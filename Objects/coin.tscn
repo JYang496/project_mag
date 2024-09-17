@@ -1,0 +1,22 @@
+[gd_scene load_steps=5 format=3 uid="uid://30h1411j5ie1"]
+
+[ext_resource type="Script" path="res://Objects/coin.gd" id="1_ncwku"]
+[ext_resource type="Texture2D" uid="uid://d0j6niqs7u06l" path="res://Textures/test/coin.png" id="1_vjq55"]
+[ext_resource type="AudioStream" uid="uid://utmsnfe5n0vx" path="res://Audio/Sounds/collectgem.mp3" id="3_xwqkn"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_otdol"]
+size = Vector2(16, 16)
+
+[node name="Coin" type="Area2D" groups=["collectables"]]
+script = ExtResource("1_ncwku")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_vjq55")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_otdol")
+
+[node name="Snd_collected" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("3_xwqkn")
+
+[connection signal="finished" from="Snd_collected" to="." method="_on_snd_collected_finished"]

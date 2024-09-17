@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dfhr57lyavtec"
+
+[deps]
+
+files=["res://Data/sniper.level.translation", "res://Data/sniper.damage.translation", "res://Data/sniper.speed.translation", "res://Data/sniper.hp.translation", "res://Data/sniper.reload.translation"]
+
+source_file="res://Data/sniper.csv"
+dest_files=["res://Data/sniper.level.translation", "res://Data/sniper.damage.translation", "res://Data/sniper.speed.translation", "res://Data/sniper.hp.translation", "res://Data/sniper.reload.translation"]
+
+[params]
+
+compress=true
+delimiter=0

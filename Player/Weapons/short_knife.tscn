@@ -1,0 +1,51 @@
+[gd_scene load_steps=6 format=3 uid="uid://dfgrtgtua41e4"]
+
+[ext_resource type="Texture2D" uid="uid://c8y0klvqommi8" path="res://Textures/test/short_knife.png" id="1_5iubf"]
+[ext_resource type="Script" path="res://Player/Weapons/short_knife.gd" id="1_cgwh4"]
+[ext_resource type="Script" path="res://Player/Weapons/area_dmg.gd" id="2_7mibg"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1lb3y"]
+size = Vector2(4, 21)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_iuuhb"]
+radius = 120.599
+
+[node name="ShortKnife" type="Node2D"]
+script = ExtResource("1_cgwh4")
+
+[node name="RemoteTransform2D" type="RemoteTransform2D" parent="."]
+remote_path = NodePath("Knife")
+update_position = false
+update_rotation = false
+update_scale = false
+
+[node name="Knife" type="Area2D" parent="RemoteTransform2D" groups=["attack"]]
+unique_name_in_owner = true
+collision_mask = 5
+script = ExtResource("2_7mibg")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RemoteTransform2D/Knife"]
+position = Vector2(0, -0.5)
+shape = SubResource("RectangleShape2D_1lb3y")
+
+[node name="KnifeSprite" type="Sprite2D" parent="RemoteTransform2D/Knife"]
+unique_name_in_owner = true
+rotation = -0.785398
+texture = ExtResource("1_5iubf")
+
+[node name="CooldownTimer" type="Timer" parent="RemoteTransform2D/Knife"]
+unique_name_in_owner = true
+one_shot = true
+
+[node name="DetectArea" type="Area2D" parent="."]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
+shape = SubResource("CircleShape2D_iuuhb")
+
+[connection signal="body_entered" from="RemoteTransform2D/Knife" to="." method="_on_knife_body_entered"]
+[connection signal="timeout" from="RemoteTransform2D/Knife/CooldownTimer" to="." method="_on_cooldown_timer_timeout"]
+[connection signal="body_entered" from="DetectArea" to="." method="_on_detect_area_body_entered"]
+[connection signal="body_exited" from="DetectArea" to="." method="_on_detect_area_body_exited"]

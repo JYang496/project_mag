@@ -1,0 +1,82 @@
+[gd_scene load_steps=7 format=3 uid="uid://bhk4geigmu4ah"]
+
+[ext_resource type="PackedScene" uid="uid://t2fjrybq8fpp" path="res://NPC/Friendly/friendly_npc.tscn" id="1_sx5eq"]
+[ext_resource type="Texture2D" uid="uid://dgu31tc4vp36g" path="res://Textures/test/npc_1.png" id="2_tct7p"]
+[ext_resource type="Script" path="res://NPC/Friendly/friendly_merchant.gd" id="2_v70x3"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_li684"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ffqmx"]
+size = Vector2(30, 29)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_sn1w3"]
+size = Vector2(138, 113)
+
+[node name="FriendlyMerchant" instance=ExtResource("1_sx5eq")]
+script = ExtResource("2_v70x3")
+
+[node name="CollisionShape2D" parent="HurtBox" index="0"]
+shape = SubResource("RectangleShape2D_li684")
+
+[node name="Body" parent="." index="1"]
+texture_filter = 1
+scale = Vector2(2, 2)
+texture = ExtResource("2_tct7p")
+
+[node name="NPCCollision" parent="." index="2"]
+position = Vector2(0, -0.5)
+shape = SubResource("RectangleShape2D_ffqmx")
+
+[node name="ShoppingArea" type="Area2D" parent="." index="3"]
+collision_layer = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ShoppingArea" index="0"]
+shape = SubResource("RectangleShape2D_sn1w3")
+
+[node name="InteractHint" type="Label" parent="." index="4"]
+visible = false
+offset_left = -16.0
+offset_top = -54.0
+offset_right = 18.0
+offset_bottom = -20.0
+theme_override_font_sizes/font_size = 24
+text = "E"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MerchantUI" type="CanvasLayer" parent="." index="5"]
+unique_name_in_owner = true
+
+[node name="GUI" type="Control" parent="MerchantUI" index="0"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+
+[node name="SelectWeaponPanel" type="Panel" parent="MerchantUI/GUI" index="0"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 350.0
+offset_top = -640.0
+offset_right = 822.0
+offset_bottom = -316.0
+
+[node name="Title" type="Label" parent="MerchantUI/GUI/SelectWeaponPanel" index="0"]
+layout_mode = 0
+offset_right = 472.0
+offset_bottom = 41.0
+text = "Select a weapon"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MerchantUI/GUI/SelectWeaponPanel" index="1"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 54.0
+offset_right = 196.0
+offset_bottom = 293.0
+
+[connection signal="body_entered" from="ShoppingArea" to="." method="_on_shopping_area_body_entered"]
+[connection signal="body_exited" from="ShoppingArea" to="." method="_on_shopping_area_body_exited"]
+
+[editable path="HurtBox"]

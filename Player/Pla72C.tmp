@@ -1,0 +1,36 @@
+[gd_scene load_steps=6 format=3 uid="uid://dve1wwmkd0ynm"]
+
+[ext_resource type="Script" path="res://Player/Player.gd" id="1_e00kg"]
+[ext_resource type="Texture2D" uid="uid://dxkaeoiymopy4" path="res://Textures/test/player.png" id="2_vcmbr"]
+[ext_resource type="PackedScene" uid="uid://bjgxvqtn52lrx" path="res://UI/character_ui.tscn" id="3_arq53"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_e43ux"]
+size = Vector2(19, 27)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_l7gq5"]
+
+[node name="Player" type="CharacterBody2D" groups=["player"]]
+motion_mode = 1
+script = ExtResource("1_e00kg")
+
+[node name="MechaSprite" type="Sprite2D" parent="."]
+position = Vector2(0.5, -5)
+scale = Vector2(1.03125, 1.3125)
+texture = ExtResource("2_vcmbr")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="MechaCollision" type="CollisionShape2D" parent="."]
+visible = false
+shape = SubResource("RectangleShape2D_e43ux")
+
+[node name="HurtBox" type="Area2D" parent="."]
+visible = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
+shape = SubResource("RectangleShape2D_l7gq5")
+
+[node name="EquippedWeapons" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="CharacterUI" parent="." instance=ExtResource("3_arq53")]

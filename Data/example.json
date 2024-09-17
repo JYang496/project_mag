@@ -1,0 +1,18 @@
+{
+	"1": {
+		"name": "gun",
+		"img": "res://Textures/test/minigun.png",
+		"res": "res://Player/Weapons/minigun.tscn",
+		"description": "gun test",
+		"price": "1",
+		"data": "res://Data/weapons/minigun.json"
+	},
+	"2": {
+		"name": "sniper",
+		"img": "res://Textures/test/sniper.png",
+		"res": "res://Player/Weapons/sniper.tscn",
+		"description": "sniper test",
+		"price": "1",
+		"data": "res://Data/weapons/sniper.json"
+	}
+}

@@ -1,0 +1,64 @@
+[gd_scene load_steps=2 format=3 uid="uid://boa65uifw4uy4"]
+
+[ext_resource type="Script" path="res://UI/margin_upgrade_card.gd" id="1_dyp4j"]
+
+[node name="MarginUpgradeCard" type="MarginContainer"]
+custom_minimum_size = Vector2(280, 400)
+offset_right = 280.0
+offset_bottom = 400.0
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+script = ExtResource("1_dyp4j")
+
+[node name="UpgradeCard" type="ColorRect" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 400)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.686275, 0.690196, 0.811765, 1)
+
+[node name="ItemImage" type="ColorRect" parent="UpgradeCard"]
+layout_mode = 0
+offset_left = 108.0
+offset_top = 55.0
+offset_right = 172.0
+offset_bottom = 119.0
+
+[node name="Icon" type="TextureRect" parent="UpgradeCard/ItemImage"]
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+
+[node name="LabelName" type="Label" parent="UpgradeCard"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 168.0
+offset_right = 270.0
+offset_bottom = 220.0
+text = "Item name"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StatusContainer" type="VBoxContainer" parent="UpgradeCard"]
+layout_mode = 2
+offset_left = 10.0
+offset_top = 210.0
+offset_right = 270.0
+offset_bottom = 341.0
+
+[node name="Label" type="Label" parent="UpgradeCard/StatusContainer"]
+layout_mode = 2
+
+[node name="Cost" type="Label" parent="UpgradeCard"]
+layout_mode = 2
+offset_top = 350.0
+offset_right = 256.0
+offset_bottom = 373.0
+text = "Cost"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[connection signal="mouse_entered" from="UpgradeCard" to="." method="_on_upgrade_card_mouse_entered"]
+[connection signal="mouse_exited" from="UpgradeCard" to="." method="_on_upgrade_card_mouse_exited"]

@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://cavfdp0tcloio"]
+
+[ext_resource type="Script" path="res://UI/labels/hit_label.gd" id="1_1e3fo"]
+
+[node name="HitLabel" type="Label"]
+z_index = 1
+offset_right = 24.0
+offset_bottom = 23.0
+text = "-10"
+vertical_alignment = 1
+script = ExtResource("1_1e3fo")

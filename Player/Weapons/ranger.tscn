@@ -1,0 +1,26 @@
+[gd_scene load_steps=3 format=3 uid="uid://cktgyo4jjgvq4"]
+
+[ext_resource type="Script" path="res://Player/Weapons/ranger.gd" id="1_wkyh8"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_0frw1"]
+radius = 153.55
+
+[node name="Ranger" type="Node2D"]
+script = ExtResource("1_wkyh8")
+
+[node name="CooldownTimer" type="Timer" parent="."]
+wait_time = 4.0
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="DetectArea" type="Area2D" parent="."]
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
+light_mask = 4
+visibility_layer = 4
+shape = SubResource("CircleShape2D_0frw1")
+
+[connection signal="shoot" from="." to="." method="_on_shoot"]
+[connection signal="body_entered" from="DetectArea" to="." method="_on_detect_area_body_entered"]
+[connection signal="body_exited" from="DetectArea" to="." method="_on_detect_area_body_exited"]

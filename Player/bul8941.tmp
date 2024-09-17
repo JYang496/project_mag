@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3 uid="uid://o8yfa3o06hu7"]
+
+[ext_resource type="Script" path="res://Player/bullet.gd" id="1_c3jlj"]
+[ext_resource type="Texture2D" uid="uid://55ri2el18p13" path="res://Textures/test/Sprite-0001.png" id="1_h4oq6"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_c247g"]
+
+[node name="Bullet" type="Node2D"]
+script = ExtResource("1_c3jlj")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("1_h4oq6")
+
+[node name="Hitbox" type="Area2D" parent="Sprite2D"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Sprite2D/Hitbox"]
+shape = SubResource("CircleShape2D_c247g")
+
+[node name="Timer" type="Timer" parent="."]
+
+[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

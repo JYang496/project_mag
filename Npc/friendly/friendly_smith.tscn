@@ -1,0 +1,28 @@
+[gd_scene load_steps=6 format=3 uid="uid://d0mgs34dodkqu"]
+
+[ext_resource type="PackedScene" uid="uid://t2fjrybq8fpp" path="res://Npc/friendly/friendly_npc.tscn" id="1_duxgc"]
+[ext_resource type="Script" path="res://Npc/friendly/FriendlySmith.gd" id="2_ua8p5"]
+[ext_resource type="Texture2D" uid="uid://i7pfn0rsdlxs" path="res://Textures/test/npc_1.png" id="3_gvuvl"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_6ig6u"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_xd28a"]
+
+[node name="FriendlySmith" instance=ExtResource("1_duxgc")]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("2_ua8p5")
+
+[node name="HurtBox" parent="." index="0"]
+collision_layer = 0
+
+[node name="CollisionShape2D" parent="HurtBox" index="0"]
+shape = SubResource("RectangleShape2D_6ig6u")
+
+[node name="Body" parent="." index="1"]
+texture = ExtResource("3_gvuvl")
+
+[node name="NPCCollision" parent="." index="2"]
+shape = SubResource("RectangleShape2D_xd28a")
+
+[editable path="HurtBox"]

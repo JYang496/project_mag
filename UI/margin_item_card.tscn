@@ -1,0 +1,61 @@
+[gd_scene load_steps=2 format=3 uid="uid://cm1a8kp01un20"]
+
+[ext_resource type="Script" path="res://UI/margin_item_card.gd" id="1_a7jwt"]
+
+[node name="MarginItemCard" type="MarginContainer"]
+custom_minimum_size = Vector2(280, 400)
+offset_right = 280.0
+offset_bottom = 400.0
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+script = ExtResource("1_a7jwt")
+
+[node name="ItemCard" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(280, 400)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.10326, 0.162251, 0.302879, 1)
+
+[node name="ItemImage" type="ColorRect" parent="ItemCard"]
+layout_mode = 0
+offset_left = 108.0
+offset_top = 55.0
+offset_right = 172.0
+offset_bottom = 119.0
+
+[node name="Icon" type="TextureRect" parent="ItemCard/ItemImage"]
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+
+[node name="LabelName" type="Label" parent="ItemCard"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 167.0
+offset_right = 270.0
+offset_bottom = 219.0
+text = "Item name"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Description" type="Label" parent="ItemCard"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 228.0
+offset_right = 270.0
+offset_bottom = 347.0
+text = "Desription"
+horizontal_alignment = 1
+
+[node name="Price" type="Label" parent="ItemCard"]
+layout_mode = 0
+offset_left = 9.0
+offset_top = 344.0
+offset_right = 269.0
+offset_bottom = 396.0
+text = "Price"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[connection signal="mouse_entered" from="ItemCard" to="." method="_on_item_card_mouse_entered"]
+[connection signal="mouse_exited" from="ItemCard" to="." method="_on_item_card_mouse_exited"]

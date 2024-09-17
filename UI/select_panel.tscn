@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://dkgeeopflvkyu"]
+
+[node name="SelectPanel" type="CanvasLayer"]
+
+[node name="GUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+metadata/_edit_use_anchors_ = true
+
+[node name="SelectWeaponPanel" type="Panel" parent="GUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.00347222
+anchor_top = 1.49537
+anchor_right = 0.00347222
+anchor_bottom = 1.49537
+offset_left = 82.0
+offset_top = -940.0
+offset_right = 1082.0
+offset_bottom = -340.0
+metadata/_edit_use_anchors_ = true
+
+[node name="Title" type="Label" parent="GUI/SelectWeaponPanel"]
+layout_mode = 0
+offset_right = 472.0
+offset_bottom = 41.0
+text = "Select Panel"
+horizontal_alignment = 1
+vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="SmithWeaponOptions" type="HBoxContainer" parent="GUI/SelectWeaponPanel"]
+layout_mode = 0
+offset_left = 3.0
+offset_top = 131.0
+offset_right = 998.0
+offset_bottom = 503.0
+alignment = 1
+metadata/_edit_use_anchors_ = true

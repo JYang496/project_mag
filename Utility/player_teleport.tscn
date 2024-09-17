@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3 uid="uid://dpgmn2gntqjee"]
+
+[ext_resource type="Script" path="res://Utility/player_teleport.gd" id="1_qgjaj"]
+
+[node name="PlayerTeleport" type="Node2D"]
+script = ExtResource("1_qgjaj")
+
+[node name="Dest1" type="Node2D" parent="."]
+
+[node name="Dest2" type="Node2D" parent="."]
+
+[node name="Timer" type="Timer" parent="."]
+one_shot = true
+
+[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

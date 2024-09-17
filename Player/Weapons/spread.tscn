@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3 uid="uid://c5283wm8mr4ui"]
+
+[ext_resource type="Script" path="res://Player/Weapons/spread.gd" id="1_nt5tr"]
+[ext_resource type="Texture2D" uid="uid://im0by60rbjt5" path="res://Textures/test/spread.png" id="2_2tery"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_igs57"]
+size = Vector2(4, 44)
+
+[node name="Hammer" type="Area2D" groups=["attack"]]
+script = ExtResource("1_nt5tr")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+z_index = 1
+rotation = -0.785398
+texture = ExtResource("2_2tery")
+
+[node name="ExpireTimer" type="Timer" parent="."]
+wait_time = 2.5
+
+[node name="ReturnTimer" type="Timer" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_igs57")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
+[connection signal="timeout" from="ReturnTimer" to="." method="_on_return_timer_timeout"]

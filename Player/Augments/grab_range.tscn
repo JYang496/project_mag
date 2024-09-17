@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://r3v8wtww3t70"]
+
+[ext_resource type="PackedScene" uid="uid://dsbpu8n2nsiup" path="res://Player/Augments/augment.tscn" id="1_oko4v"]
+[ext_resource type="Script" path="res://Player/Augments/grab_range.gd" id="2_xtmup"]
+
+[node name="GrabRange" instance=ExtResource("1_oko4v")]
+script = ExtResource("2_xtmup")
+
+[connection signal="update_aug_status" from="." to="." method="_on_update_aug_status"]

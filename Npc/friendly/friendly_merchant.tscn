@@ -1,0 +1,32 @@
+[gd_scene load_steps=6 format=3 uid="uid://bhk4geigmu4ah"]
+
+[ext_resource type="PackedScene" uid="uid://t2fjrybq8fpp" path="res://Npc/friendly/friendly_npc.tscn" id="1_sx5eq"]
+[ext_resource type="Texture2D" uid="uid://i7pfn0rsdlxs" path="res://Textures/test/npc_1.png" id="2_tct7p"]
+[ext_resource type="Script" path="res://Npc/friendly/FriendlyMerchant.gd" id="2_v70x3"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_li684"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ffqmx"]
+size = Vector2(30, 29)
+
+[node name="FriendlyMerchant" instance=ExtResource("1_sx5eq")]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("2_v70x3")
+
+[node name="HurtBox" parent="." index="0"]
+collision_layer = 0
+
+[node name="CollisionShape2D" parent="HurtBox" index="0"]
+shape = SubResource("RectangleShape2D_li684")
+
+[node name="Body" parent="." index="1"]
+texture_filter = 1
+scale = Vector2(2, 2)
+texture = ExtResource("2_tct7p")
+
+[node name="NPCCollision" parent="." index="2"]
+position = Vector2(0, -0.5)
+shape = SubResource("RectangleShape2D_ffqmx")
+
+[editable path="HurtBox"]

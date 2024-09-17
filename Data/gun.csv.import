@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://bimtncc7vyof0"
+
+[deps]
+
+files=["res://Data/gun.damage.translation", "res://Data/gun.speed.translation", "res://Data/gun.hp.translation"]
+
+source_file="res://Data/gun.csv"
+dest_files=["res://Data/gun.damage.translation", "res://Data/gun.speed.translation", "res://Data/gun.hp.translation"]
+
+[params]
+
+compress=true
+delimiter=0

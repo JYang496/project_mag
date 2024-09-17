@@ -1,0 +1,59 @@
+[gd_scene load_steps=9 format=3 uid="uid://b336cex4sdrnf"]
+
+[ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/base_enemy.tscn" id="1_jdgf0"]
+[ext_resource type="Texture2D" uid="uid://c0t8ukgysqttr" path="res://Textures/test/e2.png" id="2_1at03"]
+[ext_resource type="Script" path="res://Npc/enemy/enemy_wheel_cart.gd" id="2_m5ns1"]
+[ext_resource type="PackedScene" uid="uid://bwpw0l2pm8bif" path="res://Utility/hit_hurt_box/hit_box.tscn" id="4_j3sju"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_k1bh1"]
+size = Vector2(30, 25)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_5l3jp"]
+size = Vector2(16, 16)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_yef5u"]
+size = Vector2(110, 87)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_tpvgd"]
+size = Vector2(60, 49)
+
+[node name="EnemyWheelCart" instance=ExtResource("1_jdgf0")]
+motion_mode = 1
+script = ExtResource("2_m5ns1")
+damage = 1
+movement_speed = 60.0
+hp = 20
+
+[node name="HurtBox" parent="." index="0"]
+collision_mask = 2
+
+[node name="CollisionShape2D" parent="HurtBox" index="0"]
+position = Vector2(0, 2.5)
+shape = SubResource("RectangleShape2D_k1bh1")
+
+[node name="Body" parent="." index="1"]
+texture_filter = 1
+texture = ExtResource("2_1at03")
+
+[node name="NPCCollision" parent="." index="2"]
+position = Vector2(0, -2)
+shape = SubResource("RectangleShape2D_5l3jp")
+
+[node name="SlowDownArea" type="Area2D" parent="." index="3"]
+collision_layer = 0
+
+[node name="SlowDownShape" type="CollisionShape2D" parent="SlowDownArea" index="0"]
+position = Vector2(0, -1.5)
+shape = SubResource("RectangleShape2D_yef5u")
+
+[node name="HitBox" parent="." index="4" instance=ExtResource("4_j3sju")]
+collision_mask = 1
+
+[node name="CollisionShape2D" parent="HitBox" index="0"]
+position = Vector2(0, -1.5)
+shape = SubResource("RectangleShape2D_tpvgd")
+
+[connection signal="body_entered" from="SlowDownArea" to="." method="_on_slow_down_area_body_entered"]
+
+[editable path="HurtBox"]
+[editable path="HitBox"]
