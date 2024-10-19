@@ -51,6 +51,7 @@ func create_weapon(item_id:String):
 	PlayerData.player_weapon_list.append(weapon)
 
 func movement(delta):
+	# TODO: get position to get random or mouse
 	equppied_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
 	unique_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
 	if movement_enabled:
@@ -68,8 +69,7 @@ func movement(delta):
 		mecha_sprite.flip_h = false
 	elif distance_mouse_player.x < 0 :
 		mecha_sprite.flip_h = true
-	
-	#move_and_slide()
+
 
 func move_to(dest:Vector2) -> void:
 	movement_enabled = false
@@ -83,7 +83,7 @@ func arrived() -> void:
 
 func update_grab_radius() -> void:
 	grab_radius.shape.radius = PlayerData.total_grab_radius
-	
+
 # Player does not have death atm
 func damaged(attack:Attack):
 	PlayerData.player_hp -= attack.damage

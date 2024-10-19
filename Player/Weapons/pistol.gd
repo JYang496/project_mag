@@ -7,7 +7,7 @@ var bul_texture = preload("res://Textures/test/minigun_bullet.png")
 @onready var gun_cooldownTimer = $GunCooldownTimer
 
 # Weapon
-var ITEM_NAME = "Mini Gun"
+var ITEM_NAME = "Pistol"
 var level : int
 var damage : int
 var speed : int
@@ -17,42 +17,42 @@ var reload : float
 var weapon_data = {
 	"1": {
 		"level": "1",
-		"damage": "2",
+		"damage": "10",
 		"speed": "600",
 		"hp": "1",
-		"reload": "0.2",
+		"reload": "1",
 		"cost": "1",
 	},
 	"2": {
 		"level": "2",
-		"damage": "3",
+		"damage": "15",
 		"speed": "600",
 		"hp": "1",
-		"reload": "0.2",
+		"reload": "1",
 		"cost": "1",
 	},
 	"3": {
 		"level": "3",
-		"damage": "3",
+		"damage": "20",
 		"speed": "600",
 		"hp": "1",
-		"reload": "0.2",
+		"reload": "1",
 		"cost": "1",
 	},
 	"4": {
 		"level": "4",
-		"damage": "4",
+		"damage": "20",
 		"speed": "800",
 		"hp": "1",
-		"reload": "0.15",
+		"reload": "0.75",
 		"cost": "1",
 	},
 	"5": {
 		"level": "5",
-		"damage": "5",
+		"damage": "25",
 		"speed": "800",
 		"hp": "2",
-		"reload": "0.1",
+		"reload": "0.75",
 		"cost": "1",
 	}
 }

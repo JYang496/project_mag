@@ -1,11 +1,10 @@
 {
 	"1": {
-		"name": "gun",
+		"name": "minigun",
 		"img": "res://Textures/test/minigun.png",
 		"res": "res://Player/Weapons/minigun.tscn",
 		"description": "gun test",
 		"price": "1",
-		"data": "res://Data/weapons/minigun.json"
 	},
 	"2": {
 		"name": "sniper",
@@ -13,6 +12,33 @@
 		"res": "res://Player/Weapons/sniper.tscn",
 		"description": "sniper test",
 		"price": "1",
-		"data": "res://Data/weapons/sniper.json"
-	}
+	},
+	"3": {
+		"name": "spear",
+		"img": "res://Textures/test/spear.png",
+		"res": "res://Player/Weapons/spear_launcher.tscn",
+		"description": "spear test",
+		"price": "1",
+	},
+	"4": {
+		"name": "shotgun",
+		"img": "res://Textures/test/minigun.png",
+		"res": "res://Player/Weapons/shotgun.tscn",
+		"description": "shotgun test",
+		"price": "1",
+	},
+	"5": {
+		"name": "pistol",
+		"img": "res://Textures/test/minigun.png",
+		"res": "res://Player/Weapons/pistol.tscn",
+		"description": "pistol test",
+		"price": "1",
+	},
+	"6": {
+		"name": "cyclone",
+		"img": "res://Textures/test/sniper.png",
+		"res": "res://Player/Weapons/cyclone.tscn",
+		"description": "cyclone test",
+		"price": "1",
+	},
 }

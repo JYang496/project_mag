@@ -30,7 +30,7 @@ func _physics_process(delta: float) -> void:
 func _ready():
 	connect("select_weapon",Callable(player,"create_weapon"))
 	if item_id == null:
-		item_id = var_to_str(randi_range(1,2))
+		item_id = var_to_str(randi_range(1,6))
 	lbl_name.text = WeaponData.weapon_list.data[item_id]["name"]
 	item_icon.texture = load(WeaponData.weapon_list.data[item_id]["img"])
 	lbl_description.text = WeaponData.weapon_list.data[item_id]["description"]
@@ -39,7 +39,8 @@ func _ready():
 
 func _input(_event):
 	if Input.is_action_just_released("CLICK"):
-		if mouse_over and purchasable:
+		if mouse_over and purchasable and PlayerData.player_gold >= price:
+			PlayerData.player_gold -= price
 			emit_signal("select_weapon",item_id)
 			ui.shopping_panel_out()
 			

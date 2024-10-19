@@ -3,9 +3,8 @@ class_name Bullet
 
 var hp = 1
 var speed = 600.0
-var target = null
 var damage = 1
-var direction = Vector2.ZERO
+var direction = Vector2.RIGHT
 var blt_texture
 @onready var player  = get_tree().get_first_node_in_group("player")
 @onready var expire_timer = $ExpireTimer
@@ -13,10 +12,7 @@ var blt_texture
 
 func _ready():
 	bullet_sprite.texture = blt_texture
-	if target == null:
-		target = get_global_mouse_position()
-	direction = global_position.direction_to(target).normalized()
-	rotation = global_position.direction_to(target).angle() + deg_to_rad(90)
+	rotation = direction.angle() + deg_to_rad(90)
 	velocity = direction * speed
 	expire_timer.start()
 

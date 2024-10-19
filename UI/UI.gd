@@ -7,6 +7,7 @@ extends CanvasLayer
 @onready var shopping_root = $GUI/ShoppingRoot
 @onready var upgrade_root = $GUI/UpgradeRoot
 @onready var boss_root = $GUI/BossRoot
+@onready var pause_menu_root = $GUI/PauseMenuRoot
 
 # Character
 @onready var equipped_label = $GUI/CharacterRoot/Equipped
@@ -16,6 +17,7 @@ extends CanvasLayer
 @onready var gold_label = $GUI/CharacterRoot/Gold
 @onready var resource_label = $GUI/CharacterRoot/Resource
 @onready var time_label = $GUI/CharacterRoot/Time
+@onready var phase_label = $GUI/CharacterRoot/Phase
 
 
 # Shopping
@@ -25,6 +27,9 @@ extends CanvasLayer
 # Upgrade
 @onready var upgrade_panel = $GUI/UpgradeRoot/UpgradePanel
 @onready var upgrade_options = $GUI/UpgradeRoot/UpgradePanel/UpgradeOptions
+
+# Pause menu
+@onready var resume_button = $GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton
 
 # Misc
 @onready var move_out_timer = $GUI/MoveOutTimer
@@ -47,15 +52,26 @@ func _physics_process(_delta):
 	augments_label.text = str(PlayerData.player_augment_list)
 	gold_label.text = "Gold: " + str(PlayerData.player_gold)
 	time_label.text = "Time: " + str(PhaseManager.battle_time)
+	phase_label.text = "Phase: " + str(PhaseManager.current_state())
 	for weapon_index in PlayerData.player_weapon_list.size():
 		weapon_icons.get_child(weapon_index).texture = PlayerData.player_weapon_list[weapon_index].sprite.texture
+
+func _input(_event) -> void:
+	if Input.is_action_just_pressed("ESC"):
+		if get_tree().paused:
+			# Unpause and hide UI
+			get_tree().paused = false
+			pause_menu_root.visible = false
+		else:
+			# Pause and show UI
+			get_tree().paused = true
+			pause_menu_root.visible = true
 
 
 func shopping_panel_in() -> void:
 	if shopping_root == null:
 		return
 	move_out_timer.stop()
-	
 	shopping_root.visible = true
 	var options = 0
 	var optionsmax = 4
@@ -107,3 +123,10 @@ func free_childern(parent) -> void:
 func _on_move_out_timer_timeout():
 	# Would be useful when animation is applied
 	pass # Replace with function body.
+
+
+func _on_resume_button_pressed() -> void:
+	if get_tree().paused:
+		# Unpause and hide UI
+		get_tree().paused = false
+		pause_menu_root.visible = false

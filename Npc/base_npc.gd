@@ -13,7 +13,7 @@ class_name BaseNPC
 @export var experience = 1
 
 var knockback = Vector2.ZERO
-
+var is_dead: bool = false
 
 func _ready():
 	pass
@@ -27,8 +27,11 @@ func damaged(attack:Attack):
 	ins.global_position = global_position
 	ins.setNumber(attack.damage)
 	$".".get_parent().add_sibling(ins)
+	if is_dead:
+		return  # Prevents further damage processing if already dead
 	hp -= attack.damage
-	if hp <= 0:
+	if hp <= 0 and not is_dead:
+		is_dead = true
 		death()	
 
 func death():

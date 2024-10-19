@@ -26,7 +26,9 @@ func enter_battle() -> void:
 	phase = BATTLE
 
 func enter_bonus() -> void:
+	var teleporter = get_tree().get_first_node_in_group("teleporter")
 	phase = BONUS
+	teleporter.move_teleporter()
 
 func enter_gameover() -> void:
 	phase = GAMEOVER

@@ -1,0 +1,48 @@
+[gd_scene load_steps=7 format=3 uid="uid://c5283wm8mr4ui"]
+
+[ext_resource type="Script" path="res://Player/Weapons/spear.gd" id="1_a4jgl"]
+[ext_resource type="Texture2D" uid="uid://im0by60rbjt5" path="res://Textures/test/spear.png" id="2_vokyl"]
+[ext_resource type="PackedScene" uid="uid://bwpw0l2pm8bif" path="res://Utility/hit_hurt_box/hit_box.tscn" id="3_4fmqh"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_8nkad"]
+size = Vector2(4, 44)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_00gxe"]
+size = Vector2(4, 44)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_jncxb"]
+size = Vector2(4, 44)
+
+[node name="Spread" type="CharacterBody2D"]
+script = ExtResource("1_a4jgl")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+z_index = 1
+rotation = -0.785398
+texture = ExtResource("2_vokyl")
+
+[node name="ExpireTimer" type="Timer" parent="."]
+wait_time = 2.5
+
+[node name="ReturnTimer" type="Timer" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+visible = false
+shape = SubResource("RectangleShape2D_8nkad")
+disabled = true
+
+[node name="HitBox" parent="." instance=ExtResource("3_4fmqh")]
+collision_mask = 4
+
+[node name="CollisionShape2D" parent="HitBox" index="0"]
+shape = SubResource("RectangleShape2D_00gxe")
+
+[node name="ReturnBox" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ReturnBox"]
+shape = SubResource("RectangleShape2D_jncxb")
+
+[connection signal="timeout" from="ReturnTimer" to="." method="_on_return_timer_timeout"]
+[connection signal="body_entered" from="ReturnBox" to="." method="_on_return_box_body_entered"]
+
+[editable path="HitBox"]

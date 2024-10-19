@@ -1,0 +1,17 @@
+[gd_scene load_steps=5 format=3 uid="uid://do24df1bfmsmv"]
+
+[ext_resource type="Script" path="res://Data/spawns/SpawnArray.gd" id="1_sm5it"]
+[ext_resource type="Script" path="res://Utility/spawn_info.gd" id="2_fvbvb"]
+[ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/enemy_rolling_ball.tscn" id="3_n4krr"]
+
+[sub_resource type="Resource" id="Resource_wnahx"]
+script = ExtResource("2_fvbvb")
+time_start = 1
+time_end = 20
+enemy = ExtResource("3_n4krr")
+enemy_num = 1
+enemy_spawn_delay = 0
+
+[node name="1-1" type="Node2D"]
+script = ExtResource("1_sm5it")
+spawns = Array[ExtResource("2_fvbvb")]([SubResource("Resource_wnahx")])

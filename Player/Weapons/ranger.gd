@@ -13,6 +13,7 @@ var target_close = []
 signal shoot()
 
 func _physics_process(_delta):
+	#self.rotation = self.global_position.direction_to(get_random_target()).angle()
 	var pressed = Input.is_action_pressed("ATTACK")
 	if pressed:
 		if not justAttacked:
@@ -35,7 +36,7 @@ func get_random_target():
 		var target = target_close.pick_random()
 		return target.global_position
 	else: 
-		return null
+		return get_global_mouse_position()
 
 func _on_detect_area_body_entered(body):
 	if not target_close.has(body) and body.is_in_group("enemy"):

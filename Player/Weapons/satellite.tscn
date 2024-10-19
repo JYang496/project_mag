@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3 uid="uid://6tqh2ileg8ku"]
+
+[ext_resource type="PackedScene" uid="uid://bwpw0l2pm8bif" path="res://Utility/hit_hurt_box/hit_box.tscn" id="1_4k73p"]
+[ext_resource type="Script" path="res://Player/Weapons/satellite.gd" id="1_qf162"]
+[ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="2_5a781"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_en1xe"]
+
+[node name="Satellite" type="Node2D"]
+script = ExtResource("1_qf162")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_5a781")
+
+[node name="HitBox" parent="." instance=ExtResource("1_4k73p")]
+collision_mask = 4
+
+[node name="CollisionShape2D" parent="HitBox" index="0"]
+shape = SubResource("RectangleShape2D_en1xe")
+
+[editable path="HitBox"]

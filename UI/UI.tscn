@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://UI/UI.gd" id="1_y6r0f"]
 
 [node name="UI" type="CanvasLayer" groups=["ui"]]
+process_mode = 3
 script = ExtResource("1_y6r0f")
 
 [node name="GUI" type="Control" parent="."]
@@ -87,6 +88,14 @@ offset_top = 58.0
 offset_right = 562.0
 offset_bottom = 91.0
 text = "Time"
+
+[node name="Phase" type="Label" parent="GUI/CharacterRoot"]
+layout_mode = 0
+offset_left = 932.0
+offset_top = 8.0
+offset_right = 1032.0
+offset_bottom = 41.0
+text = "Phase:"
 
 [node name="ShoppingRoot" type="Control" parent="GUI"]
 visible = false
@@ -191,6 +200,37 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="PauseMenuRoot" type="Control" parent="GUI"]
+process_mode = 2
+visible = false
+anchors_preset = 0
+offset_left = 350.0
+offset_top = 25.0
+offset_right = 750.0
+offset_bottom = 625.0
+
+[node name="PauseMenuPanel" type="Panel" parent="GUI/PauseMenuRoot"]
+layout_mode = 0
+offset_right = 400.0
+offset_bottom = 600.0
+
+[node name="Paused" type="Label" parent="GUI/PauseMenuRoot/PauseMenuPanel"]
+layout_mode = 0
+offset_left = 66.0
+offset_top = 150.0
+offset_right = 123.0
+offset_bottom = 173.0
+text = "Paused"
+
+[node name="ResumeButton" type="Button" parent="GUI/PauseMenuRoot/PauseMenuPanel"]
+layout_mode = 0
+offset_left = 154.0
+offset_top = 257.0
+offset_right = 162.0
+offset_bottom = 265.0
+text = "Resume"
+
 [node name="MoveOutTimer" type="Timer" parent="GUI"]
 
+[connection signal="pressed" from="GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton" to="." method="_on_resume_button_pressed"]
 [connection signal="timeout" from="GUI/MoveOutTimer" to="." method="_on_move_out_timer_timeout"]

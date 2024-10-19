@@ -9,12 +9,18 @@ extends Node2D
 @onready var x_max = $BottomRight.global_position.x
 @onready var y_max = $BottomRight.global_position.y
 
+var current_level := 0 :
+	set(value):
+		current_level = clampi(value,0,len(SpawnData.spawn_list) - 1)
+var instant_list : Array
 
 func _ready():
-	pass
+	for i in SpawnData.spawn_list:
+		var ins = i.instantiate()
+		instant_list.append(ins)
+
 
 func start_timer() -> void:
-	print("start timer")
 	PhaseManager.battle_time = 0
 	timer.start()
 
@@ -22,11 +28,11 @@ func _on_timer_timeout():
 	PhaseManager.battle_time += 1
 	# When time hit 20, battle ends and bonus phase starts
 	if PhaseManager.battle_time >= 20 or PhaseManager.phase == PhaseManager.BONUS:
+		current_level += 1
 		timer.stop()
 		PhaseManager.enter_bonus()
-		print("enter bonus")
 		return
-	var enemy_spawns = spawns
+	var enemy_spawns = instant_list[current_level].spawns
 	for i in enemy_spawns:
 		if PhaseManager.battle_time >= i.time_start and PhaseManager.battle_time <= i.time_end:
 			if i.spawn_delay_counter < i.enemy_spawn_delay:

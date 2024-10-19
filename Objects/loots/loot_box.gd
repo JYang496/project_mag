@@ -1,0 +1,55 @@
+extends Node2D
+
+@onready var coin_preload = preload("res://Objects/loots/coin.tscn")
+@onready var drop_preload = preload("res://Objects/loots/drop.tscn")
+@export var coin_value:int = 0
+var number_of_coins := 5
+var remainder := 0
+
+func _ready() -> void:
+	number_of_coins = 5 + coin_value/10
+	remainder = coin_value % number_of_coins
+	animation()
+	pass
+	
+# Animation, loot box rolls and falls, opens
+func animation() -> void:
+	var tween = create_tween()
+	var rotate_tween = create_tween()
+	tween.tween_property(self,"position",position + Vector2(0,-20),0.5).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self,"position",position + Vector2(0,20),0.5).set_ease(Tween.EASE_IN)
+	rotate_tween.tween_property(self,"rotation_degrees", 1800, 1).set_ease(Tween.EASE_IN_OUT)
+	tween.connect("finished",_on_tween_finished)
+
+func drop_coins() -> void:
+	for i in range(number_of_coins):
+		var bonus := 0
+		if remainder >= 0 and remainder <= 10:
+			bonus = remainder
+			remainder = 0
+		else:
+			bonus = remainder / 2
+			remainder = remainder % 2 + remainder / 2
+		var coin = coin_preload.instantiate()
+		coin.value = coin_value / number_of_coins + bonus
+		coin.global_position = self.global_position
+		self.call_deferred("add_sibling",coin)
+
+func drops() -> void:
+	for i in range(number_of_coins):
+		var bonus := 0
+		if remainder >= 0 and remainder <= 10:
+			bonus = remainder
+			remainder = 0
+		else:
+			bonus = remainder / 2
+			remainder = remainder % 2 + remainder / 2
+		var drop = drop_preload.instantiate()
+		drop.drop = coin_preload
+		drop.value = coin_value / number_of_coins + bonus
+		drop.global_position = self.global_position
+		#get_tree().root.call_deferred("add_sibling",drop)
+		self.call_deferred("add_sibling",drop)
+	
+func _on_tween_finished() -> void:
+	drops()

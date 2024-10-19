@@ -10,10 +10,12 @@ extends Control
 
 var weapon_node
 var weapon_data
+var cost_price : int
+var upgradable := true
 var curr_status = {}
 var next_status = {}
 var comb_status = {}
-var mouse_over = false
+var mouse_over := false
 
 signal close_label()
 signal upgrade_level(level)
@@ -24,19 +26,31 @@ func _ready():
 		connect("upgrade_level",Callable(weapon_node,"set_level"))
 		comb_status = combine_status(weapon_node)
 		for key in comb_status:
-			var status_label = Label.new()
-			status_label.text = "%s: %s => %s" % [key, comb_status[key][0], comb_status[key][1]]
-			status_container.add_child(status_label)
+			if key == "cost":
+				cost_price = int(comb_status[key][1])
+				cost.text = "Cost: %s" % comb_status[key][1]
+			else:
+				var status_label = Label.new()
+				status_label.text = "%s: %s => %s" % [key, comb_status[key][0], comb_status[key][1]]
+				status_container.add_child(status_label)
 		itemIcon.texture = weapon_node.sprite.texture
 		lblName.text = weapon_node.ITEM_NAME
 		
 
-func _physics_process(_delta):
-	pass
+func _physics_process(delta: float) -> void:
+	if PlayerData.player_gold < cost_price: # Unable to purchase if player does not have enough gold
+		cost.set("theme_override_colors/font_color",Color(1.0,0.0,0.0,1.0))
+		upgradable = false
+	else:
+		cost.set("theme_override_colors/font_color",Color(1.0,1.0,1.0,1.0))
+		upgradable = true
+		
+
 		
 func _input(_event):
 	if Input.is_action_just_released("CLICK"):
-		if mouse_over:
+		if mouse_over and upgradable:
+			PlayerData.player_gold -= cost_price
 			emit_signal("upgrade_level",comb_status["level"][1])
 			ui.upgrade_panel_out()
 

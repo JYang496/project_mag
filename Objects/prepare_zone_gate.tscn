@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=4 uid="uid://w270o86lb231"]
+[gd_scene load_steps=10 format=4 uid="uid://w270o86lb231"]
 
 [ext_resource type="Script" path="res://Objects/prepare_zone_gate.gd" id="1_0unpk"]
 [ext_resource type="Texture2D" uid="uid://ibyydb01gn8o" path="res://Textures/test/p_gate.png" id="1_mwig2"]
@@ -39,6 +39,9 @@ physics_layer_0/collision_layer = 32
 physics_layer_0/collision_mask = 32
 sources/0 = SubResource("TileSetAtlasSource_2m21i")
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_62b6r"]
+size = Vector2(257, 50)
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ldp2s"]
 size = Vector2(127, 64)
 
@@ -61,6 +64,12 @@ tile_set = SubResource("TileSet_u07xh")
 position = Vector2(128, 0)
 tile_map_data = PackedByteArray("AAD//wgAAAADAAQAAAD//wcAAAADAAQAAAD//wYAAAADAAQAAAD//wUAAAADAAQAAAD//wQAAAADAAQAAAD//wMAAAADAAQAAAD//wIAAAADAAQAAAD//wEAAAADAAQAAADw/wEAAAADAAQAAADw/wIAAAADAAQAAADw/wMAAAADAAQAAADw/wQAAAADAAQAAADw/wUAAAADAAQAAADw/wYAAAADAAQAAADw/wcAAAADAAQAAADw/wgAAAADAAQAAAA=")
 tile_set = SubResource("TileSet_u07xh")
+
+[node name="PrepareDectectArea" type="Area2D" parent="."]
+position = Vector2(0, -51)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PrepareDectectArea"]
+shape = SubResource("RectangleShape2D_62b6r")
 
 [node name="DectectArea" type="Area2D" parent="."]
 position = Vector2(0, 80)
@@ -97,5 +106,6 @@ shape = SubResource("RectangleShape2D_w1yvt")
 
 [node name="PlayerTeleport" parent="." instance=ExtResource("4_86oxv")]
 
-[connection signal="tp_to_battle_zone" from="." to="PlayerTeleport" method="_on_prepare_zone_gate_tp_to_battle_zone"]
+[connection signal="tp_to_dest1" from="." to="PlayerTeleport" method="_on_prepare_zone_gate_tp_to_dest_1"]
+[connection signal="body_entered" from="PrepareDectectArea" to="." method="_on_prepare_dectect_area_body_entered"]
 [connection signal="body_entered" from="DectectArea" to="." method="_on_dectect_area_body_entered"]

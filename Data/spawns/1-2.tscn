@@ -1,0 +1,17 @@
+[gd_scene load_steps=5 format=3 uid="uid://blkcsju082ryi"]
+
+[ext_resource type="Script" path="res://Data/spawns/SpawnArray.gd" id="1_b2itx"]
+[ext_resource type="Script" path="res://Utility/spawn_info.gd" id="2_lrbk6"]
+[ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/enemy_wheel_cart.tscn" id="3_d6yav"]
+
+[sub_resource type="Resource" id="Resource_nab7e"]
+script = ExtResource("2_lrbk6")
+time_start = 1
+time_end = 20
+enemy = ExtResource("3_d6yav")
+enemy_num = 2
+enemy_spawn_delay = 2
+
+[node name="1-2" type="Node2D"]
+script = ExtResource("1_b2itx")
+spawns = Array[ExtResource("2_lrbk6")]([SubResource("Resource_nab7e")])
