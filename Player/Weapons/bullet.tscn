@@ -1,6 +1,5 @@
-[gd_scene load_steps=6 format=3 uid="uid://8ja74v57b4wd"]
+[gd_scene load_steps=5 format=3 uid="uid://bnolp06as3ib6"]
 
-[ext_resource type="Script" path="res://Player/Weapons/Bullet.gd" id="1_ycg4d"]
 [ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="2_s6n33"]
 [ext_resource type="PackedScene" uid="uid://bwpw0l2pm8bif" path="res://Utility/hit_hurt_box/hit_box.tscn" id="3_1n8ib"]
 
@@ -11,7 +10,6 @@ size = Vector2(2, 2)
 
 [node name="Bullet" type="CharacterBody2D"]
 motion_mode = 1
-script = ExtResource("1_ycg4d")
 
 [node name="BulletSprite" type="Sprite2D" parent="."]
 unique_name_in_owner = true

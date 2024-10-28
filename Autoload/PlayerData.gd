@@ -79,7 +79,7 @@ var crit_damage := 1.0
 var bonus_crit_damage := 1.0
 var total_crit_damage := crit_damage * bonus_crit_damage
 
-var grab_radius := 50 :
+var grab_radius := 50.0 :
 	get:
 		return grab_radius
 	set(value):

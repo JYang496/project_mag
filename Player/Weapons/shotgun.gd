@@ -76,7 +76,7 @@ func set_level(lv):
 	reload = float(weapon_data[lv]["reload"])
 	bullet_count = int(weapon_data[lv]["bullet_count"])
 	shotgun_attack_timer.wait_time = reload
-	
+
 func _on_shoot():
 	justAttacked = true
 	shotgun_attack_timer.start()

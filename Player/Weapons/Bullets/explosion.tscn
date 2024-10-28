@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3 uid="uid://ch7q0uhlnetro"]
+
+[ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="1_1whmk"]
+[ext_resource type="PackedScene" uid="uid://bwpw0l2pm8bif" path="res://Utility/hit_hurt_box/hit_box.tscn" id="2_2ypwf"]
+
+[sub_resource type="GDScript" id="GDScript_qqtij"]
+script/source = "extends Node2D
+"
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_igwxo"]
+radius = 11.0454
+
+[node name="Explosion" type="Node2D"]
+script = SubResource("GDScript_qqtij")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_1whmk")
+
+[node name="HitBox" parent="Sprite2D" instance=ExtResource("2_2ypwf")]
+
+[node name="CollisionShape2D" parent="Sprite2D/HitBox" index="0"]
+shape = SubResource("CircleShape2D_igwxo")
+
+[node name="Timer" type="Timer" parent="."]
+
+[editable path="Sprite2D/HitBox"]

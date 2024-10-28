@@ -13,15 +13,14 @@ var target_close = []
 signal shoot()
 
 func _physics_process(_delta):
-	#self.rotation = self.global_position.direction_to(get_random_target()).angle()
-	var pressed = Input.is_action_pressed("ATTACK")
-	if pressed:
-		if not justAttacked:
-			emit_signal("shoot")
-
+	if not justAttacked and Input.is_action_pressed("ATTACK"):
+		emit_signal("shoot")
 
 func _on_cooldown_timer_timeout():
 	justAttacked = false
+
+func _input(event: InputEvent) -> void:
+	pass
 
 
 func _on_shoot():

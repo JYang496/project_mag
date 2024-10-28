@@ -41,4 +41,11 @@
 		"description": "cyclone test",
 		"price": "1",
 	},
+	"7": {
+		"name": "orbit",
+		"img": "res://Textures/test/bullet.png",
+		"res": "res://Player/Weapons/orbit.tscn",
+		"description": "orbit test",
+		"price": "1",
+	},
 }

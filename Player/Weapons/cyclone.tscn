@@ -1,13 +1,13 @@
 [gd_scene load_steps=4 format=3 uid="uid://dta6k27srbxic"]
 
-[ext_resource type="Script" path="res://Player/Weapons/sniper.gd" id="1_m3083"]
+[ext_resource type="Script" path="res://Player/Weapons/cyclone.gd" id="1_2ql54"]
 [ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://Textures/test/sniper.png" id="2_dky3l"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_p0ini"]
 radius = 212.009
 
 [node name="Cyclone" type="Node2D"]
-script = ExtResource("1_m3083")
+script = ExtResource("1_2ql54")
 
 [node name="SniperAttackTimer" type="Timer" parent="."]
 

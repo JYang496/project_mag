@@ -1,0 +1,32 @@
+[gd_scene load_steps=5 format=3 uid="uid://dk1c4rp3qky24"]
+
+[ext_resource type="Script" path="res://Player/Weapons/Bullets/bullet.gd" id="1_7ggqm"]
+[ext_resource type="Texture2D" uid="uid://bdqglnp8spwlo" path="res://Textures/test/sniper_bullet.png" id="2_t5sb3"]
+[ext_resource type="PackedScene" uid="uid://bwpw0l2pm8bif" path="res://Utility/hit_hurt_box/hit_box.tscn" id="2_wxqip"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_r2bt5"]
+size = Vector2(6, 11)
+
+[node name="BulletBase" type="Node2D"]
+script = ExtResource("1_7ggqm")
+
+[node name="Bullet" type="Node2D" parent="."]
+
+[node name="BulletSprite" type="Sprite2D" parent="Bullet"]
+texture_filter = 1
+texture = ExtResource("2_t5sb3")
+
+[node name="HitBox" parent="Bullet" instance=ExtResource("2_wxqip")]
+collision_mask = 4
+
+[node name="CollisionShape2D" parent="Bullet/HitBox" index="0"]
+position = Vector2(0, 1.5)
+shape = SubResource("RectangleShape2D_r2bt5")
+
+[node name="ExpireTimer" type="Timer" parent="."]
+wait_time = 2.5
+one_shot = true
+
+[connection signal="timeout" from="ExpireTimer" to="." method="_on_expire_timer_timeout"]
+
+[editable path="Bullet/HitBox"]

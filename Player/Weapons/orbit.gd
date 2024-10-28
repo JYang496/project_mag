@@ -8,7 +8,7 @@ extends Node2D
 var satellites : Array = []
 
 # Weapon
-var ITEM_NAME = "Sniper"
+var ITEM_NAME = "Orbit"
 var level : int
 var damage : int
 var spin_speed : float = 5.0
@@ -18,7 +18,7 @@ var weapon_data = {
 	"1": {
 		"level": "1",
 		"damage": "5",
-		"number": "2",
+		"number": "1",
 		"spin_speed": "3",
 		"cost": "1",
 	},
@@ -54,6 +54,15 @@ var weapon_data = {
 
 func _ready() -> void:
 	set_level("1")
+
+func set_level(lv) -> void:
+	level = int(weapon_data[lv]["level"])
+	damage = int(weapon_data[lv]["damage"])
+	spin_speed = int(weapon_data[lv]["spin_speed"])
+	number = int(weapon_data[lv]["number"])
+	for s in satellites:
+		s.queue_free()
+	satellites.clear()
 	var offset_step = 2 * PI / number
 	for n in range(number):
 		var satellite_ins = satellite_preload.instantiate()
@@ -63,20 +72,3 @@ func _ready() -> void:
 		satellites.append(satellite_ins)
 	for n in range(number):
 		satellites[n].angle_offset = offset_step * n
-
-func set_level(lv) -> void:
-	level = int(weapon_data[lv]["level"])
-	damage = int(weapon_data[lv]["damage"])
-	spin_speed = int(weapon_data[lv]["spin_speed"])
-	number = int(weapon_data[lv]["number"])
-	if satellites.is_empty():
-		return
-	var offset_step = 2 * PI / number
-	for n in range(number):
-		satellites[n].angle_offset = offset_step * n
-
-func _physics_process(delta: float) -> void:
-	if satellites.is_empty():
-		return
-
-		
