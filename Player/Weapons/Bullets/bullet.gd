@@ -16,13 +16,15 @@ func _ready() -> void:
 	pass
 
 func enable_linear(direction : Vector2 = Vector2.UP, speed : float = 400.0) -> void:
+	print(self,"do not use this function!")
 	var linear_movement = load("res://Player/Weapons/Bullets/linear_movement.tscn")
 	var linear_movement_ins = linear_movement.instantiate()
 	linear_movement_ins.direction = direction
 	add_child(linear_movement_ins)
 
 func enable_spiral(spin_rate : float = PI, spin_speed : float = 100.0) -> void:
-	var spiral_movement = preload("res://Player/Weapons/Bullets/spiral_movement.tscn")
+	print(self,"do not use this function!")
+	var spiral_movement = load("res://Player/Weapons/Bullets/spiral_movement.tscn")
 	var spiral_movement_ins = spiral_movement.instantiate()
 	spiral_movement_ins.spin_rate = spin_rate
 	spiral_movement_ins.spin_speed = spin_speed

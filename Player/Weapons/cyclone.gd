@@ -3,6 +3,9 @@ extends Ranger
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/bullet.png")
+var linear_movement = preload("res://Player/Weapons/Bullets/linear_movement.tscn")
+var spiral_movement = preload("res://Player/Weapons/Bullets/spiral_movement.tscn")
+
 @onready var sprite = get_node("%GunSprite")
 @onready var sniper_attack_timer = $SniperAttackTimer
 @onready var sniper_charging_timer = $SniperChargingTimer
@@ -93,10 +96,21 @@ func _on_shoot():
 	spawn_bullet.damage = damage
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
-	spawn_bullet.enable_linear(global_position.direction_to(get_random_target()).normalized(), speed)
-	spawn_bullet.enable_spiral(spin_rate,spin_speed)
+	enable_linear(spawn_bullet, global_position.direction_to(get_random_target()).normalized(), speed)
+	enable_spiral(spawn_bullet, spin_rate,spin_speed)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
+func enable_linear(bullet : Node2D, direction : Vector2 = Vector2.UP, speed : float = 400.0) -> void:
+	var linear_movement_ins = linear_movement.instantiate()
+	linear_movement_ins.direction = direction
+	bullet.call_deferred("add_child",linear_movement_ins)
+
+
+func enable_spiral(bullet : Node2D, spin_rate : float = PI, spin_speed : float = 100.0) -> void:
+	var spiral_movement_ins = spiral_movement.instantiate()
+	spiral_movement_ins.spin_rate = spin_rate
+	spiral_movement_ins.spin_speed = spin_speed
+	bullet.call_deferred("add_child",spiral_movement_ins)
 
 func _on_sniper_attack_timer_timeout():
 	justAttacked = false

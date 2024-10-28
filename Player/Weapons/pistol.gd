@@ -1,8 +1,9 @@
 extends Ranger
 
 # Bullet
-var bullet = preload("res://Player/Weapons/bullet.tscn")
+var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/minigun_bullet.png")
+var linear_movement = preload("res://Player/Weapons/Bullets/linear_movement.tscn")
 @onready var sprite = get_node("%GunSprite")
 @onready var gun_cooldownTimer = $GunCooldownTimer
 
@@ -76,13 +77,19 @@ func _on_shoot():
 	justAttacked = true
 	gun_cooldownTimer.start()
 	var spawn_bullet = bullet.instantiate()
+	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
 	spawn_bullet.damage = damage
-	spawn_bullet.speed = speed
 	spawn_bullet.hp = hp
-	spawn_bullet.direction = global_position.direction_to(get_random_target()).normalized()
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
+	enable_linear(spawn_bullet, bullet_direction, speed)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
+
+func enable_linear(bullet : Node2D, direction : Vector2 = Vector2.UP, speed : float = 400.0) -> void:
+	var linear_movement_ins = linear_movement.instantiate()
+	linear_movement_ins.direction = direction
+	bullet.call_deferred("add_child",linear_movement_ins)
+
 
 func _on_gun_cooldown_timer_timeout():
 	justAttacked = false

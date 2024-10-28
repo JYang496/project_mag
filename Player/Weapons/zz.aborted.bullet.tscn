@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://bnolp06as3ib6"]
 
-[ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="2_s6n33"]
-[ext_resource type="PackedScene" uid="uid://bwpw0l2pm8bif" path="res://Utility/hit_hurt_box/hit_box.tscn" id="3_1n8ib"]
+[ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="1_efwmi"]
+[ext_resource type="PackedScene" uid="uid://bwpw0l2pm8bif" path="res://Utility/hit_hurt_box/hit_box.tscn" id="2_1nah4"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_mterd"]
 size = Vector2(2, 2)
@@ -14,7 +14,7 @@ motion_mode = 1
 [node name="BulletSprite" type="Sprite2D" parent="."]
 unique_name_in_owner = true
 z_index = 1
-texture = ExtResource("2_s6n33")
+texture = ExtResource("1_efwmi")
 
 [node name="ExpireTimer" type="Timer" parent="."]
 wait_time = 2.5
@@ -26,7 +26,7 @@ visible = false
 shape = SubResource("RectangleShape2D_mterd")
 disabled = true
 
-[node name="HitBox" parent="." instance=ExtResource("3_1n8ib")]
+[node name="HitBox" parent="." instance=ExtResource("2_1nah4")]
 collision_mask = 4
 
 [node name="CollisionShape2D" parent="HitBox" index="0"]

@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://ch7q0uhlnetro"]
+[gd_scene load_steps=5 format=3 uid="uid://g8e0fvj6bj2a"]
 
 [ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="1_1whmk"]
 [ext_resource type="PackedScene" uid="uid://bwpw0l2pm8bif" path="res://Utility/hit_hurt_box/hit_box.tscn" id="2_2ypwf"]
