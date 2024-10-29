@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://ylnr2d6580ii"]
 
-[ext_resource type="Script" path="res://Player/Weapons/Minigun.gd" id="1_uf2wg"]
+[ext_resource type="Script" path="res://Player/Weapons/minigun.gd" id="1_uf2wg"]
 [ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="2_j7eu2"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_onfff"]

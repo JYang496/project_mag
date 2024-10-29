@@ -3,6 +3,7 @@ class_name BulletBase
 
 var hp = 1
 var damage = 1
+var expire_time = 2.5
 var base_displacement = Vector2.ZERO
 var bullet_displacement = Vector2.ZERO
 var blt_texture
@@ -13,7 +14,9 @@ var blt_texture
 @onready var bullet_sprite = $Bullet/BulletSprite
 
 func _ready() -> void:
-	pass
+	expire_timer.wait_time = expire_time
+	bullet_sprite.texture = blt_texture
+	expire_timer.start()
 
 func enable_linear(direction : Vector2 = Vector2.UP, speed : float = 400.0) -> void:
 	print(self,"do not use this function!")
@@ -29,6 +32,10 @@ func enable_spiral(spin_rate : float = PI, spin_speed : float = 100.0) -> void:
 	spiral_movement_ins.spin_rate = spin_rate
 	spiral_movement_ins.spin_speed = spin_speed
 	add_child(spiral_movement_ins)	
+
+func edit_expire_time(time : float) -> void:
+	expire_time = time
+
 
 func _physics_process(delta: float) -> void:
 	self.position = self.position + base_displacement * delta
