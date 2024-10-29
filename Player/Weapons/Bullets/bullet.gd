@@ -12,17 +12,27 @@ var blt_texture
 @onready var expire_timer = $ExpireTimer
 @onready var bullet = $Bullet
 @onready var bullet_sprite = $Bullet/BulletSprite
+@onready var hitbox_collision = $Bullet/BulletSprite/HitBox/CollisionShape2D
 
 func _ready() -> void:
 	expire_timer.wait_time = expire_time
 	bullet_sprite.texture = blt_texture
+	edit_hitbox_shape()
 	expire_timer.start()
 
-func enable_linear(direction : Vector2 = Vector2.UP, speed : float = 400.0) -> void:
+# This function will adjust the hitbox shape identical to your sprite size
+func edit_hitbox_shape() -> void:
+	var shape = RectangleShape2D.new()
+	shape.size = bullet_sprite.texture.get_size()
+	hitbox_collision.shape = shape
+
+
+func enable_linear(direction : Vector2 = Vector2.UP, speed : float = 100.0) -> void:
 	print(self,"do not use this function!")
 	var linear_movement = load("res://Player/Weapons/Bullets/linear_movement.tscn")
 	var linear_movement_ins = linear_movement.instantiate()
 	linear_movement_ins.direction = direction
+	linear_movement_ins.speed = speed
 	add_child(linear_movement_ins)
 
 func enable_spiral(spin_rate : float = PI, spin_speed : float = 100.0) -> void:
@@ -32,9 +42,6 @@ func enable_spiral(spin_rate : float = PI, spin_speed : float = 100.0) -> void:
 	spiral_movement_ins.spin_rate = spin_rate
 	spiral_movement_ins.spin_speed = spin_speed
 	add_child(spiral_movement_ins)	
-
-func edit_expire_time(time : float) -> void:
-	expire_time = time
 
 
 func _physics_process(delta: float) -> void:

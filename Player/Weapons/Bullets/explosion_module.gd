@@ -16,9 +16,10 @@ func _on_parent_exiting() -> void:
 	print(module_parent,"exiting")
 	var spawn_bullet = explosion.instantiate()
 	spawn_bullet.damage = damage
+	spawn_bullet.hp = 99
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
-	spawn_bullet.edit_expire_time(0.1)
+	spawn_bullet.expire_time = 0.1
 	module_parent.get_tree().root.call_deferred("add_child",spawn_bullet)
 	
 

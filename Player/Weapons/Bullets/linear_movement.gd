@@ -8,7 +8,6 @@ class_name LinearMovement
 
 
 func _ready() -> void:
-	module_parent = self.get_parent()
 	if not module_parent:
 		print("Error: module does not have owner")
 		return
