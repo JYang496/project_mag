@@ -20,6 +20,9 @@ var speed : int = 300
 var hp : int = 1
 var reload : float =1
 
+# Module list
+var module_list = []
+
 var weapon_data = {
 	"1": {
 		"level": "1",
@@ -105,6 +108,7 @@ func enable_linear(blt_node : Node2D, direction : Vector2 = Vector2.UP, blt_spee
 	linear_movement_ins.direction = direction
 	linear_movement_ins.speed = blt_speed
 	blt_node.call_deferred("add_child",linear_movement_ins)
+	module_list.append(linear_movement_ins)
 
 
 func enable_spiral(blt_node : Node2D, blt_spin_rate : float = PI, blt_spin_speed : float = 100.0) -> void:
@@ -112,6 +116,7 @@ func enable_spiral(blt_node : Node2D, blt_spin_rate : float = PI, blt_spin_speed
 	spiral_movement_ins.spin_rate = blt_spin_rate
 	spiral_movement_ins.spin_speed = blt_spin_speed
 	blt_node.call_deferred("add_child",spiral_movement_ins)
+	module_list.append(spiral_movement_ins)
 
 func _on_sniper_attack_timer_timeout():
 	justAttacked = false

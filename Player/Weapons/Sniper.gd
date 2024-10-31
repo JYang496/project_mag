@@ -16,6 +16,9 @@ var speed : int
 var hp : int
 var reload : float
 
+# Module list
+var module_list = []
+
 var weapon_data = {
 	"1": {
 		"level": "1",
@@ -88,6 +91,8 @@ func enable_linear(blt_node : Node2D, direction : Vector2 = Vector2.UP, blt_spee
 	linear_movement_ins.direction = direction
 	linear_movement_ins.speed = blt_speed
 	blt_node.call_deferred("add_child",linear_movement_ins)
+	blt_node.module_list.append(linear_movement_ins)
+	module_list.append(linear_movement_ins)
 
 func _on_sniper_attack_timer_timeout():
 	justAttacked = false

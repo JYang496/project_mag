@@ -16,6 +16,10 @@ var hp : int
 var reload : float
 @export_range(0, 180) var arc : float = 0
 var bullet_count : int
+
+# Module list
+var module_list = []
+
 var weapon_data = {
 	"1": {
 		"level": "1",
@@ -102,6 +106,7 @@ func enable_linear(blt_node : Node2D, direction : Vector2 = Vector2.UP, blt_spee
 	linear_movement_ins.direction = direction
 	linear_movement_ins.speed = blt_speed
 	blt_node.call_deferred("add_child",linear_movement_ins)
+	module_list.append(linear_movement_ins)
 
 func _on_shotgun_attack_timer_timeout() -> void:
 	justAttacked = false

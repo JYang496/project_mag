@@ -7,6 +7,7 @@ var expire_time = 2.5
 var base_displacement = Vector2.ZERO
 var bullet_displacement = Vector2.ZERO
 var blt_texture
+var module_list = []
 
 @onready var player  = get_tree().get_first_node_in_group("player")
 @onready var expire_timer = $ExpireTimer
