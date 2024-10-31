@@ -11,8 +11,10 @@ func _ready() -> void:
 	if not module_parent:
 		print("Error: module does not have owner")
 		return
-	module_parent.base_displacement = module_parent.base_displacement + direction * speed
+	adjust_base_displacement()
 
+func adjust_base_displacement() -> void:
+	module_parent.base_displacement = module_parent.base_displacement + direction * speed
 
 func _physics_process(delta: float) -> void:
 	pass

@@ -9,6 +9,9 @@ var bullet_displacement = Vector2.ZERO
 var blt_texture
 var module_list = []
 
+# Signals
+signal enemy_hit_signal
+
 @onready var player  = get_tree().get_first_node_in_group("player")
 @onready var expire_timer = $ExpireTimer
 @onready var bullet = $Bullet
@@ -52,6 +55,7 @@ func _physics_process(delta: float) -> void:
 
 func enemy_hit(charge = 1):
 	hp -= charge
+	enemy_hit_signal.emit()
 	if hp <= 0:
 		self.call_deferred("queue_free")
 

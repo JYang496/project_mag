@@ -33,3 +33,4 @@ one_shot = true
 [connection signal="timeout" from="ExpireTimer" to="." method="_on_expire_timer_timeout"]
 
 [editable path="Bullet/BulletSprite/HitBox"]
+[editable path="RicochetModule"]

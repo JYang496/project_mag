@@ -302,10 +302,10 @@ position = Vector2(0, -1720)
 [node name="Departure" parent="BattleZoneTeleporter" index="3"]
 position = Vector2(-7, -586)
 
-[node name="FriendlySmith" parent="." instance=ExtResource("9_4gves")]
+[node name="FriendlySmith" parent="." groups=["friendlies"] instance=ExtResource("9_4gves")]
 position = Vector2(-295, -1526)
 
-[node name="FriendlyMerchant" parent="." instance=ExtResource("7_1eywc")]
+[node name="FriendlyMerchant" parent="." groups=["friendlies"] instance=ExtResource("7_1eywc")]
 position = Vector2(-144, -1525)
 
 [node name="EnemySpawner" parent="." instance=ExtResource("12_dyxss")]

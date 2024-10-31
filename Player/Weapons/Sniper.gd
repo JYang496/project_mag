@@ -81,6 +81,7 @@ func _on_shoot():
 	sniper_attack_timer.start()
 	var spawn_bullet = bullet.instantiate()
 	spawn_bullet.damage = damage
+	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	enable_linear(spawn_bullet, global_position.direction_to(get_random_target()).normalized(), speed)

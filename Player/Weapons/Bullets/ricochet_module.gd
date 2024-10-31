@@ -9,9 +9,20 @@ func _ready() -> void:
 		print("Error: module does not have owner")
 		return
 	# Connect enemy hit with function
-	
+	if module_parent.has_signal("enemy_hit_signal"):
+		module_parent.enemy_hit_signal.connect(change_direction)
+
+
+func change_direction() -> void:
+	for module in module_parent.module_list:
+		if module is LinearMovement:
+			module.direction = self.global_position.direction_to(get_random_target()).normalized()
+			module.adjust_base_displacement()
+
+
 func get_random_target():
-	if target_close.size() > 0:
+	print(target_close)
+	if target_close.size() > 1:
 		var target = target_close.pick_random()
 		return target.global_position
 	else: 
@@ -19,7 +30,7 @@ func get_random_target():
 		return random_position
 
 func _on_range_body_entered(body: Node2D) -> void:
-	if not target_close.has(body) and body.is_in_group("enemy"):
+	if not target_close.has(body) and body.is_in_group("enemies"):
 		target_close.append(body)
 
 
