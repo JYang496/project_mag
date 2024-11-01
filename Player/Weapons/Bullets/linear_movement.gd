@@ -16,5 +16,8 @@ func _ready() -> void:
 func adjust_base_displacement() -> void:
 	module_parent.base_displacement = module_parent.base_displacement + direction * speed
 
+func set_base_displacement() -> void:
+	module_parent.base_displacement = direction * speed
+
 func _physics_process(delta: float) -> void:
 	pass

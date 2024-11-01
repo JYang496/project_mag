@@ -3,7 +3,6 @@ extends Ranger
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/sniper_bullet.png")
-var linear_movement = preload("res://Player/Weapons/Bullets/linear_movement.tscn")
 @onready var sprite = get_node("%GunSprite")
 @onready var shotgun_attack_timer = $ShotgunAttackTimer
 
@@ -16,9 +15,6 @@ var hp : int
 var reload : float
 @export_range(0, 180) var arc : float = 0
 var bullet_count : int
-
-# Module list
-var module_list = []
 
 var weapon_data = {
 	"1": {
@@ -101,12 +97,6 @@ func _on_shoot():
 		enable_linear(spawn_bullet, bullet_direction, speed)
 		get_tree().root.call_deferred("add_child",spawn_bullet)
 
-func enable_linear(blt_node : Node2D, direction : Vector2 = Vector2.UP, blt_speed : float = 400.0) -> void:
-	var linear_movement_ins = linear_movement.instantiate()
-	linear_movement_ins.direction = direction
-	linear_movement_ins.speed = blt_speed
-	blt_node.call_deferred("add_child",linear_movement_ins)
-	module_list.append(linear_movement_ins)
 
 func _on_shotgun_attack_timer_timeout() -> void:
 	justAttacked = false

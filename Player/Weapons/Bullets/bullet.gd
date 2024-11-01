@@ -1,9 +1,9 @@
 extends Node2D
 class_name BulletBase
 
-var hp = 1
+var hp : int = 1
 var damage = 1
-var expire_time = 2.5
+var expire_time : float = 2.5
 var base_displacement = Vector2.ZERO
 var bullet_displacement = Vector2.ZERO
 var blt_texture
@@ -53,12 +53,11 @@ func _physics_process(delta: float) -> void:
 	self.rotation = base_displacement.angle() + deg_to_rad(90)
 	bullet.position = bullet.position + bullet_displacement * delta
 
-func enemy_hit(charge = 1):
+func enemy_hit(charge : int = 1):
 	hp -= charge
 	enemy_hit_signal.emit()
 	if hp <= 0:
 		self.call_deferred("queue_free")
-
 
 
 func _on_expire_timer_timeout() -> void:

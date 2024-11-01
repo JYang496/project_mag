@@ -16,12 +16,11 @@ func _ready() -> void:
 func change_direction() -> void:
 	for module in module_parent.module_list:
 		if module is LinearMovement:
-			module.direction = self.global_position.direction_to(get_random_target()).normalized()
-			module.adjust_base_displacement()
+			module.direction = self.global_position.direction_to(get_random_target())
+			module.set_base_displacement()
 
 
 func get_random_target():
-	print(target_close)
 	if target_close.size() > 1:
 		var target = target_close.pick_random()
 		return target.global_position
