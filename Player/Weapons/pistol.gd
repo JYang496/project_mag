@@ -23,6 +23,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1",
 		"cost": "1",
+		"features": [],
 	},
 	"2": {
 		"level": "2",
@@ -31,6 +32,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1",
 		"cost": "1",
+		"features": [],
 	},
 	"3": {
 		"level": "3",
@@ -39,6 +41,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1",
 		"cost": "1",
+		"features": [],
 	},
 	"4": {
 		"level": "4",
@@ -47,6 +50,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "0.75",
 		"cost": "1",
+		"features": [],
 	},
 	"5": {
 		"level": "5",
@@ -55,6 +59,7 @@ var weapon_data = {
 		"hp": "2",
 		"reload": "0.75",
 		"cost": "1",
+		"features": ["piercing"],
 	}
 }
 
@@ -72,6 +77,9 @@ func set_level(lv):
 	hp = int(weapon_data[lv]["hp"])
 	reload = float(weapon_data[lv]["reload"])
 	gun_cooldownTimer.wait_time = reload
+	for feature in weapon_data[lv]["features"]:
+		if not features.has(feature):
+			features.append(feature)
 	
 func _on_shoot():
 	justAttacked = true
@@ -82,7 +90,8 @@ func _on_shoot():
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
-	enable_linear(spawn_bullet, bullet_direction, speed)
+	apply_linear(spawn_bullet, bullet_direction, speed)
+	apply_affects(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 

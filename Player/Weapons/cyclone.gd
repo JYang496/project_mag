@@ -30,6 +30,7 @@ var weapon_data = {
 		"hp": "5",
 		"reload": "2",
 		"cost": "1",
+		"features": ["piercing"],
 	},
 	"2": {
 		"level": "2",
@@ -40,6 +41,7 @@ var weapon_data = {
 		"hp": "7",
 		"reload": "2",
 		"cost": "1",
+		"features": ["piercing"],
 	},
 	"3": {
 		"level": "3",
@@ -50,6 +52,7 @@ var weapon_data = {
 		"hp": "10",
 		"reload": "2",
 		"cost": "1",
+		"features": ["piercing"],
 	},
 	"4": {
 		"level": "4",
@@ -60,6 +63,7 @@ var weapon_data = {
 		"hp": "15",
 		"reload": "2",
 		"cost": "1",
+		"features": ["piercing"],
 	},
 	"5": {
 		"level": "5",
@@ -70,6 +74,7 @@ var weapon_data = {
 		"hp": "25",
 		"reload": "1.5",
 		"cost": "1",
+		"features": ["piercing"],
 	}
 }
 
@@ -87,6 +92,9 @@ func set_level(lv):
 	hp = int(weapon_data[lv]["hp"])
 	reload = float(weapon_data[lv]["reload"])
 	sniper_attack_timer.wait_time = reload
+	for feature in weapon_data[lv]["features"]:
+		if not features.has(feature):
+			features.append(feature)
 
 
 func _on_shoot():
@@ -97,8 +105,9 @@ func _on_shoot():
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
-	enable_linear(spawn_bullet, global_position.direction_to(get_random_target()).normalized(), speed)
-	enable_spiral(spawn_bullet, spin_rate,spin_speed)
+	apply_linear(spawn_bullet, global_position.direction_to(get_random_target()).normalized(), speed)
+	apply_spiral(spawn_bullet, spin_rate,spin_speed)
+	apply_affects(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 

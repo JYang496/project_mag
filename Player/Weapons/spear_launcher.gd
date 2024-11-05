@@ -22,6 +22,7 @@ var weapon_data = {
 		"hp": "10",
 		"reload": "0.7",
 		"cost": "1",
+		"features": ["piercing"],
 	},
 	"2": {
 		"level": "2",
@@ -30,6 +31,7 @@ var weapon_data = {
 		"hp": "10",
 		"reload": "0.5",
 		"cost": "1",
+		"features": ["piercing"],
 	},
 	"3": {
 		"level": "3",
@@ -38,6 +40,7 @@ var weapon_data = {
 		"hp": "10",
 		"reload": "0.4",
 		"cost": "1",
+		"features": ["piercing"],
 	},
 	"4": {
 		"level": "4",
@@ -46,6 +49,7 @@ var weapon_data = {
 		"hp": "10",
 		"reload": "0.4",
 		"cost": "1",
+		"features": ["piercing"],
 	},
 	"5": {
 		"level": "5",
@@ -54,6 +58,7 @@ var weapon_data = {
 		"hp": "20",
 		"reload": "0.4",
 		"cost": "1",
+		"features": ["piercing"],
 	}
 }
 
@@ -69,6 +74,9 @@ func set_level(lv):
 	hp = int(weapon_data[lv]["hp"])
 	reload = float(weapon_data[lv]["reload"])
 	spear_cooldownTimer.wait_time = reload
+	for feature in weapon_data[lv]["features"]:
+		if not features.has(feature):
+			features.append(feature)
 	
 func _process(_delta):
 	pass

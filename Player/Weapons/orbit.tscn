@@ -1,9 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://ce2cgqmptf7je"]
+[gd_scene load_steps=3 format=3 uid="uid://ce2cgqmptf7je"]
 
 [ext_resource type="Script" path="res://Player/Weapons/orbit.gd" id="1_lxm1t"]
+[ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="2_d4sd2"]
 
 [node name="Orbit" type="Node2D"]
 script = ExtResource("1_lxm1t")
 
 [node name="OrbitSprite" type="Sprite2D" parent="."]
 unique_name_in_owner = true
+texture = ExtResource("2_d4sd2")
