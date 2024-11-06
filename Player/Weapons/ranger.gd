@@ -9,7 +9,6 @@ var ricochet_module = preload("res://Player/Weapons/Bullets/ricochet_module.tscn
 var justAttacked = false
 var module_list = []
 var features = []
-var list_of_effect = []
 # object that needs to be overwrited in child class
 var object
 
@@ -66,7 +65,7 @@ func apply_ricochet(blt_node : Node2D) -> void:
 	module_list.append(ricochet_module_ins)
 
 func apply_affects(bullet) -> void:
-	for effect in list_of_effect:
+	for effect in features:
 		match effect:
 			"spiral":
 				apply_spiral(bullet)

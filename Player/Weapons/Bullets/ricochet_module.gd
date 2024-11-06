@@ -2,6 +2,7 @@ extends Node2D
 
 @onready var module_parent = self.get_parent() # Bullet root is parent
 var target_close = []
+var attemp := 0
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -23,6 +24,12 @@ func change_direction() -> void:
 func get_random_target():
 	if target_close.size() > 1:
 		var target = target_close.pick_random()
+		print(target.global_position.distance_to(global_position))
+		if target.global_position.distance_to(global_position) < 20 and attemp < 3:
+			attemp += 1
+			print(attemp)
+			return get_random_target()
+		attemp = 0
 		return target.global_position
 	else: 
 		var random_position = global_position + Vector2(randi_range(-64,64),randi_range(-64,64))
