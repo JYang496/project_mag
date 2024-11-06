@@ -24,10 +24,8 @@ func change_direction() -> void:
 func get_random_target():
 	if target_close.size() > 1:
 		var target = target_close.pick_random()
-		print(target.global_position.distance_to(global_position))
-		if target.global_position.distance_to(global_position) < 20 and attemp < 3:
+		if target.global_position.distance_to(global_position) < 24 and attemp < 3:
 			attemp += 1
-			print(attemp)
 			return get_random_target()
 		attemp = 0
 		return target.global_position
