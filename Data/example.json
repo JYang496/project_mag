@@ -48,4 +48,11 @@
 		"description": "orbit test: spiral",
 		"price": "1",
 	},
+	"8": {
+		"name": "rocket luncher",
+		"img": "res://Textures/test/minigun.png",
+		"res": "res://Player/Weapons/rocket_luncher.tscn",
+		"description": "orbit test: rocket luncher",
+		"price": "1",
+	},
 }

@@ -24,13 +24,13 @@ func _physics_process(delta: float) -> void:
 	else:
 		price_label.set("theme_override_colors/font_color",Color(1.0,1.0,1.0,1.0))
 		purchasable = true
-		
+
 
 # When player clicks on card, a weapon will be CREATED for player.
 func _ready():
 	connect("select_weapon",Callable(player,"create_weapon"))
 	if item_id == null:
-		item_id = var_to_str(randi_range(1,7))
+		item_id = var_to_str(randi_range(1,8))
 	lbl_name.text = WeaponData.weapon_list.data[item_id]["name"]
 	item_icon.texture = load(WeaponData.weapon_list.data[item_id]["img"])
 	lbl_description.text = WeaponData.weapon_list.data[item_id]["description"]
@@ -43,7 +43,7 @@ func _input(_event):
 			PlayerData.player_gold -= price
 			emit_signal("select_weapon",item_id)
 			ui.shopping_panel_out()
-			
+
 
 func _on_item_card_mouse_entered():
 	mouse_over = true

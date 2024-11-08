@@ -5,6 +5,7 @@ class_name Ranger
 var linear_movement = preload("res://Player/Weapons/Bullets/linear_movement.tscn")
 var spiral_movement = preload("res://Player/Weapons/Bullets/spiral_movement.tscn")
 var ricochet_module = preload("res://Player/Weapons/Bullets/ricochet_module.tscn")
+var explosion_module = preload("res://Player/Weapons/Bullets/explosion_module.tscn")
 
 var justAttacked = false
 var module_list = []
@@ -64,6 +65,12 @@ func apply_ricochet(blt_node : Node2D) -> void:
 	blt_node.module_list.append(ricochet_module_ins)
 	module_list.append(ricochet_module_ins)
 
+func apply_explosion(blt_node : Node2D) -> void:
+	var explosion_module_ins = explosion_module.instantiate()
+	blt_node.call_deferred("add_child",explosion_module_ins)
+	blt_node.module_list.append(explosion_module_ins)
+	module_list.append(explosion_module_ins)
+
 func apply_affects(bullet) -> void:
 	for feature in features:
 		match feature:
@@ -71,6 +78,8 @@ func apply_affects(bullet) -> void:
 				apply_spiral(bullet)
 			"ricochet":
 				apply_ricochet(bullet)
+			"explosion":
+				apply_explosion(bullet)
 
 
 func _on_detect_area_body_entered(body):
