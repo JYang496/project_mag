@@ -1,4 +1,5 @@
 extends Augment
+class_name Ricochet
 
 var ricochet_times : int = 1
 
@@ -8,9 +9,7 @@ func _ready() -> void:
 		PlayerData.player_augment_list.append(self)
 	emit_signal("update_aug_status")
 
-
 func _on_update_aug_status() -> void:
-	print(PlayerData.player_weapon_list)
 	for weapon in PlayerData.player_weapon_list:
 		if weapon.features.has("piercing"):
 			weapon.features.append("ricochet")

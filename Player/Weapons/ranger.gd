@@ -65,8 +65,8 @@ func apply_ricochet(blt_node : Node2D) -> void:
 	module_list.append(ricochet_module_ins)
 
 func apply_affects(bullet) -> void:
-	for effect in features:
-		match effect:
+	for feature in features:
+		match feature:
 			"spiral":
 				apply_spiral(bullet)
 			"ricochet":
