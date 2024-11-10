@@ -1,12 +1,22 @@
-[gd_scene load_steps=2 format=3 uid="uid://i5bqrru8qyrb"]
+[gd_scene load_steps=3 format=3 uid="uid://i5bqrru8qyrb"]
 
 [ext_resource type="Script" path="res://Player/Weapons/Bullets/beam.gd" id="1_kffti"]
+[ext_resource type="Texture2D" uid="uid://dq533db7gjrdf" path="res://Textures/test/square.png" id="2_7phdf"]
 
 [node name="BeamBase" type="Node2D"]
+position = Vector2(300, 300)
 script = ExtResource("1_kffti")
 
 [node name="RayCast2D" type="RayCast2D" parent="."]
 
 [node name="Line2D" type="Line2D" parent="RayCast2D"]
 
-[node name="Timer" type="Timer" parent="."]
+[node name="ExpireTimer" type="Timer" parent="."]
+wait_time = 0.2
+one_shot = true
+autostart = true
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_7phdf")
+
+[connection signal="timeout" from="ExpireTimer" to="." method="_on_expire_timer_timeout"]
