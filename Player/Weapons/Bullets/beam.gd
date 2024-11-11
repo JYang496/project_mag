@@ -8,16 +8,14 @@ var target_position : Vector2 = Vector2.ZERO
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	raycast.target_position = target_position
 	line.show()
 	line.add_point(Vector2.ZERO)
 	line.add_point(raycast.target_position)
 	pass
 
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	pass
 
-
 func _on_expire_timer_timeout() -> void:
-	pass # Replace with function body.
+	self.call_deferred("queue_free")

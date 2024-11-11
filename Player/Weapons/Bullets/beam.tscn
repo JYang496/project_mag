@@ -4,7 +4,6 @@
 [ext_resource type="Texture2D" uid="uid://dq533db7gjrdf" path="res://Textures/test/square.png" id="2_7phdf"]
 
 [node name="BeamBase" type="Node2D"]
-position = Vector2(300, 300)
 script = ExtResource("1_kffti")
 
 [node name="RayCast2D" type="RayCast2D" parent="."]
