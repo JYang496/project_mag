@@ -7,8 +7,10 @@
 script = ExtResource("1_kffti")
 
 [node name="RayCast2D" type="RayCast2D" parent="."]
+target_position = Vector2(0, 0)
 
 [node name="Line2D" type="Line2D" parent="RayCast2D"]
+width = 2.0
 
 [node name="ExpireTimer" type="Timer" parent="."]
 wait_time = 0.2

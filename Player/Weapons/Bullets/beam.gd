@@ -10,11 +10,15 @@ var target_position : Vector2 = Vector2.ZERO
 func _ready() -> void:
 	raycast.target_position = target_position
 	line.show()
-	line.add_point(Vector2.ZERO)
-	line.add_point(raycast.target_position)
+	print(raycast.target_position)
 	pass
 
 func _physics_process(delta: float) -> void:
+	if raycast.is_colliding():
+		var collision_point = raycast.get_collision_point()
+		var collider = raycast.get_collider()
+		line.points = [Vector2.ZERO, to_local(collision_point)]
+		print(line.points)
 	pass
 
 func _on_expire_timer_timeout() -> void:
