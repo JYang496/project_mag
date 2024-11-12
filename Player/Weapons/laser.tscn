@@ -21,6 +21,7 @@ visibility_layer = 4
 shape = SubResource("CircleShape2D_7o7o7")
 
 [node name="LaserCooldownTimer" type="Timer" parent="."]
+wait_time = 2.0
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]
 [connection signal="body_entered" from="DetectArea" to="." method="_on_detect_area_body_entered"]
