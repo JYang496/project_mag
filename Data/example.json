@@ -55,4 +55,11 @@
 		"description": "orbit test: rocket luncher",
 		"price": "1",
 	},
+	"9": {
+		"name": "laser",
+		"img": "res://Textures/test/laser.png",
+		"res": "res://Player/Weapons/laser.tscn",
+		"description": "laser test",
+		"price": "1",
+	},
 }

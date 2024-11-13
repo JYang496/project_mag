@@ -2,6 +2,7 @@ extends Node2D
 
 @onready var raycast = $RayCast2D
 @onready var line = $RayCast2D/Line2D
+@onready var expire_timer = $ExpireTimer
 
 var target_position : Vector2 = Vector2.ZERO
 
