@@ -1,9 +1,8 @@
-[gd_scene load_steps=9 format=3 uid="uid://dve1wwmkd0ynm"]
+[gd_scene load_steps=8 format=3 uid="uid://dve1wwmkd0ynm"]
 
 [ext_resource type="Script" path="res://Player/Gladiators/Player.gd" id="1_ds3ra"]
 [ext_resource type="Texture2D" uid="uid://gr13ex3fw4lx" path="res://Textures/test/player.png" id="2_omq80"]
 [ext_resource type="PackedScene" uid="uid://dr2gmtpibgjy1" path="res://Utility/hit_hurt_box/hurt_box.tscn" id="3_cj848"]
-[ext_resource type="PackedScene" uid="uid://072a80habhhh" path="res://Utility/hit_hurt_box/hit_box_dot.tscn" id="4_4hxwr"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_e43ux"]
 size = Vector2(19, 27)
@@ -60,13 +59,7 @@ collision_layer = 1
 position = Vector2(1.5, -3.5)
 shape = SubResource("RectangleShape2D_uwn7n")
 
-[node name="HitBoxDot" parent="." instance=ExtResource("4_4hxwr")]
-
-[node name="CollisionShape2D" parent="HitBoxDot" index="0"]
-scale = Vector2(13.526, 23.0582)
-
 [connection signal="area_entered" from="CollectArea" to="." method="_on_collect_area_area_entered"]
 [connection signal="area_entered" from="GrabArea" to="." method="_on_grab_area_area_entered"]
 
 [editable path="HurtBox"]
-[editable path="HitBoxDot"]
