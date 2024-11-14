@@ -8,15 +8,21 @@ var base_displacement = Vector2.ZERO
 var bullet_displacement = Vector2.ZERO
 var blt_texture
 var module_list = []
+var hitbox_type = "once"
 
 # Signals
 signal enemy_hit_signal
 
+# Preloads
+@onready var hitbox_once = preload("res://Utility/hit_hurt_box/hit_box.tscn")
+@onready var hitbox_dot = preload("res://Utility/hit_hurt_box/hit_box_dot.tscn")
+
+# Children
 @onready var player  = get_tree().get_first_node_in_group("player")
 @onready var expire_timer = $ExpireTimer
 @onready var bullet = $Bullet
 @onready var bullet_sprite = $Bullet/BulletSprite
-@onready var hitbox_collision = $Bullet/BulletSprite/HitBox/CollisionShape2D
+#@onready var hitbox_collision = $Bullet/BulletSprite/HitBox/CollisionShape2D
 
 func _ready() -> void:
 	expire_timer.wait_time = expire_time
@@ -26,9 +32,14 @@ func _ready() -> void:
 
 # This function will adjust the hitbox shape identical to your sprite size
 func edit_hitbox_shape() -> void:
+	var hitbox_ins = hitbox_once.instantiate()
+	
 	var shape = RectangleShape2D.new()
 	shape.size = bullet_sprite.texture.get_size()
-	hitbox_collision.shape = shape
+	hitbox_ins.get_child(0).shape = shape
+	hitbox_ins.set_collision_mask_value(3,true)
+	hitbox_ins.hitbox_owner = self
+	bullet_sprite.call_deferred("add_child",hitbox_ins)
 
 
 func enable_linear(direction : Vector2 = Vector2.UP, speed : float = 100.0) -> void:

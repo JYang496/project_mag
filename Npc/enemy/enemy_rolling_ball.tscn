@@ -1,14 +1,16 @@
-[gd_scene load_steps=6 format=3 uid="uid://11s8xuvk76mn"]
+[gd_scene load_steps=8 format=3 uid="uid://11s8xuvk76mn"]
 
 [ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/base_enemy.tscn" id="1_a761y"]
 [ext_resource type="Script" path="res://Npc/enemy/EnemyRollingBall.gd" id="2_ti674"]
 [ext_resource type="Texture2D" uid="uid://76u4l0356ebe" path="res://Textures/test/rolling_ball.png" id="3_fenux"]
+[ext_resource type="PackedScene" uid="uid://072a80habhhh" path="res://Utility/hit_hurt_box/hit_box_dot.tscn" id="4_x0tdr"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_148yy"]
-radius = 15.0333
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_0wqes"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_hp8e4"]
-radius = 15.0
+radius = 9.21954
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hdk6g"]
 
 [node name="EnemyRollingBall" groups=["friendlies"] instance=ExtResource("1_a761y")]
 texture_filter = 1
@@ -18,7 +20,7 @@ script = ExtResource("2_ti674")
 damage = 1
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
-shape = SubResource("CircleShape2D_148yy")
+shape = SubResource("RectangleShape2D_0wqes")
 
 [node name="Body" parent="." index="1"]
 scale = Vector2(2, 2)
@@ -27,4 +29,11 @@ texture = ExtResource("3_fenux")
 [node name="NPCCollision" parent="." index="2"]
 shape = SubResource("CircleShape2D_hp8e4")
 
+[node name="HitBoxDot" parent="." index="3" instance=ExtResource("4_x0tdr")]
+collision_mask = 1
+
+[node name="CollisionShape2D" parent="HitBoxDot" index="0"]
+shape = SubResource("RectangleShape2D_hdk6g")
+
 [editable path="HurtBox"]
+[editable path="HitBoxDot"]

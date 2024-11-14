@@ -1,9 +1,15 @@
 extends Area2D
 class_name HitBox
 
-@onready var collision = $CollisionShape2D
+@onready var collision = get_node("CollisionShape2D")
 @onready var hit_box_owner = get_owner()
+var hitbox_owner
 var attack : Attack
+
+func _ready() -> void:
+	if hitbox_owner:
+		set_owner(hitbox_owner)
+		hit_box_owner = get_owner()
 
 # Set Mask to detect hurt boxes
 func _on_area_entered(area):
