@@ -87,7 +87,7 @@ func update_grab_radius() -> void:
 # Player does not have death atm
 func damaged(attack:Attack):
 	PlayerData.player_hp -= attack.damage
-	print(PlayerData.player_hp)
+	print(self, PlayerData.player_hp)
 
 
 # When player is teleporting between zones, disable terrain collision. Enable when arrived.

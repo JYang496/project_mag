@@ -18,9 +18,9 @@ var reload : float
 var weapon_data = {
 	"1": {
 		"level": "1",
-		"damage": "2",
-		"speed": "600",
-		"hp": "1",
+		"damage": "1",
+		"speed": "60",
+		"hp": "100",
 		"reload": "0.2",
 		"cost": "1",
 		"features": [],

@@ -11,7 +11,7 @@ var damage = 1
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	raycast.target_position = target_position
+	raycast.target_position = 42 * target_position
 	line.show()
 
 func _physics_process(delta: float) -> void:

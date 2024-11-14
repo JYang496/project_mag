@@ -2,9 +2,14 @@
 
 [ext_resource type="Script" path="res://Utility/hit_hurt_box/hit_box_dot.gd" id="1_uhkn8"]
 
-[node name="HitBoxDot" type="Area2D"]
+[node name="HitBoxDot" type="Area2D" groups=["attack"]]
 collision_layer = 0
-collision_mask = 5
+collision_mask = 4
 script = ExtResource("1_uhkn8")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+
+[node name="HitTimer" type="Timer" parent="."]
+wait_time = 0.2
+
+[connection signal="timeout" from="HitTimer" to="." method="_on_hit_timer_timeout"]
