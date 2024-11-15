@@ -9,6 +9,7 @@ var bullet_displacement = Vector2.ZERO
 var blt_texture
 var module_list = []
 var hitbox_type = "once"
+var dot_cd : float
 
 # Signals
 signal enemy_hit_signal
@@ -22,7 +23,6 @@ signal enemy_hit_signal
 @onready var expire_timer = $ExpireTimer
 @onready var bullet = $Bullet
 @onready var bullet_sprite = $Bullet/BulletSprite
-#@onready var hitbox_collision = $Bullet/BulletSprite/HitBox/CollisionShape2D
 
 func _ready() -> void:
 	expire_timer.wait_time = expire_time
@@ -38,6 +38,7 @@ func init_hitbox(hitbox_type = "once") -> void:
 	match hitbox_type:
 		"dot":
 			hitbox_ins = hitbox_dot.instantiate()
+			hitbox_ins.dot_cd = dot_cd
 		_:
 			hitbox_ins = hitbox_once.instantiate()
 	hitbox_ins.get_child(0).shape = shape

@@ -5,11 +5,14 @@ class_name HitBoxDot
 @onready var hit_timer = $HitTimer
 @onready var hit_box_owner = get_owner()
 var hitbox_owner
+var dot_cd : float
 var attack : Attack
 var cooldown = false
 
 
 func _ready() -> void:
+	if dot_cd:
+		hit_timer.wait_time = dot_cd
 	if hitbox_owner:
 		set_owner(hitbox_owner)
 		hit_box_owner = get_owner()
