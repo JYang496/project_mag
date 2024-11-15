@@ -27,36 +27,23 @@ signal enemy_hit_signal
 func _ready() -> void:
 	expire_timer.wait_time = expire_time
 	bullet_sprite.texture = blt_texture
-	edit_hitbox_shape()
+	init_hitbox(hitbox_type)
 	expire_timer.start()
 
 # This function will adjust the hitbox shape identical to your sprite size
-func edit_hitbox_shape() -> void:
-	var hitbox_ins = hitbox_once.instantiate()
-	
+func init_hitbox(hitbox_type = "once") -> void:
 	var shape = RectangleShape2D.new()
 	shape.size = bullet_sprite.texture.get_size()
+	var hitbox_ins
+	match hitbox_type:
+		"dot":
+			hitbox_ins = hitbox_dot.instantiate()
+		_:
+			hitbox_ins = hitbox_once.instantiate()
 	hitbox_ins.get_child(0).shape = shape
 	hitbox_ins.set_collision_mask_value(3,true)
 	hitbox_ins.hitbox_owner = self
 	bullet_sprite.call_deferred("add_child",hitbox_ins)
-
-
-func enable_linear(direction : Vector2 = Vector2.UP, speed : float = 100.0) -> void:
-	print(self,"do not use this function!")
-	var linear_movement = load("res://Player/Weapons/Bullets/linear_movement.tscn")
-	var linear_movement_ins = linear_movement.instantiate()
-	linear_movement_ins.direction = direction
-	linear_movement_ins.speed = speed
-	add_child(linear_movement_ins)
-
-func enable_spiral(spin_rate : float = PI, spin_speed : float = 100.0) -> void:
-	print(self,"do not use this function!")
-	var spiral_movement = load("res://Player/Weapons/Bullets/spiral_movement.tscn")
-	var spiral_movement_ins = spiral_movement.instantiate()
-	spiral_movement_ins.spin_rate = spin_rate
-	spiral_movement_ins.spin_speed = spin_speed
-	add_child(spiral_movement_ins)	
 
 
 func _physics_process(delta: float) -> void:
