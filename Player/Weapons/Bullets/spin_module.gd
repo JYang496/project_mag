@@ -1,11 +1,18 @@
 extends Node2D
+class_name SpinModule
+
+@onready var module_parent = self.get_parent() # Bullet root is parent
 
 
-# Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	pass # Replace with function body.
+	if not module_parent:
+		print("Error: spin module does not have owner")
+		return
 
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
+func _physics_process(delta: float) -> void:
+	if not module_parent:
+		print("Error: spin module does not have owner")
+		return
+	module_parent.bullet.rotation += 40 * delta
+	if module_parent.bullet.rotation > 1000:
+		module_parent.bullet.rotation -= 1000

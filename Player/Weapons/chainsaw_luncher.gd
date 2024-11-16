@@ -1,5 +1,7 @@
 extends Ranger
 
+var spin_module = preload("res://Player/Weapons/Bullets/spin_module.tscn")
+
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/chainsaw_spin.png")
@@ -19,52 +21,52 @@ var weapon_data = {
 	"1": {
 		"level": "1",
 		"damage": "1",
-		"speed": "60",
+		"speed": "200",
 		"hp": "11",
 		"dot_cd": "0.1",
 		"reload": "1",
 		"cost": "1",
-		"features": [],
+		"features": ["speed_change_on_hit"],
 	},
 	"2": {
 		"level": "2",
 		"damage": "1",
-		"speed": "600",
+		"speed": "200",
 		"hp": "22",
 		"dot_cd": "0.1",
 		"reload": "1",
 		"cost": "1",
-		"features": [],
+		"features": ["speed_change_on_hit"],
 	},
 	"3": {
 		"level": "3",
 		"damage": "1",
-		"speed": "600",
+		"speed": "200",
 		"hp": "33",
 		"dot_cd": "0.1",
 		"reload": "1",
 		"cost": "1",
-		"features": [],
+		"features": ["speed_change_on_hit"],
 	},
 	"4": {
 		"level": "4",
 		"damage": "2",
-		"speed": "800",
+		"speed": "200",
 		"hp": "44",
 		"dot_cd": "0.1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": [],
+		"features": ["speed_change_on_hit"],
 	},
 	"5": {
 		"level": "5",
 		"damage": "2",
-		"speed": "800",
+		"speed": "200",
 		"hp": "55",
 		"dot_cd": "0.1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": [],
+		"features": ["speed_change_on_hit"],
 	}
 }
 
@@ -99,8 +101,14 @@ func _on_shoot():
 	spawn_bullet.dot_cd = dot_cd
 	apply_linear(spawn_bullet, bullet_direction, speed)
 	apply_affects(spawn_bullet)
+	apply_spin(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
+func apply_spin(blt_node) -> void:
+	var spin_movement_ins = spin_module.instantiate()
+	blt_node.call_deferred("add_child",spin_movement_ins)
+	blt_node.module_list.append(spin_movement_ins)
+	module_list.append(spin_movement_ins)
 
 func _on_chainsaw_luncher_timer_timeout() -> void:
 	justAttacked = false

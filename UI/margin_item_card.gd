@@ -30,7 +30,7 @@ func _physics_process(delta: float) -> void:
 func _ready():
 	connect("select_weapon",Callable(player,"create_weapon"))
 	if item_id == null:
-		item_id = var_to_str(randi_range(1,9))
+		item_id = var_to_str(randi_range(1,10))
 	lbl_name.text = WeaponData.weapon_list.data[item_id]["name"]
 	item_icon.texture = load(WeaponData.weapon_list.data[item_id]["img"])
 	lbl_description.text = WeaponData.weapon_list.data[item_id]["description"]

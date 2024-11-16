@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://baenrlcnhx2wb"]
+
+[ext_resource type="Script" path="res://Player/Weapons/Bullets/speed_change_on_hit.gd" id="1_7kjh3"]
+
+[node name="SpeedChangeOnHit" type="Node2D"]
+script = ExtResource("1_7kjh3")

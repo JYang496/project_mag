@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=4 uid="uid://blnhp33uq0sgq"]
+[gd_scene load_steps=35 format=4 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Texture2D" uid="uid://sldltmirxrkq" path="res://Textures/BlockyLife/tileset.png" id="2_3rumv"]
 [ext_resource type="Script" path="res://World/tilemaps.gd" id="2_vir17"]
@@ -22,7 +22,6 @@
 [ext_resource type="PackedScene" uid="uid://w270o86lb231" path="res://Objects/prepare_zone_gate.tscn" id="19_o7ljv"]
 [ext_resource type="PackedScene" uid="uid://djyxv43t57pnf" path="res://Objects/battle_zone_teleporter.tscn" id="20_8lc8y"]
 [ext_resource type="PackedScene" uid="uid://bpx63eseql6vs" path="res://Objects/loots/loot_box.tscn" id="21_p4g33"]
-[ext_resource type="PackedScene" uid="uid://h41t628ntor5" path="res://Player/Weapons/chainsaw_luncher.tscn" id="21_xie6e"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_afj78"]
 texture = ExtResource("2_3rumv")
@@ -325,8 +324,6 @@ position = Vector2(354, 414)
 [node name="GladiatorTest" parent="." instance=ExtResource("10_jwoh3")]
 position = Vector2(-181, -1487)
 collision_layer = 5
-
-[node name="ChainsawLuncher" parent="GladiatorTest/EquippedWeapons" index="0" instance=ExtResource("21_xie6e")]
 
 [node name="GrabRange" parent="GladiatorTest/EquippedAugments" index="0" instance=ExtResource("16_shpv5")]
 

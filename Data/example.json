@@ -62,4 +62,11 @@
 		"description": "laser test",
 		"price": "1",
 	},
+	"10": {
+		"name": "chainsaw luncher",
+		"img": "res://Textures/test/chainsaw.png",
+		"res": "res://Player/Weapons/chainsaw_luncher.tscn",
+		"description": "chainsaw luncher test",
+		"price": "1",
+	},
 }

@@ -6,6 +6,7 @@ var linear_movement = preload("res://Player/Weapons/Bullets/linear_movement.tscn
 var spiral_movement = preload("res://Player/Weapons/Bullets/spiral_movement.tscn")
 var ricochet_module = preload("res://Player/Weapons/Bullets/ricochet_module.tscn")
 var explosion_module = preload("res://Player/Weapons/Bullets/explosion_module.tscn")
+var speed_change_on_hit = preload("res://Player/Weapons/Bullets/speed_change_on_hit.tscn")
 
 var justAttacked = false
 var module_list = []
@@ -71,6 +72,14 @@ func apply_explosion(blt_node : Node2D) -> void:
 	blt_node.module_list.append(explosion_module_ins)
 	module_list.append(explosion_module_ins)
 
+func apply_speed_change_on_hit(blt_node : Node2D, speed_rate : float) -> void:
+	var speed_change_on_hit_ins = speed_change_on_hit.instantiate()
+	speed_change_on_hit_ins.speed_rate = speed_rate
+	blt_node.call_deferred("add_child",speed_change_on_hit_ins)
+	blt_node.module_list.append(speed_change_on_hit_ins)
+	module_list.append(speed_change_on_hit_ins)
+	
+
 func apply_affects(bullet) -> void:
 	for feature in features:
 		match feature:
@@ -80,6 +89,8 @@ func apply_affects(bullet) -> void:
 				apply_ricochet(bullet)
 			"explosion":
 				apply_explosion(bullet)
+			"speed_change_on_hit":
+				apply_speed_change_on_hit(bullet, 0.5)
 
 
 func _on_detect_area_body_entered(body):
