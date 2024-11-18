@@ -12,6 +12,7 @@ collide_with_areas = true
 collide_with_bodies = false
 
 [node name="Line2D" type="Line2D" parent="RayCast2D"]
+visible = false
 width = 2.0
 
 [node name="ExpireTimer" type="Timer" parent="."]
