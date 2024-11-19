@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3 uid="uid://45xrvisciu4q"]
+
+[ext_resource type="Script" path="res://Player/Weapons/Bullets/beam_blast.gd" id="1_maf4n"]
+[ext_resource type="PackedScene" uid="uid://072a80habhhh" path="res://Utility/hit_hurt_box/hit_box_dot.tscn" id="1_xsriv"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_tkvf7"]
+size = Vector2(1.59375, 2)
+
+[node name="BeamBlast" type="Node2D"]
+script = ExtResource("1_maf4n")
+
+[node name="Line2D" type="Line2D" parent="."]
+points = PackedVector2Array(0, 0, 20, 0)
+width = 2.0
+
+[node name="HitBoxDot" parent="." instance=ExtResource("1_xsriv")]
+collision_mask = 5
+
+[node name="CollisionShape2D" parent="HitBoxDot" index="0"]
+shape = SubResource("RectangleShape2D_tkvf7")
+
+[editable path="HitBoxDot"]
