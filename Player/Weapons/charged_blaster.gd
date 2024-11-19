@@ -12,6 +12,9 @@ var level : int
 var damage : int
 var dot_cd : float
 var reload : float
+var charge_level :int
+var charge_time : float = 0.0
+var time_per_level : float = 1.0
 var max_charge_level : int
 
 var weapon_data = {
@@ -31,6 +34,15 @@ var weapon_data = {
 func _ready():
 	set_level("1")
 
+func _physics_process(delta):
+	if not justAttacked:
+		if Input.is_action_pressed("ATTACK"):
+			charge_time += delta
+			if charge_time >= time_per_level:
+				charge_level = clampi(charge_level + 1, 0, max_charge_level)
+				charge_time -= time_per_level
+		if Input.is_action_just_released("ATTACK"):
+			emit_signal("shoot")
 
 func set_level(lv):
 	level = int(weapon_data[lv]["level"])
@@ -43,8 +55,13 @@ func set_level(lv):
 		if not features.has(feature):
 			features.append(feature)
 
-	
 func _on_shoot():
+	print(charge_level)
+	var beam_blast_ins = beam_blast.instantiate()
+	beam_blast_ins.target_position = get_local_mouse_position()
+	beam_blast_ins.damage = damage
+	call_deferred("add_child",beam_blast_ins)
+	charge_level = 0
 	pass
 
 

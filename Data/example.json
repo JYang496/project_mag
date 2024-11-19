@@ -7,10 +7,10 @@
 		"price": "1",
 	},
 	"2": {
-		"name": "sniper",
+		"name": "Charged Blaster",
 		"img": "res://Textures/test/sniper.png",
-		"res": "res://Player/Weapons/sniper.tscn",
-		"description": "sniper test: piercing",
+		"res": "res://Player/Weapons/charged_blaster.tscn",
+		"description": "charged blaster",
 		"price": "1",
 	},
 	"3": {

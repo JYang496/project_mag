@@ -10,13 +10,19 @@ size = Vector2(1.59375, 2)
 script = ExtResource("1_maf4n")
 
 [node name="Line2D" type="Line2D" parent="."]
-points = PackedVector2Array(0, 0, 20, 0)
-width = 2.0
+visible = false
+points = PackedVector2Array(0, 0, 100, 0)
+width = 8.0
 
 [node name="HitBoxDot" parent="." instance=ExtResource("1_xsriv")]
-collision_mask = 5
 
 [node name="CollisionShape2D" parent="HitBoxDot" index="0"]
 shape = SubResource("RectangleShape2D_tkvf7")
+
+[node name="ExpireTimer" type="Timer" parent="."]
+wait_time = 3.0
+one_shot = true
+
+[connection signal="timeout" from="ExpireTimer" to="." method="_on_expire_timer_timeout"]
 
 [editable path="HitBoxDot"]
