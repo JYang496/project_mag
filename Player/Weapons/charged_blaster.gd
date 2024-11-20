@@ -56,13 +56,14 @@ func set_level(lv):
 			features.append(feature)
 
 func _on_shoot():
-	print(charge_level)
+	if charge_level < 1:
+		return
 	var beam_blast_ins = beam_blast.instantiate()
 	beam_blast_ins.target_position = get_local_mouse_position()
 	beam_blast_ins.damage = damage
 	call_deferred("add_child",beam_blast_ins)
 	charge_level = 0
-	pass
+
 
 
 func _on_charged_blast_timer_timeout() -> void:
