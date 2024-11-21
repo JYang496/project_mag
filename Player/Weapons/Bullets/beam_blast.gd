@@ -6,13 +6,14 @@ extends Node2D
 @onready var expire_timer : Timer = $ExpireTimer
 var damage = 1
 var target_position = Vector2(100,100)
-var width
+var width := 8
 var hit_cd
 
 var frame_counter = 0
 var frames_until_show = 1
 
 func _ready() -> void:
+	line2d.width = width
 	expire_timer.start()
 
 func _physics_process(delta: float) -> void:

@@ -3,14 +3,13 @@ extends Ranger
 # Bullet
 @onready var beam_blast = preload("res://Player/Weapons/Bullets/beam_blast.tscn")
 @onready var sprite = get_node("%GunSprite")
-@export var gun_cooldownTimer : Timer
-@export var charge_timer : Timer
+@onready var gun_cooldownTimer : Timer = $ChargedBlastTimer
 
 # Weapon
 var ITEM_NAME = "Beam Blaster"
 var level : int
 var damage : int
-var dot_cd : float
+var hit_cd : float
 var reload : float
 var charge_level :int
 var charge_time : float = 0.0
@@ -20,11 +19,47 @@ var max_charge_level : int
 var weapon_data = {
 	"1": {
 		"level": "1",
-		"damage": "1",
-		"speed": "200",
-		"dot_cd": "0.1",
-		"reload": "1",
+		"damage": "2",
+		"hit_cd": "0.1",
+		"reload": "5",
+		"max_charge_level": "2",
+		"cost": "1",
+		"features": [],
+	},
+	"2": {
+		"level": "1",
+		"damage": "4",
+		"hit_cd": "0.1",
+		"reload": "5",
+		"max_charge_level": "2",
+		"cost": "1",
+		"features": [],
+	},
+	"3": {
+		"level": "1",
+		"damage": "4",
+		"hit_cd": "0.1",
+		"reload": "5",
 		"max_charge_level": "3",
+		"cost": "1",
+		"features": [],
+	},
+	"4": {
+		"level": "1",
+		"damage": "4",
+		"hit_cd": "0.08",
+		"reload": "5",
+		"max_charge_level": "3",
+		"cost": "1",
+		"features": [],
+	},
+	"5": {
+		"level": "1",
+		"damage": "6",
+		"speed": "200",
+		"hit_cd": "0.08",
+		"reload": "5",
+		"max_charge_level": "4",
 		"cost": "1",
 		"features": [],
 	},
@@ -47,7 +82,7 @@ func _physics_process(delta):
 func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	damage = int(weapon_data[lv]["damage"])
-	dot_cd = float(weapon_data[lv]["dot_cd"])
+	hit_cd = float(weapon_data[lv]["hit_cd"])
 	reload = float(weapon_data[lv]["reload"])
 	max_charge_level = int(weapon_data[lv]["max_charge_level"])
 	gun_cooldownTimer.wait_time = reload
@@ -60,15 +95,14 @@ func _on_shoot():
 		return
 	var beam_blast_ins = beam_blast.instantiate()
 	beam_blast_ins.target_position = get_local_mouse_position()
-	beam_blast_ins.damage = damage
+	beam_blast_ins.width = charge_level * 6
+	beam_blast_ins.damage = damage * (charge_level * 2) 
+	beam_blast_ins.hit_cd = hit_cd
 	call_deferred("add_child",beam_blast_ins)
 	charge_level = 0
-
+	justAttacked = true
+	gun_cooldownTimer.start()
 
 
 func _on_charged_blast_timer_timeout() -> void:
-	pass # Replace with function body.
-
-
-func _on_charge_timer_timeout() -> void:
-	pass # Replace with function body.
+	justAttacked = false

@@ -1,9 +1,9 @@
 {
 	"1": {
-		"name": "minigun",
+		"name": "machine gun",
 		"img": "res://Textures/test/minigun.png",
-		"res": "res://Player/Weapons/minigun.tscn",
-		"description": "minigun test",
+		"res": "res://Player/Weapons/machine_gun.tscn",
+		"description": "machine gun test",
 		"price": "1",
 	},
 	"2": {
