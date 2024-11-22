@@ -23,5 +23,10 @@ light_mask = 4
 visibility_layer = 4
 shape = SubResource("CircleShape2D_c1515")
 
+[node name="ASTimer" type="Timer" parent="."]
+wait_time = 0.5
+autostart = true
+
 [connection signal="shoot" from="." to="." method="_on_shoot"]
 [connection signal="timeout" from="MachineGunTimer" to="." method="_on_machine_gun_timer_timeout"]
+[connection signal="timeout" from="ASTimer" to="." method="_on_as_timer_timeout"]
