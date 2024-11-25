@@ -53,7 +53,13 @@ func _physics_process(_delta):
 	gold_label.text = "Gold: " + str(PlayerData.player_gold)
 	time_label.text = "Time: " + str(PhaseManager.battle_time)
 	phase_label.text = "Phase: " + str(PhaseManager.current_state())
+	var style_box = StyleBoxFlat.new()
+	style_box.set_border_width_all(5)
+	style_box.border_color = Color(0.5, 0.5, 0.5, 1)
+	style_box.bg_color = Color(1, 1, 1, 1)
+	
 	for weapon_index in PlayerData.player_weapon_list.size():
+		weapon_icons.get_child(weapon_index).add_theme_stylebox_override("panel", style_box)
 		weapon_icons.get_child(weapon_index).texture = PlayerData.player_weapon_list[weapon_index].sprite.texture
 
 func _input(_event) -> void:
