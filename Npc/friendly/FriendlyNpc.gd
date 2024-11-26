@@ -20,18 +20,20 @@ func _on_shopping_area_body_exited(body):
 		panel_move_out()
 		$InteractHint.visible = false
 		player_in_zone = false
-		is_interacting = false
+		PlayerData.is_interacting = false
 
 func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_released("INTERACT") and player_in_zone:
-		if not is_interacting:
+		if not PlayerData.is_interacting:
+			PlayerData.is_interacting = true
 			panel_move_in()
 		else:
 			panel_move_out()
+			PlayerData.is_interacting = false
 
 func panel_move_in() -> void:
-	is_interacting = true
+	PlayerData.is_interacting = true
 		
 func panel_move_out() -> void:
-	is_interacting = false
+	PlayerData.is_interacting = false
 	

@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://cdpdxvviop3ok"]
+[gd_scene load_steps=3 format=3 uid="uid://cdpdxvviop3ok"]
 
 [ext_resource type="Script" path="res://UI/UI.gd" id="1_y6r0f"]
+[ext_resource type="Script" path="res://UI/draw_border.gd" id="3_xpg6s"]
 
 [node name="UI" type="CanvasLayer" groups=["ui"]]
 process_mode = 3
@@ -38,18 +39,22 @@ offset_bottom = 46.0
 [node name="WeaponIcon1" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons"]
 layout_mode = 2
 expand_mode = 2
+script = ExtResource("3_xpg6s")
 
 [node name="WeaponIcon2" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons"]
 layout_mode = 2
 expand_mode = 2
+script = ExtResource("3_xpg6s")
 
 [node name="WeaponIcon3" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons"]
 layout_mode = 2
 expand_mode = 2
+script = ExtResource("3_xpg6s")
 
 [node name="WeaponIcon4" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons"]
 layout_mode = 2
 expand_mode = 2
+script = ExtResource("3_xpg6s")
 
 [node name="Augments" type="Label" parent="GUI/CharacterRoot"]
 layout_mode = 0
@@ -231,6 +236,7 @@ offset_bottom = 265.0
 text = "Resume"
 
 [node name="MoveOutTimer" type="Timer" parent="GUI"]
+wait_time = 0.5
 
 [connection signal="pressed" from="GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton" to="." method="_on_resume_button_pressed"]
 [connection signal="timeout" from="GUI/MoveOutTimer" to="." method="_on_move_out_timer_timeout"]

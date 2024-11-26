@@ -95,6 +95,18 @@ var grab_radius_mutifactor := 1.0 :
 var total_grab_radius := grab_radius * grab_radius_mutifactor
 
 var player_gold := 0
+var is_interacting : bool = false
+
 var player_weapon_list = []
+var on_select_weapon : int = 0 :
+	get:
+		return on_select_weapon
+	set(value):
+		if value < 0:
+			value = player_weapon_list.size() - 1
+		if value >= player_weapon_list.size():
+			value = 0
+		on_select_weapon = clampi(value,0,player_weapon_list.size() - 1)
+
 var player_companion_lsit = []
 var player_augment_list = []

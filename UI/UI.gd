@@ -53,13 +53,8 @@ func _physics_process(_delta):
 	gold_label.text = "Gold: " + str(PlayerData.player_gold)
 	time_label.text = "Time: " + str(PhaseManager.battle_time)
 	phase_label.text = "Phase: " + str(PhaseManager.current_state())
-	var style_box = StyleBoxFlat.new()
-	style_box.set_border_width_all(5)
-	style_box.border_color = Color(0.5, 0.5, 0.5, 1)
-	style_box.bg_color = Color(1, 1, 1, 1)
 	
 	for weapon_index in PlayerData.player_weapon_list.size():
-		weapon_icons.get_child(weapon_index).add_theme_stylebox_override("panel", style_box)
 		weapon_icons.get_child(weapon_index).texture = PlayerData.player_weapon_list[weapon_index].sprite.texture
 
 func _input(_event) -> void:
@@ -72,8 +67,24 @@ func _input(_event) -> void:
 			# Pause and show UI
 			get_tree().paused = true
 			pause_menu_root.visible = true
-
-
+	
+	if Input.is_action_just_pressed("SWITCH_LEFT"):
+		PlayerData.on_select_weapon -= 1
+		enable_border()
+	if Input.is_action_just_pressed("SWITCH_RIGHT"):
+		PlayerData.on_select_weapon += 1
+		enable_border()
+		
+func enable_border() -> void:
+	for i in weapon_icons.get_child_count():
+		var icon = weapon_icons.get_child(i)
+		if i == PlayerData.on_select_weapon:
+			icon.display = true
+		else:
+			icon.display = false
+		icon.update()
+		
+		
 func shopping_panel_in() -> void:
 	if shopping_root == null:
 		return
@@ -90,6 +101,7 @@ func shopping_panel_in() -> void:
 
 func shopping_panel_out() -> void:
 	shopping_root.visible = false
+	enable_border()
 	move_out_timer.start()
 
 func upgrade_panel_in() -> void:
@@ -120,6 +132,8 @@ func upgrade_panel_in() -> void:
 
 func upgrade_panel_out() -> void:
 	upgrade_root.visible = false
+	enable_border()
+	move_out_timer.start()
 
 func free_childern(parent) -> void:
 	var children = parent.get_children()
@@ -128,6 +142,7 @@ func free_childern(parent) -> void:
 
 func _on_move_out_timer_timeout():
 	# Would be useful when animation is applied
+	PlayerData.is_interacting = false
 	pass # Replace with function body.
 
 
