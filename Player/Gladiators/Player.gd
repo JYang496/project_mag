@@ -13,6 +13,8 @@ var movement_enabled = true
 var moveto_enabled = false
 var moveto_dest := Vector2.ZERO
 var distance_mouse_player = 0
+var overcharge_max_time : float = PlayerData.overcharge_max_time
+var overcharge_time : float = 0
 const WEAPON_SLOTS = [[16,-24],[-16,-24],[16,24],[-16,24]]
 var equppied_weapons_list : Array[String] = []
 
@@ -26,7 +28,19 @@ func _ready():
 
 func _physics_process(delta):
 	movement(delta)
+	overcharge(delta)
 	move_and_slide()
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("OVERCHANGE"):
+		PlayerData.is_overcharging = true
+	if event.is_action_released("OVERCHANGE"):
+		PlayerData.is_overcharging = false
+
+func overcharge(delta) ->void:
+	if PlayerData.is_overcharging:
+		PlayerData.overcharge_time += delta
+		print(PlayerData.is_overcharged)
 
 func getEquippedWeapons():
 	return equppied_weapons_list
@@ -51,7 +65,6 @@ func create_weapon(item_id : String):
 	PlayerData.player_weapon_list.append(weapon)
 
 func movement(delta):
-	# TODO: get position to get random or mouse
 	equppied_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
 	unique_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
 	if movement_enabled:

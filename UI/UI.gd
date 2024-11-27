@@ -137,8 +137,8 @@ func upgrade_panel_out() -> void:
 
 func free_childern(parent) -> void:
 	var children = parent.get_children()
-	for i in children:
-		i.queue_free()
+	for child in children:
+		child.queue_free()
 
 func _on_move_out_timer_timeout():
 	# Would be useful when animation is applied
