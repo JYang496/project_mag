@@ -96,6 +96,7 @@ var total_grab_radius := grab_radius * grab_radius_mutifactor
 
 var player_gold := 0
 var is_interacting : bool = false
+
 var overcharge_max_time : float = 1.5
 var overcharge_time : float = 0:
 	set(value):
@@ -112,13 +113,19 @@ var is_overcharging : bool = false :
 			overcharge_time = 0
 			is_overcharged = false
 
-var is_overcharged : bool = false
+var is_overcharged : bool = false:
+	set(value):
+		is_overcharged = value
+		var ui = get_tree().get_first_node_in_group("ui")
+		ui.refresh_border()
 
 var player_weapon_list = []
 var on_select_weapon : int = 0 :
 	get:
 		return on_select_weapon
 	set(value):
+		if player_weapon_list.size() == 0:
+			return
 		if value < 0:
 			value = player_weapon_list.size() - 1
 		if value >= player_weapon_list.size():

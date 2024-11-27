@@ -70,12 +70,12 @@ func _input(_event) -> void:
 	
 	if Input.is_action_just_pressed("SWITCH_LEFT"):
 		PlayerData.on_select_weapon -= 1
-		enable_border()
+		refresh_border()
 	if Input.is_action_just_pressed("SWITCH_RIGHT"):
 		PlayerData.on_select_weapon += 1
-		enable_border()
+		refresh_border()
 		
-func enable_border() -> void:
+func refresh_border() -> void:
 	for i in weapon_icons.get_child_count():
 		var icon = weapon_icons.get_child(i)
 		if i == PlayerData.on_select_weapon:
@@ -101,7 +101,7 @@ func shopping_panel_in() -> void:
 
 func shopping_panel_out() -> void:
 	shopping_root.visible = false
-	enable_border()
+	refresh_border()
 	move_out_timer.start()
 
 func upgrade_panel_in() -> void:
@@ -132,7 +132,7 @@ func upgrade_panel_in() -> void:
 
 func upgrade_panel_out() -> void:
 	upgrade_root.visible = false
-	enable_border()
+	refresh_border()
 	move_out_timer.start()
 
 func free_childern(parent) -> void:

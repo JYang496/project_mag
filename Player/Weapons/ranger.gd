@@ -18,6 +18,7 @@ var object
 var target_close = []
 
 signal shoot()
+signal over_charge()
 
 func _physics_process(_delta):
 	if not justAttacked and Input.is_action_pressed("ATTACK"):
@@ -100,3 +101,7 @@ func _on_detect_area_body_entered(body):
 func _on_detect_area_body_exited(body):
 	if target_close.has(body):
 		target_close.erase(body)
+
+
+func _on_over_charge() -> void:
+	print(self,"over charge")
