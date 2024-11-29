@@ -58,6 +58,8 @@ func _physics_process(_delta):
 		weapon_icons.get_child(weapon_index).texture = PlayerData.player_weapon_list[weapon_index].sprite.texture
 
 func _input(_event) -> void:
+	
+	# Pause / Menu
 	if Input.is_action_just_pressed("ESC"):
 		if get_tree().paused:
 			# Unpause and hide UI
@@ -68,6 +70,7 @@ func _input(_event) -> void:
 			get_tree().paused = true
 			pause_menu_root.visible = true
 	
+	# Switch weapon
 	if Input.is_action_just_pressed("SWITCH_LEFT"):
 		PlayerData.on_select_weapon -= 1
 		enable_border()

@@ -9,7 +9,6 @@ func _draw():
 	var rect = Rect2(Vector2.ZERO, size)
 	var width : float = 0.0
 	if display and self.texture != null:
-		print(self)
 		width = border_width
 	draw_rect(rect, border_color, false, width)
 
