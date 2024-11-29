@@ -115,9 +115,10 @@ var is_overcharging : bool = false :
 
 var is_overcharged : bool = false:
 	set(value):
-		is_overcharged = value
-		var ui = get_tree().get_first_node_in_group("ui")
-		ui.refresh_border()
+		if is_overcharged != value:
+			is_overcharged = value
+			var ui = get_tree().get_first_node_in_group("ui")
+			ui.refresh_border()
 
 var player_weapon_list = []
 var max_weapon_num : int = 4
@@ -125,13 +126,13 @@ var on_select_weapon : int = -1 :
 	get:
 		return on_select_weapon
 	set(value):
-		if player_weapon_list.size() == 0:
-			return
+		if value >= player_weapon_list.size() or player_weapon_list.size() <= 0:
+			value = -1
 		if value < -1:
 			value = player_weapon_list.size() - 1
-		if value >= player_weapon_list.size():
-			value = -1
 		on_select_weapon = clampi(value,-1,player_weapon_list.size() - 1)
+		var ui = get_tree().get_first_node_in_group("ui")
+		ui.refresh_border()
 
 var player_companion_lsit = []
 var player_augment_list = []

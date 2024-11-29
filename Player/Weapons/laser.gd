@@ -75,6 +75,7 @@ func _on_shoot():
 
 func _on_over_charge():
 	print(self,"OVER CHARGE")
+	remove_weapon()
 
 func _on_laser_cooldown_timer_timeout() -> void:
 	justAttacked = false

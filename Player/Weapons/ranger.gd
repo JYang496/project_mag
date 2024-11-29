@@ -89,7 +89,12 @@ func apply_affects(bullet) -> void:
 			"speed_change_on_hit":
 				apply_speed_change_on_hit(bullet, 0.5)
 
-
+func remove_weapon() -> void:
+	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
+	player.equppied_weapons_list[PlayerData.on_select_weapon] = "0"
+	PlayerData.on_select_weapon = -1
+	PlayerData.overcharge_time = 0
+	queue_free()
 
 func _on_over_charge() -> void:
 	print(self,"over charge")

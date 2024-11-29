@@ -7,6 +7,8 @@ extends Node2D
 
 var satellites : Array = []
 
+signal over_charge()
+
 # Weapon
 var ITEM_NAME = "Orbit"
 var level : int
@@ -68,7 +70,17 @@ func set_level(lv) -> void:
 		var satellite_ins = satellite_preload.instantiate()
 		satellite_ins.damage = damage
 		satellite_ins.spin_speed = spin_speed
-		get_tree().root.call_deferred("add_child",satellite_ins)
+		call_deferred("add_child",satellite_ins)
+		#get_tree().root.call_deferred("add_child",satellite_ins)
 		satellites.append(satellite_ins)
 	for n in range(number):
 		satellites[n].angle_offset = offset_step * n
+
+func remove_weapon() -> void:
+	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
+	PlayerData.on_select_weapon = -1
+	queue_free()
+	
+func _on_over_charge() -> void:
+	print(self,"OVER CHARGE")
+	remove_weapon()

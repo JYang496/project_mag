@@ -95,8 +95,7 @@ func _on_shoot():
 
 func _on_over_charge():
 	print(self,"OVER CHARGE")
-	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
-	queue_free()
+	remove_weapon()
 
 func _on_spear_cooldown_timer_timeout():
 	justAttacked = false

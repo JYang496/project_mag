@@ -42,7 +42,7 @@ extends CanvasLayer
 
 
 func _ready():
-	pass
+	refresh_border()
 
 
 func _physics_process(_delta):
@@ -54,12 +54,7 @@ func _physics_process(_delta):
 	gold_label.text = "Gold: " + str(PlayerData.player_gold)
 	time_label.text = "Time: " + str(PhaseManager.battle_time)
 	phase_label.text = "Phase: " + str(PhaseManager.current_state())
-	
-	for weapon_index in weapon_icons.get_child_count():
-		if weapon_index < PlayerData.player_weapon_list.size():
-			weapon_icons.get_child(weapon_index).texture = PlayerData.player_weapon_list[weapon_index].sprite.texture
-		else:
-			weapon_icons.get_child(weapon_index).texture = empty_weapon_pic
+
 func _input(_event) -> void:
 	
 	# Pause / Menu
@@ -82,6 +77,11 @@ func _input(_event) -> void:
 		refresh_border()
 		
 func refresh_border() -> void:
+	for weapon_index in weapon_icons.get_child_count():
+		if weapon_index < PlayerData.player_weapon_list.size():
+			weapon_icons.get_child(weapon_index).texture = PlayerData.player_weapon_list[weapon_index].sprite.texture
+		else:
+			weapon_icons.get_child(weapon_index).texture = empty_weapon_pic
 	for i in weapon_icons.get_child_count():
 		var icon = weapon_icons.get_child(i)
 		if i == PlayerData.on_select_weapon:
@@ -109,7 +109,6 @@ func shopping_panel_in() -> void:
 func shopping_panel_out() -> void:
 	shopping_root.visible = false
 	refresh_border()
-	print("panel out")
 	move_out_timer.start()
 
 func upgrade_panel_in() -> void:
