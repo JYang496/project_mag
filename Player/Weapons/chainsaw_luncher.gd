@@ -104,6 +104,11 @@ func _on_shoot():
 	apply_spin(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
+func _on_over_charge():
+	print(self,"OVER CHARGE")
+	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
+	queue_free()
+
 func apply_spin(blt_node) -> void:
 	var spin_movement_ins = spin_module.instantiate()
 	blt_node.call_deferred("add_child",spin_movement_ins)

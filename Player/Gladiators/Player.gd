@@ -26,7 +26,21 @@ func _ready():
 
 func _physics_process(delta):
 	movement(delta)
+	overcharge(delta)
 	move_and_slide()
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("INTERACT") and PlayerData.is_overcharged:
+		if PlayerData.player_weapon_list.size() > 0:
+			PlayerData.player_weapon_list[PlayerData.on_select_weapon].emit_signal("over_charge")
+	if event.is_action_pressed("OVERCHARGE"):
+		PlayerData.is_overcharging = true
+	if event.is_action_released("OVERCHARGE"):
+		PlayerData.is_overcharging = false
+
+func overcharge(delta) ->void:
+	if PlayerData.is_overcharging:
+		PlayerData.overcharge_time += delta
 
 func getEquippedWeapons():
 	return equppied_weapons_list
@@ -49,9 +63,9 @@ func create_weapon(item_id : String):
 	remote_transform.remote_path = weapon.get_path()
 	equppied_weapons_list[available_slot] = item_id
 	PlayerData.player_weapon_list.append(weapon)
+	print("create weapon")
 
 func movement(delta):
-	# TODO: get position to get random or mouse
 	equppied_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
 	unique_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
 	if movement_enabled:

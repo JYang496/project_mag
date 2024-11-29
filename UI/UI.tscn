@@ -31,9 +31,9 @@ text = "Weapons"
 
 [node name="WeaponIcons" type="HBoxContainer" parent="GUI/CharacterRoot"]
 layout_mode = 0
-offset_left = 77.0
+offset_left = 82.0
 offset_top = 6.0
-offset_right = 349.0
+offset_right = 354.0
 offset_bottom = 46.0
 
 [node name="WeaponIcon1" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons"]
@@ -58,9 +58,10 @@ script = ExtResource("3_xpg6s")
 
 [node name="Augments" type="Label" parent="GUI/CharacterRoot"]
 layout_mode = 0
-offset_top = 57.0
-offset_right = 74.0
-offset_bottom = 80.0
+offset_left = 2.0
+offset_top = 109.0
+offset_right = 81.0
+offset_bottom = 132.0
 text = "Augments"
 
 [node name="Hp" type="Label" parent="GUI/CharacterRoot"]

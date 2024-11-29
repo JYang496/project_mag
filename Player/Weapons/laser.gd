@@ -73,5 +73,8 @@ func _on_shoot():
 	justAttacked = true
 	cooldown_timer.start()
 
+func _on_over_charge():
+	print(self,"OVER CHARGE")
+
 func _on_laser_cooldown_timer_timeout() -> void:
 	justAttacked = false

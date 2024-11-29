@@ -21,5 +21,6 @@ texture = ExtResource("2_p8bje")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
 shape = SubResource("CircleShape2D_gbsvu")
 
+[connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="shoot" from="." to="." method="_on_shoot"]
 [connection signal="timeout" from="ShotgunAttackTimer" to="." method="_on_shotgun_attack_timer_timeout"]

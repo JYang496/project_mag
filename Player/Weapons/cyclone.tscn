@@ -23,5 +23,6 @@ collision_mask = 4
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
 shape = SubResource("CircleShape2D_p0ini")
 
+[connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="shoot" from="." to="." method="_on_shoot"]
 [connection signal="timeout" from="SniperAttackTimer" to="." method="_on_sniper_attack_timer_timeout"]

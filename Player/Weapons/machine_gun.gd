@@ -97,6 +97,11 @@ func _on_shoot():
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 	adjust_attack_speed(1.2)
 
+func _on_over_charge():
+	print(self,"OVER CHARGE")
+	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
+	queue_free()
+	
 func adjust_attack_speed(rate : float) -> void:
 	attack_speed = clampf(attack_speed * rate, 1.0, 10.0)
 

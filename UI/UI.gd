@@ -37,6 +37,7 @@ extends CanvasLayer
 @onready var upgradable_weapon_list = PlayerData.player_weapon_list
 @onready var item_card = preload("res://UI/margin_item_card.tscn")
 @onready var upgrade_card = preload("res://UI/margin_upgrade_card.tscn")
+@onready var empty_weapon_pic = preload("res://Textures/test/empty_wp.png")
 @onready var equipped_weapons = null
 
 
@@ -54,9 +55,11 @@ func _physics_process(_delta):
 	time_label.text = "Time: " + str(PhaseManager.battle_time)
 	phase_label.text = "Phase: " + str(PhaseManager.current_state())
 	
-	for weapon_index in PlayerData.player_weapon_list.size():
-		weapon_icons.get_child(weapon_index).texture = PlayerData.player_weapon_list[weapon_index].sprite.texture
-
+	for weapon_index in weapon_icons.get_child_count():
+		if weapon_index < PlayerData.player_weapon_list.size():
+			weapon_icons.get_child(weapon_index).texture = PlayerData.player_weapon_list[weapon_index].sprite.texture
+		else:
+			weapon_icons.get_child(weapon_index).texture = empty_weapon_pic
 func _input(_event) -> void:
 	
 	# Pause / Menu
@@ -73,12 +76,12 @@ func _input(_event) -> void:
 	# Switch weapon
 	if Input.is_action_just_pressed("SWITCH_LEFT"):
 		PlayerData.on_select_weapon -= 1
-		enable_border()
+		refresh_border()
 	if Input.is_action_just_pressed("SWITCH_RIGHT"):
 		PlayerData.on_select_weapon += 1
-		enable_border()
+		refresh_border()
 		
-func enable_border() -> void:
+func refresh_border() -> void:
 	for i in weapon_icons.get_child_count():
 		var icon = weapon_icons.get_child(i)
 		if i == PlayerData.on_select_weapon:
@@ -86,6 +89,7 @@ func enable_border() -> void:
 		else:
 			icon.display = false
 		icon.update()
+	print("UI refresh")
 		
 		
 func shopping_panel_in() -> void:
@@ -104,7 +108,8 @@ func shopping_panel_in() -> void:
 
 func shopping_panel_out() -> void:
 	shopping_root.visible = false
-	enable_border()
+	refresh_border()
+	print("panel out")
 	move_out_timer.start()
 
 func upgrade_panel_in() -> void:
@@ -135,13 +140,13 @@ func upgrade_panel_in() -> void:
 
 func upgrade_panel_out() -> void:
 	upgrade_root.visible = false
-	enable_border()
+	refresh_border()
 	move_out_timer.start()
 
 func free_childern(parent) -> void:
 	var children = parent.get_children()
-	for i in children:
-		i.queue_free()
+	for child in children:
+		child.queue_free()
 
 func _on_move_out_timer_timeout():
 	# Would be useful when animation is applied

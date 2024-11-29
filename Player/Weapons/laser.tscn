@@ -24,6 +24,7 @@ shape = SubResource("CircleShape2D_7o7o7")
 [node name="LaserCooldownTimer" type="Timer" parent="."]
 wait_time = 2.0
 
+[connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="shoot" from="." to="." method="_on_shoot"]
 [connection signal="body_entered" from="DetectArea" to="." method="_on_detect_area_body_entered"]
 [connection signal="body_exited" from="DetectArea" to="." method="_on_detect_area_body_exited"]

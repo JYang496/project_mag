@@ -21,6 +21,7 @@ light_mask = 4
 visibility_layer = 4
 shape = SubResource("CircleShape2D_0frw1")
 
+[connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="shoot" from="." to="." method="_on_shoot"]
 [connection signal="body_entered" from="DetectArea" to="." method="_on_detect_area_body_entered"]
 [connection signal="body_exited" from="DetectArea" to="." method="_on_detect_area_body_exited"]
