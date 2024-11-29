@@ -120,17 +120,18 @@ var is_overcharged : bool = false:
 		ui.refresh_border()
 
 var player_weapon_list = []
-var on_select_weapon : int = 0 :
+var max_weapon_num : int = 4
+var on_select_weapon : int = -1 :
 	get:
 		return on_select_weapon
 	set(value):
 		if player_weapon_list.size() == 0:
 			return
-		if value < 0:
+		if value < -1:
 			value = player_weapon_list.size() - 1
 		if value >= player_weapon_list.size():
-			value = 0
-		on_select_weapon = clampi(value,0,player_weapon_list.size() - 1)
+			value = -1
+		on_select_weapon = clampi(value,-1,player_weapon_list.size() - 1)
 
 var player_companion_lsit = []
 var player_augment_list = []

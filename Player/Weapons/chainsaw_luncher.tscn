@@ -1,27 +1,17 @@
-[gd_scene load_steps=4 format=3 uid="uid://h41t628ntor5"]
+[gd_scene load_steps=3 format=3 uid="uid://h41t628ntor5"]
 
 [ext_resource type="Script" path="res://Player/Weapons/chainsaw_luncher.gd" id="1_y5ll5"]
 [ext_resource type="Texture2D" uid="uid://dy8r3aaxk8rse" path="res://Textures/test/chainsaw.png" id="2_8k0s0"]
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_k02f6"]
-radius = 339.013
 
 [node name="ChainsawLuncher" type="Node2D"]
 script = ExtResource("1_y5ll5")
 
 [node name="ChainsawLuncherTimer" type="Timer" parent="."]
 
-[node name="DetectArea" type="Area2D" parent="."]
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
-light_mask = 4
-visibility_layer = 4
-shape = SubResource("CircleShape2D_k02f6")
-
 [node name="GunSprite" type="Sprite2D" parent="."]
 unique_name_in_owner = true
 texture = ExtResource("2_8k0s0")
 
+[connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="shoot" from="." to="." method="_on_shoot"]
 [connection signal="timeout" from="ChainsawLuncherTimer" to="." method="_on_chainsaw_luncher_timer_timeout"]

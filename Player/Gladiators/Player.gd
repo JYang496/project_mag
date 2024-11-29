@@ -63,6 +63,7 @@ func create_weapon(item_id : String):
 	remote_transform.remote_path = weapon.get_path()
 	equppied_weapons_list[available_slot] = item_id
 	PlayerData.player_weapon_list.append(weapon)
+	print("create weapon")
 
 func movement(delta):
 	equppied_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)

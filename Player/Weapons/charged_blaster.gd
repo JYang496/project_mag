@@ -103,6 +103,10 @@ func _on_shoot():
 	justAttacked = true
 	gun_cooldownTimer.start()
 
+func _on_over_charge():
+	print(self,"OVER CHARGE")
+	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
+	queue_free()
 
 func _on_charged_blast_timer_timeout() -> void:
 	justAttacked = false

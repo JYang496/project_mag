@@ -99,6 +99,8 @@ func _on_shoot():
 
 func _on_over_charge():
 	print(self,"OVER CHARGE")
+	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
+	queue_free()
 	
 func adjust_attack_speed(rate : float) -> void:
 	attack_speed = clampf(attack_speed * rate, 1.0, 10.0)

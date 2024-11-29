@@ -25,5 +25,6 @@ unique_name_in_owner = true
 rotation = -0.785398
 texture = ExtResource("1_1rx0e")
 
+[connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="shoot" from="." to="." method="_on_shoot"]
 [connection signal="timeout" from="SpearCooldownTimer" to="." method="_on_spear_cooldown_timer_timeout"]

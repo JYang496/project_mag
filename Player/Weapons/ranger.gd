@@ -14,8 +14,8 @@ var features = []
 # object that needs to be overwrited in child class
 var object
 
-# Enemy realted
-var target_close = []
+# Over charge
+var is_overcharged : bool = false
 
 signal shoot()
 signal over_charge()
@@ -39,10 +39,6 @@ func _on_shoot():
 	player.add_sibling(spawn_object)
 
 func get_random_target():
-	if target_close.size() > 0:
-		var target = target_close.pick_random()
-		return target.global_position
-	else: 
 		return get_global_mouse_position()
 
 func apply_linear(blt_node : Node2D, direction : Vector2 = Vector2.UP, blt_speed : float = 400.0) -> void:
@@ -93,14 +89,6 @@ func apply_affects(bullet) -> void:
 			"speed_change_on_hit":
 				apply_speed_change_on_hit(bullet, 0.5)
 
-
-func _on_detect_area_body_entered(body):
-	if not target_close.has(body) and body.is_in_group("enemy"):
-		target_close.append(body)
-
-func _on_detect_area_body_exited(body):
-	if target_close.has(body):
-		target_close.erase(body)
 
 
 func _on_over_charge() -> void:

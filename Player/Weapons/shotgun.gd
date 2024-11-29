@@ -106,6 +106,10 @@ func _on_shoot():
 		apply_affects(spawn_bullet)
 		get_tree().root.call_deferred("add_child",spawn_bullet)
 
+func _on_over_charge():
+	print(self,"OVER CHARGE")
+	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
+	queue_free()
 
 func _on_shotgun_attack_timer_timeout() -> void:
 	justAttacked = false

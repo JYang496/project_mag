@@ -37,6 +37,7 @@ extends CanvasLayer
 @onready var upgradable_weapon_list = PlayerData.player_weapon_list
 @onready var item_card = preload("res://UI/margin_item_card.tscn")
 @onready var upgrade_card = preload("res://UI/margin_upgrade_card.tscn")
+@onready var empty_weapon_pic = preload("res://Textures/test/empty_wp.png")
 @onready var equipped_weapons = null
 
 
@@ -54,9 +55,11 @@ func _physics_process(_delta):
 	time_label.text = "Time: " + str(PhaseManager.battle_time)
 	phase_label.text = "Phase: " + str(PhaseManager.current_state())
 	
-	for weapon_index in PlayerData.player_weapon_list.size():
-		weapon_icons.get_child(weapon_index).texture = PlayerData.player_weapon_list[weapon_index].sprite.texture
-
+	for weapon_index in weapon_icons.get_child_count():
+		if weapon_index < PlayerData.player_weapon_list.size():
+			weapon_icons.get_child(weapon_index).texture = PlayerData.player_weapon_list[weapon_index].sprite.texture
+		else:
+			weapon_icons.get_child(weapon_index).texture = empty_weapon_pic
 func _input(_event) -> void:
 	if Input.is_action_just_pressed("ESC"):
 		if get_tree().paused:
@@ -83,6 +86,7 @@ func refresh_border() -> void:
 		else:
 			icon.display = false
 		icon.update()
+	print("UI refresh")
 		
 		
 func shopping_panel_in() -> void:
@@ -102,6 +106,7 @@ func shopping_panel_in() -> void:
 func shopping_panel_out() -> void:
 	shopping_root.visible = false
 	refresh_border()
+	print("panel out")
 	move_out_timer.start()
 
 func upgrade_panel_in() -> void:
