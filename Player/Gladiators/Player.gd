@@ -14,14 +14,10 @@ var moveto_enabled = false
 var moveto_dest := Vector2.ZERO
 var distance_mouse_player = 0
 const WEAPON_SLOTS = [[16,-24],[-16,-24],[16,24],[-16,24]]
-var equppied_weapons_list : Array[String] = []
 
 
 func _ready():
 	update_grab_radius()
-	# Init weapon slots
-	for i in range(0,WEAPON_SLOTS.size()):
-		equppied_weapons_list.append("0")
 
 
 func _physics_process(delta):
@@ -42,18 +38,16 @@ func overcharge(delta) ->void:
 	if PlayerData.is_overcharging:
 		PlayerData.overcharge_time += delta
 
-func getEquippedWeapons():
-	return equppied_weapons_list
-
 func create_weapon(item_id : String):
-	# Find out available slot, if no available slots, return
 	var available_slot = 0
-	while available_slot < equppied_weapons_list.size() and equppied_weapons_list[available_slot] != "0":
-		print(available_slot," :",equppied_weapons_list.size()," ",equppied_weapons_list[available_slot])
-		available_slot += 1
-	if available_slot >= equppied_weapons_list.size():
+	if PlayerData.player_weapon_list.size() > PlayerData.max_weapon_num:
 		return
 	
+	
+	for weapon_index in PlayerData.player_weapon_list.size():
+		PlayerData.player_weapon_list[weapon_index].position.x = WEAPON_SLOTS[weapon_index][0]
+		PlayerData.player_weapon_list[weapon_index].position.y = WEAPON_SLOTS[weapon_index][1]
+	available_slot = PlayerData.player_weapon_list.size()
 	var remote_transform = RemoteTransform2D.new()
 	remote_transform.update_rotation = true
 	equppied_weapons.add_child(remote_transform)
@@ -62,7 +56,6 @@ func create_weapon(item_id : String):
 	weapon.position.y = WEAPON_SLOTS[available_slot][1]
 	remote_transform.add_child(weapon)
 	remote_transform.remote_path = weapon.get_path()
-	equppied_weapons_list[available_slot] = item_id
 	PlayerData.player_weapon_list.append(weapon)
 	print("create weapon")
 

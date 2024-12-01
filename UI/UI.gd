@@ -47,7 +47,6 @@ func _ready():
 
 func _physics_process(_delta):
 	#Character
-	equipped_weapons = player.getEquippedWeapons()
 	hp_label_label.text = "HP: " + str(PlayerData.player_hp)
 	equipped_label.text = "Equipped:"
 	augments_label.text = str(PlayerData.player_augment_list)
