@@ -15,6 +15,8 @@ var hp : int
 var reload : float
 var attack_speed : float = 1.0
 
+var max_speed_factor : float = 10.0
+
 
 var weapon_data = {
 	"1": {
@@ -98,11 +100,26 @@ func _on_shoot():
 	adjust_attack_speed(1.2)
 
 func _on_over_charge():
+	if self.is_overcharged:
+		return
+	self.is_overcharged = true
 	print(self,"OVER CHARGE")
+	speed *= 1.6
+	damage *= 2
+	hp += 2
+	max_speed_factor *= 1.6
+	var remove_timer = Timer.new()
+	remove_timer.wait_time = 0.8
+	remove_timer.one_shot = true
+	remove_timer.connect("timeout",Callable(self,"_on_remove_timer_timeout"))
+	self.add_child(remove_timer)
+	remove_timer.start()
+
+func _on_remove_timer_timeout() -> void:
 	remove_weapon()
-	
+
 func adjust_attack_speed(rate : float) -> void:
-	attack_speed = clampf(attack_speed * rate, 1.0, 10.0)
+	attack_speed = clampf(attack_speed * rate, 1.0, max_speed_factor)
 
 func _on_machine_gun_timer_timeout() -> void:
 	justAttacked = false

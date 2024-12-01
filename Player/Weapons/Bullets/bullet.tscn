@@ -1,8 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://dk1c4rp3qky24"]
+[gd_scene load_steps=3 format=3 uid="uid://dk1c4rp3qky24"]
 
 [ext_resource type="Script" path="res://Player/Weapons/Bullets/bullet.gd" id="1_7ggqm"]
 [ext_resource type="Texture2D" uid="uid://bdqglnp8spwlo" path="res://Textures/test/sniper_bullet.png" id="2_t5sb3"]
-[ext_resource type="PackedScene" uid="uid://baenrlcnhx2wb" path="res://Player/Weapons/Bullets/speed_change_on_hit.tscn" id="3_iisbf"]
 
 [node name="BulletBase" type="Node2D"]
 script = ExtResource("1_7ggqm")
@@ -16,7 +15,5 @@ texture = ExtResource("2_t5sb3")
 [node name="ExpireTimer" type="Timer" parent="."]
 wait_time = 2.5
 one_shot = true
-
-[node name="SpeedChangeOnHit" parent="." instance=ExtResource("3_iisbf")]
 
 [connection signal="timeout" from="ExpireTimer" to="." method="_on_expire_timer_timeout"]

@@ -49,6 +49,7 @@ func create_weapon(item_id : String):
 	# Find out available slot, if no available slots, return
 	var available_slot = 0
 	while available_slot < equppied_weapons_list.size() and equppied_weapons_list[available_slot] != "0":
+		print(available_slot," :",equppied_weapons_list.size()," ",equppied_weapons_list[available_slot])
 		available_slot += 1
 	if available_slot >= equppied_weapons_list.size():
 		return

@@ -4,7 +4,7 @@ class_name SpeedChangeOnHit
 @onready var module_parent = self.get_parent() # Bullet root is parent
 
 var on_hit := false
-var speed_rate = 0.3
+@export var speed_rate = 0.3
 
 func _ready() -> void:
 	if not module_parent:

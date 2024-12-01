@@ -1,6 +1,7 @@
 extends Ranger
 
 var spin_module = preload("res://Player/Weapons/Bullets/spin_module.tscn")
+var speed_change_on_hit_module = preload("res://Player/Weapons/Bullets/speed_change_on_hit.tscn")
 
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
@@ -102,6 +103,7 @@ func _on_shoot():
 	apply_linear(spawn_bullet, bullet_direction, speed)
 	apply_affects(spawn_bullet)
 	apply_spin(spawn_bullet)
+	apply_speed_change_on_hot(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
@@ -113,6 +115,12 @@ func apply_spin(blt_node) -> void:
 	blt_node.call_deferred("add_child",spin_movement_ins)
 	blt_node.module_list.append(spin_movement_ins)
 	module_list.append(spin_movement_ins)
+
+func apply_speed_change_on_hot(blt_node) -> void:
+	var speed_change_on_hit_ins = speed_change_on_hit_module.instantiate()
+	blt_node.call_deferred("add_child",speed_change_on_hit_ins)
+	blt_node.module_list.append(speed_change_on_hit_ins)
+	module_list.append(speed_change_on_hit_ins)
 
 func _on_chainsaw_luncher_timer_timeout() -> void:
 	justAttacked = false
