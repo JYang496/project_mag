@@ -14,7 +14,7 @@
 		"price": "1",
 	},
 	"3": {
-		"name": "spear",
+		"name": "Spear",
 		"img": "res://Textures/test/spear.png",
 		"res": "res://Player/Weapons/spear_launcher.tscn",
 		"description": "spear test: return",
