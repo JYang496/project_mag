@@ -329,7 +329,7 @@ collision_layer = 5
 [node name="GrabRange" parent="GladiatorTest/EquippedAugments" index="0" instance=ExtResource("16_shpv5")]
 
 [node name="LootBox" parent="." instance=ExtResource("21_p4g33")]
-position = Vector2(-294, -1425)
+position = Vector2(-180, -1432)
 
 [node name="Dummy" parent="." instance=ExtResource("23_8t5w2")]
 position = Vector2(9, -1486)

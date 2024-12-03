@@ -8,11 +8,13 @@ var damage = 1
 var target_position = Vector2(100,100)
 var width := 8
 var hit_cd
+var duration : float = 3.0
 
 var frame_counter = 0
 var frames_until_show = 1
 
 func _ready() -> void:
+	expire_timer.wait_time = duration
 	line2d.width = width
 	expire_timer.start()
 

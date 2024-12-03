@@ -103,13 +103,12 @@ func _on_over_charge():
 	if self.is_overcharged:
 		return
 	self.is_overcharged = true
-	print(self,"OVER CHARGE")
 	speed *= 1.6
 	damage *= 2
 	hp += 2
 	max_speed_factor *= 1.6
 	var remove_timer = Timer.new()
-	remove_timer.wait_time = 0.8
+	remove_timer.wait_time = 8.0
 	remove_timer.one_shot = true
 	remove_timer.connect("timeout",Callable(self,"_on_remove_timer_timeout"))
 	self.add_child(remove_timer)
