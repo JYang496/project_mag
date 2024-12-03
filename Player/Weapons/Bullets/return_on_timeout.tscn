@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3 uid="uid://umlm8f6r3v6t"]
+
+[ext_resource type="Script" path="res://Player/Weapons/Bullets/return_on_timeout.gd" id="1_vkagf"]
+
+[node name="ReturnOnTimeout" type="Node2D"]
+script = ExtResource("1_vkagf")
+
+[node name="ReturnTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="StopTimer" type="Timer" parent="."]
+one_shot = true
+
+[connection signal="timeout" from="ReturnTimer" to="." method="_on_return_timer_timeout"]
+[connection signal="timeout" from="StopTimer" to="." method="_on_stop_timer_timeout"]

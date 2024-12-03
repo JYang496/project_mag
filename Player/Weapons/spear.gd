@@ -4,8 +4,8 @@ var level : int
 var hp = 6
 var damage = 2
 var speed = 1200.0
-var target = null
 var direction = Vector2.ZERO
+var destination : Vector2
 @onready var on_return = false
 var on_land
 var blt_texture
@@ -14,21 +14,21 @@ var blt_texture
 @onready var player  = get_tree().get_first_node_in_group("player")
 
 func _ready():
-	if target == null:
-		target = get_global_mouse_position()
-	rotation = global_position.direction_to(target).angle() + deg_to_rad(90)
+	if destination == null:
+		destination = get_global_mouse_position()
+	rotation = global_position.direction_to(destination).angle() + deg_to_rad(90)
 	$ReturnTimer.start()
 		
 func _physics_process(delta):
-	var distance_to_target = global_position.distance_to(target)
+	var distance_to_target = global_position.distance_to(destination)
 	if on_return:
-		target = player.global_position
+		destination = player.global_position
 		speed = 1200
 	elif distance_to_target < 10: # Slow down the object while closing the target
 		speed *= 0.5
-	direction = global_position.direction_to(target).normalized()
-	if abs(target.x - global_position.x) > 0.01 and abs(target.y - global_position.y) > 0.01:
-		global_position = global_position.move_toward(target,delta * speed)
+	direction = global_position.direction_to(destination).normalized()
+	if abs(destination.x - global_position.x) > 0.01 and abs(destination.y - global_position.y) > 0.01:
+		global_position = global_position.move_toward(destination,delta * speed)
 	
 func enemy_hit(charge = 1):
 	hp -= charge
@@ -38,8 +38,8 @@ func enemy_hit(charge = 1):
 
 func _on_return_timer_timeout():
 	on_return = true
-	target = player.global_position
-	rotation = global_position.direction_to(target).angle() + deg_to_rad(90)
+	destination = player.global_position
+	rotation = global_position.direction_to(destination).angle() + deg_to_rad(90)
 
 
 func _on_return_box_body_entered(body: Node2D) -> void:
