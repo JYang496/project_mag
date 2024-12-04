@@ -50,7 +50,8 @@ func init_hitbox(hitbox_type = "once") -> void:
 func _physics_process(delta: float) -> void:
 	self.position = self.position + base_displacement * delta
 	print(base_displacement)
-	self.rotation = base_displacement.angle() + deg_to_rad(90)
+	if base_displacement != Vector2.ZERO:
+		self.rotation = base_displacement.angle() + deg_to_rad(90)
 	bullet.position = bullet.position + bullet_displacement * delta
 
 func enemy_hit(charge : int = 1):

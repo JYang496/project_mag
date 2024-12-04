@@ -1,7 +1,7 @@
 extends Ranger
 
 # Bullet
-var bullet = preload("res://Player/Weapons/spear.tscn")
+var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/spear.png")
 @onready var sprite = get_node("%SpearSprite")
 @onready var spear_cooldownTimer = $SpearCooldownTimer
@@ -85,12 +85,12 @@ func _on_shoot():
 	justAttacked = true
 	spear_cooldownTimer.start()
 	var spawn_bullet = bullet.instantiate()
+	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
 	spawn_bullet.damage = damage
-	spawn_bullet.speed = speed
 	spawn_bullet.hp = hp
-	spawn_bullet.destination = global_position.direction_to(get_random_target()).normalized()
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
+	apply_linear(spawn_bullet, bullet_direction, speed)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
