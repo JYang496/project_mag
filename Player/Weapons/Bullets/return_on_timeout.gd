@@ -13,7 +13,9 @@ var stop_time : float = 0.5
 
 var is_return : bool = false
 var is_stopped : bool = false
-var saved_displacement : Vector2
+
+var linear_module : LinearMovement
+var saved_direction : Vector2
 
 func _ready() -> void:
 	if not module_parent:
@@ -25,12 +27,17 @@ func _ready() -> void:
 
 func _on_return_timer_timeout() -> void:
 	is_return = true
-	module_parent.base_displacement = module_parent.global_position.direction_to(player.global_position)
+	linear_module.direction = -saved_direction
+	linear_module.set_base_displacement()
 
 
 func _on_stop_timer_timeout() -> void:
 	is_stopped = true
-	saved_displacement = module_parent.base_displacement
-	module_parent.base_displacement = Vector2.ZERO
+	for module in module_parent.module_list:
+		if module is LinearMovement:
+			linear_module = module
+	saved_direction = linear_module.direction
+	linear_module.direction = Vector2.ZERO
+	linear_module.set_base_displacement()
 	return_timer.wait_time = return_time
 	return_timer.start()

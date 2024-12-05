@@ -22,7 +22,6 @@ shape = SubResource("CircleShape2D_5ms56")
 
 [node name="SpearSprite" type="Sprite2D" parent="."]
 unique_name_in_owner = true
-rotation = -0.785398
 texture = ExtResource("1_1rx0e")
 
 [connection signal="over_charge" from="." to="." method="_on_over_charge"]
