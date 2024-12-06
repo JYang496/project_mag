@@ -3,6 +3,7 @@ extends Ranger
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/spear.png")
+var return_on_timeout = preload("res://Player/Weapons/Bullets/return_on_timeout.tscn")
 @onready var sprite = get_node("%SpearSprite")
 @onready var spear_cooldownTimer = $SpearCooldownTimer
 
@@ -90,8 +91,15 @@ func _on_shoot():
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
+	apply_return_on_timeour(spawn_bullet)
 	apply_linear(spawn_bullet, bullet_direction, speed)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
+
+func apply_return_on_timeour(blt_node) -> void:
+	var return_on_timeour_ins = return_on_timeout.instantiate()
+	blt_node.call_deferred("add_child",return_on_timeour_ins)
+	blt_node.module_list.append(return_on_timeour_ins)
+	module_list.append(return_on_timeour_ins)
 
 func _on_over_charge():
 	print(self,"OVER CHARGE")

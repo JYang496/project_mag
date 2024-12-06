@@ -11,5 +11,11 @@ one_shot = true
 [node name="StopTimer" type="Timer" parent="."]
 one_shot = true
 
+[node name="ReturnHitbox" type="Area2D" parent="."]
+collision_layer = 0
+
+[node name="ReturnShape" type="CollisionShape2D" parent="ReturnHitbox"]
+
 [connection signal="timeout" from="ReturnTimer" to="." method="_on_return_timer_timeout"]
 [connection signal="timeout" from="StopTimer" to="." method="_on_stop_timer_timeout"]
+[connection signal="body_entered" from="ReturnHitbox" to="." method="_on_return_hitbox_body_entered"]
