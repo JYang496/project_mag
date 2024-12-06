@@ -105,7 +105,3 @@ OVERCHARGE={
 2d_physics/layer_4="Enemy Attack"
 2d_physics/layer_5="Objects"
 2d_physics/layer_6="Terrain"
-
-[rendering]
-
-renderer/rendering_method="mobile"

@@ -20,7 +20,7 @@ var weapon_data = {
 	"1": {
 		"level": "1",
 		"damage": "10",
-		"speed": "900",
+		"speed": "1200",
 		"hp": "1",
 		"reload": "2",
 		"bullet_count": "3",
@@ -30,17 +30,17 @@ var weapon_data = {
 	"2": {
 		"level": "2",
 		"damage": "15",
-		"speed": "600",
+		"speed": "1200",
 		"hp": "1",
 		"reload": "1.8",
-		"bullet_count": "3",
+		"bullet_count": "5",
 		"cost": "1",
 		"features": [],
 	},
 	"3": {
 		"level": "3",
 		"damage": "20",
-		"speed": "600",
+		"speed": "1200",
 		"hp": "1",
 		"reload": "1.8",
 		"bullet_count": "5",
@@ -50,20 +50,20 @@ var weapon_data = {
 	"4": {
 		"level": "4",
 		"damage": "30",
-		"speed": "800",
+		"speed": "1200",
 		"hp": "1",
 		"reload": "1.4",
-		"bullet_count": "5",
+		"bullet_count": "7",
 		"cost": "1",
 		"features": [],
 	},
 	"5": {
 		"level": "5",
 		"damage": "40",
-		"speed": "800",
+		"speed": "1200",
 		"hp": "2",
 		"reload": "1.4",
-		"bullet_count": "7",
+		"bullet_count": "9",
 		"cost": "1",
 		"features": ["piercing"],
 	}
@@ -102,13 +102,40 @@ func _on_shoot():
 		spawn_bullet.global_position = global_position
 		spawn_bullet.blt_texture = bul_texture
 		spawn_bullet.hp = hp
+		spawn_bullet.expire_time = 0.3
 		apply_linear(spawn_bullet, bullet_direction, speed)
 		apply_affects(spawn_bullet)
 		get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
 	print(self,"OVER CHARGE")
+	for n in 10:
+		bullet_count += 1
+		var main_target = get_random_position_in_circle(100.0)
+		var start_angle = position.direction_to(main_target).normalized().angle()
+		var angle_step = deg_to_rad(arc) / clampi((bullet_count - 1),1,66)
+		var start_offset = -deg_to_rad(arc) / 2
+		
+		for i in bullet_count:
+			var spawn_bullet = bullet.instantiate()
+			var current_angle = start_angle + start_offset + (angle_step * i)
+			var bullet_direction = Vector2.RIGHT.rotated(current_angle)
+			spawn_bullet.damage = damage * 2
+			spawn_bullet.global_position = global_position
+			spawn_bullet.blt_texture = bul_texture
+			spawn_bullet.hp = hp
+			spawn_bullet.expire_time = 0.3
+			apply_linear(spawn_bullet, bullet_direction, speed)
+			apply_affects(spawn_bullet)
+			get_tree().root.call_deferred("add_child",spawn_bullet)
+		await get_tree().create_timer(0.3).timeout
 	remove_weapon()
+
+func get_random_position_in_circle(radius: float = 50.0) -> Vector2:
+	var angle = randf_range(0, TAU)  # TAU is 2*PI in Godot
+	var x = cos(angle) * radius
+	var y = sin(angle) * radius
+	return Vector2(x, y)
 
 func _on_shotgun_attack_timer_timeout() -> void:
 	justAttacked = false
