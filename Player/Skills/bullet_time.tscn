@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://di5d4mmomwcia"]
+
+[ext_resource type="Script" path="res://Player/Skills/bullet_time.gd" id="1_gobwo"]
+
+[node name="BulletTime" type="Node2D"]
+script = ExtResource("1_gobwo")
