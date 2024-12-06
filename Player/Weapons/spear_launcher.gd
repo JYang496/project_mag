@@ -78,9 +78,7 @@ func set_level(lv):
 	for feature in weapon_data[lv]["features"]:
 		if not features.has(feature):
 			features.append(feature)
-	
-func _process(_delta):
-	pass
+
 
 func _on_shoot():
 	justAttacked = true
@@ -95,14 +93,30 @@ func _on_shoot():
 	apply_linear(spawn_bullet, bullet_direction, speed)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
-func apply_return_on_timeour(blt_node) -> void:
+func apply_return_on_timeour(blt_node, stop_time : float = 0.5, return_time : float = 1.0) -> void:
 	var return_on_timeour_ins = return_on_timeout.instantiate()
+	return_on_timeour_ins.return_time = return_time
+	return_on_timeour_ins.stop_time = stop_time
 	blt_node.call_deferred("add_child",return_on_timeour_ins)
 	blt_node.module_list.append(return_on_timeour_ins)
 	module_list.append(return_on_timeour_ins)
 
 func _on_over_charge():
-	print(self,"OVER CHARGE")
+	justAttacked = true
+	var start_direction = global_position.direction_to(get_random_target()).normalized()
+	for i in 144 + (level * 36):
+		var spawn_bullet = bullet.instantiate()
+		var current_angle = i * deg_to_rad(5)
+		var bullet_direction = start_direction.rotated(current_angle)
+		spawn_bullet.damage = damage * 2
+		spawn_bullet.hp = hp * 2
+		spawn_bullet.global_position = global_position
+		spawn_bullet.blt_texture = bul_texture
+		apply_return_on_timeour(spawn_bullet)
+		apply_linear(spawn_bullet, bullet_direction, speed)
+		get_tree().root.call_deferred("add_child",spawn_bullet)
+		await get_tree().create_timer(0.05).timeout
+	
 	remove_weapon()
 
 func _on_spear_cooldown_timer_timeout():

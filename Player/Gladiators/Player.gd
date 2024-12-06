@@ -26,7 +26,7 @@ func _physics_process(delta):
 	move_and_slide()
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("INTERACT") and PlayerData.is_overcharged:
+	if event.is_action_pressed("ATTACK") and PlayerData.is_overcharged:
 		if PlayerData.player_weapon_list.size() > 0:
 			PlayerData.player_weapon_list[PlayerData.on_select_weapon].emit_signal("over_charge")
 	if event.is_action_pressed("OVERCHARGE"):
