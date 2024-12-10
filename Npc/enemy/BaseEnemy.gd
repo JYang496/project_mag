@@ -5,6 +5,7 @@ class_name BaseEnemy
 @export var coin_value := 1
 @onready var coin_preload = preload("res://Objects/loots/coin.tscn")
 
+
 func death() -> void:
 	var coin = coin_preload.instantiate()
 	coin.value = coin_value
