@@ -9,7 +9,10 @@ var explosion_module = preload("res://Player/Weapons/Bullets/explosion_module.ts
 var speed_change_on_hit = preload("res://Player/Weapons/Bullets/speed_change_on_hit.tscn")
 
 var justAttacked = false
+
+#TODO: Do I really need this list?
 var module_list = []
+
 var features = []
 # object that needs to be overwrited in child class
 var object

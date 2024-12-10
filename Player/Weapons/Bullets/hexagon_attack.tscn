@@ -6,7 +6,6 @@
 script = ExtResource("1_t3hwe")
 
 [node name="RotateTimer" type="Timer" parent="."]
-wait_time = 0.3
-autostart = true
+wait_time = 0.2
 
 [connection signal="timeout" from="RotateTimer" to="." method="_on_rotate_timer_timeout"]

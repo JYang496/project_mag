@@ -4,7 +4,9 @@ extends Node2D
 @onready var rotate_timer: Timer = $RotateTimer
 var linear_module : LinearMovement
 
-var unit_of_time : int = 0
+var id : int
+var wait_time : float = 0.2
+var unit_of_period : int = 0
 # Rotate when travel with 2, 3, 5, 6, 8, 9
 var rotate_when : Array[int] = [2,3,5,6,8,9]
 # Reverse when time is unit of 11, 8, 5
@@ -17,13 +19,15 @@ func _ready() -> void:
 	for module in module_parent.module_list:
 		if module is LinearMovement:
 			linear_module = module
+	rotate_timer.wait_time = wait_time
+	rotate_timer.start()
 
 
 func _on_rotate_timer_timeout() -> void:
-	unit_of_time += 1
-	if unit_of_time == reverse_when:
+	unit_of_period += 1
+	if unit_of_period == reverse_when:
 		reverse()
-	elif unit_of_time in rotate_when:
+	elif unit_of_period in rotate_when:
 		rotate_by_degree(120)
 
 

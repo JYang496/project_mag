@@ -18,13 +18,12 @@ var player_exp := 0 :
 	set(value):
 		player_exp = clampi(int(value), 0, player_max_exp)
 		
-var player_speed := 100.0 :
+var player_speed : float = 100.0 :
 	get:
 		return player_speed
 	set(value):
 		player_speed = clampf(float(value), 1.0, 1000.0)
-var player_bonus_speed := 0.0
-var player_total_speed := player_speed + player_bonus_speed
+var player_bonus_speed : float = 0.0
 
 var player_max_hp := 5 :
 	get:
