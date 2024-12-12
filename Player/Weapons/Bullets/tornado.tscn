@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3 uid="uid://txml7xehhxdx"]
+
+[ext_resource type="PackedScene" uid="uid://dk1c4rp3qky24" path="res://Player/Weapons/Bullets/bullet.tscn" id="1_cabev"]
+[ext_resource type="Script" path="res://Player/Weapons/Bullets/tornado.gd" id="2_16njw"]
+
+[node name="Tornado" instance=ExtResource("1_cabev")]
+script = ExtResource("2_16njw")

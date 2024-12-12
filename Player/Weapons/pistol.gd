@@ -117,6 +117,7 @@ func _on_over_charge():
 		await get_tree().create_timer(wait_time).timeout
 	PlayerData.player_bonus_speed -= PlayerData.player_speed * 2
 	Engine.time_scale = 1
+	remove_weapon()
 		
 func apply_hexagon_attack(blt_node : Node2D, id : int, unit_of_time : float) -> void:
 	var hexagon_attack_ins = hexagon_attack.instantiate()

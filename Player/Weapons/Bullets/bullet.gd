@@ -26,7 +26,7 @@ signal enemy_hit_signal
 
 func _ready() -> void:
 	expire_timer.wait_time = expire_time
-	bullet_sprite.texture = blt_texture
+	#bullet_sprite.texture = blt_texture
 	init_hitbox(hitbox_type)
 	expire_timer.start()
 
