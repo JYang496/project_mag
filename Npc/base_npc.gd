@@ -26,7 +26,8 @@ func damaged(attack:Attack):
 	var ins = hit_label.instantiate()
 	ins.global_position = global_position
 	ins.setNumber(attack.damage)
-	$".".get_parent().add_sibling(ins)
+	#$".".get_parent().add_sibling(ins)
+	get_tree().root.call_deferred("add_child",ins)
 	if is_dead:
 		return  # Prevents further damage processing if already dead
 	hp -= attack.damage

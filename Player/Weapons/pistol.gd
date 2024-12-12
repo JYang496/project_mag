@@ -93,7 +93,7 @@ func _on_shoot():
 	spawn_bullet.blt_texture = bul_texture
 	apply_linear(spawn_bullet, bullet_direction, speed)
 	apply_affects(spawn_bullet)
-	#get_tree().root.call_deferred("add_child",spawn_bullet)
+	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
 	print(self,"OVER CHARGE")
