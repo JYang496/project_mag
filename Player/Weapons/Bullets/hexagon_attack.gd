@@ -7,8 +7,12 @@ var linear_module : LinearMovement
 var id : int
 var wait_time : float = 0.2
 var unit_of_period : int = 0
+
 # Rotate when travel with 2, 3, 5, 6, 8, 9
-var rotate_when : Array[int] = [2,3,5,6,8,9]
+var next_rotate_add : Array[int] = [1,2]
+var next_rotate : int = 2
+var next_rotate_index : int = 0
+
 # Reverse when time is unit of 11, 8, 5
 var reverse_when : int = -1
 
@@ -27,8 +31,10 @@ func _on_rotate_timer_timeout() -> void:
 	unit_of_period += 1
 	if unit_of_period == reverse_when:
 		reverse()
-	elif unit_of_period in rotate_when:
+	elif unit_of_period == next_rotate:
 		rotate_by_degree(120)
+		next_rotate += next_rotate_add[next_rotate_index % 2]
+		next_rotate_index += 1
 
 
 func reverse() -> void:

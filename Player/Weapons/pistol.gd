@@ -97,12 +97,12 @@ func _on_shoot():
 
 func _on_over_charge():
 	print(self,"OVER CHARGE")
-	Engine.time_scale = 0.333
+	Engine.time_scale = 0.1
 	PlayerData.player_bonus_speed += PlayerData.player_speed * 2
 	justAttacked = true
-	speed = 800
-	var wait_time = (get_random_target() - self.global_position).length() / speed
-	var wait_unit_list = [3, 2, 1, 2, 3, 0]
+	speed = 2000
+	var unit_of_time = (get_random_target() - self.global_position).length() / speed
+	var wait_time = 0.05
 	for i in range(6):
 		var spawn_bullet = bullet.instantiate()
 		var bullet_direction = global_position.direction_to(get_random_target()).normalized()
@@ -112,16 +112,16 @@ func _on_over_charge():
 		spawn_bullet.global_position = global_position
 		spawn_bullet.blt_texture = bul_texture
 		apply_linear(spawn_bullet, bullet_direction, speed)
-		apply_hexagon_attack(spawn_bullet, i, wait_time)
+		apply_hexagon_attack(spawn_bullet,i,unit_of_time)
 		get_tree().root.call_deferred("add_child",spawn_bullet)
-		await get_tree().create_timer(wait_time *  wait_unit_list[i]).timeout
+		await get_tree().create_timer(wait_time).timeout
 	PlayerData.player_bonus_speed -= PlayerData.player_speed * 2
 	Engine.time_scale = 1
 		
-func apply_hexagon_attack(blt_node : Node2D, id : int, wait_time : float) -> void:
+func apply_hexagon_attack(blt_node : Node2D, id : int, unit_of_time : float) -> void:
 	var hexagon_attack_ins = hexagon_attack.instantiate()
 	hexagon_attack_ins.id = id
-	hexagon_attack_ins.wait_time = wait_time
+	hexagon_attack_ins.wait_time = unit_of_time
 	blt_node.call_deferred("add_child",hexagon_attack_ins)
 	blt_node.module_list.append(hexagon_attack_ins)
 	module_list.append(hexagon_attack_ins)
