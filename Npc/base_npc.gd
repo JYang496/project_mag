@@ -12,7 +12,8 @@ class_name BaseNPC
 @export var knockback_recover = 3.5
 @export var experience = 1
 
-var knockback = Vector2.ZERO
+var knockback
+
 var is_dead: bool = false
 
 func _ready():
@@ -29,8 +30,12 @@ func damaged(attack:Attack):
 	hit_label_ins.global_position = global_position
 	hit_label_ins.setNumber(attack.damage)
 	get_tree().root.call_deferred("add_child",hit_label_ins)
+	
 	# Knock back
 	print(self, attack.knock_back)
+	knockback += attack.knock_back
+	
+	
 	if is_dead:
 		return  # Prevents further damage processing if already dead
 	hp -= attack.damage

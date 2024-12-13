@@ -28,6 +28,8 @@ func _physics_process(delta: float) -> void:
 			var target = area.get_owner()
 			attack = Attack.new()
 			attack.damage = hit_box_owner.damage
+			if "knock_back" in hitbox_owner:
+				attack.knock_back = hit_box_owner.knock_back
 			target.damaged(attack)
 			if hit_box_owner.has_method("enemy_hit"):
 				hit_box_owner.enemy_hit(1)

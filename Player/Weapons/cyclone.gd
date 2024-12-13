@@ -13,6 +13,10 @@ var bul_texture = preload("res://Textures/test/bullet.png")
 var ITEM_NAME = "Cyclone"
 var level : int = 1
 var damage : int = 1
+var knock_back = {
+	"amount": 10,
+	"angle": Vector2.UP
+}
 var spin_rate : float = PI
 var spin_speed : float = 600
 var speed : int = 300
@@ -101,7 +105,9 @@ func _on_shoot():
 	justAttacked = true
 	sniper_attack_timer.start()
 	var spawn_bullet = bullet.instantiate()
+	
 	spawn_bullet.damage = damage
+	spawn_bullet.knock_back = knock_back
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture

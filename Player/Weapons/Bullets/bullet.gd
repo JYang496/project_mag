@@ -3,6 +3,10 @@ class_name BulletBase
 
 var hp : int = 1
 var damage = 1
+var knock_back = {
+	"amount": 0,
+	"angle": Vector2.ZERO
+}
 var expire_time : float = 2.5
 var base_displacement = Vector2.ZERO
 var bullet_displacement = Vector2.ZERO
@@ -30,7 +34,7 @@ func _ready() -> void:
 	init_hitbox(hitbox_type)
 	expire_timer.start()
 
-# This function will adjust the hitbox shape identical to your sprite size
+# This function will 0adjust the hitbox shape identical to your sprite size
 func init_hitbox(hitbox_type = "once") -> void:
 	var shape = RectangleShape2D.new()
 	shape.size = bullet_sprite.texture.get_size()
