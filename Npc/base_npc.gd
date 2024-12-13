@@ -12,7 +12,10 @@ class_name BaseNPC
 @export var knockback_recover = 3.5
 @export var experience = 1
 
-var knockback
+var knockback = {
+	"amount": 0,
+	"angle": Vector2.ZERO
+}
 
 var is_dead: bool = false
 
@@ -33,7 +36,8 @@ func damaged(attack:Attack):
 	
 	# Knock back
 	print(self, attack.knock_back)
-	knockback += attack.knock_back
+	knockback.amount = attack.knock_back.amount
+	knockback.angle = attack.knock_back.angle
 	
 	
 	if is_dead:

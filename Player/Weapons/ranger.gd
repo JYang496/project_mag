@@ -79,6 +79,8 @@ func apply_speed_change_on_hit(blt_node : Node2D, speed_rate : float) -> void:
 	blt_node.module_list.append(speed_change_on_hit_ins)
 	module_list.append(speed_change_on_hit_ins)
 	
+func apply_knock_back(blt_node : Node2D, direction : Vector2, amount : float) -> void:
+	pass
 
 func apply_affects(bullet) -> void:
 	for feature in features:
@@ -94,7 +96,6 @@ func apply_affects(bullet) -> void:
 
 func remove_weapon() -> void:
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
-	#player.equppied_weapons_list[PlayerData.on_select_weapon] = "0"
 	PlayerData.on_select_weapon = -1
 	PlayerData.overcharge_time = 0
 	queue_free()

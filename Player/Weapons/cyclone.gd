@@ -14,7 +14,7 @@ var ITEM_NAME = "Cyclone"
 var level : int = 1
 var damage : int = 1
 var knock_back = {
-	"amount": 10,
+	"amount": 300,
 	"angle": Vector2.UP
 }
 var spin_rate : float = PI

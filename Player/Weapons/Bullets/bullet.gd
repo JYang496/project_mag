@@ -16,7 +16,7 @@ var hitbox_type = "once"
 var dot_cd : float
 
 # Signals
-signal enemy_hit_signal
+#signal enemy_hit_signal
 
 # Preloads
 @onready var hitbox_once = preload("res://Utility/hit_hurt_box/hit_box.tscn")
@@ -27,6 +27,7 @@ signal enemy_hit_signal
 @onready var expire_timer = $ExpireTimer
 @onready var bullet = $Bullet
 @onready var bullet_sprite = $Bullet/BulletSprite
+var hitbox_ins
 
 func _ready() -> void:
 	expire_timer.wait_time = expire_time
@@ -38,7 +39,6 @@ func _ready() -> void:
 func init_hitbox(hitbox_type = "once") -> void:
 	var shape = RectangleShape2D.new()
 	shape.size = bullet_sprite.texture.get_size()
-	var hitbox_ins
 	match hitbox_type:
 		"dot":
 			hitbox_ins = hitbox_dot.instantiate()
@@ -59,7 +59,7 @@ func _physics_process(delta: float) -> void:
 
 func enemy_hit(charge : int = 1):
 	hp -= charge
-	enemy_hit_signal.emit()
+	#enemy_hit_signal.emit()
 	if hp <= 0:
 		self.call_deferred("queue_free")
 
