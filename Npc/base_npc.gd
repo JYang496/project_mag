@@ -23,11 +23,14 @@ func _physics_process(_delta):
 
 
 func damaged(attack:Attack):
-	var ins = hit_label.instantiate()
-	ins.global_position = global_position
-	ins.setNumber(attack.damage)
-	#$".".get_parent().add_sibling(ins)
-	get_tree().root.call_deferred("add_child",ins)
+	
+	# Hit label
+	var hit_label_ins = hit_label.instantiate()
+	hit_label_ins.global_position = global_position
+	hit_label_ins.setNumber(attack.damage)
+	get_tree().root.call_deferred("add_child",hit_label_ins)
+	# Knock back
+	print(self, attack.knock_back)
 	if is_dead:
 		return  # Prevents further damage processing if already dead
 	hp -= attack.damage
