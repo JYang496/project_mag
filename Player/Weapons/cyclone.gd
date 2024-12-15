@@ -14,9 +14,10 @@ var ITEM_NAME = "Cyclone"
 var level : int = 1
 var damage : int = 1
 var knock_back = {
-	"amount": 300,
-	"angle": Vector2.UP
+	"amount": 0,
+	"angle": Vector2.ZERO
 }
+var knock_back_amount = 30
 var spin_rate : float = PI
 var spin_speed : float = 600
 var speed : int = 300
@@ -28,6 +29,7 @@ var weapon_data = {
 	"1": {
 		"level": "1",
 		"damage": "5",
+		"knock_back_amount": "100",
 		"speed": "400",
 		"spin_rate": "6",
 		"spin_speed": "600",
@@ -39,6 +41,7 @@ var weapon_data = {
 	"2": {
 		"level": "2",
 		"damage": "7",
+		"knock_back_amount": "100",
 		"speed": "400",
 		"spin_rate": "6",
 		"spin_speed": "600",
@@ -50,6 +53,7 @@ var weapon_data = {
 	"3": {
 		"level": "3",
 		"damage": "10",
+		"knock_back_amount": "150",
 		"speed": "400",
 		"spin_rate": "6",
 		"spin_speed": "600",
@@ -61,6 +65,7 @@ var weapon_data = {
 	"4": {
 		"level": "4",
 		"damage": "15",
+		"knock_back_amount": "150",
 		"speed": "400",
 		"spin_rate": "9",
 		"spin_speed": "600",
@@ -72,6 +77,7 @@ var weapon_data = {
 	"5": {
 		"level": "5",
 		"damage": "25",
+		"knock_back_amount": "200",
 		"speed": "400",
 		"spin_rate": "12",
 		"spin_speed": "600",
@@ -90,6 +96,7 @@ func _ready():
 func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	damage = int(weapon_data[lv]["damage"])
+	knock_back_amount = int(weapon_data[lv]["knock_back_amount"])
 	speed = int(weapon_data[lv]["speed"])
 	spin_rate = float(weapon_data[lv]["spin_rate"])
 	spin_speed = float(weapon_data[lv]["spin_speed"])
@@ -105,13 +112,13 @@ func _on_shoot():
 	justAttacked = true
 	sniper_attack_timer.start()
 	var spawn_bullet = bullet.instantiate()
-	
 	spawn_bullet.damage = damage
-	spawn_bullet.knock_back = knock_back
+	var direction = global_position.direction_to(get_random_target()).normalized()
+	spawn_bullet.knock_back = {"amount": knock_back_amount, "angle": direction}
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
-	apply_linear(spawn_bullet, global_position.direction_to(get_random_target()).normalized(), speed)
+	apply_linear(spawn_bullet, direction, speed)
 	apply_spiral(spawn_bullet, spin_rate,spin_speed)
 	apply_affects(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
