@@ -125,8 +125,6 @@ var on_select_weapon : int = -1 :
 	get:
 		return on_select_weapon
 	set(value):
-		if (is_overcharged or is_overcharging):
-			return
 		if value >= player_weapon_list.size() or player_weapon_list.size() <= 0:
 			value = -1
 		if value < -1:

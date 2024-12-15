@@ -68,10 +68,10 @@ func _input(_event) -> void:
 			pause_menu_root.visible = true
 	
 	# Switch weapon
-	if Input.is_action_just_pressed("SWITCH_LEFT"):
+	if Input.is_action_just_pressed("SWITCH_LEFT") and not (PlayerData.is_overcharged or PlayerData.is_overcharging):
 		PlayerData.on_select_weapon -= 1
 		refresh_border()
-	if Input.is_action_just_pressed("SWITCH_RIGHT"):
+	if Input.is_action_just_pressed("SWITCH_RIGHT") and not (PlayerData.is_overcharged or PlayerData.is_overcharging):
 		PlayerData.on_select_weapon += 1
 		refresh_border()
 		

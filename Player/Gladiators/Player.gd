@@ -29,7 +29,7 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ATTACK") and PlayerData.is_overcharged:
 		if PlayerData.player_weapon_list.size() > 0:
 			PlayerData.player_weapon_list[PlayerData.on_select_weapon].emit_signal("over_charge")
-	if event.is_action_pressed("OVERCHARGE"):
+	if event.is_action_pressed("OVERCHARGE") and not PlayerData.is_overcharged:
 		PlayerData.is_overcharging = true
 	if event.is_action_released("OVERCHARGE"):
 		PlayerData.is_overcharging = false

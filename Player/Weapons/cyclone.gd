@@ -3,7 +3,8 @@ extends Ranger
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/bullet.png")
-
+var tornado = preload("res://Player/Weapons/Bullets/tornado.tscn")
+var tornado_texture = preload("res://Textures/test/tornado.png")
 
 @onready var sprite = get_node("%GunSprite")
 @onready var sniper_attack_timer = $SniperAttackTimer
@@ -124,7 +125,18 @@ func _on_shoot():
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
+	if self.is_overcharged:
+		return
+	self.is_overcharged = true
 	print(self,"OVER CHARGE")
+	var tornado_ins = tornado.instantiate()
+	tornado_ins.damage = 7
+	var direction = global_position.direction_to(get_random_target()).normalized()
+	tornado_ins.hp = hp
+	tornado_ins.blt_texture = tornado_texture
+	tornado_ins.global_position = global_position
+	apply_linear(tornado_ins, direction, speed)
+	get_tree().root.call_deferred("add_child",tornado_ins)
 	remove_weapon()
 
 func _on_sniper_attack_timer_timeout():

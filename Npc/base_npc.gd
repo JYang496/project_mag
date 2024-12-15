@@ -35,7 +35,6 @@ func damaged(attack:Attack):
 	get_tree().root.call_deferred("add_child",hit_label_ins)
 	
 	# Knock back
-	print(self, attack.knock_back)
 	knockback.amount = attack.knock_back.amount
 	knockback.angle = attack.knock_back.angle
 	

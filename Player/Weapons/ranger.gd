@@ -96,8 +96,8 @@ func apply_affects(bullet) -> void:
 
 func remove_weapon() -> void:
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
-	PlayerData.on_select_weapon = -1
 	PlayerData.overcharge_time = 0
+	PlayerData.on_select_weapon = -1
 	queue_free()
 
 func _on_over_charge() -> void:

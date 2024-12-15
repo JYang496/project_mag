@@ -16,7 +16,7 @@ var hitbox_type = "once"
 var dot_cd : float
 
 # Signals
-#signal enemy_hit_signal
+signal enemy_hit_signal
 
 # Preloads
 @onready var hitbox_once = preload("res://Utility/hit_hurt_box/hit_box.tscn")
@@ -59,7 +59,7 @@ func _physics_process(delta: float) -> void:
 
 func enemy_hit(charge : int = 1):
 	hp -= charge
-	#enemy_hit_signal.emit()
+	enemy_hit_signal.emit()
 	if hp <= 0:
 		self.call_deferred("queue_free")
 

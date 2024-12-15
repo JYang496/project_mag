@@ -23,6 +23,7 @@ func _physics_process(delta: float) -> void:
 	if frame_counter > frames_until_show:
 		line2d.show()
 	if hitbox_dot:
+		hitbox_dot.hitbox_owner = self
 		line2d.points = [Vector2.ZERO, 9 * target_position]
 		var points = line2d.points
 		var start = points[0]
