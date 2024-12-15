@@ -130,12 +130,14 @@ func _on_over_charge():
 	self.is_overcharged = true
 	print(self,"OVER CHARGE")
 	var tornado_ins = tornado.instantiate()
-	tornado_ins.damage = 7
+	tornado_ins.hitbox_type = "dot"
+	tornado_ins.dot_cd = 0.25
+	tornado_ins.damage = 1
 	var direction = global_position.direction_to(get_random_target()).normalized()
-	tornado_ins.hp = hp
+	tornado_ins.hp = 999
 	tornado_ins.blt_texture = tornado_texture
 	tornado_ins.global_position = global_position
-	apply_linear(tornado_ins, direction, speed)
+	apply_linear(tornado_ins, direction, 60)
 	get_tree().root.call_deferred("add_child",tornado_ins)
 	remove_weapon()
 
