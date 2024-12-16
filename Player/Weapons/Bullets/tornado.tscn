@@ -8,4 +8,5 @@
 script = ExtResource("2_16njw")
 
 [node name="BulletSprite" parent="Bullet" index="0"]
+scale = Vector2(2, 2)
 texture = ExtResource("3_48kcn")

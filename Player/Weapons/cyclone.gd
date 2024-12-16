@@ -132,7 +132,8 @@ func _on_over_charge():
 	var tornado_ins = tornado.instantiate()
 	tornado_ins.hitbox_type = "dot"
 	tornado_ins.dot_cd = 0.25
-	tornado_ins.damage = 1
+	tornado_ins.damage = damage
+	tornado_ins.expire_time = 10
 	var direction = global_position.direction_to(get_random_target()).normalized()
 	tornado_ins.hp = 999
 	tornado_ins.blt_texture = tornado_texture
