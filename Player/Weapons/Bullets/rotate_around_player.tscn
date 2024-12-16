@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://js2apvwqc7yc"]
+
+[ext_resource type="Script" path="res://Player/Weapons/Bullets/rotate_around_player.gd" id="1_25gk6"]
+
+[node name="RotateAroundPlayer" type="Node2D"]
+script = ExtResource("1_25gk6")

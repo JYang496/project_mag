@@ -2,8 +2,19 @@ extends Node2D
 
 @onready var sprite = get_node("%OrbitSprite")
 @onready var satellite_preload = preload("res://Player/Weapons/satellite.tscn")
-@export var radius : float = 40.0
+@onready var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
+@onready var bul_texture = preload("res://Textures/test/bullet.png")
+@export var radius : float = 80.0
 @export var angle : float = 0.0
+var knock_back = {
+	"amount": 0,
+	"angle": Vector2.ZERO
+}
+# Module
+@onready var rotate_around_player = preload("res://Player/Weapons/Bullets/rotate_around_player.tscn")
+
+#TODO: Do I really need this list?
+var module_list = []
 
 var satellites : Array = []
 
@@ -67,14 +78,26 @@ func set_level(lv) -> void:
 	satellites.clear()
 	var offset_step = 2 * PI / number
 	for n in range(number):
-		var satellite_ins = satellite_preload.instantiate()
-		satellite_ins.damage = damage
-		satellite_ins.spin_speed = spin_speed
-		call_deferred("add_child",satellite_ins)
-		#get_tree().root.call_deferred("add_child",satellite_ins)
-		satellites.append(satellite_ins)
-	for n in range(number):
-		satellites[n].angle_offset = offset_step * n
+		var spawn_bullet = bullet.instantiate()
+		spawn_bullet.damage = damage
+		spawn_bullet.hp = 9999
+		spawn_bullet.expire_time = 9999
+		spawn_bullet.blt_texture = bul_texture
+		apply_rotate_around_player(spawn_bullet, offset_step, n)
+		get_tree().root.call_deferred("add_child",spawn_bullet)
+		satellites.append(spawn_bullet)
+
+func apply_rotate_around_player(blt_node : Node2D, offset_step : float, n : int) -> void:
+	var rotate_around_player_ins = rotate_around_player.instantiate()
+	rotate_around_player_ins.spin_speed = spin_speed
+	rotate_around_player_ins.radius = radius
+	rotate_around_player_ins.angle_offset = offset_step * n
+	
+	blt_node.call_deferred("add_child",rotate_around_player_ins)
+	blt_node.module_list.append(rotate_around_player_ins)
+	module_list.append(rotate_around_player_ins)
+	pass
+
 
 func remove_weapon() -> void:
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)

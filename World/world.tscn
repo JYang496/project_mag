@@ -333,7 +333,7 @@ collision_layer = 5
 position = Vector2(-180, -1432)
 
 [node name="Dummy" parent="." instance=ExtResource("23_8t5w2")]
-position = Vector2(9, -1486)
+position = Vector2(-106, -1435)
 
 [node name="BulletTime" parent="." instance=ExtResource("24_7qkqr")]
 

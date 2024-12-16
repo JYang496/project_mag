@@ -1,13 +1,31 @@
-[gd_scene load_steps=5 format=3 uid="uid://6tqh2ileg8ku"]
+[gd_scene load_steps=5 format=3 uid="uid://dwhoqgknpxhe"]
 
 [ext_resource type="PackedScene" uid="uid://bwpw0l2pm8bif" path="res://Utility/hit_hurt_box/hit_box.tscn" id="1_4k73p"]
-[ext_resource type="Script" path="res://Player/Weapons/satellite.gd" id="1_qf162"]
 [ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="2_5a781"]
+
+[sub_resource type="GDScript" id="GDScript_noht4"]
+script/source = "extends Node2D
+
+var radius : float = 40.0
+var angle : float = 0.0
+var spin_speed : float = 3.0
+var angle_offset :float = 0.0
+
+@onready var player = get_tree().get_first_node_in_group(\"player\")
+var damage = 7
+
+
+func _physics_process(delta: float) -> void:
+	angle += spin_speed * delta
+	var x_pos = radius * cos(angle + angle_offset)
+	var y_pos = radius * sin(angle + angle_offset)
+	self.global_position = Vector2(x_pos,y_pos) + player.global_position
+"
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_en1xe"]
 
 [node name="Satellite" type="Node2D"]
-script = ExtResource("1_qf162")
+script = SubResource("GDScript_noht4")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_5a781")
