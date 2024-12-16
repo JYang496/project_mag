@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=3 uid="uid://11s8xuvk76mn"]
 
 [ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/base_enemy.tscn" id="1_a761y"]
-[ext_resource type="Script" path="res://Npc/enemy/EnemyRollingBall.gd" id="2_ti674"]
+[ext_resource type="Script" path="res://Npc/enemy/enemy_rolling_ball.gd" id="2_cf0t7"]
 [ext_resource type="Texture2D" uid="uid://76u4l0356ebe" path="res://Textures/test/rolling_ball.png" id="3_fenux"]
 [ext_resource type="PackedScene" uid="uid://072a80habhhh" path="res://Utility/hit_hurt_box/hit_box_dot.tscn" id="4_x0tdr"]
 
@@ -16,9 +16,7 @@ radius = 9.21954
 texture_filter = 1
 collision_layer = 5
 collision_mask = 5
-script = ExtResource("2_ti674")
-damage = 1
-hp = 20
+script = ExtResource("2_cf0t7")
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
 shape = SubResource("RectangleShape2D_0wqes")

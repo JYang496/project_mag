@@ -6,6 +6,5 @@ func _physics_process(delta: float) -> void:
 	bullet.position = bullet.position + bullet_displacement * delta
 
 
-
 func _on_direction_timer_timeout() -> void:
 	pass # Replace with function body.
