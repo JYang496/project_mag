@@ -1,7 +1,6 @@
 extends Node2D
 
 @onready var sprite = get_node("%OrbitSprite")
-@onready var satellite_preload = preload("res://Player/Weapons/satellite.tscn")
 @onready var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 @onready var bul_texture = preload("res://Textures/test/bullet.png")
 @export var radius : float = 80.0
@@ -13,12 +12,13 @@ var knock_back = {
 # Module
 @onready var rotate_around_player = preload("res://Player/Weapons/Bullets/rotate_around_player.tscn")
 
-#TODO: Do I really need this list?
 var module_list = []
 
 var satellites : Array = []
 
+var is_overcharged = false
 signal over_charge()
+
 
 # Weapon
 var ITEM_NAME = "Orbit"
@@ -73,6 +73,7 @@ func set_level(lv) -> void:
 	damage = int(weapon_data[lv]["damage"])
 	spin_speed = int(weapon_data[lv]["spin_speed"])
 	number = int(weapon_data[lv]["number"])
+	module_list.clear()
 	for s in satellites:
 		s.queue_free()
 	satellites.clear()
@@ -99,11 +100,20 @@ func apply_rotate_around_player(blt_node : Node2D, offset_step : float, n : int)
 	pass
 
 
+func _on_over_charge() -> void:
+	if self.is_overcharged:
+		return
+	self.is_overcharged = true
+	print(self,"OVER CHARGE")
+	for module in module_list:
+		if module is RotateAroundPlayer:
+			module.oc_mode = true
+	
+	await get_tree().create_timer(1).timeout
+	remove_weapon()
+
 func remove_weapon() -> void:
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
+	PlayerData.overcharge_time = 0
 	PlayerData.on_select_weapon = -1
 	queue_free()
-	
-func _on_over_charge() -> void:
-	print(self,"OVER CHARGE")
-	remove_weapon()
