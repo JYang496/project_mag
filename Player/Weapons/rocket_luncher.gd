@@ -6,6 +6,8 @@ var bul_texture = preload("res://Textures/test/minigun_bullet.png")
 @onready var sprite = get_node("%GunSprite")
 @onready var gun_cooldownTimer = $RocketLuncherTimer
 
+@onready var oc_booming_area: Area2D = $OCBoomingArea
+
 # Weapon
 var ITEM_NAME = "Rocket Luncher"
 var level : int
@@ -92,7 +94,13 @@ func _on_shoot():
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
+	if self.casting_oc_skill:
+		return
+	self.casting_oc_skill = true
 	print(self,"OVER CHARGE")
+	
+	
+	
 	remove_weapon()
 
 func _on_rocket_luncher_timer_timeout() -> void:
