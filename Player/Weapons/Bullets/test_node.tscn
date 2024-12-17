@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://drkl1pj835ly2"]
+
+[ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="1_sp1gt"]
+[ext_resource type="PackedScene" uid="uid://ctwf603xhsfsq" path="res://Player/Weapons/Bullets/fall.tscn" id="2_l7ajj"]
+
+[node name="Node2D" type="Node2D"]
+position = Vector2(158, 56)
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_sp1gt")
+
+[node name="Fall" parent="." instance=ExtResource("2_l7ajj")]

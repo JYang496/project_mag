@@ -6,6 +6,8 @@ var bul_texture = preload("res://Textures/test/minigun_bullet.png")
 @onready var sprite = get_node("%GunSprite")
 @onready var gun_cooldownTimer = $RocketLuncherTimer
 
+#OC
+@onready var fall_module = preload("res://Player/Weapons/Bullets/fall.tscn")
 @onready var oc_booming_area: Area2D = $OCBoomingArea
 
 # Weapon
@@ -98,10 +100,32 @@ func _on_over_charge():
 		return
 	self.casting_oc_skill = true
 	print(self,"OVER CHARGE")
-	
-	
-	
+	var n = 0
+	var max = 20
+	for i in range(max):
+		for area in oc_booming_area.get_overlapping_areas():
+			if area is HurtBox:
+				if n >= max:
+					remove_weapon()
+					return
+				var spawn_bullet = bullet.instantiate()
+				spawn_bullet.damage = damage
+				spawn_bullet.blt_texture = bul_texture
+				var fall_ins = fall_module.instantiate()
+				fall_ins.destination = area.global_position
+				apply_affects(spawn_bullet)
+				spawn_bullet.call_deferred("add_child",fall_ins)
+				get_tree().root.call_deferred("add_child",spawn_bullet)
+				n += 1
+				print(n)
+		await get_tree().create_timer(0.2).timeout		
+					
+		
 	remove_weapon()
+
+	
+	self.casting_oc_skill = false
+	#remove_weapon()
 
 func _on_rocket_luncher_timer_timeout() -> void:
 	justAttacked = false
