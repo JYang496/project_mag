@@ -100,9 +100,9 @@ func _on_shoot():
 	adjust_attack_speed(1.2)
 
 func _on_over_charge():
-	if self.is_overcharged:
+	if self.casting_oc_skill:
 		return
-	self.is_overcharged = true
+	self.casting_oc_skill = true
 	speed *= 1.6
 	damage *= 2
 	hp += 2

@@ -102,6 +102,9 @@ func apply_return_on_timeour(blt_node, stop_time : float = 0.5, return_time : fl
 	module_list.append(return_on_timeour_ins)
 
 func _on_over_charge():
+	if self.casting_oc_skill:
+		return
+	self.casting_oc_skill = true
 	justAttacked = true
 	var start_direction = global_position.direction_to(get_random_target()).normalized()
 	for i in 144 + (level * 36):

@@ -10,7 +10,6 @@ var speed_change_on_hit = preload("res://Player/Weapons/Bullets/speed_change_on_
 
 var justAttacked = false
 
-#TODO: Do I really need this list?
 var module_list = []
 
 var features = []
@@ -18,7 +17,7 @@ var features = []
 var object
 
 # Over charge
-var is_overcharged : bool = false
+var casting_oc_skill : bool = false
 
 signal shoot()
 signal over_charge()

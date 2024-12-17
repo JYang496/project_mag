@@ -88,7 +88,6 @@ func refresh_border() -> void:
 		else:
 			icon.display = false
 		icon.update()
-	print("UI refresh")
 		
 		
 func shopping_panel_in() -> void:

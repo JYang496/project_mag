@@ -108,6 +108,9 @@ func _on_shoot():
 		get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
+	if self.casting_oc_skill:
+		return
+	self.casting_oc_skill = true
 	print(self,"OVER CHARGE")
 	for n in 10:
 		bullet_count += 1

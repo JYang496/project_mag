@@ -119,6 +119,8 @@ var is_overcharged : bool = false:
 			var ui = get_tree().get_first_node_in_group("ui")
 			ui.refresh_border()
 
+var casting_oc_skill : bool = false
+
 var player_weapon_list = []
 var max_weapon_num : int = 4
 var on_select_weapon : int = -1 :

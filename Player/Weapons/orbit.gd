@@ -16,7 +16,7 @@ var module_list = []
 
 var satellites : Array = []
 
-var is_overcharged = false
+var casting_oc_skill = false
 signal over_charge()
 
 
@@ -101,9 +101,9 @@ func apply_rotate_around_player(blt_node : Node2D, offset_step : float, n : int)
 
 
 func _on_over_charge() -> void:
-	if self.is_overcharged:
+	if self.casting_oc_skill:
 		return
-	self.is_overcharged = true
+	self.casting_oc_skill = true
 	print(self,"OVER CHARGE")
 	for module in module_list:
 		if module is RotateAroundPlayer:

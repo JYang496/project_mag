@@ -4,6 +4,8 @@ extends Node2D
 var bul_texture = preload("res://Textures/test/bullet.png")
 @onready var explosion = load("res://Player/Weapons/Bullets/bullet.tscn")
 var damage = 10
+var oc_mode : bool = false
+
 func _ready() -> void:
 	module_parent = self.get_parent()
 	if not module_parent:

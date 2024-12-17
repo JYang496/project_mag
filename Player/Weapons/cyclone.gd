@@ -125,9 +125,9 @@ func _on_shoot():
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
-	if self.is_overcharged:
+	if self.casting_oc_skill:
 		return
-	self.is_overcharged = true
+	self.casting_oc_skill = true
 	print(self,"OVER CHARGE")
 	var tornado_ins = tornado.instantiate()
 	tornado_ins.hitbox_type = "dot"

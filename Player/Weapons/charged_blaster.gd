@@ -112,9 +112,9 @@ func _on_shoot():
 	gun_cooldownTimer.start()
 
 func _on_over_charge():
-	if self.is_overcharged:
+	if self.casting_oc_skill:
 		return
-	self.is_overcharged = true
+	self.casting_oc_skill = true
 	charge_level = max_charge_level *2
 	duration *= 2
 	emit_signal("shoot")
