@@ -101,23 +101,25 @@ func _on_over_charge():
 	self.casting_oc_skill = true
 	print(self,"OVER CHARGE")
 	var n = 0
-	var max = 20
-	for i in range(max):
+	var max_n = 20
+	while n < max_n:
+		if len(oc_booming_area.get_overlapping_areas()) == 0:
+			n += 1
+			break
 		for area in oc_booming_area.get_overlapping_areas():
-			if area is HurtBox:
-				if n >= max:
-					remove_weapon()
-					return
-				var spawn_bullet = bullet.instantiate()
-				spawn_bullet.damage = damage
-				spawn_bullet.blt_texture = bul_texture
-				var fall_ins = fall_module.instantiate()
-				fall_ins.destination = area.global_position
-				apply_affects(spawn_bullet)
-				spawn_bullet.call_deferred("add_child",fall_ins)
-				get_tree().root.call_deferred("add_child",spawn_bullet)
-				n += 1
-				print(n)
+			if n >= max_n:
+				break
+			if area is not HurtBox:
+				break
+			var spawn_bullet = bullet.instantiate()
+			spawn_bullet.damage = damage
+			spawn_bullet.blt_texture = bul_texture
+			var fall_ins = fall_module.instantiate()
+			fall_ins.destination = area.global_position
+			apply_affects(spawn_bullet)
+			spawn_bullet.call_deferred("add_child",fall_ins)
+			get_tree().root.call_deferred("add_child",spawn_bullet)
+			n += 1
 		await get_tree().create_timer(0.2).timeout		
 					
 		
