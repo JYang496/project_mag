@@ -103,6 +103,26 @@ func damaged(attack:Attack):
 func switch_terrain_collision(switch:bool):
 	self.set_collision_mask_value(6,switch)
 
+
+func get_closest_area_optimized(area_list: Array, target_node: Node2D) -> Area2D:
+	if area_list.is_empty():
+		return null
+		
+	var closest_area = area_list[0]
+	var shortest_distance = closest_area.global_position.distance_squared_to(target_node.global_position)
+	
+	for area in area_list:
+		if not area is Area2D:
+			continue
+			
+		var distance = area.global_position.distance_squared_to(target_node.global_position)
+		if distance < shortest_distance:
+			shortest_distance = distance
+			closest_area = area
+			
+	return closest_area
+
+
 func _on_collect_area_area_entered(area):
 	if area.is_in_group("collectables"):
 		var value = area.collect()
@@ -112,3 +132,15 @@ func _on_collect_area_area_entered(area):
 func _on_grab_area_area_entered(area):
 	if area.is_in_group("collectables"):
 		area.target = collect_area
+
+
+func _on_detect_area_area_entered(area: Area2D) -> void:
+	if not PlayerData.detected_enemies.has(area):
+		PlayerData.detected_enemies.append(area)
+		PlayerData.cloestest_enemy = get_closest_area_optimized(PlayerData.detected_enemies, self)
+
+
+func _on_detect_area_area_exited(area: Area2D) -> void:
+	if PlayerData.detected_enemies.has(area):
+		PlayerData.detected_enemies.erase(area)
+		PlayerData.cloestest_enemy = get_closest_area_optimized(PlayerData.detected_enemies, self)

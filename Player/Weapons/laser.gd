@@ -3,6 +3,9 @@ extends Ranger
 # Bullet
 @onready var beam = preload("res://Player/Weapons/Bullets/beam.tscn")
 
+@onready var detect_area: Area2D = $DetectArea
+@onready var oc_timer: Timer = $OCTimer
+
 @onready var cooldown_timer = $LaserCooldownTimer
 @onready var sprite = get_node("%GunSprite")
 
@@ -11,7 +14,6 @@ var ITEM_NAME = "Laser"
 var level : int
 var damage : int
 var reload : float
-
 
 var weapon_data = {
 	"1": {
@@ -74,8 +76,23 @@ func _on_shoot():
 	cooldown_timer.start()
 
 func _on_over_charge():
+	if self.casting_oc_skill or PlayerData.cloestest_enemy == null:
+		return
+	self.casting_oc_skill = true
 	print(self,"OVER CHARGE")
-	remove_weapon()
+	justAttacked = true
+	var beam_ins = beam.instantiate()
+	beam_ins.global_position = self.global_position
+	beam_ins.target_position = to_local(PlayerData.cloestest_enemy.global_position)
+	beam_ins.damage = damage
+	beam_ins.oc_mode = true
+	beam_ins.beam_owner = self
+	self.get_tree().root.call_deferred("add_child",beam_ins)
+	oc_timer.start()
 
 func _on_laser_cooldown_timer_timeout() -> void:
 	justAttacked = false
+
+
+func _on_oc_timer_timeout() -> void:
+	remove_weapon()

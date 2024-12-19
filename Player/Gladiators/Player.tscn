@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://dve1wwmkd0ynm"]
+[gd_scene load_steps=9 format=3 uid="uid://dve1wwmkd0ynm"]
 
 [ext_resource type="Script" path="res://Player/Gladiators/Player.gd" id="1_ds3ra"]
 [ext_resource type="Texture2D" uid="uid://gr13ex3fw4lx" path="res://Textures/test/player.png" id="2_omq80"]
@@ -15,6 +15,9 @@ radius = 65.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_uwn7n"]
 size = Vector2(21, 37)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_n8bvj"]
+size = Vector2(1200, 680)
 
 [node name="Player" type="CharacterBody2D" groups=["player"]]
 collision_mask = 37
@@ -58,7 +61,16 @@ collision_layer = 1
 position = Vector2(1.5, -3.5)
 shape = SubResource("RectangleShape2D_uwn7n")
 
+[node name="DetectArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
+shape = SubResource("RectangleShape2D_n8bvj")
+
 [connection signal="area_entered" from="CollectArea" to="." method="_on_collect_area_area_entered"]
 [connection signal="area_entered" from="GrabArea" to="." method="_on_grab_area_area_entered"]
+[connection signal="area_entered" from="DetectArea" to="." method="_on_detect_area_area_entered"]
+[connection signal="area_exited" from="DetectArea" to="." method="_on_detect_area_area_exited"]
 
 [editable path="HurtBox"]

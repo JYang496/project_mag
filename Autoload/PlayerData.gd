@@ -120,6 +120,8 @@ var is_overcharged : bool = false:
 			ui.refresh_border()
 
 var casting_oc_skill : bool = false
+var detected_enemies : Array = []
+var cloestest_enemy : Area2D = null
 
 var player_weapon_list = []
 var max_weapon_num : int = 4
