@@ -7,8 +7,4 @@ class_name BaseEnemy
 
 
 func death() -> void:
-	var coin = coin_preload.instantiate()
-	coin.value = coin_value
-	coin.global_position = self.global_position
-	self.call_deferred("add_sibling",coin)
 	queue_free()

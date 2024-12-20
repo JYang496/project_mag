@@ -27,7 +27,7 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "1",
 		"cost": "1",
-		"features": ["speed_change_on_hit"],
+		"features": [],
 	},
 	"2": {
 		"level": "2",
@@ -37,7 +37,7 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "1",
 		"cost": "1",
-		"features": ["speed_change_on_hit"],
+		"features": [],
 	},
 	"3": {
 		"level": "3",
@@ -47,7 +47,7 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "1",
 		"cost": "1",
-		"features": ["speed_change_on_hit"],
+		"features": [],
 	},
 	"4": {
 		"level": "4",
@@ -57,7 +57,7 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": ["speed_change_on_hit"],
+		"features": [],
 	},
 	"5": {
 		"level": "5",
@@ -67,7 +67,7 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": ["speed_change_on_hit"],
+		"features": [],
 	}
 }
 
@@ -103,7 +103,7 @@ func _on_shoot():
 	apply_linear(spawn_bullet, bullet_direction, speed)
 	apply_affects(spawn_bullet)
 	apply_spin(spawn_bullet)
-	apply_speed_change_on_hot(spawn_bullet)
+	apply_speed_change_on_hit(spawn_bullet, 0.3)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
@@ -116,11 +116,6 @@ func apply_spin(blt_node) -> void:
 	blt_node.module_list.append(spin_movement_ins)
 	module_list.append(spin_movement_ins)
 
-func apply_speed_change_on_hot(blt_node) -> void:
-	var speed_change_on_hit_ins = speed_change_on_hit_module.instantiate()
-	blt_node.call_deferred("add_child",speed_change_on_hit_ins)
-	blt_node.module_list.append(speed_change_on_hit_ins)
-	module_list.append(speed_change_on_hit_ins)
 
 func _on_chainsaw_luncher_timer_timeout() -> void:
 	justAttacked = false

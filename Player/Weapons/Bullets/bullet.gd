@@ -14,9 +14,13 @@ var blt_texture
 var module_list = []
 var hitbox_type = "once"
 var dot_cd : float
+var overlapping : bool = false :
+	set(value):
+		overlapping = value
+		overlapping_signal.emit()
 
 # Signals
-signal enemy_hit_signal
+signal overlapping_signal()
 
 # Preloads
 @onready var hitbox_once = preload("res://Utility/hit_hurt_box/hit_box.tscn")
@@ -59,7 +63,6 @@ func _physics_process(delta: float) -> void:
 
 func enemy_hit(charge : int = 1):
 	hp -= charge
-	enemy_hit_signal.emit()
 	if hp <= 0:
 		self.call_deferred("queue_free")
 

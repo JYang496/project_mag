@@ -12,4 +12,5 @@ script = ExtResource("1_uhkn8")
 [node name="HitTimer" type="Timer" parent="."]
 wait_time = 0.2
 
+[connection signal="area_exited" from="." to="." method="_on_area_exited"]
 [connection signal="timeout" from="HitTimer" to="." method="_on_hit_timer_timeout"]
