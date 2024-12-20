@@ -17,6 +17,7 @@ var knockback = {
 	"angle": Vector2.ZERO
 }
 
+var overlapping : bool = false
 var is_dead: bool = false
 
 func _ready():
