@@ -7,6 +7,7 @@ var spiral_movement = preload("res://Player/Weapons/Bullets/spiral_movement.tscn
 var ricochet_module = preload("res://Player/Weapons/Bullets/ricochet_module.tscn")
 var explosion_module = preload("res://Player/Weapons/Bullets/explosion_module.tscn")
 var speed_change_on_hit = preload("res://Player/Weapons/Bullets/speed_change_on_hit.tscn")
+var dmg_up_on_enemy_death_module = preload("res://Player/Weapons/Bullets/dmg_up_on_enemy_death.tscn")
 
 var justAttacked = false
 
@@ -80,6 +81,13 @@ func apply_speed_change_on_hit(blt_node : Node2D, speed_rate : float) -> void:
 	
 func apply_knock_back(blt_node : Node2D, direction : Vector2, amount : float) -> void:
 	pass
+
+func apply_dmg_up_on_enemy_death(blt_node) -> void:
+	var dmg_up_on_enemy_death_ins = dmg_up_on_enemy_death_module.instantiate()
+	dmg_up_on_enemy_death_ins.module_parent = blt_node
+	blt_node.call_deferred("add_child",dmg_up_on_enemy_death_ins)
+	blt_node.module_list.append(dmg_up_on_enemy_death_ins)
+	module_list.append(dmg_up_on_enemy_death_ins)
 
 func apply_affects(bullet) -> void:
 	for feature in features:

@@ -4,7 +4,7 @@ class_name LinearMovement
 @export var speed: float = 400.0
 @export var direction: Vector2 = Vector2.ZERO
 
-@onready var module_parent = self.get_parent() # Bullet root is parent
+@onready var module_parent : BulletBase = self.get_parent() # Bullet root is parent
 
 
 func _ready() -> void:

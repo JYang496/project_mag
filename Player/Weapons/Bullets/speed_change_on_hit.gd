@@ -12,11 +12,10 @@ func _ready() -> void:
 		print("Error: spin module does not have owner")
 		return
 	module_parent.connect("overlapping_signal",Callable(self,"_on_bullet_overlapping_change"))
-	saved_speed_adjustment = module_parent.base_displacement
 
 func _on_bullet_overlapping_change() -> void:
-	print(self, module_parent.overlapping)
 	if module_parent.overlapping:
+		saved_speed_adjustment = module_parent.base_displacement
 		module_parent.base_displacement = saved_speed_adjustment * speed_rate
 	else:
 		module_parent.base_displacement = saved_speed_adjustment
