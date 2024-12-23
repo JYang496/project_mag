@@ -121,11 +121,11 @@ func _on_over_charge():
 			get_tree().root.call_deferred("add_child",spawn_bullet)
 			n += 1
 		await get_tree().create_timer(0.2).timeout		
-					
-		
+
+
 	remove_weapon()
 
-	
+
 	self.casting_oc_skill = false
 	#remove_weapon()
 

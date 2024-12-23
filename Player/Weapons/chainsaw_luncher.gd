@@ -2,6 +2,7 @@ extends Ranger
 
 var spin_module = preload("res://Player/Weapons/Bullets/spin_module.tscn")
 var speed_change_on_hit_module = preload("res://Player/Weapons/Bullets/speed_change_on_hit.tscn")
+var scale_up_by_time_module = preload("res://Player/Weapons/Bullets/scale_up_by_time.tscn")
 
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
@@ -105,9 +106,26 @@ func _on_shoot():
 	apply_spin(spawn_bullet)
 	apply_speed_change_on_hit(spawn_bullet, 0.3)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
+	apply_scale_up_by_time(spawn_bullet)
 
 func _on_over_charge():
 	print(self,"OVER CHARGE")
+	justAttacked = true
+	var spawn_bullet = bullet.instantiate()
+	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	spawn_bullet.damage = damage
+	spawn_bullet.hp = 7777
+	spawn_bullet.expire_time = 17
+	spawn_bullet.global_position = global_position
+	spawn_bullet.blt_texture = bul_texture
+	spawn_bullet.hitbox_type = "dot"
+	spawn_bullet.dot_cd = dot_cd
+	apply_linear(spawn_bullet, bullet_direction, speed)
+	apply_affects(spawn_bullet)
+	apply_spin(spawn_bullet)
+	apply_speed_change_on_hit(spawn_bullet, 0.3)
+	get_tree().root.call_deferred("add_child",spawn_bullet)
+	apply_scale_up_by_time(spawn_bullet)
 	remove_weapon()
 
 func apply_spin(blt_node) -> void:
@@ -116,6 +134,11 @@ func apply_spin(blt_node) -> void:
 	blt_node.module_list.append(spin_movement_ins)
 	module_list.append(spin_movement_ins)
 
+func apply_scale_up_by_time(blt_node) -> void:
+	var scale_up_by_time = scale_up_by_time_module.instantiate()
+	blt_node.call_deferred("add_child",scale_up_by_time)
+	blt_node.module_list.append(scale_up_by_time)
+	module_list.append(scale_up_by_time)
 
 func _on_chainsaw_luncher_timer_timeout() -> void:
 	justAttacked = false
