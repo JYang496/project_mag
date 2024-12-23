@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=4 uid="uid://blnhp33uq0sgq"]
+[gd_scene load_steps=36 format=4 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Texture2D" uid="uid://sldltmirxrkq" path="res://Textures/BlockyLife/tileset.png" id="2_3rumv"]
 [ext_resource type="Script" path="res://World/tilemaps.gd" id="2_vir17"]
@@ -23,7 +23,6 @@
 [ext_resource type="PackedScene" uid="uid://djyxv43t57pnf" path="res://Objects/battle_zone_teleporter.tscn" id="20_8lc8y"]
 [ext_resource type="PackedScene" uid="uid://bpx63eseql6vs" path="res://Objects/loots/loot_box.tscn" id="21_p4g33"]
 [ext_resource type="PackedScene" uid="uid://0ojjxft0cfqk" path="res://Npc/enemy/dummy.tscn" id="23_8t5w2"]
-[ext_resource type="PackedScene" uid="uid://di5d4mmomwcia" path="res://Player/Skills/bullet_time.tscn" id="24_7qkqr"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_afj78"]
 texture = ExtResource("2_3rumv")
@@ -335,8 +334,6 @@ position = Vector2(-180, -1432)
 
 [node name="Dummy" parent="." instance=ExtResource("23_8t5w2")]
 position = Vector2(-106, -1435)
-
-[node name="BulletTime" parent="." instance=ExtResource("24_7qkqr")]
 
 [editable path="PrepareZoneGate"]
 [editable path="PrepareZoneGate/PlayerTeleport"]

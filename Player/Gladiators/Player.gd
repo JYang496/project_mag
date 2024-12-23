@@ -15,6 +15,8 @@ var moveto_dest := Vector2.ZERO
 var distance_mouse_player = 0
 const WEAPON_SLOTS = [[16,-24],[-16,-24],[16,24],[-16,24]]
 
+# Signals
+signal active_skill()
 
 func _ready():
 	update_grab_radius()
@@ -29,7 +31,8 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ATTACK") and PlayerData.is_overcharged:
 		if PlayerData.player_weapon_list.size() > 0:
 			PlayerData.player_weapon_list[PlayerData.on_select_weapon].emit_signal("over_charge")
-			#PlayerData.casting_oc_skill = true
+	if event.is_action_pressed("SKILL"):
+		emit_signal("active_skill")
 	if event.is_action_pressed("OVERCHARGE") and not PlayerData.is_overcharged:
 		PlayerData.is_overcharging = true
 	if event.is_action_released("OVERCHARGE"):
