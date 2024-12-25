@@ -6,16 +6,23 @@ class_name SpeedChangeOnHit
 var on_hit := false
 @export var speed_rate = 0.3
 var saved_speed_adjustment : Vector2
+var parent_overlap : bool = false
 
 func _ready() -> void:
 	if not module_parent:
 		print("Error: spin module does not have owner")
 		return
 	module_parent.connect("overlapping_signal",Callable(self,"_on_bullet_overlapping_change"))
+	saved_speed_adjustment = module_parent.base_displacement
 
 func _on_bullet_overlapping_change() -> void:
+	print("CHANGE")
 	if module_parent.overlapping:
-		saved_speed_adjustment = module_parent.base_displacement
+		print("enter")
+		parent_overlap = true
+		#saved_speed_adjustment = module_parent.base_displacement
 		module_parent.base_displacement = saved_speed_adjustment * speed_rate
-	else:
+	if not module_parent.overlapping:
+		print("exit")
 		module_parent.base_displacement = saved_speed_adjustment
+		parent_overlap = false

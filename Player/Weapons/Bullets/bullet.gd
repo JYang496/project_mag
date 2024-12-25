@@ -14,10 +14,11 @@ var blt_texture
 var module_list = []
 var hitbox_type = "once"
 var dot_cd : float
-var overlapping : bool = false :
+var overlapping : bool :
 	set(value):
-		overlapping = value
-		overlapping_signal.emit()
+		if value != overlapping:
+			overlapping = value
+			overlapping_signal.emit()
 
 # Signals
 signal overlapping_signal()
