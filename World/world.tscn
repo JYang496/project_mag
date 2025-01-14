@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=4 uid="uid://blnhp33uq0sgq"]
+[gd_scene load_steps=37 format=4 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Texture2D" uid="uid://sldltmirxrkq" path="res://Textures/BlockyLife/tileset.png" id="2_3rumv"]
 [ext_resource type="Script" path="res://World/tilemaps.gd" id="2_vir17"]
@@ -18,6 +18,7 @@
 [ext_resource type="Script" path="res://Utility/spawn_info.gd" id="13_0vine"]
 [ext_resource type="PackedScene" uid="uid://d13863fxj2rqb" path="res://Npc/friendly/tester.tscn" id="14_2pgcb"]
 [ext_resource type="PackedScene" uid="uid://r3v8wtww3t70" path="res://Player/Augments/grab_range.tscn" id="16_shpv5"]
+[ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/enemy_wheel_cart.tscn" id="19_hyh3g"]
 [ext_resource type="PackedScene" uid="uid://w270o86lb231" path="res://Objects/prepare_zone_gate.tscn" id="19_o7ljv"]
 [ext_resource type="PackedScene" uid="uid://djyxv43t57pnf" path="res://Objects/battle_zone_teleporter.tscn" id="20_8lc8y"]
@@ -308,10 +309,13 @@ position = Vector2(-7, -586)
 position = Vector2(-492, -1446)
 
 [node name="FriendlySmith" parent="." groups=["friendlies"] instance=ExtResource("9_4gves")]
-position = Vector2(-295, -1526)
+position = Vector2(-325, -1585)
 
 [node name="FriendlyMerchant" parent="." groups=["friendlies"] instance=ExtResource("7_1eywc")]
-position = Vector2(-144, -1525)
+position = Vector2(-97, -1577)
+
+[node name="Inventory" parent="." instance=ExtResource("17_1l216")]
+position = Vector2(-333, -1422)
 
 [node name="EnemySpawner" parent="." instance=ExtResource("12_dyxss")]
 spawns = Array[ExtResource("13_0vine")]([SubResource("Resource_wbf2b")])

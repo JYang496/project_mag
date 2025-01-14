@@ -197,6 +197,177 @@ grow_horizontal = 2
 grow_vertical = 2
 alignment = 1
 
+[node name="InventoryRoot" type="Control" parent="GUI"]
+anchors_preset = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+
+[node name="Panel" type="Panel" parent="GUI/InventoryRoot"]
+custom_minimum_size = Vector2(1000, 600)
+layout_mode = 0
+offset_left = 86.0
+offset_top = 30.0
+offset_right = 1086.0
+offset_bottom = 630.0
+
+[node name="Title" type="Label" parent="GUI/InventoryRoot/Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0002
+offset_bottom = 33.0002
+grow_horizontal = 2
+text = "Inventory"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Inventory" type="VBoxContainer" parent="GUI/InventoryRoot/Panel"]
+custom_minimum_size = Vector2(500, 500)
+layout_mode = 0
+offset_left = 25.0
+offset_top = 50.0
+offset_right = 525.0
+offset_bottom = 550.0
+
+[node name="MarginContainer" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Inventory"]
+custom_minimum_size = Vector2(500, 120)
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer"]
+layout_mode = 2
+color = Color(0.392157, 0.392157, 0.392157, 1)
+
+[node name="TextureRect" type="TextureRect" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 20.0
+offset_right = 90.0
+offset_bottom = 100.0
+
+[node name="Label" type="Label" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 10.0
+offset_right = 460.0
+offset_bottom = 33.0
+text = "Name"
+
+[node name="Socket" type="Label" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
+offset_left = 100.0
+offset_top = 40.0
+offset_right = 460.0
+offset_bottom = 63.0
+text = "Socket"
+
+[node name="Socket2" type="Label" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
+offset_left = 100.0
+offset_top = 60.0
+offset_right = 460.0
+offset_bottom = 83.0
+text = "Socket"
+
+[node name="Socket3" type="Label" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
+offset_left = 100.0
+offset_top = 80.0
+offset_right = 460.0
+offset_bottom = 103.0
+text = "Socket"
+
+[node name="MarginContainer2" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Inventory"]
+custom_minimum_size = Vector2(500, 120)
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer2"]
+layout_mode = 2
+
+[node name="MarginContainer3" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Inventory"]
+custom_minimum_size = Vector2(500, 120)
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer3"]
+layout_mode = 2
+
+[node name="MarginContainer4" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Inventory"]
+custom_minimum_size = Vector2(500, 120)
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer4"]
+layout_mode = 2
+
+[node name="Equipped" type="GridContainer" parent="GUI/InventoryRoot/Panel"]
+custom_minimum_size = Vector2(400, 400)
+layout_mode = 0
+offset_left = 560.0
+offset_top = 80.0
+offset_right = 964.0
+offset_bottom = 484.0
+columns = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Equipped"]
+custom_minimum_size = Vector2(200, 200)
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer"]
+layout_mode = 2
+color = Color(0.227451, 0.278431, 0.317647, 1)
+
+[node name="TextureRect" type="TextureRect" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer/ColorRect"]
+layout_mode = 0
+offset_left = 60.0
+offset_top = 10.0
+offset_right = 140.0
+offset_bottom = 90.0
+
+[node name="Name" type="Label" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer/ColorRect"]
+offset_left = 40.0
+offset_top = 100.0
+offset_right = 160.0
+offset_bottom = 123.0
+text = "Name"
+horizontal_alignment = 1
+
+[node name="Socket" type="Label" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer/ColorRect"]
+offset_left = 10.0
+offset_top = 130.0
+offset_right = 70.0
+offset_bottom = 153.0
+text = "Socket: "
+
+[node name="Socket2" type="Label" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer/ColorRect"]
+offset_left = 10.0
+offset_top = 150.0
+offset_right = 70.0
+offset_bottom = 173.0
+text = "Socket: "
+
+[node name="Socket3" type="Label" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer/ColorRect"]
+offset_left = 10.0
+offset_top = 170.0
+offset_right = 70.0
+offset_bottom = 193.0
+text = "Socket: "
+
+[node name="MarginContainer2" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Equipped"]
+custom_minimum_size = Vector2(200, 200)
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer2"]
+layout_mode = 2
+
+[node name="MarginContainer3" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Equipped"]
+custom_minimum_size = Vector2(200, 200)
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer3"]
+layout_mode = 2
+
+[node name="MarginContainer4" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Equipped"]
+custom_minimum_size = Vector2(200, 200)
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer4"]
+layout_mode = 2
+
 [node name="BossRoot" type="Control" parent="GUI"]
 visible = false
 layout_mode = 1

@@ -1,0 +1,14 @@
+[gd_scene load_steps=4 format=3 uid="uid://dqh1mc3r76bb1"]
+
+[ext_resource type="PackedScene" uid="uid://t2fjrybq8fpp" path="res://Npc/friendly/friendly_npc.tscn" id="1_64ami"]
+[ext_resource type="Script" path="res://Npc/friendly/inventory.gd" id="2_ed0a1"]
+[ext_resource type="Texture2D" uid="uid://i7pfn0rsdlxs" path="res://Textures/test/npc_1.png" id="3_rdt10"]
+
+[node name="Inventory" instance=ExtResource("1_64ami")]
+script = ExtResource("2_ed0a1")
+
+[node name="Body" parent="." index="1"]
+rotation = -3.13372
+texture = ExtResource("3_rdt10")
+
+[editable path="HurtBox"]
