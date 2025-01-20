@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://cdpdxvviop3ok"]
+[gd_scene load_steps=4 format=3 uid="uid://cdpdxvviop3ok"]
 
 [ext_resource type="Script" path="res://UI/UI.gd" id="1_y6r0f"]
+[ext_resource type="PackedScene" uid="uid://sedqknpaalyt" path="res://UI/inv_equipment.tscn" id="3_3xv3f"]
 [ext_resource type="Script" path="res://UI/draw_border.gd" id="3_xpg6s"]
 
 [node name="UI" type="CanvasLayer" groups=["ui"]]
@@ -253,6 +254,7 @@ offset_bottom = 33.0
 text = "Name"
 
 [node name="Socket" type="Label" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
+layout_mode = 0
 offset_left = 100.0
 offset_top = 40.0
 offset_right = 460.0
@@ -260,6 +262,7 @@ offset_bottom = 63.0
 text = "Socket"
 
 [node name="Socket2" type="Label" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
+layout_mode = 0
 offset_left = 100.0
 offset_top = 60.0
 offset_right = 460.0
@@ -267,6 +270,7 @@ offset_bottom = 83.0
 text = "Socket"
 
 [node name="Socket3" type="Label" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
+layout_mode = 0
 offset_left = 100.0
 offset_top = 80.0
 offset_right = 460.0
@@ -303,69 +307,16 @@ offset_right = 964.0
 offset_bottom = 484.0
 columns = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Equipped"]
-custom_minimum_size = Vector2(200, 200)
+[node name="InvEquipment" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 
-[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer"]
-layout_mode = 2
-color = Color(0.227451, 0.278431, 0.317647, 1)
-
-[node name="TextureRect" type="TextureRect" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer/ColorRect"]
-layout_mode = 0
-offset_left = 60.0
-offset_top = 10.0
-offset_right = 140.0
-offset_bottom = 90.0
-
-[node name="Name" type="Label" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer/ColorRect"]
-offset_left = 40.0
-offset_top = 100.0
-offset_right = 160.0
-offset_bottom = 123.0
-text = "Name"
-horizontal_alignment = 1
-
-[node name="Socket" type="Label" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer/ColorRect"]
-offset_left = 10.0
-offset_top = 130.0
-offset_right = 70.0
-offset_bottom = 153.0
-text = "Socket: "
-
-[node name="Socket2" type="Label" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer/ColorRect"]
-offset_left = 10.0
-offset_top = 150.0
-offset_right = 70.0
-offset_bottom = 173.0
-text = "Socket: "
-
-[node name="Socket3" type="Label" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer/ColorRect"]
-offset_left = 10.0
-offset_top = 170.0
-offset_right = 70.0
-offset_bottom = 193.0
-text = "Socket: "
-
-[node name="MarginContainer2" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Equipped"]
-custom_minimum_size = Vector2(200, 200)
+[node name="InvEquipment2" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 
-[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer2"]
+[node name="InvEquipment3" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 
-[node name="MarginContainer3" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Equipped"]
-custom_minimum_size = Vector2(200, 200)
-layout_mode = 2
-
-[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer3"]
-layout_mode = 2
-
-[node name="MarginContainer4" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Equipped"]
-custom_minimum_size = Vector2(200, 200)
-layout_mode = 2
-
-[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Equipped/MarginContainer4"]
+[node name="InvEquipment4" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 
 [node name="BossRoot" type="Control" parent="GUI"]

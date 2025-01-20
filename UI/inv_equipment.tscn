@@ -1,0 +1,54 @@
+[gd_scene load_steps=2 format=3 uid="uid://sedqknpaalyt"]
+
+[ext_resource type="Script" path="res://UI/margin_container.gd" id="1_pv7xy"]
+
+[node name="InvEquipment" type="MarginContainer"]
+custom_minimum_size = Vector2(200, 200)
+script = ExtResource("1_pv7xy")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 2
+color = Color(0.227451, 0.278431, 0.317647, 1)
+
+[node name="TextureRect" type="TextureRect" parent="ColorRect"]
+layout_mode = 0
+offset_left = 60.0
+offset_top = 10.0
+offset_right = 140.0
+offset_bottom = 90.0
+
+[node name="Name" type="Label" parent="ColorRect"]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 100.0
+offset_right = 160.0
+offset_bottom = 123.0
+text = "Name"
+horizontal_alignment = 1
+
+[node name="Socket" type="Label" parent="ColorRect"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 130.0
+offset_right = 70.0
+offset_bottom = 153.0
+text = "Socket: "
+
+[node name="Socket2" type="Label" parent="ColorRect"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 150.0
+offset_right = 70.0
+offset_bottom = 173.0
+text = "Socket: "
+
+[node name="Socket3" type="Label" parent="ColorRect"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 170.0
+offset_right = 70.0
+offset_bottom = 193.0
+text = "Socket: "
+
+[connection signal="mouse_entered" from="ColorRect" to="." method="_on_color_rect_mouse_entered"]
+[connection signal="mouse_exited" from="ColorRect" to="." method="_on_color_rect_mouse_exited"]

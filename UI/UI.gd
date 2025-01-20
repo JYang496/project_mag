@@ -3,11 +3,12 @@ extends CanvasLayer
 @onready var player = get_tree().get_first_node_in_group("player")
 
 # Roots
-@onready var character_root = $GUI/CharacterRoot
-@onready var shopping_root = $GUI/ShoppingRoot
-@onready var upgrade_root = $GUI/UpgradeRoot
-@onready var boss_root = $GUI/BossRoot
-@onready var pause_menu_root = $GUI/PauseMenuRoot
+@onready var character_root : Control = $GUI/CharacterRoot
+@onready var shopping_root : Control = $GUI/ShoppingRoot
+@onready var upgrade_root : Control = $GUI/UpgradeRoot
+@onready var boss_root : Control = $GUI/BossRoot
+@onready var inventory_root: Control = $GUI/InventoryRoot
+@onready var pause_menu_root : Control = $GUI/PauseMenuRoot
 
 # Character
 @onready var equipped_label = $GUI/CharacterRoot/Equipped
@@ -27,6 +28,10 @@ extends CanvasLayer
 # Upgrade
 @onready var upgrade_panel = $GUI/UpgradeRoot/UpgradePanel
 @onready var upgrade_options = $GUI/UpgradeRoot/UpgradePanel/UpgradeOptions
+
+# Inventory
+@onready var inventory: VBoxContainer = $GUI/InventoryRoot/Panel/Inventory
+@onready var equipped: GridContainer = $GUI/InventoryRoot/Panel/Equipped
 
 # Pause menu
 @onready var resume_button = $GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton
