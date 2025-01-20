@@ -10,9 +10,9 @@ func _ready():
 
 func panel_move_in() -> void:
 	is_interacting = true
-	#ui.shopping_panel_in()
+	ui.inventory_panel_in()
 
 
 func panel_move_out() -> void:
-	#ui.shopping_panel_out()
+	ui.inventory_panel_out()
 	is_interacting = false

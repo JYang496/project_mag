@@ -145,6 +145,14 @@ func upgrade_panel_out() -> void:
 	refresh_border()
 	move_out_timer.start()
 
+func inventory_panel_in() -> void:
+	for eq in equipped.get_children():
+		eq.update()
+	inventory_root.visible = true
+
+func inventory_panel_out() -> void:
+	inventory_root.visible = false
+
 func free_childern(parent) -> void:
 	var children = parent.get_children()
 	for child in children:

@@ -5,8 +5,6 @@ extends Control
 @onready var cost = $UpgradeCard/Cost
 @onready var status_container = $UpgradeCard/StatusContainer
 @onready var ui = get_tree().get_first_node_in_group("ui")
-@onready var player_weapon_list = PlayerData.player_weapon_list
-@onready var player = get_tree().get_first_node_in_group("player")
 
 var weapon_node
 var weapon_data

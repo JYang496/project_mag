@@ -199,6 +199,7 @@ grow_vertical = 2
 alignment = 1
 
 [node name="InventoryRoot" type="Control" parent="GUI"]
+visible = false
 anchors_preset = 0
 offset_right = 1152.0
 offset_bottom = 648.0
@@ -312,12 +313,15 @@ layout_mode = 2
 
 [node name="InvEquipment2" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
+equipment_index = 1
 
 [node name="InvEquipment3" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
+equipment_index = 2
 
 [node name="InvEquipment4" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
+equipment_index = 3
 
 [node name="BossRoot" type="Control" parent="GUI"]
 visible = false
