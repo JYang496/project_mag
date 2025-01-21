@@ -139,3 +139,4 @@ var on_select_weapon : int = -1 :
 
 var player_companion_lsit = []
 var player_augment_list = []
+var inventory_list = []

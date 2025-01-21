@@ -21,6 +21,7 @@ PlayerData="*res://Autoload/PlayerData.gd"
 WeaponData="*res://Autoload/WeaponData.gd"
 PhaseManager="*res://Autoload/PhaseManager.gd"
 SpawnData="*res://Autoload/SpawnData.gd"
+InventoryData="*res://Autoload/InventoryData.gd"
 
 [file_customization]
 
