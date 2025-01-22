@@ -1,8 +1,0 @@
-[gd_scene format=3 uid="uid://y40glq0x2r2l"]
-
-[node name="InventorySlot" type="MarginContainer"]
-offset_right = 450.0
-offset_bottom = 100.0
-
-[node name="ColorRect" type="ColorRect" parent="."]
-layout_mode = 2

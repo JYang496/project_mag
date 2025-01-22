@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://cdpdxvviop3ok"]
+[gd_scene load_steps=5 format=3 uid="uid://cdpdxvviop3ok"]
 
 [ext_resource type="Script" path="res://UI/UI.gd" id="1_y6r0f"]
 [ext_resource type="PackedScene" uid="uid://sedqknpaalyt" path="res://UI/inv_equipment.tscn" id="3_3xv3f"]
+[ext_resource type="PackedScene" uid="uid://cms57yqrnn7ga" path="res://UI/inv_slot.tscn" id="3_hcnsl"]
 [ext_resource type="Script" path="res://UI/draw_border.gd" id="3_xpg6s"]
 
 [node name="UI" type="CanvasLayer" groups=["ui"]]
@@ -199,7 +200,6 @@ grow_vertical = 2
 alignment = 1
 
 [node name="InventoryRoot" type="Control" parent="GUI"]
-visible = false
 anchors_preset = 0
 offset_right = 1152.0
 offset_bottom = 648.0
@@ -231,73 +231,20 @@ offset_top = 50.0
 offset_right = 525.0
 offset_bottom = 550.0
 
-[node name="MarginContainer" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Inventory"]
-custom_minimum_size = Vector2(500, 120)
+[node name="InvSlot" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 
-[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer"]
+[node name="InvSlot2" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
-color = Color(0.392157, 0.392157, 0.392157, 1)
+inventory_index = 1
 
-[node name="TextureRect" type="TextureRect" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 20.0
-offset_right = 90.0
-offset_bottom = 100.0
-
-[node name="Label" type="Label" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
-layout_mode = 0
-offset_left = 100.0
-offset_top = 10.0
-offset_right = 460.0
-offset_bottom = 33.0
-text = "Name"
-
-[node name="Socket" type="Label" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
-layout_mode = 0
-offset_left = 100.0
-offset_top = 40.0
-offset_right = 460.0
-offset_bottom = 63.0
-text = "Socket"
-
-[node name="Socket2" type="Label" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
-layout_mode = 0
-offset_left = 100.0
-offset_top = 60.0
-offset_right = 460.0
-offset_bottom = 83.0
-text = "Socket"
-
-[node name="Socket3" type="Label" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer/ColorRect"]
-layout_mode = 0
-offset_left = 100.0
-offset_top = 80.0
-offset_right = 460.0
-offset_bottom = 103.0
-text = "Socket"
-
-[node name="MarginContainer2" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Inventory"]
-custom_minimum_size = Vector2(500, 120)
+[node name="InvSlot3" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
+inventory_index = 2
 
-[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer2"]
+[node name="InvSlot4" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
-
-[node name="MarginContainer3" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Inventory"]
-custom_minimum_size = Vector2(500, 120)
-layout_mode = 2
-
-[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer3"]
-layout_mode = 2
-
-[node name="MarginContainer4" type="MarginContainer" parent="GUI/InventoryRoot/Panel/Inventory"]
-custom_minimum_size = Vector2(500, 120)
-layout_mode = 2
-
-[node name="ColorRect" type="ColorRect" parent="GUI/InventoryRoot/Panel/Inventory/MarginContainer4"]
-layout_mode = 2
+inventory_index = 3
 
 [node name="Equipped" type="GridContainer" parent="GUI/InventoryRoot/Panel"]
 custom_minimum_size = Vector2(400, 400)
@@ -313,15 +260,12 @@ layout_mode = 2
 
 [node name="InvEquipment2" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
-equipment_index = 1
 
 [node name="InvEquipment3" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
-equipment_index = 2
 
 [node name="InvEquipment4" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
-equipment_index = 3
 
 [node name="BossRoot" type="Control" parent="GUI"]
 visible = false

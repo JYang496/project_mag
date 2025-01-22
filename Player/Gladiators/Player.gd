@@ -44,7 +44,10 @@ func overcharge(delta) ->void:
 
 func create_weapon(item_id : String):
 	var available_slot = 0
-	if PlayerData.player_weapon_list.size() > PlayerData.max_weapon_num:
+	if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num: 
+		if len(InventoryData.inventory_slots) < InventoryData.inventory_max_slots:
+			var inv_weapon = load(WeaponData.weapon_list.data[item_id]["res"]).instantiate()
+			InventoryData.inventory_slots.append(inv_weapon)
 		return
 	
 	
@@ -61,7 +64,6 @@ func create_weapon(item_id : String):
 	remote_transform.add_child(weapon)
 	remote_transform.remote_path = weapon.get_path()
 	PlayerData.player_weapon_list.append(weapon)
-	print("create weapon")
 
 func movement(delta):
 	equppied_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
