@@ -200,6 +200,7 @@ grow_vertical = 2
 alignment = 1
 
 [node name="InventoryRoot" type="Control" parent="GUI"]
+visible = false
 anchors_preset = 0
 offset_right = 1152.0
 offset_bottom = 648.0
@@ -308,6 +309,18 @@ text = "Resume"
 
 [node name="MoveOutTimer" type="Timer" parent="GUI"]
 wait_time = 0.5
+
+[node name="DragItemRoot" type="Control" parent="GUI"]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="DragItemIcon" type="TextureRect" parent="GUI/DragItemRoot"]
+z_index = 1
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
 
 [connection signal="pressed" from="GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton" to="." method="_on_resume_button_pressed"]
 [connection signal="timeout" from="GUI/MoveOutTimer" to="." method="_on_move_out_timer_timeout"]

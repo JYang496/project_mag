@@ -4,7 +4,7 @@ extends Ranger
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/spear.png")
 var return_on_timeout = preload("res://Player/Weapons/Bullets/return_on_timeout.tscn")
-@onready var sprite = get_node("%SpearSprite")
+@onready var sprite = get_node("%GunSprite")
 @onready var spear_cooldownTimer = $SpearCooldownTimer
 
 # Weapon

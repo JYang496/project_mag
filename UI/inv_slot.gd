@@ -16,7 +16,6 @@ extends MarginContainer
 
 # UI and player data
 @onready var ui = get_tree().get_first_node_in_group("ui")
-@onready var player_weapon_list = PlayerData.player_weapon_list
 @onready var player = get_tree().get_first_node_in_group("player")
 
 var hover_over : bool = false
@@ -33,7 +32,10 @@ func _draw():
 
 func update() -> void:
 	queue_redraw()
-	
+	if len(InventoryData.inventory_slots) > inventory_index :
+		var weapon = InventoryData.inventory_slots[inventory_index]
+		image.texture = weapon.get_node("%GunSprite").texture
+		equip_name.text = weapon.ITEM_NAME
 
 func _ready() -> void:
 	pass
@@ -48,3 +50,9 @@ func _on_color_rect_mouse_entered() -> void:
 func _on_color_rect_mouse_exited() -> void:
 	hover_over = false
 	update()
+
+
+func _on_background_gui_input(event: InputEvent) -> void:
+	if event.is_action_pressed("CLICK"):
+		print(self)
+		ui.drag_item_icon.texture = self.image.texture

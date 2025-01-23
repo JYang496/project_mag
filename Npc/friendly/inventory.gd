@@ -9,7 +9,6 @@ func _ready():
 
 
 func panel_move_in() -> void:
-	print(InventoryData.inventory_slots)
 	is_interacting = true
 	ui.inventory_panel_in()
 

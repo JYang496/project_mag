@@ -44,6 +44,7 @@ extends CanvasLayer
 @onready var upgrade_card = preload("res://UI/margin_upgrade_card.tscn")
 @onready var empty_weapon_pic = preload("res://Textures/test/empty_wp.png")
 @onready var equipped_weapons = null
+@onready var drag_item_icon: TextureRect = $GUI/DragItemRoot/DragItemIcon
 
 
 func _ready():
@@ -58,7 +59,7 @@ func _physics_process(_delta):
 	gold_label.text = "Gold: " + str(PlayerData.player_gold)
 	time_label.text = "Time: " + str(PhaseManager.battle_time)
 	phase_label.text = "Phase: " + str(PhaseManager.current_state())
-
+	drag_item_icon.set_position(get_viewport().get_mouse_position())
 func _input(_event) -> void:
 	
 	# Pause / Menu
@@ -146,11 +147,15 @@ func upgrade_panel_out() -> void:
 	move_out_timer.start()
 
 func inventory_panel_in() -> void:
+	move_out_timer.stop()
 	for eq in equipped.get_children():
 		eq.update()
+	for inv in inventory.get_children():
+		inv.update()
 	inventory_root.visible = true
 
 func inventory_panel_out() -> void:
+	move_out_timer.start()
 	inventory_root.visible = false
 
 func free_childern(parent) -> void:

@@ -46,5 +46,6 @@ offset_top = 80.0
 offset_right = 460.0
 offset_bottom = 103.0
 
+[connection signal="gui_input" from="Background" to="." method="_on_background_gui_input"]
 [connection signal="mouse_entered" from="Background" to="." method="_on_color_rect_mouse_entered"]
 [connection signal="mouse_exited" from="Background" to="." method="_on_color_rect_mouse_exited"]
