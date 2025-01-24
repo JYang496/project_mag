@@ -2,10 +2,10 @@ extends Node
 
 var battle_time := 0
 
-var PREPARE := "prepare"
-var BATTLE = "battle"
-var BONUS = "bonus"
-var GAMEOVER = "gameover"
+const PREPARE := "prepare"
+const BATTLE = "battle"
+const BONUS = "bonus"
+const GAMEOVER = "gameover"
 
 var phase_list := [PREPARE,BATTLE,BONUS,GAMEOVER]
 var phase := PREPARE:

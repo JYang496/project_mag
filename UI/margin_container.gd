@@ -8,6 +8,7 @@ extends MarginContainer
 @onready var socket_2: Label = $Background/Socket2
 @onready var socket_3: Label = $Background/Socket3
 @export var equipment_index : int = 0
+var item
 
 
 # Border properties
@@ -34,9 +35,9 @@ func _draw():
 func update() -> void:
 	queue_redraw()
 	if len(player_weapon_list) > equipment_index :
-		var weapon = player_weapon_list[equipment_index]
-		image.texture = weapon.sprite.texture
-		equip_name.text = weapon.ITEM_NAME
+		item = player_weapon_list[equipment_index]
+		image.texture = item.sprite.texture
+		equip_name.text = item.ITEM_NAME
 
 func _ready() -> void:
 	pass
@@ -55,5 +56,5 @@ func _on_color_rect_mouse_exited() -> void:
 
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK"):
-		print(self.image.texture)
 		ui.drag_item_icon.texture = self.image.texture
+		InventoryData.on_select_item = item
