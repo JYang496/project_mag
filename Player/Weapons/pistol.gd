@@ -4,7 +4,7 @@ extends Ranger
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/minigun_bullet.png")
 var hexagon_attack = preload("res://Player/Weapons/Bullets/hexagon_attack.tscn")
-@onready var sprite = get_node("%GunSprite")
+@onready var sprite = get_node("%Sprite")
 @onready var gun_cooldownTimer = $GunCooldownTimer
 
 # Weapon

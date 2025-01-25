@@ -12,7 +12,7 @@ arc = 30.0
 
 [node name="ShotgunAttackTimer" type="Timer" parent="."]
 
-[node name="GunSprite" type="Sprite2D" parent="."]
+[node name="Sprite" type="Sprite2D" parent="."]
 unique_name_in_owner = true
 texture = ExtResource("2_p8bje")
 

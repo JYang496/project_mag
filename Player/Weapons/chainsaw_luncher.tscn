@@ -8,7 +8,7 @@ script = ExtResource("1_y5ll5")
 
 [node name="ChainsawLuncherTimer" type="Timer" parent="."]
 
-[node name="GunSprite" type="Sprite2D" parent="."]
+[node name="Sprite" type="Sprite2D" parent="."]
 unique_name_in_owner = true
 texture = ExtResource("2_8k0s0")
 

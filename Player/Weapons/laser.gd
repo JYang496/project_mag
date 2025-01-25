@@ -7,7 +7,7 @@ extends Ranger
 @onready var oc_timer: Timer = $OCTimer
 
 @onready var cooldown_timer = $LaserCooldownTimer
-@onready var sprite = get_node("%GunSprite")
+@onready var sprite = get_node("%Sprite")
 
 # Weapon
 var ITEM_NAME = "Laser"

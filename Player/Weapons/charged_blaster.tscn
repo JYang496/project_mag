@@ -21,7 +21,7 @@ light_mask = 4
 visibility_layer = 4
 shape = SubResource("CircleShape2D_emqbp")
 
-[node name="GunSprite" type="Sprite2D" parent="."]
+[node name="Sprite" type="Sprite2D" parent="."]
 unique_name_in_owner = true
 texture = ExtResource("2_qghy1")
 

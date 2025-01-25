@@ -48,16 +48,19 @@ func overcharge(delta) ->void:
 
 func create_weapon(item_id : String):
 	var available_slot = 0
+	
+	# Put weapon into inventory if weapon list is full
 	if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num: 
 		if len(InventoryData.inventory_slots) < InventoryData.INVENTORY_MAX_SLOTS:
 			var inv_weapon = load(WeaponData.weapon_list.data[item_id]["res"]).instantiate()
 			InventoryData.inventory_slots.append(inv_weapon)
 		return
 	
-	
+	# Update exist weapon position
 	for weapon_index in PlayerData.player_weapon_list.size():
 		PlayerData.player_weapon_list[weapon_index].position.x = WEAPON_SLOTS[weapon_index][0]
 		PlayerData.player_weapon_list[weapon_index].position.y = WEAPON_SLOTS[weapon_index][1]
+	
 	available_slot = PlayerData.player_weapon_list.size()
 	var remote_transform = RemoteTransform2D.new()
 	remote_transform.update_rotation = true
@@ -68,6 +71,18 @@ func create_weapon(item_id : String):
 	remote_transform.add_child(weapon)
 	remote_transform.remote_path = weapon.get_path()
 	PlayerData.player_weapon_list.append(weapon)
+
+func swap_weapon_position(weapon1, weapon2) -> void:
+	if weapon1 == weapon2:
+		return
+	var slot1_index = PlayerData.player_weapon_list.find(weapon1)
+	var slot2_index = PlayerData.player_weapon_list.find(weapon2)
+	var temp = PlayerData.player_weapon_list[slot1_index]
+	PlayerData.player_weapon_list[slot1_index] = PlayerData.player_weapon_list[slot2_index]
+	PlayerData.player_weapon_list[slot2_index] = temp
+	for weapon_index in PlayerData.player_weapon_list.size():
+		PlayerData.player_weapon_list[weapon_index].position.x = WEAPON_SLOTS[weapon_index][0]
+		PlayerData.player_weapon_list[weapon_index].position.y = WEAPON_SLOTS[weapon_index][1]
 
 func movement(delta):
 	equppied_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)

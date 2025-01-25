@@ -3,7 +3,7 @@ extends Ranger
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/sniper_bullet.png")
-@onready var sprite = get_node("%GunSprite")
+@onready var sprite = get_node("%Sprite")
 @onready var shotgun_attack_timer = $ShotgunAttackTimer
 
 # Weapon

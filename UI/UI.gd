@@ -1,4 +1,5 @@
 extends CanvasLayer
+class_name UI
 
 @onready var player = get_tree().get_first_node_in_group("player")
 
@@ -139,7 +140,7 @@ func upgrade_panel_in() -> void:
 		var upgrade_choice = upgrade_card.instantiate()
 		upgrade_choice.weapon_node = random_weapon
 		upgrade_options.add_child(upgrade_choice)
-		options += 1	
+		options += 1
 
 func upgrade_panel_out() -> void:
 	upgrade_root.visible = false
@@ -148,15 +149,18 @@ func upgrade_panel_out() -> void:
 
 func inventory_panel_in() -> void:
 	move_out_timer.stop()
-	for eq in equipped.get_children():
-		eq.update()
-	for inv in inventory.get_children():
-		inv.update()
+	update_inventory()
 	inventory_root.visible = true
 
 func inventory_panel_out() -> void:
 	move_out_timer.start()
 	inventory_root.visible = false
+
+func update_inventory() -> void:
+	for eq in equipped.get_children():
+		eq.update()
+	for inv in inventory.get_children():
+		inv.update()
 
 func free_childern(parent) -> void:
 	var children = parent.get_children()

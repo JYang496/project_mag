@@ -8,7 +8,7 @@ var chase_closest_enemy_module = preload("res://Player/Weapons/Bullets/chase_clo
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/chainsaw_spin.png")
-@onready var sprite = get_node("%GunSprite")
+@onready var sprite = get_node("%Sprite")
 @onready var gun_cooldownTimer = $ChainsawLuncherTimer
 
 # Weapon

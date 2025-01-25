@@ -36,7 +36,7 @@ func update() -> void:
 	queue_redraw()
 	if len(player_weapon_list) > equipment_index :
 		item = player_weapon_list[equipment_index]
-		image.texture = item.sprite.texture
+		image.texture = item.get_node("%Sprite").texture
 		equip_name.text = item.ITEM_NAME
 
 func _ready() -> void:
@@ -56,5 +56,5 @@ func _on_color_rect_mouse_exited() -> void:
 
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK"):
-		ui.drag_item_icon.texture = self.image.texture
-		InventoryData.on_select_item = item
+		InventoryData.on_select_eqp = item
+		InventoryData.on_drag_item = item
