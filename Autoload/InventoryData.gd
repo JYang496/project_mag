@@ -15,11 +15,13 @@ var on_select_item :
 	get:
 		return on_select_item
 	set(value):
-		if on_select_item == null:
-			on_select_item = value
-		elif on_select_item == value:
+		print(value,on_select_item)
+		if on_select_item == value:
 			ui.drag_item_icon.texture = null
 			on_select_item = null
+			return
+		on_select_item = value
+		
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
