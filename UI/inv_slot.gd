@@ -35,7 +35,7 @@ func update() -> void:
 	queue_redraw()
 	if len(InventoryData.inventory_slots) > inventory_index :
 		item = InventoryData.inventory_slots[inventory_index]
-		image.texture = item.get_node("%GunSprite").texture
+		image.texture = item.get_node("%Sprite").texture
 		equip_name.text = item.ITEM_NAME
 
 func _ready() -> void:

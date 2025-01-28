@@ -16,16 +16,33 @@ var on_select_eqp :
 	get:
 		return on_select_eqp
 	set(value):
-		if on_select_eqp == null:
+		if value != null and on_select_eqp == null and on_select_slot == null:
 			on_select_eqp = value
 			print("eqp was empty, assign value")
-		elif on_select_eqp != null:
+		elif value != null and on_select_eqp != null and on_select_slot == null:
 			# Swap position
 			player.swap_weapon_position(on_select_eqp,value)
 			print("swap position, clean on select afterward")
 			on_select_eqp = null
-			ui.update_inventory()
-var on_select_slot
+			on_select_slot = null
+		else:
+			on_select_eqp = value
+		ui.update_inventory()
+
+var on_select_slot :
+	get:
+		return on_select_slot
+	set(value) :
+		on_select_slot = value
+		if on_select_slot != null and on_select_eqp != null:
+			print("swap eqp and slot")
+			on_select_slot = null
+			on_select_eqp = null
+		elif on_select_slot == null and on_select_eqp != null:
+			self.inventory_slots.append(on_select_eqp)
+			print("put weapon into inv")
+			on_select_eqp = null
+			
 var on_drag_item :
 	get:
 		return on_drag_item
@@ -39,7 +56,7 @@ var on_drag_item :
 		if value == null:
 			ui.drag_item_icon.texture = null
 		else:
-			ui.drag_item_icon.texture = value.sprite.texture
+			ui.drag_item_icon.texture = value.get_node("Sprite").texture
 		on_drag_item = value
 		
 		
