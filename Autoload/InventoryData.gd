@@ -16,7 +16,9 @@ var on_select_eqp :
 	get:
 		return on_select_eqp
 	set(value):
+		print(value,on_select_eqp,on_select_slot)
 		if value != null and on_select_eqp == null and on_select_slot == null:
+			# Pick equipment
 			on_select_eqp = value
 			print("eqp was empty, assign value")
 		elif value != null and on_select_eqp != null and on_select_slot == null:
@@ -24,7 +26,18 @@ var on_select_eqp :
 			player.swap_weapon_position(on_select_eqp,value)
 			print("swap position, clean on select afterward")
 			on_select_eqp = null
+		elif value != null and on_select_eqp == null and on_select_slot != null:
+			# TODO: swap eqp and slot
+			print("swap eqp and slot")
 			on_select_slot = null
+		elif value == null and on_select_eqp == null and on_select_slot != null:
+			# TODO: Put item from inv to equipment
+			print("add item to eqp")
+			on_select_slot = null
+		elif value == null and on_select_eqp != null and on_select_slot == null:
+			#TODO : move eqp item to empty slow
+			print("move to empty slot")
+
 		else:
 			on_select_eqp = value
 		ui.update_inventory()
@@ -35,10 +48,11 @@ var on_select_slot :
 	set(value) :
 		on_select_slot = value
 		if on_select_slot != null and on_select_eqp != null:
+			# TODO: swap eqp and slot
 			print("swap eqp and slot")
 			on_select_slot = null
 			on_select_eqp = null
-		elif on_select_slot == null and on_select_eqp != null:
+		elif on_select_slot == null and on_select_eqp != null and not self.inventory_slots.has(on_select_eqp):
 			self.inventory_slots.append(on_select_eqp)
 			print("put weapon into inv")
 			on_select_eqp = null
