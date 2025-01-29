@@ -56,4 +56,3 @@ func _on_color_rect_mouse_exited() -> void:
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK"):
 		InventoryData.on_select_slot = item
-		InventoryData.on_drag_item = item
