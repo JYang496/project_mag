@@ -33,11 +33,16 @@ func _draw():
 	draw_rect(rect, border_color, false, width)
 
 func update() -> void:
+	player_weapon_list = PlayerData.player_weapon_list
 	queue_redraw()
 	if len(player_weapon_list) > equipment_index :
 		item = player_weapon_list[equipment_index]
 		image.texture = item.get_node("%Sprite").texture
 		equip_name.text = item.ITEM_NAME
+	else:
+		image.texture = null
+		equip_name.text = "Empty"
+		
 
 func _ready() -> void:
 	pass

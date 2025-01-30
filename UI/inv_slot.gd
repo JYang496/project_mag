@@ -37,6 +37,9 @@ func update() -> void:
 		item = InventoryData.inventory_slots[inventory_index]
 		image.texture = item.get_node("%Sprite").texture
 		equip_name.text = item.ITEM_NAME
+	else:
+		image.texture = null
+		equip_name.text = "Empty"
 
 func _ready() -> void:
 	pass

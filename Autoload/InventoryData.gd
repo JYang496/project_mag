@@ -9,7 +9,6 @@ var on_select_eqp :
 	get:
 		return on_select_eqp
 	set(value):
-		print(value,on_select_eqp,on_select_slot)
 		if value != null and on_select_eqp == null and on_select_slot == null:
 			# Pick equipment
 			on_select_eqp = value
@@ -50,11 +49,14 @@ var on_select_slot :
 			on_select_eqp = null
 		elif on_select_slot == null and on_select_eqp != null:
 			on_drag_item = null
-			if not self.inventory_slots.has(on_select_eqp):
-				self.inventory_slots.append(on_select_eqp)
+			var copy_eqp = on_select_eqp.duplicate()
+			if not self.inventory_slots.has(copy_eqp):
+				self.inventory_slots.append(copy_eqp)
 				print("put weapon into inv")
+				PlayerData.player_weapon_list.erase(on_select_eqp)
+				on_select_eqp.queue_free()
 			on_select_eqp = null
-			
+		ui.update_inventory()
 var on_drag_item :
 	get:
 		return on_drag_item
