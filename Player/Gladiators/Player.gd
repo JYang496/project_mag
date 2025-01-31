@@ -46,14 +46,20 @@ func overcharge(delta) ->void:
 	if PlayerData.is_overcharging:
 		PlayerData.overcharge_time += delta
 
-func create_weapon(item_id : String):
+func create_weapon(item_id):
 	var available_slot = 0
+	
+	# Create a new weapon when assign string, othervise node
+	var weapon : Node2D
+	if item_id is String:
+		weapon = load(WeaponData.weapon_list.data[item_id]["res"]).instantiate()
+	else:
+		weapon = item_id
 	
 	# Put weapon into inventory if weapon list is full
 	if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num: 
 		if len(InventoryData.inventory_slots) < InventoryData.INVENTORY_MAX_SLOTS:
-			var inv_weapon = load(WeaponData.weapon_list.data[item_id]["res"]).instantiate()
-			InventoryData.inventory_slots.append(inv_weapon)
+			InventoryData.inventory_slots.append(weapon)
 		return
 	
 	# Update exist weapon position
@@ -65,12 +71,12 @@ func create_weapon(item_id : String):
 	var remote_transform = RemoteTransform2D.new()
 	remote_transform.update_rotation = true
 	equppied_weapons.add_child(remote_transform)
-	var weapon = load(WeaponData.weapon_list.data[item_id]["res"]).instantiate()
 	weapon.position.x = WEAPON_SLOTS[available_slot][0]
 	weapon.position.y = WEAPON_SLOTS[available_slot][1]
 	remote_transform.add_child(weapon)
 	remote_transform.remote_path = weapon.get_path()
 	PlayerData.player_weapon_list.append(weapon)
+
 
 func swap_weapon_position(weapon1, weapon2) -> void:
 	if weapon1 == weapon2:

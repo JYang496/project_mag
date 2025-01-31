@@ -22,18 +22,20 @@ var on_select_eqp :
 				print("swap position, clean on select afterward")
 			on_select_eqp = null
 		elif value != null and on_select_eqp == null and on_select_slot != null:
-			# TODO: swap eqp and slot
-			on_drag_item = null
-			print("swap eqp and slot")
-			on_select_slot = null
+			# Swap eqp and slot
+			on_select_eqp = value
+			slot_eqp_swap()
 		elif value == null and on_select_eqp == null and on_select_slot != null:
-			# TODO: Put item from inv to equipment
+			# Put item from inv to equipment
 			on_drag_item = null
 			print("add item to eqp")
+			inventory_slots.erase(on_select_slot)
+			player.create_weapon(on_select_slot)
 			on_select_slot = null
 		else:
 			on_select_eqp = value
 		ui.update_inventory()
+		ui.refresh_border()
 
 var on_select_slot :
 	get:
@@ -42,11 +44,7 @@ var on_select_slot :
 		on_select_slot = value
 		on_drag_item = on_select_slot
 		if on_select_slot != null and on_select_eqp != null:
-			# TODO: swap eqp and slot
-			on_drag_item = null
-			print("swap eqp and slot")
-			on_select_slot = null
-			on_select_eqp = null
+			slot_eqp_swap()
 		elif on_select_slot == null and on_select_eqp != null:
 			on_drag_item = null
 			var copy_eqp = on_select_eqp.duplicate()
@@ -57,6 +55,24 @@ var on_select_slot :
 				on_select_eqp.queue_free()
 			on_select_eqp = null
 		ui.update_inventory()
+		ui.refresh_border()
+
+func slot_eqp_swap() -> void:
+	# Swap eqp and slot
+	on_drag_item = null
+	var copy_eqp = on_select_eqp.duplicate()
+	if not self.inventory_slots.has(copy_eqp):
+		self.inventory_slots.append(copy_eqp)
+		print("put weapon into inv")
+		PlayerData.player_weapon_list.erase(on_select_eqp)
+		on_select_eqp.queue_free()
+		inventory_slots.erase(on_select_slot)
+		player.create_weapon(on_select_slot)
+	on_select_eqp = null
+	print("swap eqp and slot")
+	on_select_slot = null
+	on_select_eqp = null
+
 var on_drag_item :
 	get:
 		return on_drag_item

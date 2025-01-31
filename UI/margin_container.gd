@@ -40,6 +40,7 @@ func update() -> void:
 		image.texture = item.get_node("%Sprite").texture
 		equip_name.text = item.ITEM_NAME
 	else:
+		item = null
 		image.texture = null
 		equip_name.text = "Empty"
 		
