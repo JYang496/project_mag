@@ -29,7 +29,7 @@ var weapon_data = {
 		"features": [],
 	},
 	"2": {
-		"level": "1",
+		"level": "2",
 		"damage": "4",
 		"hit_cd": "0.1",
 		"reload": "5",
@@ -39,7 +39,7 @@ var weapon_data = {
 		"features": [],
 	},
 	"3": {
-		"level": "1",
+		"level": "3",
 		"damage": "4",
 		"hit_cd": "0.1",
 		"reload": "5",
@@ -49,7 +49,7 @@ var weapon_data = {
 		"features": [],
 	},
 	"4": {
-		"level": "1",
+		"level": "4",
 		"damage": "4",
 		"hit_cd": "0.08",
 		"reload": "5",
@@ -59,7 +59,7 @@ var weapon_data = {
 		"features": [],
 	},
 	"5": {
-		"level": "1",
+		"level": "5",
 		"damage": "6",
 		"speed": "200",
 		"hit_cd": "0.08",

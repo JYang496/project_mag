@@ -54,7 +54,10 @@ var weapon_data = {
 }
 
 func _ready():
-	set_level("1")
+	if level != null:
+		set_level("1")
+	else:
+		set_level(str(level))
 
 
 func set_level(lv):
