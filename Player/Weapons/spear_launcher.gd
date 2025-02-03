@@ -65,10 +65,11 @@ var weapon_data = {
 
 
 func _ready():
-	set_level("1")
+	set_level(1)
 
 
 func set_level(lv):
+	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	damage = int(weapon_data[lv]["damage"])
 	speed = int(weapon_data[lv]["speed"])

@@ -12,7 +12,6 @@ var bul_texture = preload("res://Textures/test/minigun_bullet.png")
 
 # Weapon
 var ITEM_NAME = "Rocket Luncher"
-var level : int
 var damage : int
 var speed : int
 var hp : int
@@ -67,11 +66,9 @@ var weapon_data = {
 	}
 }
 
-func _ready():
-	set_level("1")
-
 
 func set_level(lv):
+	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	damage = int(weapon_data[lv]["damage"])
 	speed = int(weapon_data[lv]["speed"])

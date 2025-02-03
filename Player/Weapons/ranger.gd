@@ -9,6 +9,7 @@ var explosion_module = preload("res://Player/Weapons/Bullets/explosion_module.ts
 var speed_change_on_hit = preload("res://Player/Weapons/Bullets/speed_change_on_hit.tscn")
 var dmg_up_on_enemy_death_module = preload("res://Player/Weapons/Bullets/dmg_up_on_enemy_death.tscn")
 
+var level : int
 var justAttacked = false
 
 var module_list = []
@@ -23,6 +24,12 @@ var casting_oc_skill : bool = false
 signal shoot()
 signal over_charge()
 
+func _ready():
+	if level:
+		set_level(level)
+	else:
+		set_level(1)
+
 func _physics_process(_delta):
 	if not justAttacked and Input.is_action_pressed("ATTACK"):
 		emit_signal("shoot")
@@ -33,6 +40,8 @@ func _on_cooldown_timer_timeout():
 func _input(event: InputEvent) -> void:
 	pass
 
+func set_level(lv):
+	pass
 
 func _on_shoot():
 	justAttacked = true

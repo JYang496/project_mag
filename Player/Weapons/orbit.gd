@@ -65,10 +65,14 @@ var weapon_data = {
 	}
 }
 
-func _ready() -> void:
-	set_level("1")
+func _ready():
+	if level:
+		set_level(level)
+	else:
+		set_level(1)
 
 func set_level(lv) -> void:
+	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	damage = int(weapon_data[lv]["damage"])
 	spin_speed = int(weapon_data[lv]["spin_speed"])
@@ -113,6 +117,10 @@ func _on_over_charge() -> void:
 	remove_weapon()
 
 func remove_weapon() -> void:
+	module_list.clear()
+	for s in satellites:
+		s.queue_free()
+	satellites.clear()
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
 	PlayerData.overcharge_time = 0
 	PlayerData.on_select_weapon = -1

@@ -12,7 +12,6 @@ var tornado_texture = preload("res://Textures/test/tornado.png")
 
 # Weapon
 var ITEM_NAME = "Cyclone"
-var level : int = 1
 var damage : int = 1
 var knock_back = {
 	"amount": 0,
@@ -90,11 +89,8 @@ var weapon_data = {
 }
 
 
-func _ready():
-	set_level("1")
-
-
 func set_level(lv):
+	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	damage = int(weapon_data[lv]["damage"])
 	knock_back_amount = int(weapon_data[lv]["knock_back_amount"])

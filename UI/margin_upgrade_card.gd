@@ -4,7 +4,7 @@ extends Control
 @onready var itemIcon = $UpgradeCard/ItemImage/Icon
 @onready var cost = $UpgradeCard/Cost
 @onready var status_container = $UpgradeCard/StatusContainer
-@onready var ui = get_tree().get_first_node_in_group("ui")
+@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 
 var weapon_node
 var weapon_data
@@ -49,7 +49,7 @@ func _input(_event):
 	if Input.is_action_just_released("CLICK"):
 		if mouse_over and upgradable:
 			PlayerData.player_gold -= cost_price
-			emit_signal("upgrade_level",comb_status["level"][1])
+			emit_signal("upgrade_level",int(comb_status["level"][1]))
 			ui.upgrade_panel_out()
 
 func combine_status(node):

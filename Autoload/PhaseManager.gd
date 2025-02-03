@@ -6,6 +6,7 @@ const PREPARE := "prepare"
 const BATTLE = "battle"
 const BONUS = "bonus"
 const GAMEOVER = "gameover"
+const TIME_OUT = 30
 
 var phase_list := [PREPARE,BATTLE,BONUS,GAMEOVER]
 var phase := PREPARE:

@@ -9,7 +9,6 @@ var hexagon_attack = preload("res://Player/Weapons/Bullets/hexagon_attack.tscn")
 
 # Weapon
 var ITEM_NAME = "Pistol"
-var level : int
 var damage : int
 var speed : int
 var hp : int
@@ -67,11 +66,9 @@ var weapon_data = {
 var weapon_file
 var minigun_data = JSON.new()
 
-func _ready():
-	set_level("1")
-
 
 func set_level(lv):
+	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	damage = int(weapon_data[lv]["damage"])
 	speed = int(weapon_data[lv]["speed"])

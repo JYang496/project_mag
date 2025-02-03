@@ -1,6 +1,6 @@
 extends FriendlyNPC
 
-@onready var ui = get_tree().get_first_node_in_group("ui")
+@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 
 func panel_move_in() -> void:
 	ui.upgrade_panel_in()

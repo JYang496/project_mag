@@ -2,7 +2,7 @@ extends Node
 
 var INVENTORY_MAX_SLOTS : int = 4
 var inventory_slots : Array = []
-@onready var ui : UI= get_tree().get_first_node_in_group("ui")
+@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 @onready var player : Player = get_tree().get_first_node_in_group("player")
 
 var on_select_eqp :
@@ -49,6 +49,7 @@ var on_select_slot :
 			on_drag_item = null
 			var copy_eqp = on_select_eqp.duplicate()
 			if not self.inventory_slots.has(copy_eqp):
+				copy_eqp.level = on_select_eqp.level
 				self.inventory_slots.append(copy_eqp)
 				print("put weapon into inv")
 				PlayerData.player_weapon_list.erase(on_select_eqp)
@@ -62,8 +63,8 @@ func slot_eqp_swap() -> void:
 	on_drag_item = null
 	var copy_eqp = on_select_eqp.duplicate()
 	if not self.inventory_slots.has(copy_eqp):
+		copy_eqp.level = on_select_eqp.level
 		self.inventory_slots.append(copy_eqp)
-		print("put weapon into inv")
 		PlayerData.player_weapon_list.erase(on_select_eqp)
 		on_select_eqp.queue_free()
 		inventory_slots.erase(on_select_slot)

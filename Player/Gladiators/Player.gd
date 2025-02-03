@@ -8,20 +8,21 @@ var extra_direction = Vector2.ZERO
 @onready var mecha_sprite = $MechaSprite
 @onready var collect_area = get_node("%CollectArea")
 @onready var grab_radius = $GrabArea/GrabShape
+@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 
 var movement_enabled = true
 var moveto_enabled = false
 var moveto_dest := Vector2.ZERO
 var distance_mouse_player = 0
-const WEAPON_SLOTS = [[16,-24],[-16,-24],[16,24],[-16,24]]
+const WEAPON_SLOTS = [[-16,-24],[16,-24],[16,24],[-16,24]]
 
 # Signals
 signal active_skill()
 
 func _ready():
 	create_weapon("1")
-	create_weapon("2")
-	create_weapon("3")
+	#create_weapon("2")
+	#create_weapon("3")
 	#create_weapon("4")
 	update_grab_radius()
 
@@ -74,8 +75,11 @@ func create_weapon(item_id):
 	weapon.position.x = WEAPON_SLOTS[available_slot][0]
 	weapon.position.y = WEAPON_SLOTS[available_slot][1]
 	remote_transform.add_child(weapon)
+	weapon.set_level(weapon.level)
 	remote_transform.remote_path = weapon.get_path()
 	PlayerData.player_weapon_list.append(weapon)
+	ui.refresh_border()
+
 
 
 func swap_weapon_position(weapon1, weapon2) -> void:

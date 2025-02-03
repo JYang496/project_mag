@@ -11,7 +11,6 @@ extends Ranger
 
 # Weapon
 var ITEM_NAME = "Laser"
-var level : int
 var damage : int
 var reload : float
 
@@ -53,14 +52,10 @@ var weapon_data = {
 	}
 }
 
-func _ready():
-	if level != null:
-		set_level("1")
-	else:
-		set_level(str(level))
 
 
 func set_level(lv):
+	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	damage = int(weapon_data[lv]["damage"])
 	reload = float(weapon_data[lv]["reload"])

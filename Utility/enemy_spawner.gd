@@ -27,7 +27,7 @@ func start_timer() -> void:
 func _on_timer_timeout():
 	PhaseManager.battle_time += 1
 	# When time hit 20, battle ends and bonus phase starts
-	if PhaseManager.battle_time >= 20 or PhaseManager.phase == PhaseManager.BONUS:
+	if PhaseManager.battle_time >= PhaseManager.TIME_OUT or PhaseManager.phase == PhaseManager.BONUS:
 		current_level += 1
 		timer.stop()
 		PhaseManager.enter_bonus()

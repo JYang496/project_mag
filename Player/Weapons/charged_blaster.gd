@@ -7,7 +7,6 @@ extends Ranger
 
 # Weapon
 var ITEM_NAME = "Beam Blaster"
-var level : int
 var damage : int
 var hit_cd : float
 var reload : float
@@ -72,9 +71,6 @@ var weapon_data = {
 }
 
 
-func _ready():
-	set_level("1")
-
 func _physics_process(delta):
 	if not justAttacked:
 		if Input.is_action_pressed("ATTACK"):
@@ -85,7 +81,8 @@ func _physics_process(delta):
 		if Input.is_action_just_released("ATTACK"):
 			emit_signal("shoot")
 
-func set_level(lv : String):
+func set_level(lv):
+	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	damage = int(weapon_data[lv]["damage"])
 	hit_cd = float(weapon_data[lv]["hit_cd"])
