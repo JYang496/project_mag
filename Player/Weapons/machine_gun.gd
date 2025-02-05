@@ -72,7 +72,7 @@ var minigun_data = JSON.new()
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
-	damage = int(weapon_data[lv]["damage"])
+	base_damage = int(weapon_data[lv]["damage"])
 	speed = int(weapon_data[lv]["speed"])
 	hp = int(weapon_data[lv]["hp"])
 	reload = float(weapon_data[lv]["reload"])
@@ -87,6 +87,8 @@ func _on_shoot():
 	gun_cooldownTimer.start()
 	var spawn_bullet = bullet.instantiate()
 	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	damage = base_damage
+	calculate_damage(base_damage)
 	spawn_bullet.damage = damage
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position

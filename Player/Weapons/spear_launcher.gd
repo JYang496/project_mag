@@ -9,7 +9,6 @@ var return_on_timeout = preload("res://Player/Weapons/Bullets/return_on_timeout.
 
 # Weapon
 var ITEM_NAME = "Spear Launcher"
-var level : int
 var damage : int
 var speed : int
 var hp : int
@@ -62,11 +61,6 @@ var weapon_data = {
 		"features": ["piercing"],
 	}
 }
-
-
-func _ready():
-	set_level(1)
-
 
 func set_level(lv):
 	lv = str(lv)

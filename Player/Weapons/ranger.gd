@@ -10,6 +10,7 @@ var speed_change_on_hit = preload("res://Player/Weapons/Bullets/speed_change_on_
 var dmg_up_on_enemy_death_module = preload("res://Player/Weapons/Bullets/dmg_up_on_enemy_death.tscn")
 
 var level : int
+var base_damage : int
 var justAttacked = false
 
 var module_list = []
@@ -23,6 +24,7 @@ var casting_oc_skill : bool = false
 
 signal shoot()
 signal over_charge()
+signal calculate_weapon_damage(damage)
 
 func _ready():
 	if level:
@@ -109,6 +111,9 @@ func apply_affects(bullet) -> void:
 				apply_explosion(bullet)
 			"speed_change_on_hit":
 				apply_speed_change_on_hit(bullet, 0.5)
+
+func calculate_damage(damage : int) -> void:
+	calculate_weapon_damage.emit(damage)
 
 func remove_weapon() -> void:
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
