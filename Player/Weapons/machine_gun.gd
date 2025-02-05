@@ -85,10 +85,10 @@ func _on_shoot():
 	justAttacked = true
 	gun_cooldownTimer.wait_time = reload / attack_speed
 	gun_cooldownTimer.start()
-	var spawn_bullet = bullet.instantiate()
 	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	var spawn_bullet = bullet.instantiate()
 	damage = base_damage
-	calculate_damage(base_damage)
+	calculate_damage(damage)
 	spawn_bullet.damage = damage
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
