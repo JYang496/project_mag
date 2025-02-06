@@ -9,10 +9,6 @@ var hexagon_attack = preload("res://Player/Weapons/Bullets/hexagon_attack.tscn")
 
 # Weapon
 var ITEM_NAME = "Pistol"
-var damage : int
-var speed : int
-var hp : int
-var reload : float
 
 
 var weapon_data = {

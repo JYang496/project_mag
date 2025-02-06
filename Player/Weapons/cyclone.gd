@@ -12,7 +12,6 @@ var tornado_texture = preload("res://Textures/test/tornado.png")
 
 # Weapon
 var ITEM_NAME = "Cyclone"
-var damage : int = 1
 var knock_back = {
 	"amount": 0,
 	"angle": Vector2.ZERO
@@ -20,9 +19,6 @@ var knock_back = {
 var knock_back_amount = 30
 var spin_rate : float = PI
 var spin_speed : float = 600
-var speed : int = 300
-var hp : int = 1
-var reload : float =1
 
 
 var weapon_data = {

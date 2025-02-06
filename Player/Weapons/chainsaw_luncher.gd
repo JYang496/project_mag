@@ -13,11 +13,6 @@ var bul_texture = preload("res://Textures/test/chainsaw_spin.png")
 
 # Weapon
 var ITEM_NAME = "Chainsaw Luncher"
-var damage : int
-var speed : int
-var hp : int
-var dot_cd : float
-var reload : float
 
 var weapon_data = {
 	"1": {

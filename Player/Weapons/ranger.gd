@@ -11,6 +11,11 @@ var dmg_up_on_enemy_death_module = preload("res://Player/Weapons/Bullets/dmg_up_
 
 var level : int
 var base_damage : int
+var damage : int
+var speed : int
+var hp : int
+var dot_cd : float
+var reload : float
 var justAttacked = false
 
 var module_list = []

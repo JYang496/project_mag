@@ -12,10 +12,6 @@ var bul_texture = preload("res://Textures/test/minigun_bullet.png")
 
 # Weapon
 var ITEM_NAME = "Rocket Luncher"
-var damage : int
-var speed : int
-var hp : int
-var reload : float
 
 
 var weapon_data = {

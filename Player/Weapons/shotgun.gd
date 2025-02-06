@@ -8,10 +8,6 @@ var bul_texture = preload("res://Textures/test/sniper_bullet.png")
 
 # Weapon
 var ITEM_NAME = "Shotgun"
-var damage : int
-var speed : int
-var hp : int
-var reload : float
 @export_range(0, 180) var arc : float = 0
 var bullet_count : int
 

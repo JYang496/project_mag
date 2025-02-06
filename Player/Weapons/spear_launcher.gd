@@ -9,10 +9,6 @@ var return_on_timeout = preload("res://Player/Weapons/Bullets/return_on_timeout.
 
 # Weapon
 var ITEM_NAME = "Spear Launcher"
-var damage : int
-var speed : int
-var hp : int
-var reload : float
 
 var weapon_data = {
 	"1": {

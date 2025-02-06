@@ -7,9 +7,7 @@ extends Ranger
 
 # Weapon
 var ITEM_NAME = "Beam Blaster"
-var damage : int
 var hit_cd : float
-var reload : float
 var duration : float
 var charge_level :int
 var charge_time : float = 0.0

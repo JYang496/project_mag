@@ -11,8 +11,6 @@ extends Ranger
 
 # Weapon
 var ITEM_NAME = "Laser"
-var damage : int
-var reload : float
 
 var weapon_data = {
 	"1": {
