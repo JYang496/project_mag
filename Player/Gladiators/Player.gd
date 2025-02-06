@@ -20,7 +20,7 @@ const WEAPON_SLOTS = [[-16,-24],[16,-24],[16,24],[-16,24]]
 signal active_skill()
 
 func _ready():
-	create_weapon("1")
+	create_weapon("5")
 	#create_weapon("2")
 	#create_weapon("3")
 	#create_weapon("4")
@@ -75,7 +75,6 @@ func create_weapon(item_id):
 	weapon.position.x = WEAPON_SLOTS[available_slot][0]
 	weapon.position.y = WEAPON_SLOTS[available_slot][1]
 	remote_transform.add_child(weapon)
-	weapon.set_level(weapon.level)
 	remote_transform.remote_path = weapon.get_path()
 	PlayerData.player_weapon_list.append(weapon)
 	ui.refresh_border()

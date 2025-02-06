@@ -9,12 +9,14 @@ var explosion_module = preload("res://Player/Weapons/Bullets/explosion_module.ts
 var speed_change_on_hit = preload("res://Player/Weapons/Bullets/speed_change_on_hit.tscn")
 var dmg_up_on_enemy_death_module = preload("res://Player/Weapons/Bullets/dmg_up_on_enemy_death.tscn")
 
+# Common variables for rangers
 var level : int
 var base_damage : int
 var damage : int
 var speed : int
 var hp : int
 var dot_cd : float
+var base_reload : float
 var reload : float
 var justAttacked = false
 
@@ -30,12 +32,15 @@ var casting_oc_skill : bool = false
 signal shoot()
 signal over_charge()
 signal calculate_weapon_damage(damage)
+signal calculate_cd_timer(reload)
 
 func _ready():
 	if level:
 		set_level(level)
 	else:
+		# New weapon, create a weapon with level 1
 		set_level(1)
+	print("after rdy")
 
 func _physics_process(_delta):
 	if not justAttacked and Input.is_action_pressed("ATTACK"):
@@ -119,6 +124,12 @@ func apply_affects(bullet) -> void:
 
 func calculate_damage(damage : int) -> void:
 	calculate_weapon_damage.emit(damage)
+
+func set_cd_timer(timer) -> void:
+	reload = base_reload
+	print(reload)
+	calculate_cd_timer.emit(reload)
+	timer.wait_time = reload
 
 func remove_weapon() -> void:
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)

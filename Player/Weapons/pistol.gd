@@ -64,13 +64,15 @@ var minigun_data = JSON.new()
 
 
 func set_level(lv):
+	print("set lvl: ",self)
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	damage = int(weapon_data[lv]["damage"])
 	speed = int(weapon_data[lv]["speed"])
 	hp = int(weapon_data[lv]["hp"])
-	reload = float(weapon_data[lv]["reload"])
-	gun_cooldownTimer.wait_time = reload
+	base_reload = float(weapon_data[lv]["reload"])
+	set_cd_timer(gun_cooldownTimer)
+	#gun_cooldownTimer.wait_time = base_reload
 	for feature in weapon_data[lv]["features"]:
 		if not features.has(feature):
 			features.append(feature)
