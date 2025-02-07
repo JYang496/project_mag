@@ -5,7 +5,6 @@ var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/spear.png")
 var return_on_timeout = preload("res://Player/Weapons/Bullets/return_on_timeout.tscn")
 @onready var sprite = get_node("%Sprite")
-@onready var spear_cooldownTimer = $SpearCooldownTimer
 
 # Weapon
 var ITEM_NAME = "Spear Launcher"
@@ -58,14 +57,18 @@ var weapon_data = {
 	}
 }
 
+
+func setup_timer():
+	cooldown_timer = $SpearCooldownTimer
+
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
-	damage = int(weapon_data[lv]["damage"])
+	base_damage = int(weapon_data[lv]["damage"])
 	speed = int(weapon_data[lv]["speed"])
-	hp = int(weapon_data[lv]["hp"])
-	reload = float(weapon_data[lv]["reload"])
-	spear_cooldownTimer.wait_time = reload
+	base_hp = int(weapon_data[lv]["hp"])
+	base_reload = float(weapon_data[lv]["reload"])
+	calculate_status()
 	for feature in weapon_data[lv]["features"]:
 		if not features.has(feature):
 			features.append(feature)
@@ -73,7 +76,7 @@ func set_level(lv):
 
 func _on_shoot():
 	justAttacked = true
-	spear_cooldownTimer.start()
+	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
 	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
 	spawn_bullet.damage = damage

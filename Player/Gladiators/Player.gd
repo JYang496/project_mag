@@ -20,10 +20,10 @@ const WEAPON_SLOTS = [[-16,-24],[16,-24],[16,24],[-16,24]]
 signal active_skill()
 
 func _ready():
-	create_weapon("5")
-	#create_weapon("2")
-	#create_weapon("3")
-	#create_weapon("4")
+	create_weapon("9")
+	create_weapon("10")
+	#create_weapon("7")
+	#create_weapon("8")
 	update_grab_radius()
 
 

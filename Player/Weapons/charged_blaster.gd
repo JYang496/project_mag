@@ -3,7 +3,6 @@ extends Ranger
 # Bullet
 @onready var beam_blast = preload("res://Player/Weapons/Bullets/beam_blast.tscn")
 @onready var sprite = get_node("%Sprite")
-@onready var gun_cooldownTimer : Timer = $ChargedBlastTimer
 
 # Weapon
 var ITEM_NAME = "Beam Blaster"
@@ -69,6 +68,9 @@ var weapon_data = {
 }
 
 
+func setup_timer():
+	cooldown_timer = $ChargedBlastTimer
+
 func _physics_process(delta):
 	if not justAttacked:
 		if Input.is_action_pressed("ATTACK"):
@@ -82,12 +84,12 @@ func _physics_process(delta):
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
-	damage = int(weapon_data[lv]["damage"])
+	base_damage = int(weapon_data[lv]["damage"])
 	hit_cd = float(weapon_data[lv]["hit_cd"])
-	reload = float(weapon_data[lv]["reload"])
+	base_reload = float(weapon_data[lv]["reload"])
 	duration = float(weapon_data[lv]["duration"])
 	max_charge_level = int(weapon_data[lv]["max_charge_level"])
-	gun_cooldownTimer.wait_time = reload
+	calculate_status()
 	for feature in weapon_data[lv]["features"]:
 		if not features.has(feature):
 			features.append(feature)
@@ -104,7 +106,7 @@ func _on_shoot():
 	beam_blast_ins.hit_cd = hit_cd
 	call_deferred("add_child",beam_blast_ins)
 	charge_level = 0
-	gun_cooldownTimer.start()
+	cooldown_timer.start()
 
 func _on_over_charge():
 	if self.casting_oc_skill:

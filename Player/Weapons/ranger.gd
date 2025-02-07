@@ -13,11 +13,14 @@ var dmg_up_on_enemy_death_module = preload("res://Player/Weapons/Bullets/dmg_up_
 var level : int
 var base_damage : int
 var damage : int
+var base_speed : int
 var speed : int
+var base_hp : int
 var hp : int
 var dot_cd : float
 var base_reload : float
 var reload : float
+var cooldown_timer : Timer
 var justAttacked = false
 
 var module_list = []
@@ -32,15 +35,19 @@ var casting_oc_skill : bool = false
 signal shoot()
 signal over_charge()
 signal calculate_weapon_damage(damage)
+signal calculate_weapon_hp(hp)
 signal calculate_cd_timer(reload)
 
 func _ready():
+	setup_timer()
 	if level:
 		set_level(level)
 	else:
 		# New weapon, create a weapon with level 1
 		set_level(1)
-	print("after rdy")
+
+func setup_timer() -> void:
+	pass
 
 func _physics_process(_delta):
 	if not justAttacked and Input.is_action_pressed("ATTACK"):
@@ -122,12 +129,22 @@ func apply_affects(bullet) -> void:
 			"speed_change_on_hit":
 				apply_speed_change_on_hit(bullet, 0.5)
 
-func calculate_damage(damage : int) -> void:
-	calculate_weapon_damage.emit(damage)
-
-func set_cd_timer(timer) -> void:
+func calculate_status() -> void:
+	damage = base_damage
+	hp = base_hp
 	reload = base_reload
-	print(reload)
+	set_cd_timer(cooldown_timer)
+	calculate_damage(damage)
+	calculate_hp(hp)
+
+func calculate_damage(pre_damage : int) -> void:
+	calculate_weapon_damage.emit(pre_damage)
+
+func calculate_hp(pre_hp : int) -> void:
+	calculate_weapon_hp.emit(pre_hp)
+
+
+func set_cd_timer(timer : Timer) -> void:
 	calculate_cd_timer.emit(reload)
 	timer.wait_time = reload
 

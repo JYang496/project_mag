@@ -5,8 +5,6 @@ extends Ranger
 
 @onready var detect_area: Area2D = $DetectArea
 @onready var oc_timer: Timer = $OCTimer
-
-@onready var cooldown_timer = $LaserCooldownTimer
 @onready var sprite = get_node("%Sprite")
 
 # Weapon
@@ -51,13 +49,15 @@ var weapon_data = {
 }
 
 
+func setup_timer():
+	cooldown_timer = $LaserCooldownTimer
 
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
-	damage = int(weapon_data[lv]["damage"])
-	reload = float(weapon_data[lv]["reload"])
-	cooldown_timer.wait_time = reload
+	base_damage = int(weapon_data[lv]["damage"])
+	base_reload = float(weapon_data[lv]["reload"])
+	calculate_status()
 	for feature in weapon_data[lv]["features"]:
 		if not features.has(feature):
 			features.append(feature)

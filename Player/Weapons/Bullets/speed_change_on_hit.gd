@@ -16,13 +16,9 @@ func _ready() -> void:
 	saved_speed_adjustment = module_parent.base_displacement
 
 func _on_bullet_overlapping_change() -> void:
-	print("CHANGE")
 	if module_parent.overlapping:
-		print("enter")
 		parent_overlap = true
-		#saved_speed_adjustment = module_parent.base_displacement
 		module_parent.base_displacement = saved_speed_adjustment * speed_rate
 	if not module_parent.overlapping:
-		print("exit")
 		module_parent.base_displacement = saved_speed_adjustment
 		parent_overlap = false

@@ -7,7 +7,6 @@ var tornado = preload("res://Player/Weapons/Bullets/tornado.tscn")
 var tornado_texture = preload("res://Textures/test/tornado.png")
 
 @onready var sprite = get_node("%Sprite")
-@onready var sniper_attack_timer = $SniperAttackTimer
 @onready var sniper_charging_timer = $SniperChargingTimer
 
 # Weapon
@@ -85,17 +84,20 @@ var weapon_data = {
 }
 
 
+func setup_timer():
+	cooldown_timer = $SniperAttackTimer
+
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
-	damage = int(weapon_data[lv]["damage"])
+	base_damage = int(weapon_data[lv]["damage"])
 	knock_back_amount = int(weapon_data[lv]["knock_back_amount"])
 	speed = int(weapon_data[lv]["speed"])
 	spin_rate = float(weapon_data[lv]["spin_rate"])
 	spin_speed = float(weapon_data[lv]["spin_speed"])
-	hp = int(weapon_data[lv]["hp"])
+	base_hp = int(weapon_data[lv]["hp"])
 	reload = float(weapon_data[lv]["reload"])
-	sniper_attack_timer.wait_time = reload
+	calculate_status()
 	for feature in weapon_data[lv]["features"]:
 		if not features.has(feature):
 			features.append(feature)
@@ -103,7 +105,7 @@ func set_level(lv):
 
 func _on_shoot():
 	justAttacked = true
-	sniper_attack_timer.start()
+	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
 	spawn_bullet.damage = damage
 	var direction = global_position.direction_to(get_random_target()).normalized()

@@ -4,7 +4,6 @@ extends Ranger
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/minigun_bullet.png")
 @onready var sprite = get_node("%Sprite")
-@onready var gun_cooldownTimer = $MachineGunTimer
 
 # Weapon
 var ITEM_NAME = "Machine Gun"
@@ -65,22 +64,25 @@ var weapon_file
 var minigun_data = JSON.new()
 
 
+func setup_timer():
+	cooldown_timer = $MachineGunTimer
+
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	speed = int(weapon_data[lv]["speed"])
-	hp = int(weapon_data[lv]["hp"])
-	reload = float(weapon_data[lv]["reload"])
-	gun_cooldownTimer.wait_time = reload
+	base_hp = int(weapon_data[lv]["hp"])
+	base_reload = float(weapon_data[lv]["reload"])
+	calculate_status()
 	for feature in weapon_data[lv]["features"]:
 		if not features.has(feature):
 			features.append(feature)
 	
 func _on_shoot():
 	justAttacked = true
-	gun_cooldownTimer.wait_time = reload / attack_speed
-	gun_cooldownTimer.start()
+	cooldown_timer.wait_time = reload / attack_speed
+	cooldown_timer.start()
 	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
 	var spawn_bullet = bullet.instantiate()
 	damage = base_damage
