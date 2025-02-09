@@ -96,7 +96,7 @@ func set_level(lv):
 	spin_rate = float(weapon_data[lv]["spin_rate"])
 	spin_speed = float(weapon_data[lv]["spin_speed"])
 	base_hp = int(weapon_data[lv]["hp"])
-	reload = float(weapon_data[lv]["reload"])
+	base_reload = float(weapon_data[lv]["reload"])
 	calculate_status()
 	for feature in weapon_data[lv]["features"]:
 		if not features.has(feature):

@@ -2,12 +2,14 @@ extends Node2D
 class_name Ranger
 
 @onready var player = get_tree().get_first_node_in_group("player")
-var linear_movement = preload("res://Player/Weapons/Bullets/linear_movement.tscn")
-var spiral_movement = preload("res://Player/Weapons/Bullets/spiral_movement.tscn")
-var ricochet_module = preload("res://Player/Weapons/Bullets/ricochet_module.tscn")
-var explosion_module = preload("res://Player/Weapons/Bullets/explosion_module.tscn")
-var speed_change_on_hit = preload("res://Player/Weapons/Bullets/speed_change_on_hit.tscn")
-var dmg_up_on_enemy_death_module = preload("res://Player/Weapons/Bullets/dmg_up_on_enemy_death.tscn")
+var explosion_module = preload("res://Player/Weapons/Modules/explosion_module.tscn")
+var speed_change_on_hit = preload("res://Player/Weapons/Modules/speed_change_on_hit.tscn")
+var dmg_up_on_enemy_death_module = preload("res://Player/Weapons/Modules/dmg_up_on_enemy_death.tscn")
+const linear_movement = preload("res://Player/Weapons/Modules/linear_movement.tscn")
+const spiral_movement = preload("res://Player/Weapons/Modules/spiral_movement.tscn")
+var ricochet_module = preload("res://Player/Weapons/Modules/ricochet_module.tscn")
+
+
 
 # Common variables for rangers
 var level : int

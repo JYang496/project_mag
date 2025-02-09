@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://bona58ek1ng53"]
-
-[ext_resource type="Script" path="res://Player/Weapons/Accessories/more_hp.gd" id="1_ojf7q"]
-
-[node name="MoreHp" type="Node2D"]
-script = ExtResource("1_ojf7q")

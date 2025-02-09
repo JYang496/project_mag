@@ -1,6 +1,4 @@
-extends Node2D
-
-@onready var weapon = self.get_parent()
+extends Accessory
 
 @export var mult_by = 0.7
 # Called when the node enters the scene tree for the first time.

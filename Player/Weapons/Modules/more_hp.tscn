@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://dt2pqqoi5dsw0"]
+
+[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/accessory.tscn" id="1_4bmpc"]
+[ext_resource type="Texture2D" uid="uid://bmuw2m4jla4ac" path="res://Textures/test/more_hp.png" id="2_3fre3"]
+
+[node name="MoreHP" instance=ExtResource("1_4bmpc")]
+
+[node name="icon" parent="." index="0"]
+texture = ExtResource("2_3fre3")

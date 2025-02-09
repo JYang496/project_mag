@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://dcdj676malkbo"]
 
-[ext_resource type="Script" path="res://Player/Weapons/Bullets/dmg_up_on_enemy_death.gd" id="1_wh7sh"]
+[ext_resource type="Script" path="res://Player/Weapons/Modules/dmg_up_on_enemy_death.gd" id="1_wh7sh"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ms386"]
 radius = 302.28

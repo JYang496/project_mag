@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://ckn6jwbnoco4o"]
 
-[ext_resource type="Script" path="res://Player/Weapons/Bullets/linear_movement.gd" id="1_b4msr"]
+[ext_resource type="Script" path="res://Player/Weapons/Modules/linear_movement.gd" id="1_b4msr"]
 
 [node name="LinearMovement" type="Node2D"]
 script = ExtResource("1_b4msr")

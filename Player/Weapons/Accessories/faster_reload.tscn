@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://vgrrekr1a3cs"]
-
-[ext_resource type="Script" path="res://Player/Weapons/Accessories/faster_reload.gd" id="1_wx648"]
-
-[node name="FasterReload" type="Node2D"]
-script = ExtResource("1_wx648")

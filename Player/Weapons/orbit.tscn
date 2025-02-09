@@ -11,3 +11,4 @@ unique_name_in_owner = true
 texture = ExtResource("2_d4sd2")
 
 [connection signal="over_charge" from="." to="." method="_on_over_charge"]
+[connection signal="tree_exiting" from="." to="." method="_on_tree_exiting"]

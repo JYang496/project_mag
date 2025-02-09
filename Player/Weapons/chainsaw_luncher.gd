@@ -1,7 +1,7 @@
 extends Ranger
 
 var spin_module = preload("res://Player/Weapons/Bullets/spin_module.tscn")
-var speed_change_on_hit_module = preload("res://Player/Weapons/Bullets/speed_change_on_hit.tscn")
+var speed_change_on_hit_module = preload("res://Player/Weapons/Modules/speed_change_on_hit.tscn")
 var scale_up_by_time_module = preload("res://Player/Weapons/Bullets/scale_up_by_time.tscn")
 var chase_closest_enemy_module = preload("res://Player/Weapons/Bullets/chase_closest_enemy.tscn")
 

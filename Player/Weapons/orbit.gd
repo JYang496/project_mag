@@ -118,10 +118,14 @@ func _on_over_charge() -> void:
 
 func remove_weapon() -> void:
 	module_list.clear()
-	for s in satellites:
-		s.queue_free()
-	satellites.clear()
+	# Remove by OC
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
 	PlayerData.overcharge_time = 0
 	PlayerData.on_select_weapon = -1
 	queue_free()
+
+func _on_tree_exiting() -> void:
+	if not self.casting_oc_skill:
+		# Remove when not OC, ex: put in inv
+		for s in satellites:
+			s.queue_free()

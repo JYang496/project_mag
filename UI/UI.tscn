@@ -59,6 +59,7 @@ expand_mode = 2
 script = ExtResource("3_xpg6s")
 
 [node name="Augments" type="Label" parent="GUI/CharacterRoot"]
+visible = false
 layout_mode = 0
 offset_left = 2.0
 offset_top = 109.0
