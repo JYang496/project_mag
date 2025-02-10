@@ -9,8 +9,8 @@ var knock_back = {
 	"amount": 0,
 	"angle": Vector2.ZERO
 }
-# Module
-@onready var rotate_around_player = preload("res://Player/Weapons/Bullets/rotate_around_player.tscn")
+# Effect
+@onready var rotate_around_player = preload("res://Player/Weapons/Effects/rotate_around_player.tscn")
 
 var module_list = []
 

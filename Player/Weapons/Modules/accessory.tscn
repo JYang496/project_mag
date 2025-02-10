@@ -1,9 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://bdbij8tj8jmsq"]
-
-[ext_resource type="Script" path="res://Player/Weapons/Modules/accessory.gd" id="1_cjmqt"]
-
-[node name="Accessory" type="Node2D"]
-script = ExtResource("1_cjmqt")
-
-[node name="icon" type="Sprite2D" parent="."]
-visible = false

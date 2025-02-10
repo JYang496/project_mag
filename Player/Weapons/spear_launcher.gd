@@ -3,7 +3,7 @@ extends Ranger
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/spear.png")
-var return_on_timeout = preload("res://Player/Weapons/Bullets/return_on_timeout.tscn")
+var return_on_timeout = preload("res://Player/Weapons/Effects/return_on_timeout.tscn")
 @onready var sprite = get_node("%Sprite")
 
 # Weapon
@@ -17,7 +17,7 @@ var weapon_data = {
 		"hp": "10",
 		"reload": "0.7",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	},
 	"2": {
 		"level": "2",
@@ -26,7 +26,7 @@ var weapon_data = {
 		"hp": "10",
 		"reload": "0.5",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	},
 	"3": {
 		"level": "3",
@@ -35,7 +35,7 @@ var weapon_data = {
 		"hp": "10",
 		"reload": "0.4",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	},
 	"4": {
 		"level": "4",
@@ -44,7 +44,7 @@ var weapon_data = {
 		"hp": "10",
 		"reload": "0.4",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	},
 	"5": {
 		"level": "5",
@@ -53,7 +53,7 @@ var weapon_data = {
 		"hp": "20",
 		"reload": "0.4",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	}
 }
 

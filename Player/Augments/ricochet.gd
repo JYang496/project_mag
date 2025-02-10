@@ -11,8 +11,7 @@ func _ready() -> void:
 
 func _on_update_aug_status() -> void:
 	for weapon in PlayerData.player_weapon_list:
-		if weapon.features.has("piercing"):
-			weapon.features.append("ricochet")
+		weapon.features.append("ricochet")
 
 func remove_augment() -> void:
 	if PlayerData.player_augment_list.has(self):

@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://Npc/friendly/tester.gd" id="2_pnd0s"]
 [ext_resource type="Texture2D" uid="uid://i7pfn0rsdlxs" path="res://Textures/test/npc_1.png" id="3_p1b4o"]
 
-[node name="TesterModule" instance=ExtResource("1_1bevg")]
+[node name="TesterAug" instance=ExtResource("1_1bevg")]
 script = ExtResource("2_pnd0s")
 
 [node name="Body" parent="." index="1"]

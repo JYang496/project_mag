@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://d1i4w0rbbevbw"]
 
-[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/accessory.tscn" id="1_1716q"]
+[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_1716q"]
 [ext_resource type="Texture2D" uid="uid://r8gjrats42kq" path="res://Textures/test/faster_reload.png" id="2_w8ajp"]
 
 [node name="FasterReload" instance=ExtResource("1_1716q")]

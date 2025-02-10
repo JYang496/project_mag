@@ -1,5 +1,5 @@
 extends Node2D
-class_name SpinModule
+class_name SpinEffect
 
 @onready var module_parent = self.get_parent() # Bullet root is parent
 

@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://dn22imo0s3vt"]
-
-[ext_resource type="Script" path="res://Player/Weapons/Bullets/knock_back_module.gd" id="1_vcs6b"]
-
-[node name="KnockBackModule" type="Node2D"]
-script = ExtResource("1_vcs6b")

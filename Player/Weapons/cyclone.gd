@@ -31,7 +31,7 @@ var weapon_data = {
 		"hp": "5",
 		"reload": "2",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	},
 	"2": {
 		"level": "2",
@@ -43,7 +43,7 @@ var weapon_data = {
 		"hp": "7",
 		"reload": "2",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	},
 	"3": {
 		"level": "3",
@@ -55,7 +55,7 @@ var weapon_data = {
 		"hp": "10",
 		"reload": "2",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	},
 	"4": {
 		"level": "4",
@@ -67,7 +67,7 @@ var weapon_data = {
 		"hp": "15",
 		"reload": "2",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	},
 	"5": {
 		"level": "5",
@@ -79,7 +79,7 @@ var weapon_data = {
 		"hp": "25",
 		"reload": "1.5",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	}
 }
 

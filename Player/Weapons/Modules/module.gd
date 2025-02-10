@@ -1,5 +1,5 @@
 extends Node2D
-class_name Accessory
+class_name Module
 
 @onready var weapon = self.get_parent()
 @export var cost : int

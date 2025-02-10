@@ -56,7 +56,7 @@ var weapon_data = {
 		"hp": "2",
 		"reload": "0.6",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	}
 }
 

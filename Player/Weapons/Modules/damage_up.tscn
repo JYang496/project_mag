@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://pd13vclogpst"]
 
-[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/accessory.tscn" id="1_2t80l"]
+[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_2t80l"]
 [ext_resource type="Texture2D" uid="uid://5hcsfj131buc" path="res://Textures/test/atk_up.png" id="2_6q6ic"]
 
 [node name="DamageUp" instance=ExtResource("1_2t80l")]

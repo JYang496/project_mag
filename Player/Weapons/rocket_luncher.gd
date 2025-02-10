@@ -6,7 +6,7 @@ var bul_texture = preload("res://Textures/test/minigun_bullet.png")
 @onready var sprite = get_node("%Sprite")
 
 #OC
-@onready var fall_module = preload("res://Player/Weapons/Bullets/fall.tscn")
+@onready var fall_effect = preload("res://Player/Weapons/Effects/fall.tscn")
 @onready var oc_booming_area: Area2D = $OCBoomingArea
 
 # Weapon
@@ -21,7 +21,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1",
 		"cost": "1",
-		"features": ["explosion"],
+		"features": [],
 	},
 	"2": {
 		"level": "2",
@@ -30,7 +30,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1",
 		"cost": "1",
-		"features": ["explosion"],
+		"features": [],
 	},
 	"3": {
 		"level": "3",
@@ -39,7 +39,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1",
 		"cost": "1",
-		"features": ["explosion"],
+		"features": [],
 	},
 	"4": {
 		"level": "4",
@@ -48,7 +48,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": ["explosion"],
+		"features": [],
 	},
 	"5": {
 		"level": "5",
@@ -57,7 +57,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": ["explosion"],
+		"features": [],
 	}
 }
 
@@ -87,6 +87,7 @@ func _on_shoot():
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	apply_linear(spawn_bullet, bullet_direction, speed)
+	apply_explosion(spawn_bullet)
 	apply_affects(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
@@ -109,9 +110,9 @@ func _on_over_charge():
 			var spawn_bullet = bullet.instantiate()
 			spawn_bullet.damage = damage
 			spawn_bullet.blt_texture = bul_texture
-			var fall_ins = fall_module.instantiate()
+			var fall_ins = fall_effect.instantiate()
 			fall_ins.destination = area.global_position
-			apply_affects(spawn_bullet)
+			apply_explosion(spawn_bullet)
 			spawn_bullet.call_deferred("add_child",fall_ins)
 			get_tree().root.call_deferred("add_child",spawn_bullet)
 			n += 1

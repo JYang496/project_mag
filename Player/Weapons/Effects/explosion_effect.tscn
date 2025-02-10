@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://c0sqmjqpjtnhl"]
 
-[ext_resource type="Script" path="res://Player/Weapons/Modules/explosion_module.gd" id="1_6bt3k"]
+[ext_resource type="Script" path="res://Player/Weapons/Effects/explosion_effect.gd" id="1_6bt3k"]
 
 [node name="ExplosionModule" type="Node2D"]
 script = ExtResource("1_6bt3k")

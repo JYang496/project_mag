@@ -1,9 +1,8 @@
 extends Ranger
 
-var spin_module = preload("res://Player/Weapons/Bullets/spin_module.tscn")
-var speed_change_on_hit_module = preload("res://Player/Weapons/Modules/speed_change_on_hit.tscn")
-var scale_up_by_time_module = preload("res://Player/Weapons/Bullets/scale_up_by_time.tscn")
-var chase_closest_enemy_module = preload("res://Player/Weapons/Bullets/chase_closest_enemy.tscn")
+var spin_effect = preload("res://Player/Weapons/Effects/spin_effect.tscn")
+var scale_up_by_time_effect = preload("res://Player/Weapons/Effects/scale_up_by_time.tscn")
+var chase_closest_enemy_effect = preload("res://Player/Weapons/Effects/chase_closest_enemy.tscn")
 
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
@@ -123,19 +122,19 @@ func _on_over_charge():
 	remove_weapon()
 
 func apply_spin(blt_node) -> void:
-	var spin_movement_ins = spin_module.instantiate()
+	var spin_movement_ins = spin_effect.instantiate()
 	blt_node.call_deferred("add_child",spin_movement_ins)
 	blt_node.module_list.append(spin_movement_ins)
 	module_list.append(spin_movement_ins)
 
 func apply_scale_up_by_time(blt_node) -> void:
-	var scale_up_by_time = scale_up_by_time_module.instantiate()
+	var scale_up_by_time = scale_up_by_time_effect.instantiate()
 	blt_node.call_deferred("add_child",scale_up_by_time)
 	blt_node.module_list.append(scale_up_by_time)
 	module_list.append(scale_up_by_time)
 
 func apply_chase_closest_enemy(blt_node) -> void:
-	var chase_ins = chase_closest_enemy_module.instantiate()
+	var chase_ins = chase_closest_enemy_effect.instantiate()
 	blt_node.call_deferred("add_child",chase_ins)
 	blt_node.module_list.append(chase_ins)
 	module_list.append(chase_ins)

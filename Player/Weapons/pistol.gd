@@ -3,7 +3,7 @@ extends Ranger
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/minigun_bullet.png")
-var hexagon_attack = preload("res://Player/Weapons/Bullets/hexagon_attack.tscn")
+var hexagon_attack_effect = preload("res://Player/Weapons/Effects/hexagon_attack.tscn")
 @onready var sprite = get_node("%Sprite")
 
 # Weapon
@@ -54,7 +54,7 @@ var weapon_data = {
 		"hp": "2",
 		"reload": "0.75",
 		"cost": "1",
-		"features": ["piercing"],
+		"features": [],
 	}
 }
 
@@ -118,7 +118,7 @@ func _on_over_charge():
 	remove_weapon()
 		
 func apply_hexagon_attack(blt_node : Node2D, id : int, unit_of_time : float) -> void:
-	var hexagon_attack_ins = hexagon_attack.instantiate()
+	var hexagon_attack_ins = hexagon_attack_effect.instantiate()
 	hexagon_attack_ins.id = id
 	hexagon_attack_ins.wait_time = unit_of_time
 	blt_node.call_deferred("add_child",hexagon_attack_ins)

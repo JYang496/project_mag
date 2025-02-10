@@ -2,12 +2,12 @@ extends Node2D
 class_name Ranger
 
 @onready var player = get_tree().get_first_node_in_group("player")
-var explosion_module = preload("res://Player/Weapons/Modules/explosion_module.tscn")
-var speed_change_on_hit = preload("res://Player/Weapons/Modules/speed_change_on_hit.tscn")
-var dmg_up_on_enemy_death_module = preload("res://Player/Weapons/Modules/dmg_up_on_enemy_death.tscn")
-const linear_movement = preload("res://Player/Weapons/Modules/linear_movement.tscn")
-const spiral_movement = preload("res://Player/Weapons/Modules/spiral_movement.tscn")
-var ricochet_module = preload("res://Player/Weapons/Modules/ricochet_module.tscn")
+const explosion_effect = preload("res://Player/Weapons/Effects/explosion_effect.tscn")
+const speed_change_on_hit = preload("res://Player/Weapons/Effects/speed_change_on_hit.tscn")
+const d_up_on_emy_d_effect = preload("res://Player/Weapons/Effects/dmg_up_on_enemy_death.tscn")
+const linear_movement = preload("res://Player/Weapons/Effects/linear_movement.tscn")
+const spiral_movement = preload("res://Player/Weapons/Effects/spiral_movement.tscn")
+var ricochet_effect = preload("res://Player/Weapons/Effects/ricochet_effect.tscn")
 
 
 
@@ -91,16 +91,16 @@ func apply_spiral(blt_node : Node2D, blt_spin_rate : float = PI, blt_spin_speed 
 	module_list.append(spiral_movement_ins)
 
 func apply_ricochet(blt_node : Node2D) -> void:
-	var ricochet_module_ins = ricochet_module.instantiate()
-	blt_node.call_deferred("add_child",ricochet_module_ins)
-	blt_node.module_list.append(ricochet_module_ins)
-	module_list.append(ricochet_module_ins)
+	var ricochet_effect_ins = ricochet_effect.instantiate()
+	blt_node.call_deferred("add_child",ricochet_effect_ins)
+	blt_node.module_list.append(ricochet_effect_ins)
+	module_list.append(ricochet_effect_ins)
 
 func apply_explosion(blt_node : Node2D) -> void:
-	var explosion_module_ins = explosion_module.instantiate()
-	blt_node.call_deferred("add_child",explosion_module_ins)
-	blt_node.module_list.append(explosion_module_ins)
-	module_list.append(explosion_module_ins)
+	var explosion_effect_ins = explosion_effect.instantiate()
+	blt_node.call_deferred("add_child",explosion_effect_ins)
+	blt_node.module_list.append(explosion_effect_ins)
+	module_list.append(explosion_effect_ins)
 
 func apply_speed_change_on_hit(blt_node : Node2D, speed_rate : float) -> void:
 	var speed_change_on_hit_ins = speed_change_on_hit.instantiate()
@@ -113,7 +113,7 @@ func apply_knock_back(blt_node : Node2D, direction : Vector2, amount : float) ->
 	pass
 
 func apply_dmg_up_on_enemy_death(blt_node) -> void:
-	var dmg_up_on_enemy_death_ins = dmg_up_on_enemy_death_module.instantiate()
+	var dmg_up_on_enemy_death_ins = d_up_on_emy_d_effect.instantiate()
 	dmg_up_on_enemy_death_ins.module_parent = blt_node
 	blt_node.call_deferred("add_child",dmg_up_on_enemy_death_ins)
 	blt_node.module_list.append(dmg_up_on_enemy_death_ins)

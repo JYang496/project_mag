@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://umlm8f6r3v6t"]
 
-[ext_resource type="Script" path="res://Player/Weapons/Bullets/return_on_timeout.gd" id="1_vkagf"]
+[ext_resource type="Script" path="res://Player/Weapons/Effects/return_on_timeout.gd" id="1_vkagf"]
 
 [node name="ReturnOnTimeout" type="Node2D"]
 script = ExtResource("1_vkagf")

@@ -1,5 +1,5 @@
 extends Node2D
-class_name KnockBackModulde
+class_name KnockBackEffect
 
 @onready var module_parent = self.get_parent() # Bullet root is parent
 var direction : Vector2 = Vector2.ZERO
