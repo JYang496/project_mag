@@ -10,6 +10,8 @@ class_name UI
 @onready var boss_root : Control = $GUI/BossRoot
 @onready var inventory_root: Control = $GUI/InventoryRoot
 @onready var pause_menu_root : Control = $GUI/PauseMenuRoot
+@onready var module_root: Control = $GUI/ModuleRoot
+
 
 # Character
 @onready var equipped_label = $GUI/CharacterRoot/Equipped
@@ -156,6 +158,18 @@ func inventory_panel_out() -> void:
 	move_out_timer.start()
 	inventory_root.visible = false
 
+func module_panel_in() -> void:
+	#TODO: update model panel
+	#update_model()
+	module_root.visible = true
+
+func module_panel_out() -> void:
+	module_root.visible = false
+
+func inv_mod_panel_out() -> void:
+	inventory_panel_out()
+	module_panel_out()
+	
 func update_inventory() -> void:
 	for eq in equipped.get_children():
 		eq.update()
@@ -169,7 +183,7 @@ func free_childern(parent) -> void:
 
 func _on_move_out_timer_timeout():
 	# Would be useful when animation is applied
-	PlayerData.is_interacting = false
+	#PlayerData.is_interacting = false
 	pass # Replace with function body.
 
 

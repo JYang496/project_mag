@@ -1,4 +1,5 @@
 extends MarginContainer
+class_name EquipmentSlot
 
 # Properties
 @onready var background: ColorRect = $Background
@@ -43,13 +44,7 @@ func update() -> void:
 		item = null
 		image.texture = null
 		equip_name.text = "Empty"
-		
 
-func _ready() -> void:
-	pass
-
-func _physics_process(delta: float) -> void:
-	pass
 
 func _on_color_rect_mouse_entered() -> void:
 	hover_over = true
@@ -61,5 +56,4 @@ func _on_color_rect_mouse_exited() -> void:
 
 
 func _on_background_gui_input(event: InputEvent) -> void:
-	if event.is_action_pressed("CLICK"):
-		InventoryData.on_select_eqp = item
+	pass

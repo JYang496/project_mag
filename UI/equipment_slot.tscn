@@ -1,10 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://sedqknpaalyt"]
+[gd_scene format=3 uid="uid://sedqknpaalyt"]
 
-[ext_resource type="Script" path="res://UI/margin_container.gd" id="1_pv7xy"]
-
-[node name="InvEquipment" type="MarginContainer"]
-custom_minimum_size = Vector2(200, 200)
-script = ExtResource("1_pv7xy")
+[node name="EquipmentSlot" type="MarginContainer"]
+custom_minimum_size = Vector2(220, 220)
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 2
@@ -12,16 +9,16 @@ color = Color(0.227451, 0.278431, 0.317647, 1)
 
 [node name="Image" type="TextureRect" parent="Background"]
 layout_mode = 0
-offset_left = 60.0
+offset_left = 70.0
 offset_top = 10.0
-offset_right = 140.0
+offset_right = 150.0
 offset_bottom = 90.0
 
 [node name="EquipName" type="Label" parent="Background"]
 layout_mode = 0
 offset_left = 40.0
 offset_top = 100.0
-offset_right = 160.0
+offset_right = 180.0
 offset_bottom = 123.0
 text = "Empty"
 horizontal_alignment = 1

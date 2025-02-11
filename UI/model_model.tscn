@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://mnl6smha3sa4"]
+
+[node name="Model" type="MarginContainer"]
+custom_minimum_size = Vector2(122, 122)
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 2

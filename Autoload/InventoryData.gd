@@ -34,6 +34,7 @@ var on_select_eqp :
 			on_select_slot = null
 		else:
 			on_select_eqp = value
+			on_drag_item = on_select_eqp
 		ui.update_inventory()
 		ui.refresh_border()
 
