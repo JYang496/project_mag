@@ -2,6 +2,7 @@ extends Node
 
 var INVENTORY_MAX_SLOTS : int = 4
 var inventory_slots : Array = []
+var moddule_slots : Array = []
 @onready var ui : UI = get_tree().get_first_node_in_group("ui")
 @onready var player : Player = get_tree().get_first_node_in_group("player")
 
@@ -90,14 +91,3 @@ var on_drag_item :
 		else:
 			ui.drag_item_icon.texture = value.get_node("Sprite").texture
 		on_drag_item = value
-		
-		
-
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	pass # Replace with function body.
-
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass

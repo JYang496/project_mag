@@ -35,6 +35,8 @@ class_name UI
 # Inventory
 @onready var inventory: VBoxContainer = $GUI/InventoryRoot/Panel/Inventory
 @onready var equipped: GridContainer = $GUI/InventoryRoot/Panel/Equipped
+@onready var equipped_m: GridContainer = $GUI/ModuleRoot/Panel/EquippedM
+@onready var modules: GridContainer = $GUI/ModuleRoot/Panel/Modules
 
 # Pause menu
 @onready var resume_button = $GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton
@@ -160,7 +162,7 @@ func inventory_panel_out() -> void:
 
 func module_panel_in() -> void:
 	#TODO: update model panel
-	#update_model()
+	update_modules()
 	module_root.visible = true
 
 func module_panel_out() -> void:
@@ -175,6 +177,13 @@ func update_inventory() -> void:
 		eq.update()
 	for inv in inventory.get_children():
 		inv.update()
+
+func update_modules() -> void:
+	for eq in equipped_m.get_children():
+		eq.update()
+	for mod in modules.get_children():
+		mod.update()
+	
 
 func free_childern(parent) -> void:
 	var children = parent.get_children()

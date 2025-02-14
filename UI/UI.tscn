@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://UI/UI.gd" id="1_y6r0f"]
 [ext_resource type="PackedScene" uid="uid://sedqknpaalyt" path="res://UI/equipment_slot.tscn" id="3_3xv3f"]
 [ext_resource type="PackedScene" uid="uid://cms57yqrnn7ga" path="res://UI/inv_slot.tscn" id="3_hcnsl"]
-[ext_resource type="PackedScene" uid="uid://mnl6smha3sa4" path="res://UI/model_model.tscn" id="3_vf0d3"]
+[ext_resource type="PackedScene" uid="uid://mnl6smha3sa4" path="res://UI/module_module.tscn" id="3_vf0d3"]
 [ext_resource type="Script" path="res://UI/draw_border.gd" id="3_xpg6s"]
 [ext_resource type="Script" path="res://UI/equipment_module.gd" id="5_vb3bm"]
 [ext_resource type="Script" path="res://UI/to_inv.gd" id="6_jly3b"]
@@ -231,7 +231,7 @@ text = "Module"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="GridContainer" type="GridContainer" parent="GUI/ModuleRoot/Panel"]
+[node name="Modules" type="GridContainer" parent="GUI/ModuleRoot/Panel"]
 custom_minimum_size = Vector2(500, 500)
 layout_mode = 0
 offset_left = 25.0
@@ -240,55 +240,55 @@ offset_right = 525.0
 offset_bottom = 550.0
 columns = 4
 
-[node name="Model" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module1" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model2" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module2" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model3" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module3" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model4" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module4" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model5" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module5" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model6" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module6" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model7" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module7" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model8" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module8" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model9" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module9" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model10" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module10" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model11" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module11" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model12" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module12" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model13" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module13" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model14" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module14" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model15" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module15" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Model16" parent="GUI/ModuleRoot/Panel/GridContainer" instance=ExtResource("3_vf0d3")]
+[node name="Module16" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Wepons" type="GridContainer" parent="GUI/ModuleRoot/Panel"]
+[node name="EquippedM" type="GridContainer" parent="GUI/ModuleRoot/Panel"]
 custom_minimum_size = Vector2(440, 440)
 layout_mode = 0
 offset_left = 540.0
@@ -297,21 +297,21 @@ offset_right = 980.0
 offset_bottom = 520.0
 columns = 2
 
-[node name="InvEquipment" parent="GUI/ModuleRoot/Panel/Wepons" instance=ExtResource("3_3xv3f")]
+[node name="InvEquipment" parent="GUI/ModuleRoot/Panel/EquippedM" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("5_vb3bm")
 
-[node name="InvEquipment2" parent="GUI/ModuleRoot/Panel/Wepons" instance=ExtResource("3_3xv3f")]
+[node name="InvEquipment2" parent="GUI/ModuleRoot/Panel/EquippedM" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("5_vb3bm")
 equipment_index = 1
 
-[node name="InvEquipment3" parent="GUI/ModuleRoot/Panel/Wepons" instance=ExtResource("3_3xv3f")]
+[node name="InvEquipment3" parent="GUI/ModuleRoot/Panel/EquippedM" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("5_vb3bm")
 equipment_index = 2
 
-[node name="InvEquipment4" parent="GUI/ModuleRoot/Panel/Wepons" instance=ExtResource("3_3xv3f")]
+[node name="InvEquipment4" parent="GUI/ModuleRoot/Panel/EquippedM" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("5_vb3bm")
 equipment_index = 3
