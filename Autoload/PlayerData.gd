@@ -96,6 +96,10 @@ var total_grab_radius := grab_radius * grab_radius_mutifactor
 var player_gold := 0
 var is_interacting : bool = false
 
+var overcharge_enable : bool = true:
+	set(value):
+		on_select_weapon = -1
+		overcharge_enable = value
 var overcharge_max_time : float = 1.5
 var overcharge_time : float = 0:
 	set(value):
@@ -104,14 +108,12 @@ var overcharge_time : float = 0:
 			is_overcharged = true
 		else:
 			is_overcharged = false
-
 var is_overcharging : bool = false :
 	set(value):
 		is_overcharging = value
 		if value == false:
 			overcharge_time = 0
 			is_overcharged = false
-
 var is_overcharged : bool = false:
 	set(value):
 		if is_overcharged != value:

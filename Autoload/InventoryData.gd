@@ -91,3 +91,8 @@ var on_drag_item :
 		else:
 			ui.drag_item_icon.texture = value.get_node("Sprite").texture
 		on_drag_item = value
+
+func clear_on_select() -> void:
+	on_select_eqp = null
+	on_select_slot = null
+	on_drag_item = null

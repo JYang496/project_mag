@@ -79,10 +79,10 @@ func _input(_event) -> void:
 			pause_menu_root.visible = true
 	
 	# Switch weapon
-	if Input.is_action_just_pressed("SWITCH_LEFT") and not (PlayerData.is_overcharged or PlayerData.is_overcharging):
+	if Input.is_action_just_pressed("SWITCH_LEFT") and PlayerData.overcharge_enable and not (PlayerData.is_overcharged or PlayerData.is_overcharging):
 		PlayerData.on_select_weapon -= 1
 		refresh_border()
-	if Input.is_action_just_pressed("SWITCH_RIGHT") and not (PlayerData.is_overcharged or PlayerData.is_overcharging):
+	if Input.is_action_just_pressed("SWITCH_RIGHT") and PlayerData.overcharge_enable and not (PlayerData.is_overcharged or PlayerData.is_overcharging):
 		PlayerData.on_select_weapon += 1
 		refresh_border()
 		
@@ -157,11 +157,11 @@ func inventory_panel_in() -> void:
 	inventory_root.visible = true
 
 func inventory_panel_out() -> void:
+	InventoryData.clear_on_select()
 	move_out_timer.start()
 	inventory_root.visible = false
 
 func module_panel_in() -> void:
-	#TODO: update model panel
 	update_modules()
 	module_root.visible = true
 

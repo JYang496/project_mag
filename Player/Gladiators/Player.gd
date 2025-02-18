@@ -33,12 +33,13 @@ func _physics_process(delta):
 	move_and_slide()
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ATTACK") and PlayerData.is_overcharged:
+	if event.is_action_pressed("ATTACK") and PlayerData.is_overcharged and PlayerData.overcharge_enable:
 		if PlayerData.player_weapon_list.size() > 0:
 			PlayerData.player_weapon_list[PlayerData.on_select_weapon].emit_signal("over_charge")
+			PlayerData.overcharge_enable = false
 	if event.is_action_pressed("SKILL"):
 		emit_signal("active_skill")
-	if event.is_action_pressed("OVERCHARGE") and not PlayerData.is_overcharged:
+	if event.is_action_pressed("OVERCHARGE") and not PlayerData.is_overcharged and PlayerData.overcharge_enable:
 		PlayerData.is_overcharging = true
 	if event.is_action_released("OVERCHARGE"):
 		PlayerData.is_overcharging = false
@@ -78,7 +79,6 @@ func create_weapon(item_id):
 	remote_transform.remote_path = weapon.get_path()
 	PlayerData.player_weapon_list.append(weapon)
 	ui.refresh_border()
-
 
 
 func swap_weapon_position(weapon1, weapon2) -> void:
