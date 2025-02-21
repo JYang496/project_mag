@@ -27,7 +27,8 @@ func _physics_process(delta: float) -> void:
 			player.set_collision_mask_value(6,true)
 			PlayerData.player_bonus_speed = 0.0
 			if PhaseManager.current_state() == PhaseManager.PREPARE:
-				connect("enable_enemy_spawner",Callable(enemy_spawner,"start_timer"))
+				if not is_connected("enable_enemy_spawner",Callable(enemy_spawner,"start_timer")):
+					connect("enable_enemy_spawner",Callable(enemy_spawner,"start_timer"))
 				emit_signal("enable_enemy_spawner")
 				PhaseManager.enter_battle()
 			if PhaseManager.current_state() == PhaseManager.BONUS:

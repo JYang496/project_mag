@@ -1,7 +1,5 @@
 extends Node2D
 
-@export var spawns: Array[Spawn_info] = []
-
 @onready var player = get_tree().get_first_node_in_group("player")
 @onready var timer = $Timer
 @onready var x_min = $TopLeft.global_position.x
@@ -26,10 +24,11 @@ func start_timer() -> void:
 
 func _on_timer_timeout():
 	PhaseManager.battle_time += 1
-	# When time hit 20, battle ends and bonus phase starts
+	# When time up, battle ends and bonus phase starts
 	if PhaseManager.battle_time >= PhaseManager.TIME_OUT or PhaseManager.phase == PhaseManager.BONUS:
 		current_level += 1
 		timer.stop()
+		clear_all_enemies()
 		PhaseManager.enter_bonus()
 		return
 	var enemy_spawns = instant_list[current_level].spawns
@@ -73,3 +72,8 @@ func get_random_position():
 	var x_spawn = clampf(randf_range(spawn_pos1.x, spawn_pos2.x),x_min,x_max)
 	var y_spawn = clampf(randf_range(spawn_pos1.y, spawn_pos2.y),y_min,y_max)
 	return Vector2(x_spawn,y_spawn)
+
+func clear_all_enemies():
+	var enemies = get_tree().get_nodes_in_group("enemies")
+	for e : BaseEnemy in enemies:
+		e.death()

@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=4 uid="uid://blnhp33uq0sgq"]
+[gd_scene load_steps=34 format=4 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Texture2D" uid="uid://sldltmirxrkq" path="res://Textures/BlockyLife/tileset.png" id="2_3rumv"]
 [ext_resource type="Script" path="res://World/tilemaps.gd" id="2_vir17"]
@@ -15,14 +15,12 @@
 [ext_resource type="Texture2D" uid="uid://i8mt56nqukr5" path="res://Textures/Tilesets/tileset.png" id="10_il0ag"]
 [ext_resource type="PackedScene" uid="uid://ch7vgpt732ajy" path="res://Player/Gladiators/gladiator_test.tscn" id="10_jwoh3"]
 [ext_resource type="PackedScene" uid="uid://dkelpi3n3ysnh" path="res://Utility/enemy_spawner.tscn" id="12_dyxss"]
-[ext_resource type="Script" path="res://Utility/spawn_info.gd" id="13_0vine"]
 [ext_resource type="PackedScene" uid="uid://d13863fxj2rqb" path="res://Npc/friendly/tester.tscn" id="14_2pgcb"]
 [ext_resource type="PackedScene" uid="uid://r3v8wtww3t70" path="res://Player/Augments/grab_range.tscn" id="16_shpv5"]
 [ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/inventory.tscn" id="17_1l216"]
-[ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/enemy_wheel_cart.tscn" id="19_hyh3g"]
 [ext_resource type="PackedScene" uid="uid://w270o86lb231" path="res://Objects/prepare_zone_gate.tscn" id="19_o7ljv"]
 [ext_resource type="PackedScene" uid="uid://djyxv43t57pnf" path="res://Objects/battle_zone_teleporter.tscn" id="20_8lc8y"]
-[ext_resource type="PackedScene" uid="uid://bpx63eseql6vs" path="res://Objects/loots/loot_box.tscn" id="21_p4g33"]
+[ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://Utility/bonus_manager.tscn" id="22_n13dc"]
 [ext_resource type="PackedScene" uid="uid://0ojjxft0cfqk" path="res://Npc/enemy/dummy.tscn" id="23_8t5w2"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_afj78"]
@@ -255,14 +253,6 @@ sources/5 = SubResource("TileSetAtlasSource_ig7m1")
 sources/6 = SubResource("TileSetAtlasSource_e1aa3")
 sources/7 = SubResource("TileSetAtlasSource_amakg")
 
-[sub_resource type="Resource" id="Resource_wbf2b"]
-script = ExtResource("13_0vine")
-time_start = 1
-time_end = 20
-enemy = ExtResource("19_hyh3g")
-enemy_num = 5
-enemy_spawn_delay = 2
-
 [node name="World" type="Node2D"]
 
 [node name="UI" parent="." instance=ExtResource("9_h4135")]
@@ -318,7 +308,6 @@ position = Vector2(-97, -1577)
 position = Vector2(-333, -1422)
 
 [node name="EnemySpawner" parent="." instance=ExtResource("12_dyxss")]
-spawns = Array[ExtResource("13_0vine")]([SubResource("Resource_wbf2b")])
 
 [node name="TopLeft" parent="EnemySpawner" index="1"]
 position = Vector2(-738, -163)
@@ -333,11 +322,10 @@ collision_mask = 37
 
 [node name="GrabRange" parent="GladiatorTest/EquippedAugments" index="0" instance=ExtResource("16_shpv5")]
 
-[node name="LootBox" parent="." instance=ExtResource("21_p4g33")]
-position = Vector2(-180, -1432)
-
 [node name="Dummy" parent="." instance=ExtResource("23_8t5w2")]
 position = Vector2(-106, -1435)
+
+[node name="BonusManager" parent="." instance=ExtResource("22_n13dc")]
 
 [editable path="PrepareZoneGate"]
 [editable path="PrepareZoneGate/PlayerTeleport"]

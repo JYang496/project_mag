@@ -1,20 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://dkelpi3n3ysnh"]
+[gd_scene load_steps=2 format=3 uid="uid://dkelpi3n3ysnh"]
 
 [ext_resource type="Script" path="res://Utility/enemy_spawner.gd" id="1_pgnrl"]
-[ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/enemy_rolling_ball.tscn" id="2_6a064"]
-[ext_resource type="Script" path="res://Utility/spawn_info.gd" id="3_c0ks3"]
-
-[sub_resource type="Resource" id="Resource_xq1am"]
-script = ExtResource("3_c0ks3")
-time_start = 0
-time_end = 10
-enemy = ExtResource("2_6a064")
-enemy_num = 3
-enemy_spawn_delay = 0
 
 [node name="EnemySpawner" type="Node2D" groups=["enemy_spawner"]]
 script = ExtResource("1_pgnrl")
-spawns = Array[ExtResource("3_c0ks3")]([SubResource("Resource_xq1am")])
 
 [node name="Timer" type="Timer" parent="."]
 

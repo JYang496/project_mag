@@ -16,6 +16,7 @@ var phase := PREPARE:
 		if value in phase_list:
 			phase = value
 
+signal enter_bonus_signal
 
 func current_state() -> String:
 	return phase
@@ -29,6 +30,7 @@ func enter_battle() -> void:
 func enter_bonus() -> void:
 	var teleporter = get_tree().get_first_node_in_group("teleporter")
 	phase = BONUS
+	enter_bonus_signal.emit()
 	teleporter.move_teleporter()
 
 func enter_gameover() -> void:
