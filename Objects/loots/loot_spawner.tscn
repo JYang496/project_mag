@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://cpbvijvvou0ga"]
+[gd_scene load_steps=2 format=3 uid="uid://cg2ppvk8qcg7e"]
 
-[ext_resource type="Script" path="res://Objects/loots/loot_spawner.gd" id="1_d2h1c"]
+[sub_resource type="GDScript" id="GDScript_0ajxx"]
+script/source = "extends Node2D
+"
 
 [node name="LootSpawner" type="Node2D"]
-script = ExtResource("1_d2h1c")
+script = SubResource("GDScript_0ajxx")

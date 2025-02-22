@@ -10,3 +10,8 @@ coin_value = 31
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture_filter = 1
 texture = ExtResource("2_s0sow")
+
+[node name="DisapearTimer" type="Timer" parent="."]
+wait_time = 10.0
+
+[connection signal="timeout" from="DisapearTimer" to="." method="_on_disapear_timer_timeout"]

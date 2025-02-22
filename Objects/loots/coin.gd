@@ -3,7 +3,7 @@ extends Node2D
 @export var value = 1
 @onready var sprite = $Sprite2D
 @onready var collision = $CollisionShape2D
-@onready var sound = $Snd_collected	
+@onready var sound = $Snd_collected
 @onready var collectable = false
 
 var target = null
@@ -17,7 +17,7 @@ func _ready():
 func _physics_process(delta):
 	if target != null:
 		global_position = global_position.move_toward(target.global_position, speed)
-		speed += 5*delta
+		speed += 5 * delta
 		
 func collect():
 	collision.call_deferred("set","disabled",true)
