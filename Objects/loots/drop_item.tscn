@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://ddbjcv3wsci50"]
+
+[ext_resource type="Script" path="res://Objects/loots/drop_item.gd" id="1_jnmds"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_xap8g"]
+
+[node name="DropItem" type="Node2D"]
+script = ExtResource("1_jnmds")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="DetectArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
+scale = Vector2(5, 5)
+shape = SubResource("CircleShape2D_xap8g")

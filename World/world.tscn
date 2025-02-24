@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=4 uid="uid://blnhp33uq0sgq"]
+[gd_scene load_steps=35 format=4 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Texture2D" uid="uid://sldltmirxrkq" path="res://Textures/BlockyLife/tileset.png" id="2_3rumv"]
 [ext_resource type="Script" path="res://World/tilemaps.gd" id="2_vir17"]
@@ -22,6 +22,7 @@
 [ext_resource type="PackedScene" uid="uid://djyxv43t57pnf" path="res://Objects/battle_zone_teleporter.tscn" id="20_8lc8y"]
 [ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://Utility/bonus_manager.tscn" id="22_n13dc"]
 [ext_resource type="PackedScene" uid="uid://0ojjxft0cfqk" path="res://Npc/enemy/dummy.tscn" id="23_8t5w2"]
+[ext_resource type="PackedScene" uid="uid://ddbjcv3wsci50" path="res://Objects/loots/drop_item.tscn" id="23_oohyh"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_afj78"]
 texture = ExtResource("2_3rumv")
@@ -326,6 +327,8 @@ collision_mask = 37
 position = Vector2(-106, -1435)
 
 [node name="BonusManager" parent="." instance=ExtResource("22_n13dc")]
+
+[node name="DropItem" parent="." instance=ExtResource("23_oohyh")]
 
 [editable path="PrepareZoneGate"]
 [editable path="PrepareZoneGate/PlayerTeleport"]

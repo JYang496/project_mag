@@ -16,7 +16,6 @@ func _ready() -> void:
 	drop_instance = drop.instantiate()
 	if value:
 		drop_instance.value = value
-	#get_tree().root.call_deferred("add_child",drop_instance)
 	self.call_deferred("add_sibling",drop_instance)
 	drop_instance.position = $p0.position
 

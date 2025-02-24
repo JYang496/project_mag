@@ -48,14 +48,16 @@ func overcharge(delta) ->void:
 	if PlayerData.is_overcharging:
 		PlayerData.overcharge_time += delta
 
-func create_weapon(item_id):
+func create_weapon(item_id, level := 1):
 	var available_slot = 0
 	
 	# Create a new weapon when assign string, othervise node
 	var weapon : Node2D
 	if item_id is String:
 		weapon = load(WeaponData.weapon_list.data[item_id]["res"]).instantiate()
+		weapon.level = level
 	else:
+		# Parameter is weapon node instead of String, common case when get weapon from inventory
 		weapon = item_id
 	
 	# Put weapon into inventory if weapon list is full
