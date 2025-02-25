@@ -11,7 +11,20 @@ script = ExtResource("1_jnmds")
 [node name="Sprite2D" type="Sprite2D" parent="."]
 
 [node name="DetectArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
 scale = Vector2(5, 5)
 shape = SubResource("CircleShape2D_xap8g")
+
+[node name="InteractHint" type="Label" parent="."]
+visible = false
+offset_left = -3.0
+offset_top = -34.0
+offset_right = 37.0
+offset_bottom = -11.0
+text = "F"
+
+[connection signal="body_entered" from="DetectArea" to="." method="_on_detect_area_body_entered"]
+[connection signal="body_exited" from="DetectArea" to="." method="_on_detect_area_body_exited"]

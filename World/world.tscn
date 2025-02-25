@@ -328,7 +328,8 @@ position = Vector2(-106, -1435)
 
 [node name="BonusManager" parent="." instance=ExtResource("22_n13dc")]
 
-[node name="DropItem" parent="." instance=ExtResource("23_oohyh")]
+[node name="DropItem2" parent="." instance=ExtResource("23_oohyh")]
+position = Vector2(-271, -1478)
 
 [editable path="PrepareZoneGate"]
 [editable path="PrepareZoneGate/PlayerTeleport"]
