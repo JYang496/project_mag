@@ -10,8 +10,8 @@ var item : Node2D
 func _ready() -> void:
 	if item_id is String:
 		item = load(WeaponData.weapon_list.data[item_id]["res"]).instantiate()
+		sprite.texture = load(WeaponData.weapon_list.data[item_id]["img"])
 		item.level = level
-	sprite.texture = item.sprite.texture
 	
 func play_animation() -> void:
 	var start_position = position
