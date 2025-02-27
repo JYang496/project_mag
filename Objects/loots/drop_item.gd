@@ -1,12 +1,13 @@
 extends Node2D
 
-var item_id : String = "1"
-var level := 1
+@export var item_id : String = "1"
+@export var level := 3
 var item : Node2D
 var player_near : bool = false
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var detect_area: Area2D = $DetectArea
 @onready var interact_hint: Label = $InteractHint
+@onready var player : Player = get_tree().get_first_node_in_group("player")
 
 
 func _ready() -> void:
@@ -15,6 +16,11 @@ func _ready() -> void:
 		sprite.texture = load(WeaponData.weapon_list.data[item_id]["img"])
 		item.level = level
 		play_animation()
+
+func _input(event: InputEvent) -> void:
+	if player_near and event.is_action_pressed("INTERACT"):
+		player.create_weapon(item)
+		queue_free()
 	
 func play_animation() -> void:
 	var start_position = position

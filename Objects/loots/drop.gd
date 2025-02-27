@@ -2,6 +2,8 @@ extends Node2D
 
 var t = 0.0
 @export var drop : PackedScene
+var item_id
+var level
 var arrived = false
 var value : int
 var drop_instance
@@ -14,6 +16,10 @@ func _ready() -> void:
 	p1.position.y = (p0.position.y + p2.position.y) / 2 - randf_range(80.0,140.0)
 
 	drop_instance = drop.instantiate()
+	if item_id and level:
+		print("item id",item_id)
+		drop_instance.item_id = item_id
+		drop_instance.level = level
 	if value:
 		drop_instance.value = value
 	self.call_deferred("add_sibling",drop_instance)

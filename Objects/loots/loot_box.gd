@@ -24,10 +24,7 @@ func animation() -> void:
 	tween.connect("finished",_on_tween_finished)
 
 func drops() -> void:
-	var item_drop = drop_preload.instantiate()
-	item_drop.drop = item_preload
-	item_drop.global_position = self.global_position
-	self.call_deferred("add_sibling",item_drop)
+	drop_an_item("2",2)
 	for i in range(number_of_coins):
 		var bonus := 0
 		if remainder >= 0 and remainder <= 10:
@@ -42,6 +39,14 @@ func drops() -> void:
 		drop.global_position = self.global_position
 		self.call_deferred("add_sibling",drop)
 
+func drop_an_item(id : String, lvl : int) -> void:
+	var item_drop = drop_preload.instantiate()
+	item_drop.drop = item_preload
+	item_drop.global_position = self.global_position
+	item_drop.item_id = id
+	item_drop.level = lvl
+	self.call_deferred("add_sibling",item_drop)
+	
 func _on_tween_finished() -> void:
 	drops()
 	disapear_timer.start()
