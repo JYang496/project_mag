@@ -8,6 +8,8 @@ extends Node2D
 @export var coin_value:int = 0
 var number_of_coins := 5
 var remainder := 0
+@export var item_id : String = ""
+@export var item_lvl : int = 0
 
 func _ready() -> void:
 	number_of_coins = 5 + coin_value/10
@@ -24,7 +26,7 @@ func animation() -> void:
 	tween.connect("finished",_on_tween_finished)
 
 func drops() -> void:
-	drop_an_item("2",2)
+	drop_an_item(item_id,item_lvl)
 	for i in range(number_of_coins):
 		var bonus := 0
 		if remainder >= 0 and remainder <= 10:
@@ -39,7 +41,10 @@ func drops() -> void:
 		drop.global_position = self.global_position
 		self.call_deferred("add_sibling",drop)
 
-func drop_an_item(id : String, lvl : int) -> void:
+func drop_an_item(id : String = "", lvl : int = 0) -> void:
+	if id == "" or lvl == 0:
+		# Skip when no input
+		return
 	var item_drop = drop_preload.instantiate()
 	item_drop.drop = item_preload
 	item_drop.global_position = self.global_position

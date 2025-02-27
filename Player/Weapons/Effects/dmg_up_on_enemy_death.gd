@@ -10,9 +10,6 @@ func _ready() -> void:
 		print("Error: module does not have owner")
 		return
 
-func _physics_process(delta: float) -> void:
-	pass
-
 
 func _on_detect_area_area_entered(area: Area2D) -> void:
 	if area is HurtBox and area.hurtbox_owner.is_in_group("enemies"):
@@ -25,4 +22,7 @@ func _on_enemy_death() -> void:
 		module_parent.damage += dmg_up_per_kill
 
 func _on_detect_area_area_exited(area: Area2D) -> void:
-	pass # Replace with function body.
+	if area is HurtBox and area.hurtbox_owner.is_in_group("enemies"):
+		# Check if the signal is already connected before attempting to connect
+		if area.hurtbox_owner.is_connected("enemy_death", Callable(self, "_on_enemy_death")):
+			area.hurtbox_owner.disconnect("enemy_death", Callable(self, "_on_enemy_death"))

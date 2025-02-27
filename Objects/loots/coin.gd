@@ -35,18 +35,11 @@ func set_value():
 
 	
 func play_animation() -> void:
-	var start_position = position
-	var rand_pos = get_random_position_in_circle()
 	var dest_tween = create_tween()
 	dest_tween.tween_property(self,"rotation_degrees", 1800, 1).set_ease(Tween.EASE_IN_OUT)
 	dest_tween.connect("finished", _on_dest_tween_finished)
 
-func get_random_position_in_circle(radius: float = 50.0) -> Vector2:
-	var angle = randf_range(0, TAU)  # TAU is 2*PI in Godot
-	var distance = randf() * radius  # Random distance between 0 and radius
-	var x = cos(angle) * distance
-	var y = sin(angle) * distance
-	return Vector2(x, y)
+
 
 func _on_dest_tween_finished():
 	collision.call_deferred("set","disabled",false)

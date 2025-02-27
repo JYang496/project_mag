@@ -55,5 +55,5 @@ func _on_color_rect_mouse_exited() -> void:
 	update()
 
 
-func _on_background_gui_input(event: InputEvent) -> void:
+func _on_background_gui_input(_event: InputEvent) -> void:
 	pass

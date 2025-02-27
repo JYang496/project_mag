@@ -23,7 +23,6 @@ func _input(event: InputEvent) -> void:
 		queue_free()
 	
 func play_animation() -> void:
-	var start_position = position
 	var dest_tween = create_tween()
 	dest_tween.tween_property(self,"rotation_degrees", 1800, 1).set_ease(Tween.EASE_IN_OUT)
 	dest_tween.connect("finished", _on_dest_tween_finished)

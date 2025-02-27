@@ -20,7 +20,6 @@ func _draw():
 
 func update() -> void:
 	queue_redraw()
-	print(InventoryData.moddule_slots)
 
 func _on_background_mouse_entered() -> void:
 	hover_over = true

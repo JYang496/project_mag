@@ -10,7 +10,7 @@ signal update_aug_status()
 
 func level_up(lvl = 1) -> void:
 	level = clampi(level + lvl, 1, max_level)
-	emit_signal("update_aug_status")
+	update_aug_status.emit()
 
 func remove_augment_without_bonus() -> void:
 	queue_free()

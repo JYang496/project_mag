@@ -20,7 +20,7 @@
 [ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://w270o86lb231" path="res://Objects/prepare_zone_gate.tscn" id="19_o7ljv"]
 [ext_resource type="PackedScene" uid="uid://djyxv43t57pnf" path="res://Objects/battle_zone_teleporter.tscn" id="20_8lc8y"]
-[ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://Utility/bonus_manager.tscn" id="22_n13dc"]
+[ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://Utility/reward_manager.tscn" id="22_n13dc"]
 [ext_resource type="PackedScene" uid="uid://0ojjxft0cfqk" path="res://Npc/enemy/dummy.tscn" id="23_8t5w2"]
 [ext_resource type="PackedScene" uid="uid://ddbjcv3wsci50" path="res://Objects/loots/drop_item.tscn" id="23_oohyh"]
 
@@ -326,7 +326,7 @@ collision_mask = 37
 [node name="Dummy" parent="." instance=ExtResource("23_8t5w2")]
 position = Vector2(-106, -1435)
 
-[node name="BonusManager" parent="." instance=ExtResource("22_n13dc")]
+[node name="RewardManager" parent="." instance=ExtResource("22_n13dc")]
 
 [node name="DropItem2" parent="." instance=ExtResource("23_oohyh")]
 position = Vector2(-271, -1478)

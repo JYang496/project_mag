@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://vxhuutlmdqgt"]
-
-[ext_resource type="Script" path="res://Utility/battle_end_trigger.gd" id="1_cyf8q"]
-
-[node name="BattleEndTrigger" type="Node2D"]
-script = ExtResource("1_cyf8q")

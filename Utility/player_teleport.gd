@@ -12,7 +12,7 @@ var timeout := false
 
 signal enable_enemy_spawner()
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	if timeout and dest != null:
 		player.set_collision_mask_value(6,false)
 		player.move_to(dest.global_position)
@@ -29,9 +29,9 @@ func _physics_process(delta: float) -> void:
 			if PhaseManager.current_state() == PhaseManager.PREPARE:
 				if not is_connected("enable_enemy_spawner",Callable(enemy_spawner,"start_timer")):
 					connect("enable_enemy_spawner",Callable(enemy_spawner,"start_timer"))
-				emit_signal("enable_enemy_spawner")
+				enable_enemy_spawner.emit()
 				PhaseManager.enter_battle()
-			if PhaseManager.current_state() == PhaseManager.BONUS:
+			if PhaseManager.current_state() == PhaseManager.REWARD:
 				PhaseManager.enter_prepare()
 			return
 

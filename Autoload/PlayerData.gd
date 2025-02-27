@@ -98,7 +98,8 @@ var is_interacting : bool = false
 
 var overcharge_enable : bool = true:
 	set(value):
-		on_select_weapon = -1
+		# Bug fix: to remove weapon properly
+		#on_select_weapon = -1
 		overcharge_enable = value
 var overcharge_max_time : float = 1.5
 var overcharge_time : float = 0:

@@ -15,7 +15,8 @@ var next_status = {}
 var comb_status = {}
 var mouse_over := false
 
-signal close_label()
+# Never used?
+#signal close_label()
 signal upgrade_level(level)
 
 # By default, weapons in upgrade cards are upgradable
@@ -35,7 +36,7 @@ func _ready():
 		lblName.text = weapon_node.ITEM_NAME
 		
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	if PlayerData.player_gold < cost_price: # Unable to purchase if player does not have enough gold
 		cost.set("theme_override_colors/font_color",Color(1.0,0.0,0.0,1.0))
 		upgradable = false
@@ -49,7 +50,8 @@ func _input(_event):
 	if Input.is_action_just_released("CLICK"):
 		if mouse_over and upgradable:
 			PlayerData.player_gold -= cost_price
-			emit_signal("upgrade_level",int(comb_status["level"][1]))
+			#emit_signal("upgrade_level",int(comb_status["level"][1]))
+			upgrade_level.emit(int(comb_status["level"][1]))
 			ui.upgrade_panel_out()
 
 func combine_status(node):

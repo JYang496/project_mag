@@ -22,7 +22,7 @@ func _on_area_entered(area):
 		if hitbox_owner.has_method("enemy_hit"):
 			hitbox_owner.enemy_hit(1)
 
-func _on_area_exited(exited_area: Area2D) -> void:
+func _on_area_exited(_exited_area: Area2D) -> void:
 	for area in get_overlapping_areas():
 		if area is HurtBox:
 			hitbox_owner.overlapping = true

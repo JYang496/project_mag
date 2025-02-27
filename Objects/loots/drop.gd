@@ -17,10 +17,11 @@ func _ready() -> void:
 
 	drop_instance = drop.instantiate()
 	if item_id and level:
-		print("item id",item_id)
+		# Drop is an tiem
 		drop_instance.item_id = item_id
 		drop_instance.level = level
-	if value:
+	elif value:
+		# Drop is a coin
 		drop_instance.value = value
 	self.call_deferred("add_sibling",drop_instance)
 	drop_instance.position = $p0.position
@@ -43,8 +44,8 @@ func get_random_position_in_circle(radius: float = 50.0) -> Vector2:
 	return Vector2(x, y)
 
 
-func _quadratic_bezier(t: float):
+func _quadratic_bezier(time: float):
 	var q0 = $p0.global_position.lerp($p1.global_position, t)
 	var q1 = $p1.global_position.lerp($p2.global_position, t)
-	var r = q0.lerp(q1, t)
+	var r = q0.lerp(q1, time)
 	return r

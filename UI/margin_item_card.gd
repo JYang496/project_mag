@@ -15,9 +15,10 @@ var price : int
 @onready var ui = get_tree().get_first_node_in_group("ui")
 
 signal select_weapon(item_id)
-signal close_label()
+# Never used?
+#signal close_label()
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta) -> void:
 	if PlayerData.player_gold < price: # Unable to purchase if player does not have enough gold
 		price_label.set("theme_override_colors/font_color",Color(1.0,0.0,0.0,1.0))
 		purchasable = false
@@ -41,7 +42,8 @@ func _input(_event):
 	if Input.is_action_just_released("CLICK"):
 		if mouse_over and purchasable and PlayerData.player_gold >= price:
 			PlayerData.player_gold -= price
-			emit_signal("select_weapon",item_id)
+			#emit_signal("select_weapon",item_id)
+			select_weapon.emit(item_id)
 			ui.shopping_panel_out()
 
 

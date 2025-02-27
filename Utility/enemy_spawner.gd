@@ -25,7 +25,7 @@ func start_timer() -> void:
 func _on_timer_timeout():
 	PhaseManager.battle_time += 1
 	# When time up, battle ends and bonus phase starts
-	if PhaseManager.battle_time >= PhaseManager.TIME_OUT or PhaseManager.phase == PhaseManager.BONUS:
+	if PhaseManager.battle_time >= PhaseManager.TIME_OUT or PhaseManager.phase == PhaseManager.REWARD:
 		current_level += 1
 		timer.stop()
 		clear_all_enemies()

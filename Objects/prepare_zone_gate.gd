@@ -42,16 +42,16 @@ func _on_dectect_area_body_entered(body: Node2D) -> void:
 	if body is not Player:
 		return
 	# Body is player
-	if PhaseManager.current_state() == PhaseManager.BONUS:
+	if PhaseManager.current_state() == PhaseManager.REWARD:
 		doors_state = "open"
 	if PhaseManager.current_state() == PhaseManager.PREPARE:
-		emit_signal("tp_to_dest1")
+		tp_to_dest1.emit()
 
 
 func _on_prepare_dectect_area_body_entered(body: Node2D) -> void:
 	if body is not Player:
 		return
-	if PhaseManager.current_state() == PhaseManager.BONUS:
+	if PhaseManager.current_state() == PhaseManager.REWARD:
 		doors_state = "close"
 	if PhaseManager.current_state() == PhaseManager.PREPARE:
 		doors_state = "open"

@@ -41,10 +41,10 @@ func _ready() -> void:
 	expire_timer.start()
 
 # This function will 0adjust the hitbox shape identical to your sprite size
-func init_hitbox(hitbox_type = "once") -> void:
+func init_hitbox(hb_type = "once") -> void:
 	var shape = RectangleShape2D.new()
 	shape.size = bullet_sprite.texture.get_size()
-	match hitbox_type:
+	match hb_type:
 		"dot":
 			hitbox_ins = hitbox_dot.instantiate()
 			hitbox_ins.dot_cd = dot_cd

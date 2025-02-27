@@ -38,7 +38,7 @@ func _input(event: InputEvent) -> void:
 			PlayerData.player_weapon_list[PlayerData.on_select_weapon].emit_signal("over_charge")
 			PlayerData.overcharge_enable = false
 	if event.is_action_pressed("SKILL"):
-		emit_signal("active_skill")
+		active_skill.emit()
 	if event.is_action_pressed("OVERCHARGE") and not PlayerData.is_overcharged and PlayerData.overcharge_enable:
 		PlayerData.is_overcharging = true
 	if event.is_action_released("OVERCHARGE"):
@@ -66,10 +66,6 @@ func create_weapon(item_id, level := 1):
 			InventoryData.inventory_slots.append(weapon)
 		return
 	
-	# Update exist weapon position
-	for weapon_index in PlayerData.player_weapon_list.size():
-		PlayerData.player_weapon_list[weapon_index].position.x = WEAPON_SLOTS[weapon_index][0]
-		PlayerData.player_weapon_list[weapon_index].position.y = WEAPON_SLOTS[weapon_index][1]
 	
 	available_slot = PlayerData.player_weapon_list.size()
 	var remote_transform = RemoteTransform2D.new()
@@ -80,6 +76,12 @@ func create_weapon(item_id, level := 1):
 	remote_transform.add_child(weapon)
 	remote_transform.remote_path = weapon.get_path()
 	PlayerData.player_weapon_list.append(weapon)
+	
+	# Update exist weapon position
+	for weapon_index in PlayerData.player_weapon_list.size():
+		PlayerData.player_weapon_list[weapon_index].position.x = WEAPON_SLOTS[weapon_index][0]
+		PlayerData.player_weapon_list[weapon_index].position.y = WEAPON_SLOTS[weapon_index][1]
+	
 	ui.refresh_border()
 
 

@@ -4,11 +4,11 @@ var battle_time := 0
 
 const PREPARE := "prepare"
 const BATTLE = "battle"
-const BONUS = "bonus"
+const REWARD = "reward"
 const GAMEOVER = "gameover"
-const TIME_OUT = 30
+const TIME_OUT = 1
 
-var phase_list := [PREPARE,BATTLE,BONUS,GAMEOVER]
+var phase_list := [PREPARE,BATTLE,REWARD,GAMEOVER]
 var phase := PREPARE:
 	get:
 		return phase
@@ -16,7 +16,7 @@ var phase := PREPARE:
 		if value in phase_list:
 			phase = value
 
-signal enter_bonus_signal
+signal enter_reward_signal
 
 func current_state() -> String:
 	return phase
@@ -29,8 +29,8 @@ func enter_battle() -> void:
 
 func enter_bonus() -> void:
 	var teleporter = get_tree().get_first_node_in_group("teleporter")
-	phase = BONUS
-	enter_bonus_signal.emit()
+	phase = REWARD
+	enter_reward_signal.emit()
 	teleporter.move_teleporter()
 
 func enter_gameover() -> void:

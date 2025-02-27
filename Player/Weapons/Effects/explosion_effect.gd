@@ -26,6 +26,3 @@ func _on_parent_exiting() -> void:
 
 func _on_parent_exited() -> void:
 	pass
-
-func _physics_process(delta: float) -> void:
-	pass

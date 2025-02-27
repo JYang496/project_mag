@@ -12,7 +12,7 @@ signal tp_to_dest1()
 
 func _ready() -> void:
 	texture.position = depart.position
-	if PhaseManager.current_state() != PhaseManager.BONUS:
+	if PhaseManager.current_state() != PhaseManager.REWARD:
 		self.visible = false
 		tp_disable = true
 
@@ -26,8 +26,8 @@ func _physics_process(delta: float) -> void:
 		enable_timer.start()
 	
 func _on_detect_area_body_entered(body: Node2D) -> void:
-	if body is Player and PhaseManager.current_state() == PhaseManager.BONUS:
-		emit_signal("tp_to_dest1")
+	if body is Player and PhaseManager.current_state() == PhaseManager.REWARD:
+		tp_to_dest1.emit()
 
 func move_teleporter() -> void:
 	self.visible = true

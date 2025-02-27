@@ -7,11 +7,6 @@ func _ready() -> void:
 	pass # Replace with function body.
 
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
-
-
 func _on_button_up() -> void:
 	ui.inventory_panel_out()
 	ui.module_panel_in()

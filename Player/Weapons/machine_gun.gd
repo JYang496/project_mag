@@ -100,10 +100,10 @@ func _on_over_charge():
 	if self.casting_oc_skill:
 		return
 	self.casting_oc_skill = true
-	speed *= 1.6
+	speed *= 2
 	damage *= 2
 	hp += 2
-	max_speed_factor *= 1.6
+	max_speed_factor *= 2
 	var remove_timer = Timer.new()
 	remove_timer.wait_time = 8.0
 	remove_timer.one_shot = true

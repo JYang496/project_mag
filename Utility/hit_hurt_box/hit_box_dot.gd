@@ -15,7 +15,7 @@ func _ready() -> void:
 		set_owner(hitbox_owner)
 
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	if cooldown:
 		return
 	for area in get_overlapping_areas():
@@ -42,7 +42,7 @@ func _on_hit_timer_timeout() -> void:
 	cooldown = false
 
 
-func _on_area_exited(exited_area: Area2D) -> void:
+func _on_area_exited(_exited_area: Area2D) -> void:
 	for area in get_overlapping_areas():
 		if area is HurtBox:
 			hitbox_owner.overlapping = true
