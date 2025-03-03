@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://cjl1xropxxlws"]
 
-[ext_resource type="Script" path="res://Data/spawns/SpawnArray.gd" id="1_bv7i0"]
+[ext_resource type="Script" path="res://Data/spawns/LevelArray.gd" id="1_bv7i0"]
 [ext_resource type="Script" path="res://Utility/spawn_info.gd" id="2_gc8rk"]
 [ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/enemy_wheel_cart.tscn" id="3_gplyf"]
 [ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/enemy_rolling_ball.tscn" id="4_u3nhp"]
