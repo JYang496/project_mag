@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://ck0p2ef0sv3a0"]
 
 [ext_resource type="PackedScene" uid="uid://4sd4d8lkbkls" path="res://Npc/base_npc.tscn" id="1_y1wsb"]
-[ext_resource type="Script" path="res://Npc/enemy/BaseEnemy.gd" id="2_31lbh"]
+[ext_resource type="Script" uid="uid://ytvpcus0icms" path="res://Npc/enemy/BaseEnemy.gd" id="2_31lbh"]
 
 [node name="BaseEnemy" groups=["enemies"] instance=ExtResource("1_y1wsb")]
 collision_layer = 4

@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://4sd4d8lkbkls"]
 
 [ext_resource type="PackedScene" uid="uid://dr2gmtpibgjy1" path="res://Utility/hit_hurt_box/hurt_box.tscn" id="1_1tbjg"]
-[ext_resource type="Script" path="res://Npc/base_npc.gd" id="1_irpyh"]
+[ext_resource type="Script" uid="uid://brsjr02v2w5u0" path="res://Npc/base_npc.gd" id="1_irpyh"]
 
 [node name="BaseNPC" type="CharacterBody2D" groups=["npc"]]
 script = ExtResource("1_irpyh")

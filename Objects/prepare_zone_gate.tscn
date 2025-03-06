@@ -1,6 +1,6 @@
 [gd_scene load_steps=10 format=4 uid="uid://w270o86lb231"]
 
-[ext_resource type="Script" path="res://Objects/prepare_zone_gate.gd" id="1_0unpk"]
+[ext_resource type="Script" uid="uid://dbfmjfnf6ulax" path="res://Objects/prepare_zone_gate.gd" id="1_0unpk"]
 [ext_resource type="Texture2D" uid="uid://ibyydb01gn8o" path="res://Textures/test/p_gate.png" id="1_mwig2"]
 [ext_resource type="Texture2D" uid="uid://sldltmirxrkq" path="res://Textures/BlockyLife/tileset.png" id="2_fq5ll"]
 [ext_resource type="PackedScene" uid="uid://dpgmn2gntqjee" path="res://Utility/player_teleport.tscn" id="4_86oxv"]

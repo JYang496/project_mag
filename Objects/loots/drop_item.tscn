@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://ddbjcv3wsci50"]
 
-[ext_resource type="Script" path="res://Objects/loots/drop_item.gd" id="1_jnmds"]
+[ext_resource type="Script" uid="uid://drnkrll6ndcqc" path="res://Objects/loots/drop_item.gd" id="1_jnmds"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_xap8g"]
 

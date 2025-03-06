@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://dg4riaq8sxtsv"]
 
-[ext_resource type="Script" path="res://Player/Weapons/rocket_luncher.gd" id="1_4w11i"]
+[ext_resource type="Script" uid="uid://boni1mvd0i416" path="res://Player/Weapons/rocket_luncher.gd" id="1_4w11i"]
 [ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="1_qjd0b"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_fd8mq"]

@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://cms57yqrnn7ga"]
 
-[ext_resource type="Script" path="res://UI/inv_slot.gd" id="1_d413c"]
+[ext_resource type="Script" uid="uid://b4hnboy05hquo" path="res://UI/inv_slot.gd" id="1_d413c"]
 
 [node name="InvSlot" type="MarginContainer"]
 custom_minimum_size = Vector2(500, 120)

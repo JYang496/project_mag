@@ -1,9 +1,9 @@
 [gd_scene load_steps=7 format=3 uid="uid://do24df1bfmsmv"]
 
-[ext_resource type="Script" path="res://Data/spawns/LevelArray.gd" id="1_sm5it"]
-[ext_resource type="Script" path="res://Utility/spawn_info.gd" id="2_fvbvb"]
+[ext_resource type="Script" uid="uid://bqyvlcrq4b8xf" path="res://Data/spawns/LevelArray.gd" id="1_sm5it"]
+[ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Utility/spawn_info.gd" id="2_fvbvb"]
 [ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/enemy_rolling_ball.tscn" id="3_n4krr"]
-[ext_resource type="Script" path="res://Utility/reward_info.gd" id="4_mcjiy"]
+[ext_resource type="Script" uid="uid://cw2vo0cs83hpl" path="res://Utility/reward_info.gd" id="4_mcjiy"]
 
 [sub_resource type="Resource" id="Resource_wnahx"]
 script = ExtResource("2_fvbvb")

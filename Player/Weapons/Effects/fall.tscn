@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://ctwf603xhsfsq"]
 
-[ext_resource type="Script" path="res://Player/Weapons/Effects/fall.gd" id="1_rcm82"]
+[ext_resource type="Script" uid="uid://dgqxpvqqt75o8" path="res://Player/Weapons/Effects/fall.gd" id="1_rcm82"]
 
 [node name="Fall" type="Node2D"]
 script = ExtResource("1_rcm82")

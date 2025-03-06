@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://bpx63eseql6vs"]
 
-[ext_resource type="Script" path="res://Objects/loots/loot_box.gd" id="1_c5wyf"]
+[ext_resource type="Script" uid="uid://g34jrdcme435" path="res://Objects/loots/loot_box.gd" id="1_c5wyf"]
 [ext_resource type="Texture2D" uid="uid://1ur01rlyde1g" path="res://Textures/test/loot_box.png" id="2_s0sow"]
 
 [node name="LootBox" type="Node2D"]

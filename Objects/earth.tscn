@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://ccj57322nbh6o"]
 
 [ext_resource type="Texture2D" uid="uid://bxt7opp448c0f" path="res://Textures/BlockyLife/MCBlocksColorOutline.png" id="1_auill"]
-[ext_resource type="Script" path="res://Objects/earth.gd" id="1_b3kws"]
+[ext_resource type="Script" uid="uid://baown3nljsuqi" path="res://Objects/earth.gd" id="1_b3kws"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_p1dy3"]
 resource_name = "mc"

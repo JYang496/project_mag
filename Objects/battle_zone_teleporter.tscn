@@ -1,6 +1,6 @@
 [gd_scene load_steps=9 format=4 uid="uid://djyxv43t57pnf"]
 
-[ext_resource type="Script" path="res://Objects/battle_zone_teleporter.gd" id="1_2ac06"]
+[ext_resource type="Script" uid="uid://1ly0gbnh7ejf" path="res://Objects/battle_zone_teleporter.gd" id="1_2ac06"]
 [ext_resource type="Texture2D" uid="uid://i8mt56nqukr5" path="res://Textures/Tilesets/tileset.png" id="1_h1dka"]
 [ext_resource type="PackedScene" uid="uid://dpgmn2gntqjee" path="res://Utility/player_teleport.tscn" id="3_d60cv"]
 

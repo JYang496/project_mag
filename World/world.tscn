@@ -1,7 +1,7 @@
 [gd_scene load_steps=34 format=4 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Texture2D" uid="uid://sldltmirxrkq" path="res://Textures/BlockyLife/tileset.png" id="2_3rumv"]
-[ext_resource type="Script" path="res://World/tilemaps.gd" id="2_vir17"]
+[ext_resource type="Script" uid="uid://bf6icej2kcrba" path="res://World/tilemaps.gd" id="2_vir17"]
 [ext_resource type="Texture2D" uid="uid://d137ikkej7570" path="res://Textures/MiniWorldSprites/MiniWorldSprites/Ground/Cliff-Water.png" id="5_3gw0o"]
 [ext_resource type="Texture2D" uid="uid://dxemnwu8nukkn" path="res://Textures/MiniWorldSprites/MiniWorldSprites/Ground/DeadGrass.png" id="5_daukg"]
 [ext_resource type="Texture2D" uid="uid://ceuwy3vw6s3ca" path="res://Textures/MiniWorldSprites/MiniWorldSprites/Ground/Cliff.png" id="6_4gfth"]

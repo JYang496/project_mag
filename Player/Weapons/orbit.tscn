@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://ce2cgqmptf7je"]
 
-[ext_resource type="Script" path="res://Player/Weapons/orbit.gd" id="1_lxm1t"]
+[ext_resource type="Script" uid="uid://cgt5h2lpnxfs0" path="res://Player/Weapons/orbit.gd" id="1_lxm1t"]
 [ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="2_d4sd2"]
 
 [node name="Orbit" type="Node2D"]

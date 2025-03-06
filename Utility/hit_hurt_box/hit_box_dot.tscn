@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://072a80habhhh"]
 
-[ext_resource type="Script" path="res://Utility/hit_hurt_box/hit_box_dot.gd" id="1_uhkn8"]
+[ext_resource type="Script" uid="uid://f0r1yq5v1fe0" path="res://Utility/hit_hurt_box/hit_box_dot.gd" id="1_uhkn8"]
 
 [node name="HitBoxDot" type="Area2D" groups=["attack"]]
 collision_layer = 0

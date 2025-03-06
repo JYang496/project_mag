@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://bkeebg07ipwd7"]
 
 [ext_resource type="Texture2D" uid="uid://d0uuk0qiadjdm" path="res://Textures/test/elevator16.png" id="1_1u2kc"]
-[ext_resource type="Script" path="res://Objects/elevator.gd" id="2_sc0w4"]
+[ext_resource type="Script" uid="uid://s3dx88txvrak" path="res://Objects/elevator.gd" id="2_sc0w4"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_htffk"]
 

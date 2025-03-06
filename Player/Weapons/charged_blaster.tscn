@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://cflf3vwa1kmb2"]
 
-[ext_resource type="Script" path="res://Player/Weapons/charged_blaster.gd" id="1_48de6"]
+[ext_resource type="Script" uid="uid://bq3w32675tuff" path="res://Player/Weapons/charged_blaster.gd" id="1_48de6"]
 [ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://Textures/test/sniper.png" id="2_qghy1"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_emqbp"]

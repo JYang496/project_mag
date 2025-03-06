@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://begelxebh4jyb"]
 
-[ext_resource type="Script" path="res://Player/Weapons/machine_gun.gd" id="1_6m4bk"]
+[ext_resource type="Script" uid="uid://q1auvvjq4ncn" path="res://Player/Weapons/machine_gun.gd" id="1_6m4bk"]
 [ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="2_2rbq7"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_c1515"]

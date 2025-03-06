@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://t2fjrybq8fpp" path="res://Npc/friendly/friendly_npc.tscn" id="1_sx5eq"]
 [ext_resource type="Texture2D" uid="uid://i7pfn0rsdlxs" path="res://Textures/test/npc_1.png" id="2_tct7p"]
-[ext_resource type="Script" path="res://Npc/friendly/FriendlyMerchant.gd" id="2_v70x3"]
+[ext_resource type="Script" uid="uid://b6pueo0038vdr" path="res://Npc/friendly/FriendlyMerchant.gd" id="2_v70x3"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_li684"]
 

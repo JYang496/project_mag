@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://cm1a8kp01un20"]
 
-[ext_resource type="Script" path="res://UI/margin_item_card.gd" id="1_a7jwt"]
+[ext_resource type="Script" uid="uid://ciw6p6khxy1aj" path="res://UI/margin_item_card.gd" id="1_a7jwt"]
 
 [node name="MarginItemCard" type="MarginContainer"]
 custom_minimum_size = Vector2(280, 400)

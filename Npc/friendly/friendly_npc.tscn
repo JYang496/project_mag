@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://t2fjrybq8fpp"]
 
 [ext_resource type="PackedScene" uid="uid://4sd4d8lkbkls" path="res://Npc/base_npc.tscn" id="1_jftvo"]
-[ext_resource type="Script" path="res://Npc/friendly/FriendlyNpc.gd" id="2_iyyjk"]
+[ext_resource type="Script" uid="uid://bluk0p8rfn31b" path="res://Npc/friendly/FriendlyNpc.gd" id="2_iyyjk"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pnknk"]
 size = Vector2(138, 113)

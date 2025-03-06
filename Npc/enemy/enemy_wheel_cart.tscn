@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/base_enemy.tscn" id="1_jdgf0"]
 [ext_resource type="Texture2D" uid="uid://c0t8ukgysqttr" path="res://Textures/test/e2.png" id="2_1at03"]
-[ext_resource type="Script" path="res://Npc/enemy/enemy_wheel_cart.gd" id="2_m5ns1"]
+[ext_resource type="Script" uid="uid://dr52evamqh220" path="res://Npc/enemy/enemy_wheel_cart.gd" id="2_m5ns1"]
 [ext_resource type="PackedScene" uid="uid://072a80habhhh" path="res://Utility/hit_hurt_box/hit_box_dot.tscn" id="4_mrrxc"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_k1bh1"]

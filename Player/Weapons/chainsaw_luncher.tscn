@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://h41t628ntor5"]
 
-[ext_resource type="Script" path="res://Player/Weapons/chainsaw_luncher.gd" id="1_y5ll5"]
+[ext_resource type="Script" uid="uid://4fd56c34p01l" path="res://Player/Weapons/chainsaw_luncher.gd" id="1_y5ll5"]
 [ext_resource type="Texture2D" uid="uid://dy8r3aaxk8rse" path="res://Textures/test/chainsaw.png" id="2_8k0s0"]
 
 [node name="ChainsawLuncher" type="Node2D"]

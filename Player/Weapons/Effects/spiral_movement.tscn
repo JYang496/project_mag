@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://116hpyvvy166"]
 
-[ext_resource type="Script" path="res://Player/Weapons/Effects/spiral_movement.gd" id="1_n2hxo"]
+[ext_resource type="Script" uid="uid://cq04n0agl1nb3" path="res://Player/Weapons/Effects/spiral_movement.gd" id="1_n2hxo"]
 
 [node name="SpiralMovement" type="Node2D"]
 script = ExtResource("1_n2hxo")

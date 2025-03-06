@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://boa65uifw4uy4"]
 
-[ext_resource type="Script" path="res://UI/margin_upgrade_card.gd" id="1_dyp4j"]
+[ext_resource type="Script" uid="uid://fp047ft8u2u1" path="res://UI/margin_upgrade_card.gd" id="1_dyp4j"]
 
 [node name="MarginUpgradeCard" type="MarginContainer"]
 custom_minimum_size = Vector2(280, 400)

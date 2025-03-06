@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://d0mgs34dodkqu"]
 
 [ext_resource type="PackedScene" uid="uid://t2fjrybq8fpp" path="res://Npc/friendly/friendly_npc.tscn" id="1_duxgc"]
-[ext_resource type="Script" path="res://Npc/friendly/FriendlySmith.gd" id="2_ua8p5"]
+[ext_resource type="Script" uid="uid://sbccbboxsu1c" path="res://Npc/friendly/FriendlySmith.gd" id="2_ua8p5"]
 [ext_resource type="Texture2D" uid="uid://i7pfn0rsdlxs" path="res://Textures/test/npc_1.png" id="3_gvuvl"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_6ig6u"]
