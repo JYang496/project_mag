@@ -23,7 +23,7 @@ func _ready():
 	#create_weapon("1")
 	#create_weapon("6")
 	#create_weapon("7")
-	create_weapon("1")
+	create_weapon("9")
 	update_grab_radius()
 
 

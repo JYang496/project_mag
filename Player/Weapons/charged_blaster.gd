@@ -101,7 +101,7 @@ func _on_shoot():
 	var beam_blast_ins = beam_blast.instantiate()
 	beam_blast_ins.target_position = get_local_mouse_position()
 	beam_blast_ins.width = charge_level * 6
-	beam_blast_ins.damage = damage * (charge_level * 2) 
+	beam_blast_ins.damage = damage * charge_level
 	beam_blast_ins.duration = duration
 	beam_blast_ins.hit_cd = hit_cd
 	call_deferred("add_child",beam_blast_ins)
