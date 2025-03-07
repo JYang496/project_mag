@@ -28,16 +28,18 @@ func _on_timer_timeout():
 		PhaseManager.enter_reward()
 		return
 	var enemy_spawns = instance_list[PhaseManager.current_level]
-	for i in enemy_spawns:
+	for i : SpawnInfo in enemy_spawns:
 		if PhaseManager.battle_time >= i.time_start and PhaseManager.battle_time <= i.time_end:
-			if i.spawn_delay_counter < i.enemy_spawn_delay:
+			if i.spawn_delay_counter < i.delay - 1:
 				i.spawn_delay_counter += 1
 			else:
 				i.spawn_delay_counter = 0
 				var new_enemy = i.enemy
 				var counter = 0
-				while counter < i.enemy_num:
+				while counter < i.number:
 					var enemy_spawn = new_enemy.instantiate()
+					enemy_spawn.hp = i.hp
+					enemy_spawn.damage = i.damage
 					enemy_spawn.global_position = get_random_position()
 					add_child(enemy_spawn)
 					counter += 1
