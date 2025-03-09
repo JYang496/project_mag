@@ -13,36 +13,36 @@ var ITEM_NAME = "Laser"
 var weapon_data = {
 	"1": {
 		"level": "1",
-		"damage": "1",
-		"reload": "2",
-		"cost": "1",
-		"features": [],
-	},
-	"2": {
-		"level": "2",
-		"damage": "2",
-		"reload": "2",
-		"cost": "1",
-		"features": [],
-	},
-	"3": {
-		"level": "3",
 		"damage": "3",
 		"reload": "2",
 		"cost": "1",
 		"features": [],
 	},
-	"4": {
+	"2": {
 		"level": "4",
 		"damage": "4",
-		"reload": "1",
+		"reload": "1.6",
+		"cost": "1",
+		"features": [],
+	},
+	"3": {
+		"level": "3",
+		"damage": "6",
+		"reload": "1.1",
+		"cost": "1",
+		"features": [],
+	},
+	"4": {
+		"level": "4",
+		"damage": "7",
+		"reload": "0.8",
 		"cost": "1",
 		"features": [],
 	},
 	"5": {
 		"level": "5",
-		"damage": "5",
-		"reload": "2",
+		"damage": "8",
+		"reload": "0.6",
 		"cost": "1",
 		"features": [],
 	}

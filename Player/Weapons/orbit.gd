@@ -46,21 +46,21 @@ var weapon_data = {
 		"level": "3",
 		"damage": "10",
 		"number": "3",
-		"spin_speed": "5",
+		"spin_speed": "4",
 		"cost": "1",
 	},
 	"4": {
 		"level": "4",
 		"damage": "15",
 		"number": "3",
-		"spin_speed": "6",
+		"spin_speed": "5",
 		"cost": "1",
 	},
 	"5": {
 		"level": "5",
 		"damage": "25",
 		"number": "4",
-		"spin_speed": "6",
+		"spin_speed": "5",
 		"cost": "1",
 	}
 }

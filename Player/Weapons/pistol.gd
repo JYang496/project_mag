@@ -13,7 +13,7 @@ var ITEM_NAME = "Pistol"
 var weapon_data = {
 	"1": {
 		"level": "1",
-		"damage": "10",
+		"damage": "20",
 		"speed": "600",
 		"hp": "1",
 		"reload": "1",
@@ -22,7 +22,7 @@ var weapon_data = {
 	},
 	"2": {
 		"level": "2",
-		"damage": "15",
+		"damage": "35",
 		"speed": "600",
 		"hp": "1",
 		"reload": "1",
@@ -31,7 +31,7 @@ var weapon_data = {
 	},
 	"3": {
 		"level": "3",
-		"damage": "20",
+		"damage": "75",
 		"speed": "600",
 		"hp": "1",
 		"reload": "1",
@@ -40,7 +40,7 @@ var weapon_data = {
 	},
 	"4": {
 		"level": "4",
-		"damage": "20",
+		"damage": "80",
 		"speed": "800",
 		"hp": "1",
 		"reload": "0.75",
@@ -49,10 +49,10 @@ var weapon_data = {
 	},
 	"5": {
 		"level": "5",
-		"damage": "25",
+		"damage": "100",
 		"speed": "800",
 		"hp": "2",
-		"reload": "0.75",
+		"reload": "0.5",
 		"cost": "1",
 		"features": [],
 	}
