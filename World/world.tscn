@@ -316,16 +316,17 @@ collision_mask = 37
 
 [node name="Dummy" parent="." instance=ExtResource("23_8t5w2")]
 position = Vector2(-106, -1435)
+metal_value = 1
 
 [node name="RewardManager" parent="." instance=ExtResource("22_n13dc")]
 
 [node name="EnemySpawner" parent="." instance=ExtResource("12_dyxss")]
 
 [node name="TopLeft" parent="EnemySpawner" index="1"]
-position = Vector2(-738, -163)
+position = Vector2(-717, -153)
 
 [node name="BottomRight" parent="EnemySpawner" index="2"]
-position = Vector2(354, 414)
+position = Vector2(338, 401)
 
 [editable path="PrepareZoneGate"]
 [editable path="PrepareZoneGate/PlayerTeleport"]

@@ -8,11 +8,13 @@ extends Node2D
 @onready var y_max = $BottomRight.global_position.y
 
 var instance_list : Array
+var time_out_list : Array
 
 func _ready():
 	for i in SpawnData.level_list:
-		var ins = i.instantiate()
+		var ins : LevelArray = i.instantiate()
 		instance_list.append(ins.spawns)
+		time_out_list.append(ins.time_out)
 
 func start_timer() -> void:
 	PhaseManager.battle_time = 0
@@ -21,8 +23,7 @@ func start_timer() -> void:
 func _on_timer_timeout():
 	PhaseManager.battle_time += 1
 	# When time up, battle ends and bonus phase starts
-	if PhaseManager.battle_time >= PhaseManager.TIME_OUT or PhaseManager.phase == PhaseManager.REWARD:
-		#PhaseManager.current_level += 1
+	if PhaseManager.battle_time >= time_out_list[PhaseManager.current_level] or PhaseManager.phase == PhaseManager.REWARD:
 		timer.stop()
 		clear_all_enemies()
 		PhaseManager.enter_reward()
