@@ -1,5 +1,5 @@
 extends Node2D
-class_name Coin
+class_name Chip
 
 @export var value = 1
 @onready var sprite = $Sprite2D

@@ -1,6 +1,6 @@
 extends Node2D
 
-@onready var coin_preload = preload("res://Objects/loots/coin.tscn")
+@onready var chip_preload = preload("res://Objects/loots/chip.tscn")
 @onready var item_preload = preload("res://Objects/loots/drop_item.tscn")
 @onready var drop_preload = preload("res://Objects/loots/drop.tscn")
 @onready var disapear_timer: Timer = $DisapearTimer
@@ -54,7 +54,7 @@ func drop_coins() -> void:
 			bonus = remainder / 2
 			remainder = remainder % 2 + remainder / 2
 		var drop = drop_preload.instantiate()
-		drop.drop = coin_preload
+		drop.drop = chip_preload
 		drop.value = total_value / number_of_coins + bonus
 		drop.global_position = self.global_position
 		self.call_deferred("add_sibling",drop)

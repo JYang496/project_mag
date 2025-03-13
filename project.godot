@@ -35,6 +35,13 @@ folder_colors={
 "res://Utility/": "teal"
 }
 
+[global_group]
+
+collectables="collectables"
+enemies=""
+npc=""
+player=""
+
 [input]
 
 UP={
