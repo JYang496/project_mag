@@ -161,23 +161,22 @@ func get_closest_area_optimized(area_list: Array, target_node: Node2D) -> Area2D
 
 
 func _on_collect_area_area_entered(area):
-	if area.is_in_group("collectables"):
-		if area is Coin:
-			var value = area.collect()
-			PlayerData.player_gold += value
+	if area.is_in_group("collectables") and area is Coin:
+		var value = area.collect()
+		PlayerData.player_gold += value
 
 
 func _on_collect_chip_area_area_entered(area) -> void:
 	if area.is_in_group("collectables") and area is Chip:
 		var value = area.collect()
-		print("chip value: ", value)
+		PlayerData.player_exp += value
 
 
 func _on_grab_area_area_entered(area):
 	if area.is_in_group("collectables"):
 		if area is Coin:
 			area.target = collect_area
-		if area is Chip:
+		elif area is Chip:
 			area.target = self
 
 

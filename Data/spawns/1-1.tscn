@@ -12,12 +12,12 @@ time_end = 30
 enemy = ExtResource("3_n4krr")
 hp = 10
 damage = 1
-number = 3
+number = 10
 delay = 2
 
 [sub_resource type="Resource" id="Resource_xnq0v"]
 script = ExtResource("4_mcjiy")
-total_coin_value = 97
+total_coin_value = 60
 item_id = "2"
 item_level = 1
 

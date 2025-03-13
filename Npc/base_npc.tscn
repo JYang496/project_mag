@@ -4,6 +4,9 @@
 [ext_resource type="Script" uid="uid://brsjr02v2w5u0" path="res://Npc/base_npc.gd" id="1_irpyh"]
 
 [node name="BaseNPC" type="CharacterBody2D" groups=["npc"]]
+motion_mode = 1
+platform_on_leave = 2
+platform_floor_layers = 4294967264
 script = ExtResource("1_irpyh")
 
 [node name="HurtBox" parent="." instance=ExtResource("1_1tbjg")]

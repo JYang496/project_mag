@@ -6,14 +6,14 @@ extends Node2D
 @onready var disapear_timer: Timer = $DisapearTimer
 
 @export var total_value:int = 0
-var number_of_coins := 5
+var number_of_collectables := 5
 var remainder := 0
 @export var item_id : String = ""
 @export var item_lvl : int = 0
 
 func _ready() -> void:
-	number_of_coins = 5 + total_value/10
-	remainder = total_value % number_of_coins
+	number_of_collectables = 5 + total_value/10
+	remainder = total_value % number_of_collectables
 	animation()
 
 # Animation, loot box rolls and falls, opens
@@ -31,7 +31,7 @@ func _on_tween_finished() -> void:
 
 func drops() -> void:
 	drop_an_item()
-	drop_coins()
+	drop_collectables()
 
 func drop_an_item() -> void:
 	if item_id == "" or item_lvl == 0:
@@ -44,8 +44,8 @@ func drop_an_item() -> void:
 	item_drop.level = item_lvl
 	self.call_deferred("add_sibling",item_drop)
 
-func drop_coins() -> void:
-	for i in range(number_of_coins):
+func drop_collectables() -> void:
+	for i in range(number_of_collectables):
 		var bonus := 0
 		if remainder >= 0 and remainder <= 10:
 			bonus = remainder
@@ -55,7 +55,7 @@ func drop_coins() -> void:
 			remainder = remainder % 2 + remainder / 2
 		var drop = drop_preload.instantiate()
 		drop.drop = chip_preload
-		drop.value = total_value / number_of_coins + bonus
+		drop.value = total_value / number_of_collectables + bonus
 		drop.global_position = self.global_position
 		self.call_deferred("add_sibling",drop)
 

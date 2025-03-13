@@ -298,15 +298,19 @@ position = Vector2(-7, -586)
 
 [node name="Tester" parent="." instance=ExtResource("14_2pgcb")]
 position = Vector2(-492, -1446)
+motion_mode = 0
 
 [node name="FriendlySmith" parent="." groups=["friendlies"] instance=ExtResource("9_4gves")]
 position = Vector2(-325, -1585)
+motion_mode = 0
 
 [node name="FriendlyMerchant" parent="." groups=["friendlies"] instance=ExtResource("7_1eywc")]
 position = Vector2(-97, -1577)
+motion_mode = 0
 
 [node name="Inventory" parent="." instance=ExtResource("17_1l216")]
 position = Vector2(-333, -1422)
+motion_mode = 0
 
 [node name="GladiatorTest" parent="." instance=ExtResource("10_jwoh3")]
 position = Vector2(-181, -1487)
@@ -323,10 +327,10 @@ position = Vector2(-106, -1435)
 [node name="EnemySpawner" parent="." instance=ExtResource("12_dyxss")]
 
 [node name="TopLeft" parent="EnemySpawner" index="1"]
-position = Vector2(-717, -153)
+position = Vector2(-622, -99)
 
 [node name="BottomRight" parent="EnemySpawner" index="2"]
-position = Vector2(338, 401)
+position = Vector2(244, 357)
 
 [node name="Chip" parent="." instance=ExtResource("23_o6lw0")]
 position = Vector2(-291, -1502)

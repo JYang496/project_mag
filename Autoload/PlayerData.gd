@@ -4,7 +4,7 @@ var player_level := 1 :
 	get:
 		return player_level
 	set(value):
-		player_level = clampi(int(value), 0, 42)
+		player_level = clampi(int(value), 1, 42)
 
 var player_max_exp := 10 :
 	get:
@@ -16,7 +16,11 @@ var player_exp := 0 :
 	get:
 		return player_exp
 	set(value):
-		player_exp = clampi(int(value), 0, player_max_exp)
+		player_exp = clampi(int(value), 0, 99999)
+		while player_exp >= player_max_exp:
+			player_level += 1
+			player_exp -= player_max_exp
+		
 		
 var player_speed : float = 100.0 :
 	get:
