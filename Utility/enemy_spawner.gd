@@ -43,15 +43,15 @@ func _on_timer_timeout():
 					enemy_spawn.damage = i.damage
 					enemy_spawn.global_position = get_random_position()
 					self.call_deferred("add_child",enemy_spawn)
-					#add_child(enemy_spawn)
 					counter += 1
 
 func get_random_position():
 	var vpr = get_viewport_rect().size * randf_range(0.5,1.1)
-	var top_left = Vector2(player.global_position.x - vpr.x/2, player.global_position.y - vpr.y/2)
-	var top_right = Vector2(player.global_position.x + vpr.x/2, player.global_position.y - vpr.y/2)
-	var bottom_left = Vector2(player.global_position.x - vpr.x/2, player.global_position.y + vpr.y/2)
-	var bottom_right = Vector2(player.global_position.x + vpr.x/2, player.global_position.y + vpr.y/2)
+	
+	var top_left = clamp_position(player.global_position.x - vpr.x/2, player.global_position.y - vpr.y/2)
+	var top_right = clamp_position(player.global_position.x + vpr.x/2, player.global_position.y - vpr.y/2)
+	var bottom_left = clamp_position(player.global_position.x - vpr.x/2, player.global_position.y + vpr.y/2)
+	var bottom_right = clamp_position(player.global_position.x + vpr.x/2, player.global_position.y + vpr.y/2)
 	var pos_side = ["up","down","right","left"].pick_random()
 	var spawn_pos1 = Vector2.ZERO
 	var spawn_pos2 = Vector2.ZERO
@@ -69,9 +69,12 @@ func get_random_position():
 		"left":
 			spawn_pos1 = top_left
 			spawn_pos2 = bottom_left
-	var x_spawn = clamp(randf_range(spawn_pos1.x, spawn_pos2.x),x_min,x_max)
-	var y_spawn = clamp(randf_range(spawn_pos1.y, spawn_pos2.y),y_min,y_max)
+	var x_spawn = randf_range(spawn_pos1.x, spawn_pos2.x)
+	var y_spawn = randf_range(spawn_pos1.y, spawn_pos2.y)
 	return Vector2(x_spawn,y_spawn)
+
+func clamp_position(x_value :float, y_value :float) -> Vector2:
+	return Vector2(clampf(x_value,x_min,x_max),clampf(y_value,y_min,y_max))
 
 func clear_all_enemies():
 	var enemies = get_tree().get_nodes_in_group("enemies")
