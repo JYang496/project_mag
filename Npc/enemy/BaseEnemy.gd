@@ -7,6 +7,11 @@ class_name BaseEnemy
 
 signal enemy_death()
 
+@onready var hit_box_dot: HitBoxDot = $HitBoxDot
+
+func _ready() -> void:
+	hit_box_dot.hitbox_owner = self
+
 func death() -> void:
 	var drop = drop_preload.instantiate()
 	drop.drop = coin_preload

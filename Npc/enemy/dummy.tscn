@@ -9,7 +9,6 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_mcauc"]
 
 [node name="Dummy" instance=ExtResource("1_1lg1t")]
-motion_mode = 1
 script = ExtResource("2_p6u7u")
 movement_speed = 0.0
 hp = 9999

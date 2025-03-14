@@ -42,7 +42,8 @@ func _on_timer_timeout():
 					enemy_spawn.hp = i.hp
 					enemy_spawn.damage = i.damage
 					enemy_spawn.global_position = get_random_position()
-					add_child(enemy_spawn)
+					self.call_deferred("add_child",enemy_spawn)
+					#add_child(enemy_spawn)
 					counter += 1
 
 func get_random_position():
@@ -68,8 +69,8 @@ func get_random_position():
 		"left":
 			spawn_pos1 = top_left
 			spawn_pos2 = bottom_left
-	var x_spawn = clampf(randf_range(spawn_pos1.x, spawn_pos2.x),x_min,x_max)
-	var y_spawn = clampf(randf_range(spawn_pos1.y, spawn_pos2.y),y_min,y_max)
+	var x_spawn = clamp(randf_range(spawn_pos1.x, spawn_pos2.x),x_min,x_max)
+	var y_spawn = clamp(randf_range(spawn_pos1.y, spawn_pos2.y),y_min,y_max)
 	return Vector2(x_spawn,y_spawn)
 
 func clear_all_enemies():

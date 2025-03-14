@@ -1,10 +1,6 @@
 extends BaseEnemy
 
 @onready var final_speed = movement_speed
-@onready var hit_box_dot: HitBoxDot = $HitBoxDot
-
-func _ready() -> void:
-	hit_box_dot.hitbox_owner = self
 
 func _physics_process(_delta):
 	## direction to applied normalized
