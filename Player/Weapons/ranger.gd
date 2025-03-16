@@ -1,7 +1,6 @@
-extends Node2D
+extends Weapon
 class_name Ranger
 
-@onready var player = get_tree().get_first_node_in_group("player")
 const explosion_effect = preload("res://Player/Weapons/Effects/explosion_effect.tscn")
 const speed_change_on_hit = preload("res://Player/Weapons/Effects/speed_change_on_hit.tscn")
 const d_up_on_emy_d_effect = preload("res://Player/Weapons/Effects/dmg_up_on_enemy_death.tscn")
@@ -12,7 +11,6 @@ var ricochet_effect = preload("res://Player/Weapons/Effects/ricochet_effect.tscn
 
 
 # Common variables for rangers
-var level : int
 var base_damage : int
 var damage : int
 var base_speed : int

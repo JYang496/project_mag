@@ -97,7 +97,7 @@ var grab_radius_mutifactor := 1.0 :
 
 var total_grab_radius := grab_radius * grab_radius_mutifactor
 
-var player_gold := 0
+var player_gold := 10
 var is_interacting : bool = false
 
 var overcharge_enable : bool = true:

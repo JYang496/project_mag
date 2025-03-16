@@ -1,13 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://cms57yqrnn7ga"]
+[gd_scene load_steps=2 format=3 uid="uid://dfnpmefqatyye"]
 
-[ext_resource type="Script" uid="uid://b4hnboy05hquo" path="res://UI/inv_slot.gd" id="1_d413c"]
+[ext_resource type="Script" uid="uid://c4tnifted01bo" path="res://UI/shop_weapon_slot.gd" id="1_6vnxt"]
 
-[node name="InvSlot" type="MarginContainer"]
-custom_minimum_size = Vector2(240, 120)
-offset_top = 1.0
-offset_right = 240.0
-offset_bottom = 121.0
-script = ExtResource("1_d413c")
+[node name="ShopWeaponSlot" type="MarginContainer"]
+custom_minimum_size = Vector2(500, 120)
+script = ExtResource("1_6vnxt")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 2
@@ -51,4 +48,5 @@ offset_bottom = 103.0
 
 [connection signal="gui_input" from="Background" to="." method="_on_background_gui_input"]
 [connection signal="mouse_entered" from="Background" to="." method="_on_color_rect_mouse_entered"]
+[connection signal="mouse_entered" from="Background" to="." method="_on_background_mouse_entered"]
 [connection signal="mouse_exited" from="Background" to="." method="_on_color_rect_mouse_exited"]

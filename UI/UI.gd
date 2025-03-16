@@ -6,6 +6,7 @@ class_name UI
 # Roots
 @onready var character_root : Control = $GUI/CharacterRoot
 @onready var shopping_root : Control = $GUI/ShoppingRoot
+@onready var shopping_rootv_2: Control = $GUI/ShoppingRootv2
 @onready var upgrade_root : Control = $GUI/UpgradeRoot
 @onready var boss_root : Control = $GUI/BossRoot
 @onready var inventory_root: Control = $GUI/InventoryRoot
@@ -25,16 +26,20 @@ class_name UI
 
 
 # Shopping
-@onready var shopping_panel = $GUI/ShoppingRoot/ShoppingPanel
-@onready var shopping_options = $GUI/ShoppingRoot/ShoppingPanel/ShoppingOptions
+#@onready var shopping_panel = $GUI/ShoppingRoot/ShoppingPanel
+#@onready var shopping_options = $GUI/ShoppingRoot/ShoppingPanel/ShoppingOptions
+@onready var shop: VBoxContainer = $GUI/ShoppingRootv2/Panel/Shop
+@onready var equipped_shop: GridContainer = $GUI/ShoppingRootv2/Panel/Equipped
+@onready var shop_sell_button: Button = $GUI/ShoppingRootv2/Panel/ShopSellButton
+
 
 # Upgrade
 @onready var upgrade_panel = $GUI/UpgradeRoot/UpgradePanel
 @onready var upgrade_options = $GUI/UpgradeRoot/UpgradePanel/UpgradeOptions
 
 # Inventory
-@onready var inventory: VBoxContainer = $GUI/InventoryRoot/Panel/Inventory
-@onready var equipped: GridContainer = $GUI/InventoryRoot/Panel/Equipped
+@onready var inventory: GridContainer = $GUI/InventoryRoot/Panel/Inventory
+@onready var equipped_inv: GridContainer = $GUI/InventoryRoot/Panel/Equipped
 @onready var equipped_m: GridContainer = $GUI/ModuleRoot/Panel/EquippedM
 @onready var modules: GridContainer = $GUI/ModuleRoot/Panel/Modules
 
@@ -99,24 +104,16 @@ func refresh_border() -> void:
 		else:
 			icon.display = false
 		icon.update()
-		
-		
+
 func shopping_panel_in() -> void:
-	if shopping_root == null:
+	if shopping_rootv_2 == null:
 		return
 	move_out_timer.stop()
-	shopping_root.visible = true
-	var options = 0
-	var optionsmax = 4
-	free_childern(shopping_options)
-	while options < optionsmax:
-		var option_choice = item_card.instantiate()
-		shopping_options.add_child(option_choice)
-		options += 1
-
+	update_shop()
+	shopping_rootv_2.visible = true
 
 func shopping_panel_out() -> void:
-	shopping_root.visible = false
+	shopping_rootv_2.visible = false
 	refresh_border()
 	move_out_timer.start()
 
@@ -173,10 +170,17 @@ func inv_mod_panel_out() -> void:
 	module_panel_out()
 	
 func update_inventory() -> void:
-	for eq in equipped.get_children():
+	for eq in equipped_inv.get_children():
 		eq.update()
 	for inv in inventory.get_children():
 		inv.update()
+
+func update_shop() -> void:
+	for eq in equipped_shop.get_children():
+		eq.update()
+	for sh in shop.get_children():
+		sh.update()
+	
 
 func update_modules() -> void:
 	for eq in equipped_m.get_children():

@@ -15,8 +15,6 @@ var price : int
 @onready var ui = get_tree().get_first_node_in_group("ui")
 
 signal select_weapon(item_id)
-# Never used?
-#signal close_label()
 
 func _physics_process(_delta) -> void:
 	if PlayerData.player_gold < price: # Unable to purchase if player does not have enough gold

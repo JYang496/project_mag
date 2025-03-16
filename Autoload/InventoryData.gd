@@ -37,6 +37,7 @@ var on_select_eqp :
 			on_select_eqp = value
 			on_drag_item = on_select_eqp
 		ui.update_inventory()
+		ui.update_shop()
 		ui.refresh_border()
 
 var on_select_slot :

@@ -1,4 +1,4 @@
-extends Node2D
+extends Ranger
 
 @onready var sprite: Sprite2D = %Sprite
 @onready var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
@@ -12,18 +12,12 @@ var knock_back = {
 # Effect
 @onready var rotate_around_player = preload("res://Player/Weapons/Effects/rotate_around_player.tscn")
 
-var module_list = []
-
 var satellites : Array = []
 
-var casting_oc_skill = false
-signal over_charge()
 
 
 # Weapon
 var ITEM_NAME = "Orbit"
-var level : int
-var damage : int
 var spin_speed : float = 5.0
 var number = 4
 
@@ -65,12 +59,6 @@ var weapon_data = {
 	}
 }
 
-func _ready():
-	if level:
-		set_level(level)
-	else:
-		set_level(1)
-
 func set_level(lv) -> void:
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
@@ -85,8 +73,8 @@ func set_level(lv) -> void:
 	for n in range(number):
 		var spawn_bullet = bullet.instantiate()
 		spawn_bullet.damage = damage
-		spawn_bullet.hp = 9999
-		spawn_bullet.expire_time = 9999
+		spawn_bullet.hp = 99999
+		spawn_bullet.expire_time = 99999
 		spawn_bullet.blt_texture = bul_texture
 		apply_rotate_around_player(spawn_bullet, offset_step, n)
 		get_tree().root.call_deferred("add_child",spawn_bullet)
