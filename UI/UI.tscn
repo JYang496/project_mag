@@ -1,15 +1,20 @@
-[gd_scene load_steps=11 format=3 uid="uid://cdpdxvviop3ok"]
+[gd_scene load_steps=16 format=3 uid="uid://cdpdxvviop3ok"]
 
 [ext_resource type="Script" uid="uid://bti7r07ljp64d" path="res://UI/UI.gd" id="1_y6r0f"]
 [ext_resource type="PackedScene" uid="uid://sedqknpaalyt" path="res://UI/equipment_slot.tscn" id="3_3xv3f"]
 [ext_resource type="PackedScene" uid="uid://cms57yqrnn7ga" path="res://UI/inv_slot.tscn" id="3_hcnsl"]
 [ext_resource type="PackedScene" uid="uid://mnl6smha3sa4" path="res://UI/module_module.tscn" id="3_vf0d3"]
 [ext_resource type="Script" uid="uid://byipui1lnlbe0" path="res://UI/draw_border.gd" id="3_xpg6s"]
+[ext_resource type="Script" uid="uid://cknghpaqwqur0" path="res://UI/shop_refresh_button.gd" id="5_qhxh2"]
 [ext_resource type="Script" uid="uid://xk8jc704kfv5" path="res://UI/equipment_module.gd" id="5_vb3bm"]
+[ext_resource type="Script" uid="uid://cup1vm23a0gdf" path="res://UI/inv_slot_shop.gd" id="6_017wa"]
 [ext_resource type="Script" uid="uid://cjxwaif3ex4ed" path="res://UI/to_inv.gd" id="6_jly3b"]
+[ext_resource type="Script" uid="uid://4xfiek31loix" path="res://UI/shop_sell_button.gd" id="7_r2vy3"]
 [ext_resource type="Script" uid="uid://dkxc1ub6vatt8" path="res://UI/equipment_inv.gd" id="7_u3twa"]
 [ext_resource type="Script" uid="uid://gj2oqfscymyo" path="res://UI/to_model.gd" id="8_rbpjd"]
+[ext_resource type="Script" uid="uid://4s7d5ehiu4vp" path="res://UI/shop_cancel_button.gd" id="9_npmjx"]
 [ext_resource type="PackedScene" uid="uid://dfnpmefqatyye" path="res://UI/shop_weapon_slot.tscn" id="10_vx7wu"]
+[ext_resource type="Script" uid="uid://bg0ssyqms6h0n" path="res://UI/shop_confirm_button.gd" id="11_6q2ik"]
 
 [node name="UI" type="CanvasLayer" groups=["ui"]]
 process_mode = 3
@@ -161,6 +166,7 @@ grow_vertical = 2
 alignment = 1
 
 [node name="ShoppingRootv2" type="Control" parent="GUI"]
+visible = false
 custom_minimum_size = Vector2(1000, 640)
 layout_mode = 1
 anchors_preset = 15
@@ -208,44 +214,62 @@ layout_mode = 2
 [node name="InvSlot4" parent="GUI/ShoppingRootv2/Panel/Shop" instance=ExtResource("10_vx7wu")]
 layout_mode = 2
 
+[node name="ShopRefreshButton" type="Button" parent="GUI/ShoppingRootv2/Panel"]
+layout_mode = 0
+offset_left = 440.0
+offset_top = 554.0
+offset_right = 508.0
+offset_bottom = 585.0
+text = "Refresh"
+script = ExtResource("5_qhxh2")
+
 [node name="Inventory" type="GridContainer" parent="GUI/ShoppingRootv2/Panel"]
 visible = false
 custom_minimum_size = Vector2(500, 500)
+layout_mode = 0
 offset_left = 24.0
 offset_top = 49.0
 offset_right = 524.0
 offset_bottom = 549.0
 columns = 2
 
-[node name="InvSlot" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
+script = ExtResource("6_017wa")
 
-[node name="InvSlot2" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot2" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
+script = ExtResource("6_017wa")
 inventory_index = 1
 
-[node name="InvSlot3" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot3" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
+script = ExtResource("6_017wa")
 inventory_index = 2
 
-[node name="InvSlot4" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot4" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
+script = ExtResource("6_017wa")
 inventory_index = 3
 
-[node name="InvSlot5" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot5" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
+script = ExtResource("6_017wa")
 inventory_index = 4
 
-[node name="InvSlot6" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot6" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
+script = ExtResource("6_017wa")
 inventory_index = 5
 
-[node name="InvSlot7" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot7" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
+script = ExtResource("6_017wa")
 inventory_index = 6
 
-[node name="InvSlot8" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot8" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
+script = ExtResource("6_017wa")
 inventory_index = 7
 
 [node name="Equipped" type="GridContainer" parent="GUI/ShoppingRootv2/Panel"]
@@ -280,9 +304,30 @@ equipment_index = 3
 layout_mode = 0
 offset_left = 567.0
 offset_top = 45.0
-offset_right = 575.0
-offset_bottom = 53.0
+offset_right = 602.0
+offset_bottom = 76.0
 text = "Sell"
+script = ExtResource("7_r2vy3")
+
+[node name="ShopCancelButton" type="Button" parent="GUI/ShoppingRootv2/Panel"]
+visible = false
+layout_mode = 0
+offset_left = 570.0
+offset_top = 45.0
+offset_right = 630.0
+offset_bottom = 76.0
+text = "Cancel"
+script = ExtResource("9_npmjx")
+
+[node name="ShopConfirmButton" type="Button" parent="GUI/ShoppingRootv2/Panel"]
+visible = false
+layout_mode = 0
+offset_left = 647.0
+offset_top = 45.0
+offset_right = 682.0
+offset_bottom = 76.0
+text = "Confirm"
+script = ExtResource("11_6q2ik")
 
 [node name="UpgradeRoot" type="Control" parent="GUI"]
 visible = false
@@ -630,6 +675,10 @@ offset_right = 40.0
 offset_bottom = 40.0
 mouse_filter = 2
 
+[connection signal="button_up" from="GUI/ShoppingRootv2/Panel/ShopRefreshButton" to="GUI/ShoppingRootv2/Panel/ShopRefreshButton" method="_on_button_up"]
+[connection signal="button_up" from="GUI/ShoppingRootv2/Panel/ShopSellButton" to="GUI/ShoppingRootv2/Panel/ShopSellButton" method="_on_button_up"]
+[connection signal="button_up" from="GUI/ShoppingRootv2/Panel/ShopCancelButton" to="GUI/ShoppingRootv2/Panel/ShopCancelButton" method="_on_button_up"]
+[connection signal="button_up" from="GUI/ShoppingRootv2/Panel/ShopConfirmButton" to="GUI/ShoppingRootv2/Panel/ShopConfirmButton" method="_on_button_up"]
 [connection signal="button_up" from="GUI/ModuleRoot/Panel/ToInv" to="GUI/ModuleRoot/Panel/ToInv" method="_on_button_up"]
 [connection signal="button_up" from="GUI/InventoryRoot/Panel/ToModel" to="GUI/InventoryRoot/Panel/ToModel" method="_on_button_up"]
 [connection signal="pressed" from="GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton" to="." method="_on_resume_button_pressed"]

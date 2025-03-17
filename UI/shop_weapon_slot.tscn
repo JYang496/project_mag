@@ -8,7 +8,7 @@ script = ExtResource("1_6vnxt")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 2
-color = Color(0.392157, 0.392157, 0.392157, 1)
+color = Color(0.804012, 0.666004, 0.151819, 1)
 
 [node name="Image" type="TextureRect" parent="Background"]
 layout_mode = 0
@@ -47,6 +47,6 @@ offset_right = 460.0
 offset_bottom = 103.0
 
 [connection signal="gui_input" from="Background" to="." method="_on_background_gui_input"]
-[connection signal="mouse_entered" from="Background" to="." method="_on_color_rect_mouse_entered"]
 [connection signal="mouse_entered" from="Background" to="." method="_on_background_mouse_entered"]
+[connection signal="mouse_entered" from="Background" to="." method="_on_color_rect_mouse_entered"]
 [connection signal="mouse_exited" from="Background" to="." method="_on_color_rect_mouse_exited"]

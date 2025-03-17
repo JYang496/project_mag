@@ -114,6 +114,7 @@ func shopping_panel_in() -> void:
 
 func shopping_panel_out() -> void:
 	shopping_rootv_2.visible = false
+	InventoryData.clear_on_select()
 	refresh_border()
 	move_out_timer.start()
 

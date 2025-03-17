@@ -1,4 +1,5 @@
 extends MarginContainer
+class_name InvSlot
 
 # Properties
 @onready var background: ColorRect = $Background
@@ -14,6 +15,8 @@ var item
 # Border properties
 @export var border_color: Color = Color(1, 1, 0)
 @export var border_width: float = 4.0
+var default_border_color: Color = Color(1, 1, 0)
+var default_border_width : float = 0
 
 # UI and player data
 @onready var ui = get_tree().get_first_node_in_group("ui")
@@ -28,7 +31,7 @@ func _draw():
 	if hover_over:
 		width = border_width
 	else:
-		width = 0
+		width = default_border_width
 	draw_rect(rect, border_color, false, width)
 
 func update() -> void:
@@ -60,3 +63,4 @@ func _on_color_rect_mouse_exited() -> void:
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK"):
 		InventoryData.on_select_slot = item
+			

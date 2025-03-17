@@ -1,4 +1,5 @@
 extends MarginContainer
+class_name ShopWeaponSlot
 
 # Properties
 @onready var background: ColorRect = $Background
@@ -19,7 +20,7 @@ var price : int
 @export var border_width: float = 4.0
 
 # UI and player data
-@onready var ui = get_tree().get_first_node_in_group("ui")
+@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 @onready var player = get_tree().get_first_node_in_group("player")
 
 signal select_weapon(item_id)
@@ -43,14 +44,19 @@ func update() -> void:
 
 # When player clicks on card, a weapon will be CREATED for player.
 func _ready():
-	connect("select_weapon",Callable(player,"create_weapon"))
-	if item_id == null:
-		item_id = var_to_str(randi_range(1,10))
+	if not item_id:
+		new_item()
+
+func new_item() -> void:
+	if not self.is_connected("select_weapon",Callable(player,"create_weapon")):
+		connect("select_weapon",Callable(player,"create_weapon"))
+	item_id = var_to_str(randi_range(1,10))
 	equip_name.text = WeaponData.weapon_list.data[item_id]["name"]
 	image.texture = load(WeaponData.weapon_list.data[item_id]["img"])
 	lbl_description.text = WeaponData.weapon_list.data[item_id]["description"]
 	price_label.text = WeaponData.weapon_list.data[item_id]["price"]
 	price = int(WeaponData.weapon_list.data[item_id]["price"])
+	
 
 func _physics_process(_delta) -> void:
 	if PlayerData.player_gold < price: # Unable to purchase if player does not have enough gold
@@ -70,8 +76,6 @@ func _on_color_rect_mouse_exited() -> void:
 
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK") and purchasable and PlayerData.player_gold >= price:
-		#InventoryData.on_select_slot = item
-		print("shop")
 		PlayerData.player_gold -= price
 		select_weapon.emit(item_id)
 		ui.shopping_panel_out()
