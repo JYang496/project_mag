@@ -11,4 +11,11 @@ extends Button
 
 func _on_button_up() -> void:
 	InventoryData.clear_on_select()
-	print("confirm")
+	print("confirm: ",InventoryData.ready_to_sell_list)
+	for sell_item : Node2D in InventoryData.ready_to_sell_list:
+		if InventoryData.inventory_slots.has(sell_item):
+			print("item sold: ", sell_item)
+			InventoryData.inventory_slots.erase(sell_item)
+			sell_item.queue_free()
+	for slot : ShopInvSlot in inventory.get_children():
+		slot.reset_sell_status()

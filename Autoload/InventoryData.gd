@@ -3,6 +3,7 @@ extends Node
 var INVENTORY_MAX_SLOTS : int = 4
 var inventory_slots : Array = []
 var moddule_slots : Array = []
+var ready_to_sell_list : Array = []
 @onready var ui : UI = get_tree().get_first_node_in_group("ui")
 @onready var player : Player = get_tree().get_first_node_in_group("player")
 

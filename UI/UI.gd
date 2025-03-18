@@ -31,6 +31,7 @@ class_name UI
 @onready var shop: VBoxContainer = $GUI/ShoppingRootv2/Panel/Shop
 @onready var equipped_shop: GridContainer = $GUI/ShoppingRootv2/Panel/Equipped
 @onready var shop_sell_button: Button = $GUI/ShoppingRootv2/Panel/ShopSellButton
+@onready var shop_cancel_button: Button = $GUI/ShoppingRootv2/Panel/ShopCancelButton
 
 
 # Upgrade
@@ -109,6 +110,7 @@ func shopping_panel_in() -> void:
 	if shopping_rootv_2 == null:
 		return
 	move_out_timer.stop()
+	shop_cancel_button._on_button_up()
 	update_shop()
 	shopping_rootv_2.visible = true
 
