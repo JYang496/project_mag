@@ -16,6 +16,11 @@ var item
 @export var border_color: Color = Color(1, 1, 0)
 @export var border_width: float = 4.0
 
+var hover_over_color: Color = Color(1,1,0)
+var hover_off_color: Color = Color(0,0,0,0)
+var hover_over_width : float = 4.0
+var hover_off_width : float = 0
+
 # UI and player data
 @onready var ui = get_tree().get_first_node_in_group("ui")
 @onready var player_weapon_list = PlayerData.player_weapon_list
@@ -29,8 +34,10 @@ func _draw():
 	var width
 	if hover_over:
 		width = border_width
+		border_color = hover_over_color
 	else:
-		width = 0
+		width = hover_off_width
+		border_color = hover_off_color
 	draw_rect(rect, border_color, false, width)
 
 func update() -> void:

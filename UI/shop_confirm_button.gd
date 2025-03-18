@@ -17,5 +17,12 @@ func _on_button_up() -> void:
 			print("item sold: ", sell_item)
 			InventoryData.inventory_slots.erase(sell_item)
 			sell_item.queue_free()
+		elif PlayerData.player_weapon_list.has(sell_item):
+			print("item sold: ", sell_item)
+			PlayerData.player_weapon_list.erase(sell_item)
+			sell_item.queue_free()
+			
 	for slot : ShopInvSlot in inventory.get_children():
+		slot.reset_sell_status()
+	for slot : EquipmentSlotShop in equipped.get_children():
 		slot.reset_sell_status()

@@ -7,6 +7,10 @@ var ready_to_sell_list : Array = []
 @onready var ui : UI = get_tree().get_first_node_in_group("ui")
 @onready var player : Player = get_tree().get_first_node_in_group("player")
 
+var on_select_module :
+	get:
+		return on_select_module
+
 var on_select_eqp :
 	get:
 		return on_select_eqp

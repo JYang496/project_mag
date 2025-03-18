@@ -13,6 +13,9 @@ func _on_button_up() -> void:
 	InventoryData.clear_on_select()
 	for slot : ShopInvSlot in inventory.get_children():
 		slot.reset_sell_status()
+	for slot : EquipmentSlotShop in equipped.get_children():
+		slot.sell_mode = false
+		slot.reset_sell_status()
 	shop_sell_button.visible = true
 	shop_confirm_button.visible = false
 	shop_cancel_button.visible = false

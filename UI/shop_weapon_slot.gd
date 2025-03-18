@@ -9,6 +9,8 @@ class_name ShopWeaponSlot
 @onready var socket_2: Label = $Background/Socket2
 @onready var lbl_description: Label = $Background/Socket3
 @export var inventory_index : int = 0
+@onready var equipped: GridContainer = $"../../Equipped"
+
 var item
 var item_id = null
 var purchasable := true
@@ -38,14 +40,20 @@ func _draw():
 
 func update() -> void:
 	queue_redraw()
-	#item = null
-	#image.texture = null
-	#equip_name.text = "Empty"
 
 # When player clicks on card, a weapon will be CREATED for player.
 func _ready():
 	if not item_id:
 		new_item()
+
+func empty_item() -> void:
+	item = null
+	equip_name.text = "Sold"
+	image.texture = null
+	lbl_description.text = ""
+	price_label.text = ""
+	price = 0
+	update()
 
 func new_item() -> void:
 	if not self.is_connected("select_weapon",Callable(player,"create_weapon")):
@@ -75,7 +83,10 @@ func _on_color_rect_mouse_exited() -> void:
 	update()
 
 func _on_background_gui_input(event: InputEvent) -> void:
-	if event.is_action_pressed("CLICK") and purchasable and PlayerData.player_gold >= price:
+	if event.is_action_pressed("CLICK") and purchasable:
 		PlayerData.player_gold -= price
 		select_weapon.emit(item_id)
-		ui.shopping_panel_out()
+		for eq : EquipmentSlotShop in equipped.get_children():
+			eq.reset_sell_status()
+		#ui.shopping_panel_out()
+		self.empty_item()

@@ -24,7 +24,7 @@ offset_bottom = 100.0
 layout_mode = 0
 offset_left = 100.0
 offset_top = 10.0
-offset_right = 460.0
+offset_right = 220.0
 offset_bottom = 33.0
 text = "Empty"
 
@@ -32,21 +32,21 @@ text = "Empty"
 layout_mode = 0
 offset_left = 100.0
 offset_top = 40.0
-offset_right = 460.0
+offset_right = 220.0
 offset_bottom = 63.0
 
 [node name="Socket2" type="Label" parent="Background"]
 layout_mode = 0
 offset_left = 100.0
 offset_top = 60.0
-offset_right = 460.0
+offset_right = 220.0
 offset_bottom = 83.0
 
 [node name="Socket3" type="Label" parent="Background"]
 layout_mode = 0
 offset_left = 100.0
 offset_top = 80.0
-offset_right = 460.0
+offset_right = 220.0
 offset_bottom = 103.0
 
 [connection signal="gui_input" from="Background" to="." method="_on_background_gui_input"]

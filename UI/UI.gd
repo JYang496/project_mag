@@ -26,8 +26,6 @@ class_name UI
 
 
 # Shopping
-#@onready var shopping_panel = $GUI/ShoppingRoot/ShoppingPanel
-#@onready var shopping_options = $GUI/ShoppingRoot/ShoppingPanel/ShoppingOptions
 @onready var shop: VBoxContainer = $GUI/ShoppingRootv2/Panel/Shop
 @onready var equipped_shop: GridContainer = $GUI/ShoppingRootv2/Panel/Equipped
 @onready var shop_sell_button: Button = $GUI/ShoppingRootv2/Panel/ShopSellButton

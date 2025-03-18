@@ -166,6 +166,7 @@ grow_vertical = 2
 alignment = 1
 
 [node name="ShoppingRootv2" type="Control" parent="GUI"]
+visible = false
 custom_minimum_size = Vector2(1000, 640)
 layout_mode = 1
 anchors_preset = 15
@@ -280,21 +281,21 @@ offset_right = 980.0
 offset_bottom = 520.0
 columns = 2
 
-[node name="InvEquipment" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotShop" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("7_u3twa")
 
-[node name="InvEquipment2" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotShop2" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("7_u3twa")
 equipment_index = 1
 
-[node name="InvEquipment3" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotShop3" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("7_u3twa")
 equipment_index = 2
 
-[node name="InvEquipment4" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotShop4" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("7_u3twa")
 equipment_index = 3
@@ -321,9 +322,9 @@ script = ExtResource("9_npmjx")
 [node name="ShopConfirmButton" type="Button" parent="GUI/ShoppingRootv2/Panel"]
 visible = false
 layout_mode = 0
-offset_left = 647.0
+offset_left = 871.0
 offset_top = 45.0
-offset_right = 682.0
+offset_right = 946.0
 offset_bottom = 76.0
 text = "Confirm"
 script = ExtResource("11_6q2ik")
@@ -409,52 +410,52 @@ offset_right = 525.0
 offset_bottom = 550.0
 columns = 4
 
-[node name="Module1" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module2" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot2" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module3" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot3" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module4" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot4" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module5" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot5" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module6" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot6" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module7" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot7" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module8" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot11" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module9" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot10" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module10" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot9" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module11" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot8" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module12" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot15" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module13" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot14" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module14" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot13" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module15" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot12" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="Module16" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot16" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
 [node name="EquippedM" type="GridContainer" parent="GUI/ModuleRoot/Panel"]

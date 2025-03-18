@@ -4,7 +4,7 @@ class_name ShopInvSlot
 var ready_to_sell : bool = false
 
 func _on_background_gui_input(event: InputEvent) -> void:
-	if event.is_action_pressed("CLICK"):
+	if event.is_action_pressed("CLICK") and item != null:
 		if not ready_to_sell:
 			if not InventoryData.ready_to_sell_list.has(item):
 				InventoryData.ready_to_sell_list.append(item)
