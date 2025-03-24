@@ -7,6 +7,7 @@ radius = 153.55
 
 [node name="Ranger" type="Node2D"]
 script = ExtResource("1_wkyh8")
+metadata/_custom_type_script = "uid://dlgx3bmsdvdgr"
 
 [node name="CooldownTimer" type="Timer" parent="."]
 wait_time = 4.0
@@ -23,5 +24,3 @@ shape = SubResource("CircleShape2D_0frw1")
 
 [connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="shoot" from="." to="." method="_on_shoot"]
-[connection signal="body_entered" from="DetectArea" to="." method="_on_detect_area_body_entered"]
-[connection signal="body_exited" from="DetectArea" to="." method="_on_detect_area_body_exited"]
