@@ -5,9 +5,8 @@ class_name EquipmentSlot
 @onready var background: ColorRect = $Background
 @onready var image: TextureRect = $Background/Image
 @onready var equip_name: Label = $Background/EquipName
-@onready var socket_1: Label = $Background/Socket1
-@onready var socket_2: Label = $Background/Socket2
-@onready var socket_3: Label = $Background/Socket3
+
+
 @export var equipment_index : int = 0
 var item
 
@@ -62,5 +61,6 @@ func _on_color_rect_mouse_exited() -> void:
 	update()
 
 
-func _on_background_gui_input(_event: InputEvent) -> void:
-	pass
+func _on_background_gui_input(event: InputEvent) -> void:
+	if event.is_action_pressed("CLICK"):
+		InventoryData.on_select_eqp = item
