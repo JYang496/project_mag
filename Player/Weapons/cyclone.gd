@@ -6,7 +6,7 @@ var bul_texture = preload("res://Textures/test/bullet.png")
 var tornado = preload("res://Player/Weapons/Bullets/tornado.tscn")
 var tornado_texture = preload("res://Textures/test/tornado.png")
 
-@onready var sprite = get_node("%Sprite")
+#@onready var sprite = get_node("%Sprite")
 @onready var sniper_charging_timer = $SniperChargingTimer
 
 # Weapon

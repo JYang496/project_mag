@@ -1,6 +1,5 @@
 extends Ranger
 
-@onready var sprite: Sprite2D = %Sprite
 @onready var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 @onready var bul_texture = preload("res://Textures/test/bullet.png")
 @export var radius : float = 80.0

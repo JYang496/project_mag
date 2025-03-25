@@ -9,6 +9,7 @@ script = ExtResource("1_7ggqm")
 [node name="Bullet" type="Node2D" parent="."]
 
 [node name="BulletSprite" type="Sprite2D" parent="Bullet"]
+visible = false
 texture_filter = 1
 texture = ExtResource("2_t5sb3")
 

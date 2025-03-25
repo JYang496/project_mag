@@ -1,30 +1,13 @@
-[gd_scene load_steps=4 format=3 uid="uid://dlnlppgyg1kwh"]
+[gd_scene load_steps=4 format=3 uid="uid://cect8lp5abtw"]
 
 [ext_resource type="Texture2D" uid="uid://im0by60rbjt5" path="res://Textures/test/spear.png" id="1_1rx0e"]
 [ext_resource type="Script" uid="uid://ck17tkx32o6ft" path="res://Player/Weapons/spear_launcher.gd" id="1_wrx6n"]
+[ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_yntmd"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_5ms56"]
-radius = 339.013
-
-[node name="SpearLauncher" type="Node2D"]
+[node name="SpearLauncher" instance=ExtResource("1_yntmd")]
 script = ExtResource("1_wrx6n")
-metadata/_custom_type_script = "uid://dlgx3bmsdvdgr"
 
-[node name="SpearCooldownTimer" type="Timer" parent="."]
-wait_time = 0.2
-
-[node name="DetectArea" type="Area2D" parent="."]
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
-light_mask = 4
-visibility_layer = 4
-shape = SubResource("CircleShape2D_5ms56")
-
-[node name="Sprite" type="Sprite2D" parent="."]
-unique_name_in_owner = true
+[node name="Sprite" parent="." index="3"]
 texture = ExtResource("1_1rx0e")
 
-[connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="shoot" from="." to="." method="_on_shoot"]
-[connection signal="timeout" from="SpearCooldownTimer" to="." method="_on_spear_cooldown_timer_timeout"]

@@ -39,6 +39,8 @@ func _ready() -> void:
 	bullet_sprite.texture = blt_texture
 	init_hitbox(hitbox_type)
 	expire_timer.start()
+	await get_tree().physics_frame
+	show_bullet()
 
 # This function will 0adjust the hitbox shape identical to your sprite size
 func init_hitbox(hb_type = "once") -> void:
@@ -67,6 +69,8 @@ func enemy_hit(charge : int = 1):
 	if hp <= 0:
 		self.call_deferred("queue_free")
 
+func show_bullet() -> void:
+	bullet_sprite.visible = true
 
 func _on_expire_timer_timeout() -> void:
 	self.call_deferred("queue_free")

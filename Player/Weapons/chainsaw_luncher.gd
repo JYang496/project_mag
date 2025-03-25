@@ -7,7 +7,7 @@ var chase_closest_enemy_effect = preload("res://Player/Weapons/Effects/chase_clo
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/chainsaw_spin.png")
-@onready var sprite = get_node("%Sprite")
+#@onready var sprite = get_node("%Sprite")
 
 # Weapon
 var ITEM_NAME = "Chainsaw Luncher"

@@ -2,7 +2,7 @@ extends Ranger
 
 # Bullet
 @onready var beam_blast = preload("res://Player/Weapons/Bullets/beam_blast.tscn")
-@onready var sprite = get_node("%Sprite")
+#@onready var sprite = get_node("%Sprite")
 
 # Weapon
 var ITEM_NAME = "Beam Blaster"

@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3 uid="uid://3tk3c1iyfr24"]
+
+[ext_resource type="PackedScene" uid="uid://c4oj2glaup5b3" path="res://Player/Weapons/weapon.tscn" id="1_1fjwd"]
+[ext_resource type="Script" uid="uid://dwjqp4qfrysyl" path="res://Player/Weapons/ranger.gd" id="2_c73dy"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1fjwd"]
+radius = 153.55
+
+[node name="WeaponRanger" instance=ExtResource("1_1fjwd")]
+script = ExtResource("2_c73dy")
+
+[node name="CooldownTimer" type="Timer" parent="." index="1"]
+
+[node name="DetectArea" type="Area2D" parent="." index="2"]
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea" index="0"]
+light_mask = 4
+visibility_layer = 4
+shape = SubResource("CircleShape2D_1fjwd")
+
+[connection signal="over_charge" from="." to="." method="_on_over_charge"]
+[connection signal="timeout" from="CooldownTimer" to="." method="_on_cooldown_timer_timeout"]

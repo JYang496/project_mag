@@ -9,7 +9,6 @@ radius = 339.013
 [node name="Pistol" type="Node2D"]
 light_mask = 4
 visibility_layer = 4
-position = Vector2(0, -13)
 script = ExtResource("1_224q5")
 
 [node name="GunCooldownTimer" type="Timer" parent="."]

@@ -4,7 +4,6 @@ extends Ranger
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/spear.png")
 var return_on_timeout = preload("res://Player/Weapons/Effects/return_on_timeout.tscn")
-@onready var sprite = get_node("%Sprite")
 
 # Weapon
 var ITEM_NAME = "Spear Launcher"
@@ -56,10 +55,6 @@ var weapon_data = {
 		"features": [],
 	}
 }
-
-
-func setup_timer():
-	cooldown_timer = $SpearCooldownTimer
 
 func set_level(lv):
 	lv = str(lv)

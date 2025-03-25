@@ -6,3 +6,5 @@
 script = ExtResource("1_xgcik")
 
 [node name="Modules" type="Node2D" parent="."]
+
+[node name="Sprite" type="Sprite2D" parent="."]

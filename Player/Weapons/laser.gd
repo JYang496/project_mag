@@ -5,7 +5,7 @@ extends Ranger
 
 @onready var detect_area: Area2D = $DetectArea
 @onready var oc_timer: Timer = $OCTimer
-@onready var sprite = get_node("%Sprite")
+#@onready var sprite = get_node("%Sprite")
 
 # Weapon
 var ITEM_NAME = "Laser"

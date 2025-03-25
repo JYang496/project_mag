@@ -4,7 +4,7 @@ extends Ranger
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/minigun_bullet.png")
 var hexagon_attack_effect = preload("res://Player/Weapons/Effects/hexagon_attack.tscn")
-@onready var sprite = get_node("%Sprite")
+#@onready var sprite = get_node("%Sprite")
 
 # Weapon
 var ITEM_NAME = "Pistol"

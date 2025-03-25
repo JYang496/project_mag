@@ -10,6 +10,7 @@ var ricochet_effect = preload("res://Player/Weapons/Effects/ricochet_effect.tscn
 
 
 
+
 # Common variables for rangers
 var base_damage : int
 var damage : int
@@ -47,7 +48,7 @@ func _ready():
 		set_level(1)
 
 func setup_timer() -> void:
-	pass
+	cooldown_timer = $CooldownTimer
 
 func _physics_process(_delta):
 	if not justAttacked and Input.is_action_pressed("ATTACK"):
