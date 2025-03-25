@@ -62,9 +62,6 @@ var weapon_data = {
 }
 
 
-func setup_timer():
-	cooldown_timer = $RocketLuncherTimer
-
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
@@ -117,13 +114,5 @@ func _on_over_charge():
 			get_tree().root.call_deferred("add_child",spawn_bullet)
 			n += 1
 		await get_tree().create_timer(0.2).timeout		
-
-
 	remove_weapon()
-
-
 	self.casting_oc_skill = false
-	#remove_weapon()
-
-func _on_rocket_luncher_timer_timeout() -> void:
-	justAttacked = false

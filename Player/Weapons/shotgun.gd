@@ -3,7 +3,6 @@ extends Ranger
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/sniper_bullet.png")
-#@onready var sprite = get_node("%Sprite")
 
 # Weapon
 var ITEM_NAME = "Shotgun"
@@ -64,9 +63,6 @@ var weapon_data = {
 }
 
 
-func setup_timer():
-	cooldown_timer = $ShotgunAttackTimer
-
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
@@ -105,7 +101,6 @@ func _on_over_charge():
 	if self.casting_oc_skill:
 		return
 	self.casting_oc_skill = true
-	print(self,"OVER CHARGE")
 	for n in 10:
 		bullet_count += 1
 		var main_target = get_random_position_in_circle(100.0)
@@ -133,6 +128,3 @@ func get_random_position_in_circle(radius: float = 50.0) -> Vector2:
 	var x = cos(angle) * radius
 	var y = sin(angle) * radius
 	return Vector2(x, y)
-
-func _on_shotgun_attack_timer_timeout() -> void:
-	justAttacked = false

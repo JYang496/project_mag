@@ -1,0 +1,13 @@
+[gd_scene load_steps=4 format=3 uid="uid://cjvx8yx5wh63l"]
+
+[ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_sq336"]
+[ext_resource type="Script" uid="uid://4fd56c34p01l" path="res://Player/Weapons/chainsaw_launcher.gd" id="2_hcjeu"]
+[ext_resource type="Texture2D" uid="uid://dy8r3aaxk8rse" path="res://Textures/test/chainsaw.png" id="3_pmcfu"]
+
+[node name="ChainsawLauncher" instance=ExtResource("1_sq336")]
+script = ExtResource("2_hcjeu")
+
+[node name="Sprite" parent="." index="3"]
+texture = ExtResource("3_pmcfu")
+
+[connection signal="shoot" from="." to="." method="_on_shoot"]

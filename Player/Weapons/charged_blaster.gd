@@ -68,9 +68,6 @@ var weapon_data = {
 }
 
 
-func setup_timer():
-	cooldown_timer = $ChargedBlastTimer
-
 func _physics_process(delta):
 	if not justAttacked:
 		if Input.is_action_pressed("ATTACK"):

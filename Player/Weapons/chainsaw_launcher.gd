@@ -65,8 +65,6 @@ var weapon_data = {
 	}
 }
 
-func setup_timer():
-	cooldown_timer = $ChainsawLuncherTimer
 
 func set_level(lv):
 	lv = str(lv)

@@ -1,28 +1,13 @@
-[gd_scene load_steps=4 format=3 uid="uid://dta6k27srbxic"]
+[gd_scene load_steps=4 format=3 uid="uid://b6hw8jb80pl8s"]
 
 [ext_resource type="Script" uid="uid://cvc36tpnl7beg" path="res://Player/Weapons/cyclone.gd" id="1_2ql54"]
+[ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_oed81"]
 [ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://Textures/test/sniper.png" id="2_dky3l"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_p0ini"]
-radius = 212.009
-
-[node name="Cyclone" type="Node2D"]
+[node name="Cyclone" instance=ExtResource("1_oed81")]
 script = ExtResource("1_2ql54")
 
-[node name="SniperAttackTimer" type="Timer" parent="."]
-
-[node name="SniperChargingTimer" type="Timer" parent="."]
-
-[node name="Sprite" type="Sprite2D" parent="."]
-unique_name_in_owner = true
+[node name="Sprite" parent="." index="3"]
 texture = ExtResource("2_dky3l")
 
-[node name="DetectArea" type="Area2D" parent="."]
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
-shape = SubResource("CircleShape2D_p0ini")
-
-[connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="shoot" from="." to="." method="_on_shoot"]
-[connection signal="timeout" from="SniperAttackTimer" to="." method="_on_sniper_attack_timer_timeout"]

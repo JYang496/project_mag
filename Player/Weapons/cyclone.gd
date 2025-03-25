@@ -6,8 +6,6 @@ var bul_texture = preload("res://Textures/test/bullet.png")
 var tornado = preload("res://Player/Weapons/Bullets/tornado.tscn")
 var tornado_texture = preload("res://Textures/test/tornado.png")
 
-#@onready var sprite = get_node("%Sprite")
-@onready var sniper_charging_timer = $SniperChargingTimer
 
 # Weapon
 var ITEM_NAME = "Cyclone"
@@ -84,9 +82,6 @@ var weapon_data = {
 }
 
 
-func setup_timer():
-	cooldown_timer = $SniperAttackTimer
-
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
@@ -135,6 +130,3 @@ func _on_over_charge():
 	apply_linear(tornado_ins, direction, 60)
 	get_tree().root.call_deferred("add_child",tornado_ins)
 	remove_weapon()
-
-func _on_sniper_attack_timer_timeout():
-	justAttacked = false

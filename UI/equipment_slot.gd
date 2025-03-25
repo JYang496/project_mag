@@ -44,7 +44,7 @@ func update() -> void:
 	queue_redraw()
 	if len(player_weapon_list) > equipment_index :
 		item = player_weapon_list[equipment_index]
-		image.texture = item.get_node("%Sprite").texture
+		image.texture = item.sprite.texture
 		equip_name.text = item.ITEM_NAME
 	else:
 		item = null

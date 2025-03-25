@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3 uid="uid://dta6k27srbxic"]
+
+[ext_resource type="Script" uid="uid://cvc36tpnl7beg" path="res://Player/Weapons/cyclone.gd" id="1_fmuuy"]
+[ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://Textures/test/sniper.png" id="2_nx0gn"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_p0ini"]
+radius = 212.009
+
+[node name="Cyclone" type="Node2D"]
+script = ExtResource("1_fmuuy")
+
+[node name="SniperAttackTimer" type="Timer" parent="."]
+
+[node name="Sprite" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+texture = ExtResource("2_nx0gn")
+
+[node name="DetectArea" type="Area2D" parent="."]
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
+shape = SubResource("CircleShape2D_p0ini")
+
+[connection signal="over_charge" from="." to="." method="_on_over_charge"]
+[connection signal="shoot" from="." to="." method="_on_shoot"]
+[connection signal="timeout" from="SniperAttackTimer" to="." method="_on_sniper_attack_timer_timeout"]

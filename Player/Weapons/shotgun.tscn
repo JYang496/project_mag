@@ -1,26 +1,14 @@
-[gd_scene load_steps=4 format=3 uid="uid://mvd2xj6yq51w"]
+[gd_scene load_steps=4 format=3 uid="uid://dbwoyi8hnjfsn"]
 
-[ext_resource type="Script" uid="uid://c7tw1mv3wn7ja" path="res://Player/Weapons/shotgun.gd" id="1_ee8ip"]
-[ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="2_p8bje"]
+[ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_8d78b"]
+[ext_resource type="Script" uid="uid://c7tw1mv3wn7ja" path="res://Player/Weapons/shotgun.gd" id="2_1ble7"]
+[ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="3_1ble7"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_gbsvu"]
-radius = 66.0076
-
-[node name="Shotgun" type="Node2D"]
-script = ExtResource("1_ee8ip")
+[node name="Shotgun" instance=ExtResource("1_8d78b")]
+script = ExtResource("2_1ble7")
 arc = 30.0
 
-[node name="ShotgunAttackTimer" type="Timer" parent="."]
+[node name="Sprite" parent="." index="3"]
+texture = ExtResource("3_1ble7")
 
-[node name="Sprite" type="Sprite2D" parent="."]
-unique_name_in_owner = true
-texture = ExtResource("2_p8bje")
-
-[node name="DetectArea" type="Area2D" parent="."]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
-shape = SubResource("CircleShape2D_gbsvu")
-
-[connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="shoot" from="." to="." method="_on_shoot"]
-[connection signal="timeout" from="ShotgunAttackTimer" to="." method="_on_shotgun_attack_timer_timeout"]

@@ -51,8 +51,8 @@
 	"8": {
 		"name": "rocket luncher",
 		"img": "res://Textures/test/minigun.png",
-		"res": "res://Player/Weapons/rocket_luncher.tscn",
-		"description": "orbit test: rocket luncher",
+		"res": "res://Player/Weapons/rocket_launcher.tscn",
+		"description": "test: rocket launcher",
 		"price": "1",
 	},
 	"9": {
@@ -65,8 +65,8 @@
 	"10": {
 		"name": "chainsaw luncher",
 		"img": "res://Textures/test/chainsaw.png",
-		"res": "res://Player/Weapons/chainsaw_luncher.tscn",
-		"description": "chainsaw luncher test",
+		"res": "res://Player/Weapons/chainsaw_launcher.tscn",
+		"description": "chainsaw launcher test",
 		"price": "1",
 	},
 }

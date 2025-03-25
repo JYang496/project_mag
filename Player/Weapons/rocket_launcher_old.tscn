@@ -1,7 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://dg4riaq8sxtsv"]
+[gd_scene load_steps=5 format=3 uid="uid://ca70dftepmtbd"]
 
-[ext_resource type="Script" uid="uid://boni1mvd0i416" path="res://Player/Weapons/rocket_luncher.gd" id="1_4w11i"]
-[ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="1_qjd0b"]
+[ext_resource type="Script" uid="uid://boni1mvd0i416" path="res://Player/Weapons/rocket_launcher.gd" id="1_wex07"]
+[ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="2_5jdo6"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_fd8mq"]
 radius = 339.013
@@ -10,7 +10,7 @@ radius = 339.013
 radius = 491.123
 
 [node name="RocketLuncher" type="Node2D"]
-script = ExtResource("1_4w11i")
+script = ExtResource("1_wex07")
 
 [node name="RocketLuncherTimer" type="Timer" parent="."]
 
@@ -24,7 +24,7 @@ shape = SubResource("CircleShape2D_fd8mq")
 
 [node name="Sprite" type="Sprite2D" parent="."]
 unique_name_in_owner = true
-texture = ExtResource("1_qjd0b")
+texture = ExtResource("2_5jdo6")
 
 [node name="OCBoomingArea" type="Area2D" parent="."]
 collision_layer = 0

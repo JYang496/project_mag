@@ -110,6 +110,3 @@ func _on_over_charge():
 		await get_tree().create_timer(0.05).timeout
 	
 	remove_weapon()
-
-func _on_spear_cooldown_timer_timeout():
-	justAttacked = false

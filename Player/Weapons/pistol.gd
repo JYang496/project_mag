@@ -4,7 +4,6 @@ extends Ranger
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
 var bul_texture = preload("res://Textures/test/minigun_bullet.png")
 var hexagon_attack_effect = preload("res://Player/Weapons/Effects/hexagon_attack.tscn")
-#@onready var sprite = get_node("%Sprite")
 
 # Weapon
 var ITEM_NAME = "Pistol"
@@ -60,10 +59,6 @@ var weapon_data = {
 
 var weapon_file
 var minigun_data = JSON.new()
-
-
-func setup_timer():
-	cooldown_timer = $GunCooldownTimer
 
 func set_level(lv):
 	lv = str(lv)
@@ -124,6 +119,3 @@ func apply_hexagon_attack(blt_node : Node2D, id : int, unit_of_time : float) -> 
 	blt_node.call_deferred("add_child",hexagon_attack_ins)
 	blt_node.module_list.append(hexagon_attack_ins)
 	module_list.append(hexagon_attack_ins)
-
-func _on_gun_cooldown_timer_timeout():
-	justAttacked = false

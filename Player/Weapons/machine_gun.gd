@@ -64,9 +64,6 @@ var weapon_file
 var minigun_data = JSON.new()
 
 
-func setup_timer():
-	cooldown_timer = $MachineGunTimer
-
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
@@ -116,9 +113,6 @@ func _on_remove_timer_timeout() -> void:
 
 func adjust_attack_speed(rate : float) -> void:
 	attack_speed = clampf(attack_speed * rate, 1.0, max_speed_factor)
-
-func _on_machine_gun_timer_timeout() -> void:
-	justAttacked = false
 
 
 func _on_as_timer_timeout() -> void:

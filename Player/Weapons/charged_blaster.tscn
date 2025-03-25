@@ -1,30 +1,13 @@
-[gd_scene load_steps=4 format=3 uid="uid://cflf3vwa1kmb2"]
+[gd_scene load_steps=4 format=3 uid="uid://b1gqnq2apvnak"]
 
 [ext_resource type="Script" uid="uid://bq3w32675tuff" path="res://Player/Weapons/charged_blaster.gd" id="1_48de6"]
+[ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_thakn"]
 [ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://Textures/test/sniper.png" id="2_qghy1"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_emqbp"]
-radius = 339.013
-
-[node name="ChargedBlaster" type="Node2D"]
+[node name="ChargedBlaster" instance=ExtResource("1_thakn")]
 script = ExtResource("1_48de6")
 
-[node name="ChargedBlastTimer" type="Timer" parent="."]
-wait_time = 5.0
-one_shot = true
-
-[node name="DetectArea" type="Area2D" parent="."]
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
-light_mask = 4
-visibility_layer = 4
-shape = SubResource("CircleShape2D_emqbp")
-
-[node name="Sprite" type="Sprite2D" parent="."]
-unique_name_in_owner = true
+[node name="Sprite" parent="." index="3"]
 texture = ExtResource("2_qghy1")
 
-[connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="shoot" from="." to="." method="_on_shoot"]
-[connection signal="timeout" from="ChargedBlastTimer" to="." method="_on_charged_blast_timer_timeout"]
