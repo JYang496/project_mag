@@ -1,7 +1,8 @@
 extends Node2D
 class_name Module
 
-@onready var weapon = self.get_parent()
+# Weapon -> Modules -> Module
+@onready var weapon = self.get_parent().get_parent()
 @export var cost : int
 @onready var icon: Sprite2D = $icon
 

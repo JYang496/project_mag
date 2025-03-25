@@ -1,9 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://pd13vclogpst"]
+[gd_scene load_steps=4 format=3 uid="uid://pd13vclogpst"]
 
 [ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_2t80l"]
 [ext_resource type="Texture2D" uid="uid://5hcsfj131buc" path="res://Textures/test/atk_up.png" id="2_6q6ic"]
+[ext_resource type="Script" uid="uid://nhwrrql8jps8" path="res://Player/Weapons/Modules/damage_up.gd" id="2_sw4r6"]
 
 [node name="DamageUp" instance=ExtResource("1_2t80l")]
+script = ExtResource("2_sw4r6")
 
 [node name="icon" parent="." index="0"]
 texture = ExtResource("2_6q6ic")

@@ -6,10 +6,8 @@ class_name EquipmentSlot
 @onready var image: TextureRect = $Background/Image
 @onready var equip_name: Label = $Background/EquipName
 
-
 @export var equipment_index : int = 0
-var item
-
+var item : Weapon
 
 # Border properties
 @export var border_color: Color = Color(1, 1, 0)
@@ -19,6 +17,9 @@ var hover_over_color: Color = Color(1,1,0)
 var hover_off_color: Color = Color(0,0,0,0)
 var hover_over_width : float = 4.0
 var hover_off_width : float = 0
+
+# Module Sockets
+@onready var sockets : Array = $Background/Sockets.get_children()
 
 # UI and player data
 @onready var ui = get_tree().get_first_node_in_group("ui")
@@ -41,15 +42,21 @@ func _draw():
 
 func update() -> void:
 	player_weapon_list = PlayerData.player_weapon_list
-	queue_redraw()
 	if len(player_weapon_list) > equipment_index :
 		item = player_weapon_list[equipment_index]
 		image.texture = item.sprite.texture
 		equip_name.text = item.ITEM_NAME
+		var i = 0
+		for module : Module in item.modules.get_children():
+			if i >= sockets.size():
+				break
+			sockets[i].module = module
+			i += 1
 	else:
 		item = null
 		image.texture = null
 		equip_name.text = "Empty"
+	queue_redraw()
 
 
 func _on_color_rect_mouse_entered() -> void:
@@ -59,7 +66,6 @@ func _on_color_rect_mouse_entered() -> void:
 func _on_color_rect_mouse_exited() -> void:
 	hover_over = false
 	update()
-
 
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK"):

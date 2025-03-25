@@ -1,9 +1,16 @@
 extends TextureRect
+class_name Socket
 
 @onready var equipment_slot: EquipmentSlot = $"../../.."
 
 var hover_over : bool = false
 var border_color
+var module : Module :
+	get():
+		return module
+	set(value):
+		module = value
+		self.texture = module.icon.texture
 
 func _draw():
 	# Get the size of the control
@@ -28,3 +35,8 @@ func _on_mouse_entered() -> void:
 func _on_mouse_exited() -> void:
 	hover_over = false
 	update()
+
+
+func _on_gui_input(event: InputEvent) -> void:
+	if event.is_action_pressed("CLICK"):
+		InventoryData.on_select_module = module
