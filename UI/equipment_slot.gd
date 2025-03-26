@@ -42,6 +42,10 @@ func _draw():
 
 func update() -> void:
 	player_weapon_list = PlayerData.player_weapon_list
+	# Clear modules
+	for s in sockets:
+		s.module = null
+	# Update information
 	if len(player_weapon_list) > equipment_index :
 		item = player_weapon_list[equipment_index]
 		image.texture = item.sprite.texture

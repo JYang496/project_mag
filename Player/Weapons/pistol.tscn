@@ -1,20 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://7g3a65vo7yfl"]
+[gd_scene load_steps=4 format=3 uid="uid://7g3a65vo7yfl"]
 
 [ext_resource type="Script" uid="uid://blfkh56b4cirv" path="res://Player/Weapons/pistol.gd" id="1_224q5"]
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_bqbbe"]
 [ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="2_jnw81"]
-[ext_resource type="PackedScene" uid="uid://pd13vclogpst" path="res://Player/Weapons/Modules/damage_up.tscn" id="3_5gnoi"]
-[ext_resource type="PackedScene" uid="uid://d1i4w0rbbevbw" path="res://Player/Weapons/Modules/faster_reload.tscn" id="4_w168m"]
-[ext_resource type="PackedScene" uid="uid://dt2pqqoi5dsw0" path="res://Player/Weapons/Modules/more_hp.tscn" id="5_y2yd8"]
 
 [node name="Pistol" instance=ExtResource("1_bqbbe")]
 script = ExtResource("1_224q5")
-
-[node name="DamageUp" parent="Modules" index="0" instance=ExtResource("3_5gnoi")]
-
-[node name="FasterReload" parent="Modules" index="1" instance=ExtResource("4_w168m")]
-
-[node name="MoreHP" parent="Modules" index="2" instance=ExtResource("5_y2yd8")]
 
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("2_jnw81")

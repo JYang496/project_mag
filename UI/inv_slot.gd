@@ -9,7 +9,7 @@ class_name InvSlot
 @onready var socket_2: Label = $Background/Socket2
 @onready var socket_3: Label = $Background/Socket3
 @export var inventory_index : int = 0
-var item
+var item : Weapon
 
 
 # Border properties
@@ -45,6 +45,7 @@ func update() -> void:
 		item = InventoryData.inventory_slots[inventory_index]
 		image.texture = item.get_node("%Sprite").texture
 		equip_name.text = item.ITEM_NAME
+
 	else:
 		item = null
 		image.texture = null

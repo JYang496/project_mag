@@ -11,3 +11,5 @@ angle = 0.0
 
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("2_d4sd2")
+
+[connection signal="tree_exiting" from="." to="." method="_on_tree_exiting"]

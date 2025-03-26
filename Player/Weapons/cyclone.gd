@@ -130,3 +130,6 @@ func _on_over_charge():
 	apply_linear(tornado_ins, direction, 60)
 	get_tree().root.call_deferred("add_child",tornado_ins)
 	remove_weapon()
+
+func get_sprite():
+	return sprite

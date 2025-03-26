@@ -20,10 +20,10 @@ const WEAPON_SLOTS = [[-16,-24],[16,-24],[16,24],[-16,24]]
 signal active_skill()
 
 func _ready():
-	#create_weapon("1")
-	#create_weapon("6")
-	#create_weapon("7")
-	#create_weapon("3")
+	create_weapon("1")
+	create_weapon("6")
+	create_weapon("7")
+	create_weapon("3")
 	update_grab_radius()
 
 
@@ -52,7 +52,7 @@ func create_weapon(item_id, level := 1):
 	var available_slot = 0
 	
 	# Create a new weapon when assign string, othervise node
-	var weapon : Node2D
+	var weapon
 	if item_id is String:
 		weapon = load(WeaponData.weapon_list.data[item_id]["res"]).instantiate()
 		weapon.level = level

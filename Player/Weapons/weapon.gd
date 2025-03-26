@@ -9,3 +9,7 @@ class_name Weapon
 var level : int
 var star : int
 var max_level
+
+func get_sprite() -> Sprite2D:
+	print("123")
+	return sprite
