@@ -1,6 +1,6 @@
 extends Node
 
-var INVENTORY_MAX_SLOTS : int = 4
+var INVENTORY_MAX_SLOTS : int = 8
 var inventory_slots : Array = []
 var moddule_slots : Array = []
 var ready_to_sell_list : Array = []
@@ -10,6 +10,52 @@ var ready_to_sell_list : Array = []
 var on_select_module :
 	get:
 		return on_select_module
+	set(value):
+		if value != null and on_select_module == null and on_select_inventory_module == null:
+			on_select_module = value
+			on_drag_item = on_select_module
+			print("module was empt, assign value")
+		elif value != null and on_select_module != null and on_select_inventory_module == null:
+			# Clear the drag and on select value, no swap action taken
+			on_drag_item = null
+			on_select_module = null
+		elif value != null and on_select_module == null and on_select_inventory_module != null:
+			# Swap module between weapon and inv, no swap action taken
+			on_drag_item = null
+			on_select_inventory_module = null
+		elif value == null and on_select_module == null and on_select_inventory_module != null:
+			# Install module into a weapon
+			on_drag_item = null
+			# TODO: erase weapon from the inventory, install it into weapon
+			on_select_inventory_module = null
+		else:
+			on_select_module = value
+			on_drag_item = on_select_module
+		ui.update_modules()
+		ui.update_inventory()
+		ui.update_shop()
+		ui.refresh_border()
+
+
+var on_select_inventory_module :
+	get:
+		return on_select_inventory_module
+	set(value):
+		if value != null and on_select_inventory_module == null and on_select_module == null:
+			# Pick module in inv
+			on_select_inventory_module = value
+			on_drag_item = on_select_inventory_module
+		elif value != null and on_select_inventory_module != null and on_select_module == null:
+			# Swap position in inventory
+			on_drag_item = null
+			on_select_inventory_module = null
+		elif value != null and on_select_inventory_module == null and on_select_module != null:
+			# Put weapon module into inv, not gonna work
+			on_drag_item = null
+			on_select_module = null
+		else:
+			on_select_inventory_module = value
+			on_drag_item = on_select_inventory_module
 
 var on_select_eqp :
 	get:
@@ -41,6 +87,7 @@ var on_select_eqp :
 		else:
 			on_select_eqp = value
 			on_drag_item = on_select_eqp
+		ui.update_modules()
 		ui.update_inventory()
 		ui.update_shop()
 		ui.refresh_border()

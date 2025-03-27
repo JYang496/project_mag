@@ -48,6 +48,7 @@ func _ready():
 
 func empty_item() -> void:
 	item = null
+	item_id = null
 	equip_name.text = "Sold"
 	image.texture = null
 	lbl_description.text = ""
@@ -83,7 +84,7 @@ func _on_color_rect_mouse_exited() -> void:
 	update()
 
 func _on_background_gui_input(event: InputEvent) -> void:
-	if event.is_action_pressed("CLICK") and purchasable:
+	if event.is_action_pressed("CLICK") and item_id != null and purchasable :
 		PlayerData.player_gold -= price
 		select_weapon.emit(item_id)
 		for eq : EquipmentSlotShop in equipped.get_children():
