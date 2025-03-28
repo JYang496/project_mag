@@ -20,10 +20,10 @@ const WEAPON_SLOTS = [[-16,-24],[16,-24],[16,24],[-16,24]]
 signal active_skill()
 
 func _ready():
-	create_weapon("1")
-	create_weapon("6")
-	create_weapon("7")
-	create_weapon("3")
+	create_weapon("5")
+	#create_weapon("6")
+	#create_weapon("7")
+	#create_weapon("3")
 	update_grab_radius()
 
 
@@ -66,6 +66,7 @@ func create_weapon(item_id, level := 1):
 			InventoryData.inventory_slots.append(weapon)
 		return
 	
+	clean_up_empty_remote_transform()
 	
 	available_slot = PlayerData.player_weapon_list.size()
 	var remote_transform = RemoteTransform2D.new()
@@ -84,6 +85,11 @@ func create_weapon(item_id, level := 1):
 	
 	ui.refresh_border()
 
+func clean_up_empty_remote_transform() -> void:
+	for node in equppied_weapons.get_children():
+		if node is RemoteTransform2D and node.get_child_count() == 0:
+			node.queue_free()
+	
 
 func swap_weapon_position(weapon1, weapon2) -> void:
 	if weapon1 == weapon2:

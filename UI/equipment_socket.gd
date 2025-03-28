@@ -18,7 +18,7 @@ var module : Module :
 	set(value):
 		module = value
 		if value:
-			self.texture = module.icon.texture
+			self.texture = module.sprite.texture
 		else:
 			self.texture = null
 
@@ -33,14 +33,15 @@ func _draw():
 		width = hover_off_width
 		border_color = hover_off_color
 	if module:
-		self.texture = module.icon.texture
+		self.texture = module.sprite.texture
 	else:
 		self.texture = null
 	draw_rect(rect, border_color, false, width)
 
 func update() -> void:
 	if module:
-		self.texture = module.icon.texture
+		print(module.get_node("%Sprite").texture)
+		self.texture = module.sprite.texture
 	else:
 		self.texture = null
 	queue_redraw()
@@ -56,6 +57,6 @@ func _on_mouse_exited() -> void:
 
 
 func _on_gui_input(event: InputEvent) -> void:
-	if event.is_action_pressed("CLICK"):
+	if event.is_action_pressed("CLICK") and equipment_slot is EquipmentSlotModule:
 		InventoryData.on_select_module = module
 		print("on select module = ",module)

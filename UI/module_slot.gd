@@ -1,6 +1,9 @@
 extends MarginContainer
 class_name ModuleSlot
 
+var module : Module
+@export var module_index : int = 0
+
 # Border properties
 @export var border_color: Color = Color(1, 1, 0)
 @export var border_width: float = 4.0
@@ -27,6 +30,11 @@ func _draw():
 	draw_rect(rect, border_color, false, width)
 
 func update() -> void:
+	if len(InventoryData.moddule_slots) > module_index :
+		module = InventoryData.moddule_slots[module_index]
+	if module:
+		image.texture = module.get_node("%Sprite").texture
+		item_name.text = module.ITEM_NAME
 	queue_redraw()
 
 func _on_background_mouse_entered() -> void:
@@ -36,3 +44,8 @@ func _on_background_mouse_entered() -> void:
 func _on_background_mouse_exited() -> void:
 	hover_over = false
 	update()
+
+
+func _on_background_gui_input(event: InputEvent) -> void:
+	if event.is_action_pressed("CLICK"):
+		InventoryData.on_select_inventory_module = module

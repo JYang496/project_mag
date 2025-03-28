@@ -415,48 +415,63 @@ layout_mode = 2
 
 [node name="ModuleSlot2" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 1
 
 [node name="ModuleSlot3" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 2
 
 [node name="ModuleSlot4" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 3
 
 [node name="ModuleSlot5" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 4
 
 [node name="ModuleSlot6" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 5
 
 [node name="ModuleSlot7" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 6
 
 [node name="ModuleSlot11" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 7
 
 [node name="ModuleSlot10" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 8
 
 [node name="ModuleSlot9" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 9
 
 [node name="ModuleSlot8" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 10
 
 [node name="ModuleSlot15" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 11
 
 [node name="ModuleSlot14" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 12
 
 [node name="ModuleSlot13" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 13
 
 [node name="ModuleSlot12" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 14
 
 [node name="ModuleSlot16" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
 layout_mode = 2
+module_index = 15
 
 [node name="EquippedM" type="GridContainer" parent="GUI/ModuleRoot/Panel"]
 custom_minimum_size = Vector2(440, 440)

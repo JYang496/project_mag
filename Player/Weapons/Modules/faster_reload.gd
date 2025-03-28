@@ -1,5 +1,6 @@
 extends Module
 
+var ITEM_NAME = "Faster Reload"
 @export var mult_by = 0.7
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:

@@ -1,5 +1,6 @@
 extends Module
 
+var ITEM_NAME = "More HP"
 @export var add_by = 2
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:

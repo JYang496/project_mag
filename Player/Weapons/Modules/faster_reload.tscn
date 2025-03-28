@@ -8,5 +8,5 @@
 script = ExtResource("2_ej050")
 mult_by = 0.7
 
-[node name="icon" parent="." index="0"]
+[node name="Sprite" parent="." index="0"]
 texture = ExtResource("2_w8ajp")
