@@ -59,4 +59,5 @@ func _on_mouse_exited() -> void:
 func _on_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK") and equipment_slot is EquipmentSlotModule:
 		InventoryData.on_select_module = module
+		InventoryData.on_select_module_weapon = equipment_slot.item
 		print("on select module = ",module)

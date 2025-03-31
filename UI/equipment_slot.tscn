@@ -9,6 +9,7 @@ script = ExtResource("1_v1j4t")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 2
+mouse_filter = 1
 color = Color(0.227451, 0.278431, 0.317647, 1)
 
 [node name="Image" type="TextureRect" parent="Background"]

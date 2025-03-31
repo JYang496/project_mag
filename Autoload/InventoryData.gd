@@ -27,6 +27,7 @@ var on_select_module :
 			# Install module into a weapon
 			on_drag_item = null
 			# TODO: erase weapon from the inventory, install it into weapon
+			
 			on_select_inventory_module = null
 		else:
 			on_select_module = value
@@ -36,6 +37,7 @@ var on_select_module :
 		ui.update_shop()
 		ui.refresh_border()
 
+var on_select_module_weapon
 
 var on_select_inventory_module :
 	get:
