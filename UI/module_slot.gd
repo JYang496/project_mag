@@ -32,9 +32,14 @@ func _draw():
 func update() -> void:
 	if len(InventoryData.moddule_slots) > module_index :
 		module = InventoryData.moddule_slots[module_index]
+	else:
+		module = null
 	if module:
 		image.texture = module.get_node("%Sprite").texture
 		item_name.text = module.ITEM_NAME
+	else:
+		image.texture = null
+		item_name.text = "Empty"
 	queue_redraw()
 
 func _on_background_mouse_entered() -> void:

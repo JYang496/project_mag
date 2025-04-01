@@ -7,37 +7,54 @@ var ready_to_sell_list : Array = []
 @onready var ui : UI = get_tree().get_first_node_in_group("ui")
 @onready var player : Player = get_tree().get_first_node_in_group("player")
 
+# At this stage, on_select_module should not do anything
 var on_select_module :
 	get:
 		return on_select_module
-	set(value):
-		if value != null and on_select_module == null and on_select_inventory_module == null:
-			on_select_module = value
-			on_drag_item = on_select_module
-			print("module was empt, assign value")
-		elif value != null and on_select_module != null and on_select_inventory_module == null:
-			# Clear the drag and on select value, no swap action taken
-			on_drag_item = null
-			on_select_module = null
-		elif value != null and on_select_module == null and on_select_inventory_module != null:
-			# Swap module between weapon and inv, no swap action taken
-			on_drag_item = null
-			on_select_inventory_module = null
-		elif value == null and on_select_module == null and on_select_inventory_module != null:
-			# Install module into a weapon
-			on_drag_item = null
-			# TODO: erase weapon from the inventory, install it into weapon
-			
-			on_select_inventory_module = null
-		else:
-			on_select_module = value
-			on_drag_item = on_select_module
-		ui.update_modules()
-		ui.update_inventory()
-		ui.update_shop()
-		ui.refresh_border()
+	#set(value):
+		#if value != null and on_select_module == null and on_select_inventory_module == null:
+			##on_select_module = value
+			##on_drag_item = on_select_module
+			#on_drag_item = null
+			#on_select_module = null
+			#print("module was empt, assign value")
+		#elif value != null and on_select_module != null and on_select_inventory_module == null:
+			## Clear the drag and on select value, no swap action taken
+			#on_drag_item = null
+			#on_select_module = null
+		#elif value != null and on_select_module == null and on_select_inventory_module != null:
+			## Swap module between weapon and inv, no swap action taken
+			#on_drag_item = null
+			#on_select_inventory_module = null
+		#elif value == null and on_select_module == null and on_select_inventory_module != null:
+			## Install module into a weapon
+			#on_drag_item = null
+			#on_select_inventory_module = null
+		#else:
+			#on_select_module = value
+			#on_drag_item = on_select_module
+		#ui.update_modules()
+		#ui.update_inventory()
+		#ui.update_shop()
+		#ui.refresh_border()
 
-var on_select_module_weapon
+var on_select_module_weapon :
+	get:
+		return on_select_module_weapon
+	set(value):
+		if value != null and on_select_inventory_module != null and on_select_module == null:
+			var module_list : Array = value.modules.get_children()
+			if module_list.size() >= value.MAX_MODULE_NUMBER:
+				return
+			value.modules.add_child(on_select_inventory_module)
+			value.calculate_status()
+			moddule_slots.erase(on_select_inventory_module)
+			ui.update_modules()
+			ui.update_inventory()
+			ui.update_shop()
+			ui.refresh_border()
+			on_select_inventory_module = null
+			
 
 var on_select_inventory_module :
 	get:
