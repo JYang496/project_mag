@@ -60,8 +60,6 @@ func _on_cooldown_timer_timeout():
 func _input(event: InputEvent) -> void:
 	pass
 
-func set_level(lv):
-	pass
 
 func _on_shoot():
 	justAttacked = true

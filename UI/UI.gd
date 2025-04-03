@@ -5,7 +5,6 @@ class_name UI
 
 # Roots
 @onready var character_root : Control = $GUI/CharacterRoot
-@onready var shopping_root : Control = $GUI/ShoppingRoot
 @onready var shopping_rootv_2: Control = $GUI/ShoppingRootv2
 @onready var upgrade_root : Control = $GUI/UpgradeRoot
 @onready var boss_root : Control = $GUI/BossRoot

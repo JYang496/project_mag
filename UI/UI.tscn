@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://cdpdxvviop3ok"]
+[gd_scene load_steps=17 format=3 uid="uid://cdpdxvviop3ok"]
 
 [ext_resource type="Script" uid="uid://bti7r07ljp64d" path="res://UI/UI.gd" id="1_y6r0f"]
 [ext_resource type="PackedScene" uid="uid://sedqknpaalyt" path="res://UI/equipment_slot.tscn" id="3_3xv3f"]
@@ -15,6 +15,7 @@
 [ext_resource type="Script" uid="uid://4s7d5ehiu4vp" path="res://UI/shop_cancel_button.gd" id="9_npmjx"]
 [ext_resource type="PackedScene" uid="uid://dfnpmefqatyye" path="res://UI/shop_weapon_slot.tscn" id="10_vx7wu"]
 [ext_resource type="Script" uid="uid://bg0ssyqms6h0n" path="res://UI/shop_confirm_button.gd" id="11_6q2ik"]
+[ext_resource type="Script" uid="uid://b6slggtbt7nc3" path="res://UI/to_lb.gd" id="12_t31p1"]
 
 [node name="UI" type="CanvasLayer" groups=["ui"]]
 process_mode = 3
@@ -116,54 +117,6 @@ offset_top = 8.0
 offset_right = 1032.0
 offset_bottom = 41.0
 text = "Phase:"
-
-[node name="ShoppingRoot" type="Control" parent="GUI"]
-visible = false
-custom_minimum_size = Vector2(1000, 640)
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="ShoppingPanel" type="Panel" parent="GUI/ShoppingRoot"]
-custom_minimum_size = Vector2(1000, 600)
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.00347222
-anchor_top = 1.49537
-anchor_right = 0.00347222
-anchor_bottom = 1.49537
-offset_left = 82.0
-offset_top = -940.0
-offset_right = 1082.0
-offset_bottom = -340.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Title" type="Label" parent="GUI/ShoppingRoot/ShoppingPanel"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 10.0002
-offset_bottom = 33.0002
-grow_horizontal = 2
-text = "Select Panel"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="ShoppingOptions" type="HBoxContainer" parent="GUI/ShoppingRoot/ShoppingPanel"]
-layout_mode = 1
-anchors_preset = 14
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_top = -227.0
-offset_bottom = 224.0
-grow_horizontal = 2
-grow_vertical = 2
-alignment = 1
 
 [node name="ShoppingRootv2" type="Control" parent="GUI"]
 visible = false
@@ -374,6 +327,15 @@ offset_bottom = 224.0
 grow_horizontal = 2
 grow_vertical = 2
 alignment = 1
+
+[node name="ToLB" type="Button" parent="GUI/UpgradeRoot/UpgradePanel"]
+layout_mode = 0
+offset_left = 756.0
+offset_top = 34.0002
+offset_right = 764.0
+offset_bottom = 42.0002
+text = "To Limit Break"
+script = ExtResource("12_t31p1")
 
 [node name="ModuleRoot" type="Control" parent="GUI"]
 visible = false
@@ -690,6 +652,7 @@ mouse_filter = 2
 [connection signal="button_up" from="GUI/ShoppingRootv2/Panel/ShopSellButton" to="GUI/ShoppingRootv2/Panel/ShopSellButton" method="_on_button_up"]
 [connection signal="button_up" from="GUI/ShoppingRootv2/Panel/ShopCancelButton" to="GUI/ShoppingRootv2/Panel/ShopCancelButton" method="_on_button_up"]
 [connection signal="button_up" from="GUI/ShoppingRootv2/Panel/ShopConfirmButton" to="GUI/ShoppingRootv2/Panel/ShopConfirmButton" method="_on_button_up"]
+[connection signal="button_up" from="GUI/UpgradeRoot/UpgradePanel/ToLB" to="GUI/UpgradeRoot/UpgradePanel/ToLB" method="_on_button_up"]
 [connection signal="button_up" from="GUI/ModuleRoot/Panel/ToInv" to="GUI/ModuleRoot/Panel/ToInv" method="_on_button_up"]
 [connection signal="button_up" from="GUI/InventoryRoot/Panel/ToModel" to="GUI/InventoryRoot/Panel/ToModel" method="_on_button_up"]
 [connection signal="pressed" from="GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton" to="." method="_on_resume_button_pressed"]

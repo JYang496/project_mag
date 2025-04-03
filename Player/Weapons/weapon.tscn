@@ -1,17 +1,11 @@
-[gd_scene load_steps=4 format=3 uid="uid://c4oj2glaup5b3"]
+[gd_scene load_steps=2 format=3 uid="uid://c4oj2glaup5b3"]
 
 [ext_resource type="Script" uid="uid://dlgx3bmsdvdgr" path="res://Player/Weapons/weapon.gd" id="1_xgcik"]
-[ext_resource type="PackedScene" uid="uid://d1i4w0rbbevbw" path="res://Player/Weapons/Modules/faster_reload.tscn" id="2_s3wd2"]
-[ext_resource type="PackedScene" uid="uid://dt2pqqoi5dsw0" path="res://Player/Weapons/Modules/more_hp.tscn" id="3_r761u"]
 
 [node name="Weapon" type="Node2D"]
 script = ExtResource("1_xgcik")
 
 [node name="Modules" type="Node2D" parent="."]
-
-[node name="FasterReload" parent="Modules" instance=ExtResource("2_s3wd2")]
-
-[node name="MoreHP" parent="Modules" instance=ExtResource("3_r761u")]
 
 [node name="Sprite" type="Sprite2D" parent="."]
 unique_name_in_owner = true
