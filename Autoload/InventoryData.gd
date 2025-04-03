@@ -1,9 +1,11 @@
 extends Node
 
 var INVENTORY_MAX_SLOTS : int = 8
+var MAX_FUSE_SIZE : int = 2
 var inventory_slots : Array = []
 var moddule_slots : Array = []
 var ready_to_sell_list : Array = []
+var ready_to_fuse_list : Array = []
 @onready var ui : UI = get_tree().get_first_node_in_group("ui")
 @onready var player : Player = get_tree().get_first_node_in_group("player")
 
@@ -54,7 +56,6 @@ var on_select_module_weapon :
 			ui.update_shop()
 			ui.refresh_border()
 			on_select_inventory_module = null
-			
 
 var on_select_inventory_module :
 	get:
@@ -148,6 +149,22 @@ func slot_eqp_swap() -> void:
 	on_select_slot = null
 	on_select_eqp = null
 
+var on_select_eqp_gf :
+	get:
+		return on_select_eqp_gf
+	set(value):
+		on_select_eqp_gf = value
+
+var on_select_slot_gf :
+	get:
+		return on_select_slot_gf
+	set(value):
+		on_select_slot_gf = value
+
+func add_fuse_item(item) -> void:
+	if ready_to_fuse_list.size() < MAX_FUSE_SIZE:
+		ready_to_fuse_list.append(item)
+
 var on_drag_item :
 	get:
 		return on_drag_item
@@ -165,6 +182,9 @@ var on_drag_item :
 		on_drag_item = value
 
 func clear_on_select() -> void:
+	on_select_module = null
+	on_select_module_weapon = null
+	on_select_inventory_module = null
 	on_select_eqp = null
 	on_select_slot = null
 	on_drag_item = null

@@ -8,11 +8,11 @@ var MAX_MODULE_NUMBER = 3
 
 # Common variables for weapons
 var level : int
-var star : int
+var fuse : int
 var max_level : int
 
 func set_level(lv):
 	pass
 
-func set_star(s):
+func set_fuse(f):
 	pass

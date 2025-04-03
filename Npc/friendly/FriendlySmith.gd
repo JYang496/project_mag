@@ -8,4 +8,5 @@ func panel_move_in() -> void:
 	
 func panel_move_out() -> void:
 	ui.upgrade_panel_out()
+	ui.gf_panel_out()
 	is_interacting = false
