@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3 uid="uid://bus2yd5hbxmcp"]
+
+[ext_resource type="Script" uid="uid://s4tglse4iqwk" path="res://UI/gf_item.gd" id="1_jc2cu"]
+
+[node name="GFItem" type="MarginContainer"]
+custom_minimum_size = Vector2(150, 150)
+script = ExtResource("1_jc2cu")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(150, 150)
+layout_mode = 2
+
+[node name="Image" type="TextureRect" parent="ColorRect"]
+layout_mode = 2
+offset_left = 36.0
+offset_top = 18.0
+offset_right = 117.0
+offset_bottom = 98.0
+
+[connection signal="mouse_entered" from="ColorRect" to="." method="_on_color_rect_mouse_entered"]
+[connection signal="mouse_exited" from="ColorRect" to="." method="_on_color_rect_mouse_exited"]

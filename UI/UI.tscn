@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://cdpdxvviop3ok"]
+[gd_scene load_steps=23 format=3 uid="uid://cdpdxvviop3ok"]
 
 [ext_resource type="Script" uid="uid://bti7r07ljp64d" path="res://UI/UI.gd" id="1_y6r0f"]
 [ext_resource type="PackedScene" uid="uid://sedqknpaalyt" path="res://UI/equipment_slot.tscn" id="3_3xv3f"]
@@ -19,7 +19,9 @@
 [ext_resource type="Script" uid="uid://s85d54ephino" path="res://UI/inv_slot_gf.gd" id="13_1sm7k"]
 [ext_resource type="Script" uid="uid://cgjdew6by1fea" path="res://UI/equipment_slot_gf.gd" id="13_kncd2"]
 [ext_resource type="Script" uid="uid://ctk8dc14nmcki" path="res://UI/gf_swtich_btn.gd" id="15_xtxff"]
+[ext_resource type="PackedScene" uid="uid://bus2yd5hbxmcp" path="res://UI/gf_item.tscn" id="16_rjxvo"]
 [ext_resource type="Script" uid="uid://cc2eo3mf0uuh8" path="res://UI/gf_confirm_btn.gd" id="16_yflil"]
+[ext_resource type="Script" uid="uid://c5738xwcafeh3" path="res://UI/to_upgrade.gd" id="18_uk6e0"]
 
 [node name="UI" type="CanvasLayer" groups=["ui"]]
 process_mode = 3
@@ -334,10 +336,10 @@ alignment = 1
 
 [node name="ToGF" type="Button" parent="GUI/UpgradeRoot/UpgradePanel"]
 layout_mode = 0
-offset_left = 756.0
-offset_top = 34.0002
-offset_right = 764.0
-offset_bottom = 42.0002
+offset_left = 865.0
+offset_top = 33.0002
+offset_right = 973.0
+offset_bottom = 64.0002
 text = "To Gear Fuse"
 script = ExtResource("12_t31p1")
 
@@ -383,30 +385,37 @@ script = ExtResource("13_1sm7k")
 [node name="InvSlotGF2" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
+inventory_index = 1
 
 [node name="InvSlotGF3" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
+inventory_index = 2
 
 [node name="InvSlotGF4" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
+inventory_index = 3
 
 [node name="InvSlotGF5" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
+inventory_index = 4
 
 [node name="InvSlotGF6" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
+inventory_index = 5
 
 [node name="InvSlotGF7" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
+inventory_index = 6
 
 [node name="InvSlotGF8" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
+inventory_index = 7
 
 [node name="Equipped" type="GridContainer" parent="GUI/GearFuseRoot/Panel"]
 custom_minimum_size = Vector2(440, 440)
@@ -424,14 +433,17 @@ script = ExtResource("13_kncd2")
 [node name="EquipmentSlotGF2" parent="GUI/GearFuseRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("13_kncd2")
+equipment_index = 1
 
 [node name="EquipmentSlotGF3" parent="GUI/GearFuseRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("13_kncd2")
+equipment_index = 2
 
 [node name="EquipmentSlotGF4" parent="GUI/GearFuseRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("13_kncd2")
+equipment_index = 3
 
 [node name="SwtichBtn" type="Button" parent="GUI/GearFuseRoot/Panel"]
 layout_mode = 0
@@ -442,14 +454,45 @@ offset_bottom = 44.0
 text = "Inventory / Bag"
 script = ExtResource("15_xtxff")
 
-[node name="ConfirmBtn" type="Button" parent="GUI/GearFuseRoot/Panel"]
+[node name="MarginContainer" type="MarginContainer" parent="GUI/GearFuseRoot/Panel"]
+custom_minimum_size = Vector2(320, 320)
 layout_mode = 0
-offset_left = 240.0
-offset_top = 474.0
-offset_right = 284.0
-offset_bottom = 505.0
+offset_left = 79.0
+offset_top = 126.0
+offset_right = 459.0
+offset_bottom = 446.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer"]
+layout_mode = 2
+
+[node name="ItemRow" type="MarginContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(380, 150)
+layout_mode = 2
+
+[node name="Items" type="HBoxContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow"]
+layout_mode = 2
+alignment = 1
+
+[node name="GFItem" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow/Items" instance=ExtResource("16_rjxvo")]
+layout_mode = 2
+
+[node name="GFItem2" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow/Items" instance=ExtResource("16_rjxvo")]
+layout_mode = 2
+item_index = 1
+
+[node name="ConfirmBtn" type="Button" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
 text = "Fuse"
 script = ExtResource("16_yflil")
+
+[node name="ToUpgrade" type="Button" parent="GUI/GearFuseRoot/Panel"]
+layout_mode = 0
+offset_left = 862.0
+offset_top = 31.0
+offset_right = 960.0
+offset_bottom = 62.0
+text = "To Upgrade"
+script = ExtResource("18_uk6e0")
 
 [node name="ModuleRoot" type="Control" parent="GUI"]
 visible = false
@@ -768,7 +811,8 @@ mouse_filter = 2
 [connection signal="button_up" from="GUI/ShoppingRootv2/Panel/ShopConfirmButton" to="GUI/ShoppingRootv2/Panel/ShopConfirmButton" method="_on_button_up"]
 [connection signal="button_up" from="GUI/UpgradeRoot/UpgradePanel/ToGF" to="GUI/UpgradeRoot/UpgradePanel/ToGF" method="_on_button_up"]
 [connection signal="button_up" from="GUI/GearFuseRoot/Panel/SwtichBtn" to="GUI/GearFuseRoot/Panel/SwtichBtn" method="_on_button_up"]
-[connection signal="button_up" from="GUI/GearFuseRoot/Panel/ConfirmBtn" to="GUI/GearFuseRoot/Panel/ConfirmBtn" method="_on_button_up"]
+[connection signal="button_up" from="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ConfirmBtn" to="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ConfirmBtn" method="_on_button_up"]
+[connection signal="button_up" from="GUI/GearFuseRoot/Panel/ToUpgrade" to="GUI/GearFuseRoot/Panel/ToUpgrade" method="_on_button_up"]
 [connection signal="button_up" from="GUI/ModuleRoot/Panel/ToInv" to="GUI/ModuleRoot/Panel/ToInv" method="_on_button_up"]
 [connection signal="button_up" from="GUI/InventoryRoot/Panel/ToModel" to="GUI/InventoryRoot/Panel/ToModel" method="_on_button_up"]
 [connection signal="pressed" from="GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton" to="." method="_on_resume_button_pressed"]

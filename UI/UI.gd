@@ -39,6 +39,8 @@ class_name UI
 # Gear fuse
 @onready var inventory_gf: GridContainer = $GUI/GearFuseRoot/Panel/Inventory
 @onready var equipped_gf: GridContainer = $GUI/GearFuseRoot/Panel/Equipped
+@onready var fuse_items: HBoxContainer = $GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow/Items
+
 
 # Inventory
 @onready var inventory: GridContainer = $GUI/InventoryRoot/Panel/Inventory
@@ -160,6 +162,7 @@ func gf_panel_in() -> void:
 	equipped_gf.visible = true
 
 func gf_panel_out() -> void:
+	InventoryData.ready_to_fuse_list.clear()
 	gear_fuse_root.visible = false
 
 func inventory_panel_in() -> void:
@@ -200,13 +203,14 @@ func update_gf() -> void:
 		eq.update()
 	for inv in inventory_gf.get_children():
 		inv.update()
+	for item in fuse_items.get_children():
+		item.update()
 
 func update_modules() -> void:
 	for eq in equipped_m.get_children():
 		eq.update()
 	for mod in modules.get_children():
 		mod.update()
-	
 
 func free_childern(parent) -> void:
 	var children = parent.get_children()
