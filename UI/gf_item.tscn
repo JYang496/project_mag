@@ -17,5 +17,6 @@ offset_top = 18.0
 offset_right = 117.0
 offset_bottom = 98.0
 
+[connection signal="gui_input" from="ColorRect" to="." method="_on_color_rect_gui_input"]
 [connection signal="mouse_entered" from="ColorRect" to="." method="_on_color_rect_mouse_entered"]
 [connection signal="mouse_exited" from="ColorRect" to="." method="_on_color_rect_mouse_exited"]

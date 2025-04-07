@@ -149,6 +149,13 @@ func slot_eqp_swap() -> void:
 	on_select_slot = null
 	on_select_eqp = null
 
+var on_select_upg :
+	get:
+		return on_select_upg
+	set(value):
+		print("on select upgrade item: ",value)
+		on_select_upg = value
+
 var on_select_eqp_gf :
 	get:
 		return on_select_eqp_gf
@@ -163,11 +170,16 @@ var on_select_slot_gf :
 	set(value):
 		add_fuse_item(value)
 		on_select_slot_gf = value
-		ui.update_gf()
 
 func add_fuse_item(item) -> void:
 	if ready_to_fuse_list.size() < MAX_FUSE_SIZE and not ready_to_fuse_list.has(item):
 		ready_to_fuse_list.append(item)
+		ui.update_gf()
+
+func remove_fuse_item(item) -> void:
+	if ready_to_fuse_list.has(item):
+		ready_to_fuse_list.erase(item)
+		ui.update_gf()
 
 var on_drag_item :
 	get:

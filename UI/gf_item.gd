@@ -5,7 +5,6 @@ extends MarginContainer
 
 var item : Weapon
 @export var item_index : int = 0
-@export_enum("Input","Output") var type : String = "Input"
 
 # Border properties
 @export var border_color: Color = Color(1, 1, 0)
@@ -31,7 +30,7 @@ func _draw():
 	draw_rect(rect, border_color, false, width)
 
 func update():
-	if type == "Input" and item_index < InventoryData.ready_to_fuse_list.size():
+	if item_index < InventoryData.ready_to_fuse_list.size():
 		item = InventoryData.ready_to_fuse_list[item_index]
 		image.texture = item.get_node("%Sprite").texture
 	else:
@@ -47,3 +46,8 @@ func _on_color_rect_mouse_entered() -> void:
 func _on_color_rect_mouse_exited() -> void:
 	hover_over = false
 	update()
+
+
+func _on_color_rect_gui_input(event: InputEvent) -> void:
+	if event.is_action_pressed("CLICK") and item != null:
+		InventoryData.remove_fuse_item(item)

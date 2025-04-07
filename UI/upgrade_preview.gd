@@ -1,4 +1,4 @@
-extends Control
+extends MarginContainer
 
 @onready var lblName = $UpgradeCard/LabelName
 @onready var itemIcon = $UpgradeCard/ItemImage/Icon
@@ -7,7 +7,6 @@ extends Control
 @onready var ui : UI = get_tree().get_first_node_in_group("ui")
 
 var weapon_node
-var weapon_data
 var cost_price : int
 var upgradable := true
 var curr_status = {}
@@ -19,6 +18,11 @@ signal upgrade_level(level)
 
 # By default, weapons in upgrade cards are upgradable
 func _ready():
+	update()
+
+func update() -> void:
+	weapon_node = InventoryData.on_select_upg
+	get_signal_connection_list("upgrade_level").clear()
 	if weapon_node != null:
 		connect("upgrade_level",Callable(weapon_node,"set_level"))
 		comb_status = combine_status(weapon_node)
@@ -30,30 +34,26 @@ func _ready():
 				var status_label = Label.new()
 				status_label.text = "%s: %s => %s" % [key, comb_status[key][0], comb_status[key][1]]
 				status_container.add_child(status_label)
-		itemIcon.texture = weapon_node.sprite.texture
-		lblName.text = weapon_node.ITEM_NAME
-		
-
-func _physics_process(_delta: float) -> void:
 	if PlayerData.player_gold < cost_price: # Unable to purchase if player does not have enough gold
 		cost.set("theme_override_colors/font_color",Color(1.0,0.0,0.0,1.0))
 		upgradable = false
 	else:
 		cost.set("theme_override_colors/font_color",Color(1.0,1.0,1.0,1.0))
 		upgradable = true
+		itemIcon.texture = weapon_node.sprite.texture
+		lblName.text = weapon_node.ITEM_NAME
 		
 
 		
 func _input(_event):
-	if Input.is_action_just_released("CLICK"):
+	if Input.is_action_just_released("CLICK") and weapon_node:
 		if mouse_over and upgradable:
 			PlayerData.player_gold -= cost_price
-			#emit_signal("upgrade_level",int(comb_status["level"][1]))
 			upgrade_level.emit(int(comb_status["level"][1]))
 			ui.upgrade_panel_out()
 
 func combine_status(node):
-	weapon_data = node.weapon_data
+	var weapon_data = node.weapon_data
 	curr_status = weapon_data[str(node.level)]
 	next_status = weapon_data[str(node.level+1)]
 	var combined_output = {}
