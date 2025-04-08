@@ -9,8 +9,6 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_xd28a"]
 
 [node name="FriendlySmith" instance=ExtResource("1_duxgc")]
-collision_layer = 0
-collision_mask = 0
 script = ExtResource("2_ua8p5")
 
 [node name="HurtBox" parent="." index="0"]

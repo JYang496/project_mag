@@ -9,7 +9,7 @@ var MAX_MODULE_NUMBER = 3
 # Common variables for weapons
 var level : int
 var fuse : int
-var max_level : int
+var max_level : int = 5
 
 func set_level(lv):
 	pass

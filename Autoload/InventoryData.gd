@@ -155,6 +155,7 @@ var on_select_upg :
 	set(value):
 		print("on select upgrade item: ",value)
 		on_select_upg = value
+		ui.update_upg()
 
 var on_select_eqp_gf :
 	get:
@@ -198,6 +199,7 @@ var on_drag_item :
 		on_drag_item = value
 
 func clear_on_select() -> void:
+	on_select_upg = null
 	on_select_module = null
 	on_select_module_weapon = null
 	on_select_inventory_module = null

@@ -7,6 +7,7 @@ class_name UI
 @onready var character_root : Control = $GUI/CharacterRoot
 @onready var shopping_rootv_2: Control = $GUI/ShoppingRootv2
 @onready var upgrade_root : Control = $GUI/UpgradeRoot
+@onready var upgrade_rootv_2: Control = $GUI/UpgradeRootv2
 @onready var boss_root : Control = $GUI/BossRoot
 @onready var inventory_root: Control = $GUI/InventoryRoot
 @onready var pause_menu_root : Control = $GUI/PauseMenuRoot
@@ -35,6 +36,10 @@ class_name UI
 # Upgrade
 @onready var upgrade_panel = $GUI/UpgradeRoot/UpgradePanel
 @onready var upgrade_options = $GUI/UpgradeRoot/UpgradePanel/UpgradeOptions
+@onready var inventory_upg: GridContainer = $GUI/UpgradeRootv2/Panel/Inventory
+@onready var equipped_upg: GridContainer = $GUI/UpgradeRootv2/Panel/Equipped
+@onready var upgrade_preview: MarginContainer = $GUI/UpgradeRootv2/Panel/UpgradePreview
+
 
 # Gear fuse
 @onready var inventory_gf: GridContainer = $GUI/GearFuseRoot/Panel/Inventory
@@ -155,6 +160,17 @@ func upgrade_panel_out() -> void:
 	refresh_border()
 	move_out_timer.start()
 
+func upg_panel_in() -> void:
+	update_upg()
+	upgrade_rootv_2.visible = true
+	inventory_upg.visible = false
+	equipped_upg.visible = true
+
+func upg_panel_out() -> void:
+	upgrade_rootv_2.visible = false
+	InventoryData.clear_on_select()
+	refresh_border()
+
 func gf_panel_in() -> void:
 	update_gf()
 	gear_fuse_root.visible = true
@@ -198,6 +214,12 @@ func update_shop() -> void:
 	for sh in shop.get_children():
 		sh.update()
 
+func update_upg() -> void:
+	for eq in equipped_upg.get_children():
+		eq.update()
+	for inv in inventory_upg.get_children():
+		inv.update()
+	upgrade_preview.update()
 func update_gf() -> void:
 	for eq in equipped_gf.get_children():
 		eq.update()

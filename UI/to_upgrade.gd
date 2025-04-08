@@ -4,4 +4,4 @@ extends Button
 
 func _on_button_up() -> void:
 	ui.gf_panel_out()
-	ui.upgrade_panel_in()
+	ui.upg_panel_in()

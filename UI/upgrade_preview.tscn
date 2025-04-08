@@ -20,6 +20,7 @@ size_flags_vertical = 4
 color = Color(0.686275, 0.690196, 0.811765, 1)
 
 [node name="ItemImage" type="ColorRect" parent="UpgradeCard"]
+visible = false
 layout_mode = 0
 offset_left = 108.0
 offset_top = 55.0
@@ -57,6 +58,12 @@ offset_bottom = 383.0
 text = "Cost"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Icon" type="TextureRect" parent="UpgradeCard"]
+offset_left = 109.0
+offset_top = 59.0
+offset_right = 173.0
+offset_bottom = 123.0
 
 [connection signal="mouse_entered" from="UpgradeCard" to="." method="_on_upgrade_card_mouse_entered"]
 [connection signal="mouse_exited" from="UpgradeCard" to="." method="_on_upgrade_card_mouse_exited"]
