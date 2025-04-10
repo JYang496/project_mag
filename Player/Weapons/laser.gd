@@ -18,7 +18,7 @@ var weapon_data = {
 		"features": [],
 	},
 	"2": {
-		"level": "4",
+		"level": "2",
 		"damage": "4",
 		"reload": "1.6",
 		"cost": "1",

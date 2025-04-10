@@ -32,7 +32,8 @@ func _draw():
 func update():
 	if item_index < InventoryData.ready_to_fuse_list.size():
 		item = InventoryData.ready_to_fuse_list[item_index]
-		image.texture = item.get_node("%Sprite").texture
+		if item:
+			image.texture = item.get_node("%Sprite").texture
 	else:
 		item = null
 		image.texture = null

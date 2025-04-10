@@ -1,7 +1,7 @@
 extends CanvasLayer
 class_name UI
 
-@onready var player = get_tree().get_first_node_in_group("player")
+@onready var player : Player = get_tree().get_first_node_in_group("player")
 
 # Roots
 @onready var character_root : Control = $GUI/CharacterRoot

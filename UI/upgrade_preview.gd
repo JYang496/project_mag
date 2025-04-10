@@ -48,7 +48,7 @@ func update() -> void:
 	if weapon_node != null and weapon_node.level < weapon_node.max_level:
 		connect("upgrade_level",Callable(weapon_node,"set_level"))
 		comb_status = combine_status(weapon_node)
-		itemIcon.texture = weapon_node.sprite.texture
+		itemIcon.texture = weapon_node.get_node("Sprite").texture
 		lblName.text = weapon_node.ITEM_NAME
 		for key in comb_status:
 			if key == "cost":
@@ -69,7 +69,7 @@ func update() -> void:
 	else:
 		cost.set("theme_override_colors/font_color",Color(1.0,1.0,1.0,1.0))
 		upgradable = true
-	queue_redraw()	
+	queue_redraw()
 
 func _input(_event):
 	if Input.is_action_just_released("CLICK") and weapon_node:

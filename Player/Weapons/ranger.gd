@@ -48,7 +48,7 @@ func _ready():
 		set_level(1)
 
 func setup_timer() -> void:
-	cooldown_timer = $CooldownTimer
+	cooldown_timer = self.get_node("CooldownTimer")
 
 func _physics_process(_delta):
 	if not justAttacked and Input.is_action_pressed("ATTACK"):
@@ -141,7 +141,6 @@ func calculate_damage(pre_damage : int) -> void:
 
 func calculate_hp(pre_hp : int) -> void:
 	calculate_weapon_hp.emit(pre_hp)
-
 
 func set_cd_timer(timer : Timer) -> void:
 	calculate_cd_timer.emit(reload)

@@ -449,6 +449,7 @@ script = ExtResource("14_idhk4")
 equipment_index = 3
 
 [node name="SwtichBtn" type="Button" parent="GUI/UpgradeRootv2/Panel"]
+visible = false
 layout_mode = 0
 offset_left = 702.0
 offset_top = 13.0
