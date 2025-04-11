@@ -153,7 +153,6 @@ var on_select_upg :
 	get:
 		return on_select_upg
 	set(value):
-		print("on select upgrade item: ",value)
 		on_select_upg = value
 		ui.update_upg()
 
@@ -171,10 +170,12 @@ var on_select_slot_gf :
 	set(value):
 		add_fuse_item(value)
 		on_select_slot_gf = value
+		ui.update_gf()
 
 func add_fuse_item(item) -> void:
 	if ready_to_fuse_list.size() < MAX_FUSE_SIZE and not ready_to_fuse_list.has(item):
-		ready_to_fuse_list.append(item)
+		if ready_to_fuse_list.size() == 0 or item.ITEM_NAME == ready_to_fuse_list[0].ITEM_NAME:
+			ready_to_fuse_list.append(item)
 		ui.update_gf()
 
 func remove_fuse_item(item) -> void:
