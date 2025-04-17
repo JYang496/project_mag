@@ -8,7 +8,7 @@ var MAX_MODULE_NUMBER = 3
 
 # Common variables for weapons
 var level : int
-var fuse : int
+var fuse : int = 1
 var max_level : int = 3
 var FINAL_MAX_LEVEL : int = 5
 

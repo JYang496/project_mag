@@ -5,6 +5,8 @@ class_name EquipmentSlot
 @onready var background: ColorRect = $Background
 @onready var image: TextureRect = $Background/Image
 @onready var equip_name: Label = $Background/EquipName
+@onready var stars: HBoxContainer = $Background/Stars
+@onready var star_preload = preload("res://UI/star.tscn")
 
 @export var equipment_index : int = 0
 var item : Weapon
@@ -45,11 +47,16 @@ func update() -> void:
 	# Clear modules
 	for s in sockets:
 		s.module = null
+	for s in stars.get_children():
+		s.queue_free()
 	# Update information
 	if len(player_weapon_list) > equipment_index :
 		item = player_weapon_list[equipment_index]
 		image.texture = item.sprite.texture
 		equip_name.text = item.ITEM_NAME
+		for s in range(item.fuse):
+			var star_ins = star_preload.instantiate()
+			stars.add_child(star_ins)
 		var i = 0
 		for module : Module in item.modules.get_children():
 			if i >= sockets.size():

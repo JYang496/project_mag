@@ -19,12 +19,20 @@ offset_top = 10.0
 offset_right = 150.0
 offset_bottom = 90.0
 
+[node name="Stars" type="HBoxContainer" parent="Background"]
+layout_mode = 0
+offset_left = 52.0
+offset_top = 87.0
+offset_right = 169.0
+offset_bottom = 107.0
+alignment = 1
+
 [node name="EquipName" type="Label" parent="Background"]
 layout_mode = 0
-offset_left = 40.0
-offset_top = 100.0
-offset_right = 180.0
-offset_bottom = 123.0
+offset_left = 39.0
+offset_top = 102.0
+offset_right = 179.0
+offset_bottom = 125.0
 text = "Empty"
 horizontal_alignment = 1
 

@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://b6opjglq40gya"]
+
+[ext_resource type="Texture2D" uid="uid://d22qs3ayipnm1" path="res://Textures/test/star.png" id="1_ph7j1"]
+
+[node name="Star" type="TextureRect"]
+texture_filter = 1
+texture = ExtResource("1_ph7j1")

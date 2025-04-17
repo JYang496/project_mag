@@ -11,6 +11,7 @@ func _on_button_up() -> void:
 	var fused_item : Weapon = InventoryData.ready_to_fuse_list[0].duplicate()
 	fused_item.max_level = clampi(max(InventoryData.ready_to_fuse_list[0].max_level,InventoryData.ready_to_fuse_list[1].max_level)+1,0, InventoryData.ready_to_fuse_list[0].FINAL_MAX_LEVEL)
 	fused_item.level = max(InventoryData.ready_to_fuse_list[0].level,InventoryData.ready_to_fuse_list[1].level)
+	fused_item.fuse += 1
 	for fuse_item : Weapon in InventoryData.ready_to_fuse_list:
 		for module in fuse_item.modules.get_children():
 			var module_copy = module.duplicate()

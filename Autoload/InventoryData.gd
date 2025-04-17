@@ -85,13 +85,11 @@ var on_select_eqp :
 			# Pick equipment
 			on_select_eqp = value
 			on_drag_item = on_select_eqp
-			print("eqp was empty, assign value")
 		elif value != null and on_select_eqp != null and on_select_slot == null:
 			# Swap position
 			on_drag_item = null
 			if value != on_select_eqp:
 				player.swap_weapon_position(on_select_eqp,value)
-				print("swap position, clean on select afterward")
 			on_select_eqp = null
 		elif value != null and on_select_eqp == null and on_select_slot != null:
 			# Swap eqp and slot
@@ -100,7 +98,6 @@ var on_select_eqp :
 		elif value == null and on_select_eqp == null and on_select_slot != null:
 			# Put item from inv to equipment
 			on_drag_item = null
-			print("add item to eqp")
 			inventory_slots.erase(on_select_slot)
 			player.create_weapon(on_select_slot)
 			on_select_slot = null
@@ -126,7 +123,6 @@ var on_select_slot :
 			if not self.inventory_slots.has(copy_eqp):
 				copy_eqp.level = on_select_eqp.level
 				self.inventory_slots.append(copy_eqp)
-				print("put weapon into inv")
 				PlayerData.player_weapon_list.erase(on_select_eqp)
 				on_select_eqp.queue_free()
 			on_select_eqp = null
@@ -145,7 +141,6 @@ func slot_eqp_swap() -> void:
 		inventory_slots.erase(on_select_slot)
 		player.create_weapon(on_select_slot)
 	on_select_eqp = null
-	print("swap eqp and slot")
 	on_select_slot = null
 	on_select_eqp = null
 
