@@ -21,7 +21,7 @@ var weapon_data = {
 	},
 	"2": {
 		"level": "2",
-		"damage": "35",
+		"damage": "30",
 		"speed": "600",
 		"hp": "1",
 		"reload": "1",
@@ -30,7 +30,7 @@ var weapon_data = {
 	},
 	"3": {
 		"level": "3",
-		"damage": "75",
+		"damage": "40",
 		"speed": "600",
 		"hp": "1",
 		"reload": "1",
@@ -39,7 +39,7 @@ var weapon_data = {
 	},
 	"4": {
 		"level": "4",
-		"damage": "80",
+		"damage": "50",
 		"speed": "800",
 		"hp": "1",
 		"reload": "0.75",
@@ -48,7 +48,25 @@ var weapon_data = {
 	},
 	"5": {
 		"level": "5",
-		"damage": "100",
+		"damage": "60",
+		"speed": "800",
+		"hp": "2",
+		"reload": "0.5",
+		"cost": "1",
+		"features": [],
+	},
+	"6": {
+		"level": "6",
+		"damage": "70",
+		"speed": "800",
+		"hp": "2",
+		"reload": "0.5",
+		"cost": "1",
+		"features": [],
+	},
+	"7": {
+		"level": "7",
+		"damage": "80",
 		"speed": "800",
 		"hp": "2",
 		"reload": "0.5",

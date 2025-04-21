@@ -44,6 +44,20 @@ var weapon_data = {
 		"reload": "0.6",
 		"cost": "1",
 		"features": [],
+	},
+	"6": {
+		"level": "11",
+		"damage": "8",
+		"reload": "0.6",
+		"cost": "1",
+		"features": [],
+	},
+	"7": {
+		"level": "15",
+		"damage": "8",
+		"reload": "0.6",
+		"cost": "1",
+		"features": [],
 	}
 }
 

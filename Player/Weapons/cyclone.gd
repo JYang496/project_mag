@@ -78,6 +78,30 @@ var weapon_data = {
 		"reload": "1.5",
 		"cost": "1",
 		"features": [],
+	},
+	"6": {
+		"level": "6",
+		"damage": "65",
+		"knock_back_amount": "200",
+		"speed": "400",
+		"spin_rate": "12",
+		"spin_speed": "600",
+		"hp": "20",
+		"reload": "1.5",
+		"cost": "1",
+		"features": [],
+	},
+	"7": {
+		"level": "7",
+		"damage": "80",
+		"knock_back_amount": "200",
+		"speed": "400",
+		"spin_rate": "12",
+		"spin_speed": "600",
+		"hp": "20",
+		"reload": "1.5",
+		"cost": "1",
+		"features": [],
 	}
 }
 
