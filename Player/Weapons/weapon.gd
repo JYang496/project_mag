@@ -10,7 +10,8 @@ var MAX_MODULE_NUMBER = 3
 var level : int
 var fuse : int = 1
 var max_level : int = 3
-var FINAL_MAX_LEVEL : int = 5
+var FINAL_MAX_FUSE : int = 3
+var FINAL_MAX_LEVEL : int = 7
 
 func set_level(lv):
 	pass
