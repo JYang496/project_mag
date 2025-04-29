@@ -1,0 +1,118 @@
+[gd_scene load_steps=3 format=3 uid="uid://dwxulua8fpqd0"]
+
+[ext_resource type="Script" uid="uid://dyetc0qttcb7y" path="res://World/new_game_btn.gd" id="1_y1dix"]
+[ext_resource type="Texture2D" uid="uid://gr13ex3fw4lx" path="res://Textures/test/player.png" id="2_v7sbj"]
+
+[node name="Start" type="Node2D"]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="GUI" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer/GUI"]
+layout_mode = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+color = Color(0.25098, 0.25098, 0.25098, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect"]
+layout_mode = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 50
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(500, 548)
+layout_mode = 2
+
+[node name="Title" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "Project Mag Title"
+horizontal_alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 400)
+layout_mode = 2
+alignment = 1
+
+[node name="New Game" type="Button" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+text = "New Game"
+script = ExtResource("1_y1dix")
+
+[node name="Upgrade" type="Button" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+text = "Upgrade"
+
+[node name="Select Your Charcter" type="Button" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+text = "Select your character
+"
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 50
+
+[node name="Characters" type="VBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+
+[node name="CharTitile" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters"]
+layout_mode = 2
+text = "Characters"
+horizontal_alignment = 1
+
+[node name="CharContainer" type="HBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+
+[node name="Char" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer/Char"]
+layout_mode = 2
+texture = ExtResource("2_v7sbj")
+
+[node name="Char2" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer/Char2"]
+layout_mode = 2
+texture = ExtResource("2_v7sbj")
+
+[node name="Char3" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer/Char3"]
+layout_mode = 2
+texture = ExtResource("2_v7sbj")
+
+[node name="Char4" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer/Char4"]
+layout_mode = 2
+texture = ExtResource("2_v7sbj")
+
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters"]
+custom_minimum_size = Vector2(0, 250)
+layout_mode = 2
+color = Color(0.366595, 0.366595, 0.366595, 1)
+
+[connection signal="pressed" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer/VBoxContainer/New Game" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer/VBoxContainer/New Game" method="_on_pressed"]
