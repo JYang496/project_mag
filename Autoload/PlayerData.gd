@@ -32,12 +32,13 @@ var player_max_hp := 5 :
 	get:
 		return player_max_hp
 	set(value):
-		player_hp = clampi(int(value), 1, 50)
+		player_max_hp = clampi(int(value), 1, 999)
 var player_hp := player_max_hp :
 	get:
 		return player_hp
 	set(value):
-		player_hp = clampi(int(value) - armor, 0, player_max_hp)
+		print(value)
+		player_hp = clampi(int(value), 0, player_max_hp)
 
 var hp_regen := 0
 var hp_bonus_regen := 0

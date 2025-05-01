@@ -16,17 +16,42 @@ var moveto_dest := Vector2.ZERO
 var distance_mouse_player = 0
 const WEAPON_SLOTS = [[-16,-24],[16,-24],[16,24],[-16,24]]
 
+@export var start_up_status = {
+	"player_speed":100.0,
+	"player_max_hp":5,
+	"hp_regen":0,
+	"armor":0,
+	"shield":0,
+	"damage_reduction":1.0,
+	"crit_rate":0.0,
+	"crit_damage":1.0,
+	"grab_radius":50.0,
+	"player_gold":0,
+}
 # Signals
 signal active_skill()
 
 func _ready():
-	create_weapon("1")
+	set_start_up_status()
 	update_grab_radius()
 	custom_ready()
 
+func set_start_up_status():
+	PlayerData.player_speed = start_up_status["player_speed"]
+	PlayerData.player_max_hp = start_up_status["player_max_hp"]
+	PlayerData.player_hp = PlayerData.player_max_hp
+	PlayerData.hp_regen = start_up_status["hp_regen"]
+	PlayerData.armor = start_up_status["armor"]
+	PlayerData.shield = start_up_status["shield"]
+	PlayerData.damage_reduction = start_up_status["damage_reduction"]
+	PlayerData.crit_rate = start_up_status["crit_rate"]
+	PlayerData.crit_damage = start_up_status["crit_damage"]
+	PlayerData.grab_radius = start_up_status["grab_radius"]
+	PlayerData.player_gold = start_up_status["player_gold"]
+
 # overwrite the function on child class
 func custom_ready():
-	pass
+	create_weapon("1")
 
 func _physics_process(delta):
 	movement(delta)

@@ -5,5 +5,17 @@
 
 [node name="Collector" instance=ExtResource("1_7hicg")]
 script = ExtResource("2_jqusd")
+start_up_status = {
+"armor": 0,
+"crit_damage": 1.0,
+"crit_rate": 0.0,
+"damage_reduction": 1.0,
+"grab_radius": 75.0,
+"hp_regen": 0,
+"player_gold": 20,
+"player_max_hp": 5,
+"player_speed": 100.0,
+"shield": 0
+}
 
 [editable path="HurtBox"]
