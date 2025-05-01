@@ -1,6 +1,6 @@
 [gd_scene load_steps=10 format=3 uid="uid://dve1wwmkd0ynm"]
 
-[ext_resource type="Script" uid="uid://bmw6u23gpmpyb" path="res://Player/Gladiators/Player.gd" id="1_ds3ra"]
+[ext_resource type="Script" uid="uid://bmw6u23gpmpyb" path="res://Player/Mechas/Player.gd" id="1_ds3ra"]
 [ext_resource type="Texture2D" uid="uid://gr13ex3fw4lx" path="res://Textures/test/player.png" id="2_omq80"]
 [ext_resource type="PackedScene" uid="uid://dr2gmtpibgjy1" path="res://Utility/hit_hurt_box/hurt_box.tscn" id="3_cj848"]
 

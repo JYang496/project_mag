@@ -22,7 +22,11 @@ signal active_skill()
 func _ready():
 	create_weapon("1")
 	update_grab_radius()
+	custom_ready()
 
+# overwrite the function on child class
+func custom_ready():
+	pass
 
 func _physics_process(delta):
 	movement(delta)

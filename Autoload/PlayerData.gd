@@ -21,7 +21,6 @@ var player_exp := 0 :
 			player_level += 1
 			player_exp -= player_max_exp
 		
-		
 var player_speed : float = 100.0 :
 	get:
 		return player_speed
