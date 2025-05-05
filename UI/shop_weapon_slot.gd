@@ -63,7 +63,7 @@ func new_item() -> void:
 	equip_name.text = WeaponData.weapon_list.data[item_id]["name"]
 	image.texture = load(WeaponData.weapon_list.data[item_id]["img"])
 	lbl_description.text = WeaponData.weapon_list.data[item_id]["description"]
-	price_label.text = WeaponData.weapon_list.data[item_id]["price"]
+	price_label.text = str(WeaponData.weapon_list.data[item_id]["price"])
 	price = int(WeaponData.weapon_list.data[item_id]["price"])
 	
 

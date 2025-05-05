@@ -53,20 +53,20 @@
 		"img": "res://Textures/test/minigun.png",
 		"res": "res://Player/Weapons/rocket_launcher.tscn",
 		"description": "test: rocket launcher",
-		"price": "1",
+		"price": "10",
 	},
 	"9": {
 		"name": "laser",
 		"img": "res://Textures/test/laser.png",
 		"res": "res://Player/Weapons/laser.tscn",
 		"description": "laser test",
-		"price": "1",
+		"price": "10",
 	},
 	"10": {
 		"name": "chainsaw luncher",
 		"img": "res://Textures/test/chainsaw.png",
 		"res": "res://Player/Weapons/chainsaw_launcher.tscn",
 		"description": "chainsaw launcher test",
-		"price": "1",
+		"price": "10",
 	},
 }
