@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://05u30gc3rp15"]
+
+[ext_resource type="Script" uid="uid://dlyqi6y1up4qg" path="res://World/char_select.gd" id="1_lus60"]
+[ext_resource type="Texture2D" uid="uid://gr13ex3fw4lx" path="res://Textures/test/player.png" id="2_wrwct"]
+
+[node name="MechaSelect" type="MarginContainer"]
+custom_minimum_size = Vector2(120, 120)
+script = ExtResource("1_lus60")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 2
+texture = ExtResource("2_wrwct")
+
+[connection signal="gui_input" from="TextureRect" to="." method="_on_texture_rect_gui_input"]
+[connection signal="mouse_entered" from="TextureRect" to="." method="_on_texture_rect_mouse_entered"]
+[connection signal="mouse_exited" from="TextureRect" to="." method="_on_texture_rect_mouse_exited"]

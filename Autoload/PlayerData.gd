@@ -1,5 +1,7 @@
 extends Node
 
+var select_mecha_id :int = 1
+
 var player_level := 1 :
 	get:
 		return player_level
@@ -37,7 +39,6 @@ var player_hp := player_max_hp :
 	get:
 		return player_hp
 	set(value):
-		print(value)
 		player_hp = clampi(int(value), 0, player_max_hp)
 
 var hp_regen := 0

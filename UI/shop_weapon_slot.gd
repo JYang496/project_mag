@@ -43,7 +43,7 @@ func update() -> void:
 
 # When player clicks on card, a weapon will be CREATED for player.
 func _ready():
-	if not item_id:
+	if not item_id and player != null:
 		new_item()
 
 func empty_item() -> void:
@@ -57,14 +57,15 @@ func empty_item() -> void:
 	update()
 
 func new_item() -> void:
+	player = get_tree().get_first_node_in_group("player")
 	if not self.is_connected("select_weapon",Callable(player,"create_weapon")):
 		connect("select_weapon",Callable(player,"create_weapon"))
 	item_id = var_to_str(randi_range(1,10))
-	equip_name.text = WeaponData.weapon_list.data[item_id]["name"]
-	image.texture = load(WeaponData.weapon_list.data[item_id]["img"])
-	lbl_description.text = WeaponData.weapon_list.data[item_id]["description"]
-	price_label.text = str(WeaponData.weapon_list.data[item_id]["price"])
-	price = int(WeaponData.weapon_list.data[item_id]["price"])
+	equip_name.text = ImportData.weapon_list.data[item_id]["name"]
+	image.texture = load(ImportData.weapon_list.data[item_id]["img"])
+	lbl_description.text = ImportData.weapon_list.data[item_id]["description"]
+	price_label.text = str(ImportData.weapon_list.data[item_id]["price"])
+	price = int(ImportData.weapon_list.data[item_id]["price"])
 	
 
 func _physics_process(_delta) -> void:
@@ -89,5 +90,4 @@ func _on_background_gui_input(event: InputEvent) -> void:
 		select_weapon.emit(item_id)
 		for eq : EquipmentSlotShop in equipped.get_children():
 			eq.reset_sell_status()
-		#ui.shopping_panel_out()
 		self.empty_item()

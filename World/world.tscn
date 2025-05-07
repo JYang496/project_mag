@@ -15,7 +15,7 @@
 [ext_resource type="Texture2D" uid="uid://i8mt56nqukr5" path="res://Textures/Tilesets/tileset.png" id="10_il0ag"]
 [ext_resource type="PackedScene" uid="uid://dkelpi3n3ysnh" path="res://Utility/enemy_spawner.tscn" id="12_dyxss"]
 [ext_resource type="PackedScene" uid="uid://d13863fxj2rqb" path="res://Npc/friendly/tester.tscn" id="14_2pgcb"]
-[ext_resource type="PackedScene" uid="uid://br54nmwn8vub6" path="res://Player/Mechas/collector.tscn" id="14_26uyv"]
+[ext_resource type="Script" uid="uid://dxdn6jvfdd656" path="res://World/player_spawner.gd" id="14_26uyv"]
 [ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://w270o86lb231" path="res://Objects/prepare_zone_gate.tscn" id="19_o7ljv"]
 [ext_resource type="PackedScene" uid="uid://djyxv43t57pnf" path="res://Objects/battle_zone_teleporter.tscn" id="20_8lc8y"]
@@ -295,8 +295,9 @@ position = Vector2(0, -1720)
 [node name="Departure" parent="BattleZoneTeleporter" index="3"]
 position = Vector2(-7, -586)
 
-[node name="Collector" parent="." instance=ExtResource("14_26uyv")]
-position = Vector2(-175, -1523)
+[node name="PlayerSpawner" type="Node2D" parent="."]
+position = Vector2(-216, -1512)
+script = ExtResource("14_26uyv")
 
 [node name="Tester" parent="." instance=ExtResource("14_2pgcb")]
 position = Vector2(-492, -1446)

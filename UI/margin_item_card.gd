@@ -30,11 +30,11 @@ func _ready():
 	connect("select_weapon",Callable(player,"create_weapon"))
 	if item_id == null:
 		item_id = var_to_str(randi_range(1,10))
-	lbl_name.text = WeaponData.weapon_list.data[item_id]["name"]
-	item_icon.texture = load(WeaponData.weapon_list.data[item_id]["img"])
-	lbl_description.text = WeaponData.weapon_list.data[item_id]["description"]
-	price_label.text = WeaponData.weapon_list.data[item_id]["price"]
-	price = int(WeaponData.weapon_list.data[item_id]["price"])
+	lbl_name.text = ImportData.weapon_list.data[item_id]["name"]
+	item_icon.texture = load(ImportData.weapon_list.data[item_id]["img"])
+	lbl_description.text = ImportData.weapon_list.data[item_id]["description"]
+	price_label.text = ImportData.weapon_list.data[item_id]["price"]
+	price = int(ImportData.weapon_list.data[item_id]["price"])
 
 func _input(_event):
 	if Input.is_action_just_released("CLICK"):

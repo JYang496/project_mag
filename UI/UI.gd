@@ -58,7 +58,7 @@ class_name UI
 
 # Misc
 @onready var move_out_timer = $GUI/MoveOutTimer
-@onready var weapon_list = WeaponData.weapon_list
+@onready var weapon_list = ImportData.weapon_list
 @onready var upgradable_weapon_list = PlayerData.player_weapon_list
 @onready var item_card = preload("res://UI/margin_item_card.tscn")
 @onready var upgrade_card = preload("res://UI/margin_upgrade_card.tscn")

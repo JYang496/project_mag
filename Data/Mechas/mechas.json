@@ -2,6 +2,7 @@
 	"1":{
 		"id":"1",
 		"name":"Prototype",
+		"res":"res://Player/Mechas/prototype.tscn",
 		"current_level":"1",
 		"max_level":"10",
 		"next_level_exp":["10","20","30","40","50","60","70","80","90","-1"],
@@ -19,6 +20,7 @@
 	"2":{
 		"id":"2",
 		"name":"Ranger",
+		"res":"res://Player/Mechas/ranger.tscn",
 		"current_level":"1",
 		"max_level":"10",
 		"next_level_exp":["10","20","30","40","50","60","70","80","90","-1"],
@@ -36,6 +38,7 @@
 	"3":{
 		"id":"3",
 		"name":"Melee",
+		"res":"res://Player/Mechas/melee.tscn",
 		"current_level":"1",
 		"max_level":"10",
 		"next_level_exp":["10","20","30","40","50","60","70","80","90","-1"],
@@ -53,6 +56,7 @@
 	"4":{
 		"id":"4",
 		"name":"Collector",
+		"res":"res://Player/Mechas/collector.tscn",
 		"current_level":"1",
 		"max_level":"10",
 		"next_level_exp":["10","20","30","40","50","60","70","80","90","-1"],
@@ -70,6 +74,7 @@
 	"5":{
 		"id":"5",
 		"name":"Turret",
+		"res":"res://Player/Mechas/turret.tscn",
 		"current_level":"1",
 		"max_level":"10",
 		"next_level_exp":["10","20","30","40","50","60","70","80","90","-1"],

@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://dwxulua8fpqd0"]
 
 [ext_resource type="Script" uid="uid://dyetc0qttcb7y" path="res://World/new_game_btn.gd" id="1_y1dix"]
-[ext_resource type="Texture2D" uid="uid://gr13ex3fw4lx" path="res://Textures/test/player.png" id="2_v7sbj"]
+[ext_resource type="PackedScene" uid="uid://05u30gc3rp15" path="res://UI/mecha_select.tscn" id="2_s76s5"]
 
 [node name="Start" type="Node2D"]
 
@@ -78,37 +78,20 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 
-[node name="Char" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer"]
-custom_minimum_size = Vector2(120, 120)
+[node name="MechaSelect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
 
-[node name="TextureRect" type="TextureRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer/Char"]
+[node name="MechaSelect2" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
-texture = ExtResource("2_v7sbj")
+mecha_id = 2
 
-[node name="Char2" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer"]
-custom_minimum_size = Vector2(120, 120)
+[node name="MechaSelect3" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
+mecha_id = 3
 
-[node name="TextureRect" type="TextureRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer/Char2"]
+[node name="MechaSelect4" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
-texture = ExtResource("2_v7sbj")
-
-[node name="Char3" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer"]
-custom_minimum_size = Vector2(120, 120)
-layout_mode = 2
-
-[node name="TextureRect" type="TextureRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer/Char3"]
-layout_mode = 2
-texture = ExtResource("2_v7sbj")
-
-[node name="Char4" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer"]
-custom_minimum_size = Vector2(120, 120)
-layout_mode = 2
-
-[node name="TextureRect" type="TextureRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer/Char4"]
-layout_mode = 2
-texture = ExtResource("2_v7sbj")
+mecha_id = 4
 
 [node name="ColorRect" type="ColorRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters"]
 custom_minimum_size = Vector2(0, 250)

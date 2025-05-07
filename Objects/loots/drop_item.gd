@@ -12,8 +12,8 @@ var player_near : bool = false
 
 func _ready() -> void:
 	if item_id is String:
-		item = load(WeaponData.weapon_list.data[item_id]["res"]).instantiate()
-		sprite.texture = load(WeaponData.weapon_list.data[item_id]["img"])
+		item = load(ImportData.weapon_list.data[item_id]["res"]).instantiate()
+		sprite.texture = load(ImportData.weapon_list.data[item_id]["img"])
 		item.level = level
 		play_animation()
 
