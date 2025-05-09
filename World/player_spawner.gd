@@ -15,8 +15,8 @@ var start_up_status = {
 	"player_gold":0,
 }
 func _ready() -> void:
-	ImportData.import_mecha_data(str(PlayerData.select_mecha_id))
-	var path = ImportData.mecha_data["res"]
+	var mech_data = ImportData.read_mecha_data(str(PlayerData.select_mecha_id))
+	var path = mech_data["res"]
 	var select_mecha_load = load(path)
 	set_start_up_status()
 	var ins = select_mecha_load.instantiate()

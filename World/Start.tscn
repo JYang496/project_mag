@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://dwxulua8fpqd0"]
+[gd_scene load_steps=4 format=3 uid="uid://dwxulua8fpqd0"]
 
 [ext_resource type="Script" uid="uid://dyetc0qttcb7y" path="res://World/new_game_btn.gd" id="1_y1dix"]
 [ext_resource type="PackedScene" uid="uid://05u30gc3rp15" path="res://UI/mecha_select.tscn" id="2_s76s5"]
+[ext_resource type="Script" uid="uid://c10nnuwga4iqw" path="res://World/mecha_container.gd" id="2_w24c8"]
 
 [node name="Start" type="Node2D"]
 
@@ -74,22 +75,23 @@ layout_mode = 2
 text = "Characters"
 horizontal_alignment = 1
 
-[node name="CharContainer" type="HBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters"]
+[node name="MechaContainer" type="HBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters"]
 custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
+script = ExtResource("2_w24c8")
 
-[node name="MechaSelect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
 
-[node name="MechaSelect2" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect2" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
 mecha_id = 2
 
-[node name="MechaSelect3" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect3" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
 mecha_id = 3
 
-[node name="MechaSelect4" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/CharContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect4" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
 mecha_id = 4
 
@@ -99,3 +101,7 @@ layout_mode = 2
 color = Color(0.366595, 0.366595, 0.366595, 1)
 
 [connection signal="pressed" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer/VBoxContainer/New Game" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer/VBoxContainer/New Game" method="_on_pressed"]
+[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer/MechaSelect" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" method="_on_mecha_select_update_on_select"]
+[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer/MechaSelect2" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" method="_on_mecha_select_update_on_select"]
+[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer/MechaSelect3" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" method="_on_mecha_select_update_on_select"]
+[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer/MechaSelect4" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" method="_on_mecha_select_update_on_select"]
