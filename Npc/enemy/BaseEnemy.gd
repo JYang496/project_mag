@@ -1,6 +1,5 @@
 extends BaseNPC
 class_name BaseEnemy
-
 @export var damage := 0
 @onready var coin_preload = preload("res://Objects/loots/coin.tscn")
 @onready var drop_preload = preload("res://Objects/loots/drop.tscn")

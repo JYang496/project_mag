@@ -53,55 +53,140 @@ layout_mode = 2
 text = "New Game"
 script = ExtResource("1_y1dix")
 
-[node name="Upgrade" type="Button" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer/VBoxContainer"]
-layout_mode = 2
-text = "Upgrade"
-
-[node name="Select Your Charcter" type="Button" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer/VBoxContainer"]
-layout_mode = 2
-text = "Select your character
-"
-
-[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer"]
+[node name="MechaContainer" type="MarginContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_top = 50
+script = ExtResource("2_w24c8")
 
-[node name="Characters" type="VBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer"]
+[node name="Mechas" type="VBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 
-[node name="CharTitile" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters"]
+[node name="CharTitile" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas"]
 layout_mode = 2
-text = "Characters"
+theme_override_font_sizes/font_size = 26
+text = "Mechas"
 horizontal_alignment = 1
 
-[node name="MechaContainer" type="HBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters"]
+[node name="IconContainer" type="HBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas"]
 custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
-script = ExtResource("2_w24c8")
 
-[node name="MechaSelect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/IconContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
 
-[node name="MechaSelect2" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect2" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/IconContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
 mecha_id = 2
 
-[node name="MechaSelect3" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect3" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/IconContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
 mecha_id = 3
 
-[node name="MechaSelect4" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect4" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/IconContainer" instance=ExtResource("2_s76s5")]
 layout_mode = 2
 mecha_id = 4
 
-[node name="ColorRect" type="ColorRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters"]
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas"]
 custom_minimum_size = Vector2(0, 250)
 layout_mode = 2
 color = Color(0.366595, 0.366595, 0.366595, 1)
 
+[node name="mecha_name" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect"]
+layout_mode = 2
+offset_left = 114.0
+offset_top = 5.0
+offset_right = 369.0
+offset_bottom = 37.0
+theme_override_font_sizes/font_size = 23
+text = "name : value"
+horizontal_alignment = 1
+
+[node name="current_exp" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 40.0
+offset_right = 257.0
+offset_bottom = 72.0
+theme_override_font_sizes/font_size = 23
+text = "current_exp : value"
+
+[node name="current_level" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect"]
+layout_mode = 2
+offset_left = 244.0
+offset_top = 40.0
+offset_right = 499.0
+offset_bottom = 72.0
+theme_override_font_sizes/font_size = 23
+text = "current_level : value"
+horizontal_alignment = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect"]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 95.0
+offset_right = 256.0
+offset_bottom = 250.0
+alignment = 2
+
+[node name="player_max_hp" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "player_max_hp : value"
+horizontal_alignment = 1
+
+[node name="player_speed" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "player_speed : value"
+horizontal_alignment = 1
+
+[node name="armor" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "armor : value"
+horizontal_alignment = 1
+
+[node name="shield" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "shield : value"
+horizontal_alignment = 1
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect"]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 95.0
+offset_right = 500.0
+offset_bottom = 250.0
+alignment = 2
+
+[node name="crit_rate" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "crit_rate : value"
+horizontal_alignment = 1
+
+[node name="crit_damage" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "crit_damage : value"
+horizontal_alignment = 1
+
+[node name="grab_radius" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "grab_radius : value"
+horizontal_alignment = 1
+
+[node name="player_gold" type="Label" parent="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+text = "player_gold : value"
+horizontal_alignment = 1
+
 [connection signal="pressed" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer/VBoxContainer/New Game" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/VBoxContainer/VBoxContainer/New Game" method="_on_pressed"]
-[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer/MechaSelect" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" method="_on_mecha_select_update_on_select"]
-[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer/MechaSelect2" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" method="_on_mecha_select_update_on_select"]
-[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer/MechaSelect3" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" method="_on_mecha_select_update_on_select"]
-[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer/MechaSelect4" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MarginContainer/Characters/MechaContainer" method="_on_mecha_select_update_on_select"]
+[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
+[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect2" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
+[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect3" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
+[connection signal="update_on_select" from="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect4" to="CanvasLayer/GUI/ColorRect/MarginContainer/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
