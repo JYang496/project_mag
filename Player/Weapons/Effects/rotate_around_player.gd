@@ -9,7 +9,7 @@ var oc_mode = false
 var max_radius : float = 200.0
 var radius_hit_max : bool = false
 
-@onready var player = get_tree().get_first_node_in_group("player")
+#@onready var player = get_tree().get_first_node_in_group("player")
 @onready var module_parent = self.get_parent() # Bullet root is parent
 
 
@@ -34,6 +34,6 @@ func _physics_process(delta: float) -> void:
 	angle += spin_speed * delta
 	var x_pos = radius * cos(angle + angle_offset)
 	var y_pos = radius * sin(angle + angle_offset)
-	module_parent.global_position = Vector2(x_pos,y_pos) + player.global_position
+	module_parent.global_position = Vector2(x_pos,y_pos) + PlayerData.player.global_position
 	if radius < 10:
 		module_parent.queue_free()

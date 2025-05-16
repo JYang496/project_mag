@@ -66,7 +66,7 @@ func _on_shoot():
 	var spawn_object = object.instantiate()
 	spawn_object.target = get_random_target()
 	spawn_object.global_position = global_position
-	player.add_sibling(spawn_object)
+	PlayerData.player.add_sibling(spawn_object)
 
 func get_random_target():
 		return get_global_mouse_position()

@@ -46,6 +46,7 @@ func _on_timer_timeout():
 					counter += 1
 
 func get_random_position():
+	player = get_tree().get_first_node_in_group("player")
 	var vpr = get_viewport_rect().size * randf_range(0.5,1.1)
 	
 	var top_left = clamp_position(player.global_position.x - vpr.x/2, player.global_position.y - vpr.y/2)

@@ -28,7 +28,7 @@ signal overlapping_signal()
 @onready var hitbox_dot = preload("res://Utility/hit_hurt_box/hit_box_dot.tscn")
 
 # Children
-@onready var player  = get_tree().get_first_node_in_group("player")
+#@onready var player  = get_tree().get_first_node_in_group("player")
 @onready var expire_timer = $ExpireTimer
 @onready var bullet = $Bullet
 @onready var bullet_sprite = $Bullet/BulletSprite

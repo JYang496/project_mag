@@ -1,7 +1,7 @@
 extends Node2D
 class_name BonusManager
 
-@onready var player = get_tree().get_first_node_in_group("player")
+#@onready var player = get_tree().get_first_node_in_group("player")
 const LOOT_BOX = preload("res://Objects/loots/loot_box.tscn")
 var instance_list : Array
 
@@ -16,7 +16,7 @@ func _ready() -> void:
 func create_loot_box() -> void:
 	for reward : RewardInfo in instance_list[PhaseManager.current_level]:
 		var lb_ins = LOOT_BOX.instantiate()
-		lb_ins.position = player.position
+		lb_ins.position = PlayerData.player.position
 		lb_ins.item_id = reward.item_id
 		lb_ins.item_lvl = reward.item_level
 		lb_ins.total_value = reward.total_coin_value

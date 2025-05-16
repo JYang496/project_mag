@@ -1,6 +1,6 @@
 extends Button
 
-@onready var ui : UI = get_tree().get_first_node_in_group("ui")
+#@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 
 func _on_button_up() -> void:
 	InventoryData.clear_on_select()
@@ -23,6 +23,6 @@ func _on_button_up() -> void:
 			PlayerData.player_weapon_list.erase(fuse_item)
 			fuse_item.queue_free()
 	InventoryData.ready_to_fuse_list.clear()
-	ui.player.create_weapon(fused_item)
-	ui.update_gf()
-	ui.refresh_border()
+	PlayerData.player.create_weapon(fused_item)
+	GlobalVariables.ui.update_gf()
+	GlobalVariables.ui.refresh_border()

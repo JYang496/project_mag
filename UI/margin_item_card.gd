@@ -11,8 +11,8 @@ var item_id = null
 var purchasable := true
 var price : int
 
-@onready var player = get_tree().get_first_node_in_group("player")
-@onready var ui = get_tree().get_first_node_in_group("ui")
+#@onready var player = get_tree().get_first_node_in_group("player")
+#@onready var ui = get_tree().get_first_node_in_group("ui")
 
 signal select_weapon(item_id)
 
@@ -27,14 +27,14 @@ func _physics_process(_delta) -> void:
 
 # When player clicks on card, a weapon will be CREATED for player.
 func _ready():
-	connect("select_weapon",Callable(player,"create_weapon"))
+	connect("select_weapon",Callable(PlayerData.player,"create_weapon"))
 	if item_id == null:
 		item_id = var_to_str(randi_range(1,10))
-	lbl_name.text = ImportData.weapon_list.data[item_id]["name"]
-	item_icon.texture = load(ImportData.weapon_list.data[item_id]["img"])
-	lbl_description.text = ImportData.weapon_list.data[item_id]["description"]
-	price_label.text = ImportData.weapon_list.data[item_id]["price"]
-	price = int(ImportData.weapon_list.data[item_id]["price"])
+	lbl_name.text = DataHandler.weapon_list.data[item_id]["name"]
+	item_icon.texture = load(DataHandler.weapon_list.data[item_id]["img"])
+	lbl_description.text = DataHandler.weapon_list.data[item_id]["description"]
+	price_label.text = DataHandler.weapon_list.data[item_id]["price"]
+	price = int(DataHandler.weapon_list.data[item_id]["price"])
 
 func _input(_event):
 	if Input.is_action_just_released("CLICK"):
@@ -42,7 +42,7 @@ func _input(_event):
 			PlayerData.player_gold -= price
 			#emit_signal("select_weapon",item_id)
 			select_weapon.emit(item_id)
-			ui.shopping_panel_out()
+			GlobalVariables.ui.shopping_panel_out()
 
 
 func _on_item_card_mouse_entered():

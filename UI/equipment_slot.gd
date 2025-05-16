@@ -24,9 +24,9 @@ var hover_off_width : float = 0
 @onready var sockets : Array = $Background/Sockets.get_children()
 
 # UI and player data
-@onready var ui = get_tree().get_first_node_in_group("ui")
+#@onready var ui = get_tree().get_first_node_in_group("ui")
 @onready var player_weapon_list = PlayerData.player_weapon_list
-@onready var player = get_tree().get_first_node_in_group("player")
+#@onready var player = get_tree().get_first_node_in_group("player")
 
 var hover_over : bool = false
 

@@ -22,8 +22,8 @@ var price : int
 @export var border_width: float = 4.0
 
 # UI and player data
-@onready var ui : UI = get_tree().get_first_node_in_group("ui")
-@onready var player = get_tree().get_first_node_in_group("player")
+#@onready var ui : UI = get_tree().get_first_node_in_group("ui")
+#@onready var player = get_tree().get_first_node_in_group("player")
 
 signal select_weapon(item_id)
 var hover_over : bool = false
@@ -43,7 +43,7 @@ func update() -> void:
 
 # When player clicks on card, a weapon will be CREATED for player.
 func _ready():
-	if not item_id and player != null:
+	if not item_id and PlayerData.player != null:
 		new_item()
 
 func empty_item() -> void:
@@ -57,15 +57,14 @@ func empty_item() -> void:
 	update()
 
 func new_item() -> void:
-	player = get_tree().get_first_node_in_group("player")
-	if not self.is_connected("select_weapon",Callable(player,"create_weapon")):
-		connect("select_weapon",Callable(player,"create_weapon"))
+	if not self.is_connected("select_weapon",Callable(PlayerData.player,"create_weapon")):
+		connect("select_weapon",Callable(PlayerData.player,"create_weapon"))
 	item_id = var_to_str(randi_range(1,10))
-	equip_name.text = ImportData.weapon_list.data[item_id]["name"]
-	image.texture = load(ImportData.weapon_list.data[item_id]["img"])
-	lbl_description.text = ImportData.weapon_list.data[item_id]["description"]
-	price_label.text = str(ImportData.weapon_list.data[item_id]["price"])
-	price = int(ImportData.weapon_list.data[item_id]["price"])
+	equip_name.text = GlobalVariables.weapon_list.data[item_id]["name"]
+	image.texture = load(GlobalVariables.weapon_list.data[item_id]["img"])
+	lbl_description.text = GlobalVariables.weapon_list.data[item_id]["description"]
+	price_label.text = str(GlobalVariables.weapon_list.data[item_id]["price"])
+	price = int(GlobalVariables.weapon_list.data[item_id]["price"])
 	
 
 func _physics_process(_delta) -> void:

@@ -1,5 +1,6 @@
 extends Node
 
+@onready var player : Player
 var select_mecha_id :int = 1
 
 var player_level := 1 :
@@ -7,21 +8,22 @@ var player_level := 1 :
 		return player_level
 	set(value):
 		player_level = clampi(int(value), 1, 42)
+		next_level_exp = int(GlobalVariables.mech_data["next_level_exp"][player_level - 1]) if GlobalVariables.mech_data else 10
 
-var player_max_exp := 10 :
+var next_level_exp := 10 :
 	get:
-		return player_max_exp
+		return next_level_exp
 	set(value):
-		player_max_exp = clampi(int(value), 10, 99999)
+		next_level_exp = clampi(int(value), 10, 99999)
 
 var player_exp := 0 :
 	get:
 		return player_exp
 	set(value):
 		player_exp = clampi(int(value), 0, 99999)
-		while player_exp >= player_max_exp:
+		while player_exp >= next_level_exp:
 			player_level += 1
-			player_exp -= player_max_exp
+			player_exp -= next_level_exp
 		
 var player_speed : float = 100.0 :
 	get:

@@ -18,10 +18,11 @@ config/icon="res://icon.svg"
 [autoload]
 
 PlayerData="*res://Autoload/PlayerData.gd"
-ImportData="*res://Autoload/ImportData.gd"
+DataHandler="*res://Autoload/DataHandler.gd"
 PhaseManager="*res://Autoload/PhaseManager.gd"
 SpawnData="*res://Autoload/SpawnData.gd"
 InventoryData="*res://Autoload/InventoryData.gd"
+GlobalVariables="*res://Autoload/GlobalVariables.gd"
 
 [file_customization]
 

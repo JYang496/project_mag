@@ -8,7 +8,7 @@ var extra_direction = Vector2.ZERO
 @onready var mecha_sprite = $MechaSprite
 @onready var collect_area = get_node("%CollectArea")
 @onready var grab_radius = $GrabArea/GrabShape
-@onready var ui : UI = get_tree().get_first_node_in_group("ui")
+#@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 
 var movement_enabled = true
 var moveto_enabled = false
@@ -20,6 +20,7 @@ const WEAPON_SLOTS = [[-16,-24],[16,-24],[16,24],[-16,24]]
 signal active_skill()
 
 func _ready():
+	PlayerData.player = self
 	update_grab_radius()
 	custom_ready()
 
@@ -55,7 +56,7 @@ func create_weapon(item_id, level := 1):
 	# Create a new weapon when assign string, othervise node
 	var weapon
 	if item_id is String:
-		weapon = load(ImportData.weapon_list.data[item_id]["res"]).instantiate()
+		weapon = load(GlobalVariables.weapon_list.data[item_id]["res"]).instantiate()
 		weapon.level = level
 	else:
 		# Parameter is weapon node instead of String, common case when get weapon from inventory
@@ -84,7 +85,7 @@ func create_weapon(item_id, level := 1):
 		PlayerData.player_weapon_list[weapon_index].position.x = WEAPON_SLOTS[weapon_index][0]
 		PlayerData.player_weapon_list[weapon_index].position.y = WEAPON_SLOTS[weapon_index][1]
 	
-	ui.refresh_border()
+	GlobalVariables.ui.refresh_border()
 
 func clean_up_empty_remote_transform() -> void:
 	for node in equppied_weapons.get_children():

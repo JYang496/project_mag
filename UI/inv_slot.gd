@@ -22,8 +22,8 @@ var hover_over_width : float = 4.0
 var hover_off_width : float = 0
 
 # UI and player data
-@onready var ui = get_tree().get_first_node_in_group("ui")
-@onready var player = get_tree().get_first_node_in_group("player")
+#@onready var ui = get_tree().get_first_node_in_group("ui")
+#@onready var player = get_tree().get_first_node_in_group("player")
 
 var hover_over : bool = false
 

@@ -1,7 +1,7 @@
 extends CanvasLayer
 class_name UI
 
-@onready var player : Player = get_tree().get_first_node_in_group("player")
+#@onready var player : Player = get_tree().get_first_node_in_group("player")
 
 # Roots
 @onready var character_root : Control = $GUI/CharacterRoot
@@ -58,7 +58,7 @@ class_name UI
 
 # Misc
 @onready var move_out_timer = $GUI/MoveOutTimer
-@onready var weapon_list = ImportData.weapon_list
+@onready var weapon_list = GlobalVariables.weapon_list
 @onready var upgradable_weapon_list = PlayerData.player_weapon_list
 @onready var item_card = preload("res://UI/margin_item_card.tscn")
 @onready var upgrade_card = preload("res://UI/margin_upgrade_card.tscn")
@@ -68,6 +68,7 @@ class_name UI
 
 
 func _ready():
+	GlobalVariables.ui = self
 	refresh_border()
 
 

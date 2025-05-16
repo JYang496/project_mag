@@ -18,7 +18,7 @@ var on_hover : bool = false
 @onready var grab_radius: Label = $"../../ColorRect/VBoxContainer2/grab_radius"
 @onready var player_gold: Label = $"../../ColorRect/VBoxContainer2/player_gold"
 
-@onready var mech_data = ImportData.read_mecha_data(str(mecha_id))
+@onready var mech_data = DataHandler.read_mecha_data(str(mecha_id))
 
 signal update_on_select(id)
 

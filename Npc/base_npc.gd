@@ -3,7 +3,7 @@ class_name BaseNPC
 
 @onready var sprite_body = $Body
 @onready var hurt_box = $HurtBox
-@onready var player = get_tree().get_first_node_in_group("player")
+#@onready var player = get_tree().get_first_node_in_group("player")
 @onready var hit_label = preload("res://UI/labels/hit_label.tscn")
 
 # Export

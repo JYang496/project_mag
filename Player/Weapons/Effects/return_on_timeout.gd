@@ -2,7 +2,7 @@ extends Node2D
 class_name ReturnOnTimeout
 
 @onready var module_parent = self.get_parent() # Bullet root is parent
-@onready var player = get_tree().get_first_node_in_group("player")
+#@onready var player = get_tree().get_first_node_in_group("player")
 @onready var hitbox_once = preload("res://Utility/hit_hurt_box/hit_box.tscn")
 
 @onready var return_timer: Timer = $ReturnTimer
@@ -30,7 +30,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if is_return:
-		linear_module.direction = module_parent.global_position.direction_to(player.global_position)
+		linear_module.direction = module_parent.global_position.direction_to(PlayerData.player.global_position)
 		linear_module.set_base_displacement()
 
 func _on_return_timer_timeout() -> void:

@@ -36,6 +36,7 @@ func _physics_process(_delta: float) -> void:
 			return
 
 func set_dest(node:Node2D) -> void:
+	player = get_tree().get_first_node_in_group("player")
 	dest = node
 
 func _on_timer_timeout() -> void:

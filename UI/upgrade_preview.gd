@@ -4,7 +4,7 @@ extends MarginContainer
 @onready var itemIcon: TextureRect = $UpgradeCard/Icon
 @onready var cost = $UpgradeCard/Cost
 @onready var status_container = $UpgradeCard/StatusContainer
-@onready var ui : UI = get_tree().get_first_node_in_group("ui")
+#@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 
 var weapon_node : Weapon
 var cost_price : int
@@ -76,7 +76,7 @@ func _input(_event):
 		if hover_over and upgradable:
 			PlayerData.player_gold -= cost_price
 			upgrade_level.emit(int(comb_status["level"][1]))
-			ui.update_upg()
+			GlobalVariables.ui.update_upg()
 
 func combine_status(node):
 	var weapon_data = node.weapon_data

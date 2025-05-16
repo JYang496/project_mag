@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=4 uid="uid://blnhp33uq0sgq"]
+[gd_scene load_steps=32 format=4 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Texture2D" uid="uid://sldltmirxrkq" path="res://Textures/BlockyLife/tileset.png" id="2_3rumv"]
 [ext_resource type="Script" uid="uid://bf6icej2kcrba" path="res://World/tilemaps.gd" id="2_vir17"]
@@ -14,7 +14,6 @@
 [ext_resource type="PackedScene" uid="uid://cdpdxvviop3ok" path="res://UI/UI.tscn" id="9_h4135"]
 [ext_resource type="Texture2D" uid="uid://i8mt56nqukr5" path="res://Textures/Tilesets/tileset.png" id="10_il0ag"]
 [ext_resource type="PackedScene" uid="uid://dkelpi3n3ysnh" path="res://Utility/enemy_spawner.tscn" id="12_dyxss"]
-[ext_resource type="PackedScene" uid="uid://d13863fxj2rqb" path="res://Npc/friendly/tester.tscn" id="14_2pgcb"]
 [ext_resource type="Script" uid="uid://dxdn6jvfdd656" path="res://World/player_spawner.gd" id="14_26uyv"]
 [ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://w270o86lb231" path="res://Objects/prepare_zone_gate.tscn" id="19_o7ljv"]
@@ -298,12 +297,6 @@ position = Vector2(-7, -586)
 [node name="PlayerSpawner" type="Node2D" parent="."]
 position = Vector2(-216, -1512)
 script = ExtResource("14_26uyv")
-
-[node name="Tester" parent="." instance=ExtResource("14_2pgcb")]
-position = Vector2(-492, -1446)
-collision_layer = 1
-collision_mask = 1
-motion_mode = 0
 
 [node name="FriendlySmith" parent="." groups=["friendlies"] instance=ExtResource("9_4gves")]
 position = Vector2(-325, -1585)

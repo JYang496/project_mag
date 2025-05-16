@@ -5,7 +5,6 @@ var level_list : Array
 func _ready() -> void:
 	load_all_spawn_data("res://Data/spawns/")
 
-
 func load_all_spawn_data(path):
 	var dir = DirAccess.open(path)
 	if dir:
