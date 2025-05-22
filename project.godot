@@ -24,6 +24,10 @@ SpawnData="*res://Autoload/SpawnData.gd"
 InventoryData="*res://Autoload/InventoryData.gd"
 GlobalVariables="*res://Autoload/GlobalVariables.gd"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/json_editor/plugin.cfg")
+
 [file_customization]
 
 folder_colors={
