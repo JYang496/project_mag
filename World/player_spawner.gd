@@ -16,7 +16,7 @@ var start_up_status = {
 }
 func _ready() -> void:
 	GlobalVariables.mech_data = DataHandler.read_mecha_data(str(PlayerData.select_mecha_id))
-	GlobalVariables.autosave_data = DataHandler.read_autosave_data(str(PlayerData.select_mecha_id))
+	GlobalVariables.autosave_data = DataHandler.read_autosave_mecha_data(str(PlayerData.select_mecha_id))
 	var path = GlobalVariables.mech_data["res"]
 	var select_mecha_load = load(path)
 	set_start_up_status()

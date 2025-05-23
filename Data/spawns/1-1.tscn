@@ -14,6 +14,9 @@ hp = 10
 damage = 1
 number = 3
 delay = 2
+wave = 0
+interval = 0
+max_enemy = 0
 
 [sub_resource type="Resource" id="Resource_xnq0v"]
 script = ExtResource("4_mcjiy")

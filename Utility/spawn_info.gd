@@ -10,4 +10,8 @@ class_name SpawnInfo
 @export var number:int
 @export var delay:int
 
+@export var wave:int
+@export var interval:int
+@export var max_enemy:int
+
 var spawn_delay_counter = 0

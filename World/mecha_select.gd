@@ -19,7 +19,7 @@ var on_hover : bool = false
 @onready var player_gold: Label = $"../../ColorRect/VBoxContainer2/player_gold"
 
 @onready var mech_data = DataHandler.read_mecha_data(str(mecha_id))
-@onready var mech_autosave = DataHandler.read_autosave_data(str(mecha_id))
+@onready var mech_autosave = DataHandler.read_autosave_mecha_data(str(mecha_id))
 
 signal update_on_select(id)
 

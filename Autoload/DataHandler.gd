@@ -20,14 +20,14 @@ func read_mecha_data(id : String) -> Dictionary:
 	return file_data.data[id]
 
 # Load mecha data, will be called in Start menu.
-func read_autosave_data(id : String) -> Dictionary:
+func read_autosave_mecha_data(id : String) -> Dictionary:
 	var file = FileAccess.open("res://Data/autosave.json", FileAccess.READ)
 	var file_data = JSON.new()
 	file_data.parse(file.get_as_text())
 	file.close()
 	return file_data.data["mechas"][id]
 
-func modify_autosave_data(type : String, id : String, key : String, value : String) -> void:
+func modify_autosave_mecha_data(id : String, key : String, value : String) -> void:
 	var file = FileAccess.open("res://Data/autosave.json", FileAccess.READ)
 	var json_text = file.get_as_text()
 	file.close()
@@ -37,10 +37,7 @@ func modify_autosave_data(type : String, id : String, key : String, value : Stri
 		print("JSON Parse Error: ", json.get_error_message())
 		return
 	var data = json.data
-	if type == "mechas":
-		data[type][id][key] = value
-	else:
-		data[type] = value
+	data["mechas"][id][key] = value
 	var modified_json = JSON.stringify(data,"\t",false)
 	var file_write = FileAccess.open("res://Data/autosave.json", FileAccess.WRITE)
 	file_write.store_string(modified_json)
