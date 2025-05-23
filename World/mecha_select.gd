@@ -19,6 +19,7 @@ var on_hover : bool = false
 @onready var player_gold: Label = $"../../ColorRect/VBoxContainer2/player_gold"
 
 @onready var mech_data = DataHandler.read_mecha_data(str(mecha_id))
+@onready var mech_autosave = DataHandler.read_autosave_data(str(mecha_id))
 
 signal update_on_select(id)
 
@@ -34,10 +35,10 @@ func _ready() -> void:
 	ins.queue_free()
 	
 func update_labels() -> void:
-	var lvl_index = int(mech_data["current_level"]) - 1
+	var lvl_index = int(mech_autosave["current_level"]) - 1
 	mecha_name.text = mech_data["name"]
-	current_exp.text = "Exp: %s / %s" %[mech_data["current_exp"], mech_data["next_level_exp"][lvl_index]]
-	current_level.text = "Level: %d / %s" % [lvl_index, mech_data["max_level"]]
+	current_exp.text = "Exp: %s / %s" %[mech_autosave["current_exp"], mech_data["next_level_exp"][lvl_index]]
+	current_level.text = "Level: %s / %s" % [mech_autosave["current_level"], mech_data["max_level"]]
 	player_max_hp.text = "Max HP: %s" % [mech_data["player_max_hp"][lvl_index]]
 	player_speed.text = "Player speed: %s" % [mech_data["player_speed"][lvl_index]]
 	armor.text = "Armor: %s" % [mech_data["armor"][lvl_index]]
