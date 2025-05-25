@@ -4,3 +4,4 @@ extends Node
 @onready var mech_data : Dictionary
 @onready var autosave_data : Dictionary
 @onready var weapon_list : JSON
+@onready var enemy_spawner : EnemySpawner

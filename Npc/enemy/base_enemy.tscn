@@ -8,7 +8,7 @@
 
 [node name="BaseEnemy" groups=["enemies"] instance=ExtResource("1_y1wsb")]
 collision_layer = 4
-collision_mask = 37
+collision_mask = 1
 script = ExtResource("2_31lbh")
 damage = 0
 
@@ -20,6 +20,13 @@ collision_mask = 1
 
 [node name="CollisionShape2D" parent="HitBoxDot" index="0"]
 shape = SubResource("RectangleShape2D_hlneu")
+
+[node name="EnableCollisionTimer" type="Timer" parent="." index="4"]
+wait_time = 0.2
+one_shot = true
+autostart = true
+
+[connection signal="timeout" from="EnableCollisionTimer" to="." method="_on_enable_collision_timer_timeout"]
 
 [editable path="HurtBox"]
 [editable path="HitBoxDot"]

@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="SaveData" load_steps=2 format=3 uid="uid://ci5wnn6do5yri"]
+
+[ext_resource type="Script" uid="uid://bj5aubvyayq81" path="res://Utility/savedata.gd" id="1_ffhbd"]
+
+[resource]
+script = ExtResource("1_ffhbd")

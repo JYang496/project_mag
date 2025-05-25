@@ -33,7 +33,7 @@ func _ready() -> void:
 	var ins : Player = load(mech_data["res"]).instantiate()
 	mech_texture.texture = ins.get_node("MechaSprite").texture
 	ins.queue_free()
-	
+
 func update_labels() -> void:
 	var lvl_index = int(mech_autosave["current_level"]) - 1
 	mecha_name.text = mech_data["name"]
@@ -47,7 +47,7 @@ func update_labels() -> void:
 	crit_damage.text = "Crit Damage: %s" % [mech_data["crit_damage"][lvl_index]]
 	grab_radius.text = "Grab Radius: %s" % [mech_data["grab_radius"][lvl_index]]
 	player_gold.text = "Gold: %s" % [mech_data["player_gold"][lvl_index]]
-	
+
 func _draw():
 	# Get the size of the control
 	var rect = Rect2(Vector2.ZERO, size)
@@ -64,13 +64,11 @@ func _on_texture_rect_mouse_entered() -> void:
 	on_hover = true
 	update()
 
-
 func _on_texture_rect_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK"):
 		on_select = true
 		PlayerData.select_mecha_id = mecha_id
 		update_on_select.emit(mecha_id)
-
 
 func _on_texture_rect_mouse_exited() -> void:
 	on_hover = false

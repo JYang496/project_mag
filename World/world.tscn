@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=4 uid="uid://blnhp33uq0sgq"]
+[gd_scene load_steps=33 format=4 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Texture2D" uid="uid://sldltmirxrkq" path="res://Textures/BlockyLife/tileset.png" id="2_3rumv"]
 [ext_resource type="Script" uid="uid://bf6icej2kcrba" path="res://World/tilemaps.gd" id="2_vir17"]
@@ -18,6 +18,7 @@
 [ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://w270o86lb231" path="res://Objects/prepare_zone_gate.tscn" id="19_o7ljv"]
 [ext_resource type="PackedScene" uid="uid://djyxv43t57pnf" path="res://Objects/battle_zone_teleporter.tscn" id="20_8lc8y"]
+[ext_resource type="Script" uid="uid://gj17oe1p5v6n" path="res://World/testing_timer.gd" id="21_26uyv"]
 [ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://Utility/reward_manager.tscn" id="22_n13dc"]
 [ext_resource type="PackedScene" uid="uid://0ojjxft0cfqk" path="res://Npc/enemy/dummy.tscn" id="23_8t5w2"]
 
@@ -325,6 +326,13 @@ position = Vector2(-731, -166)
 
 [node name="BottomRight" parent="EnemySpawner" index="2"]
 position = Vector2(351, 413)
+
+[node name="TestingTimer" type="Timer" parent="."]
+one_shot = true
+autostart = true
+script = ExtResource("21_26uyv")
+
+[connection signal="timeout" from="TestingTimer" to="TestingTimer" method="_on_timeout"]
 
 [editable path="PrepareZoneGate"]
 [editable path="PrepareZoneGate/PlayerTeleport"]
