@@ -1,59 +1,51 @@
 extends Node
 
-func _ready():
-	import_resources_data()
+var save_data : SaveData
 
-# This function is used for locate weapon file location which stored in weapons.json, called in shop.
-func import_resources_data() -> void:
+func _ready():
+	load_game()
+	load_weapon_data()
+	load_mecha_data()
+
+# This function is used for locate weapon file location which stored in weapons.json.
+func load_weapon_data() -> void:
 	var file = FileAccess.open("res://Data/weapons.json", FileAccess.READ)
 	var stringdata = file.get_as_text()
 	GlobalVariables.weapon_list = JSON.new()
 	GlobalVariables.weapon_list.parse(stringdata)
 	file.close()
 
-# Load mecha data, will be called in Start menu.
-func read_mecha_data(id : String) -> Dictionary:
+# Load mecha stats for each level
+func load_mecha_data() -> void:
 	var file = FileAccess.open("res://Data/mechas.json", FileAccess.READ)
-	var file_data = JSON.new()
-	file_data.parse(file.get_as_text())
+	var stringdata = file.get_as_text()
+	GlobalVariables.mecha_list = JSON.new()
+	GlobalVariables.mecha_list.parse(stringdata)
 	file.close()
-	return file_data.data[id]
 
-# Load mecha data, will be called in Start menu.
+# Return mecha fixed data, will be called in Start menu.
+func read_mecha_data(id : String) -> Dictionary:
+	return GlobalVariables.mecha_list.data[id]
+
+# Return mecha autosave data, will be called in Start menu.
 func read_autosave_mecha_data(id : String) -> Dictionary:
-	var file = FileAccess.open("res://Data/autosave.json", FileAccess.READ)
-	var file_data = JSON.new()
-	file_data.parse(file.get_as_text())
-	file.close()
-	return file_data.data["mechas"][id]
+	if save_data == null:
+		load_game()
+	return save_data.data["mechas"][id]
 
-func modify_autosave_mecha_data(id : String, key : String, value : String) -> void:
-	var file = FileAccess.open("res://Data/autosave.json", FileAccess.READ)
-	var json_text = file.get_as_text()
-	file.close()
-	var json = JSON.new()
-	var error = json.parse(json_text)
-	if error != OK:
-		print("JSON Parse Error: ", json.get_error_message())
-		return
-	var data = json.data
-	data["mechas"][id][key] = value
-	var modified_json = JSON.stringify(data,"\t",false)
-	var file_write = FileAccess.open("res://Data/autosave.json", FileAccess.WRITE)
-	file_write.store_string(modified_json)
-	file_write.close()
-
-func save() -> void:
-	var new_save = SaveData.new()
-	var result = ResourceSaver.save(new_save,"res://Data/savedata/savegame.tres")
+func save_game(data : SaveData, file_path: String = "res://Data/savedata/autosave.tres") -> void:
+	var result = ResourceSaver.save(data,file_path)
 	print(self,": ",error_string(result))
+	print(data.data)
 
-func load_game(file_path: String = "res://Data/savedata/savegame.tres"):
+func load_game(file_path: String = "res://Data/savedata/autosave.tres"):
 	if not FileAccess.file_exists(file_path):
-		print("Save file doesn't exist")
-		return null
-	var save_data = load(file_path) as SaveData
+		print("Save file doesn't exist, create a new save file")
+		save_game(SaveData.new(), file_path)
+	else:
+		save_data = load(file_path) as SaveData
+		print("load save data")
 	if save_data == null:
 		print("Failed to load save file")
 		return null
-	return save_data.save_data
+	return save_data.data

@@ -1,23 +1,23 @@
 extends Resource
 class_name SaveData
 
-var save_data = {
+var data = {
 	"mechas":{
 		"1":{
-			"current_exp": "0",
+			"current_exp": "1",
 			"current_level": "1",
 		},
 		"2":{
 			"current_exp": "0",
-			"current_level": "2",
+			"current_level": "1",
 		},
 		"3":{
 			"current_exp": "0",
-			"current_level": "3",
+			"current_level": "1",
 		},
 		"4":{
 			"current_exp": "0",
-			"current_level": "4",
+			"current_level": "1",
 		},
 		"5":{
 			"current_exp": "0",

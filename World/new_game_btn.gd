@@ -1,4 +1,6 @@
 extends Control
 
 func _on_pressed() -> void:
-	get_tree().change_scene_to_file("res://World/world.tscn")
+	var save_data : SaveData = SaveData.new()
+	DataHandler.save_game(save_data)
+	DataHandler.load_game()

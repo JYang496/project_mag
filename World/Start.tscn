@@ -54,9 +54,9 @@ layout_mode = 2
 text = "New Game"
 script = ExtResource("1_y1dix")
 
-[node name="Continue" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
+[node name="Start" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
 layout_mode = 2
-text = "Continue"
+text = "Start"
 script = ExtResource("2_jyp4w")
 
 [node name="MechaContainer" type="MarginContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer"]
@@ -192,7 +192,7 @@ text = "player_gold : value"
 horizontal_alignment = 1
 
 [connection signal="pressed" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game" method="_on_pressed"]
-[connection signal="pressed" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Continue" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Continue" method="_on_pressed"]
+[connection signal="pressed" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Start" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Start" method="_on_pressed"]
 [connection signal="update_on_select" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
 [connection signal="update_on_select" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect2" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
 [connection signal="update_on_select" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect3" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
