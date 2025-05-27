@@ -36,7 +36,6 @@ func read_autosave_mecha_data(id : String) -> Dictionary:
 func save_game(data : SaveData, file_path: String = "res://Data/savedata/autosave.tres") -> void:
 	var result = ResourceSaver.save(data,file_path)
 	print(self,": ",error_string(result))
-	print(data.data)
 
 func load_game(file_path: String = "res://Data/savedata/autosave.tres"):
 	if not FileAccess.file_exists(file_path):

@@ -1,7 +1,7 @@
 extends Resource
 class_name SaveData
 
-var data = {
+@export var data = {
 	"mechas":{
 		"1":{
 			"current_exp": "1",
