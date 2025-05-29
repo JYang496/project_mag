@@ -31,20 +31,28 @@ func read_mecha_data(id : String) -> Dictionary:
 func read_autosave_mecha_data(id : String) -> Dictionary:
 	if save_data == null:
 		load_game()
-	return save_data.data["mechas"][id]
+	return save_data.mechas[id]
 
-func save_game(data : SaveData, file_path: String = "res://Data/savedata/autosave.tres") -> void:
+func save_game(data : SaveData = save_data, file_path: String = "res://Data/savedata/autosave.tres") -> void:
+	data.mechas[str(PlayerData.select_mecha_id)]["current_exp"] = str(PlayerData.player_exp)
+	data.mechas[str(PlayerData.select_mecha_id)]["current_level"] = str(PlayerData.player_level)
+	data.weapons = []
+	data.sub = "0"
+	data.game_level = str(PhaseManager.current_level)
 	var result = ResourceSaver.save(data,file_path)
 	print(self,": ",error_string(result))
 
-func load_game(file_path: String = "res://Data/savedata/autosave.tres"):
+func new_save(file_path: String = "res://Data/savedata/autosave.tres") -> void:
+	var result = ResourceSaver.save(SaveData.new(), file_path)
+	print(self,": ",error_string(result))
+
+func load_game(file_path: String = "res://Data/savedata/autosave.tres") -> void:
 	if not FileAccess.file_exists(file_path):
 		print("Save file doesn't exist, create a new save file")
-		save_game(SaveData.new(), file_path)
+		new_save(file_path)
 	else:
 		save_data = load(file_path) as SaveData
 		print("load save data")
 	if save_data == null:
 		print("Failed to load save file")
-		return null
-	return save_data.data
+		return

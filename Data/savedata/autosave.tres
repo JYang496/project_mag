@@ -1,15 +1,13 @@
-[gd_resource type="Resource" script_class="SaveData" load_steps=2 format=3 uid="uid://8i8aduoker3d"]
+[gd_resource type="Resource" script_class="SaveData" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://bj5aubvyayq81" path="res://Utility/savedata.gd" id="1_pc3pc"]
+[ext_resource type="Script" path="res://Utility/savedata.gd" id="1_pc3pc"]
 
 [resource]
 script = ExtResource("1_pc3pc")
-data = {
-"game_level": "1",
-"mechas": {
+mechas = {
 "1": {
-"current_exp": 20,
-"current_level": 3
+"current_exp": "0",
+"current_level": "1"
 },
 "2": {
 "current_exp": "0",
@@ -27,7 +25,8 @@ data = {
 "current_exp": "0",
 "current_level": "1"
 }
-},
-"sub": "0",
-"weapons": []
 }
+last_mecha_selected = "1"
+weapons = []
+game_level = "0"
+sub = "0"

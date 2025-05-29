@@ -27,9 +27,6 @@ func current_state() -> String:
 func enter_prepare() -> void:
 	current_level += 1
 	phase = PREPARE
-	DataHandler.save_data.data["mechas"][str(PlayerData.select_mecha_id)]["current_exp"] = str(PlayerData.player_exp)
-	DataHandler.save_data.data["mechas"][str(PlayerData.select_mecha_id)]["current_level"] = str(PlayerData.player_level)
-	DataHandler.save_data.data["game_level"] = str(current_level)
 	DataHandler.save_game(DataHandler.save_data)
 
 func enter_battle() -> void:

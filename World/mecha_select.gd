@@ -29,27 +29,14 @@ signal update_on_select(id)
 @export var border_width: float = 4.0
 
 func _ready() -> void:
-	#var mech_data = ImportData.read_mecha_data(str(mecha_id))
 	var ins : Player = load(mech_data["res"]).instantiate()
 	mech_texture.texture = ins.get_node("MechaSprite").texture
 	ins.queue_free()
-
-func update_labels() -> void:
-	var lvl_index = int(mech_autosave["current_level"]) - 1
-	mecha_name.text = mech_data["name"]
-	current_exp.text = "Exp: %s / %s" %[mech_autosave["current_exp"], mech_data["next_level_exp"][lvl_index]]
-	current_level.text = "Level: %s / %s" % [mech_autosave["current_level"], mech_data["max_level"]]
-	player_max_hp.text = "Max HP: %s" % [mech_data["player_max_hp"][lvl_index]]
-	player_speed.text = "Player speed: %s" % [mech_data["player_speed"][lvl_index]]
-	armor.text = "Armor: %s" % [mech_data["armor"][lvl_index]]
-	shield.text = "Shield: %s" % [mech_data["shield"][lvl_index]]
-	crit_rate.text = "Crit Rate: %s" % [mech_data["crit_rate"][lvl_index]]
-	crit_damage.text = "Crit Damage: %s" % [mech_data["crit_damage"][lvl_index]]
-	grab_radius.text = "Grab Radius: %s" % [mech_data["grab_radius"][lvl_index]]
-	player_gold.text = "Gold: %s" % [mech_data["player_gold"][lvl_index]]
+	# TODO: last mecha selected
+	PlayerData.select_mecha_id = DataHandler.save_data.last_mecha_selected
+	call_deferred("emit_signal", "update_on_select", str(DataHandler.save_data.last_mecha_selected))
 
 func _draw():
-	# Get the size of the control
 	var rect = Rect2(Vector2.ZERO, size)
 	var color = border_color if on_select else select_color
 	var width = border_width if on_hover or on_select else 0.0
@@ -57,8 +44,6 @@ func _draw():
 
 func update() -> void:
 	queue_redraw()
-	if mecha_id == PlayerData.select_mecha_id:
-		update_labels()
 
 func _on_texture_rect_mouse_entered() -> void:
 	on_hover = true

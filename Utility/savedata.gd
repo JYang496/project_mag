@@ -1,8 +1,7 @@
 extends Resource
 class_name SaveData
 
-@export var data = {
-	"mechas":{
+@export var mechas = {
 		"1":{
 			"current_exp": "1",
 			"current_level": "1",
@@ -23,8 +22,9 @@ class_name SaveData
 			"current_exp": "0",
 			"current_level": "1",
 		},
-	},
-	"weapons":[],
-	"game_level":"1",
-	"sub":"0"
-}
+	}
+
+@export var last_mecha_selected = "1"
+@export var weapons = []
+@export var game_level = "1"
+@export var sub = "0"
