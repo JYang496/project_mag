@@ -67,11 +67,17 @@ var damage_reduction := 1.0 :
 var bonus_damage_reduction := 1.0
 var total_damage_reduction := damage_reduction * bonus_damage_reduction
 
-var hurt_cd := 1.0 :
+var hurt_cd := 3.0 :
 	get:
 		return hurt_cd
 	set(value):
 		hurt_cd = clampf(float(value), 0.2, 5.0)
+
+var collision_cd := 1.0 :
+	get:
+		return collision_cd
+	set(value):
+		collision_cd = clampf(float(value), 0.2, 5.0)
 
 var crit_rate := 0.0 :
 	get:

@@ -22,11 +22,10 @@ extends Control
 
 @onready var on_select_id : int = 1
 func _ready() -> void:
-	for mechaselect : MechaSelect in icon_container.get_children():
-		mechaselect.on_select = true if mechaselect.mecha_id == on_select_id else false
-		mechaselect.update()
+	pass
 
 func update_labels() -> void:
+	mech_autosave = DataHandler.read_autosave_mecha_data(str(mecha_id))
 	var lvl_index = int(mech_autosave["current_level"]) - 1
 	mecha_name.text = mech_data["name"]
 	current_exp.text = "Exp: %s / %s" %[mech_autosave["current_exp"], mech_data["next_level_exp"][lvl_index]]
@@ -49,4 +48,6 @@ func _on_mecha_select_update_on_select(id) -> void:
 	for mechaselect : MechaSelect in icon_container.get_children():
 		mechaselect.on_select = true if mechaselect.mecha_id == on_select_id else false
 		mechaselect.update()
-	
+
+func _on_new_game_erase_button_pressed() -> void:
+	update_labels()

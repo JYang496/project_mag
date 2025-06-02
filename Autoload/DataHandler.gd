@@ -43,8 +43,10 @@ func save_game(data : SaveData = save_data, file_path: String = "res://Data/save
 	print(self,": ",error_string(result))
 
 func new_save(file_path: String = "res://Data/savedata/autosave.tres") -> void:
-	var result = ResourceSaver.save(SaveData.new(), file_path)
+	save_data = SaveData.new()
+	var result = ResourceSaver.save(save_data, file_path)
 	print(self,": ",error_string(result))
+	
 
 func load_game(file_path: String = "res://Data/savedata/autosave.tres") -> void:
 	if not FileAccess.file_exists(file_path):
@@ -52,7 +54,6 @@ func load_game(file_path: String = "res://Data/savedata/autosave.tres") -> void:
 		new_save(file_path)
 	else:
 		save_data = load(file_path) as SaveData
-		print("load save data")
 	if save_data == null:
 		print("Failed to load save file")
 		return

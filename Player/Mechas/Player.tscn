@@ -77,10 +77,19 @@ collision_mask = 4
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
 shape = SubResource("RectangleShape2D_n8bvj")
 
+[node name="HurtCD" type="Timer" parent="."]
+wait_time = 3.0
+one_shot = true
+
+[node name="CollisionCD" type="Timer" parent="."]
+one_shot = true
+
 [connection signal="area_entered" from="CollectArea" to="." method="_on_collect_area_area_entered"]
 [connection signal="area_entered" from="CollectChipArea" to="." method="_on_collect_chip_area_area_entered"]
 [connection signal="area_entered" from="GrabArea" to="." method="_on_grab_area_area_entered"]
 [connection signal="area_entered" from="DetectArea" to="." method="_on_detect_area_area_entered"]
 [connection signal="area_exited" from="DetectArea" to="." method="_on_detect_area_area_exited"]
+[connection signal="timeout" from="HurtCD" to="." method="_on_hurt_cd_timeout"]
+[connection signal="timeout" from="CollisionCD" to="." method="_on_collision_cd_timeout"]
 
 [editable path="HurtBox"]

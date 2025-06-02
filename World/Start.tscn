@@ -49,15 +49,15 @@ custom_minimum_size = Vector2(0, 400)
 layout_mode = 2
 alignment = 1
 
-[node name="New Game" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
-layout_mode = 2
-text = "New Game"
-script = ExtResource("1_y1dix")
-
 [node name="Start" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
 layout_mode = 2
 text = "Start"
 script = ExtResource("2_jyp4w")
+
+[node name="New Game" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
+layout_mode = 2
+text = "Erase Data"
+script = ExtResource("1_y1dix")
 
 [node name="MechaContainer" type="MarginContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer"]
 layout_mode = 2
@@ -191,8 +191,9 @@ theme_override_font_sizes/font_size = 23
 text = "player_gold : value"
 horizontal_alignment = 1
 
-[connection signal="pressed" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game" method="_on_pressed"]
 [connection signal="pressed" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Start" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Start" method="_on_pressed"]
+[connection signal="erase_button_pressed" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_new_game_erase_button_pressed"]
+[connection signal="pressed" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game" method="_on_pressed"]
 [connection signal="update_on_select" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
 [connection signal="update_on_select" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect2" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
 [connection signal="update_on_select" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect3" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]

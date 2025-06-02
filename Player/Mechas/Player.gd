@@ -8,7 +8,10 @@ var extra_direction = Vector2.ZERO
 @onready var mecha_sprite = $MechaSprite
 @onready var collect_area = get_node("%CollectArea")
 @onready var grab_radius = $GrabArea/GrabShape
-#@onready var ui : UI = get_tree().get_first_node_in_group("ui")
+@onready var hurt_cd: Timer = $HurtCD
+@onready var hurt_box: HurtBox = $HurtBox
+@onready var collision_cd: Timer = $CollisionCD
+
 
 var movement_enabled = true
 var moveto_enabled = false
@@ -141,6 +144,11 @@ func update_grab_radius() -> void:
 # Player does not have death atm
 func damaged(attack:Attack):
 	PlayerData.player_hp -= attack.damage
+	hurt_box.set_collision_layer_value(1,false)
+	self.set_collision_mask_value(3,false)
+	self.set_collision_layer_value(1,false)
+	hurt_cd.start(PlayerData.hurt_cd)
+	collision_cd.start(PlayerData.collision_cd)
 	print(self, PlayerData.player_hp)
 
 
@@ -198,3 +206,12 @@ func _on_detect_area_area_exited(area: Area2D) -> void:
 	if PlayerData.detected_enemies.has(area):
 		PlayerData.detected_enemies.erase(area)
 		PlayerData.cloestest_enemy = get_closest_area_optimized(PlayerData.detected_enemies, self)
+
+
+func _on_hurt_cd_timeout() -> void:
+	hurt_box.set_collision_layer_value(1,true)
+
+
+func _on_collision_cd_timeout() -> void:
+	self.set_collision_layer_value(1,true)
+	self.set_collision_mask_value(3,true)

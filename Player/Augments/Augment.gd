@@ -1,7 +1,6 @@
 extends Node2D
 class_name Augment
 
-#@onready var player = get_tree().get_first_node_in_group("player")
 
 var level := 1
 var max_level := 5

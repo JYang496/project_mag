@@ -6,7 +6,6 @@ class_name UI
 # Roots
 @onready var character_root : Control = $GUI/CharacterRoot
 @onready var shopping_rootv_2: Control = $GUI/ShoppingRootv2
-@onready var upgrade_root : Control = $GUI/UpgradeRoot
 @onready var upgrade_rootv_2: Control = $GUI/UpgradeRootv2
 @onready var boss_root : Control = $GUI/BossRoot
 @onready var inventory_root: Control = $GUI/InventoryRoot
@@ -31,11 +30,9 @@ class_name UI
 @onready var equipped_shop: GridContainer = $GUI/ShoppingRootv2/Panel/Equipped
 @onready var shop_sell_button: Button = $GUI/ShoppingRootv2/Panel/ShopSellButton
 @onready var shop_cancel_button: Button = $GUI/ShoppingRootv2/Panel/ShopCancelButton
-
+signal reset_cost
 
 # Upgrade
-@onready var upgrade_panel = $GUI/UpgradeRoot/UpgradePanel
-@onready var upgrade_options = $GUI/UpgradeRoot/UpgradePanel/UpgradeOptions
 @onready var inventory_upg: GridContainer = $GUI/UpgradeRootv2/Panel/Inventory
 @onready var equipped_upg: GridContainer = $GUI/UpgradeRootv2/Panel/Equipped
 @onready var upgrade_preview: MarginContainer = $GUI/UpgradeRootv2/Panel/UpgradePreview
@@ -130,36 +127,39 @@ func shopping_panel_out() -> void:
 	refresh_border()
 	move_out_timer.start()
 
-func upgrade_panel_in() -> void:
-	upgradable_weapon_list = PlayerData.player_weapon_list.duplicate()
-	
-	# Remove MAX level weapon from the list
-	var pointer = 0
-	while pointer < len(upgradable_weapon_list):
-		var weapon = upgradable_weapon_list[pointer]
-		if weapon.level >= len(weapon.weapon_data):
-			upgradable_weapon_list.remove_at(pointer)
-		else:
-			pointer += 1
+func reset_shopping_refresh_cost() -> void:
+	reset_cost.emit()
 
-	var weapon_counts = len(upgradable_weapon_list)
-	move_out_timer.stop()
-	upgrade_root.visible = true
-	var options = 0
-	var optionsmax = 4
-	free_childern(upgrade_options)
-	while options < optionsmax and options < weapon_counts:
-		var rand_index = randi_range(0,len(upgradable_weapon_list)-1)
-		var random_weapon = upgradable_weapon_list.pop_at(rand_index)
-		var upgrade_choice = upgrade_card.instantiate()
-		upgrade_choice.weapon_node = random_weapon
-		upgrade_options.add_child(upgrade_choice)
-		options += 1
-
-func upgrade_panel_out() -> void:
-	upgrade_root.visible = false
-	refresh_border()
-	move_out_timer.start()
+#func upgrade_panel_in() -> void:
+	#upgradable_weapon_list = PlayerData.player_weapon_list.duplicate()
+	#
+	## Remove MAX level weapon from the list
+	#var pointer = 0
+	#while pointer < len(upgradable_weapon_list):
+		#var weapon = upgradable_weapon_list[pointer]
+		#if weapon.level >= len(weapon.weapon_data):
+			#upgradable_weapon_list.remove_at(pointer)
+		#else:
+			#pointer += 1
+#
+	#var weapon_counts = len(upgradable_weapon_list)
+	#move_out_timer.stop()
+	#upgrade_root.visible = true
+	#var options = 0
+	#var optionsmax = 4
+	#free_childern(upgrade_options)
+	#while options < optionsmax and options < weapon_counts:
+		#var rand_index = randi_range(0,len(upgradable_weapon_list)-1)
+		#var random_weapon = upgradable_weapon_list.pop_at(rand_index)
+		#var upgrade_choice = upgrade_card.instantiate()
+		#upgrade_choice.weapon_node = random_weapon
+		#upgrade_options.add_child(upgrade_choice)
+		#options += 1
+#
+#func upgrade_panel_out() -> void:
+	#upgrade_root.visible = false
+	#refresh_border()
+	#move_out_timer.start()
 
 func upg_panel_in() -> void:
 	update_upg()

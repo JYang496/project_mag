@@ -28,6 +28,7 @@ func enter_prepare() -> void:
 	current_level += 1
 	phase = PREPARE
 	DataHandler.save_game(DataHandler.save_data)
+	GlobalVariables.ui.reset_shopping_refresh_cost()
 
 func enter_battle() -> void:
 	phase = BATTLE

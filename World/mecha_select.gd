@@ -32,7 +32,6 @@ func _ready() -> void:
 	var ins : Player = load(mech_data["res"]).instantiate()
 	mech_texture.texture = ins.get_node("MechaSprite").texture
 	ins.queue_free()
-	# TODO: last mecha selected
 	PlayerData.select_mecha_id = DataHandler.save_data.last_mecha_selected
 	call_deferred("emit_signal", "update_on_select", str(DataHandler.save_data.last_mecha_selected))
 
