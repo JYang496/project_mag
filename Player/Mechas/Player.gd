@@ -21,12 +21,12 @@ const WEAPON_SLOTS = [[-16,-24],[16,-24],[16,24],[-16,24]]
 
 # Signals
 signal active_skill()
+signal coin_collected()
 
 func _ready():
 	PlayerData.player = self
 	update_grab_radius()
 	custom_ready()
-
 
 # overwrite the function on child class
 func custom_ready():
@@ -145,8 +145,8 @@ func update_grab_radius() -> void:
 func damaged(attack:Attack):
 	PlayerData.player_hp -= attack.damage
 	hurt_box.set_collision_layer_value(1,false)
-	self.set_collision_mask_value(3,false)
-	self.set_collision_layer_value(1,false)
+	#self.set_collision_mask_value(3,false)
+	#self.set_collision_layer_value(1,false)
 	hurt_cd.start(PlayerData.hurt_cd)
 	collision_cd.start(PlayerData.collision_cd)
 	print(self, PlayerData.player_hp)
@@ -180,6 +180,7 @@ func _on_collect_area_area_entered(area):
 	if area.is_in_group("collectables") and area is Coin:
 		var value = area.collect()
 		PlayerData.player_gold += value
+		coin_collected.emit()
 
 
 func _on_collect_chip_area_area_entered(area) -> void:
@@ -213,5 +214,6 @@ func _on_hurt_cd_timeout() -> void:
 
 
 func _on_collision_cd_timeout() -> void:
-	self.set_collision_layer_value(1,true)
-	self.set_collision_mask_value(3,true)
+	pass
+	#self.set_collision_layer_value(1,true)
+	#self.set_collision_mask_value(3,true)
