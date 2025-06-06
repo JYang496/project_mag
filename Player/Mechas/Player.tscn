@@ -49,16 +49,19 @@ unique_name_in_owner = true
 [node name="CollectArea" type="Area2D" parent="."]
 unique_name_in_owner = true
 position = Vector2(0, -330)
+collision_layer = 0
 
 [node name="CollectShape" type="CollisionShape2D" parent="CollectArea"]
 shape = SubResource("RectangleShape2D_dlks0")
 
 [node name="CollectChipArea" type="Area2D" parent="."]
+collision_layer = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CollectChipArea"]
 shape = SubResource("CircleShape2D_k885b")
 
 [node name="GrabArea" type="Area2D" parent="."]
+collision_layer = 0
 
 [node name="GrabShape" type="CollisionShape2D" parent="GrabArea"]
 shape = SubResource("CircleShape2D_up5oj")

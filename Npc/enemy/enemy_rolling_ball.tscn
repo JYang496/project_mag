@@ -16,7 +16,6 @@ script = ExtResource("2_cf0t7")
 shape = SubResource("RectangleShape2D_0wqes")
 
 [node name="Body" parent="." index="1"]
-scale = Vector2(2, 2)
 texture = ExtResource("3_fenux")
 
 [node name="NPCCollision" parent="." index="2"]

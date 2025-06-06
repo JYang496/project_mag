@@ -3,14 +3,12 @@ class_name BaseNPC
 
 @onready var sprite_body = $Body
 @onready var hurt_box = $HurtBox
-#@onready var player = get_tree().get_first_node_in_group("player")
 @onready var hit_label = preload("res://UI/labels/hit_label.tscn")
 
 # Export
 @export var movement_speed = 20.0
 @export var hp = 10
 @export var knockback_recover = 3.5
-@export var experience = 1
 
 var knockback = {
 	"amount": 0,
@@ -22,7 +20,7 @@ var is_dead: bool = false
 
 func _ready():
 	pass
-	
+
 func _physics_process(_delta):
 	pass
 

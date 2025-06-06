@@ -6,5 +6,9 @@
 [node name="EliteEnemy" instance=ExtResource("1_3j000")]
 script = ExtResource("2_u46xm")
 
+[node name="SkillTimer" type="Timer" parent="." index="5"]
+
+[connection signal="timeout" from="SkillTimer" to="." method="_on_skill_timer_timeout"]
+
 [editable path="HurtBox"]
 [editable path="HitBoxDot"]

@@ -1,0 +1,42 @@
+[gd_scene load_steps=7 format=3 uid="uid://bmy3cber63qwh"]
+
+[ext_resource type="PackedScene" uid="uid://b1rwfidg5v0wk" path="res://Npc/enemy/elite_enemy.tscn" id="1_cpric"]
+[ext_resource type="Script" uid="uid://cmk6kp6oqk6ju" path="res://Npc/enemy/enemy_rolling_ball_elite.gd" id="2_0fobv"]
+[ext_resource type="Texture2D" uid="uid://76u4l0356ebe" path="res://Textures/test/rolling_ball.png" id="3_dl2yt"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dl2yt"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_0j2si"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_dl2yt"]
+radius = 179.003
+
+[node name="EnemyRollingBallElite" instance=ExtResource("1_cpric")]
+script = ExtResource("2_0fobv")
+
+[node name="CollisionShape2D" parent="HurtBox" index="0"]
+shape = SubResource("RectangleShape2D_dl2yt")
+
+[node name="Body" parent="." index="1"]
+texture = ExtResource("3_dl2yt")
+
+[node name="NPCCollision" parent="." index="2"]
+shape = SubResource("RectangleShape2D_0j2si")
+
+[node name="SkillTimer" parent="." index="5"]
+wait_time = 6.0
+
+[node name="DetectTimer" type="Timer" parent="." index="6"]
+autostart = true
+
+[node name="SkillArea" type="Area2D" parent="." index="7"]
+collision_layer = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SkillArea" index="0"]
+shape = SubResource("CircleShape2D_dl2yt")
+
+[connection signal="timeout" from="DetectTimer" to="." method="_on_detect_timer_timeout"]
+[connection signal="area_entered" from="SkillArea" to="." method="_on_skill_area_area_entered"]
+
+[editable path="HurtBox"]
+[editable path="HitBoxDot"]

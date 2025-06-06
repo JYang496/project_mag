@@ -67,12 +67,14 @@ tile_set = SubResource("TileSet_u07xh")
 
 [node name="PrepareDectectArea" type="Area2D" parent="."]
 position = Vector2(0, -51)
+collision_layer = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PrepareDectectArea"]
 shape = SubResource("RectangleShape2D_62b6r")
 
 [node name="DectectArea" type="Area2D" parent="."]
 position = Vector2(0, 80)
+collision_layer = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DectectArea"]
 position = Vector2(0.5, 1)
