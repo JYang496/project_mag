@@ -5,6 +5,7 @@ var original_material: Material
 var highlight_material: ShaderMaterial
 var is_highlighted: bool = false
 var skill_ready : bool = true
+@onready var skill_timer: Timer = $SkillTimer
 
 # Highlight shader code
 const HIGHLIGHT_SHADER = """
@@ -52,7 +53,7 @@ void fragment() {
 func _ready():
 	hit_box_dot.hitbox_owner = self
 	# Scale up the body
-	sprite_body.scale = Vector2(1.5, 1.5)
+	sprite_body.scale = Vector2(2, 2)
 	# Store original material
 	original_material = sprite_body.material
 	

@@ -9,9 +9,10 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_0j2si"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_dl2yt"]
-radius = 179.003
+radius = 251.008
 
 [node name="EnemyRollingBallElite" instance=ExtResource("1_cpric")]
+collision_mask = 0
 script = ExtResource("2_0fobv")
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
@@ -25,8 +26,10 @@ shape = SubResource("RectangleShape2D_0j2si")
 
 [node name="SkillTimer" parent="." index="5"]
 wait_time = 6.0
+one_shot = true
 
 [node name="DetectTimer" type="Timer" parent="." index="6"]
+wait_time = 0.5
 autostart = true
 
 [node name="SkillArea" type="Area2D" parent="." index="7"]
@@ -36,7 +39,8 @@ collision_layer = 0
 shape = SubResource("CircleShape2D_dl2yt")
 
 [connection signal="timeout" from="DetectTimer" to="." method="_on_detect_timer_timeout"]
-[connection signal="area_entered" from="SkillArea" to="." method="_on_skill_area_area_entered"]
+[connection signal="body_entered" from="SkillArea" to="." method="_on_skill_area_body_entered"]
+[connection signal="body_exited" from="SkillArea" to="." method="_on_skill_area_body_exited"]
 
 [editable path="HurtBox"]
 [editable path="HitBoxDot"]

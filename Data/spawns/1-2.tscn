@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://blkcsju082ryi"]
 
 [ext_resource type="Script" uid="uid://bqyvlcrq4b8xf" path="res://Data/spawns/LevelArray.gd" id="1_b2itx"]
-[ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Utility/spawn_info.gd" id="2_lrbk6"]
+[ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/spawn_info.gd" id="2_lrbk6"]
 [ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/enemy_wheel_cart.tscn" id="3_d6yav"]
 
 [sub_resource type="Resource" id="Resource_nab7e"]

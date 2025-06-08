@@ -14,8 +14,8 @@ mechas = {
 "current_level": "1"
 },
 "3": {
-"current_exp": "0",
-"current_level": "1"
+"current_exp": "15",
+"current_level": "3"
 },
 "4": {
 "current_exp": "0",
@@ -26,7 +26,7 @@ mechas = {
 "current_level": "1"
 }
 }
-last_mecha_selected = 1
+last_mecha_selected = 3
 weapons = []
 game_level = "1"
 sub = "0"
