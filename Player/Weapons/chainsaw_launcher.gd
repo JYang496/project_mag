@@ -109,6 +109,7 @@ func _on_shoot():
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
+	spawn_bullet.size = size
 	spawn_bullet.hitbox_type = "dot"
 	spawn_bullet.dot_cd = dot_cd
 	apply_linear(spawn_bullet, bullet_direction, speed)

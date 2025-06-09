@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://73l1jqjw7ajl"]
+
+[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_auk3w"]
+[ext_resource type="Script" uid="uid://blek0gh655bhn" path="res://Player/Weapons/Modules/bullet_size_up.gd" id="2_j6spg"]
+
+[node name="BulletSizeUp" instance=ExtResource("1_auk3w")]
+script = ExtResource("2_j6spg")
+mult_by = 1.2

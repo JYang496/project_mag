@@ -11,6 +11,7 @@ var expire_time : float = 2.5
 var base_displacement = Vector2.ZERO
 var bullet_displacement = Vector2.ZERO
 var blt_texture
+var size : float = 1.0
 var module_list = []
 var hitbox_type = "once"
 var dot_cd : float
@@ -37,6 +38,7 @@ var hitbox_ins
 func _ready() -> void:
 	expire_timer.wait_time = expire_time
 	bullet_sprite.texture = blt_texture
+	bullet_sprite.scale = Vector2(size,size)
 	init_hitbox(hitbox_type)
 	expire_timer.start()
 	await get_tree().physics_frame

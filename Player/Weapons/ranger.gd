@@ -22,6 +22,7 @@ var dot_cd : float
 var base_reload : float
 var reload : float
 var cooldown_timer : Timer
+var size : float = 1.0
 var justAttacked = false
 
 var module_list = []
@@ -38,6 +39,7 @@ signal over_charge()
 signal calculate_weapon_damage(damage)
 signal calculate_weapon_hp(hp)
 signal calculate_cd_timer(reload)
+signal calculate_bullet_size(size)
 
 func _ready():
 	setup_timer()
@@ -133,6 +135,7 @@ func calculate_status() -> void:
 	hp = base_hp
 	reload = base_reload
 	set_cd_timer(cooldown_timer)
+	set_bullet_size(size)
 	calculate_damage(damage)
 	calculate_hp(hp)
 
@@ -144,7 +147,11 @@ func calculate_hp(pre_hp : int) -> void:
 
 func set_cd_timer(timer : Timer) -> void:
 	calculate_cd_timer.emit(reload)
-	timer.wait_time = reload
+	if reload > 0:
+		timer.wait_time = reload
+
+func set_bullet_size(size : float) -> void:
+	calculate_bullet_size.emit(size)
 
 func remove_weapon() -> void:
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)

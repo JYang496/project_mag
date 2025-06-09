@@ -75,19 +75,22 @@ var weapon_data = {
 func set_level(lv) -> void:
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
-	damage = int(weapon_data[lv]["damage"])
+	base_damage = int(weapon_data[lv]["damage"])
 	spin_speed = int(weapon_data[lv]["spin_speed"])
 	number = int(weapon_data[lv]["number"])
+	base_hp = 99999
 	module_list.clear()
 	for s in satellites:
 		s.queue_free()
 	satellites.clear()
 	var offset_step = 2 * PI / number
+	calculate_status()
 	for n in range(number):
 		var spawn_bullet = bullet.instantiate()
 		spawn_bullet.damage = damage
 		spawn_bullet.hp = 99999
 		spawn_bullet.expire_time = 99999
+		spawn_bullet.size = size
 		spawn_bullet.blt_texture = bul_texture
 		apply_rotate_around_player(spawn_bullet, offset_step, n)
 		get_tree().root.call_deferred("add_child",spawn_bullet)

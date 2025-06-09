@@ -98,6 +98,7 @@ func _on_shoot():
 	spawn_bullet.damage = damage
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
+	spawn_bullet.size = size
 	spawn_bullet.blt_texture = bul_texture
 	apply_linear(spawn_bullet, bullet_direction, speed)
 	apply_affects(spawn_bullet)

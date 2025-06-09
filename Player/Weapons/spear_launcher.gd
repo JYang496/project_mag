@@ -94,6 +94,7 @@ func _on_shoot():
 	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
 	spawn_bullet.damage = damage
 	spawn_bullet.hp = hp
+	spawn_bullet.size = size
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	apply_return_on_timeour(spawn_bullet)
