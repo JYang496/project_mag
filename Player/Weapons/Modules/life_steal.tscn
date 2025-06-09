@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3 uid="uid://367ptksydelc"]
+
+[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_6gx3a"]
+[ext_resource type="Script" uid="uid://bb8xsgqxvkq52" path="res://Player/Weapons/Modules/life_steal.gd" id="2_5n0mv"]
+
+[node name="LifeSteal" instance=ExtResource("1_6gx3a")]
+script = ExtResource("2_5n0mv")

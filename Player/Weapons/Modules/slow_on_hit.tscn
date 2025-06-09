@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3 uid="uid://cbhk2x0yyndgs"]
+
+[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_g43gs"]
+[ext_resource type="Script" uid="uid://1uof4d56qwtv" path="res://Player/Weapons/Modules/slow_on_hit.gd" id="2_3b0k5"]
+
+[node name="SlowOnHit" instance=ExtResource("1_g43gs")]
+script = ExtResource("2_3b0k5")
