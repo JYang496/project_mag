@@ -1,13 +1,16 @@
-[gd_scene load_steps=4 format=3 uid="uid://6jm63rqvj2b7"]
+[gd_scene load_steps=5 format=3 uid="uid://6jm63rqvj2b7"]
 
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_4h80h"]
 [ext_resource type="Script" uid="uid://cgt5h2lpnxfs0" path="res://Player/Weapons/orbit.gd" id="1_lxm1t"]
 [ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="2_d4sd2"]
+[ext_resource type="PackedScene" uid="uid://73l1jqjw7ajl" path="res://Player/Weapons/Modules/bullet_size_up.tscn" id="3_nenk4"]
 
 [node name="Orbit" instance=ExtResource("1_4h80h")]
 script = ExtResource("1_lxm1t")
 radius = 80.0
 angle = 0.0
+
+[node name="BulletSizeUp" parent="Modules" index="0" instance=ExtResource("3_nenk4")]
 
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("2_d4sd2")
