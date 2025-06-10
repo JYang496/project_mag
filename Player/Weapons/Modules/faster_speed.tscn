@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://c7iowlppcwven"]
+
+[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_25te3"]
+[ext_resource type="Script" uid="uid://c0fmth0n3urt4" path="res://Player/Weapons/Modules/faster_speed.gd" id="2_ep60x"]
+
+[node name="FasterSpeed" instance=ExtResource("1_25te3")]
+script = ExtResource("2_ep60x")
+mult_by = 1.2

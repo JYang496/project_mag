@@ -38,6 +38,7 @@ signal shoot()
 signal over_charge()
 signal calculate_weapon_damage(damage)
 signal calculate_weapon_hp(hp)
+signal calculate_weapon_speed(speed)
 signal calculate_cd_timer(reload)
 signal calculate_bullet_size(size)
 
@@ -134,6 +135,7 @@ func calculate_status() -> void:
 	damage = base_damage
 	hp = base_hp
 	reload = base_reload
+	speed = base_speed
 	set_cd_timer(cooldown_timer)
 	set_bullet_size(size)
 	calculate_damage(damage)
@@ -144,6 +146,9 @@ func calculate_damage(pre_damage : int) -> void:
 
 func calculate_hp(pre_hp : int) -> void:
 	calculate_weapon_hp.emit(pre_hp)
+
+func calculate_speed(pre_speed) -> void:
+	calculate_weapon_speed.emit(pre_speed)
 
 func set_cd_timer(timer : Timer) -> void:
 	calculate_cd_timer.emit(reload)
