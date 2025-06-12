@@ -111,7 +111,7 @@ func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	knock_back_amount = int(weapon_data[lv]["knock_back_amount"])
-	speed = int(weapon_data[lv]["speed"])
+	base_speed = int(weapon_data[lv]["speed"])
 	spin_rate = float(weapon_data[lv]["spin_rate"])
 	spin_speed = float(weapon_data[lv]["spin_speed"])
 	base_hp = int(weapon_data[lv]["hp"])

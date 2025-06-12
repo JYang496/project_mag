@@ -1,17 +1,17 @@
 extends Node2D
 
-@onready var module_parent : BulletBase = self.get_parent() # Bullet root is parent
+@onready var bullet : BulletBase = self.get_parent() # Bullet root is parent
 @onready var detect_area: Area2D = $DetectArea
 
 var linear_module : LinearMovement
 var closest_target
 # This module applies after bullet created
 func _ready() -> void:
-	module_parent = self.get_parent()
-	if not module_parent:
+	bullet = self.get_parent()
+	if not bullet:
 		print("Error: module does not have owner")
 		return
-	for module in module_parent.module_list:
+	for module in bullet.effect_list:
 		if module is LinearMovement:
 			linear_module = module
 

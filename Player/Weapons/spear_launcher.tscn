@@ -1,14 +1,11 @@
-[gd_scene load_steps=5 format=3 uid="uid://cect8lp5abtw"]
+[gd_scene load_steps=4 format=3 uid="uid://cect8lp5abtw"]
 
 [ext_resource type="Texture2D" uid="uid://im0by60rbjt5" path="res://Textures/test/spear.png" id="1_1rx0e"]
 [ext_resource type="Script" uid="uid://ck17tkx32o6ft" path="res://Player/Weapons/spear_launcher.gd" id="1_wrx6n"]
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_yntmd"]
-[ext_resource type="PackedScene" uid="uid://73l1jqjw7ajl" path="res://Player/Weapons/Modules/bullet_size_up.tscn" id="3_br2iw"]
 
 [node name="SpearLauncher" instance=ExtResource("1_yntmd")]
 script = ExtResource("1_wrx6n")
-
-[node name="BulletSizeUp" parent="Modules" index="0" instance=ExtResource("3_br2iw")]
 
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("1_1rx0e")

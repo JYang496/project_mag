@@ -1,0 +1,10 @@
+[gd_scene load_steps=4 format=3 uid="uid://wpnbfpae12mu"]
+
+[ext_resource type="PackedScene" uid="uid://c4oj2glaup5b3" path="res://Player/Weapons/weapon.tscn" id="1_wnvxc"]
+[ext_resource type="Script" uid="uid://pgnfihdeaov" path="res://Player/Weapons/weapon_melee.gd" id="2_pje4t"]
+[ext_resource type="PackedScene" uid="uid://dg8e3f1gat6ui" path="res://Player/Weapons/Effects/Effect.tscn" id="3_ky77f"]
+
+[node name="WeaponMelee" instance=ExtResource("1_wnvxc")]
+script = ExtResource("2_pje4t")
+
+[node name="Effect" parent="." index="2" instance=ExtResource("3_ky77f")]

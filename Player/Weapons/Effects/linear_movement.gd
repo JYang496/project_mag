@@ -1,23 +1,26 @@
-extends Node2D
+extends Effect
 class_name LinearMovement
 
 @export var speed: float = 400.0
 @export var direction: Vector2 = Vector2.ZERO
 
-@onready var module_parent : BulletBase = self.get_parent() # Bullet root is parent
+#@onready var module_parent : BulletBase = self.get_parent() # Bullet root is parent
 
 
-func _ready() -> void:
-	if not module_parent:
-		print("Error: module does not have owner")
-		return
+#func _ready() -> void:
+	#if not module_parent:
+		#print("Error: module does not have owner")
+		#return
+	#adjust_base_displacement()
+
+func bullet_effect_ready() -> void:
 	adjust_base_displacement()
 
 func adjust_base_displacement() -> void:
-	module_parent.base_displacement = module_parent.base_displacement + direction * speed
+	bullet.base_displacement = bullet.base_displacement + direction * speed
 
 func set_base_displacement() -> void:
-	module_parent.base_displacement = direction * speed
+	bullet.base_displacement = direction * speed
 
 func _physics_process(delta: float) -> void:
 	pass

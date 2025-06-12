@@ -1,8 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://cfbc6ur330eqf"]
-
-[ext_resource type="Script" uid="uid://o05r6l6jaepd" path="res://Player/Weapons/Bullets/pistol_oc.gd" id="1_qupww"]
-
-[node name="PistolOC" type="Node2D"]
-script = ExtResource("1_qupww")
-
-[node name="RotateTimer" type="Timer" parent="."]

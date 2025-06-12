@@ -13,6 +13,7 @@ var bullet_displacement = Vector2.ZERO
 var blt_texture
 var size : float = 1.0
 var module_list = []
+var effect_list = []
 var hitbox_type = "once"
 var dot_cd : float
 var overlapping : bool :
@@ -32,6 +33,8 @@ signal overlapping_signal()
 @onready var expire_timer = $ExpireTimer
 @onready var bullet = $Bullet
 @onready var bullet_sprite = $Bullet/BulletSprite
+@onready var effects: Node2D = $Effects
+
 var hitbox_ins
 
 func _ready() -> void:

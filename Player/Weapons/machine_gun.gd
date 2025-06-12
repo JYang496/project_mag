@@ -68,7 +68,7 @@ func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
-	speed = int(weapon_data[lv]["speed"])
+	base_speed = int(weapon_data[lv]["speed"])
 	base_hp = int(weapon_data[lv]["hp"])
 	base_reload = float(weapon_data[lv]["reload"])
 	calculate_status()
