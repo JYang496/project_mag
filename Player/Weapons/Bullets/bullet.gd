@@ -33,7 +33,6 @@ signal overlapping_signal()
 @onready var expire_timer = $ExpireTimer
 @onready var bullet = $Bullet
 @onready var bullet_sprite = $Bullet/BulletSprite
-@onready var effects: Node2D = $Effects
 
 var hitbox_ins
 

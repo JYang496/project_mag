@@ -115,7 +115,7 @@ func _on_shoot():
 		spawn_bullet.hp = hp
 		spawn_bullet.expire_time = 0.3
 		apply_linear(spawn_bullet, bullet_direction, speed)
-		apply_affects(spawn_bullet)
+		apply_effects(spawn_bullet)
 		get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
@@ -139,7 +139,7 @@ func _on_over_charge():
 			spawn_bullet.hp = hp
 			spawn_bullet.expire_time = 0.3
 			apply_linear(spawn_bullet, bullet_direction, speed)
-			apply_affects(spawn_bullet)
+			apply_effects(spawn_bullet)
 			get_tree().root.call_deferred("add_child",spawn_bullet)
 		await get_tree().create_timer(0.3).timeout
 	remove_weapon()

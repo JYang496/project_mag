@@ -1,8 +1,6 @@
-extends Node2D
+extends Effect
 class_name ReturnOnTimeout
 
-@onready var module_parent = self.get_parent() # Bullet root is parent
-#@onready var player = get_tree().get_first_node_in_group("player")
 @onready var hitbox_once = preload("res://Utility/hit_hurt_box/hit_box.tscn")
 
 @onready var return_timer: Timer = $ReturnTimer
@@ -21,16 +19,14 @@ var is_stopped : bool = false
 var linear_module : LinearMovement
 var saved_direction : Vector2
 
-func _ready() -> void:
-	if not module_parent:
-		print("Error: spin module does not have owner")
-		return
+
+func bullet_effect_ready() -> void:
 	stop_timer.wait_time = stop_time
-	stop_timer.start()
+	stop_timer.start()	
 
 func _physics_process(delta: float) -> void:
 	if is_return:
-		linear_module.direction = module_parent.global_position.direction_to(PlayerData.player.global_position)
+		linear_module.direction = bullet.global_position.direction_to(PlayerData.player.global_position)
 		linear_module.set_base_displacement()
 
 func _on_return_timer_timeout() -> void:
@@ -39,12 +35,12 @@ func _on_return_timer_timeout() -> void:
 
 func create_return_hitbox() -> void:
 	var shape = RectangleShape2D.new()
-	shape.size = module_parent.bullet_sprite.texture.get_size()
+	shape.size = bullet.bullet_sprite.texture.get_size()
 	return_shape.shape = shape
 
 func _on_stop_timer_timeout() -> void:
 	is_stopped = true
-	for module in module_parent.module_list:
+	for module in bullet.effect_list:
 		if module is LinearMovement:
 			linear_module = module
 	saved_direction = linear_module.direction
@@ -55,4 +51,4 @@ func _on_stop_timer_timeout() -> void:
 
 
 func _on_return_hitbox_body_entered(body: Node2D) -> void:
-	module_parent.queue_free()
+	bullet.call_deferred("queue_free")

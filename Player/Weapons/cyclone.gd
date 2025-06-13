@@ -135,7 +135,7 @@ func _on_shoot():
 	spawn_bullet.size = size
 	apply_linear(spawn_bullet, direction, speed)
 	apply_spiral(spawn_bullet, spin_rate,spin_speed)
-	apply_affects(spawn_bullet)
+	apply_effects(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():

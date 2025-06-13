@@ -1,21 +1,15 @@
-extends Node2D
+extends Effect
+class_name RicochetEffect
 
-@onready var module_parent = self.get_parent() # Bullet root is parent
 var target_close = []
 var attemp := 0
 
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	if not module_parent:
-		print("Error: module does not have owner")
-		return
-	# Connect enemy hit with function
-	if module_parent.has_signal("enemy_hit_signal"):
-		module_parent.enemy_hit_signal.connect(change_direction)
-
+func bullet_effect_ready() -> void:
+	if bullet.has_signal("enemy_hit_signal"):
+		bullet.enemy_hit_signal.connect(change_direction)	
 
 func change_direction() -> void:
-	for module in module_parent.module_list:
+	for module in bullet.module_list:
 		if module is LinearMovement:
 			module.direction = self.global_position.direction_to(get_random_target())
 			module.set_base_displacement()

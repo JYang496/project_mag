@@ -1,26 +1,21 @@
-extends Node2D
+extends Effect
+class_name ChaseEnemy
 
-@onready var bullet : BulletBase = self.get_parent() # Bullet root is parent
 @onready var detect_area: Area2D = $DetectArea
 
 var linear_module : LinearMovement
 var closest_target
-# This module applies after bullet created
-func _ready() -> void:
-	bullet = self.get_parent()
-	if not bullet:
-		print("Error: module does not have owner")
-		return
-	for module in bullet.effect_list:
-		if module is LinearMovement:
-			linear_module = module
 
+func bullet_effect_ready() -> void:
+	for effect in bullet.effect_list:
+		if effect is LinearMovement:
+			linear_module = effect
 
 func _physics_process(delta: float) -> void:
 	# get closest enemy each frame:
 	var targets = detect_area.get_overlapping_areas()
 	var closest_target = get_closest_area_optimized(targets, self)
-	if closest_target:
+	if closest_target and linear_module:
 		linear_module.direction = self.global_position.direction_to(closest_target.global_position)
 		linear_module.speed = 10
 		linear_module.adjust_base_displacement()

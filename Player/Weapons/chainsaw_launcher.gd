@@ -113,7 +113,7 @@ func _on_shoot():
 	spawn_bullet.hitbox_type = "dot"
 	spawn_bullet.dot_cd = dot_cd
 	apply_linear(spawn_bullet, bullet_direction, speed)
-	apply_affects(spawn_bullet)
+	apply_effects(spawn_bullet)
 	apply_spin(spawn_bullet)
 	apply_speed_change_on_hit(spawn_bullet, 0.3)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
@@ -131,7 +131,7 @@ func _on_over_charge():
 	spawn_bullet.hitbox_type = "dot"
 	spawn_bullet.dot_cd = dot_cd
 	apply_linear(spawn_bullet, bullet_direction, speed)
-	apply_affects(spawn_bullet)
+	apply_effects(spawn_bullet)
 	apply_spin(spawn_bullet)
 	apply_speed_change_on_hit(spawn_bullet, 0.3)
 	get_tree().root.call_deferred("add_child",spawn_bullet)

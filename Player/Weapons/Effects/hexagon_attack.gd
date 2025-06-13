@@ -1,6 +1,6 @@
-extends Node2D
+extends Effect
+class_name HexagonAttack
 
-@onready var module_parent = self.get_parent() # Bullet root is parent
 @onready var rotate_timer: Timer = $RotateTimer
 var linear_module : LinearMovement
 
@@ -16,16 +16,13 @@ var next_rotate_index : int = 0
 # Reverse when time is unit of 11, 8, 5
 var reverse_when : int = -1
 
-func _ready() -> void:
-	if not module_parent:
-		print("Error: module does not have owner")
-		return
-	for module in module_parent.module_list:
+
+func bullet_effect_ready() -> void:
+	for module in bullet.module_list:
 		if module is LinearMovement:
 			linear_module = module
 	rotate_timer.wait_time = wait_time
-	rotate_timer.start()
-
+	rotate_timer.start()	
 
 func _on_rotate_timer_timeout() -> void:
 	unit_of_period += 1

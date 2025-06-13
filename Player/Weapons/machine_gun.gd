@@ -90,7 +90,7 @@ func _on_shoot():
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.size = size
 	apply_linear(spawn_bullet, bullet_direction, speed)
-	apply_affects(spawn_bullet)
+	apply_effects(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 	adjust_attack_speed(1.2)
 

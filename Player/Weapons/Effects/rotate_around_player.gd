@@ -1,4 +1,4 @@
-extends Node2D
+extends Effect
 class_name RotateAroundPlayer
 
 var radius : float = 40.0
@@ -9,19 +9,12 @@ var oc_mode = false
 var max_radius : float = 200.0
 var radius_hit_max : bool = false
 
-#@onready var player = get_tree().get_first_node_in_group("player")
-@onready var module_parent = self.get_parent() # Bullet root is parent
-
-
-func _ready() -> void:
-	if not module_parent:
-		print("Error: module does not have owner")
-		return
-	module_parent.base_displacement = Vector2.ZERO
+func bullet_effect_ready() -> void:
+	bullet.base_displacement = Vector2.ZERO
 	max_radius = radius * 5
 
 func _physics_process(delta: float) -> void:
-	if not module_parent:
+	if not bullet:
 		return
 	if oc_mode:
 		if radius > max_radius:
@@ -34,6 +27,6 @@ func _physics_process(delta: float) -> void:
 	angle += spin_speed * delta
 	var x_pos = radius * cos(angle + angle_offset)
 	var y_pos = radius * sin(angle + angle_offset)
-	module_parent.global_position = Vector2(x_pos,y_pos) + PlayerData.player.global_position
+	bullet.global_position = Vector2(x_pos,y_pos) + PlayerData.player.global_position
 	if radius < 10:
-		module_parent.queue_free()
+		bullet.queue_free()

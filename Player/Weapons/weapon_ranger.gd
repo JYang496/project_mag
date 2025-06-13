@@ -26,6 +26,7 @@ var size : float = 1.0
 var justAttacked = false
 
 var module_list = []
+var bullet_effect_list = []
 
 var features = []
 # object that needs to be overwrited in child class
@@ -79,7 +80,7 @@ func apply_linear(blt_node : Node2D, direction : Vector2 = Vector2.UP, blt_speed
 	linear_movement_ins.direction = direction
 	linear_movement_ins.speed = blt_speed
 	blt_node.call_deferred("add_child",linear_movement_ins)
-	blt_node.module_list.append(linear_movement_ins)
+	blt_node.effect_list.append(linear_movement_ins)
 	module_list.append(linear_movement_ins)
 
 func apply_spiral(blt_node : Node2D, blt_spin_rate : float = PI, blt_spin_speed : float = 100.0) -> void:
@@ -87,26 +88,26 @@ func apply_spiral(blt_node : Node2D, blt_spin_rate : float = PI, blt_spin_speed 
 	spiral_movement_ins.spin_rate = blt_spin_rate
 	spiral_movement_ins.spin_speed = blt_spin_speed
 	blt_node.call_deferred("add_child",spiral_movement_ins)
-	blt_node.module_list.append(spiral_movement_ins)
+	blt_node.effect_list.append(spiral_movement_ins)
 	module_list.append(spiral_movement_ins)
 
 func apply_ricochet(blt_node : Node2D) -> void:
 	var ricochet_effect_ins = ricochet_effect.instantiate()
 	blt_node.call_deferred("add_child",ricochet_effect_ins)
-	blt_node.module_list.append(ricochet_effect_ins)
+	blt_node.effect_list.append(ricochet_effect_ins)
 	module_list.append(ricochet_effect_ins)
 
 func apply_explosion(blt_node : Node2D) -> void:
 	var explosion_effect_ins = explosion_effect.instantiate()
 	blt_node.call_deferred("add_child",explosion_effect_ins)
-	blt_node.module_list.append(explosion_effect_ins)
+	blt_node.effect_list.append(explosion_effect_ins)
 	module_list.append(explosion_effect_ins)
 
 func apply_speed_change_on_hit(blt_node : Node2D, speed_rate : float) -> void:
 	var speed_change_on_hit_ins = speed_change_on_hit.instantiate()
 	speed_change_on_hit_ins.speed_rate = speed_rate
 	blt_node.call_deferred("add_child",speed_change_on_hit_ins)
-	blt_node.module_list.append(speed_change_on_hit_ins)
+	blt_node.effect_list.append(speed_change_on_hit_ins)
 	module_list.append(speed_change_on_hit_ins)
 	
 func apply_knock_back(blt_node : Node2D, direction : Vector2, amount : float) -> void:
@@ -114,12 +115,12 @@ func apply_knock_back(blt_node : Node2D, direction : Vector2, amount : float) ->
 
 func apply_dmg_up_on_enemy_death(blt_node) -> void:
 	var dmg_up_on_enemy_death_ins = d_up_on_emy_d_effect.instantiate()
-	dmg_up_on_enemy_death_ins.module_parent = blt_node
+	#dmg_up_on_enemy_death_ins.module_parent = blt_node
 	blt_node.call_deferred("add_child",dmg_up_on_enemy_death_ins)
 	blt_node.module_list.append(dmg_up_on_enemy_death_ins)
 	module_list.append(dmg_up_on_enemy_death_ins)
 
-func apply_affects(bullet) -> void:
+func apply_effects(bullet) -> void:
 	for feature in features:
 		match feature:
 			"spiral":
