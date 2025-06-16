@@ -75,9 +75,20 @@ func _on_shoot():
 func get_random_target():
 		return get_global_mouse_position()
 
+# TODO: testing in progress
+func apply_effects_on_bullet(effect_list, bullet) -> void:
+	for effect in effect_list:
+		var effect_load = load("res://Player/Weapons/Effects/%s.tscn" %effect.name)
+		var effect_ins = effect_load.instantiate()
+		for attribute in effect.attributes:
+			effect_ins.set(attribute.key,attribute.value)
+		bullet.call_deferred("add_child", effect_ins)
+		bullet.effect_list.append(effect_ins)
+
 func apply_linear(blt_node : Node2D, direction : Vector2 = Vector2.UP, blt_speed : float = 400.0) -> void:
+	var load_in = load("res://Player/Weapons/Effects/linear_movement.tscn")
 	var linear_movement_ins = linear_movement.instantiate()
-	linear_movement_ins.direction = direction
+	linear_movement_ins.set("direction", direction)
 	linear_movement_ins.speed = blt_speed
 	blt_node.call_deferred("add_child",linear_movement_ins)
 	blt_node.effect_list.append(linear_movement_ins)
@@ -115,9 +126,8 @@ func apply_knock_back(blt_node : Node2D, direction : Vector2, amount : float) ->
 
 func apply_dmg_up_on_enemy_death(blt_node) -> void:
 	var dmg_up_on_enemy_death_ins = d_up_on_emy_d_effect.instantiate()
-	#dmg_up_on_enemy_death_ins.module_parent = blt_node
 	blt_node.call_deferred("add_child",dmg_up_on_enemy_death_ins)
-	blt_node.module_list.append(dmg_up_on_enemy_death_ins)
+	blt_node.effect_list.append(dmg_up_on_enemy_death_ins)
 	module_list.append(dmg_up_on_enemy_death_ins)
 
 func apply_effects(bullet) -> void:

@@ -15,5 +15,7 @@ var FINAL_MAX_LEVEL : int = 7
 func set_level(lv):
 	pass
 
+
+
 func set_max_level(ml : int):
 	max_level = ml

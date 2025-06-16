@@ -67,7 +67,7 @@ var weapon_data = {
 		"hp": "2",
 		"reload": "1.4",
 		"bullet_count": "8",
-		"cost": "1.3",
+		"cost": "1",
 		"features": [],
 	},
 	"7": {
