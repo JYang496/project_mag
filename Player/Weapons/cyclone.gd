@@ -127,15 +127,14 @@ func _on_shoot():
 	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
 	spawn_bullet.damage = damage
-	var direction = global_position.direction_to(get_random_target()).normalized()
-	spawn_bullet.knock_back = {"amount": knock_back_amount, "angle": direction}
+	bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	spawn_bullet.knock_back = {"amount": knock_back_amount, "angle": bullet_direction}
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.size = size
-	apply_linear(spawn_bullet, direction, speed)
 	apply_spiral(spawn_bullet, spin_rate,spin_speed)
-	apply_effects(spawn_bullet)
+	apply_effects_on_bullet(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
@@ -148,11 +147,11 @@ func _on_over_charge():
 	tornado_ins.dot_cd = 0.25
 	tornado_ins.damage = damage
 	tornado_ins.expire_time = 10
-	var direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_random_target()).normalized()
 	tornado_ins.hp = 999
 	tornado_ins.blt_texture = tornado_texture
 	tornado_ins.global_position = global_position
-	apply_linear(tornado_ins, direction, 60)
+	apply_effects_on_bullet(tornado_ins)
 	get_tree().root.call_deferred("add_child",tornado_ins)
 	remove_weapon()
 

@@ -107,15 +107,14 @@ func _on_shoot():
 	for i in bullet_count:
 		var spawn_bullet = bullet.instantiate()
 		var current_angle = start_angle + start_offset + (angle_step * i)
-		var bullet_direction = Vector2.RIGHT.rotated(current_angle)
+		bullet_direction = Vector2.RIGHT.rotated(current_angle)
 		spawn_bullet.damage = damage
 		spawn_bullet.global_position = global_position
 		spawn_bullet.blt_texture = bul_texture
 		spawn_bullet.size = size
 		spawn_bullet.hp = hp
 		spawn_bullet.expire_time = 0.3
-		apply_linear(spawn_bullet, bullet_direction, speed)
-		apply_effects(spawn_bullet)
+		apply_effects_on_bullet(spawn_bullet)
 		get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
@@ -132,14 +131,13 @@ func _on_over_charge():
 		for i in bullet_count:
 			var spawn_bullet = bullet.instantiate()
 			var current_angle = start_angle + start_offset + (angle_step * i)
-			var bullet_direction = Vector2.RIGHT.rotated(current_angle)
+			bullet_direction = Vector2.RIGHT.rotated(current_angle)
 			spawn_bullet.damage = damage * 2
 			spawn_bullet.global_position = global_position
 			spawn_bullet.blt_texture = bul_texture
 			spawn_bullet.hp = hp
 			spawn_bullet.expire_time = 0.3
-			apply_linear(spawn_bullet, bullet_direction, speed)
-			apply_effects(spawn_bullet)
+			apply_effects_on_bullet(spawn_bullet)
 			get_tree().root.call_deferred("add_child",spawn_bullet)
 		await get_tree().create_timer(0.3).timeout
 	remove_weapon()

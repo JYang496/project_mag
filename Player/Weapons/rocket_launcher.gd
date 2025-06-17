@@ -78,15 +78,14 @@ func _on_shoot():
 	justAttacked = true
 	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
-	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_random_target()).normalized()
 	spawn_bullet.damage = damage
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.size = size
-	apply_linear(spawn_bullet, bullet_direction, speed)
 	apply_explosion(spawn_bullet)
-	apply_effects(spawn_bullet)
+	apply_effects_on_bullet(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
@@ -106,11 +105,13 @@ func _on_over_charge():
 			if area is not HurtBox:
 				break
 			var spawn_bullet = bullet.instantiate()
+			bullet_direction = null
 			spawn_bullet.damage = damage
 			spawn_bullet.blt_texture = bul_texture
 			var fall_ins = fall_effect.instantiate()
 			fall_ins.destination = area.global_position
 			apply_explosion(spawn_bullet)
+			apply_effects_on_bullet(spawn_bullet)
 			spawn_bullet.call_deferred("add_child",fall_ins)
 			get_tree().root.call_deferred("add_child",spawn_bullet)
 			n += 1

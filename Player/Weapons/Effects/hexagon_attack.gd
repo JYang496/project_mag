@@ -18,7 +18,7 @@ var reverse_when : int = -1
 
 
 func bullet_effect_ready() -> void:
-	for module in bullet.module_list:
+	for module in bullet.effect_list:
 		if module is LinearMovement:
 			linear_module = module
 	rotate_timer.wait_time = wait_time

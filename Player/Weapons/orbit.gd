@@ -93,6 +93,7 @@ func set_level(lv) -> void:
 		spawn_bullet.size = size
 		spawn_bullet.blt_texture = bul_texture
 		apply_rotate_around_player(spawn_bullet, offset_step, n)
+		apply_effects_on_bullet(spawn_bullet)
 		get_tree().root.call_deferred("add_child",spawn_bullet)
 		satellites.append(spawn_bullet)
 

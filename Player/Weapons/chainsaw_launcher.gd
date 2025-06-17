@@ -104,7 +104,7 @@ func _on_shoot():
 	justAttacked = true
 	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
-	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_random_target()).normalized()
 	spawn_bullet.damage = damage
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
@@ -112,8 +112,7 @@ func _on_shoot():
 	spawn_bullet.size = size
 	spawn_bullet.hitbox_type = "dot"
 	spawn_bullet.dot_cd = dot_cd
-	apply_linear(spawn_bullet, bullet_direction, speed)
-	apply_effects(spawn_bullet)
+	apply_effects_on_bullet(spawn_bullet)
 	apply_spin(spawn_bullet)
 	apply_speed_change_on_hit(spawn_bullet, 0.3)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
@@ -122,7 +121,7 @@ func _on_over_charge():
 	print(self,"OVER CHARGE")
 	justAttacked = true
 	var spawn_bullet = bullet.instantiate()
-	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_random_target()).normalized()
 	spawn_bullet.damage = damage
 	spawn_bullet.hp = 7777
 	spawn_bullet.expire_time = 17
@@ -130,8 +129,7 @@ func _on_over_charge():
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.hitbox_type = "dot"
 	spawn_bullet.dot_cd = dot_cd
-	apply_linear(spawn_bullet, bullet_direction, speed)
-	apply_effects(spawn_bullet)
+	apply_effects_on_bullet(spawn_bullet)
 	apply_spin(spawn_bullet)
 	apply_speed_change_on_hit(spawn_bullet, 0.3)
 	get_tree().root.call_deferred("add_child",spawn_bullet)

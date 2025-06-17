@@ -23,10 +23,12 @@ var base_reload : float
 var reload : float
 var cooldown_timer : Timer
 var size : float = 1.0
+var bullet_direction
 var justAttacked = false
 
 var module_list = []
-var bullet_effect_list = []
+var bullet_effects : Dictionary  = {}
+var effect_sample = {"name":"effect_name", "attribute":{"key1":123,"key2":234}}
 
 var features = []
 # object that needs to be overwrited in child class
@@ -75,13 +77,28 @@ func _on_shoot():
 func get_random_target():
 		return get_global_mouse_position()
 
-# TODO: testing in progress
-func apply_effects_on_bullet(effect_list, bullet) -> void:
-	for effect in effect_list:
-		var effect_load = load("res://Player/Weapons/Effects/%s.tscn" %effect.name)
+# This function calls before a bullet is added
+func apply_effects_on_bullet(bullet : Node2D) -> void:
+	
+	# Update linear movement if exist
+	if bullet_direction and speed:
+		if bullet_effects.has("linear_movement"):
+			bullet_effects.get("linear_movement").set("direction",bullet_direction)
+			bullet_effects.get("linear_movement").set("speed",speed)
+		else:
+			bullet_effects.assign({"linear_movement":{"direction":bullet_direction, "speed": speed}})
+	else:
+		if bullet_effects.has("linear_movement"):
+			bullet_effects.erase("linear_movement")
+
+	for effect in bullet_effects:
+		var effect_load = load("res://Player/Weapons/Effects/%s.tscn" %effect)
 		var effect_ins = effect_load.instantiate()
-		for attribute in effect.attributes:
-			effect_ins.set(attribute.key,attribute.value)
+		for attribute in bullet_effects.get(effect):
+			prints(attribute,bullet_effects.get(effect).get(attribute))
+			effect_ins.set(attribute,bullet_effects.get(effect).get(attribute))
+		if not bullet:
+			printerr("Bullet not found")
 		bullet.call_deferred("add_child", effect_ins)
 		bullet.effect_list.append(effect_ins)
 

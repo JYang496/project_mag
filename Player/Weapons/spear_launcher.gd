@@ -74,6 +74,7 @@ var weapon_data = {
 	}
 }
 
+
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
@@ -91,17 +92,17 @@ func _on_shoot():
 	justAttacked = true
 	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
-	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_random_target()).normalized()
 	spawn_bullet.damage = damage
 	spawn_bullet.hp = hp
 	spawn_bullet.size = size
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
-	apply_return_on_timeour(spawn_bullet)
-	apply_linear(spawn_bullet, bullet_direction, speed)
+	apply_return_on_timeout(spawn_bullet)
+	apply_effects_on_bullet(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
-func apply_return_on_timeour(blt_node, stop_time : float = 0.5, return_time : float = 1.0) -> void:
+func apply_return_on_timeout(blt_node, stop_time : float = 0.5, return_time : float = 1.0) -> void:
 	var return_on_timeour_ins = return_on_timeout.instantiate()
 	return_on_timeour_ins.return_time = return_time
 	return_on_timeour_ins.stop_time = stop_time
@@ -123,7 +124,7 @@ func _on_over_charge():
 		spawn_bullet.hp = hp * 2
 		spawn_bullet.global_position = global_position
 		spawn_bullet.blt_texture = bul_texture
-		apply_return_on_timeour(spawn_bullet)
+		apply_return_on_timeout(spawn_bullet)
 		apply_linear(spawn_bullet, bullet_direction, speed)
 		get_tree().root.call_deferred("add_child",spawn_bullet)
 		await get_tree().create_timer(0.05).timeout

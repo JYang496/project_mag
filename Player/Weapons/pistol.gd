@@ -94,14 +94,13 @@ func _on_shoot():
 	justAttacked = true
 	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
-	var bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_random_target()).normalized()
 	spawn_bullet.damage = damage
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.size = size
 	spawn_bullet.blt_texture = bul_texture
-	apply_linear(spawn_bullet, bullet_direction, speed)
-	apply_effects(spawn_bullet)
+	apply_effects_on_bullet(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
@@ -117,13 +116,13 @@ func _on_over_charge():
 	var wait_time = 0.05
 	for i in range(6):
 		var spawn_bullet = bullet.instantiate()
-		var bullet_direction = global_position.direction_to(get_random_target()).normalized()
+		bullet_direction = global_position.direction_to(get_random_target()).normalized()
 		spawn_bullet.damage = damage
 		spawn_bullet.expire_time = 6.6
 		spawn_bullet.hp = 66
 		spawn_bullet.global_position = global_position
 		spawn_bullet.blt_texture = bul_texture
-		apply_linear(spawn_bullet, bullet_direction, speed)
+		apply_effects_on_bullet(spawn_bullet)
 		apply_hexagon_attack(spawn_bullet,i,unit_of_time)
 		get_tree().root.call_deferred("add_child",spawn_bullet)
 		await get_tree().create_timer(wait_time).timeout
@@ -136,5 +135,5 @@ func apply_hexagon_attack(blt_node : Node2D, id : int, unit_of_time : float) -> 
 	hexagon_attack_ins.id = id
 	hexagon_attack_ins.wait_time = unit_of_time
 	blt_node.call_deferred("add_child",hexagon_attack_ins)
-	blt_node.module_list.append(hexagon_attack_ins)
+	blt_node.effect_list.append(hexagon_attack_ins)
 	module_list.append(hexagon_attack_ins)

@@ -13,7 +13,7 @@ func _on_detect_area_area_entered(area: Area2D) -> void:
 
 func _on_enemy_death() -> void:
 	if "damage" in bullet:
-		bullet.base_damage += dmg_up_per_kill
+		bullet.damage += dmg_up_per_kill
 
 func _on_detect_area_area_exited(area: Area2D) -> void:
 	if area is HurtBox and area.hurtbox_owner.is_in_group("enemies"):
