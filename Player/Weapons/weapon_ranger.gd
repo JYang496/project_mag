@@ -79,85 +79,32 @@ func get_random_target():
 
 # This function calls before a bullet is added
 func apply_effects_on_bullet(bullet : Node2D) -> void:
-	
-	# Update linear movement if exist
+
+	# Update linear movement if exist, it is prerequestive effect of some effects
 	if bullet_direction and speed:
-		if bullet_effects.has("linear_movement"):
-			bullet_effects.get("linear_movement").set("direction",bullet_direction)
-			bullet_effects.get("linear_movement").set("speed",speed)
-		else:
-			bullet_effects.assign({"linear_movement":{"direction":bullet_direction, "speed": speed}})
+		#bullet_effects.set("linear_movement",{"direction":bullet_direction, "speed": speed})
+		var linear_load = load("res://Player/Weapons/Effects/linear_movement.tscn")
+		var linear_load_ins = linear_load.instantiate()
+		linear_load_ins.set("direction", bullet_direction)
+		linear_load_ins.set("speed", speed)
+		bullet.call_deferred("add_child", linear_load_ins)
+		bullet.effect_list.append(linear_load_ins)
 	else:
 		if bullet_effects.has("linear_movement"):
 			bullet_effects.erase("linear_movement")
-
 	for effect in bullet_effects:
 		var effect_load = load("res://Player/Weapons/Effects/%s.tscn" %effect)
 		var effect_ins = effect_load.instantiate()
 		for attribute in bullet_effects.get(effect):
-			prints(attribute,bullet_effects.get(effect).get(attribute))
+			prints("attr",attribute,bullet_effects.get(effect).get(attribute))
 			effect_ins.set(attribute,bullet_effects.get(effect).get(attribute))
 		if not bullet:
 			printerr("Bullet not found")
 		bullet.call_deferred("add_child", effect_ins)
 		bullet.effect_list.append(effect_ins)
 
-func apply_linear(blt_node : Node2D, direction : Vector2 = Vector2.UP, blt_speed : float = 400.0) -> void:
-	var load_in = load("res://Player/Weapons/Effects/linear_movement.tscn")
-	var linear_movement_ins = linear_movement.instantiate()
-	linear_movement_ins.set("direction", direction)
-	linear_movement_ins.speed = blt_speed
-	blt_node.call_deferred("add_child",linear_movement_ins)
-	blt_node.effect_list.append(linear_movement_ins)
-	module_list.append(linear_movement_ins)
-
-func apply_spiral(blt_node : Node2D, blt_spin_rate : float = PI, blt_spin_speed : float = 100.0) -> void:
-	var spiral_movement_ins = spiral_movement.instantiate()
-	spiral_movement_ins.spin_rate = blt_spin_rate
-	spiral_movement_ins.spin_speed = blt_spin_speed
-	blt_node.call_deferred("add_child",spiral_movement_ins)
-	blt_node.effect_list.append(spiral_movement_ins)
-	module_list.append(spiral_movement_ins)
-
-func apply_ricochet(blt_node : Node2D) -> void:
-	var ricochet_effect_ins = ricochet_effect.instantiate()
-	blt_node.call_deferred("add_child",ricochet_effect_ins)
-	blt_node.effect_list.append(ricochet_effect_ins)
-	module_list.append(ricochet_effect_ins)
-
-func apply_explosion(blt_node : Node2D) -> void:
-	var explosion_effect_ins = explosion_effect.instantiate()
-	blt_node.call_deferred("add_child",explosion_effect_ins)
-	blt_node.effect_list.append(explosion_effect_ins)
-	module_list.append(explosion_effect_ins)
-
-func apply_speed_change_on_hit(blt_node : Node2D, speed_rate : float) -> void:
-	var speed_change_on_hit_ins = speed_change_on_hit.instantiate()
-	speed_change_on_hit_ins.speed_rate = speed_rate
-	blt_node.call_deferred("add_child",speed_change_on_hit_ins)
-	blt_node.effect_list.append(speed_change_on_hit_ins)
-	module_list.append(speed_change_on_hit_ins)
-	
-func apply_knock_back(blt_node : Node2D, direction : Vector2, amount : float) -> void:
-	pass
-
-func apply_dmg_up_on_enemy_death(blt_node) -> void:
-	var dmg_up_on_enemy_death_ins = d_up_on_emy_d_effect.instantiate()
-	blt_node.call_deferred("add_child",dmg_up_on_enemy_death_ins)
-	blt_node.effect_list.append(dmg_up_on_enemy_death_ins)
-	module_list.append(dmg_up_on_enemy_death_ins)
-
 func apply_effects(bullet) -> void:
-	for feature in features:
-		match feature:
-			"spiral":
-				apply_spiral(bullet)
-			"ricochet":
-				apply_ricochet(bullet)
-			"explosion":
-				apply_explosion(bullet)
-			"speed_change_on_hit":
-				apply_speed_change_on_hit(bullet, 0.5)
+	pass
 
 func calculate_status() -> void:
 	damage = base_damage

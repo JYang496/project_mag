@@ -95,9 +95,7 @@ func set_level(lv):
 	dot_cd = float(weapon_data[lv]["dot_cd"])
 	base_reload = float(weapon_data[lv]["reload"])
 	calculate_status()
-	for feature in weapon_data[lv]["features"]:
-		if not features.has(feature):
-			features.append(feature)
+	bullet_effects.set("speed_change_on_hit",{"speed_rate":0.3})
 
 	
 func _on_shoot():
@@ -112,9 +110,8 @@ func _on_shoot():
 	spawn_bullet.size = size
 	spawn_bullet.hitbox_type = "dot"
 	spawn_bullet.dot_cd = dot_cd
-	apply_effects_on_bullet(spawn_bullet)
 	apply_spin(spawn_bullet)
-	apply_speed_change_on_hit(spawn_bullet, 0.3)
+	apply_effects_on_bullet(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
 func _on_over_charge():
@@ -129,11 +126,10 @@ func _on_over_charge():
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.hitbox_type = "dot"
 	spawn_bullet.dot_cd = dot_cd
-	apply_effects_on_bullet(spawn_bullet)
 	apply_spin(spawn_bullet)
-	apply_speed_change_on_hit(spawn_bullet, 0.3)
+	bullet_effects.set("dmg_up_on_enemy_death",{"dmg_up_per_kill":2})
+	apply_effects_on_bullet(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
-	apply_dmg_up_on_enemy_death(spawn_bullet)
 	apply_scale_up_by_time(spawn_bullet)
 	apply_chase_closest_enemy(spawn_bullet)
 	remove_weapon()

@@ -29,7 +29,6 @@ var weapon_data = {
 		"hp": "8",
 		"reload": "2",
 		"cost": "1",
-		"features": [],
 	},
 	"2": {
 		"level": "2",
@@ -41,7 +40,6 @@ var weapon_data = {
 		"hp": "10",
 		"reload": "2",
 		"cost": "1",
-		"features": [],
 	},
 	"3": {
 		"level": "3",
@@ -53,7 +51,6 @@ var weapon_data = {
 		"hp": "12",
 		"reload": "1.8",
 		"cost": "1",
-		"features": [],
 	},
 	"4": {
 		"level": "4",
@@ -65,7 +62,6 @@ var weapon_data = {
 		"hp": "15",
 		"reload": "1.8",
 		"cost": "1",
-		"features": [],
 	},
 	"5": {
 		"level": "5",
@@ -77,7 +73,6 @@ var weapon_data = {
 		"hp": "20",
 		"reload": "1.5",
 		"cost": "1",
-		"features": [],
 	},
 	"6": {
 		"level": "6",
@@ -89,7 +84,6 @@ var weapon_data = {
 		"hp": "20",
 		"reload": "1.5",
 		"cost": "1",
-		"features": [],
 	},
 	"7": {
 		"level": "7",
@@ -101,7 +95,6 @@ var weapon_data = {
 		"hp": "20",
 		"reload": "1.5",
 		"cost": "1",
-		"features": [],
 	}
 }
 
@@ -117,9 +110,7 @@ func set_level(lv):
 	base_hp = int(weapon_data[lv]["hp"])
 	base_reload = float(weapon_data[lv]["reload"])
 	calculate_status()
-	for feature in weapon_data[lv]["features"]:
-		if not features.has(feature):
-			features.append(feature)
+	bullet_effects.set("spiral_movement",{"spin_rate":spin_rate, "spin_speed": spin_speed})
 
 
 func _on_shoot():
@@ -128,12 +119,11 @@ func _on_shoot():
 	var spawn_bullet = bullet.instantiate()
 	spawn_bullet.damage = damage
 	bullet_direction = global_position.direction_to(get_random_target()).normalized()
-	spawn_bullet.knock_back = {"amount": knock_back_amount, "angle": bullet_direction}
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.size = size
-	apply_spiral(spawn_bullet, spin_rate,spin_speed)
+	bullet_effects.set("knock_back_effect",{"amount": knock_back_amount, "angle": bullet_direction})
 	apply_effects_on_bullet(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
@@ -142,6 +132,7 @@ func _on_over_charge():
 		return
 	self.casting_oc_skill = true
 	print(self,"OVER CHARGE")
+	speed = base_speed / 5
 	var tornado_ins = tornado.instantiate()
 	tornado_ins.hitbox_type = "dot"
 	tornado_ins.dot_cd = 0.25
@@ -151,8 +142,10 @@ func _on_over_charge():
 	tornado_ins.hp = 999
 	tornado_ins.blt_texture = tornado_texture
 	tornado_ins.global_position = global_position
+	bullet_effects.set("knock_back_effect",{"amount": knock_back_amount, "angle": bullet_direction})
 	apply_effects_on_bullet(tornado_ins)
 	get_tree().root.call_deferred("add_child",tornado_ins)
+	speed = base_speed
 	remove_weapon()
 
 func get_sprite():

@@ -125,7 +125,8 @@ func _on_over_charge():
 		spawn_bullet.global_position = global_position
 		spawn_bullet.blt_texture = bul_texture
 		apply_return_on_timeout(spawn_bullet)
-		apply_linear(spawn_bullet, bullet_direction, speed)
+		#apply_linear(spawn_bullet, bullet_direction, speed)
+		apply_effects_on_bullet(spawn_bullet)
 		get_tree().root.call_deferred("add_child",spawn_bullet)
 		await get_tree().create_timer(0.05).timeout
 	

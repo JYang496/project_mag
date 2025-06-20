@@ -70,9 +70,7 @@ func set_level(lv):
 	base_hp = int(weapon_data[lv]["hp"])
 	base_reload = float(weapon_data[lv]["reload"])
 	calculate_status()
-	for feature in weapon_data[lv]["features"]:
-		if not features.has(feature):
-			features.append(feature)
+	bullet_effects.set("explosion_effect",{"damage":base_damage, "explosion_size": size * 2})
 	
 func _on_shoot():
 	justAttacked = true
@@ -84,7 +82,6 @@ func _on_shoot():
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.size = size
-	apply_explosion(spawn_bullet)
 	apply_effects_on_bullet(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
@@ -110,7 +107,6 @@ func _on_over_charge():
 			spawn_bullet.blt_texture = bul_texture
 			var fall_ins = fall_effect.instantiate()
 			fall_ins.destination = area.global_position
-			apply_explosion(spawn_bullet)
 			apply_effects_on_bullet(spawn_bullet)
 			spawn_bullet.call_deferred("add_child",fall_ins)
 			get_tree().root.call_deferred("add_child",spawn_bullet)
