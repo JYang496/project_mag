@@ -96,7 +96,7 @@ func apply_effects_on_bullet(bullet : Node2D) -> void:
 		var effect_load = load("res://Player/Weapons/Effects/%s.tscn" %effect)
 		var effect_ins = effect_load.instantiate()
 		for attribute in bullet_effects.get(effect):
-			prints("attr",attribute,bullet_effects.get(effect).get(attribute))
+			prints("attr:",attribute,bullet_effects.get(effect).get(attribute))
 			effect_ins.set(attribute,bullet_effects.get(effect).get(attribute))
 		if not bullet:
 			printerr("Bullet not found")

@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3 uid="uid://lxouf7ee4m4w"]
+
+[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_t6qi5"]
+[ext_resource type="Script" uid="uid://b3nslo6guqxoq" path="res://Player/Weapons/Modules/erosion.gd" id="2_vpd86"]
+
+[node name="ErosionApply" instance=ExtResource("1_t6qi5")]
+script = ExtResource("2_vpd86")

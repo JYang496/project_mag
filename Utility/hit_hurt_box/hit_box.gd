@@ -1,7 +1,7 @@
 extends Area2D
 class_name HitBox
 
-@onready var collision = get_node("CollisionShape2D")
+@onready var collision = $CollisionShape2D
 var hitbox_owner
 var attack : Attack
 
