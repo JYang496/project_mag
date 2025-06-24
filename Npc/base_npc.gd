@@ -15,14 +15,10 @@ var knockback = {
 	"angle": Vector2.ZERO
 }
 
+@onready var status_timer: Timer = $StatusTimer
+var status_list :Dictionary = {"erosion":{"time":5,"damage":1}}
 var overlapping : bool = false
 var is_dead: bool = false
-
-func _ready():
-	pass
-
-func _physics_process(_delta):
-	pass
 
 
 func damaged(attack:Attack):
@@ -37,7 +33,6 @@ func damaged(attack:Attack):
 	knockback.amount = attack.knock_back.amount
 	knockback.angle = attack.knock_back.angle
 	
-	
 	if is_dead:
 		return  # Prevents further damage processing if already dead
 	hp -= attack.damage
@@ -47,3 +42,12 @@ func damaged(attack:Attack):
 
 func death():
 		queue_free()
+
+func _on_status_timer_timeout() -> void:
+	if status_list.is_empty():
+		return
+	for status in status_list.keys():
+		if status == "erosion":
+			status_list[status]["time"] -= 1
+			if status_list[status]["time"] <= 0:
+				status_list.erase(status)

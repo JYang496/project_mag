@@ -17,7 +17,7 @@ var weapon_data = {
 		"level": "1",
 		"damage": "2",
 		"speed": "200",
-		"hp": "10",
+		"hp": "15",
 		"dot_cd": "0.1",
 		"reload": "1",
 		"cost": "1",

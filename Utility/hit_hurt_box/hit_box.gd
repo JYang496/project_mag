@@ -13,18 +13,27 @@ func _ready() -> void:
 func _on_area_entered(area):
 	if area is HurtBox:
 		hitbox_owner.overlapping = true
-		var target = area.get_owner()
-		attack = Attack.new()
-		attack.damage = hitbox_owner.damage
-		if "knock_back" in hitbox_owner:
-			attack.knock_back = hitbox_owner.knock_back
-		target.damaged(attack)
-		if hitbox_owner.has_method("enemy_hit"):
-			hitbox_owner.enemy_hit(1)
+		apply_attack(area)
+
+func apply_attack(area) -> void:
+	var target = area.get_owner()
+	apply_effect_on_target(target)
+	attack = Attack.new()
+	attack.damage = hitbox_owner.damage
+	if "knock_back" in hitbox_owner:
+		attack.knock_back = hitbox_owner.knock_back
+	target.damaged(attack)
+	if hitbox_owner.has_method("enemy_hit"):
+		hitbox_owner.enemy_hit(1)	
+
+func apply_effect_on_target(target) -> void:
+	prints("Target:",target)
 
 func _on_area_exited(_exited_area: Area2D) -> void:
+	check_overlapping()
+
+func check_overlapping() -> void:
 	for area in get_overlapping_areas():
 		if area is HurtBox:
 			hitbox_owner.overlapping = true
-			return
-	hitbox_owner.overlapping = false
+		hitbox_owner.overlapping = false
