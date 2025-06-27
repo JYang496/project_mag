@@ -16,7 +16,7 @@ var knockback = {
 }
 
 @onready var status_timer: Timer = $StatusTimer
-var status_list :Dictionary = {"erosion":{"time":5,"damage":1}}
+var status_list :Dictionary = {}
 var overlapping : bool = false
 var is_dead: bool = false
 
@@ -49,5 +49,8 @@ func _on_status_timer_timeout() -> void:
 	for status in status_list.keys():
 		if status == "erosion":
 			status_list[status]["time"] -= 1
-			if status_list[status]["time"] <= 0:
-				status_list.erase(status)
+			var damage = Attack.new()
+			damage.damage = status_list[status].get("damage")
+			self.damaged(damage)
+		if status_list[status]["time"] <= 0:
+			status_list.erase(status)

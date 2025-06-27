@@ -18,7 +18,7 @@ var moveto_enabled = false
 var moveto_dest := Vector2.ZERO
 var distance_mouse_player = 0
 const WEAPON_SLOTS = [[-16,-24],[16,-24],[16,24],[-16,24]]
-
+var status_list = {}
 # Signals
 signal active_skill()
 signal coin_collected()
