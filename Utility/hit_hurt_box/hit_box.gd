@@ -4,7 +4,7 @@ class_name HitBox
 @onready var collision = $CollisionShape2D
 var hitbox_owner
 var attack : Attack
-var status_on_hit = {"erosion": {"time":5,"damage":1}}
+var status_on_hit = {}
 
 func _ready() -> void:
 	if hitbox_owner:

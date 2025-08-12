@@ -28,7 +28,7 @@ var justAttacked = false
 
 var module_list = []
 var bullet_effects : Dictionary  = {}
-var effect_sample = {"name":"effect_name", "attribute":{"key1":123,"key2":234}}
+var effect_sample = {"name":{"key1":123,"key2":234}}
 
 var features = []
 # object that needs to be overwrited in child class
@@ -44,6 +44,7 @@ signal calculate_weapon_hp(hp)
 signal calculate_weapon_speed(speed)
 signal calculate_cd_timer(reload)
 signal calculate_bullet_size(size)
+
 
 func _ready():
 	setup_timer()

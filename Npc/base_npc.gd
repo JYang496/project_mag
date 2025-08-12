@@ -48,9 +48,9 @@ func _on_status_timer_timeout() -> void:
 		return
 	for status in status_list.keys():
 		if status == "erosion":
-			status_list[status]["time"] -= 1
+			status_list[status]["tick"] -= 1
 			var damage = Attack.new()
 			damage.damage = status_list[status].get("damage")
 			self.damaged(damage)
-		if status_list[status]["time"] <= 0:
+		if status_list[status]["tick"] <= 0:
 			status_list.erase(status)
