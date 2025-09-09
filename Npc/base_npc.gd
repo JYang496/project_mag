@@ -29,6 +29,10 @@ func damaged(attack:Attack):
 	hit_label_ins.setNumber(attack.damage)
 	get_tree().root.call_deferred("add_child",hit_label_ins)
 	
+	# Status
+	if status_timer.is_stopped():
+		status_timer.start()
+	
 	# Knock back
 	knockback.amount = attack.knock_back.amount
 	knockback.angle = attack.knock_back.angle
@@ -45,12 +49,13 @@ func death():
 
 func _on_status_timer_timeout() -> void:
 	if status_list.is_empty():
+		status_timer.stop()
 		return
 	for status in status_list.keys():
 		if status == "erosion":
-			status_list[status]["tick"] -= 1
 			var damage = Attack.new()
 			damage.damage = status_list[status].get("damage")
 			self.damaged(damage)
+		status_list[status]["tick"] -= 1
 		if status_list[status]["tick"] <= 0:
 			status_list.erase(status)
