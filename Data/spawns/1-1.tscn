@@ -1,9 +1,9 @@
 [gd_scene load_steps=9 format=3 uid="uid://do24df1bfmsmv"]
 
-[ext_resource type="Script" uid="uid://bqyvlcrq4b8xf" path="res://Data/spawns/LevelArray.gd" id="1_sm5it"]
-[ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/spawn_info.gd" id="2_fvbvb"]
-[ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/enemy_rolling_ball.tscn" id="3_n4krr"]
-[ext_resource type="PackedScene" uid="uid://bmy3cber63qwh" path="res://Npc/enemy/enemy_rolling_ball_elite.tscn" id="3_ntoj7"]
+[ext_resource type="Script" uid="uid://bqyvlcrq4b8xf" path="res://data/spawns/LevelArray.gd" id="1_sm5it"]
+[ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/scripts/spawn_info.gd" id="2_fvbvb"]
+[ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/scenes/enemy_rolling_ball.tscn" id="3_n4krr"]
+[ext_resource type="PackedScene" uid="uid://bmy3cber63qwh" path="res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn" id="3_ntoj7"]
 [ext_resource type="Script" uid="uid://cw2vo0cs83hpl" path="res://Utility/reward_info.gd" id="4_mcjiy"]
 
 [sub_resource type="Resource" id="Resource_wnahx"]

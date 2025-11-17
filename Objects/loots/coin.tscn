@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://btvfb13ln7c4a" path="res://Objects/loots/coin.gd" id="1_ncwku"]
 [ext_resource type="Texture2D" uid="uid://d0j6niqs7u06l" path="res://Textures/test/coin.png" id="1_vjq55"]
-[ext_resource type="AudioStream" uid="uid://utmsnfe5n0vx" path="res://Audio/Sounds/collectgem.mp3" id="3_xwqkn"]
+[ext_resource type="AudioStream" uid="uid://utmsnfe5n0vx" path="res://asset/sounds/collectgem.mp3" id="3_xwqkn"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_otdol"]
 size = Vector2(16, 16)

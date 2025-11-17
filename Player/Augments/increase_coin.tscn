@@ -1,9 +1,0 @@
-[gd_scene load_steps=3 format=3 uid="uid://cn0o2cojuvbix"]
-
-[ext_resource type="PackedScene" uid="uid://dsbpu8n2nsiup" path="res://Player/Augments/augment.tscn" id="1_r2iah"]
-[ext_resource type="Script" uid="uid://cdvj6hftgkmff" path="res://Player/Augments/increase_coin.gd" id="2_7h1ed"]
-
-[node name="increase_coin" instance=ExtResource("1_r2iah")]
-script = ExtResource("2_7h1ed")
-
-[connection signal="update_aug_status" from="." to="." method="_on_update_aug_status"]

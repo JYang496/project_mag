@@ -1,9 +1,0 @@
-[gd_scene load_steps=3 format=3 uid="uid://ba0ottbkxnedj"]
-
-[ext_resource type="PackedScene" uid="uid://dve1wwmkd0ynm" path="res://Player/Mechas/Player.tscn" id="1_lapqa"]
-[ext_resource type="Script" uid="uid://djjw0naij1n2g" path="res://Player/Mechas/melee.gd" id="2_fm6xa"]
-
-[node name="Melee" instance=ExtResource("1_lapqa")]
-script = ExtResource("2_fm6xa")
-
-[editable path="HurtBox"]

@@ -1,8 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://dsbpu8n2nsiup"]
-
-[ext_resource type="Script" uid="uid://chamy0hnto2w3" path="res://Player/Augments/Augment.gd" id="1_2j1en"]
-
-[node name="Augment" type="Node2D"]
-script = ExtResource("1_2j1en")
-
-[node name="AugmentSprite" type="Sprite2D" parent="."]

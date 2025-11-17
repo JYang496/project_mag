@@ -1,0 +1,32 @@
+[gd_scene load_steps=5 format=3 uid="uid://ck0p2ef0sv3a0"]
+
+[ext_resource type="PackedScene" uid="uid://4sd4d8lkbkls" path="res://Npc/base_npc.tscn" id="1_y1wsb"]
+[ext_resource type="Script" uid="uid://ytvpcus0icms" path="res://Npc/enemy/scripts/BaseEnemy.gd" id="2_31lbh"]
+[ext_resource type="PackedScene" uid="uid://072a80habhhh" path="res://Utility/hit_hurt_box/hit_box_dot.tscn" id="3_7rcs0"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hlneu"]
+
+[node name="BaseEnemy" groups=["enemies"] instance=ExtResource("1_y1wsb")]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("2_31lbh")
+damage = 0
+
+[node name="HurtBox" parent="." index="0"]
+collision_layer = 4
+
+[node name="HitBoxDot" parent="." index="3" instance=ExtResource("3_7rcs0")]
+collision_mask = 1
+
+[node name="CollisionShape2D" parent="HitBoxDot" index="0"]
+shape = SubResource("RectangleShape2D_hlneu")
+
+[node name="EnableCollisionTimer" type="Timer" parent="." index="4"]
+wait_time = 0.2
+one_shot = true
+autostart = true
+
+[connection signal="timeout" from="EnableCollisionTimer" to="." method="_on_enable_collision_timer_timeout"]
+
+[editable path="HurtBox"]
+[editable path="HitBoxDot"]

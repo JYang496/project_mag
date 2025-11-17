@@ -1,0 +1,26 @@
+[gd_scene load_steps=6 format=3 uid="uid://11s8xuvk76mn"]
+
+[ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_a761y"]
+[ext_resource type="Script" uid="uid://dv5jn203ihbvu" path="res://Npc/enemy/scripts/enemy_rolling_ball.gd" id="2_cf0t7"]
+[ext_resource type="Texture2D" uid="uid://76u4l0356ebe" path="res://Textures/test/rolling_ball.png" id="3_fenux"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_0wqes"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_uhp8g"]
+
+[node name="EnemyRollingBall" instance=ExtResource("1_a761y")]
+texture_filter = 1
+collision_mask = 0
+script = ExtResource("2_cf0t7")
+
+[node name="CollisionShape2D" parent="HurtBox" index="0"]
+shape = SubResource("RectangleShape2D_0wqes")
+
+[node name="Body" parent="." index="1"]
+texture = ExtResource("3_fenux")
+
+[node name="NPCCollision" parent="." index="2"]
+shape = SubResource("RectangleShape2D_uhp8g")
+
+[editable path="HurtBox"]
+[editable path="HitBoxDot"]

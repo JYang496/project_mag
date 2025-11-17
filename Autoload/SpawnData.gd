@@ -3,7 +3,7 @@ extends Node
 var level_list : Array
 
 func _ready() -> void:
-	load_all_spawn_data("res://Data/spawns/")
+	load_all_spawn_data(GlobalVariables.SPAWN_PATN)
 
 func load_all_spawn_data(path):
 	var dir = DirAccess.open(path)
@@ -14,7 +14,7 @@ func load_all_spawn_data(path):
 			if dir.current_is_dir():
 				print("Found directory: " + file_name)
 			elif file_name.ends_with(".tscn"):
-				var level_spawn_info = load("res://Data/spawns/" + file_name)
+				var level_spawn_info = load(GlobalVariables.SPAWN_PATN + file_name)
 				level_list.append(level_spawn_info)
 			file_name = dir.get_next()
 	else:

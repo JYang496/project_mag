@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dyetc0qttcb7y" path="res://World/new_game_btn.gd" id="1_y1dix"]
 [ext_resource type="Script" uid="uid://q8o4fd420oji" path="res://World/continue.gd" id="2_jyp4w"]
-[ext_resource type="PackedScene" uid="uid://05u30gc3rp15" path="res://UI/mecha_select.tscn" id="2_s76s5"]
+[ext_resource type="PackedScene" uid="uid://05u30gc3rp15" path="res://UI/scenes/mecha_select.tscn" id="2_s76s5"]
 [ext_resource type="Script" uid="uid://c10nnuwga4iqw" path="res://World/mecha_container.gd" id="2_w24c8"]
 
 [node name="Start" type="Node2D"]

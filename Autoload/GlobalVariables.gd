@@ -7,3 +7,4 @@ extends Node
 @onready var mecha_list : JSON
 @onready var enemy_spawner : EnemySpawner
 @onready var AUTOSAVE_PATH : String = "res://Data/savedata/autosave.tres"
+@onready var SPAWN_PATN : String = "res://data/spawns/"

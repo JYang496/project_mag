@@ -1,0 +1,52 @@
+[gd_scene load_steps=2 format=3 uid="uid://dfnpmefqatyye"]
+
+[ext_resource type="Script" uid="uid://c4tnifted01bo" path="res://UI/scripts/shop_weapon_slot.gd" id="1_6vnxt"]
+
+[node name="ShopWeaponSlot" type="MarginContainer"]
+custom_minimum_size = Vector2(500, 120)
+script = ExtResource("1_6vnxt")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 2
+color = Color(0.619831, 0.431842, 0.270487, 1)
+
+[node name="Image" type="TextureRect" parent="Background"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 20.0
+offset_right = 90.0
+offset_bottom = 100.0
+
+[node name="EquipName" type="Label" parent="Background"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 10.0
+offset_right = 460.0
+offset_bottom = 33.0
+text = "Sold"
+
+[node name="Socket1" type="Label" parent="Background"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 40.0
+offset_right = 460.0
+offset_bottom = 63.0
+
+[node name="Socket2" type="Label" parent="Background"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 60.0
+offset_right = 460.0
+offset_bottom = 83.0
+
+[node name="Socket3" type="Label" parent="Background"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 80.0
+offset_right = 460.0
+offset_bottom = 103.0
+
+[connection signal="gui_input" from="Background" to="." method="_on_background_gui_input"]
+[connection signal="mouse_entered" from="Background" to="." method="_on_color_rect_mouse_entered"]
+[connection signal="mouse_entered" from="Background" to="." method="_on_background_mouse_entered"]
+[connection signal="mouse_exited" from="Background" to="." method="_on_color_rect_mouse_exited"]

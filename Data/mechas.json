@@ -126,7 +126,7 @@
 			"110.0",
 			"130.0"
 		],
-		"res": "res://Player/Mechas/prototype.tscn",
+		"res": "res://Player/Mechas/scenes/prototype.tscn",
 		"shield": [
 			"0",
 			"0",
@@ -270,7 +270,7 @@
 			"100.0",
 			"100.0"
 		],
-		"res": "res://Player/Mechas/ranger.tscn",
+		"res": "res://Player/Mechas/scenes/ranger.tscn",
 		"shield": [
 			"0",
 			"0",
@@ -413,7 +413,7 @@
 			"100.0",
 			"100.0"
 		],
-		"res": "res://Player/Mechas/melee.tscn",
+		"res": "res://Player/Mechas/scenes/melee.tscn",
 		"shield": [
 			"2",
 			"0",
@@ -556,7 +556,7 @@
 			"100.0",
 			"100.0"
 		],
-		"res": "res://Player/Mechas/collector.tscn",
+		"res": "res://Player/Mechas/scenes/collector.tscn",
 		"shield": [
 			"0",
 			"0",
@@ -699,7 +699,7 @@
 			"100.0",
 			"100.0"
 		],
-		"res": "res://Player/Mechas/turret.tscn",
+		"res": "res://Player/Mechas/scenes/turret.tscn",
 		"shield": [
 			"0",
 			"0",

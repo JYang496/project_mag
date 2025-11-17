@@ -17,27 +17,23 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-PlayerData="*res://Autoload/PlayerData.gd"
-DataHandler="*res://Autoload/DataHandler.gd"
-PhaseManager="*res://Autoload/PhaseManager.gd"
-SpawnData="*res://Autoload/SpawnData.gd"
-InventoryData="*res://Autoload/InventoryData.gd"
-GlobalVariables="*res://Autoload/GlobalVariables.gd"
-
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/json_editor/plugin.cfg")
+GlobalVariables="*res://autoload/GlobalVariables.gd"
+PlayerData="*res://autoload/PlayerData.gd"
+DataHandler="*res://autoload/DataHandler.gd"
+PhaseManager="*res://autoload/PhaseManager.gd"
+SpawnData="*res://autoload/SpawnData.gd"
+InventoryData="*res://autoload/InventoryData.gd"
 
 [file_customization]
 
 folder_colors={
-"res://Autoload/": "gray",
 "res://Npc/": "yellow",
 "res://Objects/": "gray",
 "res://Player/": "green",
 "res://Textures/": "purple",
 "res://UI/": "orange",
-"res://Utility/": "teal"
+"res://Utility/": "teal",
+"res://autoload/": "gray"
 }
 
 [global_group]

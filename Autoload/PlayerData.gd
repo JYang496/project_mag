@@ -150,8 +150,7 @@ var on_select_weapon : int = -1 :
 		if value < -1:
 			value = player_weapon_list.size() - 1
 		on_select_weapon = clampi(value,-1,player_weapon_list.size() - 1)
-		var ui = get_tree().get_first_node_in_group("ui")
-		ui.refresh_border()
+		GlobalVariables.ui.refresh_border()
 
 var player_companion_lsit = []
 var player_augment_list = []

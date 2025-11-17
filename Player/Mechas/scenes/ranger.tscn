@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://70xe28f6s2e8"]
+
+[ext_resource type="PackedScene" uid="uid://dve1wwmkd0ynm" path="res://Player/Mechas/scenes/Player.tscn" id="1_javnt"]
+[ext_resource type="Script" uid="uid://c2nq256vhlnub" path="res://Player/Mechas/scripts/ranger.gd" id="2_6kucl"]
+
+[node name="Ranger" instance=ExtResource("1_javnt")]
+script = ExtResource("2_6kucl")
+
+[editable path="HurtBox"]

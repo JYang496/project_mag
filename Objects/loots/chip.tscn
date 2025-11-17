@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://wxh4436y5d7q" path="res://Objects/loots/chip.gd" id="1_fq3cb"]
 [ext_resource type="Texture2D" uid="uid://0310yks02a0g" path="res://Textures/test/chip.png" id="2_686d1"]
-[ext_resource type="AudioStream" uid="uid://utmsnfe5n0vx" path="res://Audio/Sounds/collectgem.mp3" id="3_686d1"]
+[ext_resource type="AudioStream" uid="uid://utmsnfe5n0vx" path="res://asset/sounds/collectgem.mp3" id="3_686d1"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fq3cb"]
 

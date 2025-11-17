@@ -1,0 +1,26 @@
+[gd_scene load_steps=6 format=3 uid="uid://0ojjxft0cfqk"]
+
+[ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_1lg1t"]
+[ext_resource type="Script" uid="uid://b5gmav5v6en1p" path="res://Npc/enemy/scripts/dummy.gd" id="2_p6u7u"]
+[ext_resource type="Texture2D" uid="uid://dq533db7gjrdf" path="res://Textures/test/square.png" id="2_rif33"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_mgwka"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_mcauc"]
+
+[node name="Dummy" instance=ExtResource("1_1lg1t")]
+script = ExtResource("2_p6u7u")
+movement_speed = 0.0
+hp = 9999
+knockback_recover = 10.0
+
+[node name="CollisionShape2D" parent="HurtBox" index="0"]
+shape = SubResource("RectangleShape2D_mgwka")
+
+[node name="Body" parent="." index="1"]
+texture = ExtResource("2_rif33")
+
+[node name="NPCCollision" parent="." index="2"]
+shape = SubResource("RectangleShape2D_mcauc")
+
+[editable path="HurtBox"]

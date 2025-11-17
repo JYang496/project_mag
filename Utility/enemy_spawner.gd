@@ -13,7 +13,7 @@ var time_out_list : Array
 func _ready():
 	GlobalVariables.enemy_spawner = self
 	for i in SpawnData.level_list:
-		var ins : LevelArray = i.instantiate()
+		var ins : LevelSpawnConfig = i.instantiate()
 		instance_list.append(ins.spawns)
 		time_out_list.append(ins.time_out)
 

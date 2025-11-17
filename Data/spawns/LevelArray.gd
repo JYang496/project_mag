@@ -1,5 +1,5 @@
 extends Node
-class_name LevelArray
+class_name LevelSpawnConfig
 
 @export var time_out : int = 30
 @export var spawns: Array[SpawnInfo] = []

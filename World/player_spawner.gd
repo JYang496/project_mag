@@ -1,6 +1,6 @@
 extends Node2D
 
-@onready var collector = preload("res://Player/Mechas/collector.tscn")
+@onready var collector = preload("res://Player/Mechas/scenes/collector.tscn")
 
 var start_up_status = {
 	"player_speed":100.0,

@@ -1,0 +1,14 @@
+[gd_scene load_steps=4 format=3 uid="uid://d13863fxj2rqb"]
+
+[ext_resource type="PackedScene" uid="uid://t2fjrybq8fpp" path="res://Npc/friendly/scenes/friendly_npc.tscn" id="1_1bevg"]
+[ext_resource type="Script" uid="uid://dvm1tm2jbi7ra" path="res://Npc/friendly/scripts/tester.gd" id="2_pnd0s"]
+[ext_resource type="Texture2D" uid="uid://i7pfn0rsdlxs" path="res://Textures/test/npc_1.png" id="3_p1b4o"]
+
+[node name="TesterAug" instance=ExtResource("1_1bevg")]
+script = ExtResource("2_pnd0s")
+
+[node name="Body" parent="." index="1"]
+rotation = 0.523599
+texture = ExtResource("3_p1b4o")
+
+[editable path="HurtBox"]
