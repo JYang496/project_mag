@@ -1,17 +1,17 @@
 extends FriendlyNPC
 
-@onready var test_augment = preload("res://Player/Augments/ricochet.tscn")
+#@onready var test_augment = preload("res://Player/Augments/ricochet.tscn")
 
 func _ready():
 	pass
 
 
-func panel_move_in() -> void:
-	is_interacting = true
-	var test_augment_ins = test_augment.instantiate()
-	var paths = get_child_path(PlayerData.player.equppied_augments)
-	if not paths.has(test_augment_ins.get_script().resource_path):
-		PlayerData.player.equppied_augments.add_child(test_augment_ins)
+#func panel_move_in() -> void:
+	#is_interacting = true
+	#var test_augment_ins = test_augment.instantiate()
+	#var paths = get_child_path(PlayerData.player.equppied_augments)
+	#if not paths.has(test_augment_ins.get_script().resource_path):
+		#PlayerData.player.equppied_augments.add_child(test_augment_ins)
 
 func get_child_path(parent) -> Array:
 	var output_array : Array = []
