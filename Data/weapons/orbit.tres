@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://Textures/test/bullet.png" id="1_gkkp3"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/orbit.tscn" id="2_67cuh"]
+[ext_resource type="Script" path="res://data/WeaponDefinition.gd" id="3_tohqg"]
+
+[resource]
+script = ExtResource("3_tohqg")
+weapon_id = "7"
+display_name = "orbit"
+icon = ExtResource("1_gkkp3")
+price = 7
+description = "orbit test: spiral"
+scene = ExtResource("2_67cuh")

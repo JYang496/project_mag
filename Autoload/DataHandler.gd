@@ -8,12 +8,25 @@ func _ready():
 	load_mecha_data()
 
 # This function is used for locate weapon file location which stored in weapons.json.
-func load_weapon_data() -> void:
-	var file = FileAccess.open("res://Data/weapons.json", FileAccess.READ)
-	var stringdata = file.get_as_text()
-	GlobalVariables.weapon_list = JSON.new()
-	GlobalVariables.weapon_list.parse(stringdata)
-	file.close()
+#func load_weapon_data() -> void:
+	#var file = FileAccess.open("res://Data/weapons.json", FileAccess.READ)
+	#var stringdata = file.get_as_text()
+	#GlobalVariables.weapon_list = JSON.new()
+	#GlobalVariables.weapon_list.parse(stringdata)
+	#file.close()
+func load_weapon_data():
+	var dir := DirAccess.open("res://Data/weapons")
+	GlobalVariables.weapon_list = {}
+	if dir:
+		dir.list_dir_begin()
+		var file_name := dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				var def := load("res://Data/weapons/%s" % file_name) as WeaponDefinition
+				if def and def.weapon_id != "":
+					GlobalVariables.weapon_list[def.weapon_id] = def
+			file_name = dir.get_next()
+		dir.list_dir_end()
 
 # Load mecha stats for each level
 func load_mecha_data() -> void:

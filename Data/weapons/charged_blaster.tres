@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://Textures/test/sniper.png" id="1_rnx7b"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/charged_blaster.tscn" id="2_36w21"]
+[ext_resource type="Script" path="res://data/WeaponDefinition.gd" id="3_bqdxw"]
+
+[resource]
+script = ExtResource("3_bqdxw")
+weapon_id = "2"
+display_name = "Charged Blaster"
+icon = ExtResource("1_rnx7b")
+price = 7
+description = "charged blaster"
+scene = ExtResource("2_36w21")

@@ -59,7 +59,8 @@ func create_weapon(item_id, level := 1):
 	# Create a new weapon when assign string, othervise node
 	var weapon
 	if item_id is String:
-		weapon = load(GlobalVariables.weapon_list.data[item_id]["res"]).instantiate()
+		var weapon_def: WeaponDefinition = GlobalVariables.weapon_list[item_id]
+		weapon = weapon_def.scene.instantiate()
 		weapon.level = level
 	else:
 		# Parameter is weapon node instead of String, common case when get weapon from inventory

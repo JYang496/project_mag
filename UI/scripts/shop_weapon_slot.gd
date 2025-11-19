@@ -60,11 +60,12 @@ func new_item() -> void:
 	if not self.is_connected("select_weapon",Callable(PlayerData.player,"create_weapon")):
 		connect("select_weapon",Callable(PlayerData.player,"create_weapon"))
 	item_id = var_to_str(randi_range(1,10))
-	equip_name.text = GlobalVariables.weapon_list.data[item_id]["name"]
-	image.texture = load(GlobalVariables.weapon_list.data[item_id]["img"])
-	lbl_description.text = GlobalVariables.weapon_list.data[item_id]["description"]
-	price_label.text = str(GlobalVariables.weapon_list.data[item_id]["price"])
-	price = int(GlobalVariables.weapon_list.data[item_id]["price"])
+	var weapon_def: WeaponDefinition = GlobalVariables.weapon_list[item_id]
+	equip_name.text = weapon_def.display_name
+	image.texture = weapon_def.icon
+	lbl_description.text = weapon_def.description
+	price_label.text = str(weapon_def.price)
+	price = int(weapon_def.price)
 	
 
 func _physics_process(_delta) -> void:

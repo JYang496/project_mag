@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://Textures/test/chainsaw.png" id="1_m0vjd"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/chainsaw_launcher.tscn" id="2_f0p1k"]
+[ext_resource type="Script" path="res://data/WeaponDefinition.gd" id="3_ep74y"]
+
+[resource]
+script = ExtResource("3_ep74y")
+weapon_id = "10"
+display_name = "chainsaw luncher"
+icon = ExtResource("1_m0vjd")
+price = 8
+description = "chainsaw launcher test"
+scene = ExtResource("2_f0p1k")

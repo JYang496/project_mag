@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://Textures/test/spear.png" id="1_ji2p0"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/spear_launcher.tscn" id="2_mskrm"]
+[ext_resource type="Script" path="res://data/WeaponDefinition.gd" id="3_txwgl"]
+
+[resource]
+script = ExtResource("3_txwgl")
+weapon_id = "3"
+display_name = "Spear"
+icon = ExtResource("1_ji2p0")
+price = 6
+description = "spear test: return"
+scene = ExtResource("2_mskrm")

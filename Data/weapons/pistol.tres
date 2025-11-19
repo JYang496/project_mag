@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://Textures/test/minigun.png" id="1_dybqt"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/pistol.tscn" id="2_nmgaj"]
+[ext_resource type="Script" path="res://data/WeaponDefinition.gd" id="3_nupfu"]
+
+[resource]
+script = ExtResource("3_nupfu")
+weapon_id = "5"
+display_name = "pistol"
+icon = ExtResource("1_dybqt")
+price = 5
+description = "pistol test"
+scene = ExtResource("2_nmgaj")
