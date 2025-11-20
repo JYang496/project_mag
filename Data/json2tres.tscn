@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cms11nu57vlrm"]
+
+[ext_resource type="Script" uid="uid://crq8u77ynebkj" path="res://data/mecha_json_to_tres.gd" id="1_ngwor"]
+
+[node name="Json2Tres" type="Node2D"]
+script = ExtResource("1_ngwor")

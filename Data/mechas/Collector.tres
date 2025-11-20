@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="MechaDefinition" load_steps=3 format=3 uid="uid://cgu4f88knsf6d"]
+
+[ext_resource type="PackedScene" uid="uid://br54nmwn8vub6" path="res://Player/Mechas/scenes/collector.tscn" id="1_5qhgd"]
+[ext_resource type="Script" uid="uid://34kn3nmpdsqn" path="res://data/MechaDefinition.gd" id="2_2fg7c"]
+
+[resource]
+script = ExtResource("2_2fg7c")
+mecha_id = "4"
+display_name = "Collector"
+scene = ExtResource("1_5qhgd")
+next_level_exp = PackedInt32Array(10, 20, 30, 40, 50, 60, 70, 80, 90, -1)
+player_max_hp = PackedInt32Array(5, 5, 5, 5, 5, 5, 5, 5, 5, 5)
+player_speed = PackedFloat32Array(120, 100, 100, 100, 100, 100, 100, 100, 100, 100)
+armor = PackedInt32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shield = PackedInt32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+hp_regen = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+damage_reduction = PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+crit_rate = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+crit_damage = PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+grab_radius = PackedFloat32Array(100, 50, 50, 50, 50, 50, 50, 50, 50, 50)
+player_gold = PackedInt32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)

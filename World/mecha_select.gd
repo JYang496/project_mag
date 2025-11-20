@@ -18,7 +18,7 @@ var on_hover : bool = false
 @onready var grab_radius: Label = $"../../ColorRect/VBoxContainer2/grab_radius"
 @onready var player_gold: Label = $"../../ColorRect/VBoxContainer2/player_gold"
 
-@onready var mech_data = DataHandler.read_mecha_data(str(mecha_id))
+@onready var mech_data : MechaDefinition = DataHandler.read_mecha_data(str(mecha_id))
 @onready var mech_autosave = DataHandler.read_autosave_mecha_data(str(mecha_id))
 
 signal update_on_select(id)
@@ -29,7 +29,7 @@ signal update_on_select(id)
 @export var border_width: float = 4.0
 
 func _ready() -> void:
-	var ins : Player = load(mech_data["res"]).instantiate()
+	var ins : Player = mech_data.scene.instantiate()
 	mech_texture.texture = ins.get_node("MechaSprite").texture
 	ins.queue_free()
 	PlayerData.select_mecha_id = DataHandler.save_data.last_mecha_selected

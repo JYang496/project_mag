@@ -7,13 +7,7 @@ func _ready():
 	load_weapon_data()
 	load_mecha_data()
 
-# This function is used for locate weapon file location which stored in weapons.json.
-#func load_weapon_data() -> void:
-	#var file = FileAccess.open("res://Data/weapons.json", FileAccess.READ)
-	#var stringdata = file.get_as_text()
-	#GlobalVariables.weapon_list = JSON.new()
-	#GlobalVariables.weapon_list.parse(stringdata)
-	#file.close()
+# This function is used for locate weapon file location which stored in data/weapons.
 func load_weapon_data():
 	var dir := DirAccess.open("res://Data/weapons")
 	GlobalVariables.weapon_list = {}
@@ -28,17 +22,37 @@ func load_weapon_data():
 			file_name = dir.get_next()
 		dir.list_dir_end()
 
+func load_mecha_data():
+	GlobalVariables.mecha_list = {}
+	var dir := DirAccess.open("res://data/mechas")
+	if dir:
+		dir.list_dir_begin()
+		var name := dir.get_next()
+		while name != "":
+			if name.ends_with(".tres"):
+				var def := load("res://data/mechas/%s" % name) as MechaDefinition
+				if def and def.mecha_id != "":
+					GlobalVariables.mecha_list[def.mecha_id] = def
+			name = dir.get_next()
+		dir.list_dir_end()
+
+func read_mecha_data(id: String) -> MechaDefinition:
+	return GlobalVariables.mecha_list.get(id)
+
+
+
+
 # Load mecha stats for each level
-func load_mecha_data() -> void:
-	var file = FileAccess.open("res://Data/mechas.json", FileAccess.READ)
-	var stringdata = file.get_as_text()
-	GlobalVariables.mecha_list = JSON.new()
-	GlobalVariables.mecha_list.parse(stringdata)
-	file.close()
+#func load_mecha_data() -> void:
+	#var file = FileAccess.open("res://Data/mechas.json", FileAccess.READ)
+	#var stringdata = file.get_as_text()
+	#GlobalVariables.mecha_list = JSON.new()
+	#GlobalVariables.mecha_list.parse(stringdata)
+	#file.close()
 
 # Return mecha fixed data, will be called in Start menu.
-func read_mecha_data(id : String) -> Dictionary:
-	return GlobalVariables.mecha_list.data[id]
+#func read_mecha_data(id : String) -> Dictionary:
+	#return GlobalVariables.mecha_list.data[id]
 
 # Return mecha autosave data, will be called in Start menu.
 func read_autosave_mecha_data(id : String) -> Dictionary:

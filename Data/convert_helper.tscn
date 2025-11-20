@@ -1,6 +1,21 @@
 [gd_scene load_steps=2 format=3 uid="uid://dn8ayyvpd61vs"]
 
-[ext_resource type="Script" uid="uid://dar1sv7hdfkof" path="res://data/convert_helper.gd" id="1_bhssx"]
+[sub_resource type="GDScript" id="GDScript_rr1vc"]
+script/source = "extends Node
+
+func _ready():
+	var json = JSON.parse_string(FileAccess.get_file_as_string(\"res://Data/weapons.json\"))
+	for id in json.keys():
+		var data = json[id]
+		var def = WeaponDefinition.new()
+		def.weapon_id = id
+		def.display_name = data.name
+		def.icon = load(data.img)
+		def.price = int(data.price)
+		def.description = data.description
+		def.scene = load(data.res)
+		ResourceSaver.save(def, \"res://Data/weapons/%s.tres\" % data.name)
+"
 
 [node name="ConvertHelper" type="Node2D"]
-script = ExtResource("1_bhssx")
+script = SubResource("GDScript_rr1vc")
