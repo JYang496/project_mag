@@ -1,8 +1,8 @@
 [gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
 
-[ext_resource type="Texture2D" path="res://Textures/test/minigun.png" id="1_l3ko5"]
-[ext_resource type="PackedScene" path="res://Player/Weapons/rocket_launcher.tscn" id="2_jqtkv"]
-[ext_resource type="Script" path="res://data/WeaponDefinition.gd" id="3_1guoo"]
+[ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="1_l3ko5"]
+[ext_resource type="PackedScene" uid="uid://wg0f6ksc27f8" path="res://Player/Weapons/rocket_launcher.tscn" id="2_jqtkv"]
+[ext_resource type="Script" uid="uid://da2xunq05neb0" path="res://Data/WeaponDefinition.gd" id="3_1guoo"]
 
 [resource]
 script = ExtResource("3_1guoo")

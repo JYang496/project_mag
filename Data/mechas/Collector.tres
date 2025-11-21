@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="MechaDefinition" load_steps=3 format=3 uid="uid://cgu4f88knsf6d"]
 
 [ext_resource type="PackedScene" uid="uid://br54nmwn8vub6" path="res://Player/Mechas/scenes/collector.tscn" id="1_5qhgd"]
-[ext_resource type="Script" uid="uid://34kn3nmpdsqn" path="res://data/MechaDefinition.gd" id="2_2fg7c"]
+[ext_resource type="Script" uid="uid://34kn3nmpdsqn" path="res://Data/MechaDefinition.gd" id="2_2fg7c"]
 
 [resource]
 script = ExtResource("2_2fg7c")

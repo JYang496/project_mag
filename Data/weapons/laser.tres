@@ -1,8 +1,8 @@
 [gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
 
-[ext_resource type="Texture2D" path="res://Textures/test/laser.png" id="1_awlad"]
-[ext_resource type="PackedScene" path="res://Player/Weapons/laser.tscn" id="2_1xgp4"]
-[ext_resource type="Script" path="res://data/WeaponDefinition.gd" id="3_reql6"]
+[ext_resource type="Texture2D" uid="uid://frvb0gd4mcia" path="res://Textures/test/laser.png" id="1_awlad"]
+[ext_resource type="PackedScene" uid="uid://do7jqh0t1td8u" path="res://Player/Weapons/laser.tscn" id="2_1xgp4"]
+[ext_resource type="Script" uid="uid://da2xunq05neb0" path="res://Data/WeaponDefinition.gd" id="3_reql6"]
 
 [resource]
 script = ExtResource("3_reql6")

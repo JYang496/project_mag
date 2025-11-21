@@ -1,8 +1,8 @@
 [gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
 
-[ext_resource type="Texture2D" path="res://Textures/test/sniper.png" id="1_rnx7b"]
-[ext_resource type="PackedScene" path="res://Player/Weapons/charged_blaster.tscn" id="2_36w21"]
-[ext_resource type="Script" path="res://data/WeaponDefinition.gd" id="3_bqdxw"]
+[ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://Textures/test/sniper.png" id="1_rnx7b"]
+[ext_resource type="PackedScene" uid="uid://b1gqnq2apvnak" path="res://Player/Weapons/charged_blaster.tscn" id="2_36w21"]
+[ext_resource type="Script" uid="uid://da2xunq05neb0" path="res://Data/WeaponDefinition.gd" id="3_bqdxw"]
 
 [resource]
 script = ExtResource("3_bqdxw")
