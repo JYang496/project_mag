@@ -13,6 +13,7 @@ position = Vector2(256, 256)
 scale = Vector2(16, 16)
 
 [node name="Sprite2D" type="Sprite2D" parent="Texture"]
+texture_filter = 1
 texture = ExtResource("2_tgu0a")
 
 [node name="Area2D" type="Area2D" parent="."]

@@ -7,13 +7,13 @@ var player_near : bool = false
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var detect_area: Area2D = $DetectArea
 @onready var interact_hint: Label = $InteractHint
-#@onready var player : Player = get_tree().get_first_node_in_group("player")
 
 
 func _ready() -> void:
 	if item_id is String:
-		item = load(GlobalVariables.weapon_list.data[item_id]["res"]).instantiate()
-		sprite.texture = load(GlobalVariables.weapon_list.data[item_id]["img"])
+		var weapon_def : WeaponDefinition = GlobalVariables.weapon_list[item_id]
+		item = weapon_def.scene.instantiate()
+		sprite.texture = weapon_def.icon
 		item.level = level
 		play_animation()
 

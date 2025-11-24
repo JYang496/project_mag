@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://801wgdw50w"]
+
+[ext_resource type="Script" path="res://Board/Cells/Effects/coin_control_effect.gd" id="1_wtmho"]
+
+[node name="CoinControlEffect" type="Node"]
+script = ExtResource("1_wtmho")
