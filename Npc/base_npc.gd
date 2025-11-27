@@ -9,6 +9,7 @@ class_name BaseNPC
 @export var movement_speed = 20.0
 @export var hp = 10
 @export var knockback_recover = 3.5
+var damage_taken_multiplier: float = 1.0
 
 var knockback = {
 	"amount": 0,
@@ -26,7 +27,11 @@ func damaged(attack:Attack):
 	# Hit label
 	var hit_label_ins = hit_label.instantiate()
 	hit_label_ins.global_position = global_position
-	hit_label_ins.setNumber(attack.damage)
+	var effective_damage := attack.damage
+	if effective_damage > 0:
+		effective_damage = int(round(effective_damage * damage_taken_multiplier))
+		effective_damage = max(1, effective_damage)
+	hit_label_ins.setNumber(effective_damage)
 	get_tree().root.call_deferred("add_child",hit_label_ins)
 	
 	# Status
@@ -39,7 +44,7 @@ func damaged(attack:Attack):
 	
 	if is_dead:
 		return  # Prevents further damage processing if already dead
-	hp -= attack.damage
+	hp -= effective_damage
 	if hp <= 0 and not is_dead:
 		is_dead = true
 		death()	

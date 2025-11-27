@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=4 uid="uid://blnhp33uq0sgq"]
+[gd_scene load_steps=33 format=4 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Texture2D" uid="uid://sldltmirxrkq" path="res://Textures/BlockyLife/tileset.png" id="2_3rumv"]
 [ext_resource type="Script" uid="uid://bf6icej2kcrba" path="res://World/tilemaps.gd" id="2_vir17"]
@@ -16,8 +16,6 @@
 [ext_resource type="PackedScene" uid="uid://dkelpi3n3ysnh" path="res://Utility/enemy_spawner.tscn" id="12_dyxss"]
 [ext_resource type="Script" uid="uid://dxdn6jvfdd656" path="res://World/player_spawner.gd" id="14_26uyv"]
 [ext_resource type="PackedScene" uid="uid://d382rsvvo0j8d" path="res://Board/Cells/cell.tscn" id="14_dqu5g"]
-[ext_resource type="PackedScene" uid="uid://bsl2p1gae4knc" path="res://Board/Cells/Effects/speed_boost_effect.tscn" id="14_o6lw0"]
-[ext_resource type="PackedScene" uid="uid://801wgdw50w" path="res://Board/Cells/Effects/coin_control_effect.tscn" id="14_x0pyu"]
 [ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/scenes/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://w270o86lb231" path="res://Objects/prepare_zone_gate.tscn" id="19_o7ljv"]
 [ext_resource type="PackedScene" uid="uid://djyxv43t57pnf" path="res://Objects/battle_zone_teleporter.tscn" id="20_8lc8y"]
@@ -295,32 +293,20 @@ position = Vector2(-984, -522)
 
 [node name="Cell" parent="Board" instance=ExtResource("14_dqu5g")]
 
-[node name="CoinControlEffect" parent="Board/Cell" instance=ExtResource("14_x0pyu")]
-
 [node name="Cell2" parent="Board" instance=ExtResource("14_dqu5g")]
 position = Vector2(510, 0)
-
-[node name="CoinControlEffect" parent="Board/Cell2" instance=ExtResource("14_x0pyu")]
 
 [node name="Cell3" parent="Board" instance=ExtResource("14_dqu5g")]
 position = Vector2(1020, 0)
 
-[node name="CoinControlEffect" parent="Board/Cell3" instance=ExtResource("14_x0pyu")]
-
 [node name="Cell4" parent="Board" instance=ExtResource("14_dqu5g")]
 position = Vector2(0, 510)
-
-[node name="SpeedBoostEffect" parent="Board/Cell4" instance=ExtResource("14_o6lw0")]
 
 [node name="Cell5" parent="Board" instance=ExtResource("14_dqu5g")]
 position = Vector2(510, 510)
 
-[node name="CoinControlEffect" parent="Board/Cell5" instance=ExtResource("14_x0pyu")]
-
 [node name="Cell6" parent="Board" instance=ExtResource("14_dqu5g")]
 position = Vector2(1020, 510)
-
-[node name="CoinControlEffect" parent="Board/Cell6" instance=ExtResource("14_x0pyu")]
 
 [node name="Cell7" parent="Board" instance=ExtResource("14_dqu5g")]
 position = Vector2(0, 1020)
