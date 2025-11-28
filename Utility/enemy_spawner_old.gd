@@ -11,8 +11,10 @@ var time_out_list : Array
 
 func _ready():
 	#GlobalVariables.enemy_spawner = self
-	for i in SpawnData.level_list:
-		var ins : LevelSpawnConfig = i.instantiate()
+	for level_config in SpawnData.level_list:
+		if level_config == null:
+			continue
+		var ins : LevelSpawnConfig = level_config.duplicate(true)
 		instance_list.append(ins.spawns)
 		time_out_list.append(ins.time_out)
 
@@ -39,8 +41,7 @@ func _on_timer_timeout():
 				var counter = 0
 				while counter < i.number:
 					var enemy_spawn = new_enemy.instantiate()
-					enemy_spawn.hp = i.hp
-					enemy_spawn.damage = i.damage
+					_apply_level_scaling(i, enemy_spawn)
 					enemy_spawn.global_position = get_random_position()
 					self.call_deferred("add_child",enemy_spawn)
 					counter += 1
@@ -81,3 +82,10 @@ func clear_all_enemies():
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for e : BaseEnemy in enemies:
 		e.death()
+
+func _apply_level_scaling(spawn_info: SpawnInfo, enemy_instance) -> void:
+	if enemy_instance is BaseEnemy:
+		var base_enemy : BaseEnemy = enemy_instance
+		var level_index = max(PhaseManager.current_level, 0)
+		base_enemy.hp = spawn_info.get_scaled_hp(level_index, base_enemy.hp)
+		base_enemy.damage = spawn_info.get_scaled_damage(level_index, base_enemy.damage)

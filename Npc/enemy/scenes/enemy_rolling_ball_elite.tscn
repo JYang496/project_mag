@@ -14,6 +14,7 @@ radius = 251.008
 [node name="EnemyRollingBallElite" instance=ExtResource("1_cpric")]
 collision_mask = 0
 script = ExtResource("2_0fobv")
+damage = 1
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
 shape = SubResource("RectangleShape2D_dl2yt")

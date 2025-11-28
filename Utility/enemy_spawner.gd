@@ -15,8 +15,10 @@ var board_cells : Array[Cell] = []
 func _ready():
 	GlobalVariables.enemy_spawner = self
 	_cache_board_cells()
-	for i in SpawnData.level_list:
-		var ins : LevelSpawnConfig = i.instantiate()
+	for level_config in SpawnData.level_list:
+		if level_config == null:
+			continue
+		var ins : LevelSpawnConfig = level_config.duplicate(true)
 		instance_list.append(ins.spawns)
 		time_out_list.append(ins.time_out)
 
@@ -50,8 +52,7 @@ func _on_timer_timeout():
 				var random_position_center = get_random_position()
 				while counter < i.number:
 					var enemy_spawn = new_enemy.instantiate()
-					enemy_spawn.hp = i.hp
-					enemy_spawn.damage = i.damage
+					_apply_level_scaling(i, enemy_spawn)
 					enemy_spawn.global_position = get_nearby_position(random_position_center)
 					self.call_deferred("add_child",enemy_spawn)
 					i.add_enemy_with_signal(enemy_spawn)
@@ -164,3 +165,10 @@ func erase_all_enemies():
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for e : BaseEnemy in enemies:
 		e.erase()
+
+func _apply_level_scaling(spawn_info: SpawnInfo, enemy_instance) -> void:
+	if enemy_instance is BaseEnemy:
+		var base_enemy : BaseEnemy = enemy_instance
+		var level_index = max(PhaseManager.current_level, 0)
+		base_enemy.hp = spawn_info.get_scaled_hp(level_index, base_enemy.hp)
+		base_enemy.damage = spawn_info.get_scaled_damage(level_index, base_enemy.damage)

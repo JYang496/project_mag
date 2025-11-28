@@ -7,8 +7,10 @@ var instance_list : Array
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	for i in SpawnData.level_list:
-		var ins = i.instantiate()
+	for level_config in SpawnData.level_list:
+		if level_config == null:
+			continue
+		var ins : LevelSpawnConfig = level_config.duplicate(true)
 		instance_list.append(ins.rewards)
 	if not PhaseManager.is_connected("enter_reward_signal",Callable(self,"create_loot_box")):
 		PhaseManager.connect("enter_reward_signal",Callable(self,"create_loot_box"))

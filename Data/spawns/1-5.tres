@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="LevelSpawnConfig" load_steps=7 format=3]
+
+[ext_resource type="Script" uid="uid://bqyvlcrq4b8xf" path="res://Data/spawns/LevelArray.gd" id="1_t0rad"]
+[ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/scripts/spawn_info.gd" id="2_t75kb"]
+[ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/scenes/enemy_wheel_cart.tscn" id="3_uol3e"]
+[ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/scenes/enemy_rolling_ball.tscn" id="4_jqjt7"]
+
+[sub_resource type="Resource" id="Resource_xsuya"]
+script = ExtResource("2_t75kb")
+time_start = 0
+time_end = 15
+enemy = ExtResource("3_uol3e")
+hp = 11
+damage = 1
+number = 3
+delay = 3
+
+[sub_resource type="Resource" id="Resource_xwo5i"]
+script = ExtResource("2_t75kb")
+time_start = 15
+time_end = 30
+enemy = ExtResource("4_jqjt7")
+hp = 16
+damage = 1
+number = 2
+delay = 1
+
+[resource]
+script = ExtResource("1_t0rad")
+spawns = Array[ExtResource("2_t75kb")]([SubResource("Resource_xsuya"), SubResource("Resource_xwo5i")])

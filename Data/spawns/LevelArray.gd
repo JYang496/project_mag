@@ -1,4 +1,4 @@
-extends Node
+extends Resource
 class_name LevelSpawnConfig
 
 @export var time_out : int = 30
