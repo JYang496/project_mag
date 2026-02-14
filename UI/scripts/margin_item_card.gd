@@ -1,6 +1,5 @@
 extends Control
 
-
 @onready var lbl_name = $ItemCard/LabelName
 @onready var lbl_description = $ItemCard/Description
 @onready var item_icon = $ItemCard/ItemImage/Icon

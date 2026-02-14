@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://d382rsvvo0j8d"]
 
 [ext_resource type="Script" uid="uid://pjql3h4nrpm5" path="res://Board/Cells/cell.gd" id="1_bsmxj"]
-[ext_resource type="Texture2D" uid="uid://br1poh0bkjdwt" path="res://Textures/test/wall.png" id="2_tgu0a"]
+[ext_resource type="Texture2D" path="res://asset/images/cells/default.png" id="2_tgu0a"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hnton"]
 
@@ -10,7 +10,7 @@ script = ExtResource("1_bsmxj")
 
 [node name="Texture" type="Node2D" parent="."]
 position = Vector2(256, 256)
-scale = Vector2(16, 16)
+scale = Vector2(0.5, 0.5)
 
 [node name="Sprite2D" type="Sprite2D" parent="Texture"]
 texture_filter = 1

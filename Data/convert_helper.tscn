@@ -3,6 +3,9 @@
 [sub_resource type="GDScript" id="GDScript_rr1vc"]
 script/source = "extends Node
 
+const WEAPON_SCENE_DIR := \"res://Player/Weapons/\"
+const WEAPON_ICON_DIR := \"res://Textures/test/\"
+
 func _ready():
 	var json = JSON.parse_string(FileAccess.get_file_as_string(\"res://Data/weapons.json\"))
 	for id in json.keys():
@@ -10,10 +13,16 @@ func _ready():
 		var def = WeaponDefinition.new()
 		def.weapon_id = id
 		def.display_name = data.name
-		def.icon = load(data.img)
+		var icon_path = data.img
+		if icon_path.contains(\"/\"):
+			icon_path = icon_path.get_file()
+		def.icon = load(\"%s%s\" % [WEAPON_ICON_DIR, icon_path])
 		def.price = int(data.price)
 		def.description = data.description
-		def.scene = load(data.res)
+		var weapon_scene = data.res
+		if weapon_scene.contains(\"/\"):
+			weapon_scene = weapon_scene.get_file()
+		def.scene = load(\"%s%s\" % [WEAPON_SCENE_DIR, weapon_scene])
 		ResourceSaver.save(def, \"res://Data/weapons/%s.tres\" % data.name)
 "
 

@@ -2,8 +2,7 @@ extends Ranger
 
 # Bullet
 var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
-var bul_texture = preload("res://Textures/test/minigun_bullet.png")
-#@onready var sprite = get_node("%Sprite")
+var bul_texture = preload("res://asset/images/weapons/projectiles/plasma.png")
 
 # Weapon
 var ITEM_NAME = "Machine Gun"
@@ -11,6 +10,7 @@ var attack_speed : float = 1.0
 
 var max_speed_factor : float = 10.0
 
+const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
 
 var weapon_data = {
 	"1": {
@@ -88,6 +88,7 @@ func _on_shoot():
 	spawn_bullet.hp = hp
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
+	spawn_bullet.desired_pixel_size = BULLET_PIXEL_SIZE
 	spawn_bullet.size = size
 	apply_effects_on_bullet(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)

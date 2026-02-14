@@ -11,6 +11,7 @@ class_name EnemySpawner
 var instance_list : Array
 var time_out_list : Array
 var board_cells : Array[Cell] = []
+var _last_spawn_cell: Cell = null
 
 func _ready():
 	GlobalVariables.enemy_spawner = self
@@ -61,10 +62,13 @@ func _on_timer_timeout():
 func get_random_position() -> Vector2:
 	var player : Player = PlayerData.player
 	if player == null:
+		_last_spawn_cell = null
 		return Vector2.ZERO
 	var spawn_cell = _pick_spawn_cell_near_player(player)
 	if spawn_cell:
+		_last_spawn_cell = spawn_cell
 		return _get_random_point_in_cell(spawn_cell)
+	_last_spawn_cell = null
 	return _get_fallback_spawn_position(player)
 
 func _cache_board_cells() -> void:
@@ -81,18 +85,43 @@ func _pick_spawn_cell_near_player(player: Player) -> Cell:
 		return null
 	var player_position = player.global_position
 	var player_cell = _get_cell_at_position(player_position)
-	var sorted_cells = board_cells.duplicate()
-	sorted_cells.sort_custom(func(a: Cell, b: Cell) -> bool:
-		return a.global_position.distance_squared_to(player_position) < b.global_position.distance_squared_to(player_position)
-	)
-	for cell in sorted_cells:
+	var view_rect := _get_player_view_rect(player)
+	var visible_preferred : Array[Cell] = []
+	var visible_fallback : Array[Cell] = []
+	var preferred_cells : Array[Cell] = []
+	var fallback_cells : Array[Cell] = []
+	for cell in board_cells:
 		if cell == null:
 			continue
 		if cell == player_cell:
 			continue
-		if cell.cell_owner == Cell.CellOwner.PLAYER:
+		var is_contested := cell.state == Cell.CellState.CONTESTED
+		if cell.cell_owner == Cell.CellOwner.PLAYER and not is_contested:
 			continue
-		return cell
+		var is_visible := _cell_intersects_rect(cell, view_rect)
+		if cell.state == Cell.CellState.ENEMY or is_contested:
+			if is_visible:
+				visible_preferred.append(cell)
+			else:
+				preferred_cells.append(cell)
+		elif cell.state != Cell.CellState.LOCKED:
+			if is_visible:
+				visible_fallback.append(cell)
+			else:
+				fallback_cells.append(cell)
+	var ordered_lists = [visible_preferred, visible_fallback, preferred_cells, fallback_cells]
+	for cell_list in ordered_lists:
+		if cell_list.is_empty():
+			continue
+		var best_cell : Cell = null
+		var best_distance := INF
+		for candidate in cell_list:
+			var distance = candidate.global_position.distance_squared_to(player_position)
+			if distance < best_distance:
+				best_distance = distance
+				best_cell = candidate
+		if best_cell:
+			return best_cell
 	return null
 
 func _get_cell_at_position(position: Vector2) -> Cell:
@@ -126,6 +155,55 @@ func _get_random_point_in_cell(cell: Cell) -> Vector2:
 		return collision_shape.global_transform * random_local
 	return cell.global_position
 
+func _project_point_into_cell(cell: Cell, position: Vector2) -> Vector2:
+	var collision_shape : CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
+	if collision_shape == null:
+		return position
+	var rect_shape := collision_shape.shape
+	if rect_shape is RectangleShape2D:
+		var half_size = rect_shape.size * 0.5
+		var local_point = collision_shape.global_transform.affine_inverse() * position
+		local_point.x = clampf(local_point.x, -half_size.x, half_size.x)
+		local_point.y = clampf(local_point.y, -half_size.y, half_size.y)
+		return collision_shape.global_transform * local_point
+	return position
+
+func _get_player_view_rect(player: Player) -> Rect2:
+	var viewport_size = get_viewport_rect().size
+	var half_size = viewport_size * 0.5
+	var top_left = player.global_position - half_size
+	return Rect2(top_left, viewport_size)
+
+func _cell_intersects_rect(cell: Cell, rect: Rect2) -> bool:
+	var cell_rect := _get_cell_aabb(cell)
+	if cell_rect.size == Vector2.ZERO:
+		return rect.has_point(cell.global_position)
+	return cell_rect.intersects(rect)
+
+func _get_cell_aabb(cell: Cell) -> Rect2:
+	var collision_shape : CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
+	if collision_shape and collision_shape.shape is RectangleShape2D:
+		var rect_shape : RectangleShape2D = collision_shape.shape
+		var half_size = rect_shape.size * 0.5
+		var gt := collision_shape.global_transform
+		var points = [
+			gt * Vector2(-half_size.x, -half_size.y),
+			gt * Vector2(half_size.x, -half_size.y),
+			gt * Vector2(half_size.x, half_size.y),
+			gt * Vector2(-half_size.x, half_size.y)
+		]
+		var min_x = points[0].x
+		var max_x = points[0].x
+		var min_y = points[0].y
+		var max_y = points[0].y
+		for p in points:
+			min_x = min(min_x, p.x)
+			max_x = max(max_x, p.x)
+			min_y = min(min_y, p.y)
+			max_y = max(max_y, p.y)
+		return Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+	return Rect2(cell.global_position, Vector2.ZERO)
+
 func _get_fallback_spawn_position(player: Player) -> Vector2:
 	var vpr = get_viewport_rect().size * randf_range(0.5,1.1)
 	var top_left = clamp_position(player.global_position.x - vpr.x/2, player.global_position.y - vpr.y/2)
@@ -156,6 +234,8 @@ func get_nearby_position(A: Vector2, min_distance: float = 0.0, max_distance: fl
 	var angle = randf() * 2 * PI
 	var distance = randf_range(min_distance, max_distance)
 	var nearby_pos = A + Vector2(cos(angle), sin(angle)) * distance
+	if _last_spawn_cell:
+		return _project_point_into_cell(_last_spawn_cell, nearby_pos)
 	return clamp_position(nearby_pos.x, nearby_pos.y)
 
 func clamp_position(x_value :float, y_value :float) -> Vector2:

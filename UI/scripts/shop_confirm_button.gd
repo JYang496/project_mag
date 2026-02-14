@@ -21,7 +21,9 @@ func _on_button_up() -> void:
 		elif PlayerData.player_weapon_list.has(sell_item):
 			PlayerData.player_weapon_list.erase(sell_item)
 			sell_item.queue_free()
-	for slot : ShopInvSlot in inventory.get_children():
-		slot.reset_sell_status()
-	for slot : EquipmentSlotShop in equipped.get_children():
-		slot.reset_sell_status()
+	if inventory:
+		for slot : ShopInvSlot in inventory.get_children():
+			slot.reset_sell_status()
+	if equipped:
+		for slot : EquipmentSlotShop in equipped.get_children():
+			slot.reset_sell_status()

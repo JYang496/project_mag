@@ -1,15 +1,11 @@
-[gd_scene load_steps=5 format=3 uid="uid://ch7vgpt732ajy"]
+[gd_scene load_steps=4 format=3 uid="uid://ch7vgpt732ajy"]
 
 [ext_resource type="PackedScene" uid="uid://dve1wwmkd0ynm" path="res://Player/Mechas/scenes/Player.tscn" id="1_jrs2l"]
-[ext_resource type="Texture2D" uid="uid://d1eyb7nsm5kfy" path="res://Textures/test/p1.png" id="2_880jd"]
 [ext_resource type="Script" uid="uid://cmq88n7owityy" path="res://Player/Mechas/scripts/prototype.gd" id="2_lp66g"]
 [ext_resource type="PackedScene" uid="uid://cn0o2cojuvbix" path="res://Player/Augments/scenes/increase_coin.tscn" id="4_b0b4t"]
 
 [node name="Prototype" instance=ExtResource("1_jrs2l")]
 script = ExtResource("2_lp66g")
-
-[node name="MechaSprite" parent="." index="0"]
-texture = ExtResource("2_880jd")
 
 [node name="increase_coin" parent="EquippedAugments" index="0" instance=ExtResource("4_b0b4t")]
 

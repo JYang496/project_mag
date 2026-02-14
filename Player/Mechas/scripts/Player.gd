@@ -17,22 +17,44 @@ var movement_enabled = true
 var moveto_enabled = false
 var moveto_dest := Vector2.ZERO
 var distance_mouse_player = 0
-const WEAPON_SLOTS = [[-16,-24],[16,-24],[16,24],[-16,24]]
 var status_list = {}
+const TARGET_MECHA_SIZE = Vector2(48,48)
+const MECHA_DIRECTION_TEXTURES := {
+	"left": preload("res://asset/images/characters/l.png"),
+	"bottom_left": preload("res://asset/images/characters/bl.png"),
+	"bottom": preload("res://asset/images/characters/b.png"),
+	"bottom_right": preload("res://asset/images/characters/br.png"),
+	"right": preload("res://asset/images/characters/r.png"),
+	"top_right": preload("res://asset/images/characters/fr.png"),
+	"top": preload("res://asset/images/characters/f.png"),
+	"top_left": preload("res://asset/images/characters/fl.png"),
+}
+var current_mecha_direction := ""
+const ORBIT_RADIUS := Vector2(40, 20)
+const ORBIT_ACCEL := 16.0
+const ORBIT_MAX_SPEED := 8.0
+const ORBIT_FRICTION := 6.0
+const ORBIT_OFFSET := Vector2(0, -25)
+var weapon_orbit_states: Dictionary = {}
 # Signals
 signal active_skill()
 signal coin_collected()
 
 func _ready():
 	PlayerData.player = self
+	_resize_mecha_sprite()
+	_sync_weapon_orbit_states(true)
 	update_grab_radius()
 	custom_ready()
+	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
+		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 
 # overwrite the function on child class
 func custom_ready():
 	create_weapon("1")
 
 func _physics_process(delta):
+	_sync_weapon_orbit_states()
 	movement(delta)
 	overcharge(delta)
 	move_and_slide()
@@ -72,30 +94,13 @@ func create_weapon(item_id, level := 1):
 			InventoryData.inventory_slots.append(weapon)
 		return
 	
-	clean_up_empty_remote_transform()
-	
 	available_slot = PlayerData.player_weapon_list.size()
-	var remote_transform = RemoteTransform2D.new()
-	remote_transform.update_rotation = true
-	equppied_weapons.add_child(remote_transform)
-	weapon.position.x = WEAPON_SLOTS[available_slot][0]
-	weapon.position.y = WEAPON_SLOTS[available_slot][1]
-	remote_transform.add_child(weapon)
-	remote_transform.remote_path = weapon.get_path()
+	equppied_weapons.add_child(weapon)
+	weapon.position = Vector2.ZERO
 	PlayerData.player_weapon_list.append(weapon)
 	
-	# Update exist weapon position
-	for weapon_index in PlayerData.player_weapon_list.size():
-		PlayerData.player_weapon_list[weapon_index].position.x = WEAPON_SLOTS[weapon_index][0]
-		PlayerData.player_weapon_list[weapon_index].position.y = WEAPON_SLOTS[weapon_index][1]
-	
+	_sync_weapon_orbit_states(true)
 	GlobalVariables.ui.refresh_border()
-
-func clean_up_empty_remote_transform() -> void:
-	for node in equppied_weapons.get_children():
-		if node is RemoteTransform2D and node.get_child_count() == 0:
-			node.queue_free()
-	
 
 func swap_weapon_position(weapon1, weapon2) -> void:
 	if weapon1 == weapon2:
@@ -105,13 +110,9 @@ func swap_weapon_position(weapon1, weapon2) -> void:
 	var temp = PlayerData.player_weapon_list[slot1_index]
 	PlayerData.player_weapon_list[slot1_index] = PlayerData.player_weapon_list[slot2_index]
 	PlayerData.player_weapon_list[slot2_index] = temp
-	for weapon_index in PlayerData.player_weapon_list.size():
-		PlayerData.player_weapon_list[weapon_index].position.x = WEAPON_SLOTS[weapon_index][0]
-		PlayerData.player_weapon_list[weapon_index].position.y = WEAPON_SLOTS[weapon_index][1]
+	_sync_weapon_orbit_states(true)
 
 func movement(delta):
-	equppied_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
-	unique_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
 	if movement_enabled:
 		var x_mov = Input.get_action_strength("RIGHT") - Input.get_action_strength("LEFT")
 		var y_mov = Input.get_action_strength("DOWN") - Input.get_action_strength("UP")
@@ -123,10 +124,9 @@ func movement(delta):
 		self.global_position = self.global_position.move_toward(moveto_dest, delta * PlayerData.player_bonus_speed)
 	
 	distance_mouse_player = get_global_mouse_position() - global_position
-	if distance_mouse_player.x > 0 : 
-		mecha_sprite.flip_h = false
-	elif distance_mouse_player.x < 0 :
-		mecha_sprite.flip_h = true
+	_update_mecha_direction(distance_mouse_player)
+	unique_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
+	_update_weapon_orbits(delta)
 
 
 func move_to(dest:Vector2) -> void:
@@ -141,6 +141,136 @@ func arrived() -> void:
 
 func update_grab_radius() -> void:
 	grab_radius.shape.radius = PlayerData.total_grab_radius
+
+func _resize_mecha_sprite() -> void:
+	if not mecha_sprite or not mecha_sprite.texture:
+		return
+	var tex_size: Vector2 = mecha_sprite.texture.get_size()
+	if tex_size.x == 0 or tex_size.y == 0:
+		return
+	mecha_sprite.scale = TARGET_MECHA_SIZE / tex_size
+
+func _sync_weapon_orbit_states(force_reset := false) -> void:
+	var weapons: Array = PlayerData.player_weapon_list
+	var total: int = max(weapons.size(), 1)
+	var base_angle := _get_mouse_angle()
+	var formations := _get_formation_angle_offsets(weapons.size())
+	for weapon_index in range(weapons.size()):
+		var weapon = weapons[weapon_index]
+		if not is_instance_valid(weapon):
+			continue
+		if weapon.get_parent() != equppied_weapons:
+			equppied_weapons.add_child(weapon)
+		var offset := TAU * float(weapon_index) / float(total)
+		if weapon_index < formations.size():
+			offset = formations[weapon_index]
+		var state: Dictionary = weapon_orbit_states.get(weapon, {})
+		if state.is_empty():
+			state = {"angle": base_angle + offset, "velocity": 0.0, "offset": offset}
+			weapon_orbit_states[weapon] = state
+		else:
+			if force_reset:
+				state["angle"] = base_angle + offset
+				state["velocity"] = 0.0
+			state["offset"] = offset
+	_remove_missing_weapon_states(weapons)
+
+func _update_weapon_orbits(delta: float) -> void:
+	if PlayerData.player_weapon_list.is_empty():
+		return
+	var base_angle := _get_mouse_angle()
+	for weapon in PlayerData.player_weapon_list:
+		if not is_instance_valid(weapon):
+			continue
+		var state: Dictionary = weapon_orbit_states.get(weapon, {})
+		if state.is_empty():
+			continue
+		var current_angle: float = state.get("angle", base_angle)
+		var velocity: float = state.get("velocity", 0.0)
+		var offset: float = state.get("offset", 0.0)
+		var target_angle := wrapf(base_angle + offset, -PI, PI)
+		var angle_diff := _shortest_angle(current_angle, target_angle)
+		velocity += clamp(angle_diff * ORBIT_ACCEL, -ORBIT_ACCEL, ORBIT_ACCEL) * delta
+		velocity = clamp(velocity, -ORBIT_MAX_SPEED, ORBIT_MAX_SPEED)
+		velocity = lerp(velocity, 0.0, clamp(ORBIT_FRICTION * delta, 0.0, 1.0))
+		current_angle = wrapf(current_angle + velocity * delta, -PI, PI)
+		state["angle"] = current_angle
+		state["velocity"] = velocity
+		weapon.position = _get_orbit_position(current_angle)
+
+func _remove_missing_weapon_states(valid_weapons: Array) -> void:
+	var to_remove: Array = []
+	for weapon in weapon_orbit_states.keys():
+		if not valid_weapons.has(weapon) or not is_instance_valid(weapon):
+			to_remove.append(weapon)
+	for weapon in to_remove:
+		weapon_orbit_states.erase(weapon)
+
+func _get_formation_angle_offsets(count: int) -> Array:
+	match count:
+		1:
+			return [PI]
+		2:
+			return [PI / 2, -PI / 2]
+		3:
+			return [PI / 2, -PI / 2, PI]
+		4:
+			return [
+				PI / 4,         # front left
+				-PI / 4,        # front right
+				PI - PI / 4,    # back left
+				-PI + PI / 4    # back right
+			]
+		_:
+			var offsets: Array = []
+			if count <= 0:
+				return offsets
+			for i in range(count):
+				offsets.append(TAU * float(i) / float(count))
+			return offsets
+
+func _get_mouse_angle() -> float:
+	return global_position.direction_to(get_global_mouse_position()).angle()
+
+func _get_orbit_position(angle: float) -> Vector2:
+	var cos_a := cos(angle)
+	var sin_a := sin(angle)
+	var denominator := sqrt(pow(ORBIT_RADIUS.y * cos_a, 2) + pow(ORBIT_RADIUS.x * sin_a, 2))
+	if denominator == 0:
+		return ORBIT_OFFSET
+	var radius := (ORBIT_RADIUS.x * ORBIT_RADIUS.y) / denominator
+	return Vector2(cos_a, sin_a) * radius + ORBIT_OFFSET
+
+func _shortest_angle(from_angle: float, to_angle: float) -> float:
+	return wrapf(to_angle - from_angle, -PI, PI)
+
+func _update_mecha_direction(direction: Vector2) -> void:
+	if direction == Vector2.ZERO:
+		return
+	var angle_deg = rad_to_deg(direction.angle())
+	var new_dir := ""
+	if angle_deg >= -22.5 and angle_deg < 22.5:
+		new_dir = "right"
+	elif angle_deg >= 22.5 and angle_deg < 67.5:
+		new_dir = "top_right"
+	elif angle_deg >= 67.5 and angle_deg < 112.5:
+		new_dir = "top"
+	elif angle_deg >= 112.5 and angle_deg < 157.5:
+		new_dir = "top_left"
+	elif angle_deg >= 157.5 or angle_deg < -157.5:
+		new_dir = "left"
+	elif angle_deg >= -157.5 and angle_deg < -112.5:
+		new_dir = "bottom_left"
+	elif angle_deg >= -112.5 and angle_deg < -67.5:
+		new_dir = "bottom"
+	elif angle_deg >= -67.5 and angle_deg < -22.5:
+		new_dir = "bottom_right"
+	if new_dir == "" or new_dir == current_mecha_direction:
+		return
+	current_mecha_direction = new_dir
+	if MECHA_DIRECTION_TEXTURES.has(new_dir):
+		mecha_sprite.texture = MECHA_DIRECTION_TEXTURES[new_dir]
+		_resize_mecha_sprite()
 
 # Player does not have death atm
 func damaged(attack:Attack):
@@ -198,6 +328,19 @@ func _on_grab_area_area_entered(area):
 			area.target = self
 
 
+func _on_phase_changed(new_phase: String) -> void:
+	if new_phase == PhaseManager.PREPARE:
+		_attract_all_coins()
+
+
+func _attract_all_coins() -> void:
+	if not collect_area:
+		return
+	for collectable in get_tree().get_nodes_in_group("collectables"):
+		if collectable is Coin and is_instance_valid(collectable):
+			collectable.target = collect_area
+
+
 func _on_detect_area_area_entered(area: Area2D) -> void:
 	if not PlayerData.detected_enemies.has(area):
 		PlayerData.detected_enemies.append(area)
@@ -216,5 +359,3 @@ func _on_hurt_cd_timeout() -> void:
 
 func _on_collision_cd_timeout() -> void:
 	pass
-	#self.set_collision_layer_value(1,true)
-	#self.set_collision_mask_value(3,true)

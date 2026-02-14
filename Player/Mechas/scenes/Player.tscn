@@ -1,7 +1,7 @@
-[gd_scene load_steps=10 format=3 uid="uid://dve1wwmkd0ynm"]
+[gd_scene format=3 uid="uid://dve1wwmkd0ynm"]
 
 [ext_resource type="Script" uid="uid://bmw6u23gpmpyb" path="res://Player/Mechas/scripts/Player.gd" id="1_ds3ra"]
-[ext_resource type="Texture2D" uid="uid://gr13ex3fw4lx" path="res://Textures/test/player.png" id="2_omq80"]
+[ext_resource type="Texture2D" uid="uid://dckpubjv7tbtk" path="res://asset/images/characters/f.png" id="2_we6y6"]
 [ext_resource type="PackedScene" uid="uid://dr2gmtpibgjy1" path="res://Utility/hit_hurt_box/hurt_box.tscn" id="3_cj848"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_e43ux"]
@@ -21,71 +21,71 @@ size = Vector2(21, 37)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_n8bvj"]
 size = Vector2(1200, 680)
 
-[node name="Player" type="CharacterBody2D" groups=["player"]]
+[node name="Player" type="CharacterBody2D" unique_id=852457555 groups=["player"]]
+z_index = 10
 collision_layer = 17
 collision_mask = 32
 motion_mode = 1
 script = ExtResource("1_ds3ra")
 
-[node name="MechaSprite" type="Sprite2D" parent="."]
+[node name="MechaSprite" type="Sprite2D" parent="." unique_id=1424985253]
 position = Vector2(0.5, -5)
-scale = Vector2(1.03125, 1.3125)
-texture = ExtResource("2_omq80")
+texture = ExtResource("2_we6y6")
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=665109581]
 
-[node name="MechaCollision" type="CollisionShape2D" parent="."]
+[node name="MechaCollision" type="CollisionShape2D" parent="." unique_id=645371433]
 visible = false
 shape = SubResource("RectangleShape2D_e43ux")
 
-[node name="EquippedWeapons" type="Node2D" parent="."]
+[node name="EquippedWeapons" type="Node2D" parent="." unique_id=966247538]
 unique_name_in_owner = true
 
-[node name="EquippedAugments" type="Node2D" parent="."]
+[node name="EquippedAugments" type="Node2D" parent="." unique_id=1346964768]
 
-[node name="UniqueWeapon" type="Node2D" parent="."]
+[node name="UniqueWeapon" type="Node2D" parent="." unique_id=763063318]
 
-[node name="ActiveSkill" type="Node2D" parent="."]
+[node name="ActiveSkill" type="Node2D" parent="." unique_id=269678612]
 
-[node name="CollectArea" type="Area2D" parent="."]
+[node name="CollectArea" type="Area2D" parent="." unique_id=798938077]
 unique_name_in_owner = true
 position = Vector2(0, -330)
 collision_layer = 0
 
-[node name="CollectShape" type="CollisionShape2D" parent="CollectArea"]
+[node name="CollectShape" type="CollisionShape2D" parent="CollectArea" unique_id=1418368109]
 shape = SubResource("RectangleShape2D_dlks0")
 
-[node name="CollectChipArea" type="Area2D" parent="."]
+[node name="CollectChipArea" type="Area2D" parent="." unique_id=611976283]
 collision_layer = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="CollectChipArea"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CollectChipArea" unique_id=614597683]
 shape = SubResource("CircleShape2D_k885b")
 
-[node name="GrabArea" type="Area2D" parent="."]
+[node name="GrabArea" type="Area2D" parent="." unique_id=675314015]
 collision_layer = 0
 
-[node name="GrabShape" type="CollisionShape2D" parent="GrabArea"]
+[node name="GrabShape" type="CollisionShape2D" parent="GrabArea" unique_id=1612269621]
 shape = SubResource("CircleShape2D_up5oj")
 
-[node name="HurtBox" parent="." instance=ExtResource("3_cj848")]
+[node name="HurtBox" parent="." unique_id=2034184633 instance=ExtResource("3_cj848")]
 collision_layer = 1
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
 position = Vector2(1.5, -3.5)
 shape = SubResource("RectangleShape2D_uwn7n")
 
-[node name="DetectArea" type="Area2D" parent="."]
+[node name="DetectArea" type="Area2D" parent="." unique_id=412029861]
 collision_layer = 0
 collision_mask = 4
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea" unique_id=173988112]
 shape = SubResource("RectangleShape2D_n8bvj")
 
-[node name="HurtCD" type="Timer" parent="."]
+[node name="HurtCD" type="Timer" parent="." unique_id=2030254263]
 wait_time = 3.0
 one_shot = true
 
-[node name="CollisionCD" type="Timer" parent="."]
+[node name="CollisionCD" type="Timer" parent="." unique_id=894059812]
 one_shot = true
 
 [connection signal="area_entered" from="CollectArea" to="." method="_on_collect_area_area_entered"]

@@ -10,6 +10,7 @@ script = ExtResource("1_lus60")
 [node name="MechTexture" type="TextureRect" parent="."]
 layout_mode = 2
 texture = ExtResource("2_wrwct")
+expand_mode = 2
 
 [connection signal="gui_input" from="MechTexture" to="." method="_on_texture_rect_gui_input"]
 [connection signal="mouse_entered" from="MechTexture" to="." method="_on_texture_rect_mouse_entered"]

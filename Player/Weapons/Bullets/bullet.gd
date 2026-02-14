@@ -12,6 +12,7 @@ var base_displacement = Vector2.ZERO
 var bullet_displacement = Vector2.ZERO
 var blt_texture
 var size : float = 1.0
+var desired_pixel_size : Vector2 = Vector2.ZERO
 var module_list = []
 var effect_list = []
 var hitbox_type = "once"
@@ -39,11 +40,21 @@ var hitbox_ins
 func _ready() -> void:
 	expire_timer.wait_time = expire_time
 	bullet_sprite.texture = blt_texture
-	bullet_sprite.scale = Vector2(size,size)
+	bullet_sprite.scale = _resolve_bullet_scale()
 	init_hitbox(hitbox_type)
 	expire_timer.start()
 	await get_tree().physics_frame
 	show_bullet()
+
+func _resolve_bullet_scale() -> Vector2:
+	if desired_pixel_size != Vector2.ZERO and bullet_sprite.texture:
+		var texture_size : Vector2 = bullet_sprite.texture.get_size()
+		if texture_size.x > 0 and texture_size.y > 0:
+			return Vector2(
+				desired_pixel_size.x / texture_size.x,
+				desired_pixel_size.y / texture_size.y
+			)
+	return Vector2(size, size)
 
 # This function will 0adjust the hitbox shape identical to your sprite size
 func init_hitbox(hb_type = "once") -> void:

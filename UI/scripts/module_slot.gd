@@ -35,8 +35,15 @@ func update() -> void:
 	else:
 		module = null
 	if module:
-		image.texture = module.get_node("%Sprite").texture
-		item_name.text = module.ITEM_NAME
+		var sprite_node := module.get_node_or_null("%Sprite")
+		if sprite_node:
+			image.texture = sprite_node.texture
+		else:
+			image.texture = null
+		var module_name = module.get("ITEM_NAME")
+		if module_name == null or module_name == "":
+			module_name = module.name
+		item_name.text = str(module_name)
 	else:
 		image.texture = null
 		item_name.text = "Empty"

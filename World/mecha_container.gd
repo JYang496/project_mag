@@ -27,6 +27,7 @@ func _ready() -> void:
 func update_labels() -> void:
 	mech_autosave = DataHandler.read_autosave_mecha_data(str(mecha_id))
 	var lvl_index = int(mech_autosave["current_level"]) - 1
+	var crit_rate_value: float = mech_data.crit_rate[lvl_index]
 	mecha_name.text = mech_data.display_name
 	current_exp.text = "Exp: %s / %s" %[mech_autosave["current_exp"], mech_data["next_level_exp"][lvl_index]]
 	current_level.text = "Level: %s / %s" % [mech_autosave["current_level"], mech_data["max_level"]]
@@ -34,7 +35,7 @@ func update_labels() -> void:
 	player_speed.text = "Player speed: %s" % [mech_data.player_speed[lvl_index]]
 	armor.text = "Armor: %s" % [mech_data.armor[lvl_index]]
 	shield.text = "Shield: %s" % [mech_data.shield[lvl_index]]
-	crit_rate.text = "Crit Rate: %s" % [mech_data.crit_rate[lvl_index]]
+	crit_rate.text = "Crit Rate: %s%%" % [String.num(crit_rate_value * 100.0, 1)]
 	crit_damage.text = "Crit Damage: %s" % [mech_data.crit_damage[lvl_index]]
 	grab_radius.text = "Grab Radius: %s" % [mech_data.grab_radius[lvl_index]]
 	player_gold.text = "Gold: %s" % [mech_data.player_gold[lvl_index]]

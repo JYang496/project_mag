@@ -15,6 +15,9 @@ var _enemy_bodies: Array[Node2D] = []
 var progress: int = 0
 @onready var _sprite: Sprite2D = $Texture/Sprite2D
 var _default_color: Color = Color.WHITE
+var _is_highlighted := false
+var _pending_highlight_color: Color = Color.WHITE
+var _has_pending_highlight := false
 
 const PROGRESS_INTERVAL := 0.2
 const PROGRESS_STEP := 1
@@ -42,6 +45,9 @@ func set_cell_owner(value: int) -> void:
 func _ready() -> void:
 	if _sprite:
 		_default_color = _sprite.modulate
+	if _is_highlighted and _has_pending_highlight and _sprite:
+		_sprite.modulate = _pending_highlight_color
+		_has_pending_highlight = false
 	_progress_timer = Timer.new()
 	_progress_timer.wait_time = PROGRESS_INTERVAL
 	_progress_timer.autostart = true
@@ -53,7 +59,7 @@ func _update_visual_by_state() -> void:
 	pass
 
 func _update_visual_by_owner() -> void:
-	if not _sprite:
+	if not _sprite or _is_highlighted:
 		return
 	match cell_owner:
 		CellOwner.PLAYER:
@@ -62,6 +68,23 @@ func _update_visual_by_owner() -> void:
 			_sprite.modulate = Color(1.0, 0.4, 0.4)
 		_:
 			_sprite.modulate = _default_color
+
+func set_highlight_color(color: Color) -> void:
+	_is_highlighted = true
+	if not _sprite:
+		_pending_highlight_color = color
+		_has_pending_highlight = true
+		return
+	_has_pending_highlight = false
+	_sprite.modulate = color
+
+func clear_highlight() -> void:
+	if not _sprite:
+		_is_highlighted = false
+		_has_pending_highlight = false
+		return
+	_is_highlighted = false
+	_update_visual_by_owner()
 
 func _evaluate_cell_state() -> void:
 	if state == CellState.LOCKED:

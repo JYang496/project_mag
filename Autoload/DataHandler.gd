@@ -52,12 +52,12 @@ func save_game(data : SaveData = save_data, file_path: String = "res://Data/save
 	data.sub = "0"
 	data.game_level = str(PhaseManager.current_level)
 	var result = ResourceSaver.save(data,file_path)
-	print(self,": ",error_string(result))
+	print(self,": Save game ",error_string(result))
 
 func new_save(file_path: String = "res://Data/savedata/autosave.tres") -> void:
 	save_data = SaveData.new()
 	var result = ResourceSaver.save(save_data, file_path)
-	print(self,": ",error_string(result))
+	print(self,": New save",error_string(result))
 	
 
 func load_game(file_path: String = "res://Data/savedata/autosave.tres") -> void:

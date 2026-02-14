@@ -8,9 +8,6 @@ const linear_movement = preload("res://Player/Weapons/Effects/linear_movement.ts
 const spiral_movement = preload("res://Player/Weapons/Effects/spiral_movement.tscn")
 var ricochet_effect = preload("res://Player/Weapons/Effects/ricochet_effect.tscn")
 
-
-
-
 # Common variables for rangers
 var base_damage : int
 var damage : int
@@ -37,6 +34,9 @@ var object
 # Over charge
 var casting_oc_skill : bool = false
 
+const SPRITE_TARGET_HEIGHT := 30.0
+const AIM_ROTATION_OFFSET := deg_to_rad(90)
+
 signal shoot()
 signal over_charge()
 signal calculate_weapon_damage(damage)
@@ -48,6 +48,8 @@ signal calculate_bullet_size(size)
 
 func _ready():
 	setup_timer()
+	_apply_fuse_sprite()
+	_adjust_sprite_height()
 	if level:
 		set_level(level)
 	else:
@@ -58,6 +60,7 @@ func setup_timer() -> void:
 	cooldown_timer = self.get_node("CooldownTimer")
 
 func _physics_process(_delta):
+	_update_weapon_rotation()
 	if not justAttacked and Input.is_action_pressed("ATTACK"):
 		emit_signal("shoot")
 
@@ -83,7 +86,6 @@ func apply_effects_on_bullet(bullet : Node2D) -> void:
 
 	# Update linear movement if exist, it is prerequestive effect of some effects
 	if bullet_direction and speed:
-		#bullet_effects.set("linear_movement",{"direction":bullet_direction, "speed": speed})
 		var linear_load = load("res://Player/Weapons/Effects/linear_movement.tscn")
 		var linear_load_ins = linear_load.instantiate()
 		linear_load_ins.set("direction", bullet_direction)
@@ -97,7 +99,6 @@ func apply_effects_on_bullet(bullet : Node2D) -> void:
 		var effect_load = load("res://Player/Weapons/Effects/%s.tscn" %effect)
 		var effect_ins = effect_load.instantiate()
 		for attribute in bullet_effects.get(effect):
-			prints("attr:",attribute,bullet_effects.get(effect).get(attribute))
 			effect_ins.set(attribute,bullet_effects.get(effect).get(attribute))
 		if not bullet:
 			printerr("Bullet not found")
@@ -142,3 +143,18 @@ func remove_weapon() -> void:
 
 func _on_over_charge() -> void:
 	print(self,"over charge")
+
+func _adjust_sprite_height() -> void:
+	if not sprite or not sprite.texture:
+		return
+	var tex_height := float(sprite.texture.get_height())
+	if tex_height <= 0.0:
+		return
+	var scale_factor := SPRITE_TARGET_HEIGHT / tex_height
+	sprite.scale = Vector2(scale_factor, scale_factor)
+
+func _update_weapon_rotation() -> void:
+	var mouse_direction := get_global_mouse_position() - global_position
+	if mouse_direction == Vector2.ZERO:
+		return
+	rotation = mouse_direction.angle() + AIM_ROTATION_OFFSET

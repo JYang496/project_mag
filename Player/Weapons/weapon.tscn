@@ -1,13 +1,24 @@
-[gd_scene load_steps=2 format=3 uid="uid://c4oj2glaup5b3"]
+[gd_scene format=3 uid="uid://c4oj2glaup5b3"]
 
 [ext_resource type="Script" uid="uid://dlgx3bmsdvdgr" path="res://Player/Weapons/weapon.gd" id="1_xgcik"]
+[ext_resource type="Texture2D" uid="uid://bo8agyho2ubhi" path="res://asset/images/weapons/cannon1.png" id="2_xgcik"]
+[ext_resource type="Script" uid="uid://b1ppn0xcqgjq1" path="res://Player/Weapons/fuse_sprite_holder.gd" id="3_xgcik"]
+[ext_resource type="Texture2D" uid="uid://ibu0avxj67o0" path="res://asset/images/weapons/cannon2.png" id="4_xgcik"]
+[ext_resource type="Texture2D" uid="uid://cl6fpuet5temg" path="res://asset/images/weapons/cannon3.png" id="5_xgcik"]
 
-[node name="Weapon" type="Node2D"]
+[node name="Weapon" type="Node2D" unique_id=495213386]
 script = ExtResource("1_xgcik")
 
-[node name="Modules" type="Node2D" parent="."]
+[node name="Modules" type="Node2D" parent="." unique_id=1154744371]
 
-[node name="Sprite" type="Sprite2D" parent="."]
+[node name="Sprite" type="Sprite2D" parent="." unique_id=1522898652]
 unique_name_in_owner = true
+texture = ExtResource("2_xgcik")
+
+[node name="FuseSprites" type="Node" parent="." unique_id=50406900]
+script = ExtResource("3_xgcik")
+fuse_texture_1 = ExtResource("2_xgcik")
+fuse_texture_2 = ExtResource("4_xgcik")
+fuse_texture_3 = ExtResource("5_xgcik")
 
 [connection signal="tree_exited" from="." to="." method="_on_tree_exited"]
