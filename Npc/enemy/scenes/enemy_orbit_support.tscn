@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://3nbq5hvtkssa"]
+
+[ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_l0h4g"]
+[ext_resource type="Script" uid="uid://b3sl4jct0dmkr" path="res://Npc/enemy/scripts/enemy_orbit_support.gd" id="2_6n8h1"]
+[ext_resource type="Texture2D" uid="uid://ctm115arudbhj" path="res://asset/images/enemies/b.png" id="3_mk2fd"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hurt"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_npc"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_buff"]
+radius = 77.52419
+
+[node name="EnemyOrbitSupport" unique_id=18994915 instance=ExtResource("1_l0h4g")]
+collision_mask = 0
+script = ExtResource("2_6n8h1")
+orbit_radius = 170.0
+orbit_correction = 2.5
+orbit_clockwise = true
+orbit_entry_margin = 35.0
+aura_radius = 180.0
+aura_speed_bonus = 1.0
+debug_aura_detection = false
+damage = 1
+movement_speed = 30.0
+hp = 30
+
+[node name="CollisionShape2D" parent="HurtBox" index="0"]
+shape = SubResource("RectangleShape2D_hurt")
+
+[node name="Body" parent="." index="1"]
+position = Vector2(-0.019227505, 0.12500143)
+scale = Vector2(0.20447402, 0.21703292)
+texture = ExtResource("3_mk2fd")
+
+[node name="NPCCollision" parent="." index="2"]
+shape = SubResource("RectangleShape2D_npc")
+
+[node name="SpeedBuffArea" type="Area2D" parent="." index="3" unique_id=738163898]
+collision_layer = 0
+collision_mask = 20
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SpeedBuffArea" index="0" unique_id=985297685]
+shape = SubResource("CircleShape2D_buff")
+
+[connection signal="body_entered" from="SpeedBuffArea" to="." method="_on_speed_buff_area_body_entered"]
+[connection signal="body_exited" from="SpeedBuffArea" to="." method="_on_speed_buff_area_body_exited"]
+
+[editable path="HurtBox"]
+[editable path="HitBoxDot"]

@@ -23,8 +23,8 @@ func _ready() -> void:
 	elif value:
 		# Drop is a coin
 		drop_instance.value = value
-	self.call_deferred("add_sibling",drop_instance)
-	drop_instance.position = $p0.position
+	add_sibling(drop_instance)
+	drop_instance.global_position = p0.global_position
 
 func _physics_process(delta):
 	if not drop_instance or arrived:

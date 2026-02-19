@@ -2,6 +2,7 @@ extends Node2D
 class_name EnemySpawner
 
 @onready var timer = $Timer
+@export var debug_print_spawn_stats := false
 @onready var board = get_parent().get_node_or_null("Board")
 @onready var x_min = $TopLeft.global_position.x
 @onready var y_min = $TopLeft.global_position.y
@@ -54,6 +55,7 @@ func _on_timer_timeout():
 				while counter < i.number:
 					var enemy_spawn = new_enemy.instantiate()
 					_apply_level_scaling(i, enemy_spawn)
+					_debug_log_spawned_enemy(enemy_spawn)
 					enemy_spawn.global_position = get_nearby_position(random_position_center)
 					self.call_deferred("add_child",enemy_spawn)
 					i.add_enemy_with_signal(enemy_spawn)
@@ -252,3 +254,13 @@ func _apply_level_scaling(spawn_info: SpawnInfo, enemy_instance) -> void:
 		var level_index = max(PhaseManager.current_level, 0)
 		base_enemy.hp = spawn_info.get_scaled_hp(level_index, base_enemy.hp)
 		base_enemy.damage = spawn_info.get_scaled_damage(level_index, base_enemy.damage)
+
+func _debug_log_spawned_enemy(enemy_instance) -> void:
+	if not debug_print_spawn_stats:
+		return
+	if enemy_instance is BaseEnemy:
+		var base_enemy := enemy_instance as BaseEnemy
+		print(
+			"[Spawn] level=%s enemy=%s hp=%s damage=%s"
+			% [PhaseManager.current_level, base_enemy.name, base_enemy.hp, base_enemy.damage]
+		)

@@ -1,23 +1,26 @@
-[gd_scene load_steps=6 format=3 uid="uid://11s8xuvk76mn"]
+[gd_scene format=3 uid="uid://11s8xuvk76mn"]
 
 [ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_a761y"]
 [ext_resource type="Script" uid="uid://dv5jn203ihbvu" path="res://Npc/enemy/scripts/enemy_rolling_ball.gd" id="2_cf0t7"]
-[ext_resource type="Texture2D" uid="uid://76u4l0356ebe" path="res://Textures/test/rolling_ball.png" id="3_fenux"]
+[ext_resource type="Texture2D" uid="uid://lt43ryicwj03" path="res://asset/images/enemies/a.png" id="3_h8otr"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_0wqes"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_uhp8g"]
 
-[node name="EnemyRollingBall" instance=ExtResource("1_a761y")]
+[node name="EnemyRollingBall" unique_id=1652890419 instance=ExtResource("1_a761y")]
 texture_filter = 1
 collision_mask = 0
 script = ExtResource("2_cf0t7")
+damage = 2
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
 shape = SubResource("RectangleShape2D_0wqes")
 
 [node name="Body" parent="." index="1"]
-texture = ExtResource("3_fenux")
+position = Vector2(-0.019227505, 0.12500143)
+scale = Vector2(0.20447402, 0.21703292)
+texture = ExtResource("3_h8otr")
 
 [node name="NPCCollision" parent="." index="2"]
 shape = SubResource("RectangleShape2D_uhp8g")

@@ -52,8 +52,6 @@ void fragment() {
 
 func _ready():
 	hit_box_dot.hitbox_owner = self
-	# Scale up the body
-	sprite_body.scale = Vector2(2, 2)
 	# Store original material
 	original_material = sprite_body.material
 	

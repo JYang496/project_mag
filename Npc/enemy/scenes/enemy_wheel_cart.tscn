@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://b336cex4sdrnf"]
+[gd_scene format=3 uid="uid://b336cex4sdrnf"]
 
 [ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_jdgf0"]
 [ext_resource type="Texture2D" uid="uid://c0t8ukgysqttr" path="res://Textures/test/e2.png" id="2_1at03"]
@@ -13,11 +13,14 @@ size = Vector2(16, 16)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_yef5u"]
 size = Vector2(110, 87)
 
-[node name="EnemyWheelCart" instance=ExtResource("1_jdgf0")]
+[node name="EnemyWheelCart" unique_id=1509861233 instance=ExtResource("1_jdgf0")]
 script = ExtResource("2_m5ns1")
-damage = 1
-movement_speed = 60.0
-hp = 20
+chase_acceleration = 25.0
+slowdown_deceleration = 180.0
+max_speed_multiplier = 3.0
+damage = 4
+movement_speed = 40.0
+hp = 30
 
 [node name="HurtBox" parent="." index="0"]
 collision_mask = 2
@@ -34,10 +37,10 @@ texture = ExtResource("2_1at03")
 position = Vector2(0, -2)
 shape = SubResource("RectangleShape2D_5l3jp")
 
-[node name="SlowDownArea" type="Area2D" parent="." index="3"]
+[node name="SlowDownArea" type="Area2D" parent="." index="3" unique_id=593321342]
 collision_layer = 0
 
-[node name="SlowDownShape" type="CollisionShape2D" parent="SlowDownArea" index="0"]
+[node name="SlowDownShape" type="CollisionShape2D" parent="SlowDownArea" index="0" unique_id=1650695760]
 position = Vector2(0, -1.5)
 shape = SubResource("RectangleShape2D_yef5u")
 

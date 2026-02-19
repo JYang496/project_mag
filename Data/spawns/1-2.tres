@@ -1,20 +1,19 @@
-[gd_resource type="Resource" script_class="LevelSpawnConfig" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="LevelSpawnConfig" format=3 uid="uid://dk38tkiaqqevc"]
 
-[ext_resource type="Script" uid="uid://bqyvlcrq4b8xf" path="res://Data/spawns/LevelArray.gd" id="1_b2itx"]
+[ext_resource type="Script" uid="uid://bqyvlcrq4b8xf" path="res://data/spawns/LevelArray.gd" id="1_b2itx"]
+[ext_resource type="Script" uid="uid://cw2vo0cs83hpl" path="res://Utility/reward_info.gd" id="1_wxt1a"]
 [ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/scripts/spawn_info.gd" id="2_lrbk6"]
 [ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/scenes/enemy_wheel_cart.tscn" id="3_d6yav"]
 
-[sub_resource type="Resource" id="Resource_nab7e"]
+[sub_resource type="Resource" id="Resource_wxt1a"]
 script = ExtResource("2_lrbk6")
 time_start = 1
 enemy = ExtResource("3_d6yav")
 number = 3
 max_enemy_number = 9
-hp = 12
-damage = 1
 max_wave = 5
 interval = 2
 
 [resource]
 script = ExtResource("1_b2itx")
-spawns = Array[ExtResource("2_lrbk6")]([SubResource("Resource_nab7e")])
+spawns = Array[ExtResource("2_lrbk6")]([SubResource("Resource_wxt1a")])

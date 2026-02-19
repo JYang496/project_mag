@@ -1,30 +1,33 @@
-[gd_resource type="Resource" script_class="LevelSpawnConfig" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="LevelSpawnConfig" format=3 uid="uid://buavbm3rd8ofi"]
 
-[ext_resource type="Script" uid="uid://bqyvlcrq4b8xf" path="res://Data/spawns/LevelArray.gd" id="1_41147"]
+[ext_resource type="Script" uid="uid://cw2vo0cs83hpl" path="res://Utility/reward_info.gd" id="1_8ppqq"]
+[ext_resource type="Script" uid="uid://bqyvlcrq4b8xf" path="res://data/spawns/LevelArray.gd" id="1_41147"]
 [ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/scripts/spawn_info.gd" id="2_q5pe3"]
 [ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/scenes/enemy_wheel_cart.tscn" id="3_rye6q"]
 [ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/scenes/enemy_rolling_ball.tscn" id="4_nissg"]
 
 [sub_resource type="Resource" id="Resource_xsuya"]
 script = ExtResource("2_q5pe3")
-time_start = 0
-time_end = 15
 enemy = ExtResource("3_rye6q")
-hp = 11
-damage = 1
 number = 3
-delay = 3
+max_enemy_number = 9
+hp = 0
+damage = 0
+max_wave = 5
+interval = 3
 
 [sub_resource type="Resource" id="Resource_xwo5i"]
 script = ExtResource("2_q5pe3")
 time_start = 15
-time_end = 30
 enemy = ExtResource("4_nissg")
-hp = 16
-damage = 1
 number = 2
-delay = 1
+max_enemy_number = 6
+hp = 0
+damage = 0
+max_wave = 15
+interval = 1
 
 [resource]
 script = ExtResource("1_41147")
 spawns = Array[ExtResource("2_q5pe3")]([SubResource("Resource_xsuya"), SubResource("Resource_xwo5i")])
+

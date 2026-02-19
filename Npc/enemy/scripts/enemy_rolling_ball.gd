@@ -1,4 +1,5 @@
 extends BaseEnemy
+class_name EnemyRollingBall
 
 func _physics_process(_delta):
 	## direction to applied normalized

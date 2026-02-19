@@ -1,8 +1,8 @@
-[gd_scene load_steps=7 format=3 uid="uid://bmy3cber63qwh"]
+[gd_scene format=3 uid="uid://bmy3cber63qwh"]
 
 [ext_resource type="PackedScene" uid="uid://b1rwfidg5v0wk" path="res://Npc/enemy/scenes/elite_enemy.tscn" id="1_cpric"]
 [ext_resource type="Script" uid="uid://cmk6kp6oqk6ju" path="res://Npc/enemy/scripts/enemy_rolling_ball_elite.gd" id="2_0fobv"]
-[ext_resource type="Texture2D" uid="uid://76u4l0356ebe" path="res://Textures/test/rolling_ball.png" id="3_dl2yt"]
+[ext_resource type="Texture2D" uid="uid://lt43ryicwj03" path="res://asset/images/enemies/a.png" id="3_ojmbw"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_dl2yt"]
 
@@ -11,32 +11,38 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_dl2yt"]
 radius = 251.008
 
-[node name="EnemyRollingBallElite" instance=ExtResource("1_cpric")]
+[node name="EnemyRollingBallElite" unique_id=53735121 instance=ExtResource("1_cpric")]
 collision_mask = 0
 script = ExtResource("2_0fobv")
-damage = 1
+damage = 3
+hp = 60
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
 shape = SubResource("RectangleShape2D_dl2yt")
 
 [node name="Body" parent="." index="1"]
-texture = ExtResource("3_dl2yt")
+position = Vector2(0.034549713, -1.4305115e-06)
+scale = Vector2(0.32296523, 0.37362638)
+texture = ExtResource("3_ojmbw")
 
 [node name="NPCCollision" parent="." index="2"]
 shape = SubResource("RectangleShape2D_0j2si")
+
+[node name="CollisionShape2D" parent="HitBoxDot" parent_id_path=PackedInt32Array(728839487) index="0"]
+position = Vector2(0.5, 0.5)
 
 [node name="SkillTimer" parent="." index="5"]
 wait_time = 6.0
 one_shot = true
 
-[node name="DetectTimer" type="Timer" parent="." index="6"]
+[node name="DetectTimer" type="Timer" parent="." index="6" unique_id=1499426267]
 wait_time = 0.5
 autostart = true
 
-[node name="SkillArea" type="Area2D" parent="." index="7"]
+[node name="SkillArea" type="Area2D" parent="." index="7" unique_id=1612717376]
 collision_layer = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SkillArea" index="0"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SkillArea" index="0" unique_id=1802249229]
 shape = SubResource("CircleShape2D_dl2yt")
 
 [connection signal="timeout" from="DetectTimer" to="." method="_on_detect_timer_timeout"]
