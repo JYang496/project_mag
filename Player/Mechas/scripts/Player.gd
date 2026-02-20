@@ -62,7 +62,12 @@ func _physics_process(delta):
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ATTACK") and PlayerData.is_overcharged and PlayerData.overcharge_enable:
 		if PlayerData.player_weapon_list.size() > 0:
-			PlayerData.player_weapon_list[PlayerData.on_select_weapon].emit_signal("over_charge")
+			var select_index := PlayerData.on_select_weapon
+			if select_index < 0 or select_index >= PlayerData.player_weapon_list.size():
+				return
+			var selected_weapon = PlayerData.player_weapon_list[select_index]
+			if is_instance_valid(selected_weapon):
+				selected_weapon.emit_signal("over_charge")
 			PlayerData.overcharge_enable = false
 	if event.is_action_pressed("SKILL"):
 		active_skill.emit()
@@ -274,7 +279,14 @@ func _update_mecha_direction(direction: Vector2) -> void:
 
 # Player does not have death atm
 func damaged(attack:Attack):
+	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
+		return
 	PlayerData.player_hp -= attack.damage
+	if PlayerData.testing_keep_hp_above_zero and PlayerData.player_hp <= 0:
+		PlayerData.player_hp = 1
+	if PlayerData.player_hp <= 0:
+		PhaseManager.enter_gameover()
+		return
 	hurt_box.set_collision_layer_value(1,false)
 	#self.set_collision_mask_value(3,false)
 	#self.set_collision_layer_value(1,false)
@@ -286,6 +298,10 @@ func damaged(attack:Attack):
 # When player is teleporting between zones, disable terrain collision. Enable when arrived.
 func switch_terrain_collision(switch:bool):
 	self.set_collision_mask_value(6,switch)
+
+
+func set_hp_safety_for_testing(enabled: bool) -> void:
+	PlayerData.set_hp_safety_for_testing(enabled)
 
 
 func get_closest_area_optimized(area_list: Array, target_node: Node2D) -> Area2D:
@@ -311,6 +327,7 @@ func _on_collect_area_area_entered(area):
 	if area.is_in_group("collectables") and area is Coin:
 		var value = area.collect()
 		PlayerData.player_gold += value
+		PlayerData.round_coin_collected += value
 		coin_collected.emit()
 
 
@@ -318,6 +335,7 @@ func _on_collect_chip_area_area_entered(area) -> void:
 	if area.is_in_group("collectables") and area is Chip:
 		var value = area.collect()
 		PlayerData.player_exp += value
+		PlayerData.round_chip_collected += value
 
 
 func _on_grab_area_area_entered(area):

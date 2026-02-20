@@ -6,8 +6,8 @@
 script = ExtResource("1_pc3pc")
 mechas = {
 "1": {
-"current_exp": "0",
-"current_level": "6"
+"current_exp": "-10",
+"current_level": "7"
 },
 "2": {
 "current_exp": "0",

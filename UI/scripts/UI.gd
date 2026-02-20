@@ -12,6 +12,10 @@ class_name UI
 @onready var pause_menu_root : Control = $GUI/PauseMenuRoot
 @onready var module_root: Control = $GUI/ModuleRoot
 @onready var gear_fuse_root: Control = $GUI/GearFuseRoot
+var game_over_root: Control
+var game_over_status_label: Label
+var game_over_coin_label: Label
+var game_over_chip_label: Label
 
 
 # Character
@@ -66,6 +70,9 @@ signal reset_cost
 
 func _ready():
 	GlobalVariables.ui = self
+	_create_game_over_layout()
+	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
+		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 	refresh_border()
 
 
@@ -79,6 +86,8 @@ func _physics_process(_delta):
 	phase_label.text = "Phase: " + str(PhaseManager.current_state())
 	drag_item_icon.set_position(get_viewport().get_mouse_position())
 func _input(_event) -> void:
+	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
+		return
 	
 	# Pause / Menu
 	if Input.is_action_just_pressed("ESC"):
@@ -100,9 +109,19 @@ func _input(_event) -> void:
 		refresh_border()
 		
 func refresh_border() -> void:
+	var valid_weapons: Array = []
+	for weapon in PlayerData.player_weapon_list:
+		if is_instance_valid(weapon):
+			valid_weapons.append(weapon)
+	PlayerData.player_weapon_list = valid_weapons
+
 	for weapon_index in weapon_icons.get_child_count():
 		if weapon_index < PlayerData.player_weapon_list.size():
-			weapon_icons.get_child(weapon_index).texture = PlayerData.player_weapon_list[weapon_index].sprite.texture
+			var weapon = PlayerData.player_weapon_list[weapon_index]
+			if is_instance_valid(weapon) and weapon.has_node("Sprite"):
+				weapon_icons.get_child(weapon_index).texture = weapon.get_node("Sprite").texture
+			else:
+				weapon_icons.get_child(weapon_index).texture = empty_weapon_pic
 		else:
 			weapon_icons.get_child(weapon_index).texture = empty_weapon_pic
 	for i in weapon_icons.get_child_count():
@@ -251,3 +270,98 @@ func _on_resume_button_pressed() -> void:
 		# Unpause and hide UI
 		get_tree().paused = false
 		pause_menu_root.visible = false
+
+
+func _on_phase_changed(new_phase: String) -> void:
+	if new_phase == PhaseManager.GAMEOVER:
+		_show_game_over()
+
+
+func _show_game_over() -> void:
+	if game_over_root == null:
+		return
+	pause_menu_root.visible = false
+	shopping_rootv_2.visible = false
+	upgrade_rootv_2.visible = false
+	inventory_root.visible = false
+	module_root.visible = false
+	gear_fuse_root.visible = false
+	game_over_status_label.text = "Status  HP: %s/%s  Level: %s  EXP: %s" % [
+		str(PlayerData.player_hp),
+		str(PlayerData.player_max_hp),
+		str(PlayerData.player_level),
+		str(PlayerData.player_exp)
+	]
+	game_over_coin_label.text = "Coin Collected: %s" % str(PlayerData.round_coin_collected)
+	game_over_chip_label.text = "Chip Collected: %s" % str(PlayerData.round_chip_collected)
+	game_over_root.visible = true
+	get_tree().paused = true
+
+
+func _create_game_over_layout() -> void:
+	game_over_root = Control.new()
+	game_over_root.name = "GameOverRoot"
+	game_over_root.visible = false
+	game_over_root.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	game_over_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	$GUI.add_child(game_over_root)
+
+	var panel := Panel.new()
+	panel.name = "GameOverPanel"
+	panel.custom_minimum_size = Vector2(480, 320)
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -240
+	panel.offset_top = -160
+	panel.offset_right = 240
+	panel.offset_bottom = 160
+	game_over_root.add_child(panel)
+
+	var title := Label.new()
+	title.text = "Game Over"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.offset_left = 0
+	title.offset_top = 24
+	title.offset_right = 480
+	title.offset_bottom = 56
+	panel.add_child(title)
+
+	game_over_status_label = Label.new()
+	game_over_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	game_over_status_label.offset_left = 20
+	game_over_status_label.offset_top = 92
+	game_over_status_label.offset_right = 460
+	game_over_status_label.offset_bottom = 124
+	panel.add_child(game_over_status_label)
+
+	game_over_coin_label = Label.new()
+	game_over_coin_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	game_over_coin_label.offset_left = 20
+	game_over_coin_label.offset_top = 136
+	game_over_coin_label.offset_right = 460
+	game_over_coin_label.offset_bottom = 168
+	panel.add_child(game_over_coin_label)
+
+	game_over_chip_label = Label.new()
+	game_over_chip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	game_over_chip_label.offset_left = 20
+	game_over_chip_label.offset_top = 176
+	game_over_chip_label.offset_right = 460
+	game_over_chip_label.offset_bottom = 208
+	panel.add_child(game_over_chip_label)
+
+	var new_game_button := Button.new()
+	new_game_button.text = "New Game"
+	new_game_button.offset_left = 170
+	new_game_button.offset_top = 250
+	new_game_button.offset_right = 310
+	new_game_button.offset_bottom = 286
+	new_game_button.pressed.connect(_on_game_over_new_game_pressed)
+	panel.add_child(new_game_button)
+
+
+func _on_game_over_new_game_pressed() -> void:
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://World/Start.tscn")

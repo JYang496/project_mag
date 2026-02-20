@@ -8,7 +8,6 @@ var move := false
 @onready var enable_timer = $EnableTimer
 @onready var depart = $Departure
 var origin_position
-signal tp_to_dest1()
 
 func _ready() -> void:
 	texture.position = depart.position
@@ -27,7 +26,7 @@ func _physics_process(delta: float) -> void:
 	
 func _on_detect_area_body_entered(body: Node2D) -> void:
 	if body is Player and PhaseManager.current_state() == PhaseManager.REWARD:
-		tp_to_dest1.emit()
+		return
 
 func move_teleporter() -> void:
 	self.visible = true

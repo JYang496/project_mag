@@ -52,17 +52,22 @@ func update() -> void:
 	# Update information
 	if len(player_weapon_list) > equipment_index :
 		item = player_weapon_list[equipment_index]
-		image.texture = item.sprite.texture
-		equip_name.text = item.ITEM_NAME
-		for s in range(item.fuse):
-			var star_ins = star_preload.instantiate()
-			stars.add_child(star_ins)
-		var i = 0
-		for module : Module in item.modules.get_children():
-			if i >= sockets.size():
-				break
-			sockets[i].module = module
-			i += 1
+		if is_instance_valid(item):
+			image.texture = item.sprite.texture
+			equip_name.text = item.ITEM_NAME
+			for s in range(item.fuse):
+				var star_ins = star_preload.instantiate()
+				stars.add_child(star_ins)
+			var i = 0
+			for module : Module in item.modules.get_children():
+				if i >= sockets.size():
+					break
+				sockets[i].module = module
+				i += 1
+		else:
+			item = null
+			image.texture = null
+			equip_name.text = "Empty"
 	else:
 		item = null
 		image.texture = null

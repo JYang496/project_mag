@@ -44,3 +44,10 @@ func enter_reward() -> void:
 func enter_gameover() -> void:
 	phase = GAMEOVER
 	phase_changed.emit(phase)
+
+
+func reset_runtime_state() -> void:
+	battle_time = 0
+	current_level = 0
+	time_out = 30
+	phase = PREPARE

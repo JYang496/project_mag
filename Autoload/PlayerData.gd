@@ -107,6 +107,9 @@ var grab_radius_mutifactor := 1.0 :
 var total_grab_radius := grab_radius * grab_radius_mutifactor
 
 var player_gold := 10
+var round_coin_collected := 0
+var round_chip_collected := 0
+var testing_keep_hp_above_zero := false
 var is_interacting : bool = false
 
 var overcharge_enable : bool = true:
@@ -133,7 +136,8 @@ var is_overcharged : bool = false:
 		if is_overcharged != value:
 			is_overcharged = value
 			var ui = get_tree().get_first_node_in_group("ui")
-			ui.refresh_border()
+			if ui and is_instance_valid(ui):
+				ui.refresh_border()
 
 var casting_oc_skill : bool = false
 var detected_enemies : Array = []
@@ -150,7 +154,68 @@ var on_select_weapon : int = -1 :
 		if value < -1:
 			value = player_weapon_list.size() - 1
 		on_select_weapon = clampi(value,-1,player_weapon_list.size() - 1)
-		GlobalVariables.ui.refresh_border()
+		if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui):
+			GlobalVariables.ui.refresh_border()
 
 var player_companion_lsit = []
 var player_augment_list = []
+
+func set_hp_safety_for_testing(enabled: bool) -> void:
+	testing_keep_hp_above_zero = enabled
+	if testing_keep_hp_above_zero:
+		if player_max_hp < 1:
+			player_max_hp = 1
+		if player_hp < 1:
+			player_hp = 1
+
+
+func reset_runtime_state() -> void:
+	player = null
+	player_level = 1
+	next_level_exp = 10
+	player_exp = 0
+	player_speed = 100.0
+	player_bonus_speed = 0.0
+	player_max_hp = 5
+	player_hp = 5
+	hp_regen = 0
+	hp_bonus_regen = 0
+	hp_total_regen = 0
+	armor = 0
+	bonus_armor = 0
+	total_armor = 0
+	shield = 0
+	bonus_shield = 0
+	total_shield = 0
+	damage_reduction = 1.0
+	bonus_damage_reduction = 1.0
+	total_damage_reduction = 1.0
+	hurt_cd = 3.0
+	collision_cd = 1.0
+	crit_rate = 0.0
+	bonus_crit_rate = 0.0
+	total_crit_rate = 0.0
+	crit_damage = 1.0
+	bonus_crit_damage = 1.0
+	total_crit_damage = 1.0
+	grab_radius = 50.0
+	grab_radius_mutifactor = 1.0
+	total_grab_radius = 50.0
+	player_gold = 10
+	round_coin_collected = 0
+	round_chip_collected = 0
+	is_interacting = false
+	overcharge_enable = true
+	overcharge_max_time = 1.5
+	overcharge_time = 0.0
+	is_overcharging = false
+	is_overcharged = false
+	casting_oc_skill = false
+	detected_enemies.clear()
+	cloestest_enemy = null
+	player_weapon_list.clear()
+	max_weapon_num = 4
+	on_select_weapon = -1
+	player_companion_lsit.clear()
+	player_augment_list.clear()
+	testing_keep_hp_above_zero = false

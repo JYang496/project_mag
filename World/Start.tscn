@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://dwxulua8fpqd0"]
+[gd_scene load_steps=6 format=3 uid="uid://dwxulua8fpqd0"]
 
 [ext_resource type="Script" uid="uid://dyetc0qttcb7y" path="res://World/new_game_btn.gd" id="1_y1dix"]
 [ext_resource type="Script" uid="uid://q8o4fd420oji" path="res://World/continue.gd" id="2_jyp4w"]
 [ext_resource type="PackedScene" uid="uid://05u30gc3rp15" path="res://UI/scenes/mecha_select.tscn" id="2_s76s5"]
 [ext_resource type="Script" uid="uid://c10nnuwga4iqw" path="res://World/mecha_container.gd" id="2_w24c8"]
+[ext_resource type="Script" path="res://World/hp_safety_toggle_btn.gd" id="5_hp_toggle"]
 
 [node name="Start" type="Node2D"]
 
@@ -58,6 +59,11 @@ script = ExtResource("2_jyp4w")
 layout_mode = 2
 text = "Erase Data"
 script = ExtResource("1_y1dix")
+
+[node name="HpSafetyToggle" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
+layout_mode = 2
+text = "Keep HP > 1: OFF"
+script = ExtResource("5_hp_toggle")
 
 [node name="MechaContainer" type="MarginContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer"]
 layout_mode = 2

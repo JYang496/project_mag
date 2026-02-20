@@ -1,8 +1,7 @@
-[gd_scene load_steps=9 format=4 uid="uid://djyxv43t57pnf"]
+[gd_scene load_steps=8 format=4 uid="uid://djyxv43t57pnf"]
 
 [ext_resource type="Script" uid="uid://1ly0gbnh7ejf" path="res://Objects/battle_zone_teleporter.gd" id="1_2ac06"]
 [ext_resource type="Texture2D" uid="uid://i8mt56nqukr5" path="res://Textures/Tilesets/tileset.png" id="1_h1dka"]
-[ext_resource type="PackedScene" uid="uid://dpgmn2gntqjee" path="res://Utility/player_teleport.tscn" id="3_d60cv"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_6uypi"]
 texture = ExtResource("1_h1dka")
@@ -90,8 +89,6 @@ tile_set = SubResource("TileSet_2b60x")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DetectArea"]
 shape = SubResource("RectangleShape2D_bstf3")
 
-[node name="PlayerTeleport" parent="." instance=ExtResource("3_d60cv")]
-
 [node name="Departure" type="Node2D" parent="."]
 position = Vector2(0, -544)
 
@@ -102,7 +99,6 @@ one_shot = true
 position = Vector2(2, -39)
 scale = Vector2(8, 7.3)
 
-[connection signal="tp_to_dest1" from="." to="PlayerTeleport" method="_on_battle_zone_teleporter_tp_to_dest_1"]
 [connection signal="body_entered" from="DetectArea" to="." method="_on_detect_area_body_entered"]
 [connection signal="timeout" from="EnableTimer" to="." method="_on_enable_timer_timeout"]
 [connection signal="screen_exited" from="VisibleOnScreenNotifier2D" to="." method="_on_visible_on_screen_notifier_2d_screen_exited"]

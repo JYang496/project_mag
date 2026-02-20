@@ -1,9 +1,7 @@
-[gd_scene load_steps=10 format=4 uid="uid://w270o86lb231"]
+[gd_scene load_steps=8 format=4 uid="uid://w270o86lb231"]
 
-[ext_resource type="Script" uid="uid://dbfmjfnf6ulax" path="res://Objects/prepare_zone_gate.gd" id="1_0unpk"]
 [ext_resource type="Texture2D" uid="uid://ibyydb01gn8o" path="res://Textures/test/p_gate.png" id="1_mwig2"]
 [ext_resource type="Texture2D" uid="uid://sldltmirxrkq" path="res://Textures/BlockyLife/tileset.png" id="2_fq5ll"]
-[ext_resource type="PackedScene" uid="uid://dpgmn2gntqjee" path="res://Utility/player_teleport.tscn" id="4_86oxv"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_2m21i"]
 texture = ExtResource("2_fq5ll")
@@ -49,7 +47,6 @@ size = Vector2(127, 64)
 size = Vector2(128, 32)
 
 [node name="PrepareZoneGate" type="Node2D"]
-script = ExtResource("1_0unpk")
 
 [node name="GateRight" type="TileMapLayer" parent="."]
 position = Vector2(128, 0)
@@ -105,9 +102,3 @@ texture = ExtResource("1_mwig2")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DoorRight"]
 shape = SubResource("RectangleShape2D_w1yvt")
-
-[node name="PlayerTeleport" parent="." instance=ExtResource("4_86oxv")]
-
-[connection signal="tp_to_dest1" from="." to="PlayerTeleport" method="_on_prepare_zone_gate_tp_to_dest_1"]
-[connection signal="body_entered" from="PrepareDectectArea" to="." method="_on_prepare_dectect_area_body_entered"]
-[connection signal="body_entered" from="DectectArea" to="." method="_on_dectect_area_body_entered"]

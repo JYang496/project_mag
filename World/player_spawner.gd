@@ -21,8 +21,13 @@ var _current_cell: Cell
 var _highlight_active := false
 
 func _ready() -> void:
+	PlayerData.player_weapon_list.clear()
+	PlayerData.detected_enemies.clear()
+	PlayerData.cloestest_enemy = null
 	GlobalVariables.mech_data = DataHandler.read_mecha_data(str(PlayerData.select_mecha_id))
 	GlobalVariables.autosave_data = DataHandler.read_autosave_mecha_data(str(PlayerData.select_mecha_id))
+	PlayerData.round_coin_collected = 0
+	PlayerData.round_chip_collected = 0
 	var select_mecha_load = GlobalVariables.mech_data.scene
 	set_start_up_status()
 	var ins = select_mecha_load.instantiate()

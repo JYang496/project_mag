@@ -8,3 +8,10 @@ extends Node
 @onready var enemy_spawner : EnemySpawner
 @onready var AUTOSAVE_PATH : String = "res://Data/savedata/autosave.tres"
 @onready var SPAWN_PATN : String = "res://data/spawns/"
+
+
+func reset_runtime_state() -> void:
+	ui = null
+	mech_data = null
+	autosave_data = {}
+	enemy_spawner = null

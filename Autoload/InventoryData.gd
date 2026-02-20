@@ -9,6 +9,46 @@ var ready_to_fuse_list : Array = []
 #@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 #@onready var player : Player = get_tree().get_first_node_in_group("player")
 
+func _get_ui():
+	var ui = GlobalVariables.ui
+	if ui and is_instance_valid(ui):
+		return ui
+	return null
+
+func _safe_refresh_all_panels() -> void:
+	var ui = _get_ui()
+	if ui == null:
+		return
+	ui.update_modules()
+	ui.update_inventory()
+	ui.update_shop()
+	ui.refresh_border()
+
+func _safe_update_inventory_and_border() -> void:
+	var ui = _get_ui()
+	if ui == null:
+		return
+	ui.update_inventory()
+	ui.refresh_border()
+
+func _safe_update_upg() -> void:
+	var ui = _get_ui()
+	if ui == null:
+		return
+	ui.update_upg()
+
+func _safe_update_gf() -> void:
+	var ui = _get_ui()
+	if ui == null:
+		return
+	ui.update_gf()
+
+func _safe_set_drag_icon(texture) -> void:
+	var ui = _get_ui()
+	if ui == null or not ui.drag_item_icon:
+		return
+	ui.drag_item_icon.texture = texture
+
 # At this stage, on_select_module should not do anything
 var on_select_module :
 	get:
@@ -51,10 +91,7 @@ var on_select_module_weapon :
 			value.modules.add_child(on_select_inventory_module)
 			value.calculate_status()
 			moddule_slots.erase(on_select_inventory_module)
-			GlobalVariables.ui.update_modules()
-			GlobalVariables.ui.update_inventory()
-			GlobalVariables.ui.update_shop()
-			GlobalVariables.ui.refresh_border()
+			_safe_refresh_all_panels()
 			on_select_inventory_module = null
 
 var on_select_inventory_module :
@@ -104,10 +141,7 @@ var on_select_eqp :
 		else:
 			on_select_eqp = value
 			on_drag_item = on_select_eqp
-		GlobalVariables.ui.update_modules()
-		GlobalVariables.ui.update_inventory()
-		GlobalVariables.ui.update_shop()
-		GlobalVariables.ui.refresh_border()
+		_safe_refresh_all_panels()
 
 var on_select_slot :
 	get:
@@ -126,8 +160,7 @@ var on_select_slot :
 				PlayerData.player_weapon_list.erase(on_select_eqp)
 				on_select_eqp.queue_free()
 			on_select_eqp = null
-		GlobalVariables.ui.update_inventory()
-		GlobalVariables.ui.refresh_border()
+		_safe_update_inventory_and_border()
 
 func slot_eqp_swap() -> void:
 	# Swap eqp and slot
@@ -149,7 +182,7 @@ var on_select_upg :
 		return on_select_upg
 	set(value):
 		on_select_upg = value
-		GlobalVariables.ui.update_upg()
+		_safe_update_upg()
 
 var on_select_eqp_gf :
 	get:
@@ -157,7 +190,7 @@ var on_select_eqp_gf :
 	set(value):
 		add_fuse_item(value)
 		on_select_eqp_gf = value
-		GlobalVariables.ui.update_gf()
+		_safe_update_gf()
 
 var on_select_slot_gf :
 	get:
@@ -165,18 +198,18 @@ var on_select_slot_gf :
 	set(value):
 		add_fuse_item(value)
 		on_select_slot_gf = value
-		GlobalVariables.ui.update_gf()
+		_safe_update_gf()
 
 func add_fuse_item(item) -> void:
 	if ready_to_fuse_list.size() < MAX_FUSE_SIZE and not ready_to_fuse_list.has(item):
 		if ready_to_fuse_list.size() == 0 or item.ITEM_NAME == ready_to_fuse_list[0].ITEM_NAME:
 			ready_to_fuse_list.append(item)
-		GlobalVariables.ui.update_gf()
+		_safe_update_gf()
 
 func remove_fuse_item(item) -> void:
 	if ready_to_fuse_list.has(item):
 		ready_to_fuse_list.erase(item)
-		GlobalVariables.ui.update_gf()
+		_safe_update_gf()
 
 var on_drag_item :
 	get:
@@ -184,14 +217,14 @@ var on_drag_item :
 	set(value):
 		if on_drag_item == value:
 			# Cancel selection
-			GlobalVariables.ui.drag_item_icon.texture = null
+			_safe_set_drag_icon(null)
 			on_drag_item = null
 			return
 		# Select item
 		if value == null:
-			GlobalVariables.ui.drag_item_icon.texture = null
+			_safe_set_drag_icon(null)
 		else:
-			GlobalVariables.ui.drag_item_icon.texture = value.get_node("Sprite").texture
+			_safe_set_drag_icon(value.get_node("Sprite").texture)
 		on_drag_item = value
 
 func clear_on_select() -> void:
@@ -202,3 +235,11 @@ func clear_on_select() -> void:
 	on_select_eqp = null
 	on_select_slot = null
 	on_drag_item = null
+
+
+func reset_runtime_state() -> void:
+	inventory_slots.clear()
+	moddule_slots.clear()
+	ready_to_sell_list.clear()
+	ready_to_fuse_list.clear()
+	clear_on_select()
