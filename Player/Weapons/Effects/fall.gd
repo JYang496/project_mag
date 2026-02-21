@@ -10,6 +10,7 @@ class_name Fall
 var t = 0.0
 var arrived = false
 var destination : Vector2 = Vector2(400, 600)
+var _helpers_added := false
 
 func bullet_effect_ready() -> void:
 	for child in bullet.get_children():
@@ -20,16 +21,18 @@ func bullet_effect_ready() -> void:
 	p0.global_position = Vector2(p1.global_position.x - 400, p1.global_position.y)
 	bullet.call_deferred("add_sibling",p0)
 	bullet.call_deferred("add_sibling",p1)
-	bullet.call_deferred("add_sibling",p2)	
+	bullet.call_deferred("add_sibling",p2)
+	_helpers_added = true
 
 func _physics_process(delta: float) -> void:
 	if arrived:
 		return
 	if bullet.global_position.distance_to(p2.global_position) > 5:
-		t += delta * 2
+		t += delta * (speed / 200.0)
 		bullet.global_position = _quadratic_bezier(t)
 	else:
 		arrived = true
+		_cleanup_helpers()
 		bullet.queue_free()
 
 func _quadratic_bezier(t: float):
@@ -37,3 +40,14 @@ func _quadratic_bezier(t: float):
 	var q1 = p1.global_position.lerp(p2.global_position, t)
 	var r = q0.lerp(q1, t)
 	return r
+
+func _exit_tree() -> void:
+	_cleanup_helpers()
+
+func _cleanup_helpers() -> void:
+	if not _helpers_added:
+		return
+	for helper in [p0, p1, p2]:
+		if helper and is_instance_valid(helper):
+			helper.queue_free()
+	_helpers_added = false

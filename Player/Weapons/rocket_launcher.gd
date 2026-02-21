@@ -70,7 +70,7 @@ func set_level(lv):
 	base_hp = int(weapon_data[lv]["hp"])
 	base_reload = float(weapon_data[lv]["reload"])
 	calculate_status()
-	bullet_effects.set("explosion_effect",{"damage":base_damage, "explosion_size": size * 2})
+	bullet_effects.set("explosion_effect",{"damage":damage, "explosion_size": size * 2})
 	
 func _on_shoot():
 	justAttacked = true
@@ -82,34 +82,44 @@ func _on_shoot():
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.size = size
+	if bullet_effects.has("explosion_effect"):
+		bullet_effects["explosion_effect"]["damage"] = damage
 	apply_effects_on_bullet(spawn_bullet)
-	get_tree().root.call_deferred("add_child",spawn_bullet)
+	get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)
 
 func _on_over_charge():
 	if self.casting_oc_skill:
 		return
 	self.casting_oc_skill = true
-	print(self,"OVER CHARGE")
 	var n = 0
 	var max_n = 20
+	var spawn_bullet = null
 	while n < max_n:
-		if len(oc_booming_area.get_overlapping_areas()) == 0:
+		var overlap_areas = oc_booming_area.get_overlapping_areas()
+		if overlap_areas.is_empty():
 			n += 1
 			break
-		for area in oc_booming_area.get_overlapping_areas():
+		var valid_targets: Array[Area2D] = []
+		for area in overlap_areas:
+			if area is HurtBox:
+				valid_targets.append(area)
+		if valid_targets.is_empty():
+			n += 1
+			break
+		for area in valid_targets:
 			if n >= max_n:
 				break
-			if area is not HurtBox:
-				break
-			var spawn_bullet = bullet.instantiate()
+			spawn_bullet = bullet.instantiate()
 			bullet_direction = null
 			spawn_bullet.damage = damage
 			spawn_bullet.blt_texture = bul_texture
 			var fall_ins = fall_effect.instantiate()
 			fall_ins.destination = area.global_position
+			if bullet_effects.has("explosion_effect"):
+				bullet_effects["explosion_effect"]["damage"] = damage
 			apply_effects_on_bullet(spawn_bullet)
 			spawn_bullet.call_deferred("add_child",fall_ins)
-			get_tree().root.call_deferred("add_child",spawn_bullet)
+			get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)
 			n += 1
 		await get_tree().create_timer(0.2).timeout		
 	remove_weapon()

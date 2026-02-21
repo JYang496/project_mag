@@ -100,7 +100,7 @@ func _on_shoot():
 	spawn_bullet.blt_texture = bul_texture
 	apply_return_on_timeout(spawn_bullet)
 	apply_effects_on_bullet(spawn_bullet)
-	get_tree().root.call_deferred("add_child",spawn_bullet)
+	get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)
 
 func apply_return_on_timeout(blt_node, stop_time : float = 0.5, return_time : float = 1.0) -> void:
 	var return_on_timeour_ins = return_on_timeout.instantiate()
@@ -108,7 +108,6 @@ func apply_return_on_timeout(blt_node, stop_time : float = 0.5, return_time : fl
 	return_on_timeour_ins.stop_time = stop_time
 	blt_node.call_deferred("add_child",return_on_timeour_ins)
 	blt_node.module_list.append(return_on_timeour_ins)
-	module_list.append(return_on_timeour_ins)
 
 func _on_over_charge():
 	if self.casting_oc_skill:
@@ -127,7 +126,7 @@ func _on_over_charge():
 		apply_return_on_timeout(spawn_bullet)
 		#apply_linear(spawn_bullet, bullet_direction, speed)
 		apply_effects_on_bullet(spawn_bullet)
-		get_tree().root.call_deferred("add_child",spawn_bullet)
+		get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)
 		await get_tree().create_timer(0.05).timeout
 	
 	remove_weapon()

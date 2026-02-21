@@ -115,16 +115,20 @@ func _on_shoot():
 		spawn_bullet.hp = hp
 		spawn_bullet.expire_time = 0.3
 		apply_effects_on_bullet(spawn_bullet)
-		get_tree().root.call_deferred("add_child",spawn_bullet)
+		get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)
 
 func _on_over_charge():
 	if self.casting_oc_skill:
 		return
 	self.casting_oc_skill = true
+	justAttacked = true
 	for n in 10:
 		bullet_count += 1
-		var main_target = get_random_position_in_circle(100.0)
-		var start_angle = position.direction_to(main_target).normalized().angle()
+		var main_target_local = get_random_position_in_circle(100.0)
+		var start_direction = main_target_local.normalized()
+		if start_direction == Vector2.ZERO:
+			start_direction = Vector2.UP
+		var start_angle = start_direction.angle()
 		var angle_step = deg_to_rad(arc) / clampi((bullet_count - 1),1,66)
 		var start_offset = -deg_to_rad(arc) / 2
 		
@@ -138,7 +142,7 @@ func _on_over_charge():
 			spawn_bullet.hp = hp
 			spawn_bullet.expire_time = 0.3
 			apply_effects_on_bullet(spawn_bullet)
-			get_tree().root.call_deferred("add_child",spawn_bullet)
+			get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)
 		await get_tree().create_timer(0.3).timeout
 	remove_weapon()
 

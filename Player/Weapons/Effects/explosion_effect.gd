@@ -19,7 +19,10 @@ func _on_parent_exiting() -> void:
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.size = explosion_size
 	spawn_bullet.expire_time = 0.1
-	bullet.get_tree().root.call_deferred("add_child",spawn_bullet)
+	var spawn_parent: Node = bullet.get_tree().current_scene
+	if spawn_parent == null:
+		spawn_parent = bullet.get_tree().root
+	spawn_parent.call_deferred("add_child", spawn_bullet)
 	
 
 func _on_parent_exited() -> void:

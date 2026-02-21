@@ -26,6 +26,9 @@ var justAttacked = false
 var module_list = []
 var bullet_effects : Dictionary  = {}
 var effect_sample = {"name":{"key1":123,"key2":234}}
+var _effect_scene_cache: Dictionary = {
+	"linear_movement": linear_movement,
+}
 
 var features = []
 # object that needs to be overwrited in child class
@@ -76,7 +79,7 @@ func _on_shoot():
 	var spawn_object = object.instantiate()
 	spawn_object.target = get_random_target()
 	spawn_object.global_position = global_position
-	PlayerData.player.add_sibling(spawn_object)
+	get_projectile_spawn_parent().call_deferred("add_child", spawn_object)
 
 func get_random_target():
 		return get_global_mouse_position()
@@ -86,8 +89,7 @@ func apply_effects_on_bullet(bullet : Node2D) -> void:
 
 	# Update linear movement if exist, it is prerequestive effect of some effects
 	if bullet_direction and speed:
-		var linear_load = load("res://Player/Weapons/Effects/linear_movement.tscn")
-		var linear_load_ins = linear_load.instantiate()
+		var linear_load_ins = linear_movement.instantiate()
 		linear_load_ins.set("direction", bullet_direction)
 		linear_load_ins.set("speed", speed)
 		bullet.call_deferred("add_child", linear_load_ins)
@@ -96,14 +98,36 @@ func apply_effects_on_bullet(bullet : Node2D) -> void:
 		if bullet_effects.has("linear_movement"):
 			bullet_effects.erase("linear_movement")
 	for effect in bullet_effects:
-		var effect_load = load("res://Player/Weapons/Effects/%s.tscn" %effect)
-		var effect_ins = effect_load.instantiate()
+		var effect_scene := _get_effect_scene(effect)
+		if effect_scene == null:
+			continue
+		var effect_ins = effect_scene.instantiate()
 		for attribute in bullet_effects.get(effect):
 			effect_ins.set(attribute,bullet_effects.get(effect).get(attribute))
 		if not bullet:
 			printerr("Bullet not found")
 		bullet.call_deferred("add_child", effect_ins)
 		bullet.effect_list.append(effect_ins)
+
+func _get_effect_scene(effect_name: String) -> PackedScene:
+	if _effect_scene_cache.has(effect_name):
+		return _effect_scene_cache[effect_name]
+	var effect_path := "res://Player/Weapons/Effects/%s.tscn" % effect_name
+	if not ResourceLoader.exists(effect_path):
+		return null
+	var loaded_scene := load(effect_path)
+	if loaded_scene is PackedScene:
+		_effect_scene_cache[effect_name] = loaded_scene
+		return loaded_scene
+	return null
+
+func get_projectile_spawn_parent() -> Node:
+	var current_scene := get_tree().current_scene
+	if current_scene:
+		return current_scene
+	if PlayerData.player and PlayerData.player.get_parent():
+		return PlayerData.player.get_parent()
+	return get_tree().root
 
 func apply_effects(bullet) -> void:
 	pass

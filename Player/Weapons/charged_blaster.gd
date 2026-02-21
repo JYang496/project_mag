@@ -11,6 +11,12 @@ var charge_level :int
 var charge_time : float = 0.0
 var time_per_level : float = 1.0
 var max_charge_level : int
+var beam_range : float = 450.0
+var beam_local_forward := Vector2.UP
+var normal_turn_speed := 12.0
+var firing_turn_speed := 1.2
+var is_firing_beam := false
+var firing_turn_timer: Timer
 
 var weapon_data = {
 	"1": {
@@ -67,12 +73,16 @@ var weapon_data = {
 
 
 func _physics_process(delta):
+	_update_smoothed_rotation(delta)
 	if not justAttacked:
 		if Input.is_action_pressed("ATTACK"):
 			charge_time += delta
 			if charge_time >= time_per_level:
 				charge_level = clampi(charge_level + 1, 0, max_charge_level)
 				charge_time -= time_per_level
+				if charge_level >= max_charge_level:
+					emit_signal("shoot")
+					charge_time = 0.0
 		if Input.is_action_just_released("ATTACK"):
 			emit_signal("shoot")
 
@@ -94,12 +104,14 @@ func _on_shoot():
 		return
 	justAttacked = true
 	var beam_blast_ins = beam_blast.instantiate()
-	beam_blast_ins.target_position = get_local_mouse_position()
+	# Beam direction is fixed to weapon local forward so it always fires from gun orientation.
+	beam_blast_ins.target_position = beam_local_forward.normalized() * beam_range
 	beam_blast_ins.width = charge_level * 6
 	beam_blast_ins.damage = damage * charge_level
 	beam_blast_ins.duration = duration
 	beam_blast_ins.hit_cd = hit_cd
 	call_deferred("add_child",beam_blast_ins)
+	_start_firing_turn_slowdown(duration)
 	charge_level = 0
 	cooldown_timer.start()
 
@@ -122,3 +134,27 @@ func _on_remove_timer_timeout() -> void:
 
 func _on_charged_blast_timer_timeout() -> void:
 	justAttacked = false
+
+
+func _update_smoothed_rotation(delta: float) -> void:
+	var mouse_direction := get_global_mouse_position() - global_position
+	if mouse_direction == Vector2.ZERO:
+		return
+	var target_rotation := mouse_direction.angle() + AIM_ROTATION_OFFSET
+	var turn_speed := firing_turn_speed if is_firing_beam else normal_turn_speed
+	rotation = lerp_angle(rotation, target_rotation, clamp(turn_speed * delta, 0.0, 1.0))
+
+
+func _start_firing_turn_slowdown(active_duration: float) -> void:
+	is_firing_beam = true
+	if firing_turn_timer == null:
+		firing_turn_timer = Timer.new()
+		firing_turn_timer.one_shot = true
+		firing_turn_timer.timeout.connect(_on_firing_turn_timeout)
+		add_child(firing_turn_timer)
+	firing_turn_timer.wait_time = max(active_duration, 0.01)
+	firing_turn_timer.start()
+
+
+func _on_firing_turn_timeout() -> void:
+	is_firing_beam = false
