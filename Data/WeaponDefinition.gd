@@ -1,6 +1,5 @@
 @tool
 extends Resource
-class_name WeaponDefinition
 
 @export var weapon_id := ""
 @export var display_name := ""

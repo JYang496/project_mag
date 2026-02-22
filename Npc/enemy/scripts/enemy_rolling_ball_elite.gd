@@ -11,10 +11,15 @@ var dash_remaining_distance: float = 0.0
 @onready var direction = Vector2.ZERO
 
 func _physics_process(delta: float) -> void:
+	if is_stunned():
+		knockback.amount = clamp(knockback.amount - knockback_recover, 0, knockback.amount)
+		velocity = knockback.amount * knockback.angle
+		move_and_slide()
+		return
 	if not charging:
 		direction = global_position.direction_to(PlayerData.player.global_position)
 	knockback.amount = clamp(knockback.amount - knockback_recover, 0, knockback.amount)
-	velocity = direction * (movement_speed + bonus_speed)
+	velocity = direction * (get_current_movement_speed() + bonus_speed)
 	velocity += knockback.amount * knockback.angle
 	var previous_position := global_position
 	move_and_slide()

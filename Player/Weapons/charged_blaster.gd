@@ -74,7 +74,7 @@ var weapon_data = {
 
 func _physics_process(delta):
 	_update_smoothed_rotation(delta)
-	if not justAttacked:
+	if not is_on_cooldown:
 		if Input.is_action_pressed("ATTACK"):
 			charge_time += delta
 			if charge_time >= time_per_level:
@@ -91,18 +91,18 @@ func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	hit_cd = float(weapon_data[lv]["hit_cd"])
-	base_reload = float(weapon_data[lv]["reload"])
+	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	duration = float(weapon_data[lv]["duration"])
 	max_charge_level = int(weapon_data[lv]["max_charge_level"])
-	calculate_status()
+	sync_stats()
 	for feature in weapon_data[lv]["features"]:
-		if not features.has(feature):
-			features.append(feature)
+		if not weapon_features.has(feature):
+			weapon_features.append(feature)
 
 func _on_shoot():
-	if charge_level < 1 or justAttacked:
+	if charge_level < 1 or is_on_cooldown:
 		return
-	justAttacked = true
+	is_on_cooldown = true
 	var beam_blast_ins = beam_blast.instantiate()
 	# Beam direction is fixed to weapon local forward so it always fires from gun orientation.
 	beam_blast_ins.target_position = beam_local_forward.normalized() * beam_range
@@ -110,6 +110,7 @@ func _on_shoot():
 	beam_blast_ins.damage = damage * charge_level
 	beam_blast_ins.duration = duration
 	beam_blast_ins.hit_cd = hit_cd
+	beam_blast_ins.source_weapon = self
 	call_deferred("add_child",beam_blast_ins)
 	_start_firing_turn_slowdown(duration)
 	charge_level = 0
@@ -133,7 +134,7 @@ func _on_remove_timer_timeout() -> void:
 	remove_weapon()
 
 func _on_charged_blast_timer_timeout() -> void:
-	justAttacked = false
+	is_on_cooldown = false
 
 
 func _update_smoothed_rotation(delta: float) -> void:

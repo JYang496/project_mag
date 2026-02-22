@@ -83,20 +83,20 @@ func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	base_speed = int(weapon_data[lv]["speed"])
-	base_hp = int(weapon_data[lv]["hp"])
-	base_reload = float(weapon_data[lv]["reload"])
-	calculate_status()
+	base_bullet_hits = int(weapon_data[lv]["hp"])
+	base_attack_cooldown = float(weapon_data[lv]["reload"])
+	sync_stats()
 	for feature in weapon_data[lv]["features"]:
-		if not features.has(feature):
-			features.append(feature)
+		if not weapon_features.has(feature):
+			weapon_features.append(feature)
 	
 func _on_shoot():
-	justAttacked = true
+	is_on_cooldown = true
 	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
-	bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_mouse_target()).normalized()
 	spawn_bullet.damage = damage
-	spawn_bullet.hp = hp
+	spawn_bullet.hp = bullet_hits
 	spawn_bullet.global_position = global_position
 	spawn_bullet.size = size
 	spawn_bullet.blt_texture = bul_texture
@@ -110,13 +110,13 @@ func _on_over_charge():
 	print(self,"OVER CHARGE")
 	Engine.time_scale = 0.1
 	PlayerData.player_bonus_speed += PlayerData.player_speed * 2
-	justAttacked = true
+	is_on_cooldown = true
 	speed = 2000
-	var unit_of_time = (get_random_target() - self.global_position).length() / speed
+	var unit_of_time = (get_mouse_target() - self.global_position).length() / speed
 	var wait_time = 0.05
 	for i in range(6):
 		var spawn_bullet = bullet.instantiate()
-		bullet_direction = global_position.direction_to(get_random_target()).normalized()
+		bullet_direction = global_position.direction_to(get_mouse_target()).normalized()
 		spawn_bullet.damage = damage
 		spawn_bullet.expire_time = 6.6
 		spawn_bullet.hp = 66

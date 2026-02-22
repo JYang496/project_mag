@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://btkf4sq12hfbm"]
+
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/module.tscn" id="1_vw7lc"]
+[ext_resource type="Script" path="res://Player/Weapons/Modules/stun_on_hit.gd" id="2_wun0r"]
+
+[node name="StunOnHit" instance=ExtResource("1_vw7lc")]
+script = ExtResource("2_wun0r")

@@ -24,6 +24,8 @@ func apply_attack(area) -> void:
 	if "knock_back" in hitbox_owner:
 		attack.knock_back = hitbox_owner.knock_back
 	target.damaged(attack)
+	if hitbox_owner and hitbox_owner.has_method("on_hit_target"):
+		hitbox_owner.on_hit_target(target)
 	if hitbox_owner.has_method("enemy_hit"):
 		hitbox_owner.enemy_hit(1)	
 

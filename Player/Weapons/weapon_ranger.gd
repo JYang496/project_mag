@@ -13,26 +13,26 @@ var base_damage : int
 var damage : int
 var base_speed : int
 var speed : int
-var base_hp : int
-var hp : int
+var base_bullet_hits : int
+var bullet_hits : int
 var dot_cd : float
-var base_reload : float
-var reload : float
+var base_attack_cooldown : float
+var attack_cooldown : float
 var cooldown_timer : Timer
 var size : float = 1.0
 var bullet_direction
-var justAttacked = false
+var is_on_cooldown = false
 
 var module_list = []
-var bullet_effects : Dictionary  = {}
+var bullet_modifiers : Dictionary  = {}
 var effect_sample = {"name":{"key1":123,"key2":234}}
 var _effect_scene_cache: Dictionary = {
 	"linear_movement": linear_movement,
 }
 
-var features = []
-# object that needs to be overwrited in child class
-var object
+var weapon_features = []
+# bullet scene that needs to be overwritten in child class
+var bullet_scene
 
 # Over charge
 var casting_oc_skill : bool = false
@@ -43,9 +43,9 @@ const AIM_ROTATION_OFFSET := deg_to_rad(90)
 signal shoot()
 signal over_charge()
 signal calculate_weapon_damage(damage)
-signal calculate_weapon_hp(hp)
+signal calculate_weapon_bullet_hits(bullet_hits)
 signal calculate_weapon_speed(speed)
-signal calculate_cd_timer(reload)
+signal calculate_attack_cooldown(attack_cooldown)
 signal calculate_bullet_size(size)
 
 
@@ -64,28 +64,30 @@ func setup_timer() -> void:
 
 func _physics_process(_delta):
 	_update_weapon_rotation()
-	if not justAttacked and Input.is_action_pressed("ATTACK"):
+	if not is_on_cooldown and Input.is_action_pressed("ATTACK"):
 		emit_signal("shoot")
 
 func _on_cooldown_timer_timeout():
-	justAttacked = false
+	is_on_cooldown = false
 
 func _input(event: InputEvent) -> void:
 	pass
 
 
 func _on_shoot():
-	justAttacked = true
-	var spawn_object = object.instantiate()
-	spawn_object.target = get_random_target()
-	spawn_object.global_position = global_position
-	get_projectile_spawn_parent().call_deferred("add_child", spawn_object)
+	is_on_cooldown = true
+	var bullet = bullet_scene.instantiate()
+	bullet.target = get_mouse_target()
+	bullet.global_position = global_position
+	get_projectile_spawn_parent().call_deferred("add_child", bullet)
 
-func get_random_target():
-		return get_global_mouse_position()
+func get_mouse_target():
+	return get_global_mouse_position()
 
 # This function calls before a bullet is added
 func apply_effects_on_bullet(bullet : Node2D) -> void:
+	if bullet is BulletBase:
+		bullet.source_weapon = self
 
 	# Update linear movement if exist, it is prerequestive effect of some effects
 	if bullet_direction and speed:
@@ -95,15 +97,15 @@ func apply_effects_on_bullet(bullet : Node2D) -> void:
 		bullet.call_deferred("add_child", linear_load_ins)
 		bullet.effect_list.append(linear_load_ins)
 	else:
-		if bullet_effects.has("linear_movement"):
-			bullet_effects.erase("linear_movement")
-	for effect in bullet_effects:
+		if bullet_modifiers.has("linear_movement"):
+			bullet_modifiers.erase("linear_movement")
+	for effect in bullet_modifiers:
 		var effect_scene := _get_effect_scene(effect)
 		if effect_scene == null:
 			continue
 		var effect_ins = effect_scene.instantiate()
-		for attribute in bullet_effects.get(effect):
-			effect_ins.set(attribute,bullet_effects.get(effect).get(attribute))
+		for attribute in bullet_modifiers.get(effect):
+			effect_ins.set(attribute,bullet_modifiers.get(effect).get(attribute))
 		if not bullet:
 			printerr("Bullet not found")
 		bullet.call_deferred("add_child", effect_ins)
@@ -132,29 +134,29 @@ func get_projectile_spawn_parent() -> Node:
 func apply_effects(bullet) -> void:
 	pass
 
-func calculate_status() -> void:
+func sync_stats() -> void:
 	damage = base_damage
-	hp = base_hp
-	reload = base_reload
+	bullet_hits = base_bullet_hits
+	attack_cooldown = base_attack_cooldown
 	speed = base_speed
 	set_cd_timer(cooldown_timer)
 	set_bullet_size(size)
 	calculate_damage(damage)
-	calculate_hp(hp)
+	calculate_bullet_hits(bullet_hits)
 
 func calculate_damage(pre_damage : int) -> void:
 	calculate_weapon_damage.emit(pre_damage)
 
-func calculate_hp(pre_hp : int) -> void:
-	calculate_weapon_hp.emit(pre_hp)
+func calculate_bullet_hits(pre_bullet_hits : int) -> void:
+	calculate_weapon_bullet_hits.emit(pre_bullet_hits)
 
 func calculate_speed(pre_speed) -> void:
 	calculate_weapon_speed.emit(pre_speed)
 
 func set_cd_timer(timer : Timer) -> void:
-	calculate_cd_timer.emit(reload)
-	if reload > 0:
-		timer.wait_time = reload
+	calculate_attack_cooldown.emit(attack_cooldown)
+	if attack_cooldown > 0:
+		timer.wait_time = attack_cooldown
 
 func set_bullet_size(size : float) -> void:
 	calculate_bullet_size.emit(size)

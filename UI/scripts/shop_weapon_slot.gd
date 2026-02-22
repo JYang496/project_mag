@@ -60,7 +60,7 @@ func new_item() -> void:
 	if not self.is_connected("select_weapon",Callable(PlayerData.player,"create_weapon")):
 		connect("select_weapon",Callable(PlayerData.player,"create_weapon"))
 	item_id = var_to_str(randi_range(1,10))
-	var weapon_def: WeaponDefinition = GlobalVariables.weapon_list[item_id]
+	var weapon_def = GlobalVariables.weapon_list[item_id]
 	equip_name.text = weapon_def.display_name
 	image.texture = weapon_def.icon
 	lbl_description.text = weapon_def.description

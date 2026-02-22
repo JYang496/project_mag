@@ -6,24 +6,24 @@ var attemp := 0
 
 func bullet_effect_ready() -> void:
 	if bullet.has_signal("enemy_hit_signal"):
-		bullet.enemy_hit_signal.connect(change_direction)	
+		bullet.enemy_hit_signal.connect(change_direction)
 
 func change_direction() -> void:
 	for module in bullet.module_list:
 		if module is LinearMovement:
-			module.direction = self.global_position.direction_to(get_random_target())
+			module.direction = self.global_position.direction_to(get_ricochet_target())
 			module.set_base_displacement()
 
 
-func get_random_target():
+func get_ricochet_target():
 	if target_close.size() > 1:
 		var target = target_close.pick_random()
 		if target.global_position.distance_to(global_position) < 24 and attemp < 3:
 			attemp += 1
-			return get_random_target()
+			return get_ricochet_target()
 		attemp = 0
 		return target.global_position
-	else: 
+	else:
 		var random_position = global_position + Vector2(randi_range(-64,64),randi_range(-64,64))
 		return random_position
 

@@ -9,6 +9,7 @@ var target_position : Vector2 = Vector2.ZERO
 var attack : Attack
 var damage = 1
 var beam_owner
+var source_weapon: Weapon
 
 var frame_counter = 0
 var frames_until_show = 1
@@ -39,6 +40,8 @@ func _physics_process(delta: float) -> void:
 			attack = Attack.new()
 			attack.damage = damage
 			target.damaged(attack)
+			if source_weapon and is_instance_valid(source_weapon):
+				source_weapon.on_hit_target(target)
 	else:
 		line.points = [beam_start_position, to_local(raycast.target_position)]
 

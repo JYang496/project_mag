@@ -69,4 +69,18 @@
 		"description": "chainsaw launcher test",
 		"price": "8",
 	},
+	"11": {
+		"name": "dash blade",
+		"img": "short_knife.png",
+		"res": "dash_blade.tscn",
+		"description": "dash to nearby enemy and deal melee damage",
+		"price": "8",
+	},
+	"12": {
+		"name": "hammer",
+		"img": "hammer.png",
+		"res": "hammer.tscn",
+		"description": "single target smash with stun chance",
+		"price": "9",
+	},
 }

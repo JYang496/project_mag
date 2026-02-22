@@ -80,21 +80,21 @@ func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	base_speed = int(weapon_data[lv]["speed"])
-	base_hp = int(weapon_data[lv]["hp"])
-	base_reload = float(weapon_data[lv]["reload"])
-	calculate_status()
+	base_bullet_hits = int(weapon_data[lv]["hp"])
+	base_attack_cooldown = float(weapon_data[lv]["reload"])
+	sync_stats()
 	for feature in weapon_data[lv]["features"]:
-		if not features.has(feature):
-			features.append(feature)
+		if not weapon_features.has(feature):
+			weapon_features.append(feature)
 
 
 func _on_shoot():
-	justAttacked = true
+	is_on_cooldown = true
 	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
-	bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_mouse_target()).normalized()
 	spawn_bullet.damage = damage
-	spawn_bullet.hp = hp
+	spawn_bullet.hp = bullet_hits
 	spawn_bullet.size = size
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
@@ -113,14 +113,14 @@ func _on_over_charge():
 	if self.casting_oc_skill:
 		return
 	self.casting_oc_skill = true
-	justAttacked = true
-	var start_direction = global_position.direction_to(get_random_target()).normalized()
+	is_on_cooldown = true
+	var start_direction = global_position.direction_to(get_mouse_target()).normalized()
 	for i in 144 + (level * 36):
 		var spawn_bullet = bullet.instantiate()
 		var current_angle = i * deg_to_rad(5)
 		var bullet_direction = start_direction.rotated(current_angle)
 		spawn_bullet.damage = damage * 2
-		spawn_bullet.hp = hp * 2
+		spawn_bullet.hp = bullet_hits * 2
 		spawn_bullet.global_position = global_position
 		spawn_bullet.blt_texture = bul_texture
 		apply_return_on_timeout(spawn_bullet)

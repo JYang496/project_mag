@@ -78,13 +78,13 @@ func set_level(lv) -> void:
 	base_damage = int(weapon_data[lv]["damage"])
 	spin_speed = int(weapon_data[lv]["spin_speed"])
 	number = int(weapon_data[lv]["number"])
-	base_hp = 99999
+	base_bullet_hits = 99999
 	module_list.clear()
 	for s in satellites:
 		s.queue_free()
 	satellites.clear()
 	var offset_step = 2 * PI / number
-	calculate_status()
+	sync_stats()
 	for n in range(number):
 		var spawn_bullet = bullet.instantiate()
 		spawn_bullet.damage = damage

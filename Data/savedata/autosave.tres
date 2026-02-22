@@ -4,26 +4,4 @@
 
 [resource]
 script = ExtResource("1_pc3pc")
-mechas = {
-"1": {
-"current_exp": "60",
-"current_level": "7"
-},
-"2": {
-"current_exp": "0",
-"current_level": "1"
-},
-"3": {
-"current_exp": "0",
-"current_level": "1"
-},
-"4": {
-"current_exp": "0",
-"current_level": "1"
-},
-"5": {
-"current_exp": "0",
-"current_level": "1"
-}
-}
 last_mecha_selected = 1

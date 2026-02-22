@@ -69,23 +69,23 @@ func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	base_speed = int(weapon_data[lv]["speed"])
-	base_hp = int(weapon_data[lv]["hp"])
-	base_reload = float(weapon_data[lv]["reload"])
-	calculate_status()
+	base_bullet_hits = int(weapon_data[lv]["hp"])
+	base_attack_cooldown = float(weapon_data[lv]["reload"])
+	sync_stats()
 	for feature in weapon_data[lv]["features"]:
-		if not features.has(feature):
-			features.append(feature)
-	
+		if not weapon_features.has(feature):
+			weapon_features.append(feature)
+
 func _on_shoot():
-	justAttacked = true
-	cooldown_timer.wait_time = reload / attack_speed
+	is_on_cooldown = true
+	cooldown_timer.wait_time = attack_cooldown / attack_speed
 	cooldown_timer.start()
-	bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_mouse_target()).normalized()
 	var spawn_bullet = bullet.instantiate()
 	damage = base_damage
 	calculate_damage(damage)
 	spawn_bullet.damage = damage
-	spawn_bullet.hp = hp
+	spawn_bullet.hp = bullet_hits
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.desired_pixel_size = BULLET_PIXEL_SIZE
@@ -100,7 +100,7 @@ func _on_over_charge():
 	self.casting_oc_skill = true
 	speed *= 2
 	damage *= 2
-	hp += 2
+	bullet_hits += 2
 	max_speed_factor *= 2
 	var remove_timer = Timer.new()
 	remove_timer.wait_time = 8.0
@@ -117,5 +117,5 @@ func adjust_attack_speed(rate : float) -> void:
 
 
 func _on_as_timer_timeout() -> void:
-	if not justAttacked:
+	if not is_on_cooldown:
 		adjust_attack_speed(0.5)

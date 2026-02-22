@@ -16,7 +16,7 @@ func load_weapon_data():
 		var file_name := dir.get_next()
 		while file_name != "":
 			if file_name.ends_with(".tres"):
-				var def := load("res://Data/weapons/%s" % file_name) as WeaponDefinition
+				var def := load("res://Data/weapons/%s" % file_name)
 				if def and def.weapon_id != "":
 					GlobalVariables.weapon_list[def.weapon_id] = def
 			file_name = dir.get_next()

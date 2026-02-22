@@ -1,0 +1,47 @@
+[gd_scene load_steps=8 format=3 uid="uid://d3bqmqofn531h"]
+
+[ext_resource type="Script" path="res://Player/Weapons/hammer.gd" id="1_6vn7s"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/weapon_melee.tscn" id="2_tg81u"]
+[ext_resource type="Texture2D" path="res://Textures/test/hammer.png" id="3_nock8"]
+[ext_resource type="PackedScene" path="res://Utility/hit_hurt_box/hit_box.tscn" id="4_hk3xq"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/stun_on_hit.tscn" id="5_3rbdo"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_bh6we"]
+radius = 130.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_x3lyf"]
+size = Vector2(14, 28)
+
+[node name="Hammer" instance=ExtResource("2_tg81u")]
+script = ExtResource("1_6vn7s")
+
+[node name="Sprite" parent="." index="1"]
+texture = ExtResource("3_nock8")
+
+[node name="StunOnHit" parent="Modules" index="0" instance=ExtResource("5_3rbdo")]
+
+[node name="BladeAnchor" type="Node2D" parent="." index="3"]
+
+[node name="BladeSprite" type="Sprite2D" parent="BladeAnchor" index="0"]
+texture = ExtResource("3_nock8")
+
+[node name="HitBox" parent="BladeAnchor" index="1" instance=ExtResource("4_hk3xq")]
+collision_mask = 4
+
+[node name="CollisionShape2D" parent="BladeAnchor/HitBox" index="0"]
+shape = SubResource("RectangleShape2D_x3lyf")
+
+[node name="AttackRange" type="Area2D" parent="." index="4"]
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackRange" index="0"]
+shape = SubResource("CircleShape2D_bh6we")
+
+[node name="CooldownTimer" type="Timer" parent="." index="5"]
+wait_time = 1.3
+one_shot = true
+
+[connection signal="body_entered" from="AttackRange" to="." method="_on_attack_range_body_entered"]
+[connection signal="body_exited" from="AttackRange" to="." method="_on_attack_range_body_exited"]
+[connection signal="timeout" from="CooldownTimer" to="." method="_on_cooldown_timer_timeout"]

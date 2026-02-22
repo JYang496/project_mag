@@ -15,6 +15,7 @@ var size : float = 1.0
 var desired_pixel_size : Vector2 = Vector2.ZERO
 var module_list = []
 var effect_list = []
+var source_weapon: Weapon
 var hitbox_type = "once"
 var dot_cd : float
 var overlapping : bool :
@@ -82,6 +83,10 @@ func enemy_hit(charge : int = 1):
 	hp -= charge
 	if hp <= 0:
 		self.call_deferred("queue_free")
+
+func on_hit_target(target: Node) -> void:
+	if source_weapon and is_instance_valid(source_weapon):
+		source_weapon.on_hit_target(target)
 
 func show_bullet() -> void:
 	bullet_sprite.visible = true

@@ -26,21 +26,28 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if PlayerData.player == null:
 		return
+	if is_stunned():
+		knockback.amount = clamp(knockback.amount - knockback_recover, 0, knockback.amount)
+		velocity = knockback.amount * knockback.angle
+		move_and_slide()
+		_sync_aura_overlaps()
+		return
 
 	var to_player: Vector2 = PlayerData.player.global_position - global_position
 	var distance: float = to_player.length()
 	var radial_dir: Vector2 = to_player.normalized() if distance > 0.001 else Vector2.RIGHT
 	var tangent: Vector2 = Vector2(-radial_dir.y, radial_dir.x)
 	var orbit_sign: float = -1.0 if orbit_clockwise else 1.0
+	var move_speed: float = get_current_movement_speed()
 
 	var radial_error: float = distance - orbit_radius
 	var radial_velocity: Vector2 = radial_dir * radial_error * orbit_correction
-	var orbit_velocity: Vector2 = tangent * movement_speed * orbit_sign
+	var orbit_velocity: Vector2 = tangent * move_speed * orbit_sign
 
 	knockback.amount = clamp(knockback.amount - knockback_recover, 0, knockback.amount)
 	if distance > orbit_radius + orbit_entry_margin:
 		# Catch-up phase: close the distance to player first.
-		velocity = radial_dir * movement_speed
+		velocity = radial_dir * move_speed
 	else:
 		velocity = orbit_velocity + radial_velocity
 	velocity += knockback.amount * knockback.angle

@@ -6,6 +6,7 @@ var MAX_MODULE_NUMBER = 3
 @onready var sprite: Sprite2D = $Sprite
 @onready var fuse_sprite_holder: FuseSpriteHolder = get_node_or_null("FuseSprites")
 @onready var _fuse_sprites_initialized = _load_fuse_sprites()
+var on_hit_plugins: Array[Node] = []
 
 # Common variables for weapons
 const FUSE_LEVEL_CAPS: Dictionary = {
@@ -58,3 +59,15 @@ func _load_fuse_sprites() -> bool:
 		fuse_sprites[1] = sprite.texture
 	_apply_fuse_sprite()
 	return true
+
+func register_on_hit_plugin(plugin: Node) -> void:
+	if plugin and not on_hit_plugins.has(plugin):
+		on_hit_plugins.append(plugin)
+
+func unregister_on_hit_plugin(plugin: Node) -> void:
+	on_hit_plugins.erase(plugin)
+
+func on_hit_target(target: Node) -> void:
+	for plugin in on_hit_plugins:
+		if is_instance_valid(plugin) and plugin.has_method("apply_on_hit"):
+			plugin.apply_on_hit(self, target)

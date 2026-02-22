@@ -91,20 +91,20 @@ func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	base_speed = int(weapon_data[lv]["speed"])
-	base_hp = int(weapon_data[lv]["hp"])
+	base_bullet_hits = int(weapon_data[lv]["hp"])
 	dot_cd = float(weapon_data[lv]["dot_cd"])
-	base_reload = float(weapon_data[lv]["reload"])
-	calculate_status()
-	bullet_effects.set("speed_change_on_hit",{"speed_rate":0.3})
+	base_attack_cooldown = float(weapon_data[lv]["reload"])
+	sync_stats()
+	bullet_modifiers.set("speed_change_on_hit",{"speed_rate":0.3})
 
-	
+
 func _on_shoot():
-	justAttacked = true
+	is_on_cooldown = true
 	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
-	bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_mouse_target()).normalized()
 	spawn_bullet.damage = damage
-	spawn_bullet.hp = hp
+	spawn_bullet.hp = bullet_hits
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.size = size
@@ -116,9 +116,9 @@ func _on_shoot():
 
 func _on_over_charge():
 	print(self,"OVER CHARGE")
-	justAttacked = true
+	is_on_cooldown = true
 	var spawn_bullet = bullet.instantiate()
-	bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_mouse_target()).normalized()
 	spawn_bullet.damage = damage
 	spawn_bullet.hp = 7777
 	spawn_bullet.expire_time = 17
@@ -127,7 +127,7 @@ func _on_over_charge():
 	spawn_bullet.hitbox_type = "dot"
 	spawn_bullet.dot_cd = dot_cd
 	apply_spin(spawn_bullet)
-	bullet_effects.set("dmg_up_on_enemy_death",{"dmg_up_per_kill":2})
+	bullet_modifiers.set("dmg_up_on_enemy_death",{"dmg_up_per_kill":2})
 	apply_effects_on_bullet(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 	apply_scale_up_by_time(spawn_bullet)
@@ -153,4 +153,4 @@ func apply_chase_closest_enemy(blt_node) -> void:
 	module_list.append(chase_ins)
 
 func _on_chainsaw_luncher_timer_timeout() -> void:
-	justAttacked = false
+	is_on_cooldown = false

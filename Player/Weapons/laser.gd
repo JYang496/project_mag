@@ -66,32 +66,34 @@ func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
-	base_reload = float(weapon_data[lv]["reload"])
-	calculate_status()
+	base_attack_cooldown = float(weapon_data[lv]["reload"])
+	sync_stats()
 	for feature in weapon_data[lv]["features"]:
-		if not features.has(feature):
-			features.append(feature)
+		if not weapon_features.has(feature):
+			weapon_features.append(feature)
 
 func _on_shoot():
 	var beam_ins = beam.instantiate()
 	beam_ins.global_position = self.global_position
 	beam_ins.target_position = get_global_mouse_position() - self.global_position
 	beam_ins.damage = damage
+	beam_ins.source_weapon = self
 	self.get_tree().root.call_deferred("add_child",beam_ins)
-	justAttacked = true
+	is_on_cooldown = true
 	cooldown_timer.start()
 
 func _on_over_charge():
 	if self.casting_oc_skill or PlayerData.cloestest_enemy == null:
 		return
 	self.casting_oc_skill = true
-	justAttacked = true
+	is_on_cooldown = true
 	var beam_ins = beam.instantiate()
 	beam_ins.global_position = self.global_position
 	beam_ins.target_position = to_local(PlayerData.cloestest_enemy.global_position)
 	beam_ins.damage = damage
 	beam_ins.oc_mode = true
 	beam_ins.beam_owner = self
+	beam_ins.source_weapon = self
 	self.get_tree().root.call_deferred("add_child",beam_ins)
 	oc_timer.start()
 

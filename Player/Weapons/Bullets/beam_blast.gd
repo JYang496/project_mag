@@ -5,6 +5,7 @@ extends Node2D
 @onready var line2d : Line2D = $Line2D
 @onready var expire_timer : Timer = $ExpireTimer
 var damage = 1
+var source_weapon: Weapon
 var target_position = Vector2(100,100)
 var width := 8
 var hit_cd
@@ -50,3 +51,7 @@ func _physics_process(delta: float) -> void:
 
 func _on_expire_timer_timeout() -> void:
 	queue_free()
+
+func on_hit_target(target: Node) -> void:
+	if source_weapon and is_instance_valid(source_weapon):
+		source_weapon.on_hit_target(target)

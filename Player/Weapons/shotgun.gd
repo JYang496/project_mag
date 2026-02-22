@@ -88,18 +88,18 @@ func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	base_speed = int(weapon_data[lv]["speed"])
-	base_hp = int(weapon_data[lv]["hp"])
-	base_reload = float(weapon_data[lv]["reload"])
+	base_bullet_hits = int(weapon_data[lv]["hp"])
+	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	bullet_count = int(weapon_data[lv]["bullet_count"])
-	calculate_status()
+	sync_stats()
 	for feature in weapon_data[lv]["features"]:
-		if not features.has(feature):
-			features.append(feature)
+		if not weapon_features.has(feature):
+			weapon_features.append(feature)
 
 func _on_shoot():
-	justAttacked = true
+	is_on_cooldown = true
 	cooldown_timer.start()
-	var main_target = get_random_target()
+	var main_target = get_mouse_target()
 	var start_angle = global_position.direction_to(main_target).normalized().angle()
 	var angle_step = deg_to_rad(arc) / clampi((bullet_count - 1),1,9)
 	var start_offset = -deg_to_rad(arc) / 2
@@ -112,7 +112,7 @@ func _on_shoot():
 		spawn_bullet.global_position = global_position
 		spawn_bullet.blt_texture = bul_texture
 		spawn_bullet.size = size
-		spawn_bullet.hp = hp
+		spawn_bullet.hp = bullet_hits
 		spawn_bullet.expire_time = 0.3
 		apply_effects_on_bullet(spawn_bullet)
 		get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)
@@ -121,7 +121,7 @@ func _on_over_charge():
 	if self.casting_oc_skill:
 		return
 	self.casting_oc_skill = true
-	justAttacked = true
+	is_on_cooldown = true
 	for n in 10:
 		bullet_count += 1
 		var main_target_local = get_random_position_in_circle(100.0)
@@ -139,7 +139,7 @@ func _on_over_charge():
 			spawn_bullet.damage = damage * 2
 			spawn_bullet.global_position = global_position
 			spawn_bullet.blt_texture = bul_texture
-			spawn_bullet.hp = hp
+			spawn_bullet.hp = bullet_hits
 			spawn_bullet.expire_time = 0.3
 			apply_effects_on_bullet(spawn_bullet)
 			get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)

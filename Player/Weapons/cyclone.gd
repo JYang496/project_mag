@@ -107,23 +107,23 @@ func set_level(lv):
 	base_speed = int(weapon_data[lv]["speed"])
 	spin_rate = float(weapon_data[lv]["spin_rate"])
 	spin_speed = float(weapon_data[lv]["spin_speed"])
-	base_hp = int(weapon_data[lv]["hp"])
-	base_reload = float(weapon_data[lv]["reload"])
-	calculate_status()
-	bullet_effects.set("spiral_movement",{"spin_rate":spin_rate, "spin_speed": spin_speed})
+	base_bullet_hits = int(weapon_data[lv]["hp"])
+	base_attack_cooldown = float(weapon_data[lv]["reload"])
+	sync_stats()
+	bullet_modifiers.set("spiral_movement",{"spin_rate":spin_rate, "spin_speed": spin_speed})
 
 
 func _on_shoot():
-	justAttacked = true
+	is_on_cooldown = true
 	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
 	spawn_bullet.damage = damage
-	bullet_direction = global_position.direction_to(get_random_target()).normalized()
-	spawn_bullet.hp = hp
+	bullet_direction = global_position.direction_to(get_mouse_target()).normalized()
+	spawn_bullet.hp = bullet_hits
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.size = size
-	bullet_effects.set("knock_back_effect",{"amount": knock_back_amount, "angle": bullet_direction})
+	bullet_modifiers.set("knock_back_effect",{"amount": knock_back_amount, "angle": bullet_direction})
 	apply_effects_on_bullet(spawn_bullet)
 	get_tree().root.call_deferred("add_child",spawn_bullet)
 
@@ -138,11 +138,11 @@ func _on_over_charge():
 	tornado_ins.dot_cd = 0.25
 	tornado_ins.damage = damage
 	tornado_ins.expire_time = 10
-	bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_mouse_target()).normalized()
 	tornado_ins.hp = 999
 	tornado_ins.blt_texture = tornado_texture
 	tornado_ins.global_position = global_position
-	bullet_effects.set("knock_back_effect",{"amount": knock_back_amount, "angle": bullet_direction})
+	bullet_modifiers.set("knock_back_effect",{"amount": knock_back_amount, "angle": bullet_direction})
 	apply_effects_on_bullet(tornado_ins)
 	get_tree().root.call_deferred("add_child",tornado_ins)
 	speed = base_speed

@@ -67,23 +67,23 @@ func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	base_speed = int(weapon_data[lv]["speed"])
-	base_hp = int(weapon_data[lv]["hp"])
-	base_reload = float(weapon_data[lv]["reload"])
-	calculate_status()
-	bullet_effects.set("explosion_effect",{"damage":damage, "explosion_size": size * 2})
-	
+	base_bullet_hits = int(weapon_data[lv]["hp"])
+	base_attack_cooldown = float(weapon_data[lv]["reload"])
+	sync_stats()
+	bullet_modifiers.set("explosion_effect",{"damage":damage, "explosion_size": size * 2})
+
 func _on_shoot():
-	justAttacked = true
+	is_on_cooldown = true
 	cooldown_timer.start()
 	var spawn_bullet = bullet.instantiate()
-	bullet_direction = global_position.direction_to(get_random_target()).normalized()
+	bullet_direction = global_position.direction_to(get_mouse_target()).normalized()
 	spawn_bullet.damage = damage
-	spawn_bullet.hp = hp
+	spawn_bullet.hp = bullet_hits
 	spawn_bullet.global_position = global_position
 	spawn_bullet.blt_texture = bul_texture
 	spawn_bullet.size = size
-	if bullet_effects.has("explosion_effect"):
-		bullet_effects["explosion_effect"]["damage"] = damage
+	if bullet_modifiers.has("explosion_effect"):
+		bullet_modifiers["explosion_effect"]["damage"] = damage
 	apply_effects_on_bullet(spawn_bullet)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)
 
@@ -115,8 +115,8 @@ func _on_over_charge():
 			spawn_bullet.blt_texture = bul_texture
 			var fall_ins = fall_effect.instantiate()
 			fall_ins.destination = area.global_position
-			if bullet_effects.has("explosion_effect"):
-				bullet_effects["explosion_effect"]["damage"] = damage
+			if bullet_modifiers.has("explosion_effect"):
+				bullet_modifiers["explosion_effect"]["damage"] = damage
 			apply_effects_on_bullet(spawn_bullet)
 			spawn_bullet.call_deferred("add_child",fall_ins)
 			get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)
