@@ -5,6 +5,7 @@ var ITEM_NAME = "Faster Speed"
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	supports_melee = false
 	if weapon and weapon.has_signal("calculate_weapon_speed"):
 		weapon.calculate_weapon_speed.connect(add)
 

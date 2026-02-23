@@ -184,3 +184,6 @@ func _update_weapon_rotation() -> void:
 	if mouse_direction == Vector2.ZERO:
 		return
 	rotation = mouse_direction.angle() + AIM_ROTATION_OFFSET
+
+func supports_projectiles() -> bool:
+	return true

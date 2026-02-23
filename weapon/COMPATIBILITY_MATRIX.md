@@ -29,6 +29,6 @@
 | `hexagon_attack` | Yes | No | Projectile-only |
 | `explosion_effect` | Yes | No | Projectile-only |
 | `erosion_effect` | Legacy | Legacy | Superseded by module plugin implementation |
-| `knock_back_effect` | Yes | Planned | Candidate for universal on-hit conversion |
+| `knock_back_effect` | Yes | Yes | Dual-host support implemented |
 | `speed_change_on_hit` | Yes | Planned | Candidate for universal on-hit conversion |
-| `dmg_up_on_enemy_death` | Yes | Planned | Candidate for universal logic source |
+| `dmg_up_on_enemy_death` | Yes | Yes | Dual-host support implemented |

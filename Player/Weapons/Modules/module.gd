@@ -14,9 +14,9 @@ func _ready() -> void:
 func can_apply_to_weapon(target_weapon: Weapon) -> bool:
 	if not target_weapon:
 		return false
-	if target_weapon is Melee:
+	if target_weapon.has_method("supports_melee_contact") and target_weapon.supports_melee_contact():
 		return supports_melee
-	if target_weapon is Ranger:
+	if target_weapon.has_method("supports_projectiles") and target_weapon.supports_projectiles():
 		return supports_ranged
 	return true
 

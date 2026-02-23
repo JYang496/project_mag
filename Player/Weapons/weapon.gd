@@ -71,3 +71,15 @@ func on_hit_target(target: Node) -> void:
 	for plugin in on_hit_plugins:
 		if is_instance_valid(plugin) and plugin.has_method("apply_on_hit"):
 			plugin.apply_on_hit(self, target)
+
+func supports_projectiles() -> bool:
+	return false
+
+func supports_melee_contact() -> bool:
+	return false
+
+func get_weapon_capabilities() -> Dictionary:
+	return {
+		"projectiles": supports_projectiles(),
+		"melee_contact": supports_melee_contact(),
+	}

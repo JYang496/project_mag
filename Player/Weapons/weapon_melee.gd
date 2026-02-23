@@ -17,3 +17,6 @@ func center_melee_attack_range_area(area: Area2D) -> void:
 	if not area:
 		return
 	area.global_position = get_melee_range_center()
+
+func supports_melee_contact() -> bool:
+	return true
