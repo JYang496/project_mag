@@ -1,8 +1,8 @@
 extends Ranger
 
-# Bullet
-var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
-var bul_texture = preload("res://Textures/test/sniper_bullet.png")
+# Projectile
+var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
+var projectile_texture_resource = preload("res://Textures/test/sniper_bullet.png")
 
 # Weapon
 var ITEM_NAME = "Shotgun"
@@ -88,7 +88,7 @@ func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	base_speed = int(weapon_data[lv]["speed"])
-	base_bullet_hits = int(weapon_data[lv]["hp"])
+	base_projectile_hits = int(weapon_data[lv]["hp"])
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	bullet_count = int(weapon_data[lv]["bullet_count"])
 	sync_stats()
@@ -105,17 +105,17 @@ func _on_shoot():
 	var start_offset = -deg_to_rad(arc) / 2
 	
 	for i in bullet_count:
-		var spawn_bullet = bullet.instantiate()
+		var spawn_projectile = projectile_template.instantiate()
 		var current_angle = start_angle + start_offset + (angle_step * i)
-		bullet_direction = Vector2.RIGHT.rotated(current_angle)
-		spawn_bullet.damage = damage
-		spawn_bullet.global_position = global_position
-		spawn_bullet.blt_texture = bul_texture
-		spawn_bullet.size = size
-		spawn_bullet.hp = bullet_hits
-		spawn_bullet.expire_time = 0.3
-		apply_effects_on_bullet(spawn_bullet)
-		get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)
+		projectile_direction = Vector2.RIGHT.rotated(current_angle)
+		spawn_projectile.damage = damage
+		spawn_projectile.global_position = global_position
+		spawn_projectile.projectile_texture = projectile_texture_resource
+		spawn_projectile.size = size
+		spawn_projectile.hp = projectile_hits
+		spawn_projectile.expire_time = 0.3
+		apply_effects_on_projectile(spawn_projectile)
+		get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 
 func _on_over_charge():
 	if self.casting_oc_skill:
@@ -133,16 +133,16 @@ func _on_over_charge():
 		var start_offset = -deg_to_rad(arc) / 2
 		
 		for i in bullet_count:
-			var spawn_bullet = bullet.instantiate()
+			var spawn_projectile = projectile_template.instantiate()
 			var current_angle = start_angle + start_offset + (angle_step * i)
-			bullet_direction = Vector2.RIGHT.rotated(current_angle)
-			spawn_bullet.damage = damage * 2
-			spawn_bullet.global_position = global_position
-			spawn_bullet.blt_texture = bul_texture
-			spawn_bullet.hp = bullet_hits
-			spawn_bullet.expire_time = 0.3
-			apply_effects_on_bullet(spawn_bullet)
-			get_projectile_spawn_parent().call_deferred("add_child", spawn_bullet)
+			projectile_direction = Vector2.RIGHT.rotated(current_angle)
+			spawn_projectile.damage = damage * 2
+			spawn_projectile.global_position = global_position
+			spawn_projectile.projectile_texture = projectile_texture_resource
+			spawn_projectile.hp = projectile_hits
+			spawn_projectile.expire_time = 0.3
+			apply_effects_on_projectile(spawn_projectile)
+			get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 		await get_tree().create_timer(0.3).timeout
 	remove_weapon()
 

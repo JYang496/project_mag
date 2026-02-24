@@ -1,8 +1,8 @@
 extends Ranger
 
-# Bullet
-var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
-var bul_texture = preload("res://asset/images/weapons/projectiles/plasma.png")
+# Projectile
+var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
+var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/plasma.png")
 
 # Weapon
 var ITEM_NAME = "Machine Gun"
@@ -69,7 +69,7 @@ func set_level(lv):
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	base_speed = int(weapon_data[lv]["speed"])
-	base_bullet_hits = int(weapon_data[lv]["hp"])
+	base_projectile_hits = int(weapon_data[lv]["hp"])
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	sync_stats()
 	for feature in weapon_data[lv]["features"]:
@@ -80,18 +80,18 @@ func _on_shoot():
 	is_on_cooldown = true
 	cooldown_timer.wait_time = attack_cooldown / attack_speed
 	cooldown_timer.start()
-	bullet_direction = global_position.direction_to(get_mouse_target()).normalized()
-	var spawn_bullet = bullet.instantiate()
+	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
+	var spawn_projectile = projectile_template.instantiate()
 	damage = base_damage
 	calculate_damage(damage)
-	spawn_bullet.damage = damage
-	spawn_bullet.hp = bullet_hits
-	spawn_bullet.global_position = global_position
-	spawn_bullet.blt_texture = bul_texture
-	spawn_bullet.desired_pixel_size = BULLET_PIXEL_SIZE
-	spawn_bullet.size = size
-	apply_effects_on_bullet(spawn_bullet)
-	get_tree().root.call_deferred("add_child",spawn_bullet)
+	spawn_projectile.damage = damage
+	spawn_projectile.hp = projectile_hits
+	spawn_projectile.global_position = global_position
+	spawn_projectile.projectile_texture = projectile_texture_resource
+	spawn_projectile.desired_pixel_size = BULLET_PIXEL_SIZE
+	spawn_projectile.size = size
+	apply_effects_on_projectile(spawn_projectile)
+	get_tree().root.call_deferred("add_child",spawn_projectile)
 	adjust_attack_speed(1.2)
 
 func _on_over_charge():
@@ -100,7 +100,7 @@ func _on_over_charge():
 	self.casting_oc_skill = true
 	speed *= 2
 	damage *= 2
-	bullet_hits += 2
+	projectile_hits += 2
 	max_speed_factor *= 2
 	var remove_timer = Timer.new()
 	remove_timer.wait_time = 8.0

@@ -3,6 +3,8 @@ class_name DashBlade
 
 signal calculate_weapon_damage(damage)
 signal calculate_attack_cooldown(attack_cooldown)
+signal calculate_weapon_speed(speed)
+signal calculate_weapon_size(size)
 
 const AIM_ROTATION_OFFSET := deg_to_rad(90)
 
@@ -77,10 +79,14 @@ var weapon_data := {
 var base_damage := 1
 var damage := 1
 var attack_range := 150.0
+var base_dash_speed := 900.0
 var dash_speed := 900.0
+var base_return_speed := 700.0
 var return_speed := 700.0
 var base_attack_cooldown := 1.0
 var attack_cooldown := 1.0
+var base_size := 1.0
+var size := 1.0
 var overlapping := false
 
 var _tracked_enemies: Array[BaseEnemy] = []
@@ -100,6 +106,8 @@ var _state := AttackState.IDLE
 @onready var blade_anchor: Node2D = $BladeAnchor
 @onready var blade_sprite: Sprite2D = $BladeAnchor/BladeSprite
 @onready var hit_box: HitBox = $BladeAnchor/HitBox
+@onready var _base_blade_scale: Vector2 = blade_sprite.scale
+@onready var _base_hitbox_size: Vector2 = _get_current_hitbox_size()
 
 func _ready() -> void:
 	if sprite:
@@ -123,22 +131,44 @@ func set_level(lv) -> void:
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	attack_range = float(weapon_data[lv]["range"])
-	dash_speed = float(weapon_data[lv]["dash_speed"])
-	return_speed = float(weapon_data[lv]["return_speed"])
+	base_dash_speed = float(weapon_data[lv]["dash_speed"])
+	base_return_speed = float(weapon_data[lv]["return_speed"])
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	sync_stats()
 	_update_attack_range_shape()
 
 func sync_stats() -> void:
 	damage = base_damage
+	dash_speed = base_dash_speed
+	return_speed = base_return_speed
 	attack_cooldown = base_attack_cooldown
+	size = base_size
+	apply_size_multiplier(size)
 	calculate_damage(damage)
 	calculate_attack_cooldown.emit(attack_cooldown)
+	calculate_speed(dash_speed)
+	calculate_weapon_size.emit(size)
 	if attack_cooldown > 0:
 		cooldown_timer.wait_time = attack_cooldown
 
 func calculate_damage(pre_damage: int) -> void:
 	calculate_weapon_damage.emit(pre_damage)
+
+func calculate_speed(pre_speed: float) -> void:
+	calculate_weapon_speed.emit(pre_speed)
+
+func apply_size_multiplier(multiplier: float) -> void:
+	var final_multiplier := maxf(0.1, multiplier)
+	if blade_sprite:
+		blade_sprite.scale = _base_blade_scale * final_multiplier
+	var shape: Shape2D = hit_box.collision.shape
+	if shape is RectangleShape2D:
+		shape.size = _base_hitbox_size * final_multiplier
+
+func _get_current_hitbox_size() -> Vector2:
+	if hit_box and hit_box.collision and hit_box.collision.shape is RectangleShape2D:
+		return (hit_box.collision.shape as RectangleShape2D).size
+	return Vector2.ONE
 
 func _physics_process(delta: float) -> void:
 	center_melee_attack_range_area(attack_range_area)

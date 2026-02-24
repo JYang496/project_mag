@@ -1,7 +1,7 @@
 extends Ranger
 
-@onready var bullet = preload("res://Player/Weapons/Bullets/bullet.tscn")
-@onready var bul_texture = preload("res://Textures/test/bullet.png")
+@onready var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
+@onready var projectile_texture_resource = preload("res://Textures/test/bullet.png")
 @export var radius : float = 80.0
 @export var angle : float = 0.0
 var knock_back = {
@@ -78,7 +78,7 @@ func set_level(lv) -> void:
 	base_damage = int(weapon_data[lv]["damage"])
 	spin_speed = int(weapon_data[lv]["spin_speed"])
 	number = int(weapon_data[lv]["number"])
-	base_bullet_hits = 99999
+	base_projectile_hits = 99999
 	module_list.clear()
 	for s in satellites:
 		s.queue_free()
@@ -86,25 +86,25 @@ func set_level(lv) -> void:
 	var offset_step = 2 * PI / number
 	sync_stats()
 	for n in range(number):
-		var spawn_bullet = bullet.instantiate()
-		spawn_bullet.damage = damage
-		spawn_bullet.hp = 99999
-		spawn_bullet.expire_time = 99999
-		spawn_bullet.size = size
-		spawn_bullet.blt_texture = bul_texture
-		apply_rotate_around_player(spawn_bullet, offset_step, n)
-		apply_effects_on_bullet(spawn_bullet)
-		get_tree().root.call_deferred("add_child",spawn_bullet)
-		satellites.append(spawn_bullet)
+		var spawn_projectile = projectile_template.instantiate()
+		spawn_projectile.damage = damage
+		spawn_projectile.hp = 99999
+		spawn_projectile.expire_time = 99999
+		spawn_projectile.size = size
+		spawn_projectile.projectile_texture = projectile_texture_resource
+		apply_rotate_around_player(spawn_projectile, offset_step, n)
+		apply_effects_on_projectile(spawn_projectile)
+		get_tree().root.call_deferred("add_child",spawn_projectile)
+		satellites.append(spawn_projectile)
 
-func apply_rotate_around_player(blt_node : Node2D, offset_step : float, n : int) -> void:
+func apply_rotate_around_player(projectile_node : Node2D, offset_step : float, n : int) -> void:
 	var rotate_around_player_ins = rotate_around_player.instantiate()
 	rotate_around_player_ins.spin_speed = spin_speed
 	rotate_around_player_ins.radius = radius
 	rotate_around_player_ins.angle_offset = offset_step * n
 	
-	blt_node.call_deferred("add_child",rotate_around_player_ins)
-	blt_node.module_list.append(rotate_around_player_ins)
+	projectile_node.call_deferred("add_child",rotate_around_player_ins)
+	projectile_node.module_list.append(rotate_around_player_ins)
 	module_list.append(rotate_around_player_ins)
 	pass
 

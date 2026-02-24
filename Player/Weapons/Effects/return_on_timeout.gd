@@ -20,13 +20,13 @@ var linear_module : LinearMovement
 var saved_direction : Vector2
 
 
-func bullet_effect_ready() -> void:
+func projectile_effect_ready() -> void:
 	stop_timer.wait_time = stop_time
 	stop_timer.start()	
 
 func _physics_process(delta: float) -> void:
 	if is_return:
-		linear_module.direction = bullet.global_position.direction_to(PlayerData.player.global_position)
+		linear_module.direction = projectile.global_position.direction_to(PlayerData.player.global_position)
 		linear_module.set_base_displacement()
 
 func _on_return_timer_timeout() -> void:
@@ -35,12 +35,12 @@ func _on_return_timer_timeout() -> void:
 
 func create_return_hitbox() -> void:
 	var shape = RectangleShape2D.new()
-	shape.size = bullet.bullet_sprite.texture.get_size()
+	shape.size = projectile.projectile_sprite.texture.get_size()
 	return_shape.shape = shape
 
 func _on_stop_timer_timeout() -> void:
 	is_stopped = true
-	for module in bullet.effect_list:
+	for module in projectile.effect_list:
 		if module is LinearMovement:
 			linear_module = module
 	saved_direction = linear_module.direction
@@ -51,4 +51,4 @@ func _on_stop_timer_timeout() -> void:
 
 
 func _on_return_hitbox_body_entered(body: Node2D) -> void:
-	bullet.call_deferred("queue_free")
+	projectile.call_deferred("queue_free")

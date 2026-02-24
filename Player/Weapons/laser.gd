@@ -1,7 +1,7 @@
 extends Ranger
 
-# Bullet
-@onready var beam = preload("res://Player/Weapons/Bullets/beam.tscn")
+# Projectile
+@onready var beam = preload("res://Player/Weapons/Projectiles/beam.tscn")
 
 @onready var detect_area: Area2D = $DetectArea
 @onready var oc_timer: Timer = $OCTimer

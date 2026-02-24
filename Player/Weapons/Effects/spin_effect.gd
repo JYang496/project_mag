@@ -3,9 +3,9 @@ class_name SpinEffect
 
 
 func _physics_process(delta: float) -> void:
-	if not bullet:
+	if not projectile:
 		print("Error: spin module does not have owner")
 		return
-	bullet.bullet.rotation += 40 * delta
-	if bullet.bullet.rotation > 1000:
-		bullet.bullet.rotation -= 1000
+	projectile.projectile_root.rotation += 40 * delta
+	if projectile.projectile_root.rotation > 1000:
+		projectile.projectile_root.rotation -= 1000

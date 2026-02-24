@@ -10,8 +10,8 @@ func _ready() -> void:
 	super._ready()
 	if melee:
 		_host_weapon = melee
-	elif bullet and bullet.get("source_weapon") != null:
-		_host_weapon = bullet.source_weapon
+	elif projectile and projectile.get("source_weapon") != null:
+		_host_weapon = projectile.source_weapon
 
 func _on_detect_area_area_entered(area: Area2D) -> void:
 	if area is HurtBox and area.hurtbox_owner.is_in_group("enemies"):
@@ -22,8 +22,8 @@ func _on_detect_area_area_entered(area: Area2D) -> void:
 func _on_enemy_death() -> void:
 	if _host_weapon and _host_weapon.get("damage") != null:
 		_host_weapon.damage += dmg_up_per_kill
-	elif bullet and "damage" in bullet:
-		bullet.damage += dmg_up_per_kill
+	elif projectile and "damage" in projectile:
+		projectile.damage += dmg_up_per_kill
 
 func _on_detect_area_area_exited(area: Area2D) -> void:
 	if area is HurtBox and area.hurtbox_owner.is_in_group("enemies"):

@@ -17,8 +17,8 @@ var next_rotate_index : int = 0
 var reverse_when : int = -1
 
 
-func bullet_effect_ready() -> void:
-	for module in bullet.effect_list:
+func projectile_effect_ready() -> void:
+	for module in projectile.effect_list:
 		if module is LinearMovement:
 			linear_module = module
 	rotate_timer.wait_time = wait_time

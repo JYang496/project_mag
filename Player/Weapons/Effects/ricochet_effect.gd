@@ -4,12 +4,12 @@ class_name RicochetEffect
 var target_close = []
 var attemp := 0
 
-func bullet_effect_ready() -> void:
-	if bullet.has_signal("enemy_hit_signal"):
-		bullet.enemy_hit_signal.connect(change_direction)
+func projectile_effect_ready() -> void:
+	if projectile.has_signal("enemy_hit_signal"):
+		projectile.enemy_hit_signal.connect(change_direction)
 
 func change_direction() -> void:
-	for module in bullet.module_list:
+	for module in projectile.module_list:
 		if module is LinearMovement:
 			module.direction = self.global_position.direction_to(get_ricochet_target())
 			module.set_base_displacement()

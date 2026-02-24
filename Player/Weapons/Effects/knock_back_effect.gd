@@ -8,9 +8,9 @@ func _ready() -> void:
 	supports_melee = true
 	super._ready()
 
-func bullet_effect_ready() -> void:
-	if "knock_back" in bullet:
-		bullet.knock_back = {"amount": amount, "angle": angle}
+func projectile_effect_ready() -> void:
+	if "knock_back" in projectile:
+		projectile.knock_back = {"amount": amount, "angle": angle}
 
 func melee_effect_ready() -> void:
 	var knock_back_data := {"amount": amount, "angle": angle}

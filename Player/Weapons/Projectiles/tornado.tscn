@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://txml7xehhxdx"]
 
-[ext_resource type="PackedScene" uid="uid://dk1c4rp3qky24" path="res://Player/Weapons/Bullets/bullet.tscn" id="1_cabev"]
-[ext_resource type="Script" uid="uid://bsov5h5p7wdx6" path="res://Player/Weapons/Bullets/tornado.gd" id="2_16njw"]
+[ext_resource type="PackedScene" uid="uid://dk1c4rp3qky24" path="res://Player/Weapons/Projectiles/projectile.tscn" id="1_cabev"]
+[ext_resource type="Script" uid="uid://bsov5h5p7wdx6" path="res://Player/Weapons/Projectiles/tornado.gd" id="2_16njw"]
 [ext_resource type="Texture2D" uid="uid://c330kxsny68ql" path="res://Textures/test/tornado.png" id="3_48kcn"]
 
 [node name="Tornado" instance=ExtResource("1_cabev")]

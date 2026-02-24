@@ -1,10 +1,10 @@
-[gd_scene format=3 uid="uid://3vduoenekyc7"]
+[gd_scene format=3 uid="uid://dt2pqqoi5dsw0"]
 
 [ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_4bmpc"]
 [ext_resource type="Texture2D" uid="uid://bmuw2m4jla4ac" path="res://Textures/test/more_hp.png" id="2_3fre3"]
-[ext_resource type="Script" path="res://Player/Weapons/Modules/more_hp.gd" id="2_r0310"]
+[ext_resource type="Script" uid="uid://da26a8vidmulv" path="res://Player/Weapons/Modules/pierce.gd" id="2_r0310"]
 
-[node name="MoreHP" unique_id=277676516 instance=ExtResource("1_4bmpc")]
+[node name="Pierce" instance=ExtResource("1_4bmpc")]
 script = ExtResource("2_r0310")
 pierce_add_by = 2
 

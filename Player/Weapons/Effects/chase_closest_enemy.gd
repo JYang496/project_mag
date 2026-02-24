@@ -6,8 +6,8 @@ class_name ChaseEnemy
 var linear_module : LinearMovement
 var closest_target
 
-func bullet_effect_ready() -> void:
-	for effect in bullet.effect_list:
+func projectile_effect_ready() -> void:
+	for effect in projectile.effect_list:
 		if effect is LinearMovement:
 			linear_module = effect
 

@@ -9,11 +9,11 @@ var sprite : Sprite2D
 	#if not bullet:
 		#print("Error: module does not have owner")
 		#return
-	#sprite = bullet.bullet_sprite
+	#sprite = projectile.projectile_sprite
 
-func bullet_effect_ready() -> void:
-	sprite = bullet.bullet_sprite
+func projectile_effect_ready() -> void:
+	sprite = projectile.projectile_sprite
 
 func _physics_process(delta: float) -> void:
-	if sprite and bullet.bullet_sprite.scale.x < 3:
-		bullet.bullet_sprite.scale = Vector2(bullet.bullet_sprite.scale * 1.01)
+	if sprite and projectile.projectile_sprite.scale.x < 3:
+		projectile.projectile_sprite.scale = Vector2(projectile.projectile_sprite.scale * 1.01)

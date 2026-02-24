@@ -1,7 +1,7 @@
 extends Ranger
 
-# Bullet
-@onready var beam_blast = preload("res://Player/Weapons/Bullets/beam_blast.tscn")
+# Projectile
+@onready var beam_blast = preload("res://Player/Weapons/Projectiles/beam_blast.tscn")
 
 # Weapon
 var ITEM_NAME = "Beam Blaster"
