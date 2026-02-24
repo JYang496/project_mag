@@ -1,5 +1,5 @@
 extends Node
-class_name CellHealAndShieldEffect
+
 
 @export var player_heal_ratio: float = 0.5
 @export var enemy_damage_multiplier: float = 0.8

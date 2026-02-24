@@ -59,8 +59,24 @@ func empty_item() -> void:
 func new_item() -> void:
 	if not self.is_connected("select_weapon",Callable(PlayerData.player,"create_weapon")):
 		connect("select_weapon",Callable(PlayerData.player,"create_weapon"))
-	item_id = var_to_str(randi_range(1,10))
-	var weapon_def = GlobalVariables.weapon_list[item_id]
+	var candidate_ids: Array[String] = []
+	for i: int in range(1, 11):
+		var id := str(i)
+		if GlobalVariables.weapon_list.has(id):
+			candidate_ids.append(id)
+	if candidate_ids.is_empty():
+		for key in GlobalVariables.weapon_list.keys():
+			candidate_ids.append(str(key))
+	if candidate_ids.is_empty():
+		push_warning("ShopWeaponSlot failed to generate item: weapon list is empty.")
+		empty_item()
+		return
+	item_id = candidate_ids.pick_random()
+	var weapon_def = DataHandler.read_weapon_data(item_id)
+	if weapon_def == null:
+		push_warning("ShopWeaponSlot failed to load weapon id=%s" % item_id)
+		empty_item()
+		return
 	equip_name.text = weapon_def.display_name
 	image.texture = weapon_def.icon
 	lbl_description.text = weapon_def.description

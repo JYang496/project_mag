@@ -21,23 +21,33 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GlobalVariables="*res://autoload/GlobalVariables.gd"
-PlayerData="*res://autoload/PlayerData.gd"
-DataHandler="*res://autoload/DataHandler.gd"
-PhaseManager="*res://autoload/PhaseManager.gd"
-SpawnData="*res://autoload/SpawnData.gd"
-InventoryData="*res://autoload/InventoryData.gd"
+GlobalVariables="*res://Autoload/GlobalVariables.gd"
+PlayerData="*res://Autoload/PlayerData.gd"
+DataHandler="*res://Autoload/DataHandler.gd"
+PhaseManager="*res://Autoload/PhaseManager.gd"
+SpawnData="*res://Autoload/SpawnData.gd"
+InventoryData="*res://Autoload/InventoryData.gd"
+DisplaySettings="*res://Utility/display_settings.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/size/min_width=1280
+window/size/min_height=720
 
 [file_customization]
 
 folder_colors={
+"res://Autoload/": "gray",
 "res://Npc/": "yellow",
 "res://Objects/": "gray",
 "res://Player/": "green",
 "res://Textures/": "purple",
 "res://UI/": "orange",
-"res://Utility/": "teal",
-"res://autoload/": "gray"
+"res://Utility/": "teal"
 }
 
 [global_group]

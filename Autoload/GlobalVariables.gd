@@ -7,7 +7,7 @@ extends Node
 @onready var mecha_list : Dictionary
 @onready var enemy_spawner : EnemySpawner
 @onready var AUTOSAVE_PATH : String = "res://Data/savedata/autosave.tres"
-@onready var SPAWN_PATN : String = "res://data/spawns/"
+@onready var SPAWN_PATN : String = "res://Data/spawns/"
 
 
 func reset_runtime_state() -> void:

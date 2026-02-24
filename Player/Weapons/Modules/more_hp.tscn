@@ -6,7 +6,7 @@
 
 [node name="MoreHP" unique_id=277676516 instance=ExtResource("1_4bmpc")]
 script = ExtResource("2_r0310")
-pierce_add_by = 2
+hp_add_by = 2
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("2_3fre3")

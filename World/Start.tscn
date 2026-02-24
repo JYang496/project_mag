@@ -1,31 +1,41 @@
-[gd_scene load_steps=6 format=3 uid="uid://dwxulua8fpqd0"]
+[gd_scene load_steps=7 format=3 uid="uid://dwxulua8fpqd0"]
 
 [ext_resource type="Script" uid="uid://dyetc0qttcb7y" path="res://World/new_game_btn.gd" id="1_y1dix"]
 [ext_resource type="Script" uid="uid://q8o4fd420oji" path="res://World/continue.gd" id="2_jyp4w"]
 [ext_resource type="PackedScene" uid="uid://05u30gc3rp15" path="res://UI/scenes/mecha_select.tscn" id="2_s76s5"]
 [ext_resource type="Script" uid="uid://c10nnuwga4iqw" path="res://World/mecha_container.gd" id="2_w24c8"]
 [ext_resource type="Script" path="res://World/hp_safety_toggle_btn.gd" id="5_hp_toggle"]
+[ext_resource type="Script" path="res://World/start_menu.gd" id="6_start_menu"]
 
 [node name="Start" type="Node2D"]
+script = ExtResource("6_start_menu")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="GUI" type="Control" parent="CanvasLayer"]
 layout_mode = 3
-anchors_preset = 0
-offset_right = 1152.0
-offset_bottom = 648.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Background" type="ColorRect" parent="CanvasLayer/GUI"]
-layout_mode = 0
-offset_right = 1152.0
-offset_bottom = 648.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 color = Color(0.25098, 0.25098, 0.25098, 1)
 
 [node name="HBoxMargin" type="MarginContainer" parent="CanvasLayer/GUI/Background"]
-layout_mode = 0
-offset_right = 1152.0
-offset_bottom = 648.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 50
 theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 50
@@ -33,6 +43,8 @@ theme_override_constants/margin_bottom = 50
 
 [node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin"]
 layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
 alignment = 1
 
 [node name="MenuContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer"]
@@ -64,6 +76,13 @@ script = ExtResource("1_y1dix")
 layout_mode = 2
 text = "Keep HP > 1: OFF"
 script = ExtResource("5_hp_toggle")
+
+[node name="ResolutionLabel" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
+layout_mode = 2
+text = "Resolution"
+
+[node name="ResolutionOption" type="OptionButton" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
+layout_mode = 2
 
 [node name="MechaContainer" type="MarginContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer"]
 layout_mode = 2

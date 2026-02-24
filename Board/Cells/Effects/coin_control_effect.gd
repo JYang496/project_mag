@@ -1,5 +1,5 @@
 extends Node
-class_name CellCoinControlEffect
+
 
 @export var initial_drop_amount: int = 10
 @export var drain_interval: float = 1.0

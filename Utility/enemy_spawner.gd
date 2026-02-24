@@ -17,25 +17,42 @@ var _last_spawn_cell: Cell = null
 func _ready():
 	GlobalVariables.enemy_spawner = self
 	_cache_board_cells()
+	_refresh_spawn_tables()
+
+func _refresh_spawn_tables() -> void:
+	instance_list = []
+	time_out_list = []
 	for level_config in SpawnData.level_list:
 		if level_config == null:
 			continue
-		var ins : LevelSpawnConfig = level_config.duplicate(true)
+		var ins = level_config.duplicate(true)
+		if ins == null:
+			continue
 		instance_list.append(ins.spawns)
 		time_out_list.append(ins.time_out)
 
 func start_timer() -> void:
+	if instance_list.is_empty() or time_out_list.is_empty():
+		_refresh_spawn_tables()
+	if instance_list.is_empty() or time_out_list.is_empty():
+		push_warning("EnemySpawner cannot start: spawn tables are empty.")
+		return
 	PhaseManager.battle_time = 0
 	timer.start()
 
 func _on_timer_timeout():
+	if instance_list.is_empty() or time_out_list.is_empty():
+		timer.stop()
+		push_warning("EnemySpawner timeout with empty spawn tables.")
+		return
+	var level_index := clampi(PhaseManager.current_level, 0, instance_list.size() - 1)
 	PhaseManager.battle_time += 1
-	var enemy_spawns = instance_list[PhaseManager.current_level]
+	var enemy_spawns = instance_list[level_index]
 	var wave_clear = true
 	for e : SpawnInfo in enemy_spawns:
 		if e.wave < e.max_wave or e.alive_enemy_number > 0:
 			wave_clear = false
-	if PhaseManager.battle_time >= time_out_list[PhaseManager.current_level] or wave_clear or PhaseManager.phase == PhaseManager.REWARD:
+	if PhaseManager.battle_time >= time_out_list[level_index] or wave_clear or PhaseManager.phase == PhaseManager.REWARD:
 		timer.stop()
 		erase_all_enemies()
 		PhaseManager.enter_reward()

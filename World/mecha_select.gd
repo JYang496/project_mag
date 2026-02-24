@@ -18,8 +18,8 @@ var on_hover : bool = false
 @onready var grab_radius: Label = $"../../ColorRect/VBoxContainer2/grab_radius"
 @onready var player_gold: Label = $"../../ColorRect/VBoxContainer2/player_gold"
 
-@onready var mech_data : MechaDefinition = DataHandler.read_mecha_data(str(mecha_id))
-@onready var mech_autosave = DataHandler.read_autosave_mecha_data(str(mecha_id))
+var mech_data: MechaDefinition
+var mech_autosave: Dictionary = {}
 
 signal update_on_select(id)
 
@@ -29,9 +29,13 @@ signal update_on_select(id)
 @export var border_width: float = 4.0
 
 func _ready() -> void:
-	var ins : Player = mech_data.scene.instantiate()
-	mech_texture.texture = ins.get_node("MechaSprite").texture
-	ins.queue_free()
+	_refresh_mecha_data()
+	if mech_data and mech_data.scene:
+		var ins : Player = mech_data.scene.instantiate()
+		mech_texture.texture = ins.get_node("MechaSprite").texture
+		ins.queue_free()
+	else:
+		push_warning("MechaSelect failed to load mecha data for id=%s" % str(mecha_id))
 	PlayerData.select_mecha_id = DataHandler.save_data.last_mecha_selected
 	call_deferred("emit_signal", "update_on_select", str(DataHandler.save_data.last_mecha_selected))
 
@@ -57,3 +61,7 @@ func _on_texture_rect_gui_input(event: InputEvent) -> void:
 func _on_texture_rect_mouse_exited() -> void:
 	on_hover = false
 	update()
+
+func _refresh_mecha_data() -> void:
+	mech_data = DataHandler.read_mecha_data(str(mecha_id))
+	mech_autosave = DataHandler.read_autosave_mecha_data(str(mecha_id))

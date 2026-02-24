@@ -2,8 +2,8 @@ extends Control
 
 @export var mecha_id :int = 1
 
-@onready var mech_data = DataHandler.read_mecha_data(str(mecha_id))
-@onready var mech_autosave = DataHandler.read_autosave_mecha_data(str(mecha_id))
+var mech_data: MechaDefinition
+var mech_autosave: Dictionary = {}
 
 @onready var icon_container: HBoxContainer = $Mechas/IconContainer
 
@@ -22,10 +22,14 @@ extends Control
 
 @onready var on_select_id : int = 1
 func _ready() -> void:
-	pass
+	_refresh_mecha_data()
+	update_labels()
 
 func update_labels() -> void:
-	mech_autosave = DataHandler.read_autosave_mecha_data(str(mecha_id))
+	_refresh_mecha_data()
+	if mech_data == null or mech_autosave.is_empty():
+		push_warning("MechaContainer failed to load mecha data for id=%s" % str(mecha_id))
+		return
 	var lvl_index = int(mech_autosave["current_level"]) - 1
 	var crit_rate_value: float = mech_data.crit_rate[lvl_index]
 	mecha_name.text = mech_data.display_name
@@ -42,8 +46,6 @@ func update_labels() -> void:
 
 func _on_mecha_select_update_on_select(id) -> void:
 	mecha_id = int(id)
-	mech_data = DataHandler.read_mecha_data(str(id))
-	mech_autosave = DataHandler.read_autosave_mecha_data(str(id))
 	update_labels()
 	on_select_id = int(id)
 	for mechaselect : MechaSelect in icon_container.get_children():
@@ -52,3 +54,7 @@ func _on_mecha_select_update_on_select(id) -> void:
 
 func _on_new_game_erase_button_pressed() -> void:
 	update_labels()
+
+func _refresh_mecha_data() -> void:
+	mech_data = DataHandler.read_mecha_data(str(mecha_id))
+	mech_autosave = DataHandler.read_autosave_mecha_data(str(mecha_id))

@@ -3,7 +3,8 @@ extends Node
 var battle_time := 0
 var current_level : int = 0 :
 	set(value):
-		current_level = clampi(value,0,len(SpawnData.level_list) - 1)
+		var max_level_index: int = maxi(SpawnData.level_list.size() - 1, 0)
+		current_level = clampi(value, 0, max_level_index)
 
 const PREPARE := "prepare"
 const BATTLE = "battle"

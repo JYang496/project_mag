@@ -1,6 +1,27 @@
 extends Node
 
 var save_data : SaveData
+const WEAPON_RESOURCE_PATHS := [
+	"res://Data/weapons/machine_gun.tres",
+	"res://Data/weapons/charged_blaster.tres",
+	"res://Data/weapons/Spear.tres",
+	"res://Data/weapons/shotgun.tres",
+	"res://Data/weapons/pistol.tres",
+	"res://Data/weapons/cyclone.tres",
+	"res://Data/weapons/orbit.tres",
+	"res://Data/weapons/rocket_luncher.tres",
+	"res://Data/weapons/laser.tres",
+	"res://Data/weapons/chainsaw_luncher.tres",
+	"res://Data/weapons/dash_blade.tres",
+	"res://Data/weapons/hammer.tres",
+]
+const MECHA_RESOURCE_PATHS := [
+	"res://Data/mechas/Prototype.tres",
+	"res://Data/mechas/Ranger.tres",
+	"res://Data/mechas/Melee.tres",
+	"res://Data/mechas/Collector.tres",
+	"res://Data/mechas/Turret.tres",
+]
 
 func _ready():
 	load_game()
@@ -16,28 +37,75 @@ func load_weapon_data():
 		var file_name := dir.get_next()
 		while file_name != "":
 			if file_name.ends_with(".tres"):
-				var def := load("res://Data/weapons/%s" % file_name)
-				if def and def.weapon_id != "":
-					GlobalVariables.weapon_list[def.weapon_id] = def
+				_register_weapon_resource(load("res://Data/weapons/%s" % file_name), "res://Data/weapons/%s" % file_name)
 			file_name = dir.get_next()
 		dir.list_dir_end()
+	if GlobalVariables.weapon_list.is_empty():
+		for path: String in WEAPON_RESOURCE_PATHS:
+			_register_weapon_resource(load(path), path)
+	if GlobalVariables.weapon_list.is_empty():
+		push_warning("No weapon data loaded. Check exported resources and script paths in Data/weapons/*.tres.")
 
 func load_mecha_data():
 	GlobalVariables.mecha_list = {}
-	var dir := DirAccess.open("res://data/mechas")
+	var dir := DirAccess.open("res://Data/mechas")
 	if dir:
 		dir.list_dir_begin()
 		var name = dir.get_next()
 		while name != "":
 			if name.ends_with(".tres"):
-				var def := load("res://data/mechas/%s" % name) as MechaDefinition
-				if def and def.mecha_id != "":
-					GlobalVariables.mecha_list[def.mecha_id] = def
+				_register_mecha_resource(load("res://Data/mechas/%s" % name), "res://Data/mechas/%s" % name)
 			name = dir.get_next()
 		dir.list_dir_end()
+	if GlobalVariables.mecha_list.is_empty():
+		for path: String in MECHA_RESOURCE_PATHS:
+			_register_mecha_resource(load(path), path)
+	if GlobalVariables.mecha_list.is_empty():
+		push_warning("No mecha data loaded. Check exported resources and script paths in Data/mechas/*.tres.")
 
 func read_mecha_data(id: String) -> MechaDefinition:
-	return GlobalVariables.mecha_list.get(id)
+	if GlobalVariables.mecha_list.is_empty():
+		load_mecha_data()
+	var data = GlobalVariables.mecha_list.get(id)
+	if data == null:
+		return null
+	return data as MechaDefinition
+
+func read_weapon_data(id: String):
+	if GlobalVariables.weapon_list.is_empty():
+		load_weapon_data()
+	var data = GlobalVariables.weapon_list.get(str(id))
+	if data == null:
+		return null
+	return data
+
+func _register_weapon_resource(resource: Resource, source_path: String) -> void:
+	if resource == null:
+		push_warning("Failed to load weapon resource: %s" % source_path)
+		return
+	var weapon_id_value = resource.get("weapon_id")
+	if weapon_id_value == null:
+		push_warning("Weapon resource missing weapon_id: %s" % source_path)
+		return
+	var weapon_id := str(weapon_id_value)
+	if weapon_id == "":
+		push_warning("Weapon resource has empty weapon_id: %s" % source_path)
+		return
+	GlobalVariables.weapon_list[weapon_id] = resource
+
+func _register_mecha_resource(resource: Resource, source_path: String) -> void:
+	if resource == null:
+		push_warning("Failed to load mecha resource: %s" % source_path)
+		return
+	var mecha_id_value = resource.get("mecha_id")
+	if mecha_id_value == null:
+		push_warning("Mecha resource missing mecha_id: %s" % source_path)
+		return
+	var mecha_id := str(mecha_id_value)
+	if mecha_id == "":
+		push_warning("Mecha resource has empty mecha_id: %s" % source_path)
+		return
+	GlobalVariables.mecha_list[mecha_id] = resource
 
 # Return mecha autosave data, will be called in Start menu.
 func read_autosave_mecha_data(id : String) -> Dictionary:

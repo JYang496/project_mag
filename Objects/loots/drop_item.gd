@@ -11,7 +11,11 @@ var player_near : bool = false
 
 func _ready() -> void:
 	if item_id is String:
-		var weapon_def = GlobalVariables.weapon_list[item_id]
+		var weapon_def = DataHandler.read_weapon_data(str(item_id))
+		if weapon_def == null:
+			push_warning("DropItem failed to load weapon id=%s" % str(item_id))
+			queue_free()
+			return
 		item = weapon_def.scene.instantiate()
 		sprite.texture = weapon_def.icon
 		item.level = level

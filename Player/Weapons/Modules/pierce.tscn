@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://dt2pqqoi5dsw0"]
+[gd_scene format=3 uid="uid://dxe8qj0aob3a5"]
 
 [ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_4bmpc"]
 [ext_resource type="Texture2D" uid="uid://bmuw2m4jla4ac" path="res://Textures/test/more_hp.png" id="2_3fre3"]

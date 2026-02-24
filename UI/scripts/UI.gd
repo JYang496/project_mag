@@ -1,9 +1,15 @@
 extends CanvasLayer
 class_name UI
 
+const PANEL_TARGET_SIZE := Vector2(1000, 600)
+const PANEL_MARGIN := Vector2(24, 24)
+const PAUSE_PANEL_TARGET_SIZE := Vector2(400, 600)
+const HUD_MARGIN := 16.0
+
 #@onready var player : Player = get_tree().get_first_node_in_group("player")
 
 # Roots
+@onready var gui_root: Control = $GUI
 @onready var character_root : Control = $GUI/CharacterRoot
 @onready var shopping_rootv_2: Control = $GUI/ShoppingRootv2
 @onready var upgrade_rootv_2: Control = $GUI/UpgradeRootv2
@@ -12,6 +18,12 @@ class_name UI
 @onready var pause_menu_root : Control = $GUI/PauseMenuRoot
 @onready var module_root: Control = $GUI/ModuleRoot
 @onready var gear_fuse_root: Control = $GUI/GearFuseRoot
+@onready var shopping_panel: Panel = $GUI/ShoppingRootv2/Panel
+@onready var upgrade_panel: Panel = $GUI/UpgradeRootv2/Panel
+@onready var gear_fuse_panel: Panel = $GUI/GearFuseRoot/Panel
+@onready var module_panel: Panel = $GUI/ModuleRoot/Panel
+@onready var inventory_panel: Panel = $GUI/InventoryRoot/Panel
+@onready var pause_menu_panel: Panel = $GUI/PauseMenuRoot/PauseMenuPanel
 var game_over_root: Control
 var game_over_status_label: Label
 var game_over_coin_label: Label
@@ -71,6 +83,8 @@ signal reset_cost
 func _ready():
 	GlobalVariables.ui = self
 	_create_game_over_layout()
+	_connect_viewport_signals()
+	_apply_responsive_layout()
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 	refresh_border()
@@ -365,3 +379,48 @@ func _create_game_over_layout() -> void:
 func _on_game_over_new_game_pressed() -> void:
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://World/Start.tscn")
+
+
+func _connect_viewport_signals() -> void:
+	var viewport := get_viewport()
+	if viewport and not viewport.is_connected("size_changed", Callable(self, "_on_viewport_size_changed")):
+		viewport.connect("size_changed", Callable(self, "_on_viewport_size_changed"))
+
+func _on_viewport_size_changed() -> void:
+	_apply_responsive_layout()
+
+func _apply_responsive_layout() -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	_fit_center_panel(shopping_panel, viewport_size, PANEL_TARGET_SIZE)
+	_fit_center_panel(upgrade_panel, viewport_size, PANEL_TARGET_SIZE)
+	_fit_center_panel(gear_fuse_panel, viewport_size, PANEL_TARGET_SIZE)
+	_fit_center_panel(module_panel, viewport_size, PANEL_TARGET_SIZE)
+	_fit_center_panel(inventory_panel, viewport_size, PANEL_TARGET_SIZE)
+	_fit_pause_layout(viewport_size)
+	_layout_hud(viewport_size)
+
+func _fit_center_panel(panel: Control, viewport_size: Vector2, target_size: Vector2) -> void:
+	if panel == null:
+		return
+	var available_size: Vector2 = viewport_size - PANEL_MARGIN * 2.0
+	var width: float = minf(target_size.x, available_size.x)
+	var height: float = minf(target_size.y, available_size.y)
+	panel.size = Vector2(maxf(width, 0.0), maxf(height, 0.0))
+	panel.position = (viewport_size - panel.size) * 0.5
+
+func _fit_pause_layout(viewport_size: Vector2) -> void:
+	pause_menu_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	pause_menu_root.offset_left = 0
+	pause_menu_root.offset_top = 0
+	pause_menu_root.offset_right = 0
+	pause_menu_root.offset_bottom = 0
+	_fit_center_panel(pause_menu_panel, viewport_size, PAUSE_PANEL_TARGET_SIZE)
+
+func _layout_hud(viewport_size: Vector2) -> void:
+	equipped_label.position = Vector2(HUD_MARGIN, HUD_MARGIN)
+	weapon_icons.position = Vector2(HUD_MARGIN + 82.0, HUD_MARGIN + 6.0)
+	hp_label_label.position = Vector2(HUD_MARGIN, viewport_size.y - 36.0)
+	gold_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN)
+	time_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN + 56.0)
+	phase_label.position = Vector2(viewport_size.x - 220.0, HUD_MARGIN)
+	resource_label.position = Vector2(viewport_size.x - 110.0, viewport_size.y - 54.0)

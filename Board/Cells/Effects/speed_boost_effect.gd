@@ -1,5 +1,5 @@
 extends Node
-class_name CellSpeedBoostEffect
+
 
 @export var speed_bonus: float = 45.0
 
