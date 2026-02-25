@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="1_r2q5u"]
 [ext_resource type="PackedScene" uid="uid://dbwoyi8hnjfsn" path="res://Player/Weapons/shotgun.tscn" id="2_3030w"]
-[ext_resource type="Script" uid="uid://da2xunq05neb0" path="res://Data/WeaponDefinition.gd" id="3_yk741"]
+[ext_resource type="Script" uid="uid://da2xunq05neb0" path="res://data/WeaponDefinition.gd" id="3_yk741"]
 
 [resource]
 script = ExtResource("3_yk741")

@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://dy8r3aaxk8rse" path="res://Textures/test/chainsaw.png" id="1_m0vjd"]
 [ext_resource type="PackedScene" uid="uid://cjvx8yx5wh63l" path="res://Player/Weapons/chainsaw_launcher.tscn" id="2_f0p1k"]
-[ext_resource type="Script" uid="uid://da2xunq05neb0" path="res://Data/WeaponDefinition.gd" id="3_ep74y"]
+[ext_resource type="Script" uid="uid://da2xunq05neb0" path="res://data/WeaponDefinition.gd" id="3_ep74y"]
 
 [resource]
 script = ExtResource("3_ep74y")

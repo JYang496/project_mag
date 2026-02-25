@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://c8y0klvqommi8" path="res://Textures/test/short_knife.png" id="1_vj6a5"]
 [ext_resource type="PackedScene" uid="uid://bw5j5m0r2u8g1" path="res://Player/Weapons/dash_blade.tscn" id="2_i8m5u"]
-[ext_resource type="Script" uid="uid://da2xunq05neb0" path="res://Data/WeaponDefinition.gd" id="3_wu5jv"]
+[ext_resource type="Script" uid="uid://da2xunq05neb0" path="res://data/WeaponDefinition.gd" id="3_wu5jv"]
 
 [resource]
 script = ExtResource("3_wu5jv")

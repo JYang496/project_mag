@@ -2,13 +2,13 @@ extends Node
 
 var level_list : Array[LevelSpawnConfig] = []
 const SPAWN_RESOURCE_PATHS := [
-	"res://Data/spawns/1-1.tres",
-	"res://Data/spawns/1-2.tres",
-	"res://Data/spawns/1-3.tres",
-	"res://Data/spawns/1-4.tres",
-	"res://Data/spawns/1-5.tres",
-	"res://Data/spawns/1-6.tres",
-	"res://Data/spawns/1-7.tres",
+	"res://data/spawns/1-1.tres",
+	"res://data/spawns/1-2.tres",
+	"res://data/spawns/1-3.tres",
+	"res://data/spawns/1-4.tres",
+	"res://data/spawns/1-5.tres",
+	"res://data/spawns/1-6.tres",
+	"res://data/spawns/1-7.tres",
 ]
 
 func _ready() -> void:
@@ -35,7 +35,7 @@ func load_all_spawn_data(path: String) -> void:
 		for spawn_path: String in SPAWN_RESOURCE_PATHS:
 			_register_spawn_resource(load(spawn_path), spawn_path)
 	if level_list.is_empty():
-		push_warning("No spawn data loaded. Check exported resources in Data/spawns/*.tres")
+		push_warning("No spawn data loaded. Check exported resources in data/spawns/*.tres")
 
 func _register_spawn_resource(resource: Resource, source_path: String) -> void:
 	if resource == null:
@@ -45,3 +45,4 @@ func _register_spawn_resource(resource: Resource, source_path: String) -> void:
 		push_warning("Spawn resource missing 'spawns' field: %s" % source_path)
 		return
 	level_list.append(resource)
+

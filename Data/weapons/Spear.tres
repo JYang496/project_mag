@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://im0by60rbjt5" path="res://Textures/test/spear.png" id="1_ji2p0"]
 [ext_resource type="PackedScene" uid="uid://cect8lp5abtw" path="res://Player/Weapons/spear_launcher.tscn" id="2_mskrm"]
-[ext_resource type="Script" uid="uid://da2xunq05neb0" path="res://Data/WeaponDefinition.gd" id="3_txwgl"]
+[ext_resource type="Script" uid="uid://da2xunq05neb0" path="res://data/WeaponDefinition.gd" id="3_txwgl"]
 
 [resource]
 script = ExtResource("3_txwgl")

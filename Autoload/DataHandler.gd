@@ -2,25 +2,25 @@ extends Node
 
 var save_data : SaveData
 const WEAPON_RESOURCE_PATHS := [
-	"res://Data/weapons/machine_gun.tres",
-	"res://Data/weapons/charged_blaster.tres",
-	"res://Data/weapons/Spear.tres",
-	"res://Data/weapons/shotgun.tres",
-	"res://Data/weapons/pistol.tres",
-	"res://Data/weapons/cyclone.tres",
-	"res://Data/weapons/orbit.tres",
-	"res://Data/weapons/rocket_luncher.tres",
-	"res://Data/weapons/laser.tres",
-	"res://Data/weapons/chainsaw_luncher.tres",
-	"res://Data/weapons/dash_blade.tres",
-	"res://Data/weapons/hammer.tres",
+	"res://data/weapons/machine_gun.tres",
+	"res://data/weapons/charged_blaster.tres",
+	"res://data/weapons/Spear.tres",
+	"res://data/weapons/shotgun.tres",
+	"res://data/weapons/pistol.tres",
+	"res://data/weapons/cyclone.tres",
+	"res://data/weapons/orbit.tres",
+	"res://data/weapons/rocket_luncher.tres",
+	"res://data/weapons/laser.tres",
+	"res://data/weapons/chainsaw_luncher.tres",
+	"res://data/weapons/dash_blade.tres",
+	"res://data/weapons/hammer.tres",
 ]
 const MECHA_RESOURCE_PATHS := [
-	"res://Data/mechas/Prototype.tres",
-	"res://Data/mechas/Ranger.tres",
-	"res://Data/mechas/Melee.tres",
-	"res://Data/mechas/Collector.tres",
-	"res://Data/mechas/Turret.tres",
+	"res://data/mechas/Prototype.tres",
+	"res://data/mechas/Ranger.tres",
+	"res://data/mechas/Melee.tres",
+	"res://data/mechas/Collector.tres",
+	"res://data/mechas/Turret.tres",
 ]
 
 func _ready():
@@ -30,38 +30,38 @@ func _ready():
 
 # This function is used for locate weapon file location which stored in data/weapons.
 func load_weapon_data():
-	var dir := DirAccess.open("res://Data/weapons")
+	var dir := DirAccess.open("res://data/weapons")
 	GlobalVariables.weapon_list = {}
 	if dir:
 		dir.list_dir_begin()
 		var file_name := dir.get_next()
 		while file_name != "":
 			if file_name.ends_with(".tres"):
-				_register_weapon_resource(load("res://Data/weapons/%s" % file_name), "res://Data/weapons/%s" % file_name)
+				_register_weapon_resource(load("res://data/weapons/%s" % file_name), "res://data/weapons/%s" % file_name)
 			file_name = dir.get_next()
 		dir.list_dir_end()
 	if GlobalVariables.weapon_list.is_empty():
 		for path: String in WEAPON_RESOURCE_PATHS:
 			_register_weapon_resource(load(path), path)
 	if GlobalVariables.weapon_list.is_empty():
-		push_warning("No weapon data loaded. Check exported resources and script paths in Data/weapons/*.tres.")
+		push_warning("No weapon data loaded. Check exported resources and script paths in data/weapons/*.tres.")
 
 func load_mecha_data():
 	GlobalVariables.mecha_list = {}
-	var dir := DirAccess.open("res://Data/mechas")
+	var dir := DirAccess.open("res://data/mechas")
 	if dir:
 		dir.list_dir_begin()
 		var name = dir.get_next()
 		while name != "":
 			if name.ends_with(".tres"):
-				_register_mecha_resource(load("res://Data/mechas/%s" % name), "res://Data/mechas/%s" % name)
+				_register_mecha_resource(load("res://data/mechas/%s" % name), "res://data/mechas/%s" % name)
 			name = dir.get_next()
 		dir.list_dir_end()
 	if GlobalVariables.mecha_list.is_empty():
 		for path: String in MECHA_RESOURCE_PATHS:
 			_register_mecha_resource(load(path), path)
 	if GlobalVariables.mecha_list.is_empty():
-		push_warning("No mecha data loaded. Check exported resources and script paths in Data/mechas/*.tres.")
+		push_warning("No mecha data loaded. Check exported resources and script paths in data/mechas/*.tres.")
 
 func read_mecha_data(id: String) -> MechaDefinition:
 	if GlobalVariables.mecha_list.is_empty():
@@ -113,7 +113,7 @@ func read_autosave_mecha_data(id : String) -> Dictionary:
 		load_game()
 	return save_data.mechas[id]
 
-func save_game(data : SaveData = save_data, file_path: String = "res://Data/savedata/autosave.tres") -> void:
+func save_game(data : SaveData = save_data, file_path: String = "res://data/savedata/autosave.tres") -> void:
 	data.mechas[str(PlayerData.select_mecha_id)]["current_exp"] = str(PlayerData.player_exp)
 	data.mechas[str(PlayerData.select_mecha_id)]["current_level"] = str(PlayerData.player_level)
 	data.weapons = []
@@ -122,13 +122,13 @@ func save_game(data : SaveData = save_data, file_path: String = "res://Data/save
 	var result = ResourceSaver.save(data,file_path)
 	print(self,": Save game ",error_string(result))
 
-func new_save(file_path: String = "res://Data/savedata/autosave.tres") -> void:
+func new_save(file_path: String = "res://data/savedata/autosave.tres") -> void:
 	save_data = SaveData.new()
 	var result = ResourceSaver.save(save_data, file_path)
 	print(self,": New save",error_string(result))
 	
 
-func load_game(file_path: String = "res://Data/savedata/autosave.tres") -> void:
+func load_game(file_path: String = "res://data/savedata/autosave.tres") -> void:
 	if not FileAccess.file_exists(file_path):
 		print("Save file doesn't exist, create a new save file")
 		new_save(file_path)
@@ -137,3 +137,4 @@ func load_game(file_path: String = "res://Data/savedata/autosave.tres") -> void:
 	if save_data == null:
 		print("Failed to load save file")
 		return
+

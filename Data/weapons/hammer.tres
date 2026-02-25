@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" path="res://Textures/test/hammer.png" id="1_y6f2n"]
 [ext_resource type="PackedScene" path="res://Player/Weapons/hammer.tscn" id="2_6mifu"]
-[ext_resource type="Script" path="res://Data/WeaponDefinition.gd" id="3_md0yx"]
+[ext_resource type="Script" path="res://data/WeaponDefinition.gd" id="3_md0yx"]
 
 [resource]
 script = ExtResource("3_md0yx")
