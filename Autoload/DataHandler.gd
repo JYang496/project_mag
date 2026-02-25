@@ -30,7 +30,7 @@ func _ready():
 
 # This function is used for locate weapon file location which stored in data/weapons.
 func load_weapon_data():
-	var dir := DirAccess.open("res://data/weapons")
+	var dir := DirAccess.open("res://data/weapons/")
 	GlobalVariables.weapon_list = {}
 	if dir:
 		dir.list_dir_begin()
@@ -48,7 +48,7 @@ func load_weapon_data():
 
 func load_mecha_data():
 	GlobalVariables.mecha_list = {}
-	var dir := DirAccess.open("res://data/mechas")
+	var dir := DirAccess.open("res://data/mechas/")
 	if dir:
 		dir.list_dir_begin()
 		var name = dir.get_next()
@@ -137,4 +137,3 @@ func load_game(file_path: String = "res://data/savedata/autosave.tres") -> void:
 	if save_data == null:
 		print("Failed to load save file")
 		return
-

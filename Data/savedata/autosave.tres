@@ -6,7 +6,7 @@
 script = ExtResource("1")
 mechas = {
 "1": {
-"current_exp": "20",
+"current_exp": "0",
 "current_level": "3"
 },
 "2": {
@@ -27,6 +27,3 @@ mechas = {
 }
 }
 last_mecha_selected = 1
-weapons = []
-game_level = "1"
-sub = "0"
