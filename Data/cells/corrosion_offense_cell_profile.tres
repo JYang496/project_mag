@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CellProfile" format=3 uid="uid://cpe8tbq0om15p"]
+
+[ext_resource type="Script" uid="uid://ytgqpjri2ckf" path="res://Board/Cells/cell_profile.gd" id="1_au8i0"]
+[ext_resource type="PackedScene" path="res://Board/Cells/Modules/corrosion_aura_module.tscn" id="2_q2m8h"]
+
+[resource]
+script = ExtResource("1_au8i0")
+task_type = 2
+reward_type = 2
+terrain_type = 2
+objective_enabled = true
+aura_enabled = true
+module_scenes = Array[PackedScene]([ExtResource("2_q2m8h"), null])

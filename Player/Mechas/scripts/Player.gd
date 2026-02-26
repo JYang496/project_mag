@@ -36,6 +36,8 @@ const ORBIT_MAX_SPEED := 8.0
 const ORBIT_FRICTION := 6.0
 const ORBIT_OFFSET := Vector2(0, -25)
 var weapon_orbit_states: Dictionary = {}
+var _move_speed_mul_modifiers: Dictionary = {}
+var _vision_mul_modifiers: Dictionary = {}
 # Signals
 signal active_skill()
 signal coin_collected()
@@ -125,7 +127,8 @@ func movement(delta):
 		var x_mov = Input.get_action_strength("RIGHT") - Input.get_action_strength("LEFT")
 		var y_mov = Input.get_action_strength("DOWN") - Input.get_action_strength("UP")
 		var mov = Vector2(x_mov,y_mov) + extra_direction
-		velocity = mov.normalized() * (PlayerData.player_speed + PlayerData.player_bonus_speed)
+		var speed = (PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul()
+		velocity = mov.normalized() * speed
 	else:
 		velocity = Vector2.ZERO
 	if moveto_enabled:
@@ -135,6 +138,36 @@ func movement(delta):
 	_update_mecha_direction(distance_mouse_player)
 	unique_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
 	_update_weapon_orbits(delta)
+
+func apply_move_speed_mul(source_id: StringName, mul: float) -> void:
+	if source_id == StringName():
+		return
+	_move_speed_mul_modifiers[source_id] = clampf(mul, 0.05, 10.0)
+
+func remove_move_speed_mul(source_id: StringName) -> void:
+	if _move_speed_mul_modifiers.has(source_id):
+		_move_speed_mul_modifiers.erase(source_id)
+
+func get_total_move_speed_mul() -> float:
+	var total := 1.0
+	for mul in _move_speed_mul_modifiers.values():
+		total *= float(mul)
+	return maxf(total, 0.05)
+
+func apply_vision_mul(source_id: StringName, mul: float) -> void:
+	if source_id == StringName():
+		return
+	_vision_mul_modifiers[source_id] = clampf(mul, 0.05, 10.0)
+
+func remove_vision_mul(source_id: StringName) -> void:
+	if _vision_mul_modifiers.has(source_id):
+		_vision_mul_modifiers.erase(source_id)
+
+func get_total_vision_mul() -> float:
+	var total := 1.0
+	for mul in _vision_mul_modifiers.values():
+		total *= float(mul)
+	return maxf(total, 0.05)
 
 
 func move_to(dest:Vector2) -> void:

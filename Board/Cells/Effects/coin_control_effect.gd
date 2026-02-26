@@ -43,10 +43,8 @@ func _apply_owner_state(owner: int) -> void:
 			_stop_drain()
 			_drop_coins_once()
 			_refund_coins()
-		Cell.CellOwner.ENEMY:
-			_start_drain()
 		_:
-			_stop_drain()
+			_start_drain()
 
 func _start_drain() -> void:
 	if not _drain_timer:

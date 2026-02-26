@@ -118,7 +118,7 @@ func _pick_spawn_cell_near_player(player: Player) -> Cell:
 		if cell.cell_owner == Cell.CellOwner.PLAYER and not is_contested:
 			continue
 		var is_visible := _cell_intersects_rect(cell, view_rect)
-		if cell.state == Cell.CellState.ENEMY or is_contested:
+		if is_contested:
 			if is_visible:
 				visible_preferred.append(cell)
 			else:

@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Board/Cells/Modules/cell_aura_module.gd" id="1_w4l8s"]
+
+[node name="CorrosionAuraModule" type="Node"]
+script = ExtResource("1_w4l8s")
+aura_enabled = true
+terrain_override = 1
+move_speed_mul = 0.7

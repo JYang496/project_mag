@@ -36,7 +36,7 @@ func _on_body_entered(body: Node) -> void:
 	if _tracked_enemies.has(body):
 		return
 	_tracked_enemies.append(body)
-	if _cell and _cell.cell_owner == Cell.CellOwner.ENEMY:
+	if _cell and _cell.cell_owner != Cell.CellOwner.PLAYER:
 		_apply_enemy_resistance(body)
 
 func _on_body_exited(body: Node) -> void:
@@ -54,10 +54,8 @@ func _apply_owner_state(owner: int) -> void:
 			if not _player_healed:
 				_heal_player()
 				_player_healed = true
-		Cell.CellOwner.ENEMY:
-			_apply_enemy_resistance_to_all()
 		_:
-			_clear_enemy_resistance()
+			_apply_enemy_resistance_to_all()
 
 func _heal_player() -> void:
 	if not PlayerData.player:

@@ -51,11 +51,11 @@ func load_mecha_data():
 	var dir := DirAccess.open("res://data/mechas/")
 	if dir:
 		dir.list_dir_begin()
-		var name = dir.get_next()
-		while name != "":
-			if name.ends_with(".tres"):
-				_register_mecha_resource(load("res://data/mechas/%s" % name), "res://data/mechas/%s" % name)
-			name = dir.get_next()
+		var mecha_name = dir.get_next()
+		while mecha_name != "":
+			if mecha_name.ends_with(".tres"):
+				_register_mecha_resource(load("res://data/mechas/%s" % mecha_name), "res://data/mechas/%s" % mecha_name)
+			mecha_name = dir.get_next()
 		dir.list_dir_end()
 	if GlobalVariables.mecha_list.is_empty():
 		for path: String in MECHA_RESOURCE_PATHS:

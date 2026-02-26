@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Board/Cells/Modules/cell_objective_module.gd" id="1_0s2s0"]
+
+[node name="DefenseHoldObjectiveModule" type="Node"]
+script = ExtResource("1_0s2s0")
+objective_enabled = true
+objective_type = 2
+required_hold_seconds = 8.0
+required_progress = 50

@@ -67,15 +67,12 @@ func _update_bonuses() -> void:
 			else:
 				_apply_player_bonus()
 			_clear_enemy_bonuses()
-		Cell.CellOwner.ENEMY:
+		_:
 			_clear_player_bonus()
 			if _overlapping_enemies.is_empty():
 				_clear_enemy_bonuses()
 			else:
 				_apply_enemy_bonuses()
-		_:
-			_clear_player_bonus()
-			_clear_enemy_bonuses()
 
 func _apply_player_bonus() -> void:
 	if _player_bonus_active or PlayerData.player == null:

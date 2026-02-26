@@ -45,4 +45,3 @@ func _register_spawn_resource(resource: Resource, source_path: String) -> void:
 		push_warning("Spawn resource missing 'spawns' field: %s" % source_path)
 		return
 	level_list.append(resource)
-

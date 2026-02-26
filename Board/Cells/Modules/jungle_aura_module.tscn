@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Board/Cells/Modules/cell_aura_module.gd" id="1_e53n0"]
+
+[node name="JungleAuraModule" type="Node"]
+script = ExtResource("1_e53n0")
+aura_enabled = true
+terrain_override = 2
+vision_mul = 0.7

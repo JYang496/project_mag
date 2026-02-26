@@ -7,10 +7,12 @@ class_name BoardCellGenerator
 @export var player_spawner_path: NodePath
 @export var center_spawn_offset: Vector2 = Vector2(255, 258)
 @export var auto_assign_enemy_on_battle := true
+@export var initial_cell_profiles: Array[CellProfile] = []
 
 var _cells: Array[Cell] = []
 var _player_spawner: Node2D
 var _center_cell: Cell
+var _last_phase: String = ""
 
 func _enter_tree() -> void:
 	if not _cells.is_empty():
@@ -29,6 +31,7 @@ func _enter_tree() -> void:
 	_spawn_cells()
 
 func _ready() -> void:
+	_last_phase = PhaseManager.current_state()
 	if auto_assign_enemy_on_battle and not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 
@@ -48,6 +51,7 @@ func _spawn_cells() -> void:
 			cell.position = Vector2(x * cell_spacing.x, y * cell_spacing.y)
 			add_child(cell)
 			_cells.append(cell)
+			_apply_initial_profile(cell, cell_index)
 			if Vector2i(x, y) == center_index:
 				_center_cell = cell
 	if _center_cell:
@@ -65,31 +69,37 @@ func get_cells() -> Array[Cell]:
 func get_center_cell() -> Cell:
 	return _center_cell
 
+func _apply_initial_profile(cell: Cell, cell_index: int) -> void:
+	if cell == null:
+		return
+	if cell_index < 0 or cell_index >= initial_cell_profiles.size():
+		return
+	var profile := initial_cell_profiles[cell_index]
+	if profile:
+		cell.apply_profile(profile)
+
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.BATTLE:
-		_assign_enemy_cells()
-	elif new_phase == PhaseManager.REWARD:
+		_unlock_defense_cells_for_battle()
+	elif _last_phase == PhaseManager.BATTLE and new_phase != PhaseManager.BATTLE:
 		_reset_cell_ownership()
+	_last_phase = new_phase
 
-func _assign_enemy_cells() -> void:
-	var neutral_cells: Array[Cell] = []
+func _unlock_defense_cells_for_battle() -> void:
 	for cell in _cells:
-		if cell and cell.state == Cell.CellState.IDLE:
-			neutral_cells.append(cell)
-	if neutral_cells.is_empty():
-		return
-	neutral_cells.shuffle()
-	var cells_to_convert := neutral_cells.size() / 2
-	for i in range(cells_to_convert):
-		var cell := neutral_cells[i]
-		cell.state = Cell.CellState.ENEMY
-		cell.progress = -Cell.CAPTURE_THRESHOLD
-		cell.cell_owner = Cell.CellOwner.ENEMY
+		if not cell:
+			continue
+		cell.progress = 0
+		cell.cell_owner = Cell.CellOwner.NONE
+		if cell.task_type == Cell.TaskType.DEFENSE:
+			cell.set_locked(false)
+		else:
+			cell.set_locked(true)
 
 func _reset_cell_ownership() -> void:
 	for cell in _cells:
 		if not cell:
 			continue
 		cell.progress = 0
-		cell.state = Cell.CellState.IDLE
+		cell.set_locked(true)
 		cell.cell_owner = Cell.CellOwner.NONE

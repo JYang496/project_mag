@@ -4,27 +4,45 @@ class_name Cell
 signal cell_state_changed(cell: Cell, old_state: int, new_state: int)
 signal cell_owner_changed(cell: Cell, old_owenr: int, new_owener: int)
 signal effect_triggered(cell: Cell, effect: Node, actor: Node)
+signal player_presence_changed(cell: Cell, player_count: int)
+signal enemy_presence_changed(cell: Cell, enemy_count: int)
+signal enemy_killed_in_cell(cell: Cell, enemy: BaseEnemy)
+signal objective_completed(cell_id: String)
 
-enum CellState {IDLE, PLAYER, ENEMY, CONTESTED, LOCKED}
-enum CellOwner {NONE, PLAYER, ENEMY}
+enum CellState {IDLE, PLAYER, CONTESTED, LOCKED}
+enum CellOwner {NONE, PLAYER}
+enum TaskType {NONE, OFFENSE, DEFENSE}
+enum RewardType {NONE, COMBAT, ECONOMY}
+enum TerrainType {NONE, CORROSION, JUNGLE}
 
-var state: int = CellState.IDLE : set = set_state
+var state: int = CellState.LOCKED : set = set_state
 var cell_owner: int = CellOwner.NONE : set = set_cell_owner
 var _player_bodies: Array[Node2D] = []
 var _enemy_bodies: Array[Node2D] = []
+var _enemy_death_callbacks: Dictionary = {}
 var progress: int = 0
 @onready var _sprite: Sprite2D = $Texture/Sprite2D
 var _default_color: Color = Color.WHITE
 var _is_highlighted := false
 var _pending_highlight_color: Color = Color.WHITE
 var _has_pending_highlight := false
+@export var task_type: int = TaskType.NONE
+@export var reward_type: int = RewardType.NONE
+@export var terrain_type: int = TerrainType.NONE
+@export var objective_enabled := false
+@export var aura_enabled := false
+@export var profile: CellProfile
+@export var module_scenes: Array[PackedScene] = []
 
 const PROGRESS_INTERVAL := 0.2
 const PROGRESS_STEP := 1
 const PROGRESS_LIMIT := 100
 const CAPTURE_THRESHOLD := 50
+const CONTESTED_PROGRESS_MULTIPLIER := 0.5
 
 var _progress_timer: Timer
+var _module_root: Node
+var _progress_accumulator := 0.0
 
 func set_state(value: int) -> void:
 	if state == value:
@@ -54,6 +72,7 @@ func _ready() -> void:
 	_progress_timer.one_shot = false
 	add_child(_progress_timer)
 	_progress_timer.timeout.connect(_on_progress_timer_timeout)
+	_setup_profile_and_modules()
 
 func _update_visual_by_state() -> void:
 	pass
@@ -64,8 +83,6 @@ func _update_visual_by_owner() -> void:
 	match cell_owner:
 		CellOwner.PLAYER:
 			_sprite.modulate = Color(0.6, 0.8, 1.0)
-		CellOwner.ENEMY:
-			_sprite.modulate = Color(1.0, 0.4, 0.4)
 		_:
 			_sprite.modulate = _default_color
 
@@ -86,6 +103,42 @@ func clear_highlight() -> void:
 	_is_highlighted = false
 	_update_visual_by_owner()
 
+func apply_profile(new_profile: CellProfile) -> void:
+	profile = new_profile
+	if profile == null:
+		return
+	task_type = profile.task_type
+	reward_type = profile.reward_type
+	terrain_type = profile.terrain_type
+	objective_enabled = profile.objective_enabled
+	aura_enabled = profile.aura_enabled
+	module_scenes = profile.resolve_module_scenes()
+
+func set_locked(is_locked: bool) -> void:
+	if is_locked:
+		set_state(CellState.LOCKED)
+		_progress_accumulator = 0.0
+	else:
+		# Leave LOCKED first, then evaluate occupancy to derive PLAYER/CONTESTED/IDLE.
+		if state == CellState.LOCKED:
+			set_state(CellState.IDLE)
+		_evaluate_cell_state()
+
+func has_player_inside() -> bool:
+	return not _player_bodies.is_empty()
+
+func has_enemy_inside() -> bool:
+	return not _enemy_bodies.is_empty()
+
+func get_player_count() -> int:
+	return _player_bodies.size()
+
+func get_enemy_count() -> int:
+	return _enemy_bodies.size()
+
+func emit_objective_completed() -> void:
+	objective_completed.emit(name)
+
 func _evaluate_cell_state() -> void:
 	if state == CellState.LOCKED:
 		return
@@ -95,27 +148,28 @@ func _evaluate_cell_state() -> void:
 		set_state(CellState.CONTESTED)
 	elif player_present:
 		set_state(CellState.PLAYER)
-	elif enemy_present:
-		set_state(CellState.ENEMY)
 	else:
 		set_state(CellState.IDLE)
 
 func _on_progress_timer_timeout() -> void:
 	if state == CellState.LOCKED:
 		return
-	var delta := 0
+	var delta := 0.0
 	if state == CellState.PLAYER:
 		delta = PROGRESS_STEP
-	elif state == CellState.ENEMY:
-		delta = -PROGRESS_STEP
+	elif state == CellState.CONTESTED:
+		delta = PROGRESS_STEP * CONTESTED_PROGRESS_MULTIPLIER
 	if delta == 0:
 		return
-	progress = clamp(progress + delta, -PROGRESS_LIMIT, PROGRESS_LIMIT)
+	_progress_accumulator += delta
+	var progress_step := int(floor(_progress_accumulator))
+	if progress_step <= 0:
+		return
+	_progress_accumulator -= progress_step
+	progress = clamp(progress + progress_step, 0, PROGRESS_LIMIT)
 	var new_owner := cell_owner
 	if progress >= CAPTURE_THRESHOLD:
 		new_owner = CellOwner.PLAYER
-	elif progress <= -CAPTURE_THRESHOLD:
-		new_owner = CellOwner.ENEMY
 	else:
 		new_owner = CellOwner.NONE
 	set_cell_owner(new_owner)
@@ -125,9 +179,12 @@ func _on_area_2d_body_entered(body: Node2D) -> void:
 	var state_changed := false
 	if body is Player and not _player_bodies.has(body):
 		_player_bodies.append(body)
+		player_presence_changed.emit(self, _player_bodies.size())
 		state_changed = true
 	elif body is BaseEnemy and not _enemy_bodies.has(body):
 		_enemy_bodies.append(body)
+		_track_enemy_death(body)
+		enemy_presence_changed.emit(self, _enemy_bodies.size())
 		state_changed = true
 	if state_changed:
 		_evaluate_cell_state()
@@ -137,9 +194,56 @@ func _on_area_2d_body_exited(body: Node2D) -> void:
 	var state_changed := false
 	if body is Player and _player_bodies.has(body):
 		_player_bodies.erase(body)
+		player_presence_changed.emit(self, _player_bodies.size())
 		state_changed = true
 	elif body is BaseEnemy and _enemy_bodies.has(body):
 		_enemy_bodies.erase(body)
+		_untrack_enemy_death(body)
+		enemy_presence_changed.emit(self, _enemy_bodies.size())
 		state_changed = true
 	if state_changed:
 		_evaluate_cell_state()
+
+func _track_enemy_death(enemy: BaseEnemy) -> void:
+	if enemy == null or _enemy_death_callbacks.has(enemy):
+		return
+	var callback := Callable(self, "_on_tracked_enemy_death").bind(enemy)
+	_enemy_death_callbacks[enemy] = callback
+	if not enemy.is_connected("enemy_death", callback):
+		enemy.connect("enemy_death", callback)
+
+func _untrack_enemy_death(enemy: BaseEnemy) -> void:
+	if enemy == null:
+		return
+	if not _enemy_death_callbacks.has(enemy):
+		return
+	var callback: Callable = _enemy_death_callbacks[enemy]
+	if is_instance_valid(enemy) and enemy.is_connected("enemy_death", callback):
+		enemy.disconnect("enemy_death", callback)
+	_enemy_death_callbacks.erase(enemy)
+
+func _on_tracked_enemy_death(enemy: BaseEnemy) -> void:
+	var was_inside := _enemy_bodies.has(enemy)
+	if was_inside:
+		_enemy_bodies.erase(enemy)
+		enemy_presence_changed.emit(self, _enemy_bodies.size())
+		enemy_killed_in_cell.emit(self, enemy)
+	_evaluate_cell_state()
+	_untrack_enemy_death(enemy)
+
+func _setup_profile_and_modules() -> void:
+	if profile:
+		apply_profile(profile)
+	_module_root = get_node_or_null("Modules")
+	if _module_root == null:
+		_module_root = Node.new()
+		_module_root.name = "Modules"
+		add_child(_module_root)
+	if module_scenes.is_empty():
+		return
+	for module_scene in module_scenes:
+		if module_scene == null:
+			continue
+		var module_instance = module_scene.instantiate()
+		if module_instance:
+			_module_root.add_child(module_instance)

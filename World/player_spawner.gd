@@ -88,8 +88,16 @@ func _on_cell_area_body_entered(body: Node2D) -> void:
 func _on_cell_area_body_exited(body: Node2D) -> void:
 	if body is Player:
 		_player_inside_cell = false
-		_start_battle_stage()
 		_refresh_cell_highlight()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventKey):
+		return
+	var key_event := event as InputEventKey
+	if key_event.echo or not key_event.pressed:
+		return
+	if key_event.keycode == KEY_SPACE:
+		_start_battle_stage()
 
 func _start_battle_stage() -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
