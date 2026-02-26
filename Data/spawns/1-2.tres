@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="LevelSpawnConfig" format=3 uid="uid://dk38tkiaqqevc"]
 
-[ext_resource type="Script" uid="uid://bqyvlcrq4b8xf" path="res://data/spawns/LevelArray.gd" id="1_b2itx"]
+[ext_resource type="Script" uid="uid://ytl6qq2cyao" path="res://data/spawns/LevelArray.gd" id="1_b2itx"]
 [ext_resource type="Script" uid="uid://cw2vo0cs83hpl" path="res://Utility/reward_info.gd" id="1_wxt1a"]
 [ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/scripts/spawn_info.gd" id="2_lrbk6"]
 [ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/scenes/enemy_wheel_cart.tscn" id="3_d6yav"]

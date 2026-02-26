@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="MechaDefinition" load_steps=3 format=3 uid="uid://cdvj4hsv3ooub"]
 
 [ext_resource type="PackedScene" uid="uid://5tujqlbugob2" path="res://Player/Mechas/scenes/turret.tscn" id="1_hht0s"]
-[ext_resource type="Script" uid="uid://34kn3nmpdsqn" path="res://data/MechaDefinition.gd" id="2_lgpx2"]
+[ext_resource type="Script" uid="uid://5lnhq074mor6" path="res://data/MechaDefinition.gd" id="2_lgpx2"]
 
 [resource]
 script = ExtResource("2_lgpx2")

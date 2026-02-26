@@ -1,18 +1,18 @@
-[gd_scene load_steps=7 format=3 uid="uid://dwxulua8fpqd0"]
+[gd_scene format=3 uid="uid://dwxulua8fpqd0"]
 
 [ext_resource type="Script" uid="uid://dyetc0qttcb7y" path="res://World/new_game_btn.gd" id="1_y1dix"]
 [ext_resource type="Script" uid="uid://q8o4fd420oji" path="res://World/continue.gd" id="2_jyp4w"]
 [ext_resource type="PackedScene" uid="uid://05u30gc3rp15" path="res://UI/scenes/mecha_select.tscn" id="2_s76s5"]
 [ext_resource type="Script" uid="uid://c10nnuwga4iqw" path="res://World/mecha_container.gd" id="2_w24c8"]
-[ext_resource type="Script" path="res://World/hp_safety_toggle_btn.gd" id="5_hp_toggle"]
-[ext_resource type="Script" path="res://World/start_menu.gd" id="6_start_menu"]
+[ext_resource type="Script" uid="uid://cnl0hy8g35i07" path="res://World/hp_safety_toggle_btn.gd" id="5_hp_toggle"]
+[ext_resource type="Script" uid="uid://crthixi6sav7n" path="res://World/start_menu.gd" id="6_start_menu"]
 
-[node name="Start" type="Node2D"]
+[node name="Start" type="Node2D" unique_id=1585976042]
 script = ExtResource("6_start_menu")
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=455115752]
 
-[node name="GUI" type="Control" parent="CanvasLayer"]
+[node name="GUI" type="Control" parent="CanvasLayer" unique_id=481139598]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,7 +20,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" type="ColorRect" parent="CanvasLayer/GUI"]
+[node name="Background" type="ColorRect" parent="CanvasLayer/GUI" unique_id=1122148742]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -29,7 +29,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.25098, 0.25098, 0.25098, 1)
 
-[node name="HBoxMargin" type="MarginContainer" parent="CanvasLayer/GUI/Background"]
+[node name="HBoxMargin" type="MarginContainer" parent="CanvasLayer/GUI/Background" unique_id=1626790002]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -41,90 +41,90 @@ theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 50
 theme_override_constants/margin_bottom = 50
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin"]
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin" unique_id=1989687654]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 alignment = 1
 
-[node name="MenuContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer"]
+[node name="MenuContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer" unique_id=1606636962]
 custom_minimum_size = Vector2(500, 548)
 layout_mode = 2
 
-[node name="Title" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer"]
+[node name="Title" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer" unique_id=525450202]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Project Mag Title"
 horizontal_alignment = 1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer" unique_id=1290966749]
 custom_minimum_size = Vector2(0, 400)
 layout_mode = 2
 alignment = 1
 
-[node name="Start" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
+[node name="Start" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=379445436]
 layout_mode = 2
 text = "Start"
 script = ExtResource("2_jyp4w")
 
-[node name="New Game" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
+[node name="New Game" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=2016277216]
 layout_mode = 2
 text = "Erase Data"
 script = ExtResource("1_y1dix")
 
-[node name="HpSafetyToggle" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
+[node name="HpSafetyToggle" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=1322643656]
 layout_mode = 2
 text = "Keep HP > 1: OFF"
 script = ExtResource("5_hp_toggle")
 
-[node name="ResolutionLabel" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
+[node name="ResolutionLabel" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=1441157498]
 layout_mode = 2
 text = "Resolution"
 
-[node name="ResolutionOption" type="OptionButton" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer"]
+[node name="ResolutionOption" type="OptionButton" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=95475231]
 layout_mode = 2
 
-[node name="MechaContainer" type="MarginContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer"]
+[node name="MechaContainer" type="MarginContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer" unique_id=7227956]
 layout_mode = 2
 theme_override_constants/margin_top = 50
 script = ExtResource("2_w24c8")
 
-[node name="Mechas" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer"]
+[node name="Mechas" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" unique_id=1982485898]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 
-[node name="CharTitile" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas"]
+[node name="CharTitile" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas" unique_id=971456419]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
 text = "Mechas"
 horizontal_alignment = 1
 
-[node name="IconContainer" type="HBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas"]
+[node name="IconContainer" type="HBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas" unique_id=884047136]
 custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 
-[node name="MechaSelect" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" unique_id=1149774982 instance=ExtResource("2_s76s5")]
 layout_mode = 2
 
-[node name="MechaSelect2" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect2" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" unique_id=1670701634 instance=ExtResource("2_s76s5")]
 layout_mode = 2
 mecha_id = 2
 
-[node name="MechaSelect3" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect3" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" unique_id=202766801 instance=ExtResource("2_s76s5")]
 layout_mode = 2
 mecha_id = 3
 
-[node name="MechaSelect4" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" instance=ExtResource("2_s76s5")]
+[node name="MechaSelect4" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" unique_id=334568254 instance=ExtResource("2_s76s5")]
 layout_mode = 2
 mecha_id = 4
 
-[node name="ColorRect" type="ColorRect" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas"]
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas" unique_id=1981034121]
 custom_minimum_size = Vector2(0, 250)
 layout_mode = 2
 color = Color(0.366595, 0.366595, 0.366595, 1)
 
-[node name="mecha_name" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect"]
-layout_mode = 2
+[node name="mecha_name" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=437096786]
+layout_mode = 0
 offset_left = 114.0
 offset_top = 5.0
 offset_right = 369.0
@@ -133,7 +133,7 @@ theme_override_font_sizes/font_size = 23
 text = "name : value"
 horizontal_alignment = 1
 
-[node name="current_exp" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect"]
+[node name="current_exp" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=778456083]
 layout_mode = 0
 offset_left = 2.0
 offset_top = 40.0
@@ -142,8 +142,8 @@ offset_bottom = 72.0
 theme_override_font_sizes/font_size = 23
 text = "current_exp : value"
 
-[node name="current_level" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect"]
-layout_mode = 2
+[node name="current_level" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=1852031395]
+layout_mode = 0
 offset_left = 244.0
 offset_top = 40.0
 offset_right = 499.0
@@ -152,7 +152,7 @@ theme_override_font_sizes/font_size = 23
 text = "current_level : value"
 horizontal_alignment = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=1734837354]
 layout_mode = 0
 offset_left = 1.0
 offset_top = 95.0
@@ -160,31 +160,31 @@ offset_right = 256.0
 offset_bottom = 250.0
 alignment = 2
 
-[node name="player_max_hp" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer"]
+[node name="player_max_hp" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=408731963]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
 text = "player_max_hp : value"
 horizontal_alignment = 1
 
-[node name="player_speed" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer"]
+[node name="player_speed" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=512407014]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
 text = "player_speed : value"
 horizontal_alignment = 1
 
-[node name="armor" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer"]
+[node name="armor" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=367872730]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
 text = "armor : value"
 horizontal_alignment = 1
 
-[node name="shield" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer"]
+[node name="shield" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=1881882935]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
 text = "shield : value"
 horizontal_alignment = 1
 
-[node name="VBoxContainer2" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect"]
+[node name="VBoxContainer2" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=785441317]
 layout_mode = 0
 offset_left = 245.0
 offset_top = 95.0
@@ -192,25 +192,25 @@ offset_right = 500.0
 offset_bottom = 250.0
 alignment = 2
 
-[node name="crit_rate" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2"]
+[node name="crit_rate" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=480665017]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
 text = "crit_rate : value"
 horizontal_alignment = 1
 
-[node name="crit_damage" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2"]
+[node name="crit_damage" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=224386494]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
 text = "crit_damage : value"
 horizontal_alignment = 1
 
-[node name="grab_radius" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2"]
+[node name="grab_radius" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=29803766]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
 text = "grab_radius : value"
 horizontal_alignment = 1
 
-[node name="player_gold" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2"]
+[node name="player_gold" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=1600224803]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
 text = "player_gold : value"
