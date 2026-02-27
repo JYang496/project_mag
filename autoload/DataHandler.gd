@@ -114,18 +114,14 @@ func read_autosave_mecha_data(id : String) -> Dictionary:
 	return save_data.mechas[id]
 
 func save_game(data : SaveData = save_data, file_path: String = "res://data/savedata/autosave.tres") -> void:
-	data.mechas[str(PlayerData.select_mecha_id)]["current_exp"] = str(PlayerData.player_exp)
-	data.mechas[str(PlayerData.select_mecha_id)]["current_level"] = str(PlayerData.player_level)
-	data.weapons = []
-	data.sub = "0"
-	data.game_level = str(PhaseManager.current_level)
-	var result = ResourceSaver.save(data,file_path)
-	print(self,": Save game ",error_string(result))
+	push_warning("save_game is disabled (read-only mode).")
+	return
 
 func new_save(file_path: String = "res://data/savedata/autosave.tres") -> void:
-	save_data = SaveData.new()
-	var result = ResourceSaver.save(save_data, file_path)
-	print(self,": New save",error_string(result))
+	push_warning("new_save is disabled (read-only mode).")
+	if save_data == null:
+		save_data = SaveData.new()
+	return
 	
 
 func load_game(file_path: String = "res://data/savedata/autosave.tres") -> void:

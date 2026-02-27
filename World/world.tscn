@@ -13,7 +13,10 @@
 
 [sub_resource type="Resource" id="Resource_w47uh"]
 script = ExtResource("4_lo5ox")
+task_type = 2
+reward_type = 2
 terrain_type = 2
+objective_enabled = true
 aura_enabled = true
 metadata/_custom_type_script = "uid://ytgqpjri2ckf"
 

@@ -15,4 +15,3 @@ func reset_runtime_state() -> void:
 	mech_data = null
 	autosave_data = {}
 	enemy_spawner = null
-

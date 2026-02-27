@@ -1,11 +1,13 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://Board/Cells/Modules/cell_objective_module.gd" id="1_j6f57"]
+[ext_resource type="Script" path="res://Board/Cells/Modules/offense_kill_objective_module.gd" id="1_q60b7"]
+[ext_resource type="PackedScene" path="res://Board/Cells/Bonus/objective_reward_bonus.tscn" id="2_3p8xk"]
 
 [node name="OffenseKillObjectiveModule" type="Node"]
-script = ExtResource("1_j6f57")
+script = ExtResource("1_q60b7")
 objective_enabled = true
-objective_type = 1
 required_kill_count = 10
+
+[node name="ObjectiveRewardBonus" parent="." instance=ExtResource("2_3p8xk")]
 combat_bonus_speed = 25.0
 combat_bonus_duration = 12.0

@@ -1,9 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://dg54ibhwajrvk"]
 
-[ext_resource type="Script" path="res://Board/Cells/Modules/cell_aura_module.gd" id="1_e53n0"]
+[ext_resource type="Script" uid="uid://brwhfunxwjq6w" path="res://Board/Cells/Modules/jungle_aura_module.gd" id="1_2ce8y"]
 
-[node name="JungleAuraModule" type="Node"]
-script = ExtResource("1_e53n0")
+[node name="JungleAuraModule" type="Node" unique_id=1410878073]
+script = ExtResource("1_2ce8y")
+vision_mul = 0.5
 aura_enabled = true
-terrain_override = 2
-vision_mul = 0.7

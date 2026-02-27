@@ -1,10 +1,12 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://Board/Cells/Modules/cell_objective_module.gd" id="1_0s2s0"]
+[ext_resource type="Script" path="res://Board/Cells/Modules/defense_hold_objective_module.gd" id="1_y4m0j"]
+[ext_resource type="PackedScene" path="res://Board/Cells/Bonus/objective_reward_bonus.tscn" id="2_5r2o8"]
 
 [node name="DefenseHoldObjectiveModule" type="Node"]
-script = ExtResource("1_0s2s0")
+script = ExtResource("1_y4m0j")
 objective_enabled = true
-objective_type = 2
 required_hold_seconds = 8.0
 required_progress = 50
+
+[node name="ObjectiveRewardBonus" parent="." instance=ExtResource("2_5r2o8")]

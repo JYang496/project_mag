@@ -2,13 +2,13 @@ extends Node2D
 class_name BoardCellGenerator
 
 @export var cell_scene: PackedScene
-@export var grid_size: Vector2i = Vector2i(3, 3)
 @export var cell_spacing: Vector2 = Vector2(510, 510)
 @export var player_spawner_path: NodePath
 @export var center_spawn_offset: Vector2 = Vector2(255, 258)
 @export var auto_assign_enemy_on_battle := true
 @export var initial_cell_profiles: Array[CellProfile] = []
 
+var grid_size: Vector2i = Vector2i(3, 3)
 var _cells: Array[Cell] = []
 var _player_spawner: Node2D
 var _center_cell: Cell
