@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Script" uid="uid://ytgqpjri2ckf" path="res://Board/Cells/cell_profile.gd" id="4_lo5ox"]
-[ext_resource type="Resource" uid="uid://cpe8tbq0om15p" path="res://data/cells/corrosion_offense_cell_profile.tres" id="5_h2aik"]
 [ext_resource type="PackedScene" uid="uid://bhk4geigmu4ah" path="res://Npc/friendly/scenes/friendly_merchant.tscn" id="7_1eywc"]
 [ext_resource type="PackedScene" uid="uid://d0mgs34dodkqu" path="res://Npc/friendly/scenes/friendly_smith.tscn" id="9_4gves"]
 [ext_resource type="PackedScene" uid="uid://cdpdxvviop3ok" path="res://UI/scenes/UI.tscn" id="9_h4135"]
@@ -12,6 +11,12 @@
 [ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/scenes/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://Utility/reward_manager.tscn" id="22_n13dc"]
 
+[sub_resource type="Resource" id="Resource_w47uh"]
+script = ExtResource("4_lo5ox")
+terrain_type = 2
+aura_enabled = true
+metadata/_custom_type_script = "uid://ytgqpjri2ckf"
+
 [node name="World" type="Node2D" unique_id=727876851]
 
 [node name="UI" parent="." unique_id=825817152 instance=ExtResource("9_h4135")]
@@ -21,7 +26,7 @@ position = Vector2(-977, -521)
 script = ExtResource("13_mj5tj")
 cell_scene = ExtResource("14_dqu5g")
 player_spawner_path = NodePath("PlayerSpawner")
-initial_cell_profiles = Array[ExtResource("4_lo5ox")]([null, null, null, null, ExtResource("5_h2aik"), null, null, null, null])
+initial_cell_profiles = Array[ExtResource("4_lo5ox")]([null, null, null, SubResource("Resource_w47uh"), null, null, null, null, null])
 
 [node name="PlayerSpawner" type="Node2D" parent="Board" unique_id=1320556918]
 script = ExtResource("14_26uyv")

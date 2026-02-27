@@ -6,8 +6,11 @@ var extra_direction = Vector2.ZERO
 @onready var equppied_augments = $EquippedAugments
 @onready var unique_weapons = $UniqueWeapon
 @onready var mecha_sprite = $MechaSprite
+@onready var player_camera: Camera2D = $Camera2D
 @onready var collect_area = get_node("%CollectArea")
 @onready var grab_radius = $GrabArea/GrabShape
+@onready var detect_area: Area2D = $DetectArea
+@onready var detect_shape: CollisionShape2D = $DetectArea/CollisionShape2D
 @onready var hurt_cd: Timer = $HurtCD
 @onready var hurt_box: HurtBox = $HurtBox
 @onready var collision_cd: Timer = $CollisionCD
@@ -38,6 +41,10 @@ const ORBIT_OFFSET := Vector2(0, -25)
 var weapon_orbit_states: Dictionary = {}
 var _move_speed_mul_modifiers: Dictionary = {}
 var _vision_mul_modifiers: Dictionary = {}
+var _base_detect_shape_size := Vector2.ZERO
+var _base_camera_zoom := Vector2.ONE
+var _camera_zoom_target := Vector2.ONE
+@export var camera_zoom_lerp_speed: float = 6.0
 # Signals
 signal active_skill()
 signal coin_collected()
@@ -45,6 +52,10 @@ signal coin_collected()
 func _ready():
 	PlayerData.player = self
 	_resize_mecha_sprite()
+	_cache_camera_zoom_base()
+	_camera_zoom_target = _base_camera_zoom
+	_cache_detect_shape_base()
+	_update_vision_effect()
 	_sync_weapon_orbit_states(true)
 	update_grab_radius()
 	custom_ready()
@@ -58,6 +69,7 @@ func custom_ready():
 func _physics_process(delta):
 	_sync_weapon_orbit_states()
 	movement(delta)
+	_update_camera_zoom_smooth(delta)
 	overcharge(delta)
 	move_and_slide()
 
@@ -158,10 +170,12 @@ func apply_vision_mul(source_id: StringName, mul: float) -> void:
 	if source_id == StringName():
 		return
 	_vision_mul_modifiers[source_id] = clampf(mul, 0.05, 10.0)
+	_update_vision_effect()
 
 func remove_vision_mul(source_id: StringName) -> void:
 	if _vision_mul_modifiers.has(source_id):
 		_vision_mul_modifiers.erase(source_id)
+	_update_vision_effect()
 
 func get_total_vision_mul() -> float:
 	var total := 1.0
@@ -182,6 +196,56 @@ func arrived() -> void:
 
 func update_grab_radius() -> void:
 	grab_radius.shape.radius = PlayerData.total_grab_radius
+
+func _cache_detect_shape_base() -> void:
+	if detect_shape == null:
+		return
+	var rect := detect_shape.shape as RectangleShape2D
+	if rect:
+		_base_detect_shape_size = rect.size
+
+func _cache_camera_zoom_base() -> void:
+	if player_camera == null:
+		return
+	_base_camera_zoom = player_camera.zoom
+
+func _update_vision_effect() -> void:
+	var vision_mul := get_total_vision_mul()
+	if detect_shape:
+		var rect := detect_shape.shape as RectangleShape2D
+		if rect:
+			if _base_detect_shape_size == Vector2.ZERO:
+				_base_detect_shape_size = rect.size
+			rect.size = _base_detect_shape_size * vision_mul
+	_update_camera_zoom_by_vision(vision_mul)
+	if detect_area:
+		detect_area.force_update_transform()
+		_refresh_detected_enemies()
+
+func _update_camera_zoom_by_vision(vision_mul: float) -> void:
+	if player_camera == null:
+		return
+	if _base_camera_zoom == Vector2.ZERO:
+		_base_camera_zoom = Vector2.ONE
+	# Lower vision multiplier means stronger zoom-out (wider view).
+	var zoom_factor := 1.0 / maxf(vision_mul, 0.05)
+	_camera_zoom_target = _base_camera_zoom * zoom_factor
+
+func _update_camera_zoom_smooth(delta: float) -> void:
+	if player_camera == null:
+		return
+	var t := clampf(camera_zoom_lerp_speed * delta, 0.0, 1.0)
+	player_camera.zoom = player_camera.zoom.lerp(_camera_zoom_target, t)
+
+func _refresh_detected_enemies() -> void:
+	if detect_area == null:
+		return
+	var valid: Array = []
+	for area in detect_area.get_overlapping_areas():
+		if area and area.get_collision_layer_value(3):
+			valid.append(area)
+	PlayerData.detected_enemies = valid
+	PlayerData.cloestest_enemy = get_closest_area_optimized(valid, self)
 
 func _resize_mecha_sprite() -> void:
 	if not mecha_sprite or not mecha_sprite.texture:

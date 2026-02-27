@@ -28,6 +28,7 @@ func _enter_tree() -> void:
 		return
 	if player_spawner_path != NodePath():
 		_player_spawner = get_node_or_null(player_spawner_path)
+	_normalize_initial_cell_profiles()
 	_spawn_cells()
 
 func _ready() -> void:
@@ -77,6 +78,34 @@ func _apply_initial_profile(cell: Cell, cell_index: int) -> void:
 	var profile := initial_cell_profiles[cell_index]
 	if profile:
 		cell.apply_profile(profile)
+
+func _normalize_initial_cell_profiles() -> void:
+	var expected_size := _get_expected_profile_count()
+	var current_size := initial_cell_profiles.size()
+	if current_size == expected_size:
+		return
+	initial_cell_profiles.resize(expected_size)
+	push_warning(
+		"initial_cell_profiles resized from %d to %d. Slot map: %s"
+		% [current_size, expected_size, ", ".join(get_initial_profile_slot_labels())]
+	)
+
+func _get_expected_profile_count() -> int:
+	return grid_size.x * grid_size.y
+
+func get_initial_profile_slot_labels() -> PackedStringArray:
+	var labels := PackedStringArray()
+	for index in range(_get_expected_profile_count()):
+		var grid_pos := _get_grid_pos_from_index(index)
+		labels.append("[%d] (%d,%d)" % [index, grid_pos.x, grid_pos.y])
+	return labels
+
+func _get_grid_pos_from_index(index: int) -> Vector2i:
+	if grid_size.x <= 0:
+		return Vector2i.ZERO
+	var x := index % grid_size.x
+	var y := int(index / grid_size.x)
+	return Vector2i(x, y)
 
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.BATTLE:
