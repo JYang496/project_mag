@@ -7,6 +7,12 @@ class_name DefenseHoldObjectiveModule
 var _hold_time := 0.0
 var _last_debug_snapshot := ""
 
+func set_task_parameters(params: Dictionary) -> void:
+	if params.has("required_hold_seconds"):
+		required_hold_seconds = params["required_hold_seconds"]
+	if params.has("required_progress"):
+		required_progress = params["required_progress"]
+
 func reset_objective_runtime() -> void:
 	super.reset_objective_runtime()
 	_hold_time = 0.0

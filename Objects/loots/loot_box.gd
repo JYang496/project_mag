@@ -39,7 +39,7 @@ func drop_an_item() -> void:
 		return
 	var item_drop = drop_preload.instantiate()
 	item_drop.drop = item_preload
-	item_drop.global_position = self.global_position
+	item_drop.spawn_global_position = global_position
 	item_drop.item_id = item_id
 	item_drop.level = item_lvl
 	self.call_deferred("add_sibling",item_drop)
@@ -56,7 +56,7 @@ func drop_collectables() -> void:
 		var drop = drop_preload.instantiate()
 		drop.drop = chip_preload
 		drop.value = total_value / number_of_collectables + bonus
-		drop.global_position = self.global_position
+		drop.spawn_global_position = global_position
 		self.call_deferred("add_sibling",drop)
 
 func _on_disapear_timer_timeout() -> void:

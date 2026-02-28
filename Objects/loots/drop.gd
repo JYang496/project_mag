@@ -2,6 +2,7 @@ extends Node2D
 
 var t = 0.0
 @export var drop : PackedScene
+@export var spawn_global_position := Vector2.ZERO
 var item_id
 var level
 var arrived = false
@@ -11,6 +12,7 @@ var drop_instance
 @onready var p1 = $p1
 @onready var p2 = $p2
 func _ready() -> void:
+	global_position = spawn_global_position
 	p2.position = get_random_position_in_circle()
 	p1.position.x = (p0.position.x + p2.position.x) / 2
 	p1.position.y = (p0.position.y + p2.position.y) / 2 - randf_range(80.0,140.0)

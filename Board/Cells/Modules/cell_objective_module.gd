@@ -119,3 +119,11 @@ func _resolve_bonus_module() -> CellBonusModule:
 		bonus_instance.queue_free()
 	push_warning("bonus_scene must instantiate CellBonusModule.")
 	return null
+
+func set_task_parameters(params: Dictionary) -> void:
+	# Override in subclasses
+	pass
+
+func set_bonus_parameters(params: Dictionary) -> void:
+	if _bonus_module and _bonus_module.has_method("apply_parameters"):
+		_bonus_module.apply_parameters(params)

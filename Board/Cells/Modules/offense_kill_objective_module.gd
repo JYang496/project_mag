@@ -7,6 +7,12 @@ class_name OffenseKillObjectiveModule
 var _kill_count := 0
 var _last_debug_snapshot := ""
 
+func set_task_parameters(params: Dictionary) -> void:
+	if params.has("required_kill_count"):
+		required_kill_count = params["required_kill_count"]
+	if params.has("count_kill_only_when_player_inside"):
+		count_kill_only_when_player_inside = params["count_kill_only_when_player_inside"]
+
 func reset_objective_runtime() -> void:
 	super.reset_objective_runtime()
 	_kill_count = 0

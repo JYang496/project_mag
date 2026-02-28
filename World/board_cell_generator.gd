@@ -7,6 +7,15 @@ class_name BoardCellGenerator
 @export var center_spawn_offset: Vector2 = Vector2(255, 258)
 @export var auto_assign_enemy_on_battle := true
 @export var initial_cell_profiles: Array[CellProfile] = []
+@export_group("Board Blockers")
+@export var blocker_collision_layer: int = 32
+@export var blocker_collision_mask: int = 0
+@export var corner_pillar_size: Vector2 = Vector2(48, 48)
+@export var border_wall_thickness: float = 48.0
+@export_group("Blocker Visuals")
+@export var blocker_visual_z_index: int = 5
+@export var pillar_visual_color: Color = Color(0.20, 0.20, 0.20, 0.85)
+@export var wall_visual_color: Color = Color(0.15, 0.15, 0.15, 0.75)
 
 var grid_size: Vector2i = Vector2i(3, 3)
 var _cells: Array[Cell] = []
@@ -55,6 +64,7 @@ func _spawn_cells() -> void:
 			_apply_initial_profile(cell, cell_index)
 			if Vector2i(x, y) == center_index:
 				_center_cell = cell
+	_build_navigation_blockers()
 	if _center_cell:
 		_attach_spawner(_center_cell)
 
@@ -69,6 +79,58 @@ func get_cells() -> Array[Cell]:
 
 func get_center_cell() -> Cell:
 	return _center_cell
+
+func _build_navigation_blockers() -> void:
+	var blocker_root: Node2D = get_node_or_null("NavigationBlockers") as Node2D
+	if blocker_root:
+		blocker_root.queue_free()
+	blocker_root = Node2D.new()
+	blocker_root.name = "NavigationBlockers"
+	add_child(blocker_root)
+	_add_corner_pillars(blocker_root)
+	_add_border_walls(blocker_root)
+
+func _add_corner_pillars(parent: Node2D) -> void:
+	for y in range(grid_size.y + 1):
+		for x in range(grid_size.x + 1):
+			var pillar_position: Vector2 = Vector2(x * cell_spacing.x, y * cell_spacing.y)
+			_add_blocker_body(parent, "Pillar_%d_%d" % [x, y], pillar_position, corner_pillar_size, pillar_visual_color)
+
+func _add_border_walls(parent: Node2D) -> void:
+	var board_size: Vector2 = Vector2(grid_size.x * cell_spacing.x, grid_size.y * cell_spacing.y)
+	var horizontal_size: Vector2 = Vector2(board_size.x, border_wall_thickness)
+	var vertical_size: Vector2 = Vector2(border_wall_thickness, board_size.y)
+	_add_blocker_body(parent, "WallTop", Vector2(board_size.x * 0.5, 0.0), horizontal_size, wall_visual_color)
+	_add_blocker_body(parent, "WallBottom", Vector2(board_size.x * 0.5, board_size.y), horizontal_size, wall_visual_color)
+	_add_blocker_body(parent, "WallLeft", Vector2(0.0, board_size.y * 0.5), vertical_size, wall_visual_color)
+	_add_blocker_body(parent, "WallRight", Vector2(board_size.x, board_size.y * 0.5), vertical_size, wall_visual_color)
+
+func _add_blocker_body(parent: Node2D, blocker_name: String, blocker_position: Vector2, blocker_size: Vector2, visual_color: Color) -> void:
+	var body: StaticBody2D = StaticBody2D.new()
+	body.name = blocker_name
+	body.position = blocker_position
+	body.collision_layer = blocker_collision_layer
+	body.collision_mask = blocker_collision_mask
+	var shape: CollisionShape2D = CollisionShape2D.new()
+	var rectangle: RectangleShape2D = RectangleShape2D.new()
+	rectangle.size = blocker_size
+	shape.shape = rectangle
+	body.add_child(shape)
+	body.add_child(_create_blocker_visual(blocker_size, visual_color))
+	parent.add_child(body)
+
+func _create_blocker_visual(blocker_size: Vector2, visual_color: Color) -> Polygon2D:
+	var polygon: Polygon2D = Polygon2D.new()
+	var half_size: Vector2 = blocker_size * 0.5
+	polygon.polygon = PackedVector2Array([
+		Vector2(-half_size.x, -half_size.y),
+		Vector2(half_size.x, -half_size.y),
+		Vector2(half_size.x, half_size.y),
+		Vector2(-half_size.x, half_size.y)
+	])
+	polygon.color = visual_color
+	polygon.z_index = blocker_visual_z_index
+	return polygon
 
 func _apply_initial_profile(cell: Cell, cell_index: int) -> void:
 	if cell == null:

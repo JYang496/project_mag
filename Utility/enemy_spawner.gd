@@ -3,6 +3,8 @@ class_name EnemySpawner
 
 @onready var timer = $Timer
 @export var debug_print_spawn_stats := false
+@export var min_spawn_distance_from_player: float = 180.0
+@export var spawn_point_attempts_per_enemy: int = 12
 @onready var board = get_parent().get_node_or_null("Board")
 @onready var x_min = $TopLeft.global_position.x
 @onready var y_min = $TopLeft.global_position.y
@@ -86,7 +88,7 @@ func get_random_position() -> Vector2:
 	var spawn_cell = _pick_spawn_cell_near_player(player)
 	if spawn_cell:
 		_last_spawn_cell = spawn_cell
-		return _get_random_point_in_cell(spawn_cell)
+		return _get_random_point_in_cell_away_from_player(spawn_cell, player.global_position)
 	_last_spawn_cell = null
 	return _get_fallback_spawn_position(player)
 
@@ -104,6 +106,7 @@ func _pick_spawn_cell_near_player(player: Player) -> Cell:
 		return null
 	var player_position = player.global_position
 	var player_cell = _get_cell_at_position(player_position)
+	var neighbor_cells = _get_neighbor_cells(player_cell)
 	var view_rect := _get_player_view_rect(player)
 	var visible_preferred : Array[Cell] = []
 	var visible_fallback : Array[Cell] = []
@@ -113,6 +116,10 @@ func _pick_spawn_cell_near_player(player: Player) -> Cell:
 		if cell == null:
 			continue
 		if cell == player_cell:
+			continue
+		if not neighbor_cells.is_empty() and not neighbor_cells.has(cell):
+			continue
+		if not _cell_can_spawn_away_from_player(cell, player_position):
 			continue
 		var is_contested := cell.state == Cell.CellState.CONTESTED
 		if cell.cell_owner == Cell.CellOwner.PLAYER and not is_contested:
@@ -132,15 +139,8 @@ func _pick_spawn_cell_near_player(player: Player) -> Cell:
 	for cell_list in ordered_lists:
 		if cell_list.is_empty():
 			continue
-		var best_cell : Cell = null
-		var best_distance := INF
-		for candidate in cell_list:
-			var distance = candidate.global_position.distance_squared_to(player_position)
-			if distance < best_distance:
-				best_distance = distance
-				best_cell = candidate
-		if best_cell:
-			return best_cell
+		if not cell_list.is_empty():
+			return cell_list.pick_random()
 	return null
 
 func _get_cell_at_position(position: Vector2) -> Cell:
@@ -173,6 +173,54 @@ func _get_random_point_in_cell(cell: Cell) -> Vector2:
 		)
 		return collision_shape.global_transform * random_local
 	return cell.global_position
+
+func _get_random_point_in_cell_away_from_player(cell: Cell, player_position: Vector2) -> Vector2:
+	var attempts: int = max(spawn_point_attempts_per_enemy, 1)
+	var best_point: Vector2 = _get_random_point_in_cell(cell)
+	var best_distance: float = best_point.distance_to(player_position)
+	for _i in range(attempts):
+		var candidate: Vector2 = _get_random_point_in_cell(cell)
+		var distance_to_player: float = candidate.distance_to(player_position)
+		if distance_to_player >= min_spawn_distance_from_player:
+			return candidate
+		if distance_to_player > best_distance:
+			best_distance = distance_to_player
+			best_point = candidate
+	return best_point
+
+func _cell_can_spawn_away_from_player(cell: Cell, player_position: Vector2) -> bool:
+	var cell_rect: Rect2 = _get_cell_aabb(cell)
+	if cell_rect.size == Vector2.ZERO:
+		return cell.global_position.distance_to(player_position) >= min_spawn_distance_from_player
+	var farthest_point := Vector2(
+		cell_rect.position.x if absf(player_position.x - cell_rect.position.x) > absf(player_position.x - cell_rect.end.x) else cell_rect.end.x,
+		cell_rect.position.y if absf(player_position.y - cell_rect.position.y) > absf(player_position.y - cell_rect.end.y) else cell_rect.end.y
+	)
+	return farthest_point.distance_to(player_position) >= min_spawn_distance_from_player
+
+func _get_neighbor_cells(player_cell: Cell) -> Array[Cell]:
+	var neighbors : Array[Cell] = []
+	if player_cell == null:
+		return neighbors
+	var max_neighbor_distance: float = _estimate_neighbor_distance(player_cell)
+	for cell in board_cells:
+		if cell == null or cell == player_cell:
+			continue
+		if cell.global_position.distance_to(player_cell.global_position) <= max_neighbor_distance:
+			neighbors.append(cell)
+	return neighbors
+
+func _estimate_neighbor_distance(player_cell: Cell) -> float:
+	var nearest_distance: float = INF
+	for cell in board_cells:
+		if cell == null or cell == player_cell:
+			continue
+		var distance: float = cell.global_position.distance_to(player_cell.global_position)
+		if distance > 0.0 and distance < nearest_distance:
+			nearest_distance = distance
+	if nearest_distance == INF:
+		return 0.0
+	return nearest_distance * 1.1
 
 func _project_point_into_cell(cell: Cell, position: Vector2) -> Vector2:
 	var collision_shape : CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
@@ -224,41 +272,77 @@ func _get_cell_aabb(cell: Cell) -> Rect2:
 	return Rect2(cell.global_position, Vector2.ZERO)
 
 func _get_fallback_spawn_position(player: Player) -> Vector2:
-	var vpr = get_viewport_rect().size * randf_range(0.5,1.1)
-	var top_left = clamp_position(player.global_position.x - vpr.x/2, player.global_position.y - vpr.y/2)
-	var top_right = clamp_position(player.global_position.x + vpr.x/2, player.global_position.y - vpr.y/2)
-	var bottom_left = clamp_position(player.global_position.x - vpr.x/2, player.global_position.y + vpr.y/2)
-	var bottom_right = clamp_position(player.global_position.x + vpr.x/2, player.global_position.y + vpr.y/2)
-	var pos_side = ["up","down","right","left"].pick_random()
-	var spawn_pos1 = Vector2.ZERO
-	var spawn_pos2 = Vector2.ZERO
-	match pos_side:
-		"up":
-			spawn_pos1 = top_left
-			spawn_pos2 = top_right
-		"down":
-			spawn_pos1 = bottom_left
-			spawn_pos2 = bottom_right
-		"right":
-			spawn_pos1 = top_right
-			spawn_pos2 = bottom_right
-		"left":
-			spawn_pos1 = top_left
-			spawn_pos2 = bottom_left
-	var x_spawn = randf_range(spawn_pos1.x, spawn_pos2.x)
-	var y_spawn = randf_range(spawn_pos1.y, spawn_pos2.y)
-	return Vector2(x_spawn,y_spawn)
+	var attempts: int = max(spawn_point_attempts_per_enemy, 1)
+	var best_pos: Vector2 = _get_farthest_boundary_point(player.global_position)
+	var best_distance: float = 0.0
+	for _i in range(attempts):
+		var candidate: Vector2 = _get_random_boundary_position_away_from_player(player.global_position)
+		var distance_to_player: float = candidate.distance_to(player.global_position)
+		if distance_to_player >= min_spawn_distance_from_player:
+			return candidate
+		if distance_to_player > best_distance:
+			best_distance = distance_to_player
+			best_pos = candidate
+	return best_pos
 
 func get_nearby_position(A: Vector2, min_distance: float = 0.0, max_distance: float = 100.0) -> Vector2:
-	var angle = randf() * 2 * PI
-	var distance = randf_range(min_distance, max_distance)
-	var nearby_pos = A + Vector2(cos(angle), sin(angle)) * distance
-	if _last_spawn_cell:
-		return _project_point_into_cell(_last_spawn_cell, nearby_pos)
-	return clamp_position(nearby_pos.x, nearby_pos.y)
+	var player : Player = PlayerData.player
+	var attempts: int = max(spawn_point_attempts_per_enemy, 1)
+	var best_position: Vector2 = A
+	var best_distance: float = 0.0
+	for _i in range(attempts):
+		var angle: float = randf() * 2.0 * PI
+		var distance: float = randf_range(min_distance, max_distance)
+		var nearby_pos: Vector2 = A + Vector2(cos(angle), sin(angle)) * distance
+		var candidate: Vector2 = nearby_pos
+		if _last_spawn_cell:
+			candidate = _project_point_into_cell(_last_spawn_cell, nearby_pos)
+		else:
+			candidate = clamp_position(nearby_pos.x, nearby_pos.y)
+		if player == null:
+			return candidate
+		var distance_to_player: float = candidate.distance_to(player.global_position)
+		if distance_to_player >= min_spawn_distance_from_player:
+			return candidate
+		if distance_to_player > best_distance:
+			best_distance = distance_to_player
+			best_position = candidate
+	return best_position
 
 func clamp_position(x_value :float, y_value :float) -> Vector2:
 	return Vector2(clampf(x_value,x_min,x_max),clampf(y_value,y_min,y_max))
+
+func _get_random_boundary_position_away_from_player(player_position: Vector2) -> Vector2:
+	var boundary_points := [
+		Vector2(randf_range(x_min, x_max), y_min),
+		Vector2(randf_range(x_min, x_max), y_max),
+		Vector2(x_min, randf_range(y_min, y_max)),
+		Vector2(x_max, randf_range(y_min, y_max))
+	]
+	var best_point: Vector2 = boundary_points[0]
+	var best_distance: float = best_point.distance_to(player_position)
+	for point in boundary_points:
+		var point_distance: float = point.distance_to(player_position)
+		if point_distance > best_distance:
+			best_distance = point_distance
+			best_point = point
+	return best_point
+
+func _get_farthest_boundary_point(player_position: Vector2) -> Vector2:
+	var corners := [
+		Vector2(x_min, y_min),
+		Vector2(x_max, y_min),
+		Vector2(x_min, y_max),
+		Vector2(x_max, y_max)
+	]
+	var best_point: Vector2 = corners[0]
+	var best_distance: float = best_point.distance_to(player_position)
+	for point in corners:
+		var point_distance: float = point.distance_to(player_position)
+		if point_distance > best_distance:
+			best_distance = point_distance
+			best_point = point
+	return best_point
 
 func erase_all_enemies():
 	var enemies = get_tree().get_nodes_in_group("enemies")

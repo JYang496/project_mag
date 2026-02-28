@@ -247,3 +247,39 @@ func _setup_profile_and_modules() -> void:
 		var module_instance = module_scene.instantiate()
 		if module_instance:
 			_module_root.add_child(module_instance)
+			_apply_module_parameters(module_instance)
+
+func _apply_module_parameters(module_instance: Node) -> void:
+	if profile == null:
+		return
+	# Apply task parameters
+	if module_instance.has_method("set_task_parameters"):
+		match task_type:
+			Cell.TaskType.OFFENSE:
+				module_instance.set_task_parameters({
+					"required_kill_count": profile.offense_required_kill_count,
+					"count_kill_only_when_player_inside": profile.offense_count_kill_only_when_player_inside
+				})
+			Cell.TaskType.DEFENSE:
+				module_instance.set_task_parameters({
+					"required_hold_seconds": profile.defense_required_hold_seconds,
+					"required_progress": profile.defense_required_progress
+				})
+	# Apply bonus parameters
+	if module_instance.has_method("set_bonus_parameters"):
+		module_instance.set_bonus_parameters({
+			"combat_heal_hp": profile.combat_heal_hp,
+			"combat_bonus_speed": profile.combat_bonus_speed,
+			"combat_bonus_duration": profile.combat_bonus_duration,
+			"combat_bonus_armor": profile.combat_bonus_armor,
+			"combat_bonus_crit_rate": profile.combat_bonus_crit_rate,
+			"combat_bonus_crit_damage": profile.combat_bonus_crit_damage,
+			"combat_bonus_shield": profile.combat_bonus_shield,
+			"combat_bonus_damage_reduction": profile.combat_bonus_damage_reduction,
+			"economy_gold": profile.economy_gold,
+			"economy_exp": profile.economy_exp,
+			"economy_drop_coin": profile.economy_drop_coin,
+			"economy_drop_chip": profile.economy_drop_chip,
+			"economy_drop_coin_value": profile.economy_drop_coin_value,
+			"economy_drop_chip_value": profile.economy_drop_chip_value
+		})

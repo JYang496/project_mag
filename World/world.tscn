@@ -18,6 +18,11 @@ reward_type = 2
 terrain_type = 2
 objective_enabled = true
 aura_enabled = true
+economy_gold = 7
+economy_drop_coin = 10
+economy_drop_chip = 10
+economy_drop_coin_value = 20
+economy_drop_chip_value = 20
 metadata/_custom_type_script = "uid://ytgqpjri2ckf"
 
 [node name="World" type="Node2D" unique_id=727876851]

@@ -10,6 +10,38 @@ var terrain_type: int = Cell.TerrainType.NONE
 @export var objective_enabled := false
 @export var aura_enabled := false
 
+# ========== Task Parameters ==========
+@export_group("Task Parameters")
+
+@export_subgroup("Offense (Kill) Task")
+@export var offense_required_kill_count: int = 10
+@export var offense_count_kill_only_when_player_inside := true
+
+@export_subgroup("Defense (Hold) Task")
+@export var defense_required_hold_seconds: float = 8.0
+@export var defense_required_progress: int = 50
+
+# ========== Bonus Parameters ==========
+@export_group("Bonus Parameters")
+
+@export_subgroup("Combat Bonus")
+@export var combat_heal_hp: int = 1
+@export var combat_bonus_speed: float = 20.0
+@export var combat_bonus_duration: float = 10.0
+@export var combat_bonus_armor: int = 0
+@export var combat_bonus_crit_rate: float = 0.0
+@export var combat_bonus_crit_damage: float = 0.0
+@export var combat_bonus_shield: int = 0
+@export var combat_bonus_damage_reduction: float = 1.0
+
+@export_subgroup("Economy Bonus")
+@export var economy_gold: int = 20
+@export var economy_exp: int = 0
+@export var economy_drop_coin: int = 0
+@export var economy_drop_chip: int = 0
+@export var economy_drop_coin_value: int = 1
+@export var economy_drop_chip_value: int = 1
+
 @export_group("Auto Mapping")
 @export var use_auto_module_mapping := true
 @export var use_manual_module_scenes := false
