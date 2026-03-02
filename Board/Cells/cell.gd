@@ -19,7 +19,6 @@ var _enemy_bodies: Array[Node2D] = []
 var _enemy_death_callbacks: Dictionary = {}
 var progress: int = 0
 @onready var _sprite: Sprite2D = $Texture/Sprite2D
-var _is_highlighted := false
 @export var task_type: int = TaskType.NONE
 @export var reward_type: int = RewardType.NONE
 @export var terrain_type: int = TerrainType.NONE
@@ -48,7 +47,6 @@ func set_state(value: int) -> void:
 	var old = state
 	state = value
 	cell_state_changed.emit(self, old, state)
-	_update_visual_by_state()
 
 func _ready() -> void:
 	if _sprite:
@@ -60,20 +58,6 @@ func _ready() -> void:
 	add_child(_progress_timer)
 	_progress_timer.timeout.connect(_on_progress_timer_timeout)
 	_setup_profile_and_modules()
-
-func _update_visual_by_state() -> void:
-	return
-
-func _update_visual_color() -> void:
-	return
-
-func set_highlight_color(color: Color) -> void:
-	# Keep API compatibility; cell visuals no longer change by color.
-	# Parameter intentionally unused.
-	_is_highlighted = true
-
-func clear_highlight() -> void:
-	_is_highlighted = false
 
 func apply_profile(new_profile: CellProfile) -> void:
 	profile = new_profile

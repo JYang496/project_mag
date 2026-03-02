@@ -1,16 +1,16 @@
-[gd_scene load_steps=4 format=3 uid="uid://do7jqh0t1td8u"]
+[gd_scene format=3 uid="uid://do7jqh0t1td8u"]
 
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_8p4js"]
 [ext_resource type="Script" uid="uid://db2fdeeop8pes" path="res://Player/Weapons/laser.gd" id="1_gbvh7"]
 [ext_resource type="Texture2D" uid="uid://frvb0gd4mcia" path="res://Textures/test/laser.png" id="1_u0srk"]
 
-[node name="Laser" instance=ExtResource("1_8p4js")]
+[node name="Laser" unique_id=979500994 instance=ExtResource("1_8p4js")]
 script = ExtResource("1_gbvh7")
 
-[node name="Sprite" parent="." index="3"]
+[node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("1_u0srk")
 
-[node name="OCTimer" type="Timer" parent="." index="4"]
+[node name="OCTimer" type="Timer" parent="." index="4" unique_id=919148967]
 wait_time = 5.0
 one_shot = true
 
