@@ -19,10 +19,7 @@ var _enemy_bodies: Array[Node2D] = []
 var _enemy_death_callbacks: Dictionary = {}
 var progress: int = 0
 @onready var _sprite: Sprite2D = $Texture/Sprite2D
-var _default_color: Color = Color.WHITE
 var _is_highlighted := false
-var _pending_highlight_color: Color = Color.WHITE
-var _has_pending_highlight := false
 @export var task_type: int = TaskType.NONE
 @export var reward_type: int = RewardType.NONE
 @export var terrain_type: int = TerrainType.NONE
@@ -55,11 +52,7 @@ func set_state(value: int) -> void:
 
 func _ready() -> void:
 	if _sprite:
-		_default_color = _sprite.modulate
 		_apply_terrain_texture()
-	if _is_highlighted and _has_pending_highlight and _sprite:
-		_sprite.modulate = _pending_highlight_color
-		_has_pending_highlight = false
 	_progress_timer = Timer.new()
 	_progress_timer.wait_time = PROGRESS_INTERVAL
 	_progress_timer.autostart = true
@@ -69,29 +62,18 @@ func _ready() -> void:
 	_setup_profile_and_modules()
 
 func _update_visual_by_state() -> void:
-	pass
+	return
 
 func _update_visual_color() -> void:
-	if not _sprite or _is_highlighted:
-		return
-	_sprite.modulate = _default_color
+	return
 
 func set_highlight_color(color: Color) -> void:
+	# Keep API compatibility; cell visuals no longer change by color.
+	# Parameter intentionally unused.
 	_is_highlighted = true
-	if not _sprite:
-		_pending_highlight_color = color
-		_has_pending_highlight = true
-		return
-	_has_pending_highlight = false
-	_sprite.modulate = color
 
 func clear_highlight() -> void:
-	if not _sprite:
-		_is_highlighted = false
-		_has_pending_highlight = false
-		return
 	_is_highlighted = false
-	_update_visual_color()
 
 func apply_profile(new_profile: CellProfile) -> void:
 	profile = new_profile

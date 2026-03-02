@@ -117,4 +117,6 @@ func simple_highlight(enable: bool = true):
 
 
 func _on_skill_timer_timeout() -> void:
-	pass # Replace with function body.
+	skill_ready = true
+	if highlight_material:
+		highlight_material.set_shader_parameter("outline_color", Color.YELLOW)
