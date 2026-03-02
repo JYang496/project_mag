@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Board/Cells/Modules/lucky_strike_aura_module.gd" id="1_lucky"]
+
+[node name="LuckyStrikeAuraModule" type="Node"]
+script = ExtResource("1_lucky")
+aura_enabled = true
+lucky_strike_chance = 0.3
+lucky_strike_extra_damage = 1

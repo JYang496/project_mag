@@ -60,6 +60,7 @@ func _spawn_cells() -> void:
 				cell.name = "Cell%s" % str(cell_index + 1)
 			cell.position = Vector2(x * cell_spacing.x, y * cell_spacing.y)
 			add_child(cell)
+			_configure_cell_capture_shape(cell)
 			_cells.append(cell)
 			_apply_initial_profile(cell, cell_index)
 			if Vector2i(x, y) == center_index:
@@ -94,7 +95,7 @@ func _add_corner_pillars(parent: Node2D) -> void:
 	for y in range(grid_size.y + 1):
 		for x in range(grid_size.x + 1):
 			var pillar_position: Vector2 = Vector2(x * cell_spacing.x, y * cell_spacing.y)
-			_add_blocker_body(parent, "Pillar_%d_%d" % [x, y], pillar_position, corner_pillar_size, pillar_visual_color)
+			_add_blocker_body(parent, "CellCornerZone_%d_%d" % [x, y], pillar_position, corner_pillar_size, pillar_visual_color, false)
 
 func _add_border_walls(parent: Node2D) -> void:
 	var board_size: Vector2 = Vector2(grid_size.x * cell_spacing.x, grid_size.y * cell_spacing.y)
@@ -105,12 +106,19 @@ func _add_border_walls(parent: Node2D) -> void:
 	_add_blocker_body(parent, "WallLeft", Vector2(0.0, board_size.y * 0.5), vertical_size, wall_visual_color)
 	_add_blocker_body(parent, "WallRight", Vector2(board_size.x, board_size.y * 0.5), vertical_size, wall_visual_color)
 
-func _add_blocker_body(parent: Node2D, blocker_name: String, blocker_position: Vector2, blocker_size: Vector2, visual_color: Color) -> void:
+func _add_blocker_body(
+	parent: Node2D,
+	blocker_name: String,
+	blocker_position: Vector2,
+	blocker_size: Vector2,
+	visual_color: Color,
+	enable_collision: bool = true
+) -> void:
 	var body: StaticBody2D = StaticBody2D.new()
 	body.name = blocker_name
 	body.position = blocker_position
-	body.collision_layer = blocker_collision_layer
-	body.collision_mask = blocker_collision_mask
+	body.collision_layer = blocker_collision_layer if enable_collision else 0
+	body.collision_mask = blocker_collision_mask if enable_collision else 0
 	var shape: CollisionShape2D = CollisionShape2D.new()
 	var rectangle: RectangleShape2D = RectangleShape2D.new()
 	rectangle.size = blocker_size
@@ -118,6 +126,42 @@ func _add_blocker_body(parent: Node2D, blocker_name: String, blocker_position: V
 	body.add_child(shape)
 	body.add_child(_create_blocker_visual(blocker_size, visual_color))
 	parent.add_child(body)
+
+func _configure_cell_capture_shape(cell: Cell) -> void:
+	if cell == null:
+		return
+	var area: Area2D = cell.get_node_or_null("Area2D") as Area2D
+	if area == null:
+		return
+	var collision_shape: CollisionShape2D = area.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision_shape == null:
+		return
+	var rectangle_shape: RectangleShape2D = collision_shape.shape as RectangleShape2D
+	if rectangle_shape == null:
+		return
+	var polygon_node: CollisionPolygon2D = area.get_node_or_null("CapturePolygon") as CollisionPolygon2D
+	if polygon_node == null:
+		polygon_node = CollisionPolygon2D.new()
+		polygon_node.name = "CapturePolygon"
+		area.add_child(polygon_node)
+	collision_shape.disabled = true
+	var half_size: Vector2 = rectangle_shape.size * 0.5 * collision_shape.scale.abs()
+	var center: Vector2 = collision_shape.position
+	var cut_size: float = clampf(
+		minf(corner_pillar_size.x, corner_pillar_size.y) * 0.5,
+		1.0,
+		minf(half_size.x, half_size.y) - 1.0
+	)
+	polygon_node.polygon = PackedVector2Array([
+		center + Vector2(-half_size.x + cut_size, -half_size.y),
+		center + Vector2(half_size.x - cut_size, -half_size.y),
+		center + Vector2(half_size.x, -half_size.y + cut_size),
+		center + Vector2(half_size.x, half_size.y - cut_size),
+		center + Vector2(half_size.x - cut_size, half_size.y),
+		center + Vector2(-half_size.x + cut_size, half_size.y),
+		center + Vector2(-half_size.x, half_size.y - cut_size),
+		center + Vector2(-half_size.x, -half_size.y + cut_size)
+	])
 
 func _create_blocker_visual(blocker_size: Vector2, visual_color: Color) -> Polygon2D:
 	var polygon: Polygon2D = Polygon2D.new()
@@ -173,7 +217,7 @@ func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.BATTLE:
 		_unlock_defense_cells_for_battle()
 	elif _last_phase == PhaseManager.BATTLE and new_phase != PhaseManager.BATTLE:
-		_reset_cell_ownership()
+		_reset_cells_after_battle()
 	_last_phase = new_phase
 
 func _unlock_defense_cells_for_battle() -> void:
@@ -181,16 +225,14 @@ func _unlock_defense_cells_for_battle() -> void:
 		if not cell:
 			continue
 		cell.progress = 0
-		cell.cell_owner = Cell.CellOwner.NONE
 		if cell.task_type == Cell.TaskType.DEFENSE:
 			cell.set_locked(false)
 		else:
 			cell.set_locked(true)
 
-func _reset_cell_ownership() -> void:
+func _reset_cells_after_battle() -> void:
 	for cell in _cells:
 		if not cell:
 			continue
 		cell.progress = 0
 		cell.set_locked(true)
-		cell.cell_owner = Cell.CellOwner.NONE

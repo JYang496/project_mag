@@ -36,6 +36,9 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if source_weapon and source_weapon.get("damage") != null:
 		base_damage = max(1, int(source_weapon.damage))
 	var chain_damage: int = max(1, int(round(float(base_damage) * chain_damage_ratio)))
+	var owner_player: Player = _resolve_owner_player(source_weapon)
+	if owner_player and is_instance_valid(owner_player):
+		chain_damage = owner_player.compute_outgoing_damage(chain_damage)
 
 	var candidates: Array[Node] = []
 	for enemy_ref in get_tree().get_nodes_in_group("enemies"):
@@ -61,6 +64,8 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 			atk.damage = chain_damage
 			_draw_chain_line(target2d.global_position, (chained_target as Node2D).global_position)
 			chained_target.damaged(atk)
+			if owner_player and is_instance_valid(owner_player):
+				owner_player.apply_bonus_hit_if_needed(chained_target)
 
 func _draw_chain_line(from_pos: Vector2, to_pos: Vector2) -> void:
 	var line: Line2D = Line2D.new()
@@ -82,3 +87,13 @@ func _draw_chain_line(from_pos: Vector2, to_pos: Vector2) -> void:
 		if is_instance_valid(line):
 			line.queue_free()
 	)
+
+func _resolve_owner_player(source_weapon: Weapon) -> Player:
+	if source_weapon == null or not is_instance_valid(source_weapon):
+		return null
+	var current: Node = source_weapon
+	while current:
+		if current is Player:
+			return current as Player
+		current = current.get_parent()
+	return null

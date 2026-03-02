@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://b1rwfidg5v0wk" path="res://Npc/enemy/scenes/elite_enemy.tscn" id="1_cpric"]
 [ext_resource type="Script" uid="uid://cmk6kp6oqk6ju" path="res://Npc/enemy/scripts/enemy_rolling_ball_elite.gd" id="2_0fobv"]
 [ext_resource type="Texture2D" uid="uid://lt43ryicwj03" path="res://asset/images/enemies/a.png" id="3_ojmbw"]
+[ext_resource type="Script" path="res://Npc/enemy/scripts/skill_warning_telegraph.gd" id="4_skill_telegraph"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_dl2yt"]
 
@@ -23,6 +24,7 @@ shape = SubResource("RectangleShape2D_dl2yt")
 [node name="Body" parent="." index="1"]
 position = Vector2(0.034549713, -1.4305115e-06)
 scale = Vector2(0.32296523, 0.37362638)
+z_index = 1
 texture = ExtResource("3_ojmbw")
 
 [node name="NPCCollision" parent="." index="2"]
@@ -44,6 +46,9 @@ collision_layer = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="SkillArea" index="0" unique_id=1802249229]
 shape = SubResource("CircleShape2D_dl2yt")
+
+[node name="SkillWarningTelegraph" type="Node2D" parent="." index="8"]
+script = ExtResource("4_skill_telegraph")
 
 [connection signal="timeout" from="DetectTimer" to="." method="_on_detect_timer_timeout"]
 [connection signal="body_entered" from="SkillArea" to="." method="_on_skill_area_body_entered"]

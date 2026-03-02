@@ -107,40 +107,23 @@ func _pick_spawn_cell_near_player(player: Player) -> Cell:
 	var player_position = player.global_position
 	var player_cell = _get_cell_at_position(player_position)
 	var neighbor_cells = _get_neighbor_cells(player_cell)
-	var view_rect := _get_player_view_rect(player)
-	var visible_preferred : Array[Cell] = []
-	var visible_fallback : Array[Cell] = []
-	var preferred_cells : Array[Cell] = []
-	var fallback_cells : Array[Cell] = []
+	var neighbor_candidates : Array[Cell] = []
+	var fallback_candidates : Array[Cell] = []
 	for cell in board_cells:
 		if cell == null:
 			continue
 		if cell == player_cell:
 			continue
-		if not neighbor_cells.is_empty() and not neighbor_cells.has(cell):
-			continue
 		if not _cell_can_spawn_away_from_player(cell, player_position):
 			continue
-		var is_contested := cell.state == Cell.CellState.CONTESTED
-		if cell.cell_owner == Cell.CellOwner.PLAYER and not is_contested:
-			continue
-		var is_visible := _cell_intersects_rect(cell, view_rect)
-		if is_contested:
-			if is_visible:
-				visible_preferred.append(cell)
-			else:
-				preferred_cells.append(cell)
-		elif cell.state != Cell.CellState.LOCKED:
-			if is_visible:
-				visible_fallback.append(cell)
-			else:
-				fallback_cells.append(cell)
-	var ordered_lists = [visible_preferred, visible_fallback, preferred_cells, fallback_cells]
-	for cell_list in ordered_lists:
-		if cell_list.is_empty():
-			continue
-		if not cell_list.is_empty():
-			return cell_list.pick_random()
+		if not neighbor_cells.is_empty() and neighbor_cells.has(cell):
+			neighbor_candidates.append(cell)
+		else:
+			fallback_candidates.append(cell)
+	if not neighbor_candidates.is_empty():
+		return neighbor_candidates.pick_random()
+	if not fallback_candidates.is_empty():
+		return fallback_candidates.pick_random()
 	return null
 
 func _get_cell_at_position(position: Vector2) -> Cell:
@@ -152,6 +135,9 @@ func _get_cell_at_position(position: Vector2) -> Cell:
 func _cell_contains_point(cell: Cell, position: Vector2) -> bool:
 	if cell == null:
 		return false
+	var capture_polygon: CollisionPolygon2D = _get_cell_capture_polygon(cell)
+	if capture_polygon:
+		return _is_point_inside_capture_polygon(capture_polygon, position)
 	var collision_shape : CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
 	if collision_shape == null:
 		return false
@@ -163,6 +149,9 @@ func _cell_contains_point(cell: Cell, position: Vector2) -> bool:
 	return false
 
 func _get_random_point_in_cell(cell: Cell) -> Vector2:
+	var capture_polygon: CollisionPolygon2D = _get_cell_capture_polygon(cell)
+	if capture_polygon:
+		return _get_random_point_in_capture_polygon(capture_polygon)
 	var collision_shape : CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
 	if collision_shape and collision_shape.shape is RectangleShape2D:
 		var rect_shape : RectangleShape2D = collision_shape.shape
@@ -223,6 +212,9 @@ func _estimate_neighbor_distance(player_cell: Cell) -> float:
 	return nearest_distance * 1.1
 
 func _project_point_into_cell(cell: Cell, position: Vector2) -> Vector2:
+	var capture_polygon: CollisionPolygon2D = _get_cell_capture_polygon(cell)
+	if capture_polygon:
+		return _project_point_into_capture_polygon(capture_polygon, position)
 	var collision_shape : CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
 	if collision_shape == null:
 		return position
@@ -248,6 +240,9 @@ func _cell_intersects_rect(cell: Cell, rect: Rect2) -> bool:
 	return cell_rect.intersects(rect)
 
 func _get_cell_aabb(cell: Cell) -> Rect2:
+	var capture_polygon: CollisionPolygon2D = _get_cell_capture_polygon(cell)
+	if capture_polygon:
+		return _get_capture_polygon_aabb(capture_polygon)
 	var collision_shape : CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
 	if collision_shape and collision_shape.shape is RectangleShape2D:
 		var rect_shape : RectangleShape2D = collision_shape.shape
@@ -270,6 +265,91 @@ func _get_cell_aabb(cell: Cell) -> Rect2:
 			max_y = max(max_y, p.y)
 		return Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
 	return Rect2(cell.global_position, Vector2.ZERO)
+
+func _get_cell_capture_polygon(cell: Cell) -> CollisionPolygon2D:
+	if cell == null:
+		return null
+	return cell.get_node_or_null("Area2D/CapturePolygon") as CollisionPolygon2D
+
+func _is_point_inside_capture_polygon(capture_polygon: CollisionPolygon2D, world_position: Vector2) -> bool:
+	if capture_polygon == null or capture_polygon.polygon.is_empty():
+		return false
+	var local_point: Vector2 = capture_polygon.global_transform.affine_inverse() * world_position
+	return Geometry2D.is_point_in_polygon(local_point, capture_polygon.polygon)
+
+func _get_random_point_in_capture_polygon(capture_polygon: CollisionPolygon2D) -> Vector2:
+	if capture_polygon == null or capture_polygon.polygon.is_empty():
+		return Vector2.ZERO
+	var local_aabb: Rect2 = _get_polygon_local_aabb(capture_polygon.polygon)
+	var attempts: int = max(spawn_point_attempts_per_enemy * 2, 12)
+	for _i in range(attempts):
+		var candidate_local: Vector2 = Vector2(
+			randf_range(local_aabb.position.x, local_aabb.end.x),
+			randf_range(local_aabb.position.y, local_aabb.end.y)
+		)
+		if Geometry2D.is_point_in_polygon(candidate_local, capture_polygon.polygon):
+			return capture_polygon.global_transform * candidate_local
+	var centroid_local: Vector2 = _get_polygon_centroid(capture_polygon.polygon)
+	return capture_polygon.global_transform * centroid_local
+
+func _project_point_into_capture_polygon(capture_polygon: CollisionPolygon2D, world_position: Vector2) -> Vector2:
+	if capture_polygon == null or capture_polygon.polygon.is_empty():
+		return world_position
+	if _is_point_inside_capture_polygon(capture_polygon, world_position):
+		return world_position
+	var local_aabb: Rect2 = _get_polygon_local_aabb(capture_polygon.polygon)
+	var local_point: Vector2 = capture_polygon.global_transform.affine_inverse() * world_position
+	local_point.x = clampf(local_point.x, local_aabb.position.x, local_aabb.end.x)
+	local_point.y = clampf(local_point.y, local_aabb.position.y, local_aabb.end.y)
+	if Geometry2D.is_point_in_polygon(local_point, capture_polygon.polygon):
+		return capture_polygon.global_transform * local_point
+	var nearest_polygon_point: Vector2 = capture_polygon.polygon[0]
+	var nearest_distance: float = nearest_polygon_point.distance_squared_to(local_point)
+	for polygon_point in capture_polygon.polygon:
+		var point_distance: float = polygon_point.distance_squared_to(local_point)
+		if point_distance < nearest_distance:
+			nearest_distance = point_distance
+			nearest_polygon_point = polygon_point
+	return capture_polygon.global_transform * nearest_polygon_point
+
+func _get_capture_polygon_aabb(capture_polygon: CollisionPolygon2D) -> Rect2:
+	var polygon_points: PackedVector2Array = capture_polygon.polygon
+	if polygon_points.is_empty():
+		return Rect2(capture_polygon.global_position, Vector2.ZERO)
+	var first_point: Vector2 = capture_polygon.global_transform * polygon_points[0]
+	var min_x: float = first_point.x
+	var max_x: float = first_point.x
+	var min_y: float = first_point.y
+	var max_y: float = first_point.y
+	for local_point in polygon_points:
+		var world_point: Vector2 = capture_polygon.global_transform * local_point
+		min_x = minf(min_x, world_point.x)
+		max_x = maxf(max_x, world_point.x)
+		min_y = minf(min_y, world_point.y)
+		max_y = maxf(max_y, world_point.y)
+	return Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+
+func _get_polygon_local_aabb(polygon_points: PackedVector2Array) -> Rect2:
+	if polygon_points.is_empty():
+		return Rect2(Vector2.ZERO, Vector2.ZERO)
+	var min_x: float = polygon_points[0].x
+	var max_x: float = polygon_points[0].x
+	var min_y: float = polygon_points[0].y
+	var max_y: float = polygon_points[0].y
+	for polygon_point in polygon_points:
+		min_x = minf(min_x, polygon_point.x)
+		max_x = maxf(max_x, polygon_point.x)
+		min_y = minf(min_y, polygon_point.y)
+		max_y = maxf(max_y, polygon_point.y)
+	return Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+
+func _get_polygon_centroid(polygon_points: PackedVector2Array) -> Vector2:
+	if polygon_points.is_empty():
+		return Vector2.ZERO
+	var center: Vector2 = Vector2.ZERO
+	for polygon_point in polygon_points:
+		center += polygon_point
+	return center / float(polygon_points.size())
 
 func _get_fallback_spawn_position(player: Player) -> Vector2:
 	var attempts: int = max(spawn_point_attempts_per_enemy, 1)

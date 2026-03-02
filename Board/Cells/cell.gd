@@ -2,7 +2,6 @@ extends Node2D
 class_name Cell
 
 signal cell_state_changed(cell: Cell, old_state: int, new_state: int)
-signal cell_owner_changed(cell: Cell, old_owenr: int, new_owener: int)
 signal effect_triggered(cell: Cell, effect: Node, actor: Node)
 signal player_presence_changed(cell: Cell, player_count: int)
 signal enemy_presence_changed(cell: Cell, enemy_count: int)
@@ -10,13 +9,11 @@ signal enemy_killed_in_cell(cell: Cell, enemy: BaseEnemy)
 signal objective_completed(cell_id: String)
 
 enum CellState {IDLE, PLAYER, CONTESTED, LOCKED}
-enum CellOwner {NONE, PLAYER}
 enum TaskType {NONE, OFFENSE, DEFENSE}
 enum RewardType {NONE, COMBAT, ECONOMY}
-enum TerrainType {NONE, CORROSION, JUNGLE}
+enum TerrainType {NONE, CORROSION, JUNGLE, SPEED_BOOST, REGEN, LUCKY_STRIKE, DOUBLE_LOOT, LOW_HP_BERSERK}
 
 var state: int = CellState.LOCKED : set = set_state
-var cell_owner: int = CellOwner.NONE : set = set_cell_owner
 var _player_bodies: Array[Node2D] = []
 var _enemy_bodies: Array[Node2D] = []
 var _enemy_death_callbacks: Dictionary = {}
@@ -37,8 +34,12 @@ var _has_pending_highlight := false
 const PROGRESS_INTERVAL := 0.2
 const PROGRESS_STEP := 1
 const PROGRESS_LIMIT := 100
-const CAPTURE_THRESHOLD := 50
 const CONTESTED_PROGRESS_MULTIPLIER := 0.5
+const TERRAIN_TEXTURE_PATHS := {
+	TerrainType.JUNGLE: "res://asset/images/cells/glass.png",
+	TerrainType.SPEED_BOOST: "res://asset/images/cells/ice.png",
+	TerrainType.LOW_HP_BERSERK: "res://asset/images/cells/lava.png"
+}
 
 var _progress_timer: Timer
 var _module_root: Node
@@ -52,17 +53,10 @@ func set_state(value: int) -> void:
 	cell_state_changed.emit(self, old, state)
 	_update_visual_by_state()
 
-func set_cell_owner(value: int) -> void:
-	if cell_owner == value:
-		return
-	var old = cell_owner
-	cell_owner = value
-	cell_owner_changed.emit(self, old, cell_owner)
-	_update_visual_by_owner()
-
 func _ready() -> void:
 	if _sprite:
 		_default_color = _sprite.modulate
+		_apply_terrain_texture()
 	if _is_highlighted and _has_pending_highlight and _sprite:
 		_sprite.modulate = _pending_highlight_color
 		_has_pending_highlight = false
@@ -77,14 +71,10 @@ func _ready() -> void:
 func _update_visual_by_state() -> void:
 	pass
 
-func _update_visual_by_owner() -> void:
+func _update_visual_color() -> void:
 	if not _sprite or _is_highlighted:
 		return
-	match cell_owner:
-		CellOwner.PLAYER:
-			_sprite.modulate = Color(0.6, 0.8, 1.0)
-		_:
-			_sprite.modulate = _default_color
+	_sprite.modulate = _default_color
 
 func set_highlight_color(color: Color) -> void:
 	_is_highlighted = true
@@ -101,7 +91,7 @@ func clear_highlight() -> void:
 		_has_pending_highlight = false
 		return
 	_is_highlighted = false
-	_update_visual_by_owner()
+	_update_visual_color()
 
 func apply_profile(new_profile: CellProfile) -> void:
 	profile = new_profile
@@ -110,9 +100,20 @@ func apply_profile(new_profile: CellProfile) -> void:
 	task_type = profile.task_type
 	reward_type = profile.reward_type
 	terrain_type = profile.terrain_type
+	_apply_terrain_texture()
 	objective_enabled = profile.objective_enabled
 	aura_enabled = profile.aura_enabled
 	module_scenes = profile.resolve_module_scenes()
+
+func _apply_terrain_texture() -> void:
+	if not _sprite:
+		return
+	if not TERRAIN_TEXTURE_PATHS.has(terrain_type):
+		return
+	var texture_path := str(TERRAIN_TEXTURE_PATHS[terrain_type])
+	var loaded := load(texture_path)
+	if loaded is Texture2D:
+		_sprite.texture = loaded
 
 func set_locked(is_locked: bool) -> void:
 	if is_locked:
@@ -167,12 +168,6 @@ func _on_progress_timer_timeout() -> void:
 		return
 	_progress_accumulator -= progress_step
 	progress = clamp(progress + progress_step, 0, PROGRESS_LIMIT)
-	var new_owner := cell_owner
-	if progress >= CAPTURE_THRESHOLD:
-		new_owner = CellOwner.PLAYER
-	else:
-		new_owner = CellOwner.NONE
-	set_cell_owner(new_owner)
 
 # Body with layer 5 can be detected
 func _on_area_2d_body_entered(body: Node2D) -> void:
@@ -282,4 +277,20 @@ func _apply_module_parameters(module_instance: Node) -> void:
 			"economy_drop_chip": profile.economy_drop_chip,
 			"economy_drop_coin_value": profile.economy_drop_coin_value,
 			"economy_drop_chip_value": profile.economy_drop_chip_value
+		})
+	# Apply aura parameters
+	if module_instance.has_method("set_aura_parameters"):
+		module_instance.set_aura_parameters({
+			"aura_corrosion_move_speed_mul": profile.aura_corrosion_move_speed_mul,
+			"aura_jungle_vision_mul": profile.aura_jungle_vision_mul,
+			"aura_speed_move_speed_mul": profile.aura_speed_move_speed_mul,
+			"aura_regen_interval_sec": profile.aura_regen_interval_sec,
+			"aura_regen_heal_amount": profile.aura_regen_heal_amount,
+			"aura_lucky_strike_chance": profile.aura_lucky_strike_chance,
+			"aura_lucky_strike_extra_damage": profile.aura_lucky_strike_extra_damage,
+			"aura_double_loot_coin_chance": profile.aura_double_loot_coin_chance,
+			"aura_double_loot_chip_chance": profile.aura_double_loot_chip_chance,
+			"aura_double_loot_multiplier": profile.aura_double_loot_multiplier,
+			"aura_low_hp_min_hp_ratio": profile.aura_low_hp_min_hp_ratio,
+			"aura_low_hp_max_damage_mul": profile.aura_low_hp_max_damage_mul
 		})

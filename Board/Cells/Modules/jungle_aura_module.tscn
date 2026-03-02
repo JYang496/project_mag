@@ -4,5 +4,5 @@
 
 [node name="JungleAuraModule" type="Node" unique_id=1410878073]
 script = ExtResource("1_2ce8y")
-vision_mul = 0.5
+aura_jungle_vision_mul = 0.5
 aura_enabled = true

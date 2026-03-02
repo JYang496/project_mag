@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Board/Cells/Modules/double_loot_aura_module.gd" id="1_loot"]
+
+[node name="DoubleLootAuraModule" type="Node"]
+script = ExtResource("1_loot")
+aura_enabled = true
+double_coin_chance = 0.3
+double_chip_chance = 0.3
+loot_multiplier = 2

@@ -20,10 +20,15 @@ func apply_attack(area) -> void:
 	var target = area.get_owner()
 	apply_effect_on_target(target)
 	attack = Attack.new()
-	attack.damage = hitbox_owner.damage
+	attack.damage = int(hitbox_owner.damage)
+	var owner_player: Player = _resolve_owner_player(hitbox_owner)
+	if owner_player and is_instance_valid(owner_player):
+		attack.damage = owner_player.compute_outgoing_damage(attack.damage)
 	if "knock_back" in hitbox_owner:
 		attack.knock_back = hitbox_owner.knock_back
 	target.damaged(attack)
+	if owner_player and is_instance_valid(owner_player):
+		owner_player.apply_bonus_hit_if_needed(target)
 	if hitbox_owner and hitbox_owner.has_method("on_hit_target"):
 		hitbox_owner.on_hit_target(target)
 	if hitbox_owner.has_method("enemy_hit"):
@@ -42,3 +47,22 @@ func check_overlapping() -> void:
 		if area is HurtBox:
 			hitbox_owner.overlapping = true
 		hitbox_owner.overlapping = false
+
+func _resolve_owner_player(node: Node) -> Player:
+	if node == null:
+		return null
+	var current: Node = node
+	while current:
+		if current is Player:
+			return current as Player
+		current = current.get_parent()
+	var source_weapon_value: Variant = node.get("source_weapon")
+	if source_weapon_value != null and source_weapon_value is Node:
+		var source_weapon: Node = source_weapon_value
+		if source_weapon:
+			current = source_weapon
+			while current:
+				if current is Player:
+					return current as Player
+				current = current.get_parent()
+	return null

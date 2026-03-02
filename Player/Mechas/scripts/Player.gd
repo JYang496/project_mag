@@ -21,16 +21,12 @@ var moveto_enabled = false
 var moveto_dest := Vector2.ZERO
 var distance_mouse_player = 0
 var status_list = {}
-const TARGET_MECHA_SIZE = Vector2(48,48)
+const TARGET_MECHA_SIZE = Vector2(76,76)
 const MECHA_DIRECTION_TEXTURES := {
-	"left": preload("res://asset/images/characters/l.png"),
-	"bottom_left": preload("res://asset/images/characters/bl.png"),
-	"bottom": preload("res://asset/images/characters/b.png"),
-	"bottom_right": preload("res://asset/images/characters/br.png"),
-	"right": preload("res://asset/images/characters/r.png"),
-	"top_right": preload("res://asset/images/characters/fr.png"),
-	"top": preload("res://asset/images/characters/f.png"),
-	"top_left": preload("res://asset/images/characters/fl.png"),
+	"top_left": preload("res://asset/images/characters/4_lb.png"),
+	"bottom_left": preload("res://asset/images/characters/4_lf.png"),
+	"top_right": preload("res://asset/images/characters/4_rb.png"),
+	"bottom_right": preload("res://asset/images/characters/4_rf.png"),
 }
 var current_mecha_direction := ""
 const ORBIT_RADIUS := Vector2(40, 20)
@@ -41,6 +37,10 @@ const ORBIT_OFFSET := Vector2(0, -25)
 var weapon_orbit_states: Dictionary = {}
 var _move_speed_mul_modifiers: Dictionary = {}
 var _vision_mul_modifiers: Dictionary = {}
+var _damage_mul_modifiers: Dictionary = {}
+var _low_hp_damage_modifiers: Dictionary = {}
+var _bonus_hit_modifiers: Dictionary = {}
+var _loot_bonus_modifiers: Dictionary = {}
 var _base_detect_shape_size := Vector2.ZERO
 var _base_camera_zoom := Vector2.ONE
 var _camera_zoom_target := Vector2.ONE
@@ -51,6 +51,7 @@ signal coin_collected()
 
 func _ready():
 	PlayerData.player = self
+	mecha_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_resize_mecha_sprite()
 	_cache_camera_zoom_base()
 	_camera_zoom_target = _base_camera_zoom
@@ -183,6 +184,104 @@ func get_total_vision_mul() -> float:
 		total *= float(mul)
 	return maxf(total, 0.05)
 
+func apply_damage_mul(source_id: StringName, mul: float) -> void:
+	if source_id == StringName():
+		return
+	_damage_mul_modifiers[source_id] = maxf(mul, 0.05)
+
+func remove_damage_mul(source_id: StringName) -> void:
+	if _damage_mul_modifiers.has(source_id):
+		_damage_mul_modifiers.erase(source_id)
+
+func register_low_hp_damage_bonus(source_id: StringName, min_hp_ratio: float, max_damage_mul: float) -> void:
+	if source_id == StringName():
+		return
+	_low_hp_damage_modifiers[source_id] = {
+		"min_hp_ratio": clampf(min_hp_ratio, 0.05, 1.0),
+		"max_damage_mul": maxf(max_damage_mul, 1.0)
+	}
+
+func remove_low_hp_damage_bonus(source_id: StringName) -> void:
+	if _low_hp_damage_modifiers.has(source_id):
+		_low_hp_damage_modifiers.erase(source_id)
+
+func register_bonus_hit(source_id: StringName, chance: float, damage: int) -> void:
+	if source_id == StringName():
+		return
+	_bonus_hit_modifiers[source_id] = {
+		"chance": clampf(chance, 0.0, 1.0),
+		"damage": max(1, damage)
+	}
+
+func remove_bonus_hit(source_id: StringName) -> void:
+	if _bonus_hit_modifiers.has(source_id):
+		_bonus_hit_modifiers.erase(source_id)
+
+func register_loot_bonus(source_id: StringName, coin_chance: float, chip_chance: float, multiplier: int) -> void:
+	if source_id == StringName():
+		return
+	_loot_bonus_modifiers[source_id] = {
+		"coin_chance": clampf(coin_chance, 0.0, 1.0),
+		"chip_chance": clampf(chip_chance, 0.0, 1.0),
+		"multiplier": max(2, multiplier)
+	}
+
+func remove_loot_bonus(source_id: StringName) -> void:
+	if _loot_bonus_modifiers.has(source_id):
+		_loot_bonus_modifiers.erase(source_id)
+
+func compute_outgoing_damage(base_damage: int) -> int:
+	var total_mul := 1.0
+	for mul in _damage_mul_modifiers.values():
+		total_mul *= float(mul)
+	total_mul *= _get_low_hp_damage_mul()
+	return max(1, int(round(float(base_damage) * total_mul)))
+
+func apply_bonus_hit_if_needed(target: Node) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if not target.has_method("damaged"):
+		return
+	for data in _bonus_hit_modifiers.values():
+		var chance: float = float(data.get("chance", 0.0))
+		var bonus_damage: int = int(data.get("damage", 1))
+		if randf() <= chance:
+			var bonus_attack := Attack.new()
+			bonus_attack.damage = max(1, bonus_damage)
+			target.damaged(bonus_attack)
+
+func apply_loot_bonus(value: int, loot_type: StringName) -> int:
+	var result: int = max(0, value)
+	for data in _loot_bonus_modifiers.values():
+		var chance: float = 0.0
+		if loot_type == &"coin":
+			chance = float(data.get("coin_chance", 0.0))
+		elif loot_type == &"chip":
+			chance = float(data.get("chip_chance", 0.0))
+		if chance <= 0.0:
+			continue
+		if randf() <= chance:
+			var multiplier: int = int(data.get("multiplier", 2))
+			result *= max(2, multiplier)
+	return result
+
+func _get_low_hp_damage_mul() -> float:
+	if _low_hp_damage_modifiers.is_empty():
+		return 1.0
+	var max_hp: float = maxf(float(PlayerData.player_max_hp), 1.0)
+	var hp_ratio: float = float(PlayerData.player_hp) / max_hp
+	var best_mul := 1.0
+	for data in _low_hp_damage_modifiers.values():
+		var min_ratio: float = clampf(float(data.get("min_hp_ratio", 0.25)), 0.05, 1.0)
+		var max_mul: float = maxf(float(data.get("max_damage_mul", 1.0)), 1.0)
+		if hp_ratio >= 1.0:
+			continue
+		var factor: float = clampf((1.0 - hp_ratio) / maxf(1.0 - min_ratio, 0.001), 0.0, 1.0)
+		var computed_mul: float = lerpf(1.0, max_mul, factor)
+		if computed_mul > best_mul:
+			best_mul = computed_mul
+	return best_mul
+
 
 func move_to(dest:Vector2) -> void:
 	movement_enabled = false
@@ -253,7 +352,8 @@ func _resize_mecha_sprite() -> void:
 	var tex_size: Vector2 = mecha_sprite.texture.get_size()
 	if tex_size.x == 0 or tex_size.y == 0:
 		return
-	mecha_sprite.scale = TARGET_MECHA_SIZE / tex_size
+	var uniform_scale := minf(TARGET_MECHA_SIZE.x / tex_size.x, TARGET_MECHA_SIZE.y / tex_size.y)
+	mecha_sprite.scale = Vector2.ONE * uniform_scale
 
 func _sync_weapon_orbit_states(force_reset := false) -> void:
 	var weapons: Array = PlayerData.player_weapon_list
@@ -352,24 +452,11 @@ func _shortest_angle(from_angle: float, to_angle: float) -> float:
 func _update_mecha_direction(direction: Vector2) -> void:
 	if direction == Vector2.ZERO:
 		return
-	var angle_deg = rad_to_deg(direction.angle())
 	var new_dir := ""
-	if angle_deg >= -22.5 and angle_deg < 22.5:
-		new_dir = "right"
-	elif angle_deg >= 22.5 and angle_deg < 67.5:
-		new_dir = "top_right"
-	elif angle_deg >= 67.5 and angle_deg < 112.5:
-		new_dir = "top"
-	elif angle_deg >= 112.5 and angle_deg < 157.5:
-		new_dir = "top_left"
-	elif angle_deg >= 157.5 or angle_deg < -157.5:
-		new_dir = "left"
-	elif angle_deg >= -157.5 and angle_deg < -112.5:
-		new_dir = "bottom_left"
-	elif angle_deg >= -112.5 and angle_deg < -67.5:
-		new_dir = "bottom"
-	elif angle_deg >= -67.5 and angle_deg < -22.5:
-		new_dir = "bottom_right"
+	if direction.x < 0.0:
+		new_dir = "top_left" if direction.y < 0.0 else "bottom_left"
+	else:
+		new_dir = "top_right" if direction.y < 0.0 else "bottom_right"
 	if new_dir == "" or new_dir == current_mecha_direction:
 		return
 	current_mecha_direction = new_dir
@@ -425,7 +512,8 @@ func get_closest_area_optimized(area_list: Array, target_node: Node2D) -> Area2D
 
 func _on_collect_area_area_entered(area):
 	if area.is_in_group("collectables") and area is Coin:
-		var value = area.collect()
+		var value: int = area.collect()
+		value = apply_loot_bonus(value, &"coin")
 		PlayerData.player_gold += value
 		PlayerData.round_coin_collected += value
 		coin_collected.emit()
@@ -433,7 +521,8 @@ func _on_collect_area_area_entered(area):
 
 func _on_collect_chip_area_area_entered(area) -> void:
 	if area.is_in_group("collectables") and area is Chip:
-		var value = area.collect()
+		var value: int = area.collect()
+		value = apply_loot_bonus(value, &"chip")
 		PlayerData.player_exp += value
 		PlayerData.round_chip_collected += value
 

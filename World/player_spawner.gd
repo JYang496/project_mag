@@ -131,7 +131,7 @@ func _refresh_cell_highlight(forced_state: String = "") -> void:
 	if not _current_cell:
 		return
 	var state := forced_state if forced_state != "" else PhaseManager.current_state()
-	var should_highlight := state == PhaseManager.PREPARE or state == PhaseManager.REWARD
+	var should_highlight := state == PhaseManager.BATTLE and _player_inside_cell
 	if should_highlight:
 		if _highlight_active:
 			return

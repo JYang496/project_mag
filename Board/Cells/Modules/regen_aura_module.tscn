@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Board/Cells/Modules/regen_aura_module.gd" id="1_regen"]
+
+[node name="RegenAuraModule" type="Node"]
+script = ExtResource("1_regen")
+aura_enabled = true
+heal_interval_sec = 5.0
+heal_amount = 1

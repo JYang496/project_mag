@@ -38,10 +38,10 @@ func _on_debug_tick() -> void:
 	if snapshot == _last_debug_snapshot:
 		return
 	_last_debug_snapshot = snapshot
-	print("[CellObjective][PROGRESS] cell=%s state=%s owner=%s type=HOLD_OR_PROGRESS %s" % [_cell.name, _cell_state_name(_cell.state), _cell_owner_name(_cell.cell_owner), snapshot])
+	print("[CellObjective][PROGRESS] cell=%s state=%s type=HOLD_OR_PROGRESS %s" % [_cell.name, _cell_state_name(_cell.state), snapshot])
 
 func _on_debug_completed(reward_type: int) -> void:
-	print("[CellObjective][DONE] cell=%s state=%s owner=%s objective=HOLD_OR_PROGRESS reward=%s" % [_cell.name, _cell_state_name(_cell.state), _cell_owner_name(_cell.cell_owner), _reward_name(reward_type)])
+	print("[CellObjective][DONE] cell=%s state=%s objective=HOLD_OR_PROGRESS reward=%s" % [_cell.name, _cell_state_name(_cell.state), _reward_name(reward_type)])
 
 func _reward_name(value: int) -> String:
 	match value:
@@ -62,14 +62,5 @@ func _cell_state_name(value: int) -> String:
 			return "CONTESTED"
 		Cell.CellState.LOCKED:
 			return "LOCKED"
-		_:
-			return "UNKNOWN"
-
-func _cell_owner_name(value: int) -> String:
-	match value:
-		Cell.CellOwner.NONE:
-			return "NONE"
-		Cell.CellOwner.PLAYER:
-			return "PLAYER"
 		_:
 			return "UNKNOWN"

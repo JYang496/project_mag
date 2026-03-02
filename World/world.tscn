@@ -11,12 +11,23 @@
 [ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/scenes/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://Utility/reward_manager.tscn" id="22_n13dc"]
 
+[sub_resource type="Resource" id="Resource_h2aik"]
+script = ExtResource("4_lo5ox")
+terrain_type = 7
+aura_enabled = true
+metadata/_custom_type_script = "uid://ytgqpjri2ckf"
+
+[sub_resource type="Resource" id="Resource_lo5ox"]
+script = ExtResource("4_lo5ox")
+terrain_type = 3
+aura_enabled = true
+metadata/_custom_type_script = "uid://ytgqpjri2ckf"
+
 [sub_resource type="Resource" id="Resource_w47uh"]
 script = ExtResource("4_lo5ox")
 task_type = 2
 reward_type = 2
 terrain_type = 2
-objective_enabled = true
 aura_enabled = true
 economy_gold = 7
 economy_drop_coin = 10
@@ -34,7 +45,7 @@ position = Vector2(-977, -521)
 script = ExtResource("13_mj5tj")
 cell_scene = ExtResource("14_dqu5g")
 player_spawner_path = NodePath("PlayerSpawner")
-initial_cell_profiles = Array[ExtResource("4_lo5ox")]([null, null, null, SubResource("Resource_w47uh"), null, null, null, null, null])
+initial_cell_profiles = Array[ExtResource("4_lo5ox")]([null, SubResource("Resource_h2aik"), SubResource("Resource_lo5ox"), SubResource("Resource_w47uh"), null, null, null, null, null])
 
 [node name="PlayerSpawner" type="Node2D" parent="Board" unique_id=1320556918]
 script = ExtResource("14_26uyv")

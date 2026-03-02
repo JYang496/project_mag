@@ -5,4 +5,4 @@
 [node name="CorrosionAuraModule" type="Node"]
 script = ExtResource("1_2n4kb")
 aura_enabled = true
-move_speed_mul = 0.7
+aura_corrosion_move_speed_mul = 0.7
