@@ -50,6 +50,7 @@ signal calculate_projectile_size(size)
 
 
 func _ready():
+	super._ready()
 	setup_timer()
 	_apply_fuse_sprite()
 	_adjust_sprite_height()

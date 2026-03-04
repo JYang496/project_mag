@@ -7,6 +7,9 @@
 [node name="Pistol" instance=ExtResource("1_bqbbe")]
 script = ExtResource("1_224q5")
 
+[node name="Modules" parent="."]
+weapon_traits = 5408
+
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("2_jnw81")
 

@@ -7,8 +7,10 @@ var projectile_texture_resource = preload("res://asset/images/weapons/projectile
 # Weapon
 var ITEM_NAME = "Machine Gun"
 var attack_speed : float = 1.0
+@export var attack_speed_decay_interval: float = 0.35
 
 var max_speed_factor : float = 10.0
+var as_timer: Timer
 
 const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
 
@@ -20,7 +22,6 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "2",
 		"cost": "1",
-		"features": [],
 	},
 	"2": {
 		"level": "2",
@@ -29,7 +30,6 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1.8",
 		"cost": "1",
-		"features": [],
 	},
 	"3": {
 		"level": "3",
@@ -38,7 +38,6 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1.6",
 		"cost": "1",
-		"features": [],
 	},
 	"4": {
 		"level": "4",
@@ -47,7 +46,6 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1.3",
 		"cost": "1",
-		"features": [],
 	},
 	"5": {
 		"level": "5",
@@ -56,12 +54,26 @@ var weapon_data = {
 		"hp": "2",
 		"reload": "1.0",
 		"cost": "1",
-		"features": [],
 	}
 }
 
 var weapon_file
 var minigun_data = JSON.new()
+
+func _ready() -> void:
+	super._ready()
+	_setup_attack_speed_decay_timer()
+
+func _setup_attack_speed_decay_timer() -> void:
+	if as_timer and is_instance_valid(as_timer):
+		return
+	as_timer = Timer.new()
+	as_timer.name = "AttackSpeedDecayTimer"
+	as_timer.one_shot = false
+	as_timer.wait_time = maxf(attack_speed_decay_interval, 0.05)
+	add_child(as_timer)
+	as_timer.timeout.connect(Callable(self, "_on_as_timer_timeout"))
+	as_timer.start()
 
 
 func set_level(lv):
@@ -72,9 +84,6 @@ func set_level(lv):
 	base_projectile_hits = int(weapon_data[lv]["hp"])
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	sync_stats()
-	for feature in weapon_data[lv]["features"]:
-		if not weapon_features.has(feature):
-			weapon_features.append(feature)
 
 func _on_shoot():
 	is_on_cooldown = true

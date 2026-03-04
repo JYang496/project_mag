@@ -7,6 +7,9 @@
 [node name="Laser" unique_id=979500994 instance=ExtResource("1_8p4js")]
 script = ExtResource("1_gbvh7")
 
+[node name="Modules" parent="."]
+weapon_traits = 9264
+
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("1_u0srk")
 

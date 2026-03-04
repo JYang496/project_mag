@@ -15,49 +15,42 @@ var weapon_data = {
 		"damage": "3",
 		"reload": "2",
 		"cost": "1",
-		"features": [],
 	},
 	"2": {
 		"level": "2",
 		"damage": "4",
 		"reload": "1.6",
 		"cost": "1",
-		"features": [],
 	},
 	"3": {
 		"level": "3",
 		"damage": "6",
 		"reload": "1.1",
 		"cost": "1",
-		"features": [],
 	},
 	"4": {
 		"level": "4",
 		"damage": "7",
 		"reload": "0.8",
 		"cost": "1",
-		"features": [],
 	},
 	"5": {
 		"level": "5",
 		"damage": "8",
 		"reload": "0.6",
 		"cost": "1",
-		"features": [],
 	},
 	"6": {
 		"level": "11",
 		"damage": "8",
 		"reload": "0.6",
 		"cost": "1",
-		"features": [],
 	},
 	"7": {
 		"level": "15",
 		"damage": "8",
 		"reload": "0.6",
 		"cost": "1",
-		"features": [],
 	}
 }
 
@@ -68,9 +61,6 @@ func set_level(lv):
 	base_damage = int(weapon_data[lv]["damage"])
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	sync_stats()
-	for feature in weapon_data[lv]["features"]:
-		if not weapon_features.has(feature):
-			weapon_features.append(feature)
 
 func _on_shoot():
 	var beam_ins = beam.instantiate()

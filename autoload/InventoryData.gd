@@ -88,6 +88,15 @@ var on_select_module_weapon :
 			var module_list : Array = value.modules.get_children()
 			if module_list.size() >= value.MAX_MODULE_NUMBER:
 				return
+			if on_select_inventory_module.has_method("can_apply_to_weapon") and not on_select_inventory_module.can_apply_to_weapon(value):
+				push_warning(
+					"Module '%s' is incompatible with weapon '%s'; install blocked." %
+					[on_select_inventory_module.name, value.name]
+				)
+				on_drag_item = null
+				on_select_inventory_module = null
+				_safe_refresh_all_panels()
+				return
 			value.modules.add_child(on_select_inventory_module)
 			value.calculate_status()
 			moddule_slots.erase(on_select_inventory_module)

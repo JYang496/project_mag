@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://ciwfncm1q32rw"]
+[gd_scene format=3 uid="uid://ciwfncm1q32rw"]
 
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_hyv6l"]
 [ext_resource type="Script" uid="uid://q1auvvjq4ncn" path="res://Player/Weapons/machine_gun.gd" id="2_0tkjt"]
@@ -7,10 +7,14 @@
 
 [node name="MachineGun" unique_id=2042815985 instance=ExtResource("1_hyv6l")]
 script = ExtResource("2_0tkjt")
+attack_speed_decay_interval = 0.35
+
+[node name="Modules" parent="." index="0" unique_id=1154744371]
+weapon_traits = 5152
+
+[node name="LightningChain" parent="Modules" index="0" unique_id=1721459993 instance=ExtResource("4_s83sq")]
 
 [node name="FuseSprites" parent="." index="4" unique_id=50406900]
 fuse_texture_1 = ExtResource("3_0tkjt")
-
-[node name="LightningChain" parent="Modules" index="0" instance=ExtResource("4_s83sq")]
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

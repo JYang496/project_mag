@@ -9,6 +9,9 @@ script = ExtResource("1_lxm1t")
 radius = 80.0
 angle = 0.0
 
+[node name="Modules" parent="."]
+weapon_traits = 11312
+
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("2_d4sd2")
 

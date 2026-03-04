@@ -21,7 +21,6 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "1",
 		"cost": "1",
-		"features": [],
 	},
 	"2": {
 		"level": "2",
@@ -31,7 +30,6 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "1",
 		"cost": "1",
-		"features": [],
 	},
 	"3": {
 		"level": "3",
@@ -41,7 +39,6 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "1",
 		"cost": "1",
-		"features": [],
 	},
 	"4": {
 		"level": "4",
@@ -51,7 +48,6 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": [],
 	},
 	"5": {
 		"level": "5",
@@ -61,7 +57,6 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": [],
 	},
 	"6": {
 		"level": "6",
@@ -71,7 +66,6 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": [],
 	},
 	"7": {
 		"level": "25",
@@ -81,7 +75,6 @@ var weapon_data = {
 		"dot_cd": "0.1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": [],
 	}
 }
 

@@ -15,6 +15,9 @@ size = Vector2(14, 28)
 [node name="Hammer" instance=ExtResource("2_tg81u")]
 script = ExtResource("1_6vn7s")
 
+[node name="Modules" parent="."]
+weapon_traits = 4450
+
 [node name="Sprite" parent="." index="1"]
 texture = ExtResource("3_nock8")
 

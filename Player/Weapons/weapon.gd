@@ -1,7 +1,7 @@
 extends Node2D
 class_name Weapon
 
-@onready var modules: Node2D = $Modules
+@onready var modules: WeaponModules = $Modules
 var MAX_MODULE_NUMBER = 3
 @onready var sprite: Sprite2D = $Sprite
 @onready var fuse_sprite_holder: FuseSpriteHolder = get_node_or_null("FuseSprites")
@@ -30,6 +30,12 @@ var fuse : int:
 
 func set_level(lv):
 	pass
+
+func calculate_status() -> void:
+	# Recompute derived runtime stats after module changes.
+	if has_method("sync_stats"):
+		call("sync_stats")
+	validate_module_compatibility()
 
 
 
@@ -77,6 +83,50 @@ func supports_projectiles() -> bool:
 
 func supports_melee_contact() -> bool:
 	return false
+
+func _ready() -> void:
+	call_deferred("validate_module_compatibility")
+
+func get_normalized_weapon_traits() -> Array[StringName]:
+	var traits: Array[StringName] = []
+	if modules and modules.has_method("get_normalized_weapon_traits"):
+		traits = modules.get_normalized_weapon_traits()
+	if supports_projectiles() and not traits.has(CombatTrait.PROJECTILE):
+		traits.append(CombatTrait.PROJECTILE)
+	if supports_melee_contact() and not traits.has(CombatTrait.MELEE):
+		traits.append(CombatTrait.MELEE)
+	return traits
+
+func has_weapon_trait(trait_name: Variant) -> bool:
+	var normalized := CombatTrait.normalize(trait_name)
+	if normalized == StringName():
+		return false
+	return get_normalized_weapon_traits().has(normalized)
+
+func has_any_weapon_traits(required_traits: Array[StringName]) -> bool:
+	if required_traits.is_empty():
+		return true
+	var traits := get_normalized_weapon_traits()
+	for required_trait in required_traits:
+		if traits.has(required_trait):
+			return true
+	return false
+
+func validate_module_compatibility() -> void:
+	if modules == null:
+		return
+	for child in modules.get_children():
+		var module_node := child as Module
+		if module_node == null:
+			continue
+		module_node.weapon = self
+		if module_node.can_apply_to_weapon(self):
+			continue
+		push_warning(
+			"Module '%s' is incompatible with weapon '%s'; removing module." %
+			[module_node.name, name]
+		)
+		module_node.call_deferred("queue_free")
 
 func get_weapon_capabilities() -> Dictionary:
 	return {

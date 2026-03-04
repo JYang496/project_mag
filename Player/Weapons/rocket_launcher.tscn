@@ -10,6 +10,9 @@ radius = 491.123
 [node name="RocketLauncher" instance=ExtResource("1_tn5im")]
 script = ExtResource("2_6v0md")
 
+[node name="Modules" parent="."]
+weapon_traits = 50208
+
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("3_6v0md")
 

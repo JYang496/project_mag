@@ -27,7 +27,6 @@ var weapon_data = {
 		"duration": "3.0",
 		"max_charge_level": "2",
 		"cost": "1",
-		"features": [],
 	},
 	"2": {
 		"level": "2",
@@ -37,7 +36,6 @@ var weapon_data = {
 		"duration": "3.0",
 		"max_charge_level": "2",
 		"cost": "1",
-		"features": [],
 	},
 	"3": {
 		"level": "3",
@@ -47,7 +45,6 @@ var weapon_data = {
 		"duration": "3.0",
 		"max_charge_level": "3",
 		"cost": "1",
-		"features": [],
 	},
 	"4": {
 		"level": "4",
@@ -57,7 +54,6 @@ var weapon_data = {
 		"duration": "3.0",
 		"max_charge_level": "3",
 		"cost": "1",
-		"features": [],
 	},
 	"5": {
 		"level": "5",
@@ -67,7 +63,6 @@ var weapon_data = {
 		"duration": "3.90",
 		"max_charge_level": "3",
 		"cost": "1",
-		"features": [],
 	},
 }
 
@@ -95,9 +90,6 @@ func set_level(lv):
 	duration = float(weapon_data[lv]["duration"])
 	max_charge_level = int(weapon_data[lv]["max_charge_level"])
 	sync_stats()
-	for feature in weapon_data[lv]["features"]:
-		if not weapon_features.has(feature):
-			weapon_features.append(feature)
 
 func _on_shoot():
 	if charge_level < 1 or is_on_cooldown:

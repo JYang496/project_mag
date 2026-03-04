@@ -7,6 +7,9 @@
 [node name="SpearLauncher" instance=ExtResource("1_yntmd")]
 script = ExtResource("1_wrx6n")
 
+[node name="Modules" parent="."]
+weapon_traits = 5152
+
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("1_1rx0e")
 

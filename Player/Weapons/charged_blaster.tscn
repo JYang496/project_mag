@@ -7,6 +7,9 @@
 [node name="ChargedBlaster" instance=ExtResource("1_thakn")]
 script = ExtResource("1_48de6")
 
+[node name="Modules" parent="."]
+weapon_traits = 9776
+
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("2_qghy1")
 

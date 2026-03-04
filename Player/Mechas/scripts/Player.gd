@@ -21,7 +21,7 @@ var moveto_enabled = false
 var moveto_dest := Vector2.ZERO
 var distance_mouse_player = 0
 var status_list = {}
-const TARGET_MECHA_SIZE = Vector2(76,76)
+const TARGET_MECHA_SIZE = Vector2(96,96)
 const MECHA_DIRECTION_TEXTURES := {
 	"top_left": preload("res://asset/images/characters/4_lb.png"),
 	"bottom_left": preload("res://asset/images/characters/4_lf.png"),

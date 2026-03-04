@@ -13,8 +13,6 @@ var start_up_status = {
 	"player_gold":0,
 }
 
-const PREPARE_CELL_COLOR := Color(0.7, 1.0, 0.7, 1.0)
-
 var _cell_area : Area2D
 var _player_inside_cell : bool = false
 var _current_cell: Cell
@@ -135,10 +133,8 @@ func _refresh_cell_highlight(forced_state: String = "") -> void:
 	if should_highlight:
 		if _highlight_active:
 			return
-		_current_cell.set_highlight_color(PREPARE_CELL_COLOR)
 		_highlight_active = true
 	else:
 		if not _highlight_active:
 			return
 		_highlight_active = false
-		_current_cell.clear_highlight()

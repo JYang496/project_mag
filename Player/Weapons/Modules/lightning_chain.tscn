@@ -1,7 +1,14 @@
-[gd_scene load_steps=3 format=3 uid="uid://cw2eufrh1ity6"]
+[gd_scene format=3 uid="uid://cw2eufrh1ity6"]
 
 [ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_cif0l"]
 [ext_resource type="Script" uid="uid://3ei0y0chnoi3" path="res://Player/Weapons/Modules/lightning_chain.gd" id="2_ov043"]
 
-[node name="LightningChain" instance=ExtResource("1_cif0l")]
+[node name="LightningChain" unique_id=2072282120 instance=ExtResource("1_cif0l")]
 script = ExtResource("2_ov043")
+chain_count = 2
+chain_range = 140.0
+chain_damage_ratio = 0.4
+chain_count_per_fuse = 0
+line_width = 2.0
+line_duration = 0.12
+required_weapon_traits = 128096

@@ -21,7 +21,6 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1",
 		"cost": "1",
-		"features": [],
 	},
 	"2": {
 		"level": "2",
@@ -30,7 +29,6 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1",
 		"cost": "1",
-		"features": [],
 	},
 	"3": {
 		"level": "3",
@@ -39,7 +37,6 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1",
 		"cost": "1",
-		"features": [],
 	},
 	"4": {
 		"level": "4",
@@ -48,7 +45,6 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": [],
 	},
 	"5": {
 		"level": "5",
@@ -57,7 +53,6 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "0.75",
 		"cost": "1",
-		"features": [],
 	}
 }
 

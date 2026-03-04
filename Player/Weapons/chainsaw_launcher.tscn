@@ -7,6 +7,9 @@
 [node name="ChainsawLauncher" instance=ExtResource("1_sq336")]
 script = ExtResource("2_hcjeu")
 
+[node name="Modules" parent="."]
+weapon_traits = 5144
+
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("3_pmcfu")
 

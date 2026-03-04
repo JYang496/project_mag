@@ -6,6 +6,10 @@
 
 [node name="Shotgun" instance=ExtResource("1_8d78b")]
 script = ExtResource("2_1ble7")
+
+[node name="Modules" parent="."]
+weapon_traits = 5408
+
 arc = 30.0
 
 [node name="Sprite" parent="." index="3"]

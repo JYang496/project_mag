@@ -16,7 +16,6 @@ var weapon_data = {
 		"hp": "4",
 		"reload": "0.6",
 		"cost": "1",
-		"features": [],
 	},
 	"2": {
 		"level": "2",
@@ -25,7 +24,6 @@ var weapon_data = {
 		"hp": "4",
 		"reload": "0.55",
 		"cost": "1",
-		"features": [],
 	},
 	"3": {
 		"level": "3",
@@ -34,7 +32,6 @@ var weapon_data = {
 		"hp": "6",
 		"reload": "0.5",
 		"cost": "1",
-		"features": [],
 	},
 	"4": {
 		"level": "4",
@@ -43,7 +40,6 @@ var weapon_data = {
 		"hp": "6",
 		"reload": "0.45",
 		"cost": "1",
-		"features": [],
 	},
 	"5": {
 		"level": "5",
@@ -52,7 +48,6 @@ var weapon_data = {
 		"hp": "6",
 		"reload": "0.4",
 		"cost": "1",
-		"features": [],
 	},
 	"6": {
 		"level": "6",
@@ -61,7 +56,6 @@ var weapon_data = {
 		"hp": "6",
 		"reload": "0.35",
 		"cost": "1",
-		"features": [],
 	},
 	"7": {
 		"level": "7",
@@ -70,7 +64,6 @@ var weapon_data = {
 		"hp": "6",
 		"reload": "0.3",
 		"cost": "1",
-		"features": [],
 	}
 }
 
@@ -83,9 +76,6 @@ func set_level(lv):
 	base_projectile_hits = int(weapon_data[lv]["hp"])
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	sync_stats()
-	for feature in weapon_data[lv]["features"]:
-		if not weapon_features.has(feature):
-			weapon_features.append(feature)
 
 
 func _on_shoot():

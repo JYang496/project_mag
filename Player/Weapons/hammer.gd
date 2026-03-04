@@ -108,6 +108,7 @@ var _state := AttackState.IDLE
 @onready var _base_hitbox_size: Vector2 = _get_current_hitbox_size()
 
 func _ready() -> void:
+	super._ready()
 	if sprite:
 		sprite.visible = false
 	_apply_fuse_sprite()
