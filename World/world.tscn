@@ -51,17 +51,14 @@ initial_cell_profiles = Array[ExtResource("4_lo5ox")]([null, SubResource("Resour
 script = ExtResource("14_26uyv")
 
 [node name="FriendlySmith" parent="." unique_id=2017467746 groups=["friendlies"] instance=ExtResource("9_4gves")]
-visible = false
 position = Vector2(-336, 130)
 motion_mode = 0
 
 [node name="FriendlyMerchant" parent="." unique_id=1155300954 groups=["friendlies"] instance=ExtResource("7_1eywc")]
-visible = false
 position = Vector2(-108, 138)
 motion_mode = 0
 
 [node name="Inventory" parent="." unique_id=156092755 instance=ExtResource("17_1l216")]
-visible = false
 position = Vector2(-344, 293)
 collision_layer = 1
 collision_mask = 1

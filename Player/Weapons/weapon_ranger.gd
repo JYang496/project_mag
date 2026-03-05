@@ -140,6 +140,8 @@ func sync_stats() -> void:
 	projectile_hits = base_projectile_hits
 	attack_cooldown = base_attack_cooldown
 	speed = base_speed
+	if cooldown_timer == null:
+		setup_timer()
 	set_cd_timer(cooldown_timer)
 	set_projectile_size(size)
 	calculate_damage(damage)
@@ -156,7 +158,7 @@ func calculate_speed(pre_speed) -> void:
 
 func set_cd_timer(timer : Timer) -> void:
 	calculate_attack_cooldown.emit(attack_cooldown)
-	if attack_cooldown > 0:
+	if timer != null and attack_cooldown > 0:
 		timer.wait_time = attack_cooldown
 
 func set_projectile_size(projectile_size : float) -> void:

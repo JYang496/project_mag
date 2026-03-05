@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://asset/images/weapons/cannon3.png" id="1_icon"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/machine_gun.tscn" id="2_weapon_scene"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Branches/machine_gun_shield_branch.tscn" id="3_behavior"]
+[ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
+
+[resource]
+script = ExtResource("4_script")
+branch_id = "shield_mg"
+display_name = "Shield Machine Gun"
+description = "Deploys a frontal shield that blocks hostile shots and interrupts enemy movement."
+icon = ExtResource("1_icon")
+unlock_fuse = 2
+weapon_scene = ExtResource("2_weapon_scene")
+behavior_scene = ExtResource("3_behavior")

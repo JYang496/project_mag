@@ -84,23 +84,22 @@ func set_level(lv):
 	base_projectile_hits = int(weapon_data[lv]["hp"])
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	sync_stats()
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_level_applied(level)
 
 func _on_shoot():
 	is_on_cooldown = true
-	cooldown_timer.wait_time = attack_cooldown / attack_speed
+	var cooldown := attack_cooldown / attack_speed
+	if branch_behavior and is_instance_valid(branch_behavior):
+		cooldown *= branch_behavior.get_cooldown_multiplier()
+	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
-	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
-	var spawn_projectile = projectile_template.instantiate()
-	damage = base_damage
-	calculate_damage(damage)
-	spawn_projectile.damage = damage
-	spawn_projectile.hp = projectile_hits
-	spawn_projectile.global_position = global_position
-	spawn_projectile.projectile_texture = projectile_texture_resource
-	spawn_projectile.desired_pixel_size = BULLET_PIXEL_SIZE
-	spawn_projectile.size = size
-	apply_effects_on_projectile(spawn_projectile)
-	get_tree().root.call_deferred("add_child",spawn_projectile)
+	var base_direction := global_position.direction_to(get_mouse_target()).normalized()
+	_fire_single_bullet(base_direction)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		for extra_direction in branch_behavior.get_additional_shot_directions(base_direction):
+			_fire_single_bullet(extra_direction.normalized())
+		branch_behavior.on_weapon_shot(base_direction)
 	adjust_attack_speed(1.2)
 
 func _on_over_charge():
@@ -128,3 +127,17 @@ func adjust_attack_speed(rate : float) -> void:
 func _on_as_timer_timeout() -> void:
 	if not is_on_cooldown:
 		adjust_attack_speed(0.5)
+
+func _fire_single_bullet(direction: Vector2) -> void:
+	projectile_direction = direction
+	var spawn_projectile = projectile_template.instantiate()
+	damage = base_damage
+	calculate_damage(damage)
+	spawn_projectile.damage = damage
+	spawn_projectile.hp = projectile_hits
+	spawn_projectile.global_position = global_position
+	spawn_projectile.projectile_texture = projectile_texture_resource
+	spawn_projectile.desired_pixel_size = BULLET_PIXEL_SIZE
+	spawn_projectile.size = size
+	apply_effects_on_projectile(spawn_projectile)
+	get_tree().root.call_deferred("add_child", spawn_projectile)

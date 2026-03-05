@@ -78,15 +78,58 @@ signal reset_cost
 @onready var empty_weapon_pic = preload("res://Textures/test/empty_wp.png")
 @onready var equipped_weapons = null
 @onready var drag_item_icon: TextureRect = $GUI/DragItemRoot/DragItemIcon
+@onready var branch_select_panel_scene = preload("res://UI/scenes/branch_select_panel.tscn")
+var branch_select_panel: BranchSelectPanel
 
 
 func _ready():
 	GlobalVariables.ui = self
+	_init_branch_select_panel()
 	_create_game_over_layout()
 	_connect_viewport_signals()
 	_apply_responsive_layout()
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
+	refresh_border()
+
+func _init_branch_select_panel() -> void:
+	branch_select_panel = branch_select_panel_scene.instantiate() as BranchSelectPanel
+	if branch_select_panel == null:
+		push_warning("Failed to create BranchSelectPanel.")
+		return
+	$GUI.add_child(branch_select_panel)
+	branch_select_panel.visible = false
+	if not branch_select_panel.is_connected("branch_selected", Callable(self, "_on_branch_selected")):
+		branch_select_panel.connect("branch_selected", Callable(self, "_on_branch_selected"))
+
+func request_weapon_branch_selection(weapon: Weapon) -> bool:
+	if weapon == null or not is_instance_valid(weapon):
+		return false
+	if weapon.branch_id != "":
+		return false
+	var branch_options := weapon.get_branch_options()
+	if branch_options.is_empty():
+		return false
+	if branch_select_panel == null or not is_instance_valid(branch_select_panel):
+		return false
+	branch_select_panel.open_for_weapon(weapon, branch_options)
+	return true
+
+func _on_branch_selected(weapon: Weapon, branch_id: String) -> void:
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	if not weapon.set_branch(branch_id):
+		push_warning("Failed to apply branch '%s' for weapon '%s'." % [branch_id, weapon.name])
+	call_deferred("_finalize_branch_selected_weapon", weapon)
+
+func _finalize_branch_selected_weapon(weapon: Weapon) -> void:
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return
+	PlayerData.player.create_weapon(weapon)
+	update_upg()
+	update_gf()
 	refresh_border()
 
 
@@ -202,6 +245,8 @@ func upg_panel_in() -> void:
 
 func upg_panel_out() -> void:
 	upgrade_rootv_2.visible = false
+	if branch_select_panel and is_instance_valid(branch_select_panel):
+		branch_select_panel.close_panel(true)
 	InventoryData.clear_on_select()
 	refresh_border()
 
@@ -213,6 +258,8 @@ func gf_panel_in() -> void:
 
 func gf_panel_out() -> void:
 	InventoryData.ready_to_fuse_list.clear()
+	if branch_select_panel and is_instance_valid(branch_select_panel):
+		branch_select_panel.close_panel(true)
 	gear_fuse_root.visible = false
 
 func inventory_panel_in() -> void:

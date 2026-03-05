@@ -20,6 +20,9 @@ var FINAL_MAX_LEVEL : int = 7
 var max_level : int = FUSE_LEVEL_CAPS[1]
 var _fuse_internal : int = 1
 var fuse_sprites: Dictionary = {}
+var branch_id: String = ""
+var branch_definition: WeaponBranchDefinition
+var branch_behavior: WeaponBranchBehavior
 var fuse : int:
 	get:
 		return _fuse_internal
@@ -85,7 +88,70 @@ func supports_melee_contact() -> bool:
 	return false
 
 func _ready() -> void:
+	_apply_branch_behavior_if_needed()
 	call_deferred("validate_module_compatibility")
+
+func set_branch(new_branch_id: String) -> bool:
+	var normalized_id := str(new_branch_id)
+	if normalized_id == "":
+		return false
+	var scene_path := scene_file_path
+	var branch_def := DataHandler.read_weapon_branch_definition(scene_path, normalized_id)
+	if branch_def == null:
+		return false
+	if fuse < int(branch_def.unlock_fuse):
+		return false
+	branch_id = normalized_id
+	branch_definition = branch_def
+	_apply_branch_behavior_if_needed(true)
+	if has_method("set_level") and level > 0:
+		set_level(level)
+	return true
+
+func get_branch_options() -> Array[WeaponBranchDefinition]:
+	return DataHandler.read_weapon_branch_options(scene_file_path, fuse)
+
+func _apply_branch_behavior_if_needed(force_refresh: bool = false) -> void:
+	if branch_id == "":
+		if force_refresh:
+			_clear_branch_behavior()
+		return
+	if branch_definition == null or force_refresh:
+		branch_definition = DataHandler.read_weapon_branch_definition(scene_file_path, branch_id)
+	if branch_definition == null:
+		if force_refresh:
+			branch_id = ""
+			_clear_branch_behavior()
+		return
+	if branch_definition.behavior_scene == null:
+		if force_refresh:
+			_clear_branch_behavior()
+		return
+	if branch_behavior == null:
+		for child in get_children():
+			var existing := child as WeaponBranchBehavior
+			if existing:
+				branch_behavior = existing
+				branch_behavior.setup(self)
+				break
+	if branch_behavior and is_instance_valid(branch_behavior):
+		if not force_refresh:
+			return
+		_clear_branch_behavior()
+	var behavior_instance := branch_definition.behavior_scene.instantiate() as WeaponBranchBehavior
+	if behavior_instance == null:
+		push_warning("Weapon branch '%s' behavior is not WeaponBranchBehavior on weapon '%s'." % [branch_id, name])
+		return
+	branch_behavior = behavior_instance
+	add_child(branch_behavior)
+	branch_behavior.setup(self)
+	branch_behavior.on_weapon_ready()
+
+func _clear_branch_behavior() -> void:
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_removed()
+		branch_behavior.queue_free()
+	branch_behavior = null
 
 func get_normalized_weapon_traits() -> Array[StringName]:
 	var traits: Array[StringName] = []

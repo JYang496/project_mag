@@ -12,6 +12,7 @@ signal enemy_death()
 var stun_remaining: float = 0.0
 var slow_remaining: float = 0.0
 var slow_multiplier: float = 1.0
+var _is_knockback_overlap_mode: bool = false
 
 func _ready() -> void:
 	hit_box_dot.hitbox_owner = self
@@ -23,6 +24,7 @@ func _process(delta: float) -> void:
 		slow_remaining = maxf(0.0, slow_remaining - delta)
 		if slow_remaining <= 0.0:
 			slow_multiplier = 1.0
+	_update_knockback_overlap_mode()
 
 func death() -> void:
 	var drop = drop_preload.instantiate()
@@ -67,3 +69,22 @@ func is_slowed() -> bool:
 
 func get_current_movement_speed() -> float:
 	return movement_speed * slow_multiplier
+
+func interrupt_movement() -> void:
+	if has_method("_finish_dash"):
+		call_deferred("_finish_dash")
+	if has_method("apply_stun"):
+		apply_stun(0.2)
+
+func _update_knockback_overlap_mode() -> void:
+	var is_being_knocked_back: bool = float(knockback.get("amount", 0.0)) > 0.01
+	if is_being_knocked_back:
+		if not _is_knockback_overlap_mode:
+			# During knockback, disable enemy-vs-enemy body collision to allow overlap.
+			self.set_collision_mask_value(3, false)
+			_is_knockback_overlap_mode = true
+		return
+	if _is_knockback_overlap_mode:
+		# Restore normal enemy collision behavior after knockback ends.
+		self.set_collision_mask_value(3, true)
+		_is_knockback_overlap_mode = false

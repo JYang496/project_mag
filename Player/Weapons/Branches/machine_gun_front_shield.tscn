@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://cc2atf53a3a6p"]
+
+[ext_resource type="Script" uid="uid://cwvt7611e6y3o" path="res://Player/Weapons/Branches/machine_gun_front_shield.gd" id="1_shield_area"]
+[ext_resource type="Texture2D" uid="uid://bmuw2m4jla4ac" path="res://Textures/test/more_hp.png" id="2_j4bmj"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_shield"]
+radius = 34.0
+
+[node name="MachineGunFrontShield" type="Area2D" unique_id=1211044797]
+collision_layer = 2
+collision_mask = 12
+script = ExtResource("1_shield_area")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1506308989]
+shape = SubResource("CircleShape2D_shield")
+
+[node name="ShieldSprite" type="Sprite2D" parent="." unique_id=350913547]
+modulate = Color(0.45, 0.85, 1, 0.55)
+scale = Vector2(0.8, 0.55)
+texture = ExtResource("2_j4bmj")
+
+[connection signal="area_entered" from="." to="." method="_on_area_entered"]
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

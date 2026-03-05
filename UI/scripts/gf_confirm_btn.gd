@@ -24,6 +24,12 @@ func _on_button_up() -> void:
 			PlayerData.player_weapon_list.erase(fuse_item)
 			fuse_item.queue_free()
 	InventoryData.ready_to_fuse_list.clear()
-	PlayerData.player.create_weapon(fused_item)
+	var ui = GlobalVariables.ui
+	if ui and is_instance_valid(ui):
+		var waiting_branch_selection := ui.request_weapon_branch_selection(fused_item)
+		if not waiting_branch_selection:
+			PlayerData.player.create_weapon(fused_item)
+	else:
+		PlayerData.player.create_weapon(fused_item)
 	GlobalVariables.ui.update_gf()
 	GlobalVariables.ui.refresh_border()
