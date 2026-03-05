@@ -34,14 +34,10 @@ var weapon_features = []
 # Projectile scene that needs to be overwritten in child class.
 var projectile_scene
 
-# Over charge
-var casting_oc_skill : bool = false
-
 const SPRITE_TARGET_HEIGHT := 30.0
 const AIM_ROTATION_OFFSET := deg_to_rad(90)
 
 signal shoot()
-signal over_charge()
 signal calculate_weapon_damage(damage)
 signal calculate_weapon_projectile_hits(projectile_hits)
 signal calculate_weapon_speed(speed)
@@ -166,12 +162,8 @@ func set_projectile_size(projectile_size : float) -> void:
 
 func remove_weapon() -> void:
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
-	PlayerData.overcharge_time = 0
 	PlayerData.on_select_weapon = -1
 	queue_free()
-
-func _on_over_charge() -> void:
-	print(self, "over charge")
 
 func _adjust_sprite_height() -> void:
 	if not sprite or not sprite.texture:

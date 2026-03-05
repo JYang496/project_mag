@@ -13,6 +13,12 @@ var max_speed_factor : float = 10.0
 var as_timer: Timer
 
 const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
+const MIN_SPREAD_ANGLE_DEG := 1.0
+const MAX_SPREAD_ANGLE_DEG := 18.0
+
+@export var spread_full_distance: float = 900.0
+@export var close_range_miss_chance: float = 0.05
+@export var long_range_miss_chance: float = 0.85
 
 var weapon_data = {
 	"1": {
@@ -94,31 +100,19 @@ func _on_shoot():
 		cooldown *= branch_behavior.get_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
-	var base_direction := global_position.direction_to(get_mouse_target()).normalized()
-	_fire_single_bullet(base_direction)
+	var target_position: Vector2 = get_mouse_target()
+	var base_direction: Vector2 = global_position.direction_to(target_position).normalized()
+	var shot_distance: float = global_position.distance_to(target_position)
+	var shot_directions: Array[Vector2] = [base_direction]
 	if branch_behavior and is_instance_valid(branch_behavior):
-		for extra_direction in branch_behavior.get_additional_shot_directions(base_direction):
-			_fire_single_bullet(extra_direction.normalized())
+		shot_directions = branch_behavior.get_shot_directions(base_direction)
+	if shot_directions.is_empty():
+		shot_directions = [base_direction]
+	for dir in shot_directions:
+		_fire_single_bullet(_apply_distance_based_spread(dir.normalized(), shot_distance))
+	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_weapon_shot(base_direction)
 	adjust_attack_speed(1.2)
-
-func _on_over_charge():
-	if self.casting_oc_skill:
-		return
-	self.casting_oc_skill = true
-	speed *= 2
-	damage *= 2
-	projectile_hits += 2
-	max_speed_factor *= 2
-	var remove_timer = Timer.new()
-	remove_timer.wait_time = 8.0
-	remove_timer.one_shot = true
-	remove_timer.connect("timeout",Callable(self,"_on_remove_timer_timeout"))
-	self.add_child(remove_timer)
-	remove_timer.start()
-
-func _on_remove_timer_timeout() -> void:
-	remove_weapon()
 
 func adjust_attack_speed(rate : float) -> void:
 	attack_speed = clampf(attack_speed * rate, 1.0, max_speed_factor)
@@ -127,6 +121,19 @@ func adjust_attack_speed(rate : float) -> void:
 func _on_as_timer_timeout() -> void:
 	if not is_on_cooldown:
 		adjust_attack_speed(0.5)
+
+func _apply_distance_based_spread(direction: Vector2, shot_distance: float) -> Vector2:
+	if direction == Vector2.ZERO:
+		return direction
+	var distance_ratio := 0.0
+	if spread_full_distance > 0.0:
+		distance_ratio = clampf(shot_distance / spread_full_distance, 0.0, 1.0)
+	var miss_chance := lerpf(close_range_miss_chance, long_range_miss_chance, distance_ratio)
+	if randf() > miss_chance:
+		return direction
+	var max_spread_radians := deg_to_rad(lerpf(MIN_SPREAD_ANGLE_DEG, MAX_SPREAD_ANGLE_DEG, distance_ratio))
+	var spread_offset := randf_range(-max_spread_radians, max_spread_radians)
+	return direction.rotated(spread_offset).normalized()
 
 func _fire_single_bullet(direction: Vector2) -> void:
 	projectile_direction = direction

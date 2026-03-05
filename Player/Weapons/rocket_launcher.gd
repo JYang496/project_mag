@@ -11,47 +11,53 @@ var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.pn
 
 # Weapon
 var ITEM_NAME = "Rocket Luncher"
+var explosion_scale : float = 2.0
 
 
 var weapon_data = {
 	"1": {
 		"level": "1",
-		"damage": "1",
-		"speed": "600",
+		"damage": "10",
+		"speed": "500",
 		"hp": "1",
-		"reload": "1",
+		"reload": "2.4",
+		"explosion_scale": "2.0",
 		"cost": "1",
 	},
 	"2": {
 		"level": "2",
-		"damage": "1",
-		"speed": "600",
+		"damage": "13",
+		"speed": "560",
 		"hp": "1",
-		"reload": "1",
+		"reload": "2.2",
+		"explosion_scale": "2.1",
 		"cost": "1",
 	},
 	"3": {
 		"level": "3",
-		"damage": "1",
+		"damage": "16",
 		"speed": "600",
 		"hp": "1",
-		"reload": "1",
+		"reload": "2.0",
+		"explosion_scale": "2.2",
 		"cost": "1",
 	},
 	"4": {
 		"level": "4",
-		"damage": "2",
-		"speed": "800",
+		"damage": "20",
+		"speed": "650",
 		"hp": "1",
-		"reload": "0.75",
+		"reload": "1.8",
+		"explosion_scale": "2.35",
 		"cost": "1",
 	},
 	"5": {
 		"level": "5",
-		"damage": "2",
-		"speed": "800",
-		"hp": "1",
-		"reload": "0.75",
+		"damage": "25",
+		"speed": "700",
+		"hp": "2",
+		"reload": "1.6",
+		"explosion_scale": "2.5",
 		"cost": "1",
 	}
 }
@@ -64,8 +70,9 @@ func set_level(lv):
 	base_speed = int(weapon_data[lv]["speed"])
 	base_projectile_hits = int(weapon_data[lv]["hp"])
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
+	explosion_scale = float(weapon_data[lv]["explosion_scale"])
 	sync_stats()
-	projectile_modifiers.set("explosion_effect",{"damage":damage, "explosion_size": size * 2})
+	projectile_modifiers.set("explosion_effect",{"damage":damage, "explosion_size": size * explosion_scale})
 
 func _on_shoot():
 	is_on_cooldown = true
@@ -79,43 +86,6 @@ func _on_shoot():
 	spawn_projectile.size = size
 	if projectile_modifiers.has("explosion_effect"):
 		projectile_modifiers["explosion_effect"]["damage"] = damage
+		projectile_modifiers["explosion_effect"]["explosion_size"] = size * explosion_scale
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
-
-func _on_over_charge():
-	if self.casting_oc_skill:
-		return
-	self.casting_oc_skill = true
-	var n = 0
-	var max_n = 20
-	var spawn_projectile = null
-	while n < max_n:
-		var overlap_areas = oc_booming_area.get_overlapping_areas()
-		if overlap_areas.is_empty():
-			n += 1
-			break
-		var valid_targets: Array[Area2D] = []
-		for area in overlap_areas:
-			if area is HurtBox:
-				valid_targets.append(area)
-		if valid_targets.is_empty():
-			n += 1
-			break
-		for area in valid_targets:
-			if n >= max_n:
-				break
-			spawn_projectile = projectile_template.instantiate()
-			projectile_direction = null
-			spawn_projectile.damage = damage
-			spawn_projectile.projectile_texture = projectile_texture_resource
-			var fall_ins = fall_effect.instantiate()
-			fall_ins.destination = area.global_position
-			if projectile_modifiers.has("explosion_effect"):
-				projectile_modifiers["explosion_effect"]["damage"] = damage
-			apply_effects_on_projectile(spawn_projectile)
-			spawn_projectile.call_deferred("add_child",fall_ins)
-			get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
-			n += 1
-		await get_tree().create_timer(0.2).timeout		
-	remove_weapon()
-	self.casting_oc_skill = false

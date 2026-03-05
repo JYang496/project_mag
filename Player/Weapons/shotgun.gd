@@ -107,35 +107,6 @@ func _on_shoot():
 		apply_effects_on_projectile(spawn_projectile)
 		get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 
-func _on_over_charge():
-	if self.casting_oc_skill:
-		return
-	self.casting_oc_skill = true
-	is_on_cooldown = true
-	for n in 10:
-		bullet_count += 1
-		var main_target_local = get_random_position_in_circle(100.0)
-		var start_direction = main_target_local.normalized()
-		if start_direction == Vector2.ZERO:
-			start_direction = Vector2.UP
-		var start_angle = start_direction.angle()
-		var angle_step = deg_to_rad(arc) / clampi((bullet_count - 1),1,66)
-		var start_offset = -deg_to_rad(arc) / 2
-		
-		for i in bullet_count:
-			var spawn_projectile = projectile_template.instantiate()
-			var current_angle = start_angle + start_offset + (angle_step * i)
-			projectile_direction = Vector2.RIGHT.rotated(current_angle)
-			spawn_projectile.damage = damage * 2
-			spawn_projectile.global_position = global_position
-			spawn_projectile.projectile_texture = projectile_texture_resource
-			spawn_projectile.hp = projectile_hits
-			spawn_projectile.expire_time = 0.3
-			apply_effects_on_projectile(spawn_projectile)
-			get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
-		await get_tree().create_timer(0.3).timeout
-	remove_weapon()
-
 func get_random_position_in_circle(radius: float = 50.0) -> Vector2:
 	var angle = randf_range(0, TAU)  # TAU is 2*PI in Godot
 	var x = cos(angle) * radius

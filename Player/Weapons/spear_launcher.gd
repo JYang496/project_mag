@@ -98,25 +98,3 @@ func apply_return_on_timeout(projectile_node, stop_time : float = 0.5, return_ti
 	return_on_timeour_ins.stop_time = stop_time
 	projectile_node.call_deferred("add_child",return_on_timeour_ins)
 	projectile_node.module_list.append(return_on_timeour_ins)
-
-func _on_over_charge():
-	if self.casting_oc_skill:
-		return
-	self.casting_oc_skill = true
-	is_on_cooldown = true
-	var start_direction = global_position.direction_to(get_mouse_target()).normalized()
-	for i in 144 + (level * 36):
-		var spawn_projectile = projectile_template.instantiate()
-		var current_angle = i * deg_to_rad(5)
-		var projectile_direction = start_direction.rotated(current_angle)
-		spawn_projectile.damage = damage * 2
-		spawn_projectile.hp = projectile_hits * 2
-		spawn_projectile.global_position = global_position
-		spawn_projectile.projectile_texture = projectile_texture_resource
-		apply_return_on_timeout(spawn_projectile)
-		#apply_linear(spawn_projectile, projectile_direction, speed)
-		apply_effects_on_projectile(spawn_projectile)
-		get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
-		await get_tree().create_timer(0.05).timeout
-	
-	remove_weapon()

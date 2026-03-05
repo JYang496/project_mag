@@ -72,21 +72,6 @@ func _on_shoot():
 	is_on_cooldown = true
 	cooldown_timer.start()
 
-func _on_over_charge():
-	if self.casting_oc_skill or PlayerData.cloestest_enemy == null:
-		return
-	self.casting_oc_skill = true
-	is_on_cooldown = true
-	var beam_ins = beam.instantiate()
-	beam_ins.global_position = self.global_position
-	beam_ins.target_position = to_local(PlayerData.cloestest_enemy.global_position)
-	beam_ins.damage = damage
-	beam_ins.oc_mode = true
-	beam_ins.beam_owner = self
-	beam_ins.source_weapon = self
-	self.get_tree().root.call_deferred("add_child",beam_ins)
-	oc_timer.start()
-
 
 func _on_oc_timer_timeout() -> void:
 	remove_weapon()

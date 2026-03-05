@@ -19,5 +19,4 @@ light_mask = 4
 visibility_layer = 4
 shape = SubResource("CircleShape2D_1fjwd")
 
-[connection signal="over_charge" from="." to="." method="_on_over_charge"]
 [connection signal="timeout" from="CooldownTimer" to="." method="_on_cooldown_timer_timeout"]

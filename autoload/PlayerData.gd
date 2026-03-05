@@ -112,34 +112,6 @@ var round_chip_collected := 0
 var testing_keep_hp_above_zero := false
 var is_interacting : bool = false
 
-var overcharge_enable : bool = true:
-	set(value):
-		# Bug fix: to remove weapon properly
-		#on_select_weapon = -1
-		overcharge_enable = value
-var overcharge_max_time : float = 1.5
-var overcharge_time : float = 0:
-	set(value):
-		overcharge_time = value
-		if overcharge_time >= overcharge_max_time:
-			is_overcharged = true
-		else:
-			is_overcharged = false
-var is_overcharging : bool = false :
-	set(value):
-		is_overcharging = value
-		if value == false:
-			overcharge_time = 0
-			is_overcharged = false
-var is_overcharged : bool = false:
-	set(value):
-		if is_overcharged != value:
-			is_overcharged = value
-			var ui = get_tree().get_first_node_in_group("ui")
-			if ui and is_instance_valid(ui):
-				ui.refresh_border()
-
-var casting_oc_skill : bool = false
 var detected_enemies : Array = []
 var cloestest_enemy : Area2D = null
 
@@ -205,12 +177,6 @@ func reset_runtime_state() -> void:
 	round_coin_collected = 0
 	round_chip_collected = 0
 	is_interacting = false
-	overcharge_enable = true
-	overcharge_max_time = 1.5
-	overcharge_time = 0.0
-	is_overcharging = false
-	is_overcharged = false
-	casting_oc_skill = false
 	detected_enemies.clear()
 	cloestest_enemy = null
 	player_weapon_list.clear()

@@ -6,10 +6,7 @@ extends TextureRect
 var display : bool = false
 func _draw():
 	# Get the size of the control
-	if PlayerData.is_overcharged:
-		border_color = Color(1, 1, 0)
-	else:
-		border_color = Color(1, 0, 0)
+	border_color = Color(1, 0, 0)
 	var rect = Rect2(Vector2.ZERO, size)
 	var width : float = 0.0
 	if display and self.texture != null:

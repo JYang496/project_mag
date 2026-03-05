@@ -92,33 +92,6 @@ func _on_shoot():
 	spawn_projectile.projectile_texture = projectile_texture_resource
 	apply_effects_on_projectile(spawn_projectile)
 	get_tree().root.call_deferred("add_child",spawn_projectile)
-
-func _on_over_charge():
-	if self.casting_oc_skill:
-		return
-	self.casting_oc_skill = true
-	print(self,"OVER CHARGE")
-	Engine.time_scale = 0.1
-	PlayerData.player_bonus_speed += PlayerData.player_speed * 2
-	is_on_cooldown = true
-	speed = 2000
-	var unit_of_time = (get_mouse_target() - self.global_position).length() / speed
-	var wait_time = 0.05
-	for i in range(6):
-		var spawn_projectile = projectile_template.instantiate()
-		projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
-		spawn_projectile.damage = damage
-		spawn_projectile.expire_time = 6.6
-		spawn_projectile.hp = 66
-		spawn_projectile.global_position = global_position
-		spawn_projectile.projectile_texture = projectile_texture_resource
-		apply_effects_on_projectile(spawn_projectile)
-		apply_hexagon_attack(spawn_projectile,i,unit_of_time)
-		get_tree().root.call_deferred("add_child",spawn_projectile)
-		await get_tree().create_timer(wait_time).timeout
-	PlayerData.player_bonus_speed -= PlayerData.player_speed * 2
-	Engine.time_scale = 1
-	remove_weapon()
 		
 func apply_hexagon_attack(projectile_node : Node2D, id : int, unit_of_time : float) -> void:
 	var hexagon_attack_ins = hexagon_attack_effect.instantiate()

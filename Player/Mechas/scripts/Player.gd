@@ -71,29 +71,11 @@ func _physics_process(delta):
 	_sync_weapon_orbit_states()
 	movement(delta)
 	_update_camera_zoom_smooth(delta)
-	overcharge(delta)
 	move_and_slide()
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ATTACK") and PlayerData.is_overcharged and PlayerData.overcharge_enable:
-		if PlayerData.player_weapon_list.size() > 0:
-			var select_index := PlayerData.on_select_weapon
-			if select_index < 0 or select_index >= PlayerData.player_weapon_list.size():
-				return
-			var selected_weapon = PlayerData.player_weapon_list[select_index]
-			if is_instance_valid(selected_weapon):
-				selected_weapon.emit_signal("over_charge")
-			PlayerData.overcharge_enable = false
 	if event.is_action_pressed("SKILL"):
 		active_skill.emit()
-	if event.is_action_pressed("OVERCHARGE") and not PlayerData.is_overcharged and PlayerData.overcharge_enable:
-		PlayerData.is_overcharging = true
-	if event.is_action_released("OVERCHARGE"):
-		PlayerData.is_overcharging = false
-
-func overcharge(delta) ->void:
-	if PlayerData.is_overcharging:
-		PlayerData.overcharge_time += delta
 
 func create_weapon(item_id, level := 1):
 	var available_slot = 0

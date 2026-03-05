@@ -1,7 +1,6 @@
 extends Node
 
 
-#func _on_over_charge():
 	#print(self,"OVER CHARGE")
 	#Engine.time_scale = 0.333
 	#PlayerData.player_bonus_speed += PlayerData.player_speed * 2

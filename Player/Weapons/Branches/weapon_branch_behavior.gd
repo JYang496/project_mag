@@ -18,7 +18,10 @@ func on_weapon_shot(_base_direction: Vector2) -> void:
 func on_removed() -> void:
 	pass
 
-func get_additional_shot_directions(_base_direction: Vector2) -> Array[Vector2]:
+func get_shot_directions(_base_direction: Vector2, _shot_count: int = 1) -> Array[Vector2]:
+	return [_base_direction]
+
+func get_additional_shot_directions(_base_direction: Vector2, _shot_count: int = 1) -> Array[Vector2]:
 	return []
 
 func get_cooldown_multiplier() -> float:

@@ -7,6 +7,7 @@ class_name MachineGunTwinBranch
 @export var heat_cool_rate: float = 0.18
 @export var max_heat: float = 1.0
 @export var max_move_slow: float = 0.45
+@export var projectile_count: int = 2
 
 var heat: float = 0.0
 var _move_mul_source_id: StringName
@@ -21,8 +22,29 @@ func _physics_process(delta: float) -> void:
 	heat = move_toward(heat, 0.0, heat_cool_rate * delta)
 	_apply_move_speed_penalty()
 
-func get_additional_shot_directions(base_direction: Vector2) -> Array[Vector2]:
-	return [base_direction.rotated(deg_to_rad(extra_spread_deg))]
+func get_shot_directions(base_direction: Vector2, shot_count: int = -1) -> Array[Vector2]:
+	var dirs: Array[Vector2] = []
+	var count: int = projectile_count if shot_count < 0 else shot_count
+	count = clampi(count, 1, 32)
+	var normalized_base := base_direction.normalized()
+	if count <= 0:
+		count = 1
+	if count == 1:
+		return [normalized_base]
+
+	if count % 2 == 1:
+		dirs.append(normalized_base)
+
+	var half_pairs := count / 2
+	var spread_rad := deg_to_rad(extra_spread_deg)
+	for i in range(half_pairs):
+		var angle := spread_rad * float(i + 1)
+		dirs.append(normalized_base.rotated(-angle))
+		dirs.append(normalized_base.rotated(angle))
+	return dirs
+
+func get_additional_shot_directions(base_direction: Vector2, _shot_count: int = 2) -> Array[Vector2]:
+	return get_shot_directions(base_direction, 2)
 
 func get_cooldown_multiplier() -> float:
 	return cooldown_multiplier

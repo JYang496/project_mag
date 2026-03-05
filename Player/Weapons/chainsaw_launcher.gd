@@ -107,26 +107,6 @@ func _on_shoot():
 	apply_effects_on_projectile(spawn_projectile)
 	get_tree().root.call_deferred("add_child",spawn_projectile)
 
-func _on_over_charge():
-	print(self,"OVER CHARGE")
-	is_on_cooldown = true
-	var spawn_projectile = projectile_template.instantiate()
-	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
-	spawn_projectile.damage = damage
-	spawn_projectile.hp = 7777
-	spawn_projectile.expire_time = 17
-	spawn_projectile.global_position = global_position
-	spawn_projectile.projectile_texture = projectile_texture_resource
-	spawn_projectile.hitbox_type = "dot"
-	spawn_projectile.dot_cd = dot_cd
-	apply_spin(spawn_projectile)
-	projectile_modifiers.set("dmg_up_on_enemy_death",{"dmg_up_per_kill":2})
-	apply_effects_on_projectile(spawn_projectile)
-	get_tree().root.call_deferred("add_child",spawn_projectile)
-	apply_scale_up_by_time(spawn_projectile)
-	apply_chase_closest_enemy(spawn_projectile)
-	remove_weapon()
-
 func apply_spin(projectile_node) -> void:
 	var spin_movement_ins = spin_effect.instantiate()
 	projectile_node.call_deferred("add_child",spin_movement_ins)

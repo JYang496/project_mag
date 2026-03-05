@@ -108,20 +108,6 @@ func _on_shoot():
 	charge_level = 0
 	cooldown_timer.start()
 
-func _on_over_charge():
-	if self.casting_oc_skill:
-		return
-	self.casting_oc_skill = true
-	charge_level = max_charge_level *2
-	duration *= 2
-	emit_signal("shoot")
-	var remove_timer = Timer.new()
-	remove_timer.wait_time = duration
-	remove_timer.one_shot = true
-	remove_timer.connect("timeout",Callable(self,"_on_remove_timer_timeout"))
-	self.add_child(remove_timer)
-	remove_timer.start()
-
 func _on_remove_timer_timeout() -> void:
 	remove_weapon()
 

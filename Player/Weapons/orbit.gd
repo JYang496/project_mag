@@ -109,28 +109,13 @@ func apply_rotate_around_player(projectile_node : Node2D, offset_step : float, n
 	pass
 
 
-func _on_over_charge() -> void:
-	if self.casting_oc_skill:
-		return
-	self.casting_oc_skill = true
-	print(self,"OVER CHARGE")
-	for module in module_list:
-		if module is RotateAroundPlayer:
-			module.oc_mode = true
-	
-	await get_tree().create_timer(1).timeout
-	remove_weapon()
-
 func remove_weapon() -> void:
 	module_list.clear()
-	# Remove by OC
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
-	PlayerData.overcharge_time = 0
 	PlayerData.on_select_weapon = -1
 	queue_free()
 
 func _on_tree_exiting() -> void:
-	if not self.casting_oc_skill:
-		# Remove when not OC, ex: put in inv
-		for s in satellites:
-			s.queue_free()
+	# Remove satellites when weapon node exits.
+	for s in satellites:
+		s.queue_free()
