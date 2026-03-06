@@ -16,7 +16,7 @@ func _exit_tree() -> void:
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if not target or not is_instance_valid(target):
 		return
-	if not target.has_method("apply_stun"):
+	if not target.has_method("apply_status_payload"):
 		return
 
 	var fuse_level := 1
@@ -29,4 +29,6 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 		return
 
 	var stun_seconds: float = maxf(0.0, base_stun_seconds + stun_seconds_per_fuse * float(fuse_bonus_steps))
-	target.apply_stun(stun_seconds)
+	target.apply_status_payload(&"stun", {
+		"duration": stun_seconds
+	})

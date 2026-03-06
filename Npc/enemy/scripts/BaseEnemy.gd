@@ -76,6 +76,20 @@ func interrupt_movement() -> void:
 	if has_method("apply_stun"):
 		apply_stun(0.2)
 
+func apply_status_payload(status_name: StringName, status_data: Variant) -> void:
+	super.apply_status_payload(status_name, status_data)
+	if not (status_data is Dictionary):
+		return
+	var payload := status_data as Dictionary
+	match status_name:
+		&"stun":
+			apply_stun(float(payload.get("duration", 0.0)))
+		&"slow":
+			apply_slow(
+				float(payload.get("multiplier", 1.0)),
+				float(payload.get("duration", 0.0))
+			)
+
 func _update_knockback_overlap_mode() -> void:
 	var is_being_knocked_back: bool = float(knockback.get("amount", 0.0)) > 0.01
 	if is_being_knocked_back:

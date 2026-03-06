@@ -15,7 +15,7 @@ func _exit_tree() -> void:
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if not target or not is_instance_valid(target):
 		return
-	if target.get("status_list") == null:
+	if not target.has_method("apply_status_effect"):
 		return
 
 	var fuse_level: int = 1
@@ -24,13 +24,5 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	var fuse_bonus_steps: int = max(0, fuse_level - 1)
 	var tick: int = max(1, base_tick + tick_per_fuse * fuse_bonus_steps)
 	var damage: int = max(1, base_damage + damage_per_fuse * fuse_bonus_steps)
-
-	var erosion_obj: Dictionary = {"tick": tick, "damage": damage}
-	var status_list: Dictionary = target.status_list
-	if status_list.has("erosion"):
-		var existing: Dictionary = status_list["erosion"]
-		existing["tick"] = max(int(existing.get("tick", 0)), tick)
-		existing["damage"] = max(int(existing.get("damage", 0)), damage)
-		status_list["erosion"] = existing
-	else:
-		status_list["erosion"] = erosion_obj
+	var effect := ErosionStatusEffect.new().setup_effect(tick, damage)
+	target.apply_status_effect(effect)

@@ -17,7 +17,7 @@ func _exit_tree() -> void:
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if not target or not is_instance_valid(target):
 		return
-	if not target.has_method("apply_slow"):
+	if not target.has_method("apply_status_payload"):
 		return
 
 	var fuse_level: int = 1
@@ -28,4 +28,7 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if randf() > final_chance:
 		return
 	var final_duration: float = maxf(0.0, duration_seconds + duration_per_fuse * float(fuse_bonus_steps))
-	target.apply_slow(slow_multiplier, final_duration)
+	target.apply_status_payload(&"slow", {
+		"multiplier": slow_multiplier,
+		"duration": final_duration
+	})

@@ -141,11 +141,14 @@ func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
 
 
 func _apply_status_to_target(target: Node) -> void:
-	var target_status_list: Variant = target.get("status_list")
-	if target_status_list == null or not (target_status_list is Dictionary):
+	if target == null or not is_instance_valid(target):
+		return
+	if not target.has_method("apply_status_payload"):
 		return
 	for status_key in status_on_apply.keys():
-		target_status_list[status_key] = status_on_apply[status_key]
+		var status_name := StringName(str(status_key))
+		var payload: Variant = status_on_apply[status_key]
+		target.apply_status_payload(status_name, payload)
 
 
 func _can_affect_hurt_box(hurt_box: HurtBox) -> bool:

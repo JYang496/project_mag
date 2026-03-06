@@ -17,7 +17,7 @@ var knockback = {
 }
 
 @onready var status_timer: Timer = $StatusTimer
-var status_list :Dictionary = {}
+var status_effects: Array[StatusEffect] = []
 var overlapping : bool = false
 var is_dead: bool = false
 
@@ -53,14 +53,34 @@ func death():
 		queue_free()
 
 func _on_status_timer_timeout() -> void:
-	if status_list.is_empty():
+	if status_effects.is_empty():
 		status_timer.stop()
 		return
-	for status in status_list.keys():
-		if status == "erosion":
-			var damage = Attack.new()
-			damage.damage = status_list[status].get("damage")
-			self.damaged(damage)
-		status_list[status]["tick"] -= 1
-		if status_list[status]["tick"] <= 0:
-			status_list.erase(status)
+	for i in range(status_effects.size() - 1, -1, -1):
+		var effect := status_effects[i]
+		if effect == null:
+			status_effects.remove_at(i)
+			continue
+		effect.apply_tick(self)
+		if effect.step():
+			status_effects.remove_at(i)
+
+
+func apply_status_effect(effect: StatusEffect) -> void:
+	if effect == null:
+		return
+	for existing in status_effects:
+		if existing.effect_id == effect.effect_id:
+			existing.merge_from(effect)
+			if status_timer.is_stopped():
+				status_timer.start()
+			return
+	status_effects.append(effect)
+	if status_timer.is_stopped():
+		status_timer.start()
+
+
+func apply_status_payload(status_name: StringName, status_data: Variant) -> void:
+	match status_name:
+		&"erosion":
+			apply_status_effect(ErosionStatusEffect.from_payload(status_data))
