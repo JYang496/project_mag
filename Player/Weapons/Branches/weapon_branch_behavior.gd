@@ -26,3 +26,6 @@ func get_additional_shot_directions(_base_direction: Vector2, _shot_count: int =
 
 func get_cooldown_multiplier() -> float:
 	return 1.0
+
+func get_projectile_damage_multiplier() -> float:
+	return 1.0

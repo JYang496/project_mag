@@ -60,6 +60,8 @@ enum TargetGroup {
 @export var debug_line_width: float = 2.0
 @export var apply_once_per_target: bool = true
 @export var one_shot_damage: int = 0
+@export var tick_damage: int = 0
+@export var tick_interval: float = 0.4
 @export var status_on_apply: Dictionary = {}
 @export var knock_back := {
 	"amount": 0.0,
@@ -74,6 +76,7 @@ enum TargetGroup {
 
 var source_node: Node
 var _affected_target_ids: Dictionary = {}
+var _tick_elapsed: float = 0.0
 
 signal target_affected(target: Node)
 
@@ -89,6 +92,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if visual_root and is_instance_valid(visual_root) and not is_zero_approx(visual_rotation_speed_deg):
 		visual_root.rotation += deg_to_rad(visual_rotation_speed_deg) * delta
+	_apply_periodic_damage(delta)
 	if _is_debug_draw_enabled():
 		queue_redraw()
 
@@ -138,6 +142,40 @@ func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
 	if not status_on_apply.is_empty():
 		_apply_status_to_target(target)
 	apply_custom_effects(target)
+
+
+# Applies periodic area damage for persistent zones like napalm.
+func _apply_periodic_damage(delta: float) -> void:
+	if tick_damage <= 0:
+		return
+	if tick_interval <= 0.0:
+		return
+	_tick_elapsed += delta
+	while _tick_elapsed >= tick_interval:
+		_tick_elapsed -= tick_interval
+		_apply_tick_to_current_overlaps()
+
+
+func _apply_tick_to_current_overlaps() -> void:
+	for area in get_overlapping_areas():
+		if not area is HurtBox:
+			continue
+		var hurt_box := area as HurtBox
+		var target := hurt_box.get_owner()
+		if target == null or not is_instance_valid(target):
+			continue
+		if not _can_affect_hurt_box(hurt_box):
+			continue
+		if not target.has_method("damaged"):
+			continue
+		var attack := Attack.new()
+		attack.damage = tick_damage
+		attack.knock_back = knock_back
+		var owner_player: Player = _resolve_owner_player(source_node)
+		if owner_player and is_instance_valid(owner_player):
+			attack.damage = owner_player.compute_outgoing_damage(attack.damage)
+		target.damaged(attack)
+		target_affected.emit(target)
 
 
 func _apply_status_to_target(target: Node) -> void:
@@ -295,8 +333,15 @@ static func toggle_debug_mode() -> bool:
 	return debug_mode_enabled
 
 
-func _resolve_owner_player(node: Node) -> Player:
-	if node == null or not is_instance_valid(node):
+func _resolve_owner_player(node_ref: Variant) -> Player:
+	if node_ref == null:
+		return null
+	if not is_instance_valid(node_ref):
+		return null
+	if not (node_ref is Node):
+		return null
+	var node := node_ref as Node
+	if node == null:
 		return null
 	var current: Node = node
 	while current:
@@ -304,7 +349,7 @@ func _resolve_owner_player(node: Node) -> Player:
 			return current as Player
 		current = current.get_parent()
 	var source_weapon_value: Variant = node.get("source_weapon")
-	if source_weapon_value != null and source_weapon_value is Node:
+	if source_weapon_value != null and is_instance_valid(source_weapon_value) and source_weapon_value is Node:
 		var source_weapon: Node = source_weapon_value
 		current = source_weapon
 		while current:

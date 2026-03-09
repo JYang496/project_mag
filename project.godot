@@ -28,6 +28,7 @@ PhaseManager="*res://autoload/PhaseManager.gd"
 SpawnData="*res://autoload/SpawnData.gd"
 InventoryData="*res://autoload/InventoryData.gd"
 DisplaySettings="*res://Utility/display_settings.gd"
+ObjectPool="*res://autoload/ObjectPool.gd"
 
 [display]
 

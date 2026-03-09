@@ -95,7 +95,9 @@ func _on_shoot():
 	var start_offset = -deg_to_rad(arc) / 2
 	
 	for i in bullet_count:
-		var spawn_projectile = projectile_template.instantiate()
+		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
+		if spawn_projectile == null:
+			continue
 		var current_angle = start_angle + start_offset + (angle_step * i)
 		projectile_direction = Vector2.RIGHT.rotated(current_angle)
 		spawn_projectile.damage = damage

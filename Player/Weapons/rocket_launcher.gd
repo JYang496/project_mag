@@ -72,20 +72,52 @@ func set_level(lv):
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	explosion_scale = float(weapon_data[lv]["explosion_scale"])
 	sync_stats()
-	projectile_modifiers.set("explosion_effect",{"damage":damage, "explosion_size": size * explosion_scale})
+	_sync_explosion_effect_config()
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_level_applied(level)
 
 func _on_shoot():
 	is_on_cooldown = true
+	var cooldown := attack_cooldown
+	if branch_behavior and is_instance_valid(branch_behavior):
+		cooldown *= branch_behavior.get_cooldown_multiplier()
+	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
-	var spawn_projectile = projectile_template.instantiate()
-	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
-	spawn_projectile.damage = damage
+	var base_direction := global_position.direction_to(get_mouse_target()).normalized()
+	var shot_directions: Array[Vector2] = [base_direction]
+	if branch_behavior and is_instance_valid(branch_behavior):
+		shot_directions = branch_behavior.get_shot_directions(base_direction)
+	if shot_directions.is_empty():
+		shot_directions = [base_direction]
+	var damage_multiplier := 1.0
+	if branch_behavior and is_instance_valid(branch_behavior):
+		damage_multiplier = branch_behavior.get_projectile_damage_multiplier()
+	for dir in shot_directions:
+		_fire_single_rocket(dir.normalized(), damage_multiplier)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_weapon_shot(base_direction)
+
+func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> void:
+	var spawn_projectile = spawn_projectile_from_scene(projectile_template)
+	if spawn_projectile == null:
+		return
+	projectile_direction = direction
+	var projectile_damage: int = maxi(1, int(round(float(damage) * maxf(damage_multiplier, 0.05))))
+	spawn_projectile.damage = projectile_damage
 	spawn_projectile.hp = projectile_hits
 	spawn_projectile.global_position = global_position
 	spawn_projectile.projectile_texture = projectile_texture_resource
 	spawn_projectile.size = size
-	if projectile_modifiers.has("explosion_effect"):
-		projectile_modifiers["explosion_effect"]["damage"] = damage
-		projectile_modifiers["explosion_effect"]["explosion_size"] = size * explosion_scale
+	_sync_explosion_effect_config(projectile_damage)
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
+
+# Keeps the typed explosion config synced with current weapon runtime stats.
+func _sync_explosion_effect_config(projectile_damage: int = damage) -> void:
+	var config := ensure_effect_config(&"explosion_effect")
+	if config is ExplosionEffectConfig:
+		var explosion_config := config as ExplosionEffectConfig
+		explosion_config.damage = projectile_damage
+		explosion_config.explosion_size = size * explosion_scale
+		if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("modify_explosion_config"):
+			branch_behavior.call("modify_explosion_config", explosion_config)

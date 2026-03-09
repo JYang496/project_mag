@@ -137,7 +137,9 @@ func _apply_distance_based_spread(direction: Vector2, shot_distance: float) -> V
 
 func _fire_single_bullet(direction: Vector2) -> void:
 	projectile_direction = direction
-	var spawn_projectile = projectile_template.instantiate()
+	var spawn_projectile = spawn_projectile_from_scene(projectile_template)
+	if spawn_projectile == null:
+		return
 	damage = base_damage
 	calculate_damage(damage)
 	spawn_projectile.damage = damage

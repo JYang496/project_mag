@@ -6,6 +6,8 @@ class_name ExplosionEffect
 @export var explosion_size = 2.0
 @export var base_radius: float = 24.0
 @export var duration: float = 0.1
+@export var area_tick_damage: int = 0
+@export var area_tick_interval: float = 0.4
 @export var visual_enabled: bool = true
 @export var use_animated_visual: bool = false
 @export var visual_texture: Texture2D = preload("res://Textures/test/bullet.png")
@@ -24,6 +26,8 @@ func projectile_effect_ready() -> void:
 func _on_parent_exiting() -> void:
 	var area_effect := area_effect_scene.instantiate() as AreaEffect
 	area_effect.one_shot_damage = damage
+	area_effect.tick_damage = area_tick_damage
+	area_effect.tick_interval = area_tick_interval
 	area_effect.radius = maxf(base_radius * explosion_size, 1.0)
 	area_effect.duration = duration
 	area_effect.target_group = AreaEffect.TargetGroup.ENEMIES

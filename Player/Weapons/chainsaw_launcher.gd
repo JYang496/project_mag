@@ -88,13 +88,15 @@ func set_level(lv):
 	dot_cd = float(weapon_data[lv]["dot_cd"])
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	sync_stats()
-	projectile_modifiers.set("speed_change_on_hit",{"speed_rate":0.3})
+	_sync_speed_change_effect_config()
 
 
 func _on_shoot():
 	is_on_cooldown = true
 	cooldown_timer.start()
-	var spawn_projectile = projectile_template.instantiate()
+	var spawn_projectile = spawn_projectile_from_scene(projectile_template)
+	if spawn_projectile == null:
+		return
 	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
 	spawn_projectile.damage = damage
 	spawn_projectile.hp = projectile_hits
@@ -127,3 +129,10 @@ func apply_chase_closest_enemy(projectile_node) -> void:
 
 func _on_chainsaw_luncher_timer_timeout() -> void:
 	is_on_cooldown = false
+
+# Ensures the typed speed-change effect config exists and stays synced.
+func _sync_speed_change_effect_config() -> void:
+	var config := ensure_effect_config(&"speed_change_on_hit")
+	if config is SpeedChangeOnHitEffectConfig:
+		var speed_config := config as SpeedChangeOnHitEffectConfig
+		speed_config.speed_rate = 0.3

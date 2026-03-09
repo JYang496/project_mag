@@ -83,7 +83,9 @@ func set_level(lv):
 func _on_shoot():
 	is_on_cooldown = true
 	cooldown_timer.start()
-	var spawn_projectile = projectile_template.instantiate()
+	var spawn_projectile = spawn_projectile_from_scene(projectile_template)
+	if spawn_projectile == null:
+		return
 	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
 	spawn_projectile.damage = damage
 	spawn_projectile.hp = projectile_hits

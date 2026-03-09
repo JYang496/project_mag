@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://asset/images/weapons/cannon3.png" id="1_icon"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/rocket_launcher.tscn" id="2_weapon_scene"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Branches/rocket_salvo_branch.tscn" id="3_behavior"]
+[ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
+
+[resource]
+script = ExtResource("4_script")
+branch_id = "salvo_rocket"
+display_name = "Salvo Rocket"
+description = "Fires a spread of rockets per trigger pull with reduced per-rocket damage."
+icon = ExtResource("1_icon")
+unlock_fuse = 2
+weapon_scene = ExtResource("2_weapon_scene")
+behavior_scene = ExtResource("3_behavior")
