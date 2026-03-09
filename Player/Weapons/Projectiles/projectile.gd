@@ -3,6 +3,7 @@ class_name Projectile
 
 var hp : int = 1
 var damage = 1
+var damage_type: StringName = Attack.TYPE_PHYSICAL
 var knock_back = {
 	"amount": 0,
 	"angle": Vector2.ZERO
@@ -195,3 +196,4 @@ func _get_object_pool() -> Node:
 	if root == null:
 		return null
 	return root.get_node_or_null("ObjectPool")
+

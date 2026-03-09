@@ -9,6 +9,7 @@ class_name BaseNPC
 @export var movement_speed = 20.0
 @export var hp = 10
 @export var knockback_recover = 3.5
+@export var hit_label_merge_window_sec: float = 0.03
 var damage_taken_multiplier: float = 1.0
 
 var knockback = {
@@ -20,19 +21,20 @@ var knockback = {
 var status_effects: Array[StatusEffect] = []
 var overlapping : bool = false
 var is_dead: bool = false
+var _pending_hit_label_damage: int = 0
+var _hit_label_batch_id: int = 0
+var _pending_hit_label_damage_by_type: Dictionary = {}
 
 
 func damaged(attack:Attack):
-	
-	# Hit label
-	var hit_label_ins = hit_label.instantiate()
-	hit_label_ins.global_position = global_position
 	var effective_damage := attack.damage
 	if effective_damage > 0:
 		effective_damage = int(round(effective_damage * damage_taken_multiplier))
 		effective_damage = max(1, effective_damage)
-	hit_label_ins.setNumber(effective_damage)
-	get_tree().root.call_deferred("add_child",hit_label_ins)
+	_queue_hit_label_damage(
+		effective_damage,
+		Attack.normalize_damage_type(attack.damage_type)
+	)
 	
 	# Status
 	if status_timer.is_stopped():
@@ -47,7 +49,72 @@ func damaged(attack:Attack):
 	hp -= effective_damage
 	if hp <= 0 and not is_dead:
 		is_dead = true
+		_flush_pending_hit_label()
 		death()	
+
+
+func _queue_hit_label_damage(damage_value: int, damage_type: StringName) -> void:
+	if damage_value <= 0:
+		return
+	var normalized_type := Attack.normalize_damage_type(damage_type)
+	_pending_hit_label_damage += damage_value
+	var current_type_damage: int = int(_pending_hit_label_damage_by_type.get(normalized_type, 0))
+	_pending_hit_label_damage_by_type[normalized_type] = current_type_damage + damage_value
+	_hit_label_batch_id += 1
+	var queued_batch_id := _hit_label_batch_id
+	_schedule_hit_label_flush(queued_batch_id)
+
+
+func _schedule_hit_label_flush(batch_id: int) -> void:
+	_flush_hit_label_after_delay(batch_id)
+
+
+func _flush_hit_label_after_delay(batch_id: int) -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	await tree.create_timer(maxf(hit_label_merge_window_sec, 0.0)).timeout
+	if not is_inside_tree():
+		return
+	if batch_id != _hit_label_batch_id:
+		return
+	_flush_pending_hit_label()
+
+
+func _flush_pending_hit_label() -> void:
+	if _pending_hit_label_damage <= 0:
+		return
+	var combined_damage := _pending_hit_label_damage
+	var label_color := _resolve_hit_label_color()
+	_pending_hit_label_damage = 0
+	var hit_label_ins = hit_label.instantiate()
+	hit_label_ins.global_position = global_position
+	hit_label_ins.setNumber(combined_damage)
+	hit_label_ins.setColor(label_color)
+	get_tree().root.call_deferred("add_child", hit_label_ins)
+	_pending_hit_label_damage_by_type.clear()
+
+func _resolve_hit_label_color() -> Color:
+	if _pending_hit_label_damage <= 0:
+		return Color.WHITE
+	var dominant_type: StringName = Attack.TYPE_PHYSICAL
+	var dominant_damage: int = 0
+	for type_key in _pending_hit_label_damage_by_type.keys():
+		var type_damage := int(_pending_hit_label_damage_by_type[type_key])
+		if type_damage > dominant_damage:
+			dominant_damage = type_damage
+			dominant_type = Attack.normalize_damage_type(type_key)
+	if float(dominant_damage) <= float(_pending_hit_label_damage) * 0.5:
+		return Color(0.65, 0.65, 0.65, 1.0) # Gray (chaos)
+	match dominant_type:
+		Attack.TYPE_ENERGY:
+			return Color(0.72, 0.45, 1.0, 1.0) # Purple
+		Attack.TYPE_FIRE:
+			return Color(1.0, 0.3, 0.25, 1.0) # Red
+		Attack.TYPE_FREEZE:
+			return Color(0.35, 0.95, 1.0, 1.0) # Cyan
+		_:
+			return Color.WHITE
 
 func death():
 		queue_free()
@@ -84,3 +151,4 @@ func apply_status_payload(status_name: StringName, status_data: Variant) -> void
 	match status_name:
 		&"erosion":
 			apply_status_effect(ErosionStatusEffect.from_payload(status_data))
+

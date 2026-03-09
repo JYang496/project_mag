@@ -19,6 +19,9 @@ func apply_attack(area) -> void:
 	var target = area.get_owner()
 	attack = Attack.new()
 	attack.damage = int(hitbox_owner.damage)
+	attack.damage_type = Attack.TYPE_PHYSICAL
+	if "damage_type" in hitbox_owner:
+		attack.damage_type = Attack.normalize_damage_type(hitbox_owner.damage_type)
 	var owner_player: Player = _resolve_owner_player(hitbox_owner)
 	if owner_player and is_instance_valid(owner_player):
 		attack.damage = owner_player.compute_outgoing_damage(attack.damage)
@@ -59,3 +62,4 @@ func _resolve_owner_player(node: Node) -> Player:
 					return current as Player
 				current = current.get_parent()
 	return null
+

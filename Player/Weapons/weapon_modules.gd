@@ -16,7 +16,7 @@ class_name WeaponModules
 	"summon",
 	"physical",
 	"energy",
-	"explosive",
+	"area_of_effect",
 	"fire",
 	"freeze"
 ) var weapon_traits: int = 0

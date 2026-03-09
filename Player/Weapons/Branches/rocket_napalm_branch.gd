@@ -27,3 +27,5 @@ func modify_explosion_config(config: ExplosionEffectConfig) -> void:
 	config.duration = maxf(napalm_duration, 0.1)
 	config.area_tick_interval = maxf(napalm_tick_interval, 0.05)
 	config.area_tick_damage = max(1, int(round(float(weapon_damage) * napalm_tick_damage_ratio)))
+	config.damage_type = Attack.TYPE_FIRE
+

@@ -23,7 +23,7 @@ var weapon: Weapon
 	"summon",
 	"physical",
 	"energy",
-	"explosive",
+	"area_of_effect",
 	"fire",
 	"freeze"
 ) var required_weapon_traits: int = 0

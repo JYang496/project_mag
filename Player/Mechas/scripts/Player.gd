@@ -230,6 +230,7 @@ func apply_bonus_hit_if_needed(target: Node) -> void:
 		if randf() <= chance:
 			var bonus_attack := Attack.new()
 			bonus_attack.damage = max(1, bonus_damage)
+			bonus_attack.damage_type = Attack.TYPE_PHYSICAL
 			target.damaged(bonus_attack)
 
 func apply_loot_bonus(value: int, loot_type: StringName) -> int:
@@ -548,3 +549,4 @@ func _on_hurt_cd_timeout() -> void:
 
 func _on_collision_cd_timeout() -> void:
 	pass
+

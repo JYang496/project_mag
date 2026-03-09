@@ -43,6 +43,7 @@ func _physics_process(delta: float) -> void:
 			if owner_player and is_instance_valid(owner_player):
 				outgoing_damage = owner_player.compute_outgoing_damage(outgoing_damage)
 			attack.damage = outgoing_damage
+			attack.damage_type = Attack.TYPE_ENERGY
 			target.damaged(attack)
 			if owner_player and is_instance_valid(owner_player):
 				owner_player.apply_bonus_hit_if_needed(target)

@@ -11,10 +11,16 @@ func acquire(scene: PackedScene) -> Node:
 	var key := _scene_key(scene)
 	var cached: Array = _available.get(key, [])
 	var node: Node = null
-	if not cached.is_empty():
-		node = cached.pop_back() as Node
-		_available[key] = cached
-	else:
+	while not cached.is_empty() and node == null:
+		var candidate: Variant = cached.pop_back()
+		if candidate == null:
+			continue
+		if not is_instance_valid(candidate):
+			continue
+		if candidate is Node:
+			node = candidate as Node
+	_available[key] = cached
+	if node == null:
 		node = scene.instantiate()
 	if node == null:
 		return null
@@ -42,11 +48,15 @@ func release(node: Node) -> void:
 	if node is CanvasItem:
 		(node as CanvasItem).visible = false
 	var cached: Array = _available.get(key, [])
+	for i in range(cached.size() - 1, -1, -1):
+		var cached_node: Variant = cached[i]
+		if cached_node == null or not is_instance_valid(cached_node):
+			cached.remove_at(i)
 	cached.append(node)
 	if cached.size() > max_cached_per_scene:
-		var old_node: Node = cached.pop_front()
-		if old_node and is_instance_valid(old_node):
-			old_node.queue_free()
+		var old_candidate: Variant = cached.pop_front()
+		if old_candidate != null and is_instance_valid(old_candidate) and old_candidate is Node:
+			(old_candidate as Node).queue_free()
 	_available[key] = cached
 	_in_use.erase(instance_id)
 

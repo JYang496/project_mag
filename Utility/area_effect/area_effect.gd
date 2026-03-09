@@ -62,6 +62,7 @@ enum TargetGroup {
 @export var one_shot_damage: int = 0
 @export var tick_damage: int = 0
 @export var tick_interval: float = 0.4
+@export var damage_type: StringName = Attack.TYPE_PHYSICAL
 @export var status_on_apply: Dictionary = {}
 @export var knock_back := {
 	"amount": 0.0,
@@ -130,6 +131,7 @@ func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
 	if one_shot_damage > 0 and target.has_method("damaged"):
 		var attack := Attack.new()
 		attack.damage = one_shot_damage
+		attack.damage_type = Attack.normalize_damage_type(damage_type)
 		attack.knock_back = knock_back
 		var owner_player: Player = _resolve_owner_player(source_node)
 		if owner_player and is_instance_valid(owner_player):
@@ -170,6 +172,7 @@ func _apply_tick_to_current_overlaps() -> void:
 			continue
 		var attack := Attack.new()
 		attack.damage = tick_damage
+		attack.damage_type = Attack.normalize_damage_type(damage_type)
 		attack.knock_back = knock_back
 		var owner_player: Player = _resolve_owner_player(source_node)
 		if owner_player and is_instance_valid(owner_player):
@@ -361,3 +364,4 @@ func _resolve_owner_player(node_ref: Variant) -> Player:
 
 func apply_custom_effects(_target: Node) -> void:
 	pass
+

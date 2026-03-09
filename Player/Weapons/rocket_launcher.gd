@@ -104,6 +104,7 @@ func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> 
 	projectile_direction = direction
 	var projectile_damage: int = maxi(1, int(round(float(damage) * maxf(damage_multiplier, 0.05))))
 	spawn_projectile.damage = projectile_damage
+	spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
 	spawn_projectile.hp = projectile_hits
 	spawn_projectile.global_position = global_position
 	spawn_projectile.projectile_texture = projectile_texture_resource
@@ -118,6 +119,7 @@ func _sync_explosion_effect_config(projectile_damage: int = damage) -> void:
 	if config is ExplosionEffectConfig:
 		var explosion_config := config as ExplosionEffectConfig
 		explosion_config.damage = projectile_damage
+		explosion_config.damage_type = Attack.TYPE_FIRE
 		explosion_config.explosion_size = size * explosion_scale
 		if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("modify_explosion_config"):
 			branch_behavior.call("modify_explosion_config", explosion_config)

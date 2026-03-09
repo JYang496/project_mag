@@ -62,6 +62,7 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 		if chained_target and chained_target.has_method("damaged"):
 			var atk := Attack.new()
 			atk.damage = chain_damage
+			atk.damage_type = Attack.TYPE_ENERGY
 			_draw_chain_line(target2d.global_position, (chained_target as Node2D).global_position)
 			chained_target.damaged(atk)
 			if owner_player and is_instance_valid(owner_player):
@@ -97,3 +98,4 @@ func _resolve_owner_player(source_weapon: Weapon) -> Player:
 			return current as Player
 		current = current.get_parent()
 	return null
+

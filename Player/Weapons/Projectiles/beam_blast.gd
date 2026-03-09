@@ -5,6 +5,7 @@ extends Node2D
 @onready var line2d : Line2D = $Line2D
 @onready var expire_timer : Timer = $ExpireTimer
 var damage = 1
+var damage_type: StringName = Attack.TYPE_ENERGY
 var source_weapon: Weapon
 var target_position = Vector2(100,100)
 var width := 8

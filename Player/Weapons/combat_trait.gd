@@ -15,7 +15,7 @@ const PROJECTILE := &"projectile"
 const SUMMON := &"summon"
 const PHYSICAL := &"physical"
 const ENERGY := &"energy"
-const EXPLOSIVE := &"explosive"
+const AREA_OF_EFFECT := &"area_of_effect"
 const FIRE := &"fire"
 const FREEZE := &"freeze"
 
@@ -34,32 +34,12 @@ const ALL: Array[StringName] = [
 	SUMMON,
 	PHYSICAL,
 	ENERGY,
-	EXPLOSIVE,
+	AREA_OF_EFFECT,
 	FIRE,
 	FREEZE,
 ]
 
 const FLAG_ORDER: Array[StringName] = ALL
-
-const ALIASES: Dictionary = {
-	"位移": MOVEMENT,
-	"减益": DEBUFF,
-	"增益": BUFF,
-	"持续伤害": DOT,
-	"持续时间": DURATION,
-	"范围": RANGE,
-	"近战": MELEE,
-	"叠层": STACKING,
-	"触发": TRIGGER,
-	"蓄力": CHARGE,
-	"投射物": PROJECTILE,
-	"召唤物": SUMMON,
-	"物理": PHYSICAL,
-	"能量": ENERGY,
-	"爆炸": EXPLOSIVE,
-	"火焰": FIRE,
-	"冻结": FREEZE,
-}
 
 static func normalize(value: Variant) -> StringName:
 	if value == null:
@@ -67,8 +47,6 @@ static func normalize(value: Variant) -> StringName:
 	var key := str(value).strip_edges().to_lower()
 	if key == "":
 		return StringName()
-	if ALIASES.has(key):
-		return ALIASES[key]
 	return StringName(key)
 
 static func normalize_array(values: Variant) -> Array[StringName]:
