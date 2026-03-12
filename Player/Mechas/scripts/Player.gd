@@ -549,4 +549,3 @@ func _on_hurt_cd_timeout() -> void:
 
 func _on_collision_cd_timeout() -> void:
 	pass
-

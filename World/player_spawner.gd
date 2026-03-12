@@ -1,5 +1,7 @@
 extends Node2D
 
+const START_BATTLE_BUTTON_SCRIPT = preload("res://World/start_battle_button.gd")
+
 var start_up_status = {
 	"player_speed":100.0,
 	"player_max_hp":5,
@@ -17,6 +19,7 @@ var _cell_area : Area2D
 var _player_inside_cell : bool = false
 var _current_cell: Cell
 var _highlight_active := false
+var _start_battle_button: StartBattleButton
 
 func _ready() -> void:
 	PlayerData.player_weapon_list.clear()
@@ -35,6 +38,7 @@ func _ready() -> void:
 	call_deferred("_add_player_to_root", ins)
 	_setup_cell_monitor()
 	_connect_phase_signals()
+	_refresh_start_battle_button(PhaseManager.current_state())
 	
 func set_start_up_status():
 	var lvl_index = int(GlobalVariables.autosave_data["current_level"]) - 1
@@ -88,18 +92,10 @@ func _on_cell_area_body_exited(body: Node2D) -> void:
 		_player_inside_cell = false
 		_refresh_cell_highlight()
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not (event is InputEventKey):
-		return
-	var key_event := event as InputEventKey
-	if key_event.echo or not key_event.pressed:
-		return
-	if key_event.keycode == KEY_SPACE:
-		_start_battle_stage()
-
 func _start_battle_stage() -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
+	_remove_start_battle_button()
 	if GlobalVariables.enemy_spawner:
 		GlobalVariables.enemy_spawner.start_timer()
 	PhaseManager.enter_battle()
@@ -124,6 +120,7 @@ func _add_player_to_root(player_instance: Node) -> void:
 
 func _on_phase_changed(new_phase: String) -> void:
 	_refresh_cell_highlight(new_phase)
+	_refresh_start_battle_button(new_phase)
 
 func _refresh_cell_highlight(forced_state: String = "") -> void:
 	if not _current_cell:
@@ -138,3 +135,76 @@ func _refresh_cell_highlight(forced_state: String = "") -> void:
 		if not _highlight_active:
 			return
 		_highlight_active = false
+
+func _refresh_start_battle_button(forced_state: String = "") -> void:
+	var state := forced_state if forced_state != "" else PhaseManager.current_state()
+	if state == PhaseManager.PREPARE:
+		_spawn_start_battle_button()
+		return
+	_remove_start_battle_button()
+
+func _spawn_start_battle_button() -> void:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return
+	var target_cell := _find_player_current_cell(PlayerData.player.global_position)
+	if target_cell == null:
+		target_cell = _current_cell
+	if target_cell == null:
+		return
+	var target_position := _get_cell_center_global(target_cell)
+	if _start_battle_button and is_instance_valid(_start_battle_button):
+		_start_battle_button.global_position = target_position
+		return
+	_start_battle_button = START_BATTLE_BUTTON_SCRIPT.new() as StartBattleButton
+	if _start_battle_button == null:
+		return
+	var scene_root := get_tree().current_scene
+	if scene_root == null:
+		scene_root = self
+	if not _start_battle_button.is_connected("activated", Callable(self, "_on_start_battle_button_activated")):
+		_start_battle_button.connect("activated", Callable(self, "_on_start_battle_button_activated"))
+	scene_root.call_deferred("add_child", _start_battle_button)
+	_start_battle_button.set_deferred("global_position", target_position)
+
+func _remove_start_battle_button() -> void:
+	if _start_battle_button and is_instance_valid(_start_battle_button):
+		_start_battle_button.queue_free()
+	_start_battle_button = null
+
+func _on_start_battle_button_activated() -> void:
+	_start_battle_stage()
+
+func _find_player_current_cell(player_position: Vector2) -> Cell:
+	var board := get_parent()
+	if board == null:
+		return null
+	for child in board.get_children():
+		var cell := child as Cell
+		if cell == null:
+			continue
+		if _cell_contains_point(cell, player_position):
+			return cell
+	return null
+
+func _cell_contains_point(cell: Cell, point: Vector2) -> bool:
+	var capture_polygon: CollisionPolygon2D = cell.get_node_or_null("Area2D/CapturePolygon")
+	if capture_polygon and not capture_polygon.polygon.is_empty():
+		var local_point := capture_polygon.global_transform.affine_inverse() * point
+		return Geometry2D.is_point_in_polygon(local_point, capture_polygon.polygon)
+	var collision_shape: CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
+	if collision_shape and collision_shape.shape is RectangleShape2D:
+		var rectangle := collision_shape.shape as RectangleShape2D
+		var half_size := rectangle.size * 0.5 * collision_shape.scale.abs()
+		var local_point := collision_shape.global_transform.affine_inverse() * point
+		return absf(local_point.x) <= half_size.x and absf(local_point.y) <= half_size.y
+	return false
+
+func _get_cell_center_global(cell: Cell) -> Vector2:
+	var capture_polygon: CollisionPolygon2D = cell.get_node_or_null("Area2D/CapturePolygon")
+	if capture_polygon and not capture_polygon.polygon.is_empty():
+		var local_sum := Vector2.ZERO
+		for p in capture_polygon.polygon:
+			local_sum += p
+		var centroid_local := local_sum / float(capture_polygon.polygon.size())
+		return capture_polygon.global_transform * centroid_local
+	return cell.global_position
