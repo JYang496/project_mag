@@ -43,8 +43,6 @@ unique_name_in_owner = true
 
 [node name="EquippedAugments" type="Node2D" parent="." unique_id=1346964768]
 
-[node name="UniqueWeapon" type="Node2D" parent="." unique_id=763063318]
-
 [node name="ActiveSkill" type="Node2D" parent="." unique_id=269678612]
 
 [node name="CollectArea" type="Area2D" parent="." unique_id=798938077]

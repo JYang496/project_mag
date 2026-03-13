@@ -7,6 +7,8 @@ class_name BoardCellGenerator
 @export var center_spawn_offset: Vector2 = Vector2(255, 258)
 @export var auto_assign_enemy_on_battle := true
 @export var initial_cell_profiles: Array[CellProfile] = []
+@export_group("Debug")
+@export var debug_recenter_logs: bool = true
 @export_group("Board Blockers")
 @export var blocker_collision_layer: int = 32
 @export var blocker_collision_mask: int = 0
@@ -217,8 +219,32 @@ func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.BATTLE:
 		_unlock_defense_cells_for_battle()
 	elif _last_phase == PhaseManager.BATTLE and new_phase != PhaseManager.BATTLE:
+		recenter_board_around_player()
 		_reset_cells_after_battle()
 	_last_phase = new_phase
+
+func recenter_board_around_player() -> void:
+	if _center_cell == null:
+		return
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return
+	var board_position_before: Vector2 = global_position
+	var player_position: Vector2 = PlayerData.player.global_position
+	var player_cell := _find_cell_containing_point(player_position)
+	if player_cell == null:
+		return
+	var center_cell_position: Vector2 = _get_cell_center_global(_center_cell)
+	var recenter_offset: Vector2 = player_position - center_cell_position
+	if recenter_offset == Vector2.ZERO:
+		_log_recenter_debug(board_position_before, global_position, player_position, PlayerData.player.global_position, recenter_offset, 0.0)
+		return
+	global_position += recenter_offset
+	var board_position_after: Vector2 = global_position
+	var player_position_after: Vector2 = PlayerData.player.global_position
+	var center_after: Vector2 = _get_cell_center_global(_center_cell)
+	var center_player_distance: float = center_after.distance_to(player_position_after)
+	_log_recenter_debug(board_position_before, board_position_after, player_position, player_position_after, recenter_offset, center_player_distance)
+	_offset_scene_npcs_and_start_buttons(recenter_offset)
 
 func _unlock_defense_cells_for_battle() -> void:
 	for cell in _cells:
@@ -236,3 +262,96 @@ func _reset_cells_after_battle() -> void:
 			continue
 		cell.progress = 0
 		cell.set_locked(true)
+
+func _find_cell_containing_point(point: Vector2) -> Cell:
+	for cell in _cells:
+		if cell == null:
+			continue
+		if _cell_contains_point(cell, point):
+			return cell
+	return null
+
+func _cell_contains_point(cell: Cell, point: Vector2) -> bool:
+	var capture_polygon: CollisionPolygon2D = cell.get_node_or_null("Area2D/CapturePolygon")
+	if capture_polygon and not capture_polygon.polygon.is_empty():
+		var local_point := capture_polygon.global_transform.affine_inverse() * point
+		return Geometry2D.is_point_in_polygon(local_point, capture_polygon.polygon)
+	var collision_shape: CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
+	if collision_shape and collision_shape.shape is RectangleShape2D:
+		var rectangle := collision_shape.shape as RectangleShape2D
+		var half_size := rectangle.size * 0.5 * collision_shape.scale.abs()
+		var local_point := collision_shape.global_transform.affine_inverse() * point
+		return absf(local_point.x) <= half_size.x and absf(local_point.y) <= half_size.y
+	return false
+
+func _get_cell_center_global(cell: Cell) -> Vector2:
+	if cell == null:
+		return Vector2.ZERO
+	var capture_polygon: CollisionPolygon2D = cell.get_node_or_null("Area2D/CapturePolygon")
+	if capture_polygon and not capture_polygon.polygon.is_empty():
+		var local_sum := Vector2.ZERO
+		for p in capture_polygon.polygon:
+			local_sum += p
+		var centroid_local := local_sum / float(capture_polygon.polygon.size())
+		return capture_polygon.global_transform * centroid_local
+	return cell.global_position
+
+func _offset_scene_npcs_and_start_buttons(offset: Vector2) -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	for node in tree.get_nodes_in_group("npc"):
+		var node_2d := node as Node2D
+		if node_2d == null:
+			continue
+		if _is_node_inside_board(node_2d):
+			continue
+		node_2d.global_position += offset
+	var scene_root := tree.current_scene
+	if scene_root == null:
+		return
+	for start_button in _find_start_battle_buttons(scene_root):
+		if start_button == null:
+			continue
+		if _is_node_inside_board(start_button):
+			continue
+		start_button.global_position += offset
+
+func _find_start_battle_buttons(root: Node) -> Array[StartBattleButton]:
+	var result: Array[StartBattleButton] = []
+	var pending: Array[Node] = [root]
+	while not pending.is_empty():
+		var current: Node = pending.pop_back() as Node
+		if current == null:
+			continue
+		var battle_button := current as StartBattleButton
+		if battle_button:
+			result.append(battle_button)
+		for child in current.get_children():
+			pending.append(child)
+	return result
+
+func _is_node_inside_board(node: Node) -> bool:
+	if node == null:
+		return false
+	var current: Node = node
+	while current:
+		if current == self:
+			return true
+		current = current.get_parent()
+	return false
+
+func _log_recenter_debug(
+	board_before: Vector2,
+	board_after: Vector2,
+	player_before: Vector2,
+	player_after: Vector2,
+	offset: Vector2,
+	center_player_distance: float
+) -> void:
+	if not debug_recenter_logs:
+		return
+	print(
+		"[BoardRecenter] board_before=%s board_after=%s player_before=%s player_after=%s offset=%s center_player_distance=%.4f"
+		% [str(board_before), str(board_after), str(player_before), str(player_after), str(offset), center_player_distance]
+	)

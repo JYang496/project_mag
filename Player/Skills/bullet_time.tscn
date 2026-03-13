@@ -1,12 +1,12 @@
-[gd_scene load_steps=2 format=3 uid="uid://di5d4mmomwcia"]
+[gd_scene format=3 uid="uid://di5d4mmomwcia"]
 
 [ext_resource type="Script" uid="uid://c7yi5mp0b3ji0" path="res://Player/Skills/bullet_time.gd" id="1_gobwo"]
 
-[node name="BulletTime" type="Node2D"]
+[node name="BulletTime" type="Node2D" unique_id=1266196217]
 script = ExtResource("1_gobwo")
 
-[node name="Timer" type="Timer" parent="."]
-wait_time = 1.5
+[node name="Timer" type="Timer" parent="." unique_id=28952652]
+wait_time = 0.5
 one_shot = true
 
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

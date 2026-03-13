@@ -4,7 +4,6 @@ class_name Player
 var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
 @onready var equppied_augments = $EquippedAugments
-@onready var unique_weapons = $UniqueWeapon
 @onready var mecha_sprite = $MechaSprite
 @onready var player_camera: Camera2D = $Camera2D
 @onready var collect_area = get_node("%CollectArea")
@@ -14,6 +13,7 @@ var extra_direction = Vector2.ZERO
 @onready var hurt_cd: Timer = $HurtCD
 @onready var hurt_box: HurtBox = $HurtBox
 @onready var collision_cd: Timer = $CollisionCD
+@onready var active_skill_holder: Node2D = $ActiveSkill
 
 
 var movement_enabled = true
@@ -45,12 +45,14 @@ var _base_detect_shape_size := Vector2.ZERO
 var _base_camera_zoom := Vector2.ONE
 var _camera_zoom_target := Vector2.ONE
 @export var camera_zoom_lerp_speed: float = 6.0
+@export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 # Signals
 signal active_skill()
 signal coin_collected()
 
 func _ready():
 	PlayerData.player = self
+	_setup_default_active_skill()
 	mecha_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_resize_mecha_sprite()
 	_cache_camera_zoom_base()
@@ -74,8 +76,31 @@ func _physics_process(delta):
 	move_and_slide()
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("SKILL"):
-		active_skill.emit()
+	if not event.is_action_pressed("SKILL"):
+		return
+	if event is InputEventKey and event.echo:
+		return
+	active_skill.emit()
+
+func _setup_default_active_skill() -> void:
+	if active_skill_holder == null:
+		push_warning("ActiveSkill node is missing, default active skill will not be loaded.")
+		return
+	if active_skill_holder.get_child_count() > 0:
+		return
+	var scene_path := default_active_skill_path
+	if not scene_path.ends_with(".tscn"):
+		scene_path += ".tscn"
+	var scene_resource := load(scene_path)
+	var skill_scene := scene_resource as PackedScene
+	if skill_scene == null:
+		push_warning("Failed to load default active skill scene: %s" % scene_path)
+		return
+	var skill_instance := skill_scene.instantiate()
+	if not (skill_instance is Skills):
+		push_warning("Default active skill must inherit Skills: %s" % scene_path)
+		return
+	active_skill_holder.add_child(skill_instance)
 
 func create_weapon(item_id, level := 1):
 	var available_slot = 0
@@ -105,7 +130,8 @@ func create_weapon(item_id, level := 1):
 	PlayerData.player_weapon_list.append(weapon)
 	
 	_sync_weapon_orbit_states(true)
-	GlobalVariables.ui.refresh_border()
+	if GlobalVariables.ui != null:
+		GlobalVariables.ui.refresh_border()
 
 func swap_weapon_position(weapon1, weapon2) -> void:
 	if weapon1 == weapon2:
@@ -131,7 +157,6 @@ func movement(delta):
 	
 	distance_mouse_player = get_global_mouse_position() - global_position
 	_update_mecha_direction(distance_mouse_player)
-	unique_weapons.rotation = global_position.direction_to(get_global_mouse_position()).angle() + deg_to_rad(90)
 	_update_weapon_orbits(delta)
 
 func apply_move_speed_mul(source_id: StringName, mul: float) -> void:

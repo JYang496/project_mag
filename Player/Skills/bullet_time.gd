@@ -1,27 +1,42 @@
-extends Node2D
+extends Skills
 
-@export var time_scale = 0.5
-var saved_scale
-var saved_speed
-#@onready var player = get_tree().get_first_node_in_group("player")
+@export var time_scale: float = 0.5
+@export var speed_bonus_multiplier: float = 3.0
+@export var default_cooldown: float = 5.0
+
 @onready var timer: Timer = $Timer
 
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	if not PlayerData.player:
-		print("Player does not exist")
+var saved_scale: float = 1.0
+var saved_speed: float = 0.0
+var _active := false
+
+func on_skill_ready() -> void:
+	if cooldown <= 0.0:
+		cooldown = default_cooldown
+
+func can_activate() -> bool:
+	return not _active
+
+func activate_skill() -> void:
+	if _player == null or not is_instance_valid(_player):
 		return
-	PlayerData.player.connect("active_skill",Callable(self, "_on_active_skill"))
-	
-func _on_active_skill() -> void:
-	timer.start()
+	_active = true
 	saved_scale = Engine.time_scale
 	Engine.time_scale = time_scale
-	saved_speed = PlayerData.player_speed * 3
+	saved_speed = PlayerData.player_speed * speed_bonus_multiplier
 	PlayerData.player_bonus_speed += saved_speed
-
-
+	timer.start()
 
 func _on_timer_timeout() -> void:
+	if not _active:
+		return
+	Engine.time_scale = saved_scale
+	PlayerData.player_bonus_speed -= saved_speed
+	saved_speed = 0.0
+	_active = false
+
+func _exit_tree() -> void:
+	if not _active:
+		return
 	Engine.time_scale = saved_scale
 	PlayerData.player_bonus_speed -= saved_speed
