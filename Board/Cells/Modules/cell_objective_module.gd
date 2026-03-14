@@ -4,7 +4,7 @@ class_name CellObjectiveModule
 @export var objective_enabled := false
 @export var reward_type_override: int = -1
 @export var bonus_scene: PackedScene = preload("res://Board/Cells/Bonus/objective_reward_bonus.tscn")
-@export var reset_on_reward_phase := true
+@export var reset_on_prepare_phase := true
 @export var debug_mode := false
 @export var debug_print_interval := 0.5
 
@@ -85,9 +85,9 @@ func _is_objective_active() -> bool:
 func _on_phase_changed(new_phase: String) -> void:
 	if _bonus_module:
 		_bonus_module.on_phase_changed(new_phase)
-	if not reset_on_reward_phase:
+	if not reset_on_prepare_phase:
 		return
-	if new_phase == PhaseManager.REWARD:
+	if new_phase == PhaseManager.PREPARE:
 		reset_objective_runtime()
 
 func _is_active_phase() -> bool:

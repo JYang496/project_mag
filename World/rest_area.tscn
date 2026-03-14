@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://cat80ev8yltf7"]
+
+[ext_resource type="Script" uid="uid://yxbtuupv8h0y" path="res://World/rest_area.gd" id="1_5q1gc"]
+[ext_resource type="Texture2D" uid="uid://d2ssct86rwnpo" path="res://asset/images/cells/default.png" id="2_tgu0a"]
+[ext_resource type="PackedScene" path="res://World/start_battle_button.tscn" id="3_y7v4g"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hnton"]
+
+[node name="RestArea" type="Node2D" unique_id=985543747]
+script = ExtResource("1_5q1gc")
+
+[node name="Texture" type="Node2D" parent="." unique_id=351996712]
+position = Vector2(256, 256)
+scale = Vector2(0.5, 0.5)
+
+[node name="Sprite2D" type="Sprite2D" parent="Texture" unique_id=1323984080]
+texture_filter = 1
+texture = ExtResource("2_tgu0a")
+
+[node name="Area2D" type="Area2D" parent="." unique_id=1929758561]
+collision_layer = 0
+collision_mask = 16
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=1604757068]
+position = Vector2(256, 256)
+scale = Vector2(25.5, 25.5)
+shape = SubResource("RectangleShape2D_hnton")
+
+[node name="StartBattleButton" parent="." unique_id=1738966985 instance=ExtResource("3_y7v4g")]
+position = Vector2(257, 255)

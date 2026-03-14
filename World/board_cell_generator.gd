@@ -24,6 +24,7 @@ var _cells: Array[Cell] = []
 var _player_spawner: Node2D
 var _center_cell: Cell
 var _last_phase: String = ""
+var _board_active := true
 
 func _enter_tree() -> void:
 	if not _cells.is_empty():
@@ -46,6 +47,7 @@ func _ready() -> void:
 	_last_phase = PhaseManager.current_state()
 	if auto_assign_enemy_on_battle and not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
+	set_board_active(PhaseManager.current_state() == PhaseManager.BATTLE)
 
 func _spawn_cells() -> void:
 	var center_index := Vector2i(grid_size.x / 2, grid_size.y / 2)
@@ -83,6 +85,41 @@ func get_cells() -> Array[Cell]:
 func get_center_cell() -> Cell:
 	return _center_cell
 
+func get_center_cell_global_position() -> Vector2:
+	if _center_cell == null:
+		return global_position
+	return _get_cell_center_global(_center_cell)
+
+func set_board_active(active: bool) -> void:
+	if _board_active == active:
+		return
+	_board_active = active
+	visible = active
+	_set_cells_monitoring(active)
+	_set_blocker_collision(active)
+
+func _set_cells_monitoring(active: bool) -> void:
+	for cell in _cells:
+		if cell == null:
+			continue
+		var area: Area2D = cell.get_node_or_null("Area2D") as Area2D
+		if area:
+			area.monitoring = active
+			area.monitorable = active
+
+func _set_blocker_collision(active: bool) -> void:
+	var blocker_root: Node = get_node_or_null("NavigationBlockers")
+	if blocker_root == null:
+		return
+	for child in blocker_root.get_children():
+		var body := child as StaticBody2D
+		if body == null:
+			continue
+		var enable_collision := bool(body.get_meta("board_collision_enabled", true))
+		var should_enable := active and enable_collision
+		body.collision_layer = blocker_collision_layer if should_enable else 0
+		body.collision_mask = blocker_collision_mask if should_enable else 0
+
 func _build_navigation_blockers() -> void:
 	var blocker_root: Node2D = get_node_or_null("NavigationBlockers") as Node2D
 	if blocker_root:
@@ -119,6 +156,7 @@ func _add_blocker_body(
 	var body: StaticBody2D = StaticBody2D.new()
 	body.name = blocker_name
 	body.position = blocker_position
+	body.set_meta("board_collision_enabled", enable_collision)
 	body.collision_layer = blocker_collision_layer if enable_collision else 0
 	body.collision_mask = blocker_collision_mask if enable_collision else 0
 	var shape: CollisionShape2D = CollisionShape2D.new()
@@ -217,10 +255,13 @@ func _get_grid_pos_from_index(index: int) -> Vector2i:
 
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.BATTLE:
+		set_board_active(true)
 		_unlock_defense_cells_for_battle()
-	elif _last_phase == PhaseManager.BATTLE and new_phase != PhaseManager.BATTLE:
-		recenter_board_around_player()
-		_reset_cells_after_battle()
+	else:
+		if _last_phase == PhaseManager.BATTLE:
+			recenter_board_around_player()
+			_reset_cells_after_battle()
+		set_board_active(false)
 	_last_phase = new_phase
 
 func recenter_board_around_player() -> void:
@@ -306,6 +347,8 @@ func _offset_scene_npcs_and_start_buttons(offset: Vector2) -> void:
 			continue
 		if _is_node_inside_board(node_2d):
 			continue
+		if _is_node_inside_group(node_2d, &"rest_area"):
+			continue
 		node_2d.global_position += offset
 	var scene_root := tree.current_scene
 	if scene_root == null:
@@ -314,6 +357,8 @@ func _offset_scene_npcs_and_start_buttons(offset: Vector2) -> void:
 		if start_button == null:
 			continue
 		if _is_node_inside_board(start_button):
+			continue
+		if _is_node_inside_group(start_button, &"rest_area"):
 			continue
 		start_button.global_position += offset
 
@@ -337,6 +382,16 @@ func _is_node_inside_board(node: Node) -> bool:
 	var current: Node = node
 	while current:
 		if current == self:
+			return true
+		current = current.get_parent()
+	return false
+
+func _is_node_inside_group(node: Node, group_name: StringName) -> bool:
+	if node == null:
+		return false
+	var current: Node = node
+	while current:
+		if current.is_in_group(group_name):
 			return true
 		current = current.get_parent()
 	return false

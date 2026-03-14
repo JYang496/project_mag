@@ -1,7 +1,5 @@
 extends Node2D
 
-const START_BATTLE_BUTTON_SCRIPT = preload("res://World/start_battle_button.gd")
-
 var start_up_status = {
 	"player_speed":100.0,
 	"player_max_hp":5,
@@ -19,7 +17,8 @@ var _cell_area : Area2D
 var _player_inside_cell : bool = false
 var _current_cell: Cell
 var _highlight_active := false
-var _start_battle_button: StartBattleButton
+@export var rest_area_path: NodePath
+var _rest_area: RestArea
 
 func _ready() -> void:
 	PlayerData.player_weapon_list.clear()
@@ -37,6 +36,8 @@ func _ready() -> void:
 	_player_inside_cell = true
 	call_deferred("_add_player_to_root", ins)
 	_setup_cell_monitor()
+	if rest_area_path != NodePath():
+		_rest_area = get_node_or_null(rest_area_path) as RestArea
 	_connect_phase_signals()
 	_refresh_start_battle_button(PhaseManager.current_state())
 	
@@ -76,8 +77,6 @@ func _find_parent_cell() -> Cell:
 	return null
 
 func _connect_phase_signals() -> void:
-	if not PhaseManager.is_connected("enter_reward_signal", Callable(self, "_on_enter_reward_phase")):
-		PhaseManager.connect("enter_reward_signal", Callable(self, "_on_enter_reward_phase"))
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 
@@ -95,20 +94,13 @@ func _on_cell_area_body_exited(body: Node2D) -> void:
 func _start_battle_stage() -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
-	_remove_start_battle_button()
 	if GlobalVariables.enemy_spawner:
 		GlobalVariables.enemy_spawner.start_timer()
 	PhaseManager.enter_battle()
 
-func _on_enter_reward_phase() -> void:
-	_try_enter_prepare_state()
-	_refresh_cell_highlight()
-
 func _try_enter_prepare_state() -> void:
 	if not _player_inside_cell:
 		return
-	if PhaseManager.current_state() == PhaseManager.REWARD:
-		PhaseManager.enter_prepare()
 	_refresh_cell_highlight()
 
 func _add_player_to_root(player_instance: Node) -> void:
@@ -138,38 +130,8 @@ func _refresh_cell_highlight(forced_state: String = "") -> void:
 
 func _refresh_start_battle_button(forced_state: String = "") -> void:
 	var state := forced_state if forced_state != "" else PhaseManager.current_state()
-	if state == PhaseManager.PREPARE:
-		_spawn_start_battle_button()
-		return
-	_remove_start_battle_button()
-
-func _spawn_start_battle_button() -> void:
-	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
-		return
-	var target_cell := _find_player_current_cell(PlayerData.player.global_position)
-	if target_cell == null:
-		target_cell = _current_cell
-	if target_cell == null:
-		return
-	var target_position := _get_cell_center_global(target_cell)
-	if _start_battle_button and is_instance_valid(_start_battle_button):
-		_start_battle_button.global_position = target_position
-		return
-	_start_battle_button = START_BATTLE_BUTTON_SCRIPT.new() as StartBattleButton
-	if _start_battle_button == null:
-		return
-	var scene_root := get_tree().current_scene
-	if scene_root == null:
-		scene_root = self
-	if not _start_battle_button.is_connected("activated", Callable(self, "_on_start_battle_button_activated")):
-		_start_battle_button.connect("activated", Callable(self, "_on_start_battle_button_activated"))
-	scene_root.call_deferred("add_child", _start_battle_button)
-	_start_battle_button.set_deferred("global_position", target_position)
-
-func _remove_start_battle_button() -> void:
-	if _start_battle_button and is_instance_valid(_start_battle_button):
-		_start_battle_button.queue_free()
-	_start_battle_button = null
+	if _rest_area:
+		_rest_area.set_button_visible(state == PhaseManager.PREPARE)
 
 func _on_start_battle_button_activated() -> void:
 	_start_battle_stage()

@@ -6,31 +6,36 @@ signal activated
 @export var hold_duration: float = 0.5
 @export var radius: float = 34.0
 @export var prompt_text: String = "Hold F to Start"
+@export var debug_mode: bool = true
+@export var debug_print_interval: float = 0.4
 
 var _player_inside := false
 var _hold_elapsed := 0.0
 var _triggered := false
-var _prompt_label: Label
+@onready var _prompt_label: Label = $PromptLabel
+@onready var _shape: CollisionShape2D = $CollisionShape2D
+var _debug_elapsed := 0.0
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_INHERIT
 	collision_layer = 0
 	collision_mask = 1
 	monitoring = true
 	monitorable = true
-
-	var shape := CollisionShape2D.new()
-	var circle := CircleShape2D.new()
-	circle.radius = radius
-	shape.shape = circle
-	add_child(shape)
-
-	_prompt_label = Label.new()
-	_prompt_label.text = prompt_text
-	_prompt_label.position = Vector2(-68.0, -52.0)
-	_prompt_label.modulate = Color(0.95, 0.98, 1.0, 0.95)
-	_prompt_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_prompt_label)
+	set_physics_process(true)
+	if debug_mode:
+		print("[StartBattleButton] ready name=%s parent=%s visible=%s process_mode=%s"
+			% [name, str(get_parent()), str(visible), str(process_mode)])
+	if _shape:
+		var circle := _shape.shape as CircleShape2D
+		if circle == null:
+			circle = CircleShape2D.new()
+			_shape.shape = circle
+		circle.radius = radius
+	if _prompt_label:
+		_prompt_label.text = prompt_text
+		_prompt_label.modulate = Color(0.95, 0.98, 1.0, 0.95)
 
 	if not body_entered.is_connected(_on_body_entered):
 		body_entered.connect(_on_body_entered)
@@ -42,6 +47,14 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if _triggered:
 		return
+	_refresh_player_proximity()
+	if debug_mode:
+		_debug_elapsed += delta
+		if _debug_elapsed >= maxf(0.1, debug_print_interval):
+			_debug_elapsed = 0.0
+			var is_pressed := Input.is_action_pressed("INTERACT")
+			print("[StartBattleButton] inside=%s pressed=%s hold=%.2f/%.2f pos=%s player=%s"
+				% [str(_player_inside), str(is_pressed), _hold_elapsed, hold_duration, str(global_position), str(PlayerData.player.global_position if PlayerData.player else Vector2.ZERO)])
 	if not _player_inside:
 		if _hold_elapsed > 0.0:
 			_hold_elapsed = 0.0
@@ -56,6 +69,19 @@ func _physics_process(delta: float) -> void:
 		if _hold_elapsed > 0.0:
 			_hold_elapsed = 0.0
 	queue_redraw()
+
+func _refresh_player_proximity() -> void:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		_player_inside = false
+		return
+	var dist_sq := PlayerData.player.global_position.distance_squared_to(global_position)
+	var radius_sq := radius * radius
+	if dist_sq <= radius_sq:
+		_player_inside = true
+	else:
+		if _player_inside:
+			_player_inside = false
+			_hold_elapsed = 0.0
 
 
 func _draw() -> void:
@@ -85,3 +111,10 @@ func _on_body_exited(body: Node2D) -> void:
 		_player_inside = false
 		_hold_elapsed = 0.0
 		queue_redraw()
+
+func reset_state() -> void:
+	_triggered = false
+	_hold_elapsed = 0.0
+	_player_inside = false
+	_debug_elapsed = 0.0
+	queue_redraw()

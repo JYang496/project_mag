@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://dabf8pyg4rbvt" path="res://World/board_cell_generator.gd" id="13_mj5tj"]
 [ext_resource type="Script" uid="uid://dxdn6jvfdd656" path="res://World/player_spawner.gd" id="14_26uyv"]
 [ext_resource type="PackedScene" uid="uid://d382rsvvo0j8d" path="res://Board/Cells/cell.tscn" id="14_dqu5g"]
+[ext_resource type="PackedScene" path="res://World/rest_area.tscn" id="15_6p52w"]
 [ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/scenes/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://Utility/reward_manager.tscn" id="22_n13dc"]
 
@@ -49,22 +50,26 @@ initial_cell_profiles = Array[ExtResource("4_lo5ox")]([null, SubResource("Resour
 
 [node name="PlayerSpawner" type="Node2D" parent="Board" unique_id=1320556918]
 script = ExtResource("14_26uyv")
+rest_area_path = NodePath("../../RestArea")
 
-[node name="FriendlySmith" parent="." unique_id=2017467746 groups=["friendlies"] instance=ExtResource("9_4gves")]
-position = Vector2(-336, 130)
+[node name="RestArea" parent="." groups=["rest_area"] instance=ExtResource("15_6p52w")]
+position = Vector2(-467, -11)
+board_path = NodePath("../Board")
+
+[node name="FriendlySmith" parent="RestArea" unique_id=2017467746 groups=["friendlies"] instance=ExtResource("9_4gves")]
+position = Vector2(131, 141)
 motion_mode = 0
 
-[node name="FriendlyMerchant" parent="." unique_id=1155300954 groups=["friendlies"] instance=ExtResource("7_1eywc")]
-position = Vector2(-108, 138)
+[node name="FriendlyMerchant" parent="RestArea" unique_id=1155300954 groups=["friendlies"] instance=ExtResource("7_1eywc")]
+position = Vector2(359, 149)
 motion_mode = 0
 
-[node name="Inventory" parent="." unique_id=156092755 instance=ExtResource("17_1l216")]
-position = Vector2(-344, 293)
+[node name="Inventory" parent="RestArea" unique_id=156092755 instance=ExtResource("17_1l216")]
+position = Vector2(123, 304)
 collision_layer = 1
 collision_mask = 1
 motion_mode = 0
 
-[node name="RewardManager" parent="." unique_id=113647262 instance=ExtResource("22_n13dc")]
 
 [node name="EnemySpawner" parent="." unique_id=236369448 instance=ExtResource("12_dyxss")]
 
@@ -75,3 +80,4 @@ position = Vector2(-982, -519)
 position = Vector2(548, 1002)
 
 [editable path="EnemySpawner"]
+[node name="RewardManager" parent="." unique_id=113647262 instance=ExtResource("22_n13dc")]

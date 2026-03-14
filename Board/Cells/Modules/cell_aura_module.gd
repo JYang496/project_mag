@@ -69,6 +69,8 @@ func _on_phase_changed(new_phase: String) -> void:
 func _refresh_players_in_area() -> void:
 	if _area == null:
 		return
+	if not _area.monitoring:
+		return
 	for body in _area.get_overlapping_bodies():
 		if body is Player:
 			var player := body as Player

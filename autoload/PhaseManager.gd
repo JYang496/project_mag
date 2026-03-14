@@ -8,11 +8,10 @@ var current_level : int = 0 :
 
 const PREPARE := "prepare"
 const BATTLE = "battle"
-const REWARD = "reward"
 const GAMEOVER = "gameover"
 var time_out = 30
 
-var phase_list := [PREPARE,BATTLE,REWARD,GAMEOVER]
+var phase_list := [PREPARE,BATTLE,GAMEOVER]
 var phase := PREPARE:
 	get:
 		return phase
@@ -21,12 +20,13 @@ var phase := PREPARE:
 			phase = value
 
 signal phase_changed(new_phase: String)
-signal enter_reward_signal
+signal pre_enter_prepare_loot
 
 func current_state() -> String:
 	return phase
 
 func enter_prepare() -> void:
+	pre_enter_prepare_loot.emit()
 	current_level += 1
 	phase = PREPARE
 	phase_changed.emit(phase)
@@ -36,11 +36,6 @@ func enter_prepare() -> void:
 func enter_battle() -> void:
 	phase = BATTLE
 	phase_changed.emit(phase)
-
-func enter_reward() -> void:
-	phase = REWARD
-	phase_changed.emit(phase)
-	enter_reward_signal.emit()
 
 func enter_gameover() -> void:
 	phase = GAMEOVER

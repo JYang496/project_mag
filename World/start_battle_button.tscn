@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://World/start_battle_button.gd" id="1_4b2aa"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_6x0qf"]
+
+[node name="StartBattleButton" type="Area2D"]
+script = ExtResource("1_4b2aa")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_6x0qf")
+
+[node name="PromptLabel" type="Label" parent="."]
+position = Vector2(-68, -52)
+text = "Hold F to Start"
+mouse_filter = 2

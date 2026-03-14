@@ -12,8 +12,8 @@ func _ready() -> void:
 			continue
 		var ins : LevelSpawnConfig = level_config.duplicate(true)
 		instance_list.append(ins.rewards)
-	if not PhaseManager.is_connected("enter_reward_signal",Callable(self,"create_loot_box")):
-		PhaseManager.connect("enter_reward_signal",Callable(self,"create_loot_box"))
+	if not PhaseManager.is_connected("pre_enter_prepare_loot",Callable(self,"create_loot_box")):
+		PhaseManager.connect("pre_enter_prepare_loot",Callable(self,"create_loot_box"))
 
 func create_loot_box() -> void:
 	for reward : RewardInfo in instance_list[PhaseManager.current_level]:

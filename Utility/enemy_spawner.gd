@@ -54,10 +54,10 @@ func _on_timer_timeout():
 	for e : SpawnInfo in enemy_spawns:
 		if e.wave < e.max_wave or e.alive_enemy_number > 0:
 			wave_clear = false
-	if PhaseManager.battle_time >= time_out_list[level_index] or wave_clear or PhaseManager.phase == PhaseManager.REWARD:
+	if PhaseManager.battle_time >= time_out_list[level_index] or wave_clear:
 		timer.stop()
 		erase_all_enemies()
-		PhaseManager.enter_reward()
+		PhaseManager.enter_prepare()
 		return
 	for i : SpawnInfo in enemy_spawns:
 		if PhaseManager.battle_time >= i.time_start and i.wave < i.max_wave:
