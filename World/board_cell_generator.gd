@@ -18,6 +18,7 @@ class_name BoardCellGenerator
 @export var blocker_visual_z_index: int = 5
 @export var pillar_visual_color: Color = Color(0.20, 0.20, 0.20, 0.85)
 @export var wall_visual_color: Color = Color(0.15, 0.15, 0.15, 0.75)
+@export var fade_duration: float = 0.35
 
 var grid_size: Vector2i = Vector2i(3, 3)
 var _cells: Array[Cell] = []
@@ -25,6 +26,7 @@ var _player_spawner: Node2D
 var _center_cell: Cell
 var _last_phase: String = ""
 var _board_active := true
+var _fade_tween: Tween
 
 func _enter_tree() -> void:
 	if not _cells.is_empty():
@@ -47,7 +49,7 @@ func _ready() -> void:
 	_last_phase = PhaseManager.current_state()
 	if auto_assign_enemy_on_battle and not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
-	set_board_active(PhaseManager.current_state() == PhaseManager.BATTLE)
+	set_board_active(PhaseManager.current_state() == PhaseManager.BATTLE, true)
 
 func _spawn_cells() -> void:
 	var center_index := Vector2i(grid_size.x / 2, grid_size.y / 2)
@@ -90,13 +92,51 @@ func get_center_cell_global_position() -> Vector2:
 		return global_position
 	return _get_cell_center_global(_center_cell)
 
-func set_board_active(active: bool) -> void:
-	if _board_active == active:
+func get_cell_center_global_for_point(point: Vector2) -> Vector2:
+	var cell := _find_cell_containing_point(point)
+	if cell:
+		return _get_cell_center_global(cell)
+	return get_center_cell_global_position()
+
+func set_board_active(active: bool, immediate: bool = false) -> void:
+	if _board_active == active and not immediate:
 		return
 	_board_active = active
-	visible = active
 	_set_cells_monitoring(active)
 	_set_blocker_collision(active)
+	if _fade_tween:
+		_fade_tween.kill()
+		_fade_tween = null
+	if immediate:
+		visible = active
+		process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
+		var color := modulate
+		color.a = 1.0 if active else 0.0
+		modulate = color
+		return
+	if active:
+		visible = true
+		process_mode = Node.PROCESS_MODE_INHERIT
+		var start_color := modulate
+		start_color.a = 0.0
+		modulate = start_color
+		var end_color := modulate
+		end_color.a = 1.0
+		_fade_tween = create_tween()
+		_fade_tween.tween_property(self, "modulate", end_color, fade_duration)\
+			.set_trans(Tween.TRANS_SINE)\
+			.set_ease(Tween.EASE_OUT)
+	else:
+		var end_color := modulate
+		end_color.a = 0.0
+		_fade_tween = create_tween()
+		_fade_tween.tween_property(self, "modulate", end_color, fade_duration)\
+			.set_trans(Tween.TRANS_SINE)\
+			.set_ease(Tween.EASE_IN)
+		_fade_tween.finished.connect(func():
+			visible = false
+			process_mode = Node.PROCESS_MODE_DISABLED
+		)
 
 func _set_cells_monitoring(active: bool) -> void:
 	for cell in _cells:
@@ -255,11 +295,12 @@ func _get_grid_pos_from_index(index: int) -> Vector2i:
 
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.BATTLE:
+		if _last_phase == PhaseManager.PREPARE:
+			recenter_board_around_player()
 		set_board_active(true)
 		_unlock_defense_cells_for_battle()
 	else:
 		if _last_phase == PhaseManager.BATTLE:
-			recenter_board_around_player()
 			_reset_cells_after_battle()
 		set_board_active(false)
 	_last_phase = new_phase

@@ -196,4 +196,3 @@ func _get_object_pool() -> Node:
 	if root == null:
 		return null
 	return root.get_node_or_null("ObjectPool")
-

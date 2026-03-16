@@ -6,7 +6,7 @@ signal activated
 @export var hold_duration: float = 0.5
 @export var radius: float = 34.0
 @export var prompt_text: String = "Hold F to Start"
-@export var debug_mode: bool = true
+@export var debug_mode: bool = false
 @export var debug_print_interval: float = 0.4
 
 var _player_inside := false

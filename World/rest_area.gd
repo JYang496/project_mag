@@ -25,14 +25,14 @@ func _ready() -> void:
 	objective_enabled = false
 	aura_enabled = false
 	_apply_bounds_size()
-	_sync_to_board_center()
+	_sync_to_target_center()
 	_set_active(_should_be_active(PhaseManager.current_state()), true)
 	_setup_start_battle_button()
 
 func _on_phase_changed(new_phase: String) -> void:
 	var should_show := _should_be_active(new_phase)
 	if should_show:
-		_sync_to_board_center()
+		_sync_to_target_center()
 	_set_active(should_show, false)
 	if should_show and _start_battle_button:
 		_start_battle_button.reset_state()
@@ -53,10 +53,13 @@ func _apply_bounds_size() -> void:
 	rect.size = _board.cell_spacing
 	shape_node.scale = Vector2.ONE
 
-func _sync_to_board_center() -> void:
+func _sync_to_target_center() -> void:
 	if _board == null:
 		return
-	global_position = _board.get_center_cell_global_position() - _get_local_center_offset()
+	var target_center := _board.get_center_cell_global_position()
+	if PlayerData.player != null and is_instance_valid(PlayerData.player):
+		target_center = _board.get_cell_center_global_for_point(PlayerData.player.global_position)
+	global_position = target_center - _get_local_center_offset()
 	_snap_start_battle_button()
 
 func _get_local_center_offset() -> Vector2:
@@ -84,13 +87,9 @@ func _set_active(active: bool, immediate: bool) -> void:
 		var color := modulate
 		color.a = 1.0 if active else 0.0
 		modulate = color
-		if active:
-			_sync_to_board_center()
-			_move_player_to_center()
 		return
 	if active:
-		_sync_to_board_center()
-		_move_player_to_center()
+		_sync_to_target_center()
 		visible = true
 		process_mode = Node.PROCESS_MODE_INHERIT
 		var start_color := modulate
