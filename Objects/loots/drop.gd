@@ -5,6 +5,8 @@ var t = 0.0
 @export var spawn_global_position := Vector2.ZERO
 var item_id
 var level
+var module_scene: PackedScene
+var module_level: int = 1
 var arrived = false
 var value : int
 var drop_instance
@@ -18,7 +20,10 @@ func _ready() -> void:
 	p1.position.y = (p0.position.y + p2.position.y) / 2 - randf_range(80.0,140.0)
 
 	drop_instance = drop.instantiate()
-	if item_id and level:
+	if module_scene:
+		drop_instance.module_scene = module_scene
+		drop_instance.module_level = module_level
+	elif item_id and level:
 		# Drop is an tiem
 		drop_instance.item_id = item_id
 		drop_instance.level = level

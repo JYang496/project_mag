@@ -29,6 +29,7 @@ var game_over_status_label: Label
 var game_over_coin_label: Label
 var game_over_chip_label: Label
 var quest_hint_label: Label
+var item_message_timer: Timer
 
 
 # Character
@@ -80,19 +81,33 @@ signal reset_cost
 @onready var equipped_weapons = null
 @onready var drag_item_icon: TextureRect = $GUI/DragItemRoot/DragItemIcon
 @onready var branch_select_panel_scene = preload("res://UI/scenes/branch_select_panel.tscn")
+@onready var module_equip_selection_panel_scene = preload("res://UI/scenes/module_equip_selection_panel.tscn")
 var branch_select_panel: BranchSelectPanel
+var module_equip_selection_panel: ModuleEquipSelectionPanel
 
 
 func _ready():
 	GlobalVariables.ui = self
 	_init_branch_select_panel()
+	_init_module_equip_selection_panel()
 	_create_game_over_layout()
 	_create_quest_hint()
 	_connect_viewport_signals()
 	_apply_responsive_layout()
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
+	_init_item_message_timer()
 	refresh_border()
+
+func _init_item_message_timer() -> void:
+	if item_message_timer and is_instance_valid(item_message_timer):
+		return
+	item_message_timer = Timer.new()
+	item_message_timer.one_shot = true
+	item_message_timer.wait_time = 1.8
+	add_child(item_message_timer)
+	if not item_message_timer.is_connected("timeout", Callable(self, "_on_item_message_timeout")):
+		item_message_timer.timeout.connect(Callable(self, "_on_item_message_timeout"))
 
 func _init_branch_select_panel() -> void:
 	branch_select_panel = branch_select_panel_scene.instantiate() as BranchSelectPanel
@@ -103,6 +118,14 @@ func _init_branch_select_panel() -> void:
 	branch_select_panel.visible = false
 	if not branch_select_panel.is_connected("branch_selected", Callable(self, "_on_branch_selected")):
 		branch_select_panel.connect("branch_selected", Callable(self, "_on_branch_selected"))
+
+func _init_module_equip_selection_panel() -> void:
+	module_equip_selection_panel = module_equip_selection_panel_scene.instantiate() as ModuleEquipSelectionPanel
+	if module_equip_selection_panel == null:
+		push_warning("Failed to create ModuleEquipSelectionPanel.")
+		return
+	$GUI.add_child(module_equip_selection_panel)
+	module_equip_selection_panel.visible = false
 
 func request_weapon_branch_selection(weapon: Weapon) -> bool:
 	if weapon == null or not is_instance_valid(weapon):
@@ -116,6 +139,13 @@ func request_weapon_branch_selection(weapon: Weapon) -> bool:
 		return false
 	branch_select_panel.open_for_weapon(weapon, branch_options)
 	return true
+
+func request_module_equip_selection(module_instance: Module, on_complete: Callable = Callable()) -> bool:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return false
+	if module_equip_selection_panel == null or not is_instance_valid(module_equip_selection_panel):
+		return false
+	return module_equip_selection_panel.open_for_module(module_instance, on_complete)
 
 func _on_branch_selected(weapon: Weapon, branch_id: String) -> void:
 	if weapon == null or not is_instance_valid(weapon):
@@ -499,3 +529,13 @@ func set_quest_hint(text: String) -> void:
 		return
 	quest_hint_label.text = text
 	quest_hint_label.visible = text.strip_edges() != ""
+
+func show_item_message(text: String, duration: float = 1.8) -> void:
+	set_quest_hint(text)
+	if item_message_timer == null or not is_instance_valid(item_message_timer):
+		_init_item_message_timer()
+	item_message_timer.wait_time = maxf(0.1, duration)
+	item_message_timer.start()
+
+func _on_item_message_timeout() -> void:
+	set_quest_hint("")

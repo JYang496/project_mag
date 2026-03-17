@@ -22,7 +22,8 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if source_weapon:
 		fuse_level = max(1, int(source_weapon.fuse))
 	var fuse_bonus_steps: int = max(0, fuse_level - 1)
-	var tick: int = max(1, base_tick + tick_per_fuse * fuse_bonus_steps)
-	var damage: int = max(1, base_damage + damage_per_fuse * fuse_bonus_steps)
+	var level_scale := get_effective_additive(1.0, 0.4)
+	var tick: int = max(1, int(round(float(base_tick + tick_per_fuse * fuse_bonus_steps) * level_scale)))
+	var damage: int = max(1, int(round(float(base_damage + damage_per_fuse * fuse_bonus_steps) * level_scale)))
 	var effect := ErosionStatusEffect.new().setup_effect(tick, damage)
 	target.apply_status_effect(effect)

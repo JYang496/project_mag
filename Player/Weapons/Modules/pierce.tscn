@@ -6,6 +6,7 @@
 
 [node name="Pierce" instance=ExtResource("1_4bmpc")]
 script = ExtResource("2_r0310")
+supports_melee = false
 pierce_add_by = 2
 
 [node name="Sprite" parent="." index="0"]

@@ -199,3 +199,8 @@ func get_weapon_capabilities() -> Dictionary:
 		"projectiles": supports_projectiles(),
 		"melee_contact": supports_melee_contact(),
 	}
+
+func _on_tree_exited() -> void:
+	on_hit_plugins.clear()
+	branch_behavior = null
+	branch_definition = null

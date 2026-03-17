@@ -9,4 +9,5 @@ func _ready() -> void:
 
 
 func mult(arg):
-	weapon.attack_cooldown = float(arg * mult_by)
+	var final_mult := get_effective_multiplier(mult_by)
+	weapon.attack_cooldown = float(arg) * final_mult

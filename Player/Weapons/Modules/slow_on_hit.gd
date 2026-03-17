@@ -24,11 +24,23 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if source_weapon:
 		fuse_level = max(1, int(source_weapon.fuse))
 	var fuse_bonus_steps: int = max(0, fuse_level - 1)
-	var final_chance: float = clampf(chance + chance_per_fuse * float(fuse_bonus_steps), 0.0, 1.0)
+	var final_chance: float = clampf(
+		(chance + chance_per_fuse * float(fuse_bonus_steps)) * get_effective_additive(1.0, 0.3),
+		0.0,
+		1.0
+	)
 	if randf() > final_chance:
 		return
-	var final_duration: float = maxf(0.0, duration_seconds + duration_per_fuse * float(fuse_bonus_steps))
+	var final_duration: float = maxf(
+		0.0,
+		(duration_seconds + duration_per_fuse * float(fuse_bonus_steps)) * get_effective_additive(1.0, 0.35)
+	)
+	var final_slow_multiplier := clampf(
+		1.0 - (1.0 - slow_multiplier) * get_effective_additive(1.0, 0.25),
+		0.1,
+		1.0
+	)
 	target.apply_status_payload(&"slow", {
-		"multiplier": slow_multiplier,
+		"multiplier": final_slow_multiplier,
 		"duration": final_duration
 	})

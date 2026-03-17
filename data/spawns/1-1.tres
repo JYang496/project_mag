@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" uid="uid://ytl6qq2cyao" path="res://data/spawns/LevelArray.gd" id="1_sm5it"]
 [ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/scripts/spawn_info.gd" id="2_fvbvb"]
+[ext_resource type="Script" uid="uid://b1hsmo6sq0tfr" path="res://Utility/module_reward_option.gd" id="2_xca02"]
 [ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/scenes/enemy_rolling_ball.tscn" id="3_n4krr"]
 [ext_resource type="PackedScene" uid="uid://bmy3cber63qwh" path="res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn" id="3_ntoj7"]
 [ext_resource type="PackedScene" uid="uid://3nbq5hvtkssa" path="res://Npc/enemy/scenes/enemy_orbit_support.tscn" id="3_orbit"]
+[ext_resource type="PackedScene" uid="uid://lxouf7ee4m4w" path="res://Player/Weapons/Modules/erosion.tscn" id="3_popq4"]
 [ext_resource type="Script" uid="uid://cw2vo0cs83hpl" path="res://Utility/reward_info.gd" id="4_mcjiy"]
 
 [sub_resource type="Resource" id="Resource_oj3c1"]
@@ -12,6 +14,7 @@ script = ExtResource("4_mcjiy")
 total_coin_value = 60
 item_id = "2"
 item_level = 1
+module_scene = ExtResource("3_popq4")
 
 [sub_resource type="Resource" id="Resource_6yone"]
 script = ExtResource("2_fvbvb")
@@ -46,4 +49,3 @@ interval = 4
 script = ExtResource("1_sm5it")
 spawns = Array[ExtResource("2_fvbvb")]([SubResource("Resource_6yone"), SubResource("Resource_gyoio"), SubResource("Resource_xca02")])
 rewards = Array[ExtResource("4_mcjiy")]([SubResource("Resource_oj3c1")])
-

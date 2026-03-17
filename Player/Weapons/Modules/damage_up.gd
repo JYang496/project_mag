@@ -9,4 +9,5 @@ func _ready() -> void:
 		
 
 func mult(pre_damage):
-	weapon.damage = int(pre_damage * mult_by)
+	var final_mult := get_effective_multiplier(mult_by)
+	weapon.damage = int(round(float(pre_damage) * final_mult))

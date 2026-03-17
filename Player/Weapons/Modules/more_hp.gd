@@ -10,4 +10,5 @@ func _ready() -> void:
 func add_hp(arg) -> void:
 	if weapon.get("hp") == null:
 		return
-	weapon.hp = int(arg + hp_add_by)
+	var final_bonus: int = int(round(get_effective_additive(float(hp_add_by))))
+	weapon.hp = int(arg) + max(1, final_bonus)

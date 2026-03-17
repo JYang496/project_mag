@@ -16,6 +16,7 @@ var _required_progress := 0.0
 var _spawned := false
 var _player_entered := false
 var _ui_visible := false
+var _pending_spawn_after_phase_change := false
 
 func _ready() -> void:
 	super._ready()
@@ -43,19 +44,30 @@ func reset_objective_runtime() -> void:
 	_required_progress = 0.0
 	_spawned = false
 	_player_entered = false
+	_pending_spawn_after_phase_change = false
 
 func _process_objective(_delta: float) -> void:
+	if _pending_spawn_after_phase_change:
+		return
 	if not _spawned:
 		_try_spawn_quest_enemies()
 
 func _on_phase_changed(new_phase: String) -> void:
 	super._on_phase_changed(new_phase)
 	if new_phase == PhaseManager.BATTLE:
-		_try_spawn_quest_enemies()
+		_pending_spawn_after_phase_change = true
+		call_deferred("_spawn_after_phase_change")
 		return
+	_pending_spawn_after_phase_change = false
 	_cleanup_quest_enemies()
 	_spawned = false
 	_player_entered = false
+
+func _spawn_after_phase_change() -> void:
+	if not is_inside_tree():
+		return
+	_pending_spawn_after_phase_change = false
+	_try_spawn_quest_enemies()
 
 func _on_player_presence_changed(_cell_ref: Cell, player_count: int) -> void:
 	if player_count <= 0:

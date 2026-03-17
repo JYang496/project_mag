@@ -11,10 +11,12 @@ func _ready() -> void:
 
 
 func mult_projectile(arg):
-	weapon.size = float(arg * mult_by)
+	var final_mult := get_effective_multiplier(mult_by)
+	weapon.size = float(arg) * final_mult
 
 func mult_weapon(arg):
-	var final_size: float = float(arg) * mult_by
+	var final_mult := get_effective_multiplier(mult_by)
+	var final_size: float = float(arg) * final_mult
 	weapon.size = final_size
 	if weapon and weapon.has_method("apply_size_multiplier"):
 		weapon.apply_size_multiplier(final_size)

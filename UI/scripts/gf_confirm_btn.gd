@@ -13,10 +13,13 @@ func _on_button_up() -> void:
 	var new_level: int = max(InventoryData.ready_to_fuse_list[0].level,InventoryData.ready_to_fuse_list[1].level)
 	fused_item.fuse = new_fuse
 	fused_item.level = clampi(new_level, 1, fused_item.max_level)
-	for fuse_item : Weapon in InventoryData.ready_to_fuse_list:
-		for module in fuse_item.modules.get_children():
-			var module_copy = module.duplicate()
-			InventoryData.moddule_slots.append(module_copy)
+	for i in range(InventoryData.ready_to_fuse_list.size()):
+		var fuse_item: Weapon = InventoryData.ready_to_fuse_list[i]
+		# The fused result already keeps modules from the base source (index 0).
+		if i > 0:
+			for module in fuse_item.modules.get_children():
+				var module_copy = module.duplicate()
+				InventoryData.obtain_module(module_copy)
 		if InventoryData.inventory_slots.has(fuse_item):
 			InventoryData.inventory_slots.erase(fuse_item)
 			fuse_item.queue_free()

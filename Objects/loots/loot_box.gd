@@ -10,6 +10,8 @@ var number_of_collectables := 5
 var remainder := 0
 @export var item_id : String = ""
 @export var item_lvl : int = 0
+@export var module_scene: PackedScene
+@export var module_level: int = 1
 
 func _ready() -> void:
 	number_of_collectables = 5 + total_value/10
@@ -34,14 +36,18 @@ func drops() -> void:
 	drop_collectables()
 
 func drop_an_item() -> void:
-	if item_id == "" or item_lvl == 0:
-		# Skip when no input
+	if (item_id == "" or item_lvl == 0) and module_scene == null:
+		# Skip when no reward item input
 		return
 	var item_drop = drop_preload.instantiate()
 	item_drop.drop = item_preload
 	item_drop.spawn_global_position = global_position
-	item_drop.item_id = item_id
-	item_drop.level = item_lvl
+	if module_scene:
+		item_drop.module_scene = module_scene
+		item_drop.module_level = module_level
+	else:
+		item_drop.item_id = item_id
+		item_drop.level = item_lvl
 	self.call_deferred("add_sibling",item_drop)
 
 func drop_collectables() -> void:

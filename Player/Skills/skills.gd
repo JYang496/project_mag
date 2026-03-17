@@ -7,7 +7,13 @@ var _player: Player
 var _on_cooldown := false
 
 func _ready() -> void:
-	_player = PlayerData.player
+	call_deferred("_bind_player_and_initialize")
+
+func _bind_player_and_initialize() -> void:
+	_player = _resolve_player()
+	if _player == null or not is_instance_valid(_player):
+		await get_tree().process_frame
+		_player = _resolve_player()
 	if _player == null or not is_instance_valid(_player):
 		push_warning("%s failed to initialize: player not found." % name)
 		return
@@ -15,6 +21,19 @@ func _ready() -> void:
 	if not _player.active_skill.is_connected(callable_ref):
 		_player.active_skill.connect(callable_ref)
 	on_skill_ready()
+
+func _resolve_player() -> Player:
+	if PlayerData.player and is_instance_valid(PlayerData.player):
+		return PlayerData.player
+	var current: Node = get_parent()
+	while current:
+		if current is Player:
+			return current as Player
+		current = current.get_parent()
+	var player_node := get_tree().get_first_node_in_group("player")
+	if player_node and player_node is Player:
+		return player_node as Player
+	return null
 
 func _on_player_active_skill_requested() -> void:
 	if _on_cooldown:
@@ -38,4 +57,3 @@ func can_activate() -> bool:
 
 func activate_skill() -> void:
 	pass
-

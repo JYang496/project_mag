@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Utility/tests/module_feature_manual_test.gd" id="1_test"]
+
+[node name="ModuleFeatureManualTest" type="Node2D"]
+script = ExtResource("1_test")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="InfoLabel" type="Label" parent="CanvasLayer"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 1240.0
+offset_bottom = 680.0
+autowrap_mode = 3

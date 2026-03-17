@@ -14,7 +14,7 @@ func _on_button_up() -> void:
 	for sell_item : Weapon in InventoryData.ready_to_sell_list:
 		for module in sell_item.modules.get_children():
 			var module_copy = module.duplicate()
-			InventoryData.moddule_slots.append(module_copy)
+			InventoryData.obtain_module(module_copy)
 		if InventoryData.inventory_slots.has(sell_item):
 			InventoryData.inventory_slots.erase(sell_item)
 			sell_item.queue_free()

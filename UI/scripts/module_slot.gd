@@ -43,7 +43,7 @@ func update() -> void:
 		var module_name = module.get("ITEM_NAME")
 		if module_name == null or module_name == "":
 			module_name = module.name
-		item_name.text = str(module_name)
+		item_name.text = "%s Lv.%d" % [str(module_name), int(module.module_level)]
 	else:
 		image.texture = null
 		item_name.text = "Empty"

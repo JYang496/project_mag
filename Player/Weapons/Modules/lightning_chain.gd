@@ -28,14 +28,16 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if source_weapon:
 		fuse_level = max(1, int(source_weapon.fuse))
 	var fuse_bonus_steps: int = max(0, fuse_level - 1)
-	var bounce_count: int = max(0, chain_count + chain_count_per_fuse * fuse_bonus_steps)
+	var level_scale := get_effective_additive(1.0, 0.35)
+	var bounce_count: int = max(0, int(round(float(chain_count + chain_count_per_fuse * fuse_bonus_steps) * level_scale)))
 	if bounce_count <= 0:
 		return
 
 	var base_damage: int = 1
 	if source_weapon and source_weapon.get("damage") != null:
 		base_damage = max(1, int(source_weapon.damage))
-	var chain_damage: int = max(1, int(round(float(base_damage) * chain_damage_ratio)))
+	var chain_damage_ratio_scaled := chain_damage_ratio * get_effective_additive(1.0, 0.3)
+	var chain_damage: int = max(1, int(round(float(base_damage) * chain_damage_ratio_scaled)))
 	var owner_player: Player = _resolve_owner_player(source_weapon)
 	if owner_player and is_instance_valid(owner_player):
 		chain_damage = owner_player.compute_outgoing_damage(chain_damage)
@@ -47,7 +49,7 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 			continue
 		if not is_instance_valid(enemy):
 			continue
-		if enemy.global_position.distance_to(target2d.global_position) <= chain_range:
+		if enemy.global_position.distance_to(target2d.global_position) <= chain_range * get_effective_additive(1.0, 0.25):
 			candidates.append(enemy)
 
 	candidates.sort_custom(func(a: Node, b: Node) -> bool:

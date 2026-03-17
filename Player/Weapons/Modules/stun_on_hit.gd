@@ -24,11 +24,18 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 		fuse_level = max(1, int(source_weapon.fuse))
 	var fuse_bonus_steps: int = max(0, fuse_level - 1)
 
-	var stun_chance: float = clampf(base_chance + chance_per_fuse * float(fuse_bonus_steps), 0.0, 1.0)
+	var stun_chance: float = clampf(
+		(base_chance + chance_per_fuse * float(fuse_bonus_steps)) * get_effective_additive(1.0, 0.35),
+		0.0,
+		1.0
+	)
 	if randf() > stun_chance:
 		return
 
-	var stun_seconds: float = maxf(0.0, base_stun_seconds + stun_seconds_per_fuse * float(fuse_bonus_steps))
+	var stun_seconds: float = maxf(
+		0.0,
+		(base_stun_seconds + stun_seconds_per_fuse * float(fuse_bonus_steps)) * get_effective_additive(1.0, 0.4)
+	)
 	target.apply_status_payload(&"stun", {
 		"duration": stun_seconds
 	})

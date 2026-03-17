@@ -1,0 +1,56 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/scripts/module_equip_selection_panel.gd" id="1_script"]
+
+[node name="ModuleEquipSelectionPanel" type="PanelContainer"]
+visible = false
+offset_left = 200.0
+offset_top = 120.0
+offset_right = 1080.0
+offset_bottom = 620.0
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="."]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 870.0
+offset_bottom = 490.0
+
+[node name="Root" type="VBoxContainer" parent="Margin"]
+
+[node name="TitleLabel" type="Label" parent="Margin/Root" unique_name_in_owner=true]
+text = "Equip Module"
+
+[node name="ModuleLabel" type="Label" parent="Margin/Root" unique_name_in_owner=true]
+text = "Select a slot."
+
+[node name="Columns" type="HBoxContainer" parent="Margin/Root"]
+size_flags_vertical = 3
+
+[node name="EquippedPanel" type="PanelContainer" parent="Margin/Root/Columns"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="EquippedList" type="VBoxContainer" parent="Margin/Root/Columns/EquippedPanel" unique_name_in_owner=true]
+offset_left = 6.0
+offset_top = 6.0
+offset_right = 416.0
+offset_bottom = 386.0
+
+[node name="InventoryPanel" type="PanelContainer" parent="Margin/Root/Columns"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="InventoryList" type="VBoxContainer" parent="Margin/Root/Columns/InventoryPanel" unique_name_in_owner=true]
+offset_left = 6.0
+offset_top = 6.0
+offset_right = 416.0
+offset_bottom = 386.0
+
+[node name="Footer" type="HBoxContainer" parent="Margin/Root"]
+
+[node name="Spacer" type="Control" parent="Margin/Root/Footer"]
+size_flags_horizontal = 3
+
+[node name="CancelButton" type="Button" parent="Margin/Root/Footer" unique_name_in_owner=true]
+text = "Cancel"

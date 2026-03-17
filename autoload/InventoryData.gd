@@ -2,6 +2,7 @@ extends Node
 
 var INVENTORY_MAX_SLOTS : int = 8
 var MAX_FUSE_SIZE : int = 2
+const MODULE_DUPLICATE_BASE_CONVERT_COINS: int = 10
 var inventory_slots : Array = []
 var moddule_slots : Array = []
 var ready_to_sell_list : Array = []
@@ -48,6 +49,11 @@ func _safe_set_drag_icon(texture) -> void:
 	if ui == null or not ui.drag_item_icon:
 		return
 	ui.drag_item_icon.texture = texture
+
+func _notify_module_message(message: String, duration: float = 1.8) -> void:
+	var ui = _get_ui()
+	if ui and ui.has_method("show_item_message"):
+		ui.show_item_message(message, duration)
 
 # At this stage, on_select_module should not do anything
 var on_select_module :
@@ -214,6 +220,76 @@ func add_fuse_item(item) -> void:
 		if ready_to_fuse_list.size() == 0 or item.ITEM_NAME == ready_to_fuse_list[0].ITEM_NAME:
 			ready_to_fuse_list.append(item)
 		_safe_update_gf()
+
+func obtain_module(module_instance: Module) -> void:
+	if module_instance == null:
+		return
+	module_instance.set_module_level(module_instance.module_level)
+	var existing_module: Module = _find_existing_module_by_name(module_instance.get_module_display_name())
+	if existing_module == null:
+		moddule_slots.append(module_instance)
+		_notify_module_message("Obtained %s Lv.%d" % [module_instance.get_module_display_name(), module_instance.module_level])
+		_safe_refresh_all_panels()
+		return
+	if existing_module.increase_module_level(1):
+		_discard_module_instance(module_instance, existing_module)
+		_notify_module_message("Upgraded %s to Lv.%d" % [existing_module.get_module_display_name(), existing_module.module_level])
+		var owner_weapon: Weapon = _resolve_module_owner_weapon(existing_module)
+		if owner_weapon and owner_weapon.has_method("calculate_status"):
+			owner_weapon.calculate_status()
+		_safe_refresh_all_panels()
+		return
+	_discard_module_instance(module_instance, existing_module)
+	var convert_coins: int = _calculate_module_conversion_coins(existing_module)
+	PlayerData.player_gold += convert_coins
+	_notify_module_message("Converted duplicate %s into +%d Gold" % [existing_module.get_module_display_name(), convert_coins])
+	_safe_refresh_all_panels()
+
+func _find_existing_module_by_name(module_name: String) -> Module:
+	var normalized_name: String = module_name.strip_edges().to_lower()
+	if normalized_name == "":
+		return null
+	for inv_module_ref in moddule_slots:
+		var inv_module: Module = inv_module_ref as Module
+		if inv_module == null or not is_instance_valid(inv_module):
+			continue
+		if inv_module.get_module_display_name().strip_edges().to_lower() == normalized_name:
+			return inv_module
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon: Weapon = weapon_ref as Weapon
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if weapon.modules == null:
+			continue
+		for child in weapon.modules.get_children():
+			var equipped_module: Module = child as Module
+			if equipped_module == null:
+				continue
+			if equipped_module.get_module_display_name().strip_edges().to_lower() == normalized_name:
+				return equipped_module
+	return null
+
+func _resolve_module_owner_weapon(module_instance: Module) -> Weapon:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return null
+	var current: Node = module_instance
+	while current:
+		if current is Weapon:
+			return current as Weapon
+		current = current.get_parent()
+	return null
+
+func _calculate_module_conversion_coins(module_instance: Module) -> int:
+	var base_cost: int = int(max(MODULE_DUPLICATE_BASE_CONVERT_COINS, int(module_instance.cost) * 10))
+	return int(base_cost * max(1, module_instance.module_level))
+
+func _discard_module_instance(module_instance: Module, keep_instance: Module = null) -> void:
+	if module_instance == null or module_instance == keep_instance or not is_instance_valid(module_instance):
+		return
+	if module_instance.get_parent() != null:
+		module_instance.queue_free()
+	else:
+		module_instance.free()
 
 func remove_fuse_item(item) -> void:
 	if ready_to_fuse_list.has(item):
