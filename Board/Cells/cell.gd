@@ -9,7 +9,7 @@ signal enemy_killed_in_cell(cell: Cell, enemy: BaseEnemy)
 signal objective_completed(cell_id: String)
 
 enum CellState {IDLE, PLAYER, CONTESTED, LOCKED}
-enum TaskType {NONE, OFFENSE, DEFENSE}
+enum TaskType {NONE, OFFENSE, DEFENSE, CLEAR}
 enum RewardType {NONE, COMBAT, ECONOMY}
 enum TerrainType {NONE, CORROSION, JUNGLE, SPEED_BOOST, REGEN, LUCKY_STRIKE, DOUBLE_LOOT, LOW_HP_BERSERK}
 
@@ -225,6 +225,15 @@ func _apply_module_parameters(module_instance: Node) -> void:
 				module_instance.set_task_parameters({
 					"required_hold_seconds": profile.defense_required_hold_seconds,
 					"required_progress": profile.defense_required_progress
+				})
+			Cell.TaskType.CLEAR:
+				module_instance.set_task_parameters({
+					"clear_enemy_count": profile.clear_enemy_count,
+					"clear_completion_ratio": profile.clear_completion_ratio,
+					"clear_allow_elite": profile.clear_allow_elite,
+					"clear_elite_weight": profile.clear_elite_weight,
+					"clear_pre_entry_damage_mul": profile.clear_pre_entry_damage_mul,
+					"clear_freeze_before_entry": profile.clear_freeze_before_entry
 				})
 	# Apply bonus parameters
 	if module_instance.has_method("set_bonus_parameters"):

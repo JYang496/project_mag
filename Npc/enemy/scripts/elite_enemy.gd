@@ -5,6 +5,8 @@ var original_material: Material
 var highlight_material: ShaderMaterial
 var is_highlighted: bool = false
 var skill_ready : bool = true
+var quest_highlight_active := false
+var quest_highlight_color := Color.WHITE
 @onready var skill_timer: Timer = $SkillTimer
 
 # Highlight shader code
@@ -52,6 +54,9 @@ void fragment() {
 
 func _ready():
 	hit_box_dot.hitbox_owner = self
+	if sprite_body == null:
+		push_warning("EliteEnemy missing Body sprite; highlight disabled.")
+		return
 	# Store original material
 	original_material = sprite_body.material
 	
@@ -71,12 +76,23 @@ func _ready():
 
 func highlight(enable: bool = true):
 	"""Toggle character highlight on/off"""
+	if sprite_body == null:
+		return
 	is_highlighted = enable
 	
 	if enable:
 		sprite_body.material = highlight_material
 	else:
 		sprite_body.material = original_material
+
+func set_quest_highlight(active: bool, color: Color = Color.WHITE) -> void:
+	if sprite_body == null:
+		return
+	quest_highlight_active = active
+	quest_highlight_color = color
+	highlight(active)
+	if active:
+		set_highlight_color(color)
 
 func set_highlight_color(color: Color):
 	"""Change the highlight color"""
@@ -119,4 +135,7 @@ func simple_highlight(enable: bool = true):
 func _on_skill_timer_timeout() -> void:
 	skill_ready = true
 	if highlight_material:
-		highlight_material.set_shader_parameter("outline_color", Color.YELLOW)
+		if quest_highlight_active:
+			highlight_material.set_shader_parameter("outline_color", quest_highlight_color)
+		else:
+			highlight_material.set_shader_parameter("outline_color", Color.YELLOW)

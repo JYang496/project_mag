@@ -1,7 +1,7 @@
 extends Resource
 class_name CellProfile
 
-@export_enum("NONE:0", "OFFENSE:1", "DEFENSE:2")
+@export_enum("NONE:0", "OFFENSE:1", "DEFENSE:2", "CLEAR:3")
 var task_type: int = Cell.TaskType.NONE
 @export_enum("NONE:0", "COMBAT:1", "ECONOMY:2")
 var reward_type: int = Cell.RewardType.NONE
@@ -20,6 +20,14 @@ var terrain_type: int = Cell.TerrainType.NONE
 @export_subgroup("Defense (Hold) Task")
 @export var defense_required_hold_seconds: float = 8.0
 @export var defense_required_progress: int = 50
+
+@export_subgroup("Clear Cell Task")
+@export var clear_enemy_count: int = 6
+@export var clear_completion_ratio: float = 0.8
+@export var clear_allow_elite: bool = true
+@export var clear_elite_weight: float = 0.5
+@export var clear_pre_entry_damage_mul: float = 0.5
+@export var clear_freeze_before_entry: bool = true
 
 # ========== Bonus Parameters ==========
 @export_group("Bonus Parameters")
@@ -79,7 +87,8 @@ var terrain_type: int = Cell.TerrainType.NONE
 
 const TASK_OBJECTIVE_REGISTRY := {
 	Cell.TaskType.OFFENSE: "res://Board/Cells/Modules/offense_kill_objective_module.tscn",
-	Cell.TaskType.DEFENSE: "res://Board/Cells/Modules/defense_hold_objective_module.tscn"
+	Cell.TaskType.DEFENSE: "res://Board/Cells/Modules/defense_hold_objective_module.tscn",
+	Cell.TaskType.CLEAR: "res://Board/Cells/Modules/clear_cell_objective_module.tscn"
 }
 const TERRAIN_AURA_REGISTRY := {
 	Cell.TerrainType.CORROSION: "res://Board/Cells/Modules/corrosion_aura_module.tscn",

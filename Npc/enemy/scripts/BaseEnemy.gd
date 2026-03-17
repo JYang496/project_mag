@@ -68,6 +68,8 @@ func is_slowed() -> bool:
 	return slow_remaining > 0.0 and slow_multiplier < 1.0
 
 func get_current_movement_speed() -> float:
+	if has_method("is_quest_movement_locked") and is_quest_movement_locked():
+		return 0.0
 	return movement_speed * slow_multiplier
 
 func interrupt_movement() -> void:
@@ -102,3 +104,16 @@ func _update_knockback_overlap_mode() -> void:
 		# Restore normal enemy collision behavior after knockback ends.
 		self.set_collision_mask_value(3, true)
 		_is_knockback_overlap_mode = false
+
+func set_quest_highlight(enabled: bool, color: Color = Color.WHITE) -> void:
+	if self is EliteEnemy:
+		var elite := self as EliteEnemy
+		if elite.has_method("set_quest_highlight"):
+			elite.set_quest_highlight(enabled, color)
+		else:
+			elite.highlight(enabled)
+			if enabled:
+				elite.set_highlight_color(color)
+		return
+	if has_method("set_outline_highlight"):
+		set_outline_highlight(enabled, color, 1.0)

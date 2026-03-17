@@ -28,6 +28,7 @@ var game_over_root: Control
 var game_over_status_label: Label
 var game_over_coin_label: Label
 var game_over_chip_label: Label
+var quest_hint_label: Label
 
 
 # Character
@@ -86,6 +87,7 @@ func _ready():
 	GlobalVariables.ui = self
 	_init_branch_select_panel()
 	_create_game_over_layout()
+	_create_quest_hint()
 	_connect_viewport_signals()
 	_apply_responsive_layout()
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
@@ -445,6 +447,7 @@ func _apply_responsive_layout() -> void:
 	_fit_center_panel(inventory_panel, viewport_size, PANEL_TARGET_SIZE)
 	_fit_pause_layout(viewport_size)
 	_layout_hud(viewport_size)
+	_layout_quest_hint(viewport_size)
 
 func _fit_center_panel(panel: Control, viewport_size: Vector2, target_size: Vector2) -> void:
 	if panel == null:
@@ -471,3 +474,28 @@ func _layout_hud(viewport_size: Vector2) -> void:
 	time_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN + 56.0)
 	phase_label.position = Vector2(viewport_size.x - 220.0, HUD_MARGIN)
 	resource_label.position = Vector2(viewport_size.x - 110.0, viewport_size.y - 54.0)
+
+func _create_quest_hint() -> void:
+	if quest_hint_label != null:
+		return
+	quest_hint_label = Label.new()
+	quest_hint_label.name = "QuestHint"
+	quest_hint_label.visible = false
+	quest_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	quest_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	quest_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	quest_hint_label.text = ""
+	$GUI.add_child(quest_hint_label)
+
+func _layout_quest_hint(viewport_size: Vector2) -> void:
+	if quest_hint_label == null:
+		return
+	var width := minf(520.0, viewport_size.x - 2.0 * HUD_MARGIN)
+	quest_hint_label.size = Vector2(maxf(width, 0.0), 36.0)
+	quest_hint_label.position = Vector2((viewport_size.x - quest_hint_label.size.x) * 0.5, HUD_MARGIN + 84.0)
+
+func set_quest_hint(text: String) -> void:
+	if quest_hint_label == null:
+		return
+	quest_hint_label.text = text
+	quest_hint_label.visible = text.strip_edges() != ""

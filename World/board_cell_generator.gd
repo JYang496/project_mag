@@ -333,7 +333,7 @@ func _unlock_defense_cells_for_battle() -> void:
 		if not cell:
 			continue
 		cell.progress = 0
-		if cell.task_type == Cell.TaskType.DEFENSE:
+		if cell.task_type == Cell.TaskType.DEFENSE or cell.task_type == Cell.TaskType.CLEAR:
 			cell.set_locked(false)
 		else:
 			cell.set_locked(true)

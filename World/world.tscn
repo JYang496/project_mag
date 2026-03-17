@@ -8,13 +8,16 @@
 [ext_resource type="Script" uid="uid://dabf8pyg4rbvt" path="res://World/board_cell_generator.gd" id="13_mj5tj"]
 [ext_resource type="Script" uid="uid://dxdn6jvfdd656" path="res://World/player_spawner.gd" id="14_26uyv"]
 [ext_resource type="PackedScene" uid="uid://d382rsvvo0j8d" path="res://Board/Cells/cell.tscn" id="14_dqu5g"]
-[ext_resource type="PackedScene" path="res://World/rest_area.tscn" id="15_6p52w"]
+[ext_resource type="PackedScene" uid="uid://cat80ev8yltf7" path="res://World/rest_area.tscn" id="15_6p52w"]
 [ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/scenes/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://Utility/reward_manager.tscn" id="22_n13dc"]
 
 [sub_resource type="Resource" id="Resource_h2aik"]
 script = ExtResource("4_lo5ox")
+task_type = 3
+reward_type = 1
 terrain_type = 7
+objective_enabled = true
 aura_enabled = true
 metadata/_custom_type_script = "uid://ytgqpjri2ckf"
 
@@ -52,7 +55,7 @@ initial_cell_profiles = Array[ExtResource("4_lo5ox")]([null, SubResource("Resour
 script = ExtResource("14_26uyv")
 rest_area_path = NodePath("../../RestArea")
 
-[node name="RestArea" parent="." groups=["rest_area"] instance=ExtResource("15_6p52w")]
+[node name="RestArea" parent="." unique_id=489488785 groups=["rest_area"] instance=ExtResource("15_6p52w")]
 position = Vector2(-467, -11)
 board_path = NodePath("../Board")
 
@@ -70,7 +73,6 @@ collision_layer = 1
 collision_mask = 1
 motion_mode = 0
 
-
 [node name="EnemySpawner" parent="." unique_id=236369448 instance=ExtResource("12_dyxss")]
 
 [node name="TopLeft" parent="EnemySpawner" index="1"]
@@ -79,5 +81,6 @@ position = Vector2(-982, -519)
 [node name="BottomRight" parent="EnemySpawner" index="2"]
 position = Vector2(548, 1002)
 
-[editable path="EnemySpawner"]
 [node name="RewardManager" parent="." unique_id=113647262 instance=ExtResource("22_n13dc")]
+
+[editable path="EnemySpawner"]

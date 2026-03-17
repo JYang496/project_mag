@@ -25,6 +25,17 @@ var _pending_hit_label_damage: int = 0
 var _hit_label_batch_id: int = 0
 var _pending_hit_label_damage_by_type: Dictionary = {}
 
+var _quest_lock_active := false
+var _quest_lock_speed := 0.0
+var _quest_lock_damage_mul := 1.0
+var _quest_freeze_movement := false
+@onready var _base_movement_speed: float = movement_speed
+var _quest_outline_enabled := false
+var _quest_outline_original_material: Material
+var _quest_outline_material: ShaderMaterial
+
+const QUEST_OUTLINE_SHADER: Shader = preload("res://Shaders/quest_outline.gdshader") as Shader
+
 
 func damaged(attack:Attack):
 	var effective_damage := attack.damage
@@ -152,3 +163,46 @@ func apply_status_payload(status_name: StringName, status_data: Variant) -> void
 		&"erosion":
 			apply_status_effect(ErosionStatusEffect.from_payload(status_data))
 
+func set_quest_lock(active: bool, damage_mul: float = 0.5, freeze_movement: bool = true) -> void:
+	if active:
+		if _quest_lock_active:
+			return
+		_quest_lock_active = true
+		_quest_lock_speed = movement_speed if movement_speed > 0.0 else _base_movement_speed
+		_quest_lock_damage_mul = damage_taken_multiplier
+		_quest_freeze_movement = freeze_movement
+		damage_taken_multiplier = minf(damage_taken_multiplier, maxf(damage_mul, 0.05))
+		return
+	if not _quest_lock_active:
+		return
+	_quest_lock_active = false
+	_quest_freeze_movement = false
+	damage_taken_multiplier = _quest_lock_damage_mul
+
+func is_quest_movement_locked() -> bool:
+	return _quest_lock_active and _quest_freeze_movement
+
+func set_outline_highlight(enabled: bool, color: Color = Color.WHITE, width: float = 1.0) -> void:
+	if sprite_body == null:
+		return
+	if enabled:
+		if not _quest_outline_enabled:
+			_quest_outline_original_material = sprite_body.material
+			_quest_outline_material = _build_quest_outline_material(color, width)
+			_quest_outline_enabled = true
+		if _quest_outline_material:
+			_quest_outline_material.set_shader_parameter("outline_color", color)
+			_quest_outline_material.set_shader_parameter("outline_width", width)
+			sprite_body.material = _quest_outline_material
+		return
+	if not _quest_outline_enabled:
+		return
+	_quest_outline_enabled = false
+	sprite_body.material = _quest_outline_original_material
+
+func _build_quest_outline_material(color: Color, width: float) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = QUEST_OUTLINE_SHADER
+	material.set_shader_parameter("outline_color", color)
+	material.set_shader_parameter("outline_width", width)
+	return material
