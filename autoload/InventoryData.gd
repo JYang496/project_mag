@@ -55,6 +55,49 @@ func _notify_module_message(message: String, duration: float = 1.8) -> void:
 	if ui and ui.has_method("show_item_message"):
 		ui.show_item_message(message, duration)
 
+func get_weapon_module_assignment_feedback(module_instance: Module, weapon: Weapon) -> Dictionary:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return {"ok": false, "reason": "Invalid module."}
+	if weapon == null or not is_instance_valid(weapon):
+		return {"ok": false, "reason": "Invalid weapon."}
+	if weapon.modules == null:
+		return {"ok": false, "reason": "Weapon has no module container."}
+	if weapon.get_module_count() >= int(weapon.MAX_MODULE_NUMBER):
+		return {"ok": false, "reason": "No module slots available."}
+	var reason: String = str(module_instance.get_incompatibility_reason(weapon))
+	if reason != "":
+		return {"ok": false, "reason": reason}
+	return {"ok": true, "reason": ""}
+
+func equip_module_to_weapon(module_instance: Module, weapon: Weapon) -> Dictionary:
+	var feedback := get_weapon_module_assignment_feedback(module_instance, weapon)
+	if not feedback.get("ok", false):
+		return feedback
+	if module_instance.get_parent() != null:
+		module_instance.reparent(weapon.modules)
+	else:
+		weapon.modules.add_child(module_instance)
+	moddule_slots.erase(module_instance)
+	if weapon.has_method("calculate_status"):
+		weapon.calculate_status()
+	_safe_refresh_all_panels()
+	return {"ok": true, "reason": ""}
+
+func unequip_module_from_weapon(module_instance: Module, weapon: Weapon) -> Dictionary:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return {"ok": false, "reason": "Invalid module."}
+	if weapon == null or not is_instance_valid(weapon):
+		return {"ok": false, "reason": "Invalid weapon."}
+	if module_instance.get_parent() == null:
+		return {"ok": false, "reason": "Module is not equipped."}
+	module_instance.reparent(self)
+	if not moddule_slots.has(module_instance):
+		moddule_slots.append(module_instance)
+	if weapon.has_method("calculate_status"):
+		weapon.calculate_status()
+	_safe_refresh_all_panels()
+	return {"ok": true, "reason": ""}
+
 # At this stage, on_select_module should not do anything
 var on_select_module :
 	get:
@@ -91,22 +134,14 @@ var on_select_module_weapon :
 		return on_select_module_weapon
 	set(value):
 		if value != null and on_select_inventory_module != null and on_select_module == null:
-			var module_list : Array = value.modules.get_children()
-			if module_list.size() >= value.MAX_MODULE_NUMBER:
-				return
-			if on_select_inventory_module.has_method("can_apply_to_weapon") and not on_select_inventory_module.can_apply_to_weapon(value):
+			var result := equip_module_to_weapon(on_select_inventory_module, value)
+			if not result.get("ok", false):
 				push_warning(
-					"Module '%s' is incompatible with weapon '%s'; install blocked." %
-					[on_select_inventory_module.name, value.name]
+					"Module '%s' cannot be equipped on '%s': %s" %
+					[on_select_inventory_module.name, value.name, str(result.get("reason", ""))]
 				)
+				_notify_module_message(str(result.get("reason", "Cannot equip module.")))
 				on_drag_item = null
-				on_select_inventory_module = null
-				_safe_refresh_all_panels()
-				return
-			value.modules.add_child(on_select_inventory_module)
-			value.calculate_status()
-			moddule_slots.erase(on_select_inventory_module)
-			_safe_refresh_all_panels()
 			on_select_inventory_module = null
 
 var on_select_inventory_module :
@@ -221,11 +256,11 @@ func add_fuse_item(item) -> void:
 			ready_to_fuse_list.append(item)
 		_safe_update_gf()
 
-func obtain_module(module_instance: Module) -> void:
+func obtain_module(module_instance: Module, ignore_weapon: Weapon = null) -> void:
 	if module_instance == null:
 		return
 	module_instance.set_module_level(module_instance.module_level)
-	var existing_module: Module = _find_existing_module_by_name(module_instance.get_module_display_name())
+	var existing_module: Module = _find_existing_module_by_name(module_instance.get_module_display_name(), ignore_weapon)
 	if existing_module == null:
 		moddule_slots.append(module_instance)
 		_notify_module_message("Obtained %s Lv.%d" % [module_instance.get_module_display_name(), module_instance.module_level])
@@ -245,7 +280,7 @@ func obtain_module(module_instance: Module) -> void:
 	_notify_module_message("Converted duplicate %s into +%d Gold" % [existing_module.get_module_display_name(), convert_coins])
 	_safe_refresh_all_panels()
 
-func _find_existing_module_by_name(module_name: String) -> Module:
+func _find_existing_module_by_name(module_name: String, ignore_weapon: Weapon = null) -> Module:
 	var normalized_name: String = module_name.strip_edges().to_lower()
 	if normalized_name == "":
 		return null
@@ -258,6 +293,8 @@ func _find_existing_module_by_name(module_name: String) -> Module:
 	for weapon_ref in PlayerData.player_weapon_list:
 		var weapon: Weapon = weapon_ref as Weapon
 		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if ignore_weapon != null and weapon == ignore_weapon:
 			continue
 		if weapon.modules == null:
 			continue

@@ -142,6 +142,7 @@ func sync_stats() -> void:
 	return_speed = base_return_speed
 	attack_cooldown = base_attack_cooldown
 	size = base_size
+	apply_module_stat_pipeline()
 	apply_size_multiplier(size)
 	calculate_damage(damage)
 	calculate_attack_cooldown.emit(attack_cooldown)

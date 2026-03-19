@@ -1,16 +1,16 @@
-[gd_scene load_steps=3 format=3 uid="uid://bpx63eseql6vs"]
+[gd_scene format=3 uid="uid://bpx63eseql6vs"]
 
 [ext_resource type="Script" uid="uid://g34jrdcme435" path="res://Objects/loots/loot_box.gd" id="1_c5wyf"]
 [ext_resource type="Texture2D" uid="uid://1ur01rlyde1g" path="res://Textures/test/loot_box.png" id="2_s0sow"]
 
-[node name="LootBox" type="Node2D"]
+[node name="LootBox" type="Node2D" unique_id=1718774930]
 script = ExtResource("1_c5wyf")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=149395096]
 texture_filter = 1
 texture = ExtResource("2_s0sow")
 
-[node name="DisapearTimer" type="Timer" parent="."]
+[node name="DisapearTimer" type="Timer" parent="." unique_id=1266524279]
 wait_time = 10.0
 
 [connection signal="timeout" from="DisapearTimer" to="." method="_on_disapear_timer_timeout"]

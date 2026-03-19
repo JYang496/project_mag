@@ -3,75 +3,52 @@ class_name BonusManager
 
 #@onready var player = get_tree().get_first_node_in_group("player")
 const LOOT_BOX = preload("res://Objects/loots/loot_box.tscn")
-var instance_list : Array
-var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var instance_list: Array = []
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	_rng.randomize()
-	for level_config in SpawnData.level_list:
-		if level_config == null:
-			continue
-		var ins : LevelSpawnConfig = level_config.duplicate(true)
-		instance_list.append(ins.rewards)
+	rebuild_rewards_cache()
 	if not PhaseManager.is_connected("pre_enter_prepare_loot",Callable(self,"create_loot_box")):
 		PhaseManager.connect("pre_enter_prepare_loot",Callable(self,"create_loot_box"))
 
 func create_loot_box() -> void:
-	for reward : RewardInfo in instance_list[PhaseManager.current_level]:
+	create_loot_box_for_level(int(PhaseManager.current_level))
+
+func rebuild_rewards_cache() -> void:
+	instance_list.clear()
+	for level_config in SpawnData.level_list:
+		if level_config == null:
+			instance_list.append([])
+			continue
+		var ins: LevelSpawnConfig = level_config.duplicate(true)
+		instance_list.append(ins.rewards.duplicate(true))
+
+func create_loot_box_for_level(level_index: int) -> int:
+	if level_index < 0 or level_index >= instance_list.size():
+		push_warning("create_loot_box_for_level ignored invalid level index: %d" % level_index)
+		return 0
+	var spawned_count := 0
+	var rewards_at_level: Array = instance_list[level_index]
+	for reward_entry in rewards_at_level:
+		if not (reward_entry is RewardInfo):
+			push_warning("Reward entry is invalid and was skipped at level index %d." % level_index)
+			continue
+		var reward: RewardInfo = reward_entry
 		var lb_ins: Node2D = LOOT_BOX.instantiate() as Node2D
 		if lb_ins == null:
 			continue
-		lb_ins.position = PlayerData.player.position
+		if PlayerData.player and is_instance_valid(PlayerData.player):
+			lb_ins.position = PlayerData.player.position
+		else:
+			lb_ins.position = Vector2.ZERO
 		lb_ins.item_id = reward.item_id
-		lb_ins.item_lvl = reward.item_level
-		var module_payload: Dictionary = _resolve_reward_module_payload(reward)
-		lb_ins.module_scene = module_payload.get("module_scene", reward.module_scene) as PackedScene
-		lb_ins.module_level = int(module_payload.get("module_level", reward.module_level))
-		lb_ins.total_value = reward.total_coin_value
+		lb_ins.item_lvl = max(0, int(reward.item_level))
+		lb_ins.module_scene = reward.module_scene
+		lb_ins.module_level = _sanitize_module_level(int(reward.module_level))
+		lb_ins.total_value = max(0, int(reward.total_chip_value))
 		self.add_child(lb_ins)
+		spawned_count += 1
+	return spawned_count
 
-func _resolve_reward_module_payload(reward: RewardInfo) -> Dictionary:
-	if reward == null:
-		return {}
-	if reward.module_options.is_empty():
-		return {
-			"module_scene": reward.module_scene,
-			"module_level": reward.module_level,
-		}
-	var picked_option: ModuleRewardOption = _pick_weighted_module_option(reward.module_options)
-	if picked_option == null or picked_option.module_scene == null:
-		return {
-			"module_scene": reward.module_scene,
-			"module_level": reward.module_level,
-		}
-	var min_level: int = picked_option.get_clamped_min_level()
-	var max_level: int = picked_option.get_clamped_max_level()
-	var rolled_level: int = _rng.randi_range(min_level, max_level)
-	return {
-		"module_scene": picked_option.module_scene,
-		"module_level": rolled_level,
-	}
-
-func _pick_weighted_module_option(options: Array[ModuleRewardOption]) -> ModuleRewardOption:
-	var valid_options: Array[ModuleRewardOption] = []
-	var total_weight: float = 0.0
-	for option in options:
-		if option == null:
-			continue
-		if option.module_scene == null:
-			continue
-		var option_weight: float = maxf(0.0, option.weight)
-		if option_weight <= 0.0:
-			continue
-		valid_options.append(option)
-		total_weight += option_weight
-	if valid_options.is_empty():
-		return null
-	var roll: float = _rng.randf_range(0.0, total_weight)
-	var cumulative: float = 0.0
-	for option in valid_options:
-		cumulative += maxf(0.0, option.weight)
-		if roll <= cumulative:
-			return option
-	return valid_options[valid_options.size() - 1]
+func _sanitize_module_level(level_value: int) -> int:
+	return clampi(level_value, 1, Module.MAX_LEVEL)

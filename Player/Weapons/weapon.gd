@@ -23,6 +23,7 @@ var fuse_sprites: Dictionary = {}
 var branch_id: String = ""
 var branch_definition: WeaponBranchDefinition
 var branch_behavior: WeaponBranchBehavior
+var _last_stat_snapshot: Dictionary = {}
 var fuse : int:
 	get:
 		return _fuse_internal
@@ -163,6 +164,11 @@ func get_normalized_weapon_traits() -> Array[StringName]:
 		traits.append(CombatTrait.MELEE)
 	return traits
 
+func get_explicit_weapon_traits() -> Array[StringName]:
+	if modules and modules.has_method("get_normalized_weapon_traits"):
+		return modules.get_normalized_weapon_traits()
+	return []
+
 func has_weapon_trait(trait_name: Variant) -> bool:
 	var normalized := CombatTrait.normalize(trait_name)
 	if normalized == StringName():
@@ -173,6 +179,15 @@ func has_any_weapon_traits(required_traits: Array[StringName]) -> bool:
 	if required_traits.is_empty():
 		return true
 	var traits := get_normalized_weapon_traits()
+	for required_trait in required_traits:
+		if traits.has(required_trait):
+			return true
+	return false
+
+func has_any_explicit_weapon_traits(required_traits: Array[StringName]) -> bool:
+	if required_traits.is_empty():
+		return true
+	var traits := get_explicit_weapon_traits()
 	for required_trait in required_traits:
 		if traits.has(required_trait):
 			return true
@@ -193,6 +208,88 @@ func validate_module_compatibility() -> void:
 			[module_node.name, name]
 		)
 		module_node.call_deferred("queue_free")
+
+func get_module_count() -> int:
+	if modules == null:
+		return 0
+	var count := 0
+	for child in modules.get_children():
+		if child is Module:
+			count += 1
+	return count
+
+func get_available_module_slots() -> int:
+	return max(0, int(MAX_MODULE_NUMBER) - get_module_count())
+
+func get_equipped_modules() -> Array[Module]:
+	var output: Array[Module] = []
+	if modules == null:
+		return output
+	for child in modules.get_children():
+		var module_node := child as Module
+		if module_node:
+			output.append(module_node)
+	return output
+
+func build_stat_snapshot() -> Dictionary:
+	var snapshot: Dictionary = {}
+	var tracked_stats: PackedStringArray = [
+		"damage",
+		"attack_cooldown",
+		"projectile_hits",
+		"speed",
+		"size",
+		"hp",
+		"dash_speed",
+		"return_speed",
+		"attack_range",
+	]
+	for stat_key in tracked_stats:
+		if get(stat_key) != null:
+			snapshot[stat_key] = float(get(stat_key))
+	return snapshot
+
+func get_last_stat_snapshot() -> Dictionary:
+	return _last_stat_snapshot.duplicate(true)
+
+func get_projected_stats_with_module(module_instance: Module) -> Dictionary:
+	var projected := build_stat_snapshot()
+	if module_instance == null:
+		return projected
+	return module_instance.apply_stat_modifiers(projected)
+
+func apply_module_stat_pipeline() -> void:
+	_apply_dynamic_module_stats()
+
+func _apply_dynamic_module_stats() -> void:
+	if modules == null:
+		_last_stat_snapshot = build_stat_snapshot()
+		return
+	var stats := build_stat_snapshot()
+	for module_node in get_equipped_modules():
+		stats = module_node.apply_stat_modifiers(stats)
+	_apply_stat_snapshot(stats)
+	_last_stat_snapshot = stats.duplicate(true)
+
+func _apply_stat_snapshot(snapshot: Dictionary) -> void:
+	if snapshot == null:
+		return
+	for stat_key in snapshot.keys():
+		var stat_name := str(stat_key)
+		if get(stat_name) == null:
+			continue
+		var current_value: Variant = get(stat_name)
+		var next_value: Variant = snapshot[stat_key]
+		if typeof(current_value) == TYPE_INT:
+			set(stat_name, int(round(float(next_value))))
+		else:
+			set(stat_name, float(next_value))
+	if get("cooldown_timer") != null and get("attack_cooldown") != null:
+		var timer_variant: Variant = get("cooldown_timer")
+		if timer_variant is Timer and float(get("attack_cooldown")) > 0.0:
+			(timer_variant as Timer).wait_time = float(get("attack_cooldown"))
+	if has_method("apply_size_multiplier") and get("size") != null:
+		call("apply_size_multiplier", float(get("size")))
 
 func get_weapon_capabilities() -> Dictionary:
 	return {

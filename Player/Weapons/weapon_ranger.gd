@@ -339,6 +339,7 @@ func sync_stats() -> void:
 	projectile_hits = base_projectile_hits
 	attack_cooldown = base_attack_cooldown
 	speed = base_speed
+	apply_module_stat_pipeline()
 	if cooldown_timer == null:
 		setup_timer()
 	set_cd_timer(cooldown_timer)

@@ -30,6 +30,7 @@ func sync_stats() -> void:
 	attack_cooldown = base_attack_cooldown
 	projectile_hits = base_projectile_hits
 	hp = base_hp
+	apply_module_stat_pipeline()
 	calculate_weapon_damage.emit(damage)
 	calculate_attack_cooldown.emit(attack_cooldown)
 	calculate_weapon_projectile_hits.emit(projectile_hits)

@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://b810a6a8ddqsn"]
+
+[ext_resource type="Script" uid="uid://bmeo84h72412" path="res://Utility/tests/reward_spawn_config_test.gd" id="1_script"]
+
+[node name="RewardSpawnConfigTest" type="Node2D" unique_id=46897242]
+script = ExtResource("1_script")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=542080867]
+
+[node name="InfoLabel" type="Label" parent="CanvasLayer" unique_id=654609616]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 1240.0
+offset_bottom = 700.0
+autowrap_mode = 3

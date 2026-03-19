@@ -57,5 +57,15 @@ func _on_mouse_exited() -> void:
 
 func _on_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK") and equipment_slot is EquipmentSlotModule:
-		InventoryData.on_select_module = module
-		InventoryData.on_select_module_weapon = equipment_slot.item
+		if module == null:
+			return
+		var weapon := equipment_slot.item
+		var result := InventoryData.unequip_module_from_weapon(module, weapon)
+		if not result.get("ok", false):
+			return
+		var ui = GlobalVariables.ui
+		if ui and is_instance_valid(ui) and ui.has_method("show_item_message"):
+			ui.show_item_message("Removed %s from %s" % [
+				module.get_module_display_name(),
+				str(weapon.get("ITEM_NAME")) if weapon and weapon.get("ITEM_NAME") != null else "weapon"
+			], 1.6)

@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://cr1621js04lit"]
+
+[ext_resource type="Script" uid="uid://dw7sfi4xw5bql" path="res://Utility/tests/weapon_module_dataflow_test.gd" id="1_script"]
+
+[node name="WeaponModuleDataflowTest" type="Node2D" unique_id=1752977748]
+script = ExtResource("1_script")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1478485574]
+
+[node name="InfoLabel" type="Label" parent="CanvasLayer" unique_id=1501042454]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 1240.0
+offset_bottom = 700.0
+autowrap_mode = 3

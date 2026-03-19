@@ -60,4 +60,10 @@ func _on_background_mouse_exited() -> void:
 
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK"):
+		if module == null:
+			return
+		var ui = GlobalVariables.ui
+		if ui and is_instance_valid(ui) and ui.has_method("request_module_equip_selection"):
+			ui.request_module_equip_selection(module)
+			return
 		InventoryData.on_select_inventory_module = module

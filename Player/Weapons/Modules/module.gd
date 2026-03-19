@@ -11,6 +11,8 @@ var weapon: Weapon
 @export var supports_ranged: bool = true
 @export_range(1, MAX_LEVEL, 1) var module_level: int = 1
 @export var module_traits: PackedStringArray = []
+@export var stat_multipliers: Dictionary = {}
+@export var stat_additives: Dictionary = {}
 @export_flags(
 	"movement",
 	"debuff",
@@ -40,19 +42,35 @@ func _ready() -> void:
 		weapon = _resolve_weapon()
 
 func can_apply_to_weapon(target_weapon: Weapon) -> bool:
+	return get_incompatibility_reason(target_weapon) == ""
+
+func get_incompatibility_reason(target_weapon: Weapon) -> String:
 	if not target_weapon:
-		return false
+		return "Invalid weapon."
 	if target_weapon.has_method("supports_melee_contact") and target_weapon.supports_melee_contact():
 		if not supports_melee:
-			return false
+			return "Not compatible with melee weapons."
 	if target_weapon.has_method("supports_projectiles") and target_weapon.supports_projectiles():
 		if not supports_ranged:
-			return false
+			return "Not compatible with ranged weapons."
 	var required_traits := get_normalized_required_weapon_traits()
-	if target_weapon.has_method("has_any_weapon_traits"):
+	if target_weapon.has_method("has_any_explicit_weapon_traits"):
+		if not target_weapon.has_any_explicit_weapon_traits(required_traits):
+			var trait_names: PackedStringArray = []
+			for required_trait_name in required_traits:
+				trait_names.append(str(required_trait_name))
+			if trait_names.is_empty():
+				return "Weapon does not match required traits."
+			return "Requires one of: %s" % ", ".join(trait_names)
+	elif target_weapon.has_method("has_any_weapon_traits"):
 		if not target_weapon.has_any_weapon_traits(required_traits):
-			return false
-	return true
+			var trait_names: PackedStringArray = []
+			for required_trait_name in required_traits:
+				trait_names.append(str(required_trait_name))
+			if trait_names.is_empty():
+				return "Weapon does not match required traits."
+			return "Requires one of: %s" % ", ".join(trait_names)
+	return ""
 
 func register_as_on_hit_plugin() -> void:
 	weapon = _resolve_weapon()
@@ -113,3 +131,49 @@ func get_effective_multiplier(base_multiplier: float, per_level_bonus: float = 0
 func get_effective_additive(base_value: float, per_level_bonus: float = 0.5) -> float:
 	var level_scale := 1.0 + per_level_bonus * float(max(0, module_level - 1))
 	return base_value * level_scale
+
+func configure_stat_modifiers() -> void:
+	pass
+
+func apply_stat_modifiers(stat_block: Dictionary) -> Dictionary:
+	if stat_block == null:
+		return {}
+	configure_stat_modifiers()
+	var output: Dictionary = stat_block.duplicate(true)
+	for key_variant in stat_multipliers.keys():
+		var key := str(key_variant)
+		if not output.has(key):
+			continue
+		var base_multiplier := float(stat_multipliers[key_variant])
+		var final_multiplier := get_effective_multiplier(base_multiplier)
+		output[key] = float(output[key]) * final_multiplier
+	for key_variant in stat_additives.keys():
+		var key := str(key_variant)
+		if not output.has(key):
+			continue
+		var base_add := float(stat_additives[key_variant])
+		var final_add := get_effective_additive(base_add)
+		output[key] = float(output[key]) + final_add
+	return output
+
+func get_effect_descriptions() -> PackedStringArray:
+	configure_stat_modifiers()
+	var descriptions: PackedStringArray = []
+	for key_variant in stat_multipliers.keys():
+		var key := str(key_variant)
+		var raw_multiplier: float = float(stat_multipliers[key_variant])
+		var final_multiplier: float = get_effective_multiplier(raw_multiplier)
+		var delta_percent := (final_multiplier - 1.0) * 100.0
+		var sign := "+" if delta_percent >= 0.0 else ""
+		descriptions.append("%s %s%.0f%%" % [_format_stat_label(key), sign, delta_percent])
+	for key_variant in stat_additives.keys():
+		var key := str(key_variant)
+		var raw_add: float = float(stat_additives[key_variant])
+		var final_add: float = get_effective_additive(raw_add)
+		var sign := "+" if final_add >= 0.0 else ""
+		descriptions.append("%s %s%.1f" % [_format_stat_label(key), sign, final_add])
+	return descriptions
+
+func _format_stat_label(stat_key: String) -> String:
+	var pretty := stat_key.replace("_", " ")
+	return pretty.capitalize()
