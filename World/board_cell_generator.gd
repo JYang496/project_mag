@@ -144,8 +144,8 @@ func _set_cells_monitoring(active: bool) -> void:
 			continue
 		var area: Area2D = cell.get_node_or_null("Area2D") as Area2D
 		if area:
-			area.monitoring = active
-			area.monitorable = active
+			area.set_deferred("monitoring", active)
+			area.set_deferred("monitorable", active)
 
 func _set_blocker_collision(active: bool) -> void:
 	var blocker_root: Node = get_node_or_null("NavigationBlockers")
@@ -333,7 +333,7 @@ func _unlock_defense_cells_for_battle() -> void:
 		if not cell:
 			continue
 		cell.progress = 0
-		if cell.task_type == Cell.TaskType.DEFENSE or cell.task_type == Cell.TaskType.CLEAR:
+		if cell.task_type == Cell.TaskType.DEFENSE or cell.task_type == Cell.TaskType.CLEAR or cell.task_type == Cell.TaskType.HUNT or cell.task_type == Cell.TaskType.DODGE:
 			cell.set_locked(false)
 		else:
 			cell.set_locked(true)

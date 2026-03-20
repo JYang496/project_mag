@@ -13,6 +13,9 @@ func apply_parameters(_params: Dictionary) -> void:
 func grant_reward(_reward_type: int) -> void:
 	pass
 
+func get_reward_summary(_reward_type: int) -> String:
+	return ""
+
 func on_phase_changed(_new_phase: String) -> void:
 	pass
 

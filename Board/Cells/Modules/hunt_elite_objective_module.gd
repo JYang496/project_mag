@@ -1,21 +1,15 @@
 extends CellObjectiveModule
-class_name ClearCellObjectiveModule
+class_name HuntEliteObjectiveModule
 
-@export var quest_enemy_count: int = 6
-@export var completion_ratio: float = 0.8
+@export var elite_count: int = 1
 @export var pre_entry_damage_mul: float = 0.5
 @export var freeze_before_entry: bool = true
-@export var highlight_color: Color = Color(1.0, 1.0, 1.0, 1.0)
+@export var highlight_color: Color = Color(1.0, 0.85, 0.2, 1.0)
 
-var _quest_enemies: Array[BaseEnemy] = []
-var _quest_enemy_weights: Dictionary = {}
-var _progress := 0.0
-var _required_progress := 0.0
+var _quest_elites: Array[BaseEnemy] = []
+var _remaining_elites := 0
 var _spawned := false
 var _player_entered := false
-var _ui_visible := false
-var _pending_spawn_after_phase_change := false
-var _finishing_objective := false
 
 func _ready() -> void:
 	super._ready()
@@ -23,172 +17,114 @@ func _ready() -> void:
 		_cell.player_presence_changed.connect(_on_player_presence_changed)
 
 func set_task_parameters(params: Dictionary) -> void:
-	if params.has("clear_enemy_count"):
-		quest_enemy_count = int(params["clear_enemy_count"])
-	if params.has("clear_completion_ratio"):
-		completion_ratio = float(params["clear_completion_ratio"])
-	if params.has("clear_pre_entry_damage_mul"):
-		pre_entry_damage_mul = float(params["clear_pre_entry_damage_mul"])
-	if params.has("clear_freeze_before_entry"):
-		freeze_before_entry = bool(params["clear_freeze_before_entry"])
+	if params.has("hunt_elite_count"):
+		elite_count = int(params["hunt_elite_count"])
+	if params.has("hunt_pre_entry_damage_mul"):
+		pre_entry_damage_mul = float(params["hunt_pre_entry_damage_mul"])
+	if params.has("hunt_freeze_before_entry"):
+		freeze_before_entry = bool(params["hunt_freeze_before_entry"])
 
 func reset_objective_runtime() -> void:
 	super.reset_objective_runtime()
-	_cleanup_quest_enemies()
-	_progress = 0.0
-	_required_progress = 0.0
+	_cleanup_quest_elites()
+	_remaining_elites = 0
 	_spawned = false
 	_player_entered = false
-	_pending_spawn_after_phase_change = false
-	_finishing_objective = false
 
 func _process_objective(_delta: float) -> void:
-	if _pending_spawn_after_phase_change:
-		return
 	if not _spawned:
-		_try_spawn_quest_enemies()
+		_try_spawn_quest_elites()
 
 func _on_phase_changed(new_phase: String) -> void:
 	super._on_phase_changed(new_phase)
-	if new_phase == PhaseManager.BATTLE:
-		_pending_spawn_after_phase_change = true
-		call_deferred("_spawn_after_phase_change")
-		return
-	_pending_spawn_after_phase_change = false
-	_cleanup_quest_enemies()
-	_spawned = false
-	_player_entered = false
-	_finishing_objective = false
-
-func _spawn_after_phase_change() -> void:
-	if not is_inside_tree():
-		return
-	_pending_spawn_after_phase_change = false
-	_try_spawn_quest_enemies()
+	if new_phase != PhaseManager.BATTLE:
+		_cleanup_quest_elites()
+		_spawned = false
+		_player_entered = false
 
 func _on_player_presence_changed(_cell_ref: Cell, player_count: int) -> void:
 	if player_count <= 0:
-		_hide_ui_hint()
 		return
 	if not _player_entered:
 		_player_entered = true
-		_unlock_quest_enemies()
-	_show_ui_hint()
+		_unlock_quest_elites()
 
-func _try_spawn_quest_enemies() -> void:
+func _try_spawn_quest_elites() -> void:
 	if _spawned:
 		return
 	if not _is_active_phase():
 		return
 	if not _is_objective_active():
 		return
-	_spawn_quest_enemies()
+	_spawn_quest_elites()
 
-func _spawn_quest_enemies() -> void:
+func _spawn_quest_elites() -> void:
 	_spawned = true
-	_progress = 0.0
-	_required_progress = 0.0
-	_quest_enemies.clear()
-	_quest_enemy_weights.clear()
+	_cleanup_quest_elites()
 
-	var spawn_infos := _get_level_spawn_infos()
-	if spawn_infos.is_empty():
-		push_warning("ClearCellObjectiveModule: no spawn data available.")
+	var elite_candidates := _get_elite_spawn_infos()
+	if elite_candidates.is_empty():
+		push_warning("HuntEliteObjectiveModule: no elite spawn data available.")
 		_complete_objective()
 		return
 
-	var normal_candidates: Array[SpawnInfo] = []
-	for info in spawn_infos:
-		if info == null:
-			continue
-		if not _is_elite_spawn(info):
-			normal_candidates.append(info)
+	var spawn_count : int = max(elite_count, 0)
+	for _i in range(spawn_count):
+		var info: SpawnInfo = elite_candidates.pick_random() as SpawnInfo
+		var elite := _spawn_enemy_from_info(info)
+		if elite:
+			_register_quest_elite(elite)
 
-	if normal_candidates.is_empty():
-		push_warning("ClearCellObjectiveModule: no normal spawn data available.")
+	_remaining_elites = _quest_elites.size()
+	if _remaining_elites <= 0:
 		_complete_objective()
 		return
-
-	var normal_count: int = max(quest_enemy_count, 0)
-	for _i in range(normal_count):
-		var info: SpawnInfo = normal_candidates.pick_random() as SpawnInfo
-		var enemy := _spawn_enemy_from_info(info)
-		if enemy:
-			_register_quest_enemy(enemy, 1.0)
-
-	var total_weight := 0.0
-	for weight in _quest_enemy_weights.values():
-		total_weight += float(weight)
-	_required_progress = maxf(total_weight * clampf(completion_ratio, 0.0, 1.0), 0.0)
 
 	if _cell and _cell.has_player_inside():
 		_player_entered = true
-		_unlock_quest_enemies()
-		_show_ui_hint()
+		_unlock_quest_elites()
 
-	if total_weight <= 0.0:
-		_complete_objective()
-
-func _register_quest_enemy(enemy: BaseEnemy, weight: float) -> void:
+func _register_quest_elite(enemy: BaseEnemy) -> void:
 	if enemy == null:
 		return
-	_quest_enemies.append(enemy)
-	_quest_enemy_weights[enemy] = weight
-	if not enemy.is_connected("enemy_death", Callable(self, "_on_quest_enemy_death").bind(enemy)):
-		enemy.connect("enemy_death", Callable(self, "_on_quest_enemy_death").bind(enemy))
+	_quest_elites.append(enemy)
+	if not enemy.is_connected("enemy_death", Callable(self, "_on_quest_elite_death").bind(enemy)):
+		enemy.connect("enemy_death", Callable(self, "_on_quest_elite_death").bind(enemy))
 	enemy.call_deferred("set_quest_highlight", true, highlight_color)
 	enemy.set_quest_lock(true, pre_entry_damage_mul, freeze_before_entry)
 
-func _on_quest_enemy_death(enemy: BaseEnemy) -> void:
-	if not _quest_enemy_weights.has(enemy):
+func _on_quest_elite_death(enemy: BaseEnemy) -> void:
+	if not _quest_elites.has(enemy):
 		return
-	var weight := float(_quest_enemy_weights[enemy])
-	_quest_enemy_weights.erase(enemy)
-	_quest_enemies.erase(enemy)
-	if _finishing_objective:
-		return
-	_progress += weight
-	_update_ui_hint()
-	if _progress >= _required_progress and not _completed:
-		_finish_objective()
+	_quest_elites.erase(enemy)
+	_remaining_elites = _quest_elites.size()
+	if _remaining_elites <= 0 and not _completed:
+		_complete_objective()
 
-func _finish_objective() -> void:
-	if _completed or _finishing_objective:
-		return
-	_finishing_objective = true
-	var remaining_enemies := _quest_enemies.duplicate()
-	for enemy in remaining_enemies:
-		if enemy == null or not is_instance_valid(enemy):
-			continue
-		enemy.set_quest_highlight(false)
-		enemy.erase()
-	_hide_ui_hint()
-	_complete_objective()
-	_finishing_objective = false
-
-func _unlock_quest_enemies() -> void:
-	for enemy in _quest_enemies:
+func _unlock_quest_elites() -> void:
+	for enemy in _quest_elites:
 		if enemy and is_instance_valid(enemy):
 			enemy.set_quest_lock(false)
 
-func _cleanup_quest_enemies() -> void:
-	_finishing_objective = false
-	for enemy in _quest_enemies:
+func _cleanup_quest_elites() -> void:
+	for enemy in _quest_elites:
 		if enemy and is_instance_valid(enemy):
 			enemy.set_quest_lock(false)
 			enemy.set_quest_highlight(false)
-	_quest_enemies.clear()
-	_quest_enemy_weights.clear()
-	_hide_ui_hint()
+	_quest_elites.clear()
 
-func _get_level_spawn_infos() -> Array[SpawnInfo]:
+func _get_elite_spawn_infos() -> Array[SpawnInfo]:
 	if SpawnData.level_list.is_empty():
 		return []
 	var level_index := clampi(PhaseManager.current_level, 0, SpawnData.level_list.size() - 1)
 	var level_config := SpawnData.level_list[level_index]
 	if level_config == null:
 		return []
-	return level_config.spawns.duplicate()
+	var elite_infos: Array[SpawnInfo] = []
+	for info in level_config.spawns:
+		if info != null and _is_elite_spawn(info):
+			elite_infos.append(info)
+	return elite_infos
 
 func _is_elite_spawn(info: SpawnInfo) -> bool:
 	if info == null:
@@ -290,32 +226,3 @@ func _get_polygon_centroid(polygon_points: PackedVector2Array) -> Vector2:
 	for polygon_point in polygon_points:
 		center += polygon_point
 	return center / float(polygon_points.size())
-
-func _show_ui_hint() -> void:
-	if _ui_visible:
-		_update_ui_hint()
-		return
-	_ui_visible = true
-	_update_ui_hint()
-
-func _hide_ui_hint() -> void:
-	if not _ui_visible:
-		return
-	_ui_visible = false
-	_set_ui_hint_text("")
-
-func _update_ui_hint() -> void:
-	if not _ui_visible:
-		return
-	var remaining := maxf(_required_progress - _progress, 0.0)
-	var percent := 0.0
-	if _required_progress > 0.0:
-		percent = clampf(_progress / _required_progress, 0.0, 1.0)
-	var text := "Quest: Clear Cell  %d%%  (%.1f remaining)" % [int(round(percent * 100.0)), remaining]
-	_set_ui_hint_text(text)
-
-func _set_ui_hint_text(text: String) -> void:
-	if GlobalVariables.ui == null:
-		return
-	if GlobalVariables.ui.has_method("set_quest_hint"):
-		GlobalVariables.ui.set_quest_hint(text)

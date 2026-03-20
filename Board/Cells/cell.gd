@@ -9,7 +9,7 @@ signal enemy_killed_in_cell(cell: Cell, enemy: BaseEnemy)
 signal objective_completed(cell_id: String)
 
 enum CellState {IDLE, PLAYER, CONTESTED, LOCKED}
-enum TaskType {NONE, OFFENSE, DEFENSE, CLEAR}
+enum TaskType {NONE, OFFENSE, DEFENSE, CLEAR, HUNT, DODGE}
 enum RewardType {NONE, COMBAT, ECONOMY}
 enum TerrainType {NONE, CORROSION, JUNGLE, SPEED_BOOST, REGEN, LUCKY_STRIKE, DOUBLE_LOOT, LOW_HP_BERSERK}
 
@@ -230,10 +230,25 @@ func _apply_module_parameters(module_instance: Node) -> void:
 				module_instance.set_task_parameters({
 					"clear_enemy_count": profile.clear_enemy_count,
 					"clear_completion_ratio": profile.clear_completion_ratio,
-					"clear_allow_elite": profile.clear_allow_elite,
-					"clear_elite_weight": profile.clear_elite_weight,
 					"clear_pre_entry_damage_mul": profile.clear_pre_entry_damage_mul,
 					"clear_freeze_before_entry": profile.clear_freeze_before_entry
+				})
+			Cell.TaskType.HUNT:
+				module_instance.set_task_parameters({
+					"hunt_elite_count": profile.hunt_elite_count,
+					"hunt_pre_entry_damage_mul": profile.hunt_pre_entry_damage_mul,
+					"hunt_freeze_before_entry": profile.hunt_freeze_before_entry
+				})
+			Cell.TaskType.DODGE:
+				module_instance.set_task_parameters({
+					"dodge_required_survival_seconds": profile.dodge_required_survival_seconds,
+					"dodge_aoe_damage": profile.dodge_aoe_damage,
+					"dodge_aoe_damage_type": profile.dodge_aoe_damage_type,
+					"dodge_aoe_radius": profile.dodge_aoe_radius,
+					"dodge_aoe_warning_seconds": profile.dodge_aoe_warning_seconds,
+					"dodge_aoe_interval_min": profile.dodge_aoe_interval_min,
+					"dodge_aoe_interval_max": profile.dodge_aoe_interval_max,
+					"dodge_aoe_impact_duration": profile.dodge_aoe_impact_duration
 				})
 	# Apply bonus parameters
 	if module_instance.has_method("set_bonus_parameters"):

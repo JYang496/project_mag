@@ -30,6 +30,11 @@ func _ready() -> void:
 	elif value:
 		# Drop is a coin
 		drop_instance.value = value
+	call_deferred("_attach_drop_instance")
+
+func _attach_drop_instance() -> void:
+	if drop_instance == null or not is_instance_valid(self):
+		return
 	add_sibling(drop_instance)
 	drop_instance.global_position = p0.global_position
 

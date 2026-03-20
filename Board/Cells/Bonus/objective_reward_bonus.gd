@@ -85,6 +85,13 @@ func grant_reward(reward_type: int) -> void:
 	elif reward_type == Cell.RewardType.ECONOMY:
 		_grant_economy_reward()
 
+func get_reward_summary(reward_type: int) -> String:
+	if reward_type == Cell.RewardType.COMBAT:
+		return _build_combat_reward_summary()
+	if reward_type == Cell.RewardType.ECONOMY:
+		return _build_economy_reward_summary()
+	return ""
+
 func _grant_combat_reward() -> void:
 	if PlayerData.player == null:
 		return
@@ -148,6 +155,39 @@ func _grant_economy_reward() -> void:
 	if economy_drop_chip > 0:
 		_spawn_loot(_chip_preload, economy_drop_chip, economy_drop_chip_value)
 
+func _build_combat_reward_summary() -> String:
+	var parts: Array[String] = []
+	if combat_heal_hp > 0:
+		parts.append("Heal +%d HP" % combat_heal_hp)
+	if combat_bonus_speed > 0:
+		if combat_bonus_duration > 0.0:
+			parts.append("Speed +%.0f (%.0fs)" % [combat_bonus_speed, combat_bonus_duration])
+		else:
+			parts.append("Speed +%.0f" % combat_bonus_speed)
+	if combat_bonus_armor > 0:
+		parts.append("Armor +%d" % combat_bonus_armor)
+	if combat_bonus_shield > 0:
+		parts.append("Shield +%d" % combat_bonus_shield)
+	if combat_bonus_crit_rate > 0.0:
+		parts.append("Crit +%.0f%%" % (combat_bonus_crit_rate * 100.0))
+	if combat_bonus_crit_damage > 0.0:
+		parts.append("Crit Dmg +%.0f%%" % (combat_bonus_crit_damage * 100.0))
+	if combat_bonus_damage_reduction < 1.0:
+		parts.append("DR x%.2f" % combat_bonus_damage_reduction)
+	return ", ".join(parts)
+
+func _build_economy_reward_summary() -> String:
+	var parts: Array[String] = []
+	if economy_gold > 0:
+		parts.append("Gold +%d" % economy_gold)
+	if economy_exp > 0:
+		parts.append("EXP +%d" % economy_exp)
+	if economy_drop_coin > 0:
+		parts.append("Coins x%d" % economy_drop_coin)
+	if economy_drop_chip > 0:
+		parts.append("Chips x%d" % economy_drop_chip)
+	return ", ".join(parts)
+
 func _spawn_loot(loot_preload: PackedScene, count: int, value: int) -> void:
 	if loot_preload == null:
 		return
@@ -165,9 +205,9 @@ func _spawn_loot(loot_preload: PackedScene, count: int, value: int) -> void:
 		drop.value = value
 		drop.spawn_global_position = spawn_position + Vector2(randf_range(-30, 30), randf_range(-30, 30))
 		if _cell != null:
-			_cell.get_parent().add_child(drop)
+			_cell.get_parent().call_deferred("add_child", drop)
 		else:
-			get_tree().current_scene.add_child(drop)
+			get_tree().current_scene.call_deferred("add_child", drop)
 
 func on_phase_changed(new_phase: String) -> void:
 	if new_phase != PhaseManager.BATTLE:

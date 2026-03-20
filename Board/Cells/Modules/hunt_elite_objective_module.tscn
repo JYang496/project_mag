@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Board/Cells/Modules/hunt_elite_objective_module.gd" id="1_hunt"]
+[ext_resource type="PackedScene" path="res://Board/Cells/Bonus/objective_reward_bonus.tscn" id="2_reward"]
+
+[node name="HuntEliteObjectiveModule" type="Node"]
+script = ExtResource("1_hunt")
+objective_enabled = true
+elite_count = 1
+
+[node name="ObjectiveRewardBonus" parent="." instance=ExtResource("2_reward")]

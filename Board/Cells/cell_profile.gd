@@ -1,7 +1,7 @@
 extends Resource
 class_name CellProfile
 
-@export_enum("NONE:0", "OFFENSE:1", "DEFENSE:2", "CLEAR:3")
+@export_enum("NONE:0", "OFFENSE:1", "DEFENSE:2", "CLEAR:3", "HUNT:4", "DODGE:5")
 var task_type: int = Cell.TaskType.NONE
 @export_enum("NONE:0", "COMBAT:1", "ECONOMY:2")
 var reward_type: int = Cell.RewardType.NONE
@@ -24,10 +24,23 @@ var terrain_type: int = Cell.TerrainType.NONE
 @export_subgroup("Clear Cell Task")
 @export var clear_enemy_count: int = 6
 @export var clear_completion_ratio: float = 0.8
-@export var clear_allow_elite: bool = true
-@export var clear_elite_weight: float = 0.5
 @export var clear_pre_entry_damage_mul: float = 0.5
 @export var clear_freeze_before_entry: bool = true
+
+@export_subgroup("Hunt Task")
+@export var hunt_elite_count: int = 1
+@export var hunt_pre_entry_damage_mul: float = 0.5
+@export var hunt_freeze_before_entry: bool = true
+
+@export_subgroup("Dodge Task")
+@export var dodge_required_survival_seconds: float = 10.0
+@export var dodge_aoe_damage: int = 1
+@export var dodge_aoe_damage_type: StringName = Attack.TYPE_FIRE
+@export var dodge_aoe_radius: float = 72.0
+@export var dodge_aoe_warning_seconds: float = 1.1
+@export var dodge_aoe_interval_min: float = 0.9
+@export var dodge_aoe_interval_max: float = 1.6
+@export var dodge_aoe_impact_duration: float = 0.2
 
 # ========== Bonus Parameters ==========
 @export_group("Bonus Parameters")
@@ -88,7 +101,9 @@ var terrain_type: int = Cell.TerrainType.NONE
 const TASK_OBJECTIVE_REGISTRY := {
 	Cell.TaskType.OFFENSE: "res://Board/Cells/Modules/offense_kill_objective_module.tscn",
 	Cell.TaskType.DEFENSE: "res://Board/Cells/Modules/defense_hold_objective_module.tscn",
-	Cell.TaskType.CLEAR: "res://Board/Cells/Modules/clear_cell_objective_module.tscn"
+	Cell.TaskType.CLEAR: "res://Board/Cells/Modules/clear_cell_objective_module.tscn",
+	Cell.TaskType.HUNT: "res://Board/Cells/Modules/hunt_elite_objective_module.tscn",
+	Cell.TaskType.DODGE: "res://Board/Cells/Modules/dodge_survival_objective_module.tscn"
 }
 const TERRAIN_AURA_REGISTRY := {
 	Cell.TerrainType.CORROSION: "res://Board/Cells/Modules/corrosion_aura_module.tscn",

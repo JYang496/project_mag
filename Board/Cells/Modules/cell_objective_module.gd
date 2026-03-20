@@ -72,7 +72,20 @@ func _complete_objective() -> void:
 func _grant_reward() -> void:
 	if _bonus_module == null:
 		return
-	_bonus_module.grant_reward(_resolve_reward_type())
+	var reward_type := _resolve_reward_type()
+	_bonus_module.grant_reward(reward_type)
+	_show_reward_message(reward_type)
+
+func _show_reward_message(reward_type: int) -> void:
+	if GlobalVariables.ui == null:
+		return
+	if not GlobalVariables.ui.has_method("show_item_message"):
+		return
+	var reward_summary := _bonus_module.get_reward_summary(reward_type)
+	var message := "Objective Complete"
+	if reward_summary.strip_edges() != "":
+		message += "  " + reward_summary
+	GlobalVariables.ui.show_item_message(message, 2.6)
 
 func _resolve_reward_type() -> int:
 	if reward_type_override >= 0:
