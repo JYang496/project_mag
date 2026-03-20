@@ -6,6 +6,7 @@ const FALLBACK_MODULE_ICON: Texture2D = preload("res://Textures/test/star.png")
 @export var level := 3
 @export var module_scene: PackedScene
 @export var module_level: int = 1
+@export var spawn_ready: bool = false
 var item : Node2D
 var module_instance: Module
 var player_near : bool = false
@@ -15,6 +16,8 @@ var player_near : bool = false
 
 
 func _ready() -> void:
+	if spawn_ready:
+		detect_area.set_collision_mask_value(1, true)
 	if module_scene:
 		module_instance = module_scene.instantiate() as Module
 		if module_instance == null:
@@ -27,7 +30,8 @@ func _ready() -> void:
 			sprite.texture = module_sprite.texture
 		else:
 			sprite.texture = FALLBACK_MODULE_ICON
-		play_animation()
+		if not spawn_ready:
+			play_animation()
 		return
 	if item_id is String:
 		var weapon_def = DataHandler.read_weapon_data(str(item_id))
@@ -38,7 +42,8 @@ func _ready() -> void:
 		item = weapon_def.scene.instantiate()
 		sprite.texture = weapon_def.icon
 		item.level = level
-		play_animation()
+		if not spawn_ready:
+			play_animation()
 
 func _input(event: InputEvent) -> void:
 	if player_near and event.is_action_pressed("INTERACT"):

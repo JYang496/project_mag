@@ -16,6 +16,10 @@ func merge_from(other: StatusEffect) -> void:
 	var typed_other := other as ErosionStatusEffect
 	ticks_left = max(ticks_left, typed_other.ticks_left)
 	damage = max(damage, typed_other.damage)
+	if self.source_player == null and typed_other.source_player != null:
+		self.source_player = typed_other.source_player
+	if self.source_node == null and typed_other.source_node != null:
+		self.source_node = typed_other.source_node
 
 
 func apply_tick(target: Node) -> void:
@@ -25,6 +29,8 @@ func apply_tick(target: Node) -> void:
 		return
 	var attack := Attack.new()
 	attack.damage = damage
+	attack.source_player = self.source_player
+	attack.source_node = self.source_node
 	target.damaged(attack)
 
 

@@ -61,7 +61,7 @@ func damaged(attack:Attack):
 	if hp <= 0 and not is_dead:
 		is_dead = true
 		_flush_pending_hit_label()
-		death()	
+		death(attack)	
 
 
 func _queue_hit_label_damage(damage_value: int, damage_type: StringName) -> void:
@@ -127,7 +127,7 @@ func _resolve_hit_label_color() -> Color:
 		_:
 			return Color.WHITE
 
-func death():
+func death(_killing_attack: Attack = null):
 		queue_free()
 
 func _on_status_timer_timeout() -> void:

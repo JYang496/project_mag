@@ -21,6 +21,7 @@ var _highlight_active := false
 var _rest_area: RestArea
 
 func _ready() -> void:
+	RunRouteManager.reset_runtime_state()
 	PlayerData.player_weapon_list.clear()
 	PlayerData.detected_enemies.clear()
 	PlayerData.cloestest_enemy = null

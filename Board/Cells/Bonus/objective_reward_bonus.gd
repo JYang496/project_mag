@@ -203,6 +203,7 @@ func _spawn_loot(loot_preload: PackedScene, count: int, value: int) -> void:
 		var drop = _drop_preload.instantiate()
 		drop.drop = loot_preload
 		drop.value = value
+		drop.resolve_immediately = true
 		drop.spawn_global_position = spawn_position + Vector2(randf_range(-30, 30), randf_range(-30, 30))
 		if _cell != null:
 			_cell.get_parent().call_deferred("add_child", drop)

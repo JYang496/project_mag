@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="RunRouteDefinition" format=3]
+
+[ext_resource type="Script" path="res://data/routes/RunRouteDefinition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+route_id = "normal"
+display_name = "Normal Route"
+description = "Standard battle flow with default rewards."
+display_order = 0
+battle_enabled = true
+grants_prepare_loot = true
+enemy_hp_multiplier = 1.0
+enemy_damage_multiplier = 1.0
+battle_timeout_multiplier = 1.0
+reward_option_count = 3
+reward_chip_multiplier = 1.0
+reward_item_level_bonus = 0
+reward_module_level_bonus = 0
+fallback_reward_chip_value = 5

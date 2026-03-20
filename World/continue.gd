@@ -5,6 +5,7 @@ func _on_pressed() -> void:
 	var keep_hp_safety = PlayerData.testing_keep_hp_above_zero
 	var selected_mecha_id = PlayerData.select_mecha_id
 	PhaseManager.reset_runtime_state()
+	RunRouteManager.reset_runtime_state()
 	GlobalVariables.reset_runtime_state()
 	PlayerData.reset_runtime_state()
 	InventoryData.reset_runtime_state()

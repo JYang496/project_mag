@@ -94,7 +94,7 @@ func _spawn_quest_enemies() -> void:
 	var spawn_infos := _get_level_spawn_infos()
 	if spawn_infos.is_empty():
 		push_warning("ClearCellObjectiveModule: no spawn data available.")
-		_complete_objective()
+		# Invalid level config for this objective: do not auto-complete and do not grant reward.
 		return
 
 	var normal_candidates: Array[SpawnInfo] = []
@@ -106,7 +106,7 @@ func _spawn_quest_enemies() -> void:
 
 	if normal_candidates.is_empty():
 		push_warning("ClearCellObjectiveModule: no normal spawn data available.")
-		_complete_objective()
+		# Invalid level config for this objective: do not auto-complete and do not grant reward.
 		return
 
 	var normal_count: int = max(quest_enemy_count, 0)
@@ -127,7 +127,7 @@ func _spawn_quest_enemies() -> void:
 		_show_ui_hint()
 
 	if total_weight <= 0.0:
-		_complete_objective()
+		push_warning("ClearCellObjectiveModule: spawned zero quest enemies; objective skipped for this battle.")
 
 func _register_quest_enemy(enemy: BaseEnemy, weight: float) -> void:
 	if enemy == null:

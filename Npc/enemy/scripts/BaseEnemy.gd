@@ -26,18 +26,28 @@ func _process(delta: float) -> void:
 			slow_multiplier = 1.0
 	_update_knockback_overlap_mode()
 
-func death() -> void:
+func death(killing_attack: Attack = null) -> void:
 	var drop = drop_preload.instantiate()
 	drop.drop = coin_preload
 	drop.value = hp / 10 + 1
 	drop.spawn_global_position = global_position
 	self.call_deferred("add_sibling",drop)
+	_try_trigger_elite_kill_impact(killing_attack)
 	enemy_death.emit()
 	queue_free()
 
 func erase() -> void:
 	enemy_death.emit()
 	queue_free()
+
+func _try_trigger_elite_kill_impact(killing_attack: Attack) -> void:
+	if not (self is EliteEnemy):
+		return
+	if killing_attack == null or not killing_attack.is_from_player():
+		return
+	var controller := get_tree().root.get_node_or_null("TimeImpactController")
+	if controller and controller.has_method("trigger_elite_kill_impact"):
+		controller.trigger_elite_kill_impact()
 
 func _on_enable_collision_timer_timeout() -> void:
 	self.set_collision_mask_value(6,true)

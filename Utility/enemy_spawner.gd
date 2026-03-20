@@ -50,11 +50,13 @@ func _on_timer_timeout():
 	var level_index := clampi(PhaseManager.current_level, 0, instance_list.size() - 1)
 	PhaseManager.battle_time += 1
 	var enemy_spawns = instance_list[level_index]
+	var base_time_out: int = int(time_out_list[level_index])
+	var effective_time_out: int = get_effective_time_out(base_time_out, level_index)
 	var wave_clear = true
 	for e : SpawnInfo in enemy_spawns:
 		if e.wave < e.max_wave or e.alive_enemy_number > 0:
 			wave_clear = false
-	if PhaseManager.battle_time >= time_out_list[level_index] or wave_clear:
+	if PhaseManager.battle_time >= effective_time_out or wave_clear:
 		timer.stop()
 		erase_all_enemies()
 		PhaseManager.enter_prepare()
@@ -433,8 +435,30 @@ func _apply_level_scaling(spawn_info: SpawnInfo, enemy_instance) -> void:
 	if enemy_instance is BaseEnemy:
 		var base_enemy : BaseEnemy = enemy_instance
 		var level_index = max(PhaseManager.current_level, 0)
-		base_enemy.hp = spawn_info.get_scaled_hp(level_index, base_enemy.hp)
-		base_enemy.damage = spawn_info.get_scaled_damage(level_index, base_enemy.damage)
+		var scaled_stats := calculate_scaled_enemy_stats(spawn_info, base_enemy.hp, base_enemy.damage, level_index)
+		base_enemy.hp = int(scaled_stats.get("hp", base_enemy.hp))
+		base_enemy.damage = int(scaled_stats.get("damage", base_enemy.damage))
+
+func calculate_scaled_enemy_stats(
+	spawn_info: SpawnInfo,
+	fallback_hp: int,
+	fallback_damage: int,
+	level_index: int
+) -> Dictionary:
+	var scaled_hp := spawn_info.get_scaled_hp(level_index, fallback_hp)
+	var scaled_damage := spawn_info.get_scaled_damage(level_index, fallback_damage)
+	var route_def := RunRouteManager.get_route_for_level(level_index)
+	if route_def:
+		scaled_hp = max(1, int(round(float(scaled_hp) * route_def.enemy_hp_multiplier)))
+		scaled_damage = max(1, int(round(float(scaled_damage) * route_def.enemy_damage_multiplier)))
+	return {"hp": scaled_hp, "damage": scaled_damage}
+
+func get_effective_time_out(base_time_out: int, level_index: int) -> int:
+	var safe_base: int = max(base_time_out, 1)
+	var route_def := RunRouteManager.get_route_for_level(level_index)
+	if route_def == null:
+		return safe_base
+	return max(1, int(round(float(safe_base) * route_def.battle_timeout_multiplier)))
 
 func _debug_log_spawned_enemy(enemy_instance) -> void:
 	if not debug_print_spawn_stats:

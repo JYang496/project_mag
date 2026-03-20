@@ -17,4 +17,3 @@ interval = 2
 [resource]
 script = ExtResource("1_b2itx")
 spawns = Array[ExtResource("2_lrbk6")]([SubResource("Resource_wxt1a")])
-

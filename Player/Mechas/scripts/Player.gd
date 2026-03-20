@@ -256,6 +256,8 @@ func apply_bonus_hit_if_needed(target: Node) -> void:
 			var bonus_attack := Attack.new()
 			bonus_attack.damage = max(1, bonus_damage)
 			bonus_attack.damage_type = Attack.TYPE_PHYSICAL
+			bonus_attack.source_node = self
+			bonus_attack.source_player = self
 			target.damaged(bonus_attack)
 
 func apply_loot_bonus(value: int, loot_type: StringName) -> int:
@@ -545,15 +547,19 @@ func _on_grab_area_area_entered(area):
 
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.PREPARE:
-		_attract_all_coins()
+		return
 
 
 func _attract_all_coins() -> void:
 	if not collect_area:
 		return
 	for collectable in get_tree().get_nodes_in_group("collectables"):
-		if collectable is Coin and is_instance_valid(collectable):
+		if not is_instance_valid(collectable):
+			continue
+		if collectable is Coin:
 			collectable.target = collect_area
+		elif collectable is Chip:
+			collectable.target = self
 
 
 func _on_detect_area_area_entered(area: Area2D) -> void:

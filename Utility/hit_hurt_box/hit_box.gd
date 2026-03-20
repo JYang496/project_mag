@@ -17,17 +17,26 @@ func _on_area_entered(area):
 
 func apply_attack(area) -> void:
 	var target = area.get_owner()
-	attack = Attack.new()
-	attack.damage = int(hitbox_owner.damage)
-	attack.damage_type = Attack.TYPE_PHYSICAL
+	var damage_type: StringName = Attack.TYPE_PHYSICAL
 	if "damage_type" in hitbox_owner:
-		attack.damage_type = Attack.normalize_damage_type(hitbox_owner.damage_type)
-	var owner_player: Player = _resolve_owner_player(hitbox_owner)
-	if owner_player and is_instance_valid(owner_player):
-		attack.damage = owner_player.compute_outgoing_damage(attack.damage)
+		damage_type = Attack.normalize_damage_type(hitbox_owner.damage_type)
+	var knock_back_data := {
+		"amount": 0,
+		"angle": Vector2.ZERO
+	}
 	if "knock_back" in hitbox_owner:
-		attack.knock_back = hitbox_owner.knock_back
-	target.damaged(attack)
+		knock_back_data = hitbox_owner.knock_back
+	var damage_data := DamageManager.build_damage_data(
+		hitbox_owner,
+		int(hitbox_owner.damage),
+		damage_type,
+		knock_back_data
+	)
+	# Guard duplicate enter/overlap events in the same short window.
+	damage_data.dedupe_token = StringName("hitbox_once_%d_%d" % [get_instance_id(), target.get_instance_id()])
+	damage_data.dedupe_window_sec = 0.02
+	DamageManager.apply_to_target(target, damage_data)
+	var owner_player := damage_data.source_player as Player
 	if owner_player and is_instance_valid(owner_player):
 		owner_player.apply_bonus_hit_if_needed(target)
 	if hitbox_owner and hitbox_owner.has_method("on_hit_target"):
@@ -44,22 +53,4 @@ func check_overlapping() -> void:
 			hitbox_owner.overlapping = true
 		hitbox_owner.overlapping = false
 
-func _resolve_owner_player(node: Node) -> Player:
-	if node == null:
-		return null
-	var current: Node = node
-	while current:
-		if current is Player:
-			return current as Player
-		current = current.get_parent()
-	var source_weapon_value: Variant = node.get("source_weapon")
-	if source_weapon_value != null and source_weapon_value is Node:
-		var source_weapon: Node = source_weapon_value
-		if source_weapon:
-			current = source_weapon
-			while current:
-				if current is Player:
-					return current as Player
-				current = current.get_parent()
-	return null
 

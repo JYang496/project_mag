@@ -82,14 +82,20 @@ signal reset_cost
 @onready var drag_item_icon: TextureRect = $GUI/DragItemRoot/DragItemIcon
 @onready var branch_select_panel_scene = preload("res://UI/scenes/branch_select_panel.tscn")
 @onready var module_equip_selection_panel_scene = preload("res://UI/scenes/module_equip_selection_panel.tscn")
+@onready var route_selection_panel_scene = preload("res://UI/scenes/route_selection_panel.tscn")
+@onready var reward_selection_panel_scene = preload("res://UI/scenes/reward_selection_panel.tscn")
 var branch_select_panel: BranchSelectPanel
 var module_equip_selection_panel: ModuleEquipSelectionPanel
+var route_selection_panel: RouteSelectionPanel
+var reward_selection_panel: RewardSelectionPanel
 
 
 func _ready():
 	GlobalVariables.ui = self
 	_init_branch_select_panel()
 	_init_module_equip_selection_panel()
+	_init_route_selection_panel()
+	_init_reward_selection_panel()
 	_create_game_over_layout()
 	_create_quest_hint()
 	_connect_viewport_signals()
@@ -127,6 +133,22 @@ func _init_module_equip_selection_panel() -> void:
 	$GUI.add_child(module_equip_selection_panel)
 	module_equip_selection_panel.visible = false
 
+func _init_route_selection_panel() -> void:
+	route_selection_panel = route_selection_panel_scene.instantiate() as RouteSelectionPanel
+	if route_selection_panel == null:
+		push_warning("Failed to create RouteSelectionPanel.")
+		return
+	$GUI.add_child(route_selection_panel)
+	route_selection_panel.visible = false
+
+func _init_reward_selection_panel() -> void:
+	reward_selection_panel = reward_selection_panel_scene.instantiate() as RewardSelectionPanel
+	if reward_selection_panel == null:
+		push_warning("Failed to create RewardSelectionPanel.")
+		return
+	$GUI.add_child(reward_selection_panel)
+	reward_selection_panel.visible = false
+
 func request_weapon_branch_selection(weapon: Weapon) -> bool:
 	if weapon == null or not is_instance_valid(weapon):
 		return false
@@ -146,6 +168,26 @@ func request_module_equip_selection(module_instance: Module, on_complete: Callab
 	if module_equip_selection_panel == null or not is_instance_valid(module_equip_selection_panel):
 		return false
 	return module_equip_selection_panel.open_for_module(module_instance, on_complete)
+
+func request_route_selection(
+	route_defs: Array[RunRouteDefinition],
+	default_route_id: String,
+	on_confirm: Callable = Callable(),
+	on_cancel: Callable = Callable()
+) -> bool:
+	if route_selection_panel == null or not is_instance_valid(route_selection_panel):
+		return false
+	return route_selection_panel.open_for_routes(route_defs, default_route_id, on_confirm, on_cancel)
+
+func request_reward_selection(
+	route_display_name: String,
+	reward_options: Array[RewardInfo],
+	on_confirm: Callable = Callable(),
+	on_cancel: Callable = Callable()
+) -> bool:
+	if reward_selection_panel == null or not is_instance_valid(reward_selection_panel):
+		return false
+	return reward_selection_panel.open_for_rewards(route_display_name, reward_options, on_confirm, on_cancel)
 
 func _on_branch_selected(weapon: Weapon, branch_id: String) -> void:
 	if weapon == null or not is_instance_valid(weapon):

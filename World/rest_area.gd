@@ -8,10 +8,16 @@ class_name RestArea
 var _board: BoardCellGenerator
 var _fade_tween: Tween
 var _active := false
+var _route_selection_pending := false
 @onready var _start_battle_button: StartBattleButton = get_node_or_null("StartBattleButton")
+@onready var _reward_manager: BonusManager = get_tree().current_scene.get_node_or_null("RewardManager") as BonusManager
 
 func _ready() -> void:
 	super._ready()
+	if _reward_manager == null:
+		var scene_root := get_tree().current_scene
+		if scene_root:
+			_reward_manager = scene_root.get_node_or_null("RewardManager") as BonusManager
 	if board_path != NodePath():
 		_board = get_node_or_null(board_path) as BoardCellGenerator
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
@@ -147,6 +153,69 @@ func _setup_start_battle_button() -> void:
 func _on_start_battle_button_activated() -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
-	if GlobalVariables.enemy_spawner:
-		GlobalVariables.enemy_spawner.start_timer()
-	PhaseManager.enter_battle()
+	if _route_selection_pending:
+		return
+	_route_selection_pending = true
+	var current_level: int = max(PhaseManager.current_level, 0)
+	var route_options := RunRouteManager.get_available_routes_for_level(current_level)
+	var default_route_id := RunRouteManager.get_default_route_id()
+	var ui = GlobalVariables.ui
+	if ui and is_instance_valid(ui) and ui.has_method("request_route_selection"):
+		var opened: bool = bool(ui.request_route_selection(
+			route_options,
+			default_route_id,
+			Callable(self, "_on_route_confirmed"),
+			Callable(self, "_on_route_selection_cancelled")
+		))
+		if opened:
+			return
+	_on_route_confirmed(default_route_id)
+
+func _on_route_selection_cancelled() -> void:
+	_route_selection_pending = false
+	if _start_battle_button:
+		_start_battle_button.reset_state()
+
+func _on_route_confirmed(route_id: String) -> void:
+	_route_selection_pending = false
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return
+	var route_def := RunRouteManager.select_route_for_current_level(route_id)
+	if route_def == null:
+		route_def = RunRouteManager.select_route_for_current_level(RunRouteManager.get_default_route_id())
+	if route_def.battle_enabled:
+		if GlobalVariables.enemy_spawner:
+			GlobalVariables.enemy_spawner.start_timer()
+		PhaseManager.enter_battle()
+		return
+	_start_bonus_route_flow(route_def)
+
+func _start_bonus_route_flow(route_def: RunRouteDefinition) -> void:
+	var level_index: int = max(PhaseManager.current_level, 0)
+	var reward_options: Array[RewardInfo] = []
+	if _reward_manager:
+		reward_options = _reward_manager.build_reward_selection_options(level_index, route_def)
+	if reward_options.is_empty():
+		var fallback_reward := RewardInfo.new()
+		fallback_reward.total_chip_value = max(route_def.fallback_reward_chip_value, 1)
+		reward_options = [fallback_reward]
+	var ui = GlobalVariables.ui
+	if ui and is_instance_valid(ui) and ui.has_method("request_reward_selection"):
+		var opened: bool = bool(ui.request_reward_selection(
+			route_def.display_name,
+			reward_options,
+			Callable(self, "_on_bonus_reward_selected"),
+			Callable(self, "_on_bonus_reward_selection_cancelled")
+		))
+		if opened:
+			return
+	_on_bonus_reward_selected(reward_options[0])
+
+func _on_bonus_reward_selection_cancelled() -> void:
+	if _start_battle_button:
+		_start_battle_button.reset_state()
+
+func _on_bonus_reward_selected(reward: RewardInfo) -> void:
+	if _reward_manager and reward:
+		_reward_manager.grant_reward_immediately(reward)
+	PhaseManager.enter_prepare()

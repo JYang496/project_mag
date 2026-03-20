@@ -26,9 +26,12 @@ PlayerData="*res://autoload/PlayerData.gd"
 DataHandler="*res://autoload/DataHandler.gd"
 PhaseManager="*res://autoload/PhaseManager.gd"
 SpawnData="*res://autoload/SpawnData.gd"
+RunRouteManager="*res://autoload/RunRouteManager.gd"
 InventoryData="*res://autoload/InventoryData.gd"
 DisplaySettings="*res://Utility/display_settings.gd"
 ObjectPool="*res://autoload/ObjectPool.gd"
+TimeImpactController="*res://autoload/TimeImpactController.gd"
+DamageManager="*res://autoload/DamageManager.gd"
 
 [display]
 

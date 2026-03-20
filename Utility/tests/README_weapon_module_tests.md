@@ -10,6 +10,8 @@ This folder includes a runnable in-project test harness for the weapon module an
 - `res://Utility/tests/weapon_module_dataflow_test.gd`
 - `res://Utility/tests/reward_spawn_config_test.tscn`
 - `res://Utility/tests/reward_spawn_config_test.gd`
+- `res://Utility/tests/route_system_test.tscn`
+- `res://Utility/tests/route_system_test.gd`
 - `res://Utility/tests/mocks/test_weapon.tscn`
 - `res://Utility/tests/mocks/test_weapon.gd`
 - `res://Utility/tests/mocks/test_enemy.gd`
@@ -63,6 +65,19 @@ For level spawn reward configuration validation (including malformed input):
 - `1`: spawn loot boxes from real cached level 0 rewards
 - `2`: spawn loot boxes from an injected malformed reward list
 - `R`: reset manager fixture
+
+## Route System Scene
+
+For route selection balancing + flow-rule verification:
+
+1. Open scene: `res://Utility/tests/route_system_test.tscn`.
+2. Press Play Scene (`F6`).
+3. Auto tests validate:
+- Normal route preserves default spawn/reward scaling.
+- Bonus route disables battle and uses reward-choice options.
+- Difficult route increases enemy scaling and reward values.
+4. Manual controls:
+- `F5`: rerun all tests
 
 ## Coverage Mapping To Test Plan
 

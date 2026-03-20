@@ -129,14 +129,14 @@ func _try_apply_on_hurt_box(area: Area2D) -> void:
 
 func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
 	if one_shot_damage > 0 and target.has_method("damaged"):
-		var attack := Attack.new()
-		attack.damage = one_shot_damage
-		attack.damage_type = Attack.normalize_damage_type(damage_type)
-		attack.knock_back = knock_back
-		var owner_player: Player = _resolve_owner_player(source_node)
-		if owner_player and is_instance_valid(owner_player):
-			attack.damage = owner_player.compute_outgoing_damage(attack.damage)
-		target.damaged(attack)
+		var damage_data := DamageManager.build_damage_data(
+			source_node,
+			one_shot_damage,
+			Attack.normalize_damage_type(damage_type),
+			knock_back
+		)
+		DamageManager.apply_to_target(target, damage_data)
+		var owner_player := damage_data.source_player as Player
 		if owner_player and is_instance_valid(owner_player) and target_is_enemy:
 			owner_player.apply_bonus_hit_if_needed(target)
 		if source_node and is_instance_valid(source_node) and source_node.has_method("on_hit_target"):
@@ -170,14 +170,13 @@ func _apply_tick_to_current_overlaps() -> void:
 			continue
 		if not target.has_method("damaged"):
 			continue
-		var attack := Attack.new()
-		attack.damage = tick_damage
-		attack.damage_type = Attack.normalize_damage_type(damage_type)
-		attack.knock_back = knock_back
-		var owner_player: Player = _resolve_owner_player(source_node)
-		if owner_player and is_instance_valid(owner_player):
-			attack.damage = owner_player.compute_outgoing_damage(attack.damage)
-		target.damaged(attack)
+		var damage_data := DamageManager.build_damage_data(
+			source_node,
+			tick_damage,
+			Attack.normalize_damage_type(damage_type),
+			knock_back
+		)
+		DamageManager.apply_to_target(target, damage_data)
 		target_affected.emit(target)
 
 
@@ -334,32 +333,6 @@ static func set_debug_mode(enabled: bool) -> void:
 static func toggle_debug_mode() -> bool:
 	debug_mode_enabled = not debug_mode_enabled
 	return debug_mode_enabled
-
-
-func _resolve_owner_player(node_ref: Variant) -> Player:
-	if node_ref == null:
-		return null
-	if not is_instance_valid(node_ref):
-		return null
-	if not (node_ref is Node):
-		return null
-	var node := node_ref as Node
-	if node == null:
-		return null
-	var current: Node = node
-	while current:
-		if current is Player:
-			return current as Player
-		current = current.get_parent()
-	var source_weapon_value: Variant = node.get("source_weapon")
-	if source_weapon_value != null and is_instance_valid(source_weapon_value) and source_weapon_value is Node:
-		var source_weapon: Node = source_weapon_value
-		current = source_weapon
-		while current:
-			if current is Player:
-				return current as Player
-			current = current.get_parent()
-	return null
 
 
 func apply_custom_effects(_target: Node) -> void:

@@ -65,7 +65,7 @@ func _spawn_quest_elites() -> void:
 	var elite_candidates := _get_elite_spawn_infos()
 	if elite_candidates.is_empty():
 		push_warning("HuntEliteObjectiveModule: no elite spawn data available.")
-		_complete_objective()
+		# Invalid level config for this objective: do not auto-complete and do not grant reward.
 		return
 
 	var spawn_count : int = max(elite_count, 0)
@@ -77,7 +77,8 @@ func _spawn_quest_elites() -> void:
 
 	_remaining_elites = _quest_elites.size()
 	if _remaining_elites <= 0:
-		_complete_objective()
+		# Nothing was spawned for this objective in this level, so keep it inactive.
+		push_warning("HuntEliteObjectiveModule: spawned zero elites; objective skipped for this battle.")
 		return
 
 	if _cell and _cell.has_player_inside():

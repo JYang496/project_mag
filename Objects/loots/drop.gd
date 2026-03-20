@@ -7,6 +7,7 @@ var item_id
 var level
 var module_scene: PackedScene
 var module_level: int = 1
+var resolve_immediately: bool = false
 var arrived = false
 var value : int
 var drop_instance
@@ -16,6 +17,8 @@ var drop_instance
 func _ready() -> void:
 	global_position = spawn_global_position
 	p2.position = get_random_position_in_circle()
+	if resolve_immediately:
+		p2.position = get_random_position_in_ring(90.0, 160.0)
 	p1.position.x = (p0.position.x + p2.position.x) / 2
 	p1.position.y = (p0.position.y + p2.position.y) / 2 - randf_range(80.0,140.0)
 
@@ -30,6 +33,10 @@ func _ready() -> void:
 	elif value:
 		# Drop is a coin
 		drop_instance.value = value
+	if resolve_immediately:
+		_mark_drop_instance_spawn_ready(drop_instance)
+		call_deferred("_attach_drop_instance_immediate")
+		return
 	call_deferred("_attach_drop_instance")
 
 func _attach_drop_instance() -> void:
@@ -37,6 +44,21 @@ func _attach_drop_instance() -> void:
 		return
 	add_sibling(drop_instance)
 	drop_instance.global_position = p0.global_position
+
+func _attach_drop_instance_immediate() -> void:
+	if drop_instance == null or not is_instance_valid(self):
+		return
+	add_sibling(drop_instance)
+	drop_instance.global_position = p2.global_position
+	queue_free()
+
+func _mark_drop_instance_spawn_ready(instance: Node) -> void:
+	if instance == null:
+		return
+	for property_info in instance.get_property_list():
+		if str(property_info.get("name", "")) == "spawn_ready":
+			instance.set("spawn_ready", true)
+			return
 
 func _physics_process(delta):
 	if not drop_instance or arrived:
@@ -54,6 +76,13 @@ func get_random_position_in_circle(radius: float = 50.0) -> Vector2:
 	var x = cos(angle) * distance
 	var y = sin(angle) * distance
 	return Vector2(x, y)
+
+func get_random_position_in_ring(min_radius: float, max_radius: float) -> Vector2:
+	var safe_min := maxf(0.0, min_radius)
+	var safe_max := maxf(max_radius, safe_min + 0.1)
+	var angle := randf_range(0.0, TAU)
+	var distance := randf_range(safe_min, safe_max)
+	return Vector2(cos(angle), sin(angle)) * distance
 
 
 func _quadratic_bezier(time: float):

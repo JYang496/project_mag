@@ -2,6 +2,7 @@ extends Node2D
 class_name Chip
 
 @export var value = 1
+@export var spawn_ready: bool = false
 @onready var sprite = $Sprite2D
 @onready var collision = $CollisionShape2D
 @onready var sound = $Snd_collected
@@ -11,6 +12,10 @@ var target = null
 var speed = 0
 
 func _ready():
+	if spawn_ready:
+		collision.call_deferred("set","disabled",false)
+		set_value()
+		return
 	play_animation()
 	set_value()
 

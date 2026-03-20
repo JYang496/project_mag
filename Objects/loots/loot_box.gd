@@ -12,10 +12,15 @@ var remainder := 0
 @export var item_lvl : int = 0
 @export var module_scene: PackedScene
 @export var module_level: int = 1
+@export var resolve_immediately: bool = false
 
 func _ready() -> void:
 	number_of_collectables = 5 + total_value/10
 	remainder = total_value % number_of_collectables
+	if resolve_immediately:
+		drops()
+		queue_free()
+		return
 	animation()
 
 # Animation, loot box rolls and falls, opens
@@ -48,6 +53,7 @@ func drop_an_item() -> void:
 	else:
 		item_drop.item_id = item_id
 		item_drop.level = item_lvl
+	item_drop.resolve_immediately = resolve_immediately
 	self.call_deferred("add_sibling",item_drop)
 
 func drop_collectables() -> void:
@@ -63,6 +69,7 @@ func drop_collectables() -> void:
 		drop.drop = chip_preload
 		drop.value = total_value / number_of_collectables + bonus
 		drop.spawn_global_position = global_position
+		drop.resolve_immediately = resolve_immediately
 		self.call_deferred("add_sibling",drop)
 
 func _on_disapear_timer_timeout() -> void:

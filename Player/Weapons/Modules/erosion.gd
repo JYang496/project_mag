@@ -25,5 +25,7 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	var level_scale := get_effective_additive(1.0, 0.4)
 	var tick: int = max(1, int(round(float(base_tick + tick_per_fuse * fuse_bonus_steps) * level_scale)))
 	var damage: int = max(1, int(round(float(base_damage + damage_per_fuse * fuse_bonus_steps) * level_scale)))
-	var effect := ErosionStatusEffect.new().setup_effect(tick, damage)
+	var owner_player := DamageManager.resolve_source_player(source_weapon)
+	var effect: ErosionStatusEffect = ErosionStatusEffect.new().setup_effect(tick, damage)
+	effect.set_source_context(owner_player, source_weapon)
 	target.apply_status_effect(effect)
