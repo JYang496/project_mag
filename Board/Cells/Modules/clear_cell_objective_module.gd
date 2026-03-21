@@ -139,12 +139,19 @@ func _register_quest_enemy(enemy: BaseEnemy, weight: float) -> void:
 	enemy.call_deferred("set_quest_highlight", true, highlight_color)
 	enemy.set_quest_lock(true, pre_entry_damage_mul, freeze_before_entry)
 
-func _on_quest_enemy_death(enemy: BaseEnemy) -> void:
+# Note: bind params come AFTER signal params in Godot 4
+func _on_quest_enemy_death(was_killed: bool, enemy: BaseEnemy) -> void:
+	if not is_instance_valid(self):
+		return
+	if not is_instance_valid(enemy):
+		return
 	if not _quest_enemy_weights.has(enemy):
 		return
 	var weight := float(_quest_enemy_weights[enemy])
 	_quest_enemy_weights.erase(enemy)
 	_quest_enemies.erase(enemy)
+	if not was_killed:
+		return
 	if _finishing_objective:
 		return
 	_progress += weight

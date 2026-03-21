@@ -478,7 +478,12 @@ func _update_mecha_direction(direction: Vector2) -> void:
 func damaged(attack:Attack):
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
 		return
-	PlayerData.player_hp -= attack.damage
+	var incoming_damage: int = max(0, int(round(float(attack.damage) * _get_total_damage_reduction())))
+	incoming_damage = max(0, incoming_damage - _get_total_armor())
+	incoming_damage = _absorb_damage_with_shield(incoming_damage)
+	if incoming_damage <= 0:
+		return
+	PlayerData.player_hp -= incoming_damage
 	if PlayerData.testing_keep_hp_above_zero and PlayerData.player_hp <= 0:
 		PlayerData.player_hp = 1
 	if PlayerData.player_hp <= 0:
@@ -490,6 +495,25 @@ func damaged(attack:Attack):
 	hurt_cd.start(PlayerData.hurt_cd)
 	collision_cd.start(PlayerData.collision_cd)
 	print(self, PlayerData.player_hp)
+
+func _get_total_armor() -> int:
+	return max(0, int(PlayerData.armor) + int(PlayerData.bonus_armor))
+
+func _get_total_damage_reduction() -> float:
+	return clampf(float(PlayerData.damage_reduction) * float(PlayerData.bonus_damage_reduction), 0.2, 5.0)
+
+func _absorb_damage_with_shield(incoming_damage: int) -> int:
+	var remaining: int = max(0, incoming_damage)
+	var total_shield: int = max(0, int(PlayerData.shield) + int(PlayerData.bonus_shield))
+	if total_shield <= 0:
+		return remaining
+	var absorbed: int = min(total_shield, remaining)
+	var base_shield_absorb: int = min(absorbed, int(PlayerData.shield))
+	PlayerData.shield = max(0, int(PlayerData.shield) - base_shield_absorb)
+	absorbed -= base_shield_absorb
+	if absorbed > 0:
+		PlayerData.bonus_shield = max(0, int(PlayerData.bonus_shield) - absorbed)
+	return max(0, remaining - min(total_shield, incoming_damage))
 
 
 # When player is teleporting between zones, disable terrain collision. Enable when arrived.

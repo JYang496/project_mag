@@ -72,9 +72,13 @@ func setup_timer() -> void:
 	cooldown_timer = self.get_node("CooldownTimer")
 
 func _physics_process(_delta):
+	super._physics_process(_delta)
 	_update_weapon_rotation()
 	if not is_on_cooldown and Input.is_action_pressed("ATTACK"):
+		if not can_fire_with_heat():
+			return
 		emit_signal("shoot")
+		register_shot_heat()
 
 func _on_cooldown_timer_timeout():
 	is_on_cooldown = false

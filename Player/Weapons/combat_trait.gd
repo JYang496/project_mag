@@ -18,6 +18,7 @@ const ENERGY := &"energy"
 const AREA_OF_EFFECT := &"area_of_effect"
 const FIRE := &"fire"
 const FREEZE := &"freeze"
+const HEAT := &"heat"
 
 const ALL: Array[StringName] = [
 	MOVEMENT,
@@ -37,6 +38,7 @@ const ALL: Array[StringName] = [
 	AREA_OF_EFFECT,
 	FIRE,
 	FREEZE,
+	HEAT,
 ]
 
 const FLAG_ORDER: Array[StringName] = ALL

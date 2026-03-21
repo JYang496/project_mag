@@ -2,7 +2,7 @@ extends Node2D
 
 const TEST_WEAPON_SCENE := preload("res://Utility/tests/mocks/test_weapon.tscn")
 const TEST_ENEMY_SCRIPT := preload("res://Utility/tests/mocks/test_enemy.gd")
-const TEST_PLAYER_SCENE := preload("res://Player/Mechas/scenes/prototype.tscn")
+const TEST_PLAYER_SCENE := preload("res://Player/Mechas/scenes/heavy_assault.tscn")
 
 const MODULE_DAMAGE_UP := preload("res://Player/Weapons/Modules/damage_up.tscn")
 const MODULE_FASTER_RELOAD := preload("res://Player/Weapons/Modules/faster_reload.tscn")

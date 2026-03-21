@@ -8,7 +8,10 @@ extends Skills
 var _is_dashing := false
 
 func on_skill_ready() -> void:
-	if cooldown <= 0.0:
+	var data_cooldown := float(PlayerData.dash_cooldown)
+	if data_cooldown > 0.0:
+		cooldown = data_cooldown
+	elif cooldown <= 0.0:
 		cooldown = default_cooldown
 
 func can_activate() -> bool:

@@ -19,7 +19,11 @@ func _on_detect_area_area_entered(area: Area2D) -> void:
 		if not area.hurtbox_owner.is_connected("enemy_death", Callable(self, "_on_enemy_death")):
 			area.hurtbox_owner.connect("enemy_death", Callable(self, "_on_enemy_death"))
 
-func _on_enemy_death() -> void:
+func _on_enemy_death(was_killed: bool) -> void:
+	if not is_instance_valid(self):
+		return
+	if not was_killed:
+		return
 	if _host_weapon and _host_weapon.get("damage") != null:
 		_host_weapon.damage += dmg_up_per_kill
 	elif projectile and "damage" in projectile:

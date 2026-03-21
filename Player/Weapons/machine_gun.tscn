@@ -9,7 +9,7 @@ script = ExtResource("2_0tkjt")
 attack_speed_decay_interval = 0.35
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 5152
+weapon_traits = 136224
 
 [node name="FuseSprites" parent="." index="4" unique_id=50406900]
 fuse_texture_1 = ExtResource("3_0tkjt")

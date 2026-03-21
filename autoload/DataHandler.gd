@@ -16,7 +16,7 @@ const WEAPON_RESOURCE_PATHS := [
 	"res://data/weapons/hammer.tres",
 ]
 const MECHA_RESOURCE_PATHS := [
-	"res://data/mechas/Prototype.tres",
+	"res://data/mechas/HeavyAssault.tres",
 	"res://data/mechas/Ranger.tres",
 	"res://data/mechas/Melee.tres",
 	"res://data/mechas/Collector.tres",

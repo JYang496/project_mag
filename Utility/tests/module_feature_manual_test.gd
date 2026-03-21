@@ -1,7 +1,7 @@
 extends Node2D
 
 const UI_SCENE := preload("res://UI/scenes/UI.tscn")
-const PLAYER_SCENE := preload("res://Player/Mechas/scenes/prototype.tscn")
+const PLAYER_SCENE := preload("res://Player/Mechas/scenes/heavy_assault.tscn")
 const MODULE_DAMAGE_UP := preload("res://Player/Weapons/Modules/damage_up.tscn")
 const MODULE_PIERCE := preload("res://Player/Weapons/Modules/pierce.tscn")
 

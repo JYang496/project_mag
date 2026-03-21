@@ -41,6 +41,7 @@ var item_message_timer: Timer
 @onready var resource_label = $GUI/CharacterRoot/Resource
 @onready var time_label = $GUI/CharacterRoot/Time
 @onready var phase_label = $GUI/CharacterRoot/Phase
+var heat_label: Label
 
 
 # Shopping
@@ -92,6 +93,7 @@ var reward_selection_panel: RewardSelectionPanel
 
 func _ready():
 	GlobalVariables.ui = self
+	_ensure_heat_label()
 	_init_branch_select_panel()
 	_init_module_equip_selection_panel()
 	_init_route_selection_panel()
@@ -210,6 +212,7 @@ func _finalize_branch_selected_weapon(weapon: Weapon) -> void:
 func _physics_process(_delta):
 	#Character
 	hp_label_label.text = "HP: " + str(PlayerData.player_hp)
+	_update_heat_label_text()
 	equipped_label.text = "Equipped:"
 	augments_label.text = str(PlayerData.player_augment_list)
 	gold_label.text = "Gold: " + str(PlayerData.player_gold)
@@ -542,6 +545,8 @@ func _layout_hud(viewport_size: Vector2) -> void:
 	equipped_label.position = Vector2(HUD_MARGIN, HUD_MARGIN)
 	weapon_icons.position = Vector2(HUD_MARGIN + 82.0, HUD_MARGIN + 6.0)
 	hp_label_label.position = Vector2(HUD_MARGIN, viewport_size.y - 36.0)
+	if heat_label:
+		heat_label.position = Vector2(HUD_MARGIN, viewport_size.y - 68.0)
 	gold_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN)
 	time_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN + 56.0)
 	phase_label.position = Vector2(viewport_size.x - 220.0, HUD_MARGIN)
@@ -581,3 +586,36 @@ func show_item_message(text: String, duration: float = 1.8) -> void:
 
 func _on_item_message_timeout() -> void:
 	set_quest_hint("")
+
+func _ensure_heat_label() -> void:
+	if heat_label != null and is_instance_valid(heat_label):
+		return
+	heat_label = Label.new()
+	heat_label.name = "Heat"
+	heat_label.text = "Heat: --"
+	heat_label.visible = false
+	character_root.add_child(heat_label)
+
+func _update_heat_label_text() -> void:
+	if heat_label == null or not is_instance_valid(heat_label):
+		return
+	var heat_weapon := _get_heat_weapon()
+	if heat_weapon == null:
+		heat_label.visible = false
+		return
+	var percent := int(heat_weapon.call("get_heat_percent"))
+	var overheated := bool(heat_weapon.call("is_weapon_overheated"))
+	heat_label.text = "Heat: %d%%%s" % [percent, " (OVERHEAT)" if overheated else ""]
+	heat_label.visible = true
+
+func _get_heat_weapon() -> Node:
+	if PlayerData.player_weapon_list.is_empty():
+		return null
+	if PlayerData.on_select_weapon >= 0 and PlayerData.on_select_weapon < PlayerData.player_weapon_list.size():
+		var selected = PlayerData.player_weapon_list[PlayerData.on_select_weapon]
+		if selected and is_instance_valid(selected) and selected.has_method("has_heat_system") and bool(selected.call("has_heat_system")):
+			return selected
+	for weapon in PlayerData.player_weapon_list:
+		if weapon and is_instance_valid(weapon) and weapon.has_method("has_heat_system") and bool(weapon.call("has_heat_system")):
+			return weapon
+	return null

@@ -168,10 +168,12 @@ func _on_area_2d_body_exited(body: Node2D) -> void:
 func _track_enemy_death(enemy: BaseEnemy) -> void:
 	if enemy == null or _enemy_death_callbacks.has(enemy):
 		return
+	# Always disconnect first to avoid duplicate connections
 	var callback := Callable(self, "_on_tracked_enemy_death").bind(enemy)
+	if enemy.is_connected("enemy_death", callback):
+		enemy.disconnect("enemy_death", callback)
+	enemy.connect("enemy_death", callback)
 	_enemy_death_callbacks[enemy] = callback
-	if not enemy.is_connected("enemy_death", callback):
-		enemy.connect("enemy_death", callback)
 
 func _untrack_enemy_death(enemy: BaseEnemy) -> void:
 	if enemy == null:
@@ -183,12 +185,18 @@ func _untrack_enemy_death(enemy: BaseEnemy) -> void:
 		enemy.disconnect("enemy_death", callback)
 	_enemy_death_callbacks.erase(enemy)
 
-func _on_tracked_enemy_death(enemy: BaseEnemy) -> void:
+# Note: bind params come AFTER signal params in Godot 4
+func _on_tracked_enemy_death(was_killed: bool, enemy: BaseEnemy) -> void:
+	if not is_instance_valid(self):
+		return
+	if not is_instance_valid(enemy):
+		return
 	var was_inside := _enemy_bodies.has(enemy)
 	if was_inside:
 		_enemy_bodies.erase(enemy)
 		enemy_presence_changed.emit(self, _enemy_bodies.size())
-		enemy_killed_in_cell.emit(self, enemy)
+		if was_killed:
+			enemy_killed_in_cell.emit(self, enemy)
 	_evaluate_cell_state()
 	_untrack_enemy_death(enemy)
 

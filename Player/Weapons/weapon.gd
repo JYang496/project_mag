@@ -2,6 +2,7 @@ extends Node2D
 class_name Weapon
 
 @onready var modules: WeaponModules = $Modules
+const HEAT_SCRIPT := preload("res://Player/Weapons/heat.gd")
 var MAX_MODULE_NUMBER = 3
 @onready var sprite: Sprite2D = $Sprite
 @onready var fuse_sprite_holder: FuseSpriteHolder = get_node_or_null("FuseSprites")
@@ -24,6 +25,10 @@ var branch_id: String = ""
 var branch_definition: WeaponBranchDefinition
 var branch_behavior: WeaponBranchBehavior
 var _last_stat_snapshot: Dictionary = {}
+var heat_core: Heat
+var heat_per_shot: float = 1.0
+var heat_max_value: float = 100.0
+var heat_cool_rate: float = 20.0
 var fuse : int:
 	get:
 		return _fuse_internal
@@ -40,6 +45,7 @@ func calculate_status() -> void:
 	if has_method("sync_stats"):
 		call("sync_stats")
 	validate_module_compatibility()
+	_sync_heat_trait_state()
 
 
 
@@ -90,7 +96,11 @@ func supports_melee_contact() -> bool:
 
 func _ready() -> void:
 	_apply_branch_behavior_if_needed()
+	_sync_heat_trait_state()
 	call_deferred("validate_module_compatibility")
+
+func _physics_process(delta: float) -> void:
+	_update_heat_system(delta)
 
 func set_branch(new_branch_id: String) -> bool:
 	var normalized_id := str(new_branch_id)
@@ -163,6 +173,45 @@ func get_normalized_weapon_traits() -> Array[StringName]:
 	if supports_melee_contact() and not traits.has(CombatTrait.MELEE):
 		traits.append(CombatTrait.MELEE)
 	return traits
+
+func has_heat_trait() -> bool:
+	return has_weapon_trait(CombatTrait.HEAT)
+
+func has_heat_system() -> bool:
+	return heat_core != null
+
+func can_fire_with_heat() -> bool:
+	if heat_core == null:
+		return true
+	return heat_core.can_fire()
+
+func configure_heat(per_shot: float, max_value: float, cool_rate: float) -> void:
+	heat_per_shot = maxf(per_shot, 0.0)
+	heat_max_value = maxf(max_value, 1.0)
+	heat_cool_rate = maxf(cool_rate, 0.0)
+	_sync_heat_trait_state()
+	if heat_core != null:
+		heat_core.configure(heat_per_shot, heat_max_value, heat_cool_rate)
+
+func register_shot_heat(multiplier: float = 1.0) -> void:
+	if heat_core == null:
+		return
+	heat_core.add_heat(multiplier)
+
+func get_heat_ratio() -> float:
+	if heat_core == null:
+		return 0.0
+	return heat_core.get_ratio()
+
+func get_heat_percent() -> int:
+	if heat_core == null:
+		return 0
+	return heat_core.get_percent()
+
+func is_weapon_overheated() -> bool:
+	if heat_core == null:
+		return false
+	return bool(heat_core.overheated)
 
 func get_explicit_weapon_traits() -> Array[StringName]:
 	if modules and modules.has_method("get_normalized_weapon_traits"):
@@ -296,6 +345,20 @@ func get_weapon_capabilities() -> Dictionary:
 		"projectiles": supports_projectiles(),
 		"melee_contact": supports_melee_contact(),
 	}
+
+func _sync_heat_trait_state() -> void:
+	if has_heat_trait():
+		if heat_core == null:
+			heat_core = HEAT_SCRIPT.new() as Heat
+		if heat_core != null:
+			heat_core.configure(heat_per_shot, heat_max_value, heat_cool_rate)
+		return
+	heat_core = null
+
+func _update_heat_system(delta: float) -> void:
+	if heat_core == null:
+		return
+	heat_core.cool_down(delta)
 
 func _on_tree_exited() -> void:
 	on_hit_plugins.clear()

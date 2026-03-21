@@ -31,6 +31,7 @@ var player_speed : float = 100.0 :
 	set(value):
 		player_speed = clampf(float(value), 1.0, 1000.0)
 var player_bonus_speed : float = 0.0
+var dash_cooldown: float = 5.0
 
 var player_max_hp := 5 :
 	get:
@@ -148,6 +149,7 @@ func reset_runtime_state() -> void:
 	player_exp = 0
 	player_speed = 100.0
 	player_bonus_speed = 0.0
+	dash_cooldown = 5.0
 	player_max_hp = 5
 	player_hp = 5
 	hp_regen = 0

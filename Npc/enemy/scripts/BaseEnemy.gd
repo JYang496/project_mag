@@ -5,7 +5,7 @@ class_name BaseEnemy
 @onready var coin_preload = preload("res://Objects/loots/coin.tscn")
 @onready var drop_preload = preload("res://Objects/loots/drop.tscn")
 
-signal enemy_death()
+signal enemy_death(was_killed: bool)
 
 @onready var hit_box_dot: HitBoxDot = $HitBoxDot
 @onready var enable_collision_timer: Timer = $EnableCollisionTimer
@@ -33,11 +33,11 @@ func death(killing_attack: Attack = null) -> void:
 	drop.spawn_global_position = global_position
 	self.call_deferred("add_sibling",drop)
 	_try_trigger_elite_kill_impact(killing_attack)
-	enemy_death.emit()
+	enemy_death.emit(true)
 	queue_free()
 
 func erase() -> void:
-	enemy_death.emit()
+	enemy_death.emit(false)
 	queue_free()
 
 func _try_trigger_elite_kill_impact(killing_attack: Attack) -> void:

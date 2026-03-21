@@ -48,6 +48,11 @@ func set_start_up_status():
 	PlayerData.player_level = int(GlobalVariables.autosave_data["current_level"])
 	PlayerData.next_level_exp = int(GlobalVariables.mech_data.next_level_exp[lvl_index])
 	PlayerData.player_speed = float(GlobalVariables.mech_data.player_speed[lvl_index])
+	var dash_cooldowns_value: Variant = GlobalVariables.mech_data.get("dash_cooldown")
+	if dash_cooldowns_value is PackedFloat32Array:
+		var dash_cooldowns: PackedFloat32Array = dash_cooldowns_value
+		if dash_cooldowns.size() > lvl_index:
+			PlayerData.dash_cooldown = float(dash_cooldowns[lvl_index])
 	PlayerData.player_max_hp = int(GlobalVariables.mech_data.player_max_hp[lvl_index])
 	PlayerData.player_hp = PlayerData.player_max_hp
 	PlayerData.hp_regen = int(GlobalVariables.mech_data.hp_regen[lvl_index])

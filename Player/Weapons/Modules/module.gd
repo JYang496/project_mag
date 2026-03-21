@@ -30,7 +30,8 @@ var weapon: Weapon
 	"energy",
 	"area_of_effect",
 	"fire",
-	"freeze"
+	"freeze",
+	"heat"
 ) var required_weapon_traits: int = 0
 
 func _enter_tree() -> void:

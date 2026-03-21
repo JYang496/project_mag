@@ -94,10 +94,18 @@ func _register_quest_elite(enemy: BaseEnemy) -> void:
 	enemy.call_deferred("set_quest_highlight", true, highlight_color)
 	enemy.set_quest_lock(true, pre_entry_damage_mul, freeze_before_entry)
 
-func _on_quest_elite_death(enemy: BaseEnemy) -> void:
+# Note: bind params come AFTER signal params in Godot 4
+func _on_quest_elite_death(was_killed: bool, enemy: BaseEnemy) -> void:
+	if not is_instance_valid(self):
+		return
+	if not is_instance_valid(enemy):
+		return
 	if not _quest_elites.has(enemy):
 		return
 	_quest_elites.erase(enemy)
+	if not was_killed:
+		_remaining_elites = _quest_elites.size()
+		return
 	_remaining_elites = _quest_elites.size()
 	if _remaining_elites <= 0 and not _completed:
 		_complete_objective()

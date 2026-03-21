@@ -1,10 +1,10 @@
-[gd_scene format=3 uid="uid://ch7vgpt732ajy"]
+[gd_scene format=3]
 
 [ext_resource type="PackedScene" uid="uid://dve1wwmkd0ynm" path="res://Player/Mechas/scenes/Player.tscn" id="1_jrs2l"]
-[ext_resource type="Script" uid="uid://cmq88n7owityy" path="res://Player/Mechas/scripts/prototype.gd" id="2_lp66g"]
+[ext_resource type="Script" uid="uid://cmq88n7owityy" path="res://Player/Mechas/scripts/heavy_assault.gd" id="2_lp66g"]
 [ext_resource type="PackedScene" path="res://Player/Skills/dash.tscn" id="4_3u5lw"]
 
-[node name="Prototype" unique_id=950613849 instance=ExtResource("1_jrs2l")]
+[node name="HeavyAssault" unique_id=950613849 instance=ExtResource("1_jrs2l")]
 script = ExtResource("2_lp66g")
 
 [node name="Dash" parent="ActiveSkill" parent_id_path=PackedInt32Array(269678612) index="0" unique_id=1807338388 instance=ExtResource("4_3u5lw")]

@@ -1,7 +1,7 @@
 extends Node
 
 const TEST_WEAPON_SCENE := preload("res://Utility/tests/mocks/test_weapon.tscn")
-const PLAYER_SCENE := preload("res://Player/Mechas/scenes/prototype.tscn")
+const PLAYER_SCENE := preload("res://Player/Mechas/scenes/heavy_assault.tscn")
 const UI_SCENE := preload("res://UI/scenes/UI.tscn")
 
 const MODULE_DAMAGE_UP := preload("res://Player/Weapons/Modules/damage_up.tscn")

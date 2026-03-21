@@ -337,4 +337,3 @@ static func toggle_debug_mode() -> bool:
 
 func apply_custom_effects(_target: Node) -> void:
 	pass
-

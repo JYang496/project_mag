@@ -9,6 +9,7 @@ class_name MechaDefinition
 @export var next_level_exp: PackedInt32Array = []
 @export var player_max_hp: PackedInt32Array = []
 @export var player_speed: PackedFloat32Array = []
+@export var dash_cooldown: PackedFloat32Array = []
 @export var armor: PackedInt32Array = []
 @export var shield: PackedInt32Array = []
 @export var hp_regen: PackedFloat32Array = []

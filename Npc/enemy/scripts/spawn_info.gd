@@ -22,7 +22,7 @@ func add_enemy_with_signal (i) -> void:
 		alive_enemy_number += 1
 		i.connect("enemy_death",Callable(self,"remove_enemy_from_list"))
 
-func remove_enemy_from_list() -> void:
+func remove_enemy_from_list(_was_killed: bool) -> void:
 	alive_enemy_number -= 1
 
 func get_scaled_hp(level: int, fallback_value: int) -> int:
