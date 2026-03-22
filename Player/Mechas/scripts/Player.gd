@@ -604,3 +604,33 @@ func _on_hurt_cd_timeout() -> void:
 
 func _on_collision_cd_timeout() -> void:
 	pass
+
+func get_total_heat_value() -> float:
+	var total: float = 0.0
+	for weapon in PlayerData.player_weapon_list:
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if not weapon.has_method("has_heat_system"):
+			continue
+		if not bool(weapon.call("has_heat_system")):
+			continue
+		total += float(weapon.call("get_heat_value"))
+	return total
+
+func get_total_heat_max() -> float:
+	var total: float = 0.0
+	for weapon in PlayerData.player_weapon_list:
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if not weapon.has_method("has_heat_system"):
+			continue
+		if not bool(weapon.call("has_heat_system")):
+			continue
+		total += float(weapon.call("get_heat_max_value"))
+	return total
+
+func get_total_heat_ratio() -> float:
+	var max_heat: float = get_total_heat_max()
+	if max_heat <= 0.0:
+		return 0.0
+	return clampf(get_total_heat_value() / max_heat, 0.0, 1.0)

@@ -599,13 +599,25 @@ func _ensure_heat_label() -> void:
 func _update_heat_label_text() -> void:
 	if heat_label == null or not is_instance_valid(heat_label):
 		return
-	var heat_weapon := _get_heat_weapon()
-	if heat_weapon == null:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
 		heat_label.visible = false
 		return
-	var percent := int(heat_weapon.call("get_heat_percent"))
-	var overheated := bool(heat_weapon.call("is_weapon_overheated"))
-	heat_label.text = "Heat: %d%%%s" % [percent, " (OVERHEAT)" if overheated else ""]
+	if not PlayerData.player.has_method("get_total_heat_max"):
+		heat_label.visible = false
+		return
+	var heat_max: float = float(PlayerData.player.call("get_total_heat_max"))
+	if heat_max <= 0.0:
+		heat_label.visible = false
+		return
+	var heat_value: float = float(PlayerData.player.call("get_total_heat_value"))
+	var percent: int = int(round(clampf(heat_value / heat_max, 0.0, 1.0) * 100.0))
+	var overheated := _any_heat_weapon_overheated()
+	heat_label.text = "Heat: %d/%d (%d%%)%s" % [
+		int(round(heat_value)),
+		int(round(heat_max)),
+		percent,
+		" (OVERHEAT)" if overheated else ""
+	]
 	heat_label.visible = true
 
 func _get_heat_weapon() -> Node:
@@ -619,3 +631,15 @@ func _get_heat_weapon() -> Node:
 		if weapon and is_instance_valid(weapon) and weapon.has_method("has_heat_system") and bool(weapon.call("has_heat_system")):
 			return weapon
 	return null
+
+func _any_heat_weapon_overheated() -> bool:
+	for weapon in PlayerData.player_weapon_list:
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if not weapon.has_method("has_heat_system"):
+			continue
+		if not bool(weapon.call("has_heat_system")):
+			continue
+		if weapon.has_method("is_weapon_overheated") and bool(weapon.call("is_weapon_overheated")):
+			return true
+	return false

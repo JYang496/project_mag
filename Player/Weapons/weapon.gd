@@ -203,6 +203,16 @@ func get_heat_ratio() -> float:
 		return 0.0
 	return heat_core.get_ratio()
 
+func get_heat_value() -> float:
+	if heat_core == null:
+		return 0.0
+	return float(heat_core.heat_value)
+
+func get_heat_max_value() -> float:
+	if heat_core == null:
+		return 0.0
+	return float(heat_core.max_heat)
+
 func get_heat_percent() -> int:
 	if heat_core == null:
 		return 0
@@ -212,6 +222,11 @@ func is_weapon_overheated() -> bool:
 	if heat_core == null:
 		return false
 	return bool(heat_core.overheated)
+
+func lock_heat_value(value: float, duration_sec: float) -> void:
+	if heat_core == null:
+		return
+	heat_core.lock_to_value(value, duration_sec)
 
 func get_explicit_weapon_traits() -> Array[StringName]:
 	if modules and modules.has_method("get_normalized_weapon_traits"):

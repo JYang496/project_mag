@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Player/Skills/heavy_assault_heat_lock.gd" id="1_heatlock"]
+
+[node name="HeavyAssaultHeatLock" type="Node2D"]
+script = ExtResource("1_heatlock")
