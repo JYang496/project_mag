@@ -127,7 +127,12 @@ func _on_shoot():
 		fired_count += 1
 	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_weapon_shot(base_direction)
-	register_shot_heat(float(max(0, fired_count - 1)))
+	var extra_heat_multiplier := 1.0
+	if branch_behavior and is_instance_valid(branch_behavior):
+		if branch_behavior.has_method("get_extra_heat_shot_multiplier"):
+			extra_heat_multiplier = float(branch_behavior.call("get_extra_heat_shot_multiplier"))
+	var extra_heat_shots := float(max(0, fired_count - 1)) * clampf(extra_heat_multiplier, 0.0, 1.0)
+	register_shot_heat(extra_heat_shots)
 	adjust_attack_speed(1.2)
 
 func adjust_attack_speed(rate : float) -> void:

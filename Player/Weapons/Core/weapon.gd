@@ -2,7 +2,7 @@ extends Node2D
 class_name Weapon
 
 @onready var modules: WeaponModules = $Modules
-const HEAT_SCRIPT := preload("res://Player/Weapons/heat.gd")
+const HEAT_SCRIPT := preload("res://Player/Weapons/Heat/heat.gd")
 var MAX_MODULE_NUMBER = 3
 @onready var sprite: Sprite2D = $Sprite
 @onready var fuse_sprite_holder: FuseSpriteHolder = get_node_or_null("FuseSprites")
@@ -46,6 +46,7 @@ func calculate_status() -> void:
 		call("sync_stats")
 	validate_module_compatibility()
 	_sync_heat_trait_state()
+	_notify_shared_heat_pool_dirty()
 
 
 
@@ -97,6 +98,7 @@ func supports_melee_contact() -> bool:
 func _ready() -> void:
 	_apply_branch_behavior_if_needed()
 	_sync_heat_trait_state()
+	_notify_shared_heat_pool_dirty()
 	call_deferred("validate_module_compatibility")
 
 func _physics_process(delta: float) -> void:
@@ -178,12 +180,18 @@ func has_heat_trait() -> bool:
 	return has_weapon_trait(CombatTrait.HEAT)
 
 func has_heat_system() -> bool:
+	if not has_heat_trait():
+		return false
+	var shared_pool := _get_shared_heat_pool()
+	if shared_pool != null:
+		return true
 	return heat_core != null
 
 func can_fire_with_heat() -> bool:
-	if heat_core == null:
+	var core := _get_active_heat_core()
+	if core == null:
 		return true
-	return heat_core.can_fire()
+	return core.can_fire()
 
 func configure_heat(per_shot: float, max_value: float, cool_rate: float) -> void:
 	heat_per_shot = maxf(per_shot, 0.0)
@@ -192,41 +200,56 @@ func configure_heat(per_shot: float, max_value: float, cool_rate: float) -> void
 	_sync_heat_trait_state()
 	if heat_core != null:
 		heat_core.configure(heat_per_shot, heat_max_value, heat_cool_rate)
+	_notify_shared_heat_pool_dirty()
 
 func register_shot_heat(multiplier: float = 1.0) -> void:
-	if heat_core == null:
+	if not has_heat_trait():
 		return
-	heat_core.add_heat(multiplier)
+	var core := _get_active_heat_core()
+	if core == null:
+		return
+	if core.has_method("add_heat_amount"):
+		core.call("add_heat_amount", maxf(0.0, heat_per_shot * maxf(multiplier, 0.0)))
+		return
+	core.add_heat(multiplier)
 
 func get_heat_ratio() -> float:
-	if heat_core == null:
+	var core := _get_active_heat_core()
+	if core == null:
 		return 0.0
-	return heat_core.get_ratio()
+	return core.get_ratio()
 
 func get_heat_value() -> float:
-	if heat_core == null:
+	var core := _get_active_heat_core()
+	if core == null:
 		return 0.0
-	return float(heat_core.heat_value)
+	return float(core.heat_value)
 
 func get_heat_max_value() -> float:
-	if heat_core == null:
+	var core := _get_active_heat_core()
+	if core == null:
 		return 0.0
-	return float(heat_core.max_heat)
+	if core.has_method("has_contributors") and not bool(core.call("has_contributors")):
+		return 0.0
+	return float(core.max_heat)
 
 func get_heat_percent() -> int:
-	if heat_core == null:
+	var core := _get_active_heat_core()
+	if core == null:
 		return 0
-	return heat_core.get_percent()
+	return core.get_percent()
 
 func is_weapon_overheated() -> bool:
-	if heat_core == null:
+	var core := _get_active_heat_core()
+	if core == null:
 		return false
-	return bool(heat_core.overheated)
+	return bool(core.overheated)
 
 func lock_heat_value(value: float, duration_sec: float) -> void:
-	if heat_core == null:
+	var core := _get_active_heat_core()
+	if core == null:
 		return
-	heat_core.lock_to_value(value, duration_sec)
+	core.lock_to_value(value, duration_sec)
 
 func get_explicit_weapon_traits() -> Array[StringName]:
 	if modules and modules.has_method("get_normalized_weapon_traits"):
@@ -362,6 +385,11 @@ func get_weapon_capabilities() -> Dictionary:
 	}
 
 func _sync_heat_trait_state() -> void:
+	_notify_shared_heat_pool_dirty()
+	var shared_pool := _get_shared_heat_pool()
+	if shared_pool != null:
+		heat_core = null
+		return
 	if has_heat_trait():
 		if heat_core == null:
 			heat_core = HEAT_SCRIPT.new() as Heat
@@ -371,9 +399,33 @@ func _sync_heat_trait_state() -> void:
 	heat_core = null
 
 func _update_heat_system(delta: float) -> void:
+	if _get_shared_heat_pool() != null:
+		return
 	if heat_core == null:
 		return
 	heat_core.cool_down(delta)
+
+func _get_shared_heat_pool() -> Heat:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return null
+	if not PlayerData.player.has_method("get_shared_heat_pool"):
+		return null
+	var pool: Variant = PlayerData.player.call("get_shared_heat_pool")
+	if pool == null:
+		return null
+	return pool as Heat
+
+func _get_active_heat_core() -> Heat:
+	var shared_pool := _get_shared_heat_pool()
+	if shared_pool != null:
+		return shared_pool
+	return heat_core
+
+func _notify_shared_heat_pool_dirty() -> void:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return
+	if PlayerData.player.has_method("mark_shared_heat_pool_dirty"):
+		PlayerData.player.call("mark_shared_heat_pool_dirty")
 
 func _on_tree_exited() -> void:
 	on_hit_plugins.clear()

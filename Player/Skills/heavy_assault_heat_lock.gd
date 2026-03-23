@@ -23,45 +23,35 @@ func can_activate() -> bool:
 	return _has_heat_weapon()
 
 func activate_skill() -> void:
-	for weapon in PlayerData.player_weapon_list:
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		if not weapon.has_method("has_heat_system"):
-			continue
-		if not bool(weapon.call("has_heat_system")):
-			continue
-		var max_heat: float = 0.0
-		if weapon.has_method("get_heat_max_value"):
-			max_heat = float(weapon.call("get_heat_max_value"))
-		weapon.call("lock_heat_value", max_heat * clampf(lock_heat_ratio, 0.0, 1.0), lock_duration_sec)
+	var pool := _get_shared_heat_pool()
+	if pool == null:
+		return
+	var max_heat: float = float(pool.max_heat)
+	pool.lock_to_value(max_heat * clampf(lock_heat_ratio, 0.0, 1.0), lock_duration_sec)
 
 func _physics_process(_delta: float) -> void:
 	if _player == null or not is_instance_valid(_player):
 		return
-	var best_mul: float = 1.0
-	for weapon in PlayerData.player_weapon_list:
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		if not weapon.has_method("has_heat_system"):
-			continue
-		if not bool(weapon.call("has_heat_system")):
-			continue
-		var heat_ratio: float = 0.0
-		if weapon.has_method("get_heat_ratio"):
-			heat_ratio = float(weapon.call("get_heat_ratio"))
-		var diff: float = absf(heat_ratio - passive_center_ratio)
-		var proximity: float = 1.0 - clampf(diff / maxf(passive_falloff_ratio, 0.01), 0.0, 1.0)
-		var mul: float = lerpf(1.0, maxf(passive_peak_mul, 1.0), proximity)
-		if mul > best_mul:
-			best_mul = mul
+	var heat_ratio: float = 0.0
+	var pool := _get_shared_heat_pool()
+	if pool != null:
+		heat_ratio = float(pool.get_ratio())
+	var diff: float = absf(heat_ratio - passive_center_ratio)
+	var proximity: float = 1.0 - clampf(diff / maxf(passive_falloff_ratio, 0.01), 0.0, 1.0)
+	var best_mul: float = lerpf(1.0, maxf(passive_peak_mul, 1.0), proximity)
 	_player.apply_move_speed_mul(_move_mul_source_id, best_mul)
 
 func _has_heat_weapon() -> bool:
-	for weapon in PlayerData.player_weapon_list:
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		if not weapon.has_method("has_heat_system"):
-			continue
-		if bool(weapon.call("has_heat_system")):
-			return true
-	return false
+	var pool := _get_shared_heat_pool()
+	if pool == null:
+		return false
+	if pool.has_method("has_contributors"):
+		return bool(pool.call("has_contributors"))
+	return float(pool.max_heat) > 0.0
+
+func _get_shared_heat_pool() -> Object:
+	if _player == null or not is_instance_valid(_player):
+		return null
+	if not _player.has_method("get_shared_heat_pool"):
+		return null
+	return _player.call("get_shared_heat_pool")

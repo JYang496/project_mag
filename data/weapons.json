@@ -83,4 +83,11 @@
 		"description": "single target smash with stun chance",
 		"price": "9",
 	},
+	"13": {
+		"name": "flamethrower",
+		"img": "cannon1.png",
+		"res": "flamethrower.tscn",
+		"description": "short-range cone burst with fire aoe and heat",
+		"price": "9",
+	},
 }

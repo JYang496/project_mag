@@ -14,6 +14,7 @@ const WEAPON_RESOURCE_PATHS := [
 	"res://data/weapons/chainsaw_luncher.tres",
 	"res://data/weapons/dash_blade.tres",
 	"res://data/weapons/hammer.tres",
+	"res://data/weapons/flamethrower.tres",
 ]
 const MECHA_RESOURCE_PATHS := [
 	"res://data/mechas/HeavyAssault.tres",

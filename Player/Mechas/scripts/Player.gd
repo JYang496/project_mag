@@ -1,6 +1,8 @@
 extends CharacterBody2D
 class_name Player
 
+const SHARED_HEAT_POOL_SCRIPT := preload("res://Player/Weapons/Heat/shared_heat_pool.gd")
+
 var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
 @onready var equppied_augments = $EquippedAugments
@@ -44,6 +46,8 @@ var _loot_bonus_modifiers: Dictionary = {}
 var _base_detect_shape_size := Vector2.ZERO
 var _base_camera_zoom := Vector2.ONE
 var _camera_zoom_target := Vector2.ONE
+var _shared_heat_pool: SharedHeatPool
+var _shared_heat_signature: String = ""
 @export var camera_zoom_lerp_speed: float = 6.0
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 # Signals
@@ -52,6 +56,9 @@ signal coin_collected()
 
 func _ready():
 	PlayerData.player = self
+	_shared_heat_pool = SHARED_HEAT_POOL_SCRIPT.new() as SharedHeatPool
+	if _shared_heat_pool == null:
+		push_warning("Failed to initialize SharedHeatPool.")
 	_setup_default_active_skill()
 	mecha_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_resize_mecha_sprite()
@@ -62,6 +69,7 @@ func _ready():
 	_sync_weapon_orbit_states(true)
 	update_grab_radius()
 	custom_ready()
+	_rebuild_shared_heat_pool()
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 
@@ -71,6 +79,7 @@ func custom_ready():
 
 func _physics_process(delta):
 	_sync_weapon_orbit_states()
+	_update_shared_heat_pool(delta)
 	movement(delta)
 	_update_camera_zoom_smooth(delta)
 	move_and_slide()
@@ -130,6 +139,7 @@ func create_weapon(item_id, level := 1):
 	PlayerData.player_weapon_list.append(weapon)
 	
 	_sync_weapon_orbit_states(true)
+	_rebuild_shared_heat_pool()
 	if GlobalVariables.ui != null:
 		GlobalVariables.ui.refresh_border()
 
@@ -142,6 +152,7 @@ func swap_weapon_position(weapon1, weapon2) -> void:
 	PlayerData.player_weapon_list[slot1_index] = PlayerData.player_weapon_list[slot2_index]
 	PlayerData.player_weapon_list[slot2_index] = temp
 	_sync_weapon_orbit_states(true)
+	_rebuild_shared_heat_pool()
 
 func movement(delta):
 	if movement_enabled:
@@ -605,32 +616,62 @@ func _on_hurt_cd_timeout() -> void:
 func _on_collision_cd_timeout() -> void:
 	pass
 
-func get_total_heat_value() -> float:
-	var total: float = 0.0
+func _update_shared_heat_pool(delta: float) -> void:
+	if _shared_heat_pool == null:
+		return
+	var next_signature := _build_shared_heat_signature()
+	if next_signature != _shared_heat_signature:
+		_shared_heat_signature = next_signature
+		_rebuild_shared_heat_pool()
+	_shared_heat_pool.cool_down(delta)
+
+func _rebuild_shared_heat_pool() -> void:
+	if _shared_heat_pool == null:
+		return
+	_shared_heat_pool.configure_from_weapons(PlayerData.player_weapon_list)
+	_shared_heat_signature = _build_shared_heat_signature()
+
+func mark_shared_heat_pool_dirty() -> void:
+	_shared_heat_signature = ""
+
+func get_shared_heat_pool() -> SharedHeatPool:
+	return _shared_heat_pool
+
+func _build_shared_heat_signature() -> String:
+	var keys: PackedStringArray = []
 	for weapon in PlayerData.player_weapon_list:
 		if weapon == null or not is_instance_valid(weapon):
 			continue
-		if not weapon.has_method("has_heat_system"):
+		var contributes := false
+		if weapon.has_method("has_heat_trait"):
+			contributes = bool(weapon.call("has_heat_trait"))
+		elif weapon.has_method("has_heat_system"):
+			contributes = bool(weapon.call("has_heat_system"))
+		if not contributes:
 			continue
-		if not bool(weapon.call("has_heat_system")):
-			continue
-		total += float(weapon.call("get_heat_value"))
-	return total
+		var max_heat: float = 0.0
+		var cool_rate: float = 0.0
+		if weapon.get("heat_max_value") != null:
+			max_heat = float(weapon.get("heat_max_value"))
+		if weapon.get("heat_cool_rate") != null:
+			cool_rate = float(weapon.get("heat_cool_rate"))
+		keys.append("%s:%.4f:%.4f" % [str(weapon.get_instance_id()), max_heat, cool_rate])
+	keys.sort()
+	return "|".join(keys)
+
+func get_total_heat_value() -> float:
+	if _shared_heat_pool == null:
+		return 0.0
+	return float(_shared_heat_pool.heat_value)
 
 func get_total_heat_max() -> float:
-	var total: float = 0.0
-	for weapon in PlayerData.player_weapon_list:
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		if not weapon.has_method("has_heat_system"):
-			continue
-		if not bool(weapon.call("has_heat_system")):
-			continue
-		total += float(weapon.call("get_heat_max_value"))
-	return total
+	if _shared_heat_pool == null:
+		return 0.0
+	if not _shared_heat_pool.has_contributors():
+		return 0.0
+	return float(_shared_heat_pool.max_heat)
 
 func get_total_heat_ratio() -> float:
-	var max_heat: float = get_total_heat_max()
-	if max_heat <= 0.0:
+	if _shared_heat_pool == null or not _shared_heat_pool.has_contributors():
 		return 0.0
-	return clampf(get_total_heat_value() / max_heat, 0.0, 1.0)
+	return _shared_heat_pool.get_ratio()
