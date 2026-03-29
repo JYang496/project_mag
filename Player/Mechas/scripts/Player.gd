@@ -25,8 +25,8 @@ var distance_mouse_player = 0
 var status_list = {}
 const TARGET_MECHA_SIZE = Vector2(96,96)
 const MECHA_DIRECTION_TEXTURES := {
-	"top_left": preload("res://asset/images/characters/4_lb.png"),
-	"bottom_left": preload("res://asset/images/characters/4_lf.png"),
+	"top_left": preload("res://asset/images/characters/2lb.png"),
+	"bottom_left": preload("res://asset/images/characters/2lf.png"),
 	"top_right": preload("res://asset/images/characters/4_rb.png"),
 	"bottom_right": preload("res://asset/images/characters/4_rf.png"),
 }

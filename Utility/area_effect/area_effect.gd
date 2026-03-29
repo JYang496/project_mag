@@ -1,7 +1,7 @@
 extends Area2D
 class_name AreaEffect
 
-static var debug_mode_enabled: bool = true
+static var debug_mode_enabled: bool = false
 
 enum TargetGroup {
 	ENEMIES,
@@ -54,7 +54,10 @@ enum TargetGroup {
 	set(value):
 		visual_size_multiplier = maxf(value, 0.01)
 		_sync_visual_scale()
-@export var debug_draw_enabled: bool = false
+@export var draw_enabled: bool = true:
+	set(value):
+		draw_enabled = value
+		queue_redraw()
 @export var debug_fill_color: Color = Color(1.0, 0.4, 0.2, 0.14)
 @export var debug_line_color: Color = Color(1.0, 0.6, 0.3, 0.9)
 @export var debug_line_width: float = 2.0
@@ -128,19 +131,20 @@ func _try_apply_on_hurt_box(area: Area2D) -> void:
 
 
 func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
-	if one_shot_damage > 0 and target.has_method("damaged"):
+	if one_shot_damage > 0:
 		var damage_data := DamageManager.build_damage_data(
 			source_node,
 			one_shot_damage,
 			Attack.normalize_damage_type(damage_type),
 			knock_back
 		)
-		DamageManager.apply_to_target(target, damage_data)
-		var owner_player := damage_data.source_player as Player
-		if owner_player and is_instance_valid(owner_player) and target_is_enemy:
-			owner_player.apply_bonus_hit_if_needed(target)
-		if source_node and is_instance_valid(source_node) and source_node.has_method("on_hit_target"):
-			source_node.on_hit_target(target)
+		var applied := DamageManager.apply_to_target(target, damage_data)
+		if applied:
+			var owner_player := damage_data.source_player as Player
+			if owner_player and is_instance_valid(owner_player) and target_is_enemy:
+				owner_player.apply_bonus_hit_if_needed(target)
+			if source_node and is_instance_valid(source_node) and source_node.has_method("on_hit_target"):
+				source_node.on_hit_target(target)
 	if not status_on_apply.is_empty():
 		_apply_status_to_target(target)
 	apply_custom_effects(target)
@@ -168,16 +172,14 @@ func _apply_tick_to_current_overlaps() -> void:
 			continue
 		if not _can_affect_hurt_box(hurt_box):
 			continue
-		if not target.has_method("damaged"):
-			continue
 		var damage_data := DamageManager.build_damage_data(
 			source_node,
 			tick_damage,
 			Attack.normalize_damage_type(damage_type),
 			knock_back
 		)
-		DamageManager.apply_to_target(target, damage_data)
-		target_affected.emit(target)
+		if DamageManager.apply_to_target(target, damage_data):
+			target_affected.emit(target)
 
 
 func _apply_status_to_target(target: Node) -> void:
@@ -319,7 +321,7 @@ func _draw() -> void:
 
 
 func _is_debug_draw_enabled() -> bool:
-	if debug_draw_enabled:
+	if draw_enabled:
 		return true
 	if debug_mode_enabled:
 		return true
