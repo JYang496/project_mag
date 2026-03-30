@@ -121,6 +121,8 @@ func apply_base_movement(projectile: Node2D) -> void:
 		return
 	if speed == null or speed == 0:
 		return
+	# Set first-frame facing immediately to avoid one-frame rotation lag.
+	projectile.rotation = projectile_direction.angle() + deg_to_rad(90.0)
 	var movement_node := _spawn_effect_instance("linear_movement", linear_movement)
 	if movement_node == null:
 		return

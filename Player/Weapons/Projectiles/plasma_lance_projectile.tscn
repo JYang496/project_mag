@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Player/Weapons/Projectiles/plasma_lance_projectile.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/projectiles/plasma.png" id="2_texture"]
+
+[node name="PlasmaLanceProjectile" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Bullet" type="Node2D" parent="."]
+
+[node name="BulletSprite" type="Sprite2D" parent="Bullet"]
+visible = false
+texture_filter = 1
+texture = ExtResource("2_texture")
+
+[node name="ExpireTimer" type="Timer" parent="."]
+wait_time = 2.5
+one_shot = true
+
+[connection signal="timeout" from="ExpireTimer" to="." method="_on_expire_timer_timeout"]

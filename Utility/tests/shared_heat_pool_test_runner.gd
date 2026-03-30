@@ -2,6 +2,10 @@ extends Node
 
 const TEST_WEAPON_SCENE := preload("res://Utility/tests/mocks/test_weapon.tscn")
 const SHARED_HEAT_POOL_SCRIPT := preload("res://Player/Weapons/Heat/shared_heat_pool.gd")
+const THERMAL_CANNON_SCENE := preload("res://Player/Weapons/thermal_cannon.tscn")
+const GATLING_THERMAL_SCENE := preload("res://Player/Weapons/gatling_thermal.tscn")
+const HEAT_SINK_BURST_SCENE := preload("res://Player/Weapons/heat_sink_burst.tscn")
+const PLASMA_LANCE_SCENE := preload("res://Player/Weapons/plasma_lance.tscn")
 
 var _pass_count: int = 0
 var _fail_count: int = 0
@@ -16,6 +20,8 @@ func run_all_tests() -> void:
 	await _test_shared_accumulation_across_weapons()
 	await _test_overheat_gates_all_heat_weapons()
 	await _test_lock_semantics_through_weapon_api()
+	await _test_new_heat_weapon_pool_aggregation()
+	await _test_new_heat_weapon_overheat_and_recovery()
 	_print_summary()
 
 func _test_pool_aggregation_math() -> void:
@@ -84,6 +90,73 @@ func _test_lock_semantics_through_weapon_api() -> void:
 	_assert_true(pool.heat_value > 30.0, "Lock: heat can increase after lock expires")
 	await _teardown_fixture(ctx)
 
+func _test_new_heat_weapon_pool_aggregation() -> void:
+	var ctx := await _build_new_weapons_fixture()
+	var pool: SharedHeatPool = ctx.pool
+	var weapons: Array = ctx.weapons
+
+	_assert_eq_int(pool.contributor_count, 4, "New weapons: all 4 heat weapons contribute to shared pool")
+	_assert_near(pool.max_heat, 400.0, 0.001, "New weapons: shared max heat aggregates to 400")
+	_assert_near(pool.cooldown_rate, 90.0, 0.001, "New weapons: shared cooldown rate aggregates to 90")
+
+	for weapon_variant in weapons:
+		var weapon := weapon_variant as Weapon
+		_assert_true(weapon != null, "New weapons: instantiated weapon is valid")
+		if weapon == null:
+			continue
+		_assert_true(weapon.has_heat_trait(), "New weapons: weapon has HEAT trait -> %s" % weapon.name)
+		_assert_true(weapon.can_fire_with_heat(), "New weapons: weapon starts able to fire -> %s" % weapon.name)
+
+	await _teardown_new_weapons_fixture(ctx)
+
+func _test_new_heat_weapon_overheat_and_recovery() -> void:
+	var ctx := await _build_new_weapons_fixture()
+	var pool: SharedHeatPool = ctx.pool
+	var weapons: Array = ctx.weapons
+
+	var total_shot_heat := 0.0
+	for weapon_variant in weapons:
+		var weapon := weapon_variant as Weapon
+		if weapon == null:
+			continue
+		total_shot_heat += float(weapon.heat_per_shot)
+	_assert_near(total_shot_heat, 40.5, 0.001, "New weapons: total per-volley heat is expected (40.5)")
+
+	# 10 volleys exceed 400 max heat (10 * 40.5 = 405) and must overheat the shared pool.
+	for _i in range(10):
+		for weapon_variant in weapons:
+			var weapon := weapon_variant as Weapon
+			if weapon == null:
+				continue
+			weapon.register_shot_heat()
+
+	_assert_true(pool.overheated, "New weapons: shared pool overheats after sustained combined fire")
+	_assert_true(pool.heat_value >= pool.max_heat - 0.001, "New weapons: pool heat clamps at shared max")
+	for weapon_variant in weapons:
+		var weapon := weapon_variant as Weapon
+		if weapon == null:
+			continue
+		_assert_false(weapon.can_fire_with_heat(), "New weapons: firing blocked while shared pool overheated -> %s" % weapon.name)
+
+	# Partial cooldown while heat > 0 should keep overheat lockout.
+	pool.cool_down(1.0)
+	for weapon_variant in weapons:
+		var weapon := weapon_variant as Weapon
+		if weapon == null:
+			continue
+		_assert_false(weapon.can_fire_with_heat(), "New weapons: still blocked while shared heat remains above zero -> %s" % weapon.name)
+
+	# Cool to zero; overheat state should clear for all.
+	pool.cool_down(10.0)
+	_assert_true(pool.heat_value <= 0.001, "New weapons: pool fully cools to zero")
+	for weapon_variant in weapons:
+		var weapon := weapon_variant as Weapon
+		if weapon == null:
+			continue
+		_assert_true(weapon.can_fire_with_heat(), "New weapons: firing restored after full cooldown -> %s" % weapon.name)
+
+	await _teardown_new_weapons_fixture(ctx)
+
 func _build_fixture(a_max: float, a_cool: float, b_max: float, b_cool: float) -> Dictionary:
 	var fake_player := Player.new()
 	var pool := SHARED_HEAT_POOL_SCRIPT.new() as SharedHeatPool
@@ -110,6 +183,32 @@ func _build_fixture(a_max: float, a_cool: float, b_max: float, b_cool: float) ->
 		"weapon_b": weapon_b,
 	}
 
+func _build_new_weapons_fixture() -> Dictionary:
+	var fake_player := Player.new()
+	var pool := SHARED_HEAT_POOL_SCRIPT.new() as SharedHeatPool
+	fake_player.set("_shared_heat_pool", pool)
+	PlayerData.player = fake_player
+
+	var thermal := THERMAL_CANNON_SCENE.instantiate() as Weapon
+	var gatling := GATLING_THERMAL_SCENE.instantiate() as Weapon
+	var burst := HEAT_SINK_BURST_SCENE.instantiate() as Weapon
+	var lance := PLASMA_LANCE_SCENE.instantiate() as Weapon
+
+	var weapons: Array[Weapon] = []
+	for weapon in [thermal, gatling, burst, lance]:
+		if weapon != null:
+			add_child(weapon)
+			weapons.append(weapon)
+
+	await _wait_frames(3)
+	pool.configure_from_weapons(weapons)
+
+	return {
+		"player": fake_player,
+		"pool": pool,
+		"weapons": weapons,
+	}
+
 func _teardown_fixture(ctx: Dictionary) -> void:
 	for key in ["weapon_a", "weapon_b", "player"]:
 		var node_variant: Variant = ctx.get(key)
@@ -120,6 +219,27 @@ func _teardown_fixture(ctx: Dictionary) -> void:
 					node_ref.queue_free()
 				else:
 					node_ref.free()
+	PlayerData.player = null
+	await _wait_frames(2)
+
+func _teardown_new_weapons_fixture(ctx: Dictionary) -> void:
+	var weapons_variant: Variant = ctx.get("weapons", [])
+	if weapons_variant is Array:
+		for weapon_variant in weapons_variant:
+			if weapon_variant is Node:
+				var weapon_node := weapon_variant as Node
+				if weapon_node != null and is_instance_valid(weapon_node):
+					if weapon_node.get_parent() != null:
+						weapon_node.queue_free()
+					else:
+						weapon_node.free()
+
+	var player_variant: Variant = ctx.get("player")
+	if player_variant is Node:
+		var player_node := player_variant as Node
+		if player_node != null and is_instance_valid(player_node):
+			player_node.free()
+
 	PlayerData.player = null
 	await _wait_frames(2)
 

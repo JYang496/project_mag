@@ -90,4 +90,32 @@
 		"description": "short-range cone burst with fire aoe and heat",
 		"price": "9",
 	},
+	"14": {
+		"name": "thermal cannon",
+		"img": "cannon2.png",
+		"res": "thermal_cannon.tscn",
+		"description": "mid-range high damage thermal sniper, heat scales damage",
+		"price": "12",
+	},
+	"15": {
+		"name": "gatling thermal",
+		"img": "mg2.png",
+		"res": "gatling_thermal.tscn",
+		"description": "high fire-rate thermal suppressor with burn at high heat",
+		"price": "11",
+	},
+	"16": {
+		"name": "heat sink burst",
+		"img": "cannon3.png",
+		"res": "heat_sink_burst.tscn",
+		"description": "low heat shots, overheat triggers burst AOE",
+		"price": "10",
+	},
+	"17": {
+		"name": "plasma lance",
+		"img": "cannon1.png",
+		"res": "plasma_lance.tscn",
+		"description": "low fire-rate piercing lance, damage grows after penetration",
+		"price": "12",
+	},
 }
