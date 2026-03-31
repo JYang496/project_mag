@@ -102,7 +102,8 @@ func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> 
 	if spawn_projectile == null:
 		return
 	projectile_direction = direction
-	var projectile_damage: int = maxi(1, int(round(float(damage) * maxf(damage_multiplier, 0.05))))
+	var runtime_damage := get_runtime_shot_damage()
+	var projectile_damage: int = maxi(1, int(round(float(runtime_damage) * maxf(damage_multiplier, 0.05))))
 	spawn_projectile.damage = projectile_damage
 	spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
 	spawn_projectile.hp = projectile_hits

@@ -1,4 +1,5 @@
 extends Module
+# Use on hit-capable weapons to chain bonus lightning damage to nearby enemies.
 
 var ITEM_NAME := "Lightning Chain"
 
@@ -8,6 +9,10 @@ var ITEM_NAME := "Lightning Chain"
 @export var chain_count_per_fuse: int = 0
 @export var line_width: float = 2.0
 @export var line_duration: float = 0.12
+
+func _enter_tree() -> void:
+	super._enter_tree()
+	register_as_on_hit_plugin()
 
 func _ready() -> void:
 	register_as_on_hit_plugin()

@@ -2,10 +2,20 @@
 
 [ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_4bmpc"]
 [ext_resource type="Texture2D" uid="uid://bmuw2m4jla4ac" path="res://Textures/test/more_hp.png" id="2_3fre3"]
-[ext_resource type="Script" path="res://Player/Weapons/Modules/more_hp.gd" id="2_r0310"]
+
+[sub_resource type="GDScript" id="GDScript_3j8dt"]
+script/source = "extends Module
+# Use on durability-based weapons to increase projectile or summon hit points.
+
+var ITEM_NAME = \"More HP\"
+@export var hp_add_by: int = 2
+
+func configure_stat_modifiers() -> void:
+	stat_additives[\"hp\"] = float(hp_add_by)
+"
 
 [node name="MoreHP" unique_id=277676516 instance=ExtResource("1_4bmpc")]
-script = ExtResource("2_r0310")
+script = SubResource("GDScript_3j8dt")
 hp_add_by = 2
 
 [node name="Sprite" parent="." index="0"]

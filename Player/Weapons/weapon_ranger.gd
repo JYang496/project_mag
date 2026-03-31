@@ -370,6 +370,10 @@ func set_cd_timer(timer : Timer) -> void:
 func set_projectile_size(projectile_size : float) -> void:
 	calculate_projectile_size.emit(projectile_size)
 
+# Computes per-shot damage from base damage and current modules without mutating runtime stats.
+func get_runtime_shot_damage() -> int:
+	return get_runtime_damage_value(float(base_damage))
+
 func remove_weapon() -> void:
 	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
 	PlayerData.on_select_weapon = -1

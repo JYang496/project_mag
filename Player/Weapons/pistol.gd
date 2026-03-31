@@ -87,7 +87,7 @@ func _on_shoot():
 	if spawn_projectile == null:
 		return
 	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
-	spawn_projectile.damage = damage
+	spawn_projectile.damage = get_runtime_shot_damage()
 	spawn_projectile.hp = projectile_hits
 	spawn_projectile.global_position = global_position
 	spawn_projectile.size = size

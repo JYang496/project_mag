@@ -50,6 +50,7 @@ func _on_shoot() -> void:
 	if forward == Vector2.ZERO:
 		forward = Vector2.UP
 
+	var runtime_damage := get_runtime_shot_damage()
 	var is_burning_mode := get_heat_ratio() >= overheat_burn_threshold_ratio
 	for i in range(bullets_per_shot):
 		var spawn_projectile := spawn_projectile_from_scene(projectile_template)
@@ -58,9 +59,9 @@ func _on_shoot() -> void:
 		var offset_rad := deg_to_rad(randf_range(-front_fire_half_angle_deg, front_fire_half_angle_deg))
 		var shot_dir := forward.rotated(offset_rad).normalized()
 		projectile_direction = shot_dir
-		var shot_damage := damage
+		var shot_damage := runtime_damage
 		if is_burning_mode:
-			shot_damage = int(round(float(damage) * (1.0 + burn_bonus_damage_ratio)))
+			shot_damage = int(round(float(runtime_damage) * (1.0 + burn_bonus_damage_ratio)))
 			spawn_projectile.damage_type = Attack.TYPE_FIRE
 		else:
 			spawn_projectile.damage_type = Attack.TYPE_PHYSICAL

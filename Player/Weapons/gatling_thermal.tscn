@@ -1,20 +1,34 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://d3bbihpg4ctwu"]
 
-[ext_resource type="PackedScene" path="res://Player/Weapons/weapon_ranger.tscn" id="1_ranger"]
-[ext_resource type="Script" path="res://Player/Weapons/gatling_thermal.gd" id="2_script"]
-[ext_resource type="Texture2D" path="res://asset/images/weapons/mg2.png" id="3_icon"]
+[ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_ranger"]
+[ext_resource type="Script" uid="uid://30qyqw3ndrh" path="res://Player/Weapons/gatling_thermal.gd" id="2_script"]
+[ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_5at86"]
+[ext_resource type="Texture2D" uid="uid://b7seflu15mxpt" path="res://asset/images/weapons/mg2.png" id="3_icon"]
+[ext_resource type="PackedScene" uid="uid://73l1jqjw7ajl" path="res://Player/Weapons/Modules/bullet_size_up.tscn" id="4_cs3gh"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/thermal_ignition.tscn" id="6_qyf3a"]
 
-[node name="GatlingThermal" instance=ExtResource("1_ranger")]
+[node name="GatlingThermal" unique_id=562977408 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
 heat_accumulation = 4.0
 max_heat = 100.0
 heat_cooldown_rate = 20.0
 front_fire_half_angle_deg = 35.0
+overheat_burn_threshold_ratio = 0.8
+burn_bonus_damage_ratio = 0.35
+effect_configs = Array[ExtResource("3_5at86")]([])
+debug_projectile_effects = false
 
-[node name="Modules" parent="." index="0"]
+[node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 136224
 
-[node name="FuseSprites" parent="." index="4"]
+[node name="BulletSizeUp" parent="Modules" index="0" unique_id=63235425 instance=ExtResource("4_cs3gh")]
+mult_by = 2.0
+
+[node name="ThermalIgnition" parent="Modules" index="1" unique_id=378813951 instance=ExtResource("6_qyf3a")]
+dot_damage = 3.0
+dot_duration = 3.0
+
+[node name="FuseSprites" parent="." index="4" unique_id=50406900]
 fuse_texture_1 = ExtResource("3_icon")
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

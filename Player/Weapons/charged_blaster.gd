@@ -99,7 +99,7 @@ func _on_shoot():
 	# Beam direction is fixed to weapon local forward so it always fires from gun orientation.
 	beam_blast_ins.target_position = beam_local_forward.normalized() * beam_range
 	beam_blast_ins.width = charge_level * 6
-	beam_blast_ins.damage = damage * charge_level
+	beam_blast_ins.damage = get_runtime_shot_damage() * charge_level
 	beam_blast_ins.duration = duration
 	beam_blast_ins.hit_cd = hit_cd
 	beam_blast_ins.source_weapon = self

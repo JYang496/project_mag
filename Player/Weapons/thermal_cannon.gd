@@ -47,7 +47,8 @@ func _on_shoot() -> void:
 
 	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
 	var heat_bonus := 1.0 + (get_heat_ratio() * maxf(heat_damage_bonus_at_full_heat, 0.0))
-	var scaled_damage := int(round(float(damage) * heat_bonus))
+	var runtime_damage := get_runtime_shot_damage()
+	var scaled_damage := int(round(float(runtime_damage) * heat_bonus))
 
 	spawn_projectile.damage = max(1, scaled_damage)
 	spawn_projectile.damage_type = Attack.TYPE_ENERGY

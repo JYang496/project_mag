@@ -26,9 +26,14 @@ func apply_attack(area) -> void:
 	}
 	if "knock_back" in hitbox_owner:
 		knock_back_data = hitbox_owner.knock_back
+	var outgoing_damage := int(hitbox_owner.damage)
+	if hitbox_owner and hitbox_owner.has_method("get_runtime_damage_value"):
+		var base_damage_variant: Variant = hitbox_owner.get("base_damage")
+		if base_damage_variant != null:
+			outgoing_damage = int(hitbox_owner.call("get_runtime_damage_value", float(base_damage_variant)))
 	var damage_data := DamageManager.build_damage_data(
 		hitbox_owner,
-		int(hitbox_owner.damage),
+		max(1, outgoing_damage),
 		damage_type,
 		knock_back_data
 	)
@@ -52,5 +57,4 @@ func check_overlapping() -> void:
 		if area is HurtBox:
 			hitbox_owner.overlapping = true
 		hitbox_owner.overlapping = false
-
 

@@ -66,10 +66,11 @@ func _resolve_projectile_scale() -> Vector2:
 	if desired_pixel_size != Vector2.ZERO and projectile_sprite.texture:
 		var texture_size : Vector2 = projectile_sprite.texture.get_size()
 		if texture_size.x > 0 and texture_size.y > 0:
-			return Vector2(
+			var base_scale := Vector2(
 				desired_pixel_size.x / texture_size.x,
 				desired_pixel_size.y / texture_size.y
 			)
+			return base_scale * maxf(size, 0.01)
 	return Vector2(size, size)
 
 func init_hitbox(hb_type = "once") -> void:
@@ -132,9 +133,19 @@ func _on_before_pooled() -> void:
 	_release_effects()
 	module_list.clear()
 	effect_list.clear()
+	hp = 1
+	damage = 1
+	damage_type = Attack.TYPE_PHYSICAL
+	size = 1.0
+	desired_pixel_size = Vector2.ZERO
+	projectile_texture = null
+	hitbox_type = "once"
+	dot_cd = 0.0
 	base_displacement = Vector2.ZERO
 	projectile_displacement = Vector2.ZERO
 	projectile_root.position = Vector2.ZERO
+	projectile_sprite.scale = Vector2.ONE
+	projectile_sprite.texture = null
 	source_weapon = null
 	overlapping = false
 	_remove_debug_overlay()

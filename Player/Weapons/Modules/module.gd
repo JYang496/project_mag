@@ -141,13 +141,6 @@ func apply_stat_modifiers(stat_block: Dictionary) -> Dictionary:
 		return {}
 	configure_stat_modifiers()
 	var output: Dictionary = stat_block.duplicate(true)
-	for key_variant in stat_multipliers.keys():
-		var key := str(key_variant)
-		if not output.has(key):
-			continue
-		var base_multiplier := float(stat_multipliers[key_variant])
-		var final_multiplier := get_effective_multiplier(base_multiplier)
-		output[key] = float(output[key]) * final_multiplier
 	for key_variant in stat_additives.keys():
 		var key := str(key_variant)
 		if not output.has(key):
@@ -155,6 +148,13 @@ func apply_stat_modifiers(stat_block: Dictionary) -> Dictionary:
 		var base_add := float(stat_additives[key_variant])
 		var final_add := get_effective_additive(base_add)
 		output[key] = float(output[key]) + final_add
+	for key_variant in stat_multipliers.keys():
+		var key := str(key_variant)
+		if not output.has(key):
+			continue
+		var base_multiplier := float(stat_multipliers[key_variant])
+		var final_multiplier := get_effective_multiplier(base_multiplier)
+		output[key] = float(output[key]) * final_multiplier
 	return output
 
 func get_effect_descriptions() -> PackedStringArray:

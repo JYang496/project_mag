@@ -1,10 +1,15 @@
 extends Module
+# Use on hit-capable weapons to apply stacking erosion damage over time.
 class_name Erosion
 
 @export var base_tick: int = 5
 @export var base_damage: int = 1
 @export var tick_per_fuse: int = 0
 @export var damage_per_fuse: int = 0
+
+func _enter_tree() -> void:
+	super._enter_tree()
+	register_as_on_hit_plugin()
 
 func _ready() -> void:
 	register_as_on_hit_plugin()

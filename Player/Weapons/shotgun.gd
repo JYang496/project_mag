@@ -93,6 +93,7 @@ func _on_shoot():
 	var start_angle = global_position.direction_to(main_target).normalized().angle()
 	var angle_step = deg_to_rad(arc) / clampi((bullet_count - 1),1,9)
 	var start_offset = -deg_to_rad(arc) / 2
+	var runtime_damage := get_runtime_shot_damage()
 	
 	for i in bullet_count:
 		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
@@ -100,7 +101,7 @@ func _on_shoot():
 			continue
 		var current_angle = start_angle + start_offset + (angle_step * i)
 		projectile_direction = Vector2.RIGHT.rotated(current_angle)
-		spawn_projectile.damage = damage
+		spawn_projectile.damage = runtime_damage
 		spawn_projectile.global_position = global_position
 		spawn_projectile.projectile_texture = projectile_texture_resource
 		spawn_projectile.size = size

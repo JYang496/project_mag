@@ -75,13 +75,14 @@ func _apply_fire_damage(target: Node) -> void:
 		return
 	_attacked_target_ids[target.get_instance_id()] = true
 
+	var runtime_damage := get_runtime_shot_damage()
 	var knock_back := {
 		"amount": 0,
 		"angle": Vector2.ZERO
 	}
 	var damage_data := DamageManager.build_damage_data(
 		self,
-		max(1, damage),
+		runtime_damage,
 		Attack.TYPE_FIRE,
 		knock_back
 	)

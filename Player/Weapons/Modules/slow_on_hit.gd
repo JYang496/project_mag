@@ -1,4 +1,5 @@
 extends Module
+# Use on hit-capable weapons to inflict a temporary slow status on enemies.
 
 var ITEM_NAME := "Slow On Hit"
 
@@ -7,6 +8,10 @@ var ITEM_NAME := "Slow On Hit"
 @export var duration_seconds: float = 1.2
 @export var chance_per_fuse: float = 0.0
 @export var duration_per_fuse: float = 0.0
+
+func _enter_tree() -> void:
+	super._enter_tree()
+	register_as_on_hit_plugin()
 
 func _ready() -> void:
 	register_as_on_hit_plugin()

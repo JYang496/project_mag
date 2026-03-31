@@ -25,6 +25,7 @@ var branch_id: String = ""
 var branch_definition: WeaponBranchDefinition
 var branch_behavior: WeaponBranchBehavior
 var _last_stat_snapshot: Dictionary = {}
+var _overheat_fire_bypass_sources: Array[Node] = []
 var heat_core: Heat
 var heat_per_shot: float = 1.0
 var heat_max_value: float = 100.0
@@ -168,8 +169,9 @@ func _clear_branch_behavior() -> void:
 
 func get_normalized_weapon_traits() -> Array[StringName]:
 	var traits: Array[StringName] = []
-	if modules and modules.has_method("get_normalized_weapon_traits"):
-		traits = modules.get_normalized_weapon_traits()
+	var modules_node := _get_modules_container()
+	if modules_node and modules_node.has_method("get_normalized_weapon_traits"):
+		traits = modules_node.get_normalized_weapon_traits()
 	if supports_projectiles() and not traits.has(CombatTrait.PROJECTILE):
 		traits.append(CombatTrait.PROJECTILE)
 	if supports_melee_contact() and not traits.has(CombatTrait.MELEE):
@@ -191,7 +193,30 @@ func can_fire_with_heat() -> bool:
 	var core := _get_active_heat_core()
 	if core == null:
 		return true
+	if bool(core.overheated) and _has_overheat_fire_bypass():
+		return true
 	return core.can_fire()
+
+func register_overheat_fire_bypass(source: Node) -> void:
+	if source == null:
+		return
+	if not _overheat_fire_bypass_sources.has(source):
+		_overheat_fire_bypass_sources.append(source)
+
+func unregister_overheat_fire_bypass(source: Node) -> void:
+	_overheat_fire_bypass_sources.erase(source)
+
+func _has_overheat_fire_bypass() -> bool:
+	for i in range(_overheat_fire_bypass_sources.size() - 1, -1, -1):
+		var source := _overheat_fire_bypass_sources[i]
+		if source == null or not is_instance_valid(source):
+			_overheat_fire_bypass_sources.remove_at(i)
+	if _overheat_fire_bypass_sources.is_empty():
+		return false
+	for source in _overheat_fire_bypass_sources:
+		if source and is_instance_valid(source):
+			return true
+	return false
 
 func configure_heat(per_shot: float, max_value: float, cool_rate: float) -> void:
 	heat_per_shot = maxf(per_shot, 0.0)
@@ -252,9 +277,19 @@ func lock_heat_value(value: float, duration_sec: float) -> void:
 	core.lock_to_value(value, duration_sec)
 
 func get_explicit_weapon_traits() -> Array[StringName]:
-	if modules and modules.has_method("get_normalized_weapon_traits"):
-		return modules.get_normalized_weapon_traits()
+	var modules_node := _get_modules_container()
+	if modules_node and modules_node.has_method("get_normalized_weapon_traits"):
+		return modules_node.get_normalized_weapon_traits()
 	return []
+
+func _get_modules_container() -> WeaponModules:
+	if modules != null and is_instance_valid(modules):
+		return modules
+	var resolved := get_node_or_null("Modules")
+	if resolved is WeaponModules:
+		modules = resolved as WeaponModules
+		return modules
+	return null
 
 func has_weapon_trait(trait_name: Variant) -> bool:
 	var normalized := CombatTrait.normalize(trait_name)
@@ -330,6 +365,9 @@ func build_stat_snapshot() -> Dictionary:
 		"dash_speed",
 		"return_speed",
 		"attack_range",
+		"heat_per_shot",
+		"heat_max_value",
+		"heat_cool_rate",
 	]
 	for stat_key in tracked_stats:
 		if get(stat_key) != null:
@@ -338,6 +376,26 @@ func build_stat_snapshot() -> Dictionary:
 
 func get_last_stat_snapshot() -> Dictionary:
 	return _last_stat_snapshot.duplicate(true)
+
+func get_runtime_stat_value(stat_name: String, base_value: float) -> float:
+	var sanitized_base := maxf(base_value, 0.0)
+	var additive_total := 0.0
+	var multiplier_delta_total := 0.0
+	for module_node in get_equipped_modules():
+		var base_eval := module_node.apply_stat_modifiers({stat_name: sanitized_base})
+		var zero_eval := module_node.apply_stat_modifiers({stat_name: 0.0})
+		var value_on_base := float(base_eval.get(stat_name, sanitized_base))
+		var value_on_zero := float(zero_eval.get(stat_name, 0.0))
+		additive_total += value_on_zero
+		if sanitized_base > 0.0:
+			var multiplier_component := (value_on_base - value_on_zero) / sanitized_base
+			multiplier_delta_total += (multiplier_component - 1.0)
+	var pre_mult_value := sanitized_base + additive_total
+	var final_mult := maxf(0.0, 1.0 + multiplier_delta_total)
+	return pre_mult_value * final_mult
+
+func get_runtime_damage_value(base_damage_value: float) -> int:
+	return max(1, int(round(get_runtime_stat_value("damage", base_damage_value))))
 
 func get_projected_stats_with_module(module_instance: Module) -> Dictionary:
 	var projected := build_stat_snapshot()
@@ -377,6 +435,8 @@ func _apply_stat_snapshot(snapshot: Dictionary) -> void:
 			(timer_variant as Timer).wait_time = float(get("attack_cooldown"))
 	if has_method("apply_size_multiplier") and get("size") != null:
 		call("apply_size_multiplier", float(get("size")))
+	if snapshot.has("heat_per_shot") or snapshot.has("heat_max_value") or snapshot.has("heat_cool_rate"):
+		configure_heat(heat_per_shot, heat_max_value, heat_cool_rate)
 
 func get_weapon_capabilities() -> Dictionary:
 	return {
@@ -429,5 +489,6 @@ func _notify_shared_heat_pool_dirty() -> void:
 
 func _on_tree_exited() -> void:
 	on_hit_plugins.clear()
+	_overheat_fire_bypass_sources.clear()
 	branch_behavior = null
 	branch_definition = null

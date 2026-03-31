@@ -61,7 +61,7 @@ func _on_shoot() -> void:
 	if spawn_projectile == null:
 		return
 	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
-	spawn_projectile.damage = max(1, damage)
+	spawn_projectile.damage = get_runtime_shot_damage()
 	spawn_projectile.damage_type = Attack.TYPE_ENERGY
 	spawn_projectile.hp = projectile_hits
 	spawn_projectile.global_position = global_position
@@ -77,12 +77,13 @@ func _trigger_overheat_burst() -> void:
 	var burst := area_effect_scene.instantiate() as AreaEffect
 	if burst == null:
 		return
-	var burst_damage: int = burst_base_damage + int(max(0, level - 1)) * burst_damage_per_level
+	var burst_base: float = float(burst_base_damage + int(max(0, level - 1)) * burst_damage_per_level)
+	var burst_damage: int = get_runtime_damage_value(burst_base)
 	burst.source_node = self
 	burst.global_position = global_position
 	burst.radius = maxf(burst_radius, 8.0)
 	burst.duration = maxf(burst_duration, 0.05)
-	burst.one_shot_damage = max(1, burst_damage)
+	burst.one_shot_damage = burst_damage
 	burst.damage_type = Attack.TYPE_FIRE
 	burst.target_group = AreaEffect.TargetGroup.ENEMIES
 	burst.apply_once_per_target = true

@@ -1,4 +1,5 @@
 extends Module
+# Use on any weapon to increase base outgoing damage.
 
 var ITEM_NAME = "Damage Up"
 @export var mult_by: float = 1.5

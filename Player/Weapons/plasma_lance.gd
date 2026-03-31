@@ -46,7 +46,7 @@ func _on_shoot() -> void:
 		return
 
 	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
-	spawn_projectile.damage = max(1, damage)
+	spawn_projectile.damage = get_runtime_shot_damage()
 	spawn_projectile.damage_type = Attack.TYPE_ENERGY
 	spawn_projectile.hp = max(1, projectile_hits)
 	var lance_projectile := spawn_projectile as PlasmaLanceProjectile

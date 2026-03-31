@@ -85,11 +85,12 @@ func set_level(lv) -> void:
 	satellites.clear()
 	var offset_step = 2 * PI / number
 	sync_stats()
+	var runtime_damage := get_runtime_shot_damage()
 	for n in range(number):
 		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 		if spawn_projectile == null:
 			continue
-		spawn_projectile.damage = damage
+		spawn_projectile.damage = runtime_damage
 		spawn_projectile.hp = 99999
 		spawn_projectile.expire_time = 99999
 		spawn_projectile.size = size

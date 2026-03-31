@@ -1,10 +1,15 @@
 extends Module
+# Use on frequent-hit weapons to recover player HP when attacks connect.
 
 var ITEM_NAME := "Life Steal"
 
 @export var steal_ratio: float = 0.1
 @export var minimum_heal: int = 1
 @export var ratio_per_fuse: float = 0.0
+
+func _enter_tree() -> void:
+	super._enter_tree()
+	register_as_on_hit_plugin()
 
 func _ready() -> void:
 	register_as_on_hit_plugin()

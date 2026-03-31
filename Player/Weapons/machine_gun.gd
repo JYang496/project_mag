@@ -194,9 +194,8 @@ func _fire_single_bullet(direction: Vector2) -> void:
 	var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 	if spawn_projectile == null:
 		return
-	damage = base_damage
-	calculate_damage(damage)
-	spawn_projectile.damage = damage
+	var runtime_damage := get_runtime_shot_damage()
+	spawn_projectile.damage = runtime_damage
 	spawn_projectile.hp = projectile_hits
 	spawn_projectile.global_position = global_position
 	spawn_projectile.projectile_texture = projectile_texture_resource

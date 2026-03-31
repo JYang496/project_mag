@@ -66,7 +66,7 @@ func _on_shoot():
 	var beam_ins = beam.instantiate()
 	beam_ins.global_position = self.global_position
 	beam_ins.target_position = get_global_mouse_position() - self.global_position
-	beam_ins.damage = damage
+	beam_ins.damage = get_runtime_shot_damage()
 	beam_ins.source_weapon = self
 	self.get_tree().root.call_deferred("add_child",beam_ins)
 	is_on_cooldown = true

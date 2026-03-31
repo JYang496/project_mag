@@ -1,4 +1,5 @@
 extends Module
+# Use on projectile weapons to increase the number of targets pierced per shot.
 
 var ITEM_NAME = "Pierce"
 @export var pierce_add_by = 2

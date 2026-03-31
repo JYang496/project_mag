@@ -1,4 +1,5 @@
 extends Module
+# Use on hit-capable weapons to add a chance to stun targets briefly.
 
 var ITEM_NAME := "Stun On Hit"
 
@@ -6,6 +7,10 @@ var ITEM_NAME := "Stun On Hit"
 @export var chance_per_fuse: float = 0.05
 @export var base_stun_seconds: float = 0.5
 @export var stun_seconds_per_fuse: float = 0.1
+
+func _enter_tree() -> void:
+	super._enter_tree()
+	register_as_on_hit_plugin()
 
 func _ready() -> void:
 	register_as_on_hit_plugin()

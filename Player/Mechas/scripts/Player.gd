@@ -25,10 +25,10 @@ var distance_mouse_player = 0
 var status_list = {}
 const TARGET_MECHA_SIZE = Vector2(96,96)
 const MECHA_DIRECTION_TEXTURES := {
-	"top_left": preload("res://asset/images/characters/2lb.png"),
-	"bottom_left": preload("res://asset/images/characters/2lf.png"),
-	"top_right": preload("res://asset/images/characters/4_rb.png"),
-	"bottom_right": preload("res://asset/images/characters/4_rf.png"),
+	"top_left": preload("res://asset/images/characters/2b.png"),
+	"bottom_left": preload("res://asset/images/characters/2f.png"),
+	"top_right": preload("res://asset/images/characters/2b.png"),
+	"bottom_right": preload("res://asset/images/characters/2f.png"),
 }
 var current_mecha_direction := ""
 const ORBIT_RADIUS := Vector2(40, 20)
@@ -249,11 +249,12 @@ func remove_loot_bonus(source_id: StringName) -> void:
 		_loot_bonus_modifiers.erase(source_id)
 
 func compute_outgoing_damage(base_damage: int) -> int:
-	var total_mul := 1.0
+	var total_mul_delta := 0.0
 	for mul in _damage_mul_modifiers.values():
-		total_mul *= float(mul)
-	total_mul *= _get_low_hp_damage_mul()
-	return max(1, int(round(float(base_damage) * total_mul)))
+		total_mul_delta += (float(mul) - 1.0)
+	total_mul_delta += (_get_low_hp_damage_mul() - 1.0)
+	var final_mul := maxf(0.0, 1.0 + total_mul_delta)
+	return max(1, int(round(float(base_damage) * final_mul)))
 
 func apply_bonus_hit_if_needed(target: Node) -> void:
 	if target == null or not is_instance_valid(target):
@@ -473,6 +474,7 @@ func _shortest_angle(from_angle: float, to_angle: float) -> float:
 func _update_mecha_direction(direction: Vector2) -> void:
 	if direction == Vector2.ZERO:
 		return
+	mecha_sprite.flip_h = direction.x > 0.0
 	var new_dir := ""
 	if direction.x < 0.0:
 		new_dir = "top_left" if direction.y < 0.0 else "bottom_left"

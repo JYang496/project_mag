@@ -3,4 +3,3 @@ class_name HeavyAssault
 
 func custom_ready() -> void:
 	create_weapon("15")
-	create_weapon("17")
