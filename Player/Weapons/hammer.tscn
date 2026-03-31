@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" path="res://Player/Weapons/weapon_melee.tscn" id="2_tg81u"]
 [ext_resource type="Texture2D" path="res://Textures/test/hammer.png" id="3_nock8"]
 [ext_resource type="PackedScene" path="res://Utility/hit_hurt_box/hit_box.tscn" id="4_hk3xq"]
-[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/stun_on_hit.tscn" id="5_3rbdo"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_stun_on_hit.tscn" id="5_3rbdo"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_bh6we"]
 radius = 130.0

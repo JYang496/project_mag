@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://dxe8qj0aob3a5"]
+
+[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/wmod_base.tscn" id="1_4bmpc"]
+[ext_resource type="Texture2D" uid="uid://bmuw2m4jla4ac" path="res://Textures/test/more_hp.png" id="2_3fre3"]
+[ext_resource type="Script" uid="uid://da26a8vidmulv" path="res://Player/Weapons/Modules/wmod_pierce_stat.gd" id="2_r0310"]
+
+[node name="Pierce" unique_id=966335507 instance=ExtResource("1_4bmpc")]
+script = ExtResource("2_r0310")
+pierce_add_by = 2
+supports_melee = false
+required_weapon_traits = 1024
+
+[node name="Sprite" parent="." index="0"]
+texture = ExtResource("2_3fre3")

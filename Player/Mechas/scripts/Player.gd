@@ -36,6 +36,8 @@ const ORBIT_ACCEL := 16.0
 const ORBIT_MAX_SPEED := 8.0
 const ORBIT_FRICTION := 6.0
 const ORBIT_OFFSET := Vector2(0, -25)
+const SCORCH_DURATION_SEC: float = 2.5
+const SCORCH_FIRE_DAMAGE_PER_STACK: float = 0.08
 var weapon_orbit_states: Dictionary = {}
 var _move_speed_mul_modifiers: Dictionary = {}
 var _vision_mul_modifiers: Dictionary = {}
@@ -43,6 +45,8 @@ var _damage_mul_modifiers: Dictionary = {}
 var _low_hp_damage_modifiers: Dictionary = {}
 var _bonus_hit_modifiers: Dictionary = {}
 var _loot_bonus_modifiers: Dictionary = {}
+var _scorch_stacks: int = 0
+var _scorch_expires_at_msec: int = 0
 var _base_detect_shape_size := Vector2.ZERO
 var _base_camera_zoom := Vector2.ONE
 var _camera_zoom_target := Vector2.ONE
@@ -491,7 +495,12 @@ func _update_mecha_direction(direction: Vector2) -> void:
 func damaged(attack:Attack):
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
 		return
+	var normalized_damage_type := Attack.normalize_damage_type(attack.damage_type)
+	_clear_expired_scorch()
 	var incoming_damage: int = max(0, int(round(float(attack.damage) * _get_total_damage_reduction())))
+	if normalized_damage_type == Attack.TYPE_FIRE and _scorch_stacks > 0:
+		var scorch_mult := 1.0 + (SCORCH_FIRE_DAMAGE_PER_STACK * float(_scorch_stacks))
+		incoming_damage = int(round(float(incoming_damage) * scorch_mult))
 	incoming_damage = max(0, incoming_damage - _get_total_armor())
 	incoming_damage = _absorb_damage_with_shield(incoming_damage)
 	if incoming_damage <= 0:
@@ -502,6 +511,8 @@ func damaged(attack:Attack):
 	if PlayerData.player_hp <= 0:
 		PhaseManager.enter_gameover()
 		return
+	if normalized_damage_type == Attack.TYPE_FIRE:
+		_apply_scorch_on_fire_hit()
 	hurt_box.set_collision_layer_value(1,false)
 	#self.set_collision_mask_value(3,false)
 	#self.set_collision_layer_value(1,false)
@@ -527,6 +538,31 @@ func _absorb_damage_with_shield(incoming_damage: int) -> int:
 	if absorbed > 0:
 		PlayerData.bonus_shield = max(0, int(PlayerData.bonus_shield) - absorbed)
 	return max(0, remaining - min(total_shield, incoming_damage))
+
+func _clear_expired_scorch() -> void:
+	if _scorch_stacks <= 0:
+		_scorch_stacks = 0
+		_scorch_expires_at_msec = 0
+		return
+	if Time.get_ticks_msec() < _scorch_expires_at_msec:
+		return
+	_scorch_stacks = 0
+	_scorch_expires_at_msec = 0
+
+func _apply_scorch_on_fire_hit() -> void:
+	var max_hp: float = maxf(float(PlayerData.player_max_hp), 1.0)
+	var hp_ratio: float = clampf(float(max(PlayerData.player_hp, 0)) / max_hp, 0.0, 1.0)
+	var stack_cap := _get_scorch_stack_cap(hp_ratio)
+	if _scorch_stacks < stack_cap:
+		_scorch_stacks += 1
+	_scorch_expires_at_msec = Time.get_ticks_msec() + int(SCORCH_DURATION_SEC * 1000.0)
+
+func _get_scorch_stack_cap(hp_ratio: float) -> int:
+	if hp_ratio <= 0.5:
+		return 3
+	if hp_ratio <= 0.75:
+		return 2
+	return 1
 
 
 # When player is teleporting between zones, disable terrain collision. Enable when arrived.

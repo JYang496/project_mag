@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://ytl6qq2cyao" path="res://data/spawns/LevelArray.gd" id="1_sm5it"]
 [ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/scripts/spawn_info.gd" id="2_fvbvb"]
-[ext_resource type="PackedScene" uid="uid://dxe8qj0aob3a5" path="res://Player/Weapons/Modules/pierce.tscn" id="2_gyoio"]
+[ext_resource type="PackedScene" uid="uid://dxe8qj0aob3a5" path="res://Player/Weapons/Modules/wmod_pierce_stat.tscn" id="2_gyoio"]
 [ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/scenes/enemy_rolling_ball.tscn" id="3_n4krr"]
 [ext_resource type="PackedScene" uid="uid://bmy3cber63qwh" path="res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn" id="3_ntoj7"]
 [ext_resource type="PackedScene" uid="uid://3nbq5hvtkssa" path="res://Npc/enemy/scenes/enemy_orbit_support.tscn" id="3_orbit"]

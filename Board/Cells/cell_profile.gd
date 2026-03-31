@@ -99,20 +99,20 @@ var terrain_type: int = Cell.TerrainType.NONE
 @export var module_scenes: Array[PackedScene] = []
 
 const TASK_OBJECTIVE_REGISTRY := {
-	Cell.TaskType.OFFENSE: "res://Board/Cells/Modules/offense_kill_objective_module.tscn",
-	Cell.TaskType.DEFENSE: "res://Board/Cells/Modules/defense_hold_objective_module.tscn",
-	Cell.TaskType.CLEAR: "res://Board/Cells/Modules/clear_cell_objective_module.tscn",
-	Cell.TaskType.HUNT: "res://Board/Cells/Modules/hunt_elite_objective_module.tscn",
-	Cell.TaskType.DODGE: "res://Board/Cells/Modules/dodge_survival_objective_module.tscn"
+	Cell.TaskType.OFFENSE: "res://Board/Cells/Modules/cell_obj_offense_kill.tscn",
+	Cell.TaskType.DEFENSE: "res://Board/Cells/Modules/cell_obj_defense_hold.tscn",
+	Cell.TaskType.CLEAR: "res://Board/Cells/Modules/cell_obj_clear_cell.tscn",
+	Cell.TaskType.HUNT: "res://Board/Cells/Modules/cell_obj_hunt_elite.tscn",
+	Cell.TaskType.DODGE: "res://Board/Cells/Modules/cell_obj_dodge_survival.tscn"
 }
 const TERRAIN_AURA_REGISTRY := {
-	Cell.TerrainType.CORROSION: "res://Board/Cells/Modules/corrosion_aura_module.tscn",
-	Cell.TerrainType.JUNGLE: "res://Board/Cells/Modules/jungle_aura_module.tscn",
-	Cell.TerrainType.SPEED_BOOST: "res://Board/Cells/Modules/speed_boost_aura_module.tscn",
-	Cell.TerrainType.REGEN: "res://Board/Cells/Modules/regen_aura_module.tscn",
-	Cell.TerrainType.LUCKY_STRIKE: "res://Board/Cells/Modules/lucky_strike_aura_module.tscn",
-	Cell.TerrainType.DOUBLE_LOOT: "res://Board/Cells/Modules/double_loot_aura_module.tscn",
-	Cell.TerrainType.LOW_HP_BERSERK: "res://Board/Cells/Modules/low_hp_berserk_aura_module.tscn"
+	Cell.TerrainType.CORROSION: "res://Board/Cells/Modules/cell_aura_corrosion.tscn",
+	Cell.TerrainType.JUNGLE: "res://Board/Cells/Modules/cell_aura_jungle.tscn",
+	Cell.TerrainType.SPEED_BOOST: "res://Board/Cells/Modules/cell_aura_speed_boost.tscn",
+	Cell.TerrainType.REGEN: "res://Board/Cells/Modules/cell_aura_regen.tscn",
+	Cell.TerrainType.LUCKY_STRIKE: "res://Board/Cells/Modules/cell_aura_lucky_strike.tscn",
+	Cell.TerrainType.DOUBLE_LOOT: "res://Board/Cells/Modules/cell_aura_double_loot.tscn",
+	Cell.TerrainType.LOW_HP_BERSERK: "res://Board/Cells/Modules/cell_aura_low_hp_berserk.tscn"
 }
 static var _SCENE_CACHE: Dictionary = {}
 

@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://d1i4w0rbbevbw"]
+
+[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/wmod_base.tscn" id="1_1716q"]
+[ext_resource type="Script" uid="uid://dpfplgxn34qyt" path="res://Player/Weapons/Modules/wmod_reload_speed_stat.gd" id="2_ej050"]
+[ext_resource type="Texture2D" uid="uid://r8gjrats42kq" path="res://Textures/test/faster_reload.png" id="2_w8ajp"]
+
+[node name="FasterReload" instance=ExtResource("1_1716q")]
+script = ExtResource("2_ej050")
+mult_by = 0.7
+
+[node name="Sprite" parent="." index="0"]
+texture = ExtResource("2_w8ajp")

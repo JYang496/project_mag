@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://Utility/tests/shared_heat_pool_test_runner.gd" id="1_runner"]
-
-[node name="SharedHeatPoolTestRunner" type="Node"]
-script = ExtResource("1_runner")

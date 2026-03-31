@@ -1,10 +1,9 @@
-[gd_scene format=3 uid="uid://dxe8qj0aob3a5"]
+[gd_scene format=3 uid="uid://baghal6x616ro"]
 
-[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/module.tscn" id="1_4bmpc"]
 [ext_resource type="Texture2D" uid="uid://bmuw2m4jla4ac" path="res://Textures/test/more_hp.png" id="2_3fre3"]
-[ext_resource type="Script" uid="uid://da26a8vidmulv" path="res://Player/Weapons/Modules/pierce.gd" id="2_r0310"]
+[ext_resource type="Script" path="res://Player/Weapons/Modules/pierce.gd" id="2_r0310"]
 
-[node name="Pierce" unique_id=966335507 instance=ExtResource("1_4bmpc")]
+[node name="Pierce" unique_id=966335507]
 script = ExtResource("2_r0310")
 pierce_add_by = 2
 supports_melee = false

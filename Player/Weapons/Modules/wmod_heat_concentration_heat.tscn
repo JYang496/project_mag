@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://c7ufld7anexg5"]
+
+[ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/wmod_base.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://bwtj4b0pm42n8" path="res://Player/Weapons/Modules/wmod_heat_concentration_heat.gd" id="2_script"]
+[ext_resource type="Texture2D" uid="uid://5hcsfj131buc" path="res://Textures/test/atk_up.png" id="3_icon"]
+
+[node name="HeatConcentration" unique_id=1472554501 instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+heat_damage_bonus_at_full_heat = 1.5
+required_weapon_traits = 131072
+
+[node name="Sprite" parent="." index="0"]
+texture = ExtResource("3_icon")

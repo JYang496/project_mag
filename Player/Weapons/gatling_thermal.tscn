@@ -4,8 +4,8 @@
 [ext_resource type="Script" uid="uid://30qyqw3ndrh" path="res://Player/Weapons/gatling_thermal.gd" id="2_script"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_5at86"]
 [ext_resource type="Texture2D" uid="uid://b7seflu15mxpt" path="res://asset/images/weapons/mg2.png" id="3_icon"]
-[ext_resource type="PackedScene" uid="uid://73l1jqjw7ajl" path="res://Player/Weapons/Modules/bullet_size_up.tscn" id="4_cs3gh"]
-[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/thermal_ignition.tscn" id="6_qyf3a"]
+[ext_resource type="PackedScene" uid="uid://73l1jqjw7ajl" path="res://Player/Weapons/Modules/wmod_bullet_size_stat.tscn" id="4_cs3gh"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_thermal_ignition_heat.tscn" id="6_qyf3a"]
 
 [node name="GatlingThermal" unique_id=562977408 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")

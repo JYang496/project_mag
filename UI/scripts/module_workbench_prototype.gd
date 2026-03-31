@@ -217,11 +217,11 @@ const THEMES := {
 }
 
 const SAMPLE_MODULE_SCENES: Array[PackedScene] = [
-	preload("res://Player/Weapons/Modules/pierce.tscn"),
-	preload("res://Player/Weapons/Modules/life_steal.tscn"),
-	preload("res://Player/Weapons/Modules/bullet_size_up.tscn"),
-	preload("res://Player/Weapons/Modules/erosion.tscn"),
-	preload("res://Player/Weapons/Modules/slow_on_hit.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_pierce_stat.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_lifesteal_on_hit.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_bullet_size_stat.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_dot_on_hit.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_slow_on_hit.tscn"),
 ]
 
 const SAMPLE_WEAPON_SCENES: Array[PackedScene] = [
@@ -231,9 +231,9 @@ const SAMPLE_WEAPON_SCENES: Array[PackedScene] = [
 ]
 
 const PRE_EQUIPPED_MODULE_SCENES: Array[PackedScene] = [
-	preload("res://Player/Weapons/Modules/damage_up.tscn"),
-	preload("res://Player/Weapons/Modules/stun_on_hit.tscn"),
-	preload("res://Player/Weapons/Modules/faster_reload.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_damage_up_stat.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_stun_on_hit.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_reload_speed_stat.tscn"),
 ]
 
 const TRACKED_STAT_KEYS: PackedStringArray = [

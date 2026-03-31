@@ -11,6 +11,8 @@ class_name BaseNPC
 @export var knockback_recover = 3.5
 @export var hit_label_merge_window_sec: float = 0.03
 var damage_taken_multiplier: float = 1.0
+const SCORCH_DURATION_SEC: float = 2.5
+const SCORCH_FIRE_DAMAGE_PER_STACK: float = 0.08
 
 var knockback = {
 	"amount": 0,
@@ -24,6 +26,9 @@ var is_dead: bool = false
 var _pending_hit_label_damage: int = 0
 var _hit_label_batch_id: int = 0
 var _pending_hit_label_damage_by_type: Dictionary = {}
+var _scorch_stacks: int = 0
+var _scorch_expires_at_msec: int = 0
+@onready var _scorch_max_hp: int = max(1, int(hp))
 
 var _quest_lock_active := false
 var _quest_lock_speed := 0.0
@@ -38,13 +43,18 @@ const QUEST_OUTLINE_SHADER: Shader = preload("res://Shaders/quest_outline.gdshad
 
 
 func damaged(attack:Attack):
+	var normalized_damage_type := Attack.normalize_damage_type(attack.damage_type)
+	_clear_expired_scorch()
 	var effective_damage := attack.damage
 	if effective_damage > 0:
 		effective_damage = int(round(effective_damage * damage_taken_multiplier))
+		if normalized_damage_type == Attack.TYPE_FIRE and _scorch_stacks > 0:
+			var scorch_mult := 1.0 + (SCORCH_FIRE_DAMAGE_PER_STACK * float(_scorch_stacks))
+			effective_damage = int(round(float(effective_damage) * scorch_mult))
 		effective_damage = max(1, effective_damage)
 	_queue_hit_label_damage(
 		effective_damage,
-		Attack.normalize_damage_type(attack.damage_type)
+		normalized_damage_type
 	)
 	
 	# Status
@@ -62,6 +72,9 @@ func damaged(attack:Attack):
 		is_dead = true
 		_flush_pending_hit_label()
 		death(attack)	
+		return
+	if normalized_damage_type == Attack.TYPE_FIRE and effective_damage > 0:
+		_apply_scorch_on_fire_hit()
 
 
 func _queue_hit_label_damage(damage_value: int, damage_type: StringName) -> void:
@@ -127,6 +140,30 @@ func _resolve_hit_label_color() -> Color:
 		_:
 			return Color.WHITE
 
+func _clear_expired_scorch() -> void:
+	if _scorch_stacks <= 0:
+		_scorch_stacks = 0
+		_scorch_expires_at_msec = 0
+		return
+	if Time.get_ticks_msec() < _scorch_expires_at_msec:
+		return
+	_scorch_stacks = 0
+	_scorch_expires_at_msec = 0
+
+func _apply_scorch_on_fire_hit() -> void:
+	var hp_ratio := float(max(hp, 0)) / float(max(_scorch_max_hp, 1))
+	var stack_cap := _get_scorch_stack_cap(hp_ratio)
+	if _scorch_stacks < stack_cap:
+		_scorch_stacks += 1
+	_scorch_expires_at_msec = Time.get_ticks_msec() + int(SCORCH_DURATION_SEC * 1000.0)
+
+func _get_scorch_stack_cap(hp_ratio: float) -> int:
+	if hp_ratio <= 0.5:
+		return 3
+	if hp_ratio <= 0.75:
+		return 2
+	return 1
+
 func death(_killing_attack: Attack = null):
 		queue_free()
 
@@ -160,8 +197,8 @@ func apply_status_effect(effect: StatusEffect) -> void:
 
 func apply_status_payload(status_name: StringName, status_data: Variant) -> void:
 	match status_name:
-		&"erosion":
-			apply_status_effect(ErosionStatusEffect.from_payload(status_data))
+		&"dot":
+			apply_status_effect(DotStatusEffect.from_dot_payload(status_data))
 
 func set_quest_lock(active: bool, damage_mul: float = 0.5, freeze_movement: bool = true) -> void:
 	if active:
