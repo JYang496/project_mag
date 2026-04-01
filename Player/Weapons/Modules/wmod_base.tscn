@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" uid="uid://drxrnfcnnexss" path="res://Player/Weapons/Modules/wmod_base.gd" id="1_bpqmw"]
 
-[node name="Module" type="Node2D"]
+[node name="Module" type="Node2D" unique_id=79514614]
 script = ExtResource("1_bpqmw")
 
-[node name="Sprite" type="Sprite2D" parent="."]
+[node name="Sprite" type="Sprite2D" parent="." unique_id=717281029]
 unique_name_in_owner = true
 visible = false

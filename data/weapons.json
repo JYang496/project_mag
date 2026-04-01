@@ -118,4 +118,32 @@
 		"description": "low fire-rate piercing lance, damage grows after penetration",
 		"price": "12",
 	},
+	"18": {
+		"name": "Cryo Carbine",
+		"img": "cannon2.png",
+		"res": "cryo_carbine.tscn",
+		"description": "precise freeze carbine, every third hit releases a shard",
+		"price": "12",
+	},
+	"19": {
+		"name": "Shatter Buckshot",
+		"img": "minigun.png",
+		"res": "shatter_buckshot.tscn",
+		"description": "close-range freeze shotgun for layering and shatter procs",
+		"price": "11",
+	},
+	"20": {
+		"name": "Frost Dash Blade",
+		"img": "short_knife.png",
+		"res": "frost_dash_blade.tscn",
+		"description": "dash melee with freeze finisher and lingering frost field",
+		"price": "12",
+	},
+	"21": {
+		"name": "Glacier Projector",
+		"img": "cannon1.png",
+		"res": "glacier_projector.tscn",
+		"description": "sustained freeze cone with cold snap trigger",
+		"price": "10",
+	},
 }

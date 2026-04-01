@@ -110,6 +110,4 @@ func _save_settings() -> void:
 	cfg.save(SETTINGS_PATH)
 
 func _is_embedded_run() -> bool:
-	# In editor run modes, Godot may execute in an embedded container where
-	# window APIs (move/resize/min size) are unsupported and emit warnings.
 	return OS.has_feature("editor")

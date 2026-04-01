@@ -2,6 +2,8 @@ extends CharacterBody2D
 class_name Player
 
 const SHARED_HEAT_POOL_SCRIPT := preload("res://Player/Weapons/Heat/shared_heat_pool.gd")
+const DAMAGE_PIPELINE_SCRIPT := preload("res://Utility/damage/damage_pipeline.gd")
+const DAMAGE_PROFILE_SCRIPT := preload("res://Utility/damage/damage_profile.gd")
 
 var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
@@ -36,8 +38,18 @@ const ORBIT_ACCEL := 16.0
 const ORBIT_MAX_SPEED := 8.0
 const ORBIT_FRICTION := 6.0
 const ORBIT_OFFSET := Vector2(0, -25)
-const SCORCH_DURATION_SEC: float = 2.5
-const SCORCH_FIRE_DAMAGE_PER_STACK: float = 0.08
+const SCORCH_DURATION_SEC: float = 6.0
+const SCORCH_DOT_RATIO_PER_STACK: float = 0.10
+const SCORCH_DOT_TICK_SEC: float = 1.0
+const FROST_DURATION_SEC: float = 6.0
+const FROST_SLOW_PER_STACK: float = 0.04
+const FROST_STACK_INTERVAL_SEC: float = 0.6
+const FROST_MAX_STACKS: int = 5
+const FROST_MOVE_SPEED_SOURCE: StringName = &"incoming_frost"
+const ENERGY_MARK_RATIO: float = 0.10
+const ENERGY_MARK_DURATION_SEC: float = 6.0
+const ENERGY_MARK_MAX_HP_RATIO: float = 0.40
+const ENERGY_MARK_TRIGGER_COOLDOWN_SEC: float = 2.0
 var weapon_orbit_states: Dictionary = {}
 var _move_speed_mul_modifiers: Dictionary = {}
 var _vision_mul_modifiers: Dictionary = {}
@@ -47,11 +59,25 @@ var _bonus_hit_modifiers: Dictionary = {}
 var _loot_bonus_modifiers: Dictionary = {}
 var _scorch_stacks: int = 0
 var _scorch_expires_at_msec: int = 0
+var _scorch_dot_damage_per_stack: int = 1
+var _scorch_dot_accum_sec: float = 0.0
+var _scorch_source_node: Node
+var _scorch_source_player: Node
+var _is_processing_scorch_dot: bool = false
+var _frost_stacks: int = 0
+var _frost_expires_at_msec: int = 0
+var _frost_next_stack_at_msec: int = 0
+var _energy_mark_value: int = 0
+var _energy_mark_expires_at_msec: int = 0
+var _energy_mark_trigger_ready_at_msec: int = 0
+var _is_processing_energy_burst: bool = false
 var _base_detect_shape_size := Vector2.ZERO
 var _base_camera_zoom := Vector2.ONE
 var _camera_zoom_target := Vector2.ONE
 var _shared_heat_pool: SharedHeatPool
 var _shared_heat_signature: String = ""
+var _incoming_damage_pipeline: DamagePipeline
+var _incoming_damage_profile: DamageProfile
 @export var camera_zoom_lerp_speed: float = 6.0
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 # Signals
@@ -60,6 +86,8 @@ signal coin_collected()
 
 func _ready():
 	PlayerData.player = self
+	_incoming_damage_pipeline = DAMAGE_PIPELINE_SCRIPT.new() as DamagePipeline
+	_setup_incoming_damage_profile()
 	_shared_heat_pool = SHARED_HEAT_POOL_SCRIPT.new() as SharedHeatPool
 	if _shared_heat_pool == null:
 		push_warning("Failed to initialize SharedHeatPool.")
@@ -84,6 +112,7 @@ func custom_ready():
 func _physics_process(delta):
 	_sync_weapon_orbit_states()
 	_update_shared_heat_pool(delta)
+	_update_incoming_elemental_effects(delta)
 	movement(delta)
 	_update_camera_zoom_smooth(delta)
 	move_and_slide()
@@ -495,29 +524,18 @@ func _update_mecha_direction(direction: Vector2) -> void:
 func damaged(attack:Attack):
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
 		return
-	var normalized_damage_type := Attack.normalize_damage_type(attack.damage_type)
-	_clear_expired_scorch()
-	var incoming_damage: int = max(0, int(round(float(attack.damage) * _get_total_damage_reduction())))
-	if normalized_damage_type == Attack.TYPE_FIRE and _scorch_stacks > 0:
-		var scorch_mult := 1.0 + (SCORCH_FIRE_DAMAGE_PER_STACK * float(_scorch_stacks))
-		incoming_damage = int(round(float(incoming_damage) * scorch_mult))
-	incoming_damage = max(0, incoming_damage - _get_total_armor())
-	incoming_damage = _absorb_damage_with_shield(incoming_damage)
-	if incoming_damage <= 0:
+	if _incoming_damage_pipeline == null:
+		_incoming_damage_pipeline = DAMAGE_PIPELINE_SCRIPT.new() as DamagePipeline
+	if _incoming_damage_profile == null:
+		_setup_incoming_damage_profile()
+	var result := _incoming_damage_pipeline.apply_incoming_damage(self, attack, _incoming_damage_profile)
+	if not result.applied:
 		return
-	PlayerData.player_hp -= incoming_damage
 	if PlayerData.testing_keep_hp_above_zero and PlayerData.player_hp <= 0:
 		PlayerData.player_hp = 1
 	if PlayerData.player_hp <= 0:
 		PhaseManager.enter_gameover()
 		return
-	if normalized_damage_type == Attack.TYPE_FIRE:
-		_apply_scorch_on_fire_hit()
-	hurt_box.set_collision_layer_value(1,false)
-	#self.set_collision_mask_value(3,false)
-	#self.set_collision_layer_value(1,false)
-	hurt_cd.start(PlayerData.hurt_cd)
-	collision_cd.start(PlayerData.collision_cd)
 	print(self, PlayerData.player_hp)
 
 func _get_total_armor() -> int:
@@ -526,35 +544,34 @@ func _get_total_armor() -> int:
 func _get_total_damage_reduction() -> float:
 	return clampf(float(PlayerData.damage_reduction) * float(PlayerData.bonus_damage_reduction), 0.2, 5.0)
 
-func _absorb_damage_with_shield(incoming_damage: int) -> int:
-	var remaining: int = max(0, incoming_damage)
-	var total_shield: int = max(0, int(PlayerData.shield) + int(PlayerData.bonus_shield))
-	if total_shield <= 0:
-		return remaining
-	var absorbed: int = min(total_shield, remaining)
-	var base_shield_absorb: int = min(absorbed, int(PlayerData.shield))
-	PlayerData.shield = max(0, int(PlayerData.shield) - base_shield_absorb)
-	absorbed -= base_shield_absorb
-	if absorbed > 0:
-		PlayerData.bonus_shield = max(0, int(PlayerData.bonus_shield) - absorbed)
-	return max(0, remaining - min(total_shield, incoming_damage))
-
 func _clear_expired_scorch() -> void:
 	if _scorch_stacks <= 0:
 		_scorch_stacks = 0
 		_scorch_expires_at_msec = 0
+		_scorch_dot_damage_per_stack = 1
+		_scorch_dot_accum_sec = 0.0
+		_scorch_source_node = null
+		_scorch_source_player = null
 		return
 	if Time.get_ticks_msec() < _scorch_expires_at_msec:
 		return
 	_scorch_stacks = 0
 	_scorch_expires_at_msec = 0
+	_scorch_dot_damage_per_stack = 1
+	_scorch_dot_accum_sec = 0.0
+	_scorch_source_node = null
+	_scorch_source_player = null
 
-func _apply_scorch_on_fire_hit() -> void:
+func _apply_scorch_on_fire_hit(fire_damage: int, source_node: Node = null, source_player: Node = null) -> void:
 	var max_hp: float = maxf(float(PlayerData.player_max_hp), 1.0)
 	var hp_ratio: float = clampf(float(max(PlayerData.player_hp, 0)) / max_hp, 0.0, 1.0)
 	var stack_cap := _get_scorch_stack_cap(hp_ratio)
 	if _scorch_stacks < stack_cap:
 		_scorch_stacks += 1
+	var per_stack_dot: int = max(1, int(round(float(max(1, fire_damage)) * SCORCH_DOT_RATIO_PER_STACK)))
+	_scorch_dot_damage_per_stack = max(_scorch_dot_damage_per_stack, per_stack_dot)
+	_scorch_source_node = source_node
+	_scorch_source_player = source_player
 	_scorch_expires_at_msec = Time.get_ticks_msec() + int(SCORCH_DURATION_SEC * 1000.0)
 
 func _get_scorch_stack_cap(hp_ratio: float) -> int:
@@ -563,6 +580,161 @@ func _get_scorch_stack_cap(hp_ratio: float) -> int:
 	if hp_ratio <= 0.75:
 		return 2
 	return 1
+
+func _clear_expired_frost() -> void:
+	if _frost_stacks <= 0:
+		_frost_stacks = 0
+		_frost_expires_at_msec = 0
+		_frost_next_stack_at_msec = 0
+		remove_move_speed_mul(FROST_MOVE_SPEED_SOURCE)
+		return
+	if Time.get_ticks_msec() < _frost_expires_at_msec:
+		return
+	_frost_stacks = 0
+	_frost_expires_at_msec = 0
+	_frost_next_stack_at_msec = 0
+	remove_move_speed_mul(FROST_MOVE_SPEED_SOURCE)
+
+func _apply_frost_on_freeze_hit() -> void:
+	var now_msec := Time.get_ticks_msec()
+	if _frost_stacks < FROST_MAX_STACKS and now_msec >= _frost_next_stack_at_msec:
+		_frost_stacks += 1
+		_frost_next_stack_at_msec = now_msec + int(FROST_STACK_INTERVAL_SEC * 1000.0)
+	_refresh_frost_move_slow()
+	_frost_expires_at_msec = now_msec + int(FROST_DURATION_SEC * 1000.0)
+
+func _refresh_frost_move_slow() -> void:
+	if _frost_stacks <= 0:
+		remove_move_speed_mul(FROST_MOVE_SPEED_SOURCE)
+		return
+	var move_mul := clampf(1.0 - float(_frost_stacks) * FROST_SLOW_PER_STACK, 0.05, 1.0)
+	apply_move_speed_mul(FROST_MOVE_SPEED_SOURCE, move_mul)
+
+func _clear_expired_energy_mark() -> void:
+	if _energy_mark_value <= 0:
+		_energy_mark_value = 0
+		_energy_mark_expires_at_msec = 0
+		return
+	if Time.get_ticks_msec() < _energy_mark_expires_at_msec:
+		return
+	_energy_mark_value = 0
+	_energy_mark_expires_at_msec = 0
+
+func _apply_energy_mark_on_energy_hit(energy_damage: int) -> void:
+	var gained_mark: int = max(0, int(round(float(max(0, energy_damage)) * ENERGY_MARK_RATIO)))
+	if gained_mark <= 0:
+		return
+	var mark_cap: int = max(1, int(round(maxf(float(PlayerData.player_max_hp), 1.0) * ENERGY_MARK_MAX_HP_RATIO)))
+	_energy_mark_value = mini(mark_cap, _energy_mark_value + gained_mark)
+	_energy_mark_expires_at_msec = Time.get_ticks_msec() + int(ENERGY_MARK_DURATION_SEC * 1000.0)
+
+func _try_trigger_energy_mark_burst(reference_attack: Attack) -> void:
+	if _energy_mark_value <= 0:
+		return
+	var now_msec := Time.get_ticks_msec()
+	if now_msec < _energy_mark_trigger_ready_at_msec:
+		return
+	if PlayerData.player_hp >= _energy_mark_value:
+		return
+	var burst_damage := _energy_mark_value
+	_energy_mark_value = 0
+	_energy_mark_expires_at_msec = 0
+	_energy_mark_trigger_ready_at_msec = now_msec + int(ENERGY_MARK_TRIGGER_COOLDOWN_SEC * 1000.0)
+	if burst_damage <= 0:
+		return
+	var burst_attack := Attack.new()
+	burst_attack.damage = burst_damage
+	burst_attack.damage_type = Attack.TYPE_ENERGY
+	if reference_attack != null:
+		burst_attack.source_node = reference_attack.source_node
+		burst_attack.source_player = reference_attack.source_player
+	_is_processing_energy_burst = true
+	damaged(burst_attack)
+	_is_processing_energy_burst = false
+
+func _apply_scorch_dot_tick(dot_damage: int) -> void:
+	if dot_damage <= 0:
+		return
+	var dot_attack := Attack.new()
+	dot_attack.damage = dot_damage
+	dot_attack.damage_type = Attack.TYPE_FIRE
+	dot_attack.source_node = _scorch_source_node
+	dot_attack.source_player = _scorch_source_player
+	_is_processing_scorch_dot = true
+	damaged(dot_attack)
+	_is_processing_scorch_dot = false
+
+func _update_incoming_elemental_effects(delta: float) -> void:
+	if _incoming_damage_pipeline == null or _incoming_damage_profile == null:
+		return
+	_incoming_damage_pipeline.process_periodic_effects(self, _incoming_damage_profile, delta)
+
+func _setup_incoming_damage_profile() -> void:
+	var profile := DAMAGE_PROFILE_SCRIPT.new() as DamageProfile
+	profile.profile_id = &"player"
+	profile.use_damage_reduction = true
+	profile.use_armor = true
+	profile.use_invuln = true
+	profile.dot_bypasses_invuln = true
+	profile.get_hp = Callable(self, "_profile_get_hp")
+	profile.set_hp = Callable(self, "_profile_set_hp")
+	profile.get_max_hp = Callable(self, "_profile_get_max_hp")
+	profile.get_armor = Callable(self, "_profile_get_armor")
+	profile.get_damage_reduction = Callable(self, "_profile_get_damage_reduction")
+	profile.get_damage_taken_multiplier = Callable(self, "_profile_get_damage_taken_multiplier")
+	profile.get_is_dead = Callable(self, "_profile_get_is_dead")
+	profile.set_is_dead = Callable(self, "_profile_set_is_dead")
+	profile.on_death = Callable(self, "_profile_on_death")
+	profile.on_trigger_invuln = Callable(self, "_profile_on_trigger_invuln")
+	profile.on_apply_frost_slow = Callable(self, "_profile_on_apply_frost_slow")
+	profile.on_clear_frost_slow = Callable(self, "_profile_on_clear_frost_slow")
+	_incoming_damage_profile = profile
+
+func _profile_get_hp() -> int:
+	return int(PlayerData.player_hp)
+
+func _profile_set_hp(value: int) -> void:
+	PlayerData.player_hp = int(value)
+
+func _profile_get_max_hp() -> int:
+	return max(1, int(PlayerData.player_max_hp))
+
+func _profile_get_armor() -> int:
+	return _get_total_armor()
+
+func _profile_get_damage_reduction() -> float:
+	return _get_total_damage_reduction()
+
+func _profile_get_damage_taken_multiplier() -> float:
+	return 1.0
+
+func _profile_get_is_dead() -> bool:
+	return PhaseManager.current_state() == PhaseManager.GAMEOVER or PlayerData.player_hp <= 0
+
+func _profile_set_is_dead(value: bool) -> void:
+	if not value:
+		return
+	if PlayerData.testing_keep_hp_above_zero:
+		PlayerData.player_hp = max(1, int(PlayerData.player_hp))
+		return
+	PlayerData.player_hp = 0
+
+func _profile_on_death(_attack: Attack) -> void:
+	if PlayerData.testing_keep_hp_above_zero:
+		PlayerData.player_hp = max(1, int(PlayerData.player_hp))
+		return
+	PhaseManager.enter_gameover()
+
+func _profile_on_trigger_invuln() -> void:
+	hurt_box.set_collision_layer_value(1,false)
+	hurt_cd.start(PlayerData.hurt_cd)
+	collision_cd.start(PlayerData.collision_cd)
+
+func _profile_on_apply_frost_slow(move_multiplier: float, _duration_sec: float) -> void:
+	apply_move_speed_mul(FROST_MOVE_SPEED_SOURCE, move_multiplier)
+
+func _profile_on_clear_frost_slow() -> void:
+	remove_move_speed_mul(FROST_MOVE_SPEED_SOURCE)
 
 
 # When player is teleporting between zones, disable terrain collision. Enable when arrived.

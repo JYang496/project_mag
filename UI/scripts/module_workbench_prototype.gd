@@ -222,12 +222,20 @@ const SAMPLE_MODULE_SCENES: Array[PackedScene] = [
 	preload("res://Player/Weapons/Modules/wmod_bullet_size_stat.tscn"),
 	preload("res://Player/Weapons/Modules/wmod_dot_on_hit.tscn"),
 	preload("res://Player/Weapons/Modules/wmod_slow_on_hit.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_cryo_infuser_freeze.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_subzero_extension_freeze.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.tscn"),
+	preload("res://Player/Weapons/Modules/wmod_permafrost_field_freeze.tscn"),
 ]
 
 const SAMPLE_WEAPON_SCENES: Array[PackedScene] = [
 	preload("res://Player/Weapons/pistol.tscn"),
 	preload("res://Player/Weapons/hammer.tscn"),
 	preload("res://Player/Weapons/rocket_launcher.tscn"),
+	preload("res://Player/Weapons/cryo_carbine.tscn"),
+	preload("res://Player/Weapons/shatter_buckshot.tscn"),
+	preload("res://Player/Weapons/frost_dash_blade.tscn"),
+	preload("res://Player/Weapons/glacier_projector.tscn"),
 ]
 
 const PRE_EQUIPPED_MODULE_SCENES: Array[PackedScene] = [

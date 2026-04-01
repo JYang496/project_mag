@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://Textures/test/minigun.png" id="1_icon"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/shatter_buckshot.tscn" id="2_scene"]
+[ext_resource type="Script" path="res://data/WeaponDefinition.gd" id="3_script"]
+
+[resource]
+script = ExtResource("3_script")
+weapon_id = "19"
+display_name = "Shatter Buckshot"
+icon = ExtResource("1_icon")
+price = 11
+description = "Freeze shotgun for close-range layering and shatter procs."
+scene = ExtResource("2_scene")

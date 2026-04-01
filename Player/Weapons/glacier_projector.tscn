@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://Player/Weapons/weapon_ranger.tscn" id="1_base"]
+[ext_resource type="Script" path="res://Player/Weapons/glacier_projector.gd" id="2_script"]
+
+[node name="GlacierProjector" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+cone_half_angle_deg = 38.0
+base_range = 280.0
+cold_snap_damage_ratio = 0.35
+cold_snap_contact_threshold_sec = 1.2
+cold_snap_icd_sec = 1.2
+
+[node name="Modules" parent="." index="0"]
+weapon_traits = 65536
+
+[connection signal="shoot" from="." to="." method="_on_shoot"]
