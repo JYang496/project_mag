@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://UI/scripts/enemy_hp_bar.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.08, 0.08, 0.08, 0.9)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fill"]
+bg_color = Color(0.93, 0.16, 0.16, 0.95)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[node name="EnemyHpBar" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Bar" type="ProgressBar" parent="."]
+offset_left = -20.0
+offset_top = -4.0
+offset_right = 20.0
+offset_bottom = 2.0
+value = 100.0
+show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_fill")
+
+[node name="HideTimer" type="Timer" parent="."]
+one_shot = true
+
+[connection signal="timeout" from="HideTimer" to="." method="_on_hide_timer_timeout"]

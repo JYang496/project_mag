@@ -10,10 +10,7 @@ const FROST_DURATION_SEC: float = 6.0
 const FROST_SLOW_PER_STACK: float = 0.04
 const FROST_STACK_INTERVAL_SEC: float = 0.6
 const FROST_MAX_STACKS: int = 5
-const ENERGY_MARK_RATIO: float = 0.10
-const ENERGY_MARK_DURATION_SEC: float = 6.0
-const ENERGY_MARK_MAX_HP_RATIO: float = 0.40
-const ENERGY_MARK_TRIGGER_COOLDOWN_SEC: float = 2.0
+const ENERGY_EXECUTE_DAMAGE_MULT: float = 1.2
 
 func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile, is_periodic: bool = false) -> DamageResult:
 	var result := DamageResult.new()
@@ -33,11 +30,13 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 	incoming_damage = int(round(float(incoming_damage) * profile.read_damage_reduction()))
 	incoming_damage = int(round(float(incoming_damage) * profile.read_damage_taken_multiplier()))
 	incoming_damage = max(0, incoming_damage - profile.read_armor())
+	var hp := profile.read_hp()
+	if _has_energy_damage_breakpoint(state, hp):
+		incoming_damage = max(1, int(round(float(incoming_damage) * ENERGY_EXECUTE_DAMAGE_MULT)))
 	if incoming_damage <= 0:
 		_save_state(target, state)
 		return result
 
-	var hp := profile.read_hp()
 	hp -= incoming_damage
 	profile.write_hp(hp)
 
@@ -60,11 +59,7 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 			Attack.TYPE_FREEZE:
 				_apply_frost_on_freeze_hit(state, profile, now_msec)
 			Attack.TYPE_ENERGY:
-				if not bool(state.get("processing_energy_burst", false)):
-					_apply_energy_mark_on_energy_hit(state, profile, incoming_damage, now_msec)
-
-	if _try_trigger_energy_mark_burst(target, state, profile, attack, now_msec):
-		result.triggered_energy_burst = true
+				_record_energy_damage_on_hit(state, incoming_damage)
 
 	if profile.use_invuln and not (is_periodic and profile.dot_bypasses_invuln):
 		profile.call_trigger_invuln()
@@ -111,8 +106,7 @@ func has_active_effects(target: Node) -> bool:
 		return false
 	var state: Dictionary = target.get_meta(DAMAGE_STATE_META, {})
 	return int(state.get("scorch_stacks", 0)) > 0 \
-		or int(state.get("frost_stacks", 0)) > 0 \
-		or int(state.get("energy_mark_value", 0)) > 0
+		or int(state.get("frost_stacks", 0)) > 0
 
 func _get_or_create_state(target: Node, profile: DamageProfile) -> Dictionary:
 	if target.has_meta(DAMAGE_STATE_META):
@@ -130,10 +124,7 @@ func _get_or_create_state(target: Node, profile: DamageProfile) -> Dictionary:
 		"frost_stacks": 0,
 		"frost_expires_at_msec": 0,
 		"frost_next_stack_at_msec": 0,
-		"energy_mark_value": 0,
-		"energy_mark_expires_at_msec": 0,
-		"energy_mark_trigger_ready_at_msec": 0,
-		"processing_energy_burst": false,
+		"energy_damage_recorded": 0,
 		"scorch_max_hp": max(1, profile.read_max_hp()),
 	}
 	target.set_meta(DAMAGE_STATE_META, state)
@@ -171,13 +162,6 @@ func _clear_expired_states(state: Dictionary, profile: DamageProfile, now_msec: 
 		state["frost_next_stack_at_msec"] = 0
 		profile.call_clear_frost_slow()
 
-	if int(state.get("energy_mark_value", 0)) <= 0:
-		state["energy_mark_value"] = 0
-		state["energy_mark_expires_at_msec"] = 0
-	elif now_msec >= int(state.get("energy_mark_expires_at_msec", 0)):
-		state["energy_mark_value"] = 0
-		state["energy_mark_expires_at_msec"] = 0
-
 func _apply_scorch_on_fire_hit(state: Dictionary, profile: DamageProfile, fire_damage: int, source_node: Node, source_player: Node, now_msec: int) -> void:
 	var max_hp: int = max(1, int(state.get("scorch_max_hp", profile.read_max_hp())))
 	var hp_ratio := clampf(float(max(profile.read_hp(), 0)) / float(max_hp), 0.0, 1.0)
@@ -189,10 +173,14 @@ func _apply_scorch_on_fire_hit(state: Dictionary, profile: DamageProfile, fire_d
 	if int(state.get("scorch_stacks", 0)) < stack_cap:
 		state["scorch_stacks"] = int(state.get("scorch_stacks", 0)) + 1
 	var per_stack_dot: int = max(1, int(round(float(max(1, fire_damage)) * SCORCH_DOT_RATIO_PER_STACK)))
-	state["scorch_dot_damage_per_stack"] = max(int(state.get("scorch_dot_damage_per_stack", 1)), per_stack_dot)
+	var current_per_stack_dot: int = int(state.get("scorch_dot_damage_per_stack", 1))
+	state["scorch_dot_damage_per_stack"] = max(current_per_stack_dot, per_stack_dot)
 	state["scorch_source_node"] = source_node
 	state["scorch_source_player"] = source_player
-	state["scorch_expires_at_msec"] = now_msec + int(SCORCH_DURATION_SEC * 1000.0)
+	# Only refresh scorch duration when the new fire hit is at least as strong as
+	# the currently active per-stack DOT value.
+	if per_stack_dot >= current_per_stack_dot:
+		state["scorch_expires_at_msec"] = now_msec + int(SCORCH_DURATION_SEC * 1000.0)
 
 func _apply_frost_on_freeze_hit(state: Dictionary, profile: DamageProfile, now_msec: int) -> void:
 	if int(state.get("frost_stacks", 0)) < FROST_MAX_STACKS and now_msec >= int(state.get("frost_next_stack_at_msec", 0)):
@@ -202,34 +190,10 @@ func _apply_frost_on_freeze_hit(state: Dictionary, profile: DamageProfile, now_m
 	profile.call_apply_frost_slow(move_mul, FROST_DURATION_SEC)
 	state["frost_expires_at_msec"] = now_msec + int(FROST_DURATION_SEC * 1000.0)
 
-func _apply_energy_mark_on_energy_hit(state: Dictionary, profile: DamageProfile, energy_damage: int, now_msec: int) -> void:
-	var gained_mark: int = max(0, int(round(float(max(0, energy_damage)) * ENERGY_MARK_RATIO)))
-	if gained_mark <= 0:
+func _record_energy_damage_on_hit(state: Dictionary, energy_damage: int) -> void:
+	if energy_damage <= 0:
 		return
-	var mark_cap: int = max(1, int(round(float(profile.read_max_hp()) * ENERGY_MARK_MAX_HP_RATIO)))
-	state["energy_mark_value"] = mini(mark_cap, int(state.get("energy_mark_value", 0)) + gained_mark)
-	state["energy_mark_expires_at_msec"] = now_msec + int(ENERGY_MARK_DURATION_SEC * 1000.0)
+	state["energy_damage_recorded"] = max(0, int(state.get("energy_damage_recorded", 0))) + energy_damage
 
-func _try_trigger_energy_mark_burst(target: Node, state: Dictionary, profile: DamageProfile, reference_attack: Attack, now_msec: int) -> bool:
-	if int(state.get("energy_mark_value", 0)) <= 0:
-		return false
-	if now_msec < int(state.get("energy_mark_trigger_ready_at_msec", 0)):
-		return false
-	if profile.read_hp() >= int(state.get("energy_mark_value", 0)):
-		return false
-	var burst_damage := int(state.get("energy_mark_value", 0))
-	state["energy_mark_value"] = 0
-	state["energy_mark_expires_at_msec"] = 0
-	state["energy_mark_trigger_ready_at_msec"] = now_msec + int(ENERGY_MARK_TRIGGER_COOLDOWN_SEC * 1000.0)
-	if burst_damage <= 0:
-		return false
-	var burst_attack := Attack.new()
-	burst_attack.damage = burst_damage
-	burst_attack.damage_type = Attack.TYPE_ENERGY
-	if reference_attack != null:
-		burst_attack.source_node = reference_attack.source_node
-		burst_attack.source_player = reference_attack.source_player
-	state["processing_energy_burst"] = true
-	apply_incoming_damage(target, burst_attack, profile, false)
-	state["processing_energy_burst"] = false
-	return true
+func _has_energy_damage_breakpoint(state: Dictionary, current_hp: int) -> bool:
+	return int(state.get("energy_damage_recorded", 0)) > max(0, current_hp)

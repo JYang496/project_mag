@@ -3,6 +3,7 @@ class_name BaseNPC
 
 const DAMAGE_PIPELINE_SCRIPT := preload("res://Utility/damage/damage_pipeline.gd")
 const DAMAGE_PROFILE_SCRIPT := preload("res://Utility/damage/damage_profile.gd")
+const ENEMY_HP_BAR_SCENE := preload("res://UI/enemy_hp_bar.tscn")
 
 @onready var sprite_body = $Body
 @onready var hurt_box = $HurtBox
@@ -13,6 +14,8 @@ const DAMAGE_PROFILE_SCRIPT := preload("res://Utility/damage/damage_profile.gd")
 @export var hp = 10
 @export var knockback_recover = 3.5
 @export var hit_label_merge_window_sec: float = 0.03
+@export var hp_bar_show_duration_sec: float = 1.5
+@export var hp_bar_vertical_offset: float = -30.0
 var damage_taken_multiplier: float = 1.0
 const SCORCH_DURATION_SEC: float = 6.0
 const SCORCH_DOT_RATIO_PER_STACK: float = 0.10
@@ -57,6 +60,7 @@ var _last_status_tick_msec: int = 0
 var _incoming_damage_pipeline: DamagePipeline
 var _incoming_damage_profile: DamageProfile
 var _incoming_damage_max_hp: int = 1
+var _enemy_hp_bar: EnemyHpBar
 
 var _quest_lock_active := false
 var _quest_lock_speed := 0.0
@@ -81,6 +85,8 @@ func damaged(attack:Attack):
 	_queue_hit_label_damage(result.final_damage, result.damage_type)
 	knockback.amount = attack.knock_back.amount
 	knockback.angle = attack.knock_back.angle
+	_sync_enemy_hp_bar()
+	_show_enemy_hp_bar_on_damage()
 	if status_timer.is_stopped() and (_incoming_damage_pipeline.has_active_effects(self) or not status_effects.is_empty()):
 		status_timer.start()
 		_last_status_tick_msec = Time.get_ticks_msec()
@@ -89,6 +95,8 @@ func damaged(attack:Attack):
 func _queue_hit_label_damage(damage_value: int, damage_type: StringName) -> void:
 	if damage_value <= 0:
 		return
+	_sync_enemy_hp_bar()
+	_show_enemy_hp_bar_on_damage()
 	var normalized_type := Attack.normalize_damage_type(damage_type)
 	_pending_hit_label_damage += damage_value
 	var current_type_damage: int = int(_pending_hit_label_damage_by_type.get(normalized_type, 0))
@@ -223,6 +231,7 @@ func _setup_incoming_damage_profile() -> void:
 	profile.on_apply_frost_slow = Callable(self, "_profile_on_apply_frost_slow")
 	profile.on_clear_frost_slow = Callable(self, "_profile_on_clear_frost_slow")
 	_incoming_damage_profile = profile
+	_sync_enemy_hp_bar()
 
 func _profile_get_hp() -> int:
 	return int(hp)
@@ -250,6 +259,7 @@ func _profile_set_is_dead(value: bool) -> void:
 
 func _profile_on_death(attack: Attack) -> void:
 	if is_dead:
+		_hide_enemy_hp_bar()
 		_flush_pending_hit_label()
 		death(attack)
 
@@ -309,3 +319,41 @@ func _build_quest_outline_material(color: Color, width: float) -> ShaderMaterial
 	material.set_shader_parameter("outline_color", color)
 	material.set_shader_parameter("outline_width", width)
 	return material
+
+func _ensure_enemy_hp_bar() -> EnemyHpBar:
+	if not is_in_group("enemies"):
+		return null
+	if _enemy_hp_bar != null and is_instance_valid(_enemy_hp_bar):
+		return _enemy_hp_bar
+	if ENEMY_HP_BAR_SCENE == null:
+		return null
+	var instance: EnemyHpBar = ENEMY_HP_BAR_SCENE.instantiate() as EnemyHpBar
+	if instance == null:
+		return null
+	instance.offset_y = hp_bar_vertical_offset
+	add_child(instance)
+	_enemy_hp_bar = instance
+	_enemy_hp_bar.hide_immediately()
+	return _enemy_hp_bar
+
+func _sync_enemy_hp_bar() -> void:
+	var hp_bar: EnemyHpBar = _ensure_enemy_hp_bar()
+	if hp_bar == null:
+		return
+	hp_bar.offset_y = hp_bar_vertical_offset
+	hp_bar.position = Vector2(0.0, hp_bar_vertical_offset)
+	hp_bar.set_max_hp(max(1, _incoming_damage_max_hp))
+	hp_bar.set_hp(max(0, int(hp)))
+
+func _show_enemy_hp_bar_on_damage() -> void:
+	var hp_bar: EnemyHpBar = _ensure_enemy_hp_bar()
+	if hp_bar == null:
+		return
+	if is_dead:
+		hp_bar.hide_immediately()
+		return
+	hp_bar.show_for(hp_bar_show_duration_sec)
+
+func _hide_enemy_hp_bar() -> void:
+	if _enemy_hp_bar != null and is_instance_valid(_enemy_hp_bar):
+		_enemy_hp_bar.hide_immediately()
