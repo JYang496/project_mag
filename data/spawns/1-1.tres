@@ -25,6 +25,7 @@ time_start = 1
 enemy = ExtResource("3_n4krr")
 number = 5
 max_enemy_number = 10
+hp = 100
 max_wave = 5
 interval = 2
 
@@ -50,5 +51,6 @@ interval = 4
 
 [resource]
 script = ExtResource("1_sm5it")
+time_out = 60
 spawns = Array[ExtResource("2_fvbvb")]([SubResource("Resource_6yone"), SubResource("Resource_gyoio"), SubResource("Resource_xca02")])
 rewards = Array[ExtResource("4_mcjiy")]([SubResource("Resource_oj3c1"), SubResource("Resource_popq4")])

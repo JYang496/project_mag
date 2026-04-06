@@ -11,6 +11,7 @@ var ITEM_NAME := "Glacier Projector"
 @export var cold_snap_damage_ratio: float = 0.35
 @export var cold_snap_contact_threshold_sec: float = 1.2
 @export var cold_snap_icd_sec: float = 1.2
+@export var debug_mode: bool = true
 
 var attack_range: float = 280.0
 var _attacked_target_ids: Dictionary = {}
@@ -153,3 +154,26 @@ func _sync_detect_radius() -> void:
 		circle = CircleShape2D.new()
 		shape_node.shape = circle
 	circle.radius = maxf(attack_range, 32.0)
+
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	if debug_mode:
+		queue_redraw()
+
+func _draw() -> void:
+	if not debug_mode:
+		return
+	_draw_attack_range()
+
+func _draw_attack_range() -> void:
+	var half_angle_rad: float = deg_to_rad(cone_half_angle_deg)
+	var offset_angle: float = -PI / 2.0
+	var start_angle: float = offset_angle - half_angle_rad
+	var end_angle: float = offset_angle + half_angle_rad
+	var fill_color := Color(0.35, 0.85, 1.0, 0.15)
+	var outline_color := Color(0.35, 0.85, 1.0, 0.7)
+	draw_arc(Vector2.ZERO, attack_range, start_angle, end_angle, 32, fill_color, -1.0)
+	draw_arc(Vector2.ZERO, attack_range, start_angle, end_angle, 32, outline_color, 2.0)
+	draw_line(Vector2.ZERO, Vector2.UP * attack_range, outline_color, 2.0)
+	draw_line(Vector2.ZERO, Vector2.UP.rotated(-half_angle_rad) * attack_range, outline_color, 1.0)
+	draw_line(Vector2.ZERO, Vector2.UP.rotated(half_angle_rad) * attack_range, outline_color, 1.0)

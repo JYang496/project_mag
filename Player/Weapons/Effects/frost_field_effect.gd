@@ -10,6 +10,9 @@ var duration_sec: float = 2.5
 var radius: float = 140.0
 var affect_players: bool = false
 var max_instances_per_owner: int = 3
+@export var show_range_indicator: bool = true
+@export var indicator_fill_color: Color = Color(0.35, 0.85, 1.0, 0.12)
+@export var indicator_outline_color: Color = Color(0.35, 0.85, 1.0, 0.8)
 
 var _elapsed_sec: float = 0.0
 var _tick_accum_sec: float = 0.0
@@ -38,6 +41,8 @@ func setup(
 
 func _ready() -> void:
 	_enforce_instance_cap()
+	if show_range_indicator:
+		queue_redraw()
 
 func _process(delta: float) -> void:
 	_elapsed_sec += maxf(delta, 0.0)
@@ -48,6 +53,20 @@ func _process(delta: float) -> void:
 	while _tick_accum_sec >= tick_interval_sec:
 		_tick_accum_sec -= tick_interval_sec
 		_apply_tick_damage()
+	if show_range_indicator:
+		queue_redraw()
+
+func _draw() -> void:
+	if not show_range_indicator:
+		return
+	var clamped_duration: float = maxf(duration_sec, 0.001)
+	var life_ratio: float = clampf(1.0 - (_elapsed_sec / clamped_duration), 0.0, 1.0)
+	var fill_color: Color = indicator_fill_color
+	fill_color.a *= life_ratio
+	var outline_color: Color = indicator_outline_color
+	outline_color.a *= life_ratio
+	draw_circle(Vector2.ZERO, radius, fill_color)
+	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 64, outline_color, 2.0)
 
 func _apply_tick_damage() -> void:
 	var candidates: Array[Node] = []

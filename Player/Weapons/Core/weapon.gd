@@ -64,6 +64,9 @@ func _apply_fuse_sprite() -> void:
 	var tex: Texture2D = fuse_sprites.get(fuse, fuse_sprites.get(1))
 	if tex:
 		sprite.texture = tex
+		var blade_sprite_node := get_node_or_null("BladeAnchor/BladeSprite")
+		if blade_sprite_node is Sprite2D:
+			(blade_sprite_node as Sprite2D).texture = tex
 
 func _load_fuse_sprites() -> bool:
 	fuse_sprites.clear()

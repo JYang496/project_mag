@@ -91,6 +91,7 @@ var overlapping := false
 
 var _tracked_enemies: Array[BaseEnemy] = []
 var _target: BaseEnemy
+var _dash_hit_confirmed: bool = false
 
 enum AttackState {
 	IDLE,
@@ -200,6 +201,7 @@ func _process_dashing(delta: float) -> void:
 	blade_anchor.global_position = blade_anchor.global_position.move_toward(target_pos, dash_speed * delta)
 	_point_blade_to(target_pos)
 	if blade_anchor.global_position.distance_to(target_pos) <= 8.0:
+		_try_confirm_dash_hit(_target)
 		_start_return()
 
 func _process_returning(delta: float) -> void:
@@ -236,6 +238,7 @@ func _get_closest_target() -> BaseEnemy:
 func _start_dash() -> void:
 	if _state != AttackState.IDLE:
 		return
+	_dash_hit_confirmed = false
 	_state = AttackState.DASHING
 	_set_hitbox_enabled(true)
 
@@ -262,7 +265,18 @@ func _point_blade_to(world_target: Vector2) -> void:
 	blade_anchor.rotation = direction.angle() + AIM_ROTATION_OFFSET
 
 func enemy_hit(_charge := 1) -> void:
+	_dash_hit_confirmed = true
 	_start_return()
+
+func _try_confirm_dash_hit(target: BaseEnemy) -> void:
+	if _dash_hit_confirmed:
+		return
+	if target == null or not is_instance_valid(target):
+		return
+	var hurt_box := target.get_node_or_null("HurtBox")
+	if hurt_box is HurtBox:
+		hit_box.apply_attack(hurt_box)
+		_dash_hit_confirmed = true
 
 func _update_attack_range_shape() -> void:
 	var circle_shape := attack_range_shape.shape as CircleShape2D

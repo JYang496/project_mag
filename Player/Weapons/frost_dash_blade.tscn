@@ -1,46 +1,48 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene format=3 uid="uid://ctpmwlxw4ndh6"]
 
-[ext_resource type="Script" path="res://Player/Weapons/frost_dash_blade.gd" id="1_script"]
-[ext_resource type="PackedScene" path="res://Player/Weapons/weapon_melee.tscn" id="2_base"]
-[ext_resource type="Texture2D" path="res://Textures/test/short_knife.png" id="3_icon"]
-[ext_resource type="PackedScene" path="res://Utility/hit_hurt_box/hit_box.tscn" id="4_hitbox"]
+[ext_resource type="Script" uid="uid://c0dqeuvdsr3g1" path="res://Player/Weapons/frost_dash_blade.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://wpnbfpae12mu" path="res://Player/Weapons/weapon_melee.tscn" id="2_base"]
+[ext_resource type="Texture2D" uid="uid://c8y0klvqommi8" path="res://Textures/test/short_knife.png" id="3_icon"]
+[ext_resource type="PackedScene" uid="uid://bwpw0l2pm8bif" path="res://Utility/hit_hurt_box/hit_box.tscn" id="4_hitbox"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_cp3r4"]
 radius = 360.0
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_32vo8"]
-size = Vector2(6, 24)
-
-[node name="FrostDashBlade" instance=ExtResource("2_base")]
+[node name="FrostDashBlade" unique_id=1692372111 instance=ExtResource("2_base")]
 script = ExtResource("1_script")
+freeze_finish_ratio = 0.35
+frost_field_duration_sec = 1.2
+frost_field_radius = 90.0
+frost_field_tick_sec = 0.4
+frost_field_tick_ratio = 0.2
 
-[node name="Modules" parent="."]
+[node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 69985
 
-[node name="Sprite" parent="." index="1"]
+[node name="Sprite" parent="." index="1" unique_id=1522898652]
 texture = ExtResource("3_icon")
 
-[node name="BladeAnchor" type="Node2D" parent="." index="3"]
+[node name="BladeAnchor" type="Node2D" parent="." index="3" unique_id=1527863513]
 
-[node name="BladeSprite" type="Sprite2D" parent="BladeAnchor" index="0"]
+[node name="BladeSprite" type="Sprite2D" parent="BladeAnchor" index="0" unique_id=1324172723]
 texture = ExtResource("3_icon")
 
-[node name="HitBox" parent="BladeAnchor" index="1" instance=ExtResource("4_hitbox")]
+[node name="HitBox" parent="BladeAnchor" index="1" unique_id=59168464 instance=ExtResource("4_hitbox")]
 collision_mask = 4
 
-[node name="CollisionShape2D" parent="BladeAnchor/HitBox" index="0"]
-shape = SubResource("RectangleShape2D_32vo8")
-
-[node name="AttackRange" type="Area2D" parent="." index="4"]
+[node name="AttackRange" type="Area2D" parent="." index="4" unique_id=441382988]
 collision_layer = 0
 collision_mask = 4
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackRange" index="0"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackRange" index="0" unique_id=652653622]
 shape = SubResource("CircleShape2D_cp3r4")
 
-[node name="CooldownTimer" type="Timer" parent="." index="5"]
+[node name="CooldownTimer" type="Timer" parent="." index="5" unique_id=1974157592]
 wait_time = 1.1
 one_shot = true
+
+[node name="FuseSprites" parent="." index="6" unique_id=50406900]
+fuse_texture_1 = ExtResource("3_icon")
 
 [connection signal="body_entered" from="AttackRange" to="." method="_on_attack_range_body_entered"]
 [connection signal="body_exited" from="AttackRange" to="." method="_on_attack_range_body_exited"]
