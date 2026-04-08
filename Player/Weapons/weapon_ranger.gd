@@ -17,6 +17,7 @@ var cooldown_timer : Timer
 var size : float = 1.0
 var projectile_direction
 var is_on_cooldown = false
+var _external_attack_speed_multiplier: float = 1.0
 
 var module_list = []
 var effect_sample = {"name":{"key1":123,"key2":234}}
@@ -74,11 +75,6 @@ func setup_timer() -> void:
 func _physics_process(_delta):
 	super._physics_process(_delta)
 	_update_weapon_rotation()
-	if not is_on_cooldown and Input.is_action_pressed("ATTACK"):
-		if not can_fire_with_heat():
-			return
-		emit_signal("shoot")
-		register_shot_heat()
 
 func _on_cooldown_timer_timeout():
 	is_on_cooldown = false
@@ -98,6 +94,63 @@ func _on_shoot():
 
 func get_mouse_target():
 	return get_global_mouse_position()
+
+func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
+	if not can_run_active_behavior():
+		return
+	if not pressed:
+		return
+	request_primary_fire()
+
+func request_primary_fire() -> bool:
+	if is_on_cooldown:
+		return false
+	if not can_fire_with_heat():
+		return false
+	if cooldown_timer:
+		cooldown_timer.wait_time = maxf(get_effective_cooldown(attack_cooldown), 0.01)
+	emit_signal("shoot")
+	register_shot_heat()
+	return true
+
+func set_external_attack_speed_multiplier(multiplier: float) -> void:
+	_external_attack_speed_multiplier = clampf(multiplier, 0.1, 10.0)
+
+func get_external_attack_speed_multiplier() -> float:
+	return _external_attack_speed_multiplier
+
+func get_effective_cooldown(base_cooldown: float) -> float:
+	var speed_mul := maxf(_external_attack_speed_multiplier, 0.1)
+	return maxf(base_cooldown / speed_mul, 0.01)
+
+func start_weapon_cooldown(base_cooldown: float, min_cooldown: float = 0.01) -> void:
+	if cooldown_timer == null:
+		setup_timer()
+	if cooldown_timer == null:
+		return
+	cooldown_timer.wait_time = maxf(get_effective_cooldown(base_cooldown), min_cooldown)
+	cooldown_timer.start()
+
+func _execute_weapon_active(damage_multiplier: float) -> bool:
+	if not can_run_active_behavior():
+		return false
+	# Weapon active casts are intentionally independent from normal-fire gating.
+	# They should not be blocked by normal attack cooldown or heat fire checks.
+	emit_signal("shoot")
+	_apply_weapon_active_multiplier_buff(damage_multiplier)
+	return true
+
+func _apply_weapon_active_multiplier_buff(damage_multiplier: float) -> void:
+	if damage_multiplier <= 1.0:
+		return
+	var source_id := StringName("weapon_active_%s" % str(get_instance_id()))
+	if PlayerData.player and is_instance_valid(PlayerData.player):
+		PlayerData.player.apply_damage_mul(source_id, damage_multiplier)
+		var clear_timer := get_tree().create_timer(0.15)
+		clear_timer.timeout.connect(func() -> void:
+			if PlayerData.player and is_instance_valid(PlayerData.player):
+				PlayerData.player.remove_damage_mul(source_id)
+		)
 
 # This function calls before a projectile is added.
 func apply_effects_on_projectile(projectile : Node2D) -> void:
@@ -375,8 +428,11 @@ func get_runtime_shot_damage() -> int:
 	return get_runtime_damage_value(float(base_damage))
 
 func remove_weapon() -> void:
-	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
-	PlayerData.on_select_weapon = -1
+	var idx := PlayerData.player_weapon_list.find(self)
+	if idx >= 0:
+		PlayerData.player_weapon_list.remove_at(idx)
+	PlayerData.sanitize_main_weapon_index()
+	PlayerData.on_select_weapon = PlayerData.main_weapon_index
 	queue_free()
 
 func _adjust_sprite_height() -> void:

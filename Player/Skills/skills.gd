@@ -5,6 +5,7 @@ class_name Skills
 
 var _player: Player
 var _on_cooldown := false
+var _cooldown_remaining: float = 0.0
 
 func _ready() -> void:
 	call_deferred("_bind_player_and_initialize")
@@ -18,7 +19,10 @@ func _bind_player_and_initialize() -> void:
 		push_warning("%s failed to initialize: player not found." % name)
 		return
 	var callable_ref := Callable(self, "_on_player_active_skill_requested")
-	if not _player.active_skill.is_connected(callable_ref):
+	if _player.has_signal("player_active_skill"):
+		if not _player.player_active_skill.is_connected(callable_ref):
+			_player.player_active_skill.connect(callable_ref)
+	elif not _player.active_skill.is_connected(callable_ref):
 		_player.active_skill.connect(callable_ref)
 	on_skill_ready()
 
@@ -46,8 +50,15 @@ func _on_player_active_skill_requested() -> void:
 
 func _start_cooldown() -> void:
 	_on_cooldown = true
+	_cooldown_remaining = maxf(cooldown, 0.0)
 	await get_tree().create_timer(cooldown).timeout
 	_on_cooldown = false
+	_cooldown_remaining = 0.0
+
+func _physics_process(delta: float) -> void:
+	if _cooldown_remaining <= 0.0:
+		return
+	_cooldown_remaining = maxf(0.0, _cooldown_remaining - maxf(delta, 0.0))
 
 func on_skill_ready() -> void:
 	pass
@@ -57,3 +68,11 @@ func can_activate() -> bool:
 
 func activate_skill() -> void:
 	pass
+
+func get_cooldown_remaining() -> float:
+	return _cooldown_remaining
+
+func get_cooldown_ratio() -> float:
+	if cooldown <= 0.0:
+		return 0.0
+	return clampf(_cooldown_remaining / cooldown, 0.0, 1.0)

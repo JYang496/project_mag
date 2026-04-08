@@ -186,6 +186,8 @@ func _physics_process(delta: float) -> void:
 
 func _process_idle() -> void:
 	blade_anchor.position = Vector2.ZERO
+	if not can_run_active_behavior():
+		return
 	if _target and is_instance_valid(_target):
 		_point_weapon_to(_target.global_position)
 		_start_dash()

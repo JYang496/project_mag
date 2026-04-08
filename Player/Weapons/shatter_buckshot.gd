@@ -35,7 +35,7 @@ func set_level(lv) -> void:
 
 func _on_shoot() -> void:
 	is_on_cooldown = true
-	cooldown_timer.wait_time = maxf(attack_cooldown, 0.05)
+	cooldown_timer.wait_time = maxf(get_effective_cooldown(attack_cooldown), 0.05)
 	cooldown_timer.start()
 	var main_target: Vector2 = get_mouse_target()
 	var start_angle: float = global_position.direction_to(main_target).normalized().angle()

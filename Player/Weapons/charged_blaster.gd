@@ -17,6 +17,7 @@ var normal_turn_speed := 12.0
 var firing_turn_speed := 1.2
 var is_firing_beam := false
 var firing_turn_timer: Timer
+var _force_active_cast: bool = false
 
 var weapon_data = {
 	"1": {
@@ -68,18 +69,8 @@ var weapon_data = {
 
 
 func _physics_process(delta):
+	super._physics_process(delta)
 	_update_smoothed_rotation(delta)
-	if not is_on_cooldown:
-		if Input.is_action_pressed("ATTACK"):
-			charge_time += delta
-			if charge_time >= time_per_level:
-				charge_level = clampi(charge_level + 1, 0, max_charge_level)
-				charge_time -= time_per_level
-				if charge_level >= max_charge_level:
-					emit_signal("shoot")
-					charge_time = 0.0
-		if Input.is_action_just_released("ATTACK"):
-			emit_signal("shoot")
 
 func set_level(lv):
 	lv = str(lv)
@@ -92,7 +83,9 @@ func set_level(lv):
 	sync_stats()
 
 func _on_shoot():
-	if charge_level < 1 or is_on_cooldown:
+	if charge_level < 1:
+		return
+	if is_on_cooldown and not _force_active_cast:
 		return
 	is_on_cooldown = true
 	var beam_blast_ins = beam_blast.instantiate()
@@ -106,7 +99,7 @@ func _on_shoot():
 	call_deferred("add_child",beam_blast_ins)
 	_start_firing_turn_slowdown(duration)
 	charge_level = 0
-	cooldown_timer.start()
+	start_weapon_cooldown(attack_cooldown, 0.05)
 
 func _on_remove_timer_timeout() -> void:
 	remove_weapon()
@@ -137,3 +130,30 @@ func _start_firing_turn_slowdown(active_duration: float) -> void:
 
 func _on_firing_turn_timeout() -> void:
 	is_firing_beam = false
+
+func handle_primary_input(pressed: bool, _just_pressed: bool, just_released: bool, delta: float) -> void:
+	if not can_run_active_behavior():
+		return
+	if is_on_cooldown:
+		return
+	if pressed:
+		charge_time += maxf(delta, 0.0)
+		if charge_time >= time_per_level:
+			charge_level = clampi(charge_level + 1, 0, max_charge_level)
+			charge_time -= time_per_level
+			if charge_level >= max_charge_level:
+				emit_signal("shoot")
+				charge_time = 0.0
+	if just_released:
+		emit_signal("shoot")
+
+func _execute_weapon_active(damage_multiplier: float) -> bool:
+	if not can_run_active_behavior():
+		return false
+	charge_level = max(1, max_charge_level)
+	_force_active_cast = true
+	emit_signal("shoot")
+	_force_active_cast = false
+	if is_on_cooldown and damage_multiplier > 1.0:
+		_apply_weapon_active_multiplier_buff(damage_multiplier)
+	return is_on_cooldown

@@ -42,6 +42,7 @@ var item_message_timer: Timer
 @onready var time_label = $GUI/CharacterRoot/Time
 @onready var phase_label = $GUI/CharacterRoot/Phase
 var heat_label: Label
+var weapon_state_label: Label
 
 
 # Shopping
@@ -94,6 +95,7 @@ var reward_selection_panel: RewardSelectionPanel
 func _ready():
 	GlobalVariables.ui = self
 	_ensure_heat_label()
+	_ensure_weapon_state_label()
 	_init_branch_select_panel()
 	_init_module_equip_selection_panel()
 	_init_route_selection_panel()
@@ -213,9 +215,14 @@ func _physics_process(_delta):
 	#Character
 	hp_label_label.text = "HP: " + str(PlayerData.player_hp)
 	_update_heat_label_text()
+	_update_weapon_state_label_text()
 	equipped_label.text = "Equipped:"
 	augments_label.text = str(PlayerData.player_augment_list)
 	gold_label.text = "Gold: " + str(PlayerData.player_gold)
+	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("get_current_energy"):
+		resource_label.text = "Energy: %d" % int(round(PlayerData.player.get_current_energy()))
+	else:
+		resource_label.text = "Energy: --"
 	time_label.text = "Time: " + str(PhaseManager.battle_time)
 	phase_label.text = "Phase: " + str(PhaseManager.current_state())
 	drag_item_icon.set_position(get_viewport().get_mouse_position())
@@ -236,11 +243,11 @@ func _input(_event) -> void:
 	
 	# Switch weapon
 	if Input.is_action_just_pressed("SWITCH_LEFT"):
-		PlayerData.on_select_weapon -= 1
-		refresh_border()
+		if PlayerData.player and is_instance_valid(PlayerData.player):
+			PlayerData.player.try_shift_main_weapon(-1)
 	if Input.is_action_just_pressed("SWITCH_RIGHT"):
-		PlayerData.on_select_weapon += 1
-		refresh_border()
+		if PlayerData.player and is_instance_valid(PlayerData.player):
+			PlayerData.player.try_shift_main_weapon(1)
 		
 func refresh_border() -> void:
 	var valid_weapons: Array = []
@@ -260,7 +267,7 @@ func refresh_border() -> void:
 			weapon_icons.get_child(weapon_index).texture = empty_weapon_pic
 	for i in weapon_icons.get_child_count():
 		var icon = weapon_icons.get_child(i)
-		if i == PlayerData.on_select_weapon:
+		if i == PlayerData.main_weapon_index:
 			icon.display = true
 		else:
 			icon.display = false
@@ -547,6 +554,8 @@ func _layout_hud(viewport_size: Vector2) -> void:
 	hp_label_label.position = Vector2(HUD_MARGIN, viewport_size.y - 36.0)
 	if heat_label:
 		heat_label.position = Vector2(HUD_MARGIN, viewport_size.y - 68.0)
+	if weapon_state_label:
+		weapon_state_label.position = Vector2(HUD_MARGIN, viewport_size.y - 100.0)
 	gold_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN)
 	time_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN + 56.0)
 	phase_label.position = Vector2(viewport_size.x - 220.0, HUD_MARGIN)
@@ -596,6 +605,15 @@ func _ensure_heat_label() -> void:
 	heat_label.visible = false
 	character_root.add_child(heat_label)
 
+func _ensure_weapon_state_label() -> void:
+	if weapon_state_label != null and is_instance_valid(weapon_state_label):
+		return
+	weapon_state_label = Label.new()
+	weapon_state_label.name = "WeaponState"
+	weapon_state_label.text = "Main: -- | WS: -- | PS: --"
+	weapon_state_label.visible = true
+	character_root.add_child(weapon_state_label)
+
 func _update_heat_label_text() -> void:
 	if heat_label == null or not is_instance_valid(heat_label):
 		return
@@ -623,8 +641,8 @@ func _update_heat_label_text() -> void:
 func _get_heat_weapon() -> Node:
 	if PlayerData.player_weapon_list.is_empty():
 		return null
-	if PlayerData.on_select_weapon >= 0 and PlayerData.on_select_weapon < PlayerData.player_weapon_list.size():
-		var selected = PlayerData.player_weapon_list[PlayerData.on_select_weapon]
+	if PlayerData.main_weapon_index >= 0 and PlayerData.main_weapon_index < PlayerData.player_weapon_list.size():
+		var selected = PlayerData.player_weapon_list[PlayerData.main_weapon_index]
 		if selected and is_instance_valid(selected) and selected.has_method("has_heat_system") and bool(selected.call("has_heat_system")):
 			return selected
 	for weapon in PlayerData.player_weapon_list:
@@ -643,3 +661,35 @@ func _any_heat_weapon_overheated() -> bool:
 		if weapon.has_method("is_weapon_overheated") and bool(weapon.call("is_weapon_overheated")):
 			return true
 	return false
+
+func _update_weapon_state_label_text() -> void:
+	if weapon_state_label == null or not is_instance_valid(weapon_state_label):
+		return
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		weapon_state_label.text = "Main: -- | WS: -- | PS: --"
+		return
+	var weapon_count := PlayerData.player_weapon_list.size()
+	var main_text := "None"
+	if weapon_count == 1:
+		main_text = "W1 (locked)"
+	elif PlayerData.main_weapon_index >= 0:
+		main_text = "W%s" % str(PlayerData.main_weapon_index + 1)
+	var ws_cd := PlayerData.player.get_weapon_active_cd_remaining() if PlayerData.player.has_method("get_weapon_active_cd_remaining") else 0.0
+	var ps_cd := 0.0
+	var active_skill_node: Node = null
+	if PlayerData.player.active_skill_holder and PlayerData.player.active_skill_holder.get_child_count() > 0:
+		active_skill_node = PlayerData.player.active_skill_holder.get_child(0)
+	if active_skill_node != null and active_skill_node.has_method("get_cooldown_remaining"):
+		ps_cd = float(active_skill_node.call("get_cooldown_remaining"))
+	var fail_reason := ""
+	if PlayerData.player.has_method("get_last_weapon_skill_fail_reason"):
+		fail_reason = str(PlayerData.player.get_last_weapon_skill_fail_reason())
+	var lock_text := "on" if weapon_count > 1 else "off"
+	weapon_state_label.text = "Main:%s Offhand:%d Swap:%s WS:%.1fs PS:%s%s" % [
+		main_text,
+		maxi(0, weapon_count - 1),
+		lock_text,
+		ws_cd,
+		"%.1fs" % ps_cd if ps_cd > 0.0 else "Ready",
+		" Fail:%s" % fail_reason if fail_reason != "" else ""
+	]

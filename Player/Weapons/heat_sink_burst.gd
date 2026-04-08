@@ -26,16 +26,7 @@ var weapon_data := {
 }
 
 func _physics_process(delta: float) -> void:
-	_update_heat_system(delta)
-	_update_weapon_rotation()
-	if not is_on_cooldown and Input.is_action_pressed("ATTACK"):
-		if not can_fire_with_heat():
-			return
-		var was_overheated := is_weapon_overheated()
-		emit_signal("shoot")
-		register_shot_heat()
-		if not was_overheated and is_weapon_overheated():
-			_trigger_overheat_burst()
+	super._physics_process(delta)
 
 func set_level(lv) -> void:
 	lv = str(lv)
@@ -54,8 +45,7 @@ func set_level(lv) -> void:
 
 func _on_shoot() -> void:
 	is_on_cooldown = true
-	cooldown_timer.wait_time = maxf(attack_cooldown, 0.03)
-	cooldown_timer.start()
+	start_weapon_cooldown(attack_cooldown, 0.03)
 
 	var spawn_projectile := spawn_projectile_from_scene(projectile_template)
 	if spawn_projectile == null:
@@ -96,3 +86,16 @@ func _get_level_data(lv: String) -> Dictionary:
 	if weapon_data.has("1"):
 		return weapon_data["1"]
 	return {"level": "1", "damage": "9", "speed": "980", "hp": "1", "reload": "0.20", "range": "680", "cost": "10"}
+
+func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
+	if not can_run_active_behavior():
+		return
+	if not pressed or is_on_cooldown:
+		return
+	if not can_fire_with_heat():
+		return
+	var was_overheated := is_weapon_overheated()
+	emit_signal("shoot")
+	register_shot_heat()
+	if not was_overheated and is_weapon_overheated():
+		_trigger_overheat_burst()

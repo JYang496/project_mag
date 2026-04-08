@@ -78,10 +78,18 @@ var _shared_heat_pool: SharedHeatPool
 var _shared_heat_signature: String = ""
 var _incoming_damage_pipeline: DamagePipeline
 var _incoming_damage_profile: DamageProfile
+var _passive_time_tick_accum: float = 0.0
 @export var camera_zoom_lerp_speed: float = 6.0
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
+@export var player_max_energy: float = 100.0
+@export var player_energy_regen_per_sec: float = 8.0
+var _player_energy: float = 100.0
+var _last_weapon_skill_fail_reason: String = ""
+var _last_player_skill_fail_reason: String = ""
 # Signals
 signal active_skill()
+signal player_active_skill()
+signal weapon_active_skill()
 signal coin_collected()
 
 func _ready():
@@ -92,6 +100,8 @@ func _ready():
 	if _shared_heat_pool == null:
 		push_warning("Failed to initialize SharedHeatPool.")
 	_setup_default_active_skill()
+	_ensure_input_actions()
+	_player_energy = player_max_energy
 	mecha_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_resize_mecha_sprite()
 	_cache_camera_zoom_base()
@@ -110,19 +120,24 @@ func custom_ready():
 	create_weapon("1")
 
 func _physics_process(delta):
+	_sanitize_weapon_list_and_roles()
+	_process_combat_input(delta)
 	_sync_weapon_orbit_states()
 	_update_shared_heat_pool(delta)
 	_update_incoming_elemental_effects(delta)
+	_regen_energy(delta)
+	_update_passive_time_tick(delta)
 	movement(delta)
 	_update_camera_zoom_smooth(delta)
 	move_and_slide()
 
 func _input(event: InputEvent) -> void:
-	if not event.is_action_pressed("SKILL"):
-		return
 	if event is InputEventKey and event.echo:
 		return
-	active_skill.emit()
+	if event.is_action_pressed("SKILL_PLAYER") or event.is_action_pressed("SKILL"):
+		_try_cast_player_active_skill()
+	if event.is_action_pressed("SKILL_WEAPON"):
+		_try_cast_main_weapon_active_skill()
 
 func _setup_default_active_skill() -> void:
 	if active_skill_holder == null:
@@ -170,7 +185,9 @@ func create_weapon(item_id, level := 1):
 	equppied_weapons.add_child(weapon)
 	weapon.position = Vector2.ZERO
 	PlayerData.player_weapon_list.append(weapon)
-	
+	if PlayerData.player_weapon_list.size() == 1:
+		PlayerData.set_main_weapon_index(0)
+	_apply_weapon_roles()
 	_sync_weapon_orbit_states(true)
 	_rebuild_shared_heat_pool()
 	if GlobalVariables.ui != null:
@@ -184,8 +201,180 @@ func swap_weapon_position(weapon1, weapon2) -> void:
 	var temp = PlayerData.player_weapon_list[slot1_index]
 	PlayerData.player_weapon_list[slot1_index] = PlayerData.player_weapon_list[slot2_index]
 	PlayerData.player_weapon_list[slot2_index] = temp
+	if PlayerData.main_weapon_index == slot1_index:
+		PlayerData.main_weapon_index = slot2_index
+	elif PlayerData.main_weapon_index == slot2_index:
+		PlayerData.main_weapon_index = slot1_index
+	PlayerData.on_select_weapon = PlayerData.main_weapon_index
+	_apply_weapon_roles()
 	_sync_weapon_orbit_states(true)
 	_rebuild_shared_heat_pool()
+
+func _process_combat_input(delta: float) -> void:
+	var main_weapon := get_main_weapon()
+	if main_weapon == null:
+		return
+	var pressed := Input.is_action_pressed("ATTACK")
+	var just_pressed := Input.is_action_just_pressed("ATTACK")
+	var just_released := Input.is_action_just_released("ATTACK")
+	if main_weapon.has_method("handle_primary_input"):
+		main_weapon.call("handle_primary_input", pressed, just_pressed, just_released, delta)
+
+func _sanitize_weapon_list_and_roles() -> void:
+	var valid_weapons: Array = []
+	for weapon in PlayerData.player_weapon_list:
+		if is_instance_valid(weapon):
+			valid_weapons.append(weapon)
+	PlayerData.player_weapon_list = valid_weapons
+	PlayerData.sanitize_main_weapon_index()
+	if valid_weapons.size() == 1:
+		PlayerData.main_weapon_index = 0
+	_apply_weapon_roles()
+
+func _apply_weapon_roles() -> void:
+	for i in range(PlayerData.player_weapon_list.size()):
+		var weapon: Variant = PlayerData.player_weapon_list[i]
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if weapon.has_method("set_weapon_role"):
+			weapon.call("set_weapon_role", "main" if i == PlayerData.main_weapon_index else "offhand")
+
+func get_main_weapon() -> Weapon:
+	if PlayerData.player_weapon_list.is_empty():
+		return null
+	PlayerData.sanitize_main_weapon_index()
+	var idx := PlayerData.main_weapon_index
+	if idx < 0 or idx >= PlayerData.player_weapon_list.size():
+		return null
+	var weapon: Variant = PlayerData.player_weapon_list[idx]
+	if weapon is Weapon:
+		return weapon as Weapon
+	return null
+
+func get_offhand_weapons() -> Array:
+	var result: Array = []
+	for i in range(PlayerData.player_weapon_list.size()):
+		if i == PlayerData.main_weapon_index:
+			continue
+		var weapon: Variant = PlayerData.player_weapon_list[i]
+		if weapon and is_instance_valid(weapon):
+			result.append(weapon)
+	return result
+
+func can_switch_main_weapon() -> bool:
+	return PlayerData.can_switch_main_weapon()
+
+func try_shift_main_weapon(step: int) -> bool:
+	if not can_switch_main_weapon():
+		return false
+	var old_main := get_main_weapon()
+	PlayerData.shift_main_weapon(step)
+	_apply_weapon_roles()
+	var new_main := get_main_weapon()
+	_broadcast_weapon_passive_event(&"on_main_swapped", {
+		"old_main": old_main,
+		"new_main": new_main
+	})
+	return true
+
+func _broadcast_weapon_passive_event(event_name: StringName, detail: Dictionary = {}) -> void:
+	for weapon in PlayerData.player_weapon_list:
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if weapon.has_method("dispatch_passive_event"):
+			weapon.call("dispatch_passive_event", event_name, detail)
+
+func _update_passive_time_tick(delta: float) -> void:
+	_passive_time_tick_accum += maxf(delta, 0.0)
+	if _passive_time_tick_accum < 1.0:
+		return
+	_passive_time_tick_accum = 0.0
+	_broadcast_weapon_passive_event(&"on_time_tick", {})
+
+func notify_enemy_killed_nearby(enemy: Node = null) -> void:
+	_broadcast_weapon_passive_event(&"on_enemy_killed_nearby", {
+		"enemy": enemy
+	})
+
+func _try_cast_player_active_skill() -> void:
+	player_active_skill.emit()
+	active_skill.emit()
+	_last_player_skill_fail_reason = ""
+
+func _try_cast_main_weapon_active_skill() -> void:
+	var main_weapon := get_main_weapon()
+	if main_weapon == null:
+		_last_weapon_skill_fail_reason = "no_main_weapon"
+		return
+	if not main_weapon.has_method("request_weapon_active"):
+		_last_weapon_skill_fail_reason = "unsupported"
+		return
+	var result_variant: Variant = main_weapon.call("request_weapon_active")
+	if result_variant is Dictionary:
+		var result := result_variant as Dictionary
+		if bool(result.get("ok", false)):
+			weapon_active_skill.emit()
+			_last_weapon_skill_fail_reason = ""
+		else:
+			_last_weapon_skill_fail_reason = str(result.get("reason", "condition"))
+			_broadcast_weapon_passive_event(&"on_main_active_cast_failed", {
+				"reason": _last_weapon_skill_fail_reason
+			})
+	else:
+		_last_weapon_skill_fail_reason = "condition"
+
+func _ensure_input_actions() -> void:
+	_ensure_input_action("SKILL_PLAYER", [KEY_SPACE])
+	_ensure_input_action("SKILL_WEAPON", [KEY_R])
+
+func _ensure_input_action(action_name: StringName, keycodes: Array[int]) -> void:
+	if not InputMap.has_action(action_name):
+		InputMap.add_action(action_name)
+	if InputMap.action_get_events(action_name).is_empty():
+		for keycode in keycodes:
+			var ev := InputEventKey.new()
+			ev.physical_keycode = keycode
+			InputMap.action_add_event(action_name, ev)
+
+func get_current_energy() -> float:
+	return _player_energy
+
+func get_max_energy() -> float:
+	return maxf(player_max_energy, 1.0)
+
+func consume_energy(amount: float) -> bool:
+	var required := maxf(amount, 0.0)
+	if _player_energy < required:
+		return false
+	_player_energy -= required
+	return true
+
+func add_energy(amount: float) -> void:
+	_player_energy = clampf(_player_energy + maxf(amount, 0.0), 0.0, get_max_energy())
+
+func _regen_energy(delta: float) -> void:
+	if player_energy_regen_per_sec <= 0.0:
+		return
+	add_energy(player_energy_regen_per_sec * maxf(delta, 0.0))
+
+func get_last_weapon_skill_fail_reason() -> String:
+	return _last_weapon_skill_fail_reason
+
+func get_weapon_active_cd_remaining() -> float:
+	var weapon := get_main_weapon()
+	if weapon == null:
+		return 0.0
+	if not weapon.has_method("get_weapon_active_cd_remaining"):
+		return 0.0
+	return float(weapon.call("get_weapon_active_cd_remaining"))
+
+func get_weapon_active_cd_ratio() -> float:
+	var weapon := get_main_weapon()
+	if weapon == null:
+		return 0.0
+	if not weapon.has_method("get_weapon_active_cd_ratio"):
+		return 0.0
+	return float(weapon.call("get_weapon_active_cd_ratio"))
 
 func movement(delta):
 	if movement_enabled:

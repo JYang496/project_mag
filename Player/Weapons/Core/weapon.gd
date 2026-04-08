@@ -8,6 +8,7 @@ var MAX_MODULE_NUMBER = 3
 @onready var fuse_sprite_holder: FuseSpriteHolder = get_node_or_null("FuseSprites")
 @onready var _fuse_sprites_initialized = _load_fuse_sprites()
 var on_hit_plugins: Array[Node] = []
+var _passive_icd_msec: Dictionary = {}
 
 # Common variables for weapons
 const FUSE_LEVEL_CAPS: Dictionary = {
@@ -30,6 +31,16 @@ var heat_core: Heat
 var heat_per_shot: float = 1.0
 var heat_max_value: float = 100.0
 var heat_cool_rate: float = 20.0
+@export_enum("main", "offhand") var weapon_role: String = "offhand"
+@export var weapon_active_cooldown_sec: float = 8.0
+@export_enum("none", "energy", "heat") var weapon_active_resource_type: String = "energy"
+@export var weapon_active_resource_cost: float = 20.0
+@export var weapon_active_hit_window_required_hits: int = 0
+@export var weapon_active_hit_window_timeout_sec: float = 6.0
+@export var weapon_active_hit_window_bonus_multiplier: float = 1.35
+var _weapon_active_cd_remaining: float = 0.0
+var _weapon_active_hit_window_hits: int = 0
+var _weapon_active_hit_window_expires_at_msec: int = 0
 var fuse : int:
 	get:
 		return _fuse_internal
@@ -37,6 +48,11 @@ var fuse : int:
 		_fuse_internal = clampi(value, 1, FINAL_MAX_FUSE)
 		max_level = get_max_level_for_fuse(_fuse_internal)
 		_apply_fuse_sprite()
+
+signal weapon_role_changed(next_role: String)
+signal weapon_active_status_changed(cooldown_remaining: float, ready: bool)
+signal weapon_active_triggered(success: bool, reason: String)
+signal passive_triggered(event_name: StringName, detail: Dictionary)
 
 func set_level(lv):
 	pass
@@ -92,6 +108,13 @@ func on_hit_target(target: Node) -> void:
 	for plugin in on_hit_plugins:
 		if is_instance_valid(plugin) and plugin.has_method("apply_on_hit"):
 			plugin.apply_on_hit(self, target)
+	_register_weapon_active_hit_window()
+	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("_broadcast_weapon_passive_event"):
+		PlayerData.player.call("_broadcast_weapon_passive_event", &"on_hit", {
+			"source_weapon": self,
+			"target": target,
+			"source_is_main": is_main_weapon()
+		})
 
 func supports_projectiles() -> bool:
 	return false
@@ -107,6 +130,8 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_update_heat_system(delta)
+	_update_weapon_active_cooldown(delta)
+	_update_weapon_active_hit_window()
 
 func set_branch(new_branch_id: String) -> bool:
 	var normalized_id := str(new_branch_id)
@@ -493,5 +518,156 @@ func _notify_shared_heat_pool_dirty() -> void:
 func _on_tree_exited() -> void:
 	on_hit_plugins.clear()
 	_overheat_fire_bypass_sources.clear()
+	_passive_icd_msec.clear()
 	branch_behavior = null
 	branch_definition = null
+
+func set_weapon_role(next_role: String) -> void:
+	var normalized := "main" if str(next_role).to_lower() == "main" else "offhand"
+	if weapon_role == normalized:
+		return
+	weapon_role = normalized
+	_on_weapon_role_changed(weapon_role)
+	weapon_role_changed.emit(weapon_role)
+
+func is_main_weapon() -> bool:
+	return weapon_role == "main"
+
+func is_offhand_weapon() -> bool:
+	return weapon_role != "main"
+
+func _on_weapon_role_changed(_next_role: String) -> void:
+	pass
+
+func can_run_active_behavior() -> bool:
+	return is_main_weapon()
+
+func handle_primary_input(_pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
+	pass
+
+func can_passive_trigger(passive_id: StringName, icd_sec: float) -> bool:
+	if passive_id == StringName():
+		return true
+	var now_msec := Time.get_ticks_msec()
+	var ready_at: int = int(_passive_icd_msec.get(passive_id, 0))
+	if now_msec < ready_at:
+		return false
+	if icd_sec > 0.0:
+		_passive_icd_msec[passive_id] = now_msec + int(icd_sec * 1000.0)
+	return true
+
+func dispatch_passive_event(event_name: StringName, detail: Dictionary = {}) -> void:
+	if is_offhand_weapon():
+		_on_offhand_passive_event(event_name, detail)
+	else:
+		_on_main_passive_event(event_name, detail)
+
+func _on_offhand_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	_on_passive_event(event_name, detail)
+
+func _on_main_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	_on_passive_event(event_name, detail)
+
+func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	passive_triggered.emit(event_name, detail)
+
+func request_weapon_active() -> Dictionary:
+	if not is_main_weapon():
+		weapon_active_triggered.emit(false, "not_main")
+		return {"ok": false, "reason": "not_main"}
+	if _weapon_active_cd_remaining > 0.0:
+		weapon_active_triggered.emit(false, "cd")
+		return {"ok": false, "reason": "cd"}
+	if not _can_pay_weapon_active_resource():
+		weapon_active_triggered.emit(false, "resource")
+		return {"ok": false, "reason": "resource"}
+	var damage_multiplier := _consume_weapon_active_hit_window_bonus()
+	var executed := _execute_weapon_active(damage_multiplier)
+	if not executed:
+		weapon_active_triggered.emit(false, "condition")
+		return {"ok": false, "reason": "condition"}
+	_pay_weapon_active_resource()
+	_weapon_active_cd_remaining = maxf(weapon_active_cooldown_sec, 0.0)
+	weapon_active_status_changed.emit(_weapon_active_cd_remaining, _weapon_active_cd_remaining <= 0.0)
+	weapon_active_triggered.emit(true, "")
+	return {"ok": true, "reason": "", "damage_multiplier": damage_multiplier}
+
+func _execute_weapon_active(_damage_multiplier: float) -> bool:
+	return false
+
+func get_weapon_active_cd_remaining() -> float:
+	return maxf(_weapon_active_cd_remaining, 0.0)
+
+func get_weapon_active_cd_ratio() -> float:
+	if weapon_active_cooldown_sec <= 0.0:
+		return 0.0
+	return clampf(_weapon_active_cd_remaining / weapon_active_cooldown_sec, 0.0, 1.0)
+
+func get_weapon_active_hit_window_progress() -> Dictionary:
+	return {
+		"hits": _weapon_active_hit_window_hits,
+		"required_hits": max(0, weapon_active_hit_window_required_hits),
+		"active": _weapon_active_hit_window_hits > 0 and _weapon_active_hit_window_expires_at_msec > Time.get_ticks_msec(),
+	}
+
+func _update_weapon_active_cooldown(delta: float) -> void:
+	if _weapon_active_cd_remaining <= 0.0:
+		return
+	var previous := _weapon_active_cd_remaining
+	_weapon_active_cd_remaining = maxf(0.0, _weapon_active_cd_remaining - maxf(delta, 0.0))
+	if int(ceil(previous * 10.0)) != int(ceil(_weapon_active_cd_remaining * 10.0)):
+		weapon_active_status_changed.emit(_weapon_active_cd_remaining, _weapon_active_cd_remaining <= 0.0)
+
+func _register_weapon_active_hit_window() -> void:
+	if weapon_active_hit_window_required_hits <= 0:
+		return
+	_weapon_active_hit_window_hits = mini(weapon_active_hit_window_required_hits, _weapon_active_hit_window_hits + 1)
+	_weapon_active_hit_window_expires_at_msec = Time.get_ticks_msec() + int(maxf(weapon_active_hit_window_timeout_sec, 0.1) * 1000.0)
+
+func _update_weapon_active_hit_window() -> void:
+	if _weapon_active_hit_window_hits <= 0:
+		return
+	if Time.get_ticks_msec() < _weapon_active_hit_window_expires_at_msec:
+		return
+	_weapon_active_hit_window_hits = 0
+	_weapon_active_hit_window_expires_at_msec = 0
+
+func _consume_weapon_active_hit_window_bonus() -> float:
+	if weapon_active_hit_window_required_hits <= 0:
+		return 1.0
+	var ready := _weapon_active_hit_window_hits >= weapon_active_hit_window_required_hits
+	_weapon_active_hit_window_hits = 0
+	_weapon_active_hit_window_expires_at_msec = 0
+	if ready:
+		return maxf(weapon_active_hit_window_bonus_multiplier, 1.0)
+	return 1.0
+
+func _can_pay_weapon_active_resource() -> bool:
+	var normalized_type := str(weapon_active_resource_type).to_lower()
+	if normalized_type == "none" or weapon_active_resource_cost <= 0.0:
+		return true
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return false
+	if normalized_type == "energy":
+		if not PlayerData.player.has_method("get_current_energy"):
+			return false
+		return float(PlayerData.player.call("get_current_energy")) >= weapon_active_resource_cost
+	if normalized_type == "heat":
+		return get_heat_value() >= weapon_active_resource_cost
+	return false
+
+func _pay_weapon_active_resource() -> void:
+	var normalized_type := str(weapon_active_resource_type).to_lower()
+	if normalized_type == "none" or weapon_active_resource_cost <= 0.0:
+		return
+	if normalized_type == "energy":
+		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("consume_energy"):
+			PlayerData.player.call("consume_energy", weapon_active_resource_cost)
+		return
+	if normalized_type == "heat":
+		var core := _get_active_heat_core()
+		if core == null:
+			return
+		core.heat_value = maxf(0.0, float(core.heat_value) - weapon_active_resource_cost)
+		if float(core.heat_value) < float(core.max_heat):
+			core.overheated = false

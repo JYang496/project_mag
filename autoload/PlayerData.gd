@@ -118,6 +118,7 @@ var cloestest_enemy : Area2D = null
 
 var player_weapon_list = []
 var max_weapon_num : int = 4
+var main_weapon_index: int = -1
 var on_select_weapon : int = -1 :
 	get:
 		return on_select_weapon
@@ -183,7 +184,39 @@ func reset_runtime_state() -> void:
 	cloestest_enemy = null
 	player_weapon_list.clear()
 	max_weapon_num = 4
+	main_weapon_index = -1
 	on_select_weapon = -1
 	player_companion_lsit.clear()
 	player_augment_list.clear()
 	testing_keep_hp_above_zero = false
+
+func sanitize_main_weapon_index() -> void:
+	if player_weapon_list.is_empty():
+		main_weapon_index = -1
+		return
+	main_weapon_index = clampi(main_weapon_index, 0, player_weapon_list.size() - 1)
+
+func can_switch_main_weapon() -> bool:
+	return player_weapon_list.size() > 1
+
+func set_main_weapon_index(value: int) -> void:
+	if player_weapon_list.is_empty():
+		main_weapon_index = -1
+	else:
+		main_weapon_index = clampi(value, 0, player_weapon_list.size() - 1)
+	on_select_weapon = main_weapon_index
+	if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui):
+		GlobalVariables.ui.refresh_border()
+
+func shift_main_weapon(step: int) -> void:
+	if not can_switch_main_weapon():
+		sanitize_main_weapon_index()
+		on_select_weapon = main_weapon_index
+		return
+	if main_weapon_index < 0:
+		main_weapon_index = 0
+	var size := player_weapon_list.size()
+	var next := (main_weapon_index + step) % size
+	if next < 0:
+		next += size
+	set_main_weapon_index(next)

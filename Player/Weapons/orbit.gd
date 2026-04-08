@@ -19,6 +19,12 @@ var satellites : Array = []
 var ITEM_NAME = "Orbit"
 var spin_speed : float = 5.0
 var number = 4
+@export var offhand_main_attack_speed_mult: float = 1.3
+@export var offhand_buff_duration_sec: float = 0.5
+@export var offhand_buff_icd_sec: float = 0.12
+var _buff_target: Ranger
+var _next_offhand_apply_msec: int = 0
+var _offhand_buff_expires_at_msec: int = 0
 
 var weapon_data = {
 	"1": {
@@ -80,25 +86,8 @@ func set_level(lv) -> void:
 	number = int(weapon_data[lv]["number"])
 	base_projectile_hits = 99999
 	module_list.clear()
-	for s in satellites:
-		s.queue_free()
-	satellites.clear()
-	var offset_step = 2 * PI / number
 	sync_stats()
-	var runtime_damage := get_runtime_shot_damage()
-	for n in range(number):
-		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
-		if spawn_projectile == null:
-			continue
-		spawn_projectile.damage = runtime_damage
-		spawn_projectile.hp = 99999
-		spawn_projectile.expire_time = 99999
-		spawn_projectile.size = size
-		spawn_projectile.projectile_texture = projectile_texture_resource
-		apply_rotate_around_player(spawn_projectile, offset_step, n)
-		apply_effects_on_projectile(spawn_projectile)
-		get_tree().root.call_deferred("add_child",spawn_projectile)
-		satellites.append(spawn_projectile)
+	_refresh_orbit_mode_state()
 
 func apply_rotate_around_player(projectile_node : Node2D, offset_step : float, n : int) -> void:
 	var rotate_around_player_ins = rotate_around_player.instantiate()
@@ -113,12 +102,95 @@ func apply_rotate_around_player(projectile_node : Node2D, offset_step : float, n
 
 
 func remove_weapon() -> void:
+	_clear_offhand_main_buff()
 	module_list.clear()
-	PlayerData.player_weapon_list.pop_at(PlayerData.on_select_weapon)
-	PlayerData.on_select_weapon = -1
+	var idx := PlayerData.player_weapon_list.find(self)
+	if idx >= 0:
+		PlayerData.player_weapon_list.remove_at(idx)
+	PlayerData.sanitize_main_weapon_index()
+	PlayerData.on_select_weapon = PlayerData.main_weapon_index
 	queue_free()
 
 func _on_tree_exiting() -> void:
+	_clear_offhand_main_buff()
 	# Remove satellites when weapon node exits.
 	for s in satellites:
 		s.queue_free()
+
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	if is_main_weapon():
+		return
+	_process_offhand_main_weapon_buff()
+
+func _on_weapon_role_changed(next_role: String) -> void:
+	_refresh_orbit_mode_state()
+	if next_role == "main":
+		_clear_offhand_main_buff()
+
+func _refresh_orbit_mode_state() -> void:
+	_clear_satellites()
+	if not is_main_weapon():
+		return
+	var offset_step = 2 * PI / max(1, number)
+	var runtime_damage := get_runtime_shot_damage()
+	for n in range(number):
+		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
+		if spawn_projectile == null:
+			continue
+		spawn_projectile.damage = runtime_damage
+		spawn_projectile.hp = 99999
+		spawn_projectile.expire_time = 99999
+		spawn_projectile.size = size
+		spawn_projectile.projectile_texture = projectile_texture_resource
+		apply_rotate_around_player(spawn_projectile, offset_step, n)
+		apply_effects_on_projectile(spawn_projectile)
+		get_tree().root.call_deferred("add_child", spawn_projectile)
+		satellites.append(spawn_projectile)
+
+func _clear_satellites() -> void:
+	for s in satellites:
+		if s and is_instance_valid(s):
+			s.queue_free()
+	satellites.clear()
+
+func _process_offhand_main_weapon_buff() -> void:
+	var now_msec := Time.get_ticks_msec()
+	if _buff_target != null and is_instance_valid(_buff_target) and now_msec >= _offhand_buff_expires_at_msec:
+		_buff_target.set_external_attack_speed_multiplier(1.0)
+		_buff_target = null
+	if now_msec < _next_offhand_apply_msec:
+		return
+	_next_offhand_apply_msec = now_msec + int(maxf(offhand_buff_icd_sec, 0.05) * 1000.0)
+	var main_weapon := _resolve_main_weapon()
+	if main_weapon == null:
+		return
+	if _buff_target != main_weapon:
+		_clear_offhand_main_buff()
+		_buff_target = main_weapon
+	_buff_target.set_external_attack_speed_multiplier(maxf(offhand_main_attack_speed_mult, 1.0))
+	_offhand_buff_expires_at_msec = now_msec + int(maxf(offhand_buff_duration_sec, 0.05) * 1000.0)
+	passive_triggered.emit(&"offhand_orbit_attack_speed", {
+		"multiplier": offhand_main_attack_speed_mult,
+		"duration": offhand_buff_duration_sec
+	})
+
+func _resolve_main_weapon() -> Ranger:
+	if PlayerData.player_weapon_list.is_empty():
+		return null
+	PlayerData.sanitize_main_weapon_index()
+	var idx := PlayerData.main_weapon_index
+	if idx < 0 or idx >= PlayerData.player_weapon_list.size():
+		return null
+	var weapon: Variant = PlayerData.player_weapon_list[idx]
+	if weapon == self:
+		return null
+	if weapon is Ranger:
+		return weapon as Ranger
+	return null
+
+func _clear_offhand_main_buff() -> void:
+	if _buff_target != null and is_instance_valid(_buff_target):
+		_buff_target.set_external_attack_speed_multiplier(1.0)
+	_buff_target = null
+	_offhand_buff_expires_at_msec = 0
