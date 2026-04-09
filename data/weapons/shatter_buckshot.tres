@@ -12,3 +12,5 @@ icon = ExtResource("1_icon")
 price = 11
 description = "Freeze shotgun for close-range layering and shatter procs."
 scene = ExtResource("2_scene")
+appears_as_standalone = false
+standalone_replacement_weapon_id = "4"

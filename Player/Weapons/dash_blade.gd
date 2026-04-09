@@ -78,6 +78,7 @@ var weapon_data := {
 
 var base_damage := 1
 var damage := 1
+var base_attack_range := 150.0
 var attack_range := 150.0
 var base_dash_speed := 900.0
 var dash_speed := 900.0
@@ -132,19 +133,28 @@ func set_level(lv) -> void:
 		return
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
-	attack_range = float(weapon_data[lv]["range"])
+	base_attack_range = float(weapon_data[lv]["range"])
 	base_dash_speed = float(weapon_data[lv]["dash_speed"])
 	base_return_speed = float(weapon_data[lv]["return_speed"])
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
 	sync_stats()
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_level_applied(level)
 	_update_attack_range_shape()
 
 func sync_stats() -> void:
 	damage = base_damage
+	attack_range = base_attack_range
 	dash_speed = base_dash_speed
 	return_speed = base_return_speed
 	attack_cooldown = base_attack_cooldown
 	size = base_size
+	if branch_behavior and is_instance_valid(branch_behavior):
+		damage = max(1, int(round(float(damage) * maxf(branch_behavior.get_damage_multiplier(), 0.05))))
+		attack_range = maxf(1.0, attack_range * maxf(branch_behavior.get_attack_range_multiplier(), 0.05))
+		dash_speed = maxf(1.0, dash_speed * maxf(branch_behavior.get_dash_speed_multiplier(), 0.05))
+		return_speed = maxf(1.0, return_speed * maxf(branch_behavior.get_return_speed_multiplier(), 0.05))
+		attack_cooldown = maxf(0.02, attack_cooldown * maxf(branch_behavior.get_cooldown_multiplier(), 0.05))
 	apply_module_stat_pipeline()
 	apply_size_multiplier(size)
 	calculate_damage(damage)
@@ -153,6 +163,7 @@ func sync_stats() -> void:
 	calculate_weapon_size.emit(size)
 	if attack_cooldown > 0:
 		cooldown_timer.wait_time = attack_cooldown
+	_update_attack_range_shape()
 
 func calculate_damage(pre_damage: int) -> void:
 	calculate_weapon_damage.emit(pre_damage)
@@ -279,6 +290,11 @@ func _try_confirm_dash_hit(target: BaseEnemy) -> void:
 	if hurt_box is HurtBox:
 		hit_box.apply_attack(hurt_box)
 		_dash_hit_confirmed = true
+
+func on_hit_target(target: Node) -> void:
+	super.on_hit_target(target)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_target_hit(target)
 
 func _update_attack_range_shape() -> void:
 	var circle_shape := attack_range_shape.shape as CircleShape2D

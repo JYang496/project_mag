@@ -8,6 +8,8 @@ var projectile_texture_resource = preload("res://Textures/test/sniper_bullet.png
 var ITEM_NAME = "Shotgun"
 @export_range(0, 180) var arc : float = 0
 var bullet_count : int
+var base_arc: float = 0.0
+var base_bullet_count: int = 3
 
 var weapon_data = {
 	"1": {
@@ -83,25 +85,54 @@ func set_level(lv):
 	base_speed = int(weapon_data[lv]["speed"])
 	base_projectile_hits = int(weapon_data[lv]["hp"])
 	base_attack_cooldown = float(weapon_data[lv]["reload"])
-	bullet_count = int(weapon_data[lv]["bullet_count"])
+	base_bullet_count = int(weapon_data[lv]["bullet_count"])
+	bullet_count = base_bullet_count
+	base_arc = arc
 	sync_stats()
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_level_applied(level)
 
 func _on_shoot():
 	is_on_cooldown = true
+	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		cooldown *= maxf(branch_behavior.get_cooldown_multiplier(), 0.05)
+	cooldown_timer.wait_time = maxf(cooldown, 0.05)
 	cooldown_timer.start()
-	var main_target = get_mouse_target()
-	var start_angle = global_position.direction_to(main_target).normalized().angle()
-	var angle_step = deg_to_rad(arc) / clampi((bullet_count - 1),1,9)
-	var start_offset = -deg_to_rad(arc) / 2
+	var main_target: Vector2 = get_mouse_target()
+	var base_direction: Vector2 = global_position.direction_to(main_target).normalized()
+	var shot_count: int = max(1, bullet_count)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		if branch_behavior.has_method("get_projectile_count_override"):
+			shot_count = max(1, int(branch_behavior.call("get_projectile_count_override", shot_count)))
+	var spread_arc := base_arc
+	if branch_behavior and is_instance_valid(branch_behavior):
+		spread_arc *= maxf(branch_behavior.get_cone_or_spread_multiplier(), 0.05)
+	var shot_directions: Array[Vector2] = []
+	if branch_behavior and is_instance_valid(branch_behavior):
+		shot_directions = branch_behavior.get_shot_directions(base_direction, shot_count)
+	if shot_directions.is_empty():
+		var start_angle := base_direction.angle()
+		var angle_step := deg_to_rad(spread_arc) / maxf(float(max(1, shot_count - 1)), 1.0)
+		var start_offset := -deg_to_rad(spread_arc) / 2.0
+		for i in range(shot_count):
+			var current_angle := start_angle + start_offset + (angle_step * float(i))
+			shot_directions.append(Vector2.RIGHT.rotated(current_angle).normalized())
 	var runtime_damage := get_runtime_shot_damage()
-	
-	for i in bullet_count:
+	var damage_multiplier := 1.0
+	if branch_behavior and is_instance_valid(branch_behavior):
+		damage_multiplier = maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05)
+	var damage_type: StringName = Attack.TYPE_PHYSICAL
+	if branch_behavior and is_instance_valid(branch_behavior):
+		if branch_behavior.has_method("get_damage_type_override"):
+			damage_type = Attack.normalize_damage_type(branch_behavior.call("get_damage_type_override"))
+	for dir in shot_directions:
 		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 		if spawn_projectile == null:
 			continue
-		var current_angle = start_angle + start_offset + (angle_step * i)
-		projectile_direction = Vector2.RIGHT.rotated(current_angle)
-		spawn_projectile.damage = runtime_damage
+		projectile_direction = dir.normalized()
+		spawn_projectile.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
+		spawn_projectile.damage_type = damage_type
 		spawn_projectile.global_position = global_position
 		spawn_projectile.projectile_texture = projectile_texture_resource
 		spawn_projectile.size = size
@@ -115,3 +146,8 @@ func get_random_position_in_circle(radius: float = 50.0) -> Vector2:
 	var x = cos(angle) * radius
 	var y = sin(angle) * radius
 	return Vector2(x, y)
+
+func on_hit_target(target: Node) -> void:
+	super.on_hit_target(target)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_target_hit(target)

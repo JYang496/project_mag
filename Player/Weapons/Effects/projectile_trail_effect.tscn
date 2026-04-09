@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Player/Weapons/Effects/projectile_trail_effect.gd" id="1_script"]
+
+[node name="ProjectileTrailEffect" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Line2D" type="Line2D" parent="."]
+width = 2.0
+default_color = Color(0.7, 0.9, 1, 0.9)

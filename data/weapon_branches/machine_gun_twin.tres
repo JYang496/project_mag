@@ -7,7 +7,7 @@
 
 [resource]
 script = ExtResource("4_script")
-branch_id = "twin_mg"
+branch_id = "gatling_mg"
 display_name = "Gatling Thermal"
 description = "Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup."
 icon = ExtResource("1_icon")

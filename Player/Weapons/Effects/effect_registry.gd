@@ -6,6 +6,7 @@ const _SCENE_BY_ID := {
 	"explosion_effect": preload("res://Player/Weapons/Effects/explosion_effect.tscn"),
 	"speed_change_on_hit": preload("res://Player/Weapons/Effects/speed_change_on_hit.tscn"),
 	"dmg_up_on_enemy_death": preload("res://Player/Weapons/Effects/dmg_up_on_enemy_death.tscn"),
+	"projectile_trail": preload("res://Player/Weapons/Effects/projectile_trail_effect.tscn"),
 }
 
 const _CONFIG_SCRIPT_BY_ID := {
@@ -13,6 +14,7 @@ const _CONFIG_SCRIPT_BY_ID := {
 	"explosion_effect": preload("res://Player/Weapons/Effects/Configs/explosion_effect_config.gd"),
 	"speed_change_on_hit": preload("res://Player/Weapons/Effects/Configs/speed_change_on_hit_config.gd"),
 	"dmg_up_on_enemy_death": preload("res://Player/Weapons/Effects/Configs/dmg_up_on_enemy_death_config.gd"),
+	"projectile_trail": preload("res://Player/Weapons/Effects/Configs/projectile_trail_effect_config.gd"),
 }
 
 # Returns true when the registry knows this effect id.

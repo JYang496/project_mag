@@ -165,7 +165,8 @@ func create_weapon(item_id, level := 1):
 	# Create a new weapon when assign string, othervise node
 	var weapon
 	if item_id is String:
-		var weapon_def = DataHandler.read_weapon_data(str(item_id))
+		var resolved_weapon_id := DataHandler.resolve_weapon_id_for_standalone(str(item_id))
+		var weapon_def = DataHandler.read_weapon_data(resolved_weapon_id)
 		if weapon_def == null:
 			push_warning("create_weapon failed: weapon id %s not found." % str(item_id))
 			return

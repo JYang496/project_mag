@@ -25,7 +25,7 @@ time_start = 1
 enemy = ExtResource("3_n4krr")
 number = 5
 max_enemy_number = 10
-hp = 100
+hp = 500
 max_wave = 5
 interval = 2
 

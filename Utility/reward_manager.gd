@@ -90,7 +90,7 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 		PlayerData.round_chip_collected += chip_value
 		granted_any = true
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
-		var weapon_id := reward.item_id.strip_edges()
+		var weapon_id := DataHandler.resolve_weapon_id_for_standalone(reward.item_id.strip_edges())
 		if PlayerData.player and is_instance_valid(PlayerData.player):
 			PlayerData.player.create_weapon(weapon_id, max(1, int(reward.item_level)))
 			granted_any = true

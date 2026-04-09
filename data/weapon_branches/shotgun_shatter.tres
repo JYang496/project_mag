@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://Textures/test/minigun.png" id="1_icon"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/shotgun.tscn" id="2_weapon_scene"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Branches/shotgun_shatter_branch.tscn" id="3_behavior"]
+[ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
+
+[resource]
+script = ExtResource("4_script")
+branch_id = "shatter_buckshot"
+display_name = "Shatter Buckshot"
+description = "Freeze pellets can shatter targets after rapid multi-hit bursts."
+icon = ExtResource("1_icon")
+unlock_fuse = 2
+weapon_scene = ExtResource("2_weapon_scene")
+behavior_scene = ExtResource("3_behavior")

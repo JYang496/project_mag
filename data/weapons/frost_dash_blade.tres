@@ -12,3 +12,5 @@ icon = ExtResource("1_icon")
 price = 12
 description = "Dash melee with freeze finisher and lingering frost trail."
 scene = ExtResource("2_scene")
+appears_as_standalone = false
+standalone_replacement_weapon_id = "11"

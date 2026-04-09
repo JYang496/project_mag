@@ -22,6 +22,7 @@ const WEAPON_RESOURCE_PATHS := [
 	"res://data/weapons/shatter_buckshot.tres",
 	"res://data/weapons/frost_dash_blade.tres",
 	"res://data/weapons/glacier_projector.tres",
+	"res://data/weapons/cannon.tres",
 ]
 const MECHA_RESOURCE_PATHS := [
 	"res://data/mechas/HeavyAssault.tres",
@@ -33,6 +34,10 @@ const MECHA_RESOURCE_PATHS := [
 const WEAPON_BRANCH_RESOURCE_PATHS := [
 	"res://data/weapon_branches/machine_gun_shield.tres",
 ]
+const WEAPON_BRANCH_ID_ALIASES := {
+	"twin_mg": "gatling_mg",
+	"gatling_mg": "gatling_mg",
+}
 
 func _ready():
 	load_game()
@@ -112,11 +117,20 @@ func read_weapon_branch_options(scene_path: String, current_fuse: int = 1) -> Ar
 func read_weapon_branch_definition(scene_path: String, branch_id: String) -> WeaponBranchDefinition:
 	if branch_id == "":
 		return null
+	var normalized_branch_id := _normalize_weapon_branch_id(branch_id)
 	var options := read_weapon_branch_options(scene_path, 999)
 	for def in options:
-		if def.branch_id == branch_id:
+		if _normalize_weapon_branch_id(def.branch_id) == normalized_branch_id:
 			return def
 	return null
+
+func _normalize_weapon_branch_id(branch_id: String) -> String:
+	var normalized := str(branch_id).strip_edges()
+	if normalized == "":
+		return ""
+	if WEAPON_BRANCH_ID_ALIASES.has(normalized):
+		return str(WEAPON_BRANCH_ID_ALIASES[normalized])
+	return normalized
 
 func read_mecha_data(id: String) -> MechaDefinition:
 	if GlobalVariables.mecha_list.is_empty():
@@ -133,6 +147,37 @@ func read_weapon_data(id: String):
 	if data == null:
 		return null
 	return data
+
+func get_standalone_weapon_ids() -> Array[String]:
+	if GlobalVariables.weapon_list.is_empty():
+		load_weapon_data()
+	var ids: Array[String] = []
+	for key_variant in GlobalVariables.weapon_list.keys():
+		var key := str(key_variant)
+		var def := read_weapon_data(key) as WeaponDefinition
+		if def == null:
+			continue
+		if not bool(def.appears_as_standalone):
+			continue
+		ids.append(key)
+	return ids
+
+func resolve_weapon_id_for_standalone(requested_weapon_id: String) -> String:
+	var requested := str(requested_weapon_id).strip_edges()
+	if requested == "":
+		return ""
+	var def := read_weapon_data(requested) as WeaponDefinition
+	if def == null:
+		return requested
+	if bool(def.appears_as_standalone):
+		return requested
+	var fallback_id := str(def.standalone_replacement_weapon_id).strip_edges()
+	if fallback_id == "":
+		return requested
+	var fallback_def := read_weapon_data(fallback_id) as WeaponDefinition
+	if fallback_def == null:
+		return requested
+	return fallback_id
 
 func _register_weapon_resource(resource: Resource, source_path: String) -> void:
 	if resource == null:

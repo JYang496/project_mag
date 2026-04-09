@@ -12,3 +12,5 @@ icon = ExtResource("1_icon")
 price = 13
 description = "Heavy energy cannon. Gains execute burst against low-HP marked targets."
 scene = ExtResource("2_scene")
+appears_as_standalone = false
+standalone_replacement_weapon_id = "25"

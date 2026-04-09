@@ -24,7 +24,7 @@ func setup(
 ) -> DamageData:
 	amount = damage_amount
 	damage_type = Attack.normalize_damage_type(type_value)
-	knock_back = knockback_value.duplicate(true)
+	knock_back = _normalize_knock_back(knockback_value)
 	source_node = source_node_value
 	source_player = source_player_value
 	return self
@@ -38,3 +38,19 @@ func to_attack() -> Attack:
 	attack.source_node = source_node
 	attack.source_player = source_player
 	return attack
+
+
+func _normalize_knock_back(value: Dictionary) -> Dictionary:
+	var normalized := {
+		"amount": 0,
+		"angle": Vector2.ZERO
+	}
+	if value == null:
+		return normalized
+	if value.has("amount"):
+		normalized.amount = int(value.get("amount", 0))
+	if value.has("angle"):
+		var angle_value: Variant = value.get("angle", Vector2.ZERO)
+		if angle_value is Vector2:
+			normalized.angle = angle_value
+	return normalized

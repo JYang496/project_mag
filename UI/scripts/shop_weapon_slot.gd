@@ -59,9 +59,7 @@ func empty_item() -> void:
 func new_item() -> void:
 	if not self.is_connected("select_weapon",Callable(PlayerData.player,"create_weapon")):
 		connect("select_weapon",Callable(PlayerData.player,"create_weapon"))
-	var candidate_ids: Array[String] = []
-	for key in GlobalVariables.weapon_list.keys():
-		candidate_ids.append(str(key))
+	var candidate_ids: Array[String] = DataHandler.get_standalone_weapon_ids()
 	if candidate_ids.is_empty():
 		push_warning("ShopWeaponSlot failed to generate item: weapon list is empty.")
 		empty_item()
