@@ -39,10 +39,15 @@ func set_level(lv) -> void:
 	heat_cool_rate = heat_cooldown_rate
 	configure_heat(heat_per_shot, heat_max_value, heat_cool_rate)
 	sync_stats()
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_level_applied(level)
 
 func _on_shoot() -> void:
 	is_on_cooldown = true
-	cooldown_timer.wait_time = maxf(get_effective_cooldown(attack_cooldown), 0.03)
+	var cooldown := get_effective_cooldown(attack_cooldown)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		cooldown *= branch_behavior.get_cooldown_multiplier()
+	cooldown_timer.wait_time = maxf(cooldown, 0.03)
 	cooldown_timer.start()
 
 	var target_position: Vector2 = get_mouse_target()
@@ -50,30 +55,49 @@ func _on_shoot() -> void:
 	if forward == Vector2.ZERO:
 		forward = Vector2.UP
 
+	var shot_directions: Array[Vector2] = [forward]
+	if branch_behavior and is_instance_valid(branch_behavior):
+		shot_directions = branch_behavior.get_shot_directions(forward)
+	if shot_directions.is_empty():
+		shot_directions = [forward]
+
 	var runtime_damage := get_runtime_shot_damage()
 	var is_burning_mode := get_heat_ratio() >= overheat_burn_threshold_ratio
-	for i in range(bullets_per_shot):
-		var spawn_projectile := spawn_projectile_from_scene(projectile_template)
-		if spawn_projectile == null:
-			continue
-		var offset_rad := deg_to_rad(randf_range(-front_fire_half_angle_deg, front_fire_half_angle_deg))
-		var shot_dir := forward.rotated(offset_rad).normalized()
-		projectile_direction = shot_dir
-		var shot_damage := runtime_damage
-		if is_burning_mode:
-			shot_damage = int(round(float(runtime_damage) * (1.0 + burn_bonus_damage_ratio)))
-			spawn_projectile.damage_type = Attack.TYPE_FIRE
-		else:
-			spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
-		spawn_projectile.damage = max(1, shot_damage)
-		spawn_projectile.hp = projectile_hits
-		spawn_projectile.global_position = global_position
-		spawn_projectile.projectile_texture = projectile_texture_resource
-		spawn_projectile.desired_pixel_size = BULLET_PIXEL_SIZE
-		spawn_projectile.size = size
-		spawn_projectile.expire_time = maxf(attack_range / maxf(float(speed), 1.0), 0.12)
-		apply_effects_on_projectile(spawn_projectile)
-		get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
+	var fired_count := 0
+	for base_dir in shot_directions:
+		var normalized_base := base_dir.normalized()
+		for i in range(bullets_per_shot):
+			var spawn_projectile := spawn_projectile_from_scene(projectile_template)
+			if spawn_projectile == null:
+				continue
+			var offset_rad := deg_to_rad(randf_range(-front_fire_half_angle_deg, front_fire_half_angle_deg))
+			var shot_dir := normalized_base.rotated(offset_rad).normalized()
+			projectile_direction = shot_dir
+			var shot_damage := runtime_damage
+			if is_burning_mode:
+				shot_damage = int(round(float(runtime_damage) * (1.0 + burn_bonus_damage_ratio)))
+				spawn_projectile.damage_type = Attack.TYPE_FIRE
+			else:
+				spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
+			spawn_projectile.damage = max(1, shot_damage)
+			spawn_projectile.hp = projectile_hits
+			spawn_projectile.global_position = global_position
+			spawn_projectile.projectile_texture = projectile_texture_resource
+			spawn_projectile.desired_pixel_size = BULLET_PIXEL_SIZE
+			spawn_projectile.size = size
+			spawn_projectile.expire_time = maxf(attack_range / maxf(float(speed), 1.0), 0.12)
+			apply_effects_on_projectile(spawn_projectile)
+			get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
+			fired_count += 1
+
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_weapon_shot(forward)
+	var extra_heat_multiplier := 1.0
+	if branch_behavior and is_instance_valid(branch_behavior):
+		if branch_behavior.has_method("get_extra_heat_shot_multiplier"):
+			extra_heat_multiplier = float(branch_behavior.call("get_extra_heat_shot_multiplier"))
+	var extra_heat_shots := float(max(0, fired_count - bullets_per_shot)) * clampf(extra_heat_multiplier, 0.0, 1.0)
+	register_shot_heat(extra_heat_shots)
 
 func _get_level_data(lv: String) -> Dictionary:
 	if weapon_data.has(lv):

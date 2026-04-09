@@ -1,15 +1,15 @@
 [gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=5 format=3]
 
-[ext_resource type="Texture2D" path="res://asset/images/weapons/cannon2.png" id="1_icon"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/mg2.png" id="1_icon"]
 [ext_resource type="PackedScene" path="res://Player/Weapons/machine_gun.tscn" id="2_weapon_scene"]
-[ext_resource type="PackedScene" path="res://Player/Weapons/Branches/machine_gun_twin_branch.tscn" id="3_behavior"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Branches/machine_gun_gatling_branch.tscn" id="3_behavior"]
 [ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
 
 [resource]
 script = ExtResource("4_script")
 branch_id = "twin_mg"
-display_name = "Twin Machine Gun"
-description = "Dual barrels with faster fire cadence. Heat buildup slows the mech."
+display_name = "Gatling Thermal"
+description = "Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 weapon_scene = ExtResource("2_weapon_scene")

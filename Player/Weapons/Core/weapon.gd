@@ -25,6 +25,7 @@ var fuse_sprites: Dictionary = {}
 var branch_id: String = ""
 var branch_definition: WeaponBranchDefinition
 var branch_behavior: WeaponBranchBehavior
+var _runtime_trait_overrides: Array[StringName] = []
 var _last_stat_snapshot: Dictionary = {}
 var _overheat_fire_bypass_sources: Array[Node] = []
 var heat_core: Heat
@@ -200,6 +201,9 @@ func get_normalized_weapon_traits() -> Array[StringName]:
 	var modules_node := _get_modules_container()
 	if modules_node and modules_node.has_method("get_normalized_weapon_traits"):
 		traits = modules_node.get_normalized_weapon_traits()
+	for runtime_trait in _runtime_trait_overrides:
+		if not traits.has(runtime_trait):
+			traits.append(runtime_trait)
 	if supports_projectiles() and not traits.has(CombatTrait.PROJECTILE):
 		traits.append(CombatTrait.PROJECTILE)
 	if supports_melee_contact() and not traits.has(CombatTrait.MELEE):
@@ -306,9 +310,37 @@ func lock_heat_value(value: float, duration_sec: float) -> void:
 
 func get_explicit_weapon_traits() -> Array[StringName]:
 	var modules_node := _get_modules_container()
+	var traits: Array[StringName] = []
 	if modules_node and modules_node.has_method("get_normalized_weapon_traits"):
-		return modules_node.get_normalized_weapon_traits()
-	return []
+		traits = modules_node.get_normalized_weapon_traits()
+	for runtime_trait in _runtime_trait_overrides:
+		if not traits.has(runtime_trait):
+			traits.append(runtime_trait)
+	return traits
+
+func add_runtime_weapon_trait(trait_name: Variant) -> void:
+	var normalized := CombatTrait.normalize(trait_name)
+	if normalized == StringName():
+		return
+	if _runtime_trait_overrides.has(normalized):
+		return
+	_runtime_trait_overrides.append(normalized)
+	calculate_status()
+
+func remove_runtime_weapon_trait(trait_name: Variant) -> void:
+	var normalized := CombatTrait.normalize(trait_name)
+	if normalized == StringName():
+		return
+	if not _runtime_trait_overrides.has(normalized):
+		return
+	_runtime_trait_overrides.erase(normalized)
+	calculate_status()
+
+func clear_runtime_weapon_traits() -> void:
+	if _runtime_trait_overrides.is_empty():
+		return
+	_runtime_trait_overrides.clear()
+	calculate_status()
 
 func _get_modules_container() -> WeaponModules:
 	if modules != null and is_instance_valid(modules):

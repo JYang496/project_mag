@@ -37,8 +37,14 @@ func apply_tick(target: Node) -> void:
 	var attack := Attack.new()
 	attack.damage = damage
 	attack.damage_type = damage_type
-	attack.source_player = self.source_player
-	attack.source_node = self.source_node
+	if self.source_player != null and is_instance_valid(self.source_player):
+		attack.source_player = self.source_player
+	else:
+		attack.source_player = null
+	if self.source_node != null and is_instance_valid(self.source_node):
+		attack.source_node = self.source_node
+	else:
+		attack.source_node = null
 	target.damaged(attack)
 
 

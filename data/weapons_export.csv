@@ -1,0 +1,24 @@
+﻿Weapon ID,Display Name,Description,Passive Skills,Damage Type,Notes,Weapon Branch Options,range
+1,machine gun,machine gun test,,Physical,heat + high rof,,mid
+2,Charged Blaster,charged blaster,Charge beam - hold to charge up shots,Physical,heat,,far
+3,Spear,spear test: return,Return weapon - returns after thrown,Physical,close range,,close
+4,shotgun,shotgun test: multi shoot,Multiple projectiles per shot,Physical,close range + high hof,,close
+5,pistol,pistol test,Basic ranged weapon,Physical,passive weapon,,mid
+7,orbit,orbit test: spiral,Orbital projectile - spirals around user,Physical,passive weapon,,close
+8,rocket luncher,test: rocket launcher,Explosive projectile,Physical,AOE,"Napalm Rocket, Salvo Rocket",mid
+9,laser,laser test,Laser beam weapon,Physical,rework,,far
+10,chainsaw luncher,chainsaw launcher test,Continuous damage beam,Physical,high rof,,mid
+11,dash blade,Dash to nearby target and deal melee hit on contact.,Dash melee,Physical,rework,,close
+12,hammer,Single-target melee dash. Has chance to stun on hit.,Stun chance on hit,Physical,rework,,close
+13,flamethrower,short-range cone burst with fire aoe and heat management,Fire AOE - heat management system,Heat,heat + aoe + close range,,close
+14,Thermal Cannon,Mid-range heavy thermal sniper. Damage scales with current heat ratio.,Heat ratio scaling - higher heat = more damage,Heat,Heat-based,,far
+15,Gatling Thermal,High-rate thermal suppression with random front spread and burn boost above 80% heat.,Burn boost at 80%+ heat - random spread,Heat,Heat-based,,mid
+16,Heat Sink Burst,Low-heat rapid fire. Entering overheat triggers a high-damage fire burst around the mech.,Overheat trigger burst,Heat,Heat trigger,,mid
+17,Plasma Lance,Slow heavy piercing lance. Projectile damage increases after each penetration.,Penetration damage scaling,Physical,,,close
+18,Cryo Carbine,Precise freeze carbine; every third hit releases a shard.,Third hit releases ice shard,Freeze,,,mid
+19,Shatter Buckshot,Freeze shotgun for close-range layering and shatter procs.,Shatter procs on frozen enemies,Freeze,,,close
+20,Frost Dash Blade,Dash melee with freeze finisher and lingering frost trail.,Freeze finisher + frost trail,Freeze,,,close
+21,Glacier Projector,Sustained freeze cone; prolonged contact triggers cold snap.,Cold snap after prolonged freeze,Freeze,,,mid
+22,Pulse Sidearm,Fast energy sidearm. Every 4th shot resonates for bonus energy damage.,Fourth shot resonance,Energy,,,mid
+23,Arc Coil,Energy rifle that chains arc damage to nearby enemies on hit.,Chain lightning to nearby enemies,Energy,,,mid
+24,Zero Cannon,Heavy energy cannon. Gains execute burst against low-HP marked targets.,Execute burst on low HP targets,Energy,,,far

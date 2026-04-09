@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dxiipuc6a5sy3"]
+
+[ext_resource type="Script" uid="uid://ckkw8701n0kul" path="res://Player/Weapons/Branches/machine_gun_gatling_branch.gd" id="1_gatling"]
+
+[node name="MachineGunGatlingBranch" type="Node" unique_id=861016731]
+script = ExtResource("1_gatling")

@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_base"]
 [ext_resource type="Script" uid="uid://dlee5w18ma4c8" path="res://Player/Weapons/glacier_projector.gd" id="2_script"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_3hv4x"]
-[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.tscn" id="5_74i8c"]
+[ext_resource type="PackedScene" uid="uid://lpkx68xlbpyj" path="res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.tscn" id="5_74i8c"]
 
 [node name="GlacierProjector" unique_id=252111721 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
@@ -20,11 +20,5 @@ debug_projectile_effects = false
 weapon_traits = 65536
 
 [node name="BrittleTrigger" parent="Modules" index="0" unique_id=2045249766 instance=ExtResource("5_74i8c")]
-ratio_lv1 = 0.2
-ratio_lv2 = 0.28
-ratio_lv3 = 0.36
-required_frost_stacks = 3
-target_icd_sec = 0.8
-module_traits = Array[ExtResource("3_3hv4x")]([])
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

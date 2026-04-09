@@ -42,16 +42,31 @@ func set_level(lv) -> void:
 	heat_cool_rate = heat_cooldown_rate
 	configure_heat(heat_per_shot, heat_max_value, heat_cool_rate)
 	sync_stats()
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_level_applied(level)
 	_sync_detect_radius()
 
 func _on_shoot() -> void:
 	is_on_cooldown = true
-	cooldown_timer.wait_time = maxf(get_effective_cooldown(attack_cooldown), 0.02)
+	var cooldown: float = get_effective_cooldown(attack_cooldown)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		cooldown *= branch_behavior.get_cooldown_multiplier()
+	cooldown_timer.wait_time = maxf(cooldown, 0.02)
 	cooldown_timer.start()
 	_emit_flame_burst()
 
 func supports_projectiles() -> bool:
 	return false
+
+func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
+	if branch_behavior and is_instance_valid(branch_behavior):
+		if branch_behavior.has_method("disables_primary_fire") and bool(branch_behavior.call("disables_primary_fire")):
+			return
+	if not can_run_active_behavior():
+		return
+	if not pressed:
+		return
+	request_primary_fire()
 
 func _emit_flame_burst() -> void:
 	# 每轮射击开始时清空已攻击目标列表
@@ -75,7 +90,11 @@ func _apply_fire_damage(target: Node) -> void:
 		return
 	_attacked_target_ids[target.get_instance_id()] = true
 
-	var runtime_damage := get_runtime_shot_damage()
+	var runtime_damage: int = get_runtime_shot_damage()
+	if branch_behavior and is_instance_valid(branch_behavior):
+		if branch_behavior.has_method("get_damage_multiplier"):
+			var damage_multiplier: float = float(branch_behavior.call("get_damage_multiplier"))
+			runtime_damage = max(1, int(round(float(runtime_damage) * maxf(damage_multiplier, 0.05))))
 	var knock_back := {
 		"amount": 0,
 		"angle": Vector2.ZERO
@@ -94,7 +113,8 @@ func _apply_fire_damage(target: Node) -> void:
 func _collect_targets_in_cone(forward: Vector2) -> Array[Node]:
 	var output: Array[Node] = []
 	var touched_ids: Dictionary = {}
-	var max_angle_rad := deg_to_rad(cone_half_angle_deg)
+	var max_angle_rad := deg_to_rad(_get_effective_cone_half_angle_deg())
+	var effective_range: float = _get_effective_attack_range()
 	for area in detect_area.get_overlapping_areas():
 		if not area is HurtBox:
 			continue
@@ -109,7 +129,7 @@ func _collect_targets_in_cone(forward: Vector2) -> Array[Node]:
 			continue
 		var to_target := target.global_position - global_position
 		var distance := to_target.length()
-		if distance > attack_range:
+		if distance > effective_range:
 			continue
 		var dir := to_target.normalized()
 		if absf(forward.angle_to(dir)) > max_angle_rad:
@@ -128,7 +148,7 @@ func _sync_detect_radius() -> void:
 	if circle == null:
 		circle = CircleShape2D.new()
 		shape_node.shape = circle
-	circle.radius = maxf(attack_range, 32.0)
+	circle.radius = maxf(_get_effective_attack_range(), 32.0)
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
@@ -143,10 +163,11 @@ func _draw() -> void:
 func _draw_attack_range() -> void:
 	# _draw() 是在节点坐标系中绘制，武器旋转时内容会跟着旋转
 	# 武器默认朝上(UP)，所以需要向左旋转90度(-PI/2)来对齐
-	var half_angle_rad := deg_to_rad(cone_half_angle_deg)
+	var half_angle_rad := deg_to_rad(_get_effective_cone_half_angle_deg())
 	var offset_angle := -PI / 2.0  # 向左旋转90度
 	var start_angle := offset_angle - half_angle_rad
 	var end_angle := offset_angle + half_angle_rad
+	var effective_range: float = _get_effective_attack_range()
 
 	# 扇形填充颜色
 	var fill_color := Color(1.0, 0.4, 0.0, 0.15)
@@ -154,11 +175,25 @@ func _draw_attack_range() -> void:
 	var outline_color := Color(1.0, 0.4, 0.0, 0.6)
 
 	# 绘制扇形填充
-	draw_arc(Vector2.ZERO, attack_range, start_angle, end_angle, 32, fill_color, -1.0)
+	draw_arc(Vector2.ZERO, effective_range, start_angle, end_angle, 32, fill_color, -1.0)
 	# 绘制扇形轮廓
-	draw_arc(Vector2.ZERO, attack_range, start_angle, end_angle, 32, outline_color, 2.0)
+	draw_arc(Vector2.ZERO, effective_range, start_angle, end_angle, 32, outline_color, 2.0)
 	# 绘制中心半径线
-	draw_line(Vector2.ZERO, Vector2.UP * attack_range, outline_color, 2.0)
+	draw_line(Vector2.ZERO, Vector2.UP * effective_range, outline_color, 2.0)
 	# 绘制边界半径线
-	draw_line(Vector2.ZERO, Vector2.UP.rotated(-half_angle_rad) * attack_range, outline_color, 1.0)
-	draw_line(Vector2.ZERO, Vector2.UP.rotated(half_angle_rad) * attack_range, outline_color, 1.0)
+	draw_line(Vector2.ZERO, Vector2.UP.rotated(-half_angle_rad) * effective_range, outline_color, 1.0)
+	draw_line(Vector2.ZERO, Vector2.UP.rotated(half_angle_rad) * effective_range, outline_color, 1.0)
+
+func _get_effective_attack_range() -> float:
+	var range_multiplier: float = 1.0
+	if branch_behavior and is_instance_valid(branch_behavior):
+		if branch_behavior.has_method("get_attack_range_multiplier"):
+			range_multiplier = float(branch_behavior.call("get_attack_range_multiplier"))
+	return maxf(attack_range * maxf(range_multiplier, 0.1), 1.0)
+
+func _get_effective_cone_half_angle_deg() -> float:
+	var angle_multiplier: float = 1.0
+	if branch_behavior and is_instance_valid(branch_behavior):
+		if branch_behavior.has_method("get_cone_half_angle_multiplier"):
+			angle_multiplier = float(branch_behavior.call("get_cone_half_angle_multiplier"))
+	return maxf(cone_half_angle_deg * maxf(angle_multiplier, 0.1), 1.0)

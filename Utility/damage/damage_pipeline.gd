@@ -86,8 +86,18 @@ func process_periodic_effects(target: Node, profile: DamageProfile, delta_sec: f
 			var dot_attack := Attack.new()
 			dot_attack.damage = dot_damage
 			dot_attack.damage_type = Attack.TYPE_FIRE
-			dot_attack.source_node = state.get("scorch_source_node", null)
-			dot_attack.source_player = state.get("scorch_source_player", null)
+			var scorch_source_node: Variant = state.get("scorch_source_node", null)
+			if scorch_source_node != null and is_instance_valid(scorch_source_node):
+				dot_attack.source_node = scorch_source_node as Node
+			else:
+				dot_attack.source_node = null
+				state["scorch_source_node"] = null
+			var scorch_source_player: Variant = state.get("scorch_source_player", null)
+			if scorch_source_player != null and is_instance_valid(scorch_source_player):
+				dot_attack.source_player = scorch_source_player as Node
+			else:
+				dot_attack.source_player = null
+				state["scorch_source_player"] = null
 			state["processing_scorch_dot"] = true
 			var dot_result := apply_incoming_damage(target, dot_attack, profile, true)
 			state["processing_scorch_dot"] = false

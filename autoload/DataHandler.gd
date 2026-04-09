@@ -16,7 +16,6 @@ const WEAPON_RESOURCE_PATHS := [
 	"res://data/weapons/hammer.tres",
 	"res://data/weapons/flamethrower.tres",
 	"res://data/weapons/thermal_cannon.tres",
-	"res://data/weapons/gatling_thermal.tres",
 	"res://data/weapons/heat_sink_burst.tres",
 	"res://data/weapons/plasma_lance.tres",
 	"res://data/weapons/cryo_carbine.tres",
@@ -32,7 +31,6 @@ const MECHA_RESOURCE_PATHS := [
 	"res://data/mechas/Turret.tres",
 ]
 const WEAPON_BRANCH_RESOURCE_PATHS := [
-	"res://data/weapon_branches/machine_gun_twin.tres",
 	"res://data/weapon_branches/machine_gun_shield.tres",
 ]
 

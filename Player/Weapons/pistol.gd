@@ -95,10 +95,3 @@ func _on_shoot():
 	apply_effects_on_projectile(spawn_projectile)
 	get_tree().root.call_deferred("add_child",spawn_projectile)
 		
-func apply_hexagon_attack(projectile_node : Node2D, id : int, unit_of_time : float) -> void:
-	var hexagon_attack_ins = hexagon_attack_effect.instantiate()
-	hexagon_attack_ins.id = id
-	hexagon_attack_ins.wait_time = unit_of_time
-	projectile_node.call_deferred("add_child",hexagon_attack_ins)
-	projectile_node.effect_list.append(hexagon_attack_ins)
-	module_list.append(hexagon_attack_ins)
