@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://cdpdxvviop3ok"]
+[gd_scene format=3 uid="uid://cdpdxvviop3ok"]
 
 [ext_resource type="Script" uid="uid://bti7r07ljp64d" path="res://UI/scripts/UI.gd" id="1_y6r0f"]
 [ext_resource type="PackedScene" uid="uid://sedqknpaalyt" path="res://UI/scenes/equipment_slot.tscn" id="3_3xv3f"]
@@ -26,11 +26,11 @@
 [ext_resource type="Script" uid="uid://cc2eo3mf0uuh8" path="res://UI/scripts/gf_confirm_btn.gd" id="16_yflil"]
 [ext_resource type="Script" uid="uid://c5738xwcafeh3" path="res://UI/scripts/to_upgrade.gd" id="18_uk6e0"]
 
-[node name="UI" type="CanvasLayer" groups=["ui"]]
+[node name="UI" type="CanvasLayer" unique_id=73837684 groups=["ui"]]
 process_mode = 3
 script = ExtResource("1_y6r0f")
 
-[node name="GUI" type="Control" parent="."]
+[node name="GUI" type="Control" parent="." unique_id=1914569511]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -38,7 +38,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="CharacterRoot" type="Control" parent="GUI"]
+[node name="CharacterRoot" type="Control" parent="GUI" unique_id=1096268923]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -46,40 +46,40 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Equipped" type="Label" parent="GUI/CharacterRoot"]
+[node name="Equipped" type="Label" parent="GUI/CharacterRoot" unique_id=321428590]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
 text = "Weapons"
 
-[node name="WeaponIcons" type="HBoxContainer" parent="GUI/CharacterRoot"]
+[node name="WeaponIcons" type="HBoxContainer" parent="GUI/CharacterRoot" unique_id=1104267185]
 layout_mode = 0
 offset_left = 82.0
 offset_top = 6.0
 offset_right = 354.0
 offset_bottom = 46.0
 
-[node name="WeaponIcon1" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons"]
+[node name="WeaponIcon1" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons" unique_id=249680766]
 layout_mode = 2
 expand_mode = 2
 script = ExtResource("3_xpg6s")
 
-[node name="WeaponIcon2" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons"]
+[node name="WeaponIcon2" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons" unique_id=1922153951]
 layout_mode = 2
 expand_mode = 2
 script = ExtResource("3_xpg6s")
 
-[node name="WeaponIcon3" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons"]
+[node name="WeaponIcon3" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons" unique_id=8158167]
 layout_mode = 2
 expand_mode = 2
 script = ExtResource("3_xpg6s")
 
-[node name="WeaponIcon4" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons"]
+[node name="WeaponIcon4" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons" unique_id=1581305221]
 layout_mode = 2
 expand_mode = 2
 script = ExtResource("3_xpg6s")
 
-[node name="Augments" type="Label" parent="GUI/CharacterRoot"]
+[node name="Augments" type="Label" parent="GUI/CharacterRoot" unique_id=360447397]
 visible = false
 layout_mode = 0
 offset_left = 2.0
@@ -88,14 +88,14 @@ offset_right = 81.0
 offset_bottom = 132.0
 text = "Augments"
 
-[node name="Hp" type="Label" parent="GUI/CharacterRoot"]
+[node name="Hp" type="Label" parent="GUI/CharacterRoot" unique_id=1902588253]
 layout_mode = 0
 offset_top = 612.0
 offset_right = 22.0
 offset_bottom = 635.0
 text = "HP"
 
-[node name="Gold" type="Label" parent="GUI/CharacterRoot"]
+[node name="Gold" type="Label" parent="GUI/CharacterRoot" unique_id=1807235609]
 layout_mode = 0
 offset_left = 461.0
 offset_top = 2.0
@@ -103,7 +103,7 @@ offset_right = 561.0
 offset_bottom = 35.0
 text = "Gold"
 
-[node name="Resource" type="Label" parent="GUI/CharacterRoot"]
+[node name="Resource" type="Label" parent="GUI/CharacterRoot" unique_id=1404810870]
 layout_mode = 0
 offset_left = 1056.0
 offset_top = 595.0
@@ -111,7 +111,7 @@ offset_right = 1128.0
 offset_bottom = 618.0
 text = "Resource"
 
-[node name="Time" type="Label" parent="GUI/CharacterRoot"]
+[node name="Time" type="Label" parent="GUI/CharacterRoot" unique_id=2040564488]
 layout_mode = 0
 offset_left = 462.0
 offset_top = 58.0
@@ -119,7 +119,7 @@ offset_right = 562.0
 offset_bottom = 91.0
 text = "Time"
 
-[node name="Phase" type="Label" parent="GUI/CharacterRoot"]
+[node name="Phase" type="Label" parent="GUI/CharacterRoot" unique_id=1252155713]
 layout_mode = 0
 offset_left = 932.0
 offset_top = 8.0
@@ -127,7 +127,12 @@ offset_right = 1032.0
 offset_bottom = 41.0
 text = "Phase:"
 
-[node name="ShoppingRootv2" type="Control" parent="GUI"]
+[node name="NewWeaponIcons" type="TextureRect" parent="GUI/CharacterRoot" unique_id=1976014584]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ShoppingRootv2" type="Control" parent="GUI" unique_id=1309213749]
 visible = false
 custom_minimum_size = Vector2(1000, 640)
 layout_mode = 1
@@ -137,7 +142,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Panel" type="Panel" parent="GUI/ShoppingRootv2"]
+[node name="Panel" type="Panel" parent="GUI/ShoppingRootv2" unique_id=1776602350]
 custom_minimum_size = Vector2(1000, 600)
 layout_mode = 0
 offset_left = 86.0
@@ -145,7 +150,7 @@ offset_top = 30.0
 offset_right = 1086.0
 offset_bottom = 630.0
 
-[node name="Title" type="Label" parent="GUI/ShoppingRootv2/Panel"]
+[node name="Title" type="Label" parent="GUI/ShoppingRootv2/Panel" unique_id=533358428]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -156,7 +161,7 @@ text = "Shop"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Shop" type="VBoxContainer" parent="GUI/ShoppingRootv2/Panel"]
+[node name="Shop" type="VBoxContainer" parent="GUI/ShoppingRootv2/Panel" unique_id=1983117070]
 custom_minimum_size = Vector2(500, 500)
 layout_mode = 0
 offset_left = 25.0
@@ -164,19 +169,19 @@ offset_top = 50.0
 offset_right = 525.0
 offset_bottom = 550.0
 
-[node name="InvSlot" parent="GUI/ShoppingRootv2/Panel/Shop" instance=ExtResource("10_vx7wu")]
+[node name="InvSlot" parent="GUI/ShoppingRootv2/Panel/Shop" unique_id=661416437 instance=ExtResource("10_vx7wu")]
 layout_mode = 2
 
-[node name="InvSlot2" parent="GUI/ShoppingRootv2/Panel/Shop" instance=ExtResource("10_vx7wu")]
+[node name="InvSlot2" parent="GUI/ShoppingRootv2/Panel/Shop" unique_id=2060445331 instance=ExtResource("10_vx7wu")]
 layout_mode = 2
 
-[node name="InvSlot3" parent="GUI/ShoppingRootv2/Panel/Shop" instance=ExtResource("10_vx7wu")]
+[node name="InvSlot3" parent="GUI/ShoppingRootv2/Panel/Shop" unique_id=1183457737 instance=ExtResource("10_vx7wu")]
 layout_mode = 2
 
-[node name="InvSlot4" parent="GUI/ShoppingRootv2/Panel/Shop" instance=ExtResource("10_vx7wu")]
+[node name="InvSlot4" parent="GUI/ShoppingRootv2/Panel/Shop" unique_id=792555668 instance=ExtResource("10_vx7wu")]
 layout_mode = 2
 
-[node name="ShopRefreshButton" type="Button" parent="GUI/ShoppingRootv2/Panel"]
+[node name="ShopRefreshButton" type="Button" parent="GUI/ShoppingRootv2/Panel" unique_id=1321238218]
 layout_mode = 0
 offset_left = 440.0
 offset_top = 554.0
@@ -185,7 +190,7 @@ offset_bottom = 585.0
 text = "Refresh"
 script = ExtResource("5_qhxh2")
 
-[node name="Inventory" type="GridContainer" parent="GUI/ShoppingRootv2/Panel"]
+[node name="Inventory" type="GridContainer" parent="GUI/ShoppingRootv2/Panel" unique_id=1886176993]
 visible = false
 custom_minimum_size = Vector2(500, 500)
 layout_mode = 0
@@ -195,46 +200,46 @@ offset_right = 524.0
 offset_bottom = 549.0
 columns = 2
 
-[node name="ShopInvSlot" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot" parent="GUI/ShoppingRootv2/Panel/Inventory" unique_id=1091960248 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("6_017wa")
 
-[node name="ShopInvSlot2" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot2" parent="GUI/ShoppingRootv2/Panel/Inventory" unique_id=1516220476 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("6_017wa")
 inventory_index = 1
 
-[node name="ShopInvSlot3" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot3" parent="GUI/ShoppingRootv2/Panel/Inventory" unique_id=209867124 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("6_017wa")
 inventory_index = 2
 
-[node name="ShopInvSlot4" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot4" parent="GUI/ShoppingRootv2/Panel/Inventory" unique_id=1648088258 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("6_017wa")
 inventory_index = 3
 
-[node name="ShopInvSlot5" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot5" parent="GUI/ShoppingRootv2/Panel/Inventory" unique_id=1723631418 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("6_017wa")
 inventory_index = 4
 
-[node name="ShopInvSlot6" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot6" parent="GUI/ShoppingRootv2/Panel/Inventory" unique_id=1418133361 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("6_017wa")
 inventory_index = 5
 
-[node name="ShopInvSlot7" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot7" parent="GUI/ShoppingRootv2/Panel/Inventory" unique_id=2083133282 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("6_017wa")
 inventory_index = 6
 
-[node name="ShopInvSlot8" parent="GUI/ShoppingRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="ShopInvSlot8" parent="GUI/ShoppingRootv2/Panel/Inventory" unique_id=1453630602 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("6_017wa")
 inventory_index = 7
 
-[node name="Equipped" type="GridContainer" parent="GUI/ShoppingRootv2/Panel"]
+[node name="Equipped" type="GridContainer" parent="GUI/ShoppingRootv2/Panel" unique_id=1466111824]
 custom_minimum_size = Vector2(440, 440)
 layout_mode = 0
 offset_left = 540.0
@@ -243,26 +248,26 @@ offset_right = 980.0
 offset_bottom = 520.0
 columns = 2
 
-[node name="EquipmentSlotShop" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotShop" parent="GUI/ShoppingRootv2/Panel/Equipped" unique_id=1046152207 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("7_u3twa")
 
-[node name="EquipmentSlotShop2" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotShop2" parent="GUI/ShoppingRootv2/Panel/Equipped" unique_id=784183754 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("7_u3twa")
 equipment_index = 1
 
-[node name="EquipmentSlotShop3" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotShop3" parent="GUI/ShoppingRootv2/Panel/Equipped" unique_id=1305992477 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("7_u3twa")
 equipment_index = 2
 
-[node name="EquipmentSlotShop4" parent="GUI/ShoppingRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotShop4" parent="GUI/ShoppingRootv2/Panel/Equipped" unique_id=279750054 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("7_u3twa")
 equipment_index = 3
 
-[node name="ShopSellButton" type="Button" parent="GUI/ShoppingRootv2/Panel"]
+[node name="ShopSellButton" type="Button" parent="GUI/ShoppingRootv2/Panel" unique_id=1717213444]
 layout_mode = 0
 offset_left = 567.0
 offset_top = 45.0
@@ -271,7 +276,7 @@ offset_bottom = 76.0
 text = "Sell"
 script = ExtResource("7_r2vy3")
 
-[node name="ShopCancelButton" type="Button" parent="GUI/ShoppingRootv2/Panel"]
+[node name="ShopCancelButton" type="Button" parent="GUI/ShoppingRootv2/Panel" unique_id=1039094710]
 visible = false
 layout_mode = 0
 offset_left = 567.0
@@ -281,7 +286,7 @@ offset_bottom = 76.0
 text = "Cancel"
 script = ExtResource("9_npmjx")
 
-[node name="ShopConfirmButton" type="Button" parent="GUI/ShoppingRootv2/Panel"]
+[node name="ShopConfirmButton" type="Button" parent="GUI/ShoppingRootv2/Panel" unique_id=856180077]
 visible = false
 layout_mode = 0
 offset_left = 871.0
@@ -291,13 +296,13 @@ offset_bottom = 76.0
 text = "Confirm"
 script = ExtResource("11_6q2ik")
 
-[node name="UpgradeRootv2" type="Control" parent="GUI"]
+[node name="UpgradeRootv2" type="Control" parent="GUI" unique_id=113070022]
 visible = false
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="Panel" type="Panel" parent="GUI/UpgradeRootv2"]
+[node name="Panel" type="Panel" parent="GUI/UpgradeRootv2" unique_id=895639610]
 custom_minimum_size = Vector2(1000, 600)
 layout_mode = 0
 offset_left = 86.0
@@ -305,7 +310,7 @@ offset_top = 30.0
 offset_right = 1086.0
 offset_bottom = 630.0
 
-[node name="Title" type="Label" parent="GUI/UpgradeRootv2/Panel"]
+[node name="Title" type="Label" parent="GUI/UpgradeRootv2/Panel" unique_id=425941768]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -316,7 +321,7 @@ text = "Upgrade"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Inventory" type="GridContainer" parent="GUI/UpgradeRootv2/Panel"]
+[node name="Inventory" type="GridContainer" parent="GUI/UpgradeRootv2/Panel" unique_id=308370987]
 visible = false
 custom_minimum_size = Vector2(500, 500)
 layout_mode = 0
@@ -326,46 +331,46 @@ offset_right = 1007.0
 offset_bottom = 550.0
 columns = 2
 
-[node name="InvSlotUpg" parent="GUI/UpgradeRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotUpg" parent="GUI/UpgradeRootv2/Panel/Inventory" unique_id=2069685344 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_vh35o")
 
-[node name="InvSlotUpg2" parent="GUI/UpgradeRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotUpg2" parent="GUI/UpgradeRootv2/Panel/Inventory" unique_id=1448178498 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_vh35o")
 inventory_index = 1
 
-[node name="InvSlotUpg3" parent="GUI/UpgradeRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotUpg3" parent="GUI/UpgradeRootv2/Panel/Inventory" unique_id=711696620 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_vh35o")
 inventory_index = 2
 
-[node name="InvSlotUpg4" parent="GUI/UpgradeRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotUpg4" parent="GUI/UpgradeRootv2/Panel/Inventory" unique_id=1164056364 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_vh35o")
 inventory_index = 3
 
-[node name="InvSlotUpg5" parent="GUI/UpgradeRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotUpg5" parent="GUI/UpgradeRootv2/Panel/Inventory" unique_id=1590973747 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_vh35o")
 inventory_index = 4
 
-[node name="InvSlotUpg6" parent="GUI/UpgradeRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotUpg6" parent="GUI/UpgradeRootv2/Panel/Inventory" unique_id=1601111484 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_vh35o")
 inventory_index = 5
 
-[node name="InvSlotUpg7" parent="GUI/UpgradeRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotUpg7" parent="GUI/UpgradeRootv2/Panel/Inventory" unique_id=1129449058 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_vh35o")
 inventory_index = 6
 
-[node name="InvSlotUpg8" parent="GUI/UpgradeRootv2/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotUpg8" parent="GUI/UpgradeRootv2/Panel/Inventory" unique_id=881922226 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_vh35o")
 inventory_index = 7
 
-[node name="Equipped" type="GridContainer" parent="GUI/UpgradeRootv2/Panel"]
+[node name="Equipped" type="GridContainer" parent="GUI/UpgradeRootv2/Panel" unique_id=1105041673]
 custom_minimum_size = Vector2(440, 440)
 layout_mode = 0
 offset_left = 540.0
@@ -374,26 +379,26 @@ offset_right = 980.0
 offset_bottom = 520.0
 columns = 2
 
-[node name="EquipmentSlotUpg" parent="GUI/UpgradeRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotUpg" parent="GUI/UpgradeRootv2/Panel/Equipped" unique_id=1406531158 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("14_idhk4")
 
-[node name="EquipmentSlotUpgr2" parent="GUI/UpgradeRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotUpgr2" parent="GUI/UpgradeRootv2/Panel/Equipped" unique_id=10446316 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("14_idhk4")
 equipment_index = 1
 
-[node name="EquipmentSlotUpgr3" parent="GUI/UpgradeRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotUpgr3" parent="GUI/UpgradeRootv2/Panel/Equipped" unique_id=1724014814 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("14_idhk4")
 equipment_index = 2
 
-[node name="EquipmentSlotUpgr4" parent="GUI/UpgradeRootv2/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotUpgr4" parent="GUI/UpgradeRootv2/Panel/Equipped" unique_id=25348943 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("14_idhk4")
 equipment_index = 3
 
-[node name="SwtichBtn" type="Button" parent="GUI/UpgradeRootv2/Panel"]
+[node name="SwtichBtn" type="Button" parent="GUI/UpgradeRootv2/Panel" unique_id=714330059]
 visible = false
 layout_mode = 0
 offset_left = 702.0
@@ -404,7 +409,7 @@ text = "Inventory / Bag"
 script = ExtResource("15_xtxff")
 panel = "upg"
 
-[node name="ToGF" type="Button" parent="GUI/UpgradeRootv2/Panel"]
+[node name="ToGF" type="Button" parent="GUI/UpgradeRootv2/Panel" unique_id=109470270]
 layout_mode = 0
 offset_left = 865.0
 offset_top = 33.0002
@@ -413,20 +418,20 @@ offset_bottom = 64.0002
 text = "To Gear Fuse"
 script = ExtResource("12_t31p1")
 
-[node name="UpgradePreview" parent="GUI/UpgradeRootv2/Panel" instance=ExtResource("16_2jerp")]
+[node name="UpgradePreview" parent="GUI/UpgradeRootv2/Panel" unique_id=1792859512 instance=ExtResource("16_2jerp")]
 layout_mode = 0
 offset_left = 127.0
 offset_top = 97.0
 offset_right = 427.0
 offset_bottom = 513.0
 
-[node name="GearFuseRoot" type="Control" parent="GUI"]
+[node name="GearFuseRoot" type="Control" parent="GUI" unique_id=1968132388]
 visible = false
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="Panel" type="Panel" parent="GUI/GearFuseRoot"]
+[node name="Panel" type="Panel" parent="GUI/GearFuseRoot" unique_id=1712496429]
 custom_minimum_size = Vector2(1000, 600)
 layout_mode = 0
 offset_left = 86.0
@@ -434,7 +439,7 @@ offset_top = 30.0
 offset_right = 1086.0
 offset_bottom = 630.0
 
-[node name="Title" type="Label" parent="GUI/GearFuseRoot/Panel"]
+[node name="Title" type="Label" parent="GUI/GearFuseRoot/Panel" unique_id=720932783]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -445,7 +450,7 @@ text = "Gear Fuse"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Inventory" type="GridContainer" parent="GUI/GearFuseRoot/Panel"]
+[node name="Inventory" type="GridContainer" parent="GUI/GearFuseRoot/Panel" unique_id=973559862]
 visible = false
 custom_minimum_size = Vector2(500, 500)
 layout_mode = 0
@@ -455,46 +460,46 @@ offset_right = 1007.0
 offset_bottom = 550.0
 columns = 2
 
-[node name="InvSlotGF" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotGF" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=1234441771 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
 
-[node name="InvSlotGF2" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotGF2" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=732766505 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
 inventory_index = 1
 
-[node name="InvSlotGF3" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotGF3" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=392481348 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
 inventory_index = 2
 
-[node name="InvSlotGF4" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotGF4" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=793088385 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
 inventory_index = 3
 
-[node name="InvSlotGF5" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotGF5" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=1146935885 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
 inventory_index = 4
 
-[node name="InvSlotGF6" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotGF6" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=177555594 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
 inventory_index = 5
 
-[node name="InvSlotGF7" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotGF7" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=1686113534 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
 inventory_index = 6
 
-[node name="InvSlotGF8" parent="GUI/GearFuseRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlotGF8" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=874918015 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 script = ExtResource("13_1sm7k")
 inventory_index = 7
 
-[node name="Equipped" type="GridContainer" parent="GUI/GearFuseRoot/Panel"]
+[node name="Equipped" type="GridContainer" parent="GUI/GearFuseRoot/Panel" unique_id=1790929182]
 custom_minimum_size = Vector2(440, 440)
 layout_mode = 0
 offset_left = 540.0
@@ -503,26 +508,26 @@ offset_right = 980.0
 offset_bottom = 520.0
 columns = 2
 
-[node name="EquipmentSlotGF" parent="GUI/GearFuseRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotGF" parent="GUI/GearFuseRoot/Panel/Equipped" unique_id=954180765 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("13_kncd2")
 
-[node name="EquipmentSlotGF2" parent="GUI/GearFuseRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotGF2" parent="GUI/GearFuseRoot/Panel/Equipped" unique_id=1813093506 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("13_kncd2")
 equipment_index = 1
 
-[node name="EquipmentSlotGF3" parent="GUI/GearFuseRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotGF3" parent="GUI/GearFuseRoot/Panel/Equipped" unique_id=1660525263 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("13_kncd2")
 equipment_index = 2
 
-[node name="EquipmentSlotGF4" parent="GUI/GearFuseRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlotGF4" parent="GUI/GearFuseRoot/Panel/Equipped" unique_id=627960095 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("13_kncd2")
 equipment_index = 3
 
-[node name="SwtichBtn" type="Button" parent="GUI/GearFuseRoot/Panel"]
+[node name="SwtichBtn" type="Button" parent="GUI/GearFuseRoot/Panel" unique_id=475128506]
 layout_mode = 0
 offset_left = 702.0
 offset_top = 13.0
@@ -531,7 +536,7 @@ offset_bottom = 44.0
 text = "Inventory / Bag"
 script = ExtResource("15_xtxff")
 
-[node name="MarginContainer" type="MarginContainer" parent="GUI/GearFuseRoot/Panel"]
+[node name="MarginContainer" type="MarginContainer" parent="GUI/GearFuseRoot/Panel" unique_id=2142222546]
 custom_minimum_size = Vector2(320, 320)
 layout_mode = 0
 offset_left = 79.0
@@ -539,30 +544,30 @@ offset_top = 126.0
 offset_right = 459.0
 offset_bottom = 446.0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer" unique_id=1298444235]
 layout_mode = 2
 
-[node name="ItemRow" type="MarginContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer"]
+[node name="ItemRow" type="MarginContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer" unique_id=867830728]
 custom_minimum_size = Vector2(380, 150)
 layout_mode = 2
 
-[node name="Items" type="HBoxContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow"]
+[node name="Items" type="HBoxContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow" unique_id=211386484]
 layout_mode = 2
 alignment = 1
 
-[node name="GFItem" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow/Items" instance=ExtResource("16_rjxvo")]
+[node name="GFItem" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow/Items" unique_id=1270524766 instance=ExtResource("16_rjxvo")]
 layout_mode = 2
 
-[node name="GFItem2" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow/Items" instance=ExtResource("16_rjxvo")]
+[node name="GFItem2" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow/Items" unique_id=932551755 instance=ExtResource("16_rjxvo")]
 layout_mode = 2
 item_index = 1
 
-[node name="ConfirmBtn" type="Button" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer"]
+[node name="ConfirmBtn" type="Button" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer" unique_id=1349447636]
 layout_mode = 2
 text = "Fuse"
 script = ExtResource("16_yflil")
 
-[node name="ToUpgrade" type="Button" parent="GUI/GearFuseRoot/Panel"]
+[node name="ToUpgrade" type="Button" parent="GUI/GearFuseRoot/Panel" unique_id=1014978807]
 layout_mode = 0
 offset_left = 862.0
 offset_top = 31.0
@@ -571,14 +576,13 @@ offset_bottom = 62.0
 text = "To Upgrade"
 script = ExtResource("18_uk6e0")
 
-[node name="ModuleRoot" type="Control" parent="GUI"]
+[node name="ModuleRoot" type="Control" parent="GUI" unique_id=1074484278]
 visible = false
-layout_mode = 3
 anchors_preset = 0
 offset_right = 1152.0
 offset_bottom = 648.0
 
-[node name="Panel" type="Panel" parent="GUI/ModuleRoot"]
+[node name="Panel" type="Panel" parent="GUI/ModuleRoot" unique_id=854258448]
 custom_minimum_size = Vector2(1000, 600)
 layout_mode = 0
 offset_left = 86.0
@@ -586,7 +590,7 @@ offset_top = 30.0
 offset_right = 1086.0
 offset_bottom = 630.0
 
-[node name="Title" type="Label" parent="GUI/ModuleRoot/Panel"]
+[node name="Title" type="Label" parent="GUI/ModuleRoot/Panel" unique_id=1803435389]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -597,7 +601,7 @@ text = "Module"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Modules" type="GridContainer" parent="GUI/ModuleRoot/Panel"]
+[node name="Modules" type="GridContainer" parent="GUI/ModuleRoot/Panel" unique_id=1671542255]
 custom_minimum_size = Vector2(500, 500)
 layout_mode = 0
 offset_left = 25.0
@@ -606,70 +610,70 @@ offset_right = 525.0
 offset_bottom = 550.0
 columns = 4
 
-[node name="ModuleSlot" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot" parent="GUI/ModuleRoot/Panel/Modules" unique_id=1400370480 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 
-[node name="ModuleSlot2" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot2" parent="GUI/ModuleRoot/Panel/Modules" unique_id=2022432827 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 1
 
-[node name="ModuleSlot3" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot3" parent="GUI/ModuleRoot/Panel/Modules" unique_id=375489053 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 2
 
-[node name="ModuleSlot4" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot4" parent="GUI/ModuleRoot/Panel/Modules" unique_id=1183057618 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 3
 
-[node name="ModuleSlot5" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot5" parent="GUI/ModuleRoot/Panel/Modules" unique_id=2055527290 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 4
 
-[node name="ModuleSlot6" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot6" parent="GUI/ModuleRoot/Panel/Modules" unique_id=1158212492 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 5
 
-[node name="ModuleSlot7" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot7" parent="GUI/ModuleRoot/Panel/Modules" unique_id=2008268290 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 6
 
-[node name="ModuleSlot11" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot11" parent="GUI/ModuleRoot/Panel/Modules" unique_id=539681967 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 7
 
-[node name="ModuleSlot10" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot10" parent="GUI/ModuleRoot/Panel/Modules" unique_id=408176805 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 8
 
-[node name="ModuleSlot9" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot9" parent="GUI/ModuleRoot/Panel/Modules" unique_id=466276577 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 9
 
-[node name="ModuleSlot8" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot8" parent="GUI/ModuleRoot/Panel/Modules" unique_id=2062818225 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 10
 
-[node name="ModuleSlot15" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot15" parent="GUI/ModuleRoot/Panel/Modules" unique_id=1665875537 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 11
 
-[node name="ModuleSlot14" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot14" parent="GUI/ModuleRoot/Panel/Modules" unique_id=252993772 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 12
 
-[node name="ModuleSlot13" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot13" parent="GUI/ModuleRoot/Panel/Modules" unique_id=1079416377 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 13
 
-[node name="ModuleSlot12" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot12" parent="GUI/ModuleRoot/Panel/Modules" unique_id=102864194 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 14
 
-[node name="ModuleSlot16" parent="GUI/ModuleRoot/Panel/Modules" instance=ExtResource("3_vf0d3")]
+[node name="ModuleSlot16" parent="GUI/ModuleRoot/Panel/Modules" unique_id=127218951 instance=ExtResource("3_vf0d3")]
 layout_mode = 2
 module_index = 15
 
-[node name="EquippedM" type="GridContainer" parent="GUI/ModuleRoot/Panel"]
+[node name="EquippedM" type="GridContainer" parent="GUI/ModuleRoot/Panel" unique_id=1026464692]
 custom_minimum_size = Vector2(440, 440)
 layout_mode = 0
 offset_left = 540.0
@@ -678,26 +682,26 @@ offset_right = 980.0
 offset_bottom = 520.0
 columns = 2
 
-[node name="InvEquipment" parent="GUI/ModuleRoot/Panel/EquippedM" instance=ExtResource("3_3xv3f")]
+[node name="InvEquipment" parent="GUI/ModuleRoot/Panel/EquippedM" unique_id=346059751 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("5_vb3bm")
 
-[node name="InvEquipment2" parent="GUI/ModuleRoot/Panel/EquippedM" instance=ExtResource("3_3xv3f")]
+[node name="InvEquipment2" parent="GUI/ModuleRoot/Panel/EquippedM" unique_id=1182334020 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("5_vb3bm")
 equipment_index = 1
 
-[node name="InvEquipment3" parent="GUI/ModuleRoot/Panel/EquippedM" instance=ExtResource("3_3xv3f")]
+[node name="InvEquipment3" parent="GUI/ModuleRoot/Panel/EquippedM" unique_id=499901373 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("5_vb3bm")
 equipment_index = 2
 
-[node name="InvEquipment4" parent="GUI/ModuleRoot/Panel/EquippedM" instance=ExtResource("3_3xv3f")]
+[node name="InvEquipment4" parent="GUI/ModuleRoot/Panel/EquippedM" unique_id=1049566929 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 script = ExtResource("5_vb3bm")
 equipment_index = 3
 
-[node name="ToInv" type="Button" parent="GUI/ModuleRoot/Panel"]
+[node name="ToInv" type="Button" parent="GUI/ModuleRoot/Panel" unique_id=2073477089]
 layout_mode = 0
 offset_left = 826.0
 offset_top = 39.0
@@ -706,13 +710,13 @@ offset_bottom = 47.0
 text = "Inventory"
 script = ExtResource("6_jly3b")
 
-[node name="InventoryRoot" type="Control" parent="GUI"]
+[node name="InventoryRoot" type="Control" parent="GUI" unique_id=794958865]
 visible = false
 anchors_preset = 0
 offset_right = 1152.0
 offset_bottom = 648.0
 
-[node name="Panel" type="Panel" parent="GUI/InventoryRoot"]
+[node name="Panel" type="Panel" parent="GUI/InventoryRoot" unique_id=43768158]
 custom_minimum_size = Vector2(1000, 600)
 layout_mode = 0
 offset_left = 86.0
@@ -720,7 +724,7 @@ offset_top = 30.0
 offset_right = 1086.0
 offset_bottom = 630.0
 
-[node name="Title" type="Label" parent="GUI/InventoryRoot/Panel"]
+[node name="Title" type="Label" parent="GUI/InventoryRoot/Panel" unique_id=2010594890]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -731,7 +735,7 @@ text = "Inventory"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Inventory" type="GridContainer" parent="GUI/InventoryRoot/Panel"]
+[node name="Inventory" type="GridContainer" parent="GUI/InventoryRoot/Panel" unique_id=783257602]
 custom_minimum_size = Vector2(500, 500)
 layout_mode = 0
 offset_left = 24.0
@@ -740,38 +744,38 @@ offset_right = 524.0
 offset_bottom = 549.0
 columns = 2
 
-[node name="InvSlot" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot" parent="GUI/InventoryRoot/Panel/Inventory" unique_id=2007169080 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 
-[node name="InvSlot2" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot2" parent="GUI/InventoryRoot/Panel/Inventory" unique_id=897040171 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 inventory_index = 1
 
-[node name="InvSlot3" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot3" parent="GUI/InventoryRoot/Panel/Inventory" unique_id=1628371015 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 inventory_index = 2
 
-[node name="InvSlot4" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot4" parent="GUI/InventoryRoot/Panel/Inventory" unique_id=764167578 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 inventory_index = 3
 
-[node name="InvSlot5" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot5" parent="GUI/InventoryRoot/Panel/Inventory" unique_id=1613534776 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 inventory_index = 4
 
-[node name="InvSlot6" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot6" parent="GUI/InventoryRoot/Panel/Inventory" unique_id=1225077585 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 inventory_index = 5
 
-[node name="InvSlot7" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot7" parent="GUI/InventoryRoot/Panel/Inventory" unique_id=681499508 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 inventory_index = 6
 
-[node name="InvSlot8" parent="GUI/InventoryRoot/Panel/Inventory" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot8" parent="GUI/InventoryRoot/Panel/Inventory" unique_id=1688033264 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 inventory_index = 7
 
-[node name="Inventory_abort" type="VBoxContainer" parent="GUI/InventoryRoot/Panel"]
+[node name="Inventory_abort" type="VBoxContainer" parent="GUI/InventoryRoot/Panel" unique_id=1510272843]
 visible = false
 custom_minimum_size = Vector2(500, 500)
 layout_mode = 0
@@ -780,22 +784,22 @@ offset_top = 50.0
 offset_right = 525.0
 offset_bottom = 550.0
 
-[node name="InvSlot" parent="GUI/InventoryRoot/Panel/Inventory_abort" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot" parent="GUI/InventoryRoot/Panel/Inventory_abort" unique_id=753236611 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 
-[node name="InvSlot2" parent="GUI/InventoryRoot/Panel/Inventory_abort" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot2" parent="GUI/InventoryRoot/Panel/Inventory_abort" unique_id=901415196 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 inventory_index = 1
 
-[node name="InvSlot3" parent="GUI/InventoryRoot/Panel/Inventory_abort" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot3" parent="GUI/InventoryRoot/Panel/Inventory_abort" unique_id=1883437410 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 inventory_index = 2
 
-[node name="InvSlot4" parent="GUI/InventoryRoot/Panel/Inventory_abort" instance=ExtResource("3_hcnsl")]
+[node name="InvSlot4" parent="GUI/InventoryRoot/Panel/Inventory_abort" unique_id=820874526 instance=ExtResource("3_hcnsl")]
 layout_mode = 2
 inventory_index = 3
 
-[node name="Equipped" type="GridContainer" parent="GUI/InventoryRoot/Panel"]
+[node name="Equipped" type="GridContainer" parent="GUI/InventoryRoot/Panel" unique_id=2132945080]
 custom_minimum_size = Vector2(440, 440)
 layout_mode = 0
 offset_left = 540.0
@@ -804,22 +808,22 @@ offset_right = 980.0
 offset_bottom = 520.0
 columns = 2
 
-[node name="EquipmentSlot" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlot" parent="GUI/InventoryRoot/Panel/Equipped" unique_id=209951969 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 
-[node name="EquipmentSlot2" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlot2" parent="GUI/InventoryRoot/Panel/Equipped" unique_id=766827776 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 equipment_index = 1
 
-[node name="EquipmentSlot3" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlot3" parent="GUI/InventoryRoot/Panel/Equipped" unique_id=1476147874 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 equipment_index = 2
 
-[node name="EquipmentSlot4" parent="GUI/InventoryRoot/Panel/Equipped" instance=ExtResource("3_3xv3f")]
+[node name="EquipmentSlot4" parent="GUI/InventoryRoot/Panel/Equipped" unique_id=1062617132 instance=ExtResource("3_3xv3f")]
 layout_mode = 2
 equipment_index = 3
 
-[node name="ToModel" type="Button" parent="GUI/InventoryRoot/Panel"]
+[node name="ToModel" type="Button" parent="GUI/InventoryRoot/Panel" unique_id=1941662972]
 layout_mode = 0
 offset_left = 826.0
 offset_top = 39.0
@@ -828,7 +832,7 @@ offset_bottom = 47.0
 text = "Module"
 script = ExtResource("8_rbpjd")
 
-[node name="BossRoot" type="Control" parent="GUI"]
+[node name="BossRoot" type="Control" parent="GUI" unique_id=1824351649]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -837,7 +841,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PauseMenuRoot" type="Control" parent="GUI"]
+[node name="PauseMenuRoot" type="Control" parent="GUI" unique_id=1775346363]
 process_mode = 2
 visible = false
 anchors_preset = 0
@@ -846,12 +850,12 @@ offset_top = 25.0
 offset_right = 750.0
 offset_bottom = 625.0
 
-[node name="PauseMenuPanel" type="Panel" parent="GUI/PauseMenuRoot"]
+[node name="PauseMenuPanel" type="Panel" parent="GUI/PauseMenuRoot" unique_id=978817655]
 layout_mode = 0
 offset_right = 400.0
 offset_bottom = 600.0
 
-[node name="Paused" type="Label" parent="GUI/PauseMenuRoot/PauseMenuPanel"]
+[node name="Paused" type="Label" parent="GUI/PauseMenuRoot/PauseMenuPanel" unique_id=1656821197]
 layout_mode = 0
 offset_left = 66.0
 offset_top = 150.0
@@ -859,7 +863,7 @@ offset_right = 123.0
 offset_bottom = 173.0
 text = "Paused"
 
-[node name="ResumeButton" type="Button" parent="GUI/PauseMenuRoot/PauseMenuPanel"]
+[node name="ResumeButton" type="Button" parent="GUI/PauseMenuRoot/PauseMenuPanel" unique_id=378820124]
 layout_mode = 0
 offset_left = 154.0
 offset_top = 257.0
@@ -867,15 +871,15 @@ offset_right = 162.0
 offset_bottom = 265.0
 text = "Resume"
 
-[node name="MoveOutTimer" type="Timer" parent="GUI"]
+[node name="MoveOutTimer" type="Timer" parent="GUI" unique_id=1110680344]
 wait_time = 0.5
 
-[node name="DragItemRoot" type="Control" parent="GUI"]
+[node name="DragItemRoot" type="Control" parent="GUI" unique_id=126839237]
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="DragItemIcon" type="TextureRect" parent="GUI/DragItemRoot"]
+[node name="DragItemIcon" type="TextureRect" parent="GUI/DragItemRoot" unique_id=2828562]
 z_index = 1
 layout_mode = 0
 offset_right = 40.0
