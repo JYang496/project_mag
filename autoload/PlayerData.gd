@@ -1,5 +1,8 @@
 extends Node
 
+signal main_weapon_index_changed(old_index: int, new_index: int, step: int)
+signal weapon_list_changed()
+
 @onready var player : Player
 var select_mecha_id :int = 1
 
@@ -144,6 +147,7 @@ func set_hp_safety_for_testing(enabled: bool) -> void:
 
 
 func reset_runtime_state() -> void:
+	var prev_main_index := main_weapon_index
 	player = null
 	player_level = 1
 	next_level_exp = 10
@@ -189,21 +193,31 @@ func reset_runtime_state() -> void:
 	player_companion_lsit.clear()
 	player_augment_list.clear()
 	testing_keep_hp_above_zero = false
+	weapon_list_changed.emit()
+	if prev_main_index != main_weapon_index:
+		main_weapon_index_changed.emit(prev_main_index, main_weapon_index, 0)
 
 func sanitize_main_weapon_index() -> void:
+	var old_index := main_weapon_index
 	if player_weapon_list.is_empty():
 		main_weapon_index = -1
-		return
-	main_weapon_index = clampi(main_weapon_index, 0, player_weapon_list.size() - 1)
+	else:
+		main_weapon_index = clampi(main_weapon_index, 0, player_weapon_list.size() - 1)
+	if old_index != main_weapon_index:
+		main_weapon_index_changed.emit(old_index, main_weapon_index, 0)
 
 func can_switch_main_weapon() -> bool:
 	return player_weapon_list.size() > 1
 
 func set_main_weapon_index(value: int) -> void:
+	var old_index := main_weapon_index
 	if player_weapon_list.is_empty():
 		main_weapon_index = -1
 	else:
 		main_weapon_index = clampi(value, 0, player_weapon_list.size() - 1)
+	if old_index != main_weapon_index:
+		var step_sign := _calculate_step_sign(old_index, main_weapon_index, player_weapon_list.size())
+		main_weapon_index_changed.emit(old_index, main_weapon_index, step_sign)
 	on_select_weapon = main_weapon_index
 	if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui):
 		GlobalVariables.ui.refresh_border()
@@ -220,3 +234,17 @@ func shift_main_weapon(step: int) -> void:
 	if next < 0:
 		next += size
 	set_main_weapon_index(next)
+
+func notify_weapon_list_changed() -> void:
+	weapon_list_changed.emit()
+
+func _calculate_step_sign(old_index: int, new_index: int, list_size: int) -> int:
+	if list_size <= 1 or old_index < 0 or new_index < 0:
+		return 0
+	var diff := new_index - old_index
+	if diff == 0:
+		return 0
+	var abs_diff := absi(diff)
+	if abs_diff > list_size / 2:
+		return -1 if diff > 0 else 1
+	return 1 if diff > 0 else -1

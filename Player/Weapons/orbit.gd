@@ -20,6 +20,7 @@ var ITEM_NAME = "Orbit"
 var spin_speed : float = 5.0
 var number = 4
 @export var offhand_main_attack_speed_mult: float = 1.3
+@export var offhand_spin_speed_multiplier: float = 0.65
 @export var offhand_buff_duration_sec: float = 0.5
 @export var offhand_buff_icd_sec: float = 0.12
 var _buff_target: Ranger
@@ -87,11 +88,13 @@ func set_level(lv) -> void:
 	base_projectile_hits = 99999
 	module_list.clear()
 	sync_stats()
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_level_applied(level)
 	_refresh_orbit_mode_state()
 
-func apply_rotate_around_player(projectile_node : Node2D, offset_step : float, n : int) -> void:
+func apply_rotate_around_player(projectile_node : Node2D, offset_step : float, n : int, spin_speed_value: float) -> void:
 	var rotate_around_player_ins = rotate_around_player.instantiate()
-	rotate_around_player_ins.spin_speed = spin_speed
+	rotate_around_player_ins.spin_speed = spin_speed_value
 	rotate_around_player_ins.radius = radius
 	rotate_around_player_ins.angle_offset = offset_step * n
 	
@@ -124,29 +127,61 @@ func _physics_process(delta: float) -> void:
 	_process_offhand_main_weapon_buff()
 
 func _on_weapon_role_changed(next_role: String) -> void:
-	_refresh_orbit_mode_state()
+	_update_satellite_runtime_state()
 	if next_role == "main":
 		_clear_offhand_main_buff()
 
 func _refresh_orbit_mode_state() -> void:
 	_clear_satellites()
-	if not is_main_weapon():
-		return
 	var offset_step = 2 * PI / max(1, number)
-	var runtime_damage := get_runtime_shot_damage()
+	var runtime_damage: int = get_runtime_shot_damage()
+	var damage_multiplier: float = 1.0
+	if branch_behavior and is_instance_valid(branch_behavior):
+		damage_multiplier = maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05)
+	var damage_type: StringName = Attack.TYPE_PHYSICAL
+	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("get_damage_type_override"):
+		damage_type = Attack.normalize_damage_type(branch_behavior.call("get_damage_type_override"))
+	var effective_spin_speed: float = _get_effective_orbit_spin_speed()
 	for n in range(number):
 		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 		if spawn_projectile == null:
 			continue
-		spawn_projectile.damage = runtime_damage
+		spawn_projectile.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
+		spawn_projectile.damage_type = damage_type
 		spawn_projectile.hp = 99999
 		spawn_projectile.expire_time = 99999
 		spawn_projectile.size = size
 		spawn_projectile.projectile_texture = projectile_texture_resource
-		apply_rotate_around_player(spawn_projectile, offset_step, n)
+		apply_rotate_around_player(spawn_projectile, offset_step, n, effective_spin_speed)
 		apply_effects_on_projectile(spawn_projectile)
 		get_tree().root.call_deferred("add_child", spawn_projectile)
 		satellites.append(spawn_projectile)
+
+func _update_satellite_runtime_state() -> void:
+	var runtime_damage: int = get_runtime_shot_damage()
+	var damage_multiplier: float = 1.0
+	if branch_behavior and is_instance_valid(branch_behavior):
+		damage_multiplier = maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05)
+	var damage_type: StringName = Attack.TYPE_PHYSICAL
+	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("get_damage_type_override"):
+		damage_type = Attack.normalize_damage_type(branch_behavior.call("get_damage_type_override"))
+	var effective_spin_speed: float = _get_effective_orbit_spin_speed()
+	for item in satellites:
+		var satellite: Projectile = item as Projectile
+		if satellite == null or not is_instance_valid(satellite):
+			continue
+		satellite.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
+		satellite.damage_type = damage_type
+		var rotate_effect: RotateAroundPlayer = _find_rotate_module(satellite)
+		if rotate_effect != null and is_instance_valid(rotate_effect):
+			rotate_effect.spin_speed = effective_spin_speed
+
+func _find_rotate_module(satellite: Projectile) -> RotateAroundPlayer:
+	for module_item in satellite.module_list:
+		var rotate_effect: RotateAroundPlayer = module_item as RotateAroundPlayer
+		if rotate_effect != null and is_instance_valid(rotate_effect):
+			return rotate_effect
+	return null
 
 func _clear_satellites() -> void:
 	for s in satellites:
@@ -194,3 +229,33 @@ func _clear_offhand_main_buff() -> void:
 		_buff_target.set_external_attack_speed_multiplier(1.0)
 	_buff_target = null
 	_offhand_buff_expires_at_msec = 0
+
+func on_hit_target(target: Node) -> void:
+	super.on_hit_target(target)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_target_hit(target)
+
+func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	super._on_passive_event(event_name, detail)
+	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("on_passive_event"):
+		branch_behavior.call("on_passive_event", event_name, detail)
+
+func get_satellites() -> Array[Node2D]:
+	var valid_satellites: Array[Node2D] = []
+	for item in satellites:
+		var satellite: Node2D = item as Node2D
+		if satellite == null or not is_instance_valid(satellite):
+			continue
+		valid_satellites.append(satellite)
+	return valid_satellites
+
+func _get_branch_spin_speed_multiplier() -> float:
+	if branch_behavior == null or not is_instance_valid(branch_behavior):
+		return 1.0
+	if not branch_behavior.has_method("get_orbit_spin_speed_multiplier"):
+		return 1.0
+	return maxf(float(branch_behavior.call("get_orbit_spin_speed_multiplier")), 0.05)
+
+func _get_effective_orbit_spin_speed() -> float:
+	var role_multiplier: float = 1.0 if is_main_weapon() else maxf(offhand_spin_speed_multiplier, 0.05)
+	return spin_speed * _get_branch_spin_speed_multiplier() * role_multiplier

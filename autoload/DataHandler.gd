@@ -15,12 +15,8 @@ const WEAPON_RESOURCE_PATHS := [
 	"res://data/weapons/dash_blade.tres",
 	"res://data/weapons/hammer.tres",
 	"res://data/weapons/flamethrower.tres",
-	"res://data/weapons/thermal_cannon.tres",
 	"res://data/weapons/heat_sink_burst.tres",
 	"res://data/weapons/plasma_lance.tres",
-	"res://data/weapons/cryo_carbine.tres",
-	"res://data/weapons/shatter_buckshot.tres",
-	"res://data/weapons/frost_dash_blade.tres",
 	"res://data/weapons/glacier_projector.tres",
 	"res://data/weapons/cannon.tres",
 ]

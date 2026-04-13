@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://Textures/test/chainsaw.png" id="1_icon"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/chainsaw_launcher.tscn" id="2_weapon_scene"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Branches/chainsaw_explosive_branch.tscn" id="3_behavior"]
+[ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
+
+[resource]
+script = ExtResource("4_script")
+branch_id = "explosive_saw"
+display_name = "Explosive Saw"
+description = "First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE."
+icon = ExtResource("1_icon")
+unlock_fuse = 2
+weapon_scene = ExtResource("2_weapon_scene")
+behavior_scene = ExtResource("3_behavior")

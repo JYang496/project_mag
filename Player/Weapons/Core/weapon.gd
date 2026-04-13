@@ -39,9 +39,14 @@ var heat_cool_rate: float = 20.0
 @export var weapon_active_hit_window_required_hits: int = 0
 @export var weapon_active_hit_window_timeout_sec: float = 6.0
 @export var weapon_active_hit_window_bonus_multiplier: float = 1.35
+@export var magazine_capacity: int = 50
+@export var reload_duration_sec: float = 6.0
 var _weapon_active_cd_remaining: float = 0.0
 var _weapon_active_hit_window_hits: int = 0
 var _weapon_active_hit_window_expires_at_msec: int = 0
+var current_ammo: int = 0
+var is_reloading: bool = false
+var reload_time_left: float = 0.0
 var fuse : int:
 	get:
 		return _fuse_internal
@@ -124,12 +129,14 @@ func supports_melee_contact() -> bool:
 	return false
 
 func _ready() -> void:
+	_initialize_ammo_system()
 	_apply_branch_behavior_if_needed()
 	_sync_heat_trait_state()
 	_notify_shared_heat_pool_dirty()
 	call_deferred("validate_module_compatibility")
 
 func _physics_process(delta: float) -> void:
+	_update_reload_state(delta)
 	_update_heat_system(delta)
 	_update_weapon_active_cooldown(delta)
 	_update_weapon_active_hit_window()
@@ -228,6 +235,74 @@ func can_fire_with_heat() -> bool:
 	if bool(core.overheated) and _has_overheat_fire_bypass():
 		return true
 	return core.can_fire()
+
+func uses_ammo_system() -> bool:
+	return false
+
+func can_fire_with_ammo() -> bool:
+	if not uses_ammo_system():
+		return true
+	if is_reloading:
+		return false
+	return current_ammo > 0
+
+func consume_ammo(amount: int = 1) -> bool:
+	if not uses_ammo_system():
+		return true
+	var consume_amount := maxi(amount, 0)
+	if consume_amount <= 0:
+		return true
+	if current_ammo < consume_amount:
+		return false
+	current_ammo -= consume_amount
+	return true
+
+func request_reload() -> bool:
+	if not uses_ammo_system():
+		return false
+	if is_reloading:
+		return false
+	is_reloading = true
+	reload_time_left = maxf(reload_duration_sec, 0.0)
+	if reload_time_left <= 0.0:
+		_finish_reload()
+	return true
+
+func _update_reload_state(delta: float) -> void:
+	if not uses_ammo_system():
+		return
+	if not is_reloading:
+		return
+	reload_time_left = maxf(0.0, reload_time_left - maxf(delta, 0.0))
+	if reload_time_left <= 0.0:
+		_finish_reload()
+
+func _finish_reload() -> void:
+	if not uses_ammo_system():
+		return
+	current_ammo = max(0, magazine_capacity)
+	is_reloading = false
+	reload_time_left = 0.0
+
+func get_ammo_status() -> Dictionary:
+	return {
+		"enabled": uses_ammo_system(),
+		"current": current_ammo,
+		"max": max(0, magazine_capacity),
+		"is_reloading": is_reloading,
+		"reload_left": reload_time_left,
+	}
+
+func _initialize_ammo_system() -> void:
+	if not uses_ammo_system():
+		current_ammo = 0
+		is_reloading = false
+		reload_time_left = 0.0
+		return
+	magazine_capacity = max(0, magazine_capacity)
+	current_ammo = magazine_capacity
+	is_reloading = false
+	reload_time_left = 0.0
 
 func register_overheat_fire_bypass(source: Node) -> void:
 	if source == null:

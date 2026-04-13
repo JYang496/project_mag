@@ -138,6 +138,7 @@ func _input(event: InputEvent) -> void:
 		_try_cast_player_active_skill()
 	if event.is_action_pressed("SKILL_WEAPON"):
 		_try_cast_main_weapon_active_skill()
+		_try_reload_main_weapon()
 
 func _setup_default_active_skill() -> void:
 	if active_skill_holder == null:
@@ -323,6 +324,14 @@ func _try_cast_main_weapon_active_skill() -> void:
 			})
 	else:
 		_last_weapon_skill_fail_reason = "condition"
+
+func _try_reload_main_weapon() -> void:
+	var main_weapon := get_main_weapon()
+	if main_weapon == null:
+		return
+	if not main_weapon.has_method("request_reload"):
+		return
+	main_weapon.call("request_reload")
 
 func _ensure_input_actions() -> void:
 	_ensure_input_action("SKILL_PLAYER", [KEY_SPACE])

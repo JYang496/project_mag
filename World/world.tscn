@@ -12,11 +12,48 @@
 [ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/scenes/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://Utility/reward_manager.tscn" id="22_n13dc"]
 
+[sub_resource type="Resource" id="Resource_h2aik"]
+script = ExtResource("4_lo5ox")
+terrain_type = 5
+metadata/_custom_type_script = "uid://ytgqpjri2ckf"
+
 [sub_resource type="Resource" id="Resource_lo5ox"]
 script = ExtResource("4_lo5ox")
 task_type = 5
 reward_type = 2
+terrain_type = 2
 objective_enabled = true
+aura_enabled = true
+metadata/_custom_type_script = "uid://ytgqpjri2ckf"
+
+[sub_resource type="Resource" id="Resource_0wqet"]
+script = ExtResource("4_lo5ox")
+metadata/_custom_type_script = "uid://ytgqpjri2ckf"
+
+[sub_resource type="Resource" id="Resource_awrha"]
+script = ExtResource("4_lo5ox")
+terrain_type = 3
+metadata/_custom_type_script = "uid://ytgqpjri2ckf"
+
+[sub_resource type="Resource" id="Resource_f23eu"]
+script = ExtResource("4_lo5ox")
+terrain_type = 4
+metadata/_custom_type_script = "uid://ytgqpjri2ckf"
+
+[sub_resource type="Resource" id="Resource_oeat8"]
+script = ExtResource("4_lo5ox")
+metadata/_custom_type_script = "uid://ytgqpjri2ckf"
+
+[sub_resource type="Resource" id="Resource_5xkvv"]
+script = ExtResource("4_lo5ox")
+metadata/_custom_type_script = "uid://ytgqpjri2ckf"
+
+[sub_resource type="Resource" id="Resource_kcyjf"]
+script = ExtResource("4_lo5ox")
+metadata/_custom_type_script = "uid://ytgqpjri2ckf"
+
+[sub_resource type="Resource" id="Resource_xw5lg"]
+script = ExtResource("4_lo5ox")
 metadata/_custom_type_script = "uid://ytgqpjri2ckf"
 
 [node name="World" type="Node2D" unique_id=727876851]
@@ -28,7 +65,7 @@ position = Vector2(-977, -521)
 script = ExtResource("13_mj5tj")
 cell_scene = ExtResource("14_dqu5g")
 player_spawner_path = NodePath("PlayerSpawner")
-initial_cell_profiles = Array[ExtResource("4_lo5ox")]([null, SubResource("Resource_lo5ox"), null, null, null, null, null, null, null])
+initial_cell_profiles = Array[ExtResource("4_lo5ox")]([SubResource("Resource_h2aik"), SubResource("Resource_lo5ox"), SubResource("Resource_0wqet"), SubResource("Resource_awrha"), SubResource("Resource_f23eu"), SubResource("Resource_oeat8"), SubResource("Resource_5xkvv"), SubResource("Resource_kcyjf"), SubResource("Resource_xw5lg")])
 
 [node name="PlayerSpawner" type="Node2D" parent="Board" unique_id=1320556918]
 script = ExtResource("14_26uyv")

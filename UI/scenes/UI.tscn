@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bti7r07ljp64d" path="res://UI/scripts/UI.gd" id="1_y6r0f"]
 [ext_resource type="PackedScene" uid="uid://sedqknpaalyt" path="res://UI/scenes/equipment_slot.tscn" id="3_3xv3f"]
+[ext_resource type="Texture2D" uid="uid://cvg2x8vpjf05m" path="res://asset/images/ui/status frame.png" id="3_dqn0w"]
 [ext_resource type="PackedScene" uid="uid://cms57yqrnn7ga" path="res://UI/scenes/inv_slot.tscn" id="3_hcnsl"]
 [ext_resource type="PackedScene" uid="uid://mnl6smha3sa4" path="res://UI/scenes/module_slot.tscn" id="3_vf0d3"]
 [ext_resource type="Script" uid="uid://byipui1lnlbe0" path="res://UI/scripts/draw_border.gd" id="3_xpg6s"]
@@ -25,6 +26,23 @@
 [ext_resource type="PackedScene" uid="uid://bus2yd5hbxmcp" path="res://UI/scenes/gf_item.tscn" id="16_rjxvo"]
 [ext_resource type="Script" uid="uid://cc2eo3mf0uuh8" path="res://UI/scripts/gf_confirm_btn.gd" id="16_yflil"]
 [ext_resource type="Script" uid="uid://c5738xwcafeh3" path="res://UI/scripts/to_upgrade.gd" id="18_uk6e0"]
+[ext_resource type="Script" path="res://UI/scripts/weapon_selector.gd" id="19_wsel"]
+[ext_resource type="Texture2D" path="res://asset/images/ui/mainhand.png" id="20_mainh"]
+[ext_resource type="Texture2D" path="res://asset/images/ui/offhand.png" id="21_offh"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bar_bg"]
+bg_color = Color(0.08, 0.08, 0.08, 0.82)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bar_fill"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
 
 [node name="UI" type="CanvasLayer" unique_id=73837684 groups=["ui"]]
 process_mode = 3
@@ -53,6 +71,7 @@ offset_bottom = 23.0
 text = "Weapons"
 
 [node name="WeaponIcons" type="HBoxContainer" parent="GUI/CharacterRoot" unique_id=1104267185]
+visible = false
 layout_mode = 0
 offset_left = 82.0
 offset_top = 6.0
@@ -79,6 +98,150 @@ layout_mode = 2
 expand_mode = 2
 script = ExtResource("3_xpg6s")
 
+[node name="WeaponSelector" type="Control" parent="GUI/CharacterRoot"]
+layout_mode = 0
+offset_left = 82.0
+offset_top = 6.0
+offset_right = 282.0
+offset_bottom = 206.0
+script = ExtResource("19_wsel")
+
+[node name="Slot0" type="Control" parent="GUI/CharacterRoot/WeaponSelector"]
+layout_mode = 0
+offset_left = 56.0
+offset_top = 120.0
+offset_right = 136.0
+offset_bottom = 200.0
+
+[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot0"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+texture = ExtResource("20_mainh")
+
+[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot0"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Slot1" type="Control" parent="GUI/CharacterRoot/WeaponSelector"]
+layout_mode = 0
+offset_left = 56.0
+offset_top = 8.0
+offset_right = 136.0
+offset_bottom = 88.0
+
+[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+texture = ExtResource("21_offh")
+
+[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot1"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Slot2" type="Control" parent="GUI/CharacterRoot/WeaponSelector"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 64.0
+offset_right = 80.0
+offset_bottom = 144.0
+
+[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+texture = ExtResource("21_offh")
+
+[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot2"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Slot3" type="Control" parent="GUI/CharacterRoot/WeaponSelector"]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 64.0
+offset_right = 192.0
+offset_bottom = 144.0
+
+[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+texture = ExtResource("21_offh")
+
+[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot3"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
 [node name="Augments" type="Label" parent="GUI/CharacterRoot" unique_id=360447397]
 visible = false
 layout_mode = 0
@@ -88,12 +251,33 @@ offset_right = 81.0
 offset_bottom = 132.0
 text = "Augments"
 
-[node name="Hp" type="Label" parent="GUI/CharacterRoot" unique_id=1902588253]
+[node name="HpLabel" type="TextureRect" parent="GUI/CharacterRoot" unique_id=889654884]
 layout_mode = 0
-offset_top = 612.0
-offset_right = 22.0
-offset_bottom = 635.0
+offset_left = 4.0
+offset_top = 535.0
+offset_right = 435.0
+offset_bottom = 704.0
+scale = Vector2(0.8, 0.64)
+texture = ExtResource("3_dqn0w")
+
+[node name="Hp" type="Label" parent="GUI/CharacterRoot/HpLabel" unique_id=1902588253]
+layout_mode = 0
+offset_left = 64.99999
+offset_top = 37.5
+offset_right = 86.99999
+offset_bottom = 60.5
 text = "HP"
+
+[node name="HpBar" type="ProgressBar" parent="GUI/CharacterRoot/HpLabel" unique_id=1213377119]
+layout_mode = 0
+offset_left = 175.0
+offset_top = 42.187492
+offset_right = 337.0
+offset_bottom = 54.187492
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bar_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_bar_fill")
+value = 100.0
+show_percentage = false
 
 [node name="Gold" type="Label" parent="GUI/CharacterRoot" unique_id=1807235609]
 layout_mode = 0
@@ -126,11 +310,6 @@ offset_top = 8.0
 offset_right = 1032.0
 offset_bottom = 41.0
 text = "Phase:"
-
-[node name="NewWeaponIcons" type="TextureRect" parent="GUI/CharacterRoot" unique_id=1976014584]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
 
 [node name="ShoppingRootv2" type="Control" parent="GUI" unique_id=1309213749]
 visible = false

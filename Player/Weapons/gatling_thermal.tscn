@@ -1,14 +1,123 @@
-[gd_scene format=3 uid="uid://d3bbihpg4ctwu"]
+[gd_scene format=3 uid="uid://d4kaggimwh77o"]
 
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_ranger"]
-[ext_resource type="Script" uid="uid://30qyqw3ndrh" path="res://Player/Weapons/gatling_thermal.gd" id="2_script"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_5at86"]
 [ext_resource type="Texture2D" uid="uid://b7seflu15mxpt" path="res://asset/images/weapons/mg2.png" id="3_icon"]
 [ext_resource type="PackedScene" uid="uid://73l1jqjw7ajl" path="res://Player/Weapons/Modules/wmod_bullet_size_stat.tscn" id="4_cs3gh"]
 [ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_thermal_ignition_heat.tscn" id="6_qyf3a"]
 
+[sub_resource type="GDScript" id="GDScript_cs3gh"]
+script/source = "extends Ranger
+
+var projectile_template = preload(\"res://Player/Weapons/Projectiles/projectile.tscn\")
+var projectile_texture_resource = preload(\"res://asset/images/weapons/projectiles/plasma.png\")
+
+var ITEM_NAME := \"Gatling Thermal\"
+const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
+
+@export var heat_accumulation: float = 4.0
+@export var max_heat: float = 100.0
+@export var heat_cooldown_rate: float = 20.0
+@export_range(5.0, 80.0, 1.0) var front_fire_half_angle_deg: float = 35.0
+@export_range(0.0, 1.0, 0.01) var overheat_burn_threshold_ratio: float = 0.8
+@export_range(0.0, 2.0, 0.01) var burn_bonus_damage_ratio: float = 0.35
+
+var attack_range: float = 760.0
+var bullets_per_shot: int = 3
+
+var weapon_data := {
+	\"1\": {\"level\": \"1\", \"damage\": \"7\", \"speed\": \"920\", \"hp\": \"1\", \"reload\": \"0.16\", \"bullet_count\": \"3\", \"range\": \"700\", \"cost\": \"11\"},
+	\"2\": {\"level\": \"2\", \"damage\": \"8\", \"speed\": \"940\", \"hp\": \"1\", \"reload\": \"0.15\", \"bullet_count\": \"3\", \"range\": \"720\", \"cost\": \"11\"},
+	\"3\": {\"level\": \"3\", \"damage\": \"9\", \"speed\": \"980\", \"hp\": \"1\", \"reload\": \"0.14\", \"bullet_count\": \"4\", \"range\": \"740\", \"cost\": \"11\"},
+	\"4\": {\"level\": \"4\", \"damage\": \"11\", \"speed\": \"1020\", \"hp\": \"1\", \"reload\": \"0.13\", \"bullet_count\": \"4\", \"range\": \"780\", \"cost\": \"11\"},
+	\"5\": {\"level\": \"5\", \"damage\": \"13\", \"speed\": \"1080\", \"hp\": \"2\", \"reload\": \"0.12\", \"bullet_count\": \"5\", \"range\": \"820\", \"cost\": \"11\"},
+}
+
+func set_level(lv) -> void:
+	lv = str(lv)
+	var level_data := _get_level_data(lv)
+	level = int(level_data[\"level\"])
+	base_damage = int(level_data[\"damage\"])
+	base_speed = int(level_data[\"speed\"])
+	base_projectile_hits = int(level_data[\"hp\"])
+	base_attack_cooldown = float(level_data[\"reload\"])
+	bullets_per_shot = max(1, int(level_data.get(\"bullet_count\", bullets_per_shot)))
+	attack_range = float(level_data.get(\"range\", attack_range))
+	heat_per_shot = heat_accumulation
+	heat_max_value = max_heat
+	heat_cool_rate = heat_cooldown_rate
+	configure_heat(heat_per_shot, heat_max_value, heat_cool_rate)
+	sync_stats()
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_level_applied(level)
+
+func _on_shoot() -> void:
+	is_on_cooldown = true
+	var cooldown := get_effective_cooldown(attack_cooldown)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		cooldown *= branch_behavior.get_cooldown_multiplier()
+	cooldown_timer.wait_time = maxf(cooldown, 0.03)
+	cooldown_timer.start()
+
+	var target_position: Vector2 = get_mouse_target()
+	var forward := global_position.direction_to(target_position).normalized()
+	if forward == Vector2.ZERO:
+		forward = Vector2.UP
+
+	var shot_directions: Array[Vector2] = [forward]
+	if branch_behavior and is_instance_valid(branch_behavior):
+		shot_directions = branch_behavior.get_shot_directions(forward)
+	if shot_directions.is_empty():
+		shot_directions = [forward]
+
+	var runtime_damage := get_runtime_shot_damage()
+	var is_burning_mode := get_heat_ratio() >= overheat_burn_threshold_ratio
+	var fired_count := 0
+	for base_dir in shot_directions:
+		var normalized_base := base_dir.normalized()
+		for i in range(bullets_per_shot):
+			var spawn_projectile := spawn_projectile_from_scene(projectile_template)
+			if spawn_projectile == null:
+				continue
+			var offset_rad := deg_to_rad(randf_range(-front_fire_half_angle_deg, front_fire_half_angle_deg))
+			var shot_dir := normalized_base.rotated(offset_rad).normalized()
+			projectile_direction = shot_dir
+			var shot_damage := runtime_damage
+			if is_burning_mode:
+				shot_damage = int(round(float(runtime_damage) * (1.0 + burn_bonus_damage_ratio)))
+				spawn_projectile.damage_type = Attack.TYPE_FIRE
+			else:
+				spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
+			spawn_projectile.damage = max(1, shot_damage)
+			spawn_projectile.hp = projectile_hits
+			spawn_projectile.global_position = global_position
+			spawn_projectile.projectile_texture = projectile_texture_resource
+			spawn_projectile.desired_pixel_size = BULLET_PIXEL_SIZE
+			spawn_projectile.size = size
+			spawn_projectile.expire_time = maxf(attack_range / maxf(float(speed), 1.0), 0.12)
+			apply_effects_on_projectile(spawn_projectile)
+			get_projectile_spawn_parent().call_deferred(\"add_child\", spawn_projectile)
+			fired_count += 1
+
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_weapon_shot(forward)
+	var extra_heat_multiplier := 1.0
+	if branch_behavior and is_instance_valid(branch_behavior):
+		if branch_behavior.has_method(\"get_extra_heat_shot_multiplier\"):
+			extra_heat_multiplier = float(branch_behavior.call(\"get_extra_heat_shot_multiplier\"))
+	var extra_heat_shots := float(max(0, fired_count - bullets_per_shot)) * clampf(extra_heat_multiplier, 0.0, 1.0)
+	register_shot_heat(extra_heat_shots)
+
+func _get_level_data(lv: String) -> Dictionary:
+	if weapon_data.has(lv):
+		return weapon_data[lv]
+	if weapon_data.has(\"1\"):
+		return weapon_data[\"1\"]
+	return {\"level\": \"1\", \"damage\": \"7\", \"speed\": \"920\", \"hp\": \"1\", \"reload\": \"0.16\", \"bullet_count\": \"3\", \"range\": \"700\", \"cost\": \"11\"}
+"
+
 [node name="GatlingThermal" unique_id=562977408 instance=ExtResource("1_ranger")]
-script = ExtResource("2_script")
+script = SubResource("GDScript_cs3gh")
 heat_accumulation = 4.0
 max_heat = 100.0
 heat_cooldown_rate = 20.0

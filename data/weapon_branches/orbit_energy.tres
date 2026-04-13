@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://Textures/test/bullet.png" id="1_icon"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/orbit.tscn" id="2_weapon_scene"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Branches/orbit_energy_branch.tscn" id="3_behavior"]
+[ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
+
+[resource]
+script = ExtResource("4_script")
+branch_id = "energy_orbit"
+display_name = "Energy Orbit"
+description = "Orbit spins slower with reduced hit damage, but enemies near satellites take bonus energy damage when hit."
+icon = ExtResource("1_icon")
+unlock_fuse = 2
+weapon_scene = ExtResource("2_weapon_scene")
+behavior_scene = ExtResource("3_behavior")

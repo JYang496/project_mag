@@ -34,7 +34,9 @@ const CONTESTED_PROGRESS_MULTIPLIER := 0.5
 const TERRAIN_TEXTURE_PATHS := {
 	TerrainType.JUNGLE: "res://asset/images/cells/glass.png",
 	TerrainType.SPEED_BOOST: "res://asset/images/cells/ice.png",
-	TerrainType.LOW_HP_BERSERK: "res://asset/images/cells/lava.png"
+	TerrainType.LOW_HP_BERSERK: "res://asset/images/cells/lava.png",
+	TerrainType.LUCKY_STRIKE: "res://asset/images/cells/gold1.png",
+	TerrainType.REGEN: "res://asset/images/cells/fact1.png"
 }
 
 var _progress_timer: Timer

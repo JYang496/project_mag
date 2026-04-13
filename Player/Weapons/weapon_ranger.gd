@@ -102,10 +102,17 @@ func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bo
 		return
 	request_primary_fire()
 
+func uses_ammo_system() -> bool:
+	return true
+
 func request_primary_fire() -> bool:
 	if is_on_cooldown:
 		return false
 	if not can_fire_with_heat():
+		return false
+	if not can_fire_with_ammo():
+		return false
+	if not consume_ammo(1):
 		return false
 	if cooldown_timer:
 		cooldown_timer.wait_time = maxf(get_effective_cooldown(attack_cooldown), 0.01)

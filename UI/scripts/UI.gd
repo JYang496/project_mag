@@ -5,6 +5,9 @@ const PANEL_TARGET_SIZE := Vector2(1000, 600)
 const PANEL_MARGIN := Vector2(24, 24)
 const PAUSE_PANEL_TARGET_SIZE := Vector2(400, 600)
 const HUD_MARGIN := 16.0
+const HP_BAR_ANIM_TIME := 0.2
+const HP_BAR_TRANS := Tween.TRANS_SINE
+const HP_BAR_EASE := Tween.EASE_OUT
 
 #@onready var player : Player = get_tree().get_first_node_in_group("player")
 
@@ -35,14 +38,20 @@ var item_message_timer: Timer
 # Character
 @onready var equipped_label = $GUI/CharacterRoot/Equipped
 @onready var weapon_icons = $GUI/CharacterRoot/WeaponIcons
+@onready var weapon_selector: WeaponSelector = $GUI/CharacterRoot/WeaponSelector
 @onready var augments_label = $GUI/CharacterRoot/Augments
-@onready var hp_label_label = $GUI/CharacterRoot/Hp
+@onready var hp_label_label = $GUI/CharacterRoot/HpLabel
+@onready var hp_label_text = $GUI/CharacterRoot/HpLabel/Hp
+@onready var hp_bar: ProgressBar = $GUI/CharacterRoot/HpLabel/HpBar
 @onready var gold_label = $GUI/CharacterRoot/Gold
 @onready var resource_label = $GUI/CharacterRoot/Resource
 @onready var time_label = $GUI/CharacterRoot/Time
 @onready var phase_label = $GUI/CharacterRoot/Phase
 var heat_label: Label
+var ammo_label: Label
 var weapon_state_label: Label
+var _hp_bar_display_value: float = 0.0
+var _hp_bar_tween: Tween
 
 
 # Shopping
@@ -94,7 +103,10 @@ var reward_selection_panel: RewardSelectionPanel
 
 func _ready():
 	GlobalVariables.ui = self
+	_init_hp_bar()
+	_refresh_hp_hud()
 	_ensure_heat_label()
+	_ensure_ammo_label()
 	_ensure_weapon_state_label()
 	_init_branch_select_panel()
 	_init_module_equip_selection_panel()
@@ -107,6 +119,9 @@ func _ready():
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 	_init_item_message_timer()
+	if weapon_selector and is_instance_valid(weapon_selector):
+		weapon_selector.bind_player_data()
+		weapon_selector.refresh_slots()
 	refresh_border()
 
 func _init_item_message_timer() -> void:
@@ -213,8 +228,9 @@ func _finalize_branch_selected_weapon(weapon: Weapon) -> void:
 
 func _physics_process(_delta):
 	#Character
-	hp_label_label.text = "HP: " + str(PlayerData.player_hp)
+	_refresh_hp_hud()
 	_update_heat_label_text()
+	_update_ammo_label_text()
 	_update_weapon_state_label_text()
 	equipped_label.text = "Equipped:"
 	augments_label.text = str(PlayerData.player_augment_list)
@@ -250,11 +266,16 @@ func _input(_event) -> void:
 			PlayerData.player.try_shift_main_weapon(1)
 		
 func refresh_border() -> void:
+	var list_changed := false
 	var valid_weapons: Array = []
 	for weapon in PlayerData.player_weapon_list:
 		if is_instance_valid(weapon):
 			valid_weapons.append(weapon)
+	if valid_weapons.size() != PlayerData.player_weapon_list.size():
+		list_changed = true
 	PlayerData.player_weapon_list = valid_weapons
+	if list_changed:
+		PlayerData.notify_weapon_list_changed()
 
 	for weapon_index in weapon_icons.get_child_count():
 		if weapon_index < PlayerData.player_weapon_list.size():
@@ -272,6 +293,8 @@ func refresh_border() -> void:
 		else:
 			icon.display = false
 		icon.update()
+	if weapon_selector and is_instance_valid(weapon_selector):
+		weapon_selector.refresh_slots()
 
 func shopping_panel_in() -> void:
 	if shopping_rootv_2 == null:
@@ -551,11 +574,15 @@ func _fit_pause_layout(viewport_size: Vector2) -> void:
 func _layout_hud(viewport_size: Vector2) -> void:
 	equipped_label.position = Vector2(HUD_MARGIN, HUD_MARGIN)
 	weapon_icons.position = Vector2(HUD_MARGIN + 82.0, HUD_MARGIN + 6.0)
-	hp_label_label.position = Vector2(HUD_MARGIN, viewport_size.y - 36.0)
+	if weapon_selector and is_instance_valid(weapon_selector):
+		weapon_selector.set_layout_origin(Vector2(HUD_MARGIN + 82.0, HUD_MARGIN + 6.0))
+	hp_label_label.position = Vector2(HUD_MARGIN, viewport_size.y - 120.0)
 	if heat_label:
-		heat_label.position = Vector2(HUD_MARGIN, viewport_size.y - 68.0)
+		heat_label.position = Vector2(HUD_MARGIN, viewport_size.y - 96.0)
+	if ammo_label:
+		ammo_label.position = Vector2(HUD_MARGIN, viewport_size.y - 72.0)
 	if weapon_state_label:
-		weapon_state_label.position = Vector2(HUD_MARGIN, viewport_size.y - 100.0)
+		weapon_state_label.position = Vector2(HUD_MARGIN, viewport_size.y - 300.0)
 	gold_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN)
 	time_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN + 56.0)
 	phase_label.position = Vector2(viewport_size.x - 220.0, HUD_MARGIN)
@@ -596,6 +623,46 @@ func show_item_message(text: String, duration: float = 1.8) -> void:
 func _on_item_message_timeout() -> void:
 	set_quest_hint("")
 
+func _init_hp_bar() -> void:
+	if hp_bar == null or not is_instance_valid(hp_bar):
+		return
+	var max_hp: int = max(1, int(PlayerData.player_max_hp))
+	var current_hp: int = clampi(int(PlayerData.player_hp), 0, max_hp)
+	hp_bar.max_value = float(max_hp)
+	hp_bar.value = float(current_hp)
+	_hp_bar_display_value = hp_bar.value
+
+func _set_hp_bar_max(max_hp: int) -> void:
+	if hp_bar == null or not is_instance_valid(hp_bar):
+		return
+	var safe_max: int = max(1, max_hp)
+	if not is_equal_approx(hp_bar.max_value, float(safe_max)):
+		hp_bar.max_value = float(safe_max)
+	if hp_bar.value > hp_bar.max_value:
+		hp_bar.value = hp_bar.max_value
+	_hp_bar_display_value = clampf(_hp_bar_display_value, 0.0, hp_bar.max_value)
+
+func _animate_hp_bar_to(target_hp: int) -> void:
+	if hp_bar == null or not is_instance_valid(hp_bar):
+		return
+	var clamped_target: float = clampf(float(target_hp), 0.0, hp_bar.max_value)
+	if is_equal_approx(_hp_bar_display_value, clamped_target):
+		return
+	if _hp_bar_tween != null and is_instance_valid(_hp_bar_tween):
+		_hp_bar_tween.kill()
+	_hp_bar_tween = create_tween()
+	_hp_bar_tween.set_trans(HP_BAR_TRANS)
+	_hp_bar_tween.set_ease(HP_BAR_EASE)
+	_hp_bar_tween.tween_property(hp_bar, "value", clamped_target, HP_BAR_ANIM_TIME)
+	_hp_bar_display_value = clamped_target
+
+func _refresh_hp_hud() -> void:
+	var max_hp: int = max(1, int(PlayerData.player_max_hp))
+	var current_hp: int = clampi(int(PlayerData.player_hp), 0, max_hp)
+	hp_label_text.text = "HP: %d/%d" % [current_hp, max_hp]
+	_set_hp_bar_max(max_hp)
+	_animate_hp_bar_to(current_hp)
+
 func _ensure_heat_label() -> void:
 	if heat_label != null and is_instance_valid(heat_label):
 		return
@@ -604,6 +671,15 @@ func _ensure_heat_label() -> void:
 	heat_label.text = "Heat: --"
 	heat_label.visible = false
 	character_root.add_child(heat_label)
+
+func _ensure_ammo_label() -> void:
+	if ammo_label != null and is_instance_valid(ammo_label):
+		return
+	ammo_label = Label.new()
+	ammo_label.name = "Ammo"
+	ammo_label.text = "Ammo: --"
+	ammo_label.visible = true
+	character_root.add_child(ammo_label)
 
 func _ensure_weapon_state_label() -> void:
 	if weapon_state_label != null and is_instance_valid(weapon_state_label):
@@ -637,6 +713,44 @@ func _update_heat_label_text() -> void:
 		" (OVERHEAT)" if overheated else ""
 	]
 	heat_label.visible = true
+
+func _update_ammo_label_text() -> void:
+	if ammo_label == null or not is_instance_valid(ammo_label):
+		return
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		ammo_label.text = "Ammo: --"
+		return
+	if not PlayerData.player.has_method("get_main_weapon"):
+		ammo_label.text = "Ammo: --"
+		return
+	var main_weapon_variant: Variant = PlayerData.player.call("get_main_weapon")
+	if not (main_weapon_variant is Node):
+		ammo_label.text = "Ammo: --"
+		return
+	var main_weapon := main_weapon_variant as Node
+	if main_weapon == null or not is_instance_valid(main_weapon):
+		ammo_label.text = "Ammo: --"
+		return
+	if not main_weapon.has_method("get_ammo_status"):
+		ammo_label.text = "Ammo: --"
+		return
+	var status_variant: Variant = main_weapon.call("get_ammo_status")
+	if not (status_variant is Dictionary):
+		ammo_label.text = "Ammo: --"
+		return
+	var status := status_variant as Dictionary
+	if not bool(status.get("enabled", false)):
+		ammo_label.text = "Ammo: --"
+		return
+	var current := int(status.get("current", 0))
+	var max_ammo := int(status.get("max", 0))
+	var is_reloading := bool(status.get("is_reloading", false))
+	var reload_left := maxf(float(status.get("reload_left", 0.0)), 0.0)
+	ammo_label.text = "Ammo: %d/%d%s" % [
+		current,
+		max_ammo,
+		" (Reloading %.1fs)" % reload_left if is_reloading else ""
+	]
 
 func _get_heat_weapon() -> Node:
 	if PlayerData.player_weapon_list.is_empty():

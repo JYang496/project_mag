@@ -26,10 +26,14 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 	var now_msec := Time.get_ticks_msec()
 	_clear_expired_states(state, profile, now_msec)
 
-	var incoming_damage: int = max(0, int(attack.damage))
+	var raw_damage: int = max(0, int(attack.damage))
+	var incoming_damage: int = raw_damage
 	incoming_damage = int(round(float(incoming_damage) * profile.read_damage_reduction()))
 	incoming_damage = int(round(float(incoming_damage) * profile.read_damage_taken_multiplier()))
 	incoming_damage = max(0, incoming_damage - profile.read_armor())
+	# Ensure non-zero incoming attacks still chip for at least 1 damage after mitigation.
+	if raw_damage > 0 and incoming_damage <= 0:
+		incoming_damage = 1
 	var hp := profile.read_hp()
 	if _has_energy_damage_breakpoint(state, hp):
 		incoming_damage = max(1, int(round(float(incoming_damage) * ENERGY_EXECUTE_DAMAGE_MULT)))

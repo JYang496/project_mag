@@ -1,7 +1,7 @@
-[gd_scene format=3 uid="uid://bct7uu82waiar"]
+[gd_scene format=3 uid="uid://cyihios2ek1gp"]
 
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_base"]
-[ext_resource type="Script" uid="uid://b22gyjv54k32j" path="res://Player/Weapons/cryo_carbine.gd" id="2_script"]
+[ext_resource type="Script" path="res://Player/Weapons/cryo_carbine.gd" id="2_script"]
 [ext_resource type="Texture2D" uid="uid://ibu0avxj67o0" path="res://asset/images/weapons/cannon2.png" id="3_icon"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_pihsc"]
 

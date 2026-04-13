@@ -16,7 +16,15 @@ func _on_area_entered(area):
 		apply_attack(area)
 
 func apply_attack(area) -> void:
-	var target = area.get_owner()
+	var target: Node = null
+	if area is HurtBox and area.has_method("get_damage_target"):
+		target = area.call("get_damage_target")
+	if target == null or not is_instance_valid(target):
+		target = area.get_owner()
+	if target == null or not is_instance_valid(target):
+		target = area.get_parent()
+	if target == null or not is_instance_valid(target):
+		return
 	var damage_type: StringName = Attack.TYPE_PHYSICAL
 	if "damage_type" in hitbox_owner:
 		damage_type = Attack.normalize_damage_type(hitbox_owner.damage_type)
@@ -40,7 +48,10 @@ func apply_attack(area) -> void:
 	# Guard duplicate enter/overlap events in the same short window.
 	damage_data.dedupe_token = StringName("hitbox_once_%d_%d" % [get_instance_id(), target.get_instance_id()])
 	damage_data.dedupe_window_sec = 0.02
-	DamageManager.apply_to_target(target, damage_data)
+	if area is HurtBox:
+		DamageManager.apply_to_hurt_box(area, damage_data)
+	else:
+		DamageManager.apply_to_target(target, damage_data)
 	var owner_player := damage_data.source_player as Player
 	if owner_player and is_instance_valid(owner_player):
 		owner_player.apply_bonus_hit_if_needed(target)
@@ -57,4 +68,3 @@ func check_overlapping() -> void:
 		if area is HurtBox:
 			hitbox_owner.overlapping = true
 		hitbox_owner.overlapping = false
-

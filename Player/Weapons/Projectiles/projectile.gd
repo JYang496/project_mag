@@ -1,6 +1,8 @@
 extends Node2D
 class_name Projectile
 
+const DEFAULT_EXPIRE_TIME: float = 2.5
+
 var hp : int = 1
 var damage = 1
 var damage_type: StringName = Attack.TYPE_PHYSICAL
@@ -8,7 +10,7 @@ var knock_back = {
 	"amount": 0,
 	"angle": Vector2.ZERO
 }
-var expire_time : float = 2.5
+var expire_time : float = DEFAULT_EXPIRE_TIME
 var base_displacement = Vector2.ZERO
 var projectile_displacement = Vector2.ZERO
 var projectile_texture
@@ -100,6 +102,8 @@ func enemy_hit(charge : int = 1):
 
 func on_hit_target(target: Node) -> void:
 	if source_weapon and is_instance_valid(source_weapon):
+		if source_weapon.has_method("on_projectile_hit_target"):
+			source_weapon.call("on_projectile_hit_target", self, target)
 		source_weapon.on_hit_target(target)
 
 func show_projectile() -> void:
@@ -136,6 +140,11 @@ func _on_before_pooled() -> void:
 	hp = 1
 	damage = 1
 	damage_type = Attack.TYPE_PHYSICAL
+	knock_back = {
+		"amount": 0,
+		"angle": Vector2.ZERO
+	}
+	expire_time = DEFAULT_EXPIRE_TIME
 	size = 1.0
 	desired_pixel_size = Vector2.ZERO
 	projectile_texture = null
@@ -148,10 +157,17 @@ func _on_before_pooled() -> void:
 	projectile_sprite.texture = null
 	source_weapon = null
 	overlapping = false
+	position = Vector2.ZERO
+	rotation = 0.0
+	debug_source_weapon = ""
+	debug_effect_names.clear()
+	debug_effect_params.clear()
+	_reset_runtime_meta_flags()
 	_remove_debug_overlay()
 
 func _on_acquired_from_pool() -> void:
 	visible = true
+	_reset_runtime_meta_flags()
 
 func _clear_hitbox() -> void:
 	if hitbox_ins and is_instance_valid(hitbox_ins):
@@ -207,3 +223,13 @@ func _get_object_pool() -> Node:
 	if root == null:
 		return null
 	return root.get_node_or_null("ObjectPool")
+
+func _reset_runtime_meta_flags() -> void:
+	var keep_meta: Dictionary = {
+		"_pool_scene_key": true,
+	}
+	for meta_key_variant in get_meta_list():
+		var meta_key := str(meta_key_variant)
+		if keep_meta.has(meta_key):
+			continue
+		remove_meta(meta_key)

@@ -17,5 +17,4 @@ func _on_projectile_overlapping_change() -> void:
 		parent_overlap = true
 		projectile.base_displacement = saved_speed_adjustment * speed_rate
 	if not projectile.overlapping:
-		projectile.base_displacement = saved_speed_adjustment
 		parent_overlap = false

@@ -117,7 +117,13 @@ func _try_apply_on_hurt_box(area: Area2D) -> void:
 	if not area is HurtBox:
 		return
 	var hurt_box: HurtBox = area
-	var target := hurt_box.get_owner()
+	var target: Node = null
+	if hurt_box.has_method("get_damage_target"):
+		target = hurt_box.call("get_damage_target")
+	if target == null or not is_instance_valid(target):
+		target = hurt_box.get_owner()
+	if target == null or not is_instance_valid(target):
+		target = hurt_box.get_parent()
 	if target == null or not is_instance_valid(target):
 		return
 	if not _can_affect_hurt_box(hurt_box):
@@ -167,7 +173,13 @@ func _apply_tick_to_current_overlaps() -> void:
 		if not area is HurtBox:
 			continue
 		var hurt_box := area as HurtBox
-		var target := hurt_box.get_owner()
+		var target: Node = null
+		if hurt_box.has_method("get_damage_target"):
+			target = hurt_box.call("get_damage_target")
+		if target == null or not is_instance_valid(target):
+			target = hurt_box.get_owner()
+		if target == null or not is_instance_valid(target):
+			target = hurt_box.get_parent()
 		if target == null or not is_instance_valid(target):
 			continue
 		if not _can_affect_hurt_box(hurt_box):

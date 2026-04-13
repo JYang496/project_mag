@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Player/Weapons/Branches/orbit_energy_branch.gd" id="1_branch"]
+
+[node name="OrbitEnergyBranch" type="Node"]
+script = ExtResource("1_branch")

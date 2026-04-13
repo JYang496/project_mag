@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" format=3 uid="uid://c5w57t1r7cbi4"]
+
+[ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://Textures/test/sniper.png" id="1_icon"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/sniper.tscn" id="2_scene"]
+[ext_resource type="Script" uid="uid://cf8w6uadvmajn" path="res://data/WeaponDefinition.gd" id="3_def"]
+
+[resource]
+script = ExtResource("3_def")
+weapon_id = "26"
+display_name = "Sniper"
+icon = ExtResource("1_icon")
+price = 14
+description = "High-damage long-range rifle. Deals more damage to distant targets."
+scene = ExtResource("2_scene")

@@ -12,6 +12,7 @@ collision_layer = 20
 collision_mask = 1
 script = ExtResource("2_31lbh")
 damage = 0
+is_boss = false
 
 [node name="HurtBox" parent="." index="0"]
 collision_layer = 4

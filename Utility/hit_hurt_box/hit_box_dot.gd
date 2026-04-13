@@ -12,16 +12,25 @@ func _ready() -> void:
 		set_owner(hitbox_owner)
 
 func _on_area_entered(area: Area2D) -> void:
-	if area is HurtBox and not cooldown:
-		check_hits()
+	if not (area is HurtBox):
+		return
+	if cooldown:
+		return
+	cooldown = true
+	hit_timer.start()
+	apply_attack(area)
 
 func check_hits() -> void:
-	cooldown = false # Cooldown will be false when no hurt box detected.
+	var has_hurt_box := false
 	for area in get_overlapping_areas():
 		if area is HurtBox:
-			cooldown = true
-			hit_timer.start()
+			has_hurt_box = true
 			apply_attack(area)
+	if has_hurt_box:
+		cooldown = true
+		hit_timer.start()
+	else:
+		cooldown = false # Cooldown will be false when no hurt box detected.
 
 
 func _on_hit_timer_timeout() -> void:

@@ -32,7 +32,13 @@ func build_damage_data(
 func apply_to_hurt_box(hurt_box: HurtBox, data: DamageData) -> bool:
 	if hurt_box == null or not is_instance_valid(hurt_box):
 		return false
-	var target := hurt_box.get_owner()
+	var target: Node = null
+	if hurt_box.has_method("get_damage_target"):
+		target = hurt_box.call("get_damage_target")
+	if target == null or not is_instance_valid(target):
+		target = hurt_box.get_owner()
+	if target == null or not is_instance_valid(target):
+		target = hurt_box.get_parent()
 	return apply_to_target(target, data)
 
 
