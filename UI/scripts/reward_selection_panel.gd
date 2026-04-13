@@ -14,6 +14,7 @@ var _reward_options: Array[RewardInfo] = []
 var _selected_index: int = -1
 var _on_confirm: Callable = Callable()
 var _on_cancel: Callable = Callable()
+var _route_display_name_cache: String = ""
 
 func _ready() -> void:
 	visible = false
@@ -21,6 +22,8 @@ func _ready() -> void:
 		confirm_button.pressed.connect(_on_confirm_pressed)
 	if not cancel_button.is_connected("pressed", Callable(self, "_on_cancel_pressed")):
 		cancel_button.pressed.connect(_on_cancel_pressed)
+	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
+		LocalizationManager.language_changed.connect(_on_language_changed)
 
 func open_for_rewards(
 	route_display_name: String,
@@ -32,10 +35,17 @@ func open_for_rewards(
 		return false
 	_on_confirm = on_confirm
 	_on_cancel = on_cancel
+	_route_display_name_cache = route_display_name
 	_selected_index = -1
 	_reward_options.clear()
-	title_label.text = "Choose Reward"
-	subtitle_label.text = "%s - pick one reward." % route_display_name
+	title_label.text = LocalizationManager.tr_key("ui.reward.title", "Choose Reward")
+	subtitle_label.text = LocalizationManager.tr_format(
+		"ui.reward.subtitle",
+		{"route": route_display_name},
+		"%s - pick one reward." % route_display_name
+	)
+	confirm_button.text = LocalizationManager.tr_key("ui.reward.confirm", "Confirm Reward")
+	cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
 	for child in options_box.get_children():
 		child.queue_free()
 	for reward in reward_options:
@@ -97,14 +107,30 @@ func _on_cancel_pressed() -> void:
 func _build_reward_summary(reward: RewardInfo) -> String:
 	var chunks: PackedStringArray = []
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
-		chunks.append("Weapon #%s Lv.%d" % [reward.item_id, reward.item_level])
+		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
+		chunks.append(LocalizationManager.tr_format(
+			"ui.reward.weapon",
+			{"id": weapon_name, "level": reward.item_level},
+			"Weapon %s Lv.%d" % [weapon_name, reward.item_level]
+		))
 	if reward.module_scene:
 		var module_name := _extract_scene_name(reward.module_scene.resource_path)
-		chunks.append("Module %s Lv.%d" % [module_name, max(1, reward.module_level)])
+		var module_id := reward.module_scene.resource_path.get_file().get_basename()
+		if module_id != "":
+			module_name = LocalizationManager.tr_key("module.%s.name" % module_id, module_name)
+		chunks.append(LocalizationManager.tr_format(
+			"ui.reward.module",
+			{"name": module_name, "level": max(1, reward.module_level)},
+			"Module %s Lv.%d" % [module_name, max(1, reward.module_level)]
+		))
 	if reward.total_chip_value > 0:
-		chunks.append("EXP +%d" % reward.total_chip_value)
+		chunks.append(LocalizationManager.tr_format(
+			"ui.reward.exp",
+			{"value": reward.total_chip_value},
+			"EXP +%d" % reward.total_chip_value
+		))
 	if chunks.is_empty():
-		return "Reward"
+		return LocalizationManager.tr_key("ui.reward.default", "Reward")
 	return " + ".join(chunks)
 
 func _extract_scene_name(scene_path: String) -> String:
@@ -114,3 +140,7 @@ func _extract_scene_name(scene_path: String) -> String:
 	if file_name == "":
 		return "Unknown"
 	return file_name.replace("_", " ").capitalize()
+
+func _on_language_changed(_locale: String) -> void:
+	if visible:
+		open_for_rewards(_route_display_name_cache, _reward_options, _on_confirm, _on_cancel)

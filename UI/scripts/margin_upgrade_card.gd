@@ -25,13 +25,17 @@ func _ready():
 		for key in comb_status:
 			if key == "cost":
 				cost_price = int(comb_status[key][1])
-				cost.text = "Cost: %s" % comb_status[key][1]
+				cost.text = LocalizationManager.tr_format("ui.upgrade.cost", {"value": comb_status[key][1]}, "Cost: %s" % comb_status[key][1])
 			else:
 				var status_label = Label.new()
-				status_label.text = "%s: %s => %s" % [key, comb_status[key][0], comb_status[key][1]]
+				status_label.text = LocalizationManager.tr_format(
+					"ui.upgrade.status_line",
+					{"key": key, "from": comb_status[key][0], "to": comb_status[key][1]},
+					"%s: %s => %s" % [key, comb_status[key][0], comb_status[key][1]]
+				)
 				status_container.add_child(status_label)
 		itemIcon.texture = weapon_node.sprite.texture
-		lblName.text = weapon_node.ITEM_NAME
+		lblName.text = LocalizationManager.get_weapon_name_from_node(weapon_node)
 		
 
 func _physics_process(_delta: float) -> void:

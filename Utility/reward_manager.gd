@@ -153,12 +153,46 @@ func _show_reward_granted_message(reward: RewardInfo) -> void:
 		return
 	var chunks: PackedStringArray = []
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
-		chunks.append("Weapon #%s Lv.%d" % [reward.item_id, reward.item_level])
+		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
+		chunks.append(
+			LocalizationManager.tr_format(
+				"ui.reward.weapon",
+				{"id": weapon_name, "level": reward.item_level},
+				"Weapon %s Lv.%d" % [weapon_name, reward.item_level]
+			)
+		)
 	if reward.module_scene:
-		var module_name := reward.module_scene.resource_path.get_file().get_basename().replace("_", " ").capitalize()
-		chunks.append("Module %s Lv.%d" % [module_name, _sanitize_module_level(reward.module_level)])
+		var module_name := _get_module_name_from_reward_scene(reward.module_scene)
+		var level := _sanitize_module_level(reward.module_level)
+		chunks.append(
+			LocalizationManager.tr_format(
+				"ui.reward.module",
+				{"name": module_name, "level": level},
+				"Module %s Lv.%d" % [module_name, level]
+			)
+		)
 	if reward.total_chip_value > 0:
-		chunks.append("EXP +%d" % reward.total_chip_value)
+		chunks.append(
+			LocalizationManager.tr_format(
+				"ui.reward.exp",
+				{"value": reward.total_chip_value},
+				"EXP +%d" % reward.total_chip_value
+			)
+		)
 	if chunks.is_empty():
 		return
-	ui.show_item_message("Reward: %s" % " + ".join(chunks), 2.1)
+	var content := " + ".join(chunks)
+	ui.show_item_message(
+		LocalizationManager.tr_format("ui.reward.message", {"content": content}, "Reward: %s" % content),
+		2.1
+	)
+
+func _get_module_name_from_reward_scene(module_scene: PackedScene) -> String:
+	if module_scene == null:
+		return ""
+	var scene_path := str(module_scene.resource_path)
+	var module_id := scene_path.get_file().get_basename() if scene_path != "" else ""
+	var fallback := module_id.replace("_", " ").capitalize()
+	if module_id == "":
+		return fallback
+	return LocalizationManager.tr_key("module.%s.name" % module_id, fallback)

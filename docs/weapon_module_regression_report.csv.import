@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://c0565k1aj7osj"
+
+[deps]
+
+files=["res://docs/weapon_module_regression_report.branch.translation", "res://docs/weapon_module_regression_report.module.translation", "res://docs/weapon_module_regression_report.compatible.translation", "res://docs/weapon_module_regression_report.reason.translation"]
+
+source_file="res://docs/weapon_module_regression_report.csv"
+dest_files=["res://docs/weapon_module_regression_report.branch.translation", "res://docs/weapon_module_regression_report.module.translation", "res://docs/weapon_module_regression_report.compatible.translation", "res://docs/weapon_module_regression_report.reason.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

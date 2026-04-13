@@ -44,12 +44,12 @@ func update() -> void:
 	if len(InventoryData.inventory_slots) > inventory_index :
 		item = InventoryData.inventory_slots[inventory_index]
 		image.texture = item.get_node("%Sprite").texture
-		equip_name.text = item.ITEM_NAME
+		equip_name.text = LocalizationManager.get_weapon_name_from_node(item)
 
 	else:
 		item = null
 		image.texture = null
-		equip_name.text = "Empty"
+		equip_name.text = LocalizationManager.tr_key("ui.inventory.slot.empty", "Empty")
 
 func _ready() -> void:
 	pass

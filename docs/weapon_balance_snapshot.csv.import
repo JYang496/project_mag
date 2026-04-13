@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dktfycrlcqxev"
+
+[deps]
+
+files=["res://docs/weapon_balance_snapshot.branch.translation", "res://docs/weapon_balance_snapshot.level.translation", "res://docs/weapon_balance_snapshot.damage.translation", "res://docs/weapon_balance_snapshot.cooldown.translation", "res://docs/weapon_balance_snapshot.hit.translation", "res://docs/weapon_balance_snapshot.shot.translation", "res://docs/weapon_balance_snapshot.tick.translation", "res://docs/weapon_balance_snapshot.range.translation"]
+
+source_file="res://docs/weapon_balance_snapshot.csv"
+dest_files=["res://docs/weapon_balance_snapshot.branch.translation", "res://docs/weapon_balance_snapshot.level.translation", "res://docs/weapon_balance_snapshot.damage.translation", "res://docs/weapon_balance_snapshot.cooldown.translation", "res://docs/weapon_balance_snapshot.hit.translation", "res://docs/weapon_balance_snapshot.shot.translation", "res://docs/weapon_balance_snapshot.tick.translation", "res://docs/weapon_balance_snapshot.range.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

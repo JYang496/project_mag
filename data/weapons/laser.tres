@@ -12,3 +12,5 @@ icon = ExtResource("1_awlad")
 price = 6
 description = "laser test"
 scene = ExtResource("2_1xgp4")
+appears_as_standalone = false
+standalone_replacement_weapon_id = "2"

@@ -12,3 +12,5 @@ icon = ExtResource("1_icon")
 price = 10
 description = "Sustained freeze cone; prolonged contact triggers cold snap."
 scene = ExtResource("2_scene")
+appears_as_standalone = false
+standalone_replacement_weapon_id = "13"

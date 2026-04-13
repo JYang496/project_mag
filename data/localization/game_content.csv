@@ -1,0 +1,103 @@
+keys,en,zh_CN
+weapon.25.name,Cannon,Cannon
+weapon.25.desc,Heavy physical cannon with a short windup before each shot.,Heavy physical cannon with a short windup before each shot.
+weapon.10.name,chainsaw luncher,chainsaw luncher
+weapon.10.desc,chainsaw launcher test,chainsaw launcher test
+weapon.2.name,Charged Blaster,Charged Blaster
+weapon.2.desc,charged blaster,charged blaster
+weapon.11.name,dash blade,dash blade
+weapon.11.desc,Dash to nearby target and deal melee hit on contact.,Dash to nearby target and deal melee hit on contact.
+weapon.13.name,flamethrower,flamethrower
+weapon.13.desc,short-range cone burst with fire aoe and heat management,short-range cone burst with fire aoe and heat management
+weapon.21.name,Glacier Projector,Glacier Projector
+weapon.21.desc,Sustained freeze cone; prolonged contact triggers cold snap.,Sustained freeze cone; prolonged contact triggers cold snap.
+weapon.9.name,laser,laser
+weapon.9.desc,laser test,laser test
+weapon.1.name,machine gun,machine gun
+weapon.1.desc,machine gun test,machine gun test
+weapon.7.name,orbit,orbit
+weapon.7.desc,orbit test: spiral,orbit test: spiral
+weapon.5.name,pistol,pistol
+weapon.5.desc,pistol test,pistol test
+weapon.17.name,Plasma Lance,Plasma Lance
+weapon.17.desc,Slow heavy piercing lance. Projectile damage increases after each penetration.,Slow heavy piercing lance. Projectile damage increases after each penetration.
+weapon.8.name,rocket luncher,rocket luncher
+weapon.8.desc,test: rocket launcher,test: rocket launcher
+weapon.4.name,shotgun,shotgun
+weapon.4.desc,shotgun test: muti shoot,shotgun test: muti shoot
+weapon.26.name,Sniper,Sniper
+weapon.26.desc,High-damage long-range rifle. Deals more damage to distant targets.,High-damage long-range rifle. Deals more damage to distant targets.
+weapon.3.name,Spear,Spear
+weapon.3.desc,spear test: return,spear test: return
+branch.thermal_cannon_branch.name,Thermal Cannon,Thermal Cannon
+branch.thermal_cannon_branch.desc,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.
+branch.zero_cannon_branch.name,Zero Cannon,Zero Cannon
+branch.zero_cannon_branch.desc,Energy cannon branch with low-HP execute bursts against marked enemies.,Energy cannon branch with low-HP execute bursts against marked enemies.
+branch.explosive_saw.name,Explosive Saw,Explosive Saw
+branch.explosive_saw.desc,"First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE.","First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE."
+branch.ricochet_saw.name,Ricochet Saw,Ricochet Saw
+branch.ricochet_saw.desc,"On first hit, saw splits once. The split saw chases the nearest enemy.","On first hit, saw splits once. The split saw chases the nearest enemy."
+branch.focus_lance.name,Focus Lance,Focus Lance
+branch.focus_lance.desc,"Single-target boss beam: thinner, longer, harder-hitting sustained lance with first-hit lock.","Single-target boss beam: thinner, longer, harder-hitting sustained lance with first-hit lock."
+branch.prism_fan.name,Prism Fan,Prism Fan
+branch.prism_fan.desc,"Main beam plus two side beams for wide-area coverage, with reduced single-target focus.","Main beam plus two side beams for wide-area coverage, with reduced single-target focus."
+branch.frost_dash.name,Frost Dash Blade,Frost Dash Blade
+branch.frost_dash.desc,Dash attacks inflict bonus freeze finish and leave a short-lived frost field.,Dash attacks inflict bonus freeze finish and leave a short-lived frost field.
+branch.fire_pulse_aura.name,Fire Pulse Aura,Fire Pulse Aura
+branch.fire_pulse_aura.desc,"Periodically emits a fire pulse centered on the mech, scorching nearby enemies.","Periodically emits a fire pulse centered on the mech, scorching nearby enemies."
+branch.long_cone_flame.name,Long Cone Flame,Long Cone Flame
+branch.long_cone_flame.desc,Extends flamethrower cone reach for safer mid-range burn control.,Extends flamethrower cone reach for safer mid-range burn control.
+branch.shield_mg.name,Shield Machine Gun,Shield Machine Gun
+branch.shield_mg.desc,Deploys a frontal shield that blocks hostile shots and interrupts enemy movement.,Deploys a frontal shield that blocks hostile shots and interrupts enemy movement.
+branch.gatling_mg.name,Gatling Thermal,Gatling Thermal
+branch.gatling_mg.desc,"Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup.","Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup."
+branch.energy_orbit.name,Energy Orbit,Energy Orbit
+branch.energy_orbit.desc,"Orbit spins slower with reduced hit damage, but enemies near satellites take bonus energy damage when hit.","Orbit spins slower with reduced hit damage, but enemies near satellites take bonus energy damage when hit."
+branch.frost_orbit.name,Frost Orbit,Frost Orbit
+branch.frost_orbit.desc,Orbit hits become freeze damage and apply a small player-to-target knockback.,Orbit hits become freeze damage and apply a small player-to-target knockback.
+branch.arc_coil.name,Arc Coil,Arc Coil
+branch.arc_coil.desc,Energy branch: each hit chains arc damage to nearby enemies with falloff.,Energy branch: each hit chains arc damage to nearby enemies with falloff.
+branch.cryo_carbine.name,Cryo Carbine,Cryo Carbine
+branch.cryo_carbine.desc,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.
+branch.napalm_rocket.name,Napalm Rocket,Napalm Rocket
+branch.napalm_rocket.desc,Explosions persist as burning zones that deal periodic damage.,Explosions persist as burning zones that deal periodic damage.
+branch.salvo_rocket.name,Salvo Rocket,Salvo Rocket
+branch.salvo_rocket.desc,Fires a spread of rockets per trigger pull with reduced per-rocket damage.,Fires a spread of rockets per trigger pull with reduced per-rocket damage.
+branch.shatter_buckshot.name,Shatter Buckshot,Shatter Buckshot
+branch.shatter_buckshot.desc,Freeze pellets can shatter targets after rapid multi-hit bursts.,Freeze pellets can shatter targets after rapid multi-hit bursts.
+branch.sniper_deep_pierce.name,Deep Pierce,Deep Pierce
+branch.sniper_deep_pierce.desc,Each pierce increases projectile damage for the remaining hits.,Each pierce increases projectile damage for the remaining hits.
+branch.sniper_impact_burst.name,Impact Burst,Impact Burst
+branch.sniper_impact_burst.desc,Sniper hits trigger physical burst damage around the target.,Sniper hits trigger physical burst damage around the target.
+branch.spear_multi_pierce.name,Multi-Pierce,Multi-Pierce
+branch.spear_multi_pierce.desc,Fires 3-5 spears in a spread pattern. Each spear deals reduced damage.,Fires 3-5 spears in a spread pattern. Each spear deals reduced damage.
+branch.spear_rending.name,Rending Thrust,Rending Thrust
+branch.spear_rending.desc,Repeated hits on the same target increase damage. Resets after a time window.,Repeated hits on the same target increase damage. Resets after a time window.
+module.wmod_base.name,wmod_base,wmod_base
+module.wmod_brittle_trigger_freeze.name,Brittle Trigger,Brittle Trigger
+module.wmod_bullet_size_stat.name,Size Up,Size Up
+module.wmod_cryo_infuser_freeze.name,Cryo Infuser,Cryo Infuser
+module.wmod_damage_up_stat.name,Damage Up,Damage Up
+module.wmod_dot_on_hit.name,wmod_dot_on_hit,wmod_dot_on_hit
+module.wmod_heat_capacity_heat.name,Heat Capacity,Heat Capacity
+module.wmod_heat_concentration_heat.name,Heat Concentration,Heat Concentration
+module.wmod_heat_vent_heat.name,Heat Vent,Heat Vent
+module.wmod_lifesteal_on_hit.name,Life Steal,Life Steal
+module.wmod_lightning_chain_on_hit.name,Lightning Chain,Lightning Chain
+module.wmod_overheat_boost_heat.name,Overheat Boost,Overheat Boost
+module.wmod_permafrost_field_freeze.name,Permafrost Field,Permafrost Field
+module.wmod_pierce_stat.name,Pierce,Pierce
+module.wmod_projectile_speed_stat.name,Faster Speed,Faster Speed
+module.wmod_stun_on_hit.name,Stun On Hit,Stun On Hit
+module.wmod_subzero_extension_freeze.name,Subzero Extension,Subzero Extension
+mecha.4.name,Tank,Tank
+mecha.1.name,Heavy Assault,Heavy Assault
+mecha.3.name,Melee,Melee
+mecha.2.name,Ranger,Ranger
+mecha.5.name,Turret,Turret
+route.bonus.name,Bonus Route,Bonus Route
+route.bonus.desc,No combat. Choose 1 reward option and move to the next level.,No combat. Choose 1 reward option and move to the next level.
+route.difficult.name,Difficult Route,Difficult Route
+route.difficult.desc,Harder combat and tighter pacing with better rewards.,Harder combat and tighter pacing with better rewards.
+route.normal.name,Normal Route,Normal Route
+route.normal.desc,Standard battle flow with default rewards.,Standard battle flow with default rewards.

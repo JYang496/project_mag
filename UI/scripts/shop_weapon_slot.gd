@@ -49,7 +49,7 @@ func _ready():
 func empty_item() -> void:
 	item = null
 	item_id = null
-	equip_name.text = "Sold"
+	equip_name.text = LocalizationManager.tr_key("ui.module.sold", "Sold")
 	image.texture = null
 	lbl_description.text = ""
 	price_label.text = ""
@@ -70,9 +70,9 @@ func new_item() -> void:
 		push_warning("ShopWeaponSlot failed to load weapon id=%s" % item_id)
 		empty_item()
 		return
-	equip_name.text = weapon_def.display_name
+	equip_name.text = LocalizationManager.get_weapon_name_from_definition(weapon_def)
 	image.texture = weapon_def.icon
-	lbl_description.text = weapon_def.description
+	lbl_description.text = LocalizationManager.get_weapon_description_from_definition(weapon_def)
 	price_label.text = str(weapon_def.price)
 	price = int(weapon_def.price)
 	

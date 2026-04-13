@@ -4,7 +4,6 @@
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_5at86"]
 [ext_resource type="Texture2D" uid="uid://b7seflu15mxpt" path="res://asset/images/weapons/mg2.png" id="3_icon"]
 [ext_resource type="PackedScene" uid="uid://73l1jqjw7ajl" path="res://Player/Weapons/Modules/wmod_bullet_size_stat.tscn" id="4_cs3gh"]
-[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_thermal_ignition_heat.tscn" id="6_qyf3a"]
 
 [sub_resource type="GDScript" id="GDScript_cs3gh"]
 script/source = "extends Ranger
@@ -132,10 +131,6 @@ weapon_traits = 136224
 
 [node name="BulletSizeUp" parent="Modules" index="0" unique_id=63235425 instance=ExtResource("4_cs3gh")]
 mult_by = 2.0
-
-[node name="ThermalIgnition" parent="Modules" index="1" unique_id=378813951 instance=ExtResource("6_qyf3a")]
-dot_damage = 3.0
-dot_duration = 3.0
 
 [node name="FuseSprites" parent="." index="4" unique_id=50406900]
 fuse_texture_1 = ExtResource("3_icon")

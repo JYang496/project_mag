@@ -12,3 +12,5 @@ icon = ExtResource("1_icon")
 price = 12
 description = "Slow heavy piercing lance. Projectile damage increases after each penetration."
 scene = ExtResource("2_scene")
+appears_as_standalone = false
+standalone_replacement_weapon_id = "25"

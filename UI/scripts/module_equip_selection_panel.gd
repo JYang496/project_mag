@@ -34,19 +34,21 @@ func _ready() -> void:
 	visible = false
 	if not cancel_button.is_connected("pressed", Callable(self, "_on_cancel_pressed")):
 		cancel_button.pressed.connect(_on_cancel_pressed)
+	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
+		LocalizationManager.language_changed.connect(_on_language_changed)
 
 func open_for_module(module_instance: Module, on_complete: Callable = Callable()) -> bool:
 	if module_instance == null:
 		return false
 	_module_instance = module_instance
 	_on_complete = on_complete
-	title_label.text = "Equip Module"
+	title_label.text = LocalizationManager.tr_key("ui.module.title", "Equip Module")
 	var effect_lines := _module_instance.get_effect_descriptions()
-	var effect_summary := "No direct stat changes."
+	var effect_summary := LocalizationManager.tr_key("ui.module.no_effect", "No direct stat changes.")
 	if not effect_lines.is_empty():
-		effect_summary = "Effects: %s" % ", ".join(effect_lines)
+		effect_summary = LocalizationManager.tr_format("ui.module.effects", {"effects": ", ".join(effect_lines)}, "Effects: %s" % ", ".join(effect_lines))
 	module_label.text = "%s Lv.%d - %s" % [
-		_module_instance.get_module_display_name(),
+		LocalizationManager.get_module_name(_module_instance),
 		_module_instance.module_level,
 		effect_summary
 	]
@@ -57,8 +59,8 @@ func open_for_module(module_instance: Module, on_complete: Callable = Callable()
 func _rebuild_lists() -> void:
 	_clear_list(equipped_list)
 	_clear_list(inventory_list)
-	_build_weapon_section(equipped_list, _collect_equipped_weapons(), "Equipped Weapons")
-	_build_weapon_section(inventory_list, _collect_inventory_weapons(), "Inventory Weapons")
+	_build_weapon_section(equipped_list, _collect_equipped_weapons(), true)
+	_build_weapon_section(inventory_list, _collect_inventory_weapons(), false)
 
 func _collect_equipped_weapons() -> Array[Weapon]:
 	var result: Array[Weapon] = []
@@ -76,13 +78,16 @@ func _collect_inventory_weapons() -> Array[Weapon]:
 			result.append(weapon)
 	return result
 
-func _build_weapon_section(parent: VBoxContainer, weapons: Array[Weapon], section_name: String) -> void:
+func _build_weapon_section(parent: VBoxContainer, weapons: Array[Weapon], is_equipped_section: bool) -> void:
 	var section_header: Label = Label.new()
-	section_header.text = section_name
+	section_header.text = LocalizationManager.tr_key(
+		"ui.module.section.equipped" if is_equipped_section else "ui.module.section.inventory",
+		"Equipped Weapons" if is_equipped_section else "Inventory Weapons"
+	)
 	parent.add_child(section_header)
 	if weapons.is_empty():
 		var empty_label: Label = Label.new()
-		empty_label.text = "(none)"
+		empty_label.text = LocalizationManager.tr_key("ui.module.none", "(none)")
 		parent.add_child(empty_label)
 		return
 	for weapon in weapons:
@@ -101,7 +106,11 @@ func _build_weapon_row(parent: VBoxContainer, weapon: Weapon) -> void:
 	header_row.add_child(weapon_name_label)
 
 	var slot_state_label: Label = Label.new()
-	slot_state_label.text = "Slots: %d/%d" % [weapon.get_module_count(), int(weapon.MAX_MODULE_NUMBER)]
+	slot_state_label.text = LocalizationManager.tr_format(
+		"ui.module.slots",
+		{"used": weapon.get_module_count(), "max": int(weapon.MAX_MODULE_NUMBER)},
+		"Slots: %d/%d" % [weapon.get_module_count(), int(weapon.MAX_MODULE_NUMBER)]
+	)
 	slot_state_label.custom_minimum_size = Vector2(100, 0)
 	header_row.add_child(slot_state_label)
 
@@ -112,12 +121,12 @@ func _build_weapon_row(parent: VBoxContainer, weapon: Weapon) -> void:
 	var feedback := InventoryData.get_weapon_module_assignment_feedback(_module_instance, weapon)
 	var can_equip: bool = bool(feedback.get("ok", false))
 	if can_equip:
-		action_button.text = "Equip"
+		action_button.text = LocalizationManager.tr_key("ui.module.action.equip", "Equip")
 		action_button.disabled = false
 		action_button.modulate = available_slot_color
 		action_button.pressed.connect(_on_slot_selected.bind(weapon))
 	else:
-		action_button.text = "Blocked"
+		action_button.text = LocalizationManager.tr_key("ui.module.action.blocked", "Blocked")
 		action_button.disabled = true
 		action_button.modulate = incompatible_slot_color
 
@@ -134,10 +143,11 @@ func _build_weapon_row(parent: VBoxContainer, weapon: Weapon) -> void:
 	var feedback_line := Label.new()
 	feedback_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if can_equip:
-		feedback_line.text = "Compatible"
+		feedback_line.text = LocalizationManager.tr_key("ui.module.compatible", "Compatible")
 		feedback_line.modulate = stat_up_color
 	else:
-		feedback_line.text = "Cannot equip: %s" % str(feedback.get("reason", "Unknown reason"))
+		var reason := LocalizationManager.localize_module_reason(str(feedback.get("reason", "Unknown reason")))
+		feedback_line.text = LocalizationManager.tr_format("ui.module.cannot_equip", {"reason": reason}, "Cannot equip: %s" % reason)
 		feedback_line.modulate = feedback_text_color
 	card.add_child(feedback_line)
 
@@ -149,18 +159,26 @@ func _on_slot_selected(weapon: Weapon) -> void:
 	if not result.get("ok", false):
 		var ui_fail = GlobalVariables.ui
 		if ui_fail and is_instance_valid(ui_fail) and ui_fail.has_method("show_item_message"):
-			ui_fail.show_item_message("Cannot equip: %s" % str(result.get("reason", "")), 1.8)
+			var reason := LocalizationManager.localize_module_reason(str(result.get("reason", "")))
+			ui_fail.show_item_message(
+				LocalizationManager.tr_format("ui.module.cannot_equip", {"reason": reason}, "Cannot equip: %s" % reason),
+				1.8
+			)
 		_complete(false)
 		return
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui):
 		if ui.has_method("show_item_message"):
 			ui.show_item_message(
-				"Equipped %s Lv.%d to %s" % [
-					_module_instance.get_module_display_name(),
+				LocalizationManager.tr_format("ui.module.equipped_message", {
+					"module": LocalizationManager.get_module_name(_module_instance),
+					"level": _module_instance.module_level,
+					"weapon": _get_weapon_display_name(weapon)
+				}, "Equipped %s Lv.%d to %s" % [
+					LocalizationManager.get_module_name(_module_instance),
 					_module_instance.module_level,
-					str(weapon.get("ITEM_NAME")) if weapon.get("ITEM_NAME") != null else weapon.name
-				],
+					_get_weapon_display_name(weapon)
+				]),
 				2.0
 			)
 	_complete(true)
@@ -180,19 +198,18 @@ func _clear_list(container: VBoxContainer) -> void:
 		child.queue_free()
 
 func _get_weapon_display_name(weapon: Weapon) -> String:
-	var item_name: Variant = weapon.get("ITEM_NAME")
-	return str(item_name) if item_name != null else weapon.name
+	return LocalizationManager.get_weapon_name_from_node(weapon)
 
 func _build_equipped_modules_line(weapon: Weapon) -> String:
 	var equipped_names: PackedStringArray = []
 	for module_instance in weapon.get_equipped_modules():
 		equipped_names.append("%s Lv.%d" % [
-			module_instance.get_module_display_name(),
+			LocalizationManager.get_module_name(module_instance),
 			int(module_instance.module_level)
 		])
 	if equipped_names.is_empty():
-		return "Equipped modules: none"
-	return "Equipped modules: %s" % ", ".join(equipped_names)
+		return LocalizationManager.tr_key("ui.module.equipped_modules_none", "Equipped modules: none")
+	return LocalizationManager.tr_format("ui.module.equipped_modules", {"modules": ", ".join(equipped_names)}, "Equipped modules: %s" % ", ".join(equipped_names))
 
 func _build_stat_preview_line(weapon: Weapon) -> String:
 	var current: Dictionary = weapon.build_stat_snapshot()
@@ -207,8 +224,12 @@ func _build_stat_preview_line(weapon: Weapon) -> String:
 			continue
 		deltas.append("%s %.2f -> %.2f" % [_format_stat_label(stat_key), before, after])
 	if deltas.is_empty():
-		return "Stat changes: none"
-	return "Stat changes: %s" % ", ".join(deltas)
+		return LocalizationManager.tr_key("ui.module.stat_changes_none", "Stat changes: none")
+	return LocalizationManager.tr_format("ui.module.stat_changes", {"changes": ", ".join(deltas)}, "Stat changes: %s" % ", ".join(deltas))
 
 func _format_stat_label(stat_key: String) -> String:
 	return stat_key.replace("_", " ").capitalize()
+
+func _on_language_changed(_locale: String) -> void:
+	if visible and _module_instance != null and is_instance_valid(_module_instance):
+		open_for_module(_module_instance, _on_complete)

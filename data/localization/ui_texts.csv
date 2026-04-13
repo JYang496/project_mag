@@ -1,0 +1,116 @@
+keys,en,zh_CN
+ui.language.en,English,English
+ui.language.zh_cn,Simplified Chinese,简体中文
+ui.start.title,Project Mag Title,Project Mag 标题
+ui.start.continue,Continue,继续
+ui.start.new_game,Erase Data,清除存档
+ui.start.hp_safety,Keep HP > 1: {state},保留生命值 > 1：{state}
+ui.start.resolution,Resolution,分辨率
+ui.start.resolution_tooltip,Run standalone or exported build to change window resolution.,请在独立运行或导出版本中修改窗口分辨率。
+ui.start.language,Language,语言
+ui.start.mechas,Mechas,机甲
+ui.common.state.on,ON,开
+ui.common.state.off,OFF,关
+ui.mecha.exp,Exp: {current} / {next},经验：{current} / {next}
+ui.mecha.level,Level: {current} / {max},等级：{current} / {max}
+ui.mecha.max_hp,Max HP: {value},最大生命：{value}
+ui.mecha.speed,Player Speed: {value},移动速度：{value}
+ui.mecha.armor,Armor: {value},护甲：{value}
+ui.mecha.shield,Shield: {value},护盾：{value}
+ui.mecha.crit_rate,Crit Rate: {value}%,暴击率：{value}%
+ui.mecha.crit_damage,Crit Damage: {value},暴击伤害：{value}
+ui.mecha.grab_radius,Grab Radius: {value},拾取范围：{value}
+ui.mecha.gold,Gold: {value},金币：{value}
+ui.hud.equipped,Equipped:,已装备：
+ui.hud.gold,Gold: {value},金币：{value}
+ui.hud.energy,Energy: {value},能量：{value}
+ui.hud.energy_none,Energy: --,能量：--
+ui.hud.time,Time: {value},时间：{value}
+ui.hud.phase,Phase: {value},阶段：{value}
+ui.hud.hp,HP: {current}/{max},生命：{current}/{max}
+ui.hud.heat_empty,Heat: --,热量：--
+ui.hud.heat,Heat: {value}/{max} ({percent}%){overheat},热量：{value}/{max}（{percent}%）{overheat}
+ui.hud.heat_overheat, (OVERHEAT),（过热）
+ui.hud.ammo_empty,Ammo: --,弹药：--
+ui.hud.ammo,Ammo: {current}/{max}{reload},弹药：{current}/{max}{reload}
+ui.hud.ammo_reloading, (Reloading {sec}s),（装填中 {sec}秒）
+ui.hud.weapon_state_none,Main: -- | WS: -- | PS: --,主武器：-- | 武器技能：-- | 角色技能：--
+ui.hud.weapon_state,Main:{main} Offhand:{offhand} Swap:{swap} WS:{ws} PS:{ps}{fail},主武器：{main} 副武器：{offhand} 切换：{swap} 武器技能：{ws} 角色技能：{ps}{fail}
+ui.hud.weapon.main.none,None,无
+ui.hud.weapon.main.locked,W1 (locked),W1（锁定）
+ui.hud.weapon.main.slot,W{index},W{index}
+ui.hud.weapon.swap.on,on,开
+ui.hud.weapon.swap.off,off,关
+ui.hud.weapon.ready,Ready,就绪
+ui.hud.weapon.fail, Fail:{reason}, 失败：{reason}
+ui.panel.shop,Shop,商店
+ui.panel.upgrade,Upgrade,升级
+ui.panel.gear_fuse,Gear Fuse,装备融合
+ui.panel.module,Module,模组
+ui.panel.inventory,Inventory,背包
+ui.panel.pause,Paused,已暂停
+ui.panel.resume,Resume,继续
+ui.settings.language,Language,语言
+ui.panel.refresh,Refresh,刷新
+ui.panel.sell,Sell,出售
+ui.panel.cancel,Cancel,取消
+ui.panel.confirm,Confirm,确认
+ui.panel.inventory_bag,Inventory / Bag,背包切换
+ui.panel.to_gear_fuse,To Gear Fuse,前往融合
+ui.panel.to_upgrade,To Upgrade,前往升级
+ui.panel.to_inventory,Inventory,背包
+ui.panel.to_module,Module,模组
+ui.panel.fuse,Fuse,融合
+ui.upgrade.cost,Cost: {value},花费：{value}
+ui.upgrade.status_line,{key}: {from} => {to},{key}：{from} => {to}
+ui.branch.title,Choose Evolution Branch,选择进化分支
+ui.branch.weapon,Weapon,武器
+ui.route.title,Choose Route,选择路线
+ui.route.subtitle,Select one route for this level.,为本关选择一条路线。
+ui.route.confirm,Confirm Route,确认路线
+ui.reward.title,Choose Reward,选择奖励
+ui.reward.subtitle,{route} - pick one reward.,{route} - 请选择一个奖励。
+ui.reward.confirm,Confirm Reward,确认奖励
+ui.reward.default,Reward,奖励
+ui.reward.weapon,Weapon {id} Lv.{level},武器 {id} Lv.{level}
+ui.reward.module,Module {name} Lv.{level},模组 {name} Lv.{level}
+ui.reward.exp,EXP +{value},经验 +{value}
+ui.reward.message,Reward: {content},奖励：{content}
+ui.module.title,Equip Module,装备模组
+ui.module.no_effect,No direct stat changes.,无直接属性变化。
+ui.module.effects,Effects: {effects},效果：{effects}
+ui.module.section.equipped,Equipped Weapons,已装备武器
+ui.module.section.inventory,Inventory Weapons,背包武器
+ui.module.none,(none),（无）
+ui.module.slots,Slots: {used}/{max},槽位：{used}/{max}
+ui.module.action.equip,Equip,装备
+ui.module.action.blocked,Blocked,不可用
+ui.module.compatible,Compatible,兼容
+ui.module.cannot_equip,Cannot equip: {reason},无法装备：{reason}
+ui.module.equipped_modules_none,Equipped modules: none,已装备模组：无
+ui.module.equipped_modules,Equipped modules: {modules},已装备模组：{modules}
+ui.module.stat_changes_none,Stat changes: none,属性变化：无
+ui.module.stat_changes,Stat changes: {changes},属性变化：{changes}
+ui.module.equipped_message,Equipped {module} Lv.{level} to {weapon},已将 {module} Lv.{level} 装备到 {weapon}
+ui.module.removed_message,Removed {module} from {weapon},已从 {weapon} 卸下 {module}
+ui.module.empty,Empty,空
+ui.module.sold,Sold,已售出
+ui.inventory.slot.empty,Empty,空
+ui.gameover.title,Game Over,游戏结束
+ui.gameover.status,Status  HP: {hp}/{max_hp}  Level: {level}  EXP: {exp},状态  生命：{hp}/{max_hp}  等级：{level}  经验：{exp}
+ui.gameover.coin,Coin Collected: {value},金币获取：{value}
+ui.gameover.chip,Chip Collected: {value},芯片获取：{value}
+ui.gameover.new_game,New Game,新游戏
+ui.start_battle.hold_f,Hold F to Start,按住 F 开始战斗
+ui.module.reason.invalid_module,Invalid module.,无效模组。
+ui.module.reason.invalid_weapon,Invalid weapon.,无效武器。
+ui.module.reason.no_container,Weapon has no module container.,武器没有模组容器。
+ui.module.reason.no_slots,No module slots available.,没有可用模组槽。
+ui.module.reason.not_equipped,Module is not equipped.,模组尚未装备。
+ui.module.reason.not_melee,Not compatible with melee weapons.,不兼容近战武器。
+ui.module.reason.not_ranged,Not compatible with ranged weapons.,不兼容远程武器。
+ui.module.reason.trait_required,Weapon does not match required traits.,武器不满足所需特性。
+ui.module.reason.requires_one_of,Requires one of: {traits},需要以下特性之一：{traits}
+ui.inventory.obtain,Obtained {name} Lv.{level},获得 {name} Lv.{level}
+ui.inventory.upgrade,Upgraded {name} to Lv.{level},升级 {name} 到 Lv.{level}
+ui.inventory.convert,Converted duplicate {name} into +{gold} Gold,重复 {name} 已转换为 +{gold} 金币

@@ -8,6 +8,7 @@ const HUD_MARGIN := 16.0
 const HP_BAR_ANIM_TIME := 0.2
 const HP_BAR_TRANS := Tween.TRANS_SINE
 const HP_BAR_EASE := Tween.EASE_OUT
+const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 
 #@onready var player : Player = get_tree().get_first_node_in_group("player")
 
@@ -99,10 +100,15 @@ var branch_select_panel: BranchSelectPanel
 var module_equip_selection_panel: ModuleEquipSelectionPanel
 var route_selection_panel: RouteSelectionPanel
 var reward_selection_panel: RewardSelectionPanel
+var game_over_title_label: Label
+var game_over_new_game_button: Button
+var pause_language_label: Label
+var pause_language_option: OptionButton
 
 
 func _ready():
 	GlobalVariables.ui = self
+	gui_root.theme = GLOBAL_UI_THEME
 	_init_hp_bar()
 	_refresh_hp_hud()
 	_ensure_heat_label()
@@ -113,11 +119,15 @@ func _ready():
 	_init_route_selection_panel()
 	_init_reward_selection_panel()
 	_create_game_over_layout()
+	_ensure_pause_language_controls()
+	_refresh_localized_static_text()
 	_create_quest_hint()
 	_connect_viewport_signals()
 	_apply_responsive_layout()
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
+	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
+		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
 	_init_item_message_timer()
 	if weapon_selector and is_instance_valid(weapon_selector):
 		weapon_selector.bind_player_data()
@@ -232,15 +242,7 @@ func _physics_process(_delta):
 	_update_heat_label_text()
 	_update_ammo_label_text()
 	_update_weapon_state_label_text()
-	equipped_label.text = "Equipped:"
-	augments_label.text = str(PlayerData.player_augment_list)
-	gold_label.text = "Gold: " + str(PlayerData.player_gold)
-	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("get_current_energy"):
-		resource_label.text = "Energy: %d" % int(round(PlayerData.player.get_current_energy()))
-	else:
-		resource_label.text = "Energy: --"
-	time_label.text = "Time: " + str(PhaseManager.battle_time)
-	phase_label.text = "Phase: " + str(PhaseManager.current_state())
+	_refresh_hud_text_values()
 	drag_item_icon.set_position(get_viewport().get_mouse_position())
 func _input(_event) -> void:
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
@@ -454,14 +456,31 @@ func _show_game_over() -> void:
 	inventory_root.visible = false
 	module_root.visible = false
 	gear_fuse_root.visible = false
-	game_over_status_label.text = "Status  HP: %s/%s  Level: %s  EXP: %s" % [
-		str(PlayerData.player_hp),
-		str(PlayerData.player_max_hp),
-		str(PlayerData.player_level),
-		str(PlayerData.player_exp)
-	]
-	game_over_coin_label.text = "Coin Collected: %s" % str(PlayerData.round_coin_collected)
-	game_over_chip_label.text = "Chip Collected: %s" % str(PlayerData.round_chip_collected)
+	game_over_status_label.text = LocalizationManager.tr_format(
+		"ui.gameover.status",
+		{
+			"hp": PlayerData.player_hp,
+			"max_hp": PlayerData.player_max_hp,
+			"level": PlayerData.player_level,
+			"exp": PlayerData.player_exp
+		},
+		"Status  HP: %s/%s  Level: %s  EXP: %s" % [
+			str(PlayerData.player_hp),
+			str(PlayerData.player_max_hp),
+			str(PlayerData.player_level),
+			str(PlayerData.player_exp)
+		]
+	)
+	game_over_coin_label.text = LocalizationManager.tr_format(
+		"ui.gameover.coin",
+		{"value": PlayerData.round_coin_collected},
+		"Coin Collected: %s" % str(PlayerData.round_coin_collected)
+	)
+	game_over_chip_label.text = LocalizationManager.tr_format(
+		"ui.gameover.chip",
+		{"value": PlayerData.round_chip_collected},
+		"Chip Collected: %s" % str(PlayerData.round_chip_collected)
+	)
 	game_over_root.visible = true
 	get_tree().paused = true
 
@@ -487,14 +506,13 @@ func _create_game_over_layout() -> void:
 	panel.offset_bottom = 160
 	game_over_root.add_child(panel)
 
-	var title := Label.new()
-	title.text = "Game Over"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.offset_left = 0
-	title.offset_top = 24
-	title.offset_right = 480
-	title.offset_bottom = 56
-	panel.add_child(title)
+	game_over_title_label = Label.new()
+	game_over_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	game_over_title_label.offset_left = 0
+	game_over_title_label.offset_top = 24
+	game_over_title_label.offset_right = 480
+	game_over_title_label.offset_bottom = 56
+	panel.add_child(game_over_title_label)
 
 	game_over_status_label = Label.new()
 	game_over_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -520,14 +538,14 @@ func _create_game_over_layout() -> void:
 	game_over_chip_label.offset_bottom = 208
 	panel.add_child(game_over_chip_label)
 
-	var new_game_button := Button.new()
-	new_game_button.text = "New Game"
-	new_game_button.offset_left = 170
-	new_game_button.offset_top = 250
-	new_game_button.offset_right = 310
-	new_game_button.offset_bottom = 286
-	new_game_button.pressed.connect(_on_game_over_new_game_pressed)
-	panel.add_child(new_game_button)
+	game_over_new_game_button = Button.new()
+	game_over_new_game_button.offset_left = 170
+	game_over_new_game_button.offset_top = 250
+	game_over_new_game_button.offset_right = 310
+	game_over_new_game_button.offset_bottom = 286
+	game_over_new_game_button.pressed.connect(_on_game_over_new_game_pressed)
+	panel.add_child(game_over_new_game_button)
+	_refresh_game_over_static_text()
 
 
 func _on_game_over_new_game_pressed() -> void:
@@ -659,7 +677,7 @@ func _animate_hp_bar_to(target_hp: int) -> void:
 func _refresh_hp_hud() -> void:
 	var max_hp: int = max(1, int(PlayerData.player_max_hp))
 	var current_hp: int = clampi(int(PlayerData.player_hp), 0, max_hp)
-	hp_label_text.text = "HP: %d/%d" % [current_hp, max_hp]
+	hp_label_text.text = LocalizationManager.tr_format("ui.hud.hp", {"current": current_hp, "max": max_hp}, "HP: %d/%d" % [current_hp, max_hp])
 	_set_hp_bar_max(max_hp)
 	_animate_hp_bar_to(current_hp)
 
@@ -668,7 +686,7 @@ func _ensure_heat_label() -> void:
 		return
 	heat_label = Label.new()
 	heat_label.name = "Heat"
-	heat_label.text = "Heat: --"
+	heat_label.text = LocalizationManager.tr_key("ui.hud.heat_empty", "Heat: --")
 	heat_label.visible = false
 	character_root.add_child(heat_label)
 
@@ -677,7 +695,7 @@ func _ensure_ammo_label() -> void:
 		return
 	ammo_label = Label.new()
 	ammo_label.name = "Ammo"
-	ammo_label.text = "Ammo: --"
+	ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
 	ammo_label.visible = true
 	character_root.add_child(ammo_label)
 
@@ -686,7 +704,7 @@ func _ensure_weapon_state_label() -> void:
 		return
 	weapon_state_label = Label.new()
 	weapon_state_label.name = "WeaponState"
-	weapon_state_label.text = "Main: -- | WS: -- | PS: --"
+	weapon_state_label.text = LocalizationManager.tr_key("ui.hud.weapon_state_none", "Main: -- | WS: -- | PS: --")
 	weapon_state_label.visible = true
 	character_root.add_child(weapon_state_label)
 
@@ -706,51 +724,59 @@ func _update_heat_label_text() -> void:
 	var heat_value: float = float(PlayerData.player.call("get_total_heat_value"))
 	var percent: int = int(round(clampf(heat_value / heat_max, 0.0, 1.0) * 100.0))
 	var overheated := _any_heat_weapon_overheated()
-	heat_label.text = "Heat: %d/%d (%d%%)%s" % [
-		int(round(heat_value)),
-		int(round(heat_max)),
-		percent,
-		" (OVERHEAT)" if overheated else ""
-	]
+	var overheat_text := LocalizationManager.tr_key("ui.hud.heat_overheat", " (OVERHEAT)") if overheated else ""
+	heat_label.text = LocalizationManager.tr_format(
+		"ui.hud.heat",
+		{
+			"value": int(round(heat_value)),
+			"max": int(round(heat_max)),
+			"percent": percent,
+			"overheat": overheat_text
+		},
+		"Heat: %d/%d (%d%%)%s" % [int(round(heat_value)), int(round(heat_max)), percent, overheat_text]
+	)
 	heat_label.visible = true
 
 func _update_ammo_label_text() -> void:
 	if ammo_label == null or not is_instance_valid(ammo_label):
 		return
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
-		ammo_label.text = "Ammo: --"
+		ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
 		return
 	if not PlayerData.player.has_method("get_main_weapon"):
-		ammo_label.text = "Ammo: --"
+		ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
 		return
 	var main_weapon_variant: Variant = PlayerData.player.call("get_main_weapon")
 	if not (main_weapon_variant is Node):
-		ammo_label.text = "Ammo: --"
+		ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
 		return
 	var main_weapon := main_weapon_variant as Node
 	if main_weapon == null or not is_instance_valid(main_weapon):
-		ammo_label.text = "Ammo: --"
+		ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
 		return
 	if not main_weapon.has_method("get_ammo_status"):
-		ammo_label.text = "Ammo: --"
+		ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
 		return
 	var status_variant: Variant = main_weapon.call("get_ammo_status")
 	if not (status_variant is Dictionary):
-		ammo_label.text = "Ammo: --"
+		ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
 		return
 	var status := status_variant as Dictionary
 	if not bool(status.get("enabled", false)):
-		ammo_label.text = "Ammo: --"
+		ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
 		return
 	var current := int(status.get("current", 0))
 	var max_ammo := int(status.get("max", 0))
 	var is_reloading := bool(status.get("is_reloading", false))
 	var reload_left := maxf(float(status.get("reload_left", 0.0)), 0.0)
-	ammo_label.text = "Ammo: %d/%d%s" % [
-		current,
-		max_ammo,
-		" (Reloading %.1fs)" % reload_left if is_reloading else ""
-	]
+	var reload_text := ""
+	if is_reloading:
+		reload_text = LocalizationManager.tr_format("ui.hud.ammo_reloading", {"sec": snappedf(reload_left, 0.1)}, " (Reloading %.1fs)" % reload_left)
+	ammo_label.text = LocalizationManager.tr_format(
+		"ui.hud.ammo",
+		{"current": current, "max": max_ammo, "reload": reload_text},
+		"Ammo: %d/%d%s" % [current, max_ammo, reload_text]
+	)
 
 func _get_heat_weapon() -> Node:
 	if PlayerData.player_weapon_list.is_empty():
@@ -780,14 +806,14 @@ func _update_weapon_state_label_text() -> void:
 	if weapon_state_label == null or not is_instance_valid(weapon_state_label):
 		return
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
-		weapon_state_label.text = "Main: -- | WS: -- | PS: --"
+		weapon_state_label.text = LocalizationManager.tr_key("ui.hud.weapon_state_none", "Main: -- | WS: -- | PS: --")
 		return
 	var weapon_count := PlayerData.player_weapon_list.size()
-	var main_text := "None"
+	var main_text := LocalizationManager.tr_key("ui.hud.weapon.main.none", "None")
 	if weapon_count == 1:
-		main_text = "W1 (locked)"
+		main_text = LocalizationManager.tr_key("ui.hud.weapon.main.locked", "W1 (locked)")
 	elif PlayerData.main_weapon_index >= 0:
-		main_text = "W%s" % str(PlayerData.main_weapon_index + 1)
+		main_text = LocalizationManager.tr_format("ui.hud.weapon.main.slot", {"index": PlayerData.main_weapon_index + 1}, "W%s" % str(PlayerData.main_weapon_index + 1))
 	var ws_cd := PlayerData.player.get_weapon_active_cd_remaining() if PlayerData.player.has_method("get_weapon_active_cd_remaining") else 0.0
 	var ps_cd := 0.0
 	var active_skill_node: Node = null
@@ -798,12 +824,169 @@ func _update_weapon_state_label_text() -> void:
 	var fail_reason := ""
 	if PlayerData.player.has_method("get_last_weapon_skill_fail_reason"):
 		fail_reason = str(PlayerData.player.get_last_weapon_skill_fail_reason())
-	var lock_text := "on" if weapon_count > 1 else "off"
-	weapon_state_label.text = "Main:%s Offhand:%d Swap:%s WS:%.1fs PS:%s%s" % [
-		main_text,
-		maxi(0, weapon_count - 1),
-		lock_text,
-		ws_cd,
-		"%.1fs" % ps_cd if ps_cd > 0.0 else "Ready",
-		" Fail:%s" % fail_reason if fail_reason != "" else ""
-	]
+	var lock_text := LocalizationManager.tr_key("ui.hud.weapon.swap.on", "on") if weapon_count > 1 else LocalizationManager.tr_key("ui.hud.weapon.swap.off", "off")
+	var ps_text := "%.1fs" % ps_cd if ps_cd > 0.0 else LocalizationManager.tr_key("ui.hud.weapon.ready", "Ready")
+	var fail_text := ""
+	if fail_reason != "":
+		fail_text = LocalizationManager.tr_format("ui.hud.weapon.fail", {"reason": fail_reason}, " Fail:%s" % fail_reason)
+	weapon_state_label.text = LocalizationManager.tr_format(
+		"ui.hud.weapon_state",
+		{
+			"main": main_text,
+			"offhand": maxi(0, weapon_count - 1),
+			"swap": lock_text,
+			"ws": "%.1fs" % ws_cd,
+			"ps": ps_text,
+			"fail": fail_text
+		},
+		"Main:%s Offhand:%d Swap:%s WS:%.1fs PS:%s%s" % [main_text, maxi(0, weapon_count - 1), lock_text, ws_cd, ps_text, fail_text]
+	)
+
+func _ensure_pause_language_controls() -> void:
+	var pause_label := pause_menu_panel.get_node_or_null("Paused") as Label
+	if pause_label:
+		pause_label.text = LocalizationManager.tr_key("ui.panel.pause", "Paused")
+	resume_button.text = LocalizationManager.tr_key("ui.panel.resume", "Resume")
+	var existing_label := pause_menu_panel.get_node_or_null("LanguageLabel")
+	if existing_label is Label:
+		pause_language_label = existing_label as Label
+	else:
+		pause_language_label = Label.new()
+		pause_language_label.name = "LanguageLabel"
+		pause_menu_panel.add_child(pause_language_label)
+	var existing_option := pause_menu_panel.get_node_or_null("LanguageOption")
+	if existing_option is OptionButton:
+		pause_language_option = existing_option as OptionButton
+	else:
+		pause_language_option = OptionButton.new()
+		pause_language_option.name = "LanguageOption"
+		pause_menu_panel.add_child(pause_language_option)
+	if not pause_language_option.is_connected("item_selected", Callable(self, "_on_pause_language_option_item_selected")):
+		pause_language_option.connect("item_selected", Callable(self, "_on_pause_language_option_item_selected"))
+	_refresh_pause_language_options()
+
+func _refresh_pause_language_options() -> void:
+	if pause_language_label:
+		pause_language_label.text = LocalizationManager.tr_key("ui.settings.language", "Language")
+		pause_language_label.position = Vector2(72.0, 324.0)
+		pause_language_label.size = Vector2(110.0, 28.0)
+	if pause_language_option == null:
+		return
+	pause_language_option.position = Vector2(184.0, 320.0)
+	pause_language_option.size = Vector2(148.0, 30.0)
+	pause_language_option.clear()
+	var locales := LocalizationManager.available_locales()
+	var selected_idx := -1
+	var current_locale := LocalizationManager.get_locale()
+	for i in range(locales.size()):
+		var locale := str(locales[i])
+		pause_language_option.add_item(LocalizationManager.locale_display_name(locale))
+		pause_language_option.set_item_metadata(i, locale)
+		if locale == current_locale:
+			selected_idx = i
+	if selected_idx >= 0:
+		pause_language_option.select(selected_idx)
+
+func _on_pause_language_option_item_selected(index: int) -> void:
+	if pause_language_option == null:
+		return
+	var locale := str(pause_language_option.get_item_metadata(index))
+	if locale != "":
+		LocalizationManager.set_locale(locale)
+
+func _on_language_changed(_new_locale: String) -> void:
+	_refresh_localized_static_text()
+	_refresh_heat_fallback_text()
+	_refresh_hud_text_values()
+	_refresh_hp_hud()
+	_update_heat_label_text()
+	_update_ammo_label_text()
+	_update_weapon_state_label_text()
+	if route_selection_panel and is_instance_valid(route_selection_panel) and route_selection_panel.visible:
+		route_selection_panel._on_language_changed(LocalizationManager.get_locale())
+	if reward_selection_panel and is_instance_valid(reward_selection_panel) and reward_selection_panel.visible:
+		reward_selection_panel._on_language_changed(LocalizationManager.get_locale())
+	if branch_select_panel and is_instance_valid(branch_select_panel) and branch_select_panel.visible:
+		branch_select_panel._on_language_changed(LocalizationManager.get_locale())
+	if module_equip_selection_panel and is_instance_valid(module_equip_selection_panel) and module_equip_selection_panel.visible:
+		module_equip_selection_panel._on_language_changed(LocalizationManager.get_locale())
+
+func _refresh_localized_static_text() -> void:
+	var shop_title := shopping_panel.get_node_or_null("Title") as Label
+	if shop_title:
+		shop_title.text = LocalizationManager.tr_key("ui.panel.shop", "Shop")
+	var upgrade_title := upgrade_panel.get_node_or_null("Title") as Label
+	if upgrade_title:
+		upgrade_title.text = LocalizationManager.tr_key("ui.panel.upgrade", "Upgrade")
+	var gear_fuse_title := gear_fuse_panel.get_node_or_null("Title") as Label
+	if gear_fuse_title:
+		gear_fuse_title.text = LocalizationManager.tr_key("ui.panel.gear_fuse", "Gear Fuse")
+	var module_title := module_panel.get_node_or_null("Title") as Label
+	if module_title:
+		module_title.text = LocalizationManager.tr_key("ui.panel.module", "Module")
+	var inventory_title := inventory_panel.get_node_or_null("Title") as Label
+	if inventory_title:
+		inventory_title.text = LocalizationManager.tr_key("ui.panel.inventory", "Inventory")
+	shop_sell_button.text = LocalizationManager.tr_key("ui.panel.sell", "Sell")
+	shop_cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
+	var shop_confirm := shopping_panel.get_node_or_null("ShopConfirmButton") as Button
+	if shop_confirm:
+		shop_confirm.text = LocalizationManager.tr_key("ui.panel.confirm", "Confirm")
+	var shop_refresh := shopping_panel.get_node_or_null("ShopRefreshButton") as Button
+	if shop_refresh:
+		shop_refresh.text = LocalizationManager.tr_key("ui.panel.refresh", "Refresh")
+	var to_gf := upgrade_panel.get_node_or_null("ToGF") as Button
+	if to_gf:
+		to_gf.text = LocalizationManager.tr_key("ui.panel.to_gear_fuse", "To Gear Fuse")
+	var upg_switch := upgrade_panel.get_node_or_null("SwtichBtn") as Button
+	if upg_switch:
+		upg_switch.text = LocalizationManager.tr_key("ui.panel.inventory_bag", "Inventory / Bag")
+	var to_upgrade := gear_fuse_panel.get_node_or_null("ToUpgrade") as Button
+	if to_upgrade:
+		to_upgrade.text = LocalizationManager.tr_key("ui.panel.to_upgrade", "To Upgrade")
+	var gf_switch := gear_fuse_panel.get_node_or_null("SwtichBtn") as Button
+	if gf_switch:
+		gf_switch.text = LocalizationManager.tr_key("ui.panel.inventory_bag", "Inventory / Bag")
+	var gf_confirm := gear_fuse_panel.get_node_or_null("MarginContainer/VBoxContainer/ConfirmBtn") as Button
+	if gf_confirm:
+		gf_confirm.text = LocalizationManager.tr_key("ui.panel.fuse", "Fuse")
+	var to_inv := module_panel.get_node_or_null("ToInv") as Button
+	if to_inv:
+		to_inv.text = LocalizationManager.tr_key("ui.panel.to_inventory", "Inventory")
+	var to_module := inventory_panel.get_node_or_null("ToModel") as Button
+	if to_module:
+		to_module.text = LocalizationManager.tr_key("ui.panel.to_module", "Module")
+	var pause_label := pause_menu_panel.get_node_or_null("Paused") as Label
+	if pause_label:
+		pause_label.text = LocalizationManager.tr_key("ui.panel.pause", "Paused")
+	resume_button.text = LocalizationManager.tr_key("ui.panel.resume", "Resume")
+	_refresh_pause_language_options()
+	_refresh_game_over_static_text()
+
+func _refresh_game_over_static_text() -> void:
+	if game_over_title_label and is_instance_valid(game_over_title_label):
+		game_over_title_label.text = LocalizationManager.tr_key("ui.gameover.title", "Game Over")
+	if game_over_new_game_button and is_instance_valid(game_over_new_game_button):
+		game_over_new_game_button.text = LocalizationManager.tr_key("ui.gameover.new_game", "New Game")
+
+func _refresh_heat_fallback_text() -> void:
+	if heat_label and is_instance_valid(heat_label) and not heat_label.visible:
+		heat_label.text = LocalizationManager.tr_key("ui.hud.heat_empty", "Heat: --")
+	if ammo_label and is_instance_valid(ammo_label):
+		if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+			ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
+
+func _refresh_hud_text_values() -> void:
+	equipped_label.text = LocalizationManager.tr_key("ui.hud.equipped", "Equipped:")
+	augments_label.text = str(PlayerData.player_augment_list)
+	gold_label.text = LocalizationManager.tr_format("ui.hud.gold", {"value": PlayerData.player_gold}, "Gold: %s" % str(PlayerData.player_gold))
+	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("get_current_energy"):
+		resource_label.text = LocalizationManager.tr_format(
+			"ui.hud.energy",
+			{"value": int(round(PlayerData.player.get_current_energy()))},
+			"Energy: %d" % int(round(PlayerData.player.get_current_energy()))
+		)
+	else:
+		resource_label.text = LocalizationManager.tr_key("ui.hud.energy_none", "Energy: --")
+	time_label.text = LocalizationManager.tr_format("ui.hud.time", {"value": PhaseManager.battle_time}, "Time: %s" % str(PhaseManager.battle_time))
+	phase_label.text = LocalizationManager.tr_format("ui.hud.phase", {"value": PhaseManager.current_state()}, "Phase: %s" % str(PhaseManager.current_state()))

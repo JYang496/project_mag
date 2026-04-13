@@ -54,7 +54,7 @@ func update() -> void:
 		item = player_weapon_list[equipment_index]
 		if is_instance_valid(item):
 			image.texture = item.sprite.texture
-			equip_name.text = item.ITEM_NAME
+			equip_name.text = LocalizationManager.get_weapon_name_from_node(item)
 			for s in range(item.fuse):
 				var star_ins = star_preload.instantiate()
 				stars.add_child(star_ins)
@@ -67,11 +67,11 @@ func update() -> void:
 		else:
 			item = null
 			image.texture = null
-			equip_name.text = "Empty"
+			equip_name.text = LocalizationManager.tr_key("ui.inventory.slot.empty", "Empty")
 	else:
 		item = null
 		image.texture = null
-		equip_name.text = "Empty"
+		equip_name.text = LocalizationManager.tr_key("ui.inventory.slot.empty", "Empty")
 	queue_redraw()
 
 

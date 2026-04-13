@@ -55,6 +55,11 @@ func _notify_module_message(message: String, duration: float = 1.8) -> void:
 	if ui and ui.has_method("show_item_message"):
 		ui.show_item_message(message, duration)
 
+func _get_localized_module_name(module_instance: Module) -> String:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return ""
+	return LocalizationManager.get_module_name(module_instance)
+
 func get_weapon_module_assignment_feedback(module_instance: Module, weapon: Weapon) -> Dictionary:
 	if module_instance == null or not is_instance_valid(module_instance):
 		return {"ok": false, "reason": "Invalid module."}
@@ -140,7 +145,8 @@ var on_select_module_weapon :
 					"Module '%s' cannot be equipped on '%s': %s" %
 					[on_select_inventory_module.name, value.name, str(result.get("reason", ""))]
 				)
-				_notify_module_message(str(result.get("reason", "Cannot equip module.")))
+				var reason_text := LocalizationManager.localize_module_reason(str(result.get("reason", "Cannot equip module.")))
+				_notify_module_message(LocalizationManager.tr_format("ui.module.cannot_equip", {"reason": reason_text}, "Cannot equip: %s" % reason_text))
 				on_drag_item = null
 			on_select_inventory_module = null
 
@@ -263,12 +269,20 @@ func obtain_module(module_instance: Module, ignore_weapon: Weapon = null) -> voi
 	var existing_module: Module = _find_existing_module_by_name(module_instance.get_module_display_name(), ignore_weapon)
 	if existing_module == null:
 		moddule_slots.append(module_instance)
-		_notify_module_message("Obtained %s Lv.%d" % [module_instance.get_module_display_name(), module_instance.module_level])
+		_notify_module_message(LocalizationManager.tr_format(
+			"ui.inventory.obtain",
+			{"name": _get_localized_module_name(module_instance), "level": module_instance.module_level},
+			"Obtained %s Lv.%d" % [_get_localized_module_name(module_instance), module_instance.module_level]
+		))
 		_safe_refresh_all_panels()
 		return
 	if existing_module.increase_module_level(1):
 		_discard_module_instance(module_instance, existing_module)
-		_notify_module_message("Upgraded %s to Lv.%d" % [existing_module.get_module_display_name(), existing_module.module_level])
+		_notify_module_message(LocalizationManager.tr_format(
+			"ui.inventory.upgrade",
+			{"name": _get_localized_module_name(existing_module), "level": existing_module.module_level},
+			"Upgraded %s to Lv.%d" % [_get_localized_module_name(existing_module), existing_module.module_level]
+		))
 		var owner_weapon: Weapon = _resolve_module_owner_weapon(existing_module)
 		if owner_weapon and owner_weapon.has_method("calculate_status"):
 			owner_weapon.calculate_status()
@@ -277,7 +291,11 @@ func obtain_module(module_instance: Module, ignore_weapon: Weapon = null) -> voi
 	_discard_module_instance(module_instance, existing_module)
 	var convert_coins: int = _calculate_module_conversion_coins(existing_module)
 	PlayerData.player_gold += convert_coins
-	_notify_module_message("Converted duplicate %s into +%d Gold" % [existing_module.get_module_display_name(), convert_coins])
+	_notify_module_message(LocalizationManager.tr_format(
+		"ui.inventory.convert",
+		{"name": _get_localized_module_name(existing_module), "gold": convert_coins},
+		"Converted duplicate %s into +%d Gold" % [_get_localized_module_name(existing_module), convert_coins]
+	))
 	_safe_refresh_all_panels()
 
 func _find_existing_module_by_name(module_name: String, ignore_weapon: Weapon = null) -> Module:

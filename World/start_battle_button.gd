@@ -6,6 +6,7 @@ signal activated
 @export var hold_duration: float = 0.5
 @export var radius: float = 34.0
 @export var prompt_text: String = "Hold F to Start"
+@export var prompt_text_key: String = "ui.start_battle.hold_f"
 @export var debug_mode: bool = false
 @export var debug_print_interval: float = 0.4
 
@@ -34,8 +35,10 @@ func _ready() -> void:
 			_shape.shape = circle
 		circle.radius = radius
 	if _prompt_label:
-		_prompt_label.text = prompt_text
+		_prompt_label.text = LocalizationManager.tr_key(prompt_text_key, prompt_text)
 		_prompt_label.modulate = Color(0.95, 0.98, 1.0, 0.95)
+	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
+		LocalizationManager.language_changed.connect(_on_language_changed)
 
 	if not body_entered.is_connected(_on_body_entered):
 		body_entered.connect(_on_body_entered)
@@ -118,3 +121,7 @@ func reset_state() -> void:
 	_player_inside = false
 	_debug_elapsed = 0.0
 	queue_redraw()
+
+func _on_language_changed(_locale: String) -> void:
+	if _prompt_label:
+		_prompt_label.text = LocalizationManager.tr_key(prompt_text_key, prompt_text)

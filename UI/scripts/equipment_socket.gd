@@ -61,14 +61,18 @@ func _on_gui_input(event: InputEvent) -> void:
 		if selected_module == null or not is_instance_valid(selected_module):
 			return
 		var weapon: Weapon = equipment_slot.item
-		var module_display_name: String = selected_module.get_module_display_name()
-		var weapon_display_name: String = str(weapon.get("ITEM_NAME")) if weapon and weapon.get("ITEM_NAME") != null else "weapon"
+		var module_display_name: String = LocalizationManager.get_module_name(selected_module)
+		var weapon_display_name: String = LocalizationManager.get_weapon_name_from_node(weapon)
 		var result := InventoryData.unequip_module_from_weapon(selected_module, weapon)
 		if not result.get("ok", false):
 			return
 		var ui = GlobalVariables.ui
 		if ui and is_instance_valid(ui) and ui.has_method("show_item_message"):
-			ui.show_item_message("Removed %s from %s" % [
-				module_display_name,
-				weapon_display_name
-			], 1.6)
+			ui.show_item_message(
+				LocalizationManager.tr_format(
+					"ui.module.removed_message",
+					{"module": module_display_name, "weapon": weapon_display_name},
+					"Removed %s from %s" % [module_display_name, weapon_display_name]
+				),
+				1.6
+			)

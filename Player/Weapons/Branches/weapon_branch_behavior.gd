@@ -50,3 +50,12 @@ func get_cone_or_spread_multiplier() -> float:
 
 func get_projectile_trail_config() -> Dictionary:
 	return {}
+
+func get_charged_turn_speed_multiplier() -> float:
+	return 1.0
+
+func get_charged_beam_profiles(base_profile: Dictionary) -> Array[Dictionary]:
+	return [base_profile]
+
+func on_charged_beam_hit(_target: Node, _beam_profile: Dictionary, _hit_damage: int) -> void:
+	pass

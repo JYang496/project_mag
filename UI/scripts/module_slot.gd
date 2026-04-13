@@ -43,10 +43,10 @@ func update() -> void:
 		var module_name = module.get("ITEM_NAME")
 		if module_name == null or module_name == "":
 			module_name = module.name
-		item_name.text = "%s Lv.%d" % [str(module_name), int(module.module_level)]
+		item_name.text = "%s Lv.%d" % [LocalizationManager.get_module_name(module), int(module.module_level)]
 	else:
 		image.texture = null
-		item_name.text = "Empty"
+		item_name.text = LocalizationManager.tr_key("ui.module.empty", "Empty")
 	queue_redraw()
 
 func _on_background_mouse_entered() -> void:

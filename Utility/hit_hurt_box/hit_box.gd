@@ -25,6 +25,9 @@ func apply_attack(area) -> void:
 		target = area.get_parent()
 	if target == null or not is_instance_valid(target):
 		return
+	if hitbox_owner and hitbox_owner.has_method("can_hit_target"):
+		if not bool(hitbox_owner.call("can_hit_target", target)):
+			return
 	var damage_type: StringName = Attack.TYPE_PHYSICAL
 	if "damage_type" in hitbox_owner:
 		damage_type = Attack.normalize_damage_type(hitbox_owner.damage_type)
