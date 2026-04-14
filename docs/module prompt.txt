@@ -1,0 +1,43 @@
+你是 Godot 4/GDScript 开发者。请基于现有项目武器模组风格，设计并实现以下“新武器模组”。
+- 投射物经过的路径会产生AOE，存在期间持续造成冰属性伤害，持续X秒。
+- 换弹时，根据已经打出的子弹百分比对玩家周围的敌人造成一次伤害。
+- 换弹时，根据已经打出的子弹百分比对玩家周围的敌人造成一次击退。
+- 换弹时，根据已经打出的子弹百分比提高该武器的伤害，持续X秒。
+- 换弹时，根据已经打出的子弹百分比提升玩家的移动速度，持续X秒。
+- 换弹时，根据已经打出的子弹百分比给予玩家临时护盾，持续X秒。
+- 换弹时，根据已经打出的子弹百分比对玩家其他武器的伤害，持续X秒。
+- 换弹时，如果存在其它正在换弹的武器，本武器换弹速度提升X%。
+
+【项目约束（必须遵守）】
+1. 新模组继承 `Module`（`Player/Weapons/Modules/wmod_base.gd`）。
+2. 文件命名：
+   - 脚本：`Player/Weapons/Modules/wmod_<effect>_<tag>.gd`
+   - 场景：`Player/Weapons/Modules/wmod_<effect>_<tag>.tscn`
+3. 场景结构必须复用 `wmod_base.tscn`，并设置：
+   - `script`
+   - `Sprite.texture`（并且默认不可视）
+   - 必要时设置 `required_weapon_traits` / `module_traits` / `supports_melee` / `supports_ranged`
+4. 若是纯数值模组：优先实现 `configure_stat_modifiers()`，通过 `stat_multipliers/stat_additives` 修改属性。
+5. 若是命中触发模组：实现 `apply_on_hit(source_weapon, target)`，并在 `_enter_tree/_ready` 注册 `register_as_on_hit_plugin()`，在 `_exit_tree` 反注册。
+6. 所有逻辑都要做空值与接口检查（`is_instance_valid`、`has_method`）。
+7. 等级成长必须兼容 `module_level`（1~3），优先使用 `get_effective_multiplier/get_effective_additive` 或 `lv1/lv2/lv3` 参数。
+8. 不要破坏现有接口和模块兼容性文案格式（如 `Requires one of: ...`）。
+
+【设计目标】
+- 模组名称：{{MODULE_NAME}}
+- 模组定位：{{DESIGN_GOAL}}（如：冻结流/热量流/高频命中/投射物）
+- 触发方式：{{TRIGGER_TYPE}}（stat 或 on_hit）
+- 目标武器特性限制：{{REQUIRED_TRAITS}}（如 freeze / heat / projectile）
+- 预期强度：{{POWER_BUDGET}}（早中后期）
+- 是否需要 fuse 联动：{{FUSE_SCALING}}
+
+【输出内容（按顺序）】
+1. 先给“设计说明”（机制、适配武器、强弱项、平衡风险）。
+2. 输出完整 `.gd` 代码。
+3. 输出完整 `.tscn` 内容（含 base scene 继承、脚本、图标、导出参数）。
+4. 列出需要补充的本地化 key（`data/localization/game_content.csv` 的 `module.<id>.name`）。
+5. 给出 5 条测试清单（兼容性、数值生效、边界条件、多模组叠加、回归风险）。
+
+【代码风格】
+- 保持和现有模组一致：短注释、早返回、命名清晰。
+- 不引入无关系统改动，不修改其他武器脚本，除非必要并明确说明原因。

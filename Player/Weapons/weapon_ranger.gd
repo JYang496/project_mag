@@ -168,6 +168,7 @@ func apply_effects_on_projectile(projectile : Node2D) -> void:
 	bind_source_weapon(projectile)
 	apply_base_movement(projectile)
 	apply_modifiers(projectile, active_modifiers)
+	notify_projectile_spawned(projectile)
 	_update_projectile_debug_snapshot(projectile, active_modifiers)
 
 # Binds the weapon for hit attribution and on-hit module callbacks.

@@ -78,6 +78,14 @@ module.wmod_brittle_trigger_freeze.name,Brittle Trigger,Brittle Trigger
 module.wmod_bullet_size_stat.name,Size Up,Size Up
 module.wmod_cryo_infuser_freeze.name,Cryo Infuser,Cryo Infuser
 module.wmod_damage_up_stat.name,Damage Up,Damage Up
+module.wmod_reload_blast_damage.name,Reload Burst,Reload Burst
+module.wmod_reload_blast_knockback.name,Reload Shockwave,Reload Shockwave
+module.wmod_reload_damage_boost.name,Reloaded Force,Reloaded Force
+module.wmod_reload_move_boost.name,Reload Sprint,Reload Sprint
+module.wmod_reload_offhand_boost.name,Reload Relay,Reload Relay
+module.wmod_reload_shield_boost.name,Reload Barrier,Reload Barrier
+module.wmod_reload_speed_link.name,Reload Link,Reload Link
+module.wmod_trail_aoe_freeze.name,Frost Trail,Frost Trail
 module.wmod_dot_on_hit.name,wmod_dot_on_hit,wmod_dot_on_hit
 module.wmod_heat_capacity_heat.name,Heat Capacity,Heat Capacity
 module.wmod_heat_concentration_heat.name,Heat Concentration,Heat Concentration

@@ -8,7 +8,10 @@ var MAX_MODULE_NUMBER = 3
 @onready var fuse_sprite_holder: FuseSpriteHolder = get_node_or_null("FuseSprites")
 @onready var _fuse_sprites_initialized = _load_fuse_sprites()
 var on_hit_plugins: Array[Node] = []
+var projectile_spawn_plugins: Array[Node] = []
+var reload_duration_plugins: Array[Node] = []
 var _passive_icd_msec: Dictionary = {}
+var _external_damage_mul_modifiers: Dictionary = {}
 
 # Common variables for weapons
 const FUSE_LEVEL_CAPS: Dictionary = {
@@ -109,6 +112,31 @@ func register_on_hit_plugin(plugin: Node) -> void:
 
 func unregister_on_hit_plugin(plugin: Node) -> void:
 	on_hit_plugins.erase(plugin)
+
+func register_projectile_spawn_plugin(plugin: Node) -> void:
+	if plugin and not projectile_spawn_plugins.has(plugin):
+		projectile_spawn_plugins.append(plugin)
+
+func unregister_projectile_spawn_plugin(plugin: Node) -> void:
+	projectile_spawn_plugins.erase(plugin)
+
+func notify_projectile_spawned(projectile: Node2D) -> void:
+	if projectile == null or not is_instance_valid(projectile):
+		return
+	for i in range(projectile_spawn_plugins.size() - 1, -1, -1):
+		var plugin := projectile_spawn_plugins[i]
+		if plugin == null or not is_instance_valid(plugin):
+			projectile_spawn_plugins.remove_at(i)
+			continue
+		if plugin.has_method("on_projectile_spawned"):
+			plugin.call("on_projectile_spawned", self, projectile)
+
+func register_reload_duration_plugin(plugin: Node) -> void:
+	if plugin and not reload_duration_plugins.has(plugin):
+		reload_duration_plugins.append(plugin)
+
+func unregister_reload_duration_plugin(plugin: Node) -> void:
+	reload_duration_plugins.erase(plugin)
 
 func on_hit_target(target: Node) -> void:
 	for plugin in on_hit_plugins:
@@ -262,8 +290,19 @@ func request_reload() -> bool:
 		return false
 	if is_reloading:
 		return false
+	var ammo_before := current_ammo
+	var reload_duration := _get_effective_reload_duration()
+	var spent_ratio := _get_spent_magazine_ratio()
 	is_reloading = true
-	reload_time_left = maxf(reload_duration_sec, 0.0)
+	reload_time_left = reload_duration
+	dispatch_passive_event(&"on_reload_started", {
+		"source_weapon": self,
+		"ammo_before": ammo_before,
+		"ammo_after": current_ammo,
+		"magazine_capacity": max(0, magazine_capacity),
+		"spent_ratio": spent_ratio,
+		"reload_duration": reload_duration,
+	})
 	if reload_time_left <= 0.0:
 		_finish_reload()
 	return true
@@ -280,9 +319,18 @@ func _update_reload_state(delta: float) -> void:
 func _finish_reload() -> void:
 	if not uses_ammo_system():
 		return
+	var ammo_before := current_ammo
+	var spent_ratio := _get_spent_magazine_ratio()
 	current_ammo = max(0, magazine_capacity)
 	is_reloading = false
 	reload_time_left = 0.0
+	dispatch_passive_event(&"on_reload_finished", {
+		"source_weapon": self,
+		"ammo_before": ammo_before,
+		"ammo_after": current_ammo,
+		"magazine_capacity": max(0, magazine_capacity),
+		"spent_ratio": spent_ratio,
+	})
 
 func get_ammo_status() -> Dictionary:
 	return {
@@ -530,7 +578,24 @@ func get_runtime_stat_value(stat_name: String, base_value: float) -> float:
 	return pre_mult_value * final_mult
 
 func get_runtime_damage_value(base_damage_value: float) -> int:
-	return max(1, int(round(get_runtime_stat_value("damage", base_damage_value))))
+	var runtime_damage := get_runtime_stat_value("damage", base_damage_value)
+	runtime_damage *= get_total_external_damage_mul()
+	return max(1, int(round(runtime_damage)))
+
+func apply_external_damage_mul(source_id: StringName, mul: float) -> void:
+	if source_id == StringName():
+		return
+	_external_damage_mul_modifiers[source_id] = maxf(mul, 0.05)
+
+func remove_external_damage_mul(source_id: StringName) -> void:
+	if _external_damage_mul_modifiers.has(source_id):
+		_external_damage_mul_modifiers.erase(source_id)
+
+func get_total_external_damage_mul() -> float:
+	var total := 1.0
+	for mul in _external_damage_mul_modifiers.values():
+		total *= float(mul)
+	return maxf(total, 0.05)
 
 func get_projected_stats_with_module(module_instance: Module) -> Dictionary:
 	var projected := build_stat_snapshot()
@@ -624,8 +689,11 @@ func _notify_shared_heat_pool_dirty() -> void:
 
 func _on_tree_exited() -> void:
 	on_hit_plugins.clear()
+	projectile_spawn_plugins.clear()
+	reload_duration_plugins.clear()
 	_overheat_fire_bypass_sources.clear()
 	_passive_icd_msec.clear()
+	_external_damage_mul_modifiers.clear()
 	branch_behavior = null
 	branch_definition = null
 
@@ -677,6 +745,27 @@ func _on_main_passive_event(event_name: StringName, detail: Dictionary) -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	passive_triggered.emit(event_name, detail)
+
+func _get_spent_magazine_ratio() -> float:
+	if magazine_capacity <= 0:
+		return 0.0
+	var spent: int = max(0, magazine_capacity - current_ammo)
+	return clampf(float(spent) / float(magazine_capacity), 0.0, 1.0)
+
+func _get_effective_reload_duration() -> float:
+	var duration: float = maxf(reload_duration_sec, 0.0)
+	if reload_duration_plugins.is_empty():
+		return duration
+	var final_multiplier: float = 1.0
+	for i in range(reload_duration_plugins.size() - 1, -1, -1):
+		var plugin := reload_duration_plugins[i]
+		if plugin == null or not is_instance_valid(plugin):
+			reload_duration_plugins.remove_at(i)
+			continue
+		if not plugin.has_method("get_reload_duration_multiplier"):
+			continue
+		final_multiplier *= maxf(float(plugin.call("get_reload_duration_multiplier", self, duration)), 0.05)
+	return maxf(duration * final_multiplier, 0.0)
 
 func request_weapon_active() -> Dictionary:
 	if not is_main_weapon():

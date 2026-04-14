@@ -6,8 +6,6 @@ class_name SpiralMovement
 var angle : float = 0.0
 var direction: Vector2 = Vector2.ZERO
 
-#@onready var module_parent = self.get_parent() # Bullet root is parent
-
 
 func _process(delta: float) -> void:
 	angle += spin_rate * delta
