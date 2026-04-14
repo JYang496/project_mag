@@ -13,11 +13,16 @@ Cannon,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Cannon,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Cannon,base,wmod_pierce_stat,1,-
 Cannon,base,wmod_projectile_speed_stat,1,-
-Cannon,base,wmod_reload_speed_stat,1,-
-Cannon,base,wmod_slow_on_hit,1,-
+Cannon,base,wmod_reload_blast_damage,1,-
+Cannon,base,wmod_reload_blast_knockback,1,-
+Cannon,base,wmod_reload_damage_boost,1,-
+Cannon,base,wmod_reload_move_boost,1,-
+Cannon,base,wmod_reload_offhand_boost,1,-
+Cannon,base,wmod_reload_shield_boost,1,-
+Cannon,base,wmod_reload_speed_link,1,-
 Cannon,base,wmod_stun_on_hit,1,-
 Cannon,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Cannon,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Cannon,base,wmod_trail_aoe_freeze,1,-
 Cannon,thermal_cannon_branch,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Cannon,thermal_cannon_branch,wmod_bullet_size_stat,1,-
 Cannon,thermal_cannon_branch,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -32,11 +37,16 @@ Cannon,thermal_cannon_branch,wmod_overheat_boost_heat,1,-
 Cannon,thermal_cannon_branch,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Cannon,thermal_cannon_branch,wmod_pierce_stat,1,-
 Cannon,thermal_cannon_branch,wmod_projectile_speed_stat,1,-
-Cannon,thermal_cannon_branch,wmod_reload_speed_stat,1,-
-Cannon,thermal_cannon_branch,wmod_slow_on_hit,1,-
+Cannon,thermal_cannon_branch,wmod_reload_blast_damage,1,-
+Cannon,thermal_cannon_branch,wmod_reload_blast_knockback,1,-
+Cannon,thermal_cannon_branch,wmod_reload_damage_boost,1,-
+Cannon,thermal_cannon_branch,wmod_reload_move_boost,1,-
+Cannon,thermal_cannon_branch,wmod_reload_offhand_boost,1,-
+Cannon,thermal_cannon_branch,wmod_reload_shield_boost,1,-
+Cannon,thermal_cannon_branch,wmod_reload_speed_link,1,-
 Cannon,thermal_cannon_branch,wmod_stun_on_hit,1,-
 Cannon,thermal_cannon_branch,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Cannon,thermal_cannon_branch,wmod_thermal_ignition_heat,1,-
+Cannon,thermal_cannon_branch,wmod_trail_aoe_freeze,1,-
 Cannon,zero_cannon_branch,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Cannon,zero_cannon_branch,wmod_bullet_size_stat,1,-
 Cannon,zero_cannon_branch,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -51,11 +61,16 @@ Cannon,zero_cannon_branch,wmod_overheat_boost_heat,0,Requires one of: heat
 Cannon,zero_cannon_branch,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Cannon,zero_cannon_branch,wmod_pierce_stat,1,-
 Cannon,zero_cannon_branch,wmod_projectile_speed_stat,1,-
-Cannon,zero_cannon_branch,wmod_reload_speed_stat,1,-
-Cannon,zero_cannon_branch,wmod_slow_on_hit,1,-
+Cannon,zero_cannon_branch,wmod_reload_blast_damage,1,-
+Cannon,zero_cannon_branch,wmod_reload_blast_knockback,1,-
+Cannon,zero_cannon_branch,wmod_reload_damage_boost,1,-
+Cannon,zero_cannon_branch,wmod_reload_move_boost,1,-
+Cannon,zero_cannon_branch,wmod_reload_offhand_boost,1,-
+Cannon,zero_cannon_branch,wmod_reload_shield_boost,1,-
+Cannon,zero_cannon_branch,wmod_reload_speed_link,1,-
 Cannon,zero_cannon_branch,wmod_stun_on_hit,1,-
 Cannon,zero_cannon_branch,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Cannon,zero_cannon_branch,wmod_thermal_ignition_heat,0,Requires one of: heat
+Cannon,zero_cannon_branch,wmod_trail_aoe_freeze,1,-
 Chainsaw Luncher,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Chainsaw Luncher,base,wmod_bullet_size_stat,1,-
 Chainsaw Luncher,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -70,11 +85,16 @@ Chainsaw Luncher,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Chainsaw Luncher,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Chainsaw Luncher,base,wmod_pierce_stat,1,-
 Chainsaw Luncher,base,wmod_projectile_speed_stat,1,-
-Chainsaw Luncher,base,wmod_reload_speed_stat,1,-
-Chainsaw Luncher,base,wmod_slow_on_hit,1,-
+Chainsaw Luncher,base,wmod_reload_blast_damage,1,-
+Chainsaw Luncher,base,wmod_reload_blast_knockback,1,-
+Chainsaw Luncher,base,wmod_reload_damage_boost,1,-
+Chainsaw Luncher,base,wmod_reload_move_boost,1,-
+Chainsaw Luncher,base,wmod_reload_offhand_boost,1,-
+Chainsaw Luncher,base,wmod_reload_shield_boost,1,-
+Chainsaw Luncher,base,wmod_reload_speed_link,1,-
 Chainsaw Luncher,base,wmod_stun_on_hit,1,-
 Chainsaw Luncher,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Chainsaw Luncher,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Chainsaw Luncher,base,wmod_trail_aoe_freeze,1,-
 Chainsaw Luncher,explosive_saw,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Chainsaw Luncher,explosive_saw,wmod_bullet_size_stat,1,-
 Chainsaw Luncher,explosive_saw,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -89,11 +109,16 @@ Chainsaw Luncher,explosive_saw,wmod_overheat_boost_heat,0,Requires one of: heat
 Chainsaw Luncher,explosive_saw,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Chainsaw Luncher,explosive_saw,wmod_pierce_stat,1,-
 Chainsaw Luncher,explosive_saw,wmod_projectile_speed_stat,1,-
-Chainsaw Luncher,explosive_saw,wmod_reload_speed_stat,1,-
-Chainsaw Luncher,explosive_saw,wmod_slow_on_hit,1,-
+Chainsaw Luncher,explosive_saw,wmod_reload_blast_damage,1,-
+Chainsaw Luncher,explosive_saw,wmod_reload_blast_knockback,1,-
+Chainsaw Luncher,explosive_saw,wmod_reload_damage_boost,1,-
+Chainsaw Luncher,explosive_saw,wmod_reload_move_boost,1,-
+Chainsaw Luncher,explosive_saw,wmod_reload_offhand_boost,1,-
+Chainsaw Luncher,explosive_saw,wmod_reload_shield_boost,1,-
+Chainsaw Luncher,explosive_saw,wmod_reload_speed_link,1,-
 Chainsaw Luncher,explosive_saw,wmod_stun_on_hit,1,-
 Chainsaw Luncher,explosive_saw,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Chainsaw Luncher,explosive_saw,wmod_thermal_ignition_heat,0,Requires one of: heat
+Chainsaw Luncher,explosive_saw,wmod_trail_aoe_freeze,1,-
 Chainsaw Luncher,ricochet_saw,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Chainsaw Luncher,ricochet_saw,wmod_bullet_size_stat,1,-
 Chainsaw Luncher,ricochet_saw,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -108,11 +133,16 @@ Chainsaw Luncher,ricochet_saw,wmod_overheat_boost_heat,0,Requires one of: heat
 Chainsaw Luncher,ricochet_saw,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Chainsaw Luncher,ricochet_saw,wmod_pierce_stat,1,-
 Chainsaw Luncher,ricochet_saw,wmod_projectile_speed_stat,1,-
-Chainsaw Luncher,ricochet_saw,wmod_reload_speed_stat,1,-
-Chainsaw Luncher,ricochet_saw,wmod_slow_on_hit,1,-
+Chainsaw Luncher,ricochet_saw,wmod_reload_blast_damage,1,-
+Chainsaw Luncher,ricochet_saw,wmod_reload_blast_knockback,1,-
+Chainsaw Luncher,ricochet_saw,wmod_reload_damage_boost,1,-
+Chainsaw Luncher,ricochet_saw,wmod_reload_move_boost,1,-
+Chainsaw Luncher,ricochet_saw,wmod_reload_offhand_boost,1,-
+Chainsaw Luncher,ricochet_saw,wmod_reload_shield_boost,1,-
+Chainsaw Luncher,ricochet_saw,wmod_reload_speed_link,1,-
 Chainsaw Luncher,ricochet_saw,wmod_stun_on_hit,1,-
 Chainsaw Luncher,ricochet_saw,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Chainsaw Luncher,ricochet_saw,wmod_thermal_ignition_heat,0,Requires one of: heat
+Chainsaw Luncher,ricochet_saw,wmod_trail_aoe_freeze,1,-
 Beam Blaster,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Beam Blaster,base,wmod_bullet_size_stat,0,Requires one of: projectile
 Beam Blaster,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -127,11 +157,16 @@ Beam Blaster,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Beam Blaster,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Beam Blaster,base,wmod_pierce_stat,0,Requires one of: projectile
 Beam Blaster,base,wmod_projectile_speed_stat,1,-
-Beam Blaster,base,wmod_reload_speed_stat,1,-
-Beam Blaster,base,wmod_slow_on_hit,1,-
+Beam Blaster,base,wmod_reload_blast_damage,1,-
+Beam Blaster,base,wmod_reload_blast_knockback,1,-
+Beam Blaster,base,wmod_reload_damage_boost,1,-
+Beam Blaster,base,wmod_reload_move_boost,1,-
+Beam Blaster,base,wmod_reload_offhand_boost,1,-
+Beam Blaster,base,wmod_reload_shield_boost,1,-
+Beam Blaster,base,wmod_reload_speed_link,1,-
 Beam Blaster,base,wmod_stun_on_hit,1,-
 Beam Blaster,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Beam Blaster,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Beam Blaster,base,wmod_trail_aoe_freeze,0,Requires one of: projectile
 Beam Blaster,focus_lance,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Beam Blaster,focus_lance,wmod_bullet_size_stat,0,Requires one of: projectile
 Beam Blaster,focus_lance,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -146,11 +181,16 @@ Beam Blaster,focus_lance,wmod_overheat_boost_heat,0,Requires one of: heat
 Beam Blaster,focus_lance,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Beam Blaster,focus_lance,wmod_pierce_stat,0,Requires one of: projectile
 Beam Blaster,focus_lance,wmod_projectile_speed_stat,1,-
-Beam Blaster,focus_lance,wmod_reload_speed_stat,1,-
-Beam Blaster,focus_lance,wmod_slow_on_hit,1,-
+Beam Blaster,focus_lance,wmod_reload_blast_damage,1,-
+Beam Blaster,focus_lance,wmod_reload_blast_knockback,1,-
+Beam Blaster,focus_lance,wmod_reload_damage_boost,1,-
+Beam Blaster,focus_lance,wmod_reload_move_boost,1,-
+Beam Blaster,focus_lance,wmod_reload_offhand_boost,1,-
+Beam Blaster,focus_lance,wmod_reload_shield_boost,1,-
+Beam Blaster,focus_lance,wmod_reload_speed_link,1,-
 Beam Blaster,focus_lance,wmod_stun_on_hit,1,-
 Beam Blaster,focus_lance,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Beam Blaster,focus_lance,wmod_thermal_ignition_heat,0,Requires one of: heat
+Beam Blaster,focus_lance,wmod_trail_aoe_freeze,0,Requires one of: projectile
 Beam Blaster,prism_fan,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Beam Blaster,prism_fan,wmod_bullet_size_stat,0,Requires one of: projectile
 Beam Blaster,prism_fan,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -165,11 +205,16 @@ Beam Blaster,prism_fan,wmod_overheat_boost_heat,0,Requires one of: heat
 Beam Blaster,prism_fan,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Beam Blaster,prism_fan,wmod_pierce_stat,0,Requires one of: projectile
 Beam Blaster,prism_fan,wmod_projectile_speed_stat,1,-
-Beam Blaster,prism_fan,wmod_reload_speed_stat,1,-
-Beam Blaster,prism_fan,wmod_slow_on_hit,1,-
+Beam Blaster,prism_fan,wmod_reload_blast_damage,1,-
+Beam Blaster,prism_fan,wmod_reload_blast_knockback,1,-
+Beam Blaster,prism_fan,wmod_reload_damage_boost,1,-
+Beam Blaster,prism_fan,wmod_reload_move_boost,1,-
+Beam Blaster,prism_fan,wmod_reload_offhand_boost,1,-
+Beam Blaster,prism_fan,wmod_reload_shield_boost,1,-
+Beam Blaster,prism_fan,wmod_reload_speed_link,1,-
 Beam Blaster,prism_fan,wmod_stun_on_hit,1,-
 Beam Blaster,prism_fan,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Beam Blaster,prism_fan,wmod_thermal_ignition_heat,0,Requires one of: heat
+Beam Blaster,prism_fan,wmod_trail_aoe_freeze,0,Requires one of: projectile
 Dash Blade,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Dash Blade,base,wmod_bullet_size_stat,0,Requires one of: projectile
 Dash Blade,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -184,11 +229,16 @@ Dash Blade,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Dash Blade,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Dash Blade,base,wmod_pierce_stat,0,Not compatible with melee weapons.
 Dash Blade,base,wmod_projectile_speed_stat,1,-
-Dash Blade,base,wmod_reload_speed_stat,1,-
-Dash Blade,base,wmod_slow_on_hit,1,-
+Dash Blade,base,wmod_reload_blast_damage,0,Not compatible with melee weapons.
+Dash Blade,base,wmod_reload_blast_knockback,0,Not compatible with melee weapons.
+Dash Blade,base,wmod_reload_damage_boost,0,Not compatible with melee weapons.
+Dash Blade,base,wmod_reload_move_boost,0,Not compatible with melee weapons.
+Dash Blade,base,wmod_reload_offhand_boost,0,Not compatible with melee weapons.
+Dash Blade,base,wmod_reload_shield_boost,0,Not compatible with melee weapons.
+Dash Blade,base,wmod_reload_speed_link,0,Not compatible with melee weapons.
 Dash Blade,base,wmod_stun_on_hit,1,-
 Dash Blade,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Dash Blade,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Dash Blade,base,wmod_trail_aoe_freeze,0,Not compatible with melee weapons.
 Dash Blade,frost_dash,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Dash Blade,frost_dash,wmod_bullet_size_stat,0,Requires one of: projectile
 Dash Blade,frost_dash,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -203,11 +253,16 @@ Dash Blade,frost_dash,wmod_overheat_boost_heat,0,Requires one of: heat
 Dash Blade,frost_dash,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Dash Blade,frost_dash,wmod_pierce_stat,0,Not compatible with melee weapons.
 Dash Blade,frost_dash,wmod_projectile_speed_stat,1,-
-Dash Blade,frost_dash,wmod_reload_speed_stat,1,-
-Dash Blade,frost_dash,wmod_slow_on_hit,1,-
+Dash Blade,frost_dash,wmod_reload_blast_damage,0,Not compatible with melee weapons.
+Dash Blade,frost_dash,wmod_reload_blast_knockback,0,Not compatible with melee weapons.
+Dash Blade,frost_dash,wmod_reload_damage_boost,0,Not compatible with melee weapons.
+Dash Blade,frost_dash,wmod_reload_move_boost,0,Not compatible with melee weapons.
+Dash Blade,frost_dash,wmod_reload_offhand_boost,0,Not compatible with melee weapons.
+Dash Blade,frost_dash,wmod_reload_shield_boost,0,Not compatible with melee weapons.
+Dash Blade,frost_dash,wmod_reload_speed_link,0,Not compatible with melee weapons.
 Dash Blade,frost_dash,wmod_stun_on_hit,1,-
 Dash Blade,frost_dash,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Dash Blade,frost_dash,wmod_thermal_ignition_heat,0,Requires one of: heat
+Dash Blade,frost_dash,wmod_trail_aoe_freeze,0,Not compatible with melee weapons.
 Flamethrower,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Flamethrower,base,wmod_bullet_size_stat,0,Requires one of: projectile
 Flamethrower,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -222,11 +277,16 @@ Flamethrower,base,wmod_overheat_boost_heat,1,-
 Flamethrower,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Flamethrower,base,wmod_pierce_stat,0,Requires one of: projectile
 Flamethrower,base,wmod_projectile_speed_stat,1,-
-Flamethrower,base,wmod_reload_speed_stat,1,-
-Flamethrower,base,wmod_slow_on_hit,1,-
+Flamethrower,base,wmod_reload_blast_damage,1,-
+Flamethrower,base,wmod_reload_blast_knockback,1,-
+Flamethrower,base,wmod_reload_damage_boost,1,-
+Flamethrower,base,wmod_reload_move_boost,1,-
+Flamethrower,base,wmod_reload_offhand_boost,1,-
+Flamethrower,base,wmod_reload_shield_boost,1,-
+Flamethrower,base,wmod_reload_speed_link,1,-
 Flamethrower,base,wmod_stun_on_hit,1,-
 Flamethrower,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Flamethrower,base,wmod_thermal_ignition_heat,1,-
+Flamethrower,base,wmod_trail_aoe_freeze,0,Requires one of: projectile
 Flamethrower,fire_pulse_aura,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Flamethrower,fire_pulse_aura,wmod_bullet_size_stat,0,Requires one of: projectile
 Flamethrower,fire_pulse_aura,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -241,11 +301,16 @@ Flamethrower,fire_pulse_aura,wmod_overheat_boost_heat,1,-
 Flamethrower,fire_pulse_aura,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Flamethrower,fire_pulse_aura,wmod_pierce_stat,0,Requires one of: projectile
 Flamethrower,fire_pulse_aura,wmod_projectile_speed_stat,1,-
-Flamethrower,fire_pulse_aura,wmod_reload_speed_stat,1,-
-Flamethrower,fire_pulse_aura,wmod_slow_on_hit,1,-
+Flamethrower,fire_pulse_aura,wmod_reload_blast_damage,1,-
+Flamethrower,fire_pulse_aura,wmod_reload_blast_knockback,1,-
+Flamethrower,fire_pulse_aura,wmod_reload_damage_boost,1,-
+Flamethrower,fire_pulse_aura,wmod_reload_move_boost,1,-
+Flamethrower,fire_pulse_aura,wmod_reload_offhand_boost,1,-
+Flamethrower,fire_pulse_aura,wmod_reload_shield_boost,1,-
+Flamethrower,fire_pulse_aura,wmod_reload_speed_link,1,-
 Flamethrower,fire_pulse_aura,wmod_stun_on_hit,1,-
 Flamethrower,fire_pulse_aura,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Flamethrower,fire_pulse_aura,wmod_thermal_ignition_heat,1,-
+Flamethrower,fire_pulse_aura,wmod_trail_aoe_freeze,0,Requires one of: projectile
 Flamethrower,long_cone_flame,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Flamethrower,long_cone_flame,wmod_bullet_size_stat,0,Requires one of: projectile
 Flamethrower,long_cone_flame,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -260,11 +325,16 @@ Flamethrower,long_cone_flame,wmod_overheat_boost_heat,1,-
 Flamethrower,long_cone_flame,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Flamethrower,long_cone_flame,wmod_pierce_stat,0,Requires one of: projectile
 Flamethrower,long_cone_flame,wmod_projectile_speed_stat,1,-
-Flamethrower,long_cone_flame,wmod_reload_speed_stat,1,-
-Flamethrower,long_cone_flame,wmod_slow_on_hit,1,-
+Flamethrower,long_cone_flame,wmod_reload_blast_damage,1,-
+Flamethrower,long_cone_flame,wmod_reload_blast_knockback,1,-
+Flamethrower,long_cone_flame,wmod_reload_damage_boost,1,-
+Flamethrower,long_cone_flame,wmod_reload_move_boost,1,-
+Flamethrower,long_cone_flame,wmod_reload_offhand_boost,1,-
+Flamethrower,long_cone_flame,wmod_reload_shield_boost,1,-
+Flamethrower,long_cone_flame,wmod_reload_speed_link,1,-
 Flamethrower,long_cone_flame,wmod_stun_on_hit,1,-
 Flamethrower,long_cone_flame,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Flamethrower,long_cone_flame,wmod_thermal_ignition_heat,1,-
+Flamethrower,long_cone_flame,wmod_trail_aoe_freeze,0,Requires one of: projectile
 Glacier Projector,base,wmod_brittle_trigger_freeze,1,-
 Glacier Projector,base,wmod_bullet_size_stat,0,Requires one of: projectile
 Glacier Projector,base,wmod_cryo_infuser_freeze,1,-
@@ -279,11 +349,16 @@ Glacier Projector,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Glacier Projector,base,wmod_permafrost_field_freeze,1,-
 Glacier Projector,base,wmod_pierce_stat,0,Requires one of: projectile
 Glacier Projector,base,wmod_projectile_speed_stat,1,-
-Glacier Projector,base,wmod_reload_speed_stat,1,-
-Glacier Projector,base,wmod_slow_on_hit,1,-
+Glacier Projector,base,wmod_reload_blast_damage,1,-
+Glacier Projector,base,wmod_reload_blast_knockback,1,-
+Glacier Projector,base,wmod_reload_damage_boost,1,-
+Glacier Projector,base,wmod_reload_move_boost,1,-
+Glacier Projector,base,wmod_reload_offhand_boost,1,-
+Glacier Projector,base,wmod_reload_shield_boost,1,-
+Glacier Projector,base,wmod_reload_speed_link,1,-
 Glacier Projector,base,wmod_stun_on_hit,1,-
 Glacier Projector,base,wmod_subzero_extension_freeze,1,-
-Glacier Projector,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Glacier Projector,base,wmod_trail_aoe_freeze,0,Requires one of: projectile
 Laser,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Laser,base,wmod_bullet_size_stat,1,-
 Laser,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -298,11 +373,16 @@ Laser,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Laser,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Laser,base,wmod_pierce_stat,1,-
 Laser,base,wmod_projectile_speed_stat,1,-
-Laser,base,wmod_reload_speed_stat,1,-
-Laser,base,wmod_slow_on_hit,1,-
+Laser,base,wmod_reload_blast_damage,1,-
+Laser,base,wmod_reload_blast_knockback,1,-
+Laser,base,wmod_reload_damage_boost,1,-
+Laser,base,wmod_reload_move_boost,1,-
+Laser,base,wmod_reload_offhand_boost,1,-
+Laser,base,wmod_reload_shield_boost,1,-
+Laser,base,wmod_reload_speed_link,1,-
 Laser,base,wmod_stun_on_hit,1,-
 Laser,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Laser,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Laser,base,wmod_trail_aoe_freeze,1,-
 Machine Gun,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Machine Gun,base,wmod_bullet_size_stat,1,-
 Machine Gun,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -317,11 +397,16 @@ Machine Gun,base,wmod_overheat_boost_heat,1,-
 Machine Gun,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Machine Gun,base,wmod_pierce_stat,1,-
 Machine Gun,base,wmod_projectile_speed_stat,1,-
-Machine Gun,base,wmod_reload_speed_stat,1,-
-Machine Gun,base,wmod_slow_on_hit,1,-
+Machine Gun,base,wmod_reload_blast_damage,1,-
+Machine Gun,base,wmod_reload_blast_knockback,1,-
+Machine Gun,base,wmod_reload_damage_boost,1,-
+Machine Gun,base,wmod_reload_move_boost,1,-
+Machine Gun,base,wmod_reload_offhand_boost,1,-
+Machine Gun,base,wmod_reload_shield_boost,1,-
+Machine Gun,base,wmod_reload_speed_link,1,-
 Machine Gun,base,wmod_stun_on_hit,1,-
 Machine Gun,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Machine Gun,base,wmod_thermal_ignition_heat,1,-
+Machine Gun,base,wmod_trail_aoe_freeze,1,-
 Machine Gun,shield_mg,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Machine Gun,shield_mg,wmod_bullet_size_stat,1,-
 Machine Gun,shield_mg,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -336,11 +421,16 @@ Machine Gun,shield_mg,wmod_overheat_boost_heat,1,-
 Machine Gun,shield_mg,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Machine Gun,shield_mg,wmod_pierce_stat,1,-
 Machine Gun,shield_mg,wmod_projectile_speed_stat,1,-
-Machine Gun,shield_mg,wmod_reload_speed_stat,1,-
-Machine Gun,shield_mg,wmod_slow_on_hit,1,-
+Machine Gun,shield_mg,wmod_reload_blast_damage,1,-
+Machine Gun,shield_mg,wmod_reload_blast_knockback,1,-
+Machine Gun,shield_mg,wmod_reload_damage_boost,1,-
+Machine Gun,shield_mg,wmod_reload_move_boost,1,-
+Machine Gun,shield_mg,wmod_reload_offhand_boost,1,-
+Machine Gun,shield_mg,wmod_reload_shield_boost,1,-
+Machine Gun,shield_mg,wmod_reload_speed_link,1,-
 Machine Gun,shield_mg,wmod_stun_on_hit,1,-
 Machine Gun,shield_mg,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Machine Gun,shield_mg,wmod_thermal_ignition_heat,1,-
+Machine Gun,shield_mg,wmod_trail_aoe_freeze,1,-
 Machine Gun,gatling_mg,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Machine Gun,gatling_mg,wmod_bullet_size_stat,1,-
 Machine Gun,gatling_mg,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -355,11 +445,16 @@ Machine Gun,gatling_mg,wmod_overheat_boost_heat,1,-
 Machine Gun,gatling_mg,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Machine Gun,gatling_mg,wmod_pierce_stat,1,-
 Machine Gun,gatling_mg,wmod_projectile_speed_stat,1,-
-Machine Gun,gatling_mg,wmod_reload_speed_stat,1,-
-Machine Gun,gatling_mg,wmod_slow_on_hit,1,-
+Machine Gun,gatling_mg,wmod_reload_blast_damage,1,-
+Machine Gun,gatling_mg,wmod_reload_blast_knockback,1,-
+Machine Gun,gatling_mg,wmod_reload_damage_boost,1,-
+Machine Gun,gatling_mg,wmod_reload_move_boost,1,-
+Machine Gun,gatling_mg,wmod_reload_offhand_boost,1,-
+Machine Gun,gatling_mg,wmod_reload_shield_boost,1,-
+Machine Gun,gatling_mg,wmod_reload_speed_link,1,-
 Machine Gun,gatling_mg,wmod_stun_on_hit,1,-
 Machine Gun,gatling_mg,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Machine Gun,gatling_mg,wmod_thermal_ignition_heat,1,-
+Machine Gun,gatling_mg,wmod_trail_aoe_freeze,1,-
 Orbit,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Orbit,base,wmod_bullet_size_stat,1,-
 Orbit,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -374,11 +469,16 @@ Orbit,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Orbit,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Orbit,base,wmod_pierce_stat,1,-
 Orbit,base,wmod_projectile_speed_stat,1,-
-Orbit,base,wmod_reload_speed_stat,1,-
-Orbit,base,wmod_slow_on_hit,1,-
+Orbit,base,wmod_reload_blast_damage,1,-
+Orbit,base,wmod_reload_blast_knockback,1,-
+Orbit,base,wmod_reload_damage_boost,1,-
+Orbit,base,wmod_reload_move_boost,1,-
+Orbit,base,wmod_reload_offhand_boost,1,-
+Orbit,base,wmod_reload_shield_boost,1,-
+Orbit,base,wmod_reload_speed_link,1,-
 Orbit,base,wmod_stun_on_hit,1,-
 Orbit,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Orbit,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Orbit,base,wmod_trail_aoe_freeze,1,-
 Orbit,energy_orbit,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Orbit,energy_orbit,wmod_bullet_size_stat,1,-
 Orbit,energy_orbit,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -393,11 +493,16 @@ Orbit,energy_orbit,wmod_overheat_boost_heat,0,Requires one of: heat
 Orbit,energy_orbit,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Orbit,energy_orbit,wmod_pierce_stat,1,-
 Orbit,energy_orbit,wmod_projectile_speed_stat,1,-
-Orbit,energy_orbit,wmod_reload_speed_stat,1,-
-Orbit,energy_orbit,wmod_slow_on_hit,1,-
+Orbit,energy_orbit,wmod_reload_blast_damage,1,-
+Orbit,energy_orbit,wmod_reload_blast_knockback,1,-
+Orbit,energy_orbit,wmod_reload_damage_boost,1,-
+Orbit,energy_orbit,wmod_reload_move_boost,1,-
+Orbit,energy_orbit,wmod_reload_offhand_boost,1,-
+Orbit,energy_orbit,wmod_reload_shield_boost,1,-
+Orbit,energy_orbit,wmod_reload_speed_link,1,-
 Orbit,energy_orbit,wmod_stun_on_hit,1,-
 Orbit,energy_orbit,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Orbit,energy_orbit,wmod_thermal_ignition_heat,0,Requires one of: heat
+Orbit,energy_orbit,wmod_trail_aoe_freeze,1,-
 Orbit,frost_orbit,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Orbit,frost_orbit,wmod_bullet_size_stat,1,-
 Orbit,frost_orbit,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -412,11 +517,16 @@ Orbit,frost_orbit,wmod_overheat_boost_heat,0,Requires one of: heat
 Orbit,frost_orbit,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Orbit,frost_orbit,wmod_pierce_stat,1,-
 Orbit,frost_orbit,wmod_projectile_speed_stat,1,-
-Orbit,frost_orbit,wmod_reload_speed_stat,1,-
-Orbit,frost_orbit,wmod_slow_on_hit,1,-
+Orbit,frost_orbit,wmod_reload_blast_damage,1,-
+Orbit,frost_orbit,wmod_reload_blast_knockback,1,-
+Orbit,frost_orbit,wmod_reload_damage_boost,1,-
+Orbit,frost_orbit,wmod_reload_move_boost,1,-
+Orbit,frost_orbit,wmod_reload_offhand_boost,1,-
+Orbit,frost_orbit,wmod_reload_shield_boost,1,-
+Orbit,frost_orbit,wmod_reload_speed_link,1,-
 Orbit,frost_orbit,wmod_stun_on_hit,1,-
 Orbit,frost_orbit,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Orbit,frost_orbit,wmod_thermal_ignition_heat,0,Requires one of: heat
+Orbit,frost_orbit,wmod_trail_aoe_freeze,1,-
 Pistol,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Pistol,base,wmod_bullet_size_stat,1,-
 Pistol,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -431,11 +541,16 @@ Pistol,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Pistol,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Pistol,base,wmod_pierce_stat,1,-
 Pistol,base,wmod_projectile_speed_stat,1,-
-Pistol,base,wmod_reload_speed_stat,1,-
-Pistol,base,wmod_slow_on_hit,1,-
+Pistol,base,wmod_reload_blast_damage,1,-
+Pistol,base,wmod_reload_blast_knockback,1,-
+Pistol,base,wmod_reload_damage_boost,1,-
+Pistol,base,wmod_reload_move_boost,1,-
+Pistol,base,wmod_reload_offhand_boost,1,-
+Pistol,base,wmod_reload_shield_boost,1,-
+Pistol,base,wmod_reload_speed_link,1,-
 Pistol,base,wmod_stun_on_hit,1,-
 Pistol,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Pistol,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Pistol,base,wmod_trail_aoe_freeze,1,-
 Pistol,arc_coil,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Pistol,arc_coil,wmod_bullet_size_stat,1,-
 Pistol,arc_coil,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -450,11 +565,16 @@ Pistol,arc_coil,wmod_overheat_boost_heat,0,Requires one of: heat
 Pistol,arc_coil,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Pistol,arc_coil,wmod_pierce_stat,1,-
 Pistol,arc_coil,wmod_projectile_speed_stat,1,-
-Pistol,arc_coil,wmod_reload_speed_stat,1,-
-Pistol,arc_coil,wmod_slow_on_hit,1,-
+Pistol,arc_coil,wmod_reload_blast_damage,1,-
+Pistol,arc_coil,wmod_reload_blast_knockback,1,-
+Pistol,arc_coil,wmod_reload_damage_boost,1,-
+Pistol,arc_coil,wmod_reload_move_boost,1,-
+Pistol,arc_coil,wmod_reload_offhand_boost,1,-
+Pistol,arc_coil,wmod_reload_shield_boost,1,-
+Pistol,arc_coil,wmod_reload_speed_link,1,-
 Pistol,arc_coil,wmod_stun_on_hit,1,-
 Pistol,arc_coil,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Pistol,arc_coil,wmod_thermal_ignition_heat,0,Requires one of: heat
+Pistol,arc_coil,wmod_trail_aoe_freeze,1,-
 Pistol,cryo_carbine,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Pistol,cryo_carbine,wmod_bullet_size_stat,1,-
 Pistol,cryo_carbine,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -469,11 +589,16 @@ Pistol,cryo_carbine,wmod_overheat_boost_heat,0,Requires one of: heat
 Pistol,cryo_carbine,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Pistol,cryo_carbine,wmod_pierce_stat,1,-
 Pistol,cryo_carbine,wmod_projectile_speed_stat,1,-
-Pistol,cryo_carbine,wmod_reload_speed_stat,1,-
-Pistol,cryo_carbine,wmod_slow_on_hit,1,-
+Pistol,cryo_carbine,wmod_reload_blast_damage,1,-
+Pistol,cryo_carbine,wmod_reload_blast_knockback,1,-
+Pistol,cryo_carbine,wmod_reload_damage_boost,1,-
+Pistol,cryo_carbine,wmod_reload_move_boost,1,-
+Pistol,cryo_carbine,wmod_reload_offhand_boost,1,-
+Pistol,cryo_carbine,wmod_reload_shield_boost,1,-
+Pistol,cryo_carbine,wmod_reload_speed_link,1,-
 Pistol,cryo_carbine,wmod_stun_on_hit,1,-
 Pistol,cryo_carbine,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Pistol,cryo_carbine,wmod_thermal_ignition_heat,0,Requires one of: heat
+Pistol,cryo_carbine,wmod_trail_aoe_freeze,1,-
 Plasma Lance,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Plasma Lance,base,wmod_bullet_size_stat,1,-
 Plasma Lance,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -488,11 +613,16 @@ Plasma Lance,base,wmod_overheat_boost_heat,1,-
 Plasma Lance,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Plasma Lance,base,wmod_pierce_stat,1,-
 Plasma Lance,base,wmod_projectile_speed_stat,1,-
-Plasma Lance,base,wmod_reload_speed_stat,1,-
-Plasma Lance,base,wmod_slow_on_hit,1,-
+Plasma Lance,base,wmod_reload_blast_damage,1,-
+Plasma Lance,base,wmod_reload_blast_knockback,1,-
+Plasma Lance,base,wmod_reload_damage_boost,1,-
+Plasma Lance,base,wmod_reload_move_boost,1,-
+Plasma Lance,base,wmod_reload_offhand_boost,1,-
+Plasma Lance,base,wmod_reload_shield_boost,1,-
+Plasma Lance,base,wmod_reload_speed_link,1,-
 Plasma Lance,base,wmod_stun_on_hit,1,-
 Plasma Lance,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Plasma Lance,base,wmod_thermal_ignition_heat,1,-
+Plasma Lance,base,wmod_trail_aoe_freeze,1,-
 Rocket Luncher,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Rocket Luncher,base,wmod_bullet_size_stat,1,-
 Rocket Luncher,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -507,11 +637,16 @@ Rocket Luncher,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Rocket Luncher,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Rocket Luncher,base,wmod_pierce_stat,1,-
 Rocket Luncher,base,wmod_projectile_speed_stat,1,-
-Rocket Luncher,base,wmod_reload_speed_stat,1,-
-Rocket Luncher,base,wmod_slow_on_hit,1,-
+Rocket Luncher,base,wmod_reload_blast_damage,1,-
+Rocket Luncher,base,wmod_reload_blast_knockback,1,-
+Rocket Luncher,base,wmod_reload_damage_boost,1,-
+Rocket Luncher,base,wmod_reload_move_boost,1,-
+Rocket Luncher,base,wmod_reload_offhand_boost,1,-
+Rocket Luncher,base,wmod_reload_shield_boost,1,-
+Rocket Luncher,base,wmod_reload_speed_link,1,-
 Rocket Luncher,base,wmod_stun_on_hit,1,-
 Rocket Luncher,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Rocket Luncher,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Rocket Luncher,base,wmod_trail_aoe_freeze,1,-
 Rocket Luncher,napalm_rocket,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Rocket Luncher,napalm_rocket,wmod_bullet_size_stat,1,-
 Rocket Luncher,napalm_rocket,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -526,11 +661,16 @@ Rocket Luncher,napalm_rocket,wmod_overheat_boost_heat,0,Requires one of: heat
 Rocket Luncher,napalm_rocket,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Rocket Luncher,napalm_rocket,wmod_pierce_stat,1,-
 Rocket Luncher,napalm_rocket,wmod_projectile_speed_stat,1,-
-Rocket Luncher,napalm_rocket,wmod_reload_speed_stat,1,-
-Rocket Luncher,napalm_rocket,wmod_slow_on_hit,1,-
+Rocket Luncher,napalm_rocket,wmod_reload_blast_damage,1,-
+Rocket Luncher,napalm_rocket,wmod_reload_blast_knockback,1,-
+Rocket Luncher,napalm_rocket,wmod_reload_damage_boost,1,-
+Rocket Luncher,napalm_rocket,wmod_reload_move_boost,1,-
+Rocket Luncher,napalm_rocket,wmod_reload_offhand_boost,1,-
+Rocket Luncher,napalm_rocket,wmod_reload_shield_boost,1,-
+Rocket Luncher,napalm_rocket,wmod_reload_speed_link,1,-
 Rocket Luncher,napalm_rocket,wmod_stun_on_hit,1,-
 Rocket Luncher,napalm_rocket,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Rocket Luncher,napalm_rocket,wmod_thermal_ignition_heat,0,Requires one of: heat
+Rocket Luncher,napalm_rocket,wmod_trail_aoe_freeze,1,-
 Rocket Luncher,salvo_rocket,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Rocket Luncher,salvo_rocket,wmod_bullet_size_stat,1,-
 Rocket Luncher,salvo_rocket,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -545,11 +685,16 @@ Rocket Luncher,salvo_rocket,wmod_overheat_boost_heat,0,Requires one of: heat
 Rocket Luncher,salvo_rocket,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Rocket Luncher,salvo_rocket,wmod_pierce_stat,1,-
 Rocket Luncher,salvo_rocket,wmod_projectile_speed_stat,1,-
-Rocket Luncher,salvo_rocket,wmod_reload_speed_stat,1,-
-Rocket Luncher,salvo_rocket,wmod_slow_on_hit,1,-
+Rocket Luncher,salvo_rocket,wmod_reload_blast_damage,1,-
+Rocket Luncher,salvo_rocket,wmod_reload_blast_knockback,1,-
+Rocket Luncher,salvo_rocket,wmod_reload_damage_boost,1,-
+Rocket Luncher,salvo_rocket,wmod_reload_move_boost,1,-
+Rocket Luncher,salvo_rocket,wmod_reload_offhand_boost,1,-
+Rocket Luncher,salvo_rocket,wmod_reload_shield_boost,1,-
+Rocket Luncher,salvo_rocket,wmod_reload_speed_link,1,-
 Rocket Luncher,salvo_rocket,wmod_stun_on_hit,1,-
 Rocket Luncher,salvo_rocket,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Rocket Luncher,salvo_rocket,wmod_thermal_ignition_heat,0,Requires one of: heat
+Rocket Luncher,salvo_rocket,wmod_trail_aoe_freeze,1,-
 Shotgun,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Shotgun,base,wmod_bullet_size_stat,1,-
 Shotgun,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -564,11 +709,16 @@ Shotgun,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Shotgun,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Shotgun,base,wmod_pierce_stat,1,-
 Shotgun,base,wmod_projectile_speed_stat,1,-
-Shotgun,base,wmod_reload_speed_stat,1,-
-Shotgun,base,wmod_slow_on_hit,1,-
+Shotgun,base,wmod_reload_blast_damage,1,-
+Shotgun,base,wmod_reload_blast_knockback,1,-
+Shotgun,base,wmod_reload_damage_boost,1,-
+Shotgun,base,wmod_reload_move_boost,1,-
+Shotgun,base,wmod_reload_offhand_boost,1,-
+Shotgun,base,wmod_reload_shield_boost,1,-
+Shotgun,base,wmod_reload_speed_link,1,-
 Shotgun,base,wmod_stun_on_hit,1,-
 Shotgun,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Shotgun,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Shotgun,base,wmod_trail_aoe_freeze,1,-
 Shotgun,shatter_buckshot,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Shotgun,shatter_buckshot,wmod_bullet_size_stat,1,-
 Shotgun,shatter_buckshot,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -583,11 +733,16 @@ Shotgun,shatter_buckshot,wmod_overheat_boost_heat,0,Requires one of: heat
 Shotgun,shatter_buckshot,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Shotgun,shatter_buckshot,wmod_pierce_stat,1,-
 Shotgun,shatter_buckshot,wmod_projectile_speed_stat,1,-
-Shotgun,shatter_buckshot,wmod_reload_speed_stat,1,-
-Shotgun,shatter_buckshot,wmod_slow_on_hit,1,-
+Shotgun,shatter_buckshot,wmod_reload_blast_damage,1,-
+Shotgun,shatter_buckshot,wmod_reload_blast_knockback,1,-
+Shotgun,shatter_buckshot,wmod_reload_damage_boost,1,-
+Shotgun,shatter_buckshot,wmod_reload_move_boost,1,-
+Shotgun,shatter_buckshot,wmod_reload_offhand_boost,1,-
+Shotgun,shatter_buckshot,wmod_reload_shield_boost,1,-
+Shotgun,shatter_buckshot,wmod_reload_speed_link,1,-
 Shotgun,shatter_buckshot,wmod_stun_on_hit,1,-
 Shotgun,shatter_buckshot,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Shotgun,shatter_buckshot,wmod_thermal_ignition_heat,0,Requires one of: heat
+Shotgun,shatter_buckshot,wmod_trail_aoe_freeze,1,-
 Sniper,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Sniper,base,wmod_bullet_size_stat,0,Requires one of: projectile
 Sniper,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -602,11 +757,16 @@ Sniper,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Sniper,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Sniper,base,wmod_pierce_stat,0,Requires one of: projectile
 Sniper,base,wmod_projectile_speed_stat,1,-
-Sniper,base,wmod_reload_speed_stat,1,-
-Sniper,base,wmod_slow_on_hit,1,-
+Sniper,base,wmod_reload_blast_damage,1,-
+Sniper,base,wmod_reload_blast_knockback,1,-
+Sniper,base,wmod_reload_damage_boost,1,-
+Sniper,base,wmod_reload_move_boost,1,-
+Sniper,base,wmod_reload_offhand_boost,1,-
+Sniper,base,wmod_reload_shield_boost,1,-
+Sniper,base,wmod_reload_speed_link,1,-
 Sniper,base,wmod_stun_on_hit,1,-
 Sniper,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Sniper,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Sniper,base,wmod_trail_aoe_freeze,0,Requires one of: projectile
 Sniper,sniper_deep_pierce,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Sniper,sniper_deep_pierce,wmod_bullet_size_stat,0,Requires one of: projectile
 Sniper,sniper_deep_pierce,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -621,11 +781,16 @@ Sniper,sniper_deep_pierce,wmod_overheat_boost_heat,0,Requires one of: heat
 Sniper,sniper_deep_pierce,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Sniper,sniper_deep_pierce,wmod_pierce_stat,0,Requires one of: projectile
 Sniper,sniper_deep_pierce,wmod_projectile_speed_stat,1,-
-Sniper,sniper_deep_pierce,wmod_reload_speed_stat,1,-
-Sniper,sniper_deep_pierce,wmod_slow_on_hit,1,-
+Sniper,sniper_deep_pierce,wmod_reload_blast_damage,1,-
+Sniper,sniper_deep_pierce,wmod_reload_blast_knockback,1,-
+Sniper,sniper_deep_pierce,wmod_reload_damage_boost,1,-
+Sniper,sniper_deep_pierce,wmod_reload_move_boost,1,-
+Sniper,sniper_deep_pierce,wmod_reload_offhand_boost,1,-
+Sniper,sniper_deep_pierce,wmod_reload_shield_boost,1,-
+Sniper,sniper_deep_pierce,wmod_reload_speed_link,1,-
 Sniper,sniper_deep_pierce,wmod_stun_on_hit,1,-
 Sniper,sniper_deep_pierce,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Sniper,sniper_deep_pierce,wmod_thermal_ignition_heat,0,Requires one of: heat
+Sniper,sniper_deep_pierce,wmod_trail_aoe_freeze,0,Requires one of: projectile
 Sniper,sniper_impact_burst,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Sniper,sniper_impact_burst,wmod_bullet_size_stat,0,Requires one of: projectile
 Sniper,sniper_impact_burst,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -640,11 +805,16 @@ Sniper,sniper_impact_burst,wmod_overheat_boost_heat,0,Requires one of: heat
 Sniper,sniper_impact_burst,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Sniper,sniper_impact_burst,wmod_pierce_stat,0,Requires one of: projectile
 Sniper,sniper_impact_burst,wmod_projectile_speed_stat,1,-
-Sniper,sniper_impact_burst,wmod_reload_speed_stat,1,-
-Sniper,sniper_impact_burst,wmod_slow_on_hit,1,-
+Sniper,sniper_impact_burst,wmod_reload_blast_damage,1,-
+Sniper,sniper_impact_burst,wmod_reload_blast_knockback,1,-
+Sniper,sniper_impact_burst,wmod_reload_damage_boost,1,-
+Sniper,sniper_impact_burst,wmod_reload_move_boost,1,-
+Sniper,sniper_impact_burst,wmod_reload_offhand_boost,1,-
+Sniper,sniper_impact_burst,wmod_reload_shield_boost,1,-
+Sniper,sniper_impact_burst,wmod_reload_speed_link,1,-
 Sniper,sniper_impact_burst,wmod_stun_on_hit,1,-
 Sniper,sniper_impact_burst,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Sniper,sniper_impact_burst,wmod_thermal_ignition_heat,0,Requires one of: heat
+Sniper,sniper_impact_burst,wmod_trail_aoe_freeze,0,Requires one of: projectile
 Spear Launcher,base,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Spear Launcher,base,wmod_bullet_size_stat,1,-
 Spear Launcher,base,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -659,11 +829,16 @@ Spear Launcher,base,wmod_overheat_boost_heat,0,Requires one of: heat
 Spear Launcher,base,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Spear Launcher,base,wmod_pierce_stat,1,-
 Spear Launcher,base,wmod_projectile_speed_stat,1,-
-Spear Launcher,base,wmod_reload_speed_stat,1,-
-Spear Launcher,base,wmod_slow_on_hit,1,-
+Spear Launcher,base,wmod_reload_blast_damage,1,-
+Spear Launcher,base,wmod_reload_blast_knockback,1,-
+Spear Launcher,base,wmod_reload_damage_boost,1,-
+Spear Launcher,base,wmod_reload_move_boost,1,-
+Spear Launcher,base,wmod_reload_offhand_boost,1,-
+Spear Launcher,base,wmod_reload_shield_boost,1,-
+Spear Launcher,base,wmod_reload_speed_link,1,-
 Spear Launcher,base,wmod_stun_on_hit,1,-
 Spear Launcher,base,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Spear Launcher,base,wmod_thermal_ignition_heat,0,Requires one of: heat
+Spear Launcher,base,wmod_trail_aoe_freeze,1,-
 Spear Launcher,spear_multi_pierce,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Spear Launcher,spear_multi_pierce,wmod_bullet_size_stat,1,-
 Spear Launcher,spear_multi_pierce,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -678,11 +853,16 @@ Spear Launcher,spear_multi_pierce,wmod_overheat_boost_heat,0,Requires one of: he
 Spear Launcher,spear_multi_pierce,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Spear Launcher,spear_multi_pierce,wmod_pierce_stat,1,-
 Spear Launcher,spear_multi_pierce,wmod_projectile_speed_stat,1,-
-Spear Launcher,spear_multi_pierce,wmod_reload_speed_stat,1,-
-Spear Launcher,spear_multi_pierce,wmod_slow_on_hit,1,-
+Spear Launcher,spear_multi_pierce,wmod_reload_blast_damage,1,-
+Spear Launcher,spear_multi_pierce,wmod_reload_blast_knockback,1,-
+Spear Launcher,spear_multi_pierce,wmod_reload_damage_boost,1,-
+Spear Launcher,spear_multi_pierce,wmod_reload_move_boost,1,-
+Spear Launcher,spear_multi_pierce,wmod_reload_offhand_boost,1,-
+Spear Launcher,spear_multi_pierce,wmod_reload_shield_boost,1,-
+Spear Launcher,spear_multi_pierce,wmod_reload_speed_link,1,-
 Spear Launcher,spear_multi_pierce,wmod_stun_on_hit,1,-
 Spear Launcher,spear_multi_pierce,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Spear Launcher,spear_multi_pierce,wmod_thermal_ignition_heat,0,Requires one of: heat
+Spear Launcher,spear_multi_pierce,wmod_trail_aoe_freeze,1,-
 Spear Launcher,spear_rending,wmod_brittle_trigger_freeze,0,Requires one of: freeze
 Spear Launcher,spear_rending,wmod_bullet_size_stat,1,-
 Spear Launcher,spear_rending,wmod_cryo_infuser_freeze,0,Requires one of: freeze
@@ -697,8 +877,13 @@ Spear Launcher,spear_rending,wmod_overheat_boost_heat,0,Requires one of: heat
 Spear Launcher,spear_rending,wmod_permafrost_field_freeze,0,Requires one of: freeze
 Spear Launcher,spear_rending,wmod_pierce_stat,1,-
 Spear Launcher,spear_rending,wmod_projectile_speed_stat,1,-
-Spear Launcher,spear_rending,wmod_reload_speed_stat,1,-
-Spear Launcher,spear_rending,wmod_slow_on_hit,1,-
+Spear Launcher,spear_rending,wmod_reload_blast_damage,1,-
+Spear Launcher,spear_rending,wmod_reload_blast_knockback,1,-
+Spear Launcher,spear_rending,wmod_reload_damage_boost,1,-
+Spear Launcher,spear_rending,wmod_reload_move_boost,1,-
+Spear Launcher,spear_rending,wmod_reload_offhand_boost,1,-
+Spear Launcher,spear_rending,wmod_reload_shield_boost,1,-
+Spear Launcher,spear_rending,wmod_reload_speed_link,1,-
 Spear Launcher,spear_rending,wmod_stun_on_hit,1,-
 Spear Launcher,spear_rending,wmod_subzero_extension_freeze,0,Requires one of: freeze
-Spear Launcher,spear_rending,wmod_thermal_ignition_heat,0,Requires one of: heat
+Spear Launcher,spear_rending,wmod_trail_aoe_freeze,1,-

@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://Player/Weapons/Modules/wmod_shatter_strike_freeze.gd" id="2_script"]
+[ext_resource type="Texture2D" path="res://Textures/test/atk_up.png" id="3_icon"]
+
+[node name="ShatterStrikeFreeze" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+module_traits = PackedStringArray("trigger", "freeze", "physical")
+required_weapon_traits = 65536
+
+[node name="Sprite" parent="." index="0"]
+texture = ExtResource("3_icon")

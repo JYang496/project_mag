@@ -12,6 +12,9 @@ var knock_back = {
 @onready var rotate_around_player = preload("res://Player/Weapons/Effects/rotate_around_player.tscn")
 
 var satellites : Array = []
+const ORBIT_PROJECTILE_LIFETIME_SEC: float = 5.0
+const LV1_TARGET_ACTIVE_COUNT: float = 2.0
+@export var orbit_radius_jitter: float = 12.0
 
 
 
@@ -33,6 +36,7 @@ var weapon_data = {
 		"damage": "15",
 		"number": "1",
 		"spin_speed": "3",
+		"reload": "2.5",
 		"cost": "1",
 	},
 	"2": {
@@ -40,6 +44,7 @@ var weapon_data = {
 		"damage": "15",
 		"number": "2",
 		"spin_speed": "3",
+		"reload": "2.2",
 		"cost": "1",
 	},
 	"3": {
@@ -47,6 +52,7 @@ var weapon_data = {
 		"damage": "18",
 		"number": "3",
 		"spin_speed": "3",
+		"reload": "2.0",
 		"cost": "1",
 	},
 	"4": {
@@ -54,6 +60,7 @@ var weapon_data = {
 		"damage": "21",
 		"number": "3",
 		"spin_speed": "4",
+		"reload": "1.8",
 		"cost": "1",
 	},
 	"5": {
@@ -61,6 +68,7 @@ var weapon_data = {
 		"damage": "30",
 		"number": "4",
 		"spin_speed": "4",
+		"reload": "1.6",
 		"cost": "1",
 	},
 	"6": {
@@ -68,6 +76,7 @@ var weapon_data = {
 		"damage": "40",
 		"number": "5",
 		"spin_speed": "4",
+		"reload": "1.4",
 		"cost": "1",
 	},
 	"7": {
@@ -75,16 +84,24 @@ var weapon_data = {
 		"damage": "50",
 		"number": "6",
 		"spin_speed": "4",
+		"reload": "1.2",
 		"cost": "1",
 	}
 }
 
 func set_level(lv) -> void:
-	lv = str(lv)
-	level = int(weapon_data[lv]["level"])
-	base_damage = int(weapon_data[lv]["damage"])
-	spin_speed = int(weapon_data[lv]["spin_speed"])
-	number = int(weapon_data[lv]["number"])
+	var requested_level := maxi(int(lv), 1)
+	var key := str(requested_level)
+	if not weapon_data.has(key):
+		key = str(clampi(requested_level, 1, weapon_data.size()))
+		if not weapon_data.has(key):
+			return
+	var level_data: Dictionary = weapon_data[key]
+	level = clampi(int(level_data.get("level", key)), 1, weapon_data.size())
+	base_damage = int(level_data.get("damage", 1))
+	spin_speed = int(level_data.get("spin_speed", spin_speed))
+	number = int(level_data.get("number", number))
+	base_attack_cooldown = float(level_data.get("reload", ORBIT_PROJECTILE_LIFETIME_SEC / maxf(LV1_TARGET_ACTIVE_COUNT, 1.0)))
 	base_projectile_hits = 99999
 	module_list.clear()
 	sync_stats()
@@ -95,7 +112,7 @@ func set_level(lv) -> void:
 func apply_rotate_around_player(projectile_node : Node2D, offset_step : float, n : int, spin_speed_value: float) -> void:
 	var rotate_around_player_ins = rotate_around_player.instantiate()
 	rotate_around_player_ins.spin_speed = spin_speed_value
-	rotate_around_player_ins.radius = radius
+	rotate_around_player_ins.radius = _resolve_orbit_spawn_radius()
 	rotate_around_player_ins.angle_offset = offset_step * n
 	
 	projectile_node.call_deferred("add_child",rotate_around_player_ins)
@@ -122,6 +139,7 @@ func _on_tree_exiting() -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
+	_prune_satellites()
 	if is_main_weapon():
 		return
 	_process_offhand_main_weapon_buff()
@@ -132,8 +150,13 @@ func _on_weapon_role_changed(next_role: String) -> void:
 		_clear_offhand_main_buff()
 
 func _refresh_orbit_mode_state() -> void:
-	_clear_satellites()
-	var offset_step = 2 * PI / max(1, number)
+	_prune_satellites()
+	_update_satellite_runtime_state()
+
+func _on_shoot() -> void:
+	is_on_cooldown = true
+	start_weapon_cooldown(attack_cooldown)
+	var new_satellites: Array[Projectile] = []
 	var runtime_damage: int = get_runtime_shot_damage()
 	var damage_multiplier: float = 1.0
 	if branch_behavior and is_instance_valid(branch_behavior):
@@ -149,13 +172,15 @@ func _refresh_orbit_mode_state() -> void:
 		spawn_projectile.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
 		spawn_projectile.damage_type = damage_type
 		spawn_projectile.hp = 99999
-		spawn_projectile.expire_time = 99999
+		spawn_projectile.expire_time = ORBIT_PROJECTILE_LIFETIME_SEC
 		spawn_projectile.size = size
 		spawn_projectile.projectile_texture = projectile_texture_resource
-		apply_rotate_around_player(spawn_projectile, offset_step, n, effective_spin_speed)
+		apply_rotate_around_player(spawn_projectile, 0.0, n, effective_spin_speed)
 		apply_effects_on_projectile(spawn_projectile)
 		get_tree().root.call_deferred("add_child", spawn_projectile)
 		satellites.append(spawn_projectile)
+		new_satellites.append(spawn_projectile)
+	_rebalance_new_satellite_offsets(new_satellites)
 
 func _update_satellite_runtime_state() -> void:
 	var runtime_damage: int = get_runtime_shot_damage()
@@ -188,6 +213,33 @@ func _clear_satellites() -> void:
 		if s and is_instance_valid(s):
 			s.queue_free()
 	satellites.clear()
+
+func _prune_satellites() -> void:
+	var kept: Array = []
+	for s in satellites:
+		if s and is_instance_valid(s):
+			kept.append(s)
+	satellites = kept
+
+func _rebalance_new_satellite_offsets(new_satellites: Array[Projectile]) -> void:
+	var count := new_satellites.size()
+	if count <= 0:
+		return
+	var offset_step := TAU / float(count)
+	for i in range(count):
+		var satellite: Projectile = new_satellites[i]
+		if satellite == null or not is_instance_valid(satellite):
+			continue
+		var rotate_effect: RotateAroundPlayer = _find_rotate_module(satellite)
+		if rotate_effect == null or not is_instance_valid(rotate_effect):
+			continue
+		rotate_effect.angle_offset = offset_step * float(i)
+
+func _resolve_orbit_spawn_radius() -> float:
+	var jitter := maxf(orbit_radius_jitter, 0.0)
+	if jitter <= 0.0:
+		return maxf(radius, 1.0)
+	return maxf(radius + randf_range(-jitter, jitter), 1.0)
 
 func _process_offhand_main_weapon_buff() -> void:
 	var now_msec := Time.get_ticks_msec()

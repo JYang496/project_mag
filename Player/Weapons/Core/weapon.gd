@@ -183,7 +183,7 @@ func set_branch(new_branch_id: String) -> bool:
 	branch_definition = branch_def
 	_apply_branch_behavior_if_needed(true)
 	if has_method("set_level") and level > 0:
-		set_level(level)
+		set_level(clampi(level, 1, max_level))
 	return true
 
 func get_branch_options() -> Array[WeaponBranchDefinition]:

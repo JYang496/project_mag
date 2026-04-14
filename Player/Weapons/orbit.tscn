@@ -1,18 +1,46 @@
-[gd_scene load_steps=4 format=3 uid="uid://6jm63rqvj2b7"]
+[gd_scene format=3 uid="uid://6jm63rqvj2b7"]
 
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_4h80h"]
 [ext_resource type="Script" uid="uid://cgt5h2lpnxfs0" path="res://Player/Weapons/orbit.gd" id="1_lxm1t"]
 [ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="2_d4sd2"]
+[ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_8qu7o"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_trail_aoe_freeze.tscn" id="4_axrby"]
 
-[node name="Orbit" instance=ExtResource("1_4h80h")]
+[node name="Orbit" unique_id=80514895 instance=ExtResource("1_4h80h")]
 script = ExtResource("1_lxm1t")
 radius = 80.0
 angle = 0.0
+orbit_radius_jitter = 12.0
+offhand_main_attack_speed_mult = 1.3
+offhand_spin_speed_multiplier = 0.65
+offhand_buff_duration_sec = 0.5
+offhand_buff_icd_sec = 0.12
+effect_configs = Array[ExtResource("3_8qu7o")]([])
+debug_projectile_effects = false
 
-[node name="Modules" parent="."]
+[node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 11312
 
-[node name="Sprite" parent="." index="3"]
+[node name="FrostTrail" parent="Modules" index="0" unique_id=1882416655 instance=ExtResource("4_axrby")]
+trail_radius = 34.0
+trail_tick_interval = 0.25
+trail_sample_interval = 0.08
+trail_min_spacing = 5.0
+duration_lv1 = 1.6
+duration_lv2 = 2.0
+duration_lv3 = 2.4
+damage_ratio_lv1 = 0.18
+damage_ratio_lv2 = 0.24
+damage_ratio_lv3 = 0.3
+max_active_fields = 24
+show_trail_range = true
+trail_fill_color = Color(0.35, 0.85, 1, 0.18)
+trail_line_color = Color(0.45, 0.95, 1, 0.75)
+trail_line_width = 12.5
+module_traits = Array[ExtResource("3_8qu7o")]([])
+
+[node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("2_d4sd2")
 
+[connection signal="shoot" from="." to="." method="_on_shoot"]
 [connection signal="tree_exiting" from="." to="." method="_on_tree_exiting"]

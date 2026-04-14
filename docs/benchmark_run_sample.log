@@ -1,0 +1,36 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+benchmark start, budget_sec=1800.0, pair_cap=24
+weapons loaded: 15
+modules loaded: 35
+weapon 'Cannon' branches: 3
+branch start: Cannon/base
+cases finished: 10 (latest: Cannon / base / wmod_damage_up_stat)
+cases finished: 20 (latest: Cannon / base / wmod_pierce_stat)
+cases finished: 30 (latest: Cannon / base / wmod_reload_damage_boost)
+cases finished: 40 (latest: Cannon / base / wmod_stun_on_hit)
+cases finished: 50 (latest: Cannon / base / wmod_battle_focus_buff+wmod_damage_up_stat)
+cases finished: 60 (latest: Cannon / base / wmod_battle_focus_buff+wmod_pierce_stat)
+cases finished: 70 (latest: Cannon / base / wmod_battle_focus_buff+wmod_reload_damage_boost)
+cases finished: 80 (latest: Cannon / base / wmod_battle_focus_buff+wmod_stun_on_hit)
+cases finished: 90 (latest: Cannon / base / wmod_bullet_size_stat+wmod_dot_on_hit)
+branch start: Cannon/thermal_cannon_branch
+cases finished: 100 (latest: Cannon / thermal_cannon_branch / wmod_corrosive_touch_energy)
+cases finished: 110 (latest: Cannon / thermal_cannon_branch / wmod_heat_concentration_heat)
+cases finished: 120 (latest: Cannon / thermal_cannon_branch / wmod_momentum_haste)
+cases finished: 130 (latest: Cannon / thermal_cannon_branch / wmod_reload_blast_damage)
+cases finished: 140 (latest: Cannon / thermal_cannon_branch / wmod_reload_shield_boost)
+cases finished: 150 (latest: Cannon / thermal_cannon_branch / wmod_battle_focus_buff+wmod_bullet_size_stat)
+cases finished: 160 (latest: Cannon / thermal_cannon_branch / wmod_battle_focus_buff+wmod_heat_capacity_heat)
+cases finished: 170 (latest: Cannon / thermal_cannon_branch / wmod_battle_focus_buff+wmod_molten_splash_fire)
+cases finished: 180 (latest: Cannon / thermal_cannon_branch / wmod_battle_focus_buff+wmod_projectile_speed_stat)
+cases finished: 190 (latest: Cannon / thermal_cannon_branch / wmod_battle_focus_buff+wmod_reload_offhand_boost)
+branch start: Cannon/zero_cannon_branch
+cases finished: 200 (latest: Cannon / zero_cannon_branch / wmod_battle_focus_buff)
+cases finished: 210 (latest: Cannon / zero_cannon_branch / wmod_lifesteal_on_hit)
+cases finished: 220 (latest: Cannon / zero_cannon_branch / wmod_projectile_speed_stat)
+cases finished: 230 (latest: Cannon / zero_cannon_branch / wmod_reload_offhand_boost)
+cases finished: 240 (latest: Cannon / zero_cannon_branch / wmod_vampiric_surge)
+cases finished: 250 (latest: Cannon / zero_cannon_branch / wmod_battle_focus_buff+wmod_lifesteal_on_hit)
+cases finished: 260 (latest: Cannon / zero_cannon_branch / wmod_battle_focus_buff+wmod_projectile_speed_stat)
+cases finished: 270 (latest: Cannon / zero_cannon_branch / wmod_battle_focus_buff+wmod_reload_offhand_boost)

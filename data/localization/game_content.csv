@@ -101,7 +101,7 @@ module.wmod_subzero_extension_freeze.name,Subzero Extension,Subzero Extension
 mecha.4.name,Tank,Tank
 mecha.1.name,Heavy Assault,Heavy Assault
 mecha.3.name,Melee,Melee
-mecha.2.name,Ranger,Ranger
+mecha.2.name,Long-Range Firepower,远距火力型
 mecha.5.name,Turret,Turret
 route.bonus.name,Bonus Route,Bonus Route
 route.bonus.desc,No combat. Choose 1 reward option and move to the next level.,No combat. Choose 1 reward option and move to the next level.

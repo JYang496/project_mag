@@ -6,12 +6,17 @@ class_name LinearMovement
 
 
 func projectile_effect_ready() -> void:
+	claim_projectile_movement_control()
 	adjust_base_displacement()
 
 func adjust_base_displacement() -> void:
+	if not has_projectile_movement_control():
+		return
 	projectile.base_displacement = projectile.base_displacement + direction * speed
 
 func set_base_displacement() -> void:
+	if not has_projectile_movement_control():
+		return
 	projectile.base_displacement = direction * speed
 
 func _physics_process(delta: float) -> void:

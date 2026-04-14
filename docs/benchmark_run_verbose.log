@@ -1,0 +1,1679 @@
+WorkerThreadPool: 12 threads, 3 max low-priority.
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+TextServer: Added interface "Dummy"
+TextServer: Added interface "ICU / HarfBuzz / Graphite (Built-in)"
+Unrecognized output string "misc2" in mapping:
+030000000d0f00000202000000000000,Horipad O Nintendo Switch 2 Controller,a:b1,b:b0,back:b8,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,guide:b12,leftshoulder:b4,leftstick:b10,lefttrigger:b6,leftx:a0,lefty:a1,misc1:b13,misc2:b14,rightshoulder:b5,rightstick:b11,righttrigger:b7,rightx:a2,righty:a3,start:b9,x:b3,y:b2,platform:Windows,
+Unrecognized output string "misc2" in mapping:
+030000000d0f00009601000000000000,Horipad Steam,a:b0,b:b1,back:b10,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,guide:b12,leftshoulder:b6,leftstick:b13,lefttrigger:b8,leftx:a0,lefty:a1,misc2:b2,paddle1:b5,paddle2:b15,paddle3:b18,paddle4:b19,rightshoulder:b7,rightstick:b14,righttrigger:b9,rightx:a3,righty:a4,start:b11,x:b3,y:b4,platform:Windows,
+Unrecognized output string "misc2" in mapping:
+030000007e0500006920000000000000,Nintendo Switch 2 Pro Controller,a:b0,b:b1,back:b14,dpdown:b8,dpleft:b10,dpright:b9,dpup:b11,guide:b16,leftshoulder:b12,leftstick:b15,lefttrigger:b13,leftx:a0,lefty:a1~,misc1:b17,misc2:b20,paddle1:b18,paddle2:b19,rightshoulder:b4,rightstick:b7,righttrigger:b5,rightx:a2,righty:a3~,start:b6,x:b2,y:b3,platform:Windows,
+Using "default" pen tablet driver...
+
+Loading resource: res://data/localization/ui_texts.en.translation
+Loading resource: res://data/localization/ui_texts.zh_CN.translation
+Loading resource: res://data/localization/game_content.en.translation
+Loading resource: res://data/localization/game_content.zh_CN.translation
+TextServer: Primary interface set to: "ICU / HarfBuzz / Graphite (Built-in)".
+CORE API HASH: 75400357
+EDITOR API HASH: 3012763406
+SceneTreeFTI: traversal method DEFAULT
+Loading resource: res://autoload/GlobalVariables.gd
+Loading resource: res://UI/themes/global_ui_theme.tres
+Loading resource: res://asset/fonts/NotoSansSC-Regular.ttf
+Loading resource: res://.godot/imported/NotoSansSC-Regular.ttf-2de7e5bcc64a9f0fbaf188fc108d5a6a.fontdata
+Loading resource: res://UI/scenes/margin_item_card.tscn
+Loading resource: res://UI/scripts/margin_item_card.gd
+Loading resource: res://asset/images/characters/2b.png
+Loading resource: res://.godot/imported/2b.png-0a7db9d71bff1e7d4b4a34b01bcde784.ctex
+Loading resource: res://asset/images/characters/2f.png
+Loading resource: res://.godot/imported/2f.png-b7bad20862bcfe31b2f8d3c2a04144d1.ctex
+Loading resource: res://UI/scenes/margin_upgrade_card.tscn
+Loading resource: res://UI/scripts/margin_upgrade_card.gd
+Loading resource: res://Textures/test/empty_wp.png
+Loading resource: res://.godot/imported/empty_wp.png-e95c14df8bbe19908da92f4a4066bbc3.ctex
+Loading resource: res://UI/scenes/branch_select_panel.tscn
+Loading resource: res://UI/scripts/branch_select_panel.gd
+Loading resource: res://UI/scenes/module_equip_selection_panel.tscn
+Loading resource: res://UI/scripts/module_equip_selection_panel.gd
+Loading resource: res://UI/scenes/route_selection_panel.tscn
+Loading resource: res://UI/scripts/route_selection_panel.gd
+Loading resource: res://UI/scenes/reward_selection_panel.tscn
+Loading resource: res://UI/scripts/reward_selection_panel.gd
+Loading resource: res://asset/images/ui/mainhand.png
+Loading resource: res://.godot/imported/mainhand.png-b4c31aed43159c96622ac99fc8c49f44.ctex
+Loading resource: res://asset/images/ui/offhand.png
+Loading resource: res://.godot/imported/offhand.png-3002ffd426ed8e875ca5220356ec7e62.ctex
+Loading resource: res://UI/enemy_hp_bar.tscn
+Loading resource: res://UI/scripts/enemy_hp_bar.gd
+Loading resource: res://UI/labels/hit_label.tscn
+Loading resource: res://UI/labels/hit_label.gd
+Loading resource: res://Shaders/quest_outline.gdshader
+Loading resource: res://Objects/loots/coin.tscn
+Loading resource: res://Textures/test/coin.png
+Loading resource: res://.godot/imported/coin.png-4112c6498c457d373c206f16f65b8ab1.ctex
+Loading resource: res://asset/sounds/collectgem.mp3
+Loading resource: res://.godot/imported/collectgem.mp3-d9903ea3c1a63c138325d931868acc69.mp3str
+Loading resource: res://Objects/loots/drop.tscn
+Loading resource: res://Objects/loots/drop.gd
+Loading resource: res://Utility/display_settings.gd
+Loading resource: res://autoload/ObjectPool.gd
+Loading resource: res://autoload/TimeImpactController.gd
+Loaded system CA certificates
+Loading resource: res://Utility/tests/weapon_module_dps_benchmark.tscn
+Loading resource: res://Utility/tests/weapon_module_dps_benchmark.gd
+Loading resource: res://Utility/tests/benchmark_dummy_enemy.tscn
+Loading resource: res://Utility/tests/benchmark_dummy_enemy.gd
+Loading resource: res://data/savedata/autosave.tres
+Loading resource: res://data/weapons/cannon.tres
+Loading resource: res://asset/images/weapons/cannon1.png
+Loading resource: res://.godot/imported/cannon1.png-c3ef5b8ae0b1772765f7b977ba0edfa9.ctex
+Loading resource: res://Player/Weapons/cannon.tscn
+Loading resource: res://Player/Weapons/weapon_ranger.tscn
+Loading resource: res://Player/Weapons/weapon.tscn
+Loading resource: res://asset/images/weapons/cannon2.png
+Loading resource: res://.godot/imported/cannon2.png-dc1ff0dd5ece6f3f51bb7ad0d55d7bd5.ctex
+Loading resource: res://asset/images/weapons/cannon3.png
+Loading resource: res://.godot/imported/cannon3.png-615d331b0ccc8c7207e6ddcb3091b5ad.ctex
+Loading resource: res://Player/Weapons/weapon_ranger.gd
+Loading resource: res://Player/Weapons/Effects/linear_movement.tscn
+Loading resource: res://Player/Weapons/Effects/linear_movement.gd
+Loading resource: res://Utility/hit_hurt_box/hit_box.tscn
+Loading resource: res://Utility/hit_hurt_box/hit_box_dot.tscn
+Loading resource: res://Player/Weapons/Effects/explosion_effect.tscn
+Loading resource: res://Player/Weapons/Effects/explosion_effect.gd
+Loading resource: res://Utility/area_effect/area_effect.tscn
+Loading resource: res://Utility/area_effect/area_effect.gd
+Loading resource: res://Textures/test/bullet.png
+Loading resource: res://.godot/imported/bullet.png-3d578e1194e4bf5f21f856febdfade1b.ctex
+Loading resource: res://Player/Weapons/Effects/speed_change_on_hit.tscn
+Loading resource: res://Player/Weapons/Effects/speed_change_on_hit.gd
+Loading resource: res://Player/Weapons/Effects/dmg_up_on_enemy_death.tscn
+Loading resource: res://Player/Weapons/Effects/dmg_up_on_enemy_death.gd
+Loading resource: res://Player/Weapons/cannon.gd
+Loading resource: res://Player/Weapons/Projectiles/projectile.tscn
+Loading resource: res://Textures/test/sniper_bullet.png
+Loading resource: res://.godot/imported/sniper_bullet.png-2ff011c99c5eec84bafbdb3e211dfb8f.ctex
+Loading resource: res://asset/images/weapons/projectiles/plasma.png
+Loading resource: res://.godot/imported/plasma.png-ff460e6e513b459a502117b78c269a8e.ctex
+Loading resource: res://data/weapons/chainsaw_luncher.tres
+Loading resource: res://Textures/test/chainsaw.png
+Loading resource: res://.godot/imported/chainsaw.png-e4444e71ef0ea4dcda55fa1fe29941b0.ctex
+Loading resource: res://Player/Weapons/chainsaw_launcher.tscn
+Loading resource: res://Player/Weapons/chainsaw_launcher.gd
+Loading resource: res://Player/Weapons/Effects/spin_effect.tscn
+Loading resource: res://Player/Weapons/Effects/spin_effect.gd
+Loading resource: res://Player/Weapons/Effects/scale_up_by_time.tscn
+Loading resource: res://Player/Weapons/Effects/scale_up_by_time.gd
+Loading resource: res://Player/Weapons/Effects/chase_closest_enemy.tscn
+Loading resource: res://Player/Weapons/Effects/chase_closest_enemy.gd
+Loading resource: res://Textures/test/chainsaw_spin.png
+Loading resource: res://.godot/imported/chainsaw_spin.png-ea39d1cd99204e869f0e784e8f4550fe.ctex
+Loading resource: res://data/weapons/charged_blaster.tres
+Loading resource: res://Textures/test/sniper.png
+Loading resource: res://.godot/imported/sniper.png-2bcdc5e3b106f279ab3bd59885dfcc89.ctex
+Loading resource: res://Player/Weapons/charged_blaster.tscn
+Loading resource: res://Player/Weapons/charged_blaster.gd
+Loading resource: res://Player/Weapons/Projectiles/beam_blast.tscn
+Loading resource: res://Player/Weapons/Projectiles/beam_blast.gd
+Loading resource: res://data/weapons/dash_blade.tres
+Loading resource: res://Textures/test/short_knife.png
+Loading resource: res://.godot/imported/short_knife.png-0b5338f53617c359e8756abaa3ab1b09.ctex
+Loading resource: res://Player/Weapons/dash_blade.tscn
+Loading resource: res://Player/Weapons/dash_blade.gd
+Loading resource: res://Player/Weapons/weapon_melee.tscn
+Loading resource: res://Player/Weapons/Effects/Effect.tscn
+Loading resource: res://data/weapons/flamethrower.tres
+Loading resource: res://Player/Weapons/flamethrower.tscn
+Loading resource: res://Player/Weapons/flamethrower.gd
+Loading resource: res://data/weapons/glacier_projector.tres
+Loading resource: res://Player/Weapons/glacier_projector.tscn
+Loading resource: res://Player/Weapons/glacier_projector.gd
+Loading resource: res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_base.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.gd
+Loading resource: res://data/weapons/laser.tres
+Loading resource: res://Textures/test/laser.png
+Loading resource: res://.godot/imported/laser.png-2ce4d435780edc01c89a490f64903aa6.ctex
+Loading resource: res://Player/Weapons/laser.tscn
+Loading resource: res://Player/Weapons/laser.gd
+Loading resource: res://Player/Weapons/Projectiles/beam.tscn
+Loading resource: res://Player/Weapons/Projectiles/beam.gd
+Loading resource: res://data/weapons/machine_gun.tres
+Loading resource: res://Player/Weapons/machine_gun.tscn
+Loading resource: res://Player/Weapons/machine_gun.gd
+Loading resource: res://asset/images/weapons/mg2.png
+Loading resource: res://.godot/imported/mg2.png-3d762231734d3c97295266cc82684102.ctex
+Loading resource: res://data/weapons/orbit.tres
+Loading resource: res://Player/Weapons/orbit.tscn
+Loading resource: res://Player/Weapons/orbit.gd
+Loading resource: res://Player/Weapons/Effects/rotate_around_player.tscn
+Loading resource: res://Player/Weapons/Effects/rotate_around_player.gd
+Loading resource: res://Player/Weapons/Modules/wmod_trail_aoe_freeze.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_trail_aoe_freeze.gd
+Loading resource: res://asset/images/cells/ice.png
+Loading resource: res://.godot/imported/ice.png-a1cf9b045adaec0cb4a6c749925a510b.ctex
+Loading resource: res://data/weapons/pistol.tres
+Loading resource: res://Textures/test/minigun.png
+Loading resource: res://.godot/imported/minigun.png-b964aadccdec139a10412055ffc59834.ctex
+Loading resource: res://Player/Weapons/pistol.tscn
+Loading resource: res://Player/Weapons/pistol.gd
+Loading resource: res://Textures/test/minigun_bullet.png
+Loading resource: res://.godot/imported/minigun_bullet.png-481eb5cd7e86986f34cb2f5c72d33ec9.ctex
+Loading resource: res://data/weapons/plasma_lance.tres
+Loading resource: res://Player/Weapons/plasma_lance.tscn
+Loading resource: res://Player/Weapons/plasma_lance.gd
+Loading resource: res://Player/Weapons/Projectiles/plasma_lance_projectile.tscn
+Loading resource: res://Player/Weapons/Projectiles/plasma_lance_projectile.gd
+Loading resource: res://data/weapons/rocket_luncher.tres
+Loading resource: res://Player/Weapons/rocket_launcher.tscn
+Loading resource: res://Player/Weapons/rocket_launcher.gd
+Loading resource: res://Player/Weapons/Effects/fall.tscn
+Loading resource: res://Player/Weapons/Effects/fall.gd
+Loading resource: res://data/weapons/shotgun.tres
+Loading resource: res://Player/Weapons/shotgun.tscn
+Loading resource: res://Player/Weapons/shotgun.gd
+Loading resource: res://data/weapons/sniper.tres
+Loading resource: res://Player/Weapons/sniper.tscn
+Loading resource: res://Player/Weapons/sniper.gd
+Loading resource: res://Player/Weapons/Projectiles/sniper_projectile.tscn
+Loading resource: res://Player/Weapons/Projectiles/sniper_projectile.gd
+Loading resource: res://data/weapons/Spear.tres
+Loading resource: res://Textures/test/spear.png
+Loading resource: res://.godot/imported/spear.png-53b6347c482f39a5d4054e9123689d39.ctex
+Loading resource: res://Player/Weapons/spear_launcher.tscn
+Loading resource: res://Player/Weapons/spear_launcher.gd
+Loading resource: res://Player/Weapons/Effects/return_on_timeout.tscn
+Loading resource: res://Player/Weapons/Effects/return_on_timeout.gd
+Loading resource: res://data/weapon_branches/cannon_thermal.tres
+Loading resource: res://Player/Weapons/Branches/cannon_thermal_branch.tscn
+Loading resource: res://Player/Weapons/Branches/cannon_thermal_branch.gd
+Loading resource: res://data/weapon_branches/cannon_zero.tres
+Loading resource: res://Player/Weapons/Branches/cannon_zero_branch.tscn
+Loading resource: res://Player/Weapons/Branches/cannon_zero_branch.gd
+Loading resource: res://data/weapon_branches/chainsaw_explosive.tres
+Loading resource: res://Player/Weapons/Branches/chainsaw_explosive_branch.tscn
+Loading resource: res://Player/Weapons/Branches/chainsaw_explosive_branch.gd
+Loading resource: res://data/weapon_branches/chainsaw_ricochet.tres
+Loading resource: res://Player/Weapons/Branches/chainsaw_ricochet_branch.tscn
+Loading resource: res://Player/Weapons/Branches/chainsaw_ricochet_branch.gd
+Loading resource: res://data/weapon_branches/charged_blaster_focus_lance.tres
+Loading resource: res://Player/Weapons/Branches/charged_blaster_focus_lance_branch.tscn
+Loading resource: res://Player/Weapons/Branches/charged_blaster_focus_lance_branch.gd
+Loading resource: res://data/weapon_branches/charged_blaster_prism_fan.tres
+Loading resource: res://Player/Weapons/Branches/charged_blaster_prism_fan_branch.tscn
+Loading resource: res://Player/Weapons/Branches/charged_blaster_prism_fan_branch.gd
+Loading resource: res://data/weapon_branches/dash_frost.tres
+Loading resource: res://Player/Weapons/Branches/dash_frost_branch.tscn
+Loading resource: res://Player/Weapons/Branches/dash_frost_branch.gd
+Loading resource: res://Player/Weapons/Effects/frost_field_effect.tscn
+Loading resource: res://Player/Weapons/Effects/frost_field_effect.gd
+Loading resource: res://data/weapon_branches/flamethrower_fire_aura.tres
+Loading resource: res://Player/Weapons/Branches/flamethrower_fire_aura_branch.tscn
+Loading resource: res://Player/Weapons/Branches/flamethrower_fire_aura_branch.gd
+Loading resource: res://data/weapon_branches/flamethrower_long_cone.tres
+Loading resource: res://Player/Weapons/Branches/flamethrower_long_cone_branch.tscn
+Loading resource: res://Player/Weapons/Branches/flamethrower_long_cone_branch.gd
+Loading resource: res://data/weapon_branches/machine_gun_shield.tres
+Loading resource: res://Player/Weapons/Branches/machine_gun_shield_branch.tscn
+Loading resource: res://Player/Weapons/Branches/machine_gun_shield_branch.gd
+Loading resource: res://Player/Weapons/Branches/machine_gun_front_shield.tscn
+Loading resource: res://Player/Weapons/Branches/machine_gun_front_shield.gd
+Loading resource: res://Textures/test/more_hp.png
+Loading resource: res://.godot/imported/more_hp.png-1433efd4eaa5e40bca7dd2e7f073479b.ctex
+Loading resource: res://data/weapon_branches/machine_gun_twin.tres
+Loading resource: res://Player/Weapons/Branches/machine_gun_gatling_branch.tscn
+Loading resource: res://Player/Weapons/Branches/machine_gun_gatling_branch.gd
+Loading resource: res://data/weapon_branches/orbit_energy.tres
+Loading resource: res://Player/Weapons/Branches/orbit_energy_branch.tscn
+Loading resource: res://Player/Weapons/Branches/orbit_energy_branch.gd
+Loading resource: res://data/weapon_branches/orbit_frost.tres
+Loading resource: res://Player/Weapons/Branches/orbit_frost_branch.tscn
+Loading resource: res://Player/Weapons/Branches/orbit_frost_branch.gd
+Loading resource: res://data/weapon_branches/pistol_arc_coil.tres
+Loading resource: res://Player/Weapons/Branches/pistol_arc_branch.tscn
+Loading resource: res://Player/Weapons/Branches/pistol_arc_branch.gd
+Loading resource: res://data/weapon_branches/pistol_cryo_carbine.tres
+Loading resource: res://Player/Weapons/Branches/pistol_cryo_branch.tscn
+Loading resource: res://Player/Weapons/Branches/pistol_cryo_branch.gd
+Loading resource: res://data/weapon_branches/rocket_napalm.tres
+Loading resource: res://Player/Weapons/Branches/rocket_napalm_branch.tscn
+Loading resource: res://Player/Weapons/Branches/rocket_napalm_branch.gd
+Loading resource: res://data/weapon_branches/rocket_salvo.tres
+Loading resource: res://Player/Weapons/Branches/rocket_salvo_branch.tscn
+Loading resource: res://Player/Weapons/Branches/rocket_salvo_branch.gd
+Loading resource: res://data/weapon_branches/shotgun_shatter.tres
+Loading resource: res://Player/Weapons/Branches/shotgun_shatter_branch.tscn
+Loading resource: res://Player/Weapons/Branches/shotgun_shatter_branch.gd
+Loading resource: res://data/weapon_branches/sniper_deep_pierce.tres
+Loading resource: res://Player/Weapons/Branches/sniper_deep_pierce_branch.tscn
+Loading resource: res://Player/Weapons/Branches/sniper_deep_pierce_branch.gd
+Loading resource: res://data/weapon_branches/sniper_impact_burst.tres
+Loading resource: res://Player/Weapons/Branches/sniper_impact_burst_branch.tscn
+Loading resource: res://Player/Weapons/Branches/sniper_impact_burst_branch.gd
+Loading resource: res://data/weapon_branches/spear_multi_pierce.tres
+Loading resource: res://Player/Weapons/Branches/spear_multi_pierce_branch.tscn
+Loading resource: res://Player/Weapons/Branches/spear_multi_pierce_branch.gd
+Loading resource: res://data/weapon_branches/spear_rending.tres
+Loading resource: res://Player/Weapons/Branches/spear_rending_branch.tscn
+Loading resource: res://Player/Weapons/Branches/spear_rending_branch.gd
+Loading resource: res://data/mechas/Collector.tres
+Loading resource: res://Player/Mechas/scenes/collector.tscn
+Loading resource: res://Player/Mechas/scenes/Player.tscn
+Loading resource: res://asset/images/characters/f.png
+Loading resource: res://.godot/imported/f.png-f70ab119c91efd43b1779dde4963d08f.ctex
+Loading resource: res://Utility/hit_hurt_box/hurt_box.tscn
+Loading resource: res://Player/Mechas/scripts/collector.gd
+Loading resource: res://data/mechas/HeavyAssault.tres
+Loading resource: res://Player/Mechas/scenes/heavy_assault.tscn
+Loading resource: res://Player/Mechas/scripts/heavy_assault.gd
+Loading resource: res://Player/Skills/heavy_assault_heat_lock.tscn
+Loading resource: res://Player/Skills/heavy_assault_heat_lock.gd
+Loading resource: res://data/mechas/Melee.tres
+Loading resource: res://Player/Mechas/scenes/melee.tscn
+Loading resource: res://Player/Mechas/scripts/melee.gd
+Loading resource: res://data/mechas/Ranger.tres
+Loading resource: res://Player/Mechas/scenes/ranger.tscn
+Loading resource: res://Player/Mechas/scripts/ranger.gd
+Loading resource: res://data/mechas/Turret.tres
+Loading resource: res://Player/Mechas/scenes/turret.tscn
+Loading resource: res://data/spawns/1-1.tres
+Loading resource: res://Player/Weapons/Modules/wmod_pierce_stat.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_pierce_stat.gd
+Loading resource: res://Npc/enemy/scenes/enemy_rolling_ball.tscn
+Loading resource: res://Npc/enemy/scenes/base_enemy.tscn
+Loading resource: res://Npc/base_npc.tscn
+Loading resource: res://Npc/enemy/scripts/enemy_rolling_ball.gd
+Loading resource: res://asset/images/enemies/a.png
+Loading resource: res://.godot/imported/a.png-d570fc82fc9f0b51a393e333ea967e39.ctex
+Loading resource: res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn
+Loading resource: res://Npc/enemy/scenes/elite_enemy.tscn
+Loading resource: res://Npc/enemy/scripts/enemy_rolling_ball_elite.gd
+Loading resource: res://Npc/enemy/scenes/enemy_orbit_support.tscn
+Loading resource: res://Npc/enemy/scripts/enemy_orbit_support.gd
+Loading resource: res://asset/images/enemies/b.png
+Loading resource: res://.godot/imported/b.png-f0aa7f557df81afec1f7b3d67eb942b0.ctex
+Loading resource: res://data/spawns/1-2.tres
+Loading resource: res://Npc/enemy/scenes/enemy_wheel_cart.tscn
+Loading resource: res://Textures/test/e2.png
+Loading resource: res://.godot/imported/e2.png-14f67c6623e0117882c96c54778d4618.ctex
+Loading resource: res://Npc/enemy/scripts/enemy_wheel_cart.gd
+Loading resource: res://data/spawns/1-3.tres
+Loading resource: res://data/spawns/1-4.tres
+Loading resource: res://data/spawns/1-5.tres
+Loading resource: res://data/spawns/1-6.tres
+Loading resource: res://data/spawns/1-7.tres
+Loading resource: res://data/routes/bonus_route.tres
+Loading resource: res://data/routes/difficult_route.tres
+Loading resource: res://data/routes/normal_route.tres
+Loading resource: res://data/weapons/cannon.tres
+Loading resource: res://data/weapons/chainsaw_luncher.tres
+Loading resource: res://data/weapons/charged_blaster.tres
+Loading resource: res://data/weapons/dash_blade.tres
+Loading resource: res://data/weapons/flamethrower.tres
+Loading resource: res://data/weapons/glacier_projector.tres
+Loading resource: res://Player/Weapons/glacier_projector.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.tscn
+Loading resource: res://data/weapons/laser.tres
+Loading resource: res://Textures/test/laser.png
+Loading resource: res://.godot/imported/laser.png-2ce4d435780edc01c89a490f64903aa6.ctex
+Loading resource: res://Player/Weapons/laser.tscn
+Loading resource: res://data/weapons/machine_gun.tres
+Loading resource: res://data/weapons/orbit.tres
+Loading resource: res://data/weapons/pistol.tres
+Loading resource: res://data/weapons/plasma_lance.tres
+Loading resource: res://Player/Weapons/plasma_lance.tscn
+Loading resource: res://data/weapons/rocket_luncher.tres
+Loading resource: res://data/weapons/shotgun.tres
+Loading resource: res://data/weapons/sniper.tres
+Loading resource: res://data/weapons/Spear.tres
+Loading resource: res://data/weapon_branches/cannon_thermal.tres
+Loading resource: res://Player/Weapons/Branches/cannon_thermal_branch.tscn
+Loading resource: res://data/weapon_branches/cannon_zero.tres
+Loading resource: res://Player/Weapons/Branches/cannon_zero_branch.tscn
+Loading resource: res://data/weapon_branches/chainsaw_explosive.tres
+Loading resource: res://Player/Weapons/Branches/chainsaw_explosive_branch.tscn
+Loading resource: res://data/weapon_branches/chainsaw_ricochet.tres
+Loading resource: res://Player/Weapons/Branches/chainsaw_ricochet_branch.tscn
+Loading resource: res://data/weapon_branches/charged_blaster_focus_lance.tres
+Loading resource: res://Player/Weapons/Branches/charged_blaster_focus_lance_branch.tscn
+Loading resource: res://data/weapon_branches/charged_blaster_prism_fan.tres
+Loading resource: res://Player/Weapons/Branches/charged_blaster_prism_fan_branch.tscn
+Loading resource: res://data/weapon_branches/dash_frost.tres
+Loading resource: res://Player/Weapons/Branches/dash_frost_branch.tscn
+Loading resource: res://data/weapon_branches/flamethrower_fire_aura.tres
+Loading resource: res://Player/Weapons/Branches/flamethrower_fire_aura_branch.tscn
+Loading resource: res://data/weapon_branches/flamethrower_long_cone.tres
+Loading resource: res://Player/Weapons/Branches/flamethrower_long_cone_branch.tscn
+Loading resource: res://data/weapon_branches/machine_gun_shield.tres
+Loading resource: res://Player/Weapons/Branches/machine_gun_shield_branch.tscn
+Loading resource: res://data/weapon_branches/machine_gun_twin.tres
+Loading resource: res://Player/Weapons/Branches/machine_gun_gatling_branch.tscn
+Loading resource: res://data/weapon_branches/orbit_energy.tres
+Loading resource: res://Player/Weapons/Branches/orbit_energy_branch.tscn
+Loading resource: res://data/weapon_branches/orbit_frost.tres
+Loading resource: res://Player/Weapons/Branches/orbit_frost_branch.tscn
+Loading resource: res://data/weapon_branches/pistol_arc_coil.tres
+Loading resource: res://Player/Weapons/Branches/pistol_arc_branch.tscn
+Loading resource: res://data/weapon_branches/pistol_cryo_carbine.tres
+Loading resource: res://Player/Weapons/Branches/pistol_cryo_branch.tscn
+Loading resource: res://data/weapon_branches/rocket_napalm.tres
+Loading resource: res://Player/Weapons/Branches/rocket_napalm_branch.tscn
+Loading resource: res://data/weapon_branches/rocket_salvo.tres
+Loading resource: res://Player/Weapons/Branches/rocket_salvo_branch.tscn
+Loading resource: res://data/weapon_branches/shotgun_shatter.tres
+Loading resource: res://Player/Weapons/Branches/shotgun_shatter_branch.tscn
+Loading resource: res://data/weapon_branches/sniper_deep_pierce.tres
+Loading resource: res://Player/Weapons/Branches/sniper_deep_pierce_branch.tscn
+Loading resource: res://data/weapon_branches/sniper_impact_burst.tres
+Loading resource: res://Player/Weapons/Branches/sniper_impact_burst_branch.tscn
+Loading resource: res://data/weapon_branches/spear_multi_pierce.tres
+Loading resource: res://Player/Weapons/Branches/spear_multi_pierce_branch.tscn
+Loading resource: res://data/weapon_branches/spear_rending.tres
+Loading resource: res://Player/Weapons/Branches/spear_rending_branch.tscn
+benchmark start, budget_sec=1800.0, pair_cap=24
+Loading resource: res://Player/Weapons/Modules/wmod_battle_focus_buff.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_battle_focus_buff.gd
+Loading resource: res://Textures/test/atk_up.png
+Loading resource: res://.godot/imported/atk_up.png-968ff712e0cddda42f17d3f4f1bfd05c.ctex
+Loading resource: res://Player/Weapons/Modules/wmod_bleed_edge_physical.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_bleed_edge_physical.gd
+Loading resource: res://Player/Weapons/Modules/wmod_bullet_size_stat.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_bullet_size_stat.gd
+Loading resource: res://Player/Weapons/Modules/wmod_chill_chain_freeze.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_chill_chain_freeze.gd
+Loading resource: res://Player/Weapons/Modules/wmod_corrosive_touch_energy.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_corrosive_touch_energy.gd
+Loading resource: res://Player/Weapons/Modules/wmod_cryo_infuser_freeze.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_cryo_infuser_freeze.gd
+Loading resource: res://Player/Weapons/Modules/wmod_damage_up_stat.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_damage_up_stat.gd
+Loading resource: res://Player/Weapons/Modules/wmod_dot_on_hit.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_dot_on_hit.gd
+Loading resource: res://Player/Weapons/Modules/wmod_ember_mark_fire.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_ember_mark_fire.gd
+Loading resource: res://Player/Weapons/Modules/wmod_heat_capacity_heat.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_heat_capacity_heat.gd
+Loading resource: res://Player/Weapons/Modules/wmod_heat_concentration_heat.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_heat_concentration_heat.gd
+Loading resource: res://Player/Weapons/Modules/wmod_heat_vent_heat.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_heat_vent_heat.gd
+Loading resource: res://Player/Weapons/Modules/wmod_ice_prison_freeze.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_ice_prison_freeze.gd
+Loading resource: res://Player/Weapons/Modules/wmod_lifesteal_on_hit.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_lifesteal_on_hit.gd
+Loading resource: res://Player/Weapons/Modules/wmod_lightning_chain_on_hit.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_lightning_chain_on_hit.gd
+Loading resource: res://Textures/test/star.png
+Loading resource: res://.godot/imported/star.png-50bb4265daac5eb64a3bb31806651956.ctex
+Loading resource: res://Player/Weapons/Modules/wmod_molten_splash_fire.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_molten_splash_fire.gd
+Loading resource: res://Player/Weapons/Modules/wmod_momentum_haste.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_momentum_haste.gd
+Loading resource: res://Player/Weapons/Modules/wmod_overheat_boost_heat.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_overheat_boost_heat.gd
+Loading resource: res://Player/Weapons/Modules/wmod_permafrost_field_freeze.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_permafrost_field_freeze.gd
+Loading resource: res://Player/Weapons/Modules/wmod_plague_seed_dot.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_plague_seed_dot.gd
+Loading resource: res://Player/Weapons/Modules/wmod_projectile_speed_stat.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_projectile_speed_stat.gd
+Loading resource: res://Textures/test/faster_reload.png
+Loading resource: res://.godot/imported/faster_reload.png-1f202d727c4160c1bdc7db4e1a15d18a.ctex
+Loading resource: res://Player/Weapons/Modules/wmod_reload_blast_damage.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_reload_blast_damage.gd
+Loading resource: res://Player/Weapons/Modules/wmod_reload_blast_knockback.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_reload_blast_knockback.gd
+Loading resource: res://Player/Weapons/Modules/wmod_reload_damage_boost.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_reload_damage_boost.gd
+Loading resource: res://Player/Weapons/Modules/wmod_reload_move_boost.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_reload_move_boost.gd
+Loading resource: res://Player/Weapons/Modules/wmod_reload_offhand_boost.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_reload_offhand_boost.gd
+Loading resource: res://Player/Weapons/Modules/wmod_reload_shield_boost.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_reload_shield_boost.gd
+Loading resource: res://Player/Weapons/Modules/wmod_reload_speed_link.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_reload_speed_link.gd
+Loading resource: res://Player/Weapons/Modules/wmod_shatter_strike_freeze.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_shatter_strike_freeze.gd
+Loading resource: res://Player/Weapons/Modules/wmod_stun_on_hit.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_stun_on_hit.gd
+Loading resource: res://Textures/test/elevator16.png
+Loading resource: res://.godot/imported/elevator16.png-6afce9ee9c34461e80c5eeadaff5556e.ctex
+Loading resource: res://Player/Weapons/Modules/wmod_subzero_extension_freeze.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_subzero_extension_freeze.gd
+Loading resource: res://Player/Weapons/Modules/wmod_vampiric_surge.tscn
+Loading resource: res://Player/Weapons/Modules/wmod_vampiric_surge.gd
+weapons loaded: 15
+modules loaded: 35
+weapon 'Cannon' branches: 3
+branch start: Cannon/base
+XR: Clearing primary interface
+XR: Removed interface "Native mobile"
+XR: Removed interface "OpenXR"
+ERROR: 1 RID allocations of type 'P12GodotShape2D' were leaked at exit.
+ERROR: 16 RID allocations of type 'PN13RendererDummy14TextureStorage12DummyTextureE' were leaked at exit.
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2641)
+Leaked instance: GDScriptNativeClass:9223372042475143460 - Reference count: 2
+Leaked instance: GDScriptNativeClass:9223372049873896157 - Reference count: 2
+Leaked instance: GDScriptNativeClass:9223372049890673374 - Reference count: 42
+Leaked instance: GDScriptNativeClass:9223372053279671208 - Reference count: 2
+Leaked instance: GDScript:9223372072523138544 - Reference count: 3
+Leaked instance: GDScript:9223372072640579057 - Reference count: 66
+Leaked instance: GDScript:9223372074871948796 - Reference count: 1
+Leaked instance: GDScript:9223372074989389309 - Reference count: 1
+Leaked instance: GDScript:9223372075559814657 - Reference count: 71
+Leaked instance: GDScript:9223372076952323589 - Reference count: 1
+Leaked instance: GDScript:9223372113543431734 - Reference count: 1
+Leaked instance: GDScript:9223372114751391292 - Reference count: 3
+Leaked instance: GDScript:9223372118022948420 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372121428723277 - Reference count: 4
+Leaked instance: Image:9223372121512609360 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372134565283409 - Reference count: 1
+Leaked instance: Image:9223372134649169492 - Reference count: 1
+Leaked instance: GDScript:9223372132417799765 - Reference count: 1
+Leaked instance: PackedScene:9223372134280070742 - Reference count: 1
+Leaked instance: GDScript:9223372122385024599 - Reference count: 3
+Leaked instance: CompressedTexture2D:9223372121881708122 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372122099811931 - Reference count: 1
+Leaked instance: Image:9223372121965594204 - Reference count: 1
+Leaked instance: PackedScene:9223372122250806878 - Reference count: 1
+Leaked instance: Image:9223372122183698015 - Reference count: 1
+Leaked instance: SceneState:9223372122267584097 - Reference count: 1
+Leaked instance: CircleShape2D:9223372132266804837 - Reference count: 1
+Leaked instance: PackedScene:9223372132283582054 - Reference count: 1
+Leaked instance: SceneState:9223372132300359271 - Reference count: 1
+Leaked instance: GDScript:9223372126696769131 - Reference count: 1
+Leaked instance: GDScript:9223372123962082925 - Reference count: 1
+Leaked instance: PackedScene:9223372124331181682 - Reference count: 1
+Leaked instance: SceneState:9223372124347958899 - Reference count: 1
+Leaked instance: PackedScene:9223372124515731060 - Reference count: 1
+Leaked instance: SceneState:9223372124532508277 - Reference count: 1
+Leaked instance: SceneState:9223372134296847991 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372139011245689 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372128626148990 - Reference count: 4
+Leaked instance: Image:9223372128710035076 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372133374101131 - Reference count: 1
+Leaked instance: Image:9223372139095131789 - Reference count: 1
+Leaked instance: Image:9223372133457987215 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372133005002384 - Reference count: 1
+Leaked instance: SceneState:9223372133155997329 - Reference count: 1
+Leaked instance: Image:9223372133088888466 - Reference count: 1
+Leaked instance: PackedScene:9223372133139220115 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372203955848875 - Reference count: 2
+Leaked instance: Resource:9223372202563339954 - Reference count: 2
+Leaked instance: GDScript:9223372145839572677 - Reference count: 1
+Leaked instance: PackedScene:9223372145705354950 - Reference count: 35
+Leaked instance: SceneState:9223372145722132167 - Reference count: 1
+Leaked instance: Image:9223372204039734987 - Reference count: 1
+Leaked instance: GDScript:9223372153942968028 - Reference count: 1
+Leaked instance: PackedScene:9223372203603527393 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372155503249123 - Reference count: 2
+Leaked instance: SceneState:9223372155654244069 - Reference count: 1
+Leaked instance: Image:9223372155587135206 - Reference count: 1
+Leaked instance: PackedScene:9223372155637466855 - Reference count: 1
+Leaked instance: SceneState:9223372203620304622 - Reference count: 1
+Leaked instance: GDScript:9223372213032322834 - Reference count: 1
+Leaked instance: GDScript:9223372213971846939 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372178488035133 - Reference count: 2
+Leaked instance: Image:9223372178571921215 - Reference count: 1
+Leaked instance: GDScript:9223372196338993054 - Reference count: 1
+Leaked instance: PackedScene:9223372196573874079 - Reference count: 1
+Leaked instance: SceneState:9223372196590651296 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372200147421124 - Reference count: 1
+Leaked instance: Image:9223372200231307206 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372213619525597 - Reference count: 15
+Leaked instance: SceneState:9223372213770520542 - Reference count: 1
+Leaked instance: Image:9223372213703411679 - Reference count: 1
+Leaked instance: PackedScene:9223372213753743328 - Reference count: 1
+Leaked instance: GDScript:9223372214626158561 - Reference count: 1
+Leaked instance: PackedScene:9223372214391277538 - Reference count: 1
+Leaked instance: SceneState:9223372214408054755 - Reference count: 1
+Leaked instance: GDScript:9223372215095920612 - Reference count: 1
+Leaked instance: PackedScene:9223372214877816805 - Reference count: 1
+Leaked instance: SceneState:9223372214894594022 - Reference count: 1
+Leaked instance: GDScript:9223372215716677607 - Reference count: 1
+Leaked instance: PackedScene:9223372215498573800 - Reference count: 1
+Leaked instance: SceneState:9223372215515351017 - Reference count: 1
+Leaked instance: GDScript:9223372216186439658 - Reference count: 1
+Leaked instance: PackedScene:9223372215968335851 - Reference count: 1
+Leaked instance: SceneState:9223372215985113068 - Reference count: 1
+Leaked instance: GDScript:9223372217226627053 - Reference count: 1
+Leaked instance: PackedScene:9223372216538761198 - Reference count: 1
+Leaked instance: SceneState:9223372216555538415 - Reference count: 1
+Leaked instance: GDScript:9223372216773642224 - Reference count: 1
+Leaked instance: PackedScene:9223372217008523249 - Reference count: 1
+Leaked instance: SceneState:9223372217025300466 - Reference count: 1
+Leaked instance: GDScript:9223372217797052403 - Reference count: 1
+Leaked instance: PackedScene:9223372217578948596 - Reference count: 1
+Leaked instance: SceneState:9223372217595725813 - Reference count: 1
+Leaked instance: GDScript:9223372218585581558 - Reference count: 1
+Leaked instance: PackedScene:9223372218367477751 - Reference count: 1
+Leaked instance: SceneState:9223372218384254968 - Reference count: 1
+Leaked instance: GDScript:9223372219055343609 - Reference count: 1
+Leaked instance: PackedScene:9223372218837239802 - Reference count: 1
+Leaked instance: SceneState:9223372218854017019 - Reference count: 1
+Leaked instance: GDScript:9223372219525105660 - Reference count: 1
+Leaked instance: PackedScene:9223372219307001853 - Reference count: 1
+Leaked instance: SceneState:9223372219323779070 - Reference count: 1
+Leaked instance: GDScript:9223372219994867711 - Reference count: 1
+Leaked instance: PackedScene:9223372219776763904 - Reference count: 1
+Leaked instance: SceneState:9223372219793541121 - Reference count: 1
+Leaked instance: GDScript:9223372220464629762 - Reference count: 1
+Leaked instance: PackedScene:9223372220246525955 - Reference count: 1
+Leaked instance: SceneState:9223372220263303172 - Reference count: 1
+Leaked instance: GDScript:9223372221202827269 - Reference count: 1
+Leaked instance: PackedScene:9223372220984723462 - Reference count: 1
+Leaked instance: SceneState:9223372221001500679 - Reference count: 1
+Leaked instance: GDScript:9223372222041688072 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372221689366537 - Reference count: 1
+Leaked instance: SceneState:9223372221840361482 - Reference count: 1
+Leaked instance: Image:9223372221773252619 - Reference count: 1
+Leaked instance: PackedScene:9223372221823584268 - Reference count: 1
+Leaked instance: GDScript:9223372222830217229 - Reference count: 1
+Leaked instance: PackedScene:9223372222612113422 - Reference count: 1
+Leaked instance: SceneState:9223372222628890639 - Reference count: 1
+Leaked instance: GDScript:9223372223450974224 - Reference count: 1
+Leaked instance: PackedScene:9223372223232870417 - Reference count: 1
+Leaked instance: SceneState:9223372223249647634 - Reference count: 1
+Leaked instance: GDScript:9223372223920736275 - Reference count: 1
+Leaked instance: PackedScene:9223372223702632468 - Reference count: 1
+Leaked instance: SceneState:9223372223719409685 - Reference count: 1
+Leaked instance: GDScript:9223372224507938838 - Reference count: 1
+Leaked instance: PackedScene:9223372224273057815 - Reference count: 1
+Leaked instance: SceneState:9223372224289835032 - Reference count: 1
+Leaked instance: GDScript:9223372225229359129 - Reference count: 1
+Leaked instance: PackedScene:9223372225011255322 - Reference count: 1
+Leaked instance: SceneState:9223372225028032539 - Reference count: 1
+Leaked instance: GDScript:9223372225900447772 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372225548126237 - Reference count: 5
+Leaked instance: SceneState:9223372225699121182 - Reference count: 1
+Leaked instance: Image:9223372225632012319 - Reference count: 1
+Leaked instance: PackedScene:9223372225682343968 - Reference count: 1
+Leaked instance: GDScript:9223372226688976929 - Reference count: 1
+Leaked instance: PackedScene:9223372226470873122 - Reference count: 1
+Leaked instance: SceneState:9223372226487650339 - Reference count: 1
+Leaked instance: GDScript:9223372227443951652 - Reference count: 1
+Leaked instance: PackedScene:9223372227225847845 - Reference count: 1
+Leaked instance: SceneState:9223372227242625062 - Reference count: 1
+Leaked instance: GDScript:9223372228064708647 - Reference count: 1
+Leaked instance: PackedScene:9223372227846604840 - Reference count: 1
+Leaked instance: SceneState:9223372227863382057 - Reference count: 1
+Leaked instance: GDScript:9223372228685465642 - Reference count: 1
+Leaked instance: PackedScene:9223372228467361835 - Reference count: 1
+Leaked instance: SceneState:9223372228484139052 - Reference count: 1
+Leaked instance: GDScript:9223372229306222637 - Reference count: 1
+Leaked instance: PackedScene:9223372229088118830 - Reference count: 1
+Leaked instance: SceneState:9223372229104896047 - Reference count: 1
+Leaked instance: GDScript:9223372230195415088 - Reference count: 1
+Leaked instance: PackedScene:9223372229977311281 - Reference count: 1
+Leaked instance: SceneState:9223372229994088498 - Reference count: 1
+Leaked instance: GDScript:9223372230816172083 - Reference count: 1
+Leaked instance: PackedScene:9223372230598068276 - Reference count: 1
+Leaked instance: SceneState:9223372230614845493 - Reference count: 1
+Leaked instance: GDScript:9223372231604701238 - Reference count: 1
+Leaked instance: PackedScene:9223372231386597431 - Reference count: 1
+Leaked instance: SceneState:9223372231403374648 - Reference count: 1
+Leaked instance: GDScript:9223372232292567097 - Reference count: 1
+Leaked instance: CompressedTexture2D:9223372231923468346 - Reference count: 1
+Leaked instance: SceneState:9223372232091240507 - Reference count: 1
+Leaked instance: Image:9223372232024131644 - Reference count: 1
+Leaked instance: PackedScene:9223372232074463293 - Reference count: 1
+Leaked instance: GDScript:9223372232779106366 - Reference count: 1
+Leaked instance: PackedScene:9223372232544225343 - Reference count: 1
+Leaked instance: SceneState:9223372232561002560 - Reference count: 1
+Leaked instance: PackedScene:9223372233517303874 - Reference count: 1
+Leaked instance: SceneState:9223372233534081091 - Reference count: 1
+Leaked instance: GDScriptFunctionState:9223372233768962121 - Reference count: 1
+Leaked instance: GDScriptFunctionState:9223372243499747418 - Reference count: 1
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:204497487966 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:198575130719 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:198625462368 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:198675794017 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:198726125666 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:198776457315 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:198826788964 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:199246219365 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:199296551014 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:199346882663 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:199397214312 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:199447545961 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:199497877610 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:199917308011 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:199967639660 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:200017971309 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:200068302958 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:200118634607 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:200168966256 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:203692181618 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:203742513268 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:203843176565 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:203792844918 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:203893508215 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:204396824696 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:203943839865 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:204447156346 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:204547819643 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:200940718205 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:200991049854 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:201041381503 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:201091713152 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:201142044801 - Node path: 
+Leaked instance: Node:201192376450 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:201947351171 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:201997682820 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:202048014469 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:202098346118 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:202148677767 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+ERROR: Cannot get path of node as it is not in a scene tree.
+Leaked instance: Node:202199009416 - Node path: 
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:202953984137 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:203004315786 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:203054647435 - Node path: 
+Leaked instance: Node:203104979084 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:203155310733 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:203205642382 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:204598151311 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:204648482960 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:205101467793 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:205151799442 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:205202131091 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:205252462740 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+ERROR: Cannot get path of node as it is not in a scene tree.
+Leaked instance: Node:205302794389 - Node path: 
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:205353126038 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+ERROR: Cannot get path of node as it is not in a scene tree.
+Leaked instance: Node:206158432419 - Node path: 
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:206208764068 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:206259095717 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:206309427366 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:206359759015 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:206410090664 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:207198619817 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:207248951466 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:207299283115 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:207349614764 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:207399946413 - Node path: 
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+Leaked instance: Node:207450278062 - Node path: 
+Hint: Leaked instances typically happen when nodes are removed from the scene tree (with `remove_child()`) but not freed (with `free()` or `queue_free()`).
+ERROR: 108 resources still in use at exit.
+   at: clear (core/io/resource.cpp:805)
+Resource still in use: res://Utility/classes/Attack.gd (GDScript)
+Resource still in use: res://Player/Weapons/Core/weapon_modules.gd (GDScript)
+Resource still in use: res://Player/Weapons/Core/fuse_sprite_holder.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_base.gd (GDScript)
+Resource still in use: res://data/WeaponDefinition.gd (GDScript)
+Resource still in use: res://Player/Weapons/Core/weapon.gd (GDScript)
+Resource still in use: res://Utility/hit_hurt_box/hit_box.gd (GDScript)
+Resource still in use: res://Utility/hit_hurt_box/hit_box_dot.gd (GDScript)
+Resource still in use: res://Utility/tests/weapon_module_dps_benchmark.gd (GDScript)
+Resource still in use: res://asset/images/weapons/cannon1.png (CompressedTexture2D)
+Resource still in use: res://asset/images/weapons/cannon2.png (CompressedTexture2D)
+Resource still in use: res://asset/images/weapons/cannon3.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/weapon.tscn (PackedScene)
+Resource still in use: res://Utility/hit_hurt_box/hit_box.tscn (PackedScene)
+Resource still in use: res://Utility/hit_hurt_box/hit_box_dot.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Projectiles/projectile.gd (GDScript)
+Resource still in use: res://Player/Weapons/Effects/effect_config.gd (GDScript)
+Resource still in use: res://Textures/test/bullet.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/weapon_ranger.gd (GDScript)
+Resource still in use: res://Player/Weapons/weapon_ranger.tscn::CircleShape2D_1fjwd (CircleShape2D)
+Resource still in use: res://Player/Weapons/weapon_ranger.tscn (PackedScene)
+Resource still in use: res://Textures/test/sniper_bullet.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/Projectiles/projectile.tscn (PackedScene)
+Resource still in use: res://asset/images/weapons/projectiles/plasma.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/cannon.gd (GDScript)
+Resource still in use: res://Player/Weapons/cannon.tscn (PackedScene)
+Resource still in use: res://Textures/test/chainsaw.png (CompressedTexture2D)
+Resource still in use: res://Textures/test/sniper.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/Modules/wmod_base.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_trail_aoe_freeze.gd (GDScript)
+Resource still in use: res://asset/images/cells/ice.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/Modules/wmod_trail_aoe_freeze.tscn (PackedScene)
+Resource still in use: res://Textures/test/more_hp.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/Modules/wmod_pierce_stat.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_pierce_stat.tscn (PackedScene)
+Resource still in use: res://Textures/test/e2.png (CompressedTexture2D)
+Resource still in use: res://data/weapons/cannon.tres (Resource)
+Resource still in use: res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.tscn (PackedScene)
+Resource still in use: res://Textures/test/laser.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/Modules/wmod_battle_focus_buff.gd (GDScript)
+Resource still in use: res://Textures/test/atk_up.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/Modules/wmod_battle_focus_buff.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_bleed_edge_physical.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_bleed_edge_physical.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_bullet_size_stat.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_bullet_size_stat.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_chill_chain_freeze.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_chill_chain_freeze.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_corrosive_touch_energy.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_corrosive_touch_energy.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_cryo_infuser_freeze.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_cryo_infuser_freeze.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_damage_up_stat.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_damage_up_stat.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_dot_on_hit.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_dot_on_hit.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_ember_mark_fire.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_ember_mark_fire.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_heat_capacity_heat.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_heat_capacity_heat.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_heat_concentration_heat.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_heat_concentration_heat.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_heat_vent_heat.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_heat_vent_heat.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_ice_prison_freeze.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_ice_prison_freeze.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_lifesteal_on_hit.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_lifesteal_on_hit.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_lightning_chain_on_hit.gd (GDScript)
+Resource still in use: res://Textures/test/star.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/Modules/wmod_lightning_chain_on_hit.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_molten_splash_fire.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_molten_splash_fire.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_momentum_haste.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_momentum_haste.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_overheat_boost_heat.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_overheat_boost_heat.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_permafrost_field_freeze.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_permafrost_field_freeze.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_plague_seed_dot.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_plague_seed_dot.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_projectile_speed_stat.gd (GDScript)
+Resource still in use: res://Textures/test/faster_reload.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/Modules/wmod_projectile_speed_stat.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_blast_damage.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_blast_damage.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_blast_knockback.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_blast_knockback.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_damage_boost.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_damage_boost.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_move_boost.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_move_boost.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_offhand_boost.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_offhand_boost.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_shield_boost.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_shield_boost.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_speed_link.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_reload_speed_link.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_shatter_strike_freeze.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_shatter_strike_freeze.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_stun_on_hit.gd (GDScript)
+Resource still in use: res://Textures/test/elevator16.png (CompressedTexture2D)
+Resource still in use: res://Player/Weapons/Modules/wmod_stun_on_hit.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_subzero_extension_freeze.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_subzero_extension_freeze.tscn (PackedScene)
+Resource still in use: res://Player/Weapons/Modules/wmod_vampiric_surge.gd (GDScript)
+Resource still in use: res://Player/Weapons/Modules/wmod_vampiric_surge.tscn (PackedScene)
+Orphan StringName: _target_last_proc_msec (static: 0, total: 6)
+Orphan StringName: duration_lv1 (static: 0, total: 28)
+Orphan StringName: duration_lv2 (static: 0, total: 28)
+Orphan StringName: duration_lv3 (static: 0, total: 28)
+Orphan StringName: steal_ratio (static: 0, total: 4)
+Orphan StringName: damage_lv1 (static: 0, total: 4)
+Orphan StringName: damage_lv2 (static: 0, total: 4)
+Orphan StringName: damage_lv3 (static: 0, total: 4)
+Orphan StringName: can_fire_with_ammo (static: 0, total: 1)
+Orphan StringName: _log (static: 0, total: 1)
+Orphan StringName: BleedEdgePhysical (static: 0, total: 1)
+Orphan StringName: get_weapon_capabilities (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_bleed_edge_physical.gd" (static: 0, total: 1)
+Orphan StringName: ErosionApply (static: 0, total: 1)
+Orphan StringName: _get_conversion_ratio (static: 0, total: 1)
+Orphan StringName: _update_weapon_active_cooldown (static: 0, total: 1)
+Orphan StringName: attack_speed_per_stack_lv1 (static: 0, total: 4)
+Orphan StringName: attack_speed_per_stack_lv2 (static: 0, total: 4)
+Orphan StringName: attack_speed_per_stack_lv3 (static: 0, total: 4)
+Orphan StringName: required_frost_stacks (static: 0, total: 5)
+Orphan StringName: slow_duration_lv1 (static: 0, total: 4)
+Orphan StringName: slow_duration_lv2 (static: 0, total: 4)
+Orphan StringName: slow_duration_lv3 (static: 0, total: 4)
+Orphan StringName: get_ammo_status (static: 0, total: 1)
+Orphan StringName: get_effective_additive (static: 0, total: 1)
+Orphan StringName: _get_bonus_ratio (static: 0, total: 4)
+Orphan StringName: stat_multipliers (static: 0, total: 3)
+Orphan StringName: debug_effect_params (static: 0, total: 2)
+Orphan StringName: _enter_tree (static: 1, total: 29)
+Orphan StringName: price (static: 0, total: 5)
+Orphan StringName: scene (static: 0, total: 4)
+Orphan StringName: _trail_effect (static: 0, total: 2)
+Orphan StringName: _case_counter (static: 0, total: 3)
+Orphan StringName: radius (static: 0, total: 13)
+Orphan StringName: ReloadOffhandBoost (static: 0, total: 1)
+Orphan StringName: _get_attack_speed_per_stack (static: 0, total: 1)
+Orphan StringName: apply_module_stat_pipeline (static: 0, total: 1)
+Orphan StringName: MODULE_DIR (static: 0, total: 1)
+Orphan StringName: get_runtime_stat_value (static: 0, total: 1)
+Orphan StringName: module_level (static: 0, total: 4)
+Orphan StringName: MAX_PAIR_CASES_PER_BRANCH (static: 0, total: 1)
+Orphan StringName: base_damage (static: 0, total: 6)
+Orphan StringName: _on_seeded_enemy_death (static: 0, total: 1)
+Orphan StringName: get_equipped_modules (static: 0, total: 1)
+Orphan StringName: get_weapon_active_hit_window_progress (static: 0, total: 1)
+Orphan StringName: _ready (static: 1, total: 36)
+Orphan StringName: _update_reload_state (static: 0, total: 1)
+Orphan StringName: max_stacks (static: 0, total: 12)
+Orphan StringName: script (static: 0, total: 44)
+Orphan StringName: _trigger_burst (static: 0, total: 1)
+Orphan StringName: PermafrostField (static: 0, total: 1)
+Orphan StringName: _clear_seed_connections (static: 0, total: 1)
+Orphan StringName: start_weapon_cooldown (static: 0, total: 1)
+Orphan StringName: _exit_tree (static: 1, total: 29)
+Orphan StringName: base_speed (static: 0, total: 2)
+Orphan StringName: uses_ammo_system (static: 0, total: 2)
+Orphan StringName: _on_hit_timer_timeout (static: 0, total: 2)
+Orphan StringName: _get_level_data (static: 0, total: 1)
+Orphan StringName: Modules (static: 0, total: 2)
+Orphan StringName: priority (static: 0, total: 4)
+Orphan StringName: mark_threshold_lv1 (static: 0, total: 4)
+Orphan StringName: mark_threshold_lv2 (static: 0, total: 4)
+Orphan StringName: mark_threshold_lv3 (static: 0, total: 4)
+Orphan StringName: _reset_focus (static: 0, total: 1)
+Orphan StringName: register_overheat_fire_bypass (static: 0, total: 1)
+Orphan StringName: fuse_sprite_holder (static: 0, total: 2)
+Orphan StringName: freeze_damage_lv1 (static: 0, total: 4)
+Orphan StringName: freeze_damage_lv2 (static: 0, total: 4)
+Orphan StringName: freeze_damage_lv3 (static: 0, total: 4)
+Orphan StringName: Pierce (static: 0, total: 1)
+Orphan StringName: weapon_traits (static: 0, total: 5)
+Orphan StringName: module_list (static: 0, total: 4)
+Orphan StringName: calculate_weapon_speed (static: 0, total: 2)
+Orphan StringName: _initialize_ammo_system (static: 0, total: 1)
+Orphan StringName: can_apply_to_weapon (static: 0, total: 1)
+Orphan StringName: FrostTrail (static: 0, total: 1)
+Orphan StringName: supports_melee (static: 0, total: 13)
+Orphan StringName: _passive_icd_msec (static: 0, total: 2)
+Orphan StringName: calculate_attack_cooldown (static: 0, total: 2)
+Orphan StringName: duration_sec (static: 0, total: 5)
+Orphan StringName: fuse_texture_1 (static: 0, total: 5)
+Orphan StringName: fuse_texture_2 (static: 0, total: 4)
+Orphan StringName: fuse_texture_3 (static: 0, total: 4)
+Orphan StringName: splash_length_lv1 (static: 0, total: 4)
+Orphan StringName: splash_length_lv2 (static: 0, total: 4)
+Orphan StringName: splash_length_lv3 (static: 0, total: 4)
+Orphan StringName: clear_runtime_weapon_traits (static: 0, total: 1)
+Orphan StringName: _on_windup_timer_timeout (static: 0, total: 2)
+Orphan StringName: _applied_crit_bonus (static: 0, total: 3)
+Orphan StringName: _on_offhand_passive_event (static: 0, total: 1)
+Orphan StringName: MAX_LEVEL (static: 0, total: 1)
+Orphan StringName: _remove_debug_overlay (static: 0, total: 1)
+Orphan StringName: calculate_status (static: 0, total: 1)
+Orphan StringName: overlapping_signal (static: 0, total: 2)
+Orphan StringName: fuse_sprites (static: 0, total: 2)
+Orphan StringName: on_hit_target (static: 0, total: 3)
+Orphan StringName: get_fuse_textures (static: 0, total: 1)
+Orphan StringName: _get_effective_reload_duration (static: 0, total: 1)
+Orphan StringName: chain_range (static: 0, total: 5)
+Orphan StringName: has_heat_system (static: 0, total: 1)
+Orphan StringName: _apply_stat_snapshot (static: 0, total: 1)
+Orphan StringName: BattleFocusBuff (static: 0, total: 1)
+Orphan StringName: minimum_heal (static: 0, total: 4)
+Orphan StringName: _sort_effect_config_by_priority (static: 0, total: 1)
+Orphan StringName: Cannon (static: 0, total: 4)
+Orphan StringName: calculate_speed (static: 0, total: 1)
+Orphan StringName: standalone_replacement_weapon_id (static: 0, total: 5)
+Orphan StringName: "Player/Weapons/Modules/wmod_reload_blast_knockback.gd" (static: 0, total: 1)
+Orphan StringName: group5 (static: 0, total: 3)
+Orphan StringName: dispatch_passive_event (static: 0, total: 1)
+Orphan StringName: apply_stat_modifiers (static: 0, total: 4)
+Orphan StringName: _ensure_bypass_registration (static: 0, total: 1)
+Orphan StringName: heat_core (static: 0, total: 2)
+Orphan StringName: "Player/Weapons/Modules/wmod_heat_capacity_heat.gd" (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_projectile_speed_stat.gd" (static: 0, total: 1)
+Orphan StringName: _on_main_passive_event (static: 0, total: 1)
+Orphan StringName: effect_list (static: 0, total: 2)
+Orphan StringName: speed (static: 0, total: 2)
+Orphan StringName: get_runtime_shot_damage (static: 0, total: 1)
+Orphan StringName: source_player (static: 0, total: 68)
+Orphan StringName: setup_timer (static: 0, total: 1)
+Orphan StringName: _spawn_dummy_targets (static: 0, total: 1)
+Orphan StringName: _spawn_weapon_instance (static: 0, total: 1)
+Orphan StringName: BASE_SEED (static: 0, total: 1)
+Orphan StringName: conversion_ratio_lv1 (static: 0, total: 4)
+Orphan StringName: conversion_ratio_lv2 (static: 0, total: 4)
+Orphan StringName: conversion_ratio_lv3 (static: 0, total: 4)
+Orphan StringName: "Player/Weapons/Modules/wmod_brittle_trigger_freeze.gd" (static: 0, total: 1)
+Orphan StringName: _can_pay_weapon_active_resource (static: 0, total: 1)
+Orphan StringName: _should_prime_on_first_step (static: 0, total: 1)
+Orphan StringName: _is_budget_exceeded (static: 0, total: 1)
+Orphan StringName: _weapon_active_hit_window_hits (static: 0, total: 3)
+Orphan StringName: apply_base_movement (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_plague_seed_dot.gd" (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_reload_offhand_boost.gd" (static: 0, total: 1)
+Orphan StringName: heat_max_value (static: 0, total: 3)
+Orphan StringName: projectile_spawn_plugins (static: 0, total: 2)
+Orphan StringName: calculate_damage (static: 0, total: 1)
+Orphan StringName: collision_mask (static: 0, total: 3)
+Orphan StringName: debug_effect_names (static: 0, total: 2)
+Orphan StringName: linear_movement (static: 0, total: 1)
+Orphan StringName: _get_splash_ratio (static: 0, total: 1)
+Orphan StringName: base_chance (static: 0, total: 4)
+Orphan StringName: set_branch (static: 0, total: 1)
+Orphan StringName: _equip_modules (static: 0, total: 1)
+Orphan StringName: _clear_branch_behavior (static: 0, total: 1)
+Orphan StringName: EmberMarkFire (static: 0, total: 1)
+Orphan StringName: build_stat_snapshot (static: 0, total: 1)
+Orphan StringName: debug_overlay_enabled (static: 0, total: 4)
+Orphan StringName: VALID_TYPES (static: 0, total: 1)
+Orphan StringName: _distance_point_to_segment (static: 0, total: 1)
+Orphan StringName: ITEM_NAME (static: 0, total: 105)
+Orphan StringName: _register_hook (static: 0, total: 6)
+Orphan StringName: _get_tick_damage_by_level (static: 0, total: 1)
+Orphan StringName: DUMMY_SCENE (static: 0, total: 1)
+Orphan StringName: check_overlapping (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_reload_move_boost.gd" (static: 0, total: 1)
+Orphan StringName: SubzeroExtension (static: 0, total: 1)
+Orphan StringName: reload_duration_plugins (static: 0, total: 2)
+Orphan StringName: _bypass_registered (static: 0, total: 3)
+Orphan StringName: _logs (static: 0, total: 2)
+Orphan StringName: branch_id (static: 0, total: 3)
+Orphan StringName: trail_line_color (static: 0, total: 4)
+Orphan StringName: _windup_in_progress (static: 0, total: 3)
+Orphan StringName: CryoInfuser (static: 0, total: 1)
+Orphan StringName: Sprite (static: 0, total: 37)
+Orphan StringName: trail_min_spacing (static: 0, total: 4)
+Orphan StringName: collision (static: 0, total: 2)
+Orphan StringName: WeaponRanger (static: 0, total: 1)
+Orphan StringName: windup_sec (static: 0, total: 5)
+Orphan StringName: "Player/Weapons/Modules/wmod_overheat_boost_heat.gd" (static: 0, total: 1)
+Orphan StringName: CorrosiveTouchEnergy (static: 0, total: 1)
+Orphan StringName: BrittleTrigger (static: 0, total: 1)
+Orphan StringName: _get_crit_per_stack (static: 0, total: 1)
+Orphan StringName: max_active_fields (static: 0, total: 4)
+Orphan StringName: MomentumHaste (static: 0, total: 1)
+Orphan StringName: handle_primary_input (static: 0, total: 2)
+Orphan StringName: cost (static: 0, total: 3)
+Orphan StringName: get_incompatibility_reason (static: 0, total: 1)
+Orphan StringName: _clear_bonus (static: 0, total: 4)
+Orphan StringName: HitBoxDot (static: 0, total: 4)
+Orphan StringName: _get_splash_length (static: 0, total: 1)
+Orphan StringName: _pay_weapon_active_resource (static: 0, total: 1)
+Orphan StringName: _external_damage_mul_modifiers (static: 0, total: 2)
+Orphan StringName: HitBox (static: 0, total: 4)
+Orphan StringName: on_hit_plugins (static: 0, total: 2)
+Orphan StringName: get_normalized_weapon_traits (static: 0, total: 2)
+Orphan StringName: projectile_direction (static: 0, total: 2)
+Orphan StringName: "Player/Weapons/Modules/wmod_ember_mark_fire.gd" (static: 0, total: 1)
+Orphan StringName: visibility_layer (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_permafrost_field_freeze.gd" (static: 0, total: 1)
+Orphan StringName: Area2D (static: 0, total: 4)
+Orphan StringName: IcePrisonFreeze (static: 0, total: 1)
+Orphan StringName: heat_cool_rate (static: 0, total: 3)
+Orphan StringName: texture (static: 0, total: 37)
+Orphan StringName: request_weapon_active (static: 0, total: 1)
+Orphan StringName: base_tick (static: 0, total: 4)
+Orphan StringName: _update_weapon_rotation (static: 0, total: 1)
+Orphan StringName: max_fields (static: 0, total: 5)
+Orphan StringName: shield_ratio_lv1 (static: 0, total: 4)
+Orphan StringName: shield_ratio_lv2 (static: 0, total: 4)
+Orphan StringName: shield_ratio_lv3 (static: 0, total: 4)
+Orphan StringName: capacity_mult (static: 0, total: 4)
+Orphan StringName: chance_per_fuse (static: 0, total: 4)
+Orphan StringName: has_heat_trait (static: 0, total: 1)
+Orphan StringName: _build_pair_combos (static: 0, total: 1)
+Orphan StringName: ratio_lv1 (static: 0, total: 5)
+Orphan StringName: ratio_lv2 (static: 0, total: 5)
+Orphan StringName: ratio_lv3 (static: 0, total: 5)
+Orphan StringName: FINAL_MAX_FUSE (static: 0, total: 3)
+Orphan StringName: weapon_role_changed (static: 0, total: 2)
+Orphan StringName: check_hits (static: 0, total: 1)
+Orphan StringName: _restore_target_corrosion (static: 0, total: 1)
+Orphan StringName: TYPE_FIRE (static: 0, total: 1)
+Orphan StringName: FUSE_LEVEL_CAPS (static: 0, total: 1)
+Orphan StringName: projectile_texture (static: 0, total: 2)
+Orphan StringName: "Player/Weapons/Modules/wmod_cryo_infuser_freeze.gd" (static: 0, total: 1)
+Orphan StringName: BulletSprite (static: 0, total: 1)
+Orphan StringName: _notify_shared_heat_pool_dirty (static: 0, total: 1)
+Orphan StringName: sprite (static: 0, total: 4)
+Orphan StringName: _apply_debug_overlay (static: 0, total: 1)
+Orphan StringName: base_frost_slow_per_stack (static: 0, total: 4)
+Orphan StringName: _unregister_hook (static: 0, total: 6)
+Orphan StringName: can_passive_trigger (static: 0, total: 1)
+Orphan StringName: process_frame (static: 1, total: 3)
+Orphan StringName: dot_damage_lv1 (static: 0, total: 4)
+Orphan StringName: dot_damage_lv2 (static: 0, total: 4)
+Orphan StringName: _adjust_sprite_height (static: 0, total: 1)
+Orphan StringName: dot_damage_lv3 (static: 0, total: 4)
+Orphan StringName: base_stun_seconds (static: 0, total: 4)
+Orphan StringName: _expires_at_msec (static: 0, total: 3)
+Orphan StringName: get_heat_max_value (static: 0, total: 1)
+Orphan StringName: current_ammo (static: 0, total: 3)
+Orphan StringName: enemy_hit (static: 0, total: 1)
+Orphan StringName: has_movement_control (static: 0, total: 1)
+Orphan StringName: result_label (static: 0, total: 2)
+Orphan StringName: _fuse_internal (static: 0, total: 3)
+Orphan StringName: _on_weapon_role_changed (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_reload_speed_link.gd" (static: 0, total: 1)
+Orphan StringName: display_name (static: 0, total: 5)
+Orphan StringName: "Player/Weapons/Modules/wmod_shatter_strike_freeze.gd" (static: 0, total: 1)
+Orphan StringName: weapon_active_resource_type (static: 0, total: 4)
+Orphan StringName: _external_attack_speed_multiplier (static: 0, total: 3)
+Orphan StringName: is_offhand_weapon (static: 0, total: 1)
+Orphan StringName: icon (static: 0, total: 4)
+Orphan StringName: _get_slow_multiplier (static: 0, total: 1)
+Orphan StringName: Sprite2D (static: 0, total: 3)
+Orphan StringName: FROST_FIELD_EFFECT_SCENE (static: 0, total: 1)
+Orphan StringName: _get_duration (static: 0, total: 7)
+Orphan StringName: branch_behavior (static: 0, total: 2)
+Orphan StringName: get_projectile_spawn_parent (static: 0, total: 1)
+Orphan StringName: request_reload (static: 0, total: 1)
+Orphan StringName: magazine_capacity (static: 0, total: 4)
+Orphan StringName: _get_slow_duration (static: 0, total: 1)
+Orphan StringName: _sync_heat_trait_state (static: 0, total: 1)
+Orphan StringName: _validated_modifier_params (static: 0, total: 1)
+Orphan StringName: _get_ratio_per_stack (static: 0, total: 1)
+Orphan StringName: DT_SEC (static: 0, total: 1)
+Orphan StringName: _prepare_for_spawn (static: 0, total: 1)
+Orphan StringName: _active_until_msec (static: 0, total: 12)
+Orphan StringName: knock_back (static: 0, total: 70)
+Orphan StringName: _clear_all_corrosion (static: 0, total: 1)
+Orphan StringName: FuseSprites (static: 0, total: 2)
+Orphan StringName: texture_filter (static: 0, total: 1)
+Orphan StringName: _get_module_scene_defs (static: 0, total: 1)
+Orphan StringName: _run_end_msec (static: 0, total: 3)
+Orphan StringName: _is_pooled (static: 0, total: 3)
+Orphan StringName: weapon_active_hit_window_bonus_multiplier (static: 0, total: 4)
+Orphan StringName: _on_expire_timer_timeout (static: 0, total: 2)
+Orphan StringName: ReloadMoveBoost (static: 0, total: 1)
+Orphan StringName: _simulate_hit (static: 0, total: 1)
+Orphan StringName: supports_melee_contact (static: 0, total: 1)
+Orphan StringName: _is_effect_poolable (static: 0, total: 1)
+Orphan StringName: _run_single_measurement (static: 0, total: 2)
+Orphan StringName: LightningChain (static: 0, total: 1)
+Orphan StringName: get_heat_ratio (static: 0, total: 1)
+Orphan StringName: _apply_branch_behavior_if_needed (static: 0, total: 1)
+Orphan StringName: _get_weapon_definitions (static: 0, total: 1)
+Orphan StringName: _update_projectile_debug_snapshot (static: 0, total: 1)
+Orphan StringName: _resolve_weapon (static: 0, total: 1)
+Orphan StringName: _input (static: 1, total: 2)
+Orphan StringName: _spread_from_target (static: 0, total: 1)
+Orphan StringName: _effect_schema_cache (static: 0, total: 2)
+Orphan StringName: heat_damage_bonus_at_full_heat (static: 0, total: 5)
+Orphan StringName: _start_msec (static: 0, total: 3)
+Orphan StringName: register_on_hit_plugin (static: 0, total: 1)
+Orphan StringName: Ranger (static: 0, total: 3)
+Orphan StringName: projectile_hits (static: 0, total: 2)
+Orphan StringName: _clear_buffs (static: 0, total: 1)
+Orphan StringName: VampiricSurge (static: 0, total: 1)
+Orphan StringName: register_shot_heat (static: 0, total: 1)
+Orphan StringName: _stacks (static: 0, total: 3)
+Orphan StringName: get_branch_options (static: 0, total: 1)
+Orphan StringName: single (static: 0, total: 1)
+Orphan StringName: source_node (static: 0, total: 68)
+Orphan StringName: register_as_on_hit_plugin (static: 0, total: 1)
+Orphan StringName: _write_csv_report (static: 0, total: 1)
+Orphan StringName: get_available_module_slots (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_reload_shield_boost.gd" (static: 0, total: 1)
+Orphan StringName: unregister_projectile_spawn_plugin (static: 0, total: 1)
+Orphan StringName: Resource (static: 1, total: 3)
+Orphan StringName: damage_taken_bonus_per_stack_lv1 (static: 0, total: 4)
+Orphan StringName: damage_taken_bonus_per_stack_lv2 (static: 0, total: 4)
+Orphan StringName: damage_taken_bonus_per_stack_lv3 (static: 0, total: 4)
+Orphan StringName: weapon_active_hit_window_required_hits (static: 0, total: 4)
+Orphan StringName: line_duration (static: 0, total: 5)
+Orphan StringName: BULLET_PIXEL_SIZE (static: 0, total: 1)
+Orphan StringName: get_effective_multiplier (static: 0, total: 1)
+Orphan StringName: weapon_id (static: 0, total: 5)
+Orphan StringName: ensure_effect_config (static: 0, total: 1)
+Orphan StringName: REPORT_CSV_PATH (static: 0, total: 1)
+Orphan StringName: _get_source_id (static: 0, total: 4)
+Orphan StringName: "Player/Weapons/Modules/wmod_subzero_extension_freeze.gd" (static: 0, total: 1)
+Orphan StringName: MAX_MODULE_NUMBER (static: 0, total: 3)
+Orphan StringName: _register_plugin (static: 0, total: 2)
+Orphan StringName: "Player/Weapons/Modules/wmod_damage_up_stat.gd" (static: 0, total: 1)
+Orphan StringName: validate_module_compatibility (static: 0, total: 1)
+Orphan StringName: extension_lv1 (static: 0, total: 4)
+Orphan StringName: extension_lv2 (static: 0, total: 4)
+Orphan StringName: extension_lv3 (static: 0, total: 4)
+Orphan StringName: _init_csv_report (static: 0, total: 1)
+Orphan StringName: increase_module_level (static: 0, total: 1)
+Orphan StringName: notify_projectile_spawned (static: 0, total: 1)
+Orphan StringName: _unregister_plugin (static: 0, total: 2)
+Orphan StringName: _get_dot_ticks (static: 0, total: 1)
+Orphan StringName: _apply_slow (static: 0, total: 1)
+Orphan StringName: has_any_explicit_weapon_traits (static: 0, total: 1)
+Orphan StringName: claim_movement_control (static: 0, total: 1)
+Orphan StringName: UTILS (static: 0, total: 14)
+Orphan StringName: source_weapon (static: 0, total: 2)
+Orphan StringName: unique_name_in_owner (static: 0, total: 3)
+Orphan StringName: get_reload_duration_multiplier (static: 0, total: 1)
+Orphan StringName: _is_valid_heat_weapon (static: 0, total: 3)
+Orphan StringName: _active_movement_controller (static: 0, total: 2)
+Orphan StringName: get_max_level_for_fuse (static: 0, total: 1)
+Orphan StringName: _active_bonus_shield (static: 0, total: 3)
+Orphan StringName: _on_area_entered (static: 0, total: 4)
+Orphan StringName: supports_projectiles (static: 0, total: 2)
+Orphan StringName: TYPE_PHYSICAL (static: 0, total: 1)
+Orphan StringName: burst_ratio_lv1 (static: 0, total: 4)
+Orphan StringName: burst_ratio_lv2 (static: 0, total: 4)
+Orphan StringName: burst_ratio_lv3 (static: 0, total: 4)
+Orphan StringName: _on_weapon_passive_triggered (static: 0, total: 6)
+Orphan StringName: hp (static: 0, total: 3)
+Orphan StringName: _run_benchmark (static: 0, total: 2)
+Orphan StringName: dot_ticks_lv1 (static: 0, total: 4)
+Orphan StringName: dot_ticks_lv2 (static: 0, total: 4)
+Orphan StringName: dot_ticks_lv3 (static: 0, total: 4)
+Orphan StringName: despawn (static: 0, total: 1)
+Orphan StringName: chain_count_per_fuse (static: 0, total: 5)
+Orphan StringName: _release_effects (static: 0, total: 1)
+Orphan StringName: _combo_to_name (static: 0, total: 1)
+Orphan StringName: Timer (static: 0, total: 4)
+Orphan StringName: stun_seconds_per_fuse (static: 0, total: 4)
+Orphan StringName: calculate_weapon_projectile_hits (static: 0, total: 2)
+Orphan StringName: required_frost_stacks_lv1 (static: 0, total: 4)
+Orphan StringName: required_frost_stacks_lv2 (static: 0, total: 4)
+Orphan StringName: required_frost_stacks_lv3 (static: 0, total: 4)
+Orphan StringName: "Player/Weapons/Modules/wmod_heat_concentration_heat.gd" (static: 0, total: 1)
+Orphan StringName: FINAL_MAX_LEVEL (static: 0, total: 3)
+Orphan StringName: chain_count (static: 0, total: 5)
+Orphan StringName: "Player/Weapons/Modules/wmod_heat_vent_heat.gd" (static: 0, total: 1)
+Orphan StringName: tick_interval_sec (static: 0, total: 4)
+Orphan StringName: build_params (static: 0, total: 1)
+Orphan StringName: get_explicit_weapon_traits (static: 0, total: 1)
+Orphan StringName: set_max_level (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_corrosive_touch_energy.gd" (static: 0, total: 1)
+Orphan StringName: projectile_displacement (static: 0, total: 3)
+Orphan StringName: trail_radius (static: 0, total: 4)
+Orphan StringName: _registered (static: 0, total: 21)
+Orphan StringName: register_reload_duration_plugin (static: 0, total: 1)
+Orphan StringName: SPRITE_TARGET_HEIGHT (static: 0, total: 1)
+Orphan StringName: WeaponModules (static: 0, total: 3)
+Orphan StringName: _rows (static: 0, total: 2)
+Orphan StringName: windup_timer (static: 0, total: 2)
+Orphan StringName: _weapon_active_hit_window_expires_at_msec (static: 0, total: 3)
+Orphan StringName: get_total_external_damage_mul (static: 0, total: 1)
+Orphan StringName: slow_multiplier_lv1 (static: 0, total: 4)
+Orphan StringName: slow_multiplier_lv2 (static: 0, total: 4)
+Orphan StringName: slow_multiplier_lv3 (static: 0, total: 4)
+Orphan StringName: _apply_dynamic_module_stats (static: 0, total: 1)
+Orphan StringName: _resolve_trail_radius (static: 0, total: 1)
+Orphan StringName: _apply_root_like_slow (static: 0, total: 1)
+Orphan StringName: _last_scope (static: 0, total: 3)
+Orphan StringName: weapon_active_cooldown_sec (static: 0, total: 4)
+Orphan StringName: appears_as_standalone (static: 0, total: 5)
+Orphan StringName: ReloadBlastDamage (static: 0, total: 1)
+Orphan StringName: module_traits (static: 0, total: 24)
+Orphan StringName: HeatVent (static: 0, total: 1)
+Orphan StringName: _finish_reload (static: 0, total: 1)
+Orphan StringName: streak_timeout_sec (static: 0, total: 4)
+Orphan StringName: timeout (static: 0, total: 4)
+Orphan StringName: _sync_trail_effect_config (static: 0, total: 1)
+Orphan StringName: max_total_slow (static: 0, total: 4)
+Orphan StringName: AIM_ROTATION_OFFSET (static: 0, total: 1)
+Orphan StringName: MoltenSplashFire (static: 0, total: 1)
+Orphan StringName: _write_markdown_report (static: 0, total: 1)
+Orphan StringName: DEFAULT_EXPIRE_TIME (static: 0, total: 1)
+Orphan StringName: _get_required_frost_stacks (static: 0, total: 1)
+Orphan StringName: has_any_weapon_traits (static: 0, total: 1)
+Orphan StringName: _get_extension_sec_by_level (static: 0, total: 1)
+Orphan StringName: crit_per_stack_lv1 (static: 0, total: 4)
+Orphan StringName: crit_per_stack_lv2 (static: 0, total: 4)
+Orphan StringName: crit_per_stack_lv3 (static: 0, total: 4)
+Orphan StringName: remove_runtime_weapon_trait (static: 0, total: 1)
+Orphan StringName: _draw_chain_line (static: 0, total: 1)
+Orphan StringName: heat_per_shot (static: 0, total: 3)
+Orphan StringName: get_normalized_required_weapon_traits (static: 0, total: 1)
+Orphan StringName: chain_damage_ratio (static: 0, total: 5)
+Orphan StringName: move_speed_per_stack_lv1 (static: 0, total: 4)
+Orphan StringName: move_speed_per_stack_lv2 (static: 0, total: 4)
+Orphan StringName: move_speed_per_stack_lv3 (static: 0, total: 4)
+Orphan StringName: _weapon_active_cd_remaining (static: 0, total: 3)
+Orphan StringName: apply_attack (static: 0, total: 1)
+Orphan StringName: ReloadDamageBoost (static: 0, total: 1)
+Orphan StringName: visible (static: 0, total: 4)
+Orphan StringName: weapon_role (static: 0, total: 4)
+Orphan StringName: _apply_plague_dot (static: 0, total: 1)
+Orphan StringName: passive_triggered (static: 0, total: 2)
+Orphan StringName: Node2D (static: 0, total: 6)
+Orphan StringName: wait_time (static: 0, total: 2)
+Orphan StringName: get_module_count (static: 0, total: 1)
+Orphan StringName: trail_tick_interval (static: 0, total: 4)
+Orphan StringName: _spawn_permafrost_field (static: 0, total: 1)
+Orphan StringName: Erosion (static: 0, total: 3)
+Orphan StringName: get_last_stat_snapshot (static: 0, total: 1)
+Orphan StringName: _on_acquired_from_pool (static: 0, total: 1)
+Orphan StringName: can_run_active_behavior (static: 0, total: 1)
+Orphan StringName: projectile_sprite (static: 0, total: 2)
+Orphan StringName: set_debug_snapshot (static: 0, total: 1)
+Orphan StringName: physical (static: 0, total: 4)
+Orphan StringName: "Player/Weapons/Modules/wmod_battle_focus_buff.gd" (static: 0, total: 1)
+Orphan StringName: pierce_add_by (static: 0, total: 5)
+Orphan StringName: damage_type (static: 0, total: 76)
+Orphan StringName: _get_compatible_module_defs (static: 0, total: 1)
+Orphan StringName: _has_overheat_fire_bypass (static: 0, total: 1)
+Orphan StringName: _on_tree_exited (static: 0, total: 2)
+Orphan StringName: reload_duration_sec (static: 0, total: 4)
+Orphan StringName: TYPE_ENERGY (static: 0, total: 1)
+Orphan StringName: set_cd_timer (static: 0, total: 1)
+Orphan StringName: cool_rate_mult (static: 0, total: 4)
+Orphan StringName: MockBenchmarkPlayer (static: 0, total: 1)
+Orphan StringName: PROGRESS_LOG_EVERY_CASES (static: 0, total: 1)
+Orphan StringName: _get_or_build_effect_schema (static: 0, total: 1)
+Orphan StringName: reload_time_left (static: 0, total: 3)
+Orphan StringName: _warn_projectile_modifier (static: 0, total: 1)
+Orphan StringName: Weapon (static: 0, total: 4)
+Orphan StringName: stat_additives (static: 0, total: 3)
+Orphan StringName: lock_heat_value (static: 0, total: 1)
+Orphan StringName: max_level (static: 0, total: 3)
+Orphan StringName: damage (static: 0, total: 74)
+Orphan StringName: overlapping (static: 0, total: 2)
+Orphan StringName: _execute_weapon_active (static: 0, total: 2)
+Orphan StringName: _is_target_dead (static: 0, total: 1)
+Orphan StringName: get_weapon_active_cd_ratio (static: 0, total: 1)
+Orphan StringName: FuseSpriteHolder (static: 0, total: 3)
+Orphan StringName: HeatCapacity (static: 0, total: 1)
+Orphan StringName: get_mouse_target (static: 0, total: 1)
+Orphan StringName: _last_stat_snapshot (static: 0, total: 2)
+Orphan StringName: mult_by (static: 0, total: 14)
+Orphan StringName: max_stack_scale (static: 0, total: 4)
+Orphan StringName: splash_ratio_lv1 (static: 0, total: 4)
+Orphan StringName: splash_ratio_lv2 (static: 0, total: 4)
+Orphan StringName: splash_ratio_lv3 (static: 0, total: 4)
+Orphan StringName: "Utility/tests/weapon_module_dps_benchmark.gd" (static: 0, total: 1)
+Orphan StringName: _get_armor_reduction_per_stack (static: 0, total: 1)
+Orphan StringName: set_level (static: 0, total: 2)
+Orphan StringName: splash_half_width (static: 0, total: 4)
+Orphan StringName: attack_cooldown (static: 0, total: 2)
+Orphan StringName: get_heat_value (static: 0, total: 1)
+Orphan StringName: _validate_weapon_compatibility (static: 0, total: 1)
+Orphan StringName: attack_range (static: 0, total: 3)
+Orphan StringName: _runtime_trait_overrides (static: 0, total: 2)
+Orphan StringName: _get_branch_ids (static: 0, total: 1)
+Orphan StringName: WindupTimer (static: 0, total: 2)
+Orphan StringName: DamageUp (static: 0, total: 1)
+Orphan StringName: _get_mark_threshold (static: 0, total: 1)
+Orphan StringName: REPEATS (static: 0, total: 1)
+Orphan StringName: CollisionShape2D (static: 0, total: 6)
+Orphan StringName: weapon_data (static: 0, total: 2)
+Orphan StringName: _get_object_pool (static: 0, total: 2)
+Orphan StringName: _tick_module_nodes (static: 0, total: 1)
+Orphan StringName: unregister_reload_duration_plugin (static: 0, total: 1)
+Orphan StringName: cooldown (static: 0, total: 3)
+Orphan StringName: get_effective_cooldown (static: 0, total: 1)
+Orphan StringName: line_width (static: 0, total: 5)
+Orphan StringName: _seeded_targets (static: 0, total: 2)
+Orphan StringName: expire_time (static: 0, total: 3)
+Orphan StringName: tick_damage_lv1 (static: 0, total: 5)
+Orphan StringName: tick_damage_lv2 (static: 0, total: 5)
+Orphan StringName: tick_damage_lv3 (static: 0, total: 5)
+Orphan StringName: slow_bonus_lv1 (static: 0, total: 4)
+Orphan StringName: slow_bonus_lv2 (static: 0, total: 4)
+Orphan StringName: slow_bonus_lv3 (static: 0, total: 4)
+Orphan StringName: one_shot (static: 0, total: 3)
+Orphan StringName: request_primary_fire (static: 0, total: 2)
+Orphan StringName: projectile_template (static: 0, total: 3)
+Orphan StringName: set_external_attack_speed_multiplier (static: 0, total: 1)
+Orphan StringName: _mark_stacks (static: 0, total: 2)
+Orphan StringName: modules (static: 0, total: 2)
+Orphan StringName: damage_per_fuse (static: 0, total: 4)
+Orphan StringName: tick_sec (static: 0, total: 5)
+Orphan StringName: weapon (static: 0, total: 2)
+Orphan StringName: weapon_features (static: 0, total: 2)
+Orphan StringName: hitbox_owner (static: 0, total: 2)
+Orphan StringName: init_hitbox (static: 0, total: 1)
+Orphan StringName: trail_sample_interval (static: 0, total: 4)
+Orphan StringName: get_normalized_module_traits (static: 0, total: 1)
+Orphan StringName: effect_sample (static: 0, total: 2)
+Orphan StringName: _apply_target_corrosion (static: 0, total: 1)
+Orphan StringName: Module (static: 0, total: 4)
+Orphan StringName: _track_seed_target (static: 0, total: 1)
+Orphan StringName: damage_ratio_lv1 (static: 0, total: 8)
+Orphan StringName: damage_ratio_lv2 (static: 0, total: 8)
+Orphan StringName: damage_ratio_lv3 (static: 0, total: 8)
+Orphan StringName: can_fire_with_heat (static: 0, total: 1)
+Orphan StringName: _get_root_duration (static: 0, total: 1)
+Orphan StringName: shape (static: 0, total: 1)
+Orphan StringName: _clear_hitbox (static: 0, total: 1)
+Orphan StringName: trail_line_width (static: 0, total: 4)
+Orphan StringName: cooldown_timer (static: 0, total: 2)
+Orphan StringName: FasterSpeed (static: 0, total: 1)
+Orphan StringName: . (static: 1, total: 68)
+Orphan StringName: Attack (static: 0, total: 3)
+Orphan StringName: desired_pixel_size (static: 0, total: 3)
+Orphan StringName: overheated_damage_mult (static: 0, total: 5)
+Orphan StringName: projectile_texture_resource (static: 0, total: 3)
+Orphan StringName: _timed_out (static: 0, total: 3)
+Orphan StringName: _resolve_damage_type (static: 0, total: 1)
+Orphan StringName: unregister_on_hit_plugin (static: 0, total: 1)
+Orphan StringName: _resolve_fire_interval (static: 0, total: 1)
+Orphan StringName: calculate_weapon_damage (static: 0, total: 2)
+Orphan StringName: "Player/Weapons/Modules/wmod_lightning_chain_on_hit.gd" (static: 0, total: 1)
+Orphan StringName: _on_cooldown_timer_timeout (static: 0, total: 3)
+Orphan StringName: _get_dot_damage (static: 0, total: 1)
+Orphan StringName: light_mask (static: 0, total: 1)
+Orphan StringName: TRAIL_AREA_EFFECT_SCRIPT (static: 0, total: 1)
+Orphan StringName: is_main_weapon (static: 0, total: 1)
+Orphan StringName: tree_exited (static: 0, total: 1)
+Orphan StringName: ReloadShieldBoost (static: 0, total: 1)
+Orphan StringName: Node (static: 4, total: 6)
+Orphan StringName: get_projected_stats_with_module (static: 0, total: 1)
+Orphan StringName: set_module_level (static: 0, total: 1)
+Orphan StringName: register_projectile_spawn_plugin (static: 0, total: 1)
+Orphan StringName: apply_effects (static: 0, total: 1)
+Orphan StringName: _is_value_compatible (static: 0, total: 1)
+Orphan StringName: _apply_weapon_active_multiplier_buff (static: 0, total: 1)
+Orphan StringName: base_projectile_hits (static: 0, total: 2)
+Orphan StringName: bonus_lv1 (static: 0, total: 16)
+Orphan StringName: bonus_lv2 (static: 0, total: 16)
+Orphan StringName: bonus_lv3 (static: 0, total: 16)
+Orphan StringName: level (static: 0, total: 2)
+Orphan StringName: get_runtime_damage_value (static: 0, total: 1)
+Orphan StringName: _csv_initialized (static: 0, total: 3)
+Orphan StringName: show_trail_range (static: 0, total: 4)
+Orphan StringName: EffectConfig (static: 0, total: 3)
+Orphan StringName: unregister_as_on_hit_plugin (static: 0, total: 1)
+Orphan StringName: _load_fuse_sprites (static: 0, total: 1)
+Orphan StringName: bind_source_weapon (static: 0, total: 1)
+Orphan StringName: move_threshold (static: 0, total: 4)
+Orphan StringName: _spawn_effect_instance (static: 0, total: 1)
+Orphan StringName: CooldownTimer (static: 0, total: 2)
+Orphan StringName: _fuse_sprites_initialized (static: 0, total: 2)
+Orphan StringName: dot_cd (static: 0, total: 6)
+Orphan StringName: min_shield_gain (static: 0, total: 4)
+Orphan StringName: _debug_label (static: 0, total: 2)
+Orphan StringName: Bullet (static: 0, total: 2)
+Orphan StringName: _get_burst_ratio (static: 0, total: 1)
+Orphan StringName: debug_projectile_effects (static: 0, total: 4)
+Orphan StringName: debug_source_weapon (static: 0, total: 3)
+Orphan StringName: _reset_runtime_meta_flags (static: 0, total: 1)
+Orphan StringName: burst_radius (static: 0, total: 4)
+Orphan StringName: HEAT_SCRIPT (static: 0, total: 1)
+Orphan StringName: weapon_active_triggered (static: 0, total: 2)
+Orphan StringName: _update_heat_system (static: 0, total: 1)
+Orphan StringName: unregister_overheat_fire_bypass (static: 0, total: 1)
+Orphan StringName: ReloadSpeedLink (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_lifesteal_on_hit.gd" (static: 0, total: 1)
+Orphan StringName: description (static: 0, total: 5)
+Orphan StringName: "Player/Weapons/Modules/wmod_chill_chain_freeze.gd" (static: 0, total: 1)
+Orphan StringName: is_on_cooldown (static: 0, total: 3)
+Orphan StringName: "Player/Weapons/Modules/wmod_reload_blast_damage.gd" (static: 0, total: 1)
+Orphan StringName: _get_active_heat_core (static: 0, total: 1)
+Orphan StringName: normalize_damage_type (static: 0, total: 1)
+Orphan StringName: _get_root_chance (static: 0, total: 1)
+Orphan StringName: apply_effects_on_projectile (static: 0, total: 1)
+Orphan StringName: _get_spent_magazine_ratio (static: 0, total: 1)
+Orphan StringName: attack (static: 0, total: 4)
+Orphan StringName: get_effect_descriptions (static: 0, total: 9)
+Orphan StringName: _apply_bleed_tick (static: 0, total: 1)
+Orphan StringName: WINDOW_SEC (static: 0, total: 1)
+Orphan StringName: remove_weapon (static: 0, total: 1)
+Orphan StringName: knockback_lv1 (static: 0, total: 4)
+Orphan StringName: knockback_lv2 (static: 0, total: 4)
+Orphan StringName: knockback_lv3 (static: 0, total: 4)
+Orphan StringName: PARTIAL_MD_EVERY_CASES (static: 0, total: 1)
+Orphan StringName: _tracked_target_id (static: 0, total: 3)
+Orphan StringName: _untrack_seed_target (static: 0, total: 1)
+Orphan StringName: _update_weapon_active_hit_window (static: 0, total: 1)
+Orphan StringName: projectile_scene (static: 0, total: 2)
+Orphan StringName: hitbox_type (static: 0, total: 3)
+Orphan StringName: area_entered (static: 0, total: 2)
+Orphan StringName: apply_on_hit (static: 0, total: 19)
+Orphan StringName: expire_timer (static: 0, total: 2)
+Orphan StringName: is_weapon_overheated (static: 0, total: 1)
+Orphan StringName: _on_before_pooled (static: 0, total: 1)
+Orphan StringName: _apply_fuse_sprite (static: 0, total: 1)
+Orphan StringName: required_weapon_traits (static: 0, total: 23)
+Orphan StringName: "Player/Weapons/Modules/wmod_pierce_stat.gd" (static: 0, total: 1)
+Orphan StringName: sync_stats (static: 0, total: 1)
+Orphan StringName: trail_fill_color (static: 0, total: 4)
+Orphan StringName: hitbox_dot (static: 0, total: 3)
+Orphan StringName: _overheat_fire_bypass_sources (static: 0, total: 2)
+Orphan StringName: _get_shield_ratio (static: 0, total: 1)
+Orphan StringName: spawn_projectile_from_scene (static: 0, total: 1)
+Orphan StringName: ChillChainFreeze (static: 0, total: 1)
+Orphan StringName: PlagueSeedDot (static: 0, total: 1)
+Orphan StringName: _on_area_exited (static: 0, total: 3)
+Orphan StringName: _get_configuration_warnings (static: 0, total: 1)
+Orphan StringName: stack_duration_sec (static: 0, total: 4)
+Orphan StringName: is_reloading (static: 0, total: 3)
+Orphan StringName: WeaponDefinition (static: 0, total: 3)
+Orphan StringName: REPORT_MD_PATH (static: 0, total: 1)
+Orphan StringName: _build_active_projectile_modifiers (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_reload_damage_boost.gd" (static: 0, total: 1)
+Orphan StringName: DetectArea (static: 0, total: 2)
+Orphan StringName: _get_bonus_ratio_by_level (static: 0, total: 1)
+Orphan StringName: _ensure_trail_effect (static: 0, total: 1)
+Orphan StringName: _consume_weapon_active_hit_window_bonus (static: 0, total: 1)
+Orphan StringName: _refresh_crit_bonus (static: 0, total: 1)
+Orphan StringName: weapon_active_resource_cost (static: 0, total: 4)
+Orphan StringName: _runtime (static: 0, total: 2)
+Orphan StringName: _get_effect_scene (static: 0, total: 1)
+Orphan StringName: POOLED_EFFECTS (static: 0, total: 1)
+Orphan StringName: tick_per_fuse (static: 0, total: 4)
+Orphan StringName: _get_damage_taken_bonus_per_stack (static: 0, total: 1)
+Orphan StringName: ShatterStrikeFreeze (static: 0, total: 1)
+Orphan StringName: OverheatBoost (static: 0, total: 1)
+Orphan StringName: get_heat_percent (static: 0, total: 1)
+Orphan StringName: _get_freeze_damage_by_level (static: 0, total: 1)
+Orphan StringName: _bleed_runtime (static: 0, total: 2)
+Orphan StringName: hitbox_once (static: 0, total: 3)
+Orphan StringName: _get_shared_heat_pool (static: 0, total: 1)
+Orphan StringName: _append_csv_row (static: 0, total: 1)
+Orphan StringName: calculate_projectile_hits (static: 0, total: 1)
+Orphan StringName: _get_tick_damage (static: 0, total: 2)
+Orphan StringName: get_module_display_name (static: 0, total: 1)
+Orphan StringName: root_chance_lv1 (static: 0, total: 4)
+Orphan StringName: root_chance_lv2 (static: 0, total: 4)
+Orphan StringName: root_chance_lv3 (static: 0, total: 4)
+Orphan StringName: "Player/Weapons/Modules/wmod_molten_splash_fire.gd" (static: 0, total: 1)
+Orphan StringName: _get_move_speed_per_stack (static: 0, total: 1)
+Orphan StringName: completed (static: 2, total: 4)
+Orphan StringName: show_projectile (static: 0, total: 1)
+Orphan StringName: hitbox_ins (static: 0, total: 2)
+Orphan StringName: effect_id (static: 0, total: 3)
+Orphan StringName: _on_shoot (static: 0, total: 3)
+Orphan StringName: _run_branch_benchmark (static: 0, total: 1)
+Orphan StringName: root_duration_lv1 (static: 0, total: 4)
+Orphan StringName: root_duration_lv2 (static: 0, total: 4)
+Orphan StringName: root_duration_lv3 (static: 0, total: 4)
+Orphan StringName: weapon_active_status_changed (static: 0, total: 2)
+Orphan StringName: get_external_attack_speed_multiplier (static: 0, total: 1)
+Orphan StringName: supports_ranged (static: 0, total: 12)
+Orphan StringName: energy (static: 0, total: 66)
+Orphan StringName: calculate_projectile_size (static: 0, total: 2)
+Orphan StringName: _clear_all_shield (static: 0, total: 1)
+Orphan StringName: get_effect_config (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_ice_prison_freeze.gd" (static: 0, total: 1)
+Orphan StringName: branch_definition (static: 0, total: 2)
+Orphan StringName: enabled (static: 0, total: 4)
+Orphan StringName: effect_configs (static: 0, total: 3)
+Orphan StringName: "Player/Weapons/Modules/wmod_momentum_haste.gd" (static: 0, total: 1)
+Orphan StringName: hit_timer (static: 0, total: 2)
+Orphan StringName: "Player/Weapons/Modules/wmod_trail_aoe_freeze.gd" (static: 0, total: 1)
+Orphan StringName: MAX_BUDGET_SEC (static: 0, total: 1)
+Orphan StringName: _apply_buffs (static: 0, total: 1)
+Orphan StringName: _current_stacks (static: 0, total: 3)
+Orphan StringName: target_icd_sec (static: 0, total: 13)
+Orphan StringName: configure_stat_modifiers (static: 0, total: 7)
+Orphan StringName: Projectile (static: 0, total: 4)
+Orphan StringName: LifeSteal (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_bullet_size_stat.gd" (static: 0, total: 1)
+Orphan StringName: _build_modifiers_from_configs (static: 0, total: 1)
+Orphan StringName: size (static: 0, total: 6)
+Orphan StringName: is_from_player (static: 0, total: 1)
+Orphan StringName: _format_stat_label (static: 0, total: 1)
+Orphan StringName: remove_external_damage_mul (static: 0, total: 1)
+Orphan StringName: TYPE_FREEZE (static: 0, total: 1)
+Orphan StringName: consume_ammo (static: 0, total: 1)
+Orphan StringName: _csv_cell (static: 0, total: 1)
+Orphan StringName: _streak_expires_at_msec (static: 0, total: 3)
+Orphan StringName: HeatConcentration (static: 0, total: 1)
+Orphan StringName: armor_reduce_per_stack_lv1 (static: 0, total: 4)
+Orphan StringName: armor_reduce_per_stack_lv2 (static: 0, total: 4)
+Orphan StringName: armor_reduce_per_stack_lv3 (static: 0, total: 4)
+Orphan StringName: _csv_line (static: 0, total: 1)
+Orphan StringName: _active_shield_chunks (static: 0, total: 2)
+Orphan StringName: shoot (static: 0, total: 3)
+Orphan StringName: _get_knockback_amount (static: 0, total: 1)
+Orphan StringName: BulletSizeUp (static: 0, total: 1)
+Orphan StringName: configure_heat (static: 0, total: 1)
+Orphan StringName: _plugin_registered (static: 0, total: 3)
+Orphan StringName: area_exited (static: 0, total: 2)
+Orphan StringName: apply_external_damage_mul (static: 0, total: 1)
+Orphan StringName: _get_slow_bonus_factor_by_level (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_stun_on_hit.gd" (static: 0, total: 1)
+Orphan StringName: _has_other_reloading_weapon (static: 0, total: 1)
+Orphan StringName: on_projectile_spawned (static: 0, total: 1)
+Orphan StringName: weapon_active_hit_window_timeout_sec (static: 0, total: 4)
+Orphan StringName: ratio_per_stack_lv1 (static: 0, total: 4)
+Orphan StringName: ratio_per_stack_lv2 (static: 0, total: 4)
+Orphan StringName: ratio_per_stack_lv3 (static: 0, total: 4)
+Orphan StringName: spread_radius (static: 0, total: 8)
+Orphan StringName: base_attack_cooldown (static: 0, total: 2)
+Orphan StringName: _get_modules_container (static: 0, total: 1)
+Orphan StringName: set_weapon_role (static: 0, total: 1)
+Orphan StringName: set_projectile_size (static: 0, total: 1)
+Orphan StringName: apply_modifiers (static: 0, total: 1)
+Orphan StringName: _get_damage_ratio (static: 0, total: 2)
+Orphan StringName: HitTimer (static: 0, total: 2)
+Orphan StringName: _physics_process (static: 3, total: 17)
+Orphan StringName: _effect_scene_cache (static: 0, total: 2)
+Orphan StringName: base_displacement (static: 0, total: 3)
+Orphan StringName: add_runtime_weapon_trait (static: 0, total: 1)
+Orphan StringName: get_editor_summary (static: 0, total: 1)
+Orphan StringName: ExpireTimer (static: 0, total: 2)
+Orphan StringName: ratio_per_fuse (static: 0, total: 4)
+Orphan StringName: projectile_root (static: 0, total: 2)
+Orphan StringName: _resolve_projectile_scale (static: 0, total: 1)
+Orphan StringName: shield_duration_sec (static: 0, total: 4)
+Orphan StringName: get_weapon_active_cd_remaining (static: 0, total: 1)
+Orphan StringName: collision_layer (static: 0, total: 2)
+Orphan StringName: StunOnHit (static: 0, total: 1)
+Orphan StringName: fuse (static: 0, total: 2)
+Orphan StringName: _register_weapon_active_hit_window (static: 0, total: 1)
+Orphan StringName: _on_passive_event (static: 0, total: 1)
+Orphan StringName: "Player/Weapons/Modules/wmod_vampiric_surge.gd" (static: 0, total: 1)
+Orphan StringName: ReloadBlastKnockback (static: 0, total: 1)
+Orphan StringName: has_weapon_trait (static: 0, total: 1)
+StringName: 740 unclaimed string names at exit.

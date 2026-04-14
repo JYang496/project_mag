@@ -8,7 +8,7 @@ class_name BoardCellGenerator
 @export var auto_assign_enemy_on_battle := true
 @export var initial_cell_profiles: Array[CellProfile] = []
 @export_group("Debug")
-@export var debug_recenter_logs: bool = true
+@export var debug_recenter_logs: bool = false
 @export_group("Board Blockers")
 @export var blocker_collision_layer: int = 32
 @export var blocker_collision_mask: int = 0

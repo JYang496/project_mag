@@ -3,7 +3,6 @@ extends Ranger
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
 var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.png")
-var hexagon_attack_effect = preload("res://Player/Weapons/Effects/hexagon_attack.tscn")
 const BRANCH_TRAIL_EFFECT_ID: StringName = &"projectile_trail"
 @export var auto_fire_range: float = 900.0
 

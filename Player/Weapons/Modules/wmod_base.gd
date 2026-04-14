@@ -6,7 +6,7 @@ const MAX_LEVEL: int = 3
 
 var weapon: Weapon
 @export var cost : int
-@onready var sprite: Sprite2D = %Sprite
+@onready var sprite: Sprite2D = get_node_or_null("%Sprite") as Sprite2D
 @export var supports_melee: bool = true
 @export var supports_ranged: bool = true
 @export_range(1, MAX_LEVEL, 1) var module_level: int = 1

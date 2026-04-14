@@ -84,7 +84,7 @@ func _test_stability_smoke(weapon_defs: Array[WeaponDefinition], module_defs: Ar
 			weapon.call("set_level", max_level)
 		weapon.calculate_status()
 		await get_tree().process_frame
-		var equipped := 0
+		var equipped := weapon.get_module_count()
 		for module_def in module_defs:
 			if equipped >= int(weapon.MAX_MODULE_NUMBER):
 				break

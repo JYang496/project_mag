@@ -22,6 +22,7 @@ var source_weapon: Weapon
 var hitbox_type = "once"
 var dot_cd : float
 var _is_pooled: bool = false
+var _active_movement_controller: Node
 var debug_source_weapon: String = ""
 var debug_effect_names: Array[String] = []
 var debug_effect_params: Dictionary = {}
@@ -162,6 +163,7 @@ func _on_before_pooled() -> void:
 	debug_source_weapon = ""
 	debug_effect_names.clear()
 	debug_effect_params.clear()
+	_active_movement_controller = null
 	_reset_runtime_meta_flags()
 	_remove_debug_overlay()
 
@@ -233,3 +235,15 @@ func _reset_runtime_meta_flags() -> void:
 		if keep_meta.has(meta_key):
 			continue
 		remove_meta(meta_key)
+
+func claim_movement_control(controller: Node) -> void:
+	if controller == null:
+		return
+	_active_movement_controller = controller
+
+func has_movement_control(controller: Node) -> bool:
+	if controller == null:
+		return false
+	if _active_movement_controller == null or not is_instance_valid(_active_movement_controller):
+		_active_movement_controller = controller
+	return _active_movement_controller == controller

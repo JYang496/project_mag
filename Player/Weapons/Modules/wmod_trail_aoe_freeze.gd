@@ -1,8 +1,7 @@
 extends Module
-# Projectiles leave short-lived freeze damage zones along their path.
 
-const AREA_EFFECT_SCENE: PackedScene = preload("res://Utility/area_effect/area_effect.tscn")
 const UTILS := preload("res://Player/Weapons/Modules/wmod_runtime_utils.gd")
+const TRAIL_AREA_EFFECT_SCRIPT := preload("res://Utility/area_effect/trail_area_effect.gd")
 
 var ITEM_NAME := "Frost Trail"
 
@@ -17,34 +16,50 @@ var ITEM_NAME := "Frost Trail"
 @export var damage_ratio_lv2: float = 0.24
 @export var damage_ratio_lv3: float = 0.30
 @export var max_active_fields: int = 18
+@export var show_trail_range: bool = true
+@export var trail_fill_color: Color = Color(0.35, 0.85, 1.0, 0.18)
+@export var trail_line_color: Color = Color(0.45, 0.95, 1.0, 0.75)
+@export var trail_line_width: float = 1.5
 
-var _tracked_projectiles: Dictionary = {}
-var _field_refs: Array[WeakRef] = []
 var _plugin_registered: bool = false
+var _trail_effect: Node
 
 func _enter_tree() -> void:
 	super._enter_tree()
+	_ensure_trail_effect()
 	_register_plugin()
 
 func _ready() -> void:
+	_ensure_trail_effect()
 	_register_plugin()
 
 func _exit_tree() -> void:
 	_unregister_plugin()
+	if _trail_effect != null and is_instance_valid(_trail_effect):
+		_trail_effect.queue_free()
+	_trail_effect = null
 
 func _physics_process(delta: float) -> void:
-	_process_projectiles(delta)
+	_ensure_trail_effect()
+	_sync_trail_effect_config()
+	if _trail_effect != null and is_instance_valid(_trail_effect):
+		_trail_effect.step(delta)
 
 func on_projectile_spawned(source_weapon: Weapon, projectile: Node2D) -> void:
 	if source_weapon == null or source_weapon != weapon:
 		return
 	if projectile == null or not is_instance_valid(projectile):
 		return
-	_tracked_projectiles[projectile.get_instance_id()] = {
-		"projectile_ref": weakref(projectile),
-		"last_position": projectile.global_position,
-		"sample_accum": 0.0,
-	}
+	_ensure_trail_effect()
+	_sync_trail_effect_config()
+	if _trail_effect == null or not is_instance_valid(_trail_effect):
+		return
+	_trail_effect.attach_emitter(
+		projectile,
+		_resolve_trail_radius(projectile),
+		trail_min_spacing,
+		_should_prime_on_first_step(source_weapon)
+	)
 
 func get_effect_descriptions() -> PackedStringArray:
 	return PackedStringArray([
@@ -71,79 +86,46 @@ func _unregister_plugin() -> void:
 		weapon.call("unregister_projectile_spawn_plugin", self)
 	_plugin_registered = false
 
-func _process_projectiles(delta: float) -> void:
-	if _tracked_projectiles.is_empty():
+func _ensure_trail_effect() -> void:
+	if _trail_effect != null and is_instance_valid(_trail_effect):
 		return
-	var sample_step := maxf(trail_sample_interval, 0.02)
-	for projectile_id in _tracked_projectiles.keys():
-		var payload_variant: Variant = _tracked_projectiles.get(projectile_id, {})
-		if not (payload_variant is Dictionary):
-			_tracked_projectiles.erase(projectile_id)
-			continue
-		var payload: Dictionary = payload_variant
-		var projectile_ref: WeakRef = payload.get("projectile_ref", null)
-		var projectile: Node2D = null
-		if projectile_ref != null:
-			projectile = projectile_ref.get_ref() as Node2D
-		if projectile == null or not is_instance_valid(projectile):
-			_tracked_projectiles.erase(projectile_id)
-			continue
-		var sample_accum := float(payload.get("sample_accum", 0.0)) + maxf(delta, 0.0)
-		if sample_accum < sample_step:
-			payload["sample_accum"] = sample_accum
-			_tracked_projectiles[projectile_id] = payload
-			continue
-		sample_accum = 0.0
-		var previous_position: Variant = payload.get("last_position", projectile.global_position)
-		if previous_position is Vector2 and (previous_position as Vector2).distance_to(projectile.global_position) >= maxf(trail_min_spacing, 4.0):
-			_spawn_trail_field(projectile.global_position)
-			payload["last_position"] = projectile.global_position
-		payload["sample_accum"] = sample_accum
-		_tracked_projectiles[projectile_id] = payload
-
-func _spawn_trail_field(spawn_position: Vector2) -> void:
-	var area_effect := AREA_EFFECT_SCENE.instantiate() as AreaEffect
-	if area_effect == null:
+	var effect_node := TRAIL_AREA_EFFECT_SCRIPT.new()
+	if effect_node == null:
 		return
-	area_effect.radius = maxf(trail_radius, 8.0)
-	area_effect.duration = _get_duration()
-	area_effect.target_group = AreaEffect.TargetGroup.ENEMIES
-	area_effect.apply_once_per_target = false
-	area_effect.damage_type = Attack.TYPE_FREEZE
-	area_effect.tick_interval = maxf(trail_tick_interval, 0.05)
-	area_effect.tick_damage = _get_tick_damage()
-	area_effect.source_node = weapon
-	area_effect.global_position = spawn_position
 	var tree := get_tree()
 	if tree == null:
-		area_effect.queue_free()
 		return
 	var parent: Node = tree.current_scene if tree.current_scene != null else tree.root
 	if parent == null:
-		area_effect.queue_free()
 		return
-	parent.call_deferred("add_child", area_effect)
-	_track_field(area_effect)
+	effect_node.name = "TrailAreaEffect_%s" % str(get_instance_id())
+	effect_node.auto_process = false
+	parent.add_child(effect_node)
+	_trail_effect = effect_node
 
-func _track_field(area_effect: AreaEffect) -> void:
-	if area_effect == null:
+func _sync_trail_effect_config() -> void:
+	if _trail_effect == null or not is_instance_valid(_trail_effect):
 		return
-	_cleanup_fields()
-	_field_refs.append(weakref(area_effect))
-	while _field_refs.size() > max(1, max_active_fields):
-		var oldest_ref: WeakRef = _field_refs[0]
-		_field_refs.remove_at(0)
-		if oldest_ref == null:
-			continue
-		var oldest: Object = oldest_ref.get_ref()
-		if oldest != null and is_instance_valid(oldest):
-			oldest.queue_free()
+	_trail_effect.source_node = weapon
+	_trail_effect.duration = _get_duration()
+	_trail_effect.tick_interval = maxf(trail_tick_interval, 0.05)
+	_trail_effect.sample_interval = maxf(trail_sample_interval, 0.02)
+	_trail_effect.max_segments = max(1, max_active_fields)
+	_trail_effect.target_group = 0
+	_trail_effect.tick_damage = _get_tick_damage()
+	_trail_effect.damage_type = Attack.TYPE_FREEZE
+	_trail_effect.stack_damage_per_segment = false
+	_trail_effect.draw_enabled = show_trail_range
+	_trail_effect.fill_color = trail_fill_color
+	_trail_effect.line_color = trail_line_color
+	_trail_effect.line_width = maxf(trail_line_width, 0.5)
 
-func _cleanup_fields() -> void:
-	for i in range(_field_refs.size() - 1, -1, -1):
-		var field: Object = _field_refs[i].get_ref()
-		if field == null or not is_instance_valid(field):
-			_field_refs.remove_at(i)
+func _resolve_trail_radius(projectile: Node2D) -> float:
+	if projectile != null and is_instance_valid(projectile):
+		var projectile_size: Variant = projectile.get("size")
+		if projectile_size != null:
+			return maxf(float(projectile_size), 0.1)
+	return maxf(trail_radius, 0.1)
 
 func _get_duration() -> float:
 	return UTILS.get_value_by_level(module_level, duration_lv1, duration_lv2, duration_lv3)
@@ -153,3 +135,14 @@ func _get_damage_ratio() -> float:
 
 func _get_tick_damage() -> int:
 	return max(1, int(round(float(UTILS.get_runtime_weapon_damage(weapon)) * _get_damage_ratio())))
+
+func _should_prime_on_first_step(source_weapon: Weapon) -> bool:
+	if source_weapon == null or not is_instance_valid(source_weapon):
+		return false
+	var item_name: Variant = source_weapon.get("ITEM_NAME")
+	if item_name != null and str(item_name) == "Orbit":
+		return true
+	var script_ref: Script = source_weapon.get_script()
+	if script_ref != null and String(script_ref.resource_path).ends_with("/orbit.gd"):
+		return true
+	return false

@@ -41,6 +41,19 @@ func projectile_effect_ready() -> void:
 func melee_effect_ready() -> void:
 	pass
 
+func claim_projectile_movement_control() -> void:
+	if projectile == null or not is_instance_valid(projectile):
+		return
+	if projectile.has_method("claim_movement_control"):
+		projectile.call("claim_movement_control", self)
+
+func has_projectile_movement_control() -> bool:
+	if projectile == null or not is_instance_valid(projectile):
+		return false
+	if projectile.has_method("has_movement_control"):
+		return bool(projectile.call("has_movement_control", self))
+	return true
+
 func _get_effect_property_type_map() -> Dictionary:
 	var output := {}
 	for prop in get_property_list():

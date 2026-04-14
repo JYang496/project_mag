@@ -69,7 +69,7 @@ var weapon_data = {
 		"cost": "1",
 	},
 	"7": {
-		"level": "25",
+		"level": "7",
 		"damage": "15",
 		"speed": "200",
 		"hp": "30",
@@ -81,13 +81,19 @@ var weapon_data = {
 
 
 func set_level(lv):
-	lv = str(lv)
-	level = int(weapon_data[lv]["level"])
-	base_damage = int(weapon_data[lv]["damage"])
-	base_speed = int(weapon_data[lv]["speed"])
-	base_projectile_hits = int(weapon_data[lv]["hp"])
-	dot_cd = float(weapon_data[lv]["dot_cd"])
-	base_attack_cooldown = float(weapon_data[lv]["reload"])
+	var requested_level := maxi(int(lv), 1)
+	var key := str(requested_level)
+	if not weapon_data.has(key):
+		key = str(clampi(requested_level, 1, weapon_data.size()))
+		if not weapon_data.has(key):
+			return
+	var level_data: Dictionary = weapon_data[key]
+	level = clampi(int(level_data.get("level", key)), 1, weapon_data.size())
+	base_damage = int(level_data.get("damage", 1))
+	base_speed = int(level_data.get("speed", 0))
+	base_projectile_hits = int(level_data.get("hp", 1))
+	dot_cd = float(level_data.get("dot_cd", 0.1))
+	base_attack_cooldown = float(level_data.get("reload", 1.0))
 	sync_stats()
 	_sync_speed_change_effect_config()
 	if branch_behavior and is_instance_valid(branch_behavior):

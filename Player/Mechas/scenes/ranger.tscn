@@ -1,9 +1,12 @@
-[gd_scene load_steps=3 format=3 uid="uid://70xe28f6s2e8"]
+[gd_scene load_steps=4 format=3 uid="uid://70xe28f6s2e8"]
 
 [ext_resource type="PackedScene" uid="uid://dve1wwmkd0ynm" path="res://Player/Mechas/scenes/Player.tscn" id="1_javnt"]
 [ext_resource type="Script" uid="uid://c2nq256vhlnub" path="res://Player/Mechas/scripts/ranger.gd" id="2_6kucl"]
+[ext_resource type="PackedScene" path="res://Player/Skills/ranger_drone_strike.tscn" id="3_drone"]
 
 [node name="Ranger" instance=ExtResource("1_javnt")]
 script = ExtResource("2_6kucl")
+
+[node name="RangerDroneStrike" parent="ActiveSkill" parent_id_path=PackedInt32Array(269678612) index="0" instance=ExtResource("3_drone")]
 
 [editable path="HurtBox"]

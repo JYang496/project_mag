@@ -5,7 +5,7 @@ var ITEM_NAME := "Lightning Chain"
 
 @export var chain_count: int = 2
 @export var chain_range: float = 140.0
-@export var chain_damage_ratio: float = 0.4
+@export var chain_damage_ratio: float = 0.3
 @export var chain_count_per_fuse: int = 0
 @export var line_width: float = 2.0
 @export var line_duration: float = 0.12

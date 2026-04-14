@@ -13,6 +13,7 @@ var destination : Vector2 = Vector2(400, 600)
 var _helpers_added := false
 
 func projectile_effect_ready() -> void:
+	claim_projectile_movement_control()
 	for child in projectile.get_children():
 		if child is HitBox or child is HitBoxDot:
 			child.set_collision_mask_value(3, false)
@@ -25,6 +26,8 @@ func projectile_effect_ready() -> void:
 	_helpers_added = true
 
 func _physics_process(delta: float) -> void:
+	if not has_projectile_movement_control():
+		return
 	if arrived:
 		return
 	if projectile.global_position.distance_to(p2.global_position) > 5:

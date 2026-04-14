@@ -8,7 +8,7 @@
 script = ExtResource("2_ov043")
 chain_count = 2
 chain_range = 140.0
-chain_damage_ratio = 0.4
+chain_damage_ratio = 0.3
 chain_count_per_fuse = 0
 line_width = 2.0
 line_duration = 0.12

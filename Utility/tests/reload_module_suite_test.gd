@@ -77,6 +77,7 @@ func _run_tests() -> void:
 
 func _test_trail_module_spawns_freeze_field() -> void:
 	var rig := _create_rig()
+	var enemy := _spawn_enemy(Vector2(40, 0))
 	var module_instance: Module = TRAIL_MODULE_SCRIPT.new() as Module
 	rig.main.modules.add_child(module_instance)
 	await get_tree().process_frame
@@ -86,16 +87,10 @@ func _test_trail_module_spawns_freeze_field() -> void:
 	rig.main.notify_projectile_spawned(projectile)
 	projectile.global_position = Vector2(80, 0)
 	module_instance._physics_process(0.2)
-	await get_tree().process_frame
-	var found_field := false
-	for child in get_children():
-		if child is AreaEffect:
-			var area_effect := child as AreaEffect
-			if area_effect.damage_type == Attack.TYPE_FREEZE and area_effect.tick_damage > 0:
-				found_field = true
-				break
-	_expect(found_field, "trail module should spawn freeze area effect on projectile path")
+	module_instance._physics_process(0.4)
+	_expect(enemy.hp < 100, "trail module should damage enemies along projectile path")
 	rig.root.queue_free()
+	enemy.queue_free()
 
 func _test_reload_blast_damage() -> void:
 	var rig := _create_rig()

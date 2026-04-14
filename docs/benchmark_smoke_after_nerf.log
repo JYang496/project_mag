@@ -1,0 +1,8 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+benchmark start, budget_sec=1800.0, pair_cap=24
+weapons loaded: 15
+modules loaded: 35
+weapon 'Cannon' branches: 3
+branch start: Cannon/base
+cases finished: 10 (latest: Cannon / base / wmod_damage_up_stat)
