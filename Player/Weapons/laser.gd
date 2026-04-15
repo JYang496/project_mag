@@ -14,43 +14,43 @@ var weapon_data = {
 		"level": "1",
 		"damage": "3",
 		"reload": "2",
-		"cost": "1",
+		"cost": "5",
 	},
 	"2": {
 		"level": "2",
 		"damage": "4",
 		"reload": "1.6",
-		"cost": "1",
+		"cost": "5",
 	},
 	"3": {
 		"level": "3",
 		"damage": "6",
 		"reload": "1.1",
-		"cost": "1",
+		"cost": "5",
 	},
 	"4": {
 		"level": "4",
 		"damage": "7",
 		"reload": "0.8",
-		"cost": "1",
+		"cost": "5",
 	},
 	"5": {
 		"level": "5",
 		"damage": "8",
 		"reload": "0.6",
-		"cost": "1",
+		"cost": "5",
 	},
 	"6": {
 		"level": "11",
 		"damage": "8",
 		"reload": "0.6",
-		"cost": "1",
+		"cost": "5",
 	},
 	"7": {
 		"level": "15",
 		"damage": "8",
 		"reload": "0.6",
-		"cost": "1",
+		"cost": "5",
 	}
 }
 

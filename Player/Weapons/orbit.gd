@@ -37,7 +37,7 @@ var weapon_data = {
 		"number": "1",
 		"spin_speed": "3",
 		"reload": "2.5",
-		"cost": "1",
+		"cost": "8",
 	},
 	"2": {
 		"level": "2",
@@ -45,7 +45,7 @@ var weapon_data = {
 		"number": "2",
 		"spin_speed": "3",
 		"reload": "2.2",
-		"cost": "1",
+		"cost": "8",
 	},
 	"3": {
 		"level": "3",
@@ -53,7 +53,7 @@ var weapon_data = {
 		"number": "3",
 		"spin_speed": "3",
 		"reload": "2.0",
-		"cost": "1",
+		"cost": "8",
 	},
 	"4": {
 		"level": "4",
@@ -61,7 +61,7 @@ var weapon_data = {
 		"number": "3",
 		"spin_speed": "4",
 		"reload": "1.8",
-		"cost": "1",
+		"cost": "8",
 	},
 	"5": {
 		"level": "5",
@@ -69,7 +69,7 @@ var weapon_data = {
 		"number": "4",
 		"spin_speed": "4",
 		"reload": "1.6",
-		"cost": "1",
+		"cost": "8",
 	},
 	"6": {
 		"level": "6",
@@ -77,7 +77,7 @@ var weapon_data = {
 		"number": "5",
 		"spin_speed": "4",
 		"reload": "1.4",
-		"cost": "1",
+		"cost": "8",
 	},
 	"7": {
 		"level": "7",
@@ -85,7 +85,7 @@ var weapon_data = {
 		"number": "6",
 		"spin_speed": "4",
 		"reload": "1.2",
-		"cost": "1",
+		"cost": "8",
 	}
 }
 

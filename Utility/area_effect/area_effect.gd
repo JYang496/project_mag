@@ -138,8 +138,9 @@ func _try_apply_on_hurt_box(area: Area2D) -> void:
 
 func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
 	if one_shot_damage > 0:
+		var valid_source_node: Node = _resolve_valid_source_node()
 		var damage_data := DamageManager.build_damage_data(
-			source_node,
+			valid_source_node,
 			one_shot_damage,
 			Attack.normalize_damage_type(damage_type),
 			knock_back
@@ -149,8 +150,8 @@ func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
 			var owner_player := damage_data.source_player as Player
 			if owner_player and is_instance_valid(owner_player) and target_is_enemy:
 				owner_player.apply_bonus_hit_if_needed(target)
-			if source_node and is_instance_valid(source_node) and source_node.has_method("on_hit_target"):
-				source_node.on_hit_target(target)
+			if valid_source_node and valid_source_node.has_method("on_hit_target"):
+				valid_source_node.on_hit_target(target)
 	if not status_on_apply.is_empty():
 		_apply_status_to_target(target)
 	apply_custom_effects(target)
@@ -184,14 +185,20 @@ func _apply_tick_to_current_overlaps() -> void:
 			continue
 		if not _can_affect_hurt_box(hurt_box):
 			continue
+		var valid_source_node: Node = _resolve_valid_source_node()
 		var damage_data := DamageManager.build_damage_data(
-			source_node,
+			valid_source_node,
 			tick_damage,
 			Attack.normalize_damage_type(damage_type),
 			knock_back
 		)
 		if DamageManager.apply_to_target(target, damage_data):
 			target_affected.emit(target)
+
+func _resolve_valid_source_node() -> Node:
+	if source_node != null and is_instance_valid(source_node):
+		return source_node
+	return null
 
 
 func _apply_status_to_target(target: Node) -> void:

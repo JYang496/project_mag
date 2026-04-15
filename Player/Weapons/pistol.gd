@@ -17,7 +17,7 @@ var weapon_data = {
 		"speed": "600",
 		"hp": "1",
 		"reload": "1",
-		"cost": "1",
+		"cost": "17",
 	},
 	"2": {
 		"level": "2",
@@ -25,7 +25,7 @@ var weapon_data = {
 		"speed": "600",
 		"hp": "1",
 		"reload": "1",
-		"cost": "1",
+		"cost": "17",
 	},
 	"3": {
 		"level": "3",
@@ -33,7 +33,7 @@ var weapon_data = {
 		"speed": "600",
 		"hp": "1",
 		"reload": "1",
-		"cost": "1",
+		"cost": "17",
 	},
 	"4": {
 		"level": "4",
@@ -41,7 +41,7 @@ var weapon_data = {
 		"speed": "800",
 		"hp": "1",
 		"reload": "0.75",
-		"cost": "1",
+		"cost": "17",
 	},
 	"5": {
 		"level": "5",
@@ -49,7 +49,7 @@ var weapon_data = {
 		"speed": "800",
 		"hp": "2",
 		"reload": "0.5",
-		"cost": "1",
+		"cost": "17",
 	},
 	"6": {
 		"level": "6",
@@ -57,7 +57,7 @@ var weapon_data = {
 		"speed": "800",
 		"hp": "2",
 		"reload": "0.5",
-		"cost": "1",
+		"cost": "17",
 	},
 	"7": {
 		"level": "7",
@@ -65,7 +65,7 @@ var weapon_data = {
 		"speed": "800",
 		"hp": "2",
 		"reload": "0.5",
-		"cost": "1",
+		"cost": "17",
 	}
 }
 
@@ -212,4 +212,4 @@ func _get_level_data(lv: String) -> Dictionary:
 		return weapon_data[lv]
 	if weapon_data.has("1"):
 		return weapon_data["1"]
-	return {"level": "1", "damage": "20", "speed": "600", "hp": "1", "reload": "1", "cost": "1"}
+	return {"level": "1", "damage": "20", "speed": "600", "hp": "1", "reload": "1", "cost": "17"}

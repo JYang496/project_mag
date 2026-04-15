@@ -15,7 +15,7 @@ var weapon_data = {
 		"speed": "900",
 		"hp": "4",
 		"reload": "0.6",
-		"cost": "1",
+		"cost": "9",
 	},
 	"2": {
 		"level": "2",
@@ -23,7 +23,7 @@ var weapon_data = {
 		"speed": "600",
 		"hp": "4",
 		"reload": "0.55",
-		"cost": "1",
+		"cost": "9",
 	},
 	"3": {
 		"level": "3",
@@ -31,7 +31,7 @@ var weapon_data = {
 		"speed": "600",
 		"hp": "6",
 		"reload": "0.5",
-		"cost": "1",
+		"cost": "9",
 	},
 	"4": {
 		"level": "4",
@@ -39,7 +39,7 @@ var weapon_data = {
 		"speed": "800",
 		"hp": "6",
 		"reload": "0.45",
-		"cost": "1",
+		"cost": "9",
 	},
 	"5": {
 		"level": "5",
@@ -47,7 +47,7 @@ var weapon_data = {
 		"speed": "800",
 		"hp": "6",
 		"reload": "0.4",
-		"cost": "1",
+		"cost": "9",
 	},
 	"6": {
 		"level": "6",
@@ -55,7 +55,7 @@ var weapon_data = {
 		"speed": "800",
 		"hp": "6",
 		"reload": "0.35",
-		"cost": "1",
+		"cost": "9",
 	},
 	"7": {
 		"level": "7",
@@ -63,7 +63,7 @@ var weapon_data = {
 		"speed": "800",
 		"hp": "6",
 		"reload": "0.3",
-		"cost": "1",
+		"cost": "9",
 	}
 }
 

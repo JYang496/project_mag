@@ -29,7 +29,7 @@ func _process(delta: float) -> void:
 func death(killing_attack: Attack = null) -> void:
 	var drop = drop_preload.instantiate()
 	drop.drop = coin_preload
-	drop.value = hp / 10 + 1
+	drop.value = clampi(int(floor(min(hp, 200) / 20.0)) + 1, 1, 12)
 	drop.spawn_global_position = global_position
 	self.call_deferred("add_sibling",drop)
 	_try_trigger_elite_kill_impact(killing_attack)

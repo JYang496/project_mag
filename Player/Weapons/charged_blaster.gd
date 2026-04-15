@@ -28,7 +28,7 @@ var weapon_data = {
 		"reload": "5",
 		"duration": "3.0",
 		"max_charge_level": "2",
-		"cost": "1",
+		"cost": "9",
 	},
 	"2": {
 		"level": "2",
@@ -37,7 +37,7 @@ var weapon_data = {
 		"reload": "5",
 		"duration": "3.0",
 		"max_charge_level": "2",
-		"cost": "1",
+		"cost": "9",
 	},
 	"3": {
 		"level": "3",
@@ -46,7 +46,7 @@ var weapon_data = {
 		"reload": "5",
 		"duration": "3.0",
 		"max_charge_level": "3",
-		"cost": "1",
+		"cost": "9",
 	},
 	"4": {
 		"level": "4",
@@ -55,7 +55,7 @@ var weapon_data = {
 		"reload": "5",
 		"duration": "3.0",
 		"max_charge_level": "3",
-		"cost": "1",
+		"cost": "9",
 	},
 	"5": {
 		"level": "5",
@@ -64,7 +64,7 @@ var weapon_data = {
 		"reload": "5",
 		"duration": "3.90",
 		"max_charge_level": "3",
-		"cost": "1",
+		"cost": "9",
 	},
 }
 

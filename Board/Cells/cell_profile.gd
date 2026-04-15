@@ -56,7 +56,7 @@ var terrain_type: int = Cell.TerrainType.NONE
 @export var combat_bonus_damage_reduction: float = 1.0
 
 @export_subgroup("Economy Bonus")
-@export var economy_gold: int = 20
+@export var economy_gold: int = 10
 @export var economy_exp: int = 0
 @export var economy_drop_coin: int = 0
 @export var economy_drop_chip: int = 0
@@ -83,8 +83,8 @@ var terrain_type: int = Cell.TerrainType.NONE
 @export var aura_lucky_strike_extra_damage: int = 1
 
 @export_subgroup("Double Loot Aura")
-@export var aura_double_loot_coin_chance: float = 0.3
-@export var aura_double_loot_chip_chance: float = 0.3
+@export var aura_double_loot_coin_chance: float = 0.2
+@export var aura_double_loot_chip_chance: float = 0.2
 @export var aura_double_loot_multiplier: int = 2
 
 @export_subgroup("Low HP Berserk Aura")

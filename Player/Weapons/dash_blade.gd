@@ -18,7 +18,7 @@ var weapon_data := {
 		"dash_speed": "900",
 		"return_speed": "700",
 		"reload": "1.1",
-		"cost": "1",
+		"cost": "16",
 	},
 	"2": {
 		"level": "2",
@@ -27,7 +27,7 @@ var weapon_data := {
 		"dash_speed": "950",
 		"return_speed": "730",
 		"reload": "1.0",
-		"cost": "1",
+		"cost": "16",
 	},
 	"3": {
 		"level": "3",
@@ -36,7 +36,7 @@ var weapon_data := {
 		"dash_speed": "980",
 		"return_speed": "760",
 		"reload": "0.95",
-		"cost": "1",
+		"cost": "16",
 	},
 	"4": {
 		"level": "4",
@@ -45,7 +45,7 @@ var weapon_data := {
 		"dash_speed": "1020",
 		"return_speed": "780",
 		"reload": "0.9",
-		"cost": "1",
+		"cost": "16",
 	},
 	"5": {
 		"level": "5",
@@ -54,7 +54,7 @@ var weapon_data := {
 		"dash_speed": "1080",
 		"return_speed": "820",
 		"reload": "0.85",
-		"cost": "1",
+		"cost": "16",
 	},
 	"6": {
 		"level": "6",
@@ -63,7 +63,7 @@ var weapon_data := {
 		"dash_speed": "1150",
 		"return_speed": "860",
 		"reload": "0.8",
-		"cost": "1",
+		"cost": "16",
 	},
 	"7": {
 		"level": "7",
@@ -72,7 +72,7 @@ var weapon_data := {
 		"dash_speed": "1220",
 		"return_speed": "900",
 		"reload": "0.75",
-		"cost": "1",
+		"cost": "16",
 	},
 }
 

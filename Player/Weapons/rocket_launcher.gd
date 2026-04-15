@@ -22,7 +22,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "2.4",
 		"explosion_scale": "2.0",
-		"cost": "1",
+		"cost": "6",
 	},
 	"2": {
 		"level": "2",
@@ -31,7 +31,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "2.2",
 		"explosion_scale": "2.1",
-		"cost": "1",
+		"cost": "6",
 	},
 	"3": {
 		"level": "3",
@@ -40,7 +40,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "2.0",
 		"explosion_scale": "2.2",
-		"cost": "1",
+		"cost": "6",
 	},
 	"4": {
 		"level": "4",
@@ -49,7 +49,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1.8",
 		"explosion_scale": "2.35",
-		"cost": "1",
+		"cost": "6",
 	},
 	"5": {
 		"level": "5",
@@ -58,7 +58,7 @@ var weapon_data = {
 		"hp": "2",
 		"reload": "1.6",
 		"explosion_scale": "2.5",
-		"cost": "1",
+		"cost": "6",
 	}
 }
 

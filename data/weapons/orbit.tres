@@ -9,6 +9,6 @@ script = ExtResource("3_tohqg")
 weapon_id = "7"
 display_name = "orbit"
 icon = ExtResource("1_gkkp3")
-price = 7
+price = 8
 description = "orbit test: spiral"
 scene = ExtResource("2_67cuh")

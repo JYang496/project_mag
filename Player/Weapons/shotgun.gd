@@ -19,7 +19,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "2",
 		"bullet_count": "3",
-		"cost": "1",
+		"cost": "7",
 	},
 	"2": {
 		"level": "2",
@@ -28,7 +28,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1.8",
 		"bullet_count": "4",
-		"cost": "1",
+		"cost": "7",
 	},
 	"3": {
 		"level": "3",
@@ -37,7 +37,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1.6",
 		"bullet_count": "5",
-		"cost": "1",
+		"cost": "7",
 	},
 	"4": {
 		"level": "4",
@@ -46,7 +46,7 @@ var weapon_data = {
 		"hp": "1",
 		"reload": "1.5",
 		"bullet_count": "6",
-		"cost": "1",
+		"cost": "7",
 	},
 	"5": {
 		"level": "5",
@@ -55,7 +55,7 @@ var weapon_data = {
 		"hp": "2",
 		"reload": "1.4",
 		"bullet_count": "7",
-		"cost": "1",
+		"cost": "7",
 	},
 	"6": {
 		"level": "6",
@@ -64,7 +64,7 @@ var weapon_data = {
 		"hp": "2",
 		"reload": "1.4",
 		"bullet_count": "8",
-		"cost": "1",
+		"cost": "7",
 	},
 	"7": {
 		"level": "7",
@@ -73,7 +73,7 @@ var weapon_data = {
 		"hp": "2",
 		"reload": "1.1",
 		"bullet_count": "9",
-		"cost": "1",
+		"cost": "7",
 	}
 }
 

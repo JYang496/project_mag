@@ -18,11 +18,11 @@ var attack_range: float = 280.0
 var _attacked_target_ids: Dictionary = {}
 
 var weapon_data := {
-	"1": {"level": "1", "damage": "8", "reload": "0.30", "range": "260", "cost": "7"},
-	"2": {"level": "2", "damage": "10", "reload": "0.28", "range": "270", "cost": "7"},
-	"3": {"level": "3", "damage": "12", "reload": "0.26", "range": "285", "cost": "7"},
-	"4": {"level": "4", "damage": "14", "reload": "0.24", "range": "300", "cost": "7"},
-	"5": {"level": "5", "damage": "17", "reload": "0.22", "range": "320", "cost": "7"},
+	"1": {"level": "1", "damage": "8", "reload": "0.30", "range": "260", "cost": "11"},
+	"2": {"level": "2", "damage": "10", "reload": "0.28", "range": "270", "cost": "11"},
+	"3": {"level": "3", "damage": "12", "reload": "0.26", "range": "285", "cost": "11"},
+	"4": {"level": "4", "damage": "14", "reload": "0.24", "range": "300", "cost": "11"},
+	"5": {"level": "5", "damage": "17", "reload": "0.22", "range": "320", "cost": "11"},
 }
 
 func _ready() -> void:

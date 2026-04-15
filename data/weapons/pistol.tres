@@ -9,6 +9,6 @@ script = ExtResource("3_nupfu")
 weapon_id = "5"
 display_name = "pistol"
 icon = ExtResource("1_dybqt")
-price = 5
+price = 17
 description = "pistol test"
 scene = ExtResource("2_nmgaj")

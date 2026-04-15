@@ -9,6 +9,6 @@ script = ExtResource("3_ep74y")
 weapon_id = "10"
 display_name = "chainsaw luncher"
 icon = ExtResource("1_m0vjd")
-price = 8
+price = 6
 description = "chainsaw launcher test"
 scene = ExtResource("2_f0p1k")

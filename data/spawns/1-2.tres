@@ -1,19 +1,34 @@
 [gd_resource type="Resource" script_class="LevelSpawnConfig" format=3 uid="uid://dk38tkiaqqevc"]
 
-[ext_resource type="Script" uid="uid://ytl6qq2cyao" path="res://data/spawns/LevelArray.gd" id="1_b2itx"]
-[ext_resource type="Script" uid="uid://cw2vo0cs83hpl" path="res://Utility/reward_info.gd" id="1_wxt1a"]
-[ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/scripts/spawn_info.gd" id="2_lrbk6"]
-[ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/scenes/enemy_wheel_cart.tscn" id="3_d6yav"]
+[ext_resource type="Script" uid="uid://ytl6qq2cyao" path="res://data/spawns/LevelArray.gd" id="1_cfg"]
+[ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/scripts/spawn_info.gd" id="2_spawn"]
+[ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/scenes/enemy_wheel_cart.tscn" id="3_wheel"]
+[ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/scenes/enemy_rolling_ball.tscn" id="4_roll"]
 
-[sub_resource type="Resource" id="Resource_wxt1a"]
-script = ExtResource("2_lrbk6")
+[sub_resource type="Resource" id="Spawn_wheel_main"]
+script = ExtResource("2_spawn")
 time_start = 1
-enemy = ExtResource("3_d6yav")
+enemy = ExtResource("3_wheel")
 number = 3
-max_enemy_number = 9
-max_wave = 5
+max_enemy_number = 8
+hp = 0
+damage = 0
+max_wave = 10
+interval = 3
+
+[sub_resource type="Resource" id="Spawn_roll_support"]
+script = ExtResource("2_spawn")
+time_start = 18
+enemy = ExtResource("4_roll")
+number = 2
+max_enemy_number = 6
+hp = 0
+damage = 0
+max_wave = 8
 interval = 2
 
 [resource]
-script = ExtResource("1_b2itx")
-spawns = Array[ExtResource("2_lrbk6")]([SubResource("Resource_wxt1a")])
+script = ExtResource("1_cfg")
+time_out = 110
+spawns = Array[ExtResource("2_spawn")]([SubResource("Spawn_wheel_main"), SubResource("Spawn_roll_support")])
+rewards = Array[Resource]([])

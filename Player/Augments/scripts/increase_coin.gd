@@ -1,6 +1,6 @@
 extends Augment
 
-var probability = 0.5
+var probability = 0.3
 var increased_coin = 1
 var COIN_PER_LEVEL = 1
 
