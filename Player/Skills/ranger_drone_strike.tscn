@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://dmcf57fe70x3w"]
 
-[ext_resource type="Script" path="res://Player/Skills/ranger_drone_strike.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://cbmka8atalmy0" path="res://Player/Skills/ranger_drone_strike.gd" id="1_script"]
 
-[node name="RangerDroneStrike" type="Node2D"]
+[node name="RangerDroneStrike" type="Node2D" unique_id=445793963]
 script = ExtResource("1_script")
