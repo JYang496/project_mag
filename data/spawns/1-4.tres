@@ -9,26 +9,28 @@
 script = ExtResource("2_spawn")
 time_start = 1
 enemy = ExtResource("3")
-number = 2
-max_enemy_number = 44
-hp = 0
+number = 4
+max_enemy_number = 170
+hp = 10
 damage = 0
-max_wave = 22
+max_wave = 13
 interval = 4
 
 [sub_resource type="Resource" id="Spawn_mine_zone"]
 script = ExtResource("2_spawn")
 time_start = 14
 enemy = ExtResource("4")
-number = 2
-max_enemy_number = 44
-hp = 0
+number = 3
+max_enemy_number = 170
+hp = 10
 damage = 0
-max_wave = 22
+max_wave = 10
 interval = 4
 
 [resource]
 script = ExtResource("1_cfg")
-time_out = 130
+time_out = 57
 spawns = Array[ExtResource("2_spawn")]([SubResource("Spawn_bomber_main"), SubResource("Spawn_mine_zone")])
 rewards = Array[Resource]([])
+
+

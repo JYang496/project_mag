@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dlfjvy3mfbuo7"
+
+[deps]
+
+files=["res://docs/machine_gun_run_plan_report_per_level_tuned_v2.level.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.timeout.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.total.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.required.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.kills.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.gold.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.operation.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.operation.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.main.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.offhand.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.sim.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.pass.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.gold.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.enemy.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.enemy.translation"]
+
+source_file="res://docs/machine_gun_run_plan_report_per_level_tuned_v2.csv"
+dest_files=["res://docs/machine_gun_run_plan_report_per_level_tuned_v2.level.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.timeout.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.total.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.required.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.kills.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.gold.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.operation.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.operation.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.main.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.offhand.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.sim.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.pass.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.gold.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.enemy.translation", "res://docs/machine_gun_run_plan_report_per_level_tuned_v2.enemy.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

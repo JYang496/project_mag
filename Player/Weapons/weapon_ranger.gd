@@ -111,13 +111,20 @@ func request_primary_fire() -> bool:
 	if not can_fire_with_heat():
 		return false
 	if not can_fire_with_ammo():
+		# Auto-reload when trying to fire with an empty magazine.
+		if uses_ammo_system() and current_ammo <= 0:
+			request_reload()
 		return false
 	if not consume_ammo(1):
+		if uses_ammo_system() and current_ammo <= 0:
+			request_reload()
 		return false
 	if cooldown_timer:
 		cooldown_timer.wait_time = maxf(get_effective_cooldown(attack_cooldown), 0.01)
 	emit_signal("shoot")
 	register_shot_heat()
+	if uses_ammo_system() and current_ammo <= 0:
+		request_reload()
 	return true
 
 func set_external_attack_speed_multiplier(multiplier: float) -> void:
@@ -138,14 +145,9 @@ func start_weapon_cooldown(base_cooldown: float, min_cooldown: float = 0.01) -> 
 	cooldown_timer.wait_time = maxf(get_effective_cooldown(base_cooldown), min_cooldown)
 	cooldown_timer.start()
 
-func _execute_weapon_active(damage_multiplier: float) -> bool:
-	if not can_run_active_behavior():
-		return false
-	# Weapon active casts are intentionally independent from normal-fire gating.
-	# They should not be blocked by normal attack cooldown or heat fire checks.
-	emit_signal("shoot")
-	_apply_weapon_active_multiplier_buff(damage_multiplier)
-	return true
+func _execute_weapon_active(_damage_multiplier: float) -> bool:
+	# Keep ranger weapon active empty by design.
+	return false
 
 func _apply_weapon_active_multiplier_buff(damage_multiplier: float) -> void:
 	if damage_multiplier <= 1.0:

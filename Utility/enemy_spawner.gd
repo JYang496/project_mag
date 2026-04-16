@@ -6,19 +6,22 @@ class_name EnemySpawner
 @export var min_spawn_distance_from_player: float = 180.0
 @export var spawn_point_attempts_per_enemy: int = 12
 @onready var board = get_parent().get_node_or_null("Board")
-@onready var x_min = $TopLeft.global_position.x
-@onready var y_min = $TopLeft.global_position.y
-@onready var x_max = $BottomRight.global_position.x
-@onready var y_max = $BottomRight.global_position.y
+@onready var top_left_marker: Node2D = $TopLeft
+@onready var bottom_right_marker: Node2D = $BottomRight
 
 var instance_list : Array
 var time_out_list : Array
 var board_cells : Array[Cell] = []
 var _last_spawn_cell: Cell = null
+var x_min: float = 0.0
+var y_min: float = 0.0
+var x_max: float = 0.0
+var y_max: float = 0.0
 
 func _ready():
 	GlobalVariables.enemy_spawner = self
 	_cache_board_cells()
+	_refresh_fallback_bounds()
 	_refresh_spawn_tables()
 
 func _refresh_spawn_tables() -> void:
@@ -87,6 +90,7 @@ func get_random_position() -> Vector2:
 	if player == null:
 		_last_spawn_cell = null
 		return Vector2.ZERO
+	_refresh_fallback_bounds()
 	var spawn_cell = _pick_spawn_cell_near_player(player)
 	if spawn_cell:
 		_last_spawn_cell = spawn_cell
@@ -100,6 +104,46 @@ func _cache_board_cells() -> void:
 		for child in board.get_children():
 			if child is Cell:
 				board_cells.append(child)
+	_refresh_fallback_bounds()
+
+func _refresh_fallback_bounds() -> void:
+	var bounds_set := false
+	var min_x := 0.0
+	var min_y := 0.0
+	var max_x := 0.0
+	var max_y := 0.0
+	for cell in board_cells:
+		if cell == null:
+			continue
+		var cell_rect: Rect2 = _get_cell_aabb(cell)
+		if cell_rect.size == Vector2.ZERO:
+			continue
+		if not bounds_set:
+			min_x = cell_rect.position.x
+			min_y = cell_rect.position.y
+			max_x = cell_rect.end.x
+			max_y = cell_rect.end.y
+			bounds_set = true
+			continue
+		min_x = minf(min_x, cell_rect.position.x)
+		min_y = minf(min_y, cell_rect.position.y)
+		max_x = maxf(max_x, cell_rect.end.x)
+		max_y = maxf(max_y, cell_rect.end.y)
+	if not bounds_set:
+		if top_left_marker != null and bottom_right_marker != null:
+			min_x = minf(top_left_marker.global_position.x, bottom_right_marker.global_position.x)
+			min_y = minf(top_left_marker.global_position.y, bottom_right_marker.global_position.y)
+			max_x = maxf(top_left_marker.global_position.x, bottom_right_marker.global_position.x)
+			max_y = maxf(top_left_marker.global_position.y, bottom_right_marker.global_position.y)
+		else:
+			min_x = -1000.0
+			min_y = -1000.0
+			max_x = 1000.0
+			max_y = 1000.0
+	x_min = min_x
+	y_min = min_y
+	x_max = max_x
+	y_max = max_y
 
 func _pick_spawn_cell_near_player(player: Player) -> Cell:
 	if board_cells.is_empty():
@@ -354,6 +398,10 @@ func _get_polygon_centroid(polygon_points: PackedVector2Array) -> Vector2:
 	return center / float(polygon_points.size())
 
 func _get_fallback_spawn_position(player: Player) -> Vector2:
+	var far_cell := _pick_farthest_cell_from_player(player.global_position)
+	if far_cell:
+		_last_spawn_cell = far_cell
+		return _get_random_point_in_cell_away_from_player(far_cell, player.global_position)
 	var attempts: int = max(spawn_point_attempts_per_enemy, 1)
 	var best_pos: Vector2 = _get_farthest_boundary_point(player.global_position)
 	var best_distance: float = 0.0
@@ -366,6 +414,24 @@ func _get_fallback_spawn_position(player: Player) -> Vector2:
 			best_distance = distance_to_player
 			best_pos = candidate
 	return best_pos
+
+func _pick_farthest_cell_from_player(player_position: Vector2) -> Cell:
+	if board_cells.is_empty():
+		_cache_board_cells()
+	if board_cells.is_empty():
+		return null
+	var best_cell: Cell = null
+	var best_distance := -1.0
+	for cell in board_cells:
+		if cell == null:
+			continue
+		if not _cell_can_spawn_away_from_player(cell, player_position):
+			continue
+		var distance_to_player: float = cell.global_position.distance_to(player_position)
+		if distance_to_player > best_distance:
+			best_distance = distance_to_player
+			best_cell = cell
+	return best_cell
 
 func get_nearby_position(A: Vector2, min_distance: float = 0.0, max_distance: float = 100.0) -> Vector2:
 	var player : Player = PlayerData.player

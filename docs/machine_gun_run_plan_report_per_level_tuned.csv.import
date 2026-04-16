@@ -2,11 +2,12 @@
 
 importer="csv_translation"
 type="Translation"
-uid="uid://b2da5gr086xt8"
+uid="uid://ewfbg6daytqm"
+valid=false
 
 [deps]
 
-source_file="res://docs/review.csv"
+source_file="res://docs/machine_gun_run_plan_report_per_level_tuned.csv"
 
 [params]
 

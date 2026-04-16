@@ -9,7 +9,7 @@ var ITEM_NAME = "Machine Gun"
 var attack_speed : float = 1.0
 @export var attack_speed_decay_interval: float = 0.35
 
-var max_speed_factor : float = 10.0
+var max_speed_factor : float = 5.0
 var as_timer: Timer
 
 const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)

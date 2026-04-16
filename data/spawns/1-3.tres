@@ -9,26 +9,28 @@
 script = ExtResource("2_spawn")
 time_start = 1
 enemy = ExtResource("3")
-number = 2
-max_enemy_number = 40
-hp = 0
+number = 3
+max_enemy_number = 150
+hp = 10
 damage = 0
-max_wave = 20
+max_wave = 12
 interval = 4
 
 [sub_resource type="Resource" id="Spawn_roll_chaser"]
 script = ExtResource("2_spawn")
 time_start = 18
 enemy = ExtResource("4")
-number = 3
-max_enemy_number = 48
-hp = 0
+number = 5
+max_enemy_number = 210
+hp = 10
 damage = 0
-max_wave = 16
+max_wave = 8
 interval = 4
 
 [resource]
 script = ExtResource("1_cfg")
-time_out = 120
+time_out = 53
 spawns = Array[ExtResource("2_spawn")]([SubResource("Spawn_spike_main"), SubResource("Spawn_roll_chaser")])
 rewards = Array[Resource]([])
+
+
