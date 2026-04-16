@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="LevelSpawnConfig" format=3]
+
+[ext_resource type="Script" path="res://data/spawns/LevelArray.gd" id="1_cfg"]
+[ext_resource type="Script" path="res://Npc/enemy/scripts/spawn_info.gd" id="2_spawn"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_spike_turret.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_wheel_cart.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_orbit_support.tscn" id="5"]
+
+[sub_resource type="Resource" id="Spawn_spike_wall"]
+script = ExtResource("2_spawn")
+time_start = 1
+enemy = ExtResource("3")
+number = 2
+max_enemy_number = 32
+hp = 0
+damage = 0
+max_wave = 16
+interval = 7
+
+[sub_resource type="Resource" id="Spawn_wheel_breaker"]
+script = ExtResource("2_spawn")
+time_start = 12
+enemy = ExtResource("4")
+number = 2
+max_enemy_number = 28
+hp = 0
+damage = 0
+max_wave = 14
+interval = 7
+
+[sub_resource type="Resource" id="Spawn_orbit_harass"]
+script = ExtResource("2_spawn")
+time_start = 22
+enemy = ExtResource("5")
+number = 2
+max_enemy_number = 24
+hp = 0
+damage = 0
+max_wave = 12
+interval = 8
+
+[resource]
+script = ExtResource("1_cfg")
+time_out = 150
+spawns = Array[ExtResource("2_spawn")]([SubResource("Spawn_spike_wall"), SubResource("Spawn_wheel_breaker"), SubResource("Spawn_orbit_harass")])
+rewards = Array[Resource]([])

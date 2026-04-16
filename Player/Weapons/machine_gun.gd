@@ -19,9 +19,9 @@ const MAX_SPREAD_ANGLE_DEG := 18.0
 @export var spread_full_distance: float = 900.0
 @export var close_range_miss_chance: float = 0.05
 @export var long_range_miss_chance: float = 0.85
-@export var heat_accumulation: float = 5.5
+@export var heat_accumulation: float = 3
 @export var max_heat: float = 100.0
-@export var heat_cooldown_rate: float = 18.0
+@export var heat_cooldown_rate: float = 20.0
 @export_range(5.0, 80.0, 1.0) var front_fire_half_angle_deg: float = 35.0
 var attack_range: float = 800.0
 
@@ -31,7 +31,7 @@ var weapon_data = {
 		"damage": "5",
 		"speed": "600",
 		"hp": "1",
-		"reload": "2",
+		"reload": "1",
 		"cost": "4",
 	},
 	"2": {
@@ -39,7 +39,7 @@ var weapon_data = {
 		"damage": "6",
 		"speed": "600",
 		"hp": "1",
-		"reload": "1.8",
+		"reload": "1",
 		"cost": "4",
 	},
 	"3": {
@@ -47,7 +47,7 @@ var weapon_data = {
 		"damage": "7",
 		"speed": "600",
 		"hp": "1",
-		"reload": "1.6",
+		"reload": "1",
 		"cost": "4",
 	},
 	"4": {
@@ -55,7 +55,7 @@ var weapon_data = {
 		"damage": "9",
 		"speed": "800",
 		"hp": "1",
-		"reload": "1.3",
+		"reload": "1",
 		"cost": "4",
 	},
 	"5": {

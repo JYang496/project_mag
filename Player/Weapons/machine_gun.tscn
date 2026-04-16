@@ -11,12 +11,13 @@ attack_speed_decay_interval = 0.35
 spread_full_distance = 900.0
 close_range_miss_chance = 0.05
 long_range_miss_chance = 0.85
-heat_accumulation = 5.5
+heat_accumulation = 3.0
 max_heat = 100.0
-heat_cooldown_rate = 18.0
+heat_cooldown_rate = 20.0
 front_fire_half_angle_deg = 35.0
 effect_configs = Array[ExtResource("3_mhges")]([])
 debug_projectile_effects = false
+magazine_capacity = 80
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 136224
