@@ -4,23 +4,41 @@ class_name EnemyMortarTurret
 const AREA_EFFECT_SCENE := preload("res://Utility/area_effect/area_effect.tscn")
 const WARNING_SCENE := preload("res://Npc/enemy/scenes/target_warning.tscn")
 
+@export var detect_range: float = 900.0
 @export var attack_range: float = 620.0
 @export var cast_delay: float = 1.25
 @export var cooldown_duration: float = 2.9
 @export var aoe_radius: float = 62.0
 @export var aoe_damage_multiplier: float = 1.8
+@export var random_move_change_interval_sec: float = 3.0
+@export var screen_fire_margin: float = 28.0
+@export var approaching_velocity_threshold: float = 4.0
 
 var _cooldown_remaining: float = 0.0
 var _casting: bool = false
 var _cast_remaining: float = 0.0
 var _target_position: Vector2 = Vector2.ZERO
 
+func _ready() -> void:
+	super._ready()
+	combat_role = "ranged"
+
 func _physics_process(delta: float) -> void:
 	knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
-	velocity = knockback.amount * knockback.angle
-	move_and_slide()
 	if is_stunned():
+		velocity = knockback.amount * knockback.angle
+		move_and_slide()
 		return
+	var ranged_move_velocity := compute_ranged_navigation(
+		delta,
+		detect_range,
+		attack_range,
+		1.0,
+		0.68,
+		random_move_change_interval_sec
+	)
+	velocity = ranged_move_velocity + knockback.amount * knockback.angle
+	move_and_slide()
 	_process_attack(delta)
 
 func _process_attack(delta: float) -> void:
@@ -39,6 +57,10 @@ func _process_attack(delta: float) -> void:
 	var player_pos := PlayerData.player.global_position
 	if player_pos.distance_to(global_position) > attack_range:
 		return
+	if not is_world_position_in_player_screen(global_position, screen_fire_margin):
+		return
+	if not _is_approaching_player(player_pos - global_position):
+		return
 	_target_position = player_pos
 	_casting = true
 	_cast_remaining = cast_delay
@@ -51,6 +73,7 @@ func _spawn_warning(world_pos: Vector2) -> void:
 	warning.global_position = world_pos
 	warning.duration = cast_delay
 	warning.radius = aoe_radius
+	warning.visual_preset = TargetWarning.VisualPreset.DODGE_STYLE
 	call_deferred("add_sibling", warning)
 
 func _spawn_mortar_impact(world_pos: Vector2) -> void:
@@ -70,3 +93,12 @@ func _spawn_mortar_impact(world_pos: Vector2) -> void:
 	area.apply_once_per_target = true
 	area.source_node = self
 	call_deferred("add_sibling", area)
+
+func _is_approaching_player(to_player: Vector2) -> bool:
+	# Stationary turrets cannot move toward the player; keep them attack-capable.
+	if get_current_movement_speed() <= 1.0:
+		return true
+	if to_player.length() <= 0.001 or velocity.length() <= 0.001:
+		return false
+	var approach_speed := velocity.dot(to_player.normalized())
+	return approach_speed >= approaching_velocity_threshold

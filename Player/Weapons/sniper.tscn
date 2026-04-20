@@ -1,16 +1,19 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bq5n6umh1s8wb"]
 
-[ext_resource type="PackedScene" path="res://Player/Weapons/weapon_ranger.tscn" id="1_ranger"]
-[ext_resource type="Script" path="res://Player/Weapons/sniper.gd" id="2_script"]
-[ext_resource type="Texture2D" path="res://Textures/test/sniper.png" id="3_icon"]
+[ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_ranger"]
+[ext_resource type="Script" uid="uid://cltknaqte646o" path="res://Player/Weapons/sniper.gd" id="2_script"]
+[ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://Textures/test/sniper.png" id="3_icon"]
+[ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_qi27u"]
 
-[node name="Sniper" instance=ExtResource("1_ranger")]
+[node name="Sniper" unique_id=326992049 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
+effect_configs = Array[ExtResource("3_qi27u")]([])
+debug_projectile_effects = false
 
-[node name="Sprite" parent="." index="3"]
+[node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("3_icon")
 
-[node name="FuseSprites" parent="." index="4"]
+[node name="FuseSprites" parent="." index="4" unique_id=50406900]
 fuse_texture_1 = ExtResource("3_icon")
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

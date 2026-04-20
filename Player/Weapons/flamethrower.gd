@@ -18,11 +18,13 @@ var attack_range: float = 280.0
 var _attacked_target_ids: Dictionary = {}
 
 var weapon_data := {
-	"1": {"level": "1", "damage": "8", "reload": "0.30", "range": "260", "cost": "11"},
-	"2": {"level": "2", "damage": "10", "reload": "0.28", "range": "270", "cost": "11"},
-	"3": {"level": "3", "damage": "12", "reload": "0.26", "range": "285", "cost": "11"},
-	"4": {"level": "4", "damage": "14", "reload": "0.24", "range": "300", "cost": "11"},
-	"5": {"level": "5", "damage": "17", "reload": "0.22", "range": "320", "cost": "11"},
+	"1": {"level": "1", "damage": "8", "fire_interval_sec": "0.30", "ammo": "120", "range": "260", "cost": "11"},
+	"2": {"level": "2", "damage": "10", "fire_interval_sec": "0.28", "ammo": "130", "range": "270", "cost": "11"},
+	"3": {"level": "3", "damage": "12", "fire_interval_sec": "0.26", "ammo": "140", "range": "285", "cost": "11"},
+	"4": {"level": "4", "damage": "14", "fire_interval_sec": "0.24", "ammo": "150", "range": "300", "cost": "11"},
+	"5": {"level": "5", "damage": "17", "fire_interval_sec": "0.22", "ammo": "160", "range": "320", "cost": "11"},
+	"6": {"level": "6", "damage": "20", "fire_interval_sec": "0.20", "ammo": "170", "range": "340", "cost": "11"},
+	"7": {"level": "7", "damage": "23", "fire_interval_sec": "0.18", "ammo": "180", "range": "365", "cost": "11"},
 }
 
 func _ready() -> void:
@@ -35,7 +37,9 @@ func set_level(lv) -> void:
 	var level_data: Dictionary = weapon_data.get(lv, weapon_data["1"])
 	level = int(level_data["level"])
 	base_damage = int(level_data["damage"])
-	base_attack_cooldown = float(level_data["reload"])
+
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
 	attack_range = float(level_data.get("range", base_flame_range))
 	heat_per_shot = heat_accumulation
 	heat_max_value = max_heat
@@ -197,3 +201,4 @@ func _get_effective_cone_half_angle_deg() -> float:
 		if branch_behavior.has_method("get_cone_half_angle_multiplier"):
 			angle_multiplier = float(branch_behavior.call("get_cone_half_angle_multiplier"))
 	return maxf(cone_half_angle_deg * maxf(angle_multiplier, 0.1), 1.0)
+

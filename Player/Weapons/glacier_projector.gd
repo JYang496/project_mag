@@ -18,11 +18,13 @@ var _attacked_target_ids: Dictionary = {}
 var _target_contact_state: Dictionary = {}
 
 var weapon_data: Dictionary = {
-	"1": {"level": "1", "damage": "6", "reload": "0.22", "range": "260", "cost": "10"},
-	"2": {"level": "2", "damage": "7", "reload": "0.21", "range": "275", "cost": "10"},
-	"3": {"level": "3", "damage": "8", "reload": "0.20", "range": "290", "cost": "10"},
-	"4": {"level": "4", "damage": "10", "reload": "0.19", "range": "310", "cost": "10"},
-	"5": {"level": "5", "damage": "12", "reload": "0.18", "range": "330", "cost": "10"},
+	"1": {"level": "1", "damage": "6", "fire_interval_sec": "0.22", "ammo": "110", "range": "260", "cost": "10"},
+	"2": {"level": "2", "damage": "7", "fire_interval_sec": "0.21", "ammo": "120", "range": "275", "cost": "10"},
+	"3": {"level": "3", "damage": "8", "fire_interval_sec": "0.20", "ammo": "130", "range": "290", "cost": "10"},
+	"4": {"level": "4", "damage": "10", "fire_interval_sec": "0.19", "ammo": "140", "range": "310", "cost": "10"},
+	"5": {"level": "5", "damage": "12", "fire_interval_sec": "0.18", "ammo": "150", "range": "330", "cost": "10"},
+	"6": {"level": "6", "damage": "15", "fire_interval_sec": "0.17", "ammo": "160", "range": "355", "cost": "10"},
+	"7": {"level": "7", "damage": "18", "fire_interval_sec": "0.16", "ammo": "170", "range": "380", "cost": "10"},
 }
 
 func _ready() -> void:
@@ -34,7 +36,9 @@ func set_level(lv) -> void:
 	var level_data: Dictionary = weapon_data.get(lv, weapon_data["1"])
 	level = int(level_data["level"])
 	base_damage = int(level_data["damage"])
-	base_attack_cooldown = float(level_data["reload"])
+
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
 	attack_range = float(level_data.get("range", base_range))
 	sync_stats()
 	_sync_detect_radius()
@@ -177,3 +181,4 @@ func _draw_attack_range() -> void:
 	draw_line(Vector2.ZERO, Vector2.UP * attack_range, outline_color, 2.0)
 	draw_line(Vector2.ZERO, Vector2.UP.rotated(-half_angle_rad) * attack_range, outline_color, 1.0)
 	draw_line(Vector2.ZERO, Vector2.UP.rotated(half_angle_rad) * attack_range, outline_color, 1.0)
+

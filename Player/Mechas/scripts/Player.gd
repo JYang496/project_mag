@@ -11,6 +11,7 @@ var extra_direction = Vector2.ZERO
 @onready var mecha_sprite = $MechaSprite
 @onready var player_camera: Camera2D = $Camera2D
 @onready var collect_area = get_node("%CollectArea")
+@onready var grab_area: Area2D = $GrabArea
 @onready var grab_radius = $GrabArea/GrabShape
 @onready var detect_area: Area2D = $DetectArea
 @onready var detect_shape: CollisionShape2D = $DetectArea/CollisionShape2D
@@ -50,6 +51,10 @@ const ENERGY_MARK_RATIO: float = 0.10
 const ENERGY_MARK_DURATION_SEC: float = 6.0
 const ENERGY_MARK_MAX_HP_RATIO: float = 0.40
 const ENERGY_MARK_TRIGGER_COOLDOWN_SEC: float = 2.0
+const AUTO_LOOT_DURATION_SEC: float = 2.0
+const AUTO_LOOT_TICK_SEC: float = 0.2
+const AUTO_LOOT_GRAB_RADIUS: float = 2500.0
+const COLLECT_AREA_TOP_PADDING: float = 0.0
 var weapon_orbit_states: Dictionary = {}
 var _move_speed_mul_modifiers: Dictionary = {}
 var _vision_mul_modifiers: Dictionary = {}
@@ -86,6 +91,9 @@ var _passive_time_tick_accum: float = 0.0
 var _player_energy: float = 100.0
 var _last_weapon_skill_fail_reason: String = ""
 var _last_player_skill_fail_reason: String = ""
+var _last_phase: String = ""
+var _auto_loot_running: bool = false
+var _board_generator_ref: Node = null
 # Signals
 signal active_skill()
 signal player_active_skill()
@@ -114,6 +122,11 @@ func _ready():
 	_rebuild_shared_heat_pool()
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
+	_last_phase = PhaseManager.current_state()
+	var viewport := get_viewport()
+	if viewport and not viewport.is_connected("size_changed", Callable(self, "_on_viewport_size_changed")):
+		viewport.size_changed.connect(Callable(self, "_on_viewport_size_changed"))
+	_update_collect_area_anchor_to_screen_top()
 
 # overwrite the function on child class
 func custom_ready():
@@ -127,9 +140,11 @@ func _physics_process(delta):
 	_update_incoming_elemental_effects(delta)
 	_regen_energy(delta)
 	_update_passive_time_tick(delta)
+	_update_collect_area_anchor_to_screen_top()
 	movement(delta)
 	_update_camera_zoom_smooth(delta)
 	move_and_slide()
+	_constrain_to_board_traversable_area()
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.echo:
@@ -588,6 +603,46 @@ func _update_camera_zoom_smooth(delta: float) -> void:
 		return
 	var t := clampf(camera_zoom_lerp_speed * delta, 0.0, 1.0)
 	player_camera.zoom = player_camera.zoom.lerp(_camera_zoom_target, t)
+	_update_collect_area_anchor_to_screen_top()
+
+func _on_viewport_size_changed() -> void:
+	_update_collect_area_anchor_to_screen_top()
+
+func _get_board_generator() -> Node:
+	if _board_generator_ref != null and is_instance_valid(_board_generator_ref):
+		return _board_generator_ref
+	var scene_root := get_tree().current_scene
+	if scene_root:
+		_board_generator_ref = scene_root.get_node_or_null("Board")
+	return _board_generator_ref
+
+func _constrain_to_board_traversable_area() -> void:
+	var board := _get_board_generator()
+	if board == null:
+		return
+	if not board.has_method("project_point_to_player_traversable_area"):
+		return
+	var projected: Variant = board.call("project_point_to_player_traversable_area", global_position)
+	if not (projected is Vector2):
+		return
+	var projected_pos: Vector2 = projected as Vector2
+	if projected_pos.distance_squared_to(global_position) <= 0.25:
+		return
+	global_position = projected_pos
+	velocity = Vector2.ZERO
+
+func _update_collect_area_anchor_to_screen_top() -> void:
+	if collect_area == null or not is_instance_valid(collect_area):
+		return
+	var viewport := get_viewport()
+	if viewport == null:
+		return
+	var world_top_left: Vector2 = viewport.get_canvas_transform().affine_inverse() * Vector2.ZERO
+	var target_global := Vector2(
+		global_position.x,
+		world_top_left.y + COLLECT_AREA_TOP_PADDING
+	)
+	collect_area.global_position = target_global
 
 func _refresh_detected_enemies() -> void:
 	if detect_area == null:
@@ -989,8 +1044,14 @@ func _on_grab_area_area_entered(area):
 
 
 func _on_phase_changed(new_phase: String) -> void:
-	if new_phase == PhaseManager.PREPARE:
+	var previous_phase := _last_phase
+	_last_phase = new_phase
+	if new_phase == PhaseManager.PREPARE and previous_phase == PhaseManager.BATTLE:
+		_run_battle_end_auto_collect()
 		return
+	if new_phase == PhaseManager.BATTLE and _auto_loot_running:
+		_auto_loot_running = false
+		_restore_collect_ranges_after_auto_loot()
 
 
 func _attract_all_coins() -> void:
@@ -1003,6 +1064,39 @@ func _attract_all_coins() -> void:
 			collectable.target = collect_area
 		elif collectable is Chip:
 			collectable.target = self
+
+
+func _run_battle_end_auto_collect() -> void:
+	if _auto_loot_running:
+		return
+	_auto_loot_running = true
+	_expand_collect_ranges_for_auto_loot()
+	var elapsed := 0.0
+	while elapsed < AUTO_LOOT_DURATION_SEC and _auto_loot_running and is_inside_tree():
+		_process_auto_loot_grab_overlaps()
+		await get_tree().create_timer(AUTO_LOOT_TICK_SEC).timeout
+		elapsed += AUTO_LOOT_TICK_SEC
+	_restore_collect_ranges_after_auto_loot()
+	_auto_loot_running = false
+
+
+func _expand_collect_ranges_for_auto_loot() -> void:
+	var grab_circle := grab_radius.shape as CircleShape2D
+	if grab_circle:
+		grab_circle.radius = AUTO_LOOT_GRAB_RADIUS
+
+
+func _restore_collect_ranges_after_auto_loot() -> void:
+	update_grab_radius()
+
+
+func _process_auto_loot_grab_overlaps() -> void:
+	if grab_area == null or not is_instance_valid(grab_area):
+		return
+	for area in grab_area.get_overlapping_areas():
+		if area == null or not is_instance_valid(area):
+			continue
+		_on_grab_area_area_entered(area)
 
 
 func _on_detect_area_area_entered(area: Area2D) -> void:

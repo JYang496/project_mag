@@ -1,7 +1,7 @@
 extends WeaponBranchBehavior
 class_name RocketNapalmBranch
 
-@export var cooldown_multiplier: float = 1.2
+@export var cooldown_multiplier: float = 1.0
 @export var projectile_damage_multiplier: float = 0.8
 @export var explosion_size_multiplier: float = 1.1
 @export var napalm_duration: float = 2.2
@@ -28,4 +28,3 @@ func modify_explosion_config(config: ExplosionEffectConfig) -> void:
 	config.area_tick_interval = maxf(napalm_tick_interval, 0.05)
 	config.area_tick_damage = max(1, int(round(float(weapon_damage) * napalm_tick_damage_ratio)))
 	config.damage_type = Attack.TYPE_FIRE
-

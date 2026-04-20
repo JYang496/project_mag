@@ -12,3 +12,4 @@ icon = ExtResource("1_icon")
 price = 11
 description = "short-range cone burst with fire aoe and heat management"
 scene = ExtResource("2_scene")
+appears_as_standalone = false

@@ -73,8 +73,10 @@ func new_item() -> void:
 	equip_name.text = LocalizationManager.get_weapon_name_from_definition(weapon_def)
 	image.texture = weapon_def.icon
 	lbl_description.text = LocalizationManager.get_weapon_description_from_definition(weapon_def)
-	price_label.text = str(weapon_def.price)
-	price = int(weapon_def.price)
+	var base_price := int(weapon_def.price)
+	var final_price := int(round(float(base_price) * _get_purchase_price_multiplier()))
+	price = max(1, final_price)
+	price_label.text = str(price)
 	
 
 func _physics_process(_delta) -> void:
@@ -100,3 +102,8 @@ func _on_background_gui_input(event: InputEvent) -> void:
 		for eq : EquipmentSlotShop in equipped.get_children():
 			eq.reset_sell_status()
 		self.empty_item()
+
+func _get_purchase_price_multiplier() -> float:
+	if GlobalVariables.economy_data == null:
+		return 1.0
+	return maxf(0.01, float(GlobalVariables.economy_data.weapon_purchase_price_multiplier))

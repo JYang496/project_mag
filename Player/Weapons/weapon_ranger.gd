@@ -93,6 +93,15 @@ func _on_shoot():
 	get_projectile_spawn_parent().call_deferred("add_child", projectile)
 
 func get_mouse_target():
+	if has_meta("_benchmark_mouse_target"):
+		var override_target: Variant = get_meta("_benchmark_mouse_target")
+		if override_target is Vector2:
+			return override_target
+	if PlayerData.player and is_instance_valid(PlayerData.player):
+		if PlayerData.player.has_meta("_benchmark_mouse_target"):
+			var player_override: Variant = PlayerData.player.get_meta("_benchmark_mouse_target")
+			if player_override is Vector2:
+				return player_override
 	return get_global_mouse_position()
 
 func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:

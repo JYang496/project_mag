@@ -6,6 +6,7 @@ extends Node
 @onready var weapon_list : Dictionary
 @onready var weapon_branch_list : Dictionary
 @onready var mecha_list : Dictionary
+@onready var economy_data : EconomyConfig
 @onready var enemy_spawner : EnemySpawner
 @onready var AUTOSAVE_PATH : String = "res://data/savedata/autosave.tres"
 @onready var SPAWN_PATN : String = "res://data/spawns/"
@@ -18,4 +19,5 @@ func reset_runtime_state() -> void:
 	weapon_list = {}
 	weapon_branch_list = {}
 	mecha_list = {}
+	economy_data = null
 	enemy_spawner = null

@@ -15,6 +15,7 @@ var source_enemy: Node
 var _life_remaining: float = 0.0
 
 func _ready() -> void:
+	add_to_group("enemy_runtime_cleanup")
 	_life_remaining = maxf(life_time, 0.05)
 	if collision_shape and collision_shape.shape is CircleShape2D:
 		var circle := collision_shape.shape as CircleShape2D

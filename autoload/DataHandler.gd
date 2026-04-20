@@ -30,6 +30,7 @@ const MECHA_RESOURCE_PATHS := [
 const WEAPON_BRANCH_RESOURCE_PATHS := [
 	"res://data/weapon_branches/machine_gun_shield.tres",
 ]
+const ECONOMY_RESOURCE_PATH := "res://data/economy/economy_config.tres"
 const WEAPON_BRANCH_ID_ALIASES := {
 	"twin_mg": "gatling_mg",
 	"gatling_mg": "gatling_mg",
@@ -40,6 +41,7 @@ func _ready():
 	load_weapon_data()
 	load_weapon_branch_data()
 	load_mecha_data()
+	load_economy_data()
 
 # This function is used for locate weapon file location which stored in data/weapons.
 func load_weapon_data():
@@ -92,6 +94,18 @@ func load_weapon_branch_data() -> void:
 			_register_weapon_branch_resource(load(path), path)
 	if GlobalVariables.weapon_branch_list.is_empty():
 		push_warning("No weapon branch data loaded. Check resources in data/weapon_branches/*.tres.")
+
+func load_economy_data() -> void:
+	GlobalVariables.economy_data = null
+	var resource := load(ECONOMY_RESOURCE_PATH)
+	if resource == null:
+		push_warning("Failed to load economy config: %s" % ECONOMY_RESOURCE_PATH)
+		return
+	var economy := resource as EconomyConfig
+	if economy == null:
+		push_warning("Economy config has invalid type: %s" % ECONOMY_RESOURCE_PATH)
+		return
+	GlobalVariables.economy_data = economy
 
 func read_weapon_branch_options(scene_path: String, current_fuse: int = 1) -> Array[WeaponBranchDefinition]:
 	if GlobalVariables.weapon_branch_list.is_empty():

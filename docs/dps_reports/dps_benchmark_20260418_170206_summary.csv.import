@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://vosnp6m4snbf"
+valid=false
+
+[deps]
+
+source_file="res://docs/dps_reports/dps_benchmark_20260418_170206_summary.csv"
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

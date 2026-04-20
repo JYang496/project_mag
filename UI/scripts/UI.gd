@@ -10,8 +10,6 @@ const HP_BAR_TRANS := Tween.TRANS_SINE
 const HP_BAR_EASE := Tween.EASE_OUT
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 
-#@onready var player : Player = get_tree().get_first_node_in_group("player")
-
 # Roots
 @onready var gui_root: Control = $GUI
 @onready var character_root : Control = $GUI/CharacterRoot

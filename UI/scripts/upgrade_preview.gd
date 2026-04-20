@@ -41,6 +41,7 @@ func _draw():
 
 func update() -> void:
 	weapon_node = InventoryData.on_select_upg
+	cost_price = 0
 	if self.is_connected("upgrade_level",Callable(weapon_node,"set_level")):
 		self.disconnect("upgrade_level",Callable(weapon_node,"set_level"))
 	for stats in status_container.get_children():
@@ -52,8 +53,9 @@ func update() -> void:
 		lblName.text = LocalizationManager.get_weapon_name_from_node(weapon_node)
 		for key in comb_status:
 			if key == "cost":
-				cost_price = int(comb_status[key][1])
-				cost.text = LocalizationManager.tr_format("ui.upgrade.cost", {"value": comb_status[key][1]}, "Cost: %s" % comb_status[key][1])
+				var base_upgrade_cost := int(comb_status[key][1])
+				cost_price = max(1, int(round(float(base_upgrade_cost) * _get_upgrade_cost_multiplier())))
+				cost.text = LocalizationManager.tr_format("ui.upgrade.cost", {"value": cost_price}, "Cost: %s" % cost_price)
 			else:
 				var status_label = Label.new()
 				status_label.text = LocalizationManager.tr_format(
@@ -107,3 +109,8 @@ func _on_upgrade_card_mouse_entered():
 func _on_upgrade_card_mouse_exited():
 	hover_over = false
 	update()
+
+func _get_upgrade_cost_multiplier() -> float:
+	if GlobalVariables.economy_data == null:
+		return 1.0
+	return maxf(0.01, float(GlobalVariables.economy_data.weapon_upgrade_cost_multiplier))

@@ -1,10 +1,6 @@
 extends WeaponBranchBehavior
 class_name ShotgunShatterBranch
 
-@export var cooldown_multiplier: float = 0.62
-@export var projectile_damage_multiplier: float = 0.42
-@export var projectile_count: int = 6
-@export var spread_arc_deg: float = 36.0
 @export var shatter_damage_ratio: float = 0.25
 @export var shatter_required_hits: int = 3
 @export var shatter_window_sec: float = 0.12
@@ -14,31 +10,8 @@ var _target_window_hits: Dictionary = {}
 func on_removed() -> void:
 	_target_window_hits.clear()
 
-func get_cooldown_multiplier() -> float:
-	return maxf(cooldown_multiplier, 0.05)
-
-func get_projectile_damage_multiplier() -> float:
-	return maxf(projectile_damage_multiplier, 0.05)
-
-func get_projectile_count_override(_default_count: int = 1) -> int:
-	return clampi(projectile_count, 1, 24)
-
 func get_damage_type_override() -> StringName:
 	return Attack.TYPE_FREEZE
-
-func get_shot_directions(base_direction: Vector2, shot_count: int = -1) -> Array[Vector2]:
-	var dirs: Array[Vector2] = []
-	var count := projectile_count if shot_count < 0 else shot_count
-	count = clampi(count, 1, 24)
-	var normalized_base := base_direction.normalized()
-	if count == 1:
-		return [normalized_base]
-	var spread_step := deg_to_rad(spread_arc_deg) / maxf(float(count - 1), 1.0)
-	var start_offset := -deg_to_rad(spread_arc_deg) * 0.5
-	for i in range(count):
-		var angle := start_offset + spread_step * float(i)
-		dirs.append(normalized_base.rotated(angle))
-	return dirs
 
 func on_target_hit(target: Node) -> void:
 	if weapon == null or not is_instance_valid(weapon):

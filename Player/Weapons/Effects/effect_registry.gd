@@ -3,6 +3,7 @@ class_name EffectRegistry
 
 const _SCENE_BY_ID := {
 	"linear_movement": preload("res://Player/Weapons/Effects/linear_movement.tscn"),
+	"enemy_seek_steer": preload("res://Player/Weapons/Effects/enemy_seek_steer.tscn"),
 	"explosion_effect": preload("res://Player/Weapons/Effects/explosion_effect.tscn"),
 	"speed_change_on_hit": preload("res://Player/Weapons/Effects/speed_change_on_hit.tscn"),
 	"dmg_up_on_enemy_death": preload("res://Player/Weapons/Effects/dmg_up_on_enemy_death.tscn"),
@@ -10,6 +11,7 @@ const _SCENE_BY_ID := {
 
 const _CONFIG_SCRIPT_BY_ID := {
 	"linear_movement": preload("res://Player/Weapons/Effects/Configs/linear_movement_config.gd"),
+	"enemy_seek_steer": preload("res://Player/Weapons/Effects/Configs/enemy_seek_steer_config.gd"),
 	"explosion_effect": preload("res://Player/Weapons/Effects/Configs/explosion_effect_config.gd"),
 	"speed_change_on_hit": preload("res://Player/Weapons/Effects/Configs/speed_change_on_hit_config.gd"),
 	"dmg_up_on_enemy_death": preload("res://Player/Weapons/Effects/Configs/dmg_up_on_enemy_death_config.gd"),

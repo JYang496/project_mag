@@ -1,0 +1,11 @@
+weapon_id,weapon_name,group_type,rounds,dps_avg,dps_min,dps_max,dps_std,total_damage_avg,total_damage_min,total_damage_max,hit_damage_avg,hit_damage_min,hit_damage_max,hit_count_avg,fire_success_avg,quality_ok_count,quality_low_confidence_count,quality_invalid_count
+1,machine gun,single,1,11.0,11.0,11.0,0.0,33.0,33.0,33.0,11.0,11.0,11.0,3.0,3.0,1,0,0
+2,Charged Blaster,single,1,1166.667,1166.667,1166.667,0.0,3500.0,3500.0,3500.0,5.993,2.0,6.0,584.0,10.0,1,0,0
+3,Spear,single,1,28.0,28.0,28.0,0.0,84.0,84.0,84.0,12.0,12.0,12.0,7.0,7.0,1,0,0
+4,shotgun,single,1,16.667,16.667,16.667,0.0,50.0,50.0,50.0,25.0,25.0,25.0,2.0,2.0,1,0,0
+5,pistol,single,1,20.0,20.0,20.0,0.0,60.0,60.0,60.0,12.0,12.0,12.0,5.0,5.0,1,0,0
+7,orbit,single,1,8.0,8.0,8.0,0.0,24.0,24.0,24.0,24.0,24.0,24.0,1.0,1.0,0,1,0
+8,rocket luncher,single,1,8.333,8.333,8.333,0.0,25.0,25.0,25.0,25.0,25.0,25.0,1.0,1.0,0,1,0
+10,chainsaw luncher,single,1,30.0,30.0,30.0,0.0,90.0,90.0,90.0,30.0,30.0,30.0,3.0,3.0,1,0,0
+25,Cannon,single,1,62.0,62.0,62.0,0.0,186.0,186.0,186.0,93.0,93.0,93.0,2.0,2.0,1,0,0
+26,Sniper,single,1,35.0,35.0,35.0,0.0,105.0,105.0,105.0,105.0,105.0,105.0,1.0,1.0,0,1,0

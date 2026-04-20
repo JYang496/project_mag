@@ -3,6 +3,7 @@ class_name EnemyMirrorCaster
 
 const MIRROR_CLONE_SCENE := preload("res://Npc/enemy/scenes/enemy_mirror_clone.tscn")
 
+@export var detect_range: float = 760.0
 @export var cast_cooldown: float = 5.5
 @export var cast_time: float = 0.9
 @export var mirror_count: int = 2
@@ -10,10 +11,15 @@ const MIRROR_CLONE_SCENE := preload("res://Npc/enemy/scenes/enemy_mirror_clone.t
 @export var mirror_spawn_radius: float = 95.0
 @export var reposition_distance: float = 180.0
 @export var cast_range: float = 480.0
+@export var random_move_change_interval_sec: float = 3.0
 
 var _cooldown_remaining: float = 1.8
 var _is_casting: bool = false
 var _cast_remaining: float = 0.0
+
+func _ready() -> void:
+	super._ready()
+	combat_role = "ranged"
 
 func _physics_process(delta: float) -> void:
 	if is_stunned():
@@ -24,10 +30,17 @@ func _physics_process(delta: float) -> void:
 	if PlayerData.player == null:
 		return
 	_process_casting(delta)
-	var direction := global_position.direction_to(PlayerData.player.global_position)
+	var ranged_move_velocity := compute_ranged_navigation(
+		delta,
+		detect_range,
+		cast_range,
+		1.0,
+		0.72,
+		random_move_change_interval_sec
+	)
 	knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
-	var move_speed := get_current_movement_speed() * (0.45 if _is_casting else 0.85)
-	velocity = direction * move_speed + knockback.amount * knockback.angle
+	var cast_move_mul := 0.55 if _is_casting else 1.0
+	velocity = ranged_move_velocity * cast_move_mul + knockback.amount * knockback.angle
 	move_and_slide()
 
 func _process_casting(delta: float) -> void:

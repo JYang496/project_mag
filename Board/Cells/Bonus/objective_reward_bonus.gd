@@ -16,7 +16,7 @@ class_name ObjectiveRewardBonus
 # ========== 经济奖励 (Economy Rewards) ==========
 @export_group("Economy Rewards")
 
-@export var economy_gold: int = 10
+@export var economy_gold: int = 0
 @export var economy_exp: int = 0
 @export var economy_drop_coin: int = 0
 @export var economy_drop_chip: int = 0

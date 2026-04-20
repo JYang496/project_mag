@@ -1,0 +1,11 @@
+weapon_id,weapon_name,weapon_level,branch_id,round,duration_sec,fire_attempts,fire_success,reload_started,reload_finished,manual_reload_calls,fire_test_pass,reload_test_pass,total_damage_formula,dps,formula,timestamp
+1,machine gun,7,,1,20.067,301,21,0,1,1,true,true,315.0,15.698,MachineGun: damage * shot_count(branch),2026-04-19 23:00:31
+2,Charged Blaster,7,,1,20.067,301,4,1,1,1,true,true,1280.0,63.787,ChargedBlaster: sum(profile damage ticks over duration/hit_cd),2026-04-19 23:00:36
+3,Spear,7,,1,20.067,301,43,2,1,1,true,true,774.0,38.571,Spear: damage * shot_count(branch),2026-04-19 23:00:41
+4,shotgun,7,,1,20.067,301,9,1,1,1,true,true,2106.0,104.95,Shotgun: damage * pellet_count(branch aware),2026-04-19 23:00:46
+5,pistol,7,,1,20.067,301,26,1,1,1,true,true,416.0,20.731,Pistol: damage,2026-04-19 23:00:52
+7,orbit,7,,1,20.067,301,6,1,1,1,true,true,4620.0,230.233,Orbit: satellites spawn periodic damage streams,2026-04-19 23:00:57
+8,rocket luncher,7,,1,20.067,301,12,1,1,1,true,true,702.0,34.983,Rocket: damage * rockets * single_target_multiplier,2026-04-19 23:01:02
+10,chainsaw luncher,7,,1,20.067,301,19,1,1,1,true,true,3615.0,180.15,Chainsaw: immediate hit + DOT stream over contact duration,2026-04-19 23:01:07
+25,Cannon,7,,1,20.067,301,14,1,1,1,true,true,1960.0,97.674,Cannon: damage (single shell),2026-04-19 23:01:12
+26,Sniper,7,,1,20.067,301,8,1,1,1,true,true,522.0,26.013,Sniper: damage * distance_multiplier (+ optional pierce estimate),2026-04-19 23:01:18

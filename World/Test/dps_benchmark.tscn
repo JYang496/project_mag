@@ -1,0 +1,74 @@
+[gd_scene format=3 uid="uid://cah7cmpefc21k"]
+
+[ext_resource type="Script" uid="uid://c2ck2mgck74w5" path="res://World/Test/dps_benchmark.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/test/dps_benchmark_default.tres" id="2_config"]
+
+[node name="DpsBenchmark" type="Node2D" unique_id=945830810]
+script = ExtResource("1_script")
+config = ExtResource("2_config")
+
+[node name="SpawnRoot" type="Node2D" parent="." unique_id=1018985307]
+
+[node name="PlayerSpawn" type="Marker2D" parent="SpawnRoot" unique_id=26745503]
+position = Vector2(360, 360)
+
+[node name="SingleSpawn" type="Marker2D" parent="SpawnRoot" unique_id=1295242979]
+position = Vector2(860, 360)
+
+[node name="AoeCenter" type="Marker2D" parent="SpawnRoot" unique_id=446994239]
+position = Vector2(1160, 360)
+
+[node name="SingleEnemies" type="Node2D" parent="SpawnRoot" unique_id=833993769]
+
+[node name="AoeEnemies" type="Node2D" parent="SpawnRoot" unique_id=1559755575]
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1637364204]
+
+[node name="Panel" type="PanelContainer" parent="UI" unique_id=413193775]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 580.0
+offset_bottom = 230.0
+
+[node name="VBox" type="VBoxContainer" parent="UI/Panel" unique_id=863416676]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="UI/Panel/VBox" unique_id=1994276632]
+layout_mode = 2
+text = "DPS Benchmark (Fresh Build)"
+
+[node name="StatusLabel" type="Label" parent="UI/Panel/VBox" unique_id=854698085]
+layout_mode = 2
+text = "Status: --"
+
+[node name="WeaponLabel" type="Label" parent="UI/Panel/VBox" unique_id=1322583044]
+layout_mode = 2
+text = "Weapon: --"
+
+[node name="ProgressLabel" type="Label" parent="UI/Panel/VBox" unique_id=1662131761]
+layout_mode = 2
+text = "Progress: --"
+
+[node name="ReportLabel" type="Label" parent="UI/Panel/VBox" unique_id=1799836486]
+layout_mode = 2
+text = "Report: --"
+autowrap_mode = 3
+
+[node name="Buttons" type="HBoxContainer" parent="UI/Panel/VBox" unique_id=1503093599]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="UI/Panel/VBox/Buttons" unique_id=975382005]
+layout_mode = 2
+text = "Start"
+
+[node name="StopButton" type="Button" parent="UI/Panel/VBox/Buttons" unique_id=1220324532]
+layout_mode = 2
+text = "Stop"
+
+[node name="ResetButton" type="Button" parent="UI/Panel/VBox/Buttons" unique_id=1280752316]
+layout_mode = 2
+text = "Reset"
+
+[node name="NextCaseButton" type="Button" parent="UI/Panel/VBox/Buttons" unique_id=90884396]
+layout_mode = 2
+text = "Next Case"

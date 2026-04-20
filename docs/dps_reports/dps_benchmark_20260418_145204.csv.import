@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cile0kttgefgy"
+
+[deps]
+
+files=["res://docs/dps_reports/dps_benchmark_20260418_145204.weapon.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.weapon.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.group.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.round.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.total.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.hit.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.hit.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.hit.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.duration.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.dps.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.hit.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.kill.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.target.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.fire.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.fire.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.fire.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.data.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.quality.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.timestamp.translation"]
+
+source_file="res://docs/dps_reports/dps_benchmark_20260418_145204.csv"
+dest_files=["res://docs/dps_reports/dps_benchmark_20260418_145204.weapon.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.weapon.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.group.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.round.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.total.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.hit.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.hit.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.hit.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.duration.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.dps.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.hit.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.kill.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.target.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.fire.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.fire.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.fire.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.data.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.quality.translation", "res://docs/dps_reports/dps_benchmark_20260418_145204.timestamp.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

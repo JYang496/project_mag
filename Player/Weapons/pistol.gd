@@ -3,7 +3,6 @@ extends Ranger
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
 var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.png")
-const BRANCH_TRAIL_EFFECT_ID: StringName = &"projectile_trail"
 @export var auto_fire_range: float = 900.0
 
 # Weapon
@@ -13,58 +12,65 @@ var ITEM_NAME = "Pistol"
 var weapon_data = {
 	"1": {
 		"level": "1",
-		"damage": "20",
+		"damage": "4",
 		"speed": "600",
 		"hp": "1",
-		"reload": "1",
+		"fire_interval_sec": "1",
+		"ammo": "45",
 		"cost": "17",
 	},
 	"2": {
 		"level": "2",
-		"damage": "30",
+		"damage": "6",
 		"speed": "600",
 		"hp": "1",
-		"reload": "1",
+		"fire_interval_sec": "1",
+		"ammo": "50",
 		"cost": "17",
 	},
 	"3": {
 		"level": "3",
-		"damage": "40",
+		"damage": "8",
 		"speed": "600",
 		"hp": "1",
-		"reload": "1",
+		"fire_interval_sec": "1",
+		"ammo": "55",
 		"cost": "17",
 	},
 	"4": {
 		"level": "4",
-		"damage": "50",
+		"damage": "10",
 		"speed": "800",
 		"hp": "1",
-		"reload": "0.75",
+		"fire_interval_sec": "0.75",
+		"ammo": "60",
 		"cost": "17",
 	},
 	"5": {
 		"level": "5",
-		"damage": "60",
+		"damage": "12",
 		"speed": "800",
 		"hp": "2",
-		"reload": "0.5",
+		"fire_interval_sec": "0.5",
+		"ammo": "65",
 		"cost": "17",
 	},
 	"6": {
 		"level": "6",
-		"damage": "70",
+		"damage": "14",
 		"speed": "800",
 		"hp": "2",
-		"reload": "0.5",
+		"fire_interval_sec": "0.5",
+		"ammo": "70",
 		"cost": "17",
 	},
 	"7": {
 		"level": "7",
-		"damage": "80",
+		"damage": "16",
 		"speed": "800",
 		"hp": "2",
-		"reload": "0.5",
+		"fire_interval_sec": "0.5",
+		"ammo": "75",
 		"cost": "17",
 	}
 }
@@ -79,7 +85,9 @@ func set_level(lv) -> void:
 	base_damage = int(level_data["damage"])
 	base_speed = int(level_data["speed"])
 	base_projectile_hits = int(level_data["hp"])
-	base_attack_cooldown = float(level_data["reload"])
+
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
 	sync_stats()
 	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_level_applied(level)
@@ -88,8 +96,12 @@ func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	_process_auto_fire()
 
-func handle_primary_input(_pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
-	pass
+func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
+	if not can_run_active_behavior():
+		return
+	if not pressed:
+		return
+	request_primary_fire()
 
 func _process_auto_fire() -> void:
 	if is_on_cooldown:
@@ -101,9 +113,10 @@ func _process_auto_fire() -> void:
 	request_primary_fire()
 
 func _on_shoot() -> void:
+	var target_pos: Vector2 = get_mouse_target()
 	var target := _find_closest_enemy()
-	if target == null:
-		return
+	if target != null:
+		target_pos = target.global_position
 
 	is_on_cooldown = true
 	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
@@ -116,7 +129,7 @@ func _on_shoot() -> void:
 	if spawn_projectile == null:
 		return
 
-	projectile_direction = global_position.direction_to(target.global_position).normalized()
+	projectile_direction = global_position.direction_to(target_pos).normalized()
 	if projectile_direction == Vector2.ZERO:
 		return
 	spawn_projectile.damage = get_runtime_shot_damage()
@@ -134,7 +147,6 @@ func _on_shoot() -> void:
 	spawn_projectile.size = size
 	spawn_projectile.projectile_texture = projectile_texture_resource
 	apply_effects_on_projectile(spawn_projectile)
-	_apply_branch_trail(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 
 func on_hit_target(target: Node) -> void:
@@ -182,34 +194,9 @@ func _update_weapon_rotation() -> void:
 		return
 	rotation = direction.angle() + deg_to_rad(90)
 
-func _apply_branch_trail(spawn_projectile: Node2D) -> void:
-	if spawn_projectile == null:
-		return
-	if branch_behavior == null or not is_instance_valid(branch_behavior):
-		return
-	if not branch_behavior.has_method("get_projectile_trail_config"):
-		return
-	var config_variant: Variant = branch_behavior.call("get_projectile_trail_config")
-	if not (config_variant is Dictionary):
-		return
-	var config: Dictionary = config_variant
-	if config.is_empty():
-		return
-	var trail_scene := EffectRegistry.get_scene(BRANCH_TRAIL_EFFECT_ID)
-	if trail_scene == null:
-		return
-	var trail_effect := trail_scene.instantiate()
-	if trail_effect == null:
-		return
-	if trail_effect.has_method("configure"):
-		trail_effect.call("configure", config)
-	spawn_projectile.call_deferred("add_child", trail_effect)
-	if spawn_projectile is Projectile:
-		(spawn_projectile as Projectile).effect_list.append(trail_effect)
-
 func _get_level_data(lv: String) -> Dictionary:
 	if weapon_data.has(lv):
 		return weapon_data[lv]
 	if weapon_data.has("1"):
 		return weapon_data["1"]
-	return {"level": "1", "damage": "20", "speed": "600", "hp": "1", "reload": "1", "cost": "17"}
+	return {"level": "1", "damage": "4", "speed": "600", "hp": "1", "fire_interval_sec": "1", "ammo": "45", "cost": "17"}

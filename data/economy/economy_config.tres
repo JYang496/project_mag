@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EconomyConfig" format=3]
+
+[ext_resource type="Script" path="res://data/EconomyConfig.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+enemy_coin_drop_value = 1
+weapon_purchase_price_multiplier = 8.0
+weapon_upgrade_cost_multiplier = 8.0
+shop_refresh_start_cost = 8
+shop_refresh_step = 4
+shop_refresh_cost_cap = 40
+objective_economy_gold_by_level = PackedInt32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)

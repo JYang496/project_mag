@@ -11,58 +11,65 @@ var ITEM_NAME = "Spear Launcher"
 var weapon_data = {
 	"1": {
 		"level": "1",
-		"damage": "7",
+		"damage": "6",
 		"speed": "900",
 		"hp": "4",
-		"reload": "0.6",
+		"fire_interval_sec": "0.6",
+		"ammo": "30",
 		"cost": "9",
 	},
 	"2": {
 		"level": "2",
-		"damage": "9",
+		"damage": "7",
 		"speed": "600",
 		"hp": "4",
-		"reload": "0.55",
+		"fire_interval_sec": "0.55",
+		"ammo": "32",
 		"cost": "9",
 	},
 	"3": {
 		"level": "3",
-		"damage": "11",
+		"damage": "9",
 		"speed": "600",
 		"hp": "6",
-		"reload": "0.5",
+		"fire_interval_sec": "0.5",
+		"ammo": "34",
 		"cost": "9",
 	},
 	"4": {
 		"level": "4",
-		"damage": "13",
+		"damage": "10",
 		"speed": "800",
 		"hp": "6",
-		"reload": "0.45",
+		"fire_interval_sec": "0.45",
+		"ammo": "36",
 		"cost": "9",
 	},
 	"5": {
 		"level": "5",
-		"damage": "15",
+		"damage": "12",
 		"speed": "800",
 		"hp": "6",
-		"reload": "0.4",
+		"fire_interval_sec": "0.4",
+		"ammo": "38",
 		"cost": "9",
 	},
 	"6": {
 		"level": "6",
-		"damage": "18",
+		"damage": "14",
 		"speed": "800",
 		"hp": "6",
-		"reload": "0.35",
+		"fire_interval_sec": "0.35",
+		"ammo": "40",
 		"cost": "9",
 	},
 	"7": {
 		"level": "7",
-		"damage": "22",
+		"damage": "18",
 		"speed": "800",
 		"hp": "6",
-		"reload": "0.3",
+		"fire_interval_sec": "0.3",
+		"ammo": "42",
 		"cost": "9",
 	}
 }
@@ -74,7 +81,9 @@ func set_level(lv):
 	base_damage = int(weapon_data[lv]["damage"])
 	base_speed = int(weapon_data[lv]["speed"])
 	base_projectile_hits = int(weapon_data[lv]["hp"])
-	base_attack_cooldown = float(weapon_data[lv]["reload"])
+
+	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
+	apply_level_ammo(weapon_data[lv])
 	sync_stats()
 
 
@@ -129,3 +138,4 @@ func apply_return_on_timeout(projectile_node, stop_time : float = 0.5, return_ti
 func on_hit_target(target: Node) -> void:
 	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_target_hit(target)
+

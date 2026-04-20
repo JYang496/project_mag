@@ -3,11 +3,7 @@ extends Ranger
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
 var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.png")
-#@onready var sprite = get_node("%Sprite")
 
-#OC
-@onready var fall_effect = preload("res://Player/Weapons/Effects/fall.tscn")
-@onready var oc_booming_area: Area2D = $OCBoomingArea
 
 # Weapon
 var ITEM_NAME = "Rocket Luncher"
@@ -20,7 +16,8 @@ var weapon_data = {
 		"damage": "10",
 		"speed": "500",
 		"hp": "1",
-		"reload": "2.4",
+		"fire_interval_sec": "2.4",
+		"ammo": "14",
 		"explosion_scale": "2.0",
 		"cost": "6",
 	},
@@ -29,7 +26,8 @@ var weapon_data = {
 		"damage": "13",
 		"speed": "560",
 		"hp": "1",
-		"reload": "2.2",
+		"fire_interval_sec": "2.2",
+		"ammo": "16",
 		"explosion_scale": "2.1",
 		"cost": "6",
 	},
@@ -38,7 +36,8 @@ var weapon_data = {
 		"damage": "16",
 		"speed": "600",
 		"hp": "1",
-		"reload": "2.0",
+		"fire_interval_sec": "2.0",
+		"ammo": "18",
 		"explosion_scale": "2.2",
 		"cost": "6",
 	},
@@ -47,7 +46,8 @@ var weapon_data = {
 		"damage": "20",
 		"speed": "650",
 		"hp": "1",
-		"reload": "1.8",
+		"fire_interval_sec": "1.8",
+		"ammo": "20",
 		"explosion_scale": "2.35",
 		"cost": "6",
 	},
@@ -56,8 +56,29 @@ var weapon_data = {
 		"damage": "25",
 		"speed": "700",
 		"hp": "2",
-		"reload": "1.6",
+		"fire_interval_sec": "1.6",
+		"ammo": "22",
 		"explosion_scale": "2.5",
+		"cost": "6",
+	},
+	"6": {
+		"level": "6",
+		"damage": "31",
+		"speed": "750",
+		"hp": "2",
+		"fire_interval_sec": "1.4",
+		"ammo": "24",
+		"explosion_scale": "2.65",
+		"cost": "6",
+	},
+	"7": {
+		"level": "7",
+		"damage": "39",
+		"speed": "800",
+		"hp": "2",
+		"fire_interval_sec": "1.2",
+		"ammo": "26",
+		"explosion_scale": "2.8",
 		"cost": "6",
 	}
 }
@@ -69,7 +90,9 @@ func set_level(lv):
 	base_damage = int(weapon_data[lv]["damage"])
 	base_speed = int(weapon_data[lv]["speed"])
 	base_projectile_hits = int(weapon_data[lv]["hp"])
-	base_attack_cooldown = float(weapon_data[lv]["reload"])
+
+	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
+	apply_level_ammo(weapon_data[lv])
 	explosion_scale = float(weapon_data[lv]["explosion_scale"])
 	sync_stats()
 	_sync_explosion_effect_config()

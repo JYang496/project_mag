@@ -12,3 +12,4 @@ icon = ExtResource("1_vj6a5")
 price = 16
 description = "Dash to nearby target and deal melee hit on contact."
 scene = ExtResource("2_i8m5u")
+appears_as_standalone = false

@@ -2,7 +2,7 @@ extends WeaponBranchBehavior
 class_name SniperImpactBurstBranch
 
 @export var cooldown_multiplier: float = 1.12
-@export var projectile_damage_multiplier: float = 0.88
+@export var projectile_damage_multiplier: float = 1.0
 @export var burst_radius: float = 58.0
 @export var burst_damage_ratio: float = 0.55
 @export var burst_duration: float = 0.08
@@ -44,4 +44,3 @@ func on_target_hit(target: Node) -> void:
 	if spawn_parent == null:
 		spawn_parent = weapon.get_tree().root
 	spawn_parent.call_deferred("add_child", area_effect)
-

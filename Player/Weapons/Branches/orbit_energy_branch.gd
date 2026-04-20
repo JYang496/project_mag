@@ -4,8 +4,6 @@ class_name OrbitEnergyBranch
 const ENERGY_FIELD_INDICATOR_SCRIPT := preload("res://Player/Weapons/Branches/orbit_energy_field_indicator.gd")
 const ENERGY_FIELD_INDICATOR_NODE_NAME := "EnergyFieldIndicator"
 
-@export var projectile_damage_multiplier: float = 0.35
-@export var orbit_spin_speed_multiplier: float = 0.55
 @export var field_radius: float = 84.0
 @export var bonus_energy_ratio: float = 0.25
 @export var min_bonus_energy_damage: int = 1
@@ -37,12 +35,6 @@ func _process(delta: float) -> void:
 		return
 	_indicator_sync_accum_sec = 0.0
 	_sync_satellite_indicators()
-
-func get_projectile_damage_multiplier() -> float:
-	return maxf(projectile_damage_multiplier, 0.05)
-
-func get_orbit_spin_speed_multiplier() -> float:
-	return maxf(orbit_spin_speed_multiplier, 0.05)
 
 func on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	if event_name != &"on_hit":

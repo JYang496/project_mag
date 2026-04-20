@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_base"]
+[ext_resource type="Script" path="res://World/Test/dps_test_dummy_enemy.gd" id="2_script"]
+
+[node name="DpsTestDummyEnemy" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+movement_speed = 0.0
+hp = 3000
+damage = 0
+loot_value_multiplier = 0.0
+
+[editable path="HurtBox"]
+[editable path="HitBoxDot"]

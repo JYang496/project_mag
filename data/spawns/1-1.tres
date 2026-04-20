@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="LevelSpawnConfig" format=3 uid="uid://be48n8mb6fd2w"]
+[gd_resource type="Resource" script_class="LevelSpawnConfig" format=3 uid="uid://dtfwg72r8dpo4"]
 
 [ext_resource type="Script" uid="uid://ytl6qq2cyao" path="res://data/spawns/LevelArray.gd" id="1_cfg"]
 [ext_resource type="Script" uid="uid://cw2vo0cs83hpl" path="res://Utility/reward_info.gd" id="1_hj0qn"]
@@ -9,13 +9,12 @@
 script = ExtResource("2_spawn")
 time_start = 1
 enemy = ExtResource("3")
-number = 5
+number = 3
 max_enemy_number = 220
 hp = 10
-max_wave = 19
+max_wave = 12
 interval = 2
 
 [resource]
 script = ExtResource("1_cfg")
-time_out = 44
 spawns = Array[ExtResource("2_spawn")]([SubResource("Spawn_roll_intro")])

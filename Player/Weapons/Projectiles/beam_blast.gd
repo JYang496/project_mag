@@ -35,11 +35,14 @@ func _ready() -> void:
 	expire_timer.wait_time = duration
 	line2d.width = width
 	clip_to_nearest_target = bool(beam_profile.get("clip_to_nearest_target", false))
+	var safe_hit_cd: float = maxf(float(hit_cd) if hit_cd != null else 0.2, 0.01)
 	if hitbox_dot:
-		hitbox_dot.dot_cd = hit_cd
+		var dot_hitbox := hitbox_dot as HitBoxDot
+		if dot_hitbox != null:
+			dot_hitbox.dot_cd = safe_hit_cd
 		var hit_timer := hitbox_dot.get_node_or_null("HitTimer") as Timer
 		if hit_timer:
-			hit_timer.wait_time = maxf(float(hit_cd), 0.01)
+			hit_timer.wait_time = safe_hit_cd
 	expire_timer.start()
 
 func _physics_process(delta: float) -> void:

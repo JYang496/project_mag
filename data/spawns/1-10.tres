@@ -15,8 +15,8 @@ number = 3
 max_enemy_number = 190
 hp = 11
 damage = 0
-max_wave = 13
-interval = 6
+max_wave = 24
+interval = 3
 
 [sub_resource type="Resource" id="Spawn_bomber_storm"]
 script = ExtResource("2_spawn")
@@ -26,8 +26,8 @@ number = 4
 max_enemy_number = 280
 hp = 10
 damage = 0
-max_wave = 15
-interval = 5
+max_wave = 28
+interval = 2
 
 [sub_resource type="Resource" id="Spawn_elite_hunt"]
 script = ExtResource("2_spawn")
@@ -37,8 +37,8 @@ number = 2
 max_enemy_number = 90
 hp = 10
 damage = 0
-max_wave = 9
-interval = 7
+max_wave = 20
+interval = 2
 
 [sub_resource type="Resource" id="Spawn_mirror_collapse"]
 script = ExtResource("2_spawn")
@@ -48,13 +48,16 @@ number = 2
 max_enemy_number = 80
 hp = 10
 damage = 0
-max_wave = 8
-interval = 7
+max_wave = 18
+interval = 2
 
 [resource]
 script = ExtResource("1_cfg")
-time_out = 84
+time_out = 67
 spawns = Array[ExtResource("2_spawn")]([SubResource("Spawn_mortar_core"), SubResource("Spawn_bomber_storm"), SubResource("Spawn_elite_hunt"), SubResource("Spawn_mirror_collapse")])
 rewards = Array[Resource]([])
+
+
+
 
 

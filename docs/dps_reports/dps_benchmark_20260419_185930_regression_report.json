@@ -1,0 +1,116 @@
+{
+	"checks": [
+		{
+			"dps_avg": 11.921,
+			"expected_max": 80.0,
+			"expected_min": 20.0,
+			"group_type": "single",
+			"reason": "below_min",
+			"rounds": 1,
+			"status": "fail",
+			"weapon_id": "1",
+			"weapon_name": "machine gun"
+		},
+		{
+			"dps_avg": 36.954,
+			"expected_max": null,
+			"expected_min": null,
+			"group_type": "single",
+			"reason": "no_threshold",
+			"rounds": 1,
+			"status": "skip",
+			"weapon_id": "2",
+			"weapon_name": "Charged Blaster"
+		},
+		{
+			"dps_avg": 9.536,
+			"expected_max": null,
+			"expected_min": null,
+			"group_type": "single",
+			"reason": "no_threshold",
+			"rounds": 1,
+			"status": "skip",
+			"weapon_id": "3",
+			"weapon_name": "Spear"
+		},
+		{
+			"dps_avg": 6.954,
+			"expected_max": 120.0,
+			"expected_min": 20.0,
+			"group_type": "single",
+			"reason": "below_min",
+			"rounds": 1,
+			"status": "fail",
+			"weapon_id": "4",
+			"weapon_name": "shotgun"
+		},
+		{
+			"dps_avg": 3.974,
+			"expected_max": 180.0,
+			"expected_min": 40.0,
+			"group_type": "single",
+			"reason": "below_min",
+			"rounds": 1,
+			"status": "fail",
+			"weapon_id": "5",
+			"weapon_name": "pistol"
+		},
+		{
+			"dps_avg": 3.179,
+			"expected_max": null,
+			"expected_min": null,
+			"group_type": "single",
+			"reason": "no_threshold",
+			"rounds": 1,
+			"status": "skip",
+			"weapon_id": "7",
+			"weapon_name": "orbit"
+		},
+		{
+			"dps_avg": 3.974,
+			"expected_max": 80.0,
+			"expected_min": 5.0,
+			"group_type": "single",
+			"reason": "below_min",
+			"rounds": 1,
+			"status": "fail",
+			"weapon_id": "8",
+			"weapon_name": "rocket luncher"
+		},
+		{
+			"dps_avg": 2.98,
+			"expected_max": null,
+			"expected_min": null,
+			"group_type": "single",
+			"reason": "no_threshold",
+			"rounds": 1,
+			"status": "skip",
+			"weapon_id": "10",
+			"weapon_name": "chainsaw luncher"
+		},
+		{
+			"dps_avg": 24.834,
+			"expected_max": 120.0,
+			"expected_min": 20.0,
+			"group_type": "single",
+			"reason": "",
+			"rounds": 1,
+			"status": "pass",
+			"weapon_id": "25",
+			"weapon_name": "Cannon"
+		},
+		{
+			"dps_avg": 3.576,
+			"expected_max": 150.0,
+			"expected_min": 20.0,
+			"group_type": "single",
+			"reason": "below_min",
+			"rounds": 1,
+			"status": "fail",
+			"weapon_id": "26",
+			"weapon_name": "Sniper"
+		}
+	],
+	"status": "fail",
+	"timestamp": "2026-04-19 22:59:30"
+}

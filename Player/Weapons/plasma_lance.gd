@@ -14,11 +14,13 @@ const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
 var attack_range: float = 980.0
 
 var weapon_data := {
-	"1": {"level": "1", "damage": "26", "speed": "1100", "hp": "4", "reload": "1.5", "range": "900", "cost": "12"},
-	"2": {"level": "2", "damage": "32", "speed": "1140", "hp": "5", "reload": "1.45", "range": "940", "cost": "12"},
-	"3": {"level": "3", "damage": "38", "speed": "1180", "hp": "6", "reload": "1.38", "range": "980", "cost": "12"},
-	"4": {"level": "4", "damage": "45", "speed": "1220", "hp": "7", "reload": "1.30", "range": "1020", "cost": "12"},
-	"5": {"level": "5", "damage": "54", "speed": "1260", "hp": "8", "reload": "1.20", "range": "1080", "cost": "12"},
+	"1": {"level": "1", "damage": "26", "speed": "1100", "hp": "4", "fire_interval_sec": "1.5", "ammo": "16", "range": "900", "cost": "12"},
+	"2": {"level": "2", "damage": "32", "speed": "1140", "hp": "5", "fire_interval_sec": "1.45", "ammo": "18", "range": "940", "cost": "12"},
+	"3": {"level": "3", "damage": "38", "speed": "1180", "hp": "6", "fire_interval_sec": "1.38", "ammo": "20", "range": "980", "cost": "12"},
+	"4": {"level": "4", "damage": "45", "speed": "1220", "hp": "7", "fire_interval_sec": "1.30", "ammo": "22", "range": "1020", "cost": "12"},
+	"5": {"level": "5", "damage": "54", "speed": "1260", "hp": "8", "fire_interval_sec": "1.20", "ammo": "24", "range": "1080", "cost": "12"},
+	"6": {"level": "6", "damage": "64", "speed": "1300", "hp": "9", "fire_interval_sec": "1.09", "ammo": "26", "range": "1140", "cost": "12"},
+	"7": {"level": "7", "damage": "76", "speed": "1340", "hp": "10", "fire_interval_sec": "0.97", "ammo": "28", "range": "1200", "cost": "12"},
 }
 
 func set_level(lv) -> void:
@@ -28,7 +30,9 @@ func set_level(lv) -> void:
 	base_damage = int(level_data["damage"])
 	base_speed = int(level_data["speed"])
 	base_projectile_hits = int(level_data["hp"])
-	base_attack_cooldown = float(level_data["reload"])
+
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
 	attack_range = float(level_data.get("range", attack_range))
 	heat_per_shot = heat_accumulation
 	heat_max_value = max_heat
@@ -65,4 +69,5 @@ func _get_level_data(lv: String) -> Dictionary:
 		return weapon_data[lv]
 	if weapon_data.has("1"):
 		return weapon_data["1"]
-	return {"level": "1", "damage": "26", "speed": "1100", "hp": "4", "reload": "1.5", "range": "900", "cost": "12"}
+	return {"level": "1", "damage": "26", "speed": "1100", "hp": "4", "fire_interval_sec": "1.5", "ammo": "16", "range": "900", "cost": "12"}
+

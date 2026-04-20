@@ -56,7 +56,7 @@ var terrain_type: int = Cell.TerrainType.NONE
 @export var combat_bonus_damage_reduction: float = 1.0
 
 @export_subgroup("Economy Bonus")
-@export var economy_gold: int = 10
+@export var economy_gold: int = 0
 @export var economy_exp: int = 0
 @export var economy_drop_coin: int = 0
 @export var economy_drop_chip: int = 0

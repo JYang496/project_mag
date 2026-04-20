@@ -1,18 +1,20 @@
-[gd_scene load_steps=4 format=3 uid="uid://dbwoyi8hnjfsn"]
+[gd_scene format=3 uid="uid://dbwoyi8hnjfsn"]
 
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_8d78b"]
 [ext_resource type="Script" uid="uid://c7tw1mv3wn7ja" path="res://Player/Weapons/shotgun.gd" id="2_1ble7"]
 [ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="3_1ble7"]
+[ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_owlms"]
 
-[node name="Shotgun" instance=ExtResource("1_8d78b")]
+[node name="Shotgun" unique_id=906790110 instance=ExtResource("1_8d78b")]
 script = ExtResource("2_1ble7")
+arc = 30.0
+effect_configs = Array[ExtResource("3_owlms")]([])
+debug_projectile_effects = false
 
-[node name="Modules" parent="."]
+[node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 5408
 
-arc = 30.0
-
-[node name="Sprite" parent="." index="3"]
+[node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("3_1ble7")
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

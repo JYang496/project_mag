@@ -31,7 +31,8 @@ var weapon_data = {
 		"damage": "5",
 		"speed": "600",
 		"hp": "1",
-		"reload": "1",
+		"fire_interval_sec": "1",
+		"ammo": "70",
 		"cost": "4",
 	},
 	"2": {
@@ -39,7 +40,8 @@ var weapon_data = {
 		"damage": "6",
 		"speed": "600",
 		"hp": "1",
-		"reload": "1",
+		"fire_interval_sec": "1",
+		"ammo": "75",
 		"cost": "4",
 	},
 	"3": {
@@ -47,7 +49,8 @@ var weapon_data = {
 		"damage": "7",
 		"speed": "600",
 		"hp": "1",
-		"reload": "1",
+		"fire_interval_sec": "1",
+		"ammo": "80",
 		"cost": "4",
 	},
 	"4": {
@@ -55,7 +58,8 @@ var weapon_data = {
 		"damage": "9",
 		"speed": "800",
 		"hp": "1",
-		"reload": "1",
+		"fire_interval_sec": "1",
+		"ammo": "85",
 		"cost": "4",
 	},
 	"5": {
@@ -63,7 +67,26 @@ var weapon_data = {
 		"damage": "11",
 		"speed": "800",
 		"hp": "2",
-		"reload": "1.0",
+		"fire_interval_sec": "1.0",
+		"ammo": "90",
+		"cost": "4",
+	},
+	"6": {
+		"level": "6",
+		"damage": "13",
+		"speed": "800",
+		"hp": "2",
+		"fire_interval_sec": "1.0",
+		"ammo": "95",
+		"cost": "4",
+	},
+	"7": {
+		"level": "7",
+		"damage": "15",
+		"speed": "800",
+		"hp": "2",
+		"fire_interval_sec": "1.0",
+		"ammo": "100",
 		"cost": "4",
 	}
 }
@@ -94,7 +117,9 @@ func set_level(lv):
 	base_damage = int(level_data["damage"])
 	base_speed = int(level_data["speed"])
 	base_projectile_hits = int(level_data["hp"])
-	base_attack_cooldown = float(level_data["reload"])
+
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
 	attack_range = float(level_data.get("range", attack_range))
 	heat_per_shot = heat_accumulation
 	heat_max_value = max_heat
@@ -161,7 +186,8 @@ func _get_level_data(lv: String) -> Dictionary:
 		"damage": "5",
 		"speed": "600",
 		"hp": "1",
-		"reload": "2",
+		"fire_interval_sec": "2",
+		"ammo": "70",
 	}
 
 func _constrain_to_forward_cone(direction: Vector2, forward: Vector2) -> Vector2:

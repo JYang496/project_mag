@@ -1,0 +1,93 @@
+﻿[gd_resource type="Resource" script_class="DpsBenchmarkConfig" format=3]
+
+[ext_resource type="Script" path="res://data/test/dps_benchmark_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+weapon_ids = PackedStringArray("1", "5", "4", "8", "9", "17", "21", "25", "26")
+weapon_level = 1
+rounds_per_case = 1
+warmup_sec = 1.0
+test_duration_sec = 10.0
+auto_start_on_ready = true
+force_mouse_to_target = true
+quit_on_completion = true
+script_hit_simulation = true
+sim_target_hit_radius = 18.0
+sim_beam_tick_hz = 30.0
+accelerated_mode = true
+simulation_time_scale = 4.0
+generate_summary_report = true
+regression_check_enabled = true
+min_fire_success_ratio = 0.03
+min_hit_count = 1
+expected_dps_ranges = {
+"1": {
+"aoe_max": 80.0,
+"aoe_min": 20.0,
+"single_max": 80.0,
+"single_min": 20.0
+},
+"17": {
+"aoe_max": 120.0,
+"aoe_min": 20.0,
+"single_max": 120.0,
+"single_min": 20.0
+},
+"21": {
+"aoe_max": 120.0,
+"aoe_min": 20.0,
+"single_max": 120.0,
+"single_min": 20.0
+},
+"25": {
+"aoe_max": 120.0,
+"aoe_min": 20.0,
+"single_max": 120.0,
+"single_min": 20.0
+},
+"26": {
+"aoe_max": 150.0,
+"aoe_min": 20.0,
+"single_max": 150.0,
+"single_min": 20.0
+},
+"4": {
+"aoe_max": 220.0,
+"aoe_min": 40.0,
+"single_max": 120.0,
+"single_min": 20.0
+},
+"5": {
+"aoe_max": 180.0,
+"aoe_min": 40.0,
+"single_max": 180.0,
+"single_min": 40.0
+},
+"8": {
+"aoe_max": 120.0,
+"aoe_min": 10.0,
+"single_max": 80.0,
+"single_min": 5.0
+},
+"9": {
+"aoe_max": 160.0,
+"aoe_min": 20.0,
+"single_max": 160.0,
+"single_min": 20.0
+}
+}
+auto_discover_standalone_weapons = true
+auto_discover_all_weapon_ids = false
+include_aoe_cases = false
+player_position = Vector2(900, 900)
+single_group_position = Vector2(620, 620)
+aoe_group_center = Vector2(520, 520)
+aoe_cluster_radius = 40.0
+single_target_hp = 3500
+aoe_target_hp = 1800
+aoe_target_count = 5
+report_dir = "res://docs/dps_reports"
+report_file_prefix = "dps_benchmark"
+
+

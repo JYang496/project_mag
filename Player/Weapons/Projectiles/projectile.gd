@@ -118,7 +118,7 @@ func set_debug_snapshot(source_weapon_name: String, effect_names: Array[String],
 	debug_effect_names = effect_names.duplicate()
 	debug_effect_params = effect_params.duplicate(true)
 	debug_overlay_enabled = overlay_enabled
-	if OS.is_debug_build():
+	if OS.is_debug_build() and debug_overlay_enabled:
 		print("[ProjectileDebug] source=", debug_source_weapon, " effects=", debug_effect_names, " params=", debug_effect_params)
 	_apply_debug_overlay()
 
@@ -184,6 +184,9 @@ func _release_effects() -> void:
 		if child is Label:
 			continue
 		if child is Effect:
+			# Give effects a deterministic despawn hook before they are released.
+			if child.has_method("on_projectile_will_despawn"):
+				child.call("on_projectile_will_despawn")
 			if bool(child.get_meta("_pool_enabled", false)):
 				var object_pool := _get_object_pool()
 				if object_pool:

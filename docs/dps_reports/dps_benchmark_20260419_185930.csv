@@ -1,0 +1,11 @@
+weapon_id,weapon_name,weapon_level,group_type,round,total_damage,hit_damage_avg,hit_damage_min,hit_damage_max,duration_sec,dps,hit_count,kill_time_sec,target_count,fire_attempts,fire_success,fire_no_weapon,data_quality,quality_reason,timestamp
+1,machine gun,1,single,1,120,5.0,5,5,10.067,11.921,24,-1.0,1,151,24,0,ok,,2026-04-19 22:59:05
+2,Charged Blaster,1,single,1,372,6.0,6,6,10.067,36.954,62,-1.0,1,151,2,0,low_confidence,low_fire_success_ratio,2026-04-19 22:59:07
+3,Spear,1,single,1,96,6.0,6,6,10.067,9.536,16,-1.0,1,151,16,0,ok,,2026-04-19 22:59:10
+4,shotgun,1,single,1,70,14.0,14,14,10.067,6.954,5,-1.0,1,151,5,0,ok,,2026-04-19 22:59:13
+5,pistol,1,single,1,40,4.0,4,4,10.067,3.974,10,-1.0,1,151,10,0,ok,,2026-04-19 22:59:16
+7,orbit,1,single,1,32,8.0,8,8,10.067,3.179,4,-1.0,1,151,4,0,low_confidence,low_fire_success_ratio,2026-04-19 22:59:19
+8,rocket luncher,1,single,1,40,10.0,10,10,10.067,3.974,4,-1.0,1,151,4,0,low_confidence,low_fire_success_ratio,2026-04-19 22:59:21
+10,chainsaw luncher,1,single,1,30,3.0,3,3,10.067,2.98,10,-1.0,1,151,10,0,ok,,2026-04-19 22:59:24
+25,Cannon,1,single,1,250,50.0,50,50,10.067,24.834,5,-1.0,1,151,5,0,ok,,2026-04-19 22:59:27
+26,Sniper,1,single,1,36,12.0,12,12,10.067,3.576,3,-1.0,1,151,3,0,low_confidence,low_fire_success_ratio,2026-04-19 22:59:30

@@ -9,7 +9,7 @@
 script = ExtResource("4_script")
 branch_id = "energy_orbit"
 display_name = "Energy Orbit"
-description = "Orbit spins slower with reduced hit damage, but enemies near satellites take bonus energy damage when hit."
+description = "Enemies near satellites take bonus energy damage when hit."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 weapon_scene = ExtResource("2_weapon_scene")

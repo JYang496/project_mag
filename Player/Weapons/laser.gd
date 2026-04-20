@@ -13,43 +13,50 @@ var weapon_data = {
 	"1": {
 		"level": "1",
 		"damage": "3",
-		"reload": "2",
+		"fire_interval_sec": "2",
+		"ammo": "45",
 		"cost": "5",
 	},
 	"2": {
 		"level": "2",
 		"damage": "4",
-		"reload": "1.6",
+		"fire_interval_sec": "1.6",
+		"ammo": "50",
 		"cost": "5",
 	},
 	"3": {
 		"level": "3",
 		"damage": "6",
-		"reload": "1.1",
+		"fire_interval_sec": "1.1",
+		"ammo": "55",
 		"cost": "5",
 	},
 	"4": {
 		"level": "4",
 		"damage": "7",
-		"reload": "0.8",
+		"fire_interval_sec": "0.8",
+		"ammo": "60",
 		"cost": "5",
 	},
 	"5": {
 		"level": "5",
 		"damage": "8",
-		"reload": "0.6",
+		"fire_interval_sec": "0.6",
+		"ammo": "65",
 		"cost": "5",
 	},
 	"6": {
-		"level": "11",
-		"damage": "8",
-		"reload": "0.6",
+		"level": "6",
+		"damage": "9",
+		"fire_interval_sec": "0.5",
+		"ammo": "70",
 		"cost": "5",
 	},
 	"7": {
-		"level": "15",
-		"damage": "8",
-		"reload": "0.6",
+		"level": "7",
+		"damage": "10",
+		"fire_interval_sec": "0.45",
+		"ammo": "75",
 		"cost": "5",
 	}
 }
@@ -59,7 +66,9 @@ func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
-	base_attack_cooldown = float(weapon_data[lv]["reload"])
+
+	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
+	apply_level_ammo(weapon_data[lv])
 	sync_stats()
 
 func _on_shoot():
@@ -75,3 +84,4 @@ func _on_shoot():
 
 func _on_oc_timer_timeout() -> void:
 	remove_weapon()
+

@@ -274,6 +274,20 @@ func can_fire_with_ammo() -> bool:
 		return false
 	return current_ammo > 0
 
+func apply_level_ammo(level_data: Dictionary) -> void:
+	if level_data == null:
+		return
+	if not level_data.has("ammo"):
+		return
+	var next_mag := maxi(0, int(level_data.get("ammo", magazine_capacity)))
+	if next_mag <= 0:
+		return
+	magazine_capacity = next_mag
+	if uses_ammo_system():
+		current_ammo = magazine_capacity
+		is_reloading = false
+		reload_time_left = 0.0
+
 func consume_ammo(amount: int = 1) -> bool:
 	if not uses_ammo_system():
 		return true

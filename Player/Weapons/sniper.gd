@@ -12,11 +12,13 @@ var attack_range: float = 900.0
 var _last_projectile_hit_damage: int = 0
 
 var weapon_data := {
-	"1": {"level": "1", "damage": "100", "speed": "1700", "hp": "8", "reload": "3.0", "range": "900", "cost": "14"},
-	"2": {"level": "2", "damage": "128", "speed": "1750", "hp": "9", "reload": "2.8", "range": "980", "cost": "14"},
-	"3": {"level": "3", "damage": "156", "speed": "1800", "hp": "10", "reload": "2.6", "range": "1060", "cost": "14"},
-	"4": {"level": "4", "damage": "183", "speed": "1850", "hp": "11", "reload": "2.4", "range": "1140", "cost": "14"},
-	"5": {"level": "5", "damage": "210", "speed": "1900", "hp": "12", "reload": "2.2", "range": "1220", "cost": "14"},
+	"1": {"level": "1", "damage": "12", "speed": "1700", "hp": "5", "fire_interval_sec": "3.0", "ammo": "5", "range": "900", "cost": "14"},
+	"2": {"level": "2", "damage": "15", "speed": "1700", "hp": "6", "fire_interval_sec": "2.8", "ammo": "6", "range": "980", "cost": "14"},
+	"3": {"level": "3", "damage": "19", "speed": "1800", "hp": "7", "fire_interval_sec": "2.6", "ammo": "7", "range": "1060", "cost": "14"},
+	"4": {"level": "4", "damage": "24", "speed": "1800", "hp": "8", "fire_interval_sec": "2.4", "ammo": "8", "range": "1140", "cost": "14"},
+	"5": {"level": "5", "damage": "30", "speed": "1900", "hp": "9", "fire_interval_sec": "2.2", "ammo": "9", "range": "1220", "cost": "14"},
+	"6": {"level": "6", "damage": "37", "speed": "1900", "hp": "10", "fire_interval_sec": "2.1", "ammo": "10", "range": "1300", "cost": "14"},
+	"7": {"level": "7", "damage": "45", "speed": "2000", "hp": "11", "fire_interval_sec": "2.0", "ammo": "12", "range": "1380", "cost": "14"},
 }
 
 func set_level(lv) -> void:
@@ -26,7 +28,9 @@ func set_level(lv) -> void:
 	base_damage = int(level_data["damage"])
 	base_speed = int(level_data["speed"])
 	base_projectile_hits = int(level_data["hp"])
-	base_attack_cooldown = float(level_data["reload"])
+
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
 	attack_range = float(level_data.get("range", attack_range))
 	sync_stats()
 	if branch_behavior and is_instance_valid(branch_behavior):
@@ -116,4 +120,4 @@ func _get_level_data(lv: String) -> Dictionary:
 		return weapon_data[lv]
 	if weapon_data.has("1"):
 		return weapon_data["1"]
-	return {"level": "1", "damage": "100", "speed": "1700", "hp": "8", "reload": "3.0", "range": "900", "cost": "14"}
+	return {"level": "1", "damage": "12", "speed": "1700", "hp": "5", "fire_interval_sec": "3.0", "ammo": "5", "range": "900", "cost": "14"}

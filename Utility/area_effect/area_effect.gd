@@ -86,6 +86,8 @@ signal target_affected(target: Node)
 
 
 func _ready() -> void:
+	if source_node is BaseEnemy:
+		add_to_group("enemy_runtime_cleanup")
 	_sync_radius()
 	_sync_collision_mask()
 	_sync_visual_nodes()

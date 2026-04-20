@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="WeaponFormulaBenchmarkConfig" format=3 uid="uid://drpfqf3pa6xke"]
+
+[ext_resource type="Script" uid="uid://5yyu04t7lpvt" path="res://data/test/weapon_formula_benchmark_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+weapon_ids = null

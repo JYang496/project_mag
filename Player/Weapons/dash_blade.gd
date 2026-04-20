@@ -17,7 +17,8 @@ var weapon_data := {
 		"range": "150",
 		"dash_speed": "900",
 		"return_speed": "700",
-		"reload": "1.1",
+		"fire_interval_sec": "1.1",
+		"ammo": "24",
 		"cost": "16",
 	},
 	"2": {
@@ -26,7 +27,8 @@ var weapon_data := {
 		"range": "160",
 		"dash_speed": "950",
 		"return_speed": "730",
-		"reload": "1.0",
+		"fire_interval_sec": "1.0",
+		"ammo": "26",
 		"cost": "16",
 	},
 	"3": {
@@ -35,7 +37,8 @@ var weapon_data := {
 		"range": "170",
 		"dash_speed": "980",
 		"return_speed": "760",
-		"reload": "0.95",
+		"fire_interval_sec": "0.95",
+		"ammo": "28",
 		"cost": "16",
 	},
 	"4": {
@@ -44,7 +47,8 @@ var weapon_data := {
 		"range": "180",
 		"dash_speed": "1020",
 		"return_speed": "780",
-		"reload": "0.9",
+		"fire_interval_sec": "0.9",
+		"ammo": "30",
 		"cost": "16",
 	},
 	"5": {
@@ -53,7 +57,8 @@ var weapon_data := {
 		"range": "190",
 		"dash_speed": "1080",
 		"return_speed": "820",
-		"reload": "0.85",
+		"fire_interval_sec": "0.85",
+		"ammo": "32",
 		"cost": "16",
 	},
 	"6": {
@@ -62,7 +67,8 @@ var weapon_data := {
 		"range": "210",
 		"dash_speed": "1150",
 		"return_speed": "860",
-		"reload": "0.8",
+		"fire_interval_sec": "0.8",
+		"ammo": "34",
 		"cost": "16",
 	},
 	"7": {
@@ -71,7 +77,8 @@ var weapon_data := {
 		"range": "230",
 		"dash_speed": "1220",
 		"return_speed": "900",
-		"reload": "0.75",
+		"fire_interval_sec": "0.75",
+		"ammo": "36",
 		"cost": "16",
 	},
 }
@@ -136,7 +143,9 @@ func set_level(lv) -> void:
 	base_attack_range = float(weapon_data[lv]["range"])
 	base_dash_speed = float(weapon_data[lv]["dash_speed"])
 	base_return_speed = float(weapon_data[lv]["return_speed"])
-	base_attack_cooldown = float(weapon_data[lv]["reload"])
+
+	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
+	apply_level_ammo(weapon_data[lv])
 	sync_stats()
 	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_level_applied(level)

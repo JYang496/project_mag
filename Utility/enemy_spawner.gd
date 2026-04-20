@@ -5,6 +5,7 @@ class_name EnemySpawner
 @export var debug_print_spawn_stats := false
 @export var min_spawn_distance_from_player: float = 180.0
 @export var spawn_point_attempts_per_enemy: int = 12
+@export var spawn_edge_margin: float = 28.0
 @onready var board = get_parent().get_node_or_null("Board")
 @onready var top_left_marker: Node2D = $TopLeft
 @onready var bottom_right_marker: Node2D = $BottomRight
@@ -21,8 +22,13 @@ var y_max: float = 0.0
 func _ready():
 	GlobalVariables.enemy_spawner = self
 	_cache_board_cells()
+	if board and board.has_signal("active_cells_changed") and not board.is_connected("active_cells_changed", Callable(self, "_on_board_active_cells_changed")):
+		board.connect("active_cells_changed", Callable(self, "_on_board_active_cells_changed"))
 	_refresh_fallback_bounds()
 	_refresh_spawn_tables()
+
+func _on_board_active_cells_changed(_active_cell_ids: PackedInt32Array) -> void:
+	_refresh_fallback_bounds()
 
 func _refresh_spawn_tables() -> void:
 	instance_list = []
@@ -74,11 +80,24 @@ func _on_timer_timeout():
 				i.wave += 1
 				i.interval_counter = i.interval
 				var new_enemy = i.enemy
+				var spawn_count: int = max(1, i.number)
+				var loot_value_multiplier: float = 1.0
+				var preview_enemy: Node = new_enemy.instantiate()
+				if preview_enemy is BaseEnemy:
+					var base_preview: BaseEnemy = preview_enemy as BaseEnemy
+					if base_preview.is_ranged_enemy():
+						spawn_count = maxi(1, int(ceil(float(i.number) * 0.5)))
+						loot_value_multiplier = float(max(1, i.number)) / float(spawn_count)
+				if preview_enemy != null and is_instance_valid(preview_enemy):
+					preview_enemy.free()
 				var counter = 0
 				var random_position_center = get_random_position()
-				while counter < i.number:
+				while counter < spawn_count:
 					var enemy_spawn = new_enemy.instantiate()
 					_apply_level_scaling(i, enemy_spawn)
+					if enemy_spawn is BaseEnemy:
+						var base_enemy := enemy_spawn as BaseEnemy
+						base_enemy.loot_value_multiplier = maxf(loot_value_multiplier, 0.1)
 					_debug_log_spawned_enemy(enemy_spawn)
 					enemy_spawn.global_position = get_nearby_position(random_position_center)
 					self.call_deferred("add_child",enemy_spawn)
@@ -94,9 +113,9 @@ func get_random_position() -> Vector2:
 	var spawn_cell = _pick_spawn_cell_near_player(player)
 	if spawn_cell:
 		_last_spawn_cell = spawn_cell
-		return _get_random_point_in_cell_away_from_player(spawn_cell, player.global_position)
+		return _apply_spawn_safety_margin(_get_random_point_in_cell_away_from_player(spawn_cell, player.global_position))
 	_last_spawn_cell = null
-	return _get_fallback_spawn_position(player)
+	return _apply_spawn_safety_margin(_get_fallback_spawn_position(player))
 
 func _cache_board_cells() -> void:
 	board_cells.clear()
@@ -112,7 +131,8 @@ func _refresh_fallback_bounds() -> void:
 	var min_y := 0.0
 	var max_x := 0.0
 	var max_y := 0.0
-	for cell in board_cells:
+	var effective_cells := _get_effective_board_cells()
+	for cell in effective_cells:
 		if cell == null:
 			continue
 		var cell_rect: Rect2 = _get_cell_aabb(cell)
@@ -146,16 +166,18 @@ func _refresh_fallback_bounds() -> void:
 	y_max = max_y
 
 func _pick_spawn_cell_near_player(player: Player) -> Cell:
-	if board_cells.is_empty():
+	var effective_cells := _get_effective_board_cells()
+	if effective_cells.is_empty():
 		_cache_board_cells()
-	if board_cells.is_empty():
+		effective_cells = _get_effective_board_cells()
+	if effective_cells.is_empty():
 		return null
 	var player_position = player.global_position
-	var player_cell = _get_cell_at_position(player_position)
-	var neighbor_cells = _get_neighbor_cells(player_cell)
+	var player_cell = _get_cell_at_position(player_position, effective_cells)
+	var neighbor_cells = _get_neighbor_cells(player_cell, effective_cells)
 	var neighbor_candidates : Array[Cell] = []
 	var fallback_candidates : Array[Cell] = []
-	for cell in board_cells:
+	for cell in effective_cells:
 		if cell == null:
 			continue
 		if cell == player_cell:
@@ -172,8 +194,8 @@ func _pick_spawn_cell_near_player(player: Player) -> Cell:
 		return fallback_candidates.pick_random()
 	return null
 
-func _get_cell_at_position(position: Vector2) -> Cell:
-	for cell in board_cells:
+func _get_cell_at_position(position: Vector2, cells: Array[Cell]) -> Cell:
+	for cell in cells:
 		if _cell_contains_point(cell, position):
 			return cell
 	return null
@@ -233,21 +255,21 @@ func _cell_can_spawn_away_from_player(cell: Cell, player_position: Vector2) -> b
 	)
 	return farthest_point.distance_to(player_position) >= min_spawn_distance_from_player
 
-func _get_neighbor_cells(player_cell: Cell) -> Array[Cell]:
+func _get_neighbor_cells(player_cell: Cell, cells: Array[Cell]) -> Array[Cell]:
 	var neighbors : Array[Cell] = []
 	if player_cell == null:
 		return neighbors
-	var max_neighbor_distance: float = _estimate_neighbor_distance(player_cell)
-	for cell in board_cells:
+	var max_neighbor_distance: float = _estimate_neighbor_distance(player_cell, cells)
+	for cell in cells:
 		if cell == null or cell == player_cell:
 			continue
 		if cell.global_position.distance_to(player_cell.global_position) <= max_neighbor_distance:
 			neighbors.append(cell)
 	return neighbors
 
-func _estimate_neighbor_distance(player_cell: Cell) -> float:
+func _estimate_neighbor_distance(player_cell: Cell, cells: Array[Cell]) -> float:
 	var nearest_distance: float = INF
-	for cell in board_cells:
+	for cell in cells:
 		if cell == null or cell == player_cell:
 			continue
 		var distance: float = cell.global_position.distance_to(player_cell.global_position)
@@ -416,13 +438,15 @@ func _get_fallback_spawn_position(player: Player) -> Vector2:
 	return best_pos
 
 func _pick_farthest_cell_from_player(player_position: Vector2) -> Cell:
-	if board_cells.is_empty():
+	var effective_cells := _get_effective_board_cells()
+	if effective_cells.is_empty():
 		_cache_board_cells()
-	if board_cells.is_empty():
+		effective_cells = _get_effective_board_cells()
+	if effective_cells.is_empty():
 		return null
 	var best_cell: Cell = null
 	var best_distance := -1.0
-	for cell in board_cells:
+	for cell in effective_cells:
 		if cell == null:
 			continue
 		if not _cell_can_spawn_away_from_player(cell, player_position):
@@ -432,6 +456,19 @@ func _pick_farthest_cell_from_player(player_position: Vector2) -> Cell:
 			best_distance = distance_to_player
 			best_cell = cell
 	return best_cell
+
+func _get_effective_board_cells() -> Array[Cell]:
+	if board and board.has_method("get_active_cells"):
+		var active_cells_variant: Variant = board.call("get_active_cells")
+		if active_cells_variant is Array:
+			var active_cells_raw := active_cells_variant as Array
+			var active_cells: Array[Cell] = []
+			for node in active_cells_raw:
+				if node is Cell:
+					active_cells.append(node as Cell)
+			if not active_cells.is_empty():
+				return active_cells
+	return board_cells
 
 func get_nearby_position(A: Vector2, min_distance: float = 0.0, max_distance: float = 100.0) -> Vector2:
 	var player : Player = PlayerData.player
@@ -447,6 +484,7 @@ func get_nearby_position(A: Vector2, min_distance: float = 0.0, max_distance: fl
 			candidate = _project_point_into_cell(_last_spawn_cell, nearby_pos)
 		else:
 			candidate = clamp_position(nearby_pos.x, nearby_pos.y)
+		candidate = _apply_spawn_safety_margin(candidate)
 		if player == null:
 			return candidate
 		var distance_to_player: float = candidate.distance_to(player.global_position)
@@ -456,6 +494,22 @@ func get_nearby_position(A: Vector2, min_distance: float = 0.0, max_distance: fl
 			best_distance = distance_to_player
 			best_position = candidate
 	return best_position
+
+func _apply_spawn_safety_margin(position: Vector2) -> Vector2:
+	var margin := maxf(spawn_edge_margin, 0.0)
+	if margin <= 0.001:
+		return position
+	if board != null and board.has_method("project_point_to_enemy_traversable_area_with_margin"):
+		var projected_with_margin: Variant = board.call("project_point_to_enemy_traversable_area_with_margin", position, margin)
+		if projected_with_margin is Vector2:
+			return projected_with_margin as Vector2
+	if _last_spawn_cell != null:
+		var center: Vector2 = _last_spawn_cell.global_position
+		if position.distance_squared_to(center) > 0.0001:
+			var moved := position.move_toward(center, margin)
+			if _cell_contains_point(_last_spawn_cell, moved):
+				return moved
+	return position
 
 func clamp_position(x_value :float, y_value :float) -> Vector2:
 	return Vector2(clampf(x_value,x_min,x_max),clampf(y_value,y_min,y_max))
@@ -496,6 +550,13 @@ func erase_all_enemies():
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for e : BaseEnemy in enemies:
 		e.erase()
+	for runtime_node in get_tree().get_nodes_in_group("enemy_runtime_cleanup"):
+		if runtime_node == null or not is_instance_valid(runtime_node):
+			continue
+		if runtime_node.has_method("erase"):
+			runtime_node.call_deferred("erase")
+		else:
+			runtime_node.call_deferred("queue_free")
 
 func _apply_level_scaling(spawn_info: SpawnInfo, enemy_instance) -> void:
 	if enemy_instance is BaseEnemy:

@@ -4,17 +4,13 @@ extends Ranger
 @onready var beam_blast = preload("res://Player/Weapons/Projectiles/beam_blast.tscn")
 
 # Weapon
-var ITEM_NAME = "Beam Blaster"
+var ITEM_NAME = "Charged Blaster"
 var hit_cd : float
 var duration : float
-var charge_level :int
-var charge_time : float = 0.0
-var time_per_level : float = 1.0
-var max_charge_level : int
 var beam_range : float = 450.0
 var beam_local_forward := Vector2.UP
 var normal_turn_speed := 12.0
-var firing_turn_speed := 1.2
+@export_range(0.05, 1.0, 0.01) var firing_rotation_slow_multiplier: float = 0.1
 var is_firing_beam := false
 var firing_turn_timer: Timer
 var _force_active_cast: bool = false
@@ -23,47 +19,65 @@ var _feedback_refund_accum_sec: float = 0.0
 var weapon_data = {
 	"1": {
 		"level": "1",
-		"damage": "3",
+		"damage": "6",
 		"hit_cd": "0.2",
-		"reload": "5",
-		"duration": "3.0",
-		"max_charge_level": "2",
+		"fire_interval_sec": "4",
+		"ammo": "10",
+		"duration": "1.0",
 		"cost": "9",
 	},
 	"2": {
 		"level": "2",
-		"damage": "4",
+		"damage": "8",
 		"hit_cd": "0.2",
-		"reload": "5",
-		"duration": "3.0",
-		"max_charge_level": "2",
+		"fire_interval_sec": "4",
+		"ammo": "10",
+		"duration": "1.2",
 		"cost": "9",
 	},
 	"3": {
 		"level": "3",
-		"damage": "4",
-		"hit_cd": "0.15",
-		"reload": "5",
-		"duration": "3.0",
-		"max_charge_level": "3",
+		"damage": "12",
+		"hit_cd": "0.2",
+		"fire_interval_sec": "4",
+		"ammo": "12",
+		"duration": "1.2",
 		"cost": "9",
 	},
 	"4": {
 		"level": "4",
-		"damage": "5",
-		"hit_cd": "0.15",
-		"reload": "5",
-		"duration": "3.0",
-		"max_charge_level": "3",
+		"damage": "15",
+		"hit_cd": "0.2",
+		"fire_interval_sec": "4",
+		"ammo": "12",
+		"duration": "1.4",
 		"cost": "9",
 	},
 	"5": {
 		"level": "5",
-		"damage": "6",
-		"hit_cd": "0.15",
-		"reload": "5",
-		"duration": "3.90",
-		"max_charge_level": "3",
+		"damage": "18",
+		"hit_cd": "0.2",
+		"fire_interval_sec": "4",
+		"ammo": "14",
+		"duration": "1.6",
+		"cost": "9",
+	},
+	"6": {
+		"level": "6",
+		"damage": "28",
+		"hit_cd": "0.2",
+		"fire_interval_sec": "4",
+		"ammo": "14",
+		"duration": "1.8",
+		"cost": "9",
+	},
+	"7": {
+		"level": "7",
+		"damage": "32",
+		"hit_cd": "0.2",
+		"fire_interval_sec": "4",
+		"ammo": "16",
+		"duration": "2.0",
 		"cost": "9",
 	},
 }
@@ -73,21 +87,24 @@ func _physics_process(delta):
 	super._physics_process(delta)
 	_update_smoothed_rotation(delta)
 
+# Charged Blaster drives its own smoothed rotation, so skip Ranger's instant snap-to-mouse rotation.
+func _update_weapon_rotation() -> void:
+	pass
+
 func set_level(lv):
 	lv = str(lv)
 	level = int(weapon_data[lv]["level"])
 	base_damage = int(weapon_data[lv]["damage"])
 	hit_cd = float(weapon_data[lv]["hit_cd"])
-	base_attack_cooldown = float(weapon_data[lv]["reload"])
+
+	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
+	apply_level_ammo(weapon_data[lv])
 	duration = float(weapon_data[lv]["duration"])
-	max_charge_level = int(weapon_data[lv]["max_charge_level"])
 	sync_stats()
 	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_level_applied(level)
 
 func _on_shoot():
-	if charge_level < 1:
-		return
 	if is_on_cooldown and not _force_active_cast:
 		return
 	is_on_cooldown = true
@@ -96,7 +113,7 @@ func _on_shoot():
 		"direction": beam_local_forward.normalized(),
 		"range_multiplier": 1.0,
 		"width_multiplier": 1.0,
-		"damage_multiplier": float(charge_level),
+		"damage_multiplier": 1.0,
 		"duration_multiplier": 1.0,
 		"angle_offset_deg": 0.0,
 		"target_lock_mode": "none",
@@ -109,7 +126,6 @@ func _on_shoot():
 		max_beam_duration = maxf(max_beam_duration, _spawn_beam_from_profile(profile))
 	if max_beam_duration > 0.0:
 		_start_firing_turn_slowdown(max_beam_duration)
-	charge_level = 0
 	start_weapon_cooldown(attack_cooldown, 0.05)
 
 func _on_remove_timer_timeout() -> void:
@@ -124,6 +140,7 @@ func _update_smoothed_rotation(delta: float) -> void:
 	if mouse_direction == Vector2.ZERO:
 		return
 	var target_rotation := mouse_direction.angle() + AIM_ROTATION_OFFSET
+	var firing_turn_speed := normal_turn_speed * clampf(firing_rotation_slow_multiplier, 0.05, 1.0)
 	var turn_speed := firing_turn_speed if is_firing_beam else normal_turn_speed
 	turn_speed *= _get_charged_turn_speed_multiplier()
 	rotation = lerp_angle(rotation, target_rotation, clamp(turn_speed * delta, 0.0, 1.0))
@@ -143,26 +160,16 @@ func _start_firing_turn_slowdown(active_duration: float) -> void:
 func _on_firing_turn_timeout() -> void:
 	is_firing_beam = false
 
-func handle_primary_input(pressed: bool, _just_pressed: bool, just_released: bool, delta: float) -> void:
+func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	if not can_run_active_behavior():
 		return
-	if is_on_cooldown:
+	if not pressed:
 		return
-	if pressed:
-		charge_time += maxf(delta, 0.0)
-		if charge_time >= time_per_level:
-			charge_level = clampi(charge_level + 1, 0, max_charge_level)
-			charge_time -= time_per_level
-			if charge_level >= max_charge_level:
-				emit_signal("shoot")
-				charge_time = 0.0
-	if just_released:
-		emit_signal("shoot")
+	request_primary_fire()
 
 func _execute_weapon_active(damage_multiplier: float) -> bool:
 	if not can_run_active_behavior():
 		return false
-	charge_level = max(1, max_charge_level)
 	_force_active_cast = true
 	emit_signal("shoot")
 	_force_active_cast = false
@@ -227,7 +234,7 @@ func _spawn_beam_from_profile(profile: Dictionary) -> float:
 	var fixed_width_no_charge: bool = bool(profile.get("fixed_width_no_charge", false))
 	var beam_duration: float = maxf(duration * duration_multiplier, 0.05)
 	var beam_hit_cd: float = maxf(hit_cd * hit_cd_multiplier, 0.01)
-	var base_beam_width: float = 6.0 if fixed_width_no_charge else float(charge_level * 6)
+	var base_beam_width: float = 6.0 if fixed_width_no_charge else _get_full_power_beam_width()
 	beam_blast_ins.target_position = dir * beam_range * range_multiplier
 	beam_blast_ins.width = maxf(base_beam_width * width_multiplier, 1.0)
 	beam_blast_ins.damage = max(1, int(round(float(get_runtime_shot_damage()) * damage_multiplier)))
@@ -239,3 +246,10 @@ func _spawn_beam_from_profile(profile: Dictionary) -> float:
 	beam_blast_ins.target_lock_release_multiplier = maxf(float(profile.get("target_lock_release_multiplier", 1.8)), 1.0)
 	call_deferred("add_child", beam_blast_ins)
 	return beam_duration
+
+func _get_full_power_beam_width() -> float:
+	if level >= 6:
+		return 24.0
+	if level >= 3:
+		return 18.0
+	return 12.0

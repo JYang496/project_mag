@@ -6,6 +6,10 @@ class_name EnemyTarSlowZone
 @export var player_slow_multiplier: float = 0.65
 @export var enemy_slow_multiplier: float = 0.65
 @export var enemy_refresh_duration: float = 0.25
+@export var draw_zone: bool = true
+@export var zone_fill_color: Color = Color(0.2, 0.16, 0.1, 0.28)
+@export var zone_line_color: Color = Color(0.55, 0.42, 0.2, 0.95)
+@export var zone_line_width: float = 2.0
 
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var life_timer: Timer = $LifeTimer
@@ -14,6 +18,7 @@ var _field_source_id: StringName
 var _slowed_players: Dictionary = {}
 
 func _ready() -> void:
+	add_to_group("enemy_runtime_cleanup")
 	_field_source_id = StringName("tar_zone_%d" % get_instance_id())
 	if collision_shape and collision_shape.shape is CircleShape2D:
 		var circle := collision_shape.shape as CircleShape2D
@@ -22,6 +27,8 @@ func _ready() -> void:
 	life_timer.start()
 
 func _physics_process(_delta: float) -> void:
+	if draw_zone:
+		queue_redraw()
 	for area in get_overlapping_areas():
 		if not (area is HurtBox):
 			continue
@@ -76,3 +83,18 @@ func _cleanup_all_player_slow() -> void:
 		if player and is_instance_valid(player):
 			player.remove_move_speed_mul(_field_source_id)
 	_slowed_players.clear()
+
+func _draw() -> void:
+	if not draw_zone:
+		return
+	draw_circle(Vector2.ZERO, maxf(radius, 1.0), zone_fill_color)
+	draw_arc(
+		Vector2.ZERO,
+		maxf(radius, 1.0),
+		0.0,
+		TAU,
+		56,
+		zone_line_color,
+		maxf(zone_line_width, 1.0),
+		true
+	)

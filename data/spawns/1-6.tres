@@ -14,8 +14,8 @@ number = 3
 max_enemy_number = 130
 hp = 12
 damage = 0
-max_wave = 8
-interval = 7
+max_wave = 16
+interval = 3
 
 [sub_resource type="Resource" id="Spawn_wheel_breaker"]
 script = ExtResource("2_spawn")
@@ -25,8 +25,8 @@ number = 3
 max_enemy_number = 120
 hp = 10
 damage = 0
-max_wave = 8
-interval = 7
+max_wave = 14
+interval = 3
 
 [sub_resource type="Resource" id="Spawn_orbit_harass"]
 script = ExtResource("2_spawn")
@@ -36,13 +36,16 @@ number = 3
 max_enemy_number = 110
 hp = 10
 damage = 0
-max_wave = 5
-interval = 8
+max_wave = 12
+interval = 2
 
 [resource]
 script = ExtResource("1_cfg")
-time_out = 66
+time_out = 53
 spawns = Array[ExtResource("2_spawn")]([SubResource("Spawn_spike_wall"), SubResource("Spawn_wheel_breaker"), SubResource("Spawn_orbit_harass")])
 rewards = Array[Resource]([])
+
+
+
 
 

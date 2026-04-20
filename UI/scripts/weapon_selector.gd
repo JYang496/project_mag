@@ -1,7 +1,7 @@
 extends Control
 class_name WeaponSelector
 
-@export var debug_mode := true
+@export var debug_mode := false
 
 const SLOT_COUNT := 4
 const SWITCH_ANIM_TIME := 0.35

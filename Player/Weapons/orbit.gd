@@ -33,58 +33,65 @@ var _offhand_buff_expires_at_msec: int = 0
 var weapon_data = {
 	"1": {
 		"level": "1",
-		"damage": "15",
+		"damage": "8",
 		"number": "1",
 		"spin_speed": "3",
-		"reload": "2.5",
+		"fire_interval_sec": "2.5",
+		"ammo": "20",
 		"cost": "8",
 	},
 	"2": {
 		"level": "2",
-		"damage": "15",
+		"damage": "10",
 		"number": "2",
 		"spin_speed": "3",
-		"reload": "2.2",
+		"fire_interval_sec": "2.5",
+		"ammo": "20",
 		"cost": "8",
 	},
 	"3": {
 		"level": "3",
-		"damage": "18",
+		"damage": "12",
 		"number": "3",
-		"spin_speed": "3",
-		"reload": "2.0",
+		"spin_speed": "3.5",
+		"fire_interval_sec": "2.5",
+		"ammo": "20",
 		"cost": "8",
 	},
 	"4": {
 		"level": "4",
-		"damage": "21",
-		"number": "3",
-		"spin_speed": "4",
-		"reload": "1.8",
+		"damage": "14",
+		"number": "4",
+		"spin_speed": "3.5",
+		"fire_interval_sec": "2.5",
+		"ammo": "20",
 		"cost": "8",
 	},
 	"5": {
 		"level": "5",
-		"damage": "30",
-		"number": "4",
+		"damage": "16",
+		"number": "5",
 		"spin_speed": "4",
-		"reload": "1.6",
+		"fire_interval_sec": "2.5",
+		"ammo": "20",
 		"cost": "8",
 	},
 	"6": {
 		"level": "6",
-		"damage": "40",
-		"number": "5",
+		"damage": "18",
+		"number": "6",
 		"spin_speed": "4",
-		"reload": "1.4",
+		"fire_interval_sec": "2.5",
+		"ammo": "20",
 		"cost": "8",
 	},
 	"7": {
 		"level": "7",
-		"damage": "50",
-		"number": "6",
-		"spin_speed": "4",
-		"reload": "1.2",
+		"damage": "20",
+		"number": "7",
+		"spin_speed": "5",
+		"fire_interval_sec": "2.5",
+		"ammo": "20",
 		"cost": "8",
 	}
 }
@@ -101,7 +108,8 @@ func set_level(lv) -> void:
 	base_damage = int(level_data.get("damage", 1))
 	spin_speed = int(level_data.get("spin_speed", spin_speed))
 	number = int(level_data.get("number", number))
-	base_attack_cooldown = float(level_data.get("reload", ORBIT_PROJECTILE_LIFETIME_SEC / maxf(LV1_TARGET_ACTIVE_COUNT, 1.0)))
+	base_attack_cooldown = float(level_data.get("fire_interval_sec", ORBIT_PROJECTILE_LIFETIME_SEC / maxf(LV1_TARGET_ACTIVE_COUNT, 1.0)))
+	apply_level_ammo(level_data)
 	base_projectile_hits = 99999
 	module_list.clear()
 	sync_stats()

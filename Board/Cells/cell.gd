@@ -24,8 +24,10 @@ var progress: int = 0
 @export var terrain_type: int = TerrainType.NONE
 @export var objective_enabled := false
 @export var aura_enabled := false
+@export var logical_id: int = 0
 @export var profile: CellProfile
 @export var module_scenes: Array[PackedScene] = []
+var board_enabled: bool = true
 
 const PROGRESS_INTERVAL := 0.2
 const PROGRESS_STEP := 1
@@ -92,6 +94,24 @@ func set_locked(is_locked: bool) -> void:
 		if state == CellState.LOCKED:
 			set_state(CellState.IDLE)
 		_evaluate_cell_state()
+
+func set_board_enabled(enabled: bool) -> void:
+	board_enabled = enabled
+	var area: Area2D = get_node_or_null("Area2D") as Area2D
+	if area:
+		area.set_deferred("monitoring", enabled)
+		area.set_deferred("monitorable", enabled)
+	if enabled:
+		modulate = Color(1.0, 1.0, 1.0, 1.0)
+	else:
+		modulate = Color(0.35, 0.35, 0.35, 0.35)
+		for tracked_enemy in _enemy_death_callbacks.keys():
+			_untrack_enemy_death(tracked_enemy as BaseEnemy)
+		_player_bodies.clear()
+		_enemy_bodies.clear()
+		_progress_accumulator = 0.0
+		progress = 0
+		set_state(CellState.LOCKED)
 
 func has_player_inside() -> bool:
 	return not _player_bodies.is_empty()
@@ -262,6 +282,7 @@ func _apply_module_parameters(module_instance: Node) -> void:
 				})
 	# Apply bonus parameters
 	if module_instance.has_method("set_bonus_parameters"):
+		var economy_gold_value := _resolve_economy_gold_for_current_level(profile.economy_gold)
 		module_instance.set_bonus_parameters({
 			"combat_heal_hp": profile.combat_heal_hp,
 			"combat_bonus_speed": profile.combat_bonus_speed,
@@ -271,7 +292,7 @@ func _apply_module_parameters(module_instance: Node) -> void:
 			"combat_bonus_crit_damage": profile.combat_bonus_crit_damage,
 			"combat_bonus_shield": profile.combat_bonus_shield,
 			"combat_bonus_damage_reduction": profile.combat_bonus_damage_reduction,
-			"economy_gold": profile.economy_gold,
+			"economy_gold": economy_gold_value,
 			"economy_exp": profile.economy_exp,
 			"economy_drop_coin": profile.economy_drop_coin,
 			"economy_drop_chip": profile.economy_drop_chip,
@@ -294,3 +315,14 @@ func _apply_module_parameters(module_instance: Node) -> void:
 			"aura_low_hp_min_hp_ratio": profile.aura_low_hp_min_hp_ratio,
 			"aura_low_hp_max_damage_mul": profile.aura_low_hp_max_damage_mul
 		})
+
+func _resolve_economy_gold_for_current_level(fallback_value: int) -> int:
+	if GlobalVariables.economy_data == null:
+		return fallback_value
+	var override_values: PackedInt32Array = GlobalVariables.economy_data.objective_economy_gold_by_level
+	if override_values.is_empty():
+		return fallback_value
+	var level_index := maxi(int(PhaseManager.current_level), 0)
+	if level_index < 0 or level_index >= override_values.size():
+		return fallback_value
+	return int(override_values[level_index])

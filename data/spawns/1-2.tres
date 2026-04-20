@@ -13,8 +13,8 @@ enemy = ExtResource("3")
 number = 4
 max_enemy_number = 140
 hp = 10
-max_wave = 11
-interval = 4
+max_wave = 18
+interval = 2
 
 [sub_resource type="Resource" id="Spawn_roll_support"]
 script = ExtResource("2_spawn")
@@ -23,10 +23,13 @@ enemy = ExtResource("4")
 number = 5
 max_enemy_number = 180
 hp = 10
-max_wave = 9
-interval = 4
+max_wave = 16
+interval = 2
 
 [resource]
 script = ExtResource("1_cfg")
-time_out = 49
+time_out = 39
 spawns = Array[ExtResource("2_spawn")]([SubResource("Spawn_wheel_main"), SubResource("Spawn_roll_support")])
+
+
+

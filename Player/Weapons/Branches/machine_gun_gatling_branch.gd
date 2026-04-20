@@ -2,12 +2,11 @@ extends WeaponBranchBehavior
 class_name MachineGunGatlingBranch
 
 # Gatling branch: higher fire cadence, split lanes, and heat-based fire conversion.
-@export var cooldown_multiplier: float = 0.42
 @export var projectile_count: int = 2
 @export var spread_deg: float = 7.0
 @export_range(0.0, 1.0, 0.05) var extra_heat_shot_multiplier: float = 0.45
+@export_range(0.05, 2.0, 0.01) var base_damage_multiplier: float = 0.80
 @export_range(0.0, 1.0, 0.01) var fire_mode_heat_ratio: float = 0.50
-@export_range(0.0, 2.0, 0.01) var fire_mode_damage_bonus_ratio: float = 0.35
 const BRANCH_RUNTIME_TRAIT_FIRE: StringName = CombatTrait.FIRE
 
 func on_weapon_ready() -> void:
@@ -37,20 +36,20 @@ func get_shot_directions(base_direction: Vector2, shot_count: int = -1) -> Array
 	return dirs
 
 func get_cooldown_multiplier() -> float:
-	return maxf(cooldown_multiplier, 0.05)
+	# Remove branch-only cooldown bonus; keep base weapon cadence.
+	return 1.0
 
 func get_extra_heat_shot_multiplier() -> float:
 	return clampf(extra_heat_shot_multiplier, 0.0, 1.0)
 
 func get_projectile_damage_multiplier() -> float:
 	if weapon == null or not is_instance_valid(weapon):
-		return 1.0
+		return maxf(base_damage_multiplier, 0.05)
 	if not weapon.has_method("get_heat_ratio"):
-		return 1.0
-	var heat_ratio: float = float(weapon.call("get_heat_ratio"))
-	if heat_ratio < fire_mode_heat_ratio:
-		return 1.0
-	return 1.0 + maxf(fire_mode_damage_bonus_ratio, 0.0)
+		return maxf(base_damage_multiplier, 0.05)
+	var base_mul := maxf(base_damage_multiplier, 0.05)
+	# Remove high-heat damage scaling: gatling keeps a fixed base multiplier.
+	return base_mul
 
 func get_damage_type_override() -> StringName:
 	if weapon == null or not is_instance_valid(weapon):

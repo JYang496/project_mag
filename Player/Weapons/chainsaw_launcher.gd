@@ -2,12 +2,10 @@ extends Ranger
 
 var spin_effect = preload("res://Player/Weapons/Effects/spin_effect.tscn")
 var scale_up_by_time_effect = preload("res://Player/Weapons/Effects/scale_up_by_time.tscn")
-var chase_closest_enemy_effect = preload("res://Player/Weapons/Effects/chase_closest_enemy.tscn")
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
 var projectile_texture_resource = preload("res://Textures/test/chainsaw_spin.png")
-#@onready var sprite = get_node("%Sprite")
 
 # Weapon
 var ITEM_NAME = "Chainsaw Luncher"
@@ -16,11 +14,12 @@ var _last_hit_projectile: Projectile
 var weapon_data = {
 	"1": {
 		"level": "1",
-		"damage": "2",
+		"damage": "3",
 		"speed": "200",
 		"hp": "15",
 		"dot_cd": "0.1",
-		"reload": "1",
+		"fire_interval_sec": "1",
+		"ammo": "28",
 		"cost": "6",
 	},
 	"2": {
@@ -29,43 +28,48 @@ var weapon_data = {
 		"speed": "200",
 		"hp": "15",
 		"dot_cd": "0.1",
-		"reload": "1",
+		"fire_interval_sec": "1",
+		"ammo": "30",
 		"cost": "6",
 	},
 	"3": {
 		"level": "3",
-		"damage": "7",
+		"damage": "5",
 		"speed": "200",
 		"hp": "20",
 		"dot_cd": "0.1",
-		"reload": "1",
+		"fire_interval_sec": "1",
+		"ammo": "32",
 		"cost": "6",
 	},
 	"4": {
 		"level": "4",
-		"damage": "10",
+		"damage": "7",
 		"speed": "200",
 		"hp": "25",
 		"dot_cd": "0.1",
-		"reload": "0.75",
+		"fire_interval_sec": "0.75",
+		"ammo": "34",
 		"cost": "6",
 	},
 	"5": {
 		"level": "5",
-		"damage": "15",
+		"damage": "9",
 		"speed": "200",
 		"hp": "25",
 		"dot_cd": "0.1",
-		"reload": "0.75",
+		"fire_interval_sec": "0.75",
+		"ammo": "36",
 		"cost": "6",
 	},
 	"6": {
 		"level": "6",
-		"damage": "20",
+		"damage": "12",
 		"speed": "200",
 		"hp": "30",
 		"dot_cd": "0.1",
-		"reload": "0.75",
+		"fire_interval_sec": "0.75",
+		"ammo": "38",
 		"cost": "6",
 	},
 	"7": {
@@ -74,7 +78,8 @@ var weapon_data = {
 		"speed": "200",
 		"hp": "30",
 		"dot_cd": "0.1",
-		"reload": "0.75",
+		"fire_interval_sec": "0.75",
+		"ammo": "40",
 		"cost": "6",
 	}
 }
@@ -93,7 +98,8 @@ func set_level(lv):
 	base_speed = int(level_data.get("speed", 0))
 	base_projectile_hits = int(level_data.get("hp", 1))
 	dot_cd = float(level_data.get("dot_cd", 0.1))
-	base_attack_cooldown = float(level_data.get("reload", 1.0))
+	base_attack_cooldown = float(level_data.get("fire_interval_sec", 1.0))
+	apply_level_ammo(level_data)
 	sync_stats()
 	_sync_speed_change_effect_config()
 	if branch_behavior and is_instance_valid(branch_behavior):
@@ -139,12 +145,6 @@ func apply_scale_up_by_time(projectile_node) -> void:
 	projectile_node.call_deferred("add_child",scale_up_by_time)
 	projectile_node.module_list.append(scale_up_by_time)
 	module_list.append(scale_up_by_time)
-
-func apply_chase_closest_enemy(projectile_node) -> void:
-	var chase_ins = chase_closest_enemy_effect.instantiate()
-	projectile_node.call_deferred("add_child",chase_ins)
-	projectile_node.module_list.append(chase_ins)
-	module_list.append(chase_ins)
 
 func _on_chainsaw_luncher_timer_timeout() -> void:
 	is_on_cooldown = false

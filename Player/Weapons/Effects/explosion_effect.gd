@@ -19,12 +19,15 @@ class_name ExplosionEffect
 @export var visual_rotation_speed_deg: float = 240.0
 @export var visual_size_multiplier: float = 1.0
 var oc_mode : bool = false
+var _detonated: bool = false
 
 func projectile_effect_ready() -> void:
-	projectile.tree_exiting.connect(_on_parent_exiting)
-	projectile.tree_exited.connect(_on_parent_exited)	
+	_detonated = false
 
-func _on_parent_exiting() -> void:
+func on_projectile_will_despawn() -> void:
+	if _detonated:
+		return
+	_detonated = true
 	var area_effect := area_effect_scene.instantiate() as AreaEffect
 	area_effect.one_shot_damage = damage
 	area_effect.tick_damage = area_tick_damage
@@ -52,8 +55,3 @@ func _on_parent_exiting() -> void:
 	if spawn_parent == null:
 		spawn_parent = projectile.get_tree().root
 	spawn_parent.call_deferred("add_child", area_effect)
-	
-
-func _on_parent_exited() -> void:
-	pass
-

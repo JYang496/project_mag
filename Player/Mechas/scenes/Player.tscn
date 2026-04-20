@@ -50,7 +50,7 @@ unique_name_in_owner = true
 
 [node name="CollectArea" type="Area2D" parent="." unique_id=798938077]
 unique_name_in_owner = true
-position = Vector2(0, -330)
+position = Vector2(0, -438)
 collision_layer = 0
 
 [node name="CollectShape" type="CollisionShape2D" parent="CollectArea" unique_id=1418368109]
