@@ -155,8 +155,7 @@ func _on_shoot():
 		branch_behavior.on_weapon_shot(base_direction)
 	var extra_heat_multiplier := 1.0
 	if branch_behavior and is_instance_valid(branch_behavior):
-		if branch_behavior.has_method("get_extra_heat_shot_multiplier"):
-			extra_heat_multiplier = float(branch_behavior.call("get_extra_heat_shot_multiplier"))
+		extra_heat_multiplier = branch_behavior.get_extra_heat_shot_multiplier()
 	var extra_heat_shots := float(max(0, fired_count - 1)) * clampf(extra_heat_multiplier, 0.0, 1.0)
 	register_shot_heat(extra_heat_shots)
 	adjust_attack_speed(1.2)
@@ -224,14 +223,12 @@ func _fire_single_bullet(direction: Vector2) -> void:
 	var runtime_damage: int = int(get_runtime_shot_damage())
 	var damage_multiplier: float = 1.0
 	if branch_behavior and is_instance_valid(branch_behavior):
-		if branch_behavior.has_method("get_projectile_damage_multiplier"):
-			damage_multiplier = float(branch_behavior.call("get_projectile_damage_multiplier"))
+		damage_multiplier = branch_behavior.get_projectile_damage_multiplier()
 	var final_damage: int = max(1, int(round(float(runtime_damage) * maxf(damage_multiplier, 0.05))))
 	spawn_projectile.damage = final_damage
 	var damage_type: StringName = Attack.TYPE_PHYSICAL
 	if branch_behavior and is_instance_valid(branch_behavior):
-		if branch_behavior.has_method("get_damage_type_override"):
-			damage_type = Attack.normalize_damage_type(branch_behavior.call("get_damage_type_override"))
+		damage_type = Attack.normalize_damage_type(branch_behavior.get_damage_type_override())
 	spawn_projectile.damage_type = damage_type
 	spawn_projectile.hp = projectile_hits
 	spawn_projectile.global_position = global_position

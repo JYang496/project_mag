@@ -188,6 +188,7 @@ func _run_case(case_data: Dictionary, order_idx: int, total_cases: int) -> void:
 func _prepare_case(case_data: Dictionary) -> void:
 	_cleanup_targets()
 	_sync_spawn_markers_from_config()
+	_ensure_battle_phase_for_test()
 	_current_weapon_id = str(case_data.get("weapon_id", ""))
 	_current_branch_id = ""
 	if config and config.has_method("get_branch_for_weapon"):
@@ -198,6 +199,14 @@ func _prepare_case(case_data: Dictionary) -> void:
 	_spawn_target_dummy()
 	_equip_weapon(_current_weapon_id, _current_branch_id)
 	_apply_benchmark_aim_meta()
+
+func _ensure_battle_phase_for_test() -> void:
+	if PhaseManager == null or not PhaseManager.has_method("current_state"):
+		return
+	if str(PhaseManager.current_state()) == str(PhaseManager.BATTLE):
+		return
+	if PhaseManager.has_method("enter_battle"):
+		PhaseManager.enter_battle()
 
 func _spawn_target_dummy() -> void:
 	var dummy_instance := dummy_scene.instantiate()

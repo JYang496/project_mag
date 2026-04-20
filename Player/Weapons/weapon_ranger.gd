@@ -115,6 +115,8 @@ func uses_ammo_system() -> bool:
 	return true
 
 func request_primary_fire() -> bool:
+	if not is_attack_phase_allowed():
+		return false
 	if is_on_cooldown:
 		return false
 	if not can_fire_with_heat():

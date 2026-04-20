@@ -29,6 +29,12 @@
 [ext_resource type="Script" path="res://UI/scripts/weapon_selector.gd" id="19_wsel"]
 [ext_resource type="Texture2D" path="res://asset/images/ui/mainhand.png" id="20_mainh"]
 [ext_resource type="Texture2D" path="res://asset/images/ui/offhand.png" id="21_offh"]
+[ext_resource type="Script" path="res://UI/scripts/smith_back_button.gd" id="22_sback"]
+[ext_resource type="Script" path="res://UI/scripts/open_smith_upgrade_button.gd" id="23_supg"]
+[ext_resource type="Script" path="res://UI/scripts/open_smith_fuse_button.gd" id="24_sgf"]
+[ext_resource type="Script" path="res://UI/scripts/open_merchant_buy_button.gd" id="25_mbuy"]
+[ext_resource type="Script" path="res://UI/scripts/open_merchant_sell_button.gd" id="26_msell"]
+[ext_resource type="Script" path="res://UI/scripts/merchant_back_button.gd" id="27_mback"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bar_bg"]
 bg_color = Color(0.08, 0.08, 0.08, 0.82)
@@ -475,6 +481,145 @@ offset_bottom = 76.0
 text = "Confirm"
 script = ExtResource("11_6q2ik")
 
+[node name="BackToMerchantMenu" type="Button" parent="GUI/ShoppingRootv2/Panel"]
+layout_mode = 0
+offset_left = 759.0
+offset_top = 45.0
+offset_right = 827.0
+offset_bottom = 76.0
+text = "Back"
+script = ExtResource("27_mback")
+
+[node name="MerchantRoot" type="Control" parent="GUI"]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Panel" type="Panel" parent="GUI/MerchantRoot"]
+custom_minimum_size = Vector2(520, 320)
+layout_mode = 0
+offset_left = 316.0
+offset_top = 170.0
+offset_right = 836.0
+offset_bottom = 490.0
+
+[node name="Title" type="Label" parent="GUI/MerchantRoot/Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 16.0
+offset_bottom = 52.0
+grow_horizontal = 2
+text = "Merchant Menu"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SubTitle" type="Label" parent="GUI/MerchantRoot/Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 56.0
+offset_bottom = 84.0
+grow_horizontal = 2
+text = "Choose Buy or Sell"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="OpenBuyButton" type="Button" parent="GUI/MerchantRoot/Panel"]
+layout_mode = 0
+offset_left = 160.0
+offset_top = 120.0
+offset_right = 360.0
+offset_bottom = 166.0
+text = "Buy"
+script = ExtResource("25_mbuy")
+
+[node name="OpenSellButton" type="Button" parent="GUI/MerchantRoot/Panel"]
+layout_mode = 0
+offset_left = 160.0
+offset_top = 182.0
+offset_right = 360.0
+offset_bottom = 228.0
+text = "Sell"
+script = ExtResource("26_msell")
+
+[node name="CloseHint" type="Label" parent="GUI/MerchantRoot/Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 266.0
+offset_bottom = 294.0
+grow_horizontal = 2
+text = "Press Interact to close"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SmithRoot" type="Control" parent="GUI"]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Panel" type="Panel" parent="GUI/SmithRoot"]
+custom_minimum_size = Vector2(520, 320)
+layout_mode = 0
+offset_left = 316.0
+offset_top = 170.0
+offset_right = 836.0
+offset_bottom = 490.0
+
+[node name="Title" type="Label" parent="GUI/SmithRoot/Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 16.0
+offset_bottom = 52.0
+grow_horizontal = 2
+text = "Smith Menu"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SubTitle" type="Label" parent="GUI/SmithRoot/Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 56.0
+offset_bottom = 84.0
+grow_horizontal = 2
+text = "Choose an operation"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="OpenUpgradeButton" type="Button" parent="GUI/SmithRoot/Panel"]
+layout_mode = 0
+offset_left = 160.0
+offset_top = 120.0
+offset_right = 360.0
+offset_bottom = 166.0
+text = "Upgrade"
+script = ExtResource("23_supg")
+
+[node name="OpenFuseButton" type="Button" parent="GUI/SmithRoot/Panel"]
+layout_mode = 0
+offset_left = 160.0
+offset_top = 182.0
+offset_right = 360.0
+offset_bottom = 228.0
+text = "Gear Fuse"
+script = ExtResource("24_sgf")
+
+[node name="CloseHint" type="Label" parent="GUI/SmithRoot/Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 266.0
+offset_bottom = 294.0
+grow_horizontal = 2
+text = "Press Interact to close"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="UpgradeRootv2" type="Control" parent="GUI" unique_id=113070022]
 visible = false
 anchors_preset = 0
@@ -597,6 +742,15 @@ offset_bottom = 64.0002
 text = "To Gear Fuse"
 script = ExtResource("12_t31p1")
 
+[node name="BackToSmithMenu" type="Button" parent="GUI/UpgradeRootv2/Panel"]
+layout_mode = 0
+offset_left = 752.0
+offset_top = 33.0002
+offset_right = 850.0
+offset_bottom = 64.0002
+text = "Back"
+script = ExtResource("22_sback")
+
 [node name="UpgradePreview" parent="GUI/UpgradeRootv2/Panel" unique_id=1792859512 instance=ExtResource("16_2jerp")]
 layout_mode = 0
 offset_left = 127.0
@@ -714,6 +868,15 @@ offset_right = 828.0
 offset_bottom = 44.0
 text = "Inventory / Bag"
 script = ExtResource("15_xtxff")
+
+[node name="BackToSmithMenu" type="Button" parent="GUI/GearFuseRoot/Panel"]
+layout_mode = 0
+offset_left = 752.0
+offset_top = 31.0
+offset_right = 850.0
+offset_bottom = 62.0
+text = "Back"
+script = ExtResource("22_sback")
 
 [node name="MarginContainer" type="MarginContainer" parent="GUI/GearFuseRoot/Panel" unique_id=2142222546]
 custom_minimum_size = Vector2(320, 320)
@@ -1070,9 +1233,16 @@ mouse_filter = 2
 [connection signal="button_up" from="GUI/ShoppingRootv2/Panel/ShopSellButton" to="GUI/ShoppingRootv2/Panel/ShopSellButton" method="_on_button_up"]
 [connection signal="button_up" from="GUI/ShoppingRootv2/Panel/ShopCancelButton" to="GUI/ShoppingRootv2/Panel/ShopCancelButton" method="_on_button_up"]
 [connection signal="button_up" from="GUI/ShoppingRootv2/Panel/ShopConfirmButton" to="GUI/ShoppingRootv2/Panel/ShopConfirmButton" method="_on_button_up"]
+[connection signal="button_up" from="GUI/ShoppingRootv2/Panel/BackToMerchantMenu" to="GUI/ShoppingRootv2/Panel/BackToMerchantMenu" method="_on_button_up"]
+[connection signal="button_up" from="GUI/MerchantRoot/Panel/OpenBuyButton" to="GUI/MerchantRoot/Panel/OpenBuyButton" method="_on_button_up"]
+[connection signal="button_up" from="GUI/MerchantRoot/Panel/OpenSellButton" to="GUI/MerchantRoot/Panel/OpenSellButton" method="_on_button_up"]
+[connection signal="button_up" from="GUI/SmithRoot/Panel/OpenUpgradeButton" to="GUI/SmithRoot/Panel/OpenUpgradeButton" method="_on_button_up"]
+[connection signal="button_up" from="GUI/SmithRoot/Panel/OpenFuseButton" to="GUI/SmithRoot/Panel/OpenFuseButton" method="_on_button_up"]
 [connection signal="button_up" from="GUI/UpgradeRootv2/Panel/SwtichBtn" to="GUI/UpgradeRootv2/Panel/SwtichBtn" method="_on_button_up"]
 [connection signal="button_up" from="GUI/UpgradeRootv2/Panel/ToGF" to="GUI/UpgradeRootv2/Panel/ToGF" method="_on_button_up"]
+[connection signal="button_up" from="GUI/UpgradeRootv2/Panel/BackToSmithMenu" to="GUI/UpgradeRootv2/Panel/BackToSmithMenu" method="_on_button_up"]
 [connection signal="button_up" from="GUI/GearFuseRoot/Panel/SwtichBtn" to="GUI/GearFuseRoot/Panel/SwtichBtn" method="_on_button_up"]
+[connection signal="button_up" from="GUI/GearFuseRoot/Panel/BackToSmithMenu" to="GUI/GearFuseRoot/Panel/BackToSmithMenu" method="_on_button_up"]
 [connection signal="button_up" from="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ConfirmBtn" to="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ConfirmBtn" method="_on_button_up"]
 [connection signal="button_up" from="GUI/GearFuseRoot/Panel/ToUpgrade" to="GUI/GearFuseRoot/Panel/ToUpgrade" method="_on_button_up"]
 [connection signal="button_up" from="GUI/ModuleRoot/Panel/ToInv" to="GUI/ModuleRoot/Panel/ToInv" method="_on_button_up"]

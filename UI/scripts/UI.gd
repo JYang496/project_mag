@@ -15,6 +15,8 @@ const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 @onready var character_root : Control = $GUI/CharacterRoot
 @onready var shopping_rootv_2: Control = $GUI/ShoppingRootv2
 @onready var upgrade_rootv_2: Control = $GUI/UpgradeRootv2
+@onready var smith_root: Control = $GUI/SmithRoot
+@onready var merchant_root: Control = $GUI/MerchantRoot
 @onready var boss_root : Control = $GUI/BossRoot
 @onready var inventory_root: Control = $GUI/InventoryRoot
 @onready var pause_menu_root : Control = $GUI/PauseMenuRoot
@@ -302,6 +304,8 @@ func shopping_panel_in() -> void:
 	move_out_timer.stop()
 	shop_cancel_button._on_button_up()
 	update_shop()
+	if merchant_root:
+		merchant_root.visible = false
 	shopping_rootv_2.visible = true
 
 func shopping_panel_out() -> void:
@@ -309,6 +313,33 @@ func shopping_panel_out() -> void:
 	InventoryData.clear_on_select()
 	refresh_border()
 	move_out_timer.start()
+
+func merchant_menu_in() -> void:
+	shopping_panel_out()
+	if merchant_root:
+		merchant_root.visible = true
+
+func merchant_menu_out() -> void:
+	if merchant_root:
+		merchant_root.visible = false
+	shopping_panel_out()
+
+func merchant_open_buy_panel() -> void:
+	if merchant_root:
+		merchant_root.visible = false
+	shopping_panel_in()
+
+func merchant_open_sell_panel() -> void:
+	if merchant_root:
+		merchant_root.visible = false
+	shopping_panel_in()
+	if shop_sell_button and is_instance_valid(shop_sell_button):
+		shop_sell_button._on_button_up()
+
+func merchant_back_to_primary_menu() -> void:
+	shopping_panel_out()
+	if merchant_root:
+		merchant_root.visible = true
 
 func reset_shopping_refresh_cost() -> void:
 	reset_cost.emit()
@@ -346,6 +377,8 @@ func reset_shopping_refresh_cost() -> void:
 
 func upg_panel_in() -> void:
 	update_upg()
+	if smith_root:
+		smith_root.visible = false
 	upgrade_rootv_2.visible = true
 	inventory_upg.visible = false
 	equipped_upg.visible = true
@@ -359,6 +392,8 @@ func upg_panel_out() -> void:
 
 func gf_panel_in() -> void:
 	update_gf()
+	if smith_root:
+		smith_root.visible = false
 	gear_fuse_root.visible = true
 	inventory_gf.visible = false
 	equipped_gf.visible = true
@@ -368,6 +403,34 @@ func gf_panel_out() -> void:
 	if branch_select_panel and is_instance_valid(branch_select_panel):
 		branch_select_panel.close_panel(true)
 	gear_fuse_root.visible = false
+
+func smith_menu_in() -> void:
+	upg_panel_out()
+	gf_panel_out()
+	if smith_root:
+		smith_root.visible = true
+
+func smith_menu_out() -> void:
+	if smith_root:
+		smith_root.visible = false
+	upg_panel_out()
+	gf_panel_out()
+
+func smith_open_upgrade_panel() -> void:
+	if smith_root:
+		smith_root.visible = false
+	upg_panel_in()
+
+func smith_open_fuse_panel() -> void:
+	if smith_root:
+		smith_root.visible = false
+	gf_panel_in()
+
+func smith_back_to_primary_menu() -> void:
+	upg_panel_out()
+	gf_panel_out()
+	if smith_root:
+		smith_root.visible = true
 
 func inventory_panel_in() -> void:
 	move_out_timer.stop()

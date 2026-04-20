@@ -33,6 +33,9 @@ func get_cooldown_multiplier() -> float:
 func get_projectile_damage_multiplier() -> float:
 	return 1.0
 
+func get_damage_type_override() -> StringName:
+	return Attack.TYPE_PHYSICAL
+
 func get_damage_multiplier() -> float:
 	return 1.0
 
@@ -48,8 +51,32 @@ func get_return_speed_multiplier() -> float:
 func get_cone_or_spread_multiplier() -> float:
 	return 1.0
 
+func get_cone_half_angle_multiplier() -> float:
+	return 1.0
+
+func get_projectile_count_override(current_count: int) -> int:
+	return max(1, current_count)
+
+func get_extra_heat_shot_multiplier() -> float:
+	return 1.0
+
+func get_orbit_spin_speed_multiplier() -> float:
+	return 1.0
+
+func get_pierce_damage_gain_per_hit() -> int:
+	return 0
+
+func get_max_pierce_damage_stacks() -> int:
+	return 0
+
+func disables_primary_fire() -> bool:
+	return false
+
 func get_projectile_trail_config() -> Dictionary:
 	return {}
+
+func modify_explosion_config(_config: ExplosionEffectConfig) -> void:
+	pass
 
 func get_charged_turn_speed_multiplier() -> float:
 	return 1.0
@@ -58,4 +85,10 @@ func get_charged_beam_profiles(base_profile: Dictionary) -> Array[Dictionary]:
 	return [base_profile]
 
 func on_charged_beam_hit(_target: Node, _beam_profile: Dictionary, _hit_damage: int) -> void:
+	pass
+
+func on_chainsaw_target_hit(_target: Node, _projectile: Projectile) -> void:
+	pass
+
+func on_passive_event(_event_name: StringName, _detail: Dictionary) -> void:
 	pass

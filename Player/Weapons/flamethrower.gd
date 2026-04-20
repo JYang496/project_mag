@@ -63,9 +63,8 @@ func supports_projectiles() -> bool:
 	return false
 
 func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
-	if branch_behavior and is_instance_valid(branch_behavior):
-		if branch_behavior.has_method("disables_primary_fire") and bool(branch_behavior.call("disables_primary_fire")):
-			return
+	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.disables_primary_fire():
+		return
 	if not can_run_active_behavior():
 		return
 	if not pressed:
@@ -96,9 +95,8 @@ func _apply_fire_damage(target: Node) -> void:
 
 	var runtime_damage: int = get_runtime_shot_damage()
 	if branch_behavior and is_instance_valid(branch_behavior):
-		if branch_behavior.has_method("get_damage_multiplier"):
-			var damage_multiplier: float = float(branch_behavior.call("get_damage_multiplier"))
-			runtime_damage = max(1, int(round(float(runtime_damage) * maxf(damage_multiplier, 0.05))))
+		var damage_multiplier := branch_behavior.get_damage_multiplier()
+		runtime_damage = max(1, int(round(float(runtime_damage) * maxf(damage_multiplier, 0.05))))
 	var knock_back := {
 		"amount": 0,
 		"angle": Vector2.ZERO
@@ -191,14 +189,11 @@ func _draw_attack_range() -> void:
 func _get_effective_attack_range() -> float:
 	var range_multiplier: float = 1.0
 	if branch_behavior and is_instance_valid(branch_behavior):
-		if branch_behavior.has_method("get_attack_range_multiplier"):
-			range_multiplier = float(branch_behavior.call("get_attack_range_multiplier"))
+		range_multiplier = branch_behavior.get_attack_range_multiplier()
 	return maxf(attack_range * maxf(range_multiplier, 0.1), 1.0)
 
 func _get_effective_cone_half_angle_deg() -> float:
 	var angle_multiplier: float = 1.0
 	if branch_behavior and is_instance_valid(branch_behavior):
-		if branch_behavior.has_method("get_cone_half_angle_multiplier"):
-			angle_multiplier = float(branch_behavior.call("get_cone_half_angle_multiplier"))
+		angle_multiplier = branch_behavior.get_cone_half_angle_multiplier()
 	return maxf(cone_half_angle_deg * maxf(angle_multiplier, 0.1), 1.0)
-

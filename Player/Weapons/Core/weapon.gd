@@ -729,7 +729,14 @@ func _on_weapon_role_changed(_next_role: String) -> void:
 	pass
 
 func can_run_active_behavior() -> bool:
-	return is_main_weapon()
+	return is_main_weapon() and is_attack_phase_allowed()
+
+func is_attack_phase_allowed() -> bool:
+	if PhaseManager == null:
+		return true
+	if not PhaseManager.has_method("current_state"):
+		return true
+	return str(PhaseManager.current_state()) == str(PhaseManager.BATTLE)
 
 func handle_primary_input(_pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	pass
@@ -782,6 +789,9 @@ func _get_effective_reload_duration() -> float:
 	return maxf(duration * final_multiplier, 0.0)
 
 func request_weapon_active() -> Dictionary:
+	if not is_attack_phase_allowed():
+		weapon_active_triggered.emit(false, "phase")
+		return {"ok": false, "reason": "phase"}
 	if not is_main_weapon():
 		weapon_active_triggered.emit(false, "not_main")
 		return {"ok": false, "reason": "not_main"}

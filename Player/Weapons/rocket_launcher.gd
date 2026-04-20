@@ -145,5 +145,5 @@ func _sync_explosion_effect_config(projectile_damage: int = damage) -> void:
 		explosion_config.damage = projectile_damage
 		explosion_config.damage_type = Attack.TYPE_FIRE
 		explosion_config.explosion_size = size * explosion_scale
-		if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("modify_explosion_config"):
-			branch_behavior.call("modify_explosion_config", explosion_config)
+		if branch_behavior and is_instance_valid(branch_behavior):
+			branch_behavior.modify_explosion_config(explosion_config)

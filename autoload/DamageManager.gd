@@ -47,6 +47,8 @@ func apply_to_target(target: Node, data: DamageData) -> bool:
 		return false
 	if data == null:
 		return false
+	if _is_player_attack_blocked_by_phase(data):
+		return false
 	if _is_duplicate_damage(target, data):
 		return false
 
@@ -59,6 +61,20 @@ func apply_to_target(target: Node, data: DamageData) -> bool:
 		target.damaged(data.to_attack())
 		return true
 	return false
+
+func _is_player_attack_blocked_by_phase(data: DamageData) -> bool:
+	if data == null:
+		return false
+	if PhaseManager == null or not PhaseManager.has_method("current_state"):
+		return false
+	if str(PhaseManager.current_state()) == str(PhaseManager.BATTLE):
+		return false
+	var source_player: Node = data.source_player
+	if source_player == null and data.source_node != null and is_instance_valid(data.source_node):
+		source_player = resolve_source_player(data.source_node)
+	if source_player == null or not is_instance_valid(source_player):
+		return false
+	return source_player is Player
 
 
 func resolve_source_player(source_node: Node) -> Node:

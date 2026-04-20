@@ -11,9 +11,9 @@ func _ready():
 
 func panel_move_in() -> void:
 	is_interacting = true
-	GlobalVariables.ui.shopping_panel_in()
+	GlobalVariables.ui.merchant_menu_in()
 
 
 func panel_move_out() -> void:
-	GlobalVariables.ui.shopping_panel_out()
+	GlobalVariables.ui.merchant_menu_out()
 	is_interacting = false

@@ -251,6 +251,7 @@ func _run_case(case_data: Dictionary, order_idx: int, total_cases: int) -> void:
 func _prepare_case(case_data: Dictionary) -> void:
 	_cleanup_spawned_targets()
 	_sync_spawn_markers_from_config()
+	_ensure_battle_phase_for_test()
 	_current_weapon_id = str(case_data.get("weapon_id", ""))
 	_current_group_type = str(case_data.get("group_type", "single"))
 	if _player == null or not is_instance_valid(_player):
@@ -259,6 +260,14 @@ func _prepare_case(case_data: Dictionary) -> void:
 	_equip_weapon(_current_weapon_id)
 	_spawn_targets(_current_group_type)
 	_update_aim_target(_current_group_type)
+
+func _ensure_battle_phase_for_test() -> void:
+	if PhaseManager == null or not PhaseManager.has_method("current_state"):
+		return
+	if str(PhaseManager.current_state()) == str(PhaseManager.BATTLE):
+		return
+	if PhaseManager.has_method("enter_battle"):
+		PhaseManager.enter_battle()
 
 func _equip_weapon(weapon_id: String) -> void:
 	if _player == null or not is_instance_valid(_player):

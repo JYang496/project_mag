@@ -39,6 +39,8 @@ func set_level(lv) -> void:
 		branch_behavior.on_level_applied(level)
 
 func request_primary_fire() -> bool:
+	if not is_attack_phase_allowed():
+		return false
 	if is_on_cooldown or _windup_in_progress:
 		return false
 	if not can_fire_with_heat():
@@ -83,8 +85,7 @@ func _on_shoot() -> void:
 	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
 	var damage_type: StringName = Attack.TYPE_PHYSICAL
 	if branch_behavior and is_instance_valid(branch_behavior):
-		if branch_behavior.has_method("get_damage_type_override"):
-			damage_type = Attack.normalize_damage_type(branch_behavior.call("get_damage_type_override"))
+		damage_type = Attack.normalize_damage_type(branch_behavior.get_damage_type_override())
 	spawn_projectile.damage_type = damage_type
 	spawn_projectile.hp = max(1, projectile_hits)
 	spawn_projectile.global_position = global_position

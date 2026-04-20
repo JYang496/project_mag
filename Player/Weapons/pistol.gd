@@ -139,8 +139,8 @@ func _on_shoot() -> void:
 			int(round(float(spawn_projectile.damage) * maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05)))
 		)
 	var damage_type: StringName = Attack.TYPE_PHYSICAL
-	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("get_damage_type_override"):
-		damage_type = Attack.normalize_damage_type(branch_behavior.call("get_damage_type_override"))
+	if branch_behavior and is_instance_valid(branch_behavior):
+		damage_type = Attack.normalize_damage_type(branch_behavior.get_damage_type_override())
 	spawn_projectile.damage_type = damage_type
 	spawn_projectile.hp = projectile_hits
 	spawn_projectile.global_position = global_position

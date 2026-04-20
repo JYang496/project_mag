@@ -104,16 +104,12 @@ func _apply_distance_bonus_damage(target: Node) -> void:
 func _get_branch_pierce_damage_gain_per_hit() -> int:
 	if branch_behavior == null or not is_instance_valid(branch_behavior):
 		return 0
-	if not branch_behavior.has_method("get_pierce_damage_gain_per_hit"):
-		return 0
-	return max(0, int(branch_behavior.call("get_pierce_damage_gain_per_hit")))
+	return max(0, branch_behavior.get_pierce_damage_gain_per_hit())
 
 func _get_branch_max_pierce_damage_stacks() -> int:
 	if branch_behavior == null or not is_instance_valid(branch_behavior):
 		return 0
-	if not branch_behavior.has_method("get_max_pierce_damage_stacks"):
-		return 0
-	return max(0, int(branch_behavior.call("get_max_pierce_damage_stacks")))
+	return max(0, branch_behavior.get_max_pierce_damage_stacks())
 
 func _get_level_data(lv: String) -> Dictionary:
 	if weapon_data.has(lv):

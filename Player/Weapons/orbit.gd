@@ -170,8 +170,8 @@ func _on_shoot() -> void:
 	if branch_behavior and is_instance_valid(branch_behavior):
 		damage_multiplier = maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05)
 	var damage_type: StringName = Attack.TYPE_PHYSICAL
-	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("get_damage_type_override"):
-		damage_type = Attack.normalize_damage_type(branch_behavior.call("get_damage_type_override"))
+	if branch_behavior and is_instance_valid(branch_behavior):
+		damage_type = Attack.normalize_damage_type(branch_behavior.get_damage_type_override())
 	var effective_spin_speed: float = _get_effective_orbit_spin_speed()
 	for n in range(number):
 		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
@@ -196,8 +196,8 @@ func _update_satellite_runtime_state() -> void:
 	if branch_behavior and is_instance_valid(branch_behavior):
 		damage_multiplier = maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05)
 	var damage_type: StringName = Attack.TYPE_PHYSICAL
-	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("get_damage_type_override"):
-		damage_type = Attack.normalize_damage_type(branch_behavior.call("get_damage_type_override"))
+	if branch_behavior and is_instance_valid(branch_behavior):
+		damage_type = Attack.normalize_damage_type(branch_behavior.get_damage_type_override())
 	var effective_spin_speed: float = _get_effective_orbit_spin_speed()
 	for item in satellites:
 		var satellite: Projectile = item as Projectile
@@ -297,8 +297,8 @@ func on_hit_target(target: Node) -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("on_passive_event"):
-		branch_behavior.call("on_passive_event", event_name, detail)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_passive_event(event_name, detail)
 
 func get_satellites() -> Array[Node2D]:
 	var valid_satellites: Array[Node2D] = []
@@ -312,9 +312,7 @@ func get_satellites() -> Array[Node2D]:
 func _get_branch_spin_speed_multiplier() -> float:
 	if branch_behavior == null or not is_instance_valid(branch_behavior):
 		return 1.0
-	if not branch_behavior.has_method("get_orbit_spin_speed_multiplier"):
-		return 1.0
-	return maxf(float(branch_behavior.call("get_orbit_spin_speed_multiplier")), 0.05)
+	return maxf(branch_behavior.get_orbit_spin_speed_multiplier(), 0.05)
 
 func _get_effective_orbit_spin_speed() -> float:
 	var role_multiplier: float = 1.0 if is_main_weapon() else maxf(offhand_spin_speed_multiplier, 0.05)

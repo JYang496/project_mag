@@ -162,15 +162,13 @@ func on_projectile_hit_target(projectile: Projectile, _target: Node) -> void:
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
 	if branch_behavior and is_instance_valid(branch_behavior):
-		if branch_behavior.has_method("on_chainsaw_target_hit"):
-			branch_behavior.call("on_chainsaw_target_hit", target, _last_hit_projectile)
-		else:
-			branch_behavior.on_target_hit(target)
+		branch_behavior.on_chainsaw_target_hit(target, _last_hit_projectile)
+		branch_behavior.on_target_hit(target)
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("on_passive_event"):
-		branch_behavior.call("on_passive_event", event_name, detail)
+	if branch_behavior and is_instance_valid(branch_behavior):
+		branch_behavior.on_passive_event(event_name, detail)
 
 func split_projectile_with_ricochet(source: Projectile) -> void:
 	if source == null or not is_instance_valid(source):

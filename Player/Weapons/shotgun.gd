@@ -114,8 +114,7 @@ func _on_shoot():
 		base_direction = Vector2.UP
 	var shot_count: int = max(1, bullet_count)
 	if branch_behavior and is_instance_valid(branch_behavior):
-		if branch_behavior.has_method("get_projectile_count_override"):
-			shot_count = max(1, int(branch_behavior.call("get_projectile_count_override", shot_count)))
+		shot_count = max(1, branch_behavior.get_projectile_count_override(shot_count))
 	var spread_arc := base_arc
 	if branch_behavior and is_instance_valid(branch_behavior):
 		spread_arc *= maxf(branch_behavior.get_cone_or_spread_multiplier(), 0.05)
@@ -138,8 +137,7 @@ func _on_shoot():
 		damage_multiplier = maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05)
 	var damage_type: StringName = Attack.TYPE_PHYSICAL
 	if branch_behavior and is_instance_valid(branch_behavior):
-		if branch_behavior.has_method("get_damage_type_override"):
-			damage_type = Attack.normalize_damage_type(branch_behavior.call("get_damage_type_override"))
+		damage_type = Attack.normalize_damage_type(branch_behavior.get_damage_type_override())
 	for dir in shot_directions:
 		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 		if spawn_projectile == null:
