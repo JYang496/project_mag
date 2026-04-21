@@ -76,15 +76,15 @@ position = Vector2(-467, -11)
 board_path = NodePath("../Board")
 
 [node name="FriendlySmith" parent="RestArea" unique_id=2017467746 groups=["friendlies"] instance=ExtResource("9_4gves")]
-position = Vector2(131, 141)
+position = Vector2(100, 114)
 motion_mode = 0
 
 [node name="FriendlyMerchant" parent="RestArea" unique_id=1155300954 groups=["friendlies"] instance=ExtResource("7_1eywc")]
-position = Vector2(359, 149)
+position = Vector2(409, 112)
 motion_mode = 0
 
 [node name="Inventory" parent="RestArea" unique_id=156092755 instance=ExtResource("17_1l216")]
-position = Vector2(123, 304)
+position = Vector2(100, 399)
 collision_layer = 1
 collision_mask = 1
 motion_mode = 0
