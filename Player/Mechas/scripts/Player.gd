@@ -402,11 +402,17 @@ func get_weapon_active_cd_ratio() -> float:
 
 func movement(delta):
 	if movement_enabled:
-		var x_mov = Input.get_action_strength("RIGHT") - Input.get_action_strength("LEFT")
-		var y_mov = Input.get_action_strength("DOWN") - Input.get_action_strength("UP")
-		var mov = Vector2(x_mov,y_mov) + extra_direction
-		var speed = (PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul()
-		velocity = mov.normalized() * speed
+		var allow_manual_input := true
+		if PhaseManager != null and PhaseManager.has_method("current_state"):
+			allow_manual_input = str(PhaseManager.current_state()) != str(PhaseManager.PREPARE)
+		if allow_manual_input:
+			var x_mov = Input.get_action_strength("RIGHT") - Input.get_action_strength("LEFT")
+			var y_mov = Input.get_action_strength("DOWN") - Input.get_action_strength("UP")
+			var mov = Vector2(x_mov,y_mov) + extra_direction
+			var speed = (PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul()
+			velocity = mov.normalized() * speed
+		else:
+			velocity = Vector2.ZERO
 	else:
 		velocity = Vector2.ZERO
 	if moveto_enabled:

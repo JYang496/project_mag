@@ -24,6 +24,10 @@ func _on_shopping_area_body_exited(body):
 
 func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_released("INTERACT") and player_in_zone:
+		var ui = GlobalVariables.ui
+		if ui and is_instance_valid(ui) and ui.has_method("is_rest_area_merchant_active"):
+			if bool(ui.call("is_rest_area_merchant_active")):
+				return
 		if not PlayerData.is_interacting:
 			PlayerData.is_interacting = true
 			panel_move_in()

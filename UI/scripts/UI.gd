@@ -4,7 +4,11 @@ class_name UI
 const PANEL_TARGET_SIZE := Vector2(1000, 600)
 const PANEL_MARGIN := Vector2(24, 24)
 const PAUSE_PANEL_TARGET_SIZE := Vector2(400, 600)
+const PRIMARY_MENU_TARGET_SIZE := Vector2(312, 320)
+const PRIMARY_MENU_LEFT_MARGIN := 16.0
 const HUD_MARGIN := 16.0
+const REST_HINT_SIZE := Vector2(220, 28)
+const REST_HINT_OFFSET := Vector2(12, 212)
 const HP_BAR_ANIM_TIME := 0.2
 const HP_BAR_TRANS := Tween.TRANS_SINE
 const HP_BAR_EASE := Tween.EASE_OUT
@@ -28,17 +32,21 @@ const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 @onready var module_panel: Panel = $GUI/ModuleRoot/Panel
 @onready var inventory_panel: Panel = $GUI/InventoryRoot/Panel
 @onready var pause_menu_panel: Panel = $GUI/PauseMenuRoot/PauseMenuPanel
+@onready var merchant_primary_panel: Panel = $GUI/MerchantRoot/Panel
+@onready var smith_primary_panel: Panel = $GUI/SmithRoot/Panel
 var game_over_root: Control
 var game_over_status_label: Label
 var game_over_coin_label: Label
 var game_over_chip_label: Label
 var quest_hint_label: Label
+var rest_area_hover_hint_label: Label
+var _rest_area_hover_hint_anchor_world := Vector2.ZERO
+var _rest_area_hover_hint_use_world_anchor := false
 var item_message_timer: Timer
 
 
 # Character
 @onready var equipped_label = $GUI/CharacterRoot/Equipped
-@onready var weapon_icons = $GUI/CharacterRoot/WeaponIcons
 @onready var weapon_selector: WeaponSelector = $GUI/CharacterRoot/WeaponSelector
 @onready var augments_label = $GUI/CharacterRoot/Augments
 @onready var hp_label_label = $GUI/CharacterRoot/HpLabel
@@ -100,6 +108,8 @@ var branch_select_panel: BranchSelectPanel
 var module_equip_selection_panel: ModuleEquipSelectionPanel
 var route_selection_panel: RouteSelectionPanel
 var reward_selection_panel: RewardSelectionPanel
+var _rest_area_merchant_active := false
+var _rest_area_primary_menu_id: StringName = &""
 var game_over_title_label: Label
 var game_over_new_game_button: Button
 var pause_language_label: Label
@@ -122,6 +132,7 @@ func _ready():
 	_ensure_pause_language_controls()
 	_refresh_localized_static_text()
 	_create_quest_hint()
+	_ensure_rest_area_hover_hint()
 	_connect_viewport_signals()
 	_apply_responsive_layout()
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
@@ -244,6 +255,7 @@ func _physics_process(_delta):
 	_update_weapon_state_label_text()
 	_refresh_hud_text_values()
 	drag_item_icon.set_position(get_viewport().get_mouse_position())
+	_update_rest_area_hover_hint_position()
 func _input(_event) -> void:
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
 		return
@@ -278,23 +290,6 @@ func refresh_border() -> void:
 	PlayerData.player_weapon_list = valid_weapons
 	if list_changed:
 		PlayerData.notify_weapon_list_changed()
-
-	for weapon_index in weapon_icons.get_child_count():
-		if weapon_index < PlayerData.player_weapon_list.size():
-			var weapon = PlayerData.player_weapon_list[weapon_index]
-			if is_instance_valid(weapon) and weapon.has_node("Sprite"):
-				weapon_icons.get_child(weapon_index).texture = weapon.get_node("Sprite").texture
-			else:
-				weapon_icons.get_child(weapon_index).texture = empty_weapon_pic
-		else:
-			weapon_icons.get_child(weapon_index).texture = empty_weapon_pic
-	for i in weapon_icons.get_child_count():
-		var icon = weapon_icons.get_child(i)
-		if i == PlayerData.main_weapon_index:
-			icon.display = true
-		else:
-			icon.display = false
-		icon.update()
 	if weapon_selector and is_instance_valid(weapon_selector):
 		weapon_selector.refresh_slots()
 
@@ -323,6 +318,9 @@ func merchant_menu_out() -> void:
 	if merchant_root:
 		merchant_root.visible = false
 	shopping_panel_out()
+	_rest_area_merchant_active = false
+	if _rest_area_primary_menu_id == &"merchant":
+		_rest_area_primary_menu_id = &""
 
 func merchant_open_buy_panel() -> void:
 	if merchant_root:
@@ -340,6 +338,61 @@ func merchant_back_to_primary_menu() -> void:
 	shopping_panel_out()
 	if merchant_root:
 		merchant_root.visible = true
+
+func open_rest_area_merchant_menu() -> void:
+	_rest_area_merchant_active = true
+	_rest_area_primary_menu_id = &"merchant"
+	PlayerData.is_interacting = true
+	merchant_menu_in()
+
+func close_rest_area_merchant_menu() -> void:
+	if not _rest_area_merchant_active:
+		return
+	merchant_menu_out()
+	PlayerData.is_interacting = false
+
+func is_rest_area_merchant_active() -> bool:
+	return _rest_area_merchant_active
+
+func is_rest_area_zone_navigation_allowed() -> bool:
+	if not _rest_area_merchant_active:
+		return true
+	if _rest_area_primary_menu_id == &"merchant" and merchant_root and merchant_root.visible:
+		return true
+	if _rest_area_primary_menu_id == &"smith" and smith_root and smith_root.visible:
+		return true
+	return false
+
+func handle_rest_area_right_cancel() -> bool:
+	if not _rest_area_merchant_active:
+		return false
+	# Secondary menu should step back to primary menu first.
+	if _rest_area_primary_menu_id == &"merchant":
+		if shopping_rootv_2 and shopping_rootv_2.visible:
+			merchant_back_to_primary_menu()
+			return true
+	elif _rest_area_primary_menu_id == &"smith":
+		if (upgrade_rootv_2 and upgrade_rootv_2.visible) or (gear_fuse_root and gear_fuse_root.visible):
+			smith_back_to_primary_menu()
+			return true
+	return false
+
+func open_rest_area_smith_menu() -> void:
+	_rest_area_merchant_active = true
+	_rest_area_primary_menu_id = &"smith"
+	PlayerData.is_interacting = true
+	smith_menu_in()
+
+func close_rest_area_primary_menu() -> void:
+	if not _rest_area_merchant_active:
+		return
+	if _rest_area_primary_menu_id == &"smith":
+		smith_menu_out()
+	else:
+		merchant_menu_out()
+	PlayerData.is_interacting = false
+	_rest_area_merchant_active = false
+	_rest_area_primary_menu_id = &""
 
 func reset_shopping_refresh_cost() -> void:
 	reset_cost.emit()
@@ -629,8 +682,11 @@ func _apply_responsive_layout() -> void:
 	_fit_center_panel(gear_fuse_panel, viewport_size, PANEL_TARGET_SIZE)
 	_fit_center_panel(module_panel, viewport_size, PANEL_TARGET_SIZE)
 	_fit_center_panel(inventory_panel, viewport_size, PANEL_TARGET_SIZE)
+	_fit_left_panel(merchant_primary_panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
+	_fit_left_panel(smith_primary_panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
 	_fit_pause_layout(viewport_size)
 	_layout_hud(viewport_size)
+	_layout_rest_area_hover_hint(viewport_size)
 	_layout_quest_hint(viewport_size)
 
 func _fit_center_panel(panel: Control, viewport_size: Vector2, target_size: Vector2) -> void:
@@ -642,6 +698,15 @@ func _fit_center_panel(panel: Control, viewport_size: Vector2, target_size: Vect
 	panel.size = Vector2(maxf(width, 0.0), maxf(height, 0.0))
 	panel.position = (viewport_size - panel.size) * 0.5
 
+func _fit_left_panel(panel: Control, viewport_size: Vector2, target_size: Vector2, left_margin: float) -> void:
+	if panel == null:
+		return
+	var available_size: Vector2 = viewport_size - PANEL_MARGIN * 2.0
+	var width: float = minf(target_size.x, available_size.x)
+	var height: float = minf(target_size.y, available_size.y)
+	panel.size = Vector2(maxf(width, 0.0), maxf(height, 0.0))
+	panel.position = Vector2(maxf(left_margin, PANEL_MARGIN.x), (viewport_size.y - panel.size.y) * 0.5)
+
 func _fit_pause_layout(viewport_size: Vector2) -> void:
 	pause_menu_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	pause_menu_root.offset_left = 0
@@ -652,9 +717,8 @@ func _fit_pause_layout(viewport_size: Vector2) -> void:
 
 func _layout_hud(viewport_size: Vector2) -> void:
 	equipped_label.position = Vector2(HUD_MARGIN, HUD_MARGIN)
-	weapon_icons.position = Vector2(HUD_MARGIN + 82.0, HUD_MARGIN + 6.0)
 	if weapon_selector and is_instance_valid(weapon_selector):
-		weapon_selector.set_layout_origin(Vector2(HUD_MARGIN + 82.0, HUD_MARGIN + 6.0))
+		weapon_selector.set_layout_origin(Vector2(HUD_MARGIN + 12.0, HUD_MARGIN + 6.0))
 	hp_label_label.position = Vector2(HUD_MARGIN, viewport_size.y - 120.0)
 	if heat_label:
 		heat_label.position = Vector2(HUD_MARGIN, viewport_size.y - 96.0)
@@ -678,6 +742,80 @@ func _create_quest_hint() -> void:
 	quest_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	quest_hint_label.text = ""
 	$GUI.add_child(quest_hint_label)
+
+func _ensure_rest_area_hover_hint() -> void:
+	if rest_area_hover_hint_label != null:
+		return
+	rest_area_hover_hint_label = Label.new()
+	rest_area_hover_hint_label.name = "RestAreaHoverHint"
+	rest_area_hover_hint_label.visible = false
+	rest_area_hover_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rest_area_hover_hint_label.z_index = 50
+	rest_area_hover_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	rest_area_hover_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	rest_area_hover_hint_label.size = REST_HINT_SIZE
+	$GUI.add_child(rest_area_hover_hint_label)
+
+func set_rest_area_hover_hint(text: String) -> void:
+	_ensure_rest_area_hover_hint()
+	if rest_area_hover_hint_label == null:
+		return
+	rest_area_hover_hint_label.text = text
+	rest_area_hover_hint_label.visible = text.strip_edges() != ""
+	_rest_area_hover_hint_use_world_anchor = false
+	var viewport := get_viewport()
+	if viewport:
+		_layout_rest_area_hover_hint(viewport.get_visible_rect().size)
+
+func set_rest_area_hover_hint_at_world(text: String, world_pos: Vector2) -> void:
+	_ensure_rest_area_hover_hint()
+	if rest_area_hover_hint_label == null:
+		return
+	rest_area_hover_hint_label.text = text
+	rest_area_hover_hint_label.visible = text.strip_edges() != ""
+	_rest_area_hover_hint_anchor_world = world_pos
+	_rest_area_hover_hint_use_world_anchor = rest_area_hover_hint_label.visible
+	_update_rest_area_hover_hint_position()
+
+func clear_rest_area_hover_hint() -> void:
+	if rest_area_hover_hint_label == null:
+		return
+	rest_area_hover_hint_label.text = ""
+	rest_area_hover_hint_label.visible = false
+	_rest_area_hover_hint_use_world_anchor = false
+
+func _layout_rest_area_hover_hint(viewport_size: Vector2) -> void:
+	if rest_area_hover_hint_label == null:
+		return
+	rest_area_hover_hint_label.size = REST_HINT_SIZE
+	var target := Vector2(HUD_MARGIN, HUD_MARGIN) + REST_HINT_OFFSET
+	var max_x := maxf(0.0, viewport_size.x - rest_area_hover_hint_label.size.x - 8.0)
+	var max_y := maxf(0.0, viewport_size.y - rest_area_hover_hint_label.size.y - 8.0)
+	rest_area_hover_hint_label.position = Vector2(
+		clampf(target.x, 8.0, max_x),
+		clampf(target.y, 8.0, max_y)
+	)
+
+func _update_rest_area_hover_hint_position() -> void:
+	if rest_area_hover_hint_label == null or not rest_area_hover_hint_label.visible:
+		return
+	if not _rest_area_hover_hint_use_world_anchor:
+		return
+	var viewport := get_viewport()
+	if viewport == null:
+		return
+	var viewport_size := viewport.get_visible_rect().size
+	var screen_pos := viewport.get_canvas_transform() * _rest_area_hover_hint_anchor_world
+	var target := Vector2(
+		screen_pos.x - rest_area_hover_hint_label.size.x * 0.5,
+		screen_pos.y - rest_area_hover_hint_label.size.y - 10.0
+	)
+	var max_x := maxf(0.0, viewport_size.x - rest_area_hover_hint_label.size.x - 8.0)
+	var max_y := maxf(0.0, viewport_size.y - rest_area_hover_hint_label.size.y - 8.0)
+	rest_area_hover_hint_label.position = Vector2(
+		clampf(target.x, 8.0, max_x),
+		clampf(target.y, 8.0, max_y)
+	)
 
 func _layout_quest_hint(viewport_size: Vector2) -> void:
 	if quest_hint_label == null:

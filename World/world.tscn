@@ -1,15 +1,12 @@
 [gd_scene format=3 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Script" uid="uid://ytgqpjri2ckf" path="res://Board/Cells/cell_profile.gd" id="4_lo5ox"]
-[ext_resource type="PackedScene" uid="uid://bhk4geigmu4ah" path="res://Npc/friendly/scenes/friendly_merchant.tscn" id="7_1eywc"]
-[ext_resource type="PackedScene" uid="uid://d0mgs34dodkqu" path="res://Npc/friendly/scenes/friendly_smith.tscn" id="9_4gves"]
 [ext_resource type="PackedScene" uid="uid://cdpdxvviop3ok" path="res://UI/scenes/UI.tscn" id="9_h4135"]
 [ext_resource type="PackedScene" uid="uid://dkelpi3n3ysnh" path="res://Utility/enemy_spawner.tscn" id="12_dyxss"]
 [ext_resource type="Script" uid="uid://dabf8pyg4rbvt" path="res://World/board_cell_generator.gd" id="13_mj5tj"]
 [ext_resource type="Script" uid="uid://dxdn6jvfdd656" path="res://World/player_spawner.gd" id="14_26uyv"]
 [ext_resource type="PackedScene" uid="uid://d382rsvvo0j8d" path="res://Board/Cells/cell.tscn" id="14_dqu5g"]
 [ext_resource type="PackedScene" uid="uid://cat80ev8yltf7" path="res://World/rest_area.tscn" id="15_6p52w"]
-[ext_resource type="PackedScene" uid="uid://dqh1mc3r76bb1" path="res://Npc/friendly/scenes/inventory.tscn" id="17_1l216"]
 [ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://Utility/reward_manager.tscn" id="22_n13dc"]
 
 [sub_resource type="Resource" id="Resource_h2aik"]
@@ -75,20 +72,6 @@ rest_area_path = NodePath("../../RestArea")
 position = Vector2(-467, -11)
 board_path = NodePath("../Board")
 
-[node name="FriendlySmith" parent="RestArea" unique_id=2017467746 groups=["friendlies"] instance=ExtResource("9_4gves")]
-position = Vector2(100, 114)
-motion_mode = 0
-
-[node name="FriendlyMerchant" parent="RestArea" unique_id=1155300954 groups=["friendlies"] instance=ExtResource("7_1eywc")]
-position = Vector2(409, 112)
-motion_mode = 0
-
-[node name="Inventory" parent="RestArea" unique_id=156092755 instance=ExtResource("17_1l216")]
-position = Vector2(100, 399)
-collision_layer = 1
-collision_mask = 1
-motion_mode = 0
-
 [node name="EnemySpawner" parent="." unique_id=236369448 instance=ExtResource("12_dyxss")]
 
 [node name="TopLeft" parent="EnemySpawner" index="1"]
@@ -99,4 +82,5 @@ position = Vector2(548, 1002)
 
 [node name="RewardManager" parent="." unique_id=113647262 instance=ExtResource("22_n13dc")]
 
+[editable path="RestArea"]
 [editable path="EnemySpawner"]

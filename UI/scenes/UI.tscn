@@ -5,7 +5,6 @@
 [ext_resource type="Texture2D" uid="uid://cvg2x8vpjf05m" path="res://asset/images/ui/status frame.png" id="3_dqn0w"]
 [ext_resource type="PackedScene" uid="uid://cms57yqrnn7ga" path="res://UI/scenes/inv_slot.tscn" id="3_hcnsl"]
 [ext_resource type="PackedScene" uid="uid://mnl6smha3sa4" path="res://UI/scenes/module_slot.tscn" id="3_vf0d3"]
-[ext_resource type="Script" uid="uid://byipui1lnlbe0" path="res://UI/scripts/draw_border.gd" id="3_xpg6s"]
 [ext_resource type="Script" uid="uid://cknghpaqwqur0" path="res://UI/scripts/shop_refresh_button.gd" id="5_qhxh2"]
 [ext_resource type="Script" uid="uid://xk8jc704kfv5" path="res://UI/scripts/equipment_slot_module.gd" id="5_vb3bm"]
 [ext_resource type="Script" uid="uid://cup1vm23a0gdf" path="res://UI/scripts/inv_slot_shop.gd" id="6_017wa"]
@@ -26,15 +25,15 @@
 [ext_resource type="PackedScene" uid="uid://bus2yd5hbxmcp" path="res://UI/scenes/gf_item.tscn" id="16_rjxvo"]
 [ext_resource type="Script" uid="uid://cc2eo3mf0uuh8" path="res://UI/scripts/gf_confirm_btn.gd" id="16_yflil"]
 [ext_resource type="Script" uid="uid://c5738xwcafeh3" path="res://UI/scripts/to_upgrade.gd" id="18_uk6e0"]
-[ext_resource type="Script" path="res://UI/scripts/weapon_selector.gd" id="19_wsel"]
-[ext_resource type="Texture2D" path="res://asset/images/ui/mainhand.png" id="20_mainh"]
-[ext_resource type="Texture2D" path="res://asset/images/ui/offhand.png" id="21_offh"]
-[ext_resource type="Script" path="res://UI/scripts/smith_back_button.gd" id="22_sback"]
-[ext_resource type="Script" path="res://UI/scripts/open_smith_upgrade_button.gd" id="23_supg"]
-[ext_resource type="Script" path="res://UI/scripts/open_smith_fuse_button.gd" id="24_sgf"]
-[ext_resource type="Script" path="res://UI/scripts/open_merchant_buy_button.gd" id="25_mbuy"]
-[ext_resource type="Script" path="res://UI/scripts/open_merchant_sell_button.gd" id="26_msell"]
-[ext_resource type="Script" path="res://UI/scripts/merchant_back_button.gd" id="27_mback"]
+[ext_resource type="Script" uid="uid://d0l44sn57n767" path="res://UI/scripts/weapon_selector.gd" id="19_wsel"]
+[ext_resource type="Texture2D" uid="uid://btuvlcm8esh3v" path="res://asset/images/ui/mainhand.png" id="20_mainh"]
+[ext_resource type="Texture2D" uid="uid://6nk1oq1063xs" path="res://asset/images/ui/offhand.png" id="21_offh"]
+[ext_resource type="Script" uid="uid://dnn7vyvb81tph" path="res://UI/scripts/smith_back_button.gd" id="22_sback"]
+[ext_resource type="Script" uid="uid://cqd71mpyml6tm" path="res://UI/scripts/open_smith_upgrade_button.gd" id="23_supg"]
+[ext_resource type="Script" uid="uid://bk3c4kqyuahj" path="res://UI/scripts/open_smith_fuse_button.gd" id="24_sgf"]
+[ext_resource type="Script" uid="uid://bvpny8o1qf1q1" path="res://UI/scripts/open_merchant_buy_button.gd" id="25_mbuy"]
+[ext_resource type="Script" uid="uid://b0nanidi3wofh" path="res://UI/scripts/open_merchant_sell_button.gd" id="26_msell"]
+[ext_resource type="Script" uid="uid://dcdn7aulipk8y" path="res://UI/scripts/merchant_back_button.gd" id="27_mback"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bar_bg"]
 bg_color = Color(0.08, 0.08, 0.08, 0.82)
@@ -71,66 +70,39 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Equipped" type="Label" parent="GUI/CharacterRoot" unique_id=321428590]
+visible = false
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
 text = "Weapons"
 
-[node name="WeaponIcons" type="HBoxContainer" parent="GUI/CharacterRoot" unique_id=1104267185]
-visible = false
-layout_mode = 0
-offset_left = 82.0
-offset_top = 6.0
-offset_right = 354.0
-offset_bottom = 46.0
-
-[node name="WeaponIcon1" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons" unique_id=249680766]
-layout_mode = 2
-expand_mode = 2
-script = ExtResource("3_xpg6s")
-
-[node name="WeaponIcon2" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons" unique_id=1922153951]
-layout_mode = 2
-expand_mode = 2
-script = ExtResource("3_xpg6s")
-
-[node name="WeaponIcon3" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons" unique_id=8158167]
-layout_mode = 2
-expand_mode = 2
-script = ExtResource("3_xpg6s")
-
-[node name="WeaponIcon4" type="TextureRect" parent="GUI/CharacterRoot/WeaponIcons" unique_id=1581305221]
-layout_mode = 2
-expand_mode = 2
-script = ExtResource("3_xpg6s")
-
-[node name="WeaponSelector" type="Control" parent="GUI/CharacterRoot"]
-layout_mode = 0
-offset_left = 82.0
-offset_top = 6.0
-offset_right = 282.0
-offset_bottom = 206.0
+[node name="WeaponSelector" type="Control" parent="GUI/CharacterRoot" unique_id=673123269]
+anchors_preset = 0
+offset_left = 6.0
+offset_top = 5.0
+offset_right = 206.0
+offset_bottom = 205.0
 script = ExtResource("19_wsel")
 
-[node name="Slot0" type="Control" parent="GUI/CharacterRoot/WeaponSelector"]
-layout_mode = 0
+[node name="Slot0" type="Control" parent="GUI/CharacterRoot/WeaponSelector" unique_id=315579612]
+anchors_preset = 0
 offset_left = 56.0
-offset_top = 120.0
+offset_top = 108.0
 offset_right = 136.0
-offset_bottom = 200.0
+offset_bottom = 188.0
 
-[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot0"]
+[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot0" unique_id=417292939]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-expand_mode = 1
-stretch_mode = 5
 texture = ExtResource("20_mainh")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot0"]
+[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot0" unique_id=239398316]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -146,25 +118,25 @@ grow_vertical = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Slot1" type="Control" parent="GUI/CharacterRoot/WeaponSelector"]
-layout_mode = 0
+[node name="Slot1" type="Control" parent="GUI/CharacterRoot/WeaponSelector" unique_id=568142288]
+anchors_preset = 0
 offset_left = 56.0
-offset_top = 8.0
+offset_top = 20.0
 offset_right = 136.0
-offset_bottom = 88.0
+offset_bottom = 100.0
 
-[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot1"]
+[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot1" unique_id=591956055]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+texture = ExtResource("21_offh")
 expand_mode = 1
 stretch_mode = 5
-texture = ExtResource("21_offh")
 
-[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot1"]
+[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot1" unique_id=1013111834]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -180,25 +152,25 @@ grow_vertical = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Slot2" type="Control" parent="GUI/CharacterRoot/WeaponSelector"]
-layout_mode = 0
-offset_left = 0.0
+[node name="Slot2" type="Control" parent="GUI/CharacterRoot/WeaponSelector" unique_id=1763285441]
+anchors_preset = 0
+offset_left = 12.0
 offset_top = 64.0
-offset_right = 80.0
+offset_right = 92.0
 offset_bottom = 144.0
 
-[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot2"]
+[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot2" unique_id=2053267405]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+texture = ExtResource("21_offh")
 expand_mode = 1
 stretch_mode = 5
-texture = ExtResource("21_offh")
 
-[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot2"]
+[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot2" unique_id=1527058606]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -214,25 +186,25 @@ grow_vertical = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Slot3" type="Control" parent="GUI/CharacterRoot/WeaponSelector"]
-layout_mode = 0
-offset_left = 112.0
+[node name="Slot3" type="Control" parent="GUI/CharacterRoot/WeaponSelector" unique_id=2127302516]
+anchors_preset = 0
+offset_left = 100.0
 offset_top = 64.0
-offset_right = 192.0
+offset_right = 180.0
 offset_bottom = 144.0
 
-[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot3"]
+[node name="Background" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot3" unique_id=1800182055]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+texture = ExtResource("21_offh")
 expand_mode = 1
 stretch_mode = 5
-texture = ExtResource("21_offh")
 
-[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot3"]
+[node name="Icon" type="TextureRect" parent="GUI/CharacterRoot/WeaponSelector/Slot3" unique_id=1196682410]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -481,7 +453,7 @@ offset_bottom = 76.0
 text = "Confirm"
 script = ExtResource("11_6q2ik")
 
-[node name="BackToMerchantMenu" type="Button" parent="GUI/ShoppingRootv2/Panel"]
+[node name="BackToMerchantMenu" type="Button" parent="GUI/ShoppingRootv2/Panel" unique_id=925990632]
 layout_mode = 0
 offset_left = 759.0
 offset_top = 45.0
@@ -490,134 +462,140 @@ offset_bottom = 76.0
 text = "Back"
 script = ExtResource("27_mback")
 
-[node name="MerchantRoot" type="Control" parent="GUI"]
+[node name="MerchantRoot" type="Control" parent="GUI" unique_id=1114808495]
 visible = false
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="Panel" type="Panel" parent="GUI/MerchantRoot"]
-custom_minimum_size = Vector2(520, 320)
+[node name="Panel" type="Panel" parent="GUI/MerchantRoot" unique_id=1490538187]
+custom_minimum_size = Vector2(312, 320)
 layout_mode = 0
 offset_left = 316.0
 offset_top = 170.0
 offset_right = 836.0
 offset_bottom = 490.0
 
-[node name="Title" type="Label" parent="GUI/MerchantRoot/Panel"]
+[node name="Title" type="Label" parent="GUI/MerchantRoot/Panel" unique_id=618611466]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
+offset_left = 28.0
 offset_top = 16.0
-offset_bottom = 52.0
+offset_right = -28.0
+offset_bottom = 44.0
 grow_horizontal = 2
 text = "Merchant Menu"
-horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SubTitle" type="Label" parent="GUI/MerchantRoot/Panel"]
+[node name="SubTitle" type="Label" parent="GUI/MerchantRoot/Panel" unique_id=488877880]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 56.0
-offset_bottom = 84.0
+offset_left = 28.0
+offset_top = 48.0
+offset_right = -28.0
+offset_bottom = 76.0
 grow_horizontal = 2
 text = "Choose Buy or Sell"
-horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="OpenBuyButton" type="Button" parent="GUI/MerchantRoot/Panel"]
+[node name="OpenBuyButton" type="Button" parent="GUI/MerchantRoot/Panel" unique_id=1278877826]
 layout_mode = 0
-offset_left = 160.0
-offset_top = 120.0
-offset_right = 360.0
-offset_bottom = 166.0
+offset_left = 28.0
+offset_top = 108.0
+offset_right = 248.0
+offset_bottom = 154.0
 text = "Buy"
 script = ExtResource("25_mbuy")
 
-[node name="OpenSellButton" type="Button" parent="GUI/MerchantRoot/Panel"]
+[node name="OpenSellButton" type="Button" parent="GUI/MerchantRoot/Panel" unique_id=1047985539]
 layout_mode = 0
-offset_left = 160.0
-offset_top = 182.0
-offset_right = 360.0
-offset_bottom = 228.0
+offset_left = 28.0
+offset_top = 166.0
+offset_right = 248.0
+offset_bottom = 212.0
 text = "Sell"
 script = ExtResource("26_msell")
 
-[node name="CloseHint" type="Label" parent="GUI/MerchantRoot/Panel"]
+[node name="CloseHint" type="Label" parent="GUI/MerchantRoot/Panel" unique_id=1734998566]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
+offset_left = 28.0
 offset_top = 266.0
+offset_right = -28.0
 offset_bottom = 294.0
 grow_horizontal = 2
 text = "Press Interact to close"
-horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SmithRoot" type="Control" parent="GUI"]
+[node name="SmithRoot" type="Control" parent="GUI" unique_id=54050891]
 visible = false
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="Panel" type="Panel" parent="GUI/SmithRoot"]
-custom_minimum_size = Vector2(520, 320)
+[node name="Panel" type="Panel" parent="GUI/SmithRoot" unique_id=274877522]
+custom_minimum_size = Vector2(312, 320)
 layout_mode = 0
 offset_left = 316.0
 offset_top = 170.0
 offset_right = 836.0
 offset_bottom = 490.0
 
-[node name="Title" type="Label" parent="GUI/SmithRoot/Panel"]
+[node name="Title" type="Label" parent="GUI/SmithRoot/Panel" unique_id=1996948769]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
+offset_left = 28.0
 offset_top = 16.0
-offset_bottom = 52.0
+offset_right = -28.0
+offset_bottom = 44.0
 grow_horizontal = 2
 text = "Smith Menu"
-horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SubTitle" type="Label" parent="GUI/SmithRoot/Panel"]
+[node name="SubTitle" type="Label" parent="GUI/SmithRoot/Panel" unique_id=2019963235]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 56.0
-offset_bottom = 84.0
+offset_left = 28.0
+offset_top = 48.0
+offset_right = -28.0
+offset_bottom = 76.0
 grow_horizontal = 2
 text = "Choose an operation"
-horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="OpenUpgradeButton" type="Button" parent="GUI/SmithRoot/Panel"]
+[node name="OpenUpgradeButton" type="Button" parent="GUI/SmithRoot/Panel" unique_id=1916617296]
 layout_mode = 0
-offset_left = 160.0
-offset_top = 120.0
-offset_right = 360.0
-offset_bottom = 166.0
+offset_left = 28.0
+offset_top = 108.0
+offset_right = 248.0
+offset_bottom = 154.0
 text = "Upgrade"
 script = ExtResource("23_supg")
 
-[node name="OpenFuseButton" type="Button" parent="GUI/SmithRoot/Panel"]
+[node name="OpenFuseButton" type="Button" parent="GUI/SmithRoot/Panel" unique_id=1126674546]
 layout_mode = 0
-offset_left = 160.0
-offset_top = 182.0
-offset_right = 360.0
-offset_bottom = 228.0
+offset_left = 28.0
+offset_top = 166.0
+offset_right = 248.0
+offset_bottom = 212.0
 text = "Gear Fuse"
 script = ExtResource("24_sgf")
 
-[node name="CloseHint" type="Label" parent="GUI/SmithRoot/Panel"]
+[node name="CloseHint" type="Label" parent="GUI/SmithRoot/Panel" unique_id=192820732]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
+offset_left = 28.0
 offset_top = 266.0
+offset_right = -28.0
 offset_bottom = 294.0
 grow_horizontal = 2
 text = "Press Interact to close"
-horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="UpgradeRootv2" type="Control" parent="GUI" unique_id=113070022]
@@ -742,7 +720,7 @@ offset_bottom = 64.0002
 text = "To Gear Fuse"
 script = ExtResource("12_t31p1")
 
-[node name="BackToSmithMenu" type="Button" parent="GUI/UpgradeRootv2/Panel"]
+[node name="BackToSmithMenu" type="Button" parent="GUI/UpgradeRootv2/Panel" unique_id=1836082639]
 layout_mode = 0
 offset_left = 752.0
 offset_top = 33.0002
@@ -869,7 +847,7 @@ offset_bottom = 44.0
 text = "Inventory / Bag"
 script = ExtResource("15_xtxff")
 
-[node name="BackToSmithMenu" type="Button" parent="GUI/GearFuseRoot/Panel"]
+[node name="BackToSmithMenu" type="Button" parent="GUI/GearFuseRoot/Panel" unique_id=468357215]
 layout_mode = 0
 offset_left = 752.0
 offset_top = 31.0

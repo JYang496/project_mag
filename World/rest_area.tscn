@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://yxbtuupv8h0y" path="res://World/rest_area.gd" id="1_5q1gc"]
 [ext_resource type="Texture2D" uid="uid://d2ssct86rwnpo" path="res://asset/images/cells/default.png" id="2_tgu0a"]
-[ext_resource type="PackedScene" path="res://World/start_battle_button.tscn" id="3_y7v4g"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hnton"]
 
@@ -25,6 +24,3 @@ collision_mask = 16
 position = Vector2(256, 256)
 scale = Vector2(25.5, 25.5)
 shape = SubResource("RectangleShape2D_hnton")
-
-[node name="StartBattleButton" parent="." unique_id=1738966985 instance=ExtResource("3_y7v4g")]
-position = Vector2(257, 255)
