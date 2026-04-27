@@ -6,31 +6,36 @@ const RESOLUTION_PRESETS: Array[Vector2i] = [
 	Vector2i(1920, 1080),
 	Vector2i(2560, 1440),
 ]
-const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
+const START_UI_THEME := preload("res://UI/themes/start_menu_theme.tres")
 
 @onready var gui_root: Control = $CanvasLayer/GUI
 @onready var background: ColorRect = $CanvasLayer/GUI/Background
 @onready var margin_root: MarginContainer = $CanvasLayer/GUI/Background/HBoxMargin
 @onready var title_label: Label = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/Title
 @onready var start_button: Button = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Start
-@onready var new_game_button: Button = $"CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game"
-@onready var hp_safety_button: Button = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/HpSafetyToggle
+@onready var new_game_button: Button = get_node_or_null("CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game")
+@onready var hp_safety_button: Button = get_node_or_null("CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/HpSafetyToggle")
 @onready var resolution_label: Label = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/ResolutionLabel
-@onready var mechas_label: Label = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/CharTitile
+@onready var mechas_label: Label = get_node_or_null("CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/CharTitile")
 @onready var menu_vbox: VBoxContainer = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer
 @onready var resolution_option: OptionButton = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/ResolutionOption
+@onready var mecha_container: Control = get_node_or_null("CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer")
 var language_label: Label
 var language_option: OptionButton
+var _start_hover_tween: Tween
 
 func _ready() -> void:
-	gui_root.theme = GLOBAL_UI_THEME
+	gui_root.theme = START_UI_THEME
 	_set_full_rect(gui_root)
 	_set_full_rect(background)
 	_set_full_rect(margin_root)
 	_ensure_language_option()
+	_configure_visible_controls()
 	_apply_localized_text()
 	_populate_resolution_options()
 	_populate_language_options()
+	_wire_start_button_hover_animation()
+	_play_intro_animation()
 	if not get_viewport().is_connected("size_changed", Callable(self, "_on_viewport_size_changed")):
 		get_viewport().connect("size_changed", Callable(self, "_on_viewport_size_changed"))
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
@@ -78,6 +83,23 @@ func _ensure_language_option() -> void:
 		menu_vbox.add_child(language_option)
 	if not language_option.is_connected("item_selected", Callable(self, "_on_language_option_item_selected")):
 		language_option.connect("item_selected", Callable(self, "_on_language_option_item_selected"))
+	var resolution_index := resolution_option.get_index()
+	if resolution_index >= 0:
+		menu_vbox.move_child(language_label, resolution_index + 1)
+		menu_vbox.move_child(language_option, resolution_index + 2)
+
+func _configure_visible_controls() -> void:
+	if new_game_button:
+		new_game_button.visible = false
+		new_game_button.disabled = true
+		new_game_button.focus_mode = Control.FOCUS_NONE
+	if hp_safety_button:
+		hp_safety_button.visible = false
+		hp_safety_button.disabled = true
+		hp_safety_button.focus_mode = Control.FOCUS_NONE
+	if mecha_container:
+		mecha_container.visible = false
+		mecha_container.process_mode = Node.PROCESS_MODE_DISABLED
 
 func _populate_language_options() -> void:
 	if language_option == null:
@@ -110,10 +132,12 @@ func _on_language_changed(_locale: String) -> void:
 
 func _apply_localized_text() -> void:
 	title_label.text = LocalizationManager.tr_key("ui.start.title", title_label.text)
-	start_button.text = LocalizationManager.tr_key("ui.start.continue", start_button.text)
-	new_game_button.text = LocalizationManager.tr_key("ui.start.new_game", new_game_button.text)
+	start_button.text = LocalizationManager.tr_key("ui.start.start_game", "Start Game")
+	if new_game_button:
+		new_game_button.text = LocalizationManager.tr_key("ui.start.new_game", new_game_button.text)
 	resolution_label.text = LocalizationManager.tr_key("ui.start.resolution", resolution_label.text)
-	mechas_label.text = LocalizationManager.tr_key("ui.start.mechas", mechas_label.text)
+	if mechas_label:
+		mechas_label.text = LocalizationManager.tr_key("ui.start.mechas", mechas_label.text)
 	if language_label:
 		language_label.text = LocalizationManager.tr_key("ui.start.language", "Language")
 	if hp_safety_button and hp_safety_button.has_method("_update_text"):
@@ -135,3 +159,38 @@ func _on_viewport_size_changed() -> void:
 	_set_full_rect(gui_root)
 	_set_full_rect(background)
 	_set_full_rect(margin_root)
+
+func _wire_start_button_hover_animation() -> void:
+	if not start_button:
+		return
+	start_button.pivot_offset = start_button.size * 0.5
+	if not start_button.is_connected("resized", Callable(self, "_on_start_button_resized")):
+		start_button.connect("resized", Callable(self, "_on_start_button_resized"))
+	if not start_button.is_connected("mouse_entered", Callable(self, "_on_start_button_mouse_entered")):
+		start_button.connect("mouse_entered", Callable(self, "_on_start_button_mouse_entered"))
+	if not start_button.is_connected("mouse_exited", Callable(self, "_on_start_button_mouse_exited")):
+		start_button.connect("mouse_exited", Callable(self, "_on_start_button_mouse_exited"))
+
+func _play_intro_animation() -> void:
+	gui_root.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	var intro := create_tween()
+	intro.set_ease(Tween.EASE_OUT)
+	intro.set_trans(Tween.TRANS_QUAD)
+	intro.tween_property(gui_root, "modulate:a", 1.0, 0.25)
+
+func _on_start_button_resized() -> void:
+	start_button.pivot_offset = start_button.size * 0.5
+
+func _on_start_button_mouse_entered() -> void:
+	_animate_start_button_scale(Vector2(1.04, 1.04))
+
+func _on_start_button_mouse_exited() -> void:
+	_animate_start_button_scale(Vector2.ONE)
+
+func _animate_start_button_scale(target_scale: Vector2) -> void:
+	if _start_hover_tween:
+		_start_hover_tween.kill()
+	_start_hover_tween = create_tween()
+	_start_hover_tween.set_ease(Tween.EASE_OUT)
+	_start_hover_tween.set_trans(Tween.TRANS_QUAD)
+	_start_hover_tween.tween_property(start_button, "scale", target_scale, 0.12)

@@ -9,6 +9,7 @@ var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
 @onready var equppied_augments = $EquippedAugments
 @onready var mecha_sprite = $MechaSprite
+@onready var mecha_move_sprite: AnimatedSprite2D = $MechaMoveSprite
 @onready var player_camera: Camera2D = $Camera2D
 @onready var collect_area = get_node("%CollectArea")
 @onready var grab_area: Area2D = $GrabArea
@@ -27,6 +28,12 @@ var moveto_dest := Vector2.ZERO
 var distance_mouse_player = 0
 var status_list = {}
 const TARGET_MECHA_SIZE = Vector2(96,96)
+const MOVE_ANIMATION_TOP: StringName = &"move_top"
+const MOVE_ANIMATION_BOTTOM: StringName = &"move_bottom"
+const MOVE_ANIMATION_FPS: float = 12.0
+const MOVE_BACK_FRAME_PATH_FMT: String = "res://asset/images/characters/move_b/move_back_%03d.png"
+const MOVE_FORWARD_FRAME_PATH_FMT: String = "res://asset/images/characters/move_f/move_forward_%03d.png"
+const MOVE_FRAME_COUNT: int = 21
 const MECHA_DIRECTION_TEXTURES := {
 	"top_left": preload("res://asset/images/characters/2b.png"),
 	"bottom_left": preload("res://asset/images/characters/2f.png"),
@@ -84,6 +91,14 @@ var _shared_heat_signature: String = ""
 var _incoming_damage_pipeline: DamagePipeline
 var _incoming_damage_profile: DamageProfile
 var _passive_time_tick_accum: float = 0.0
+enum MechaVisualState {
+	IDLE,
+	MOVING
+}
+var _mecha_visual_state: int = MechaVisualState.IDLE
+var _last_mecha_facing_direction: Vector2 = Vector2(-1.0, 1.0)
+var _current_move_animation: StringName = StringName()
+var _last_visual_position: Vector2 = Vector2.ZERO
 @export var camera_zoom_lerp_speed: float = 6.0
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 @export var player_max_energy: float = 100.0
@@ -112,6 +127,8 @@ func _ready():
 	_player_energy = player_max_energy
 	mecha_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_resize_mecha_sprite()
+	_setup_mecha_move_sprite()
+	_last_visual_position = global_position
 	_cache_camera_zoom_base()
 	_camera_zoom_target = _base_camera_zoom
 	_cache_detect_shape_base()
@@ -175,29 +192,49 @@ func _setup_default_active_skill() -> void:
 	active_skill_holder.add_child(skill_instance)
 
 func create_weapon(item_id, level := 1):
-	var available_slot = 0
-	
-	# Create a new weapon when assign string, othervise node
-	var weapon
+	# Create a new weapon when assign string, otherwise node.
+	var weapon: Weapon
+	var incoming_weapon_id := ""
 	if item_id is String:
-		var resolved_weapon_id := DataHandler.resolve_weapon_id_for_standalone(str(item_id))
-		var weapon_def = DataHandler.read_weapon_data(resolved_weapon_id)
+		incoming_weapon_id = DataHandler.resolve_weapon_id_for_standalone(str(item_id))
+		var weapon_def := DataHandler.read_weapon_data(incoming_weapon_id) as WeaponDefinition
 		if weapon_def == null:
 			push_warning("create_weapon failed: weapon id %s not found." % str(item_id))
 			return
-		weapon = weapon_def.scene.instantiate()
-		weapon.level = level
+		var existing_by_id := _find_owned_weapon_by_id(incoming_weapon_id)
+		if existing_by_id != null:
+			var duplicate_result := _apply_duplicate_weapon_upgrade(existing_by_id, incoming_weapon_id)
+			_notify_weapon_duplicate_result(existing_by_id, incoming_weapon_id, duplicate_result)
+			_refresh_weapon_related_ui()
+			return
+		weapon = weapon_def.scene.instantiate() as Weapon
+		if weapon == null:
+			push_warning("create_weapon failed: weapon scene instantiate returned null for id %s." % incoming_weapon_id)
+			return
+		weapon.level = int(level)
 	else:
-		# Parameter is weapon node instead of String, common case when get weapon from inventory
-		weapon = item_id
-	
-	# Put weapon into inventory if weapon list is full
-	if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num: 
+		# Parameter is weapon node instead of String, common case when get weapon from inventory.
+		weapon = item_id as Weapon
+		if weapon == null or not is_instance_valid(weapon):
+			push_warning("create_weapon failed: invalid weapon instance input.")
+			return
+		incoming_weapon_id = DataHandler.get_weapon_id_from_instance(weapon)
+		if incoming_weapon_id != "":
+			var existing_owned_weapon := _find_owned_weapon_by_id(incoming_weapon_id)
+			if existing_owned_weapon != null and existing_owned_weapon != weapon:
+				var duplicate_result_instance := _apply_duplicate_weapon_upgrade(existing_owned_weapon, incoming_weapon_id)
+				_consume_duplicate_weapon_instance(weapon, existing_owned_weapon)
+				_notify_weapon_duplicate_result(existing_owned_weapon, incoming_weapon_id, duplicate_result_instance)
+				_refresh_weapon_related_ui()
+				return
+
+	# Put weapon into inventory if weapon list is full.
+	if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num:
 		if len(InventoryData.inventory_slots) < InventoryData.INVENTORY_MAX_SLOTS:
 			InventoryData.inventory_slots.append(weapon)
+		_refresh_weapon_related_ui()
 		return
-	
-	available_slot = PlayerData.player_weapon_list.size()
+
 	equppied_weapons.add_child(weapon)
 	weapon.position = Vector2.ZERO
 	PlayerData.player_weapon_list.append(weapon)
@@ -206,8 +243,140 @@ func create_weapon(item_id, level := 1):
 	_apply_weapon_roles()
 	_sync_weapon_orbit_states(true)
 	_rebuild_shared_heat_pool()
-	if GlobalVariables.ui != null:
-		GlobalVariables.ui.refresh_border()
+	_refresh_weapon_related_ui()
+
+func _find_owned_weapon_by_id(weapon_id: String) -> Weapon:
+	var normalized_id := str(weapon_id).strip_edges()
+	if normalized_id == "":
+		return null
+	for equipped_weapon_ref in PlayerData.player_weapon_list:
+		var equipped_weapon := equipped_weapon_ref as Weapon
+		if equipped_weapon == null or not is_instance_valid(equipped_weapon):
+			continue
+		if DataHandler.get_weapon_id_from_instance(equipped_weapon) == normalized_id:
+			return equipped_weapon
+	for inventory_weapon_ref in InventoryData.inventory_slots:
+		var inventory_weapon := inventory_weapon_ref as Weapon
+		if inventory_weapon == null or not is_instance_valid(inventory_weapon):
+			continue
+		if DataHandler.get_weapon_id_from_instance(inventory_weapon) == normalized_id:
+			return inventory_weapon
+	return null
+
+func _apply_duplicate_weapon_upgrade(existing_weapon: Weapon, incoming_weapon_id: String) -> Dictionary:
+	if existing_weapon == null or not is_instance_valid(existing_weapon):
+		return {"result": "invalid", "value": 0}
+	var previous_fuse := int(existing_weapon.fuse)
+	var max_fuse: int = max(1, int(existing_weapon.FINAL_MAX_FUSE))
+	if previous_fuse < max_fuse:
+		existing_weapon.fuse = previous_fuse + 1
+		var clamped_level := clampi(int(existing_weapon.level), 1, int(existing_weapon.max_level))
+		if existing_weapon.has_method("set_level"):
+			existing_weapon.call("set_level", clamped_level)
+		else:
+			existing_weapon.level = clamped_level
+			if existing_weapon.has_method("calculate_status"):
+				existing_weapon.call("calculate_status")
+		_try_prompt_branch_selection(existing_weapon)
+		return {"result": "fuse", "value": int(existing_weapon.fuse)}
+	var previous_level := int(existing_weapon.level)
+	var max_level := int(existing_weapon.max_level)
+	if previous_level < max_level:
+		var next_level := previous_level + 1
+		if existing_weapon.has_method("set_level"):
+			existing_weapon.call("set_level", next_level)
+		else:
+			existing_weapon.level = next_level
+			if existing_weapon.has_method("calculate_status"):
+				existing_weapon.call("calculate_status")
+		return {"result": "level", "value": int(existing_weapon.level)}
+	var converted_gold := _convert_duplicate_weapon_to_gold(incoming_weapon_id)
+	return {"result": "convert", "gold": converted_gold}
+
+func _consume_duplicate_weapon_instance(duplicate_weapon: Weapon, keep_weapon: Weapon = null) -> void:
+	if duplicate_weapon == null or not is_instance_valid(duplicate_weapon) or duplicate_weapon == keep_weapon:
+		return
+	if duplicate_weapon.modules != null:
+		for child in duplicate_weapon.modules.get_children():
+			var module_node := child as Module
+			if module_node == null:
+				continue
+			var module_copy := module_node.duplicate() as Module
+			if module_copy:
+				InventoryData.obtain_module(module_copy)
+	PlayerData.player_weapon_list.erase(duplicate_weapon)
+	InventoryData.inventory_slots.erase(duplicate_weapon)
+	if duplicate_weapon.get_parent() != null:
+		duplicate_weapon.queue_free()
+	else:
+		duplicate_weapon.free()
+
+func _convert_duplicate_weapon_to_gold(weapon_id: String) -> int:
+	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+	var base_price := 0
+	if weapon_def != null:
+		base_price = max(0, int(weapon_def.price))
+	var converted_gold: int = max(6, base_price * 2)
+	PlayerData.player_gold += converted_gold
+	return converted_gold
+
+func _notify_weapon_duplicate_result(existing_weapon: Weapon, weapon_id: String, result: Dictionary) -> void:
+	var ui := GlobalVariables.ui
+	if ui == null or not is_instance_valid(ui) or not ui.has_method("show_item_message"):
+		return
+	var resolved_id := str(weapon_id).strip_edges()
+	var fallback_name := LocalizationManager.get_weapon_name_from_node(existing_weapon)
+	var weapon_name := LocalizationManager.get_weapon_name_by_id(resolved_id, fallback_name)
+	var result_type := str(result.get("result", ""))
+	var message := ""
+	match result_type:
+		"fuse":
+			var fuse_value := int(result.get("value", max(1, int(existing_weapon.fuse))))
+			message = LocalizationManager.tr_format(
+				"ui.weapon.duplicate.fuse_up",
+				{"name": weapon_name, "fuse": fuse_value},
+				"Duplicate %s reinforced to Fuse %d" % [weapon_name, fuse_value]
+			)
+		"level":
+			var level_value := int(result.get("value", max(1, int(existing_weapon.level))))
+			message = LocalizationManager.tr_format(
+				"ui.weapon.duplicate.level_up",
+				{"name": weapon_name, "level": level_value},
+				"Duplicate %s upgraded to Lv.%d" % [weapon_name, level_value]
+			)
+		"convert":
+			var gold_value := int(result.get("gold", 0))
+			message = LocalizationManager.tr_format(
+				"ui.weapon.duplicate.convert",
+				{"name": weapon_name, "gold": gold_value},
+				"Duplicate %s converted to +%d Gold" % [weapon_name, gold_value]
+			)
+		_:
+			return
+	ui.show_item_message(message, 1.8)
+
+func _refresh_weapon_related_ui() -> void:
+	var ui := GlobalVariables.ui
+	if ui == null or not is_instance_valid(ui):
+		return
+	if ui.has_method("update_inventory"):
+		ui.update_inventory()
+	if ui.has_method("update_upg"):
+		ui.update_upg()
+	if ui.has_method("update_gf"):
+		ui.update_gf()
+	if ui.has_method("refresh_border"):
+		ui.refresh_border()
+
+func _try_prompt_branch_selection(weapon: Weapon) -> void:
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	var ui := GlobalVariables.ui
+	if ui == null or not is_instance_valid(ui):
+		return
+	if not ui.has_method("request_weapon_branch_selection"):
+		return
+	ui.request_weapon_branch_selection(weapon)
 
 func swap_weapon_position(weapon1, weapon2) -> void:
 	if weapon1 == weapon2:
@@ -419,7 +588,7 @@ func movement(delta):
 		self.global_position = self.global_position.move_toward(moveto_dest, delta * PlayerData.player_bonus_speed)
 	
 	distance_mouse_player = get_global_mouse_position() - global_position
-	_update_mecha_direction(distance_mouse_player)
+	_update_mecha_visual_state(distance_mouse_player)
 	_update_weapon_orbits(delta)
 
 func apply_move_speed_mul(source_id: StringName, mul: float) -> void:
@@ -668,6 +837,103 @@ func _resize_mecha_sprite() -> void:
 		return
 	var uniform_scale := minf(TARGET_MECHA_SIZE.x / tex_size.x, TARGET_MECHA_SIZE.y / tex_size.y)
 	mecha_sprite.scale = Vector2.ONE * uniform_scale
+
+func _setup_mecha_move_sprite() -> void:
+	if mecha_move_sprite == null:
+		push_warning("MechaMoveSprite is missing, movement animation disabled.")
+		return
+	mecha_move_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	mecha_move_sprite.sprite_frames = _build_mecha_move_sprite_frames()
+	_resize_mecha_move_sprite(MOVE_ANIMATION_BOTTOM)
+	_set_mecha_visual_state(MechaVisualState.IDLE)
+	_update_mecha_direction(_last_mecha_facing_direction)
+
+func _build_mecha_move_sprite_frames() -> SpriteFrames:
+	var frames := SpriteFrames.new()
+	frames.add_animation(MOVE_ANIMATION_TOP)
+	frames.set_animation_loop(MOVE_ANIMATION_TOP, true)
+	frames.set_animation_speed(MOVE_ANIMATION_TOP, MOVE_ANIMATION_FPS)
+	frames.add_animation(MOVE_ANIMATION_BOTTOM)
+	frames.set_animation_loop(MOVE_ANIMATION_BOTTOM, true)
+	frames.set_animation_speed(MOVE_ANIMATION_BOTTOM, MOVE_ANIMATION_FPS)
+	for frame_idx in range(1, MOVE_FRAME_COUNT + 1):
+		var back_path := MOVE_BACK_FRAME_PATH_FMT % frame_idx
+		var back_tex := load(back_path) as Texture2D
+		if back_tex != null:
+			frames.add_frame(MOVE_ANIMATION_TOP, back_tex)
+		else:
+			push_warning("Missing move animation frame: %s" % back_path)
+		var forward_path := MOVE_FORWARD_FRAME_PATH_FMT % frame_idx
+		var forward_tex := load(forward_path) as Texture2D
+		if forward_tex != null:
+			frames.add_frame(MOVE_ANIMATION_BOTTOM, forward_tex)
+		else:
+			push_warning("Missing move animation frame: %s" % forward_path)
+	return frames
+
+func _resize_mecha_move_sprite(animation_name: StringName) -> void:
+	if mecha_move_sprite == null or mecha_move_sprite.sprite_frames == null:
+		return
+	var frames := mecha_move_sprite.sprite_frames
+	if not frames.has_animation(animation_name):
+		return
+	if frames.get_frame_count(animation_name) <= 0:
+		return
+	var tex := frames.get_frame_texture(animation_name, 0)
+	if tex == null:
+		return
+	var tex_size: Vector2 = tex.get_size()
+	if tex_size.x == 0 or tex_size.y == 0:
+		return
+	var uniform_scale := minf(TARGET_MECHA_SIZE.x / tex_size.x, TARGET_MECHA_SIZE.y / tex_size.y)
+	mecha_move_sprite.scale = Vector2.ONE * uniform_scale
+
+func _update_mecha_visual_state(direction: Vector2) -> void:
+	var position_delta := global_position - _last_visual_position
+	var moved_by_external_position := position_delta.length_squared() > 0.25
+	var facing_direction := direction
+	if moved_by_external_position and velocity.length_squared() <= 0.0001:
+		facing_direction = position_delta
+	if facing_direction == Vector2.ZERO:
+		facing_direction = _last_mecha_facing_direction
+	else:
+		_last_mecha_facing_direction = facing_direction
+
+	var is_auto_moving := moveto_enabled and global_position.distance_squared_to(moveto_dest) > 0.25
+	var is_moving := velocity.length_squared() > 0.0001 or is_auto_moving or moved_by_external_position
+	var target_state := MechaVisualState.MOVING if is_moving else MechaVisualState.IDLE
+	_set_mecha_visual_state(target_state)
+
+	if target_state == MechaVisualState.MOVING:
+		_update_mecha_move_animation(facing_direction)
+	else:
+		_update_mecha_direction(facing_direction)
+	_last_visual_position = global_position
+
+func _set_mecha_visual_state(next_state: int) -> void:
+	if _mecha_visual_state == next_state and mecha_sprite != null and mecha_move_sprite != null:
+		return
+	_mecha_visual_state = next_state
+	var is_idle := _mecha_visual_state == MechaVisualState.IDLE
+	if mecha_sprite != null:
+		mecha_sprite.visible = is_idle
+	if mecha_move_sprite != null:
+		mecha_move_sprite.visible = not is_idle
+		if is_idle:
+			mecha_move_sprite.stop()
+
+func _update_mecha_move_animation(direction: Vector2) -> void:
+	if mecha_move_sprite == null:
+		return
+	mecha_move_sprite.flip_h = direction.x > 0.0
+	var animation_name: StringName = MOVE_ANIMATION_TOP if direction.y < 0.0 else MOVE_ANIMATION_BOTTOM
+	if _current_move_animation != animation_name:
+		_current_move_animation = animation_name
+		mecha_move_sprite.play(animation_name)
+		_resize_mecha_move_sprite(animation_name)
+		return
+	if not mecha_move_sprite.is_playing():
+		mecha_move_sprite.play(animation_name)
 
 func _sync_weapon_orbit_states(force_reset := false) -> void:
 	var weapons: Array = PlayerData.player_weapon_list
@@ -1030,6 +1296,7 @@ func _on_collect_area_area_entered(area):
 		value = apply_loot_bonus(value, &"coin")
 		PlayerData.player_gold += value
 		PlayerData.round_coin_collected += value
+		PlayerData.run_gold_earned += value
 		coin_collected.emit()
 
 

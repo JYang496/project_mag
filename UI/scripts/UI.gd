@@ -6,9 +6,15 @@ const PANEL_MARGIN := Vector2(24, 24)
 const PAUSE_PANEL_TARGET_SIZE := Vector2(400, 600)
 const PRIMARY_MENU_TARGET_SIZE := Vector2(312, 320)
 const PRIMARY_MENU_LEFT_MARGIN := 16.0
+const PRIMARY_MENU_ANIM_TIME := 0.2
+const PRIMARY_MENU_ANIM_TRANS := Tween.TRANS_CUBIC
+const PRIMARY_MENU_ANIM_EASE := Tween.EASE_OUT
 const HUD_MARGIN := 16.0
-const REST_HINT_SIZE := Vector2(220, 28)
+const REST_HINT_SIZE := Vector2(460, 108)
 const REST_HINT_OFFSET := Vector2(12, 212)
+const REST_ZONE_HINT_SIZE := Vector2(240, 30)
+const CONTROLS_HINT_PANEL_SIZE := Vector2(360, 156)
+const CONTROLS_HINT_PANEL_MARGIN := Vector2(16, 16)
 const HP_BAR_ANIM_TIME := 0.2
 const HP_BAR_TRANS := Tween.TRANS_SINE
 const HP_BAR_EASE := Tween.EASE_OUT
@@ -35,13 +41,17 @@ const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 @onready var merchant_primary_panel: Panel = $GUI/MerchantRoot/Panel
 @onready var smith_primary_panel: Panel = $GUI/SmithRoot/Panel
 var game_over_root: Control
-var game_over_status_label: Label
-var game_over_coin_label: Label
-var game_over_chip_label: Label
+var game_over_total_damage_label: Label
+var game_over_completed_levels_label: Label
+var game_over_enemy_kills_label: Label
+var game_over_elite_kills_label: Label
+var game_over_gold_earned_label: Label
 var quest_hint_label: Label
 var rest_area_hover_hint_label: Label
 var _rest_area_hover_hint_anchor_world := Vector2.ZERO
 var _rest_area_hover_hint_use_world_anchor := false
+var _rest_area_zone_hint_labels: Array[Label] = []
+var _rest_area_zone_hint_anchors: Array[Vector2] = []
 var item_message_timer: Timer
 
 
@@ -55,7 +65,6 @@ var item_message_timer: Timer
 @onready var gold_label = $GUI/CharacterRoot/Gold
 @onready var resource_label = $GUI/CharacterRoot/Resource
 @onready var time_label = $GUI/CharacterRoot/Time
-@onready var phase_label = $GUI/CharacterRoot/Phase
 var heat_label: Label
 var ammo_label: Label
 var weapon_state_label: Label
@@ -114,6 +123,10 @@ var game_over_title_label: Label
 var game_over_new_game_button: Button
 var pause_language_label: Label
 var pause_language_option: OptionButton
+var controls_hint_panel: Panel
+var controls_hint_title_label: Label
+var controls_hint_body_label: Label
+var _primary_menu_tweens: Dictionary = {}
 
 
 func _ready():
@@ -123,12 +136,14 @@ func _ready():
 	_refresh_hp_hud()
 	_ensure_heat_label()
 	_ensure_ammo_label()
+	_ensure_resource_label_under_hp()
 	_ensure_weapon_state_label()
 	_init_branch_select_panel()
 	_init_module_equip_selection_panel()
 	_init_route_selection_panel()
 	_init_reward_selection_panel()
 	_create_game_over_layout()
+	_create_controls_hint_panel()
 	_ensure_pause_language_controls()
 	_refresh_localized_static_text()
 	_create_quest_hint()
@@ -140,6 +155,7 @@ func _ready():
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
 	_init_item_message_timer()
+	_update_controls_guide_for_phase(PhaseManager.current_state())
 	if weapon_selector and is_instance_valid(weapon_selector):
 		weapon_selector.bind_player_data()
 		weapon_selector.refresh_slots()
@@ -241,7 +257,9 @@ func _finalize_branch_selected_weapon(weapon: Weapon) -> void:
 		return
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
 		return
-	PlayerData.player.create_weapon(weapon)
+	var is_already_owned := PlayerData.player_weapon_list.has(weapon) or InventoryData.inventory_slots.has(weapon)
+	if not is_already_owned:
+		PlayerData.player.create_weapon(weapon)
 	update_upg()
 	update_gf()
 	refresh_border()
@@ -254,6 +272,7 @@ func _physics_process(_delta):
 	_update_ammo_label_text()
 	_update_weapon_state_label_text()
 	_refresh_hud_text_values()
+	_refresh_controls_hint_visibility()
 	drag_item_icon.set_position(get_viewport().get_mouse_position())
 	_update_rest_area_hover_hint_position()
 func _input(_event) -> void:
@@ -311,33 +330,34 @@ func shopping_panel_out() -> void:
 
 func merchant_menu_in() -> void:
 	shopping_panel_out()
-	if merchant_root:
-		merchant_root.visible = true
+	_show_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
 
 func merchant_menu_out() -> void:
-	if merchant_root:
-		merchant_root.visible = false
+	_hide_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
 	shopping_panel_out()
 	_rest_area_merchant_active = false
 	if _rest_area_primary_menu_id == &"merchant":
 		_rest_area_primary_menu_id = &""
 
 func merchant_open_buy_panel() -> void:
-	if merchant_root:
-		merchant_root.visible = false
+	var should_wait := merchant_root != null and merchant_root.visible
+	_hide_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
+	if should_wait:
+		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	shopping_panel_in()
 
 func merchant_open_sell_panel() -> void:
-	if merchant_root:
-		merchant_root.visible = false
+	var should_wait := merchant_root != null and merchant_root.visible
+	_hide_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
+	if should_wait:
+		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	shopping_panel_in()
 	if shop_sell_button and is_instance_valid(shop_sell_button):
 		shop_sell_button._on_button_up()
 
 func merchant_back_to_primary_menu() -> void:
 	shopping_panel_out()
-	if merchant_root:
-		merchant_root.visible = true
+	_show_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
 
 func open_rest_area_merchant_menu() -> void:
 	_rest_area_merchant_active = true
@@ -460,30 +480,31 @@ func gf_panel_out() -> void:
 func smith_menu_in() -> void:
 	upg_panel_out()
 	gf_panel_out()
-	if smith_root:
-		smith_root.visible = true
+	_show_primary_menu(&"smith", smith_root, smith_primary_panel)
 
 func smith_menu_out() -> void:
-	if smith_root:
-		smith_root.visible = false
+	_hide_primary_menu(&"smith", smith_root, smith_primary_panel)
 	upg_panel_out()
 	gf_panel_out()
 
 func smith_open_upgrade_panel() -> void:
-	if smith_root:
-		smith_root.visible = false
+	var should_wait := smith_root != null and smith_root.visible
+	_hide_primary_menu(&"smith", smith_root, smith_primary_panel)
+	if should_wait:
+		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	upg_panel_in()
 
 func smith_open_fuse_panel() -> void:
-	if smith_root:
-		smith_root.visible = false
+	var should_wait := smith_root != null and smith_root.visible
+	_hide_primary_menu(&"smith", smith_root, smith_primary_panel)
+	if should_wait:
+		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	gf_panel_in()
 
 func smith_back_to_primary_menu() -> void:
 	upg_panel_out()
 	gf_panel_out()
-	if smith_root:
-		smith_root.visible = true
+	_show_primary_menu(&"smith", smith_root, smith_primary_panel)
 
 func inventory_panel_in() -> void:
 	move_out_timer.stop()
@@ -559,6 +580,7 @@ func _on_resume_button_pressed() -> void:
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.GAMEOVER:
 		_show_game_over()
+	_update_controls_guide_for_phase(new_phase)
 
 
 func _show_game_over() -> void:
@@ -570,30 +592,30 @@ func _show_game_over() -> void:
 	inventory_root.visible = false
 	module_root.visible = false
 	gear_fuse_root.visible = false
-	game_over_status_label.text = LocalizationManager.tr_format(
-		"ui.gameover.status",
-		{
-			"hp": PlayerData.player_hp,
-			"max_hp": PlayerData.player_max_hp,
-			"level": PlayerData.player_level,
-			"exp": PlayerData.player_exp
-		},
-		"Status  HP: %s/%s  Level: %s  EXP: %s" % [
-			str(PlayerData.player_hp),
-			str(PlayerData.player_max_hp),
-			str(PlayerData.player_level),
-			str(PlayerData.player_exp)
-		]
+	game_over_total_damage_label.text = LocalizationManager.tr_format(
+		"ui.gameover.total_damage",
+		{"value": PlayerData.run_total_damage_dealt},
+		"Total Damage: %s" % str(PlayerData.run_total_damage_dealt)
 	)
-	game_over_coin_label.text = LocalizationManager.tr_format(
-		"ui.gameover.coin",
-		{"value": PlayerData.round_coin_collected},
-		"Coin Collected: %s" % str(PlayerData.round_coin_collected)
+	game_over_completed_levels_label.text = LocalizationManager.tr_format(
+		"ui.gameover.completed_levels",
+		{"value": PlayerData.run_completed_levels},
+		"Completed Levels: %s" % str(PlayerData.run_completed_levels)
 	)
-	game_over_chip_label.text = LocalizationManager.tr_format(
-		"ui.gameover.chip",
-		{"value": PlayerData.round_chip_collected},
-		"Chip Collected: %s" % str(PlayerData.round_chip_collected)
+	game_over_enemy_kills_label.text = LocalizationManager.tr_format(
+		"ui.gameover.enemy_kills",
+		{"value": PlayerData.run_enemy_kills},
+		"Enemy Kills: %s" % str(PlayerData.run_enemy_kills)
+	)
+	game_over_elite_kills_label.text = LocalizationManager.tr_format(
+		"ui.gameover.elite_kills",
+		{"value": PlayerData.run_elite_kills},
+		"Elite Kills: %s" % str(PlayerData.run_elite_kills)
+	)
+	game_over_gold_earned_label.text = LocalizationManager.tr_format(
+		"ui.gameover.gold_earned",
+		{"value": PlayerData.run_gold_earned},
+		"Gold Earned: %s" % str(PlayerData.run_gold_earned)
 	)
 	game_over_root.visible = true
 	get_tree().paused = true
@@ -609,62 +631,163 @@ func _create_game_over_layout() -> void:
 
 	var panel := Panel.new()
 	panel.name = "GameOverPanel"
-	panel.custom_minimum_size = Vector2(480, 320)
+	panel.custom_minimum_size = Vector2(560, 380)
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
-	panel.offset_left = -240
-	panel.offset_top = -160
-	panel.offset_right = 240
-	panel.offset_bottom = 160
+	panel.offset_left = -280
+	panel.offset_top = -190
+	panel.offset_right = 280
+	panel.offset_bottom = 190
 	game_over_root.add_child(panel)
 
 	game_over_title_label = Label.new()
 	game_over_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	game_over_title_label.offset_left = 0
 	game_over_title_label.offset_top = 24
-	game_over_title_label.offset_right = 480
+	game_over_title_label.offset_right = 560
 	game_over_title_label.offset_bottom = 56
 	panel.add_child(game_over_title_label)
 
-	game_over_status_label = Label.new()
-	game_over_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	game_over_status_label.offset_left = 20
-	game_over_status_label.offset_top = 92
-	game_over_status_label.offset_right = 460
-	game_over_status_label.offset_bottom = 124
-	panel.add_child(game_over_status_label)
-
-	game_over_coin_label = Label.new()
-	game_over_coin_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	game_over_coin_label.offset_left = 20
-	game_over_coin_label.offset_top = 136
-	game_over_coin_label.offset_right = 460
-	game_over_coin_label.offset_bottom = 168
-	panel.add_child(game_over_coin_label)
-
-	game_over_chip_label = Label.new()
-	game_over_chip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	game_over_chip_label.offset_left = 20
-	game_over_chip_label.offset_top = 176
-	game_over_chip_label.offset_right = 460
-	game_over_chip_label.offset_bottom = 208
-	panel.add_child(game_over_chip_label)
+	game_over_total_damage_label = _create_game_over_stat_label(panel, 92)
+	game_over_completed_levels_label = _create_game_over_stat_label(panel, 132)
+	game_over_enemy_kills_label = _create_game_over_stat_label(panel, 172)
+	game_over_elite_kills_label = _create_game_over_stat_label(panel, 212)
+	game_over_gold_earned_label = _create_game_over_stat_label(panel, 252)
 
 	game_over_new_game_button = Button.new()
-	game_over_new_game_button.offset_left = 170
-	game_over_new_game_button.offset_top = 250
-	game_over_new_game_button.offset_right = 310
-	game_over_new_game_button.offset_bottom = 286
+	game_over_new_game_button.offset_left = 210
+	game_over_new_game_button.offset_top = 316
+	game_over_new_game_button.offset_right = 350
+	game_over_new_game_button.offset_bottom = 352
 	game_over_new_game_button.pressed.connect(_on_game_over_new_game_pressed)
 	panel.add_child(game_over_new_game_button)
 	_refresh_game_over_static_text()
+
+func _create_game_over_stat_label(parent: Control, top_offset: float) -> Label:
+	var label := Label.new()
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.offset_left = 20
+	label.offset_top = top_offset
+	label.offset_right = 540
+	label.offset_bottom = top_offset + 32
+	parent.add_child(label)
+	return label
 
 
 func _on_game_over_new_game_pressed() -> void:
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://World/Start.tscn")
+
+func _create_controls_hint_panel() -> void:
+	if controls_hint_panel != null and is_instance_valid(controls_hint_panel):
+		return
+	controls_hint_panel = Panel.new()
+	controls_hint_panel.name = "ControlsHintPanel"
+	controls_hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	controls_hint_panel.z_index = 35
+	$GUI.add_child(controls_hint_panel)
+
+	controls_hint_title_label = Label.new()
+	controls_hint_title_label.name = "Title"
+	controls_hint_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	controls_hint_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	controls_hint_title_label.add_theme_font_size_override("font_size", 18)
+	controls_hint_panel.add_child(controls_hint_title_label)
+
+	controls_hint_body_label = Label.new()
+	controls_hint_body_label.name = "Body"
+	controls_hint_body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	controls_hint_body_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	controls_hint_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	controls_hint_body_label.add_theme_font_size_override("font_size", 16)
+	controls_hint_panel.add_child(controls_hint_body_label)
+
+func _layout_controls_hint_panel(viewport_size: Vector2) -> void:
+	if controls_hint_panel == null or not is_instance_valid(controls_hint_panel):
+		return
+	var width := minf(CONTROLS_HINT_PANEL_SIZE.x, viewport_size.x - 2.0 * CONTROLS_HINT_PANEL_MARGIN.x)
+	var height := CONTROLS_HINT_PANEL_SIZE.y
+	controls_hint_panel.size = Vector2(maxf(width, 260.0), height)
+	controls_hint_panel.position = Vector2(
+		viewport_size.x - controls_hint_panel.size.x - CONTROLS_HINT_PANEL_MARGIN.x,
+		CONTROLS_HINT_PANEL_MARGIN.y
+	)
+	controls_hint_title_label.position = Vector2(14.0, 10.0)
+	controls_hint_title_label.size = Vector2(controls_hint_panel.size.x - 28.0, 28.0)
+	controls_hint_body_label.position = Vector2(14.0, 40.0)
+	controls_hint_body_label.size = Vector2(controls_hint_panel.size.x - 28.0, controls_hint_panel.size.y - 50.0)
+
+func _update_controls_guide_for_phase(phase: String) -> void:
+	if controls_hint_panel == null or not is_instance_valid(controls_hint_panel):
+		return
+	if phase == PhaseManager.GAMEOVER:
+		controls_hint_panel.visible = false
+		return
+	_refresh_controls_hint_visibility()
+	if not controls_hint_panel.visible:
+		return
+	if _is_primary_menu_open():
+		controls_hint_title_label.text = LocalizationManager.tr_key("ui.tutorial.state.primary_menu", "Current: Primary Menu")
+		var primary_menu_lines := PackedStringArray([
+			LocalizationManager.tr_key("ui.tutorial.panel.primary_menu.line1", "[LMB] Click buttons"),
+			LocalizationManager.tr_key("ui.tutorial.panel.primary_menu.line2", "[RMB] Exit current menu")
+		])
+		controls_hint_body_label.text = "\n".join(primary_menu_lines)
+		return
+	if phase == PhaseManager.BATTLE:
+		controls_hint_title_label.text = LocalizationManager.tr_key("ui.tutorial.state.battle", "Current: Battle")
+		var battle_lines := PackedStringArray([
+			LocalizationManager.tr_key("ui.tutorial.panel.battle.line1", "[W][A][S][D] Move"),
+			LocalizationManager.tr_key("ui.tutorial.panel.battle.line2", "[LMB] Attack"),
+			LocalizationManager.tr_key("ui.tutorial.panel.battle.line3", "[Space] Skill"),
+			LocalizationManager.tr_key("ui.tutorial.panel.battle.line4", "[R] Weapon Skill"),
+			LocalizationManager.tr_key("ui.tutorial.panel.battle.line5", "[Q/E] Switch Weapon  [Esc] Pause")
+		])
+		controls_hint_body_label.text = "\n".join(battle_lines)
+		return
+	controls_hint_title_label.text = LocalizationManager.tr_key("ui.tutorial.state.rest", "Current: Rest Area")
+	var rest_lines := PackedStringArray([
+		LocalizationManager.tr_key("ui.tutorial.panel.rest.line1", "[LMB] Click menu and zones"),
+		LocalizationManager.tr_key("ui.tutorial.panel.rest.line2", "[LMB Hold Center] Start battle"),
+		LocalizationManager.tr_key("ui.tutorial.panel.rest.line3", "[Esc] Pause")
+	])
+	controls_hint_body_label.text = "\n".join(rest_lines)
+
+func _refresh_controls_hint_visibility() -> void:
+	if controls_hint_panel == null or not is_instance_valid(controls_hint_panel):
+		return
+	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
+		controls_hint_panel.visible = false
+		return
+	controls_hint_panel.visible = not _is_secondary_menu_open()
+
+func _is_primary_menu_open() -> bool:
+	var roots := [
+		merchant_root,
+		smith_root
+	]
+	for root in roots:
+		if root and is_instance_valid(root) and root.visible:
+			return true
+	return false
+
+func _is_secondary_menu_open() -> bool:
+	var roots := [
+		shopping_rootv_2,
+		upgrade_rootv_2,
+		gear_fuse_root,
+		module_root,
+		inventory_root
+	]
+	for root in roots:
+		if root and is_instance_valid(root) and root.visible:
+			return true
+	return false
+
+func _refresh_controls_guide_texts() -> void:
+	_update_controls_guide_for_phase(PhaseManager.current_state())
 
 
 func _connect_viewport_signals() -> void:
@@ -688,6 +811,64 @@ func _apply_responsive_layout() -> void:
 	_layout_hud(viewport_size)
 	_layout_rest_area_hover_hint(viewport_size)
 	_layout_quest_hint(viewport_size)
+	_layout_controls_hint_panel(viewport_size)
+
+func _show_primary_menu(menu_id: StringName, root: Control, panel: Control) -> void:
+	if root == null or panel == null:
+		return
+	_stop_primary_menu_tween(menu_id)
+	var viewport_size := get_viewport().get_visible_rect().size
+	_fit_left_panel(panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
+	var target_pos := panel.position
+	var hidden_pos := _get_primary_menu_hidden_position(panel, target_pos)
+	root.visible = true
+	panel.position = hidden_pos
+	var tween := create_tween()
+	tween.set_trans(PRIMARY_MENU_ANIM_TRANS)
+	tween.set_ease(PRIMARY_MENU_ANIM_EASE)
+	tween.tween_property(panel, "position", target_pos, PRIMARY_MENU_ANIM_TIME)
+	tween.finished.connect(Callable(self, "_on_primary_menu_tween_finished").bind(menu_id))
+	_primary_menu_tweens[menu_id] = tween
+
+func _hide_primary_menu(menu_id: StringName, root: Control, panel: Control) -> void:
+	if root == null or panel == null:
+		return
+	_stop_primary_menu_tween(menu_id)
+	var viewport_size := get_viewport().get_visible_rect().size
+	_fit_left_panel(panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
+	var target_pos := panel.position
+	var hidden_pos := _get_primary_menu_hidden_position(panel, target_pos)
+	if not root.visible:
+		panel.position = hidden_pos
+		return
+	var tween := create_tween()
+	tween.set_trans(PRIMARY_MENU_ANIM_TRANS)
+	tween.set_ease(PRIMARY_MENU_ANIM_EASE)
+	tween.tween_property(panel, "position", hidden_pos, PRIMARY_MENU_ANIM_TIME)
+	tween.tween_callback(Callable(self, "_on_primary_menu_hidden").bind(menu_id, root, panel, hidden_pos))
+	tween.finished.connect(Callable(self, "_on_primary_menu_tween_finished").bind(menu_id))
+	_primary_menu_tweens[menu_id] = tween
+
+func _get_primary_menu_hidden_position(panel: Control, target_pos: Vector2) -> Vector2:
+	return Vector2(-panel.size.x - PRIMARY_MENU_LEFT_MARGIN, target_pos.y)
+
+func _stop_primary_menu_tween(menu_id: StringName) -> void:
+	if not _primary_menu_tweens.has(menu_id):
+		return
+	var active_tween := _primary_menu_tweens[menu_id] as Tween
+	if active_tween and is_instance_valid(active_tween):
+		active_tween.kill()
+	_primary_menu_tweens.erase(menu_id)
+
+func _on_primary_menu_hidden(menu_id: StringName, root: Control, panel: Control, hidden_pos: Vector2) -> void:
+	if root:
+		root.visible = false
+	if panel:
+		panel.position = hidden_pos
+	_primary_menu_tweens.erase(menu_id)
+
+func _on_primary_menu_tween_finished(menu_id: StringName) -> void:
+	_primary_menu_tweens.erase(menu_id)
 
 func _fit_center_panel(panel: Control, viewport_size: Vector2, target_size: Vector2) -> void:
 	if panel == null:
@@ -723,13 +904,12 @@ func _layout_hud(viewport_size: Vector2) -> void:
 	if heat_label:
 		heat_label.position = Vector2(HUD_MARGIN, viewport_size.y - 96.0)
 	if ammo_label:
-		ammo_label.position = Vector2(HUD_MARGIN, viewport_size.y - 72.0)
+		ammo_label.position = Vector2(64.0, 64.0)
 	if weapon_state_label:
 		weapon_state_label.position = Vector2(HUD_MARGIN, viewport_size.y - 300.0)
 	gold_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN)
 	time_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN + 56.0)
-	phase_label.position = Vector2(viewport_size.x - 220.0, HUD_MARGIN)
-	resource_label.position = Vector2(viewport_size.x - 110.0, viewport_size.y - 54.0)
+	resource_label.position = Vector2(64.0, 88.0)
 
 func _create_quest_hint() -> void:
 	if quest_hint_label != null:
@@ -752,12 +932,69 @@ func _ensure_rest_area_hover_hint() -> void:
 	rest_area_hover_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rest_area_hover_hint_label.z_index = 50
 	rest_area_hover_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	rest_area_hover_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	rest_area_hover_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	rest_area_hover_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rest_area_hover_hint_label.add_theme_font_size_override("font_size", 15)
 	rest_area_hover_hint_label.size = REST_HINT_SIZE
 	$GUI.add_child(rest_area_hover_hint_label)
 
+func _create_rest_area_zone_hint_label() -> Label:
+	var label := Label.new()
+	label.visible = false
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.z_index = 50
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.add_theme_font_size_override("font_size", 15)
+	label.size = REST_ZONE_HINT_SIZE
+	$GUI.add_child(label)
+	return label
+
+func _ensure_rest_area_zone_hint_capacity(count: int) -> void:
+	while _rest_area_zone_hint_labels.size() < count:
+		_rest_area_zone_hint_labels.append(_create_rest_area_zone_hint_label())
+	while _rest_area_zone_hint_anchors.size() < count:
+		_rest_area_zone_hint_anchors.append(Vector2.ZERO)
+
+func _hide_rest_area_zone_hint_labels() -> void:
+	for label in _rest_area_zone_hint_labels:
+		if label:
+			label.visible = false
+	_rest_area_zone_hint_anchors.clear()
+
+func set_rest_area_zone_hints_at_world(hints: Array) -> void:
+	_ensure_rest_area_hover_hint()
+	rest_area_hover_hint_label.visible = false
+	_rest_area_hover_hint_use_world_anchor = false
+	var count := hints.size()
+	_ensure_rest_area_zone_hint_capacity(count)
+	for idx in range(_rest_area_zone_hint_labels.size()):
+		var label := _rest_area_zone_hint_labels[idx]
+		if label == null:
+			continue
+		if idx >= count:
+			label.visible = false
+			continue
+		var entry: Variant = hints[idx]
+		if not (entry is Dictionary):
+			label.visible = false
+			continue
+		var hint_dict := entry as Dictionary
+		var text := str(hint_dict.get("text", ""))
+		var world_pos_variant: Variant = hint_dict.get("world_pos", Vector2.ZERO)
+		if not (world_pos_variant is Vector2) or text.strip_edges() == "":
+			label.visible = false
+			continue
+		var world_pos: Vector2 = world_pos_variant as Vector2
+		_rest_area_zone_hint_anchors[idx] = world_pos
+		label.text = text
+		label.visible = true
+	_update_rest_area_hover_hint_position()
+
 func set_rest_area_hover_hint(text: String) -> void:
 	_ensure_rest_area_hover_hint()
+	_hide_rest_area_zone_hint_labels()
 	if rest_area_hover_hint_label == null:
 		return
 	rest_area_hover_hint_label.text = text
@@ -769,6 +1006,7 @@ func set_rest_area_hover_hint(text: String) -> void:
 
 func set_rest_area_hover_hint_at_world(text: String, world_pos: Vector2) -> void:
 	_ensure_rest_area_hover_hint()
+	_hide_rest_area_zone_hint_labels()
 	if rest_area_hover_hint_label == null:
 		return
 	rest_area_hover_hint_label.text = text
@@ -778,6 +1016,7 @@ func set_rest_area_hover_hint_at_world(text: String, world_pos: Vector2) -> void
 	_update_rest_area_hover_hint_position()
 
 func clear_rest_area_hover_hint() -> void:
+	_hide_rest_area_zone_hint_labels()
 	if rest_area_hover_hint_label == null:
 		return
 	rest_area_hover_hint_label.text = ""
@@ -797,25 +1036,40 @@ func _layout_rest_area_hover_hint(viewport_size: Vector2) -> void:
 	)
 
 func _update_rest_area_hover_hint_position() -> void:
-	if rest_area_hover_hint_label == null or not rest_area_hover_hint_label.visible:
-		return
-	if not _rest_area_hover_hint_use_world_anchor:
-		return
 	var viewport := get_viewport()
 	if viewport == null:
 		return
 	var viewport_size := viewport.get_visible_rect().size
-	var screen_pos := viewport.get_canvas_transform() * _rest_area_hover_hint_anchor_world
-	var target := Vector2(
-		screen_pos.x - rest_area_hover_hint_label.size.x * 0.5,
-		screen_pos.y - rest_area_hover_hint_label.size.y - 10.0
-	)
-	var max_x := maxf(0.0, viewport_size.x - rest_area_hover_hint_label.size.x - 8.0)
-	var max_y := maxf(0.0, viewport_size.y - rest_area_hover_hint_label.size.y - 8.0)
-	rest_area_hover_hint_label.position = Vector2(
-		clampf(target.x, 8.0, max_x),
-		clampf(target.y, 8.0, max_y)
-	)
+	if rest_area_hover_hint_label and rest_area_hover_hint_label.visible and _rest_area_hover_hint_use_world_anchor:
+		var screen_pos := viewport.get_canvas_transform() * _rest_area_hover_hint_anchor_world
+		var target := Vector2(
+			screen_pos.x - rest_area_hover_hint_label.size.x * 0.5,
+			screen_pos.y - rest_area_hover_hint_label.size.y - 10.0
+		)
+		var max_x := maxf(0.0, viewport_size.x - rest_area_hover_hint_label.size.x - 8.0)
+		var max_y := maxf(0.0, viewport_size.y - rest_area_hover_hint_label.size.y - 8.0)
+		rest_area_hover_hint_label.position = Vector2(
+			clampf(target.x, 8.0, max_x),
+			clampf(target.y, 8.0, max_y)
+		)
+	for idx in range(_rest_area_zone_hint_labels.size()):
+		var label := _rest_area_zone_hint_labels[idx]
+		if label == null or not label.visible:
+			continue
+		if idx >= _rest_area_zone_hint_anchors.size():
+			continue
+		var anchor := _rest_area_zone_hint_anchors[idx]
+		var zone_screen_pos := viewport.get_canvas_transform() * anchor
+		var zone_target := Vector2(
+			zone_screen_pos.x - label.size.x * 0.5,
+			zone_screen_pos.y - label.size.y * 0.5
+		)
+		var zone_max_x := maxf(0.0, viewport_size.x - label.size.x - 8.0)
+		var zone_max_y := maxf(0.0, viewport_size.y - label.size.y - 8.0)
+		label.position = Vector2(
+			clampf(zone_target.x, 8.0, zone_max_x),
+			clampf(zone_target.y, 8.0, zone_max_y)
+		)
 
 func _layout_quest_hint(viewport_size: Vector2) -> void:
 	if quest_hint_label == null:
@@ -896,7 +1150,20 @@ func _ensure_ammo_label() -> void:
 	ammo_label.name = "Ammo"
 	ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
 	ammo_label.visible = true
-	character_root.add_child(ammo_label)
+	# Keep ammo in the same HUD container as HP, as a sibling under HpLabel.
+	hp_label_label.add_child(ammo_label)
+
+func _ensure_resource_label_under_hp() -> void:
+	if resource_label == null or not is_instance_valid(resource_label):
+		return
+	if hp_label_label == null or not is_instance_valid(hp_label_label):
+		return
+	if resource_label.get_parent() == hp_label_label:
+		return
+	var previous_parent := resource_label.get_parent()
+	if previous_parent:
+		previous_parent.remove_child(resource_label)
+	hp_label_label.add_child(resource_label)
 
 func _ensure_weapon_state_label() -> void:
 	if weapon_state_label != null and is_instance_valid(weapon_state_label):
@@ -904,7 +1171,7 @@ func _ensure_weapon_state_label() -> void:
 	weapon_state_label = Label.new()
 	weapon_state_label.name = "WeaponState"
 	weapon_state_label.text = LocalizationManager.tr_key("ui.hud.weapon_state_none", "Main: -- | WS: -- | PS: --")
-	weapon_state_label.visible = true
+	weapon_state_label.visible = false
 	character_root.add_child(weapon_state_label)
 
 func _update_heat_label_text() -> void:
@@ -1095,6 +1362,7 @@ func _on_pause_language_option_item_selected(index: int) -> void:
 
 func _on_language_changed(_new_locale: String) -> void:
 	_refresh_localized_static_text()
+	_refresh_controls_guide_texts()
 	_refresh_heat_fallback_text()
 	_refresh_hud_text_values()
 	_refresh_hp_hud()
@@ -1159,6 +1427,7 @@ func _refresh_localized_static_text() -> void:
 	if pause_label:
 		pause_label.text = LocalizationManager.tr_key("ui.panel.pause", "Paused")
 	resume_button.text = LocalizationManager.tr_key("ui.panel.resume", "Resume")
+	_refresh_controls_guide_texts()
 	_refresh_pause_language_options()
 	_refresh_game_over_static_text()
 
@@ -1167,6 +1436,20 @@ func _refresh_game_over_static_text() -> void:
 		game_over_title_label.text = LocalizationManager.tr_key("ui.gameover.title", "Game Over")
 	if game_over_new_game_button and is_instance_valid(game_over_new_game_button):
 		game_over_new_game_button.text = LocalizationManager.tr_key("ui.gameover.new_game", "New Game")
+
+func debug_get_game_over_stat_texts() -> PackedStringArray:
+	var output := PackedStringArray()
+	if game_over_total_damage_label and is_instance_valid(game_over_total_damage_label):
+		output.append(game_over_total_damage_label.text)
+	if game_over_completed_levels_label and is_instance_valid(game_over_completed_levels_label):
+		output.append(game_over_completed_levels_label.text)
+	if game_over_enemy_kills_label and is_instance_valid(game_over_enemy_kills_label):
+		output.append(game_over_enemy_kills_label.text)
+	if game_over_elite_kills_label and is_instance_valid(game_over_elite_kills_label):
+		output.append(game_over_elite_kills_label.text)
+	if game_over_gold_earned_label and is_instance_valid(game_over_gold_earned_label):
+		output.append(game_over_gold_earned_label.text)
+	return output
 
 func _refresh_heat_fallback_text() -> void:
 	if heat_label and is_instance_valid(heat_label) and not heat_label.visible:
@@ -1188,4 +1471,3 @@ func _refresh_hud_text_values() -> void:
 	else:
 		resource_label.text = LocalizationManager.tr_key("ui.hud.energy_none", "Energy: --")
 	time_label.text = LocalizationManager.tr_format("ui.hud.time", {"value": PhaseManager.battle_time}, "Time: %s" % str(PhaseManager.battle_time))
-	phase_label.text = LocalizationManager.tr_format("ui.hud.phase", {"value": PhaseManager.current_state()}, "Phase: %s" % str(PhaseManager.current_state()))

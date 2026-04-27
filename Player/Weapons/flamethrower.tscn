@@ -11,7 +11,7 @@ base_flame_range = 280.0
 heat_accumulation = 10.0
 max_heat = 120.0
 heat_cooldown_rate = 26.0
-debug_mode = true
+debug_mode = false
 effect_configs = Array[ExtResource("3_jofir")]([])
 debug_projectile_effects = false
 

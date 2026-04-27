@@ -4,6 +4,7 @@ extends Control
 @onready var itemIcon = $UpgradeCard/ItemImage/Icon
 @onready var cost = $UpgradeCard/Cost
 @onready var status_container = $UpgradeCard/StatusContainer
+@onready var upgrade_card: Control = $UpgradeCard
 #@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 
 var weapon_node
@@ -19,6 +20,8 @@ signal upgrade_level(level)
 
 # By default, weapons in upgrade cards are upgradable
 func _ready():
+	if upgrade_card:
+		CursorManager.register_control_rule(upgrade_card, Callable(self, "_cursor_can_click"))
 	if weapon_node != null:
 		connect("upgrade_level",Callable(weapon_node,"set_level"))
 		comb_status = combine_status(weapon_node)
@@ -36,7 +39,10 @@ func _ready():
 				status_container.add_child(status_label)
 		itemIcon.texture = weapon_node.sprite.texture
 		lblName.text = LocalizationManager.get_weapon_name_from_node(weapon_node)
-		
+
+func _exit_tree() -> void:
+	if upgrade_card:
+		CursorManager.unregister_control_rule(upgrade_card)
 
 func _physics_process(_delta: float) -> void:
 	if PlayerData.player_gold < cost_price: # Unable to purchase if player does not have enough gold
@@ -79,3 +85,6 @@ func _on_upgrade_card_mouse_entered():
 
 func _on_upgrade_card_mouse_exited():
 	mouse_over = false
+
+func _cursor_can_click() -> bool:
+	return weapon_node != null and is_instance_valid(weapon_node) and upgradable

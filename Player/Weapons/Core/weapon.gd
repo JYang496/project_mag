@@ -168,13 +168,26 @@ func _physics_process(delta: float) -> void:
 	_update_heat_system(delta)
 	_update_weapon_active_cooldown(delta)
 	_update_weapon_active_hit_window()
+	_process_weapon_role_effects(delta)
+
+func _process_weapon_role_effects(delta: float) -> void:
+	if is_main_weapon():
+		_process_main_weapon_effect(delta)
+		return
+	_process_offhand_weapon_effect(delta)
+
+func _process_main_weapon_effect(_delta: float) -> void:
+	pass
+
+func _process_offhand_weapon_effect(_delta: float) -> void:
+	pass
 
 func set_branch(new_branch_id: String) -> bool:
 	var normalized_id := str(new_branch_id)
 	if normalized_id == "":
 		return false
 	var scene_path := scene_file_path
-	var branch_def := DataHandler.read_weapon_branch_definition(scene_path, normalized_id)
+	var branch_def: WeaponBranchDefinition = DataHandler.read_weapon_branch_definition(scene_path, normalized_id)
 	if branch_def == null:
 		return false
 	if fuse < int(branch_def.unlock_fuse):
@@ -717,6 +730,10 @@ func set_weapon_role(next_role: String) -> void:
 		return
 	weapon_role = normalized
 	_on_weapon_role_changed(weapon_role)
+	if weapon_role == "main":
+		_on_enter_main_weapon_role()
+	else:
+		_on_enter_offhand_weapon_role()
 	weapon_role_changed.emit(weapon_role)
 
 func is_main_weapon() -> bool:
@@ -726,6 +743,12 @@ func is_offhand_weapon() -> bool:
 	return weapon_role != "main"
 
 func _on_weapon_role_changed(_next_role: String) -> void:
+	pass
+
+func _on_enter_main_weapon_role() -> void:
+	pass
+
+func _on_enter_offhand_weapon_role() -> void:
 	pass
 
 func can_run_active_behavior() -> bool:

@@ -3,6 +3,7 @@ ui.language.en,English,English
 ui.language.zh_cn,Simplified Chinese,简体中文
 ui.start.title,Project Mag Title,Project Mag 标题
 ui.start.continue,Continue,继续
+ui.start.start_game,Start Game,开始游戏
 ui.start.new_game,Erase Data,清除存档
 ui.start.hp_safety,Keep HP > 1: {state},保留生命值 > 1：{state}
 ui.start.resolution,Resolution,分辨率
@@ -61,6 +62,7 @@ ui.panel.to_upgrade,To Upgrade,前往升级
 ui.panel.to_inventory,Inventory,背包
 ui.panel.to_module,Module,模组
 ui.panel.fuse,Fuse,融合
+ui.panel.close_with_right_click,Right Click to close,右键关闭
 ui.upgrade.cost,Cost: {value},花费：{value}
 ui.upgrade.status_line,{key}: {from} => {to},{key}：{from} => {to}
 ui.branch.title,Choose Evolution Branch,选择进化分支
@@ -97,11 +99,44 @@ ui.module.empty,Empty,空
 ui.module.sold,Sold,已售出
 ui.inventory.slot.empty,Empty,空
 ui.gameover.title,Game Over,游戏结束
+ui.gameover.total_damage,Total Damage: {value},总伤害：{value}
+ui.gameover.completed_levels,Completed Levels: {value},完成关卡：{value}
+ui.gameover.enemy_kills,Enemy Kills: {value},消灭敌人：{value}
+ui.gameover.elite_kills,Elite Kills: {value},消灭精英：{value}
+ui.gameover.gold_earned,Gold Earned: {value},获得金币：{value}
 ui.gameover.status,Status  HP: {hp}/{max_hp}  Level: {level}  EXP: {exp},状态  生命：{hp}/{max_hp}  等级：{level}  经验：{exp}
 ui.gameover.coin,Coin Collected: {value},金币获取：{value}
 ui.gameover.chip,Chip Collected: {value},芯片获取：{value}
 ui.gameover.new_game,New Game,新游戏
 ui.start_battle.hold_f,Hold F to Start,按住 F 开始战斗
+ui.tutorial.state.rest,Current: Rest Area,当前状态：休息区
+ui.tutorial.state.battle,Current: Battle,当前状态：战斗中
+ui.tutorial.state.primary_menu,Current: Primary Menu,当前状态：一级菜单
+ui.tutorial.panel.rest.line1,[LMB] Click menu and zones,[鼠标左键] 点击菜单与区域
+ui.tutorial.panel.rest.line2,[LMB Hold Center] Start battle,[鼠标左键按住中央区域] 开始战斗
+ui.tutorial.panel.rest.line3,[Esc] Pause,[Esc] 暂停
+ui.tutorial.panel.primary_menu.line1,[LMB] Click buttons,[鼠标左键] 点击按钮
+ui.tutorial.panel.primary_menu.line2,[RMB] Exit current menu,[鼠标右键] 退出当前菜单
+ui.tutorial.panel.battle.line1,[W][A][S][D] Move,[W][A][S][D] 移动
+ui.tutorial.panel.battle.line2,[LMB] Attack,[鼠标左键] 攻击
+ui.tutorial.panel.battle.line3,[Space] Skill,[空格] 角色技能
+ui.tutorial.panel.battle.line4,[R] Weapon Skill,[R] 武器技能
+ui.tutorial.panel.battle.line5,[Q/E] Switch Weapon  [Esc] Pause,[Q/E] 切换武器  [Esc] 暂停
+ui.tutorial.overlay.title,How To Play,操作指引
+ui.tutorial.overlay.intro,Rest area uses mouse-first interaction. Battle uses keyboard + mouse.,休息区以鼠标交互为主；战斗使用键盘+鼠标。
+ui.tutorial.overlay.rest.title,Rest Area,休息区
+ui.tutorial.overlay.rest.line1,- [LMB] Click shop/upgrade zones,- [鼠标左键] 点击商店/强化区域
+ui.tutorial.overlay.rest.line2,- [LMB] Click buttons and cards,- [鼠标左键] 点击按钮与卡片
+ui.tutorial.overlay.rest.line3,- [LMB Hold Center] Start battle,- [鼠标左键按住中央区域] 开始战斗
+ui.tutorial.overlay.battle.title,Battle,战斗
+ui.tutorial.overlay.battle.line1,- [WASD] Move   [LMB] Attack,- [WASD] 移动   [鼠标左键] 攻击
+ui.tutorial.overlay.battle.line2,- [Space] Player skill   [R] Weapon skill,- [空格] 角色技能   [R] 武器技能
+ui.tutorial.overlay.battle.line3,- [Q/E] Switch weapon   [Esc] Pause,- [Q/E] 切换武器   [Esc] 暂停
+ui.tutorial.overlay.dont_show_session,Don't show again this run,本次运行不再提示
+ui.tutorial.overlay.confirm,Got it,知道了
+ui.tutorial.ctx.merchant,Click to open shop,点击打开商店
+ui.tutorial.ctx.smith,Click to open upgrade,点击打开强化
+ui.tutorial.ctx.battle_hold,Hold left mouse on center to start battle,按住中央区域开始战斗
 ui.module.reason.invalid_module,Invalid module.,无效模组。
 ui.module.reason.invalid_weapon,Invalid weapon.,无效武器。
 ui.module.reason.no_container,Weapon has no module container.,武器没有模组容器。
@@ -114,3 +149,6 @@ ui.module.reason.requires_one_of,Requires one of: {traits},需要以下特性之
 ui.inventory.obtain,Obtained {name} Lv.{level},获得 {name} Lv.{level}
 ui.inventory.upgrade,Upgraded {name} to Lv.{level},升级 {name} 到 Lv.{level}
 ui.inventory.convert,Converted duplicate {name} into +{gold} Gold,重复 {name} 已转换为 +{gold} 金币
+ui.weapon.duplicate.fuse_up,Duplicate {name} reinforced to Fuse {fuse},重复 {name} 强化至 融合{fuse}
+ui.weapon.duplicate.level_up,Duplicate {name} upgraded to Lv.{level},重复 {name} 升级至 Lv.{level}
+ui.weapon.duplicate.convert,Duplicate {name} converted to +{gold} Gold,重复 {name} 已转换为 +{gold} 金币

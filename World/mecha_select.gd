@@ -29,6 +29,8 @@ signal update_on_select(id)
 @export var border_width: float = 4.0
 
 func _ready() -> void:
+	if mech_texture:
+		CursorManager.register_control_rule(mech_texture, Callable(self, "_cursor_can_click"))
 	_refresh_mecha_data()
 	if mech_data and mech_data.scene:
 		var ins : Player = mech_data.scene.instantiate()
@@ -38,6 +40,10 @@ func _ready() -> void:
 		push_warning("MechaSelect failed to load mecha data for id=%s" % str(mecha_id))
 	PlayerData.select_mecha_id = DataHandler.save_data.last_mecha_selected
 	call_deferred("emit_signal", "update_on_select", str(DataHandler.save_data.last_mecha_selected))
+
+func _exit_tree() -> void:
+	if mech_texture:
+		CursorManager.unregister_control_rule(mech_texture)
 
 func _draw():
 	var rect = Rect2(Vector2.ZERO, size)
@@ -65,3 +71,6 @@ func _on_texture_rect_mouse_exited() -> void:
 func _refresh_mecha_data() -> void:
 	mech_data = DataHandler.read_mecha_data(str(mecha_id))
 	mech_autosave = DataHandler.read_autosave_mecha_data(str(mecha_id))
+
+func _cursor_can_click() -> bool:
+	return true

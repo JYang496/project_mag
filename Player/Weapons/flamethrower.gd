@@ -9,13 +9,15 @@ var ITEM_NAME := "Flamethrower"
 @export var heat_accumulation: float = 10.0
 @export var max_heat: float = 120.0
 @export var heat_cooldown_rate: float = 26.0
+@export var offhand_main_damage_bonus_flat: int = 1
 
 ## Debug mode: 显示攻击范围扇形
-@export var debug_mode: bool = true
+@export var debug_mode: bool = false
 
 var attack_range: float = 280.0
 ## 已攻击过的目标ID（每轮射击重置）
 var _attacked_target_ids: Dictionary = {}
+var _offhand_bonus_target: Weapon = null
 
 var weapon_data := {
 	"1": {"level": "1", "damage": "8", "fire_interval_sec": "0.30", "ammo": "120", "range": "260", "cost": "11"},
@@ -157,6 +159,18 @@ func _physics_process(delta: float) -> void:
 	if debug_mode:
 		queue_redraw()
 
+func _process_main_weapon_effect(_delta: float) -> void:
+	_clear_offhand_main_weapon_damage_bonus()
+
+func _process_offhand_weapon_effect(_delta: float) -> void:
+	_update_offhand_main_weapon_damage_bonus()
+
+func _on_enter_main_weapon_role() -> void:
+	_clear_offhand_main_weapon_damage_bonus()
+
+func _on_tree_exiting() -> void:
+	_clear_offhand_main_weapon_damage_bonus()
+
 func _draw() -> void:
 	if not debug_mode:
 		return
@@ -197,3 +211,66 @@ func _get_effective_cone_half_angle_deg() -> float:
 	if branch_behavior and is_instance_valid(branch_behavior):
 		angle_multiplier = branch_behavior.get_cone_half_angle_multiplier()
 	return maxf(cone_half_angle_deg * maxf(angle_multiplier, 0.1), 1.0)
+
+func _update_offhand_main_weapon_damage_bonus() -> void:
+	var main_weapon := _resolve_main_weapon_for_offhand_bonus()
+	if main_weapon == null:
+		_clear_offhand_main_weapon_damage_bonus()
+		return
+	if _offhand_bonus_target != main_weapon:
+		_clear_offhand_main_weapon_damage_bonus()
+		_offhand_bonus_target = main_weapon
+	_apply_offhand_main_weapon_damage_bonus(main_weapon)
+
+func _resolve_main_weapon_for_offhand_bonus() -> Weapon:
+	if PlayerData.player_weapon_list.is_empty():
+		return null
+	PlayerData.sanitize_main_weapon_index()
+	var idx := PlayerData.main_weapon_index
+	if idx < 0 or idx >= PlayerData.player_weapon_list.size():
+		return null
+	var weapon_variant: Variant = PlayerData.player_weapon_list[idx]
+	var weapon := weapon_variant as Weapon
+	if weapon == null or not is_instance_valid(weapon) or weapon == self:
+		return null
+	return weapon
+
+func _apply_offhand_main_weapon_damage_bonus(target_weapon: Weapon) -> void:
+	if target_weapon == null or not is_instance_valid(target_weapon):
+		return
+	if not target_weapon.has_method("apply_external_damage_mul") or not target_weapon.has_method("remove_external_damage_mul"):
+		return
+	var source_id: StringName = _get_offhand_bonus_source_id()
+	var runtime_damage: int = _resolve_weapon_runtime_damage(target_weapon)
+	var bonus_flat: int = max(1, offhand_main_damage_bonus_flat)
+	var bonus_mul: float = float(runtime_damage + bonus_flat) / float(runtime_damage)
+	target_weapon.call("remove_external_damage_mul", source_id)
+	target_weapon.call("apply_external_damage_mul", source_id, bonus_mul)
+	passive_triggered.emit(&"offhand_flamethrower_damage_bonus", {
+		"bonus_flat": bonus_flat,
+		"target_weapon": target_weapon,
+	})
+
+func _clear_offhand_main_weapon_damage_bonus() -> void:
+	if _offhand_bonus_target != null and is_instance_valid(_offhand_bonus_target) and _offhand_bonus_target.has_method("remove_external_damage_mul"):
+		_offhand_bonus_target.call("remove_external_damage_mul", _get_offhand_bonus_source_id())
+	_offhand_bonus_target = null
+
+func _get_offhand_bonus_source_id() -> StringName:
+	return StringName("offhand_flamethrower_damage_bonus_%s" % str(get_instance_id()))
+
+func _resolve_weapon_runtime_damage(target_weapon: Weapon) -> int:
+	if target_weapon == null or not is_instance_valid(target_weapon):
+		return 1
+	if target_weapon.has_method("get_runtime_shot_damage"):
+		return max(1, int(target_weapon.call("get_runtime_shot_damage")))
+	if target_weapon.has_method("get_runtime_damage_value"):
+		var base_damage_value := 1.0
+		if target_weapon.get("base_damage") != null:
+			base_damage_value = maxf(1.0, float(target_weapon.get("base_damage")))
+		elif target_weapon.get("damage") != null:
+			base_damage_value = maxf(1.0, float(target_weapon.get("damage")))
+		return max(1, int(target_weapon.call("get_runtime_damage_value", base_damage_value)))
+	if target_weapon.get("damage") != null:
+		return max(1, int(target_weapon.get("damage")))
+	return 1

@@ -33,6 +33,7 @@ DisplaySettings="*res://Utility/display_settings.gd"
 ObjectPool="*res://autoload/ObjectPool.gd"
 TimeImpactController="*res://autoload/TimeImpactController.gd"
 DamageManager="*res://autoload/DamageManager.gd"
+CursorManager="*res://autoload/CursorManager.gd"
 
 [display]
 

@@ -9,7 +9,7 @@
 script = ExtResource("2_spawn")
 time_start = 1
 enemy = ExtResource("3")
-number = 3
+number = 11
 max_enemy_number = 220
 hp = 10
 max_wave = 12

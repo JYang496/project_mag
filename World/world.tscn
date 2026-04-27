@@ -73,6 +73,7 @@ position = Vector2(-467, -11)
 board_path = NodePath("../Board")
 
 [node name="EnemySpawner" parent="." unique_id=236369448 instance=ExtResource("12_dyxss")]
+debug_print_spawn_stats = false
 
 [node name="TopLeft" parent="EnemySpawner" index="1"]
 position = Vector2(-982, -519)

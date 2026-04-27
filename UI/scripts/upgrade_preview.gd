@@ -4,6 +4,7 @@ extends MarginContainer
 @onready var itemIcon: TextureRect = $UpgradeCard/Icon
 @onready var cost = $UpgradeCard/Cost
 @onready var status_container = $UpgradeCard/StatusContainer
+@onready var upgrade_card: Control = $UpgradeCard
 #@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 
 var weapon_node : Weapon
@@ -26,6 +27,13 @@ var hover_off_width : float = 0
 
 signal upgrade_level(level)
 
+func _ready() -> void:
+	if upgrade_card:
+		CursorManager.register_control_rule(upgrade_card, Callable(self, "_cursor_can_click"))
+
+func _exit_tree() -> void:
+	if upgrade_card:
+		CursorManager.unregister_control_rule(upgrade_card)
 
 func _draw():
 	# Get the size of the control
@@ -114,3 +122,6 @@ func _get_upgrade_cost_multiplier() -> float:
 	if GlobalVariables.economy_data == null:
 		return 1.0
 	return maxf(0.01, float(GlobalVariables.economy_data.weapon_upgrade_cost_multiplier))
+
+func _cursor_can_click() -> bool:
+	return hover_over and weapon_node != null and is_instance_valid(weapon_node) and upgradable

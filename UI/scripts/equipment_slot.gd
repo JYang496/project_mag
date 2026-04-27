@@ -30,6 +30,14 @@ var hover_off_width : float = 0
 
 var hover_over : bool = false
 
+func _ready() -> void:
+	if background:
+		CursorManager.register_control_rule(background, Callable(self, "_cursor_can_click"))
+
+func _exit_tree() -> void:
+	if background:
+		CursorManager.unregister_control_rule(background)
+
 func _draw():
 	# Get the size of the control
 	var rect = Rect2(Vector2.ZERO, size)
@@ -86,3 +94,9 @@ func _on_color_rect_mouse_exited() -> void:
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK"):
 		InventoryData.on_select_eqp = item
+
+func _cursor_can_click() -> bool:
+	return _is_click_actionable()
+
+func _is_click_actionable() -> bool:
+	return item != null and is_instance_valid(item)

@@ -82,6 +82,8 @@ func damaged(attack:Attack):
 	var result := _incoming_damage_pipeline.apply_incoming_damage(self, attack, _incoming_damage_profile)
 	if not result.applied:
 		return
+	if attack != null and attack.is_from_player():
+		PlayerData.run_total_damage_dealt += max(0, result.final_damage)
 	_queue_hit_label_damage(result.final_damage, result.damage_type)
 	knockback.amount = attack.knock_back.amount
 	knockback.angle = attack.knock_back.angle

@@ -3,8 +3,7 @@ extends Node
 var battle_time := 0
 var current_level : int = 0 :
 	set(value):
-		var max_level_index: int = maxi(SpawnData.level_list.size() - 1, 0)
-		current_level = clampi(value, 0, max_level_index)
+		current_level = maxi(value, 0)
 
 const PREPARE := "prepare"
 const BATTLE = "battle"
@@ -26,7 +25,10 @@ func current_state() -> String:
 	return phase
 
 func enter_prepare() -> void:
+	var previous_phase := phase
 	pre_enter_prepare_loot.emit()
+	if previous_phase == BATTLE:
+		PlayerData.run_completed_levels += 1
 	current_level += 1
 	phase = PREPARE
 	phase_changed.emit(phase)

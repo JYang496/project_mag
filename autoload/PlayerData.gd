@@ -113,6 +113,11 @@ var total_grab_radius := grab_radius * grab_radius_mutifactor
 var player_gold := 10
 var round_coin_collected := 0
 var round_chip_collected := 0
+var run_total_damage_dealt := 0
+var run_enemy_kills := 0
+var run_elite_kills := 0
+var run_completed_levels := 0
+var run_gold_earned := 0
 var testing_keep_hp_above_zero := false
 var is_interacting : bool = false
 
@@ -183,6 +188,11 @@ func reset_runtime_state() -> void:
 	player_gold = 10
 	round_coin_collected = 0
 	round_chip_collected = 0
+	run_total_damage_dealt = 0
+	run_enemy_kills = 0
+	run_elite_kills = 0
+	run_completed_levels = 0
+	run_gold_earned = 0
 	is_interacting = false
 	detected_enemies.clear()
 	cloestest_enemy = null

@@ -43,15 +43,19 @@ func create_loot_box_for_level(
 	return spawned_count
 
 func get_adjusted_rewards_for_level(level_index: int, route_def: RunRouteDefinition = null) -> Array[RewardInfo]:
-	if level_index < 0 or level_index >= instance_list.size():
+	if instance_list.is_empty():
+		push_warning("get_adjusted_rewards_for_level ignored because reward cache is empty.")
+		return []
+	if level_index < 0:
 		push_warning("get_adjusted_rewards_for_level ignored invalid level index: %d" % level_index)
 		return []
+	var wrapped_level_index := posmod(level_index, instance_list.size())
 	var resolved_route := route_def if route_def != null else RunRouteManager.get_route_for_level(level_index)
-	var rewards_at_level: Array = instance_list[level_index]
+	var rewards_at_level: Array = instance_list[wrapped_level_index]
 	var adjusted: Array[RewardInfo] = []
 	for reward_entry in rewards_at_level:
 		if not (reward_entry is RewardInfo):
-			push_warning("Reward entry is invalid and was skipped at level index %d." % level_index)
+			push_warning("Reward entry is invalid and was skipped at level index %d." % wrapped_level_index)
 			continue
 		adjusted.append(_build_route_adjusted_reward(reward_entry as RewardInfo, resolved_route))
 	return adjusted

@@ -1,0 +1,21 @@
+[gd_resource type="Theme" format=3 uid="uid://bymy3051i44cu"]
+
+[ext_resource type="Texture2D" uid="uid://ibmremcp0qiu" path="res://asset/images/ui/button1.png" id="1_normal"]
+[ext_resource type="Texture2D" uid="uid://da1sd02g85sd7" path="res://asset/images/ui/button1_select.png" id="2_selected"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_button_normal"]
+texture = ExtResource("1_normal")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_button_selected"]
+texture = ExtResource("2_selected")
+
+[resource]
+Button/colors/font_color = Color(1, 1, 1, 1)
+Button/colors/font_focus_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_color = Color(1, 1, 1, 1)
+Button/colors/font_pressed_color = Color(1, 1, 1, 1)
+Button/styles/disabled = SubResource("StyleBoxTexture_button_normal")
+Button/styles/focus = SubResource("StyleBoxTexture_button_selected")
+Button/styles/hover = SubResource("StyleBoxTexture_button_selected")
+Button/styles/normal = SubResource("StyleBoxTexture_button_normal")
+Button/styles/pressed = SubResource("StyleBoxTexture_button_selected")

@@ -43,8 +43,14 @@ func update() -> void:
 
 # When player clicks on card, a weapon will be CREATED for player.
 func _ready():
+	if background:
+		CursorManager.register_control_rule(background, Callable(self, "_cursor_can_click"))
 	if not item_id and PlayerData.player != null:
 		new_item()
+
+func _exit_tree() -> void:
+	if background:
+		CursorManager.unregister_control_rule(background)
 
 func empty_item() -> void:
 	item = null
@@ -107,3 +113,6 @@ func _get_purchase_price_multiplier() -> float:
 	if GlobalVariables.economy_data == null:
 		return 1.0
 	return maxf(0.01, float(GlobalVariables.economy_data.weapon_purchase_price_multiplier))
+
+func _cursor_can_click() -> bool:
+	return item_id != null and purchasable

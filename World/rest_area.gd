@@ -22,9 +22,9 @@ signal rest_menu_cancelled
 @export var zone4_hold_track_width: float = 4.0
 @export var zone4_hold_progress_width: float = 8.0
 @export var debug_click_logs: bool = false
-@export var zone_merchant_hint_text: String = "买卖区"
-@export var zone_smith_hint_text: String = "强化区"
-@export var zone_battle_hold_hint_text: String = "长按进入下一关"
+@export var zone_merchant_hint_text: String = "Click to open shop"
+@export var zone_smith_hint_text: String = "Click to open upgrade"
+@export var zone_battle_hold_hint_text: String = "Hold left mouse on center to start battle"
 
 var _board: BoardCellGenerator
 var _fade_tween: Tween
@@ -40,6 +40,9 @@ var _zone4_hold_elapsed := 0.0
 var _zone4_hold_triggered := false
 @onready var _start_battle_button: StartBattleButton = get_node_or_null("StartBattleButton")
 @onready var _texture_root: Node2D = get_node_or_null("Texture")
+@onready var _merchant_hint_label: Label = get_node_or_null("MerchantHintLabel")
+@onready var _smith_hint_label: Label = get_node_or_null("SmithHintLabel")
+@onready var _battle_hint_label: Label = get_node_or_null("BattleHintLabel")
 @onready var _reward_manager: BonusManager = get_tree().current_scene.get_node_or_null("RewardManager") as BonusManager
 
 const GRID_DIM := 3
@@ -56,6 +59,8 @@ func _ready() -> void:
 		_board = get_node_or_null(board_path) as BoardCellGenerator
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
+	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
+		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
 	var area := get_node_or_null("Area2D") as Area2D
 	if area:
 		area.monitoring = false
@@ -75,8 +80,25 @@ func _ready() -> void:
 		rest_menu_cancelled.connect(Callable(self, "_on_rest_menu_cancelled"))
 	if _should_be_active(PhaseManager.current_state()):
 		_reset_prepare_state(true)
+	_refresh_scene_hint_labels()
 	_refresh_interaction_state()
 	queue_redraw()
+
+func _exit_tree() -> void:
+	CursorManager.clear_world_state(self)
+	if LocalizationManager and LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
+		LocalizationManager.disconnect("language_changed", Callable(self, "_on_language_changed"))
+
+func _on_language_changed(_new_locale: String) -> void:
+	_refresh_scene_hint_labels()
+
+func _refresh_scene_hint_labels() -> void:
+	if _merchant_hint_label:
+		_merchant_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.merchant", zone_merchant_hint_text)
+	if _smith_hint_label:
+		_smith_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.smith", zone_smith_hint_text)
+	if _battle_hint_label:
+		_battle_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.battle_hold", zone_battle_hold_hint_text)
 
 func _ensure_visual_layering() -> void:
 	# Keep base texture behind this CanvasItem's custom draw (grid/hover/progress).
@@ -217,20 +239,7 @@ func _on_start_battle_button_activated() -> void:
 	if _route_selection_pending:
 		return
 	_route_selection_pending = true
-	var current_level: int = max(PhaseManager.current_level, 0)
-	var route_options := RunRouteManager.get_available_routes_for_level(current_level)
-	var default_route_id := RunRouteManager.get_default_route_id()
-	var ui = GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("request_route_selection"):
-		var opened: bool = bool(ui.request_route_selection(
-			route_options,
-			default_route_id,
-			Callable(self, "_on_route_confirmed"),
-			Callable(self, "_on_route_selection_cancelled")
-		))
-		if opened:
-			return
-	_on_route_confirmed(default_route_id)
+	_on_route_confirmed("normal")
 
 func _on_route_selection_cancelled() -> void:
 	_route_selection_pending = false
@@ -284,10 +293,12 @@ func _on_bonus_reward_selected(reward: RewardInfo) -> void:
 func _process(delta: float) -> void:
 	if not _is_interaction_enabled():
 		_reset_zone4_hold()
+		CursorManager.clear_world_state(self)
 		return
 	_update_hover_from_mouse()
 	_update_auto_move(delta)
 	_update_zone4_hold(delta)
+	_refresh_cursor_state()
 
 func _input(event: InputEvent) -> void:
 	if not _is_interaction_enabled():
@@ -322,6 +333,11 @@ func _handle_left_click(global_pos: Vector2) -> void:
 		return
 	if zone_id == CENTER_ZONE_ID and selected_zone_id == CENTER_ZONE_ID and not is_auto_moving:
 		# Center zone enters battle by hold, not click-to-open-menu.
+		return
+	if menu_open and zone_id == selected_zone_id and _zone_opens_primary_menu(zone_id):
+		# Already inside this zone with its primary menu open; ignore repeated click.
+		if debug_click_logs:
+			print("[RestArea] left click ignored: primary menu already open for zone=", zone_id)
 		return
 	if menu_open and zone_id != selected_zone_id:
 		_close_rest_area_primary_menu_if_open()
@@ -402,6 +418,7 @@ func _refresh_interaction_state() -> void:
 	if not enabled:
 		_set_hover_zone(-1)
 		_reset_zone4_hold()
+		CursorManager.clear_world_state(self)
 
 func _is_interaction_enabled() -> bool:
 	return _active and visible and PhaseManager.current_state() == PhaseManager.PREPARE
@@ -507,37 +524,9 @@ func _refresh_zone_hover_hint() -> void:
 	var ui = GlobalVariables.ui
 	if ui == null or not is_instance_valid(ui):
 		return
-	var hint_text := ""
-	var hint_anchor := Vector2.ZERO
-	if _is_interaction_enabled():
-		hint_text = _get_zone_hover_hint_text(hover_zone_id)
-		hint_anchor = _get_zone_hover_anchor_global(hover_zone_id)
-	if ui.has_method("set_rest_area_hover_hint_at_world"):
-		ui.call("set_rest_area_hover_hint_at_world", hint_text, hint_anchor)
-		return
-	if ui.has_method("set_rest_area_hover_hint"):
-		ui.call("set_rest_area_hover_hint", hint_text)
-		return
-	if hint_text == "" and ui.has_method("clear_rest_area_hover_hint"):
+	# Rest-area zone hints are now authored directly in the scene.
+	if ui.has_method("clear_rest_area_hover_hint"):
 		ui.call("clear_rest_area_hover_hint")
-
-func _get_zone_hover_hint_text(zone_id: int) -> String:
-	match zone_id:
-		0:
-			return zone_merchant_hint_text
-		1:
-			return zone_smith_hint_text
-		CENTER_ZONE_ID:
-			return zone_battle_hold_hint_text
-		_:
-			return ""
-
-func _get_zone_hover_anchor_global(zone_id: int) -> Vector2:
-	var zone_rect := _get_zone_rect_local(zone_id)
-	if zone_rect.size.x <= 0.0 or zone_rect.size.y <= 0.0:
-		return get_spawn_position()
-	var local_top_center := Vector2(zone_rect.position.x + zone_rect.size.x * 0.5, zone_rect.position.y)
-	return to_global(local_top_center)
 
 func _draw() -> void:
 	if not _is_interaction_enabled():
@@ -711,3 +700,39 @@ func _draw_progress_segment(from: Vector2, to: Vector2, remaining: float, color:
 	var t := remaining / seg_len
 	draw_line(from, from.lerp(to, t), color, width)
 	return 0.0
+
+func _refresh_cursor_state() -> void:
+	if not _is_interaction_enabled():
+		CursorManager.clear_world_state(self)
+		return
+	if _is_mouse_over_ui():
+		CursorManager.clear_world_state(self)
+		return
+	if _zone4_hold_elapsed > 0.0 and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and _is_zone4_hold_available():
+		CursorManager.set_world_state(self, CursorManager.STATE_HOLD_ACTIVE, 60)
+		return
+	if _is_zone_clickable_for_cursor(hover_zone_id):
+		CursorManager.set_world_state(self, CursorManager.STATE_CLICKABLE, 50)
+		return
+	CursorManager.clear_world_state(self)
+
+func _is_zone_clickable_for_cursor(zone_id: int) -> bool:
+	if zone_id < 0:
+		return false
+	if zone_id == CENTER_ZONE_ID:
+		# When the player is not on center, center zone is still clickable for move-in.
+		# Hold-to-start is only available after arriving at center.
+		if selected_zone_id != CENTER_ZONE_ID:
+			if is_auto_moving or _is_mouse_over_ui():
+				return false
+			var ui = GlobalVariables.ui
+			if ui and is_instance_valid(ui) and ui.has_method("is_rest_area_zone_navigation_allowed"):
+				return bool(ui.call("is_rest_area_zone_navigation_allowed"))
+			return true
+		return _is_zone4_hold_available()
+	if not _zone_opens_primary_menu(zone_id):
+		return false
+	var ui = GlobalVariables.ui
+	if ui and is_instance_valid(ui) and ui.has_method("is_rest_area_zone_navigation_allowed"):
+		return bool(ui.call("is_rest_area_zone_navigation_allowed"))
+	return true

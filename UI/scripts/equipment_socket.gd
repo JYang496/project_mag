@@ -22,6 +22,12 @@ var module : Module :
 		else:
 			self.texture = null
 
+func _ready() -> void:
+	CursorManager.register_control_rule(self, Callable(self, "_cursor_can_click"))
+
+func _exit_tree() -> void:
+	CursorManager.unregister_control_rule(self)
+
 func _draw():
 	# Get the size of the control
 	var rect = Rect2(Vector2.ZERO, size)
@@ -76,3 +82,6 @@ func _on_gui_input(event: InputEvent) -> void:
 				),
 				1.6
 			)
+
+func _cursor_can_click() -> bool:
+	return equipment_slot is EquipmentSlotModule and module != null and is_instance_valid(module)

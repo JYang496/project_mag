@@ -32,6 +32,11 @@ script = ExtResource("1_ds3ra")
 position = Vector2(0.5, -5)
 texture = ExtResource("2_we6y6")
 
+[node name="MechaMoveSprite" type="AnimatedSprite2D" parent="."]
+visible = false
+position = Vector2(0.5, -5)
+texture_filter = 2
+
 [node name="Camera2D" type="Camera2D" parent="." unique_id=665109581]
 zoom = Vector2(0.8, 0.8)
 position_smoothing_enabled = true

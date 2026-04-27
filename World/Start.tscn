@@ -7,6 +7,16 @@
 [ext_resource type="Script" uid="uid://cnl0hy8g35i07" path="res://World/hp_safety_toggle_btn.gd" id="5_hp_toggle"]
 [ext_resource type="Script" uid="uid://crthixi6sav7n" path="res://World/start_menu.gd" id="6_start_menu"]
 
+[sub_resource type="Gradient" id="Gradient_start_bg"]
+offsets = PackedFloat32Array(0, 0.55, 1)
+colors = PackedColorArray(0.0509804, 0.0745098, 0.129412, 1, 0.0705882, 0.109804, 0.180392, 1, 0.0196078, 0.027451, 0.0509804, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_start_bg"]
+gradient = SubResource("Gradient_start_bg")
+fill = 1
+fill_from = Vector2(0.5, 0)
+fill_to = Vector2(0.5, 1)
+
 [node name="Start" type="Node2D" unique_id=1585976042]
 script = ExtResource("6_start_menu")
 
@@ -27,19 +37,35 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.25098, 0.25098, 0.25098, 1)
+color = Color(0.0156863, 0.0196078, 0.0352941, 1)
 
-[node name="HBoxMargin" type="MarginContainer" parent="CanvasLayer/GUI/Background" unique_id=1626790002]
+[node name="GradientOverlay" type="TextureRect" parent="CanvasLayer/GUI/Background" unique_id=1621360137]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 50
-theme_override_constants/margin_top = 50
-theme_override_constants/margin_right = 50
-theme_override_constants/margin_bottom = 50
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_start_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="HBoxMargin" type="MarginContainer" parent="CanvasLayer/GUI/Background" unique_id=1626790002]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 17.0
+offset_top = -1.0
+offset_right = 17.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 36
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 36
 
 [node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin" unique_id=1989687654]
 layout_mode = 2
@@ -48,32 +74,41 @@ size_flags_vertical = 4
 alignment = 1
 
 [node name="MenuContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer" unique_id=1606636962]
-custom_minimum_size = Vector2(500, 548)
+custom_minimum_size = Vector2(420, 0)
 layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 22
 
 [node name="Title" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer" unique_id=525450202]
 layout_mode = 2
-theme_override_font_sizes/font_size = 40
-text = "Project Mag Title"
+theme_override_font_sizes/font_size = 52
+text = "Project No Name"
 horizontal_alignment = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer" unique_id=1290966749]
-custom_minimum_size = Vector2(0, 400)
 layout_mode = 2
+theme_override_constants/separation = 14
 alignment = 1
 
 [node name="Start" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=379445436]
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 text = "Start"
 script = ExtResource("2_jyp4w")
 
 [node name="New Game" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=2016277216]
+visible = false
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
+disabled = true
 text = "Erase Data"
 script = ExtResource("1_y1dix")
 
 [node name="HpSafetyToggle" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=1322643656]
+visible = false
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
+disabled = true
 text = "Keep HP > 1: OFF"
 script = ExtResource("5_hp_toggle")
 
@@ -82,9 +117,11 @@ layout_mode = 2
 text = "Resolution"
 
 [node name="ResolutionOption" type="OptionButton" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=95475231]
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 
 [node name="MechaContainer" type="MarginContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer" unique_id=7227956]
+visible = false
 layout_mode = 2
 theme_override_constants/margin_top = 50
 script = ExtResource("2_w24c8")

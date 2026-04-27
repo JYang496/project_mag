@@ -16,6 +16,15 @@ var hover_off_width : float = 0
 var hover_over : bool = false
 @onready var image: TextureRect = $Background/Image
 @onready var item_name: Label = $Background/Name
+@onready var background: Control = $Background
+
+func _ready() -> void:
+	if background:
+		CursorManager.register_control_rule(background, Callable(self, "_cursor_can_click"))
+
+func _exit_tree() -> void:
+	if background:
+		CursorManager.unregister_control_rule(background)
 
 func _draw():
 	# Get the size of the control
@@ -67,3 +76,6 @@ func _on_background_gui_input(event: InputEvent) -> void:
 			ui.request_module_equip_selection(module)
 			return
 		InventoryData.on_select_inventory_module = module
+
+func _cursor_can_click() -> bool:
+	return module != null and is_instance_valid(module)

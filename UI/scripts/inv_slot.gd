@@ -52,7 +52,12 @@ func update() -> void:
 		equip_name.text = LocalizationManager.tr_key("ui.inventory.slot.empty", "Empty")
 
 func _ready() -> void:
-	pass
+	if background:
+		CursorManager.register_control_rule(background, Callable(self, "_cursor_can_click"))
+
+func _exit_tree() -> void:
+	if background:
+		CursorManager.unregister_control_rule(background)
 
 func _physics_process(_delta: float) -> void:
 	pass
@@ -69,4 +74,10 @@ func _on_color_rect_mouse_exited() -> void:
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK"):
 		InventoryData.on_select_slot = item
+
+func _cursor_can_click() -> bool:
+	return _is_click_actionable()
+
+func _is_click_actionable() -> bool:
+	return item != null and is_instance_valid(item)
 			

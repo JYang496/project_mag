@@ -34,6 +34,7 @@
 [ext_resource type="Script" uid="uid://bvpny8o1qf1q1" path="res://UI/scripts/open_merchant_buy_button.gd" id="25_mbuy"]
 [ext_resource type="Script" uid="uid://b0nanidi3wofh" path="res://UI/scripts/open_merchant_sell_button.gd" id="26_msell"]
 [ext_resource type="Script" uid="uid://dcdn7aulipk8y" path="res://UI/scripts/merchant_back_button.gd" id="27_mback"]
+[ext_resource type="Theme" uid="uid://bymy3051i44cu" path="res://UI/themes/primary_menu_button_theme.tres" id="28_pm_btn"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bar_bg"]
 bg_color = Color(0.08, 0.08, 0.08, 0.82)
@@ -281,14 +282,6 @@ offset_right = 562.0
 offset_bottom = 91.0
 text = "Time"
 
-[node name="Phase" type="Label" parent="GUI/CharacterRoot" unique_id=1252155713]
-layout_mode = 0
-offset_left = 932.0
-offset_top = 8.0
-offset_right = 1032.0
-offset_bottom = 41.0
-text = "Phase:"
-
 [node name="ShoppingRootv2" type="Control" parent="GUI" unique_id=1309213749]
 visible = false
 custom_minimum_size = Vector2(1000, 640)
@@ -475,6 +468,7 @@ offset_left = 316.0
 offset_top = 170.0
 offset_right = 836.0
 offset_bottom = 490.0
+theme = ExtResource("28_pm_btn")
 
 [node name="Title" type="Label" parent="GUI/MerchantRoot/Panel" unique_id=618611466]
 layout_mode = 1
@@ -519,6 +513,7 @@ text = "Sell"
 script = ExtResource("26_msell")
 
 [node name="CloseHint" type="Label" parent="GUI/MerchantRoot/Panel" unique_id=1734998566]
+visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -527,7 +522,7 @@ offset_top = 266.0
 offset_right = -28.0
 offset_bottom = 294.0
 grow_horizontal = 2
-text = "Press Interact to close"
+text = "Right Click to close"
 vertical_alignment = 1
 
 [node name="SmithRoot" type="Control" parent="GUI" unique_id=54050891]
@@ -543,6 +538,7 @@ offset_left = 316.0
 offset_top = 170.0
 offset_right = 836.0
 offset_bottom = 490.0
+theme = ExtResource("28_pm_btn")
 
 [node name="Title" type="Label" parent="GUI/SmithRoot/Panel" unique_id=1996948769]
 layout_mode = 1
@@ -587,6 +583,7 @@ text = "Gear Fuse"
 script = ExtResource("24_sgf")
 
 [node name="CloseHint" type="Label" parent="GUI/SmithRoot/Panel" unique_id=192820732]
+visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -595,7 +592,7 @@ offset_top = 266.0
 offset_right = -28.0
 offset_bottom = 294.0
 grow_horizontal = 2
-text = "Press Interact to close"
+text = "Right Click to close"
 vertical_alignment = 1
 
 [node name="UpgradeRootv2" type="Control" parent="GUI" unique_id=113070022]

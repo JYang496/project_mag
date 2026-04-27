@@ -17,6 +17,14 @@ var hover_off_width : float = 0
 
 var hover_over : bool = false
 
+func _ready() -> void:
+	if color_rect:
+		CursorManager.register_control_rule(color_rect, Callable(self, "_cursor_can_click"))
+
+func _exit_tree() -> void:
+	if color_rect:
+		CursorManager.unregister_control_rule(color_rect)
+
 func _draw():
 	# Get the size of the control
 	var rect = Rect2(Vector2.ZERO, size)
@@ -52,3 +60,6 @@ func _on_color_rect_mouse_exited() -> void:
 func _on_color_rect_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK") and item != null:
 		InventoryData.remove_fuse_item(item)
+
+func _cursor_can_click() -> bool:
+	return item != null and is_instance_valid(item)

@@ -24,3 +24,30 @@ collision_mask = 16
 position = Vector2(256, 256)
 scale = Vector2(25.5, 25.5)
 shape = SubResource("RectangleShape2D_hnton")
+
+[node name="MerchantHintLabel" type="Label" parent="." unique_id=204400001]
+offset_left = 18.0
+offset_top = 62.0
+offset_right = 154.0
+offset_bottom = 86.0
+theme_override_font_sizes/font_size = 14
+text = "Click to open shop"
+horizontal_alignment = 1
+
+[node name="SmithHintLabel" type="Label" parent="." unique_id=204400002]
+offset_left = 188.0
+offset_top = 62.0
+offset_right = 324.0
+offset_bottom = 86.0
+theme_override_font_sizes/font_size = 14
+text = "Click to open upgrade"
+horizontal_alignment = 1
+
+[node name="BattleHintLabel" type="Label" parent="." unique_id=204400003]
+offset_left = 162.0
+offset_top = 230.0
+offset_right = 350.0
+offset_bottom = 254.0
+theme_override_font_sizes/font_size = 14
+text = "Hold left mouse on center to start battle"
+horizontal_alignment = 1

@@ -49,6 +49,10 @@ func death(killing_attack: Attack = null) -> void:
 	drop.value = drop_value
 	drop.spawn_global_position = global_position
 	self.call_deferred("add_sibling",drop)
+	if killing_attack != null and killing_attack.is_from_player():
+		PlayerData.run_enemy_kills += 1
+		if self is EliteEnemy:
+			PlayerData.run_elite_kills += 1
 	_try_trigger_elite_kill_impact(killing_attack)
 	enemy_death.emit(true)
 	queue_free()

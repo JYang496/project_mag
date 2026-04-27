@@ -155,6 +155,26 @@ func read_weapon_data(id: String):
 		return null
 	return data
 
+func get_weapon_id_from_scene_path(scene_path: String) -> String:
+	var normalized_path := str(scene_path).strip_edges()
+	if normalized_path == "":
+		return ""
+	if GlobalVariables.weapon_list.is_empty():
+		load_weapon_data()
+	for key_variant in GlobalVariables.weapon_list.keys():
+		var weapon_id := str(key_variant)
+		var weapon_def := read_weapon_data(weapon_id) as WeaponDefinition
+		if weapon_def == null or weapon_def.scene == null:
+			continue
+		if str(weapon_def.scene.resource_path) == normalized_path:
+			return weapon_id
+	return ""
+
+func get_weapon_id_from_instance(weapon: Weapon) -> String:
+	if weapon == null or not is_instance_valid(weapon):
+		return ""
+	return get_weapon_id_from_scene_path(str(weapon.scene_file_path))
+
 func get_standalone_weapon_ids() -> Array[String]:
 	if GlobalVariables.weapon_list.is_empty():
 		load_weapon_data()
@@ -239,25 +259,27 @@ func _register_weapon_branch_resource(resource: Resource, source_path: String) -
 func read_autosave_mecha_data(id : String) -> Dictionary:
 	if save_data == null:
 		load_game()
-	return save_data.mechas[id]
+	var mecha_id := str(id)
+	if save_data.mechas.has(mecha_id):
+		return save_data.mechas[mecha_id]
+	# Fallback prevents crashes when requesting an unknown mecha id.
+	return {"current_exp": "0", "current_level": "1"}
 
-func save_game(data : SaveData = save_data, file_path: String = "res://data/savedata/autosave.tres") -> void:
-	push_warning("save_game is disabled (read-only mode).")
+func save_game(_data : SaveData = save_data, _file_path: String = "res://data/savedata/autosave.tres") -> void:
+	# Save is intentionally disabled: run state is always in-memory for this session.
 	return
 
-func new_save(file_path: String = "res://data/savedata/autosave.tres") -> void:
-	push_warning("new_save is disabled (read-only mode).")
-	if save_data == null:
-		save_data = SaveData.new()
+func new_save(_file_path: String = "res://data/savedata/autosave.tres") -> void:
+	save_data = _create_fresh_runtime_save()
 	return
 	
 
-func load_game(file_path: String = "res://data/savedata/autosave.tres") -> void:
-	if not FileAccess.file_exists(file_path):
-		print("Save file doesn't exist, create a new save file")
-		new_save(file_path)
-	else:
-		save_data = load(file_path) as SaveData
-	if save_data == null:
-		print("Failed to load save file")
-		return
+func load_game(_file_path: String = "res://data/savedata/autosave.tres") -> void:
+	# Persistent save loading is disabled: always start from a fresh runtime state.
+	save_data = _create_fresh_runtime_save()
+
+func _create_fresh_runtime_save() -> SaveData:
+	var runtime_save := SaveData.new()
+	# Keep this explicit so the initial mecha selection is deterministic.
+	runtime_save.last_mecha_selected = "1"
+	return runtime_save
