@@ -13,17 +13,22 @@ var max_speed_factor : float = 5.0
 var as_timer: Timer
 
 const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
-const MIN_SPREAD_ANGLE_DEG := 1.0
-const MAX_SPREAD_ANGLE_DEG := 18.0
 
-@export var spread_full_distance: float = 900.0
-@export var close_range_miss_chance: float = 0.05
-@export var long_range_miss_chance: float = 0.85
 @export var heat_accumulation: float = 3
 @export var max_heat: float = 100.0
 @export var heat_cooldown_rate: float = 20.0
 @export_range(5.0, 80.0, 1.0) var front_fire_half_angle_deg: float = 35.0
+@export var offhand_trigger_window_sec: float = 2.0
+@export var offhand_trigger_hits: int = 10
+@export var offhand_buff_duration_sec: float = 6.0
+@export var offhand_cooldown_sec: float = 24.0
+@export var offhand_main_attack_speed_mult: float = 1.2
+@export var offhand_main_spread_mult: float = 0.8
 var attack_range: float = 800.0
+var _offhand_hit_timestamps_msec: Array[int] = []
+var _offhand_cd_ready_at_msec: int = 0
+var _offhand_buff_expires_at_msec: int = 0
+var _offhand_buff_target: Weapon = null
 
 var weapon_data = {
 	"1": {
@@ -139,7 +144,6 @@ func _on_shoot():
 	cooldown_timer.start()
 	var target_position: Vector2 = get_mouse_target()
 	var base_direction: Vector2 = global_position.direction_to(target_position).normalized()
-	var shot_distance: float = global_position.distance_to(target_position)
 	var shot_directions: Array[Vector2] = [base_direction]
 	if branch_behavior and is_instance_valid(branch_behavior):
 		shot_directions = branch_behavior.get_shot_directions(base_direction)
@@ -147,7 +151,7 @@ func _on_shoot():
 		shot_directions = [base_direction]
 	var fired_count := 0
 	for dir in shot_directions:
-		var spreaded := _apply_distance_based_spread(dir.normalized(), shot_distance)
+		var spreaded := apply_distance_spread_to_target(dir.normalized(), target_position)
 		var constrained := _constrain_to_forward_cone(spreaded, base_direction)
 		_fire_single_bullet(constrained)
 		fired_count += 1
@@ -167,6 +171,73 @@ func adjust_attack_speed(rate : float) -> void:
 func _on_as_timer_timeout() -> void:
 	if not is_on_cooldown:
 		adjust_attack_speed(0.8)
+
+func _process_main_weapon_effect(_delta: float) -> void:
+	_clear_offhand_main_focus_buff()
+
+func _process_offhand_weapon_effect(_delta: float) -> void:
+	var now_msec := Time.get_ticks_msec()
+	if _offhand_buff_target == null:
+		return
+	if not is_instance_valid(_offhand_buff_target):
+		_clear_offhand_main_focus_buff()
+		return
+	if now_msec >= _offhand_buff_expires_at_msec:
+		_clear_offhand_main_focus_buff()
+		return
+	var current_main := _resolve_current_main_weapon_for_offhand()
+	if current_main != _offhand_buff_target:
+		_clear_offhand_main_focus_buff()
+
+func _on_offhand_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	super._on_offhand_passive_event(event_name, detail)
+	if event_name != &"on_hit":
+		return
+	if not bool(detail.get("source_is_main", false)):
+		return
+	var source_variant: Variant = detail.get("source_weapon", null)
+	var source_weapon := source_variant as Weapon
+	if source_weapon == null or not is_instance_valid(source_weapon):
+		return
+	var current_main := _resolve_current_main_weapon_for_offhand()
+	if current_main == null or source_weapon != current_main:
+		return
+	var now_msec := Time.get_ticks_msec()
+	_cleanup_offhand_hit_window(now_msec)
+	if now_msec < _offhand_cd_ready_at_msec:
+		return
+	_offhand_hit_timestamps_msec.append(now_msec)
+	_cleanup_offhand_hit_window(now_msec)
+	if _offhand_hit_timestamps_msec.size() < max(1, offhand_trigger_hits):
+		return
+	_offhand_hit_timestamps_msec.clear()
+	var buff_duration_sec := maxf(offhand_buff_duration_sec, 0.05)
+	var cooldown_sec := maxf(offhand_cooldown_sec, 0.0)
+	_offhand_cd_ready_at_msec = now_msec + int(cooldown_sec * 1000.0)
+	notify_offhand_skill_triggered(cooldown_sec)
+	if _offhand_buff_target != source_weapon:
+		_clear_offhand_main_focus_buff()
+		_offhand_buff_target = source_weapon
+	_offhand_buff_expires_at_msec = now_msec + int(buff_duration_sec * 1000.0)
+	var spread_applied := _apply_offhand_main_focus_buff(source_weapon)
+	passive_triggered.emit(&"offhand_machine_gun_focus_buff", {
+		"trigger_hits": max(1, offhand_trigger_hits),
+		"trigger_window": maxf(offhand_trigger_window_sec, 0.1),
+		"duration": buff_duration_sec,
+		"cooldown": cooldown_sec,
+		"attack_speed_multiplier": maxf(offhand_main_attack_speed_mult, 0.1),
+		"spread_multiplier": maxf(offhand_main_spread_mult, 0.01),
+		"spread_applied": spread_applied,
+		"target_weapon": source_weapon,
+	})
+
+func _on_enter_main_weapon_role() -> void:
+	_clear_offhand_main_focus_buff()
+	_offhand_hit_timestamps_msec.clear()
+
+func _on_tree_exiting() -> void:
+	_clear_offhand_main_focus_buff()
+	_offhand_hit_timestamps_msec.clear()
 
 func _get_level_data(lv: String) -> Dictionary:
 	if weapon_data.has(lv):
@@ -202,18 +273,46 @@ func _constrain_to_forward_cone(direction: Vector2, forward: Vector2) -> Vector2
 		return normalized_dir
 	return normalized_forward.rotated(signf(angle) * cone_rad).normalized()
 
-func _apply_distance_based_spread(direction: Vector2, shot_distance: float) -> Vector2:
-	if direction == Vector2.ZERO:
-		return direction
-	var distance_ratio := 0.0
-	if spread_full_distance > 0.0:
-		distance_ratio = clampf(shot_distance / spread_full_distance, 0.0, 1.0)
-	var miss_chance := lerpf(close_range_miss_chance, long_range_miss_chance, distance_ratio)
-	if randf() > miss_chance:
-		return direction
-	var max_spread_radians := deg_to_rad(lerpf(MIN_SPREAD_ANGLE_DEG, MAX_SPREAD_ANGLE_DEG, distance_ratio))
-	var spread_offset := randf_range(-max_spread_radians, max_spread_radians)
-	return direction.rotated(spread_offset).normalized()
+func _resolve_current_main_weapon_for_offhand() -> Weapon:
+	if PlayerData.player_weapon_list.is_empty():
+		return null
+	PlayerData.sanitize_main_weapon_index()
+	var idx := PlayerData.main_weapon_index
+	if idx < 0 or idx >= PlayerData.player_weapon_list.size():
+		return null
+	var weapon_variant: Variant = PlayerData.player_weapon_list[idx]
+	var weapon := weapon_variant as Weapon
+	if weapon == null or not is_instance_valid(weapon) or weapon == self:
+		return null
+	return weapon
+
+func _cleanup_offhand_hit_window(now_msec: int) -> void:
+	var window_msec := int(maxf(offhand_trigger_window_sec, 0.1) * 1000.0)
+	while not _offhand_hit_timestamps_msec.is_empty():
+		var oldest := _offhand_hit_timestamps_msec[0]
+		if now_msec - oldest <= window_msec:
+			break
+		_offhand_hit_timestamps_msec.remove_at(0)
+
+func _apply_offhand_main_focus_buff(target_weapon: Weapon) -> bool:
+	if target_weapon == null or not is_instance_valid(target_weapon):
+		return false
+	if target_weapon.has_method("set_external_attack_speed_multiplier"):
+		target_weapon.call("set_external_attack_speed_multiplier", maxf(offhand_main_attack_speed_mult, 0.1))
+	var spread_applied := false
+	if target_weapon.has_method("set_external_spread_multiplier"):
+		target_weapon.call("set_external_spread_multiplier", maxf(offhand_main_spread_mult, 0.01))
+		spread_applied = true
+	return spread_applied
+
+func _clear_offhand_main_focus_buff() -> void:
+	if _offhand_buff_target != null and is_instance_valid(_offhand_buff_target):
+		if _offhand_buff_target.has_method("set_external_attack_speed_multiplier"):
+			_offhand_buff_target.call("set_external_attack_speed_multiplier", 1.0)
+		if _offhand_buff_target.has_method("set_external_spread_multiplier"):
+			_offhand_buff_target.call("set_external_spread_multiplier", 1.0)
+	_offhand_buff_target = null
+	_offhand_buff_expires_at_msec = 0
 
 func _fire_single_bullet(direction: Vector2) -> void:
 	projectile_direction = direction

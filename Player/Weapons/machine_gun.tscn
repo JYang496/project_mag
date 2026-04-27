@@ -8,9 +8,12 @@
 [node name="MachineGun" unique_id=2042815985 instance=ExtResource("1_hyv6l")]
 script = ExtResource("2_0tkjt")
 attack_speed_decay_interval = 0.35
+spread_enabled = true
 spread_full_distance = 900.0
-close_range_miss_chance = 0.05
-long_range_miss_chance = 0.85
+spread_close_range_miss_chance = 0.05
+spread_long_range_miss_chance = 0.85
+spread_min_radius = 6.0
+spread_max_radius = 140.0
 heat_accumulation = 3.0
 max_heat = 100.0
 heat_cooldown_rate = 20.0

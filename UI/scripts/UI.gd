@@ -19,6 +19,8 @@ const HP_BAR_ANIM_TIME := 0.2
 const HP_BAR_TRANS := Tween.TRANS_SINE
 const HP_BAR_EASE := Tween.EASE_OUT
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
+const SPREAD_CURSOR_OVERLAY_SCRIPT := preload("res://UI/scripts/spread_cursor_overlay.gd")
+const SPREAD_CURSOR_FALLBACK_RADIUS_PX := 10.0
 
 # Roots
 @onready var gui_root: Control = $GUI
@@ -127,6 +129,8 @@ var controls_hint_panel: Panel
 var controls_hint_title_label: Label
 var controls_hint_body_label: Label
 var _primary_menu_tweens: Dictionary = {}
+var spread_cursor_overlay: Control
+var _cursor_reload_total_by_weapon: Dictionary = {}
 
 
 func _ready():
@@ -138,6 +142,7 @@ func _ready():
 	_ensure_ammo_label()
 	_ensure_resource_label_under_hp()
 	_ensure_weapon_state_label()
+	_ensure_spread_cursor_overlay()
 	_init_branch_select_panel()
 	_init_module_equip_selection_panel()
 	_init_route_selection_panel()
@@ -275,6 +280,7 @@ func _physics_process(_delta):
 	_refresh_controls_hint_visibility()
 	drag_item_icon.set_position(get_viewport().get_mouse_position())
 	_update_rest_area_hover_hint_position()
+	_update_spread_cursor_overlay()
 func _input(_event) -> void:
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
 		return
@@ -902,7 +908,9 @@ func _layout_hud(viewport_size: Vector2) -> void:
 		weapon_selector.set_layout_origin(Vector2(HUD_MARGIN + 12.0, HUD_MARGIN + 6.0))
 	hp_label_label.position = Vector2(HUD_MARGIN, viewport_size.y - 120.0)
 	if heat_label:
-		heat_label.position = Vector2(HUD_MARGIN, viewport_size.y - 96.0)
+		var heat_spacing := 8.0
+		var heat_height := maxf(heat_label.get_combined_minimum_size().y, 20.0)
+		heat_label.position = Vector2(HUD_MARGIN, hp_label_label.position.y - heat_height - heat_spacing)
 	if ammo_label:
 		ammo_label.position = Vector2(64.0, 64.0)
 	if weapon_state_label:
@@ -1070,6 +1078,113 @@ func _update_rest_area_hover_hint_position() -> void:
 			clampf(zone_target.x, 8.0, zone_max_x),
 			clampf(zone_target.y, 8.0, zone_max_y)
 		)
+
+func _ensure_spread_cursor_overlay() -> void:
+	if spread_cursor_overlay != null and is_instance_valid(spread_cursor_overlay):
+		return
+	var overlay := Control.new()
+	overlay.name = "SpreadCursorOverlay"
+	overlay.set_script(SPREAD_CURSOR_OVERLAY_SCRIPT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.z_index = 300
+	gui_root.add_child(overlay)
+	gui_root.move_child(overlay, gui_root.get_child_count() - 1)
+	spread_cursor_overlay = overlay
+
+func _update_spread_cursor_overlay() -> void:
+	if spread_cursor_overlay == null or not is_instance_valid(spread_cursor_overlay):
+		return
+	var viewport := get_viewport()
+	if viewport == null:
+		_clear_spread_cursor_ammo_progress()
+		spread_cursor_overlay.visible = false
+		return
+	spread_cursor_overlay.visible = true
+	var mouse_screen := viewport.get_mouse_position()
+	if spread_cursor_overlay.has_method("set_cursor_screen_position"):
+		spread_cursor_overlay.call("set_cursor_screen_position", mouse_screen)
+	if PhaseManager.current_state() == PhaseManager.PREPARE:
+		_clear_spread_cursor_ammo_progress()
+		if spread_cursor_overlay.has_method("set_fallback_screen_radius"):
+			# Request minimum; overlay clamps to min_offset_px.
+			spread_cursor_overlay.call("set_fallback_screen_radius", 0.0)
+		return
+	if PhaseManager.current_state() != PhaseManager.BATTLE:
+		_clear_spread_cursor_ammo_progress()
+		if spread_cursor_overlay.has_method("set_fallback_screen_radius"):
+			spread_cursor_overlay.call("set_fallback_screen_radius", SPREAD_CURSOR_FALLBACK_RADIUS_PX)
+		return
+	var main_weapon := _get_main_weapon_node()
+	if main_weapon == null or not is_instance_valid(main_weapon):
+		_clear_spread_cursor_ammo_progress()
+		if spread_cursor_overlay.has_method("set_fallback_screen_radius"):
+			spread_cursor_overlay.call("set_fallback_screen_radius", SPREAD_CURSOR_FALLBACK_RADIUS_PX)
+		return
+	_update_spread_cursor_ammo_progress(main_weapon)
+	var canvas_inv := viewport.get_canvas_transform().affine_inverse()
+	var mouse_world := canvas_inv * mouse_screen
+	var spread_enabled := false
+	var spread_radius_world := 0.0
+	if main_weapon.has_method("get_spread_preview_info_for_target"):
+		var info_variant: Variant = main_weapon.call("get_spread_preview_info_for_target", mouse_world)
+		if info_variant is Dictionary:
+			var info := info_variant as Dictionary
+			spread_enabled = bool(info.get("enabled", false))
+			spread_radius_world = maxf(float(info.get("max_radius", 0.0)), 0.0)
+	elif main_weapon.has_method("get_spread_preview_radius_for_target"):
+		spread_radius_world = maxf(float(main_weapon.call("get_spread_preview_radius_for_target", mouse_world)), 0.0)
+		spread_enabled = spread_radius_world > 0.0
+	if spread_enabled and spread_radius_world > 0.0 and spread_cursor_overlay.has_method("set_world_anchor_and_radius"):
+		spread_cursor_overlay.call("set_world_anchor_and_radius", mouse_world, spread_radius_world)
+		return
+	if spread_cursor_overlay.has_method("set_fallback_screen_radius"):
+		spread_cursor_overlay.call("set_fallback_screen_radius", SPREAD_CURSOR_FALLBACK_RADIUS_PX)
+
+func _update_spread_cursor_ammo_progress(main_weapon: Node) -> void:
+	if spread_cursor_overlay == null or not is_instance_valid(spread_cursor_overlay):
+		return
+	if main_weapon == null or not is_instance_valid(main_weapon):
+		_clear_spread_cursor_ammo_progress()
+		return
+	if not main_weapon.has_method("get_ammo_status"):
+		_clear_spread_cursor_ammo_progress()
+		return
+	var status_variant: Variant = main_weapon.call("get_ammo_status")
+	if not (status_variant is Dictionary):
+		_clear_spread_cursor_ammo_progress()
+		return
+	var status: Dictionary = status_variant as Dictionary
+	if not bool(status.get("enabled", false)):
+		_clear_spread_cursor_ammo_progress()
+		return
+	var max_ammo: int = max(1, int(status.get("max", 0)))
+	var current_ammo: int = clampi(int(status.get("current", 0)), 0, max_ammo)
+	var is_reloading: bool = bool(status.get("is_reloading", false))
+	var reload_left: float = maxf(float(status.get("reload_left", 0.0)), 0.0)
+	var weapon_id: int = main_weapon.get_instance_id()
+	var progress: float = 1.0
+	var clockwise: bool = false
+	if is_reloading:
+		var tracked_total := float(_cursor_reload_total_by_weapon.get(weapon_id, 0.0))
+		if tracked_total <= 0.0:
+			tracked_total = reload_left
+		tracked_total = maxf(tracked_total, reload_left)
+		_cursor_reload_total_by_weapon[weapon_id] = tracked_total
+		if tracked_total <= 0.0:
+			progress = 0.0
+		else:
+			progress = clampf(1.0 - (reload_left / tracked_total), 0.0, 1.0)
+		clockwise = false
+	else:
+		_cursor_reload_total_by_weapon.erase(weapon_id)
+		progress = clampf(float(current_ammo) / float(max_ammo), 0.0, 1.0)
+		clockwise = false
+	if spread_cursor_overlay.has_method("set_ammo_progress"):
+		spread_cursor_overlay.call("set_ammo_progress", progress, clockwise, true)
+
+func _clear_spread_cursor_ammo_progress() -> void:
+	if spread_cursor_overlay != null and is_instance_valid(spread_cursor_overlay) and spread_cursor_overlay.has_method("clear_ammo_progress"):
+		spread_cursor_overlay.call("clear_ammo_progress")
 
 func _layout_quest_hint(viewport_size: Vector2) -> void:
 	if quest_hint_label == null:
@@ -1255,6 +1370,19 @@ func _get_heat_weapon() -> Node:
 		if weapon and is_instance_valid(weapon) and weapon.has_method("has_heat_system") and bool(weapon.call("has_heat_system")):
 			return weapon
 	return null
+
+func _get_main_weapon_node() -> Node:
+	if PlayerData.player_weapon_list.is_empty():
+		return null
+	PlayerData.sanitize_main_weapon_index()
+	var idx := PlayerData.main_weapon_index
+	if idx < 0 or idx >= PlayerData.player_weapon_list.size():
+		return null
+	var weapon_variant: Variant = PlayerData.player_weapon_list[idx]
+	var weapon_node := weapon_variant as Node
+	if weapon_node == null or not is_instance_valid(weapon_node):
+		return null
+	return weapon_node
 
 func _any_heat_weapon_overheated() -> bool:
 	for weapon in PlayerData.player_weapon_list:

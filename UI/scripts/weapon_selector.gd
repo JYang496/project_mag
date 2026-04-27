@@ -3,10 +3,17 @@ class_name WeaponSelector
 
 @export var debug_mode := false
 
+const DIAMOND_COOLDOWN_PROGRESS_SCRIPT := preload("res://UI/scripts/diamond_cooldown_progress.gd")
 const SLOT_COUNT := 4
 const SWITCH_ANIM_TIME := 0.35
 const SWITCH_ANIM_TRANS := Tween.TRANS_SINE
 const SWITCH_ANIM_EASE := Tween.EASE_OUT
+const MAINHAND_PROGRESS_COLOR := Color(0.33, 0.66, 1.0, 0.95)
+const OFFHAND_PROGRESS_COLOR := Color(0.68, 0.68, 0.68, 0.95)
+const MAINHAND_PROGRESS_BASE_COLOR := Color(0.33, 0.66, 1.0, 0.22)
+const OFFHAND_PROGRESS_BASE_COLOR := Color(0.68, 0.68, 0.68, 0.22)
+const MAINHAND_READY_GLOW_COLOR := Color(0.58, 0.86, 1.0, 1.0)
+const OFFHAND_READY_GLOW_COLOR := Color(0.92, 0.92, 0.92, 1.0)
 # Perimeter cycle to keep motion on square edges (avoid hourglass crossing).
 const SLOT_CYCLE: Array[int] = [0, 3, 1, 2]
 
@@ -20,6 +27,13 @@ var _queued_step := 0
 var _is_animating := false
 var _needs_full_refresh := false
 var _switch_tween: Tween
+var _slot_cd_nodes: Array[Control] = []
+var _slot_glow_nodes: Array[Control] = []
+var _cooldown_overlay: Control
+var _slot_anim_z_order: Dictionary = {}
+var _slot_glow_tweens: Dictionary = {}
+var _weapon_prev_cd_progress: Dictionary = {}
+var _weapon_was_cooling: Dictionary = {}
 
 var _empty_weapon_pic: Texture2D = preload("res://Textures/test/empty_wp.png")
 var _mainhand_slot_bg: Texture2D = preload("res://asset/images/ui/mainhand.png")
@@ -30,9 +44,14 @@ func _ready() -> void:
 	_slot_base_positions.clear()
 	for slot_node in _slot_nodes:
 		_slot_base_positions.append(slot_node.position)
+	_ensure_cooldown_overlay()
+	_ensure_slot_cooldown_nodes()
 	_ensure_debug_labels()
 	refresh_slots()
 	_debug_log_state("ready")
+
+func _process(_delta: float) -> void:
+	_update_slot_cooldown_progress()
 
 func set_layout_origin(origin: Vector2) -> void:
 	position = origin
@@ -47,6 +66,7 @@ func refresh_slots() -> void:
 	if _is_animating:
 		_needs_full_refresh = true
 		return
+	_ensure_slot_cooldown_nodes()
 	var valid_weapons := _sanitize_weapon_list()
 	var list_size := valid_weapons.size()
 	var main_idx := PlayerData.main_weapon_index
@@ -56,6 +76,7 @@ func refresh_slots() -> void:
 		main_idx = clampi(main_idx, 0, list_size - 1)
 	logical_order = _build_logical_order(list_size, main_idx)
 	_apply_visuals_from_logical_order(valid_weapons)
+	_apply_cooldown_visibility_from_logical_order(valid_weapons)
 	_update_debug_labels()
 	_debug_log_state("refresh_slots")
 
@@ -78,6 +99,7 @@ func animate_main_switch(step: int) -> void:
 	if occupied_slots.size() < 2:
 		refresh_slots()
 		return
+	_update_anim_overlay_z_order(occupied_slots, sign_step)
 	_rotate_logical_order(sign_step)
 	_set_all_slot_backgrounds_offhand()
 	_update_debug_labels()
@@ -123,6 +145,7 @@ func _on_switch_anim_finished(step: int) -> void:
 	_rotate_slot_nodes(step)
 	_restore_slot_positions()
 	_is_animating = false
+	_slot_anim_z_order.clear()
 	_update_debug_labels()
 	_debug_log_state("animate_finished_step_%d" % step)
 
@@ -163,6 +186,21 @@ func _build_logical_order(list_size: int, main_idx: int) -> Array[int]:
 func _apply_visuals_from_logical_order(weapons: Array) -> void:
 	_apply_slot_backgrounds_from_logical_order()
 	_apply_weapon_icons_from_logical_order(weapons)
+
+func _apply_cooldown_visibility_from_logical_order(weapons: Array) -> void:
+	for slot_idx in range(SLOT_COUNT):
+		var slot_node := _slot_nodes[slot_idx]
+		var progress_node := _get_slot_cooldown_node(slot_node)
+		var glow_node := _get_slot_glow_node(slot_node)
+		if progress_node == null:
+			continue
+		var weapon_idx := logical_order[slot_idx]
+		var has_weapon := weapon_idx >= 0 and weapon_idx < weapons.size() and is_instance_valid(weapons[weapon_idx])
+		progress_node.visible = has_weapon
+		if not has_weapon:
+			progress_node.set("progress", 1.0)
+		if glow_node != null:
+			glow_node.visible = false
 
 func _apply_slot_backgrounds_from_logical_order() -> void:
 	var current_main_index := PlayerData.main_weapon_index
@@ -243,6 +281,211 @@ func _get_slot_background(slot_node: Control) -> TextureRect:
 	if slot_node == null:
 		return null
 	return slot_node.get_node_or_null("Background") as TextureRect
+
+func _ensure_slot_cooldown_nodes() -> void:
+	_ensure_cooldown_overlay()
+	if _slot_cd_nodes.size() != SLOT_COUNT:
+		_slot_cd_nodes.resize(SLOT_COUNT)
+	if _slot_glow_nodes.size() != SLOT_COUNT:
+		_slot_glow_nodes.resize(SLOT_COUNT)
+	for slot_idx in range(SLOT_COUNT):
+		var existing := _slot_cd_nodes[slot_idx]
+		if existing != null and is_instance_valid(existing):
+			pass
+		else:
+			var progress_node := DIAMOND_COOLDOWN_PROGRESS_SCRIPT.new() as Control
+			if progress_node != null:
+				progress_node.name = "CooldownDiamond%d" % slot_idx
+				progress_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				progress_node.visible = false
+				progress_node.z_index = 10 + slot_idx
+				_cooldown_overlay.add_child(progress_node)
+				_slot_cd_nodes[slot_idx] = progress_node
+		var existing_glow := _slot_glow_nodes[slot_idx]
+		if existing_glow != null and is_instance_valid(existing_glow):
+			continue
+		var glow_node := DIAMOND_COOLDOWN_PROGRESS_SCRIPT.new() as Control
+		if glow_node == null:
+			continue
+		glow_node.name = "CooldownDiamondGlow%d" % slot_idx
+		glow_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		glow_node.visible = false
+		glow_node.z_index = 80 + slot_idx
+		glow_node.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		glow_node.set("progress", 1.0)
+		glow_node.set("line_width", 7.0)
+		glow_node.set("padding", 2.0)
+		glow_node.set("base_color", Color(1.0, 1.0, 1.0, 0.0))
+		glow_node.set("fill_color", MAINHAND_READY_GLOW_COLOR)
+		_cooldown_overlay.add_child(glow_node)
+		_slot_glow_nodes[slot_idx] = glow_node
+
+func _get_slot_cooldown_node(slot_node: Control) -> Control:
+	if slot_node == null:
+		return null
+	var slot_idx := _slot_nodes.find(slot_node)
+	if slot_idx < 0 or slot_idx >= _slot_cd_nodes.size():
+		return null
+	var cached := _slot_cd_nodes[slot_idx]
+	if cached != null and is_instance_valid(cached):
+		return cached
+	return null
+
+func _get_slot_glow_node(slot_node: Control) -> Control:
+	if slot_node == null:
+		return null
+	var slot_idx := _slot_nodes.find(slot_node)
+	if slot_idx < 0 or slot_idx >= _slot_glow_nodes.size():
+		return null
+	var cached := _slot_glow_nodes[slot_idx]
+	if cached != null and is_instance_valid(cached):
+		return cached
+	return null
+
+func _update_slot_cooldown_progress() -> void:
+	_sync_cooldown_overlay_layout()
+	var weapons: Array = PlayerData.player_weapon_list
+	var active_weapon_ids: Dictionary = {}
+	for slot_idx in range(SLOT_COUNT):
+		var slot_node := _slot_nodes[slot_idx]
+		var progress_node := _get_slot_cooldown_node(slot_node)
+		var glow_node := _get_slot_glow_node(slot_node)
+		if progress_node == null:
+			continue
+		progress_node.position = slot_node.position
+		progress_node.size = slot_node.size
+		if glow_node != null:
+			glow_node.position = slot_node.position
+			glow_node.size = slot_node.size
+		if _is_animating:
+			var anim_order := int(_slot_anim_z_order.get(slot_idx, slot_idx))
+			progress_node.z_index = 40 + anim_order
+			progress_node.scale = Vector2(0.94, 0.94)
+			progress_node.pivot_offset = progress_node.size * 0.5
+			if glow_node != null:
+				glow_node.z_index = 90 + anim_order
+		else:
+			progress_node.z_index = 10 + slot_idx
+			progress_node.scale = Vector2.ONE
+			if glow_node != null:
+				glow_node.z_index = 80 + slot_idx
+		var weapon_idx := -1
+		if slot_idx < logical_order.size():
+			weapon_idx = logical_order[slot_idx]
+		if weapon_idx < 0 or weapon_idx >= weapons.size():
+			progress_node.visible = false
+			progress_node.set("progress", 1.0)
+			if glow_node != null:
+				glow_node.visible = false
+			continue
+		var weapon: Variant = weapons[weapon_idx]
+		if weapon == null or not is_instance_valid(weapon):
+			progress_node.visible = false
+			progress_node.set("progress", 1.0)
+			if glow_node != null:
+				glow_node.visible = false
+			continue
+		var weapon_id: int = weapon.get_instance_id()
+		active_weapon_ids[weapon_id] = true
+		progress_node.visible = true
+		var is_mainhand_weapon := weapon_idx == PlayerData.main_weapon_index
+		progress_node.set("fill_color", MAINHAND_PROGRESS_COLOR if is_mainhand_weapon else OFFHAND_PROGRESS_COLOR)
+		progress_node.set("base_color", MAINHAND_PROGRESS_BASE_COLOR if is_mainhand_weapon else OFFHAND_PROGRESS_BASE_COLOR)
+		var cd_progress := 1.0
+		if weapon.has_method("get_offhand_skill_cd_progress"):
+			cd_progress = float(weapon.call("get_offhand_skill_cd_progress"))
+		var clamped_progress := clampf(cd_progress, 0.0, 1.0)
+		progress_node.set("progress", clamped_progress)
+		_track_ready_glow_for_weapon(slot_idx, weapon_id, clamped_progress, is_mainhand_weapon)
+	_cleanup_stale_glow_tracking(active_weapon_ids)
+
+func _ensure_cooldown_overlay() -> void:
+	if _cooldown_overlay != null and is_instance_valid(_cooldown_overlay):
+		return
+	_cooldown_overlay = Control.new()
+	_cooldown_overlay.name = "CooldownOverlay"
+	_cooldown_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cooldown_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_cooldown_overlay.offset_left = 0.0
+	_cooldown_overlay.offset_top = 0.0
+	_cooldown_overlay.offset_right = 0.0
+	_cooldown_overlay.offset_bottom = 0.0
+	_cooldown_overlay.z_index = 20
+	add_child(_cooldown_overlay)
+
+func _sync_cooldown_overlay_layout() -> void:
+	if _cooldown_overlay == null or not is_instance_valid(_cooldown_overlay):
+		return
+	_cooldown_overlay.position = Vector2.ZERO
+	_cooldown_overlay.size = size
+
+func _update_anim_overlay_z_order(occupied_slots: Array[int], step: int) -> void:
+	_slot_anim_z_order.clear()
+	if occupied_slots.is_empty():
+		return
+	# Assign deterministic layering order per moving slot while animating.
+	for i in range(occupied_slots.size()):
+		var slot_idx := occupied_slots[i]
+		var order := i
+		if signi(step) > 0:
+			order = occupied_slots.size() - 1 - i
+		_slot_anim_z_order[slot_idx] = order
+
+func _track_ready_glow_for_weapon(slot_idx: int, weapon_id: int, progress: float, is_mainhand_weapon: bool) -> void:
+	var prev_progress: float = float(_weapon_prev_cd_progress.get(weapon_id, progress))
+	var was_cooling: bool = bool(_weapon_was_cooling.get(weapon_id, false))
+	if progress < 0.999:
+		was_cooling = true
+	elif was_cooling and prev_progress < 0.999:
+		_play_ready_glow(slot_idx, is_mainhand_weapon)
+		was_cooling = false
+	_weapon_prev_cd_progress[weapon_id] = progress
+	_weapon_was_cooling[weapon_id] = was_cooling
+
+func _cleanup_stale_glow_tracking(active_weapon_ids: Dictionary) -> void:
+	var stale_progress_ids: Array = []
+	for key in _weapon_prev_cd_progress.keys():
+		if not active_weapon_ids.has(key):
+			stale_progress_ids.append(key)
+	for key in stale_progress_ids:
+		_weapon_prev_cd_progress.erase(key)
+	var stale_cooling_ids: Array = []
+	for key in _weapon_was_cooling.keys():
+		if not active_weapon_ids.has(key):
+			stale_cooling_ids.append(key)
+	for key in stale_cooling_ids:
+		_weapon_was_cooling.erase(key)
+
+func _play_ready_glow(slot_idx: int, is_mainhand_weapon: bool) -> void:
+	if slot_idx < 0 or slot_idx >= _slot_glow_nodes.size():
+		return
+	var glow_node := _slot_glow_nodes[slot_idx]
+	if glow_node == null or not is_instance_valid(glow_node):
+		return
+	var existing_tween: Tween = _slot_glow_tweens.get(slot_idx, null) as Tween
+	if existing_tween != null and is_instance_valid(existing_tween):
+		existing_tween.kill()
+	glow_node.visible = true
+	glow_node.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	glow_node.scale = Vector2.ONE
+	glow_node.pivot_offset = glow_node.size * 0.5
+	glow_node.set("fill_color", MAINHAND_READY_GLOW_COLOR if is_mainhand_weapon else OFFHAND_READY_GLOW_COLOR)
+	var tween := create_tween()
+	_slot_glow_tweens[slot_idx] = tween
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_parallel(true)
+	tween.tween_property(glow_node, "modulate:a", 0.95, 0.08)
+	tween.tween_property(glow_node, "scale", Vector2(1.12, 1.12), 0.12)
+	tween.set_parallel(false)
+	tween.tween_property(glow_node, "modulate:a", 0.0, 0.35)
+	tween.parallel().tween_property(glow_node, "scale", Vector2(1.02, 1.02), 0.35)
+	tween.finished.connect(func() -> void:
+		if glow_node != null and is_instance_valid(glow_node):
+			glow_node.visible = false
+			glow_node.scale = Vector2.ONE
+		_slot_glow_tweens.erase(slot_idx)
+	)
 
 func _get_occupied_slots_in_cycle() -> Array[int]:
 	var occupied_slots: Array[int] = []

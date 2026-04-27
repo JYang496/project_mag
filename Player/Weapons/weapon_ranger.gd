@@ -18,6 +18,13 @@ var size : float = 1.0
 var projectile_direction
 var is_on_cooldown = false
 var _external_attack_speed_multiplier: float = 1.0
+var _external_spread_multiplier: float = 1.0
+@export var spread_enabled: bool = false
+@export var spread_full_distance: float = 900.0
+@export var spread_close_range_miss_chance: float = 0.05
+@export var spread_long_range_miss_chance: float = 0.85
+@export var spread_min_radius: float = 6.0
+@export var spread_max_radius: float = 140.0
 
 var module_list = []
 var effect_sample = {"name":{"key1":123,"key2":234}}
@@ -147,6 +154,99 @@ func get_external_attack_speed_multiplier() -> float:
 func get_effective_cooldown(base_cooldown: float) -> float:
 	var speed_mul := maxf(_external_attack_speed_multiplier, 0.1)
 	return maxf(base_cooldown / speed_mul, 0.01)
+
+func set_external_spread_multiplier(multiplier: float) -> void:
+	_external_spread_multiplier = clampf(multiplier, 0.01, 10.0)
+
+func get_external_spread_multiplier() -> float:
+	return _external_spread_multiplier
+
+func apply_distance_based_spread(direction: Vector2, shot_distance: float) -> Vector2:
+	if direction == Vector2.ZERO:
+		return direction
+	var normalized_dir := direction.normalized()
+	if not spread_enabled:
+		return normalized_dir
+	var spread_info := _build_spread_runtime(shot_distance)
+	if randf() > spread_info["miss_chance"]:
+		return normalized_dir
+	var base_target := global_position + normalized_dir * maxf(shot_distance, 1.0)
+	var spread_target := _sample_spread_target(base_target, float(spread_info["radius"]))
+	var spreaded := global_position.direction_to(spread_target).normalized()
+	if spreaded == Vector2.ZERO:
+		return normalized_dir
+	return spreaded
+
+func apply_distance_spread_to_target(direction: Vector2, target_position: Vector2) -> Vector2:
+	var shot_distance := global_position.distance_to(target_position)
+	if direction == Vector2.ZERO:
+		return direction
+	var normalized_dir := direction.normalized()
+	if not spread_enabled:
+		return normalized_dir
+	var spread_info := _build_spread_runtime(shot_distance)
+	if randf() > spread_info["miss_chance"]:
+		return normalized_dir
+	var spread_target := _sample_spread_target(target_position, float(spread_info["radius"]))
+	var spreaded := global_position.direction_to(spread_target).normalized()
+	if spreaded == Vector2.ZERO:
+		return normalized_dir
+	return spreaded
+
+func _build_spread_runtime(shot_distance: float) -> Dictionary:
+	var distance_ratio := 0.0
+	if spread_full_distance > 0.0:
+		distance_ratio = clampf(shot_distance / spread_full_distance, 0.0, 1.0)
+	var miss_chance := lerpf(
+		clampf(spread_close_range_miss_chance, 0.0, 1.0),
+		clampf(spread_long_range_miss_chance, 0.0, 1.0),
+		distance_ratio
+	)
+	var spread_mul := clampf(_external_spread_multiplier, 0.01, 10.0)
+	var radius := lerpf(maxf(spread_min_radius, 0.0), maxf(spread_max_radius, 0.0), distance_ratio) * spread_mul
+	return {
+		"miss_chance": miss_chance,
+		"radius": maxf(radius, 0.0),
+	}
+
+func _sample_spread_target(base_target: Vector2, radius: float) -> Vector2:
+	if radius <= 0.0:
+		return base_target
+	var theta := randf() * TAU
+	var r := sqrt(randf()) * radius
+	return base_target + Vector2(cos(theta), sin(theta)) * r
+
+func get_spread_preview_radius_for_target(target_position: Vector2) -> float:
+	var info := get_spread_preview_info_for_target(target_position)
+	return maxf(float(info.get("max_radius", 0.0)), 0.0)
+
+func get_spread_preview_info_for_target(target_position: Vector2) -> Dictionary:
+	if target_position == Vector2.ZERO and global_position == Vector2.ZERO:
+		return {
+			"enabled": spread_enabled,
+			"miss_chance": 0.0,
+			"max_radius": 0.0,
+			"distance_ratio": 0.0,
+			"shot_distance": 0.0,
+		}
+	var shot_distance := global_position.distance_to(target_position)
+	var distance_ratio := 0.0
+	if spread_full_distance > 0.0:
+		distance_ratio = clampf(shot_distance / spread_full_distance, 0.0, 1.0)
+	var miss_chance := lerpf(
+		clampf(spread_close_range_miss_chance, 0.0, 1.0),
+		clampf(spread_long_range_miss_chance, 0.0, 1.0),
+		distance_ratio
+	)
+	var spread_mul := clampf(_external_spread_multiplier, 0.01, 10.0)
+	var max_radius := lerpf(maxf(spread_min_radius, 0.0), maxf(spread_max_radius, 0.0), distance_ratio) * spread_mul
+	return {
+		"enabled": spread_enabled,
+		"miss_chance": miss_chance if spread_enabled else 0.0,
+		"max_radius": maxf(max_radius, 0.0) if spread_enabled else 0.0,
+		"distance_ratio": distance_ratio,
+		"shot_distance": shot_distance,
+	}
 
 func start_weapon_cooldown(base_cooldown: float, min_cooldown: float = 0.01) -> void:
 	if cooldown_timer == null:

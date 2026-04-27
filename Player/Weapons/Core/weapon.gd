@@ -47,6 +47,8 @@ var heat_cool_rate: float = 20.0
 var _weapon_active_cd_remaining: float = 0.0
 var _weapon_active_hit_window_hits: int = 0
 var _weapon_active_hit_window_expires_at_msec: int = 0
+var _offhand_skill_cd_duration_sec: float = 0.0
+var _offhand_skill_cd_ready_at_msec: int = 0
 var current_ammo: int = 0
 var is_reloading: bool = false
 var reload_time_left: float = 0.0
@@ -852,6 +854,25 @@ func get_weapon_active_hit_window_progress() -> Dictionary:
 		"required_hits": max(0, weapon_active_hit_window_required_hits),
 		"active": _weapon_active_hit_window_hits > 0 and _weapon_active_hit_window_expires_at_msec > Time.get_ticks_msec(),
 	}
+
+func notify_offhand_skill_triggered(cooldown_sec: float) -> void:
+	var safe_cd: float = maxf(cooldown_sec, 0.0)
+	_offhand_skill_cd_duration_sec = safe_cd
+	if safe_cd <= 0.0:
+		_offhand_skill_cd_ready_at_msec = 0
+		return
+	_offhand_skill_cd_ready_at_msec = Time.get_ticks_msec() + int(safe_cd * 1000.0)
+
+func get_offhand_skill_cd_progress() -> float:
+	if _offhand_skill_cd_duration_sec <= 0.0:
+		return 1.0
+	var now_msec: int = Time.get_ticks_msec()
+	if _offhand_skill_cd_ready_at_msec <= 0 or now_msec >= _offhand_skill_cd_ready_at_msec:
+		return 1.0
+	var total_msec: int = int(maxf(_offhand_skill_cd_duration_sec, 0.01) * 1000.0)
+	var remaining_msec: int = maxi(0, _offhand_skill_cd_ready_at_msec - now_msec)
+	var elapsed_ratio: float = 1.0 - (float(remaining_msec) / float(maxi(total_msec, 1)))
+	return clampf(elapsed_ratio, 0.0, 1.0)
 
 func _update_weapon_active_cooldown(delta: float) -> void:
 	if _weapon_active_cd_remaining <= 0.0:
