@@ -99,7 +99,11 @@ var _mecha_visual_state: int = MechaVisualState.IDLE
 var _last_mecha_facing_direction: Vector2 = Vector2(-1.0, 1.0)
 var _current_move_animation: StringName = StringName()
 var _last_visual_position: Vector2 = Vector2.ZERO
-@export var camera_zoom_lerp_speed: float = 6.0
+@export var camera_zoom_lerp_speed: float = 1.0
+@export var rest_phase_camera_zoom_factor: float = 1.5
+@export var floating_hint_duration_sec: float = 1.0
+@export var floating_hint_rise_px: float = 26.0
+@export var reload_block_hint_interval_sec: float = 0.35
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 @export var player_max_energy: float = 100.0
 @export var player_energy_regen_per_sec: float = 8.0
@@ -109,6 +113,7 @@ var _last_player_skill_fail_reason: String = ""
 var _last_phase: String = ""
 var _auto_loot_running: bool = false
 var _board_generator_ref: Node = null
+var _reload_block_hint_ready_at_msec: int = 0
 # Signals
 signal active_skill()
 signal player_active_skill()
@@ -402,8 +407,55 @@ func _process_combat_input(delta: float) -> void:
 	var pressed := Input.is_action_pressed("ATTACK")
 	var just_pressed := Input.is_action_just_pressed("ATTACK")
 	var just_released := Input.is_action_just_released("ATTACK")
+	if pressed:
+		_try_show_reload_block_hint(main_weapon)
 	if main_weapon.has_method("handle_primary_input"):
 		main_weapon.call("handle_primary_input", pressed, just_pressed, just_released, delta)
+
+func _try_show_reload_block_hint(main_weapon: Weapon) -> void:
+	if main_weapon == null or not is_instance_valid(main_weapon):
+		return
+	if not main_weapon.has_method("uses_ammo_system") or not bool(main_weapon.call("uses_ammo_system")):
+		return
+	var reloading_variant: Variant = main_weapon.get("is_reloading")
+	if reloading_variant == null or not bool(reloading_variant):
+		return
+	var now_msec := Time.get_ticks_msec()
+	if now_msec < _reload_block_hint_ready_at_msec:
+		return
+	_reload_block_hint_ready_at_msec = now_msec + int(maxf(reload_block_hint_interval_sec, 0.05) * 1000.0)
+	var hint_text := "正在换弹中"
+	if LocalizationManager and LocalizationManager.has_method("tr_key"):
+		hint_text = LocalizationManager.tr_key("ui.hud.reloading_now", "正在换弹中")
+	_spawn_player_floating_hint(hint_text)
+
+func _spawn_player_floating_hint(text: String) -> void:
+	var message := text.strip_edges()
+	if message == "":
+		return
+	var label := Label.new()
+	label.text = message
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_size_override("font_size", 16)
+	label.z_as_relative = false
+	label.z_index = 200
+	add_child(label)
+	var min_size := label.get_combined_minimum_size()
+	label.size = Vector2(maxf(min_size.x + 18.0, 96.0), maxf(min_size.y + 6.0, 26.0))
+	label.position = Vector2(-label.size.x * 0.5, -80.0 - label.size.y * 0.5)
+	var anim_duration := maxf(floating_hint_duration_sec, 0.05)
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_parallel(true)
+	tween.tween_property(label, "position:y", label.position.y - maxf(floating_hint_rise_px, 0.0), anim_duration)
+	tween.tween_property(label, "modulate:a", 0.0, anim_duration)
+	tween.finished.connect(func() -> void:
+		if label and is_instance_valid(label):
+			label.queue_free()
+	)
 
 func _sanitize_weapon_list_and_roles() -> void:
 	var valid_weapons: Array = []
@@ -771,7 +823,13 @@ func _update_camera_zoom_by_vision(vision_mul: float) -> void:
 		_base_camera_zoom = Vector2.ONE
 	# Lower vision multiplier means stronger zoom-out (wider view).
 	var zoom_factor := 1.0 / maxf(vision_mul, 0.05)
-	_camera_zoom_target = _base_camera_zoom * zoom_factor
+	_camera_zoom_target = _base_camera_zoom * zoom_factor * _get_phase_camera_zoom_factor()
+
+func _get_phase_camera_zoom_factor() -> float:
+	if PhaseManager != null and PhaseManager.has_method("current_state"):
+		if str(PhaseManager.current_state()) == str(PhaseManager.PREPARE):
+			return clampf(rest_phase_camera_zoom_factor, 0.2, 2.0)
+	return 1.0
 
 func _update_camera_zoom_smooth(delta: float) -> void:
 	if player_camera == null:
@@ -1319,12 +1377,37 @@ func _on_grab_area_area_entered(area):
 func _on_phase_changed(new_phase: String) -> void:
 	var previous_phase := _last_phase
 	_last_phase = new_phase
+	_update_vision_effect()
+	if new_phase == PhaseManager.PREPARE:
+		_instant_reload_all_weapons()
+		_force_all_skills_ready()
 	if new_phase == PhaseManager.PREPARE and previous_phase == PhaseManager.BATTLE:
 		_run_battle_end_auto_collect()
 		return
 	if new_phase == PhaseManager.BATTLE and _auto_loot_running:
 		_auto_loot_running = false
 		_restore_collect_ranges_after_auto_loot()
+
+func _instant_reload_all_weapons() -> void:
+	for weapon in PlayerData.player_weapon_list:
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if weapon.has_method("refill_ammo_instantly"):
+			weapon.call("refill_ammo_instantly")
+
+func _force_all_skills_ready() -> void:
+	for weapon in PlayerData.player_weapon_list:
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if weapon.has_method("force_skill_cooldowns_ready"):
+			weapon.call("force_skill_cooldowns_ready")
+	if active_skill_holder == null or not is_instance_valid(active_skill_holder):
+		return
+	for child in active_skill_holder.get_children():
+		if child == null or not is_instance_valid(child):
+			continue
+		if child.has_method("force_cooldown_ready"):
+			child.call("force_cooldown_ready")
 
 
 func _attract_all_coins() -> void:

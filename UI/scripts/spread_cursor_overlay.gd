@@ -1,12 +1,12 @@
 extends Control
 
-@export var ring_color: Color = Color(0.85, 0.92, 1.0, 0.88)
-@export var ammo_color: Color = Color(0.35, 0.82, 1.0, 0.95)
+@export var ring_color: Color = Color(0.33, 0.66, 1.0, 0.22)
+@export var ammo_color: Color = Color(0.33, 0.66, 1.0, 0.95)
 @export var center_dot_color: Color = Color(1.0, 1.0, 1.0, 0.95)
 @export var ring_width: float = 1.6
 @export var ammo_width: float = 2.2
 @export var center_dot_radius: float = 1.8
-@export var min_offset_px: float = 4.0
+@export var min_offset_px: float = 8.0
 @export var max_offset_px: float = 220.0
 
 var _screen_center: Vector2 = Vector2.ZERO

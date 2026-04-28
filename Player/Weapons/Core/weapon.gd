@@ -361,6 +361,13 @@ func _finish_reload() -> void:
 		"spent_ratio": spent_ratio,
 	})
 
+func refill_ammo_instantly() -> void:
+	if not uses_ammo_system():
+		return
+	current_ammo = max(0, magazine_capacity)
+	is_reloading = false
+	reload_time_left = 0.0
+
 func get_ammo_status() -> Dictionary:
 	return {
 		"enabled": uses_ammo_system(),
@@ -873,6 +880,12 @@ func get_offhand_skill_cd_progress() -> float:
 	var remaining_msec: int = maxi(0, _offhand_skill_cd_ready_at_msec - now_msec)
 	var elapsed_ratio: float = 1.0 - (float(remaining_msec) / float(maxi(total_msec, 1)))
 	return clampf(elapsed_ratio, 0.0, 1.0)
+
+func force_skill_cooldowns_ready() -> void:
+	_weapon_active_cd_remaining = 0.0
+	_offhand_skill_cd_duration_sec = 0.0
+	_offhand_skill_cd_ready_at_msec = 0
+	weapon_active_status_changed.emit(0.0, true)
 
 func _update_weapon_active_cooldown(delta: float) -> void:
 	if _weapon_active_cd_remaining <= 0.0:

@@ -6,6 +6,7 @@ class_name Skills
 var _player: Player
 var _on_cooldown := false
 var _cooldown_remaining: float = 0.0
+var _cooldown_serial: int = 0
 
 func _ready() -> void:
 	call_deferred("_bind_player_and_initialize")
@@ -49,9 +50,18 @@ func _on_player_active_skill_requested() -> void:
 		_start_cooldown()
 
 func _start_cooldown() -> void:
+	_cooldown_serial += 1
+	var serial := _cooldown_serial
 	_on_cooldown = true
 	_cooldown_remaining = maxf(cooldown, 0.0)
 	await get_tree().create_timer(cooldown).timeout
+	if serial != _cooldown_serial:
+		return
+	_on_cooldown = false
+	_cooldown_remaining = 0.0
+
+func force_cooldown_ready() -> void:
+	_cooldown_serial += 1
 	_on_cooldown = false
 	_cooldown_remaining = 0.0
 

@@ -25,6 +25,8 @@ signal rest_menu_cancelled
 @export var zone_merchant_hint_text: String = "Click to open shop"
 @export var zone_smith_hint_text: String = "Click to open upgrade"
 @export var zone_battle_hold_hint_text: String = "Hold left mouse on center to start battle"
+@export var zone_hint_forward_offset: Vector2 = Vector2(0.0, -44.0)
+@export var zone_hint_z_index: int = 80
 
 var _board: BoardCellGenerator
 var _fade_tween: Tween
@@ -70,6 +72,7 @@ func _ready() -> void:
 	objective_enabled = false
 	aura_enabled = false
 	_apply_bounds_size()
+	_setup_scene_hint_labels()
 	_ensure_visual_layering()
 	_sync_to_target_center()
 	_set_active(_should_be_active(PhaseManager.current_state()), true)
@@ -99,6 +102,33 @@ func _refresh_scene_hint_labels() -> void:
 		_smith_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.smith", zone_smith_hint_text)
 	if _battle_hint_label:
 		_battle_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.battle_hold", zone_battle_hold_hint_text)
+	_layout_scene_hint_labels()
+
+func _setup_scene_hint_labels() -> void:
+	for label in [_merchant_hint_label, _smith_hint_label, _battle_hint_label]:
+		if label == null:
+			continue
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.z_as_relative = false
+		label.z_index = zone_hint_z_index
+	_layout_scene_hint_labels()
+
+func _layout_scene_hint_labels() -> void:
+	_place_zone_hint_label(_merchant_hint_label, 0)
+	_place_zone_hint_label(_smith_hint_label, 1)
+	_place_zone_hint_label(_battle_hint_label, CENTER_ZONE_ID)
+
+func _place_zone_hint_label(label: Label, zone_id: int) -> void:
+	if label == null:
+		return
+	var zone_rect := _get_zone_rect_local(zone_id)
+	if zone_rect.size.x <= 0.0 or zone_rect.size.y <= 0.0:
+		return
+	var label_size := label.size
+	if label_size.x <= 0.0 or label_size.y <= 0.0:
+		label_size = label.get_combined_minimum_size()
+	var target_center := zone_rect.get_center() + zone_hint_forward_offset
+	label.position = target_center - label_size * 0.5
 
 func _ensure_visual_layering() -> void:
 	# Keep base texture behind this CanvasItem's custom draw (grid/hover/progress).
@@ -134,6 +164,7 @@ func _apply_bounds_size() -> void:
 		shape_node.shape = rect
 	rect.size = _board.cell_spacing
 	shape_node.scale = Vector2.ONE
+	_layout_scene_hint_labels()
 
 func _sync_to_target_center() -> void:
 	if _board == null:
