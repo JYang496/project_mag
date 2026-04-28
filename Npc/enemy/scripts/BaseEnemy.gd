@@ -162,9 +162,9 @@ func compute_ranged_navigation(
 ) -> Vector2:
 	if PlayerData.player == null:
 		return Vector2.ZERO
-	var to_player := PlayerData.player.global_position - global_position
-	var distance := to_player.length()
-	var to_player_dir := to_player.normalized() if distance > 0.001 else Vector2.RIGHT
+	var to_player: Vector2 = PlayerData.player.global_position - global_position
+	var distance: float = to_player.length()
+	var to_player_dir: Vector2 = to_player.normalized() if distance > 0.001 else Vector2.RIGHT
 	var safe_detect := maxf(detect_range, 1.0)
 	var safe_attack := clampf(attack_range, 1.0, safe_detect)
 	var base_speed := get_current_movement_speed()

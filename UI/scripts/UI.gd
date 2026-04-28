@@ -21,6 +21,8 @@ const HP_BAR_EASE := Tween.EASE_OUT
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const SPREAD_CURSOR_OVERLAY_SCRIPT := preload("res://UI/scripts/spread_cursor_overlay.gd")
 const SPREAD_CURSOR_FALLBACK_RADIUS_PX := 10.0
+const BATTLE_HARDWARE_CURSOR_SIZE := 24
+const BATTLE_HARDWARE_CURSOR_COLOR := Color(0.9, 0.98, 1.0, 1.0)
 
 # Roots
 @onready var gui_root: Control = $GUI
@@ -129,12 +131,20 @@ var controls_hint_panel: Panel
 var controls_hint_title_label: Label
 var controls_hint_body_label: Label
 var _primary_menu_tweens: Dictionary = {}
-var spread_cursor_overlay: Control
+var spread_cursor_overlay
 var _cursor_reload_total_by_weapon: Dictionary = {}
+var _battle_hardware_cursor_tex: Texture2D
+var _battle_hardware_cursor_applied: bool = false
+var _last_heat_label_text: String = ""
+var _last_ammo_label_text: String = ""
+var _last_weapon_state_text: String = ""
 
 
 func _ready():
 	GlobalVariables.ui = self
+	# Reduce input-to-render latency for custom cursor overlays.
+	Input.use_accumulated_input = false
+	_battle_hardware_cursor_tex = _build_battle_hardware_cursor_texture()
 	gui_root.theme = GLOBAL_UI_THEME
 	_init_hp_bar()
 	_refresh_hp_hud()
@@ -161,6 +171,7 @@ func _ready():
 		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
 	_init_item_message_timer()
 	_update_controls_guide_for_phase(PhaseManager.current_state())
+	_update_cursor_presentation()
 	if weapon_selector and is_instance_valid(weapon_selector):
 		weapon_selector.bind_player_data()
 		weapon_selector.refresh_slots()
@@ -278,10 +289,18 @@ func _physics_process(_delta):
 	_update_weapon_state_label_text()
 	_refresh_hud_text_values()
 	_refresh_controls_hint_visibility()
-	drag_item_icon.set_position(get_viewport().get_mouse_position())
 	_update_rest_area_hover_hint_position()
+
+func _process(_delta: float) -> void:
+	# Cursor-follow visuals should run on render frames to minimize perceived mouse lag.
+	drag_item_icon.set_position(get_viewport().get_mouse_position())
 	_update_spread_cursor_overlay()
 func _input(_event) -> void:
+	if _event is InputEventMouseMotion:
+		var motion := _event as InputEventMouseMotion
+		drag_item_icon.set_position(motion.position)
+		_update_spread_cursor_overlay(motion.position)
+
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
 		return
 	
@@ -295,6 +314,7 @@ func _input(_event) -> void:
 			# Pause and show UI
 			get_tree().paused = true
 			pause_menu_root.visible = true
+		_update_cursor_presentation()
 	
 	# Switch weapon
 	if Input.is_action_just_pressed("SWITCH_LEFT"):
@@ -581,12 +601,87 @@ func _on_resume_button_pressed() -> void:
 		# Unpause and hide UI
 		get_tree().paused = false
 		pause_menu_root.visible = false
+	_update_cursor_presentation()
 
 
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.GAMEOVER:
 		_show_game_over()
 	_update_controls_guide_for_phase(new_phase)
+	_update_cursor_presentation()
+
+func _should_use_battle_ring_cursor() -> bool:
+	if PhaseManager.current_state() != PhaseManager.BATTLE:
+		return false
+	if get_tree().paused:
+		return false
+	if pause_menu_root and is_instance_valid(pause_menu_root) and pause_menu_root.visible:
+		return false
+	if game_over_root and is_instance_valid(game_over_root) and game_over_root.visible:
+		return false
+	if _is_primary_menu_open() or _is_secondary_menu_open():
+		return false
+	if branch_select_panel and is_instance_valid(branch_select_panel) and branch_select_panel.visible:
+		return false
+	if module_equip_selection_panel and is_instance_valid(module_equip_selection_panel) and module_equip_selection_panel.visible:
+		return false
+	if route_selection_panel and is_instance_valid(route_selection_panel) and route_selection_panel.visible:
+		return false
+	if reward_selection_panel and is_instance_valid(reward_selection_panel) and reward_selection_panel.visible:
+		return false
+	return true
+
+func _update_cursor_presentation() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	if _should_use_battle_ring_cursor():
+		_apply_battle_hardware_cursor()
+	else:
+		_clear_battle_hardware_cursor()
+
+func _apply_battle_hardware_cursor() -> void:
+	if _battle_hardware_cursor_applied:
+		return
+	if _battle_hardware_cursor_tex == null:
+		_battle_hardware_cursor_tex = _build_battle_hardware_cursor_texture()
+	if _battle_hardware_cursor_tex == null:
+		return
+	var hotspot := Vector2(BATTLE_HARDWARE_CURSOR_SIZE * 0.5, BATTLE_HARDWARE_CURSOR_SIZE * 0.5)
+	for shape in [Input.CURSOR_ARROW, Input.CURSOR_POINTING_HAND, Input.CURSOR_IBEAM, Input.CURSOR_WAIT]:
+		Input.set_custom_mouse_cursor(_battle_hardware_cursor_tex, shape, hotspot)
+	_battle_hardware_cursor_applied = true
+
+func _clear_battle_hardware_cursor() -> void:
+	if not _battle_hardware_cursor_applied:
+		return
+	for shape in [Input.CURSOR_ARROW, Input.CURSOR_POINTING_HAND, Input.CURSOR_IBEAM, Input.CURSOR_WAIT]:
+		Input.set_custom_mouse_cursor(null, shape)
+	_battle_hardware_cursor_applied = false
+
+func _build_battle_hardware_cursor_texture() -> Texture2D:
+	var size: int = maxi(12, BATTLE_HARDWARE_CURSOR_SIZE)
+	var center := int(size / 2)
+	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	var c := BATTLE_HARDWARE_CURSOR_COLOR
+	for x in range(size):
+		image.set_pixel(x, center, c)
+	for y in range(size):
+		image.set_pixel(center, y, c)
+	for i in range(-3, 4):
+		image.set_pixel(center + i, center, c)
+		image.set_pixel(center, center + i, c)
+	var outline := Color(0.12, 0.2, 0.28, 0.9)
+	for x in range(size):
+		if center - 1 >= 0:
+			image.set_pixel(x, center - 1, outline)
+		if center + 1 < size:
+			image.set_pixel(x, center + 1, outline)
+	for y in range(size):
+		if center - 1 >= 0:
+			image.set_pixel(center - 1, y, outline)
+		if center + 1 < size:
+			image.set_pixel(center + 1, y, outline)
+	return ImageTexture.create_from_image(image)
 
 
 func _show_game_over() -> void:
@@ -1091,34 +1186,28 @@ func _ensure_spread_cursor_overlay() -> void:
 	gui_root.move_child(overlay, gui_root.get_child_count() - 1)
 	spread_cursor_overlay = overlay
 
-func _update_spread_cursor_overlay() -> void:
+func _update_spread_cursor_overlay(mouse_screen_override: Variant = null) -> void:
 	if spread_cursor_overlay == null or not is_instance_valid(spread_cursor_overlay):
 		return
+	_update_cursor_presentation()
 	var viewport := get_viewport()
 	if viewport == null:
 		_clear_spread_cursor_ammo_progress()
 		spread_cursor_overlay.visible = false
 		return
+	if not _should_use_battle_ring_cursor():
+		_clear_spread_cursor_ammo_progress()
+		spread_cursor_overlay.visible = false
+		return
 	spread_cursor_overlay.visible = true
 	var mouse_screen := viewport.get_mouse_position()
-	if spread_cursor_overlay.has_method("set_cursor_screen_position"):
-		spread_cursor_overlay.call("set_cursor_screen_position", mouse_screen)
-	if PhaseManager.current_state() == PhaseManager.PREPARE:
-		_clear_spread_cursor_ammo_progress()
-		if spread_cursor_overlay.has_method("set_fallback_screen_radius"):
-			# Request minimum; overlay clamps to min_offset_px.
-			spread_cursor_overlay.call("set_fallback_screen_radius", 0.0)
-		return
-	if PhaseManager.current_state() != PhaseManager.BATTLE:
-		_clear_spread_cursor_ammo_progress()
-		if spread_cursor_overlay.has_method("set_fallback_screen_radius"):
-			spread_cursor_overlay.call("set_fallback_screen_radius", SPREAD_CURSOR_FALLBACK_RADIUS_PX)
-		return
+	if mouse_screen_override is Vector2:
+		mouse_screen = mouse_screen_override as Vector2
+	spread_cursor_overlay.set_cursor_screen_position(mouse_screen)
 	var main_weapon := _get_main_weapon_node()
 	if main_weapon == null or not is_instance_valid(main_weapon):
 		_clear_spread_cursor_ammo_progress()
-		if spread_cursor_overlay.has_method("set_fallback_screen_radius"):
-			spread_cursor_overlay.call("set_fallback_screen_radius", SPREAD_CURSOR_FALLBACK_RADIUS_PX)
+		spread_cursor_overlay.set_fallback_screen_radius(SPREAD_CURSOR_FALLBACK_RADIUS_PX)
 		return
 	_update_spread_cursor_ammo_progress(main_weapon)
 	var canvas_inv := viewport.get_canvas_transform().affine_inverse()
@@ -1134,11 +1223,10 @@ func _update_spread_cursor_overlay() -> void:
 	elif main_weapon.has_method("get_spread_preview_radius_for_target"):
 		spread_radius_world = maxf(float(main_weapon.call("get_spread_preview_radius_for_target", mouse_world)), 0.0)
 		spread_enabled = spread_radius_world > 0.0
-	if spread_enabled and spread_radius_world > 0.0 and spread_cursor_overlay.has_method("set_world_anchor_and_radius"):
-		spread_cursor_overlay.call("set_world_anchor_and_radius", mouse_world, spread_radius_world)
+	if spread_enabled and spread_radius_world > 0.0:
+		spread_cursor_overlay.set_world_anchor_and_radius(mouse_world, spread_radius_world)
 		return
-	if spread_cursor_overlay.has_method("set_fallback_screen_radius"):
-		spread_cursor_overlay.call("set_fallback_screen_radius", SPREAD_CURSOR_FALLBACK_RADIUS_PX)
+	spread_cursor_overlay.set_fallback_screen_radius(SPREAD_CURSOR_FALLBACK_RADIUS_PX)
 
 func _update_spread_cursor_ammo_progress(main_weapon: Node) -> void:
 	if spread_cursor_overlay == null or not is_instance_valid(spread_cursor_overlay):
@@ -1179,12 +1267,11 @@ func _update_spread_cursor_ammo_progress(main_weapon: Node) -> void:
 		_cursor_reload_total_by_weapon.erase(weapon_id)
 		progress = clampf(float(current_ammo) / float(max_ammo), 0.0, 1.0)
 		clockwise = false
-	if spread_cursor_overlay.has_method("set_ammo_progress"):
-		spread_cursor_overlay.call("set_ammo_progress", progress, clockwise, true)
+	spread_cursor_overlay.set_ammo_progress(progress, clockwise, true)
 
 func _clear_spread_cursor_ammo_progress() -> void:
-	if spread_cursor_overlay != null and is_instance_valid(spread_cursor_overlay) and spread_cursor_overlay.has_method("clear_ammo_progress"):
-		spread_cursor_overlay.call("clear_ammo_progress")
+	if spread_cursor_overlay != null and is_instance_valid(spread_cursor_overlay):
+		spread_cursor_overlay.clear_ammo_progress()
 
 func _layout_quest_hint(viewport_size: Vector2) -> void:
 	if quest_hint_label == null:
@@ -1306,7 +1393,7 @@ func _update_heat_label_text() -> void:
 	var percent: int = int(round(clampf(heat_value / heat_max, 0.0, 1.0) * 100.0))
 	var overheated := _any_heat_weapon_overheated()
 	var overheat_text := LocalizationManager.tr_key("ui.hud.heat_overheat", " (OVERHEAT)") if overheated else ""
-	heat_label.text = LocalizationManager.tr_format(
+	var next_text := LocalizationManager.tr_format(
 		"ui.hud.heat",
 		{
 			"value": int(round(heat_value)),
@@ -1316,6 +1403,9 @@ func _update_heat_label_text() -> void:
 		},
 		"Heat: %d/%d (%d%%)%s" % [int(round(heat_value)), int(round(heat_max)), percent, overheat_text]
 	)
+	if _last_heat_label_text != next_text:
+		_last_heat_label_text = next_text
+		heat_label.text = next_text
 	heat_label.visible = true
 
 func _update_ammo_label_text() -> void:
@@ -1353,11 +1443,14 @@ func _update_ammo_label_text() -> void:
 	var reload_text := ""
 	if is_reloading:
 		reload_text = LocalizationManager.tr_format("ui.hud.ammo_reloading", {"sec": snappedf(reload_left, 0.1)}, " (Reloading %.1fs)" % reload_left)
-	ammo_label.text = LocalizationManager.tr_format(
+	var next_ammo_text := LocalizationManager.tr_format(
 		"ui.hud.ammo",
 		{"current": current, "max": max_ammo, "reload": reload_text},
 		"Ammo: %d/%d%s" % [current, max_ammo, reload_text]
 	)
+	if _last_ammo_label_text != next_ammo_text:
+		_last_ammo_label_text = next_ammo_text
+		ammo_label.text = next_ammo_text
 
 func _get_heat_weapon() -> Node:
 	if PlayerData.player_weapon_list.is_empty():
@@ -1408,7 +1501,7 @@ func _update_weapon_state_label_text() -> void:
 		main_text = LocalizationManager.tr_key("ui.hud.weapon.main.locked", "W1 (locked)")
 	elif PlayerData.main_weapon_index >= 0:
 		main_text = LocalizationManager.tr_format("ui.hud.weapon.main.slot", {"index": PlayerData.main_weapon_index + 1}, "W%s" % str(PlayerData.main_weapon_index + 1))
-	var ws_cd := PlayerData.player.get_weapon_active_cd_remaining() if PlayerData.player.has_method("get_weapon_active_cd_remaining") else 0.0
+	var ws_cd: float = PlayerData.player.get_weapon_active_cd_remaining() if PlayerData.player.has_method("get_weapon_active_cd_remaining") else 0.0
 	var ps_cd := 0.0
 	var active_skill_node: Node = null
 	if PlayerData.player.active_skill_holder and PlayerData.player.active_skill_holder.get_child_count() > 0:
@@ -1423,7 +1516,7 @@ func _update_weapon_state_label_text() -> void:
 	var fail_text := ""
 	if fail_reason != "":
 		fail_text = LocalizationManager.tr_format("ui.hud.weapon.fail", {"reason": fail_reason}, " Fail:%s" % fail_reason)
-	weapon_state_label.text = LocalizationManager.tr_format(
+	var next_state_text := LocalizationManager.tr_format(
 		"ui.hud.weapon_state",
 		{
 			"main": main_text,
@@ -1435,6 +1528,9 @@ func _update_weapon_state_label_text() -> void:
 		},
 		"Main:%s Offhand:%d Swap:%s WS:%.1fs PS:%s%s" % [main_text, maxi(0, weapon_count - 1), lock_text, ws_cd, ps_text, fail_text]
 	)
+	if _last_weapon_state_text != next_state_text:
+		_last_weapon_state_text = next_state_text
+		weapon_state_label.text = next_state_text
 
 func _ensure_pause_language_controls() -> void:
 	var pause_label := pause_menu_panel.get_node_or_null("Paused") as Label

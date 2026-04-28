@@ -3,7 +3,7 @@ extends Node
 signal main_weapon_index_changed(old_index: int, new_index: int, step: int)
 signal weapon_list_changed()
 
-@onready var player : Player
+@onready var player = null
 var select_mecha_id :int = 1
 
 var player_level := 1 :

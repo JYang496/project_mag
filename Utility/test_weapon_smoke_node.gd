@@ -6,6 +6,12 @@ func _ready() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	var player_data := get_node_or_null("/root/PlayerData")
+	if player_data == null:
+		push_error("SmokeTest: PlayerData autoload missing.")
+		get_tree().quit(11)
+		return
+	var phase_manager := get_node_or_null("/root/PhaseManager")
 	var player := PLAYER_SCENE.instantiate()
 	if player == null:
 		push_error("SmokeTest: failed to instantiate player scene.")
@@ -15,12 +21,12 @@ func _run() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	if PlayerData.player_weapon_list.is_empty():
+	if player_data.player_weapon_list.is_empty():
 		push_error("SmokeTest: player has no weapon after spawn.")
 		get_tree().quit(2)
 		return
 
-	var weapon: Variant = PlayerData.player_weapon_list[0]
+	var weapon: Variant = player_data.player_weapon_list[0]
 	if weapon == null or not is_instance_valid(weapon):
 		push_error("SmokeTest: weapon instance invalid.")
 		get_tree().quit(3)
@@ -35,16 +41,16 @@ func _run() -> void:
 	weapon.set_meta("_benchmark_mouse_target", target)
 	player.set_meta("_benchmark_mouse_target", target)
 
-	if PhaseManager != null:
-		PhaseManager.phase = PhaseManager.PREPARE
+	if phase_manager != null:
+		phase_manager.phase = phase_manager.PREPARE
 	await get_tree().process_frame
 	if weapon.get("is_on_cooldown") != null:
 		weapon.set("is_on_cooldown", false)
 	var fired_in_prepare := bool(weapon.call("request_primary_fire"))
 	var ammo_prepare_after := int(weapon.get("current_ammo"))
 
-	if PhaseManager and PhaseManager.has_method("enter_battle"):
-		PhaseManager.enter_battle()
+	if phase_manager and phase_manager.has_method("enter_battle"):
+		phase_manager.enter_battle()
 	await get_tree().process_frame
 	if weapon.get("is_on_cooldown") != null:
 		weapon.set("is_on_cooldown", false)

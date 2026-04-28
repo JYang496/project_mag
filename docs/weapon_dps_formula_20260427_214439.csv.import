@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://uuoh2gw61uhs"
+
+[deps]
+
+files=["res://docs/weapon_dps_formula_20260427_214439.weapon.translation", "res://docs/weapon_dps_formula_20260427_214439.weapon.translation", "res://docs/weapon_dps_formula_20260427_214439.en.translation", "res://docs/weapon_dps_formula_20260427_214439.round.translation", "res://docs/weapon_dps_formula_20260427_214439.duration.translation", "res://docs/weapon_dps_formula_20260427_214439.fire.translation", "res://docs/weapon_dps_formula_20260427_214439.fire.translation", "res://docs/weapon_dps_formula_20260427_214439.reload.translation", "res://docs/weapon_dps_formula_20260427_214439.reload.translation", "res://docs/weapon_dps_formula_20260427_214439.manual.translation", "res://docs/weapon_dps_formula_20260427_214439.fire.translation", "res://docs/weapon_dps_formula_20260427_214439.reload.translation", "res://docs/weapon_dps_formula_20260427_214439.total.translation", "res://docs/weapon_dps_formula_20260427_214439.dps.translation", "res://docs/weapon_dps_formula_20260427_214439.formula.translation", "res://docs/weapon_dps_formula_20260427_214439.timestamp.translation"]
+
+source_file="res://docs/weapon_dps_formula_20260427_214439.csv"
+dest_files=["res://docs/weapon_dps_formula_20260427_214439.weapon.translation", "res://docs/weapon_dps_formula_20260427_214439.weapon.translation", "res://docs/weapon_dps_formula_20260427_214439.en.translation", "res://docs/weapon_dps_formula_20260427_214439.round.translation", "res://docs/weapon_dps_formula_20260427_214439.duration.translation", "res://docs/weapon_dps_formula_20260427_214439.fire.translation", "res://docs/weapon_dps_formula_20260427_214439.fire.translation", "res://docs/weapon_dps_formula_20260427_214439.reload.translation", "res://docs/weapon_dps_formula_20260427_214439.reload.translation", "res://docs/weapon_dps_formula_20260427_214439.manual.translation", "res://docs/weapon_dps_formula_20260427_214439.fire.translation", "res://docs/weapon_dps_formula_20260427_214439.reload.translation", "res://docs/weapon_dps_formula_20260427_214439.total.translation", "res://docs/weapon_dps_formula_20260427_214439.dps.translation", "res://docs/weapon_dps_formula_20260427_214439.formula.translation", "res://docs/weapon_dps_formula_20260427_214439.timestamp.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

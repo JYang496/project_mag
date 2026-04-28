@@ -178,13 +178,13 @@ func _resolve_strike_damage(strike_point: Vector2) -> void:
 	var radius_sq := maxf(aoe_radius, 1.0)
 	radius_sq *= radius_sq
 
-	var player := PlayerData.player
+	var player := PlayerData.player as Node2D
 	if player and is_instance_valid(player):
 		if player.global_position.distance_squared_to(strike_point) <= radius_sq:
 			var player_attack := Attack.new()
 			player_attack.damage = max(aoe_damage, 0)
 			player_attack.damage_type = aoe_damage_type
-			player.damaged(player_attack)
+			player.call("damaged", player_attack)
 
 	for enemy_node in get_tree().get_nodes_in_group("enemies"):
 		var enemy := enemy_node as BaseEnemy

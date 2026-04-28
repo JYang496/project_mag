@@ -4,6 +4,9 @@ class_name Player
 const SHARED_HEAT_POOL_SCRIPT := preload("res://Player/Weapons/Heat/shared_heat_pool.gd")
 const DAMAGE_PIPELINE_SCRIPT := preload("res://Utility/damage/damage_pipeline.gd")
 const DAMAGE_PROFILE_SCRIPT := preload("res://Utility/damage/damage_profile.gd")
+const FLOATING_STATUS_HINT_MANAGER_SCRIPT := preload("res://Player/Mechas/scripts/floating_status_hint_manager.gd")
+const PLAYER_STATUS_MODIFIER_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_status_modifier_system.gd")
+const PLAYER_ELEMENTAL_EFFECT_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_elemental_effect_system.gd")
 
 var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
@@ -26,7 +29,6 @@ var movement_enabled = true
 var moveto_enabled = false
 var moveto_dest := Vector2.ZERO
 var distance_mouse_player = 0
-var status_list = {}
 const TARGET_MECHA_SIZE = Vector2(96,96)
 const MOVE_ANIMATION_TOP: StringName = &"move_top"
 const MOVE_ANIMATION_BOTTOM: StringName = &"move_bottom"
@@ -63,26 +65,6 @@ const AUTO_LOOT_TICK_SEC: float = 0.2
 const AUTO_LOOT_GRAB_RADIUS: float = 2500.0
 const COLLECT_AREA_TOP_PADDING: float = 0.0
 var weapon_orbit_states: Dictionary = {}
-var _move_speed_mul_modifiers: Dictionary = {}
-var _vision_mul_modifiers: Dictionary = {}
-var _damage_mul_modifiers: Dictionary = {}
-var _low_hp_damage_modifiers: Dictionary = {}
-var _bonus_hit_modifiers: Dictionary = {}
-var _loot_bonus_modifiers: Dictionary = {}
-var _scorch_stacks: int = 0
-var _scorch_expires_at_msec: int = 0
-var _scorch_dot_damage_per_stack: int = 1
-var _scorch_dot_accum_sec: float = 0.0
-var _scorch_source_node: Node
-var _scorch_source_player: Node
-var _is_processing_scorch_dot: bool = false
-var _frost_stacks: int = 0
-var _frost_expires_at_msec: int = 0
-var _frost_next_stack_at_msec: int = 0
-var _energy_mark_value: int = 0
-var _energy_mark_expires_at_msec: int = 0
-var _energy_mark_trigger_ready_at_msec: int = 0
-var _is_processing_energy_burst: bool = false
 var _base_detect_shape_size := Vector2.ZERO
 var _base_camera_zoom := Vector2.ONE
 var _camera_zoom_target := Vector2.ONE
@@ -104,6 +86,7 @@ var _last_visual_position: Vector2 = Vector2.ZERO
 @export var floating_hint_duration_sec: float = 1.0
 @export var floating_hint_rise_px: float = 26.0
 @export var reload_block_hint_interval_sec: float = 0.35
+@export var status_hint_throttle_sec: float = 0.45
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 @export var player_max_energy: float = 100.0
 @export var player_energy_regen_per_sec: float = 8.0
@@ -114,6 +97,10 @@ var _last_phase: String = ""
 var _auto_loot_running: bool = false
 var _board_generator_ref: Node = null
 var _reload_block_hint_ready_at_msec: int = 0
+var PlayerData = null
+var _status_hint_manager
+var _status_modifier_system
+var _elemental_effect_system
 # Signals
 signal active_skill()
 signal player_active_skill()
@@ -121,6 +108,10 @@ signal weapon_active_skill()
 signal coin_collected()
 
 func _ready():
+	PlayerData = get_node_or_null("/root/PlayerData")
+	if PlayerData == null:
+		push_error("PlayerData autoload missing.")
+		return
 	PlayerData.player = self
 	_incoming_damage_pipeline = DAMAGE_PIPELINE_SCRIPT.new() as DamagePipeline
 	_setup_incoming_damage_profile()
@@ -149,6 +140,9 @@ func _ready():
 	if viewport and not viewport.is_connected("size_changed", Callable(self, "_on_viewport_size_changed")):
 		viewport.size_changed.connect(Callable(self, "_on_viewport_size_changed"))
 	_update_collect_area_anchor_to_screen_top()
+	_ensure_status_hint_manager()
+	_ensure_status_modifier_system()
+	_ensure_elemental_effect_system()
 
 # overwrite the function on child class
 func custom_ready():
@@ -430,31 +424,58 @@ func _try_show_reload_block_hint(main_weapon: Weapon) -> void:
 	_spawn_player_floating_hint(hint_text)
 
 func _spawn_player_floating_hint(text: String) -> void:
-	var message := text.strip_edges()
-	if message == "":
+	_ensure_status_hint_manager()
+	if _status_hint_manager == null:
 		return
-	var label := Label.new()
-	label.text = message
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.add_theme_font_size_override("font_size", 16)
-	label.z_as_relative = false
-	label.z_index = 200
-	add_child(label)
-	var min_size := label.get_combined_minimum_size()
-	label.size = Vector2(maxf(min_size.x + 18.0, 96.0), maxf(min_size.y + 6.0, 26.0))
-	label.position = Vector2(-label.size.x * 0.5, -80.0 - label.size.y * 0.5)
-	var anim_duration := maxf(floating_hint_duration_sec, 0.05)
-	var tween := create_tween()
-	tween.set_trans(Tween.TRANS_SINE)
-	tween.set_ease(Tween.EASE_OUT)
-	tween.set_parallel(true)
-	tween.tween_property(label, "position:y", label.position.y - maxf(floating_hint_rise_px, 0.0), anim_duration)
-	tween.tween_property(label, "modulate:a", 0.0, anim_duration)
-	tween.finished.connect(func() -> void:
-		if label and is_instance_valid(label):
-			label.queue_free()
+	_status_hint_manager.enqueue_raw_hint(text)
+
+func notify_weapon_status_change(stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
+	_notify_status_hint(&"weapon", stat_type, source_id, is_gain)
+
+func _notify_status_hint(owner: StringName, stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
+	_ensure_status_hint_manager()
+	if _status_hint_manager == null:
+		return
+	_status_hint_manager.notify_status_hint(owner, stat_type, source_id, is_gain)
+
+func _ensure_status_hint_manager() -> void:
+	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
+		_status_hint_manager.setup(self, floating_hint_duration_sec, floating_hint_rise_px, status_hint_throttle_sec)
+		return
+	_status_hint_manager = FLOATING_STATUS_HINT_MANAGER_SCRIPT.new() as FloatingStatusHintManager
+	if _status_hint_manager == null:
+		return
+	_status_hint_manager.name = "FloatingStatusHintManager"
+	add_child(_status_hint_manager)
+	_status_hint_manager.setup(self, floating_hint_duration_sec, floating_hint_rise_px, status_hint_throttle_sec)
+
+func _ensure_status_modifier_system() -> void:
+	if _status_modifier_system != null:
+		_status_modifier_system.setup(self)
+		return
+	_status_modifier_system = PLAYER_STATUS_MODIFIER_SYSTEM_SCRIPT.new()
+	if _status_modifier_system == null:
+		return
+	_status_modifier_system.setup(self)
+
+func _ensure_elemental_effect_system() -> void:
+	if _elemental_effect_system == null:
+		_elemental_effect_system = PLAYER_ELEMENTAL_EFFECT_SYSTEM_SCRIPT.new()
+	if _elemental_effect_system == null:
+		return
+	_elemental_effect_system.setup(self)
+	_elemental_effect_system.configure(
+		SCORCH_DURATION_SEC,
+		SCORCH_DOT_RATIO_PER_STACK,
+		FROST_DURATION_SEC,
+		FROST_SLOW_PER_STACK,
+		FROST_STACK_INTERVAL_SEC,
+		FROST_MAX_STACKS,
+		FROST_MOVE_SPEED_SOURCE,
+		ENERGY_MARK_RATIO,
+		ENERGY_MARK_DURATION_SEC,
+		ENERGY_MARK_MAX_HP_RATIO,
+		ENERGY_MARK_TRIGGER_COOLDOWN_SEC
 	)
 
 func _sanitize_weapon_list_and_roles() -> void:
@@ -480,7 +501,7 @@ func get_main_weapon() -> Weapon:
 	if PlayerData.player_weapon_list.is_empty():
 		return null
 	PlayerData.sanitize_main_weapon_index()
-	var idx := PlayerData.main_weapon_index
+	var idx: int = int(PlayerData.main_weapon_index)
 	if idx < 0 or idx >= PlayerData.player_weapon_list.size():
 		return null
 	var weapon: Variant = PlayerData.player_weapon_list[idx]
@@ -644,138 +665,109 @@ func movement(delta):
 	_update_weapon_orbits(delta)
 
 func apply_move_speed_mul(source_id: StringName, mul: float) -> void:
-	if source_id == StringName():
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
 		return
-	_move_speed_mul_modifiers[source_id] = clampf(mul, 0.05, 10.0)
+	_status_modifier_system.apply_move_speed_mul(source_id, mul)
 
 func remove_move_speed_mul(source_id: StringName) -> void:
-	if _move_speed_mul_modifiers.has(source_id):
-		_move_speed_mul_modifiers.erase(source_id)
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
+		return
+	_status_modifier_system.remove_move_speed_mul(source_id)
 
 func get_total_move_speed_mul() -> float:
-	var total := 1.0
-	for mul in _move_speed_mul_modifiers.values():
-		total *= float(mul)
-	return maxf(total, 0.05)
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
+		return 1.0
+	return _status_modifier_system.get_total_move_speed_mul()
 
 func apply_vision_mul(source_id: StringName, mul: float) -> void:
-	if source_id == StringName():
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
 		return
-	_vision_mul_modifiers[source_id] = clampf(mul, 0.05, 10.0)
+	_status_modifier_system.apply_vision_mul(source_id, mul)
 	_update_vision_effect()
 
 func remove_vision_mul(source_id: StringName) -> void:
-	if _vision_mul_modifiers.has(source_id):
-		_vision_mul_modifiers.erase(source_id)
+	_ensure_status_modifier_system()
+	if _status_modifier_system != null:
+		_status_modifier_system.remove_vision_mul(source_id)
 	_update_vision_effect()
 
 func get_total_vision_mul() -> float:
-	var total := 1.0
-	for mul in _vision_mul_modifiers.values():
-		total *= float(mul)
-	return maxf(total, 0.05)
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
+		return 1.0
+	return _status_modifier_system.get_total_vision_mul()
 
 func apply_damage_mul(source_id: StringName, mul: float) -> void:
-	if source_id == StringName():
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
 		return
-	_damage_mul_modifiers[source_id] = maxf(mul, 0.05)
+	_status_modifier_system.apply_damage_mul(source_id, mul)
 
 func remove_damage_mul(source_id: StringName) -> void:
-	if _damage_mul_modifiers.has(source_id):
-		_damage_mul_modifiers.erase(source_id)
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
+		return
+	_status_modifier_system.remove_damage_mul(source_id)
 
 func register_low_hp_damage_bonus(source_id: StringName, min_hp_ratio: float, max_damage_mul: float) -> void:
-	if source_id == StringName():
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
 		return
-	_low_hp_damage_modifiers[source_id] = {
-		"min_hp_ratio": clampf(min_hp_ratio, 0.05, 1.0),
-		"max_damage_mul": maxf(max_damage_mul, 1.0)
-	}
+	_status_modifier_system.register_low_hp_damage_bonus(source_id, min_hp_ratio, max_damage_mul)
 
 func remove_low_hp_damage_bonus(source_id: StringName) -> void:
-	if _low_hp_damage_modifiers.has(source_id):
-		_low_hp_damage_modifiers.erase(source_id)
+	_ensure_status_modifier_system()
+	if _status_modifier_system != null:
+		_status_modifier_system.remove_low_hp_damage_bonus(source_id)
 
 func register_bonus_hit(source_id: StringName, chance: float, damage: int) -> void:
-	if source_id == StringName():
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
 		return
-	_bonus_hit_modifiers[source_id] = {
-		"chance": clampf(chance, 0.0, 1.0),
-		"damage": max(1, damage)
-	}
+	_status_modifier_system.register_bonus_hit(source_id, chance, damage)
 
 func remove_bonus_hit(source_id: StringName) -> void:
-	if _bonus_hit_modifiers.has(source_id):
-		_bonus_hit_modifiers.erase(source_id)
+	_ensure_status_modifier_system()
+	if _status_modifier_system != null:
+		_status_modifier_system.remove_bonus_hit(source_id)
 
 func register_loot_bonus(source_id: StringName, coin_chance: float, chip_chance: float, multiplier: int) -> void:
-	if source_id == StringName():
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
 		return
-	_loot_bonus_modifiers[source_id] = {
-		"coin_chance": clampf(coin_chance, 0.0, 1.0),
-		"chip_chance": clampf(chip_chance, 0.0, 1.0),
-		"multiplier": max(2, multiplier)
-	}
+	_status_modifier_system.register_loot_bonus(source_id, coin_chance, chip_chance, multiplier)
 
 func remove_loot_bonus(source_id: StringName) -> void:
-	if _loot_bonus_modifiers.has(source_id):
-		_loot_bonus_modifiers.erase(source_id)
+	_ensure_status_modifier_system()
+	if _status_modifier_system != null:
+		_status_modifier_system.remove_loot_bonus(source_id)
 
 func compute_outgoing_damage(base_damage: int) -> int:
-	var total_mul_delta := 0.0
-	for mul in _damage_mul_modifiers.values():
-		total_mul_delta += (float(mul) - 1.0)
-	total_mul_delta += (_get_low_hp_damage_mul() - 1.0)
-	var final_mul := maxf(0.0, 1.0 + total_mul_delta)
-	return max(1, int(round(float(base_damage) * final_mul)))
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
+		return max(1, base_damage)
+	return _status_modifier_system.compute_outgoing_damage(base_damage)
 
 func apply_bonus_hit_if_needed(target: Node) -> void:
-	if target == null or not is_instance_valid(target):
-		return
-	if not target.has_method("damaged"):
-		return
-	for data in _bonus_hit_modifiers.values():
-		var chance: float = float(data.get("chance", 0.0))
-		var bonus_damage: int = int(data.get("damage", 1))
-		if randf() <= chance:
-			var bonus_attack := Attack.new()
-			bonus_attack.damage = max(1, bonus_damage)
-			bonus_attack.damage_type = Attack.TYPE_PHYSICAL
-			bonus_attack.source_node = self
-			bonus_attack.source_player = self
-			target.damaged(bonus_attack)
+	_ensure_status_modifier_system()
+	if _status_modifier_system != null:
+		_status_modifier_system.apply_bonus_hit_if_needed(target)
 
 func apply_loot_bonus(value: int, loot_type: StringName) -> int:
-	var result: int = max(0, value)
-	for data in _loot_bonus_modifiers.values():
-		var chance: float = 0.0
-		if loot_type == &"coin":
-			chance = float(data.get("coin_chance", 0.0))
-		elif loot_type == &"chip":
-			chance = float(data.get("chip_chance", 0.0))
-		if chance <= 0.0:
-			continue
-		if randf() <= chance:
-			var multiplier: int = int(data.get("multiplier", 2))
-			result *= max(2, multiplier)
-	return result
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
+		return max(0, value)
+	return _status_modifier_system.apply_loot_bonus(value, loot_type)
 
 func _get_low_hp_damage_mul() -> float:
-	if _low_hp_damage_modifiers.is_empty():
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
 		return 1.0
-	var max_hp: float = maxf(float(PlayerData.player_max_hp), 1.0)
-	var hp_ratio: float = float(PlayerData.player_hp) / max_hp
-	var best_mul := 1.0
-	for data in _low_hp_damage_modifiers.values():
-		var min_ratio: float = clampf(float(data.get("min_hp_ratio", 0.25)), 0.05, 1.0)
-		var max_mul: float = maxf(float(data.get("max_damage_mul", 1.0)), 1.0)
-		if hp_ratio >= 1.0:
-			continue
-		var factor: float = clampf((1.0 - hp_ratio) / maxf(1.0 - min_ratio, 0.001), 0.0, 1.0)
-		var computed_mul: float = lerpf(1.0, max_mul, factor)
-		if computed_mul > best_mul:
-			best_mul = computed_mul
-	return best_mul
+	return _status_modifier_system.get_low_hp_damage_mul()
 
 
 func move_to(dest:Vector2) -> void:
@@ -1128,34 +1120,14 @@ func _get_total_damage_reduction() -> float:
 	return clampf(float(PlayerData.damage_reduction) * float(PlayerData.bonus_damage_reduction), 0.2, 5.0)
 
 func _clear_expired_scorch() -> void:
-	if _scorch_stacks <= 0:
-		_scorch_stacks = 0
-		_scorch_expires_at_msec = 0
-		_scorch_dot_damage_per_stack = 1
-		_scorch_dot_accum_sec = 0.0
-		_scorch_source_node = null
-		_scorch_source_player = null
-		return
-	if Time.get_ticks_msec() < _scorch_expires_at_msec:
-		return
-	_scorch_stacks = 0
-	_scorch_expires_at_msec = 0
-	_scorch_dot_damage_per_stack = 1
-	_scorch_dot_accum_sec = 0.0
-	_scorch_source_node = null
-	_scorch_source_player = null
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null:
+		_elemental_effect_system.clear_expired_scorch()
 
 func _apply_scorch_on_fire_hit(fire_damage: int, source_node: Node = null, source_player: Node = null) -> void:
-	var max_hp: float = maxf(float(PlayerData.player_max_hp), 1.0)
-	var hp_ratio: float = clampf(float(max(PlayerData.player_hp, 0)) / max_hp, 0.0, 1.0)
-	var stack_cap := _get_scorch_stack_cap(hp_ratio)
-	if _scorch_stacks < stack_cap:
-		_scorch_stacks += 1
-	var per_stack_dot: int = max(1, int(round(float(max(1, fire_damage)) * SCORCH_DOT_RATIO_PER_STACK)))
-	_scorch_dot_damage_per_stack = max(_scorch_dot_damage_per_stack, per_stack_dot)
-	_scorch_source_node = source_node
-	_scorch_source_player = source_player
-	_scorch_expires_at_msec = Time.get_ticks_msec() + int(SCORCH_DURATION_SEC * 1000.0)
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null:
+		_elemental_effect_system.apply_scorch_on_fire_hit(fire_damage, source_node, source_player)
 
 func _get_scorch_stack_cap(hp_ratio: float) -> int:
 	if hp_ratio <= 0.5:
@@ -1165,92 +1137,45 @@ func _get_scorch_stack_cap(hp_ratio: float) -> int:
 	return 1
 
 func _clear_expired_frost() -> void:
-	if _frost_stacks <= 0:
-		_frost_stacks = 0
-		_frost_expires_at_msec = 0
-		_frost_next_stack_at_msec = 0
-		remove_move_speed_mul(FROST_MOVE_SPEED_SOURCE)
-		return
-	if Time.get_ticks_msec() < _frost_expires_at_msec:
-		return
-	_frost_stacks = 0
-	_frost_expires_at_msec = 0
-	_frost_next_stack_at_msec = 0
-	remove_move_speed_mul(FROST_MOVE_SPEED_SOURCE)
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null:
+		_elemental_effect_system.clear_expired_frost()
 
 func _apply_frost_on_freeze_hit() -> void:
-	var now_msec := Time.get_ticks_msec()
-	if _frost_stacks < FROST_MAX_STACKS and now_msec >= _frost_next_stack_at_msec:
-		_frost_stacks += 1
-		_frost_next_stack_at_msec = now_msec + int(FROST_STACK_INTERVAL_SEC * 1000.0)
-	_refresh_frost_move_slow()
-	_frost_expires_at_msec = now_msec + int(FROST_DURATION_SEC * 1000.0)
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null:
+		_elemental_effect_system.apply_frost_on_freeze_hit()
 
 func _refresh_frost_move_slow() -> void:
-	if _frost_stacks <= 0:
-		remove_move_speed_mul(FROST_MOVE_SPEED_SOURCE)
-		return
-	var move_mul := clampf(1.0 - float(_frost_stacks) * FROST_SLOW_PER_STACK, 0.05, 1.0)
-	apply_move_speed_mul(FROST_MOVE_SPEED_SOURCE, move_mul)
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null:
+		_elemental_effect_system.refresh_frost_move_slow()
 
 func _clear_expired_energy_mark() -> void:
-	if _energy_mark_value <= 0:
-		_energy_mark_value = 0
-		_energy_mark_expires_at_msec = 0
-		return
-	if Time.get_ticks_msec() < _energy_mark_expires_at_msec:
-		return
-	_energy_mark_value = 0
-	_energy_mark_expires_at_msec = 0
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null:
+		_elemental_effect_system.clear_expired_energy_mark()
 
 func _apply_energy_mark_on_energy_hit(energy_damage: int) -> void:
-	var gained_mark: int = max(0, int(round(float(max(0, energy_damage)) * ENERGY_MARK_RATIO)))
-	if gained_mark <= 0:
-		return
-	var mark_cap: int = max(1, int(round(maxf(float(PlayerData.player_max_hp), 1.0) * ENERGY_MARK_MAX_HP_RATIO)))
-	_energy_mark_value = mini(mark_cap, _energy_mark_value + gained_mark)
-	_energy_mark_expires_at_msec = Time.get_ticks_msec() + int(ENERGY_MARK_DURATION_SEC * 1000.0)
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null:
+		_elemental_effect_system.apply_energy_mark_on_energy_hit(energy_damage)
 
 func _try_trigger_energy_mark_burst(reference_attack: Attack) -> void:
-	if _energy_mark_value <= 0:
-		return
-	var now_msec := Time.get_ticks_msec()
-	if now_msec < _energy_mark_trigger_ready_at_msec:
-		return
-	if PlayerData.player_hp >= _energy_mark_value:
-		return
-	var burst_damage := _energy_mark_value
-	_energy_mark_value = 0
-	_energy_mark_expires_at_msec = 0
-	_energy_mark_trigger_ready_at_msec = now_msec + int(ENERGY_MARK_TRIGGER_COOLDOWN_SEC * 1000.0)
-	if burst_damage <= 0:
-		return
-	var burst_attack := Attack.new()
-	burst_attack.damage = burst_damage
-	burst_attack.damage_type = Attack.TYPE_ENERGY
-	if reference_attack != null:
-		burst_attack.source_node = reference_attack.source_node
-		burst_attack.source_player = reference_attack.source_player
-	_is_processing_energy_burst = true
-	damaged(burst_attack)
-	_is_processing_energy_burst = false
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null:
+		_elemental_effect_system.try_trigger_energy_mark_burst(reference_attack)
 
 func _apply_scorch_dot_tick(dot_damage: int) -> void:
-	if dot_damage <= 0:
-		return
-	var dot_attack := Attack.new()
-	dot_attack.damage = dot_damage
-	dot_attack.damage_type = Attack.TYPE_FIRE
-	dot_attack.source_node = _scorch_source_node
-	dot_attack.source_player = _scorch_source_player
-	_is_processing_scorch_dot = true
-	damaged(dot_attack)
-	_is_processing_scorch_dot = false
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null:
+		_elemental_effect_system.apply_scorch_dot_tick(dot_damage)
 
 func _update_incoming_elemental_effects(delta: float) -> void:
-	if _incoming_damage_pipeline == null or _incoming_damage_profile == null:
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system == null:
 		return
-	_incoming_damage_pipeline.process_periodic_effects(self, _incoming_damage_profile, delta)
+	_elemental_effect_system.update_incoming_elemental_effects(_incoming_damage_pipeline, _incoming_damage_profile, delta)
 
 func _setup_incoming_damage_profile() -> void:
 	var profile := DAMAGE_PROFILE_SCRIPT.new() as DamageProfile
@@ -1314,10 +1239,14 @@ func _profile_on_trigger_invuln() -> void:
 	collision_cd.start(PlayerData.collision_cd)
 
 func _profile_on_apply_frost_slow(move_multiplier: float, _duration_sec: float) -> void:
-	apply_move_speed_mul(FROST_MOVE_SPEED_SOURCE, move_multiplier)
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null:
+		_elemental_effect_system.on_profile_apply_frost_slow(move_multiplier)
 
 func _profile_on_clear_frost_slow() -> void:
-	remove_move_speed_mul(FROST_MOVE_SPEED_SOURCE)
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null:
+		_elemental_effect_system.on_profile_clear_frost_slow()
 
 
 # When player is teleporting between zones, disable terrain collision. Enable when arrived.
@@ -1473,6 +1402,10 @@ func _on_hurt_cd_timeout() -> void:
 
 func _on_collision_cd_timeout() -> void:
 	pass
+
+func _exit_tree() -> void:
+	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
+		_status_hint_manager.clear_all()
 
 func _update_shared_heat_pool(delta: float) -> void:
 	if _shared_heat_pool == null:

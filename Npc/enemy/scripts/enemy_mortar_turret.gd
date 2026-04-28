@@ -54,7 +54,7 @@ func _process_attack(delta: float) -> void:
 	if _cooldown_remaining > 0.0:
 		_cooldown_remaining = maxf(0.0, _cooldown_remaining - delta)
 		return
-	var player_pos := PlayerData.player.global_position
+	var player_pos: Vector2 = PlayerData.player.global_position
 	if player_pos.distance_to(global_position) > attack_range:
 		return
 	if not is_world_position_in_player_screen(global_position, screen_fire_margin):

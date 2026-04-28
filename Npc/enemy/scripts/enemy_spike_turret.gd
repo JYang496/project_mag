@@ -63,7 +63,7 @@ func _process_attack(delta: float) -> void:
 		_cooldown_remaining = maxf(0.0, _cooldown_remaining - delta)
 		_cancel_lock()
 		return
-	var to_player := PlayerData.player.global_position - global_position
+	var to_player: Vector2 = PlayerData.player.global_position - global_position
 	if to_player.length() > attack_range:
 		_cancel_lock()
 		return

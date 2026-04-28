@@ -10,6 +10,7 @@ class_name DiamondCooldownProgress
 @export var padding: float = 6.0
 @export var base_color: Color = Color(1.0, 1.0, 1.0, 0.18)
 @export var fill_color: Color = Color(0.95, 0.85, 0.35, 0.95)
+@export var clockwise: bool = true
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -23,7 +24,7 @@ func _draw() -> void:
 
 	if progress <= 0.0:
 		return
-	var fill_points := _build_progress_polyline(points, progress)
+	var fill_points := _build_progress_polyline(points, progress, clockwise)
 	if fill_points.size() >= 2:
 		draw_polyline(fill_points, fill_color, maxf(line_width, 0.5), true)
 
@@ -40,16 +41,19 @@ func _build_diamond_points() -> PackedVector2Array:
 	var left := Vector2(inner.position.x, center.y)
 	return PackedVector2Array([top, right, bottom, left])
 
-func _build_progress_polyline(points: PackedVector2Array, value: float) -> PackedVector2Array:
+func _build_progress_polyline(points: PackedVector2Array, value: float, draw_clockwise: bool) -> PackedVector2Array:
+	var ordered := points
+	if not draw_clockwise:
+		ordered = PackedVector2Array([points[0], points[3], points[2], points[1]])
 	var target_len := _diamond_perimeter(points) * clampf(value, 0.0, 1.0)
 	if target_len <= 0.0:
 		return PackedVector2Array()
 
-	var output: PackedVector2Array = PackedVector2Array([points[0]])
+	var output: PackedVector2Array = PackedVector2Array([ordered[0]])
 	var remain := target_len
-	for i in range(points.size()):
-		var start := points[i]
-		var next := points[(i + 1) % points.size()]
+	for i in range(ordered.size()):
+		var start := ordered[i]
+		var next := ordered[(i + 1) % ordered.size()]
 		var segment := start.distance_to(next)
 		if segment <= 0.0001:
 			continue

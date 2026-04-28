@@ -32,8 +32,8 @@ var _slot_glow_nodes: Array[Control] = []
 var _cooldown_overlay: Control
 var _slot_anim_z_order: Dictionary = {}
 var _slot_glow_tweens: Dictionary = {}
-var _weapon_prev_cd_progress: Dictionary = {}
-var _weapon_was_cooling: Dictionary = {}
+var _selector_reload_total_by_weapon: Dictionary = {}
+var _connected_reload_weapon_ids: Dictionary = {}
 
 var _empty_weapon_pic: Texture2D = preload("res://Textures/test/empty_wp.png")
 var _mainhand_slot_bg: Texture2D = preload("res://asset/images/ui/mainhand.png")
@@ -301,6 +301,8 @@ func _ensure_slot_cooldown_nodes() -> void:
 				progress_node.z_index = 10 + slot_idx
 				_cooldown_overlay.add_child(progress_node)
 				_slot_cd_nodes[slot_idx] = progress_node
+		if _slot_cd_nodes[slot_idx] != null and is_instance_valid(_slot_cd_nodes[slot_idx]):
+			_slot_cd_nodes[slot_idx].set("clockwise", false)
 		var existing_glow := _slot_glow_nodes[slot_idx]
 		if existing_glow != null and is_instance_valid(existing_glow):
 			continue
@@ -317,6 +319,7 @@ func _ensure_slot_cooldown_nodes() -> void:
 		glow_node.set("padding", 2.0)
 		glow_node.set("base_color", Color(1.0, 1.0, 1.0, 0.0))
 		glow_node.set("fill_color", MAINHAND_READY_GLOW_COLOR)
+		glow_node.set("clockwise", false)
 		_cooldown_overlay.add_child(glow_node)
 		_slot_glow_nodes[slot_idx] = glow_node
 
@@ -387,17 +390,14 @@ func _update_slot_cooldown_progress() -> void:
 			continue
 		var weapon_id: int = weapon.get_instance_id()
 		active_weapon_ids[weapon_id] = true
+		_ensure_weapon_reload_signal_connected(weapon)
 		progress_node.visible = true
 		var is_mainhand_weapon := weapon_idx == PlayerData.main_weapon_index
 		progress_node.set("fill_color", MAINHAND_PROGRESS_COLOR if is_mainhand_weapon else OFFHAND_PROGRESS_COLOR)
 		progress_node.set("base_color", MAINHAND_PROGRESS_BASE_COLOR if is_mainhand_weapon else OFFHAND_PROGRESS_BASE_COLOR)
-		var cd_progress := 1.0
-		if weapon.has_method("get_offhand_skill_cd_progress"):
-			cd_progress = float(weapon.call("get_offhand_skill_cd_progress"))
-		var clamped_progress := clampf(cd_progress, 0.0, 1.0)
-		progress_node.set("progress", clamped_progress)
-		_track_ready_glow_for_weapon(slot_idx, weapon_id, clamped_progress, is_mainhand_weapon)
-	_cleanup_stale_glow_tracking(active_weapon_ids)
+		var ring_progress := _get_selector_ring_progress(weapon)
+		progress_node.set("progress", clampf(ring_progress, 0.0, 1.0))
+	_disconnect_stale_reload_signals(active_weapon_ids)
 
 func _ensure_cooldown_overlay() -> void:
 	if _cooldown_overlay != null and is_instance_valid(_cooldown_overlay):
@@ -431,30 +431,89 @@ func _update_anim_overlay_z_order(occupied_slots: Array[int], step: int) -> void
 			order = occupied_slots.size() - 1 - i
 		_slot_anim_z_order[slot_idx] = order
 
-func _track_ready_glow_for_weapon(slot_idx: int, weapon_id: int, progress: float, is_mainhand_weapon: bool) -> void:
-	var prev_progress: float = float(_weapon_prev_cd_progress.get(weapon_id, progress))
-	var was_cooling: bool = bool(_weapon_was_cooling.get(weapon_id, false))
-	if progress < 0.999:
-		was_cooling = true
-	elif was_cooling and prev_progress < 0.999:
-		_play_ready_glow(slot_idx, is_mainhand_weapon)
-		was_cooling = false
-	_weapon_prev_cd_progress[weapon_id] = progress
-	_weapon_was_cooling[weapon_id] = was_cooling
+func _get_selector_ring_progress(weapon: Variant) -> float:
+	if weapon == null or not is_instance_valid(weapon):
+		return 1.0
+	if not weapon.has_method("get_ammo_status"):
+		return 1.0
+	var status_variant: Variant = weapon.call("get_ammo_status")
+	if not (status_variant is Dictionary):
+		return 1.0
+	var status := status_variant as Dictionary
+	if not bool(status.get("enabled", false)):
+		return 1.0
+	var weapon_id := int(weapon.get_instance_id())
+	var current := maxf(float(status.get("current", 0.0)), 0.0)
+	var max_ammo := maxf(float(status.get("max", 0.0)), 0.0)
+	var is_reloading := bool(status.get("is_reloading", false))
+	var reload_left := maxf(float(status.get("reload_left", 0.0)), 0.0)
+	if is_reloading:
+		var tracked_total := float(_selector_reload_total_by_weapon.get(weapon_id, 0.0))
+		if tracked_total <= 0.0 or reload_left > tracked_total:
+			tracked_total = reload_left
+		tracked_total = maxf(tracked_total, reload_left)
+		_selector_reload_total_by_weapon[weapon_id] = tracked_total
+		if tracked_total > 0.0001:
+			return clampf(1.0 - (reload_left / tracked_total), 0.0, 1.0)
+		return 0.0
+	_selector_reload_total_by_weapon.erase(weapon_id)
+	if max_ammo <= 0.0:
+		return 1.0
+	return clampf(current / max_ammo, 0.0, 1.0)
 
-func _cleanup_stale_glow_tracking(active_weapon_ids: Dictionary) -> void:
-	var stale_progress_ids: Array = []
-	for key in _weapon_prev_cd_progress.keys():
-		if not active_weapon_ids.has(key):
-			stale_progress_ids.append(key)
-	for key in stale_progress_ids:
-		_weapon_prev_cd_progress.erase(key)
-	var stale_cooling_ids: Array = []
-	for key in _weapon_was_cooling.keys():
-		if not active_weapon_ids.has(key):
-			stale_cooling_ids.append(key)
-	for key in stale_cooling_ids:
-		_weapon_was_cooling.erase(key)
+func _ensure_weapon_reload_signal_connected(weapon: Variant) -> void:
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	if not weapon.has_signal("weapon_reload_completed"):
+		return
+	var weapon_id := int(weapon.get_instance_id())
+	if _connected_reload_weapon_ids.has(weapon_id):
+		return
+	var callable := Callable(self, "_on_weapon_reload_completed")
+	if not weapon.is_connected("weapon_reload_completed", callable):
+		weapon.connect("weapon_reload_completed", callable)
+	_connected_reload_weapon_ids[weapon_id] = true
+
+func _disconnect_stale_reload_signals(active_weapon_ids: Dictionary) -> void:
+	var stale_ids: Array = []
+	for key in _connected_reload_weapon_ids.keys():
+		var weapon_id := int(key)
+		if active_weapon_ids.has(weapon_id):
+			continue
+		stale_ids.append(weapon_id)
+	for weapon_id in stale_ids:
+		var stale_weapon := instance_from_id(weapon_id)
+		if stale_weapon != null and is_instance_valid(stale_weapon):
+			var callable := Callable(self, "_on_weapon_reload_completed")
+			if stale_weapon.is_connected("weapon_reload_completed", callable):
+				stale_weapon.disconnect("weapon_reload_completed", callable)
+		_connected_reload_weapon_ids.erase(weapon_id)
+		_selector_reload_total_by_weapon.erase(weapon_id)
+
+func _on_weapon_reload_completed(weapon: Weapon) -> void:
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	var slot_idx := _find_slot_index_for_weapon(weapon)
+	if slot_idx < 0:
+		return
+	var is_mainhand_weapon := false
+	if slot_idx < logical_order.size():
+		is_mainhand_weapon = logical_order[slot_idx] == PlayerData.main_weapon_index
+	_play_ready_glow(slot_idx, is_mainhand_weapon)
+
+func _find_slot_index_for_weapon(weapon: Weapon) -> int:
+	if weapon == null or not is_instance_valid(weapon):
+		return -1
+	var weapons: Array = PlayerData.player_weapon_list
+	for slot_idx in range(SLOT_COUNT):
+		var weapon_idx := -1
+		if slot_idx < logical_order.size():
+			weapon_idx = logical_order[slot_idx]
+		if weapon_idx < 0 or weapon_idx >= weapons.size():
+			continue
+		if weapons[weapon_idx] == weapon:
+			return slot_idx
+	return -1
 
 func _play_ready_glow(slot_idx: int, is_mainhand_weapon: bool) -> void:
 	if slot_idx < 0 or slot_idx >= _slot_glow_nodes.size():
@@ -566,3 +625,6 @@ func _debug_log_state(tag: String) -> void:
 		str(logical_order),
 		", ".join(slot_desc)
 	])
+
+func _exit_tree() -> void:
+	_disconnect_stale_reload_signals({})

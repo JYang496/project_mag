@@ -47,8 +47,7 @@ var heat_cool_rate: float = 20.0
 var _weapon_active_cd_remaining: float = 0.0
 var _weapon_active_hit_window_hits: int = 0
 var _weapon_active_hit_window_expires_at_msec: int = 0
-var _offhand_skill_cd_duration_sec: float = 0.0
-var _offhand_skill_cd_ready_at_msec: int = 0
+var _offhand_skill_ready: bool = true
 var current_ammo: int = 0
 var is_reloading: bool = false
 var reload_time_left: float = 0.0
@@ -64,6 +63,8 @@ signal weapon_role_changed(next_role: String)
 signal weapon_active_status_changed(cooldown_remaining: float, ready: bool)
 signal weapon_active_triggered(success: bool, reason: String)
 signal passive_triggered(event_name: StringName, detail: Dictionary)
+signal weapon_reload_completed(weapon: Weapon)
+signal offhand_refreshed_by_reload(weapon: Weapon)
 
 func set_level(lv):
 	pass
@@ -353,6 +354,7 @@ func _finish_reload() -> void:
 	current_ammo = max(0, magazine_capacity)
 	is_reloading = false
 	reload_time_left = 0.0
+	_refresh_offhand_skill_on_reload()
 	dispatch_passive_event(&"on_reload_finished", {
 		"source_weapon": self,
 		"ammo_before": ammo_before,
@@ -360,6 +362,7 @@ func _finish_reload() -> void:
 		"magazine_capacity": max(0, magazine_capacity),
 		"spent_ratio": spent_ratio,
 	})
+	weapon_reload_completed.emit(self)
 
 func refill_ammo_instantly() -> void:
 	if not uses_ammo_system():
@@ -621,11 +624,27 @@ func get_runtime_damage_value(base_damage_value: float) -> int:
 func apply_external_damage_mul(source_id: StringName, mul: float) -> void:
 	if source_id == StringName():
 		return
-	_external_damage_mul_modifiers[source_id] = maxf(mul, 0.05)
+	var clamped_mul := maxf(mul, 0.05)
+	_external_damage_mul_modifiers[source_id] = clamped_mul
+	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("notify_weapon_status_change"):
+		PlayerData.player.call(
+			"notify_weapon_status_change",
+			&"weapon_damage_up" if clamped_mul >= 1.0 else &"weapon_damage_down",
+			source_id,
+			true
+		)
 
 func remove_external_damage_mul(source_id: StringName) -> void:
 	if _external_damage_mul_modifiers.has(source_id):
+		var prev_mul := float(_external_damage_mul_modifiers.get(source_id, 1.0))
 		_external_damage_mul_modifiers.erase(source_id)
+		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("notify_weapon_status_change"):
+			PlayerData.player.call(
+				"notify_weapon_status_change",
+				&"weapon_damage_up" if prev_mul >= 1.0 else &"weapon_damage_down",
+				source_id,
+				false
+			)
 
 func get_total_external_damage_mul() -> float:
 	var total := 1.0
@@ -862,29 +881,22 @@ func get_weapon_active_hit_window_progress() -> Dictionary:
 		"active": _weapon_active_hit_window_hits > 0 and _weapon_active_hit_window_expires_at_msec > Time.get_ticks_msec(),
 	}
 
-func notify_offhand_skill_triggered(cooldown_sec: float) -> void:
-	var safe_cd: float = maxf(cooldown_sec, 0.0)
-	_offhand_skill_cd_duration_sec = safe_cd
-	if safe_cd <= 0.0:
-		_offhand_skill_cd_ready_at_msec = 0
-		return
-	_offhand_skill_cd_ready_at_msec = Time.get_ticks_msec() + int(safe_cd * 1000.0)
+func notify_offhand_skill_triggered(_cooldown_sec: float) -> void:
+	_offhand_skill_ready = false
 
 func get_offhand_skill_cd_progress() -> float:
-	if _offhand_skill_cd_duration_sec <= 0.0:
-		return 1.0
-	var now_msec: int = Time.get_ticks_msec()
-	if _offhand_skill_cd_ready_at_msec <= 0 or now_msec >= _offhand_skill_cd_ready_at_msec:
-		return 1.0
-	var total_msec: int = int(maxf(_offhand_skill_cd_duration_sec, 0.01) * 1000.0)
-	var remaining_msec: int = maxi(0, _offhand_skill_cd_ready_at_msec - now_msec)
-	var elapsed_ratio: float = 1.0 - (float(remaining_msec) / float(maxi(total_msec, 1)))
-	return clampf(elapsed_ratio, 0.0, 1.0)
+	return 1.0 if _offhand_skill_ready else 0.0
+
+func is_offhand_skill_ready() -> bool:
+	return _offhand_skill_ready
+
+func _refresh_offhand_skill_on_reload() -> void:
+	_offhand_skill_ready = true
+	offhand_refreshed_by_reload.emit(self)
 
 func force_skill_cooldowns_ready() -> void:
 	_weapon_active_cd_remaining = 0.0
-	_offhand_skill_cd_duration_sec = 0.0
-	_offhand_skill_cd_ready_at_msec = 0
+	_offhand_skill_ready = true
 	weapon_active_status_changed.emit(0.0, true)
 
 func _update_weapon_active_cooldown(delta: float) -> void:

@@ -1,4 +1,5 @@
 extends Control
+class_name SpreadCursorOverlay
 
 @export var ring_color: Color = Color(0.33, 0.66, 1.0, 0.22)
 @export var ammo_color: Color = Color(0.33, 0.66, 1.0, 0.95)
@@ -25,18 +26,15 @@ func set_world_anchor_and_radius(world_pos: Vector2, world_radius: float) -> voi
 	if viewport == null:
 		return
 	var canvas_transform := viewport.get_canvas_transform()
-	var center := canvas_transform * world_pos
 	var edge_world := world_pos + Vector2(maxf(world_radius, 0.0), 0.0)
 	var edge := canvas_transform * edge_world
-	var offset_px := center.distance_to(edge)
-	_screen_center = center
+	# Keep ring center driven by latest mouse screen position to avoid perceived lag
+	# caused by world->screen transform timing.
+	var offset_px := (canvas_transform * world_pos).distance_to(edge)
 	_screen_offset_px = clampf(offset_px, min_offset_px, max_offset_px)
 	queue_redraw()
 
 func set_fallback_screen_radius(radius_px: float) -> void:
-	var viewport := get_viewport()
-	if viewport != null:
-		_screen_center = viewport.get_mouse_position()
 	_screen_offset_px = clampf(radius_px, min_offset_px, max_offset_px)
 	queue_redraw()
 

@@ -37,7 +37,7 @@ func _physics_process(delta: float) -> void:
 		projectile.queue_free()
 
 func _resolve_orbit_center() -> Vector2:
-	var player_node := PlayerData.player
+	var player_node: Variant = PlayerData.player
 	if player_node is Node2D and is_instance_valid(player_node):
 		return (player_node as Node2D).global_position
 	if projectile and is_instance_valid(projectile):

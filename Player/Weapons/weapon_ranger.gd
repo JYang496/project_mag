@@ -146,7 +146,18 @@ func request_primary_fire() -> bool:
 	return true
 
 func set_external_attack_speed_multiplier(multiplier: float) -> void:
-	_external_attack_speed_multiplier = clampf(multiplier, 0.1, 10.0)
+	var clamped_mul := clampf(multiplier, 0.1, 10.0)
+	var previous_mul := _external_attack_speed_multiplier
+	if is_equal_approx(previous_mul, clamped_mul):
+		return
+	_external_attack_speed_multiplier = clamped_mul
+	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("notify_weapon_status_change"):
+		var source_id := StringName("ranger_attack_speed_%s" % str(get_instance_id()))
+		if is_equal_approx(clamped_mul, 1.0):
+			if not is_equal_approx(previous_mul, 1.0):
+				PlayerData.player.call("notify_weapon_status_change", &"attack_speed_up" if previous_mul > 1.0 else &"attack_speed_down", source_id, false)
+		else:
+			PlayerData.player.call("notify_weapon_status_change", &"attack_speed_up" if clamped_mul > 1.0 else &"attack_speed_down", source_id, true)
 
 func get_external_attack_speed_multiplier() -> float:
 	return _external_attack_speed_multiplier
@@ -156,7 +167,18 @@ func get_effective_cooldown(base_cooldown: float) -> float:
 	return maxf(base_cooldown / speed_mul, 0.01)
 
 func set_external_spread_multiplier(multiplier: float) -> void:
-	_external_spread_multiplier = clampf(multiplier, 0.01, 10.0)
+	var clamped_mul := clampf(multiplier, 0.01, 10.0)
+	var previous_mul := _external_spread_multiplier
+	if is_equal_approx(previous_mul, clamped_mul):
+		return
+	_external_spread_multiplier = clamped_mul
+	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("notify_weapon_status_change"):
+		var source_id := StringName("ranger_spread_%s" % str(get_instance_id()))
+		if is_equal_approx(clamped_mul, 1.0):
+			if not is_equal_approx(previous_mul, 1.0):
+				PlayerData.player.call("notify_weapon_status_change", &"spread_down" if previous_mul < 1.0 else &"spread_up", source_id, false)
+		else:
+			PlayerData.player.call("notify_weapon_status_change", &"spread_down" if clamped_mul < 1.0 else &"spread_up", source_id, true)
 
 func get_external_spread_multiplier() -> float:
 	return _external_spread_multiplier
@@ -202,7 +224,7 @@ func _build_spread_runtime(shot_distance: float) -> Dictionary:
 		clampf(spread_long_range_miss_chance, 0.0, 1.0),
 		distance_ratio
 	)
-	var spread_mul := clampf(_external_spread_multiplier, 0.01, 10.0)
+	var spread_mul := clampf(_external_spread_multiplier, 0.01, 20.0)
 	var radius := lerpf(maxf(spread_min_radius, 0.0), maxf(spread_max_radius, 0.0), distance_ratio) * spread_mul
 	return {
 		"miss_chance": miss_chance,
@@ -238,7 +260,7 @@ func get_spread_preview_info_for_target(target_position: Vector2) -> Dictionary:
 		clampf(spread_long_range_miss_chance, 0.0, 1.0),
 		distance_ratio
 	)
-	var spread_mul := clampf(_external_spread_multiplier, 0.01, 10.0)
+	var spread_mul := clampf(_external_spread_multiplier, 0.01, 20.0)
 	var max_radius := lerpf(maxf(spread_min_radius, 0.0), maxf(spread_max_radius, 0.0), distance_ratio) * spread_mul
 	return {
 		"enabled": spread_enabled,

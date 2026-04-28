@@ -5,9 +5,9 @@
 [resource]
 script = ExtResource("1_script")
 enemy_coin_drop_value = 1
-weapon_purchase_price_multiplier = 8.0
-weapon_upgrade_cost_multiplier = 8.0
-shop_refresh_start_cost = 8
-shop_refresh_step = 4
-shop_refresh_cost_cap = 40
-objective_economy_gold_by_level = PackedInt32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+weapon_purchase_price_multiplier = 2.2
+weapon_upgrade_cost_multiplier = 1.6
+shop_refresh_start_cost = 6
+shop_refresh_step = 2
+shop_refresh_cost_cap = 20
+objective_economy_gold_by_level = PackedInt32Array(4, 6, 8, 10, 12, 14, 16, 18, 20, 22)

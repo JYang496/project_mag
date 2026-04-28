@@ -77,7 +77,7 @@ func _refresh_player_proximity() -> void:
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
 		_player_inside = false
 		return
-	var dist_sq := PlayerData.player.global_position.distance_squared_to(global_position)
+	var dist_sq: float = PlayerData.player.global_position.distance_squared_to(global_position)
 	var radius_sq := radius * radius
 	if dist_sq <= radius_sq:
 		_player_inside = true
