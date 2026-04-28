@@ -1,0 +1,16 @@
+weapon_id,weapon_name,weapon_level,branch_id,round,duration_sec,fire_attempts,fire_success,reload_started,reload_finished,manual_reload_calls,fire_test_pass,reload_test_pass,total_damage_formula,dps,formula,timestamp
+1,machine gun,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:31
+5,pistol,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:32
+4,shotgun,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:32
+8,rocket luncher,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:33
+9,laser,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:33
+2,Charged Blaster,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:34
+13,flamethrower,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:34
+21,Glacier Projector,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:35
+25,Cannon,7,,1,3.0,30,2,0,0,0,true,false,280.0,93.333,Cannon: damage (single shell),2026-04-28 01:44:35
+26,Sniper,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:36
+17,Plasma Lance,7,,1,3.0,30,2,0,0,0,true,false,280.0,93.333,PlasmaLance: damage + pierce scaling estimate,2026-04-28 01:44:36
+10,chainsaw luncher,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:37
+3,Spear,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:38
+7,orbit,7,,1,3.0,30,0,0,0,0,false,false,0.0,0.0,,2026-04-28 01:44:38
+11,dash blade,7,,1,3.0,0,0,0,0,0,false,true,0.0,0.0,,2026-04-28 01:44:39
