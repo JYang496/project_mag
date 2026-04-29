@@ -32,10 +32,6 @@ var distance_mouse_player = 0
 const TARGET_MECHA_SIZE = Vector2(96,96)
 const MOVE_ANIMATION_TOP: StringName = &"move_top"
 const MOVE_ANIMATION_BOTTOM: StringName = &"move_bottom"
-const MOVE_ANIMATION_FPS: float = 12.0
-const MOVE_BACK_FRAME_PATH_FMT: String = "res://asset/images/characters/move_b/move_back_%03d.png"
-const MOVE_FORWARD_FRAME_PATH_FMT: String = "res://asset/images/characters/move_f/move_forward_%03d.png"
-const MOVE_FRAME_COUNT: int = 21
 const MECHA_DIRECTION_TEXTURES := {
 	"top_left": preload("res://asset/images/characters/2b.png"),
 	"bottom_left": preload("res://asset/images/characters/2f.png"),
@@ -43,7 +39,7 @@ const MECHA_DIRECTION_TEXTURES := {
 	"bottom_right": preload("res://asset/images/characters/2f.png"),
 }
 var current_mecha_direction := ""
-const ORBIT_RADIUS := Vector2(40, 20)
+const ORBIT_RADIUS := Vector2(45, 30)
 const ORBIT_ACCEL := 16.0
 const ORBIT_MAX_SPEED := 8.0
 const ORBIT_FRICTION := 6.0
@@ -101,6 +97,7 @@ var PlayerData = null
 var _status_hint_manager
 var _status_modifier_system
 var _elemental_effect_system
+var _suppress_status_hints: bool = false
 # Signals
 signal active_skill()
 signal player_active_skill()
@@ -433,10 +430,26 @@ func notify_weapon_status_change(stat_type: StringName, source_id: StringName, i
 	_notify_status_hint(&"weapon", stat_type, source_id, is_gain)
 
 func _notify_status_hint(owner: StringName, stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
+	if _suppress_status_hints:
+		return
 	_ensure_status_hint_manager()
 	if _status_hint_manager == null:
 		return
 	_status_hint_manager.notify_status_hint(owner, stat_type, source_id, is_gain)
+
+func clear_timed_statuses_for_prepare() -> void:
+	_suppress_status_hints = true
+	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
+		_status_hint_manager.clear_all()
+	_ensure_elemental_effect_system()
+	if _elemental_effect_system != null and _elemental_effect_system.has_method("clear_timed_effects_for_prepare"):
+		_elemental_effect_system.call("clear_timed_effects_for_prepare")
+	for weapon in PlayerData.player_weapon_list:
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if weapon.has_method("clear_timed_effects_for_prepare"):
+			weapon.call("clear_timed_effects_for_prepare")
+	_suppress_status_hints = false
 
 func _ensure_status_hint_manager() -> void:
 	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
@@ -582,6 +595,9 @@ func _try_cast_main_weapon_active_skill() -> void:
 		_last_weapon_skill_fail_reason = "condition"
 
 func _try_reload_main_weapon() -> void:
+	if PhaseManager != null and PhaseManager.has_method("current_state"):
+		if str(PhaseManager.current_state()) != str(PhaseManager.BATTLE):
+			return
 	var main_weapon := get_main_weapon()
 	if main_weapon == null:
 		return
@@ -893,33 +909,12 @@ func _setup_mecha_move_sprite() -> void:
 		push_warning("MechaMoveSprite is missing, movement animation disabled.")
 		return
 	mecha_move_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	mecha_move_sprite.sprite_frames = _build_mecha_move_sprite_frames()
+	if mecha_move_sprite.sprite_frames == null:
+		push_warning("MechaMoveSprite missing SpriteFrames resource.")
+		return
 	_resize_mecha_move_sprite(MOVE_ANIMATION_BOTTOM)
 	_set_mecha_visual_state(MechaVisualState.IDLE)
 	_update_mecha_direction(_last_mecha_facing_direction)
-
-func _build_mecha_move_sprite_frames() -> SpriteFrames:
-	var frames := SpriteFrames.new()
-	frames.add_animation(MOVE_ANIMATION_TOP)
-	frames.set_animation_loop(MOVE_ANIMATION_TOP, true)
-	frames.set_animation_speed(MOVE_ANIMATION_TOP, MOVE_ANIMATION_FPS)
-	frames.add_animation(MOVE_ANIMATION_BOTTOM)
-	frames.set_animation_loop(MOVE_ANIMATION_BOTTOM, true)
-	frames.set_animation_speed(MOVE_ANIMATION_BOTTOM, MOVE_ANIMATION_FPS)
-	for frame_idx in range(1, MOVE_FRAME_COUNT + 1):
-		var back_path := MOVE_BACK_FRAME_PATH_FMT % frame_idx
-		var back_tex := load(back_path) as Texture2D
-		if back_tex != null:
-			frames.add_frame(MOVE_ANIMATION_TOP, back_tex)
-		else:
-			push_warning("Missing move animation frame: %s" % back_path)
-		var forward_path := MOVE_FORWARD_FRAME_PATH_FMT % frame_idx
-		var forward_tex := load(forward_path) as Texture2D
-		if forward_tex != null:
-			frames.add_frame(MOVE_ANIMATION_BOTTOM, forward_tex)
-		else:
-			push_warning("Missing move animation frame: %s" % forward_path)
-	return frames
 
 func _resize_mecha_move_sprite(animation_name: StringName) -> void:
 	if mecha_move_sprite == null or mecha_move_sprite.sprite_frames == null:
@@ -1308,6 +1303,7 @@ func _on_phase_changed(new_phase: String) -> void:
 	_last_phase = new_phase
 	_update_vision_effect()
 	if new_phase == PhaseManager.PREPARE:
+		clear_timed_statuses_for_prepare()
 		_instant_reload_all_weapons()
 		_force_all_skills_ready()
 	if new_phase == PhaseManager.PREPARE and previous_phase == PhaseManager.BATTLE:

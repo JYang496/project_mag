@@ -72,3 +72,6 @@ func _get_crit_per_stack() -> float:
 			return maxf(0.0, crit_per_stack_lv2)
 		_:
 			return maxf(0.0, crit_per_stack_lv1)
+
+func clear_timed_effects_for_prepare() -> void:
+	_reset_focus(true)

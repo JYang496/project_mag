@@ -80,3 +80,6 @@ func _get_attack_speed_per_stack() -> float:
 
 func _get_source_id() -> StringName:
 	return StringName("wmod_momentum_haste_%s" % str(get_instance_id()))
+
+func clear_timed_effects_for_prepare() -> void:
+	_clear_buffs()

@@ -779,6 +779,17 @@ func _on_enter_main_weapon_role() -> void:
 func _on_enter_offhand_weapon_role() -> void:
 	pass
 
+func clear_timed_effects_for_prepare() -> void:
+	_weapon_active_hit_window_hits = 0
+	_weapon_active_hit_window_expires_at_msec = 0
+	for module_node in get_equipped_modules():
+		if module_node == null or not is_instance_valid(module_node):
+			continue
+		if module_node.has_method("clear_timed_effects_for_prepare"):
+			module_node.call("clear_timed_effects_for_prepare")
+	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("clear_timed_effects_for_prepare"):
+		branch_behavior.call("clear_timed_effects_for_prepare")
+
 func can_run_active_behavior() -> bool:
 	return is_main_weapon() and is_attack_phase_allowed()
 

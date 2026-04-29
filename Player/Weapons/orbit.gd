@@ -145,6 +145,10 @@ func _on_tree_exiting() -> void:
 	for s in satellites:
 		s.queue_free()
 
+func clear_timed_effects_for_prepare() -> void:
+	super.clear_timed_effects_for_prepare()
+	_clear_offhand_main_buff()
+
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	_prune_satellites()

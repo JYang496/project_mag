@@ -207,3 +207,22 @@ func _get_scorch_stack_cap(hp_ratio: float) -> int:
 	if hp_ratio <= 0.75:
 		return 2
 	return 1
+
+func clear_timed_effects_for_prepare() -> void:
+	_scorch_stacks = 0
+	_scorch_expires_at_msec = 0
+	_scorch_dot_damage_per_stack = 1
+	_scorch_dot_accum_sec = 0.0
+	_scorch_source_node = null
+	_scorch_source_player = null
+	_is_processing_scorch_dot = false
+
+	_frost_stacks = 0
+	_frost_expires_at_msec = 0
+	_frost_next_stack_at_msec = 0
+	_remove_frost_slow()
+
+	_energy_mark_value = 0
+	_energy_mark_expires_at_msec = 0
+	_energy_mark_trigger_ready_at_msec = 0
+	_is_processing_energy_burst = false

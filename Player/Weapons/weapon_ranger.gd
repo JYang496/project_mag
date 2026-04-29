@@ -39,7 +39,7 @@ var weapon_features = []
 # Projectile scene that needs to be overwritten in child class.
 var projectile_scene
 
-const SPRITE_TARGET_HEIGHT := 30.0
+const SPRITE_TARGET_HEIGHT := 40.0
 const AIM_ROTATION_OFFSET := deg_to_rad(90)
 const POOLED_EFFECTS := {
 	"linear_movement": true,

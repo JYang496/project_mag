@@ -1,0 +1,102 @@
+[gd_resource type="SpriteFrames" load_steps=43 format=3]
+
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_001.png" id="b1"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_002.png" id="b2"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_003.png" id="b3"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_004.png" id="b4"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_005.png" id="b5"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_006.png" id="b6"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_007.png" id="b7"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_008.png" id="b8"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_009.png" id="b9"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_010.png" id="b10"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_011.png" id="b11"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_012.png" id="b12"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_013.png" id="b13"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_014.png" id="b14"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_015.png" id="b15"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_016.png" id="b16"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_017.png" id="b17"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_018.png" id="b18"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_019.png" id="b19"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_020.png" id="b20"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_b/move_back_021.png" id="b21"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_001.png" id="f1"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_002.png" id="f2"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_003.png" id="f3"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_004.png" id="f4"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_005.png" id="f5"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_006.png" id="f6"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_007.png" id="f7"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_008.png" id="f8"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_009.png" id="f9"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_010.png" id="f10"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_011.png" id="f11"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_012.png" id="f12"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_013.png" id="f13"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_014.png" id="f14"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_015.png" id="f15"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_016.png" id="f16"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_017.png" id="f17"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_018.png" id="f18"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_019.png" id="f19"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_020.png" id="f20"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/move_f/move_forward_021.png" id="f21"]
+
+[resource]
+animations = [{
+"frames": [
+{"duration": 1.0, "texture": ExtResource("b1")},
+{"duration": 1.0, "texture": ExtResource("b2")},
+{"duration": 1.0, "texture": ExtResource("b3")},
+{"duration": 1.0, "texture": ExtResource("b4")},
+{"duration": 1.0, "texture": ExtResource("b5")},
+{"duration": 1.0, "texture": ExtResource("b6")},
+{"duration": 1.0, "texture": ExtResource("b7")},
+{"duration": 1.0, "texture": ExtResource("b8")},
+{"duration": 1.0, "texture": ExtResource("b9")},
+{"duration": 1.0, "texture": ExtResource("b10")},
+{"duration": 1.0, "texture": ExtResource("b11")},
+{"duration": 1.0, "texture": ExtResource("b12")},
+{"duration": 1.0, "texture": ExtResource("b13")},
+{"duration": 1.0, "texture": ExtResource("b14")},
+{"duration": 1.0, "texture": ExtResource("b15")},
+{"duration": 1.0, "texture": ExtResource("b16")},
+{"duration": 1.0, "texture": ExtResource("b17")},
+{"duration": 1.0, "texture": ExtResource("b18")},
+{"duration": 1.0, "texture": ExtResource("b19")},
+{"duration": 1.0, "texture": ExtResource("b20")},
+{"duration": 1.0, "texture": ExtResource("b21")}
+],
+"loop": true,
+"name": &"move_top",
+"speed": 12.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": ExtResource("f1")},
+{"duration": 1.0, "texture": ExtResource("f2")},
+{"duration": 1.0, "texture": ExtResource("f3")},
+{"duration": 1.0, "texture": ExtResource("f4")},
+{"duration": 1.0, "texture": ExtResource("f5")},
+{"duration": 1.0, "texture": ExtResource("f6")},
+{"duration": 1.0, "texture": ExtResource("f7")},
+{"duration": 1.0, "texture": ExtResource("f8")},
+{"duration": 1.0, "texture": ExtResource("f9")},
+{"duration": 1.0, "texture": ExtResource("f10")},
+{"duration": 1.0, "texture": ExtResource("f11")},
+{"duration": 1.0, "texture": ExtResource("f12")},
+{"duration": 1.0, "texture": ExtResource("f13")},
+{"duration": 1.0, "texture": ExtResource("f14")},
+{"duration": 1.0, "texture": ExtResource("f15")},
+{"duration": 1.0, "texture": ExtResource("f16")},
+{"duration": 1.0, "texture": ExtResource("f17")},
+{"duration": 1.0, "texture": ExtResource("f18")},
+{"duration": 1.0, "texture": ExtResource("f19")},
+{"duration": 1.0, "texture": ExtResource("f20")},
+{"duration": 1.0, "texture": ExtResource("f21")}
+],
+"loop": true,
+"name": &"move_bottom",
+"speed": 12.0
+}]
+

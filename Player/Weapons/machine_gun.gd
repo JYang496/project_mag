@@ -230,6 +230,11 @@ func _on_tree_exiting() -> void:
 	_clear_offhand_main_focus_buff()
 	_offhand_hit_timestamps_msec.clear()
 
+func clear_timed_effects_for_prepare() -> void:
+	super.clear_timed_effects_for_prepare()
+	_clear_offhand_main_focus_buff()
+	_offhand_hit_timestamps_msec.clear()
+
 func _get_level_data(lv: String) -> Dictionary:
 	if weapon_data.has(lv):
 		return weapon_data[lv]
