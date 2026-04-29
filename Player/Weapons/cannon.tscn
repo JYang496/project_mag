@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_ranger"]
 [ext_resource type="Script" uid="uid://bnj412fl7jiol" path="res://Player/Weapons/cannon.gd" id="2_script"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_kwpdc"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/cannon2.png" id="4_icon"]
 
 [node name="Cannon" unique_id=2056242882 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
@@ -13,7 +14,15 @@ debug_projectile_effects = false
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 9216
 
-[node name="WindupTimer" type="Timer" parent="." index="5" unique_id=441090591]
+[node name="Sprite" parent="." index="3" unique_id=1522898652]
+texture = ExtResource("4_icon")
+
+[node name="FuseSprites" parent="." index="4" unique_id=50406900]
+fuse_texture_1 = ExtResource("4_icon")
+fuse_texture_2 = ExtResource("4_icon")
+fuse_texture_3 = ExtResource("4_icon")
+
+[node name="WindupTimer" type="Timer" parent="." index="6" unique_id=441090591]
 one_shot = true
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

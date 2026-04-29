@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://blfkh56b4cirv" path="res://Player/Weapons/pistol.gd" id="1_224q5"]
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_bqbbe"]
-[ext_resource type="Texture2D" uid="uid://dokswxnxdx5vn" path="res://Textures/test/minigun.png" id="2_jnw81"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/pistol.png" id="2_jnw81"]
 
 [node name="Pistol" instance=ExtResource("1_bqbbe")]
 script = ExtResource("1_224q5")
@@ -12,5 +12,10 @@ weapon_traits = 5408
 
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("2_jnw81")
+
+[node name="FuseSprites" parent="." index="4"]
+fuse_texture_1 = ExtResource("2_jnw81")
+fuse_texture_2 = ExtResource("2_jnw81")
+fuse_texture_3 = ExtResource("2_jnw81")
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

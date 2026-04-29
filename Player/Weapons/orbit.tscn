@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_4h80h"]
 [ext_resource type="Script" uid="uid://cgt5h2lpnxfs0" path="res://Player/Weapons/orbit.gd" id="1_lxm1t"]
-[ext_resource type="Texture2D" uid="uid://cdoh3f46p4lls" path="res://Textures/test/bullet.png" id="2_d4sd2"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/pistol.png" id="2_d4sd2"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_8qu7o"]
 
 [node name="Orbit" unique_id=80514895 instance=ExtResource("1_4h80h")]
@@ -22,6 +22,11 @@ weapon_traits = 11312
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("2_d4sd2")
+
+[node name="FuseSprites" parent="." index="4" unique_id=50406900]
+fuse_texture_1 = ExtResource("2_d4sd2")
+fuse_texture_2 = ExtResource("2_d4sd2")
+fuse_texture_3 = ExtResource("2_d4sd2")
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]
 [connection signal="tree_exiting" from="." to="." method="_on_tree_exiting"]

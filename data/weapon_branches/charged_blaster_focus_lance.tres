@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" format=3]
 
-[ext_resource type="Texture2D" path="res://asset/images/weapons/cannon1.png" id="1_icon"]
+[ext_resource type="Texture2D" uid="uid://bo8agyho2ubhi" path="res://asset/images/weapons/pistol.png" id="1_icon"]
 [ext_resource type="PackedScene" uid="uid://b1gqnq2apvnak" path="res://Player/Weapons/charged_blaster.tscn" id="2_weapon_scene"]
 [ext_resource type="PackedScene" path="res://Player/Weapons/Branches/charged_blaster_focus_lance_branch.tscn" id="3_behavior"]
-[ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
+[ext_resource type="Script" uid="uid://bi2n1qvhoukj3" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
 
 [resource]
 script = ExtResource("4_script")

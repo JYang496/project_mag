@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bo8agyho2ubhi"
-path="res://.godot/imported/cannon1.png-c3ef5b8ae0b1772765f7b977ba0edfa9.ctex"
+uid="uid://dm5t1awjp1tuv"
+path="res://.godot/imported/flamethower.png-d99721f631b81b6ee2a1fa7015e2b537.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://asset/images/weapons/cannon1.png"
-dest_files=["res://.godot/imported/cannon1.png-c3ef5b8ae0b1772765f7b977ba0edfa9.ctex"]
+source_file="res://asset/images/weapons/flamethower.png"
+dest_files=["res://.godot/imported/flamethower.png-d99721f631b81b6ee2a1fa7015e2b537.ctex"]
 
 [params]
 

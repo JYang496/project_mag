@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bq3w32675tuff" path="res://Player/Weapons/charged_blaster.gd" id="1_48de6"]
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_thakn"]
-[ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://Textures/test/sniper.png" id="2_qghy1"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/blaster.png" id="2_qghy1"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_o5lrl"]
 
 [node name="ChargedBlaster" unique_id=1610258449 instance=ExtResource("1_thakn")]
@@ -15,5 +15,10 @@ weapon_traits = 25136
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("2_qghy1")
+
+[node name="FuseSprites" parent="." index="4" unique_id=50406900]
+fuse_texture_1 = ExtResource("2_qghy1")
+fuse_texture_2 = ExtResource("2_qghy1")
+fuse_texture_3 = ExtResource("2_qghy1")
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

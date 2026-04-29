@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_sq336"]
 [ext_resource type="Script" uid="uid://4fd56c34p01l" path="res://Player/Weapons/chainsaw_launcher.gd" id="2_hcjeu"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_hcjeu"]
-[ext_resource type="Texture2D" uid="uid://dy8r3aaxk8rse" path="res://Textures/test/chainsaw.png" id="3_pmcfu"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/pistol.png" id="3_pmcfu"]
 
 [node name="ChainsawLauncher" unique_id=347628502 instance=ExtResource("1_sq336")]
 script = ExtResource("2_hcjeu")
@@ -15,5 +15,10 @@ weapon_traits = 5144
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("3_pmcfu")
+
+[node name="FuseSprites" parent="." index="4" unique_id=50406900]
+fuse_texture_1 = ExtResource("3_pmcfu")
+fuse_texture_2 = ExtResource("3_pmcfu")
+fuse_texture_3 = ExtResource("3_pmcfu")
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

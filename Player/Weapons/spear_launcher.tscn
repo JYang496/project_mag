@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://cect8lp5abtw"]
 
-[ext_resource type="Texture2D" uid="uid://im0by60rbjt5" path="res://Textures/test/spear.png" id="1_1rx0e"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/pistol.png" id="1_1rx0e"]
 [ext_resource type="Script" uid="uid://ck17tkx32o6ft" path="res://Player/Weapons/spear_launcher.gd" id="1_wrx6n"]
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_yntmd"]
 
@@ -12,5 +12,10 @@ weapon_traits = 5152
 
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("1_1rx0e")
+
+[node name="FuseSprites" parent="." index="4"]
+fuse_texture_1 = ExtResource("1_1rx0e")
+fuse_texture_2 = ExtResource("1_1rx0e")
+fuse_texture_3 = ExtResource("1_1rx0e")
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

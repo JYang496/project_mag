@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_ranger"]
 [ext_resource type="Script" uid="uid://l4c120d4ll33" path="res://Player/Weapons/flamethrower.gd" id="2_script"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_jofir"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/flamethrower.png" id="4_icon"]
 
 [node name="Flamethrower" unique_id=491042674 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
@@ -17,5 +18,13 @@ debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 180256
+
+[node name="Sprite" parent="." index="3" unique_id=1522898652]
+texture = ExtResource("4_icon")
+
+[node name="FuseSprites" parent="." index="4" unique_id=50406900]
+fuse_texture_1 = ExtResource("4_icon")
+fuse_texture_2 = ExtResource("4_icon")
+fuse_texture_3 = ExtResource("4_icon")
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

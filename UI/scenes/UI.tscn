@@ -83,6 +83,7 @@ offset_left = 6.0
 offset_top = 5.0
 offset_right = 206.0
 offset_bottom = 205.0
+scale = Vector2(1.2, 1.2)
 script = ExtResource("19_wsel")
 
 [node name="Slot0" type="Control" parent="GUI/CharacterRoot/WeaponSelector" unique_id=315579612]

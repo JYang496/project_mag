@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://c4oj2glaup5b3"]
 
 [ext_resource type="Script" uid="uid://dlgx3bmsdvdgr" path="res://Player/Weapons/Core/weapon.gd" id="1_xgcik"]
-[ext_resource type="Texture2D" uid="uid://bo8agyho2ubhi" path="res://asset/images/weapons/cannon1.png" id="2_xgcik"]
+[ext_resource type="Texture2D" uid="uid://bo8agyho2ubhi" path="res://asset/images/weapons/pistol.png" id="2_xgcik"]
 [ext_resource type="Script" uid="uid://b1ppn0xcqgjq1" path="res://Player/Weapons/Core/fuse_sprite_holder.gd" id="3_xgcik"]
 [ext_resource type="Texture2D" uid="uid://ibu0avxj67o0" path="res://asset/images/weapons/cannon2.png" id="4_xgcik"]
 [ext_resource type="Texture2D" uid="uid://cl6fpuet5temg" path="res://asset/images/weapons/cannon3.png" id="5_xgcik"]
-[ext_resource type="Script" path="res://Player/Weapons/Core/weapon_modules.gd" id="6_82ygd"]
+[ext_resource type="Script" uid="uid://dm6sksr3q1us5" path="res://Player/Weapons/Core/weapon_modules.gd" id="6_82ygd"]
 
 [node name="Weapon" type="Node2D" unique_id=495213386]
 script = ExtResource("1_xgcik")
