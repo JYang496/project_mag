@@ -7,6 +7,8 @@ const DAMAGE_PROFILE_SCRIPT := preload("res://Utility/damage/damage_profile.gd")
 const FLOATING_STATUS_HINT_MANAGER_SCRIPT := preload("res://Player/Mechas/scripts/floating_status_hint_manager.gd")
 const PLAYER_STATUS_MODIFIER_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_status_modifier_system.gd")
 const PLAYER_ELEMENTAL_EFFECT_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_elemental_effect_system.gd")
+const PLAYER_MOVEMENT_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_movement_system.gd")
+const PLAYER_CAMERA_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_camera_system.gd")
 
 var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
@@ -21,6 +23,7 @@ var extra_direction = Vector2.ZERO
 @onready var detect_shape: CollisionShape2D = $DetectArea/CollisionShape2D
 @onready var hurt_cd: Timer = $HurtCD
 @onready var hurt_box: HurtBox = $HurtBox
+@onready var hurt_box_shape_node: CollisionShape2D = $HurtBox/CollisionShape2D
 @onready var collision_cd: Timer = $CollisionCD
 @onready var active_skill_holder: Node2D = $ActiveSkill
 
@@ -64,6 +67,10 @@ var weapon_orbit_states: Dictionary = {}
 var _base_detect_shape_size := Vector2.ZERO
 var _base_camera_zoom := Vector2.ONE
 var _camera_zoom_target := Vector2.ONE
+var _camera_offset_target := Vector2.ZERO
+var _base_hurtbox_shape_size := Vector2.ZERO
+var _base_hurtbox_shape_position := Vector2.ZERO
+var _hurtbox_shape_base_cached: bool = false
 var _shared_heat_pool: SharedHeatPool
 var _shared_heat_signature: String = ""
 var _incoming_damage_pipeline: DamagePipeline
@@ -79,6 +86,23 @@ var _current_move_animation: StringName = StringName()
 var _last_visual_position: Vector2 = Vector2.ZERO
 @export var camera_zoom_lerp_speed: float = 1.0
 @export var rest_phase_camera_zoom_factor: float = 1.5
+@export var move_accel: float = 2800.0
+@export var move_decel: float = 3200.0
+@export var move_turn_penalty: float = 0.15
+@export var move_input_buffer_sec: float = 0.1
+@export var camera_lookahead_distance: float = 18.0
+@export var camera_lookahead_lerp_speed: float = 5.0
+@export var camera_lookahead_min_speed_ratio: float = 0.2
+@export var mecha_scale_reference_pixel_height: float = 1116.0
+@export var idle_mecha_scale_multiplier: float = 0.7
+@export var move_animation_scale_multiplier: float = 1.0
+@export var face_axis_hysteresis: float = 0.08
+@export var face_min_distance_px: float = 6.0
+@export var move_anim_y_hysteresis: float = 0.08
+@export var face_hysteresis_debug: bool = false
+@export var hurtbox_bind_to_idle_sprite: bool = true
+@export var elite_hit_slow_mul: float = 0.75
+@export var elite_hit_slow_duration_sec: float = 0.06
 @export var floating_hint_duration_sec: float = 1.0
 @export var floating_hint_rise_px: float = 26.0
 @export var reload_block_hint_interval_sec: float = 0.35
@@ -93,10 +117,19 @@ var _last_phase: String = ""
 var _auto_loot_running: bool = false
 var _board_generator_ref: Node = null
 var _reload_block_hint_ready_at_msec: int = 0
+var _last_move_input_dir: Vector2 = Vector2.ZERO
+var _last_move_input_msec: int = -1
+var _last_face_horizontal_sign: int = -1
+var _last_face_vertical_sign: int = 1
+var _last_move_anim_is_top: bool = false
+const ELITE_HIT_SLOW_SOURCE_ID: StringName = &"elite_hit_stagger"
+var _elite_hit_slow_until_msec: int = 0
 var PlayerData = null
 var _status_hint_manager
 var _status_modifier_system
 var _elemental_effect_system
+var _movement_system
+var _camera_system
 var _suppress_status_hints: bool = false
 # Signals
 signal active_skill()
@@ -137,9 +170,13 @@ func _ready():
 	if viewport and not viewport.is_connected("size_changed", Callable(self, "_on_viewport_size_changed")):
 		viewport.size_changed.connect(Callable(self, "_on_viewport_size_changed"))
 	_update_collect_area_anchor_to_screen_top()
+	_cache_hurtbox_shape_base()
+	_sync_hurtbox_to_idle_sprite_scale()
 	_ensure_status_hint_manager()
 	_ensure_status_modifier_system()
 	_ensure_elemental_effect_system()
+	_ensure_movement_system()
+	_ensure_camera_system()
 
 # overwrite the function on child class
 func custom_ready():
@@ -154,9 +191,20 @@ func _physics_process(delta):
 	_regen_energy(delta)
 	_update_passive_time_tick(delta)
 	_update_collect_area_anchor_to_screen_top()
-	movement(delta)
-	_update_camera_zoom_smooth(delta)
+	if _movement_system != null and _movement_system.has_method("tick"):
+		_movement_system.call("tick", delta)
+	else:
+		movement(delta)
 	move_and_slide()
+	distance_mouse_player = get_global_mouse_position() - global_position
+	_update_mecha_visual_state(distance_mouse_player)
+	_update_weapon_orbits(delta)
+	if _camera_system != null and _camera_system.has_method("tick"):
+		_camera_system.call("tick", delta)
+	else:
+		_update_camera_zoom_smooth(delta)
+		_update_camera_lookahead(delta)
+	_update_collect_area_anchor_to_screen_top()
 	_constrain_to_board_traversable_area()
 
 func _input(event: InputEvent) -> void:
@@ -659,26 +707,44 @@ func get_weapon_active_cd_ratio() -> float:
 	return float(weapon.call("get_weapon_active_cd_ratio"))
 
 func movement(delta):
-	if movement_enabled:
+	if moveto_enabled:
+		_update_auto_navigation(delta)
+	elif movement_enabled:
 		var allow_manual_input := true
 		if PhaseManager != null and PhaseManager.has_method("current_state"):
 			allow_manual_input = str(PhaseManager.current_state()) != str(PhaseManager.PREPARE)
 		if allow_manual_input:
-			var x_mov = Input.get_action_strength("RIGHT") - Input.get_action_strength("LEFT")
-			var y_mov = Input.get_action_strength("DOWN") - Input.get_action_strength("UP")
-			var mov = Vector2(x_mov,y_mov) + extra_direction
-			var speed = (PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul()
-			velocity = mov.normalized() * speed
+			var mov: Vector2 = _resolve_buffered_move_input() + extra_direction
+			var speed: float = (PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul()
+			var target_velocity: Vector2 = mov.normalized() * speed if mov.length_squared() > 0.0001 else Vector2.ZERO
+			var is_turning: bool = velocity.length_squared() > 1.0 and target_velocity.length_squared() > 1.0 and velocity.dot(target_velocity) < 0.0
+			var accel: float = move_accel if target_velocity.length_squared() > 0.0 else move_decel
+			if is_turning:
+				accel *= (1.0 - clampf(move_turn_penalty, 0.0, 0.9))
+			velocity = velocity.move_toward(target_velocity, maxf(accel, 0.0) * maxf(delta, 0.0))
 		else:
-			velocity = Vector2.ZERO
+			velocity = velocity.move_toward(Vector2.ZERO, maxf(move_decel, 0.0) * maxf(delta, 0.0))
 	else:
-		velocity = Vector2.ZERO
-	if moveto_enabled:
-		self.global_position = self.global_position.move_toward(moveto_dest, delta * PlayerData.player_bonus_speed)
+		velocity = velocity.move_toward(Vector2.ZERO, maxf(move_decel, 0.0) * maxf(delta, 0.0))
 	
 	distance_mouse_player = get_global_mouse_position() - global_position
 	_update_mecha_visual_state(distance_mouse_player)
 	_update_weapon_orbits(delta)
+
+func _update_auto_navigation(delta: float) -> void:
+	var to_dest: Vector2 = moveto_dest - global_position
+	var distance_to_dest: float = to_dest.length()
+	var reach_distance: float = maxf(3.0, velocity.length() * 0.03)
+	if distance_to_dest <= reach_distance:
+		global_position = moveto_dest
+		velocity = Vector2.ZERO
+		moveto_enabled = false
+		movement_enabled = true
+		moveto_dest = Vector2.ZERO
+		return
+	var speed: float = (PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul()
+	var target_velocity: Vector2 = to_dest.normalized() * speed
+	velocity = velocity.move_toward(target_velocity, maxf(move_accel, 0.0) * maxf(delta, 0.0))
 
 func apply_move_speed_mul(source_id: StringName, mul: float) -> void:
 	_ensure_status_modifier_system()
@@ -786,15 +852,53 @@ func _get_low_hp_damage_mul() -> float:
 	return _status_modifier_system.get_low_hp_damage_mul()
 
 
-func move_to(dest:Vector2) -> void:
+func start_auto_nav(dest: Vector2) -> void:
+	if _movement_system != null and _movement_system.has_method("start_auto_nav"):
+		_movement_system.call("start_auto_nav", dest)
+		return
 	movement_enabled = false
 	moveto_enabled = true
 	moveto_dest = dest
 
-func arrived() -> void:
+func stop_auto_nav() -> void:
+	if _movement_system != null and _movement_system.has_method("stop_auto_nav"):
+		_movement_system.call("stop_auto_nav")
+		return
 	movement_enabled = true
 	moveto_enabled = false
 	moveto_dest = Vector2.ZERO
+	velocity = Vector2.ZERO
+
+func is_auto_nav_active() -> bool:
+	if _movement_system != null and _movement_system.has_method("is_auto_navigating"):
+		return bool(_movement_system.call("is_auto_navigating"))
+	return moveto_enabled
+
+func configure_auto_nav_speed_mul(speed_mul: float) -> void:
+	if _movement_system != null and _movement_system.has_method("configure_auto_nav_speed_mul"):
+		_movement_system.call("configure_auto_nav_speed_mul", speed_mul)
+
+func set_restarea_camera_control_enabled(enabled: bool, snap_target: Vector2 = Vector2.ZERO, snap_now: bool = false) -> void:
+	if _camera_system != null and _camera_system.has_method("set_restarea_control_enabled"):
+		_camera_system.call("set_restarea_control_enabled", enabled, snap_target, snap_now)
+
+func move_restarea_camera_to(target_global: Vector2, speed_mul: float = 1.0) -> void:
+	if _camera_system != null and _camera_system.has_method("move_restarea_camera_to"):
+		_camera_system.call("move_restarea_camera_to", target_global, speed_mul)
+
+func configure_restarea_camera_motion(min_speed: float, max_speed: float, speed_curve: float) -> void:
+	if _camera_system != null and _camera_system.has_method("configure_restarea_camera_motion"):
+		_camera_system.call("configure_restarea_camera_motion", min_speed, max_speed, speed_curve)
+
+func is_restarea_camera_close_to(target_global: Vector2, tolerance: float) -> bool:
+	if _camera_system != null and _camera_system.has_method("is_restarea_camera_close_to"):
+		return bool(_camera_system.call("is_restarea_camera_close_to", target_global, tolerance))
+	return false
+
+func get_restarea_camera_world_position() -> Vector2:
+	if _camera_system != null and _camera_system.has_method("get_camera_world_position"):
+		return _camera_system.call("get_camera_world_position")
+	return global_position
 
 func update_grab_radius() -> void:
 	grab_radius.shape.radius = PlayerData.total_grab_radius
@@ -825,11 +929,13 @@ func _update_vision_effect() -> void:
 		_refresh_detected_enemies()
 
 func _update_camera_zoom_by_vision(vision_mul: float) -> void:
+	if _camera_system != null and _camera_system.has_method("update_zoom_target_by_vision"):
+		_camera_system.call("update_zoom_target_by_vision", vision_mul)
+		return
 	if player_camera == null:
 		return
 	if _base_camera_zoom == Vector2.ZERO:
 		_base_camera_zoom = Vector2.ONE
-	# Lower vision multiplier means stronger zoom-out (wider view).
 	var zoom_factor := 1.0 / maxf(vision_mul, 0.05)
 	_camera_zoom_target = _base_camera_zoom * zoom_factor * _get_phase_camera_zoom_factor()
 
@@ -845,6 +951,40 @@ func _update_camera_zoom_smooth(delta: float) -> void:
 	var t := clampf(camera_zoom_lerp_speed * delta, 0.0, 1.0)
 	player_camera.zoom = player_camera.zoom.lerp(_camera_zoom_target, t)
 	_update_collect_area_anchor_to_screen_top()
+
+func _update_camera_lookahead(delta: float) -> void:
+	if player_camera == null:
+		return
+	if PhaseManager != null and PhaseManager.has_method("current_state"):
+		if str(PhaseManager.current_state()) == str(PhaseManager.PREPARE):
+			var reset_t := clampf(maxf(camera_lookahead_lerp_speed, 0.0) * maxf(delta, 0.0), 0.0, 1.0)
+			_camera_offset_target = Vector2.ZERO
+			player_camera.offset = player_camera.offset.lerp(Vector2.ZERO, reset_t)
+			return
+	var speed := velocity.length()
+	var max_speed := maxf((PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul(), 1.0)
+	var speed_ratio := clampf(speed / max_speed, 0.0, 1.0)
+	if speed_ratio < clampf(camera_lookahead_min_speed_ratio, 0.0, 1.0):
+		speed_ratio = 0.0
+	var move_dir := velocity.normalized() if speed > 0.01 else Vector2.ZERO
+	_camera_offset_target = move_dir * maxf(camera_lookahead_distance, 0.0) * speed_ratio
+	var t := clampf(maxf(camera_lookahead_lerp_speed, 0.0) * maxf(delta, 0.0), 0.0, 1.0)
+	player_camera.offset = player_camera.offset.lerp(_camera_offset_target, t)
+
+func _resolve_buffered_move_input() -> Vector2:
+	var x_mov := Input.get_action_strength("RIGHT") - Input.get_action_strength("LEFT")
+	var y_mov := Input.get_action_strength("DOWN") - Input.get_action_strength("UP")
+	var raw_input := Vector2(x_mov, y_mov)
+	var now_msec := Time.get_ticks_msec()
+	if raw_input.length_squared() > 0.0001:
+		_last_move_input_dir = raw_input.normalized()
+		_last_move_input_msec = now_msec
+		return raw_input
+	if _last_move_input_msec > 0:
+		var age_sec := float(now_msec - _last_move_input_msec) / 1000.0
+		if age_sec <= maxf(move_input_buffer_sec, 0.0):
+			return _last_move_input_dir
+	return Vector2.ZERO
 
 func _on_viewport_size_changed() -> void:
 	_update_collect_area_anchor_to_screen_top()
@@ -901,8 +1041,9 @@ func _resize_mecha_sprite() -> void:
 	var tex_size: Vector2 = mecha_sprite.texture.get_size()
 	if tex_size.x == 0 or tex_size.y == 0:
 		return
-	var uniform_scale := minf(TARGET_MECHA_SIZE.x / tex_size.x, TARGET_MECHA_SIZE.y / tex_size.y)
-	mecha_sprite.scale = Vector2.ONE * uniform_scale
+	var uniform_scale := _get_mecha_uniform_scale()
+	mecha_sprite.scale = Vector2.ONE * uniform_scale * clampf(idle_mecha_scale_multiplier, 0.1, 3.0)
+	_sync_hurtbox_to_idle_sprite_scale()
 
 func _setup_mecha_move_sprite() -> void:
 	if mecha_move_sprite == null:
@@ -930,8 +1071,47 @@ func _resize_mecha_move_sprite(animation_name: StringName) -> void:
 	var tex_size: Vector2 = tex.get_size()
 	if tex_size.x == 0 or tex_size.y == 0:
 		return
-	var uniform_scale := minf(TARGET_MECHA_SIZE.x / tex_size.x, TARGET_MECHA_SIZE.y / tex_size.y)
-	mecha_move_sprite.scale = Vector2.ONE * uniform_scale
+	var uniform_scale := _get_mecha_uniform_scale()
+	mecha_move_sprite.scale = Vector2.ONE * uniform_scale * clampf(move_animation_scale_multiplier, 0.1, 3.0)
+
+func _get_mecha_uniform_scale() -> float:
+	var ref_height := maxf(mecha_scale_reference_pixel_height, 1.0)
+	return TARGET_MECHA_SIZE.y / ref_height
+
+func _cache_hurtbox_shape_base() -> void:
+	if _hurtbox_shape_base_cached:
+		return
+	if hurt_box_shape_node == null or not is_instance_valid(hurt_box_shape_node):
+		return
+	var rect_shape := hurt_box_shape_node.shape as RectangleShape2D
+	if rect_shape == null:
+		return
+	_base_hurtbox_shape_size = rect_shape.size
+	_base_hurtbox_shape_position = hurt_box_shape_node.position
+	_hurtbox_shape_base_cached = true
+
+func _sync_hurtbox_to_idle_sprite_scale() -> void:
+	if not hurtbox_bind_to_idle_sprite:
+		return
+	if mecha_sprite == null or not is_instance_valid(mecha_sprite):
+		return
+	_cache_hurtbox_shape_base()
+	if not _hurtbox_shape_base_cached:
+		return
+	if hurt_box_shape_node == null or not is_instance_valid(hurt_box_shape_node):
+		return
+	var rect_shape := hurt_box_shape_node.shape as RectangleShape2D
+	if rect_shape == null:
+		return
+	var idle_scale: Vector2 = mecha_sprite.scale
+	rect_shape.size = Vector2(
+		_base_hurtbox_shape_size.x * idle_scale.x,
+		_base_hurtbox_shape_size.y * idle_scale.y
+	)
+	hurt_box_shape_node.position = Vector2(
+		_base_hurtbox_shape_position.x * idle_scale.x,
+		_base_hurtbox_shape_position.y * idle_scale.y
+	)
 
 func _update_mecha_visual_state(direction: Vector2) -> void:
 	var position_delta := global_position - _last_visual_position
@@ -971,7 +1151,16 @@ func _update_mecha_move_animation(direction: Vector2) -> void:
 	if mecha_move_sprite == null:
 		return
 	mecha_move_sprite.flip_h = direction.x > 0.0
-	var animation_name: StringName = MOVE_ANIMATION_TOP if direction.y < 0.0 else MOVE_ANIMATION_BOTTOM
+	var y_threshold: float = clampf(move_anim_y_hysteresis, 0.0, 0.5)
+	var next_is_top := _last_move_anim_is_top
+	if _last_move_anim_is_top:
+		if direction.y > y_threshold:
+			next_is_top = false
+	else:
+		if direction.y < -y_threshold:
+			next_is_top = true
+	_last_move_anim_is_top = next_is_top
+	var animation_name: StringName = MOVE_ANIMATION_TOP if next_is_top else MOVE_ANIMATION_BOTTOM
 	if _current_move_animation != animation_name:
 		_current_move_animation = animation_name
 		mecha_move_sprite.play(animation_name)
@@ -1077,18 +1266,41 @@ func _shortest_angle(from_angle: float, to_angle: float) -> float:
 func _update_mecha_direction(direction: Vector2) -> void:
 	if direction == Vector2.ZERO:
 		return
-	mecha_sprite.flip_h = direction.x > 0.0
-	var new_dir := ""
-	if direction.x < 0.0:
-		new_dir = "top_left" if direction.y < 0.0 else "bottom_left"
-	else:
-		new_dir = "top_right" if direction.y < 0.0 else "bottom_right"
+	var new_dir := _compute_stable_mecha_direction(direction)
 	if new_dir == "" or new_dir == current_mecha_direction:
 		return
 	current_mecha_direction = new_dir
+	mecha_sprite.flip_h = _last_face_horizontal_sign > 0
 	if MECHA_DIRECTION_TEXTURES.has(new_dir):
 		mecha_sprite.texture = MECHA_DIRECTION_TEXTURES[new_dir]
 		_resize_mecha_sprite()
+
+func _compute_stable_mecha_direction(direction: Vector2) -> String:
+	var distance: float = direction.length()
+	var threshold: float = clampf(face_axis_hysteresis, 0.0, 0.5)
+	if distance >= maxf(face_min_distance_px, 0.0):
+		var normalized: Vector2 = direction / distance
+		# Schmitt trigger per-axis:
+		# switch side only when crossing the opposite threshold band.
+		if _last_face_horizontal_sign >= 0:
+			if normalized.x < -threshold:
+				_last_face_horizontal_sign = -1
+		else:
+			if normalized.x > threshold:
+				_last_face_horizontal_sign = 1
+		if _last_face_vertical_sign >= 0:
+			if normalized.y < -threshold:
+				_last_face_vertical_sign = -1
+		else:
+			if normalized.y > threshold:
+				_last_face_vertical_sign = 1
+		if face_hysteresis_debug:
+			print("[FaceHys2] d=", snappedf(distance, 0.1), " n=", normalized, " hs=", _last_face_horizontal_sign, " vs=", _last_face_vertical_sign)
+	elif face_hysteresis_debug:
+		print("[FaceHys2] deadzone d=", snappedf(distance, 0.1), " keep hs=", _last_face_horizontal_sign, " vs=", _last_face_vertical_sign)
+	if _last_face_horizontal_sign < 0:
+		return "top_left" if _last_face_vertical_sign < 0 else "bottom_left"
+	return "top_right" if _last_face_vertical_sign < 0 else "bottom_right"
 
 # Player does not have death atm
 func damaged(attack:Attack):
@@ -1101,12 +1313,53 @@ func damaged(attack:Attack):
 	var result := _incoming_damage_pipeline.apply_incoming_damage(self, attack, _incoming_damage_profile)
 	if not result.applied:
 		return
+	_apply_elite_hit_slow_if_needed(attack)
 	if PlayerData.testing_keep_hp_above_zero and PlayerData.player_hp <= 0:
 		PlayerData.player_hp = 1
 	if PlayerData.player_hp <= 0:
 		PhaseManager.enter_gameover()
 		return
 	print(self, PlayerData.player_hp)
+
+func _apply_elite_hit_slow_if_needed(attack: Attack) -> void:
+	if attack == null or _is_attack_from_player(attack):
+		return
+	if not _is_attack_from_elite_or_boss(attack):
+		return
+	var duration_msec := int(maxf(elite_hit_slow_duration_sec, 0.0) * 1000.0)
+	if duration_msec <= 0:
+		return
+	_elite_hit_slow_until_msec = Time.get_ticks_msec() + duration_msec
+	apply_move_speed_mul(ELITE_HIT_SLOW_SOURCE_ID, clampf(elite_hit_slow_mul, 0.05, 1.0))
+	_clear_elite_hit_slow_after_delay(_elite_hit_slow_until_msec)
+
+func _clear_elite_hit_slow_after_delay(token_until_msec: int) -> void:
+	await get_tree().create_timer(maxf(elite_hit_slow_duration_sec, 0.0)).timeout
+	if not is_inside_tree():
+		return
+	if token_until_msec != _elite_hit_slow_until_msec:
+		return
+	remove_move_speed_mul(ELITE_HIT_SLOW_SOURCE_ID)
+
+func _is_attack_from_player(attack: Attack) -> bool:
+	if attack == null:
+		return false
+	return attack.is_from_player()
+
+func _is_attack_from_elite_or_boss(attack: Attack) -> bool:
+	if attack == null or attack.source_node == null or not is_instance_valid(attack.source_node):
+		return false
+	var current: Node = attack.source_node
+	while current != null:
+		if current is EliteEnemy:
+			return true
+		if current.is_in_group("boss"):
+			return true
+		var is_boss_variant: Variant = current.get("is_boss")
+		if is_boss_variant != null and bool(is_boss_variant):
+			return true
+		current = current.get_parent()
+	return false
 
 func _get_total_armor() -> int:
 	return max(0, int(PlayerData.armor) + int(PlayerData.bonus_armor))
@@ -1312,6 +1565,22 @@ func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.BATTLE and _auto_loot_running:
 		_auto_loot_running = false
 		_restore_collect_ranges_after_auto_loot()
+
+func _ensure_movement_system() -> void:
+	if _movement_system != null:
+		_movement_system.setup(self)
+		return
+	_movement_system = PLAYER_MOVEMENT_SYSTEM_SCRIPT.new()
+	if _movement_system != null:
+		_movement_system.setup(self)
+
+func _ensure_camera_system() -> void:
+	if _camera_system != null:
+		_camera_system.setup(self, player_camera)
+		return
+	_camera_system = PLAYER_CAMERA_SYSTEM_SCRIPT.new()
+	if _camera_system != null:
+		_camera_system.setup(self, player_camera)
 
 func _instant_reload_all_weapons() -> void:
 	for weapon in PlayerData.player_weapon_list:

@@ -9,6 +9,13 @@ signal rest_menu_cancelled
 @export var fade_duration: float = 0.35
 @export var zone_move_speed: float = 500.0
 @export var zone_reach_distance: float = 6.0
+@export_range(0.0, 1.0, 0.01) var rest_zone_player_target_pull: float = 0.35
+@export var rest_camera_min_speed: float = 1400.0
+@export var rest_camera_max_speed: float = 4800.0
+@export var rest_camera_speed_curve: float = 6.0
+@export var rest_camera_recenter_speed_mul: float = 1.5
+@export var menu_open_cooldown_msec: int = 150
+@export var zone4_hold_move_boost_mul: float = 2.2
 @export var zone_grid_color: Color = Color(0.70, 0.84, 1.0, 0.60)
 @export var zone_hover_color: Color = Color(0.44, 0.88, 1.0, 1.0)
 @export var zone_selected_color: Color = Color(0.38, 1.0, 0.58, 0.95)
@@ -36,10 +43,18 @@ var hover_zone_id := -1
 var selected_zone_id := 4
 var menu_open := false
 var move_target_global := Vector2.ZERO
+var player_move_target_global := Vector2.ZERO
 var is_auto_moving := false
 var _emit_menu_on_arrival := false
+var _arrival_token: int = 0
+var _camera_owner_active := false
+var _camera_is_moving := false
+var _camera_move_target := Vector2.ZERO
+var _camera_move_speed_mul: float = 1.0
+var _last_menu_open_msec: int = -1000000
 var _zone4_hold_elapsed := 0.0
 var _zone4_hold_triggered := false
+var _zone4_hold_boost_active: bool = false
 @onready var _start_battle_button: StartBattleButton = get_node_or_null("StartBattleButton")
 @onready var _texture_root: Node2D = get_node_or_null("Texture")
 @onready var _merchant_hint_label: Label = get_node_or_null("MerchantHintLabel")
@@ -50,6 +65,7 @@ var _zone4_hold_triggered := false
 const GRID_DIM := 3
 const ZONE_COUNT := GRID_DIM * GRID_DIM
 const CENTER_ZONE_ID := 4
+const ZONE4_HOLD_BOOST_SOURCE_ID: StringName = &"rest_zone4_hold_boost"
 
 func _ready() -> void:
 	super._ready()
@@ -75,13 +91,15 @@ func _ready() -> void:
 	_setup_scene_hint_labels()
 	_ensure_visual_layering()
 	_sync_to_target_center()
-	_set_active(_should_be_active(PhaseManager.current_state()), true)
+	var should_show := _should_be_active(PhaseManager.current_state())
+	_set_camera_owner_active(should_show)
+	_set_active(should_show, true)
 	_setup_start_battle_button()
 	if not rest_menu_requested.is_connected(Callable(self, "_on_rest_menu_requested")):
 		rest_menu_requested.connect(Callable(self, "_on_rest_menu_requested"))
 	if not rest_menu_cancelled.is_connected(Callable(self, "_on_rest_menu_cancelled")):
 		rest_menu_cancelled.connect(Callable(self, "_on_rest_menu_cancelled"))
-	if _should_be_active(PhaseManager.current_state()):
+	if should_show:
 		_reset_prepare_state(true)
 	_refresh_scene_hint_labels()
 	_refresh_interaction_state()
@@ -138,6 +156,9 @@ func _ensure_visual_layering() -> void:
 
 func _on_phase_changed(new_phase: String) -> void:
 	var should_show := _should_be_active(new_phase)
+	_set_camera_owner_active(should_show)
+	if new_phase != PhaseManager.PREPARE:
+		_clear_zone4_hold_move_boost()
 	if should_show:
 		_sync_to_target_center()
 	_set_active(should_show, false)
@@ -269,6 +290,7 @@ func _on_start_battle_button_activated() -> void:
 		return
 	if _route_selection_pending:
 		return
+	_clear_zone4_hold_move_boost()
 	_route_selection_pending = true
 	_on_route_confirmed("normal")
 
@@ -288,6 +310,7 @@ func _on_route_confirmed(route_id: String) -> void:
 		if GlobalVariables.enemy_spawner:
 			GlobalVariables.enemy_spawner.start_timer()
 		PhaseManager.enter_battle()
+		_clear_zone4_hold_move_boost()
 		return
 	_start_bonus_route_flow(route_def)
 
@@ -327,7 +350,8 @@ func _process(delta: float) -> void:
 		CursorManager.clear_world_state(self)
 		return
 	_update_hover_from_mouse()
-	_update_auto_move(delta)
+	_update_camera_move(delta)
+	_update_auto_move()
 	_update_zone4_hold(delta)
 	_refresh_cursor_state()
 
@@ -389,46 +413,59 @@ func _handle_right_click() -> void:
 	menu_open = false
 	rest_menu_cancelled.emit()
 	_begin_zone_move(CENTER_ZONE_ID, false)
+	_begin_camera_move_to(_get_zone_center_global(CENTER_ZONE_ID), rest_camera_recenter_speed_mul)
 	get_viewport().set_input_as_handled()
 
 func _begin_zone_move(zone_id: int, open_menu_on_arrival: bool) -> void:
+	_arrival_token += 1
 	selected_zone_id = zone_id
 	menu_open = false
 	move_target_global = _get_zone_center_global(zone_id)
+	player_move_target_global = move_target_global
+	if not _camera_owner_active:
+		_set_camera_owner_active(true)
+	_begin_camera_move_to(move_target_global, 1.0)
 	is_auto_moving = true
 	_emit_menu_on_arrival = open_menu_on_arrival
+	_apply_zone_move_speed_override()
+	if PlayerData.player != null and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("start_auto_nav"):
+		PlayerData.player.call("start_auto_nav", player_move_target_global)
 	if debug_click_logs:
-		print("[RestArea] begin move zone=", zone_id, " target=", move_target_global, " open_menu=", open_menu_on_arrival)
+		print("[RestArea] begin move zone=", zone_id, " cam_target=", move_target_global, " player_target=", player_move_target_global, " open_menu=", open_menu_on_arrival)
 	queue_redraw()
 
-func _update_auto_move(delta: float) -> void:
+func _update_auto_move() -> void:
 	if not is_auto_moving:
 		return
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
 		_stop_auto_move()
 		return
-	var step := maxf(zone_move_speed, 1.0) * maxf(delta, 0.0)
-	PlayerData.player.global_position = PlayerData.player.global_position.move_toward(move_target_global, step)
 	_snap_start_battle_button()
-	if PlayerData.player.global_position.distance_to(move_target_global) > zone_reach_distance:
+	var arrived_now := false
+	if PlayerData.player.has_method("is_auto_nav_active"):
+		arrived_now = not bool(PlayerData.player.call("is_auto_nav_active"))
+	else:
+		arrived_now = PlayerData.player.global_position.distance_to(player_move_target_global) <= zone_reach_distance
+	if not arrived_now:
 		return
-	PlayerData.player.global_position = move_target_global
 	is_auto_moving = false
 	if _emit_menu_on_arrival:
-		menu_open = true
-		if debug_click_logs:
-			print("[RestArea] arrived zone=", selected_zone_id, " menu_open=true")
-		rest_menu_requested.emit(selected_zone_id, move_target_global)
-	else:
-		menu_open = false
-		if debug_click_logs:
-			print("[RestArea] arrived center/menu cancelled")
-	_emit_menu_on_arrival = false
+		_try_open_menu_for_zone(selected_zone_id, move_target_global, "player_fallback")
 	queue_redraw()
 
+func _get_player_move_target_for_zone(zone_id: int) -> Vector2:
+	return _get_zone_center_global(zone_id)
+
 func _stop_auto_move() -> void:
+	_arrival_token += 1
 	is_auto_moving = false
 	_emit_menu_on_arrival = false
+	_camera_is_moving = false
+	_camera_move_speed_mul = 1.0
+	_clear_zone_move_speed_override()
+	_clear_zone4_hold_move_boost()
+	if PlayerData.player != null and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("stop_auto_nav"):
+		PlayerData.player.call("stop_auto_nav")
 
 func _reset_prepare_state(move_player_to_center: bool) -> void:
 	menu_open = false
@@ -440,6 +477,13 @@ func _reset_prepare_state(move_player_to_center: bool) -> void:
 	_close_rest_area_primary_menu_if_open()
 	if move_player_to_center:
 		_move_player_to_center()
+	if _camera_owner_active:
+		if PlayerData.player != null and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("set_restarea_camera_control_enabled"):
+			var center_target := _get_zone_center_global(CENTER_ZONE_ID)
+			PlayerData.player.call("set_restarea_camera_control_enabled", true, center_target, true)
+			_camera_move_target = center_target
+			_camera_is_moving = false
+			_camera_move_speed_mul = 1.0
 	queue_redraw()
 
 func _refresh_interaction_state() -> void:
@@ -644,11 +688,14 @@ func _zone_opens_primary_menu(zone_id: int) -> bool:
 
 func _update_zone4_hold(delta: float) -> void:
 	if not _is_zone4_hold_available():
+		_clear_zone4_hold_move_boost()
 		_reset_zone4_hold()
 		return
 	if not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		_clear_zone4_hold_move_boost()
 		_reset_zone4_hold()
 		return
+	_ensure_zone4_hold_move_boost_active()
 	if _zone4_hold_triggered:
 		return
 	_zone4_hold_elapsed = minf(_zone4_hold_elapsed + maxf(delta, 0.0), maxf(zone4_hold_duration, 0.01))
@@ -665,9 +712,9 @@ func _update_zone4_hold(delta: float) -> void:
 func _is_zone4_hold_available() -> bool:
 	if not _is_interaction_enabled():
 		return false
-	if is_auto_moving:
-		return false
 	if selected_zone_id != CENTER_ZONE_ID:
+		return false
+	if not _is_camera_close_to_zone_center(CENTER_ZONE_ID):
 		return false
 	if hover_zone_id != CENTER_ZONE_ID:
 		return false
@@ -679,12 +726,146 @@ func _is_zone4_hold_available() -> bool:
 		return false
 	return true
 
+func _set_camera_owner_active(active: bool) -> void:
+	_camera_owner_active = active
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return
+	if PlayerData.player.has_method("configure_restarea_camera_motion"):
+		PlayerData.player.call(
+			"configure_restarea_camera_motion",
+			rest_camera_min_speed,
+			rest_camera_max_speed,
+			rest_camera_speed_curve
+		)
+	if not PlayerData.player.has_method("set_restarea_camera_control_enabled"):
+		return
+	PlayerData.player.call(
+		"set_restarea_camera_control_enabled",
+		active,
+		_get_zone_center_global(CENTER_ZONE_ID),
+		true
+	)
+	_camera_is_moving = false
+
+func _begin_camera_move_to(target_global: Vector2, speed_mul: float = 1.0) -> void:
+	if not _camera_owner_active:
+		return
+	_camera_move_target = target_global
+	_camera_is_moving = true
+	_camera_move_speed_mul = maxf(speed_mul, 0.1)
+	if PlayerData.player != null and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("configure_restarea_camera_motion"):
+		PlayerData.player.call(
+			"configure_restarea_camera_motion",
+			rest_camera_min_speed,
+			rest_camera_max_speed,
+			rest_camera_speed_curve
+		)
+	if PlayerData.player != null and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("move_restarea_camera_to"):
+		PlayerData.player.call("move_restarea_camera_to", _camera_move_target, _camera_move_speed_mul)
+
+func _update_camera_move(delta: float) -> void:
+	if not _camera_owner_active or not _camera_is_moving:
+		return
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		_camera_is_moving = false
+		return
+	var close := false
+	if PlayerData.player.has_method("is_restarea_camera_close_to"):
+		close = bool(PlayerData.player.call("is_restarea_camera_close_to", _camera_move_target, _get_camera_reach_distance(0.0)))
+	if close:
+		_camera_is_moving = false
+		_camera_move_speed_mul = 1.0
+		_on_camera_arrived()
+
+func _get_camera_reach_distance(camera_speed: float) -> float:
+	return maxf(8.0, camera_speed * 0.03)
+
+func _on_camera_arrived() -> void:
+	if not _emit_menu_on_arrival:
+		return
+	_try_open_menu_for_zone(selected_zone_id, move_target_global, "camera")
+
+func _try_open_menu_for_zone(zone_id: int, zone_center: Vector2, source: String) -> void:
+	if not _emit_menu_on_arrival:
+		return
+	if not _zone_opens_primary_menu(zone_id):
+		return
+	var now_msec := Time.get_ticks_msec()
+	if now_msec - _last_menu_open_msec < max(menu_open_cooldown_msec, 0):
+		return
+	_last_menu_open_msec = now_msec
+	_open_menu_after_stable_frames(zone_id, zone_center, source, _arrival_token)
+
+func _open_menu_after_stable_frames(zone_id: int, zone_center: Vector2, source: String, token: int) -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_inside_tree():
+		return
+	if token != _arrival_token:
+		return
+	if menu_open:
+		return
+	if not _emit_menu_on_arrival:
+		return
+	menu_open = true
+	_emit_menu_on_arrival = false
+	if debug_click_logs:
+		print("[RestArea] open menu source=", source, " zone=", zone_id)
+	rest_menu_requested.emit(zone_id, zone_center)
+	queue_redraw()
+
+func _is_camera_close_to_zone_center(zone_id: int) -> bool:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return false
+	if not PlayerData.player.has_method("is_restarea_camera_close_to"):
+		return false
+	return bool(PlayerData.player.call("is_restarea_camera_close_to", _get_zone_center_global(zone_id), maxf(8.0, zone_reach_distance)))
+
 func _reset_zone4_hold() -> void:
 	var needs_redraw := _zone4_hold_elapsed > 0.0
 	_zone4_hold_elapsed = 0.0
 	_zone4_hold_triggered = false
 	if needs_redraw:
 		queue_redraw()
+
+func _ensure_zone4_hold_move_boost_active() -> void:
+	if _zone4_hold_boost_active:
+		return
+	var player: Node = PlayerData.player
+	if player == null or not is_instance_valid(player):
+		return
+	if not player.has_method("apply_move_speed_mul"):
+		return
+	player.call("apply_move_speed_mul", ZONE4_HOLD_BOOST_SOURCE_ID, maxf(zone4_hold_move_boost_mul, 0.05))
+	_zone4_hold_boost_active = true
+
+func _clear_zone4_hold_move_boost() -> void:
+	if not _zone4_hold_boost_active:
+		return
+	var player: Node = PlayerData.player
+	if player != null and is_instance_valid(player) and player.has_method("remove_move_speed_mul"):
+		player.call("remove_move_speed_mul", ZONE4_HOLD_BOOST_SOURCE_ID)
+	_zone4_hold_boost_active = false
+
+func _apply_zone_move_speed_override() -> void:
+	var player: Node = PlayerData.player
+	if player == null or not is_instance_valid(player):
+		return
+	if not player.has_method("configure_auto_nav_speed_mul"):
+		return
+	var base_speed := 1.0
+	if "player_speed" in PlayerData and "player_bonus_speed" in PlayerData:
+		base_speed = maxf(float(PlayerData.player_speed) + float(PlayerData.player_bonus_speed), 1.0)
+	var target_speed := maxf(zone_move_speed, 1.0)
+	var speed_mul := clampf(target_speed / base_speed, 0.1, 8.0)
+	player.call("configure_auto_nav_speed_mul", speed_mul)
+
+func _clear_zone_move_speed_override() -> void:
+	var player: Node = PlayerData.player
+	if player == null or not is_instance_valid(player):
+		return
+	if player.has_method("configure_auto_nav_speed_mul"):
+		player.call("configure_auto_nav_speed_mul", 1.0)
 
 func _draw_zone4_hold_progress() -> void:
 	if selected_zone_id != CENTER_ZONE_ID and hover_zone_id != CENTER_ZONE_ID and _zone4_hold_elapsed <= 0.0:

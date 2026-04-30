@@ -16,6 +16,11 @@ const ENEMY_HP_BAR_SCENE := preload("res://UI/enemy_hp_bar.tscn")
 @export var hit_label_merge_window_sec: float = 0.03
 @export var hp_bar_show_duration_sec: float = 1.5
 @export var hp_bar_vertical_offset: float = -30.0
+@export var hit_flash_enabled: bool = true
+@export var hit_flash_peak_color: Color = Color(1.0, 1.0, 1.0, 1.0)
+@export_range(0.0, 1.0, 0.01) var hit_flash_peak_alpha: float = 0.8
+@export var hit_flash_in_duration_sec: float = 0.0
+@export var hit_flash_out_duration_sec: float = 0.3
 var damage_taken_multiplier: float = 1.0
 const SCORCH_DURATION_SEC: float = 6.0
 const SCORCH_DOT_RATIO_PER_STACK: float = 0.10
@@ -61,6 +66,8 @@ var _incoming_damage_pipeline: DamagePipeline
 var _incoming_damage_profile: DamageProfile
 var _incoming_damage_max_hp: int = 1
 var _enemy_hp_bar: EnemyHpBar
+var _hit_flash_tween: Tween
+var _hit_flash_overlay: Sprite2D
 
 var _quest_lock_active := false
 var _quest_lock_speed := 0.0
@@ -87,6 +94,7 @@ func damaged(attack:Attack):
 	_queue_hit_label_damage(result.final_damage, result.damage_type)
 	knockback.amount = attack.knock_back.amount
 	knockback.angle = attack.knock_back.angle
+	_play_hit_flash()
 	_sync_enemy_hp_bar()
 	_show_enemy_hp_bar_on_damage()
 	if status_timer.is_stopped() and (_incoming_damage_pipeline.has_active_effects(self) or not status_effects.is_empty()):
@@ -271,6 +279,62 @@ func _profile_on_apply_frost_slow(move_multiplier: float, duration_sec: float) -
 
 func _profile_on_clear_frost_slow() -> void:
 	pass
+
+func _play_hit_flash() -> void:
+	if not hit_flash_enabled:
+		return
+	if sprite_body == null or not is_instance_valid(sprite_body):
+		return
+	var overlay := _ensure_hit_flash_overlay()
+	if overlay == null:
+		return
+	if _hit_flash_tween != null and is_instance_valid(_hit_flash_tween):
+		_hit_flash_tween.kill()
+	var flash_in := maxf(hit_flash_in_duration_sec, 0.0)
+	var flash_out := maxf(hit_flash_out_duration_sec, 0.0)
+	var peak_alpha := clampf(hit_flash_peak_alpha, 0.0, 1.0)
+	overlay.texture = sprite_body.texture
+	overlay.position = sprite_body.position
+	overlay.scale = sprite_body.scale
+	overlay.rotation = sprite_body.rotation
+	overlay.flip_h = sprite_body.flip_h
+	overlay.flip_v = sprite_body.flip_v
+	overlay.visible = true
+	overlay.modulate = Color(hit_flash_peak_color.r, hit_flash_peak_color.g, hit_flash_peak_color.b, 0.0)
+	_hit_flash_tween = create_tween()
+	if flash_in > 0.0:
+		_hit_flash_tween.tween_property(overlay, "modulate:a", peak_alpha, flash_in)
+	else:
+		overlay.modulate.a = peak_alpha
+	if flash_out > 0.0:
+		_hit_flash_tween.tween_property(overlay, "modulate:a", 0.0, flash_out)
+	else:
+		overlay.modulate.a = 0.0
+	_hit_flash_tween.finished.connect(func() -> void:
+		if overlay != null and is_instance_valid(overlay):
+			overlay.visible = false
+		_hit_flash_tween = null
+	)
+
+func _ensure_hit_flash_overlay() -> Sprite2D:
+	if _hit_flash_overlay != null and is_instance_valid(_hit_flash_overlay):
+		return _hit_flash_overlay
+	if sprite_body == null or not is_instance_valid(sprite_body):
+		return null
+	var overlay := Sprite2D.new()
+	overlay.name = "HitFlashOverlay"
+	overlay.centered = sprite_body.centered
+	overlay.offset = sprite_body.offset
+	overlay.texture_filter = sprite_body.texture_filter
+	overlay.z_index = sprite_body.z_index + 1
+	var add_mat := CanvasItemMaterial.new()
+	add_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	overlay.material = add_mat
+	overlay.visible = false
+	overlay.modulate = Color(hit_flash_peak_color.r, hit_flash_peak_color.g, hit_flash_peak_color.b, 0.0)
+	add_child(overlay)
+	_hit_flash_overlay = overlay
+	return _hit_flash_overlay
 
 
 func apply_status_payload(status_name: StringName, status_data: Variant) -> void:
