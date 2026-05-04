@@ -4,18 +4,26 @@ class_name FloatingStatusHintManager
 var _host: Node2D
 var _floating_hint_duration_sec: float = 1.0
 var _floating_hint_rise_px: float = 26.0
-var _status_hint_throttle_sec: float = 0.45
+var _status_hint_throttle_sec: float = 0.9
+var _status_hint_queue_interval_sec: float = 1.0
 
 var _status_hint_ready_at_msec: Dictionary = {}
 var _status_hint_state_by_source: Dictionary = {}
 var _status_hint_queue: Array[Dictionary] = []
 var _is_status_hint_playing: bool = false
 
-func setup(host: Node2D, floating_hint_duration_sec: float, floating_hint_rise_px: float, status_hint_throttle_sec: float) -> void:
+func setup(
+	host: Node2D,
+	floating_hint_duration_sec: float,
+	floating_hint_rise_px: float,
+	status_hint_throttle_sec: float,
+	status_hint_queue_interval_sec: float
+) -> void:
 	_host = host
 	_floating_hint_duration_sec = maxf(floating_hint_duration_sec, 0.05)
 	_floating_hint_rise_px = maxf(floating_hint_rise_px, 0.0)
 	_status_hint_throttle_sec = maxf(status_hint_throttle_sec, 0.05)
+	_status_hint_queue_interval_sec = maxf(status_hint_queue_interval_sec, 0.05)
 
 func enqueue_raw_hint(text: String) -> void:
 	var message := text.strip_edges()
@@ -90,7 +98,24 @@ func _try_play_next_status_hint() -> void:
 		_try_play_next_status_hint()
 		return
 	_is_status_hint_playing = true
+	_schedule_next_status_hint_slot()
 	_spawn_player_floating_hint(next_text)
+
+func _schedule_next_status_hint_slot() -> void:
+	if _host == null or not is_instance_valid(_host):
+		return
+	var tree := _host.get_tree()
+	if tree == null:
+		return
+	var wait_time := minf(_status_hint_queue_interval_sec, _floating_hint_duration_sec)
+	tree.create_timer(wait_time).timeout.connect(func() -> void:
+		if _host == null or not is_instance_valid(_host):
+			return
+		if _host.is_queued_for_deletion() or not _host.is_inside_tree():
+			return
+		_is_status_hint_playing = false
+		_try_play_next_status_hint()
+	, CONNECT_ONE_SHOT)
 
 func _spawn_player_floating_hint(text: String) -> void:
 	var message := text.strip_edges()
@@ -128,12 +153,10 @@ func _spawn_player_floating_hint(text: String) -> void:
 	)
 
 func _on_status_hint_playback_finished() -> void:
-	_is_status_hint_playing = false
 	if _host == null or not is_instance_valid(_host):
 		return
 	if _host.is_queued_for_deletion() or not _host.is_inside_tree():
 		return
-	_try_play_next_status_hint()
 
 func _status_hint_meta(stat_type: StringName) -> Dictionary:
 	match stat_type:

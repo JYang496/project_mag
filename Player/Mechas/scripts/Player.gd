@@ -1,14 +1,6 @@
 extends CharacterBody2D
 class_name Player
 
-const SHARED_HEAT_POOL_SCRIPT := preload("res://Player/Weapons/Heat/shared_heat_pool.gd")
-const DAMAGE_PIPELINE_SCRIPT := preload("res://Utility/damage/damage_pipeline.gd")
-const DAMAGE_PROFILE_SCRIPT := preload("res://Utility/damage/damage_profile.gd")
-const FLOATING_STATUS_HINT_MANAGER_SCRIPT := preload("res://Player/Mechas/scripts/floating_status_hint_manager.gd")
-const PLAYER_STATUS_MODIFIER_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_status_modifier_system.gd")
-const PLAYER_ELEMENTAL_EFFECT_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_elemental_effect_system.gd")
-const PLAYER_MOVEMENT_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_movement_system.gd")
-const PLAYER_CAMERA_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_camera_system.gd")
 
 var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
@@ -66,13 +58,9 @@ const COLLECT_AREA_TOP_PADDING: float = 0.0
 var weapon_orbit_states: Dictionary = {}
 var _base_detect_shape_size := Vector2.ZERO
 var _base_camera_zoom := Vector2.ONE
-var _camera_zoom_target := Vector2.ONE
-var _camera_offset_target := Vector2.ZERO
 var _base_hurtbox_shape_size := Vector2.ZERO
 var _base_hurtbox_shape_position := Vector2.ZERO
 var _hurtbox_shape_base_cached: bool = false
-var _shared_heat_pool: SharedHeatPool
-var _shared_heat_signature: String = ""
 var _incoming_damage_pipeline: DamagePipeline
 var _incoming_damage_profile: DamageProfile
 var _passive_time_tick_accum: float = 0.0
@@ -85,7 +73,10 @@ var _last_mecha_facing_direction: Vector2 = Vector2(-1.0, 1.0)
 var _current_move_animation: StringName = StringName()
 var _last_visual_position: Vector2 = Vector2.ZERO
 @export var camera_zoom_lerp_speed: float = 1.0
-@export var rest_phase_camera_zoom_factor: float = 1.5
+@export var rest_phase_camera_zoom_factor: float = 1.3
+@export var rest_camera_zoom_enter_duration: float = 0.42
+@export var rest_camera_zoom_exit_duration: float = 0.30
+@export var rest_camera_zoom_transition_enabled: bool = true
 @export var move_accel: float = 2800.0
 @export var move_decel: float = 3200.0
 @export var move_turn_penalty: float = 0.15
@@ -105,8 +96,9 @@ var _last_visual_position: Vector2 = Vector2.ZERO
 @export var elite_hit_slow_duration_sec: float = 0.06
 @export var floating_hint_duration_sec: float = 1.0
 @export var floating_hint_rise_px: float = 26.0
-@export var reload_block_hint_interval_sec: float = 0.35
-@export var status_hint_throttle_sec: float = 0.45
+@export var reload_block_hint_interval_sec: float = 0.25
+@export var status_hint_throttle_sec: float = 1.0
+@export var status_hint_queue_interval_sec: float = 0.5
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 @export var player_max_energy: float = 100.0
 @export var player_energy_regen_per_sec: float = 8.0
@@ -114,7 +106,6 @@ var _player_energy: float = 100.0
 var _last_weapon_skill_fail_reason: String = ""
 var _last_player_skill_fail_reason: String = ""
 var _last_phase: String = ""
-var _auto_loot_running: bool = false
 var _board_generator_ref: Node = null
 var _reload_block_hint_ready_at_msec: int = 0
 var _last_move_input_dir: Vector2 = Vector2.ZERO
@@ -128,9 +119,13 @@ var PlayerData = null
 var _status_hint_manager
 var _status_modifier_system
 var _elemental_effect_system
-var _movement_system
-var _camera_system
+var _movement_system: PlayerMovementSystem
+var _camera_system: PlayerCameraSystem
+var _shared_heat_system: PlayerSharedHeatSystem
+var _loot_system: PlayerLootSystem
+var _damage_reaction_system: PlayerDamageReactionSystem
 var _suppress_status_hints: bool = false
+var _systems_strict_ready: bool = false
 # Signals
 signal active_skill()
 signal player_active_skill()
@@ -143,11 +138,8 @@ func _ready():
 		push_error("PlayerData autoload missing.")
 		return
 	PlayerData.player = self
-	_incoming_damage_pipeline = DAMAGE_PIPELINE_SCRIPT.new() as DamagePipeline
+	_incoming_damage_pipeline = DamagePipeline.new() as DamagePipeline
 	_setup_incoming_damage_profile()
-	_shared_heat_pool = SHARED_HEAT_POOL_SCRIPT.new() as SharedHeatPool
-	if _shared_heat_pool == null:
-		push_warning("Failed to initialize SharedHeatPool.")
 	_setup_default_active_skill()
 	_ensure_input_actions()
 	_player_energy = player_max_energy
@@ -156,12 +148,12 @@ func _ready():
 	_setup_mecha_move_sprite()
 	_last_visual_position = global_position
 	_cache_camera_zoom_base()
-	_camera_zoom_target = _base_camera_zoom
 	_cache_detect_shape_base()
 	_update_vision_effect()
 	_sync_weapon_orbit_states(true)
 	update_grab_radius()
 	custom_ready()
+	_ensure_shared_heat_system()
 	_rebuild_shared_heat_pool()
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
@@ -175,8 +167,16 @@ func _ready():
 	_ensure_status_hint_manager()
 	_ensure_status_modifier_system()
 	_ensure_elemental_effect_system()
+	_ensure_damage_reaction_system()
 	_ensure_movement_system()
 	_ensure_camera_system()
+	_ensure_loot_system()
+	_systems_strict_ready = true
+	if not _require_movement_system_or_halt():
+		return
+	if not _require_camera_system_or_halt():
+		return
+	_update_vision_effect()
 
 # overwrite the function on child class
 func custom_ready():
@@ -191,19 +191,16 @@ func _physics_process(delta):
 	_regen_energy(delta)
 	_update_passive_time_tick(delta)
 	_update_collect_area_anchor_to_screen_top()
-	if _movement_system != null and _movement_system.has_method("tick"):
-		_movement_system.call("tick", delta)
-	else:
-		movement(delta)
+	if not _require_movement_system_or_halt():
+		return
+	_movement_system.tick(delta)
 	move_and_slide()
 	distance_mouse_player = get_global_mouse_position() - global_position
 	_update_mecha_visual_state(distance_mouse_player)
 	_update_weapon_orbits(delta)
-	if _camera_system != null and _camera_system.has_method("tick"):
-		_camera_system.call("tick", delta)
-	else:
-		_update_camera_zoom_smooth(delta)
-		_update_camera_lookahead(delta)
+	if not _require_camera_system_or_halt():
+		return
+	_camera_system.tick(delta)
 	_update_collect_area_anchor_to_screen_top()
 	_constrain_to_board_traversable_area()
 
@@ -501,27 +498,39 @@ func clear_timed_statuses_for_prepare() -> void:
 
 func _ensure_status_hint_manager() -> void:
 	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
-		_status_hint_manager.setup(self, floating_hint_duration_sec, floating_hint_rise_px, status_hint_throttle_sec)
+		_status_hint_manager.setup(
+			self,
+			floating_hint_duration_sec,
+			floating_hint_rise_px,
+			status_hint_throttle_sec,
+			status_hint_queue_interval_sec
+		)
 		return
-	_status_hint_manager = FLOATING_STATUS_HINT_MANAGER_SCRIPT.new() as FloatingStatusHintManager
+	_status_hint_manager = FloatingStatusHintManager.new() as FloatingStatusHintManager
 	if _status_hint_manager == null:
 		return
 	_status_hint_manager.name = "FloatingStatusHintManager"
 	add_child(_status_hint_manager)
-	_status_hint_manager.setup(self, floating_hint_duration_sec, floating_hint_rise_px, status_hint_throttle_sec)
+	_status_hint_manager.setup(
+		self,
+		floating_hint_duration_sec,
+		floating_hint_rise_px,
+		status_hint_throttle_sec,
+		status_hint_queue_interval_sec
+	)
 
 func _ensure_status_modifier_system() -> void:
 	if _status_modifier_system != null:
 		_status_modifier_system.setup(self)
 		return
-	_status_modifier_system = PLAYER_STATUS_MODIFIER_SYSTEM_SCRIPT.new()
+	_status_modifier_system = PlayerStatusModifierSystem.new()
 	if _status_modifier_system == null:
 		return
 	_status_modifier_system.setup(self)
 
 func _ensure_elemental_effect_system() -> void:
 	if _elemental_effect_system == null:
-		_elemental_effect_system = PLAYER_ELEMENTAL_EFFECT_SYSTEM_SCRIPT.new()
+		_elemental_effect_system = PlayerElementalEffectSystem.new()
 	if _elemental_effect_system == null:
 		return
 	_elemental_effect_system.setup(self)
@@ -706,46 +715,6 @@ func get_weapon_active_cd_ratio() -> float:
 		return 0.0
 	return float(weapon.call("get_weapon_active_cd_ratio"))
 
-func movement(delta):
-	if moveto_enabled:
-		_update_auto_navigation(delta)
-	elif movement_enabled:
-		var allow_manual_input := true
-		if PhaseManager != null and PhaseManager.has_method("current_state"):
-			allow_manual_input = str(PhaseManager.current_state()) != str(PhaseManager.PREPARE)
-		if allow_manual_input:
-			var mov: Vector2 = _resolve_buffered_move_input() + extra_direction
-			var speed: float = (PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul()
-			var target_velocity: Vector2 = mov.normalized() * speed if mov.length_squared() > 0.0001 else Vector2.ZERO
-			var is_turning: bool = velocity.length_squared() > 1.0 and target_velocity.length_squared() > 1.0 and velocity.dot(target_velocity) < 0.0
-			var accel: float = move_accel if target_velocity.length_squared() > 0.0 else move_decel
-			if is_turning:
-				accel *= (1.0 - clampf(move_turn_penalty, 0.0, 0.9))
-			velocity = velocity.move_toward(target_velocity, maxf(accel, 0.0) * maxf(delta, 0.0))
-		else:
-			velocity = velocity.move_toward(Vector2.ZERO, maxf(move_decel, 0.0) * maxf(delta, 0.0))
-	else:
-		velocity = velocity.move_toward(Vector2.ZERO, maxf(move_decel, 0.0) * maxf(delta, 0.0))
-	
-	distance_mouse_player = get_global_mouse_position() - global_position
-	_update_mecha_visual_state(distance_mouse_player)
-	_update_weapon_orbits(delta)
-
-func _update_auto_navigation(delta: float) -> void:
-	var to_dest: Vector2 = moveto_dest - global_position
-	var distance_to_dest: float = to_dest.length()
-	var reach_distance: float = maxf(3.0, velocity.length() * 0.03)
-	if distance_to_dest <= reach_distance:
-		global_position = moveto_dest
-		velocity = Vector2.ZERO
-		moveto_enabled = false
-		movement_enabled = true
-		moveto_dest = Vector2.ZERO
-		return
-	var speed: float = (PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul()
-	var target_velocity: Vector2 = to_dest.normalized() * speed
-	velocity = velocity.move_toward(target_velocity, maxf(move_accel, 0.0) * maxf(delta, 0.0))
-
 func apply_move_speed_mul(source_id: StringName, mul: float) -> void:
 	_ensure_status_modifier_system()
 	if _status_modifier_system == null:
@@ -853,52 +822,56 @@ func _get_low_hp_damage_mul() -> float:
 
 
 func start_auto_nav(dest: Vector2) -> void:
-	if _movement_system != null and _movement_system.has_method("start_auto_nav"):
-		_movement_system.call("start_auto_nav", dest)
+	if not _require_movement_system_or_halt():
 		return
-	movement_enabled = false
-	moveto_enabled = true
-	moveto_dest = dest
+	_movement_system.start_auto_nav(dest)
 
 func stop_auto_nav() -> void:
-	if _movement_system != null and _movement_system.has_method("stop_auto_nav"):
-		_movement_system.call("stop_auto_nav")
+	if not _require_movement_system_or_halt():
 		return
-	movement_enabled = true
-	moveto_enabled = false
-	moveto_dest = Vector2.ZERO
-	velocity = Vector2.ZERO
+	_movement_system.stop_auto_nav()
 
 func is_auto_nav_active() -> bool:
-	if _movement_system != null and _movement_system.has_method("is_auto_navigating"):
-		return bool(_movement_system.call("is_auto_navigating"))
-	return moveto_enabled
+	if not _require_movement_system_or_halt():
+		return false
+	return _movement_system.is_auto_navigating()
 
 func configure_auto_nav_speed_mul(speed_mul: float) -> void:
-	if _movement_system != null and _movement_system.has_method("configure_auto_nav_speed_mul"):
-		_movement_system.call("configure_auto_nav_speed_mul", speed_mul)
+	if not _require_movement_system_or_halt():
+		return
+	_movement_system.configure_auto_nav_speed_mul(speed_mul)
 
 func set_restarea_camera_control_enabled(enabled: bool, snap_target: Vector2 = Vector2.ZERO, snap_now: bool = false) -> void:
-	if _camera_system != null and _camera_system.has_method("set_restarea_control_enabled"):
-		_camera_system.call("set_restarea_control_enabled", enabled, snap_target, snap_now)
+	if not _require_camera_system_or_halt():
+		return
+	_camera_system.set_restarea_control_enabled(enabled, snap_target, snap_now)
 
 func move_restarea_camera_to(target_global: Vector2, speed_mul: float = 1.0) -> void:
-	if _camera_system != null and _camera_system.has_method("move_restarea_camera_to"):
-		_camera_system.call("move_restarea_camera_to", target_global, speed_mul)
+	if not _require_camera_system_or_halt():
+		return
+	_camera_system.move_restarea_camera_to(target_global, speed_mul)
 
 func configure_restarea_camera_motion(min_speed: float, max_speed: float, speed_curve: float) -> void:
-	if _camera_system != null and _camera_system.has_method("configure_restarea_camera_motion"):
-		_camera_system.call("configure_restarea_camera_motion", min_speed, max_speed, speed_curve)
+	if not _require_camera_system_or_halt():
+		return
+	_camera_system.configure_restarea_camera_motion(min_speed, max_speed, speed_curve)
 
 func is_restarea_camera_close_to(target_global: Vector2, tolerance: float) -> bool:
-	if _camera_system != null and _camera_system.has_method("is_restarea_camera_close_to"):
-		return bool(_camera_system.call("is_restarea_camera_close_to", target_global, tolerance))
-	return false
+	if not _require_camera_system_or_halt():
+		return false
+	return _camera_system.is_restarea_camera_close_to(target_global, tolerance)
 
 func get_restarea_camera_world_position() -> Vector2:
-	if _camera_system != null and _camera_system.has_method("get_camera_world_position"):
-		return _camera_system.call("get_camera_world_position")
-	return global_position
+	if not _require_camera_system_or_halt():
+		return global_position
+	return _camera_system.get_camera_world_position()
+
+func force_recover_battle_camera_zoom() -> void:
+	if not _require_camera_system_or_halt():
+		return
+	var vision_mul := maxf(get_total_vision_mul(), 0.05)
+	var target_zoom := _base_camera_zoom * (1.0 / vision_mul)
+	_camera_system.force_zoom_now(target_zoom)
 
 func update_grab_radius() -> void:
 	grab_radius.shape.radius = PlayerData.total_grab_radius
@@ -929,47 +902,9 @@ func _update_vision_effect() -> void:
 		_refresh_detected_enemies()
 
 func _update_camera_zoom_by_vision(vision_mul: float) -> void:
-	if _camera_system != null and _camera_system.has_method("update_zoom_target_by_vision"):
-		_camera_system.call("update_zoom_target_by_vision", vision_mul)
+	if not _require_camera_system_or_halt():
 		return
-	if player_camera == null:
-		return
-	if _base_camera_zoom == Vector2.ZERO:
-		_base_camera_zoom = Vector2.ONE
-	var zoom_factor := 1.0 / maxf(vision_mul, 0.05)
-	_camera_zoom_target = _base_camera_zoom * zoom_factor * _get_phase_camera_zoom_factor()
-
-func _get_phase_camera_zoom_factor() -> float:
-	if PhaseManager != null and PhaseManager.has_method("current_state"):
-		if str(PhaseManager.current_state()) == str(PhaseManager.PREPARE):
-			return clampf(rest_phase_camera_zoom_factor, 0.2, 2.0)
-	return 1.0
-
-func _update_camera_zoom_smooth(delta: float) -> void:
-	if player_camera == null:
-		return
-	var t := clampf(camera_zoom_lerp_speed * delta, 0.0, 1.0)
-	player_camera.zoom = player_camera.zoom.lerp(_camera_zoom_target, t)
-	_update_collect_area_anchor_to_screen_top()
-
-func _update_camera_lookahead(delta: float) -> void:
-	if player_camera == null:
-		return
-	if PhaseManager != null and PhaseManager.has_method("current_state"):
-		if str(PhaseManager.current_state()) == str(PhaseManager.PREPARE):
-			var reset_t := clampf(maxf(camera_lookahead_lerp_speed, 0.0) * maxf(delta, 0.0), 0.0, 1.0)
-			_camera_offset_target = Vector2.ZERO
-			player_camera.offset = player_camera.offset.lerp(Vector2.ZERO, reset_t)
-			return
-	var speed := velocity.length()
-	var max_speed := maxf((PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul(), 1.0)
-	var speed_ratio := clampf(speed / max_speed, 0.0, 1.0)
-	if speed_ratio < clampf(camera_lookahead_min_speed_ratio, 0.0, 1.0):
-		speed_ratio = 0.0
-	var move_dir := velocity.normalized() if speed > 0.01 else Vector2.ZERO
-	_camera_offset_target = move_dir * maxf(camera_lookahead_distance, 0.0) * speed_ratio
-	var t := clampf(maxf(camera_lookahead_lerp_speed, 0.0) * maxf(delta, 0.0), 0.0, 1.0)
-	player_camera.offset = player_camera.offset.lerp(_camera_offset_target, t)
+	_camera_system.update_zoom_target_by_vision(vision_mul)
 
 func _resolve_buffered_move_input() -> Vector2:
 	var x_mov := Input.get_action_strength("RIGHT") - Input.get_action_strength("LEFT")
@@ -1304,47 +1239,20 @@ func _compute_stable_mecha_direction(direction: Vector2) -> String:
 
 # Player does not have death atm
 func damaged(attack:Attack):
-	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
-		return
-	if _incoming_damage_pipeline == null:
-		_incoming_damage_pipeline = DAMAGE_PIPELINE_SCRIPT.new() as DamagePipeline
-	if _incoming_damage_profile == null:
-		_setup_incoming_damage_profile()
-	var result := _incoming_damage_pipeline.apply_incoming_damage(self, attack, _incoming_damage_profile)
-	if not result.applied:
-		return
-	_apply_elite_hit_slow_if_needed(attack)
-	if PlayerData.testing_keep_hp_above_zero and PlayerData.player_hp <= 0:
-		PlayerData.player_hp = 1
-	if PlayerData.player_hp <= 0:
-		PhaseManager.enter_gameover()
-		return
-	print(self, PlayerData.player_hp)
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.damaged(attack)
 
 func _apply_elite_hit_slow_if_needed(attack: Attack) -> void:
-	if attack == null or _is_attack_from_player(attack):
-		return
-	if not _is_attack_from_elite_or_boss(attack):
-		return
-	var duration_msec := int(maxf(elite_hit_slow_duration_sec, 0.0) * 1000.0)
-	if duration_msec <= 0:
-		return
-	_elite_hit_slow_until_msec = Time.get_ticks_msec() + duration_msec
-	apply_move_speed_mul(ELITE_HIT_SLOW_SOURCE_ID, clampf(elite_hit_slow_mul, 0.05, 1.0))
-	_clear_elite_hit_slow_after_delay(_elite_hit_slow_until_msec)
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.apply_elite_hit_slow_if_needed(attack)
 
 func _clear_elite_hit_slow_after_delay(token_until_msec: int) -> void:
-	await get_tree().create_timer(maxf(elite_hit_slow_duration_sec, 0.0)).timeout
-	if not is_inside_tree():
-		return
-	if token_until_msec != _elite_hit_slow_until_msec:
-		return
-	remove_move_speed_mul(ELITE_HIT_SLOW_SOURCE_ID)
+	pass
 
 func _is_attack_from_player(attack: Attack) -> bool:
-	if attack == null:
-		return false
-	return attack.is_from_player()
+	return attack != null and attack.is_from_player()
 
 func _is_attack_from_elite_or_boss(attack: Attack) -> bool:
 	if attack == null or attack.source_node == null or not is_instance_valid(attack.source_node):
@@ -1368,65 +1276,63 @@ func _get_total_damage_reduction() -> float:
 	return clampf(float(PlayerData.damage_reduction) * float(PlayerData.bonus_damage_reduction), 0.2, 5.0)
 
 func _clear_expired_scorch() -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system != null:
-		_elemental_effect_system.clear_expired_scorch()
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.clear_expired_scorch()
 
 func _apply_scorch_on_fire_hit(fire_damage: int, source_node: Node = null, source_player: Node = null) -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system != null:
-		_elemental_effect_system.apply_scorch_on_fire_hit(fire_damage, source_node, source_player)
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.apply_scorch_on_fire_hit(fire_damage, source_node, source_player)
 
 func _get_scorch_stack_cap(hp_ratio: float) -> int:
-	if hp_ratio <= 0.5:
-		return 3
-	if hp_ratio <= 0.75:
-		return 2
-	return 1
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system == null:
+		return 1
+	return _damage_reaction_system.get_scorch_stack_cap(hp_ratio)
 
 func _clear_expired_frost() -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system != null:
-		_elemental_effect_system.clear_expired_frost()
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.clear_expired_frost()
 
 func _apply_frost_on_freeze_hit() -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system != null:
-		_elemental_effect_system.apply_frost_on_freeze_hit()
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.apply_frost_on_freeze_hit()
 
 func _refresh_frost_move_slow() -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system != null:
-		_elemental_effect_system.refresh_frost_move_slow()
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.refresh_frost_move_slow()
 
 func _clear_expired_energy_mark() -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system != null:
-		_elemental_effect_system.clear_expired_energy_mark()
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.clear_expired_energy_mark()
 
 func _apply_energy_mark_on_energy_hit(energy_damage: int) -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system != null:
-		_elemental_effect_system.apply_energy_mark_on_energy_hit(energy_damage)
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.apply_energy_mark_on_energy_hit(energy_damage)
 
 func _try_trigger_energy_mark_burst(reference_attack: Attack) -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system != null:
-		_elemental_effect_system.try_trigger_energy_mark_burst(reference_attack)
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.try_trigger_energy_mark_burst(reference_attack)
 
 func _apply_scorch_dot_tick(dot_damage: int) -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system != null:
-		_elemental_effect_system.apply_scorch_dot_tick(dot_damage)
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.apply_scorch_dot_tick(dot_damage)
 
 func _update_incoming_elemental_effects(delta: float) -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system == null:
-		return
-	_elemental_effect_system.update_incoming_elemental_effects(_incoming_damage_pipeline, _incoming_damage_profile, delta)
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.update_incoming_elemental_effects(delta)
 
 func _setup_incoming_damage_profile() -> void:
-	var profile := DAMAGE_PROFILE_SCRIPT.new() as DamageProfile
+	var profile := DamageProfile.new() as DamageProfile
 	profile.profile_id = &"player"
 	profile.use_damage_reduction = true
 	profile.use_armor = true
@@ -1487,14 +1393,14 @@ func _profile_on_trigger_invuln() -> void:
 	collision_cd.start(PlayerData.collision_cd)
 
 func _profile_on_apply_frost_slow(move_multiplier: float, _duration_sec: float) -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system != null:
-		_elemental_effect_system.on_profile_apply_frost_slow(move_multiplier)
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.on_profile_apply_frost_slow(move_multiplier)
 
 func _profile_on_clear_frost_slow() -> void:
-	_ensure_elemental_effect_system()
-	if _elemental_effect_system != null:
-		_elemental_effect_system.on_profile_clear_frost_slow()
+	_ensure_damage_reaction_system()
+	if _damage_reaction_system != null:
+		_damage_reaction_system.on_profile_clear_frost_slow()
 
 
 # When player is teleporting between zones, disable terrain collision. Enable when arrived.
@@ -1526,61 +1432,102 @@ func get_closest_area_optimized(area_list: Array, target_node: Node2D) -> Area2D
 
 
 func _on_collect_area_area_entered(area):
-	if area.is_in_group("collectables") and area is Coin:
-		var value: int = area.collect()
-		value = apply_loot_bonus(value, &"coin")
-		PlayerData.player_gold += value
-		PlayerData.round_coin_collected += value
-		PlayerData.run_gold_earned += value
-		coin_collected.emit()
+	_ensure_loot_system()
+	if _loot_system != null:
+		_loot_system.on_collect_area_entered(area)
 
 
 func _on_collect_chip_area_area_entered(area) -> void:
-	if area.is_in_group("collectables") and area is Chip:
-		var value: int = area.collect()
-		value = apply_loot_bonus(value, &"chip")
-		PlayerData.player_exp += value
-		PlayerData.round_chip_collected += value
+	_ensure_loot_system()
+	if _loot_system != null:
+		_loot_system.on_collect_chip_area_entered(area)
 
 
 func _on_grab_area_area_entered(area):
-	if area.is_in_group("collectables"):
-		if area is Coin:
-			area.target = collect_area
-		elif area is Chip:
-			area.target = self
+	_ensure_loot_system()
+	if _loot_system != null:
+		_loot_system.on_grab_area_entered(area)
 
 
 func _on_phase_changed(new_phase: String) -> void:
 	var previous_phase := _last_phase
 	_last_phase = new_phase
 	_update_vision_effect()
+	if not _require_camera_system_or_halt():
+		return
+	_camera_system.on_phase_changed()
 	if new_phase == PhaseManager.PREPARE:
 		clear_timed_statuses_for_prepare()
 		_instant_reload_all_weapons()
 		_force_all_skills_ready()
-	if new_phase == PhaseManager.PREPARE and previous_phase == PhaseManager.BATTLE:
-		_run_battle_end_auto_collect()
-		return
-	if new_phase == PhaseManager.BATTLE and _auto_loot_running:
-		_auto_loot_running = false
-		_restore_collect_ranges_after_auto_loot()
+	_ensure_loot_system()
+	if _loot_system != null:
+		_loot_system.on_phase_changed(new_phase, previous_phase)
 
 func _ensure_movement_system() -> void:
 	if _movement_system != null:
 		_movement_system.setup(self)
 		return
-	_movement_system = PLAYER_MOVEMENT_SYSTEM_SCRIPT.new()
+	_movement_system = PlayerMovementSystem.new() as PlayerMovementSystem
 	if _movement_system != null:
 		_movement_system.setup(self)
 
 func _ensure_camera_system() -> void:
 	if _camera_system != null:
-		_camera_system.setup(self, player_camera)
+		if player_camera != null:
+			var bound := _camera_system.has_camera_binding()
+			if not bound:
+				_camera_system.setup(self, player_camera)
 		return
-	_camera_system = PLAYER_CAMERA_SYSTEM_SCRIPT.new()
+	_camera_system = PlayerCameraSystem.new() as PlayerCameraSystem
 	if _camera_system != null:
 		_camera_system.setup(self, player_camera)
+
+func _ensure_shared_heat_system() -> void:
+	if _shared_heat_system != null:
+		_shared_heat_system.setup(self)
+		return
+	_shared_heat_system = PlayerSharedHeatSystem.new() as PlayerSharedHeatSystem
+	if _shared_heat_system != null:
+		_shared_heat_system.setup(self)
+
+func _ensure_loot_system() -> void:
+	if _loot_system != null:
+		_loot_system.setup(self)
+		return
+	_loot_system = PlayerLootSystem.new() as PlayerLootSystem
+	if _loot_system != null:
+		_loot_system.setup(self)
+
+func _ensure_damage_reaction_system() -> void:
+	if _damage_reaction_system != null:
+		_damage_reaction_system.setup(self)
+		return
+	_damage_reaction_system = PlayerDamageReactionSystem.new() as PlayerDamageReactionSystem
+	if _damage_reaction_system != null:
+		_damage_reaction_system.setup(self)
+
+func _require_movement_system_or_halt() -> bool:
+	if _movement_system == null:
+		_ensure_movement_system()
+	if _movement_system != null:
+		return true
+	if not _systems_strict_ready:
+		return false
+	push_error("PlayerMovementSystem missing. Halting Player physics.")
+	set_physics_process(false)
+	return false
+
+func _require_camera_system_or_halt() -> bool:
+	if _camera_system == null:
+		_ensure_camera_system()
+	if _camera_system != null:
+		return true
+	if not _systems_strict_ready:
+		return false
+	push_error("PlayerCameraSystem missing. Halting Player physics.")
+	set_physics_process(false)
+	return false
 
 func _instant_reload_all_weapons() -> void:
 	for weapon in PlayerData.player_weapon_list:
@@ -1605,35 +1552,21 @@ func _force_all_skills_ready() -> void:
 
 
 func _attract_all_coins() -> void:
-	if not collect_area:
-		return
-	for collectable in get_tree().get_nodes_in_group("collectables"):
-		if not is_instance_valid(collectable):
-			continue
-		if collectable is Coin:
-			collectable.target = collect_area
-		elif collectable is Chip:
-			collectable.target = self
+	_ensure_loot_system()
+	if _loot_system != null:
+		_loot_system.attract_all_coins()
 
 
 func _run_battle_end_auto_collect() -> void:
-	if _auto_loot_running:
-		return
-	_auto_loot_running = true
-	_expand_collect_ranges_for_auto_loot()
-	var elapsed := 0.0
-	while elapsed < AUTO_LOOT_DURATION_SEC and _auto_loot_running and is_inside_tree():
-		_process_auto_loot_grab_overlaps()
-		await get_tree().create_timer(AUTO_LOOT_TICK_SEC).timeout
-		elapsed += AUTO_LOOT_TICK_SEC
-	_restore_collect_ranges_after_auto_loot()
-	_auto_loot_running = false
+	_ensure_loot_system()
+	if _loot_system != null:
+		_loot_system.run_battle_end_auto_collect()
 
 
 func _expand_collect_ranges_for_auto_loot() -> void:
-	var grab_circle := grab_radius.shape as CircleShape2D
-	if grab_circle:
-		grab_circle.radius = AUTO_LOOT_GRAB_RADIUS
+	_ensure_loot_system()
+	if _loot_system != null:
+		_loot_system.expand_collect_ranges_for_auto_loot()
 
 
 func _restore_collect_ranges_after_auto_loot() -> void:
@@ -1641,12 +1574,9 @@ func _restore_collect_ranges_after_auto_loot() -> void:
 
 
 func _process_auto_loot_grab_overlaps() -> void:
-	if grab_area == null or not is_instance_valid(grab_area):
-		return
-	for area in grab_area.get_overlapping_areas():
-		if area == null or not is_instance_valid(area):
-			continue
-		_on_grab_area_area_entered(area)
+	_ensure_loot_system()
+	if _loot_system != null:
+		_loot_system.process_auto_loot_grab_overlaps()
 
 
 func _on_detect_area_area_entered(area: Area2D) -> void:
@@ -1673,61 +1603,40 @@ func _exit_tree() -> void:
 		_status_hint_manager.clear_all()
 
 func _update_shared_heat_pool(delta: float) -> void:
-	if _shared_heat_pool == null:
-		return
-	var next_signature := _build_shared_heat_signature()
-	if next_signature != _shared_heat_signature:
-		_shared_heat_signature = next_signature
-		_rebuild_shared_heat_pool()
-	_shared_heat_pool.cool_down(delta)
+	_ensure_shared_heat_system()
+	if _shared_heat_system != null:
+		_shared_heat_system.tick(delta)
 
 func _rebuild_shared_heat_pool() -> void:
-	if _shared_heat_pool == null:
-		return
-	_shared_heat_pool.configure_from_weapons(PlayerData.player_weapon_list)
-	_shared_heat_signature = _build_shared_heat_signature()
+	_ensure_shared_heat_system()
+	if _shared_heat_system != null:
+		_shared_heat_system.rebuild()
 
 func mark_shared_heat_pool_dirty() -> void:
-	_shared_heat_signature = ""
+	_ensure_shared_heat_system()
+	if _shared_heat_system != null:
+		_shared_heat_system.mark_dirty()
 
 func get_shared_heat_pool() -> SharedHeatPool:
-	return _shared_heat_pool
-
-func _build_shared_heat_signature() -> String:
-	var keys: PackedStringArray = []
-	for weapon in PlayerData.player_weapon_list:
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		var contributes := false
-		if weapon.has_method("has_heat_trait"):
-			contributes = bool(weapon.call("has_heat_trait"))
-		elif weapon.has_method("has_heat_system"):
-			contributes = bool(weapon.call("has_heat_system"))
-		if not contributes:
-			continue
-		var max_heat: float = 0.0
-		var cool_rate: float = 0.0
-		if weapon.get("heat_max_value") != null:
-			max_heat = float(weapon.get("heat_max_value"))
-		if weapon.get("heat_cool_rate") != null:
-			cool_rate = float(weapon.get("heat_cool_rate"))
-		keys.append("%s:%.4f:%.4f" % [str(weapon.get_instance_id()), max_heat, cool_rate])
-	keys.sort()
-	return "|".join(keys)
+	_ensure_shared_heat_system()
+	if _shared_heat_system == null:
+		return null
+	return _shared_heat_system.get_pool()
 
 func get_total_heat_value() -> float:
-	if _shared_heat_pool == null:
+	_ensure_shared_heat_system()
+	if _shared_heat_system == null:
 		return 0.0
-	return float(_shared_heat_pool.heat_value)
+	return _shared_heat_system.get_total_heat_value()
 
 func get_total_heat_max() -> float:
-	if _shared_heat_pool == null:
+	_ensure_shared_heat_system()
+	if _shared_heat_system == null:
 		return 0.0
-	if not _shared_heat_pool.has_contributors():
-		return 0.0
-	return float(_shared_heat_pool.max_heat)
+	return _shared_heat_system.get_total_heat_max()
 
 func get_total_heat_ratio() -> float:
-	if _shared_heat_pool == null or not _shared_heat_pool.has_contributors():
+	_ensure_shared_heat_system()
+	if _shared_heat_system == null:
 		return 0.0
-	return _shared_heat_pool.get_ratio()
+	return _shared_heat_system.get_total_heat_ratio()

@@ -41,7 +41,6 @@ sprite_frames = ExtResource("4_movef")
 animation = &"move_top"
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=665109581]
-zoom = Vector2(0.8, 0.8)
 position_smoothing_speed = 10.0
 
 [node name="MechaCollision" type="CollisionShape2D" parent="." unique_id=645371433]

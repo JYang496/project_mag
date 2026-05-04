@@ -17,8 +17,6 @@ var _cell_area : Area2D
 var _player_inside_cell : bool = false
 var _current_cell: Cell
 var _highlight_active := false
-@export var rest_area_path: NodePath
-var _rest_area: RestArea
 
 func _ready() -> void:
 	RunRouteManager.reset_runtime_state()
@@ -37,10 +35,7 @@ func _ready() -> void:
 	_player_inside_cell = true
 	call_deferred("_add_player_to_root", ins)
 	_setup_cell_monitor()
-	if rest_area_path != NodePath():
-		_rest_area = get_node_or_null(rest_area_path) as RestArea
 	_connect_phase_signals()
-	_refresh_start_battle_button(PhaseManager.current_state())
 	
 func set_start_up_status():
 	var lvl_index = int(GlobalVariables.autosave_data["current_level"]) - 1
@@ -118,7 +113,6 @@ func _add_player_to_root(player_instance: Node) -> void:
 
 func _on_phase_changed(new_phase: String) -> void:
 	_refresh_cell_highlight(new_phase)
-	_refresh_start_battle_button(new_phase)
 
 func _refresh_cell_highlight(forced_state: String = "") -> void:
 	if not _current_cell:
@@ -133,11 +127,6 @@ func _refresh_cell_highlight(forced_state: String = "") -> void:
 		if not _highlight_active:
 			return
 		_highlight_active = false
-
-func _refresh_start_battle_button(forced_state: String = "") -> void:
-	var state := forced_state if forced_state != "" else PhaseManager.current_state()
-	if _rest_area:
-		_rest_area.set_button_visible(state == PhaseManager.PREPARE)
 
 func _on_start_battle_button_activated() -> void:
 	_start_battle_stage()

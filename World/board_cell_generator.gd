@@ -348,6 +348,7 @@ func _get_grid_pos_from_index(index: int) -> Vector2i:
 
 func _on_phase_changed(new_phase: String) -> void:
 	_refresh_active_cells_for_current_level()
+	var entered_prepare_from_battle := new_phase != PhaseManager.BATTLE and _last_phase == PhaseManager.BATTLE
 	if new_phase == PhaseManager.BATTLE:
 		if _last_phase == PhaseManager.PREPARE:
 			recenter_board_around_player()
@@ -357,7 +358,10 @@ func _on_phase_changed(new_phase: String) -> void:
 		if _last_phase == PhaseManager.BATTLE:
 			_reset_cells_after_battle()
 		set_board_active(false)
-	_enforce_traversable_bounds_for_existing_units()
+	# On battle -> prepare, RestArea will place player at center explicitly.
+	# Skipping board projection here avoids an intermediate jump to rest-area edge.
+	if not entered_prepare_from_battle:
+		_enforce_traversable_bounds_for_existing_units()
 	_last_phase = new_phase
 
 func recenter_board_around_player() -> void:

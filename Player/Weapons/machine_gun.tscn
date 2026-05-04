@@ -10,6 +10,7 @@ script = ExtResource("2_0tkjt")
 attack_speed_decay_interval = 0.35
 spread_enabled = true
 spread_full_distance = 900.0
+spread_no_falloff_distance = 180.0
 spread_close_range_miss_chance = 0.05
 spread_long_range_miss_chance = 0.85
 spread_min_radius = 6.0

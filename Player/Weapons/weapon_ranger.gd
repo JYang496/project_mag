@@ -21,6 +21,7 @@ var _external_attack_speed_multiplier: float = 1.0
 var _external_spread_multiplier: float = 1.0
 @export var spread_enabled: bool = false
 @export var spread_full_distance: float = 900.0
+@export var spread_no_falloff_distance: float = 0.0
 @export var spread_close_range_miss_chance: float = 0.05
 @export var spread_long_range_miss_chance: float = 0.85
 @export var spread_min_radius: float = 6.0
@@ -216,9 +217,7 @@ func apply_distance_spread_to_target(direction: Vector2, target_position: Vector
 	return spreaded
 
 func _build_spread_runtime(shot_distance: float) -> Dictionary:
-	var distance_ratio := 0.0
-	if spread_full_distance > 0.0:
-		distance_ratio = clampf(shot_distance / spread_full_distance, 0.0, 1.0)
+	var distance_ratio := _get_spread_distance_ratio(shot_distance)
 	var miss_chance := lerpf(
 		clampf(spread_close_range_miss_chance, 0.0, 1.0),
 		clampf(spread_long_range_miss_chance, 0.0, 1.0),
@@ -252,9 +251,7 @@ func get_spread_preview_info_for_target(target_position: Vector2) -> Dictionary:
 			"shot_distance": 0.0,
 		}
 	var shot_distance := global_position.distance_to(target_position)
-	var distance_ratio := 0.0
-	if spread_full_distance > 0.0:
-		distance_ratio = clampf(shot_distance / spread_full_distance, 0.0, 1.0)
+	var distance_ratio := _get_spread_distance_ratio(shot_distance)
 	var miss_chance := lerpf(
 		clampf(spread_close_range_miss_chance, 0.0, 1.0),
 		clampf(spread_long_range_miss_chance, 0.0, 1.0),
@@ -269,6 +266,16 @@ func get_spread_preview_info_for_target(target_position: Vector2) -> Dictionary:
 		"distance_ratio": distance_ratio,
 		"shot_distance": shot_distance,
 	}
+
+func _get_spread_distance_ratio(shot_distance: float) -> float:
+	var near_distance := maxf(spread_no_falloff_distance, 0.0)
+	var full_distance := maxf(spread_full_distance, 0.0)
+	if full_distance <= near_distance:
+		return 0.0
+	var clamped_distance := maxf(shot_distance, 0.0)
+	if clamped_distance <= near_distance:
+		return 0.0
+	return clampf((clamped_distance - near_distance) / (full_distance - near_distance), 0.0, 1.0)
 
 func start_weapon_cooldown(base_cooldown: float, min_cooldown: float = 0.01) -> void:
 	if cooldown_timer == null:

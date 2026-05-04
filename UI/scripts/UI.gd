@@ -1014,7 +1014,7 @@ func _fit_pause_layout(viewport_size: Vector2) -> void:
 func _layout_hud(viewport_size: Vector2) -> void:
 	equipped_label.position = Vector2(HUD_MARGIN, HUD_MARGIN)
 	if weapon_selector and is_instance_valid(weapon_selector):
-		weapon_selector.set_layout_origin(Vector2(HUD_MARGIN + 12.0, HUD_MARGIN + 6.0))
+		weapon_selector.set_layout_origin(Vector2(HUD_MARGIN + 12.0, HUD_MARGIN - 2.0))
 	hp_label_label.position = Vector2(HUD_MARGIN, viewport_size.y - 120.0)
 	if heat_label:
 		var heat_spacing := 8.0

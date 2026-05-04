@@ -9,12 +9,11 @@ signal rest_menu_cancelled
 @export var fade_duration: float = 0.35
 @export var zone_move_speed: float = 500.0
 @export var zone_reach_distance: float = 6.0
-@export_range(0.0, 1.0, 0.01) var rest_zone_player_target_pull: float = 0.35
-@export var rest_camera_min_speed: float = 1400.0
-@export var rest_camera_max_speed: float = 4800.0
-@export var rest_camera_speed_curve: float = 6.0
-@export var rest_camera_recenter_speed_mul: float = 1.5
 @export var menu_open_cooldown_msec: int = 150
+@export var rest_camera_enter_min_speed: float = 160.0
+@export var rest_camera_enter_max_speed: float = 680.0
+@export var rest_camera_enter_speed_curve: float = 2.4
+@export var rest_camera_enter_speed_mul: float = 0.8
 @export var zone4_hold_move_boost_mul: float = 2.2
 @export var zone_grid_color: Color = Color(0.70, 0.84, 1.0, 0.60)
 @export var zone_hover_color: Color = Color(0.44, 0.88, 1.0, 1.0)
@@ -48,9 +47,7 @@ var is_auto_moving := false
 var _emit_menu_on_arrival := false
 var _arrival_token: int = 0
 var _camera_owner_active := false
-var _camera_is_moving := false
-var _camera_move_target := Vector2.ZERO
-var _camera_move_speed_mul: float = 1.0
+var _camera_owner_bound := false
 var _last_menu_open_msec: int = -1000000
 var _zone4_hold_elapsed := 0.0
 var _zone4_hold_triggered := false
@@ -64,8 +61,25 @@ var _zone4_hold_boost_active: bool = false
 
 const GRID_DIM := 3
 const ZONE_COUNT := GRID_DIM * GRID_DIM
+const ZONE_ID_MERCHANT := 0
+const ZONE_ID_SMITH := 1
 const CENTER_ZONE_ID := 4
 const ZONE4_HOLD_BOOST_SOURCE_ID: StringName = &"rest_zone4_hold_boost"
+const BLOCKING_UI_ROOTS: Array[StringName] = [
+	&"ShoppingRootv2",
+	&"UpgradeRootv2",
+	&"GearFuseRoot",
+	&"ModuleRoot",
+	&"InventoryRoot",
+	&"PauseMenuRoot",
+	&"MerchantRoot",
+	&"SmithRoot",
+	&"BossRoot",
+	&"RouteSelectionPanel",
+	&"RewardSelectionPanel",
+	&"BranchSelectPanel",
+	&"ModuleEquipSelectionPanel"
+]
 
 func _ready() -> void:
 	super._ready()
@@ -94,6 +108,7 @@ func _ready() -> void:
 	var should_show := _should_be_active(PhaseManager.current_state())
 	_set_camera_owner_active(should_show)
 	_set_active(should_show, true)
+	call_deferred("_ensure_camera_owner_binding")
 	_setup_start_battle_button()
 	if not rest_menu_requested.is_connected(Callable(self, "_on_rest_menu_requested")):
 		rest_menu_requested.connect(Callable(self, "_on_rest_menu_requested"))
@@ -132,8 +147,8 @@ func _setup_scene_hint_labels() -> void:
 	_layout_scene_hint_labels()
 
 func _layout_scene_hint_labels() -> void:
-	_place_zone_hint_label(_merchant_hint_label, 0)
-	_place_zone_hint_label(_smith_hint_label, 1)
+	_place_zone_hint_label(_merchant_hint_label, ZONE_ID_MERCHANT)
+	_place_zone_hint_label(_smith_hint_label, ZONE_ID_SMITH)
 	_place_zone_hint_label(_battle_hint_label, CENTER_ZONE_ID)
 
 func _place_zone_hint_label(label: Label, zone_id: int) -> void:
@@ -155,20 +170,28 @@ func _ensure_visual_layering() -> void:
 		_texture_root.z_index = -10
 
 func _on_phase_changed(new_phase: String) -> void:
-	var should_show := _should_be_active(new_phase)
-	_set_camera_owner_active(should_show)
-	if new_phase != PhaseManager.PREPARE:
-		_clear_zone4_hold_move_boost()
-	if should_show:
-		_sync_to_target_center()
-	_set_active(should_show, false)
-	if should_show:
-		_reset_prepare_state(true)
-	else:
-		_reset_prepare_state(false)
+	if _should_be_active(new_phase):
+		_enter_prepare_phase()
+		return
+	_enter_non_prepare_phase()
+
+func _enter_prepare_phase() -> void:
+	_sync_to_target_center()
+	_set_active(true, false)
+	_set_camera_owner_active(true)
+	call_deferred("_ensure_camera_owner_binding")
+	_reset_prepare_state(true)
 	_refresh_interaction_state()
-	if should_show and _start_battle_button:
+	if _start_battle_button:
 		_start_battle_button.reset_state()
+
+func _enter_non_prepare_phase() -> void:
+	_clear_zone4_hold_move_boost()
+	_set_active(false, false)
+	_set_camera_owner_active(false)
+	call_deferred("_ensure_camera_owner_binding")
+	_reset_prepare_state(false)
+	_refresh_interaction_state()
 
 func _should_be_active(phase: String) -> bool:
 	return phase == PhaseManager.PREPARE
@@ -191,8 +214,6 @@ func _sync_to_target_center() -> void:
 	if _board == null:
 		return
 	var target_center := _board.get_center_cell_global_position()
-	if PlayerData.player != null and is_instance_valid(PlayerData.player):
-		target_center = _board.get_cell_center_global_for_point(PlayerData.player.global_position)
 	global_position = target_center - _get_local_center_offset()
 	_snap_start_battle_button()
 	queue_redraw()
@@ -265,19 +286,6 @@ func _snap_start_battle_button() -> void:
 		return
 	_start_battle_button.global_position = get_spawn_position()
 
-func set_button_visible(visible: bool) -> void:
-	if _start_battle_button == null:
-		return
-	# Battle start is now driven by hold-on-zone4 interaction.
-	_start_battle_button.visible = false
-	_start_battle_button.monitoring = false
-	_start_battle_button.monitorable = false
-	_start_battle_button.process_mode = Node.PROCESS_MODE_INHERIT
-	_start_battle_button.set_process(false)
-	_start_battle_button.set_physics_process(false)
-	_start_battle_button.reset_state()
-	_snap_start_battle_button()
-
 func _setup_start_battle_button() -> void:
 	if _start_battle_button == null:
 		return
@@ -307,9 +315,17 @@ func _on_route_confirmed(route_id: String) -> void:
 	if route_def == null:
 		route_def = RunRouteManager.select_route_for_current_level(RunRouteManager.get_default_route_id())
 	if route_def.battle_enabled:
+		if PlayerData.player != null and is_instance_valid(PlayerData.player):
+			if PlayerData.player.has_method("set_restarea_camera_control_enabled"):
+				PlayerData.player.call("set_restarea_camera_control_enabled", false)
 		if GlobalVariables.enemy_spawner:
 			GlobalVariables.enemy_spawner.start_timer()
 		PhaseManager.enter_battle()
+		if PlayerData.player != null and is_instance_valid(PlayerData.player):
+			if PlayerData.player.has_method("_update_vision_effect"):
+				PlayerData.player.call_deferred("_update_vision_effect")
+			if PlayerData.player.has_method("force_recover_battle_camera_zoom"):
+				PlayerData.player.call_deferred("force_recover_battle_camera_zoom")
 		_clear_zone4_hold_move_boost()
 		return
 	_start_bonus_route_flow(route_def)
@@ -345,12 +361,12 @@ func _on_bonus_reward_selected(reward: RewardInfo) -> void:
 	PhaseManager.enter_prepare()
 
 func _process(delta: float) -> void:
+	_ensure_camera_owner_binding()
 	if not _is_interaction_enabled():
 		_reset_zone4_hold()
 		CursorManager.clear_world_state(self)
 		return
 	_update_hover_from_mouse()
-	_update_camera_move(delta)
 	_update_auto_move()
 	_update_zone4_hold(delta)
 	_refresh_cursor_state()
@@ -413,7 +429,6 @@ func _handle_right_click() -> void:
 	menu_open = false
 	rest_menu_cancelled.emit()
 	_begin_zone_move(CENTER_ZONE_ID, false)
-	_begin_camera_move_to(_get_zone_center_global(CENTER_ZONE_ID), rest_camera_recenter_speed_mul)
 	get_viewport().set_input_as_handled()
 
 func _begin_zone_move(zone_id: int, open_menu_on_arrival: bool) -> void:
@@ -424,7 +439,6 @@ func _begin_zone_move(zone_id: int, open_menu_on_arrival: bool) -> void:
 	player_move_target_global = move_target_global
 	if not _camera_owner_active:
 		_set_camera_owner_active(true)
-	_begin_camera_move_to(move_target_global, 1.0)
 	is_auto_moving = true
 	_emit_menu_on_arrival = open_menu_on_arrival
 	_apply_zone_move_speed_override()
@@ -460,12 +474,14 @@ func _stop_auto_move() -> void:
 	_arrival_token += 1
 	is_auto_moving = false
 	_emit_menu_on_arrival = false
-	_camera_is_moving = false
-	_camera_move_speed_mul = 1.0
 	_clear_zone_move_speed_override()
 	_clear_zone4_hold_move_boost()
 	if PlayerData.player != null and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("stop_auto_nav"):
 		PlayerData.player.call("stop_auto_nav")
+
+func _start_return_to_center_after_battle() -> void:
+	# Reuse the same rest-area navigation pipeline as normal zone clicks.
+	_begin_zone_move(CENTER_ZONE_ID, false)
 
 func _reset_prepare_state(move_player_to_center: bool) -> void:
 	menu_open = false
@@ -476,14 +492,7 @@ func _reset_prepare_state(move_player_to_center: bool) -> void:
 	_set_hover_zone(-1)
 	_close_rest_area_primary_menu_if_open()
 	if move_player_to_center:
-		_move_player_to_center()
-	if _camera_owner_active:
-		if PlayerData.player != null and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("set_restarea_camera_control_enabled"):
-			var center_target := _get_zone_center_global(CENTER_ZONE_ID)
-			PlayerData.player.call("set_restarea_camera_control_enabled", true, center_target, true)
-			_camera_move_target = center_target
-			_camera_is_moving = false
-			_camera_move_speed_mul = 1.0
+		_start_return_to_center_after_battle()
 	queue_redraw()
 
 func _refresh_interaction_state() -> void:
@@ -538,24 +547,9 @@ func _is_mouse_over_ui() -> bool:
 	return false
 
 func _is_inside_blocking_ui_branch(control: Control) -> bool:
-	var blocking_roots := [
-		"ShoppingRootv2",
-		"UpgradeRootv2",
-		"GearFuseRoot",
-		"ModuleRoot",
-		"InventoryRoot",
-		"PauseMenuRoot",
-		"MerchantRoot",
-		"SmithRoot",
-		"BossRoot",
-		"RouteSelectionPanel",
-		"RewardSelectionPanel",
-		"BranchSelectPanel",
-		"ModuleEquipSelectionPanel"
-	]
 	var current: Node = control
 	while current != null:
-		if blocking_roots.has(current.name):
+		if BLOCKING_UI_ROOTS.has(StringName(current.name)):
 			return true
 		current = current.get_parent()
 	return false
@@ -564,14 +558,14 @@ func _on_rest_menu_requested(zone_id: int, _zone_center_global: Vector2) -> void
 	var ui = GlobalVariables.ui
 	if ui == null or not is_instance_valid(ui):
 		return
-	if zone_id == 0:
+	if zone_id == ZONE_ID_MERCHANT:
 		if ui.has_method("open_rest_area_merchant_menu"):
 			ui.call("open_rest_area_merchant_menu")
 			return
 		if ui.has_method("merchant_menu_in"):
 			ui.call("merchant_menu_in")
 		return
-	if zone_id == 1:
+	if zone_id == ZONE_ID_SMITH:
 		if ui.has_method("open_rest_area_smith_menu"):
 			ui.call("open_rest_area_smith_menu")
 			return
@@ -684,7 +678,7 @@ func _get_bounds_local_rect() -> Rect2:
 	return Rect2(shape_node.position - size * 0.5, size)
 
 func _zone_opens_primary_menu(zone_id: int) -> bool:
-	return zone_id == 0 or zone_id == 1
+	return zone_id == ZONE_ID_MERCHANT or zone_id == ZONE_ID_SMITH
 
 func _update_zone4_hold(delta: float) -> void:
 	if not _is_zone4_hold_available():
@@ -714,8 +708,6 @@ func _is_zone4_hold_available() -> bool:
 		return false
 	if selected_zone_id != CENTER_ZONE_ID:
 		return false
-	if not _is_camera_close_to_zone_center(CENTER_ZONE_ID):
-		return false
 	if hover_zone_id != CENTER_ZONE_ID:
 		return false
 	if menu_open:
@@ -728,62 +720,37 @@ func _is_zone4_hold_available() -> bool:
 
 func _set_camera_owner_active(active: bool) -> void:
 	_camera_owner_active = active
+	if not active:
+		_camera_owner_bound = false
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
 		return
-	if PlayerData.player.has_method("configure_restarea_camera_motion"):
-		PlayerData.player.call(
-			"configure_restarea_camera_motion",
-			rest_camera_min_speed,
-			rest_camera_max_speed,
-			rest_camera_speed_curve
-		)
 	if not PlayerData.player.has_method("set_restarea_camera_control_enabled"):
 		return
+	var center_target := _get_zone_center_global(CENTER_ZONE_ID)
 	PlayerData.player.call(
 		"set_restarea_camera_control_enabled",
 		active,
-		_get_zone_center_global(CENTER_ZONE_ID),
-		true
+		center_target,
+		false
 	)
-	_camera_is_moving = false
+	if active:
+		if PlayerData.player.has_method("configure_restarea_camera_motion"):
+			PlayerData.player.call(
+				"configure_restarea_camera_motion",
+				rest_camera_enter_min_speed,
+				rest_camera_enter_max_speed,
+				rest_camera_enter_speed_curve
+			)
+		if PlayerData.player.has_method("move_restarea_camera_to"):
+			PlayerData.player.call("move_restarea_camera_to", center_target, maxf(rest_camera_enter_speed_mul, 0.05))
+	_camera_owner_bound = true
 
-func _begin_camera_move_to(target_global: Vector2, speed_mul: float = 1.0) -> void:
-	if not _camera_owner_active:
-		return
-	_camera_move_target = target_global
-	_camera_is_moving = true
-	_camera_move_speed_mul = maxf(speed_mul, 0.1)
-	if PlayerData.player != null and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("configure_restarea_camera_motion"):
-		PlayerData.player.call(
-			"configure_restarea_camera_motion",
-			rest_camera_min_speed,
-			rest_camera_max_speed,
-			rest_camera_speed_curve
-		)
-	if PlayerData.player != null and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("move_restarea_camera_to"):
-		PlayerData.player.call("move_restarea_camera_to", _camera_move_target, _camera_move_speed_mul)
-
-func _update_camera_move(delta: float) -> void:
-	if not _camera_owner_active or not _camera_is_moving:
+func _ensure_camera_owner_binding() -> void:
+	if _camera_owner_bound:
 		return
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
-		_camera_is_moving = false
 		return
-	var close := false
-	if PlayerData.player.has_method("is_restarea_camera_close_to"):
-		close = bool(PlayerData.player.call("is_restarea_camera_close_to", _camera_move_target, _get_camera_reach_distance(0.0)))
-	if close:
-		_camera_is_moving = false
-		_camera_move_speed_mul = 1.0
-		_on_camera_arrived()
-
-func _get_camera_reach_distance(camera_speed: float) -> float:
-	return maxf(8.0, camera_speed * 0.03)
-
-func _on_camera_arrived() -> void:
-	if not _emit_menu_on_arrival:
-		return
-	_try_open_menu_for_zone(selected_zone_id, move_target_global, "camera")
+	_set_camera_owner_active(_camera_owner_active)
 
 func _try_open_menu_for_zone(zone_id: int, zone_center: Vector2, source: String) -> void:
 	if not _emit_menu_on_arrival:
@@ -813,13 +780,6 @@ func _open_menu_after_stable_frames(zone_id: int, zone_center: Vector2, source: 
 		print("[RestArea] open menu source=", source, " zone=", zone_id)
 	rest_menu_requested.emit(zone_id, zone_center)
 	queue_redraw()
-
-func _is_camera_close_to_zone_center(zone_id: int) -> bool:
-	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
-		return false
-	if not PlayerData.player.has_method("is_restarea_camera_close_to"):
-		return false
-	return bool(PlayerData.player.call("is_restarea_camera_close_to", _get_zone_center_global(zone_id), maxf(8.0, zone_reach_distance)))
 
 func _reset_zone4_hold() -> void:
 	var needs_redraw := _zone4_hold_elapsed > 0.0

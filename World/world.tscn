@@ -69,7 +69,7 @@ script = ExtResource("14_26uyv")
 rest_area_path = NodePath("../../RestArea")
 
 [node name="RestArea" parent="." unique_id=489488785 groups=["rest_area"] instance=ExtResource("15_6p52w")]
-position = Vector2(-467, -11)
+position = Vector2(-256, -256)
 board_path = NodePath("../Board")
 
 [node name="EnemySpawner" parent="." unique_id=236369448 instance=ExtResource("12_dyxss")]
