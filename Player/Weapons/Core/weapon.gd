@@ -153,6 +153,15 @@ func on_hit_target(target: Node) -> void:
 			"source_is_main": is_main_weapon()
 		})
 
+func notify_main_weapon_fired() -> void:
+	if not is_main_weapon():
+		return
+	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("_broadcast_weapon_passive_event"):
+		PlayerData.player.call("_broadcast_weapon_passive_event", &"on_main_weapon_fired", {
+			"source_weapon": self,
+			"_suppress_default_emit": true,
+		})
+
 func supports_projectiles() -> bool:
 	return false
 
@@ -827,6 +836,8 @@ func _on_main_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	_on_passive_event(event_name, detail)
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	if bool(detail.get("_suppress_default_emit", false)):
+		return
 	passive_triggered.emit(event_name, detail)
 
 func _get_spent_magazine_ratio() -> float:

@@ -141,6 +141,7 @@ func request_primary_fire() -> bool:
 	if cooldown_timer:
 		cooldown_timer.wait_time = maxf(get_effective_cooldown(attack_cooldown), 0.01)
 	emit_signal("shoot")
+	notify_main_weapon_fired()
 	register_shot_heat()
 	if uses_ammo_system() and current_ammo <= 0:
 		request_reload()

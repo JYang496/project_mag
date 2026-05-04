@@ -4,9 +4,11 @@ extends Ranger
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
 var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.png")
 @export var auto_fire_range: float = 900.0
+@export var continuous_move_trigger_sec: float = 6.0
 
 # Weapon
 var ITEM_NAME = "Pistol"
+var _continuous_move_accum_sec: float = 0.0
 
 
 var weapon_data = {
@@ -94,7 +96,38 @@ func set_level(lv) -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
+	_update_continuous_move_trigger(delta)
 	_process_auto_fire()
+
+func _update_continuous_move_trigger(delta: float) -> void:
+	if not _is_battle_phase():
+		_continuous_move_accum_sec = 0.0
+		return
+	var player := PlayerData.player as Player
+	if player == null or not is_instance_valid(player):
+		_continuous_move_accum_sec = 0.0
+		return
+	var is_moving := player.velocity.length_squared() > 1.0
+	if not is_moving:
+		_continuous_move_accum_sec = 0.0
+		return
+	_continuous_move_accum_sec += maxf(delta, 0.0)
+	if _continuous_move_accum_sec < maxf(continuous_move_trigger_sec, 0.1):
+		return
+	_continuous_move_accum_sec = 0.0
+	if not is_offhand_skill_ready():
+		return
+	notify_offhand_skill_triggered(0.0)
+	passive_triggered.emit(&"pistol_continuous_move_triggered", {
+		"duration": maxf(continuous_move_trigger_sec, 0.1),
+		"refresh": "reload",
+		"player": player,
+	})
+
+func _is_battle_phase() -> bool:
+	if PhaseManager == null or not PhaseManager.has_method("current_state"):
+		return true
+	return str(PhaseManager.current_state()) == str(PhaseManager.BATTLE)
 
 func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	if not can_run_active_behavior():

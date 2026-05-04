@@ -7,6 +7,7 @@ var projectile_texture_resource = preload("res://Textures/test/sniper_bullet.png
 # Weapon
 var ITEM_NAME = "Shotgun"
 @export_range(0, 180) var arc : float = 30
+@export var close_hit_trigger_distance: float = 180.0
 var bullet_count : int
 var base_arc: float = 0.0
 var base_bullet_count: int = 3
@@ -175,5 +176,28 @@ func get_random_position_in_circle(radius: float = 50.0) -> Vector2:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	_try_trigger_close_hit(target)
 	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_target_hit(target)
+
+func _try_trigger_close_hit(target: Node) -> void:
+	if not is_main_weapon():
+		return
+	var target_node := target as Node2D
+	if target_node == null or not is_instance_valid(target_node):
+		return
+	var player := PlayerData.player as Node2D
+	if player == null or not is_instance_valid(player):
+		return
+	var distance := player.global_position.distance_to(target_node.global_position)
+	if distance >= maxf(close_hit_trigger_distance, 0.0):
+		return
+	if not is_offhand_skill_ready():
+		return
+	notify_offhand_skill_triggered(0.0)
+	passive_triggered.emit(&"shotgun_close_hit_triggered", {
+		"target": target,
+		"distance": distance,
+		"threshold": close_hit_trigger_distance,
+		"refresh": "reload",
+	})

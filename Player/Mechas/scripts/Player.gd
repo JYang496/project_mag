@@ -102,6 +102,7 @@ var _last_visual_position: Vector2 = Vector2.ZERO
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 @export var player_max_energy: float = 100.0
 @export var player_energy_regen_per_sec: float = 8.0
+@export var debug_weapon_passive_trigger_prints: bool = true
 var _player_energy: float = 100.0
 var _last_weapon_skill_fail_reason: String = ""
 var _last_player_skill_fail_reason: String = ""
@@ -115,6 +116,7 @@ var _last_face_vertical_sign: int = 1
 var _last_move_anim_is_top: bool = false
 const ELITE_HIT_SLOW_SOURCE_ID: StringName = &"elite_hit_stagger"
 var _elite_hit_slow_until_msec: int = 0
+var _debug_passive_connected_weapon_ids: Dictionary = {}
 var PlayerData = null
 var _status_hint_manager
 var _status_modifier_system
@@ -566,6 +568,7 @@ func _apply_weapon_roles() -> void:
 			continue
 		if weapon.has_method("set_weapon_role"):
 			weapon.call("set_weapon_role", "main" if i == PlayerData.main_weapon_index else "offhand")
+	_debug_connect_weapon_passive_triggers()
 
 func get_main_weapon() -> Weapon:
 	if PlayerData.player_weapon_list.is_empty():
@@ -611,6 +614,43 @@ func _broadcast_weapon_passive_event(event_name: StringName, detail: Dictionary 
 			continue
 		if weapon.has_method("dispatch_passive_event"):
 			weapon.call("dispatch_passive_event", event_name, detail)
+
+func _debug_connect_weapon_passive_triggers() -> void:
+	if not debug_weapon_passive_trigger_prints:
+		return
+	var active_ids := {}
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon := weapon_ref as Weapon
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		var weapon_instance_id := weapon.get_instance_id()
+		active_ids[weapon_instance_id] = true
+		if _debug_passive_connected_weapon_ids.has(weapon_instance_id):
+			continue
+		var callback := Callable(self, "_debug_on_weapon_passive_triggered").bind(weapon)
+		if not weapon.passive_triggered.is_connected(callback):
+			weapon.passive_triggered.connect(callback)
+		_debug_passive_connected_weapon_ids[weapon_instance_id] = true
+	for connected_id in _debug_passive_connected_weapon_ids.keys():
+		if not active_ids.has(connected_id):
+			_debug_passive_connected_weapon_ids.erase(connected_id)
+
+func _debug_on_weapon_passive_triggered(event_name: StringName, detail: Dictionary, weapon: Weapon) -> void:
+	if not debug_weapon_passive_trigger_prints:
+		return
+	if not _debug_is_weapon_passive_trigger_event(event_name):
+		return
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon) if DataHandler != null else ""
+	var weapon_name = weapon.get("ITEM_NAME")
+	if weapon_name == null or str(weapon_name).strip_edges() == "":
+		weapon_name = weapon.name
+	print("[WEAPON PASSIVE TRIGGERED] id=", weapon_id, " name=", weapon_name, " event=", event_name, " detail=", detail)
+
+func _debug_is_weapon_passive_trigger_event(event_name: StringName) -> bool:
+	var event_text := str(event_name)
+	return event_text.ends_with("_triggered") or event_name == &"offhand_machine_gun_focus_buff"
 
 func _update_passive_time_tick(delta: float) -> void:
 	_passive_time_tick_accum += maxf(delta, 0.0)

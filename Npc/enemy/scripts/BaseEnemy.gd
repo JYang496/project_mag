@@ -41,6 +41,7 @@ func _notification(what: int) -> void:
 	_constrain_to_board_traversable_area()
 
 func death(killing_attack: Attack = null) -> void:
+	var death_position := global_position
 	var drop = drop_preload.instantiate()
 	drop.drop = coin_preload
 	var drop_value := 1
@@ -53,6 +54,7 @@ func death(killing_attack: Attack = null) -> void:
 		PlayerData.run_enemy_kills += 1
 		if self is EliteEnemy:
 			PlayerData.run_elite_kills += 1
+		_notify_player_enemy_killed(killing_attack, death_position)
 	_try_trigger_elite_kill_impact(killing_attack)
 	enemy_death.emit(true)
 	queue_free()
@@ -69,6 +71,36 @@ func _try_trigger_elite_kill_impact(killing_attack: Attack) -> void:
 	var controller := get_tree().root.get_node_or_null("TimeImpactController")
 	if controller and controller.has_method("trigger_elite_kill_impact"):
 		controller.trigger_elite_kill_impact()
+
+func _notify_player_enemy_killed(killing_attack: Attack, death_position: Vector2) -> void:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return
+	if not PlayerData.player.has_method("_broadcast_weapon_passive_event"):
+		return
+	PlayerData.player.call("_broadcast_weapon_passive_event", &"on_enemy_killed", {
+		"enemy": self,
+		"source_weapon": _resolve_killing_weapon(killing_attack),
+		"position": death_position,
+		"_suppress_default_emit": true,
+	})
+
+func _resolve_killing_weapon(killing_attack: Attack) -> Weapon:
+	if killing_attack == null:
+		return null
+	var source := killing_attack.source_node
+	if source == null or not is_instance_valid(source):
+		return null
+	if source is Weapon:
+		return source as Weapon
+	var source_weapon: Variant = source.get("source_weapon")
+	if source_weapon is Weapon and is_instance_valid(source_weapon):
+		return source_weapon as Weapon
+	var current := source
+	while current != null:
+		if current is Weapon:
+			return current as Weapon
+		current = current.get_parent()
+	return null
 
 func _on_enable_collision_timer_timeout() -> void:
 	self.set_collision_mask_value(6,true)

@@ -8,6 +8,7 @@ var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.pn
 # Weapon
 var ITEM_NAME = "Rocket Luncher"
 var explosion_scale : float = 2.0
+@export var cluster_kill_radius: float = 180.0
 
 
 var weapon_data = {
@@ -147,3 +148,43 @@ func _sync_explosion_effect_config(projectile_damage: int = damage) -> void:
 		explosion_config.explosion_size = size * explosion_scale
 		if branch_behavior and is_instance_valid(branch_behavior):
 			branch_behavior.modify_explosion_config(explosion_config)
+
+func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	super._on_passive_event(event_name, detail)
+	if event_name != &"on_enemy_killed":
+		return
+	var source_weapon := detail.get("source_weapon", null) as Weapon
+	if source_weapon != self or not is_main_weapon():
+		return
+	var death_position_variant: Variant = detail.get("position", null)
+	if not (death_position_variant is Vector2):
+		return
+	var nearby_count := _count_other_enemies_near(death_position_variant as Vector2, detail.get("enemy", null))
+	if nearby_count <= 0:
+		return
+	if not is_offhand_skill_ready():
+		return
+	notify_offhand_skill_triggered(0.0)
+	passive_triggered.emit(&"rocket_cluster_kill_triggered", {
+		"enemy": detail.get("enemy", null),
+		"position": death_position_variant,
+		"radius": maxf(cluster_kill_radius, 0.0),
+		"nearby_enemy_count": nearby_count,
+		"refresh": "reload",
+	})
+
+func _count_other_enemies_near(position: Vector2, killed_enemy: Variant) -> int:
+	var tree := get_tree()
+	if tree == null:
+		return 0
+	var count := 0
+	var radius_sq := maxf(cluster_kill_radius, 0.0) * maxf(cluster_kill_radius, 0.0)
+	for enemy_ref in tree.get_nodes_in_group("enemies"):
+		var enemy := enemy_ref as Node2D
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		if killed_enemy is Object and enemy == killed_enemy:
+			continue
+		if enemy.global_position.distance_squared_to(position) <= radius_sq:
+			count += 1
+	return count

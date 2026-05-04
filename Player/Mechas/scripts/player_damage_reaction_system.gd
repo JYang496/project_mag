@@ -18,6 +18,12 @@ func damaged(attack: Attack) -> void:
 	var result: DamageResult = _player._incoming_damage_pipeline.apply_incoming_damage(_player, attack, _player._incoming_damage_profile)
 	if not result.applied:
 		return
+	if _player.has_method("_broadcast_weapon_passive_event"):
+		_player.call("_broadcast_weapon_passive_event", &"on_player_damaged", {
+			"attack": attack,
+			"player": _player,
+			"_suppress_default_emit": true,
+		})
 	_apply_elite_hit_slow_if_needed(attack)
 	if _player.PlayerData.testing_keep_hp_above_zero and _player.PlayerData.player_hp <= 0:
 		_player.PlayerData.player_hp = 1

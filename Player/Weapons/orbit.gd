@@ -301,8 +301,20 @@ func on_hit_target(target: Node) -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
+	if event_name == &"on_player_damaged":
+		_try_trigger_player_damaged(detail)
 	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_passive_event(event_name, detail)
+
+func _try_trigger_player_damaged(detail: Dictionary) -> void:
+	if not is_offhand_skill_ready():
+		return
+	notify_offhand_skill_triggered(0.0)
+	passive_triggered.emit(&"orbit_player_damaged_triggered", {
+		"attack": detail.get("attack", null),
+		"player": detail.get("player", PlayerData.player),
+		"refresh": "reload",
+	})
 
 func get_satellites() -> Array[Node2D]:
 	var valid_satellites: Array[Node2D] = []

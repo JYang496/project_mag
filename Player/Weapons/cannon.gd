@@ -8,8 +8,10 @@ var ITEM_NAME := "Cannon"
 const BULLET_PIXEL_SIZE := Vector2(11.0, 11.0)
 
 @export var windup_sec: float = 0.15
+@export var idle_fire_trigger_sec: float = 6.0
 var attack_range: float = 920.0
 var _windup_in_progress: bool = false
+var _last_main_fire_msec: int = 0
 
 var weapon_data := {
 	"1": {"level": "1", "damage": "50", "speed": "1120", "hp": "1", "fire_interval_sec": "1.667", "ammo": "18", "range": "880", "cost": "13"},
@@ -47,6 +49,7 @@ func request_primary_fire() -> bool:
 		return false
 	if windup_sec <= 0.0:
 		emit_signal("shoot")
+		notify_main_weapon_fired()
 		register_shot_heat()
 		return true
 	_windup_in_progress = true
@@ -63,6 +66,7 @@ func _on_windup_timer_timeout() -> void:
 		return
 	_windup_in_progress = false
 	emit_signal("shoot")
+	notify_main_weapon_fired()
 	register_shot_heat()
 
 func _on_shoot() -> void:
@@ -104,6 +108,40 @@ func on_hit_target(target: Node) -> void:
 func _on_cooldown_timer_timeout() -> void:
 	is_on_cooldown = false
 	_windup_in_progress = false
+
+func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	super._on_passive_event(event_name, detail)
+	match event_name:
+		&"on_main_weapon_fired", &"on_main_swapped":
+			_last_main_fire_msec = Time.get_ticks_msec()
+		&"on_time_tick":
+			_update_idle_fire_trigger()
+
+func _update_idle_fire_trigger() -> void:
+	if not _is_battle_phase():
+		_last_main_fire_msec = Time.get_ticks_msec()
+		return
+	var now_msec := Time.get_ticks_msec()
+	if _last_main_fire_msec <= 0:
+		_last_main_fire_msec = now_msec
+		return
+	var idle_msec := now_msec - _last_main_fire_msec
+	var threshold_msec := int(maxf(idle_fire_trigger_sec, 0.1) * 1000.0)
+	if idle_msec < threshold_msec:
+		return
+	_last_main_fire_msec = now_msec
+	if not is_offhand_skill_ready():
+		return
+	notify_offhand_skill_triggered(0.0)
+	passive_triggered.emit(&"cannon_idle_fire_triggered", {
+		"duration": maxf(idle_fire_trigger_sec, 0.1),
+		"refresh": "reload",
+	})
+
+func _is_battle_phase() -> bool:
+	if PhaseManager == null or not PhaseManager.has_method("current_state"):
+		return true
+	return str(PhaseManager.current_state()) == str(PhaseManager.BATTLE)
 
 func _get_level_data(lv: String) -> Dictionary:
 	if weapon_data.has(lv):

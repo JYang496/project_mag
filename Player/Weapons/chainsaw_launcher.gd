@@ -10,6 +10,9 @@ var projectile_texture_resource = preload("res://Textures/test/chainsaw_spin.png
 # Weapon
 var ITEM_NAME = "Chainsaw Luncher"
 var _last_hit_projectile: Projectile
+@export var same_target_hit_trigger_count: int = 6
+var _same_target_hit_id: int = 0
+var _same_target_hit_count: int = 0
 
 var weapon_data = {
 	"1": {
@@ -161,9 +164,37 @@ func on_projectile_hit_target(projectile: Projectile, _target: Node) -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	_update_same_target_hit_trigger(target)
 	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_chainsaw_target_hit(target, _last_hit_projectile)
 		branch_behavior.on_target_hit(target)
+
+func _update_same_target_hit_trigger(target: Node) -> void:
+	if not is_main_weapon():
+		_same_target_hit_id = 0
+		_same_target_hit_count = 0
+		return
+	if target == null or not is_instance_valid(target):
+		_same_target_hit_id = 0
+		_same_target_hit_count = 0
+		return
+	var target_id := target.get_instance_id()
+	if target_id != _same_target_hit_id:
+		_same_target_hit_id = target_id
+		_same_target_hit_count = 0
+	_same_target_hit_count += 1
+	var required_hits: int = maxi(1, same_target_hit_trigger_count)
+	if _same_target_hit_count < required_hits:
+		return
+	_same_target_hit_count = 0
+	if not is_offhand_skill_ready():
+		return
+	notify_offhand_skill_triggered(0.0)
+	passive_triggered.emit(&"chainsaw_same_target_6_hits_triggered", {
+		"target": target,
+		"hit_count": required_hits,
+		"refresh": "reload",
+	})
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)

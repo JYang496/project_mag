@@ -7,8 +7,9 @@ var projectile_texture_resource: Texture2D = preload("res://Textures/test/sniper
 var ITEM_NAME := "Sniper"
 const NEAR_DISTANCE_THRESHOLD: float = 220.0
 const FAR_DAMAGE_MULTIPLIER: float = 1.8
+@export var far_hit_trigger_distance: float = 400.0
 
-var attack_range: float = 900.0
+var attack_range: float = 300.0
 var _last_projectile_hit_damage: int = 0
 
 var weapon_data := {
@@ -75,9 +76,32 @@ func set_last_projectile_hit_damage(value: int) -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	_try_trigger_far_hit(target)
 	_apply_distance_bonus_damage(target)
 	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_target_hit(target)
+
+func _try_trigger_far_hit(target: Node) -> void:
+	if not is_main_weapon():
+		return
+	var target_node := target as Node2D
+	if target_node == null or not is_instance_valid(target_node):
+		return
+	var player := PlayerData.player as Node2D
+	if player == null or not is_instance_valid(player):
+		return
+	var distance := player.global_position.distance_to(target_node.global_position)
+	if distance < maxf(far_hit_trigger_distance, 0.0):
+		return
+	if not is_offhand_skill_ready():
+		return
+	notify_offhand_skill_triggered(0.0)
+	passive_triggered.emit(&"sniper_far_hit_triggered", {
+		"target": target,
+		"distance": distance,
+		"threshold": far_hit_trigger_distance,
+		"refresh": "reload",
+	})
 
 func _apply_distance_bonus_damage(target: Node) -> void:
 	if target == null or not is_instance_valid(target):
