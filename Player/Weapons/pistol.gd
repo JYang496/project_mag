@@ -118,11 +118,11 @@ func _update_continuous_move_trigger(delta: float) -> void:
 	if not is_offhand_skill_ready():
 		return
 	notify_offhand_skill_triggered(0.0)
-	passive_triggered.emit(&"pistol_continuous_move_triggered", {
+	emit_passive_trigger(&"pistol_continuous_move_triggered", {
 		"duration": maxf(continuous_move_trigger_sec, 0.1),
 		"refresh": "reload",
 		"player": player,
-	})
+	}, PASSIVE_SCOPE_GLOBAL)
 
 func _is_battle_phase() -> bool:
 	if PhaseManager == null or not PhaseManager.has_method("current_state"):

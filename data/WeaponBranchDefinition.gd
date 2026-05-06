@@ -9,3 +9,5 @@ class_name WeaponBranchDefinition
 @export var unlock_fuse := 2
 @export var weapon_scene: PackedScene
 @export var behavior_scene: PackedScene
+@export var exclusive_groups: PackedStringArray = PackedStringArray()
+@export var incompatible_branch_ids: PackedStringArray = PackedStringArray()

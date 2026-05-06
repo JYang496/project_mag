@@ -2,7 +2,4 @@ extends Player
 class_name HeavyAssault
 
 func custom_ready() -> void:
-	create_weapon("5")
-	create_weapon("4")
-	create_weapon("26")
-	create_weapon("8")
+	create_weapon("1")

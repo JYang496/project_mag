@@ -34,16 +34,13 @@ func set_level(lv) -> void:
 	apply_level_ammo(level_data)
 	attack_range = float(level_data.get("range", attack_range))
 	sync_stats()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_level_applied(level)
+	notify_branch_level_applied(level)
 
 func _on_shoot() -> void:
 	is_on_cooldown = true
 	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
-	var projectile_damage_multiplier := 1.0
-	if branch_behavior and is_instance_valid(branch_behavior):
-		cooldown *= maxf(branch_behavior.get_cooldown_multiplier(), 0.05)
-		projectile_damage_multiplier = maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05)
+	var projectile_damage_multiplier := get_branch_projectile_damage_multiplier()
+	cooldown *= get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
 
@@ -78,8 +75,7 @@ func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
 	_try_trigger_far_hit(target)
 	_apply_distance_bonus_damage(target)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_target_hit(target)
+	notify_branch_target_hit(target)
 
 func _try_trigger_far_hit(target: Node) -> void:
 	if not is_main_weapon():
@@ -96,12 +92,12 @@ func _try_trigger_far_hit(target: Node) -> void:
 	if not is_offhand_skill_ready():
 		return
 	notify_offhand_skill_triggered(0.0)
-	passive_triggered.emit(&"sniper_far_hit_triggered", {
+	emit_passive_trigger(&"sniper_far_hit_triggered", {
 		"target": target,
 		"distance": distance,
 		"threshold": far_hit_trigger_distance,
 		"refresh": "reload",
-	})
+	}, PASSIVE_SCOPE_GLOBAL)
 
 func _apply_distance_bonus_damage(target: Node) -> void:
 	if target == null or not is_instance_valid(target):
@@ -126,14 +122,10 @@ func _apply_distance_bonus_damage(target: Node) -> void:
 	DamageManager.apply_to_target(target, damage_data)
 
 func _get_branch_pierce_damage_gain_per_hit() -> int:
-	if branch_behavior == null or not is_instance_valid(branch_behavior):
-		return 0
-	return max(0, branch_behavior.get_pierce_damage_gain_per_hit())
+	return get_branch_pierce_damage_gain_per_hit()
 
 func _get_branch_max_pierce_damage_stacks() -> int:
-	if branch_behavior == null or not is_instance_valid(branch_behavior):
-		return 0
-	return max(0, branch_behavior.get_max_pierce_damage_stacks())
+	return get_branch_max_pierce_damage_stacks()
 
 func _get_level_data(lv: String) -> Dictionary:
 	if weapon_data.has(lv):

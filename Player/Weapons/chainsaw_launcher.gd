@@ -190,11 +190,11 @@ func _update_same_target_hit_trigger(target: Node) -> void:
 	if not is_offhand_skill_ready():
 		return
 	notify_offhand_skill_triggered(0.0)
-	passive_triggered.emit(&"chainsaw_same_target_6_hits_triggered", {
+	emit_passive_trigger(&"chainsaw_same_target_6_hits_triggered", {
 		"target": target,
 		"hit_count": required_hits,
 		"refresh": "reload",
-	})
+	}, PASSIVE_SCOPE_GLOBAL)
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)

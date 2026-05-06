@@ -21,10 +21,10 @@ func on_target_hit(_target: Node) -> void:
 func on_removed() -> void:
 	pass
 
-func get_shot_directions(_base_direction: Vector2, _shot_count: int = 1) -> Array[Vector2]:
+func get_shot_directions(_base_direction: Vector2, _shot_count: int = -1) -> Array[Vector2]:
 	return [_base_direction]
 
-func get_additional_shot_directions(_base_direction: Vector2, _shot_count: int = 1) -> Array[Vector2]:
+func get_additional_shot_directions(_base_direction: Vector2, _shot_count: int = -1) -> Array[Vector2]:
 	return []
 
 func get_cooldown_multiplier() -> float:

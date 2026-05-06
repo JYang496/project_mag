@@ -129,22 +129,19 @@ func set_level(lv):
 	heat_cool_rate = heat_cooldown_rate
 	configure_heat(heat_per_shot, heat_max_value, heat_cool_rate)
 	sync_stats()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_level_applied(level)
+	notify_branch_level_applied(level)
 
 func _on_shoot():
 	is_on_cooldown = true
 	var cooldown := attack_cooldown / attack_speed
 	cooldown = cooldown / maxf(get_external_attack_speed_multiplier(), 0.1)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		cooldown *= branch_behavior.get_cooldown_multiplier()
+	cooldown *= get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
 	var target_position: Vector2 = get_mouse_target()
 	var base_direction: Vector2 = global_position.direction_to(target_position).normalized()
 	var shot_directions: Array[Vector2] = [base_direction]
-	if branch_behavior and is_instance_valid(branch_behavior):
-		shot_directions = branch_behavior.get_shot_directions(base_direction)
+	shot_directions = get_branch_shot_directions(base_direction)
 	if shot_directions.is_empty():
 		shot_directions = [base_direction]
 	var fired_count := 0
@@ -153,11 +150,8 @@ func _on_shoot():
 		var constrained := _constrain_to_forward_cone(spreaded, base_direction)
 		_fire_single_bullet(constrained)
 		fired_count += 1
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_weapon_shot(base_direction)
-	var extra_heat_multiplier := 1.0
-	if branch_behavior and is_instance_valid(branch_behavior):
-		extra_heat_multiplier = branch_behavior.get_extra_heat_shot_multiplier()
+	notify_branch_weapon_shot(base_direction)
+	var extra_heat_multiplier := get_branch_extra_heat_shot_multiplier()
 	var extra_heat_shots := float(max(0, fired_count - 1)) * clampf(extra_heat_multiplier, 0.0, 1.0)
 	register_shot_heat(extra_heat_shots)
 	adjust_attack_speed(1.2)
@@ -182,8 +176,6 @@ func _update_offhand_focus_runtime() -> void:
 		return
 	if now_msec >= _offhand_buff_expires_at_msec:
 		_clear_offhand_main_focus_buff()
-		return
-	_sync_offhand_main_focus_buff_target()
 
 func _on_offhand_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_offhand_passive_event(event_name, detail)
@@ -210,18 +202,19 @@ func _on_offhand_passive_event(event_name: StringName, detail: Dictionary) -> vo
 	var buff_duration_sec := maxf(offhand_buff_duration_sec, 0.05)
 	notify_offhand_skill_triggered(0.0)
 	_offhand_buff_expires_at_msec = now_msec + int(buff_duration_sec * 1000.0)
-	_sync_offhand_main_focus_buff_target()
-	var spread_applied := _offhand_buff_target != null and is_instance_valid(_offhand_buff_target)
-	passive_triggered.emit(&"offhand_machine_gun_focus_buff", {
+	if PlayerData.player and is_instance_valid(PlayerData.player):
+		PlayerData.player.call("apply_global_weapon_passive_effect", _get_offhand_focus_attack_speed_source_id(), &"attack_speed_mul", maxf(offhand_main_attack_speed_mult, 0.1), buff_duration_sec, self, true)
+		PlayerData.player.call("apply_global_weapon_passive_effect", _get_offhand_focus_spread_source_id(), &"spread_mul", maxf(offhand_main_spread_mult, 0.01), buff_duration_sec, self, true)
+	emit_passive_trigger(&"offhand_machine_gun_focus_buff", {
 		"trigger_hits": max(1, offhand_trigger_hits),
 		"trigger_window": maxf(offhand_trigger_window_sec, 0.1),
 		"duration": buff_duration_sec,
 		"cooldown": 0.0,
 		"attack_speed_multiplier": maxf(offhand_main_attack_speed_mult, 0.1),
 		"spread_multiplier": maxf(offhand_main_spread_mult, 0.01),
-		"spread_applied": spread_applied,
-		"target_weapon": _offhand_buff_target,
-	})
+		"spread_applied": true,
+		"target_weapon": null,
+	}, PASSIVE_SCOPE_GLOBAL)
 
 func _on_enter_main_weapon_role() -> void:
 	_offhand_hit_timestamps_msec.clear()
@@ -327,6 +320,15 @@ func _resolve_current_main_weapon_for_buff_sync() -> Weapon:
 func _clear_offhand_main_focus_buff() -> void:
 	_clear_offhand_main_focus_buff_effect_only()
 	_offhand_buff_expires_at_msec = 0
+	if PlayerData.player and is_instance_valid(PlayerData.player):
+		PlayerData.player.call("remove_global_weapon_passive_effect", _get_offhand_focus_attack_speed_source_id())
+		PlayerData.player.call("remove_global_weapon_passive_effect", _get_offhand_focus_spread_source_id())
+
+func _get_offhand_focus_attack_speed_source_id() -> StringName:
+	return StringName("offhand_machine_gun_focus_attack_speed_%s" % str(get_instance_id()))
+
+func _get_offhand_focus_spread_source_id() -> StringName:
+	return StringName("offhand_machine_gun_focus_spread_%s" % str(get_instance_id()))
 
 func _clear_offhand_main_focus_buff_effect_only() -> void:
 	if _offhand_buff_target != null and is_instance_valid(_offhand_buff_target):
@@ -342,14 +344,10 @@ func _fire_single_bullet(direction: Vector2) -> void:
 	if spawn_projectile == null:
 		return
 	var runtime_damage: int = int(get_runtime_shot_damage())
-	var damage_multiplier: float = 1.0
-	if branch_behavior and is_instance_valid(branch_behavior):
-		damage_multiplier = branch_behavior.get_projectile_damage_multiplier()
+	var damage_multiplier: float = get_branch_projectile_damage_multiplier()
 	var final_damage: int = max(1, int(round(float(runtime_damage) * maxf(damage_multiplier, 0.05))))
 	spawn_projectile.damage = final_damage
-	var damage_type: StringName = Attack.TYPE_PHYSICAL
-	if branch_behavior and is_instance_valid(branch_behavior):
-		damage_type = Attack.normalize_damage_type(branch_behavior.get_damage_type_override())
+	var damage_type: StringName = get_branch_damage_type_override(Attack.TYPE_PHYSICAL)
 	spawn_projectile.damage_type = damage_type
 	spawn_projectile.hp = projectile_hits
 	spawn_projectile.global_position = global_position

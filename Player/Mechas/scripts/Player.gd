@@ -117,6 +117,8 @@ var _last_move_anim_is_top: bool = false
 const ELITE_HIT_SLOW_SOURCE_ID: StringName = &"elite_hit_stagger"
 var _elite_hit_slow_until_msec: int = 0
 var _debug_passive_connected_weapon_ids: Dictionary = {}
+var _global_weapon_passive_effects: Dictionary = {}
+var _global_weapon_passive_applied: Dictionary = {}
 var PlayerData = null
 var _status_hint_manager
 var _status_modifier_system
@@ -186,6 +188,7 @@ func custom_ready():
 
 func _physics_process(delta):
 	_sanitize_weapon_list_and_roles()
+	_update_global_weapon_passives()
 	_process_combat_input(delta)
 	_sync_weapon_orbit_states()
 	_update_shared_heat_pool(delta)
@@ -488,6 +491,7 @@ func clear_timed_statuses_for_prepare() -> void:
 	_suppress_status_hints = true
 	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
 		_status_hint_manager.clear_all()
+	clear_global_weapon_passives()
 	_ensure_elemental_effect_system()
 	if _elemental_effect_system != null and _elemental_effect_system.has_method("clear_timed_effects_for_prepare"):
 		_elemental_effect_system.call("clear_timed_effects_for_prepare")
@@ -615,6 +619,162 @@ func _broadcast_weapon_passive_event(event_name: StringName, detail: Dictionary 
 		if weapon.has_method("dispatch_passive_event"):
 			weapon.call("dispatch_passive_event", event_name, detail)
 
+func apply_global_weapon_passive_effect(source_id: StringName, stat_type: StringName, multiplier: float, duration_sec: float = 0.0, source_weapon: Weapon = null, include_source_weapon: bool = true) -> void:
+	if source_id == StringName() or stat_type == StringName():
+		return
+	var now_msec := Time.get_ticks_msec()
+	var expires_at_msec := 0
+	if duration_sec > 0.0:
+		expires_at_msec = now_msec + int(maxf(duration_sec, 0.01) * 1000.0)
+	_global_weapon_passive_effects[source_id] = {
+		"stat_type": stat_type,
+		"multiplier": maxf(multiplier, 0.01),
+		"expires_at_msec": expires_at_msec,
+		"source_weapon": weakref(source_weapon) if source_weapon != null else null,
+		"include_source_weapon": include_source_weapon,
+	}
+	_sync_global_weapon_passive_source(source_id)
+
+func remove_global_weapon_passive_effect(source_id: StringName) -> void:
+	if source_id == StringName():
+		return
+	_global_weapon_passive_effects.erase(source_id)
+	_remove_global_weapon_passive_source(source_id)
+
+func clear_global_weapon_passives() -> void:
+	var applied_source_ids := _global_weapon_passive_applied.keys()
+	for source_id_variant in applied_source_ids:
+		_remove_global_weapon_passive_source(StringName(str(source_id_variant)))
+	_global_weapon_passive_effects.clear()
+	_global_weapon_passive_applied.clear()
+
+func _update_global_weapon_passives() -> void:
+	if _global_weapon_passive_effects.is_empty() and _global_weapon_passive_applied.is_empty():
+		return
+	var now_msec := Time.get_ticks_msec()
+	var expired_sources: Array[StringName] = []
+	for source_id_variant in _global_weapon_passive_effects.keys():
+		var source_id := StringName(str(source_id_variant))
+		var effect: Dictionary = _global_weapon_passive_effects[source_id]
+		var expires_at_msec := int(effect.get("expires_at_msec", 0))
+		if (expires_at_msec > 0 and now_msec >= expires_at_msec) or _effect_source_weapon_is_stale(effect):
+			expired_sources.append(source_id)
+			continue
+		_sync_global_weapon_passive_source(source_id)
+	for source_id in expired_sources:
+		remove_global_weapon_passive_effect(source_id)
+
+func _sync_global_weapon_passive_source(source_id: StringName) -> void:
+	if not _global_weapon_passive_effects.has(source_id):
+		_remove_global_weapon_passive_source(source_id)
+		return
+	var effect: Dictionary = _global_weapon_passive_effects[source_id]
+	var valid_weapon_ids: Dictionary = {}
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon := weapon_ref as Weapon
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if not bool(effect.get("include_source_weapon", true)) and _effect_source_weapon_equals(effect, weapon):
+			continue
+		valid_weapon_ids[weapon.get_instance_id()] = true
+		_apply_global_weapon_passive_to_weapon(source_id, effect, weapon)
+	var applied: Dictionary = _global_weapon_passive_applied.get(source_id, {})
+	for weapon_id_variant in applied.keys():
+		var weapon_id := int(weapon_id_variant)
+		if valid_weapon_ids.has(weapon_id):
+			continue
+		var applied_entry: Dictionary = applied[weapon_id]
+		var weapon_ref: WeakRef = applied_entry.get("weapon_ref", null)
+		var weapon: Weapon = weapon_ref.get_ref() as Weapon if weapon_ref else null
+		if weapon != null and is_instance_valid(weapon):
+			_remove_global_weapon_passive_from_weapon(source_id, StringName(str(applied_entry.get("stat_type", ""))), weapon)
+		applied.erase(weapon_id)
+	_global_weapon_passive_applied[source_id] = applied
+
+func _apply_global_weapon_passive_to_weapon(source_id: StringName, effect: Dictionary, weapon: Weapon) -> void:
+	var stat_type := StringName(str(effect.get("stat_type", "")))
+	var multiplier := float(effect.get("multiplier", 1.0))
+	match stat_type:
+		&"damage_mul":
+			if weapon.has_method("apply_external_damage_mul"):
+				weapon.call("apply_external_damage_mul", source_id, multiplier)
+		&"damage_flat":
+			if weapon.has_method("apply_external_damage_mul"):
+				var runtime_damage := _resolve_weapon_runtime_damage_for_global_effect(weapon)
+				var bonus_flat: int = max(1, int(round(multiplier)))
+				var damage_mul := float(runtime_damage + bonus_flat) / float(runtime_damage)
+				weapon.call("apply_external_damage_mul", source_id, damage_mul)
+		&"attack_speed_mul":
+			if weapon.has_method("apply_external_attack_speed_mul"):
+				weapon.call("apply_external_attack_speed_mul", source_id, multiplier)
+		&"spread_mul":
+			if weapon.has_method("apply_external_spread_mul"):
+				weapon.call("apply_external_spread_mul", source_id, multiplier)
+		_:
+			return
+	var applied: Dictionary = _global_weapon_passive_applied.get(source_id, {})
+	applied[weapon.get_instance_id()] = {
+		"weapon_ref": weakref(weapon),
+		"stat_type": stat_type,
+	}
+	_global_weapon_passive_applied[source_id] = applied
+
+func _remove_global_weapon_passive_source(source_id: StringName) -> void:
+	var applied: Dictionary = _global_weapon_passive_applied.get(source_id, {})
+	for applied_entry_variant in applied.values():
+		var applied_entry: Dictionary = applied_entry_variant
+		var weapon_ref: WeakRef = applied_entry.get("weapon_ref", null)
+		var weapon: Weapon = weapon_ref.get_ref() as Weapon if weapon_ref else null
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		_remove_global_weapon_passive_from_weapon(source_id, StringName(str(applied_entry.get("stat_type", ""))), weapon)
+	_global_weapon_passive_applied.erase(source_id)
+
+func _remove_global_weapon_passive_from_weapon(source_id: StringName, stat_type: StringName, weapon: Weapon) -> void:
+	match stat_type:
+		&"damage_mul":
+			if weapon.has_method("remove_external_damage_mul"):
+				weapon.call("remove_external_damage_mul", source_id)
+		&"damage_flat":
+			if weapon.has_method("remove_external_damage_mul"):
+				weapon.call("remove_external_damage_mul", source_id)
+		&"attack_speed_mul":
+			if weapon.has_method("remove_external_attack_speed_mul"):
+				weapon.call("remove_external_attack_speed_mul", source_id)
+		&"spread_mul":
+			if weapon.has_method("remove_external_spread_mul"):
+				weapon.call("remove_external_spread_mul", source_id)
+
+func _effect_source_weapon_equals(effect: Dictionary, weapon: Weapon) -> bool:
+	var source_ref: WeakRef = effect.get("source_weapon", null)
+	if source_ref == null:
+		return false
+	var source_weapon: Weapon = source_ref.get_ref() as Weapon
+	return source_weapon != null and is_instance_valid(source_weapon) and source_weapon == weapon
+
+func _effect_source_weapon_is_stale(effect: Dictionary) -> bool:
+	var source_ref: WeakRef = effect.get("source_weapon", null)
+	if source_ref == null:
+		return false
+	var source_weapon: Weapon = source_ref.get_ref() as Weapon
+	return source_weapon == null or not is_instance_valid(source_weapon)
+
+func _resolve_weapon_runtime_damage_for_global_effect(weapon: Weapon) -> int:
+	if weapon == null or not is_instance_valid(weapon):
+		return 1
+	if weapon.has_method("get_runtime_shot_damage"):
+		return max(1, int(weapon.call("get_runtime_shot_damage")))
+	if weapon.has_method("get_runtime_damage_value"):
+		var base_damage_value := 1.0
+		if weapon.get("base_damage") != null:
+			base_damage_value = maxf(1.0, float(weapon.get("base_damage")))
+		elif weapon.get("damage") != null:
+			base_damage_value = maxf(1.0, float(weapon.get("damage")))
+		return max(1, int(weapon.call("get_runtime_damage_value", base_damage_value)))
+	if weapon.get("damage") != null:
+		return max(1, int(weapon.get("damage")))
+	return 1
+
 func _debug_connect_weapon_passive_triggers() -> void:
 	if not debug_weapon_passive_trigger_prints:
 		return
@@ -646,7 +806,7 @@ func _debug_on_weapon_passive_triggered(event_name: StringName, detail: Dictiona
 	var weapon_name = weapon.get("ITEM_NAME")
 	if weapon_name == null or str(weapon_name).strip_edges() == "":
 		weapon_name = weapon.name
-	print("[WEAPON PASSIVE TRIGGERED] id=", weapon_id, " name=", weapon_name, " event=", event_name, " detail=", detail)
+	print("[WEAPON PASSIVE TRIGGERED] id=", weapon_id, " name=", weapon_name, " event=", event_name, " scope=", detail.get("passive_scope", Weapon.PASSIVE_SCOPE_BODY), " detail=", detail)
 
 func _debug_is_weapon_passive_trigger_event(event_name: StringName) -> bool:
 	var event_text := str(event_name)

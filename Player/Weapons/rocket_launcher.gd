@@ -97,29 +97,23 @@ func set_level(lv):
 	explosion_scale = float(weapon_data[lv]["explosion_scale"])
 	sync_stats()
 	_sync_explosion_effect_config()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_level_applied(level)
+	notify_branch_level_applied(level)
 
 func _on_shoot():
 	is_on_cooldown = true
 	var cooldown := attack_cooldown / maxf(get_external_attack_speed_multiplier(), 0.1)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		cooldown *= branch_behavior.get_cooldown_multiplier()
+	cooldown *= get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
 	var base_direction := global_position.direction_to(get_mouse_target()).normalized()
 	var shot_directions: Array[Vector2] = [base_direction]
-	if branch_behavior and is_instance_valid(branch_behavior):
-		shot_directions = branch_behavior.get_shot_directions(base_direction)
+	shot_directions = get_branch_shot_directions(base_direction)
 	if shot_directions.is_empty():
 		shot_directions = [base_direction]
-	var damage_multiplier := 1.0
-	if branch_behavior and is_instance_valid(branch_behavior):
-		damage_multiplier = branch_behavior.get_projectile_damage_multiplier()
+	var damage_multiplier := get_branch_projectile_damage_multiplier()
 	for dir in shot_directions:
 		_fire_single_rocket(dir.normalized(), damage_multiplier)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_weapon_shot(base_direction)
+	notify_branch_weapon_shot(base_direction)
 
 func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> void:
 	var spawn_projectile = spawn_projectile_from_scene(projectile_template)
@@ -146,8 +140,7 @@ func _sync_explosion_effect_config(projectile_damage: int = damage) -> void:
 		explosion_config.damage = projectile_damage
 		explosion_config.damage_type = Attack.TYPE_FIRE
 		explosion_config.explosion_size = size * explosion_scale
-		if branch_behavior and is_instance_valid(branch_behavior):
-			branch_behavior.modify_explosion_config(explosion_config)
+		apply_branch_explosion_modifiers(explosion_config)
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
@@ -165,13 +158,13 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	if not is_offhand_skill_ready():
 		return
 	notify_offhand_skill_triggered(0.0)
-	passive_triggered.emit(&"rocket_cluster_kill_triggered", {
+	emit_passive_trigger(&"rocket_cluster_kill_triggered", {
 		"enemy": detail.get("enemy", null),
 		"position": death_position_variant,
 		"radius": maxf(cluster_kill_radius, 0.0),
 		"nearby_enemy_count": nearby_count,
 		"refresh": "reload",
-	})
+	}, PASSIVE_SCOPE_GLOBAL)
 
 func _count_other_enemies_near(position: Vector2, killed_enemy: Variant) -> int:
 	var tree := get_tree()

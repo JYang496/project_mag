@@ -133,10 +133,10 @@ func _update_idle_fire_trigger() -> void:
 	if not is_offhand_skill_ready():
 		return
 	notify_offhand_skill_triggered(0.0)
-	passive_triggered.emit(&"cannon_idle_fire_triggered", {
+	emit_passive_trigger(&"cannon_idle_fire_triggered", {
 		"duration": maxf(idle_fire_trigger_sec, 0.1),
 		"refresh": "reload",
-	})
+	}, PASSIVE_SCOPE_GLOBAL)
 
 func _is_battle_phase() -> bool:
 	if PhaseManager == null or not PhaseManager.has_method("current_state"):

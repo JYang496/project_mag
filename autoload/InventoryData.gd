@@ -258,9 +258,24 @@ var on_select_slot_gf :
 
 func add_fuse_item(item) -> void:
 	if ready_to_fuse_list.size() < MAX_FUSE_SIZE and not ready_to_fuse_list.has(item):
-		if ready_to_fuse_list.size() == 0 or item.ITEM_NAME == ready_to_fuse_list[0].ITEM_NAME:
+		if _can_add_fuse_item(item):
 			ready_to_fuse_list.append(item)
 		_safe_update_gf()
+
+func _can_add_fuse_item(item) -> bool:
+	var weapon := item as Weapon
+	if weapon == null or not is_instance_valid(weapon):
+		return false
+	if ready_to_fuse_list.is_empty():
+		return true
+	var base_weapon := ready_to_fuse_list[0] as Weapon
+	if base_weapon == null or not is_instance_valid(base_weapon):
+		return false
+	var base_id := DataHandler.get_weapon_id_from_instance(base_weapon)
+	var item_id := DataHandler.get_weapon_id_from_instance(weapon)
+	if base_id != "" or item_id != "":
+		return base_id != "" and base_id == item_id
+	return str(weapon.ITEM_NAME) == str(base_weapon.ITEM_NAME)
 
 func obtain_module(module_instance: Module, ignore_weapon: Weapon = null) -> void:
 	if module_instance == null:

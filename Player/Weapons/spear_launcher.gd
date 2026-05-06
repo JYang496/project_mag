@@ -91,8 +91,7 @@ func _on_shoot():
 	is_on_cooldown = true
 	# 应用分支冷却倍率
 	var cooldown := base_attack_cooldown
-	if branch_behavior and is_instance_valid(branch_behavior):
-		cooldown *= maxf(branch_behavior.get_cooldown_multiplier(), 0.05)
+	cooldown *= get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = maxf(cooldown, 0.05)
 	cooldown_timer.start()
 
@@ -100,15 +99,12 @@ func _on_shoot():
 	var target_position: Vector2 = get_mouse_target()
 	var base_direction: Vector2 = global_position.direction_to(target_position).normalized()
 	var shot_directions: Array[Vector2] = [base_direction]
-	if branch_behavior and is_instance_valid(branch_behavior):
-		shot_directions = branch_behavior.get_shot_directions(base_direction)
-		if shot_directions.is_empty():
-			shot_directions = [base_direction]
+	shot_directions = get_branch_shot_directions(base_direction)
+	if shot_directions.is_empty():
+		shot_directions = [base_direction]
 
 	# 获取伤害倍率
-	var damage_multiplier := 1.0
-	if branch_behavior and is_instance_valid(branch_behavior):
-		damage_multiplier = maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05)
+	var damage_multiplier := get_branch_projectile_damage_multiplier()
 
 	# 对每个方向发射投射物
 	for dir in shot_directions:
@@ -125,8 +121,7 @@ func _on_shoot():
 		apply_effects_on_projectile(spawn_projectile)
 		get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_weapon_shot(base_direction)
+	notify_branch_weapon_shot(base_direction)
 
 func apply_return_on_timeout(projectile_node, stop_time : float = 0.5, return_time : float = 1.0) -> void:
 	var return_on_timeour_ins = return_on_timeout.instantiate()
@@ -136,6 +131,6 @@ func apply_return_on_timeout(projectile_node, stop_time : float = 0.5, return_ti
 	projectile_node.module_list.append(return_on_timeour_ins)
 
 func on_hit_target(target: Node) -> void:
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_target_hit(target)
+	super.on_hit_target(target)
+	notify_branch_target_hit(target)
 

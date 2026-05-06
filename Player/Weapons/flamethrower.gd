@@ -10,6 +10,7 @@ var ITEM_NAME := "Flamethrower"
 @export var max_heat: float = 120.0
 @export var heat_cooldown_rate: float = 26.0
 @export var offhand_main_damage_bonus_flat: int = 1
+const OFFHAND_DAMAGE_SOURCE: StringName = &"offhand_flamethrower_damage_bonus"
 
 ## Debug mode: 显示攻击范围扇形
 @export var debug_mode: bool = false
@@ -236,28 +237,22 @@ func _resolve_main_weapon_for_offhand_bonus() -> Weapon:
 	return weapon
 
 func _apply_offhand_main_weapon_damage_bonus(target_weapon: Weapon) -> void:
-	if target_weapon == null or not is_instance_valid(target_weapon):
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
 		return
-	if not target_weapon.has_method("apply_external_damage_mul") or not target_weapon.has_method("remove_external_damage_mul"):
-		return
-	var source_id: StringName = _get_offhand_bonus_source_id()
-	var runtime_damage: int = _resolve_weapon_runtime_damage(target_weapon)
 	var bonus_flat: int = max(1, offhand_main_damage_bonus_flat)
-	var bonus_mul: float = float(runtime_damage + bonus_flat) / float(runtime_damage)
-	target_weapon.call("remove_external_damage_mul", source_id)
-	target_weapon.call("apply_external_damage_mul", source_id, bonus_mul)
-	passive_triggered.emit(&"offhand_flamethrower_damage_bonus", {
+	PlayerData.player.call("apply_global_weapon_passive_effect", _get_offhand_bonus_source_id(), &"damage_flat", float(bonus_flat), 0.0, self, false)
+	emit_passive_trigger(&"offhand_flamethrower_damage_bonus", {
 		"bonus_flat": bonus_flat,
-		"target_weapon": target_weapon,
-	})
+		"target_weapon": null,
+	}, PASSIVE_SCOPE_GLOBAL)
 
 func _clear_offhand_main_weapon_damage_bonus() -> void:
-	if _offhand_bonus_target != null and is_instance_valid(_offhand_bonus_target) and _offhand_bonus_target.has_method("remove_external_damage_mul"):
-		_offhand_bonus_target.call("remove_external_damage_mul", _get_offhand_bonus_source_id())
+	if PlayerData.player and is_instance_valid(PlayerData.player):
+		PlayerData.player.call("remove_global_weapon_passive_effect", _get_offhand_bonus_source_id())
 	_offhand_bonus_target = null
 
 func _get_offhand_bonus_source_id() -> StringName:
-	return StringName("offhand_flamethrower_damage_bonus_%s" % str(get_instance_id()))
+	return StringName("%s_%s" % [str(OFFHAND_DAMAGE_SOURCE), str(get_instance_id())])
 
 func _resolve_weapon_runtime_damage(target_weapon: Weapon) -> int:
 	if target_weapon == null or not is_instance_valid(target_weapon):

@@ -7,12 +7,23 @@ func _on_button_up() -> void:
 	if InventoryData.ready_to_fuse_list.size() != 2:
 		return
 	
-	# Mutate first weapon with higher max level
-	var fused_item : Weapon = InventoryData.ready_to_fuse_list[0].duplicate()
-	var new_fuse: int = clampi(max(InventoryData.ready_to_fuse_list[0].fuse,InventoryData.ready_to_fuse_list[1].fuse)+1, 1, fused_item.FINAL_MAX_FUSE)
-	var new_level: int = max(InventoryData.ready_to_fuse_list[0].level,InventoryData.ready_to_fuse_list[1].level)
+	var base_item: Weapon = InventoryData.ready_to_fuse_list[0] as Weapon
+	var secondary_item: Weapon = InventoryData.ready_to_fuse_list[1] as Weapon
+	if base_item == null or secondary_item == null:
+		return
+	# The fused result is based on the first selected weapon. Its branches/modules are kept;
+	# the second weapon only contributes fuse/level and returns modules to inventory.
+	var fused_item: Weapon = base_item.duplicate() as Weapon
+	var previous_base_fuse := int(base_item.fuse)
+	var new_fuse: int = clampi(max(previous_base_fuse, int(secondary_item.fuse)) + 1, 1, fused_item.FINAL_MAX_FUSE)
+	var new_level: int = max(int(base_item.level), int(secondary_item.level))
 	fused_item.fuse = new_fuse
 	fused_item.level = clampi(new_level, 1, fused_item.max_level)
+	if fused_item.get("branch_ids") != null and base_item.get("branch_ids") != null:
+		fused_item.branch_ids = base_item.branch_ids.duplicate()
+	if fused_item.get("branch_definitions") != null and base_item.get("branch_definitions") != null:
+		fused_item.branch_definitions = base_item.branch_definitions.duplicate()
+	var fuse_increased := new_fuse > previous_base_fuse
 	for i in range(InventoryData.ready_to_fuse_list.size()):
 		var fuse_item: Weapon = InventoryData.ready_to_fuse_list[i]
 		# The fused result already keeps modules from the base source (index 0).
@@ -29,7 +40,9 @@ func _on_button_up() -> void:
 	InventoryData.ready_to_fuse_list.clear()
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui):
-		var waiting_branch_selection := ui.request_weapon_branch_selection(fused_item)
+		var waiting_branch_selection := false
+		if fuse_increased:
+			waiting_branch_selection = ui.request_weapon_branch_selection(fused_item)
 		if not waiting_branch_selection:
 			PlayerData.player.create_weapon(fused_item)
 	else:

@@ -147,8 +147,7 @@ func set_level(lv) -> void:
 	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
 	apply_level_ammo(weapon_data[lv])
 	sync_stats()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_level_applied(level)
+	notify_branch_level_applied(level)
 	_update_attack_range_shape()
 
 func sync_stats() -> void:
@@ -158,12 +157,11 @@ func sync_stats() -> void:
 	return_speed = base_return_speed
 	attack_cooldown = base_attack_cooldown
 	size = base_size
-	if branch_behavior and is_instance_valid(branch_behavior):
-		damage = max(1, int(round(float(damage) * maxf(branch_behavior.get_damage_multiplier(), 0.05))))
-		attack_range = maxf(1.0, attack_range * maxf(branch_behavior.get_attack_range_multiplier(), 0.05))
-		dash_speed = maxf(1.0, dash_speed * maxf(branch_behavior.get_dash_speed_multiplier(), 0.05))
-		return_speed = maxf(1.0, return_speed * maxf(branch_behavior.get_return_speed_multiplier(), 0.05))
-		attack_cooldown = maxf(0.02, attack_cooldown * maxf(branch_behavior.get_cooldown_multiplier(), 0.05))
+	damage = max(1, int(round(float(damage) * get_branch_damage_multiplier())))
+	attack_range = maxf(1.0, attack_range * get_branch_attack_range_multiplier())
+	dash_speed = maxf(1.0, dash_speed * get_branch_dash_speed_multiplier())
+	return_speed = maxf(1.0, return_speed * get_branch_return_speed_multiplier())
+	attack_cooldown = maxf(0.02, attack_cooldown * get_branch_cooldown_multiplier())
 	apply_module_stat_pipeline()
 	apply_size_multiplier(size)
 	calculate_damage(damage)
@@ -302,8 +300,7 @@ func _try_confirm_dash_hit(target: BaseEnemy) -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_target_hit(target)
+	notify_branch_target_hit(target)
 
 func _update_attack_range_shape() -> void:
 	var circle_shape := attack_range_shape.shape as CircleShape2D

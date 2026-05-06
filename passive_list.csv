@@ -1,0 +1,67 @@
+﻿passive_id,name,current_type,new_type,source_group,trigger_condition,effect
+pistol_continuous_move_triggered,手枪连续移动,global,,weapon_builtin,战斗中连续移动超过 6 秒，且副手技能 ready,触发手枪全局被动事件
+sniper_far_hit_triggered,狙击远距离命中,global,,weapon_builtin,主武器命中，距离 >= 400，且 ready,触发狙击全局被动事件；狙击自身还按距离提高伤害，最高约 x1.8
+shotgun_close_hit_triggered,霰弹近距离命中,global,,weapon_builtin,主武器命中，距离 < 180，且 ready,触发霰弹全局被动事件
+rocket_cluster_kill_triggered,火箭击杀聚怪,global,,weapon_builtin,主武器击杀敌人，死亡点 180 范围内还有敌人，且 ready,触发火箭全局被动事件
+chainsaw_same_target_6_hits_triggered,链锯同目标 6 次,global,,weapon_builtin,主武器连续命中同一目标 6 次，且 ready,触发链锯全局被动事件
+cannon_idle_fire_triggered,加农炮闲置,global,,weapon_builtin,战斗中 6 秒没有主武器开火或切主武器,触发加农炮全局被动事件
+orbit_player_damaged_triggered,轨道球受伤触发,global,,weapon_builtin,玩家受伤，且 ready,触发轨道球全局被动事件
+glacier_cold_snap,冰川 Cold Snap,body,,weapon_builtin,同一目标持续接触约 1.2 秒，且目标 ICD 结束,追加冻结伤害，约武器伤害 x0.35
+offhand_machine_gun_focus_buff,机枪副手 Focus,global,,weapon_builtin,机枪作为副手，当前主武器 2 秒内命中 10 次，且 ready,12 秒内所有武器攻速 x1.5、散布 x0.5；切主武器不丢失
+offhand_flamethrower_damage_bonus,火焰喷射器副手伤害,global,,weapon_builtin,火焰喷射器作为副手存在,所有其他武器获得 flat +1 伤害光环；切成主武器或移除时清除
+cannon_thermal_branch,加农炮热能分支,body,,weapon_branch,装备分支后常驻,转火焰/热量体系，伤害随热量提高，满热约 +80%
+cannon_zero_branch,加农炮零点分支,body,,weapon_branch,命中时记录的能量伤害超过目标当前 HP，且目标 ICD 结束,追加能量爆发，约记录能量伤害 x0.20
+chainsaw_explosive_branch,链锯爆炸分支,body,,weapon_branch,链锯命中使投射物逐步变大，达到 2 倍尺寸,爆炸造成物理范围伤害
+chainsaw_ricochet_branch,链锯弹射分支,body,,weapon_branch,链锯命中目标，且投射物未分裂过,向最近敌人分裂或弹射
+charged_blaster_focus_lance_branch,蓄力炮聚焦光束,body,,weapon_branch,装备分支后常驻,光束更窄、更长、更强，持续更久但转向更慢
+charged_blaster_prism_fan_branch,蓄力炮棱镜扇形,body,,weapon_branch,装备分支后常驻,主光束分裂成左/中/右多束
+dash_frost_branch,冲刺刃冰霜分支,body,,weapon_branch,冲刺刃命中,追加冻结终结伤害，并生成短时冰霜区域
+flamethrower_fire_aura_branch,火焰喷射器火焰光环,body,,weapon_branch,战斗中按周期触发,禁用原主射击，改为玩家周围火焰脉冲
+machine_gun_front_shield_branch,机枪前盾/盾分支,body,,weapon_branch,敌方攻击进入前方盾弧且有充能,阻挡攻击，消耗充能，并可打断、眩晕、击退
+machine_gun_gatling_branch,机枪加特林/双管,body,,weapon_branch,装备分支后常驻,多弹丸、散布、热量与伤害模式改变
+orbit_energy_branch,轨道球能量分支,body,,weapon_branch,命中目标位于卫星场范围内，且目标 ICD 结束,追加能量伤害，约武器伤害 x0.25
+orbit_frost_branch,轨道球冰霜分支,body,,weapon_branch,命中,转冻结伤害，并施加击退
+pistol_arc_branch,手枪电弧分支,body,,weapon_branch,命中,向附近敌人连锁能量伤害
+pistol_cryo_branch,手枪冰晶分支,body,,weapon_branch,同一目标每 3 次命中,冰晶命中附近敌人，造成冻结伤害
+rocket_napalm_branch,火箭燃烧弹分支,body,,weapon_branch,火箭爆炸,爆炸改为燃烧区域，持续火焰 tick 伤害
+rocket_salvo_branch,火箭齐射分支,body,,weapon_branch,开火,发射 3 枚追踪火箭，冷却、伤害、散布调整
+shotgun_shatter_branch,霰弹碎冰分支,body,,weapon_branch,同一目标短时间内 3 次命中,追加冻结伤害
+sniper_impact_burst_branch,狙击冲击爆破,body,,weapon_branch,命中,在命中点产生物理 AoE 爆发
+sniper_deep_pierce_branch,狙击深度穿透,body,,weapon_branch,穿透命中叠层,每次穿透提高后续穿透伤害，最多 10 层
+spear_rending_branch,长矛撕裂分支,body,,weapon_branch,2.5 秒内重复命中同一目标,逐次提高额外物理伤害，最高约 x2
+spear_multi_pierce_branch,长矛多重穿透,body,,weapon_branch,开火,改为多投射物散射，冷却 x1.3、单弹伤害 x0.55
+wmod_battle_focus_buff,Battle Focus,body,,weapon_module,连续命中同一目标，1.8 秒内不断档,叠加暴击率，最多 6 层
+wmod_bleed_edge_physical,Bleed Edge,body,,weapon_module,命中敌人,标记流血；目标移动距离足够时造成物理 tick 伤害
+wmod_brittle_trigger_freeze,Brittle Trigger,body,,weapon_module,命中冻结层数 >= 3 的目标，且目标 ICD 结束,按武器伤害比例追加物理伤害
+wmod_chill_chain_freeze,Chill Chain,body,,weapon_module,命中敌人,对附近 1 个敌人施加减速
+wmod_corrosive_touch_energy,Corrosive Touch,body,,weapon_module,命中敌人,叠腐蚀，降低护甲并提高受伤倍率
+wmod_cryo_infuser_freeze,Cryo Infuser,body,,weapon_module,命中,追加固定冻结伤害
+wmod_dot_on_hit,Erosion / DOT on Hit,body,,weapon_module,命中,施加持续伤害状态
+wmod_ember_mark_fire,Ember Mark,body,,weapon_module,命中叠印记，达到阈值,触发火焰范围爆发
+wmod_ice_prison_freeze,Ice Prison,body,,weapon_module,命中冻结层数达标目标，且概率/ICD 通过,施加强控式极低移速
+wmod_lifesteal_on_hit,Lifesteal,body,,weapon_module,命中,按伤害比例治疗玩家
+wmod_lightning_chain_on_hit,Lightning Chain,body,,weapon_module,命中,向附近敌人连锁能量伤害
+wmod_molten_splash_fire,Molten Splash,body,,weapon_module,命中,在目标后方线形区域造成火焰溅射
+wmod_momentum_haste,Momentum Haste,body,,weapon_module,命中,叠玩家移速和来源武器攻速，最多 6 层
+wmod_overheat_boost_heat,Overheat Boost,body,,weapon_module,热量武器过热期间,允许过热射击，但伤害约 x0.5
+wmod_permafrost_field_freeze,Permafrost Field,body,,weapon_module,带冻结层数的目标死亡,生成冰霜区域，持续 tick 伤害
+wmod_plague_seed_dot,Plague Seed,body,,weapon_module,命中并种下 DOT；目标死亡,DOT 向附近敌人扩散
+wmod_reload_blast_damage,Reload Blast Damage,body,,weapon_module,本武器开始换弹，且消耗过弹药,玩家周围范围伤害，随消耗弹药比例缩放
+wmod_reload_blast_knockback,Reload Blast Knockback,body,,weapon_module,本武器开始换弹，且消耗过弹药,玩家周围击退，随消耗弹药比例缩放
+wmod_reload_damage_boost,Reload Damage Boost,body,,weapon_module,本武器开始换弹，且消耗过弹药,本武器短时伤害倍率提升
+wmod_reload_move_boost,Reload Move Boost,global_player,,weapon_module,本武器开始换弹，且消耗过弹药,玩家短时移速提升
+wmod_reload_offhand_boost,Reload Offhand Boost,global,,weapon_module,本武器开始换弹，且消耗过弹药,其他武器短时伤害倍率提升
+wmod_reload_shield_boost,Reload Shield Boost,global_player,,weapon_module,本武器开始换弹，且消耗过弹药,玩家获得短时护盾
+wmod_reload_speed_link,Reload Speed Link,body,,weapon_module,本武器换弹时，另一个武器也在换弹,缩短本次换弹时间
+wmod_shatter_strike_freeze,Shatter Strike,body,,weapon_module,命中带冻结层数目标，且目标 ICD 结束,按冻结层数追加物理伤害
+wmod_stun_on_hit,Stun on Hit,body,,weapon_module,命中且概率通过,施加眩晕
+wmod_subzero_extension_freeze,Subzero Extension,body,,weapon_module,命中带冻结层数目标,延长冻结过期时间并增强减速
+wmod_trail_aoe_freeze,Trail AoE Freeze,body,,weapon_module,投射物生成后,投射物留下冻结 AoE 轨迹
+wmod_vampiric_surge,Vampiric Surge,body,,weapon_module,命中造成过量击杀伤害,把溢出伤害转为临时护盾
+wmod_bullet_size_stat,Bullet Size,body,,weapon_module_static,装备模块后常驻,调整弹体大小
+wmod_damage_up_stat,Damage Up,body,,weapon_module_static,装备模块后常驻,提高武器伤害
+wmod_pierce_stat,Pierce,body,,weapon_module_static,装备模块后常驻,提高穿透
+wmod_projectile_speed_stat,Projectile Speed,body,,weapon_module_static,装备模块后常驻,提高弹速
+wmod_heat_capacity_heat,Heat Capacity,body,,weapon_module_static,装备模块后常驻,调整热量容量
+wmod_heat_concentration_heat,Heat Concentration,body,,weapon_module_static,装备模块后常驻,调整热量相关伤害或积累
+wmod_heat_vent_heat,Heat Vent,body,,weapon_module_static,装备模块后常驻,调整散热行为

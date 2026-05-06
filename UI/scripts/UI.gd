@@ -120,6 +120,7 @@ var branch_select_panel: BranchSelectPanel
 var module_equip_selection_panel: ModuleEquipSelectionPanel
 var route_selection_panel: RouteSelectionPanel
 var reward_selection_panel: RewardSelectionPanel
+var _branch_selection_queue: Array[WeakRef] = []
 var _rest_area_merchant_active := false
 var _rest_area_primary_menu_id: StringName = &""
 var game_over_title_label: Label
@@ -220,15 +221,33 @@ func _init_reward_selection_panel() -> void:
 func request_weapon_branch_selection(weapon: Weapon) -> bool:
 	if weapon == null or not is_instance_valid(weapon):
 		return false
-	if weapon.branch_id != "":
-		return false
 	var branch_options := weapon.get_branch_options()
 	if branch_options.is_empty():
 		return false
 	if branch_select_panel == null or not is_instance_valid(branch_select_panel):
 		return false
+	if branch_select_panel.visible:
+		_branch_selection_queue.append(weakref(weapon))
+		return true
 	branch_select_panel.open_for_weapon(weapon, branch_options)
 	return true
+
+func _request_next_queued_weapon_branch_selection() -> void:
+	if branch_select_panel == null or not is_instance_valid(branch_select_panel):
+		_branch_selection_queue.clear()
+		return
+	if branch_select_panel.visible:
+		return
+	while not _branch_selection_queue.is_empty():
+		var weapon_ref: WeakRef = _branch_selection_queue.pop_front()
+		var queued_weapon := weapon_ref.get_ref() as Weapon if weapon_ref else null
+		if queued_weapon == null or not is_instance_valid(queued_weapon):
+			continue
+		var branch_options := queued_weapon.get_branch_options()
+		if branch_options.is_empty():
+			continue
+		branch_select_panel.open_for_weapon(queued_weapon, branch_options)
+		return
 
 func request_module_equip_selection(module_instance: Module, on_complete: Callable = Callable()) -> bool:
 	if module_instance == null or not is_instance_valid(module_instance):
@@ -275,6 +294,7 @@ func _finalize_branch_selected_weapon(weapon: Weapon) -> void:
 	update_upg()
 	update_gf()
 	refresh_border()
+	_request_next_queued_weapon_branch_selection()
 
 
 func _physics_process(_delta):

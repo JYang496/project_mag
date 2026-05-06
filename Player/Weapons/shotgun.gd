@@ -195,9 +195,9 @@ func _try_trigger_close_hit(target: Node) -> void:
 	if not is_offhand_skill_ready():
 		return
 	notify_offhand_skill_triggered(0.0)
-	passive_triggered.emit(&"shotgun_close_hit_triggered", {
+	emit_passive_trigger(&"shotgun_close_hit_triggered", {
 		"target": target,
 		"distance": distance,
 		"threshold": close_hit_trigger_distance,
 		"refresh": "reload",
-	})
+	}, PASSIVE_SCOPE_GLOBAL)

@@ -12,6 +12,8 @@ var projectile_spawn_plugins: Array[Node] = []
 var reload_duration_plugins: Array[Node] = []
 var _passive_icd_msec: Dictionary = {}
 var _external_damage_mul_modifiers: Dictionary = {}
+const PASSIVE_SCOPE_BODY: StringName = &"body"
+const PASSIVE_SCOPE_GLOBAL: StringName = &"global"
 
 # Common variables for weapons
 const FUSE_LEVEL_CAPS: Dictionary = {
@@ -25,6 +27,9 @@ var FINAL_MAX_LEVEL : int = 7
 var max_level : int = FUSE_LEVEL_CAPS[1]
 var _fuse_internal : int = 1
 var fuse_sprites: Dictionary = {}
+var branch_ids: Array[String] = []
+var branch_definitions: Array[WeaponBranchDefinition] = []
+var branch_behaviors: Array[WeaponBranchBehavior] = []
 var branch_id: String = ""
 var branch_definition: WeaponBranchDefinition
 var branch_behavior: WeaponBranchBehavior
@@ -170,7 +175,8 @@ func supports_melee_contact() -> bool:
 
 func _ready() -> void:
 	_initialize_ammo_system()
-	_apply_branch_behavior_if_needed()
+	_migrate_legacy_branch_state()
+	_apply_branch_behaviors_if_needed()
 	_sync_heat_trait_state()
 	_notify_shared_heat_pool_dirty()
 	call_deferred("validate_module_compatibility")
@@ -195,8 +201,13 @@ func _process_offhand_weapon_effect(_delta: float) -> void:
 	pass
 
 func set_branch(new_branch_id: String) -> bool:
+	return add_branch(new_branch_id)
+
+func add_branch(new_branch_id: String) -> bool:
 	var normalized_id := str(new_branch_id)
 	if normalized_id == "":
+		return false
+	if has_branch(normalized_id):
 		return false
 	var scene_path := scene_file_path
 	var branch_def: WeaponBranchDefinition = DataHandler.read_weapon_branch_definition(scene_path, normalized_id)
@@ -204,57 +215,314 @@ func set_branch(new_branch_id: String) -> bool:
 		return false
 	if fuse < int(branch_def.unlock_fuse):
 		return false
-	branch_id = normalized_id
-	branch_definition = branch_def
-	_apply_branch_behavior_if_needed(true)
+	if not is_branch_compatible_with_existing(branch_def):
+		return false
+	branch_ids.append(normalized_id)
+	branch_definitions.append(branch_def)
+	_apply_branch_behavior_for_definition(branch_def, normalized_id)
+	_sync_legacy_branch_refs()
 	if has_method("set_level") and level > 0:
 		set_level(clampi(level, 1, max_level))
 	return true
 
+func has_branch(check_branch_id: String) -> bool:
+	var normalized_id := str(check_branch_id)
+	if normalized_id == "":
+		return false
+	for existing_id in branch_ids:
+		if str(existing_id) == normalized_id:
+			return true
+	return false
+
 func get_branch_options() -> Array[WeaponBranchDefinition]:
-	return DataHandler.read_weapon_branch_options(scene_file_path, fuse)
+	return get_available_branch_options()
+
+func get_available_branch_options() -> Array[WeaponBranchDefinition]:
+	_migrate_legacy_branch_state()
+	if not _can_choose_more_branches():
+		return []
+	var output: Array[WeaponBranchDefinition] = []
+	var options := DataHandler.read_weapon_branch_options(scene_file_path, fuse)
+	for def in options:
+		if def == null:
+			continue
+		if has_branch(def.branch_id):
+			continue
+		if not is_branch_compatible_with_existing(def):
+			continue
+		output.append(def)
+	return output
+
+func is_branch_compatible_with_existing(candidate_def: WeaponBranchDefinition) -> bool:
+	return get_branch_incompatibility_reason(candidate_def) == ""
+
+func get_branch_incompatibility_reason(candidate_def: WeaponBranchDefinition) -> String:
+	if candidate_def == null:
+		return "invalid"
+	var candidate_id := str(candidate_def.branch_id)
+	if candidate_id == "":
+		return "invalid"
+	if has_branch(candidate_id):
+		return "duplicate"
+	for i in range(branch_ids.size()):
+		var existing_id := str(branch_ids[i])
+		if existing_id == "":
+			continue
+		var existing_def := _get_branch_definition_for_index(i, existing_id)
+		if existing_def == null:
+			continue
+		if _branch_lists_id(candidate_def.incompatible_branch_ids, existing_id):
+			return "incompatible"
+		if _branch_lists_id(existing_def.incompatible_branch_ids, candidate_id):
+			return "incompatible"
+		if _branch_groups_overlap(candidate_def.exclusive_groups, existing_def.exclusive_groups):
+			return "exclusive_group"
+	return ""
+
+func get_branch_behaviors() -> Array[WeaponBranchBehavior]:
+	var output: Array[WeaponBranchBehavior] = []
+	for behavior in branch_behaviors:
+		if behavior and is_instance_valid(behavior):
+			output.append(behavior)
+	return output
+
+func notify_branch_level_applied(applied_level: int) -> void:
+	for behavior in get_branch_behaviors():
+		behavior.on_level_applied(applied_level)
+
+func notify_branch_weapon_shot(base_direction: Vector2) -> void:
+	for behavior in get_branch_behaviors():
+		behavior.on_weapon_shot(base_direction)
+
+func notify_branch_target_hit(target: Node) -> void:
+	for behavior in get_branch_behaviors():
+		behavior.on_target_hit(target)
+
+func notify_branch_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	for behavior in get_branch_behaviors():
+		behavior.on_passive_event(event_name, detail)
+
+func get_branch_shot_directions(base_direction: Vector2, shot_count: int = -1) -> Array[Vector2]:
+	var directions: Array[Vector2] = [base_direction]
+	for behavior in get_branch_behaviors():
+		var next_directions: Array[Vector2] = []
+		for direction in directions:
+			var branch_dirs := behavior.get_shot_directions(direction, shot_count)
+			if branch_dirs.is_empty():
+				next_directions.append(direction)
+			else:
+				next_directions.append_array(branch_dirs)
+		directions = next_directions
+	return directions
+
+func get_branch_cooldown_multiplier() -> float:
+	var multiplier := 1.0
+	for behavior in get_branch_behaviors():
+		multiplier *= maxf(behavior.get_cooldown_multiplier(), 0.05)
+	return maxf(multiplier, 0.05)
+
+func get_branch_projectile_damage_multiplier() -> float:
+	var multiplier := 1.0
+	for behavior in get_branch_behaviors():
+		multiplier *= maxf(behavior.get_projectile_damage_multiplier(), 0.05)
+	return maxf(multiplier, 0.05)
+
+func get_branch_damage_multiplier() -> float:
+	var multiplier := 1.0
+	for behavior in get_branch_behaviors():
+		multiplier *= maxf(behavior.get_damage_multiplier(), 0.05)
+	return maxf(multiplier, 0.05)
+
+func get_branch_attack_range_multiplier() -> float:
+	var multiplier := 1.0
+	for behavior in get_branch_behaviors():
+		multiplier *= maxf(behavior.get_attack_range_multiplier(), 0.05)
+	return maxf(multiplier, 0.05)
+
+func get_branch_dash_speed_multiplier() -> float:
+	var multiplier := 1.0
+	for behavior in get_branch_behaviors():
+		multiplier *= maxf(behavior.get_dash_speed_multiplier(), 0.05)
+	return maxf(multiplier, 0.05)
+
+func get_branch_return_speed_multiplier() -> float:
+	var multiplier := 1.0
+	for behavior in get_branch_behaviors():
+		multiplier *= maxf(behavior.get_return_speed_multiplier(), 0.05)
+	return maxf(multiplier, 0.05)
+
+func get_branch_extra_heat_shot_multiplier() -> float:
+	var multiplier := 1.0
+	for behavior in get_branch_behaviors():
+		multiplier *= clampf(behavior.get_extra_heat_shot_multiplier(), 0.0, 1.0)
+	return clampf(multiplier, 0.0, 1.0)
+
+func get_branch_orbit_spin_speed_multiplier() -> float:
+	var multiplier := 1.0
+	for behavior in get_branch_behaviors():
+		multiplier *= maxf(behavior.get_orbit_spin_speed_multiplier(), 0.05)
+	return maxf(multiplier, 0.05)
+
+func get_branch_pierce_damage_gain_per_hit() -> int:
+	var total := 0
+	for behavior in get_branch_behaviors():
+		total += max(0, behavior.get_pierce_damage_gain_per_hit())
+	return total
+
+func get_branch_max_pierce_damage_stacks() -> int:
+	var max_stacks := 0
+	for behavior in get_branch_behaviors():
+		max_stacks = max(max_stacks, behavior.get_max_pierce_damage_stacks())
+	return max_stacks
+
+func get_branch_damage_type_override(default_type: StringName = Attack.TYPE_PHYSICAL) -> StringName:
+	var resolved_type := default_type
+	for behavior in get_branch_behaviors():
+		var next_type := Attack.normalize_damage_type(behavior.get_damage_type_override())
+		if next_type != Attack.TYPE_PHYSICAL:
+			resolved_type = next_type
+	return resolved_type
+
+func apply_branch_explosion_modifiers(config: ExplosionEffectConfig) -> void:
+	for behavior in get_branch_behaviors():
+		behavior.modify_explosion_config(config)
+
+func _migrate_legacy_branch_state() -> void:
+	if branch_ids.is_empty() and branch_id != "":
+		branch_ids.append(branch_id)
+	if branch_definitions.size() > branch_ids.size():
+		branch_definitions.resize(branch_ids.size())
+	for i in range(branch_ids.size()):
+		var existing_id := str(branch_ids[i])
+		if existing_id == "":
+			continue
+		if i < branch_definitions.size() and branch_definitions[i] != null:
+			continue
+		var def := DataHandler.read_weapon_branch_definition(scene_file_path, existing_id)
+		if def == null:
+			continue
+		while branch_definitions.size() <= i:
+			branch_definitions.append(null)
+		branch_definitions[i] = def
+	_sync_legacy_branch_refs()
+
+func _can_choose_more_branches() -> bool:
+	return true
+
+func _can_add_branch(candidate_branch_id: String) -> bool:
+	var candidate_def := DataHandler.read_weapon_branch_definition(scene_file_path, candidate_branch_id)
+	if candidate_def == null:
+		return false
+	return is_branch_compatible_with_existing(candidate_def)
+
+func _get_branch_definition_for_index(index: int, fallback_branch_id: String) -> WeaponBranchDefinition:
+	if index >= 0 and index < branch_definitions.size():
+		var existing_def := branch_definitions[index]
+		if existing_def != null:
+			return existing_def
+	return DataHandler.read_weapon_branch_definition(scene_file_path, fallback_branch_id)
+
+func _branch_lists_id(branch_id_list: PackedStringArray, lookup_id: String) -> bool:
+	var normalized_lookup := str(lookup_id)
+	if normalized_lookup == "":
+		return false
+	for item in branch_id_list:
+		if str(item) == normalized_lookup:
+			return true
+	return false
+
+func _branch_groups_overlap(a: PackedStringArray, b: PackedStringArray) -> bool:
+	for group_a in a:
+		var normalized_group := str(group_a).strip_edges()
+		if normalized_group == "":
+			continue
+		for group_b in b:
+			if normalized_group == str(group_b).strip_edges():
+				return true
+	return false
+
+func _apply_branch_behaviors_if_needed(force_refresh: bool = false) -> void:
+	_migrate_legacy_branch_state()
+	if force_refresh:
+		_clear_branch_behaviors()
+	_adopt_existing_branch_behavior_children()
+	for i in range(branch_ids.size()):
+		var current_id := str(branch_ids[i])
+		if current_id == "":
+			continue
+		if _has_branch_behavior(current_id):
+			continue
+		var def: WeaponBranchDefinition = null
+		if i < branch_definitions.size():
+			def = branch_definitions[i]
+		if def == null:
+			def = DataHandler.read_weapon_branch_definition(scene_file_path, current_id)
+			if def != null:
+				while branch_definitions.size() <= i:
+					branch_definitions.append(null)
+				branch_definitions[i] = def
+		if def == null:
+			continue
+		_apply_branch_behavior_for_definition(def, current_id)
+	_sync_legacy_branch_refs()
 
 func _apply_branch_behavior_if_needed(force_refresh: bool = false) -> void:
-	if branch_id == "":
-		if force_refresh:
-			_clear_branch_behavior()
+	_apply_branch_behaviors_if_needed(force_refresh)
+
+func _apply_branch_behavior_for_definition(def: WeaponBranchDefinition, id: String) -> void:
+	if def == null or def.behavior_scene == null:
 		return
-	if branch_definition == null or force_refresh:
-		branch_definition = DataHandler.read_weapon_branch_definition(scene_file_path, branch_id)
-	if branch_definition == null:
-		if force_refresh:
-			branch_id = ""
-			_clear_branch_behavior()
-		return
-	if branch_definition.behavior_scene == null:
-		if force_refresh:
-			_clear_branch_behavior()
-		return
-	if branch_behavior == null:
-		for child in get_children():
-			var existing := child as WeaponBranchBehavior
-			if existing:
-				branch_behavior = existing
-				branch_behavior.setup(self)
-				break
-	if branch_behavior and is_instance_valid(branch_behavior):
-		if not force_refresh:
-			return
-		_clear_branch_behavior()
-	var behavior_instance := branch_definition.behavior_scene.instantiate() as WeaponBranchBehavior
+	var behavior_instance := def.behavior_scene.instantiate() as WeaponBranchBehavior
 	if behavior_instance == null:
-		push_warning("Weapon branch '%s' behavior is not WeaponBranchBehavior on weapon '%s'." % [branch_id, name])
+		push_warning("Weapon branch '%s' behavior is not WeaponBranchBehavior on weapon '%s'." % [id, name])
 		return
-	branch_behavior = behavior_instance
-	add_child(branch_behavior)
-	branch_behavior.setup(self)
-	branch_behavior.on_weapon_ready()
+	behavior_instance.name = "Branch_%s" % id
+	behavior_instance.set_meta("branch_id", id)
+	branch_behaviors.append(behavior_instance)
+	add_child(behavior_instance)
+	behavior_instance.setup(self)
+	behavior_instance.on_weapon_ready()
+	_sync_legacy_branch_refs()
+
+func _has_branch_behavior(id: String) -> bool:
+	for behavior in branch_behaviors:
+		if behavior and is_instance_valid(behavior) and str(behavior.get_meta("branch_id", "")) == id:
+			return true
+	return false
+
+func _adopt_existing_branch_behavior_children() -> void:
+	for child in get_children():
+		var existing := child as WeaponBranchBehavior
+		if existing == null or branch_behaviors.has(existing):
+			continue
+		var existing_id := str(existing.get_meta("branch_id", ""))
+		if existing_id == "" and branch_ids.size() == 1:
+			existing_id = branch_ids[0]
+			existing.set_meta("branch_id", existing_id)
+		if existing_id == "" or not branch_ids.has(existing_id):
+			continue
+		existing.setup(self)
+		branch_behaviors.append(existing)
+
+func _sync_legacy_branch_refs() -> void:
+	branch_id = branch_ids[0] if not branch_ids.is_empty() else ""
+	branch_definition = branch_definitions[0] if not branch_definitions.is_empty() else null
+	branch_behavior = null
+	for behavior in branch_behaviors:
+		if behavior and is_instance_valid(behavior):
+			branch_behavior = behavior
+			break
+
+func _clear_branch_behaviors() -> void:
+	for behavior in branch_behaviors:
+		if behavior and is_instance_valid(behavior):
+			behavior.on_removed()
+			behavior.queue_free()
+	branch_behaviors.clear()
+	_sync_legacy_branch_refs()
 
 func _clear_branch_behavior() -> void:
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_removed()
-		branch_behavior.queue_free()
-	branch_behavior = null
+	_clear_branch_behaviors()
 
 func get_normalized_weapon_traits() -> Array[StringName]:
 	var traits: Array[StringName] = []
@@ -661,6 +929,12 @@ func get_total_external_damage_mul() -> float:
 		total *= float(mul)
 	return maxf(total, 0.05)
 
+func emit_passive_trigger(event_name: StringName, detail: Dictionary = {}, passive_scope: StringName = PASSIVE_SCOPE_BODY) -> void:
+	var output := detail.duplicate(true) if detail != null else {}
+	if not output.has("passive_scope"):
+		output["passive_scope"] = passive_scope
+	passive_triggered.emit(event_name, output)
+
 func get_projected_stats_with_module(module_instance: Module) -> Dictionary:
 	var projected := build_stat_snapshot()
 	if module_instance == null:
@@ -758,6 +1032,8 @@ func _on_tree_exited() -> void:
 	_overheat_fire_bypass_sources.clear()
 	_passive_icd_msec.clear()
 	_external_damage_mul_modifiers.clear()
+	branch_behaviors.clear()
+	branch_definitions.clear()
 	branch_behavior = null
 	branch_definition = null
 
@@ -796,8 +1072,9 @@ func clear_timed_effects_for_prepare() -> void:
 			continue
 		if module_node.has_method("clear_timed_effects_for_prepare"):
 			module_node.call("clear_timed_effects_for_prepare")
-	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.has_method("clear_timed_effects_for_prepare"):
-		branch_behavior.call("clear_timed_effects_for_prepare")
+	for behavior in get_branch_behaviors():
+		if behavior.has_method("clear_timed_effects_for_prepare"):
+			behavior.call("clear_timed_effects_for_prepare")
 
 func can_run_active_behavior() -> bool:
 	return is_main_weapon() and is_attack_phase_allowed()
@@ -838,7 +1115,7 @@ func _on_main_passive_event(event_name: StringName, detail: Dictionary) -> void:
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	if bool(detail.get("_suppress_default_emit", false)):
 		return
-	passive_triggered.emit(event_name, detail)
+	emit_passive_trigger(event_name, detail, PASSIVE_SCOPE_BODY)
 
 func _get_spent_magazine_ratio() -> float:
 	if magazine_capacity <= 0:
