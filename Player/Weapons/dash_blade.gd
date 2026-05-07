@@ -100,6 +100,9 @@ var overlapping := false
 var _tracked_enemies: Array[BaseEnemy] = []
 var _target: BaseEnemy
 var _dash_hit_confirmed: bool = false
+@export var long_dash_trigger_range_ratio: float = 0.75
+var _dash_start_distance: float = 0.0
+var _dash_start_target_id: int = 0
 
 enum AttackState {
 	IDLE,
@@ -259,6 +262,11 @@ func _start_dash() -> void:
 	if _state != AttackState.IDLE:
 		return
 	_dash_hit_confirmed = false
+	_dash_start_distance = 0.0
+	_dash_start_target_id = 0
+	if _target and is_instance_valid(_target):
+		_dash_start_distance = blade_anchor.global_position.distance_to(_target.global_position)
+		_dash_start_target_id = _target.get_instance_id()
 	_state = AttackState.DASHING
 	_set_hitbox_enabled(true)
 
@@ -300,7 +308,28 @@ func _try_confirm_dash_hit(target: BaseEnemy) -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	_try_trigger_long_dash_hit(target)
 	notify_branch_target_hit(target)
+
+func _try_trigger_long_dash_hit(target: Node) -> void:
+	if not is_main_weapon():
+		return
+	if not is_offhand_skill_ready():
+		return
+	if target == null or not is_instance_valid(target):
+		return
+	if _dash_start_target_id != target.get_instance_id():
+		return
+	var threshold := attack_range * maxf(long_dash_trigger_range_ratio, 0.0)
+	if _dash_start_distance < threshold:
+		return
+	notify_offhand_skill_triggered(0.0)
+	emit_passive_trigger(&"dash_blade_long_dash_hit_triggered", {
+		"target": target,
+		"dash_distance": _dash_start_distance,
+		"threshold": threshold,
+		"refresh": "reload",
+	}, PASSIVE_SCOPE_GLOBAL)
 
 func _update_attack_range_shape() -> void:
 	var circle_shape := attack_range_shape.shape as CircleShape2D

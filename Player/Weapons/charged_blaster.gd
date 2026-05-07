@@ -15,6 +15,9 @@ var is_firing_beam := false
 var firing_turn_timer: Timer
 var _force_active_cast: bool = false
 var _feedback_refund_accum_sec: float = 0.0
+@export var sustained_beam_trigger_sec: float = 1.0
+@export var sustained_beam_break_tolerance_sec: float = 0.25
+var _sustained_beam_state: Dictionary = {}
 
 var weapon_data = {
 	"1": {
@@ -177,9 +180,51 @@ func _execute_weapon_active(damage_multiplier: float) -> bool:
 		_apply_weapon_active_multiplier_buff(damage_multiplier)
 	return is_on_cooldown
 
-func on_beam_hit_target(target: Node, beam_profile: Dictionary = {}, hit_damage: int = 0) -> void:
+func on_beam_hit_target(target: Node, beam_profile: Dictionary = {}, hit_damage: int = 0, beam_node: Node = null) -> void:
+	_try_trigger_sustained_beam(target, beam_node)
 	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_charged_beam_hit(target, beam_profile, hit_damage)
+
+func _try_trigger_sustained_beam(target: Node, beam_node: Node) -> void:
+	if not is_main_weapon():
+		return
+	if target == null or not is_instance_valid(target):
+		return
+	if beam_node == null or not is_instance_valid(beam_node):
+		return
+	if not is_offhand_skill_ready():
+		return
+	var now_sec := Time.get_ticks_msec() / 1000.0
+	var beam_id := beam_node.get_instance_id()
+	var target_id := target.get_instance_id()
+	var state: Dictionary = _sustained_beam_state.get(beam_id, {
+		"target_id": target_id,
+		"accum": 0.0,
+		"last_hit": now_sec,
+	})
+	var last_target_id: int = int(state.get("target_id", 0))
+	var last_hit_sec: float = float(state.get("last_hit", now_sec))
+	var accum_sec: float = float(state.get("accum", 0.0))
+	var gap_sec := now_sec - last_hit_sec
+	if last_target_id == target_id and gap_sec <= maxf(sustained_beam_break_tolerance_sec, 0.0):
+		accum_sec += maxf(gap_sec, 0.0)
+	else:
+		accum_sec = 0.0
+	state["target_id"] = target_id
+	state["accum"] = accum_sec
+	state["last_hit"] = now_sec
+	_sustained_beam_state[beam_id] = state
+	if accum_sec < maxf(sustained_beam_trigger_sec, 0.1):
+		return
+	_sustained_beam_state.erase(beam_id)
+	notify_offhand_skill_triggered(0.0)
+	emit_passive_trigger(&"charged_blaster_sustained_beam_triggered", {
+		"beam": beam_node,
+		"target": target,
+		"duration": maxf(sustained_beam_trigger_sec, 0.1),
+		"break_tolerance": maxf(sustained_beam_break_tolerance_sec, 0.0),
+		"refresh": "reload",
+	}, PASSIVE_SCOPE_GLOBAL)
 
 func reduce_cooldown_remaining(seconds: float) -> float:
 	if seconds <= 0.0:

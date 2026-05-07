@@ -119,6 +119,20 @@ func _trigger_cold_snap(target: Node) -> void:
 		owner_player
 	)
 	DamageManager.apply_to_target(target, damage_data)
+	_try_emit_cold_snap_trigger(target)
+
+func _try_emit_cold_snap_trigger(target: Node) -> void:
+	if not is_main_weapon():
+		return
+	if not is_offhand_skill_ready():
+		return
+	notify_offhand_skill_triggered(0.0)
+	emit_passive_trigger(&"glacier_cold_snap_triggered", {
+		"target": target,
+		"cold_snap_damage_ratio": maxf(cold_snap_damage_ratio, 0.0),
+		"contact_threshold": maxf(cold_snap_contact_threshold_sec, 0.1),
+		"refresh": "reload",
+	}, PASSIVE_SCOPE_GLOBAL)
 
 func _collect_targets_in_cone(forward: Vector2) -> Array[Node]:
 	var output: Array[Node] = []
@@ -181,4 +195,3 @@ func _draw_attack_range() -> void:
 	draw_line(Vector2.ZERO, Vector2.UP * attack_range, outline_color, 2.0)
 	draw_line(Vector2.ZERO, Vector2.UP.rotated(-half_angle_rad) * attack_range, outline_color, 1.0)
 	draw_line(Vector2.ZERO, Vector2.UP.rotated(half_angle_rad) * attack_range, outline_color, 1.0)
-

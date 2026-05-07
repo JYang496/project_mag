@@ -93,7 +93,7 @@ func on_hit_target(target: Node) -> void:
 		if target_id == _locked_target_id:
 			_last_locked_hit_time_sec = Time.get_ticks_msec() / 1000.0
 	if source_weapon and is_instance_valid(source_weapon) and source_weapon.has_method("on_beam_hit_target"):
-		source_weapon.call("on_beam_hit_target", target, beam_profile, int(damage))
+		source_weapon.call("on_beam_hit_target", target, beam_profile, int(damage), self)
 	if source_weapon and is_instance_valid(source_weapon):
 		source_weapon.on_hit_target(target)
 

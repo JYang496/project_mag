@@ -10,8 +10,10 @@ const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
 @export var max_heat: float = 100.0
 @export var heat_cooldown_rate: float = 15.0
 @export var damage_gain_per_pierce: int = 3
+@export var unique_targets_trigger_count: int = 4
 
 var attack_range: float = 980.0
+var _projectile_unique_hit_state: Dictionary = {}
 
 var weapon_data := {
 	"1": {"level": "1", "damage": "26", "speed": "1100", "hp": "4", "fire_interval_sec": "1.5", "ammo": "16", "range": "900", "cost": "12"},
@@ -71,3 +73,42 @@ func _get_level_data(lv: String) -> Dictionary:
 		return weapon_data["1"]
 	return {"level": "1", "damage": "26", "speed": "1100", "hp": "4", "fire_interval_sec": "1.5", "ammo": "16", "range": "900", "cost": "12"}
 
+func on_projectile_hit_target(projectile: Node, target: Node) -> void:
+	_try_trigger_unique_projectile_hits(projectile, target)
+
+func _try_trigger_unique_projectile_hits(projectile: Node, target: Node) -> void:
+	if not is_main_weapon():
+		return
+	if projectile == null or not is_instance_valid(projectile):
+		return
+	if target == null or not is_instance_valid(target):
+		return
+	if not is_offhand_skill_ready():
+		return
+	var projectile_id := projectile.get_instance_id()
+	var target_id := target.get_instance_id()
+	var state: Dictionary = _projectile_unique_hit_state.get(projectile_id, {
+		"ids": {},
+		"targets": [],
+	})
+	var ids: Dictionary = state.get("ids", {})
+	if ids.has(target_id):
+		return
+	ids[target_id] = true
+	var targets: Array = state.get("targets", [])
+	targets.append(target)
+	state["ids"] = ids
+	state["targets"] = targets
+	_projectile_unique_hit_state[projectile_id] = state
+	var required_hits := maxi(1, unique_targets_trigger_count)
+	if ids.size() < required_hits:
+		return
+	_projectile_unique_hit_state.erase(projectile_id)
+	notify_offhand_skill_triggered(0.0)
+	emit_passive_trigger(&"plasma_lance_full_pierce_triggered", {
+		"projectile": projectile,
+		"target": target,
+		"hit_count": required_hits,
+		"targets": targets,
+		"refresh": "reload",
+	}, PASSIVE_SCOPE_GLOBAL)

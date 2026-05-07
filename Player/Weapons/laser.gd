@@ -8,6 +8,11 @@ extends Ranger
 
 # Weapon
 var ITEM_NAME = "Laser"
+@export var focus_channel_trigger_sec: float = 0.6
+@export var focus_channel_break_tolerance_sec: float = 0.25
+var _focus_channel_target_id: int = 0
+var _focus_channel_accum_sec: float = 0.0
+var _focus_channel_last_hit_sec: float = -999.0
 
 var weapon_data = {
 	"1": {
@@ -85,3 +90,40 @@ func _on_shoot():
 func _on_oc_timer_timeout() -> void:
 	remove_weapon()
 
+func on_hit_target(target: Node) -> void:
+	super.on_hit_target(target)
+	_try_trigger_focus_channel(target)
+
+func _try_trigger_focus_channel(target: Node) -> void:
+	if not is_main_weapon():
+		_reset_focus_channel()
+		return
+	if target == null or not is_instance_valid(target):
+		_reset_focus_channel()
+		return
+	if not is_offhand_skill_ready():
+		return
+	var now_sec := Time.get_ticks_msec() / 1000.0
+	var target_id := target.get_instance_id()
+	var gap_sec := now_sec - _focus_channel_last_hit_sec
+	if _focus_channel_target_id == target_id and gap_sec <= maxf(focus_channel_break_tolerance_sec, 0.0):
+		_focus_channel_accum_sec += maxf(gap_sec, 0.0)
+	else:
+		_focus_channel_target_id = target_id
+		_focus_channel_accum_sec = 0.0
+	_focus_channel_last_hit_sec = now_sec
+	if _focus_channel_accum_sec < maxf(focus_channel_trigger_sec, 0.1):
+		return
+	_reset_focus_channel()
+	notify_offhand_skill_triggered(0.0)
+	emit_passive_trigger(&"laser_focus_channel_triggered", {
+		"target": target,
+		"duration": maxf(focus_channel_trigger_sec, 0.1),
+		"break_tolerance": maxf(focus_channel_break_tolerance_sec, 0.0),
+		"refresh": "reload",
+	}, PASSIVE_SCOPE_GLOBAL)
+
+func _reset_focus_channel() -> void:
+	_focus_channel_target_id = 0
+	_focus_channel_accum_sec = 0.0
+	_focus_channel_last_hit_sec = -999.0
