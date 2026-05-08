@@ -12,5 +12,6 @@ display_name = "Multi-Pierce"
 description = "Fires 3-5 spears in a spread pattern. Each spear deals reduced damage."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
+sort_order = 10
 weapon_scene = ExtResource("2_weapon_scene")
 behavior_scene = ExtResource("3_behavior")

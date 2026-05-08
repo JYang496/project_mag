@@ -18,9 +18,6 @@ func on_removed() -> void:
 	set_process(false)
 	_pulse_elapsed_sec = 0.0
 
-func disables_primary_fire() -> bool:
-	return true
-
 func _process(delta: float) -> void:
 	if weapon == null or not is_instance_valid(weapon):
 		set_process(false)

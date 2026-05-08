@@ -65,6 +65,8 @@ func _on_language_changed(_locale: String) -> void:
 		open_for_weapon(_weapon, _branch_defs_cache)
 
 func _sort_branch_defs(a: WeaponBranchDefinition, b: WeaponBranchDefinition) -> bool:
+	if int(a.sort_order) != int(b.sort_order):
+		return int(a.sort_order) < int(b.sort_order)
 	var name_a := LocalizationManager.get_branch_display_name(a).to_lower()
 	var name_b := LocalizationManager.get_branch_display_name(b).to_lower()
 	if name_a == name_b:

@@ -105,15 +105,13 @@ func set_level(lv):
 	apply_level_ammo(level_data)
 	sync_stats()
 	_sync_speed_change_effect_config()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_level_applied(level)
+	notify_branch_level_applied(level)
 
 
 func _on_shoot():
 	is_on_cooldown = true
 	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		cooldown *= maxf(branch_behavior.get_cooldown_multiplier(), 0.05)
+	cooldown *= get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
 	var spawn_projectile = spawn_projectile_from_scene(projectile_template)
@@ -121,8 +119,7 @@ func _on_shoot():
 		return
 	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
 	var runtime_damage: int = get_runtime_shot_damage()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		runtime_damage = maxi(1, int(round(float(runtime_damage) * maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05))))
+	runtime_damage = maxi(1, int(round(float(runtime_damage) * get_branch_projectile_damage_multiplier())))
 	spawn_projectile.damage = runtime_damage
 	spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
 	spawn_projectile.hp = projectile_hits
@@ -134,8 +131,7 @@ func _on_shoot():
 	apply_spin(spawn_projectile)
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_weapon_shot(projectile_direction)
+	notify_branch_weapon_shot(projectile_direction)
 
 func apply_spin(projectile_node) -> void:
 	var spin_movement_ins = spin_effect.instantiate()
@@ -165,9 +161,9 @@ func on_projectile_hit_target(projectile: Projectile, _target: Node) -> void:
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
 	_update_same_target_hit_trigger(target)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_chainsaw_target_hit(target, _last_hit_projectile)
-		branch_behavior.on_target_hit(target)
+	for behavior in get_branch_behaviors():
+		behavior.on_chainsaw_target_hit(target, _last_hit_projectile)
+		behavior.on_target_hit(target)
 
 func _update_same_target_hit_trigger(target: Node) -> void:
 	if not is_main_weapon():
@@ -198,8 +194,7 @@ func _update_same_target_hit_trigger(target: Node) -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_passive_event(event_name, detail)
+	notify_branch_passive_event(event_name, detail)
 
 func split_projectile_with_ricochet(source: Projectile) -> void:
 	if source == null or not is_instance_valid(source):

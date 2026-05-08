@@ -12,6 +12,6 @@ display_name = "Long Cone Flame"
 description = "Extends flamethrower cone reach for safer mid-range burn control."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
-exclusive_groups = PackedStringArray("flamethrower_primary_mode")
+sort_order = 10
 weapon_scene = ExtResource("2_weapon_scene")
 behavior_scene = ExtResource("3_behavior")

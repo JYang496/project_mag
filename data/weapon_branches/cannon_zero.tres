@@ -12,6 +12,6 @@ display_name = "Zero Cannon"
 description = "Energy cannon branch with low-HP execute bursts against marked enemies."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
-exclusive_groups = PackedStringArray("damage_type_override")
+sort_order = 20
 weapon_scene = ExtResource("2_weapon_scene")
 behavior_scene = ExtResource("3_behavior")

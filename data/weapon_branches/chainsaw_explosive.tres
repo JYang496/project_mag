@@ -12,6 +12,6 @@ display_name = "Explosive Saw"
 description = "First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
-exclusive_groups = PackedStringArray("chainsaw_first_hit_behavior")
+sort_order = 20
 weapon_scene = ExtResource("2_weapon_scene")
 behavior_scene = ExtResource("3_behavior")

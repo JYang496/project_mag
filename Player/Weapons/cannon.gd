@@ -37,8 +37,7 @@ func set_level(lv) -> void:
 	apply_level_ammo(level_data)
 	attack_range = float(level_data.get("range", attack_range))
 	sync_stats()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_level_applied(level)
+	notify_branch_level_applied(level)
 
 func request_primary_fire() -> bool:
 	if not is_attack_phase_allowed():
@@ -72,8 +71,7 @@ func _on_windup_timer_timeout() -> void:
 func _on_shoot() -> void:
 	is_on_cooldown = true
 	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		cooldown *= maxf(branch_behavior.get_cooldown_multiplier(), 0.05)
+	cooldown *= get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
 
@@ -83,13 +81,9 @@ func _on_shoot() -> void:
 
 	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
 	var runtime_damage := get_runtime_shot_damage()
-	var damage_multiplier := 1.0
-	if branch_behavior and is_instance_valid(branch_behavior):
-		damage_multiplier = maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05)
+	var damage_multiplier := get_branch_projectile_damage_multiplier()
 	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
-	var damage_type: StringName = Attack.TYPE_PHYSICAL
-	if branch_behavior and is_instance_valid(branch_behavior):
-		damage_type = Attack.normalize_damage_type(branch_behavior.get_damage_type_override())
+	var damage_type: StringName = get_branch_damage_type_override(Attack.TYPE_PHYSICAL)
 	spawn_projectile.damage_type = damage_type
 	spawn_projectile.hp = max(1, projectile_hits)
 	spawn_projectile.global_position = global_position
@@ -102,8 +96,7 @@ func _on_shoot() -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_target_hit(target)
+	notify_branch_target_hit(target)
 
 func _on_cooldown_timer_timeout() -> void:
 	is_on_cooldown = false

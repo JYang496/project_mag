@@ -104,8 +104,7 @@ func set_level(lv):
 	apply_level_ammo(weapon_data[lv])
 	duration = float(weapon_data[lv]["duration"])
 	sync_stats()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_level_applied(level)
+	notify_branch_level_applied(level)
 
 func _on_shoot():
 	if is_on_cooldown and not _force_active_cast:
@@ -182,8 +181,8 @@ func _execute_weapon_active(damage_multiplier: float) -> bool:
 
 func on_beam_hit_target(target: Node, beam_profile: Dictionary = {}, hit_damage: int = 0, beam_node: Node = null) -> void:
 	_try_trigger_sustained_beam(target, beam_node)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_charged_beam_hit(target, beam_profile, hit_damage)
+	for behavior in get_branch_behaviors():
+		behavior.on_charged_beam_hit(target, beam_profile, hit_damage)
 
 func _try_trigger_sustained_beam(target: Node, beam_node: Node) -> void:
 	if not is_main_weapon():
@@ -254,14 +253,23 @@ func add_feedback_refund_accum_sec(seconds: float) -> void:
 	_feedback_refund_accum_sec += seconds
 
 func _get_charged_turn_speed_multiplier() -> float:
-	if branch_behavior and is_instance_valid(branch_behavior):
-		return maxf(branch_behavior.get_charged_turn_speed_multiplier(), 0.05)
-	return 1.0
+	var multiplier := 1.0
+	for behavior in get_branch_behaviors():
+		multiplier *= maxf(behavior.get_charged_turn_speed_multiplier(), 0.05)
+	return maxf(multiplier, 0.05)
 
 func _get_charged_beam_profiles(base_profile: Dictionary) -> Array[Dictionary]:
-	if branch_behavior and is_instance_valid(branch_behavior):
-		return branch_behavior.get_charged_beam_profiles(base_profile)
-	return [base_profile]
+	var profiles: Array[Dictionary] = [base_profile]
+	for behavior in get_branch_behaviors():
+		var next_profiles: Array[Dictionary] = []
+		for profile in profiles:
+			var branch_profiles := behavior.get_charged_beam_profiles(profile)
+			if branch_profiles.is_empty():
+				next_profiles.append(profile)
+			else:
+				next_profiles.append_array(branch_profiles)
+		profiles = next_profiles
+	return profiles
 
 func _spawn_beam_from_profile(profile: Dictionary) -> float:
 	var beam_blast_ins = beam_blast.instantiate()

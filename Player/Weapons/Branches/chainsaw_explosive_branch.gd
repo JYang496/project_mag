@@ -25,8 +25,10 @@ func get_projectile_damage_multiplier() -> float:
 func on_chainsaw_target_hit(_target: Node, projectile: Projectile) -> void:
 	if projectile == null or not is_instance_valid(projectile):
 		return
+	var newly_armed := not bool(projectile.get_meta("chainsaw_explosive_started", false))
 	projectile.set_meta("chainsaw_explosive_started", true)
-	projectile.base_displacement *= clampf(slow_speed_multiplier, 0.05, 1.0)
+	if newly_armed:
+		projectile.base_displacement *= clampf(slow_speed_multiplier, 0.05, 1.0)
 	var projectile_id: int = projectile.get_instance_id()
 	var entry: Dictionary = _armed_projectiles.get(projectile_id, {})
 	var sprite: Sprite2D = projectile.get_node_or_null("Bullet/BulletSprite") as Sprite2D

@@ -12,6 +12,6 @@ display_name = "Focus Lance"
 description = "Single-target boss beam: thinner, longer, harder-hitting sustained lance with first-hit lock."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
-exclusive_groups = PackedStringArray("beam_shape")
+sort_order = 10
 weapon_scene = ExtResource("2_weapon_scene")
 behavior_scene = ExtResource("3_behavior")

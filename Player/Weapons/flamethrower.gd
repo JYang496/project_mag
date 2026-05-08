@@ -49,15 +49,13 @@ func set_level(lv) -> void:
 	heat_cool_rate = heat_cooldown_rate
 	configure_heat(heat_per_shot, heat_max_value, heat_cool_rate)
 	sync_stats()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_level_applied(level)
+	notify_branch_level_applied(level)
 	_sync_detect_radius()
 
 func _on_shoot() -> void:
 	is_on_cooldown = true
 	var cooldown: float = get_effective_cooldown(attack_cooldown)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		cooldown *= branch_behavior.get_cooldown_multiplier()
+	cooldown *= get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = maxf(cooldown, 0.02)
 	cooldown_timer.start()
 	_emit_flame_burst()
@@ -66,8 +64,9 @@ func supports_projectiles() -> bool:
 	return false
 
 func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
-	if branch_behavior and is_instance_valid(branch_behavior) and branch_behavior.disables_primary_fire():
-		return
+	for behavior in get_branch_behaviors():
+		if behavior.disables_primary_fire():
+			return
 	if not can_run_active_behavior():
 		return
 	if not pressed:
@@ -97,9 +96,7 @@ func _apply_fire_damage(target: Node) -> void:
 	_attacked_target_ids[target.get_instance_id()] = true
 
 	var runtime_damage: int = get_runtime_shot_damage()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		var damage_multiplier := branch_behavior.get_damage_multiplier()
-		runtime_damage = max(1, int(round(float(runtime_damage) * maxf(damage_multiplier, 0.05))))
+	runtime_damage = max(1, int(round(float(runtime_damage) * get_branch_damage_multiplier())))
 	var knock_back := {
 		"amount": 0,
 		"angle": Vector2.ZERO
@@ -202,15 +199,13 @@ func _draw_attack_range() -> void:
 	draw_line(Vector2.ZERO, Vector2.UP.rotated(half_angle_rad) * effective_range, outline_color, 1.0)
 
 func _get_effective_attack_range() -> float:
-	var range_multiplier: float = 1.0
-	if branch_behavior and is_instance_valid(branch_behavior):
-		range_multiplier = branch_behavior.get_attack_range_multiplier()
+	var range_multiplier: float = get_branch_attack_range_multiplier()
 	return maxf(attack_range * maxf(range_multiplier, 0.1), 1.0)
 
 func _get_effective_cone_half_angle_deg() -> float:
 	var angle_multiplier: float = 1.0
-	if branch_behavior and is_instance_valid(branch_behavior):
-		angle_multiplier = branch_behavior.get_cone_half_angle_multiplier()
+	for behavior in get_branch_behaviors():
+		angle_multiplier *= maxf(behavior.get_cone_half_angle_multiplier(), 0.1)
 	return maxf(cone_half_angle_deg * maxf(angle_multiplier, 0.1), 1.0)
 
 func _update_offhand_main_weapon_damage_bonus() -> void:

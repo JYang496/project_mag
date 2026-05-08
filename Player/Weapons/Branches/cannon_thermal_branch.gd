@@ -27,9 +27,6 @@ func get_projectile_damage_multiplier() -> float:
 	var heat_ratio := clampf(float(weapon.call("get_heat_ratio")), 0.0, 1.0)
 	return 1.0 + heat_ratio * maxf(heat_damage_bonus_at_full_heat, 0.0)
 
-func get_damage_type_override() -> StringName:
-	return Attack.TYPE_FIRE
-
 func _apply_runtime_traits(enable: bool) -> void:
 	if weapon == null or not is_instance_valid(weapon):
 		return

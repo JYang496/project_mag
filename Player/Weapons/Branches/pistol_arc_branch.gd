@@ -12,9 +12,6 @@ class_name PistolArcBranch
 @export var trail_sample_interval_sec: float = 0.010
 @export var trail_fade_sec: float = 0.2
 
-func get_damage_type_override() -> StringName:
-	return Attack.TYPE_ENERGY
-
 func get_projectile_trail_config() -> Dictionary:
 	return {
 		"trail_color": trail_color,

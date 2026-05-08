@@ -407,7 +407,7 @@ func _migrate_legacy_branch_state() -> void:
 	_sync_legacy_branch_refs()
 
 func _can_choose_more_branches() -> bool:
-	return true
+	return branch_ids.size() < 2
 
 func _can_add_branch(candidate_branch_id: String) -> bool:
 	var candidate_def := DataHandler.read_weapon_branch_definition(scene_file_path, candidate_branch_id)

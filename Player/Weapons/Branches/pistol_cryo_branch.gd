@@ -17,9 +17,6 @@ var _target_hit_counter: Dictionary = {}
 func on_removed() -> void:
 	_target_hit_counter.clear()
 
-func get_damage_type_override() -> StringName:
-	return Attack.TYPE_FREEZE
-
 func get_projectile_trail_config() -> Dictionary:
 	return {
 		"trail_color": trail_color,

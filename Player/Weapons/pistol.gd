@@ -91,8 +91,7 @@ func set_level(lv) -> void:
 	base_attack_cooldown = float(level_data["fire_interval_sec"])
 	apply_level_ammo(level_data)
 	sync_stats()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_level_applied(level)
+	notify_branch_level_applied(level)
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
@@ -153,8 +152,7 @@ func _on_shoot() -> void:
 
 	is_on_cooldown = true
 	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		cooldown *= maxf(branch_behavior.get_cooldown_multiplier(), 0.05)
+	cooldown *= get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
 
@@ -166,15 +164,11 @@ func _on_shoot() -> void:
 	if projectile_direction == Vector2.ZERO:
 		return
 	spawn_projectile.damage = get_runtime_shot_damage()
-	if branch_behavior and is_instance_valid(branch_behavior):
-		spawn_projectile.damage = max(
-			1,
-			int(round(float(spawn_projectile.damage) * maxf(branch_behavior.get_projectile_damage_multiplier(), 0.05)))
-		)
-	var damage_type: StringName = Attack.TYPE_PHYSICAL
-	if branch_behavior and is_instance_valid(branch_behavior):
-		damage_type = Attack.normalize_damage_type(branch_behavior.get_damage_type_override())
-	spawn_projectile.damage_type = damage_type
+	spawn_projectile.damage = max(
+		1,
+		int(round(float(spawn_projectile.damage) * get_branch_projectile_damage_multiplier()))
+	)
+	spawn_projectile.damage_type = get_branch_damage_type_override(Attack.TYPE_PHYSICAL)
 	spawn_projectile.hp = projectile_hits
 	spawn_projectile.global_position = global_position
 	spawn_projectile.size = size
@@ -184,8 +178,7 @@ func _on_shoot() -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
-	if branch_behavior and is_instance_valid(branch_behavior):
-		branch_behavior.on_target_hit(target)
+	notify_branch_target_hit(target)
 
 func _resolve_auto_aim_direction() -> Vector2:
 	var target := _find_closest_enemy()
