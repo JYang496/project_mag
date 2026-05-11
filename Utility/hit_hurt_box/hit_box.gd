@@ -51,14 +51,19 @@ func apply_attack(area) -> void:
 	# Guard duplicate enter/overlap events in the same short window.
 	damage_data.dedupe_token = StringName("hitbox_once_%d_%d" % [get_instance_id(), target.get_instance_id()])
 	damage_data.dedupe_window_sec = 0.02
+	var damage_result: DamageResult
 	if area is HurtBox:
-		DamageManager.apply_to_hurt_box(area, damage_data)
+		damage_result = DamageManager.apply_to_hurt_box_result(area, damage_data)
 	else:
-		DamageManager.apply_to_target(target, damage_data)
+		damage_result = DamageManager.apply_to_target_result(target, damage_data)
+	if hitbox_owner and damage_result.applied and hitbox_owner.has_method("on_hit_target_damage_dealt"):
+		hitbox_owner.call("on_hit_target_damage_dealt", target, damage_type, damage_result.final_damage)
 	var owner_player := damage_data.source_player as Player
 	if owner_player and is_instance_valid(owner_player):
 		owner_player.apply_bonus_hit_if_needed(target)
-	if hitbox_owner and hitbox_owner.has_method("on_hit_target"):
+	if hitbox_owner and hitbox_owner.has_method("on_hit_target_with_damage_type"):
+		hitbox_owner.call("on_hit_target_with_damage_type", target, damage_type)
+	elif hitbox_owner and hitbox_owner.has_method("on_hit_target"):
 		hitbox_owner.on_hit_target(target)
 	if hitbox_owner.has_method("enemy_hit"):
 		hitbox_owner.enemy_hit(1)	

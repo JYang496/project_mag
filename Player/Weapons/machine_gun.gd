@@ -14,17 +14,17 @@ var as_timer: Timer
 
 const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
 
-@export var heat_accumulation: float = 3
+@export var heat_accumulation: float = 4
 @export var max_heat: float = 100.0
-@export var heat_cooldown_rate: float = 20.0
+@export var heat_cooldown_rate: float = 6.0
 @export_range(5.0, 80.0, 1.0) var front_fire_half_angle_deg: float = 35.0
-@export var offhand_trigger_window_sec: float = 2.0
-@export var offhand_trigger_hits: int = 10
 @export var offhand_buff_duration_sec: float = 12.0
 @export var offhand_main_attack_speed_mult: float = 1.5
 @export var offhand_main_spread_mult: float = 0.5
+@export var heat_stabilized_duration_sec: float = 8.0
+@export var heat_stabilized_full_decay_mul: float = 0.5
+@export var heat_stabilized_full_cost_mul: float = 0.75
 var attack_range: float = 800.0
-var _offhand_hit_timestamps_msec: Array[int] = []
 var _offhand_buff_expires_at_msec: int = 0
 var _offhand_buff_target: Weapon = null
 
@@ -123,7 +123,6 @@ func set_level(lv):
 
 	base_attack_cooldown = float(level_data["fire_interval_sec"])
 	apply_level_ammo(level_data)
-	attack_range = float(level_data.get("range", attack_range))
 	heat_per_shot = heat_accumulation
 	heat_max_value = max_heat
 	heat_cool_rate = heat_cooldown_rate
@@ -177,56 +176,42 @@ func _update_offhand_focus_runtime() -> void:
 	if now_msec >= _offhand_buff_expires_at_msec:
 		_clear_offhand_main_focus_buff()
 
-func _on_offhand_passive_event(event_name: StringName, detail: Dictionary) -> void:
-	super._on_offhand_passive_event(event_name, detail)
-	if event_name != &"on_hit":
+func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	super._on_passive_event(event_name, detail)
+	if event_name != &"on_reload_started":
 		return
-	if not bool(detail.get("source_is_main", false)):
+	if detail.get("source_weapon", null) != self:
 		return
-	var source_variant: Variant = detail.get("source_weapon", null)
-	var source_weapon := source_variant as Weapon
-	if source_weapon == null or not is_instance_valid(source_weapon):
-		return
-	var current_main := _resolve_current_main_weapon_for_offhand()
-	if current_main == null or source_weapon != current_main:
-		return
-	var now_msec := Time.get_ticks_msec()
-	_cleanup_offhand_hit_window(now_msec)
 	if not is_offhand_skill_ready():
 		return
-	_offhand_hit_timestamps_msec.append(now_msec)
-	_cleanup_offhand_hit_window(now_msec)
-	if _offhand_hit_timestamps_msec.size() < max(1, offhand_trigger_hits):
+	var spent_ratio := clampf(float(detail.get("spent_ratio", 0.0)), 0.0, 1.0)
+	if spent_ratio <= 0.0:
 		return
-	_offhand_hit_timestamps_msec.clear()
-	var buff_duration_sec := maxf(offhand_buff_duration_sec, 0.05)
+	var duration_sec := maxf(heat_stabilized_duration_sec, 0.05)
+	var decay_mul := lerpf(1.0, clampf(heat_stabilized_full_decay_mul, 0.0, 1.0), spent_ratio)
+	var cost_mul := lerpf(1.0, clampf(heat_stabilized_full_cost_mul, 0.0, 1.0), spent_ratio)
 	notify_offhand_skill_triggered(0.0)
-	_offhand_buff_expires_at_msec = now_msec + int(buff_duration_sec * 1000.0)
 	if PlayerData.player and is_instance_valid(PlayerData.player):
-		PlayerData.player.call("apply_global_weapon_passive_effect", _get_offhand_focus_attack_speed_source_id(), &"attack_speed_mul", maxf(offhand_main_attack_speed_mult, 0.1), buff_duration_sec, self, true)
-		PlayerData.player.call("apply_global_weapon_passive_effect", _get_offhand_focus_spread_source_id(), &"spread_mul", maxf(offhand_main_spread_mult, 0.01), buff_duration_sec, self, true)
-	emit_passive_trigger(&"offhand_machine_gun_focus_buff", {
-		"trigger_hits": max(1, offhand_trigger_hits),
-		"trigger_window": maxf(offhand_trigger_window_sec, 0.1),
-		"duration": buff_duration_sec,
+		PlayerData.player.call("apply_heat_stabilized", duration_sec, decay_mul, cost_mul)
+	emit_passive_trigger(&"machine_gun_heat_stabilized", {
+		"trigger": "reload_started",
+		"spent_ratio": spent_ratio,
+		"duration": duration_sec,
 		"cooldown": 0.0,
-		"attack_speed_multiplier": maxf(offhand_main_attack_speed_mult, 0.1),
-		"spread_multiplier": maxf(offhand_main_spread_mult, 0.01),
-		"spread_applied": true,
+		"decay_multiplier": decay_mul,
+		"cost_multiplier": cost_mul,
 		"target_weapon": null,
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func _on_enter_main_weapon_role() -> void:
-	_offhand_hit_timestamps_msec.clear()
+	pass
 
 func _on_tree_exiting() -> void:
 	_clear_offhand_main_focus_buff()
-	_offhand_hit_timestamps_msec.clear()
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
 	_clear_offhand_main_focus_buff()
-	_offhand_hit_timestamps_msec.clear()
 
 func _get_level_data(lv: String) -> Dictionary:
 	if weapon_data.has(lv):
@@ -261,27 +246,6 @@ func _constrain_to_forward_cone(direction: Vector2, forward: Vector2) -> Vector2
 	if absf(angle) <= cone_rad:
 		return normalized_dir
 	return normalized_forward.rotated(signf(angle) * cone_rad).normalized()
-
-func _resolve_current_main_weapon_for_offhand() -> Weapon:
-	if PlayerData.player_weapon_list.is_empty():
-		return null
-	PlayerData.sanitize_main_weapon_index()
-	var idx := PlayerData.main_weapon_index
-	if idx < 0 or idx >= PlayerData.player_weapon_list.size():
-		return null
-	var weapon_variant: Variant = PlayerData.player_weapon_list[idx]
-	var weapon := weapon_variant as Weapon
-	if weapon == null or not is_instance_valid(weapon) or weapon == self:
-		return null
-	return weapon
-
-func _cleanup_offhand_hit_window(now_msec: int) -> void:
-	var window_msec := int(maxf(offhand_trigger_window_sec, 0.1) * 1000.0)
-	while not _offhand_hit_timestamps_msec.is_empty():
-		var oldest := _offhand_hit_timestamps_msec[0]
-		if now_msec - oldest <= window_msec:
-			break
-		_offhand_hit_timestamps_msec.remove_at(0)
 
 func _apply_offhand_main_focus_buff(target_weapon: Weapon) -> bool:
 	if target_weapon == null or not is_instance_valid(target_weapon):

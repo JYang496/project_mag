@@ -15,9 +15,10 @@ var is_firing_beam := false
 var firing_turn_timer: Timer
 var _force_active_cast: bool = false
 var _feedback_refund_accum_sec: float = 0.0
-@export var sustained_beam_trigger_sec: float = 1.0
-@export var sustained_beam_break_tolerance_sec: float = 0.25
-var _sustained_beam_state: Dictionary = {}
+@export var simultaneous_hit_trigger_count: int = 3
+var _beam_multi_hit_target_ids: Dictionary = {}
+var _beam_multi_hit_targets: Array[Node] = []
+var _beam_multi_hit_triggered: bool = false
 
 var weapon_data = {
 	"1": {
@@ -111,6 +112,7 @@ func _on_shoot():
 		return
 	is_on_cooldown = true
 	_feedback_refund_accum_sec = 0.0
+	_reset_beam_multi_hit_trigger()
 	var base_profile := {
 		"direction": beam_local_forward.normalized(),
 		"range_multiplier": 1.0,
@@ -180,50 +182,43 @@ func _execute_weapon_active(damage_multiplier: float) -> bool:
 	return is_on_cooldown
 
 func on_beam_hit_target(target: Node, beam_profile: Dictionary = {}, hit_damage: int = 0, beam_node: Node = null) -> void:
-	_try_trigger_sustained_beam(target, beam_node)
+	_try_trigger_simultaneous_beam_hits(target, beam_node)
 	for behavior in get_branch_behaviors():
 		behavior.on_charged_beam_hit(target, beam_profile, hit_damage)
 
-func _try_trigger_sustained_beam(target: Node, beam_node: Node) -> void:
+func _try_trigger_simultaneous_beam_hits(target: Node, beam_node: Node) -> void:
 	if not is_main_weapon():
 		return
 	if target == null or not is_instance_valid(target):
 		return
 	if beam_node == null or not is_instance_valid(beam_node):
 		return
+	if _beam_multi_hit_triggered:
+		return
 	if not is_offhand_skill_ready():
 		return
-	var now_sec := Time.get_ticks_msec() / 1000.0
-	var beam_id := beam_node.get_instance_id()
 	var target_id := target.get_instance_id()
-	var state: Dictionary = _sustained_beam_state.get(beam_id, {
-		"target_id": target_id,
-		"accum": 0.0,
-		"last_hit": now_sec,
-	})
-	var last_target_id: int = int(state.get("target_id", 0))
-	var last_hit_sec: float = float(state.get("last_hit", now_sec))
-	var accum_sec: float = float(state.get("accum", 0.0))
-	var gap_sec := now_sec - last_hit_sec
-	if last_target_id == target_id and gap_sec <= maxf(sustained_beam_break_tolerance_sec, 0.0):
-		accum_sec += maxf(gap_sec, 0.0)
-	else:
-		accum_sec = 0.0
-	state["target_id"] = target_id
-	state["accum"] = accum_sec
-	state["last_hit"] = now_sec
-	_sustained_beam_state[beam_id] = state
-	if accum_sec < maxf(sustained_beam_trigger_sec, 0.1):
+	if _beam_multi_hit_target_ids.has(target_id):
 		return
-	_sustained_beam_state.erase(beam_id)
+	_beam_multi_hit_target_ids[target_id] = true
+	_beam_multi_hit_targets.append(target)
+	var required_hits := maxi(1, simultaneous_hit_trigger_count)
+	if _beam_multi_hit_target_ids.size() < required_hits:
+		return
+	_beam_multi_hit_triggered = true
 	notify_offhand_skill_triggered(0.0)
-	emit_passive_trigger(&"charged_blaster_sustained_beam_triggered", {
+	emit_passive_trigger(&"charged_blaster_multi_hit_triggered", {
 		"beam": beam_node,
 		"target": target,
-		"duration": maxf(sustained_beam_trigger_sec, 0.1),
-		"break_tolerance": maxf(sustained_beam_break_tolerance_sec, 0.0),
+		"hit_count": required_hits,
+		"targets": _beam_multi_hit_targets.duplicate(),
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
+
+func _reset_beam_multi_hit_trigger() -> void:
+	_beam_multi_hit_target_ids.clear()
+	_beam_multi_hit_targets.clear()
+	_beam_multi_hit_triggered = false
 
 func reduce_cooldown_remaining(seconds: float) -> float:
 	if seconds <= 0.0:

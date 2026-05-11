@@ -8,11 +8,11 @@ extends Ranger
 
 # Weapon
 var ITEM_NAME = "Laser"
-@export var focus_channel_trigger_sec: float = 0.6
-@export var focus_channel_break_tolerance_sec: float = 0.25
-var _focus_channel_target_id: int = 0
-var _focus_channel_accum_sec: float = 0.0
-var _focus_channel_last_hit_sec: float = -999.0
+@export var mouse_still_trigger_sec: float = 1.0
+@export var mouse_still_max_total_distance: float = 24.0
+var _mouse_still_accum_sec: float = 0.0
+var _mouse_still_distance: float = 0.0
+var _last_mouse_position: Vector2 = Vector2.INF
 
 var weapon_data = {
 	"1": {
@@ -76,6 +76,10 @@ func set_level(lv):
 	apply_level_ammo(weapon_data[lv])
 	sync_stats()
 
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	_update_mouse_still_trigger(delta)
+
 func _on_shoot():
 	var beam_ins = beam.instantiate()
 	beam_ins.global_position = self.global_position
@@ -92,38 +96,36 @@ func _on_oc_timer_timeout() -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
-	_try_trigger_focus_channel(target)
 
-func _try_trigger_focus_channel(target: Node) -> void:
+func _update_mouse_still_trigger(delta: float) -> void:
 	if not is_main_weapon():
-		_reset_focus_channel()
-		return
-	if target == null or not is_instance_valid(target):
-		_reset_focus_channel()
+		_reset_mouse_still_window()
 		return
 	if not is_offhand_skill_ready():
+		_reset_mouse_still_window()
 		return
-	var now_sec := Time.get_ticks_msec() / 1000.0
-	var target_id := target.get_instance_id()
-	var gap_sec := now_sec - _focus_channel_last_hit_sec
-	if _focus_channel_target_id == target_id and gap_sec <= maxf(focus_channel_break_tolerance_sec, 0.0):
-		_focus_channel_accum_sec += maxf(gap_sec, 0.0)
-	else:
-		_focus_channel_target_id = target_id
-		_focus_channel_accum_sec = 0.0
-	_focus_channel_last_hit_sec = now_sec
-	if _focus_channel_accum_sec < maxf(focus_channel_trigger_sec, 0.1):
+	var mouse_pos := get_global_mouse_position()
+	if _last_mouse_position == Vector2.INF:
+		_last_mouse_position = mouse_pos
 		return
-	_reset_focus_channel()
+	_mouse_still_distance += _last_mouse_position.distance_to(mouse_pos)
+	_last_mouse_position = mouse_pos
+	_mouse_still_accum_sec += maxf(delta, 0.0)
+	if _mouse_still_accum_sec < maxf(mouse_still_trigger_sec, 0.1):
+		return
+	var total_distance := _mouse_still_distance
+	_reset_mouse_still_window()
+	if total_distance > maxf(mouse_still_max_total_distance, 0.0):
+		return
 	notify_offhand_skill_triggered(0.0)
 	emit_passive_trigger(&"laser_focus_channel_triggered", {
-		"target": target,
-		"duration": maxf(focus_channel_trigger_sec, 0.1),
-		"break_tolerance": maxf(focus_channel_break_tolerance_sec, 0.0),
+		"duration": maxf(mouse_still_trigger_sec, 0.1),
+		"mouse_distance": total_distance,
+		"max_mouse_distance": maxf(mouse_still_max_total_distance, 0.0),
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
-func _reset_focus_channel() -> void:
-	_focus_channel_target_id = 0
-	_focus_channel_accum_sec = 0.0
-	_focus_channel_last_hit_sec = -999.0
+func _reset_mouse_still_window() -> void:
+	_mouse_still_accum_sec = 0.0
+	_mouse_still_distance = 0.0
+	_last_mouse_position = Vector2.INF

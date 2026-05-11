@@ -10,9 +10,7 @@ var projectile_texture_resource = preload("res://Textures/test/chainsaw_spin.png
 # Weapon
 var ITEM_NAME = "Chainsaw Luncher"
 var _last_hit_projectile: Projectile
-@export var same_target_hit_trigger_count: int = 6
-var _same_target_hit_id: int = 0
-var _same_target_hit_count: int = 0
+@export_flags_2d_physics var chainsaw_wall_collision_mask: int = 32
 
 var weapon_data = {
 	"1": {
@@ -128,6 +126,7 @@ func _on_shoot():
 	spawn_projectile.size = size
 	spawn_projectile.hitbox_type = "dot"
 	spawn_projectile.dot_cd = dot_cd
+	spawn_projectile.wall_collision_mask = chainsaw_wall_collision_mask
 	apply_spin(spawn_projectile)
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
@@ -160,35 +159,23 @@ func on_projectile_hit_target(projectile: Projectile, _target: Node) -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
-	_update_same_target_hit_trigger(target)
 	for behavior in get_branch_behaviors():
 		behavior.on_chainsaw_target_hit(target, _last_hit_projectile)
 		behavior.on_target_hit(target)
 
-func _update_same_target_hit_trigger(target: Node) -> void:
+func on_projectile_hit_wall(projectile: Projectile, wall_hit: Dictionary) -> void:
 	if not is_main_weapon():
-		_same_target_hit_id = 0
-		_same_target_hit_count = 0
 		return
-	if target == null or not is_instance_valid(target):
-		_same_target_hit_id = 0
-		_same_target_hit_count = 0
+	if projectile == null or not is_instance_valid(projectile):
 		return
-	var target_id := target.get_instance_id()
-	if target_id != _same_target_hit_id:
-		_same_target_hit_id = target_id
-		_same_target_hit_count = 0
-	_same_target_hit_count += 1
-	var required_hits: int = maxi(1, same_target_hit_trigger_count)
-	if _same_target_hit_count < required_hits:
-		return
-	_same_target_hit_count = 0
 	if not is_offhand_skill_ready():
 		return
 	notify_offhand_skill_triggered(0.0)
-	emit_passive_trigger(&"chainsaw_same_target_6_hits_triggered", {
-		"target": target,
-		"hit_count": required_hits,
+	emit_passive_trigger(&"chainsaw_wall_contact_triggered", {
+		"projectile": projectile,
+		"position": wall_hit.get("position", projectile.global_position),
+		"normal": wall_hit.get("normal", Vector2.ZERO),
+		"collider": wall_hit.get("collider", null),
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 

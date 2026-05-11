@@ -11,7 +11,6 @@ script = ExtResource("2_script")
 cone_half_angle_deg = 38.0
 base_range = 280.0
 cold_snap_damage_ratio = 0.35
-cold_snap_contact_threshold_sec = 1.2
 cold_snap_icd_sec = 1.2
 debug_mode = true
 effect_configs = Array[ExtResource("3_3hv4x")]([])

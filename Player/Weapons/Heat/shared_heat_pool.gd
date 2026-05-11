@@ -2,6 +2,7 @@ extends Heat
 class_name SharedHeatPool
 
 var contributor_count: int = 0
+var heat_gain_multiplier_provider: Callable = Callable()
 
 func configure_from_weapons(weapons: Array) -> void:
 	var total_max_heat: float = 0.0
@@ -36,7 +37,10 @@ func add_heat_amount(amount: float) -> void:
 		return
 	if overheated:
 		return
-	var added: float = maxf(amount, 0.0)
+	var multiplier := 1.0
+	if heat_gain_multiplier_provider.is_valid():
+		multiplier = maxf(float(heat_gain_multiplier_provider.call()), 0.0)
+	var added: float = maxf(amount, 0.0) * multiplier
 	heat_value = clampf(heat_value + added, 0.0, max_heat)
 	if heat_value >= max_heat:
 		overheated = true

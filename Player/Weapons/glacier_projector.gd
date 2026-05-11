@@ -9,13 +9,12 @@ var ITEM_NAME := "Glacier Projector"
 @export_range(5.0, 120.0, 1.0) var cone_half_angle_deg: float = 38.0
 @export_range(40.0, 1200.0, 1.0) var base_range: float = 280.0
 @export var cold_snap_damage_ratio: float = 0.35
-@export var cold_snap_contact_threshold_sec: float = 1.2
 @export var cold_snap_icd_sec: float = 1.2
 @export var debug_mode: bool = true
 
 var attack_range: float = 280.0
 var _attacked_target_ids: Dictionary = {}
-var _target_contact_state: Dictionary = {}
+var _cold_snap_ready_at_msec: int = 0
 
 var weapon_data: Dictionary = {
 	"1": {"level": "1", "damage": "6", "fire_interval_sec": "0.22", "ammo": "110", "range": "260", "cost": "10"},
@@ -80,31 +79,23 @@ func _apply_freeze_damage(target: Node) -> void:
 		{"amount": 0, "angle": Vector2.ZERO}
 	)
 	DamageManager.apply_to_target(target, damage_data)
-	_on_target_contact(target)
-	on_hit_target(target)
+	on_hit_target_with_damage_type(target, Attack.TYPE_FREEZE)
 
-func _on_target_contact(target: Node) -> void:
-	var now_sec: float = Time.get_ticks_msec() / 1000.0
-	var target_id: int = target.get_instance_id()
-	var state: Dictionary = _target_contact_state.get(target_id, {
-		"accum": 0.0,
-		"last_contact": -999.0,
-		"last_proc": -999.0,
-	})
-	var last_contact: float = float(state.get("last_contact", -999.0))
-	var accum: float = float(state.get("accum", 0.0))
-	if now_sec - last_contact <= FROST_CONTACT_WINDOW_SEC:
-		accum += attack_cooldown
-	else:
-		accum = attack_cooldown
-	state["last_contact"] = now_sec
-	state["accum"] = accum
-	var last_proc: float = float(state.get("last_proc", -999.0))
-	if accum >= maxf(cold_snap_contact_threshold_sec, 0.1) and now_sec - last_proc >= maxf(cold_snap_icd_sec, 0.1):
-		state["last_proc"] = now_sec
-		state["accum"] = 0.0
-		_trigger_cold_snap(target)
-	_target_contact_state[target_id] = state
+func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
+	super.on_hit_target_with_damage_type(target, damage_type)
+	_try_trigger_main_freeze_hit(target, damage_type)
+
+func _try_trigger_main_freeze_hit(target: Node, damage_type: StringName) -> void:
+	if not is_main_weapon():
+		return
+	if Attack.normalize_damage_type(damage_type) != Attack.TYPE_FREEZE:
+		return
+	if Time.get_ticks_msec() < _cold_snap_ready_at_msec:
+		return
+	if not is_offhand_skill_ready():
+		return
+	_cold_snap_ready_at_msec = Time.get_ticks_msec() + int(maxf(cold_snap_icd_sec, 0.1) * 1000.0)
+	_trigger_cold_snap(target)
 
 func _trigger_cold_snap(target: Node) -> void:
 	if target == null or not is_instance_valid(target):
@@ -130,7 +121,7 @@ func _try_emit_cold_snap_trigger(target: Node) -> void:
 	emit_passive_trigger(&"glacier_cold_snap_triggered", {
 		"target": target,
 		"cold_snap_damage_ratio": maxf(cold_snap_damage_ratio, 0.0),
-		"contact_threshold": maxf(cold_snap_contact_threshold_sec, 0.1),
+		"trigger_damage_type": Attack.TYPE_FREEZE,
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 

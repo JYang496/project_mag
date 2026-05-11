@@ -25,5 +25,9 @@ fuse_texture_3 = ExtResource("4_icon")
 [node name="WindupTimer" type="Timer" parent="." index="6" unique_id=441090591]
 one_shot = true
 
+[node name="IdleFireTimer" type="Timer" parent="." index="7"]
+wait_time = 6.0
+one_shot = true
+
 [connection signal="shoot" from="." to="." method="_on_shoot"]
 [connection signal="timeout" from="WindupTimer" to="." method="_on_windup_timer_timeout"]

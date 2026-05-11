@@ -147,16 +147,25 @@ func unregister_reload_duration_plugin(plugin: Node) -> void:
 	reload_duration_plugins.erase(plugin)
 
 func on_hit_target(target: Node) -> void:
+	_handle_hit_target(target)
+
+func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
+	_handle_hit_target(target, Attack.normalize_damage_type(damage_type))
+
+func _handle_hit_target(target: Node, damage_type: StringName = StringName()) -> void:
 	for plugin in on_hit_plugins:
 		if is_instance_valid(plugin) and plugin.has_method("apply_on_hit"):
 			plugin.apply_on_hit(self, target)
 	_register_weapon_active_hit_window()
 	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("_broadcast_weapon_passive_event"):
-		PlayerData.player.call("_broadcast_weapon_passive_event", &"on_hit", {
+		var detail := {
 			"source_weapon": self,
 			"target": target,
 			"source_is_main": is_main_weapon()
-		})
+		}
+		if damage_type != StringName():
+			detail["damage_type"] = damage_type
+		PlayerData.player.call("_broadcast_weapon_passive_event", &"on_hit", detail)
 
 func notify_main_weapon_fired() -> void:
 	if not is_main_weapon():

@@ -27,7 +27,9 @@ var debug_source_weapon: String = ""
 var debug_effect_names: Array[String] = []
 var debug_effect_params: Dictionary = {}
 @export var debug_overlay_enabled: bool = false
+var wall_collision_mask: int = 0
 var _debug_label: Label
+var _wall_hit_reported: bool = false
 var overlapping : bool :
 	set(value):
 		if value != overlapping:
@@ -91,6 +93,7 @@ func init_hitbox(hb_type = "once") -> void:
 	projectile_sprite.call_deferred("add_child", hitbox_ins)
 
 func _physics_process(delta: float) -> void:
+	_check_wall_contact(delta)
 	position += base_displacement * delta
 	if base_displacement != Vector2.ZERO:
 		rotation = base_displacement.angle() + deg_to_rad(90)
@@ -106,6 +109,20 @@ func on_hit_target(target: Node) -> void:
 		if source_weapon.has_method("on_projectile_hit_target"):
 			source_weapon.call("on_projectile_hit_target", self, target)
 		source_weapon.on_hit_target(target)
+
+func on_hit_target_with_damage_type(target: Node, hit_damage_type: StringName) -> void:
+	if source_weapon and is_instance_valid(source_weapon):
+		if source_weapon.has_method("on_projectile_hit_target"):
+			source_weapon.call("on_projectile_hit_target", self, target)
+		if source_weapon.has_method("on_hit_target_with_damage_type"):
+			source_weapon.call("on_hit_target_with_damage_type", target, hit_damage_type)
+		else:
+			source_weapon.on_hit_target(target)
+
+func on_hit_target_damage_dealt(target: Node, hit_damage_type: StringName, final_damage: int) -> void:
+	if source_weapon and is_instance_valid(source_weapon):
+		if source_weapon.has_method("on_projectile_hit_damage_dealt"):
+			source_weapon.call("on_projectile_hit_damage_dealt", self, target, hit_damage_type, final_damage)
 
 func show_projectile() -> void:
 	projectile_sprite.visible = true
@@ -157,6 +174,8 @@ func _on_before_pooled() -> void:
 	projectile_sprite.scale = Vector2.ONE
 	projectile_sprite.texture = null
 	source_weapon = null
+	wall_collision_mask = 0
+	_wall_hit_reported = false
 	overlapping = false
 	position = Vector2.ZERO
 	rotation = 0.0
@@ -170,6 +189,27 @@ func _on_before_pooled() -> void:
 func _on_acquired_from_pool() -> void:
 	visible = true
 	_reset_runtime_meta_flags()
+	_wall_hit_reported = false
+
+func _check_wall_contact(delta: float) -> void:
+	if wall_collision_mask <= 0:
+		return
+	if _wall_hit_reported:
+		return
+	if not is_inside_tree():
+		return
+	var motion: Vector2 = (base_displacement + projectile_displacement) * maxf(delta, 0.0)
+	if motion.length_squared() <= 0.01:
+		return
+	var query := PhysicsRayQueryParameters2D.create(global_position, global_position + motion, wall_collision_mask)
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	var result := get_world_2d().direct_space_state.intersect_ray(query)
+	if result.is_empty():
+		return
+	_wall_hit_reported = true
+	if source_weapon and is_instance_valid(source_weapon) and source_weapon.has_method("on_projectile_hit_wall"):
+		source_weapon.call("on_projectile_hit_wall", self, result)
 
 func _clear_hitbox() -> void:
 	if hitbox_ins and is_instance_valid(hitbox_ins):

@@ -45,7 +45,7 @@ var _prev_fire_success: int = 0
 var _prev_reloading: bool = false
 var _prev_dash_state: int = -1
 var _pending_damage_streams: Array[Dictionary] = []
-var _glacier_state: Dictionary = {"accum_sec": 0.0, "last_proc_sec": -999.0}
+var _glacier_state: Dictionary = {"last_proc_sec": -999.0}
 
 var _last_csv_path: String = ""
 var _original_time_scale: float = 1.0
@@ -256,7 +256,7 @@ func _reset_measurement_state() -> void:
 	_prev_reloading = false
 	_prev_dash_state = -1
 	_pending_damage_streams.clear()
-	_glacier_state = {"accum_sec": 0.0, "last_proc_sec": -999.0}
+	_glacier_state = {"last_proc_sec": -999.0}
 	var w := _resolve_main_weapon_node()
 	if w:
 		_prev_reloading = bool(w.get("is_reloading")) if w.get("is_reloading") != null else false
@@ -345,7 +345,7 @@ func _on_formula_fire_success(main_weapon: Node) -> void:
 			_formula_notes = "Flamethrower: damage * expected_targets * branch_damage_multiplier"
 		"21":
 			_apply_glacier_formula(main_weapon, runtime_damage)
-			_formula_notes = "Glacier: burst damage + cold snap proc accumulation"
+			_formula_notes = "Glacier: burst damage + cold snap on freeze damage ICD"
 		"25":
 			_current_total_damage_formula += runtime_damage
 			_formula_notes = "Cannon: damage (single shell)"
@@ -410,16 +410,12 @@ func _apply_glacier_formula(main_weapon: Node, runtime_damage: float) -> void:
 	var expected_targets: float = maxf(float(config.get("formula_target_count")), 1.0)
 	_current_total_damage_formula += runtime_damage * expected_targets
 	var now_sec: float = _elapsed_test_sec
-	var accum_sec: float = float(_glacier_state.get("accum_sec", 0.0)) + maxf(_resolve_weapon_cooldown(main_weapon), 0.01)
 	var last_proc_sec: float = float(_glacier_state.get("last_proc_sec", -999.0))
-	var threshold_sec: float = float(main_weapon.get("cold_snap_contact_threshold_sec")) if main_weapon.get("cold_snap_contact_threshold_sec") != null else 1.2
 	var icd_sec: float = float(main_weapon.get("cold_snap_icd_sec")) if main_weapon.get("cold_snap_icd_sec") != null else 1.2
-	if accum_sec >= maxf(threshold_sec, 0.1) and now_sec - last_proc_sec >= maxf(icd_sec, 0.1):
+	if now_sec - last_proc_sec >= maxf(icd_sec, 0.1):
 		var ratio: float = float(main_weapon.get("cold_snap_damage_ratio")) if main_weapon.get("cold_snap_damage_ratio") != null else 0.35
 		_current_total_damage_formula += runtime_damage * maxf(ratio, 0.0) * expected_targets
-		accum_sec = 0.0
 		last_proc_sec = now_sec
-	_glacier_state["accum_sec"] = accum_sec
 	_glacier_state["last_proc_sec"] = last_proc_sec
 
 func _apply_sniper_formula(main_weapon: Node, runtime_damage: float) -> void:

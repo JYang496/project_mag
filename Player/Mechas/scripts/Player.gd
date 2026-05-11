@@ -55,6 +55,7 @@ const AUTO_LOOT_DURATION_SEC: float = 2.0
 const AUTO_LOOT_TICK_SEC: float = 0.2
 const AUTO_LOOT_GRAB_RADIUS: float = 2500.0
 const COLLECT_AREA_TOP_PADDING: float = 0.0
+const HEAT_PREPARED_DAMAGE_SOURCE: StringName = &"heat_prepared_damage"
 var weapon_orbit_states: Dictionary = {}
 var _base_detect_shape_size := Vector2.ZERO
 var _base_camera_zoom := Vector2.ONE
@@ -119,6 +120,15 @@ var _elite_hit_slow_until_msec: int = 0
 var _debug_passive_connected_weapon_ids: Dictionary = {}
 var _global_weapon_passive_effects: Dictionary = {}
 var _global_weapon_passive_applied: Dictionary = {}
+var _heat_prepared_until_msec: int = 0
+var _heat_prepared_consume_mul: float = 1.0
+var _heat_stabilized_until_msec: int = 0
+var _heat_stabilized_decay_mul: float = 1.0
+var _heat_stabilized_cost_mul: float = 1.0
+var _plasma_lance_heat_feedback_until_msec: int = 0
+var _plasma_lance_heat_feedback_threshold: float = 0.7
+var _plasma_lance_heat_feedback_low_mul: float = 1.2
+var _plasma_lance_heat_feedback_high_mul: float = 0.8
 var PlayerData = null
 var _status_hint_manager
 var _status_modifier_system
@@ -189,6 +199,7 @@ func custom_ready():
 func _physics_process(delta):
 	_sanitize_weapon_list_and_roles()
 	_update_global_weapon_passives()
+	_update_heat_statuses()
 	_process_combat_input(delta)
 	_sync_weapon_orbit_states()
 	_update_shared_heat_pool(delta)
@@ -492,6 +503,7 @@ func clear_timed_statuses_for_prepare() -> void:
 	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
 		_status_hint_manager.clear_all()
 	clear_global_weapon_passives()
+	clear_heat_statuses()
 	_ensure_elemental_effect_system()
 	if _elemental_effect_system != null and _elemental_effect_system.has_method("clear_timed_effects_for_prepare"):
 		_elemental_effect_system.call("clear_timed_effects_for_prepare")
@@ -810,7 +822,7 @@ func _debug_on_weapon_passive_triggered(event_name: StringName, detail: Dictiona
 
 func _debug_is_weapon_passive_trigger_event(event_name: StringName) -> bool:
 	var event_text := str(event_name)
-	return event_text.ends_with("_triggered") or event_name == &"offhand_machine_gun_focus_buff"
+	return event_text.ends_with("_triggered") or event_text.ends_with("_spend") or event_name == &"offhand_machine_gun_focus_buff"
 
 func _update_passive_time_tick(delta: float) -> void:
 	_passive_time_tick_accum += maxf(delta, 0.0)
@@ -963,6 +975,128 @@ func remove_damage_mul(source_id: StringName) -> void:
 	if _status_modifier_system == null:
 		return
 	_status_modifier_system.remove_damage_mul(source_id)
+
+func apply_heat_prepared(duration_sec: float = 10.0, damage_mul: float = 1.05, consume_mul: float = 1.35) -> void:
+	var duration_msec := int(maxf(duration_sec, 0.05) * 1000.0)
+	_heat_prepared_until_msec = Time.get_ticks_msec() + duration_msec
+	_heat_prepared_consume_mul = maxf(consume_mul, 0.05)
+	apply_damage_mul(HEAT_PREPARED_DAMAGE_SOURCE, maxf(damage_mul, 0.05))
+	_spawn_player_floating_hint("Heat Prepared")
+	if debug_weapon_passive_trigger_prints:
+		print("[HeatStatus] Heat Prepared duration=", duration_sec, " damage_mul=", damage_mul, " consume_mul=", _heat_prepared_consume_mul)
+
+func has_heat_prepared() -> bool:
+	return _heat_prepared_until_msec > 0 and Time.get_ticks_msec() < _heat_prepared_until_msec
+
+func consume_heat_prepared() -> bool:
+	_update_heat_statuses()
+	if not has_heat_prepared():
+		return false
+	_clear_heat_prepared()
+	_spawn_player_floating_hint("Heat Released")
+	if debug_weapon_passive_trigger_prints:
+		print("[HeatStatus] Heat Prepared consumed")
+	return true
+
+func get_heat_prepared_consume_mul() -> float:
+	_update_heat_statuses()
+	if not has_heat_prepared():
+		return 1.0
+	return _heat_prepared_consume_mul
+
+func apply_heat_stabilized(duration_sec: float = 8.0, decay_mul: float = 0.5, cost_mul: float = -1.0) -> void:
+	var duration_msec := int(maxf(duration_sec, 0.05) * 1000.0)
+	_heat_stabilized_until_msec = Time.get_ticks_msec() + duration_msec
+	_heat_stabilized_decay_mul = clampf(decay_mul, 0.0, 1.0)
+	_heat_stabilized_cost_mul = clampf(cost_mul if cost_mul >= 0.0 else decay_mul, 0.0, 1.0)
+	_spawn_player_floating_hint("Heat Stabilized")
+	if debug_weapon_passive_trigger_prints:
+		print("[HeatStatus] Heat Stabilized duration=", duration_sec, " decay_mul=", _heat_stabilized_decay_mul, " cost_mul=", _heat_stabilized_cost_mul)
+
+func has_heat_stabilized() -> bool:
+	return _heat_stabilized_until_msec > 0 and Time.get_ticks_msec() < _heat_stabilized_until_msec
+
+func get_heat_stabilized_decay_mul() -> float:
+	_update_heat_statuses()
+	if not has_heat_stabilized():
+		return 1.0
+	return _heat_stabilized_decay_mul
+
+func get_heat_stabilized_cost_mul() -> float:
+	_update_heat_statuses()
+	if not has_heat_stabilized():
+		return 1.0
+	return _heat_stabilized_cost_mul
+
+func apply_plasma_lance_heat_feedback(duration_sec: float = 10.0, low_mul: float = 1.2, high_mul: float = 0.8, threshold: float = 0.7) -> void:
+	var duration_msec := int(maxf(duration_sec, 0.05) * 1000.0)
+	_plasma_lance_heat_feedback_until_msec = Time.get_ticks_msec() + duration_msec
+	_plasma_lance_heat_feedback_low_mul = maxf(low_mul, 0.0)
+	_plasma_lance_heat_feedback_high_mul = maxf(high_mul, 0.0)
+	_plasma_lance_heat_feedback_threshold = clampf(threshold, 0.0, 1.0)
+	_spawn_player_floating_hint("Heat Feedback")
+	if debug_weapon_passive_trigger_prints:
+		print("[HeatStatus] Plasma Lance Heat Feedback duration=", duration_sec, " threshold=", _plasma_lance_heat_feedback_threshold, " low_mul=", _plasma_lance_heat_feedback_low_mul, " high_mul=", _plasma_lance_heat_feedback_high_mul)
+
+func has_plasma_lance_heat_feedback() -> bool:
+	return _plasma_lance_heat_feedback_until_msec > 0 and Time.get_ticks_msec() < _plasma_lance_heat_feedback_until_msec
+
+func get_plasma_lance_heat_feedback_remaining_sec() -> float:
+	_update_heat_statuses()
+	if not has_plasma_lance_heat_feedback():
+		return 0.0
+	return maxf(float(_plasma_lance_heat_feedback_until_msec - Time.get_ticks_msec()) / 1000.0, 0.0)
+
+func get_heat_gain_multiplier() -> float:
+	_update_heat_statuses()
+	if not has_plasma_lance_heat_feedback():
+		return 1.0
+	var heat_ratio := get_total_heat_ratio()
+	if heat_ratio <= _plasma_lance_heat_feedback_threshold:
+		return _plasma_lance_heat_feedback_low_mul
+	return _plasma_lance_heat_feedback_high_mul
+
+func consume_shared_heat(amount: float) -> float:
+	var spend_amount := maxf(amount, 0.0)
+	if spend_amount <= 0.0:
+		return 0.0
+	var pool := get_shared_heat_pool()
+	if pool == null:
+		return 0.0
+	var available := maxf(float(pool.heat_value), 0.0)
+	var spent := minf(available, spend_amount)
+	pool.heat_value = maxf(0.0, available - spent)
+	if pool.heat_value < pool.max_heat:
+		pool.overheated = false
+	return spent
+
+func clear_heat_statuses() -> void:
+	_clear_heat_prepared()
+	_heat_stabilized_until_msec = 0
+	_heat_stabilized_decay_mul = 1.0
+	_heat_stabilized_cost_mul = 1.0
+	_plasma_lance_heat_feedback_until_msec = 0
+	_plasma_lance_heat_feedback_threshold = 0.7
+	_plasma_lance_heat_feedback_low_mul = 1.2
+	_plasma_lance_heat_feedback_high_mul = 0.8
+
+func _update_heat_statuses() -> void:
+	var now_msec := Time.get_ticks_msec()
+	if _heat_prepared_until_msec > 0 and now_msec >= _heat_prepared_until_msec:
+		_clear_heat_prepared()
+	if _heat_stabilized_until_msec > 0 and now_msec >= _heat_stabilized_until_msec:
+		_heat_stabilized_until_msec = 0
+		_heat_stabilized_decay_mul = 1.0
+		_heat_stabilized_cost_mul = 1.0
+	if _plasma_lance_heat_feedback_until_msec > 0 and now_msec >= _plasma_lance_heat_feedback_until_msec:
+		_plasma_lance_heat_feedback_until_msec = 0
+
+func _clear_heat_prepared() -> void:
+	if _heat_prepared_until_msec <= 0:
+		return
+	_heat_prepared_until_msec = 0
+	_heat_prepared_consume_mul = 1.0
+	remove_damage_mul(HEAT_PREPARED_DAMAGE_SOURCE)
 
 func register_low_hp_damage_bonus(source_id: StringName, min_hp_ratio: float, max_damage_mul: float) -> void:
 	_ensure_status_modifier_system()
@@ -1840,3 +1974,27 @@ func get_total_heat_ratio() -> float:
 	if _shared_heat_system == null:
 		return 0.0
 	return _shared_heat_system.get_total_heat_ratio()
+
+func get_selected_heat_decay_rate() -> float:
+	_ensure_shared_heat_system()
+	if _shared_heat_system == null:
+		return 0.0
+	return _shared_heat_system.get_selected_heat_decay_rate()
+
+func get_effective_heat_decay_rate() -> float:
+	_ensure_shared_heat_system()
+	if _shared_heat_system == null:
+		return 0.0
+	return _shared_heat_system.get_effective_heat_decay_rate()
+
+func get_selected_heat_decay_source_name() -> String:
+	_ensure_shared_heat_system()
+	if _shared_heat_system == null:
+		return "None"
+	return _shared_heat_system.get_selected_heat_decay_source_name()
+
+func get_last_heat_decay_source_name() -> String:
+	_ensure_shared_heat_system()
+	if _shared_heat_system == null:
+		return "None"
+	return _shared_heat_system.get_last_heat_decay_source_name()

@@ -28,12 +28,18 @@ func add_heat(multiplier: float = 1.0) -> void:
 		overheated = true
 
 func cool_down(delta: float) -> void:
+	_cool_down_with_rate(delta, cooldown_rate)
+
+func cool_down_at_rate(delta: float, rate: float) -> void:
+	_cool_down_with_rate(delta, maxf(rate, 0.0))
+
+func _cool_down_with_rate(delta: float, rate: float) -> void:
 	if _lock_remaining_sec > 0.0:
 		_lock_remaining_sec = maxf(0.0, _lock_remaining_sec - maxf(delta, 0.0))
 		heat_value = clampf(_locked_value, 0.0, max_heat)
 		overheated = heat_value >= max_heat
 		return
-	heat_value = move_toward(heat_value, 0.0, cooldown_rate * maxf(delta, 0.0))
+	heat_value = move_toward(heat_value, 0.0, maxf(rate, 0.0) * maxf(delta, 0.0))
 	if overheated and heat_value <= 0.001:
 		overheated = false
 

@@ -1,4 +1,4 @@
-extends Node
+extends RefCounted
 class_name Attack
 
 const TYPE_PHYSICAL: StringName = &"physical"

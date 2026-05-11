@@ -85,6 +85,9 @@ func can_hit_target(target: Node) -> bool:
 	return target.get_instance_id() == _locked_target_id
 
 func on_hit_target(target: Node) -> void:
+	on_hit_target_with_damage_type(target, damage_type)
+
+func on_hit_target_with_damage_type(target: Node, hit_damage_type: StringName) -> void:
 	if target_lock_mode == &"first_hit":
 		var target_id: int = target.get_instance_id()
 		if _locked_target_id < 0:
@@ -95,7 +98,10 @@ func on_hit_target(target: Node) -> void:
 	if source_weapon and is_instance_valid(source_weapon) and source_weapon.has_method("on_beam_hit_target"):
 		source_weapon.call("on_beam_hit_target", target, beam_profile, int(damage), self)
 	if source_weapon and is_instance_valid(source_weapon):
-		source_weapon.on_hit_target(target)
+		if source_weapon.has_method("on_hit_target_with_damage_type"):
+			source_weapon.call("on_hit_target_with_damage_type", target, hit_damage_type)
+		else:
+			source_weapon.on_hit_target(target)
 
 func _update_target_lock_timeout() -> void:
 	if target_lock_mode != &"first_hit":

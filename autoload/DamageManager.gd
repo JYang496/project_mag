@@ -30,8 +30,13 @@ func build_damage_data(
 
 
 func apply_to_hurt_box(hurt_box: HurtBox, data: DamageData) -> bool:
+	return apply_to_hurt_box_result(hurt_box, data).applied
+
+
+func apply_to_hurt_box_result(hurt_box: HurtBox, data: DamageData) -> DamageResult:
+	var result := DamageResult.new()
 	if hurt_box == null or not is_instance_valid(hurt_box):
-		return false
+		return result
 	var target: Node = null
 	if hurt_box.has_method("get_damage_target"):
 		target = hurt_box.call("get_damage_target")
@@ -39,28 +44,62 @@ func apply_to_hurt_box(hurt_box: HurtBox, data: DamageData) -> bool:
 		target = hurt_box.get_owner()
 	if target == null or not is_instance_valid(target):
 		target = hurt_box.get_parent()
-	return apply_to_target(target, data)
+	return apply_to_target_result(target, data)
 
 
 func apply_to_target(target: Node, data: DamageData) -> bool:
+	return apply_to_target_result(target, data).applied
+
+
+func apply_to_target_result(target: Node, data: DamageData) -> DamageResult:
+	var result := DamageResult.new()
 	if target == null or not is_instance_valid(target):
-		return false
+		return result
 	if data == null:
-		return false
+		return result
 	if _is_player_attack_blocked_by_phase(data):
-		return false
+		return result
 	if _is_duplicate_damage(target, data):
-		return false
+		return result
+	var hp_before: Variant = _read_target_hp(target)
 
 	# Prefer a Damageable component when present for extensibility.
 	var component := target.get_node_or_null("Damageable")
 	if component and component.has_method("apply_damage_data"):
-		return bool(component.apply_damage_data(data))
+		result.applied = bool(component.apply_damage_data(data))
+		_populate_damage_result(result, target, data, hp_before)
+		return result
 
 	if target.has_method("damaged"):
 		target.damaged(data.to_attack())
-		return true
-	return false
+		result.applied = true
+		_populate_damage_result(result, target, data, hp_before)
+		return result
+	return result
+
+
+func _populate_damage_result(result: DamageResult, target: Node, data: DamageData, hp_before: Variant) -> void:
+	if result == null or data == null:
+		return
+	result.damage_type = Attack.normalize_damage_type(data.damage_type)
+	if not result.applied:
+		return
+	var hp_after: Variant = _read_target_hp(target)
+	if hp_before != null and hp_after != null:
+		result.final_damage = max(0, int(hp_before) - int(hp_after))
+	else:
+		result.final_damage = max(0, int(data.amount))
+	if target != null and is_instance_valid(target) and target.get("is_dead") != null:
+		result.killed = bool(target.get("is_dead"))
+
+
+func _read_target_hp(target: Node) -> Variant:
+	if target == null or not is_instance_valid(target):
+		return null
+	var hp_value: Variant = target.get("hp")
+	if hp_value == null:
+		return null
+	return int(hp_value)
 
 func _is_player_attack_blocked_by_phase(data: DamageData) -> bool:
 	if data == null:
