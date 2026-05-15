@@ -151,9 +151,11 @@ func _try_trigger_unique_projectile_hits(projectile: Node, target: Node) -> void
 	var projectile_id := projectile.get_instance_id()
 	var target_id := target.get_instance_id()
 	var state: Dictionary = _projectile_unique_hit_state.get(projectile_id, {
+		"projectile": projectile,
 		"ids": {},
 		"targets": [],
 	})
+	state["projectile"] = projectile
 	var ids: Dictionary = state.get("ids", {})
 	if ids.has(target_id):
 		return
@@ -175,3 +177,36 @@ func _try_trigger_unique_projectile_hits(projectile: Node, target: Node) -> void
 		"targets": targets,
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
+
+func get_passive_status() -> Dictionary:
+	var required_hits := maxi(1, unique_targets_trigger_count)
+	var current_hits := _get_current_unique_projectile_hit_count()
+	var state := "charging"
+	if not is_main_weapon():
+		state = "inactive"
+	elif not is_passive_ready():
+		state = "waiting_refresh"
+	elif current_hits >= required_hits:
+		state = "ready_pending_action"
+	return {
+		"id": "spear_multi_pierce_triggered",
+		"display_name": "Multi Pierce",
+		"state": state,
+		"progress": clampf(float(current_hits) / float(required_hits), 0.0, 1.0),
+		"current": current_hits,
+		"required": required_hits,
+		"ready": state == "ready_pending_action",
+		"trigger_hint": "same_projectile_unique_targets",
+		"refresh_hint": "reload",
+	}
+
+func _get_current_unique_projectile_hit_count() -> int:
+	var best_count := 0
+	for state_key in _projectile_unique_hit_state.keys():
+		var state: Dictionary = _projectile_unique_hit_state.get(state_key, {})
+		var projectile = state.get("projectile", null)
+		if projectile == null or not is_instance_valid(projectile):
+			continue
+		var ids: Dictionary = state.get("ids", {})
+		best_count = maxi(best_count, ids.size())
+	return best_count

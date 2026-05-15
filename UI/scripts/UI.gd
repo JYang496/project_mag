@@ -19,6 +19,7 @@ const HP_BAR_ANIM_TIME := 0.2
 const HP_BAR_TRANS := Tween.TRANS_SINE
 const HP_BAR_EASE := Tween.EASE_OUT
 const HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hud_presenter.gd")
+const WEAPON_PASSIVE_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_passive_presenter.gd")
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const SPREAD_CURSOR_OVERLAY_SCRIPT := preload("res://UI/scripts/spread_cursor_overlay.gd")
 const SPREAD_CURSOR_FALLBACK_RADIUS_PX := 10.0
@@ -73,6 +74,8 @@ var item_message_timer: Timer
 var heat_label: Label
 var ammo_label: Label
 var weapon_state_label: Label
+var weapon_passive_panel: PanelContainer
+var weapon_passive_list: VBoxContainer
 
 
 # Shopping
@@ -136,6 +139,8 @@ var _cursor_reload_total_by_weapon: Dictionary = {}
 var _battle_hardware_cursor_tex: Texture2D
 var _battle_hardware_cursor_applied: bool = false
 var hud_presenter: HudPresenter
+var weapon_passive_presenter
+var _weapon_passive_rows: Array[Dictionary] = []
 
 
 func _ready():
@@ -148,6 +153,8 @@ func _ready():
 	_ensure_ammo_label()
 	_ensure_resource_label_under_hp()
 	_ensure_weapon_state_label()
+	_init_weapon_passive_presenter()
+	_ensure_weapon_passive_panel()
 	_init_hud_presenter()
 	_ensure_spread_cursor_overlay()
 	_init_branch_select_panel()
@@ -300,6 +307,7 @@ func _finalize_branch_selected_weapon(weapon: Weapon) -> void:
 func _physics_process(_delta):
 	#Character
 	hud_presenter.refresh_dynamic_texts()
+	_refresh_weapon_passive_panel()
 	_refresh_controls_hint_visibility()
 	_update_rest_area_hover_hint_position()
 
@@ -324,6 +332,11 @@ func _init_hud_presenter() -> void:
 	hud_presenter.configure_hp_bar_anim(HP_BAR_ANIM_TIME, HP_BAR_TRANS, HP_BAR_EASE)
 	hud_presenter.init_hp_bar()
 	hud_presenter.refresh_static_texts()
+
+func _init_weapon_passive_presenter() -> void:
+	if weapon_passive_presenter != null:
+		return
+	weapon_passive_presenter = WEAPON_PASSIVE_PRESENTER_SCRIPT.new()
 
 func _process(_delta: float) -> void:
 	# Cursor-follow visuals should run on render frames to minimize perceived mouse lag.
@@ -1369,6 +1382,182 @@ func _ensure_weapon_state_label() -> void:
 	weapon_state_label.text = LocalizationManager.tr_key("ui.hud.weapon_state_none", "Main: -- | WS: -- | PS: --")
 	weapon_state_label.visible = false
 	character_root.add_child(weapon_state_label)
+
+func _ensure_weapon_passive_panel() -> void:
+	if weapon_passive_panel != null and is_instance_valid(weapon_passive_panel):
+		return
+	weapon_passive_panel = PanelContainer.new()
+	weapon_passive_panel.name = "WeaponPassivePanel"
+	weapon_passive_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	weapon_passive_panel.position = Vector2(224.0, 8.0)
+	weapon_passive_panel.custom_minimum_size = Vector2(300.0, 0.0)
+	character_root.add_child(weapon_passive_panel)
+	weapon_passive_list = VBoxContainer.new()
+	weapon_passive_list.name = "WeaponPassiveList"
+	weapon_passive_list.add_theme_constant_override("separation", 4)
+	weapon_passive_panel.add_child(weapon_passive_list)
+
+func _refresh_weapon_passive_panel() -> void:
+	if weapon_passive_presenter == null:
+		return
+	_ensure_weapon_passive_panel()
+	if weapon_passive_panel == null or weapon_passive_list == null:
+		return
+	var statuses: Array = weapon_passive_presenter.get_equipped_weapon_passive_statuses()
+	weapon_passive_panel.visible = not statuses.is_empty()
+	_ensure_weapon_passive_row_count(statuses.size())
+	for idx in range(_weapon_passive_rows.size()):
+		var row := _weapon_passive_rows[idx]
+		var root := row.get("root", null) as Control
+		if root == null:
+			continue
+		if idx >= statuses.size():
+			root.visible = false
+			continue
+		root.visible = true
+		_apply_weapon_passive_row(row, statuses[idx])
+
+func _ensure_weapon_passive_row_count(count: int) -> void:
+	if weapon_passive_list == null:
+		return
+	while _weapon_passive_rows.size() < count:
+		_weapon_passive_rows.append(_create_weapon_passive_row())
+
+func _create_weapon_passive_row() -> Dictionary:
+	var row_root := VBoxContainer.new()
+	row_root.name = "WeaponPassiveRow"
+	row_root.custom_minimum_size = Vector2(288.0, 0.0)
+	row_root.add_theme_constant_override("separation", 1)
+	weapon_passive_list.add_child(row_root)
+
+	var header := HBoxContainer.new()
+	header.name = "Header"
+	header.add_theme_constant_override("separation", 6)
+	row_root.add_child(header)
+
+	var icon_rect := TextureRect.new()
+	icon_rect.name = "Icon"
+	icon_rect.custom_minimum_size = Vector2(18.0, 18.0)
+	icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	header.add_child(icon_rect)
+
+	var name_label := Label.new()
+	name_label.name = "Name"
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.clip_text = true
+	header.add_child(name_label)
+
+	var state_label := Label.new()
+	state_label.name = "State"
+	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	state_label.custom_minimum_size = Vector2(98.0, 0.0)
+	header.add_child(state_label)
+
+	var progress_bar := ProgressBar.new()
+	progress_bar.name = "Progress"
+	progress_bar.min_value = 0.0
+	progress_bar.max_value = 1.0
+	progress_bar.step = 0.001
+	progress_bar.custom_minimum_size = Vector2(0.0, 8.0)
+	progress_bar.show_percentage = false
+	row_root.add_child(progress_bar)
+
+	var detail_label := Label.new()
+	detail_label.name = "Detail"
+	detail_label.clip_text = true
+	detail_label.add_theme_font_size_override("font_size", 11)
+	row_root.add_child(detail_label)
+
+	return {
+		"root": row_root,
+		"icon": icon_rect,
+		"name": name_label,
+		"state": state_label,
+		"progress": progress_bar,
+		"detail": detail_label,
+	}
+
+func _apply_weapon_passive_row(row: Dictionary, status: Dictionary) -> void:
+	var root := row.get("root", null) as Control
+	var icon_rect := row.get("icon", null) as TextureRect
+	var name_label := row.get("name", null) as Label
+	var state_label := row.get("state", null) as Label
+	var progress_bar := row.get("progress", null) as ProgressBar
+	var detail_label := row.get("detail", null) as Label
+	if root == null or name_label == null or state_label == null or progress_bar == null or detail_label == null:
+		return
+	var is_main := bool(status.get("is_main_weapon", false))
+	var state := str(status.get("state", "inactive"))
+	var ready := bool(status.get("ready", false))
+	var weapon_prefix := "* " if is_main else "  "
+	var passive_name := str(status.get("passive_name", ""))
+	var name_text := str(status.get("weapon_name", "Weapon"))
+	if passive_name != "":
+		name_text = "%s - %s" % [name_text, passive_name]
+	name_label.text = weapon_prefix + name_text
+	if icon_rect != null:
+		var icon_variant: Variant = status.get("icon", null)
+		icon_rect.texture = icon_variant as Texture2D
+		icon_rect.visible = icon_rect.texture != null
+	state_label.text = _format_weapon_passive_state(state, ready)
+	var progress := float(status.get("progress", -1.0))
+	progress_bar.visible = progress >= 0.0
+	if progress_bar.visible:
+		progress_bar.value = clampf(progress, 0.0, 1.0)
+	detail_label.text = _format_weapon_passive_detail(status)
+	if is_main:
+		root.modulate = Color(1.0, 1.0, 1.0, 1.0)
+	elif str(status.get("inactive_reason", "")) == "not_main_weapon":
+		root.modulate = Color(0.65, 0.65, 0.65, 0.82)
+	else:
+		root.modulate = Color(0.8, 0.8, 0.8, 0.9)
+
+func _format_weapon_passive_state(state: String, ready: bool) -> String:
+	if ready:
+		return "Ready"
+	match state:
+		"charging":
+			return "Charging"
+		"ready_pending_action":
+			return "Primed"
+		"waiting_refresh":
+			return "Refresh"
+		"cooldown":
+			return "Cooldown"
+		"inactive":
+			return "Inactive"
+		_:
+			return state.capitalize()
+
+func _format_weapon_passive_detail(status: Dictionary) -> String:
+	var parts: Array[String] = []
+	var current: Variant = status.get("current", null)
+	var required: Variant = status.get("required", null)
+	if current != null and required != null:
+		parts.append("%s/%s" % [_format_passive_number(current), _format_passive_number(required)])
+	var trigger_hint := str(status.get("trigger_hint", ""))
+	if trigger_hint != "":
+		parts.append(trigger_hint)
+	var refresh_hint := str(status.get("refresh_hint", ""))
+	if refresh_hint != "":
+		parts.append("refresh: %s" % refresh_hint)
+	var condition_type := str(status.get("condition_type", ""))
+	if condition_type != "" and trigger_hint == "":
+		parts.append(condition_type)
+	var refresh_type := str(status.get("refresh_type", ""))
+	if refresh_type != "" and refresh_hint == "":
+		parts.append("refresh: %s" % refresh_type)
+	var inactive_reason := str(status.get("inactive_reason", ""))
+	if inactive_reason != "":
+		parts.append(inactive_reason)
+	return " | ".join(parts)
+
+func _format_passive_number(value: Variant) -> String:
+	var number := float(value)
+	if is_equal_approx(number, roundf(number)):
+		return str(int(roundf(number)))
+	return "%.1f" % number
 
 func _get_main_weapon_node() -> Node:
 	if PlayerData.player_weapon_list.is_empty():

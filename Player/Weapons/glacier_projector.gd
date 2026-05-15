@@ -125,6 +125,29 @@ func _try_emit_cold_snap_trigger(target: Node) -> void:
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
+func get_passive_status() -> Dictionary:
+	var icd_sec := maxf(cold_snap_icd_sec, 0.1)
+	var now_msec := Time.get_ticks_msec()
+	var cooldown_remaining := maxf(float(_cold_snap_ready_at_msec - now_msec) / 1000.0, 0.0)
+	var state := "ready"
+	if not is_main_weapon():
+		state = "inactive"
+	elif not is_passive_ready():
+		state = "waiting_refresh"
+	elif cooldown_remaining > 0.0:
+		state = "cooldown"
+	return {
+		"id": "glacier_cold_snap_triggered",
+		"display_name": "Cold Snap",
+		"state": state,
+		"ready": state == "ready",
+		"trigger_hint": "freeze_hit",
+		"refresh_hint": "reload",
+		"cooldown_remaining": cooldown_remaining,
+		"cooldown_duration": icd_sec,
+		"progress": 1.0 - clampf(cooldown_remaining / icd_sec, 0.0, 1.0),
+	}
+
 func _collect_targets_in_cone(forward: Vector2) -> Array[Node]:
 	var output: Array[Node] = []
 	var touched_ids: Dictionary = {}

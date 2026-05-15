@@ -25,6 +25,9 @@ func _run_probe(scene: Node) -> void:
 	scene.call("_set_main_weapon", "Plasma Lance")
 	await physics_frame
 	_assert_decay_rate(scene, 15.0, "Plasma Lance")
+	if not _assert_machine_gun_shared_heat_speed_contract(scene):
+		quit(1)
+		return
 	var hp_before := int(dummy.get("hp"))
 	scene.call("_fire_flamethrower")
 	await create_timer(0.35).timeout
@@ -129,7 +132,11 @@ func _assert_flamethrower_heat_prepared_contract(scene: Node) -> bool:
 		return false
 	pool.heat_value = maxf(float(plasma_lance.get("plasma_heat_spend_amount")), 20.0)
 	pool.overheated = false
-	plasma_lance.call("_consume_heat_spend_multiplier")
+	var heat_spend_multiplier := float(plasma_lance.call("_consume_heat_spend_multiplier"))
+	var expected_heat_spend_multiplier := 1.0 + float(plasma_lance.get("plasma_heat_spend_damage_bonus"))
+	if not is_equal_approx(heat_spend_multiplier, expected_heat_spend_multiplier):
+		push_error("FAIL: Heat Prepared changed Plasma Lance heat spend multiplier expected %.3f got %.3f" % [expected_heat_spend_multiplier, heat_spend_multiplier])
+		return false
 	if not bool(player.call("has_heat_prepared")):
 		push_error("FAIL: Heat Prepared was consumed by heat spend")
 		return false
@@ -140,6 +147,62 @@ func _assert_flamethrower_heat_prepared_contract(scene: Node) -> bool:
 		push_error("FAIL: Flamethrower Heat Prepared triggered on reload below accumulated heat threshold")
 		return false
 	print("PASS: flamethrower reload-gated accumulated Heat Prepared trigger, persistence, and reset")
+	return true
+
+func _assert_machine_gun_shared_heat_speed_contract(scene: Node) -> bool:
+	var player_data := root.get_node_or_null("/root/PlayerData")
+	if player_data == null:
+		push_error("FAIL: missing PlayerData autoload")
+		return false
+	var player := player_data.get("player") as Node
+	if player == null or not is_instance_valid(player):
+		push_error("FAIL: missing PlayerData.player")
+		return false
+	var weapons_by_name: Dictionary = scene.get("_weapons_by_name")
+	var machine_gun := weapons_by_name.get("Machine Gun", null) as Node
+	if machine_gun == null or not is_instance_valid(machine_gun):
+		push_error("FAIL: missing Machine Gun weapon")
+		return false
+	var pool := player.call("get_shared_heat_pool") as SharedHeatPool
+	if pool == null:
+		push_error("FAIL: missing shared heat pool")
+		return false
+	player.call("clear_heat_statuses")
+	pool.overheated = false
+	pool.heat_value = 90.0
+	var speed_at_mid_heat := float(machine_gun.call("_resolve_shared_heat_attack_speed"))
+	if not is_equal_approx(speed_at_mid_heat, 7.0):
+		push_error("FAIL: Machine Gun shared heat speed expected 7.0 at 90 heat got %.3f" % speed_at_mid_heat)
+		return false
+	pool.heat_value = 0.0
+	pool.overheated = false
+	machine_gun.is_reloading = false
+	machine_gun.is_on_cooldown = true
+	machine_gun.current_ammo = 10
+	machine_gun.call("_add_held_trigger_heat", 1.0)
+	if not is_equal_approx(pool.heat_value, 28.0):
+		push_error("FAIL: Machine Gun held trigger heat expected 28.0 got %.3f" % pool.heat_value)
+		return false
+	machine_gun.is_on_cooldown = false
+	machine_gun.current_ammo = 10
+	pool.heat_value = 0.0
+	pool.overheated = false
+	machine_gun.call("request_primary_fire")
+	if not is_equal_approx(pool.heat_value, 0.0):
+		push_error("FAIL: Machine Gun shot added per-shot heat got %.3f" % pool.heat_value)
+		return false
+	pool.heat_value = 180.0
+	pool.overheated = false
+	machine_gun.is_reloading = false
+	machine_gun.is_on_cooldown = true
+	machine_gun.current_ammo = 10
+	machine_gun.call("_add_held_trigger_heat", 1.0)
+	if not is_equal_approx(pool.heat_value, 208.0):
+		push_error("FAIL: Machine Gun held trigger heat expected 208.0 above 180 heat got %.3f" % pool.heat_value)
+		return false
+	pool.heat_value = 0.0
+	pool.overheated = false
+	print("PASS: machine gun shared heat speed curve and held trigger heat")
 	return true
 
 func _assert_decay_rate(scene: Node, expected: float, label: String) -> void:
@@ -182,12 +245,18 @@ func _assert_plasma_lance_heat_feedback(scene: Node) -> bool:
 		return false
 	plasma_lance.call("force_skill_cooldowns_ready")
 	plasma_lance.set("_heat_spend_attack_count", 0)
+	plasma_lance.set("_heat_spend_chain_pending", false)
+	plasma_lance.set("_heat_spend_chain_last_spent", 0.0)
 	player.call("clear_heat_statuses")
 	plasma_lance.call("_try_trigger_heat_spend_chain", 20.0)
 	plasma_lance.call("_try_trigger_heat_spend_chain", 20.0)
 	plasma_lance.call("_try_trigger_heat_spend_chain", 20.0)
+	if bool(player.call("has_plasma_lance_heat_feedback")):
+		push_error("FAIL: Plasma Lance heat feedback triggered before reload finished")
+		return false
+	plasma_lance.call("_on_passive_event", &"on_reload_finished", {"source_weapon": plasma_lance})
 	if not bool(player.call("has_plasma_lance_heat_feedback")):
-		push_error("FAIL: Plasma Lance heat spend chain did not apply heat feedback")
+		push_error("FAIL: Plasma Lance heat spend chain did not apply heat feedback after reload")
 		return false
 	var heat_max := maxf(float(player.call("get_total_heat_max")), 1.0)
 	player.call("clear_heat_statuses")

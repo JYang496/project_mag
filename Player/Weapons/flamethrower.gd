@@ -6,13 +6,12 @@ var ITEM_NAME := "Flamethrower"
 
 @export_range(5.0, 120.0, 1.0) var cone_half_angle_deg: float = 40.0
 @export_range(40.0, 1200.0, 1.0) var base_flame_range: float = 280.0
-@export var heat_accumulation: float = 25.0
+@export var heat_accumulation: float = 55.0
 @export var max_heat: float = 200.0
 @export var heat_cooldown_rate: float = 26.0
 @export var heat_prepared_heat_amount: float = 20.0
 @export var heat_prepared_duration_sec: float = 10.0
 @export var heat_prepared_damage_mul: float = 1.05
-@export var heat_prepared_consume_mul: float = 1.35
 @export var heat_prepared_flat_damage_bonus: int = 1
 @export var heat_prepared_icd_sec: float = 0.25
 
@@ -191,6 +190,29 @@ func clear_timed_effects_for_prepare() -> void:
 	_heat_prepared_ready_at_msec = 0
 	_heat_prepared_accumulated_heat = 0.0
 
+func get_passive_status() -> Dictionary:
+	var required_heat := maxf(heat_max_value, 1.0)
+	var current_heat := maxf(_heat_prepared_accumulated_heat, 0.0)
+	var progress := clampf(current_heat / required_heat, 0.0, 1.0)
+	var state := "charging"
+	if not is_main_weapon():
+		state = "inactive"
+	elif not _heat_prepared_reload_ready:
+		state = "waiting_refresh"
+	elif current_heat >= required_heat:
+		state = "ready_pending_action"
+	return {
+		"id": "flamethrower_heat_prepared",
+		"display_name": "Heat Prepared",
+		"state": state,
+		"progress": progress,
+		"current": current_heat,
+		"required": required_heat,
+		"ready": state == "ready_pending_action",
+		"trigger_hint": "reload_finished",
+		"refresh_hint": "reload_finished",
+	}
+
 func _draw() -> void:
 	if not debug_mode:
 		return
@@ -257,7 +279,6 @@ func _try_apply_heat_prepared() -> void:
 			"apply_heat_prepared",
 			maxf(heat_prepared_duration_sec, 0.05),
 			maxf(heat_prepared_damage_mul, 0.05),
-			maxf(heat_prepared_consume_mul, 0.05),
 			maxi(heat_prepared_flat_damage_bonus, 0)
 		)
 	emit_passive_trigger(&"flamethrower_heat_prepared", {
@@ -268,7 +289,6 @@ func _try_apply_heat_prepared() -> void:
 		"shared_heat_added": maxf(heat_prepared_heat_amount, 0.0),
 		"duration": maxf(heat_prepared_duration_sec, 0.05),
 		"damage_multiplier": maxf(heat_prepared_damage_mul, 0.05),
-		"consume_multiplier": maxf(heat_prepared_consume_mul, 0.05),
 		"flat_damage_bonus": maxi(heat_prepared_flat_damage_bonus, 0),
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)

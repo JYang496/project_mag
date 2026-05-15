@@ -27,6 +27,7 @@ const MECHA_RESOURCE_PATHS := [
 const WEAPON_BRANCH_RESOURCE_PATHS := [
 	"res://data/weapon_branches/machine_gun_shield.tres",
 ]
+const WEAPON_PASSIVE_BRANCH_RESOURCE_PATHS := []
 const ECONOMY_RESOURCE_PATH := "res://data/economy/economy_config.tres"
 const WEAPON_BRANCH_ID_ALIASES := {
 	"twin_mg": "gatling_mg",
@@ -37,6 +38,7 @@ func _ready():
 	load_game()
 	load_weapon_data()
 	load_weapon_branch_data()
+	load_weapon_passive_branch_data()
 	load_mecha_data()
 	load_economy_data()
 
@@ -92,6 +94,21 @@ func load_weapon_branch_data() -> void:
 	if GlobalVariables.weapon_branch_list.is_empty():
 		push_warning("No weapon branch data loaded. Check resources in data/weapon_branches/*.tres.")
 
+func load_weapon_passive_branch_data() -> void:
+	GlobalVariables.weapon_passive_branch_list = {}
+	var dir := DirAccess.open("res://data/weapon_passives/")
+	if dir:
+		dir.list_dir_begin()
+		var file_name := dir.get_next()
+		while file_name != "":
+			if file_name.ends_with(".tres"):
+				_register_weapon_passive_branch_resource(load("res://data/weapon_passives/%s" % file_name), "res://data/weapon_passives/%s" % file_name)
+			file_name = dir.get_next()
+		dir.list_dir_end()
+	if GlobalVariables.weapon_passive_branch_list.is_empty():
+		for path: String in WEAPON_PASSIVE_BRANCH_RESOURCE_PATHS:
+			_register_weapon_passive_branch_resource(load(path), path)
+
 func load_economy_data() -> void:
 	GlobalVariables.economy_data = null
 	var resource := load(ECONOMY_RESOURCE_PATH)
@@ -130,6 +147,14 @@ func read_weapon_branch_definition(scene_path: String, branch_id: String) -> Wea
 		if _normalize_weapon_branch_id(def.branch_id) == normalized_branch_id:
 			return def
 	return null
+
+func read_weapon_passive_branch_definition(passive_id: String) -> Resource:
+	if passive_id == "":
+		return null
+	if GlobalVariables.weapon_passive_branch_list.is_empty():
+		load_weapon_passive_branch_data()
+	var def_variant: Variant = GlobalVariables.weapon_passive_branch_list.get(str(passive_id), null)
+	return def_variant as Resource
 
 func _normalize_weapon_branch_id(branch_id: String) -> String:
 	var normalized := str(branch_id).strip_edges()
@@ -254,6 +279,20 @@ func _register_weapon_branch_resource(resource: Resource, source_path: String) -
 	var branch_list: Array = GlobalVariables.weapon_branch_list[scene_path]
 	branch_list.append(branch_def)
 	GlobalVariables.weapon_branch_list[scene_path] = branch_list
+
+func _register_weapon_passive_branch_resource(resource: Resource, source_path: String) -> void:
+	if resource == null:
+		push_warning("Failed to load weapon passive resource: %s" % source_path)
+		return
+	var passive_id_value: Variant = resource.get("passive_id")
+	if passive_id_value == null:
+		push_warning("Weapon passive resource missing passive_id: %s" % source_path)
+		return
+	var passive_id := str(passive_id_value)
+	if passive_id == "":
+		push_warning("Weapon passive resource has empty passive_id: %s" % source_path)
+		return
+	GlobalVariables.weapon_passive_branch_list[passive_id] = resource
 
 # Return mecha autosave data, will be called in Start menu.
 func read_autosave_mecha_data(id : String) -> Dictionary:

@@ -7,111 +7,40 @@ var projectile_texture_resource = preload("res://asset/images/weapons/projectile
 # Weapon
 var ITEM_NAME = "Machine Gun"
 var attack_speed : float = 1.0
-@export var attack_speed_decay_interval: float = 0.35
 
-var max_speed_factor : float = 5.0
-var as_timer: Timer
+var max_speed_factor : float = 8.0
 
 const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
+const HEAT_SPEED_POINTS: Array[Vector2] = [
+	Vector2(0.0, 1.0),
+	Vector2(20.0, 2.0),
+	Vector2(40.0, 4.0),
+	Vector2(80.0, 6.0),
+	Vector2(100.0, 8.0),
+]
 
 @export var heat_accumulation: float = 4
+@export var heat_accumulation_per_sec: float = 28.0
 @export var max_heat: float = 100.0
 @export var heat_cooldown_rate: float = 6.0
 @export_range(5.0, 80.0, 1.0) var front_fire_half_angle_deg: float = 35.0
-@export var offhand_buff_duration_sec: float = 12.0
-@export var offhand_main_attack_speed_mult: float = 1.5
-@export var offhand_main_spread_mult: float = 0.5
 @export var heat_stabilized_duration_sec: float = 8.0
 @export var heat_stabilized_full_decay_mul: float = 0.5
 @export var heat_stabilized_full_cost_mul: float = 0.75
 var attack_range: float = 800.0
-var _offhand_buff_expires_at_msec: int = 0
-var _offhand_buff_target: Weapon = null
 
 var weapon_data = {
-	"1": {
-		"level": "1",
-		"damage": "5",
-		"speed": "600",
-		"hp": "1",
-		"fire_interval_sec": "1",
-		"ammo": "70",
-		"cost": "4",
-	},
-	"2": {
-		"level": "2",
-		"damage": "6",
-		"speed": "600",
-		"hp": "1",
-		"fire_interval_sec": "1",
-		"ammo": "75",
-		"cost": "4",
-	},
-	"3": {
-		"level": "3",
-		"damage": "7",
-		"speed": "600",
-		"hp": "1",
-		"fire_interval_sec": "1",
-		"ammo": "80",
-		"cost": "4",
-	},
-	"4": {
-		"level": "4",
-		"damage": "9",
-		"speed": "800",
-		"hp": "1",
-		"fire_interval_sec": "1",
-		"ammo": "85",
-		"cost": "4",
-	},
-	"5": {
-		"level": "5",
-		"damage": "11",
-		"speed": "800",
-		"hp": "2",
-		"fire_interval_sec": "1.0",
-		"ammo": "90",
-		"cost": "4",
-	},
-	"6": {
-		"level": "6",
-		"damage": "13",
-		"speed": "800",
-		"hp": "2",
-		"fire_interval_sec": "1.0",
-		"ammo": "95",
-		"cost": "4",
-	},
-	"7": {
-		"level": "7",
-		"damage": "15",
-		"speed": "800",
-		"hp": "2",
-		"fire_interval_sec": "1.0",
-		"ammo": "100",
-		"cost": "4",
-	}
+	"1": {"level": "1", "damage": "5", "speed": "600", "hp": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"},
+	"2": {"level": "2", "damage": "6", "speed": "600", "hp": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"},
+	"3": {"level": "3", "damage": "7", "speed": "600", "hp": "1", "fire_interval_sec": "0.9", "ammo": "55", "cost": "4"},
+	"4": {"level": "4", "damage": "9", "speed": "800", "hp": "1", "fire_interval_sec": "0.9", "ammo": "55", "cost": "4"},
+	"5": {"level": "5", "damage": "11", "speed": "800", "hp": "2", "fire_interval_sec": "0.8", "ammo": "65", "cost": "4"},
+	"6": {"level": "6", "damage": "13", "speed": "800", "hp": "2", "fire_interval_sec": "0.8", "ammo": "65", "cost": "4"},
+	"7": {"level": "7", "damage": "15", "speed": "800", "hp": "2", "fire_interval_sec": "0.8", "ammo": "65", "cost": "4"}
 }
-
-var weapon_file
-var minigun_data = JSON.new()
 
 func _ready() -> void:
 	super._ready()
-	_setup_attack_speed_decay_timer()
-
-func _setup_attack_speed_decay_timer() -> void:
-	if as_timer and is_instance_valid(as_timer):
-		return
-	as_timer = Timer.new()
-	as_timer.name = "AttackSpeedDecayTimer"
-	as_timer.one_shot = false
-	as_timer.wait_time = maxf(attack_speed_decay_interval, 0.05)
-	add_child(as_timer)
-	as_timer.timeout.connect(Callable(self, "_on_as_timer_timeout"))
-	as_timer.start()
-
 
 func set_level(lv):
 	lv = str(lv)
@@ -130,9 +59,39 @@ func set_level(lv):
 	sync_stats()
 	notify_branch_level_applied(level)
 
+func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, delta: float) -> void:
+	if not can_run_active_behavior():
+		return
+	if not pressed:
+		return
+	_add_held_trigger_heat(delta)
+	request_primary_fire()
+
+func request_primary_fire() -> bool:
+	if not is_attack_phase_allowed():
+		return false
+	if is_on_cooldown:
+		return false
+	if not can_fire_with_heat():
+		return false
+	if not can_fire_with_ammo():
+		if uses_ammo_system() and current_ammo <= 0:
+			request_reload()
+		return false
+	if not consume_ammo(1):
+		if uses_ammo_system() and current_ammo <= 0:
+			request_reload()
+		return false
+	emit_signal("shoot")
+	notify_main_weapon_fired()
+	if uses_ammo_system() and current_ammo <= 0:
+		request_reload()
+	return true
+
 func _on_shoot():
 	is_on_cooldown = true
-	var cooldown := attack_cooldown / attack_speed
+	attack_speed = _resolve_shared_heat_attack_speed()
+	var cooldown := attack_cooldown / maxf(attack_speed, 0.1)
 	cooldown = cooldown / maxf(get_external_attack_speed_multiplier(), 0.1)
 	cooldown *= get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
@@ -152,29 +111,46 @@ func _on_shoot():
 	notify_branch_weapon_shot(base_direction)
 	var extra_heat_multiplier := get_branch_extra_heat_shot_multiplier()
 	var extra_heat_shots := float(max(0, fired_count - 1)) * clampf(extra_heat_multiplier, 0.0, 1.0)
-	register_shot_heat(extra_heat_shots)
-	adjust_attack_speed(1.2)
+	if extra_heat_shots > 0.0:
+		register_shot_heat(extra_heat_shots)
 
-func adjust_attack_speed(rate : float) -> void:
-	attack_speed = clampf(attack_speed * rate, 1.0, max_speed_factor)
+func _resolve_shared_heat_attack_speed() -> float:
+	var heat_value := _get_shared_heat_value()
+	var resolved_speed := float(HEAT_SPEED_POINTS[0].y)
+	for i in range(HEAT_SPEED_POINTS.size() - 1):
+		var current := HEAT_SPEED_POINTS[i]
+		var next := HEAT_SPEED_POINTS[i + 1]
+		if heat_value <= next.x:
+			var t := inverse_lerp(current.x, next.x, heat_value)
+			resolved_speed = lerpf(current.y, next.y, clampf(t, 0.0, 1.0))
+			return clampf(resolved_speed, 1.0, max_speed_factor)
+	resolved_speed = float(HEAT_SPEED_POINTS[HEAT_SPEED_POINTS.size() - 1].y)
+	return clampf(resolved_speed, 1.0, max_speed_factor)
 
+func _get_shared_heat_value() -> float:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return get_heat_value()
+	if PlayerData.player.has_method("get_total_heat_value"):
+		return maxf(float(PlayerData.player.call("get_total_heat_value")), 0.0)
+	return get_heat_value()
 
-func _on_as_timer_timeout() -> void:
-	if not is_on_cooldown:
-		adjust_attack_speed(0.8)
-
-func _process_main_weapon_effect(_delta: float) -> void:
-	_update_offhand_focus_runtime()
-
-func _process_offhand_weapon_effect(_delta: float) -> void:
-	_update_offhand_focus_runtime()
-
-func _update_offhand_focus_runtime() -> void:
-	var now_msec := Time.get_ticks_msec()
-	if _offhand_buff_expires_at_msec <= 0:
+func _add_held_trigger_heat(delta: float) -> void:
+	if delta <= 0.0:
 		return
-	if now_msec >= _offhand_buff_expires_at_msec:
-		_clear_offhand_main_focus_buff()
+	if not can_fire_with_heat():
+		return
+	if not can_fire_with_ammo():
+		return
+	var core := _get_active_heat_core()
+	if core == null:
+		return
+	var amount := maxf(heat_accumulation_per_sec, 0.0) * maxf(delta, 0.0)
+	if amount <= 0.0:
+		return
+	if core.has_method("add_heat_amount"):
+		core.call("add_heat_amount", amount)
+	else:
+		core.call("add_heat", amount / maxf(heat_per_shot, 0.001))
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
@@ -203,16 +179,6 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 		"target_weapon": null,
 	}, PASSIVE_SCOPE_GLOBAL)
 
-func _on_enter_main_weapon_role() -> void:
-	pass
-
-func _on_tree_exiting() -> void:
-	_clear_offhand_main_focus_buff()
-
-func clear_timed_effects_for_prepare() -> void:
-	super.clear_timed_effects_for_prepare()
-	_clear_offhand_main_focus_buff()
-
 func _get_level_data(lv: String) -> Dictionary:
 	if weapon_data.has(lv):
 		return weapon_data[lv]
@@ -225,14 +191,7 @@ func _get_level_data(lv: String) -> Dictionary:
 		return weapon_data["1"]
 	
 	# This should not trigger
-	return {
-		"level": "1",
-		"damage": "5",
-		"speed": "600",
-		"hp": "1",
-		"fire_interval_sec": "2",
-		"ammo": "70",
-	}
+	return {"level": "1", "damage": "5", "speed": "600", "hp": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"}
 
 func _constrain_to_forward_cone(direction: Vector2, forward: Vector2) -> Vector2:
 	if direction == Vector2.ZERO:
@@ -246,61 +205,6 @@ func _constrain_to_forward_cone(direction: Vector2, forward: Vector2) -> Vector2
 	if absf(angle) <= cone_rad:
 		return normalized_dir
 	return normalized_forward.rotated(signf(angle) * cone_rad).normalized()
-
-func _apply_offhand_main_focus_buff(target_weapon: Weapon) -> bool:
-	if target_weapon == null or not is_instance_valid(target_weapon):
-		return false
-	if target_weapon.has_method("set_external_attack_speed_multiplier"):
-		target_weapon.call("set_external_attack_speed_multiplier", maxf(offhand_main_attack_speed_mult, 0.1))
-	var spread_applied := false
-	if target_weapon.has_method("set_external_spread_multiplier"):
-		target_weapon.call("set_external_spread_multiplier", maxf(offhand_main_spread_mult, 0.01))
-		spread_applied = true
-	return spread_applied
-
-func _sync_offhand_main_focus_buff_target() -> void:
-	var current_main := _resolve_current_main_weapon_for_buff_sync()
-	if current_main == null:
-		_clear_offhand_main_focus_buff()
-		return
-	if _offhand_buff_target != current_main:
-		_clear_offhand_main_focus_buff_effect_only()
-		_offhand_buff_target = current_main
-	_apply_offhand_main_focus_buff(current_main)
-
-func _resolve_current_main_weapon_for_buff_sync() -> Weapon:
-	if PlayerData.player_weapon_list.is_empty():
-		return null
-	PlayerData.sanitize_main_weapon_index()
-	var idx := PlayerData.main_weapon_index
-	if idx < 0 or idx >= PlayerData.player_weapon_list.size():
-		return null
-	var weapon_variant: Variant = PlayerData.player_weapon_list[idx]
-	var weapon := weapon_variant as Weapon
-	if weapon == null or not is_instance_valid(weapon):
-		return null
-	return weapon
-
-func _clear_offhand_main_focus_buff() -> void:
-	_clear_offhand_main_focus_buff_effect_only()
-	_offhand_buff_expires_at_msec = 0
-	if PlayerData.player and is_instance_valid(PlayerData.player):
-		PlayerData.player.call("remove_global_weapon_passive_effect", _get_offhand_focus_attack_speed_source_id())
-		PlayerData.player.call("remove_global_weapon_passive_effect", _get_offhand_focus_spread_source_id())
-
-func _get_offhand_focus_attack_speed_source_id() -> StringName:
-	return StringName("offhand_machine_gun_focus_attack_speed_%s" % str(get_instance_id()))
-
-func _get_offhand_focus_spread_source_id() -> StringName:
-	return StringName("offhand_machine_gun_focus_spread_%s" % str(get_instance_id()))
-
-func _clear_offhand_main_focus_buff_effect_only() -> void:
-	if _offhand_buff_target != null and is_instance_valid(_offhand_buff_target):
-		if _offhand_buff_target.has_method("set_external_attack_speed_multiplier"):
-			_offhand_buff_target.call("set_external_attack_speed_multiplier", 1.0)
-		if _offhand_buff_target.has_method("set_external_spread_multiplier"):
-			_offhand_buff_target.call("set_external_spread_multiplier", 1.0)
-	_offhand_buff_target = null
 
 func _fire_single_bullet(direction: Vector2) -> void:
 	projectile_direction = direction

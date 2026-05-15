@@ -166,6 +166,22 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
+func get_passive_status() -> Dictionary:
+	var state := "ready"
+	if not is_main_weapon():
+		state = "inactive"
+	elif not is_passive_ready():
+		state = "waiting_refresh"
+	return {
+		"id": "rocket_cluster_kill_triggered",
+		"display_name": "Cluster Kill",
+		"state": state,
+		"ready": state == "ready",
+		"trigger_hint": "enemy_killed_nearby_enemy",
+		"refresh_hint": "reload",
+		"radius": maxf(cluster_kill_radius, 0.0),
+	}
+
 func _count_other_enemies_near(position: Vector2, killed_enemy: Variant) -> int:
 	var tree := get_tree()
 	if tree == null:

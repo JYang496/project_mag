@@ -940,6 +940,14 @@ func get_total_external_damage_mul() -> float:
 
 func emit_passive_trigger(event_name: StringName, detail: Dictionary = {}, passive_scope: StringName = PASSIVE_SCOPE_BODY) -> void:
 	var output := detail.duplicate(true) if detail != null else {}
+	if not output.has("passive_id"):
+		output["passive_id"] = str(event_name)
+	if not output.has("trigger_type"):
+		output["trigger_type"] = str(output.get("trigger", event_name))
+	if not output.has("refresh_type"):
+		output["refresh_type"] = str(output.get("refresh", ""))
+	if not output.has("state_after_trigger"):
+		output["state_after_trigger"] = "ready" if is_passive_ready() else "cooldown"
 	if not output.has("passive_scope"):
 		output["passive_scope"] = passive_scope
 	passive_triggered.emit(event_name, output)
@@ -1189,18 +1197,40 @@ func get_weapon_active_hit_window_progress() -> Dictionary:
 		"active": _weapon_active_hit_window_hits > 0 and _weapon_active_hit_window_expires_at_msec > Time.get_ticks_msec(),
 	}
 
-func notify_offhand_skill_triggered(_cooldown_sec: float) -> void:
-	_offhand_skill_ready = false
+func get_passive_status() -> Dictionary:
+	return {
+		"id": "",
+		"display_name": "",
+		"state": "unavailable",
+		"progress": 1.0 if is_passive_ready() else 0.0,
+		"current": 1 if is_passive_ready() else 0,
+		"required": 1,
+		"ready": is_passive_ready(),
+		"trigger_hint": "",
+		"refresh_hint": "reload",
+	}
 
-func get_offhand_skill_cd_progress() -> float:
-	return 1.0 if _offhand_skill_ready else 0.0
-
-func is_offhand_skill_ready() -> bool:
+func is_passive_ready() -> bool:
 	return _offhand_skill_ready
 
-func _refresh_offhand_skill_on_reload() -> void:
+func notify_passive_triggered(_cooldown_sec := 0.0) -> void:
+	_offhand_skill_ready = false
+
+func refresh_passive_on_reload() -> void:
 	_offhand_skill_ready = true
 	offhand_refreshed_by_reload.emit(self)
+
+func notify_offhand_skill_triggered(cooldown_sec: float) -> void:
+	notify_passive_triggered(cooldown_sec)
+
+func get_offhand_skill_cd_progress() -> float:
+	return 1.0 if is_passive_ready() else 0.0
+
+func is_offhand_skill_ready() -> bool:
+	return is_passive_ready()
+
+func _refresh_offhand_skill_on_reload() -> void:
+	refresh_passive_on_reload()
 
 func force_skill_cooldowns_ready() -> void:
 	_weapon_active_cd_remaining = 0.0

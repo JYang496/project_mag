@@ -179,6 +179,21 @@ func on_projectile_hit_wall(projectile: Projectile, wall_hit: Dictionary) -> voi
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
+func get_passive_status() -> Dictionary:
+	var state := "ready"
+	if not is_main_weapon():
+		state = "inactive"
+	elif not is_passive_ready():
+		state = "waiting_refresh"
+	return {
+		"id": "chainsaw_wall_contact_triggered",
+		"display_name": "Wall Contact",
+		"state": state,
+		"ready": state == "ready",
+		"trigger_hint": "projectile_wall_contact",
+		"refresh_hint": "reload",
+	}
+
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
 	notify_branch_passive_event(event_name, detail)

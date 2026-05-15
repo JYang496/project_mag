@@ -53,12 +53,8 @@ func consume_heat_spend_multiplier() -> float:
 	var spent_ratio := clampf(spent / maxf(effective_cost, 0.001), 0.0, 1.0)
 	var multiplier := 1.0 + maxf(cannon_heat_spend_damage_bonus, 0.0) * spent_ratio
 	var heat_prepared_active := false
-	var prepared_consume_mul := 1.0
-	if player.has_method("get_heat_prepared_consume_mul"):
-		prepared_consume_mul = maxf(float(player.call("get_heat_prepared_consume_mul")), 0.05)
 	if player.has_method("has_heat_prepared") and bool(player.call("has_heat_prepared")):
 		heat_prepared_active = true
-		multiplier *= prepared_consume_mul
 	if weapon != null and is_instance_valid(weapon) and weapon.has_method("emit_passive_trigger"):
 		weapon.call("emit_passive_trigger", &"cannon_thermal_heat_spend", {
 			"trigger": "shot",
@@ -68,7 +64,6 @@ func consume_heat_spend_multiplier() -> float:
 			"spent_ratio": spent_ratio,
 			"damage_multiplier": multiplier,
 			"heat_prepared_active": heat_prepared_active,
-			"heat_prepared_consume_multiplier": prepared_consume_mul if heat_prepared_active else 1.0,
 		}, Weapon.PASSIVE_SCOPE_GLOBAL)
 	return maxf(multiplier, 0.05)
 

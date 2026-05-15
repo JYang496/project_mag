@@ -123,6 +123,28 @@ func _update_continuous_move_trigger(delta: float) -> void:
 		"player": player,
 	}, PASSIVE_SCOPE_GLOBAL)
 
+func get_passive_status() -> Dictionary:
+	var required_sec := maxf(continuous_move_trigger_sec, 0.1)
+	var current_sec := clampf(_continuous_move_accum_sec, 0.0, required_sec)
+	var state := "charging"
+	if not is_main_weapon():
+		state = "inactive"
+	elif not is_passive_ready():
+		state = "waiting_refresh"
+	elif current_sec >= required_sec:
+		state = "ready_pending_action"
+	return {
+		"id": "pistol_continuous_move_triggered",
+		"display_name": "Continuous Move",
+		"state": state,
+		"progress": clampf(current_sec / required_sec, 0.0, 1.0),
+		"current": current_sec,
+		"required": required_sec,
+		"ready": state == "ready_pending_action",
+		"trigger_hint": "continuous_move",
+		"refresh_hint": "reload",
+	}
+
 func _is_battle_phase() -> bool:
 	if PhaseManager == null or not PhaseManager.has_method("current_state"):
 		return true

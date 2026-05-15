@@ -220,6 +220,28 @@ func _reset_beam_multi_hit_trigger() -> void:
 	_beam_multi_hit_targets.clear()
 	_beam_multi_hit_triggered = false
 
+func get_passive_status() -> Dictionary:
+	var required_hits := maxi(1, simultaneous_hit_trigger_count)
+	var current_hits := mini(_beam_multi_hit_target_ids.size(), required_hits)
+	var state := "charging"
+	if not is_main_weapon():
+		state = "inactive"
+	elif _beam_multi_hit_triggered or not is_passive_ready():
+		state = "waiting_refresh"
+	elif current_hits >= required_hits:
+		state = "ready_pending_action"
+	return {
+		"id": "charged_blaster_multi_hit_triggered",
+		"display_name": "Beam Multi Hit",
+		"state": state,
+		"progress": clampf(float(current_hits) / float(required_hits), 0.0, 1.0),
+		"current": current_hits,
+		"required": required_hits,
+		"ready": state == "ready_pending_action",
+		"trigger_hint": "same_beam_unique_targets",
+		"refresh_hint": "reload",
+	}
+
 func reduce_cooldown_remaining(seconds: float) -> float:
 	if seconds <= 0.0:
 		return 0.0

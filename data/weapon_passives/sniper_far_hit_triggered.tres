@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WeaponPassiveBranchDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/WeaponPassiveBranchDefinition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+passive_id = "sniper_far_hit_triggered"
+display_name = "Far Hit"
+description = "Hit a target from at least the required distance."
+condition_type = "distance_threshold"
+refresh_type = "reload"
+ui_mode = "threshold"

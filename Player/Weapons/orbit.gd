@@ -250,6 +250,17 @@ func _try_trigger_player_damaged(detail: Dictionary) -> void:
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
+func get_passive_status() -> Dictionary:
+	var state := "ready" if is_passive_ready() else "waiting_refresh"
+	return {
+		"id": "orbit_player_damaged_triggered",
+		"display_name": "Player Damaged",
+		"state": state,
+		"ready": state == "ready",
+		"trigger_hint": "player_damaged",
+		"refresh_hint": "reload",
+	}
+
 func get_satellites() -> Array[Node2D]:
 	var valid_satellites: Array[Node2D] = []
 	for item in satellites:

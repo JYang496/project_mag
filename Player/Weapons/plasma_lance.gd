@@ -21,6 +21,8 @@ const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
 
 var attack_range: float = 980.0
 var _heat_spend_attack_count: int = 0
+var _heat_spend_chain_pending: bool = false
+var _heat_spend_chain_last_spent: float = 0.0
 
 var weapon_data := {
 	"1": {"level": "1", "damage": "26", "speed": "1100", "hp": "4", "fire_interval_sec": "1.5", "ammo": "16", "cost": "12"},
@@ -99,12 +101,8 @@ func _consume_heat_spend_multiplier() -> float:
 	var spent_ratio := clampf(spent / maxf(intended_cost, 0.001), 0.0, max_spend_ratio)
 	var multiplier := 1.0 + maxf(plasma_heat_spend_damage_bonus, 0.0) * spent_ratio
 	var heat_prepared_active := false
-	var prepared_consume_mul := 1.0
-	if player.has_method("get_heat_prepared_consume_mul"):
-		prepared_consume_mul = maxf(float(player.call("get_heat_prepared_consume_mul")), 0.05)
 	if player.has_method("has_heat_prepared") and bool(player.call("has_heat_prepared")):
 		heat_prepared_active = true
-		multiplier *= prepared_consume_mul
 	emit_passive_trigger(&"plasma_lance_heat_spend", {
 		"trigger": "shot",
 		"heat_spent": spent,
@@ -112,7 +110,6 @@ func _consume_heat_spend_multiplier() -> float:
 		"spent_ratio": spent_ratio,
 		"damage_multiplier": multiplier,
 		"heat_prepared_active": heat_prepared_active,
-		"heat_prepared_consume_multiplier": prepared_consume_mul if heat_prepared_active else 1.0,
 	}, PASSIVE_SCOPE_GLOBAL)
 	_try_trigger_heat_spend_chain(spent)
 	return maxf(multiplier, 0.05)
@@ -132,6 +129,19 @@ func _try_trigger_heat_spend_chain(spent: float) -> void:
 	if not is_offhand_skill_ready():
 		return
 	_heat_spend_attack_count += 1
+	_heat_spend_chain_last_spent = spent
+	var required_count := maxi(1, heat_spend_attacks_trigger_count)
+	if _heat_spend_attack_count < required_count:
+		return
+	_heat_spend_chain_pending = true
+
+func _trigger_pending_heat_spend_chain() -> void:
+	if not _heat_spend_chain_pending:
+		return
+	if not is_main_weapon():
+		return
+	if not is_offhand_skill_ready():
+		return
 	var required_count := maxi(1, heat_spend_attacks_trigger_count)
 	if _heat_spend_attack_count < required_count:
 		return
@@ -146,10 +156,10 @@ func _try_trigger_heat_spend_chain(spent: float) -> void:
 			clampf(heat_feedback_threshold, 0.0, 1.0)
 		)
 	emit_passive_trigger(&"plasma_lance_heat_spend_chain_triggered", {
-		"trigger": "heat_spend_attack_count",
+		"trigger": "reload_finished_after_heat_spend_attack_count",
 		"heat_spend_attack_count": _heat_spend_attack_count,
 		"required_count": required_count,
-		"last_heat_spent": spent,
+		"last_heat_spent": _heat_spend_chain_last_spent,
 		"refresh": "reload",
 		"status": "plasma_lance_heat_feedback",
 		"duration": maxf(heat_feedback_duration_sec, 0.05),
@@ -158,14 +168,41 @@ func _try_trigger_heat_spend_chain(spent: float) -> void:
 		"high_heat_gain_multiplier": maxf(heat_feedback_high_gain_mul, 0.0),
 	}, PASSIVE_SCOPE_GLOBAL)
 
+func get_passive_status() -> Dictionary:
+	var required_count := maxi(1, heat_spend_attacks_trigger_count)
+	var current_count := mini(_heat_spend_attack_count, required_count)
+	var state := "charging"
+	if not is_main_weapon():
+		state = "inactive"
+	elif not is_passive_ready():
+		state = "waiting_refresh"
+	elif _heat_spend_chain_pending or current_count >= required_count:
+		state = "ready_pending_action"
+	return {
+		"id": "plasma_lance_heat_spend_chain_triggered",
+		"display_name": "Heat Spend Chain",
+		"state": state,
+		"progress": clampf(float(current_count) / float(required_count), 0.0, 1.0),
+		"current": current_count,
+		"required": required_count,
+		"ready": state == "ready_pending_action",
+		"trigger_hint": "reload_finished",
+		"refresh_hint": "reload",
+	}
+
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
 	if event_name != &"on_reload_finished":
 		return
 	if detail.get("source_weapon", null) != self:
 		return
+	_trigger_pending_heat_spend_chain()
 	_heat_spend_attack_count = 0
+	_heat_spend_chain_pending = false
+	_heat_spend_chain_last_spent = 0.0
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
 	_heat_spend_attack_count = 0
+	_heat_spend_chain_pending = false
+	_heat_spend_chain_last_spent = 0.0

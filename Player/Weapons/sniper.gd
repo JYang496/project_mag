@@ -98,6 +98,24 @@ func _try_trigger_far_hit(target: Node) -> void:
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
+func get_passive_status() -> Dictionary:
+	var state := "ready"
+	if not is_main_weapon():
+		state = "inactive"
+	elif not is_passive_ready():
+		state = "waiting_refresh"
+	return {
+		"id": "sniper_far_hit_triggered",
+		"display_name": "Far Hit",
+		"state": state,
+		"ready": state == "ready",
+		"condition_type": "distance_threshold",
+		"required": maxf(far_hit_trigger_distance, 0.0),
+		"comparison": ">=",
+		"trigger_hint": "hit_distance",
+		"refresh_hint": "reload",
+	}
+
 func _apply_distance_bonus_damage(target: Node) -> void:
 	if target == null or not is_instance_valid(target):
 		return

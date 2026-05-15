@@ -331,6 +331,30 @@ func _try_trigger_long_dash_hit(target: Node) -> void:
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
+func get_passive_status() -> Dictionary:
+	var threshold := attack_range * maxf(long_dash_trigger_range_ratio, 0.0)
+	var state := "ready"
+	if not is_main_weapon():
+		state = "inactive"
+	elif not is_passive_ready():
+		state = "waiting_refresh"
+	var status := {
+		"id": "dash_blade_long_dash_hit_triggered",
+		"display_name": "Long Dash Hit",
+		"state": state,
+		"ready": state == "ready",
+		"condition_type": "distance_threshold",
+		"required": threshold,
+		"comparison": ">=",
+		"trigger_hint": "dash_start_distance",
+		"refresh_hint": "reload",
+	}
+	if _state == AttackState.DASHING or _state == AttackState.RETURNING:
+		var current_distance := maxf(_dash_start_distance, 0.0)
+		status["current"] = current_distance
+		status["progress"] = clampf(current_distance / maxf(threshold, 0.001), 0.0, 1.0)
+	return status
+
 func _update_attack_range_shape() -> void:
 	var circle_shape := attack_range_shape.shape as CircleShape2D
 	if circle_shape:

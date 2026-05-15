@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WeaponPassiveBranchDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/WeaponPassiveBranchDefinition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+passive_id = "rocket_cluster_kill_triggered"
+display_name = "Cluster Kill"
+description = "Trigger after a kill when another enemy is nearby."
+condition_type = "event_reaction"
+refresh_type = "reload"
+ui_mode = "state"

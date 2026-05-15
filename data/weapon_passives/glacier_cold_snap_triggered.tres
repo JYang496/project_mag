@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WeaponPassiveBranchDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/WeaponPassiveBranchDefinition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+passive_id = "glacier_cold_snap_triggered"
+display_name = "Cold Snap"
+description = "Trigger on a freeze hit, with a short internal cooldown."
+condition_type = "event_reaction"
+refresh_type = "reload"
+ui_mode = "cooldown"

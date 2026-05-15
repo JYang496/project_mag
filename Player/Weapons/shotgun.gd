@@ -201,3 +201,21 @@ func _try_trigger_close_hit(target: Node) -> void:
 		"threshold": close_hit_trigger_distance,
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
+
+func get_passive_status() -> Dictionary:
+	var state := "ready"
+	if not is_main_weapon():
+		state = "inactive"
+	elif not is_passive_ready():
+		state = "waiting_refresh"
+	return {
+		"id": "shotgun_close_hit_triggered",
+		"display_name": "Close Hit",
+		"state": state,
+		"ready": state == "ready",
+		"condition_type": "distance_threshold",
+		"required": maxf(close_hit_trigger_distance, 0.0),
+		"comparison": "<",
+		"trigger_hint": "hit_distance",
+		"refresh_hint": "reload",
+	}
