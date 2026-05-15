@@ -37,6 +37,9 @@ func _run_probe(scene: Node) -> void:
 		push_error("FAIL: heat passive test dummy did not take damage. before=%d after=%d" % [hp_before, hp_after])
 		quit(1)
 		return
+	if not await _assert_flamethrower_heat_prepared_contract(scene):
+		quit(1)
+		return
 	scene.call("_ready_cannon_body_passive")
 	await physics_frame
 	var target_root := scene.get_node_or_null("SpawnRoot/Targets")
@@ -71,6 +74,73 @@ func _run_probe(scene: Node) -> void:
 		return
 	print("PASS: heat passive test dummy damage before=%d after=%d" % [hp_before, hp_after])
 	quit(0)
+
+func _assert_flamethrower_heat_prepared_contract(scene: Node) -> bool:
+	var player_data := root.get_node_or_null("/root/PlayerData")
+	if player_data == null:
+		push_error("FAIL: missing PlayerData autoload")
+		return false
+	var player := player_data.get("player") as Node
+	if player == null or not is_instance_valid(player):
+		push_error("FAIL: missing PlayerData.player")
+		return false
+	var weapons_by_name: Dictionary = scene.get("_weapons_by_name")
+	var flamethrower := weapons_by_name.get("Flamethrower", null) as Node
+	var plasma_lance := weapons_by_name.get("Plasma Lance", null) as Node
+	if flamethrower == null or not is_instance_valid(flamethrower):
+		push_error("FAIL: missing Flamethrower weapon")
+		return false
+	if plasma_lance == null or not is_instance_valid(plasma_lance):
+		push_error("FAIL: missing Plasma Lance weapon")
+		return false
+	scene.call("_set_main_weapon", "Flamethrower")
+	player.call("clear_heat_statuses")
+	player.call("consume_shared_heat", 999999.0)
+	flamethrower.set("_heat_prepared_reload_ready", true)
+	flamethrower.set("_heat_prepared_accumulated_heat", 0.0)
+	var heat_per_shot := maxf(float(flamethrower.get("heat_per_shot")), 0.001)
+	var required_heat := maxf(float(flamethrower.get("heat_max_value")), 1.0)
+	var shots_before_trigger := maxi(0, int(ceil(required_heat / heat_per_shot)) - 1)
+	for i in range(shots_before_trigger):
+		flamethrower.call("register_shot_heat")
+	if bool(player.call("has_heat_prepared")):
+		push_error("FAIL: Flamethrower Heat Prepared triggered before reload")
+		return false
+	flamethrower.call("register_shot_heat")
+	if bool(player.call("has_heat_prepared")):
+		push_error("FAIL: Flamethrower Heat Prepared triggered from accumulated heat without reload")
+		return false
+	if float(flamethrower.get("_heat_prepared_accumulated_heat")) < required_heat:
+		push_error("FAIL: Flamethrower accumulated heat did not reach reload trigger threshold")
+		return false
+	flamethrower.call("_on_passive_event", &"on_reload_finished", {"source_weapon": flamethrower})
+	if not bool(player.call("has_heat_prepared")):
+		push_error("FAIL: Flamethrower Heat Prepared did not trigger on reload after accumulated heat threshold")
+		return false
+	if not bool(flamethrower.get("_heat_prepared_reload_ready")):
+		push_error("FAIL: Flamethrower reload did not unlock Heat Prepared accumulation")
+		return false
+	if not is_equal_approx(float(flamethrower.get("_heat_prepared_accumulated_heat")), 0.0):
+		push_error("FAIL: Flamethrower reload did not clear accumulated Heat Prepared progress")
+		return false
+	var pool := player.call("get_shared_heat_pool") as SharedHeatPool
+	if pool == null:
+		push_error("FAIL: missing shared heat pool")
+		return false
+	pool.heat_value = maxf(float(plasma_lance.get("plasma_heat_spend_amount")), 20.0)
+	pool.overheated = false
+	plasma_lance.call("_consume_heat_spend_multiplier")
+	if not bool(player.call("has_heat_prepared")):
+		push_error("FAIL: Heat Prepared was consumed by heat spend")
+		return false
+	player.call("clear_heat_statuses")
+	flamethrower.set("_heat_prepared_accumulated_heat", maxf(required_heat - heat_per_shot, 0.0))
+	flamethrower.call("_on_passive_event", &"on_reload_finished", {"source_weapon": flamethrower})
+	if bool(player.call("has_heat_prepared")):
+		push_error("FAIL: Flamethrower Heat Prepared triggered on reload below accumulated heat threshold")
+		return false
+	print("PASS: flamethrower reload-gated accumulated Heat Prepared trigger, persistence, and reset")
+	return true
 
 func _assert_decay_rate(scene: Node, expected: float, label: String) -> void:
 	var player_data := root.get_node_or_null("/root/PlayerData")

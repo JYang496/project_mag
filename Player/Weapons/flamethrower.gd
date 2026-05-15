@@ -9,15 +9,12 @@ var ITEM_NAME := "Flamethrower"
 @export var heat_accumulation: float = 25.0
 @export var max_heat: float = 200.0
 @export var heat_cooldown_rate: float = 26.0
-@export var offhand_main_damage_bonus_flat: int = 1
-@export var offhand_damage_bonus_duration_sec: float = 6.0
 @export var heat_prepared_heat_amount: float = 20.0
 @export var heat_prepared_duration_sec: float = 10.0
 @export var heat_prepared_damage_mul: float = 1.05
 @export var heat_prepared_consume_mul: float = 1.35
-@export_range(0.0, 1.0, 0.01) var heat_prepared_min_heat_ratio: float = 0.7
+@export var heat_prepared_flat_damage_bonus: int = 1
 @export var heat_prepared_icd_sec: float = 0.25
-const OFFHAND_DAMAGE_SOURCE: StringName = &"offhand_flamethrower_damage_bonus"
 
 ## Debug mode: 显示攻击范围扇形
 @export var debug_mode: bool = false
@@ -25,9 +22,9 @@ const OFFHAND_DAMAGE_SOURCE: StringName = &"offhand_flamethrower_damage_bonus"
 var attack_range: float = 280.0
 ## 已攻击过的目标ID（每轮射击重置）
 var _attacked_target_ids: Dictionary = {}
-var _offhand_bonus_target: Weapon = null
 var _heat_prepared_ready_at_msec: int = 0
 var _heat_prepared_reload_ready: bool = true
+var _heat_prepared_accumulated_heat: float = 0.0
 
 var weapon_data := {
 	"1": {"level": "1", "damage": "8", "fire_interval_sec": "0.30", "ammo": "120", "range": "260", "cost": "11"},
@@ -120,7 +117,6 @@ func _apply_fire_damage(target: Node) -> void:
 
 	# 调用 on_hit_target 触发武器的命中效果
 	on_hit_target_with_damage_type(target, Attack.TYPE_FIRE)
-	_try_apply_heat_prepared()
 
 func _collect_targets_in_cone(forward: Vector2) -> Array[Node]:
 	var output: Array[Node] = []
@@ -168,21 +164,32 @@ func _physics_process(delta: float) -> void:
 		queue_redraw()
 
 func _process_main_weapon_effect(_delta: float) -> void:
-	_clear_offhand_main_weapon_damage_bonus()
+	pass
 
 func _process_offhand_weapon_effect(_delta: float) -> void:
 	pass
 
 func _on_enter_main_weapon_role() -> void:
-	_clear_offhand_main_weapon_damage_bonus()
+	pass
 
-func _on_tree_exiting() -> void:
-	_clear_offhand_main_weapon_damage_bonus()
+func register_shot_heat(multiplier: float = 1.0) -> void:
+	var heat_before := get_heat_value()
+	super.register_shot_heat(multiplier)
+	if not is_main_weapon():
+		return
+	if not _heat_prepared_reload_ready:
+		return
+	var heat_after := get_heat_value()
+	var added_heat := maxf(heat_after - heat_before, 0.0)
+	if added_heat <= 0.0:
+		return
+	_heat_prepared_accumulated_heat += added_heat
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
 	_heat_prepared_reload_ready = true
 	_heat_prepared_ready_at_msec = 0
+	_heat_prepared_accumulated_heat = 0.0
 
 func _draw() -> void:
 	if not debug_mode:
@@ -225,11 +232,14 @@ func _get_effective_cone_half_angle_deg() -> float:
 
 func _try_apply_heat_prepared() -> void:
 	if not is_main_weapon():
+		_heat_prepared_accumulated_heat = 0.0
 		return
 	if not _heat_prepared_reload_ready:
+		_heat_prepared_accumulated_heat = 0.0
 		return
-	var heat_ratio := get_heat_ratio()
-	if heat_ratio < clampf(heat_prepared_min_heat_ratio, 0.0, 1.0):
+	var required_heat := maxf(heat_max_value, 1.0)
+	if _heat_prepared_accumulated_heat < required_heat:
+		_heat_prepared_accumulated_heat = 0.0
 		return
 	var player: Node = PlayerData.player
 	if player == null or not is_instance_valid(player):
@@ -247,17 +257,19 @@ func _try_apply_heat_prepared() -> void:
 			"apply_heat_prepared",
 			maxf(heat_prepared_duration_sec, 0.05),
 			maxf(heat_prepared_damage_mul, 0.05),
-			maxf(heat_prepared_consume_mul, 0.05)
+			maxf(heat_prepared_consume_mul, 0.05),
+			maxi(heat_prepared_flat_damage_bonus, 0)
 		)
 	emit_passive_trigger(&"flamethrower_heat_prepared", {
-		"trigger": "high_heat_fire_damage",
+		"trigger": "reload_after_accumulated_self_heat",
 		"damage_type": Attack.TYPE_FIRE,
-		"heat_ratio": heat_ratio,
-		"required_heat_ratio": clampf(heat_prepared_min_heat_ratio, 0.0, 1.0),
+		"accumulated_heat": _heat_prepared_accumulated_heat,
+		"required_heat": required_heat,
 		"shared_heat_added": maxf(heat_prepared_heat_amount, 0.0),
 		"duration": maxf(heat_prepared_duration_sec, 0.05),
 		"damage_multiplier": maxf(heat_prepared_damage_mul, 0.05),
 		"consume_multiplier": maxf(heat_prepared_consume_mul, 0.05),
+		"flat_damage_bonus": maxi(heat_prepared_flat_damage_bonus, 0),
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
@@ -267,70 +279,6 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 		return
 	if detail.get("source_weapon", null) != self:
 		return
+	_try_apply_heat_prepared()
+	_heat_prepared_accumulated_heat = 0.0
 	_heat_prepared_reload_ready = true
-
-func _on_offhand_passive_event(event_name: StringName, detail: Dictionary) -> void:
-	super._on_offhand_passive_event(event_name, detail)
-	if event_name != &"on_hit":
-		return
-	if not bool(detail.get("source_is_main", false)):
-		return
-	if Attack.normalize_damage_type(detail.get("damage_type", Attack.TYPE_PHYSICAL)) != Attack.TYPE_FIRE:
-		return
-	if not is_offhand_skill_ready():
-		return
-	var source_weapon := detail.get("source_weapon", null) as Weapon
-	if source_weapon == null or not is_instance_valid(source_weapon) or source_weapon == self:
-		return
-	notify_offhand_skill_triggered(0.0)
-	_apply_offhand_main_weapon_damage_bonus(source_weapon)
-
-func _resolve_main_weapon_for_offhand_bonus() -> Weapon:
-	if PlayerData.player_weapon_list.is_empty():
-		return null
-	PlayerData.sanitize_main_weapon_index()
-	var idx := PlayerData.main_weapon_index
-	if idx < 0 or idx >= PlayerData.player_weapon_list.size():
-		return null
-	var weapon_variant: Variant = PlayerData.player_weapon_list[idx]
-	var weapon := weapon_variant as Weapon
-	if weapon == null or not is_instance_valid(weapon) or weapon == self:
-		return null
-	return weapon
-
-func _apply_offhand_main_weapon_damage_bonus(target_weapon: Weapon) -> void:
-	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
-		return
-	var bonus_flat: int = max(1, offhand_main_damage_bonus_flat)
-	var duration_sec := maxf(offhand_damage_bonus_duration_sec, 0.05)
-	PlayerData.player.call("apply_global_weapon_passive_effect", _get_offhand_bonus_source_id(), &"damage_flat", float(bonus_flat), duration_sec, self, false)
-	emit_passive_trigger(&"offhand_flamethrower_damage_bonus", {
-		"bonus_flat": bonus_flat,
-		"duration": duration_sec,
-		"trigger_damage_type": Attack.TYPE_FIRE,
-		"target_weapon": target_weapon,
-	}, PASSIVE_SCOPE_GLOBAL)
-
-func _clear_offhand_main_weapon_damage_bonus() -> void:
-	if PlayerData.player and is_instance_valid(PlayerData.player):
-		PlayerData.player.call("remove_global_weapon_passive_effect", _get_offhand_bonus_source_id())
-	_offhand_bonus_target = null
-
-func _get_offhand_bonus_source_id() -> StringName:
-	return StringName("%s_%s" % [str(OFFHAND_DAMAGE_SOURCE), str(get_instance_id())])
-
-func _resolve_weapon_runtime_damage(target_weapon: Weapon) -> int:
-	if target_weapon == null or not is_instance_valid(target_weapon):
-		return 1
-	if target_weapon.has_method("get_runtime_shot_damage"):
-		return max(1, int(target_weapon.call("get_runtime_shot_damage")))
-	if target_weapon.has_method("get_runtime_damage_value"):
-		var base_damage_value := 1.0
-		if target_weapon.get("base_damage") != null:
-			base_damage_value = maxf(1.0, float(target_weapon.get("base_damage")))
-		elif target_weapon.get("damage") != null:
-			base_damage_value = maxf(1.0, float(target_weapon.get("damage")))
-		return max(1, int(target_weapon.call("get_runtime_damage_value", base_damage_value)))
-	if target_weapon.get("damage") != null:
-		return max(1, int(target_weapon.get("damage")))
-	return 1

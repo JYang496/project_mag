@@ -98,12 +98,12 @@ func _consume_heat_spend_multiplier() -> float:
 	var max_spend_ratio := maxf(max_spend / maxf(intended_cost, 0.001), 1.0)
 	var spent_ratio := clampf(spent / maxf(intended_cost, 0.001), 0.0, max_spend_ratio)
 	var multiplier := 1.0 + maxf(plasma_heat_spend_damage_bonus, 0.0) * spent_ratio
-	var consumed_prepared := false
+	var heat_prepared_active := false
 	var prepared_consume_mul := 1.0
 	if player.has_method("get_heat_prepared_consume_mul"):
 		prepared_consume_mul = maxf(float(player.call("get_heat_prepared_consume_mul")), 0.05)
-	if player.has_method("consume_heat_prepared") and bool(player.call("consume_heat_prepared")):
-		consumed_prepared = true
+	if player.has_method("has_heat_prepared") and bool(player.call("has_heat_prepared")):
+		heat_prepared_active = true
 		multiplier *= prepared_consume_mul
 	emit_passive_trigger(&"plasma_lance_heat_spend", {
 		"trigger": "shot",
@@ -111,8 +111,8 @@ func _consume_heat_spend_multiplier() -> float:
 		"heat_cost": effective_cost,
 		"spent_ratio": spent_ratio,
 		"damage_multiplier": multiplier,
-		"heat_prepared_consumed": consumed_prepared,
-		"heat_prepared_consume_multiplier": prepared_consume_mul if consumed_prepared else 1.0,
+		"heat_prepared_active": heat_prepared_active,
+		"heat_prepared_consume_multiplier": prepared_consume_mul if heat_prepared_active else 1.0,
 	}, PASSIVE_SCOPE_GLOBAL)
 	_try_trigger_heat_spend_chain(spent)
 	return maxf(multiplier, 0.05)

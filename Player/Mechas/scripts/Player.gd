@@ -56,6 +56,7 @@ const AUTO_LOOT_TICK_SEC: float = 0.2
 const AUTO_LOOT_GRAB_RADIUS: float = 2500.0
 const COLLECT_AREA_TOP_PADDING: float = 0.0
 const HEAT_PREPARED_DAMAGE_SOURCE: StringName = &"heat_prepared_damage"
+const HEAT_PREPARED_FLAT_DAMAGE_SOURCE: StringName = &"heat_prepared_flat_damage"
 var weapon_orbit_states: Dictionary = {}
 var _base_detect_shape_size := Vector2.ZERO
 var _base_camera_zoom := Vector2.ONE
@@ -713,7 +714,9 @@ func _apply_global_weapon_passive_to_weapon(source_id: StringName, effect: Dicti
 		&"damage_flat":
 			if weapon.has_method("apply_external_damage_mul"):
 				var runtime_damage := _resolve_weapon_runtime_damage_for_global_effect(weapon)
-				var bonus_flat: int = max(1, int(round(multiplier)))
+				var bonus_flat: int = max(0, int(round(multiplier)))
+				if bonus_flat <= 0:
+					return
 				var damage_mul := float(runtime_damage + bonus_flat) / float(runtime_damage)
 				weapon.call("apply_external_damage_mul", source_id, damage_mul)
 		&"attack_speed_mul":
@@ -976,14 +979,15 @@ func remove_damage_mul(source_id: StringName) -> void:
 		return
 	_status_modifier_system.remove_damage_mul(source_id)
 
-func apply_heat_prepared(duration_sec: float = 10.0, damage_mul: float = 1.05, consume_mul: float = 1.35) -> void:
+func apply_heat_prepared(duration_sec: float = 10.0, damage_mul: float = 1.05, consume_mul: float = 1.35, flat_damage_bonus: int = 1) -> void:
 	var duration_msec := int(maxf(duration_sec, 0.05) * 1000.0)
 	_heat_prepared_until_msec = Time.get_ticks_msec() + duration_msec
 	_heat_prepared_consume_mul = maxf(consume_mul, 0.05)
 	apply_damage_mul(HEAT_PREPARED_DAMAGE_SOURCE, maxf(damage_mul, 0.05))
+	apply_global_weapon_passive_effect(HEAT_PREPARED_FLAT_DAMAGE_SOURCE, &"damage_flat", float(maxi(flat_damage_bonus, 0)), duration_sec)
 	_spawn_player_floating_hint("Heat Prepared")
 	if debug_weapon_passive_trigger_prints:
-		print("[HeatStatus] Heat Prepared duration=", duration_sec, " damage_mul=", damage_mul, " consume_mul=", _heat_prepared_consume_mul)
+		print("[HeatStatus] Heat Prepared duration=", duration_sec, " damage_mul=", damage_mul, " consume_mul=", _heat_prepared_consume_mul, " flat_damage=", flat_damage_bonus)
 
 func has_heat_prepared() -> bool:
 	return _heat_prepared_until_msec > 0 and Time.get_ticks_msec() < _heat_prepared_until_msec
@@ -992,10 +996,6 @@ func consume_heat_prepared() -> bool:
 	_update_heat_statuses()
 	if not has_heat_prepared():
 		return false
-	_clear_heat_prepared()
-	_spawn_player_floating_hint("Heat Released")
-	if debug_weapon_passive_trigger_prints:
-		print("[HeatStatus] Heat Prepared consumed")
 	return true
 
 func get_heat_prepared_consume_mul() -> float:
@@ -1097,6 +1097,7 @@ func _clear_heat_prepared() -> void:
 	_heat_prepared_until_msec = 0
 	_heat_prepared_consume_mul = 1.0
 	remove_damage_mul(HEAT_PREPARED_DAMAGE_SOURCE)
+	remove_global_weapon_passive_effect(HEAT_PREPARED_FLAT_DAMAGE_SOURCE)
 
 func register_low_hp_damage_bonus(source_id: StringName, min_hp_ratio: float, max_damage_mul: float) -> void:
 	_ensure_status_modifier_system()
