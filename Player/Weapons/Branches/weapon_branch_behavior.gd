@@ -57,6 +57,9 @@ func get_cone_half_angle_multiplier() -> float:
 func get_projectile_count_override(current_count: int) -> int:
 	return max(1, current_count)
 
+func get_projectile_hit_override(current_hits: int) -> int:
+	return max(1, current_hits)
+
 func get_extra_heat_shot_multiplier() -> float:
 	return 1.0
 
@@ -68,6 +71,9 @@ func get_pierce_damage_gain_per_hit() -> int:
 
 func get_max_pierce_damage_stacks() -> int:
 	return 0
+
+func get_heat_spend_max_amount(base_max_amount: float) -> float:
+	return maxf(base_max_amount, 0.0)
 
 func disables_primary_fire() -> bool:
 	return false

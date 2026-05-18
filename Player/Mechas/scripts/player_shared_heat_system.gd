@@ -9,7 +9,7 @@ var _last_heat_decay_rate: float = 0.0
 var _last_heat_decay_source_name: String = "None"
 var _selected_heat_decay_rate: float = 0.0
 var _selected_heat_decay_source_name: String = "None"
-var _heat_stabilized_decay_mul: float = 1.0
+var _heat_max_multiplier: float = 1.0
 
 func setup(player) -> void:
 	_player = player
@@ -30,19 +30,15 @@ func tick(delta: float) -> void:
 		_shared_heat_signature = next_signature
 		rebuild()
 	var selected_rate := _resolve_selected_decay_rate()
-	_heat_stabilized_decay_mul = 1.0
-	if _player.has_method("get_heat_stabilized_decay_mul"):
-		_heat_stabilized_decay_mul = maxf(float(_player.call("get_heat_stabilized_decay_mul")), 0.0)
-	var effective_rate := selected_rate * _heat_stabilized_decay_mul
 	if _shared_heat_pool.has_method("cool_down_at_rate"):
-		_shared_heat_pool.call("cool_down_at_rate", delta, effective_rate)
+		_shared_heat_pool.call("cool_down_at_rate", delta, selected_rate)
 	else:
 		_shared_heat_pool.cool_down(delta)
 
 func rebuild() -> void:
 	if _shared_heat_pool == null or _player == null or _player.PlayerData == null:
 		return
-	_shared_heat_pool.configure_from_weapons(_player.PlayerData.player_weapon_list)
+	_shared_heat_pool.configure_from_weapons(_player.PlayerData.player_weapon_list, _heat_max_multiplier)
 	_shared_heat_signature = _build_signature()
 
 func mark_dirty() -> void:
@@ -61,6 +57,25 @@ func get_total_heat_max() -> float:
 		return 0.0
 	return float(_shared_heat_pool.max_heat)
 
+func set_heat_max_multiplier(multiplier: float, scale_current_heat: bool, preserve_overheat: bool = true) -> void:
+	if _shared_heat_pool == null:
+		return
+	var old_heat_value := float(_shared_heat_pool.heat_value)
+	var old_overheated := bool(_shared_heat_pool.overheated)
+	_heat_max_multiplier = maxf(multiplier, 0.01)
+	rebuild()
+	if scale_current_heat:
+		_shared_heat_pool.heat_value = clampf(old_heat_value * _heat_max_multiplier, 0.0, _shared_heat_pool.max_heat)
+	else:
+		_shared_heat_pool.heat_value = clampf(old_heat_value, 0.0, _shared_heat_pool.max_heat)
+	if preserve_overheat:
+		_shared_heat_pool.overheated = old_overheated
+	else:
+		_shared_heat_pool.overheated = _shared_heat_pool.heat_value >= _shared_heat_pool.max_heat
+
+func get_heat_max_multiplier() -> float:
+	return _heat_max_multiplier
+
 func get_total_heat_ratio() -> float:
 	if _shared_heat_pool == null or not _shared_heat_pool.has_contributors():
 		return 0.0
@@ -76,10 +91,10 @@ func get_last_heat_decay_source_name() -> String:
 	return _last_heat_decay_source_name
 
 func get_heat_stabilized_decay_mul() -> float:
-	return _heat_stabilized_decay_mul
+	return 1.0
 
 func get_effective_heat_decay_rate() -> float:
-	return _selected_heat_decay_rate * _heat_stabilized_decay_mul
+	return _selected_heat_decay_rate
 
 func _resolve_selected_decay_rate() -> float:
 	var current_main := _get_current_main_weapon()

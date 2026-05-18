@@ -47,6 +47,7 @@ const FROST_SLOW_PER_STACK: float = 0.04
 const FROST_STACK_INTERVAL_SEC: float = 0.6
 const FROST_MAX_STACKS: int = 5
 const FROST_MOVE_SPEED_SOURCE: StringName = &"incoming_frost"
+const HEAT_EXPANSION_END_CLAMP_RATIO: float = 0.8
 const ENERGY_MARK_RATIO: float = 0.10
 const ENERGY_MARK_DURATION_SEC: float = 6.0
 const ENERGY_MARK_MAX_HP_RATIO: float = 0.40
@@ -122,9 +123,8 @@ var _debug_passive_connected_weapon_ids: Dictionary = {}
 var _global_weapon_passive_effects: Dictionary = {}
 var _global_weapon_passive_applied: Dictionary = {}
 var _heat_prepared_until_msec: int = 0
-var _heat_stabilized_until_msec: int = 0
-var _heat_stabilized_decay_mul: float = 1.0
-var _heat_stabilized_cost_mul: float = 1.0
+var _heat_expansion_until_msec: int = 0
+var _heat_expansion_max_mul: float = 1.0
 var _plasma_lance_heat_feedback_until_msec: int = 0
 var _plasma_lance_heat_feedback_threshold: float = 0.7
 var _plasma_lance_heat_feedback_low_mul: float = 1.2
@@ -996,29 +996,36 @@ func consume_heat_prepared() -> bool:
 		return false
 	return true
 
-func apply_heat_stabilized(duration_sec: float = 8.0, decay_mul: float = 0.5, cost_mul: float = -1.0) -> void:
+func apply_heat_expansion(duration_sec: float = 8.0, max_heat_mul: float = 2.0) -> bool:
 	var duration_msec := int(maxf(duration_sec, 0.05) * 1000.0)
-	_heat_stabilized_until_msec = Time.get_ticks_msec() + duration_msec
-	_heat_stabilized_decay_mul = clampf(decay_mul, 0.0, 1.0)
-	_heat_stabilized_cost_mul = clampf(cost_mul if cost_mul >= 0.0 else decay_mul, 0.0, 1.0)
-	_spawn_player_floating_hint("Heat Stabilized")
+	_update_heat_statuses()
+	var was_active := has_heat_expansion()
+	_heat_expansion_until_msec = Time.get_ticks_msec() + duration_msec
+	_heat_expansion_max_mul = maxf(max_heat_mul, 1.0)
+	_apply_heat_expansion_pool_multiplier(not was_active)
+	_clamp_heat_expansion_to_soft_cap()
+	_spawn_player_floating_hint("Heat Expansion")
 	if debug_weapon_passive_trigger_prints:
-		print("[HeatStatus] Heat Stabilized duration=", duration_sec, " decay_mul=", _heat_stabilized_decay_mul, " cost_mul=", _heat_stabilized_cost_mul)
+		print("[HeatStatus] Heat Expansion duration=", duration_sec, " max_heat_mul=", _heat_expansion_max_mul, " scaled_current_heat=", not was_active)
+	return not was_active
+
+func has_heat_expansion() -> bool:
+	return _heat_expansion_until_msec > 0 and Time.get_ticks_msec() < _heat_expansion_until_msec
+
+func get_heat_expansion_max_multiplier() -> float:
+	_update_heat_statuses()
+	if not has_heat_expansion():
+		return 1.0
+	return _heat_expansion_max_mul
 
 func has_heat_stabilized() -> bool:
-	return _heat_stabilized_until_msec > 0 and Time.get_ticks_msec() < _heat_stabilized_until_msec
+	return has_heat_expansion()
 
 func get_heat_stabilized_decay_mul() -> float:
-	_update_heat_statuses()
-	if not has_heat_stabilized():
-		return 1.0
-	return _heat_stabilized_decay_mul
+	return 1.0
 
 func get_heat_stabilized_cost_mul() -> float:
-	_update_heat_statuses()
-	if not has_heat_stabilized():
-		return 1.0
-	return _heat_stabilized_cost_mul
+	return 1.0
 
 func apply_plasma_lance_heat_feedback(duration_sec: float = 10.0, low_mul: float = 1.2, high_mul: float = 0.8, threshold: float = 0.7) -> void:
 	var duration_msec := int(maxf(duration_sec, 0.05) * 1000.0)
@@ -1064,9 +1071,7 @@ func consume_shared_heat(amount: float) -> float:
 
 func clear_heat_statuses() -> void:
 	_clear_heat_prepared()
-	_heat_stabilized_until_msec = 0
-	_heat_stabilized_decay_mul = 1.0
-	_heat_stabilized_cost_mul = 1.0
+	_end_heat_expansion(true)
 	_plasma_lance_heat_feedback_until_msec = 0
 	_plasma_lance_heat_feedback_threshold = 0.7
 	_plasma_lance_heat_feedback_low_mul = 1.2
@@ -1076,12 +1081,44 @@ func _update_heat_statuses() -> void:
 	var now_msec := Time.get_ticks_msec()
 	if _heat_prepared_until_msec > 0 and now_msec >= _heat_prepared_until_msec:
 		_clear_heat_prepared()
-	if _heat_stabilized_until_msec > 0 and now_msec >= _heat_stabilized_until_msec:
-		_heat_stabilized_until_msec = 0
-		_heat_stabilized_decay_mul = 1.0
-		_heat_stabilized_cost_mul = 1.0
+	if _heat_expansion_until_msec > 0 and now_msec >= _heat_expansion_until_msec:
+		_end_heat_expansion(false)
 	if _plasma_lance_heat_feedback_until_msec > 0 and now_msec >= _plasma_lance_heat_feedback_until_msec:
 		_plasma_lance_heat_feedback_until_msec = 0
+
+func _apply_heat_expansion_pool_multiplier(scale_current_heat: bool) -> void:
+	_ensure_shared_heat_system()
+	if _shared_heat_system == null:
+		return
+	_shared_heat_system.set_heat_max_multiplier(_heat_expansion_max_mul, scale_current_heat, true)
+
+func _end_heat_expansion(clear_heat_value: bool) -> void:
+	var had_expansion := _heat_expansion_until_msec > 0 or _heat_expansion_max_mul > 1.0
+	_heat_expansion_until_msec = 0
+	_heat_expansion_max_mul = 1.0
+	if not had_expansion:
+		return
+	_ensure_shared_heat_system()
+	if _shared_heat_system == null:
+		return
+	_shared_heat_system.set_heat_max_multiplier(1.0, false, true)
+	var pool := get_shared_heat_pool()
+	if pool == null:
+		return
+	if clear_heat_value:
+		pool.heat_value = 0.0
+		pool.overheated = false
+		return
+	_clamp_heat_expansion_to_soft_cap()
+
+func _clamp_heat_expansion_to_soft_cap() -> void:
+	var pool := get_shared_heat_pool()
+	if pool == null:
+		return
+	var cap := maxf(float(pool.max_heat) * HEAT_EXPANSION_END_CLAMP_RATIO, 0.0)
+	if float(pool.heat_value) > cap:
+		pool.heat_value = cap
+		pool.overheated = false
 
 func _clear_heat_prepared() -> void:
 	if _heat_prepared_until_msec <= 0:

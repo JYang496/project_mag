@@ -307,20 +307,20 @@ func _update_status() -> void:
 	var heat_max := float(_player.call("get_total_heat_max"))
 	var heat_ratio := float(_player.call("get_total_heat_ratio"))
 	var prepared := bool(_player.call("has_heat_prepared"))
-	var stabilized := bool(_player.call("has_heat_stabilized"))
+	var expanded := bool(_player.call("has_heat_expansion"))
 	var selected_decay_rate := float(_player.call("get_selected_heat_decay_rate"))
 	var effective_decay_rate := float(_player.call("get_effective_heat_decay_rate"))
 	var selected_decay_source := str(_player.call("get_selected_heat_decay_source_name"))
 	var last_decay_source := str(_player.call("get_last_heat_decay_source_name"))
-	var stabilized_decay_mul := float(_player.call("get_heat_stabilized_decay_mul"))
-	status_label.text = "Status: Prepared=%s  Stabilized=%s" % [str(prepared), str(stabilized)]
+	var heat_expansion_mul := float(_player.call("get_heat_expansion_max_multiplier"))
+	status_label.text = "Status: Prepared=%s  Heat Expansion=%s" % [str(prepared), str(expanded)]
 	weapon_label.text = "Main Weapon: %s" % main_name
 	heat_label.text = "Shared Heat: %.1f / %.1f (%.0f%%)" % [heat_value, heat_max, heat_ratio * 100.0]
-	heat_decay_label.text = "Heat Decay: selected=%.1f source=%s last=%s stabilized_mul=%.2f effective=%.1f" % [
+	heat_decay_label.text = "Heat Decay: selected=%.1f source=%s last=%s expansion_mul=%.2f effective=%.1f" % [
 		selected_decay_rate,
 		selected_decay_source,
 		last_decay_source,
-		stabilized_decay_mul,
+		heat_expansion_mul,
 		effective_decay_rate,
 	]
 	event_label.text = "Last Passive: %s" % _last_event_text

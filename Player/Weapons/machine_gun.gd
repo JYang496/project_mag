@@ -24,9 +24,8 @@ const HEAT_SPEED_POINTS: Array[Vector2] = [
 @export var max_heat: float = 100.0
 @export var heat_cooldown_rate: float = 6.0
 @export_range(5.0, 80.0, 1.0) var front_fire_half_angle_deg: float = 35.0
-@export var heat_stabilized_duration_sec: float = 8.0
-@export var heat_stabilized_full_decay_mul: float = 0.5
-@export var heat_stabilized_full_cost_mul: float = 0.75
+@export var heat_expansion_duration_sec: float = 8.0
+@export var heat_expansion_max_heat_multiplier: float = 2.0
 var attack_range: float = 800.0
 
 var weapon_data = {
@@ -163,21 +162,43 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	var spent_ratio := clampf(float(detail.get("spent_ratio", 0.0)), 0.0, 1.0)
 	if spent_ratio <= 0.0:
 		return
-	var duration_sec := maxf(heat_stabilized_duration_sec, 0.05)
-	var decay_mul := lerpf(1.0, clampf(heat_stabilized_full_decay_mul, 0.0, 1.0), spent_ratio)
-	var cost_mul := lerpf(1.0, clampf(heat_stabilized_full_cost_mul, 0.0, 1.0), spent_ratio)
+	var duration_sec := maxf(heat_expansion_duration_sec, 0.05)
+	var max_heat_mul := lerpf(1.0, maxf(heat_expansion_max_heat_multiplier, 1.0), spent_ratio)
 	notify_offhand_skill_triggered(0.0)
+	var scaled_current_heat := false
 	if PlayerData.player and is_instance_valid(PlayerData.player):
-		PlayerData.player.call("apply_heat_stabilized", duration_sec, decay_mul, cost_mul)
-	emit_passive_trigger(&"machine_gun_heat_stabilized", {
+		scaled_current_heat = bool(PlayerData.player.call("apply_heat_expansion", duration_sec, max_heat_mul))
+	emit_passive_trigger(&"machine_gun_heat_expansion", {
 		"trigger": "reload_started",
 		"spent_ratio": spent_ratio,
 		"duration": duration_sec,
 		"cooldown": 0.0,
-		"decay_multiplier": decay_mul,
-		"cost_multiplier": cost_mul,
+		"max_heat_multiplier": max_heat_mul,
+		"scaled_current_heat": scaled_current_heat,
 		"target_weapon": null,
 	}, PASSIVE_SCOPE_GLOBAL)
+
+func get_passive_status() -> Dictionary:
+	var spent: int = max(0, magazine_capacity - current_ammo)
+	var progress: float = clampf(float(spent) / float(maxi(magazine_capacity, 1)), 0.0, 1.0)
+	var state := "charging"
+	if not is_main_weapon():
+		state = "inactive"
+	elif not is_passive_ready():
+		state = "waiting_refresh"
+	elif spent > 0:
+		state = "ready_pending_action"
+	return {
+		"id": "machine_gun_heat_expansion",
+		"display_name": "Heat Expansion",
+		"state": state,
+		"progress": progress,
+		"current": spent,
+		"required": magazine_capacity,
+		"ready": state == "ready_pending_action",
+		"trigger_hint": "reload_started",
+		"refresh_hint": "reload_finished",
+	}
 
 func _get_level_data(lv: String) -> Dictionary:
 	if weapon_data.has(lv):

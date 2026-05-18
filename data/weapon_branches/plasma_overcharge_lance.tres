@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=5 format=3]
+
+[ext_resource type="Texture2D" uid="uid://bo8agyho2ubhi" path="res://asset/images/weapons/pistol.png" id="1_icon"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/plasma_lance.tscn" id="2_weapon_scene"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Branches/plasma_overcharge_lance_branch.tscn" id="3_behavior"]
+[ext_resource type="Script" uid="uid://bi2n1qvhoukj3" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
+
+[resource]
+script = ExtResource("4_script")
+branch_id = "plasma_overcharge_lance"
+display_name = "Overcharge Lance"
+description = "Burst lance tuning: heat-spending shots build a unique timed Overcharge buff. Retriggering adds a stack and refreshes duration; existing stacks can spend 5 extra heat each for +25% damage."
+icon = ExtResource("1_icon")
+unlock_fuse = 2
+sort_order = 20
+weapon_scene = ExtResource("2_weapon_scene")
+behavior_scene = ExtResource("3_behavior")

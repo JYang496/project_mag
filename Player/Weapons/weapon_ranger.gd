@@ -27,8 +27,6 @@ var _external_spread_mul_modifiers: Dictionary = {}
 @export var spread_min_radius: float = 6.0
 @export var spread_max_radius: float = 140.0
 
-var module_list = []
-var effect_sample = {"name":{"key1":123,"key2":234}}
 @export var effect_configs: Array[EffectConfig] = []
 var _effect_scene_cache: Dictionary = {
 	"linear_movement": linear_movement,
@@ -36,7 +34,6 @@ var _effect_scene_cache: Dictionary = {
 var _effect_schema_cache: Dictionary = {}
 @export var debug_projectile_effects: bool = false
 
-var weapon_features = []
 # Projectile scene that needs to be overwritten in child class.
 var projectile_scene
 
@@ -47,11 +44,6 @@ const POOLED_EFFECTS := {
 }
 
 signal shoot()
-signal calculate_weapon_damage(damage)
-signal calculate_weapon_projectile_hits(projectile_hits)
-signal calculate_weapon_speed(speed)
-signal calculate_attack_cooldown(attack_cooldown)
-signal calculate_projectile_size(size)
 
 
 func _ready():
@@ -86,10 +78,6 @@ func _physics_process(_delta):
 
 func _on_cooldown_timer_timeout():
 	is_on_cooldown = false
-
-func _input(event: InputEvent) -> void:
-	pass
-
 
 func _on_shoot():
 	is_on_cooldown = true
@@ -571,9 +559,6 @@ func get_projectile_spawn_parent() -> Node:
 		return PlayerData.player.get_parent()
 	return get_tree().root
 
-func apply_effects(projectile) -> void:
-	pass
-
 func sync_stats() -> void:
 	damage = base_damage
 	projectile_hits = base_projectile_hits
@@ -582,27 +567,8 @@ func sync_stats() -> void:
 	apply_module_stat_pipeline()
 	if cooldown_timer == null:
 		setup_timer()
-	set_cd_timer(cooldown_timer)
-	set_projectile_size(size)
-	calculate_damage(damage)
-	calculate_projectile_hits(projectile_hits)
-
-func calculate_damage(pre_damage : int) -> void:
-	calculate_weapon_damage.emit(pre_damage)
-
-func calculate_projectile_hits(pre_projectile_hits : int) -> void:
-	calculate_weapon_projectile_hits.emit(pre_projectile_hits)
-
-func calculate_speed(pre_speed) -> void:
-	calculate_weapon_speed.emit(pre_speed)
-
-func set_cd_timer(timer : Timer) -> void:
-	calculate_attack_cooldown.emit(attack_cooldown)
-	if timer != null and attack_cooldown > 0:
-		timer.wait_time = attack_cooldown
-
-func set_projectile_size(projectile_size : float) -> void:
-	calculate_projectile_size.emit(projectile_size)
+	if cooldown_timer != null and attack_cooldown > 0:
+		cooldown_timer.wait_time = attack_cooldown
 
 # Computes per-shot damage from base damage and current modules without mutating runtime stats.
 func get_runtime_shot_damage() -> int:

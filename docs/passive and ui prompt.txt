@@ -71,7 +71,7 @@ Prompt 4：为喷火器实现被动状态读取
 
 主武器每次射击累计 _heat_prepared_accumulated_heat
 达到 heat_max_value
-换弹完成时触发 flamethrower_heat_prepared
+开始换弹时立刻触发 flamethrower_heat_prepared
 目标：
 
 暴露：
@@ -80,14 +80,14 @@ state = "charging" / "ready_pending_action" / "waiting_refresh" / "inactive"
 progress = accumulated / required
 current = _heat_prepared_accumulated_heat
 required = heat_max_value
-trigger_hint = "reload_finished"
+trigger_hint = "reload_started"
 refresh_hint = "reload_finished"
 条件已满足但还没换弹时，状态必须是 ready_pending_action。
 验收：
 
 UI 可以知道喷火器已经满足触发条件。
-不改变喷火器实际触发时机。
-换弹完成后状态能正确重置。
+喷火器实际触发时机是开始换弹。
+换弹完成后状态能正确恢复下一轮累计。
 
 Prompt 5：为计数型被动实现状态读取
 

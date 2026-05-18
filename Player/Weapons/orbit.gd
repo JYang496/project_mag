@@ -105,7 +105,6 @@ func set_level(lv) -> void:
 	base_attack_cooldown = float(level_data.get("fire_interval_sec", ORBIT_PROJECTILE_LIFETIME_SEC / maxf(LV1_TARGET_ACTIVE_COUNT, 1.0)))
 	apply_level_ammo(level_data)
 	base_projectile_hits = 99999
-	module_list.clear()
 	sync_stats()
 	notify_branch_level_applied(level)
 	_refresh_orbit_mode_state()
@@ -118,12 +117,10 @@ func apply_rotate_around_player(projectile_node : Node2D, offset_step : float, n
 	
 	projectile_node.call_deferred("add_child",rotate_around_player_ins)
 	projectile_node.module_list.append(rotate_around_player_ins)
-	module_list.append(rotate_around_player_ins)
 	pass
 
 
 func remove_weapon() -> void:
-	module_list.clear()
 	var idx := PlayerData.player_weapon_list.find(self)
 	if idx >= 0:
 		PlayerData.player_weapon_list.remove_at(idx)

@@ -17,4 +17,5 @@ interval = 2
 
 [resource]
 script = ExtResource("1_cfg")
+time_out = 60
 spawns = Array[ExtResource("2_spawn")]([SubResource("Spawn_roll_intro")])

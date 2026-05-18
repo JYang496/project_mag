@@ -4,9 +4,9 @@
 
 [resource]
 script = ExtResource("1_script")
-passive_id = "flamethrower_heat_prepared"
-display_name = "Heat Prepared"
-description = "Accumulate weapon heat, then start a reload to gain a temporary damage boost."
-condition_type = "heat_accumulation"
+passive_id = "machine_gun_heat_expansion"
+display_name = "Heat Expansion"
+description = "Spend magazine ammo, then start a reload to temporarily increase shared heat capacity, up to double at full spend."
+condition_type = "ammo_spent"
 refresh_type = "reload_finished"
 ui_mode = "progress"

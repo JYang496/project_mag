@@ -1,15 +1,16 @@
 extends Ranger
 
+const CONE_SPRAY_VFX_SCENE: PackedScene = preload("res://Player/Weapons/Effects/cone_spray_vfx.tscn")
+
 @onready var detect_area: Area2D = $DetectArea
 
 var ITEM_NAME := "Flamethrower"
 
 @export_range(5.0, 120.0, 1.0) var cone_half_angle_deg: float = 40.0
 @export_range(40.0, 1200.0, 1.0) var base_flame_range: float = 280.0
-@export var heat_accumulation: float = 55.0
-@export var max_heat: float = 200.0
-@export var heat_cooldown_rate: float = 26.0
-@export var heat_prepared_heat_amount: float = 20.0
+@export var heat_accumulation: float = 10.0
+@export var max_heat: float = 160.0
+@export var heat_cooldown_rate: float = 10.0
 @export var heat_prepared_duration_sec: float = 10.0
 @export var heat_prepared_damage_mul: float = 1.05
 @export var heat_prepared_flat_damage_bonus: int = 1
@@ -24,21 +25,24 @@ var _attacked_target_ids: Dictionary = {}
 var _heat_prepared_ready_at_msec: int = 0
 var _heat_prepared_reload_ready: bool = true
 var _heat_prepared_accumulated_heat: float = 0.0
+var _flame_vfx: Node
+var _primary_fire_held: bool = false
 
 var weapon_data := {
-	"1": {"level": "1", "damage": "8", "fire_interval_sec": "0.30", "ammo": "120", "range": "260", "cost": "11"},
-	"2": {"level": "2", "damage": "10", "fire_interval_sec": "0.30", "ammo": "130", "range": "270", "cost": "11"},
-	"3": {"level": "3", "damage": "12", "fire_interval_sec": "0.30", "ammo": "140", "range": "285", "cost": "11"},
-	"4": {"level": "4", "damage": "14", "fire_interval_sec": "0.30", "ammo": "150", "range": "300", "cost": "11"},
-	"5": {"level": "5", "damage": "17", "fire_interval_sec": "0.25", "ammo": "160", "range": "320", "cost": "11"},
-	"6": {"level": "6", "damage": "20", "fire_interval_sec": "0.25", "ammo": "170", "range": "340", "cost": "11"},
-	"7": {"level": "7", "damage": "23", "fire_interval_sec": "0.25", "ammo": "180", "range": "365", "cost": "11"},
+	"1": {"level": "1", "damage": "8", "fire_interval_sec": "0.30", "ammo": "20", "range": "260", "cost": "11"},
+	"2": {"level": "2", "damage": "10", "fire_interval_sec": "0.30", "ammo": "20", "range": "270", "cost": "11"},
+	"3": {"level": "3", "damage": "12", "fire_interval_sec": "0.30", "ammo": "20", "range": "285", "cost": "11"},
+	"4": {"level": "4", "damage": "14", "fire_interval_sec": "0.30", "ammo": "20", "range": "300", "cost": "11"},
+	"5": {"level": "5", "damage": "17", "fire_interval_sec": "0.25", "ammo": "20", "range": "320", "cost": "11"},
+	"6": {"level": "6", "damage": "20", "fire_interval_sec": "0.25", "ammo": "20", "range": "340", "cost": "11"},
+	"7": {"level": "7", "damage": "23", "fire_interval_sec": "0.25", "ammo": "20", "range": "365", "cost": "11"},
 }
 
 func _ready() -> void:
 	super._ready()
 	_apply_fuse_sprite()
 	_sync_detect_radius()
+	_ensure_flame_vfx()
 
 func set_level(lv) -> void:
 	lv = str(lv)
@@ -71,12 +75,20 @@ func supports_projectiles() -> bool:
 func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	for behavior in get_branch_behaviors():
 		if behavior.disables_primary_fire():
+			_primary_fire_held = false
+			_stop_flame_vfx()
 			return
 	if not can_run_active_behavior():
+		_primary_fire_held = false
+		_stop_flame_vfx()
 		return
 	if not pressed:
+		_primary_fire_held = false
+		_stop_flame_vfx()
 		return
+	_primary_fire_held = true
 	request_primary_fire()
+	_refresh_held_flame_vfx()
 
 func _emit_flame_burst() -> void:
 	# 每轮射击开始时清空已攻击目标列表
@@ -87,6 +99,7 @@ func _emit_flame_burst() -> void:
 	var forward := global_position.direction_to(get_mouse_target()).normalized()
 	if forward == Vector2.ZERO:
 		return
+	_refresh_flame_vfx(forward)
 	var targets := _collect_targets_in_cone(forward)
 	for target in targets:
 		_apply_fire_damage(target)
@@ -159,6 +172,7 @@ func _sync_detect_radius() -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
+	_update_flame_vfx_follow()
 	if debug_mode:
 		queue_redraw()
 
@@ -209,7 +223,7 @@ func get_passive_status() -> Dictionary:
 		"current": current_heat,
 		"required": required_heat,
 		"ready": state == "ready_pending_action",
-		"trigger_hint": "reload_finished",
+		"trigger_hint": "reload_started",
 		"refresh_hint": "reload_finished",
 	}
 
@@ -252,6 +266,73 @@ func _get_effective_cone_half_angle_deg() -> float:
 		angle_multiplier *= maxf(behavior.get_cone_half_angle_multiplier(), 0.1)
 	return maxf(cone_half_angle_deg * maxf(angle_multiplier, 0.1), 1.0)
 
+func _ensure_flame_vfx() -> void:
+	if _flame_vfx != null and is_instance_valid(_flame_vfx):
+		return
+	if CONE_SPRAY_VFX_SCENE == null:
+		return
+	var instance: Node = CONE_SPRAY_VFX_SCENE.instantiate()
+	if instance == null:
+		return
+	_flame_vfx = instance
+	_flame_vfx.name = "FlameSprayVfx"
+	add_child(_flame_vfx)
+
+func _refresh_flame_vfx(forward: Vector2) -> void:
+	_ensure_flame_vfx()
+	if _flame_vfx == null or not is_instance_valid(_flame_vfx):
+		return
+	if _flame_vfx.has_method("start_or_refresh"):
+		_flame_vfx.call(
+			"start_or_refresh",
+			global_position,
+			forward,
+			_get_effective_attack_range(),
+			_get_effective_cone_half_angle_deg()
+		)
+
+func _refresh_held_flame_vfx() -> void:
+	if not _primary_fire_held:
+		return
+	if is_reloading or current_ammo <= 0:
+		_stop_flame_vfx()
+		return
+	if _flame_vfx == null or not is_instance_valid(_flame_vfx):
+		return
+	if not _flame_vfx.has_method("is_visible_or_fading"):
+		return
+	if not bool(_flame_vfx.call("is_visible_or_fading")):
+		return
+	var forward := global_position.direction_to(get_mouse_target()).normalized()
+	if forward == Vector2.ZERO:
+		return
+	_refresh_flame_vfx(forward)
+
+func _update_flame_vfx_follow() -> void:
+	if _flame_vfx == null or not is_instance_valid(_flame_vfx):
+		return
+	if not _flame_vfx.has_method("is_visible_or_fading"):
+		return
+	if not bool(_flame_vfx.call("is_visible_or_fading")):
+		return
+	var forward := global_position.direction_to(get_mouse_target()).normalized()
+	if forward == Vector2.ZERO:
+		return
+	if _flame_vfx.has_method("update_aim"):
+		_flame_vfx.call(
+			"update_aim",
+			global_position,
+			forward,
+			_get_effective_attack_range(),
+			_get_effective_cone_half_angle_deg()
+		)
+
+func _stop_flame_vfx() -> void:
+	if _flame_vfx == null or not is_instance_valid(_flame_vfx):
+		return
+	if _flame_vfx.has_method("stop"):
+		_flame_vfx.call("stop")
+
 func _try_apply_heat_prepared() -> void:
 	if not is_main_weapon():
 		_heat_prepared_accumulated_heat = 0.0
@@ -271,9 +352,6 @@ func _try_apply_heat_prepared() -> void:
 		return
 	_heat_prepared_ready_at_msec = now_msec + int(maxf(heat_prepared_icd_sec, 0.0) * 1000.0)
 	_heat_prepared_reload_ready = false
-	var pool = player.call("get_shared_heat_pool")
-	if pool != null and pool.has_method("add_heat_amount"):
-		pool.call("add_heat_amount", maxf(heat_prepared_heat_amount, 0.0))
 	if player.has_method("apply_heat_prepared"):
 		player.call(
 			"apply_heat_prepared",
@@ -282,11 +360,10 @@ func _try_apply_heat_prepared() -> void:
 			maxi(heat_prepared_flat_damage_bonus, 0)
 		)
 	emit_passive_trigger(&"flamethrower_heat_prepared", {
-		"trigger": "reload_after_accumulated_self_heat",
+		"trigger": "reload_started_after_accumulated_self_heat",
 		"damage_type": Attack.TYPE_FIRE,
 		"accumulated_heat": _heat_prepared_accumulated_heat,
 		"required_heat": required_heat,
-		"shared_heat_added": maxf(heat_prepared_heat_amount, 0.0),
 		"duration": maxf(heat_prepared_duration_sec, 0.05),
 		"damage_multiplier": maxf(heat_prepared_damage_mul, 0.05),
 		"flat_damage_bonus": maxi(heat_prepared_flat_damage_bonus, 0),
@@ -295,10 +372,12 @@ func _try_apply_heat_prepared() -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if event_name != &"on_reload_finished":
-		return
 	if detail.get("source_weapon", null) != self:
 		return
-	_try_apply_heat_prepared()
-	_heat_prepared_accumulated_heat = 0.0
-	_heat_prepared_reload_ready = true
+	if event_name == &"on_reload_started":
+		_try_apply_heat_prepared()
+		_heat_prepared_accumulated_heat = 0.0
+		_heat_prepared_reload_ready = false
+		return
+	if event_name == &"on_reload_finished":
+		_heat_prepared_reload_ready = true

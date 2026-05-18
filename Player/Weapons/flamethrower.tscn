@@ -3,18 +3,30 @@
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_ranger"]
 [ext_resource type="Script" uid="uid://l4c120d4ll33" path="res://Player/Weapons/flamethrower.gd" id="2_script"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_jofir"]
-[ext_resource type="Texture2D" path="res://asset/images/weapons/flamethrower.png" id="4_icon"]
+[ext_resource type="Texture2D" uid="uid://43d40hfm56i5" path="res://asset/images/weapons/flamethrower.png" id="4_icon"]
 
 [node name="Flamethrower" unique_id=491042674 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
 cone_half_angle_deg = 40.0
 base_flame_range = 280.0
 heat_accumulation = 10.0
-max_heat = 120.0
-heat_cooldown_rate = 26.0
+max_heat = 160.0
+heat_cooldown_rate = 10.0
+heat_prepared_duration_sec = 10.0
+heat_prepared_damage_mul = 1.05
+heat_prepared_flat_damage_bonus = 1
+heat_prepared_icd_sec = 0.25
 debug_mode = false
+spread_enabled = false
+spread_full_distance = 900.0
+spread_no_falloff_distance = 0.0
+spread_close_range_miss_chance = 0.05
+spread_long_range_miss_chance = 0.85
+spread_min_radius = 6.0
+spread_max_radius = 140.0
 effect_configs = Array[ExtResource("3_jofir")]([])
 debug_projectile_effects = false
+reload_duration_sec = 10.0
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 180256

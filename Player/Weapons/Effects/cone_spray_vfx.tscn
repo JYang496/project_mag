@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Player/Weapons/Effects/cone_spray_vfx.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://asset/images/effects/flame_spray/flame_spray_frames.tres" id="2_frames"]
+
+[node name="ConeSprayVfx" type="Node2D"]
+script = ExtResource("1_script")
+sprite_frames = ExtResource("2_frames")
+
+[node name="SprayRoot" type="Node2D" parent="."]
+
+[node name="Sprite" type="AnimatedSprite2D" parent="SprayRoot"]
+position = Vector2(0, -80)
+sprite_frames = ExtResource("2_frames")
+animation = &"spray"
+centered = false

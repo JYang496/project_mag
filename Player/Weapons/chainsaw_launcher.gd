@@ -136,13 +136,11 @@ func apply_spin(projectile_node) -> void:
 	var spin_movement_ins = spin_effect.instantiate()
 	projectile_node.call_deferred("add_child",spin_movement_ins)
 	projectile_node.module_list.append(spin_movement_ins)
-	module_list.append(spin_movement_ins)
 
 func apply_scale_up_by_time(projectile_node) -> void:
 	var scale_up_by_time = scale_up_by_time_effect.instantiate()
 	projectile_node.call_deferred("add_child",scale_up_by_time)
 	projectile_node.module_list.append(scale_up_by_time)
-	module_list.append(scale_up_by_time)
 
 func _on_chainsaw_luncher_timer_timeout() -> void:
 	is_on_cooldown = false

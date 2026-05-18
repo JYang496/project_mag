@@ -431,7 +431,9 @@ func _apply_sniper_formula(main_weapon: Node, runtime_damage: float) -> void:
 
 func _apply_plasma_lance_formula(main_weapon: Node, runtime_damage: float) -> void:
 	var expected_pierce_hits: int = maxi(int(config.get("plasma_expected_pierce_hits")), 0)
-	var gain_per_pierce: int = int(main_weapon.get("damage_gain_per_pierce")) if main_weapon.get("damage_gain_per_pierce") != null else 0
+	var gain_per_pierce: int = 0
+	if main_weapon.has_method("get_branch_pierce_damage_gain_per_hit"):
+		gain_per_pierce = maxi(int(main_weapon.call("get_branch_pierce_damage_gain_per_hit")), 0)
 	_current_total_damage_formula += runtime_damage + float(gain_per_pierce * expected_pierce_hits)
 
 func _apply_chainsaw_formula(main_weapon: Node, runtime_damage: float) -> void:

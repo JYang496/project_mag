@@ -336,6 +336,12 @@ func get_branch_projectile_damage_multiplier() -> float:
 		multiplier *= maxf(behavior.get_projectile_damage_multiplier(), 0.05)
 	return maxf(multiplier, 0.05)
 
+func get_branch_projectile_hit_override(current_hits: int) -> int:
+	var hits: int = max(1, current_hits)
+	for behavior in get_branch_behaviors():
+		hits = max(1, behavior.get_projectile_hit_override(hits))
+	return hits
+
 func get_branch_damage_multiplier() -> float:
 	var multiplier := 1.0
 	for behavior in get_branch_behaviors():
