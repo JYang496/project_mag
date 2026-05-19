@@ -48,12 +48,11 @@ func _trigger_shard(hit_target: Node2D, original_target: Node) -> void:
 		runtime_damage = max(1, int(weapon.call("get_runtime_shot_damage")))
 	var shard_damage: int = max(1, int(round(float(runtime_damage) * maxf(shard_damage_ratio, 0.0))))
 	var candidates: Array[Node2D] = []
-	for enemy_ref in weapon.get_tree().get_nodes_in_group("enemies"):
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(weapon.get_tree(), hit_target.global_position, maxf(shard_radius, 1.0)):
 		var enemy: Node2D = enemy_ref as Node2D
 		if enemy == null or not is_instance_valid(enemy) or enemy == original_target:
 			continue
-		if enemy.global_position.distance_to(hit_target.global_position) <= maxf(shard_radius, 1.0):
-			candidates.append(enemy)
+		candidates.append(enemy)
 	candidates.sort_custom(func(a: Node2D, b: Node2D) -> bool:
 		return a.global_position.distance_to(hit_target.global_position) < b.global_position.distance_to(hit_target.global_position)
 	)

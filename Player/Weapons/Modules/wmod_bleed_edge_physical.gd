@@ -16,6 +16,7 @@ var _bleed_runtime: Dictionary = {}
 
 func _enter_tree() -> void:
 	super._enter_tree()
+	set_physics_process(false)
 	register_as_on_hit_plugin()
 
 func _ready() -> void:
@@ -58,6 +59,8 @@ func _physics_process(_delta: float) -> void:
 		_apply_bleed_tick(target, entry)
 	for target_id in remove_ids:
 		_bleed_runtime.erase(target_id)
+	if _bleed_runtime.is_empty():
+		set_physics_process(false)
 
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if target == null or not is_instance_valid(target):
@@ -76,6 +79,7 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 		"last_tick_msec": now_msec,
 		"last_pos": target2d.global_position,
 	}
+	set_physics_process(true)
 
 func _apply_bleed_tick(target: Node, entry: Dictionary) -> void:
 	if target == null or not is_instance_valid(target):

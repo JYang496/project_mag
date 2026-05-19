@@ -8,9 +8,9 @@ var ITEM_NAME := "Flamethrower"
 
 @export_range(5.0, 120.0, 1.0) var cone_half_angle_deg: float = 40.0
 @export_range(40.0, 1200.0, 1.0) var base_flame_range: float = 280.0
-@export var heat_accumulation: float = 10.0
-@export var max_heat: float = 160.0
-@export var heat_cooldown_rate: float = 10.0
+@export var heat_accumulation: float = 5.0
+@export var max_heat: float = 80.0
+@export var heat_cooldown_rate: float = 5.0
 @export var heat_prepared_duration_sec: float = 10.0
 @export var heat_prepared_damage_mul: float = 1.05
 @export var heat_prepared_flat_damage_bonus: int = 1

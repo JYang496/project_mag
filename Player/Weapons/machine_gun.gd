@@ -20,9 +20,9 @@ const HEAT_SPEED_POINTS: Array[Vector2] = [
 ]
 
 @export var heat_accumulation: float = 4
-@export var heat_accumulation_per_sec: float = 28.0
-@export var max_heat: float = 100.0
-@export var heat_cooldown_rate: float = 6.0
+@export var heat_accumulation_per_sec: float = 14.0
+@export var max_heat: float = 50.0
+@export var heat_cooldown_rate: float = 3.0
 @export_range(5.0, 80.0, 1.0) var front_fire_half_angle_deg: float = 35.0
 @export var heat_expansion_duration_sec: float = 8.0
 @export var heat_expansion_max_heat_multiplier: float = 2.0

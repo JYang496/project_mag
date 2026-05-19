@@ -8,11 +8,15 @@ var _bypass_registered: bool = false
 
 func _ready() -> void:
 	_ensure_bypass_registration()
+	set_physics_process(not _bypass_registered)
 
 func _physics_process(_delta: float) -> void:
 	if _bypass_registered:
+		set_physics_process(false)
 		return
 	_ensure_bypass_registration()
+	if _bypass_registered:
+		set_physics_process(false)
 
 func _exit_tree() -> void:
 	if not _bypass_registered:

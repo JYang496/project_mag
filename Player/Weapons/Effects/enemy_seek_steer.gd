@@ -57,7 +57,7 @@ func _find_closest_valid_enemy() -> Node2D:
 	var max_dist_sq: float = maxf(search_radius, 1.0)
 	max_dist_sq *= max_dist_sq
 	var max_lock_angle_rad: float = deg_to_rad(maxf(max_lock_angle_deg, 0.0))
-	for enemy_ref in tree.get_nodes_in_group("enemies"):
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(tree, projectile.global_position, search_radius):
 		var enemy := enemy_ref as Node2D
 		if enemy == null or not is_instance_valid(enemy):
 			continue
@@ -95,4 +95,3 @@ func _apply_steer(desired_dir: Vector2, delta: float) -> void:
 	var min_speed := _base_linear_speed * maxf(min_speed_ratio, 0.0)
 	_linear_module.speed = maxf(_linear_module.speed, min_speed)
 	_linear_module.set_base_displacement()
-

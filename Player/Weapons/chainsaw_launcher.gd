@@ -249,7 +249,7 @@ func _resolve_direction_to_closest_enemy(from_position: Vector2) -> Vector2:
 		return Vector2.ZERO
 	var nearest: Node2D = null
 	var nearest_dist: float = INF
-	for enemy_ref in tree.get_nodes_in_group("enemies"):
+	for enemy_ref in WeaponModuleRuntimeUtils.get_enemy_candidates(tree):
 		var enemy: Node2D = enemy_ref as Node2D
 		if enemy == null or not is_instance_valid(enemy):
 			continue

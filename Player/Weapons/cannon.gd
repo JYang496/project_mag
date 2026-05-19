@@ -59,10 +59,20 @@ func request_primary_fire() -> bool:
 		return false
 	if not can_fire_with_heat():
 		return false
+	if not can_fire_with_ammo():
+		if uses_ammo_system() and current_ammo <= 0:
+			request_reload()
+		return false
+	if not consume_ammo(1):
+		if uses_ammo_system() and current_ammo <= 0:
+			request_reload()
+		return false
 	if windup_sec <= 0.0:
 		emit_signal("shoot")
 		notify_main_weapon_fired()
 		register_shot_heat()
+		if uses_ammo_system() and current_ammo <= 0:
+			request_reload()
 		return true
 	_windup_in_progress = true
 	is_on_cooldown = true
@@ -80,6 +90,8 @@ func _on_windup_timer_timeout() -> void:
 	emit_signal("shoot")
 	notify_main_weapon_fired()
 	register_shot_heat()
+	if uses_ammo_system() and current_ammo <= 0:
+		request_reload()
 
 func _on_shoot() -> void:
 	is_on_cooldown = true

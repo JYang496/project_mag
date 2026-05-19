@@ -20,8 +20,18 @@ var _ranged_wander_time_left: float = 0.0
 var _board_generator_ref: Node = null
 var _constraint_pending_physics_tick: bool = true
 
+func _enter_tree() -> void:
+	var enemy_registry := get_node_or_null("/root/EnemyRegistry")
+	if enemy_registry != null and enemy_registry.has_method("register_enemy"):
+		enemy_registry.call("register_enemy", self)
+
 func _ready() -> void:
 	hit_box_dot.hitbox_owner = self
+
+func _exit_tree() -> void:
+	var enemy_registry := get_node_or_null("/root/EnemyRegistry")
+	if enemy_registry != null and enemy_registry.has_method("unregister_enemy"):
+		enemy_registry.call("unregister_enemy", self)
 
 func _process(delta: float) -> void:
 	if stun_remaining > 0.0:

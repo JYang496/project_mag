@@ -15,6 +15,7 @@ var _active_shield_chunks: Array[Dictionary] = []
 
 func _enter_tree() -> void:
 	super._enter_tree()
+	set_physics_process(false)
 	register_as_on_hit_plugin()
 
 func _ready() -> void:
@@ -36,6 +37,8 @@ func _physics_process(_delta: float) -> void:
 		if amount > 0:
 			PlayerData.bonus_shield = max(0, int(PlayerData.bonus_shield) - amount)
 		_active_shield_chunks.remove_at(i)
+	if _active_shield_chunks.is_empty():
+		set_physics_process(false)
 
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if target == null or not is_instance_valid(target):
@@ -62,6 +65,7 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 		"amount": gain_amount,
 		"expires_at_msec": Time.get_ticks_msec() + int(maxf(shield_duration_sec, 0.1) * 1000.0),
 	})
+	set_physics_process(true)
 
 func _clear_all_shield() -> void:
 	for chunk in _active_shield_chunks:
@@ -69,6 +73,7 @@ func _clear_all_shield() -> void:
 		if amount > 0:
 			PlayerData.bonus_shield = max(0, int(PlayerData.bonus_shield) - amount)
 	_active_shield_chunks.clear()
+	set_physics_process(false)
 
 func _get_conversion_ratio() -> float:
 	match module_level:

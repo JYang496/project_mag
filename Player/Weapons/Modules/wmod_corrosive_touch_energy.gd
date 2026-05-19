@@ -18,6 +18,7 @@ var _runtime: Dictionary = {}
 
 func _enter_tree() -> void:
 	super._enter_tree()
+	set_physics_process(false)
 	register_as_on_hit_plugin()
 
 func _ready() -> void:
@@ -50,6 +51,8 @@ func _physics_process(_delta: float) -> void:
 		remove_ids.append(target_id)
 	for target_id in remove_ids:
 		_runtime.erase(target_id)
+	if _runtime.is_empty():
+		set_physics_process(false)
 
 func apply_on_hit(_source_weapon: Weapon, target: Node) -> void:
 	if target == null or not is_instance_valid(target):
@@ -70,6 +73,7 @@ func apply_on_hit(_source_weapon: Weapon, target: Node) -> void:
 	_runtime[target_id] = entry
 	_apply_target_corrosion(target, entry)
 	_runtime[target_id] = entry
+	set_physics_process(true)
 
 func _apply_target_corrosion(target: Node, entry: Dictionary) -> void:
 	if target == null or not is_instance_valid(target):
@@ -112,6 +116,7 @@ func _clear_all_corrosion() -> void:
 			continue
 		_restore_target_corrosion(target, entry)
 	_runtime.clear()
+	set_physics_process(false)
 
 func _get_duration() -> float:
 	match module_level:

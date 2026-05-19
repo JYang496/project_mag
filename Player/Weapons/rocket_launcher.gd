@@ -187,13 +187,11 @@ func _count_other_enemies_near(position: Vector2, killed_enemy: Variant) -> int:
 	if tree == null:
 		return 0
 	var count := 0
-	var radius_sq := maxf(cluster_kill_radius, 0.0) * maxf(cluster_kill_radius, 0.0)
-	for enemy_ref in tree.get_nodes_in_group("enemies"):
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(tree, position, maxf(cluster_kill_radius, 0.0)):
 		var enemy := enemy_ref as Node2D
 		if enemy == null or not is_instance_valid(enemy):
 			continue
 		if killed_enemy is Object and enemy == killed_enemy:
 			continue
-		if enemy.global_position.distance_squared_to(position) <= radius_sq:
-			count += 1
+		count += 1
 	return count

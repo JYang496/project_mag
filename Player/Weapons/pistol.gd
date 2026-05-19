@@ -219,13 +219,11 @@ func _find_closest_enemy() -> Node2D:
 		return null
 	var nearest: Node2D = null
 	var nearest_dist := INF
-	for enemy_ref in tree.get_nodes_in_group("enemies"):
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(tree, global_position, maxf(auto_fire_range, 1.0)):
 		var enemy := enemy_ref as Node2D
 		if enemy == null or not is_instance_valid(enemy):
 			continue
 		var distance := global_position.distance_to(enemy.global_position)
-		if distance > maxf(auto_fire_range, 1.0):
-			continue
 		if distance < nearest_dist:
 			nearest_dist = distance
 			nearest = enemy

@@ -47,6 +47,15 @@ static func get_nearby_enemies(tree: SceneTree, origin: Vector2, radius: float) 
 	var output: Array[Node2D] = []
 	if tree == null:
 		return output
+	var registry := tree.root.get_node_or_null("EnemyRegistry")
+	if registry != null and registry.has_method("get_enemies_in_radius"):
+		var registered_enemies: Variant = registry.call("get_enemies_in_radius", origin, radius)
+		if registered_enemies is Array:
+			for enemy_ref in registered_enemies:
+				var enemy := enemy_ref as Node2D
+				if enemy != null and is_instance_valid(enemy):
+					output.append(enemy)
+			return output
 	var max_radius := maxf(radius, 0.0)
 	for enemy_ref in tree.get_nodes_in_group("enemies"):
 		var enemy := enemy_ref as Node2D
@@ -55,4 +64,41 @@ static func get_nearby_enemies(tree: SceneTree, origin: Vector2, radius: float) 
 		if enemy.global_position.distance_to(origin) > max_radius:
 			continue
 		output.append(enemy)
+	return output
+
+static func get_enemy_candidates(tree: SceneTree) -> Array[Node2D]:
+	var output: Array[Node2D] = []
+	if tree == null:
+		return output
+	var registry := tree.root.get_node_or_null("EnemyRegistry")
+	if registry != null and registry.has_method("get_enemies"):
+		var registered_enemies: Variant = registry.call("get_enemies")
+		if registered_enemies is Array:
+			for enemy_ref in registered_enemies:
+				var enemy := enemy_ref as Node2D
+				if enemy != null and is_instance_valid(enemy):
+					output.append(enemy)
+			return output
+	for enemy_ref in tree.get_nodes_in_group("enemies"):
+		var enemy := enemy_ref as Node2D
+		if enemy != null and is_instance_valid(enemy):
+			output.append(enemy)
+	return output
+
+static func get_enemies_in_rect(tree: SceneTree, world_rect: Rect2) -> Array[Node2D]:
+	var output: Array[Node2D] = []
+	if tree == null:
+		return output
+	var registry := tree.root.get_node_or_null("EnemyRegistry")
+	if registry != null and registry.has_method("get_enemies_in_rect"):
+		var registered_enemies: Variant = registry.call("get_enemies_in_rect", world_rect)
+		if registered_enemies is Array:
+			for enemy_ref in registered_enemies:
+				var enemy := enemy_ref as Node2D
+				if enemy != null and is_instance_valid(enemy):
+					output.append(enemy)
+			return output
+	for enemy in get_enemy_candidates(tree):
+		if world_rect.has_point(enemy.global_position):
+			output.append(enemy)
 	return output

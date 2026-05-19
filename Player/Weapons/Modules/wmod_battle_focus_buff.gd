@@ -16,6 +16,7 @@ var _applied_crit_bonus: float = 0.0
 
 func _enter_tree() -> void:
 	super._enter_tree()
+	set_physics_process(false)
 	register_as_on_hit_plugin()
 
 func _ready() -> void:
@@ -46,6 +47,7 @@ func apply_on_hit(_source_weapon: Weapon, target: Node) -> void:
 		_current_stacks = 1
 	_streak_expires_at_msec = now_msec + int(maxf(streak_timeout_sec, 0.1) * 1000.0)
 	_refresh_crit_bonus()
+	set_physics_process(true)
 
 func _refresh_crit_bonus() -> void:
 	var next_bonus: float = float(_current_stacks) * _get_crit_per_stack()
@@ -63,6 +65,7 @@ func _reset_focus(clear_target: bool) -> void:
 	_streak_expires_at_msec = 0
 	if clear_target:
 		_tracked_target_id = 0
+	set_physics_process(false)
 
 func _get_crit_per_stack() -> float:
 	match module_level:

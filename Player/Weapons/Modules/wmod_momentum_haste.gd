@@ -17,6 +17,7 @@ var _expires_at_msec: int = 0
 
 func _enter_tree() -> void:
 	super._enter_tree()
+	set_physics_process(false)
 	register_as_on_hit_plugin()
 
 func _ready() -> void:
@@ -41,6 +42,7 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	_stacks = mini(max(1, max_stacks), _stacks + 1)
 	_expires_at_msec = Time.get_ticks_msec() + int(maxf(stack_duration_sec, 0.1) * 1000.0)
 	_apply_buffs(source_weapon)
+	set_physics_process(true)
 
 func _apply_buffs(source_weapon: Weapon) -> void:
 	var player := WeaponModuleRuntimeUtils.resolve_player_node(source_weapon)
@@ -59,6 +61,7 @@ func _clear_buffs() -> void:
 		weapon.call("set_external_attack_speed_multiplier", 1.0)
 	_stacks = 0
 	_expires_at_msec = 0
+	set_physics_process(false)
 
 func _get_move_speed_per_stack() -> float:
 	match module_level:

@@ -6,9 +6,9 @@ var projectile_texture_resource = preload("res://asset/images/weapons/projectile
 var ITEM_NAME := "Plasma Lance"
 const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
 
-@export var heat_accumulation: float = 40.0
+@export var heat_accumulation: float = 10.0
 @export var max_heat: float = 100.0
-@export var heat_cooldown_rate: float = 2.0
+@export var heat_cooldown_rate: float = 0.0
 @export var heat_spend_attacks_trigger_count: int = 3
 @export var plasma_heat_spend_amount: float = 20.0
 @export var plasma_heat_max_spend_amount: float = 20.0

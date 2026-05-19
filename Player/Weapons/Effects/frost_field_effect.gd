@@ -74,7 +74,7 @@ func _apply_tick_damage() -> void:
 		var player: Node = PlayerData.player
 		if player and is_instance_valid(player):
 			candidates.append(player)
-	for enemy_ref in get_tree().get_nodes_in_group("enemies"):
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(get_tree(), global_position, radius):
 		var enemy: Node = enemy_ref as Node
 		if enemy and is_instance_valid(enemy):
 			candidates.append(enemy)

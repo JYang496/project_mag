@@ -34,14 +34,13 @@ func on_target_hit(target: Node) -> void:
 
 	var ratios := [chain_damage_ratio_1, chain_damage_ratio_2]
 	var candidates: Array[Node2D] = []
-	for enemy_ref in weapon.get_tree().get_nodes_in_group("enemies"):
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(weapon.get_tree(), center.global_position, maxf(chain_radius, 1.0)):
 		var enemy := enemy_ref as Node2D
 		if enemy == null or enemy == center:
 			continue
 		if not is_instance_valid(enemy):
 			continue
-		if enemy.global_position.distance_to(center.global_position) <= maxf(chain_radius, 1.0):
-			candidates.append(enemy)
+		candidates.append(enemy)
 
 	candidates.sort_custom(func(a: Node2D, b: Node2D) -> bool:
 		return a.global_position.distance_to(center.global_position) < b.global_position.distance_to(center.global_position)

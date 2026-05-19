@@ -18,6 +18,7 @@ var _active_bonus_shield: int = 0
 
 func _enter_tree() -> void:
 	super._enter_tree()
+	set_physics_process(false)
 	_register_hook()
 
 func _ready() -> void:
@@ -75,12 +76,14 @@ func _on_weapon_passive_triggered(event_name: StringName, detail: Dictionary) ->
 		return
 	PlayerData.bonus_shield += _active_bonus_shield
 	_active_until_msec = Time.get_ticks_msec() + int(maxf(_get_duration(), 0.05) * 1000.0)
+	set_physics_process(true)
 
 func _clear_bonus() -> void:
 	if _active_bonus_shield > 0:
 		PlayerData.bonus_shield = max(0, int(PlayerData.bonus_shield) - _active_bonus_shield)
 	_active_bonus_shield = 0
 	_active_until_msec = 0
+	set_physics_process(false)
 
 func _get_shield_ratio() -> float:
 	return UTILS.get_value_by_level(module_level, shield_ratio_lv1, shield_ratio_lv2, shield_ratio_lv3)

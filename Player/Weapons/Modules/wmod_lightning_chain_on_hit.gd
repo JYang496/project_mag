@@ -48,14 +48,14 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 		chain_damage = owner_player.compute_outgoing_damage(chain_damage)
 
 	var candidates: Array[Node] = []
-	for enemy_ref in get_tree().get_nodes_in_group("enemies"):
+	var effective_chain_range := chain_range * get_effective_additive(1.0, 0.25)
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(get_tree(), target2d.global_position, effective_chain_range):
 		var enemy: Node2D = enemy_ref as Node2D
 		if enemy == null or enemy == target:
 			continue
 		if not is_instance_valid(enemy):
 			continue
-		if enemy.global_position.distance_to(target2d.global_position) <= chain_range * get_effective_additive(1.0, 0.25):
-			candidates.append(enemy)
+		candidates.append(enemy)
 
 	candidates.sort_custom(func(a: Node, b: Node) -> bool:
 		var a2d: Node2D = a as Node2D

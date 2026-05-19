@@ -17,6 +17,7 @@ var _active_until_msec: int = 0
 
 func _enter_tree() -> void:
 	super._enter_tree()
+	set_physics_process(false)
 	_register_hook()
 
 func _ready() -> void:
@@ -76,12 +77,14 @@ func _on_weapon_passive_triggered(event_name: StringName, detail: Dictionary) ->
 	var next_mul := 1.0 + _get_bonus_ratio() * spent_ratio
 	player.call("apply_move_speed_mul", source_id, next_mul)
 	_active_until_msec = Time.get_ticks_msec() + int(maxf(_get_duration(), 0.05) * 1000.0)
+	set_physics_process(true)
 
 func _clear_bonus() -> void:
 	var player := UTILS.resolve_player_node(weapon)
 	if player != null and is_instance_valid(player) and player.has_method("remove_move_speed_mul"):
 		player.call("remove_move_speed_mul", _get_source_id())
 	_active_until_msec = 0
+	set_physics_process(false)
 
 func _get_bonus_ratio() -> float:
 	return UTILS.get_value_by_level(module_level, bonus_lv1, bonus_lv2, bonus_lv3)

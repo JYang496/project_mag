@@ -164,7 +164,8 @@ func _apply_laser_damage(beam_start: Vector2, beam_end: Vector2) -> void:
 	var tree := get_tree()
 	if tree == null:
 		return
-	for enemy_variant in tree.get_nodes_in_group("enemies"):
+	var bounds := Rect2(beam_start, Vector2.ZERO).expand(beam_end).grow(beam_half_width)
+	for enemy_variant in WeaponModuleRuntimeUtils.get_enemies_in_rect(tree, bounds):
 		if not _is_target_valid(enemy_variant):
 			continue
 		var enemy := enemy_variant as Node2D
@@ -191,7 +192,7 @@ func _pick_nearest_enemy() -> Node2D:
 	var nearest: Node2D = null
 	var nearest_dist_sq := INF
 	var player_pos := _player.global_position
-	for enemy_variant in tree.get_nodes_in_group("enemies"):
+	for enemy_variant in WeaponModuleRuntimeUtils.get_enemy_candidates(tree):
 		var enemy := enemy_variant as Node2D
 		if not _is_target_valid(enemy):
 			continue
