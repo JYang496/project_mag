@@ -68,7 +68,6 @@ const ZONE4_HOLD_BOOST_SOURCE_ID: StringName = &"rest_zone4_hold_boost"
 const BLOCKING_UI_ROOTS: Array[StringName] = [
 	&"ShoppingRootv2",
 	&"UpgradeRootv2",
-	&"GearFuseRoot",
 	&"ModuleRoot",
 	&"InventoryRoot",
 	&"PauseMenuRoot",
@@ -341,6 +340,11 @@ func _start_bonus_route_flow(route_def: RunRouteDefinition) -> void:
 		reward_options = [fallback_reward]
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("request_reward_selection"):
+		if ui.has_method("is_branch_selection_blocking_interactions") and bool(ui.call("is_branch_selection_blocking_interactions")):
+			_route_selection_pending = false
+			if _start_battle_button:
+				_start_battle_button.reset_state()
+			return
 		var opened: bool = bool(ui.request_reward_selection(
 			route_def.display_name,
 			reward_options,

@@ -50,15 +50,19 @@ func _draw():
 func update() -> void:
 	weapon_node = InventoryData.on_select_upg
 	cost_price = 0
-	if self.is_connected("upgrade_level",Callable(weapon_node,"set_level")):
-		self.disconnect("upgrade_level",Callable(weapon_node,"set_level"))
+	for connection in get_signal_connection_list("upgrade_level"):
+		var callable: Callable = connection.get("callable", Callable())
+		if callable.is_valid():
+			disconnect("upgrade_level", callable)
 	for stats in status_container.get_children():
 		stats.queue_free()
+	if weapon_node != null:
+		comb_status = {}
+		itemIcon.texture = weapon_node.get_node("Sprite").texture
+		lblName.text = _build_weapon_header(weapon_node)
 	if weapon_node != null and weapon_node.level < weapon_node.max_level:
 		connect("upgrade_level",Callable(weapon_node,"set_level"))
 		comb_status = combine_status(weapon_node)
-		itemIcon.texture = weapon_node.get_node("Sprite").texture
-		lblName.text = LocalizationManager.get_weapon_name_from_node(weapon_node)
 		for key in comb_status:
 			if key == "cost":
 				var base_upgrade_cost := int(comb_status[key][1])
@@ -72,6 +76,9 @@ func update() -> void:
 					"%s: %s => %s" % [key, comb_status[key][0], comb_status[key][1]]
 				)
 				status_container.add_child(status_label)
+	elif weapon_node != null:
+		cost.text = _build_cap_reason(weapon_node)
+		upgradable = false
 	else:
 		weapon_node = null
 		cost.text = ""
@@ -125,3 +132,17 @@ func _get_upgrade_cost_multiplier() -> float:
 
 func _cursor_can_click() -> bool:
 	return hover_over and weapon_node != null and is_instance_valid(weapon_node) and upgradable
+
+func _build_weapon_header(weapon: Weapon) -> String:
+	var weapon_name := LocalizationManager.get_weapon_name_from_node(weapon)
+	return "%s  Fuse %d  Lv.%d/%d" % [
+		weapon_name,
+		int(weapon.fuse),
+		int(weapon.level),
+		int(weapon.max_level),
+	]
+
+func _build_cap_reason(weapon: Weapon) -> String:
+	if int(weapon.level) >= int(weapon.max_level) and int(weapon.fuse) < int(weapon.FINAL_MAX_FUSE):
+		return LocalizationManager.tr_key("ui.upgrade.need_duplicate", "Level capped by fuse. Obtain a duplicate weapon to break through.")
+	return LocalizationManager.tr_key("ui.upgrade.fully_upgraded", "Fully upgraded.")

@@ -96,7 +96,9 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_id := reward.item_id.strip_edges()
 		if PlayerData.player and is_instance_valid(PlayerData.player):
-			PlayerData.player.create_weapon(weapon_id, max(1, int(reward.item_level)))
+			var outcome: Dictionary = PlayerData.player.try_auto_fuse_weapon_obtain(weapon_id)
+			if str(outcome.get("result", "")) == "not_applicable":
+				PlayerData.player.create_weapon(weapon_id, max(1, int(reward.item_level)))
 			granted_any = true
 		else:
 			var weapon_def = DataHandler.read_weapon_data(weapon_id)
@@ -158,13 +160,15 @@ func _show_reward_granted_message(reward: RewardInfo) -> void:
 	var chunks: PackedStringArray = []
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
-		chunks.append(
-			LocalizationManager.tr_format(
-				"ui.reward.weapon",
-				{"id": weapon_name, "level": reward.item_level},
-				"Weapon %s Lv.%d" % [weapon_name, reward.item_level]
-			)
+		var weapon_text := LocalizationManager.tr_format(
+			"ui.reward.weapon",
+			{"id": weapon_name, "level": reward.item_level},
+			"Weapon %s Lv.%d" % [weapon_name, reward.item_level]
 		)
+		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("predict_auto_fuse_weapon_obtain"):
+			var outcome: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(reward.item_id)
+			weapon_text = _format_weapon_obtain_prediction(weapon_text, weapon_name, outcome)
+		chunks.append(weapon_text)
 	if reward.module_scene:
 		var module_name := _get_module_name_from_reward_scene(reward.module_scene)
 		var level := _sanitize_module_level(reward.module_level)
@@ -200,3 +204,21 @@ func _get_module_name_from_reward_scene(module_scene: PackedScene) -> String:
 	if module_id == "":
 		return fallback
 	return LocalizationManager.tr_key("module.%s.name" % module_id, fallback)
+
+func _format_weapon_obtain_prediction(base_text: String, weapon_name: String, outcome: Dictionary) -> String:
+	var result_type := str(outcome.get("result", "not_applicable"))
+	match result_type:
+		"fused":
+			return LocalizationManager.tr_format(
+				"ui.weapon.obtain_preview.fuse",
+				{"name": weapon_name, "fuse": int(outcome.get("target_fuse", 1))},
+				"%s -> Fuse %d" % [weapon_name, int(outcome.get("target_fuse", 1))]
+			)
+		"converted_to_gold":
+			return LocalizationManager.tr_format(
+				"ui.weapon.obtain_preview.gold",
+				{"name": weapon_name, "gold": int(outcome.get("gold", 0))},
+				"%s -> +%d Gold" % [weapon_name, int(outcome.get("gold", 0))]
+			)
+		_:
+			return base_text

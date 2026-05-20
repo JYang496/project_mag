@@ -46,7 +46,6 @@ ui.hud.weapon.ready,Ready,就绪
 ui.hud.weapon.fail, Fail:{reason}, 失败：{reason}
 ui.panel.shop,Shop,商店
 ui.panel.upgrade,Upgrade,升级
-ui.panel.gear_fuse,Gear Fuse,装备融合
 ui.panel.module,Module,模组
 ui.panel.inventory,Inventory,背包
 ui.panel.pause,Paused,已暂停
@@ -57,11 +56,8 @@ ui.panel.sell,Sell,出售
 ui.panel.cancel,Cancel,取消
 ui.panel.confirm,Confirm,确认
 ui.panel.inventory_bag,Inventory / Bag,背包切换
-ui.panel.to_gear_fuse,To Gear Fuse,前往融合
-ui.panel.to_upgrade,To Upgrade,前往升级
 ui.panel.to_inventory,Inventory,背包
 ui.panel.to_module,Module,模组
-ui.panel.fuse,Fuse,融合
 ui.panel.close_with_right_click,Right Click to close,右键关闭
 ui.upgrade.cost,Cost: {value},花费：{value}
 ui.upgrade.status_line,{key}: {from} => {to},{key}：{from} => {to}
@@ -150,5 +146,14 @@ ui.inventory.obtain,Obtained {name} Lv.{level},获得 {name} Lv.{level}
 ui.inventory.upgrade,Upgraded {name} to Lv.{level},升级 {name} 到 Lv.{level}
 ui.inventory.convert,Converted duplicate {name} into +{gold} Gold,重复 {name} 已转换为 +{gold} 金币
 ui.weapon.duplicate.fuse_up,Duplicate {name} reinforced to Fuse {fuse},重复 {name} 强化至 融合{fuse}
-ui.weapon.duplicate.level_up,Duplicate {name} upgraded to Lv.{level},重复 {name} 升级至 Lv.{level}
 ui.weapon.duplicate.convert,Duplicate {name} converted to +{gold} Gold,重复 {name} 已转换为 +{gold} 金币
+ui.weapon.obtain_preview.new,New weapon,新武器
+ui.weapon.obtain_preview.fuse,{name} -> Fuse {fuse},{name} -> 融合{fuse}
+ui.weapon.obtain_preview.gold,{name} -> +{gold} Gold,{name} -> +{gold} 金币
+ui.upgrade.need_duplicate,Level capped by fuse. Obtain a duplicate weapon to break through.,等级已受融合上限限制。获得重复武器以突破。
+ui.upgrade.fully_upgraded,Fully upgraded.,已完全升级。
+ui.branch.no_options,No evolution branch is configured for this weapon.,该武器尚未配置进化分支。
+ui.branch.missing_weapon,Evolution choice skipped because the weapon is no longer available.,武器已不存在，已跳过进化选择。
+ui.branch.pending_blocks,Choose an evolution branch first.,请先选择进化分支。
+ui.branch.selected_none,Selected branches: none,已选分支：无
+ui.branch.selected_summary,Selected branches: {branches},已选分支：{branches}

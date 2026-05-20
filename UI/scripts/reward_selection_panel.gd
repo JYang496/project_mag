@@ -108,11 +108,15 @@ func _build_reward_summary(reward: RewardInfo) -> String:
 	var chunks: PackedStringArray = []
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
-		chunks.append(LocalizationManager.tr_format(
+		var weapon_text := LocalizationManager.tr_format(
 			"ui.reward.weapon",
 			{"id": weapon_name, "level": reward.item_level},
 			"Weapon %s Lv.%d" % [weapon_name, reward.item_level]
-		))
+		)
+		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("predict_auto_fuse_weapon_obtain"):
+			var outcome: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(reward.item_id)
+			weapon_text = _format_weapon_obtain_prediction(weapon_text, weapon_name, outcome)
+		chunks.append(weapon_text)
 	if reward.module_scene:
 		var module_name := _extract_scene_name(reward.module_scene.resource_path)
 		var module_id := reward.module_scene.resource_path.get_file().get_basename()
@@ -140,6 +144,24 @@ func _extract_scene_name(scene_path: String) -> String:
 	if file_name == "":
 		return "Unknown"
 	return file_name.replace("_", " ").capitalize()
+
+func _format_weapon_obtain_prediction(base_text: String, weapon_name: String, outcome: Dictionary) -> String:
+	var result_type := str(outcome.get("result", "not_applicable"))
+	match result_type:
+		"fused":
+			return LocalizationManager.tr_format(
+				"ui.weapon.obtain_preview.fuse",
+				{"name": weapon_name, "fuse": int(outcome.get("target_fuse", 1))},
+				"%s -> Fuse %d" % [weapon_name, int(outcome.get("target_fuse", 1))]
+			)
+		"converted_to_gold":
+			return LocalizationManager.tr_format(
+				"ui.weapon.obtain_preview.gold",
+				{"name": weapon_name, "gold": int(outcome.get("gold", 0))},
+				"%s -> +%d Gold" % [weapon_name, int(outcome.get("gold", 0))]
+			)
+		_:
+			return base_text
 
 func _on_language_changed(_locale: String) -> void:
 	if visible:

@@ -6,7 +6,6 @@ const MODULE_DUPLICATE_BASE_CONVERT_COINS: int = 6
 var inventory_slots : Array = []
 var moddule_slots : Array = []
 var ready_to_sell_list : Array = []
-var ready_to_fuse_list : Array = []
 #@onready var ui : UI = get_tree().get_first_node_in_group("ui")
 #@onready var player : Player = get_tree().get_first_node_in_group("player")
 
@@ -37,12 +36,6 @@ func _safe_update_upg() -> void:
 	if ui == null:
 		return
 	ui.update_upg()
-
-func _safe_update_gf() -> void:
-	var ui = _get_ui()
-	if ui == null:
-		return
-	ui.update_gf()
 
 func _safe_set_drag_icon(texture) -> void:
 	var ui = _get_ui()
@@ -240,43 +233,6 @@ var on_select_upg :
 		on_select_upg = value
 		_safe_update_upg()
 
-var on_select_eqp_gf :
-	get:
-		return on_select_eqp_gf
-	set(value):
-		add_fuse_item(value)
-		on_select_eqp_gf = value
-		_safe_update_gf()
-
-var on_select_slot_gf :
-	get:
-		return on_select_slot_gf
-	set(value):
-		add_fuse_item(value)
-		on_select_slot_gf = value
-		_safe_update_gf()
-
-func add_fuse_item(item) -> void:
-	if ready_to_fuse_list.size() < MAX_FUSE_SIZE and not ready_to_fuse_list.has(item):
-		if _can_add_fuse_item(item):
-			ready_to_fuse_list.append(item)
-		_safe_update_gf()
-
-func _can_add_fuse_item(item) -> bool:
-	var weapon := item as Weapon
-	if weapon == null or not is_instance_valid(weapon):
-		return false
-	if ready_to_fuse_list.is_empty():
-		return true
-	var base_weapon := ready_to_fuse_list[0] as Weapon
-	if base_weapon == null or not is_instance_valid(base_weapon):
-		return false
-	var base_id := DataHandler.get_weapon_id_from_instance(base_weapon)
-	var item_id := DataHandler.get_weapon_id_from_instance(weapon)
-	if base_id != "" or item_id != "":
-		return base_id != "" and base_id == item_id
-	return str(weapon.ITEM_NAME) == str(base_weapon.ITEM_NAME)
-
 func obtain_module(module_instance: Module, ignore_weapon: Weapon = null) -> void:
 	if module_instance == null:
 		return
@@ -361,11 +317,6 @@ func _discard_module_instance(module_instance: Module, keep_instance: Module = n
 	else:
 		module_instance.free()
 
-func remove_fuse_item(item) -> void:
-	if ready_to_fuse_list.has(item):
-		ready_to_fuse_list.erase(item)
-		_safe_update_gf()
-
 var on_drag_item :
 	get:
 		return on_drag_item
@@ -396,5 +347,4 @@ func reset_runtime_state() -> void:
 	inventory_slots.clear()
 	moddule_slots.clear()
 	ready_to_sell_list.clear()
-	ready_to_fuse_list.clear()
 	clear_on_select()

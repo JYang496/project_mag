@@ -258,12 +258,6 @@ func create_weapon(item_id, level := 1):
 		if weapon_def == null:
 			push_warning("create_weapon failed: weapon id %s not found." % str(item_id))
 			return
-		var existing_by_id := _find_owned_weapon_by_id(incoming_weapon_id)
-		if existing_by_id != null:
-			var duplicate_result := _apply_duplicate_weapon_upgrade(existing_by_id, incoming_weapon_id)
-			_notify_weapon_duplicate_result(existing_by_id, incoming_weapon_id, duplicate_result)
-			_refresh_weapon_related_ui()
-			return
 		weapon = weapon_def.scene.instantiate() as Weapon
 		if weapon == null:
 			push_warning("create_weapon failed: weapon scene instantiate returned null for id %s." % incoming_weapon_id)
@@ -276,14 +270,6 @@ func create_weapon(item_id, level := 1):
 			push_warning("create_weapon failed: invalid weapon instance input.")
 			return
 		incoming_weapon_id = DataHandler.get_weapon_id_from_instance(weapon)
-		if incoming_weapon_id != "":
-			var existing_owned_weapon := _find_owned_weapon_by_id(incoming_weapon_id)
-			if existing_owned_weapon != null and existing_owned_weapon != weapon:
-				var duplicate_result_instance := _apply_duplicate_weapon_upgrade(existing_owned_weapon, incoming_weapon_id)
-				_consume_duplicate_weapon_instance(weapon, existing_owned_weapon)
-				_notify_weapon_duplicate_result(existing_owned_weapon, incoming_weapon_id, duplicate_result_instance)
-				_refresh_weapon_related_ui()
-				return
 
 	# Put weapon into inventory if weapon list is full.
 	if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num:
@@ -302,7 +288,56 @@ func create_weapon(item_id, level := 1):
 	_rebuild_shared_heat_pool()
 	_refresh_weapon_related_ui()
 
-func _find_owned_weapon_by_id(weapon_id: String) -> Weapon:
+func try_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
+	var prediction := predict_auto_fuse_weapon_obtain(weapon_id)
+	var result_type := str(prediction.get("result", "not_applicable"))
+	if result_type == "not_applicable" or result_type == "invalid":
+		return prediction
+	var subject := prediction.get("weapon", null) as Weapon
+	if subject == null or not is_instance_valid(subject):
+		return {"result": "invalid", "weapon_id": weapon_id}
+	if result_type == "fused":
+		var target_fuse := int(prediction.get("target_fuse", int(subject.fuse)))
+		subject.fuse = target_fuse
+		var clamped_level := clampi(int(subject.level), 1, int(subject.max_level))
+		if subject.has_method("set_level"):
+			subject.call("set_level", clamped_level)
+		else:
+			subject.level = clamped_level
+			if subject.has_method("calculate_status"):
+				subject.call("calculate_status")
+		_try_prompt_branch_selection(subject, target_fuse)
+	elif result_type == "converted_to_gold":
+		var converted_gold := int(prediction.get("gold", 0))
+		PlayerData.player_gold += converted_gold
+	_notify_weapon_duplicate_result(subject, weapon_id, prediction)
+	_refresh_weapon_related_ui()
+	return prediction
+
+func predict_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
+	var normalized_id := str(weapon_id).strip_edges()
+	if normalized_id == "":
+		return {"result": "invalid", "weapon_id": normalized_id}
+	var equipped_weapon := _find_equipped_weapon_by_id(normalized_id)
+	if equipped_weapon == null:
+		return {"result": "not_applicable", "weapon_id": normalized_id}
+	var max_fuse: int = max(1, int(equipped_weapon.FINAL_MAX_FUSE))
+	if int(equipped_weapon.fuse) < max_fuse:
+		return {
+			"result": "fused",
+			"weapon_id": normalized_id,
+			"weapon": equipped_weapon,
+			"from_fuse": int(equipped_weapon.fuse),
+			"target_fuse": int(equipped_weapon.fuse) + 1,
+		}
+	return {
+		"result": "converted_to_gold",
+		"weapon_id": normalized_id,
+		"weapon": equipped_weapon,
+		"gold": _calculate_duplicate_weapon_gold(normalized_id),
+	}
+
+func _find_equipped_weapon_by_id(weapon_id: String) -> Weapon:
 	var normalized_id := str(weapon_id).strip_edges()
 	if normalized_id == "":
 		return null
@@ -312,70 +347,14 @@ func _find_owned_weapon_by_id(weapon_id: String) -> Weapon:
 			continue
 		if DataHandler.get_weapon_id_from_instance(equipped_weapon) == normalized_id:
 			return equipped_weapon
-	for inventory_weapon_ref in InventoryData.inventory_slots:
-		var inventory_weapon := inventory_weapon_ref as Weapon
-		if inventory_weapon == null or not is_instance_valid(inventory_weapon):
-			continue
-		if DataHandler.get_weapon_id_from_instance(inventory_weapon) == normalized_id:
-			return inventory_weapon
 	return null
 
-func _apply_duplicate_weapon_upgrade(existing_weapon: Weapon, incoming_weapon_id: String) -> Dictionary:
-	if existing_weapon == null or not is_instance_valid(existing_weapon):
-		return {"result": "invalid", "value": 0}
-	var previous_fuse := int(existing_weapon.fuse)
-	var max_fuse: int = max(1, int(existing_weapon.FINAL_MAX_FUSE))
-	if previous_fuse < max_fuse:
-		existing_weapon.fuse = previous_fuse + 1
-		var clamped_level := clampi(int(existing_weapon.level), 1, int(existing_weapon.max_level))
-		if existing_weapon.has_method("set_level"):
-			existing_weapon.call("set_level", clamped_level)
-		else:
-			existing_weapon.level = clamped_level
-			if existing_weapon.has_method("calculate_status"):
-				existing_weapon.call("calculate_status")
-		_try_prompt_branch_selection(existing_weapon)
-		return {"result": "fuse", "value": int(existing_weapon.fuse)}
-	var previous_level := int(existing_weapon.level)
-	var max_level := int(existing_weapon.max_level)
-	if previous_level < max_level:
-		var next_level := previous_level + 1
-		if existing_weapon.has_method("set_level"):
-			existing_weapon.call("set_level", next_level)
-		else:
-			existing_weapon.level = next_level
-			if existing_weapon.has_method("calculate_status"):
-				existing_weapon.call("calculate_status")
-		return {"result": "level", "value": int(existing_weapon.level)}
-	var converted_gold := _convert_duplicate_weapon_to_gold(incoming_weapon_id)
-	return {"result": "convert", "gold": converted_gold}
-
-func _consume_duplicate_weapon_instance(duplicate_weapon: Weapon, keep_weapon: Weapon = null) -> void:
-	if duplicate_weapon == null or not is_instance_valid(duplicate_weapon) or duplicate_weapon == keep_weapon:
-		return
-	if duplicate_weapon.modules != null:
-		for child in duplicate_weapon.modules.get_children():
-			var module_node := child as Module
-			if module_node == null:
-				continue
-			var module_copy := module_node.duplicate() as Module
-			if module_copy:
-				InventoryData.obtain_module(module_copy)
-	PlayerData.player_weapon_list.erase(duplicate_weapon)
-	InventoryData.inventory_slots.erase(duplicate_weapon)
-	if duplicate_weapon.get_parent() != null:
-		duplicate_weapon.queue_free()
-	else:
-		duplicate_weapon.free()
-
-func _convert_duplicate_weapon_to_gold(weapon_id: String) -> int:
+func _calculate_duplicate_weapon_gold(weapon_id: String) -> int:
 	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
 	var base_price := 0
 	if weapon_def != null:
 		base_price = max(0, int(weapon_def.price))
-	var converted_gold: int = max(6, base_price * 2)
-	PlayerData.player_gold += converted_gold
-	return converted_gold
+	return max(6, base_price * 2)
 
 func _notify_weapon_duplicate_result(existing_weapon: Weapon, weapon_id: String, result: Dictionary) -> void:
 	var ui := GlobalVariables.ui
@@ -387,21 +366,14 @@ func _notify_weapon_duplicate_result(existing_weapon: Weapon, weapon_id: String,
 	var result_type := str(result.get("result", ""))
 	var message := ""
 	match result_type:
-		"fuse":
-			var fuse_value := int(result.get("value", max(1, int(existing_weapon.fuse))))
+		"fused":
+			var fuse_value := int(result.get("target_fuse", max(1, int(existing_weapon.fuse))))
 			message = LocalizationManager.tr_format(
 				"ui.weapon.duplicate.fuse_up",
 				{"name": weapon_name, "fuse": fuse_value},
 				"Duplicate %s reinforced to Fuse %d" % [weapon_name, fuse_value]
 			)
-		"level":
-			var level_value := int(result.get("value", max(1, int(existing_weapon.level))))
-			message = LocalizationManager.tr_format(
-				"ui.weapon.duplicate.level_up",
-				{"name": weapon_name, "level": level_value},
-				"Duplicate %s upgraded to Lv.%d" % [weapon_name, level_value]
-			)
-		"convert":
+		"converted_to_gold":
 			var gold_value := int(result.get("gold", 0))
 			message = LocalizationManager.tr_format(
 				"ui.weapon.duplicate.convert",
@@ -420,12 +392,10 @@ func _refresh_weapon_related_ui() -> void:
 		ui.update_inventory()
 	if ui.has_method("update_upg"):
 		ui.update_upg()
-	if ui.has_method("update_gf"):
-		ui.update_gf()
 	if ui.has_method("refresh_border"):
 		ui.refresh_border()
 
-func _try_prompt_branch_selection(weapon: Weapon) -> void:
+func _try_prompt_branch_selection(weapon: Weapon, target_fuse: int = 0) -> void:
 	if weapon == null or not is_instance_valid(weapon):
 		return
 	var ui := GlobalVariables.ui
@@ -433,7 +403,9 @@ func _try_prompt_branch_selection(weapon: Weapon) -> void:
 		return
 	if not ui.has_method("request_weapon_branch_selection"):
 		return
-	ui.request_weapon_branch_selection(weapon)
+	if target_fuse <= 0:
+		target_fuse = int(weapon.fuse)
+	ui.request_weapon_branch_selection(weapon, target_fuse)
 
 func swap_weapon_position(weapon1, weapon2) -> void:
 	if weapon1 == weapon2:

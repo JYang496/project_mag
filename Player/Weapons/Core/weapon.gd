@@ -234,6 +234,38 @@ func add_branch(new_branch_id: String) -> bool:
 		set_level(clampi(level, 1, max_level))
 	return true
 
+func restore_branch_ids(saved_branch_ids: Array) -> void:
+	_clear_branch_behaviors()
+	branch_ids.clear()
+	branch_definitions.clear()
+	branch_id = ""
+	branch_definition = null
+	for branch_id_variant in saved_branch_ids:
+		if branch_ids.size() >= 2:
+			push_warning("Skipping extra saved branch '%s' on weapon '%s'." % [str(branch_id_variant), name])
+			continue
+		var saved_branch_id := str(branch_id_variant).strip_edges()
+		if saved_branch_id == "":
+			continue
+		var def := DataHandler.read_weapon_branch_definition(scene_file_path, saved_branch_id)
+		if def == null:
+			push_warning("Skipping missing saved branch '%s' on weapon '%s'." % [saved_branch_id, name])
+			continue
+		if int(fuse) < int(def.unlock_fuse):
+			push_warning("Skipping saved branch '%s' because fuse %d is below unlock fuse %d." % [saved_branch_id, int(fuse), int(def.unlock_fuse)])
+			continue
+		if not is_branch_compatible_with_existing(def):
+			push_warning("Skipping incompatible saved branch '%s' on weapon '%s'." % [saved_branch_id, name])
+			continue
+		branch_ids.append(saved_branch_id)
+		branch_definitions.append(def)
+		_apply_branch_behavior_for_definition(def, saved_branch_id)
+	_sync_legacy_branch_refs()
+	if has_method("set_level") and level > 0:
+		set_level(clampi(level, 1, max_level))
+	else:
+		calculate_status()
+
 func has_branch(check_branch_id: String) -> bool:
 	var normalized_id := str(check_branch_id)
 	if normalized_id == "":

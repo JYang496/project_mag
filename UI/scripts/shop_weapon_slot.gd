@@ -83,6 +83,7 @@ func new_item() -> void:
 	var final_price := int(round(float(base_price) * _get_purchase_price_multiplier()))
 	price = max(1, final_price)
 	price_label.text = str(price)
+	_refresh_purchase_prediction()
 	
 
 func _physics_process(_delta) -> void:
@@ -103,8 +104,16 @@ func _on_color_rect_mouse_exited() -> void:
 
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK") and item_id != null and purchasable :
+		var ui := GlobalVariables.ui
+		if ui and is_instance_valid(ui) and ui.has_method("is_branch_selection_blocking_interactions") and ui.is_branch_selection_blocking_interactions():
+			ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
+			return
 		PlayerData.player_gold -= price
-		select_weapon.emit(item_id)
+		var outcome := {}
+		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("try_auto_fuse_weapon_obtain"):
+			outcome = PlayerData.player.try_auto_fuse_weapon_obtain(str(item_id))
+		if str(outcome.get("result", "not_applicable")) == "not_applicable":
+			select_weapon.emit(item_id)
 		for eq : EquipmentSlotShop in equipped.get_children():
 			eq.reset_sell_status()
 		self.empty_item()
@@ -116,3 +125,29 @@ func _get_purchase_price_multiplier() -> float:
 
 func _cursor_can_click() -> bool:
 	return item_id != null and purchasable
+
+func _refresh_purchase_prediction() -> void:
+	socket_2.text = ""
+	if item_id == null:
+		return
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return
+	if not PlayerData.player.has_method("predict_auto_fuse_weapon_obtain"):
+		return
+	var outcome: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(str(item_id))
+	var weapon_name := equip_name.text
+	match str(outcome.get("result", "not_applicable")):
+		"fused":
+			socket_2.text = LocalizationManager.tr_format(
+				"ui.weapon.obtain_preview.fuse",
+				{"name": weapon_name, "fuse": int(outcome.get("target_fuse", 1))},
+				"%s -> Fuse %d" % [weapon_name, int(outcome.get("target_fuse", 1))]
+			)
+		"converted_to_gold":
+			socket_2.text = LocalizationManager.tr_format(
+				"ui.weapon.obtain_preview.gold",
+				{"name": weapon_name, "gold": int(outcome.get("gold", 0))},
+				"%s -> +%d Gold" % [weapon_name, int(outcome.get("gold", 0))]
+			)
+		_:
+			socket_2.text = LocalizationManager.tr_key("ui.weapon.obtain_preview.new", "New weapon")

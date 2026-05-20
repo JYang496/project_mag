@@ -23,7 +23,10 @@ func open_for_weapon(target_weapon: Weapon, branch_defs: Array[WeaponBranchDefin
 	if _weapon and is_instance_valid(_weapon):
 		title_label.text = LocalizationManager.tr_key("ui.branch.title", "Choose Evolution Branch")
 		var weapon_name := LocalizationManager.get_weapon_name_from_node(_weapon)
+		var selected_summary := _build_selected_branch_summary(_weapon)
 		subtitle_label.text = weapon_name if weapon_name != "" else LocalizationManager.tr_key("ui.branch.weapon", "Weapon")
+		if selected_summary != "":
+			subtitle_label.text += "\n" + selected_summary
 	else:
 		title_label.text = LocalizationManager.tr_key("ui.branch.title", "Choose Evolution Branch")
 		subtitle_label.text = ""
@@ -47,8 +50,6 @@ func open_for_weapon(target_weapon: Weapon, branch_defs: Array[WeaponBranchDefin
 		row.add_child(branch_card)
 
 func close_panel(choose_default_if_pending: bool = false) -> void:
-	if choose_default_if_pending and _weapon and is_instance_valid(_weapon) and not _branch_ids.is_empty():
-		branch_selected.emit(_weapon, _branch_ids[0])
 	visible = false
 	_weapon = null
 	_branch_ids.clear()
@@ -122,3 +123,23 @@ func _build_branch_card(def: WeaponBranchDefinition) -> Button:
 	vbox.add_child(desc_label)
 
 	return button
+
+func _build_selected_branch_summary(weapon: Weapon) -> String:
+	if weapon == null or not is_instance_valid(weapon):
+		return ""
+	var selected_ids: Array = weapon.branch_ids
+	if selected_ids.is_empty():
+		return LocalizationManager.tr_key("ui.branch.selected_none", "Selected branches: none")
+	var parts: PackedStringArray = []
+	for branch_id_variant in selected_ids:
+		var branch_id := str(branch_id_variant)
+		var def := DataHandler.read_weapon_branch_definition(weapon.scene_file_path, branch_id)
+		if def == null:
+			parts.append(branch_id)
+		else:
+			parts.append(LocalizationManager.get_branch_display_name(def))
+	return LocalizationManager.tr_format(
+		"ui.branch.selected_summary",
+		{"branches": ", ".join(parts)},
+		"Selected branches: %s" % ", ".join(parts)
+	)

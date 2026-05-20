@@ -15,22 +15,15 @@
 [ext_resource type="Script" uid="uid://4s7d5ehiu4vp" path="res://UI/scripts/shop_cancel_button.gd" id="9_npmjx"]
 [ext_resource type="PackedScene" uid="uid://dfnpmefqatyye" path="res://UI/scenes/shop_weapon_slot.tscn" id="10_vx7wu"]
 [ext_resource type="Script" uid="uid://bg0ssyqms6h0n" path="res://UI/scripts/shop_confirm_button.gd" id="11_6q2ik"]
-[ext_resource type="Script" uid="uid://b6slggtbt7nc3" path="res://UI/scripts/to_lb.gd" id="12_t31p1"]
-[ext_resource type="Script" uid="uid://s85d54ephino" path="res://UI/scripts/inv_slot_gf.gd" id="13_1sm7k"]
-[ext_resource type="Script" uid="uid://cgjdew6by1fea" path="res://UI/scripts/equipment_slot_gf.gd" id="13_kncd2"]
 [ext_resource type="Script" uid="uid://bcw8ybxkxlffj" path="res://UI/scripts/inv_slot_upg.gd" id="13_vh35o"]
 [ext_resource type="Script" uid="uid://tmf8da50pbs4" path="res://UI/scripts/equipment_slot_upgrade.gd" id="14_idhk4"]
-[ext_resource type="Script" uid="uid://ctk8dc14nmcki" path="res://UI/scripts/gf_swtich_btn.gd" id="15_xtxff"]
+[ext_resource type="Script" path="res://UI/scripts/inventory_bag_switch_btn.gd" id="15_xtxff"]
 [ext_resource type="PackedScene" uid="uid://d1wde4dqoyc24" path="res://UI/scenes/upgrade_preview.tscn" id="16_2jerp"]
-[ext_resource type="PackedScene" uid="uid://bus2yd5hbxmcp" path="res://UI/scenes/gf_item.tscn" id="16_rjxvo"]
-[ext_resource type="Script" uid="uid://cc2eo3mf0uuh8" path="res://UI/scripts/gf_confirm_btn.gd" id="16_yflil"]
-[ext_resource type="Script" uid="uid://c5738xwcafeh3" path="res://UI/scripts/to_upgrade.gd" id="18_uk6e0"]
 [ext_resource type="Script" uid="uid://d0l44sn57n767" path="res://UI/scripts/weapon_selector.gd" id="19_wsel"]
 [ext_resource type="Texture2D" uid="uid://btuvlcm8esh3v" path="res://asset/images/ui/mainhand.png" id="20_mainh"]
 [ext_resource type="Texture2D" uid="uid://6nk1oq1063xs" path="res://asset/images/ui/offhand.png" id="21_offh"]
 [ext_resource type="Script" uid="uid://dnn7vyvb81tph" path="res://UI/scripts/smith_back_button.gd" id="22_sback"]
 [ext_resource type="Script" uid="uid://cqd71mpyml6tm" path="res://UI/scripts/open_smith_upgrade_button.gd" id="23_supg"]
-[ext_resource type="Script" uid="uid://bk3c4kqyuahj" path="res://UI/scripts/open_smith_fuse_button.gd" id="24_sgf"]
 [ext_resource type="Script" uid="uid://bvpny8o1qf1q1" path="res://UI/scripts/open_merchant_buy_button.gd" id="25_mbuy"]
 [ext_resource type="Script" uid="uid://b0nanidi3wofh" path="res://UI/scripts/open_merchant_sell_button.gd" id="26_msell"]
 [ext_resource type="Script" uid="uid://dcdn7aulipk8y" path="res://UI/scripts/merchant_back_button.gd" id="27_mback"]
@@ -574,15 +567,6 @@ offset_bottom = 154.0
 text = "Upgrade"
 script = ExtResource("23_supg")
 
-[node name="OpenFuseButton" type="Button" parent="GUI/SmithRoot/Panel" unique_id=1126674546]
-layout_mode = 0
-offset_left = 28.0
-offset_top = 166.0
-offset_right = 248.0
-offset_bottom = 212.0
-text = "Gear Fuse"
-script = ExtResource("24_sgf")
-
 [node name="CloseHint" type="Label" parent="GUI/SmithRoot/Panel" unique_id=192820732]
 visible = false
 layout_mode = 1
@@ -707,16 +691,6 @@ offset_right = 828.0
 offset_bottom = 44.0
 text = "Inventory / Bag"
 script = ExtResource("15_xtxff")
-panel = "upg"
-
-[node name="ToGF" type="Button" parent="GUI/UpgradeRootv2/Panel" unique_id=109470270]
-layout_mode = 0
-offset_left = 865.0
-offset_top = 33.0002
-offset_right = 973.0
-offset_bottom = 64.0002
-text = "To Gear Fuse"
-script = ExtResource("12_t31p1")
 
 [node name="BackToSmithMenu" type="Button" parent="GUI/UpgradeRootv2/Panel" unique_id=1836082639]
 layout_mode = 0
@@ -733,166 +707,6 @@ offset_left = 127.0
 offset_top = 97.0
 offset_right = 427.0
 offset_bottom = 513.0
-
-[node name="GearFuseRoot" type="Control" parent="GUI" unique_id=1968132388]
-visible = false
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-
-[node name="Panel" type="Panel" parent="GUI/GearFuseRoot" unique_id=1712496429]
-custom_minimum_size = Vector2(1000, 600)
-layout_mode = 0
-offset_left = 86.0
-offset_top = 30.0
-offset_right = 1086.0
-offset_bottom = 630.0
-
-[node name="Title" type="Label" parent="GUI/GearFuseRoot/Panel" unique_id=720932783]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 10.0002
-offset_bottom = 33.0002
-grow_horizontal = 2
-text = "Gear Fuse"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Inventory" type="GridContainer" parent="GUI/GearFuseRoot/Panel" unique_id=973559862]
-visible = false
-custom_minimum_size = Vector2(500, 500)
-layout_mode = 0
-offset_left = 507.0
-offset_top = 50.0
-offset_right = 1007.0
-offset_bottom = 550.0
-columns = 2
-
-[node name="InvSlotGF" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=1234441771 instance=ExtResource("3_hcnsl")]
-layout_mode = 2
-script = ExtResource("13_1sm7k")
-
-[node name="InvSlotGF2" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=732766505 instance=ExtResource("3_hcnsl")]
-layout_mode = 2
-script = ExtResource("13_1sm7k")
-inventory_index = 1
-
-[node name="InvSlotGF3" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=392481348 instance=ExtResource("3_hcnsl")]
-layout_mode = 2
-script = ExtResource("13_1sm7k")
-inventory_index = 2
-
-[node name="InvSlotGF4" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=793088385 instance=ExtResource("3_hcnsl")]
-layout_mode = 2
-script = ExtResource("13_1sm7k")
-inventory_index = 3
-
-[node name="InvSlotGF5" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=1146935885 instance=ExtResource("3_hcnsl")]
-layout_mode = 2
-script = ExtResource("13_1sm7k")
-inventory_index = 4
-
-[node name="InvSlotGF6" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=177555594 instance=ExtResource("3_hcnsl")]
-layout_mode = 2
-script = ExtResource("13_1sm7k")
-inventory_index = 5
-
-[node name="InvSlotGF7" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=1686113534 instance=ExtResource("3_hcnsl")]
-layout_mode = 2
-script = ExtResource("13_1sm7k")
-inventory_index = 6
-
-[node name="InvSlotGF8" parent="GUI/GearFuseRoot/Panel/Inventory" unique_id=874918015 instance=ExtResource("3_hcnsl")]
-layout_mode = 2
-script = ExtResource("13_1sm7k")
-inventory_index = 7
-
-[node name="Equipped" type="GridContainer" parent="GUI/GearFuseRoot/Panel" unique_id=1790929182]
-custom_minimum_size = Vector2(440, 440)
-layout_mode = 0
-offset_left = 540.0
-offset_top = 80.0
-offset_right = 980.0
-offset_bottom = 520.0
-columns = 2
-
-[node name="EquipmentSlotGF" parent="GUI/GearFuseRoot/Panel/Equipped" unique_id=954180765 instance=ExtResource("3_3xv3f")]
-layout_mode = 2
-script = ExtResource("13_kncd2")
-
-[node name="EquipmentSlotGF2" parent="GUI/GearFuseRoot/Panel/Equipped" unique_id=1813093506 instance=ExtResource("3_3xv3f")]
-layout_mode = 2
-script = ExtResource("13_kncd2")
-equipment_index = 1
-
-[node name="EquipmentSlotGF3" parent="GUI/GearFuseRoot/Panel/Equipped" unique_id=1660525263 instance=ExtResource("3_3xv3f")]
-layout_mode = 2
-script = ExtResource("13_kncd2")
-equipment_index = 2
-
-[node name="EquipmentSlotGF4" parent="GUI/GearFuseRoot/Panel/Equipped" unique_id=627960095 instance=ExtResource("3_3xv3f")]
-layout_mode = 2
-script = ExtResource("13_kncd2")
-equipment_index = 3
-
-[node name="SwtichBtn" type="Button" parent="GUI/GearFuseRoot/Panel" unique_id=475128506]
-layout_mode = 0
-offset_left = 702.0
-offset_top = 13.0
-offset_right = 828.0
-offset_bottom = 44.0
-text = "Inventory / Bag"
-script = ExtResource("15_xtxff")
-
-[node name="BackToSmithMenu" type="Button" parent="GUI/GearFuseRoot/Panel" unique_id=468357215]
-layout_mode = 0
-offset_left = 752.0
-offset_top = 31.0
-offset_right = 850.0
-offset_bottom = 62.0
-text = "Back"
-script = ExtResource("22_sback")
-
-[node name="MarginContainer" type="MarginContainer" parent="GUI/GearFuseRoot/Panel" unique_id=2142222546]
-custom_minimum_size = Vector2(320, 320)
-layout_mode = 0
-offset_left = 79.0
-offset_top = 126.0
-offset_right = 459.0
-offset_bottom = 446.0
-
-[node name="VBoxContainer" type="VBoxContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer" unique_id=1298444235]
-layout_mode = 2
-
-[node name="ItemRow" type="MarginContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer" unique_id=867830728]
-custom_minimum_size = Vector2(380, 150)
-layout_mode = 2
-
-[node name="Items" type="HBoxContainer" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow" unique_id=211386484]
-layout_mode = 2
-alignment = 1
-
-[node name="GFItem" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow/Items" unique_id=1270524766 instance=ExtResource("16_rjxvo")]
-layout_mode = 2
-
-[node name="GFItem2" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow/Items" unique_id=932551755 instance=ExtResource("16_rjxvo")]
-layout_mode = 2
-item_index = 1
-
-[node name="ConfirmBtn" type="Button" parent="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer" unique_id=1349447636]
-layout_mode = 2
-text = "Fuse"
-script = ExtResource("16_yflil")
-
-[node name="ToUpgrade" type="Button" parent="GUI/GearFuseRoot/Panel" unique_id=1014978807]
-layout_mode = 0
-offset_left = 862.0
-offset_top = 31.0
-offset_right = 960.0
-offset_bottom = 62.0
-text = "To Upgrade"
-script = ExtResource("18_uk6e0")
 
 [node name="ModuleRoot" type="Control" parent="GUI" unique_id=1074484278]
 visible = false
@@ -1213,14 +1027,8 @@ mouse_filter = 2
 [connection signal="button_up" from="GUI/MerchantRoot/Panel/OpenBuyButton" to="GUI/MerchantRoot/Panel/OpenBuyButton" method="_on_button_up"]
 [connection signal="button_up" from="GUI/MerchantRoot/Panel/OpenSellButton" to="GUI/MerchantRoot/Panel/OpenSellButton" method="_on_button_up"]
 [connection signal="button_up" from="GUI/SmithRoot/Panel/OpenUpgradeButton" to="GUI/SmithRoot/Panel/OpenUpgradeButton" method="_on_button_up"]
-[connection signal="button_up" from="GUI/SmithRoot/Panel/OpenFuseButton" to="GUI/SmithRoot/Panel/OpenFuseButton" method="_on_button_up"]
 [connection signal="button_up" from="GUI/UpgradeRootv2/Panel/SwtichBtn" to="GUI/UpgradeRootv2/Panel/SwtichBtn" method="_on_button_up"]
-[connection signal="button_up" from="GUI/UpgradeRootv2/Panel/ToGF" to="GUI/UpgradeRootv2/Panel/ToGF" method="_on_button_up"]
 [connection signal="button_up" from="GUI/UpgradeRootv2/Panel/BackToSmithMenu" to="GUI/UpgradeRootv2/Panel/BackToSmithMenu" method="_on_button_up"]
-[connection signal="button_up" from="GUI/GearFuseRoot/Panel/SwtichBtn" to="GUI/GearFuseRoot/Panel/SwtichBtn" method="_on_button_up"]
-[connection signal="button_up" from="GUI/GearFuseRoot/Panel/BackToSmithMenu" to="GUI/GearFuseRoot/Panel/BackToSmithMenu" method="_on_button_up"]
-[connection signal="button_up" from="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ConfirmBtn" to="GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ConfirmBtn" method="_on_button_up"]
-[connection signal="button_up" from="GUI/GearFuseRoot/Panel/ToUpgrade" to="GUI/GearFuseRoot/Panel/ToUpgrade" method="_on_button_up"]
 [connection signal="button_up" from="GUI/ModuleRoot/Panel/ToInv" to="GUI/ModuleRoot/Panel/ToInv" method="_on_button_up"]
 [connection signal="button_up" from="GUI/InventoryRoot/Panel/ToModel" to="GUI/InventoryRoot/Panel/ToModel" method="_on_button_up"]
 [connection signal="pressed" from="GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton" to="." method="_on_resume_button_pressed"]

@@ -50,7 +50,13 @@ func _input(event: InputEvent) -> void:
 		if module_instance:
 			_pick_module()
 			return
-		PlayerData.player.create_weapon(item)
+		var outcome := {}
+		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("try_auto_fuse_weapon_obtain"):
+			outcome = PlayerData.player.try_auto_fuse_weapon_obtain(str(item_id))
+		if str(outcome.get("result", "not_applicable")) == "not_applicable":
+			PlayerData.player.create_weapon(item)
+		elif item != null and is_instance_valid(item):
+			item.queue_free()
 		queue_free()
 
 func _pick_module() -> void:

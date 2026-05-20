@@ -212,6 +212,73 @@ func get_weapon_ids() -> Array[String]:
 		ids.append(key)
 	return ids
 
+func build_weapon_save_payload(weapon: Weapon) -> Dictionary:
+	if weapon == null or not is_instance_valid(weapon):
+		return {}
+	var module_payloads: Array[Dictionary] = []
+	if weapon.modules != null:
+		for child in weapon.modules.get_children():
+			var module_node := child as Module
+			if module_node == null:
+				continue
+			module_payloads.append({
+				"scene_path": str(module_node.scene_file_path),
+				"level": int(module_node.module_level),
+			})
+	return {
+		"weapon_id": get_weapon_id_from_instance(weapon),
+		"level": int(weapon.level),
+		"fuse": int(weapon.fuse),
+		"branch_ids": weapon.branch_ids.duplicate(),
+		"modules": module_payloads,
+	}
+
+func instantiate_weapon_from_save_payload(payload: Dictionary) -> Weapon:
+	var weapon_id := str(payload.get("weapon_id", "")).strip_edges()
+	var weapon_def := read_weapon_data(weapon_id) as WeaponDefinition
+	if weapon_def == null or weapon_def.scene == null:
+		push_warning("Cannot restore saved weapon id=%s." % weapon_id)
+		return null
+	var weapon := weapon_def.scene.instantiate() as Weapon
+	if weapon == null:
+		push_warning("Cannot instantiate saved weapon id=%s." % weapon_id)
+		return null
+	weapon.fuse = clampi(int(payload.get("fuse", 1)), 1, int(weapon.FINAL_MAX_FUSE))
+	var saved_level := clampi(int(payload.get("level", 1)), 1, int(weapon.max_level))
+	if weapon.has_method("set_level"):
+		weapon.call("set_level", saved_level)
+	else:
+		weapon.level = saved_level
+	var saved_branch_ids: Array = payload.get("branch_ids", [])
+	if weapon.has_method("restore_branch_ids"):
+		weapon.call("restore_branch_ids", saved_branch_ids)
+	if payload.has("modules"):
+		_restore_weapon_modules_from_payload(weapon, payload.get("modules", []))
+	if weapon.has_method("calculate_status"):
+		weapon.call("calculate_status")
+	return weapon
+
+func _restore_weapon_modules_from_payload(weapon: Weapon, module_payloads: Array) -> void:
+	if weapon == null or weapon.modules == null:
+		return
+	for module_payload_variant in module_payloads:
+		if not (module_payload_variant is Dictionary):
+			continue
+		var module_payload := module_payload_variant as Dictionary
+		var scene_path := str(module_payload.get("scene_path", "")).strip_edges()
+		if scene_path == "":
+			continue
+		var module_scene := load(scene_path) as PackedScene
+		if module_scene == null:
+			push_warning("Skipping missing saved module scene: %s" % scene_path)
+			continue
+		var module_instance := module_scene.instantiate() as Module
+		if module_instance == null:
+			push_warning("Skipping invalid saved module scene: %s" % scene_path)
+			continue
+		module_instance.set_module_level(int(module_payload.get("level", 1)))
+		weapon.modules.add_child(module_instance)
+
 func _register_weapon_resource(resource: Resource, source_path: String) -> void:
 	if resource == null:
 		push_warning("Failed to load weapon resource: %s" % source_path)

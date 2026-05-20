@@ -37,10 +37,8 @@ const BATTLE_HARDWARE_CURSOR_COLOR := Color(0.9, 0.98, 1.0, 1.0)
 @onready var inventory_root: Control = $GUI/InventoryRoot
 @onready var pause_menu_root : Control = $GUI/PauseMenuRoot
 @onready var module_root: Control = $GUI/ModuleRoot
-@onready var gear_fuse_root: Control = $GUI/GearFuseRoot
 @onready var shopping_panel: Panel = $GUI/ShoppingRootv2/Panel
 @onready var upgrade_panel: Panel = $GUI/UpgradeRootv2/Panel
-@onready var gear_fuse_panel: Panel = $GUI/GearFuseRoot/Panel
 @onready var module_panel: Panel = $GUI/ModuleRoot/Panel
 @onready var inventory_panel: Panel = $GUI/InventoryRoot/Panel
 @onready var pause_menu_panel: Panel = $GUI/PauseMenuRoot/PauseMenuPanel
@@ -91,12 +89,6 @@ signal reset_cost
 @onready var upgrade_preview: MarginContainer = $GUI/UpgradeRootv2/Panel/UpgradePreview
 
 
-# Gear fuse
-@onready var inventory_gf: GridContainer = $GUI/GearFuseRoot/Panel/Inventory
-@onready var equipped_gf: GridContainer = $GUI/GearFuseRoot/Panel/Equipped
-@onready var fuse_items: HBoxContainer = $GUI/GearFuseRoot/Panel/MarginContainer/VBoxContainer/ItemRow/Items
-
-
 # Inventory
 @onready var inventory: GridContainer = $GUI/InventoryRoot/Panel/Inventory
 @onready var equipped_inv: GridContainer = $GUI/InventoryRoot/Panel/Equipped
@@ -123,7 +115,7 @@ var branch_select_panel: BranchSelectPanel
 var module_equip_selection_panel: ModuleEquipSelectionPanel
 var route_selection_panel: RouteSelectionPanel
 var reward_selection_panel: RewardSelectionPanel
-var _branch_selection_queue: Array[WeakRef] = []
+var _branch_selection_queue: Array[Dictionary] = []
 var _rest_area_merchant_active := false
 var _rest_area_primary_menu_id: StringName = &""
 var game_over_title_label: Label
@@ -225,18 +217,56 @@ func _init_reward_selection_panel() -> void:
 	$GUI.add_child(reward_selection_panel)
 	reward_selection_panel.visible = false
 
-func request_weapon_branch_selection(weapon: Weapon) -> bool:
+func request_weapon_branch_selection(weapon: Weapon, target_fuse: int = 0) -> bool:
 	if weapon == null or not is_instance_valid(weapon):
-		return false
-	var branch_options := weapon.get_branch_options()
-	if branch_options.is_empty():
 		return false
 	if branch_select_panel == null or not is_instance_valid(branch_select_panel):
 		return false
-	if branch_select_panel.visible:
-		_branch_selection_queue.append(weakref(weapon))
-		return true
-	branch_select_panel.open_for_weapon(weapon, branch_options)
+	var resolved_target_fuse := target_fuse if target_fuse > 0 else int(weapon.fuse)
+	_branch_selection_queue.append({
+		"weapon": weakref(weapon),
+		"weapon_id": DataHandler.get_weapon_id_from_instance(weapon),
+		"target_fuse": resolved_target_fuse,
+	})
+	_request_next_queued_weapon_branch_selection()
+	return true
+
+func has_pending_branch_selection() -> bool:
+	return not _branch_selection_queue.is_empty() or (branch_select_panel != null and is_instance_valid(branch_select_panel) and branch_select_panel.visible)
+
+func is_branch_selection_blocking_interactions() -> bool:
+	return has_pending_branch_selection()
+
+func _is_branch_selection_safe_state() -> bool:
+	if PhaseManager.current_state() == PhaseManager.BATTLE:
+		return false
+	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
+		return false
+	return true
+
+func _warn_skipped_branch_selection(weapon_id: String, target_fuse: int, reason: String) -> void:
+	push_warning("Skipped branch selection for weapon id=%s fuse=%d: %s" % [weapon_id, target_fuse, reason])
+	var message := ""
+	if reason == "no_options":
+		message = LocalizationManager.tr_key("ui.branch.no_options", "No evolution branch is configured for this weapon.")
+	elif reason == "missing_weapon":
+		message = LocalizationManager.tr_key("ui.branch.missing_weapon", "Evolution choice skipped because the weapon is no longer available.")
+	if message != "":
+		show_item_message(message, 2.0)
+
+func _open_branch_panel_for_queue_entry(entry: Dictionary) -> bool:
+	var weapon_ref: WeakRef = entry.get("weapon", null)
+	var queued_weapon := weapon_ref.get_ref() as Weapon if weapon_ref else null
+	var weapon_id := str(entry.get("weapon_id", ""))
+	var target_fuse := int(entry.get("target_fuse", 0))
+	if queued_weapon == null or not is_instance_valid(queued_weapon):
+		_warn_skipped_branch_selection(weapon_id, target_fuse, "missing_weapon")
+		return false
+	var branch_options := queued_weapon.get_branch_options()
+	if branch_options.is_empty():
+		_warn_skipped_branch_selection(weapon_id, target_fuse, "no_options")
+		return false
+	branch_select_panel.open_for_weapon(queued_weapon, branch_options)
 	return true
 
 func _request_next_queued_weapon_branch_selection() -> void:
@@ -245,16 +275,12 @@ func _request_next_queued_weapon_branch_selection() -> void:
 		return
 	if branch_select_panel.visible:
 		return
-	while not _branch_selection_queue.is_empty():
-		var weapon_ref: WeakRef = _branch_selection_queue.pop_front()
-		var queued_weapon := weapon_ref.get_ref() as Weapon if weapon_ref else null
-		if queued_weapon == null or not is_instance_valid(queued_weapon):
-			continue
-		var branch_options := queued_weapon.get_branch_options()
-		if branch_options.is_empty():
-			continue
-		branch_select_panel.open_for_weapon(queued_weapon, branch_options)
+	if not _is_branch_selection_safe_state():
 		return
+	while not _branch_selection_queue.is_empty():
+		var entry: Dictionary = _branch_selection_queue.pop_front()
+		if _open_branch_panel_for_queue_entry(entry):
+			return
 
 func request_module_equip_selection(module_instance: Module, on_complete: Callable = Callable()) -> bool:
 	if module_instance == null or not is_instance_valid(module_instance):
@@ -269,6 +295,9 @@ func request_route_selection(
 	on_confirm: Callable = Callable(),
 	on_cancel: Callable = Callable()
 ) -> bool:
+	if is_branch_selection_blocking_interactions():
+		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
+		return false
 	if route_selection_panel == null or not is_instance_valid(route_selection_panel):
 		return false
 	return route_selection_panel.open_for_routes(route_defs, default_route_id, on_confirm, on_cancel)
@@ -279,6 +308,9 @@ func request_reward_selection(
 	on_confirm: Callable = Callable(),
 	on_cancel: Callable = Callable()
 ) -> bool:
+	if is_branch_selection_blocking_interactions():
+		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
+		return false
 	if reward_selection_panel == null or not is_instance_valid(reward_selection_panel):
 		return false
 	return reward_selection_panel.open_for_rewards(route_display_name, reward_options, on_confirm, on_cancel)
@@ -299,7 +331,6 @@ func _finalize_branch_selected_weapon(weapon: Weapon) -> void:
 	if not is_already_owned:
 		PlayerData.player.create_weapon(weapon)
 	update_upg()
-	update_gf()
 	refresh_border()
 	_request_next_queued_weapon_branch_selection()
 
@@ -388,6 +419,9 @@ func refresh_border() -> void:
 func shopping_panel_in() -> void:
 	if shopping_rootv_2 == null:
 		return
+	if is_branch_selection_blocking_interactions():
+		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
+		return
 	move_out_timer.stop()
 	shop_cancel_button._on_button_up()
 	update_shop()
@@ -465,7 +499,7 @@ func handle_rest_area_right_cancel() -> bool:
 			merchant_back_to_primary_menu()
 			return true
 	elif _rest_area_primary_menu_id == &"smith":
-		if (upgrade_rootv_2 and upgrade_rootv_2.visible) or (gear_fuse_root and gear_fuse_root.visible):
+		if upgrade_rootv_2 and upgrade_rootv_2.visible:
 			smith_back_to_primary_menu()
 			return true
 	return false
@@ -522,6 +556,9 @@ func reset_shopping_refresh_cost() -> void:
 	#move_out_timer.start()
 
 func upg_panel_in() -> void:
+	if is_branch_selection_blocking_interactions():
+		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
+		return
 	update_upg()
 	if smith_root:
 		smith_root.visible = false
@@ -531,34 +568,16 @@ func upg_panel_in() -> void:
 
 func upg_panel_out() -> void:
 	upgrade_rootv_2.visible = false
-	if branch_select_panel and is_instance_valid(branch_select_panel):
-		branch_select_panel.close_panel(true)
 	InventoryData.clear_on_select()
 	refresh_border()
 
-func gf_panel_in() -> void:
-	update_gf()
-	if smith_root:
-		smith_root.visible = false
-	gear_fuse_root.visible = true
-	inventory_gf.visible = false
-	equipped_gf.visible = true
-
-func gf_panel_out() -> void:
-	InventoryData.ready_to_fuse_list.clear()
-	if branch_select_panel and is_instance_valid(branch_select_panel):
-		branch_select_panel.close_panel(true)
-	gear_fuse_root.visible = false
-
 func smith_menu_in() -> void:
 	upg_panel_out()
-	gf_panel_out()
 	_show_primary_menu(&"smith", smith_root, smith_primary_panel)
 
 func smith_menu_out() -> void:
 	_hide_primary_menu(&"smith", smith_root, smith_primary_panel)
 	upg_panel_out()
-	gf_panel_out()
 
 func smith_open_upgrade_panel() -> void:
 	var should_wait := smith_root != null and smith_root.visible
@@ -567,16 +586,8 @@ func smith_open_upgrade_panel() -> void:
 		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	upg_panel_in()
 
-func smith_open_fuse_panel() -> void:
-	var should_wait := smith_root != null and smith_root.visible
-	_hide_primary_menu(&"smith", smith_root, smith_primary_panel)
-	if should_wait:
-		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
-	gf_panel_in()
-
 func smith_back_to_primary_menu() -> void:
 	upg_panel_out()
-	gf_panel_out()
 	_show_primary_menu(&"smith", smith_root, smith_primary_panel)
 
 func inventory_panel_in() -> void:
@@ -618,14 +629,6 @@ func update_upg() -> void:
 	for inv in inventory_upg.get_children():
 		inv.update()
 	upgrade_preview.update()
-func update_gf() -> void:
-	for eq in equipped_gf.get_children():
-		eq.update()
-	for inv in inventory_gf.get_children():
-		inv.update()
-	for item in fuse_items.get_children():
-		item.update()
-
 func update_modules() -> void:
 	for eq in equipped_m.get_children():
 		eq.update()
@@ -654,6 +657,7 @@ func _on_resume_button_pressed() -> void:
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.GAMEOVER:
 		_show_game_over()
+	_request_next_queued_weapon_branch_selection()
 	_update_controls_guide_for_phase(new_phase)
 	_update_cursor_presentation()
 
@@ -739,7 +743,6 @@ func _show_game_over() -> void:
 	upgrade_rootv_2.visible = false
 	inventory_root.visible = false
 	module_root.visible = false
-	gear_fuse_root.visible = false
 	game_over_total_damage_label.text = LocalizationManager.tr_format(
 		"ui.gameover.total_damage",
 		{"value": PlayerData.run_total_damage_dealt},
@@ -925,7 +928,6 @@ func _is_secondary_menu_open() -> bool:
 	var roots := [
 		shopping_rootv_2,
 		upgrade_rootv_2,
-		gear_fuse_root,
 		module_root,
 		inventory_root
 	]
@@ -950,7 +952,6 @@ func _apply_responsive_layout() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	_fit_center_panel(shopping_panel, viewport_size, PANEL_TARGET_SIZE)
 	_fit_center_panel(upgrade_panel, viewport_size, PANEL_TARGET_SIZE)
-	_fit_center_panel(gear_fuse_panel, viewport_size, PANEL_TARGET_SIZE)
 	_fit_center_panel(module_panel, viewport_size, PANEL_TARGET_SIZE)
 	_fit_center_panel(inventory_panel, viewport_size, PANEL_TARGET_SIZE)
 	_fit_left_panel(merchant_primary_panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
@@ -1646,9 +1647,6 @@ func _refresh_localized_static_text() -> void:
 	var upgrade_title := upgrade_panel.get_node_or_null("Title") as Label
 	if upgrade_title:
 		upgrade_title.text = LocalizationManager.tr_key("ui.panel.upgrade", "Upgrade")
-	var gear_fuse_title := gear_fuse_panel.get_node_or_null("Title") as Label
-	if gear_fuse_title:
-		gear_fuse_title.text = LocalizationManager.tr_key("ui.panel.gear_fuse", "Gear Fuse")
 	var module_title := module_panel.get_node_or_null("Title") as Label
 	if module_title:
 		module_title.text = LocalizationManager.tr_key("ui.panel.module", "Module")
@@ -1663,21 +1661,9 @@ func _refresh_localized_static_text() -> void:
 	var shop_refresh := shopping_panel.get_node_or_null("ShopRefreshButton") as Button
 	if shop_refresh:
 		shop_refresh.text = LocalizationManager.tr_key("ui.panel.refresh", "Refresh")
-	var to_gf := upgrade_panel.get_node_or_null("ToGF") as Button
-	if to_gf:
-		to_gf.text = LocalizationManager.tr_key("ui.panel.to_gear_fuse", "To Gear Fuse")
 	var upg_switch := upgrade_panel.get_node_or_null("SwtichBtn") as Button
 	if upg_switch:
 		upg_switch.text = LocalizationManager.tr_key("ui.panel.inventory_bag", "Inventory / Bag")
-	var to_upgrade := gear_fuse_panel.get_node_or_null("ToUpgrade") as Button
-	if to_upgrade:
-		to_upgrade.text = LocalizationManager.tr_key("ui.panel.to_upgrade", "To Upgrade")
-	var gf_switch := gear_fuse_panel.get_node_or_null("SwtichBtn") as Button
-	if gf_switch:
-		gf_switch.text = LocalizationManager.tr_key("ui.panel.inventory_bag", "Inventory / Bag")
-	var gf_confirm := gear_fuse_panel.get_node_or_null("MarginContainer/VBoxContainer/ConfirmBtn") as Button
-	if gf_confirm:
-		gf_confirm.text = LocalizationManager.tr_key("ui.panel.fuse", "Fuse")
 	var to_inv := module_panel.get_node_or_null("ToInv") as Button
 	if to_inv:
 		to_inv.text = LocalizationManager.tr_key("ui.panel.to_inventory", "Inventory")

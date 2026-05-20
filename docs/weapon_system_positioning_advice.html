@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>武器系统定位建议</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #20242a;
+      --muted: #626b77;
+      --line: #d9dee7;
+      --head: #18202b;
+      --blue: #2563eb;
+      --green: #15803d;
+      --amber: #b45309;
+      --red: #b91c1c;
+      --chip: #eef2ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif;
+      line-height: 1.65;
+    }
+
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    header {
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 24px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: var(--head);
+      line-height: 1.25;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 34px;
+    }
+
+    h2 {
+      margin: 36px 0 14px;
+      font-size: 24px;
+    }
+
+    h3 {
+      margin: 22px 0 10px;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    .summary {
+      max-width: 900px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .paper {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      margin: 18px 0;
+    }
+
+    .callout {
+      border-left: 4px solid var(--blue);
+      background: #eff6ff;
+      padding: 16px 18px;
+      margin: 18px 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--chip);
+      color: #3730a3;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 16px 0 24px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 12px 14px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #f0f3f8;
+      color: var(--head);
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    ul,
+    ol {
+      margin-top: 8px;
+      padding-left: 24px;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    code {
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: #eef0f4;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.92em;
+    }
+
+    .good {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .warn {
+      color: var(--amber);
+      font-weight: 700;
+    }
+
+    .risk {
+      color: var(--red);
+      font-weight: 700;
+    }
+
+    @media (max-width: 760px) {
+      main {
+        padding: 28px 16px 56px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>武器、分支、模组与武器联动的系统定位建议</h1>
+      <p class="summary">
+        本文基于当前项目已有设计整理：武器拥有 fuse 突破和等级上限，分支通过
+        <code>WeaponBranchBehavior</code> 改变行为，模组通过 trait、stat modifier、on-hit plugin
+        和被动事件接入武器。建议目标是让四层系统各自承担清晰职责，并形成从前期到后期的成长链条。
+      </p>
+    </header>
+
+    <section class="callout">
+      <strong>总纲：</strong>
+      武器提供前期伤害、手感和触发基础；武器分支决定打法路线；模组把武器行为转化为中后期主要伤害；
+      武器联动通过跨武器、跨模组、跨被动事件形成后期输出上限。
+    </section>
+
+    <section>
+      <h2>一、系统分层定位</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>系统</th>
+            <th>阶段定位</th>
+            <th>核心职责</th>
+            <th>设计边界</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>武器</strong></td>
+            <td>前期核心</td>
+            <td>基础直接伤害、攻击节奏、命中事件、换弹事件、热量/弹药等基础循环。</td>
+            <td>武器可以成长，但不应独立承担中后期全部伤害；它更应该是模组和联动的触发器。</td>
+          </tr>
+          <tr>
+            <td><strong>武器分支</strong></td>
+            <td>中期转型</td>
+            <td>在 fuse 2 和 fuse 3 时提供强选择，改变攻击形态、伤害类型、范围、穿透、热量消耗或副手价值。</td>
+            <td>分支应通过行为改造带来质变，避免只做线性数值加成。</td>
+          </tr>
+          <tr>
+            <td><strong>模组</strong></td>
+            <td>中后期核心</td>
+            <td>读取武器 trait 和事件，把命中、换弹、热量、异常、移动、击杀等行为转化为额外机制和额外伤害。</td>
+            <td>模组可以强，但应依赖触发条件、兼容 trait 和等级预算，避免成为所有武器通用的无脑乘区。</td>
+          </tr>
+          <tr>
+            <td><strong>武器联动</strong></td>
+            <td>后期核心玩法</td>
+            <td>让主武器、副武器、分支、模组、被动事件互相放大，形成构筑上限。</td>
+            <td>联动可以几何倍提升总输出，但必须建立在更高构筑门槛、资源成本和可读反馈之上。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>二、成长曲线建议</h2>
+      <div class="paper">
+        <p>
+          当前 fuse 规则已经适合承担阶段门槛：<code>fuse 1 = level cap 3</code>、
+          <code>fuse 2 = level cap 5 + 第一次分支</code>、
+          <code>fuse 3 = level cap 7 + 第二次分支</code>。建议把它明确设计成“成长阶段转换器”，而不是纯数值突破。
+        </p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>阶段</th>
+            <th>玩家主要感受</th>
+            <th>主要伤害来源</th>
+            <th>建议伤害占比</th>
+            <th>设计重点</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>前期</td>
+            <td>拿到武器，理解射击、命中、换弹、热量和范围。</td>
+            <td>武器直接伤害</td>
+            <td>约 70% 到 90%</td>
+            <td>武器手感必须可靠；模组只做轻量辅助或明确触发演示。</td>
+          </tr>
+          <tr>
+            <td>中期</td>
+            <td>通过重复武器突破，第一次选择分支，开始围绕 trait 和触发条件选模组。</td>
+            <td>分支 + 模组</td>
+            <td>约 50% 到 70%</td>
+            <td>分支改变打法，模组开始接管输出成长。</td>
+          </tr>
+          <tr>
+            <td>后期</td>
+            <td>第二分支成型，多武器之间有明确分工，模组链条开始互相放大。</td>
+            <td>模组 + 武器联动</td>
+            <td>约 60% 到 85%</td>
+            <td>允许高上限组合，但用触发条件、冷却、资源和 UI 反馈控制可读性。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>三、各系统具体建议</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>武器：基础行为和触发接口</h3>
+          <span class="tag">直接伤害</span>
+          <span class="tag">手感</span>
+          <span class="tag">触发器</span>
+          <p>
+            武器的直接伤害应保证前期能独立推进战斗，但中后期的价值应逐步转向“高质量触发源”：
+            命中频率、伤害类型、弹药消耗、换弹节奏、热量消耗、主副手状态，都会决定它能触发哪些模组和联动。
+          </p>
+          <ul>
+            <li>每把武器至少要有一个清晰的触发标签，例如 projectile、melee、heat、freeze、area_of_effect。</li>
+            <li>武器升级主要改善基础体验：伤害、冷却、弹药、范围、投射物速度。</li>
+            <li>避免让武器等级单独提供过高乘法成长，否则分支和模组会失去构筑价值。</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h3>武器分支：路线和质变</h3>
+          <span class="tag">打法路线</span>
+          <span class="tag">形态变化</span>
+          <span class="tag">中期选择</span>
+          <p>
+            分支应回答“这把武器接下来要成为哪种构筑核心”。当前的分支行为接口已经支持弹道、伤害类型、
+            冷却、穿透、热量、爆炸配置和被动事件，适合承载质变。
+          </p>
+          <ul>
+            <li>每个分支优先改变行为，再附带少量数值。</li>
+            <li>同一武器的两个分支池建议覆盖不同路线：群体、单体、异常、热量、保护、副手辅助。</li>
+            <li>使用 <code>exclusive_groups</code> 和 <code>incompatible_branch_ids</code> 防止破坏性组合。</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h3>模组：中后期伤害主体</h3>
+          <span class="tag">触发收益</span>
+          <span class="tag">trait 兼容</span>
+          <span class="tag">机制扩展</span>
+          <p>
+            模组应把武器行为翻译成额外收益。纯数值模组适合补基础短板，触发型模组适合提供中后期主要伤害。
+            当前 <code>Module</code> 已经提供 stat modifier、on-hit plugin、等级成长和 trait 限制，建议继续沿用。
+          </p>
+          <ul>
+            <li>通用数值模组预算低，专用触发模组预算高。</li>
+            <li>强模组必须绑定明确条件，例如 freeze、heat、reload、projectile、melee。</li>
+            <li>模组等级 1 到 3 应改变“可靠性或覆盖率”，不要只堆伤害倍率。</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h3>武器联动：后期乘区和构筑上限</h3>
+          <span class="tag">跨武器</span>
+          <span class="tag">被动事件</span>
+          <span class="tag">几何成长</span>
+          <p>
+            联动的目标不是让每把武器都独立变强，而是让玩家通过组合获得更高输出。例如一个武器负责制造状态，
+            另一个武器消耗状态；一个武器通过 reload 事件强化副手，另一个武器通过高频命中兑现强化。
+          </p>
+          <ul>
+            <li>联动应优先使用现有全局被动事件和模组插件体系，减少武器之间的硬编码引用。</li>
+            <li>后期允许乘法收益，但必须让 UI 显示来源、触发条件和当前状态。</li>
+            <li>强联动应至少占用两个条件：指定 trait、指定事件、主副手位置、冷却、热量或弹药窗口。</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>四、伤害预算规则</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>收益类型</th>
+            <th>建议预算</th>
+            <th>适合放在哪</th>
+            <th>风险</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>直接加伤、减冷却、加弹药</td>
+            <td>低到中</td>
+            <td>武器等级、基础模组、小分支附带数值</td>
+            <td>过高会稀释构筑选择。</td>
+          </tr>
+          <tr>
+            <td>改变攻击形态</td>
+            <td>中到高</td>
+            <td>武器分支</td>
+            <td>容易同时提升清怪、单体和触发频率，需要保留短板。</td>
+          </tr>
+          <tr>
+            <td>命中/异常/换弹触发额外伤害</td>
+            <td>中到高</td>
+            <td>触发型模组、武器被动</td>
+            <td>高频武器会放大收益，需要内部冷却或衰减。</td>
+          </tr>
+          <tr>
+            <td>跨武器增益</td>
+            <td>高</td>
+            <td>后期模组、第二分支、特殊被动</td>
+            <td>乘法叠加可能失控，必须限制持续时间、条件或覆盖率。</td>
+          </tr>
+          <tr>
+            <td>状态制造 + 状态消费</td>
+            <td>高到极高</td>
+            <td>后期联动核心</td>
+            <td>如果状态覆盖率过高，会变成无条件全局增伤。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="paper">
+        <h3>推荐公式思路</h3>
+        <p>
+          总输出可以被拆成：<code>武器基础 DPS × 分支形态系数 × 模组触发收益 × 联动覆盖率</code>。
+          其中联动不要直接设计成永久倍率，而应设计成“高倍率 × 有限覆盖率”。这样玩家能打出爆发窗口，
+          但常态输出不会被永久乘区压垮。
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>五、内容设计准则</h2>
+
+      <h3>1. 每把武器先定义触发身份</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>武器身份</th>
+            <th>适合的模组</th>
+            <th>适合的联动</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>高频命中</td>
+            <td>低伤害 on-hit、叠层、短 ICD 触发</td>
+            <td>消费标记、刷新短增益、触发连锁</td>
+          </tr>
+          <tr>
+            <td>低频爆发</td>
+            <td>高倍率、暴击、范围爆炸、击杀触发</td>
+            <td>吃前置状态、消耗热量、爆发窗口</td>
+          </tr>
+          <tr>
+            <td>异常制造</td>
+            <td>冻结、燃烧、腐蚀、减速、易伤</td>
+            <td>给其他武器提供消费对象</td>
+          </tr>
+          <tr>
+            <td>换弹/热量循环</td>
+            <td>reload、heat、overheat、ammo spend</td>
+            <td>强化副手、触发全局事件、窗口爆发</td>
+          </tr>
+          <tr>
+            <td>近战/轨迹覆盖</td>
+            <td>trail、contact、area、lifesteal、shield</td>
+            <td>控制战场位置，为远程武器创造输出窗口</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2. 分支要保留路线短板</h3>
+      <ul>
+        <li><span class="good">推荐：</span>长射程分支提升安全性，但降低清群或冷却；范围分支提升覆盖，但降低单体。</li>
+        <li><span class="good">推荐：</span>热量分支提高爆发，但增加热量管理压力。</li>
+        <li><span class="warn">谨慎：</span>同时增加投射物数量、基础伤害、触发频率和范围，这会直接压过模组和联动。</li>
+      </ul>
+
+      <h3>3. 模组按触发成本定强度</h3>
+      <ul>
+        <li>无条件 stat 模组：低预算，主要补体验。</li>
+        <li>单武器条件模组：中预算，例如 projectile、freeze、heat、melee 限定。</li>
+        <li>需要特定事件的模组：高预算，例如换弹、击杀、连续移动、蓄力命中。</li>
+        <li>需要另一把武器配合的模组：最高预算，但应占用后期资源或稀有度。</li>
+      </ul>
+
+      <h3>4. 联动链条必须可读</h3>
+      <p>
+        如果玩家无法判断是哪把武器、哪个分支、哪个模组在放大输出，后期构筑会变成黑箱。
+        建议每个强联动都能在 UI 或日志里显示“来源、目标、触发条件、持续时间、当前层数”。
+      </p>
+    </section>
+
+    <section>
+      <h2>六、与现有实现的对齐建议</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>现有能力</th>
+            <th>建议用法</th>
+            <th>下一步</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>FUSE_LEVEL_CAPS</code> 与自动 fuse</td>
+            <td>作为阶段门槛，控制等级上限和分支选择。</td>
+            <td>在武器详情、奖励和商店中明确展示“突破后解锁分支/等级上限”。</td>
+          </tr>
+          <tr>
+            <td><code>WeaponBranchBehavior</code></td>
+            <td>承载分支质变，避免替换整把武器场景。</td>
+            <td>为每个分支补一行“路线标签”，例如单体、清群、异常、热量、副手。</td>
+          </tr>
+          <tr>
+            <td><code>Module.required_weapon_traits</code></td>
+            <td>把强模组限制到合适武器，防止无条件泛用。</td>
+            <td>检查现有强模组是否都绑定了足够具体的 trait。</td>
+          </tr>
+          <tr>
+            <td><code>passive_triggered</code> 与全局事件</td>
+            <td>作为武器联动的主要通道。</td>
+            <td>统一 detail 字段，让 UI 和调试能读出联动来源。</td>
+          </tr>
+          <tr>
+            <td>reload/offhand 类模组</td>
+            <td>作为第一批武器联动模板。</td>
+            <td>把“主武器触发，副武器兑现”的组合做成后期推荐构筑。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>七、推荐落地顺序</h2>
+      <ol>
+        <li>
+          <strong>先补定位标签：</strong>
+          给武器、分支、模组增加设计侧标签，至少包括输出方式、触发方式、伤害类型、联动角色。
+        </li>
+        <li>
+          <strong>再补 UI 可读性：</strong>
+          武器详情展示当前 fuse、等级上限、分支、已装备模组、被动状态和可触发联动。
+        </li>
+        <li>
+          <strong>整理模组预算：</strong>
+          把无条件数值模组、单武器触发模组、跨武器联动模组分成不同强度档。
+        </li>
+        <li>
+          <strong>建立后期联动样板：</strong>
+          每个元素或 trait 至少设计一条“制造者 + 消费者 + 放大器”的三段链条。
+        </li>
+        <li>
+          <strong>用 DPS 测试验证：</strong>
+          针对单武器、分支成型、模组成型、双武器联动四种状态分别跑基准，确认成长曲线不是断崖或爆炸。
+        </li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>八、设计红线</h2>
+      <ul>
+        <li><span class="risk">不要</span>让武器基础等级成为最大的后期乘区，否则分支和模组只是装饰。</li>
+        <li><span class="risk">不要</span>让强模组无 trait 限制地适配所有武器。</li>
+        <li><span class="risk">不要</span>把分支做成纯数值升级，分支应该改变玩法路线。</li>
+        <li><span class="risk">不要</span>让武器联动永久满覆盖，后期强度应来自窗口、链条和构筑理解。</li>
+        <li><span class="risk">不要</span>隐藏后期输出来源，至少在调试和武器详情中能追踪触发链条。</li>
+      </ul>
+    </section>
+
+    <section class="paper">
+      <h2>结论</h2>
+      <p>
+        当前项目的技术结构已经适合支撑这套定位：fuse 控制阶段，分支提供质变，模组读取 trait 和事件，
+        被动事件承载跨武器联动。后续设计应避免把所有成长都压到武器本体上，而是让玩家逐步经历
+        “武器能打”到“分支定向”到“模组成型”再到“联动爆发”的完整构筑过程。
+      </p>
+    </section>
+  </main>
+</body>
+</html>
