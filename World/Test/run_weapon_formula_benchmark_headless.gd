@@ -11,7 +11,7 @@ func _initialize() -> void:
 	if cfg != null:
 		cfg.set("auto_start_on_ready", false)
 		cfg.set("quit_on_completion", true)
-		cfg.set("auto_discover_standalone_weapons", false)
+	cfg.set("auto_discover_weapons", false)
 		cfg.set("weapon_ids", PackedStringArray(["1", "5", "4", "8", "9", "2", "13", "21", "25", "26", "17", "10", "3", "7", "11"]))
 		cfg.set("test_duration_sec", 3.0)
 		cfg.set("warmup_sec", 0.2)

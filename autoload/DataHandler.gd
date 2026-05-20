@@ -200,7 +200,7 @@ func get_weapon_id_from_instance(weapon: Weapon) -> String:
 		return ""
 	return get_weapon_id_from_scene_path(str(weapon.scene_file_path))
 
-func get_standalone_weapon_ids() -> Array[String]:
+func get_weapon_ids() -> Array[String]:
 	if GlobalVariables.weapon_list.is_empty():
 		load_weapon_data()
 	var ids: Array[String] = []
@@ -209,27 +209,8 @@ func get_standalone_weapon_ids() -> Array[String]:
 		var def := read_weapon_data(key) as WeaponDefinition
 		if def == null:
 			continue
-		if not bool(def.appears_as_standalone):
-			continue
 		ids.append(key)
 	return ids
-
-func resolve_weapon_id_for_standalone(requested_weapon_id: String) -> String:
-	var requested := str(requested_weapon_id).strip_edges()
-	if requested == "":
-		return ""
-	var def := read_weapon_data(requested) as WeaponDefinition
-	if def == null:
-		return requested
-	if bool(def.appears_as_standalone):
-		return requested
-	var fallback_id := str(def.standalone_replacement_weapon_id).strip_edges()
-	if fallback_id == "":
-		return requested
-	var fallback_def := read_weapon_data(fallback_id) as WeaponDefinition
-	if fallback_def == null:
-		return requested
-	return fallback_id
 
 func _register_weapon_resource(resource: Resource, source_path: String) -> void:
 	if resource == null:

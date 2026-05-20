@@ -29,7 +29,7 @@ class_name DpsBenchmarkConfig
 @export var min_fire_success_ratio: float = 0.03
 @export var min_hit_count: int = 1
 @export var expected_dps_ranges: Dictionary = {}
-@export var auto_discover_standalone_weapons: bool = true
+@export var auto_discover_weapons: bool = true
 @export var auto_discover_all_weapon_ids: bool = false
 @export var include_aoe_cases: bool = true
 
@@ -75,8 +75,8 @@ func _resolve_weapon_ids() -> PackedStringArray:
 				return int(a) < int(b)
 			)
 			return PackedStringArray(all_ids)
-	if auto_discover_standalone_weapons:
-		var ids: Array[String] = DataHandler.get_standalone_weapon_ids()
+	if auto_discover_weapons:
+		var ids: Array[String] = DataHandler.get_weapon_ids()
 		if not ids.is_empty():
 			ids.sort_custom(func(a: String, b: String) -> bool:
 				return int(a) < int(b)

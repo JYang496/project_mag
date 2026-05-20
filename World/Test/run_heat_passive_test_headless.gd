@@ -75,6 +75,9 @@ func _run_probe(scene: Node) -> void:
 	if not await _assert_plasma_lance_heat_feedback(scene):
 		quit(1)
 		return
+	if not await _assert_plasma_lance_rift_projectile_contract(scene):
+		quit(1)
+		return
 	if not await _assert_plasma_lance_branch_contract(scene):
 		quit(1)
 		return
@@ -383,6 +386,76 @@ func _assert_plasma_lance_heat_feedback(scene: Node) -> bool:
 	player.call("clear_heat_statuses")
 	print("PASS: plasma lance heat feedback low/high gain and refresh")
 	return true
+
+func _assert_plasma_lance_rift_projectile_contract(scene: Node) -> bool:
+	var projectile_scene := load("res://Player/Weapons/Projectiles/plasma_lance_projectile.tscn") as PackedScene
+	if projectile_scene == null:
+		push_error("FAIL: missing Plasma Lance projectile scene")
+		return false
+	var weapons_by_name: Dictionary = scene.get("_weapons_by_name")
+	var plasma_lance := weapons_by_name.get("Plasma Lance", null) as Weapon
+	if plasma_lance == null or not is_instance_valid(plasma_lance):
+		push_error("FAIL: missing Plasma Lance weapon for rift contract")
+		return false
+	var target_root := scene.get_node_or_null("SpawnRoot/Targets")
+	if target_root == null:
+		push_error("FAIL: missing heat passive target root for rift contract")
+		return false
+	var anchor := _find_dummy_by_role(target_root, "Primary")
+	var linked := _find_dummy_by_role(target_root, "Spectator")
+	if anchor == null or linked == null:
+		push_error("FAIL: missing Plasma Lance rift dummy pair")
+		return false
+	var projectile := projectile_scene.instantiate() as PlasmaLanceProjectile
+	if projectile == null:
+		push_error("FAIL: Plasma Lance projectile scene did not instantiate PlasmaLanceProjectile")
+		return false
+	projectile.source_weapon = plasma_lance
+	projectile.damage = 100
+	projectile.damage_type = Attack.TYPE_ENERGY
+	projectile.rift_damage_ratio = 0.5
+	projectile.rift_width = 24.0
+	projectile.expire_time = 10.0
+	projectile.projectile_texture = load("res://asset/images/weapons/projectiles/plasma.png") as Texture2D
+	projectile.desired_pixel_size = Vector2(10.0, 10.0)
+	scene.add_child(projectile)
+	await physics_frame
+	var anchor_before := int(anchor.get("hp"))
+	var linked_before := int(linked.get("hp"))
+	projectile.call("on_hit_target", anchor)
+	await physics_frame
+	if int(anchor.get("hp")) != anchor_before or int(linked.get("hp")) != linked_before:
+		push_error("FAIL: Plasma Lance rift damaged enemies on first anchor hit")
+		projectile.queue_free()
+		return false
+	projectile.call("on_hit_target", linked)
+	await physics_frame
+	var anchor_damage := anchor_before - int(anchor.get("hp"))
+	var linked_damage := linked_before - int(linked.get("hp"))
+	if anchor_damage != 50:
+		push_error("FAIL: Plasma Lance rift anchor damage expected 50 got %d" % anchor_damage)
+		projectile.queue_free()
+		return false
+	if linked_damage != 50:
+		push_error("FAIL: Plasma Lance rift linked damage expected 50 got %d" % linked_damage)
+		projectile.queue_free()
+		return false
+	projectile.call("despawn")
+	await physics_frame
+	if is_instance_valid(projectile) and not Array(projectile.get("_rift_hit_positions")).is_empty():
+		push_error("FAIL: Plasma Lance rift positions were not cleared on despawn")
+		return false
+	print("PASS: plasma lance projectile rift anchor, line damage, and cleanup")
+	return true
+
+func _find_dummy_by_role(target_root: Node, role: String) -> Node2D:
+	for child in target_root.get_children():
+		var node := child as Node2D
+		if node == null:
+			continue
+		if str(node.get_meta("heat_passive_test_role", "")) == role:
+			return node
+	return null
 
 func _assert_plasma_lance_branch_contract(scene: Node) -> bool:
 	var player_data := root.get_node_or_null("/root/PlayerData")

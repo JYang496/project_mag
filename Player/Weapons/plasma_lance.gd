@@ -26,13 +26,13 @@ var _overcharge_lance_stack_count: int = 0
 var _overcharge_lance_remaining_sec: float = 0.0
 
 var weapon_data := {
-	"1": {"level": "1", "damage": "26", "speed": "1100", "hp": "2", "fire_interval_sec": "1.5", "ammo": "16", "cost": "12"},
-	"2": {"level": "2", "damage": "32", "speed": "1140", "hp": "2", "fire_interval_sec": "1.45", "ammo": "18", "cost": "12"},
-	"3": {"level": "3", "damage": "38", "speed": "1180", "hp": "2", "fire_interval_sec": "1.38", "ammo": "20", "cost": "12"},
-	"4": {"level": "4", "damage": "45", "speed": "1220", "hp": "2", "fire_interval_sec": "1.30", "ammo": "22", "cost": "12"},
-	"5": {"level": "5", "damage": "54", "speed": "1260", "hp": "2", "fire_interval_sec": "1.20", "ammo": "24", "cost": "12"},
-	"6": {"level": "6", "damage": "64", "speed": "1300", "hp": "2", "fire_interval_sec": "1.09", "ammo": "26", "cost": "12"},
-	"7": {"level": "7", "damage": "76", "speed": "1340", "hp": "2", "fire_interval_sec": "0.97", "ammo": "28", "cost": "12"},
+	"1": {"level": "1", "damage": "26", "speed": "1100", "hp": "3", "fire_interval_sec": "1.5", "ammo": "16", "cost": "12"},
+	"2": {"level": "2", "damage": "32", "speed": "1140", "hp": "3", "fire_interval_sec": "1.45", "ammo": "18", "cost": "12"},
+	"3": {"level": "3", "damage": "38", "speed": "1180", "hp": "3", "fire_interval_sec": "1.38", "ammo": "20", "cost": "12"},
+	"4": {"level": "4", "damage": "45", "speed": "1220", "hp": "3", "fire_interval_sec": "1.30", "ammo": "22", "cost": "12"},
+	"5": {"level": "5", "damage": "54", "speed": "1260", "hp": "3", "fire_interval_sec": "1.20", "ammo": "24", "cost": "12"},
+	"6": {"level": "6", "damage": "64", "speed": "1300", "hp": "3", "fire_interval_sec": "1.09", "ammo": "26", "cost": "12"},
+	"7": {"level": "7", "damage": "76", "speed": "1340", "hp": "3", "fire_interval_sec": "0.97", "ammo": "28", "cost": "12"},
 }
 
 func _physics_process(delta: float) -> void:

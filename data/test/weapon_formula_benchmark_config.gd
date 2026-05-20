@@ -11,7 +11,7 @@ class_name WeaponFormulaBenchmarkConfig
 @export var force_mouse_to_target: bool = true
 @export var accelerated_mode: bool = true
 @export var simulation_time_scale: float = 4.0
-@export var auto_discover_standalone_weapons: bool = true
+@export var auto_discover_weapons: bool = true
 @export var branch_by_weapon_id: Dictionary = {}
 
 @export var player_position: Vector2 = Vector2(360, 360)
@@ -45,10 +45,10 @@ func build_case_queue() -> Array[Dictionary]:
 	return queue
 
 func _resolve_weapon_ids() -> PackedStringArray:
-	if auto_discover_standalone_weapons:
+	if auto_discover_weapons:
 		if GlobalVariables.weapon_list.is_empty():
 			DataHandler.load_weapon_data()
-		var ids: Array[String] = DataHandler.get_standalone_weapon_ids()
+		var ids: Array[String] = DataHandler.get_weapon_ids()
 		if not ids.is_empty():
 			ids.sort_custom(func(a: String, b: String) -> bool:
 				return int(a) < int(b)

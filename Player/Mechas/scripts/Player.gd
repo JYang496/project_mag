@@ -253,7 +253,7 @@ func create_weapon(item_id, level := 1):
 	var weapon: Weapon
 	var incoming_weapon_id := ""
 	if item_id is String:
-		incoming_weapon_id = DataHandler.resolve_weapon_id_for_standalone(str(item_id))
+		incoming_weapon_id = str(item_id).strip_edges()
 		var weapon_def := DataHandler.read_weapon_data(incoming_weapon_id) as WeaponDefinition
 		if weapon_def == null:
 			push_warning("create_weapon failed: weapon id %s not found." % str(item_id))

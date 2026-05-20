@@ -12,5 +12,3 @@ icon = ExtResource("1_icon")
 price = 12
 description = "Slow heavy energy lance with light pierce and heat-spend chain feedback."
 scene = ExtResource("2_scene")
-appears_as_standalone = false
-standalone_replacement_weapon_id = "25"
