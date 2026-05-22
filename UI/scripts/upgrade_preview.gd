@@ -101,13 +101,13 @@ func _input(_event):
 	if Input.is_action_just_released("CLICK") and weapon_node:
 		if hover_over and upgradable:
 			PlayerData.player_gold -= cost_price
-			upgrade_level.emit(int(comb_status["level"][1]))
+			upgrade_level.emit(int(weapon_node.level) + 1)
 			GlobalVariables.ui.update_upg()
 
 func combine_status(node):
 	var weapon_data = node.weapon_data
-	curr_status = weapon_data[str(node.level)]
-	next_status = weapon_data[str(node.level+1)]
+	curr_status = node.get_weapon_level_data(node.level, weapon_data)
+	next_status = node.get_weapon_level_data(node.level + 1, weapon_data)
 	var combined_output = {}
 	# Combine array that stores both current and next status {"k":[v_curr,v_next],...}
 	for key in curr_status:

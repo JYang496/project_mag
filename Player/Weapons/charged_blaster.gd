@@ -22,7 +22,6 @@ var _beam_multi_hit_triggered: bool = false
 
 var weapon_data = {
 	"1": {
-		"level": "1",
 		"damage": "6",
 		"hit_cd": "0.2",
 		"fire_interval_sec": "4",
@@ -31,7 +30,6 @@ var weapon_data = {
 		"cost": "9",
 	},
 	"2": {
-		"level": "2",
 		"damage": "8",
 		"hit_cd": "0.2",
 		"fire_interval_sec": "4",
@@ -40,7 +38,6 @@ var weapon_data = {
 		"cost": "9",
 	},
 	"3": {
-		"level": "3",
 		"damage": "12",
 		"hit_cd": "0.2",
 		"fire_interval_sec": "4",
@@ -49,7 +46,6 @@ var weapon_data = {
 		"cost": "9",
 	},
 	"4": {
-		"level": "4",
 		"damage": "15",
 		"hit_cd": "0.2",
 		"fire_interval_sec": "4",
@@ -58,7 +54,6 @@ var weapon_data = {
 		"cost": "9",
 	},
 	"5": {
-		"level": "5",
 		"damage": "18",
 		"hit_cd": "0.2",
 		"fire_interval_sec": "4",
@@ -67,7 +62,6 @@ var weapon_data = {
 		"cost": "9",
 	},
 	"6": {
-		"level": "6",
 		"damage": "28",
 		"hit_cd": "0.2",
 		"fire_interval_sec": "4",
@@ -76,7 +70,6 @@ var weapon_data = {
 		"cost": "9",
 	},
 	"7": {
-		"level": "7",
 		"damage": "32",
 		"hit_cd": "0.2",
 		"fire_interval_sec": "4",
@@ -97,13 +90,14 @@ func _update_weapon_rotation() -> void:
 
 func set_level(lv):
 	lv = str(lv)
-	level = int(weapon_data[lv]["level"])
-	base_damage = int(weapon_data[lv]["damage"])
-	hit_cd = float(weapon_data[lv]["hit_cd"])
+	var level_data := get_weapon_level_data(lv, weapon_data)
+	level = int(get_weapon_level_key(lv, weapon_data))
+	base_damage = int(level_data["damage"])
+	hit_cd = float(level_data["hit_cd"])
 
-	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
-	apply_level_ammo(weapon_data[lv])
-	duration = float(weapon_data[lv]["duration"])
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
+	duration = float(level_data["duration"])
 	sync_stats()
 	notify_branch_level_applied(level)
 

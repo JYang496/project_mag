@@ -7,8 +7,6 @@
 
 [node name="Sniper" unique_id=326992049 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
-effect_configs = Array[ExtResource("3_qi27u")]([])
-debug_projectile_effects = false
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("3_icon")

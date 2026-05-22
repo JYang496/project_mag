@@ -13,64 +13,57 @@ var _continuous_move_accum_sec: float = 0.0
 
 var weapon_data = {
 	"1": {
-		"level": "1",
 		"damage": "4",
 		"speed": "600",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "1",
 		"ammo": "45",
 		"cost": "17",
 	},
 	"2": {
-		"level": "2",
 		"damage": "6",
 		"speed": "600",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "1",
 		"ammo": "50",
 		"cost": "17",
 	},
 	"3": {
-		"level": "3",
 		"damage": "8",
 		"speed": "600",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "1",
 		"ammo": "55",
 		"cost": "17",
 	},
 	"4": {
-		"level": "4",
 		"damage": "10",
 		"speed": "800",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "0.75",
 		"ammo": "60",
 		"cost": "17",
 	},
 	"5": {
-		"level": "5",
 		"damage": "12",
 		"speed": "800",
-		"hp": "2",
+		"projectile_hits": "2",
 		"fire_interval_sec": "0.5",
 		"ammo": "65",
 		"cost": "17",
 	},
 	"6": {
-		"level": "6",
 		"damage": "14",
 		"speed": "800",
-		"hp": "2",
+		"projectile_hits": "2",
 		"fire_interval_sec": "0.5",
 		"ammo": "70",
 		"cost": "17",
 	},
 	"7": {
-		"level": "7",
 		"damage": "16",
 		"speed": "800",
-		"hp": "2",
+		"projectile_hits": "2",
 		"fire_interval_sec": "0.5",
 		"ammo": "75",
 		"cost": "17",
@@ -83,10 +76,10 @@ var minigun_data = JSON.new()
 func set_level(lv) -> void:
 	lv = str(lv)
 	var level_data: Dictionary = _get_level_data(lv)
-	level = int(level_data["level"])
+	level = int(get_weapon_level_key(lv, weapon_data))
 	base_damage = int(level_data["damage"])
 	base_speed = int(level_data["speed"])
-	base_projectile_hits = int(level_data["hp"])
+	base_projectile_hits = int(level_data["projectile_hits"])
 
 	base_attack_cooldown = float(level_data["fire_interval_sec"])
 	apply_level_ammo(level_data)
@@ -244,8 +237,4 @@ func _update_weapon_rotation() -> void:
 	rotation = direction.angle() + deg_to_rad(90)
 
 func _get_level_data(lv: String) -> Dictionary:
-	if weapon_data.has(lv):
-		return weapon_data[lv]
-	if weapon_data.has("1"):
-		return weapon_data["1"]
-	return {"level": "1", "damage": "4", "speed": "600", "hp": "1", "fire_interval_sec": "1", "ammo": "45", "cost": "17"}
+	return get_weapon_level_data(lv, weapon_data)

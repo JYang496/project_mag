@@ -12,7 +12,6 @@ var ITEM_NAME := "Dash Blade"
 
 var weapon_data := {
 	"1": {
-		"level": "1",
 		"damage": "28",
 		"range": "150",
 		"dash_speed": "900",
@@ -22,7 +21,6 @@ var weapon_data := {
 		"cost": "16",
 	},
 	"2": {
-		"level": "2",
 		"damage": "34",
 		"range": "160",
 		"dash_speed": "950",
@@ -32,7 +30,6 @@ var weapon_data := {
 		"cost": "16",
 	},
 	"3": {
-		"level": "3",
 		"damage": "40",
 		"range": "170",
 		"dash_speed": "980",
@@ -42,7 +39,6 @@ var weapon_data := {
 		"cost": "16",
 	},
 	"4": {
-		"level": "4",
 		"damage": "48",
 		"range": "180",
 		"dash_speed": "1020",
@@ -52,7 +48,6 @@ var weapon_data := {
 		"cost": "16",
 	},
 	"5": {
-		"level": "5",
 		"damage": "58",
 		"range": "190",
 		"dash_speed": "1080",
@@ -62,7 +57,6 @@ var weapon_data := {
 		"cost": "16",
 	},
 	"6": {
-		"level": "6",
 		"damage": "70",
 		"range": "210",
 		"dash_speed": "1150",
@@ -72,7 +66,6 @@ var weapon_data := {
 		"cost": "16",
 	},
 	"7": {
-		"level": "7",
 		"damage": "85",
 		"range": "230",
 		"dash_speed": "1220",
@@ -139,16 +132,17 @@ func _ready() -> void:
 
 func set_level(lv) -> void:
 	lv = str(lv)
-	if not weapon_data.has(lv):
+	var level_data := get_weapon_level_data(lv, weapon_data)
+	if level_data.is_empty():
 		return
-	level = int(weapon_data[lv]["level"])
-	base_damage = int(weapon_data[lv]["damage"])
-	base_attack_range = float(weapon_data[lv]["range"])
-	base_dash_speed = float(weapon_data[lv]["dash_speed"])
-	base_return_speed = float(weapon_data[lv]["return_speed"])
+	level = int(get_weapon_level_key(lv, weapon_data))
+	base_damage = int(level_data["damage"])
+	base_attack_range = float(level_data["range"])
+	base_dash_speed = float(level_data["dash_speed"])
+	base_return_speed = float(level_data["return_speed"])
 
-	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
-	apply_level_ammo(weapon_data[lv])
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
 	sync_stats()
 	notify_branch_level_applied(level)
 	_update_attack_range_shape()

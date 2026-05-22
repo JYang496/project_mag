@@ -7,8 +7,6 @@
 
 [node name="ChargedBlaster" unique_id=1610258449 instance=ExtResource("1_thakn")]
 script = ExtResource("1_48de6")
-effect_configs = Array[ExtResource("3_o5lrl")]([])
-debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 25136

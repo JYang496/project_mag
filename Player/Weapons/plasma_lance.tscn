@@ -6,9 +6,6 @@
 
 [node name="PlasmaLance" instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
-heat_accumulation = 20.0
-max_heat = 100.0
-heat_cooldown_rate = 15.0
 
 [node name="Modules" parent="." index="0"]
 weapon_traits = 140320

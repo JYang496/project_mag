@@ -74,6 +74,40 @@ signal offhand_refreshed_by_reload(weapon: Weapon)
 func set_level(lv):
 	pass
 
+func get_weapon_level_key(requested_level: Variant, data: Dictionary = {}) -> String:
+	var source := data
+	if source.is_empty():
+		var weapon_data_variant: Variant = get("weapon_data")
+		if weapon_data_variant is Dictionary:
+			source = weapon_data_variant as Dictionary
+	if source.is_empty():
+		return str(maxi(int(requested_level), 1))
+	var key := str(requested_level)
+	if source.has(key):
+		return key
+	var fallback_key := str(clampi(int(requested_level), 1, source.size()))
+	if source.has(fallback_key):
+		return fallback_key
+	if source.has("1"):
+		return "1"
+	var keys := source.keys()
+	keys.sort()
+	return str(keys[0])
+
+func get_weapon_level_data(requested_level: Variant, data: Dictionary = {}) -> Dictionary:
+	var source := data
+	if source.is_empty():
+		var weapon_data_variant: Variant = get("weapon_data")
+		if weapon_data_variant is Dictionary:
+			source = weapon_data_variant as Dictionary
+	if source.is_empty():
+		return {}
+	var key := get_weapon_level_key(requested_level, source)
+	var level_data: Variant = source.get(key, {})
+	if level_data is Dictionary:
+		return level_data as Dictionary
+	return {}
+
 func calculate_status() -> void:
 	# Recompute derived runtime stats after module changes.
 	if has_method("sync_stats"):

@@ -26,7 +26,6 @@ var number = 4
 
 var weapon_data = {
 	"1": {
-		"level": "1",
 		"damage": "8",
 		"number": "1",
 		"spin_speed": "3",
@@ -35,7 +34,6 @@ var weapon_data = {
 		"cost": "8",
 	},
 	"2": {
-		"level": "2",
 		"damage": "10",
 		"number": "2",
 		"spin_speed": "3",
@@ -44,7 +42,6 @@ var weapon_data = {
 		"cost": "8",
 	},
 	"3": {
-		"level": "3",
 		"damage": "12",
 		"number": "3",
 		"spin_speed": "3.5",
@@ -53,7 +50,6 @@ var weapon_data = {
 		"cost": "8",
 	},
 	"4": {
-		"level": "4",
 		"damage": "14",
 		"number": "4",
 		"spin_speed": "3.5",
@@ -62,7 +58,6 @@ var weapon_data = {
 		"cost": "8",
 	},
 	"5": {
-		"level": "5",
 		"damage": "16",
 		"number": "5",
 		"spin_speed": "4",
@@ -71,7 +66,6 @@ var weapon_data = {
 		"cost": "8",
 	},
 	"6": {
-		"level": "6",
 		"damage": "18",
 		"number": "6",
 		"spin_speed": "4",
@@ -80,7 +74,6 @@ var weapon_data = {
 		"cost": "8",
 	},
 	"7": {
-		"level": "7",
 		"damage": "20",
 		"number": "7",
 		"spin_speed": "5",
@@ -92,13 +85,11 @@ var weapon_data = {
 
 func set_level(lv) -> void:
 	var requested_level := maxi(int(lv), 1)
-	var key := str(requested_level)
-	if not weapon_data.has(key):
-		key = str(clampi(requested_level, 1, weapon_data.size()))
-		if not weapon_data.has(key):
-			return
-	var level_data: Dictionary = weapon_data[key]
-	level = clampi(int(level_data.get("level", key)), 1, weapon_data.size())
+	var key := get_weapon_level_key(requested_level, weapon_data)
+	var level_data: Dictionary = get_weapon_level_data(key, weapon_data)
+	if level_data.is_empty():
+		return
+	level = int(key)
 	base_damage = int(level_data.get("damage", 1))
 	spin_speed = int(level_data.get("spin_speed", spin_speed))
 	number = int(level_data.get("number", number))

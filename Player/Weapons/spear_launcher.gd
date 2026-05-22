@@ -12,64 +12,57 @@ var _projectile_unique_hit_state: Dictionary = {}
 
 var weapon_data = {
 	"1": {
-		"level": "1",
 		"damage": "6",
 		"speed": "900",
-		"hp": "4",
+		"projectile_hits": "4",
 		"fire_interval_sec": "0.6",
 		"ammo": "30",
 		"cost": "9",
 	},
 	"2": {
-		"level": "2",
 		"damage": "7",
 		"speed": "600",
-		"hp": "4",
+		"projectile_hits": "4",
 		"fire_interval_sec": "0.55",
 		"ammo": "32",
 		"cost": "9",
 	},
 	"3": {
-		"level": "3",
 		"damage": "9",
 		"speed": "600",
-		"hp": "6",
+		"projectile_hits": "6",
 		"fire_interval_sec": "0.5",
 		"ammo": "34",
 		"cost": "9",
 	},
 	"4": {
-		"level": "4",
 		"damage": "10",
 		"speed": "800",
-		"hp": "6",
+		"projectile_hits": "6",
 		"fire_interval_sec": "0.45",
 		"ammo": "36",
 		"cost": "9",
 	},
 	"5": {
-		"level": "5",
 		"damage": "12",
 		"speed": "800",
-		"hp": "6",
+		"projectile_hits": "6",
 		"fire_interval_sec": "0.4",
 		"ammo": "38",
 		"cost": "9",
 	},
 	"6": {
-		"level": "6",
 		"damage": "14",
 		"speed": "800",
-		"hp": "6",
+		"projectile_hits": "6",
 		"fire_interval_sec": "0.35",
 		"ammo": "40",
 		"cost": "9",
 	},
 	"7": {
-		"level": "7",
 		"damage": "18",
 		"speed": "800",
-		"hp": "6",
+		"projectile_hits": "6",
 		"fire_interval_sec": "0.3",
 		"ammo": "42",
 		"cost": "9",
@@ -79,13 +72,14 @@ var weapon_data = {
 
 func set_level(lv):
 	lv = str(lv)
-	level = int(weapon_data[lv]["level"])
-	base_damage = int(weapon_data[lv]["damage"])
-	base_speed = int(weapon_data[lv]["speed"])
-	base_projectile_hits = int(weapon_data[lv]["hp"])
+	var level_data := get_weapon_level_data(lv, weapon_data)
+	level = int(get_weapon_level_key(lv, weapon_data))
+	base_damage = int(level_data["damage"])
+	base_speed = int(level_data["speed"])
+	base_projectile_hits = int(level_data["projectile_hits"])
 
-	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
-	apply_level_ammo(weapon_data[lv])
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
 	sync_stats()
 
 

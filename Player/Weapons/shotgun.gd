@@ -14,70 +14,63 @@ var base_bullet_count: int = 3
 
 var weapon_data = {
 	"1": {
-		"level": "1",
 		"damage": "14",
 		"speed": "1000",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "2",
 		"ammo": "24",
 		"bullet_count": "3",
 		"cost": "7",
 	},
 	"2": {
-		"level": "2",
 		"damage": "16",
 		"speed": "1000",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "2",
 		"ammo": "26",
 		"bullet_count": "4",
 		"cost": "7",
 	},
 	"3": {
-		"level": "3",
 		"damage": "18",
 		"speed": "1000",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "1.8",
 		"ammo": "28",
 		"bullet_count": "5",
 		"cost": "7",
 	},
 	"4": {
-		"level": "4",
 		"damage": "20",
 		"speed": "1000",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "1.8",
 		"ammo": "30",
 		"bullet_count": "6",
 		"cost": "7",
 	},
 	"5": {
-		"level": "5",
 		"damage": "22",
 		"speed": "1000",
-		"hp": "2",
+		"projectile_hits": "2",
 		"fire_interval_sec": "1.6",
 		"ammo": "32",
 		"bullet_count": "7",
 		"cost": "7",
 	},
 	"6": {
-		"level": "6",
 		"damage": "24",
 		"speed": "1000",
-		"hp": "2",
+		"projectile_hits": "2",
 		"fire_interval_sec": "1.6",
 		"ammo": "34",
 		"bullet_count": "8",
 		"cost": "7",
 	},
 	"7": {
-		"level": "7",
 		"damage": "26",
 		"speed": "1000",
-		"hp": "2",
+		"projectile_hits": "2",
 		"fire_interval_sec": "1.6",
 		"ammo": "36",
 		"bullet_count": "9",
@@ -88,14 +81,15 @@ var weapon_data = {
 
 func set_level(lv):
 	lv = str(lv)
-	level = int(weapon_data[lv]["level"])
-	base_damage = int(weapon_data[lv]["damage"])
-	base_speed = int(weapon_data[lv]["speed"])
-	base_projectile_hits = int(weapon_data[lv]["hp"])
+	var level_data := get_weapon_level_data(lv, weapon_data)
+	level = int(get_weapon_level_key(lv, weapon_data))
+	base_damage = int(level_data["damage"])
+	base_speed = int(level_data["speed"])
+	base_projectile_hits = int(level_data["projectile_hits"])
 
-	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
-	apply_level_ammo(weapon_data[lv])
-	base_bullet_count = int(weapon_data[lv]["bullet_count"])
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
+	base_bullet_count = int(level_data["bullet_count"])
 	bullet_count = base_bullet_count
 	base_arc = arc
 	sync_stats()

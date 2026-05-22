@@ -13,29 +13,31 @@ var max_speed_factor : float = 8.0
 const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
 const HEAT_SPEED_POINTS: Array[Vector2] = [
 	Vector2(0.0, 1.0),
-	Vector2(20.0, 2.0),
-	Vector2(40.0, 4.0),
-	Vector2(80.0, 6.0),
-	Vector2(100.0, 8.0),
+	Vector2(10.0, 2.0),
+	Vector2(20.0, 4.0),
+	Vector2(40.0, 6.0),
+	Vector2(50.0, 8.0),
 ]
 
 @export var heat_accumulation: float = 4
-@export var heat_accumulation_per_sec: float = 14.0
+@export var heat_accumulation_per_sec: float = 25.0
 @export var max_heat: float = 50.0
-@export var heat_cooldown_rate: float = 3.0
+@export var heat_cooldown_rate: float = 20.0
 @export_range(5.0, 80.0, 1.0) var front_fire_half_angle_deg: float = 35.0
 @export var heat_expansion_duration_sec: float = 8.0
 @export var heat_expansion_max_heat_multiplier: float = 2.0
 var attack_range: float = 800.0
 
 var weapon_data = {
-	"1": {"level": "1", "damage": "5", "speed": "600", "hp": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"},
-	"2": {"level": "2", "damage": "6", "speed": "600", "hp": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"},
-	"3": {"level": "3", "damage": "7", "speed": "600", "hp": "1", "fire_interval_sec": "0.9", "ammo": "55", "cost": "4"},
-	"4": {"level": "4", "damage": "9", "speed": "800", "hp": "1", "fire_interval_sec": "0.9", "ammo": "55", "cost": "4"},
-	"5": {"level": "5", "damage": "11", "speed": "800", "hp": "2", "fire_interval_sec": "0.8", "ammo": "65", "cost": "4"},
-	"6": {"level": "6", "damage": "13", "speed": "800", "hp": "2", "fire_interval_sec": "0.8", "ammo": "65", "cost": "4"},
-	"7": {"level": "7", "damage": "15", "speed": "800", "hp": "2", "fire_interval_sec": "0.8", "ammo": "65", "cost": "4"}
+	"1": {"damage": "8", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"},
+	"2": {"damage": "10", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"},
+	"3": {"damage": "12", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"},
+	"4": {"damage": "14", "speed": "800", "projectile_hits": "1", "fire_interval_sec": "0.9", "ammo": "55", "cost": "4"},
+	"5": {"damage": "16", "speed": "800", "projectile_hits": "1", "fire_interval_sec": "0.9", "ammo": "55", "cost": "4"},
+	"6": {"damage": "18", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.9", "ammo": "55", "cost": "4"},
+	"7": {"damage": "20", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "65", "cost": "4"},
+	"8": {"damage": "22", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "65", "cost": "4"},
+	"9": {"damage": "24", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "65", "cost": "4"}
 }
 
 func _ready() -> void:
@@ -44,10 +46,10 @@ func _ready() -> void:
 func set_level(lv):
 	lv = str(lv)
 	var level_data := _get_level_data(lv)
-	level = int(level_data["level"])
+	level = int(get_weapon_level_key(lv, weapon_data))
 	base_damage = int(level_data["damage"])
 	base_speed = int(level_data["speed"])
-	base_projectile_hits = int(level_data["hp"])
+	base_projectile_hits = int(level_data["projectile_hits"])
 
 	base_attack_cooldown = float(level_data["fire_interval_sec"])
 	apply_level_ammo(level_data)
@@ -201,18 +203,7 @@ func get_passive_status() -> Dictionary:
 	}
 
 func _get_level_data(lv: String) -> Dictionary:
-	if weapon_data.has(lv):
-		return weapon_data[lv]
-	var lv_int := int(lv)
-	for i in range(lv_int, 0, -1):
-		var key := str(i)
-		if weapon_data.has(key):
-			return weapon_data[key]
-	if weapon_data.has("1"):
-		return weapon_data["1"]
-	
-	# This should not trigger
-	return {"level": "1", "damage": "5", "speed": "600", "hp": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"}
+	return get_weapon_level_data(lv, weapon_data)
 
 func _constrain_to_forward_cone(direction: Vector2, forward: Vector2) -> Vector2:
 	if direction == Vector2.ZERO:

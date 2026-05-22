@@ -13,70 +13,63 @@ var explosion_scale : float = 2.0
 
 var weapon_data = {
 	"1": {
-		"level": "1",
 		"damage": "10",
 		"speed": "500",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "2.4",
 		"ammo": "14",
 		"explosion_scale": "2.0",
 		"cost": "6",
 	},
 	"2": {
-		"level": "2",
 		"damage": "13",
 		"speed": "560",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "2.2",
 		"ammo": "16",
 		"explosion_scale": "2.1",
 		"cost": "6",
 	},
 	"3": {
-		"level": "3",
 		"damage": "16",
 		"speed": "600",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "2.0",
 		"ammo": "18",
 		"explosion_scale": "2.2",
 		"cost": "6",
 	},
 	"4": {
-		"level": "4",
 		"damage": "20",
 		"speed": "650",
-		"hp": "1",
+		"projectile_hits": "1",
 		"fire_interval_sec": "1.8",
 		"ammo": "20",
 		"explosion_scale": "2.35",
 		"cost": "6",
 	},
 	"5": {
-		"level": "5",
 		"damage": "25",
 		"speed": "700",
-		"hp": "2",
+		"projectile_hits": "2",
 		"fire_interval_sec": "1.6",
 		"ammo": "22",
 		"explosion_scale": "2.5",
 		"cost": "6",
 	},
 	"6": {
-		"level": "6",
 		"damage": "31",
 		"speed": "750",
-		"hp": "2",
+		"projectile_hits": "2",
 		"fire_interval_sec": "1.4",
 		"ammo": "24",
 		"explosion_scale": "2.65",
 		"cost": "6",
 	},
 	"7": {
-		"level": "7",
 		"damage": "39",
 		"speed": "800",
-		"hp": "2",
+		"projectile_hits": "2",
 		"fire_interval_sec": "1.2",
 		"ammo": "26",
 		"explosion_scale": "2.8",
@@ -87,14 +80,15 @@ var weapon_data = {
 
 func set_level(lv):
 	lv = str(lv)
-	level = int(weapon_data[lv]["level"])
-	base_damage = int(weapon_data[lv]["damage"])
-	base_speed = int(weapon_data[lv]["speed"])
-	base_projectile_hits = int(weapon_data[lv]["hp"])
+	var level_data := get_weapon_level_data(lv, weapon_data)
+	level = int(get_weapon_level_key(lv, weapon_data))
+	base_damage = int(level_data["damage"])
+	base_speed = int(level_data["speed"])
+	base_projectile_hits = int(level_data["projectile_hits"])
 
-	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
-	apply_level_ammo(weapon_data[lv])
-	explosion_scale = float(weapon_data[lv]["explosion_scale"])
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
+	explosion_scale = float(level_data["explosion_scale"])
 	sync_stats()
 	_sync_explosion_effect_config()
 	notify_branch_level_applied(level)

@@ -7,9 +7,6 @@
 
 [node name="Shotgun" unique_id=906790110 instance=ExtResource("1_8d78b")]
 script = ExtResource("2_1ble7")
-arc = 30.0
-effect_configs = Array[ExtResource("3_owlms")]([])
-debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 5408

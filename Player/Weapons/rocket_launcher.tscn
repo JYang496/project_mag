@@ -6,7 +6,6 @@
 
 [node name="RocketLauncher" unique_id=318102634 instance=ExtResource("1_tn5im")]
 script = ExtResource("2_6v0md")
-debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 50208

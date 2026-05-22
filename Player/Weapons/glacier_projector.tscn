@@ -8,13 +8,6 @@
 
 [node name="GlacierProjector" unique_id=252111721 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-cone_half_angle_deg = 38.0
-base_range = 280.0
-cold_snap_damage_ratio = 0.35
-cold_snap_icd_sec = 1.2
-debug_mode = true
-effect_configs = Array[ExtResource("3_3hv4x")]([])
-debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 65536

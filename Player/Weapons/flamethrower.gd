@@ -29,13 +29,13 @@ var _flame_vfx: Node
 var _primary_fire_held: bool = false
 
 var weapon_data := {
-	"1": {"level": "1", "damage": "8", "fire_interval_sec": "0.30", "ammo": "20", "range": "260", "cost": "11"},
-	"2": {"level": "2", "damage": "10", "fire_interval_sec": "0.30", "ammo": "20", "range": "270", "cost": "11"},
-	"3": {"level": "3", "damage": "12", "fire_interval_sec": "0.30", "ammo": "20", "range": "285", "cost": "11"},
-	"4": {"level": "4", "damage": "14", "fire_interval_sec": "0.30", "ammo": "20", "range": "300", "cost": "11"},
-	"5": {"level": "5", "damage": "17", "fire_interval_sec": "0.25", "ammo": "20", "range": "320", "cost": "11"},
-	"6": {"level": "6", "damage": "20", "fire_interval_sec": "0.25", "ammo": "20", "range": "340", "cost": "11"},
-	"7": {"level": "7", "damage": "23", "fire_interval_sec": "0.25", "ammo": "20", "range": "365", "cost": "11"},
+	"1": {"damage": "8", "fire_interval_sec": "0.30", "ammo": "20", "range": "260", "cost": "11"},
+	"2": {"damage": "10", "fire_interval_sec": "0.30", "ammo": "20", "range": "270", "cost": "11"},
+	"3": {"damage": "12", "fire_interval_sec": "0.30", "ammo": "20", "range": "285", "cost": "11"},
+	"4": {"damage": "14", "fire_interval_sec": "0.30", "ammo": "20", "range": "300", "cost": "11"},
+	"5": {"damage": "17", "fire_interval_sec": "0.25", "ammo": "20", "range": "320", "cost": "11"},
+	"6": {"damage": "20", "fire_interval_sec": "0.25", "ammo": "20", "range": "340", "cost": "11"},
+	"7": {"damage": "23", "fire_interval_sec": "0.25", "ammo": "20", "range": "365", "cost": "11"},
 }
 
 func _ready() -> void:
@@ -46,8 +46,8 @@ func _ready() -> void:
 
 func set_level(lv) -> void:
 	lv = str(lv)
-	var level_data: Dictionary = weapon_data.get(lv, weapon_data["1"])
-	level = int(level_data["level"])
+	var level_data: Dictionary = get_weapon_level_data(lv, weapon_data)
+	level = int(get_weapon_level_key(lv, weapon_data))
 	base_damage = int(level_data["damage"])
 
 	base_attack_cooldown = float(level_data["fire_interval_sec"])

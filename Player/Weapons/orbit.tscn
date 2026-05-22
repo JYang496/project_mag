@@ -7,12 +7,6 @@
 
 [node name="Orbit" unique_id=80514895 instance=ExtResource("1_4h80h")]
 script = ExtResource("1_lxm1t")
-radius = 80.0
-angle = 0.0
-orbit_radius_jitter = 12.0
-offhand_spin_speed_multiplier = 0.65
-effect_configs = Array[ExtResource("3_8qu7o")]([])
-debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 11312

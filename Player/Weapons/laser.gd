@@ -16,49 +16,42 @@ var _last_mouse_position: Vector2 = Vector2.INF
 
 var weapon_data = {
 	"1": {
-		"level": "1",
 		"damage": "3",
 		"fire_interval_sec": "2",
 		"ammo": "45",
 		"cost": "5",
 	},
 	"2": {
-		"level": "2",
 		"damage": "4",
 		"fire_interval_sec": "1.6",
 		"ammo": "50",
 		"cost": "5",
 	},
 	"3": {
-		"level": "3",
 		"damage": "6",
 		"fire_interval_sec": "1.1",
 		"ammo": "55",
 		"cost": "5",
 	},
 	"4": {
-		"level": "4",
 		"damage": "7",
 		"fire_interval_sec": "0.8",
 		"ammo": "60",
 		"cost": "5",
 	},
 	"5": {
-		"level": "5",
 		"damage": "8",
 		"fire_interval_sec": "0.6",
 		"ammo": "65",
 		"cost": "5",
 	},
 	"6": {
-		"level": "6",
 		"damage": "9",
 		"fire_interval_sec": "0.5",
 		"ammo": "70",
 		"cost": "5",
 	},
 	"7": {
-		"level": "7",
 		"damage": "10",
 		"fire_interval_sec": "0.45",
 		"ammo": "75",
@@ -69,11 +62,12 @@ var weapon_data = {
 
 func set_level(lv):
 	lv = str(lv)
-	level = int(weapon_data[lv]["level"])
-	base_damage = int(weapon_data[lv]["damage"])
+	var level_data := get_weapon_level_data(lv, weapon_data)
+	level = int(get_weapon_level_key(lv, weapon_data))
+	base_damage = int(level_data["damage"])
 
-	base_attack_cooldown = float(weapon_data[lv]["fire_interval_sec"])
-	apply_level_ammo(weapon_data[lv])
+	base_attack_cooldown = float(level_data["fire_interval_sec"])
+	apply_level_ammo(level_data)
 	sync_stats()
 
 func _physics_process(delta: float) -> void:

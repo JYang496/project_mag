@@ -14,70 +14,63 @@ var _last_hit_projectile: Projectile
 
 var weapon_data = {
 	"1": {
-		"level": "1",
 		"damage": "3",
 		"speed": "200",
-		"hp": "15",
+		"projectile_hits": "15",
 		"dot_cd": "0.1",
 		"fire_interval_sec": "1",
 		"ammo": "28",
 		"cost": "6",
 	},
 	"2": {
-		"level": "2",
 		"damage": "4",
 		"speed": "200",
-		"hp": "15",
+		"projectile_hits": "15",
 		"dot_cd": "0.1",
 		"fire_interval_sec": "1",
 		"ammo": "30",
 		"cost": "6",
 	},
 	"3": {
-		"level": "3",
 		"damage": "5",
 		"speed": "200",
-		"hp": "20",
+		"projectile_hits": "20",
 		"dot_cd": "0.1",
 		"fire_interval_sec": "1",
 		"ammo": "32",
 		"cost": "6",
 	},
 	"4": {
-		"level": "4",
 		"damage": "7",
 		"speed": "200",
-		"hp": "25",
+		"projectile_hits": "25",
 		"dot_cd": "0.1",
 		"fire_interval_sec": "0.75",
 		"ammo": "34",
 		"cost": "6",
 	},
 	"5": {
-		"level": "5",
 		"damage": "9",
 		"speed": "200",
-		"hp": "25",
+		"projectile_hits": "25",
 		"dot_cd": "0.1",
 		"fire_interval_sec": "0.75",
 		"ammo": "36",
 		"cost": "6",
 	},
 	"6": {
-		"level": "6",
 		"damage": "12",
 		"speed": "200",
-		"hp": "30",
+		"projectile_hits": "30",
 		"dot_cd": "0.1",
 		"fire_interval_sec": "0.75",
 		"ammo": "38",
 		"cost": "6",
 	},
 	"7": {
-		"level": "7",
 		"damage": "15",
 		"speed": "200",
-		"hp": "30",
+		"projectile_hits": "30",
 		"dot_cd": "0.1",
 		"fire_interval_sec": "0.75",
 		"ammo": "40",
@@ -88,16 +81,14 @@ var weapon_data = {
 
 func set_level(lv):
 	var requested_level := maxi(int(lv), 1)
-	var key := str(requested_level)
-	if not weapon_data.has(key):
-		key = str(clampi(requested_level, 1, weapon_data.size()))
-		if not weapon_data.has(key):
-			return
-	var level_data: Dictionary = weapon_data[key]
-	level = clampi(int(level_data.get("level", key)), 1, weapon_data.size())
+	var key := get_weapon_level_key(requested_level, weapon_data)
+	var level_data: Dictionary = get_weapon_level_data(key, weapon_data)
+	if level_data.is_empty():
+		return
+	level = int(key)
 	base_damage = int(level_data.get("damage", 1))
 	base_speed = int(level_data.get("speed", 0))
-	base_projectile_hits = int(level_data.get("hp", 1))
+	base_projectile_hits = int(level_data.get("projectile_hits", 1))
 	dot_cd = float(level_data.get("dot_cd", 0.1))
 	base_attack_cooldown = float(level_data.get("fire_interval_sec", 1.0))
 	apply_level_ammo(level_data)

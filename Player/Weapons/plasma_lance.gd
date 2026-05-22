@@ -26,13 +26,13 @@ var _overcharge_lance_stack_count: int = 0
 var _overcharge_lance_remaining_sec: float = 0.0
 
 var weapon_data := {
-	"1": {"level": "1", "damage": "26", "speed": "1100", "hp": "3", "fire_interval_sec": "1.5", "ammo": "16", "cost": "12"},
-	"2": {"level": "2", "damage": "32", "speed": "1140", "hp": "3", "fire_interval_sec": "1.45", "ammo": "18", "cost": "12"},
-	"3": {"level": "3", "damage": "38", "speed": "1180", "hp": "3", "fire_interval_sec": "1.38", "ammo": "20", "cost": "12"},
-	"4": {"level": "4", "damage": "45", "speed": "1220", "hp": "3", "fire_interval_sec": "1.30", "ammo": "22", "cost": "12"},
-	"5": {"level": "5", "damage": "54", "speed": "1260", "hp": "3", "fire_interval_sec": "1.20", "ammo": "24", "cost": "12"},
-	"6": {"level": "6", "damage": "64", "speed": "1300", "hp": "3", "fire_interval_sec": "1.09", "ammo": "26", "cost": "12"},
-	"7": {"level": "7", "damage": "76", "speed": "1340", "hp": "3", "fire_interval_sec": "0.97", "ammo": "28", "cost": "12"},
+	"1": {"damage": "26", "speed": "1100", "projectile_hits": "3", "fire_interval_sec": "1.5", "ammo": "16", "cost": "12"},
+	"2": {"damage": "32", "speed": "1140", "projectile_hits": "3", "fire_interval_sec": "1.45", "ammo": "18", "cost": "12"},
+	"3": {"damage": "38", "speed": "1180", "projectile_hits": "3", "fire_interval_sec": "1.38", "ammo": "20", "cost": "12"},
+	"4": {"damage": "45", "speed": "1220", "projectile_hits": "3", "fire_interval_sec": "1.30", "ammo": "22", "cost": "12"},
+	"5": {"damage": "54", "speed": "1260", "projectile_hits": "3", "fire_interval_sec": "1.20", "ammo": "24", "cost": "12"},
+	"6": {"damage": "64", "speed": "1300", "projectile_hits": "3", "fire_interval_sec": "1.09", "ammo": "26", "cost": "12"},
+	"7": {"damage": "76", "speed": "1340", "projectile_hits": "3", "fire_interval_sec": "0.97", "ammo": "28", "cost": "12"},
 }
 
 func _physics_process(delta: float) -> void:
@@ -42,10 +42,10 @@ func _physics_process(delta: float) -> void:
 func set_level(lv) -> void:
 	lv = str(lv)
 	var level_data := _get_level_data(lv)
-	level = int(level_data["level"])
+	level = int(get_weapon_level_key(lv, weapon_data))
 	base_damage = int(level_data["damage"])
 	base_speed = int(level_data["speed"])
-	base_projectile_hits = int(level_data["hp"])
+	base_projectile_hits = int(level_data["projectile_hits"])
 
 	base_attack_cooldown = float(level_data["fire_interval_sec"])
 	apply_level_ammo(level_data)
@@ -182,11 +182,7 @@ func _clear_overcharge_lance_stacks() -> void:
 	_overcharge_lance_remaining_sec = 0.0
 
 func _get_level_data(lv: String) -> Dictionary:
-	if weapon_data.has(lv):
-		return weapon_data[lv]
-	if weapon_data.has("1"):
-		return weapon_data["1"]
-	return {"level": "1", "damage": "26", "speed": "1100", "hp": "2", "fire_interval_sec": "1.5", "ammo": "16", "cost": "12"}
+	return get_weapon_level_data(lv, weapon_data)
 
 func _try_trigger_heat_spend_chain(spent: float) -> void:
 	if not is_main_weapon():

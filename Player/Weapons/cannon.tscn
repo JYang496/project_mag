@@ -7,9 +7,6 @@
 
 [node name="Cannon" unique_id=2056242882 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
-windup_sec = 0.15
-effect_configs = Array[ExtResource("3_kwpdc")]([])
-debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 9216

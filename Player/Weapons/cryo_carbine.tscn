@@ -7,11 +7,6 @@
 
 [node name="CryoCarbine" unique_id=596895753 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-shard_damage_ratio = 0.4
-shard_radius = 120.0
-shard_target_count = 1
-effect_configs = Array[ExtResource("3_pihsc")]([])
-debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 66560

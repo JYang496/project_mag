@@ -100,21 +100,59 @@ func _build_case_queue() -> Array[Dictionary]:
 		return int(a) < int(b)
 	)
 	for weapon_id in ids:
-		for level_value in range(min_weapon_level, max_weapon_level + 1):
+		var weapon_max_level := _get_weapon_max_benchmark_level(weapon_id)
+		for level_value in range(min_weapon_level, weapon_max_level + 1):
 			queue.append({
 				"weapon_id": weapon_id,
 				"level": level_value,
+				"max_level": weapon_max_level,
 			})
 	return queue
 
+func _get_weapon_max_benchmark_level(weapon_id: String) -> int:
+	var def: Variant = DataHandler.read_weapon_data(weapon_id)
+	if def == null:
+		return max(min_weapon_level, max_weapon_level)
+	var scene_variant: Variant = def.get("scene")
+	var scene := scene_variant as PackedScene
+	if scene == null:
+		return max(min_weapon_level, max_weapon_level)
+	var weapon_instance := scene.instantiate() as Node
+	if weapon_instance == null:
+		return max(min_weapon_level, max_weapon_level)
+	var result := _get_max_level_from_weapon_instance(weapon_instance)
+	weapon_instance.free()
+	return max(min_weapon_level, result)
+
+func _get_max_level_from_weapon_instance(weapon_instance: Node) -> int:
+	var weapon_data_variant: Variant = weapon_instance.get("weapon_data")
+	if weapon_data_variant is Dictionary:
+		var max_data_level := _get_max_numeric_key(weapon_data_variant as Dictionary)
+		if max_data_level > 0:
+			return max_data_level
+	var max_level_variant: Variant = weapon_instance.get("max_level")
+	if max_level_variant != null:
+		return int(max_level_variant)
+	return max_weapon_level
+
+func _get_max_numeric_key(data: Dictionary) -> int:
+	var result := 0
+	for key in data.keys():
+		if not str(key).is_valid_int():
+			continue
+		result = maxi(result, int(key))
+	return result
+
 func _run_case(case_data: Dictionary, case_index: int, total_cases: int) -> void:
 	await _prepare_case(case_data)
+	Input.action_press("ATTACK")
 	weapon_label.text = "Weapon %s | Lv.%d" % [_current_weapon_id, _current_weapon_level]
 	_update_progress(case_index, total_cases, "Warmup")
 	var warmup_left := maxf(warmup_sec, 0.0)
 	while warmup_left > 0.0:
 		_step_weapon(false)
 		await get_tree().physics_frame
+		_track_current_weapon_state(false)
 		var delta := _get_benchmark_delta()
 		warmup_left -= delta
 
@@ -123,10 +161,12 @@ func _run_case(case_data: Dictionary, case_index: int, total_cases: int) -> void
 	while _elapsed_test_sec < test_duration_sec:
 		_step_weapon(true)
 		await get_tree().physics_frame
+		_track_current_weapon_state(true)
 		var delta := _get_benchmark_delta()
 		_elapsed_test_sec += delta
 		_update_progress(case_index, total_cases, "%.2f / %.2fs" % [minf(_elapsed_test_sec, test_duration_sec), test_duration_sec])
 	_measurement_active = false
+	Input.action_release("ATTACK")
 
 	_results.append(_build_result())
 	_cleanup_case()
@@ -135,7 +175,8 @@ func _prepare_case(case_data: Dictionary) -> void:
 	_cleanup_case()
 	_ensure_battle_phase_for_test()
 	_current_weapon_id = str(case_data.get("weapon_id", ""))
-	_current_weapon_level = clampi(int(case_data.get("level", min_weapon_level)), min_weapon_level, max_weapon_level)
+	var case_max_level := int(case_data.get("max_level", _get_weapon_max_benchmark_level(_current_weapon_id)))
+	_current_weapon_level = clampi(int(case_data.get("level", min_weapon_level)), min_weapon_level, case_max_level)
 	_spawn_player()
 	_spawn_target()
 	_equip_weapon(_current_weapon_id, _current_weapon_level)
@@ -190,6 +231,8 @@ func _equip_weapon(weapon_id: String, level_value: int) -> void:
 		weapon.call("set_level", level_value)
 	if weapon != null and weapon.has_signal("weapon_reload_completed"):
 		weapon.connect("weapon_reload_completed", Callable(self, "_on_weapon_reload_completed"))
+	if weapon != null and weapon.has_signal("shoot"):
+		weapon.connect("shoot", Callable(self, "_on_weapon_shot"))
 	_previous_reloading = _is_weapon_reloading(weapon)
 
 func _clear_player_weapons_for_case() -> void:
@@ -230,15 +273,15 @@ func _step_weapon(record_stats: bool) -> void:
 	var weapon := _resolve_main_weapon_node()
 	if weapon == null:
 		return
-	var skip_forced_fire := _should_skip_forced_fire(weapon)
-	if record_stats and not skip_forced_fire:
+	if record_stats:
 		_current_fire_attempts += 1
-	if not skip_forced_fire and weapon.has_method("request_primary_fire"):
-		var ok := bool(weapon.call("request_primary_fire"))
-		if ok and record_stats:
-			_current_fire_success += 1
-	_track_reload_state(weapon, record_stats)
 	_apply_benchmark_aim_meta()
+
+func _track_current_weapon_state(record_stats: bool) -> void:
+	var weapon := _resolve_main_weapon_node()
+	if weapon == null:
+		return
+	_track_reload_state(weapon, record_stats)
 
 func _should_skip_forced_fire(weapon: Node) -> bool:
 	if weapon == null or not is_instance_valid(weapon):
@@ -264,6 +307,10 @@ func _is_weapon_reloading(weapon: Node) -> bool:
 
 func _on_weapon_reload_completed(_weapon: Weapon) -> void:
 	_current_reload_finished += 1
+
+func _on_weapon_shot() -> void:
+	if _measurement_active:
+		_current_fire_success += 1
 
 func _on_dummy_damage_received(_dummy: Node, amount: int, attack: Attack, _hp_after: int) -> void:
 	if not _measurement_active:

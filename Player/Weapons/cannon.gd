@@ -23,13 +23,13 @@ var _idle_fire_empowered_shots_remaining: int = 0
 var _idle_fire_aoe_sequence: int = 0
 
 var weapon_data := {
-	"1": {"level": "1", "damage": "50", "speed": "1120", "hp": "2", "fire_interval_sec": "1.667", "ammo": "6", "cost": "13"},
-	"2": {"level": "2", "damage": "60", "speed": "1140", "hp": "2", "fire_interval_sec": "1.600", "ammo": "6", "cost": "13"},
-	"3": {"level": "3", "damage": "67", "speed": "1170", "hp": "2", "fire_interval_sec": "1.533", "ammo": "9", "cost": "13"},
-	"4": {"level": "4", "damage": "80", "speed": "1200", "hp": "2", "fire_interval_sec": "1.467", "ammo": "9", "cost": "13"},
-	"5": {"level": "5", "damage": "100", "speed": "1230", "hp": "2", "fire_interval_sec": "1.400", "ammo": "12", "cost": "13"},
-	"6": {"level": "6", "damage": "120", "speed": "1260", "hp": "2", "fire_interval_sec": "1.333", "ammo": "12", "cost": "13"},
-	"7": {"level": "7", "damage": "140", "speed": "1290", "hp": "3", "fire_interval_sec": "1.267", "ammo": "12", "cost": "13"},
+	"1": {"damage": "50", "speed": "1120", "projectile_hits": "2", "fire_interval_sec": "1.667", "ammo": "6", "cost": "13"},
+	"2": {"damage": "60", "speed": "1140", "projectile_hits": "2", "fire_interval_sec": "1.600", "ammo": "6", "cost": "13"},
+	"3": {"damage": "67", "speed": "1170", "projectile_hits": "2", "fire_interval_sec": "1.533", "ammo": "9", "cost": "13"},
+	"4": {"damage": "80", "speed": "1200", "projectile_hits": "2", "fire_interval_sec": "1.467", "ammo": "9", "cost": "13"},
+	"5": {"damage": "100", "speed": "1230", "projectile_hits": "2", "fire_interval_sec": "1.400", "ammo": "12", "cost": "13"},
+	"6": {"damage": "120", "speed": "1260", "projectile_hits": "2", "fire_interval_sec": "1.333", "ammo": "12", "cost": "13"},
+	"7": {"damage": "140", "speed": "1290", "projectile_hits": "3", "fire_interval_sec": "1.267", "ammo": "12", "cost": "13"},
 }
 
 @onready var windup_timer: Timer = $WindupTimer
@@ -42,10 +42,10 @@ func _ready() -> void:
 func set_level(lv) -> void:
 	lv = str(lv)
 	var level_data := _get_level_data(lv)
-	level = int(level_data["level"])
+	level = int(get_weapon_level_key(lv, weapon_data))
 	base_damage = int(level_data["damage"])
 	base_speed = int(level_data["speed"])
-	base_projectile_hits = int(level_data["hp"])
+	base_projectile_hits = int(level_data["projectile_hits"])
 
 	base_attack_cooldown = float(level_data["fire_interval_sec"])
 	apply_level_ammo(level_data)
@@ -284,8 +284,4 @@ func clear_timed_effects_for_prepare() -> void:
 	_restart_idle_fire_timer()
 
 func _get_level_data(lv: String) -> Dictionary:
-	if weapon_data.has(lv):
-		return weapon_data[lv]
-	if weapon_data.has("1"):
-		return weapon_data["1"]
-	return {"level": "1", "damage": "48", "speed": "1120", "hp": "1", "fire_interval_sec": "1.667", "ammo": "18", "cost": "13"}
+	return get_weapon_level_data(lv, weapon_data)
