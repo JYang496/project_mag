@@ -1,6 +1,8 @@
 extends MarginContainer
 class_name ModuleSlot
 
+const RARITY_UTIL := preload("res://data/LootRarity.gd")
+
 var module : Module
 @export var module_index : int = 0
 
@@ -33,6 +35,9 @@ func _draw():
 	if hover_over:
 		width = border_width
 		border_color = hover_over_color
+	elif module != null and is_instance_valid(module):
+		width = 2.0
+		border_color = RARITY_UTIL.get_color(module.get_rarity())
 	else:
 		width = hover_off_width
 		border_color = hover_off_color
@@ -52,10 +57,16 @@ func update() -> void:
 		var module_name = module.get("ITEM_NAME")
 		if module_name == null or module_name == "":
 			module_name = module.name
-		item_name.text = "%s Lv.%d" % [LocalizationManager.get_module_name(module), int(module.module_level)]
+		item_name.text = "[%s] %s Lv.%d" % [
+			RARITY_UTIL.get_display_name(module.get_rarity()),
+			LocalizationManager.get_module_name(module),
+			int(module.module_level)
+		]
+		item_name.set("theme_override_colors/font_color", RARITY_UTIL.get_color(module.get_rarity()))
 	else:
 		image.texture = null
 		item_name.text = LocalizationManager.tr_key("ui.module.empty", "Empty")
+		item_name.remove_theme_color_override("font_color")
 	queue_redraw()
 
 func _on_background_mouse_entered() -> void:

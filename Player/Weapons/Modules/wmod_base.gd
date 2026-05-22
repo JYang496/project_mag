@@ -2,6 +2,7 @@ extends Node2D
 class_name Module
 
 # Weapon -> Modules -> Module
+const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const MAX_LEVEL: int = 3
 
 var weapon: Weapon
@@ -10,6 +11,8 @@ var weapon: Weapon
 @export var supports_melee: bool = true
 @export var supports_ranged: bool = true
 @export_range(1, MAX_LEVEL, 1) var module_level: int = 1
+@export_enum("common", "rare", "epic") var rarity: String = "common"
+@export_range(0.0, 1000000.0, 0.01) var drop_weight: float = 100.0
 @export var module_traits: PackedStringArray = []
 @export var stat_multipliers: Dictionary = {}
 @export var stat_additives: Dictionary = {}
@@ -122,6 +125,12 @@ func get_module_display_name() -> String:
 	if item_name != null and str(item_name) != "":
 		return str(item_name)
 	return name
+
+func get_rarity() -> String:
+	return RARITY_UTIL.normalize(rarity)
+
+func get_drop_weight() -> float:
+	return RARITY_UTIL.sanitize_weight(drop_weight, get_rarity())
 
 func get_effective_multiplier(base_multiplier: float, per_level_bonus: float = 0.35) -> float:
 	var level_scale := 1.0 + per_level_bonus * float(max(0, module_level - 1))

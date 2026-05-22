@@ -4,6 +4,8 @@ class_name RewardSelectionPanel
 signal reward_confirmed(reward: RewardInfo)
 signal selection_cancelled
 
+const RARITY_UTIL := preload("res://data/LootRarity.gd")
+
 @onready var title_label: Label = $Panel/VBox/Title
 @onready var subtitle_label: Label = $Panel/VBox/SubTitle
 @onready var options_box: VBoxContainer = $Panel/VBox/Options
@@ -60,6 +62,7 @@ func open_for_rewards(
 		button.custom_minimum_size = Vector2(0, 58)
 		button.text = _build_reward_summary(_reward_options[idx])
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_apply_reward_button_rarity_style(button, _reward_options[idx])
 		button.pressed.connect(Callable(self, "_on_reward_button_pressed").bind(idx, button))
 		options_box.add_child(button)
 	if options_box.get_child_count() > 0:
@@ -106,6 +109,7 @@ func _on_cancel_pressed() -> void:
 
 func _build_reward_summary(reward: RewardInfo) -> String:
 	var chunks: PackedStringArray = []
+	chunks.append("[%s]" % RARITY_UTIL.get_display_name(reward.get_rarity()))
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
 		var weapon_text := LocalizationManager.tr_format(
@@ -136,6 +140,21 @@ func _build_reward_summary(reward: RewardInfo) -> String:
 	if chunks.is_empty():
 		return LocalizationManager.tr_key("ui.reward.default", "Reward")
 	return " + ".join(chunks)
+
+func _apply_reward_button_rarity_style(button: Button, reward: RewardInfo) -> void:
+	if button == null or reward == null:
+		return
+	var rarity_color: Color = RARITY_UTIL.get_color(reward.get_rarity())
+	button.add_theme_color_override("font_color", rarity_color)
+	for state in ["normal", "hover", "pressed", "focus"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.08, 0.08, 0.08, 0.92)
+		if state == "hover" or state == "pressed":
+			style.bg_color = Color(0.14, 0.14, 0.14, 0.96)
+		style.border_color = rarity_color
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(4)
+		button.add_theme_stylebox_override(state, style)
 
 func _extract_scene_name(scene_path: String) -> String:
 	if scene_path == "":

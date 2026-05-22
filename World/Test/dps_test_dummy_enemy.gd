@@ -5,9 +5,11 @@ signal damage_received(dummy: DpsTestDummyEnemy, amount: int, attack: Attack, hp
 signal dummy_died(dummy: DpsTestDummyEnemy, killing_attack: Attack)
 
 @export var max_hp_value: int = 3000
+@export var hurtbox_radius: float = 72.0
 
 func _ready() -> void:
 	super._ready()
+	_configure_hurtbox_shape()
 	movement_speed = 0.0
 	damage = 0
 	hp = max(1, max_hp_value)
@@ -31,3 +33,11 @@ func death(killing_attack: Attack = null) -> void:
 	is_dead = true
 	dummy_died.emit(self, killing_attack)
 	queue_free()
+
+func _configure_hurtbox_shape() -> void:
+	var shape_node := get_node_or_null("HurtBox/CollisionShape2D") as CollisionShape2D
+	if shape_node == null:
+		return
+	var circle := CircleShape2D.new()
+	circle.radius = maxf(hurtbox_radius, 1.0)
+	shape_node.shape = circle

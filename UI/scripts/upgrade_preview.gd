@@ -1,5 +1,7 @@
 extends MarginContainer
 
+const RARITY_UTIL := preload("res://data/LootRarity.gd")
+
 @onready var lblName = $UpgradeCard/LabelName
 @onready var itemIcon: TextureRect = $UpgradeCard/Icon
 @onready var cost = $UpgradeCard/Cost
@@ -42,6 +44,9 @@ func _draw():
 	if hover_over:
 		width = border_width
 		border_color = hover_over_color
+	elif weapon_node != null and is_instance_valid(weapon_node):
+		width = 2.0
+		border_color = RARITY_UTIL.get_color(_get_weapon_rarity(weapon_node))
 	else:
 		width = hover_off_width
 		border_color = hover_off_color
@@ -135,7 +140,10 @@ func _cursor_can_click() -> bool:
 
 func _build_weapon_header(weapon: Weapon) -> String:
 	var weapon_name := LocalizationManager.get_weapon_name_from_node(weapon)
-	return "%s  Fuse %d  Lv.%d/%d" % [
+	var rarity: String = _get_weapon_rarity(weapon)
+	lblName.set("theme_override_colors/font_color", RARITY_UTIL.get_color(rarity))
+	return "[%s] %s  Fuse %d  Lv.%d/%d" % [
+		RARITY_UTIL.get_display_name(rarity),
 		weapon_name,
 		int(weapon.fuse),
 		int(weapon.level),
@@ -146,3 +154,12 @@ func _build_cap_reason(weapon: Weapon) -> String:
 	if int(weapon.level) >= int(weapon.max_level) and int(weapon.fuse) < int(weapon.FINAL_MAX_FUSE):
 		return LocalizationManager.tr_key("ui.upgrade.need_duplicate", "Level capped by fuse. Obtain a duplicate weapon to break through.")
 	return LocalizationManager.tr_key("ui.upgrade.fully_upgraded", "Fully upgraded.")
+
+func _get_weapon_rarity(weapon: Weapon) -> String:
+	if weapon == null or not is_instance_valid(weapon):
+		return RARITY_UTIL.COMMON
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+	if weapon_def == null:
+		return RARITY_UTIL.COMMON
+	return weapon_def.get_rarity()

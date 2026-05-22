@@ -1,6 +1,8 @@
 extends MarginContainer
 class_name EquipmentSlot
 
+const RARITY_UTIL := preload("res://data/LootRarity.gd")
+
 # Properties
 @onready var background: ColorRect = $Background
 @onready var image: TextureRect = $Background/Image
@@ -45,6 +47,9 @@ func _draw():
 	if hover_over:
 		width = border_width
 		border_color = hover_over_color
+	elif item != null and is_instance_valid(item):
+		width = 2.0
+		border_color = _get_weapon_rarity_color(item)
 	else:
 		width = hover_off_width
 		border_color = hover_off_color
@@ -62,7 +67,12 @@ func update() -> void:
 		item = player_weapon_list[equipment_index]
 		if is_instance_valid(item):
 			image.texture = item.sprite.texture
-			equip_name.text = LocalizationManager.get_weapon_name_from_node(item)
+			var rarity: String = _get_weapon_rarity(item)
+			equip_name.text = "[%s] %s" % [
+				RARITY_UTIL.get_display_name(rarity),
+				LocalizationManager.get_weapon_name_from_node(item)
+			]
+			equip_name.set("theme_override_colors/font_color", RARITY_UTIL.get_color(rarity))
 			for s in range(item.fuse):
 				var star_ins = star_preload.instantiate()
 				stars.add_child(star_ins)
@@ -76,10 +86,12 @@ func update() -> void:
 			item = null
 			image.texture = null
 			equip_name.text = LocalizationManager.tr_key("ui.inventory.slot.empty", "Empty")
+			equip_name.remove_theme_color_override("font_color")
 	else:
 		item = null
 		image.texture = null
 		equip_name.text = LocalizationManager.tr_key("ui.inventory.slot.empty", "Empty")
+		equip_name.remove_theme_color_override("font_color")
 	queue_redraw()
 
 
@@ -100,3 +112,15 @@ func _cursor_can_click() -> bool:
 
 func _is_click_actionable() -> bool:
 	return item != null and is_instance_valid(item)
+
+func _get_weapon_rarity(weapon: Weapon) -> String:
+	if weapon == null or not is_instance_valid(weapon):
+		return RARITY_UTIL.COMMON
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+	if weapon_def == null:
+		return RARITY_UTIL.COMMON
+	return weapon_def.get_rarity()
+
+func _get_weapon_rarity_color(weapon: Weapon) -> Color:
+	return RARITY_UTIL.get_color(_get_weapon_rarity(weapon))

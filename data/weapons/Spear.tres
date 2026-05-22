@@ -12,3 +12,4 @@ icon = ExtResource("1_ji2p0")
 price = 9
 description = "spear test: return"
 scene = ExtResource("2_mskrm")
+is_hidden = true

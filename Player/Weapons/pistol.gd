@@ -166,6 +166,9 @@ func _process_auto_fire() -> void:
 		return
 	request_primary_fire()
 
+func should_skip_benchmark_forced_fire() -> bool:
+	return true
+
 func _on_shoot() -> void:
 	var target_pos: Vector2 = get_mouse_target()
 	var target := _find_closest_enemy()

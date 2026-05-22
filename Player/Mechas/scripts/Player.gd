@@ -559,6 +559,8 @@ func _apply_weapon_roles() -> void:
 	_debug_connect_weapon_passive_triggers()
 
 func get_main_weapon() -> Weapon:
+	if PlayerData == null:
+		return null
 	if PlayerData.player_weapon_list.is_empty():
 		return null
 	PlayerData.sanitize_main_weapon_index()

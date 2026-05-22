@@ -1,6 +1,8 @@
 extends MarginContainer
 class_name ShopWeaponSlot
 
+const RARITY_UTIL := preload("res://data/LootRarity.gd")
+
 # Properties
 @onready var background: ColorRect = $Background
 @onready var image: TextureRect = $Background/Image
@@ -34,6 +36,9 @@ func _draw():
 	var width
 	if hover_over:
 		width = border_width
+	elif item_id != null:
+		width = 2.0
+		border_color = _get_weapon_definition_rarity_color()
 	else:
 		width = 0
 	draw_rect(rect, border_color, false, width)
@@ -76,7 +81,12 @@ func new_item() -> void:
 		push_warning("ShopWeaponSlot failed to load weapon id=%s" % item_id)
 		empty_item()
 		return
-	equip_name.text = LocalizationManager.get_weapon_name_from_definition(weapon_def)
+	var rarity: String = weapon_def.get_rarity()
+	equip_name.text = "[%s] %s" % [
+		RARITY_UTIL.get_display_name(rarity),
+		LocalizationManager.get_weapon_name_from_definition(weapon_def)
+	]
+	equip_name.set("theme_override_colors/font_color", RARITY_UTIL.get_color(rarity))
 	image.texture = weapon_def.icon
 	lbl_description.text = LocalizationManager.get_weapon_description_from_definition(weapon_def)
 	var base_price := int(weapon_def.price)
@@ -151,3 +161,9 @@ func _refresh_purchase_prediction() -> void:
 			)
 		_:
 			socket_2.text = LocalizationManager.tr_key("ui.weapon.obtain_preview.new", "New weapon")
+
+func _get_weapon_definition_rarity_color() -> Color:
+	var weapon_def := DataHandler.read_weapon_data(str(item_id)) as WeaponDefinition
+	if weapon_def == null:
+		return RARITY_UTIL.get_color(RARITY_UTIL.COMMON)
+	return RARITY_UTIL.get_color(weapon_def.get_rarity())

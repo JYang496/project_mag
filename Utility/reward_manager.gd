@@ -2,6 +2,12 @@ extends Node2D
 class_name BonusManager
 
 const LOOT_BOX = preload("res://Objects/loots/loot_box.tscn")
+const RARITY_UTIL := preload("res://data/LootRarity.gd")
+const MODULE_DIRECTORY_PATH := "res://Player/Weapons/Modules/"
+const REWARD_TYPE_WEAPON := "weapon"
+const REWARD_TYPE_MODULE := "module"
+const WEAPON_REWARD_CHANCE: float = 0.5
+const MAX_REWARD_ROLL_ATTEMPTS: int = 64
 
 var instance_list: Array = []
 
@@ -66,22 +72,19 @@ func build_reward_selection_options(
 	option_count_override: int = -1
 ) -> Array[RewardInfo]:
 	var resolved_route := route_def if route_def != null else RunRouteManager.get_route_for_level(level_index)
-	var options := get_adjusted_rewards_for_level(level_index, resolved_route)
-	if options.is_empty():
-		var fallback := RewardInfo.new()
-		fallback.total_chip_value = max(1, resolved_route.fallback_reward_chip_value if resolved_route else 5)
-		options.append(fallback)
-	options.shuffle()
 	var target_count := option_count_override
 	if target_count <= 0:
 		target_count = resolved_route.reward_option_count if resolved_route else 3
 	target_count = clampi(target_count, 1, 6)
-	while options.size() < target_count:
-		var filler := RewardInfo.new()
-		filler.total_chip_value = max(1, (resolved_route.fallback_reward_chip_value if resolved_route else 5) + options.size() * 2)
-		options.append(filler)
-	if options.size() > target_count:
-		options.resize(target_count)
+	var weapon_candidates := _build_weapon_reward_candidates()
+	var module_candidates := _build_module_reward_candidates()
+	var options: Array[RewardInfo] = []
+	var selected_keys: Dictionary = {}
+	for _i in range(target_count):
+		var reward := _roll_reward_option(weapon_candidates, module_candidates, selected_keys, resolved_route)
+		if reward == null:
+			reward = _build_fallback_chip_reward(options.size(), resolved_route)
+		options.append(reward)
 	return options
 
 func grant_reward_immediately(reward: RewardInfo) -> bool:
@@ -141,6 +144,7 @@ func _build_route_adjusted_reward(base_reward: RewardInfo, route_def: RunRouteDe
 	reward.module_scene = base_reward.module_scene
 	reward.module_level = _sanitize_module_level(int(base_reward.module_level))
 	reward.total_chip_value = max(0, int(base_reward.total_chip_value))
+	reward.rarity = base_reward.get_rarity()
 	if route_def == null:
 		return reward
 	reward.total_chip_value = max(0, int(round(float(reward.total_chip_value) * route_def.reward_chip_multiplier)))
@@ -149,6 +153,190 @@ func _build_route_adjusted_reward(base_reward: RewardInfo, route_def: RunRouteDe
 	if reward.module_scene:
 		reward.module_level = _sanitize_module_level(reward.module_level + int(route_def.reward_module_level_bonus))
 	return reward
+
+func _build_weapon_reward_candidates() -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	for weapon_id in DataHandler.get_weapon_ids():
+		if not _can_offer_weapon_reward(weapon_id):
+			continue
+		var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+		if weapon_def == null:
+			continue
+		if weapon_def.is_hidden:
+			continue
+		var weight := weapon_def.get_drop_weight()
+		if weight <= 0.0:
+			continue
+		candidates.append({
+			"type": REWARD_TYPE_WEAPON,
+			"id": weapon_id,
+			"rarity": weapon_def.get_rarity(),
+			"weight": weight,
+		})
+	return candidates
+
+func _build_module_reward_candidates() -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	var dir := DirAccess.open(MODULE_DIRECTORY_PATH)
+	if dir == null:
+		push_warning("Unable to open module reward directory: %s" % MODULE_DIRECTORY_PATH)
+		return candidates
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir() and file_name.to_lower().ends_with(".tscn") and file_name != "wmod_base.tscn":
+			var scene_path := MODULE_DIRECTORY_PATH + file_name
+			var candidate := _build_module_reward_candidate(scene_path)
+			if not candidate.is_empty():
+				candidates.append(candidate)
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	return candidates
+
+func _build_module_reward_candidate(scene_path: String) -> Dictionary:
+	if not _can_offer_module_reward(scene_path):
+		return {}
+	var module_scene := load(scene_path) as PackedScene
+	if module_scene == null:
+		return {}
+	var module_instance := module_scene.instantiate() as Module
+	if module_instance == null:
+		return {}
+	var weight := module_instance.get_drop_weight()
+	var rarity: String = module_instance.get_rarity()
+	module_instance.free()
+	if weight <= 0.0:
+		return {}
+	return {
+		"type": REWARD_TYPE_MODULE,
+		"scene": module_scene,
+		"scene_path": scene_path,
+		"rarity": rarity,
+		"weight": weight,
+	}
+
+func _roll_reward_option(
+	weapon_candidates: Array[Dictionary],
+	module_candidates: Array[Dictionary],
+	selected_keys: Dictionary,
+	route_def: RunRouteDefinition
+) -> RewardInfo:
+	var prefer_weapon := randf() < WEAPON_REWARD_CHANCE
+	var first_type := REWARD_TYPE_WEAPON if prefer_weapon else REWARD_TYPE_MODULE
+	var second_type := REWARD_TYPE_MODULE if prefer_weapon else REWARD_TYPE_WEAPON
+	var reward := _roll_reward_from_type(first_type, weapon_candidates, module_candidates, selected_keys, route_def)
+	if reward != null:
+		return reward
+	return _roll_reward_from_type(second_type, weapon_candidates, module_candidates, selected_keys, route_def)
+
+func _roll_reward_from_type(
+	reward_type: String,
+	weapon_candidates: Array[Dictionary],
+	module_candidates: Array[Dictionary],
+	selected_keys: Dictionary,
+	route_def: RunRouteDefinition
+) -> RewardInfo:
+	var candidates := weapon_candidates if reward_type == REWARD_TYPE_WEAPON else module_candidates
+	for _attempt in range(MAX_REWARD_ROLL_ATTEMPTS):
+		var candidate := _pick_weighted_candidate(candidates, selected_keys)
+		if candidate.is_empty():
+			return null
+		var key := _get_candidate_key(candidate)
+		if selected_keys.has(key):
+			continue
+		var reward := _build_reward_from_candidate(candidate, route_def)
+		if reward == null:
+			continue
+		selected_keys[key] = true
+		return reward
+	return null
+
+func _pick_weighted_candidate(candidates: Array[Dictionary], selected_keys: Dictionary) -> Dictionary:
+	var total_weight := 0.0
+	for candidate in candidates:
+		if selected_keys.has(_get_candidate_key(candidate)):
+			continue
+		total_weight += maxf(0.0, float(candidate.get("weight", 0.0)))
+	if total_weight <= 0.0:
+		return {}
+	var roll := randf() * total_weight
+	for candidate in candidates:
+		if selected_keys.has(_get_candidate_key(candidate)):
+			continue
+		roll -= maxf(0.0, float(candidate.get("weight", 0.0)))
+		if roll <= 0.0:
+			return candidate
+	return {}
+
+func _build_reward_from_candidate(candidate: Dictionary, route_def: RunRouteDefinition) -> RewardInfo:
+	var reward := RewardInfo.new()
+	reward.rarity = RARITY_UTIL.normalize(str(candidate.get("rarity", RARITY_UTIL.COMMON)))
+	match str(candidate.get("type", "")):
+		REWARD_TYPE_WEAPON:
+			reward.item_id = str(candidate.get("id", ""))
+			reward.item_level = max(1, 1 + (int(route_def.reward_item_level_bonus) if route_def else 0))
+		REWARD_TYPE_MODULE:
+			reward.module_scene = candidate.get("scene", null) as PackedScene
+			reward.module_level = _sanitize_module_level(1 + (int(route_def.reward_module_level_bonus) if route_def else 0))
+		_:
+			return null
+	return reward
+
+func _build_fallback_chip_reward(option_index: int, route_def: RunRouteDefinition) -> RewardInfo:
+	var fallback := RewardInfo.new()
+	var base_value: int = max(1, route_def.fallback_reward_chip_value if route_def else 5)
+	fallback.total_chip_value = base_value + option_index * 2
+	fallback.rarity = RARITY_UTIL.COMMON
+	return fallback
+
+func _get_candidate_key(candidate: Dictionary) -> String:
+	match str(candidate.get("type", "")):
+		REWARD_TYPE_WEAPON:
+			return "weapon:%s" % str(candidate.get("id", ""))
+		REWARD_TYPE_MODULE:
+			return "module:%s" % str(candidate.get("scene_path", ""))
+		_:
+			return "unknown:%s" % str(candidate)
+
+func _can_offer_weapon_reward(weapon_id: String) -> bool:
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon := weapon_ref as Weapon
+		if _is_full_fuse_weapon_match(weapon, weapon_id):
+			return false
+	for weapon_ref in InventoryData.inventory_slots:
+		var weapon := weapon_ref as Weapon
+		if _is_full_fuse_weapon_match(weapon, weapon_id):
+			return false
+	return true
+
+func _is_full_fuse_weapon_match(weapon: Weapon, weapon_id: String) -> bool:
+	if weapon == null or not is_instance_valid(weapon):
+		return false
+	if DataHandler.get_weapon_id_from_instance(weapon) != weapon_id:
+		return false
+	return int(weapon.fuse) >= max(1, int(weapon.FINAL_MAX_FUSE))
+
+func _can_offer_module_reward(scene_path: String) -> bool:
+	for module_ref in InventoryData.moddule_slots:
+		var module_instance := module_ref as Module
+		if _is_full_level_module_match(module_instance, scene_path):
+			return false
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon := weapon_ref as Weapon
+		if weapon == null or not is_instance_valid(weapon) or weapon.modules == null:
+			continue
+		for child in weapon.modules.get_children():
+			var equipped_module := child as Module
+			if _is_full_level_module_match(equipped_module, scene_path):
+				return false
+	return true
+
+func _is_full_level_module_match(module_instance: Module, scene_path: String) -> bool:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return false
+	if str(module_instance.scene_file_path) != scene_path:
+		return false
+	return int(module_instance.module_level) >= Module.MAX_LEVEL
 
 func _sanitize_module_level(level_value: int) -> int:
 	return clampi(level_value, 1, Module.MAX_LEVEL)
