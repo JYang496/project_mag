@@ -9,6 +9,6 @@ script = ExtResource("3_script")
 weapon_id = "21"
 display_name = "Glacier Projector"
 icon = ExtResource("1_icon")
-price = 10
+price = 100
 description = "Sustained freeze cone; prolonged contact triggers cold snap."
 scene = ExtResource("2_scene")

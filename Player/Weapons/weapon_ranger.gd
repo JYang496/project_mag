@@ -237,6 +237,11 @@ func apply_distance_spread_to_target(direction: Vector2, target_position: Vector
 
 func _build_spread_runtime(shot_distance: float) -> Dictionary:
 	var distance_ratio := _get_spread_distance_ratio(shot_distance)
+	if distance_ratio <= 0.0 and shot_distance <= maxf(spread_no_falloff_distance, 0.0):
+		return {
+			"miss_chance": 0.0,
+			"radius": 0.0,
+		}
 	var miss_chance := lerpf(
 		clampf(spread_close_range_miss_chance, 0.0, 1.0),
 		clampf(spread_long_range_miss_chance, 0.0, 1.0),
@@ -271,13 +276,18 @@ func get_spread_preview_info_for_target(target_position: Vector2) -> Dictionary:
 		}
 	var shot_distance := global_position.distance_to(target_position)
 	var distance_ratio := _get_spread_distance_ratio(shot_distance)
-	var miss_chance := lerpf(
-		clampf(spread_close_range_miss_chance, 0.0, 1.0),
-		clampf(spread_long_range_miss_chance, 0.0, 1.0),
-		distance_ratio
-	)
+	var no_falloff_active := distance_ratio <= 0.0 and shot_distance <= maxf(spread_no_falloff_distance, 0.0)
+	var miss_chance := 0.0
+	if not no_falloff_active:
+		miss_chance = lerpf(
+			clampf(spread_close_range_miss_chance, 0.0, 1.0),
+			clampf(spread_long_range_miss_chance, 0.0, 1.0),
+			distance_ratio
+		)
 	var spread_mul := clampf(get_external_spread_multiplier(), 0.01, 20.0)
-	var max_radius := lerpf(maxf(spread_min_radius, 0.0), maxf(spread_max_radius, 0.0), distance_ratio) * spread_mul
+	var max_radius := 0.0
+	if not no_falloff_active:
+		max_radius = lerpf(maxf(spread_min_radius, 0.0), maxf(spread_max_radius, 0.0), distance_ratio) * spread_mul
 	return {
 		"enabled": spread_enabled,
 		"miss_chance": miss_chance if spread_enabled else 0.0,

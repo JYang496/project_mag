@@ -24,19 +24,17 @@ func _ready():
 		CursorManager.register_control_rule(upgrade_card, Callable(self, "_cursor_can_click"))
 	if weapon_node != null:
 		connect("upgrade_level",Callable(weapon_node,"set_level"))
+		cost_price = _get_upgrade_cost(weapon_node)
+		cost.text = LocalizationManager.tr_format("ui.upgrade.cost", {"value": cost_price}, "Cost: %s" % cost_price)
 		comb_status = combine_status(weapon_node)
 		for key in comb_status:
-			if key == "cost":
-				cost_price = int(comb_status[key][1])
-				cost.text = LocalizationManager.tr_format("ui.upgrade.cost", {"value": comb_status[key][1]}, "Cost: %s" % comb_status[key][1])
-			else:
-				var status_label = Label.new()
-				status_label.text = LocalizationManager.tr_format(
-					"ui.upgrade.status_line",
-					{"key": key, "from": comb_status[key][0], "to": comb_status[key][1]},
-					"%s: %s => %s" % [key, comb_status[key][0], comb_status[key][1]]
-				)
-				status_container.add_child(status_label)
+			var status_label = Label.new()
+			status_label.text = LocalizationManager.tr_format(
+				"ui.upgrade.status_line",
+				{"key": key, "from": comb_status[key][0], "to": comb_status[key][1]},
+				"%s: %s => %s" % [key, comb_status[key][0], comb_status[key][1]]
+			)
+			status_container.add_child(status_label)
 		itemIcon.texture = weapon_node.sprite.texture
 		lblName.text = LocalizationManager.get_weapon_name_from_node(weapon_node)
 
@@ -87,3 +85,14 @@ func _on_upgrade_card_mouse_exited():
 
 func _cursor_can_click() -> bool:
 	return weapon_node != null and is_instance_valid(weapon_node) and upgradable
+
+func _get_upgrade_cost(weapon: Weapon) -> int:
+	if weapon == null or not is_instance_valid(weapon):
+		return 1
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+	if weapon_def == null:
+		return 1
+	if GlobalVariables.economy_data == null:
+		return maxi(1, int(round(float(weapon_def.price) * 0.5)))
+	return GlobalVariables.economy_data.get_weapon_upgrade_gold(int(weapon_def.price))

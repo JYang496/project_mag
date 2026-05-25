@@ -29,15 +29,15 @@ const HEAT_SPEED_POINTS: Array[Vector2] = [
 var attack_range: float = 800.0
 
 var weapon_data = {
-	"1": {"damage": "8", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"},
-	"2": {"damage": "10", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"},
-	"3": {"damage": "12", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "50", "cost": "4"},
-	"4": {"damage": "14", "speed": "800", "projectile_hits": "1", "fire_interval_sec": "0.9", "ammo": "55", "cost": "4"},
-	"5": {"damage": "16", "speed": "800", "projectile_hits": "1", "fire_interval_sec": "0.9", "ammo": "55", "cost": "4"},
-	"6": {"damage": "18", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.9", "ammo": "55", "cost": "4"},
-	"7": {"damage": "20", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "65", "cost": "4"},
-	"8": {"damage": "22", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "65", "cost": "4"},
-	"9": {"damage": "24", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "65", "cost": "4"}
+	"1": {"damage": "6", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "40"},
+	"2": {"damage": "8", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "40"},
+	"3": {"damage": "10", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "40"},
+	"4": {"damage": "11", "speed": "800", "projectile_hits": "1", "fire_interval_sec": "0.9", "ammo": "45"},
+	"5": {"damage": "13", "speed": "800", "projectile_hits": "1", "fire_interval_sec": "0.9", "ammo": "45"},
+	"6": {"damage": "15", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.9", "ammo": "45"},
+	"7": {"damage": "16", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "50"},
+	"8": {"damage": "18", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "50"},
+	"9": {"damage": "20", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "50"}
 }
 
 func _ready() -> void:

@@ -2,7 +2,6 @@ extends Node
 
 var INVENTORY_MAX_SLOTS : int = 8
 var MAX_FUSE_SIZE : int = 2
-const MODULE_DUPLICATE_BASE_CONVERT_COINS: int = 6
 var inventory_slots : Array = []
 var moddule_slots : Array = []
 var ready_to_sell_list : Array = []
@@ -306,8 +305,13 @@ func _resolve_module_owner_weapon(module_instance: Module) -> Weapon:
 	return null
 
 func _calculate_module_conversion_coins(module_instance: Module) -> int:
-	var base_cost: int = int(max(MODULE_DUPLICATE_BASE_CONVERT_COINS, int(module_instance.cost) * 6))
-	return int(base_cost * max(1, module_instance.module_level))
+	var economy := _get_economy_config()
+	return economy.get_duplicate_module_gold(int(module_instance.cost), int(module_instance.module_level))
+
+func _get_economy_config() -> EconomyConfig:
+	if GlobalVariables.economy_data:
+		return GlobalVariables.economy_data
+	return EconomyConfig.new()
 
 func _discard_module_instance(module_instance: Module, keep_instance: Module = null) -> void:
 	if module_instance == null or module_instance == keep_instance or not is_instance_valid(module_instance):

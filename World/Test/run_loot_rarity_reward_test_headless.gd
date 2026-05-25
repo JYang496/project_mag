@@ -19,7 +19,6 @@ func _run() -> void:
 		get_tree().quit(1)
 		return
 	get_tree().root.add_child(reward_manager)
-	reward_manager.rebuild_rewards_cache()
 
 	var route := RunRouteManager.get_route_for_level(0)
 	var options := reward_manager.build_reward_selection_options(0, route, 3)

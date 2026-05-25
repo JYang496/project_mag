@@ -13,13 +13,13 @@ var attack_range: float = 900.0
 var _last_projectile_hit_damage: int = 0
 
 var weapon_data := {
-	"1": {"damage": "12", "speed": "1700", "projectile_hits": "5", "fire_interval_sec": "3.0", "ammo": "5", "cost": "14"},
-	"2": {"damage": "15", "speed": "1700", "projectile_hits": "6", "fire_interval_sec": "2.8", "ammo": "6", "cost": "14"},
-	"3": {"damage": "19", "speed": "1800", "projectile_hits": "7", "fire_interval_sec": "2.6", "ammo": "7", "cost": "14"},
-	"4": {"damage": "24", "speed": "1800", "projectile_hits": "8", "fire_interval_sec": "2.4", "ammo": "8", "cost": "14"},
-	"5": {"damage": "30", "speed": "1900", "projectile_hits": "9", "fire_interval_sec": "2.2", "ammo": "9", "cost": "14"},
-	"6": {"damage": "37", "speed": "1900", "projectile_hits": "10", "fire_interval_sec": "2.1", "ammo": "10", "cost": "14"},
-	"7": {"damage": "45", "speed": "2000", "projectile_hits": "11", "fire_interval_sec": "2.0", "ammo": "12", "cost": "14"},
+	"1": {"damage": "12", "speed": "1700", "projectile_hits": "5", "fire_interval_sec": "3.0", "ammo": "5"},
+	"2": {"damage": "15", "speed": "1700", "projectile_hits": "6", "fire_interval_sec": "2.8", "ammo": "6"},
+	"3": {"damage": "19", "speed": "1800", "projectile_hits": "7", "fire_interval_sec": "2.6", "ammo": "7"},
+	"4": {"damage": "24", "speed": "1800", "projectile_hits": "8", "fire_interval_sec": "2.4", "ammo": "8"},
+	"5": {"damage": "30", "speed": "1900", "projectile_hits": "9", "fire_interval_sec": "2.2", "ammo": "9"},
+	"6": {"damage": "37", "speed": "1900", "projectile_hits": "10", "fire_interval_sec": "2.1", "ammo": "10"},
+	"7": {"damage": "45", "speed": "2000", "projectile_hits": "11", "fire_interval_sec": "2.0", "ammo": "12"},
 }
 
 func set_level(lv) -> void:

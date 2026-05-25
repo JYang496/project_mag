@@ -1,70 +1,50 @@
 extends Node2D
 class_name BonusManager
 
-const LOOT_BOX = preload("res://Objects/loots/loot_box.tscn")
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const MODULE_DIRECTORY_PATH := "res://Player/Weapons/Modules/"
 const REWARD_TYPE_WEAPON := "weapon"
 const REWARD_TYPE_MODULE := "module"
-const WEAPON_REWARD_CHANCE: float = 0.5
+const REWARD_TYPE_ECONOMY := "economy"
 const MAX_REWARD_ROLL_ATTEMPTS: int = 64
 
-var instance_list: Array = []
-
 func _ready() -> void:
-	rebuild_rewards_cache()
 	if not PhaseManager.is_connected("pre_enter_prepare_loot", Callable(self, "create_loot_box")):
 		PhaseManager.connect("pre_enter_prepare_loot", Callable(self, "create_loot_box"))
 
 func create_loot_box() -> void:
+	if PhaseManager.current_state() == PhaseManager.BATTLE:
+		_request_battle_reward_selection()
+		return
+	var level_index := int(PhaseManager.current_level)
+	if not RunRouteManager.should_spawn_prepare_loot_for_level(level_index):
+		return
+
+func _request_battle_reward_selection() -> void:
 	var level_index := int(PhaseManager.current_level)
 	if not RunRouteManager.should_spawn_prepare_loot_for_level(level_index):
 		return
 	var route_def := RunRouteManager.get_route_for_level(level_index)
-	create_loot_box_for_level(level_index, route_def, false)
+	var reward_options := build_reward_selection_options(level_index, route_def)
+	if reward_options.is_empty():
+		return
+	var ui = GlobalVariables.ui
+	if ui == null or not is_instance_valid(ui) or not ui.has_method("request_reward_selection"):
+		grant_reward_immediately(reward_options[0])
+		return
+	var route_name := route_def.display_name if route_def else "Battle Reward"
+	var opened: bool = bool(ui.request_reward_selection(
+		route_name,
+		reward_options,
+		Callable(self, "_on_battle_reward_selected"),
+		Callable(),
+		false
+	))
+	if not opened:
+		grant_reward_immediately(reward_options[0])
 
-func rebuild_rewards_cache() -> void:
-	instance_list.clear()
-	for level_config in SpawnData.level_list:
-		if level_config == null:
-			instance_list.append([])
-			continue
-		var ins: LevelSpawnConfig = level_config.duplicate(true)
-		instance_list.append(ins.rewards.duplicate(true))
-
-func create_loot_box_for_level(
-	level_index: int,
-	route_def: RunRouteDefinition = null,
-	resolve_immediately: bool = false
-) -> int:
-	var rewards := get_adjusted_rewards_for_level(level_index, route_def)
-	if rewards.is_empty():
-		return 0
-	var spawned_count := 0
-	for reward in rewards:
-		if reward == null:
-			continue
-		if _spawn_loot_box_from_reward(reward, resolve_immediately):
-			spawned_count += 1
-	return spawned_count
-
-func get_adjusted_rewards_for_level(level_index: int, route_def: RunRouteDefinition = null) -> Array[RewardInfo]:
-	if instance_list.is_empty():
-		push_warning("get_adjusted_rewards_for_level ignored because reward cache is empty.")
-		return []
-	if level_index < 0:
-		push_warning("get_adjusted_rewards_for_level ignored invalid level index: %d" % level_index)
-		return []
-	var wrapped_level_index := posmod(level_index, instance_list.size())
-	var resolved_route := route_def if route_def != null else RunRouteManager.get_route_for_level(level_index)
-	var rewards_at_level: Array = instance_list[wrapped_level_index]
-	var adjusted: Array[RewardInfo] = []
-	for reward_entry in rewards_at_level:
-		if not (reward_entry is RewardInfo):
-			push_warning("Reward entry is invalid and was skipped at level index %d." % wrapped_level_index)
-			continue
-		adjusted.append(_build_route_adjusted_reward(reward_entry as RewardInfo, resolved_route))
-	return adjusted
+func _on_battle_reward_selected(reward: RewardInfo) -> void:
+	grant_reward_immediately(reward)
 
 func build_reward_selection_options(
 	level_index: int,
@@ -77,13 +57,19 @@ func build_reward_selection_options(
 		target_count = resolved_route.reward_option_count if resolved_route else 3
 	target_count = clampi(target_count, 1, 6)
 	var weapon_candidates := _build_weapon_reward_candidates()
-	var module_candidates := _build_module_reward_candidates()
+	var module_candidates: Array[Dictionary] = []
+	if _get_economy_config().reward_module_options_enabled:
+		module_candidates = _build_module_reward_candidates()
 	var options: Array[RewardInfo] = []
 	var selected_keys: Dictionary = {}
-	for _i in range(target_count):
+	var guaranteed_reward := _build_guaranteed_weapon_progress_reward(selected_keys)
+	if guaranteed_reward != null:
+		options.append(guaranteed_reward)
+	while options.size() < target_count:
 		var reward := _roll_reward_option(weapon_candidates, module_candidates, selected_keys, resolved_route)
 		if reward == null:
-			reward = _build_fallback_chip_reward(options.size(), resolved_route)
+			reward = _build_fallback_economy_reward(options.size(), resolved_route)
+		selected_keys[_get_reward_key(reward)] = true
 		options.append(reward)
 	return options
 
@@ -91,10 +77,17 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 	if reward == null:
 		return false
 	var granted_any := false
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		granted_any = _grant_weapon_upgrade_reward(reward)
 	if reward.total_chip_value > 0:
 		var chip_value: int = max(0, int(reward.total_chip_value))
 		PlayerData.player_exp += chip_value
 		PlayerData.round_chip_collected += chip_value
+		granted_any = true
+	if reward.gold_value > 0:
+		var gold_value: int = max(0, int(reward.gold_value))
+		PlayerData.player_gold += gold_value
+		PlayerData.run_gold_earned += gold_value
 		granted_any = true
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_id := reward.item_id.strip_edges()
@@ -119,40 +112,6 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 	if granted_any:
 		_show_reward_granted_message(reward)
 	return granted_any
-
-func _spawn_loot_box_from_reward(reward: RewardInfo, resolve_immediately: bool = false) -> bool:
-	var lb_ins: Node2D = LOOT_BOX.instantiate() as Node2D
-	if lb_ins == null:
-		return false
-	if PlayerData.player and is_instance_valid(PlayerData.player):
-		lb_ins.position = PlayerData.player.position
-	else:
-		lb_ins.position = Vector2.ZERO
-	lb_ins.item_id = reward.item_id
-	lb_ins.item_lvl = max(0, int(reward.item_level))
-	lb_ins.module_scene = reward.module_scene
-	lb_ins.module_level = _sanitize_module_level(int(reward.module_level))
-	lb_ins.total_value = max(0, int(reward.total_chip_value))
-	lb_ins.resolve_immediately = resolve_immediately
-	add_child(lb_ins)
-	return true
-
-func _build_route_adjusted_reward(base_reward: RewardInfo, route_def: RunRouteDefinition) -> RewardInfo:
-	var reward := RewardInfo.new()
-	reward.item_id = base_reward.item_id
-	reward.item_level = max(0, int(base_reward.item_level))
-	reward.module_scene = base_reward.module_scene
-	reward.module_level = _sanitize_module_level(int(base_reward.module_level))
-	reward.total_chip_value = max(0, int(base_reward.total_chip_value))
-	reward.rarity = base_reward.get_rarity()
-	if route_def == null:
-		return reward
-	reward.total_chip_value = max(0, int(round(float(reward.total_chip_value) * route_def.reward_chip_multiplier)))
-	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
-		reward.item_level = max(1, reward.item_level + int(route_def.reward_item_level_bonus))
-	if reward.module_scene:
-		reward.module_level = _sanitize_module_level(reward.module_level + int(route_def.reward_module_level_bonus))
-	return reward
 
 func _build_weapon_reward_candidates() -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
@@ -221,7 +180,14 @@ func _roll_reward_option(
 	selected_keys: Dictionary,
 	route_def: RunRouteDefinition
 ) -> RewardInfo:
-	var prefer_weapon := randf() < WEAPON_REWARD_CHANCE
+	var economy := _get_economy_config()
+	if randf() < economy.get_reward_economy_option_chance() and not _has_selected_economy_reward(selected_keys):
+		var economy_reward := _build_fallback_economy_reward(selected_keys.size(), route_def)
+		if not selected_keys.has(_get_reward_key(economy_reward)):
+			return economy_reward
+	if not economy.reward_module_options_enabled or module_candidates.is_empty():
+		return _roll_reward_from_type(REWARD_TYPE_WEAPON, weapon_candidates, module_candidates, selected_keys, route_def)
+	var prefer_weapon := randf() < economy.get_reward_weapon_option_chance()
 	var first_type := REWARD_TYPE_WEAPON if prefer_weapon else REWARD_TYPE_MODULE
 	var second_type := REWARD_TYPE_MODULE if prefer_weapon else REWARD_TYPE_WEAPON
 	var reward := _roll_reward_from_type(first_type, weapon_candidates, module_candidates, selected_keys, route_def)
@@ -282,12 +248,121 @@ func _build_reward_from_candidate(candidate: Dictionary, route_def: RunRouteDefi
 			return null
 	return reward
 
-func _build_fallback_chip_reward(option_index: int, route_def: RunRouteDefinition) -> RewardInfo:
+func _build_fallback_economy_reward(option_index: int, _route_def: RunRouteDefinition) -> RewardInfo:
+	var economy := _get_economy_config()
 	var fallback := RewardInfo.new()
-	var base_value: int = max(1, route_def.fallback_reward_chip_value if route_def else 5)
-	fallback.total_chip_value = base_value + option_index * 2
+	fallback.reward_kind = RewardInfo.KIND_ECONOMY
+	fallback.total_chip_value = economy.get_reward_economy_exp()
+	fallback.gold_value = economy.get_reward_economy_gold()
 	fallback.rarity = RARITY_UTIL.COMMON
+	fallback.reward_key_override = "economy:%d" % max(option_index, 0)
 	return fallback
+
+func _build_guaranteed_weapon_progress_reward(selected_keys: Dictionary) -> RewardInfo:
+	var equipped_weapons := _get_valid_equipped_weapons()
+	var upgrade_candidates: Array[Weapon] = []
+	var fuse_candidates: Array[Weapon] = []
+	for weapon in equipped_weapons:
+		if _can_upgrade_weapon(weapon):
+			upgrade_candidates.append(weapon)
+		elif _can_fuse_weapon(weapon):
+			fuse_candidates.append(weapon)
+	if not upgrade_candidates.is_empty():
+		var upgrade_weapon: Weapon = upgrade_candidates.pick_random()
+		var reward := RewardInfo.new()
+		reward.configure_weapon_upgrade(upgrade_weapon)
+		reward.rarity = _get_weapon_rarity_by_instance(upgrade_weapon)
+		_mark_reward_selected(reward, selected_keys)
+		_mark_weapon_id_selected(DataHandler.get_weapon_id_from_instance(upgrade_weapon), selected_keys)
+		return reward
+	if not fuse_candidates.is_empty():
+		var fuse_weapon: Weapon = fuse_candidates.pick_random()
+		var weapon_id: String = DataHandler.get_weapon_id_from_instance(fuse_weapon)
+		var reward := RewardInfo.new()
+		reward.item_id = weapon_id
+		reward.item_level = 1
+		reward.rarity = _get_weapon_rarity_by_instance(fuse_weapon)
+		_mark_reward_selected(reward, selected_keys)
+		return reward
+	var fallback := _build_fallback_economy_reward(0, null)
+	_mark_reward_selected(fallback, selected_keys)
+	return fallback
+
+func _get_valid_equipped_weapons() -> Array[Weapon]:
+	var result: Array[Weapon] = []
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon := weapon_ref as Weapon
+		if weapon != null and is_instance_valid(weapon):
+			result.append(weapon)
+	return result
+
+func _can_upgrade_weapon(weapon: Weapon) -> bool:
+	if weapon == null or not is_instance_valid(weapon):
+		return false
+	return int(weapon.level) < int(weapon.max_level)
+
+func _can_fuse_weapon(weapon: Weapon) -> bool:
+	if weapon == null or not is_instance_valid(weapon):
+		return false
+	if DataHandler.get_weapon_id_from_instance(weapon).strip_edges() == "":
+		return false
+	return int(weapon.fuse) < max(1, int(weapon.FINAL_MAX_FUSE))
+
+func _grant_weapon_upgrade_reward(reward: RewardInfo) -> bool:
+	var weapon := reward.get_target_weapon()
+	if weapon == null or not is_instance_valid(weapon):
+		return false
+	if not _can_upgrade_weapon(weapon):
+		return false
+	var next_level := mini(int(weapon.level) + 1, int(weapon.max_level))
+	if weapon.has_method("set_level"):
+		weapon.call("set_level", next_level)
+	else:
+		weapon.level = next_level
+		if weapon.has_method("calculate_status"):
+			weapon.call("calculate_status")
+	if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui):
+		if GlobalVariables.ui.has_method("update_upg"):
+			GlobalVariables.ui.update_upg()
+		if GlobalVariables.ui.has_method("refresh_border"):
+			GlobalVariables.ui.refresh_border()
+	return true
+
+func _get_weapon_rarity_by_instance(weapon: Weapon) -> String:
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+	if weapon_def == null:
+		return RARITY_UTIL.COMMON
+	return weapon_def.get_rarity()
+
+func _mark_reward_selected(reward: RewardInfo, selected_keys: Dictionary) -> void:
+	selected_keys[_get_reward_key(reward)] = true
+
+func _mark_weapon_id_selected(weapon_id: String, selected_keys: Dictionary) -> void:
+	var normalized_id := weapon_id.strip_edges()
+	if normalized_id != "":
+		selected_keys["weapon:%s" % normalized_id] = true
+
+func _has_selected_economy_reward(selected_keys: Dictionary) -> bool:
+	for key_variant in selected_keys.keys():
+		if str(key_variant).begins_with("economy:"):
+			return true
+	return false
+
+func _get_reward_key(reward: RewardInfo) -> String:
+	if reward == null:
+		return "null"
+	if reward.reward_key_override.strip_edges() != "":
+		return reward.reward_key_override
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		return "upgrade:%s" % str(reward.target_weapon_id)
+	if reward.item_id.strip_edges() != "":
+		return "weapon:%s" % reward.item_id.strip_edges()
+	if reward.module_scene != null:
+		return "module:%s" % str(reward.module_scene.resource_path)
+	if reward.gold_value > 0 or reward.total_chip_value > 0:
+		return "economy:%d:%d" % [int(reward.total_chip_value), int(reward.gold_value)]
+	return "reward:%s" % str(reward)
 
 func _get_candidate_key(candidate: Dictionary) -> String:
 	match str(candidate.get("type", "")):
@@ -341,11 +416,33 @@ func _is_full_level_module_match(module_instance: Module, scene_path: String) ->
 func _sanitize_module_level(level_value: int) -> int:
 	return clampi(level_value, 1, Module.MAX_LEVEL)
 
+func _get_economy_config() -> EconomyConfig:
+	if GlobalVariables.economy_data:
+		return GlobalVariables.economy_data
+	return EconomyConfig.new()
+
 func _show_reward_granted_message(reward: RewardInfo) -> void:
 	var ui := GlobalVariables.ui
 	if ui == null or not is_instance_valid(ui) or not ui.has_method("show_item_message"):
 		return
 	var chunks: PackedStringArray = []
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		var weapon_name := reward.target_weapon_name
+		if weapon_name.strip_edges() == "":
+			weapon_name = LocalizationManager.tr_key("ui.branch.weapon", "Weapon")
+		chunks.append(LocalizationManager.tr_format(
+			"ui.reward.weapon_upgrade",
+			{
+				"name": weapon_name,
+				"from": int(reward.target_weapon_from_level),
+				"to": int(reward.target_weapon_to_level),
+			},
+			"Upgrade %s Lv.%d -> Lv.%d" % [
+				weapon_name,
+				int(reward.target_weapon_from_level),
+				int(reward.target_weapon_to_level),
+			]
+		))
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
 		var weapon_text := LocalizationManager.tr_format(
@@ -373,6 +470,14 @@ func _show_reward_granted_message(reward: RewardInfo) -> void:
 				"ui.reward.exp",
 				{"value": reward.total_chip_value},
 				"EXP +%d" % reward.total_chip_value
+			)
+		)
+	if reward.gold_value > 0:
+		chunks.append(
+			LocalizationManager.tr_format(
+				"ui.reward.gold",
+				{"value": reward.gold_value},
+				"Gold +%d" % reward.gold_value
 			)
 		)
 	if chunks.is_empty():

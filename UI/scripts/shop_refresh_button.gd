@@ -14,14 +14,17 @@ func _on_button_up() -> void:
 	if PlayerData.player_gold >= cost:
 		PlayerData.player_gold -= cost
 		cost = _compute_next_refresh_cost(cost)
-		for slot : ShopWeaponSlot in shop.get_children():
-			slot.new_item()
-			slot.update()
+		refresh_shop_items()
 
 
 func _on_ui_reset_cost() -> void:
 	_reload_refresh_settings()
 	cost = starting_cost
+
+func refresh_shop_items() -> void:
+	for slot: ShopWeaponSlot in shop.get_children():
+		slot.new_item()
+		slot.update()
 
 func _reload_refresh_settings() -> void:
 	if GlobalVariables.economy_data == null:

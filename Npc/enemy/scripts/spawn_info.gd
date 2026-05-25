@@ -5,7 +5,7 @@ class_name SpawnInfo
 @export var time_start:int
 
 @export var enemy:Resource
-@export var number:int
+@export var spawn_weight:int
 @export var max_enemy_number:int
 @export var hp:int
 @export var damage:int

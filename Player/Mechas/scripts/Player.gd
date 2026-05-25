@@ -354,7 +354,12 @@ func _calculate_duplicate_weapon_gold(weapon_id: String) -> int:
 	var base_price := 0
 	if weapon_def != null:
 		base_price = max(0, int(weapon_def.price))
-	return max(6, base_price * 2)
+	return _get_economy_config().get_duplicate_weapon_gold(base_price)
+
+func _get_economy_config() -> EconomyConfig:
+	if GlobalVariables.economy_data:
+		return GlobalVariables.economy_data
+	return EconomyConfig.new()
 
 func _notify_weapon_duplicate_result(existing_weapon: Weapon, weapon_id: String, result: Dictionary) -> void:
 	var ui := GlobalVariables.ui

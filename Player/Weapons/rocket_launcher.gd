@@ -19,7 +19,6 @@ var weapon_data = {
 		"fire_interval_sec": "2.4",
 		"ammo": "14",
 		"explosion_scale": "2.0",
-		"cost": "6",
 	},
 	"2": {
 		"damage": "13",
@@ -28,7 +27,6 @@ var weapon_data = {
 		"fire_interval_sec": "2.2",
 		"ammo": "16",
 		"explosion_scale": "2.1",
-		"cost": "6",
 	},
 	"3": {
 		"damage": "16",
@@ -37,7 +35,6 @@ var weapon_data = {
 		"fire_interval_sec": "2.0",
 		"ammo": "18",
 		"explosion_scale": "2.2",
-		"cost": "6",
 	},
 	"4": {
 		"damage": "20",
@@ -46,7 +43,6 @@ var weapon_data = {
 		"fire_interval_sec": "1.8",
 		"ammo": "20",
 		"explosion_scale": "2.35",
-		"cost": "6",
 	},
 	"5": {
 		"damage": "25",
@@ -55,7 +51,6 @@ var weapon_data = {
 		"fire_interval_sec": "1.6",
 		"ammo": "22",
 		"explosion_scale": "2.5",
-		"cost": "6",
 	},
 	"6": {
 		"damage": "31",
@@ -64,7 +59,6 @@ var weapon_data = {
 		"fire_interval_sec": "1.4",
 		"ammo": "24",
 		"explosion_scale": "2.65",
-		"cost": "6",
 	},
 	"7": {
 		"damage": "39",
@@ -73,7 +67,6 @@ var weapon_data = {
 		"fire_interval_sec": "1.2",
 		"ammo": "26",
 		"explosion_scale": "2.8",
-		"cost": "6",
 	}
 }
 

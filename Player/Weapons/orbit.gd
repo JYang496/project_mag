@@ -31,7 +31,6 @@ var weapon_data = {
 		"spin_speed": "3",
 		"fire_interval_sec": "2.5",
 		"ammo": "20",
-		"cost": "8",
 	},
 	"2": {
 		"damage": "10",
@@ -39,7 +38,6 @@ var weapon_data = {
 		"spin_speed": "3",
 		"fire_interval_sec": "2.5",
 		"ammo": "20",
-		"cost": "8",
 	},
 	"3": {
 		"damage": "12",
@@ -47,7 +45,6 @@ var weapon_data = {
 		"spin_speed": "3.5",
 		"fire_interval_sec": "2.5",
 		"ammo": "20",
-		"cost": "8",
 	},
 	"4": {
 		"damage": "14",
@@ -55,7 +52,6 @@ var weapon_data = {
 		"spin_speed": "3.5",
 		"fire_interval_sec": "2.5",
 		"ammo": "20",
-		"cost": "8",
 	},
 	"5": {
 		"damage": "16",
@@ -63,7 +59,6 @@ var weapon_data = {
 		"spin_speed": "4",
 		"fire_interval_sec": "2.5",
 		"ammo": "20",
-		"cost": "8",
 	},
 	"6": {
 		"damage": "18",
@@ -71,7 +66,6 @@ var weapon_data = {
 		"spin_speed": "4",
 		"fire_interval_sec": "2.5",
 		"ammo": "20",
-		"cost": "8",
 	},
 	"7": {
 		"damage": "20",
@@ -79,7 +73,6 @@ var weapon_data = {
 		"spin_speed": "5",
 		"fire_interval_sec": "2.5",
 		"ammo": "20",
-		"cost": "8",
 	}
 }
 

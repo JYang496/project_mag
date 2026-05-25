@@ -1,0 +1,354 @@
+[gd_resource type="Resource" script_class="SpawnBalanceProfile" format=3 uid="uid://j1pgrdlstc50"]
+
+[ext_resource type="Script" uid="uid://lxtdjllrwkfp" path="res://data/spawns/SpawnBalanceProfile.gd" id="1_profile"]
+[ext_resource type="Script" uid="uid://ytl6qq2cyao" path="res://data/spawns/LevelArray.gd" id="2_level_script"]
+[ext_resource type="Script" uid="uid://ywgnvqwvqn2h" path="res://Npc/enemy/scripts/spawn_info.gd" id="3_spawn_script"]
+[ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/scenes/enemy_rolling_ball.tscn" id="4_rolling_ball"]
+[ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/scenes/enemy_wheel_cart.tscn" id="5_wheel_cart"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_spike_turret.tscn" id="6_spike_turret"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_bomber.tscn" id="7_bomber"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_mine_crawler.tscn" id="8_mine_crawler"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_mortar_turret.tscn" id="9_mortar_turret"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_mirror_caster.tscn" id="10_mirror_caster"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_tar_mine_crawler.tscn" id="11_tar_mine_crawler"]
+[ext_resource type="PackedScene" uid="uid://3nbq5hvtkssa" path="res://Npc/enemy/scenes/enemy_orbit_support.tscn" id="12_orbit_support"]
+[ext_resource type="PackedScene" uid="uid://bmy3cber63qwh" path="res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn" id="13_rolling_ball_elite"]
+
+[sub_resource type="Resource" id="Spawn_roll_intro"]
+script = ExtResource("3_spawn_script")
+time_start = 1
+enemy = ExtResource("4_rolling_ball")
+spawn_weight = 11
+max_enemy_number = 220
+hp = 7
+max_wave = 12
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Level_1_1"]
+script = ExtResource("2_level_script")
+spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_roll_intro")])
+
+[sub_resource type="Resource" id="Spawn_wheel_main"]
+script = ExtResource("3_spawn_script")
+time_start = 1
+enemy = ExtResource("5_wheel_cart")
+spawn_weight = 4
+max_enemy_number = 140
+hp = 9
+max_wave = 18
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_roll_support"]
+script = ExtResource("3_spawn_script")
+time_start = 10
+enemy = ExtResource("4_rolling_ball")
+spawn_weight = 5
+max_enemy_number = 180
+hp = 9
+max_wave = 16
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Level_1_2"]
+script = ExtResource("2_level_script")
+time_out = 55
+spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_wheel_main"), SubResource("Spawn_roll_support")])
+
+[sub_resource type="Resource" id="Spawn_spike_main"]
+script = ExtResource("3_spawn_script")
+time_start = 1
+enemy = ExtResource("6_spike_turret")
+spawn_weight = 3
+max_enemy_number = 150
+hp = 14
+max_wave = 20
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_roll_chaser"]
+script = ExtResource("3_spawn_script")
+time_start = 18
+enemy = ExtResource("4_rolling_ball")
+spawn_weight = 5
+max_enemy_number = 210
+hp = 14
+max_wave = 16
+interval = 1
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Level_1_3"]
+script = ExtResource("2_level_script")
+time_out = 65
+spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_spike_main"), SubResource("Spawn_roll_chaser")])
+
+[sub_resource type="Resource" id="Spawn_bomber_main"]
+script = ExtResource("3_spawn_script")
+time_start = 1
+enemy = ExtResource("7_bomber")
+spawn_weight = 4
+max_enemy_number = 170
+hp = 19
+max_wave = 22
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_mine_zone"]
+script = ExtResource("3_spawn_script")
+time_start = 14
+enemy = ExtResource("8_mine_crawler")
+spawn_weight = 3
+max_enemy_number = 170
+hp = 19
+max_wave = 22
+interval = 1
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Level_1_4"]
+script = ExtResource("2_level_script")
+time_out = 75
+spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_bomber_main"), SubResource("Spawn_mine_zone")])
+
+[sub_resource type="Resource" id="Spawn_mortar_lane"]
+script = ExtResource("3_spawn_script")
+time_start = 1
+enemy = ExtResource("9_mortar_turret")
+spawn_weight = 2
+max_enemy_number = 90
+hp = 36
+max_wave = 20
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_mirror_peak"]
+script = ExtResource("3_spawn_script")
+time_start = 28
+enemy = ExtResource("10_mirror_caster")
+spawn_weight = 2
+max_enemy_number = 60
+hp = 36
+max_wave = 13
+interval = 1
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_tar_control"]
+script = ExtResource("3_spawn_script")
+time_start = 40
+enemy = ExtResource("11_tar_mine_crawler")
+spawn_weight = 3
+max_enemy_number = 110
+hp = 36
+max_wave = 13
+interval = 1
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Level_1_5"]
+script = ExtResource("2_level_script")
+time_out = 85
+spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_mortar_lane"), SubResource("Spawn_mirror_peak"), SubResource("Spawn_tar_control")])
+
+[sub_resource type="Resource" id="Spawn_spike_wall"]
+script = ExtResource("3_spawn_script")
+time_start = 1
+enemy = ExtResource("6_spike_turret")
+spawn_weight = 3
+max_enemy_number = 130
+hp = 38
+max_wave = 16
+interval = 3
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_wheel_breaker"]
+script = ExtResource("3_spawn_script")
+time_start = 12
+enemy = ExtResource("5_wheel_cart")
+spawn_weight = 3
+max_enemy_number = 120
+hp = 38
+max_wave = 14
+interval = 3
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_orbit_harass"]
+script = ExtResource("3_spawn_script")
+time_start = 22
+enemy = ExtResource("12_orbit_support")
+spawn_weight = 3
+max_enemy_number = 110
+hp = 38
+max_wave = 12
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Level_1_6"]
+script = ExtResource("2_level_script")
+time_out = 95
+spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_spike_wall"), SubResource("Spawn_wheel_breaker"), SubResource("Spawn_orbit_harass")])
+
+[sub_resource type="Resource" id="Spawn_bomber_push"]
+script = ExtResource("3_spawn_script")
+time_start = 1
+enemy = ExtResource("7_bomber")
+spawn_weight = 3
+max_enemy_number = 170
+hp = 35
+max_wave = 22
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_mine_flood"]
+script = ExtResource("3_spawn_script")
+time_start = 10
+enemy = ExtResource("8_mine_crawler")
+spawn_weight = 4
+max_enemy_number = 240
+hp = 35
+max_wave = 20
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_elite_anchor"]
+script = ExtResource("3_spawn_script")
+time_start = 36
+enemy = ExtResource("13_rolling_ball_elite")
+spawn_weight = 2
+max_enemy_number = 80
+hp = 35
+max_wave = 18
+interval = 1
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Level_1_7"]
+script = ExtResource("2_level_script")
+time_out = 105
+spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_bomber_push"), SubResource("Spawn_mine_flood"), SubResource("Spawn_elite_anchor")])
+
+[sub_resource type="Resource" id="Spawn_mortar_matrix"]
+script = ExtResource("3_spawn_script")
+time_start = 1
+enemy = ExtResource("9_mortar_turret")
+spawn_weight = 3
+max_enemy_number = 180
+hp = 46
+max_wave = 22
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_tar_drag"]
+script = ExtResource("3_spawn_script")
+time_start = 15
+enemy = ExtResource("11_tar_mine_crawler")
+spawn_weight = 3
+max_enemy_number = 150
+hp = 46
+max_wave = 20
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_mirror_split"]
+script = ExtResource("3_spawn_script")
+time_start = 25
+enemy = ExtResource("10_mirror_caster")
+spawn_weight = 2
+max_enemy_number = 90
+hp = 46
+max_wave = 20
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Level_1_8"]
+script = ExtResource("2_level_script")
+time_out = 115
+spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_mortar_matrix"), SubResource("Spawn_tar_drag"), SubResource("Spawn_mirror_split")])
+
+[sub_resource type="Resource" id="Spawn_wheel_press"]
+script = ExtResource("3_spawn_script")
+time_start = 1
+enemy = ExtResource("5_wheel_cart")
+spawn_weight = 4
+max_enemy_number = 260
+hp = 41
+max_wave = 24
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_spike_screen"]
+script = ExtResource("3_spawn_script")
+time_start = 10
+enemy = ExtResource("6_spike_turret")
+spawn_weight = 3
+max_enemy_number = 170
+hp = 41
+max_wave = 22
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_orbit_cover"]
+script = ExtResource("3_spawn_script")
+time_start = 20
+enemy = ExtResource("12_orbit_support")
+spawn_weight = 3
+max_enemy_number = 150
+hp = 41
+max_wave = 20
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Level_1_9"]
+script = ExtResource("2_level_script")
+time_out = 125
+spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_wheel_press"), SubResource("Spawn_spike_screen"), SubResource("Spawn_orbit_cover")])
+
+[sub_resource type="Resource" id="Spawn_mortar_core"]
+script = ExtResource("3_spawn_script")
+time_start = 1
+enemy = ExtResource("9_mortar_turret")
+spawn_weight = 3
+max_enemy_number = 190
+hp = 38
+max_wave = 24
+interval = 3
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_bomber_storm"]
+script = ExtResource("3_spawn_script")
+time_start = 8
+enemy = ExtResource("7_bomber")
+spawn_weight = 4
+max_enemy_number = 280
+hp = 38
+max_wave = 28
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_elite_hunt"]
+script = ExtResource("3_spawn_script")
+time_start = 18
+enemy = ExtResource("13_rolling_ball_elite")
+spawn_weight = 2
+max_enemy_number = 90
+hp = 38
+max_wave = 20
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Spawn_mirror_collapse"]
+script = ExtResource("3_spawn_script")
+time_start = 30
+enemy = ExtResource("10_mirror_caster")
+spawn_weight = 2
+max_enemy_number = 80
+hp = 38
+max_wave = 18
+interval = 2
+hp_growth_per_level = 0.0
+
+[sub_resource type="Resource" id="Level_1_10"]
+script = ExtResource("2_level_script")
+time_out = 135
+spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_mortar_core"), SubResource("Spawn_bomber_storm"), SubResource("Spawn_elite_hunt"), SubResource("Spawn_mirror_collapse")])
+
+[resource]
+script = ExtResource("1_profile")
+level_configs = Array[ExtResource("2_level_script")]([SubResource("Level_1_1"), SubResource("Level_1_2"), SubResource("Level_1_3"), SubResource("Level_1_4"), SubResource("Level_1_5"), SubResource("Level_1_6"), SubResource("Level_1_7"), SubResource("Level_1_8"), SubResource("Level_1_9"), SubResource("Level_1_10")])

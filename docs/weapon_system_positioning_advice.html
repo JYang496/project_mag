@@ -534,9 +534,143 @@
         </tbody>
       </table>
 
+      <h3>当前休息区可执行操作</h3>
+      <div class="paper">
+        <p>
+          当前休息区不是单一商店界面，而是一个 3×3 区域导航层：玩家在准备阶段点击商人区、铁匠区或中心区，
+          角色会自动移动到对应区域；中心区需要鼠标左键长按约 1 秒才开始下一场战斗。右键用于从二级面板退回主菜单。
+          因此，休息区的设计重点应是控制“每回合显式决策数量”，而不是把所有管理入口同时压给玩家。
+        </p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>入口</th>
+            <th>玩家可以做什么</th>
+            <th>当前代码行为</th>
+            <th>节奏建议</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>商人区</td>
+            <td>打开商人主菜单，进入购买或出售。</td>
+            <td><code>RestArea</code> 的 0 号区域调用 <code>open_rest_area_merchant_menu()</code>，再进入购买/出售二级面板。</td>
+            <td>商人区应作为“路线补强”入口，不建议每回合都要求购买和出售都处理。</td>
+          </tr>
+          <tr>
+            <td>商店购买</td>
+            <td>从 4 个武器商品中购买一把武器；如果买到已装备武器，会自动尝试 fuse。</td>
+            <td><code>ShopWeaponSlot</code> 扣除金币后调用 <code>try_auto_fuse_weapon_obtain()</code>；未重复时创建新武器。</td>
+            <td>购买是高成本路线投资，适合占 1.5 到 2 次普通金币操作预算。</td>
+          </tr>
+          <tr>
+            <td>商店刷新</td>
+            <td>花金币重roll 4 个武器商品。</td>
+            <td><code>ShopRefreshButton</code> 使用 <code>shop_refresh_start_cost</code>、<code>shop_refresh_step</code> 和 <code>shop_refresh_cost_cap</code> 递增费用。</td>
+            <td>刷新应是“补选择”而不是主循环；多数回合最多鼓励 1 次，后期才允许更多尝试。</td>
+          </tr>
+          <tr>
+            <td>商店出售</td>
+            <td>选择背包或已装备武器加入待出售列表并确认出售；已装模组会先回收到模组背包。</td>
+            <td><code>ShopSellButton</code> 进入出售模式，<code>ShopConfirmButton</code> 删除武器并把其模组交回 <code>InventoryData.obtain_module()</code>。</td>
+            <td>出售更像整理/纠错操作，不能成为玩家每回合必须处理的金币来源。</td>
+          </tr>
+          <tr>
+            <td>铁匠区</td>
+            <td>打开铁匠主菜单，进入武器升级。</td>
+            <td><code>RestArea</code> 的 1 号区域调用 <code>open_rest_area_smith_menu()</code>，再显示升级面板。</td>
+            <td>铁匠区应是休息区最稳定的金币消耗入口。</td>
+          </tr>
+          <tr>
+            <td>武器升级</td>
+            <td>选择已装备武器，支付金币提升等级；等级上限受 fuse 限制。</td>
+            <td><code>UpgradePreview</code> 读取下一等级 <code>cost</code>，乘以 <code>weapon_upgrade_cost_multiplier</code> 后扣费并调用 <code>set_level()</code>。</td>
+            <td>升级应承担主要金币消耗：前期约 1 到 2 次，中期 2 次左右，后期稳定支撑 2 到 3 次操作。</td>
+          </tr>
+          <tr>
+            <td>背包与装备整理</td>
+            <td>在已装备武器和背包武器之间交换、装备或卸下武器。</td>
+            <td><code>InventoryData.on_select_eqp</code>、<code>on_select_slot</code> 负责装备位和背包位交换。</td>
+            <td>这是低成本整理操作，不应计入主要金币操作预算，但会占用注意力。</td>
+          </tr>
+          <tr>
+            <td>模组整理</td>
+            <td>查看模组背包，把模组装到兼容武器上；可以在装备武器和背包武器之间选择目标。</td>
+            <td><code>ModuleSlot</code> 打开 <code>ModuleEquipSelectionPanel</code>，再由 <code>InventoryData.equip_module_to_weapon()</code> 校验 trait、槽位和兼容性。</td>
+            <td>模组装配是中后期主注意力来源；建议不要和复杂商店购买、分支选择在同一次休息区同时强制出现。</td>
+          </tr>
+          <tr>
+            <td>路线奖励选择</td>
+            <td>在非战斗奖励路线上，从若干奖励选项中选 1 个。</td>
+            <td>无战斗路线会调用 <code>RewardSelectionPanel</code>，选项可包含武器、模组和 EXP；确认后立即发放。</td>
+            <td>奖励选择应视为本回合主任务；若出现奖励选择，当次休息区应减少商店/升级压力。</td>
+          </tr>
+          <tr>
+            <td>武器分支选择</td>
+            <td>当重复武器触发 fuse 2 或 fuse 3 且有分支可选时，选择进化分支。</td>
+            <td><code>try_auto_fuse_weapon_obtain()</code> 提升 fuse 后请求 <code>BranchSelectPanel</code>；待选分支会阻塞商店、升级和奖励选择。</td>
+            <td>分支选择是强决策，应该单独占据当次休息区的主要注意力，避免和大量金币操作叠加。</td>
+          </tr>
+          <tr>
+            <td>重复物品自动处理</td>
+            <td>重复武器优先 fuse，满 fuse 后转金币；重复模组优先升级，满级后转金币。</td>
+            <td>武器由 <code>Player.try_auto_fuse_weapon_obtain()</code> 处理；模组由 <code>InventoryData.obtain_module()</code> 处理。</td>
+            <td>重复转金币是补偿，不是玩家主动刷钱目标；返还量应低于购买/投入成本，避免经济滚雪球。</td>
+          </tr>
+          <tr>
+            <td>开始下一场战斗</td>
+            <td>回到中心区，鼠标左键长按进入下一场战斗。</td>
+            <td><code>RestArea</code> 的中心区长按触发 <code>_on_start_battle_button_activated()</code>，默认选择 normal 路线并进入战斗。</td>
+            <td>中心长按是明确的“我准备好了”动作；当有分支选择等阻塞面板时不应让玩家误进战斗。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>休息区操作预算建议</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>阶段</th>
+            <th>建议主任务</th>
+            <th>建议次任务</th>
+            <th>金币相关操作目标</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1-2 段</td>
+            <td>升级 1 次或购买 1 把关键武器。</td>
+            <td>少量装备整理。</td>
+            <td>约 2 次，不要求刷新。</td>
+          </tr>
+          <tr>
+            <td>3-4 段</td>
+            <td>升级主武器，准备第一次 fuse。</td>
+            <td>可进行 1 次刷新或一次模组装配。</td>
+            <td>约 2 次；如果触发分支选择，则减少商店操作。</td>
+          </tr>
+          <tr>
+            <td>5-8 段</td>
+            <td>按 fuse 2 路线升级主武器和核心模组。</td>
+            <td>购买补路线武器，或刷新 1 次找重复武器。</td>
+            <td>约 2 到 3 次。</td>
+          </tr>
+          <tr>
+            <td>9-12 段</td>
+            <td>强化已有构筑和联动窗口。</td>
+            <td>少量刷新找重复、整理模组。</td>
+            <td>稳定约 3 次；不再加入新的高学习成本操作。</td>
+          </tr>
+        </tbody>
+      </table>
+
       <h3>执行原则</h3>
       <ul>
         <li>安全区采用“主任务 + 次任务”，避免每次都开放奖励、商店、升级、模组和分支的完整管理负担。</li>
+        <li>金币相关操作按“升级为主、购买/刷新为辅”组织：前期约 2 次，中期 2 到 3 次，后期稳定约 3 次。</li>
+        <li>奖励选择、分支选择和模组装配都属于高注意力操作；当它们出现时，应减少同一休息区内的购买、刷新或升级压力。</li>
         <li>fuse 2 使用软保底：第 3-4 段提高已装备武器重复出现率，目标是在约 10 分钟前后完成第一次分支。</li>
         <li>fuse 3 使用弱软保底：第 7-8 段提高主路线武器重复出现率，允许少量局延后到第 9 段初。</li>
         <li>fuse 2 分支做中质变，但用短描述和强视觉/手感变化表达；选完后让模组继续主导构筑。</li>

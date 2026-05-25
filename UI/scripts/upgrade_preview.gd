@@ -67,20 +67,17 @@ func update() -> void:
 		lblName.text = _build_weapon_header(weapon_node)
 	if weapon_node != null and weapon_node.level < weapon_node.max_level:
 		connect("upgrade_level",Callable(weapon_node,"set_level"))
+		cost_price = _get_upgrade_cost(weapon_node)
+		cost.text = LocalizationManager.tr_format("ui.upgrade.cost", {"value": cost_price}, "Cost: %s" % cost_price)
 		comb_status = combine_status(weapon_node)
 		for key in comb_status:
-			if key == "cost":
-				var base_upgrade_cost := int(comb_status[key][1])
-				cost_price = max(1, int(round(float(base_upgrade_cost) * _get_upgrade_cost_multiplier())))
-				cost.text = LocalizationManager.tr_format("ui.upgrade.cost", {"value": cost_price}, "Cost: %s" % cost_price)
-			else:
-				var status_label = Label.new()
-				status_label.text = LocalizationManager.tr_format(
-					"ui.upgrade.status_line",
-					{"key": key, "from": comb_status[key][0], "to": comb_status[key][1]},
-					"%s: %s => %s" % [key, comb_status[key][0], comb_status[key][1]]
-				)
-				status_container.add_child(status_label)
+			var status_label = Label.new()
+			status_label.text = LocalizationManager.tr_format(
+				"ui.upgrade.status_line",
+				{"key": key, "from": comb_status[key][0], "to": comb_status[key][1]},
+				"%s: %s => %s" % [key, comb_status[key][0], comb_status[key][1]]
+			)
+			status_container.add_child(status_label)
 	elif weapon_node != null:
 		cost.text = _build_cap_reason(weapon_node)
 		upgradable = false
@@ -130,10 +127,17 @@ func _on_upgrade_card_mouse_exited():
 	hover_over = false
 	update()
 
-func _get_upgrade_cost_multiplier() -> float:
+func _get_upgrade_cost(weapon: Weapon) -> int:
+	if weapon == null or not is_instance_valid(weapon):
+		return 1
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+	if weapon_def == null:
+		return 1
 	if GlobalVariables.economy_data == null:
-		return 1.0
-	return maxf(0.01, float(GlobalVariables.economy_data.weapon_upgrade_cost_multiplier))
+		return maxi(1, int(round(float(weapon_def.price) * 0.5)))
+	return GlobalVariables.economy_data.get_weapon_upgrade_gold(int(weapon_def.price))
+
 
 func _cursor_can_click() -> bool:
 	return hover_over and weapon_node != null and is_instance_valid(weapon_node) and upgradable

@@ -144,6 +144,8 @@ func _refresh_purchase_prediction() -> void:
 		return
 	if not PlayerData.player.has_method("predict_auto_fuse_weapon_obtain"):
 		return
+	if PlayerData.player.get("PlayerData") == null:
+		return
 	var outcome: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(str(item_id))
 	var weapon_name := equip_name.text
 	match str(outcome.get("result", "not_applicable")):

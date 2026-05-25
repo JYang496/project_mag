@@ -11,39 +11,13 @@ class_name EnemySpawner
 @onready var top_left_marker: Node2D = $TopLeft
 @onready var bottom_right_marker: Node2D = $BottomRight
 
-const BASE_BUDGET_BY_LEVEL: Array[int] = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
-const EARLY_PHASE_RATIO: float = 0.30
-const LATE_PHASE_RATIO: float = 0.70
-const EARLY_PHASE_MULTIPLIER: float = 0.85
-const MID_PHASE_MULTIPLIER: float = 1.0
-const LATE_PHASE_MULTIPLIER: float = 1.2
-const SURGE_INTERVAL_SEC: int = 15
-const SURGE_BONUS_BUDGET: int = 2
-const MAX_SAME_TYPE_PER_BATCH: int = 4
-const MAX_RANGED_PER_BATCH: int = 3
-const MAX_SELECTION_ATTEMPTS: int = 96
-const ENEMY_COST_BY_SCENE_PATH := {
-	"res://Npc/enemy/scenes/enemy_rolling_ball.tscn": 1,
-	"res://Npc/enemy/scenes/enemy_wheel_cart.tscn": 2,
-	"res://Npc/enemy/scenes/enemy_mine_crawler.tscn": 2,
-	"res://Npc/enemy/scenes/enemy_tar_mine_crawler.tscn": 3,
-	"res://Npc/enemy/scenes/enemy_bomber.tscn": 3,
-	"res://Npc/enemy/scenes/enemy_spike_turret.tscn": 3,
-	"res://Npc/enemy/scenes/enemy_orbit_support.tscn": 4,
-	"res://Npc/enemy/scenes/enemy_mortar_turret.tscn": 5,
-	"res://Npc/enemy/scenes/enemy_mirror_caster.tscn": 6,
-	"res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn": 8,
-}
-const DEFAULT_ENEMY_COST: int = 3
-const INFINITE_MODE_START_LEVEL_INDEX: int = 10
-const INFINITE_HP_GROWTH_PER_LEVEL: float = 0.18
-const INFINITE_DAMAGE_GROWTH_PER_LEVEL: float = 0.08
-const INFINITE_BUDGET_GROWTH_PER_LEVEL: float = 0.05
+const SpawnBalanceProfileScript := preload("res://data/spawns/SpawnBalanceProfile.gd")
 
 var instance_list : Array
 var time_out_list : Array
 var _runtime_enemy_spawns: Array = []
 var _runtime_base_time_out: int = 30
+var _fallback_spawn_balance_profile: Resource = SpawnBalanceProfileScript.new()
 var board_cells : Array[Cell] = []
 var _last_spawn_cell: Cell = null
 var x_min: float = 0.0
@@ -53,6 +27,12 @@ var y_max: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _enemy_ranged_cache: Dictionary = {}
 var _enemy_cost_cache: Dictionary = {}
+var _kill_gold_budget: int = 0
+var _kill_gold_paid: int = 0
+var _kill_gold_expected_kills: int = 1
+var _kill_gold_battle_timeout: int = 1
+var _kill_gold_budget_active: bool = false
+var _warned_inactive_kill_gold_budget: bool = false
 
 func _ready():
 	GlobalVariables.enemy_spawner = self
@@ -85,6 +65,9 @@ func start_timer() -> void:
 		push_warning("EnemySpawner cannot start: spawn tables are empty.")
 		return
 	PhaseManager.battle_time = 0
+	var level_index := maxi(PhaseManager.current_level, 0)
+	var effective_time_out := get_effective_time_out(_runtime_base_time_out, level_index)
+	_start_kill_gold_budget(level_index, effective_time_out)
 	timer.start()
 
 func _on_timer_timeout():
@@ -122,7 +105,7 @@ func _spawn_with_legacy_schedule(enemy_spawns: Array) -> void:
 			continue
 		i.wave += 1
 		i.interval_counter = max(1, i.interval)
-		_spawn_from_info(i, max(1, i.number))
+		_spawn_from_info(i, max(1, i.spawn_weight))
 
 func _spawn_with_random_wave_template(level_index: int, enemy_spawns: Array, effective_time_out: int) -> void:
 	var batch: Dictionary = _build_random_spawn_batch(level_index, enemy_spawns, effective_time_out)
@@ -172,7 +155,8 @@ func _build_random_spawn_batch(level_index: int, enemy_spawns: Array, effective_
 	var ranged_count := 0
 	var elite_count := 0
 
-	for _attempt in range(MAX_SELECTION_ATTEMPTS):
+	var profile: Resource = _get_spawn_balance_profile()
+	for _attempt in range(int(profile.get("max_selection_attempts"))):
 		if remaining <= 0:
 			break
 		var candidate := _pick_weighted_candidate(available, remaining, count_by_scene, ranged_count, elite_count, level_index)
@@ -196,21 +180,117 @@ func _build_random_spawn_batch(level_index: int, enemy_spawns: Array, effective_
 	return batch
 
 func _resolve_batch_budget(level_index: int, effective_time_out: int) -> int:
-	var clamped_level := clampi(level_index, 0, BASE_BUDGET_BY_LEVEL.size() - 1)
-	var base_budget: int = BASE_BUDGET_BY_LEVEL[clamped_level]
+	var profile: Resource = _get_spawn_balance_profile()
+	var base_budget: int = int(profile.call("get_base_budget_for_level", level_index))
 	var timeout: int = maxi(1, effective_time_out)
 	var progress := clampf(float(PhaseManager.battle_time) / float(timeout), 0.0, 1.0)
-	var phase_multiplier := MID_PHASE_MULTIPLIER
-	if progress <= EARLY_PHASE_RATIO:
-		phase_multiplier = EARLY_PHASE_MULTIPLIER
-	elif progress >= LATE_PHASE_RATIO:
-		phase_multiplier = LATE_PHASE_MULTIPLIER
+	var phase_multiplier: float = float(profile.get("mid_phase_multiplier"))
+	if progress <= float(profile.get("early_phase_ratio")):
+		phase_multiplier = float(profile.get("early_phase_multiplier"))
+	elif progress >= float(profile.get("late_phase_ratio")):
+		phase_multiplier = float(profile.get("late_phase_multiplier"))
 	var overflow_level := _resolve_infinite_overflow_level(level_index)
-	var infinite_budget_multiplier := pow(1.0 + INFINITE_BUDGET_GROWTH_PER_LEVEL, float(overflow_level))
+	var infinite_budget_multiplier := pow(1.0 + float(profile.get("infinite_budget_growth_per_level")), float(overflow_level))
 	var budget := int(round(float(base_budget) * phase_multiplier * infinite_budget_multiplier))
-	if SURGE_INTERVAL_SEC > 0 and PhaseManager.battle_time > 0 and PhaseManager.battle_time % SURGE_INTERVAL_SEC == 0:
-		budget += SURGE_BONUS_BUDGET
+	var surge_interval_sec := int(profile.get("surge_interval_sec"))
+	if surge_interval_sec > 0 and PhaseManager.battle_time > 0 and PhaseManager.battle_time % surge_interval_sec == 0:
+		budget += int(profile.get("surge_bonus_budget"))
 	return max(1, budget)
+
+func roll_enemy_kill_gold() -> int:
+	if not _kill_gold_budget_active:
+		return 0
+	var remaining_gold := maxi(_kill_gold_budget - _kill_gold_paid, 0)
+	if remaining_gold <= 0:
+		return 0
+	var remaining_kills := _estimate_remaining_kill_count()
+	var expected_gold_per_kill := float(remaining_gold) / float(maxi(remaining_kills, 1))
+	var max_drop_chance := _get_kill_gold_max_drop_chance()
+	var drop_value := maxi(int(ceil(expected_gold_per_kill / max_drop_chance)), 1)
+	var drop_chance := clampf(expected_gold_per_kill / float(drop_value), 0.0, max_drop_chance)
+	var gold := drop_value if randf() < drop_chance else 0
+	gold = clampi(gold, 0, remaining_gold)
+	_kill_gold_paid += gold
+	return gold
+
+func is_kill_gold_budget_active() -> bool:
+	return _kill_gold_budget_active
+
+func ensure_kill_gold_budget_active() -> bool:
+	if _kill_gold_budget_active:
+		return true
+	var level_index := maxi(PhaseManager.current_level, 0)
+	if _runtime_enemy_spawns.is_empty() or _runtime_base_time_out <= 0:
+		_build_runtime_spawn_context(level_index)
+	var effective_time_out := get_effective_time_out(_runtime_base_time_out, level_index)
+	_start_kill_gold_budget(level_index, effective_time_out)
+	return _kill_gold_budget_active
+
+func get_kill_gold_budget_snapshot() -> Dictionary:
+	return {
+		"budget": _kill_gold_budget,
+		"paid": _kill_gold_paid,
+		"remaining": maxi(_kill_gold_budget - _kill_gold_paid, 0),
+		"expected_kills": _kill_gold_expected_kills,
+		"battle_timeout": _kill_gold_battle_timeout,
+	}
+
+func _start_kill_gold_budget(level_index: int, effective_time_out: int) -> void:
+	var target := _resolve_kill_gold_target_for_level(level_index)
+	var variance := _get_kill_gold_budget_variance()
+	var roll_min := maxf(0.0, 1.0 - variance)
+	var roll_max := maxf(roll_min, 1.0 + variance)
+	_kill_gold_budget = maxi(0, int(round(float(target) * randf_range(roll_min, roll_max))))
+	_kill_gold_paid = 0
+	_kill_gold_expected_kills = maxi(_resolve_expected_kills_for_level(level_index), 1)
+	_kill_gold_battle_timeout = maxi(effective_time_out, 1)
+	_kill_gold_budget_active = _kill_gold_budget > 0
+	_warned_inactive_kill_gold_budget = false
+
+func warn_inactive_kill_gold_budget() -> void:
+	if _warned_inactive_kill_gold_budget:
+		return
+	_warned_inactive_kill_gold_budget = true
+	push_warning("Enemy kill gold budget is inactive; kill gold drops are disabled for this battle.")
+
+func _resolve_kill_gold_target_for_level(level_index: int) -> int:
+	var economy := _get_economy_config()
+	var targets: PackedInt32Array = economy.kill_gold_target_by_level
+	if targets.is_empty():
+		return 0
+	var safe_level := maxi(level_index, 0)
+	if safe_level < targets.size():
+		return maxi(int(targets[safe_level]), 0)
+	var increment := maxi(int(economy.kill_gold_target_increment_after_table), 0)
+	return maxi(int(targets[targets.size() - 1]) + increment * (safe_level - targets.size() + 1), 0)
+
+func _resolve_expected_kills_for_level(level_index: int) -> int:
+	var economy := _get_economy_config()
+	var expected: PackedInt32Array = economy.kill_gold_expected_kills_by_level
+	if expected.is_empty():
+		return 1
+	var safe_level := maxi(level_index, 0)
+	if safe_level < expected.size():
+		return maxi(int(expected[safe_level]), 1)
+	return maxi(int(expected[expected.size() - 1]), 1)
+
+func _get_kill_gold_budget_variance() -> float:
+	var economy := _get_economy_config()
+	return clampf(float(economy.kill_gold_budget_variance), 0.0, 1.0)
+
+func _get_kill_gold_max_drop_chance() -> float:
+	var economy := _get_economy_config()
+	return clampf(float(economy.kill_gold_max_drop_chance), 0.05, 1.0)
+
+func _get_economy_config() -> EconomyConfig:
+	if GlobalVariables.economy_data:
+		return GlobalVariables.economy_data
+	return EconomyConfig.new()
+
+func _estimate_remaining_kill_count() -> int:
+	var progress := clampf(float(PhaseManager.battle_time) / float(maxi(_kill_gold_battle_timeout, 1)), 0.0, 1.0)
+	var expected_done := int(round(float(_kill_gold_expected_kills) * progress))
+	return maxi(_kill_gold_expected_kills - expected_done, 1)
 
 func _pick_weighted_candidate(
 	available: Array[SpawnInfo],
@@ -225,7 +305,7 @@ func _pick_weighted_candidate(
 	for info in available:
 		if not _can_pick_candidate(info, remaining_budget, count_by_scene, ranged_count, elite_count, level_index):
 			continue
-		var weight := maxf(float(max(1, info.number)), 1.0)
+		var weight := maxf(float(max(1, info.spawn_weight)), 1.0)
 		weighted_candidates.append({"info": info, "weight": weight})
 		total_weight += weight
 	if weighted_candidates.is_empty() or total_weight <= 0.0:
@@ -271,9 +351,10 @@ func _can_pick_candidate(
 	if scene_path == "":
 		return false
 	var same_type_count := int(count_by_scene.get(scene_path, 0))
-	if same_type_count >= MAX_SAME_TYPE_PER_BATCH:
+	var profile: Resource = _get_spawn_balance_profile()
+	if same_type_count >= int(profile.get("max_same_type_per_batch")):
 		return false
-	if _is_spawn_ranged(info) and ranged_count >= MAX_RANGED_PER_BATCH:
+	if _is_spawn_ranged(info) and ranged_count >= int(profile.get("max_ranged_per_batch")):
 		return false
 	if _is_spawn_elite(info):
 		var elite_limit := 1 if level_index < 8 else 2
@@ -292,10 +373,10 @@ func _get_spawn_scene_path(info: SpawnInfo) -> String:
 
 func _get_enemy_cost(scene_path: String) -> int:
 	if scene_path == "":
-		return DEFAULT_ENEMY_COST
+		return int(_get_spawn_balance_profile().get("default_enemy_cost"))
 	if _enemy_cost_cache.has(scene_path):
 		return int(_enemy_cost_cache[scene_path])
-	var cost := int(ENEMY_COST_BY_SCENE_PATH.get(scene_path, DEFAULT_ENEMY_COST))
+	var cost: int = int(_get_spawn_balance_profile().call("get_enemy_cost", scene_path))
 	_enemy_cost_cache[scene_path] = cost
 	return cost
 
@@ -824,8 +905,9 @@ func calculate_scaled_enemy_stats(
 		scaled_damage = max(1, int(round(float(scaled_damage) * route_def.enemy_damage_multiplier)))
 	var overflow_level := _resolve_infinite_overflow_level(level_index)
 	if overflow_level > 0:
-		scaled_hp = max(1, int(round(float(scaled_hp) * pow(1.0 + INFINITE_HP_GROWTH_PER_LEVEL, float(overflow_level)))))
-		scaled_damage = max(1, int(round(float(scaled_damage) * pow(1.0 + INFINITE_DAMAGE_GROWTH_PER_LEVEL, float(overflow_level)))))
+		var profile: Resource = _get_spawn_balance_profile()
+		scaled_hp = max(1, int(round(float(scaled_hp) * pow(1.0 + float(profile.get("infinite_hp_growth_per_level")), float(overflow_level)))))
+		scaled_damage = max(1, int(round(float(scaled_damage) * pow(1.0 + float(profile.get("infinite_damage_growth_per_level")), float(overflow_level)))))
 	return {"hp": scaled_hp, "damage": scaled_damage}
 
 func get_effective_time_out(base_time_out: int, level_index: int) -> int:
@@ -880,7 +962,7 @@ func _duplicate_spawn_infos(spawn_infos: Array) -> Array:
 	return copied
 
 func _resolve_infinite_overflow_level(level_index: int) -> int:
-	return maxi(level_index - (INFINITE_MODE_START_LEVEL_INDEX - 1), 0)
+	return int(_get_spawn_balance_profile().call("get_infinite_overflow_level", level_index))
 
 func debug_get_infinite_overflow_level(level_index: int) -> int:
 	return _resolve_infinite_overflow_level(level_index)
@@ -889,3 +971,10 @@ func debug_get_runtime_spawn_pool_size_for_level(level_index: int) -> int:
 	if not _build_runtime_spawn_context(level_index):
 		return 0
 	return _runtime_enemy_spawns.size()
+
+func _get_spawn_balance_profile() -> Resource:
+	var profile: Resource = SpawnData.get_spawn_balance_profile()
+	if profile != null:
+		return profile
+	_fallback_spawn_balance_profile.call("sanitize")
+	return _fallback_spawn_balance_profile

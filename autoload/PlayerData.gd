@@ -110,7 +110,7 @@ var grab_radius_mutifactor := 1.0 :
 
 var total_grab_radius := grab_radius * grab_radius_mutifactor
 
-var player_gold := 10
+var player_gold := 0
 var round_coin_collected := 0
 var round_chip_collected := 0
 var run_total_damage_dealt := 0
@@ -185,7 +185,7 @@ func reset_runtime_state() -> void:
 	grab_radius = 50.0
 	grab_radius_mutifactor = 1.0
 	total_grab_radius = 50.0
-	player_gold = 10
+	player_gold = _get_default_player_gold()
 	round_coin_collected = 0
 	round_chip_collected = 0
 	run_total_damage_dealt = 0
@@ -206,6 +206,11 @@ func reset_runtime_state() -> void:
 	weapon_list_changed.emit()
 	if prev_main_index != main_weapon_index:
 		main_weapon_index_changed.emit(prev_main_index, main_weapon_index, 0)
+
+func _get_default_player_gold() -> int:
+	if GlobalVariables.economy_data:
+		return GlobalVariables.economy_data.get_default_player_gold()
+	return EconomyConfig.new().get_default_player_gold()
 
 func sanitize_main_weapon_index() -> void:
 	var old_index := main_weapon_index

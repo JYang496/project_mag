@@ -17,7 +17,6 @@ var weapon_data = {
 		"projectile_hits": "4",
 		"fire_interval_sec": "0.6",
 		"ammo": "30",
-		"cost": "9",
 	},
 	"2": {
 		"damage": "7",
@@ -25,7 +24,6 @@ var weapon_data = {
 		"projectile_hits": "4",
 		"fire_interval_sec": "0.55",
 		"ammo": "32",
-		"cost": "9",
 	},
 	"3": {
 		"damage": "9",
@@ -33,7 +31,6 @@ var weapon_data = {
 		"projectile_hits": "6",
 		"fire_interval_sec": "0.5",
 		"ammo": "34",
-		"cost": "9",
 	},
 	"4": {
 		"damage": "10",
@@ -41,7 +38,6 @@ var weapon_data = {
 		"projectile_hits": "6",
 		"fire_interval_sec": "0.45",
 		"ammo": "36",
-		"cost": "9",
 	},
 	"5": {
 		"damage": "12",
@@ -49,7 +45,6 @@ var weapon_data = {
 		"projectile_hits": "6",
 		"fire_interval_sec": "0.4",
 		"ammo": "38",
-		"cost": "9",
 	},
 	"6": {
 		"damage": "14",
@@ -57,7 +52,6 @@ var weapon_data = {
 		"projectile_hits": "6",
 		"fire_interval_sec": "0.35",
 		"ammo": "40",
-		"cost": "9",
 	},
 	"7": {
 		"damage": "18",
@@ -65,7 +59,6 @@ var weapon_data = {
 		"projectile_hits": "6",
 		"fire_interval_sec": "0.3",
 		"ammo": "42",
-		"cost": "9",
 	}
 }
 

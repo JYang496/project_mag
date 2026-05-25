@@ -172,6 +172,14 @@ func _ready():
 		weapon_selector.bind_player_data()
 		weapon_selector.refresh_slots()
 	refresh_border()
+	call_deferred("_refresh_initial_prepare_shop")
+
+func _refresh_initial_prepare_shop() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return
+	reset_shopping_refresh_cost()
 
 func _init_item_message_timer() -> void:
 	if item_message_timer and is_instance_valid(item_message_timer):
@@ -306,14 +314,15 @@ func request_reward_selection(
 	route_display_name: String,
 	reward_options: Array[RewardInfo],
 	on_confirm: Callable = Callable(),
-	on_cancel: Callable = Callable()
+	on_cancel: Callable = Callable(),
+	allow_cancel: bool = true
 ) -> bool:
 	if is_branch_selection_blocking_interactions():
 		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
 		return false
 	if reward_selection_panel == null or not is_instance_valid(reward_selection_panel):
 		return false
-	return reward_selection_panel.open_for_rewards(route_display_name, reward_options, on_confirm, on_cancel)
+	return reward_selection_panel.open_for_rewards(route_display_name, reward_options, on_confirm, on_cancel, allow_cancel)
 
 func _on_branch_selected(weapon: Weapon, branch_id: String) -> void:
 	if weapon == null or not is_instance_valid(weapon):
@@ -523,6 +532,19 @@ func close_rest_area_primary_menu() -> void:
 
 func reset_shopping_refresh_cost() -> void:
 	reset_cost.emit()
+	refresh_shop_items_for_prepare()
+
+func refresh_shop_items_for_prepare() -> void:
+	var shop_refresh := shopping_panel.get_node_or_null("ShopRefreshButton")
+	if shop_refresh != null and shop_refresh.has_method("refresh_shop_items"):
+		shop_refresh.call("refresh_shop_items")
+		return
+	for slot in shop.get_children():
+		var shop_slot := slot as ShopWeaponSlot
+		if shop_slot == null:
+			continue
+		shop_slot.new_item()
+		shop_slot.update()
 
 #func upgrade_panel_in() -> void:
 	#upgradable_weapon_list = PlayerData.player_weapon_list.duplicate()

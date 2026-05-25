@@ -19,43 +19,36 @@ var weapon_data = {
 		"damage": "3",
 		"fire_interval_sec": "2",
 		"ammo": "45",
-		"cost": "5",
 	},
 	"2": {
 		"damage": "4",
 		"fire_interval_sec": "1.6",
 		"ammo": "50",
-		"cost": "5",
 	},
 	"3": {
 		"damage": "6",
 		"fire_interval_sec": "1.1",
 		"ammo": "55",
-		"cost": "5",
 	},
 	"4": {
 		"damage": "7",
 		"fire_interval_sec": "0.8",
 		"ammo": "60",
-		"cost": "5",
 	},
 	"5": {
 		"damage": "8",
 		"fire_interval_sec": "0.6",
 		"ammo": "65",
-		"cost": "5",
 	},
 	"6": {
 		"damage": "9",
 		"fire_interval_sec": "0.5",
 		"ammo": "70",
-		"cost": "5",
 	},
 	"7": {
 		"damage": "10",
 		"fire_interval_sec": "0.45",
 		"ammo": "75",
-		"cost": "5",
 	}
 }
 

@@ -17,6 +17,7 @@ var _selected_index: int = -1
 var _on_confirm: Callable = Callable()
 var _on_cancel: Callable = Callable()
 var _route_display_name_cache: String = ""
+var _allow_cancel: bool = true
 
 func _ready() -> void:
 	visible = false
@@ -31,12 +32,14 @@ func open_for_rewards(
 	route_display_name: String,
 	reward_options: Array[RewardInfo],
 	on_confirm: Callable = Callable(),
-	on_cancel: Callable = Callable()
+	on_cancel: Callable = Callable(),
+	allow_cancel: bool = true
 ) -> bool:
 	if reward_options.is_empty():
 		return false
 	_on_confirm = on_confirm
 	_on_cancel = on_cancel
+	_allow_cancel = allow_cancel
 	_route_display_name_cache = route_display_name
 	_selected_index = -1
 	_reward_options.clear()
@@ -48,6 +51,8 @@ func open_for_rewards(
 	)
 	confirm_button.text = LocalizationManager.tr_key("ui.reward.confirm", "Confirm Reward")
 	cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
+	cancel_button.visible = _allow_cancel
+	cancel_button.disabled = not _allow_cancel
 	for child in options_box.get_children():
 		child.queue_free()
 	for reward in reward_options:
@@ -79,6 +84,7 @@ func close_panel() -> void:
 	_selected_index = -1
 	_on_confirm = Callable()
 	_on_cancel = Callable()
+	_allow_cancel = true
 
 func _on_reward_button_pressed(index: int, source_button: Button) -> void:
 	_selected_index = index
@@ -102,6 +108,8 @@ func _on_confirm_pressed() -> void:
 	close_panel()
 
 func _on_cancel_pressed() -> void:
+	if not _allow_cancel:
+		return
 	selection_cancelled.emit()
 	if _on_cancel.is_valid():
 		_on_cancel.call_deferred()
@@ -110,6 +118,23 @@ func _on_cancel_pressed() -> void:
 func _build_reward_summary(reward: RewardInfo) -> String:
 	var chunks: PackedStringArray = []
 	chunks.append("[%s]" % RARITY_UTIL.get_display_name(reward.get_rarity()))
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		var weapon_name := reward.target_weapon_name
+		if weapon_name.strip_edges() == "":
+			weapon_name = LocalizationManager.tr_key("ui.branch.weapon", "Weapon")
+		chunks.append(LocalizationManager.tr_format(
+			"ui.reward.weapon_upgrade",
+			{
+				"name": weapon_name,
+				"from": int(reward.target_weapon_from_level),
+				"to": int(reward.target_weapon_to_level),
+			},
+			"Upgrade %s Lv.%d -> Lv.%d" % [
+				weapon_name,
+				int(reward.target_weapon_from_level),
+				int(reward.target_weapon_to_level),
+			]
+		))
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
 		var weapon_text := LocalizationManager.tr_format(
@@ -136,6 +161,12 @@ func _build_reward_summary(reward: RewardInfo) -> String:
 			"ui.reward.exp",
 			{"value": reward.total_chip_value},
 			"EXP +%d" % reward.total_chip_value
+		))
+	if reward.gold_value > 0:
+		chunks.append(LocalizationManager.tr_format(
+			"ui.reward.gold",
+			{"value": reward.gold_value},
+			"Gold +%d" % reward.gold_value
 		))
 	if chunks.is_empty():
 		return LocalizationManager.tr_key("ui.reward.default", "Reward")
@@ -184,4 +215,4 @@ func _format_weapon_obtain_prediction(base_text: String, weapon_name: String, ou
 
 func _on_language_changed(_locale: String) -> void:
 	if visible:
-		open_for_rewards(_route_display_name_cache, _reward_options, _on_confirm, _on_cancel)
+		open_for_rewards(_route_display_name_cache, _reward_options, _on_confirm, _on_cancel, _allow_cancel)

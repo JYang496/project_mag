@@ -71,8 +71,10 @@ ui.reward.subtitle,{route} - pick one reward.,{route} - 请选择一个奖励。
 ui.reward.confirm,Confirm Reward,确认奖励
 ui.reward.default,Reward,奖励
 ui.reward.weapon,Weapon {id} Lv.{level},武器 {id} Lv.{level}
+ui.reward.weapon_upgrade,Upgrade {name} Lv.{from} -> Lv.{to},升级 {name} Lv.{from} -> Lv.{to}
 ui.reward.module,Module {name} Lv.{level},模组 {name} Lv.{level}
 ui.reward.exp,EXP +{value},经验 +{value}
+ui.reward.gold,Gold +{value},金币 +{value}
 ui.reward.message,Reward: {content},奖励：{content}
 ui.module.title,Equip Module,装备模组
 ui.module.no_effect,No direct stat changes.,无直接属性变化。

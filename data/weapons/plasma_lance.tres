@@ -9,6 +9,6 @@ script = ExtResource("3_def")
 weapon_id = "17"
 display_name = "Plasma Lance"
 icon = ExtResource("1_icon")
-price = 12
+price = 100
 description = "Slow heavy energy lance with light pierce and heat-spend chain feedback."
 scene = ExtResource("2_scene")

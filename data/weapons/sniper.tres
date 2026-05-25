@@ -9,6 +9,6 @@ script = ExtResource("3_def")
 weapon_id = "26"
 display_name = "Sniper"
 icon = ExtResource("1_icon")
-price = 14
+price = 120
 description = "High-damage long-range rifle. Deals more damage to distant targets."
 scene = ExtResource("2_scene")

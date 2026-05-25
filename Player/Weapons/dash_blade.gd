@@ -18,7 +18,6 @@ var weapon_data := {
 		"return_speed": "700",
 		"fire_interval_sec": "1.1",
 		"ammo": "24",
-		"cost": "16",
 	},
 	"2": {
 		"damage": "34",
@@ -27,7 +26,6 @@ var weapon_data := {
 		"return_speed": "730",
 		"fire_interval_sec": "1.0",
 		"ammo": "26",
-		"cost": "16",
 	},
 	"3": {
 		"damage": "40",
@@ -36,7 +34,6 @@ var weapon_data := {
 		"return_speed": "760",
 		"fire_interval_sec": "0.95",
 		"ammo": "28",
-		"cost": "16",
 	},
 	"4": {
 		"damage": "48",
@@ -45,7 +42,6 @@ var weapon_data := {
 		"return_speed": "780",
 		"fire_interval_sec": "0.9",
 		"ammo": "30",
-		"cost": "16",
 	},
 	"5": {
 		"damage": "58",
@@ -54,7 +50,6 @@ var weapon_data := {
 		"return_speed": "820",
 		"fire_interval_sec": "0.85",
 		"ammo": "32",
-		"cost": "16",
 	},
 	"6": {
 		"damage": "70",
@@ -63,7 +58,6 @@ var weapon_data := {
 		"return_speed": "860",
 		"fire_interval_sec": "0.8",
 		"ammo": "34",
-		"cost": "16",
 	},
 	"7": {
 		"damage": "85",
@@ -72,7 +66,6 @@ var weapon_data := {
 		"return_speed": "900",
 		"fire_interval_sec": "0.75",
 		"ammo": "36",
-		"cost": "16",
 	},
 }
 

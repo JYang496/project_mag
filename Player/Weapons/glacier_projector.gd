@@ -17,13 +17,13 @@ var _attacked_target_ids: Dictionary = {}
 var _cold_snap_ready_at_msec: int = 0
 
 var weapon_data: Dictionary = {
-	"1": {"damage": "6", "fire_interval_sec": "0.22", "ammo": "110", "range": "260", "cost": "10"},
-	"2": {"damage": "7", "fire_interval_sec": "0.21", "ammo": "120", "range": "275", "cost": "10"},
-	"3": {"damage": "8", "fire_interval_sec": "0.20", "ammo": "130", "range": "290", "cost": "10"},
-	"4": {"damage": "10", "fire_interval_sec": "0.19", "ammo": "140", "range": "310", "cost": "10"},
-	"5": {"damage": "12", "fire_interval_sec": "0.18", "ammo": "150", "range": "330", "cost": "10"},
-	"6": {"damage": "15", "fire_interval_sec": "0.17", "ammo": "160", "range": "355", "cost": "10"},
-	"7": {"damage": "18", "fire_interval_sec": "0.16", "ammo": "170", "range": "380", "cost": "10"},
+	"1": {"damage": "6", "fire_interval_sec": "0.22", "ammo": "110", "range": "260"},
+	"2": {"damage": "7", "fire_interval_sec": "0.21", "ammo": "120", "range": "275"},
+	"3": {"damage": "8", "fire_interval_sec": "0.20", "ammo": "130", "range": "290"},
+	"4": {"damage": "10", "fire_interval_sec": "0.19", "ammo": "140", "range": "310"},
+	"5": {"damage": "12", "fire_interval_sec": "0.18", "ammo": "150", "range": "330"},
+	"6": {"damage": "15", "fire_interval_sec": "0.17", "ammo": "160", "range": "355"},
+	"7": {"damage": "18", "fire_interval_sec": "0.16", "ammo": "170", "range": "380"},
 }
 
 func _ready() -> void:
