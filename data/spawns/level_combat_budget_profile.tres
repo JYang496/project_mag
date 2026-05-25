@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="LevelCombatBudgetProfile" format=3]
+
+[ext_resource type="Script" path="res://data/spawns/LevelCombatBudgetProfile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+level_target_total_hp = PackedInt32Array(1800, 3200, 5200, 7600, 9800, 12200, 15000, 18200, 21800, 25800)
+weight_mode = "level_share"
+min_hp = 1
+max_hp = 9999
+tolerance_pct = 0.02
+rounding_mode = "nearest"
+enable_hp_per_sec_report = true
+hp_per_sec_tolerance_pct = 0.08

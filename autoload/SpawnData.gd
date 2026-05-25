@@ -1,8 +1,10 @@
 extends Node
 
 const SPAWN_BALANCE_PROFILE_PATH := "res://data/spawns/spawn_balance_profile.tres"
+const LEVEL_COMBAT_BUDGET_PROFILE_PATH := "res://data/spawns/level_combat_budget_profile.tres"
 
 var spawn_balance_profile: Resource
+var level_combat_budget_profile: Resource
 var level_list: Array[LevelSpawnConfig] = []
 
 func _ready() -> void:
@@ -10,6 +12,7 @@ func _ready() -> void:
 
 func load_all_spawn_data(_legacy_path: String = "") -> void:
 	reload_spawn_balance_profile()
+	reload_level_combat_budget_profile()
 
 func reload_spawn_balance_profile() -> void:
 	level_list.clear()
@@ -33,3 +36,16 @@ func get_spawn_balance_profile() -> Resource:
 	if spawn_balance_profile == null:
 		reload_spawn_balance_profile()
 	return spawn_balance_profile
+
+func reload_level_combat_budget_profile() -> void:
+	level_combat_budget_profile = load(LEVEL_COMBAT_BUDGET_PROFILE_PATH) as Resource
+	if level_combat_budget_profile == null:
+		push_warning("Failed to load level combat budget profile: %s" % LEVEL_COMBAT_BUDGET_PROFILE_PATH)
+		return
+	if level_combat_budget_profile.has_method("sanitize"):
+		level_combat_budget_profile.call("sanitize")
+
+func get_level_combat_budget_profile() -> Resource:
+	if level_combat_budget_profile == null:
+		reload_level_combat_budget_profile()
+	return level_combat_budget_profile

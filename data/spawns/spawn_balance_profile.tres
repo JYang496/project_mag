@@ -18,9 +18,9 @@
 script = ExtResource("3_spawn_script")
 time_start = 1
 enemy = ExtResource("4_rolling_ball")
-spawn_weight = 11
+spawn_weight = 10
 max_enemy_number = 220
-hp = 7
+hp = 6
 max_wave = 12
 interval = 2
 hp_growth_per_level = 0.0
