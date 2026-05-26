@@ -36,6 +36,8 @@ var _warned_inactive_kill_gold_budget: bool = false
 var _combat_budget_active: bool = false
 var _planned_spawn_limit_by_scene_path: Dictionary = {}
 var _planned_spawn_used_by_scene_path: Dictionary = {}
+var _budget_same_type_limit_by_scene_path: Dictionary = {}
+var _budget_batch_cost_floor: int = 0
 var _scaled_hp_by_scene_path: Dictionary = {}
 var _planned_target_total_hp: int = 0
 var _planned_total_hp_after_rounding: int = 0
@@ -202,6 +204,8 @@ func _resolve_batch_budget(level_index: int, effective_time_out: int) -> int:
 	var surge_interval_sec := int(profile.get("surge_interval_sec"))
 	if surge_interval_sec > 0 and PhaseManager.battle_time > 0 and PhaseManager.battle_time % surge_interval_sec == 0:
 		budget += int(profile.get("surge_bonus_budget"))
+	if _combat_budget_active:
+		budget = maxi(budget, _budget_batch_cost_floor)
 	return max(1, budget)
 
 func roll_enemy_kill_gold() -> int:
@@ -364,7 +368,7 @@ func _can_pick_candidate(
 			return false
 	var same_type_count := int(count_by_scene.get(scene_path, 0))
 	var profile: Resource = _get_spawn_balance_profile()
-	if same_type_count >= int(profile.get("max_same_type_per_batch")):
+	if same_type_count >= _get_same_type_batch_limit(scene_path, profile):
 		return false
 	if _is_spawn_ranged(info) and ranged_count >= int(profile.get("max_ranged_per_batch")):
 		return false
@@ -939,6 +943,8 @@ func _prepare_level_combat_budget(level_index: int, effective_time_out: int) -> 
 	_combat_budget_active = false
 	_planned_spawn_limit_by_scene_path.clear()
 	_planned_spawn_used_by_scene_path.clear()
+	_budget_same_type_limit_by_scene_path.clear()
+	_budget_batch_cost_floor = 0
 	_scaled_hp_by_scene_path.clear()
 	_planned_target_total_hp = 0
 	_planned_total_hp_after_rounding = 0
@@ -1000,6 +1006,10 @@ func _prepare_level_combat_budget(level_index: int, effective_time_out: int) -> 
 			"fraction": scaled_float - floor(scaled_float),
 		})
 	_apply_hp_remainder_compensation(target_total_hp, total_after_rounding, hp_remainders, min_hp, max_hp)
+	if bool(budget_profile.get("adjust_batch_limits_from_hp_budget")):
+		var max_budget_batch_limit := maxi(int(budget_profile.get("max_same_type_per_batch_from_budget")), 1)
+		var max_budget_batch_cost := maxi(int(budget_profile.get("max_total_batch_cost_from_hp_budget")), 1)
+		_prepare_budget_batch_limits(effective_time_out, max_budget_batch_limit, max_budget_batch_cost)
 	_planned_target_total_hp = target_total_hp
 	_planned_total_hp_after_rounding = _calculate_planned_total_hp_from_limits()
 	_combat_budget_active = true
@@ -1080,6 +1090,56 @@ func _distribute_counts_by_largest_remainder(candidates: Array[Dictionary], tota
 		remaining -= 1
 		idx += 1
 	return counts
+
+func _prepare_budget_batch_limits(effective_time_out: int, max_budget_batch_limit: int, max_budget_batch_cost: int) -> void:
+	_budget_same_type_limit_by_scene_path.clear()
+	_budget_batch_cost_floor = 0
+	var profile: Resource = _get_spawn_balance_profile()
+	var base_limit := maxi(int(profile.get("max_same_type_per_batch")), 1)
+	var required_batch_cost := 0
+	for scene_path_variant in _planned_spawn_limit_by_scene_path.keys():
+		var scene_path := String(scene_path_variant)
+		var planned_count := int(_planned_spawn_limit_by_scene_path.get(scene_path, 0))
+		if scene_path == "" or planned_count <= 0:
+			continue
+		var spawn_windows := _estimate_spawn_windows_for_scene_path(scene_path, effective_time_out)
+		var required_limit := int(ceil(float(planned_count) / float(maxi(spawn_windows, 1))))
+		var adjusted_limit := clampi(maxi(base_limit, required_limit), base_limit, max_budget_batch_limit)
+		_budget_same_type_limit_by_scene_path[scene_path] = adjusted_limit
+		required_batch_cost += mini(required_limit, max_budget_batch_limit) * _get_enemy_cost(scene_path)
+		if required_limit > max_budget_batch_limit:
+			push_warning("Spawn budget for %s needs %d same-type enemies per wave to hit the HP target, but max_same_type_per_batch_from_budget caps it at %d." % [
+				scene_path,
+				required_limit,
+				max_budget_batch_limit,
+			])
+	_budget_batch_cost_floor = mini(maxi(required_batch_cost, 0), max_budget_batch_cost)
+	if required_batch_cost > max_budget_batch_cost:
+		push_warning("Spawn budget needs batch cost %d to hit the HP target, but max_total_batch_cost_from_hp_budget caps it at %d." % [
+			required_batch_cost,
+			max_budget_batch_cost,
+		])
+
+func _estimate_spawn_windows_for_scene_path(scene_path: String, effective_time_out: int) -> int:
+	var last_spawn_tick := maxi(effective_time_out - 1, 0)
+	var windows := 0
+	for info_variant in _runtime_enemy_spawns:
+		var info := info_variant as SpawnInfo
+		if info == null or _get_spawn_scene_path(info) != scene_path:
+			continue
+		var first_tick := maxi(info.time_start, 1)
+		if first_tick > last_spawn_tick:
+			continue
+		var interval := maxi(info.interval, 1)
+		var windows_by_time := 1 + int(floor(float(last_spawn_tick - first_tick) / float(interval)))
+		windows += mini(maxi(info.max_wave, 0), windows_by_time)
+	return maxi(windows, 1)
+
+func _get_same_type_batch_limit(scene_path: String, profile: Resource) -> int:
+	var base_limit := maxi(int(profile.get("max_same_type_per_batch")), 1)
+	if _combat_budget_active and _budget_same_type_limit_by_scene_path.has(scene_path):
+		return maxi(int(_budget_same_type_limit_by_scene_path.get(scene_path, base_limit)), base_limit)
+	return base_limit
 
 func _round_with_mode(value: float, rounding_mode: String) -> int:
 	match rounding_mode:
