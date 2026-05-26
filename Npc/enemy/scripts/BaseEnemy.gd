@@ -1,9 +1,19 @@
 extends BaseNPC
 class_name BaseEnemy
+
+const SPAWN_TAG_RANGED := &"ranged"
+const SPAWN_TAG_ELITE := &"elite"
+
 @export var damage := 0
 @export var is_boss: bool = false
 @export_enum("melee", "ranged") var combat_role: String = "melee"
 @export var loot_value_multiplier: float = 1.0
+@export_group("Spawn Metadata")
+@export var spawn_cost: int = 3
+@export var spawn_tags: Array[StringName] = []
+@export var spawn_alive_cap: int = 0
+@export var spawn_batch_cap: int = 0
+@export_group("")
 @onready var coin_preload = preload("res://Objects/loots/coin.tscn")
 @onready var drop_preload = preload("res://Objects/loots/drop.tscn")
 
@@ -203,8 +213,8 @@ func set_quest_highlight(enabled: bool, color: Color = Color.WHITE) -> void:
 	if has_method("set_outline_highlight"):
 		set_outline_highlight(enabled, color, 1.0)
 
-func is_ranged_enemy() -> bool:
-	return combat_role == "ranged"
+func has_spawn_tag(tag: StringName) -> bool:
+	return spawn_tags.has(tag)
 
 func compute_ranged_navigation(
 	delta: float,

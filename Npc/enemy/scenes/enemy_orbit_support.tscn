@@ -22,6 +22,7 @@ aura_radius = 180.0
 aura_speed_bonus = 1.0
 debug_aura_detection = false
 damage = 1
+spawn_cost = 4
 movement_speed = 30.0
 hp = 30
 

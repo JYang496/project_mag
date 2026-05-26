@@ -16,6 +16,8 @@ radius = 251.008
 collision_mask = 0
 script = ExtResource("2_0fobv")
 damage = 3
+spawn_cost = 6
+spawn_tags = Array[StringName]([&"elite"])
 hp = 60
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]

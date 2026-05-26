@@ -13,6 +13,7 @@ size = Vector2(18, 16)
 [node name="EnemyBomber" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
 damage = 3
+spawn_cost = 3
 movement_speed = 34.0
 hp = 24
 

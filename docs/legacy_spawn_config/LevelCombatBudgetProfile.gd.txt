@@ -13,6 +13,18 @@ class_name LevelCombatBudgetProfile
 	21800,
 	25800,
 ])
+@export var level_time_out_sec: PackedInt32Array = PackedInt32Array([
+	30,
+	55,
+	65,
+	75,
+	85,
+	95,
+	105,
+	115,
+	125,
+	135,
+])
 @export_enum("level_share") var weight_mode: String = "level_share"
 
 @export_group("HP Adjustment")
@@ -38,7 +50,20 @@ func get_target_total_hp(level_index: int) -> int:
 		return maxi(int(level_target_total_hp[safe_level]), 0)
 	return maxi(int(level_target_total_hp[level_target_total_hp.size() - 1]), 0)
 
+func get_level_time_out(level_index: int, fallback_value: int = 30) -> int:
+	var safe_fallback := maxi(fallback_value, 1)
+	if level_time_out_sec.is_empty():
+		return safe_fallback
+	var safe_level := maxi(level_index, 0)
+	if safe_level < level_time_out_sec.size():
+		return maxi(int(level_time_out_sec[safe_level]), 1)
+	return maxi(int(level_time_out_sec[level_time_out_sec.size() - 1]), 1)
+
 func sanitize() -> void:
+	if level_time_out_sec.is_empty():
+		level_time_out_sec = PackedInt32Array([30])
+	for i in range(level_time_out_sec.size()):
+		level_time_out_sec[i] = maxi(int(level_time_out_sec[i]), 1)
 	min_hp = maxi(min_hp, 1)
 	max_hp = maxi(max_hp, min_hp)
 	max_same_type_per_batch_from_budget = maxi(max_same_type_per_batch_from_budget, 1)

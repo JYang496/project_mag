@@ -13,6 +13,8 @@ size = Vector2(22, 22)
 [node name="EnemySpikeTurret" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
 damage = 3
+spawn_cost = 3
+spawn_tags = Array[StringName]([&"ranged"])
 movement_speed = 0.0
 hp = 42
 

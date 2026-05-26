@@ -13,6 +13,7 @@ size = Vector2(16, 16)
 [node name="EnemyMineCrawler" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
 damage = 2
+spawn_cost = 2
 movement_speed = 28.0
 hp = 22
 

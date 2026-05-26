@@ -19,8 +19,7 @@ script = ExtResource("3_spawn_script")
 time_start = 1
 enemy = ExtResource("4_rolling_ball")
 spawn_weight = 10
-max_enemy_number = 220
-hp = 6
+max_enemy_number = 30
 max_wave = 12
 interval = 2
 hp_growth_per_level = 0.0
@@ -53,7 +52,6 @@ hp_growth_per_level = 0.0
 
 [sub_resource type="Resource" id="Level_1_2"]
 script = ExtResource("2_level_script")
-time_out = 55
 spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_wheel_main"), SubResource("Spawn_roll_support")])
 
 [sub_resource type="Resource" id="Spawn_spike_main"]
@@ -80,7 +78,6 @@ hp_growth_per_level = 0.0
 
 [sub_resource type="Resource" id="Level_1_3"]
 script = ExtResource("2_level_script")
-time_out = 65
 spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_spike_main"), SubResource("Spawn_roll_chaser")])
 
 [sub_resource type="Resource" id="Spawn_bomber_main"]
@@ -107,7 +104,6 @@ hp_growth_per_level = 0.0
 
 [sub_resource type="Resource" id="Level_1_4"]
 script = ExtResource("2_level_script")
-time_out = 75
 spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_bomber_main"), SubResource("Spawn_mine_zone")])
 
 [sub_resource type="Resource" id="Spawn_mortar_lane"]
@@ -145,7 +141,6 @@ hp_growth_per_level = 0.0
 
 [sub_resource type="Resource" id="Level_1_5"]
 script = ExtResource("2_level_script")
-time_out = 85
 spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_mortar_lane"), SubResource("Spawn_mirror_peak"), SubResource("Spawn_tar_control")])
 
 [sub_resource type="Resource" id="Spawn_spike_wall"]
@@ -183,7 +178,6 @@ hp_growth_per_level = 0.0
 
 [sub_resource type="Resource" id="Level_1_6"]
 script = ExtResource("2_level_script")
-time_out = 95
 spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_spike_wall"), SubResource("Spawn_wheel_breaker"), SubResource("Spawn_orbit_harass")])
 
 [sub_resource type="Resource" id="Spawn_bomber_push"]
@@ -221,7 +215,6 @@ hp_growth_per_level = 0.0
 
 [sub_resource type="Resource" id="Level_1_7"]
 script = ExtResource("2_level_script")
-time_out = 105
 spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_bomber_push"), SubResource("Spawn_mine_flood"), SubResource("Spawn_elite_anchor")])
 
 [sub_resource type="Resource" id="Spawn_mortar_matrix"]
@@ -259,7 +252,6 @@ hp_growth_per_level = 0.0
 
 [sub_resource type="Resource" id="Level_1_8"]
 script = ExtResource("2_level_script")
-time_out = 115
 spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_mortar_matrix"), SubResource("Spawn_tar_drag"), SubResource("Spawn_mirror_split")])
 
 [sub_resource type="Resource" id="Spawn_wheel_press"]
@@ -297,7 +289,6 @@ hp_growth_per_level = 0.0
 
 [sub_resource type="Resource" id="Level_1_9"]
 script = ExtResource("2_level_script")
-time_out = 125
 spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_wheel_press"), SubResource("Spawn_spike_screen"), SubResource("Spawn_orbit_cover")])
 
 [sub_resource type="Resource" id="Spawn_mortar_core"]
@@ -346,7 +337,6 @@ hp_growth_per_level = 0.0
 
 [sub_resource type="Resource" id="Level_1_10"]
 script = ExtResource("2_level_script")
-time_out = 135
 spawns = Array[ExtResource("3_spawn_script")]([SubResource("Spawn_mortar_core"), SubResource("Spawn_bomber_storm"), SubResource("Spawn_elite_hunt"), SubResource("Spawn_mirror_collapse")])
 
 [resource]

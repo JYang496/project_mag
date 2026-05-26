@@ -33,16 +33,16 @@ func _run_test() -> void:
 	var mixed_pool_size := int(spawner.debug_get_runtime_spawn_pool_size_for_level(10))
 	_assert_true(mixed_pool_size > single_pool_size, "Infinite mode mixed spawn pool should exceed single-level pool size.")
 
-	var first_level: LevelSpawnConfig = null
+	var first_level: LevelCombatPlan = null
 	if not SpawnData.level_list.is_empty():
-		first_level = SpawnData.level_list[0] as LevelSpawnConfig
-	var first_spawn: SpawnInfo = null
+		first_level = SpawnData.level_list[0] as LevelCombatPlan
+	var first_spawn: EnemySpawnEntry = null
 	if first_level and not first_level.spawns.is_empty():
-		first_spawn = first_level.spawns[0] as SpawnInfo
-	_assert_true(first_spawn != null, "A valid SpawnInfo is required for scaling checks.")
+		first_spawn = first_level.spawns[0] as EnemySpawnEntry
+	_assert_true(first_spawn != null, "A valid EnemySpawnEntry is required for scaling checks.")
 	if first_spawn != null:
-		var low_stats := spawner.calculate_scaled_enemy_stats(first_spawn, 10, 1, 0)
-		var high_stats := spawner.calculate_scaled_enemy_stats(first_spawn, 10, 1, 12)
+		var low_stats := spawner.calculate_scaled_enemy_stats(10, 1, 0)
+		var high_stats := spawner.calculate_scaled_enemy_stats(10, 1, 12)
 		_assert_true(int(high_stats.get("hp", 0)) > int(low_stats.get("hp", 0)), "Scaled HP should increase at higher infinite levels.")
 
 	PhaseManager.battle_time = 10

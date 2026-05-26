@@ -19,6 +19,7 @@ chase_acceleration = 25.0
 slowdown_deceleration = 180.0
 max_speed_multiplier = 3.0
 damage = 4
+spawn_cost = 2
 movement_speed = 40.0
 hp = 30
 

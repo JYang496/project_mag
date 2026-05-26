@@ -6,18 +6,16 @@ class_name EnemySpawner
 @export var min_spawn_distance_from_player: float = 180.0
 @export var spawn_point_attempts_per_enemy: int = 12
 @export var spawn_edge_margin: float = 28.0
-@export var use_random_wave_templates: bool = true
 @onready var board = get_parent().get_node_or_null("Board")
 @onready var top_left_marker: Node2D = $TopLeft
 @onready var bottom_right_marker: Node2D = $BottomRight
 
-const SpawnBalanceProfileScript := preload("res://data/spawns/SpawnBalanceProfile.gd")
+const SpawnCombatProfileScript := preload("res://data/spawns/SpawnCombatProfile.gd")
 
 var instance_list : Array
-var time_out_list : Array
-var _runtime_enemy_spawns: Array = []
+var _runtime_spawn_states: Array[Dictionary] = []
 var _runtime_base_time_out: int = 30
-var _fallback_spawn_balance_profile: Resource = SpawnBalanceProfileScript.new()
+var _fallback_spawn_combat_profile: SpawnCombatProfile = SpawnCombatProfileScript.new()
 var board_cells : Array[Cell] = []
 var _last_spawn_cell: Cell = null
 var x_min: float = 0.0
@@ -25,7 +23,7 @@ var y_min: float = 0.0
 var x_max: float = 0.0
 var y_max: float = 0.0
 var _rng := RandomNumberGenerator.new()
-var _enemy_ranged_cache: Dictionary = {}
+var _enemy_metadata_cache: Dictionary = {}
 var _enemy_cost_cache: Dictionary = {}
 var _kill_gold_budget: int = 0
 var _kill_gold_paid: int = 0
@@ -33,14 +31,16 @@ var _kill_gold_expected_kills: int = 1
 var _kill_gold_battle_timeout: int = 1
 var _kill_gold_budget_active: bool = false
 var _warned_inactive_kill_gold_budget: bool = false
-var _combat_budget_active: bool = false
-var _planned_spawn_limit_by_scene_path: Dictionary = {}
-var _planned_spawn_used_by_scene_path: Dictionary = {}
+var _combat_budget_active: bool = true
+var _planned_spawn_limit_by_entry_id: Dictionary = {}
+var _planned_spawn_used_by_entry_id: Dictionary = {}
 var _budget_same_type_limit_by_scene_path: Dictionary = {}
 var _budget_batch_cost_floor: int = 0
-var _scaled_hp_by_scene_path: Dictionary = {}
+var _scaled_hp_by_entry_id: Dictionary = {}
 var _planned_target_total_hp: int = 0
 var _planned_total_hp_after_rounding: int = 0
+var _planned_total_spawn_count: int = 0
+var _planned_total_spawn_used: int = 0
 
 func _ready():
 	GlobalVariables.enemy_spawner = self
@@ -56,7 +56,6 @@ func _on_board_active_cells_changed(_active_cell_ids: PackedInt32Array) -> void:
 
 func _refresh_spawn_tables() -> void:
 	instance_list = []
-	time_out_list = []
 	for level_config in SpawnData.level_list:
 		if level_config == null:
 			continue
@@ -64,12 +63,11 @@ func _refresh_spawn_tables() -> void:
 		if ins == null:
 			continue
 		instance_list.append(ins.spawns)
-		time_out_list.append(ins.time_out)
 
 func start_timer() -> void:
-	if instance_list.is_empty() or time_out_list.is_empty():
+	if instance_list.is_empty():
 		_refresh_spawn_tables()
-	if instance_list.is_empty() or time_out_list.is_empty() or not _build_runtime_spawn_context(maxi(PhaseManager.current_level, 0)):
+	if instance_list.is_empty() or not _build_runtime_spawn_context(maxi(PhaseManager.current_level, 0)):
 		push_warning("EnemySpawner cannot start: spawn tables are empty.")
 		return
 	PhaseManager.battle_time = 0
@@ -80,80 +78,58 @@ func start_timer() -> void:
 	timer.start()
 
 func _on_timer_timeout():
-	if _runtime_enemy_spawns.is_empty():
+	if _runtime_spawn_states.is_empty():
 		timer.stop()
 		push_warning("EnemySpawner timeout with empty runtime spawn table.")
 		return
 	var level_index := maxi(PhaseManager.current_level, 0)
 	PhaseManager.battle_time += 1
-	var enemy_spawns = _runtime_enemy_spawns
 	var base_time_out: int = _runtime_base_time_out
 	var effective_time_out: int = get_effective_time_out(base_time_out, level_index)
-	var wave_clear = true
-	for e : SpawnInfo in enemy_spawns:
-		if e.wave < e.max_wave or e.alive_enemy_number > 0:
-			wave_clear = false
-	if PhaseManager.battle_time >= effective_time_out or wave_clear:
+	if PhaseManager.battle_time >= effective_time_out or _is_runtime_spawn_budget_spent():
 		timer.stop()
 		erase_all_enemies()
 		PhaseManager.enter_prepare()
 		return
-	_tick_spawn_intervals(enemy_spawns)
-	if use_random_wave_templates:
-		_spawn_with_random_wave_template(level_index, enemy_spawns, effective_time_out)
-	else:
-		_spawn_with_legacy_schedule(enemy_spawns)
+	_tick_spawn_intervals()
+	_spawn_with_random_wave_template(level_index, effective_time_out)
 
-func _spawn_with_legacy_schedule(enemy_spawns: Array) -> void:
-	for i : SpawnInfo in enemy_spawns:
-		if PhaseManager.battle_time < i.time_start or i.wave >= i.max_wave:
-			continue
-		if i.interval_counter > 0:
-			continue
-		if i.alive_enemy_number >= i.max_enemy_number:
-			continue
-		i.wave += 1
-		i.interval_counter = max(1, i.interval)
-		_spawn_from_info(i, max(1, i.spawn_weight))
+func _is_runtime_spawn_budget_spent() -> bool:
+	return _is_combat_budget_ready() and _planned_total_spawn_used >= _planned_total_spawn_count
 
-func _spawn_with_random_wave_template(level_index: int, enemy_spawns: Array, effective_time_out: int) -> void:
-	var batch: Dictionary = _build_random_spawn_batch(level_index, enemy_spawns, effective_time_out)
+func _spawn_with_random_wave_template(level_index: int, effective_time_out: int) -> void:
+	var batch: Dictionary = _build_random_spawn_batch(level_index, effective_time_out)
 	if batch.is_empty():
 		return
-	for info_variant in batch.keys():
-		var info := info_variant as SpawnInfo
-		if info == null:
+	for state_id_variant in batch.keys():
+		var state := _get_runtime_state_by_id(int(state_id_variant))
+		if state.is_empty():
 			continue
-		var spawn_count := int(batch.get(info, 0))
+		var spawn_count := int(batch.get(state_id_variant, 0))
 		if spawn_count <= 0:
 			continue
-		info.wave += 1
-		info.interval_counter = max(1, info.interval)
-		_spawn_from_info(info, spawn_count)
+		state["cooldown"] = 1
+		_spawn_from_state(state, spawn_count)
 
-func _tick_spawn_intervals(enemy_spawns: Array) -> void:
-	for info_variant in enemy_spawns:
-		var info := info_variant as SpawnInfo
-		if info == null:
-			continue
-		if info.interval_counter > 0:
-			info.interval_counter -= 1
+func _tick_spawn_intervals() -> void:
+	for state in _runtime_spawn_states:
+		state["cooldown"] = maxi(int(state.get("cooldown", 0)) - 1, 0)
 
-func _build_random_spawn_batch(level_index: int, enemy_spawns: Array, effective_time_out: int) -> Dictionary:
-	var available: Array[SpawnInfo] = []
-	for info_variant in enemy_spawns:
-		var info := info_variant as SpawnInfo
-		if info == null:
+func _build_random_spawn_batch(level_index: int, effective_time_out: int) -> Dictionary:
+	var available: Array[Dictionary] = []
+	for state in _runtime_spawn_states:
+		var entry := _get_state_entry(state)
+		if entry == null:
 			continue
-		if PhaseManager.battle_time < info.time_start:
+		if PhaseManager.battle_time < entry.start_sec:
 			continue
-		if info.wave >= info.max_wave:
+		if int(state.get("cooldown", 0)) > 0:
 			continue
-		if info.interval_counter > 0:
+		if int(state.get("alive", 0)) >= _get_state_alive_cap(state):
 			continue
-		if info.alive_enemy_number >= info.max_enemy_number:
+		if _get_total_runtime_alive_count() >= _get_spawn_combat_profile().default_total_alive_cap:
 			continue
-		available.append(info)
+		available.append(state)
 	if available.is_empty():
 		return {}
 
@@ -164,18 +140,19 @@ func _build_random_spawn_batch(level_index: int, enemy_spawns: Array, effective_
 	var ranged_count := 0
 	var elite_count := 0
 
-	var profile: Resource = _get_spawn_balance_profile()
+	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
 	for _attempt in range(int(profile.get("max_selection_attempts"))):
 		if remaining <= 0:
 			break
 		var candidate := _pick_weighted_candidate(available, remaining, count_by_scene, ranged_count, elite_count, level_index)
-		if candidate == null:
+		if candidate.is_empty():
 			break
 		var scene_path := _get_spawn_scene_path(candidate)
 		var cost := _get_enemy_cost(scene_path)
 		if cost > remaining and not batch.is_empty():
 			continue
-		batch[candidate] = int(batch.get(candidate, 0)) + 1
+		var candidate_id := int(candidate.get("id", -1))
+		batch[candidate_id] = int(batch.get(candidate_id, 0)) + 1
 		count_by_scene[scene_path] = int(count_by_scene.get(scene_path, 0)) + 1
 		if _is_spawn_ranged(candidate):
 			ranged_count += 1
@@ -184,27 +161,18 @@ func _build_random_spawn_batch(level_index: int, enemy_spawns: Array, effective_
 		remaining -= cost
 	if batch.is_empty():
 		var fallback := _pick_fallback_candidate(available, count_by_scene, ranged_count, elite_count, level_index)
-		if fallback != null:
-			batch[fallback] = 1
+		if not fallback.is_empty():
+			batch[int(fallback.get("id", -1))] = 1
 	return batch
 
 func _resolve_batch_budget(level_index: int, effective_time_out: int) -> int:
-	var profile: Resource = _get_spawn_balance_profile()
-	var base_budget: int = int(profile.call("get_base_budget_for_level", level_index))
+	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
+	var base_budget: int = int(profile.call("get_base_budget_for_level", level_index, effective_time_out))
 	var timeout: int = maxi(1, effective_time_out)
 	var progress := clampf(float(PhaseManager.battle_time) / float(timeout), 0.0, 1.0)
-	var phase_multiplier: float = float(profile.get("mid_phase_multiplier"))
-	if progress <= float(profile.get("early_phase_ratio")):
-		phase_multiplier = float(profile.get("early_phase_multiplier"))
-	elif progress >= float(profile.get("late_phase_ratio")):
-		phase_multiplier = float(profile.get("late_phase_multiplier"))
-	var overflow_level := _resolve_infinite_overflow_level(level_index)
-	var infinite_budget_multiplier := pow(1.0 + float(profile.get("infinite_budget_growth_per_level")), float(overflow_level))
-	var budget := int(round(float(base_budget) * phase_multiplier * infinite_budget_multiplier))
-	var surge_interval_sec := int(profile.get("surge_interval_sec"))
-	if surge_interval_sec > 0 and PhaseManager.battle_time > 0 and PhaseManager.battle_time % surge_interval_sec == 0:
-		budget += int(profile.get("surge_bonus_budget"))
-	if _combat_budget_active:
+	var phase_multiplier: float = float(profile.call("get_pressure_multiplier", progress))
+	var budget := int(round(float(base_budget) * phase_multiplier))
+	if _is_combat_budget_ready():
 		budget = maxi(budget, _budget_batch_cost_floor)
 	return max(1, budget)
 
@@ -231,7 +199,7 @@ func ensure_kill_gold_budget_active() -> bool:
 	if _kill_gold_budget_active:
 		return true
 	var level_index := maxi(PhaseManager.current_level, 0)
-	if _runtime_enemy_spawns.is_empty() or _runtime_base_time_out <= 0:
+	if _runtime_spawn_states.is_empty() or _runtime_base_time_out <= 0:
 		_build_runtime_spawn_context(level_index)
 	var effective_time_out := get_effective_time_out(_runtime_base_time_out, level_index)
 	_start_kill_gold_budget(level_index, effective_time_out)
@@ -303,76 +271,154 @@ func _estimate_remaining_kill_count() -> int:
 	var expected_done := int(round(float(_kill_gold_expected_kills) * progress))
 	return maxi(_kill_gold_expected_kills - expected_done, 1)
 
+func _get_state_entry(state: Dictionary) -> EnemySpawnEntry:
+	return state.get("entry") as EnemySpawnEntry
+
+func _get_runtime_state_by_id(state_id: int) -> Dictionary:
+	for state in _runtime_spawn_states:
+		if int(state.get("id", -1)) == state_id:
+			return state
+	return {}
+
+func _get_state_alive_cap(state: Dictionary) -> int:
+	var entry := _get_state_entry(state)
+	var profile := _get_spawn_combat_profile()
+	if entry == null:
+		return profile.default_alive_cap_per_type
+	var scene_path := _get_spawn_scene_path(state)
+	var metadata := _get_enemy_metadata(scene_path, entry.enemy)
+	var enemy_cap := int(metadata.get("spawn_alive_cap", 0))
+	if enemy_cap > 0:
+		return enemy_cap
+	return profile.default_alive_cap_per_type
+
+func _get_total_runtime_alive_count() -> int:
+	var total := 0
+	for state in _runtime_spawn_states:
+		total += int(state.get("alive", 0))
+	return total
+
+func _add_enemy_with_state_signal(state: Dictionary, enemy_instance: Node) -> void:
+	if enemy_instance == null:
+		return
+	state["alive"] = int(state.get("alive", 0)) + 1
+	if enemy_instance.has_signal("enemy_death"):
+		enemy_instance.connect("enemy_death", func(_was_killed: bool) -> void:
+			state["alive"] = maxi(int(state.get("alive", 0)) - 1, 0)
+		)
+
+func _get_enemy_metadata(scene_path: String, scene: PackedScene) -> Dictionary:
+	if scene_path != "" and _enemy_metadata_cache.has(scene_path):
+		return _enemy_metadata_cache[scene_path]
+	var metadata := {
+		"spawn_cost": _get_spawn_combat_profile().default_enemy_cost,
+		"spawn_tags": [],
+		"spawn_alive_cap": 0,
+		"spawn_batch_cap": 0,
+		"base_hp": 1,
+		"base_damage": 0,
+	}
+	if scene != null:
+		var preview := scene.instantiate()
+		if preview is BaseEnemy:
+			var base_enemy := preview as BaseEnemy
+			metadata["spawn_cost"] = maxi(_safe_int(base_enemy.get("spawn_cost"), _get_spawn_combat_profile().default_enemy_cost), 1)
+			var tags_variant: Variant = base_enemy.get("spawn_tags")
+			metadata["spawn_tags"] = tags_variant.duplicate() if tags_variant is Array else []
+			metadata["spawn_alive_cap"] = maxi(_safe_int(base_enemy.get("spawn_alive_cap"), 0), 0)
+			metadata["spawn_batch_cap"] = maxi(_safe_int(base_enemy.get("spawn_batch_cap"), 0), 0)
+			metadata["base_hp"] = maxi(int(base_enemy.hp), 1)
+			metadata["base_damage"] = maxi(int(base_enemy.damage), 0)
+		if preview != null and is_instance_valid(preview):
+			preview.free()
+	if scene_path != "":
+		_enemy_metadata_cache[scene_path] = metadata
+	return metadata
+
+func _safe_int(value: Variant, fallback: int) -> int:
+	if value == null:
+		return fallback
+	return int(value)
+
 func _pick_weighted_candidate(
-	available: Array[SpawnInfo],
+	available: Array[Dictionary],
 	remaining_budget: int,
 	count_by_scene: Dictionary,
 	ranged_count: int,
 	elite_count: int,
 	level_index: int
-) -> SpawnInfo:
+) -> Dictionary:
 	var weighted_candidates: Array[Dictionary] = []
 	var total_weight := 0.0
-	for info in available:
-		if not _can_pick_candidate(info, remaining_budget, count_by_scene, ranged_count, elite_count, level_index):
+	for state in available:
+		if not _can_pick_candidate(state, remaining_budget, count_by_scene, ranged_count, elite_count, level_index):
 			continue
-		var weight := maxf(float(max(1, info.spawn_weight)), 1.0)
-		weighted_candidates.append({"info": info, "weight": weight})
+		var entry := _get_state_entry(state)
+		var planned_limit := int(_planned_spawn_limit_by_entry_id.get(int(state.get("id", -1)), 0))
+		var used_count := int(_planned_spawn_used_by_entry_id.get(int(state.get("id", -1)), 0))
+		var weight := maxf(float(entry.weight), 1.0)
+		if _is_combat_budget_ready() and used_count >= planned_limit:
+			weight *= 0.25
+		weighted_candidates.append({"state": state, "weight": weight})
 		total_weight += weight
 	if weighted_candidates.is_empty() or total_weight <= 0.0:
-		return null
+		return {}
 	var roll := _rng.randf_range(0.0, total_weight)
 	for item in weighted_candidates:
 		roll -= float(item["weight"])
 		if roll <= 0.0:
-			return item["info"] as SpawnInfo
-	return weighted_candidates.back()["info"] as SpawnInfo
+			return item["state"] as Dictionary
+	return weighted_candidates.back()["state"] as Dictionary
 
 func _pick_fallback_candidate(
-	available: Array[SpawnInfo],
+	available: Array[Dictionary],
 	count_by_scene: Dictionary,
 	ranged_count: int,
 	elite_count: int,
 	level_index: int
-) -> SpawnInfo:
-	var best: SpawnInfo = null
+) -> Dictionary:
+	var best: Dictionary = {}
 	var best_cost := INF
-	for info in available:
-		if not _can_pick_candidate(info, 999, count_by_scene, ranged_count, elite_count, level_index):
+	for state in available:
+		if not _can_pick_candidate(state, 999, count_by_scene, ranged_count, elite_count, level_index):
 			continue
-		var cost := _get_enemy_cost(_get_spawn_scene_path(info))
+		var cost := _get_enemy_cost(_get_spawn_scene_path(state))
 		if cost < best_cost:
 			best_cost = cost
-			best = info
+			best = state
 	return best
 
 func _can_pick_candidate(
-	info: SpawnInfo,
+	state: Dictionary,
 	remaining_budget: int,
 	count_by_scene: Dictionary,
 	ranged_count: int,
 	elite_count: int,
 	level_index: int
 ) -> bool:
-	if info == null:
+	var entry := _get_state_entry(state)
+	if entry == null:
 		return false
-	if info.alive_enemy_number >= info.max_enemy_number:
+	if int(state.get("alive", 0)) >= _get_state_alive_cap(state):
 		return false
-	var scene_path := _get_spawn_scene_path(info)
+	if _get_total_runtime_alive_count() >= _get_spawn_combat_profile().default_total_alive_cap:
+		return false
+	if _is_combat_budget_ready() and _planned_total_spawn_used >= _planned_total_spawn_count:
+		return false
+	var scene_path := _get_spawn_scene_path(state)
 	if scene_path == "":
 		return false
-	if _combat_budget_active:
-		var planned_limit := int(_planned_spawn_limit_by_scene_path.get(scene_path, 0))
-		var used_count := int(_planned_spawn_used_by_scene_path.get(scene_path, 0))
-		if used_count >= planned_limit:
-			return false
 	var same_type_count := int(count_by_scene.get(scene_path, 0))
-	var profile: Resource = _get_spawn_balance_profile()
+	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
 	if same_type_count >= _get_same_type_batch_limit(scene_path, profile):
 		return false
-	if _is_spawn_ranged(info) and ranged_count >= int(profile.get("max_ranged_per_batch")):
+	var metadata := _get_enemy_metadata(scene_path, entry.enemy)
+	var scene_batch_cap := int(metadata.get("spawn_batch_cap", 0))
+	if scene_batch_cap > 0 and same_type_count >= scene_batch_cap:
 		return false
-	if _is_spawn_elite(info):
+	if _is_spawn_ranged(state) and ranged_count >= int(profile.get("max_ranged_per_batch")):
+		return false
+	if _is_spawn_elite(state):
 		var elite_limit := 1 if level_index < 8 else 2
 		if elite_count >= elite_limit:
 			return false
@@ -381,61 +427,63 @@ func _can_pick_candidate(
 		return false
 	return true
 
-func _get_spawn_scene_path(info: SpawnInfo) -> String:
-	if info == null or not (info.enemy is PackedScene):
+func _get_spawn_scene_path(state: Dictionary) -> String:
+	var entry := _get_state_entry(state)
+	if entry == null or entry.enemy == null:
 		return ""
-	var scene := info.enemy as PackedScene
-	return scene.resource_path
+	return entry.enemy.resource_path
 
 func _get_enemy_cost(scene_path: String) -> int:
 	if scene_path == "":
-		return int(_get_spawn_balance_profile().get("default_enemy_cost"))
+		return int(_get_spawn_combat_profile().get("default_enemy_cost"))
 	if _enemy_cost_cache.has(scene_path):
 		return int(_enemy_cost_cache[scene_path])
-	var cost: int = int(_get_spawn_balance_profile().call("get_enemy_cost", scene_path))
+	var entry_scene: PackedScene = null
+	for state in _runtime_spawn_states:
+		if _get_spawn_scene_path(state) == scene_path:
+			var entry := _get_state_entry(state)
+			if entry != null:
+				entry_scene = entry.enemy
+				break
+	var metadata := _get_enemy_metadata(scene_path, entry_scene)
+	var cost: int = maxi(int(metadata.get("spawn_cost", _get_spawn_combat_profile().default_enemy_cost)), 1)
 	_enemy_cost_cache[scene_path] = cost
 	return cost
 
-func _is_spawn_elite(info: SpawnInfo) -> bool:
-	var scene_path := _get_spawn_scene_path(info).to_lower()
-	return scene_path.find("elite") != -1
-
-func _is_spawn_ranged(info: SpawnInfo) -> bool:
-	var scene_path := _get_spawn_scene_path(info)
-	if scene_path == "":
+func _is_spawn_elite(state: Dictionary) -> bool:
+	var entry := _get_state_entry(state)
+	if entry == null:
 		return false
-	if _enemy_ranged_cache.has(scene_path):
-		return bool(_enemy_ranged_cache[scene_path])
-	var is_ranged := false
-	if info.enemy is PackedScene:
-		var packed := info.enemy as PackedScene
-		var preview: Node = packed.instantiate()
-		if preview is BaseEnemy:
-			is_ranged = (preview as BaseEnemy).is_ranged_enemy()
-		if preview != null and is_instance_valid(preview):
-			preview.free()
-	_enemy_ranged_cache[scene_path] = is_ranged
-	return is_ranged
+	var metadata := _get_enemy_metadata(_get_spawn_scene_path(state), entry.enemy)
+	var tags: Array = metadata.get("spawn_tags", [])
+	return tags.has(BaseEnemy.SPAWN_TAG_ELITE)
 
-func _spawn_from_info(info: SpawnInfo, requested_count: int) -> void:
-	if info == null or not (info.enemy is PackedScene):
+func _is_spawn_ranged(state: Dictionary) -> bool:
+	var entry := _get_state_entry(state)
+	if entry == null:
+		return false
+	var metadata := _get_enemy_metadata(_get_spawn_scene_path(state), entry.enemy)
+	var tags: Array = metadata.get("spawn_tags", [])
+	return tags.has(BaseEnemy.SPAWN_TAG_RANGED)
+
+func _spawn_from_state(state: Dictionary, requested_count: int) -> void:
+	var entry := _get_state_entry(state)
+	if entry == null or entry.enemy == null:
 		return
-	var spawn_room: int = maxi(0, info.max_enemy_number - info.alive_enemy_number)
+	var spawn_room: int = maxi(0, _get_state_alive_cap(state) - int(state.get("alive", 0)))
 	if spawn_room <= 0:
 		return
-	var scene_path := _get_spawn_scene_path(info)
-	var new_enemy := info.enemy as PackedScene
+	var scene_path := _get_spawn_scene_path(state)
+	var new_enemy := entry.enemy
 	var base_count := clampi(max(1, requested_count), 1, spawn_room)
 	var spawn_count: int = base_count
-	if _combat_budget_active and scene_path != "":
-		var planned_limit := int(_planned_spawn_limit_by_scene_path.get(scene_path, 0))
-		var used_count := int(_planned_spawn_used_by_scene_path.get(scene_path, 0))
-		var planned_remaining := maxi(planned_limit - used_count, 0)
-		if planned_remaining <= 0:
+	if _is_combat_budget_ready():
+		var total_remaining := maxi(_planned_total_spawn_count - _planned_total_spawn_used, 0)
+		if total_remaining <= 0:
 			return
-		spawn_count = mini(spawn_count, planned_remaining)
+		spawn_count = mini(spawn_count, total_remaining)
 	var loot_value_multiplier: float = 1.0
-	if _is_spawn_ranged(info):
+	if _is_spawn_ranged(state):
 		spawn_count = maxi(1, int(ceil(float(base_count) * 0.5)))
 		spawn_count = mini(spawn_count, spawn_room)
 		loot_value_multiplier = float(base_count) / float(max(1, spawn_count))
@@ -443,16 +491,18 @@ func _spawn_from_info(info: SpawnInfo, requested_count: int) -> void:
 	var counter := 0
 	while counter < spawn_count:
 		var enemy_spawn = new_enemy.instantiate()
-		_apply_level_scaling(info, enemy_spawn)
+		_apply_level_scaling(state, enemy_spawn)
 		if enemy_spawn is BaseEnemy:
 			var base_enemy := enemy_spawn as BaseEnemy
 			base_enemy.loot_value_multiplier = maxf(loot_value_multiplier, 0.1)
 		_debug_log_spawned_enemy(enemy_spawn)
 		enemy_spawn.global_position = get_nearby_position(random_position_center)
 		self.call_deferred("add_child", enemy_spawn)
-		info.add_enemy_with_signal(enemy_spawn)
-		if _combat_budget_active and scene_path != "":
-			_planned_spawn_used_by_scene_path[scene_path] = int(_planned_spawn_used_by_scene_path.get(scene_path, 0)) + 1
+		_add_enemy_with_state_signal(state, enemy_spawn)
+		if _is_combat_budget_ready():
+			var entry_id := int(state.get("id", -1))
+			_planned_spawn_used_by_entry_id[entry_id] = int(_planned_spawn_used_by_entry_id.get(entry_id, 0)) + 1
+			_planned_total_spawn_used += 1
 		counter += 1
 
 func get_random_position() -> Vector2:
@@ -909,46 +959,47 @@ func erase_all_enemies():
 		else:
 			runtime_node.call_deferred("queue_free")
 
-func _apply_level_scaling(spawn_info: SpawnInfo, enemy_instance) -> void:
+func _apply_level_scaling(state: Dictionary, enemy_instance) -> void:
 	if enemy_instance is BaseEnemy:
 		var base_enemy : BaseEnemy = enemy_instance
 		var level_index = max(PhaseManager.current_level, 0)
-		var scaled_stats := calculate_scaled_enemy_stats(spawn_info, base_enemy.hp, base_enemy.damage, level_index)
-		var scene_path := _get_spawn_scene_path(spawn_info)
-		if _combat_budget_active and scene_path != "" and _scaled_hp_by_scene_path.has(scene_path):
-			scaled_stats["hp"] = int(_scaled_hp_by_scene_path[scene_path])
+		var scaled_stats := calculate_scaled_enemy_stats(base_enemy.hp, base_enemy.damage, level_index)
+		var entry_id := int(state.get("id", -1))
+		if _is_combat_budget_ready() and _scaled_hp_by_entry_id.has(entry_id):
+			scaled_stats["hp"] = int(_scaled_hp_by_entry_id[entry_id])
 		base_enemy.hp = int(scaled_stats.get("hp", base_enemy.hp))
 		base_enemy.damage = int(scaled_stats.get("damage", base_enemy.damage))
 
 func calculate_scaled_enemy_stats(
-	spawn_info: SpawnInfo,
 	fallback_hp: int,
 	fallback_damage: int,
 	level_index: int
 ) -> Dictionary:
-	var scaled_hp := spawn_info.get_scaled_hp(level_index, fallback_hp)
-	var scaled_damage := spawn_info.get_scaled_damage(level_index, fallback_damage)
+	var scaled_hp := maxi(fallback_hp, 1)
+	var scaled_damage := maxi(fallback_damage, 0)
 	var route_def := RunRouteManager.get_route_for_level(level_index)
 	if route_def:
 		scaled_hp = max(1, int(round(float(scaled_hp) * route_def.enemy_hp_multiplier)))
 		scaled_damage = max(1, int(round(float(scaled_damage) * route_def.enemy_damage_multiplier)))
 	var overflow_level := _resolve_infinite_overflow_level(level_index)
 	if overflow_level > 0:
-		var profile: Resource = _get_spawn_balance_profile()
+		var profile: SpawnCombatProfile = _get_spawn_combat_profile()
 		scaled_hp = max(1, int(round(float(scaled_hp) * pow(1.0 + float(profile.get("infinite_hp_growth_per_level")), float(overflow_level)))))
 		scaled_damage = max(1, int(round(float(scaled_damage) * pow(1.0 + float(profile.get("infinite_damage_growth_per_level")), float(overflow_level)))))
 	return {"hp": scaled_hp, "damage": scaled_damage}
 
 func _prepare_level_combat_budget(level_index: int, effective_time_out: int) -> void:
-	_combat_budget_active = false
-	_planned_spawn_limit_by_scene_path.clear()
-	_planned_spawn_used_by_scene_path.clear()
+	_combat_budget_active = true
+	_planned_spawn_limit_by_entry_id.clear()
+	_planned_spawn_used_by_entry_id.clear()
 	_budget_same_type_limit_by_scene_path.clear()
 	_budget_batch_cost_floor = 0
-	_scaled_hp_by_scene_path.clear()
+	_scaled_hp_by_entry_id.clear()
 	_planned_target_total_hp = 0
 	_planned_total_hp_after_rounding = 0
-	var budget_profile := SpawnData.get_level_combat_budget_profile()
+	_planned_total_spawn_count = 0
+	_planned_total_spawn_used = 0
+	var budget_profile := _get_spawn_combat_profile()
 	if budget_profile == null:
 		return
 	var target_total_hp := int(budget_profile.call("get_target_total_hp", level_index))
@@ -970,14 +1021,14 @@ func _prepare_level_combat_budget(level_index: int, effective_time_out: int) -> 
 		return
 	var weighted_avg_hp := weighted_hp_sum / total_weight
 	var planned_total_count := maxi(int(round(float(target_total_hp) / weighted_avg_hp)), 1)
-	var counts_by_scene := _distribute_counts_by_largest_remainder(candidates, planned_total_count, total_weight)
-	if counts_by_scene.is_empty():
+	var counts_by_entry := _distribute_counts_by_largest_remainder(candidates, planned_total_count, total_weight)
+	if counts_by_entry.is_empty():
 		return
 	var raw_total_hp := 0.0
 	for candidate in candidates:
-		var scene_path := String(candidate.get("scene_path", ""))
+		var entry_id := int(candidate.get("entry_id", -1))
 		var base_hp := float(candidate.get("base_hp", 0.0))
-		var count := int(counts_by_scene.get(scene_path, 0))
+		var count := int(counts_by_entry.get(entry_id, 0))
 		raw_total_hp += base_hp * float(count)
 	if raw_total_hp <= 0.0:
 		return
@@ -988,28 +1039,28 @@ func _prepare_level_combat_budget(level_index: int, effective_time_out: int) -> 
 	var hp_remainders: Array[Dictionary] = []
 	var total_after_rounding := 0
 	for candidate in candidates:
-		var scene_path := String(candidate.get("scene_path", ""))
+		var entry_id := int(candidate.get("entry_id", -1))
 		var base_hp := float(candidate.get("base_hp", 0.0))
-		var count := int(counts_by_scene.get(scene_path, 0))
+		var count := int(counts_by_entry.get(entry_id, 0))
 		if count <= 0:
 			continue
 		var scaled_float := base_hp * hp_scale
 		var rounded_hp := _round_with_mode(scaled_float, rounding_mode)
 		rounded_hp = clampi(rounded_hp, min_hp, max_hp)
-		_scaled_hp_by_scene_path[scene_path] = rounded_hp
-		_planned_spawn_limit_by_scene_path[scene_path] = count
-		_planned_spawn_used_by_scene_path[scene_path] = 0
+		_scaled_hp_by_entry_id[entry_id] = rounded_hp
+		_planned_spawn_limit_by_entry_id[entry_id] = count
+		_planned_spawn_used_by_entry_id[entry_id] = 0
+		_planned_total_spawn_count += count
 		total_after_rounding += rounded_hp * count
 		hp_remainders.append({
-			"scene_path": scene_path,
+			"entry_id": entry_id,
 			"count": count,
 			"fraction": scaled_float - floor(scaled_float),
 		})
 	_apply_hp_remainder_compensation(target_total_hp, total_after_rounding, hp_remainders, min_hp, max_hp)
-	if bool(budget_profile.get("adjust_batch_limits_from_hp_budget")):
-		var max_budget_batch_limit := maxi(int(budget_profile.get("max_same_type_per_batch_from_budget")), 1)
-		var max_budget_batch_cost := maxi(int(budget_profile.get("max_total_batch_cost_from_hp_budget")), 1)
-		_prepare_budget_batch_limits(effective_time_out, max_budget_batch_limit, max_budget_batch_cost)
+	var max_budget_batch_limit := maxi(int(budget_profile.get("max_same_type_per_batch_from_budget")), 1)
+	var max_budget_batch_cost := maxi(int(budget_profile.get("max_total_batch_cost_from_hp_budget")), 1)
+	_prepare_budget_batch_limits(effective_time_out, max_budget_batch_limit, max_budget_batch_cost)
 	_planned_target_total_hp = target_total_hp
 	_planned_total_hp_after_rounding = _calculate_planned_total_hp_from_limits()
 	_combat_budget_active = true
@@ -1026,56 +1077,62 @@ func _prepare_level_combat_budget(level_index: int, effective_time_out: int) -> 
 
 func _collect_budget_candidates(level_index: int) -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
-	var seen_scene_paths: Dictionary = {}
-	for info_variant in _runtime_enemy_spawns:
-		var info := info_variant as SpawnInfo
-		if info == null:
+	for state in _runtime_spawn_states:
+		var entry := _get_state_entry(state)
+		if entry == null:
 			continue
-		var scene_path := _get_spawn_scene_path(info)
-		if scene_path == "" or seen_scene_paths.has(scene_path):
+		var scene_path := _get_spawn_scene_path(state)
+		if scene_path == "":
 			continue
-		seen_scene_paths[scene_path] = true
-		var weight := maxf(float(max(1, info.spawn_weight)), 1.0)
-		var base_hp := float(_get_enemy_scene_default_hp(info))
+		var weight := maxf(float(entry.weight), 1.0)
+		var base_hp := float(_resolve_budget_candidate_hp(state, level_index))
 		if base_hp <= 0.0:
 			continue
-		if _is_spawn_elite(info) and level_index < 8:
+		if _is_spawn_elite(state) and level_index < 8:
 			weight *= 0.5
 		candidates.append({
+			"entry_id": int(state.get("id", -1)),
 			"scene_path": scene_path,
 			"weight": weight,
 			"base_hp": base_hp,
 		})
 	return candidates
 
-func _get_enemy_scene_default_hp(info: SpawnInfo) -> int:
-	if info == null or not (info.enemy is PackedScene):
+func _resolve_budget_candidate_hp(state: Dictionary, level_index: int) -> int:
+	var fallback_hp := _get_enemy_scene_default_hp(state)
+	var fallback_damage := _get_enemy_scene_default_damage(state)
+	var scaled_stats := calculate_scaled_enemy_stats(fallback_hp, fallback_damage, level_index)
+	return maxi(int(scaled_stats.get("hp", fallback_hp)), 1)
+
+func _get_enemy_scene_default_hp(state: Dictionary) -> int:
+	var entry := _get_state_entry(state)
+	if entry == null:
 		return 1
-	var packed := info.enemy as PackedScene
-	var preview := packed.instantiate()
-	if preview is BaseEnemy:
-		var hp_value: int = maxi(1, int((preview as BaseEnemy).hp))
-		preview.free()
-		return hp_value
-	if preview != null and is_instance_valid(preview):
-		preview.free()
-	return 1
+	var metadata := _get_enemy_metadata(_get_spawn_scene_path(state), entry.enemy)
+	return maxi(int(metadata.get("base_hp", 1)), 1)
+
+func _get_enemy_scene_default_damage(state: Dictionary) -> int:
+	var entry := _get_state_entry(state)
+	if entry == null:
+		return 0
+	var metadata := _get_enemy_metadata(_get_spawn_scene_path(state), entry.enemy)
+	return maxi(int(metadata.get("base_damage", 0)), 0)
 
 func _distribute_counts_by_largest_remainder(candidates: Array[Dictionary], total_count: int, total_weight: float) -> Dictionary:
 	var counts: Dictionary = {}
 	var remainders: Array[Dictionary] = []
 	var assigned := 0
 	for candidate in candidates:
-		var scene_path := String(candidate.get("scene_path", ""))
+		var entry_id := int(candidate.get("entry_id", -1))
 		var weight := float(candidate.get("weight", 0.0))
-		if scene_path == "" or weight <= 0.0:
+		if entry_id < 0 or weight <= 0.0:
 			continue
 		var exact_count := float(total_count) * weight / total_weight
 		var base_count := int(floor(exact_count))
-		counts[scene_path] = base_count
+		counts[entry_id] = base_count
 		assigned += base_count
 		remainders.append({
-			"scene_path": scene_path,
+			"entry_id": entry_id,
 			"remainder": exact_count - float(base_count),
 		})
 	var remaining := maxi(total_count - assigned, 0)
@@ -1085,8 +1142,8 @@ func _distribute_counts_by_largest_remainder(candidates: Array[Dictionary], tota
 	var idx := 0
 	while remaining > 0 and not remainders.is_empty():
 		var item: Dictionary = remainders[idx % remainders.size()]
-		var path := String(item.get("scene_path", ""))
-		counts[path] = int(counts.get(path, 0)) + 1
+		var entry_id := int(item.get("entry_id", -1))
+		counts[entry_id] = int(counts.get(entry_id, 0)) + 1
 		remaining -= 1
 		idx += 1
 	return counts
@@ -1094,18 +1151,20 @@ func _distribute_counts_by_largest_remainder(candidates: Array[Dictionary], tota
 func _prepare_budget_batch_limits(effective_time_out: int, max_budget_batch_limit: int, max_budget_batch_cost: int) -> void:
 	_budget_same_type_limit_by_scene_path.clear()
 	_budget_batch_cost_floor = 0
-	var profile: Resource = _get_spawn_balance_profile()
+	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
 	var base_limit := maxi(int(profile.get("max_same_type_per_batch")), 1)
 	var required_batch_cost := 0
-	for scene_path_variant in _planned_spawn_limit_by_scene_path.keys():
-		var scene_path := String(scene_path_variant)
-		var planned_count := int(_planned_spawn_limit_by_scene_path.get(scene_path, 0))
+	for entry_id_variant in _planned_spawn_limit_by_entry_id.keys():
+		var entry_id := int(entry_id_variant)
+		var state := _get_runtime_state_by_id(entry_id)
+		var scene_path := _get_spawn_scene_path(state)
+		var planned_count := int(_planned_spawn_limit_by_entry_id.get(entry_id, 0))
 		if scene_path == "" or planned_count <= 0:
 			continue
-		var spawn_windows := _estimate_spawn_windows_for_scene_path(scene_path, effective_time_out)
+		var spawn_windows := _estimate_spawn_windows_for_state(state, effective_time_out)
 		var required_limit := int(ceil(float(planned_count) / float(maxi(spawn_windows, 1))))
 		var adjusted_limit := clampi(maxi(base_limit, required_limit), base_limit, max_budget_batch_limit)
-		_budget_same_type_limit_by_scene_path[scene_path] = adjusted_limit
+		_budget_same_type_limit_by_scene_path[scene_path] = maxi(int(_budget_same_type_limit_by_scene_path.get(scene_path, base_limit)), adjusted_limit)
 		required_batch_cost += mini(required_limit, max_budget_batch_limit) * _get_enemy_cost(scene_path)
 		if required_limit > max_budget_batch_limit:
 			push_warning("Spawn budget for %s needs %d same-type enemies per wave to hit the HP target, but max_same_type_per_batch_from_budget caps it at %d." % [
@@ -1120,26 +1179,26 @@ func _prepare_budget_batch_limits(effective_time_out: int, max_budget_batch_limi
 			max_budget_batch_cost,
 		])
 
-func _estimate_spawn_windows_for_scene_path(scene_path: String, effective_time_out: int) -> int:
+func _estimate_spawn_windows_for_state(state: Dictionary, effective_time_out: int) -> int:
+	var entry := _get_state_entry(state)
+	if entry == null:
+		return 1
 	var last_spawn_tick := maxi(effective_time_out - 1, 0)
-	var windows := 0
-	for info_variant in _runtime_enemy_spawns:
-		var info := info_variant as SpawnInfo
-		if info == null or _get_spawn_scene_path(info) != scene_path:
-			continue
-		var first_tick := maxi(info.time_start, 1)
-		if first_tick > last_spawn_tick:
-			continue
-		var interval := maxi(info.interval, 1)
-		var windows_by_time := 1 + int(floor(float(last_spawn_tick - first_tick) / float(interval)))
-		windows += mini(maxi(info.max_wave, 0), windows_by_time)
-	return maxi(windows, 1)
+	var first_tick := maxi(entry.start_sec, 1)
+	if first_tick > last_spawn_tick:
+		return 1
+	return maxi(1 + int(floor(float(last_spawn_tick - first_tick))), 1)
 
-func _get_same_type_batch_limit(scene_path: String, profile: Resource) -> int:
+func _get_same_type_batch_limit(scene_path: String, profile: SpawnCombatProfile) -> int:
 	var base_limit := maxi(int(profile.get("max_same_type_per_batch")), 1)
-	if _combat_budget_active and _budget_same_type_limit_by_scene_path.has(scene_path):
+	if _is_combat_budget_ready() and _budget_same_type_limit_by_scene_path.has(scene_path):
 		return maxi(int(_budget_same_type_limit_by_scene_path.get(scene_path, base_limit)), base_limit)
 	return base_limit
+
+func _is_combat_budget_ready() -> bool:
+	return _combat_budget_active \
+		and not _planned_spawn_limit_by_entry_id.is_empty() \
+		and not _scaled_hp_by_entry_id.is_empty()
 
 func _round_with_mode(value: float, rounding_mode: String) -> int:
 	match rounding_mode:
@@ -1172,31 +1231,31 @@ func _apply_hp_remainder_compensation(
 	var idx := 0
 	while diff != 0 and safety_steps > 0:
 		var item: Dictionary = hp_remainders[idx % hp_remainders.size()]
-		var scene_path := String(item.get("scene_path", ""))
+		var entry_id := int(item.get("entry_id", -1))
 		var count := maxi(int(item.get("count", 0)), 1)
-		var current_hp := int(_scaled_hp_by_scene_path.get(scene_path, min_hp))
+		var current_hp := int(_scaled_hp_by_entry_id.get(entry_id, min_hp))
 		if diff > 0:
 			if current_hp >= max_hp:
 				idx += 1
 				safety_steps -= 1
 				continue
-			_scaled_hp_by_scene_path[scene_path] = current_hp + 1
+			_scaled_hp_by_entry_id[entry_id] = current_hp + 1
 			diff -= count
 		else:
 			if current_hp <= min_hp:
 				idx += 1
 				safety_steps -= 1
 				continue
-			_scaled_hp_by_scene_path[scene_path] = current_hp - 1
+			_scaled_hp_by_entry_id[entry_id] = current_hp - 1
 			diff += count
 		idx += 1
 		safety_steps -= 1
 
 func _calculate_planned_total_hp_from_limits() -> int:
 	var total_hp := 0
-	for scene_path in _planned_spawn_limit_by_scene_path.keys():
-		var count := int(_planned_spawn_limit_by_scene_path.get(scene_path, 0))
-		var hp := int(_scaled_hp_by_scene_path.get(scene_path, 0))
+	for entry_id in _planned_spawn_limit_by_entry_id.keys():
+		var count := int(_planned_spawn_limit_by_entry_id.get(entry_id, 0))
+		var hp := int(_scaled_hp_by_entry_id.get(entry_id, 0))
 		total_hp += count * hp
 	return total_hp
 
@@ -1218,41 +1277,57 @@ func _debug_log_spawned_enemy(enemy_instance) -> void:
 		)
 
 func _build_runtime_spawn_context(level_index: int) -> bool:
-	if instance_list.is_empty() or time_out_list.is_empty():
+	if instance_list.is_empty():
 		return false
 	var safe_level_index := maxi(level_index, 0)
 	if safe_level_index < instance_list.size():
-		_runtime_enemy_spawns = _duplicate_spawn_infos(instance_list[safe_level_index])
-		_runtime_base_time_out = max(1, int(time_out_list[safe_level_index]))
-		return not _runtime_enemy_spawns.is_empty()
+		_runtime_spawn_states = _build_runtime_states(instance_list[safe_level_index])
+		var fallback_timeout := 30
+		var level_config := SpawnData.level_list[safe_level_index]
+		if level_config != null:
+			fallback_timeout = max(1, int(level_config.time_out_sec))
+		_runtime_base_time_out = _resolve_level_time_out_for_budget(safe_level_index, fallback_timeout)
+		return not _runtime_spawn_states.is_empty()
 	var mixed_spawns: Array = []
 	for level_spawns_variant in instance_list:
 		if not (level_spawns_variant is Array):
 			continue
-		var copied := _duplicate_spawn_infos(level_spawns_variant as Array)
-		for copied_spawn in copied:
-			mixed_spawns.append(copied_spawn)
-	_runtime_enemy_spawns = mixed_spawns
-	_runtime_base_time_out = max(1, int(time_out_list.back()))
-	return not _runtime_enemy_spawns.is_empty()
+		for entry in level_spawns_variant as Array:
+			mixed_spawns.append(entry)
+	_runtime_spawn_states = _build_runtime_states(mixed_spawns)
+	var overflow_fallback := 30
+	if not SpawnData.level_list.is_empty():
+		var last_level_config: LevelCombatPlan = SpawnData.level_list.back() as LevelCombatPlan
+		if last_level_config != null:
+			overflow_fallback = max(1, int(last_level_config.time_out_sec))
+	_runtime_base_time_out = _resolve_level_time_out_for_budget(safe_level_index, overflow_fallback)
+	return not _runtime_spawn_states.is_empty()
 
-func _duplicate_spawn_infos(spawn_infos: Array) -> Array:
-	var copied: Array = []
-	for info_variant in spawn_infos:
-		var info := info_variant as SpawnInfo
-		if info == null:
+func _resolve_level_time_out_for_budget(level_index: int, fallback_time_out: int) -> int:
+	var safe_fallback: int = maxi(int(fallback_time_out), 1)
+	var budget_profile: SpawnCombatProfile = _get_spawn_combat_profile()
+	if budget_profile == null or not budget_profile.has_method("get_level_time_out"):
+		return safe_fallback
+	return max(1, int(budget_profile.call("get_level_time_out", level_index, safe_fallback)))
+
+func _build_runtime_states(entries: Array) -> Array[Dictionary]:
+	var states: Array[Dictionary] = []
+	var idx := 0
+	for entry_variant in entries:
+		var entry := entry_variant as EnemySpawnEntry
+		if entry == null:
 			continue
-		var duplicate_info := info.duplicate(true) as SpawnInfo
-		if duplicate_info == null:
-			continue
-		duplicate_info.alive_enemy_number = 0
-		duplicate_info.interval_counter = 0
-		duplicate_info.wave = 0
-		copied.append(duplicate_info)
-	return copied
+		states.append({
+			"id": idx,
+			"entry": entry,
+			"alive": 0,
+			"cooldown": 0,
+		})
+		idx += 1
+	return states
 
 func _resolve_infinite_overflow_level(level_index: int) -> int:
-	return int(_get_spawn_balance_profile().call("get_infinite_overflow_level", level_index))
+	return int(_get_spawn_combat_profile().call("get_infinite_overflow_level", level_index))
 
 func debug_get_infinite_overflow_level(level_index: int) -> int:
 	return _resolve_infinite_overflow_level(level_index)
@@ -1260,11 +1335,11 @@ func debug_get_infinite_overflow_level(level_index: int) -> int:
 func debug_get_runtime_spawn_pool_size_for_level(level_index: int) -> int:
 	if not _build_runtime_spawn_context(level_index):
 		return 0
-	return _runtime_enemy_spawns.size()
+	return _runtime_spawn_states.size()
 
-func _get_spawn_balance_profile() -> Resource:
-	var profile: Resource = SpawnData.get_spawn_balance_profile()
+func _get_spawn_combat_profile() -> SpawnCombatProfile:
+	var profile: SpawnCombatProfile = SpawnData.get_spawn_combat_profile()
 	if profile != null:
 		return profile
-	_fallback_spawn_balance_profile.call("sanitize")
-	return _fallback_spawn_balance_profile
+	_fallback_spawn_combat_profile.sanitize()
+	return _fallback_spawn_combat_profile

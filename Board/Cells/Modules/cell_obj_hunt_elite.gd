@@ -70,8 +70,8 @@ func _spawn_quest_elites() -> void:
 
 	var spawn_count : int = max(elite_count, 0)
 	for _i in range(spawn_count):
-		var info: SpawnInfo = elite_candidates.pick_random() as SpawnInfo
-		var elite := _spawn_enemy_from_info(info)
+		var entry: EnemySpawnEntry = elite_candidates.pick_random() as EnemySpawnEntry
+		var elite := _spawn_enemy_from_entry(entry)
 		if elite:
 			_register_quest_elite(elite)
 
@@ -122,35 +122,35 @@ func _cleanup_quest_elites() -> void:
 			enemy.set_quest_highlight(false)
 	_quest_elites.clear()
 
-func _get_elite_spawn_infos() -> Array[SpawnInfo]:
+func _get_elite_spawn_infos() -> Array[EnemySpawnEntry]:
 	if SpawnData.level_list.is_empty():
 		return []
 	var level_index := clampi(PhaseManager.current_level, 0, SpawnData.level_list.size() - 1)
 	var level_config := SpawnData.level_list[level_index]
 	if level_config == null:
 		return []
-	var elite_infos: Array[SpawnInfo] = []
-	for info in level_config.spawns:
-		if info != null and _is_elite_spawn(info):
-			elite_infos.append(info)
+	var elite_infos: Array[EnemySpawnEntry] = []
+	for entry in level_config.spawns:
+		if entry != null and _is_elite_spawn(entry):
+			elite_infos.append(entry)
 	return elite_infos
 
-func _is_elite_spawn(info: SpawnInfo) -> bool:
-	if info == null:
+func _is_elite_spawn(entry: EnemySpawnEntry) -> bool:
+	if entry == null:
 		return false
-	var scene := info.enemy as PackedScene
+	var scene := entry.enemy
 	if scene == null:
 		return false
 	var instance := scene.instantiate()
-	var is_elite := instance is EliteEnemy
+	var is_elite := instance is BaseEnemy and (instance as BaseEnemy).has_spawn_tag(BaseEnemy.SPAWN_TAG_ELITE)
 	if instance:
 		instance.queue_free()
 	return is_elite
 
-func _spawn_enemy_from_info(info: SpawnInfo) -> BaseEnemy:
-	if info == null:
+func _spawn_enemy_from_entry(entry: EnemySpawnEntry) -> BaseEnemy:
+	if entry == null:
 		return null
-	var scene := info.enemy as PackedScene
+	var scene := entry.enemy
 	if scene == null:
 		return null
 	var enemy := scene.instantiate()
@@ -159,7 +159,7 @@ func _spawn_enemy_from_info(info: SpawnInfo) -> BaseEnemy:
 			enemy.queue_free()
 		return null
 	var base_enemy := enemy as BaseEnemy
-	_apply_level_scaling(info, base_enemy)
+	_apply_level_scaling(base_enemy)
 	base_enemy.global_position = _get_random_point_in_cell()
 	_attach_enemy(base_enemy)
 	return base_enemy
@@ -174,12 +174,20 @@ func _attach_enemy(enemy: BaseEnemy) -> void:
 		return
 	get_tree().root.call_deferred("add_child", enemy)
 
-func _apply_level_scaling(spawn_info: SpawnInfo, enemy_instance: BaseEnemy) -> void:
+func _apply_level_scaling(enemy_instance: BaseEnemy) -> void:
 	if enemy_instance == null:
 		return
 	var level_index: int = maxi(PhaseManager.current_level, 0)
-	enemy_instance.hp = spawn_info.get_scaled_hp(level_index, enemy_instance.hp)
-	enemy_instance.damage = spawn_info.get_scaled_damage(level_index, enemy_instance.damage)
+	var route_def := RunRouteManager.get_route_for_level(level_index)
+	if route_def:
+		enemy_instance.hp = max(1, int(round(float(enemy_instance.hp) * route_def.enemy_hp_multiplier)))
+		enemy_instance.damage = max(1, int(round(float(enemy_instance.damage) * route_def.enemy_damage_multiplier)))
+	var profile := SpawnData.get_spawn_combat_profile()
+	if profile != null:
+		var overflow_level := int(profile.get_infinite_overflow_level(level_index))
+		if overflow_level > 0:
+			enemy_instance.hp = max(1, int(round(float(enemy_instance.hp) * pow(1.0 + profile.infinite_hp_growth_per_level, float(overflow_level)))))
+			enemy_instance.damage = max(1, int(round(float(enemy_instance.damage) * pow(1.0 + profile.infinite_damage_growth_per_level, float(overflow_level)))))
 
 func _get_random_point_in_cell() -> Vector2:
 	if _cell == null:

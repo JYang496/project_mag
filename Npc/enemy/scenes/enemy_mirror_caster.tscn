@@ -13,6 +13,8 @@ size = Vector2(22, 22)
 [node name="EnemyMirrorCaster" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
 damage = 2
+spawn_cost = 5
+spawn_tags = Array[StringName]([&"ranged"])
 movement_speed = 24.0
 hp = 34
 
