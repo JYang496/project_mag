@@ -46,9 +46,11 @@ func _run_test() -> void:
 		_assert_true(int(high_stats.get("hp", 0)) > int(low_stats.get("hp", 0)), "Scaled HP should increase at higher infinite levels.")
 
 	PhaseManager.battle_time = 10
-	var budget_low := int(spawner.call("_resolve_batch_budget", 9, 60))
-	var budget_high := int(spawner.call("_resolve_batch_budget", 14, 60))
-	_assert_true(budget_high > budget_low, "Spawn budget should grow for higher infinite levels.")
+	spawner.call("_prepare_level_combat_budget", 9, 60)
+	var budget_low := float(spawner.call("_resolve_batch_hp_budget", 9, 60))
+	spawner.call("_prepare_level_combat_budget", 14, 60)
+	var budget_high := float(spawner.call("_resolve_batch_hp_budget", 14, 60))
+	_assert_true(budget_high > budget_low, "Spawn HP budget should grow for higher infinite levels.")
 	_assert_true(spawner.debug_get_infinite_overflow_level(10) == 1, "Overflow level should start at 1 for level index 10.")
 
 	spawner.queue_free()

@@ -40,14 +40,13 @@ func _validate_level(profile: SpawnCombatProfile, level_index: int, level: Level
 			errors.append("Level %d entry %d weight must be > 0." % [level_index, entry_index])
 		if entry.start_sec >= level.time_out_sec:
 			errors.append("Level %d entry %d start_sec must be < time_out_sec." % [level_index, entry_index])
-		var metadata := _read_enemy_metadata(profile, entry)
-		if int(metadata.get("spawn_cost", 0)) <= 0:
-			errors.append("Level %d entry %d enemy has invalid spawn_cost." % [level_index, entry_index])
+		var metadata := _read_enemy_metadata(entry)
 		var active_seconds := maxi(level.time_out_sec - entry.start_sec, 0)
 		var batch_cap := _safe_int(metadata.get("spawn_batch_cap", 0), 0)
 		if batch_cap <= 0:
 			batch_cap = profile.max_same_type_per_batch
-		estimated_capacity_hp += active_seconds * maxi(batch_cap, 1) * profile.max_hp
+		var base_hp := _safe_int(metadata.get("base_hp", 1), 1)
+		estimated_capacity_hp += active_seconds * maxi(batch_cap, 1) * maxi(base_hp, 1)
 	if estimated_capacity_hp <= 0:
 		return
 	var min_allowed := int(round(float(level.target_total_hp) * (1.0 - profile.hp_per_sec_tolerance_pct)))
@@ -57,9 +56,8 @@ func _validate_level(profile: SpawnCombatProfile, level_index: int, level: Level
 			% [level_index, estimated_capacity_hp, level.target_total_hp]
 		)
 
-func _read_enemy_metadata(profile: SpawnCombatProfile, entry: EnemySpawnEntry) -> Dictionary:
+func _read_enemy_metadata(entry: EnemySpawnEntry) -> Dictionary:
 	var metadata := {
-		"spawn_cost": profile.default_enemy_cost,
 		"spawn_tags": [],
 		"spawn_batch_cap": 0,
 		"base_hp": 1,
@@ -71,9 +69,6 @@ func _read_enemy_metadata(profile: SpawnCombatProfile, entry: EnemySpawnEntry) -
 	if file == null:
 		return metadata
 	var text := file.get_as_text()
-	var cost_match := RegEx.create_from_string("(?m)^spawn_cost = (\\d+)").search(text)
-	if cost_match != null:
-		metadata["spawn_cost"] = maxi(int(cost_match.get_string(1)), 1)
 	var hp_match := RegEx.create_from_string("(?m)^hp = (\\d+)").search(text)
 	if hp_match != null:
 		metadata["base_hp"] = maxi(int(hp_match.get_string(1)), 1)
