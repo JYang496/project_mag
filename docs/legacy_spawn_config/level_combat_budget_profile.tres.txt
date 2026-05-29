@@ -1,8 +1,0 @@
-[gd_resource type="Resource" script_class="LevelCombatBudgetProfile" format=3 uid="uid://o4nrmv3awm7k"]
-
-[ext_resource type="Script" uid="uid://bpgitaqe5dhk4" path="res://data/spawns/LevelCombatBudgetProfile.gd" id="1_profile"]
-
-[resource]
-script = ExtResource("1_profile")
-level_target_total_hp = PackedInt32Array(1800, 3200, 5200, 7600, 9800, 12200, 15000, 18200, 21800, 25800)
-level_time_out_sec = PackedInt32Array(30, 55, 65, 75, 85, 95, 105, 115, 125, 135)

@@ -16,7 +16,10 @@ damage = 2
 combat_role = "melee"
 loot_value_multiplier = 1.0
 spawn_cost = 1
-hp = 6
+spawn_tags = Array[StringName]([])
+spawn_alive_cap = 0
+spawn_batch_cap = 0
+hp = 18
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
 shape = SubResource("RectangleShape2D_0wqes")

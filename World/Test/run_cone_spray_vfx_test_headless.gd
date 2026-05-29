@@ -85,6 +85,22 @@ func _run() -> void:
 			float(vfx.get("_fade_remaining_sec")),
 		])
 
+	weapon.set("current_ammo", maxi(1, int(weapon.get("magazine_capacity"))))
+	weapon.set("is_reloading", false)
+	if weapon.has_method("lock_heat_value") and weapon.has_method("get_heat_max_value"):
+		var heat_max := maxf(float(weapon.call("get_heat_max_value")), 1.0)
+		weapon.call("lock_heat_value", heat_max, 0.2)
+	weapon.call("_refresh_flame_vfx", Vector2.RIGHT)
+	await process_frame
+	for i in range(60):
+		weapon.call("handle_primary_input", true, false, false, 1.0 / 60.0)
+		vfx.call("_physics_process", 1.0 / 60.0)
+	if vfx.visible:
+		_fail("FlameSprayVfx did not fade out during overheated held fire. linger=%.3f fade=%.3f" % [
+			float(vfx.get("_linger_remaining_sec")),
+			float(vfx.get("_fade_remaining_sec")),
+		])
+
 	_finish()
 
 

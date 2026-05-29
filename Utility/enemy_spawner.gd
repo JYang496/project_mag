@@ -33,8 +33,13 @@ var _warned_inactive_kill_gold_budget: bool = false
 var _combat_budget_active: bool = true
 var _planned_target_total_hp: int = 0
 var _spawned_total_hp: int = 0
+var _killed_total_hp: int = 0
 var _available_hp_budget: float = 0.0
 var _pressure_budget_total: float = 1.0
+var _budget_release_duration_sec: int = 1
+var _budget_release_finished: bool = false
+var _spawn_budget_stopped: bool = false
+var _budget_summary_printed: bool = false
 
 func _ready():
 	GlobalVariables.enemy_spawner = self
@@ -80,22 +85,33 @@ func _on_timer_timeout():
 	PhaseManager.battle_time += 1
 	var base_time_out: int = _runtime_base_time_out
 	var effective_time_out: int = get_effective_time_out(base_time_out, level_index)
-	if PhaseManager.battle_time >= effective_time_out or _is_runtime_spawn_budget_spent():
+	if PhaseManager.battle_time >= effective_time_out or _should_end_after_spawn_budget_stopped():
 		timer.stop()
+		_print_spawn_budget_battle_summary(level_index, effective_time_out)
 		erase_all_enemies()
 		PhaseManager.enter_prepare()
 		return
 	_tick_spawn_intervals()
 	_spawn_with_random_wave_template(level_index, effective_time_out)
+	if _should_end_after_spawn_budget_stopped():
+		timer.stop()
+		_print_spawn_budget_battle_summary(level_index, effective_time_out)
+		erase_all_enemies()
+		PhaseManager.enter_prepare()
 
 func _is_runtime_spawn_budget_spent() -> bool:
 	return _is_combat_budget_ready() and _spawned_total_hp >= _planned_target_total_hp
+
+func _should_end_after_spawn_budget_stopped() -> bool:
+	return _spawn_budget_stopped and _get_total_runtime_alive_count() <= 0
 
 func _spawn_with_random_wave_template(level_index: int, effective_time_out: int) -> void:
 	if not _is_combat_budget_ready():
 		return
 	_release_hp_budget_for_current_tick(level_index, effective_time_out)
 	if _available_hp_budget <= 0.0:
+		return
+	if _spawn_budget_stopped:
 		return
 	_build_random_spawn_batch(level_index, effective_time_out)
 
@@ -128,7 +144,7 @@ func _build_random_spawn_batch(level_index: int, effective_time_out: int) -> Dic
 
 	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
 	for _attempt in range(int(profile.get("max_selection_attempts"))):
-		if _available_hp_budget <= 0.0 or _is_runtime_spawn_budget_spent():
+		if _available_hp_budget <= 0.0 or _spawn_budget_stopped:
 			break
 		var candidate := _pick_weighted_candidate(available, count_by_scene, ranged_count, elite_count, level_index)
 		if candidate.is_empty():
@@ -148,22 +164,33 @@ func _build_random_spawn_batch(level_index: int, effective_time_out: int) -> Dic
 			elite_count += 1
 		_available_hp_budget -= float(spawned_hp)
 		_spawned_total_hp += spawned_hp
+		_update_spawn_budget_stop_state()
 	return batch
 
-func _resolve_batch_hp_budget(level_index: int, effective_time_out: int) -> float:
+func _resolve_batch_hp_budget(level_index: int, _effective_time_out: int) -> float:
 	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
 	var target_hp := float(maxi(int(profile.call("get_target_total_hp", level_index)), 1))
-	var timeout: int = maxi(1, effective_time_out)
-	var progress := clampf(float(PhaseManager.battle_time) / float(timeout), 0.0, 1.0)
+	var release_duration: int = maxi(_budget_release_duration_sec, 1)
+	var progress := clampf(float(PhaseManager.battle_time) / float(release_duration), 0.0, 1.0)
 	var pressure_multiplier: float = float(profile.call("get_pressure_multiplier", progress))
 	return target_hp * pressure_multiplier / maxf(_pressure_budget_total, 0.001)
 
 func _release_hp_budget_for_current_tick(level_index: int, effective_time_out: int) -> void:
+	if _spawn_budget_stopped:
+		return
+	if _budget_release_finished:
+		return
+	if PhaseManager.battle_time >= _budget_release_duration_sec:
+		_release_remaining_spawn_budget()
+		_budget_release_finished = true
+		_update_spawn_budget_stop_state()
+		return
 	var current_budget := _resolve_batch_hp_budget(level_index, effective_time_out)
 	_available_hp_budget += current_budget
 	var max_carryover_seconds := maxi(int(_get_spawn_combat_profile().get("max_hp_budget_carryover_seconds")), 1)
 	var max_available := current_budget * float(max_carryover_seconds)
 	_available_hp_budget = minf(_available_hp_budget, max_available)
+	_update_spawn_budget_stop_state()
 
 func roll_enemy_kill_gold() -> int:
 	if not _kill_gold_budget_active:
@@ -292,8 +319,10 @@ func _add_enemy_with_state_signal(state: Dictionary, enemy_instance: Node) -> vo
 		return
 	state["alive"] = int(state.get("alive", 0)) + 1
 	if enemy_instance.has_signal("enemy_death"):
-		enemy_instance.connect("enemy_death", func(_was_killed: bool) -> void:
+		enemy_instance.connect("enemy_death", func(was_killed: bool) -> void:
 			state["alive"] = maxi(int(state.get("alive", 0)) - 1, 0)
+			_record_enemy_death_for_budget_summary(enemy_instance, was_killed)
+			call_deferred("_try_finish_battle_after_spawn_budget_stop")
 		)
 
 func _get_enemy_metadata(scene_path: String, scene: PackedScene) -> Dictionary:
@@ -451,7 +480,9 @@ func _spawn_from_state(state: Dictionary, requested_count: int) -> int:
 		if enemy_spawn is BaseEnemy:
 			var base_enemy := enemy_spawn as BaseEnemy
 			base_enemy.loot_value_multiplier = maxf(loot_value_multiplier, 0.1)
-			spawned_hp += maxi(int(base_enemy.hp), 1)
+			var scaled_hp := maxi(int(base_enemy.hp), 1)
+			base_enemy.set_meta("_spawn_budget_scaled_hp", scaled_hp)
+			spawned_hp += scaled_hp
 		_debug_log_spawned_enemy(enemy_spawn)
 		enemy_spawn.global_position = get_nearby_position(random_position_center)
 		self.call_deferred("add_child", enemy_spawn)
@@ -943,8 +974,13 @@ func _prepare_level_combat_budget(level_index: int, effective_time_out: int) -> 
 	_combat_budget_active = true
 	_planned_target_total_hp = 0
 	_spawned_total_hp = 0
+	_killed_total_hp = 0
 	_available_hp_budget = 0.0
 	_pressure_budget_total = 1.0
+	_budget_release_duration_sec = 1
+	_budget_release_finished = false
+	_spawn_budget_stopped = false
+	_budget_summary_printed = false
 	var budget_profile := _get_spawn_combat_profile()
 	if budget_profile == null:
 		return
@@ -952,20 +988,79 @@ func _prepare_level_combat_budget(level_index: int, effective_time_out: int) -> 
 	if target_total_hp <= 0:
 		return
 	_planned_target_total_hp = target_total_hp
-	_pressure_budget_total = _calculate_pressure_budget_total(effective_time_out)
+	var release_ratio := clampf(float(budget_profile.get("budget_release_completion_ratio")), 0.05, 1.0)
+	_budget_release_duration_sec = clampi(int(round(float(maxi(effective_time_out, 1)) * release_ratio)), 1, maxi(effective_time_out, 1))
+	_pressure_budget_total = _calculate_pressure_budget_total(_budget_release_duration_sec)
 	_combat_budget_active = true
 	if bool(budget_profile.get("enable_hp_per_sec_report")):
-		var target_hps := float(target_total_hp) / float(maxi(effective_time_out, 1))
-		print("[SpawnBudget] level=%d target_hp=%d target_hps=%.2f pressure_sum=%.2f" % [
+		var target_hps := float(target_total_hp) / float(maxi(_budget_release_duration_sec, 1))
+		print("[SpawnBudget] level=%d target_hp=%d target_hps=%.2f release_sec=%d timeout=%d pressure_sum=%.2f" % [
 			level_index,
 			target_total_hp,
 			target_hps,
+			_budget_release_duration_sec,
+			effective_time_out,
 			_pressure_budget_total,
 		])
 
-func _calculate_pressure_budget_total(effective_time_out: int) -> float:
+func _record_enemy_death_for_budget_summary(enemy_instance: Node, was_killed: bool) -> void:
+	if not was_killed:
+		return
+	if enemy_instance == null:
+		return
+	var scaled_hp := 1
+	if enemy_instance.has_meta("_spawn_budget_scaled_hp"):
+		scaled_hp = maxi(int(enemy_instance.get_meta("_spawn_budget_scaled_hp")), 1)
+	elif enemy_instance.get("hp") != null:
+		scaled_hp = maxi(int(enemy_instance.get("hp")), 1)
+	_killed_total_hp += scaled_hp
+
+func _print_spawn_budget_battle_summary(level_index: int, effective_time_out: int) -> void:
+	if not _is_combat_budget_ready():
+		return
+	if _budget_summary_printed:
+		return
+	_budget_summary_printed = true
+	print("[SpawnBudgetSummary] level=%d killed_hp=%d target_hp=%d spawned_hp=%d battle_time=%d timeout=%d release_sec=%d stopped=%s" % [
+		level_index,
+		_killed_total_hp,
+		_planned_target_total_hp,
+		_spawned_total_hp,
+		PhaseManager.battle_time,
+		effective_time_out,
+		_budget_release_duration_sec,
+		str(_spawn_budget_stopped),
+	])
+
+func _release_remaining_spawn_budget() -> void:
+	var remaining_hp := maxi(_planned_target_total_hp - _spawned_total_hp, 0)
+	if remaining_hp <= 0:
+		return
+	_available_hp_budget += float(remaining_hp)
+
+func _update_spawn_budget_stop_state() -> void:
+	if not _is_combat_budget_ready():
+		return
+	if _spawned_total_hp >= _planned_target_total_hp:
+		_spawn_budget_stopped = true
+		_available_hp_budget = 0.0
+
+func _try_finish_battle_after_spawn_budget_stop() -> void:
+	if PhaseManager == null or PhaseManager.current_state() != PhaseManager.BATTLE:
+		return
+	if not _should_end_after_spawn_budget_stopped():
+		return
+	var level_index := maxi(PhaseManager.current_level, 0)
+	var effective_time_out := get_effective_time_out(_runtime_base_time_out, level_index)
+	if timer != null:
+		timer.stop()
+	_print_spawn_budget_battle_summary(level_index, effective_time_out)
+	erase_all_enemies()
+	PhaseManager.enter_prepare()
+
+func _calculate_pressure_budget_total(release_duration_sec: int) -> float:
 	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
-	var timeout := maxi(effective_time_out, 1)
+	var timeout := maxi(release_duration_sec, 1)
 	var total := 0.0
 	for tick in range(1, timeout):
 		var progress := clampf(float(tick) / float(timeout), 0.0, 1.0)

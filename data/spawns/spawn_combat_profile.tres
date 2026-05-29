@@ -39,7 +39,7 @@ weight = 10
 [sub_resource type="Resource" id="Level_1"]
 script = ExtResource("2_level")
 time_out_sec = 30
-target_total_hp = 1800
+target_total_hp = 500
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_roll_intro")])
 
 [sub_resource type="Resource" id="Entry_wheel_main"]
@@ -56,8 +56,8 @@ weight = 5
 
 [sub_resource type="Resource" id="Level_2"]
 script = ExtResource("2_level")
-time_out_sec = 55
-target_total_hp = 3200
+time_out_sec = 30
+target_total_hp = 500
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_main"), SubResource("Entry_roll_support")])
 
 [sub_resource type="Resource" id="Entry_spike_main"]
@@ -74,8 +74,8 @@ weight = 5
 
 [sub_resource type="Resource" id="Level_3"]
 script = ExtResource("2_level")
-time_out_sec = 65
-target_total_hp = 5200
+time_out_sec = 35
+target_total_hp = 600
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_spike_main"), SubResource("Entry_roll_chaser")])
 
 [sub_resource type="Resource" id="Entry_bomber_main"]
@@ -92,8 +92,8 @@ weight = 3
 
 [sub_resource type="Resource" id="Level_4"]
 script = ExtResource("2_level")
-time_out_sec = 75
-target_total_hp = 7600
+time_out_sec = 40
+target_total_hp = 700
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_bomber_main"), SubResource("Entry_mine_zone")])
 
 [sub_resource type="Resource" id="Entry_mortar_lane"]
@@ -116,8 +116,8 @@ weight = 3
 
 [sub_resource type="Resource" id="Level_5"]
 script = ExtResource("2_level")
-time_out_sec = 85
-target_total_hp = 9800
+time_out_sec = 45
+target_total_hp = 800
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_lane"), SubResource("Entry_mirror_peak"), SubResource("Entry_tar_control")])
 
 [sub_resource type="Resource" id="Entry_spike_wall"]
@@ -140,8 +140,8 @@ weight = 3
 
 [sub_resource type="Resource" id="Level_6"]
 script = ExtResource("2_level")
-time_out_sec = 95
-target_total_hp = 12200
+time_out_sec = 50
+target_total_hp = 900
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_spike_wall"), SubResource("Entry_wheel_breaker"), SubResource("Entry_orbit_harass")])
 
 [sub_resource type="Resource" id="Entry_bomber_push"]
@@ -164,8 +164,8 @@ weight = 2
 
 [sub_resource type="Resource" id="Level_7"]
 script = ExtResource("2_level")
-time_out_sec = 105
-target_total_hp = 15000
+time_out_sec = 60
+target_total_hp = 1100
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_bomber_push"), SubResource("Entry_mine_flood"), SubResource("Entry_elite_anchor")])
 
 [sub_resource type="Resource" id="Entry_mortar_matrix"]
@@ -188,8 +188,8 @@ weight = 2
 
 [sub_resource type="Resource" id="Level_8"]
 script = ExtResource("2_level")
-time_out_sec = 115
-target_total_hp = 18200
+time_out_sec = 70
+target_total_hp = 1300
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_matrix"), SubResource("Entry_tar_drag"), SubResource("Entry_mirror_split")])
 
 [sub_resource type="Resource" id="Entry_wheel_press"]
@@ -212,8 +212,8 @@ weight = 3
 
 [sub_resource type="Resource" id="Level_9"]
 script = ExtResource("2_level")
-time_out_sec = 125
-target_total_hp = 21800
+time_out_sec = 80
+target_total_hp = 1500
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_press"), SubResource("Entry_spike_screen"), SubResource("Entry_orbit_cover")])
 
 [sub_resource type="Resource" id="Entry_mortar_core"]
@@ -242,11 +242,12 @@ weight = 2
 
 [sub_resource type="Resource" id="Level_10"]
 script = ExtResource("2_level")
-time_out_sec = 135
-target_total_hp = 25800
+time_out_sec = 90
+target_total_hp = 1750
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_core"), SubResource("Entry_bomber_storm"), SubResource("Entry_elite_hunt"), SubResource("Entry_mirror_collapse")])
 
 [resource]
 script = ExtResource("1_profile")
 levels = Array[ExtResource("2_level")]([SubResource("Level_1"), SubResource("Level_2"), SubResource("Level_3"), SubResource("Level_4"), SubResource("Level_5"), SubResource("Level_6"), SubResource("Level_7"), SubResource("Level_8"), SubResource("Level_9"), SubResource("Level_10")])
 pressure_points = Array[ExtResource("4_pressure")]([SubResource("Pressure_early"), SubResource("Pressure_mid"), SubResource("Pressure_late")])
+budget_release_completion_ratio = 0.8

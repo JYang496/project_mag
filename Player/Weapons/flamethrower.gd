@@ -88,6 +88,9 @@ func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bo
 		return
 	_primary_fire_held = true
 	request_primary_fire()
+	if not _can_maintain_held_flame_vfx():
+		_stop_flame_vfx()
+		return
 	_refresh_held_flame_vfx()
 
 func _emit_flame_burst() -> void:
@@ -294,7 +297,7 @@ func _refresh_flame_vfx(forward: Vector2) -> void:
 func _refresh_held_flame_vfx() -> void:
 	if not _primary_fire_held:
 		return
-	if is_reloading or current_ammo <= 0:
+	if not _can_maintain_held_flame_vfx():
 		_stop_flame_vfx()
 		return
 	if _flame_vfx == null or not is_instance_valid(_flame_vfx):
@@ -326,6 +329,15 @@ func _update_flame_vfx_follow() -> void:
 			_get_effective_attack_range(),
 			_get_effective_cone_half_angle_deg()
 		)
+
+func _can_maintain_held_flame_vfx() -> bool:
+	if not is_attack_phase_allowed():
+		return false
+	if not can_fire_with_heat():
+		return false
+	if not can_fire_with_ammo():
+		return false
+	return true
 
 func _stop_flame_vfx() -> void:
 	if _flame_vfx == null or not is_instance_valid(_flame_vfx):

@@ -11,6 +11,8 @@ var _status_hint_ready_at_msec: Dictionary = {}
 var _status_hint_state_by_source: Dictionary = {}
 var _status_hint_queue: Array[Dictionary] = []
 var _is_status_hint_playing: bool = false
+var _raw_hint_ready_at_msec: Dictionary = {}
+var _queued_raw_hint_keys: Dictionary = {}
 
 func setup(
 	host: Node2D,
@@ -26,11 +28,27 @@ func setup(
 	_status_hint_queue_interval_sec = maxf(status_hint_queue_interval_sec, 0.05)
 
 func enqueue_raw_hint(text: String) -> void:
+	enqueue_keyed_raw_hint(text, StringName(), 0.0)
+
+func enqueue_keyed_raw_hint(text: String, hint_key: StringName, throttle_sec: float = -1.0) -> void:
 	var message := text.strip_edges()
 	if message == "":
 		return
+	if hint_key != StringName():
+		if _queued_raw_hint_keys.has(hint_key):
+			return
+		var now_msec := Time.get_ticks_msec()
+		var ready_at := int(_raw_hint_ready_at_msec.get(hint_key, 0))
+		if now_msec < ready_at:
+			return
+		var throttle := throttle_sec
+		if throttle < 0.0:
+			throttle = _status_hint_throttle_sec
+		_raw_hint_ready_at_msec[hint_key] = now_msec + int(maxf(throttle, 0.0) * 1000.0)
+		_queued_raw_hint_keys[hint_key] = true
 	_status_hint_queue.append({
 		"text": message,
+		"key": hint_key,
 		"created_at_msec": Time.get_ticks_msec(),
 	})
 	_try_play_next_status_hint()
@@ -69,6 +87,8 @@ func clear_all() -> void:
 	_status_hint_queue.clear()
 	_status_hint_ready_at_msec.clear()
 	_status_hint_state_by_source.clear()
+	_raw_hint_ready_at_msec.clear()
+	_queued_raw_hint_keys.clear()
 	_is_status_hint_playing = false
 
 func _emit_status_hint(owner: StringName, stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
@@ -93,6 +113,9 @@ func _try_play_next_status_hint() -> void:
 	if _status_hint_queue.is_empty():
 		return
 	var next_item: Dictionary = _status_hint_queue.pop_front() as Dictionary
+	var next_key := StringName(next_item.get("key", StringName()))
+	if next_key != StringName():
+		_queued_raw_hint_keys.erase(next_key)
 	var next_text: String = str(next_item.get("text", "")).strip_edges()
 	if next_text == "":
 		_try_play_next_status_hint()

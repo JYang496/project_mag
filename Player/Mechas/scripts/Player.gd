@@ -99,7 +99,7 @@ var _last_visual_position: Vector2 = Vector2.ZERO
 @export var elite_hit_slow_duration_sec: float = 0.06
 @export var floating_hint_duration_sec: float = 1.0
 @export var floating_hint_rise_px: float = 26.0
-@export var reload_block_hint_interval_sec: float = 0.25
+@export var reload_block_hint_interval_sec: float = 1.25
 @export var status_hint_throttle_sec: float = 1.0
 @export var status_hint_queue_interval_sec: float = 0.5
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
@@ -456,11 +456,20 @@ func _try_show_reload_block_hint(main_weapon: Weapon) -> void:
 	var hint_text := "正在换弹中"
 	if LocalizationManager and LocalizationManager.has_method("tr_key"):
 		hint_text = LocalizationManager.tr_key("ui.hud.reloading_now", "正在换弹中")
-	_spawn_player_floating_hint(hint_text)
+	_spawn_keyed_player_floating_hint(hint_text, &"reload_blocked", reload_block_hint_interval_sec)
 
 func _spawn_player_floating_hint(text: String) -> void:
 	_ensure_status_hint_manager()
 	if _status_hint_manager == null:
+		return
+	_status_hint_manager.enqueue_raw_hint(text)
+
+func _spawn_keyed_player_floating_hint(text: String, hint_key: StringName, throttle_sec: float) -> void:
+	_ensure_status_hint_manager()
+	if _status_hint_manager == null:
+		return
+	if _status_hint_manager.has_method("enqueue_keyed_raw_hint"):
+		_status_hint_manager.call("enqueue_keyed_raw_hint", text, hint_key, throttle_sec)
 		return
 	_status_hint_manager.enqueue_raw_hint(text)
 

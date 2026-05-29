@@ -6,6 +6,7 @@ class_name SpawnCombatProfile
 
 @export_group("Pressure")
 @export var pressure_points: Array[PressurePoint] = []
+@export_range(0.05, 1.0, 0.01) var budget_release_completion_ratio: float = 0.8
 @export var max_hp_budget_carryover_seconds: int = 3
 
 @export_group("Batch Limits")
@@ -40,6 +41,7 @@ func sanitize() -> void:
 	pressure_points.sort_custom(func(a: PressurePoint, b: PressurePoint) -> bool:
 		return float(a.t if a != null else 0.0) < float(b.t if b != null else 0.0)
 	)
+	budget_release_completion_ratio = clampf(budget_release_completion_ratio, 0.05, 1.0)
 	max_hp_budget_carryover_seconds = maxi(max_hp_budget_carryover_seconds, 1)
 	max_same_type_per_batch = maxi(max_same_type_per_batch, 1)
 	max_ranged_per_batch = maxi(max_ranged_per_batch, 0)
