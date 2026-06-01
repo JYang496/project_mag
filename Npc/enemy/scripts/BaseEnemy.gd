@@ -14,6 +14,13 @@ const SPAWN_TAG_ELITE := &"elite"
 @export var spawn_alive_cap: int = 0
 @export var spawn_batch_cap: int = 0
 @export_group("")
+@export_group("Body Push")
+@export var body_push_enabled: bool = true
+@export var body_push_strength: float = 0.45
+@export var body_push_decay: float = 900.0
+@export var body_push_max_speed: float = 260.0
+@export var body_push_min_speed_delta: float = 18.0
+@export_group("")
 @onready var coin_preload = preload("res://Objects/loots/coin.tscn")
 @onready var drop_preload = preload("res://Objects/loots/drop.tscn")
 
@@ -29,6 +36,8 @@ var _ranged_wander_dir: Vector2 = Vector2.ZERO
 var _ranged_wander_time_left: float = 0.0
 var _board_generator_ref: Node = null
 var _constraint_pending_physics_tick: bool = true
+var body_push_velocity: Vector2 = Vector2.ZERO
+var _body_push_collision_velocity: Vector2 = Vector2.ZERO
 
 func _enter_tree() -> void:
 	var enemy_registry := get_node_or_null("/root/EnemyRegistry")
@@ -166,6 +175,64 @@ func get_current_movement_speed() -> float:
 	if has_method("is_quest_movement_locked") and is_quest_movement_locked():
 		return 0.0
 	return movement_speed * slow_multiplier
+
+func move_with_body_push(desired_velocity: Vector2, delta: float) -> void:
+	var knockback_velocity: Vector2 = knockback.amount * knockback.angle
+	var safe_push_velocity := body_push_velocity if body_push_enabled else Vector2.ZERO
+	_body_push_collision_velocity = desired_velocity + safe_push_velocity
+	velocity = _body_push_collision_velocity + knockback_velocity
+	move_and_slide()
+	_apply_body_push_from_slide_collisions()
+	_decay_body_push_velocity(delta)
+
+func apply_body_push(push_velocity: Vector2) -> void:
+	if not body_push_enabled:
+		return
+	if push_velocity.length_squared() <= 0.01:
+		return
+	body_push_velocity += push_velocity
+	var max_speed := maxf(body_push_max_speed, 0.0)
+	if max_speed > 0.0 and body_push_velocity.length() > max_speed:
+		body_push_velocity = body_push_velocity.normalized() * max_speed
+
+func get_body_push_collision_velocity() -> Vector2:
+	return _body_push_collision_velocity
+
+func _apply_body_push_from_slide_collisions() -> void:
+	if not body_push_enabled:
+		return
+	var own_speed := _body_push_collision_velocity.length()
+	if own_speed <= maxf(body_push_min_speed_delta, 0.0):
+		return
+	for collision_index in range(get_slide_collision_count()):
+		var collision := get_slide_collision(collision_index)
+		if collision == null:
+			continue
+		var other := collision.get_collider() as BaseEnemy
+		if other == null or other == self or not is_instance_valid(other):
+			continue
+		if not other.body_push_enabled:
+			continue
+		var push_dir := -collision.get_normal()
+		if push_dir.length_squared() <= 0.001:
+			push_dir = global_position.direction_to(other.global_position)
+		if push_dir.length_squared() <= 0.001:
+			continue
+		push_dir = push_dir.normalized()
+		var incoming_speed := _body_push_collision_velocity.dot(push_dir)
+		if incoming_speed <= 0.0:
+			continue
+		var other_forward_speed := maxf(other.get_body_push_collision_velocity().dot(push_dir), 0.0)
+		var speed_delta := incoming_speed - other_forward_speed
+		if speed_delta <= maxf(body_push_min_speed_delta, 0.0):
+			continue
+		other.apply_body_push(push_dir * speed_delta * maxf(body_push_strength, 0.0))
+
+func _decay_body_push_velocity(delta: float) -> void:
+	if body_push_velocity.length_squared() <= 0.01:
+		body_push_velocity = Vector2.ZERO
+		return
+	body_push_velocity = body_push_velocity.move_toward(Vector2.ZERO, maxf(body_push_decay, 0.0) * maxf(delta, 0.0))
 
 func interrupt_movement() -> void:
 	if has_method("_finish_dash"):

@@ -15,8 +15,7 @@ var _current_speed: float = 0.0
 func _physics_process(delta: float) -> void:
 	if is_stunned():
 		knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
-		velocity = knockback.amount * knockback.angle
-		move_and_slide()
+		move_with_body_push(Vector2.ZERO, delta)
 		return
 	if PlayerData.player == null:
 		return
@@ -25,8 +24,7 @@ func _physics_process(delta: float) -> void:
 	_current_speed = minf(_current_speed + chase_acceleration * delta, max_speed)
 	var direction := global_position.direction_to(PlayerData.player.global_position)
 	knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
-	velocity = direction * _current_speed + knockback.amount * knockback.angle
-	move_and_slide()
+	move_with_body_push(direction * _current_speed, delta)
 
 func death(killing_attack: Attack = null) -> void:
 	if not is_inside_tree():

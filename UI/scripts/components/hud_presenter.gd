@@ -250,7 +250,8 @@ func _refresh_hud_text_values() -> void:
 		else:
 			resource_label.text = LocalizationManager.tr_key("ui.hud.energy_none", "Energy: --")
 	if time_label and is_instance_valid(time_label):
-		time_label.text = LocalizationManager.tr_format("ui.hud.time", {"value": PhaseManager.battle_time}, "Time: %s" % str(PhaseManager.battle_time))
+		var time_remaining := PhaseManager.get_battle_time_remaining() if PhaseManager.has_method("get_battle_time_remaining") else PhaseManager.battle_time
+		time_label.text = LocalizationManager.tr_format("ui.hud.time", {"value": time_remaining}, "Time Left: %s" % str(time_remaining))
 
 func refresh_heat_fallback_text() -> void:
 	if heat_label and is_instance_valid(heat_label) and not heat_label.visible:

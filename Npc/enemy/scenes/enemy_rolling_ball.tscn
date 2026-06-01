@@ -19,6 +19,7 @@ spawn_cost = 1
 spawn_tags = Array[StringName]([])
 spawn_alive_cap = 0
 spawn_batch_cap = 0
+movement_speed = 32.0
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
 shape = SubResource("RectangleShape2D_0wqes")

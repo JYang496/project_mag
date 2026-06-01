@@ -69,9 +69,9 @@ func start_timer() -> void:
 	if instance_list.is_empty() or not _build_runtime_spawn_context(maxi(PhaseManager.current_level, 0)):
 		push_warning("EnemySpawner cannot start: spawn tables are empty.")
 		return
-	PhaseManager.battle_time = 0
 	var level_index := maxi(PhaseManager.current_level, 0)
 	var effective_time_out := get_effective_time_out(_runtime_base_time_out, level_index)
+	PhaseManager.start_battle_timer(effective_time_out)
 	_prepare_level_combat_budget(level_index, effective_time_out)
 	_start_kill_gold_budget(level_index, effective_time_out)
 	timer.start()
@@ -82,7 +82,7 @@ func _on_timer_timeout():
 		push_warning("EnemySpawner timeout with empty runtime spawn table.")
 		return
 	var level_index := maxi(PhaseManager.current_level, 0)
-	PhaseManager.battle_time += 1
+	PhaseManager.advance_battle_time(1)
 	var base_time_out: int = _runtime_base_time_out
 	var effective_time_out: int = get_effective_time_out(base_time_out, level_index)
 	if PhaseManager.battle_time >= effective_time_out or _should_end_after_spawn_budget_stopped():

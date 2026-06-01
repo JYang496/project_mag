@@ -26,7 +26,7 @@ ui.hud.equipped,Equipped:,已装备：
 ui.hud.gold,Gold: {value},金币：{value}
 ui.hud.energy,Energy: {value},能量：{value}
 ui.hud.energy_none,Energy: --,能量：--
-ui.hud.time,Time: {value},时间：{value}
+ui.hud.time,Time Left: {value},剩余时间：{value}
 ui.hud.phase,Phase: {value},阶段：{value}
 ui.hud.hp,HP: {current}/{max},生命：{current}/{max}
 ui.hud.heat_empty,Heat: --,热量：--

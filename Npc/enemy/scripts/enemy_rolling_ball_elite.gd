@@ -20,18 +20,16 @@ func _physics_process(delta: float) -> void:
 		if preparing_dash:
 			_update_dash_prepare(delta)
 		knockback.amount = clamp(knockback.amount - knockback_recover, 0, knockback.amount)
-		velocity = knockback.amount * knockback.angle
-		move_and_slide()
+		move_with_body_push(Vector2.ZERO, delta)
 		return
 	if not charging:
 		direction = global_position.direction_to(PlayerData.player.global_position)
 	if preparing_dash:
 		_update_dash_prepare(delta)
 	knockback.amount = clamp(knockback.amount - knockback_recover, 0, knockback.amount)
-	velocity = direction * (get_current_movement_speed() + bonus_speed)
-	velocity += knockback.amount * knockback.angle
+	var desired_velocity: Vector2 = direction * (get_current_movement_speed() + bonus_speed)
 	var previous_position := global_position
-	move_and_slide()
+	move_with_body_push(desired_velocity, delta)
 	if charging:
 		var moved_distance := global_position.distance_to(previous_position)
 		dash_remaining_distance -= moved_distance

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="SpawnCombatProfile" format=3 uid="uid://bqcgou0io1dcp"]
+[gd_resource type="Resource" script_class="SpawnCombatProfile" format=3 uid="uid://b1nrm1ytrbwe1"]
 
 [ext_resource type="Script" uid="uid://cnkvn8jg0k81q" path="res://data/spawns/SpawnCombatProfile.gd" id="1_profile"]
 [ext_resource type="Script" uid="uid://bclf8v2jydc3w" path="res://data/spawns/LevelCombatPlan.gd" id="2_level"]
@@ -6,7 +6,7 @@
 [ext_resource type="Script" uid="uid://vjp7txif0lsf" path="res://data/spawns/PressurePoint.gd" id="4_pressure"]
 [ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/scenes/enemy_rolling_ball.tscn" id="5_rolling_ball"]
 [ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/scenes/enemy_wheel_cart.tscn" id="6_wheel_cart"]
-[ext_resource type="PackedScene" uid="uid://dgemdo8ka2seb" path="res://Npc/enemy/scenes/enemy_spike_turret.tscn" id="7_spike_turret"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_spike_turret.tscn" id="7_spike_turret"]
 [ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_bomber.tscn" id="8_bomber"]
 [ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_mine_crawler.tscn" id="9_mine_crawler"]
 [ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_mortar_turret.tscn" id="10_mortar_turret"]
@@ -29,13 +29,13 @@ spawns = Array[ExtResource("3_entry")]([SubResource("Entry_roll_intro")])
 [sub_resource type="Resource" id="Entry_wheel_main"]
 script = ExtResource("3_entry")
 enemy = ExtResource("6_wheel_cart")
-weight = 4
+start_sec = 10
+weight = 5
 
 [sub_resource type="Resource" id="Entry_roll_support"]
 script = ExtResource("3_entry")
 enemy = ExtResource("5_rolling_ball")
-start_sec = 10
-weight = 5
+weight = 10
 
 [sub_resource type="Resource" id="Level_2"]
 script = ExtResource("2_level")

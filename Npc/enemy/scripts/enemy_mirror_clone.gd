@@ -16,15 +16,13 @@ func _physics_process(delta: float) -> void:
 		return
 	if is_stunned():
 		knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
-		velocity = knockback.amount * knockback.angle
-		move_and_slide()
+		move_with_body_push(Vector2.ZERO, delta)
 		return
 	if PlayerData.player == null:
 		return
 	var direction := global_position.direction_to(PlayerData.player.global_position)
 	knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
-	velocity = direction * get_current_movement_speed() + knockback.amount * knockback.angle
-	move_and_slide()
+	move_with_body_push(direction * get_current_movement_speed(), delta)
 
 func death(_killing_attack: Attack = null) -> void:
 	enemy_death.emit(true)

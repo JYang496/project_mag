@@ -16,7 +16,7 @@ size = Vector2(150, 150)
 [node name="EnemyWheelCart" unique_id=1509861233 instance=ExtResource("1_jdgf0")]
 script = ExtResource("2_m5ns1")
 chase_acceleration = 25.0
-slowdown_deceleration = 180.0
+slowdown_deceleration = 96.0
 max_speed_multiplier = 3.0
 damage = 4
 combat_role = "melee"
@@ -25,7 +25,7 @@ spawn_cost = 2
 spawn_tags = Array[StringName]([])
 spawn_alive_cap = 0
 spawn_batch_cap = 0
-movement_speed = 40.0
+movement_speed = 32.0
 hp = 30
 
 [node name="HurtBox" parent="." index="0"]

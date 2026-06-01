@@ -1,6 +1,7 @@
 extends Node
 
 var battle_time := 0
+var battle_time_remaining := 30
 var current_level : int = 0 :
 	set(value):
 		current_level = maxi(value, 0)
@@ -43,9 +44,22 @@ func enter_gameover() -> void:
 	phase = GAMEOVER
 	phase_changed.emit(phase)
 
+func start_battle_timer(duration_sec: int) -> void:
+	time_out = maxi(duration_sec, 1)
+	battle_time = 0
+	battle_time_remaining = time_out
+
+func advance_battle_time(delta_sec: int = 1) -> void:
+	var safe_delta := maxi(delta_sec, 0)
+	battle_time += safe_delta
+	battle_time_remaining = maxi(time_out - battle_time, 0)
+
+func get_battle_time_remaining() -> int:
+	return maxi(battle_time_remaining, 0)
 
 func reset_runtime_state() -> void:
 	battle_time = 0
+	battle_time_remaining = 30
 	current_level = 0
 	time_out = 30
 	phase = PREPARE

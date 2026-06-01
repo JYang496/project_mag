@@ -34,8 +34,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if is_stunned():
 		knockback.amount = clamp(knockback.amount - knockback_recover, 0, knockback.amount)
-		velocity = knockback.amount * knockback.angle
-		move_and_slide()
+		move_with_body_push(Vector2.ZERO, delta)
 		_sync_aura_overlaps()
 		return
 
@@ -51,13 +50,13 @@ func _physics_process(delta: float) -> void:
 	var orbit_velocity: Vector2 = tangent * move_speed * orbit_sign
 
 	knockback.amount = clamp(knockback.amount - knockback_recover, 0, knockback.amount)
+	var desired_velocity: Vector2 = Vector2.ZERO
 	if distance > orbit_radius + orbit_entry_margin:
 		# Catch-up phase: close the distance to player first.
-		velocity = radial_dir * move_speed
+		desired_velocity = radial_dir * move_speed
 	else:
-		velocity = orbit_velocity + radial_velocity
-	velocity += knockback.amount * knockback.angle
-	move_and_slide()
+		desired_velocity = orbit_velocity + radial_velocity
+	move_with_body_push(desired_velocity, delta)
 	_sync_aura_overlaps()
 
 func _on_speed_buff_area_body_entered(body: Node2D) -> void:

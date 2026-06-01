@@ -24,8 +24,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if is_stunned():
 		knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
-		velocity = knockback.amount * knockback.angle
-		move_and_slide()
+		move_with_body_push(Vector2.ZERO, delta)
 		return
 	if PlayerData.player == null:
 		return
@@ -40,8 +39,7 @@ func _physics_process(delta: float) -> void:
 	)
 	knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
 	var cast_move_mul := 0.55 if _is_casting else 1.0
-	velocity = ranged_move_velocity * cast_move_mul + knockback.amount * knockback.angle
-	move_and_slide()
+	move_with_body_push(ranged_move_velocity * cast_move_mul, delta)
 
 func _process_casting(delta: float) -> void:
 	if _is_casting:

@@ -39,13 +39,11 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
 	if is_stunned():
-		velocity = knockback.amount * knockback.angle
-		move_and_slide()
+		move_with_body_push(Vector2.ZERO, delta)
 		return
 	_update_stationary_mode()
 	var chase_velocity := _get_chase_velocity()
-	velocity = chase_velocity + knockback.amount * knockback.angle
-	move_and_slide()
+	move_with_body_push(chase_velocity, delta)
 	_process_attack(delta)
 	_update_aim_warning_visual()
 

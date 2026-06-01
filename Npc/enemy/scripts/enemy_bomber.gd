@@ -18,16 +18,14 @@ var _fuse_elapsed: float = 0.0
 func _physics_process(delta: float) -> void:
 	if is_stunned():
 		knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
-		velocity = knockback.amount * knockback.angle
-		move_and_slide()
+		move_with_body_push(Vector2.ZERO, delta)
 		return
 	if _is_fusing:
 		_fuse_elapsed += maxf(delta, 0.0)
 		_update_fuse_flash()
 		_fuse_remaining -= maxf(delta, 0.0)
 		knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
-		velocity = knockback.amount * knockback.angle
-		move_and_slide()
+		move_with_body_push(Vector2.ZERO, delta)
 		if _fuse_remaining <= 0.0:
 			_explode()
 		return
@@ -38,8 +36,7 @@ func _physics_process(delta: float) -> void:
 	_current_speed = minf(_current_speed + chase_acceleration * delta, max_speed)
 	var direction := global_position.direction_to(PlayerData.player.global_position)
 	knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
-	velocity = direction * _current_speed + knockback.amount * knockback.angle
-	move_and_slide()
+	move_with_body_push(direction * _current_speed, delta)
 	if global_position.distance_to(PlayerData.player.global_position) <= trigger_radius:
 		_start_fuse()
 
