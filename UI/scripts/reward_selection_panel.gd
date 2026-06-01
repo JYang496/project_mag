@@ -5,6 +5,7 @@ signal reward_confirmed(reward: RewardInfo)
 signal selection_cancelled
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
+const PREVIEW_FORMATTER := preload("res://UI/scripts/weapon_obtain_preview_formatter.gd")
 
 @onready var title_label: Label = $Panel/VBox/Title
 @onready var subtitle_label: Label = $Panel/VBox/SubTitle
@@ -196,22 +197,7 @@ func _extract_scene_name(scene_path: String) -> String:
 	return file_name.replace("_", " ").capitalize()
 
 func _format_weapon_obtain_prediction(base_text: String, weapon_name: String, outcome: Dictionary) -> String:
-	var result_type := str(outcome.get("result", "not_applicable"))
-	match result_type:
-		"fused":
-			return LocalizationManager.tr_format(
-				"ui.weapon.obtain_preview.fuse",
-				{"name": weapon_name, "fuse": int(outcome.get("target_fuse", 1))},
-				"%s -> Fuse %d" % [weapon_name, int(outcome.get("target_fuse", 1))]
-			)
-		"converted_to_gold":
-			return LocalizationManager.tr_format(
-				"ui.weapon.obtain_preview.gold",
-				{"name": weapon_name, "gold": int(outcome.get("gold", 0))},
-				"%s -> +%d Gold" % [weapon_name, int(outcome.get("gold", 0))]
-			)
-		_:
-			return base_text
+	return PREVIEW_FORMATTER.format_obtain_preview(base_text, weapon_name, outcome)
 
 func _on_language_changed(_locale: String) -> void:
 	if visible:

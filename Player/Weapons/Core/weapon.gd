@@ -313,11 +313,14 @@ func get_branch_options() -> Array[WeaponBranchDefinition]:
 	return get_available_branch_options()
 
 func get_available_branch_options() -> Array[WeaponBranchDefinition]:
+	return get_available_branch_options_for_fuse(fuse)
+
+func get_available_branch_options_for_fuse(target_fuse: int) -> Array[WeaponBranchDefinition]:
 	_migrate_legacy_branch_state()
 	if not _can_choose_more_branches():
 		return []
 	var output: Array[WeaponBranchDefinition] = []
-	var options := DataHandler.read_weapon_branch_options(scene_file_path, fuse)
+	var options := DataHandler.read_weapon_branch_options(scene_file_path, target_fuse)
 	for def in options:
 		if def == null:
 			continue

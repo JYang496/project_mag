@@ -55,6 +55,7 @@ func _draw():
 func update() -> void:
 	weapon_node = InventoryData.on_select_upg
 	cost_price = 0
+	upgradable = false
 	for connection in get_signal_connection_list("upgrade_level"):
 		var callable: Callable = connection.get("callable", Callable())
 		if callable.is_valid():
@@ -86,12 +87,14 @@ func update() -> void:
 		cost.text = ""
 		lblName.text = ""
 		itemIcon.texture = null
-	if PlayerData.player_gold < cost_price: # Unable to purchase if player does not have enough gold
+	if weapon_node != null and is_instance_valid(weapon_node) and weapon_node.level < weapon_node.max_level and PlayerData.player_gold >= cost_price:
+		cost.set("theme_override_colors/font_color",Color(1.0,1.0,1.0,1.0))
+		upgradable = true
+	elif weapon_node != null and is_instance_valid(weapon_node) and weapon_node.level < weapon_node.max_level:
 		cost.set("theme_override_colors/font_color",Color(1.0,0.0,0.0,1.0))
 		upgradable = false
 	else:
 		cost.set("theme_override_colors/font_color",Color(1.0,1.0,1.0,1.0))
-		upgradable = true
 	queue_redraw()
 
 func _input(_event):
@@ -156,7 +159,7 @@ func _build_weapon_header(weapon: Weapon) -> String:
 
 func _build_cap_reason(weapon: Weapon) -> String:
 	if int(weapon.level) >= int(weapon.max_level) and int(weapon.fuse) < int(weapon.FINAL_MAX_FUSE):
-		return LocalizationManager.tr_key("ui.upgrade.need_duplicate", "Level capped by fuse. Obtain a duplicate weapon to break through.")
+		return LocalizationManager.tr_key("ui.upgrade.need_duplicate", "Level capped; obtain a duplicate weapon to break through.")
 	return LocalizationManager.tr_key("ui.upgrade.fully_upgraded", "Fully upgraded.")
 
 func _get_weapon_rarity(weapon: Weapon) -> String:

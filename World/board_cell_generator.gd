@@ -33,6 +33,8 @@ var _rest_area: Cell
 var _last_phase: String = ""
 var _board_active := true
 var _fade_tween: Tween
+var _has_rest_area_target_center := false
+var _rest_area_target_center := Vector2.ZERO
 
 func _enter_tree() -> void:
 	if not _cells.is_empty():
@@ -123,6 +125,11 @@ func get_cell_center_global_for_point(point: Vector2) -> Vector2:
 	var cell := _find_cell_containing_point(point)
 	if cell:
 		return _get_cell_center_global(cell)
+	return get_center_cell_global_position()
+
+func get_rest_area_target_center_global_position() -> Vector2:
+	if _has_rest_area_target_center:
+		return _rest_area_target_center
 	return get_center_cell_global_position()
 
 func project_point_to_enemy_traversable_area(world_point: Vector2) -> Vector2:
@@ -347,8 +354,12 @@ func _get_grid_pos_from_index(index: int) -> Vector2i:
 	return Vector2i(x, y)
 
 func _on_phase_changed(new_phase: String) -> void:
-	_refresh_active_cells_for_current_level()
 	var entered_prepare_from_battle := new_phase != PhaseManager.BATTLE and _last_phase == PhaseManager.BATTLE
+	if entered_prepare_from_battle:
+		_capture_rest_area_target_from_player_cell()
+	elif new_phase != PhaseManager.BATTLE:
+		_clear_rest_area_target_center()
+	_refresh_active_cells_for_current_level()
 	if new_phase == PhaseManager.BATTLE:
 		if _last_phase == PhaseManager.PREPARE:
 			recenter_board_around_player()
@@ -363,6 +374,20 @@ func _on_phase_changed(new_phase: String) -> void:
 	if not entered_prepare_from_battle:
 		_enforce_traversable_bounds_for_existing_units()
 	_last_phase = new_phase
+
+func _capture_rest_area_target_from_player_cell() -> void:
+	_clear_rest_area_target_center()
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return
+	var player_cell := _find_any_cell_containing_point(PlayerData.player.global_position)
+	if player_cell == null:
+		return
+	_rest_area_target_center = _get_cell_center_global(player_cell)
+	_has_rest_area_target_center = true
+
+func _clear_rest_area_target_center() -> void:
+	_has_rest_area_target_center = false
+	_rest_area_target_center = Vector2.ZERO
 
 func recenter_board_around_player() -> void:
 	if _center_cell == null:
@@ -416,6 +441,14 @@ func _find_cell_containing_point(point: Vector2) -> Cell:
 			return cell
 	return null
 
+func _find_any_cell_containing_point(point: Vector2) -> Cell:
+	for cell in _cells:
+		if cell == null:
+			continue
+		if _cell_contains_point(cell, point):
+			return cell
+	return null
+
 func _compute_logical_cell_id(grid_pos: Vector2i) -> int:
 	# 3x3 mapping from top-left to bottom-right:
 	# 7,8,9
@@ -425,8 +458,12 @@ func _compute_logical_cell_id(grid_pos: Vector2i) -> int:
 
 func _get_active_cell_ids_for_level(level_one_based: int) -> PackedInt32Array:
 	if level_one_based <= 2:
+		return PackedInt32Array([5, 6])
+	if level_one_based <= 4:
 		return PackedInt32Array([4, 5, 6])
-	if level_one_based <= 5:
+	if level_one_based <= 6:
+		return PackedInt32Array([4, 5, 6, 8])
+	if level_one_based <= 8:
 		return PackedInt32Array([2, 4, 5, 6, 8])
 	var all_ids := PackedInt32Array()
 	for i in range(1, grid_size.x * grid_size.y + 1):

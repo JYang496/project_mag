@@ -5,20 +5,20 @@ const PROJECTILE_SCENE := preload("res://Npc/enemy/scenes/enemy_spike_projectile
 
 @export var detect_range: float = 760.0
 @export var attack_range: float = 430.0
+@export_range(0.1, 1.0, 0.01) var stationary_enter_range_ratio: float = 0.8
 @export var lock_duration: float = 1.1
 @export var cooldown_duration: float = 1.9
 @export var projectile_speed: float = 190.0
 @export var projectile_life_time: float = 3.2
 @export var muzzle_offset: float = 22.0
-@export var random_move_change_interval_sec: float = 3.0
 @export var screen_fire_margin: float = 28.0
-@export var approaching_velocity_threshold: float = 4.0
 @export var aim_warning_color: Color = Color(1.0, 0.12, 0.12, 0.9)
 @export var aim_warning_width: float = 3.0
 
 var _cooldown_remaining: float = 0.0
 var _lock_remaining: float = 0.0
 var _is_locking: bool = false
+var _is_stationary_mode: bool = false
 var _locked_direction: Vector2 = Vector2.RIGHT
 var _locked_warning_distance: float = 0.0
 var _aim_warning_line: Line2D = null
@@ -42,49 +42,69 @@ func _physics_process(delta: float) -> void:
 		velocity = knockback.amount * knockback.angle
 		move_and_slide()
 		return
-	var ranged_move_velocity := compute_ranged_navigation(
-		delta,
-		detect_range,
-		attack_range,
-		1.0,
-		0.78,
-		random_move_change_interval_sec
-	)
-	velocity = ranged_move_velocity + knockback.amount * knockback.angle
+	_update_stationary_mode()
+	var chase_velocity := _get_chase_velocity()
+	velocity = chase_velocity + knockback.amount * knockback.angle
 	move_and_slide()
 	_process_attack(delta)
 	_update_aim_warning_visual()
+
+func _update_stationary_mode() -> void:
+	if PlayerData.player == null:
+		_is_stationary_mode = false
+		return
+	var distance := global_position.distance_to(PlayerData.player.global_position)
+	var enter_distance := attack_range * clampf(stationary_enter_range_ratio, 0.1, 1.0)
+	if _is_stationary_mode:
+		if _is_locking:
+			return
+		if distance > attack_range:
+			_is_stationary_mode = false
+		return
+	if distance <= enter_distance:
+		_is_stationary_mode = true
+
+func _get_chase_velocity() -> Vector2:
+	if _is_stationary_mode:
+		return Vector2.ZERO
+	if PlayerData.player == null:
+		return Vector2.ZERO
+	var to_player: Vector2 = PlayerData.player.global_position - global_position
+	if to_player.length() <= 0.001:
+		return Vector2.ZERO
+	return to_player.normalized() * get_current_movement_speed()
 
 func _process_attack(delta: float) -> void:
 	if PlayerData.player == null:
 		_cancel_lock()
 		return
-	if _cooldown_remaining > 0.0:
-		_cooldown_remaining = maxf(0.0, _cooldown_remaining - delta)
+	if not _is_stationary_mode:
+		if _cooldown_remaining > 0.0:
+			_cooldown_remaining = maxf(0.0, _cooldown_remaining - delta)
 		_cancel_lock()
 		return
 	var to_player: Vector2 = PlayerData.player.global_position - global_position
+	if _is_locking:
+		_lock_remaining -= delta
+		if _lock_remaining > 0.0:
+			return
+		_fire_projectile()
+		_is_locking = false
+		_cooldown_remaining = cooldown_duration
+		return
+	if _cooldown_remaining > 0.0:
+		_cooldown_remaining = maxf(0.0, _cooldown_remaining - delta)
+		return
 	if to_player.length() > attack_range:
 		_cancel_lock()
 		return
 	if not is_world_position_in_player_screen(global_position, screen_fire_margin):
 		_cancel_lock()
 		return
-	if not _is_approaching_player(to_player):
-		_cancel_lock()
-		return
-	if not _is_locking:
-		_locked_direction = to_player.normalized() if to_player.length() > 0.001 else Vector2.RIGHT
-		_locked_warning_distance = _resolve_lock_warning_distance()
-		_is_locking = true
-		_lock_remaining = lock_duration
-		return
-	_lock_remaining -= delta
-	if _lock_remaining > 0.0:
-		return
-	_fire_projectile()
-	_is_locking = false
-	_cooldown_remaining = cooldown_duration
+	_locked_direction = to_player.normalized() if to_player.length() > 0.001 else Vector2.RIGHT
+	_locked_warning_distance = _resolve_lock_warning_distance()
+	_is_locking = true
+	_lock_remaining = lock_duration
 
 func _fire_projectile() -> void:
 	var projectile := PROJECTILE_SCENE.instantiate() as EnemySpikeProjectile
@@ -108,15 +128,6 @@ func _resolve_lock_warning_distance() -> float:
 	if PlayerData.player:
 		line_distance = minf(attack_range, PlayerData.player.global_position.distance_to(global_position))
 	return maxf(line_distance, muzzle_offset + 24.0)
-
-func _is_approaching_player(to_player: Vector2) -> bool:
-	# Stationary turrets cannot move toward the player; keep them attack-capable.
-	if get_current_movement_speed() <= 1.0:
-		return true
-	if to_player.length() <= 0.001 or velocity.length() <= 0.001:
-		return false
-	var approach_speed := velocity.dot(to_player.normalized())
-	return approach_speed >= approaching_velocity_threshold
 
 func _update_aim_warning_visual() -> void:
 	if _aim_warning_line == null:

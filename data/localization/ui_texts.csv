@@ -52,6 +52,7 @@ ui.panel.pause,Paused,已暂停
 ui.panel.resume,Resume,继续
 ui.settings.language,Language,语言
 ui.panel.refresh,Refresh,刷新
+ui.panel.refresh_cost,Refresh: {value},刷新：{value}
 ui.panel.sell,Sell,出售
 ui.panel.cancel,Cancel,取消
 ui.panel.confirm,Confirm,确认
@@ -152,7 +153,11 @@ ui.weapon.duplicate.convert,Duplicate {name} converted to +{gold} Gold,重复 {n
 ui.weapon.obtain_preview.new,New weapon,新武器
 ui.weapon.obtain_preview.fuse,{name} -> Fuse {fuse},{name} -> 融合{fuse}
 ui.weapon.obtain_preview.gold,{name} -> +{gold} Gold,{name} -> +{gold} 金币
-ui.upgrade.need_duplicate,Level capped by fuse. Obtain a duplicate weapon to break through.,等级已受融合上限限制。获得重复武器以突破。
+ui.weapon.obtain_preview.new_named,Obtain new {name},获得新武器 {name}
+ui.weapon.obtain_preview.fuse_branch,{name}: Break through to Fuse {fuse}; choose a branch to continue,{name}：突破到融合{fuse}，选择分支后继续
+ui.weapon.obtain_preview.fuse_no_branch,{name}: Break through to Fuse {fuse}; no branch available,{name}：突破到融合{fuse}，无可选分支
+ui.weapon.obtain_preview.gold_action,{name}: Fuse maxed; convert to +{gold} Gold,{name}：融合已满，转为 +{gold} 金币
+ui.upgrade.need_duplicate,Level capped; obtain a duplicate weapon to break through.,等级已满，需重复武器突破。
 ui.upgrade.fully_upgraded,Fully upgraded.,已完全升级。
 ui.branch.no_options,No evolution branch is configured for this weapon.,该武器尚未配置进化分支。
 ui.branch.missing_weapon,Evolution choice skipped because the weapon is no longer available.,武器已不存在，已跳过进化选择。

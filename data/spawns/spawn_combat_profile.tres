@@ -1,12 +1,12 @@
-[gd_resource type="Resource" script_class="SpawnCombatProfile" format=3]
+[gd_resource type="Resource" script_class="SpawnCombatProfile" format=3 uid="uid://bqcgou0io1dcp"]
 
-[ext_resource type="Script" path="res://data/spawns/SpawnCombatProfile.gd" id="1_profile"]
-[ext_resource type="Script" path="res://data/spawns/LevelCombatPlan.gd" id="2_level"]
-[ext_resource type="Script" path="res://data/spawns/EnemySpawnEntry.gd" id="3_entry"]
-[ext_resource type="Script" path="res://data/spawns/PressurePoint.gd" id="4_pressure"]
+[ext_resource type="Script" uid="uid://cnkvn8jg0k81q" path="res://data/spawns/SpawnCombatProfile.gd" id="1_profile"]
+[ext_resource type="Script" uid="uid://bclf8v2jydc3w" path="res://data/spawns/LevelCombatPlan.gd" id="2_level"]
+[ext_resource type="Script" uid="uid://c0lfnuwhhqfjr" path="res://data/spawns/EnemySpawnEntry.gd" id="3_entry"]
+[ext_resource type="Script" uid="uid://vjp7txif0lsf" path="res://data/spawns/PressurePoint.gd" id="4_pressure"]
 [ext_resource type="PackedScene" uid="uid://11s8xuvk76mn" path="res://Npc/enemy/scenes/enemy_rolling_ball.tscn" id="5_rolling_ball"]
 [ext_resource type="PackedScene" uid="uid://b336cex4sdrnf" path="res://Npc/enemy/scenes/enemy_wheel_cart.tscn" id="6_wheel_cart"]
-[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_spike_turret.tscn" id="7_spike_turret"]
+[ext_resource type="PackedScene" uid="uid://dgemdo8ka2seb" path="res://Npc/enemy/scenes/enemy_spike_turret.tscn" id="7_spike_turret"]
 [ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_bomber.tscn" id="8_bomber"]
 [ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_mine_crawler.tscn" id="9_mine_crawler"]
 [ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_mortar_turret.tscn" id="10_mortar_turret"]
@@ -15,37 +15,20 @@
 [ext_resource type="PackedScene" uid="uid://3nbq5hvtkssa" path="res://Npc/enemy/scenes/enemy_orbit_support.tscn" id="13_orbit_support"]
 [ext_resource type="PackedScene" uid="uid://bmy3cber63qwh" path="res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn" id="14_rolling_ball_elite"]
 
-[sub_resource type="Resource" id="Pressure_early"]
-script = ExtResource("4_pressure")
-t = 0.0
-multiplier = 0.85
-
-[sub_resource type="Resource" id="Pressure_mid"]
-script = ExtResource("4_pressure")
-t = 0.7
-multiplier = 1.0
-
-[sub_resource type="Resource" id="Pressure_late"]
-script = ExtResource("4_pressure")
-t = 1.0
-multiplier = 1.2
-
 [sub_resource type="Resource" id="Entry_roll_intro"]
 script = ExtResource("3_entry")
 enemy = ExtResource("5_rolling_ball")
-start_sec = 1
 weight = 10
 
 [sub_resource type="Resource" id="Level_1"]
 script = ExtResource("2_level")
-time_out_sec = 30
+time_out_sec = 60
 target_total_hp = 500
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_roll_intro")])
 
 [sub_resource type="Resource" id="Entry_wheel_main"]
 script = ExtResource("3_entry")
 enemy = ExtResource("6_wheel_cart")
-start_sec = 1
 weight = 4
 
 [sub_resource type="Resource" id="Entry_roll_support"]
@@ -56,14 +39,13 @@ weight = 5
 
 [sub_resource type="Resource" id="Level_2"]
 script = ExtResource("2_level")
-time_out_sec = 30
-target_total_hp = 500
+time_out_sec = 60
+target_total_hp = 650
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_main"), SubResource("Entry_roll_support")])
 
 [sub_resource type="Resource" id="Entry_spike_main"]
 script = ExtResource("3_entry")
 enemy = ExtResource("7_spike_turret")
-start_sec = 1
 weight = 3
 
 [sub_resource type="Resource" id="Entry_roll_chaser"]
@@ -81,7 +63,6 @@ spawns = Array[ExtResource("3_entry")]([SubResource("Entry_spike_main"), SubReso
 [sub_resource type="Resource" id="Entry_bomber_main"]
 script = ExtResource("3_entry")
 enemy = ExtResource("8_bomber")
-start_sec = 1
 weight = 4
 
 [sub_resource type="Resource" id="Entry_mine_zone"]
@@ -99,7 +80,6 @@ spawns = Array[ExtResource("3_entry")]([SubResource("Entry_bomber_main"), SubRes
 [sub_resource type="Resource" id="Entry_mortar_lane"]
 script = ExtResource("3_entry")
 enemy = ExtResource("10_mortar_turret")
-start_sec = 1
 weight = 2
 
 [sub_resource type="Resource" id="Entry_mirror_peak"]
@@ -123,7 +103,6 @@ spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_lane"), SubRes
 [sub_resource type="Resource" id="Entry_spike_wall"]
 script = ExtResource("3_entry")
 enemy = ExtResource("7_spike_turret")
-start_sec = 1
 weight = 3
 
 [sub_resource type="Resource" id="Entry_wheel_breaker"]
@@ -147,7 +126,6 @@ spawns = Array[ExtResource("3_entry")]([SubResource("Entry_spike_wall"), SubReso
 [sub_resource type="Resource" id="Entry_bomber_push"]
 script = ExtResource("3_entry")
 enemy = ExtResource("8_bomber")
-start_sec = 1
 weight = 3
 
 [sub_resource type="Resource" id="Entry_mine_flood"]
@@ -171,7 +149,6 @@ spawns = Array[ExtResource("3_entry")]([SubResource("Entry_bomber_push"), SubRes
 [sub_resource type="Resource" id="Entry_mortar_matrix"]
 script = ExtResource("3_entry")
 enemy = ExtResource("10_mortar_turret")
-start_sec = 1
 weight = 3
 
 [sub_resource type="Resource" id="Entry_tar_drag"]
@@ -195,7 +172,6 @@ spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_matrix"), SubR
 [sub_resource type="Resource" id="Entry_wheel_press"]
 script = ExtResource("3_entry")
 enemy = ExtResource("6_wheel_cart")
-start_sec = 1
 weight = 4
 
 [sub_resource type="Resource" id="Entry_spike_screen"]
@@ -219,7 +195,6 @@ spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_press"), SubRes
 [sub_resource type="Resource" id="Entry_mortar_core"]
 script = ExtResource("3_entry")
 enemy = ExtResource("10_mortar_turret")
-start_sec = 1
 weight = 3
 
 [sub_resource type="Resource" id="Entry_bomber_storm"]
@@ -246,8 +221,20 @@ time_out_sec = 90
 target_total_hp = 1750
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_core"), SubResource("Entry_bomber_storm"), SubResource("Entry_elite_hunt"), SubResource("Entry_mirror_collapse")])
 
+[sub_resource type="Resource" id="Pressure_early"]
+script = ExtResource("4_pressure")
+multiplier = 0.85
+
+[sub_resource type="Resource" id="Pressure_mid"]
+script = ExtResource("4_pressure")
+t = 0.7
+
+[sub_resource type="Resource" id="Pressure_late"]
+script = ExtResource("4_pressure")
+t = 1.0
+multiplier = 1.2
+
 [resource]
 script = ExtResource("1_profile")
 levels = Array[ExtResource("2_level")]([SubResource("Level_1"), SubResource("Level_2"), SubResource("Level_3"), SubResource("Level_4"), SubResource("Level_5"), SubResource("Level_6"), SubResource("Level_7"), SubResource("Level_8"), SubResource("Level_9"), SubResource("Level_10")])
 pressure_points = Array[ExtResource("4_pressure")]([SubResource("Pressure_early"), SubResource("Pressure_mid"), SubResource("Pressure_late")])
-budget_release_completion_ratio = 0.8

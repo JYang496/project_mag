@@ -9,17 +9,20 @@ var max_cost: int = 99999
 func _ready() -> void:
 	_reload_refresh_settings()
 	cost = starting_cost
+	refresh_button_label()
 
 func _on_button_up() -> void:
 	if PlayerData.player_gold >= cost:
 		PlayerData.player_gold -= cost
 		cost = _compute_next_refresh_cost(cost)
 		refresh_shop_items()
+		refresh_button_label()
 
 
 func _on_ui_reset_cost() -> void:
 	_reload_refresh_settings()
 	cost = starting_cost
+	refresh_button_label()
 
 func refresh_shop_items() -> void:
 	for slot: ShopWeaponSlot in shop.get_children():
@@ -39,3 +42,10 @@ func _reload_refresh_settings() -> void:
 func _compute_next_refresh_cost(current_cost: int) -> int:
 	var next_cost: int = current_cost + step_cost
 	return mini(next_cost, max_cost)
+
+func refresh_button_label() -> void:
+	text = LocalizationManager.tr_format(
+		"ui.panel.refresh_cost",
+		{"value": cost},
+		"Refresh: %s" % cost
+	)

@@ -1682,7 +1682,10 @@ func _refresh_localized_static_text() -> void:
 		shop_confirm.text = LocalizationManager.tr_key("ui.panel.confirm", "Confirm")
 	var shop_refresh := shopping_panel.get_node_or_null("ShopRefreshButton") as Button
 	if shop_refresh:
-		shop_refresh.text = LocalizationManager.tr_key("ui.panel.refresh", "Refresh")
+		if shop_refresh.has_method("refresh_button_label"):
+			shop_refresh.call("refresh_button_label")
+		else:
+			shop_refresh.text = LocalizationManager.tr_key("ui.panel.refresh", "Refresh")
 	var upg_switch := upgrade_panel.get_node_or_null("SwtichBtn") as Button
 	if upg_switch:
 		upg_switch.text = LocalizationManager.tr_key("ui.panel.inventory_bag", "Inventory / Bag")

@@ -212,7 +212,7 @@ func _apply_bounds_size() -> void:
 func _sync_to_target_center() -> void:
 	if _board == null:
 		return
-	var target_center := _board.get_center_cell_global_position()
+	var target_center := _board.get_rest_area_target_center_global_position()
 	global_position = target_center - _get_local_center_offset()
 	_snap_start_battle_button()
 	queue_redraw()

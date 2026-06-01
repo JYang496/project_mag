@@ -323,12 +323,14 @@ func predict_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
 		return {"result": "not_applicable", "weapon_id": normalized_id}
 	var max_fuse: int = max(1, int(equipped_weapon.FINAL_MAX_FUSE))
 	if int(equipped_weapon.fuse) < max_fuse:
+		var target_fuse := int(equipped_weapon.fuse) + 1
 		return {
 			"result": "fused",
 			"weapon_id": normalized_id,
 			"weapon": equipped_weapon,
 			"from_fuse": int(equipped_weapon.fuse),
-			"target_fuse": int(equipped_weapon.fuse) + 1,
+			"target_fuse": target_fuse,
+			"has_branch_options": _has_branch_options_for_fuse(equipped_weapon, target_fuse),
 		}
 	return {
 		"result": "converted_to_gold",
@@ -336,6 +338,14 @@ func predict_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
 		"weapon": equipped_weapon,
 		"gold": _calculate_duplicate_weapon_gold(normalized_id),
 	}
+
+func _has_branch_options_for_fuse(weapon: Weapon, target_fuse: int) -> bool:
+	if weapon == null or not is_instance_valid(weapon):
+		return false
+	if weapon.has_method("get_available_branch_options_for_fuse"):
+		var options_variant: Variant = weapon.call("get_available_branch_options_for_fuse", target_fuse)
+		return options_variant is Array and not (options_variant as Array).is_empty()
+	return not weapon.get_branch_options().is_empty()
 
 func _find_equipped_weapon_by_id(weapon_id: String) -> Weapon:
 	var normalized_id := str(weapon_id).strip_edges()

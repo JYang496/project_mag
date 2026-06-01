@@ -314,6 +314,13 @@ func _get_total_runtime_alive_count() -> int:
 		total += int(state.get("alive", 0))
 	return total
 
+func _get_total_runtime_ranged_alive_count() -> int:
+	var total := 0
+	for state in _runtime_spawn_states:
+		if _is_spawn_ranged(state):
+			total += int(state.get("alive", 0))
+	return total
+
 func _add_enemy_with_state_signal(state: Dictionary, enemy_instance: Node) -> void:
 	if enemy_instance == null:
 		return
@@ -428,6 +435,10 @@ func _can_pick_candidate(
 		return false
 	if _is_spawn_ranged(state) and ranged_count >= int(profile.get("max_ranged_per_batch")):
 		return false
+	if _is_spawn_ranged(state):
+		var max_ranged_alive := int(profile.get("max_ranged_alive_total"))
+		if max_ranged_alive > 0 and _get_total_runtime_ranged_alive_count() >= max_ranged_alive:
+			return false
 	if _is_spawn_elite(state):
 		var elite_limit := 1 if level_index < 8 else 2
 		if elite_count >= elite_limit:
@@ -467,10 +478,6 @@ func _spawn_from_state(state: Dictionary, requested_count: int) -> int:
 	var base_count := clampi(max(1, requested_count), 1, spawn_room)
 	var spawn_count: int = base_count
 	var loot_value_multiplier: float = 1.0
-	if _is_spawn_ranged(state):
-		spawn_count = maxi(1, int(ceil(float(base_count) * 0.5)))
-		spawn_count = mini(spawn_count, spawn_room)
-		loot_value_multiplier = float(base_count) / float(max(1, spawn_count))
 	var random_position_center := get_random_position()
 	var counter := 0
 	var spawned_hp := 0

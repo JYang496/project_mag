@@ -2,6 +2,7 @@ extends MarginContainer
 class_name ShopWeaponSlot
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
+const PREVIEW_FORMATTER := preload("res://UI/scripts/weapon_obtain_preview_formatter.gd")
 
 # Properties
 @onready var background: ColorRect = $Background
@@ -147,22 +148,12 @@ func _refresh_purchase_prediction() -> void:
 	if PlayerData.player.get("PlayerData") == null:
 		return
 	var outcome: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(str(item_id))
-	var weapon_name := equip_name.text
-	match str(outcome.get("result", "not_applicable")):
-		"fused":
-			socket_2.text = LocalizationManager.tr_format(
-				"ui.weapon.obtain_preview.fuse",
-				{"name": weapon_name, "fuse": int(outcome.get("target_fuse", 1))},
-				"%s -> Fuse %d" % [weapon_name, int(outcome.get("target_fuse", 1))]
-			)
-		"converted_to_gold":
-			socket_2.text = LocalizationManager.tr_format(
-				"ui.weapon.obtain_preview.gold",
-				{"name": weapon_name, "gold": int(outcome.get("gold", 0))},
-				"%s -> +%d Gold" % [weapon_name, int(outcome.get("gold", 0))]
-			)
-		_:
-			socket_2.text = LocalizationManager.tr_key("ui.weapon.obtain_preview.new", "New weapon")
+	var weapon_name := LocalizationManager.get_weapon_name_by_id(str(item_id), str(item_id))
+	socket_2.text = PREVIEW_FORMATTER.format_obtain_preview(
+		LocalizationManager.tr_key("ui.weapon.obtain_preview.new", "New weapon"),
+		weapon_name,
+		outcome
+	)
 
 func _get_weapon_definition_rarity_color() -> Color:
 	var weapon_def := DataHandler.read_weapon_data(str(item_id)) as WeaponDefinition

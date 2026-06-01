@@ -11,7 +11,7 @@ size = Vector2(30, 25)
 size = Vector2(16, 16)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_yef5u"]
-size = Vector2(110, 87)
+size = Vector2(150, 150)
 
 [node name="EnemyWheelCart" unique_id=1509861233 instance=ExtResource("1_jdgf0")]
 script = ExtResource("2_m5ns1")
@@ -19,7 +19,12 @@ chase_acceleration = 25.0
 slowdown_deceleration = 180.0
 max_speed_multiplier = 3.0
 damage = 4
+combat_role = "melee"
+loot_value_multiplier = 1.0
 spawn_cost = 2
+spawn_tags = Array[StringName]([])
+spawn_alive_cap = 0
+spawn_batch_cap = 0
 movement_speed = 40.0
 hp = 30
 
@@ -42,7 +47,6 @@ shape = SubResource("RectangleShape2D_5l3jp")
 collision_layer = 0
 
 [node name="SlowDownShape" type="CollisionShape2D" parent="SlowDownArea" index="0" unique_id=1650695760]
-position = Vector2(0, -1.5)
 shape = SubResource("RectangleShape2D_yef5u")
 
 [connection signal="body_entered" from="SlowDownArea" to="." method="_on_slow_down_area_body_entered"]

@@ -11,12 +11,13 @@ class_name SpawnCombatProfile
 
 @export_group("Batch Limits")
 @export var max_same_type_per_batch: int = 4
-@export var max_ranged_per_batch: int = 3
+@export var max_ranged_per_batch: int = 4
 @export var max_selection_attempts: int = 96
 
 @export_group("Alive Limits")
 @export var default_alive_cap_per_type: int = 80
 @export var default_total_alive_cap: int = 240
+@export var max_ranged_alive_total: int = 8
 
 @export_group("Validation")
 @export var enable_hp_per_sec_report: bool = true
@@ -48,6 +49,7 @@ func sanitize() -> void:
 	max_selection_attempts = maxi(max_selection_attempts, 1)
 	default_alive_cap_per_type = maxi(default_alive_cap_per_type, 1)
 	default_total_alive_cap = maxi(default_total_alive_cap, default_alive_cap_per_type)
+	max_ranged_alive_total = maxi(max_ranged_alive_total, 0)
 	hp_per_sec_tolerance_pct = clampf(hp_per_sec_tolerance_pct, 0.0, 1.0)
 	infinite_mode_start_level_index = maxi(infinite_mode_start_level_index, 1)
 	infinite_hp_growth_per_level = maxf(infinite_hp_growth_per_level, 0.0)

@@ -1,8 +1,8 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://dgemdo8ka2seb"]
 
-[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_base"]
-[ext_resource type="Script" path="res://Npc/enemy/scripts/enemy_spike_turret.gd" id="2_script"]
-[ext_resource type="Texture2D" path="res://asset/images/enemies/b.png" id="3_tex"]
+[ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://dlj7blvxdmn3b" path="res://Npc/enemy/scripts/enemy_spike_turret.gd" id="2_script"]
+[ext_resource type="Texture2D" uid="uid://ctm115arudbhj" path="res://asset/images/enemies/b.png" id="3_tex"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hurt"]
 size = Vector2(24, 24)
@@ -10,12 +10,27 @@ size = Vector2(24, 24)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(22, 22)
 
-[node name="EnemySpikeTurret" instance=ExtResource("1_base")]
+[node name="EnemySpikeTurret" unique_id=716778477 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+detect_range = 760.0
+attack_range = 430.0
+stationary_enter_range_ratio = 0.8
+lock_duration = 1.1
+cooldown_duration = 1.9
+projectile_speed = 190.0
+projectile_life_time = 3.2
+muzzle_offset = 22.0
+screen_fire_margin = 28.0
+aim_warning_color = Color(1, 0.12, 0.12, 0.9)
+aim_warning_width = 3.0
 damage = 3
+combat_role = "melee"
+loot_value_multiplier = 1.0
 spawn_cost = 3
 spawn_tags = Array[StringName]([&"ranged"])
-movement_speed = 0.0
+spawn_alive_cap = 0
+spawn_batch_cap = 0
+movement_speed = 18.0
 hp = 42
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
