@@ -20,6 +20,9 @@ const SPAWN_TAG_ELITE := &"elite"
 @export var body_push_decay: float = 900.0
 @export var body_push_max_speed: float = 260.0
 @export var body_push_min_speed_delta: float = 18.0
+@export_group("Crowd Breakthrough")
+@export var crowd_breakthrough_width_multiplier: float = 1.5
+@export var crowd_breakthrough_side_push_strength: float = 0.6
 @export_group("")
 @onready var coin_preload = preload("res://Objects/loots/coin.tscn")
 @onready var drop_preload = preload("res://Objects/loots/drop.tscn")
@@ -38,6 +41,8 @@ var _board_generator_ref: Node = null
 var _constraint_pending_physics_tick: bool = true
 var body_push_velocity: Vector2 = Vector2.ZERO
 var _body_push_collision_velocity: Vector2 = Vector2.ZERO
+var _crowd_breakthrough_active: bool = false
+var _crowd_breakthrough_is_overlapping_enemies: bool = false
 
 func _enter_tree() -> void:
 	var enemy_registry := get_node_or_null("/root/EnemyRegistry")
@@ -180,8 +185,11 @@ func move_with_body_push(desired_velocity: Vector2, delta: float) -> void:
 	var knockback_velocity: Vector2 = knockback.amount * knockback.angle
 	var safe_push_velocity := body_push_velocity if body_push_enabled else Vector2.ZERO
 	_body_push_collision_velocity = desired_velocity + safe_push_velocity
+	var previous_position := global_position
+	_update_crowd_breakthrough_collision_mask(_body_push_collision_velocity)
 	velocity = _body_push_collision_velocity + knockback_velocity
 	move_and_slide()
+	_apply_crowd_breakthrough_path_push(previous_position, global_position, _body_push_collision_velocity)
 	_apply_body_push_from_slide_collisions()
 	_decay_body_push_velocity(delta)
 
@@ -197,6 +205,13 @@ func apply_body_push(push_velocity: Vector2) -> void:
 
 func get_body_push_collision_velocity() -> Vector2:
 	return _body_push_collision_velocity
+
+func set_crowd_breakthrough_active(active: bool) -> void:
+	if _crowd_breakthrough_active == active:
+		return
+	_crowd_breakthrough_active = active
+	if not active:
+		_set_crowd_breakthrough_enemy_overlap(false)
 
 func _apply_body_push_from_slide_collisions() -> void:
 	if not body_push_enabled:
@@ -234,6 +249,124 @@ func _decay_body_push_velocity(delta: float) -> void:
 		return
 	body_push_velocity = body_push_velocity.move_toward(Vector2.ZERO, maxf(body_push_decay, 0.0) * maxf(delta, 0.0))
 
+func _update_crowd_breakthrough_collision_mask(move_velocity: Vector2) -> void:
+	if not _crowd_breakthrough_active:
+		_set_crowd_breakthrough_enemy_overlap(false)
+		return
+	if move_velocity.length_squared() <= 1.0:
+		_set_crowd_breakthrough_enemy_overlap(false)
+		return
+	_set_crowd_breakthrough_enemy_overlap(not _has_crowd_breakthrough_blocker(move_velocity))
+
+func _set_crowd_breakthrough_enemy_overlap(enabled: bool) -> void:
+	if _crowd_breakthrough_is_overlapping_enemies == enabled:
+		return
+	self.set_collision_mask_value(3, not enabled)
+	_crowd_breakthrough_is_overlapping_enemies = enabled
+
+func _has_crowd_breakthrough_blocker(move_velocity: Vector2) -> bool:
+	var move_dir := move_velocity.normalized()
+	var half_width := _get_crowd_breakthrough_half_width()
+	var lookahead := maxf(half_width * 2.0, move_velocity.length() * 0.18)
+	for enemy in _get_crowd_breakthrough_candidates(lookahead + half_width):
+		if enemy == self or not _is_crowd_breakthrough_blocker(enemy):
+			continue
+		var to_enemy := enemy.global_position - global_position
+		var forward_distance := to_enemy.dot(move_dir)
+		if forward_distance < 0.0 or forward_distance > lookahead:
+			continue
+		var lateral_distance := absf(to_enemy.dot(Vector2(-move_dir.y, move_dir.x)))
+		if lateral_distance <= half_width:
+			return true
+	return false
+
+func _apply_crowd_breakthrough_path_push(start_position: Vector2, end_position: Vector2, move_velocity: Vector2) -> void:
+	if not _crowd_breakthrough_active or move_velocity.length_squared() <= 1.0:
+		return
+	var segment := end_position - start_position
+	if segment.length_squared() <= 1.0:
+		segment = move_velocity.normalized() * maxf(_get_crowd_breakthrough_half_width(), 1.0)
+	var segment_length := segment.length()
+	var move_dir := segment / segment_length
+	var side_dir := Vector2(-move_dir.y, move_dir.x)
+	var half_width := _get_crowd_breakthrough_half_width()
+	var search_radius := segment_length + half_width * 2.0
+	var base_push_speed := move_velocity.length() * maxf(crowd_breakthrough_side_push_strength, 0.0)
+	if base_push_speed <= 0.0:
+		return
+	for enemy in _get_crowd_breakthrough_candidates(search_radius):
+		if enemy == self or not _is_crowd_breakthrough_push_target(enemy):
+			continue
+		var to_enemy := enemy.global_position - start_position
+		var along := clampf(to_enemy.dot(move_dir), 0.0, segment_length)
+		var closest_point := start_position + move_dir * along
+		var offset := enemy.global_position - closest_point
+		if offset.length() > half_width:
+			continue
+		var side_sign := 1.0
+		var lateral := offset.dot(side_dir)
+		if absf(lateral) > 0.001:
+			side_sign = signf(lateral)
+		elif enemy.get_instance_id() % 2 == 0:
+			side_sign = -1.0
+		enemy.apply_body_push(side_dir * side_sign * base_push_speed)
+
+func _get_crowd_breakthrough_candidates(radius: float) -> Array[BaseEnemy]:
+	var output: Array[BaseEnemy] = []
+	var tree := get_tree()
+	if tree == null:
+		return output
+	var registry := tree.root.get_node_or_null("EnemyRegistry")
+	if registry != null and registry.has_method("get_enemies_in_radius"):
+		var registered_enemies: Variant = registry.call("get_enemies_in_radius", global_position, maxf(radius, 1.0), self)
+		if registered_enemies is Array:
+			for enemy_ref in registered_enemies:
+				var enemy := enemy_ref as BaseEnemy
+				if enemy != null and is_instance_valid(enemy):
+					output.append(enemy)
+			return output
+	for enemy_ref in tree.get_nodes_in_group("enemies"):
+		var enemy := enemy_ref as BaseEnemy
+		if enemy == null or enemy == self or not is_instance_valid(enemy):
+			continue
+		if enemy.global_position.distance_to(global_position) > radius:
+			continue
+		output.append(enemy)
+	return output
+
+func _is_crowd_breakthrough_push_target(enemy: BaseEnemy) -> bool:
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+	if not enemy.body_push_enabled:
+		return false
+	return not _is_crowd_breakthrough_blocker(enemy)
+
+func _is_crowd_breakthrough_blocker(enemy: BaseEnemy) -> bool:
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+	if enemy.is_boss or enemy.is_in_group("boss"):
+		return true
+	if enemy is EliteEnemy:
+		return true
+	if enemy.has_method("is_quest_movement_locked") and enemy.is_quest_movement_locked():
+		return true
+	return false
+
+func _get_crowd_breakthrough_half_width() -> float:
+	var radius := 16.0
+	var collision_shape := get_node_or_null("NPCCollision") as CollisionShape2D
+	if collision_shape != null and collision_shape.shape != null:
+		var shape := collision_shape.shape
+		if shape is CircleShape2D:
+			radius = (shape as CircleShape2D).radius
+		elif shape is RectangleShape2D:
+			var size := (shape as RectangleShape2D).size
+			radius = maxf(size.x, size.y) * 0.5
+		elif shape is CapsuleShape2D:
+			var capsule := shape as CapsuleShape2D
+			radius = maxf(capsule.radius, capsule.height * 0.5)
+	return maxf(radius * maxf(crowd_breakthrough_width_multiplier, 0.1), 1.0)
+
 func interrupt_movement() -> void:
 	if has_method("_finish_dash"):
 		call_deferred("_finish_dash")
@@ -255,6 +388,8 @@ func apply_status_payload(status_name: StringName, status_data: Variant) -> void
 			)
 
 func _update_knockback_overlap_mode() -> void:
+	if _crowd_breakthrough_is_overlapping_enemies:
+		return
 	var is_being_knocked_back: bool = float(knockback.get("amount", 0.0)) > 0.01
 	if is_being_knocked_back:
 		if not _is_knockback_overlap_mode:

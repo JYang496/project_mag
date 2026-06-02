@@ -17,6 +17,7 @@ var charge_elapsed: float = 0.0
 
 func _physics_process(delta: float) -> void:
 	if is_stunned():
+		set_crowd_breakthrough_active(false)
 		if preparing_dash:
 			_update_dash_prepare(delta)
 		knockback.amount = clamp(knockback.amount - knockback_recover, 0, knockback.amount)
@@ -58,6 +59,7 @@ func _finish_dash() -> void:
 	if not charging and not preparing_dash:
 		return
 	highlight_material.set_shader_parameter("outline_color", Color.YELLOW)
+	set_crowd_breakthrough_active(false)
 	self.set_collision_mask_value(3,true)
 	charging = false
 	preparing_dash = false
@@ -70,6 +72,7 @@ func _finish_dash() -> void:
 
 func _start_dash_prepare() -> void:
 	skill_ready = false
+	set_crowd_breakthrough_active(false)
 	preparing_dash = true
 	charge_elapsed = 0.0
 	if PlayerData.player and direction == Vector2.ZERO:
@@ -97,6 +100,7 @@ func _update_dash_prepare(delta: float) -> void:
 func _begin_dash() -> void:
 	preparing_dash = false
 	charging = true
+	set_crowd_breakthrough_active(true)
 	bonus_speed = dash_speed_multiplier * movement_speed
 	dash_remaining_distance = dash_distance
 	charge_elapsed = 0.0
