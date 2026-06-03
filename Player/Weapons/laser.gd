@@ -15,41 +15,15 @@ var _mouse_still_distance: float = 0.0
 var _last_mouse_position: Vector2 = Vector2.INF
 
 var weapon_data = {
-	"1": {
-		"damage": "3",
-		"fire_interval_sec": "2",
-		"ammo": "45",
-	},
-	"2": {
-		"damage": "4",
-		"fire_interval_sec": "1.6",
-		"ammo": "50",
-	},
-	"3": {
-		"damage": "6",
-		"fire_interval_sec": "1.1",
-		"ammo": "55",
-	},
-	"4": {
-		"damage": "7",
-		"fire_interval_sec": "0.8",
-		"ammo": "60",
-	},
-	"5": {
-		"damage": "8",
-		"fire_interval_sec": "0.6",
-		"ammo": "65",
-	},
-	"6": {
-		"damage": "9",
-		"fire_interval_sec": "0.5",
-		"ammo": "70",
-	},
-	"7": {
-		"damage": "10",
-		"fire_interval_sec": "0.45",
-		"ammo": "75",
-	}
+	"1": {"damage": "3", "fire_interval_sec": "2", "ammo": "45"},
+	"2": {"damage": "4", "fire_interval_sec": "1.6", "ammo": "50"},
+	"3": {"damage": "6", "fire_interval_sec": "1.1", "ammo": "55"},
+	"4": {"damage": "7", "fire_interval_sec": "0.8", "ammo": "60"},
+	"5": {"damage": "8", "fire_interval_sec": "0.6", "ammo": "65"},
+	"6": {"damage": "9", "fire_interval_sec": "0.5", "ammo": "70"},
+	"7": {"damage": "10", "fire_interval_sec": "0.45", "ammo": "75"},
+	"8": {"damage": "11", "fire_interval_sec": "0.40", "ammo": "80"},
+	"9": {"damage": "12", "fire_interval_sec": "0.35", "ammo": "85"}
 }
 
 

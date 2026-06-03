@@ -7,60 +7,20 @@ var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.pn
 @export var continuous_move_trigger_sec: float = 6.0
 
 # Weapon
-var ITEM_NAME = "Pistol"
+var ITEM_NAME = "Auto Pistol"
 var _continuous_move_accum_sec: float = 0.0
 
 
 var weapon_data = {
-	"1": {
-		"damage": "4",
-		"speed": "600",
-		"projectile_hits": "1",
-		"fire_interval_sec": "1",
-		"ammo": "45",
-	},
-	"2": {
-		"damage": "6",
-		"speed": "600",
-		"projectile_hits": "1",
-		"fire_interval_sec": "1",
-		"ammo": "50",
-	},
-	"3": {
-		"damage": "8",
-		"speed": "600",
-		"projectile_hits": "1",
-		"fire_interval_sec": "1",
-		"ammo": "55",
-	},
-	"4": {
-		"damage": "10",
-		"speed": "800",
-		"projectile_hits": "1",
-		"fire_interval_sec": "0.75",
-		"ammo": "60",
-	},
-	"5": {
-		"damage": "12",
-		"speed": "800",
-		"projectile_hits": "2",
-		"fire_interval_sec": "0.5",
-		"ammo": "65",
-	},
-	"6": {
-		"damage": "14",
-		"speed": "800",
-		"projectile_hits": "2",
-		"fire_interval_sec": "0.5",
-		"ammo": "70",
-	},
-	"7": {
-		"damage": "16",
-		"speed": "800",
-		"projectile_hits": "2",
-		"fire_interval_sec": "0.5",
-		"ammo": "75",
-	}
+	"1": {"damage": "4", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "45"},
+	"2": {"damage": "6", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "50"},
+	"3": {"damage": "8", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "55"},
+	"4": {"damage": "10", "speed": "800", "projectile_hits": "1", "fire_interval_sec": "0.75", "ammo": "60"},
+	"5": {"damage": "12", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.5", "ammo": "65"},
+	"6": {"damage": "14", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.5", "ammo": "70"},
+	"7": {"damage": "16", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.5", "ammo": "75"},
+	"8": {"damage": "18", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.5", "ammo": "80"},
+	"9": {"damage": "20", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.5", "ammo": "85"}
 }
 
 var weapon_file

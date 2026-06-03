@@ -17,8 +17,8 @@ weapon.1.name,machine gun,machine gun
 weapon.1.desc,machine gun test,machine gun test
 weapon.7.name,orbit,orbit
 weapon.7.desc,orbit test: spiral,orbit test: spiral
-weapon.5.name,pistol,pistol
-weapon.5.desc,pistol test,pistol test
+weapon.5.name,Auto Pistol,自动手枪
+weapon.5.desc,Auto-targeting sidearm that fires at the nearest enemy in range. Moving continuously primes its passive.,自动索敌副枪，会攻击范围内最近敌人；连续移动可预热被动。
 weapon.17.name,Plasma Lance,Plasma Lance
 weapon.17.desc,Slow heavy piercing lance. Projectile damage increases after each penetration.,Slow heavy piercing lance. Projectile damage increases after each penetration.
 weapon.8.name,rocket luncher,rocket luncher

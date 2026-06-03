@@ -158,8 +158,6 @@ func _build_weapon_header(weapon: Weapon) -> String:
 	]
 
 func _build_cap_reason(weapon: Weapon) -> String:
-	if int(weapon.level) >= int(weapon.max_level) and int(weapon.fuse) < int(weapon.FINAL_MAX_FUSE):
-		return LocalizationManager.tr_key("ui.upgrade.need_duplicate", "Level capped; obtain a duplicate weapon to break through.")
 	return LocalizationManager.tr_key("ui.upgrade.fully_upgraded", "Fully upgraded.")
 
 func _get_weapon_rarity(weapon: Weapon) -> String:

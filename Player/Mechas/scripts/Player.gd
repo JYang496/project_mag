@@ -117,6 +117,7 @@ var _last_move_input_msec: int = -1
 var _last_face_horizontal_sign: int = -1
 var _last_face_vertical_sign: int = 1
 var _last_move_anim_is_top: bool = false
+var _suppress_attack_until_released: bool = false
 const ELITE_HIT_SLOW_SOURCE_ID: StringName = &"elite_hit_stagger"
 var _elite_hit_slow_until_msec: int = 0
 var _debug_passive_connected_weapon_ids: Dictionary = {}
@@ -299,6 +300,8 @@ func try_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
 	if result_type == "fused":
 		var target_fuse := int(prediction.get("target_fuse", int(subject.fuse)))
 		subject.fuse = target_fuse
+		if subject.has_method("refresh_max_level_from_data"):
+			subject.call("refresh_max_level_from_data")
 		var clamped_level := clampi(int(subject.level), 1, int(subject.max_level))
 		if subject.has_method("set_level"):
 			subject.call("set_level", clamped_level)
@@ -446,6 +449,13 @@ func _process_combat_input(delta: float) -> void:
 	var pressed := Input.is_action_pressed("ATTACK")
 	var just_pressed := Input.is_action_just_pressed("ATTACK")
 	var just_released := Input.is_action_just_released("ATTACK")
+	if _suppress_attack_until_released:
+		if pressed:
+			pressed = false
+			just_pressed = false
+			just_released = false
+		else:
+			_suppress_attack_until_released = false
 	if pressed:
 		_try_show_reload_block_hint(main_weapon)
 	if main_weapon.has_method("handle_primary_input"):
@@ -1813,6 +1823,10 @@ func _on_grab_area_area_entered(area):
 func _on_phase_changed(new_phase: String) -> void:
 	var previous_phase := _last_phase
 	_last_phase = new_phase
+	if new_phase == PhaseManager.BATTLE:
+		_suppress_attack_until_released = Input.is_action_pressed("ATTACK")
+	else:
+		_suppress_attack_until_released = false
 	_update_vision_effect()
 	if not _require_camera_system_or_halt():
 		return

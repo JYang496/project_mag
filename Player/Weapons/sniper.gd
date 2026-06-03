@@ -20,6 +20,8 @@ var weapon_data := {
 	"5": {"damage": "30", "speed": "1900", "projectile_hits": "9", "fire_interval_sec": "2.2", "ammo": "9"},
 	"6": {"damage": "37", "speed": "1900", "projectile_hits": "10", "fire_interval_sec": "2.1", "ammo": "10"},
 	"7": {"damage": "45", "speed": "2000", "projectile_hits": "11", "fire_interval_sec": "2.0", "ammo": "12"},
+	"8": {"damage": "53", "speed": "2100", "projectile_hits": "12", "fire_interval_sec": "1.9", "ammo": "14"},
+	"9": {"damage": "61", "speed": "2200", "projectile_hits": "13", "fire_interval_sec": "1.8", "ammo": "16"}
 }
 
 func set_level(lv) -> void:

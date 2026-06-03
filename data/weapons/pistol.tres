@@ -7,8 +7,8 @@
 [resource]
 script = ExtResource("3_nupfu")
 weapon_id = "5"
-display_name = "pistol"
+display_name = "Auto Pistol"
 icon = ExtResource("1_dybqt")
 price = 120
-description = "pistol test"
+description = "Auto-targeting sidearm that fires at the nearest enemy in range. Moving continuously primes its passive."
 scene = ExtResource("2_nmgaj")

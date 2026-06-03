@@ -13,62 +13,15 @@ var base_arc: float = 0.0
 var base_bullet_count: int = 3
 
 var weapon_data = {
-	"1": {
-		"damage": "14",
-		"speed": "1000",
-		"projectile_hits": "1",
-		"fire_interval_sec": "2",
-		"ammo": "24",
-		"bullet_count": "3",
-	},
-	"2": {
-		"damage": "16",
-		"speed": "1000",
-		"projectile_hits": "1",
-		"fire_interval_sec": "2",
-		"ammo": "26",
-		"bullet_count": "4",
-	},
-	"3": {
-		"damage": "18",
-		"speed": "1000",
-		"projectile_hits": "1",
-		"fire_interval_sec": "1.8",
-		"ammo": "28",
-		"bullet_count": "5",
-	},
-	"4": {
-		"damage": "20",
-		"speed": "1000",
-		"projectile_hits": "1",
-		"fire_interval_sec": "1.8",
-		"ammo": "30",
-		"bullet_count": "6",
-	},
-	"5": {
-		"damage": "22",
-		"speed": "1000",
-		"projectile_hits": "2",
-		"fire_interval_sec": "1.6",
-		"ammo": "32",
-		"bullet_count": "7",
-	},
-	"6": {
-		"damage": "24",
-		"speed": "1000",
-		"projectile_hits": "2",
-		"fire_interval_sec": "1.6",
-		"ammo": "34",
-		"bullet_count": "8",
-	},
-	"7": {
-		"damage": "26",
-		"speed": "1000",
-		"projectile_hits": "2",
-		"fire_interval_sec": "1.6",
-		"ammo": "36",
-		"bullet_count": "9",
-	}
+	"1": {"damage": "14", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "2", "ammo": "24", "bullet_count": "3"},
+	"2": {"damage": "16", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "2", "ammo": "26", "bullet_count": "4"},
+	"3": {"damage": "18", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "28", "bullet_count": "5"},
+	"4": {"damage": "20", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "30", "bullet_count": "6"},
+	"5": {"damage": "22", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "32", "bullet_count": "7"},
+	"6": {"damage": "24", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "34", "bullet_count": "8"},
+	"7": {"damage": "26", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "36", "bullet_count": "9"},
+	"8": {"damage": "28", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "38", "bullet_count": "10"},
+	"9": {"damage": "30", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "40", "bullet_count": "11"}
 }
 
 

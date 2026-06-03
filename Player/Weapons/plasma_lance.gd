@@ -33,6 +33,8 @@ var weapon_data := {
 	"5": {"damage": "54", "speed": "1260", "projectile_hits": "3", "fire_interval_sec": "1.20", "ammo": "24"},
 	"6": {"damage": "64", "speed": "1300", "projectile_hits": "3", "fire_interval_sec": "1.09", "ammo": "26"},
 	"7": {"damage": "76", "speed": "1340", "projectile_hits": "3", "fire_interval_sec": "0.97", "ammo": "28"},
+	"8": {"damage": "88", "speed": "1380", "projectile_hits": "3", "fire_interval_sec": "0.85", "ammo": "30"},
+	"9": {"damage": "100", "speed": "1420", "projectile_hits": "3", "fire_interval_sec": "0.73", "ammo": "32"}
 }
 
 func _physics_process(delta: float) -> void:

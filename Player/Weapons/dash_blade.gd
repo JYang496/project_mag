@@ -11,62 +11,15 @@ const AIM_ROTATION_OFFSET := deg_to_rad(90)
 var ITEM_NAME := "Dash Blade"
 
 var weapon_data := {
-	"1": {
-		"damage": "28",
-		"range": "150",
-		"dash_speed": "900",
-		"return_speed": "700",
-		"fire_interval_sec": "1.1",
-		"ammo": "24",
-	},
-	"2": {
-		"damage": "34",
-		"range": "160",
-		"dash_speed": "950",
-		"return_speed": "730",
-		"fire_interval_sec": "1.0",
-		"ammo": "26",
-	},
-	"3": {
-		"damage": "40",
-		"range": "170",
-		"dash_speed": "980",
-		"return_speed": "760",
-		"fire_interval_sec": "0.95",
-		"ammo": "28",
-	},
-	"4": {
-		"damage": "48",
-		"range": "180",
-		"dash_speed": "1020",
-		"return_speed": "780",
-		"fire_interval_sec": "0.9",
-		"ammo": "30",
-	},
-	"5": {
-		"damage": "58",
-		"range": "190",
-		"dash_speed": "1080",
-		"return_speed": "820",
-		"fire_interval_sec": "0.85",
-		"ammo": "32",
-	},
-	"6": {
-		"damage": "70",
-		"range": "210",
-		"dash_speed": "1150",
-		"return_speed": "860",
-		"fire_interval_sec": "0.8",
-		"ammo": "34",
-	},
-	"7": {
-		"damage": "85",
-		"range": "230",
-		"dash_speed": "1220",
-		"return_speed": "900",
-		"fire_interval_sec": "0.75",
-		"ammo": "36",
-	},
+	"1": {"damage": "28", "range": "150", "dash_speed": "900", "return_speed": "700", "fire_interval_sec": "1.1", "ammo": "24"},
+	"2": {"damage": "34", "range": "160", "dash_speed": "950", "return_speed": "730", "fire_interval_sec": "1.0", "ammo": "26"},
+	"3": {"damage": "40", "range": "170", "dash_speed": "980", "return_speed": "760", "fire_interval_sec": "0.95", "ammo": "28"},
+	"4": {"damage": "48", "range": "180", "dash_speed": "1020", "return_speed": "780", "fire_interval_sec": "0.9", "ammo": "30"},
+	"5": {"damage": "58", "range": "190", "dash_speed": "1080", "return_speed": "820", "fire_interval_sec": "0.85", "ammo": "32"},
+	"6": {"damage": "70", "range": "210", "dash_speed": "1150", "return_speed": "860", "fire_interval_sec": "0.8", "ammo": "34"},
+	"7": {"damage": "85", "range": "230", "dash_speed": "1220", "return_speed": "900", "fire_interval_sec": "0.75", "ammo": "36"},
+	"8": {"damage": "100", "range": "250", "dash_speed": "1290", "return_speed": "940", "fire_interval_sec": "0.70", "ammo": "38"},
+	"9": {"damage": "115", "range": "270", "dash_speed": "1360", "return_speed": "980", "fire_interval_sec": "0.65", "ammo": "40"}
 }
 
 var base_damage := 1

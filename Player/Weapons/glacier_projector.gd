@@ -24,6 +24,8 @@ var weapon_data: Dictionary = {
 	"5": {"damage": "12", "fire_interval_sec": "0.18", "ammo": "150", "range": "330"},
 	"6": {"damage": "15", "fire_interval_sec": "0.17", "ammo": "160", "range": "355"},
 	"7": {"damage": "18", "fire_interval_sec": "0.16", "ammo": "170", "range": "380"},
+	"8": {"damage": "21", "fire_interval_sec": "0.15", "ammo": "180", "range": "405"},
+	"9": {"damage": "24", "fire_interval_sec": "0.14", "ammo": "190", "range": "430"}
 }
 
 func _ready() -> void:

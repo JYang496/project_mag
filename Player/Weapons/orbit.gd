@@ -25,55 +25,15 @@ var number = 4
 @export var offhand_spin_speed_multiplier: float = 0.65
 
 var weapon_data = {
-	"1": {
-		"damage": "8",
-		"number": "1",
-		"spin_speed": "3",
-		"fire_interval_sec": "2.5",
-		"ammo": "20",
-	},
-	"2": {
-		"damage": "10",
-		"number": "2",
-		"spin_speed": "3",
-		"fire_interval_sec": "2.5",
-		"ammo": "20",
-	},
-	"3": {
-		"damage": "12",
-		"number": "3",
-		"spin_speed": "3.5",
-		"fire_interval_sec": "2.5",
-		"ammo": "20",
-	},
-	"4": {
-		"damage": "14",
-		"number": "4",
-		"spin_speed": "3.5",
-		"fire_interval_sec": "2.5",
-		"ammo": "20",
-	},
-	"5": {
-		"damage": "16",
-		"number": "5",
-		"spin_speed": "4",
-		"fire_interval_sec": "2.5",
-		"ammo": "20",
-	},
-	"6": {
-		"damage": "18",
-		"number": "6",
-		"spin_speed": "4",
-		"fire_interval_sec": "2.5",
-		"ammo": "20",
-	},
-	"7": {
-		"damage": "20",
-		"number": "7",
-		"spin_speed": "5",
-		"fire_interval_sec": "2.5",
-		"ammo": "20",
-	}
+	"1": {"damage": "8", "number": "1", "spin_speed": "3", "fire_interval_sec": "2.5", "ammo": "20"},
+	"2": {"damage": "10", "number": "2", "spin_speed": "3", "fire_interval_sec": "2.5", "ammo": "20"},
+	"3": {"damage": "12", "number": "3", "spin_speed": "3.5", "fire_interval_sec": "2.5", "ammo": "20"},
+	"4": {"damage": "14", "number": "4", "spin_speed": "3.5", "fire_interval_sec": "2.5", "ammo": "20"},
+	"5": {"damage": "16", "number": "5", "spin_speed": "4", "fire_interval_sec": "2.5", "ammo": "20"},
+	"6": {"damage": "18", "number": "6", "spin_speed": "4", "fire_interval_sec": "2.5", "ammo": "20"},
+	"7": {"damage": "20", "number": "7", "spin_speed": "5", "fire_interval_sec": "2.5", "ammo": "20"},
+	"8": {"damage": "22", "number": "8", "spin_speed": "6", "fire_interval_sec": "2.5", "ammo": "20"},
+	"9": {"damage": "24", "number": "9", "spin_speed": "7", "fire_interval_sec": "2.5", "ammo": "20"}
 }
 
 func set_level(lv) -> void:

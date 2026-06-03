@@ -16,15 +16,10 @@ const PASSIVE_SCOPE_BODY: StringName = &"body"
 const PASSIVE_SCOPE_GLOBAL: StringName = &"global"
 
 # Common variables for weapons
-const FUSE_LEVEL_CAPS: Dictionary = {
-	1: 3,
-	2: 5,
-	3: 7,
-}
 var level : int
 var FINAL_MAX_FUSE : int = 3
 var FINAL_MAX_LEVEL : int = 7
-var max_level : int = FUSE_LEVEL_CAPS[1]
+var max_level : int = FINAL_MAX_LEVEL
 var _fuse_internal : int = 1
 var fuse_sprites: Dictionary = {}
 var branch_ids: Array[String] = []
@@ -61,7 +56,6 @@ var fuse : int:
 		return _fuse_internal
 	set(value):
 		_fuse_internal = clampi(value, 1, FINAL_MAX_FUSE)
-		max_level = get_max_level_for_fuse(_fuse_internal)
 		_apply_fuse_sprite()
 
 signal weapon_role_changed(next_role: String)
@@ -110,6 +104,7 @@ func get_weapon_level_data(requested_level: Variant, data: Dictionary = {}) -> D
 
 func calculate_status() -> void:
 	# Recompute derived runtime stats after module changes.
+	refresh_max_level_from_data()
 	if has_method("sync_stats"):
 		call("sync_stats")
 	validate_module_compatibility()
@@ -118,12 +113,33 @@ func calculate_status() -> void:
 
 
 
-func set_max_level(ml : int):
-	var fuse_cap: int = get_max_level_for_fuse(fuse)
-	max_level = clampi(ml, 1, fuse_cap)
+func set_max_level(ml : int) -> void:
+	max_level = maxi(int(ml), 1)
 
-func get_max_level_for_fuse(fuse_level: int) -> int:
-	return FUSE_LEVEL_CAPS.get(fuse_level, FINAL_MAX_LEVEL)
+func get_max_level_for_fuse(_fuse_level: int) -> int:
+	return get_weapon_max_level()
+
+func get_weapon_max_level() -> int:
+	var data_max := _get_weapon_data_max_level()
+	if data_max > 0:
+		return data_max
+	return maxi(int(max_level), 1)
+
+func refresh_max_level_from_data() -> void:
+	max_level = get_weapon_max_level()
+
+func _get_weapon_data_max_level() -> int:
+	var weapon_data_variant: Variant = get("weapon_data")
+	if not (weapon_data_variant is Dictionary):
+		return maxi(int(FINAL_MAX_LEVEL), 1)
+	var data := weapon_data_variant as Dictionary
+	var best := 0
+	for key_variant in data.keys():
+		var key_text := str(key_variant)
+		if not key_text.is_valid_int():
+			continue
+		best = maxi(best, int(key_text))
+	return best
 
 func _apply_fuse_sprite() -> void:
 	if not sprite:
@@ -217,6 +233,7 @@ func supports_melee_contact() -> bool:
 	return false
 
 func _ready() -> void:
+	refresh_max_level_from_data()
 	_initialize_ammo_system()
 	_migrate_legacy_branch_state()
 	_apply_branch_behaviors_if_needed()

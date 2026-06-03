@@ -36,6 +36,8 @@ var weapon_data := {
 	"5": {"damage": "17", "fire_interval_sec": "0.25", "ammo": "20", "range": "320"},
 	"6": {"damage": "20", "fire_interval_sec": "0.25", "ammo": "20", "range": "340"},
 	"7": {"damage": "23", "fire_interval_sec": "0.25", "ammo": "20", "range": "365"},
+	"8": {"damage": "26", "fire_interval_sec": "0.25", "ammo": "20", "range": "390"},
+	"9": {"damage": "29", "fire_interval_sec": "0.25", "ammo": "20", "range": "415"}
 }
 
 func _ready() -> void:

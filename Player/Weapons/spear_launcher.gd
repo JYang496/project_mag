@@ -11,55 +11,15 @@ var ITEM_NAME = "Spear Launcher"
 var _projectile_unique_hit_state: Dictionary = {}
 
 var weapon_data = {
-	"1": {
-		"damage": "6",
-		"speed": "900",
-		"projectile_hits": "4",
-		"fire_interval_sec": "0.6",
-		"ammo": "30",
-	},
-	"2": {
-		"damage": "7",
-		"speed": "600",
-		"projectile_hits": "4",
-		"fire_interval_sec": "0.55",
-		"ammo": "32",
-	},
-	"3": {
-		"damage": "9",
-		"speed": "600",
-		"projectile_hits": "6",
-		"fire_interval_sec": "0.5",
-		"ammo": "34",
-	},
-	"4": {
-		"damage": "10",
-		"speed": "800",
-		"projectile_hits": "6",
-		"fire_interval_sec": "0.45",
-		"ammo": "36",
-	},
-	"5": {
-		"damage": "12",
-		"speed": "800",
-		"projectile_hits": "6",
-		"fire_interval_sec": "0.4",
-		"ammo": "38",
-	},
-	"6": {
-		"damage": "14",
-		"speed": "800",
-		"projectile_hits": "6",
-		"fire_interval_sec": "0.35",
-		"ammo": "40",
-	},
-	"7": {
-		"damage": "18",
-		"speed": "800",
-		"projectile_hits": "6",
-		"fire_interval_sec": "0.3",
-		"ammo": "42",
-	}
+	"1": {"damage": "6", "speed": "900", "projectile_hits": "4", "fire_interval_sec": "0.6", "ammo": "30"},
+	"2": {"damage": "7", "speed": "600", "projectile_hits": "4", "fire_interval_sec": "0.55", "ammo": "32"},
+	"3": {"damage": "9", "speed": "600", "projectile_hits": "6", "fire_interval_sec": "0.5", "ammo": "34"},
+	"4": {"damage": "10", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.45", "ammo": "36"},
+	"5": {"damage": "12", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.4", "ammo": "38"},
+	"6": {"damage": "14", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.35", "ammo": "40"},
+	"7": {"damage": "18", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.3", "ammo": "42"},
+	"8": {"damage": "22", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.25", "ammo": "44"},
+	"9": {"damage": "26", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.20", "ammo": "46"}
 }
 
 

@@ -10,12 +10,12 @@ static func format_obtain_preview(base_text: String, weapon_name: String, outcom
 				return LocalizationManager.tr_format(
 					"ui.weapon.obtain_preview.fuse_branch",
 					{"name": weapon_name, "fuse": target_fuse},
-					"%s: Break through to Fuse %d; choose a branch to continue" % [weapon_name, target_fuse]
+					"%s: Add Fuse %d trait; choose a branch to continue" % [weapon_name, target_fuse]
 				)
 			return LocalizationManager.tr_format(
 				"ui.weapon.obtain_preview.fuse_no_branch",
 				{"name": weapon_name, "fuse": target_fuse},
-				"%s: Break through to Fuse %d; no branch available" % [weapon_name, target_fuse]
+				"%s: Add Fuse %d trait; no branch available" % [weapon_name, target_fuse]
 			)
 		"converted_to_gold":
 			return LocalizationManager.tr_format(

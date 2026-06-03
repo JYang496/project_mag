@@ -218,7 +218,7 @@
     <header>
       <h1>武器、分支、模组与武器联动的系统定位建议</h1>
       <p class="summary">
-        本文基于当前项目已有设计整理：武器拥有 fuse 突破和等级上限，分支通过
+        本文基于当前项目已有设计整理：武器拥有独立等级成长，fuse 用于添加新特性和解锁分支，分支通过
         <code>WeaponBranchBehavior</code> 改变行为，模组通过 trait、stat modifier、on-hit plugin
         和被动事件接入武器。建议目标是让四层系统各自承担清晰职责，并形成从前期到后期的成长链条。
       </p>
@@ -274,9 +274,9 @@
       <h2>二、成长曲线建议</h2>
       <div class="paper">
         <p>
-          当前 fuse 规则已经适合承担阶段门槛：<code>fuse 1 = level cap 3</code>、
-          <code>fuse 2 = level cap 5 + 第一次分支</code>、
-          <code>fuse 3 = level cap 7 + 第二次分支</code>。建议把它明确设计成“成长阶段转换器”，而不是纯数值突破。
+          当前 fuse 规则更适合承担特性门槛：<code>fuse 1 = 基础形态</code>、
+          <code>fuse 2 = 第一次特性/分支</code>、
+          <code>fuse 3 = 第二次特性/分支</code>。武器等级上限应由该武器自己的 <code>weapon_data</code> 决定，不再受 fuse 限制。
         </p>
       </div>
 
@@ -300,7 +300,7 @@
           </tr>
           <tr>
             <td>中期</td>
-            <td>通过重复武器突破，第一次选择分支，开始围绕 trait 和触发条件选模组。</td>
+            <td>通过重复武器提升 fuse 并添加新特性，第一次选择分支，开始围绕 trait 和触发条件选模组。</td>
             <td>分支 + 模组</td>
             <td>约 50% 到 70%</td>
             <td>分支改变打法，模组开始接管输出成长。</td>
@@ -585,7 +585,7 @@
           </tr>
           <tr>
             <td>武器升级</td>
-            <td>选择已装备武器，支付金币提升等级；等级上限受 fuse 限制。</td>
+            <td>选择已装备武器，支付金币提升等级；等级上限由该武器自己的基础数据决定。</td>
             <td><code>UpgradePreview</code> 读取下一等级 <code>cost</code>，乘以 <code>weapon_upgrade_cost_multiplier</code> 后扣费并调用 <code>set_level()</code>。</td>
             <td>升级应承担主要金币消耗：前期约 1 到 2 次，中期 2 次左右，后期稳定支撑 2 到 3 次操作。</td>
           </tr>
@@ -878,9 +878,9 @@
         </thead>
         <tbody>
           <tr>
-            <td><code>FUSE_LEVEL_CAPS</code> 与自动 fuse</td>
-            <td>作为阶段门槛，控制等级上限和分支选择。</td>
-            <td>在武器详情、奖励和商店中明确展示“突破后解锁分支/等级上限”。</td>
+            <td><code>max_level</code> 与自动 fuse</td>
+            <td>作为特性门槛，控制分支选择和武器新特性的加入。</td>
+            <td>在武器详情、奖励和商店中明确展示“重复武器提升 fuse，并添加新特性/分支”。</td>
           </tr>
           <tr>
             <td><code>WeaponBranchBehavior</code></td>
@@ -910,7 +910,8 @@
       <h2>八、当前武器特性与成长数值</h2>
       <p>
         下表按当前 <code>data/weapons/*.tres</code>、<code>Player/Weapons/*.tscn</code> 和各武器脚本中的
-        <code>weapon_data</code> 整理。数值为 1-7 级基础表，不包含分支、模组、临时 buff、敌人抗性或运行时外部乘区。
+        <code>weapon_data</code> 整理。数值为脚本定义的基础等级表，不包含分支、模组、临时 buff、敌人抗性或运行时外部乘区。
+        当前 fuse 不再限制等级；例如 <code>machine_gun.gd</code> 定义到 9 级时，升级上限应直接来自这张基础表。
       </p>
       <table class="weapon-growth-table">
         <thead>
@@ -918,99 +919,99 @@
             <th>武器</th>
             <th>特性与触发身份</th>
             <th>成长方向</th>
-            <th>1-7 级基础数值</th>
+            <th>1-9 级基础数值</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>machine gun</strong><br><small>ID 1 / 价格 4<br><code>machine_gun.gd</code></small></td>
+            <td><strong>machine gun</strong><br><small>ID 1 / 价格 40<br><code>machine_gun.gd</code></small></td>
             <td>高频物理弹幕，弹速、穿透和弹匣成长；消耗弹匣后换弹触发 <code>machine_gun_heat_expansion</code>。<br><strong>Traits：</strong>range、projectile、physical、heat</td>
-            <td>从基础高频触发源成长为 heat 联动入口。</td>
-            <td><ul class="metric-list"><li>伤害：5 / 6 / 7 / 9 / 11 / 13 / 15</li><li>间隔：1 / 1 / 0.9 / 0.9 / 0.8 / 0.8 / 0.8</li><li>弹匣：50 / 50 / 55 / 55 / 65 / 65 / 65</li><li>速度：600 / 600 / 600 / 800 / 800 / 800 / 800</li><li>穿透：1 / 1 / 1 / 1 / 2 / 2 / 2</li></ul></td>
+            <td>从基础高频触发源成长为 heat 联动入口；脚本定义到 9 级，等级上限不再被 fuse 阶段截断。</td>
+            <td><ul class="metric-list"><li>伤害：6 / 8 / 10 / 11 / 13 / 15 / 16 / 18 / 20</li><li>间隔：1 / 1 / 1 / 0.9 / 0.9 / 0.9 / 0.82 / 0.82 / 0.82</li><li>弹匣：40 / 40 / 40 / 45 / 45 / 45 / 50 / 50 / 50</li><li>速度：600 / 600 / 600 / 800 / 800 / 800 / 800 / 800 / 800</li><li>穿透：1 / 1 / 1 / 1 / 1 / 2 / 2 / 2 / 2</li></ul></td>
           </tr>
           <tr>
-            <td><strong>Charged Blaster</strong><br><small>ID 2 / 价格 9<br><code>charged_blaster.gd</code></small></td>
+            <td><strong>Charged Blaster</strong><br><small>ID 2 / 价格 100<br><code>charged_blaster.gd</code></small></td>
             <td>蓄力/持续光束，多目标命中触发 <code>charged_blaster_multi_hit_triggered</code>。<br><strong>Traits：</strong>duration、range、charge、energy、area_of_effect</td>
             <td>主要提升单 tick 伤害、持续时间和弹匣；冷却保持 4 秒。</td>
-            <td><ul class="metric-list"><li>伤害：6 / 8 / 12 / 15 / 18 / 28 / 32</li><li>间隔：4 / 4 / 4 / 4 / 4 / 4 / 4</li><li>弹匣：10 / 10 / 12 / 12 / 14 / 14 / 16</li><li>持续：1.0 / 1.2 / 1.2 / 1.4 / 1.6 / 1.8 / 2.0</li><li>命中 CD：0.2 全等级</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：6 / 8 / 12 / 15 / 18 / 28 / 32 / 36 / 40</li><li>间隔：4 / 4 / 4 / 4 / 4 / 4 / 4 / 4 / 4</li><li>弹匣：10 / 10 / 12 / 12 / 14 / 14 / 16 / 18 / 20</li><li>持续：1.0 / 1.2 / 1.2 / 1.4 / 1.6 / 1.8 / 2.0 / 2.2 / 2.4</li><li>命中 CD：0.2 全等级</li></ul></td>
           </tr>
           <tr>
-            <td><strong>Spear</strong><br><small>ID 3 / 价格 9<br><code>spear_launcher.gd</code></small></td>
+            <td><strong>Spear</strong><br><small>ID 3 / 价格 100 / hidden<br><code>spear_launcher.gd</code></small></td>
             <td>高频穿透长矛，单发命中多个不同目标触发 <code>spear_multi_pierce_triggered</code>。<br><strong>Traits：</strong>range、projectile、physical</td>
             <td>冷却持续缩短，伤害和弹匣平滑提升，穿透在 3 级跃升。</td>
-            <td><ul class="metric-list"><li>伤害：6 / 7 / 9 / 10 / 12 / 14 / 18</li><li>间隔：0.6 / 0.55 / 0.5 / 0.45 / 0.4 / 0.35 / 0.3</li><li>弹匣：30 / 32 / 34 / 36 / 38 / 40 / 42</li><li>速度：900 / 600 / 600 / 800 / 800 / 800 / 800</li><li>穿透：4 / 4 / 6 / 6 / 6 / 6 / 6</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：6 / 7 / 9 / 10 / 12 / 14 / 18 / 22 / 26</li><li>间隔：0.6 / 0.55 / 0.5 / 0.45 / 0.4 / 0.35 / 0.3 / 0.25 / 0.20</li><li>弹匣：30 / 32 / 34 / 36 / 38 / 40 / 42 / 44 / 46</li><li>速度：900 / 600 / 600 / 800 / 800 / 800 / 800 / 800 / 800</li><li>穿透：4 / 4 / 6 / 6 / 6 / 6 / 6 / 6 / 6</li></ul></td>
           </tr>
           <tr>
-            <td><strong>shotgun</strong><br><small>ID 4 / 价格 7<br><code>shotgun.gd</code></small></td>
+            <td><strong>shotgun</strong><br><small>ID 4 / 价格 80<br><code>shotgun.gd</code></small></td>
             <td>近距离多弹丸物理武器，近距离命中触发 <code>shotgun_close_hit_triggered</code>。<br><strong>Traits：</strong>range、trigger、projectile、physical</td>
             <td>弹丸数量每级增加，冷却在 3/5 级下降，穿透 5 级提升。</td>
-            <td><ul class="metric-list"><li>伤害：14 / 16 / 18 / 20 / 22 / 24 / 26</li><li>间隔：2 / 2 / 1.8 / 1.8 / 1.6 / 1.6 / 1.6</li><li>弹匣：24 / 26 / 28 / 30 / 32 / 34 / 36</li><li>弹丸：3 / 4 / 5 / 6 / 7 / 8 / 9</li><li>穿透：1 / 1 / 1 / 1 / 2 / 2 / 2</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：14 / 16 / 18 / 20 / 22 / 24 / 26 / 28 / 30</li><li>间隔：2 / 2 / 1.8 / 1.8 / 1.6 / 1.6 / 1.6 / 1.6 / 1.6</li><li>弹匣：24 / 26 / 28 / 30 / 32 / 34 / 36 / 38 / 40</li><li>弹丸：3 / 4 / 5 / 6 / 7 / 8 / 9 / 10 / 11</li><li>穿透：1 / 1 / 1 / 1 / 2 / 2 / 2 / 2 / 2</li></ul></td>
           </tr>
           <tr>
-            <td><strong>pistol</strong><br><small>ID 5 / 价格 17<br><code>pistol.gd</code></small></td>
+            <td><strong>Auto Pistol</strong><br><small>ID 5 / 价格 120<br><code>pistol.gd</code></small></td>
             <td>通用物理手枪，连续移动预热触发 <code>pistol_continuous_move_triggered</code>。<br><strong>Traits：</strong>range、trigger、projectile、physical</td>
             <td>稳定提升伤害和弹匣，4/5 级获得射速、弹速和穿透台阶。</td>
-            <td><ul class="metric-list"><li>伤害：4 / 6 / 8 / 10 / 12 / 14 / 16</li><li>间隔：1 / 1 / 1 / 0.75 / 0.5 / 0.5 / 0.5</li><li>弹匣：45 / 50 / 55 / 60 / 65 / 70 / 75</li><li>速度：600 / 600 / 600 / 800 / 800 / 800 / 800</li><li>穿透：1 / 1 / 1 / 1 / 2 / 2 / 2</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：4 / 6 / 8 / 10 / 12 / 14 / 16 / 18 / 20</li><li>间隔：1 / 1 / 1 / 0.75 / 0.5 / 0.5 / 0.5 / 0.5 / 0.5</li><li>弹匣：45 / 50 / 55 / 60 / 65 / 70 / 75 / 80 / 85</li><li>速度：600 / 600 / 600 / 800 / 800 / 800 / 800 / 800 / 800</li><li>穿透：1 / 1 / 1 / 1 / 2 / 2 / 2 / 2 / 2</li></ul></td>
           </tr>
           <tr>
-            <td><strong>orbit</strong><br><small>ID 7 / 价格 8<br><code>orbit.gd</code></small></td>
+            <td><strong>orbit</strong><br><small>ID 7 / 价格 80<br><code>orbit.gd</code></small></td>
             <td>召唤环绕弹体，玩家受伤触发 <code>orbit_player_damaged_triggered</code>。<br><strong>Traits：</strong>duration、range、projectile、summon、energy</td>
             <td>数量每级 +1，是最明确的线性覆盖成长；旋转速度分段提升。</td>
-            <td><ul class="metric-list"><li>伤害：8 / 10 / 12 / 14 / 16 / 18 / 20</li><li>数量：1 / 2 / 3 / 4 / 5 / 6 / 7</li><li>旋转速：3 / 3 / 3.5 / 3.5 / 4 / 4 / 5</li><li>间隔：2.5 全等级</li><li>弹匣：20 全等级</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：8 / 10 / 12 / 14 / 16 / 18 / 20 / 22 / 24</li><li>数量：1 / 2 / 3 / 4 / 5 / 6 / 7 / 8 / 9</li><li>旋转速：3 / 3 / 3.5 / 3.5 / 4 / 4 / 5 / 6 / 7</li><li>间隔：2.5 全等级</li><li>弹匣：20 全等级</li></ul></td>
           </tr>
           <tr>
-            <td><strong>rocket luncher</strong><br><small>ID 8 / 价格 6<br><code>rocket_launcher.gd</code></small></td>
+            <td><strong>rocket luncher</strong><br><small>ID 8 / 价格 80<br><code>rocket_launcher.gd</code></small></td>
             <td>慢速火箭与爆炸范围，击杀附近敌人触发 <code>rocket_cluster_kill_triggered</code>。<br><strong>Traits：</strong>range、projectile、area_of_effect、fire</td>
             <td>伤害、射速、弹速、爆炸尺度全部成长，是群体清场路线。</td>
-            <td><ul class="metric-list"><li>伤害：10 / 13 / 16 / 20 / 25 / 31 / 39</li><li>间隔：2.4 / 2.2 / 2.0 / 1.8 / 1.6 / 1.4 / 1.2</li><li>弹匣：14 / 16 / 18 / 20 / 22 / 24 / 26</li><li>速度：500 / 560 / 600 / 650 / 700 / 750 / 800</li><li>爆炸尺度：2.0 / 2.1 / 2.2 / 2.35 / 2.5 / 2.65 / 2.8</li><li>穿透：1 / 1 / 1 / 1 / 2 / 2 / 2</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：10 / 13 / 16 / 20 / 25 / 31 / 39 / 47 / 55</li><li>间隔：2.4 / 2.2 / 2.0 / 1.8 / 1.6 / 1.4 / 1.2 / 1.0 / 0.8</li><li>弹匣：14 / 16 / 18 / 20 / 22 / 24 / 26 / 28 / 30</li><li>速度：500 / 560 / 600 / 650 / 700 / 750 / 800 / 850 / 900</li><li>爆炸尺度：2.0 / 2.1 / 2.2 / 2.35 / 2.5 / 2.65 / 2.8 / 2.95 / 3.10</li><li>穿透：1 / 1 / 1 / 1 / 2 / 2 / 2 / 2 / 2</li></ul></td>
           </tr>
           <tr>
-            <td><strong>laser</strong><br><small>ID 9 / 价格 5<br><code>laser.gd</code></small></td>
+            <td><strong>laser</strong><br><small>ID 9 / 价格 80<br><code>laser.gd</code></small></td>
             <td>持续/射线类能量输出，专属触发为 <code>laser_focus_channel_triggered</code>。<br><strong>Traits：</strong>duration、range、projectile、energy</td>
             <td>主要成长来自冷却大幅缩短，伤害和弹匣稳定增加。</td>
-            <td><ul class="metric-list"><li>伤害：3 / 4 / 6 / 7 / 8 / 9 / 10</li><li>间隔：2 / 1.6 / 1.1 / 0.8 / 0.6 / 0.5 / 0.45</li><li>弹匣：45 / 50 / 55 / 60 / 65 / 70 / 75</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：3 / 4 / 6 / 7 / 8 / 9 / 10 / 11 / 12</li><li>间隔：2 / 1.6 / 1.1 / 0.8 / 0.6 / 0.5 / 0.45 / 0.40 / 0.35</li><li>弹匣：45 / 50 / 55 / 60 / 65 / 70 / 75 / 80 / 85</li></ul></td>
           </tr>
           <tr>
-            <td><strong>chainsaw luncher</strong><br><small>ID 10 / 价格 6<br><code>chainsaw_launcher.gd</code></small></td>
+            <td><strong>chainsaw luncher</strong><br><small>ID 10 / 价格 80<br><code>chainsaw_launcher.gd</code></small></td>
             <td>慢速链锯投射物，多段接触伤害，撞墙触发 <code>chainsaw_wall_contact_triggered</code>。<br><strong>Traits：</strong>dot、duration、projectile、physical</td>
             <td>伤害和命中寿命提升，4 级后冷却缩短，弹匣逐级增加。</td>
-            <td><ul class="metric-list"><li>伤害：3 / 4 / 5 / 7 / 9 / 12 / 15</li><li>间隔：1 / 1 / 1 / 0.75 / 0.75 / 0.75 / 0.75</li><li>弹匣：28 / 30 / 32 / 34 / 36 / 38 / 40</li><li>速度：200 全等级</li><li>命中数：15 / 15 / 20 / 25 / 25 / 30 / 30</li><li>DOT 间隔：0.1 全等级</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：3 / 4 / 5 / 7 / 9 / 12 / 15 / 18 / 21</li><li>间隔：1 / 1 / 1 / 0.75 / 0.75 / 0.75 / 0.75 / 0.75 / 0.75</li><li>弹匣：28 / 30 / 32 / 34 / 36 / 38 / 40 / 42 / 44</li><li>速度：200 全等级</li><li>命中数：15 / 15 / 20 / 25 / 25 / 30 / 30 / 30 / 30</li><li>DOT 间隔：0.1 全等级</li></ul></td>
           </tr>
           <tr>
-            <td><strong>dash blade</strong><br><small>ID 11 / 价格 16<br><code>dash_blade.gd</code></small></td>
+            <td><strong>dash blade</strong><br><small>ID 11 / 价格 120<br><code>dash_blade.gd</code></small></td>
             <td>近战突进命中，长距离突进命中触发 <code>dash_blade_long_dash_hit_triggered</code>。<br><strong>Traits：</strong>movement、range、melee、trigger、physical</td>
             <td>伤害、突进距离、突进速度和回收速度同步成长。</td>
-            <td><ul class="metric-list"><li>伤害：28 / 34 / 40 / 48 / 58 / 70 / 85</li><li>间隔：1.1 / 1.0 / 0.95 / 0.9 / 0.85 / 0.8 / 0.75</li><li>弹匣：24 / 26 / 28 / 30 / 32 / 34 / 36</li><li>范围：150 / 160 / 170 / 180 / 190 / 210 / 230</li><li>突进速：900 / 950 / 980 / 1020 / 1080 / 1150 / 1220</li><li>返回速：700 / 730 / 760 / 780 / 820 / 860 / 900</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：28 / 34 / 40 / 48 / 58 / 70 / 85 / 100 / 115</li><li>间隔：1.1 / 1.0 / 0.95 / 0.9 / 0.85 / 0.8 / 0.75 / 0.70 / 0.65</li><li>弹匣：24 / 26 / 28 / 30 / 32 / 34 / 36 / 38 / 40</li><li>范围：150 / 160 / 170 / 180 / 190 / 210 / 230 / 250 / 270</li><li>突进速：900 / 950 / 980 / 1020 / 1080 / 1150 / 1220 / 1290 / 1360</li><li>返回速：700 / 730 / 760 / 780 / 820 / 860 / 900 / 940 / 980</li></ul></td>
           </tr>
           <tr>
-            <td><strong>flamethrower</strong><br><small>ID 13 / 价格 11<br><code>flamethrower.gd</code></small></td>
+            <td><strong>flamethrower</strong><br><small>ID 13 / 价格 100<br><code>flamethrower.gd</code></small></td>
             <td>火焰扇形持续输出，热量准备后换弹触发 <code>flamethrower_heat_prepared</code>。<br><strong>Traits：</strong>range、area_of_effect、fire、heat</td>
             <td>伤害和范围成长，5 级后 tick 间隔从 0.30 降到 0.25。</td>
-            <td><ul class="metric-list"><li>伤害：8 / 10 / 12 / 14 / 17 / 20 / 23</li><li>间隔：0.30 / 0.30 / 0.30 / 0.30 / 0.25 / 0.25 / 0.25</li><li>弹匣：20 全等级</li><li>范围：260 / 270 / 285 / 300 / 320 / 340 / 365</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：8 / 10 / 12 / 14 / 17 / 20 / 23 / 26 / 29</li><li>间隔：0.30 / 0.30 / 0.30 / 0.30 / 0.25 / 0.25 / 0.25 / 0.25 / 0.25</li><li>弹匣：20 全等级</li><li>范围：260 / 270 / 285 / 300 / 320 / 340 / 365 / 390 / 415</li></ul></td>
           </tr>
           <tr>
-            <td><strong>Plasma Lance</strong><br><small>ID 17 / 价格 12<br><code>plasma_lance.gd</code></small></td>
+            <td><strong>Plasma Lance</strong><br><small>ID 17 / 价格 100<br><code>plasma_lance.gd</code></small></td>
             <td>重型能量长矛，轻穿透，热量消耗链触发 <code>plasma_lance_heat_spend_chain_triggered</code>。<br><strong>Traits：</strong>range、projectile、energy、heat</td>
             <td>重单发路线：伤害、弹速、射速、弹匣全部递增，穿透固定 3。</td>
-            <td><ul class="metric-list"><li>伤害：26 / 32 / 38 / 45 / 54 / 64 / 76</li><li>间隔：1.5 / 1.45 / 1.38 / 1.30 / 1.20 / 1.09 / 0.97</li><li>弹匣：16 / 18 / 20 / 22 / 24 / 26 / 28</li><li>速度：1100 / 1140 / 1180 / 1220 / 1260 / 1300 / 1340</li><li>穿透：3 全等级</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：26 / 32 / 38 / 45 / 54 / 64 / 76 / 88 / 100</li><li>间隔：1.5 / 1.45 / 1.38 / 1.30 / 1.20 / 1.09 / 0.97 / 0.85 / 0.73</li><li>弹匣：16 / 18 / 20 / 22 / 24 / 26 / 28 / 30 / 32</li><li>速度：1100 / 1140 / 1180 / 1220 / 1260 / 1300 / 1340 / 1380 / 1420</li><li>穿透：3 全等级</li></ul></td>
           </tr>
           <tr>
-            <td><strong>Glacier Projector</strong><br><small>ID 21 / 价格 10<br><code>glacier_projector.gd</code></small></td>
+            <td><strong>Glacier Projector</strong><br><small>ID 21 / 价格 100<br><code>glacier_projector.gd</code></small></td>
             <td>冰冻扇形持续输出，freeze 命中触发 <code>glacier_cold_snap_triggered</code>。<br><strong>Traits：</strong>freeze</td>
             <td>伤害、范围、弹匣增长，tick 间隔逐级缩短。</td>
-            <td><ul class="metric-list"><li>伤害：6 / 7 / 8 / 10 / 12 / 15 / 18</li><li>间隔：0.22 / 0.21 / 0.20 / 0.19 / 0.18 / 0.17 / 0.16</li><li>弹匣：110 / 120 / 130 / 140 / 150 / 160 / 170</li><li>范围：260 / 275 / 290 / 310 / 330 / 355 / 380</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：6 / 7 / 8 / 10 / 12 / 15 / 18 / 21 / 24</li><li>间隔：0.22 / 0.21 / 0.20 / 0.19 / 0.18 / 0.17 / 0.16 / 0.15 / 0.14</li><li>弹匣：110 / 120 / 130 / 140 / 150 / 160 / 170 / 180 / 190</li><li>范围：260 / 275 / 290 / 310 / 330 / 355 / 380 / 405 / 430</li></ul></td>
           </tr>
           <tr>
-            <td><strong>Cannon</strong><br><small>ID 25 / 价格 13<br><code>cannon.gd</code></small></td>
+            <td><strong>Cannon</strong><br><small>ID 25 / 价格 120<br><code>cannon.gd</code></small></td>
             <td>重炮投射物，短前摇，高单发；静置/换弹节奏触发 <code>cannon_idle_fire_triggered</code>。<br><strong>Traits：</strong>projectile、energy</td>
             <td>高伤害成长，射速和弹速同步提升，7 级穿透提升到 3。</td>
-            <td><ul class="metric-list"><li>伤害：50 / 60 / 67 / 80 / 100 / 120 / 140</li><li>间隔：1.667 / 1.600 / 1.533 / 1.467 / 1.400 / 1.333 / 1.267</li><li>弹匣：6 / 6 / 9 / 9 / 12 / 12 / 12</li><li>速度：1120 / 1140 / 1170 / 1200 / 1230 / 1260 / 1290</li><li>穿透：2 / 2 / 2 / 2 / 2 / 2 / 3</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：50 / 60 / 67 / 80 / 100 / 120 / 140 / 160 / 180</li><li>间隔：1.667 / 1.600 / 1.533 / 1.467 / 1.400 / 1.333 / 1.267 / 1.201 / 1.135</li><li>弹匣：6 / 6 / 9 / 9 / 12 / 12 / 12 / 12 / 12</li><li>速度：1120 / 1140 / 1170 / 1200 / 1230 / 1260 / 1290 / 1320 / 1350</li><li>穿透：2 / 2 / 2 / 2 / 2 / 2 / 3 / 4 / 5</li></ul></td>
           </tr>
           <tr>
-            <td><strong>Sniper</strong><br><small>ID 26 / 价格 14<br><code>sniper.gd</code></small></td>
+            <td><strong>Sniper</strong><br><small>ID 26 / 价格 120<br><code>sniper.gd</code></small></td>
             <td>远距离高穿透高弹速，远距离命中触发 <code>sniper_far_hit_triggered</code>；当前场景未配置显式 traits。<br><strong>Traits：</strong>未配置</td>
             <td>高穿透、高单发成长，冷却逐级缩短，弹匣从 5 提升到 12。</td>
-            <td><ul class="metric-list"><li>伤害：12 / 15 / 19 / 24 / 30 / 37 / 45</li><li>间隔：3.0 / 2.8 / 2.6 / 2.4 / 2.2 / 2.1 / 2.0</li><li>弹匣：5 / 6 / 7 / 8 / 9 / 10 / 12</li><li>速度：1700 / 1700 / 1800 / 1800 / 1900 / 1900 / 2000</li><li>穿透：5 / 6 / 7 / 8 / 9 / 10 / 11</li></ul></td>
+            <td><ul class="metric-list"><li>伤害：12 / 15 / 19 / 24 / 30 / 37 / 45 / 53 / 61</li><li>间隔：3.0 / 2.8 / 2.6 / 2.4 / 2.2 / 2.1 / 2.0 / 1.9 / 1.8</li><li>弹匣：5 / 6 / 7 / 8 / 9 / 10 / 12 / 14 / 16</li><li>速度：1700 / 1700 / 1800 / 1800 / 1900 / 1900 / 2000 / 2100 / 2200</li><li>穿透：5 / 6 / 7 / 8 / 9 / 10 / 11 / 12 / 13</li></ul></td>
           </tr>
         </tbody>
       </table>
