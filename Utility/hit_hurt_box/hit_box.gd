@@ -5,6 +5,10 @@ class_name HitBox
 var hitbox_owner
 var attack : Attack
 
+const SPEAR_PIERCE_MARK_EXPIRES_META := "spear_pierce_mark_expires_msec"
+const SPEAR_PIERCE_MARK_BONUS_MULTIPLIER_META := "spear_pierce_mark_bonus_multiplier"
+const SPEAR_PIERCE_MARK_THRESHOLD_META := "spear_pierce_mark_threshold"
+
 func _ready() -> void:
 	if hitbox_owner:
 		set_owner(hitbox_owner)
@@ -42,6 +46,7 @@ func apply_attack(area) -> void:
 		var base_damage_variant: Variant = hitbox_owner.get("base_damage")
 		if base_damage_variant != null:
 			outgoing_damage = int(hitbox_owner.call("get_runtime_damage_value", float(base_damage_variant)))
+	outgoing_damage = _apply_spear_pierce_mark_bonus(target, outgoing_damage)
 	var damage_data := DamageManager.build_damage_data(
 		hitbox_owner,
 		max(1, outgoing_damage),
@@ -65,8 +70,27 @@ func apply_attack(area) -> void:
 		hitbox_owner.call("on_hit_target_with_damage_type", target, damage_type)
 	elif hitbox_owner and hitbox_owner.has_method("on_hit_target"):
 		hitbox_owner.on_hit_target(target)
-	if hitbox_owner.has_method("enemy_hit"):
-		hitbox_owner.enemy_hit(1)	
+	if hitbox_owner.has_method("consume_projectile_durability"):
+		hitbox_owner.call("consume_projectile_durability", 1, target)
+	elif hitbox_owner.has_method("enemy_hit"):
+		hitbox_owner.enemy_hit(1)
+
+func _apply_spear_pierce_mark_bonus(target: Node, damage_value: int) -> int:
+	if target == null or not is_instance_valid(target):
+		return damage_value
+	if hitbox_owner == null or not is_instance_valid(hitbox_owner):
+		return damage_value
+	if not hitbox_owner.has_method("get_projectile_pierce_capacity"):
+		return damage_value
+	var expires_at := int(target.get_meta(SPEAR_PIERCE_MARK_EXPIRES_META, 0))
+	if expires_at <= Time.get_ticks_msec():
+		return damage_value
+	var pierce_capacity := int(hitbox_owner.call("get_projectile_pierce_capacity"))
+	var threshold := int(target.get_meta(SPEAR_PIERCE_MARK_THRESHOLD_META, 4))
+	if pierce_capacity < threshold:
+		return damage_value
+	var multiplier := maxf(float(target.get_meta(SPEAR_PIERCE_MARK_BONUS_MULTIPLIER_META, 1.35)), 1.0)
+	return max(1, int(round(float(damage_value) * multiplier)))
 
 func _on_area_exited(_exited_area: Area2D) -> void:
 	check_overlapping()

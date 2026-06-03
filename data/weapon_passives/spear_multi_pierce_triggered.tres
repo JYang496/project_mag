@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "spear_multi_pierce_triggered"
 display_name = "Multi Pierce"
-description = "A single spear projectile must hit multiple different targets."
-condition_type = "unique_hit_count"
+description = "A single spear projectile must hit the same target twice to mark it. High-pierce attacks deal increased damage to marked targets."
+condition_type = "same_target_hit_count"
 refresh_type = "reload"
 ui_mode = "progress"

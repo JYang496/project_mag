@@ -7,8 +7,11 @@ var return_on_timeout = preload("res://Player/Weapons/Effects/return_on_timeout.
 
 # Weapon
 var ITEM_NAME = "Spear Launcher"
-@export var unique_targets_trigger_count: int = 3
-var _projectile_unique_hit_state: Dictionary = {}
+@export var same_target_trigger_count: int = 2
+@export var pierce_mark_duration_sec: float = 5.0
+@export var pierce_mark_damage_multiplier: float = 1.35
+@export var high_pierce_threshold: int = 4
+var _projectile_hit_state: Dictionary = {}
 
 var weapon_data = {
 	"1": {"damage": "6", "speed": "900", "projectile_hits": "4", "fire_interval_sec": "0.6", "ammo": "30"},
@@ -84,9 +87,9 @@ func on_hit_target(target: Node) -> void:
 	notify_branch_target_hit(target)
 
 func on_projectile_hit_target(projectile: Node, target: Node) -> void:
-	_try_trigger_unique_projectile_hits(projectile, target)
+	_try_trigger_same_target_projectile_hits(projectile, target)
 
-func _try_trigger_unique_projectile_hits(projectile: Node, target: Node) -> void:
+func _try_trigger_same_target_projectile_hits(projectile: Node, target: Node) -> void:
 	if not is_main_weapon():
 		return
 	if projectile == null or not is_instance_valid(projectile):
@@ -97,37 +100,42 @@ func _try_trigger_unique_projectile_hits(projectile: Node, target: Node) -> void
 		return
 	var projectile_id := projectile.get_instance_id()
 	var target_id := target.get_instance_id()
-	var state: Dictionary = _projectile_unique_hit_state.get(projectile_id, {
+	var state: Dictionary = _projectile_hit_state.get(projectile_id, {
 		"projectile": projectile,
-		"ids": {},
-		"targets": [],
+		"counts": {},
 	})
 	state["projectile"] = projectile
-	var ids: Dictionary = state.get("ids", {})
-	if ids.has(target_id):
+	var counts: Dictionary = state.get("counts", {})
+	var hit_count := int(counts.get(target_id, 0)) + 1
+	counts[target_id] = hit_count
+	state["counts"] = counts
+	_projectile_hit_state[projectile_id] = state
+	var required_hits := maxi(1, same_target_trigger_count)
+	if hit_count < required_hits:
 		return
-	ids[target_id] = true
-	var targets: Array = state.get("targets", [])
-	targets.append(target)
-	state["ids"] = ids
-	state["targets"] = targets
-	_projectile_unique_hit_state[projectile_id] = state
-	var required_hits := maxi(1, unique_targets_trigger_count)
-	if ids.size() < required_hits:
-		return
-	_projectile_unique_hit_state.erase(projectile_id)
+	_projectile_hit_state.erase(projectile_id)
+	_apply_pierce_mark(target)
 	notify_offhand_skill_triggered(0.0)
 	emit_passive_trigger(&"spear_multi_pierce_triggered", {
 		"projectile": projectile,
 		"target": target,
 		"hit_count": required_hits,
-		"targets": targets,
+		"mark_duration": maxf(pierce_mark_duration_sec, 0.1),
+		"damage_multiplier": maxf(pierce_mark_damage_multiplier, 1.0),
+		"high_pierce_threshold": maxi(1, high_pierce_threshold),
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
+func _apply_pierce_mark(target: Node) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	target.set_meta("spear_pierce_mark_expires_msec", Time.get_ticks_msec() + int(maxf(pierce_mark_duration_sec, 0.1) * 1000.0))
+	target.set_meta("spear_pierce_mark_bonus_multiplier", maxf(pierce_mark_damage_multiplier, 1.0))
+	target.set_meta("spear_pierce_mark_threshold", maxi(1, high_pierce_threshold))
+
 func get_passive_status() -> Dictionary:
-	var required_hits := maxi(1, unique_targets_trigger_count)
-	var current_hits := _get_current_unique_projectile_hit_count()
+	var required_hits := maxi(1, same_target_trigger_count)
+	var current_hits := _get_current_same_target_projectile_hit_count()
 	var state := "charging"
 	if not is_main_weapon():
 		state = "inactive"
@@ -143,17 +151,18 @@ func get_passive_status() -> Dictionary:
 		"current": current_hits,
 		"required": required_hits,
 		"ready": state == "ready_pending_action",
-		"trigger_hint": "same_projectile_unique_targets",
+		"trigger_hint": "same_projectile_same_target_hits",
 		"refresh_hint": "reload",
 	}
 
-func _get_current_unique_projectile_hit_count() -> int:
+func _get_current_same_target_projectile_hit_count() -> int:
 	var best_count := 0
-	for state_key in _projectile_unique_hit_state.keys():
-		var state: Dictionary = _projectile_unique_hit_state.get(state_key, {})
+	for state_key in _projectile_hit_state.keys():
+		var state: Dictionary = _projectile_hit_state.get(state_key, {})
 		var projectile = state.get("projectile", null)
 		if projectile == null or not is_instance_valid(projectile):
 			continue
-		var ids: Dictionary = state.get("ids", {})
-		best_count = maxi(best_count, ids.size())
+		var counts: Dictionary = state.get("counts", {})
+		for target_key in counts.keys():
+			best_count = maxi(best_count, int(counts.get(target_key, 0)))
 	return best_count

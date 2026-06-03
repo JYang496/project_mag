@@ -937,7 +937,7 @@
           </tr>
           <tr>
             <td><strong>Spear</strong><br><small>ID 3 / 价格 100 / hidden<br><code>spear_launcher.gd</code></small></td>
-            <td>高频穿透长矛，单发命中多个不同目标触发 <code>spear_multi_pierce_triggered</code>。<br><strong>Traits：</strong>range、projectile、physical</td>
+            <td>高频穿透长矛，同一个投射物二次命中同一目标时触发 <code>spear_multi_pierce_triggered</code> 并施加高穿透易伤标记。<br><strong>Traits：</strong>range、projectile、physical</td>
             <td>冷却持续缩短，伤害和弹匣平滑提升，穿透在 3 级跃升。</td>
             <td><ul class="metric-list"><li>伤害：6 / 7 / 9 / 10 / 12 / 14 / 18 / 22 / 26</li><li>间隔：0.6 / 0.55 / 0.5 / 0.45 / 0.4 / 0.35 / 0.3 / 0.25 / 0.20</li><li>弹匣：30 / 32 / 34 / 36 / 38 / 40 / 42 / 44 / 46</li><li>速度：900 / 600 / 600 / 800 / 800 / 800 / 800 / 800 / 800</li><li>穿透：4 / 4 / 6 / 6 / 6 / 6 / 6 / 6 / 6</li></ul></td>
           </tr>
@@ -949,7 +949,7 @@
           </tr>
           <tr>
             <td><strong>Auto Pistol</strong><br><small>ID 5 / 价格 120<br><code>pistol.gd</code></small></td>
-            <td>通用物理手枪，连续移动预热触发 <code>pistol_continuous_move_triggered</code>。<br><strong>Traits：</strong>range、trigger、projectile、physical</td>
+            <td>通用物理手枪，周期性进入标记窗口，窗口内命中敌人触发 <code>pistol_continuous_move_triggered</code> 的穿透耐久保留标记。<br><strong>Traits：</strong>range、trigger、projectile、physical</td>
             <td>稳定提升伤害和弹匣，4/5 级获得射速、弹速和穿透台阶。</td>
             <td><ul class="metric-list"><li>伤害：4 / 6 / 8 / 10 / 12 / 14 / 16 / 18 / 20</li><li>间隔：1 / 1 / 1 / 0.75 / 0.5 / 0.5 / 0.5 / 0.5 / 0.5</li><li>弹匣：45 / 50 / 55 / 60 / 65 / 70 / 75 / 80 / 85</li><li>速度：600 / 600 / 600 / 800 / 800 / 800 / 800 / 800 / 800</li><li>穿透：1 / 1 / 1 / 1 / 2 / 2 / 2 / 2 / 2</li></ul></td>
           </tr>
@@ -1009,7 +1009,7 @@
           </tr>
           <tr>
             <td><strong>Sniper</strong><br><small>ID 26 / 价格 120<br><code>sniper.gd</code></small></td>
-            <td>远距离高穿透高弹速，远距离命中触发 <code>sniper_far_hit_triggered</code>；当前场景未配置显式 traits。<br><strong>Traits：</strong>未配置</td>
+            <td>远距离高穿透高弹速，远距离命中或命中 Spear 标记目标触发 <code>sniper_far_hit_triggered</code>，Spear 标记目标按满额距离额外伤害结算；当前场景未配置显式 traits。<br><strong>Traits：</strong>未配置</td>
             <td>高穿透、高单发成长，冷却逐级缩短，弹匣从 5 提升到 12。</td>
             <td><ul class="metric-list"><li>伤害：12 / 15 / 19 / 24 / 30 / 37 / 45 / 53 / 61</li><li>间隔：3.0 / 2.8 / 2.6 / 2.4 / 2.2 / 2.1 / 2.0 / 1.9 / 1.8</li><li>弹匣：5 / 6 / 7 / 8 / 9 / 10 / 12 / 14 / 16</li><li>速度：1700 / 1700 / 1800 / 1800 / 1900 / 1900 / 2000 / 2100 / 2200</li><li>穿透：5 / 6 / 7 / 8 / 9 / 10 / 11 / 12 / 13</li></ul></td>
           </tr>

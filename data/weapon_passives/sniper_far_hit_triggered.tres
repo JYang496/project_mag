@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "sniper_far_hit_triggered"
 display_name = "Far Hit"
-description = "Hit a target from at least the required distance."
-condition_type = "distance_threshold"
+description = "Deal bonus damage based on distance. Spear-marked targets receive the full distance bonus."
+condition_type = "distance_or_pierce_mark"
 refresh_type = "reload"
 ui_mode = "threshold"

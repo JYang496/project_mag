@@ -7,6 +7,7 @@ var projectile_texture_resource: Texture2D = preload("res://Textures/test/sniper
 var ITEM_NAME := "Sniper"
 const NEAR_DISTANCE_THRESHOLD: float = 220.0
 const FAR_DAMAGE_MULTIPLIER: float = 1.8
+const SPEAR_PIERCE_MARK_EXPIRES_META := "spear_pierce_mark_expires_msec"
 @export var far_hit_trigger_distance: float = 400.0
 
 var attack_range: float = 900.0
@@ -78,6 +79,12 @@ func on_hit_target(target: Node) -> void:
 	_apply_distance_bonus_damage(target)
 	notify_branch_target_hit(target)
 
+func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
+	super.on_hit_target_with_damage_type(target, damage_type)
+	_try_trigger_far_hit(target)
+	_apply_distance_bonus_damage(target)
+	notify_branch_target_hit(target)
+
 func _try_trigger_far_hit(target: Node) -> void:
 	if not is_main_weapon():
 		return
@@ -88,7 +95,8 @@ func _try_trigger_far_hit(target: Node) -> void:
 	if player == null or not is_instance_valid(player):
 		return
 	var distance := player.global_position.distance_to(target_node.global_position)
-	if distance < maxf(far_hit_trigger_distance, 0.0):
+	var has_pierce_mark := _has_spear_pierce_mark(target)
+	if distance < maxf(far_hit_trigger_distance, 0.0) and not has_pierce_mark:
 		return
 	if not is_offhand_skill_ready():
 		return
@@ -97,6 +105,7 @@ func _try_trigger_far_hit(target: Node) -> void:
 		"target": target,
 		"distance": distance,
 		"threshold": far_hit_trigger_distance,
+		"forced_full_bonus_by_mark": has_pierce_mark,
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
@@ -128,6 +137,8 @@ func _apply_distance_bonus_damage(target: Node) -> void:
 	var far_distance: float = maxf(attack_range, NEAR_DISTANCE_THRESHOLD + 1.0)
 	var distance: float = global_position.distance_to(target_node.global_position)
 	var t: float = clampf((distance - NEAR_DISTANCE_THRESHOLD) / maxf(far_distance - NEAR_DISTANCE_THRESHOLD, 1.0), 0.0, 1.0)
+	if _has_spear_pierce_mark(target):
+		t = 1.0
 	var multiplier: float = lerpf(1.0, FAR_DAMAGE_MULTIPLIER, t)
 	var bonus_damage: int = int(round(float(base_hit_damage) * maxf(multiplier - 1.0, 0.0)))
 	if bonus_damage <= 0:
@@ -139,6 +150,12 @@ func _apply_distance_bonus_damage(target: Node) -> void:
 		{"amount": 0, "angle": Vector2.ZERO}
 	)
 	DamageManager.apply_to_target(target, damage_data)
+
+func _has_spear_pierce_mark(target: Node) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	var expires_at := int(target.get_meta(SPEAR_PIERCE_MARK_EXPIRES_META, 0))
+	return expires_at > Time.get_ticks_msec()
 
 func _get_branch_pierce_damage_gain_per_hit() -> int:
 	return get_branch_pierce_damage_gain_per_hit()

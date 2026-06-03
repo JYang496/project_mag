@@ -4,11 +4,14 @@ extends Ranger
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
 var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.png")
 @export var auto_fire_range: float = 900.0
-@export var continuous_move_trigger_sec: float = 6.0
+@export var pierce_mark_cycle_sec: float = 8.0
+@export var pierce_mark_window_sec: float = 3.0
+@export var pierce_mark_duration_sec: float = 5.0
 
 # Weapon
 var ITEM_NAME = "Auto Pistol"
-var _continuous_move_accum_sec: float = 0.0
+var _pierce_mark_cycle_elapsed_sec: float = 0.0
+var _pierce_mark_window_remaining_sec: float = 0.0
 
 
 var weapon_data = {
@@ -41,54 +44,49 @@ func set_level(lv) -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	_update_continuous_move_trigger(delta)
+	_update_pierce_mark_window(delta)
 	_process_auto_fire()
 
-func _update_continuous_move_trigger(delta: float) -> void:
+func _update_pierce_mark_window(delta: float) -> void:
 	if not _is_battle_phase():
-		_continuous_move_accum_sec = 0.0
+		_pierce_mark_cycle_elapsed_sec = 0.0
+		_pierce_mark_window_remaining_sec = 0.0
 		return
-	var player := PlayerData.player as Player
-	if player == null or not is_instance_valid(player):
-		_continuous_move_accum_sec = 0.0
+	if not is_main_weapon():
 		return
-	var is_moving := player.velocity.length_squared() > 1.0
-	if not is_moving:
-		_continuous_move_accum_sec = 0.0
+	if _pierce_mark_window_remaining_sec > 0.0:
+		_pierce_mark_window_remaining_sec = maxf(_pierce_mark_window_remaining_sec - maxf(delta, 0.0), 0.0)
 		return
-	_continuous_move_accum_sec += maxf(delta, 0.0)
-	if _continuous_move_accum_sec < maxf(continuous_move_trigger_sec, 0.1):
+	_pierce_mark_cycle_elapsed_sec += maxf(delta, 0.0)
+	var required_sec := maxf(pierce_mark_cycle_sec, 0.1)
+	if _pierce_mark_cycle_elapsed_sec < required_sec:
 		return
-	_continuous_move_accum_sec = 0.0
-	if not is_offhand_skill_ready():
-		return
-	notify_offhand_skill_triggered(0.0)
+	_pierce_mark_cycle_elapsed_sec = 0.0
+	_pierce_mark_window_remaining_sec = maxf(pierce_mark_window_sec, 0.1)
 	emit_passive_trigger(&"pistol_continuous_move_triggered", {
-		"duration": maxf(continuous_move_trigger_sec, 0.1),
-		"refresh": "reload",
-		"player": player,
+		"window_duration": _pierce_mark_window_remaining_sec,
+		"mark_duration": maxf(pierce_mark_duration_sec, 0.1),
+		"refresh": "time",
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
-	var required_sec := maxf(continuous_move_trigger_sec, 0.1)
-	var current_sec := clampf(_continuous_move_accum_sec, 0.0, required_sec)
+	var required_sec := maxf(pierce_mark_cycle_sec, 0.1)
+	var current_sec := clampf(_pierce_mark_cycle_elapsed_sec, 0.0, required_sec)
 	var state := "charging"
 	if not is_main_weapon():
 		state = "inactive"
-	elif not is_passive_ready():
-		state = "waiting_refresh"
-	elif current_sec >= required_sec:
-		state = "ready_pending_action"
+	elif _pierce_mark_window_remaining_sec > 0.0:
+		state = "active"
 	return {
 		"id": "pistol_continuous_move_triggered",
-		"display_name": "Continuous Move",
+		"display_name": "Pierce Mark",
 		"state": state,
-		"progress": clampf(current_sec / required_sec, 0.0, 1.0),
-		"current": current_sec,
+		"progress": 1.0 if state == "active" else clampf(current_sec / required_sec, 0.0, 1.0),
+		"current": _pierce_mark_window_remaining_sec if state == "active" else current_sec,
 		"required": required_sec,
-		"ready": state == "ready_pending_action",
-		"trigger_hint": "continuous_move",
-		"refresh_hint": "reload",
+		"ready": state == "active",
+		"trigger_hint": "periodic_auto_pistol_hits_mark_targets",
+		"refresh_hint": "time",
 	}
 
 func _is_battle_phase() -> bool:
@@ -149,7 +147,21 @@ func _on_shoot() -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	_apply_pierce_mark(target)
 	notify_branch_target_hit(target)
+
+func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
+	super.on_hit_target_with_damage_type(target, damage_type)
+	_apply_pierce_mark(target)
+	notify_branch_target_hit(target)
+
+func _apply_pierce_mark(target: Node) -> void:
+	if _pierce_mark_window_remaining_sec <= 0.0:
+		return
+	if target == null or not is_instance_valid(target):
+		return
+	var duration_sec := maxf(pierce_mark_duration_sec, 0.1)
+	target.set_meta("pistol_pierce_mark_expires_msec", Time.get_ticks_msec() + int(duration_sec * 1000.0))
 
 func _resolve_auto_aim_direction() -> Vector2:
 	var target := _find_closest_enemy()

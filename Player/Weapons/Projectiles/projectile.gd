@@ -2,6 +2,8 @@ extends Node2D
 class_name Projectile
 
 const DEFAULT_EXPIRE_TIME: float = 2.5
+const PISTOL_PIERCE_MARK_EXPIRES_META := "pistol_pierce_mark_expires_msec"
+const INITIAL_PROJECTILE_HITS_META := "initial_projectile_hits"
 
 var hp : int = 1
 var damage = 1
@@ -56,6 +58,7 @@ func _ready() -> void:
 
 func _prepare_for_spawn() -> void:
 	overlapping = false
+	_capture_initial_projectile_hits()
 	expire_timer.wait_time = expire_time
 	projectile_sprite.texture = projectile_texture
 	projectile_sprite.scale = _resolve_projectile_scale()
@@ -103,6 +106,19 @@ func enemy_hit(charge : int = 1):
 	hp -= charge
 	if hp <= 0:
 		call_deferred("despawn")
+
+func enemy_hit_target(charge: int = 1, target: Node = null) -> void:
+	if should_preserve_projectile_durability(target):
+		return
+	enemy_hit(charge)
+
+func get_projectile_pierce_capacity() -> int:
+	return maxi(1, int(get_meta(INITIAL_PROJECTILE_HITS_META, hp)))
+
+func consume_projectile_durability(charge: int = 1, target: Node = null) -> void:
+	if should_preserve_projectile_durability(target):
+		return
+	enemy_hit(charge)
 
 func on_hit_target(target: Node) -> void:
 	if source_weapon and is_instance_valid(source_weapon):
@@ -278,6 +294,15 @@ func _reset_runtime_meta_flags() -> void:
 		if keep_meta.has(meta_key):
 			continue
 		remove_meta(meta_key)
+
+func should_preserve_projectile_durability(target: Node) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	var expires_at := int(target.get_meta(PISTOL_PIERCE_MARK_EXPIRES_META, 0))
+	return expires_at > Time.get_ticks_msec()
+
+func _capture_initial_projectile_hits() -> void:
+	set_meta(INITIAL_PROJECTILE_HITS_META, maxi(1, hp))
 
 func claim_movement_control(controller: Node) -> void:
 	if controller == null:
