@@ -28,7 +28,9 @@ weapon.4.desc,shotgun test: muti shoot,shotgun test: muti shoot
 weapon.26.name,Sniper,Sniper
 weapon.26.desc,High-damage long-range rifle. Deals more damage to distant targets.,High-damage long-range rifle. Deals more damage to distant targets.
 weapon.3.name,Spear,Spear
-weapon.3.desc,spear test: return,spear test: return
+weapon.3.desc,Returning spears build charge through repeat hits. Reload with enough charge to launch a marking radial volley.,回旋长矛通过重复命中积累充能；充能充足时换弹会发射施加标记的环形齐射。
+passive.piercing_blade_dance.name,Piercing Blade Dance,穿刺轮舞
+passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds charge. Reload at 10 or 20 charge to launch an 8- or 16-direction volley. Its hits mark surviving enemies for 20 seconds and knock them away.","同一根长矛重复伤害同一敌人可积累充能。充能达到10或20点时换弹，发射8或16方向齐射；命中存活敌人后施加持续20秒的标记并将其击退。"
 branch.thermal_cannon_branch.name,Thermal Cannon,Thermal Cannon
 branch.thermal_cannon_branch.desc,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.
 branch.zero_cannon_branch.name,Zero Cannon,Zero Cannon

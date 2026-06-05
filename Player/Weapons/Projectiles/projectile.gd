@@ -2,7 +2,7 @@ extends Node2D
 class_name Projectile
 
 const DEFAULT_EXPIRE_TIME: float = 2.5
-const PISTOL_PIERCE_MARK_EXPIRES_META := "pistol_pierce_mark_expires_msec"
+const PISTOL_PIERCE_MARK_ID := &"pistol_pierce"
 const INITIAL_PROJECTILE_HITS_META := "initial_projectile_hits"
 
 var hp : int = 1
@@ -298,8 +298,9 @@ func _reset_runtime_meta_flags() -> void:
 func should_preserve_projectile_durability(target: Node) -> bool:
 	if target == null or not is_instance_valid(target):
 		return false
-	var expires_at := int(target.get_meta(PISTOL_PIERCE_MARK_EXPIRES_META, 0))
-	return expires_at > Time.get_ticks_msec()
+	if not target.has_method("has_mark"):
+		return false
+	return bool(target.call("has_mark", PISTOL_PIERCE_MARK_ID))
 
 func _capture_initial_projectile_hits() -> void:
 	set_meta(INITIAL_PROJECTILE_HITS_META, maxi(1, hp))

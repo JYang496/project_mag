@@ -96,6 +96,19 @@ func get_branch_description(branch_def: WeaponBranchDefinition) -> String:
 		return ""
 	return tr_key("branch.%s.desc" % branch_def.branch_id, str(branch_def.description))
 
+
+func get_weapon_passive_display_name(passive_def: WeaponPassiveBranchDefinition) -> String:
+	if passive_def == null:
+		return ""
+	return tr_key("passive.%s.name" % passive_def.passive_id, str(passive_def.display_name))
+
+
+func get_weapon_passive_description(passive_def: WeaponPassiveBranchDefinition) -> String:
+	if passive_def == null:
+		return ""
+	return tr_key("passive.%s.desc" % passive_def.passive_id, str(passive_def.description))
+
+
 func get_module_id_from_instance(module_instance: Module) -> String:
 	if module_instance == null:
 		return ""

@@ -33,8 +33,8 @@ func _build_presenter_status(weapon: Node, weapon_index: int, passive_status: Di
 		"weapon_id": _get_weapon_id(weapon),
 		"weapon_name": _get_weapon_name(weapon),
 		"passive_id": passive_id,
-		"passive_name": _get_meta_string(passive_meta, "display_name", str(passive_status.get("display_name", ""))),
-		"description": _get_meta_string(passive_meta, "description", ""),
+		"passive_name": _get_localized_passive_name(passive_meta, str(passive_status.get("display_name", ""))),
+		"description": _get_localized_passive_description(passive_meta),
 		"icon": _get_meta_value(passive_meta, "icon", null),
 		"condition_type": _get_meta_string(passive_meta, "condition_type", str(passive_status.get("condition_type", ""))),
 		"refresh_type": _get_meta_string(passive_meta, "refresh_type", str(passive_status.get("refresh_hint", ""))),
@@ -47,6 +47,7 @@ func _build_presenter_status(weapon: Node, weapon_index: int, passive_status: Di
 		"ready": ready,
 		"trigger_hint": str(passive_status.get("trigger_hint", "")),
 		"refresh_hint": str(passive_status.get("refresh_hint", "")),
+		"radial_projectile_count": passive_status.get("radial_projectile_count", 0),
 		"inactive_reason": inactive_reason,
 	}
 
@@ -72,6 +73,19 @@ func _get_meta_value(meta: Resource, key: String, fallback: Variant) -> Variant:
 		return fallback
 	var value: Variant = meta.get(key)
 	return fallback if value == null else value
+
+
+func _get_localized_passive_name(meta: Resource, fallback: String) -> String:
+	if meta is WeaponPassiveBranchDefinition and LocalizationManager != null:
+		return LocalizationManager.get_weapon_passive_display_name(meta as WeaponPassiveBranchDefinition)
+	return _get_meta_string(meta, "display_name", fallback)
+
+
+func _get_localized_passive_description(meta: Resource) -> String:
+	if meta is WeaponPassiveBranchDefinition and LocalizationManager != null:
+		return LocalizationManager.get_weapon_passive_description(meta as WeaponPassiveBranchDefinition)
+	return _get_meta_string(meta, "description", "")
+
 
 func _is_main_weapon(weapon: Node, weapon_index: int) -> bool:
 	if weapon.has_method("is_main_weapon"):

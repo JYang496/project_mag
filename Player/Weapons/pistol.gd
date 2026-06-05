@@ -7,6 +7,7 @@ var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.pn
 @export var pierce_mark_cycle_sec: float = 8.0
 @export var pierce_mark_window_sec: float = 3.0
 @export var pierce_mark_duration_sec: float = 5.0
+const PISTOL_PIERCE_MARK_ID := &"pistol_pierce"
 
 # Weapon
 var ITEM_NAME = "Auto Pistol"
@@ -160,8 +161,10 @@ func _apply_pierce_mark(target: Node) -> void:
 		return
 	if target == null or not is_instance_valid(target):
 		return
+	if not target.has_method("apply_mark"):
+		return
 	var duration_sec := maxf(pierce_mark_duration_sec, 0.1)
-	target.set_meta("pistol_pierce_mark_expires_msec", Time.get_ticks_msec() + int(duration_sec * 1000.0))
+	target.call("apply_mark", PISTOL_PIERCE_MARK_ID, duration_sec, {})
 
 func _resolve_auto_aim_direction() -> Vector2:
 	var target := _find_closest_enemy()

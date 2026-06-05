@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponPassiveBranchDefinition" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" uid="uid://im0by60rbjt5" path="res://Textures/test/spear.png" id="1_icon"]
+[ext_resource type="Script" path="res://data/WeaponPassiveBranchDefinition.gd" id="2_script"]
+
+[resource]
+script = ExtResource("2_script")
+passive_id = "piercing_blade_dance"
+display_name = "Piercing Blade Dance"
+description = "Repeated damage from the same spear builds charge. Reload at 10 or 20 charge to launch an 8- or 16-direction marking volley."
+icon = ExtResource("1_icon")
+condition_type = "same_projectile_same_target_damage_twice"
+refresh_type = "reload_started"
+ui_mode = "progress"

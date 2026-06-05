@@ -1,4 +1,5 @@
 keys,en,zh_CN
+ui.passive.next_radial_volley,Next volley: {count},下次环射：{count}根
 ui.language.en,English,English
 ui.language.zh_cn,Simplified Chinese,简体中文
 ui.start.title,Project Mag Title,Project Mag 标题

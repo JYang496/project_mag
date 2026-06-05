@@ -10,6 +10,6 @@ weapon_id = "3"
 display_name = "Spear"
 icon = ExtResource("1_ji2p0")
 price = 100
-description = "spear test: return"
+description = "Returning spears build charge through repeat hits. Reload with enough charge to launch a marking radial volley."
 scene = ExtResource("2_mskrm")
 is_hidden = true

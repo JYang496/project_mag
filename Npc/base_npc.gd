@@ -221,6 +221,56 @@ func apply_status_effect(effect: StatusEffect) -> void:
 		status_timer.start()
 		_last_status_tick_msec = Time.get_ticks_msec()
 
+func apply_mark(mark_id: StringName, duration_sec: float, data: Dictionary = {}) -> void:
+	if mark_id == StringName():
+		return
+	var effect := MarkStatusEffect.new().setup_mark(mark_id, duration_sec, data)
+	apply_status_effect(effect)
+
+
+func has_mark(mark_id: StringName) -> bool:
+	return _get_mark_effect(mark_id) != null
+
+
+func has_any_mark() -> bool:
+	return not get_active_mark_ids().is_empty()
+
+
+func get_active_mark_ids() -> Array[StringName]:
+	var output: Array[StringName] = []
+	for i in range(status_effects.size() - 1, -1, -1):
+		var effect := status_effects[i]
+		if effect == null:
+			status_effects.remove_at(i)
+			continue
+		if effect is MarkStatusEffect:
+			var mark_effect := effect as MarkStatusEffect
+			if not mark_effect.is_active():
+				status_effects.remove_at(i)
+				continue
+			output.append(mark_effect.mark_id)
+	return output
+
+
+func get_mark_value(mark_id: StringName, key: StringName, default_value: Variant = null) -> Variant:
+	var effect := _get_mark_effect(mark_id)
+	if effect == null:
+		return default_value
+	return effect.get_value(key, default_value)
+
+
+func _get_mark_effect(mark_id: StringName) -> MarkStatusEffect:
+	if mark_id == StringName():
+		return null
+	for effect in status_effects:
+		if effect is MarkStatusEffect:
+			var mark_effect := effect as MarkStatusEffect
+			if mark_effect.is_active() and mark_effect.mark_id == mark_id:
+				return mark_effect
+	get_active_mark_ids()
+	return null
+
+
 func _setup_incoming_damage_profile() -> void:
 	_incoming_damage_max_hp = max(1, int(hp))
 	var profile := DAMAGE_PROFILE_SCRIPT.new() as DamageProfile
@@ -341,6 +391,18 @@ func apply_status_payload(status_name: StringName, status_data: Variant) -> void
 	match status_name:
 		&"dot":
 			apply_status_effect(DotStatusEffect.from_dot_payload(status_data))
+		&"mark":
+			if status_data is Dictionary:
+				var payload := status_data as Dictionary
+				var mark_data: Dictionary = {}
+				var raw_mark_data: Variant = payload.get("data", {})
+				if raw_mark_data is Dictionary:
+					mark_data = (raw_mark_data as Dictionary).duplicate(true)
+				apply_mark(
+					StringName(payload.get("mark_id", StringName())),
+					float(payload.get("duration", 0.1)),
+					mark_data
+				)
 
 func set_quest_lock(active: bool, damage_mul: float = 0.5, freeze_movement: bool = true) -> void:
 	if active:

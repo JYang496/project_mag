@@ -5,9 +5,9 @@ class_name HitBox
 var hitbox_owner
 var attack : Attack
 
-const SPEAR_PIERCE_MARK_EXPIRES_META := "spear_pierce_mark_expires_msec"
-const SPEAR_PIERCE_MARK_BONUS_MULTIPLIER_META := "spear_pierce_mark_bonus_multiplier"
-const SPEAR_PIERCE_MARK_THRESHOLD_META := "spear_pierce_mark_threshold"
+const SPEAR_PIERCE_MARK_ID := &"spear_pierce"
+const SPEAR_PIERCE_MARK_BONUS_MULTIPLIER_KEY := &"bonus_multiplier"
+const SPEAR_PIERCE_MARK_THRESHOLD_KEY := &"threshold"
 
 func _ready() -> void:
 	if hitbox_owner:
@@ -82,14 +82,13 @@ func _apply_spear_pierce_mark_bonus(target: Node, damage_value: int) -> int:
 		return damage_value
 	if not hitbox_owner.has_method("get_projectile_pierce_capacity"):
 		return damage_value
-	var expires_at := int(target.get_meta(SPEAR_PIERCE_MARK_EXPIRES_META, 0))
-	if expires_at <= Time.get_ticks_msec():
+	if not target.has_method("has_mark") or not bool(target.call("has_mark", SPEAR_PIERCE_MARK_ID)):
 		return damage_value
 	var pierce_capacity := int(hitbox_owner.call("get_projectile_pierce_capacity"))
-	var threshold := int(target.get_meta(SPEAR_PIERCE_MARK_THRESHOLD_META, 4))
+	var threshold := int(target.call("get_mark_value", SPEAR_PIERCE_MARK_ID, SPEAR_PIERCE_MARK_THRESHOLD_KEY, 4))
 	if pierce_capacity < threshold:
 		return damage_value
-	var multiplier := maxf(float(target.get_meta(SPEAR_PIERCE_MARK_BONUS_MULTIPLIER_META, 1.35)), 1.0)
+	var multiplier := maxf(float(target.call("get_mark_value", SPEAR_PIERCE_MARK_ID, SPEAR_PIERCE_MARK_BONUS_MULTIPLIER_KEY, 1.35)), 1.0)
 	return max(1, int(round(float(damage_value) * multiplier)))
 
 func _on_area_exited(_exited_area: Area2D) -> void:

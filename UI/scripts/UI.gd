@@ -1559,6 +1559,13 @@ func _format_weapon_passive_detail(status: Dictionary) -> String:
 	var required: Variant = status.get("required", null)
 	if current != null and required != null:
 		parts.append("%s/%s" % [_format_passive_number(current), _format_passive_number(required)])
+	var radial_projectile_count := int(status.get("radial_projectile_count", 0))
+	if radial_projectile_count > 0:
+		parts.append(LocalizationManager.tr_format(
+			"ui.passive.next_radial_volley",
+			{"count": radial_projectile_count},
+			"Next volley: {count}"
+		))
 	var trigger_hint := str(status.get("trigger_hint", ""))
 	if trigger_hint != "":
 		parts.append(trigger_hint)
