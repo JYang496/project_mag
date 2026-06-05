@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WeaponPassiveBranchDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/WeaponPassiveBranchDefinition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+passive_id = "cannon_idle_fire_triggered"
+display_name = "Idle Fire"
+description = "Stand still long enough, then fire an empowered cannon shot that creates physical area damage on hit."
+condition_type = "idle_time_threshold"
+refresh_type = "reload"
+ui_mode = "threshold"

@@ -1044,7 +1044,110 @@
     </section>
 
     <section>
-      <h2>十、设计红线</h2>
+      <h2>十、武器联动方案矩阵</h2>
+      <p>
+        下面把现有武器按“制造者 + 消费者 + 放大器”的三段链条整理。每条联动都应优先通过
+        <code>passive_triggered</code>、全局被动广播、trait 限制和模组插件接入，避免武器脚本之间互相硬引用。
+        数值预算以“窗口收益 25% 到 35%，常态收益 5% 到 12%”为初始目标。
+      </p>
+
+      <h3>已形成的两组模板</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>组合</th>
+            <th>联动定位</th>
+            <th>触发链条</th>
+            <th>数值边界</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>flamethrower + machine gun + Plasma Lance</strong></td>
+            <td>热量循环：制造热量、扩容热量、消耗热量。</td>
+            <td><code>flamethrower_heat_prepared</code> 提供短时火焰输出窗口；<code>machine_gun_heat_expansion</code> 提高共享热量容量；<code>plasma_lance_heat_spend_chain_triggered</code> 消耗热量后给高单发能量武器反馈。</td>
+            <td>热量窗口不做永久全局增伤；扩容持续 4-6 秒，Plasma Lance 只吃 1-3 次强化射击。</td>
+          </tr>
+          <tr>
+            <td><strong>Auto Pistol + Spear + Sniper</strong></td>
+            <td>标记/穿透循环：制造标记、扩大覆盖、远程兑现。</td>
+            <td><code>pistol_continuous_move_triggered</code> 让手枪命中施加穿透标记；<code>piercing_blade_dance</code> 用环形齐射扩大标记覆盖；<code>sniper_far_hit_triggered</code> 对标记目标视为满距离收益。</td>
+            <td>标记持续 8-12 秒；Sniper 对标记目标只获得距离补偿，不额外叠无限易伤。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>剩余武器方案</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>核心武器</th>
+            <th>推荐搭档</th>
+            <th>联动方案</th>
+            <th>落地入口</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Charged Blaster</strong></td>
+            <td>Orbit、Rocket Launcher、Sniper</td>
+            <td>多目标光束命中后进入“棱镜锁定”窗口：Orbit 卫星附近敌人受到额外 energy 链伤，Rocket 爆炸会优先在被光束扫过的敌群中二次引爆，Sniper 对被锁定目标获得一次穿透保底。</td>
+            <td>使用 <code>charged_blaster_multi_hit_triggered</code> 作为全局事件；新增 energy/area 模组读取 <code>unique_hit_count</code> 和持续时间。</td>
+          </tr>
+          <tr>
+            <td><strong>Shotgun</strong></td>
+            <td>Dash Blade、Glacier Projector、Spear</td>
+            <td>近距离命中制造“破甲裂口”：Dash Blade 命中裂口目标延长回收加速，Glacier 对裂口目标更快触发 cold snap，Spear 重复命中裂口目标额外获得 1 点轮舞充能。</td>
+            <td>使用 <code>shotgun_close_hit_triggered</code>；裂口应是短时状态，持续 3-5 秒，避免成为永久易伤。</td>
+          </tr>
+          <tr>
+            <td><strong>Orbit</strong></td>
+            <td>Machine Gun、Auto Pistol、Laser</td>
+            <td>玩家受伤后 Orbit 开启“护航轨道”：高频弹幕命中 Orbit 半径内敌人时追加小额 energy 伤害，Laser 在护航期间获得更稳定的聚焦进度，Auto Pistol 的移动标记窗口延长。</td>
+            <td>使用 <code>orbit_player_damaged_triggered</code>；收益偏防御反打，持续短、冷却长，避免鼓励主动吃伤害。</td>
+          </tr>
+          <tr>
+            <td><strong>Rocket Launcher</strong></td>
+            <td>Flamethrower、Shotgun、Charged Blaster</td>
+            <td>集群击杀后生成“爆燃余波”：Flamethrower 对余波区域内敌人提高燃烧 tick 覆盖，Shotgun 近距离击杀可刷新一次小范围爆炸，Charged Blaster 扫过余波区域时把爆炸转为 energy 脉冲。</td>
+            <td>使用 <code>rocket_cluster_kill_triggered</code>；强度来自击杀条件和敌群密度，单体 boss 场景应明显降效。</td>
+          </tr>
+          <tr>
+            <td><strong>Laser</strong></td>
+            <td>Plasma Lance、Cannon、Charged Blaster</td>
+            <td>持续聚焦后开启“精密校准”：下一次 Plasma Lance 或 Cannon 的低频重击获得命中半径/穿透补偿；Charged Blaster 可把聚焦窗口转换成更宽的副光束。</td>
+            <td>补齐 <code>laser_focus_channel_triggered</code> 被动定义；窗口只影响下一发或 2 秒内首次重击。</td>
+          </tr>
+          <tr>
+            <td><strong>Chainsaw Launcher</strong></td>
+            <td>Dash Blade、Rocket Launcher、Shotgun</td>
+            <td>锯片撞墙后进入“反弹撕裂”：Dash Blade 对被锯片擦过的目标追加 bleed，Rocket 对反弹路径终点触发小爆炸，Shotgun 近距离命中被撕裂目标时弹片获得一次额外穿透。</td>
+            <td>使用 <code>chainsaw_wall_contact_triggered</code>；联动依赖地形和轨迹，伤害预算可以高于普通 on-hit。</td>
+          </tr>
+          <tr>
+            <td><strong>Dash Blade</strong></td>
+            <td>Shotgun、Glacier Projector、Orbit</td>
+            <td>长距离突进命中后留下“切入窗口”：Shotgun 在窗口内近距离命中获得更稳定的 Close Hit 触发，Glacier 在路径上留下短冰场，Orbit 卫星沿突进方向短暂拉长轨道。</td>
+            <td>使用 <code>dash_blade_long_dash_hit_triggered</code>；主要奖励位置操作，不直接给全局伤害倍率。</td>
+          </tr>
+          <tr>
+            <td><strong>Glacier Projector</strong></td>
+            <td>Shotgun、Sniper、Flamethrower</td>
+            <td>Cold Snap 后制造“脆化窗口”：Shotgun 的 Shatter 路线可提前引爆冻结目标，Sniper 对脆化目标获得一次稳定暴击/满距离补偿，Flamethrower 命中脆化目标时触发蒸汽脉冲但移除冻结。</td>
+            <td>使用 <code>glacier_cold_snap_triggered</code>；冰火联动必须有取舍，燃烧收益换掉控制时间。</td>
+          </tr>
+          <tr>
+            <td><strong>Cannon</strong></td>
+            <td>Laser、Plasma Lance、Orbit</td>
+            <td>静置蓄势后发射“重炮坐标”：Laser 聚焦可缩短下一次蓄势门槛，Plasma Lance 命中坐标区域会留下裂隙，Orbit 在坐标附近追加防御性 energy 脉冲。</td>
+            <td>补齐 <code>cannon_idle_fire_triggered</code> 被动定义；收益绑定静置风险，移动中快速射击不应获得完整联动。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>十一、设计红线</h2>
       <ul>
         <li><span class="risk">不要</span>让武器基础等级成为最大的后期乘区，否则分支和模组只是装饰。</li>
         <li><span class="risk">不要</span>让强模组无 trait 限制地适配所有武器。</li>
