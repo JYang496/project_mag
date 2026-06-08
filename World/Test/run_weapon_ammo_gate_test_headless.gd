@@ -4,8 +4,8 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var plasma_lance_scene := load("res://Player/Weapons/plasma_lance.tscn") as PackedScene
-	var cannon_scene := load("res://Player/Weapons/cannon.tscn") as PackedScene
+	var plasma_lance_scene := load("res://Player/Weapons/Instances/plasma_lance.tscn") as PackedScene
+	var cannon_scene := load("res://Player/Weapons/Instances/cannon.tscn") as PackedScene
 	var failed := false
 	var plasma_ok := await _assert_weapon_ammo_gate("Plasma Lance", plasma_lance_scene)
 	failed = not plasma_ok or failed

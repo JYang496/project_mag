@@ -82,7 +82,7 @@ func _assert_spear_hitbox_bonus() -> bool:
 
 
 func _assert_sniper_reads_spear_mark() -> bool:
-	var sniper_scene := load("res://Player/Weapons/sniper.tscn") as PackedScene
+	var sniper_scene := load("res://Player/Weapons/Instances/sniper.tscn") as PackedScene
 	var sniper := sniper_scene.instantiate()
 	root.add_child(sniper)
 	sniper.global_position = Vector2.ZERO

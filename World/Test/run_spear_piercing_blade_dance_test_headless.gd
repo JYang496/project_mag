@@ -59,7 +59,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var spear_scene := load("res://Player/Weapons/spear_launcher.tscn") as PackedScene
+	var spear_scene := load("res://Player/Weapons/Instances/spear_launcher.tscn") as PackedScene
 	if spear_scene == null:
 		_fail("unable to load Spear Launcher scene")
 		return

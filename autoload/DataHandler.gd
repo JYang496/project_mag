@@ -229,7 +229,7 @@ func build_weapon_save_payload(weapon: Weapon) -> Dictionary:
 		"weapon_id": get_weapon_id_from_instance(weapon),
 		"level": int(weapon.level),
 		"fuse": int(weapon.fuse),
-		"branch_ids": weapon.branch_ids.duplicate(),
+		"branch_ids": weapon.branch_runtime.branch_ids.duplicate(),
 		"modules": module_payloads,
 	}
 
@@ -252,8 +252,7 @@ func instantiate_weapon_from_save_payload(payload: Dictionary) -> Weapon:
 	else:
 		weapon.level = saved_level
 	var saved_branch_ids: Array = payload.get("branch_ids", [])
-	if weapon.has_method("restore_branch_ids"):
-		weapon.call("restore_branch_ids", saved_branch_ids)
+	weapon.branch_runtime.restore_branch_ids(saved_branch_ids)
 	if payload.has("modules"):
 		_restore_weapon_modules_from_payload(weapon, payload.get("modules", []))
 	if weapon.has_method("calculate_status"):

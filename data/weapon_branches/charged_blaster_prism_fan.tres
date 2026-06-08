@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=5 format=3]
 
 [ext_resource type="Texture2D" path="res://asset/images/weapons/cannon2.png" id="1_icon"]
-[ext_resource type="PackedScene" uid="uid://b1gqnq2apvnak" path="res://Player/Weapons/charged_blaster.tscn" id="2_weapon_scene"]
+[ext_resource type="PackedScene" uid="uid://b1gqnq2apvnak" path="res://Player/Weapons/Instances/charged_blaster.tscn" id="2_weapon_scene"]
 [ext_resource type="PackedScene" path="res://Player/Weapons/Branches/charged_blaster_prism_fan_branch.tscn" id="3_behavior"]
 [ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
 

@@ -235,8 +235,9 @@ func _equip_weapon(weapon_id: String, branch_id: String) -> void:
 	var main_weapon := _resolve_main_weapon_node()
 	if main_weapon == null:
 		return
-	if branch_id != "" and main_weapon.has_method("set_branch"):
-		var branch_ok := bool(main_weapon.call("set_branch", branch_id))
+	var branch_runtime := _get_branch_runtime(main_weapon)
+	if branch_id != "" and branch_runtime != null:
+		var branch_ok := bool(branch_runtime.add_branch(branch_id))
 		if not branch_ok:
 			push_warning("weapon_formula_benchmark: failed to apply branch %s to weapon %s" % [branch_id, weapon_id])
 
@@ -390,11 +391,13 @@ func _spawn_charged_blaster_streams(main_weapon: Node, runtime_damage: float) ->
 		"hit_cd_multiplier": 1.0,
 	}
 	var profiles: Array = [base_profile]
-	var branch: Node = main_weapon.get("branch_behavior") as Node
-	if branch and is_instance_valid(branch) and branch.has_method("get_charged_beam_profiles"):
-		var branch_profiles: Variant = branch.call("get_charged_beam_profiles", base_profile)
-		if branch_profiles is Array and not (branch_profiles as Array).is_empty():
-			profiles = branch_profiles
+	var branch_runtime := _get_branch_runtime(main_weapon)
+	if branch_runtime != null:
+		for branch in branch_runtime.get_branch_behaviors():
+			if branch and is_instance_valid(branch) and branch.has_method("get_charged_beam_profiles"):
+				var branch_profiles: Variant = branch.call("get_charged_beam_profiles", base_profile)
+				if branch_profiles is Array and not (branch_profiles as Array).is_empty():
+					profiles = branch_profiles
 	var base_duration: float = float(main_weapon.get("duration")) if main_weapon.get("duration") != null else 1.0
 	var base_hit_cd: float = float(main_weapon.get("hit_cd")) if main_weapon.get("hit_cd") != null else 0.2
 	for profile_variant in profiles:
@@ -422,18 +425,19 @@ func _apply_sniper_formula(main_weapon: Node, runtime_damage: float) -> void:
 	var distance_mul: float = maxf(float(config.get("sniper_distance_multiplier")), 1.0)
 	var total: float = runtime_damage * distance_mul
 	var expected_pierce_hits: int = maxi(int(config.get("sniper_expected_pierce_hits")), 0)
-	var branch: Node = main_weapon.get("branch_behavior") as Node
 	var gain_per_hit: int = 0
-	if branch and is_instance_valid(branch) and branch.has_method("get_pierce_damage_gain_per_hit"):
-		gain_per_hit = maxi(int(branch.call("get_pierce_damage_gain_per_hit")), 0)
+	var branch_runtime := _get_branch_runtime(main_weapon)
+	if branch_runtime != null:
+		gain_per_hit = branch_runtime.get_branch_pierce_damage_gain_per_hit()
 	total += float(gain_per_hit * expected_pierce_hits)
 	_current_total_damage_formula += total
 
 func _apply_plasma_lance_formula(main_weapon: Node, runtime_damage: float) -> void:
 	var expected_pierce_hits: int = maxi(int(config.get("plasma_expected_pierce_hits")), 0)
 	var gain_per_pierce: int = 0
-	if main_weapon.has_method("get_branch_pierce_damage_gain_per_hit"):
-		gain_per_pierce = maxi(int(main_weapon.call("get_branch_pierce_damage_gain_per_hit")), 0)
+	var branch_runtime := _get_branch_runtime(main_weapon)
+	if branch_runtime != null:
+		gain_per_pierce = branch_runtime.get_branch_pierce_damage_gain_per_hit()
 	_current_total_damage_formula += runtime_damage + float(gain_per_pierce * expected_pierce_hits)
 
 func _apply_chainsaw_formula(main_weapon: Node, runtime_damage: float) -> void:
@@ -468,37 +472,42 @@ func _resolve_weapon_cooldown(main_weapon: Node) -> float:
 
 func _resolve_branch_shot_count(main_weapon: Node, fallback: int) -> int:
 	var result: int = maxi(fallback, 1)
-	var branch: Node = main_weapon.get("branch_behavior") as Node
-	if branch and is_instance_valid(branch) and branch.has_method("get_shot_directions"):
-		var dirs_variant: Variant = branch.call("get_shot_directions", Vector2.RIGHT, result)
-		if dirs_variant is Array:
-			var dirs: Array = dirs_variant
-			if dirs.size() > 1:
-				result = dirs.size()
+	var branch_runtime := _get_branch_runtime(main_weapon)
+	if branch_runtime != null:
+		var dirs := branch_runtime.get_branch_shot_directions(Vector2.RIGHT, result)
+		if dirs.size() > 1:
+			result = dirs.size()
 	return result
 
 func _resolve_shotgun_pellet_count(main_weapon: Node) -> int:
 	var pellet_count: int = maxi(int(main_weapon.get("bullet_count")) if main_weapon.get("bullet_count") != null else 1, 1)
-	var branch: Node = main_weapon.get("branch_behavior") as Node
-	if branch and is_instance_valid(branch) and branch.has_method("get_projectile_count_override"):
-		pellet_count = maxi(int(branch.call("get_projectile_count_override", pellet_count)), 1)
-	if branch and is_instance_valid(branch) and branch.has_method("get_shot_directions"):
-		var dirs_variant: Variant = branch.call("get_shot_directions", Vector2.RIGHT, pellet_count)
-		if dirs_variant is Array and (dirs_variant as Array).size() > 1:
-			pellet_count = (dirs_variant as Array).size()
+	var branch_runtime := _get_branch_runtime(main_weapon)
+	if branch_runtime != null:
+		for branch in branch_runtime.get_branch_behaviors():
+			if branch and is_instance_valid(branch) and branch.has_method("get_projectile_count_override"):
+				pellet_count = maxi(int(branch.call("get_projectile_count_override", pellet_count)), 1)
+		var dirs := branch_runtime.get_branch_shot_directions(Vector2.RIGHT, pellet_count)
+		if dirs.size() > 1:
+			pellet_count = dirs.size()
 	return pellet_count
 
 func _get_branch_projectile_damage_multiplier(main_weapon: Node) -> float:
-	var branch: Node = main_weapon.get("branch_behavior") as Node
-	if branch and is_instance_valid(branch) and branch.has_method("get_projectile_damage_multiplier"):
-		return maxf(float(branch.call("get_projectile_damage_multiplier")), 0.05)
+	var branch_runtime := _get_branch_runtime(main_weapon)
+	if branch_runtime != null:
+		return branch_runtime.get_branch_projectile_damage_multiplier()
 	return 1.0
 
 func _get_branch_damage_multiplier(main_weapon: Node) -> float:
-	var branch: Node = main_weapon.get("branch_behavior") as Node
-	if branch and is_instance_valid(branch) and branch.has_method("get_damage_multiplier"):
-		return maxf(float(branch.call("get_damage_multiplier")), 0.05)
+	var branch_runtime := _get_branch_runtime(main_weapon)
+	if branch_runtime != null:
+		return branch_runtime.get_branch_damage_multiplier()
 	return 1.0
+
+func _get_branch_runtime(main_weapon: Node) -> WeaponBranchRuntime:
+	if main_weapon == null or not is_instance_valid(main_weapon):
+		return null
+	var runtime_variant: Variant = main_weapon.get("branch_runtime")
+	return runtime_variant as WeaponBranchRuntime
 
 func _update_damage_streams(delta: float, record_damage: bool) -> void:
 	if _pending_damage_streams.is_empty():

@@ -127,7 +127,7 @@ func _build_branch_card(def: WeaponBranchDefinition) -> Button:
 func _build_selected_branch_summary(weapon: Weapon) -> String:
 	if weapon == null or not is_instance_valid(weapon):
 		return ""
-	var selected_ids: Array = weapon.branch_ids
+	var selected_ids: Array = weapon.branch_runtime.branch_ids
 	if selected_ids.is_empty():
 		return LocalizationManager.tr_key("ui.branch.selected_none", "Selected branches: none")
 	var parts: PackedStringArray = []

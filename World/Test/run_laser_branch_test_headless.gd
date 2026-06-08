@@ -9,7 +9,7 @@ func _run() -> void:
 		_fail("DataHandler autoload missing")
 		return
 	data_handler.call("load_weapon_branch_data")
-	var laser_scene := load("res://Player/Weapons/laser.tscn") as PackedScene
+	var laser_scene := load("res://Player/Weapons/Instances/laser.tscn") as PackedScene
 	if laser_scene == null:
 		_fail("failed to load laser scene")
 		return

@@ -47,7 +47,7 @@ func _make_target() -> Node2D:
 
 
 func _make_orbit() -> Node:
-	var scene := load("res://Player/Weapons/orbit.tscn") as PackedScene
+	var scene := load("res://Player/Weapons/Instances/orbit.tscn") as PackedScene
 	var orbit := scene.instantiate()
 	root.add_child(orbit)
 	return orbit

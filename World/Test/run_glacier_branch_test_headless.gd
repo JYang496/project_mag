@@ -12,7 +12,7 @@ func _run() -> void:
 		return
 	data_handler.call("load_weapon_branch_data")
 
-	var glacier_scene := load("res://Player/Weapons/glacier_projector.tscn") as PackedScene
+	var glacier_scene := load("res://Player/Weapons/Instances/glacier_projector.tscn") as PackedScene
 	if glacier_scene == null:
 		_fail("failed to load Glacier Projector scene")
 		return

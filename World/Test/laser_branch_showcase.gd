@@ -1,6 +1,6 @@
 extends Node2D
 
-const LASER_SCENE := preload("res://Player/Weapons/laser.tscn")
+const LASER_SCENE := preload("res://Player/Weapons/Instances/laser.tscn")
 const DUMMY_SCENE := preload("res://World/Test/dps_test_dummy_enemy.tscn")
 
 var _laser: Weapon
@@ -127,7 +127,7 @@ func _set_branch_mode(branch_ids: Array) -> void:
 	_laser.set_level(5)
 	_laser.fuse = 3
 	for branch_id in branch_ids:
-		var added := bool(_laser.call("add_branch", str(branch_id)))
+		var added := bool(_laser.branch_runtime.add_branch(str(branch_id)))
 		_log("Add branch %s: %s" % [str(branch_id), "OK" if added else "FAILED"])
 	_refresh_status()
 
@@ -173,7 +173,7 @@ func _refresh_status() -> void:
 	lines.append("[b]Live Laser[/b]")
 	lines.append("Level: %d" % int(_laser.level))
 	lines.append("Fuse: %d" % int(_laser.fuse))
-	lines.append("Branches: %s" % (", ".join(_laser.branch_ids) if not _laser.branch_ids.is_empty() else "none"))
+	lines.append("Branches: %s" % (", ".join(_laser.branch_runtime.branch_ids) if not _laser.branch_runtime.branch_ids.is_empty() else "none"))
 	lines.append("Runtime shot damage: %d" % int(_laser.call("get_runtime_shot_damage")))
 	lines.append("Beam profiles: %d" % profiles.size())
 	lines.append(_summarize_profiles(profiles))

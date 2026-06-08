@@ -486,7 +486,7 @@ func _assert_plasma_lance_branch_contract(scene: Node) -> bool:
 	if int(plasma_lance.call("_get_effective_projectile_hits")) != 2:
 		push_error("FAIL: base Plasma Lance expected 2 projectile hits got %d" % int(plasma_lance.call("_get_effective_projectile_hits")))
 		return false
-	if int(plasma_lance.call("get_branch_pierce_damage_gain_per_hit")) != 0:
+	if int(plasma_lance.branch_runtime.get_branch_pierce_damage_gain_per_hit()) != 0:
 		push_error("FAIL: base Plasma Lance should not gain damage per pierce")
 		return false
 	pool.heat_value = 40.0
@@ -498,13 +498,13 @@ func _assert_plasma_lance_branch_contract(scene: Node) -> bool:
 	if not is_equal_approx(pool.heat_value, 20.0):
 		push_error("FAIL: base Plasma Lance should spend exactly 20 heat, remaining %.3f" % pool.heat_value)
 		return false
-	if not bool(plasma_lance.call("add_branch", "plasma_piercing_lance")):
+	if not bool(plasma_lance.branch_runtime.add_branch("plasma_piercing_lance")):
 		push_error("FAIL: unable to add Plasma Lance Piercing branch")
 		return false
 	if int(plasma_lance.call("_get_effective_projectile_hits")) != 12:
 		push_error("FAIL: Piercing Lance expected 12 projectile hits got %d" % int(plasma_lance.call("_get_effective_projectile_hits")))
 		return false
-	if int(plasma_lance.call("get_branch_pierce_damage_gain_per_hit")) != 4:
+	if int(plasma_lance.branch_runtime.get_branch_pierce_damage_gain_per_hit()) != 4:
 		push_error("FAIL: Piercing Lance expected +4 damage per pierce")
 		return false
 	pool.heat_value = 40.0

@@ -259,7 +259,7 @@ func _refresh_status() -> void:
 		lines.append("Main weapon id: %s" % DataHandler.get_weapon_id_from_instance(weapon))
 		lines.append("Main weapon fuse: %d / %d" % [int(weapon.fuse), int(weapon.FINAL_MAX_FUSE)])
 		lines.append("Main weapon level: %d / %d" % [int(weapon.level), int(weapon.max_level)])
-		lines.append("Selected branches: %s" % (", ".join(weapon.branch_ids) if not weapon.branch_ids.is_empty() else "none"))
+		lines.append("Selected branches: %s" % (", ".join(weapon.branch_runtime.branch_ids) if not weapon.branch_runtime.branch_ids.is_empty() else "none"))
 	lines.append("Branch panel visible: %s" % str(_ui != null and _ui.branch_select_panel != null and _ui.branch_select_panel.visible))
 	lines.append("Branch selection pending/blocking: %s" % str(_ui != null and _ui.has_pending_branch_selection()))
 	lines.append("")

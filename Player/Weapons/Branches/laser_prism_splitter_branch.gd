@@ -26,4 +26,4 @@ func _configure_side_profile(profile: Dictionary, angle_offset_deg: float) -> vo
 	profile["beam_tag"] = "prism_side"
 
 func _has_tracking_lens() -> bool:
-	return weapon != null and is_instance_valid(weapon) and weapon.has_branch("laser_tracking_lens")
+	return weapon != null and is_instance_valid(weapon) and weapon.branch_runtime.has_branch("laser_tracking_lens")

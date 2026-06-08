@@ -270,7 +270,7 @@ func _open_branch_panel_for_queue_entry(entry: Dictionary) -> bool:
 	if queued_weapon == null or not is_instance_valid(queued_weapon):
 		_warn_skipped_branch_selection(weapon_id, target_fuse, "missing_weapon")
 		return false
-	var branch_options := queued_weapon.get_branch_options()
+	var branch_options := queued_weapon.branch_runtime.get_branch_options()
 	if branch_options.is_empty():
 		_warn_skipped_branch_selection(weapon_id, target_fuse, "no_options")
 		return false
@@ -327,7 +327,7 @@ func request_reward_selection(
 func _on_branch_selected(weapon: Weapon, branch_id: String) -> void:
 	if weapon == null or not is_instance_valid(weapon):
 		return
-	if not weapon.set_branch(branch_id):
+	if not weapon.branch_runtime.set_branch(branch_id):
 		push_warning("Failed to apply branch '%s' for weapon '%s'." % [branch_id, weapon.name])
 	call_deferred("_finalize_branch_selected_weapon", weapon)
 

@@ -5,7 +5,7 @@ func _ready() -> void:
 	get_tree().quit(0 if ok else 1)
 
 func _run() -> bool:
-	var scene := load("res://Player/Weapons/machine_gun.tscn") as PackedScene
+	var scene := load("res://Player/Weapons/Instances/machine_gun.tscn") as PackedScene
 	if scene == null:
 		push_error("MachineGunSpreadProbe: failed to load machine_gun.tscn")
 		return false
