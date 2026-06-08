@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" format=3 uid="uid://c5gqj4chwf7lf"]
+
+[ext_resource type="Texture2D" uid="uid://frvb0gd4mcia" path="res://Textures/test/laser.png" id="1_icon"]
+[ext_resource type="PackedScene" uid="uid://do7jqh0t1td8u" path="res://Player/Weapons/laser.tscn" id="2_weapon_scene"]
+[ext_resource type="PackedScene" uid="uid://bbr8v1e65nm8w" path="res://Player/Weapons/Branches/laser_tracking_lens_branch.tscn" id="3_behavior"]
+[ext_resource type="Script" uid="uid://bi2n1qvhoukj3" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
+
+[resource]
+script = ExtResource("4_script")
+branch_id = "laser_tracking_lens"
+display_name = "Tracking Lens"
+description = "Laser beams independently correct  degrees toward nearby enemies. When combined with Prism Splitter, each split beam tracks its own target without damage loss."
+icon = ExtResource("1_icon")
+sort_order = 10
+weapon_scene = ExtResource("2_weapon_scene")
+behavior_scene = ExtResource("3_behavior")
+exclusive_groups = PackedStringArray()
+incompatible_branch_ids = PackedStringArray()

@@ -936,15 +936,15 @@
             <td><ul class="metric-list"><li>伤害：6 / 8 / 12 / 15 / 18 / 28 / 32 / 36 / 40</li><li>间隔：4 / 4 / 4 / 4 / 4 / 4 / 4 / 4 / 4</li><li>弹匣：10 / 10 / 12 / 12 / 14 / 14 / 16 / 18 / 20</li><li>持续：1.0 / 1.2 / 1.2 / 1.4 / 1.6 / 1.8 / 2.0 / 2.2 / 2.4</li><li>命中 CD：0.2 全等级</li></ul></td>
           </tr>
           <tr>
-            <td><strong>Spear</strong><br><small>ID 3 / 价格 100 / hidden<br><code>spear_launcher.gd</code></small></td>
+            <td><strong>Spear Launcher</strong><br><small>ID 3 / 价格 100 / hidden<br><code>spear_launcher.gd</code></small></td>
             <td>高频穿透回旋长矛，同一个投射物二次伤害同一目标时获得充能；达到 10/20 点后换弹触发 8/16 方向的 <code>piercing_blade_dance</code> 环形齐射，并施加持续标记与击退。<br><strong>Traits：</strong>range、projectile、physical</td>
             <td>冷却持续缩短，伤害和弹匣平滑提升，穿透在 3 级跃升。</td>
             <td><ul class="metric-list"><li>伤害：6 / 7 / 9 / 10 / 12 / 14 / 18 / 22 / 26</li><li>间隔：0.6 / 0.55 / 0.5 / 0.45 / 0.4 / 0.35 / 0.3 / 0.25 / 0.20</li><li>弹匣：30 / 32 / 34 / 36 / 38 / 40 / 42 / 44 / 46</li><li>速度：900 / 600 / 600 / 800 / 800 / 800 / 800 / 800 / 800</li><li>穿透：4 / 4 / 6 / 6 / 6 / 6 / 6 / 6 / 6</li></ul></td>
           </tr>
           <tr>
             <td><strong>shotgun</strong><br><small>ID 4 / 价格 80<br><code>shotgun.gd</code></small></td>
-            <td>近距离多弹丸物理武器，近距离命中触发 <code>shotgun_close_hit_triggered</code>。<br><strong>Traits：</strong>range、trigger、projectile、physical</td>
-            <td>弹丸数量每级增加，冷却在 3/5 级下降，穿透 5 级提升。</td>
+            <td>近距离多弹丸物理武器，同一发基础弹丸多次命中同一目标时，从第二次命中开始追加 25% 最终伤害；近距离命中仍触发 <code>shotgun_close_hit_triggered</code>。<br><strong>Traits：</strong>range、trigger、projectile、physical</td>
+            <td>弹丸数量每级增加，冷却在 3/5 级下降，穿透 5 级提升；成长会自然提高同发多弹命中同一目标的概率。</td>
             <td><ul class="metric-list"><li>伤害：14 / 16 / 18 / 20 / 22 / 24 / 26 / 28 / 30</li><li>间隔：2 / 2 / 1.8 / 1.8 / 1.6 / 1.6 / 1.6 / 1.6 / 1.6</li><li>弹匣：24 / 26 / 28 / 30 / 32 / 34 / 36 / 38 / 40</li><li>弹丸：3 / 4 / 5 / 6 / 7 / 8 / 9 / 10 / 11</li><li>穿透：1 / 1 / 1 / 1 / 2 / 2 / 2 / 2 / 2</li></ul></td>
           </tr>
           <tr>
@@ -955,12 +955,12 @@
           </tr>
           <tr>
             <td><strong>orbit</strong><br><small>ID 7 / 价格 80<br><code>orbit.gd</code></small></td>
-            <td>召唤环绕弹体，玩家受伤触发 <code>orbit_player_damaged_triggered</code>。<br><strong>Traits：</strong>duration、range、projectile、summon、energy</td>
-            <td>数量每级 +1，是最明确的线性覆盖成长；旋转速度分段提升。</td>
-            <td><ul class="metric-list"><li>伤害：8 / 10 / 12 / 14 / 16 / 18 / 20 / 22 / 24</li><li>数量：1 / 2 / 3 / 4 / 5 / 6 / 7 / 8 / 9</li><li>旋转速：3 / 3 / 3.5 / 3.5 / 4 / 4 / 5 / 6 / 7</li><li>间隔：2.5 全等级</li><li>弹匣：20 全等级</li></ul></td>
+            <td>低频重部署环绕武器，每次开火消耗当前全部弹药，1 发弹药召唤 1 颗卫星；卫星命中施加 0.85x / 1 秒轻减速，玩家受伤仍触发 <code>orbit_player_damaged_triggered</code>。<br><strong>Traits：</strong>duration、range、projectile、summon、energy</td>
+            <td>卫星数量由本轮消耗弹药决定，旧卫星不会被新一轮清除；弹匣成长控制满弹部署规模，8 秒换弹制造明显空窗。</td>
+            <td><ul class="metric-list"><li>伤害：8 / 10 / 12 / 14 / 16 / 18 / 20 / 22 / 24</li><li>满弹卫星/弹匣：2 / 2 / 3 / 3 / 4 / 5 / 6 / 7 / 8</li><li>旋转速：3 / 3 / 3.5 / 3.5 / 4 / 4 / 5 / 6 / 7</li><li>开火间隔：2.5 全等级</li><li>换弹：8.0 全等级</li></ul></td>
           </tr>
           <tr>
-            <td><strong>rocket luncher</strong><br><small>ID 8 / 价格 80<br><code>rocket_launcher.gd</code></small></td>
+            <td><strong>Rocket Launcher</strong><br><small>ID 8 / 价格 80<br><code>rocket_launcher.gd</code></small></td>
             <td>慢速火箭与爆炸范围，击杀附近敌人触发 <code>rocket_cluster_kill_triggered</code>。<br><strong>Traits：</strong>range、projectile、area_of_effect、fire</td>
             <td>伤害、射速、弹速、爆炸尺度全部成长，是群体清场路线。</td>
             <td><ul class="metric-list"><li>伤害：10 / 13 / 16 / 20 / 25 / 31 / 39 / 47 / 55</li><li>间隔：2.4 / 2.2 / 2.0 / 1.8 / 1.6 / 1.4 / 1.2 / 1.0 / 0.8</li><li>弹匣：14 / 16 / 18 / 20 / 22 / 24 / 26 / 28 / 30</li><li>速度：500 / 560 / 600 / 650 / 700 / 750 / 800 / 850 / 900</li><li>爆炸尺度：2.0 / 2.1 / 2.2 / 2.35 / 2.5 / 2.65 / 2.8 / 2.95 / 3.10</li><li>穿透：1 / 1 / 1 / 1 / 2 / 2 / 2 / 2 / 2</li></ul></td>
@@ -972,15 +972,15 @@
             <td><ul class="metric-list"><li>伤害：3 / 4 / 6 / 7 / 8 / 9 / 10 / 11 / 12</li><li>间隔：2 / 1.6 / 1.1 / 0.8 / 0.6 / 0.5 / 0.45 / 0.40 / 0.35</li><li>弹匣：45 / 50 / 55 / 60 / 65 / 70 / 75 / 80 / 85</li></ul></td>
           </tr>
           <tr>
-            <td><strong>chainsaw luncher</strong><br><small>ID 10 / 价格 80<br><code>chainsaw_launcher.gd</code></small></td>
-            <td>慢速链锯投射物，多段接触伤害，撞墙触发 <code>chainsaw_wall_contact_triggered</code>。<br><strong>Traits：</strong>dot、duration、projectile、physical</td>
-            <td>伤害和命中寿命提升，4 级后冷却缩短，弹匣逐级增加。</td>
+            <td><strong>Chainsaw Launcher</strong><br><small>ID 10 / 价格 80<br><code>chainsaw_launcher.gd</code></small></td>
+            <td>慢速链锯投射物，多段接触伤害；命中被减速目标时施加 <code>close_vulnerability</code>，使其 6 秒内承受 1.15x 玩家武器伤害，撞墙仍触发 <code>chainsaw_wall_contact_triggered</code>。<br><strong>Traits：</strong>dot、duration、projectile、physical</td>
+            <td>伤害和命中寿命提升，4 级后冷却缩短，弹匣逐级增加；高命中频率适合兑现短时易伤窗口。</td>
             <td><ul class="metric-list"><li>伤害：3 / 4 / 5 / 7 / 9 / 12 / 15 / 18 / 21</li><li>间隔：1 / 1 / 1 / 0.75 / 0.75 / 0.75 / 0.75 / 0.75 / 0.75</li><li>弹匣：28 / 30 / 32 / 34 / 36 / 38 / 40 / 42 / 44</li><li>速度：200 全等级</li><li>命中数：15 / 15 / 20 / 25 / 25 / 30 / 30 / 30 / 30</li><li>DOT 间隔：0.1 全等级</li></ul></td>
           </tr>
           <tr>
             <td><strong>dash blade</strong><br><small>ID 11 / 价格 120<br><code>dash_blade.gd</code></small></td>
-            <td>近战突进命中，长距离突进命中触发 <code>dash_blade_long_dash_hit_triggered</code>。<br><strong>Traits：</strong>movement、range、melee、trigger、physical</td>
-            <td>伤害、突进距离、突进速度和回收速度同步成长。</td>
+            <td>近战突进命中会对目标施加 0.7x 减速 3 秒，长距离突进命中仍触发 <code>dash_blade_long_dash_hit_triggered</code>。<br><strong>Traits：</strong>movement、range、melee、trigger、physical</td>
+            <td>伤害、突进距离、突进速度和回收速度同步成长；更长突进距离提高减速起手和长距离被动触发空间。</td>
             <td><ul class="metric-list"><li>伤害：28 / 34 / 40 / 48 / 58 / 70 / 85 / 100 / 115</li><li>间隔：1.1 / 1.0 / 0.95 / 0.9 / 0.85 / 0.8 / 0.75 / 0.70 / 0.65</li><li>弹匣：24 / 26 / 28 / 30 / 32 / 34 / 36 / 38 / 40</li><li>范围：150 / 160 / 170 / 180 / 190 / 210 / 230 / 250 / 270</li><li>突进速：900 / 950 / 980 / 1020 / 1080 / 1150 / 1220 / 1290 / 1360</li><li>返回速：700 / 730 / 760 / 780 / 820 / 860 / 900 / 940 / 980</li></ul></td>
           </tr>
           <tr>
@@ -1096,15 +1096,15 @@
           </tr>
           <tr>
             <td><strong>Shotgun</strong></td>
-            <td>Dash Blade、Glacier Projector、Spear</td>
-            <td>近距离命中制造“破甲裂口”：Dash Blade 命中裂口目标延长回收加速，Glacier 对裂口目标更快触发 cold snap，Spear 重复命中裂口目标额外获得 1 点轮舞充能。</td>
-            <td>使用 <code>shotgun_close_hit_triggered</code>；裂口应是短时状态，持续 3-5 秒，避免成为永久易伤。</td>
+            <td>Dash Blade、Chainsaw Launcher、Glacier Projector</td>
+            <td>已落地近身链的终点：Dash Blade 先减速目标，Chainsaw 对减速目标施加短时易伤，Shotgun 同一发多弹命中同一目标时从第二颗基础弹丸开始追加 25% 最终伤害，用高弹丸数兑现贴脸爆发。</td>
+            <td>使用 <code>shotgun_close_hit_triggered</code> 和同发 volley 计数；额外伤害走 final damage 路径，不递归触发 on-hit 或反应效果。</td>
           </tr>
           <tr>
             <td><strong>Orbit</strong></td>
             <td>Machine Gun、Auto Pistol、Laser</td>
-            <td>玩家受伤后 Orbit 开启“护航轨道”：高频弹幕命中 Orbit 半径内敌人时追加小额 energy 伤害，Laser 在护航期间获得更稳定的聚焦进度，Auto Pistol 的移动标记窗口延长。</td>
-            <td>使用 <code>orbit_player_damaged_triggered</code>；收益偏防御反打，持续短、冷却长，避免鼓励主动吃伤害。</td>
+            <td>Orbit 作为低频近身控场部署：每轮消耗当前全部弹药生成 2-8 颗卫星，卫星命中提供 0.85x / 1 秒轻减速，帮助 Shotgun 贴脸时把目标留在多弹命中区，也能给 Chainsaw 的 <code>is_slowed()</code> 易伤判定提供低强度入口；玩家受伤触发的 <code>orbit_player_damaged_triggered</code> 仍保留防御反打身份。</td>
+            <td>减速是 Orbit 基础命中规则，不并入受伤被动 HUD；8 秒换弹和较小弹匣限制覆盖，强度低于 Dash Blade 的 0.7x / 3 秒，避免取代 Dash 的强起手。</td>
           </tr>
           <tr>
             <td><strong>Rocket Launcher</strong></td>
@@ -1120,15 +1120,15 @@
           </tr>
           <tr>
             <td><strong>Chainsaw Launcher</strong></td>
-            <td>Dash Blade、Rocket Launcher、Shotgun</td>
-            <td>锯片撞墙后进入“反弹撕裂”：Dash Blade 对被锯片擦过的目标追加 bleed，Rocket 对反弹路径终点触发小爆炸，Shotgun 近距离命中被撕裂目标时弹片获得一次额外穿透。</td>
-            <td>使用 <code>chainsaw_wall_contact_triggered</code>；联动依赖地形和轨迹，伤害预算可以高于普通 on-hit。</td>
+            <td>Dash Blade、Shotgun、Rocket Launcher</td>
+            <td>已落地近身链的中继：Dash Blade 命中提供 0.7x / 3 秒减速，Chainsaw 命中减速目标后施加 <code>close_vulnerability</code>，目标 6 秒内承受 1.15x 玩家武器伤害；Shotgun 负责在易伤窗口内贴脸兑现多弹最终伤害。</td>
+            <td>易伤只对玩家武器来源生效，刷新但不叠加；<code>chainsaw_wall_contact_triggered</code> 仍作为撞墙被动事件保留给分支和后续地形联动。</td>
           </tr>
           <tr>
             <td><strong>Dash Blade</strong></td>
-            <td>Shotgun、Glacier Projector、Orbit</td>
-            <td>长距离突进命中后留下“切入窗口”：Shotgun 在窗口内近距离命中获得更稳定的 Close Hit 触发，Glacier 在路径上留下短冰场，Orbit 卫星沿突进方向短暂拉长轨道。</td>
-            <td>使用 <code>dash_blade_long_dash_hit_triggered</code>；主要奖励位置操作，不直接给全局伤害倍率。</td>
+            <td>Chainsaw Launcher、Shotgun、Glacier Projector</td>
+            <td>已落地近身链的起手：Dash Blade 每次命中都施加 0.7x / 3 秒减速，给 Chainsaw 的减速目标判定创造窗口；长距离突进命中仍作为 <code>dash_blade_long_dash_hit_triggered</code> 事件，用于保留位置操作奖励。</td>
+            <td>减速是链条入口，不直接给全局伤害倍率；主要强度来自后续 Chainsaw 易伤和 Shotgun 同发多弹最终伤害。</td>
           </tr>
           <tr>
             <td><strong>Glacier Projector</strong></td>

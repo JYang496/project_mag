@@ -10,5 +10,5 @@ weapon_id = "21"
 display_name = "Glacier Projector"
 icon = ExtResource("1_icon")
 price = 100
-description = "Sustained freeze cone; prolonged contact triggers cold snap."
+description = "Sustained freeze cone; freeze hits trigger Cold Snap as it recharges."
 scene = ExtResource("2_scene")

@@ -20,32 +20,37 @@ func _run() -> bool:
 		return false
 	add_child(spawner)
 	await get_tree().process_frame
-	var level_results: Array[String] = []
-	for level_index in [0, 1]:
+	var level_index := 0
+	var enemy_hp := 10
+	var enemy_count := 50
+	var trial_count := 600
+	var total_ratio := 0.0
+	var zero_count := 0
+	var positive_count := 0
+	var mock_enemy := Node.new()
+	mock_enemy.set_meta("_spawn_budget_scaled_hp", enemy_hp)
+	add_child(mock_enemy)
+	for _trial in range(trial_count):
 		PhaseManager.current_level = level_index
-		spawner.start_timer()
-		var zero_count := 0
-		var positive_count := 0
-		var total_gold := 0
-		for _i in range(40):
-			var gold := spawner.roll_enemy_kill_gold()
+		spawner.call("_start_kill_gold_budget", level_index, 60)
+		var trial_gold := 0
+		for _i in range(enemy_count):
+			var gold := spawner.roll_enemy_kill_gold(mock_enemy)
 			if gold > 0:
 				positive_count += 1
-				total_gold += gold
+				trial_gold += gold
 			else:
 				zero_count += 1
 		var snapshot := spawner.get_kill_gold_budget_snapshot()
-		level_results.append("L%d zero=%d positive=%d total=%d budget=%d paid=%d" % [
-			level_index + 1,
-			zero_count,
-			positive_count,
-			total_gold,
-			int(snapshot.get("budget", 0)),
-			int(snapshot.get("paid", 0)),
-		])
-		if zero_count <= 0:
-			push_error("KillGoldDropProbe: level %d produced no zero-gold rolls." % (level_index + 1))
-			return false
+		var budget := maxi(int(snapshot.get("budget", 0)), 1)
+		total_ratio += float(trial_gold) / float(budget)
+	var average_ratio := total_ratio / float(trial_count)
+	if average_ratio < 0.92 or average_ratio > 1.08:
+		push_error("KillGoldDropProbe: HP-budget gold average ratio %.3f is outside tolerance." % average_ratio)
+		return false
+	if zero_count <= 0 or positive_count <= 0:
+		push_error("KillGoldDropProbe: HP-budget gold should still produce mixed zero and positive rolls.")
+		return false
 	PhaseManager.current_level = 0
 	var lazy_spawner := spawner_scene.instantiate() as EnemySpawner
 	if lazy_spawner == null:
@@ -56,12 +61,35 @@ func _run() -> bool:
 	if not lazy_spawner.ensure_kill_gold_budget_active():
 		push_error("KillGoldDropProbe: lazy budget activation failed.")
 		return false
-	var lazy_gold := lazy_spawner.roll_enemy_kill_gold()
+	var lazy_gold := lazy_spawner.roll_enemy_kill_gold(mock_enemy)
 	var lazy_snapshot := lazy_spawner.get_kill_gold_budget_snapshot()
-	level_results.append("lazy active=%s first=%d budget=%d" % [
+	GlobalVariables.economy_data = null
+	var reload_spawner := spawner_scene.instantiate() as EnemySpawner
+	if reload_spawner == null:
+		push_error("KillGoldDropProbe: failed to instantiate reload EnemySpawner")
+		return false
+	add_child(reload_spawner)
+	await get_tree().process_frame
+	PhaseManager.current_level = 0
+	reload_spawner.call("_start_kill_gold_budget", 0, 60)
+	var reload_budget := int(reload_spawner.get_kill_gold_budget_snapshot().get("budget", 0))
+	if reload_budget < 72 or reload_budget > 88:
+		push_error("KillGoldDropProbe: economy reload budget should use resource target 80, got %d." % reload_budget)
+		return false
+	print("KillGoldDropProbe: level=1 trials=%d enemy_count=%d hp=%d average_ratio=%.3f zero=%d positive=%d | lazy active=%s first=%d budget=%d" % [
+		trial_count,
+		enemy_count,
+		enemy_hp,
+		average_ratio,
+		zero_count,
+		positive_count,
 		str(lazy_spawner.is_kill_gold_budget_active()),
 		lazy_gold,
 		int(lazy_snapshot.get("budget", 0)),
 	])
-	print("KillGoldDropProbe: " + " | ".join(level_results))
+	mock_enemy.queue_free()
+	spawner.queue_free()
+	lazy_spawner.queue_free()
+	reload_spawner.queue_free()
+	await get_tree().process_frame
 	return true

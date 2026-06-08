@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://asset/images/cells/ice.png" id="1_icon"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/glacier_projector.tscn" id="2_weapon_scene"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Branches/glacier_whiteout_expansion_branch.tscn" id="3_behavior"]
+[ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
+
+[resource]
+script = ExtResource("4_script")
+branch_id = "glacier_whiteout_expansion"
+display_name = "Whiteout Expansion"
+description = "Glacier Projector cone angle expands by 20% without reducing range or damage."
+icon = ExtResource("1_icon")
+unlock_fuse = 2
+sort_order = 10
+weapon_scene = ExtResource("2_weapon_scene")
+behavior_scene = ExtResource("3_behavior")

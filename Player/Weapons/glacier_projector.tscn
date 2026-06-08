@@ -4,21 +4,31 @@
 [ext_resource type="Script" uid="uid://dlee5w18ma4c8" path="res://Player/Weapons/glacier_projector.gd" id="2_script"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_3hv4x"]
 [ext_resource type="PackedScene" uid="uid://lpkx68xlbpyj" path="res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.tscn" id="5_74i8c"]
-[ext_resource type="Texture2D" path="res://asset/images/weapons/pistol.png" id="6_icon"]
+[ext_resource type="Texture2D" uid="uid://bo8agyho2ubhi" path="res://asset/images/weapons/pistol.png" id="6_icon"]
 
 [node name="GlacierProjector" unique_id=252111721 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cone_half_angle_deg = 15.0
+base_range = 200.0
+cold_snap_damage_ratio = 0.35
+cold_snap_recharge_sec = 6.0
+debug_mode = true
+spread_enabled = false
+spread_full_distance = 900.0
+spread_no_falloff_distance = 0.0
+spread_close_range_miss_chance = 0.05
+spread_long_range_miss_chance = 0.85
+spread_min_radius = 6.0
+spread_max_radius = 140.0
+effect_configs = Array[ExtResource("3_3hv4x")]([])
+debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 65536
 
 [node name="BrittleTrigger" parent="Modules" index="0" unique_id=2045249766 instance=ExtResource("5_74i8c")]
 
-[node name="Sprite" parent="." index="3" unique_id=1522898652]
-texture = ExtResource("6_icon")
-
 [node name="FuseSprites" parent="." index="4" unique_id=50406900]
-fuse_texture_1 = ExtResource("6_icon")
 fuse_texture_2 = ExtResource("6_icon")
 fuse_texture_3 = ExtResource("6_icon")
 

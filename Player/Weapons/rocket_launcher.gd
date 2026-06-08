@@ -6,7 +6,7 @@ var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.pn
 
 
 # Weapon
-var ITEM_NAME = "Rocket Luncher"
+var ITEM_NAME = "Rocket Launcher"
 var explosion_scale : float = 2.0
 @export var cluster_kill_radius: float = 180.0
 

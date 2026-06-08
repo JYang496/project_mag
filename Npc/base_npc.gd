@@ -3,6 +3,7 @@ class_name BaseNPC
 
 const DAMAGE_PIPELINE_SCRIPT := preload("res://Utility/damage/damage_pipeline.gd")
 const DAMAGE_PROFILE_SCRIPT := preload("res://Utility/damage/damage_profile.gd")
+const DAMAGE_TAKEN_MULTIPLIER_STATUS_SCRIPT := preload("res://Utility/status_effects/damage_taken_multiplier_status_effect.gd")
 const ENEMY_HP_BAR_SCENE := preload("res://UI/enemy_hp_bar.tscn")
 
 @onready var sprite_body = $Body
@@ -259,6 +260,24 @@ func get_mark_value(mark_id: StringName, key: StringName, default_value: Variant
 	return effect.get_value(key, default_value)
 
 
+func apply_damage_taken_multiplier_status(status_id: StringName, multiplier: float, duration_sec: float) -> void:
+	if status_id == StringName():
+		return
+	var effect: StatusEffect = DAMAGE_TAKEN_MULTIPLIER_STATUS_SCRIPT.new().setup_multiplier(status_id, multiplier, duration_sec)
+	apply_status_effect(effect)
+
+
+func has_damage_taken_multiplier_status(status_id: StringName) -> bool:
+	return _get_damage_taken_multiplier_status(status_id) != null
+
+
+func get_damage_taken_multiplier_status_value(status_id: StringName, default_value: float = 1.0) -> float:
+	var effect := _get_damage_taken_multiplier_status(status_id)
+	if effect == null:
+		return default_value
+	return float(effect.get("multiplier"))
+
+
 func _get_mark_effect(mark_id: StringName) -> MarkStatusEffect:
 	if mark_id == StringName():
 		return null
@@ -269,6 +288,42 @@ func _get_mark_effect(mark_id: StringName) -> MarkStatusEffect:
 				return mark_effect
 	get_active_mark_ids()
 	return null
+
+
+func _get_damage_taken_multiplier_status(status_id: StringName) -> StatusEffect:
+	if status_id == StringName():
+		return null
+	for i in range(status_effects.size() - 1, -1, -1):
+		var effect := status_effects[i]
+		if effect == null:
+			status_effects.remove_at(i)
+			continue
+		if _is_damage_taken_multiplier_status(effect):
+			if not bool(effect.call("is_active")):
+				status_effects.remove_at(i)
+				continue
+			if StringName(effect.get("status_id")) == status_id:
+				return effect
+	return null
+
+
+func _get_status_damage_taken_multiplier() -> float:
+	var multiplier := 1.0
+	for i in range(status_effects.size() - 1, -1, -1):
+		var effect := status_effects[i]
+		if effect == null:
+			status_effects.remove_at(i)
+			continue
+		if _is_damage_taken_multiplier_status(effect):
+			if not bool(effect.call("is_active")):
+				status_effects.remove_at(i)
+				continue
+			multiplier *= maxf(float(effect.get("multiplier")), 0.0)
+	return multiplier
+
+
+func _is_damage_taken_multiplier_status(effect: StatusEffect) -> bool:
+	return effect != null and effect.get_script() == DAMAGE_TAKEN_MULTIPLIER_STATUS_SCRIPT
 
 
 func _setup_incoming_damage_profile() -> void:
@@ -310,6 +365,26 @@ func _profile_get_damage_reduction() -> float:
 
 func _profile_get_damage_taken_multiplier() -> float:
 	return maxf(0.0, damage_taken_multiplier)
+
+func get_source_damage_taken_multiplier(attack: Attack) -> float:
+	if attack == null or not _attack_is_from_player_weapon_source(attack):
+		return 1.0
+	return _get_status_damage_taken_multiplier()
+
+func _attack_is_from_player_weapon_source(attack: Attack) -> bool:
+	if attack == null:
+		return false
+	if attack.is_from_player():
+		return true
+	var source := attack.source_node
+	if source == null or not is_instance_valid(source):
+		return false
+	if bool(source.get_meta("player_weapon_damage_source", false)):
+		return true
+	if source is Weapon:
+		return true
+	var source_weapon_value: Variant = source.get("source_weapon")
+	return source_weapon_value is Weapon and is_instance_valid(source_weapon_value)
 
 func _profile_get_is_dead() -> bool:
 	return is_dead
@@ -393,15 +468,23 @@ func apply_status_payload(status_name: StringName, status_data: Variant) -> void
 			apply_status_effect(DotStatusEffect.from_dot_payload(status_data))
 		&"mark":
 			if status_data is Dictionary:
-				var payload := status_data as Dictionary
+				var payload_mark := status_data as Dictionary
 				var mark_data: Dictionary = {}
-				var raw_mark_data: Variant = payload.get("data", {})
+				var raw_mark_data: Variant = payload_mark.get("data", {})
 				if raw_mark_data is Dictionary:
 					mark_data = (raw_mark_data as Dictionary).duplicate(true)
 				apply_mark(
-					StringName(payload.get("mark_id", StringName())),
-					float(payload.get("duration", 0.1)),
+					StringName(payload_mark.get("mark_id", StringName())),
+					float(payload_mark.get("duration", 0.1)),
 					mark_data
+				)
+		&"damage_taken_multiplier":
+			if status_data is Dictionary:
+				var payload_multiplier := status_data as Dictionary
+				apply_damage_taken_multiplier_status(
+					StringName(payload_multiplier.get("status_id", StringName())),
+					float(payload_multiplier.get("multiplier", 1.0)),
+					float(payload_multiplier.get("duration", 0.1))
 				)
 
 func set_quest_lock(active: bool, damage_mul: float = 0.5, freeze_movement: bool = true) -> void:

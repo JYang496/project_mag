@@ -13,6 +13,8 @@ var source_player: Node
 # Optional duplicate-event guard metadata.
 var dedupe_token: StringName = StringName()
 var dedupe_window_sec: float = 0.0
+var damage_is_final: bool = false
+var suppress_reactive_effects: bool = false
 
 
 func setup(
@@ -37,6 +39,8 @@ func to_attack() -> Attack:
 	attack.knock_back = knock_back
 	attack.source_node = source_node
 	attack.source_player = source_player
+	attack.damage_is_final = damage_is_final
+	attack.suppress_reactive_effects = suppress_reactive_effects
 	return attack
 
 

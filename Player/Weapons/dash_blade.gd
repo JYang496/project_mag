@@ -7,6 +7,7 @@ signal calculate_weapon_speed(speed)
 signal calculate_weapon_size(size)
 
 const AIM_ROTATION_OFFSET := deg_to_rad(90)
+const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_rules.gd")
 
 var ITEM_NAME := "Dash Blade"
 
@@ -40,6 +41,8 @@ var _tracked_enemies: Array[BaseEnemy] = []
 var _target: BaseEnemy
 var _dash_hit_confirmed: bool = false
 @export var long_dash_trigger_range_ratio: float = 0.75
+@export var close_chain_slow_multiplier: float = 0.7
+@export var close_chain_slow_duration_sec: float = 3.0
 var _dash_start_distance: float = 0.0
 var _dash_start_target_id: int = 0
 
@@ -248,8 +251,12 @@ func _try_confirm_dash_hit(target: BaseEnemy) -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	_apply_close_chain_slow(target)
 	_try_trigger_long_dash_hit(target)
 	notify_branch_target_hit(target)
+
+func _apply_close_chain_slow(target: Node) -> void:
+	CLOSE_CHAIN_RULES.apply_dash_slow(target, close_chain_slow_multiplier, close_chain_slow_duration_sec)
 
 func _try_trigger_long_dash_hit(target: Node) -> void:
 	if not is_main_weapon():
@@ -288,6 +295,8 @@ func get_passive_status() -> Dictionary:
 		"comparison": ">=",
 		"trigger_hint": "dash_start_distance",
 		"refresh_hint": "reload",
+		"slow_multiplier": clampf(close_chain_slow_multiplier, 0.05, 1.0),
+		"slow_duration": maxf(close_chain_slow_duration_sec, 0.1),
 	}
 	if _state == AttackState.DASHING or _state == AttackState.RETURNING:
 		var current_distance := maxf(_dash_start_distance, 0.0)

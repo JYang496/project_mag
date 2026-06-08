@@ -7,7 +7,7 @@
 [resource]
 script = ExtResource("3_ep74y")
 weapon_id = "10"
-display_name = "chainsaw luncher"
+display_name = "Chainsaw Launcher"
 icon = ExtResource("1_m0vjd")
 price = 80
 description = "chainsaw launcher test"

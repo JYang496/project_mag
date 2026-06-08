@@ -1,5 +1,7 @@
 extends Ranger
 
+const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_rules.gd")
+
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
 var projectile_texture_resource = preload("res://Textures/test/sniper_bullet.png")
@@ -8,9 +10,14 @@ var projectile_texture_resource = preload("res://Textures/test/sniper_bullet.png
 var ITEM_NAME = "Shotgun"
 @export_range(0, 180) var arc : float = 30
 @export var close_hit_trigger_distance: float = 180.0
+@export var same_volley_repeat_hit_bonus_ratio: float = 0.25
 var bullet_count : int
 var base_arc: float = 0.0
 var base_bullet_count: int = 3
+const VOLLEY_ID_META := "shotgun_base_volley_id"
+const VOLLEY_PROJECTILE_META := "shotgun_base_volley_projectile"
+var _shotgun_volley_sequence: int = 0
+var _shotgun_volley_hit_counts: Dictionary = {}
 
 var weapon_data = {
 	"1": {"damage": "14", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "2", "ammo": "24", "bullet_count": "3"},
@@ -79,6 +86,9 @@ func _on_shoot():
 	var damage_type: StringName = Attack.TYPE_PHYSICAL
 	if branch_behavior and is_instance_valid(branch_behavior):
 		damage_type = Attack.normalize_damage_type(branch_behavior.get_damage_type_override())
+	_shotgun_volley_sequence += 1
+	var volley_id := _shotgun_volley_sequence
+	_shotgun_volley_hit_counts[volley_id] = {}
 	for dir in shot_directions:
 		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 		if spawn_projectile == null:
@@ -91,8 +101,11 @@ func _on_shoot():
 		spawn_projectile.size = size
 		spawn_projectile.hp = projectile_hits
 		spawn_projectile.expire_time = 0.3
+		spawn_projectile.set_meta(VOLLEY_ID_META, volley_id)
+		spawn_projectile.set_meta(VOLLEY_PROJECTILE_META, true)
 		apply_effects_on_projectile(spawn_projectile)
 		get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
+	_cleanup_old_shotgun_volleys(volley_id)
 
 func _build_spread_directions(base_direction: Vector2, shot_count: int, spread_arc: float) -> Array[Vector2]:
 	var dirs: Array[Vector2] = []
@@ -119,6 +132,50 @@ func on_hit_target(target: Node) -> void:
 	_try_trigger_close_hit(target)
 	if branch_behavior and is_instance_valid(branch_behavior):
 		branch_behavior.on_target_hit(target)
+
+func on_projectile_hit_damage_dealt(projectile: Node, target: Node, hit_damage_type: StringName, final_damage: int) -> void:
+	if final_damage <= 0:
+		return
+	if projectile == null or not is_instance_valid(projectile):
+		return
+	if target == null or not is_instance_valid(target):
+		return
+	if not bool(projectile.get_meta(VOLLEY_PROJECTILE_META, false)):
+		return
+	var volley_id := int(projectile.get_meta(VOLLEY_ID_META, 0))
+	if volley_id <= 0:
+		return
+	var hit_counts: Dictionary = _shotgun_volley_hit_counts.get(volley_id, {})
+	var target_id := target.get_instance_id()
+	var next_count := int(hit_counts.get(target_id, 0)) + 1
+	hit_counts[target_id] = next_count
+	_shotgun_volley_hit_counts[volley_id] = hit_counts
+	if next_count <= 1:
+		return
+	_apply_same_volley_repeat_hit_bonus(target, hit_damage_type, final_damage, volley_id, target_id, next_count)
+
+func _apply_same_volley_repeat_hit_bonus(
+	target: Node,
+	hit_damage_type: StringName,
+	final_damage: int,
+	volley_id: int,
+	target_id: int,
+	hit_index: int
+) -> void:
+	CLOSE_CHAIN_RULES.apply_final_bonus_damage(
+		self,
+		target,
+		Attack.normalize_damage_type(hit_damage_type),
+		final_damage,
+		same_volley_repeat_hit_bonus_ratio,
+		StringName("shotgun_same_volley_bonus_%d_%d_%d" % [volley_id, target_id, hit_index])
+	)
+
+func _cleanup_old_shotgun_volleys(current_volley_id: int) -> void:
+	var min_kept := maxi(1, current_volley_id - 6)
+	for key in _shotgun_volley_hit_counts.keys():
+		if int(key) < min_kept:
+			_shotgun_volley_hit_counts.erase(key)
 
 func _try_trigger_close_hit(target: Node) -> void:
 	if not is_main_weapon():
@@ -158,4 +215,5 @@ func get_passive_status() -> Dictionary:
 		"comparison": "<",
 		"trigger_hint": "hit_distance",
 		"refresh_hint": "reload",
+		"same_volley_repeat_hit_bonus_ratio": maxf(same_volley_repeat_hit_bonus_ratio, 0.0),
 	}

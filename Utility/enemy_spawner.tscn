@@ -1,14 +1,14 @@
-[gd_scene load_steps=2 format=3 uid="uid://dkelpi3n3ysnh"]
+[gd_scene format=3 uid="uid://dkelpi3n3ysnh"]
 
 [ext_resource type="Script" uid="uid://br141hm52i05i" path="res://Utility/enemy_spawner.gd" id="1_pgnrl"]
 
-[node name="EnemySpawner" type="Node2D" groups=["enemy_spawner"]]
+[node name="EnemySpawner" type="Node2D" unique_id=682370926 groups=["enemy_spawner"]]
 script = ExtResource("1_pgnrl")
 
-[node name="Timer" type="Timer" parent="."]
+[node name="Timer" type="Timer" parent="." unique_id=1387871289]
 
-[node name="TopLeft" type="Node2D" parent="."]
+[node name="TopLeft" type="Node2D" parent="." unique_id=207267487]
 
-[node name="BottomRight" type="Node2D" parent="."]
+[node name="BottomRight" type="Node2D" parent="." unique_id=1477745255]
 
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

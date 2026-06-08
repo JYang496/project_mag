@@ -28,9 +28,11 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 
 	var raw_damage: int = max(0, int(attack.damage))
 	var incoming_damage: int = raw_damage
-	incoming_damage = int(round(float(incoming_damage) * profile.read_damage_reduction()))
-	incoming_damage = int(round(float(incoming_damage) * profile.read_damage_taken_multiplier()))
-	incoming_damage = max(0, incoming_damage - profile.read_armor())
+	if not attack.damage_is_final:
+		incoming_damage = int(round(float(incoming_damage) * profile.read_damage_reduction()))
+		incoming_damage = int(round(float(incoming_damage) * profile.read_damage_taken_multiplier()))
+		incoming_damage = int(round(float(incoming_damage) * _read_target_source_damage_taken_multiplier(target, attack)))
+		incoming_damage = max(0, incoming_damage - profile.read_armor())
 	# Ensure non-zero incoming attacks still chip for at least 1 damage after mitigation.
 	if raw_damage > 0 and incoming_damage <= 0:
 		incoming_damage = 1
@@ -55,7 +57,7 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 		profile.call_on_death(attack)
 		return result
 
-	if not is_periodic:
+	if not is_periodic and not attack.suppress_reactive_effects:
 		match normalized_type:
 			Attack.TYPE_FIRE:
 				if not bool(state.get("processing_scorch_dot", false)):
@@ -121,6 +123,13 @@ func has_active_effects(target: Node) -> bool:
 	var state: Dictionary = target.get_meta(DAMAGE_STATE_META, {})
 	return int(state.get("scorch_stacks", 0)) > 0 \
 		or int(state.get("frost_stacks", 0)) > 0
+
+func _read_target_source_damage_taken_multiplier(target: Node, attack: Attack) -> float:
+	if target == null or not is_instance_valid(target):
+		return 1.0
+	if not target.has_method("get_source_damage_taken_multiplier"):
+		return 1.0
+	return maxf(0.0, float(target.call("get_source_damage_taken_multiplier", attack)))
 
 func _get_or_create_state(target: Node, profile: DamageProfile) -> Dictionary:
 	if target.has_meta(DAMAGE_STATE_META):

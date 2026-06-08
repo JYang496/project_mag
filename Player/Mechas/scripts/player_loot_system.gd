@@ -16,6 +16,8 @@ func on_collect_area_entered(area) -> void:
 		_player.PlayerData.player_gold += value
 		_player.PlayerData.round_coin_collected += value
 		_player.PlayerData.run_gold_earned += value
+		if GlobalVariables.enemy_spawner and is_instance_valid(GlobalVariables.enemy_spawner) and GlobalVariables.enemy_spawner.has_method("record_kill_gold_coin_collected"):
+			GlobalVariables.enemy_spawner.record_kill_gold_coin_collected(value)
 		_player.coin_collected.emit()
 
 func on_collect_chip_area_entered(area) -> void:
@@ -58,6 +60,8 @@ func run_battle_end_auto_collect() -> void:
 		elapsed += _player.AUTO_LOOT_TICK_SEC
 	restore_collect_ranges_after_auto_loot()
 	_auto_loot_running = false
+	if GlobalVariables.enemy_spawner and is_instance_valid(GlobalVariables.enemy_spawner) and GlobalVariables.enemy_spawner.has_method("print_kill_gold_debug_summary"):
+		GlobalVariables.enemy_spawner.print_kill_gold_debug_summary("auto_loot_end")
 
 func attract_all_coins() -> void:
 	if _player == null or not _player.collect_area:

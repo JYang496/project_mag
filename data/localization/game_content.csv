@@ -1,7 +1,7 @@
 keys,en,zh_CN
 weapon.25.name,Cannon,Cannon
 weapon.25.desc,Heavy physical cannon with a short windup before each shot.,Heavy physical cannon with a short windup before each shot.
-weapon.10.name,chainsaw luncher,chainsaw luncher
+weapon.10.name,Chainsaw Launcher,Chainsaw Launcher
 weapon.10.desc,chainsaw launcher test,chainsaw launcher test
 weapon.2.name,Charged Blaster,Charged Blaster
 weapon.2.desc,charged blaster,charged blaster
@@ -10,24 +10,24 @@ weapon.11.desc,Dash to nearby target and deal melee hit on contact.,Dash to near
 weapon.13.name,flamethrower,flamethrower
 weapon.13.desc,short-range cone burst with fire aoe and heat management,short-range cone burst with fire aoe and heat management
 weapon.21.name,Glacier Projector,Glacier Projector
-weapon.21.desc,Sustained freeze cone; prolonged contact triggers cold snap.,Sustained freeze cone; prolonged contact triggers cold snap.
+weapon.21.desc,Sustained freeze cone; freeze hits trigger Cold Snap as it recharges.,Sustained freeze cone; freeze hits trigger Cold Snap as it recharges.
 weapon.9.name,laser,laser
 weapon.9.desc,laser test,laser test
 weapon.1.name,machine gun,machine gun
 weapon.1.desc,machine gun test,machine gun test
 weapon.7.name,orbit,orbit
-weapon.7.desc,orbit test: spiral,orbit test: spiral
+weapon.7.desc,Consumes the current magazine to deploy one slowing orbiting satellite per ammo spent.,Consumes the current magazine to deploy one slowing orbiting satellite per ammo spent.
 weapon.5.name,Auto Pistol,自动手枪
 weapon.5.desc,Auto-targeting sidearm that fires at the nearest enemy in range. Moving continuously primes its passive.,自动索敌副枪，会攻击范围内最近敌人；连续移动可预热被动。
 weapon.17.name,Plasma Lance,Plasma Lance
 weapon.17.desc,Slow heavy piercing lance. Projectile damage increases after each penetration.,Slow heavy piercing lance. Projectile damage increases after each penetration.
-weapon.8.name,rocket luncher,rocket luncher
+weapon.8.name,Rocket Launcher,Rocket Launcher
 weapon.8.desc,test: rocket launcher,test: rocket launcher
 weapon.4.name,shotgun,shotgun
 weapon.4.desc,shotgun test: muti shoot,shotgun test: muti shoot
 weapon.26.name,Sniper,Sniper
 weapon.26.desc,High-damage long-range rifle. Deals more damage to distant targets.,High-damage long-range rifle. Deals more damage to distant targets.
-weapon.3.name,Spear,Spear
+weapon.3.name,Spear Launcher,Spear Launcher
 weapon.3.desc,Returning spears build charge through repeat hits. Reload with enough charge to launch a marking radial volley.,回旋长矛通过重复命中积累充能；充能充足时换弹会发射施加标记的环形齐射。
 passive.piercing_blade_dance.name,Piercing Blade Dance,穿刺轮舞
 passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds charge. Reload at 10 or 20 charge to launch an 8- or 16-direction volley. Its hits mark surviving enemies for 20 seconds and knock them away.","同一根长矛重复伤害同一敌人可积累充能。充能达到10或20点时换弹，发射8或16方向齐射；命中存活敌人后施加持续20秒的标记并将其击退。"
@@ -45,10 +45,18 @@ branch.prism_fan.name,Prism Fan,Prism Fan
 branch.prism_fan.desc,"Main beam plus two side beams for wide-area coverage, with reduced single-target focus.","Main beam plus two side beams for wide-area coverage, with reduced single-target focus."
 branch.frost_dash.name,Frost Dash Blade,Frost Dash Blade
 branch.frost_dash.desc,Dash attacks inflict bonus freeze finish and leave a short-lived frost field.,Dash attacks inflict bonus freeze finish and leave a short-lived frost field.
+branch.glacier_whiteout_expansion.name,Whiteout Expansion,Whiteout Expansion
+branch.glacier_whiteout_expansion.desc,Glacier Projector cone angle expands by 20% without reducing range or damage.,Glacier Projector cone angle expands by 20% without reducing range or damage.
+branch.glacier_subzero_battery.name,Subzero Battery,Subzero Battery
+branch.glacier_subzero_battery.desc,Cold Snap restores 6 ammo, capped by the current magazine.,Cold Snap restores 6 ammo, capped by the current magazine.
 branch.fire_pulse_aura.name,Fire Pulse Aura,Fire Pulse Aura
 branch.fire_pulse_aura.desc,"Periodically emits a fire pulse centered on the mech, scorching nearby enemies.","Periodically emits a fire pulse centered on the mech, scorching nearby enemies."
 branch.long_cone_flame.name,Long Cone Flame,Long Cone Flame
 branch.long_cone_flame.desc,Extends flamethrower cone reach for safer mid-range burn control.,Extends flamethrower cone reach for safer mid-range burn control.
+branch.laser_tracking_lens.name,Tracking Lens,Tracking Lens
+branch.laser_tracking_lens.desc,"Laser beams independently correct up to 15 degrees toward nearby enemies. With Prism Splitter, each beam tracks its own target without damage loss.","Laser beams independently correct up to 15 degrees toward nearby enemies. With Prism Splitter, each beam tracks its own target without damage loss."
+branch.laser_prism_splitter.name,Prism Splitter,Prism Splitter
+branch.laser_prism_splitter.desc,"Laser shots split into a central beam and two angled prism beams, allowing one shot to sweep multiple lanes.","Laser shots split into a central beam and two angled prism beams, allowing one shot to sweep multiple lanes."
 branch.shield_mg.name,Shield Machine Gun,Shield Machine Gun
 branch.shield_mg.desc,Deploys a frontal shield that blocks hostile shots and interrupts enemy movement.,Deploys a frontal shield that blocks hostile shots and interrupts enemy movement.
 branch.gatling_mg.name,Gatling Thermal,Gatling Thermal

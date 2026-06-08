@@ -7,7 +7,7 @@
 [resource]
 script = ExtResource("3_1guoo")
 weapon_id = "8"
-display_name = "rocket luncher"
+display_name = "Rocket Launcher"
 icon = ExtResource("1_l3ko5")
 price = 80
 description = "test: rocket launcher"

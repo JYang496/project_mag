@@ -45,7 +45,7 @@ var _prev_fire_success: int = 0
 var _prev_reloading: bool = false
 var _prev_dash_state: int = -1
 var _pending_damage_streams: Array[Dictionary] = []
-var _glacier_state: Dictionary = {"last_proc_sec": -999.0}
+var _glacier_state: Dictionary = {"recharge_remaining_sec": 0.0}
 
 var _last_csv_path: String = ""
 var _original_time_scale: float = 1.0
@@ -256,7 +256,7 @@ func _reset_measurement_state() -> void:
 	_prev_reloading = false
 	_prev_dash_state = -1
 	_pending_damage_streams.clear()
-	_glacier_state = {"last_proc_sec": -999.0}
+	_glacier_state = {"recharge_remaining_sec": 0.0}
 	var w := _resolve_main_weapon_node()
 	if w:
 		_prev_reloading = bool(w.get("is_reloading")) if w.get("is_reloading") != null else false
@@ -409,14 +409,14 @@ func _spawn_charged_blaster_streams(main_weapon: Node, runtime_damage: float) ->
 func _apply_glacier_formula(main_weapon: Node, runtime_damage: float) -> void:
 	var expected_targets: float = maxf(float(config.get("formula_target_count")), 1.0)
 	_current_total_damage_formula += runtime_damage * expected_targets
-	var now_sec: float = _elapsed_test_sec
-	var last_proc_sec: float = float(_glacier_state.get("last_proc_sec", -999.0))
-	var icd_sec: float = float(main_weapon.get("cold_snap_icd_sec")) if main_weapon.get("cold_snap_icd_sec") != null else 1.2
-	if now_sec - last_proc_sec >= maxf(icd_sec, 0.1):
+	var delta_sec: float = maxf(get_physics_process_delta_time(), 0.001)
+	var recharge_remaining_sec: float = maxf(float(_glacier_state.get("recharge_remaining_sec", 0.0)) - delta_sec, 0.0)
+	if recharge_remaining_sec <= 0.0:
 		var ratio: float = float(main_weapon.get("cold_snap_damage_ratio")) if main_weapon.get("cold_snap_damage_ratio") != null else 0.35
+		var recharge_sec: float = float(main_weapon.get("cold_snap_recharge_sec")) if main_weapon.get("cold_snap_recharge_sec") != null else 6.0
 		_current_total_damage_formula += runtime_damage * maxf(ratio, 0.0) * expected_targets
-		last_proc_sec = now_sec
-	_glacier_state["last_proc_sec"] = last_proc_sec
+		recharge_remaining_sec = maxf(recharge_sec, 0.0)
+	_glacier_state["recharge_remaining_sec"] = recharge_remaining_sec
 
 func _apply_sniper_formula(main_weapon: Node, runtime_damage: float) -> void:
 	var distance_mul: float = maxf(float(config.get("sniper_distance_multiplier")), 1.0)

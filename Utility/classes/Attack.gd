@@ -20,6 +20,8 @@ var knock_back = {
 	"amount": 0,
 	"angle": Vector2.ZERO
 }
+var damage_is_final: bool = false
+var suppress_reactive_effects: bool = false
 
 static func normalize_damage_type(value: Variant) -> StringName:
 	if value == null:

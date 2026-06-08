@@ -249,12 +249,17 @@ func _setup_default_active_skill() -> void:
 		return
 	active_skill_holder.add_child(skill_instance)
 
-func create_weapon(item_id, level := 1):
+func create_weapon(item_id, level := 1, auto_fuse := false):
 	# Create a new weapon when assign string, otherwise node.
 	var weapon: Weapon
 	var incoming_weapon_id := ""
 	if item_id is String:
 		incoming_weapon_id = str(item_id).strip_edges()
+		if auto_fuse:
+			var auto_fuse_result := try_auto_fuse_weapon_obtain(incoming_weapon_id)
+			var result_type := str(auto_fuse_result.get("result", "not_applicable"))
+			if result_type == "fused" or result_type == "converted_to_gold":
+				return
 		var weapon_def := DataHandler.read_weapon_data(incoming_weapon_id) as WeaponDefinition
 		if weapon_def == null:
 			push_warning("create_weapon failed: weapon id %s not found." % str(item_id))

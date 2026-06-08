@@ -8,22 +8,17 @@ extends Ranger
 
 # Weapon
 var ITEM_NAME = "Laser"
-@export var mouse_still_trigger_sec: float = 1.0
-@export var mouse_still_max_total_distance: float = 24.0
-var _mouse_still_accum_sec: float = 0.0
-var _mouse_still_distance: float = 0.0
-var _last_mouse_position: Vector2 = Vector2.INF
 
 var weapon_data = {
-	"1": {"damage": "3", "fire_interval_sec": "2", "ammo": "45"},
-	"2": {"damage": "4", "fire_interval_sec": "1.6", "ammo": "50"},
-	"3": {"damage": "6", "fire_interval_sec": "1.1", "ammo": "55"},
-	"4": {"damage": "7", "fire_interval_sec": "0.8", "ammo": "60"},
-	"5": {"damage": "8", "fire_interval_sec": "0.6", "ammo": "65"},
-	"6": {"damage": "9", "fire_interval_sec": "0.5", "ammo": "70"},
-	"7": {"damage": "10", "fire_interval_sec": "0.45", "ammo": "75"},
-	"8": {"damage": "11", "fire_interval_sec": "0.40", "ammo": "80"},
-	"9": {"damage": "12", "fire_interval_sec": "0.35", "ammo": "85"}
+	"1": {"damage": "1", "fire_interval_sec": "2", "ammo": "5"},
+	"2": {"damage": "1", "fire_interval_sec": "1.7", "ammo": "6"},
+	"3": {"damage": "1", "fire_interval_sec": "1.5", "ammo": "7"},
+	"4": {"damage": "2", "fire_interval_sec": "1.4", "ammo": "7"},
+	"5": {"damage": "2", "fire_interval_sec": "1.3", "ammo": "8"},
+	"6": {"damage": "2", "fire_interval_sec": "1.2", "ammo": "9"},
+	"7": {"damage": "3", "fire_interval_sec": "1.0", "ammo": "10"},
+	"8": {"damage": "3", "fire_interval_sec": "0.9", "ammo": "13"},
+	"9": {"damage": "3", "fire_interval_sec": "0.85", "ammo": "16"}
 }
 
 
@@ -39,17 +34,62 @@ func set_level(lv):
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	_update_mouse_still_trigger(delta)
 
 func _on_shoot():
-	var beam_ins = beam.instantiate()
-	beam_ins.global_position = self.global_position
-	beam_ins.target_position = get_global_mouse_position() - self.global_position
-	beam_ins.damage = get_runtime_shot_damage()
-	beam_ins.source_weapon = self
-	self.get_tree().root.call_deferred("add_child",beam_ins)
+	fire_laser_toward(get_global_mouse_position() - global_position)
 	is_on_cooldown = true
 	cooldown_timer.start()
+
+func fire_laser_toward(target_offset: Vector2) -> void:
+	var profiles := build_laser_beam_profiles(target_offset)
+	for profile in profiles:
+		_spawn_laser_beam(profile)
+	notify_branch_weapon_shot(target_offset.normalized())
+
+func build_laser_beam_profiles(target_offset: Vector2) -> Array[Dictionary]:
+	var base_direction := target_offset.normalized()
+	if base_direction == Vector2.ZERO:
+		base_direction = Vector2.RIGHT
+	var base_profile := {
+		"direction": base_direction,
+		"damage_multiplier": 1.0,
+		"width_multiplier": 1.0,
+		"angle_offset_deg": 0.0,
+		"beam_tag": "main",
+	}
+	var profiles: Array[Dictionary] = [base_profile]
+	for behavior in get_branch_behaviors():
+		var next_profiles: Array[Dictionary] = []
+		for profile in profiles:
+			var branch_profiles := behavior.get_laser_beam_profiles(profile)
+			if branch_profiles.is_empty():
+				next_profiles.append(profile)
+			else:
+				next_profiles.append_array(branch_profiles)
+		profiles = next_profiles
+	for behavior in get_branch_behaviors():
+		var next_profiles: Array[Dictionary] = []
+		for profile in profiles:
+			next_profiles.append(behavior.apply_laser_tracking_to_profile(profile))
+		profiles = next_profiles
+	return profiles
+
+func _spawn_laser_beam(profile: Dictionary) -> void:
+	var beam_ins = beam.instantiate()
+	beam_ins.global_position = self.global_position
+	var direction: Vector2 = profile.get("direction", Vector2.RIGHT)
+	direction = direction.normalized()
+	if direction == Vector2.ZERO:
+		direction = Vector2.RIGHT
+	var angle_offset := deg_to_rad(float(profile.get("angle_offset_deg", 0.0)))
+	direction = direction.rotated(angle_offset).normalized()
+	beam_ins.target_position = direction * 1000.0
+	var damage_multiplier := maxf(float(profile.get("damage_multiplier", 1.0)), 0.05)
+	beam_ins.damage = max(1, int(round(float(get_runtime_shot_damage()) * damage_multiplier)))
+	beam_ins.source_weapon = self
+	if beam_ins.has_method("configure_laser_beam"):
+		beam_ins.call("configure_laser_beam", profile)
+	self.get_tree().root.call_deferred("add_child",beam_ins)
 
 
 func _on_oc_timer_timeout() -> void:
@@ -57,36 +97,3 @@ func _on_oc_timer_timeout() -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
-
-func _update_mouse_still_trigger(delta: float) -> void:
-	if not is_main_weapon():
-		_reset_mouse_still_window()
-		return
-	if not is_offhand_skill_ready():
-		_reset_mouse_still_window()
-		return
-	var mouse_pos := get_global_mouse_position()
-	if _last_mouse_position == Vector2.INF:
-		_last_mouse_position = mouse_pos
-		return
-	_mouse_still_distance += _last_mouse_position.distance_to(mouse_pos)
-	_last_mouse_position = mouse_pos
-	_mouse_still_accum_sec += maxf(delta, 0.0)
-	if _mouse_still_accum_sec < maxf(mouse_still_trigger_sec, 0.1):
-		return
-	var total_distance := _mouse_still_distance
-	_reset_mouse_still_window()
-	if total_distance > maxf(mouse_still_max_total_distance, 0.0):
-		return
-	notify_offhand_skill_triggered(0.0)
-	emit_passive_trigger(&"laser_focus_channel_triggered", {
-		"duration": maxf(mouse_still_trigger_sec, 0.1),
-		"mouse_distance": total_distance,
-		"max_mouse_distance": maxf(mouse_still_max_total_distance, 0.0),
-		"refresh": "reload",
-	}, PASSIVE_SCOPE_GLOBAL)
-
-func _reset_mouse_still_window() -> void:
-	_mouse_still_accum_sec = 0.0
-	_mouse_still_distance = 0.0
-	_last_mouse_position = Vector2.INF

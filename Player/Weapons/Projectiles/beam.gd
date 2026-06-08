@@ -16,6 +16,12 @@ var frames_until_show = 1
 
 var beam_start_position : Vector2 = Vector2.ZERO
 var oc_mode : bool = false
+var beam_width_multiplier: float = 1.0
+var beam_tag: String = "main"
+
+func configure_laser_beam(profile: Dictionary) -> void:
+	beam_width_multiplier = maxf(float(profile.get("width_multiplier", 1.0)), 0.05)
+	beam_tag = str(profile.get("beam_tag", "main"))
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -23,6 +29,11 @@ func _ready() -> void:
 		expire_timer.wait_time = 5
 	expire_timer.start()
 	raycast.target_position = 42 * target_position
+	line.width = maxf(line.width * beam_width_multiplier, 1.0)
+	if beam_tag.contains("focus"):
+		line.default_color = Color(0.45, 0.95, 1.0, 1.0)
+	elif beam_tag.contains("prism_side"):
+		line.default_color = Color(0.85, 0.55, 1.0, 0.9)
 
 func _physics_process(delta: float) -> void:
 	frame_counter += 1
@@ -47,7 +58,7 @@ func _physics_process(delta: float) -> void:
 			if owner_player and is_instance_valid(owner_player):
 				owner_player.apply_bonus_hit_if_needed(target)
 			if source_weapon and is_instance_valid(source_weapon):
-				source_weapon.on_hit_target(target)
+				source_weapon.on_hit_target_with_damage_type(target, Attack.TYPE_ENERGY)
 	else:
 		line.points = [beam_start_position, to_local(raycast.target_position)]
 

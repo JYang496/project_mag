@@ -93,6 +93,21 @@ func get_charged_beam_profiles(base_profile: Dictionary) -> Array[Dictionary]:
 func on_charged_beam_hit(_target: Node, _beam_profile: Dictionary, _hit_damage: int) -> void:
 	pass
 
+func get_laser_beam_profiles(base_profile: Dictionary) -> Array[Dictionary]:
+	return [base_profile]
+
+func apply_laser_tracking_to_profile(base_profile: Dictionary) -> Dictionary:
+	return base_profile
+
+func get_laser_focus_duration_sec() -> float:
+	return 0.0
+
+func get_laser_focus_damage_multiplier() -> float:
+	return 1.0
+
+func get_laser_focus_width_multiplier() -> float:
+	return 1.0
+
 func on_chainsaw_target_hit(_target: Node, _projectile: Projectile) -> void:
 	pass
 

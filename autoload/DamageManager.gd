@@ -29,6 +29,24 @@ func build_damage_data(
 	return data
 
 
+func build_final_damage_data(
+	source_node: Node,
+	final_damage: int,
+	damage_type: StringName = Attack.TYPE_PHYSICAL,
+	knock_back: Dictionary = {}
+) -> DamageData:
+	var data := DamageData.new().setup(
+		max(0, int(final_damage)),
+		damage_type,
+		knock_back,
+		source_node,
+		resolve_source_player(source_node)
+	)
+	data.damage_is_final = true
+	data.suppress_reactive_effects = true
+	return data
+
+
 func apply_to_hurt_box(hurt_box: HurtBox, data: DamageData) -> bool:
 	return apply_to_hurt_box_result(hurt_box, data).applied
 

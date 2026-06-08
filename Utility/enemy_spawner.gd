@@ -3,6 +3,7 @@ class_name EnemySpawner
 
 @onready var timer = $Timer
 @export var debug_print_spawn_stats := true
+@export var debug_print_kill_gold_stats := true
 @export var min_spawn_distance_from_player: float = 180.0
 @export var spawn_point_attempts_per_enemy: int = 12
 @export var spawn_edge_margin: float = 28.0
@@ -30,6 +31,7 @@ var _kill_gold_expected_kills: int = 1
 var _kill_gold_battle_timeout: int = 1
 var _kill_gold_budget_active: bool = false
 var _warned_inactive_kill_gold_budget: bool = false
+var _kill_gold_collected: int = 0
 var _combat_budget_active: bool = true
 var _planned_target_total_hp: int = 0
 var _spawned_total_hp: int = 0
@@ -192,21 +194,64 @@ func _release_hp_budget_for_current_tick(level_index: int, effective_time_out: i
 	_available_hp_budget = minf(_available_hp_budget, max_available)
 	_update_spawn_budget_stop_state()
 
-func roll_enemy_kill_gold() -> int:
+func roll_enemy_kill_gold(enemy_instance: Node = null) -> int:
 	if not _kill_gold_budget_active:
 		return 0
-	var remaining_gold := maxi(_kill_gold_budget - _kill_gold_paid, 0)
-	if remaining_gold <= 0:
+	var expected_gold := _resolve_enemy_kill_expected_gold(enemy_instance)
+	if expected_gold <= 0.0:
 		return 0
-	var remaining_kills := _estimate_remaining_kill_count()
-	var expected_gold_per_kill := float(remaining_gold) / float(maxi(remaining_kills, 1))
 	var max_drop_chance := _get_kill_gold_max_drop_chance()
-	var drop_value := maxi(int(ceil(expected_gold_per_kill / max_drop_chance)), 1)
-	var drop_chance := clampf(expected_gold_per_kill / float(drop_value), 0.0, max_drop_chance)
+	var drop_value := maxi(int(ceil(expected_gold / max_drop_chance)), 1)
+	var drop_chance := clampf(expected_gold / float(drop_value), 0.0, max_drop_chance)
 	var gold := drop_value if randf() < drop_chance else 0
-	gold = clampi(gold, 0, remaining_gold)
 	_kill_gold_paid += gold
 	return gold
+
+func record_kill_gold_coin_spawned(value: int) -> void:
+	var gold_value := maxi(value, 0)
+	if gold_value <= 0:
+		return
+	if debug_print_kill_gold_stats:
+		print("[KillGoldDrop] level=%d value=%d generated_total=%d collected_total=%d remaining_coin_value=%d" % [
+			maxi(PhaseManager.current_level, 0),
+			gold_value,
+			_kill_gold_paid,
+			_kill_gold_collected,
+			_get_remaining_coin_value(),
+		])
+
+func record_kill_gold_coin_collected(value: int) -> void:
+	var gold_value := maxi(value, 0)
+	if gold_value <= 0:
+		return
+	_kill_gold_collected += gold_value
+
+func _resolve_enemy_kill_expected_gold(enemy_instance: Node) -> float:
+	var level_index := maxi(PhaseManager.current_level, 0)
+	var target_total_hp := _resolve_kill_gold_target_total_hp_for_level(level_index)
+	if target_total_hp <= 0:
+		return 0.0
+	var enemy_hp := _resolve_enemy_kill_gold_hp(enemy_instance)
+	if enemy_hp <= 0:
+		return 0.0
+	return float(_kill_gold_budget) * float(enemy_hp) / float(target_total_hp)
+
+func _resolve_enemy_kill_gold_hp(enemy_instance: Node) -> int:
+	if enemy_instance != null:
+		if enemy_instance.has_meta("_spawn_budget_scaled_hp"):
+			return maxi(int(enemy_instance.get_meta("_spawn_budget_scaled_hp")), 1)
+		var hp_value: Variant = enemy_instance.get("hp")
+		if hp_value != null:
+			return maxi(int(hp_value), 1)
+	var level_index := maxi(PhaseManager.current_level, 0)
+	var average_hp := float(_resolve_kill_gold_target_total_hp_for_level(level_index)) / float(maxi(_kill_gold_expected_kills, 1))
+	return maxi(int(round(average_hp)), 1)
+
+func _resolve_kill_gold_target_total_hp_for_level(level_index: int) -> int:
+	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
+	if profile == null:
+		return 0
+	return maxi(int(profile.call("get_target_total_hp", level_index)), 0)
 
 func is_kill_gold_budget_active() -> bool:
 	return _kill_gold_budget_active
@@ -237,6 +282,7 @@ func _start_kill_gold_budget(level_index: int, effective_time_out: int) -> void:
 	var roll_max := maxf(roll_min, 1.0 + variance)
 	_kill_gold_budget = maxi(0, int(round(float(target) * randf_range(roll_min, roll_max))))
 	_kill_gold_paid = 0
+	_kill_gold_collected = 0
 	_kill_gold_expected_kills = maxi(_resolve_expected_kills_for_level(level_index), 1)
 	_kill_gold_battle_timeout = maxi(effective_time_out, 1)
 	_kill_gold_budget_active = _kill_gold_budget > 0
@@ -278,6 +324,10 @@ func _get_kill_gold_max_drop_chance() -> float:
 	return clampf(float(economy.kill_gold_max_drop_chance), 0.05, 1.0)
 
 func _get_economy_config() -> EconomyConfig:
+	if GlobalVariables.economy_data:
+		return GlobalVariables.economy_data
+	if DataHandler != null and DataHandler.has_method("load_economy_data"):
+		DataHandler.load_economy_data()
 	if GlobalVariables.economy_data:
 		return GlobalVariables.economy_data
 	return EconomyConfig.new()
@@ -1038,6 +1088,51 @@ func _print_spawn_budget_battle_summary(level_index: int, effective_time_out: in
 		_budget_release_duration_sec,
 		str(_spawn_budget_stopped),
 	])
+	_print_kill_gold_debug_summary("battle_end", level_index)
+
+func print_kill_gold_debug_summary(context: String = "manual") -> void:
+	_print_kill_gold_debug_summary(context, maxi(PhaseManager.current_level, 0))
+
+func _print_kill_gold_debug_summary(context: String, level_index: int) -> void:
+	if not debug_print_kill_gold_stats:
+		return
+	var remaining_coin_value := _get_remaining_coin_value()
+	print("[KillGoldSummary] context=%s level=%d budget=%d generated=%d collected=%d player_round=%d player_gold=%d remaining_coin_value=%d remaining_coin_count=%d" % [
+		context,
+		level_index,
+		_kill_gold_budget,
+		_kill_gold_paid,
+		_kill_gold_collected,
+		PlayerData.round_coin_collected,
+		PlayerData.player_gold,
+		remaining_coin_value,
+		_get_remaining_coin_count(),
+	])
+
+func _get_remaining_coin_value() -> int:
+	var total := 0
+	for collectable in get_tree().get_nodes_in_group("collectables"):
+		if not is_instance_valid(collectable):
+			continue
+		if _is_uncollected_coin(collectable):
+			var coin := collectable as Coin
+			total += maxi(int(coin.value), 0)
+	return total
+
+func _get_remaining_coin_count() -> int:
+	var total := 0
+	for collectable in get_tree().get_nodes_in_group("collectables"):
+		if is_instance_valid(collectable) and _is_uncollected_coin(collectable):
+			total += 1
+	return total
+
+func _is_uncollected_coin(collectable: Node) -> bool:
+	var coin := collectable as Coin
+	if coin == null:
+		return false
+	if coin.sprite != null and not coin.sprite.visible:
+		return false
+	return true
 
 func _release_remaining_spawn_budget() -> void:
 	var remaining_hp := maxi(_planned_target_total_hp - _spawned_total_hp, 0)

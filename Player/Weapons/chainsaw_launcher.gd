@@ -1,5 +1,7 @@
 extends Ranger
 
+const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_rules.gd")
+
 var spin_effect = preload("res://Player/Weapons/Effects/spin_effect.tscn")
 var scale_up_by_time_effect = preload("res://Player/Weapons/Effects/scale_up_by_time.tscn")
 
@@ -8,9 +10,11 @@ var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.t
 var projectile_texture_resource = preload("res://Textures/test/chainsaw_spin.png")
 
 # Weapon
-var ITEM_NAME = "Chainsaw Luncher"
+var ITEM_NAME = "Chainsaw Launcher"
 var _last_hit_projectile: Projectile
 @export_flags_2d_physics var chainsaw_wall_collision_mask: int = 32
+@export var close_vulnerability_multiplier: float = 1.15
+@export var close_vulnerability_duration_sec: float = 6.0
 
 var weapon_data = {
 	"1": {"damage": "3", "speed": "200", "projectile_hits": "15", "dot_cd": "0.1", "fire_interval_sec": "1", "ammo": "28"},
@@ -94,9 +98,13 @@ func on_projectile_hit_target(projectile: Projectile, _target: Node) -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	_try_apply_close_vulnerability(target)
 	for behavior in get_branch_behaviors():
 		behavior.on_chainsaw_target_hit(target, _last_hit_projectile)
 		behavior.on_target_hit(target)
+
+func _try_apply_close_vulnerability(target: Node) -> void:
+	CLOSE_CHAIN_RULES.apply_chainsaw_vulnerability(target, close_vulnerability_multiplier, close_vulnerability_duration_sec)
 
 func on_projectile_hit_wall(projectile: Projectile, wall_hit: Dictionary) -> void:
 	if not is_main_weapon():
@@ -127,6 +135,8 @@ func get_passive_status() -> Dictionary:
 		"ready": state == "ready",
 		"trigger_hint": "projectile_wall_contact",
 		"refresh_hint": "reload",
+		"vulnerability_multiplier": maxf(close_vulnerability_multiplier, 1.0),
+		"vulnerability_duration": maxf(close_vulnerability_duration_sec, 0.1),
 	}
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:

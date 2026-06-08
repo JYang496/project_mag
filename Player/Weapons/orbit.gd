@@ -1,5 +1,7 @@
 extends Ranger
 
+const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_rules.gd")
+
 @onready var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
 @onready var projectile_texture_resource = preload("res://Textures/test/bullet.png")
 @export var radius : float = 80.0
@@ -15,25 +17,27 @@ var satellites : Array = []
 const ORBIT_PROJECTILE_LIFETIME_SEC: float = 5.0
 const LV1_TARGET_ACTIVE_COUNT: float = 2.0
 @export var orbit_radius_jitter: float = 12.0
+@export var satellite_slow_multiplier: float = 0.85
+@export var satellite_slow_duration_sec: float = 1.0
 
 
 
 # Weapon
 var ITEM_NAME = "Orbit"
 var spin_speed : float = 5.0
-var number = 4
 @export var offhand_spin_speed_multiplier: float = 0.65
+var _pending_satellite_spawn_count: int = 0
 
 var weapon_data = {
-	"1": {"damage": "8", "number": "1", "spin_speed": "3", "fire_interval_sec": "2.5", "ammo": "20"},
-	"2": {"damage": "10", "number": "2", "spin_speed": "3", "fire_interval_sec": "2.5", "ammo": "20"},
-	"3": {"damage": "12", "number": "3", "spin_speed": "3.5", "fire_interval_sec": "2.5", "ammo": "20"},
-	"4": {"damage": "14", "number": "4", "spin_speed": "3.5", "fire_interval_sec": "2.5", "ammo": "20"},
-	"5": {"damage": "16", "number": "5", "spin_speed": "4", "fire_interval_sec": "2.5", "ammo": "20"},
-	"6": {"damage": "18", "number": "6", "spin_speed": "4", "fire_interval_sec": "2.5", "ammo": "20"},
-	"7": {"damage": "20", "number": "7", "spin_speed": "5", "fire_interval_sec": "2.5", "ammo": "20"},
-	"8": {"damage": "22", "number": "8", "spin_speed": "6", "fire_interval_sec": "2.5", "ammo": "20"},
-	"9": {"damage": "24", "number": "9", "spin_speed": "7", "fire_interval_sec": "2.5", "ammo": "20"}
+	"1": {"damage": "8", "spin_speed": "3", "fire_interval_sec": "2.5", "ammo": "2"},
+	"2": {"damage": "10", "spin_speed": "3", "fire_interval_sec": "2.5", "ammo": "2"},
+	"3": {"damage": "12", "spin_speed": "3.5", "fire_interval_sec": "2.5", "ammo": "3"},
+	"4": {"damage": "14", "spin_speed": "3.5", "fire_interval_sec": "2.5", "ammo": "3"},
+	"5": {"damage": "16", "spin_speed": "4", "fire_interval_sec": "2.5", "ammo": "4"},
+	"6": {"damage": "18", "spin_speed": "4", "fire_interval_sec": "2.5", "ammo": "5"},
+	"7": {"damage": "20", "spin_speed": "5", "fire_interval_sec": "2.5", "ammo": "6"},
+	"8": {"damage": "22", "spin_speed": "6", "fire_interval_sec": "2.5", "ammo": "7"},
+	"9": {"damage": "24", "spin_speed": "7", "fire_interval_sec": "2.5", "ammo": "8"}
 }
 
 func set_level(lv) -> void:
@@ -45,7 +49,6 @@ func set_level(lv) -> void:
 	level = int(key)
 	base_damage = int(level_data.get("damage", 1))
 	spin_speed = int(level_data.get("spin_speed", spin_speed))
-	number = int(level_data.get("number", number))
 	base_attack_cooldown = float(level_data.get("fire_interval_sec", ORBIT_PROJECTILE_LIFETIME_SEC / maxf(LV1_TARGET_ACTIVE_COUNT, 1.0)))
 	apply_level_ammo(level_data)
 	base_projectile_hits = 99999
@@ -91,7 +94,35 @@ func _refresh_orbit_mode_state() -> void:
 	_prune_satellites()
 	_update_satellite_runtime_state()
 
+func request_primary_fire() -> bool:
+	if not is_attack_phase_allowed():
+		return false
+	if is_on_cooldown:
+		return false
+	if not can_fire_with_heat():
+		return false
+	if not can_fire_with_ammo():
+		if uses_ammo_system() and current_ammo <= 0:
+			request_reload()
+		return false
+	var spent_ammo := current_ammo
+	if not consume_ammo(spent_ammo):
+		if uses_ammo_system() and current_ammo <= 0:
+			request_reload()
+		return false
+	_pending_satellite_spawn_count = spent_ammo
+	emit_signal("shoot")
+	notify_main_weapon_fired()
+	register_shot_heat()
+	if uses_ammo_system() and current_ammo <= 0:
+		request_reload()
+	return true
+
 func _on_shoot() -> void:
+	var spawn_count := maxi(_pending_satellite_spawn_count, 0)
+	_pending_satellite_spawn_count = 0
+	if spawn_count <= 0:
+		return
 	is_on_cooldown = true
 	start_weapon_cooldown(attack_cooldown)
 	var new_satellites: Array[Projectile] = []
@@ -99,7 +130,7 @@ func _on_shoot() -> void:
 	var damage_multiplier: float = get_branch_projectile_damage_multiplier()
 	var damage_type: StringName = get_branch_damage_type_override(Attack.TYPE_PHYSICAL)
 	var effective_spin_speed: float = _get_effective_orbit_spin_speed()
-	for n in range(number):
+	for n in range(spawn_count):
 		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 		if spawn_projectile == null:
 			continue
@@ -173,6 +204,7 @@ func _resolve_orbit_spawn_radius() -> float:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	CLOSE_CHAIN_RULES.apply_slow_to_target(target, satellite_slow_multiplier, satellite_slow_duration_sec)
 	notify_branch_target_hit(target)
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:

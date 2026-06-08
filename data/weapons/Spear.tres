@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="WeaponDefinition" format=3 uid="uid://b7r541dq2ce3i"]
 
 [ext_resource type="Texture2D" uid="uid://im0by60rbjt5" path="res://Textures/test/spear.png" id="1_ji2p0"]
 [ext_resource type="PackedScene" uid="uid://cect8lp5abtw" path="res://Player/Weapons/spear_launcher.tscn" id="2_mskrm"]
@@ -7,7 +7,7 @@
 [resource]
 script = ExtResource("3_txwgl")
 weapon_id = "3"
-display_name = "Spear"
+display_name = "Spear Launcher"
 icon = ExtResource("1_ji2p0")
 price = 100
 description = "Returning spears build charge through repeat hits. Reload with enough charge to launch a marking radial volley."

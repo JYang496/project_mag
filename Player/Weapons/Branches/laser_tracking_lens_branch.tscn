@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bbr8v1e65nm8w"]
+
+[ext_resource type="Script" uid="uid://cgicsqdad1bgb" path="res://Player/Weapons/Branches/laser_tracking_lens_branch.gd" id="1_script"]
+
+[node name="LaserTrackingLensBranch" type="Node" unique_id=549380124]
+script = ExtResource("1_script")

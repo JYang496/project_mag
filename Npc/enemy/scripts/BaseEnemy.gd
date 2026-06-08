@@ -83,6 +83,8 @@ func death(killing_attack: Attack = null) -> void:
 		drop.value = drop_value
 		drop.spawn_global_position = global_position
 		self.call_deferred("add_sibling",drop)
+		if GlobalVariables.enemy_spawner and is_instance_valid(GlobalVariables.enemy_spawner) and GlobalVariables.enemy_spawner.has_method("record_kill_gold_coin_spawned"):
+			GlobalVariables.enemy_spawner.record_kill_gold_coin_spawned(drop_value)
 	if killing_attack != null and killing_attack.is_from_player():
 		PlayerData.run_enemy_kills += 1
 		if self is EliteEnemy:
@@ -97,7 +99,7 @@ func _roll_kill_gold_drop_value() -> int:
 		if GlobalVariables.enemy_spawner.has_method("ensure_kill_gold_budget_active"):
 			GlobalVariables.enemy_spawner.call("ensure_kill_gold_budget_active")
 		if GlobalVariables.enemy_spawner.has_method("is_kill_gold_budget_active") and bool(GlobalVariables.enemy_spawner.call("is_kill_gold_budget_active")):
-			return maxi(int(GlobalVariables.enemy_spawner.roll_enemy_kill_gold()), 0)
+			return maxi(int(GlobalVariables.enemy_spawner.roll_enemy_kill_gold(self)), 0)
 		if GlobalVariables.enemy_spawner.has_method("warn_inactive_kill_gold_budget"):
 			GlobalVariables.enemy_spawner.call("warn_inactive_kill_gold_budget")
 		return 0
