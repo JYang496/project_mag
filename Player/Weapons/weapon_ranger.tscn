@@ -8,6 +8,7 @@ radius = 153.55
 
 [node name="WeaponRanger" unique_id=1303382289 instance=ExtResource("1_1fjwd")]
 script = ExtResource("2_c73dy")
+delivery_type_flags = 1
 
 [node name="CooldownTimer" type="Timer" parent="." index="1" unique_id=624336172]
 

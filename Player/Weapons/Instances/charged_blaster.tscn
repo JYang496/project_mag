@@ -7,6 +7,7 @@
 
 [node name="ChargedBlaster" unique_id=1610258449 instance=ExtResource("1_thakn")]
 script = ExtResource("1_48de6")
+delivery_type_flags = 4
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 25136

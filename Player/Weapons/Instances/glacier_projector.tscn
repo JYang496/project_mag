@@ -8,6 +8,7 @@
 
 [node name="GlacierProjector" unique_id=252111721 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+delivery_type_flags = 8
 cone_half_angle_deg = 15.0
 base_range = 200.0
 cold_snap_damage_ratio = 0.35

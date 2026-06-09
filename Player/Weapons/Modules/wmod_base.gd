@@ -34,8 +34,12 @@ var weapon: Weapon
 	"area_of_effect",
 	"fire",
 	"freeze",
-	"heat"
+	"heat",
+	"beam",
+	"trap",
+	"support"
 ) var required_weapon_traits: int = 0
+@export_flags("projectile", "melee_contact", "beam", "area", "summon", "trap", "support") var required_delivery_types: int = 0
 
 func _enter_tree() -> void:
 	weapon = _resolve_weapon()
@@ -57,6 +61,18 @@ func get_incompatibility_reason(target_weapon: Weapon) -> String:
 	if target_weapon.has_method("supports_projectiles") and target_weapon.supports_projectiles():
 		if not supports_ranged:
 			return "Not compatible with ranged weapons."
+	var required_delivery := get_normalized_required_delivery_types()
+	if not required_delivery.is_empty() and target_weapon.has_method("has_delivery_type"):
+		var matched_delivery := false
+		for delivery_type in required_delivery:
+			if target_weapon.has_delivery_type(delivery_type):
+				matched_delivery = true
+				break
+		if not matched_delivery:
+			var delivery_names: PackedStringArray = []
+			for required_delivery_type in required_delivery:
+				delivery_names.append(str(required_delivery_type))
+			return "Requires delivery type: %s" % ", ".join(delivery_names)
 	var required_traits := get_normalized_required_weapon_traits()
 	if target_weapon.has_method("has_any_explicit_weapon_traits"):
 		if not target_weapon.has_any_explicit_weapon_traits(required_traits):
@@ -91,6 +107,11 @@ func get_normalized_module_traits() -> Array[StringName]:
 
 func get_normalized_required_weapon_traits() -> Array[StringName]:
 	return CombatTrait.flags_to_traits(required_weapon_traits)
+
+func get_normalized_required_delivery_types() -> Array[StringName]:
+	if weapon == null:
+		return Weapon.delivery_flags_to_types(required_delivery_types)
+	return weapon.delivery_flags_to_types(required_delivery_types)
 
 func _resolve_weapon() -> Weapon:
 	var current: Node = get_parent()

@@ -13,6 +13,7 @@ size = Vector2(6, 24)
 
 [node name="DashBlade" instance=ExtResource("2_bkv2s")]
 script = ExtResource("1_s2x1k")
+delivery_type_flags = 2
 
 [node name="Modules" parent="."]
 weapon_traits = 4449

@@ -10,18 +10,19 @@ func setup(source_weapon: Weapon) -> void:
 	weapon = source_weapon
 
 func get_normalized_weapon_traits() -> Array[StringName]:
-	var traits: Array[StringName] = _get_modules_container().get_normalized_weapon_traits()
+	var modules_container := _get_modules_container()
+	var traits: Array[StringName] = modules_container.get_normalized_weapon_traits() if modules_container != null else []
 	for runtime_trait in runtime_trait_overrides:
 		if not traits.has(runtime_trait):
 			traits.append(runtime_trait)
-	if weapon.supports_projectiles() and not traits.has(CombatTrait.PROJECTILE):
-		traits.append(CombatTrait.PROJECTILE)
-	if weapon.supports_melee_contact() and not traits.has(CombatTrait.MELEE):
-		traits.append(CombatTrait.MELEE)
+	for delivery_trait in weapon.get_delivery_traits():
+		if not traits.has(delivery_trait):
+			traits.append(delivery_trait)
 	return traits
 
 func get_explicit_weapon_traits() -> Array[StringName]:
-	var traits: Array[StringName] = _get_modules_container().get_normalized_weapon_traits()
+	var modules_container := _get_modules_container()
+	var traits: Array[StringName] = modules_container.get_normalized_weapon_traits() if modules_container != null else []
 	for runtime_trait in runtime_trait_overrides:
 		if not traits.has(runtime_trait):
 			traits.append(runtime_trait)
@@ -76,7 +77,10 @@ func has_any_explicit_weapon_traits(required_traits: Array[StringName]) -> bool:
 	return false
 
 func validate_module_compatibility() -> void:
-	for child in _get_modules_container().get_children():
+	var modules_container := _get_modules_container()
+	if modules_container == null:
+		return
+	for child in modules_container.get_children():
 		var module_node := child as Module
 		if module_node == null:
 			continue
@@ -90,8 +94,11 @@ func validate_module_compatibility() -> void:
 		module_node.call_deferred("queue_free")
 
 func get_module_count() -> int:
+	var modules_container := _get_modules_container()
+	if modules_container == null:
+		return 0
 	var count := 0
-	for child in _get_modules_container().get_children():
+	for child in modules_container.get_children():
 		if child is Module:
 			count += 1
 	return count
@@ -101,7 +108,10 @@ func get_available_module_slots() -> int:
 
 func get_equipped_modules() -> Array[Module]:
 	var output: Array[Module] = []
-	for child in _get_modules_container().get_children():
+	var modules_container := _get_modules_container()
+	if modules_container == null:
+		return output
+	for child in modules_container.get_children():
 		var module_node := child as Module
 		if module_node:
 			output.append(module_node)
@@ -225,4 +235,8 @@ func apply_stat_snapshot(snapshot: Dictionary) -> void:
 		weapon.configure_heat(weapon.heat_per_shot, weapon.heat_max_value, weapon.heat_cool_rate)
 
 func _get_modules_container() -> WeaponModules:
-	return weapon.modules
+	if weapon == null:
+		return null
+	if weapon.modules != null:
+		return weapon.modules
+	return weapon.get_node_or_null("Modules") as WeaponModules

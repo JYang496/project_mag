@@ -6,5 +6,6 @@
 
 [node name="WeaponMelee" instance=ExtResource("1_wnvxc")]
 script = ExtResource("2_pje4t")
+delivery_type_flags = 2
 
 [node name="Effect" parent="." index="2" instance=ExtResource("3_ky77f")]

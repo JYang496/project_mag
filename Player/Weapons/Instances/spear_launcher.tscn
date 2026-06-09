@@ -6,6 +6,7 @@
 
 [node name="SpearLauncher" instance=ExtResource("1_yntmd")]
 script = ExtResource("1_wrx6n")
+delivery_type_flags = 1
 
 [node name="Modules" parent="."]
 weapon_traits = 5152

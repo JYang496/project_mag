@@ -19,7 +19,10 @@ class_name WeaponModules
 	"area_of_effect",
 	"fire",
 	"freeze",
-	"heat"
+	"heat",
+	"beam",
+	"trap",
+	"support"
 ) var weapon_traits: int = 0
 
 func get_normalized_weapon_traits() -> Array[StringName]:

@@ -1,8 +1,6 @@
 extends Weapon
 class_name Ranger
 
-const linear_movement = preload("res://Player/Weapons/Effects/linear_movement.tscn")
-
 # Common variables for rangers
 var base_damage : int
 var damage : int
@@ -17,8 +15,6 @@ var cooldown_timer : Timer
 var size : float = 1.0
 var projectile_direction
 var is_on_cooldown = false
-var _external_attack_speed_mul_modifiers: Dictionary = {}
-var _external_spread_mul_modifiers: Dictionary = {}
 @export var spread_enabled: bool = false
 @export var spread_full_distance: float = 900.0
 @export var spread_no_falloff_distance: float = 0.0
@@ -28,10 +24,6 @@ var _external_spread_mul_modifiers: Dictionary = {}
 @export var spread_max_radius: float = 140.0
 
 @export var effect_configs: Array[EffectConfig] = []
-var _effect_scene_cache: Dictionary = {
-	"linear_movement": linear_movement,
-}
-var _effect_schema_cache: Dictionary = {}
 @export var debug_projectile_effects: bool = false
 
 # Projectile scene that needs to be overwritten in child class.
@@ -39,15 +31,17 @@ var projectile_scene
 
 const SPRITE_TARGET_HEIGHT := 40.0
 const AIM_ROTATION_OFFSET := deg_to_rad(90)
-const POOLED_EFFECTS := {
-	"linear_movement": true,
-}
 
 signal shoot()
 
+var projectile_emitter: ProjectileEmitter = ProjectileEmitter.new()
+var spread_model: WeaponSpreadModel = WeaponSpreadModel.new()
+var fire_controller: WeaponFireController = WeaponFireController.new()
+var _components_bound := false
 
 func _ready():
 	super._ready()
+	_setup_components()
 	setup_timer()
 	_apply_fuse_sprite()
 	_adjust_sprite_height()
@@ -60,24 +54,34 @@ func _ready():
 
 # Surfaces editor warnings when effect config ids are invalid.
 func _get_configuration_warnings() -> PackedStringArray:
-	var warnings: PackedStringArray = []
-	for config in effect_configs:
-		if config == null:
-			warnings.append("Effect config list contains null entries.")
-			continue
-		if not EffectRegistry.has_effect(config.effect_id):
-			warnings.append("Unknown effect id in effect_configs: %s" % str(config.effect_id))
-	return warnings
+	_setup_components()
+	return projectile_emitter.get_configuration_warnings()
+
+func _setup_components() -> void:
+	if _components_bound:
+		return
+	if projectile_emitter == null:
+		projectile_emitter = ProjectileEmitter.new()
+	projectile_emitter.setup(self)
+	if spread_model == null:
+		spread_model = WeaponSpreadModel.new()
+	spread_model.setup(self)
+	if fire_controller == null:
+		fire_controller = WeaponFireController.new()
+	fire_controller.setup(self)
+	_components_bound = true
 
 func setup_timer() -> void:
-	cooldown_timer = self.get_node("CooldownTimer")
+	_setup_components()
+	fire_controller.setup_timer()
 
 func _physics_process(_delta):
 	super._physics_process(_delta)
 	_update_weapon_rotation()
 
 func _on_cooldown_timer_timeout():
-	is_on_cooldown = false
+	_setup_components()
+	fire_controller.on_cooldown_timer_timeout()
 
 func _on_shoot():
 	is_on_cooldown = true
@@ -111,208 +115,58 @@ func uses_ammo_system() -> bool:
 	return true
 
 func request_primary_fire() -> bool:
-	if not is_attack_phase_allowed():
-		return false
-	if is_on_cooldown:
-		return false
-	if not can_fire_with_heat():
-		return false
-	if not can_fire_with_ammo():
-		# Auto-reload when trying to fire with an empty magazine.
-		if uses_ammo_system() and current_ammo <= 0:
-			request_reload()
-		return false
-	if not consume_ammo(1):
-		if uses_ammo_system() and current_ammo <= 0:
-			request_reload()
-		return false
-	if cooldown_timer:
-		cooldown_timer.wait_time = maxf(get_effective_cooldown(attack_cooldown), 0.01)
-	emit_signal("shoot")
-	notify_main_weapon_fired()
-	register_shot_heat()
-	if uses_ammo_system() and current_ammo <= 0:
-		request_reload()
-	return true
+	return fire_controller.request_primary_fire()
 
 func set_external_attack_speed_multiplier(multiplier: float) -> void:
-	var source_id := StringName("ranger_attack_speed_%s" % str(get_instance_id()))
-	if is_equal_approx(multiplier, 1.0):
-		remove_external_attack_speed_mul(source_id)
-	else:
-		apply_external_attack_speed_mul(source_id, multiplier)
+	fire_controller.set_external_attack_speed_multiplier(multiplier)
 
 func apply_external_attack_speed_mul(source_id: StringName, multiplier: float) -> void:
-	if source_id == StringName():
-		return
-	var clamped_mul := clampf(multiplier, 0.1, 10.0)
-	var previous_mul := float(_external_attack_speed_mul_modifiers.get(source_id, 1.0))
-	if _external_attack_speed_mul_modifiers.has(source_id) and is_equal_approx(previous_mul, clamped_mul):
-		return
-	_external_attack_speed_mul_modifiers[source_id] = clamped_mul
-	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("notify_weapon_status_change"):
-		PlayerData.player.call("notify_weapon_status_change", &"attack_speed_up" if clamped_mul > 1.0 else &"attack_speed_down", source_id, true)
+	fire_controller.apply_external_attack_speed_mul(source_id, multiplier)
 
 func remove_external_attack_speed_mul(source_id: StringName) -> void:
-	if not _external_attack_speed_mul_modifiers.has(source_id):
-		return
-	var previous_mul := float(_external_attack_speed_mul_modifiers.get(source_id, 1.0))
-	_external_attack_speed_mul_modifiers.erase(source_id)
-	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("notify_weapon_status_change"):
-		PlayerData.player.call("notify_weapon_status_change", &"attack_speed_up" if previous_mul > 1.0 else &"attack_speed_down", source_id, false)
+	fire_controller.remove_external_attack_speed_mul(source_id)
 
 func get_external_attack_speed_multiplier() -> float:
-	var total := 1.0
-	for mul in _external_attack_speed_mul_modifiers.values():
-		total *= float(mul)
-	return clampf(total, 0.1, 10.0)
+	return fire_controller.get_external_attack_speed_multiplier()
 
 func get_effective_cooldown(base_cooldown: float) -> float:
-	var speed_mul := maxf(get_external_attack_speed_multiplier(), 0.1)
-	return maxf(base_cooldown / speed_mul, 0.01)
+	return fire_controller.get_effective_cooldown(base_cooldown)
 
 func set_external_spread_multiplier(multiplier: float) -> void:
-	var source_id := StringName("ranger_spread_%s" % str(get_instance_id()))
-	if is_equal_approx(multiplier, 1.0):
-		remove_external_spread_mul(source_id)
-	else:
-		apply_external_spread_mul(source_id, multiplier)
+	spread_model.set_external_spread_multiplier(multiplier)
 
 func apply_external_spread_mul(source_id: StringName, multiplier: float) -> void:
-	if source_id == StringName():
-		return
-	var clamped_mul := clampf(multiplier, 0.01, 10.0)
-	var previous_mul := float(_external_spread_mul_modifiers.get(source_id, 1.0))
-	if _external_spread_mul_modifiers.has(source_id) and is_equal_approx(previous_mul, clamped_mul):
-		return
-	_external_spread_mul_modifiers[source_id] = clamped_mul
-	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("notify_weapon_status_change"):
-		PlayerData.player.call("notify_weapon_status_change", &"spread_down" if clamped_mul < 1.0 else &"spread_up", source_id, true)
+	spread_model.apply_external_spread_mul(source_id, multiplier)
 
 func remove_external_spread_mul(source_id: StringName) -> void:
-	if not _external_spread_mul_modifiers.has(source_id):
-		return
-	var previous_mul := float(_external_spread_mul_modifiers.get(source_id, 1.0))
-	_external_spread_mul_modifiers.erase(source_id)
-	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("notify_weapon_status_change"):
-		PlayerData.player.call("notify_weapon_status_change", &"spread_down" if previous_mul < 1.0 else &"spread_up", source_id, false)
+	spread_model.remove_external_spread_mul(source_id)
 
 func get_external_spread_multiplier() -> float:
-	var total := 1.0
-	for mul in _external_spread_mul_modifiers.values():
-		total *= float(mul)
-	return clampf(total, 0.01, 20.0)
+	return spread_model.get_external_spread_multiplier()
 
 func apply_distance_based_spread(direction: Vector2, shot_distance: float) -> Vector2:
-	if direction == Vector2.ZERO:
-		return direction
-	var normalized_dir := direction.normalized()
-	if not spread_enabled:
-		return normalized_dir
-	var spread_info := _build_spread_runtime(shot_distance)
-	if randf() > spread_info["miss_chance"]:
-		return normalized_dir
-	var base_target := global_position + normalized_dir * maxf(shot_distance, 1.0)
-	var spread_target := _sample_spread_target(base_target, float(spread_info["radius"]))
-	var spreaded := global_position.direction_to(spread_target).normalized()
-	if spreaded == Vector2.ZERO:
-		return normalized_dir
-	return spreaded
+	return spread_model.apply_distance_based_spread(direction, shot_distance)
 
 func apply_distance_spread_to_target(direction: Vector2, target_position: Vector2) -> Vector2:
-	var shot_distance := global_position.distance_to(target_position)
-	if direction == Vector2.ZERO:
-		return direction
-	var normalized_dir := direction.normalized()
-	if not spread_enabled:
-		return normalized_dir
-	var spread_info := _build_spread_runtime(shot_distance)
-	if randf() > spread_info["miss_chance"]:
-		return normalized_dir
-	var spread_target := _sample_spread_target(target_position, float(spread_info["radius"]))
-	var spreaded := global_position.direction_to(spread_target).normalized()
-	if spreaded == Vector2.ZERO:
-		return normalized_dir
-	return spreaded
+	return spread_model.apply_distance_spread_to_target(direction, target_position)
 
 func _build_spread_runtime(shot_distance: float) -> Dictionary:
-	var distance_ratio := _get_spread_distance_ratio(shot_distance)
-	if distance_ratio <= 0.0 and shot_distance <= maxf(spread_no_falloff_distance, 0.0):
-		return {
-			"miss_chance": 0.0,
-			"radius": 0.0,
-		}
-	var miss_chance := lerpf(
-		clampf(spread_close_range_miss_chance, 0.0, 1.0),
-		clampf(spread_long_range_miss_chance, 0.0, 1.0),
-		distance_ratio
-	)
-	var spread_mul := clampf(get_external_spread_multiplier(), 0.01, 20.0)
-	var radius := lerpf(maxf(spread_min_radius, 0.0), maxf(spread_max_radius, 0.0), distance_ratio) * spread_mul
-	return {
-		"miss_chance": miss_chance,
-		"radius": maxf(radius, 0.0),
-	}
+	return spread_model.build_spread_runtime(shot_distance)
 
 func _sample_spread_target(base_target: Vector2, radius: float) -> Vector2:
-	if radius <= 0.0:
-		return base_target
-	var theta := randf() * TAU
-	var r := sqrt(randf()) * radius
-	return base_target + Vector2(cos(theta), sin(theta)) * r
+	return spread_model.sample_spread_target(base_target, radius)
 
 func get_spread_preview_radius_for_target(target_position: Vector2) -> float:
-	var info := get_spread_preview_info_for_target(target_position)
-	return maxf(float(info.get("max_radius", 0.0)), 0.0)
+	return spread_model.get_spread_preview_radius_for_target(target_position)
 
 func get_spread_preview_info_for_target(target_position: Vector2) -> Dictionary:
-	if target_position == Vector2.ZERO and global_position == Vector2.ZERO:
-		return {
-			"enabled": spread_enabled,
-			"miss_chance": 0.0,
-			"max_radius": 0.0,
-			"distance_ratio": 0.0,
-			"shot_distance": 0.0,
-		}
-	var shot_distance := global_position.distance_to(target_position)
-	var distance_ratio := _get_spread_distance_ratio(shot_distance)
-	var no_falloff_active := distance_ratio <= 0.0 and shot_distance <= maxf(spread_no_falloff_distance, 0.0)
-	var miss_chance := 0.0
-	if not no_falloff_active:
-		miss_chance = lerpf(
-			clampf(spread_close_range_miss_chance, 0.0, 1.0),
-			clampf(spread_long_range_miss_chance, 0.0, 1.0),
-			distance_ratio
-		)
-	var spread_mul := clampf(get_external_spread_multiplier(), 0.01, 20.0)
-	var max_radius := 0.0
-	if not no_falloff_active:
-		max_radius = lerpf(maxf(spread_min_radius, 0.0), maxf(spread_max_radius, 0.0), distance_ratio) * spread_mul
-	return {
-		"enabled": spread_enabled,
-		"miss_chance": miss_chance if spread_enabled else 0.0,
-		"max_radius": maxf(max_radius, 0.0) if spread_enabled else 0.0,
-		"distance_ratio": distance_ratio,
-		"shot_distance": shot_distance,
-	}
+	return spread_model.get_spread_preview_info_for_target(target_position)
 
 func _get_spread_distance_ratio(shot_distance: float) -> float:
-	var near_distance := maxf(spread_no_falloff_distance, 0.0)
-	var full_distance := maxf(spread_full_distance, 0.0)
-	if full_distance <= near_distance:
-		return 0.0
-	var clamped_distance := maxf(shot_distance, 0.0)
-	if clamped_distance <= near_distance:
-		return 0.0
-	return clampf((clamped_distance - near_distance) / (full_distance - near_distance), 0.0, 1.0)
+	return spread_model.get_spread_distance_ratio(shot_distance)
 
 func start_weapon_cooldown(base_cooldown: float, min_cooldown: float = 0.01) -> void:
-	if cooldown_timer == null:
-		setup_timer()
-	if cooldown_timer == null:
-		return
-	cooldown_timer.wait_time = maxf(get_effective_cooldown(base_cooldown), min_cooldown)
-	cooldown_timer.start()
+	fire_controller.start_weapon_cooldown(base_cooldown, min_cooldown)
 
 func _execute_weapon_active(_damage_multiplier: float) -> bool:
 	# Keep ranger weapon active empty by design.
@@ -332,242 +186,33 @@ func _apply_weapon_active_multiplier_buff(damage_multiplier: float) -> void:
 
 # This function calls before a projectile is added.
 func apply_effects_on_projectile(projectile : Node2D) -> void:
-	if projectile == null:
-		return
-	# Build a runtime snapshot so applying effects never mutates source config/state.
-	var active_modifiers := _build_active_projectile_modifiers()
-	bind_source_weapon(projectile)
-	apply_base_movement(projectile)
-	apply_modifiers(projectile, active_modifiers)
-	notify_projectile_spawned(projectile)
-	_update_projectile_debug_snapshot(projectile, active_modifiers)
+	projectile_emitter.apply_effects_on_projectile(projectile)
 
 # Binds the weapon for hit attribution and on-hit module callbacks.
 func bind_source_weapon(projectile: Node2D) -> void:
-	if projectile is Projectile:
-		(projectile as Projectile).source_weapon = self
+	projectile_emitter.bind_source_weapon(projectile)
 
 # Injects mandatory linear movement as a base effect stage.
 func apply_base_movement(projectile: Node2D) -> void:
-	if projectile_direction == null:
-		return
-	if speed == null or speed == 0:
-		return
-	# Set first-frame facing immediately to avoid one-frame rotation lag.
-	projectile.rotation = projectile_direction.angle() + deg_to_rad(90.0)
-	var movement_node := _spawn_effect_instance("linear_movement", linear_movement)
-	if movement_node == null:
-		return
-	if movement_node.has_method("configure"):
-		movement_node.call("configure", {"direction": projectile_direction, "speed": speed})
-	else:
-		movement_node.set("direction", projectile_direction)
-		movement_node.set("speed", speed)
-	projectile.call_deferred("add_child", movement_node)
-	if projectile is Projectile:
-		(projectile as Projectile).effect_list.append(movement_node)
+	projectile_emitter.apply_base_movement(projectile)
 
 # Applies validated effect modifiers built from typed configs.
 func apply_modifiers(projectile: Node2D, active_modifiers: Dictionary) -> void:
-	for effect_name in active_modifiers.keys():
-		var effect_scene := _get_effect_scene(str(effect_name))
-		if effect_scene == null:
-			_warn_projectile_modifier("effect '%s' scene not found." % str(effect_name))
-			continue
-		var raw_params: Variant = active_modifiers[effect_name]
-		if not (raw_params is Dictionary):
-			_warn_projectile_modifier("effect '%s' params must be Dictionary." % str(effect_name))
-			continue
-		var params: Dictionary = _validated_modifier_params(str(effect_name), effect_scene, raw_params)
-		var effect_ins := _spawn_effect_instance(str(effect_name), effect_scene)
-		if effect_ins == null:
-			continue
-		if effect_ins.has_method("configure"):
-			effect_ins.call("configure", params)
-		else:
-			for attribute in params.keys():
-				effect_ins.set(str(attribute), params[attribute])
-		projectile.call_deferred("add_child", effect_ins)
-		if projectile is Projectile:
-			(projectile as Projectile).effect_list.append(effect_ins)
-
-# Builds active modifiers from typed EffectConfig resources.
-func _build_active_projectile_modifiers() -> Dictionary:
-	return _build_modifiers_from_configs()
-
-# Converts exported EffectConfig resources to a runtime dictionary.
-func _build_modifiers_from_configs() -> Dictionary:
-	var output := {}
-	var sorted_configs := effect_configs.duplicate()
-	sorted_configs.sort_custom(Callable(self, "_sort_effect_config_by_priority"))
-	for raw_config in sorted_configs:
-		var config := raw_config as EffectConfig
-		if config == null:
-			_warn_projectile_modifier("null effect config ignored.")
-			continue
-		if not config.enabled:
-			continue
-		if str(config.effect_id) == "linear_movement":
-			_warn_projectile_modifier("effect config 'linear_movement' is managed by apply_base_movement() and will be ignored.")
-			continue
-		if not EffectRegistry.has_effect(config.effect_id):
-			_warn_projectile_modifier("effect config id '%s' is not registered." % str(config.effect_id))
-			continue
-		var params: Dictionary = config.build_params()
-		output[str(config.effect_id)] = params.duplicate(true)
-	return output
-
-# Sort callback used to make config application order deterministic.
-func _sort_effect_config_by_priority(a: Variant, b: Variant) -> bool:
-	var config_a := a as EffectConfig
-	var config_b := b as EffectConfig
-	if config_a == null:
-		return false
-	if config_b == null:
-		return true
-	return config_a.priority < config_b.priority
+	projectile_emitter.apply_modifiers(projectile, active_modifiers)
 
 # Returns the first EffectConfig with the requested id.
 func get_effect_config(effect_id: StringName) -> EffectConfig:
-	for config in effect_configs:
-		if config != null and config.effect_id == effect_id:
-			return config
-	return null
+	return projectile_emitter.get_effect_config(effect_id)
 
 # Ensures a typed config exists; creates a default one through the registry when missing.
 func ensure_effect_config(effect_id: StringName) -> EffectConfig:
-	var existing := get_effect_config(effect_id)
-	if existing != null:
-		return existing
-	var created := EffectRegistry.create_default_config(effect_id)
-	if created == null:
-		_warn_projectile_modifier("cannot create typed config for unregistered effect '%s'." % str(effect_id))
-		return null
-	effect_configs.append(created)
-	update_configuration_warnings()
-	return created
-
-func _get_effect_scene(effect_name: String) -> PackedScene:
-	if _effect_scene_cache.has(effect_name):
-		return _effect_scene_cache[effect_name]
-	var loaded_scene := EffectRegistry.get_scene(effect_name)
-	if loaded_scene is PackedScene:
-		_effect_scene_cache[effect_name] = loaded_scene
-		return loaded_scene
-	return null
-
-func _validated_modifier_params(effect_name: String, effect_scene: PackedScene, params: Dictionary) -> Dictionary:
-	var output := {}
-	var schema := _get_or_build_effect_schema(effect_name, effect_scene)
-	var expected_types: Dictionary = schema.get("types", {})
-	for key in params.keys():
-		var key_name := str(key)
-		if not expected_types.has(key_name):
-			_warn_projectile_modifier(
-				"effect '%s' unknown property '%s'." % [effect_name, key_name]
-			)
-			continue
-		var expected_type: int = int(expected_types[key_name])
-		var value: Variant = params[key]
-		if not _is_value_compatible(expected_type, value):
-			_warn_projectile_modifier(
-				"effect '%s' property '%s' expects %s, got %s." %
-				[effect_name, key_name, type_string(expected_type), type_string(typeof(value))]
-			)
-			continue
-		output[key_name] = value
-	return output
-
-func _get_or_build_effect_schema(effect_name: String, effect_scene: PackedScene) -> Dictionary:
-	if _effect_schema_cache.has(effect_name):
-		return _effect_schema_cache[effect_name]
-	var instance: Node = effect_scene.instantiate()
-	var type_map := {}
-	for prop in instance.get_property_list():
-		var usage: int = int(prop.get("usage", 0))
-		if (usage & PROPERTY_USAGE_SCRIPT_VARIABLE) == 0:
-			continue
-		var prop_name := str(prop.get("name", ""))
-		if prop_name == "":
-			continue
-		type_map[prop_name] = int(prop.get("type", TYPE_NIL))
-	instance.queue_free()
-	var schema := {"types": type_map}
-	_effect_schema_cache[effect_name] = schema
-	return schema
-
-func _is_value_compatible(expected_type: int, value: Variant) -> bool:
-	var actual_type := typeof(value)
-	if expected_type == TYPE_NIL:
-		return true
-	if actual_type == expected_type:
-		return true
-	if expected_type == TYPE_FLOAT and actual_type == TYPE_INT:
-		return true
-	return false
-
-func _warn_projectile_modifier(message: String) -> void:
-	if OS.is_debug_build():
-		push_warning("[Ranger:%s] %s" % [name, message])
-
-func _spawn_effect_instance(effect_name: String, effect_scene: PackedScene) -> Node:
-	if effect_scene == null:
-		return null
-	var object_pool := _get_object_pool()
-	if object_pool and _is_effect_poolable(effect_name):
-		var pooled: Node = object_pool.acquire(effect_scene)
-		if pooled != null:
-			pooled.set_meta("_pool_enabled", true)
-			return pooled
-	var instantiated := effect_scene.instantiate()
-	if instantiated:
-		instantiated.set_meta("_pool_enabled", false)
-	return instantiated
-
-func _is_effect_poolable(effect_name: String) -> bool:
-	return bool(POOLED_EFFECTS.get(effect_name, false))
+	return projectile_emitter.ensure_effect_config(effect_id)
 
 func spawn_projectile_from_scene(scene: PackedScene) -> Node2D:
-	if scene == null:
-		return null
-	var object_pool := _get_object_pool()
-	if object_pool:
-		var pooled: Node = object_pool.acquire(scene)
-		if pooled is Node2D:
-			return pooled as Node2D
-	var inst := scene.instantiate()
-	if inst is Node2D:
-		return inst as Node2D
-	return null
-
-func _get_object_pool() -> Node:
-	var tree := get_tree()
-	if tree == null:
-		return null
-	var root := tree.root
-	if root == null:
-		return null
-	return root.get_node_or_null("ObjectPool")
-
-func _update_projectile_debug_snapshot(projectile: Node2D, active_modifiers: Dictionary) -> void:
-	if not (projectile is Projectile):
-		return
-	var proj := projectile as Projectile
-	var effect_names: Array[String] = []
-	for effect_name in active_modifiers.keys():
-		effect_names.append(str(effect_name))
-	if projectile_direction != null and speed:
-		if not effect_names.has("linear_movement"):
-			effect_names.append("linear_movement")
-	proj.set_debug_snapshot(name, effect_names, active_modifiers, debug_projectile_effects)
+	return projectile_emitter.spawn_projectile_from_scene(scene)
 
 func get_projectile_spawn_parent() -> Node:
-	var current_scene := get_tree().current_scene
-	if current_scene:
-		return current_scene
-	if PlayerData.player and PlayerData.player.get_parent():
-		return PlayerData.player.get_parent()
-	return get_tree().root
+	return projectile_emitter.get_projectile_spawn_parent()
 
 func sync_stats() -> void:
 	damage = base_damage
@@ -575,10 +220,8 @@ func sync_stats() -> void:
 	attack_cooldown = base_attack_cooldown
 	speed = base_speed
 	apply_module_stat_pipeline()
-	if cooldown_timer == null:
-		setup_timer()
-	if cooldown_timer != null and attack_cooldown > 0:
-		cooldown_timer.wait_time = attack_cooldown
+	_setup_components()
+	fire_controller.sync_cooldown_timer()
 
 # Computes per-shot damage from base damage and current modules without mutating runtime stats.
 func get_runtime_shot_damage() -> int:

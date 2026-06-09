@@ -7,6 +7,7 @@
 
 [node name="ChainsawLauncher" unique_id=347628502 instance=ExtResource("1_sq336")]
 script = ExtResource("2_hcjeu")
+delivery_type_flags = 1
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 5144

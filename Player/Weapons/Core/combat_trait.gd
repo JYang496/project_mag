@@ -12,7 +12,10 @@ const STACKING := &"stacking"
 const TRIGGER := &"trigger"
 const CHARGE := &"charge"
 const PROJECTILE := &"projectile"
+const BEAM := &"beam"
 const SUMMON := &"summon"
+const TRAP := &"trap"
+const SUPPORT := &"support"
 const PHYSICAL := &"physical"
 const ENERGY := &"energy"
 const AREA_OF_EFFECT := &"area_of_effect"
@@ -39,6 +42,9 @@ const ALL: Array[StringName] = [
 	FIRE,
 	FREEZE,
 	HEAT,
+	BEAM,
+	TRAP,
+	SUPPORT,
 ]
 
 const FLAG_ORDER: Array[StringName] = ALL

@@ -17,6 +17,22 @@ var MAX_MODULE_NUMBER = 3
 @onready var _fuse_sprites_initialized = _load_fuse_sprites()
 const PASSIVE_SCOPE_BODY: StringName = &"body"
 const PASSIVE_SCOPE_GLOBAL: StringName = &"global"
+const DELIVERY_PROJECTILE: StringName = &"projectile"
+const DELIVERY_MELEE_CONTACT: StringName = &"melee_contact"
+const DELIVERY_BEAM: StringName = &"beam"
+const DELIVERY_AREA: StringName = &"area"
+const DELIVERY_SUMMON: StringName = &"summon"
+const DELIVERY_TRAP: StringName = &"trap"
+const DELIVERY_SUPPORT: StringName = &"support"
+const DELIVERY_FLAG_ORDER: Array[StringName] = [
+	DELIVERY_PROJECTILE,
+	DELIVERY_MELEE_CONTACT,
+	DELIVERY_BEAM,
+	DELIVERY_AREA,
+	DELIVERY_SUMMON,
+	DELIVERY_TRAP,
+	DELIVERY_SUPPORT,
+]
 
 # Common variables for weapons
 var level : int
@@ -35,6 +51,7 @@ var heat_cool_rate: float = 20.0
 @export var weapon_active_hit_window_required_hits: int = 0
 @export var weapon_active_hit_window_timeout_sec: float = 6.0
 @export var weapon_active_hit_window_bonus_multiplier: float = 1.35
+@export_flags("projectile", "melee_contact", "beam", "area", "summon", "trap", "support") var delivery_type_flags: int = 0
 @export var magazine_capacity: int = 50
 @export var reload_duration_sec: float = 6.0
 var _offhand_skill_ready: bool = true
@@ -163,10 +180,76 @@ func notify_main_weapon_fired() -> void:
 
 #region Capabilities And Enemy Queries
 func supports_projectiles() -> bool:
-	return false
+	return has_explicit_delivery_type(DELIVERY_PROJECTILE)
 
 func supports_melee_contact() -> bool:
-	return false
+	return has_explicit_delivery_type(DELIVERY_MELEE_CONTACT)
+
+static func normalize_delivery_type(value: Variant) -> StringName:
+	if value == null:
+		return StringName()
+	var key := str(value).strip_edges().to_lower()
+	if key == "":
+		return StringName()
+	return StringName(key)
+
+static func delivery_flags_to_types(mask: int) -> Array[StringName]:
+	var output: Array[StringName] = []
+	for i in range(DELIVERY_FLAG_ORDER.size()):
+		if (mask & (1 << i)) != 0:
+			output.append(DELIVERY_FLAG_ORDER[i])
+	return output
+
+func get_explicit_delivery_types() -> Array[StringName]:
+	return delivery_flags_to_types(delivery_type_flags)
+
+func has_explicit_delivery_type(delivery_type: Variant) -> bool:
+	var normalized := normalize_delivery_type(delivery_type)
+	if normalized == StringName():
+		return false
+	return get_explicit_delivery_types().has(normalized)
+
+func get_weapon_delivery_types() -> Array[StringName]:
+	var output := get_explicit_delivery_types()
+	if supports_projectiles():
+		_append_delivery_type(output, DELIVERY_PROJECTILE)
+	if supports_melee_contact():
+		_append_delivery_type(output, DELIVERY_MELEE_CONTACT)
+	return output
+
+func has_delivery_type(delivery_type: Variant) -> bool:
+	var normalized := normalize_delivery_type(delivery_type)
+	if normalized == StringName():
+		return false
+	return get_weapon_delivery_types().has(normalized)
+
+func get_delivery_traits() -> Array[StringName]:
+	var traits: Array[StringName] = []
+	for delivery_type in get_weapon_delivery_types():
+		match delivery_type:
+			DELIVERY_PROJECTILE:
+				_append_trait(traits, CombatTrait.PROJECTILE)
+			DELIVERY_MELEE_CONTACT:
+				_append_trait(traits, CombatTrait.MELEE)
+			DELIVERY_BEAM:
+				_append_trait(traits, CombatTrait.BEAM)
+			DELIVERY_AREA:
+				_append_trait(traits, CombatTrait.AREA_OF_EFFECT)
+			DELIVERY_SUMMON:
+				_append_trait(traits, CombatTrait.SUMMON)
+			DELIVERY_TRAP:
+				_append_trait(traits, CombatTrait.TRAP)
+			DELIVERY_SUPPORT:
+				_append_trait(traits, CombatTrait.SUPPORT)
+	return traits
+
+func _append_delivery_type(types: Array[StringName], delivery_type: StringName) -> void:
+	if not types.has(delivery_type):
+		types.append(delivery_type)
+
+func _append_trait(traits: Array[StringName], trait_name: StringName) -> void:
+	if not traits.has(trait_name):
+		traits.append(trait_name)
 
 func find_closest_enemy(origin: Vector2, radius: float = INF) -> Node2D:
 	var tree := get_tree()
@@ -485,13 +568,16 @@ func can_passive_trigger(passive_id: StringName, icd_sec: float) -> bool:
 	return passive_controller.can_passive_trigger(passive_id, icd_sec)
 
 func dispatch_passive_event(event_name: StringName, detail: Dictionary = {}) -> void:
-	passive_controller.dispatch_passive_event(event_name, detail)
+	if is_offhand_weapon():
+		_on_offhand_passive_event(event_name, detail)
+	else:
+		_on_main_passive_event(event_name, detail)
 
 func _on_offhand_passive_event(event_name: StringName, detail: Dictionary) -> void:
-	passive_controller.on_offhand_passive_event(event_name, detail)
+	_on_passive_event(event_name, detail)
 
 func _on_main_passive_event(event_name: StringName, detail: Dictionary) -> void:
-	passive_controller.on_main_passive_event(event_name, detail)
+	_on_passive_event(event_name, detail)
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	passive_controller.on_passive_event(event_name, detail)
