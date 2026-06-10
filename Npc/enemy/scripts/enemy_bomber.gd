@@ -17,14 +17,14 @@ var _fuse_elapsed: float = 0.0
 
 func _physics_process(delta: float) -> void:
 	if is_stunned():
-		knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
+		decay_knockback()
 		move_with_body_push(Vector2.ZERO, delta)
 		return
 	if _is_fusing:
 		_fuse_elapsed += maxf(delta, 0.0)
 		_update_fuse_flash()
 		_fuse_remaining -= maxf(delta, 0.0)
-		knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
+		decay_knockback()
 		move_with_body_push(Vector2.ZERO, delta)
 		if _fuse_remaining <= 0.0:
 			_explode()
@@ -35,7 +35,7 @@ func _physics_process(delta: float) -> void:
 	var max_speed := base_speed * maxf(max_speed_multiplier, 1.0)
 	_current_speed = minf(_current_speed + chase_acceleration * delta, max_speed)
 	var direction := global_position.direction_to(PlayerData.player.global_position)
-	knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
+	decay_knockback()
 	move_with_body_push(direction * _current_speed, delta)
 	if global_position.distance_to(PlayerData.player.global_position) <= trigger_radius:
 		_start_fuse()
@@ -79,7 +79,6 @@ func _explode() -> void:
 		call_deferred("add_sibling", area)
 	death(null)
 
-func death(killing_attack: Attack = null) -> void:
+func _before_death(_killing_attack: Attack) -> void:
 	if sprite_body != null:
 		sprite_body.modulate = Color.WHITE
-	super.death(killing_attack)

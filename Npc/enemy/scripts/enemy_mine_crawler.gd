@@ -14,7 +14,7 @@ var _current_speed: float = 0.0
 
 func _physics_process(delta: float) -> void:
 	if is_stunned():
-		knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
+		decay_knockback()
 		move_with_body_push(Vector2.ZERO, delta)
 		return
 	if PlayerData.player == null:
@@ -23,12 +23,11 @@ func _physics_process(delta: float) -> void:
 	var max_speed := base_speed * maxf(max_speed_multiplier, 1.0)
 	_current_speed = minf(_current_speed + chase_acceleration * delta, max_speed)
 	var direction := global_position.direction_to(PlayerData.player.global_position)
-	knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
+	decay_knockback()
 	move_with_body_push(direction * _current_speed, delta)
 
-func death(killing_attack: Attack = null) -> void:
+func _before_death(_killing_attack: Attack) -> void:
 	if not is_inside_tree():
-		_finalize_death(killing_attack)
 		return
 	var zone := SLOW_ZONE_SCENE.instantiate() as EnemyTarSlowZone
 	if zone:
@@ -38,7 +37,3 @@ func death(killing_attack: Attack = null) -> void:
 		zone.player_slow_multiplier = clampf(death_player_slow_multiplier, 0.05, 1.0)
 		zone.enemy_slow_multiplier = clampf(death_enemy_slow_multiplier, 0.05, 1.0)
 		call_deferred("add_sibling", zone)
-	_finalize_death(killing_attack)
-
-func _finalize_death(killing_attack: Attack = null) -> void:
-	super.death(killing_attack)

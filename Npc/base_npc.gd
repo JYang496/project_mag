@@ -1,14 +1,8 @@
 extends CharacterBody2D
 class_name BaseNPC
 
-const DAMAGE_PIPELINE_SCRIPT := preload("res://Utility/damage/damage_pipeline.gd")
-const DAMAGE_PROFILE_SCRIPT := preload("res://Utility/damage/damage_profile.gd")
-const DAMAGE_TAKEN_MULTIPLIER_STATUS_SCRIPT := preload("res://Utility/status_effects/damage_taken_multiplier_status_effect.gd")
-const ENEMY_HP_BAR_SCENE := preload("res://UI/enemy_hp_bar.tscn")
-
 @onready var sprite_body = $Body
 @onready var hurt_box = $HurtBox
-@onready var hit_label = preload("res://UI/labels/hit_label.tscn")
 
 # Export
 @export var movement_speed = 20.0
@@ -23,17 +17,6 @@ const ENEMY_HP_BAR_SCENE := preload("res://UI/enemy_hp_bar.tscn")
 @export var hit_flash_in_duration_sec: float = 0.0
 @export var hit_flash_out_duration_sec: float = 0.3
 var damage_taken_multiplier: float = 1.0
-const SCORCH_DURATION_SEC: float = 6.0
-const SCORCH_DOT_RATIO_PER_STACK: float = 0.10
-const SCORCH_DOT_TICK_SEC: float = 1.0
-const FROST_DURATION_SEC: float = 6.0
-const FROST_SLOW_PER_STACK: float = 0.04
-const FROST_STACK_INTERVAL_SEC: float = 0.6
-const FROST_MAX_STACKS: int = 5
-const ENERGY_MARK_RATIO: float = 0.10
-const ENERGY_MARK_DURATION_SEC: float = 6.0
-const ENERGY_MARK_MAX_HP_RATIO: float = 0.40
-const ENERGY_MARK_TRIGGER_COOLDOWN_SEC: float = 2.0
 
 var knockback = {
 	"amount": 0,
@@ -41,50 +24,24 @@ var knockback = {
 }
 
 @onready var status_timer: Timer = $StatusTimer
-var status_effects: Array[StatusEffect] = []
+var status_effects: Array[StatusEffect]:
+	get:
+		return status_runtime.status_effects
 var overlapping : bool = false
 var is_dead: bool = false
-var _pending_hit_label_damage: int = 0
-var _hit_label_batch_id: int = 0
-var _pending_hit_label_damage_by_type: Dictionary = {}
-var _scorch_stacks: int = 0
-var _scorch_expires_at_msec: int = 0
-var _scorch_dot_damage_per_stack: int = 1
-var _scorch_dot_accum_sec: float = 0.0
-var _scorch_source_node: Node
-var _scorch_source_player: Node
-var _is_processing_scorch_dot: bool = false
-var _frost_stacks: int = 0
-var _frost_expires_at_msec: int = 0
-var _frost_next_stack_at_msec: int = 0
-var _energy_mark_value: int = 0
-var _energy_mark_expires_at_msec: int = 0
-var _energy_mark_trigger_ready_at_msec: int = 0
-var _is_processing_energy_burst: bool = false
-var _last_status_tick_msec: int = 0
-@onready var _scorch_max_hp: int = max(1, int(hp))
 var _incoming_damage_pipeline: DamagePipeline
 var _incoming_damage_profile: DamageProfile
 var _incoming_damage_max_hp: int = 1
-var _enemy_hp_bar: EnemyHpBar
-var _hit_flash_tween: Tween
-var _hit_flash_overlay: Sprite2D
+var damage_feedback: NpcDamageFeedbackController = NpcDamageFeedbackController.new()
+var status_runtime: NpcStatusRuntime = NpcStatusRuntime.new()
 
-var _quest_lock_active := false
-var _quest_lock_speed := 0.0
-var _quest_lock_damage_mul := 1.0
-var _quest_freeze_movement := false
-@onready var _base_movement_speed: float = movement_speed
-var _quest_outline_enabled := false
-var _quest_outline_original_material: Material
-var _quest_outline_material: ShaderMaterial
-
-const QUEST_OUTLINE_SHADER: Shader = preload("res://Shaders/quest_outline.gdshader") as Shader
-
+func _init() -> void:
+	damage_feedback.setup(self)
+	status_runtime.setup(self)
 
 func damaged(attack:Attack):
 	if _incoming_damage_pipeline == null:
-		_incoming_damage_pipeline = DAMAGE_PIPELINE_SCRIPT.new() as DamagePipeline
+		_incoming_damage_pipeline = DamagePipeline.new()
 	if _incoming_damage_profile == null:
 		_setup_incoming_damage_profile()
 	var result := _incoming_damage_pipeline.apply_incoming_damage(self, attack, _incoming_damage_profile)
@@ -99,236 +56,77 @@ func damaged(attack:Attack):
 	_sync_enemy_hp_bar()
 	_show_enemy_hp_bar_on_damage()
 	if status_timer.is_stopped() and (_incoming_damage_pipeline.has_active_effects(self) or not status_effects.is_empty()):
-		status_timer.start()
-		_last_status_tick_msec = Time.get_ticks_msec()
+		status_runtime.start_timer_if_needed()
 
 
 func _queue_hit_label_damage(damage_value: int, damage_type: StringName) -> void:
-	if damage_value <= 0:
-		return
-	_sync_enemy_hp_bar()
-	_show_enemy_hp_bar_on_damage()
-	var normalized_type := Attack.normalize_damage_type(damage_type)
-	_pending_hit_label_damage += damage_value
-	var current_type_damage: int = int(_pending_hit_label_damage_by_type.get(normalized_type, 0))
-	_pending_hit_label_damage_by_type[normalized_type] = current_type_damage + damage_value
-	# Death is decided inside the damage pipeline before this function is called.
-	# Flush immediately so queue_free on death does not swallow the label.
-	if is_dead:
-		_flush_pending_hit_label()
-		return
-	_hit_label_batch_id += 1
-	var queued_batch_id := _hit_label_batch_id
-	_schedule_hit_label_flush(queued_batch_id)
-
-
-func _schedule_hit_label_flush(batch_id: int) -> void:
-	_flush_hit_label_after_delay(batch_id)
-
-
-func _flush_hit_label_after_delay(batch_id: int) -> void:
-	var tree := get_tree()
-	if tree == null:
-		return
-	await tree.create_timer(maxf(hit_label_merge_window_sec, 0.0)).timeout
-	if not is_inside_tree():
-		return
-	if batch_id != _hit_label_batch_id:
-		return
-	_flush_pending_hit_label()
-
+	damage_feedback.queue_hit_label_damage(damage_value, damage_type)
 
 func _flush_pending_hit_label() -> void:
-	if _pending_hit_label_damage <= 0:
-		return
-	var tree := get_tree()
-	if tree == null or tree.root == null:
-		return
-	var combined_damage := _pending_hit_label_damage
-	var label_color := _resolve_hit_label_color()
-	_pending_hit_label_damage = 0
-	var hit_label_ins = hit_label.instantiate()
-	hit_label_ins.global_position = global_position
-	hit_label_ins.setNumber(combined_damage)
-	hit_label_ins.setColor(label_color)
-	tree.root.call_deferred("add_child", hit_label_ins)
-	_pending_hit_label_damage_by_type.clear()
-
-func _resolve_hit_label_color() -> Color:
-	if _pending_hit_label_damage <= 0:
-		return Color.WHITE
-	var dominant_type: StringName = Attack.TYPE_PHYSICAL
-	var dominant_damage: int = 0
-	for type_key in _pending_hit_label_damage_by_type.keys():
-		var type_damage := int(_pending_hit_label_damage_by_type[type_key])
-		if type_damage > dominant_damage:
-			dominant_damage = type_damage
-			dominant_type = Attack.normalize_damage_type(type_key)
-	if float(dominant_damage) <= float(_pending_hit_label_damage) * 0.5:
-		return Color(0.65, 0.65, 0.65, 1.0) # Gray (chaos)
-	match dominant_type:
-		Attack.TYPE_ENERGY:
-			return Color(0.72, 0.45, 1.0, 1.0) # Purple
-		Attack.TYPE_FIRE:
-			return Color(1.0, 0.3, 0.25, 1.0) # Red
-		Attack.TYPE_FREEZE:
-			return Color(0.35, 0.95, 1.0, 1.0) # Cyan
-		_:
-			return Color.WHITE
+	damage_feedback.flush_pending_hit_label()
 
 func death(_killing_attack: Attack = null):
 		queue_free()
 
 func _on_status_timer_timeout() -> void:
 	if _incoming_damage_pipeline == null:
-		_incoming_damage_pipeline = DAMAGE_PIPELINE_SCRIPT.new() as DamagePipeline
+		_incoming_damage_pipeline = DamagePipeline.new()
 	if _incoming_damage_profile == null:
 		_setup_incoming_damage_profile()
-	var now_msec := Time.get_ticks_msec()
-	var elapsed_sec := status_timer.wait_time
-	if _last_status_tick_msec > 0:
-		elapsed_sec = maxf(0.0, float(now_msec - _last_status_tick_msec) / 1000.0)
-	_last_status_tick_msec = now_msec
+	var elapsed_sec := status_runtime.get_elapsed_tick_sec(status_timer.wait_time)
 	var periodic_results := _incoming_damage_pipeline.process_periodic_effects(self, _incoming_damage_profile, elapsed_sec)
 	for periodic_result in periodic_results:
 		if periodic_result.applied:
 			_queue_hit_label_damage(periodic_result.final_damage, periodic_result.damage_type)
 	if status_effects.is_empty() and not _incoming_damage_pipeline.has_active_effects(self):
 		status_timer.stop()
-		_last_status_tick_msec = 0
+		status_runtime.stop_timer_tracking()
 		return
-	for i in range(status_effects.size() - 1, -1, -1):
-		var effect := status_effects[i]
-		if effect == null:
-			status_effects.remove_at(i)
-			continue
-		effect.apply_tick(self)
-		if effect.step():
-			status_effects.remove_at(i)
+	status_runtime.process_tick()
 
 
 func apply_status_effect(effect: StatusEffect) -> void:
-	if effect == null:
-		return
-	for existing in status_effects:
-		if existing.effect_id == effect.effect_id:
-			existing.merge_from(effect)
-			if status_timer.is_stopped():
-				status_timer.start()
-				_last_status_tick_msec = Time.get_ticks_msec()
-			return
-	status_effects.append(effect)
-	if status_timer.is_stopped():
-		status_timer.start()
-		_last_status_tick_msec = Time.get_ticks_msec()
+	status_runtime.apply_status_effect(effect)
 
 func apply_mark(mark_id: StringName, duration_sec: float, data: Dictionary = {}) -> void:
-	if mark_id == StringName():
-		return
-	var effect := MarkStatusEffect.new().setup_mark(mark_id, duration_sec, data)
-	apply_status_effect(effect)
+	status_runtime.apply_mark(mark_id, duration_sec, data)
 
 
 func has_mark(mark_id: StringName) -> bool:
-	return _get_mark_effect(mark_id) != null
+	return status_runtime.has_mark(mark_id)
 
 
 func has_any_mark() -> bool:
-	return not get_active_mark_ids().is_empty()
+	return status_runtime.has_any_mark()
 
 
 func get_active_mark_ids() -> Array[StringName]:
-	var output: Array[StringName] = []
-	for i in range(status_effects.size() - 1, -1, -1):
-		var effect := status_effects[i]
-		if effect == null:
-			status_effects.remove_at(i)
-			continue
-		if effect is MarkStatusEffect:
-			var mark_effect := effect as MarkStatusEffect
-			if not mark_effect.is_active():
-				status_effects.remove_at(i)
-				continue
-			output.append(mark_effect.mark_id)
-	return output
+	return status_runtime.get_active_mark_ids()
 
 
 func get_mark_value(mark_id: StringName, key: StringName, default_value: Variant = null) -> Variant:
-	var effect := _get_mark_effect(mark_id)
-	if effect == null:
-		return default_value
-	return effect.get_value(key, default_value)
+	return status_runtime.get_mark_value(mark_id, key, default_value)
 
 
 func apply_damage_taken_multiplier_status(status_id: StringName, multiplier: float, duration_sec: float) -> void:
-	if status_id == StringName():
-		return
-	var effect: StatusEffect = DAMAGE_TAKEN_MULTIPLIER_STATUS_SCRIPT.new().setup_multiplier(status_id, multiplier, duration_sec)
-	apply_status_effect(effect)
+	status_runtime.apply_damage_taken_multiplier_status(status_id, multiplier, duration_sec)
 
 
 func has_damage_taken_multiplier_status(status_id: StringName) -> bool:
-	return _get_damage_taken_multiplier_status(status_id) != null
+	return status_runtime.has_damage_taken_multiplier_status(status_id)
 
 
 func get_damage_taken_multiplier_status_value(status_id: StringName, default_value: float = 1.0) -> float:
-	var effect := _get_damage_taken_multiplier_status(status_id)
-	if effect == null:
-		return default_value
-	return float(effect.get("multiplier"))
-
-
-func _get_mark_effect(mark_id: StringName) -> MarkStatusEffect:
-	if mark_id == StringName():
-		return null
-	for effect in status_effects:
-		if effect is MarkStatusEffect:
-			var mark_effect := effect as MarkStatusEffect
-			if mark_effect.is_active() and mark_effect.mark_id == mark_id:
-				return mark_effect
-	get_active_mark_ids()
-	return null
-
-
-func _get_damage_taken_multiplier_status(status_id: StringName) -> StatusEffect:
-	if status_id == StringName():
-		return null
-	for i in range(status_effects.size() - 1, -1, -1):
-		var effect := status_effects[i]
-		if effect == null:
-			status_effects.remove_at(i)
-			continue
-		if _is_damage_taken_multiplier_status(effect):
-			if not bool(effect.call("is_active")):
-				status_effects.remove_at(i)
-				continue
-			if StringName(effect.get("status_id")) == status_id:
-				return effect
-	return null
+	return status_runtime.get_damage_taken_multiplier_status_value(status_id, default_value)
 
 
 func _get_status_damage_taken_multiplier() -> float:
-	var multiplier := 1.0
-	for i in range(status_effects.size() - 1, -1, -1):
-		var effect := status_effects[i]
-		if effect == null:
-			status_effects.remove_at(i)
-			continue
-		if _is_damage_taken_multiplier_status(effect):
-			if not bool(effect.call("is_active")):
-				status_effects.remove_at(i)
-				continue
-			multiplier *= maxf(float(effect.get("multiplier")), 0.0)
-	return multiplier
-
-
-func _is_damage_taken_multiplier_status(effect: StatusEffect) -> bool:
-	return effect != null and effect.get_script() == DAMAGE_TAKEN_MULTIPLIER_STATUS_SCRIPT
+	return status_runtime.get_damage_taken_multiplier()
 
 
 func _setup_incoming_damage_profile() -> void:
 	_incoming_damage_max_hp = max(1, int(hp))
-	var profile := DAMAGE_PROFILE_SCRIPT.new() as DamageProfile
+	var profile := DamageProfile.new()
 	profile.profile_id = &"enemy"
 	profile.use_damage_reduction = false
 	profile.use_armor = false
@@ -406,165 +204,23 @@ func _profile_on_clear_frost_slow() -> void:
 	pass
 
 func _play_hit_flash() -> void:
-	if not hit_flash_enabled:
-		return
-	if sprite_body == null or not is_instance_valid(sprite_body):
-		return
-	var overlay := _ensure_hit_flash_overlay()
-	if overlay == null:
-		return
-	if _hit_flash_tween != null and is_instance_valid(_hit_flash_tween):
-		_hit_flash_tween.kill()
-	var flash_in := maxf(hit_flash_in_duration_sec, 0.0)
-	var flash_out := maxf(hit_flash_out_duration_sec, 0.0)
-	var peak_alpha := clampf(hit_flash_peak_alpha, 0.0, 1.0)
-	overlay.texture = sprite_body.texture
-	overlay.position = sprite_body.position
-	overlay.scale = sprite_body.scale
-	overlay.rotation = sprite_body.rotation
-	overlay.flip_h = sprite_body.flip_h
-	overlay.flip_v = sprite_body.flip_v
-	overlay.visible = true
-	overlay.modulate = Color(hit_flash_peak_color.r, hit_flash_peak_color.g, hit_flash_peak_color.b, 0.0)
-	_hit_flash_tween = create_tween()
-	if flash_in > 0.0:
-		_hit_flash_tween.tween_property(overlay, "modulate:a", peak_alpha, flash_in)
-	else:
-		overlay.modulate.a = peak_alpha
-	if flash_out > 0.0:
-		_hit_flash_tween.tween_property(overlay, "modulate:a", 0.0, flash_out)
-	else:
-		overlay.modulate.a = 0.0
-	_hit_flash_tween.finished.connect(func() -> void:
-		if overlay != null and is_instance_valid(overlay):
-			overlay.visible = false
-		_hit_flash_tween = null
-	)
-
-func _ensure_hit_flash_overlay() -> Sprite2D:
-	if _hit_flash_overlay != null and is_instance_valid(_hit_flash_overlay):
-		return _hit_flash_overlay
-	if sprite_body == null or not is_instance_valid(sprite_body):
-		return null
-	var overlay := Sprite2D.new()
-	overlay.name = "HitFlashOverlay"
-	overlay.centered = sprite_body.centered
-	overlay.offset = sprite_body.offset
-	overlay.texture_filter = sprite_body.texture_filter
-	overlay.z_index = sprite_body.z_index + 1
-	var add_mat := CanvasItemMaterial.new()
-	add_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	overlay.material = add_mat
-	overlay.visible = false
-	overlay.modulate = Color(hit_flash_peak_color.r, hit_flash_peak_color.g, hit_flash_peak_color.b, 0.0)
-	add_child(overlay)
-	_hit_flash_overlay = overlay
-	return _hit_flash_overlay
+	damage_feedback.play_hit_flash()
 
 
 func apply_status_payload(status_name: StringName, status_data: Variant) -> void:
-	match status_name:
-		&"dot":
-			apply_status_effect(DotStatusEffect.from_dot_payload(status_data))
-		&"mark":
-			if status_data is Dictionary:
-				var payload_mark := status_data as Dictionary
-				var mark_data: Dictionary = {}
-				var raw_mark_data: Variant = payload_mark.get("data", {})
-				if raw_mark_data is Dictionary:
-					mark_data = (raw_mark_data as Dictionary).duplicate(true)
-				apply_mark(
-					StringName(payload_mark.get("mark_id", StringName())),
-					float(payload_mark.get("duration", 0.1)),
-					mark_data
-				)
-		&"damage_taken_multiplier":
-			if status_data is Dictionary:
-				var payload_multiplier := status_data as Dictionary
-				apply_damage_taken_multiplier_status(
-					StringName(payload_multiplier.get("status_id", StringName())),
-					float(payload_multiplier.get("multiplier", 1.0)),
-					float(payload_multiplier.get("duration", 0.1))
-				)
-
-func set_quest_lock(active: bool, damage_mul: float = 0.5, freeze_movement: bool = true) -> void:
-	if active:
-		if _quest_lock_active:
-			return
-		_quest_lock_active = true
-		_quest_lock_speed = movement_speed if movement_speed > 0.0 else _base_movement_speed
-		_quest_lock_damage_mul = damage_taken_multiplier
-		_quest_freeze_movement = freeze_movement
-		damage_taken_multiplier = minf(damage_taken_multiplier, maxf(damage_mul, 0.05))
-		return
-	if not _quest_lock_active:
-		return
-	_quest_lock_active = false
-	_quest_freeze_movement = false
-	damage_taken_multiplier = _quest_lock_damage_mul
-
-func is_quest_movement_locked() -> bool:
-	return _quest_lock_active and _quest_freeze_movement
-
-func set_outline_highlight(enabled: bool, color: Color = Color.WHITE, width: float = 1.0) -> void:
-	if sprite_body == null:
-		return
-	if enabled:
-		if not _quest_outline_enabled:
-			_quest_outline_original_material = sprite_body.material
-			_quest_outline_material = _build_quest_outline_material(color, width)
-			_quest_outline_enabled = true
-		if _quest_outline_material:
-			_quest_outline_material.set_shader_parameter("outline_color", color)
-			_quest_outline_material.set_shader_parameter("outline_width", width)
-			sprite_body.material = _quest_outline_material
-		return
-	if not _quest_outline_enabled:
-		return
-	_quest_outline_enabled = false
-	sprite_body.material = _quest_outline_original_material
-
-func _build_quest_outline_material(color: Color, width: float) -> ShaderMaterial:
-	var material := ShaderMaterial.new()
-	material.shader = QUEST_OUTLINE_SHADER
-	material.set_shader_parameter("outline_color", color)
-	material.set_shader_parameter("outline_width", width)
-	return material
+	status_runtime.apply_status_payload(status_name, status_data)
 
 func _ensure_enemy_hp_bar() -> EnemyHpBar:
-	if not is_in_group("enemies"):
-		return null
-	if _enemy_hp_bar != null and is_instance_valid(_enemy_hp_bar):
-		return _enemy_hp_bar
-	if ENEMY_HP_BAR_SCENE == null:
-		return null
-	var instance: EnemyHpBar = ENEMY_HP_BAR_SCENE.instantiate() as EnemyHpBar
-	if instance == null:
-		return null
-	instance.offset_y = hp_bar_vertical_offset
-	add_child(instance)
-	_enemy_hp_bar = instance
-	_enemy_hp_bar.hide_immediately()
-	return _enemy_hp_bar
+	return damage_feedback._ensure_enemy_hp_bar()
 
 func _sync_enemy_hp_bar() -> void:
-	var hp_bar: EnemyHpBar = _ensure_enemy_hp_bar()
-	if hp_bar == null:
-		return
-	hp_bar.offset_y = hp_bar_vertical_offset
-	hp_bar.position = Vector2(0.0, hp_bar_vertical_offset)
-	hp_bar.set_max_hp(max(1, _incoming_damage_max_hp))
-	hp_bar.set_hp(max(0, int(hp)))
+	damage_feedback.sync_enemy_hp_bar()
 
 func _show_enemy_hp_bar_on_damage() -> void:
-	var hp_bar: EnemyHpBar = _ensure_enemy_hp_bar()
-	if hp_bar == null:
-		return
-	if is_dead:
-		hp_bar.hide_immediately()
-		return
-	hp_bar.show_for(hp_bar_show_duration_sec)
+	damage_feedback.show_enemy_hp_bar_on_damage()
 
 func _hide_enemy_hp_bar() -> void:
-	if _enemy_hp_bar != null and is_instance_valid(_enemy_hp_bar):
-		_enemy_hp_bar.hide_immediately()
+	damage_feedback.hide_enemy_hp_bar()
+
+func get_incoming_damage_max_hp() -> int:
+	return _incoming_damage_max_hp

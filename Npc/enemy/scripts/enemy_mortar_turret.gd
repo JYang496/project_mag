@@ -24,7 +24,7 @@ func _ready() -> void:
 	combat_role = "ranged"
 
 func _physics_process(delta: float) -> void:
-	knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
+	decay_knockback()
 	if is_stunned():
 		move_with_body_push(Vector2.ZERO, delta)
 		return

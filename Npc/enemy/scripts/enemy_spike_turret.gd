@@ -37,7 +37,7 @@ func _ready() -> void:
 	add_child(_aim_warning_line)
 
 func _physics_process(delta: float) -> void:
-	knockback.amount = clampf(knockback.amount - knockback_recover, 0.0, knockback.amount)
+	decay_knockback()
 	if is_stunned():
 		move_with_body_push(Vector2.ZERO, delta)
 		return

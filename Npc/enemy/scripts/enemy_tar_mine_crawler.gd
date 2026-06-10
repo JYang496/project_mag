@@ -8,9 +8,8 @@ const TAR_ZONE_SCENE := preload("res://Npc/enemy/scenes/tar_slow_zone.tscn")
 @export var tar_player_slow_multiplier: float = 0.65
 @export var tar_enemy_slow_multiplier: float = 0.65
 
-func death(killing_attack: Attack = null) -> void:
+func _before_death(_killing_attack: Attack) -> void:
 	_spawn_tar_zone()
-	_finalize_death(killing_attack)
 
 func _spawn_tar_zone() -> void:
 	var zone := TAR_ZONE_SCENE.instantiate() as EnemyTarSlowZone

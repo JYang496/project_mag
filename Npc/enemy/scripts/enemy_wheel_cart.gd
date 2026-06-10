@@ -10,7 +10,7 @@ var slowdown_triggered: bool = false
 func _physics_process(delta: float) -> void:
 	if is_stunned():
 		set_crowd_breakthrough_active(false)
-		knockback.amount = clamp(knockback.amount - knockback_recover, 0, knockback.amount)
+		decay_knockback()
 		move_with_body_push(Vector2.ZERO, delta)
 		return
 	var current_base_speed: float = get_current_movement_speed()
