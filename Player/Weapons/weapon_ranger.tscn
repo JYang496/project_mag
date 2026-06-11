@@ -2,12 +2,22 @@
 
 [ext_resource type="PackedScene" uid="uid://c4oj2glaup5b3" path="res://Player/Weapons/weapon.tscn" id="1_1fjwd"]
 [ext_resource type="Script" uid="uid://dwjqp4qfrysyl" path="res://Player/Weapons/weapon_ranger.gd" id="2_c73dy"]
+[ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_c73dy"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1fjwd"]
 radius = 153.55
 
 [node name="WeaponRanger" unique_id=1303382289 instance=ExtResource("1_1fjwd")]
 script = ExtResource("2_c73dy")
+spread_enabled = false
+spread_full_distance = 900.0
+spread_no_falloff_distance = 0.0
+spread_close_range_miss_chance = 0.05
+spread_long_range_miss_chance = 0.85
+spread_min_radius = 6.0
+spread_max_radius = 140.0
+effect_configs = Array[ExtResource("3_c73dy")]([])
+debug_projectile_effects = false
 delivery_type_flags = 1
 
 [node name="CooldownTimer" type="Timer" parent="." index="1" unique_id=624336172]

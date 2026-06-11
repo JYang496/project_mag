@@ -4,9 +4,6 @@
 
 [resource]
 script = ExtResource("1_script")
-shop_refresh_start_cost = 12
-shop_refresh_step = 6
-shop_refresh_cost_cap = 30
-objective_economy_gold_by_level = PackedInt32Array(4, 6, 8, 10, 12, 14, 16, 18, 20, 22)
-kill_gold_target_by_level = PackedInt32Array(80, 80, 55, 61, 74, 88, 103, 119, 136, 154)
+objective_economy_gold_by_level = PackedInt32Array(3, 4, 6, 7, 8, 10, 11, 13, 14, 15)
+kill_gold_target_by_level = PackedInt32Array(30, 35, 39, 43, 52, 62, 72, 83, 95, 108)
 kill_gold_expected_kills_by_level = PackedInt32Array(48, 129, 93, 134, 79, 113, 183, 129, 197, 182)

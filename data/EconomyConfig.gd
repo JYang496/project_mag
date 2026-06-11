@@ -4,19 +4,19 @@ class_name EconomyConfig
 @export var enemy_coin_drop_value: int = 1
 @export var default_player_gold: int = 10
 @export var weapon_purchase_price_multiplier: float = 1.0
-@export_range(0.0, 10.0, 0.01) var weapon_upgrade_price_ratio: float = 0.5
-@export var shop_refresh_start_cost: int = 6
-@export var shop_refresh_step: int = 2
+@export_range(0.0, 10.0, 0.01) var weapon_upgrade_price_ratio: float = 0.75
+@export var shop_refresh_start_cost: int = 8
+@export var shop_refresh_step: int = 4
 @export var shop_refresh_cost_cap: int = 20
-@export var duplicate_weapon_gold_minimum: int = 6
+@export var duplicate_weapon_gold_minimum: int = 4
 @export_range(0.0, 1.0, 0.01) var duplicate_weapon_gold_refund_ratio: float = 0.5
-@export var duplicate_module_gold_minimum: int = 6
+@export var duplicate_module_gold_minimum: int = 4
 @export var duplicate_module_gold_cost_multiplier: float = 6.0
 @export_range(0.0, 1.0, 0.01) var duplicate_module_gold_refund_ratio: float = 0.5
 @export_range(0.0, 1.0, 0.01) var coin_bonus_augment_chance: float = 0.3
 @export var coin_bonus_augment_gold_per_level: int = 1
-@export var objective_economy_gold_by_level: PackedInt32Array = PackedInt32Array([4, 6, 8, 10, 12, 14, 16, 18, 20, 22])
-@export var kill_gold_target_by_level: PackedInt32Array = PackedInt32Array([80, 45, 55, 61, 74, 88, 103, 119, 136, 154])
+@export var objective_economy_gold_by_level: PackedInt32Array = PackedInt32Array([3, 4, 6, 7, 8, 10, 11, 13, 14, 15])
+@export var kill_gold_target_by_level: PackedInt32Array = PackedInt32Array([56, 56, 39, 43, 52, 62, 72, 83, 95, 108])
 @export var kill_gold_expected_kills_by_level: PackedInt32Array = PackedInt32Array([48, 129, 93, 134, 79, 113, 183, 129, 197, 182])
 @export var kill_gold_target_increment_after_table: int = 12
 @export_range(0.0, 1.0, 0.01) var kill_gold_budget_variance: float = 0.1
@@ -25,7 +25,7 @@ class_name EconomyConfig
 @export_range(0.0, 1.0, 0.01) var reward_weapon_option_chance: float = 0.5
 @export_range(0.0, 1.0, 0.01) var reward_economy_option_chance: float = 0.15
 @export var reward_economy_exp: int = 5
-@export var reward_economy_gold: int = 10
+@export var reward_economy_gold: int = 7
 
 func get_default_player_gold() -> int:
 	return maxi(default_player_gold, 0)

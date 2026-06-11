@@ -209,6 +209,8 @@ func get_weapon_ids() -> Array[String]:
 		var def := read_weapon_data(key) as WeaponDefinition
 		if def == null:
 			continue
+		if bool(def.is_hidden):
+			continue
 		ids.append(key)
 	return ids
 

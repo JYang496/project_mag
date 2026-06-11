@@ -9,6 +9,6 @@ script = ExtResource("3_def")
 weapon_id = "25"
 display_name = "Cannon"
 icon = ExtResource("1_icon")
-price = 120
+price = 80
 description = "Heavy physical cannon with a short windup before each shot."
 scene = ExtResource("2_scene")

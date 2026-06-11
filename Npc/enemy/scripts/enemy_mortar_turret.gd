@@ -4,19 +4,19 @@ class_name EnemyMortarTurret
 const AREA_EFFECT_SCENE := preload("res://Utility/area_effect/area_effect.tscn")
 const WARNING_SCENE := preload("res://Npc/enemy/scenes/target_warning.tscn")
 
-@export var detect_range: float = 900.0
-@export var attack_range: float = 620.0
+@export var detect_range: float = 760.0
+@export var attack_range: float = 480.0
+@export_range(0.1, 1.0, 0.01) var stationary_enter_range_ratio: float = 0.8
 @export var cast_delay: float = 1.25
 @export var cooldown_duration: float = 2.9
 @export var aoe_radius: float = 62.0
 @export var aoe_damage_multiplier: float = 1.8
-@export var random_move_change_interval_sec: float = 3.0
 @export var screen_fire_margin: float = 28.0
-@export var approaching_velocity_threshold: float = 4.0
 
 var _cooldown_remaining: float = 0.0
 var _casting: bool = false
 var _cast_remaining: float = 0.0
+var _is_stationary_mode: bool = false
 var _target_position: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
@@ -28,19 +28,43 @@ func _physics_process(delta: float) -> void:
 	if is_stunned():
 		move_with_body_push(Vector2.ZERO, delta)
 		return
-	var ranged_move_velocity := compute_ranged_navigation(
-		delta,
-		detect_range,
-		attack_range,
-		1.0,
-		0.68,
-		random_move_change_interval_sec
-	)
-	move_with_body_push(ranged_move_velocity, delta)
+	_update_stationary_mode()
+	move_with_body_push(_get_chase_velocity(), delta)
 	_process_attack(delta)
+
+func _update_stationary_mode() -> void:
+	if PlayerData.player == null:
+		_is_stationary_mode = false
+		return
+	var distance := global_position.distance_to(PlayerData.player.global_position)
+	var enter_distance := attack_range * clampf(stationary_enter_range_ratio, 0.1, 1.0)
+	if _is_stationary_mode:
+		if _casting:
+			return
+		if distance > attack_range:
+			_is_stationary_mode = false
+		return
+	if distance <= enter_distance:
+		_is_stationary_mode = true
+
+func _get_chase_velocity() -> Vector2:
+	if _is_stationary_mode:
+		return Vector2.ZERO
+	if PlayerData.player == null:
+		return Vector2.ZERO
+	var to_player: Vector2 = PlayerData.player.global_position - global_position
+	if to_player.length() <= 0.001:
+		return Vector2.ZERO
+	return to_player.normalized() * get_current_movement_speed()
 
 func _process_attack(delta: float) -> void:
 	if PlayerData.player == null:
+		_cancel_cast()
+		return
+	if not _is_stationary_mode:
+		if _cooldown_remaining > 0.0:
+			_cooldown_remaining = maxf(0.0, _cooldown_remaining - delta)
+		_cancel_cast()
 		return
 	if _casting:
 		_cast_remaining -= delta
@@ -54,15 +78,19 @@ func _process_attack(delta: float) -> void:
 		return
 	var player_pos: Vector2 = PlayerData.player.global_position
 	if player_pos.distance_to(global_position) > attack_range:
+		_cancel_cast()
 		return
 	if not is_world_position_in_player_screen(global_position, screen_fire_margin):
-		return
-	if not _is_approaching_player(player_pos - global_position):
+		_cancel_cast()
 		return
 	_target_position = player_pos
 	_casting = true
 	_cast_remaining = cast_delay
 	_spawn_warning(_target_position)
+
+func _cancel_cast() -> void:
+	_casting = false
+	_cast_remaining = 0.0
 
 func _spawn_warning(world_pos: Vector2) -> void:
 	var warning := WARNING_SCENE.instantiate() as TargetWarning
@@ -91,12 +119,3 @@ func _spawn_mortar_impact(world_pos: Vector2) -> void:
 	area.apply_once_per_target = true
 	area.source_node = self
 	call_deferred("add_sibling", area)
-
-func _is_approaching_player(to_player: Vector2) -> bool:
-	# Stationary turrets cannot move toward the player; keep them attack-capable.
-	if get_current_movement_speed() <= 1.0:
-		return true
-	if to_player.length() <= 0.001 or velocity.length() <= 0.001:
-		return false
-	var approach_speed := velocity.dot(to_player.normalized())
-	return approach_speed >= approaching_velocity_threshold
