@@ -51,7 +51,10 @@ func _physics_process(delta: float) -> void:
 			var damage_data := DamageManager.build_damage_data(
 				self,
 				int(damage),
-				Attack.TYPE_ENERGY
+				Attack.TYPE_ENERGY,
+				{},
+				DamageData.SOURCE_PLAYER_WEAPON,
+				DamageDeliveryType.BEAM
 			)
 			DamageManager.apply_to_target(target, damage_data)
 			var owner_player := damage_data.source_player as Player

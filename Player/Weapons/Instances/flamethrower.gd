@@ -128,7 +128,9 @@ func _apply_fire_damage(target: Node) -> void:
 		self,
 		runtime_damage,
 		Attack.TYPE_FIRE,
-		knock_back
+		knock_back,
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.AREA
 	)
 	DamageManager.apply_to_target(target, damage_data)
 

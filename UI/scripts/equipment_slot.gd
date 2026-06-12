@@ -104,8 +104,7 @@ func _on_color_rect_mouse_exited() -> void:
 	update()
 
 func _on_background_gui_input(event: InputEvent) -> void:
-	if event.is_action_pressed("CLICK"):
-		InventoryData.on_select_eqp = item
+	pass
 
 func _cursor_can_click() -> bool:
 	return _is_click_actionable()

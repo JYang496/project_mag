@@ -6,9 +6,9 @@
 
 [node name="Pierce" unique_id=966335507 instance=ExtResource("1_4bmpc")]
 script = ExtResource("2_r0310")
+level_effects = PackedStringArray("Projectile pierce +2", "Projectile pierce +3", "Projectile pierce +4")
+required_delivery_types = 1
 pierce_add_by = 2
-supports_melee = false
-required_weapon_traits = 1024
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("2_3fre3")

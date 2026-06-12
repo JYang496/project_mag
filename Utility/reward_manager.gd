@@ -94,20 +94,43 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 		if PlayerData.player and is_instance_valid(PlayerData.player):
 			var outcome: Dictionary = PlayerData.player.try_auto_fuse_weapon_obtain(weapon_id)
 			if str(outcome.get("result", "")) == "not_applicable":
-				PlayerData.player.create_weapon(weapon_id, max(1, int(reward.item_level)))
+				var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+				var weapon: Weapon
+				if weapon_def and weapon_def.scene:
+					weapon = weapon_def.scene.instantiate() as Weapon
+				if weapon:
+					weapon.level = max(1, int(reward.item_level))
+					var ui = GlobalVariables.ui
+					if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
+						ui.call("request_weapon_replacement", weapon, true)
+					else:
+						PlayerData.player.create_weapon(weapon)
 			granted_any = true
 		else:
 			var weapon_def = DataHandler.read_weapon_data(weapon_id)
 			if weapon_def and weapon_def.scene:
 				var weapon = weapon_def.scene.instantiate()
 				weapon.level = max(1, int(reward.item_level))
-				InventoryData.inventory_slots.append(weapon)
+				var ui = GlobalVariables.ui
+				if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
+					ui.call("request_weapon_replacement", weapon)
+				else:
+					weapon.queue_free()
 				granted_any = true
 	if reward.module_scene:
 		var module_instance := reward.module_scene.instantiate() as Module
 		if module_instance:
 			module_instance.set_module_level(_sanitize_module_level(int(reward.module_level)))
-			InventoryData.obtain_module(module_instance)
+			var module_result := InventoryData.obtain_module(module_instance)
+			if str(module_result.get("result", "")) == "stored":
+				var ui = GlobalVariables.ui
+				if ui and is_instance_valid(ui) and ui.has_method("request_module_equip_selection"):
+					ui.call(
+						"request_module_equip_selection",
+						module_instance,
+						Callable(),
+						true
+					)
 			granted_any = true
 	if granted_any:
 		_show_reward_granted_message(reward)
@@ -378,10 +401,6 @@ func _can_offer_weapon_reward(weapon_id: String) -> bool:
 		var weapon := weapon_ref as Weapon
 		if _is_full_fuse_weapon_match(weapon, weapon_id):
 			return false
-	for weapon_ref in InventoryData.inventory_slots:
-		var weapon := weapon_ref as Weapon
-		if _is_full_fuse_weapon_match(weapon, weapon_id):
-			return false
 	return true
 
 func _is_full_fuse_weapon_match(weapon: Weapon, weapon_id: String) -> bool:
@@ -392,7 +411,7 @@ func _is_full_fuse_weapon_match(weapon: Weapon, weapon_id: String) -> bool:
 	return int(weapon.fuse) >= max(1, int(weapon.FINAL_MAX_FUSE))
 
 func _can_offer_module_reward(scene_path: String) -> bool:
-	for module_ref in InventoryData.moddule_slots:
+	for module_ref in InventoryData.temporary_modules:
 		var module_instance := module_ref as Module
 		if _is_full_level_module_match(module_instance, scene_path):
 			return false

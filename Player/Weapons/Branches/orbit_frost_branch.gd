@@ -1,6 +1,12 @@
 extends WeaponBranchBehavior
 class_name OrbitFrostBranch
 
+func get_added_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.FREEZE]
+
+func get_suppressed_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.PHYSICAL]
+
 @export var knockback_amount: float = 24.0
 
 func get_damage_type_override() -> StringName:

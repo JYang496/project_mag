@@ -1,6 +1,12 @@
 extends WeaponBranchBehavior
 class_name ShotgunShatterBranch
 
+func get_added_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.FREEZE]
+
+func get_suppressed_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.PHYSICAL]
+
 @export var shatter_damage_ratio: float = 0.25
 @export var shatter_required_hits: int = 3
 @export var shatter_window_sec: float = 0.12
@@ -55,6 +61,8 @@ func _trigger_shatter(target: Node) -> void:
 		Attack.TYPE_FREEZE,
 		{"amount": 0, "angle": Vector2.ZERO},
 		weapon,
-		DamageManager.resolve_source_player(weapon)
+		DamageManager.resolve_source_player(weapon),
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.PROJECTILE
 	)
 	DamageManager.apply_to_target(target, damage_data)

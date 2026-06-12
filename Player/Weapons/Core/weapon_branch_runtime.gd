@@ -336,7 +336,11 @@ func _adopt_existing_branch_behavior_children() -> void:
 func _clear_branch_behaviors() -> void:
 	for behavior in branch_behaviors:
 		if behavior and is_instance_valid(behavior):
+			var source_id := behavior.get_runtime_classification_source_id()
 			behavior.on_removed()
+			weapon.clear_runtime_weapon_traits(source_id)
+			weapon.clear_runtime_delivery_types(source_id)
+			weapon.clear_runtime_weapon_capabilities(source_id)
 			behavior.queue_free()
 	branch_behaviors.clear()
 

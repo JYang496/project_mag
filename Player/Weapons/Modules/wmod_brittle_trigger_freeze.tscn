@@ -6,12 +6,14 @@
 
 [node name="BrittleTrigger" unique_id=858451798 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+level_effects = PackedStringArray("Brittle bonus damage equals 20% of weapon damage", "Brittle bonus damage equals 28% of weapon damage", "Brittle bonus damage equals 36% of weapon damage")
+required_weapon_traits = 8
+required_hooks = 2
 ratio_lv1 = 0.2
 ratio_lv2 = 0.28
 ratio_lv3 = 0.36
 required_frost_stacks = 3
 target_icd_sec = 0.8
-required_weapon_traits = 65536
 
 [node name="Sprite" parent="." index="0" unique_id=717281029]
 texture = ExtResource("3_icon")

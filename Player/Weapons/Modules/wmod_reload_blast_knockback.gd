@@ -23,10 +23,10 @@ func _exit_tree() -> void:
 	_unregister_hook()
 
 func get_effect_descriptions() -> PackedStringArray:
-	return PackedStringArray([
+	return with_level_effect_descriptions(PackedStringArray([
 		"Reload shockwave knocks back nearby enemies",
 		"Knockback scales with spent ammo",
-	])
+	]))
 
 func _register_hook() -> void:
 	if _registered:
@@ -74,7 +74,9 @@ func _on_weapon_passive_triggered(event_name: StringName, detail: Dictionary) ->
 			weapon,
 			0,
 			Attack.TYPE_PHYSICAL,
-			{"amount": knockback_amount, "angle": direction}
+			{"amount": knockback_amount, "angle": direction},
+			DamageData.SOURCE_PLAYER_WEAPON,
+			DamageDeliveryType.AREA
 		)
 		DamageManager.apply_to_target(enemy, damage_data)
 

@@ -6,10 +6,10 @@
 
 [node name="RocketLauncher" unique_id=318102634 instance=ExtResource("1_tn5im")]
 script = ExtResource("2_6v0md")
-delivery_type_flags = 1
+delivery_type_flags = 9
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 50208
+weapon_traits = 5
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("3_6v0md")

@@ -6,8 +6,10 @@
 
 [node name="EmberMarkFire" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-module_traits = PackedStringArray("trigger", "stacking", "fire", "area_of_effect")
-required_weapon_traits = 32768
+level_effects = PackedStringArray("4 marks trigger a 30% weapon-damage fire burst", "3 marks trigger a 42% weapon-damage fire burst", "3 marks trigger a 55% weapon-damage fire burst")
+required_weapon_traits = 4
+required_hooks = 2
+module_tags = PackedStringArray("trigger", "stacking", "fire", "area")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

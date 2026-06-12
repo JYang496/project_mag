@@ -26,7 +26,7 @@ effect_configs = Array[ExtResource("3_mhges")]([])
 debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 136224
+weapon_traits = 17
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("3_0tkjt")

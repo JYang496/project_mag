@@ -1,8 +1,12 @@
 extends RefCounted
 class_name DamageData
 
+const SOURCE_PLAYER_WEAPON := &"player_weapon"
+
 var amount: int = 0
 var damage_type: StringName = Attack.TYPE_PHYSICAL
+var source_category: StringName = StringName()
+var delivery_type: StringName = StringName()
 var knock_back := {
 	"amount": 0,
 	"angle": Vector2.ZERO
@@ -22,14 +26,23 @@ func setup(
 	type_value: StringName,
 	knockback_value: Dictionary,
 	source_node_value: Node,
-	source_player_value: Node = null
+	source_player_value: Node = null,
+	source_category_value: StringName = StringName(),
+	delivery_type_value: StringName = StringName()
 ) -> DamageData:
 	amount = damage_amount
 	damage_type = Attack.normalize_damage_type(type_value)
 	knock_back = _normalize_knock_back(knockback_value)
 	source_node = source_node_value
 	source_player = source_player_value
+	source_category = source_category_value
+	delivery_type = DamageDeliveryType.normalize(delivery_type_value)
 	return self
+
+func has_valid_player_weapon_context() -> bool:
+	if source_category != SOURCE_PLAYER_WEAPON:
+		return true
+	return delivery_type != StringName()
 
 
 func to_attack() -> Attack:

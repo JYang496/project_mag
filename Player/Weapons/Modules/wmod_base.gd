@@ -8,38 +8,33 @@ const MAX_LEVEL: int = 3
 var weapon: Weapon
 @export var cost : int
 @onready var sprite: Sprite2D = get_node_or_null("%Sprite") as Sprite2D
-@export var supports_melee: bool = true
-@export var supports_ranged: bool = true
 @export_range(1, MAX_LEVEL, 1) var module_level: int = 1
 @export_enum("common", "rare", "epic") var rarity: String = "common"
 @export_range(0.0, 1000000.0, 0.01) var drop_weight: float = 100.0
-@export var module_traits: PackedStringArray = []
+@export var module_tags: PackedStringArray = []
+@export var level_effects: PackedStringArray = []
 @export var stat_multipliers: Dictionary = {}
 @export var stat_additives: Dictionary = {}
 @export_flags(
-	"movement",
-	"debuff",
-	"buff",
-	"dot",
-	"duration",
-	"range",
-	"melee",
-	"stacking",
-	"trigger",
-	"charge",
-	"projectile",
-	"summon",
 	"physical",
 	"energy",
-	"area_of_effect",
 	"fire",
 	"freeze",
 	"heat",
-	"beam",
-	"trap",
-	"support"
+	"charge"
 ) var required_weapon_traits: int = 0
-@export_flags("projectile", "melee_contact", "beam", "area", "summon", "trap", "support") var required_delivery_types: int = 0
+@export_flags("projectile", "melee_contact", "beam", "area") var required_delivery_types: int = 0
+@export_flags("summon", "trap", "support", "movement") var required_weapon_capabilities: int = 0
+@export_flags(
+	"projectile_spawn",
+	"hit",
+	"damage_dealt",
+	"area_damage",
+	"beam_hit",
+	"reload_start",
+	"reload_duration",
+	"kill"
+) var required_hooks: int = 0
 
 func _enter_tree() -> void:
 	weapon = _resolve_weapon()
@@ -55,12 +50,6 @@ func can_apply_to_weapon(target_weapon: Weapon) -> bool:
 func get_incompatibility_reason(target_weapon: Weapon) -> String:
 	if not target_weapon:
 		return "Invalid weapon."
-	if target_weapon.has_method("supports_melee_contact") and target_weapon.supports_melee_contact():
-		if not supports_melee:
-			return "Not compatible with melee weapons."
-	if target_weapon.has_method("supports_projectiles") and target_weapon.supports_projectiles():
-		if not supports_ranged:
-			return "Not compatible with ranged weapons."
 	var required_delivery := get_normalized_required_delivery_types()
 	if not required_delivery.is_empty() and target_weapon.has_method("has_delivery_type"):
 		var matched_delivery := false
@@ -74,15 +63,7 @@ func get_incompatibility_reason(target_weapon: Weapon) -> String:
 				delivery_names.append(str(required_delivery_type))
 			return "Requires delivery type: %s" % ", ".join(delivery_names)
 	var required_traits := get_normalized_required_weapon_traits()
-	if target_weapon.has_method("has_any_explicit_weapon_traits"):
-		if not target_weapon.has_any_explicit_weapon_traits(required_traits):
-			var trait_names: PackedStringArray = []
-			for required_trait_name in required_traits:
-				trait_names.append(str(required_trait_name))
-			if trait_names.is_empty():
-				return "Weapon does not match required traits."
-			return "Requires one of: %s" % ", ".join(trait_names)
-	elif target_weapon.has_method("has_any_weapon_traits"):
+	if target_weapon.has_method("has_any_weapon_traits"):
 		if not target_weapon.has_any_weapon_traits(required_traits):
 			var trait_names: PackedStringArray = []
 			for required_trait_name in required_traits:
@@ -90,6 +71,14 @@ func get_incompatibility_reason(target_weapon: Weapon) -> String:
 			if trait_names.is_empty():
 				return "Weapon does not match required traits."
 			return "Requires one of: %s" % ", ".join(trait_names)
+	var required_capabilities := get_normalized_required_weapon_capabilities()
+	if not required_capabilities.is_empty():
+		if not target_weapon.has_method("has_any_weapon_capabilities") \
+				or not target_weapon.has_any_weapon_capabilities(required_capabilities):
+			return "Requires one of capabilities: %s" % ", ".join(PackedStringArray(required_capabilities))
+	var hook_reason := get_hook_validation_error()
+	if hook_reason != "":
+		return hook_reason
 	return ""
 
 func register_as_on_hit_plugin() -> void:
@@ -102,16 +91,42 @@ func unregister_as_on_hit_plugin() -> void:
 	if weapon and weapon.has_method("unregister_on_hit_plugin"):
 		weapon.unregister_on_hit_plugin(self)
 
-func get_normalized_module_traits() -> Array[StringName]:
-	return CombatTrait.normalize_array(module_traits)
+func get_normalized_module_tags() -> Array[StringName]:
+	return ModuleTag.normalize_array(module_tags)
+
+func get_unknown_module_tags() -> Array[StringName]:
+	var output: Array[StringName] = []
+	for tag in get_normalized_module_tags():
+		if not ModuleTag.CORE.has(tag):
+			output.append(tag)
+	return output
 
 func get_normalized_required_weapon_traits() -> Array[StringName]:
-	return CombatTrait.flags_to_traits(required_weapon_traits)
+	return WeaponTrait.flags_to_traits(required_weapon_traits)
 
 func get_normalized_required_delivery_types() -> Array[StringName]:
-	if weapon == null:
-		return Weapon.delivery_flags_to_types(required_delivery_types)
-	return weapon.delivery_flags_to_types(required_delivery_types)
+	return DamageDeliveryType.flags_to_types(required_delivery_types)
+
+func get_normalized_required_weapon_capabilities() -> Array[StringName]:
+	return WeaponCapability.flags_to_capabilities(required_weapon_capabilities)
+
+func get_normalized_required_hooks() -> Array[StringName]:
+	return ModuleHook.flags_to_hooks(required_hooks)
+
+func get_hook_validation_error() -> String:
+	for hook in get_normalized_required_hooks():
+		var method_name: StringName = ModuleHook.METHOD_BY_HOOK.get(hook, StringName())
+		if method_name == StringName() or not has_method(method_name):
+			return "Declared hook '%s' requires method %s()." % [hook, method_name]
+	return ""
+
+func resolve_primary_damage_delivery(source_weapon: Weapon = weapon) -> StringName:
+	if source_weapon == null or not is_instance_valid(source_weapon):
+		return StringName()
+	var delivery_types := source_weapon.get_weapon_delivery_types()
+	if delivery_types.is_empty():
+		return StringName()
+	return delivery_types[0]
 
 func _resolve_weapon() -> Weapon:
 	var current: Node = get_parent()
@@ -190,6 +205,9 @@ func apply_stat_modifiers(stat_block: Dictionary) -> Dictionary:
 func get_effect_descriptions() -> PackedStringArray:
 	configure_stat_modifiers()
 	var descriptions: PackedStringArray = []
+	var level_effect := get_level_effect_description()
+	if level_effect != "":
+		descriptions.append(level_effect)
 	for key_variant in stat_multipliers.keys():
 		var key := str(key_variant)
 		var raw_multiplier: float = float(stat_multipliers[key_variant])
@@ -204,6 +222,20 @@ func get_effect_descriptions() -> PackedStringArray:
 		var sign := "+" if final_add >= 0.0 else ""
 		descriptions.append("%s %s%.1f" % [_format_stat_label(key), sign, final_add])
 	return descriptions
+
+func get_level_effect_description(level: int = module_level) -> String:
+	var index := clampi(level, 1, MAX_LEVEL) - 1
+	if index >= level_effects.size():
+		return ""
+	return str(level_effects[index]).strip_edges()
+
+func with_level_effect_descriptions(descriptions: PackedStringArray) -> PackedStringArray:
+	var output := PackedStringArray()
+	var level_effect := get_level_effect_description()
+	if level_effect != "":
+		output.append(level_effect)
+	output.append_array(descriptions)
+	return output
 
 func _format_stat_label(stat_key: String) -> String:
 	var pretty := stat_key.replace("_", " ")

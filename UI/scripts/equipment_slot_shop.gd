@@ -8,7 +8,7 @@ var ready_to_sell : bool = false
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK"):
 		if not sell_mode:
-			InventoryData.on_select_eqp = item
+			return
 		else:
 			click_sell_equipment()
 			

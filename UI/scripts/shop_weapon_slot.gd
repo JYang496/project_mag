@@ -72,9 +72,18 @@ func new_item() -> void:
 	if not self.is_connected("select_weapon",Callable(PlayerData.player,"create_weapon")):
 		connect("select_weapon",Callable(PlayerData.player,"create_weapon"))
 	var candidate_ids: Array[String] = DataHandler.get_weapon_ids()
+	if PlayerData.player and is_instance_valid(PlayerData.player):
+		candidate_ids = candidate_ids.filter(func(candidate_id: String) -> bool:
+			var prediction: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(candidate_id)
+			return str(prediction.get("result", "")) != "converted_to_gold"
+		)
 	if candidate_ids.is_empty():
-		push_warning("ShopWeaponSlot failed to generate item: weapon list is empty.")
+		push_warning("ShopWeaponSlot has no valid weapon candidates.")
 		empty_item()
+		equip_name.text = LocalizationManager.tr_key(
+			"ui.shop.no_valid_weapons",
+			"No weapons available"
+		)
 		return
 	item_id = candidate_ids.pick_random()
 	var weapon_def = DataHandler.read_weapon_data(item_id)
@@ -119,15 +128,38 @@ func _on_background_gui_input(event: InputEvent) -> void:
 		if ui and is_instance_valid(ui) and ui.has_method("is_branch_selection_blocking_interactions") and ui.is_branch_selection_blocking_interactions():
 			ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
 			return
-		PlayerData.player_gold -= price
 		var outcome := {}
 		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("try_auto_fuse_weapon_obtain"):
-			outcome = PlayerData.player.try_auto_fuse_weapon_obtain(str(item_id))
-		if str(outcome.get("result", "not_applicable")) == "not_applicable":
-			select_weapon.emit(item_id)
+			var prediction: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(str(item_id))
+			if str(prediction.get("result", "not_applicable")) != "not_applicable":
+				PlayerData.player_gold -= price
+				outcome = PlayerData.player.try_auto_fuse_weapon_obtain(str(item_id))
+			else:
+				var weapon_def := DataHandler.read_weapon_data(str(item_id)) as WeaponDefinition
+				var new_weapon: Weapon
+				if weapon_def and weapon_def.scene:
+					new_weapon = weapon_def.scene.instantiate() as Weapon
+				if new_weapon == null:
+					return
+				var opened := ui != null and ui.has_method("request_weapon_replacement") \
+					and bool(ui.request_weapon_replacement(
+						new_weapon,
+						false,
+						Callable(self, "_on_purchase_replacement_completed").bind(price)
+					))
+				if not opened:
+					new_weapon.queue_free()
+					return
 		for eq : EquipmentSlotShop in equipped.get_children():
 			eq.reset_sell_status()
-		self.empty_item()
+		if str(outcome.get("result", "not_applicable")) != "not_applicable":
+			self.empty_item()
+
+func _on_purchase_replacement_completed(accepted: bool, _result: Dictionary, purchase_price: int) -> void:
+	if not accepted:
+		return
+	PlayerData.player_gold -= purchase_price
+	empty_item()
 
 func _get_purchase_price_multiplier() -> float:
 	if GlobalVariables.economy_data == null:

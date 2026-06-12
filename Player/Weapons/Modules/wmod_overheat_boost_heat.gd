@@ -3,7 +3,9 @@ extends Module
 
 var ITEM_NAME := "Overheat Boost"
 
-@export var overheated_damage_mult: float = 0.5
+@export var overheated_damage_mult_lv1: float = 0.50
+@export var overheated_damage_mult_lv2: float = 0.65
+@export var overheated_damage_mult_lv3: float = 0.80
 var _bypass_registered: bool = false
 
 func _ready() -> void:
@@ -36,9 +38,7 @@ func apply_stat_modifiers(stat_block: Dictionary) -> Dictionary:
 	if not bool(weapon.call("is_weapon_overheated")):
 		return output
 
-	var clamped_mult := maxf(overheated_damage_mult, 0.05)
-	var final_mult := get_effective_multiplier(clamped_mult, 0.25)
-	output["damage"] = float(output["damage"]) * final_mult
+	output["damage"] = float(output["damage"]) * _get_overheated_damage_multiplier()
 	return output
 
 func _is_valid_heat_weapon(target_weapon: Weapon) -> bool:
@@ -61,3 +61,12 @@ func _ensure_bypass_registration() -> void:
 		return
 	weapon.call("register_overheat_fire_bypass", self)
 	_bypass_registered = true
+
+func _get_overheated_damage_multiplier() -> float:
+	match module_level:
+		3:
+			return clampf(overheated_damage_mult_lv3, 0.05, 1.0)
+		2:
+			return clampf(overheated_damage_mult_lv2, 0.05, 1.0)
+		_:
+			return clampf(overheated_damage_mult_lv1, 0.05, 1.0)

@@ -236,7 +236,9 @@ func _apply_idle_fire_aoe_damage(target: Node, amount: int, hit_damage_type: Str
 		{
 			"amount": 0,
 			"angle": Vector2.ZERO,
-		}
+		},
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.AREA
 	)
 	damage_data.dedupe_token = StringName("cannon_idle_aoe_%d_%d_%d" % [
 		get_instance_id(),
@@ -259,6 +261,7 @@ func _spawn_idle_fire_aoe_visual(position_value: Vector2, radius: float) -> void
 	area_effect.apply_once_per_target = true
 	area_effect.target_group = AreaEffect.TargetGroup.ENEMIES
 	area_effect.source_node = self
+	area_effect.source_category = DamageData.SOURCE_PLAYER_WEAPON
 	area_effect.draw_enabled = true
 	area_effect.debug_fill_color = Color(1.0, 0.35, 0.12, 0.16)
 	area_effect.debug_line_color = Color(1.0, 0.75, 0.25, 0.9)

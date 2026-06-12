@@ -6,8 +6,10 @@
 
 [node name="CorrosiveTouchEnergy" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-module_traits = PackedStringArray("trigger", "debuff", "duration", "stacking", "energy")
-required_weapon_traits = 8192
+level_effects = PackedStringArray("Corrosion lasts 2.8s; -1 armor and +4% damage taken per stack", "Corrosion lasts 3.5s; -1 armor and +6% damage taken per stack", "Corrosion lasts 4.2s; -2 armor and +8% damage taken per stack")
+required_weapon_traits = 2
+required_hooks = 2
+module_tags = PackedStringArray("trigger", "debuff", "duration", "stacking", "energy")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

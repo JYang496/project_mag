@@ -6,8 +6,10 @@
 
 [node name="SubzeroExtension" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-module_traits = PackedStringArray("freeze")
-required_weapon_traits = 65536
+level_effects = PackedStringArray("Extend frost by 0.6s and strengthen slow by 10%", "Extend frost by 0.9s and strengthen slow by 15%", "Extend frost by 1.2s and strengthen slow by 20%")
+required_weapon_traits = 8
+required_hooks = 2
+module_tags = PackedStringArray("freeze")
 
 [node name="Sprite" parent="." index="0"]
 visible = true

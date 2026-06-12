@@ -1,6 +1,9 @@
 extends WeaponBranchBehavior
 class_name PistolCryoBranch
 
+func get_added_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.FREEZE]
+
 @export var shard_damage_ratio: float = 0.4
 @export var shard_radius: float = 120.0
 @export var shard_target_count: int = 1
@@ -64,6 +67,8 @@ func _trigger_shard(hit_target: Node2D, original_target: Node) -> void:
 			Attack.TYPE_FREEZE,
 			{"amount": 0, "angle": Vector2.ZERO},
 			weapon,
-			owner_player
+			owner_player,
+			DamageData.SOURCE_PLAYER_WEAPON,
+			DamageDeliveryType.PROJECTILE
 		)
 		DamageManager.apply_to_target(chained_target, damage_data)

@@ -356,7 +356,7 @@ func read_autosave_mecha_data(id : String) -> Dictionary:
 	return {"current_exp": "0", "current_level": "1"}
 
 func save_game(_data : SaveData = save_data, _file_path: String = "res://data/savedata/autosave.tres") -> void:
-	# Save is intentionally disabled: run state is always in-memory for this session.
+	InventoryData.save_runtime_state()
 	return
 
 func new_save(_file_path: String = "res://data/savedata/autosave.tres") -> void:

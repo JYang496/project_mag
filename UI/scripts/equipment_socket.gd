@@ -69,19 +69,9 @@ func _on_gui_input(event: InputEvent) -> void:
 		var weapon: Weapon = equipment_slot.item
 		var module_display_name: String = LocalizationManager.get_module_name(selected_module)
 		var weapon_display_name: String = LocalizationManager.get_weapon_name_from_node(weapon)
-		var result := InventoryData.unequip_module_from_weapon(selected_module, weapon)
-		if not result.get("ok", false):
-			return
 		var ui = GlobalVariables.ui
-		if ui and is_instance_valid(ui) and ui.has_method("show_item_message"):
-			ui.show_item_message(
-				LocalizationManager.tr_format(
-					"ui.module.removed_message",
-					{"module": module_display_name, "weapon": weapon_display_name},
-					"Removed %s from %s" % [module_display_name, weapon_display_name]
-				),
-				1.6
-			)
+		if ui and is_instance_valid(ui) and ui.has_method("request_module_unequip_confirmation"):
+			ui.request_module_unequip_confirmation(selected_module, weapon)
 
 func _cursor_can_click() -> bool:
 	return equipment_slot is EquipmentSlotModule and module != null and is_instance_valid(module)

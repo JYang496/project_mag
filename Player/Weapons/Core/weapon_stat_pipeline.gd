@@ -2,7 +2,8 @@ extends RefCounted
 class_name WeaponStatPipeline
 
 var weapon: Weapon
-var runtime_trait_overrides: Array[StringName] = []
+var runtime_trait_additions: Dictionary = {}
+var runtime_trait_suppressions: Dictionary = {}
 var last_stat_snapshot: Dictionary = {}
 var external_damage_mul_modifiers: Dictionary = {}
 
@@ -12,48 +13,46 @@ func setup(source_weapon: Weapon) -> void:
 func get_normalized_weapon_traits() -> Array[StringName]:
 	var modules_container := _get_modules_container()
 	var traits: Array[StringName] = modules_container.get_normalized_weapon_traits() if modules_container != null else []
-	for runtime_trait in runtime_trait_overrides:
-		if not traits.has(runtime_trait):
-			traits.append(runtime_trait)
-	for delivery_trait in weapon.get_delivery_traits():
-		if not traits.has(delivery_trait):
-			traits.append(delivery_trait)
+	for source_traits in runtime_trait_suppressions.values():
+		for runtime_trait in source_traits:
+			traits.erase(runtime_trait)
+	for source_traits in runtime_trait_additions.values():
+		for runtime_trait in source_traits:
+			if not traits.has(runtime_trait):
+				traits.append(runtime_trait)
 	return traits
 
 func get_explicit_weapon_traits() -> Array[StringName]:
 	var modules_container := _get_modules_container()
-	var traits: Array[StringName] = modules_container.get_normalized_weapon_traits() if modules_container != null else []
-	for runtime_trait in runtime_trait_overrides:
-		if not traits.has(runtime_trait):
-			traits.append(runtime_trait)
-	return traits
+	return modules_container.get_normalized_weapon_traits() if modules_container != null else []
 
-func add_runtime_weapon_trait(trait_name: Variant) -> void:
-	var normalized := CombatTrait.normalize(trait_name)
+func add_runtime_weapon_trait(source_id: StringName, trait_name: Variant) -> void:
+	var normalized := WeaponTrait.normalize(trait_name)
 	if normalized == StringName():
 		return
-	if runtime_trait_overrides.has(normalized):
-		return
-	runtime_trait_overrides.append(normalized)
+	var traits: Array = runtime_trait_additions.get(source_id, [])
+	if not traits.has(normalized):
+		traits.append(normalized)
+	runtime_trait_additions[source_id] = traits
 	weapon.calculate_status()
 
-func remove_runtime_weapon_trait(trait_name: Variant) -> void:
-	var normalized := CombatTrait.normalize(trait_name)
+func suppress_runtime_weapon_trait(source_id: StringName, trait_name: Variant) -> void:
+	var normalized := WeaponTrait.normalize(trait_name)
 	if normalized == StringName():
 		return
-	if not runtime_trait_overrides.has(normalized):
-		return
-	runtime_trait_overrides.erase(normalized)
+	var traits: Array = runtime_trait_suppressions.get(source_id, [])
+	if not traits.has(normalized):
+		traits.append(normalized)
+	runtime_trait_suppressions[source_id] = traits
 	weapon.calculate_status()
 
-func clear_runtime_weapon_traits() -> void:
-	if runtime_trait_overrides.is_empty():
-		return
-	runtime_trait_overrides.clear()
+func clear_runtime_weapon_traits(source_id: StringName) -> void:
+	runtime_trait_additions.erase(source_id)
+	runtime_trait_suppressions.erase(source_id)
 	weapon.calculate_status()
 
 func has_weapon_trait(trait_name: Variant) -> bool:
-	var normalized := CombatTrait.normalize(trait_name)
+	var normalized := WeaponTrait.normalize(trait_name)
 	if normalized == StringName():
 		return false
 	return get_normalized_weapon_traits().has(normalized)
@@ -62,15 +61,6 @@ func has_any_weapon_traits(required_traits: Array[StringName]) -> bool:
 	if required_traits.is_empty():
 		return true
 	var traits := get_normalized_weapon_traits()
-	for required_trait in required_traits:
-		if traits.has(required_trait):
-			return true
-	return false
-
-func has_any_explicit_weapon_traits(required_traits: Array[StringName]) -> bool:
-	if required_traits.is_empty():
-		return true
-	var traits := get_explicit_weapon_traits()
 	for required_trait in required_traits:
 		if traits.has(required_trait):
 			return true
@@ -208,7 +198,8 @@ func apply_module_stat_pipeline() -> void:
 	last_stat_snapshot = stats.duplicate(true)
 
 func clear_for_weapon_exit() -> void:
-	runtime_trait_overrides.clear()
+	runtime_trait_additions.clear()
+	runtime_trait_suppressions.clear()
 	last_stat_snapshot.clear()
 	external_damage_mul_modifiers.clear()
 

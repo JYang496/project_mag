@@ -41,6 +41,7 @@ func _emit_fire_pulse() -> void:
 		return
 	var pulse_damage: int = _compute_pulse_damage()
 	area_effect.source_node = weapon
+	area_effect.source_category = DamageData.SOURCE_PLAYER_WEAPON
 	area_effect.radius = maxf(pulse_radius, 8.0)
 	area_effect.duration = maxf(pulse_duration_sec, 0.01)
 	area_effect.target_group = AreaEffect.TargetGroup.ENEMIES

@@ -29,7 +29,7 @@ effect_configs = Array[ExtResource("3_jofir")]([])
 debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 180256
+weapon_traits = 20
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("4_icon")

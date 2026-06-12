@@ -7,19 +7,8 @@ class_name MachineGunGatlingBranch
 @export_range(0.0, 1.0, 0.05) var extra_heat_shot_multiplier: float = 0.45
 @export_range(0.05, 2.0, 0.01) var base_damage_multiplier: float = 0.80
 @export_range(0.0, 1.0, 0.01) var fire_mode_heat_ratio: float = 0.50
-const BRANCH_RUNTIME_TRAIT_FIRE: StringName = CombatTrait.FIRE
-
-func on_weapon_ready() -> void:
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	if weapon.has_method("add_runtime_weapon_trait"):
-		weapon.call("add_runtime_weapon_trait", BRANCH_RUNTIME_TRAIT_FIRE)
-
-func on_removed() -> void:
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	if weapon.has_method("remove_runtime_weapon_trait"):
-		weapon.call("remove_runtime_weapon_trait", BRANCH_RUNTIME_TRAIT_FIRE)
+func get_added_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.FIRE]
 
 func get_shot_directions(base_direction: Vector2, shot_count: int = -1) -> Array[Vector2]:
 	var dirs: Array[Vector2] = []

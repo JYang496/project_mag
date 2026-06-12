@@ -6,9 +6,10 @@
 
 [node name="ReloadShieldBoost" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-supports_melee = false
-supports_ranged = true
-module_traits = PackedStringArray("trigger", "buff", "duration")
+level_effects = PackedStringArray("Reload grants shield equal to up to 10% max HP for 3s", "Reload grants shield equal to up to 14% max HP for 4s", "Reload grants shield equal to up to 18% max HP for 5s")
+required_delivery_types = 13
+required_hooks = 32
+module_tags = PackedStringArray("trigger", "buff", "duration")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

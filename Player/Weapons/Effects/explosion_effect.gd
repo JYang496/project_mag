@@ -50,6 +50,7 @@ func on_projectile_will_despawn() -> void:
 		area_effect.source_node = source_weapon_value
 	else:
 		area_effect.source_node = projectile
+	area_effect.source_category = DamageData.SOURCE_PLAYER_WEAPON
 	area_effect.global_position = global_position
 	var spawn_parent: Node = projectile.get_tree().current_scene
 	if spawn_parent == null:

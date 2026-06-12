@@ -2,7 +2,6 @@ extends Node
 
 const REWARD_MANAGER_SCENE := preload("res://Utility/reward_manager.tscn")
 const MODULE_DIRECTORY_PATH := "res://Player/Weapons/Modules/"
-const HIDDEN_WEAPON_ID := "3"
 
 func _ready() -> void:
 	call_deferred("_run")
@@ -50,17 +49,18 @@ func _run() -> void:
 	get_tree().quit(0)
 
 func _assert_hidden_weapon_filter(reward_manager: BonusManager) -> bool:
-	var hidden_def := DataHandler.read_weapon_data(HIDDEN_WEAPON_ID) as WeaponDefinition
-	if hidden_def == null:
-		push_error("LootRarityRewardTest: hidden weapon id=%s is not registered." % HIDDEN_WEAPON_ID)
-		return false
-	if not hidden_def.is_hidden:
-		push_error("LootRarityRewardTest: weapon id=%s is expected to be hidden." % HIDDEN_WEAPON_ID)
-		return false
+	var hidden_ids: PackedStringArray = []
+	for weapon_id in DataHandler.get_weapon_ids():
+		var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+		if weapon_def and weapon_def.is_hidden:
+			hidden_ids.append(weapon_id)
+	if hidden_ids.is_empty():
+		return true
 	var candidates: Array = reward_manager.call("_build_weapon_reward_candidates")
 	for candidate in candidates:
-		if str(candidate.get("id", "")) == HIDDEN_WEAPON_ID:
-			push_error("LootRarityRewardTest: hidden weapon id=%s was still in reward candidates." % HIDDEN_WEAPON_ID)
+		var candidate_id := str(candidate.get("id", ""))
+		if hidden_ids.has(candidate_id):
+			push_error("LootRarityRewardTest: hidden weapon id=%s was still in reward candidates." % candidate_id)
 			return false
 	return true
 
@@ -102,9 +102,9 @@ func _assert_full_level_module_filter(reward_manager: BonusManager) -> bool:
 		push_error("LootRarityRewardTest: failed to instantiate module scene %s." % module_path)
 		return false
 	module_instance.set_module_level(Module.MAX_LEVEL)
-	InventoryData.moddule_slots.append(module_instance)
+	InventoryData.temporary_modules.append(module_instance)
 	var can_offer := bool(reward_manager.call("_can_offer_module_reward", module_path))
-	InventoryData.moddule_slots.erase(module_instance)
+	InventoryData.temporary_modules.erase(module_instance)
 	module_instance.free()
 	if can_offer:
 		push_error("LootRarityRewardTest: max-level module was still offerable.")

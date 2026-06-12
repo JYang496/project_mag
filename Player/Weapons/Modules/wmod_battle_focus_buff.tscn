@@ -6,7 +6,9 @@
 
 [node name="BattleFocusBuff" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-module_traits = PackedStringArray("trigger", "buff", "stacking", "duration")
+level_effects = PackedStringArray("Crit chance +1.5% per stack, up to 6 stacks", "Crit chance +2.0% per stack, up to 6 stacks", "Crit chance +2.5% per stack, up to 6 stacks")
+required_hooks = 2
+module_tags = PackedStringArray("trigger", "buff", "stacking", "duration")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

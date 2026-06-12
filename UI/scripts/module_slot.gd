@@ -44,8 +44,8 @@ func _draw():
 	draw_rect(rect, border_color, false, width)
 
 func update() -> void:
-	if len(InventoryData.moddule_slots) > module_index :
-		module = InventoryData.moddule_slots[module_index]
+	if len(InventoryData.temporary_modules) > module_index :
+		module = InventoryData.temporary_modules[module_index]
 	else:
 		module = null
 	if module:
@@ -79,6 +79,13 @@ func _on_background_mouse_exited() -> void:
 
 
 func _on_background_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		if module == null:
+			return
+		var ui_sell = GlobalVariables.ui
+		if ui_sell and is_instance_valid(ui_sell) and ui_sell.has_method("request_temporary_module_sell_confirmation"):
+			ui_sell.request_temporary_module_sell_confirmation(module)
+		return
 	if event.is_action_pressed("CLICK"):
 		if module == null:
 			return
@@ -86,7 +93,6 @@ func _on_background_gui_input(event: InputEvent) -> void:
 		if ui and is_instance_valid(ui) and ui.has_method("request_module_equip_selection"):
 			ui.request_module_equip_selection(module)
 			return
-		InventoryData.on_select_inventory_module = module
 
 func _cursor_can_click() -> bool:
 	return module != null and is_instance_valid(module)

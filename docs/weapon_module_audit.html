@@ -20,36 +20,79 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 </head>
 <body><main>
 <h1>武器模组系统检查报告</h1>
-<p class="muted">基于当前运行时代码与资源生成：2026-06-11 22:34:34。兼容结果直接调用 <code>Module.can_apply_to_weapon()</code>。</p>
+<p class="muted">基于当前运行时代码与资源生成：2026-06-12 16:12:45。兼容结果直接调用 <code>Module.can_apply_to_weapon()</code>。</p>
 <section class="summary">
 <div class="metric"><span class="muted">模组</span><strong>35</strong></div>
 <div class="metric"><span class="muted">武器</span><strong>15</strong></div>
 <div class="metric"><span class="muted">无限制模组</span><strong>9</strong></div>
-<div class="metric"><span class="muted">兼容组合</span><strong>311 / 525</strong></div>
+<div class="metric"><span class="muted">兼容组合</span><strong>314 / 525</strong></div>
+</section>
+<section class="card"><h2>分类词表</h2>
+<p><strong>WeaponTrait（6）：</strong><span class="tag ">physical</span><span class="tag ">energy</span><span class="tag ">fire</span><span class="tag ">freeze</span><span class="tag ">heat</span><span class="tag ">charge</span></p>
+<p><strong>DamageDeliveryType（4）：</strong><span class="tag ">projectile</span><span class="tag ">melee_contact</span><span class="tag ">beam</span><span class="tag ">area</span></p>
+<p><strong>WeaponCapability（4）：</strong><span class="tag ">summon</span><span class="tag ">trap</span><span class="tag ">support</span><span class="tag ">movement</span></p>
+<p><strong>EffectDeliveryType（3）：</strong><span class="tag ">self</span><span class="tag ">target</span><span class="tag ">area</span></p>
+<p><strong>ModuleHook（8）：</strong><span class="tag ">projectile_spawn</span><span class="tag ">hit</span><span class="tag ">damage_dealt</span><span class="tag ">area_damage</span><span class="tag ">beam_hit</span><span class="tag ">reload_start</span><span class="tag ">reload_duration</span><span class="tag ">kill</span></p>
+<p><strong>ModuleTag 核心词表（20，可扩展）：</strong><span class="tag ">trigger</span><span class="tag ">buff</span><span class="tag ">debuff</span><span class="tag ">dot</span><span class="tag ">duration</span><span class="tag ">stacking</span><span class="tag ">movement</span><span class="tag ">physical</span><span class="tag ">energy</span><span class="tag ">fire</span><span class="tag ">freeze</span><span class="tag ">heat</span><span class="tag ">charge</span><span class="tag ">projectile</span><span class="tag ">melee_contact</span><span class="tag ">beam</span><span class="tag ">area</span><span class="tag ">summon</span><span class="tag ">trap</span><span class="tag ">support</span></p>
 </section>
 <section class="card issues"><h2>系统检查结论</h2><ul>
 <li>战斗奖励池会自动扫描 <code>Player/Weapons/Modules/*.tscn</code>，仅排除 <code>wmod_base.tscn</code>；本报告使用同一范围。</li>
-<li>兼容判定顺序为：近战/远程支持、交付类型命中、显式 weapon trait 至少命中一个。多个 required trait 是“任一命中”，不是“全部命中”。</li>
+<li>兼容维度为 WeaponTrait、DamageDeliveryType、WeaponCapability；维度之间全部满足，维度内部任一命中。</li>
+<li>Trait 与交付类型严格分工，不进行交付类型到 trait 的兼容映射。</li>
 <li>每把武器最多安装 3 个模组；模组等级范围为 1-3。报告参数显示场景覆盖后的当前值。</li>
+<li>系统不再使用永久武器背包或模组背包。武器只能存在于 4 个装备槽；同类型武器全局唯一，重复武器用于融合。</li>
+<li>每种模组全局唯一。未安装模组只存在于当前运行的临时模组区；重复模组升级唯一实例，满 3 级后溢出立即出售。</li>
+<li>主动模组管理只能在激活的 Rest Area 且阶段为 <code>PREPARE</code> 时进行；奖励事务允许在奖励到休整的过渡期处理。</li>
+<li>武器出售或替换时，其模组进入临时区。开始战斗前剩余临时模组统一出售，并可关闭确认提示。</li>
 <li>效果描述包含脚本机制说明，以及模组实际 <code>get_effect_descriptions()</code> 在 1-3 级的返回文本。</li>
 <li>隐藏武器仍列入兼容性检查，因为其定义与场景仍存在，且可被保存恢复路径实例化。</li>
 </ul></section>
-<h2>武器清单</h2><div class="card"><table><thead><tr><th>武器</th><th>ID</th><th>显式 Traits</th><th>交付类型</th><th>资源</th></tr></thead><tbody>
-<tr><td><strong>Auto Pistol</strong></td><td>5</td><td><span class="tag ">range</span><span class="tag ">trigger</span><span class="tag ">projectile</span><span class="tag ">physical</span></td><td><span class="tag ">projectile</span></td><td class="path">res://Player/Weapons/Instances/pistol.tscn</td></tr>
-<tr><td><strong>Cannon</strong></td><td>25</td><td><span class="tag ">projectile</span><span class="tag ">energy</span></td><td><span class="tag ">projectile</span></td><td class="path">res://Player/Weapons/Instances/cannon.tscn</td></tr>
-<tr><td><strong>Chainsaw Launcher</strong></td><td>10</td><td><span class="tag ">dot</span><span class="tag ">duration</span><span class="tag ">projectile</span><span class="tag ">physical</span></td><td><span class="tag ">projectile</span></td><td class="path">res://Player/Weapons/Instances/chainsaw_launcher.tscn</td></tr>
-<tr><td><strong>Charged Blaster</strong></td><td>2</td><td><span class="tag ">duration</span><span class="tag ">range</span><span class="tag ">charge</span><span class="tag ">energy</span><span class="tag ">area_of_effect</span></td><td><span class="tag ">beam</span></td><td class="path">res://Player/Weapons/Instances/charged_blaster.tscn</td></tr>
-<tr><td><strong>dash blade</strong></td><td>11</td><td><span class="tag ">movement</span><span class="tag ">range</span><span class="tag ">melee</span><span class="tag ">trigger</span><span class="tag ">physical</span></td><td><span class="tag ">melee_contact</span></td><td class="path">res://Player/Weapons/Instances/dash_blade.tscn</td></tr>
-<tr><td><strong>flamethrower</strong></td><td>13</td><td><span class="tag ">range</span><span class="tag ">area_of_effect</span><span class="tag ">fire</span><span class="tag ">heat</span></td><td><span class="tag ">area</span></td><td class="path">res://Player/Weapons/Instances/flamethrower.tscn</td></tr>
-<tr><td><strong>Glacier Projector</strong></td><td>21</td><td><span class="tag ">freeze</span></td><td><span class="tag ">area</span></td><td class="path">res://Player/Weapons/Instances/glacier_projector.tscn</td></tr>
-<tr><td><strong>laser</strong></td><td>9</td><td><span class="tag ">duration</span><span class="tag ">range</span><span class="tag ">projectile</span><span class="tag ">energy</span></td><td><span class="tag ">beam</span></td><td class="path">res://Player/Weapons/Instances/laser.tscn</td></tr>
-<tr><td><strong>machine gun</strong></td><td>1</td><td><span class="tag ">range</span><span class="tag ">projectile</span><span class="tag ">physical</span><span class="tag ">heat</span></td><td><span class="tag ">projectile</span></td><td class="path">res://Player/Weapons/Instances/machine_gun.tscn</td></tr>
-<tr><td><strong>orbit</strong></td><td>7</td><td><span class="tag ">duration</span><span class="tag ">range</span><span class="tag ">projectile</span><span class="tag ">summon</span><span class="tag ">energy</span></td><td><span class="tag ">projectile</span><span class="tag ">summon</span></td><td class="path">res://Player/Weapons/Instances/orbit.tscn</td></tr>
-<tr><td><strong>Plasma Lance</strong></td><td>17</td><td><span class="tag ">range</span><span class="tag ">projectile</span><span class="tag ">energy</span><span class="tag ">heat</span></td><td><span class="tag ">projectile</span></td><td class="path">res://Player/Weapons/Instances/plasma_lance.tscn</td></tr>
-<tr><td><strong>Rocket Launcher</strong></td><td>8</td><td><span class="tag ">range</span><span class="tag ">projectile</span><span class="tag ">area_of_effect</span><span class="tag ">fire</span></td><td><span class="tag ">projectile</span></td><td class="path">res://Player/Weapons/Instances/rocket_launcher.tscn</td></tr>
-<tr><td><strong>shotgun</strong></td><td>4</td><td><span class="tag ">range</span><span class="tag ">trigger</span><span class="tag ">projectile</span><span class="tag ">physical</span></td><td><span class="tag ">projectile</span></td><td class="path">res://Player/Weapons/Instances/shotgun.tscn</td></tr>
-<tr><td><strong>Sniper</strong></td><td>26</td><td><span class="muted">无</span></td><td><span class="tag ">projectile</span></td><td class="path">res://Player/Weapons/Instances/sniper.tscn</td></tr>
-<tr class="hidden-weapon"><td><strong>Spear Launcher</strong> <span class="tag no">隐藏</span></td><td>3</td><td><span class="tag ">range</span><span class="tag ">projectile</span><span class="tag ">physical</span></td><td><span class="tag ">projectile</span></td><td class="path">res://Player/Weapons/Instances/spear_launcher.tscn</td></tr>
+<h2>武器清单</h2><div class="card"><table><thead><tr><th>武器</th><th>ID</th><th>基础 Traits</th><th>运行时 Traits</th><th>基础交付</th><th>运行时交付</th><th>基础能力</th><th>运行时能力</th><th>资源</th></tr></thead><tbody>
+<tr><td><strong>Auto Pistol</strong></td><td>5</td><td><span class="tag ">physical</span></td><td><span class="tag ">physical</span></td><td><span class="tag ">projectile</span></td><td><span class="tag ">projectile</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/pistol.tscn</td></tr>
+<tr><td><strong>Cannon</strong></td><td>25</td><td><span class="tag ">physical</span></td><td><span class="tag ">physical</span></td><td><span class="tag ">projectile</span><span class="tag ">area</span></td><td><span class="tag ">projectile</span><span class="tag ">area</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/cannon.tscn</td></tr>
+<tr><td><strong>Chainsaw Launcher</strong></td><td>10</td><td><span class="tag ">physical</span></td><td><span class="tag ">physical</span></td><td><span class="tag ">projectile</span></td><td><span class="tag ">projectile</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/chainsaw_launcher.tscn</td></tr>
+<tr><td><strong>Charged Blaster</strong></td><td>2</td><td><span class="tag ">energy</span><span class="tag ">charge</span></td><td><span class="tag ">energy</span><span class="tag ">charge</span></td><td><span class="tag ">beam</span></td><td><span class="tag ">beam</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/charged_blaster.tscn</td></tr>
+<tr><td><strong>dash blade</strong></td><td>11</td><td><span class="tag ">physical</span></td><td><span class="tag ">physical</span></td><td><span class="tag ">melee_contact</span></td><td><span class="tag ">melee_contact</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/dash_blade.tscn</td></tr>
+<tr><td><strong>flamethrower</strong></td><td>13</td><td><span class="tag ">fire</span><span class="tag ">heat</span></td><td><span class="tag ">fire</span><span class="tag ">heat</span></td><td><span class="tag ">area</span></td><td><span class="tag ">area</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/flamethrower.tscn</td></tr>
+<tr><td><strong>Glacier Projector</strong></td><td>21</td><td><span class="tag ">freeze</span></td><td><span class="tag ">freeze</span></td><td><span class="tag ">area</span></td><td><span class="tag ">area</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/glacier_projector.tscn</td></tr>
+<tr><td><strong>laser</strong></td><td>9</td><td><span class="tag ">energy</span></td><td><span class="tag ">energy</span></td><td><span class="tag ">beam</span></td><td><span class="tag ">beam</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/laser.tscn</td></tr>
+<tr><td><strong>machine gun</strong></td><td>1</td><td><span class="tag ">physical</span><span class="tag ">heat</span></td><td><span class="tag ">physical</span><span class="tag ">heat</span></td><td><span class="tag ">projectile</span></td><td><span class="tag ">projectile</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/machine_gun.tscn</td></tr>
+<tr><td><strong>orbit</strong></td><td>7</td><td><span class="tag ">physical</span></td><td><span class="tag ">physical</span></td><td><span class="tag ">projectile</span></td><td><span class="tag ">projectile</span></td><td><span class="tag ">summon</span></td><td><span class="tag ">summon</span></td><td class="path">res://Player/Weapons/Instances/orbit.tscn</td></tr>
+<tr><td><strong>Plasma Lance</strong></td><td>17</td><td><span class="tag ">energy</span><span class="tag ">heat</span></td><td><span class="tag ">energy</span><span class="tag ">heat</span></td><td><span class="tag ">projectile</span></td><td><span class="tag ">projectile</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/plasma_lance.tscn</td></tr>
+<tr><td><strong>Rocket Launcher</strong></td><td>8</td><td><span class="tag ">physical</span><span class="tag ">fire</span></td><td><span class="tag ">physical</span><span class="tag ">fire</span></td><td><span class="tag ">projectile</span><span class="tag ">area</span></td><td><span class="tag ">projectile</span><span class="tag ">area</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/rocket_launcher.tscn</td></tr>
+<tr><td><strong>shotgun</strong></td><td>4</td><td><span class="tag ">physical</span></td><td><span class="tag ">physical</span></td><td><span class="tag ">projectile</span></td><td><span class="tag ">projectile</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/shotgun.tscn</td></tr>
+<tr><td><strong>Sniper</strong></td><td>26</td><td><span class="tag ">physical</span></td><td><span class="tag ">physical</span></td><td><span class="tag ">projectile</span></td><td><span class="tag ">projectile</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/sniper.tscn</td></tr>
+<tr><td><strong>Spear Launcher</strong></td><td>3</td><td><span class="tag ">physical</span></td><td><span class="tag ">physical</span></td><td><span class="tag ">projectile</span></td><td><span class="tag ">projectile</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td class="path">res://Player/Weapons/Instances/spear_launcher.tscn</td></tr>
+</tbody></table></div>
+<h2>分支分类增量</h2><div class="card"><table><thead><tr><th>分支</th><th>武器资源</th><th>新增 Traits</th><th>屏蔽 Traits</th><th>新增交付</th><th>屏蔽交付</th><th>新增能力</th></tr></thead><tbody>
+<tr><td><strong>Arc Coil</strong><br><span class="path">arc_coil</span></td><td class="path">res://Player/Weapons/Instances/pistol.tscn</td><td><span class="tag ">energy</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Cryo Carbine</strong><br><span class="path">cryo_carbine</span></td><td class="path">res://Player/Weapons/Instances/pistol.tscn</td><td><span class="tag ">freeze</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Energy Orbit</strong><br><span class="path">energy_orbit</span></td><td class="path">res://Player/Weapons/Instances/orbit.tscn</td><td><span class="tag ">energy</span></td><td><span class="muted">无</span></td><td><span class="tag ">area</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Explosive Saw</strong><br><span class="path">explosive_saw</span></td><td class="path">res://Player/Weapons/Instances/chainsaw_launcher.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="tag ">area</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Fire Pulse Aura</strong><br><span class="path">fire_pulse_aura</span></td><td class="path">res://Player/Weapons/Instances/flamethrower.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Focus Lance</strong><br><span class="path">focus_lance</span></td><td class="path">res://Player/Weapons/Instances/charged_blaster.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Frost Dash Blade</strong><br><span class="path">frost_dash</span></td><td class="path">res://Player/Weapons/Instances/dash_blade.tscn</td><td><span class="tag ">freeze</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Frost Orbit</strong><br><span class="path">frost_orbit</span></td><td class="path">res://Player/Weapons/Instances/orbit.tscn</td><td><span class="tag ">freeze</span></td><td><span class="tag ">physical</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Gatling Thermal</strong><br><span class="path">gatling_mg</span></td><td class="path">res://Player/Weapons/Instances/machine_gun.tscn</td><td><span class="tag ">fire</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Subzero Battery</strong><br><span class="path">glacier_subzero_battery</span></td><td class="path">res://Player/Weapons/Instances/glacier_projector.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Whiteout Expansion</strong><br><span class="path">glacier_whiteout_expansion</span></td><td class="path">res://Player/Weapons/Instances/glacier_projector.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Prism Splitter</strong><br><span class="path">laser_prism_splitter</span></td><td class="path">res://Player/Weapons/Instances/laser.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Tracking Lens</strong><br><span class="path">laser_tracking_lens</span></td><td class="path">res://Player/Weapons/Instances/laser.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Long Cone Flame</strong><br><span class="path">long_cone_flame</span></td><td class="path">res://Player/Weapons/Instances/flamethrower.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Napalm Rocket</strong><br><span class="path">napalm_rocket</span></td><td class="path">res://Player/Weapons/Instances/rocket_launcher.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Overcharge Lance</strong><br><span class="path">plasma_overcharge_lance</span></td><td class="path">res://Player/Weapons/Instances/plasma_lance.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Piercing Lance</strong><br><span class="path">plasma_piercing_lance</span></td><td class="path">res://Player/Weapons/Instances/plasma_lance.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Prism Fan</strong><br><span class="path">prism_fan</span></td><td class="path">res://Player/Weapons/Instances/charged_blaster.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Ricochet Saw</strong><br><span class="path">ricochet_saw</span></td><td class="path">res://Player/Weapons/Instances/chainsaw_launcher.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Salvo Rocket</strong><br><span class="path">salvo_rocket</span></td><td class="path">res://Player/Weapons/Instances/rocket_launcher.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Shatter Buckshot</strong><br><span class="path">shatter_buckshot</span></td><td class="path">res://Player/Weapons/Instances/shotgun.tscn</td><td><span class="tag ">freeze</span></td><td><span class="tag ">physical</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Shield Machine Gun</strong><br><span class="path">shield_mg</span></td><td class="path">res://Player/Weapons/Instances/machine_gun.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Deep Pierce</strong><br><span class="path">sniper_deep_pierce</span></td><td class="path">res://Player/Weapons/Instances/sniper.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Impact Burst</strong><br><span class="path">sniper_impact_burst</span></td><td class="path">res://Player/Weapons/Instances/sniper.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="tag ">area</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Multi-Pierce</strong><br><span class="path">spear_multi_pierce</span></td><td class="path">res://Player/Weapons/Instances/spear_launcher.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Rending Thrust</strong><br><span class="path">spear_rending</span></td><td class="path">res://Player/Weapons/Instances/spear_launcher.tscn</td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Thermal Cannon</strong><br><span class="path">thermal_cannon_branch</span></td><td class="path">res://Player/Weapons/Instances/cannon.tscn</td><td><span class="tag ">heat</span><span class="tag ">fire</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
+<tr><td><strong>Zero Cannon</strong><br><span class="path">zero_cannon_branch</span></td><td class="path">res://Player/Weapons/Instances/cannon.tscn</td><td><span class="tag ">energy</span></td><td><span class="tag ">physical</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td><td><span class="muted">无</span></td></tr>
 </tbody></table></div>
 <h2>完整兼容矩阵</h2><div class="matrix-wrap"><table class="matrix"><thead><tr><th>模组</th>
 <th class="center">Auto Pistol</th>
@@ -87,7 +130,7 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 </tr>
 <tr><td><strong>Bleed Edge</strong></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Requires one of: physical">否</span></td>
+<td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag no" title="Requires one of: physical">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
@@ -95,11 +138,11 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag no" title="Requires one of: physical">否</span></td>
 <td class="center"><span class="tag no" title="Requires one of: physical">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Requires one of: physical">否</span></td>
-<td class="center"><span class="tag no" title="Requires one of: physical">否</span></td>
-<td class="center"><span class="tag no" title="Requires one of: physical">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag no" title="Requires one of: physical">否</span></td>
+<td class="center"><span class="tag ok" title="兼容">是</span></td>
+<td class="center"><span class="tag ok" title="兼容">是</span></td>
+<td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 </tr>
 <tr><td><strong>Brittle Trigger</strong></td>
@@ -138,15 +181,15 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 </tr>
 <tr><td><strong>Corrosive Touch</strong></td>
 <td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
-<td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
-<td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
 <td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
 <td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
+<td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
+<td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
+<td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
+<td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
 <td class="center"><span class="tag no" title="Requires one of: energy">否</span></td>
@@ -242,17 +285,17 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
-<td class="center"><span class="tag no" title="Not compatible with melee weapons.">否</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 </tr>
 <tr><td><strong>Heat Capacity</strong></td>
@@ -354,7 +397,7 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Requires one of: range, melee, projectile, physical, energy, area_of_effect, fire, freeze">否</span></td>
+<td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 </tr>
 <tr><td><strong>Molten Splash</strong></td>
@@ -429,17 +472,17 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
-<td class="center"><span class="tag no" title="Not compatible with melee weapons.">否</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 </tr>
 <tr><td><strong>Plague Seed</strong></td>
@@ -464,7 +507,7 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Not compatible with melee weapons.">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile, beam, area">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
@@ -481,7 +524,7 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Not compatible with melee weapons.">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile, beam, area">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
@@ -498,7 +541,7 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Not compatible with melee weapons.">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile, beam, area">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
@@ -515,7 +558,7 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Not compatible with melee weapons.">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile, beam, area">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
@@ -532,7 +575,7 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Not compatible with melee weapons.">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile, beam, area">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
@@ -549,7 +592,7 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Not compatible with melee weapons.">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile, beam, area">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
@@ -566,7 +609,7 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Not compatible with melee weapons.">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile, beam, area">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
@@ -599,17 +642,17 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
+<td class="center"><span class="tag no" title="Requires delivery type: projectile">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
-<td class="center"><span class="tag no" title="Requires one of: projectile">否</span></td>
 <td class="center"><span class="tag ok" title="兼容">是</span></td>
 </tr>
 <tr><td><strong>Stun On Hit</strong></td>
@@ -673,22 +716,23 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>连续命中同一目标会叠加临时暴击率；更换目标或超过连击时限后清空层数。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Crit chance +1.5% per stack, up to 6 stacks</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Crit chance +2.0% per stack, up to 6 stacks</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Crit chance +2.5% per stack, up to 6 stacks</div>
 </div>
 </div></section>
 <p><strong>可安装武器（15）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">dash blade</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, buff, stacking, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, buff, stacking, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Crit chance +1.5% per stack, up to 6 stacks, Crit chance +2.0% per stack, up to 6 stacks, Crit chance +2.5% per stack, up to 6 stacks</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -706,23 +750,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中时施加流血；流血目标移动距离达到阈值后会周期性受到物理伤害。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Bleed lasts 2.4s and deals 2 damage per movement trigger</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Bleed lasts 3.0s and deals 3 damage per movement trigger</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Bleed lasts 3.8s and deals 4 damage per movement trigger</div>
 </div>
 </div></section>
-<p><strong>可安装武器（6）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">dash blade</span><span class="tag ok">machine gun</span><span class="tag ok">shotgun</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（9）</summary><p>Cannon：Requires one of: physical<br>Charged Blaster：Requires one of: physical<br>flamethrower：Requires one of: physical<br>Glacier Projector：Requires one of: physical<br>laser：Requires one of: physical<br>orbit：Requires one of: physical<br>Plasma Lance：Requires one of: physical<br>Rocket Launcher：Requires one of: physical<br>Sniper：Requires one of: physical</p></details>
+<p><strong>可安装武器（10）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">dash blade</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
+<details><summary>不兼容武器与原因（5）</summary><p>Charged Blaster：Requires one of: physical<br>flamethrower：Requires one of: physical<br>Glacier Projector：Requires one of: physical<br>laser：Requires one of: physical<br>Plasma Lance：Requires one of: physical</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>physical</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, debuff, dot, movement, physical</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, debuff, dot, movement, physical</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Bleed lasts 2.4s and deals 2 damage per movement trigger, Bleed lasts 3.0s and deals 3 damage per movement trigger, Bleed lasts 3.8s and deals 4 damage per movement trigger</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -743,23 +788,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中霜冻层数达到要求的目标时，按武器伤害比例追加物理伤害，并受单目标触发间隔限制。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Brittle bonus damage equals 20% of weapon damage</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Brittle bonus damage equals 28% of weapon damage</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Brittle bonus damage equals 36% of weapon damage</div>
 </div>
 </div></section>
 <p><strong>可安装武器（1）：</strong><span class="tag ok">Glacier Projector</span></p>
 <details><summary>不兼容武器与原因（14）</summary><p>Auto Pistol：Requires one of: freeze<br>Cannon：Requires one of: freeze<br>Chainsaw Launcher：Requires one of: freeze<br>Charged Blaster：Requires one of: freeze<br>dash blade：Requires one of: freeze<br>flamethrower：Requires one of: freeze<br>laser：Requires one of: freeze<br>machine gun：Requires one of: freeze<br>orbit：Requires one of: freeze<br>Plasma Lance：Requires one of: freeze<br>Rocket Launcher：Requires one of: freeze<br>shotgun：Requires one of: freeze<br>Sniper：Requires one of: freeze<br>Spear Launcher：Requires one of: freeze</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>freeze</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Brittle bonus damage equals 20% of weapon damage, Brittle bonus damage equals 28% of weapon damage, Brittle bonus damage equals 36% of weapon damage</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -777,23 +823,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中后将短时减速扩散给范围内最近的另一名敌人。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Chain slow to 88% speed for 1.2s</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Chain slow to 82% speed for 1.5s</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Chain slow to 76% speed for 1.8s</div>
 </div>
 </div></section>
 <p><strong>可安装武器（1）：</strong><span class="tag ok">Glacier Projector</span></p>
 <details><summary>不兼容武器与原因（14）</summary><p>Auto Pistol：Requires one of: freeze<br>Cannon：Requires one of: freeze<br>Chainsaw Launcher：Requires one of: freeze<br>Charged Blaster：Requires one of: freeze<br>dash blade：Requires one of: freeze<br>flamethrower：Requires one of: freeze<br>laser：Requires one of: freeze<br>machine gun：Requires one of: freeze<br>orbit：Requires one of: freeze<br>Plasma Lance：Requires one of: freeze<br>Rocket Launcher：Requires one of: freeze<br>shotgun：Requires one of: freeze<br>Sniper：Requires one of: freeze<br>Spear Launcher：Requires one of: freeze</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>freeze</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, freeze, debuff, movement</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, freeze, debuff, movement</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Chain slow to 88% speed for 1.2s, Chain slow to 82% speed for 1.5s, Chain slow to 76% speed for 1.8s</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -813,23 +860,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中时叠加腐蚀，短时间降低目标护甲并提高其受到的伤害。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Corrosion lasts 2.8s; -1 armor and +4% damage taken per stack</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Corrosion lasts 3.5s; -1 armor and +6% damage taken per stack</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Corrosion lasts 4.2s; -2 armor and +8% damage taken per stack</div>
 </div>
 </div></section>
-<p><strong>可安装武器（5）：</strong><span class="tag ok">Cannon</span><span class="tag ok">Charged Blaster</span><span class="tag ok">laser</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span></p>
-<details><summary>不兼容武器与原因（10）</summary><p>Auto Pistol：Requires one of: energy<br>Chainsaw Launcher：Requires one of: energy<br>dash blade：Requires one of: energy<br>flamethrower：Requires one of: energy<br>Glacier Projector：Requires one of: energy<br>machine gun：Requires one of: energy<br>Rocket Launcher：Requires one of: energy<br>shotgun：Requires one of: energy<br>Sniper：Requires one of: energy<br>Spear Launcher：Requires one of: energy</p></details>
+<p><strong>可安装武器（3）：</strong><span class="tag ok">Charged Blaster</span><span class="tag ok">laser</span><span class="tag ok">Plasma Lance</span></p>
+<details><summary>不兼容武器与原因（12）</summary><p>Auto Pistol：Requires one of: energy<br>Cannon：Requires one of: energy<br>Chainsaw Launcher：Requires one of: energy<br>dash blade：Requires one of: energy<br>flamethrower：Requires one of: energy<br>Glacier Projector：Requires one of: energy<br>machine gun：Requires one of: energy<br>orbit：Requires one of: energy<br>Rocket Launcher：Requires one of: energy<br>shotgun：Requires one of: energy<br>Sniper：Requires one of: energy<br>Spear Launcher：Requires one of: energy</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>energy</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, debuff, duration, stacking, energy</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, debuff, duration, stacking, energy</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Corrosion lasts 2.8s; -1 armor and +4% damage taken per stack, Corrosion lasts 3.5s; -1 armor and +6% damage taken per stack, Corrosion lasts 4.2s; -2 armor and +8% damage taken per stack</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -852,23 +900,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中时追加冻结伤害，用于为目标建立霜冻层数。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Adds 3 freeze damage on hit</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Adds 4 freeze damage on hit</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Adds 5 freeze damage on hit</div>
 </div>
 </div></section>
 <p><strong>可安装武器（1）：</strong><span class="tag ok">Glacier Projector</span></p>
 <details><summary>不兼容武器与原因（14）</summary><p>Auto Pistol：Requires one of: freeze<br>Cannon：Requires one of: freeze<br>Chainsaw Launcher：Requires one of: freeze<br>Charged Blaster：Requires one of: freeze<br>dash blade：Requires one of: freeze<br>flamethrower：Requires one of: freeze<br>laser：Requires one of: freeze<br>machine gun：Requires one of: freeze<br>orbit：Requires one of: freeze<br>Plasma Lance：Requires one of: freeze<br>Rocket Launcher：Requires one of: freeze<br>shotgun：Requires one of: freeze<br>Sniper：Requires one of: freeze<br>Spear Launcher：Requires one of: freeze</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>freeze</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>freeze</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>freeze</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Adds 3 freeze damage on hit, Adds 4 freeze damage on hit, Adds 5 freeze damage on hit</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -884,22 +933,26 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>提高武器的基础输出伤害。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Weapon damage +50%</div>
 <div>伤害 +50%</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Weapon damage +67.5%</div>
 <div>伤害 +68%</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Weapon damage +85%</div>
 <div>伤害 +85%</div>
 </div>
 </div></section>
 <p><strong>可安装武器（15）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">dash blade</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Weapon damage +50%, Weapon damage +67.5%, Weapon damage +85%</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -913,23 +966,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中时积累余烬标记；达到标记阈值后触发小范围火焰爆发。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>4 marks trigger a 30% weapon-damage fire burst</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>3 marks trigger a 42% weapon-damage fire burst</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>3 marks trigger a 55% weapon-damage fire burst</div>
 </div>
 </div></section>
 <p><strong>可安装武器（2）：</strong><span class="tag ok">flamethrower</span><span class="tag ok">Rocket Launcher</span></p>
 <details><summary>不兼容武器与原因（13）</summary><p>Auto Pistol：Requires one of: fire<br>Cannon：Requires one of: fire<br>Chainsaw Launcher：Requires one of: fire<br>Charged Blaster：Requires one of: fire<br>dash blade：Requires one of: fire<br>Glacier Projector：Requires one of: fire<br>laser：Requires one of: fire<br>machine gun：Requires one of: fire<br>orbit：Requires one of: fire<br>Plasma Lance：Requires one of: fire<br>shotgun：Requires one of: fire<br>Sniper：Requires one of: fire<br>Spear Launcher：Requires one of: fire</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>fire</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, stacking, fire, area_of_effect</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, stacking, fire, area</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>4 marks trigger a 30% weapon-damage fire burst, 3 marks trigger a 42% weapon-damage fire burst, 3 marks trigger a 55% weapon-damage fire burst</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -949,22 +1003,23 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中时施加可叠加的持续伤害效果；持续次数与单次伤害可随聚变等级成长。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Applies 5 ticks of 1 damage</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Applies 7 ticks of 1 damage</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Applies 9 ticks of 2 damage</div>
 </div>
 </div></section>
 <p><strong>可安装武器（15）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">dash blade</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Applies 5 ticks of 1 damage, Applies 7 ticks of 1 damage, Applies 9 ticks of 2 damage</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -981,16 +1036,19 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>提高投射物的飞行速度。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Projectile travel speed +50%</div>
 <div>速度 +20%</div>
 <div>Dash Speed +20%</div>
 <div>Return Speed +20%</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Projectile travel speed +67.5%</div>
 <div>速度 +27%</div>
 <div>Dash Speed +27%</div>
 <div>Return Speed +27%</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Projectile travel speed +85%</div>
 <div>速度 +34%</div>
 <div>Dash Speed +34%</div>
 <div>Return Speed +34%</div>
@@ -998,11 +1056,12 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 </div></section>
 <p><strong>可安装武器（15）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">dash blade</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Projectile travel speed +50%, Projectile travel speed +67.5%, Projectile travel speed +85%</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1016,26 +1075,30 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>投射物飞行时沿路径留下冻结伤害区域；轨迹会按间隔采样并限制同时存在的区域数量。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Freeze trail lasts 1.6s and deals 18% weapon damage</div>
 <div>投射物会留下冻结范围伤害轨迹</div>
 <div>轨迹持续时间 1.6s</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Freeze trail lasts 2.0s and deals 24% weapon damage</div>
 <div>投射物会留下冻结范围伤害轨迹</div>
 <div>轨迹持续时间 2.0s</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Freeze trail lasts 2.4s and deals 30% weapon damage</div>
 <div>投射物会留下冻结范围伤害轨迹</div>
 <div>轨迹持续时间 2.4s</div>
 </div>
 </div></section>
-<p><strong>可安装武器（10）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（5）</summary><p>Charged Blaster：Requires one of: projectile<br>dash blade：Not compatible with melee weapons.<br>flamethrower：Requires one of: projectile<br>Glacier Projector：Requires one of: projectile<br>Sniper：Requires one of: projectile</p></details>
+<p><strong>可安装武器（10）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
+<details><summary>不兼容武器与原因（5）</summary><p>Charged Blaster：Requires delivery type: projectile<br>dash blade：Requires delivery type: projectile<br>flamethrower：Requires delivery type: projectile<br>Glacier Projector：Requires delivery type: projectile<br>laser：Requires delivery type: projectile</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>false</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_weapon_traits</code></td><td>projectile</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>freeze, projectile, area_of_effect, dot</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_delivery_types</code></td><td>projectile</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>projectile_spawn</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>freeze, projectile, area, dot</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Freeze trail lasts 1.6s and deals 18% weapon damage, Freeze trail lasts 2.0s and deals 24% weapon damage, Freeze trail lasts 2.4s and deals 30% weapon damage</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1063,23 +1126,27 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>提高热能武器的最大热容量，使其更晚进入过热。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Maximum heat +50%</div>
 <div>最大热容量 +50%</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Maximum heat +67.5%</div>
 <div>最大热容量 +68%</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Maximum heat +85%</div>
 <div>最大热容量 +85%</div>
 </div>
 </div></section>
 <p><strong>可安装武器（3）：</strong><span class="tag ok">flamethrower</span><span class="tag ok">machine gun</span><span class="tag ok">Plasma Lance</span></p>
 <details><summary>不兼容武器与原因（12）</summary><p>Auto Pistol：Requires one of: heat<br>Cannon：Requires one of: heat<br>Chainsaw Launcher：Requires one of: heat<br>Charged Blaster：Requires one of: heat<br>dash blade：Requires one of: heat<br>Glacier Projector：Requires one of: heat<br>laser：Requires one of: heat<br>orbit：Requires one of: heat<br>Rocket Launcher：Requires one of: heat<br>shotgun：Requires one of: heat<br>Sniper：Requires one of: heat<br>Spear Launcher：Requires one of: heat</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>heat</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Maximum heat +50%, Maximum heat +67.5%, Maximum heat +85%</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1093,23 +1160,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>热量越高，武器造成的伤害越高；满热时达到最大伤害加成。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Up to +140% damage at full heat</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Up to +189% damage at full heat</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Up to +238% damage at full heat</div>
 </div>
 </div></section>
 <p><strong>可安装武器（3）：</strong><span class="tag ok">flamethrower</span><span class="tag ok">machine gun</span><span class="tag ok">Plasma Lance</span></p>
 <details><summary>不兼容武器与原因（12）</summary><p>Auto Pistol：Requires one of: heat<br>Cannon：Requires one of: heat<br>Chainsaw Launcher：Requires one of: heat<br>Charged Blaster：Requires one of: heat<br>dash blade：Requires one of: heat<br>Glacier Projector：Requires one of: heat<br>laser：Requires one of: heat<br>orbit：Requires one of: heat<br>Rocket Launcher：Requires one of: heat<br>shotgun：Requires one of: heat<br>Sniper：Requires one of: heat<br>Spear Launcher：Requires one of: heat</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>heat</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Up to +140% damage at full heat, Up to +189% damage at full heat, Up to +238% damage at full heat</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1123,23 +1191,27 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>提高热能武器的冷却速率，并在高热量时获得更强冷却效果。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Up to +50% cooling rate at full heat</div>
 <div>热量冷却速率 +50%</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Up to +67.5% cooling rate at full heat</div>
 <div>热量冷却速率 +68%</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Up to +85% cooling rate at full heat</div>
 <div>热量冷却速率 +85%</div>
 </div>
 </div></section>
 <p><strong>可安装武器（3）：</strong><span class="tag ok">flamethrower</span><span class="tag ok">machine gun</span><span class="tag ok">Plasma Lance</span></p>
 <details><summary>不兼容武器与原因（12）</summary><p>Auto Pistol：Requires one of: heat<br>Cannon：Requires one of: heat<br>Chainsaw Launcher：Requires one of: heat<br>Charged Blaster：Requires one of: heat<br>dash blade：Requires one of: heat<br>Glacier Projector：Requires one of: heat<br>laser：Requires one of: heat<br>orbit：Requires one of: heat<br>Rocket Launcher：Requires one of: heat<br>shotgun：Requires one of: heat<br>Sniper：Requires one of: heat<br>Spear Launcher：Requires one of: heat</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>heat</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Up to +50% cooling rate at full heat, Up to +67.5% cooling rate at full heat, Up to +85% cooling rate at full heat</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1153,23 +1225,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中高霜冻层数目标时，有概率短暂定身目标，并受单目标触发间隔限制。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>At 3 frost stacks: 22% chance to root for 0.55s</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>At 3 frost stacks: 30% chance to root for 0.75s</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>At 2 frost stacks: 38% chance to root for 0.95s</div>
 </div>
 </div></section>
 <p><strong>可安装武器（1）：</strong><span class="tag ok">Glacier Projector</span></p>
 <details><summary>不兼容武器与原因（14）</summary><p>Auto Pistol：Requires one of: freeze<br>Cannon：Requires one of: freeze<br>Chainsaw Launcher：Requires one of: freeze<br>Charged Blaster：Requires one of: freeze<br>dash blade：Requires one of: freeze<br>flamethrower：Requires one of: freeze<br>laser：Requires one of: freeze<br>machine gun：Requires one of: freeze<br>orbit：Requires one of: freeze<br>Plasma Lance：Requires one of: freeze<br>Rocket Launcher：Requires one of: freeze<br>shotgun：Requires one of: freeze<br>Sniper：Requires one of: freeze<br>Spear Launcher：Requires one of: freeze</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>freeze</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, freeze, debuff, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, freeze, debuff, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>At 3 frost stacks: 22% chance to root for 0.55s, At 3 frost stacks: 30% chance to root for 0.75s, At 2 frost stacks: 38% chance to root for 0.95s</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1192,22 +1265,23 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>攻击命中时按武器伤害比例恢复玩家生命，且至少恢复最低治疗量。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Heal for 10% of weapon damage, minimum 1 HP</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Heal for 13.5% of weapon damage, minimum 1 HP</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Heal for 17% of weapon damage, minimum 2 HP</div>
 </div>
 </div></section>
 <p><strong>可安装武器（15）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">dash blade</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Heal for 10% of weapon damage, minimum 1 HP, Heal for 13.5% of weapon damage, minimum 1 HP, Heal for 17% of weapon damage, minimum 2 HP</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1223,23 +1297,23 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中时向附近敌人传导额外闪电伤害；传导数量可随聚变等级增加。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Chains to 2 targets within 140 range for 30% damage</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Chains to 3 targets within 175 range for 39% damage</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Chains to 3 targets within 210 range for 48% damage</div>
 </div>
 </div></section>
-<p><strong>可安装武器（14）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">dash blade</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（1）</summary><p>Sniper：Requires one of: range, melee, projectile, physical, energy, area_of_effect, fire, freeze</p></details>
+<p><strong>可安装武器（15）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">dash blade</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_weapon_traits</code></td><td>range, melee, projectile, physical, energy, area_of_effect, fire, freeze</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_traits</code></td><td>physical, energy, fire, freeze</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Chains to 2 targets within 140 range for 30% damage, Chains to 3 targets within 175 range for 39% damage, Chains to 3 targets within 210 range for 48% damage</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1258,23 +1332,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中后沿目标后方的短条形区域溅射熔火伤害。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Creates a 105-length splash for 25% weapon damage</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Creates a 132-length splash for 36% weapon damage</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Creates a 156-length splash for 46% weapon damage</div>
 </div>
 </div></section>
 <p><strong>可安装武器（2）：</strong><span class="tag ok">flamethrower</span><span class="tag ok">Rocket Launcher</span></p>
 <details><summary>不兼容武器与原因（13）</summary><p>Auto Pistol：Requires one of: fire<br>Cannon：Requires one of: fire<br>Chainsaw Launcher：Requires one of: fire<br>Charged Blaster：Requires one of: fire<br>dash blade：Requires one of: fire<br>Glacier Projector：Requires one of: fire<br>laser：Requires one of: fire<br>machine gun：Requires one of: fire<br>orbit：Requires one of: fire<br>Plasma Lance：Requires one of: fire<br>shotgun：Requires one of: fire<br>Sniper：Requires one of: fire<br>Spear Launcher：Requires one of: fire</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>fire</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, fire, area_of_effect, range</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, fire, area</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Creates a 105-length splash for 25% weapon damage, Creates a 132-length splash for 36% weapon damage, Creates a 156-length splash for 46% weapon damage</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1294,22 +1369,23 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>每次命中都会叠加短时移动速度与攻击速度加成，直到层数上限。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>+4% move speed and +3% attack speed per stack</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>+5.5% move speed and +4.5% attack speed per stack</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>+7% move speed and +6% attack speed per stack</div>
 </div>
 </div></section>
 <p><strong>可安装武器（15）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">dash blade</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, buff, stacking, movement, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, buff, stacking, movement, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>+4% move speed and +3% attack speed per stack, +5.5% move speed and +4.5% attack speed per stack, +7% move speed and +6% attack speed per stack</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1330,29 +1406,32 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>热能武器过热后仍可继续开火，但过热期间伤害会降低。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Can fire while overheated at 50% damage</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Can fire while overheated at 65% damage</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Can fire while overheated at 80% damage</div>
 </div>
 </div></section>
 <p><strong>可安装武器（3）：</strong><span class="tag ok">flamethrower</span><span class="tag ok">machine gun</span><span class="tag ok">Plasma Lance</span></p>
 <details><summary>不兼容武器与原因（12）</summary><p>Auto Pistol：Requires one of: heat<br>Cannon：Requires one of: heat<br>Chainsaw Launcher：Requires one of: heat<br>Charged Blaster：Requires one of: heat<br>dash blade：Requires one of: heat<br>Glacier Projector：Requires one of: heat<br>laser：Requires one of: heat<br>orbit：Requires one of: heat<br>Rocket Launcher：Requires one of: heat<br>shotgun：Requires one of: heat<br>Sniper：Requires one of: heat<br>Spear Launcher：Requires one of: heat</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>heat</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Can fire while overheated at 50% damage, Can fire while overheated at 65% damage, Can fire while overheated at 80% damage</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
 <tr><td><code>stat_multipliers</code></td><td>无</td><td>通用/兼容参数</td></tr>
 <tr><td><code>stat_additives</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>overheated_damage_mult</code></td><td>0.5</td><td>模组专用参数</td></tr>
+<tr><td><code>overheated_damage_mult_lv1</code></td><td>0.5</td><td>模组专用参数</td></tr>
+<tr><td><code>overheated_damage_mult_lv2</code></td><td>0.65</td><td>模组专用参数</td></tr>
+<tr><td><code>overheated_damage_mult_lv3</code></td><td>0.8</td><td>模组专用参数</td></tr>
 </tbody></table></article>
 <article class="card module-card"><h3>Permafrost Field <span class="tag">wmod_permafrost_field_freeze</span></h3>
 <p class="path">res://Player/Weapons/Modules/wmod_permafrost_field_freeze.tscn<br>res://Player/Weapons/Modules/wmod_permafrost_field_freeze.gd</p>
@@ -1360,23 +1439,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>击杀带有霜冻的敌人时生成持续造成冻结伤害的领域，同时存在数量受限。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Frosted kills create fields dealing 2 freeze damage per tick</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Frosted kills create fields dealing 3 freeze damage per tick</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Frosted kills create fields dealing 4 freeze damage per tick</div>
 </div>
 </div></section>
 <p><strong>可安装武器（1）：</strong><span class="tag ok">Glacier Projector</span></p>
 <details><summary>不兼容武器与原因（14）</summary><p>Auto Pistol：Requires one of: freeze<br>Cannon：Requires one of: freeze<br>Chainsaw Launcher：Requires one of: freeze<br>Charged Blaster：Requires one of: freeze<br>dash blade：Requires one of: freeze<br>flamethrower：Requires one of: freeze<br>laser：Requires one of: freeze<br>machine gun：Requires one of: freeze<br>orbit：Requires one of: freeze<br>Plasma Lance：Requires one of: freeze<br>Rocket Launcher：Requires one of: freeze<br>shotgun：Requires one of: freeze<br>Sniper：Requires one of: freeze<br>Spear Launcher：Requires one of: freeze</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>freeze</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Frosted kills create fields dealing 2 freeze damage per tick, Frosted kills create fields dealing 3 freeze damage per tick, Frosted kills create fields dealing 4 freeze damage per tick</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1396,23 +1476,27 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>提高投射物每次射击可穿透的目标数量。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Projectile pierce +2</div>
 <div>投射物穿透数 +2.0</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Projectile pierce +3</div>
 <div>投射物穿透数 +3.0</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Projectile pierce +4</div>
 <div>投射物穿透数 +4.0</div>
 </div>
 </div></section>
-<p><strong>可安装武器（10）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（5）</summary><p>Charged Blaster：Requires one of: projectile<br>dash blade：Not compatible with melee weapons.<br>flamethrower：Requires one of: projectile<br>Glacier Projector：Requires one of: projectile<br>Sniper：Requires one of: projectile</p></details>
+<p><strong>可安装武器（10）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
+<details><summary>不兼容武器与原因（5）</summary><p>Charged Blaster：Requires delivery type: projectile<br>dash blade：Requires delivery type: projectile<br>flamethrower：Requires delivery type: projectile<br>Glacier Projector：Requires delivery type: projectile<br>laser：Requires delivery type: projectile</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>false</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_weapon_traits</code></td><td>projectile</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_delivery_types</code></td><td>projectile</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Projectile pierce +2, Projectile pierce +3, Projectile pierce +4</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1426,22 +1510,23 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中时施加瘟疫种子持续伤害；带种子的敌人死亡后会向附近敌人传播持续伤害。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Plague seed deals 1 damage for 3 ticks</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Plague seed deals 2 damage for 4 ticks</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Plague seed deals 3 damage for 5 ticks</div>
 </div>
 </div></section>
 <p><strong>可安装武器（15）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">dash blade</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, dot, debuff, stacking, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, dot, debuff, stacking, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Plague seed deals 1 damage for 3 ticks, Plague seed deals 2 damage for 4 ticks, Plague seed deals 3 damage for 5 ticks</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1461,26 +1546,30 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>开始装填时获得临时护盾，护盾量随本次已消耗弹药比例提高。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Reload grants shield equal to up to 10% max HP for 3s</div>
 <div>装填时获得临时护盾</div>
 <div>护盾量随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Reload grants shield equal to up to 14% max HP for 4s</div>
 <div>装填时获得临时护盾</div>
 <div>护盾量随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Reload grants shield equal to up to 18% max HP for 5s</div>
 <div>装填时获得临时护盾</div>
 <div>护盾量随本次已消耗弹药比例提高</div>
 </div>
 </div></section>
 <p><strong>可安装武器（14）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Not compatible with melee weapons.</p></details>
+<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Requires delivery type: projectile, beam, area</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>false</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, buff, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_delivery_types</code></td><td>projectile, beam, area</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>reload_start</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, buff, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Reload grants shield equal to up to 10% max HP for 3s, Reload grants shield equal to up to 14% max HP for 4s, Reload grants shield equal to up to 18% max HP for 5s</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1499,26 +1588,30 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>开始装填时在玩家周围造成一次范围伤害，伤害随本次已消耗弹药比例提高。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Reload burst deals up to 65% weapon damage</div>
 <div>装填时对附近敌人造成范围伤害</div>
 <div>伤害随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Reload burst deals up to 85% weapon damage</div>
 <div>装填时对附近敌人造成范围伤害</div>
 <div>伤害随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Reload burst deals up to 110% weapon damage</div>
 <div>装填时对附近敌人造成范围伤害</div>
 <div>伤害随本次已消耗弹药比例提高</div>
 </div>
 </div></section>
 <p><strong>可安装武器（14）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Not compatible with melee weapons.</p></details>
+<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Requires delivery type: projectile, beam, area</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>false</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, area_of_effect, physical</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_delivery_types</code></td><td>projectile, beam, area</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>reload_start</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, area, physical</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Reload burst deals up to 65% weapon damage, Reload burst deals up to 85% weapon damage, Reload burst deals up to 110% weapon damage</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1536,23 +1629,27 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>当另一把武器正在装填时，缩短当前武器的装填时间。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Reload duration -18% while another weapon reloads</div>
 <div>另一把武器正在装填时，当前武器装填更快</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Reload duration -24% while another weapon reloads</div>
 <div>另一把武器正在装填时，当前武器装填更快</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Reload duration -30% while another weapon reloads</div>
 <div>另一把武器正在装填时，当前武器装填更快</div>
 </div>
 </div></section>
 <p><strong>可安装武器（14）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Not compatible with melee weapons.</p></details>
+<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Requires delivery type: projectile, beam, area</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>false</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, buff</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_delivery_types</code></td><td>projectile, beam, area</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>reload_duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, buff</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Reload duration -18% while another weapon reloads, Reload duration -24% while another weapon reloads, Reload duration -30% while another weapon reloads</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1568,26 +1665,30 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>开始装填时暂时提高其他武器的伤害，加成随本次已消耗弹药比例提高。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Reload grants other weapons up to +12% damage for 3s</div>
 <div>装填时暂时提高其他武器的伤害</div>
 <div>加成随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Reload grants other weapons up to +18% damage for 4s</div>
 <div>装填时暂时提高其他武器的伤害</div>
 <div>加成随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Reload grants other weapons up to +24% damage for 5s</div>
 <div>装填时暂时提高其他武器的伤害</div>
 <div>加成随本次已消耗弹药比例提高</div>
 </div>
 </div></section>
 <p><strong>可安装武器（14）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Not compatible with melee weapons.</p></details>
+<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Requires delivery type: projectile, beam, area</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>false</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, buff, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_delivery_types</code></td><td>projectile, beam, area</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>reload_start</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, buff, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Reload grants other weapons up to +12% damage for 3s, Reload grants other weapons up to +18% damage for 4s, Reload grants other weapons up to +24% damage for 5s</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1606,26 +1707,30 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>开始装填时击退玩家周围的敌人，击退强度随本次已消耗弹药比例提高。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Reload shockwave applies up to 150 knockback</div>
 <div>装填时击退附近敌人</div>
 <div>击退强度随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Reload shockwave applies up to 210 knockback</div>
 <div>装填时击退附近敌人</div>
 <div>击退强度随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Reload shockwave applies up to 280 knockback</div>
 <div>装填时击退附近敌人</div>
 <div>击退强度随本次已消耗弹药比例提高</div>
 </div>
 </div></section>
 <p><strong>可安装武器（14）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Not compatible with melee weapons.</p></details>
+<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Requires delivery type: projectile, beam, area</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>false</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, area_of_effect, debuff</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_delivery_types</code></td><td>projectile, beam, area</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>reload_start</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, area, debuff</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Reload shockwave applies up to 150 knockback, Reload shockwave applies up to 210 knockback, Reload shockwave applies up to 280 knockback</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1642,26 +1747,30 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>开始装填时暂时提高玩家移动速度，加成随本次已消耗弹药比例提高。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Reload grants up to +12% move speed for 3s</div>
 <div>装填时暂时提高玩家移动速度</div>
 <div>加成随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Reload grants up to +18% move speed for 4s</div>
 <div>装填时暂时提高玩家移动速度</div>
 <div>加成随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Reload grants up to +24% move speed for 5s</div>
 <div>装填时暂时提高玩家移动速度</div>
 <div>加成随本次已消耗弹药比例提高</div>
 </div>
 </div></section>
 <p><strong>可安装武器（14）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Not compatible with melee weapons.</p></details>
+<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Requires delivery type: projectile, beam, area</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>false</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, buff, movement, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_delivery_types</code></td><td>projectile, beam, area</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>reload_start</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, buff, movement, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Reload grants up to +12% move speed for 3s, Reload grants up to +18% move speed for 4s, Reload grants up to +24% move speed for 5s</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1680,26 +1789,30 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>开始装填时使当前武器暂时获得伤害加成，加成随本次已消耗弹药比例提高。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Reload grants up to +20% damage for 3s</div>
 <div>装填时使当前武器暂时获得伤害加成</div>
 <div>加成随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Reload grants up to +30% damage for 4s</div>
 <div>装填时使当前武器暂时获得伤害加成</div>
 <div>加成随本次已消耗弹药比例提高</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Reload grants up to +40% damage for 5s</div>
 <div>装填时使当前武器暂时获得伤害加成</div>
 <div>加成随本次已消耗弹药比例提高</div>
 </div>
 </div></section>
 <p><strong>可安装武器（14）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Not compatible with melee weapons.</p></details>
+<details><summary>不兼容武器与原因（1）</summary><p>dash blade：Requires delivery type: projectile, beam, area</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>false</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, buff, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_delivery_types</code></td><td>projectile, beam, area</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>reload_start</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, buff, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Reload grants up to +20% damage for 3s, Reload grants up to +30% damage for 4s, Reload grants up to +40% damage for 5s</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1718,23 +1831,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中带有霜冻的目标时，按当前霜冻层数追加碎裂物理伤害，并受单目标触发间隔限制。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Shatter adds 6% weapon damage per frost stack</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Shatter adds 8% weapon damage per frost stack</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Shatter adds 10% weapon damage per frost stack</div>
 </div>
 </div></section>
 <p><strong>可安装武器（1）：</strong><span class="tag ok">Glacier Projector</span></p>
 <details><summary>不兼容武器与原因（14）</summary><p>Auto Pistol：Requires one of: freeze<br>Cannon：Requires one of: freeze<br>Chainsaw Launcher：Requires one of: freeze<br>Charged Blaster：Requires one of: freeze<br>dash blade：Requires one of: freeze<br>flamethrower：Requires one of: freeze<br>laser：Requires one of: freeze<br>machine gun：Requires one of: freeze<br>orbit：Requires one of: freeze<br>Plasma Lance：Requires one of: freeze<br>Rocket Launcher：Requires one of: freeze<br>shotgun：Requires one of: freeze<br>Sniper：Requires one of: freeze<br>Spear Launcher：Requires one of: freeze</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>freeze</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, freeze, physical</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, freeze, physical</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Shatter adds 6% weapon damage per frost stack, Shatter adds 8% weapon damage per frost stack, Shatter adds 10% weapon damage per frost stack</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1752,23 +1866,27 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>提高投射物的视觉尺寸与碰撞体尺寸。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
+<div>Projectile size +50%</div>
 <div>尺寸 +20%</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
+<div>Projectile size +67.5%</div>
 <div>尺寸 +27%</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
+<div>Projectile size +85%</div>
 <div>尺寸 +34%</div>
 </div>
 </div></section>
-<p><strong>可安装武器（10）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Spear Launcher</span></p>
-<details><summary>不兼容武器与原因（5）</summary><p>Charged Blaster：Requires one of: projectile<br>dash blade：Requires one of: projectile<br>flamethrower：Requires one of: projectile<br>Glacier Projector：Requires one of: projectile<br>Sniper：Requires one of: projectile</p></details>
+<p><strong>可安装武器（10）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
+<details><summary>不兼容武器与原因（5）</summary><p>Charged Blaster：Requires delivery type: projectile<br>dash blade：Requires delivery type: projectile<br>flamethrower：Requires delivery type: projectile<br>Glacier Projector：Requires delivery type: projectile<br>laser：Requires delivery type: projectile</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_weapon_traits</code></td><td>projectile</td><td>通用/兼容参数</td></tr>
-<tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_delivery_types</code></td><td>projectile</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Projectile size +50%, Projectile size +67.5%, Projectile size +85%</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1782,22 +1900,23 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中时有概率短暂眩晕目标；概率与眩晕时间可随聚变等级提高。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>25% chance to stun for 0.5s</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>33.75% chance to stun for 0.7s</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>42.5% chance to stun for 0.9s</div>
 </div>
 </div></section>
 <p><strong>可安装武器（15）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">dash blade</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>25% chance to stun for 0.5s, 33.75% chance to stun for 0.7s, 42.5% chance to stun for 0.9s</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1814,23 +1933,24 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>命中带有霜冻的目标时延长霜冻持续时间，并强化霜冻层数产生的减速。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Extend frost by 0.6s and strengthen slow by 10%</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Extend frost by 0.9s and strengthen slow by 15%</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Extend frost by 1.2s and strengthen slow by 20%</div>
 </div>
 </div></section>
 <p><strong>可安装武器（1）：</strong><span class="tag ok">Glacier Projector</span></p>
 <details><summary>不兼容武器与原因（14）</summary><p>Auto Pistol：Requires one of: freeze<br>Cannon：Requires one of: freeze<br>Chainsaw Launcher：Requires one of: freeze<br>Charged Blaster：Requires one of: freeze<br>dash blade：Requires one of: freeze<br>flamethrower：Requires one of: freeze<br>laser：Requires one of: freeze<br>machine gun：Requires one of: freeze<br>orbit：Requires one of: freeze<br>Plasma Lance：Requires one of: freeze<br>Rocket Launcher：Requires one of: freeze<br>shotgun：Requires one of: freeze<br>Sniper：Requires one of: freeze<br>Spear Launcher：Requires one of: freeze</p></details>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>freeze</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>freeze</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>freeze</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Extend frost by 0.6s and strengthen slow by 10%, Extend frost by 0.9s and strengthen slow by 15%, Extend frost by 1.2s and strengthen slow by 20%</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>
@@ -1851,22 +1971,23 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 <p>将击杀时超出目标剩余生命的过量伤害转化为临时护盾。</p>
 <div class="effect-levels">
 <div class="effect-level"><strong>等级 1</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Convert 40% of overkill damage into temporary shield</div>
 </div>
 <div class="effect-level"><strong>等级 2</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Convert 55% of overkill damage into temporary shield</div>
 </div>
 <div class="effect-level"><strong>等级 3</strong>
-<span class="muted">未提供等级效果文本</span>
+<div>Convert 70% of overkill damage into temporary shield</div>
 </div>
 </div></section>
 <p><strong>可安装武器（15）：</strong><span class="tag ok">Auto Pistol</span><span class="tag ok">Cannon</span><span class="tag ok">Chainsaw Launcher</span><span class="tag ok">Charged Blaster</span><span class="tag ok">dash blade</span><span class="tag ok">flamethrower</span><span class="tag ok">Glacier Projector</span><span class="tag ok">laser</span><span class="tag ok">machine gun</span><span class="tag ok">orbit</span><span class="tag ok">Plasma Lance</span><span class="tag ok">Rocket Launcher</span><span class="tag ok">shotgun</span><span class="tag ok">Sniper</span><span class="tag ok">Spear Launcher</span></p>
 <table><thead><tr><th>参数</th><th>当前值</th><th>类型</th></tr></thead><tbody>
-<tr><td><code>supports_melee</code></td><td>true</td><td>通用/兼容参数</td></tr>
-<tr><td><code>supports_ranged</code></td><td>true</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_weapon_traits</code></td><td>无</td><td>通用/兼容参数</td></tr>
 <tr><td><code>required_delivery_types</code></td><td>无</td><td>通用/兼容参数</td></tr>
-<tr><td><code>module_traits</code></td><td>trigger, buff, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_weapon_capabilities</code></td><td>无</td><td>通用/兼容参数</td></tr>
+<tr><td><code>required_hooks</code></td><td>hit</td><td>通用/兼容参数</td></tr>
+<tr><td><code>module_tags</code></td><td>trigger, buff, duration</td><td>通用/兼容参数</td></tr>
+<tr><td><code>level_effects</code></td><td>Convert 40% of overkill damage into temporary shield, Convert 55% of overkill damage into temporary shield, Convert 70% of overkill damage into temporary shield</td><td>通用/兼容参数</td></tr>
 <tr><td><code>rarity</code></td><td>common</td><td>通用/兼容参数</td></tr>
 <tr><td><code>drop_weight</code></td><td>100</td><td>通用/兼容参数</td></tr>
 <tr><td><code>cost</code></td><td>0</td><td>通用/兼容参数</td></tr>

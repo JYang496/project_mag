@@ -5,6 +5,7 @@ var weapon: Weapon
 
 func setup(target_weapon: Weapon) -> void:
 	weapon = target_weapon
+	_apply_runtime_classification()
 
 func on_weapon_ready() -> void:
 	pass
@@ -19,7 +20,45 @@ func on_target_hit(_target: Node) -> void:
 	pass
 
 func on_removed() -> void:
-	pass
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	var source_id := get_runtime_classification_source_id()
+	weapon.clear_runtime_weapon_traits(source_id)
+	weapon.clear_runtime_delivery_types(source_id)
+	weapon.clear_runtime_weapon_capabilities(source_id)
+
+func get_runtime_classification_source_id() -> StringName:
+	return StringName("branch:%s" % str(get_meta("branch_id", name)))
+
+func get_added_weapon_traits() -> Array[StringName]:
+	return []
+
+func get_suppressed_weapon_traits() -> Array[StringName]:
+	return []
+
+func get_added_delivery_types() -> Array[StringName]:
+	return []
+
+func get_suppressed_delivery_types() -> Array[StringName]:
+	return []
+
+func get_added_weapon_capabilities() -> Array[StringName]:
+	return []
+
+func _apply_runtime_classification() -> void:
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	var source_id := get_runtime_classification_source_id()
+	for trait_name in get_added_weapon_traits():
+		weapon.add_runtime_weapon_trait(source_id, trait_name)
+	for trait_name in get_suppressed_weapon_traits():
+		weapon.suppress_runtime_weapon_trait(source_id, trait_name)
+	for delivery_type in get_added_delivery_types():
+		weapon.add_runtime_delivery_type(source_id, delivery_type)
+	for delivery_type in get_suppressed_delivery_types():
+		weapon.suppress_runtime_delivery_type(source_id, delivery_type)
+	for capability in get_added_weapon_capabilities():
+		weapon.add_runtime_weapon_capability(source_id, capability)
 
 func get_shot_directions(_base_direction: Vector2, _shot_count: int = -1) -> Array[Vector2]:
 	return [_base_direction]

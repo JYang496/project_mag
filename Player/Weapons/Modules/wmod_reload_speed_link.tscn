@@ -6,9 +6,10 @@
 
 [node name="ReloadSpeedLink" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-supports_melee = false
-supports_ranged = true
-module_traits = PackedStringArray("trigger", "buff")
+level_effects = PackedStringArray("Reload duration -18% while another weapon reloads", "Reload duration -24% while another weapon reloads", "Reload duration -30% while another weapon reloads")
+required_delivery_types = 13
+required_hooks = 64
+module_tags = PackedStringArray("trigger", "buff")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

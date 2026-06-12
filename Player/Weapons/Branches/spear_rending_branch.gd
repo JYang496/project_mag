@@ -72,6 +72,8 @@ func _apply_rending_damage(target: Node, damage_multiplier: float) -> void:
 		Attack.TYPE_PHYSICAL,
 		{"amount": 0, "angle": Vector2.ZERO},
 		weapon,
-		DamageManager.resolve_source_player(weapon)
+		DamageManager.resolve_source_player(weapon),
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.PROJECTILE
 	)
 	DamageManager.apply_to_target(target, damage_data)

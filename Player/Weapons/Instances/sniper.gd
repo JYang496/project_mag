@@ -146,7 +146,9 @@ func _apply_distance_bonus_damage(target: Node) -> void:
 		self,
 		bonus_damage,
 		Attack.TYPE_PHYSICAL,
-		{"amount": 0, "angle": Vector2.ZERO}
+		{"amount": 0, "angle": Vector2.ZERO},
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.PROJECTILE
 	)
 	DamageManager.apply_to_target(target, damage_data)
 

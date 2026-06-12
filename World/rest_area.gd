@@ -30,6 +30,7 @@ signal rest_menu_cancelled
 @export var debug_click_logs: bool = false
 @export var zone_merchant_hint_text: String = "Click to open shop"
 @export var zone_smith_hint_text: String = "Click to open upgrade"
+@export var zone_module_hint_text: String = "Click to manage modules"
 @export var zone_battle_hold_hint_text: String = "Hold left mouse on center to start battle"
 @export var zone_hint_forward_offset: Vector2 = Vector2(0.0, -44.0)
 @export var zone_hint_z_index: int = 80
@@ -56,6 +57,7 @@ var _zone4_hold_boost_active: bool = false
 @onready var _texture_root: Node2D = get_node_or_null("Texture")
 @onready var _merchant_hint_label: Label = get_node_or_null("MerchantHintLabel")
 @onready var _smith_hint_label: Label = get_node_or_null("SmithHintLabel")
+@onready var _module_hint_label: Label = get_node_or_null("ModuleHintLabel")
 @onready var _battle_hint_label: Label = get_node_or_null("BattleHintLabel")
 @onready var _reward_manager: BonusManager = get_tree().current_scene.get_node_or_null("RewardManager") as BonusManager
 
@@ -63,21 +65,23 @@ const GRID_DIM := 3
 const ZONE_COUNT := GRID_DIM * GRID_DIM
 const ZONE_ID_MERCHANT := 0
 const ZONE_ID_SMITH := 1
+const ZONE_ID_MODULE := 2
 const CENTER_ZONE_ID := 4
 const ZONE4_HOLD_BOOST_SOURCE_ID: StringName = &"rest_zone4_hold_boost"
 const BLOCKING_UI_ROOTS: Array[StringName] = [
 	&"ShoppingRootv2",
 	&"UpgradeRootv2",
 	&"ModuleRoot",
-	&"InventoryRoot",
 	&"PauseMenuRoot",
 	&"MerchantRoot",
 	&"SmithRoot",
+	&"ModuleMenuRoot",
 	&"BossRoot",
 	&"RouteSelectionPanel",
 	&"RewardSelectionPanel",
 	&"BranchSelectPanel",
-	&"ModuleEquipSelectionPanel"
+	&"ModuleEquipSelectionPanel",
+	&"WeaponReplacementPanel"
 ]
 
 func _ready() -> void:
@@ -132,12 +136,14 @@ func _refresh_scene_hint_labels() -> void:
 		_merchant_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.merchant", zone_merchant_hint_text)
 	if _smith_hint_label:
 		_smith_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.smith", zone_smith_hint_text)
+	if _module_hint_label:
+		_module_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.module", zone_module_hint_text)
 	if _battle_hint_label:
 		_battle_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.battle_hold", zone_battle_hold_hint_text)
 	_layout_scene_hint_labels()
 
 func _setup_scene_hint_labels() -> void:
-	for label in [_merchant_hint_label, _smith_hint_label, _battle_hint_label]:
+	for label in [_merchant_hint_label, _smith_hint_label, _module_hint_label, _battle_hint_label]:
 		if label == null:
 			continue
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -148,6 +154,7 @@ func _setup_scene_hint_labels() -> void:
 func _layout_scene_hint_labels() -> void:
 	_place_zone_hint_label(_merchant_hint_label, ZONE_ID_MERCHANT)
 	_place_zone_hint_label(_smith_hint_label, ZONE_ID_SMITH)
+	_place_zone_hint_label(_module_hint_label, ZONE_ID_MODULE)
 	_place_zone_hint_label(_battle_hint_label, CENTER_ZONE_ID)
 
 func _place_zone_hint_label(label: Label, zone_id: int) -> void:
@@ -298,6 +305,25 @@ func _on_start_battle_button_activated() -> void:
 	if _route_selection_pending:
 		return
 	_clear_zone4_hold_move_boost()
+	var ui = GlobalVariables.ui
+	if ui and is_instance_valid(ui) and ui.has_method("request_temporary_module_settlement"):
+		ui.call(
+			"request_temporary_module_settlement",
+			Callable(self, "_continue_start_battle"),
+			Callable(self, "_on_battle_start_cancelled")
+		)
+		return
+	_continue_start_battle()
+
+func _on_battle_start_cancelled() -> void:
+	_clear_zone4_hold_move_boost()
+	_reset_zone4_hold()
+	if _start_battle_button:
+		_start_battle_button.reset_state()
+
+func _continue_start_battle() -> void:
+	if PhaseManager.current_state() != PhaseManager.PREPARE or _route_selection_pending:
+		return
 	_route_selection_pending = true
 	_on_route_confirmed("normal")
 
@@ -511,6 +537,9 @@ func _refresh_interaction_state() -> void:
 func _is_interaction_enabled() -> bool:
 	return _active and visible and PhaseManager.current_state() == PhaseManager.PREPARE
 
+func is_module_management_available() -> bool:
+	return _is_interaction_enabled()
+
 func _update_hover_from_mouse() -> void:
 	if _is_mouse_over_ui():
 		_set_hover_zone(-1)
@@ -575,6 +604,13 @@ func _on_rest_menu_requested(zone_id: int, _zone_center_global: Vector2) -> void
 			return
 		if ui.has_method("smith_menu_in"):
 			ui.call("smith_menu_in")
+		return
+	if zone_id == ZONE_ID_MODULE:
+		if ui.has_method("open_rest_area_module_menu"):
+			ui.call("open_rest_area_module_menu")
+			return
+		if ui.has_method("module_menu_in"):
+			ui.call("module_menu_in")
 		return
 
 func _on_rest_menu_cancelled() -> void:
@@ -682,7 +718,7 @@ func _get_bounds_local_rect() -> Rect2:
 	return Rect2(shape_node.position - size * 0.5, size)
 
 func _zone_opens_primary_menu(zone_id: int) -> bool:
-	return zone_id == ZONE_ID_MERCHANT or zone_id == ZONE_ID_SMITH
+	return zone_id == ZONE_ID_MERCHANT or zone_id == ZONE_ID_SMITH or zone_id == ZONE_ID_MODULE
 
 func _update_zone4_hold(delta: float) -> void:
 	if not _is_zone4_hold_available():

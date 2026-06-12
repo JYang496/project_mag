@@ -63,9 +63,9 @@ func _run() -> void:
 		return
 
 	PlayerData.player_weapon_list.erase(weapon)
-	var inventory_prediction := player.predict_auto_fuse_weapon_obtain(weapon_id)
-	if str(inventory_prediction.get("result", "")) != "not_applicable":
-		push_error("AutoFuseTest: inventory-only duplicate was treated as auto-fuse subject.")
+	var unequipped_prediction := player.predict_auto_fuse_weapon_obtain(weapon_id)
+	if str(unequipped_prediction.get("result", "")) != "not_applicable":
+		push_error("AutoFuseTest: an unequipped weapon was treated as an auto-fuse subject.")
 		get_tree().quit(11)
 		return
 

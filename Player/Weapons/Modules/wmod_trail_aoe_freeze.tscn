@@ -6,10 +6,10 @@
 
 [node name="FrostTrail" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-supports_melee = false
-supports_ranged = true
-module_traits = PackedStringArray("freeze", "projectile", "area_of_effect", "dot")
-required_weapon_traits = 1024
+level_effects = PackedStringArray("Freeze trail lasts 1.6s and deals 18% weapon damage", "Freeze trail lasts 2.0s and deals 24% weapon damage", "Freeze trail lasts 2.4s and deals 30% weapon damage")
+required_delivery_types = 1
+required_hooks = 1
+module_tags = PackedStringArray("freeze", "projectile", "area", "dot")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

@@ -6,8 +6,9 @@
 
 [node name="BulletSizeUp" unique_id=2078825559 instance=ExtResource("1_auk3w")]
 script = ExtResource("2_j6spg")
+level_effects = PackedStringArray("Projectile size +50%", "Projectile size +67.5%", "Projectile size +85%")
+required_delivery_types = 1
 mult_by = 1.2
-required_weapon_traits = 1024
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

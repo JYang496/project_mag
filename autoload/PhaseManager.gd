@@ -43,6 +43,7 @@ func enter_battle() -> void:
 func enter_gameover() -> void:
 	phase = GAMEOVER
 	phase_changed.emit(phase)
+	InventoryData.reset_runtime_state()
 
 func start_battle_timer(duration_sec: int) -> void:
 	time_out = maxi(duration_sec, 1)

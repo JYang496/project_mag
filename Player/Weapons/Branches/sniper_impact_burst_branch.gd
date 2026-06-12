@@ -1,6 +1,9 @@
 extends WeaponBranchBehavior
 class_name SniperImpactBurstBranch
 
+func get_added_delivery_types() -> Array[StringName]:
+	return [DamageDeliveryType.AREA]
+
 @export var cooldown_multiplier: float = 1.12
 @export var projectile_damage_multiplier: float = 1.0
 @export var burst_radius: float = 58.0
@@ -39,6 +42,7 @@ func on_target_hit(target: Node) -> void:
 	area_effect.target_group = AreaEffect.TargetGroup.ENEMIES
 	# Use branch node as source to avoid recursive weapon on_hit->branch->AoE loops.
 	area_effect.source_node = self
+	area_effect.source_category = DamageData.SOURCE_PLAYER_WEAPON
 	area_effect.global_position = target_node.global_position
 	var spawn_parent := weapon.get_tree().current_scene
 	if spawn_parent == null:

@@ -6,6 +6,8 @@
 
 [node name="LifeSteal" instance=ExtResource("1_6gx3a")]
 script = ExtResource("2_5n0mv")
+level_effects = PackedStringArray("Heal for 10% of weapon damage, minimum 1 HP", "Heal for 13.5% of weapon damage, minimum 1 HP", "Heal for 17% of weapon damage, minimum 2 HP")
+required_hooks = 2
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

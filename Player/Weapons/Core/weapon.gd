@@ -17,22 +17,11 @@ var MAX_MODULE_NUMBER = 3
 @onready var _fuse_sprites_initialized = _load_fuse_sprites()
 const PASSIVE_SCOPE_BODY: StringName = &"body"
 const PASSIVE_SCOPE_GLOBAL: StringName = &"global"
-const DELIVERY_PROJECTILE: StringName = &"projectile"
-const DELIVERY_MELEE_CONTACT: StringName = &"melee_contact"
-const DELIVERY_BEAM: StringName = &"beam"
-const DELIVERY_AREA: StringName = &"area"
-const DELIVERY_SUMMON: StringName = &"summon"
-const DELIVERY_TRAP: StringName = &"trap"
-const DELIVERY_SUPPORT: StringName = &"support"
-const DELIVERY_FLAG_ORDER: Array[StringName] = [
-	DELIVERY_PROJECTILE,
-	DELIVERY_MELEE_CONTACT,
-	DELIVERY_BEAM,
-	DELIVERY_AREA,
-	DELIVERY_SUMMON,
-	DELIVERY_TRAP,
-	DELIVERY_SUPPORT,
-]
+const DELIVERY_PROJECTILE: StringName = DamageDeliveryType.PROJECTILE
+const DELIVERY_MELEE_CONTACT: StringName = DamageDeliveryType.MELEE_CONTACT
+const DELIVERY_BEAM: StringName = DamageDeliveryType.BEAM
+const DELIVERY_AREA: StringName = DamageDeliveryType.AREA
+const DELIVERY_FLAG_ORDER: Array[StringName] = DamageDeliveryType.ALL
 
 # Common variables for weapons
 var level : int
@@ -51,7 +40,12 @@ var heat_cool_rate: float = 20.0
 @export var weapon_active_hit_window_required_hits: int = 0
 @export var weapon_active_hit_window_timeout_sec: float = 6.0
 @export var weapon_active_hit_window_bonus_multiplier: float = 1.35
-@export_flags("projectile", "melee_contact", "beam", "area", "summon", "trap", "support") var delivery_type_flags: int = 0
+@export_flags("projectile", "melee_contact", "beam", "area") var delivery_type_flags: int = 0
+@export_flags("summon", "trap", "support", "movement") var weapon_capability_flags: int = 0
+var runtime_delivery_additions: Dictionary = {}
+var runtime_delivery_suppressions: Dictionary = {}
+var runtime_capability_additions: Dictionary = {}
+var runtime_capability_suppressions: Dictionary = {}
 @export var magazine_capacity: int = 50
 @export var reload_duration_sec: float = 6.0
 var _offhand_skill_ready: bool = true
@@ -186,19 +180,10 @@ func supports_melee_contact() -> bool:
 	return has_explicit_delivery_type(DELIVERY_MELEE_CONTACT)
 
 static func normalize_delivery_type(value: Variant) -> StringName:
-	if value == null:
-		return StringName()
-	var key := str(value).strip_edges().to_lower()
-	if key == "":
-		return StringName()
-	return StringName(key)
+	return DamageDeliveryType.normalize(value)
 
 static func delivery_flags_to_types(mask: int) -> Array[StringName]:
-	var output: Array[StringName] = []
-	for i in range(DELIVERY_FLAG_ORDER.size()):
-		if (mask & (1 << i)) != 0:
-			output.append(DELIVERY_FLAG_ORDER[i])
-	return output
+	return DamageDeliveryType.flags_to_types(mask)
 
 func get_explicit_delivery_types() -> Array[StringName]:
 	return delivery_flags_to_types(delivery_type_flags)
@@ -211,10 +196,12 @@ func has_explicit_delivery_type(delivery_type: Variant) -> bool:
 
 func get_weapon_delivery_types() -> Array[StringName]:
 	var output := get_explicit_delivery_types()
-	if supports_projectiles():
-		_append_delivery_type(output, DELIVERY_PROJECTILE)
-	if supports_melee_contact():
-		_append_delivery_type(output, DELIVERY_MELEE_CONTACT)
+	for source_types in runtime_delivery_suppressions.values():
+		for delivery_type in source_types:
+			output.erase(delivery_type)
+	for source_types in runtime_delivery_additions.values():
+		for delivery_type in source_types:
+			_append_delivery_type(output, delivery_type)
 	return output
 
 func has_delivery_type(delivery_type: Variant) -> bool:
@@ -223,33 +210,75 @@ func has_delivery_type(delivery_type: Variant) -> bool:
 		return false
 	return get_weapon_delivery_types().has(normalized)
 
-func get_delivery_traits() -> Array[StringName]:
-	var traits: Array[StringName] = []
-	for delivery_type in get_weapon_delivery_types():
-		match delivery_type:
-			DELIVERY_PROJECTILE:
-				_append_trait(traits, CombatTrait.PROJECTILE)
-			DELIVERY_MELEE_CONTACT:
-				_append_trait(traits, CombatTrait.MELEE)
-			DELIVERY_BEAM:
-				_append_trait(traits, CombatTrait.BEAM)
-			DELIVERY_AREA:
-				_append_trait(traits, CombatTrait.AREA_OF_EFFECT)
-			DELIVERY_SUMMON:
-				_append_trait(traits, CombatTrait.SUMMON)
-			DELIVERY_TRAP:
-				_append_trait(traits, CombatTrait.TRAP)
-			DELIVERY_SUPPORT:
-				_append_trait(traits, CombatTrait.SUPPORT)
-	return traits
-
 func _append_delivery_type(types: Array[StringName], delivery_type: StringName) -> void:
 	if not types.has(delivery_type):
 		types.append(delivery_type)
 
-func _append_trait(traits: Array[StringName], trait_name: StringName) -> void:
-	if not traits.has(trait_name):
-		traits.append(trait_name)
+func add_runtime_delivery_type(source_id: StringName, delivery_type: Variant) -> void:
+	var normalized := DamageDeliveryType.normalize(delivery_type)
+	if normalized == StringName():
+		return
+	var values: Array = runtime_delivery_additions.get(source_id, [])
+	if not values.has(normalized):
+		values.append(normalized)
+	runtime_delivery_additions[source_id] = values
+	calculate_status()
+
+func suppress_runtime_delivery_type(source_id: StringName, delivery_type: Variant) -> void:
+	var normalized := DamageDeliveryType.normalize(delivery_type)
+	if normalized == StringName():
+		return
+	var values: Array = runtime_delivery_suppressions.get(source_id, [])
+	if not values.has(normalized):
+		values.append(normalized)
+	runtime_delivery_suppressions[source_id] = values
+	calculate_status()
+
+func clear_runtime_delivery_types(source_id: StringName) -> void:
+	runtime_delivery_additions.erase(source_id)
+	runtime_delivery_suppressions.erase(source_id)
+	calculate_status()
+
+func get_explicit_weapon_capabilities() -> Array[StringName]:
+	return WeaponCapability.flags_to_capabilities(weapon_capability_flags)
+
+func get_weapon_capabilities() -> Array[StringName]:
+	var output := get_explicit_weapon_capabilities()
+	for source_values in runtime_capability_suppressions.values():
+		for capability in source_values:
+			output.erase(capability)
+	for source_values in runtime_capability_additions.values():
+		for capability in source_values:
+			if not output.has(capability):
+				output.append(capability)
+	return output
+
+func has_weapon_capability(capability: Variant) -> bool:
+	var normalized := WeaponCapability.normalize(capability)
+	return normalized != StringName() and get_weapon_capabilities().has(normalized)
+
+func has_any_weapon_capabilities(required: Array[StringName]) -> bool:
+	if required.is_empty():
+		return true
+	for capability in required:
+		if has_weapon_capability(capability):
+			return true
+	return false
+
+func add_runtime_weapon_capability(source_id: StringName, capability: Variant) -> void:
+	var normalized := WeaponCapability.normalize(capability)
+	if normalized == StringName():
+		return
+	var values: Array = runtime_capability_additions.get(source_id, [])
+	if not values.has(normalized):
+		values.append(normalized)
+	runtime_capability_additions[source_id] = values
+	calculate_status()
+
+func clear_runtime_weapon_capabilities(source_id: StringName) -> void:
+	runtime_capability_additions.erase(source_id)
+	runtime_capability_suppressions.erase(source_id)
+	calculate_status()
 
 func find_closest_enemy(origin: Vector2, radius: float = INF) -> Node2D:
 	var tree := get_tree()
@@ -319,7 +348,7 @@ func get_normalized_weapon_traits() -> Array[StringName]:
 	return stat_pipeline.get_normalized_weapon_traits()
 
 func has_heat_trait() -> bool:
-	return has_weapon_trait(CombatTrait.HEAT)
+	return has_weapon_trait(WeaponTrait.HEAT)
 #endregion
 
 #region Heat Gates
@@ -401,14 +430,14 @@ func lock_heat_value(value: float, duration_sec: float) -> void:
 func get_explicit_weapon_traits() -> Array[StringName]:
 	return stat_pipeline.get_explicit_weapon_traits()
 
-func add_runtime_weapon_trait(trait_name: Variant) -> void:
-	stat_pipeline.add_runtime_weapon_trait(trait_name)
+func add_runtime_weapon_trait(source_id: StringName, trait_name: Variant) -> void:
+	stat_pipeline.add_runtime_weapon_trait(source_id, trait_name)
 
-func remove_runtime_weapon_trait(trait_name: Variant) -> void:
-	stat_pipeline.remove_runtime_weapon_trait(trait_name)
+func suppress_runtime_weapon_trait(source_id: StringName, trait_name: Variant) -> void:
+	stat_pipeline.suppress_runtime_weapon_trait(source_id, trait_name)
 
-func clear_runtime_weapon_traits() -> void:
-	stat_pipeline.clear_runtime_weapon_traits()
+func clear_runtime_weapon_traits(source_id: StringName) -> void:
+	stat_pipeline.clear_runtime_weapon_traits(source_id)
 
 func _get_modules_container() -> WeaponModules:
 	return modules
@@ -418,9 +447,6 @@ func has_weapon_trait(trait_name: Variant) -> bool:
 
 func has_any_weapon_traits(required_traits: Array[StringName]) -> bool:
 	return stat_pipeline.has_any_weapon_traits(required_traits)
-
-func has_any_explicit_weapon_traits(required_traits: Array[StringName]) -> bool:
-	return stat_pipeline.has_any_explicit_weapon_traits(required_traits)
 
 func validate_module_compatibility() -> void:
 	stat_pipeline.validate_module_compatibility()
@@ -474,11 +500,6 @@ func _apply_dynamic_module_stats() -> void:
 func _apply_stat_snapshot(snapshot: Dictionary) -> void:
 	stat_pipeline.apply_stat_snapshot(snapshot)
 
-func get_weapon_capabilities() -> Dictionary:
-	return {
-		"projectiles": supports_projectiles(),
-		"melee_contact": supports_melee_contact(),
-	}
 #endregion
 
 #region Heat Integration

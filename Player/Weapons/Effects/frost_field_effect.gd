@@ -90,7 +90,9 @@ func _apply_tick_damage() -> void:
 			damage_type,
 			{"amount": 0, "angle": Vector2.ZERO},
 			source_node,
-			source_player
+			source_player,
+			DamageData.SOURCE_PLAYER_WEAPON,
+			DamageDeliveryType.AREA
 		)
 		DamageManager.apply_to_target(candidate, damage_data)
 

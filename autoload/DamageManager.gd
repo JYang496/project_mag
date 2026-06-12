@@ -12,7 +12,9 @@ func build_damage_data(
 	source_node: Node,
 	base_damage: int,
 	damage_type: StringName = Attack.TYPE_PHYSICAL,
-	knock_back: Dictionary = {}
+	knock_back: Dictionary = {},
+	source_category: StringName = StringName(),
+	delivery_type: StringName = StringName()
 ) -> DamageData:
 	var resolved_source_player: Node = resolve_source_player(source_node)
 	var final_damage: int = max(0, int(base_damage))
@@ -24,7 +26,9 @@ func build_damage_data(
 		damage_type,
 		knock_back,
 		source_node,
-		resolved_source_player
+		resolved_source_player,
+		source_category,
+		delivery_type
 	)
 	return data
 
@@ -33,14 +37,18 @@ func build_final_damage_data(
 	source_node: Node,
 	final_damage: int,
 	damage_type: StringName = Attack.TYPE_PHYSICAL,
-	knock_back: Dictionary = {}
+	knock_back: Dictionary = {},
+	source_category: StringName = StringName(),
+	delivery_type: StringName = StringName()
 ) -> DamageData:
 	var data := DamageData.new().setup(
 		max(0, int(final_damage)),
 		damage_type,
 		knock_back,
 		source_node,
-		resolve_source_player(source_node)
+		resolve_source_player(source_node),
+		source_category,
+		delivery_type
 	)
 	data.damage_is_final = true
 	data.suppress_reactive_effects = true
@@ -74,6 +82,9 @@ func apply_to_target_result(target: Node, data: DamageData) -> DamageResult:
 	if target == null or not is_instance_valid(target):
 		return result
 	if data == null:
+		return result
+	if not data.has_valid_player_weapon_context():
+		push_error("Player weapon damage is missing a valid delivery_type.")
 		return result
 	if _is_player_attack_blocked_by_phase(data):
 		return result

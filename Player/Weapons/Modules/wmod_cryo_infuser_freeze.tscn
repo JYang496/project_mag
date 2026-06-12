@@ -6,8 +6,10 @@
 
 [node name="CryoInfuser" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-module_traits = PackedStringArray("freeze")
-required_weapon_traits = 65536
+level_effects = PackedStringArray("Adds 3 freeze damage on hit", "Adds 4 freeze damage on hit", "Adds 5 freeze damage on hit")
+required_weapon_traits = 8
+required_hooks = 2
+module_tags = PackedStringArray("freeze")
 
 [node name="Sprite" parent="." index="0"]
 visible = true

@@ -6,9 +6,10 @@
 
 [node name="ReloadMoveBoost" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-supports_melee = false
-supports_ranged = true
-module_traits = PackedStringArray("trigger", "buff", "movement", "duration")
+level_effects = PackedStringArray("Reload grants up to +12% move speed for 3s", "Reload grants up to +18% move speed for 4s", "Reload grants up to +24% move speed for 5s")
+required_delivery_types = 13
+required_hooks = 32
+module_tags = PackedStringArray("trigger", "buff", "movement", "duration")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

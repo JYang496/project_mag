@@ -6,8 +6,10 @@
 
 [node name="BleedEdgePhysical" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-module_traits = PackedStringArray("trigger", "debuff", "dot", "movement", "physical")
-required_weapon_traits = 4096
+level_effects = PackedStringArray("Bleed lasts 2.4s and deals 2 damage per movement trigger", "Bleed lasts 3.0s and deals 3 damage per movement trigger", "Bleed lasts 3.8s and deals 4 damage per movement trigger")
+required_weapon_traits = 1
+required_hooks = 2
+module_tags = PackedStringArray("trigger", "debuff", "dot", "movement", "physical")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

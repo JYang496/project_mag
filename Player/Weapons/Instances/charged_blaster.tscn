@@ -10,7 +10,7 @@ script = ExtResource("1_48de6")
 delivery_type_flags = 4
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 25136
+weapon_traits = 34
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("2_qghy1")

@@ -56,7 +56,9 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 			Attack.TYPE_FIRE,
 			{"amount": 0, "angle": Vector2.ZERO},
 			source_weapon,
-			owner_player
+			owner_player,
+			DamageData.SOURCE_PLAYER_WEAPON,
+			DamageDeliveryType.AREA
 		)
 		DamageManager.apply_to_target(enemy, damage_data)
 

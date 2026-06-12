@@ -24,10 +24,10 @@ func _exit_tree() -> void:
 	_unregister_hook()
 
 func get_effect_descriptions() -> PackedStringArray:
-	return PackedStringArray([
+	return with_level_effect_descriptions(PackedStringArray([
 		"Reload burst damages nearby enemies",
 		"Damage scales with spent ammo",
-	])
+	]))
 
 func _register_hook() -> void:
 	if _registered:
@@ -71,7 +71,9 @@ func _on_weapon_passive_triggered(event_name: StringName, detail: Dictionary) ->
 			weapon,
 			burst_damage,
 			Attack.normalize_damage_type(damage_type),
-			{"amount": 0.0, "angle": Vector2.ZERO}
+			{"amount": 0.0, "angle": Vector2.ZERO},
+			DamageData.SOURCE_PLAYER_WEAPON,
+			DamageDeliveryType.AREA
 		)
 		DamageManager.apply_to_target(enemy, damage_data)
 

@@ -6,6 +6,9 @@
 
 [node name="PermafrostField" unique_id=989868125 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+level_effects = PackedStringArray("Frosted kills create fields dealing 2 freeze damage per tick", "Frosted kills create fields dealing 3 freeze damage per tick", "Frosted kills create fields dealing 4 freeze damage per tick")
+required_weapon_traits = 8
+required_hooks = 2
 duration_sec = 2.5
 radius = 140.0
 tick_sec = 0.5
@@ -13,7 +16,6 @@ tick_damage_lv1 = 2
 tick_damage_lv2 = 3
 tick_damage_lv3 = 4
 max_fields = 3
-required_weapon_traits = 65536
 
 [node name="Sprite" parent="." index="0" unique_id=717281029]
 texture = ExtResource("3_icon")

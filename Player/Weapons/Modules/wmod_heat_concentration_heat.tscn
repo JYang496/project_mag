@@ -6,8 +6,9 @@
 
 [node name="HeatConcentration" unique_id=1472554501 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+level_effects = PackedStringArray("Up to +140% damage at full heat", "Up to +189% damage at full heat", "Up to +238% damage at full heat")
+required_weapon_traits = 16
 heat_damage_bonus_at_full_heat = 1.5
-required_weapon_traits = 131072
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

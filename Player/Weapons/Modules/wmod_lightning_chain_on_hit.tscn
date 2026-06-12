@@ -6,13 +6,15 @@
 
 [node name="LightningChain" unique_id=2072282120 instance=ExtResource("1_cif0l")]
 script = ExtResource("2_ov043")
+level_effects = PackedStringArray("Chains to 2 targets within 140 range for 30% damage", "Chains to 3 targets within 175 range for 39% damage", "Chains to 3 targets within 210 range for 48% damage")
+required_weapon_traits = 15
+required_hooks = 2
 chain_count = 2
 chain_range = 140.0
 chain_damage_ratio = 0.3
 chain_count_per_fuse = 0
 line_width = 2.0
 line_duration = 0.12
-required_weapon_traits = 128096
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

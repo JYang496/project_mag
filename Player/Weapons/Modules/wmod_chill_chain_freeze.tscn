@@ -6,8 +6,10 @@
 
 [node name="ChillChainFreeze" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-module_traits = PackedStringArray("trigger", "freeze", "debuff", "movement")
-required_weapon_traits = 65536
+level_effects = PackedStringArray("Chain slow to 88% speed for 1.2s", "Chain slow to 82% speed for 1.5s", "Chain slow to 76% speed for 1.8s")
+required_weapon_traits = 8
+required_hooks = 2
+module_tags = PackedStringArray("trigger", "freeze", "debuff", "movement")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

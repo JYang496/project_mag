@@ -6,8 +6,10 @@
 
 [node name="ShatterStrikeFreeze" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-module_traits = PackedStringArray("trigger", "freeze", "physical")
-required_weapon_traits = 65536
+level_effects = PackedStringArray("Shatter adds 6% weapon damage per frost stack", "Shatter adds 8% weapon damage per frost stack", "Shatter adds 10% weapon damage per frost stack")
+required_weapon_traits = 8
+required_hooks = 2
+module_tags = PackedStringArray("trigger", "freeze", "physical")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

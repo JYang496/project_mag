@@ -1,6 +1,9 @@
 extends WeaponBranchBehavior
 class_name PistolArcBranch
 
+func get_added_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.ENERGY]
+
 @export var chain_count: int = 2
 @export var chain_radius: float = 240.0
 @export var chain_damage_ratio_1: float = 0.65
@@ -57,7 +60,9 @@ func on_target_hit(target: Node) -> void:
 			weapon,
 			chain_damage,
 			Attack.TYPE_ENERGY,
-			{"amount": 0, "angle": Vector2.ZERO}
+			{"amount": 0, "angle": Vector2.ZERO},
+			DamageData.SOURCE_PLAYER_WEAPON,
+			DamageDeliveryType.BEAM
 		)
 		if DamageManager.apply_to_target(candidates[i], chain_data):
 			var owner_player := chain_data.source_player as Player

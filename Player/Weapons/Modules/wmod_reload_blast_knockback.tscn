@@ -6,9 +6,10 @@
 
 [node name="ReloadBlastKnockback" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-supports_melee = false
-supports_ranged = true
-module_traits = PackedStringArray("trigger", "area_of_effect", "debuff")
+level_effects = PackedStringArray("Reload shockwave applies up to 150 knockback", "Reload shockwave applies up to 210 knockback", "Reload shockwave applies up to 280 knockback")
+required_delivery_types = 13
+required_hooks = 32
+module_tags = PackedStringArray("trigger", "area", "debuff")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

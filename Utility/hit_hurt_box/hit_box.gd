@@ -51,7 +51,9 @@ func apply_attack(area) -> void:
 		hitbox_owner,
 		max(1, outgoing_damage),
 		damage_type,
-		knock_back_data
+		knock_back_data,
+		DamageData.SOURCE_PLAYER_WEAPON if _resolve_source_weapon() != null else StringName(),
+		_resolve_delivery_type()
 	)
 	# Guard duplicate enter/overlap events in the same short window.
 	damage_data.dedupe_token = StringName("hitbox_once_%d_%d" % [get_instance_id(), target.get_instance_id()])
@@ -74,6 +76,22 @@ func apply_attack(area) -> void:
 		hitbox_owner.call("consume_projectile_durability", 1, target)
 	elif hitbox_owner.has_method("enemy_hit"):
 		hitbox_owner.enemy_hit(1)
+
+func _resolve_source_weapon() -> Weapon:
+	if hitbox_owner is Weapon:
+		return hitbox_owner as Weapon
+	if hitbox_owner != null and hitbox_owner.get("source_weapon") is Weapon:
+		return hitbox_owner.get("source_weapon") as Weapon
+	return null
+
+func _resolve_delivery_type() -> StringName:
+	if hitbox_owner is Projectile:
+		return DamageDeliveryType.PROJECTILE
+	if hitbox_owner is Weapon:
+		return DamageDeliveryType.MELEE_CONTACT
+	if hitbox_owner != null and hitbox_owner.get("beam_profile") != null:
+		return DamageDeliveryType.BEAM
+	return StringName()
 
 func _apply_spear_pierce_mark_bonus(target: Node, damage_value: int) -> int:
 	if target == null or not is_instance_valid(target):

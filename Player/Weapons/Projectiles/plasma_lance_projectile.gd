@@ -147,7 +147,9 @@ func _apply_rift_damage(target: Node, amount: int) -> void:
 		self,
 		maxi(1, amount),
 		Attack.normalize_damage_type(damage_type),
-		knock_back
+		knock_back,
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.AREA
 	)
 	damage_data.dedupe_token = StringName("plasma_lance_rift_%d_%d_%d" % [
 		get_instance_id(),

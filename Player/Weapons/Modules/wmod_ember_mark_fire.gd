@@ -60,7 +60,9 @@ func _trigger_burst(source_weapon: Weapon, center_target: Node2D) -> void:
 			Attack.TYPE_FIRE,
 			{"amount": 0, "angle": Vector2.ZERO},
 			source_weapon,
-			owner_player
+			owner_player,
+			DamageData.SOURCE_PLAYER_WEAPON,
+			DamageDeliveryType.AREA
 		)
 		DamageManager.apply_to_target(enemy, damage_data)
 

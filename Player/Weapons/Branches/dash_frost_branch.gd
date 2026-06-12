@@ -1,6 +1,9 @@
 extends WeaponBranchBehavior
 class_name DashFrostBranch
 
+func get_added_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.FREEZE]
+
 const FROST_FIELD_EFFECT_SCENE: PackedScene = preload("res://Player/Weapons/Effects/frost_field_effect.tscn")
 
 @export var damage_multiplier: float = 1.22
@@ -43,7 +46,9 @@ func on_target_hit(target: Node) -> void:
 		Attack.TYPE_FREEZE,
 		{"amount": 0, "angle": Vector2.ZERO},
 		weapon,
-		DamageManager.resolve_source_player(weapon)
+		DamageManager.resolve_source_player(weapon),
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.MELEE_CONTACT
 	)
 	DamageManager.apply_to_target(target, finish_damage)
 	_spawn_frost_field(target as Node2D, runtime_damage)

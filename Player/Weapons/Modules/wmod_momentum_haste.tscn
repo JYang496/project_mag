@@ -6,7 +6,9 @@
 
 [node name="MomentumHaste" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-module_traits = PackedStringArray("trigger", "buff", "stacking", "movement", "duration")
+level_effects = PackedStringArray("+4% move speed and +3% attack speed per stack", "+5.5% move speed and +4.5% attack speed per stack", "+7% move speed and +6% attack speed per stack")
+required_hooks = 2
+module_tags = PackedStringArray("trigger", "buff", "stacking", "movement", "duration")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

@@ -6,6 +6,8 @@
 
 [node name="StunOnHit" instance=ExtResource("1_vw7lc")]
 script = ExtResource("2_wun0r")
+level_effects = PackedStringArray("25% chance to stun for 0.5s", "33.75% chance to stun for 0.7s", "42.5% chance to stun for 0.9s")
+required_hooks = 2
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

@@ -75,7 +75,9 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 					"angle": Vector2.ZERO
 				},
 				source_weapon,
-				owner_player
+				owner_player,
+				DamageData.SOURCE_PLAYER_WEAPON,
+				DamageDeliveryType.BEAM
 			)
 			_draw_chain_line(target2d.global_position, (chained_target as Node2D).global_position)
 			DamageManager.apply_to_target(chained_target, damage_data)

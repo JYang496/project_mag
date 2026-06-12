@@ -9,18 +9,14 @@ class_name CannonThermalBranch
 @export var cannon_heat_spend_amount: float = 40.0
 @export var cannon_heat_spend_damage_bonus: float = 0.35
 
-const RUNTIME_TRAIT_HEAT: StringName = CombatTrait.HEAT
-const RUNTIME_TRAIT_FIRE: StringName = CombatTrait.FIRE
-
 func on_weapon_ready() -> void:
-	_apply_runtime_traits(true)
 	_apply_heat_params()
 
 func on_level_applied(_level: int) -> void:
 	_apply_heat_params()
 
-func on_removed() -> void:
-	_apply_runtime_traits(false)
+func get_added_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.HEAT, WeaponTrait.FIRE]
 
 func get_projectile_damage_multiplier() -> float:
 	if weapon == null or not is_instance_valid(weapon):
@@ -66,18 +62,6 @@ func consume_heat_spend_multiplier() -> float:
 			"heat_prepared_active": heat_prepared_active,
 		}, Weapon.PASSIVE_SCOPE_GLOBAL)
 	return maxf(multiplier, 0.05)
-
-func _apply_runtime_traits(enable: bool) -> void:
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	if enable:
-		if weapon.has_method("add_runtime_weapon_trait"):
-			weapon.call("add_runtime_weapon_trait", RUNTIME_TRAIT_HEAT)
-			weapon.call("add_runtime_weapon_trait", RUNTIME_TRAIT_FIRE)
-	else:
-		if weapon.has_method("remove_runtime_weapon_trait"):
-			weapon.call("remove_runtime_weapon_trait", RUNTIME_TRAIT_HEAT)
-			weapon.call("remove_runtime_weapon_trait", RUNTIME_TRAIT_FIRE)
 
 func _apply_heat_params() -> void:
 	if weapon == null or not is_instance_valid(weapon):

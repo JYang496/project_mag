@@ -6,9 +6,10 @@
 
 [node name="ReloadBlastDamage" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-supports_melee = false
-supports_ranged = true
-module_traits = PackedStringArray("trigger", "area_of_effect", "physical")
+level_effects = PackedStringArray("Reload burst deals up to 65% weapon damage", "Reload burst deals up to 85% weapon damage", "Reload burst deals up to 110% weapon damage")
+required_delivery_types = 13
+required_hooks = 32
+module_tags = PackedStringArray("trigger", "area", "physical")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

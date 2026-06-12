@@ -33,17 +33,17 @@ const BATTLE_HARDWARE_CURSOR_COLOR := Color(0.9, 0.98, 1.0, 1.0)
 @onready var upgrade_rootv_2: Control = $GUI/UpgradeRootv2
 @onready var smith_root: Control = $GUI/SmithRoot
 @onready var merchant_root: Control = $GUI/MerchantRoot
+@onready var module_menu_root: Control = $GUI/ModuleMenuRoot
 @onready var boss_root : Control = $GUI/BossRoot
-@onready var inventory_root: Control = $GUI/InventoryRoot
 @onready var pause_menu_root : Control = $GUI/PauseMenuRoot
 @onready var module_root: Control = $GUI/ModuleRoot
 @onready var shopping_panel: Panel = $GUI/ShoppingRootv2/Panel
 @onready var upgrade_panel: Panel = $GUI/UpgradeRootv2/Panel
 @onready var module_panel: Panel = $GUI/ModuleRoot/Panel
-@onready var inventory_panel: Panel = $GUI/InventoryRoot/Panel
 @onready var pause_menu_panel: Panel = $GUI/PauseMenuRoot/PauseMenuPanel
 @onready var merchant_primary_panel: Panel = $GUI/MerchantRoot/Panel
 @onready var smith_primary_panel: Panel = $GUI/SmithRoot/Panel
+@onready var module_primary_panel: Panel = $GUI/ModuleMenuRoot/Panel
 var game_over_root: Control
 var game_over_total_damage_label: Label
 var game_over_completed_levels_label: Label
@@ -84,16 +84,13 @@ var weapon_passive_list: VBoxContainer
 signal reset_cost
 
 # Upgrade
-@onready var inventory_upg: GridContainer = $GUI/UpgradeRootv2/Panel/Inventory
 @onready var equipped_upg: GridContainer = $GUI/UpgradeRootv2/Panel/Equipped
 @onready var upgrade_preview: MarginContainer = $GUI/UpgradeRootv2/Panel/UpgradePreview
 
 
-# Inventory
-@onready var inventory: GridContainer = $GUI/InventoryRoot/Panel/Inventory
-@onready var equipped_inv: GridContainer = $GUI/InventoryRoot/Panel/Equipped
 @onready var equipped_m: GridContainer = $GUI/ModuleRoot/Panel/EquippedM
-@onready var modules: GridContainer = $GUI/ModuleRoot/Panel/Modules
+@onready var modules: GridContainer = $GUI/ModuleRoot/Panel/TemporaryModulesScroll/Modules
+@onready var module_slot_scene: PackedScene = preload("res://UI/scenes/module_slot.tscn")
 
 # Pause menu
 @onready var resume_button = $GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton
@@ -106,15 +103,16 @@ signal reset_cost
 @onready var upgrade_card = preload("res://UI/scenes/margin_upgrade_card.tscn")
 @onready var empty_weapon_pic = preload("res://Textures/test/empty_wp.png")
 @onready var equipped_weapons = null
-@onready var drag_item_icon: TextureRect = $GUI/DragItemRoot/DragItemIcon
 @onready var branch_select_panel_scene = preload("res://UI/scenes/branch_select_panel.tscn")
 @onready var module_equip_selection_panel_scene = preload("res://UI/scenes/module_equip_selection_panel.tscn")
 @onready var route_selection_panel_scene = preload("res://UI/scenes/route_selection_panel.tscn")
 @onready var reward_selection_panel_scene = preload("res://UI/scenes/reward_selection_panel.tscn")
+@onready var weapon_replacement_panel_scene = preload("res://UI/scenes/weapon_replacement_panel.tscn")
 var branch_select_panel: BranchSelectPanel
 var module_equip_selection_panel: ModuleEquipSelectionPanel
 var route_selection_panel: RouteSelectionPanel
 var reward_selection_panel: RewardSelectionPanel
+var weapon_replacement_panel: WeaponReplacementPanel
 var _branch_selection_queue: Array[Dictionary] = []
 var _rest_area_merchant_active := false
 var _rest_area_primary_menu_id: StringName = &""
@@ -122,6 +120,14 @@ var game_over_title_label: Label
 var game_over_new_game_button: Button
 var pause_language_label: Label
 var pause_language_option: OptionButton
+var temporary_module_confirm_toggle: CheckButton
+var module_action_dialog: ConfirmationDialog
+var temporary_module_settlement_dialog: ConfirmationDialog
+var temporary_module_settlement_checkbox: CheckBox
+var _pending_module_action := Callable()
+var _pending_battle_start := Callable()
+var _pending_battle_start_cancel := Callable()
+const MODULE_SETTINGS_PATH := "user://module_management_settings.cfg"
 var controls_hint_panel: Panel
 var controls_hint_title_label: Label
 var controls_hint_body_label: Label
@@ -153,9 +159,11 @@ func _ready():
 	_init_module_equip_selection_panel()
 	_init_route_selection_panel()
 	_init_reward_selection_panel()
+	_init_weapon_replacement_panel()
 	_create_game_over_layout()
 	_create_controls_hint_panel()
 	_ensure_pause_language_controls()
+	_init_module_action_dialogs()
 	_refresh_localized_static_text()
 	_create_quest_hint()
 	_ensure_rest_area_hover_hint()
@@ -173,6 +181,7 @@ func _ready():
 		weapon_selector.refresh_slots()
 	refresh_border()
 	call_deferred("_refresh_initial_prepare_shop")
+	call_deferred("_restore_pending_equipment_transactions")
 
 func _refresh_initial_prepare_shop() -> void:
 	await get_tree().process_frame
@@ -180,6 +189,34 @@ func _refresh_initial_prepare_shop() -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
 	reset_shopping_refresh_cost()
+
+func _restore_pending_equipment_transactions() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if InventoryData.pending_transactions.is_empty():
+		return
+	var transaction := InventoryData.pending_transactions[0] as Dictionary
+	match str(transaction.get("type", "")):
+		"weapon_replacement":
+			var weapon := DataHandler.instantiate_weapon_from_save_payload(
+				transaction.get("weapon", {}) as Dictionary
+			)
+			if weapon:
+				request_weapon_replacement(
+					weapon,
+					bool(transaction.get("cancel_to_gold", true))
+				)
+			else:
+				InventoryData.finish_pending_transaction(str(transaction.get("id", "")))
+		"module_assignment":
+			var scene_path := str(transaction.get("scene_path", ""))
+			var module_instance := InventoryData.find_owned_module_by_scene_path(scene_path)
+			if module_instance:
+				request_module_equip_selection(module_instance, Callable(), true)
+			else:
+				InventoryData.finish_pending_transaction(str(transaction.get("id", "")))
+		_:
+			InventoryData.finish_pending_transaction(str(transaction.get("id", "")))
 
 func _init_item_message_timer() -> void:
 	if item_message_timer and is_instance_valid(item_message_timer):
@@ -224,6 +261,191 @@ func _init_reward_selection_panel() -> void:
 		return
 	$GUI.add_child(reward_selection_panel)
 	reward_selection_panel.visible = false
+
+func _init_weapon_replacement_panel() -> void:
+	weapon_replacement_panel = weapon_replacement_panel_scene.instantiate() as WeaponReplacementPanel
+	if weapon_replacement_panel == null:
+		push_warning("Failed to create WeaponReplacementPanel.")
+		return
+	$GUI.add_child(weapon_replacement_panel)
+	weapon_replacement_panel.visible = false
+
+func request_weapon_replacement(
+	weapon: Weapon,
+	cancel_to_gold: bool = true,
+	on_complete: Callable = Callable()
+) -> bool:
+	if weapon_replacement_panel == null or not is_instance_valid(weapon_replacement_panel):
+		return false
+	return weapon_replacement_panel.open_for_weapon(weapon, cancel_to_gold, on_complete)
+
+func _init_module_action_dialogs() -> void:
+	module_action_dialog = ConfirmationDialog.new()
+	module_action_dialog.name = "ModuleActionDialog"
+	$GUI.add_child(module_action_dialog)
+	module_action_dialog.confirmed.connect(_on_module_action_confirmed)
+	temporary_module_settlement_dialog = ConfirmationDialog.new()
+	temporary_module_settlement_dialog.name = "TemporaryModuleSettlementDialog"
+	temporary_module_settlement_dialog.dialog_text = ""
+	$GUI.add_child(temporary_module_settlement_dialog)
+	var content := VBoxContainer.new()
+	var message := Label.new()
+	message.name = "Message"
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(message)
+	temporary_module_settlement_checkbox = CheckBox.new()
+	temporary_module_settlement_checkbox.text = LocalizationManager.tr_key(
+		"ui.module.settlement.dont_show",
+		"Do not show this confirmation again"
+	)
+	content.add_child(temporary_module_settlement_checkbox)
+	temporary_module_settlement_dialog.add_child(content)
+	temporary_module_settlement_dialog.confirmed.connect(_on_temporary_module_settlement_confirmed)
+	temporary_module_settlement_dialog.canceled.connect(_on_temporary_module_settlement_cancelled)
+
+func request_module_unequip_confirmation(module_instance: Module, weapon: Weapon) -> bool:
+	if module_instance == null or weapon == null:
+		return false
+	module_action_dialog.title = LocalizationManager.tr_key("ui.module.unequip.title", "Unequip Module")
+	module_action_dialog.dialog_text = LocalizationManager.tr_format(
+		"ui.module.unequip.confirm",
+		{
+			"module": LocalizationManager.get_module_name(module_instance),
+			"weapon": LocalizationManager.get_weapon_name_from_node(weapon),
+		},
+		"Move %s from %s to the temporary area? Unsold modules are sold when battle starts." % [
+			LocalizationManager.get_module_name(module_instance),
+			LocalizationManager.get_weapon_name_from_node(weapon),
+		]
+	)
+	_pending_module_action = Callable(self, "_confirm_module_unequip").bind(module_instance, weapon)
+	module_action_dialog.popup_centered()
+	return true
+
+func _confirm_module_unequip(module_instance: Module, weapon: Weapon) -> void:
+	var result := InventoryData.unequip_module_from_weapon(module_instance, weapon)
+	if not result.get("ok", false):
+		show_item_message(LocalizationManager.localize_module_reason(str(result.get("reason", ""))), 1.8)
+
+func request_temporary_module_sell_confirmation(module_instance: Module) -> bool:
+	if module_instance == null or not InventoryData.temporary_modules.has(module_instance):
+		return false
+	var gold := GlobalVariables.economy_data.get_duplicate_module_gold(
+		int(module_instance.cost),
+		int(module_instance.module_level)
+	) if GlobalVariables.economy_data else 0
+	module_action_dialog.title = LocalizationManager.tr_key("ui.module.sell.title", "Sell Module")
+	module_action_dialog.dialog_text = LocalizationManager.tr_format(
+		"ui.module.sell.confirm",
+		{
+			"module": LocalizationManager.get_module_name(module_instance),
+			"level": module_instance.module_level,
+			"gold": gold,
+		},
+		"Sell %s Lv.%d for %d Gold? This cannot be undone." % [
+			LocalizationManager.get_module_name(module_instance),
+			module_instance.module_level,
+			gold,
+		]
+	)
+	_pending_module_action = Callable(self, "_confirm_temporary_module_sell").bind(module_instance)
+	module_action_dialog.popup_centered()
+	return true
+
+func _confirm_temporary_module_sell(module_instance: Module) -> void:
+	InventoryData.sell_temporary_module(module_instance)
+
+func _on_module_action_confirmed() -> void:
+	if _pending_module_action.is_valid():
+		_pending_module_action.call()
+	_pending_module_action = Callable()
+
+func request_temporary_module_settlement(
+	on_complete: Callable,
+	on_cancel: Callable = Callable()
+) -> bool:
+	if has_pending_blocking_transaction():
+		show_item_message(LocalizationManager.tr_key(
+			"ui.transaction.pending",
+			"Finish or cancel the current equipment transaction first."
+		), 1.8)
+		if on_cancel.is_valid():
+			on_cancel.call_deferred()
+		return false
+	if InventoryData.temporary_modules.is_empty():
+		on_complete.call_deferred()
+		return true
+	_pending_battle_start = on_complete
+	_pending_battle_start_cancel = on_cancel
+	if not _is_temporary_module_confirmation_enabled():
+		InventoryData.sell_all_temporary_modules()
+		on_complete.call_deferred()
+		_pending_battle_start = Callable()
+		_pending_battle_start_cancel = Callable()
+		return true
+	var total_gold := 0
+	for module_instance in InventoryData.temporary_modules:
+		total_gold += GlobalVariables.economy_data.get_duplicate_module_gold(
+			int(module_instance.cost),
+			int(module_instance.module_level)
+		) if GlobalVariables.economy_data else 0
+	var message := temporary_module_settlement_dialog.get_node_or_null("VBoxContainer/Message") as Label
+	if message == null:
+		message = temporary_module_settlement_dialog.find_child("Message", true, false) as Label
+	if message:
+		message.text = LocalizationManager.tr_format(
+			"ui.module.settlement.confirm",
+			{"count": InventoryData.temporary_modules.size(), "gold": total_gold},
+			"Sell %d temporary modules for %d Gold and start battle?" % [
+				InventoryData.temporary_modules.size(),
+				total_gold,
+			]
+		)
+	temporary_module_settlement_checkbox.button_pressed = false
+	temporary_module_settlement_dialog.title = LocalizationManager.tr_key(
+		"ui.module.settlement.title",
+		"Temporary Module Settlement"
+	)
+	temporary_module_settlement_dialog.popup_centered(Vector2i(560, 260))
+	return true
+
+func _on_temporary_module_settlement_confirmed() -> void:
+	if temporary_module_settlement_checkbox.button_pressed:
+		_set_temporary_module_confirmation_enabled(false)
+	InventoryData.sell_all_temporary_modules()
+	if _pending_battle_start.is_valid():
+		_pending_battle_start.call_deferred()
+	_pending_battle_start = Callable()
+	_pending_battle_start_cancel = Callable()
+
+func _on_temporary_module_settlement_cancelled() -> void:
+	if _pending_battle_start_cancel.is_valid():
+		_pending_battle_start_cancel.call_deferred()
+	_pending_battle_start = Callable()
+	_pending_battle_start_cancel = Callable()
+
+func has_pending_blocking_transaction() -> bool:
+	if has_pending_branch_selection():
+		return true
+	if weapon_replacement_panel and weapon_replacement_panel.visible:
+		return true
+	if module_equip_selection_panel and module_equip_selection_panel.visible:
+		return true
+	return false
+
+func _is_temporary_module_confirmation_enabled() -> bool:
+	var cfg := ConfigFile.new()
+	if cfg.load(MODULE_SETTINGS_PATH) != OK:
+		return true
+	return bool(cfg.get_value("module_management", "confirm_temporary_sale", true))
+
+func _set_temporary_module_confirmation_enabled(enabled: bool) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(MODULE_SETTINGS_PATH)
+	cfg.set_value("module_management", "confirm_temporary_sale", enabled)
+	cfg.save(MODULE_SETTINGS_PATH)
+	if temporary_module_confirm_toggle:
+		temporary_module_confirm_toggle.button_pressed = enabled
 
 func request_weapon_branch_selection(weapon: Weapon, target_fuse: int = 0) -> bool:
 	if weapon == null or not is_instance_valid(weapon):
@@ -290,12 +512,45 @@ func _request_next_queued_weapon_branch_selection() -> void:
 		if _open_branch_panel_for_queue_entry(entry):
 			return
 
-func request_module_equip_selection(module_instance: Module, on_complete: Callable = Callable()) -> bool:
+func request_module_equip_selection(
+	module_instance: Module,
+	on_complete: Callable = Callable(),
+	allow_reward_transaction: bool = false
+) -> bool:
 	if module_instance == null or not is_instance_valid(module_instance):
+		return false
+	if not allow_reward_transaction and not is_rest_area_module_management_available():
+		show_item_message(LocalizationManager.tr_key(
+			"ui.module.reason.rest_area_only",
+			"Modules can only be managed in the Rest Area."
+		), 1.8)
 		return false
 	if module_equip_selection_panel == null or not is_instance_valid(module_equip_selection_panel):
 		return false
-	return module_equip_selection_panel.open_for_module(module_instance, on_complete)
+	var transaction_id := "module:%s" % str(module_instance.scene_file_path)
+	InventoryData.begin_pending_transaction({
+		"id": transaction_id,
+		"type": "module_assignment",
+		"scene_path": str(module_instance.scene_file_path),
+	})
+	var wrapped_complete := Callable(self, "_on_module_assignment_completed").bind(
+		transaction_id,
+		on_complete
+	)
+	return module_equip_selection_panel.open_for_module(
+		module_instance,
+		wrapped_complete,
+		allow_reward_transaction
+	)
+
+func _on_module_assignment_completed(
+	assigned: bool,
+	transaction_id: String,
+	on_complete: Callable
+) -> void:
+	InventoryData.finish_pending_transaction(transaction_id)
+	if on_complete.is_valid():
+		on_complete.call_deferred(assigned)
 
 func request_route_selection(
 	route_defs: Array[RunRouteDefinition],
@@ -336,7 +591,7 @@ func _finalize_branch_selected_weapon(weapon: Weapon) -> void:
 		return
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
 		return
-	var is_already_owned := PlayerData.player_weapon_list.has(weapon) or InventoryData.inventory_slots.has(weapon)
+	var is_already_owned := PlayerData.player_weapon_list.has(weapon)
 	if not is_already_owned:
 		PlayerData.player.create_weapon(weapon)
 	update_upg()
@@ -380,12 +635,10 @@ func _init_weapon_passive_presenter() -> void:
 
 func _process(_delta: float) -> void:
 	# Cursor-follow visuals should run on render frames to minimize perceived mouse lag.
-	drag_item_icon.set_position(get_viewport().get_mouse_position())
 	_update_spread_cursor_overlay()
 func _input(_event) -> void:
 	if _event is InputEventMouseMotion:
 		var motion := _event as InputEventMouseMotion
-		drag_item_icon.set_position(motion.position)
 		_update_spread_cursor_overlay(motion.position)
 
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
@@ -497,6 +750,8 @@ func is_rest_area_zone_navigation_allowed() -> bool:
 		return true
 	if _rest_area_primary_menu_id == &"smith" and smith_root and smith_root.visible:
 		return true
+	if _rest_area_primary_menu_id == &"module" and module_menu_root and module_menu_root.visible:
+		return true
 	return false
 
 func handle_rest_area_right_cancel() -> bool:
@@ -511,6 +766,13 @@ func handle_rest_area_right_cancel() -> bool:
 		if upgrade_rootv_2 and upgrade_rootv_2.visible:
 			smith_back_to_primary_menu()
 			return true
+	elif _rest_area_primary_menu_id == &"module":
+		if module_equip_selection_panel and module_equip_selection_panel.visible:
+			module_equip_selection_panel.close_without_assignment()
+			return true
+		if module_root and module_root.visible:
+			module_back_to_primary_menu()
+			return true
 	return false
 
 func open_rest_area_smith_menu() -> void:
@@ -519,11 +781,19 @@ func open_rest_area_smith_menu() -> void:
 	PlayerData.is_interacting = true
 	smith_menu_in()
 
+func open_rest_area_module_menu() -> void:
+	_rest_area_merchant_active = true
+	_rest_area_primary_menu_id = &"module"
+	PlayerData.is_interacting = true
+	module_menu_in()
+
 func close_rest_area_primary_menu() -> void:
 	if not _rest_area_merchant_active:
 		return
 	if _rest_area_primary_menu_id == &"smith":
 		smith_menu_out()
+	elif _rest_area_primary_menu_id == &"module":
+		module_menu_out()
 	else:
 		merchant_menu_out()
 	PlayerData.is_interacting = false
@@ -585,7 +855,6 @@ func upg_panel_in() -> void:
 	if smith_root:
 		smith_root.visible = false
 	upgrade_rootv_2.visible = true
-	inventory_upg.visible = false
 	equipped_upg.visible = true
 
 func upg_panel_out() -> void:
@@ -612,32 +881,71 @@ func smith_back_to_primary_menu() -> void:
 	upg_panel_out()
 	_show_primary_menu(&"smith", smith_root, smith_primary_panel)
 
-func inventory_panel_in() -> void:
-	move_out_timer.stop()
-	update_inventory()
-	inventory_root.visible = true
+func module_menu_in() -> void:
+	module_panel_out()
+	_show_primary_menu(&"module", module_menu_root, module_primary_panel)
 
-func inventory_panel_out() -> void:
+func module_menu_out() -> void:
+	_hide_primary_menu(&"module", module_menu_root, module_primary_panel)
+	module_panel_out()
+	if module_equip_selection_panel and module_equip_selection_panel.visible:
+		module_equip_selection_panel.close_without_assignment()
 	InventoryData.clear_on_select()
-	move_out_timer.start()
-	inventory_root.visible = false
+
+func module_open_management_panel() -> void:
+	if not is_rest_area_module_management_available():
+		_show_module_rest_area_only_message()
+		return
+	var should_wait := module_menu_root != null and module_menu_root.visible
+	_hide_primary_menu(&"module", module_menu_root, module_primary_panel)
+	if should_wait:
+		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
+	module_panel_in()
+
+func module_back_to_primary_menu() -> void:
+	if module_equip_selection_panel and module_equip_selection_panel.visible:
+		module_equip_selection_panel.close_without_assignment()
+	module_panel_out()
+	_show_primary_menu(&"module", module_menu_root, module_primary_panel)
 
 func module_panel_in() -> void:
+	if not is_rest_area_module_management_available():
+		_show_module_rest_area_only_message()
+		return
 	update_modules()
 	module_root.visible = true
 
 func module_panel_out() -> void:
 	module_root.visible = false
 
-func inv_mod_panel_out() -> void:
-	inventory_panel_out()
-	module_panel_out()
-	
-func update_inventory() -> void:
-	for eq in equipped_inv.get_children():
-		eq.update()
-	for inv in inventory.get_children():
-		inv.update()
+func is_rest_area_module_management_available() -> bool:
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return false
+	for node in get_tree().get_nodes_in_group("rest_area"):
+		if node and is_instance_valid(node) and node.has_method("is_module_management_available"):
+			if bool(node.call("is_module_management_available")):
+				return true
+	return false
+
+func _show_module_rest_area_only_message() -> void:
+	show_item_message(LocalizationManager.tr_key(
+		"ui.module.reason.rest_area_only",
+		"Modules can only be managed in the Rest Area."
+	), 1.8)
+
+func _close_module_management_ui() -> void:
+	if module_equip_selection_panel and module_equip_selection_panel.visible:
+		module_equip_selection_panel.close_without_assignment()
+	if module_root:
+		module_root.visible = false
+	if module_menu_root:
+		module_menu_root.visible = false
+	InventoryData.clear_on_select()
+	if _rest_area_primary_menu_id == &"module":
+		_stop_primary_menu_tween(&"module")
+		_rest_area_merchant_active = false
+		_rest_area_primary_menu_id = &""
+		PlayerData.is_interacting = false
 
 func update_shop() -> void:
 	for eq in equipped_shop.get_children():
@@ -648,14 +956,18 @@ func update_shop() -> void:
 func update_upg() -> void:
 	for eq in equipped_upg.get_children():
 		eq.update()
-	for inv in inventory_upg.get_children():
-		inv.update()
 	upgrade_preview.update()
 func update_modules() -> void:
 	for eq in equipped_m.get_children():
 		eq.update()
-	for mod in modules.get_children():
-		mod.update()
+	for child in modules.get_children():
+		child.queue_free()
+	var slot_count := maxi(InventoryData.temporary_modules.size(), 1)
+	for index in range(slot_count):
+		var slot := module_slot_scene.instantiate() as ModuleSlot
+		slot.module_index = index
+		modules.add_child(slot)
+		slot.update()
 
 func free_childern(parent) -> void:
 	var children = parent.get_children()
@@ -677,6 +989,8 @@ func _on_resume_button_pressed() -> void:
 
 
 func _on_phase_changed(new_phase: String) -> void:
+	if new_phase != PhaseManager.PREPARE:
+		_close_module_management_ui()
 	if new_phase == PhaseManager.GAMEOVER:
 		_show_game_over()
 	_request_next_queued_weapon_branch_selection()
@@ -763,7 +1077,6 @@ func _show_game_over() -> void:
 	pause_menu_root.visible = false
 	shopping_rootv_2.visible = false
 	upgrade_rootv_2.visible = false
-	inventory_root.visible = false
 	module_root.visible = false
 	game_over_total_damage_label.text = LocalizationManager.tr_format(
 		"ui.gameover.total_damage",
@@ -939,7 +1252,8 @@ func _refresh_controls_hint_visibility() -> void:
 func _is_primary_menu_open() -> bool:
 	var roots := [
 		merchant_root,
-		smith_root
+		smith_root,
+		module_menu_root
 	]
 	for root in roots:
 		if root and is_instance_valid(root) and root.visible:
@@ -951,7 +1265,6 @@ func _is_secondary_menu_open() -> bool:
 		shopping_rootv_2,
 		upgrade_rootv_2,
 		module_root,
-		inventory_root
 	]
 	for root in roots:
 		if root and is_instance_valid(root) and root.visible:
@@ -975,9 +1288,9 @@ func _apply_responsive_layout() -> void:
 	_fit_center_panel(shopping_panel, viewport_size, PANEL_TARGET_SIZE)
 	_fit_center_panel(upgrade_panel, viewport_size, PANEL_TARGET_SIZE)
 	_fit_center_panel(module_panel, viewport_size, PANEL_TARGET_SIZE)
-	_fit_center_panel(inventory_panel, viewport_size, PANEL_TARGET_SIZE)
 	_fit_left_panel(merchant_primary_panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
 	_fit_left_panel(smith_primary_panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
+	_fit_left_panel(module_primary_panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
 	_fit_pause_layout(viewport_size)
 	_layout_hud(viewport_size)
 	_layout_rest_area_hover_hint(viewport_size)
@@ -1623,6 +1936,13 @@ func _ensure_pause_language_controls() -> void:
 		pause_menu_panel.add_child(pause_language_option)
 	if not pause_language_option.is_connected("item_selected", Callable(self, "_on_pause_language_option_item_selected")):
 		pause_language_option.connect("item_selected", Callable(self, "_on_pause_language_option_item_selected"))
+	temporary_module_confirm_toggle = pause_menu_panel.get_node_or_null("TemporaryModuleConfirmToggle") as CheckButton
+	if temporary_module_confirm_toggle == null:
+		temporary_module_confirm_toggle = CheckButton.new()
+		temporary_module_confirm_toggle.name = "TemporaryModuleConfirmToggle"
+		pause_menu_panel.add_child(temporary_module_confirm_toggle)
+	if not temporary_module_confirm_toggle.toggled.is_connected(_on_temporary_module_confirm_toggled):
+		temporary_module_confirm_toggle.toggled.connect(_on_temporary_module_confirm_toggled)
 	_refresh_pause_language_options()
 
 func _refresh_pause_language_options() -> void:
@@ -1646,6 +1966,14 @@ func _refresh_pause_language_options() -> void:
 			selected_idx = i
 	if selected_idx >= 0:
 		pause_language_option.select(selected_idx)
+	if temporary_module_confirm_toggle:
+		temporary_module_confirm_toggle.position = Vector2(72.0, 366.0)
+		temporary_module_confirm_toggle.size = Vector2(310.0, 30.0)
+		temporary_module_confirm_toggle.text = LocalizationManager.tr_key(
+			"ui.settings.confirm_temporary_module_sale",
+			"Confirm temporary module sale before battle"
+		)
+		temporary_module_confirm_toggle.button_pressed = _is_temporary_module_confirmation_enabled()
 
 func _on_pause_language_option_item_selected(index: int) -> void:
 	if pause_language_option == null:
@@ -1653,6 +1981,9 @@ func _on_pause_language_option_item_selected(index: int) -> void:
 	var locale := str(pause_language_option.get_item_metadata(index))
 	if locale != "":
 		LocalizationManager.set_locale(locale)
+
+func _on_temporary_module_confirm_toggled(enabled: bool) -> void:
+	_set_temporary_module_confirmation_enabled(enabled)
 
 func _on_language_changed(_new_locale: String) -> void:
 	_refresh_localized_static_text()
@@ -1679,9 +2010,6 @@ func _refresh_localized_static_text() -> void:
 	var module_title := module_panel.get_node_or_null("Title") as Label
 	if module_title:
 		module_title.text = LocalizationManager.tr_key("ui.panel.module", "Module")
-	var inventory_title := inventory_panel.get_node_or_null("Title") as Label
-	if inventory_title:
-		inventory_title.text = LocalizationManager.tr_key("ui.panel.inventory", "Inventory")
 	shop_sell_button.text = LocalizationManager.tr_key("ui.panel.sell", "Sell")
 	shop_cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
 	var shop_confirm := shopping_panel.get_node_or_null("ShopConfirmButton") as Button
@@ -1693,15 +2021,18 @@ func _refresh_localized_static_text() -> void:
 			shop_refresh.call("refresh_button_label")
 		else:
 			shop_refresh.text = LocalizationManager.tr_key("ui.panel.refresh", "Refresh")
-	var upg_switch := upgrade_panel.get_node_or_null("SwtichBtn") as Button
-	if upg_switch:
-		upg_switch.text = LocalizationManager.tr_key("ui.panel.inventory_bag", "Inventory / Bag")
-	var to_inv := module_panel.get_node_or_null("ToInv") as Button
-	if to_inv:
-		to_inv.text = LocalizationManager.tr_key("ui.panel.to_inventory", "Inventory")
-	var to_module := inventory_panel.get_node_or_null("ToModel") as Button
-	if to_module:
-		to_module.text = LocalizationManager.tr_key("ui.panel.to_module", "Module")
+	var module_menu_title := module_primary_panel.get_node_or_null("Title") as Label
+	if module_menu_title:
+		module_menu_title.text = LocalizationManager.tr_key("ui.module.menu.title", "Module Management")
+	var module_menu_subtitle := module_primary_panel.get_node_or_null("SubTitle") as Label
+	if module_menu_subtitle:
+		module_menu_subtitle.text = LocalizationManager.tr_key("ui.module.menu.subtitle", "Install or remove weapon modules")
+	var module_menu_open := module_primary_panel.get_node_or_null("OpenModuleButton") as Button
+	if module_menu_open:
+		module_menu_open.text = LocalizationManager.tr_key("ui.module.menu.open", "Manage Modules")
+	var module_back := module_panel.get_node_or_null("BackToModuleMenu") as Button
+	if module_back:
+		module_back.text = LocalizationManager.tr_key("ui.panel.back", "Back")
 	var pause_label := pause_menu_panel.get_node_or_null("Paused") as Label
 	if pause_label:
 		pause_label.text = LocalizationManager.tr_key("ui.panel.pause", "Paused")

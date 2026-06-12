@@ -35,10 +35,10 @@ func _physics_process(_delta: float) -> void:
 	_clear_bonus()
 
 func get_effect_descriptions() -> PackedStringArray:
-	return PackedStringArray([
+	return with_level_effect_descriptions(PackedStringArray([
 		"Reload grants temporary move speed",
 		"Bonus scales with spent ammo",
-	])
+	]))
 
 func _register_hook() -> void:
 	if _registered:

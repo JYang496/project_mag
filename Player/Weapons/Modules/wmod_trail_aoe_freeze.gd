@@ -62,10 +62,10 @@ func on_projectile_spawned(source_weapon: Weapon, projectile: Node2D) -> void:
 	)
 
 func get_effect_descriptions() -> PackedStringArray:
-	return PackedStringArray([
+	return with_level_effect_descriptions(PackedStringArray([
 		"Projectiles leave freeze AoE trails",
 		"Trail duration %.1fs" % _get_duration(),
-	])
+	]))
 
 func _register_plugin() -> void:
 	if _plugin_registered:
@@ -107,6 +107,7 @@ func _sync_trail_effect_config() -> void:
 	if _trail_effect == null or not is_instance_valid(_trail_effect):
 		return
 	_trail_effect.source_node = weapon
+	_trail_effect.source_category = DamageData.SOURCE_PLAYER_WEAPON
 	_trail_effect.duration = _get_duration()
 	_trail_effect.tick_interval = maxf(trail_tick_interval, 0.05)
 	_trail_effect.sample_interval = maxf(trail_sample_interval, 0.02)

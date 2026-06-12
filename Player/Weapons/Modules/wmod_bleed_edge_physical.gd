@@ -95,7 +95,9 @@ func _apply_bleed_tick(target: Node, entry: Dictionary) -> void:
 		Attack.TYPE_PHYSICAL,
 		{"amount": 0, "angle": Vector2.ZERO},
 		source_weapon,
-		owner_player
+		owner_player,
+		DamageData.SOURCE_PLAYER_WEAPON,
+		resolve_primary_damage_delivery(source_weapon)
 	)
 	DamageManager.apply_to_target(target, damage_data)
 

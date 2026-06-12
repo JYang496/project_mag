@@ -180,11 +180,6 @@ func _test_inventory_only_duplicate() -> void:
 	if weapon_def == null or weapon_def.scene == null:
 		_fail("inventory_only", "Inventory-only weapon definition missing.")
 		return
-	var inventory_weapon := weapon_def.scene.instantiate() as Weapon
-	if inventory_weapon == null:
-		_fail("inventory_only", "Could not instantiate inventory-only weapon.")
-		return
-	InventoryData.inventory_slots.append(inventory_weapon)
 	var equipped_before := PlayerData.player_weapon_list.size()
 	var outcome := _player.try_auto_fuse_weapon_obtain(WEAPON_ID_INVENTORY_ONLY)
 	var ok := str(outcome.get("result", "")) == "not_applicable" and PlayerData.player_weapon_list.size() == equipped_before
@@ -254,7 +249,7 @@ func _refresh_status() -> void:
 	lines.append("Phase: %s" % PhaseManager.current_state())
 	lines.append("Gold: %d" % int(PlayerData.player_gold))
 	lines.append("Equipped weapons: %d" % PlayerData.player_weapon_list.size())
-	lines.append("Inventory weapons: %d" % InventoryData.inventory_slots.size())
+	lines.append("Temporary modules: %d" % InventoryData.temporary_modules.size())
 	if weapon:
 		lines.append("Main weapon id: %s" % DataHandler.get_weapon_id_from_instance(weapon))
 		lines.append("Main weapon fuse: %d / %d" % [int(weapon.fuse), int(weapon.FINAL_MAX_FUSE)])

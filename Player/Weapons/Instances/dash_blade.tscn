@@ -16,7 +16,7 @@ script = ExtResource("1_s2x1k")
 delivery_type_flags = 2
 
 [node name="Modules" parent="."]
-weapon_traits = 4449
+weapon_traits = 1
 
 [node name="Sprite" parent="." index="1"]
 texture = ExtResource("3_wjcg8")

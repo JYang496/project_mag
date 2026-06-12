@@ -255,7 +255,7 @@ func create_weapon(item_id, level := 1, auto_fuse := false):
 	var incoming_weapon_id := ""
 	if item_id is String:
 		incoming_weapon_id = str(item_id).strip_edges()
-		if auto_fuse:
+		if auto_fuse or _find_equipped_weapon_by_id(incoming_weapon_id) != null:
 			var auto_fuse_result := try_auto_fuse_weapon_obtain(incoming_weapon_id)
 			var result_type := str(auto_fuse_result.get("result", "not_applicable"))
 			if result_type == "fused" or result_type == "converted_to_gold":
@@ -277,10 +277,14 @@ func create_weapon(item_id, level := 1, auto_fuse := false):
 			return
 		incoming_weapon_id = DataHandler.get_weapon_id_from_instance(weapon)
 
-	# Put weapon into inventory if weapon list is full.
+	# A full weapon bar now requires an explicit replacement transaction.
 	if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num:
-		if len(InventoryData.inventory_slots) < InventoryData.INVENTORY_MAX_SLOTS:
-			InventoryData.inventory_slots.append(weapon)
+		var ui = GlobalVariables.ui
+		if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
+			ui.call("request_weapon_replacement", weapon)
+		else:
+			push_warning("Weapon bar is full and no replacement UI is available.")
+			weapon.queue_free()
 		_refresh_weapon_related_ui()
 		return
 

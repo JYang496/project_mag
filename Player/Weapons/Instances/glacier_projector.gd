@@ -103,7 +103,9 @@ func _apply_freeze_damage(target: Node) -> void:
 		self,
 		runtime_damage,
 		Attack.TYPE_FREEZE,
-		{"amount": 0, "angle": Vector2.ZERO}
+		{"amount": 0, "angle": Vector2.ZERO},
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.AREA
 	)
 	DamageManager.apply_to_target(target, damage_data)
 	on_hit_target_with_damage_type(target, Attack.TYPE_FREEZE)
@@ -131,7 +133,9 @@ func _trigger_cold_snap(target: Node) -> void:
 		Attack.TYPE_FREEZE,
 		{"amount": 0, "angle": Vector2.ZERO},
 		self,
-		owner_player
+		owner_player,
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.AREA
 	)
 	DamageManager.apply_to_target(target, damage_data)
 	_try_emit_cold_snap_trigger(target)

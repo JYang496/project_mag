@@ -7,10 +7,10 @@
 
 [node name="Cannon" unique_id=2056242882 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
-delivery_type_flags = 1
+delivery_type_flags = 9
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 9216
+weapon_traits = 1
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("4_icon")

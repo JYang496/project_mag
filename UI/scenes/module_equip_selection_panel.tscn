@@ -24,28 +24,13 @@ text = "Equip Module"
 [node name="ModuleLabel" type="Label" parent="Margin/Root" unique_name_in_owner=true]
 text = "Select a slot."
 
-[node name="Columns" type="HBoxContainer" parent="Margin/Root"]
+[node name="EquippedScroll" type="ScrollContainer" parent="Margin/Root"]
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
-[node name="EquippedPanel" type="PanelContainer" parent="Margin/Root/Columns"]
+[node name="EquippedList" type="VBoxContainer" parent="Margin/Root/EquippedScroll" unique_name_in_owner=true]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-
-[node name="EquippedList" type="VBoxContainer" parent="Margin/Root/Columns/EquippedPanel" unique_name_in_owner=true]
-offset_left = 6.0
-offset_top = 6.0
-offset_right = 416.0
-offset_bottom = 386.0
-
-[node name="InventoryPanel" type="PanelContainer" parent="Margin/Root/Columns"]
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="InventoryList" type="VBoxContainer" parent="Margin/Root/Columns/InventoryPanel" unique_name_in_owner=true]
-offset_left = 6.0
-offset_top = 6.0
-offset_right = 416.0
-offset_bottom = 386.0
 
 [node name="Footer" type="HBoxContainer" parent="Margin/Root"]
 

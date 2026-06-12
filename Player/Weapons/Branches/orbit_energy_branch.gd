@@ -1,6 +1,12 @@
 extends WeaponBranchBehavior
 class_name OrbitEnergyBranch
 
+func get_added_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.ENERGY]
+
+func get_added_delivery_types() -> Array[StringName]:
+	return [DamageDeliveryType.AREA]
+
 const ENERGY_FIELD_INDICATOR_SCRIPT := preload("res://Player/Weapons/Branches/orbit_energy_field_indicator.gd")
 const ENERGY_FIELD_INDICATOR_NODE_NAME := "EnergyFieldIndicator"
 
@@ -92,7 +98,9 @@ func _apply_bonus_energy_damage(target_node: Node2D) -> void:
 		weapon,
 		bonus_damage,
 		Attack.TYPE_ENERGY,
-		{"amount": 0, "angle": Vector2.ZERO}
+		{"amount": 0, "angle": Vector2.ZERO},
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.AREA
 	)
 	DamageManager.apply_to_target(target_node, damage_data)
 

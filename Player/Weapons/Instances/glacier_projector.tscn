@@ -25,7 +25,7 @@ effect_configs = Array[ExtResource("3_3hv4x")]([])
 debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 65536
+weapon_traits = 8
 
 [node name="BrittleTrigger" parent="Modules" index="0" unique_id=2045249766 instance=ExtResource("5_74i8c")]
 

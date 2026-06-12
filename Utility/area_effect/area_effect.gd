@@ -79,6 +79,8 @@ enum TargetGroup {
 @onready var visual_animated_sprite: AnimatedSprite2D = $VisualRoot/AnimatedSprite
 
 var source_node: Node
+var source_category: StringName = StringName()
+var delivery_type: StringName = DamageDeliveryType.AREA
 var _affected_target_ids: Dictionary = {}
 var _tick_elapsed: float = 0.0
 
@@ -145,7 +147,9 @@ func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
 			valid_source_node,
 			one_shot_damage,
 			Attack.normalize_damage_type(damage_type),
-			knock_back
+			knock_back,
+			source_category,
+			delivery_type
 		)
 		var applied := DamageManager.apply_to_target(target, damage_data)
 		if applied:
@@ -192,7 +196,9 @@ func _apply_tick_to_current_overlaps() -> void:
 			valid_source_node,
 			tick_damage,
 			Attack.normalize_damage_type(damage_type),
-			knock_back
+			knock_back,
+			source_category,
+			delivery_type
 		)
 		if DamageManager.apply_to_target(target, damage_data):
 			target_affected.emit(target)

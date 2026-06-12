@@ -1,6 +1,9 @@
 extends WeaponBranchBehavior
 class_name ChainsawExplosiveBranch
 
+func get_added_delivery_types() -> Array[StringName]:
+	return [DamageDeliveryType.AREA]
+
 @export var cooldown_multiplier: float = 1.0
 @export var projectile_damage_multiplier: float = 1.0
 @export var slow_speed_multiplier: float = 0.15
@@ -103,6 +106,7 @@ func _explode_projectile(projectile: Projectile) -> void:
 	area_effect.target_group = AreaEffect.TargetGroup.ENEMIES
 	# Use branch node as source to avoid recursive branch on-hit loops.
 	area_effect.source_node = self
+	area_effect.source_category = DamageData.SOURCE_PLAYER_WEAPON
 	area_effect.global_position = projectile.global_position
 	var spawn_parent: Node = projectile.get_tree().current_scene
 	if spawn_parent == null:

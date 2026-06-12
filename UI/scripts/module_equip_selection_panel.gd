@@ -12,12 +12,12 @@ signal selection_completed(assigned: bool)
 
 @onready var title_label: Label = $Margin/Root/TitleLabel
 @onready var module_label: Label = $Margin/Root/ModuleLabel
-@onready var equipped_list: VBoxContainer = $Margin/Root/Columns/EquippedPanel/EquippedList
-@onready var inventory_list: VBoxContainer = $Margin/Root/Columns/InventoryPanel/InventoryList
+@onready var equipped_list: VBoxContainer = $Margin/Root/EquippedScroll/EquippedList
 @onready var cancel_button: Button = $Margin/Root/Footer/CancelButton
 
 var _module_instance: Module
 var _on_complete: Callable = Callable()
+var _allow_reward_transaction := false
 var _tracked_stat_keys: PackedStringArray = [
 	"damage",
 	"attack_cooldown",
@@ -37,11 +37,16 @@ func _ready() -> void:
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.language_changed.connect(_on_language_changed)
 
-func open_for_module(module_instance: Module, on_complete: Callable = Callable()) -> bool:
+func open_for_module(
+	module_instance: Module,
+	on_complete: Callable = Callable(),
+	allow_reward_transaction: bool = false
+) -> bool:
 	if module_instance == null:
 		return false
 	_module_instance = module_instance
 	_on_complete = on_complete
+	_allow_reward_transaction = allow_reward_transaction
 	title_label.text = LocalizationManager.tr_key("ui.module.title", "Equip Module")
 	var effect_lines := _module_instance.get_effect_descriptions()
 	var effect_summary := LocalizationManager.tr_key("ui.module.no_effect", "No direct stat changes.")
@@ -58,21 +63,11 @@ func open_for_module(module_instance: Module, on_complete: Callable = Callable()
 
 func _rebuild_lists() -> void:
 	_clear_list(equipped_list)
-	_clear_list(inventory_list)
 	_build_weapon_section(equipped_list, _collect_equipped_weapons(), true)
-	_build_weapon_section(inventory_list, _collect_inventory_weapons(), false)
 
 func _collect_equipped_weapons() -> Array[Weapon]:
 	var result: Array[Weapon] = []
 	for weapon_ref in PlayerData.player_weapon_list:
-		var weapon: Weapon = weapon_ref as Weapon
-		if weapon and is_instance_valid(weapon):
-			result.append(weapon)
-	return result
-
-func _collect_inventory_weapons() -> Array[Weapon]:
-	var result: Array[Weapon] = []
-	for weapon_ref in InventoryData.inventory_slots:
 		var weapon: Weapon = weapon_ref as Weapon
 		if weapon and is_instance_valid(weapon):
 			result.append(weapon)
@@ -114,21 +109,50 @@ func _build_weapon_row(parent: VBoxContainer, weapon: Weapon) -> void:
 	slot_state_label.custom_minimum_size = Vector2(100, 0)
 	header_row.add_child(slot_state_label)
 
-	var action_button: Button = Button.new()
-	action_button.custom_minimum_size = Vector2(116, 28)
-	header_row.add_child(action_button)
-
-	var feedback := InventoryData.get_weapon_module_assignment_feedback(_module_instance, weapon)
+	var feedback := InventoryData.get_weapon_module_assignment_feedback(
+		_module_instance,
+		weapon,
+		null,
+		_allow_reward_transaction
+	)
 	var can_equip: bool = bool(feedback.get("ok", false))
+	var replacement_added := false
 	if can_equip:
+		var action_button := Button.new()
+		action_button.custom_minimum_size = Vector2(116, 28)
+		header_row.add_child(action_button)
 		action_button.text = LocalizationManager.tr_key("ui.module.action.equip", "Equip")
-		action_button.disabled = false
 		action_button.modulate = available_slot_color
 		action_button.pressed.connect(_on_slot_selected.bind(weapon))
 	else:
-		action_button.text = LocalizationManager.tr_key("ui.module.action.blocked", "Blocked")
-		action_button.disabled = true
-		action_button.modulate = incompatible_slot_color
+		if weapon.get_module_count() >= int(weapon.MAX_MODULE_NUMBER):
+			for equipped_module in weapon.get_equipped_modules():
+				var replace_feedback := InventoryData.get_weapon_module_assignment_feedback(
+					_module_instance,
+					weapon,
+					equipped_module,
+					_allow_reward_transaction
+				)
+				if not replace_feedback.get("ok", false):
+					continue
+				var replace_button := Button.new()
+				replace_button.custom_minimum_size = Vector2(150, 28)
+				replace_button.text = LocalizationManager.tr_format(
+					"ui.module.action.replace",
+					{"module": LocalizationManager.get_module_name(equipped_module)},
+					"Replace %s" % LocalizationManager.get_module_name(equipped_module)
+				)
+				replace_button.modulate = available_slot_color
+				replace_button.pressed.connect(_on_slot_selected.bind(weapon, equipped_module))
+				header_row.add_child(replace_button)
+				replacement_added = true
+		if not replacement_added:
+			var blocked_button := Button.new()
+			blocked_button.custom_minimum_size = Vector2(116, 28)
+			blocked_button.text = LocalizationManager.tr_key("ui.module.action.blocked", "Blocked")
+			blocked_button.disabled = true
+			blocked_button.modulate = incompatible_slot_color
+			header_row.add_child(blocked_button)
 
 	var modules_line := Label.new()
 	modules_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -145,17 +169,28 @@ func _build_weapon_row(parent: VBoxContainer, weapon: Weapon) -> void:
 	if can_equip:
 		feedback_line.text = LocalizationManager.tr_key("ui.module.compatible", "Compatible")
 		feedback_line.modulate = stat_up_color
+	elif replacement_added:
+		feedback_line.text = LocalizationManager.tr_key(
+			"ui.module.replace_available",
+			"Compatible after replacing an installed module."
+		)
+		feedback_line.modulate = stat_up_color
 	else:
 		var reason := LocalizationManager.localize_module_reason(str(feedback.get("reason", "Unknown reason")))
 		feedback_line.text = LocalizationManager.tr_format("ui.module.cannot_equip", {"reason": reason}, "Cannot equip: %s" % reason)
 		feedback_line.modulate = feedback_text_color
 	card.add_child(feedback_line)
 
-func _on_slot_selected(weapon: Weapon) -> void:
+func _on_slot_selected(weapon: Weapon, replaced_module: Module = null) -> void:
 	if weapon == null or not is_instance_valid(weapon) or _module_instance == null:
 		_complete(false)
 		return
-	var result := InventoryData.equip_module_to_weapon(_module_instance, weapon)
+	var result := InventoryData.equip_module_to_weapon(
+		_module_instance,
+		weapon,
+		replaced_module,
+		_allow_reward_transaction
+	)
 	if not result.get("ok", false):
 		var ui_fail = GlobalVariables.ui
 		if ui_fail and is_instance_valid(ui_fail) and ui_fail.has_method("show_item_message"):
@@ -186,12 +221,17 @@ func _on_slot_selected(weapon: Weapon) -> void:
 func _on_cancel_pressed() -> void:
 	_complete(false)
 
+func close_without_assignment() -> void:
+	if visible:
+		_complete(false)
+
 func _complete(assigned: bool) -> void:
 	visible = false
 	emit_signal("selection_completed", assigned)
 	if _on_complete.is_valid():
 		_on_complete.call_deferred(assigned)
 	_on_complete = Callable()
+	_allow_reward_transaction = false
 
 func _clear_list(container: VBoxContainer) -> void:
 	for child in container.get_children():
@@ -232,4 +272,4 @@ func _format_stat_label(stat_key: String) -> String:
 
 func _on_language_changed(_locale: String) -> void:
 	if visible and _module_instance != null and is_instance_valid(_module_instance):
-		open_for_module(_module_instance, _on_complete)
+		open_for_module(_module_instance, _on_complete, _allow_reward_transaction)

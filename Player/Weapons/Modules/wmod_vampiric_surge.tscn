@@ -6,7 +6,9 @@
 
 [node name="VampiricSurge" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-module_traits = PackedStringArray("trigger", "buff", "duration")
+level_effects = PackedStringArray("Convert 40% of overkill damage into temporary shield", "Convert 55% of overkill damage into temporary shield", "Convert 70% of overkill damage into temporary shield")
+required_hooks = 2
+module_tags = PackedStringArray("trigger", "buff", "duration")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

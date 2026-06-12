@@ -1,6 +1,12 @@
 extends WeaponBranchBehavior
 class_name CannonZeroBranch
 
+func get_added_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.ENERGY]
+
+func get_suppressed_weapon_traits() -> Array[StringName]:
+	return [WeaponTrait.PHYSICAL]
+
 const DAMAGE_STATE_META := &"_incoming_damage_state"
 
 @export var execute_burst_ratio: float = 0.20
@@ -50,7 +56,9 @@ func on_target_hit(target: Node) -> void:
 		{
 			"amount": 0,
 			"angle": Vector2.ZERO
-		}
+		},
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.AREA
 	)
 	if DamageManager.apply_to_target(target, burst_data):
 		var owner_player: Player = burst_data.source_player as Player

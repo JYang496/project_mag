@@ -2,13 +2,16 @@ extends SceneTree
 
 const MODULE_DIR := "res://Player/Weapons/Modules/"
 const WEAPON_DIR := "res://data/weapons/"
+const BRANCH_DIR := "res://data/weapon_branches/"
 const OUTPUT_PATH := "res://docs/weapon_module_audit.html"
+const MODULE_MAX_LEVEL := 3
 const BASE_PARAMETER_ORDER: PackedStringArray = [
-	"supports_melee",
-	"supports_ranged",
 	"required_weapon_traits",
 	"required_delivery_types",
-	"module_traits",
+	"required_weapon_capabilities",
+	"required_hooks",
+	"module_tags",
+	"level_effects",
 	"rarity",
 	"drop_weight",
 	"cost",
@@ -59,13 +62,18 @@ func _initialize() -> void:
 func _run() -> void:
 	var weapons := _load_weapons()
 	var modules := _load_modules()
+	var branch_deltas := _load_branch_deltas()
 	if weapons.is_empty() or modules.is_empty():
 		push_error("Cannot generate module report: weapons=%d modules=%d" % [weapons.size(), modules.size()])
 		_cleanup(weapons, modules)
 		quit(1)
 		return
+	if not _validate_module_level_effects(modules):
+		_cleanup(weapons, modules)
+		quit(1)
+		return
 
-	var html := _build_html(weapons, modules)
+	var html := _build_html(weapons, modules, branch_deltas)
 	var file := FileAccess.open(OUTPUT_PATH, FileAccess.WRITE)
 	if file == null:
 		push_error("Cannot open report output: %s" % OUTPUT_PATH)
@@ -98,9 +106,36 @@ func _load_weapons() -> Array[Dictionary]:
 			"scene_path": scene.resource_path,
 			"instance": instance,
 			"traits": instance.get_explicit_weapon_traits(),
+			"runtime_traits": instance.get_normalized_weapon_traits(),
 			"delivery_types": instance.get_explicit_delivery_types(),
+			"runtime_delivery_types": instance.get_weapon_delivery_types(),
+			"capabilities": instance.get_explicit_weapon_capabilities(),
+			"runtime_capabilities": instance.get_weapon_capabilities(),
 		})
 	output.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a.name).naturalnocasecmp_to(str(b.name)) < 0)
+	return output
+
+func _load_branch_deltas() -> Array[Dictionary]:
+	var output: Array[Dictionary] = []
+	for path in _list_files(BRANCH_DIR, ".tres"):
+		var definition := load(path)
+		if definition == null or definition.behavior_scene == null or definition.weapon_scene == null:
+			continue
+		var behavior: Node = definition.behavior_scene.instantiate()
+		if behavior == null:
+			continue
+		output.append({
+			"id": definition.branch_id,
+			"name": definition.display_name,
+			"weapon_scene": definition.weapon_scene.resource_path,
+			"add_traits": behavior.get_added_weapon_traits(),
+			"suppress_traits": behavior.get_suppressed_weapon_traits(),
+			"add_delivery": behavior.get_added_delivery_types(),
+			"suppress_delivery": behavior.get_suppressed_delivery_types(),
+			"add_capabilities": behavior.get_added_weapon_capabilities(),
+		})
+		behavior.free()
+	output.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a.id).naturalnocasecmp_to(str(b.id)) < 0)
 	return output
 
 func _load_modules() -> Array[Dictionary]:
@@ -116,6 +151,10 @@ func _load_modules() -> Array[Dictionary]:
 		if instance == null or not instance.has_method("can_apply_to_weapon"):
 			push_warning("Skipping scene that is not Module: %s" % path)
 			continue
+		if instance.has_method("get_unknown_module_tags"):
+			var unknown_tags: Array = instance.call("get_unknown_module_tags")
+			if not unknown_tags.is_empty():
+				push_warning("Module uses extension tags %s: %s" % [unknown_tags, path])
 		output.append({
 			"id": path.get_file().get_basename(),
 			"name": instance.get_module_display_name(),
@@ -179,6 +218,29 @@ func _get_level_effect_descriptions(instance: Node) -> Array[Dictionary]:
 	instance.call("set_module_level", 1)
 	return output
 
+func _validate_module_level_effects(modules: Array[Dictionary]) -> bool:
+	var valid := true
+	for module_data in modules:
+		var instance: Node = module_data.instance
+		if instance == null or not instance.has_method("get_level_effect_description"):
+			push_error("%s: missing level effect API" % str(module_data.scene_path))
+			valid = false
+			continue
+		var level_effects: PackedStringArray = instance.get("level_effects")
+		if level_effects.size() != MODULE_MAX_LEVEL:
+			push_error(
+				"%s: expected %d level effects, got %d" %
+				[module_data.scene_path, MODULE_MAX_LEVEL, level_effects.size()]
+			)
+			valid = false
+			continue
+		for level in range(1, MODULE_MAX_LEVEL + 1):
+			var description := str(instance.call("get_level_effect_description", level)).strip_edges()
+			if description == "":
+				push_error("%s: level %d effect is empty" % [module_data.scene_path, level])
+				valid = false
+	return valid
+
 func _translate_effect_description(description: String) -> String:
 	var exact_translations := {
 		"Reload burst damages nearby enemies": "装填时对附近敌人造成范围伤害",
@@ -218,8 +280,12 @@ func _format_parameter_value(instance: Node, property_name: String, value: Varia
 		return _join_names(instance.get_normalized_required_weapon_traits(), "无")
 	if property_name == "required_delivery_types":
 		return _join_names(instance.get_normalized_required_delivery_types(), "无")
-	if property_name == "module_traits":
-		return _join_names(instance.get_normalized_module_traits(), "无")
+	if property_name == "required_weapon_capabilities":
+		return _join_names(instance.get_normalized_required_weapon_capabilities(), "无")
+	if property_name == "required_hooks":
+		return _join_names(instance.get_normalized_required_hooks(), "无")
+	if property_name == "module_tags":
+		return _join_names(instance.get_normalized_module_tags(), "无")
 	if value is float:
 		return _format_float(float(value))
 	if value is Color:
@@ -232,7 +298,7 @@ func _format_parameter_value(instance: Node, property_name: String, value: Varia
 		return "无"
 	return str(value)
 
-func _build_html(weapons: Array[Dictionary], modules: Array[Dictionary]) -> String:
+func _build_html(weapons: Array[Dictionary], modules: Array[Dictionary], branch_deltas: Array[Dictionary]) -> String:
 	var compatible_pair_count := 0
 	var total_pair_count := weapons.size() * modules.size()
 	var unrestricted_count := 0
@@ -240,7 +306,7 @@ func _build_html(weapons: Array[Dictionary], modules: Array[Dictionary]) -> Stri
 		var module: Node = module_data.instance
 		if module.get_normalized_required_weapon_traits().is_empty() \
 				and module.get_normalized_required_delivery_types().is_empty() \
-				and module.supports_melee and module.supports_ranged:
+				and module.get_normalized_required_weapon_capabilities().is_empty():
 			unrestricted_count += 1
 		for weapon_data in weapons:
 			if module.can_apply_to_weapon(weapon_data.instance):
@@ -277,25 +343,56 @@ input{width:min(520px,100%);padding:10px 12px;border:1px solid var(--line);borde
 	body.append(_metric("无限制模组", str(unrestricted_count)))
 	body.append(_metric("兼容组合", "%d / %d" % [compatible_pair_count, total_pair_count]))
 	body.append("</section>")
+	body.append("<section class=\"card\"><h2>分类词表</h2>")
+	body.append("<p><strong>WeaponTrait（%d）：</strong>%s</p>" % [
+		WeaponTrait.ALL.size(),
+		_tags(WeaponTrait.ALL),
+	])
+	body.append("<p><strong>DamageDeliveryType（%d）：</strong>%s</p>" % [
+		DamageDeliveryType.ALL.size(),
+		_tags(DamageDeliveryType.ALL),
+	])
+	body.append("<p><strong>WeaponCapability（%d）：</strong>%s</p>" % [WeaponCapability.ALL.size(), _tags(WeaponCapability.ALL)])
+	body.append("<p><strong>EffectDeliveryType（%d）：</strong>%s</p>" % [EffectDeliveryType.ALL.size(), _tags(EffectDeliveryType.ALL)])
+	body.append("<p><strong>ModuleHook（%d）：</strong>%s</p>" % [ModuleHook.ALL.size(), _tags(ModuleHook.ALL)])
+	body.append("<p><strong>ModuleTag 核心词表（%d，可扩展）：</strong>%s</p>" % [ModuleTag.CORE.size(), _tags(ModuleTag.CORE)])
+	body.append("</section>")
 	body.append("""<section class="card issues"><h2>系统检查结论</h2><ul>
 <li>战斗奖励池会自动扫描 <code>Player/Weapons/Modules/*.tscn</code>，仅排除 <code>wmod_base.tscn</code>；本报告使用同一范围。</li>
-<li>兼容判定顺序为：近战/远程支持、交付类型命中、显式 weapon trait 至少命中一个。多个 required trait 是“任一命中”，不是“全部命中”。</li>
+<li>兼容维度为 WeaponTrait、DamageDeliveryType、WeaponCapability；维度之间全部满足，维度内部任一命中。</li>
+<li>Trait 与交付类型严格分工，不进行交付类型到 trait 的兼容映射。</li>
 <li>每把武器最多安装 3 个模组；模组等级范围为 1-3。报告参数显示场景覆盖后的当前值。</li>
+<li>系统不再使用永久武器背包或模组背包。武器只能存在于 4 个装备槽；同类型武器全局唯一，重复武器用于融合。</li>
+<li>每种模组全局唯一。未安装模组只存在于当前运行的临时模组区；重复模组升级唯一实例，满 3 级后溢出立即出售。</li>
+<li>主动模组管理只能在激活的 Rest Area 且阶段为 <code>PREPARE</code> 时进行；奖励事务允许在奖励到休整的过渡期处理。</li>
+<li>武器出售或替换时，其模组进入临时区。开始战斗前剩余临时模组统一出售，并可关闭确认提示。</li>
 <li>效果描述包含脚本机制说明，以及模组实际 <code>get_effect_descriptions()</code> 在 1-3 级的返回文本。</li>
 <li>隐藏武器仍列入兼容性检查，因为其定义与场景仍存在，且可被保存恢复路径实例化。</li>
 </ul></section>""")
-	body.append("<h2>武器清单</h2><div class=\"card\"><table><thead><tr><th>武器</th><th>ID</th><th>显式 Traits</th><th>交付类型</th><th>资源</th></tr></thead><tbody>")
+	body.append("<h2>武器清单</h2><div class=\"card\"><table><thead><tr><th>武器</th><th>ID</th><th>基础 Traits</th><th>运行时 Traits</th><th>基础交付</th><th>运行时交付</th><th>基础能力</th><th>运行时能力</th><th>资源</th></tr></thead><tbody>")
 	for weapon_data in weapons:
 		var row_class := " class=\"hidden-weapon\"" if weapon_data.hidden else ""
 		var hidden_label := " <span class=\"tag no\">隐藏</span>" if weapon_data.hidden else ""
-		body.append("<tr%s><td><strong>%s</strong>%s</td><td>%s</td><td>%s</td><td>%s</td><td class=\"path\">%s</td></tr>" % [
+		body.append("<tr%s><td><strong>%s</strong>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td class=\"path\">%s</td></tr>" % [
 			row_class,
 			_escape(str(weapon_data.name)),
 			hidden_label,
 			_escape(str(weapon_data.id)),
 			_tags(weapon_data.traits),
+			_tags(weapon_data.runtime_traits),
 			_tags(weapon_data.delivery_types),
+			_tags(weapon_data.runtime_delivery_types),
+			_tags(weapon_data.capabilities),
+			_tags(weapon_data.runtime_capabilities),
 			_escape(str(weapon_data.scene_path)),
+		])
+	body.append("</tbody></table></div>")
+	body.append("<h2>分支分类增量</h2><div class=\"card\"><table><thead><tr><th>分支</th><th>武器资源</th><th>新增 Traits</th><th>屏蔽 Traits</th><th>新增交付</th><th>屏蔽交付</th><th>新增能力</th></tr></thead><tbody>")
+	for delta in branch_deltas:
+		body.append("<tr><td><strong>%s</strong><br><span class=\"path\">%s</span></td><td class=\"path\">%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % [
+			_escape(str(delta.name)), _escape(str(delta.id)), _escape(str(delta.weapon_scene)),
+			_tags(delta.add_traits), _tags(delta.suppress_traits), _tags(delta.add_delivery),
+			_tags(delta.suppress_delivery), _tags(delta.add_capabilities),
 		])
 	body.append("</tbody></table></div>")
 	body.append("<h2>完整兼容矩阵</h2><div class=\"matrix-wrap\"><table class=\"matrix\"><thead><tr><th>模组</th>")

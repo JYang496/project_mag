@@ -26,6 +26,7 @@ enum TargetGroup {
 @export var line_width: float = 1.5
 
 var source_node: Node
+var source_category: StringName = StringName()
 
 var _segments: Array[Dictionary] = []
 var _emitters: Dictionary = {}
@@ -154,7 +155,9 @@ func _apply_tick_damage() -> void:
 			source_node,
 			max(1, int(damage_amount)),
 			Attack.normalize_damage_type(damage_type),
-			knock_back
+			knock_back,
+			source_category,
+			DamageDeliveryType.AREA
 		)
 		DamageManager.apply_to_target(target, damage_data)
 

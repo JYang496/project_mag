@@ -6,6 +6,8 @@
 
 [node name="ErosionApply" instance=ExtResource("1_t6qi5")]
 script = ExtResource("2_vpd86")
+level_effects = PackedStringArray("Applies 5 ticks of 1 damage", "Applies 7 ticks of 1 damage", "Applies 9 ticks of 2 damage")
+required_hooks = 2
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

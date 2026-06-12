@@ -156,6 +156,8 @@ func localize_module_reason(reason: String) -> String:
 		"Weapon has no module container.": "ui.module.reason.no_container",
 		"No module slots available.": "ui.module.reason.no_slots",
 		"Module is not equipped.": "ui.module.reason.not_equipped",
+		"Modules can only be managed in the Rest Area.": "ui.module.reason.rest_area_only",
+		"Only one module of each type can be owned.": "ui.module.reason.unique",
 		"Not compatible with melee weapons.": "ui.module.reason.not_melee",
 		"Not compatible with ranged weapons.": "ui.module.reason.not_ranged",
 		"Weapon does not match required traits.": "ui.module.reason.trait_required",

@@ -19,6 +19,18 @@ func emit_passive_trigger(event_name: StringName, detail: Dictionary = {}, passi
 		output["state_after_trigger"] = "ready" if is_passive_ready() else "cooldown"
 	if not output.has("passive_scope"):
 		output["passive_scope"] = passive_scope
+	var effect_delivery := EffectDeliveryType.TARGET if output.get("target") is Node else EffectDeliveryType.SELF
+	var effect_data := EffectData.new().setup(
+		weapon,
+		output.get("target") as Node,
+		event_name,
+		DamageData.SOURCE_PLAYER_WEAPON,
+		effect_delivery,
+		output
+	)
+	output["source_category"] = effect_data.source_category
+	output["effect_delivery_type"] = effect_data.effect_delivery_type
+	output["effect_data"] = effect_data
 	weapon.passive_triggered.emit(event_name, output)
 
 func can_passive_trigger(passive_id: StringName, icd_sec: float) -> bool:

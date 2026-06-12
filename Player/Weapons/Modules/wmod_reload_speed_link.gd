@@ -29,9 +29,9 @@ func get_reload_duration_multiplier(source_weapon: Weapon, _base_duration: float
 	return maxf(1.0 - _get_bonus_ratio(), 0.05)
 
 func get_effect_descriptions() -> PackedStringArray:
-	return PackedStringArray([
+	return with_level_effect_descriptions(PackedStringArray([
 		"Reloads faster while another weapon is reloading",
-	])
+	]))
 
 func _register_plugin() -> void:
 	if _registered:
