@@ -14,6 +14,9 @@
 [ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_tar_mine_crawler.tscn" id="12_tar_mine_crawler"]
 [ext_resource type="PackedScene" uid="uid://3nbq5hvtkssa" path="res://Npc/enemy/scenes/enemy_orbit_support.tscn" id="13_orbit_support"]
 [ext_resource type="PackedScene" uid="uid://bmy3cber63qwh" path="res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn" id="14_rolling_ball_elite"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_shield_core.tscn" id="15_shield_core"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_repair_unit.tscn" id="16_repair_unit"]
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/enemy_interceptor_heavy.tscn" id="17_interceptor"]
 
 [sub_resource type="Resource" id="Entry_roll_intro"]
 script = ExtResource("3_entry")
@@ -46,19 +49,25 @@ spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_main"), SubReso
 [sub_resource type="Resource" id="Entry_spike_main"]
 script = ExtResource("3_entry")
 enemy = ExtResource("7_spike_turret")
+start_sec = 24
 weight = 3
 
 [sub_resource type="Resource" id="Entry_roll_chaser"]
 script = ExtResource("3_entry")
 enemy = ExtResource("5_rolling_ball")
-start_sec = 18
-weight = 5
+weight = 8
+
+[sub_resource type="Resource" id="Entry_shield_tutorial"]
+script = ExtResource("3_entry")
+enemy = ExtResource("15_shield_core")
+start_sec = 10
+weight = 2
 
 [sub_resource type="Resource" id="Level_3"]
 script = ExtResource("2_level")
 time_out_sec = 49
-target_total_hp = 600
-spawns = Array[ExtResource("3_entry")]([SubResource("Entry_spike_main"), SubResource("Entry_roll_chaser")])
+target_total_hp = 570
+spawns = Array[ExtResource("3_entry")]([SubResource("Entry_roll_chaser"), SubResource("Entry_shield_tutorial"), SubResource("Entry_spike_main")])
 
 [sub_resource type="Resource" id="Entry_bomber_main"]
 script = ExtResource("3_entry")
@@ -68,14 +77,20 @@ weight = 4
 [sub_resource type="Resource" id="Entry_mine_zone"]
 script = ExtResource("3_entry")
 enemy = ExtResource("9_mine_crawler")
-start_sec = 14
+start_sec = 28
 weight = 3
+
+[sub_resource type="Resource" id="Entry_repair_tutorial"]
+script = ExtResource("3_entry")
+enemy = ExtResource("16_repair_unit")
+start_sec = 12
+weight = 2
 
 [sub_resource type="Resource" id="Level_4"]
 script = ExtResource("2_level")
 time_out_sec = 52
-target_total_hp = 700
-spawns = Array[ExtResource("3_entry")]([SubResource("Entry_bomber_main"), SubResource("Entry_mine_zone")])
+target_total_hp = 650
+spawns = Array[ExtResource("3_entry")]([SubResource("Entry_bomber_main"), SubResource("Entry_repair_tutorial"), SubResource("Entry_mine_zone")])
 
 [sub_resource type="Resource" id="Entry_mortar_lane"]
 script = ExtResource("3_entry")
@@ -94,11 +109,23 @@ enemy = ExtResource("12_tar_mine_crawler")
 start_sec = 40
 weight = 3
 
+[sub_resource type="Resource" id="Entry_interceptor_tutorial"]
+script = ExtResource("3_entry")
+enemy = ExtResource("17_interceptor")
+start_sec = 10
+weight = 3
+
+[sub_resource type="Resource" id="Entry_orbit_interceptor_tutorial"]
+script = ExtResource("3_entry")
+enemy = ExtResource("13_orbit_support")
+start_sec = 22
+weight = 2
+
 [sub_resource type="Resource" id="Level_5"]
 script = ExtResource("2_level")
 time_out_sec = 53
-target_total_hp = 800
-spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_lane"), SubResource("Entry_mirror_peak"), SubResource("Entry_tar_control")])
+target_total_hp = 740
+spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_lane"), SubResource("Entry_interceptor_tutorial"), SubResource("Entry_orbit_interceptor_tutorial"), SubResource("Entry_mirror_peak")])
 
 [sub_resource type="Resource" id="Entry_spike_wall"]
 script = ExtResource("3_entry")
@@ -117,11 +144,17 @@ enemy = ExtResource("13_orbit_support")
 start_sec = 22
 weight = 3
 
+[sub_resource type="Resource" id="Entry_shield_charge"]
+script = ExtResource("3_entry")
+enemy = ExtResource("15_shield_core")
+start_sec = 16
+weight = 2
+
 [sub_resource type="Resource" id="Level_6"]
 script = ExtResource("2_level")
 time_out_sec = 55
-target_total_hp = 900
-spawns = Array[ExtResource("3_entry")]([SubResource("Entry_spike_wall"), SubResource("Entry_wheel_breaker"), SubResource("Entry_orbit_harass")])
+target_total_hp = 830
+spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_breaker"), SubResource("Entry_shield_charge"), SubResource("Entry_spike_wall"), SubResource("Entry_orbit_harass")])
 
 [sub_resource type="Resource" id="Entry_bomber_push"]
 script = ExtResource("3_entry")
@@ -140,11 +173,17 @@ enemy = ExtResource("14_rolling_ball_elite")
 start_sec = 36
 weight = 2
 
+[sub_resource type="Resource" id="Entry_repair_hazard"]
+script = ExtResource("3_entry")
+enemy = ExtResource("16_repair_unit")
+start_sec = 18
+weight = 2
+
 [sub_resource type="Resource" id="Level_7"]
 script = ExtResource("2_level")
 time_out_sec = 60
-target_total_hp = 1100
-spawns = Array[ExtResource("3_entry")]([SubResource("Entry_bomber_push"), SubResource("Entry_mine_flood"), SubResource("Entry_elite_anchor")])
+target_total_hp = 1000
+spawns = Array[ExtResource("3_entry")]([SubResource("Entry_bomber_push"), SubResource("Entry_mine_flood"), SubResource("Entry_repair_hazard"), SubResource("Entry_elite_anchor")])
 
 [sub_resource type="Resource" id="Entry_mortar_matrix"]
 script = ExtResource("3_entry")
@@ -163,11 +202,23 @@ enemy = ExtResource("11_mirror_caster")
 start_sec = 25
 weight = 2
 
+[sub_resource type="Resource" id="Entry_interceptor_ranged"]
+script = ExtResource("3_entry")
+enemy = ExtResource("17_interceptor")
+start_sec = 12
+weight = 3
+
+[sub_resource type="Resource" id="Entry_orbit_ranged"]
+script = ExtResource("3_entry")
+enemy = ExtResource("13_orbit_support")
+start_sec = 22
+weight = 2
+
 [sub_resource type="Resource" id="Level_8"]
 script = ExtResource("2_level")
 time_out_sec = 67
-target_total_hp = 1300
-spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_matrix"), SubResource("Entry_tar_drag"), SubResource("Entry_mirror_split")])
+target_total_hp = 1180
+spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_matrix"), SubResource("Entry_interceptor_ranged"), SubResource("Entry_orbit_ranged"), SubResource("Entry_tar_drag"), SubResource("Entry_mirror_split")])
 
 [sub_resource type="Resource" id="Entry_wheel_press"]
 script = ExtResource("3_entry")
@@ -186,11 +237,29 @@ enemy = ExtResource("13_orbit_support")
 start_sec = 20
 weight = 3
 
+[sub_resource type="Resource" id="Entry_shield_mix"]
+script = ExtResource("3_entry")
+enemy = ExtResource("15_shield_core")
+start_sec = 10
+weight = 2
+
+[sub_resource type="Resource" id="Entry_repair_mix"]
+script = ExtResource("3_entry")
+enemy = ExtResource("16_repair_unit")
+start_sec = 20
+weight = 2
+
+[sub_resource type="Resource" id="Entry_interceptor_mix"]
+script = ExtResource("3_entry")
+enemy = ExtResource("17_interceptor")
+start_sec = 28
+weight = 3
+
 [sub_resource type="Resource" id="Level_9"]
 script = ExtResource("2_level")
 time_out_sec = 75
-target_total_hp = 1500
-spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_press"), SubResource("Entry_spike_screen"), SubResource("Entry_orbit_cover")])
+target_total_hp = 1350
+spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_press"), SubResource("Entry_shield_mix"), SubResource("Entry_spike_screen"), SubResource("Entry_repair_mix"), SubResource("Entry_orbit_cover"), SubResource("Entry_interceptor_mix")])
 
 [sub_resource type="Resource" id="Entry_mortar_core"]
 script = ExtResource("3_entry")
@@ -215,11 +284,29 @@ enemy = ExtResource("11_mirror_caster")
 start_sec = 30
 weight = 2
 
+[sub_resource type="Resource" id="Entry_shield_finale"]
+script = ExtResource("3_entry")
+enemy = ExtResource("15_shield_core")
+start_sec = 12
+weight = 2
+
+[sub_resource type="Resource" id="Entry_repair_finale"]
+script = ExtResource("3_entry")
+enemy = ExtResource("16_repair_unit")
+start_sec = 22
+weight = 2
+
+[sub_resource type="Resource" id="Entry_interceptor_finale"]
+script = ExtResource("3_entry")
+enemy = ExtResource("17_interceptor")
+start_sec = 26
+weight = 3
+
 [sub_resource type="Resource" id="Level_10"]
 script = ExtResource("2_level")
 time_out_sec = 84
-target_total_hp = 1750
-spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_core"), SubResource("Entry_bomber_storm"), SubResource("Entry_elite_hunt"), SubResource("Entry_mirror_collapse")])
+target_total_hp = 1550
+spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_core"), SubResource("Entry_bomber_storm"), SubResource("Entry_shield_finale"), SubResource("Entry_elite_hunt"), SubResource("Entry_repair_finale"), SubResource("Entry_interceptor_finale"), SubResource("Entry_mirror_collapse")])
 
 [sub_resource type="Resource" id="Pressure_early"]
 script = ExtResource("4_pressure")

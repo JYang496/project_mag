@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://b336cex4sdrnf"]
 
 [ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_jdgf0"]
-[ext_resource type="Texture2D" uid="uid://c0t8ukgysqttr" path="res://Textures/test/e2.png" id="2_1at03"]
+[ext_resource type="Texture2D" path="res://asset/images/enemies/wheel_cart.png" id="2_1at03"]
 [ext_resource type="Script" uid="uid://dr52evamqh220" path="res://Npc/enemy/scripts/enemy_wheel_cart.gd" id="2_m5ns1"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_k1bh1"]

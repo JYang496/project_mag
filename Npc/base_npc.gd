@@ -155,6 +155,20 @@ func _profile_set_hp(value: int) -> void:
 func _profile_get_max_hp() -> int:
 	return max(1, _incoming_damage_max_hp)
 
+func heal(amount: int) -> int:
+	if is_dead or amount <= 0:
+		return 0
+	var maximum: int = maxi(1, _incoming_damage_max_hp)
+	var previous: int = int(hp)
+	hp = mini(previous + amount, maximum)
+	var restored: int = int(hp) - previous
+	if restored > 0:
+		_sync_enemy_hp_bar()
+	return restored
+
+func get_health_ratio() -> float:
+	return clampf(float(maxi(int(hp), 0)) / float(maxi(_incoming_damage_max_hp, 1)), 0.0, 1.0)
+
 func _profile_get_armor() -> int:
 	return 0
 

@@ -1,0 +1,34 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_base"]
+[ext_resource type="Script" path="res://Npc/enemy/scripts/enemy_shield_core.gd" id="2_script"]
+[ext_resource type="Texture2D" path="res://asset/images/enemies/shield_core.png" id="3_tex"]
+
+[sub_resource type="RectangleShape2D" id="Shape_hurt"]
+size = Vector2(27, 27)
+
+[sub_resource type="RectangleShape2D" id="Shape_body"]
+size = Vector2(25, 25)
+
+[node name="EnemyShieldCore" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+damage = 0
+spawn_tags = Array[StringName]([&"support"])
+spawn_alive_cap = 1
+spawn_batch_cap = 1
+support_role = &"shield_core"
+movement_speed = 22.0
+hp = 42
+
+[node name="CollisionShape2D" parent="HurtBox" index="0"]
+shape = SubResource("Shape_hurt")
+
+[node name="Body" parent="." index="1"]
+scale = Vector2(0.28, 0.28)
+texture = ExtResource("3_tex")
+
+[node name="NPCCollision" parent="." index="2"]
+shape = SubResource("Shape_body")
+
+[editable path="HurtBox"]
+[editable path="HitBoxDot"]

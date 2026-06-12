@@ -23,6 +23,7 @@ var _buffed_targets: Array[BaseEnemy] = []
 
 func _ready() -> void:
 	super._ready()
+	support_role = &"speed_support"
 	if speed_buff_shape and speed_buff_shape.shape is CircleShape2D:
 		var aura_shape := speed_buff_shape.shape as CircleShape2D
 		aura_shape.radius = aura_radius

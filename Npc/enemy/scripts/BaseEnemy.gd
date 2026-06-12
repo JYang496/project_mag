@@ -3,6 +3,8 @@ class_name BaseEnemy
 
 const SPAWN_TAG_RANGED := &"ranged"
 const SPAWN_TAG_ELITE := &"elite"
+const SPAWN_TAG_SUPPORT := &"support"
+const SPAWN_TAG_INTERCEPTOR := &"interceptor"
 const QUEST_OUTLINE_SHADER: Shader = preload("res://Shaders/quest_outline.gdshader") as Shader
 
 @export var damage := 0
@@ -14,6 +16,8 @@ const QUEST_OUTLINE_SHADER: Shader = preload("res://Shaders/quest_outline.gdshad
 @export var spawn_tags: Array[StringName] = []
 @export var spawn_alive_cap: int = 0
 @export var spawn_batch_cap: int = 0
+@export_group("Support")
+@export var support_role: StringName = &""
 @export_group("")
 @export_group("Body Push")
 @export var body_push_enabled: bool = true
@@ -50,6 +54,7 @@ var _quest_freeze_movement := false
 var _quest_outline_enabled := false
 var _quest_outline_original_material: Material
 var _quest_outline_material: ShaderMaterial
+var _support_damage_reduction_sources: Dictionary = {}
 
 func _init() -> void:
 	super._init()
@@ -62,6 +67,7 @@ func _enter_tree() -> void:
 		enemy_registry.call("register_enemy", self)
 
 func _ready() -> void:
+	_incoming_damage_max_hp = max(1, int(hp))
 	hit_box_dot.hitbox_owner = self
 
 func _exit_tree() -> void:
@@ -201,6 +207,43 @@ func _build_quest_outline_material(color: Color, width: float) -> ShaderMaterial
 
 func has_spawn_tag(tag: StringName) -> bool:
 	return spawn_tags.has(tag)
+
+func get_source_damage_taken_multiplier(attack: Attack) -> float:
+	var base_multiplier := super.get_source_damage_taken_multiplier(attack)
+	if attack == null or not _attack_is_from_player_weapon_source(attack):
+		return base_multiplier
+	return base_multiplier * get_support_damage_taken_multiplier()
+
+func set_support_damage_reduction(source: Node, multiplier: float) -> void:
+	if source == null or source == self:
+		return
+	_support_damage_reduction_sources[source.get_instance_id()] = {
+		"source": weakref(source),
+		"multiplier": clampf(multiplier, 0.0, 1.0),
+	}
+
+func clear_support_damage_reduction(source: Node) -> void:
+	if source != null:
+		_support_damage_reduction_sources.erase(source.get_instance_id())
+
+func get_support_damage_taken_multiplier() -> float:
+	var strongest := 1.0
+	for source_id in _support_damage_reduction_sources.keys():
+		var entry: Dictionary = _support_damage_reduction_sources[source_id]
+		var source_ref := entry.get("source") as WeakRef
+		if source_ref == null or source_ref.get_ref() == null:
+			_support_damage_reduction_sources.erase(source_id)
+			continue
+		strongest = minf(strongest, float(entry.get("multiplier", 1.0)))
+	return strongest
+
+func is_support_unit() -> bool:
+	return support_role != &""
+
+func can_receive_support_from(source: BaseEnemy) -> bool:
+	if source == null or source == self:
+		return false
+	return support_role == &"" or support_role != source.support_role
 
 func compute_ranged_navigation(
 	delta: float,
