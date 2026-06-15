@@ -28,9 +28,9 @@ signal rest_menu_cancelled
 @export var zone4_hold_track_width: float = 4.0
 @export var zone4_hold_progress_width: float = 8.0
 @export var debug_click_logs: bool = false
-@export var zone_merchant_hint_text: String = "Click to open shop"
-@export var zone_smith_hint_text: String = "Click to open upgrade"
-@export var zone_module_hint_text: String = "Click to manage modules"
+@export var zone_merchant_hint_text: String = "Shop"
+@export var zone_smith_hint_text: String = "Weapon Upgrade"
+@export var zone_module_hint_text: String = "Module Management"
 @export var zone_battle_hold_hint_text: String = "Hold left mouse on center to start battle"
 @export var zone_hint_forward_offset: Vector2 = Vector2(0.0, -44.0)
 @export var zone_hint_z_index: int = 80
@@ -53,6 +53,8 @@ var _last_menu_open_msec: int = -1000000
 var _zone4_hold_elapsed := 0.0
 var _zone4_hold_triggered := false
 var _zone4_hold_boost_active: bool = false
+var _zone_hint_status_signature := ""
+var _zone_hint_visual_state := ""
 @onready var _start_battle_button: StartBattleButton = get_node_or_null("StartBattleButton")
 @onready var _texture_root: Node2D = get_node_or_null("Texture")
 @onready var _merchant_hint_label: Label = get_node_or_null("MerchantHintLabel")
@@ -96,6 +98,10 @@ func _ready() -> void:
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
+	if not InventoryData.temporary_modules_changed.is_connected(_on_zone_hint_status_changed):
+		InventoryData.temporary_modules_changed.connect(_on_zone_hint_status_changed)
+	if not PlayerData.weapon_list_changed.is_connected(_on_zone_hint_status_changed):
+		PlayerData.weapon_list_changed.connect(_on_zone_hint_status_changed)
 	var area := get_node_or_null("Area2D") as Area2D
 	if area:
 		area.monitoring = false
@@ -127,19 +133,54 @@ func _exit_tree() -> void:
 	CursorManager.clear_world_state(self)
 	if LocalizationManager and LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.disconnect("language_changed", Callable(self, "_on_language_changed"))
+	if InventoryData and InventoryData.temporary_modules_changed.is_connected(_on_zone_hint_status_changed):
+		InventoryData.temporary_modules_changed.disconnect(_on_zone_hint_status_changed)
+	if PlayerData and PlayerData.weapon_list_changed.is_connected(_on_zone_hint_status_changed):
+		PlayerData.weapon_list_changed.disconnect(_on_zone_hint_status_changed)
 
 func _on_language_changed(_new_locale: String) -> void:
+	_zone_hint_status_signature = ""
+	_refresh_scene_hint_labels()
+
+func _on_zone_hint_status_changed() -> void:
+	_zone_hint_status_signature = ""
 	_refresh_scene_hint_labels()
 
 func _refresh_scene_hint_labels() -> void:
 	if _merchant_hint_label:
-		_merchant_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.merchant", zone_merchant_hint_text)
+		_merchant_hint_label.text = "%s\n%s" % [
+			LocalizationManager.tr_key("ui.rest.zone.shop.title", zone_merchant_hint_text),
+			LocalizationManager.tr_key("ui.rest.zone.shop.status", "Buy and sell weapons"),
+		]
 	if _smith_hint_label:
-		_smith_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.smith", zone_smith_hint_text)
+		var upgradable_count := _get_affordable_upgrade_count()
+		var upgrade_status := LocalizationManager.tr_key("ui.rest.zone.upgrade.none", "No upgrades available")
+		if upgradable_count > 0:
+			upgrade_status = LocalizationManager.tr_format(
+				"ui.rest.zone.upgrade.available",
+				{"count": upgradable_count},
+				"%d upgrades available" % upgradable_count
+			)
+		_smith_hint_label.text = "%s\n%s" % [
+			LocalizationManager.tr_key("ui.rest.zone.upgrade.title", zone_smith_hint_text),
+			upgrade_status,
+		]
 	if _module_hint_label:
-		_module_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.module", zone_module_hint_text)
+		var pending_count := InventoryData.temporary_modules.size()
+		var module_status := LocalizationManager.tr_key("ui.rest.zone.module.none", "No pending modules")
+		if pending_count > 0:
+			module_status = LocalizationManager.tr_format(
+				"ui.rest.zone.module.pending",
+				{"count": pending_count},
+				"%d pending" % pending_count
+			)
+		_module_hint_label.text = "%s\n%s" % [
+			LocalizationManager.tr_key("ui.rest.zone.module.title", zone_module_hint_text),
+			module_status,
+		]
 	if _battle_hint_label:
 		_battle_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.battle_hold", zone_battle_hold_hint_text)
+	_zone_hint_status_signature = _build_zone_hint_status_signature()
 	_layout_scene_hint_labels()
 
 func _setup_scene_hint_labels() -> void:
@@ -149,6 +190,16 @@ func _setup_scene_hint_labels() -> void:
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		label.z_as_relative = false
 		label.z_index = zone_hint_z_index
+	for zone_label in [_merchant_hint_label, _smith_hint_label, _module_hint_label]:
+		if zone_label == null:
+			continue
+		zone_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		zone_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		zone_label.add_theme_font_size_override("font_size", 16)
+		zone_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+		zone_label.add_theme_constant_override("shadow_offset_x", 1)
+		zone_label.add_theme_constant_override("shadow_offset_y", 2)
+	_update_zone_hint_visuals(true)
 	_layout_scene_hint_labels()
 
 func _layout_scene_hint_labels() -> void:
@@ -168,6 +219,90 @@ func _place_zone_hint_label(label: Label, zone_id: int) -> void:
 		label_size = label.get_combined_minimum_size()
 	var target_center := zone_rect.get_center() + zone_hint_forward_offset
 	label.position = target_center - label_size * 0.5
+
+func _build_zone_hint_status_signature() -> String:
+	var weapon_parts: PackedStringArray = []
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon := weapon_ref as Weapon
+		if weapon != null and is_instance_valid(weapon):
+			weapon_parts.append("%d:%d" % [int(weapon.level), int(weapon.max_level)])
+	return "%d|%d|%s" % [
+		int(PlayerData.player_gold),
+		InventoryData.temporary_modules.size(),
+		",".join(weapon_parts),
+	]
+
+func _get_affordable_upgrade_count() -> int:
+	var count := 0
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon := weapon_ref as Weapon
+		if weapon == null or not is_instance_valid(weapon) or weapon.level >= weapon.max_level:
+			continue
+		if PlayerData.player_gold >= _get_weapon_upgrade_cost(weapon):
+			count += 1
+	return count
+
+func _get_weapon_upgrade_cost(weapon: Weapon) -> int:
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+	if weapon_def == null:
+		return 1
+	if GlobalVariables.economy_data == null:
+		return maxi(1, int(round(float(weapon_def.price) * 0.5)))
+	return GlobalVariables.economy_data.get_weapon_upgrade_gold(int(weapon_def.price))
+
+func _update_zone_hint_visibility() -> void:
+	var show_zone_hints := _is_interaction_enabled() and not _has_visible_blocking_ui()
+	for label in [_merchant_hint_label, _smith_hint_label, _module_hint_label, _battle_hint_label]:
+		if label:
+			label.visible = show_zone_hints
+
+func _has_visible_blocking_ui() -> bool:
+	var ui := GlobalVariables.ui as Node
+	if ui == null or not is_instance_valid(ui):
+		return false
+	for root_name in BLOCKING_UI_ROOTS:
+		var root := ui.get_node_or_null("GUI/%s" % root_name) as CanvasItem
+		if root != null and root.is_visible_in_tree():
+			return true
+	return false
+
+func _update_zone_hint_visuals(force: bool = false) -> void:
+	var state := "%d|%d|%s" % [hover_zone_id, selected_zone_id, str(is_auto_moving)]
+	if not force and state == _zone_hint_visual_state:
+		return
+	_zone_hint_visual_state = state
+	_style_zone_hint(_merchant_hint_label, ZONE_ID_MERCHANT)
+	_style_zone_hint(_smith_hint_label, ZONE_ID_SMITH)
+	_style_zone_hint(_module_hint_label, ZONE_ID_MODULE)
+
+func _style_zone_hint(label: Label, zone_id: int) -> void:
+	if label == null:
+		return
+	var is_hovered := hover_zone_id == zone_id
+	var is_selected := selected_zone_id == zone_id
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.035, 0.055, 0.075, 0.92)
+	style.border_color = Color(0.28, 0.42, 0.55, 0.95)
+	if is_hovered:
+		style.bg_color = Color(0.055, 0.18, 0.26, 0.96)
+		style.border_color = zone_hover_color
+	if is_selected:
+		style.bg_color = Color(0.045, 0.20, 0.13, 0.96)
+		style.border_color = zone_selected_color
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 10.0
+	style.content_margin_right = 10.0
+	style.content_margin_top = 6.0
+	style.content_margin_bottom = 6.0
+	style.shadow_color = Color(0, 0, 0, 0.5)
+	style.shadow_size = 6
+	label.add_theme_stylebox_override("normal", style)
+	label.add_theme_color_override(
+		"font_color",
+		Color(0.82, 1.0, 0.88) if is_selected else Color(0.86, 0.95, 1.0)
+	)
 
 func _ensure_visual_layering() -> void:
 	# Keep base texture behind this CanvasItem's custom draw (grid/hover/progress).
@@ -396,6 +531,10 @@ func _process(delta: float) -> void:
 		_reset_zone4_hold()
 		CursorManager.clear_world_state(self)
 		return
+	var status_signature := _build_zone_hint_status_signature()
+	if status_signature != _zone_hint_status_signature:
+		_refresh_scene_hint_labels()
+	_update_zone_hint_visibility()
 	_update_hover_from_mouse()
 	_update_auto_move()
 	_update_zone4_hold(delta)
@@ -465,6 +604,7 @@ func _begin_zone_move(zone_id: int, open_menu_on_arrival: bool) -> void:
 	_arrival_token += 1
 	selected_zone_id = zone_id
 	menu_open = false
+	_update_zone_hint_visuals()
 	move_target_global = _get_zone_center_global(zone_id)
 	player_move_target_global = move_target_global
 	if not _camera_owner_active:
@@ -519,6 +659,7 @@ func _reset_prepare_state(move_player_to_center: bool) -> void:
 	_stop_auto_move()
 	_reset_zone4_hold()
 	selected_zone_id = CENTER_ZONE_ID
+	_update_zone_hint_visuals()
 	_set_hover_zone(-1)
 	_close_rest_area_primary_menu_if_open()
 	if move_player_to_center:
@@ -554,6 +695,7 @@ func _set_hover_zone(zone_id: int) -> void:
 		print("[RestArea] hover_zone=", hover_zone_id)
 	if hover_zone_id != CENTER_ZONE_ID:
 		_reset_zone4_hold()
+	_update_zone_hint_visuals()
 	_refresh_zone_hover_hint()
 	queue_redraw()
 

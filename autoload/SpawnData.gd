@@ -5,11 +5,12 @@ const SPAWN_COMBAT_PROFILE_PATH := "res://data/spawns/spawn_combat_profile.tres"
 var spawn_combat_profile: SpawnCombatProfile
 var level_list: Array[LevelCombatPlan] = []
 
-func _ready() -> void:
-	load_all_spawn_data(GlobalVariables.SPAWN_PATN)
-
 func load_all_spawn_data(_legacy_path: String = "") -> void:
 	reload_spawn_combat_profile()
+
+func ensure_loaded() -> void:
+	if spawn_combat_profile == null or level_list.is_empty():
+		reload_spawn_combat_profile()
 
 func reload_spawn_combat_profile() -> void:
 	level_list.clear()
@@ -26,6 +27,5 @@ func reload_spawn_combat_profile() -> void:
 		push_warning("Spawn combat profile has no level configs: %s" % SPAWN_COMBAT_PROFILE_PATH)
 
 func get_spawn_combat_profile() -> SpawnCombatProfile:
-	if spawn_combat_profile == null:
-		reload_spawn_combat_profile()
+	ensure_loaded()
 	return spawn_combat_profile

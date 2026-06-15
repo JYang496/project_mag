@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Use on frequent-hit weapons to recover player HP when attacks connect.
 
 var ITEM_NAME := "Life Steal"
@@ -6,16 +6,6 @@ var ITEM_NAME := "Life Steal"
 @export var steal_ratio: float = 0.1
 @export var minimum_heal: int = 1
 @export var ratio_per_fuse: float = 0.0
-
-func _enter_tree() -> void:
-	super._enter_tree()
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
-
-func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
 
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if not target or not is_instance_valid(target):

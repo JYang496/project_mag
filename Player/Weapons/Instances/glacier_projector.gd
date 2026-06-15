@@ -170,7 +170,7 @@ func _refund_ammo_from_cold_snap_branches() -> int:
 	if total_refund <= 0:
 		return 0
 	var ammo_before := current_ammo
-	current_ammo = mini(maxi(current_ammo + total_refund, 0), max(0, magazine_capacity))
+	current_ammo = mini(maxi(current_ammo + total_refund, 0), get_effective_magazine_capacity())
 	return maxi(current_ammo - ammo_before, 0)
 
 func get_passive_status() -> Dictionary:
@@ -241,7 +241,7 @@ func _get_effective_cone_half_angle_deg() -> float:
 	var angle_multiplier: float = 1.0
 	for behavior in branch_runtime.get_branch_behaviors():
 		angle_multiplier *= maxf(behavior.get_cone_half_angle_multiplier(), 0.1)
-	return maxf(cone_half_angle_deg * maxf(angle_multiplier, 0.1), 1.0)
+	return get_effective_cone_half_angle(cone_half_angle_deg * maxf(angle_multiplier, 0.1))
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)

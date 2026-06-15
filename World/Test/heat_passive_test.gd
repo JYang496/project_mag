@@ -2,7 +2,7 @@ extends Node2D
 
 @export var player_scene: PackedScene = preload("res://Player/Mechas/scenes/Player.tscn")
 @export var dummy_scene: PackedScene = preload("res://World/Test/dps_test_dummy_enemy.tscn")
-@export var dummy_texture: Texture2D = preload("res://Textures/test/square.png")
+@export var dummy_texture: Texture2D = preload("res://asset/images/test/square.png")
 @export var weapon_level: int = 7
 @export var dummy_hp: int = 20000
 @export var cannon_spectator_offsets: Array[Vector2] = [

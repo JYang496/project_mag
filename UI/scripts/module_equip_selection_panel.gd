@@ -32,6 +32,7 @@ var _tracked_stat_keys: PackedStringArray = [
 
 func _ready() -> void:
 	visible = false
+	_apply_visual_style()
 	if not cancel_button.is_connected("pressed", Callable(self, "_on_cancel_pressed")):
 		cancel_button.pressed.connect(_on_cancel_pressed)
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
@@ -89,8 +90,18 @@ func _build_weapon_section(parent: VBoxContainer, weapons: Array[Weapon], is_equ
 		_build_weapon_row(parent, weapon)
 
 func _build_weapon_row(parent: VBoxContainer, weapon: Weapon) -> void:
+	var card_panel := PanelContainer.new()
+	card_panel.add_theme_stylebox_override("panel", _make_card_style())
+	parent.add_child(card_panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	card_panel.add_child(margin)
 	var card: VBoxContainer = VBoxContainer.new()
-	parent.add_child(card)
+	card.add_theme_constant_override("separation", 7)
+	margin.add_child(card)
 
 	var header_row: HBoxContainer = HBoxContainer.new()
 	card.add_child(header_row)
@@ -119,7 +130,7 @@ func _build_weapon_row(parent: VBoxContainer, weapon: Weapon) -> void:
 	var replacement_added := false
 	if can_equip:
 		var action_button := Button.new()
-		action_button.custom_minimum_size = Vector2(116, 28)
+		action_button.custom_minimum_size = Vector2(116, 44)
 		header_row.add_child(action_button)
 		action_button.text = LocalizationManager.tr_key("ui.module.action.equip", "Equip")
 		action_button.modulate = available_slot_color
@@ -136,7 +147,7 @@ func _build_weapon_row(parent: VBoxContainer, weapon: Weapon) -> void:
 				if not replace_feedback.get("ok", false):
 					continue
 				var replace_button := Button.new()
-				replace_button.custom_minimum_size = Vector2(150, 28)
+				replace_button.custom_minimum_size = Vector2(150, 44)
 				replace_button.text = LocalizationManager.tr_format(
 					"ui.module.action.replace",
 					{"module": LocalizationManager.get_module_name(equipped_module)},
@@ -148,7 +159,7 @@ func _build_weapon_row(parent: VBoxContainer, weapon: Weapon) -> void:
 				replacement_added = true
 		if not replacement_added:
 			var blocked_button := Button.new()
-			blocked_button.custom_minimum_size = Vector2(116, 28)
+			blocked_button.custom_minimum_size = Vector2(116, 44)
 			blocked_button.text = LocalizationManager.tr_key("ui.module.action.blocked", "Blocked")
 			blocked_button.disabled = true
 			blocked_button.modulate = incompatible_slot_color
@@ -269,6 +280,30 @@ func _build_stat_preview_line(weapon: Weapon) -> String:
 
 func _format_stat_label(stat_key: String) -> String:
 	return stat_key.replace("_", " ").capitalize()
+
+func _apply_visual_style() -> void:
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.045, 0.065, 0.09, 0.99)
+	panel_style.border_color = Color(0.25, 0.58, 0.76)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(12)
+	panel_style.shadow_color = Color(0, 0, 0, 0.5)
+	panel_style.shadow_size = 12
+	add_theme_stylebox_override("panel", panel_style)
+	title_label.add_theme_font_size_override("font_size", 28)
+	title_label.add_theme_color_override("font_color", Color(0.82, 0.94, 1.0))
+	module_label.add_theme_color_override("font_color", Color(0.7, 0.8, 0.88))
+	module_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	equipped_list.add_theme_constant_override("separation", 10)
+	cancel_button.custom_minimum_size = Vector2(180, 46)
+
+func _make_card_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.11, 0.15, 0.98)
+	style.border_color = Color(0.2, 0.3, 0.39)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(8)
+	return style
 
 func _on_language_changed(_locale: String) -> void:
 	if visible and _module_instance != null and is_instance_valid(_module_instance):

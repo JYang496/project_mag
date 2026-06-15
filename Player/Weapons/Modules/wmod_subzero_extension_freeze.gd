@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Extends frost expiration and strengthens slow derived from frost stacks.
 
 var ITEM_NAME := "Subzero Extension"
@@ -11,16 +11,6 @@ var ITEM_NAME := "Subzero Extension"
 @export var slow_bonus_lv3: float = 0.20
 @export var max_total_slow: float = 0.35
 @export var base_frost_slow_per_stack: float = 0.04
-
-func _enter_tree() -> void:
-	super._enter_tree()
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
-
-func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
 
 func apply_on_hit(_source_weapon: Weapon, target: Node) -> void:
 	if target == null or not is_instance_valid(target):

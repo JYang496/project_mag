@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://bdbij8tj8jmsq" path="res://Player/Weapons/Modules/wmod_base.tscn" id="1_25te3"]
 [ext_resource type="Script" uid="uid://c0fmth0n3urt4" path="res://Player/Weapons/Modules/wmod_projectile_speed_stat.gd" id="2_ep60x"]
-[ext_resource type="Texture2D" path="res://Textures/test/faster_reload.png" id="3_icon"]
+[ext_resource type="Texture2D" path="res://asset/images/modules/wmod_projectile_speed_stat.svg" id="3_icon"]
 
 [node name="FasterSpeed" instance=ExtResource("1_25te3")]
 script = ExtResource("2_ep60x")

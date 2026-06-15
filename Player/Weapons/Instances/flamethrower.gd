@@ -271,7 +271,7 @@ func _get_effective_cone_half_angle_deg() -> float:
 	var angle_multiplier: float = 1.0
 	for behavior in branch_runtime.get_branch_behaviors():
 		angle_multiplier *= maxf(behavior.get_cone_half_angle_multiplier(), 0.1)
-	return maxf(cone_half_angle_deg * maxf(angle_multiplier, 0.1), 1.0)
+	return get_effective_cone_half_angle(cone_half_angle_deg * maxf(angle_multiplier, 0.1))
 
 func _ensure_flame_vfx() -> void:
 	if _flame_vfx != null and is_instance_valid(_flame_vfx):

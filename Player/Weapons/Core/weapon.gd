@@ -17,6 +17,8 @@ var MAX_MODULE_NUMBER = 3
 @onready var _fuse_sprites_initialized = _load_fuse_sprites()
 const PASSIVE_SCOPE_BODY: StringName = &"body"
 const PASSIVE_SCOPE_GLOBAL: StringName = &"global"
+const LAST_HIT_WEAPON_META: StringName = &"_last_player_weapon_hit_id"
+const LAST_HIT_WEAPON_TIME_META: StringName = &"_last_player_weapon_hit_msec"
 const DELIVERY_PROJECTILE: StringName = DamageDeliveryType.PROJECTILE
 const DELIVERY_MELEE_CONTACT: StringName = DamageDeliveryType.MELEE_CONTACT
 const DELIVERY_BEAM: StringName = DamageDeliveryType.BEAM
@@ -91,6 +93,7 @@ func calculate_status() -> void:
 	refresh_max_level_from_data()
 	if has_method("sync_stats"):
 		call("sync_stats")
+	ammo_controller.reconcile_capacity()
 	validate_module_compatibility()
 	_sync_heat_trait_state()
 
@@ -151,6 +154,9 @@ func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> vo
 
 func _handle_hit_target(target: Node, damage_type: StringName = StringName()) -> void:
 	plugin_dispatcher.apply_on_hit_plugins(target)
+	if target != null and is_instance_valid(target):
+		target.set_meta(LAST_HIT_WEAPON_META, get_instance_id())
+		target.set_meta(LAST_HIT_WEAPON_TIME_META, Time.get_ticks_msec())
 	active_controller.register_hit_window()
 	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("_broadcast_weapon_passive_event"):
 		var detail := {
@@ -471,6 +477,39 @@ func get_runtime_stat_value(stat_name: String, base_value: float) -> float:
 
 func get_runtime_damage_value(base_damage_value: float) -> int:
 	return stat_pipeline.get_runtime_damage_value(base_damage_value)
+
+func get_effective_magazine_capacity() -> int:
+	return maxi(1, int(round(get_runtime_stat_value("magazine_capacity", float(magazine_capacity)))))
+
+func get_effective_area_radius(base_radius: float) -> float:
+	return maxf(1.0, get_runtime_stat_value("area_radius", base_radius))
+
+func get_effective_knockback(base_knockback: float) -> float:
+	return maxf(0.0, get_runtime_stat_value("knockback", base_knockback))
+
+func get_effective_projectile_count(base_count: int) -> int:
+	return maxi(1, int(round(get_runtime_stat_value("projectile_count", float(base_count)))))
+
+func get_effective_cone_half_angle(base_angle_deg: float) -> float:
+	return maxf(1.0, get_runtime_stat_value("cone_half_angle_deg", base_angle_deg))
+
+func supports_multi_launcher_module() -> bool:
+	return false
+
+func get_module_shot_directions(base_direction: Vector2, base_count: int = 1) -> Array[Vector2]:
+	var direction := base_direction.normalized()
+	if direction == Vector2.ZERO:
+		direction = Vector2.UP
+	var effective_count := get_effective_projectile_count(base_count)
+	if effective_count <= 1:
+		return [direction]
+	var directions: Array[Vector2] = []
+	var total_arc_deg := minf(12.0 * float(effective_count - 1), 60.0)
+	var start_angle := direction.angle() - deg_to_rad(total_arc_deg) * 0.5
+	var step := deg_to_rad(total_arc_deg) / float(effective_count - 1)
+	for index in range(effective_count):
+		directions.append(Vector2.RIGHT.rotated(start_angle + step * float(index)).normalized())
+	return directions
 
 func apply_external_damage_mul(source_id: StringName, mul: float) -> void:
 	stat_pipeline.apply_external_damage_mul(source_id, mul)

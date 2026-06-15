@@ -13,7 +13,7 @@
    - 事件模组必须设置 `required_hooks`
    - 描述性标签使用 `module_tags`，不得将标签作为兼容条件
 4. 若是纯数值模组：优先实现 `configure_stat_modifiers()`，通过 `stat_multipliers/stat_additives` 修改属性。
-5. 若是命中触发模组：实现 `apply_on_hit(source_weapon, target)`，并在 `_enter_tree/_ready` 注册 `register_as_on_hit_plugin()`，在 `_exit_tree` 反注册。
+5. 若是命中触发模组：继承 `OnHitModule`（`Player/Weapons/Modules/wmod_on_hit_base.gd`）并实现 `apply_on_hit(source_weapon, target)`。注册与反注册由基类统一处理；仅在需要额外生命周期逻辑时覆盖 `_enter_tree/_ready/_exit_tree`，并调用对应的 `super`。
 6. 所有逻辑都要做空值与接口检查（`is_instance_valid`、`has_method`）。
 7. 等级成长必须兼容 `module_level`（1~3），优先使用 `get_effective_multiplier/get_effective_additive` 或 `lv1/lv2/lv3` 参数。
 8. 不要破坏现有接口和模块兼容性文案格式（如 `Requires one of: ...`）。

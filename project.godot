@@ -51,9 +51,9 @@ folder_colors={
 "res://Npc/": "yellow",
 "res://Objects/": "gray",
 "res://Player/": "green",
-"res://Textures/": "purple",
 "res://UI/": "orange",
 "res://Utility/": "teal",
+"res://asset/": "purple",
 "res://autoload/": "gray"
 }
 

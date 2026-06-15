@@ -4,7 +4,7 @@ const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_ru
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://Textures/test/sniper_bullet.png")
+var projectile_texture_resource = preload("res://asset/images/test/sniper_bullet.png")
 
 # Weapon
 var ITEM_NAME = "Shotgun"
@@ -64,6 +64,7 @@ func _on_shoot():
 	var spread_arc := base_arc
 	for behavior in branch_runtime.get_branch_behaviors():
 		spread_arc *= maxf(behavior.get_cone_or_spread_multiplier(), 0.05)
+	spread_arc = get_effective_cone_half_angle(spread_arc)
 	# Ensure pellets do not collapse into a single line when arc config is missing/zero.
 	if shot_count > 1:
 		spread_arc = maxf(spread_arc, 18.0)
@@ -99,6 +100,9 @@ func _on_shoot():
 		apply_effects_on_projectile(spawn_projectile)
 		get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 	_cleanup_old_shotgun_volleys(volley_id)
+
+func supports_multi_launcher_module() -> bool:
+	return true
 
 func _build_spread_directions(base_direction: Vector2, shot_count: int, spread_arc: float) -> Array[Vector2]:
 	var dirs: Array[Vector2] = []

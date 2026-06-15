@@ -81,16 +81,31 @@ var weapon_passive_list: VBoxContainer
 @onready var equipped_shop: GridContainer = $GUI/ShoppingRootv2/Panel/Equipped
 @onready var shop_sell_button: Button = $GUI/ShoppingRootv2/Panel/ShopSellButton
 @onready var shop_cancel_button: Button = $GUI/ShoppingRootv2/Panel/ShopCancelButton
+var shop_sell_summary_panel: PanelContainer
+var shop_sell_summary_title: Label
+var shop_sell_summary_hint: Label
+var shop_sell_summary_list: VBoxContainer
+var shop_sell_summary_total: Label
+var shop_sell_summary_modules: Label
+var shop_sell_mode_active: bool = false
+var shop_instruction_label: Label
 signal reset_cost
 
 # Upgrade
 @onready var equipped_upg: GridContainer = $GUI/UpgradeRootv2/Panel/Equipped
 @onready var upgrade_preview: MarginContainer = $GUI/UpgradeRootv2/Panel/UpgradePreview
+var upgrade_instruction_label: Label
+var upgrade_action_button: Button
 
 
 @onready var equipped_m: GridContainer = $GUI/ModuleRoot/Panel/EquippedM
 @onready var modules: GridContainer = $GUI/ModuleRoot/Panel/TemporaryModulesScroll/Modules
 @onready var module_slot_scene: PackedScene = preload("res://UI/scenes/module_slot.tscn")
+var module_instruction_label: Label
+var module_selection_label: Label
+var module_equip_button: Button
+var module_sell_button: Button
+var selected_temporary_module: Module
 
 # Pause menu
 @onready var resume_button = $GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton
@@ -101,13 +116,13 @@ signal reset_cost
 @onready var upgradable_weapon_list = PlayerData.player_weapon_list
 @onready var item_card = preload("res://UI/scenes/margin_item_card.tscn")
 @onready var upgrade_card = preload("res://UI/scenes/margin_upgrade_card.tscn")
-@onready var empty_weapon_pic = preload("res://Textures/test/empty_wp.png")
+@onready var empty_weapon_pic = preload("res://asset/images/test/empty_wp.png")
 @onready var equipped_weapons = null
-@onready var branch_select_panel_scene = preload("res://UI/scenes/branch_select_panel.tscn")
-@onready var module_equip_selection_panel_scene = preload("res://UI/scenes/module_equip_selection_panel.tscn")
-@onready var route_selection_panel_scene = preload("res://UI/scenes/route_selection_panel.tscn")
-@onready var reward_selection_panel_scene = preload("res://UI/scenes/reward_selection_panel.tscn")
-@onready var weapon_replacement_panel_scene = preload("res://UI/scenes/weapon_replacement_panel.tscn")
+const BRANCH_SELECT_PANEL_PATH := "res://UI/scenes/branch_select_panel.tscn"
+const MODULE_EQUIP_SELECTION_PANEL_PATH := "res://UI/scenes/module_equip_selection_panel.tscn"
+const ROUTE_SELECTION_PANEL_PATH := "res://UI/scenes/route_selection_panel.tscn"
+const REWARD_SELECTION_PANEL_PATH := "res://UI/scenes/reward_selection_panel.tscn"
+const WEAPON_REPLACEMENT_PANEL_PATH := "res://UI/scenes/weapon_replacement_panel.tscn"
 var branch_select_panel: BranchSelectPanel
 var module_equip_selection_panel: ModuleEquipSelectionPanel
 var route_selection_panel: RouteSelectionPanel
@@ -123,6 +138,7 @@ var pause_language_option: OptionButton
 var temporary_module_confirm_toggle: CheckButton
 var module_action_dialog: ConfirmationDialog
 var temporary_module_settlement_dialog: ConfirmationDialog
+var temporary_module_settlement_message: Label
 var temporary_module_settlement_checkbox: CheckBox
 var _pending_module_action := Callable()
 var _pending_battle_start := Callable()
@@ -155,15 +171,12 @@ func _ready():
 	_ensure_weapon_passive_panel()
 	_init_hud_presenter()
 	_ensure_spread_cursor_overlay()
-	_init_branch_select_panel()
-	_init_module_equip_selection_panel()
-	_init_route_selection_panel()
-	_init_reward_selection_panel()
-	_init_weapon_replacement_panel()
 	_create_game_over_layout()
 	_create_controls_hint_panel()
 	_ensure_pause_language_controls()
 	_init_module_action_dialogs()
+	_init_shop_sell_summary()
+	_init_management_ui_polish()
 	_refresh_localized_static_text()
 	_create_quest_hint()
 	_ensure_rest_area_hover_hint()
@@ -229,7 +242,10 @@ func _init_item_message_timer() -> void:
 		item_message_timer.timeout.connect(Callable(self, "_on_item_message_timeout"))
 
 func _init_branch_select_panel() -> void:
-	branch_select_panel = branch_select_panel_scene.instantiate() as BranchSelectPanel
+	if branch_select_panel != null and is_instance_valid(branch_select_panel):
+		return
+	var panel_scene := load(BRANCH_SELECT_PANEL_PATH) as PackedScene
+	branch_select_panel = panel_scene.instantiate() as BranchSelectPanel if panel_scene else null
 	if branch_select_panel == null:
 		push_warning("Failed to create BranchSelectPanel.")
 		return
@@ -239,7 +255,10 @@ func _init_branch_select_panel() -> void:
 		branch_select_panel.connect("branch_selected", Callable(self, "_on_branch_selected"))
 
 func _init_module_equip_selection_panel() -> void:
-	module_equip_selection_panel = module_equip_selection_panel_scene.instantiate() as ModuleEquipSelectionPanel
+	if module_equip_selection_panel != null and is_instance_valid(module_equip_selection_panel):
+		return
+	var panel_scene := load(MODULE_EQUIP_SELECTION_PANEL_PATH) as PackedScene
+	module_equip_selection_panel = panel_scene.instantiate() as ModuleEquipSelectionPanel if panel_scene else null
 	if module_equip_selection_panel == null:
 		push_warning("Failed to create ModuleEquipSelectionPanel.")
 		return
@@ -247,7 +266,10 @@ func _init_module_equip_selection_panel() -> void:
 	module_equip_selection_panel.visible = false
 
 func _init_route_selection_panel() -> void:
-	route_selection_panel = route_selection_panel_scene.instantiate() as RouteSelectionPanel
+	if route_selection_panel != null and is_instance_valid(route_selection_panel):
+		return
+	var panel_scene := load(ROUTE_SELECTION_PANEL_PATH) as PackedScene
+	route_selection_panel = panel_scene.instantiate() as RouteSelectionPanel if panel_scene else null
 	if route_selection_panel == null:
 		push_warning("Failed to create RouteSelectionPanel.")
 		return
@@ -255,7 +277,10 @@ func _init_route_selection_panel() -> void:
 	route_selection_panel.visible = false
 
 func _init_reward_selection_panel() -> void:
-	reward_selection_panel = reward_selection_panel_scene.instantiate() as RewardSelectionPanel
+	if reward_selection_panel != null and is_instance_valid(reward_selection_panel):
+		return
+	var panel_scene := load(REWARD_SELECTION_PANEL_PATH) as PackedScene
+	reward_selection_panel = panel_scene.instantiate() as RewardSelectionPanel if panel_scene else null
 	if reward_selection_panel == null:
 		push_warning("Failed to create RewardSelectionPanel.")
 		return
@@ -263,7 +288,10 @@ func _init_reward_selection_panel() -> void:
 	reward_selection_panel.visible = false
 
 func _init_weapon_replacement_panel() -> void:
-	weapon_replacement_panel = weapon_replacement_panel_scene.instantiate() as WeaponReplacementPanel
+	if weapon_replacement_panel != null and is_instance_valid(weapon_replacement_panel):
+		return
+	var panel_scene := load(WEAPON_REPLACEMENT_PANEL_PATH) as PackedScene
+	weapon_replacement_panel = panel_scene.instantiate() as WeaponReplacementPanel if panel_scene else null
 	if weapon_replacement_panel == null:
 		push_warning("Failed to create WeaponReplacementPanel.")
 		return
@@ -275,9 +303,158 @@ func request_weapon_replacement(
 	cancel_to_gold: bool = true,
 	on_complete: Callable = Callable()
 ) -> bool:
+	_init_weapon_replacement_panel()
 	if weapon_replacement_panel == null or not is_instance_valid(weapon_replacement_panel):
 		return false
 	return weapon_replacement_panel.open_for_weapon(weapon, cancel_to_gold, on_complete)
+
+func _init_shop_sell_summary() -> void:
+	if shop_sell_summary_panel and is_instance_valid(shop_sell_summary_panel):
+		return
+	shop_sell_summary_panel = PanelContainer.new()
+	shop_sell_summary_panel.name = "ShopSellSummary"
+	shop_sell_summary_panel.position = Vector2(25.0, 50.0)
+	shop_sell_summary_panel.size = Vector2(500.0, 500.0)
+	shop_sell_summary_panel.custom_minimum_size = Vector2(500.0, 500.0)
+	shop_sell_summary_panel.visible = false
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.055, 0.07, 0.09, 0.96)
+	style.border_color = Color(0.78, 0.24, 0.18, 0.95)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	shop_sell_summary_panel.add_theme_stylebox_override("panel", style)
+	shopping_panel.add_child(shop_sell_summary_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_bottom", 18)
+	shop_sell_summary_panel.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 12)
+	margin.add_child(content)
+
+	shop_sell_summary_title = Label.new()
+	shop_sell_summary_title.add_theme_font_size_override("font_size", 26)
+	shop_sell_summary_title.add_theme_color_override("font_color", Color(1.0, 0.48, 0.36))
+	content.add_child(shop_sell_summary_title)
+	shop_sell_summary_hint = Label.new()
+	shop_sell_summary_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	shop_sell_summary_hint.modulate = Color(0.82, 0.86, 0.9)
+	content.add_child(shop_sell_summary_hint)
+	var separator := HSeparator.new()
+	content.add_child(separator)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(scroll)
+	shop_sell_summary_list = VBoxContainer.new()
+	shop_sell_summary_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_sell_summary_list.add_theme_constant_override("separation", 8)
+	scroll.add_child(shop_sell_summary_list)
+	shop_sell_summary_modules = Label.new()
+	shop_sell_summary_modules.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(shop_sell_summary_modules)
+	shop_sell_summary_total = Label.new()
+	shop_sell_summary_total.add_theme_font_size_override("font_size", 22)
+	shop_sell_summary_total.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
+	content.add_child(shop_sell_summary_total)
+	refresh_shop_sell_summary()
+
+func set_shop_sell_mode(enabled: bool) -> void:
+	shop_sell_mode_active = enabled
+	InventoryData.clear_on_select()
+	for slot: EquipmentSlotShop in equipped_shop.get_children():
+		slot.sell_mode = enabled
+		slot.reset_sell_status()
+	shop_sell_button.visible = not enabled
+	var shop_confirm := shopping_panel.get_node_or_null("ShopConfirmButton") as Button
+	if shop_confirm:
+		shop_confirm.visible = enabled
+	shop_cancel_button.visible = enabled
+	var shop_back := shopping_panel.get_node_or_null("BackToMerchantMenu") as Button
+	if shop_back:
+		shop_back.visible = not enabled
+	var shop_refresh := shopping_panel.get_node_or_null("ShopRefreshButton") as Button
+	if shop_refresh:
+		shop_refresh.visible = not enabled
+	shop.visible = not enabled
+	if shop_sell_summary_panel:
+		shop_sell_summary_panel.visible = enabled
+	_refresh_shop_mode_title()
+	refresh_shop_sell_summary()
+
+func _refresh_shop_mode_title() -> void:
+	var shop_title := shopping_panel.get_node_or_null("Title") as Label
+	if shop_title:
+		shop_title.text = LocalizationManager.tr_key(
+			"ui.shop.sell.panel_title" if shop_sell_mode_active else "ui.panel.shop",
+			"Sell Weapons" if shop_sell_mode_active else "Shop"
+		)
+
+func refresh_shop_sell_summary() -> void:
+	if shop_sell_summary_list == null:
+		return
+	for child in shop_sell_summary_list.get_children():
+		shop_sell_summary_list.remove_child(child)
+		child.queue_free()
+	var total_gold := 0
+	var module_count := 0
+	var valid_count := 0
+	for weapon_ref in InventoryData.ready_to_sell_list:
+		var weapon := weapon_ref as Weapon
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		valid_count += 1
+		var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+		var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+		var base_price := int(weapon_def.price) if weapon_def else 0
+		var gold := GlobalVariables.economy_data.get_duplicate_weapon_gold(base_price) \
+			if GlobalVariables.economy_data else EconomyConfig.new().get_duplicate_weapon_gold(base_price)
+		var weapon_modules := weapon.get_module_count()
+		total_gold += gold
+		module_count += weapon_modules
+		var row := Label.new()
+		row.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.text = LocalizationManager.tr_format(
+			"ui.shop.sell.row",
+			{
+				"name": LocalizationManager.get_weapon_name_from_node(weapon),
+				"level": int(weapon.level),
+				"fuse": int(weapon.fuse),
+				"gold": gold,
+				"modules": weapon_modules,
+			},
+			"%s  Lv.%d  Fuse %d  |  +%d Gold  |  %d modules" % [
+				LocalizationManager.get_weapon_name_from_node(weapon),
+				int(weapon.level),
+				int(weapon.fuse),
+				gold,
+				weapon_modules,
+			]
+		)
+		shop_sell_summary_list.add_child(row)
+	if valid_count == 0:
+		var empty := Label.new()
+		empty.text = LocalizationManager.tr_key(
+			"ui.shop.sell.empty",
+			"Click a weapon on the right to mark it for sale."
+		)
+		empty.modulate = Color(0.68, 0.72, 0.76)
+		shop_sell_summary_list.add_child(empty)
+	shop_sell_summary_modules.text = LocalizationManager.tr_format(
+		"ui.shop.sell.modules",
+		{"count": module_count},
+		"Equipped modules moved to temporary storage: %d" % module_count
+	)
+	shop_sell_summary_total.text = LocalizationManager.tr_format(
+		"ui.shop.sell.total",
+		{"count": valid_count, "gold": total_gold},
+		"Selected: %d    Total refund: +%d Gold" % [valid_count, total_gold]
+	)
+	var shop_confirm := shopping_panel.get_node_or_null("ShopConfirmButton") as Button
+	if shop_confirm:
+		shop_confirm.disabled = valid_count == 0
 
 func _init_module_action_dialogs() -> void:
 	module_action_dialog = ConfirmationDialog.new()
@@ -287,12 +464,15 @@ func _init_module_action_dialogs() -> void:
 	temporary_module_settlement_dialog = ConfirmationDialog.new()
 	temporary_module_settlement_dialog.name = "TemporaryModuleSettlementDialog"
 	temporary_module_settlement_dialog.dialog_text = ""
+	temporary_module_settlement_dialog.wrap_controls = false
 	$GUI.add_child(temporary_module_settlement_dialog)
 	var content := VBoxContainer.new()
-	var message := Label.new()
-	message.name = "Message"
-	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(message)
+	content.name = "SettlementContent"
+	content.custom_minimum_size = Vector2(480.0, 0.0)
+	temporary_module_settlement_message = Label.new()
+	temporary_module_settlement_message.name = "Message"
+	temporary_module_settlement_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(temporary_module_settlement_message)
 	temporary_module_settlement_checkbox = CheckBox.new()
 	temporary_module_settlement_checkbox.text = LocalizationManager.tr_key(
 		"ui.module.settlement.dont_show",
@@ -354,6 +534,9 @@ func request_temporary_module_sell_confirmation(module_instance: Module) -> bool
 
 func _confirm_temporary_module_sell(module_instance: Module) -> void:
 	InventoryData.sell_temporary_module(module_instance)
+	if selected_temporary_module == module_instance:
+		selected_temporary_module = null
+	update_modules()
 
 func _on_module_action_confirmed() -> void:
 	if _pending_module_action.is_valid():
@@ -389,11 +572,8 @@ func request_temporary_module_settlement(
 			int(module_instance.cost),
 			int(module_instance.module_level)
 		) if GlobalVariables.economy_data else 0
-	var message := temporary_module_settlement_dialog.get_node_or_null("VBoxContainer/Message") as Label
-	if message == null:
-		message = temporary_module_settlement_dialog.find_child("Message", true, false) as Label
-	if message:
-		message.text = LocalizationManager.tr_format(
+	if temporary_module_settlement_message:
+		temporary_module_settlement_message.text = LocalizationManager.tr_format(
 			"ui.module.settlement.confirm",
 			{"count": InventoryData.temporary_modules.size(), "gold": total_gold},
 			"Sell %d temporary modules for %d Gold and start battle?" % [
@@ -406,7 +586,7 @@ func request_temporary_module_settlement(
 		"ui.module.settlement.title",
 		"Temporary Module Settlement"
 	)
-	temporary_module_settlement_dialog.popup_centered(Vector2i(560, 260))
+	temporary_module_settlement_dialog.popup_centered_clamped(Vector2i(560, 260), 0.8)
 	return true
 
 func _on_temporary_module_settlement_confirmed() -> void:
@@ -450,6 +630,7 @@ func _set_temporary_module_confirmation_enabled(enabled: bool) -> void:
 func request_weapon_branch_selection(weapon: Weapon, target_fuse: int = 0) -> bool:
 	if weapon == null or not is_instance_valid(weapon):
 		return false
+	_init_branch_select_panel()
 	if branch_select_panel == null or not is_instance_valid(branch_select_panel):
 		return false
 	var resolved_target_fuse := target_fuse if target_fuse > 0 else int(weapon.fuse)
@@ -525,6 +706,7 @@ func request_module_equip_selection(
 			"Modules can only be managed in the Rest Area."
 		), 1.8)
 		return false
+	_init_module_equip_selection_panel()
 	if module_equip_selection_panel == null or not is_instance_valid(module_equip_selection_panel):
 		return false
 	var transaction_id := "module:%s" % str(module_instance.scene_file_path)
@@ -561,6 +743,7 @@ func request_route_selection(
 	if is_branch_selection_blocking_interactions():
 		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
 		return false
+	_init_route_selection_panel()
 	if route_selection_panel == null or not is_instance_valid(route_selection_panel):
 		return false
 	return route_selection_panel.open_for_routes(route_defs, default_route_id, on_confirm, on_cancel)
@@ -575,6 +758,7 @@ func request_reward_selection(
 	if is_branch_selection_blocking_interactions():
 		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
 		return false
+	_init_reward_selection_panel()
 	if reward_selection_panel == null or not is_instance_valid(reward_selection_panel):
 		return false
 	return reward_selection_panel.open_for_rewards(route_display_name, reward_options, on_confirm, on_cancel, allow_cancel)
@@ -685,7 +869,7 @@ func shopping_panel_in() -> void:
 		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
 		return
 	move_out_timer.stop()
-	shop_cancel_button._on_button_up()
+	set_shop_sell_mode(false)
 	update_shop()
 	if merchant_root:
 		merchant_root.visible = false
@@ -957,6 +1141,7 @@ func update_upg() -> void:
 	for eq in equipped_upg.get_children():
 		eq.update()
 	upgrade_preview.update()
+	_refresh_upgrade_action()
 func update_modules() -> void:
 	for eq in equipped_m.get_children():
 		eq.update()
@@ -967,7 +1152,180 @@ func update_modules() -> void:
 		var slot := module_slot_scene.instantiate() as ModuleSlot
 		slot.module_index = index
 		modules.add_child(slot)
+		slot.module_selected.connect(_on_temporary_module_selected)
 		slot.update()
+		slot.set_selected(slot.module == selected_temporary_module)
+	if selected_temporary_module != null and not InventoryData.temporary_modules.has(selected_temporary_module):
+		selected_temporary_module = null
+	_refresh_module_action()
+
+func _init_management_ui_polish() -> void:
+	_style_management_panel(shopping_panel)
+	_style_management_panel(upgrade_panel)
+	_style_management_panel(module_panel)
+
+	shop_instruction_label = _create_management_instruction(
+		shopping_panel,
+		"ShopInstruction",
+		Vector2(25, 42),
+		Vector2(500, 30)
+	)
+	upgrade_instruction_label = _create_management_instruction(
+		upgrade_panel,
+		"UpgradeInstruction",
+		Vector2(25, 42),
+		Vector2(480, 30)
+	)
+	module_instruction_label = _create_management_instruction(
+		module_panel,
+		"ModuleInstruction",
+		Vector2(25, 42),
+		Vector2(500, 30)
+	)
+
+	for button_name in ["ShopRefreshButton", "ShopSellButton", "ShopCancelButton", "ShopConfirmButton", "BackToMerchantMenu"]:
+		_style_management_button(shopping_panel.get_node_or_null(button_name) as Button)
+	_style_management_button(shopping_panel.get_node_or_null("ShopConfirmButton") as Button, true)
+	_position_management_button(shopping_panel.get_node_or_null("ShopRefreshButton") as Button, Vector2(325, 548), Vector2(200, 44))
+	_position_management_button(shopping_panel.get_node_or_null("ShopSellButton") as Button, Vector2(540, 532), Vector2(200, 52))
+	_position_management_button(shopping_panel.get_node_or_null("ShopCancelButton") as Button, Vector2(540, 532), Vector2(200, 52))
+	_position_management_button(shopping_panel.get_node_or_null("BackToMerchantMenu") as Button, Vector2(760, 532), Vector2(200, 52))
+	_position_management_button(shopping_panel.get_node_or_null("ShopConfirmButton") as Button, Vector2(760, 532), Vector2(200, 52))
+	_style_management_button(upgrade_panel.get_node_or_null("BackToSmithMenu") as Button)
+	_style_management_button(module_panel.get_node_or_null("BackToModuleMenu") as Button)
+	_position_management_button(upgrade_panel.get_node_or_null("BackToSmithMenu") as Button, Vector2(760, 532), Vector2(200, 52))
+	_position_management_button(module_panel.get_node_or_null("BackToModuleMenu") as Button, Vector2(760, 532), Vector2(200, 52))
+
+	upgrade_action_button = Button.new()
+	upgrade_action_button.name = "UpgradeActionButton"
+	upgrade_action_button.position = Vector2(127, 522)
+	upgrade_action_button.size = Vector2(300, 52)
+	upgrade_action_button.pressed.connect(_on_upgrade_action_pressed)
+	upgrade_panel.add_child(upgrade_action_button)
+	_style_management_button(upgrade_action_button, true)
+
+	var module_scroll := module_panel.get_node_or_null("TemporaryModulesScroll") as ScrollContainer
+	if module_scroll:
+		module_scroll.position = Vector2(25, 78)
+		module_scroll.size = Vector2(500, 392)
+		module_scroll.custom_minimum_size = Vector2(500, 392)
+	module_selection_label = Label.new()
+	module_selection_label.name = "ModuleSelectionLabel"
+	module_selection_label.position = Vector2(25, 480)
+	module_selection_label.size = Vector2(500, 35)
+	module_selection_label.clip_text = true
+	module_panel.add_child(module_selection_label)
+	module_equip_button = Button.new()
+	module_equip_button.name = "ModuleEquipButton"
+	module_equip_button.position = Vector2(25, 522)
+	module_equip_button.size = Vector2(238, 52)
+	module_equip_button.pressed.connect(_on_module_equip_pressed)
+	module_panel.add_child(module_equip_button)
+	_style_management_button(module_equip_button, true)
+	module_sell_button = Button.new()
+	module_sell_button.name = "ModuleSellButton"
+	module_sell_button.position = Vector2(287, 522)
+	module_sell_button.size = Vector2(238, 52)
+	module_sell_button.pressed.connect(_on_module_sell_pressed)
+	module_panel.add_child(module_sell_button)
+	_style_management_button(module_sell_button)
+
+	for title_panel in [shopping_panel, upgrade_panel, module_panel]:
+		var title := title_panel.get_node_or_null("Title") as Label
+		if title:
+			title.add_theme_font_size_override("font_size", 26)
+			title.add_theme_color_override("font_color", Color(0.86, 0.94, 1.0))
+	_refresh_upgrade_action()
+	_refresh_module_action()
+
+func _style_management_panel(panel: Panel) -> void:
+	if panel == null:
+		return
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.045, 0.065, 0.09, 0.98)
+	style.border_color = Color(0.18, 0.38, 0.52, 1.0)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(12)
+	style.shadow_color = Color(0, 0, 0, 0.45)
+	style.shadow_size = 12
+	panel.add_theme_stylebox_override("panel", style)
+
+func _style_management_button(button: Button, primary: bool = false) -> void:
+	if button == null:
+		return
+	button.custom_minimum_size.y = 44.0
+	button.add_theme_font_size_override("font_size", 18)
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.12, 0.38, 0.58) if primary else Color(0.12, 0.18, 0.25)
+	normal.border_color = Color(0.3, 0.68, 0.9) if primary else Color(0.28, 0.42, 0.55)
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(7)
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = normal.bg_color.lightened(0.12)
+	var pressed := normal.duplicate() as StyleBoxFlat
+	pressed.bg_color = normal.bg_color.darkened(0.12)
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", pressed)
+
+func _position_management_button(button: Button, position: Vector2, button_size: Vector2) -> void:
+	if button == null:
+		return
+	button.position = position
+	button.size = button_size
+
+func _create_management_instruction(panel: Panel, node_name: String, position: Vector2, label_size: Vector2) -> Label:
+	var label := Label.new()
+	label.name = node_name
+	label.position = position
+	label.size = label_size
+	label.add_theme_color_override("font_color", Color(0.62, 0.72, 0.8))
+	label.add_theme_font_size_override("font_size", 16)
+	panel.add_child(label)
+	return label
+
+func _on_upgrade_action_pressed() -> void:
+	if upgrade_preview.has_method("try_upgrade_selected_weapon"):
+		upgrade_preview.call("try_upgrade_selected_weapon")
+
+func _refresh_upgrade_action() -> void:
+	if upgrade_action_button == null:
+		return
+	var selected := InventoryData.on_select_upg as Weapon
+	var ready := selected != null and is_instance_valid(selected) and bool(upgrade_preview.get("upgradable"))
+	upgrade_action_button.disabled = not ready
+	upgrade_action_button.text = LocalizationManager.tr_key("ui.upgrade.action", "Upgrade Selected Weapon")
+
+func _on_temporary_module_selected(module_instance: Module) -> void:
+	selected_temporary_module = module_instance
+	for slot: ModuleSlot in modules.get_children():
+		slot.set_selected(slot.module == selected_temporary_module)
+	_refresh_module_action()
+
+func _on_module_equip_pressed() -> void:
+	if selected_temporary_module != null and is_instance_valid(selected_temporary_module):
+		request_module_equip_selection(selected_temporary_module)
+
+func _on_module_sell_pressed() -> void:
+	if selected_temporary_module != null and is_instance_valid(selected_temporary_module):
+		request_temporary_module_sell_confirmation(selected_temporary_module)
+
+func _refresh_module_action() -> void:
+	if module_equip_button == null or module_sell_button == null or module_selection_label == null:
+		return
+	var has_selection := selected_temporary_module != null and is_instance_valid(selected_temporary_module)
+	module_equip_button.disabled = not has_selection
+	module_sell_button.disabled = not has_selection
+	module_equip_button.text = LocalizationManager.tr_key("ui.module.action.equip_selected", "Equip Selected Module")
+	module_sell_button.text = LocalizationManager.tr_key("ui.module.action.sell_selected", "Sell Selected Module")
+	if has_selection:
+		module_selection_label.text = LocalizationManager.tr_format(
+			"ui.module.selected",
+			{"module": LocalizationManager.get_module_name(selected_temporary_module), "level": selected_temporary_module.module_level},
+			"Selected: %s Lv.%d" % [LocalizationManager.get_module_name(selected_temporary_module), selected_temporary_module.module_level]
+		)
+	else:
+		module_selection_label.text = LocalizationManager.tr_key("ui.module.select_prompt", "Select a temporary module to manage.")
 
 func free_childern(parent) -> void:
 	var children = parent.get_children()
@@ -1774,7 +2132,7 @@ func _create_weapon_passive_row() -> Dictionary:
 	var icon_rect := TextureRect.new()
 	icon_rect.name = "Icon"
 	icon_rect.custom_minimum_size = Vector2(18.0, 18.0)
-	icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	header.add_child(icon_rect)
 
@@ -2001,17 +2359,31 @@ func _on_language_changed(_new_locale: String) -> void:
 		module_equip_selection_panel._on_language_changed(LocalizationManager.get_locale())
 
 func _refresh_localized_static_text() -> void:
-	var shop_title := shopping_panel.get_node_or_null("Title") as Label
-	if shop_title:
-		shop_title.text = LocalizationManager.tr_key("ui.panel.shop", "Shop")
+	_refresh_shop_mode_title()
+	if shop_instruction_label:
+		shop_instruction_label.text = LocalizationManager.tr_key("ui.shop.instruction", "Buy weapons on the left, or manage equipped weapons on the right.")
 	var upgrade_title := upgrade_panel.get_node_or_null("Title") as Label
 	if upgrade_title:
 		upgrade_title.text = LocalizationManager.tr_key("ui.panel.upgrade", "Upgrade")
+	if upgrade_instruction_label:
+		upgrade_instruction_label.text = LocalizationManager.tr_key("ui.upgrade.instruction", "Select a weapon on the right, review changes, then upgrade.")
 	var module_title := module_panel.get_node_or_null("Title") as Label
 	if module_title:
 		module_title.text = LocalizationManager.tr_key("ui.panel.module", "Module")
+	if module_instruction_label:
+		module_instruction_label.text = LocalizationManager.tr_key("ui.module.instruction", "Select a temporary module, then choose Equip or Sell.")
 	shop_sell_button.text = LocalizationManager.tr_key("ui.panel.sell", "Sell")
 	shop_cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
+	if shop_sell_summary_title:
+		shop_sell_summary_title.text = LocalizationManager.tr_key("ui.shop.sell.title", "Weapons Marked for Sale")
+	if shop_sell_summary_hint:
+		shop_sell_summary_hint.text = LocalizationManager.tr_key(
+			"ui.shop.sell.hint",
+			"Select weapons on the right. Confirming sells all marked weapons."
+		)
+	for slot: EquipmentSlotShop in equipped_shop.get_children():
+		slot.refresh_sell_label_text()
+	refresh_shop_sell_summary()
 	var shop_confirm := shopping_panel.get_node_or_null("ShopConfirmButton") as Button
 	if shop_confirm:
 		shop_confirm.text = LocalizationManager.tr_key("ui.panel.confirm", "Confirm")
@@ -2033,6 +2405,8 @@ func _refresh_localized_static_text() -> void:
 	var module_back := module_panel.get_node_or_null("BackToModuleMenu") as Button
 	if module_back:
 		module_back.text = LocalizationManager.tr_key("ui.panel.back", "Back")
+	_refresh_upgrade_action()
+	_refresh_module_action()
 	var pause_label := pause_menu_panel.get_node_or_null("Paused") as Label
 	if pause_label:
 		pause_label.text = LocalizationManager.tr_key("ui.panel.pause", "Paused")

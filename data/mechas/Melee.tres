@@ -1,13 +1,12 @@
 [gd_resource type="Resource" script_class="MechaDefinition" load_steps=3 format=3 uid="uid://b1mim2in5jxrb"]
 
-[ext_resource type="PackedScene" uid="uid://ba0ottbkxnedj" path="res://Player/Mechas/scenes/melee.tscn" id="1_let6o"]
 [ext_resource type="Script" uid="uid://5lnhq074mor6" path="res://data/MechaDefinition.gd" id="2_y8nc0"]
 
 [resource]
 script = ExtResource("2_y8nc0")
 mecha_id = "3"
 display_name = "Melee"
-scene = ExtResource("1_let6o")
+scene_path = "res://Player/Mechas/scenes/melee.tscn"
 next_level_exp = PackedInt32Array(10, 20, 30, 40, 50, 60, 70, 80, 90, -1)
 player_max_hp = PackedInt32Array(8, 5, 5, 5, 5, 5, 5, 5, 5, 5)
 player_speed = PackedFloat32Array(100, 100, 100, 100, 100, 100, 100, 100, 100, 100)

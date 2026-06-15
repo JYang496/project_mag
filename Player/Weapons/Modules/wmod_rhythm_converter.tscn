@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://Player/Weapons/Modules/wmod_rhythm_converter.gd" id="2_script"]
+[ext_resource type="Texture2D" path="res://asset/images/modules/wmod_rhythm_converter.svg" id="3_icon"]
+
+[node name="RhythmConverter" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+level_effects = PackedStringArray("After a 0.8s attack pause, stored hits grant +3% damage each for 2s", "After a 0.8s attack pause, stored hits grant +4% damage each for 2s", "After a 0.8s attack pause, stored hits grant +5% damage each for 2s")
+required_hooks = 2
+module_tags = PackedStringArray("trigger", "buff", "stacking", "duration")
+
+[node name="Sprite" parent="." index="0"]
+texture = ExtResource("3_icon")
+

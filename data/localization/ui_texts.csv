@@ -59,11 +59,24 @@ ui.panel.sell,Sell,出售
 ui.panel.cancel,Cancel,取消
 ui.panel.confirm,Confirm,确认
 ui.shop.no_valid_weapons,No weapons available,当前没有可购买武器
+ui.shop.sell.title,Weapons Marked for Sale,待售武器
+ui.shop.sell.panel_title,Sell Weapons,出售武器
+ui.shop.sell.hint,Select weapons on the right. Confirming sells all marked weapons.,点击右侧武器进行选择，确认后出售全部已标记武器。
+ui.shop.sell.empty,Click a weapon on the right to mark it for sale.,点击右侧武器将其标记为待售。
+ui.shop.sell.selected,MARKED FOR SALE,待售
+ui.shop.sell.keep_one,At least one weapon must remain equipped.,至少需要保留一把已装备武器。
+ui.shop.sell.row,{name}  Lv.{level}  Fuse {fuse}  |  +{gold} Gold  |  {modules} modules,{name}  Lv.{level}  融合 {fuse}  |  +{gold} 金币  |  {modules} 个模组
+ui.shop.sell.modules,Equipped modules moved to temporary storage: {count},将转入临时区的已装备模组：{count}
+ui.shop.sell.total,Selected: {count}    Total refund: +{gold} Gold,已选择：{count}    总返还：+{gold} 金币
+ui.shop.instruction,"Buy weapons on the left, or manage equipped weapons on the right.","在左侧购买武器，或在右侧管理已装备武器。"
 ui.panel.to_module,Module,模组
 ui.panel.back,Back,返回
 ui.panel.close_with_right_click,Right Click to close,右键关闭
 ui.upgrade.cost,Cost: {value},花费：{value}
 ui.upgrade.status_line,{key}: {from} => {to},{key}：{from} => {to}
+ui.upgrade.instruction,"Select a weapon on the right, review changes, then upgrade.","在右侧选择武器，确认属性变化后再强化。"
+ui.upgrade.action,Upgrade Selected Weapon,强化所选武器
+ui.upgrade.selected,SELECTED,已选择
 ui.branch.title,Choose Evolution Branch,选择进化分支
 ui.branch.weapon,Weapon,武器
 ui.route.title,Choose Route,选择路线
@@ -89,6 +102,11 @@ ui.module.slots,Slots: {used}/{max},槽位：{used}/{max}
 ui.module.action.equip,Equip,装备
 ui.module.action.replace,Replace {module},替换 {module}
 ui.module.action.blocked,Blocked,不可用
+ui.module.instruction,"Select a temporary module, then choose Equip or Sell.","选择一个临时模组，然后选择装备或出售。"
+ui.module.select_prompt,Select a temporary module to manage.,请选择一个需要管理的临时模组。
+ui.module.selected,Selected: {module} Lv.{level},已选择：{module} Lv.{level}
+ui.module.action.equip_selected,Equip Selected Module,装备所选模组
+ui.module.action.sell_selected,Sell Selected Module,出售所选模组
 ui.module.unequip.title,Unequip Module,卸下模组
 ui.module.unequip.confirm,Move {module} from {weapon} to the temporary area? Unsold modules are sold when battle starts.,将 {module} 从 {weapon} 移至临时区域？开始战斗时未处理的模组将自动出售。
 ui.module.sell.title,Sell Module,出售模组
@@ -156,6 +174,14 @@ ui.tutorial.ctx.merchant,Click to open shop,点击打开商店
 ui.tutorial.ctx.smith,Click to open upgrade,点击打开强化
 ui.tutorial.ctx.module,Click to manage modules,点击管理模组
 ui.tutorial.ctx.battle_hold,Hold left mouse on center to start battle,按住中央区域开始战斗
+ui.rest.zone.shop.title,Shop,商店
+ui.rest.zone.shop.status,Buy and sell weapons,购买与出售武器
+ui.rest.zone.upgrade.title,Weapon Upgrade,武器升级
+ui.rest.zone.upgrade.available,{count} upgrades available,可升级 {count}
+ui.rest.zone.upgrade.none,No upgrades available,暂无可升级
+ui.rest.zone.module.title,Module Management,模组管理
+ui.rest.zone.module.pending,{count} pending,待处理 {count}
+ui.rest.zone.module.none,No pending modules,无待处理模组
 ui.module.reason.invalid_module,Invalid module.,无效模组。
 ui.module.reason.invalid_weapon,Invalid weapon.,无效武器。
 ui.module.reason.no_container,Weapon has no module container.,武器没有模组容器。

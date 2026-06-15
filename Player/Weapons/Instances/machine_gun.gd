@@ -115,6 +115,9 @@ func _on_shoot():
 	if extra_heat_shots > 0.0:
 		register_shot_heat(extra_heat_shots)
 
+func supports_multi_launcher_module() -> bool:
+	return true
+
 func _resolve_shared_heat_attack_speed() -> float:
 	var heat_value := _get_shared_heat_value()
 	var resolved_speed := float(HEAT_SPEED_POINTS[0].y)
@@ -181,8 +184,9 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
-	var spent: int = max(0, magazine_capacity - current_ammo)
-	var progress: float = clampf(float(spent) / float(maxi(magazine_capacity, 1)), 0.0, 1.0)
+	var effective_capacity := get_effective_magazine_capacity()
+	var spent: int = max(0, effective_capacity - current_ammo)
+	var progress: float = clampf(float(spent) / float(effective_capacity), 0.0, 1.0)
 	var state := "charging"
 	if not is_main_weapon():
 		state = "inactive"
@@ -196,7 +200,7 @@ func get_passive_status() -> Dictionary:
 		"state": state,
 		"progress": progress,
 		"current": spent,
-		"required": magazine_capacity,
+		"required": get_effective_magazine_capacity(),
 		"ready": state == "ready_pending_action",
 		"trigger_hint": "reload_started",
 		"refresh_hint": "reload_finished",

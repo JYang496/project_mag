@@ -1,13 +1,12 @@
 [gd_resource type="Resource" script_class="MechaDefinition" load_steps=3 format=3 uid="uid://cdvj4hsv3ooub"]
 
-[ext_resource type="PackedScene" uid="uid://5tujqlbugob2" path="res://Player/Mechas/scenes/turret.tscn" id="1_hht0s"]
 [ext_resource type="Script" uid="uid://5lnhq074mor6" path="res://data/MechaDefinition.gd" id="2_lgpx2"]
 
 [resource]
 script = ExtResource("2_lgpx2")
 mecha_id = "5"
 display_name = "Turret"
-scene = ExtResource("1_hht0s")
+scene_path = "res://Player/Mechas/scenes/turret.tscn"
 next_level_exp = PackedInt32Array(10, 20, 30, 40, 50, 60, 70, 80, 90, -1)
 player_max_hp = PackedInt32Array(5, 5, 5, 5, 5, 5, 5, 5, 5, 5)
 player_speed = PackedFloat32Array(100, 100, 100, 100, 100, 100, 100, 100, 100, 100)

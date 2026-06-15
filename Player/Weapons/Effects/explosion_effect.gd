@@ -11,7 +11,7 @@ class_name ExplosionEffect
 @export var damage_type: StringName = Attack.TYPE_PHYSICAL
 @export var visual_enabled: bool = true
 @export var use_animated_visual: bool = false
-@export var visual_texture: Texture2D = preload("res://Textures/test/bullet.png")
+@export var visual_texture: Texture2D = preload("res://asset/images/test/bullet.png")
 @export var visual_frames: SpriteFrames
 @export var visual_animation: StringName = &"default"
 @export var visual_playback_speed: float = 1.0

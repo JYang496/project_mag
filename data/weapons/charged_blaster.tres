@@ -1,7 +1,6 @@
 [gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
 
-[ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://Textures/test/sniper.png" id="1_rnx7b"]
-[ext_resource type="PackedScene" uid="uid://b1gqnq2apvnak" path="res://Player/Weapons/Instances/charged_blaster.tscn" id="2_36w21"]
+[ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://asset/images/test/sniper.png" id="1_rnx7b"]
 [ext_resource type="Script" uid="uid://cf8w6uadvmajn" path="res://data/WeaponDefinition.gd" id="3_bqdxw"]
 
 [resource]
@@ -11,4 +10,4 @@ display_name = "Charged Blaster"
 icon = ExtResource("1_rnx7b")
 price = 60
 description = "charged blaster"
-scene = ExtResource("2_36w21")
+scene_path = "res://Player/Weapons/Instances/charged_blaster.tscn"

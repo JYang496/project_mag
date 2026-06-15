@@ -16,7 +16,7 @@ class_name RangerDroneStrike
 @export var laser_visual_duration_sec: float = 0.08
 @export var laser_max_length: float = 360.0
 
-const DRONE_VISUAL_TEXTURE: Texture2D = preload("res://Textures/test/star.png")
+const DRONE_VISUAL_TEXTURE: Texture2D = preload("res://asset/images/test/star.png")
 
 var _is_active: bool = false
 var _active_left_sec: float = 0.0

@@ -18,6 +18,8 @@ offset_left = 45.0
 offset_top = 15.0
 offset_right = 77.0
 offset_bottom = 47.0
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Name" type="Label" parent="Background"]
 layout_mode = 0

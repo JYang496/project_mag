@@ -1,7 +1,6 @@
 [gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
 
-[ext_resource type="Texture2D" uid="uid://dy8r3aaxk8rse" path="res://Textures/test/chainsaw.png" id="1_m0vjd"]
-[ext_resource type="PackedScene" uid="uid://cjvx8yx5wh63l" path="res://Player/Weapons/Instances/chainsaw_launcher.tscn" id="2_f0p1k"]
+[ext_resource type="Texture2D" uid="uid://dy8r3aaxk8rse" path="res://asset/images/test/chainsaw.png" id="1_m0vjd"]
 [ext_resource type="Script" uid="uid://cf8w6uadvmajn" path="res://data/WeaponDefinition.gd" id="3_ep74y"]
 
 [resource]
@@ -11,4 +10,4 @@ display_name = "Chainsaw Launcher"
 icon = ExtResource("1_m0vjd")
 price = 60
 description = "chainsaw launcher test"
-scene = ExtResource("2_f0p1k")
+scene_path = "res://Player/Weapons/Instances/chainsaw_launcher.tscn"

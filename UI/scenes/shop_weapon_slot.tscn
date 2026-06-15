@@ -16,6 +16,8 @@ offset_left = 10.0
 offset_top = 20.0
 offset_right = 90.0
 offset_bottom = 100.0
+expand_mode = 1
+stretch_mode = 5
 
 [node name="EquipName" type="Label" parent="Background"]
 layout_mode = 0

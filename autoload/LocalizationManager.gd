@@ -201,9 +201,9 @@ func _rebuild_content_lookup() -> void:
 	for key_variant in GlobalVariables.weapon_list.keys():
 		var weapon_id := str(key_variant)
 		var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
-		if weapon_def == null or weapon_def.scene == null:
+		if weapon_def == null:
 			continue
-		var scene_path := str(weapon_def.scene.resource_path)
+		var scene_path := weapon_def.scene_path
 		if scene_path == "":
 			continue
 		_weapon_scene_to_id[scene_path] = weapon_id

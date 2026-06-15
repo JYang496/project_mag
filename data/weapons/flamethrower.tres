@@ -1,7 +1,6 @@
 [gd_resource type="Resource" script_class="WeaponDefinition" format=3]
 
 [ext_resource type="Texture2D" uid="uid://bo8agyho2ubhi" path="res://asset/images/weapons/pistol.png" id="1_icon"]
-[ext_resource type="PackedScene" uid="uid://ofhphmwcaxhy" path="res://Player/Weapons/Instances/flamethrower.tscn" id="2_scene"]
 [ext_resource type="Script" uid="uid://cf8w6uadvmajn" path="res://data/WeaponDefinition.gd" id="3_def"]
 
 [resource]
@@ -11,4 +10,4 @@ display_name = "flamethrower"
 icon = ExtResource("1_icon")
 price = 60
 description = "short-range cone burst with fire aoe and heat management"
-scene = ExtResource("2_scene")
+scene_path = "res://Player/Weapons/Instances/flamethrower.tscn"

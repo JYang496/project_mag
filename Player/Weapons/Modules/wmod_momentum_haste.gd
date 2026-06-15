@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Each hit grants short movement and attack speed stacks, up to a cap.
 
 var ITEM_NAME := "Momentum Haste"
@@ -18,13 +18,9 @@ var _expires_at_msec: int = 0
 func _enter_tree() -> void:
 	super._enter_tree()
 	set_physics_process(false)
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
 
 func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
+	super._exit_tree()
 	_clear_buffs()
 
 func _physics_process(_delta: float) -> void:

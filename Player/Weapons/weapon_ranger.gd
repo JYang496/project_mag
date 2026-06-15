@@ -85,12 +85,17 @@ func _on_cooldown_timer_timeout():
 
 func _on_shoot():
 	is_on_cooldown = true
-	var projectile := spawn_projectile_from_scene(projectile_scene)
-	if projectile == null:
-		return
-	projectile.target = get_mouse_target()
-	projectile.global_position = global_position
-	get_projectile_spawn_parent().call_deferred("add_child", projectile)
+	var target_position: Vector2 = get_mouse_target()
+	var base_direction := global_position.direction_to(target_position).normalized()
+	for direction in branch_runtime.get_branch_shot_directions(base_direction):
+		var projectile := spawn_projectile_from_scene(projectile_scene)
+		if projectile == null:
+			continue
+		projectile_direction = direction
+		projectile.target = global_position + direction * global_position.distance_to(target_position)
+		projectile.global_position = global_position
+		apply_effects_on_projectile(projectile)
+		get_projectile_spawn_parent().call_deferred("add_child", projectile)
 
 func get_mouse_target():
 	if has_meta("_benchmark_mouse_target"):

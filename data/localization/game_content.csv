@@ -108,6 +108,38 @@ module.wmod_pierce_stat.name,Pierce,Pierce
 module.wmod_projectile_speed_stat.name,Faster Speed,Faster Speed
 module.wmod_stun_on_hit.name,Stun On Hit,Stun On Hit
 module.wmod_subzero_extension_freeze.name,Subzero Extension,Subzero Extension
+module.wmod_battle_focus_buff.name,Battle Focus,战斗专注
+module.wmod_bleed_edge_physical.name,Bleed Edge,流血锋刃
+module.wmod_chill_chain_freeze.name,Chill Chain,寒意链
+module.wmod_corrosive_touch_energy.name,Corrosive Touch,腐蚀触碰
+module.wmod_ember_mark_fire.name,Ember Mark,余烬标记
+module.wmod_ice_prison_freeze.name,Ice Prison,冰封牢笼
+module.wmod_molten_splash_fire.name,Molten Splash,熔火飞溅
+module.wmod_momentum_haste.name,Momentum Haste,动量加速
+module.wmod_plague_seed_dot.name,Plague Seed,瘟疫种子
+module.wmod_shatter_strike_freeze.name,Shatter Strike,碎裂打击
+module.wmod_vampiric_surge.name,Vampiric Surge,吸血涌动
+module.wmod_area_expander.name,Area Expander,范围扩展器
+module.wmod_crit_amplifier.name,Crit Amplifier,暴击增幅器
+module.wmod_crit_calibrator.name,Crit Calibrator,暴击校准器
+module.wmod_dash_cooler.name,Dash Cooler,冲刺冷却器
+module.wmod_diffusion_nozzle.name,Diffusion Nozzle,扩散喷嘴
+module.wmod_expanded_magazine.name,Expanded Magazine,扩容弹匣
+module.wmod_fast_reload.name,Fast Reload,快速装填
+module.wmod_heat_throttle.name,Heat Throttle,热量节流器
+module.wmod_impact_coil.name,Impact Coil,冲击线圈
+module.wmod_multi_launcher.name,Multi Launcher,多重发射器
+module.wmod_quick_cycle.name,Quick Cycle,快速循环
+module.wmod_recovery_magnet.name,Recovery Magnet,回收磁体
+module.wmod_firepower_diffusion.name,Firepower Diffusion,火力扩散
+module.wmod_rhythm_converter.name,Rhythm Converter,节奏转换器
+module.wmod_penetration_momentum.name,Penetration Momentum,贯穿动能
+module.wmod_weakness_relay.name,Weakness Relay,弱点接力
+module.wmod_overkill_recovery.name,Overkill Recovery,过量回收
+module.wmod_magazine_pressure.name,Magazine Pressure,弹仓余压
+module.wmod_inertial_aim.name,Inertial Aim,惯性瞄准
+module.wmod_crossfire.name,Crossfire,交叉火力
+module.wmod_kill_endurance.name,Kill Endurance,击杀续航
 mecha.4.name,Tank,Tank
 mecha.1.name,Heavy Assault,Heavy Assault
 mecha.3.name,Melee,Melee

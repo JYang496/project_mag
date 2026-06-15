@@ -109,7 +109,10 @@ func compute_outgoing_damage(base_damage: int) -> int:
 		total_mul_delta += (float(mul) - 1.0)
 	total_mul_delta += (_get_low_hp_damage_mul() - 1.0)
 	var final_mul := maxf(0.0, 1.0 + total_mul_delta)
-	return max(1, int(round(float(base_damage) * final_mul)))
+	var final_damage: int = maxi(1, int(round(float(base_damage) * final_mul)))
+	if randf() < clampf(float(PlayerData.total_crit_rate), 0.0, 1.0):
+		final_damage = maxi(1, int(round(float(final_damage) * maxf(float(PlayerData.total_crit_damage), 1.0))))
+	return final_damage
 
 func get_low_hp_damage_mul() -> float:
 	return _get_low_hp_damage_mul()

@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Hitting frosted targets triggers bonus shatter damage scaling with current frost stacks.
 
 const UTILS := preload("res://Player/Weapons/Modules/wmod_runtime_utils.gd")
@@ -13,15 +13,8 @@ var ITEM_NAME := "Shatter Strike"
 
 var _target_last_proc_msec: Dictionary = {}
 
-func _enter_tree() -> void:
-	super._enter_tree()
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
-
 func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
+	super._exit_tree()
 	_target_last_proc_msec.clear()
 
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:

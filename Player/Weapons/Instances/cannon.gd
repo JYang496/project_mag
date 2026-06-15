@@ -127,7 +127,7 @@ func _on_shoot() -> void:
 	spawn_projectile.expire_time = maxf(attack_range / maxf(float(speed), 1.0), 0.2)
 	if idle_empowered_shot:
 		spawn_projectile.set_meta("cannon_idle_empowered", true)
-		spawn_projectile.set_meta("cannon_idle_aoe_radius", maxf(idle_fire_aoe_radius, 1.0))
+		spawn_projectile.set_meta("cannon_idle_aoe_radius", get_effective_area_radius(idle_fire_aoe_radius))
 		spawn_projectile.set_meta("cannon_idle_aoe_damage_ratio", maxf(idle_fire_aoe_damage_ratio, 0.0))
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)

@@ -12,7 +12,7 @@ const MARK_VISUAL_SCRIPT := preload("res://Player/Weapons/Effects/spear_pierce_m
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://Textures/test/spear.png")
+var projectile_texture_resource = preload("res://asset/images/test/spear.png")
 var return_on_timeout = preload("res://Player/Weapons/Effects/return_on_timeout.tscn")
 
 # Weapon
@@ -62,7 +62,7 @@ func set_level(lv):
 
 func _on_shoot():
 	is_on_cooldown = true
-	var cooldown := base_attack_cooldown
+	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = maxf(cooldown, 0.05)
 	cooldown_timer.start()
@@ -78,6 +78,9 @@ func _on_shoot():
 		_spawn_spear_projectile(direction, global_position, damage_multiplier, false)
 
 	branch_runtime.notify_branch_weapon_shot(base_direction)
+
+func supports_multi_launcher_module() -> bool:
+	return true
 
 
 func _spawn_spear_projectile(

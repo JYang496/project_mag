@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://Player/Weapons/Modules/wmod_diffusion_nozzle.gd" id="2_script"]
+[ext_resource type="Texture2D" path="res://asset/images/modules/wmod_diffusion_nozzle.svg" id="3_icon"]
+
+[node name="DiffusionNozzle" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+item_name = "Diffusion Nozzle"
+stat_key = "cone_half_angle_deg"
+multiplier_lv1 = 1.15
+multiplier_lv2 = 1.22
+multiplier_lv3 = 1.29
+required_property = "cone_half_angle_deg"
+level_effects = PackedStringArray("Cone attack angle +15%", "Cone attack angle +22%", "Cone attack angle +29%")
+module_tags = PackedStringArray("buff", "area")
+
+[node name="Sprite" parent="." index="0"]
+texture = ExtResource("3_icon")

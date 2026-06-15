@@ -3,8 +3,11 @@ class_name ModuleSlot
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 
+signal module_selected(module_instance: Module)
+
 var module : Module
 @export var module_index : int = 0
+var selected := false
 
 # Border properties
 @export var border_color: Color = Color(1, 1, 0)
@@ -35,6 +38,9 @@ func _draw():
 	if hover_over:
 		width = border_width
 		border_color = hover_over_color
+	elif selected and module != null and is_instance_valid(module):
+		width = 5.0
+		border_color = Color(0.3, 0.85, 1.0)
 	elif module != null and is_instance_valid(module):
 		width = 2.0
 		border_color = RARITY_UTIL.get_color(module.get_rarity())
@@ -79,20 +85,14 @@ func _on_background_mouse_exited() -> void:
 
 
 func _on_background_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		if module == null:
-			return
-		var ui_sell = GlobalVariables.ui
-		if ui_sell and is_instance_valid(ui_sell) and ui_sell.has_method("request_temporary_module_sell_confirmation"):
-			ui_sell.request_temporary_module_sell_confirmation(module)
-		return
 	if event.is_action_pressed("CLICK"):
 		if module == null:
 			return
-		var ui = GlobalVariables.ui
-		if ui and is_instance_valid(ui) and ui.has_method("request_module_equip_selection"):
-			ui.request_module_equip_selection(module)
-			return
+		module_selected.emit(module)
 
 func _cursor_can_click() -> bool:
 	return module != null and is_instance_valid(module)
+
+func set_selected(value: bool) -> void:
+	selected = value
+	queue_redraw()

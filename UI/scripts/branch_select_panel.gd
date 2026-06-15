@@ -108,7 +108,7 @@ func _build_branch_card(def: WeaponBranchDefinition) -> Button:
 	icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon_rect.custom_minimum_size = Vector2(96, 72)
 	icon_rect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon_rect.texture = def.icon
 	vbox.add_child(icon_rect)

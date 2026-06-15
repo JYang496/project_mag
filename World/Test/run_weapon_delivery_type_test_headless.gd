@@ -268,8 +268,8 @@ func _validate_modules() -> PackedStringArray:
 				module.free()
 		file_name = dir.get_next()
 	dir.list_dir_end()
-	if module_count != 35:
-		failures.append("modules: expected 35 module scenes, got %d" % module_count)
+	if module_count != 56:
+		failures.append("modules: expected 56 module scenes, got %d" % module_count)
 	return failures
 
 func _validate_mask(path: String, field: String, value: int, allowed_mask: int) -> PackedStringArray:

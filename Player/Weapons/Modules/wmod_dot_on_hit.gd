@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Use on hit-capable weapons to apply stacking DOT damage over time.
 class_name Erosion
 
@@ -6,16 +6,6 @@ class_name Erosion
 @export var base_damage: int = 1
 @export var tick_per_fuse: int = 0
 @export var damage_per_fuse: int = 0
-
-func _enter_tree() -> void:
-	super._enter_tree()
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
-
-func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
 
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if not target or not is_instance_valid(target):

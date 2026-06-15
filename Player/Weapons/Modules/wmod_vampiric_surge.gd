@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Converts overkill damage into temporary bonus shield.
 
 const UTILS := preload("res://Player/Weapons/Modules/wmod_runtime_utils.gd")
@@ -16,13 +16,9 @@ var _active_shield_chunks: Array[Dictionary] = []
 func _enter_tree() -> void:
 	super._enter_tree()
 	set_physics_process(false)
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
 
 func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
+	super._exit_tree()
 	_clear_all_shield()
 
 func _physics_process(_delta: float) -> void:

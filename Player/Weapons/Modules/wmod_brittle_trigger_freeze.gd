@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Deals bonus physical damage when hitting targets with high frost stacks.
 
 var ITEM_NAME := "Brittle Trigger"
@@ -10,16 +10,6 @@ var ITEM_NAME := "Brittle Trigger"
 @export var target_icd_sec: float = 0.8
 
 var _target_last_proc_msec: Dictionary = {}
-
-func _enter_tree() -> void:
-	super._enter_tree()
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
-
-func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
 
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if target == null or not is_instance_valid(target):

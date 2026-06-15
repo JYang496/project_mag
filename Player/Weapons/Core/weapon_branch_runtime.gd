@@ -155,6 +155,17 @@ func get_branch_shot_directions(base_direction: Vector2, shot_count: int = -1) -
 			else:
 				next_directions.append_array(branch_dirs)
 		directions = next_directions
+	if weapon != null and is_instance_valid(weapon) and weapon.has_method("get_module_shot_directions"):
+		var base_module_count := directions.size()
+		if shot_count > 0:
+			base_module_count = maxi(base_module_count, shot_count)
+		var module_directions: Array[Vector2] = weapon.call(
+			"get_module_shot_directions",
+			base_direction,
+			base_module_count
+		)
+		if module_directions.size() > directions.size():
+			directions = module_directions
 	return directions
 
 func get_branch_cooldown_multiplier() -> float:

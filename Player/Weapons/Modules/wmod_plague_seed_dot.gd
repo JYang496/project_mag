@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Applies plague seed DOT. Seeded enemies spread DOT to nearby enemies when they die.
 
 const UTILS := preload("res://Player/Weapons/Modules/wmod_runtime_utils.gd")
@@ -15,15 +15,8 @@ var ITEM_NAME := "Plague Seed"
 
 var _seeded_targets: Dictionary = {}
 
-func _enter_tree() -> void:
-	super._enter_tree()
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
-
 func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
+	super._exit_tree()
 	_clear_seed_connections()
 
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:

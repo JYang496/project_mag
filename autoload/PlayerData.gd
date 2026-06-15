@@ -89,11 +89,15 @@ var crit_rate := 0.0 :
 	set(value):
 		crit_rate = clampf(float(value), 0.0, 1.0)
 var bonus_crit_rate := 0.0
-var total_crit_rate := crit_rate + bonus_crit_rate
+var total_crit_rate: float:
+	get:
+		return clampf(float(crit_rate) + float(bonus_crit_rate), 0.0, 1.0)
 
 var crit_damage := 1.0
 var bonus_crit_damage := 1.0
-var total_crit_damage := crit_damage * bonus_crit_damage
+var total_crit_damage: float:
+	get:
+		return maxf(1.0, float(crit_damage) * float(bonus_crit_damage))
 
 var grab_radius := 50.0 :
 	get:
@@ -178,10 +182,8 @@ func reset_runtime_state() -> void:
 	collision_cd = 1.0
 	crit_rate = 0.0
 	bonus_crit_rate = 0.0
-	total_crit_rate = 0.0
 	crit_damage = 1.0
 	bonus_crit_damage = 1.0
-	total_crit_damage = 1.0
 	grab_radius = 50.0
 	grab_radius_mutifactor = 1.0
 	total_grab_radius = 50.0

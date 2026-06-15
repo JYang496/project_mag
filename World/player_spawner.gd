@@ -1,5 +1,14 @@
 extends Node2D
 
+const STARTUP_FEATURE_TEST_ENABLED: bool = true
+const STARTUP_FEATURE_TEST_WEAPON_COUNT: int = 2
+const STARTUP_FEATURE_TEST_WEAPON_IDS: PackedStringArray = ["1", "5", "7", "26"]
+const STARTUP_FEATURE_TEST_MODULE_PATHS: PackedStringArray = [
+	"res://Player/Weapons/Modules/wmod_damage_up_stat.tscn",
+	"res://Player/Weapons/Modules/wmod_lifesteal_on_hit.tscn",
+	"res://Player/Weapons/Modules/wmod_reload_speed_link.tscn",
+]
+
 var start_up_status = {
 	"player_speed":100.0,
 	"player_max_hp":5,
@@ -110,6 +119,26 @@ func _add_player_to_root(player_instance: Node) -> void:
 		root.add_child(player_instance)
 	else:
 		get_tree().root.add_child(player_instance)
+	grant_startup_feature_test_loadout(player_instance as Player)
+
+static func grant_startup_feature_test_loadout(player: Player) -> void:
+	if not STARTUP_FEATURE_TEST_ENABLED or player == null or not is_instance_valid(player):
+		return
+	for weapon_id in STARTUP_FEATURE_TEST_WEAPON_IDS:
+		if PlayerData.player_weapon_list.size() >= STARTUP_FEATURE_TEST_WEAPON_COUNT:
+			break
+		if player.call("_find_equipped_weapon_by_id", weapon_id) == null:
+			player.create_weapon(weapon_id)
+	for module_path in STARTUP_FEATURE_TEST_MODULE_PATHS:
+		var module_scene := load(module_path) as PackedScene
+		if module_scene == null:
+			push_warning("Startup feature test module scene not found: %s" % module_path)
+			continue
+		var module_instance := module_scene.instantiate() as Module
+		if module_instance == null:
+			push_warning("Startup feature test module scene is invalid: %s" % module_path)
+			continue
+		InventoryData.obtain_module(module_instance)
 
 func _on_phase_changed(new_phase: String) -> void:
 	_refresh_cell_highlight(new_phase)

@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Applies corrosion on hit: lowers armor and raises damage taken for a short duration.
 
 var ITEM_NAME := "Corrosive Touch"
@@ -19,13 +19,9 @@ var _runtime: Dictionary = {}
 func _enter_tree() -> void:
 	super._enter_tree()
 	set_physics_process(false)
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
 
 func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
+	super._exit_tree()
 	_clear_all_corrosion()
 
 func _physics_process(_delta: float) -> void:

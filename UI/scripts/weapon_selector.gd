@@ -30,12 +30,11 @@ var _switch_tween: Tween
 var _slot_cd_nodes: Array[Control] = []
 var _slot_glow_nodes: Array[Control] = []
 var _cooldown_overlay: Control
-var _slot_anim_z_order: Dictionary = {}
 var _slot_glow_tweens: Dictionary = {}
 var _selector_reload_total_by_weapon: Dictionary = {}
 var _connected_reload_weapon_ids: Dictionary = {}
 
-var _empty_weapon_pic: Texture2D = preload("res://Textures/test/empty_wp.png")
+var _empty_weapon_pic: Texture2D = preload("res://asset/images/test/empty_wp.png")
 var _mainhand_slot_bg: Texture2D = preload("res://asset/images/ui/mainhand.png")
 var _offhand_slot_bg: Texture2D = preload("res://asset/images/ui/offhand.png")
 
@@ -99,7 +98,6 @@ func animate_main_switch(step: int) -> void:
 	if occupied_slots.size() < 2:
 		refresh_slots()
 		return
-	_update_anim_overlay_z_order(occupied_slots, sign_step)
 	_rotate_logical_order(sign_step)
 	_set_all_slot_backgrounds_offhand()
 	_update_debug_labels()
@@ -145,7 +143,6 @@ func _on_switch_anim_finished(step: int) -> void:
 	_rotate_slot_nodes(step)
 	_restore_slot_positions()
 	_is_animating = false
-	_slot_anim_z_order.clear()
 	_update_debug_labels()
 	_debug_log_state("animate_finished_step_%d" % step)
 
@@ -298,7 +295,7 @@ func _ensure_slot_cooldown_nodes() -> void:
 				progress_node.name = "CooldownDiamond%d" % slot_idx
 				progress_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 				progress_node.visible = false
-				progress_node.z_index = 10 + slot_idx
+				progress_node.z_index = 0
 				_cooldown_overlay.add_child(progress_node)
 				_slot_cd_nodes[slot_idx] = progress_node
 		if _slot_cd_nodes[slot_idx] != null and is_instance_valid(_slot_cd_nodes[slot_idx]):
@@ -312,7 +309,7 @@ func _ensure_slot_cooldown_nodes() -> void:
 		glow_node.name = "CooldownDiamondGlow%d" % slot_idx
 		glow_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		glow_node.visible = false
-		glow_node.z_index = 80 + slot_idx
+		glow_node.z_index = 0
 		glow_node.modulate = Color(1.0, 1.0, 1.0, 0.0)
 		glow_node.set("progress", 1.0)
 		glow_node.set("line_width", 7.0)
@@ -361,17 +358,10 @@ func _update_slot_cooldown_progress() -> void:
 			glow_node.position = slot_node.position
 			glow_node.size = slot_node.size
 		if _is_animating:
-			var anim_order := int(_slot_anim_z_order.get(slot_idx, slot_idx))
-			progress_node.z_index = 40 + anim_order
 			progress_node.scale = Vector2(0.94, 0.94)
 			progress_node.pivot_offset = progress_node.size * 0.5
-			if glow_node != null:
-				glow_node.z_index = 90 + anim_order
 		else:
-			progress_node.z_index = 10 + slot_idx
 			progress_node.scale = Vector2.ONE
-			if glow_node != null:
-				glow_node.z_index = 80 + slot_idx
 		var weapon_idx := -1
 		if slot_idx < logical_order.size():
 			weapon_idx = logical_order[slot_idx]
@@ -410,7 +400,8 @@ func _ensure_cooldown_overlay() -> void:
 	_cooldown_overlay.offset_top = 0.0
 	_cooldown_overlay.offset_right = 0.0
 	_cooldown_overlay.offset_bottom = 0.0
-	_cooldown_overlay.z_index = 20
+	# Keep the ring branch on the selector's own draw layer so it cannot cover sibling UI.
+	_cooldown_overlay.z_index = 0
 	add_child(_cooldown_overlay)
 
 func _sync_cooldown_overlay_layout() -> void:
@@ -418,18 +409,6 @@ func _sync_cooldown_overlay_layout() -> void:
 		return
 	_cooldown_overlay.position = Vector2.ZERO
 	_cooldown_overlay.size = size
-
-func _update_anim_overlay_z_order(occupied_slots: Array[int], step: int) -> void:
-	_slot_anim_z_order.clear()
-	if occupied_slots.is_empty():
-		return
-	# Assign deterministic layering order per moving slot while animating.
-	for i in range(occupied_slots.size()):
-		var slot_idx := occupied_slots[i]
-		var order := i
-		if signi(step) > 0:
-			order = occupied_slots.size() - 1 - i
-		_slot_anim_z_order[slot_idx] = order
 
 func _get_selector_ring_progress(weapon: Variant) -> float:
 	if weapon == null or not is_instance_valid(weapon):

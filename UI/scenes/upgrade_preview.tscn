@@ -31,6 +31,8 @@ offset_bottom = 119.0
 layout_mode = 0
 offset_right = 64.0
 offset_bottom = 64.0
+expand_mode = 1
+stretch_mode = 5
 
 [node name="LabelName" type="Label" parent="UpgradeCard"]
 layout_mode = 0
@@ -65,6 +67,8 @@ offset_left = 109.0
 offset_top = 59.0
 offset_right = 173.0
 offset_bottom = 123.0
+expand_mode = 1
+stretch_mode = 5
 
 [connection signal="mouse_entered" from="UpgradeCard" to="." method="_on_upgrade_card_mouse_entered"]
 [connection signal="mouse_exited" from="UpgradeCard" to="." method="_on_upgrade_card_mouse_exited"]

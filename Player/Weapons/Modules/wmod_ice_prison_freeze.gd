@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # High frost-stack targets can be briefly rooted on hit.
 
 var ITEM_NAME := "Ice Prison"
@@ -16,15 +16,8 @@ var ITEM_NAME := "Ice Prison"
 
 var _target_last_proc_msec: Dictionary = {}
 
-func _enter_tree() -> void:
-	super._enter_tree()
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
-
 func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
+	super._exit_tree()
 	_target_last_proc_msec.clear()
 
 func apply_on_hit(_source_weapon: Weapon, target: Node) -> void:

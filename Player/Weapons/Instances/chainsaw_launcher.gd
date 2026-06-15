@@ -7,7 +7,7 @@ var scale_up_by_time_effect = preload("res://Player/Weapons/Effects/scale_up_by_
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://Textures/test/chainsaw_spin.png")
+var projectile_texture_resource = preload("res://asset/images/test/chainsaw_spin.png")
 
 # Weapon
 var ITEM_NAME = "Chainsaw Launcher"

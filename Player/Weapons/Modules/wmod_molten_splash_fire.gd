@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Splashes molten droplets in a short line behind the hit target.
 
 const UTILS := preload("res://Player/Weapons/Modules/wmod_runtime_utils.gd")
@@ -12,16 +12,6 @@ var ITEM_NAME := "Molten Splash"
 @export var splash_length_lv2: float = 132.0
 @export var splash_length_lv3: float = 156.0
 @export var splash_half_width: float = 24.0
-
-func _enter_tree() -> void:
-	super._enter_tree()
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
-
-func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
 
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if target == null or not is_instance_valid(target):

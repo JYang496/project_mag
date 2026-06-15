@@ -36,11 +36,18 @@ const WEAPON_BRANCH_ID_ALIASES := {
 
 func _ready():
 	load_game()
-	load_weapon_data()
-	load_weapon_branch_data()
-	load_weapon_passive_branch_data()
-	load_mecha_data()
-	load_economy_data()
+
+func prepare_world_data() -> void:
+	if GlobalVariables.weapon_list.is_empty():
+		load_weapon_data()
+	if GlobalVariables.weapon_branch_list.is_empty():
+		load_weapon_branch_data()
+	if GlobalVariables.weapon_passive_branch_list.is_empty():
+		load_weapon_passive_branch_data()
+	if GlobalVariables.mecha_list.is_empty():
+		load_mecha_data()
+	if GlobalVariables.economy_data == null:
+		load_economy_data()
 
 # This function is used for locate weapon file location which stored in data/weapons.
 func load_weapon_data():
@@ -189,9 +196,9 @@ func get_weapon_id_from_scene_path(scene_path: String) -> String:
 	for key_variant in GlobalVariables.weapon_list.keys():
 		var weapon_id := str(key_variant)
 		var weapon_def := read_weapon_data(weapon_id) as WeaponDefinition
-		if weapon_def == null or weapon_def.scene == null:
+		if weapon_def == null:
 			continue
-		if str(weapon_def.scene.resource_path) == normalized_path:
+		if weapon_def.scene_path == normalized_path:
 			return weapon_id
 	return ""
 
@@ -318,12 +325,9 @@ func _register_weapon_branch_resource(resource: Resource, source_path: String) -
 	if branch_def.branch_id == "":
 		push_warning("Weapon branch resource has empty branch_id: %s" % source_path)
 		return
-	if branch_def.weapon_scene == null:
-		push_warning("Weapon branch resource missing weapon_scene: %s" % source_path)
-		return
-	var scene_path := branch_def.weapon_scene.resource_path
+	var scene_path := branch_def.weapon_scene_path
 	if scene_path == "":
-		push_warning("Weapon branch weapon_scene has empty path: %s" % source_path)
+		push_warning("Weapon branch resource missing weapon_scene_path: %s" % source_path)
 		return
 	if not GlobalVariables.weapon_branch_list.has(scene_path):
 		GlobalVariables.weapon_branch_list[scene_path] = []

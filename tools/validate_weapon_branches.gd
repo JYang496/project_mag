@@ -36,15 +36,15 @@ func _validate_branch_resource_text(path: String, branches_by_weapon: Dictionary
 		return
 	var text := file.get_as_text()
 	var branch_id := _extract_assigned_string(text, "branch_id")
-	var weapon_scene_path := _extract_ext_resource_path(text, "2_weapon_scene")
-	var behavior_scene_path := _extract_ext_resource_path(text, "3_behavior")
+	var weapon_scene_path := _extract_assigned_string(text, "weapon_scene_path")
+	var behavior_scene_path := _extract_assigned_string(text, "behavior_scene_path")
 	var sort_order := _extract_assigned_int(text, "sort_order", 0)
 	if branch_id == "":
 		errors.append("%s has empty branch_id." % path)
 	if weapon_scene_path == "":
-		errors.append("%s is missing weapon_scene ext resource id 2_weapon_scene." % path)
+		errors.append("%s is missing weapon_scene_path." % path)
 	if behavior_scene_path == "":
-		errors.append("%s is missing behavior_scene ext resource id 3_behavior." % path)
+		errors.append("%s is missing behavior_scene_path." % path)
 	if sort_order == 0:
 		warnings.append("%s has sort_order 0; set an explicit UI/default order." % path)
 	if weapon_scene_path != "":
@@ -85,11 +85,3 @@ func _extract_assigned_int(text: String, property_name: String, fallback: int) -
 	if match == null:
 		return fallback
 	return int(match.get_string(1))
-
-func _extract_ext_resource_path(text: String, resource_id: String) -> String:
-	var regex := RegEx.new()
-	regex.compile("\\[ext_resource[^\\]]*path=\"([^\"]+)\"[^\\]]*id=\"%s\"[^\\]]*\\]" % resource_id)
-	var match := regex.search(text)
-	if match == null:
-		return ""
-	return match.get_string(1).strip_edges()

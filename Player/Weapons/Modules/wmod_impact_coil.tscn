@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://Player/Weapons/Modules/wmod_impact_coil.gd" id="2_script"]
+[ext_resource type="Texture2D" path="res://asset/images/modules/wmod_impact_coil.svg" id="3_icon"]
+
+[node name="ImpactCoil" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+item_name = "Impact Coil"
+stat_key = "knockback"
+multiplier_lv1 = 1.25
+multiplier_lv2 = 1.35
+multiplier_lv3 = 1.45
+level_effects = PackedStringArray("Weapon knockback +25%", "Weapon knockback +35%", "Weapon knockback +45%")
+module_tags = PackedStringArray("buff")
+
+[node name="Sprite" parent="." index="0"]
+texture = ExtResource("3_icon")

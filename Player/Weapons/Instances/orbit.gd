@@ -3,7 +3,7 @@ extends Ranger
 const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_rules.gd")
 
 @onready var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-@onready var projectile_texture_resource = preload("res://Textures/test/bullet.png")
+@onready var projectile_texture_resource = preload("res://asset/images/test/bullet.png")
 @export var radius : float = 80.0
 @export var angle : float = 0.0
 var knock_back = {

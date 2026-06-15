@@ -100,9 +100,15 @@ func update() -> void:
 func _input(_event):
 	if Input.is_action_just_released("CLICK") and weapon_node:
 		if hover_over and upgradable:
-			PlayerData.player_gold -= cost_price
-			upgrade_level.emit(int(weapon_node.level) + 1)
-			GlobalVariables.ui.update_upg()
+			try_upgrade_selected_weapon()
+
+func try_upgrade_selected_weapon() -> bool:
+	if weapon_node == null or not is_instance_valid(weapon_node) or not upgradable:
+		return false
+	PlayerData.player_gold -= cost_price
+	upgrade_level.emit(int(weapon_node.level) + 1)
+	GlobalVariables.ui.update_upg()
+	return true
 
 func combine_status(node):
 	var weapon_data = node.weapon_data

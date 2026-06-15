@@ -21,10 +21,17 @@ func build_damage_data(
 	if resolved_source_player and is_instance_valid(resolved_source_player) and resolved_source_player is Player:
 		final_damage = (resolved_source_player as Player).compute_outgoing_damage(final_damage)
 
+	var effective_knock_back := knock_back.duplicate(true)
+	var source_weapon := resolve_source_weapon(source_node)
+	if source_weapon != null and source_weapon.has_method("get_effective_knockback"):
+		effective_knock_back["amount"] = source_weapon.call(
+			"get_effective_knockback",
+			float(effective_knock_back.get("amount", 0.0))
+		)
 	var data := DamageData.new().setup(
 		final_damage,
 		damage_type,
-		knock_back,
+		effective_knock_back,
 		source_node,
 		resolved_source_player,
 		source_category,
@@ -166,6 +173,19 @@ func resolve_source_player(source_node: Node) -> Node:
 		"expires": expires_msec,
 	}
 	return resolved_player
+
+func resolve_source_weapon(source_node: Node) -> Weapon:
+	if source_node == null or not is_instance_valid(source_node):
+		return null
+	var current: Node = source_node
+	while current != null:
+		if current is Weapon:
+			return current as Weapon
+		current = current.get_parent()
+	var source_weapon_value: Variant = source_node.get("source_weapon")
+	if source_weapon_value is Weapon and is_instance_valid(source_weapon_value):
+		return source_weapon_value as Weapon
+	return null
 
 
 func _resolve_player_by_walk(source_node: Node) -> Node:

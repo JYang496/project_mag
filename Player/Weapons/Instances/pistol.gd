@@ -2,7 +2,7 @@ extends Ranger
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.png")
+var projectile_texture_resource = preload("res://asset/images/test/minigun_bullet.png")
 @export var auto_fire_range: float = 900.0
 @export var pierce_mark_cycle_sec: float = 8.0
 @export var pierce_mark_window_sec: float = 3.0

@@ -25,6 +25,11 @@ func apply_level_ammo(level_data: Dictionary) -> void:
 	if weapon.uses_ammo_system():
 		refill_instantly()
 
+func reconcile_capacity() -> void:
+	if not weapon.uses_ammo_system():
+		return
+	weapon.current_ammo = mini(maxi(weapon.current_ammo, 0), _get_effective_capacity())
+
 func consume(amount: int = 1) -> bool:
 	if not weapon.uses_ammo_system():
 		return true
@@ -50,7 +55,7 @@ func request_reload() -> bool:
 		"source_weapon": weapon,
 		"ammo_before": ammo_before,
 		"ammo_after": weapon.current_ammo,
-		"magazine_capacity": max(0, weapon.magazine_capacity),
+		"magazine_capacity": _get_effective_capacity(),
 		"spent_ratio": spent_ratio,
 		"reload_duration": reload_duration,
 	})
@@ -72,7 +77,7 @@ func finish_reload() -> void:
 		return
 	var ammo_before := weapon.current_ammo
 	var spent_ratio := get_spent_magazine_ratio()
-	weapon.current_ammo = max(0, weapon.magazine_capacity)
+	weapon.current_ammo = _get_effective_capacity()
 	weapon.is_reloading = false
 	weapon.reload_time_left = 0.0
 	weapon._refresh_offhand_skill_on_reload()
@@ -80,7 +85,7 @@ func finish_reload() -> void:
 		"source_weapon": weapon,
 		"ammo_before": ammo_before,
 		"ammo_after": weapon.current_ammo,
-		"magazine_capacity": max(0, weapon.magazine_capacity),
+		"magazine_capacity": _get_effective_capacity(),
 		"spent_ratio": spent_ratio,
 	})
 	weapon.weapon_reload_completed.emit(weapon)
@@ -88,7 +93,7 @@ func finish_reload() -> void:
 func refill_instantly() -> void:
 	if not weapon.uses_ammo_system():
 		return
-	weapon.current_ammo = max(0, weapon.magazine_capacity)
+	weapon.current_ammo = _get_effective_capacity()
 	weapon.is_reloading = false
 	weapon.reload_time_left = 0.0
 
@@ -96,7 +101,7 @@ func get_status() -> Dictionary:
 	return {
 		"enabled": weapon.uses_ammo_system(),
 		"current": weapon.current_ammo,
-		"max": max(0, weapon.magazine_capacity),
+		"max": _get_effective_capacity(),
 		"is_reloading": weapon.is_reloading,
 		"reload_left": weapon.reload_time_left,
 	}
@@ -108,18 +113,25 @@ func initialize_ammo_system() -> void:
 		weapon.reload_time_left = 0.0
 		return
 	weapon.magazine_capacity = max(0, weapon.magazine_capacity)
-	weapon.current_ammo = weapon.magazine_capacity
+	weapon.current_ammo = _get_effective_capacity()
 	weapon.is_reloading = false
 	weapon.reload_time_left = 0.0
 
 func get_spent_magazine_ratio() -> float:
-	if weapon.magazine_capacity <= 0:
+	var effective_capacity := _get_effective_capacity()
+	if effective_capacity <= 0:
 		return 0.0
-	var spent: int = max(0, weapon.magazine_capacity - weapon.current_ammo)
-	return clampf(float(spent) / float(weapon.magazine_capacity), 0.0, 1.0)
+	var spent: int = max(0, effective_capacity - weapon.current_ammo)
+	return clampf(float(spent) / float(effective_capacity), 0.0, 1.0)
 
 func get_effective_reload_duration() -> float:
-	return weapon.plugin_dispatcher.get_effective_reload_duration(weapon.reload_duration_sec)
+	var module_duration := weapon.get_runtime_stat_value("reload_duration_sec", weapon.reload_duration_sec)
+	return weapon.plugin_dispatcher.get_effective_reload_duration(module_duration)
+
+func _get_effective_capacity() -> int:
+	if weapon.has_method("get_effective_magazine_capacity"):
+		return maxi(1, int(weapon.call("get_effective_magazine_capacity")))
+	return maxi(1, int(weapon.magazine_capacity))
 
 func clear_for_weapon_exit() -> void:
 	pass

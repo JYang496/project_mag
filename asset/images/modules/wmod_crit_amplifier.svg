@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <style>
+    .main { fill: none; stroke: #d788ff; stroke-width: 2; stroke-linecap: square; stroke-linejoin: round; }
+    .badge { fill: #10141f; stroke: #ffffff; stroke-width: 1.5; stroke-linecap: square; stroke-linejoin: round; }
+    .fill { fill: #ffffff; stroke: none; }
+  </style>
+  <g class="main"><circle cx='16' cy='16' r='8'/><circle cx='16' cy='16' r='3'/><path d='M16 4v5M16 23v5M4 16h5M23 16h5'/></g>
+  <path class='badge' d='M22 27v-7M19 23l3-3 3 3'/>
+</svg>

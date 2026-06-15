@@ -1,8 +1,6 @@
 [gd_resource type="Resource" script_class="WeaponBranchDefinition" format=3 uid="uid://c3hgkrybt6vpc"]
 
 [ext_resource type="Texture2D" uid="uid://cpi5rnavtbaeu" path="res://asset/images/cells/ice.png" id="1_icon"]
-[ext_resource type="PackedScene" uid="uid://cnesep1ehs3v2" path="res://Player/Weapons/Instances/glacier_projector.tscn" id="2_weapon_scene"]
-[ext_resource type="PackedScene" uid="uid://dvuplrxuo3hk2" path="res://Player/Weapons/Branches/glacier_subzero_battery_branch.tscn" id="3_behavior"]
 [ext_resource type="Script" uid="uid://bi2n1qvhoukj3" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
 
 [resource]
@@ -12,7 +10,7 @@ display_name = "Subzero Battery"
 description = "Cold Snap restores 6 ammo, capped by the current magazine."
 icon = ExtResource("1_icon")
 sort_order = 20
-weapon_scene = ExtResource("2_weapon_scene")
-behavior_scene = ExtResource("3_behavior")
+weapon_scene_path = "res://Player/Weapons/Instances/glacier_projector.tscn"
+behavior_scene_path = "res://Player/Weapons/Branches/glacier_subzero_battery_branch.tscn"
 exclusive_groups = PackedStringArray()
 incompatible_branch_ids = PackedStringArray()

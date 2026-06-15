@@ -4,7 +4,7 @@ class_name MechaDefinition
 
 @export var mecha_id := ""
 @export var display_name := ""
-@export var scene: PackedScene
+@export_file("*.tscn") var scene_path := ""
 @export var max_level := 10
 @export var next_level_exp: PackedInt32Array = []
 @export var player_max_hp: PackedInt32Array = []
@@ -18,3 +18,13 @@ class_name MechaDefinition
 @export var crit_damage: PackedFloat32Array = []
 @export var grab_radius: PackedFloat32Array = []
 @export var player_gold: PackedInt32Array = []
+
+var _scene_cache: PackedScene
+var scene: PackedScene:
+	get:
+		return get_scene()
+
+func get_scene() -> PackedScene:
+	if _scene_cache == null and scene_path != "":
+		_scene_cache = load(scene_path) as PackedScene
+	return _scene_cache

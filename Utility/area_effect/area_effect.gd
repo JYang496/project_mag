@@ -90,6 +90,10 @@ signal target_affected(target: Node)
 func _ready() -> void:
 	if source_node is BaseEnemy:
 		add_to_group("enemy_runtime_cleanup")
+	if source_category == DamageData.SOURCE_PLAYER_WEAPON:
+		var source_weapon := DamageManager.resolve_source_weapon(source_node)
+		if source_weapon != null and source_weapon.has_method("get_effective_area_radius"):
+			radius = float(source_weapon.call("get_effective_area_radius", radius))
 	_sync_radius()
 	_sync_collision_mask()
 	_sync_visual_nodes()

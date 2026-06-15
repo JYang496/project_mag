@@ -2,7 +2,7 @@ extends Ranger
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://Textures/test/minigun_bullet.png")
+var projectile_texture_resource = preload("res://asset/images/test/minigun_bullet.png")
 
 
 # Weapon
@@ -54,6 +54,9 @@ func _on_shoot():
 	for dir in shot_directions:
 		_fire_single_rocket(dir.normalized(), damage_multiplier)
 	branch_runtime.notify_branch_weapon_shot(base_direction)
+
+func supports_multi_launcher_module() -> bool:
+	return true
 
 func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> void:
 	var spawn_projectile = spawn_projectile_from_scene(projectile_template)

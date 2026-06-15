@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Applies bonus freeze damage on hit so frost stacks can be seeded by module hits.
 
 var ITEM_NAME := "Cryo Infuser"
@@ -6,16 +6,6 @@ var ITEM_NAME := "Cryo Infuser"
 @export var freeze_damage_lv1: int = 3
 @export var freeze_damage_lv2: int = 4
 @export var freeze_damage_lv3: int = 5
-
-func _enter_tree() -> void:
-	super._enter_tree()
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
-
-func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
 
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if target == null or not is_instance_valid(target):

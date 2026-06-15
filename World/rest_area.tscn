@@ -26,30 +26,30 @@ scale = Vector2(25.5, 25.5)
 shape = SubResource("RectangleShape2D_hnton")
 
 [node name="MerchantHintLabel" type="Label" parent="." unique_id=204400001]
-offset_left = 18.0
-offset_top = 62.0
-offset_right = 154.0
-offset_bottom = 86.0
-theme_override_font_sizes/font_size = 14
-text = "Click to open shop"
+custom_minimum_size = Vector2(156, 58)
+offset_left = 7.0
+offset_top = 45.0
+offset_right = 163.0
+offset_bottom = 103.0
+text = "Shop\nBuy and sell weapons"
 horizontal_alignment = 1
 
 [node name="SmithHintLabel" type="Label" parent="." unique_id=204400002]
-offset_left = 188.0
-offset_top = 62.0
-offset_right = 324.0
-offset_bottom = 86.0
-theme_override_font_sizes/font_size = 14
-text = "Click to open upgrade"
+custom_minimum_size = Vector2(156, 58)
+offset_left = 178.0
+offset_top = 45.0
+offset_right = 334.0
+offset_bottom = 103.0
+text = "Weapon Upgrade\nNo upgrades available"
 horizontal_alignment = 1
 
 [node name="ModuleHintLabel" type="Label" parent="." unique_id=204400004]
-offset_left = 358.0
-offset_top = 62.0
-offset_right = 494.0
-offset_bottom = 86.0
-theme_override_font_sizes/font_size = 14
-text = "Click to manage modules"
+custom_minimum_size = Vector2(156, 58)
+offset_left = 349.0
+offset_top = 45.0
+offset_right = 505.0
+offset_bottom = 103.0
+text = "Module Management\nNo pending modules"
 horizontal_alignment = 1
 
 [node name="BattleHintLabel" type="Label" parent="." unique_id=204400003]

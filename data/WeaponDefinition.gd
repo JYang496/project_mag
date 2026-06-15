@@ -9,10 +9,20 @@ const RARITY_UTIL := preload("res://data/LootRarity.gd")
 @export var icon: Texture2D
 @export var price := 0
 @export_multiline var description := ""
-@export var scene: PackedScene
+@export_file("*.tscn") var scene_path := ""
 @export var is_hidden: bool = false
 @export_enum("common", "rare", "epic") var rarity: String = "common"
 @export_range(0.0, 1000000.0, 0.01) var drop_weight: float = 100.0
+
+var _scene_cache: PackedScene
+var scene: PackedScene:
+	get:
+		return get_scene()
+
+func get_scene() -> PackedScene:
+	if _scene_cache == null and scene_path != "":
+		_scene_cache = load(scene_path) as PackedScene
+	return _scene_cache
 
 func get_rarity() -> String:
 	return RARITY_UTIL.normalize(rarity)

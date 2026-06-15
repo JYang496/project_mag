@@ -56,6 +56,7 @@ func _on_board_active_cells_changed(_active_cell_ids: PackedInt32Array) -> void:
 	_refresh_fallback_bounds()
 
 func _refresh_spawn_tables() -> void:
+	SpawnData.ensure_loaded()
 	instance_list = []
 	for level_config in SpawnData.level_list:
 		if level_config == null:

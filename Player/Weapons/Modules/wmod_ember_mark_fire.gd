@@ -1,4 +1,4 @@
-extends Module
+extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Builds ember marks on hit, then triggers a small fire burst when the mark threshold is reached.
 
 const UTILS := preload("res://Player/Weapons/Modules/wmod_runtime_utils.gd")
@@ -15,15 +15,8 @@ var ITEM_NAME := "Ember Mark"
 
 var _mark_stacks: Dictionary = {}
 
-func _enter_tree() -> void:
-	super._enter_tree()
-	register_as_on_hit_plugin()
-
-func _ready() -> void:
-	register_as_on_hit_plugin()
-
 func _exit_tree() -> void:
-	unregister_as_on_hit_plugin()
+	super._exit_tree()
 	_mark_stacks.clear()
 
 func apply_on_hit(source_weapon: Weapon, target: Node) -> void:

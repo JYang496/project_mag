@@ -9,13 +9,7 @@ extends Button
 
 
 func _on_button_up() -> void:
-	InventoryData.clear_on_select()
-	for slot : EquipmentSlotShop in equipped.get_children():
-		slot.sell_mode = false
-		slot.reset_sell_status()
-	shop_sell_button.visible = true
-	shop_confirm_button.visible = false
-	shop_cancel_button.visible = false
-	shop_refresh_button.visible = true
-	shop.visible = true
+	var ui = GlobalVariables.ui
+	if ui and is_instance_valid(ui) and ui.has_method("set_shop_sell_mode"):
+		ui.set_shop_sell_mode(false)
 	
