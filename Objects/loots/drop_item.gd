@@ -7,6 +7,8 @@ const FALLBACK_MODULE_ICON: Texture2D = preload("res://asset/images/test/star.pn
 @export var module_scene: PackedScene
 @export var module_level: int = 1
 @export var spawn_ready: bool = false
+@export var auto_collect_on_landing: bool = false
+@export var trajectory_animation_managed: bool = false
 var item : Node2D
 var module_instance: Module
 var player_near : bool = false
@@ -30,7 +32,7 @@ func _ready() -> void:
 			sprite.texture = module_sprite.texture
 		else:
 			sprite.texture = FALLBACK_MODULE_ICON
-		if not spawn_ready:
+		if not spawn_ready and not trajectory_animation_managed:
 			play_animation()
 		return
 	if item_id is String:
@@ -42,7 +44,7 @@ func _ready() -> void:
 		item = weapon_def.scene.instantiate()
 		sprite.texture = weapon_def.icon
 		item.level = level
-		if not spawn_ready:
+		if not spawn_ready and not trajectory_animation_managed:
 			play_animation()
 
 func _input(event: InputEvent) -> void:
@@ -50,14 +52,23 @@ func _input(event: InputEvent) -> void:
 		if module_instance:
 			_pick_module()
 			return
-		var outcome := {}
-		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("try_auto_fuse_weapon_obtain"):
-			outcome = PlayerData.player.try_auto_fuse_weapon_obtain(str(item_id))
-		if str(outcome.get("result", "not_applicable")) == "not_applicable":
-			PlayerData.player.create_weapon(item)
-		elif item != null and is_instance_valid(item):
-			item.queue_free()
+		_pick_weapon()
+
+func collect_automatically() -> void:
+	if module_instance:
+		InventoryData.obtain_module(module_instance)
+		module_instance = null
 		queue_free()
+		return
+	_pick_weapon()
+
+func _pick_weapon() -> void:
+	if item == null or not is_instance_valid(item):
+		queue_free()
+		return
+	InventoryData.obtain_weapon_reward(item as Weapon)
+	item = null
+	queue_free()
 
 func _pick_module() -> void:
 	var ui = GlobalVariables.ui

@@ -120,6 +120,7 @@ func _add_player_to_root(player_instance: Node) -> void:
 	else:
 		get_tree().root.add_child(player_instance)
 	grant_startup_feature_test_loadout(player_instance as Player)
+	TaskRewardManager.restore_snapshot_after_player_spawn()
 
 static func grant_startup_feature_test_loadout(player: Player) -> void:
 	if not STARTUP_FEATURE_TEST_ENABLED or player == null or not is_instance_valid(player):

@@ -432,7 +432,7 @@ offset_top = 48.0
 offset_right = -28.0
 offset_bottom = 76.0
 grow_horizontal = 2
-text = "Choose Buy or Sell"
+text = "Choose Buy or Warehouse"
 vertical_alignment = 1
 
 [node name="OpenBuyButton" type="Button" parent="GUI/MerchantRoot/Panel" unique_id=1278877826]
@@ -450,7 +450,7 @@ offset_left = 28.0
 offset_top = 166.0
 offset_right = 248.0
 offset_bottom = 212.0
-text = "Sell"
+text = "Warehouse"
 script = ExtResource("26_msell")
 
 [node name="CloseHint" type="Label" parent="GUI/MerchantRoot/Panel" unique_id=1734998566]

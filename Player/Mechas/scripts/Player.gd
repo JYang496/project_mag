@@ -288,7 +288,7 @@ func create_weapon(item_id, level := 1, auto_fuse := false):
 		_refresh_weapon_related_ui()
 		return
 
-	equppied_weapons.add_child(weapon)
+	_attach_weapon_to_equipped_holder(weapon)
 	weapon.position = Vector2.ZERO
 	PlayerData.player_weapon_list.append(weapon)
 	if PlayerData.player_weapon_list.size() == 1:
@@ -1490,8 +1490,7 @@ func _sync_weapon_orbit_states(force_reset := false) -> void:
 		var weapon = weapons[weapon_index]
 		if not is_instance_valid(weapon):
 			continue
-		if weapon.get_parent() != equppied_weapons:
-			equppied_weapons.add_child(weapon)
+		_attach_weapon_to_equipped_holder(weapon)
 		var offset := TAU * float(weapon_index) / float(total)
 		if weapon_index < formations.size():
 			offset = formations[weapon_index]
@@ -1505,6 +1504,14 @@ func _sync_weapon_orbit_states(force_reset := false) -> void:
 				state["velocity"] = 0.0
 			state["offset"] = offset
 	_remove_missing_weapon_states(weapons)
+
+func _attach_weapon_to_equipped_holder(weapon: Weapon) -> void:
+	if weapon.get_parent() == equppied_weapons:
+		return
+	if weapon.get_parent():
+		weapon.reparent(equppied_weapons)
+	else:
+		equppied_weapons.add_child(weapon)
 
 func _update_weapon_orbits(delta: float) -> void:
 	if PlayerData.player_weapon_list.is_empty():

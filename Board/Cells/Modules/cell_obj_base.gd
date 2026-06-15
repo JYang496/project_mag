@@ -67,9 +67,10 @@ func _complete_objective() -> void:
 	_cell.emit_objective_completed()
 	if debug_mode:
 		_on_debug_completed(_resolve_reward_type())
-	_grant_reward()
+	TaskRewardManager.notify_objective_completed(_cell.name)
 
 func _grant_reward() -> void:
+	# Legacy immediate reward hook retained for future reward modes.
 	if _bonus_module == null:
 		return
 	var reward_type := _resolve_reward_type()

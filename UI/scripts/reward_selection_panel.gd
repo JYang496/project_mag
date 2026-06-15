@@ -19,6 +19,8 @@ var _on_confirm: Callable = Callable()
 var _on_cancel: Callable = Callable()
 var _route_display_name_cache: String = ""
 var _allow_cancel: bool = true
+var _title_override_cache: String = ""
+var _subtitle_override_cache: String = ""
 
 func _ready() -> void:
 	visible = false
@@ -34,7 +36,9 @@ func open_for_rewards(
 	reward_options: Array[RewardInfo],
 	on_confirm: Callable = Callable(),
 	on_cancel: Callable = Callable(),
-	allow_cancel: bool = true
+	allow_cancel: bool = true,
+	title_override: String = "",
+	subtitle_override: String = ""
 ) -> bool:
 	if reward_options.is_empty():
 		return false
@@ -42,10 +46,12 @@ func open_for_rewards(
 	_on_cancel = on_cancel
 	_allow_cancel = allow_cancel
 	_route_display_name_cache = route_display_name
+	_title_override_cache = title_override
+	_subtitle_override_cache = subtitle_override
 	_selected_index = -1
 	_reward_options.clear()
-	title_label.text = LocalizationManager.tr_key("ui.reward.title", "Choose Reward")
-	subtitle_label.text = LocalizationManager.tr_format(
+	title_label.text = title_override if title_override != "" else LocalizationManager.tr_key("ui.reward.title", "Choose Reward")
+	subtitle_label.text = subtitle_override if subtitle_override != "" else LocalizationManager.tr_format(
 		"ui.reward.subtitle",
 		{"route": route_display_name},
 		"%s - pick one reward." % route_display_name
@@ -86,6 +92,8 @@ func close_panel() -> void:
 	_on_confirm = Callable()
 	_on_cancel = Callable()
 	_allow_cancel = true
+	_title_override_cache = ""
+	_subtitle_override_cache = ""
 
 func _on_reward_button_pressed(index: int, source_button: Button) -> void:
 	_selected_index = index
@@ -201,4 +209,12 @@ func _format_weapon_obtain_prediction(base_text: String, weapon_name: String, ou
 
 func _on_language_changed(_locale: String) -> void:
 	if visible:
-		open_for_rewards(_route_display_name_cache, _reward_options, _on_confirm, _on_cancel, _allow_cancel)
+		open_for_rewards(
+			_route_display_name_cache,
+			_reward_options,
+			_on_confirm,
+			_on_cancel,
+			_allow_cancel,
+			_title_override_cache,
+			_subtitle_override_cache
+		)

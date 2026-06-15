@@ -2,10 +2,12 @@ extends Node
 
 signal temporary_modules_changed
 signal pending_transactions_changed
+signal weapon_storage_changed
 
 const RUNTIME_STATE_PATH := "user://equipment_runtime_state.json"
 
 var temporary_modules: Array[Module] = []
+var weapon_storage: Array[Weapon] = []
 var ready_to_sell_list: Array[Weapon] = []
 var pending_transactions: Array[Dictionary] = []
 var on_select_upg: Weapon
@@ -63,7 +65,175 @@ func get_all_owned_modules() -> Array[Module]:
 			var module_instance := child as Module
 			if module_instance:
 				result.append(module_instance)
+	for weapon in weapon_storage:
+		if weapon == null or not is_instance_valid(weapon) or weapon.modules == null:
+			continue
+		for child in weapon.modules.get_children():
+			var module_instance := child as Module
+			if module_instance:
+				result.append(module_instance)
 	return result
+
+func get_stored_weapons() -> Array[Weapon]:
+	var result: Array[Weapon] = []
+	for weapon in weapon_storage:
+		if weapon and is_instance_valid(weapon):
+			result.append(weapon)
+	return result
+
+func obtain_weapon_reward(weapon: Weapon) -> Dictionary:
+	if weapon == null or not is_instance_valid(weapon):
+		return {"ok": false, "result": "invalid"}
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	if weapon_id == "":
+		weapon.queue_free()
+		return {"ok": false, "result": "invalid"}
+	if PlayerData.player and is_instance_valid(PlayerData.player):
+		var equipped_result: Dictionary = PlayerData.player.try_auto_fuse_weapon_obtain(weapon_id)
+		if str(equipped_result.get("result", "")) != "not_applicable":
+			weapon.queue_free()
+			return equipped_result
+	var stored_match := _find_stored_weapon_by_id(weapon_id)
+	if stored_match:
+		var stored_result := _merge_stored_weapon_duplicate(stored_match)
+		weapon.queue_free()
+		return stored_result
+	var ui = GlobalVariables.ui
+	if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
+		var opened := bool(ui.call("request_weapon_replacement", weapon, false))
+		if opened:
+			return {"ok": true, "result": "selection_pending", "weapon": weapon}
+	return store_weapon(weapon)
+
+func store_weapon(weapon: Weapon) -> Dictionary:
+	if weapon == null or not is_instance_valid(weapon):
+		return {"ok": false, "result": "invalid"}
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	if PlayerData.player_weapon_list.has(weapon):
+		if PlayerData.player_weapon_list.size() <= 1:
+			return {"ok": false, "reason": "At least one weapon must remain equipped."}
+		_transfer_weapon_modules_to_temporary(weapon)
+		_move_weapon_to_parent(weapon, self)
+		PlayerData.player_weapon_list.erase(weapon)
+		PlayerData.sanitize_main_weapon_index()
+		if PlayerData.player and PlayerData.player.has_method("_apply_weapon_roles"):
+			PlayerData.player.call("_apply_weapon_roles")
+		PlayerData.notify_weapon_list_changed()
+	else:
+		_transfer_weapon_modules_to_temporary(weapon)
+		_move_weapon_to_parent(weapon, self)
+	weapon.visible = false
+	weapon.process_mode = Node.PROCESS_MODE_DISABLED
+	weapon_storage.append(weapon)
+	weapon_storage_changed.emit()
+	save_runtime_state()
+	_refresh_ui()
+	_notify(LocalizationManager.tr_format(
+		"ui.inventory.weapon_stored",
+		{"name": LocalizationManager.get_weapon_name_by_id(weapon_id, weapon.name)},
+		"Stored %s in the weapon warehouse" % LocalizationManager.get_weapon_name_by_id(weapon_id, weapon.name)
+	))
+	return {"ok": true, "result": "stored", "weapon": weapon}
+
+func equip_stored_weapon(weapon: Weapon) -> Dictionary:
+	if weapon == null or not weapon_storage.has(weapon):
+		return {"ok": false, "reason": "Invalid stored weapon."}
+	if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num:
+		return {"ok": false, "reason": "No weapon slots available."}
+	weapon_storage.erase(weapon)
+	weapon.visible = true
+	weapon.process_mode = Node.PROCESS_MODE_INHERIT
+	PlayerData.player.create_weapon(weapon)
+	weapon_storage_changed.emit()
+	save_runtime_state()
+	return {"ok": true, "result": "equipped", "weapon": weapon}
+
+func exchange_stored_weapon(stored_weapon: Weapon, equipped_weapon: Weapon) -> Dictionary:
+	if stored_weapon == null or equipped_weapon == null:
+		return {"ok": false, "reason": "Invalid weapon."}
+	if not weapon_storage.has(stored_weapon) or not PlayerData.player_weapon_list.has(equipped_weapon):
+		return {"ok": false, "reason": "Invalid weapon."}
+	var slot_index := PlayerData.player_weapon_list.find(equipped_weapon)
+	var holder := equipped_weapon.get_parent()
+	_transfer_weapon_modules_to_temporary(equipped_weapon)
+	weapon_storage.erase(stored_weapon)
+	_move_weapon_to_parent(stored_weapon, holder)
+	stored_weapon.visible = true
+	stored_weapon.process_mode = Node.PROCESS_MODE_INHERIT
+	stored_weapon.position = Vector2.ZERO
+	_move_weapon_to_parent(equipped_weapon, self)
+	equipped_weapon.visible = false
+	equipped_weapon.process_mode = Node.PROCESS_MODE_DISABLED
+	weapon_storage.append(equipped_weapon)
+	PlayerData.player_weapon_list[slot_index] = stored_weapon
+	if PlayerData.player and PlayerData.player.has_method("_apply_weapon_roles"):
+		PlayerData.player.call("_apply_weapon_roles")
+	PlayerData.notify_weapon_list_changed()
+	weapon_storage_changed.emit()
+	save_runtime_state()
+	_refresh_ui()
+	return {"ok": true, "result": "exchanged", "weapon": stored_weapon, "slot": slot_index}
+
+func equip_incoming_weapon_to_slot(new_weapon: Weapon, old_weapon: Weapon = null) -> Dictionary:
+	if new_weapon == null or not is_instance_valid(new_weapon):
+		return {"ok": false, "reason": "Invalid weapon."}
+	if old_weapon == null:
+		if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num:
+			return {"ok": false, "reason": "No weapon slots available."}
+		PlayerData.player.create_weapon(new_weapon)
+		return {"ok": true, "result": "equipped", "weapon": new_weapon}
+	if not PlayerData.player_weapon_list.has(old_weapon):
+		return {"ok": false, "reason": "Invalid weapon."}
+	var slot_index := PlayerData.player_weapon_list.find(old_weapon)
+	var holder := old_weapon.get_parent()
+	_transfer_weapon_modules_to_temporary(old_weapon)
+	_move_weapon_to_parent(new_weapon, holder)
+	new_weapon.position = Vector2.ZERO
+	_move_weapon_to_parent(old_weapon, self)
+	old_weapon.visible = false
+	old_weapon.process_mode = Node.PROCESS_MODE_DISABLED
+	weapon_storage.append(old_weapon)
+	PlayerData.player_weapon_list[slot_index] = new_weapon
+	if PlayerData.player and PlayerData.player.has_method("_apply_weapon_roles"):
+		PlayerData.player.call("_apply_weapon_roles")
+	PlayerData.notify_weapon_list_changed()
+	weapon_storage_changed.emit()
+	save_runtime_state()
+	_refresh_ui()
+	return {"ok": true, "result": "exchanged", "weapon": new_weapon, "slot": slot_index}
+
+func _move_weapon_to_parent(weapon: Weapon, target_parent: Node) -> void:
+	if weapon.get_parent() == target_parent:
+		return
+	if weapon.get_parent():
+		weapon.reparent(target_parent)
+	else:
+		target_parent.add_child(weapon)
+
+func _find_stored_weapon_by_id(weapon_id: String) -> Weapon:
+	for weapon in weapon_storage:
+		if weapon and is_instance_valid(weapon) \
+				and DataHandler.get_weapon_id_from_instance(weapon) == weapon_id:
+			return weapon
+	return null
+
+func _merge_stored_weapon_duplicate(weapon: Weapon) -> Dictionary:
+	if int(weapon.fuse) < int(weapon.FINAL_MAX_FUSE):
+		weapon.fuse += 1
+		if weapon.has_method("refresh_max_level_from_data"):
+			weapon.call("refresh_max_level_from_data")
+		if weapon.has_method("calculate_status"):
+			weapon.call("calculate_status")
+		weapon_storage_changed.emit()
+		save_runtime_state()
+		return {"ok": true, "result": "fused", "weapon": weapon, "target_fuse": int(weapon.fuse)}
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+	var gold := _get_economy_config().get_duplicate_weapon_gold(int(weapon_def.price) if weapon_def else 0)
+	PlayerData.player_gold += gold
+	PlayerData.run_gold_earned += gold
+	_refresh_ui()
+	return {"ok": true, "result": "converted_to_gold", "weapon": weapon, "gold": gold}
 
 func find_owned_module_by_scene_path(scene_path: String, ignore_module: Module = null) -> Module:
 	var normalized := scene_path.strip_edges()
@@ -247,55 +417,16 @@ func sell_all_temporary_modules() -> Dictionary:
 	return {"ok": true, "gold": total_gold, "count": sold_count}
 
 func sell_equipped_weapon(weapon: Weapon) -> Dictionary:
-	if weapon == null or not PlayerData.player_weapon_list.has(weapon):
-		return {"ok": false, "reason": "Invalid weapon."}
-	if PlayerData.player_weapon_list.size() <= 1:
-		return {"ok": false, "reason": "At least one weapon must remain equipped."}
-	var ui = _get_ui()
-	if ui and ui.has_method("is_branch_selection_blocking_interactions") \
-			and bool(ui.call("is_branch_selection_blocking_interactions")):
-		return {"ok": false, "reason": "Choose an evolution branch first."}
-	_transfer_weapon_modules_to_temporary(weapon)
-	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
-	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
-	var base_price := int(weapon_def.price) if weapon_def else 0
-	var gold := _get_economy_config().get_duplicate_weapon_gold(base_price)
-	_remove_equipped_weapon(weapon)
-	PlayerData.player_gold += gold
-	PlayerData.run_gold_earned += gold
-	_refresh_ui()
-	return {"ok": true, "gold": gold}
+	return {
+		"ok": false,
+		"reason": LocalizationManager.tr_key(
+			"ui.weapon.sell_disabled",
+			"Weapon selling has been replaced by the weapon warehouse."
+		),
+	}
 
 func replace_equipped_weapon(old_weapon: Weapon, new_weapon: Weapon) -> Dictionary:
-	if old_weapon == null or new_weapon == null:
-		return {"ok": false, "reason": "Invalid weapon."}
-	var slot_index := PlayerData.player_weapon_list.find(old_weapon)
-	if slot_index < 0:
-		return {"ok": false, "reason": "Invalid weapon."}
-	var new_id := DataHandler.get_weapon_id_from_instance(new_weapon)
-	for weapon_ref in PlayerData.player_weapon_list:
-		var equipped := weapon_ref as Weapon
-		if equipped != old_weapon and DataHandler.get_weapon_id_from_instance(equipped) == new_id:
-			return {"ok": false, "reason": "Only one weapon of each type can be equipped."}
-	_transfer_weapon_modules_to_temporary(old_weapon)
-	var old_id := DataHandler.get_weapon_id_from_instance(old_weapon)
-	var old_def := DataHandler.read_weapon_data(old_id) as WeaponDefinition
-	var gold := _get_economy_config().get_duplicate_weapon_gold(int(old_def.price) if old_def else 0)
-	var holder := old_weapon.get_parent()
-	PlayerData.player_weapon_list[slot_index] = new_weapon
-	if new_weapon.get_parent() != holder:
-		if new_weapon.get_parent() != null:
-			new_weapon.reparent(holder)
-		elif holder:
-			holder.add_child(new_weapon)
-	new_weapon.position = Vector2.ZERO
-	old_weapon.queue_free()
-	PlayerData.player_gold += gold
-	PlayerData.run_gold_earned += gold
-	if PlayerData.player and PlayerData.player.has_method("_apply_weapon_roles"):
-		PlayerData.player.call("_apply_weapon_roles")
-	_refresh_ui()
-	return {"ok": true, "gold": gold, "slot": slot_index}
+	return equip_incoming_weapon_to_slot(new_weapon, old_weapon)
 
 func _transfer_weapon_modules_to_temporary(weapon: Weapon) -> void:
 	if weapon == null or weapon.modules == null:
@@ -378,11 +509,16 @@ func reset_runtime_state() -> void:
 		if module_instance and is_instance_valid(module_instance):
 			_discard_module_instance(module_instance)
 	temporary_modules.clear()
+	for weapon in weapon_storage:
+		if weapon and is_instance_valid(weapon):
+			weapon.queue_free()
+	weapon_storage.clear()
 	ready_to_sell_list.clear()
 	pending_transactions.clear()
 	on_select_upg = null
 	temporary_modules_changed.emit()
 	pending_transactions_changed.emit()
+	weapon_storage_changed.emit()
 	if FileAccess.file_exists(RUNTIME_STATE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(RUNTIME_STATE_PATH))
 
@@ -395,8 +531,13 @@ func save_runtime_state() -> void:
 			"scene_path": str(module_instance.scene_file_path),
 			"level": int(module_instance.module_level),
 		})
+	var weapon_payloads: Array[Dictionary] = []
+	for weapon in weapon_storage:
+		if weapon and is_instance_valid(weapon):
+			weapon_payloads.append(DataHandler.build_weapon_save_payload(weapon))
 	var payload := {
 		"temporary_modules": module_payloads,
+		"weapon_storage": weapon_payloads,
 		"pending_transactions": pending_transactions,
 	}
 	var file := FileAccess.open(RUNTIME_STATE_PATH, FileAccess.WRITE)
@@ -413,6 +554,17 @@ func load_runtime_state() -> void:
 	if not (parsed is Dictionary):
 		return
 	var payload := parsed as Dictionary
+	for weapon_variant in payload.get("weapon_storage", []):
+		if not (weapon_variant is Dictionary):
+			continue
+		var weapon := DataHandler.instantiate_weapon_from_save_payload(weapon_variant as Dictionary)
+		if weapon:
+			add_child(weapon)
+			_transfer_weapon_modules_to_temporary(weapon)
+			weapon.visible = false
+			weapon.process_mode = Node.PROCESS_MODE_DISABLED
+			weapon_storage.append(weapon)
+	weapon_storage_changed.emit()
 	for entry_variant in payload.get("temporary_modules", []):
 		if not (entry_variant is Dictionary):
 			continue

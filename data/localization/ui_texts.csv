@@ -89,6 +89,21 @@ ui.reward.default,Reward,奖励
 ui.reward.weapon,Weapon {id} Lv.{level},武器 {id} Lv.{level}
 ui.reward.weapon_upgrade,Upgrade {name} Lv.{from} -> Lv.{to},升级 {name} Lv.{from} -> Lv.{to}
 ui.reward.module,Module {name} Lv.{level},模组 {name} Lv.{level}
+ui.task_reward.title,Objective Reward,任务奖励
+ui.task_reward.source,Completed Objective,已完成任务
+ui.task_reward.subtitle,Choose one reward for completing an objective this battle.,选择一项本轮完成任务获得的奖励。
+ui.task_reward.unlocked,Objective complete. Reward choice unlocked for the Rest Area.,任务完成，已解锁休息阶段奖励选择。
+ui.inventory.weapon_stored,Stored {name} in the weapon warehouse,已将 {name} 存入武器仓库
+ui.weapon.warehouse.title,Weapon Warehouse,武器仓库
+ui.weapon.warehouse.hint,Store equipped weapons or exchange stored weapons with equipped slots. Stored weapons cannot keep modules.,可将持有武器存入仓库，或与仓库武器交换。仓库武器不能保留模组。
+ui.weapon.warehouse.equipped,Equipped Weapons,持有武器
+ui.weapon.warehouse.stored,Stored Weapons,仓库武器
+ui.weapon.warehouse.empty,Warehouse is empty.,仓库为空。
+ui.weapon.warehouse.store,Store in Warehouse,存入仓库
+ui.weapon.warehouse.equip,Equip,装备
+ui.weapon.warehouse.swap,Swap with {name},与 {name} 交换
+ui.merchant.subtitle,Choose Buy or Warehouse,选择购买或武器仓库
+ui.weapon.sell_disabled,Weapon selling has been replaced by the weapon warehouse.,武器出售已由武器仓库取代。
 ui.reward.exp,EXP +{value},经验 +{value}
 ui.reward.gold,Gold +{value},金币 +{value}
 ui.reward.message,Reward: {content},奖励：{content}

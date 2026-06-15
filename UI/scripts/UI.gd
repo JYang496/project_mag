@@ -123,11 +123,13 @@ const MODULE_EQUIP_SELECTION_PANEL_PATH := "res://UI/scenes/module_equip_selecti
 const ROUTE_SELECTION_PANEL_PATH := "res://UI/scenes/route_selection_panel.tscn"
 const REWARD_SELECTION_PANEL_PATH := "res://UI/scenes/reward_selection_panel.tscn"
 const WEAPON_REPLACEMENT_PANEL_PATH := "res://UI/scenes/weapon_replacement_panel.tscn"
+const WEAPON_WAREHOUSE_PANEL_PATH := "res://UI/scenes/weapon_warehouse_panel.tscn"
 var branch_select_panel: BranchSelectPanel
 var module_equip_selection_panel: ModuleEquipSelectionPanel
 var route_selection_panel: RouteSelectionPanel
 var reward_selection_panel: RewardSelectionPanel
 var weapon_replacement_panel: WeaponReplacementPanel
+var weapon_warehouse_panel: WeaponWarehousePanel
 var _branch_selection_queue: Array[Dictionary] = []
 var _rest_area_merchant_active := false
 var _rest_area_primary_menu_id: StringName = &""
@@ -217,7 +219,7 @@ func _restore_pending_equipment_transactions() -> void:
 			if weapon:
 				request_weapon_replacement(
 					weapon,
-					bool(transaction.get("cancel_to_gold", true))
+					bool(transaction.get("allow_cancel", true))
 				)
 			else:
 				InventoryData.finish_pending_transaction(str(transaction.get("id", "")))
@@ -298,15 +300,25 @@ func _init_weapon_replacement_panel() -> void:
 	$GUI.add_child(weapon_replacement_panel)
 	weapon_replacement_panel.visible = false
 
+func _init_weapon_warehouse_panel() -> void:
+	if weapon_warehouse_panel and is_instance_valid(weapon_warehouse_panel):
+		return
+	var panel_scene := load(WEAPON_WAREHOUSE_PANEL_PATH) as PackedScene
+	weapon_warehouse_panel = panel_scene.instantiate() as WeaponWarehousePanel if panel_scene else null
+	if weapon_warehouse_panel == null:
+		push_warning("Failed to create WeaponWarehousePanel.")
+		return
+	$GUI.add_child(weapon_warehouse_panel)
+
 func request_weapon_replacement(
 	weapon: Weapon,
-	cancel_to_gold: bool = true,
+	allow_cancel: bool = true,
 	on_complete: Callable = Callable()
 ) -> bool:
 	_init_weapon_replacement_panel()
 	if weapon_replacement_panel == null or not is_instance_valid(weapon_replacement_panel):
 		return false
-	return weapon_replacement_panel.open_for_weapon(weapon, cancel_to_gold, on_complete)
+	return weapon_replacement_panel.open_for_weapon(weapon, allow_cancel, on_complete)
 
 func _init_shop_sell_summary() -> void:
 	if shop_sell_summary_panel and is_instance_valid(shop_sell_summary_panel):
@@ -686,6 +698,8 @@ func _request_next_queued_weapon_branch_selection() -> void:
 		return
 	if branch_select_panel.visible:
 		return
+	if TaskRewardManager.is_reward_blocking_interactions():
+		return
 	if not _is_branch_selection_safe_state():
 		return
 	while not _branch_selection_queue.is_empty():
@@ -740,6 +754,8 @@ func request_route_selection(
 	on_confirm: Callable = Callable(),
 	on_cancel: Callable = Callable()
 ) -> bool:
+	if TaskRewardManager.is_reward_blocking_interactions():
+		return false
 	if is_branch_selection_blocking_interactions():
 		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
 		return false
@@ -762,6 +778,29 @@ func request_reward_selection(
 	if reward_selection_panel == null or not is_instance_valid(reward_selection_panel):
 		return false
 	return reward_selection_panel.open_for_rewards(route_display_name, reward_options, on_confirm, on_cancel, allow_cancel)
+
+func request_task_reward_selection(
+	reward_options: Array[RewardInfo],
+	on_confirm: Callable
+) -> bool:
+	_init_reward_selection_panel()
+	if reward_selection_panel == null or not is_instance_valid(reward_selection_panel):
+		return false
+	return reward_selection_panel.open_for_rewards(
+		LocalizationManager.tr_key("ui.task_reward.source", "Completed Objective"),
+		reward_options,
+		on_confirm,
+		Callable(),
+		false,
+		LocalizationManager.tr_key("ui.task_reward.title", "Objective Reward"),
+		LocalizationManager.tr_key(
+			"ui.task_reward.subtitle",
+			"Choose one reward for completing an objective this battle."
+		)
+	)
+
+func resume_pending_weapon_branch_selection() -> void:
+	_request_next_queued_weapon_branch_selection()
 
 func _on_branch_selected(weapon: Weapon, branch_id: String) -> void:
 	if weapon == null or not is_instance_valid(weapon):
@@ -887,6 +926,8 @@ func merchant_menu_in() -> void:
 
 func merchant_menu_out() -> void:
 	_hide_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
+	if weapon_warehouse_panel:
+		weapon_warehouse_panel.close_panel()
 	shopping_panel_out()
 	_rest_area_merchant_active = false
 	if _rest_area_primary_menu_id == &"merchant":
@@ -904,9 +945,15 @@ func merchant_open_sell_panel() -> void:
 	_hide_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
 	if should_wait:
 		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
-	shopping_panel_in()
-	if shop_sell_button and is_instance_valid(shop_sell_button):
-		shop_sell_button._on_button_up()
+	_init_weapon_warehouse_panel()
+	if weapon_warehouse_panel:
+		weapon_warehouse_panel.open_panel()
+
+func warehouse_back_to_merchant() -> void:
+	if weapon_warehouse_panel:
+		weapon_warehouse_panel.close_panel()
+	shopping_panel_out()
+	_show_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
 
 func merchant_back_to_primary_menu() -> void:
 	shopping_panel_out()
@@ -928,6 +975,8 @@ func is_rest_area_merchant_active() -> bool:
 	return _rest_area_merchant_active
 
 func is_rest_area_zone_navigation_allowed() -> bool:
+	if TaskRewardManager.is_reward_blocking_interactions():
+		return false
 	if not _rest_area_merchant_active:
 		return true
 	if _rest_area_primary_menu_id == &"merchant" and merchant_root and merchant_root.visible:
@@ -943,6 +992,10 @@ func handle_rest_area_right_cancel() -> bool:
 		return false
 	# Secondary menu should step back to primary menu first.
 	if _rest_area_primary_menu_id == &"merchant":
+		if weapon_warehouse_panel and weapon_warehouse_panel.visible:
+			weapon_warehouse_panel.close_panel()
+			_show_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
+			return true
 		if shopping_rootv_2 and shopping_rootv_2.visible:
 			merchant_back_to_primary_menu()
 			return true
@@ -2372,7 +2425,7 @@ func _refresh_localized_static_text() -> void:
 		module_title.text = LocalizationManager.tr_key("ui.panel.module", "Module")
 	if module_instruction_label:
 		module_instruction_label.text = LocalizationManager.tr_key("ui.module.instruction", "Select a temporary module, then choose Equip or Sell.")
-	shop_sell_button.text = LocalizationManager.tr_key("ui.panel.sell", "Sell")
+	shop_sell_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
 	shop_cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
 	if shop_sell_summary_title:
 		shop_sell_summary_title.text = LocalizationManager.tr_key("ui.shop.sell.title", "Weapons Marked for Sale")
@@ -2405,6 +2458,15 @@ func _refresh_localized_static_text() -> void:
 	var module_back := module_panel.get_node_or_null("BackToModuleMenu") as Button
 	if module_back:
 		module_back.text = LocalizationManager.tr_key("ui.panel.back", "Back")
+	var merchant_subtitle := merchant_primary_panel.get_node_or_null("SubTitle") as Label
+	if merchant_subtitle:
+		merchant_subtitle.text = LocalizationManager.tr_key(
+			"ui.merchant.subtitle",
+			"Choose Buy or Warehouse"
+		)
+	var warehouse_button := merchant_primary_panel.get_node_or_null("OpenSellButton") as Button
+	if warehouse_button:
+		warehouse_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
 	_refresh_upgrade_action()
 	_refresh_module_action()
 	var pause_label := pause_menu_panel.get_node_or_null("Paused") as Label

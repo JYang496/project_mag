@@ -7,10 +7,143 @@ const REWARD_TYPE_WEAPON := "weapon"
 const REWARD_TYPE_MODULE := "module"
 const REWARD_TYPE_ECONOMY := "economy"
 const MAX_REWARD_ROLL_ATTEMPTS: int = 64
+const DROP_SCENE := preload("res://Objects/loots/drop.tscn")
+const DROP_ITEM_SCENE := preload("res://Objects/loots/drop_item.tscn")
+
+var _last_phase := ""
 
 func _ready() -> void:
-	if not PhaseManager.is_connected("pre_enter_prepare_loot", Callable(self, "create_loot_box")):
-		PhaseManager.connect("pre_enter_prepare_loot", Callable(self, "create_loot_box"))
+	_last_phase = PhaseManager.current_state()
+	if not PhaseManager.phase_changed.is_connected(_on_phase_changed):
+		PhaseManager.phase_changed.connect(_on_phase_changed)
+
+func _exit_tree() -> void:
+	if PhaseManager.phase_changed.is_connected(_on_phase_changed):
+		PhaseManager.phase_changed.disconnect(_on_phase_changed)
+
+func _on_phase_changed(new_phase: String) -> void:
+	var completed_battle := _last_phase == PhaseManager.BATTLE and new_phase == PhaseManager.PREPARE
+	_last_phase = new_phase
+	if completed_battle:
+		call_deferred("_spawn_completed_battle_drops")
+
+func _spawn_completed_battle_drops() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return
+	var level_index := maxi(int(PhaseManager.current_level) - 1, 0)
+	var route_def := RunRouteManager.get_route_for_level(level_index)
+	var rewards := build_completed_battle_drop_rewards(level_index, route_def)
+	if rewards.is_empty():
+		return
+	var origin := _resolve_rest_area_drop_origin()
+	for reward in rewards:
+		_spawn_reward_drop(reward, origin)
+
+func build_completed_battle_drop_rewards(
+	_level_index: int,
+	route_def: RunRouteDefinition = null
+) -> Array[RewardInfo]:
+	var economy := _get_economy_config()
+	var weapon_candidates := _build_all_weapon_drop_candidates()
+	var module_candidates := _build_all_module_drop_candidates()
+	var drop_weapon := not weapon_candidates.is_empty() \
+		and randf() < clampf(economy.battle_drop_weapon_chance, 0.0, 1.0)
+	var drop_module := not module_candidates.is_empty() \
+		and randf() < clampf(economy.battle_drop_module_chance, 0.0, 1.0)
+	if not drop_weapon and not drop_module:
+		if weapon_candidates.is_empty():
+			drop_module = not module_candidates.is_empty()
+		elif module_candidates.is_empty():
+			drop_weapon = true
+		else:
+			var total_chance := economy.battle_drop_weapon_chance + economy.battle_drop_module_chance
+			drop_weapon = total_chance <= 0.0 \
+				or randf() < economy.battle_drop_weapon_chance / total_chance
+			drop_module = not drop_weapon
+	var rewards: Array[RewardInfo] = []
+	if drop_weapon:
+		var weapon_candidate := _pick_weighted_candidate(weapon_candidates, {})
+		var weapon_reward := _build_reward_from_candidate(weapon_candidate, route_def)
+		if weapon_reward:
+			rewards.append(weapon_reward)
+	if drop_module:
+		var module_candidate := _pick_weighted_candidate(module_candidates, {})
+		var module_reward := _build_reward_from_candidate(module_candidate, route_def)
+		if module_reward:
+			rewards.append(module_reward)
+	return rewards
+
+func _build_all_weapon_drop_candidates() -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	for weapon_id in DataHandler.get_weapon_ids():
+		var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+		if weapon_def == null or weapon_def.is_hidden or weapon_def.get_drop_weight() <= 0.0:
+			continue
+		candidates.append({
+			"type": REWARD_TYPE_WEAPON,
+			"id": weapon_id,
+			"rarity": weapon_def.get_rarity(),
+			"weight": weapon_def.get_drop_weight(),
+		})
+	return candidates
+
+func _build_all_module_drop_candidates() -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	var dir := DirAccess.open(MODULE_DIRECTORY_PATH)
+	if dir == null:
+		return candidates
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir() and file_name.ends_with(".tscn") and file_name != "wmod_base.tscn":
+			var scene_path := MODULE_DIRECTORY_PATH + file_name
+			var module_scene := load(scene_path) as PackedScene
+			var module_instance := module_scene.instantiate() as Module if module_scene else null
+			if module_instance and module_instance.get_drop_weight() > 0.0:
+				candidates.append({
+					"type": REWARD_TYPE_MODULE,
+					"scene": module_scene,
+					"scene_path": scene_path,
+					"rarity": module_instance.get_rarity(),
+					"weight": module_instance.get_drop_weight(),
+				})
+			if module_instance:
+				module_instance.free()
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	return candidates
+
+func _resolve_rest_area_drop_origin() -> Vector2:
+	for node in get_tree().get_nodes_in_group("rest_area"):
+		if node and is_instance_valid(node) and node.has_method("get_spawn_position"):
+			return node.call("get_spawn_position") as Vector2
+	return PlayerData.player.global_position \
+		if PlayerData.player and is_instance_valid(PlayerData.player) \
+		else global_position
+
+func _spawn_reward_drop(reward: RewardInfo, origin: Vector2) -> void:
+	if reward == null:
+		return
+	var drop := DROP_SCENE.instantiate()
+	drop.drop = DROP_ITEM_SCENE
+	drop.spawn_global_position = origin
+	drop.auto_collect_on_landing = true
+	if reward.module_scene:
+		drop.module_scene = reward.module_scene
+		drop.module_level = _sanitize_module_level(reward.module_level)
+	elif reward.item_id != "":
+		drop.item_id = reward.item_id
+		drop.level = maxi(reward.item_level, 1)
+	else:
+		drop.queue_free()
+		return
+	var scene := get_tree().current_scene
+	if scene:
+		scene.add_child(drop)
+	else:
+		add_sibling(drop)
 
 func create_loot_box() -> void:
 	if PhaseManager.current_state() == PhaseManager.BATTLE:
@@ -102,7 +235,7 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 					weapon.level = max(1, int(reward.item_level))
 					var ui = GlobalVariables.ui
 					if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
-						ui.call("request_weapon_replacement", weapon, true)
+						ui.call("request_weapon_replacement", weapon, false)
 					else:
 						PlayerData.player.create_weapon(weapon)
 			granted_any = true

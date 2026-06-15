@@ -50,7 +50,7 @@ func get_available_routes_for_level(_level_index: int) -> Array[RunRouteDefiniti
 	var routes: Array[RunRouteDefinition] = []
 	for route_def_variant in _routes_by_id.values():
 		var route_def := route_def_variant as RunRouteDefinition
-		if route_def:
+		if route_def and route_def.battle_enabled:
 			routes.append(route_def)
 	routes.sort_custom(func(a: RunRouteDefinition, b: RunRouteDefinition) -> bool:
 		if a.display_order == b.display_order:
@@ -89,6 +89,13 @@ func should_spawn_prepare_loot_for_level(level_index: int) -> bool:
 
 func get_route_history_snapshot() -> Dictionary:
 	return _route_history_by_level.duplicate(true)
+
+func restore_route_history(snapshot: Dictionary) -> void:
+	_route_history_by_level.clear()
+	for level_variant in snapshot.keys():
+		var level_index := int(level_variant)
+		var route_id := str(snapshot[level_variant])
+		_route_history_by_level[level_index] = _resolve_route_definition(route_id).route_id
 
 func _resolve_route_definition(route_id: String) -> RunRouteDefinition:
 	var normalized_route_id := route_id.strip_edges().to_lower()

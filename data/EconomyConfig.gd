@@ -22,6 +22,9 @@ class_name EconomyConfig
 @export_range(0.0, 1.0, 0.01) var kill_gold_budget_variance: float = 0.1
 @export_range(0.05, 1.0, 0.01) var kill_gold_max_drop_chance: float = 0.65
 @export var reward_module_options_enabled: bool = false
+@export var task_reward_options_enabled: bool = true
+@export_range(0.0, 1.0, 0.01) var battle_drop_weapon_chance: float = 0.75
+@export_range(0.0, 1.0, 0.01) var battle_drop_module_chance: float = 0.5
 @export_range(0.0, 1.0, 0.01) var reward_weapon_option_chance: float = 0.5
 @export_range(0.0, 1.0, 0.01) var reward_economy_option_chance: float = 0.15
 @export var reward_economy_exp: int = 5

@@ -10,11 +10,13 @@ func _on_pressed() -> void:
 	text = "Loading 0%"
 	var keep_hp_safety = PlayerData.testing_keep_hp_above_zero
 	var selected_mecha_id = PlayerData.select_mecha_id
+	var restore_battle_snapshot := TaskRewardManager.prepare_world_start()
 	PhaseManager.reset_runtime_state()
 	RunRouteManager.reset_runtime_state()
 	GlobalVariables.reset_runtime_state()
 	PlayerData.reset_runtime_state()
 	InventoryData.reset_runtime_state()
+	TaskRewardManager.reset_runtime_state(restore_battle_snapshot)
 	PlayerData.select_mecha_id = selected_mecha_id
 	PlayerData.set_hp_safety_for_testing(keep_hp_safety)
 	DataHandler.save_data.last_mecha_selected = PlayerData.select_mecha_id

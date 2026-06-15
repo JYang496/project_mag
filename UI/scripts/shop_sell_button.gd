@@ -10,7 +10,7 @@ extends Button
 
 func _on_button_up() -> void:
 	var ui = GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("set_shop_sell_mode"):
-		ui.set_shop_sell_mode(true)
+	if ui and is_instance_valid(ui) and ui.has_method("merchant_open_sell_panel"):
+		ui.merchant_open_sell_panel()
 	
 	

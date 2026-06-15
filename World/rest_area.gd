@@ -83,7 +83,8 @@ const BLOCKING_UI_ROOTS: Array[StringName] = [
 	&"RewardSelectionPanel",
 	&"BranchSelectPanel",
 	&"ModuleEquipSelectionPanel",
-	&"WeaponReplacementPanel"
+	&"WeaponReplacementPanel",
+	&"WeaponWarehousePanel"
 ]
 
 func _ready() -> void:
@@ -437,6 +438,8 @@ func _setup_start_battle_button() -> void:
 func _on_start_battle_button_activated() -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
+	if TaskRewardManager.is_reward_blocking_interactions():
+		return
 	if _route_selection_pending:
 		return
 	_clear_zone4_hold_move_boost()
@@ -475,6 +478,10 @@ func _on_route_confirmed(route_id: String) -> void:
 	if route_def == null:
 		route_def = RunRouteManager.select_route_for_current_level(RunRouteManager.get_default_route_id())
 	if route_def.battle_enabled:
+		if not TaskRewardManager.begin_battle_snapshot():
+			if _start_battle_button:
+				_start_battle_button.reset_state()
+			return
 		if PlayerData.player != null and is_instance_valid(PlayerData.player):
 			if PlayerData.player.has_method("set_restarea_camera_control_enabled"):
 				PlayerData.player.call("set_restarea_camera_control_enabled", false)
@@ -676,7 +683,10 @@ func _refresh_interaction_state() -> void:
 		CursorManager.clear_world_state(self)
 
 func _is_interaction_enabled() -> bool:
-	return _active and visible and PhaseManager.current_state() == PhaseManager.PREPARE
+	return _active \
+		and visible \
+		and PhaseManager.current_state() == PhaseManager.PREPARE \
+		and not TaskRewardManager.is_reward_blocking_interactions()
 
 func is_module_management_available() -> bool:
 	return _is_interaction_enabled()

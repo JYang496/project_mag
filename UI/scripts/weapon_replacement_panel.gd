@@ -7,36 +7,44 @@ class_name WeaponReplacementPanel
 @onready var cancel_button: Button = $Margin/Root/Cancel
 
 var _new_weapon: Weapon
-var _cancel_to_gold := true
+var _allow_cancel := true
 var _on_complete := Callable()
+var _store_button: Button
 
 func _ready() -> void:
 	visible = false
 	cancel_button.pressed.connect(_on_cancel_pressed)
+	_store_button = Button.new()
+	_store_button.name = "Store"
+	_store_button.custom_minimum_size = Vector2(0, 52)
+	_store_button.pressed.connect(_on_store_selected)
+	cancel_button.add_sibling(_store_button)
 
 func open_for_weapon(
 	new_weapon: Weapon,
-	cancel_to_gold: bool = true,
+	allow_cancel: bool = true,
 	on_complete: Callable = Callable()
 ) -> bool:
 	if new_weapon == null or not is_instance_valid(new_weapon):
 		return false
 	_new_weapon = new_weapon
-	_cancel_to_gold = cancel_to_gold
+	_allow_cancel = allow_cancel
 	_on_complete = on_complete
 	InventoryData.begin_pending_transaction({
 		"id": "weapon_replacement",
 		"type": "weapon_replacement",
 		"weapon": DataHandler.build_weapon_save_payload(new_weapon),
-		"cancel_to_gold": cancel_to_gold,
+		"allow_cancel": allow_cancel,
 	})
 	title_label.text = LocalizationManager.tr_key("ui.weapon.replace.title", "Choose Weapon Slot")
 	description_label.text = LocalizationManager.tr_format(
 		"ui.weapon.replace.description",
 		{"weapon": LocalizationManager.get_weapon_name_from_node(new_weapon)},
-		"Equip %s or replace an equipped weapon." % LocalizationManager.get_weapon_name_from_node(new_weapon)
+		"Equip %s, exchange an equipped weapon, or store it." % LocalizationManager.get_weapon_name_from_node(new_weapon)
 	)
 	cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
+	cancel_button.visible = _allow_cancel
+	_store_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.store", "Store in Warehouse")
 	_rebuild_slots()
 	visible = true
 	return true
@@ -77,28 +85,28 @@ func _on_empty_slot_selected() -> void:
 		return
 	var weapon := _new_weapon
 	_new_weapon = null
-	PlayerData.player.create_weapon(weapon)
-	_complete(true, {"result": "equipped"})
+	var result := InventoryData.equip_incoming_weapon_to_slot(weapon)
+	_complete(bool(result.get("ok", false)), result)
 
 func _on_replace_selected(old_weapon: Weapon) -> void:
-	var result := InventoryData.replace_equipped_weapon(old_weapon, _new_weapon)
+	var result := InventoryData.equip_incoming_weapon_to_slot(_new_weapon, old_weapon)
+	if not result.get("ok", false):
+		return
+	_new_weapon = null
+	_complete(true, result)
+
+func _on_store_selected() -> void:
+	var result := InventoryData.store_weapon(_new_weapon)
 	if not result.get("ok", false):
 		return
 	_new_weapon = null
 	_complete(true, result)
 
 func _on_cancel_pressed() -> void:
+	if not _allow_cancel:
+		return
 	var result := {"result": "cancelled"}
 	if _new_weapon and is_instance_valid(_new_weapon):
-		if _cancel_to_gold:
-			var weapon_id := DataHandler.get_weapon_id_from_instance(_new_weapon)
-			var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
-			var base_price := int(weapon_def.price) if weapon_def else 0
-			var gold := (GlobalVariables.economy_data if GlobalVariables.economy_data else EconomyConfig.new()).get_duplicate_weapon_gold(base_price)
-			PlayerData.player_gold += gold
-			PlayerData.run_gold_earned += gold
-			result["gold"] = gold
-			result["result"] = "converted_to_gold"
 		_new_weapon.queue_free()
 	_new_weapon = null
 	_complete(false, result)
