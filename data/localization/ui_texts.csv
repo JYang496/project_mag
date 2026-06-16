@@ -211,6 +211,7 @@ ui.module.reason.requires_one_of,Requires one of: {traits},需要以下特性之
 ui.inventory.obtain,Obtained {name} Lv.{level},获得 {name} Lv.{level}
 ui.inventory.upgrade,Upgraded {name} to Lv.{level},升级 {name} 到 Lv.{level}
 ui.inventory.convert,Converted duplicate {name} into +{gold} Gold,重复 {name} 已转换为 +{gold} 金币
+ui.inventory.unclaimed_module_sold,Unclaimed {name} sold for +{gold} Gold,未拾取的 {name} 已自动出售，获得 +{gold} 金币
 ui.weapon.duplicate.fuse_up,Duplicate {name} reinforced to Fuse {fuse},重复 {name} 强化至 融合{fuse}
 ui.weapon.duplicate.convert,Duplicate {name} converted to +{gold} Gold,重复 {name} 已转换为 +{gold} 金币
 ui.weapon.obtain_preview.new,New weapon,新武器

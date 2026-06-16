@@ -23,7 +23,10 @@ func _exit_tree() -> void:
 
 func _on_phase_changed(new_phase: String) -> void:
 	var completed_battle := _last_phase == PhaseManager.BATTLE and new_phase == PhaseManager.PREPARE
+	var leaving_rest_area := _last_phase == PhaseManager.PREPARE and new_phase == PhaseManager.BATTLE
 	_last_phase = new_phase
+	if leaving_rest_area:
+		_settle_unclaimed_battle_drops()
 	if completed_battle:
 		call_deferred("_spawn_completed_battle_drops")
 
@@ -129,7 +132,7 @@ func _spawn_reward_drop(reward: RewardInfo, origin: Vector2) -> void:
 	var drop := DROP_SCENE.instantiate()
 	drop.drop = DROP_ITEM_SCENE
 	drop.spawn_global_position = origin
-	drop.auto_collect_on_landing = true
+	drop.settle_unclaimed_on_battle_start = true
 	if reward.module_scene:
 		drop.module_scene = reward.module_scene
 		drop.module_level = _sanitize_module_level(reward.module_level)
@@ -144,6 +147,11 @@ func _spawn_reward_drop(reward: RewardInfo, origin: Vector2) -> void:
 		scene.add_child(drop)
 	else:
 		add_sibling(drop)
+
+func _settle_unclaimed_battle_drops() -> void:
+	for drop_item in get_tree().get_nodes_in_group(&"unclaimed_battle_rewards"):
+		if drop_item and is_instance_valid(drop_item) and drop_item.has_method("settle_unclaimed"):
+			drop_item.call("settle_unclaimed")
 
 func create_loot_box() -> void:
 	if PhaseManager.current_state() == PhaseManager.BATTLE:

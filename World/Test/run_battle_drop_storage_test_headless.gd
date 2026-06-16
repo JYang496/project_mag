@@ -93,12 +93,13 @@ func _run() -> void:
 	arc_drop.spawn_global_position = Vector2.ZERO
 	arc_drop.item_id = arc_weapon_id
 	arc_drop.level = 1
-	arc_drop.auto_collect_on_landing = true
+	arc_drop.settle_unclaimed_on_battle_start = true
 	arc_drop.flight_duration = 1.0
 	arc_drop.flight_started.connect(func(): _flight_started = true)
 	arc_drop.flight_finished.connect(func(): _flight_finished = true)
 	add_child(arc_drop)
 	await get_tree().create_timer(0.35).timeout
+	var landed_drop = arc_drop.drop_instance
 	if not _flight_started or _flight_finished:
 		_fail(12, "BattleDropStorageTest: flight animation timing signals are invalid.")
 		return
@@ -114,8 +115,59 @@ func _run() -> void:
 	if not _flight_finished:
 		_fail(15, "BattleDropStorageTest: flight animation did not finish.")
 		return
+	if InventoryData.weapon_storage.size() != 1 or landed_drop == null or not is_instance_valid(landed_drop):
+		_fail(16, "BattleDropStorageTest: landed reward did not remain for interaction.")
+		return
+	if landed_drop.detect_area.get_collision_mask_value(1) == false:
+		_fail(17, "BattleDropStorageTest: landed reward pickup detection was not activated.")
+		return
+	landed_drop.player_near = true
+	var interact_event := InputEventAction.new()
+	interact_event.action = &"INTERACT"
+	interact_event.pressed = true
+	Input.parse_input_event(interact_event)
+	await get_tree().process_frame
 	if InventoryData.weapon_storage.size() != 2:
-		_fail(16, "BattleDropStorageTest: reward was not collected after flight animation.")
+		_fail(18, "BattleDropStorageTest: interacted reward was not collected through input dispatch.")
+		return
+
+	var arc_stored_weapon := _find_stored_weapon_by_id(arc_weapon_id)
+	if arc_stored_weapon == null:
+		_fail(19, "BattleDropStorageTest: interacted weapon was not stored.")
+		return
+	var fuse_before := int(arc_stored_weapon.fuse)
+	var unclaimed_weapon_drop := DROP_ITEM_SCENE.instantiate()
+	unclaimed_weapon_drop.item_id = arc_weapon_id
+	unclaimed_weapon_drop.level = 1
+	unclaimed_weapon_drop.spawn_ready = true
+	unclaimed_weapon_drop.settle_unclaimed_on_battle_start = true
+	add_child(unclaimed_weapon_drop)
+	var unclaimed_module_drop := DROP_ITEM_SCENE.instantiate()
+	unclaimed_module_drop.module_scene = module_scene
+	unclaimed_module_drop.module_level = 1
+	unclaimed_module_drop.spawn_ready = true
+	unclaimed_module_drop.settle_unclaimed_on_battle_start = true
+	add_child(unclaimed_module_drop)
+	await get_tree().process_frame
+	var unclaimed_module := unclaimed_module_drop.module_instance as Module
+	if unclaimed_module == null:
+		_fail(20, "BattleDropStorageTest: unclaimed module fixture failed to initialize.")
+		return
+	var gold_before := PlayerData.player_gold
+	var expected_module_gold := economy.get_duplicate_module_gold(
+		int(unclaimed_module.cost),
+		int(unclaimed_module.module_level)
+	)
+	PhaseManager.enter_battle()
+	await get_tree().process_frame
+	if int(arc_stored_weapon.fuse) != fuse_before + 1:
+		_fail(21, "BattleDropStorageTest: unclaimed weapon did not upgrade in warehouse.")
+		return
+	if PlayerData.player_gold != gold_before + expected_module_gold:
+		_fail(22, "BattleDropStorageTest: unclaimed module was not automatically sold.")
+		return
+	if is_instance_valid(unclaimed_weapon_drop) or is_instance_valid(unclaimed_module_drop):
+		_fail(23, "BattleDropStorageTest: settled drop nodes remained in the scene.")
 		return
 
 	InventoryData.reset_runtime_state()
@@ -146,6 +198,12 @@ func _find_unowned_weapon_id() -> String:
 func _instantiate_weapon(weapon_id: String) -> Weapon:
 	var definition := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
 	return definition.scene.instantiate() as Weapon if definition and definition.scene else null
+
+func _find_stored_weapon_by_id(weapon_id: String) -> Weapon:
+	for weapon in InventoryData.weapon_storage:
+		if weapon and DataHandler.get_weapon_id_from_instance(weapon) == weapon_id:
+			return weapon
+	return null
 
 func _fail(code: int, message: String) -> void:
 	push_error(message)

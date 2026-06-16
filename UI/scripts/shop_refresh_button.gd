@@ -1,6 +1,7 @@
 extends Button
 
 @onready var shop: VBoxContainer = $"../Shop"
+var module_shop: VBoxContainer
 var starting_cost: int = 2
 var cost: int = 2
 var step_cost: int = 2
@@ -28,6 +29,16 @@ func refresh_shop_items() -> void:
 	for slot: ShopWeaponSlot in shop.get_children():
 		slot.new_item()
 		slot.update()
+	if module_shop == null:
+		module_shop = get_node_or_null("../ModuleShop") as VBoxContainer
+	if module_shop == null:
+		module_shop = get_node_or_null("../ModuleShopScroll/ModuleShop") as VBoxContainer
+	if module_shop:
+		for child in module_shop.get_children():
+			if child.has_method("new_item"):
+				child.call("new_item")
+			if child.has_method("update"):
+				child.call("update")
 
 func _reload_refresh_settings() -> void:
 	if GlobalVariables.economy_data == null:

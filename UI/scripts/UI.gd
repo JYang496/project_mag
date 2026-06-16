@@ -23,8 +23,10 @@ const WEAPON_PASSIVE_PRESENTER_SCRIPT := preload("res://UI/scripts/components/we
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const SPREAD_CURSOR_OVERLAY_SCRIPT := preload("res://UI/scripts/spread_cursor_overlay.gd")
 const SPREAD_CURSOR_FALLBACK_RADIUS_PX := 10.0
-const BATTLE_HARDWARE_CURSOR_SIZE := 24
+const BATTLE_HARDWARE_CURSOR_SIZE := 32
 const BATTLE_HARDWARE_CURSOR_COLOR := Color(0.9, 0.98, 1.0, 1.0)
+const BATTLE_HARDWARE_CURSOR_RING_COLOR := Color(0.33, 0.66, 1.0, 0.38)
+const BATTLE_HARDWARE_CURSOR_OUTLINE_COLOR := Color(0.12, 0.2, 0.28, 0.9)
 
 # Roots
 @onready var gui_root: Control = $GUI
@@ -89,6 +91,7 @@ var shop_sell_summary_total: Label
 var shop_sell_summary_modules: Label
 var shop_sell_mode_active: bool = false
 var shop_instruction_label: Label
+var module_shop: VBoxContainer
 signal reset_cost
 
 # Upgrade
@@ -96,6 +99,11 @@ signal reset_cost
 @onready var upgrade_preview: MarginContainer = $GUI/UpgradeRootv2/Panel/UpgradePreview
 var upgrade_instruction_label: Label
 var upgrade_action_button: Button
+var module_upgrade_scroll: ScrollContainer
+var module_upgrade_list: VBoxContainer
+var module_upgrade_selection_label: Label
+var module_upgrade_action_button: Button
+var selected_upgrade_module: Module
 
 
 @onready var equipped_m: GridContainer = $GUI/ModuleRoot/Panel/EquippedM
@@ -106,6 +114,7 @@ var module_selection_label: Label
 var module_equip_button: Button
 var module_sell_button: Button
 var selected_temporary_module: Module
+var weapon_warehouse_button: Button
 
 # Pause menu
 @onready var resume_button = $GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton
@@ -124,6 +133,7 @@ const ROUTE_SELECTION_PANEL_PATH := "res://UI/scenes/route_selection_panel.tscn"
 const REWARD_SELECTION_PANEL_PATH := "res://UI/scenes/reward_selection_panel.tscn"
 const WEAPON_REPLACEMENT_PANEL_PATH := "res://UI/scenes/weapon_replacement_panel.tscn"
 const WEAPON_WAREHOUSE_PANEL_PATH := "res://UI/scenes/weapon_warehouse_panel.tscn"
+const SHOP_MODULE_SLOT_SCENE := preload("res://UI/scenes/shop_module_slot.tscn")
 var branch_select_panel: BranchSelectPanel
 var module_equip_selection_panel: ModuleEquipSelectionPanel
 var route_selection_panel: RouteSelectionPanel
@@ -154,6 +164,7 @@ var spread_cursor_overlay
 var _cursor_reload_total_by_weapon: Dictionary = {}
 var _battle_hardware_cursor_tex: Texture2D
 var _battle_hardware_cursor_applied: bool = false
+var _battle_hardware_cursor_state_key: String = ""
 var hud_presenter: HudPresenter
 var weapon_passive_presenter
 var _weapon_passive_rows: Array[Dictionary] = []
@@ -391,6 +402,10 @@ func set_shop_sell_mode(enabled: bool) -> void:
 	if shop_refresh:
 		shop_refresh.visible = not enabled
 	shop.visible = not enabled
+	if module_shop:
+		var module_scroll := module_shop.get_parent() as Control
+		if module_scroll:
+			module_scroll.visible = not enabled
 	if shop_sell_summary_panel:
 		shop_sell_summary_panel.visible = enabled
 	_refresh_shop_mode_title()
@@ -400,8 +415,8 @@ func _refresh_shop_mode_title() -> void:
 	var shop_title := shopping_panel.get_node_or_null("Title") as Label
 	if shop_title:
 		shop_title.text = LocalizationManager.tr_key(
-			"ui.shop.sell.panel_title" if shop_sell_mode_active else "ui.panel.shop",
-			"Sell Weapons" if shop_sell_mode_active else "Shop"
+			"ui.shop.sell.panel_title" if shop_sell_mode_active else "ui.panel.purchase",
+			"Sell Weapons" if shop_sell_mode_active else "Purchase"
 		)
 
 func refresh_shop_sell_summary() -> void:
@@ -473,11 +488,13 @@ func _init_module_action_dialogs() -> void:
 	module_action_dialog.name = "ModuleActionDialog"
 	$GUI.add_child(module_action_dialog)
 	module_action_dialog.confirmed.connect(_on_module_action_confirmed)
+	_connect_right_cancel_window(module_action_dialog)
 	temporary_module_settlement_dialog = ConfirmationDialog.new()
 	temporary_module_settlement_dialog.name = "TemporaryModuleSettlementDialog"
 	temporary_module_settlement_dialog.dialog_text = ""
 	temporary_module_settlement_dialog.wrap_controls = false
 	$GUI.add_child(temporary_module_settlement_dialog)
+	_connect_right_cancel_window(temporary_module_settlement_dialog)
 	var content := VBoxContainer.new()
 	content.name = "SettlementContent"
 	content.custom_minimum_size = Vector2(480.0, 0.0)
@@ -494,6 +511,19 @@ func _init_module_action_dialogs() -> void:
 	temporary_module_settlement_dialog.add_child(content)
 	temporary_module_settlement_dialog.confirmed.connect(_on_temporary_module_settlement_confirmed)
 	temporary_module_settlement_dialog.canceled.connect(_on_temporary_module_settlement_cancelled)
+
+func _connect_right_cancel_window(dialog: Window) -> void:
+	if dialog == null or not dialog.has_signal("window_input"):
+		return
+	var callback := Callable(self, "_on_cancel_window_input")
+	if not dialog.is_connected("window_input", callback):
+		dialog.connect("window_input", callback)
+
+func _on_cancel_window_input(event: InputEvent) -> void:
+	if event.is_action_pressed("CANCEL") \
+			and PhaseManager.current_state() != PhaseManager.BATTLE \
+			and handle_non_battle_right_cancel():
+		get_viewport().set_input_as_handled()
 
 func request_module_unequip_confirmation(module_instance: Module, weapon: Weapon) -> bool:
 	if module_instance == null or weapon == null:
@@ -866,6 +896,11 @@ func _input(_event) -> void:
 
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
 		return
+	if _event.is_action_pressed("CANCEL") \
+			and PhaseManager.current_state() != PhaseManager.BATTLE \
+			and handle_non_battle_right_cancel():
+		get_viewport().set_input_as_handled()
+		return
 	
 	# Pause / Menu
 	if Input.is_action_just_pressed("ESC"):
@@ -953,7 +988,10 @@ func warehouse_back_to_merchant() -> void:
 	if weapon_warehouse_panel:
 		weapon_warehouse_panel.close_panel()
 	shopping_panel_out()
-	_show_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
+	if _rest_area_primary_menu_id == &"module":
+		_show_primary_menu(&"module", module_menu_root, module_primary_panel)
+	else:
+		_show_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
 
 func merchant_back_to_primary_menu() -> void:
 	shopping_panel_out()
@@ -974,6 +1012,17 @@ func close_rest_area_merchant_menu() -> void:
 func is_rest_area_merchant_active() -> bool:
 	return _rest_area_merchant_active
 
+func is_rest_area_menu_visible() -> bool:
+	if not _rest_area_merchant_active:
+		return false
+	if _is_primary_menu_open() or _is_secondary_menu_open():
+		return true
+	if weapon_warehouse_panel and is_instance_valid(weapon_warehouse_panel) and weapon_warehouse_panel.visible:
+		return true
+	if module_equip_selection_panel and is_instance_valid(module_equip_selection_panel) and module_equip_selection_panel.visible:
+		return true
+	return false
+
 func is_rest_area_zone_navigation_allowed() -> bool:
 	if TaskRewardManager.is_reward_blocking_interactions():
 		return false
@@ -988,6 +1037,8 @@ func is_rest_area_zone_navigation_allowed() -> bool:
 	return false
 
 func handle_rest_area_right_cancel() -> bool:
+	if _cancel_top_level_non_battle_ui():
+		return true
 	if not _rest_area_merchant_active:
 		return false
 	# Secondary menu should step back to primary menu first.
@@ -1004,11 +1055,78 @@ func handle_rest_area_right_cancel() -> bool:
 			smith_back_to_primary_menu()
 			return true
 	elif _rest_area_primary_menu_id == &"module":
+		if weapon_warehouse_panel and weapon_warehouse_panel.visible:
+			weapon_warehouse_panel.close_panel()
+			_show_primary_menu(&"module", module_menu_root, module_primary_panel)
+			return true
 		if module_equip_selection_panel and module_equip_selection_panel.visible:
 			module_equip_selection_panel.close_without_assignment()
 			return true
 		if module_root and module_root.visible:
 			module_back_to_primary_menu()
+			return true
+	return false
+
+func handle_non_battle_right_cancel() -> bool:
+	return _cancel_top_level_non_battle_ui()
+
+func _cancel_top_level_non_battle_ui() -> bool:
+	if temporary_module_settlement_dialog and temporary_module_settlement_dialog.visible:
+		temporary_module_settlement_dialog.hide()
+		_on_temporary_module_settlement_cancelled()
+		return true
+	if module_action_dialog and module_action_dialog.visible:
+		module_action_dialog.hide()
+		_pending_module_action = Callable()
+		return true
+	if weapon_replacement_panel and weapon_replacement_panel.visible:
+		weapon_replacement_panel.call("_on_cancel_pressed")
+		return not weapon_replacement_panel.visible
+	if route_selection_panel and route_selection_panel.visible:
+		route_selection_panel.call("_on_cancel_pressed")
+		return not route_selection_panel.visible
+	if reward_selection_panel and reward_selection_panel.visible:
+		reward_selection_panel.call("_on_cancel_pressed")
+		return not reward_selection_panel.visible
+	if module_equip_selection_panel and module_equip_selection_panel.visible:
+		module_equip_selection_panel.close_without_assignment()
+		return true
+	if _rest_area_merchant_active:
+		return _cancel_rest_area_menu_level()
+	return false
+
+func _cancel_rest_area_menu_level() -> bool:
+	if _rest_area_primary_menu_id == &"merchant":
+		if weapon_warehouse_panel and weapon_warehouse_panel.visible:
+			weapon_warehouse_panel.close_panel()
+			_show_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
+			return true
+		if shopping_rootv_2 and shopping_rootv_2.visible:
+			if shop_sell_mode_active:
+				set_shop_sell_mode(false)
+				return true
+			merchant_back_to_primary_menu()
+			return true
+		if merchant_root and merchant_root.visible:
+			close_rest_area_primary_menu()
+			return true
+	elif _rest_area_primary_menu_id == &"smith":
+		if upgrade_rootv_2 and upgrade_rootv_2.visible:
+			smith_back_to_primary_menu()
+			return true
+		if smith_root and smith_root.visible:
+			close_rest_area_primary_menu()
+			return true
+	elif _rest_area_primary_menu_id == &"module":
+		if weapon_warehouse_panel and weapon_warehouse_panel.visible:
+			weapon_warehouse_panel.close_panel()
+			_show_primary_menu(&"module", module_menu_root, module_primary_panel)
+			return true
+		if module_root and module_root.visible:
+			module_back_to_primary_menu()
+			return true
+		if module_menu_root and module_menu_root.visible:
+			close_rest_area_primary_menu()
 			return true
 	return false
 
@@ -1052,6 +1170,12 @@ func refresh_shop_items_for_prepare() -> void:
 			continue
 		shop_slot.new_item()
 		shop_slot.update()
+	if module_shop:
+		for slot in module_shop.get_children():
+			if slot.has_method("new_item"):
+				slot.call("new_item")
+			if slot.has_method("update"):
+				slot.call("update")
 
 #func upgrade_panel_in() -> void:
 	#upgradable_weapon_list = PlayerData.player_weapon_list.duplicate()
@@ -1139,6 +1263,15 @@ func module_open_management_panel() -> void:
 		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	module_panel_in()
 
+func module_open_weapon_warehouse_panel() -> void:
+	var should_wait := module_menu_root != null and module_menu_root.visible
+	_hide_primary_menu(&"module", module_menu_root, module_primary_panel)
+	if should_wait:
+		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
+	_init_weapon_warehouse_panel()
+	if weapon_warehouse_panel:
+		weapon_warehouse_panel.open_panel()
+
 func module_back_to_primary_menu() -> void:
 	if module_equip_selection_panel and module_equip_selection_panel.visible:
 		module_equip_selection_panel.close_without_assignment()
@@ -1189,11 +1322,16 @@ func update_shop() -> void:
 		eq.update()
 	for sh in shop.get_children():
 		sh.update()
+	if module_shop:
+		for module_slot in module_shop.get_children():
+			if module_slot.has_method("update"):
+				module_slot.call("update")
 
 func update_upg() -> void:
 	for eq in equipped_upg.get_children():
 		eq.update()
 	upgrade_preview.update()
+	_refresh_module_upgrade_list()
 	_refresh_upgrade_action()
 func update_modules() -> void:
 	for eq in equipped_m.get_children():
@@ -1235,6 +1373,9 @@ func _init_management_ui_polish() -> void:
 		Vector2(25, 42),
 		Vector2(500, 30)
 	)
+	_ensure_purchase_module_shop()
+	_ensure_module_upgrade_panel()
+	_ensure_management_menu_buttons()
 
 	for button_name in ["ShopRefreshButton", "ShopSellButton", "ShopCancelButton", "ShopConfirmButton", "BackToMerchantMenu"]:
 		_style_management_button(shopping_panel.get_node_or_null(button_name) as Button)
@@ -1290,6 +1431,74 @@ func _init_management_ui_polish() -> void:
 			title.add_theme_color_override("font_color", Color(0.86, 0.94, 1.0))
 	_refresh_upgrade_action()
 	_refresh_module_action()
+
+func _ensure_purchase_module_shop() -> void:
+	if module_shop != null:
+		return
+	equipped_shop.visible = false
+	shop.custom_minimum_size = Vector2(460, 440)
+	shop.position = Vector2(25, 80)
+	shop.size = Vector2(460, 440)
+	var module_scroll := ScrollContainer.new()
+	module_scroll.name = "ModuleShopScroll"
+	module_scroll.position = Vector2(540, 80)
+	module_scroll.size = Vector2(440, 440)
+	module_scroll.custom_minimum_size = Vector2(440, 440)
+	shopping_panel.add_child(module_scroll)
+	module_shop = VBoxContainer.new()
+	module_shop.name = "ModuleShop"
+	module_shop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	module_shop.add_theme_constant_override("separation", 8)
+	module_scroll.add_child(module_shop)
+	for index in range(4):
+		var slot := SHOP_MODULE_SLOT_SCENE.instantiate()
+		slot.name = "ModuleShopSlot%d" % (index + 1)
+		module_shop.add_child(slot)
+
+func _ensure_module_upgrade_panel() -> void:
+	if module_upgrade_list != null:
+		return
+	equipped_upg.custom_minimum_size = Vector2(440, 205)
+	equipped_upg.position = Vector2(540, 80)
+	equipped_upg.size = Vector2(440, 205)
+	module_upgrade_scroll = ScrollContainer.new()
+	module_upgrade_scroll.name = "ModuleUpgradeScroll"
+	module_upgrade_scroll.position = Vector2(540, 300)
+	module_upgrade_scroll.size = Vector2(440, 205)
+	module_upgrade_scroll.custom_minimum_size = Vector2(440, 205)
+	upgrade_panel.add_child(module_upgrade_scroll)
+	module_upgrade_list = VBoxContainer.new()
+	module_upgrade_list.name = "ModuleUpgradeList"
+	module_upgrade_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	module_upgrade_list.add_theme_constant_override("separation", 8)
+	module_upgrade_scroll.add_child(module_upgrade_list)
+	module_upgrade_selection_label = Label.new()
+	module_upgrade_selection_label.name = "ModuleUpgradeSelectionLabel"
+	module_upgrade_selection_label.position = Vector2(540, 510)
+	module_upgrade_selection_label.size = Vector2(200, 48)
+	module_upgrade_selection_label.clip_text = true
+	upgrade_panel.add_child(module_upgrade_selection_label)
+	module_upgrade_action_button = Button.new()
+	module_upgrade_action_button.name = "ModuleUpgradeActionButton"
+	module_upgrade_action_button.position = Vector2(540, 548)
+	module_upgrade_action_button.size = Vector2(200, 44)
+	module_upgrade_action_button.pressed.connect(_on_module_upgrade_action_pressed)
+	upgrade_panel.add_child(module_upgrade_action_button)
+	_style_management_button(module_upgrade_action_button, true)
+
+func _ensure_management_menu_buttons() -> void:
+	var open_module_button := module_primary_panel.get_node_or_null("OpenModuleButton") as Button
+	if open_module_button:
+		open_module_button.position = Vector2(28, 166)
+		open_module_button.size = Vector2(220, 46)
+	if weapon_warehouse_button == null:
+		weapon_warehouse_button = Button.new()
+		weapon_warehouse_button.name = "OpenWeaponWarehouseButton"
+		weapon_warehouse_button.position = Vector2(28, 108)
+		weapon_warehouse_button.size = Vector2(220, 46)
+		weapon_warehouse_button.pressed.connect(module_open_weapon_warehouse_panel)
+		module_primary_panel.add_child(weapon_warehouse_button)
+		_style_management_button(weapon_warehouse_button)
 
 func _style_management_panel(panel: Panel) -> void:
 	if panel == null:
@@ -1348,6 +1557,82 @@ func _refresh_upgrade_action() -> void:
 	var ready := selected != null and is_instance_valid(selected) and bool(upgrade_preview.get("upgradable"))
 	upgrade_action_button.disabled = not ready
 	upgrade_action_button.text = LocalizationManager.tr_key("ui.upgrade.action", "Upgrade Selected Weapon")
+
+func _refresh_module_upgrade_list() -> void:
+	if module_upgrade_list == null:
+		return
+	for child in module_upgrade_list.get_children():
+		child.queue_free()
+	var has_rows := false
+	for module_instance in InventoryData.get_all_owned_modules():
+		if module_instance == null or not is_instance_valid(module_instance):
+			continue
+		if int(module_instance.module_level) >= Module.MAX_LEVEL:
+			continue
+		has_rows = true
+		var button := Button.new()
+		button.text = _build_module_upgrade_row_text(module_instance)
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.pressed.connect(_on_upgrade_module_selected.bind(module_instance))
+		module_upgrade_list.add_child(button)
+		_style_management_button(button, module_instance == selected_upgrade_module)
+	if not has_rows:
+		var empty := Label.new()
+		empty.text = LocalizationManager.tr_key("ui.upgrade.module.empty", "No modules can be upgraded.")
+		module_upgrade_list.add_child(empty)
+	if selected_upgrade_module != null and (not is_instance_valid(selected_upgrade_module) or int(selected_upgrade_module.module_level) >= Module.MAX_LEVEL):
+		selected_upgrade_module = null
+	_refresh_module_upgrade_action()
+
+func _on_upgrade_module_selected(module_instance: Module) -> void:
+	selected_upgrade_module = module_instance
+	_refresh_module_upgrade_list()
+	_refresh_module_upgrade_action()
+
+func _on_module_upgrade_action_pressed() -> void:
+	if selected_upgrade_module == null or not is_instance_valid(selected_upgrade_module):
+		return
+	var result := InventoryData.upgrade_module_with_gold(selected_upgrade_module)
+	if not result.get("ok", false):
+		show_item_message(str(result.get("reason", "")), 1.6)
+	update_upg()
+
+func _refresh_module_upgrade_action() -> void:
+	if module_upgrade_action_button == null or module_upgrade_selection_label == null:
+		return
+	var ready := selected_upgrade_module != null and is_instance_valid(selected_upgrade_module) \
+		and int(selected_upgrade_module.module_level) < Module.MAX_LEVEL
+	var price := _get_module_upgrade_price(selected_upgrade_module) if ready else 0
+	module_upgrade_action_button.disabled = not ready or PlayerData.player_gold < price
+	module_upgrade_action_button.text = LocalizationManager.tr_format(
+		"ui.upgrade.module.action",
+		{"value": price},
+		"Upgrade Module: %s" % price
+	) if ready else LocalizationManager.tr_key("ui.upgrade.module.action_empty", "Upgrade Module")
+	if ready:
+		module_upgrade_selection_label.text = LocalizationManager.tr_format(
+			"ui.upgrade.module.selected",
+			{"module": LocalizationManager.get_module_name(selected_upgrade_module), "level": selected_upgrade_module.module_level},
+			"%s Lv.%d" % [LocalizationManager.get_module_name(selected_upgrade_module), selected_upgrade_module.module_level]
+		)
+	else:
+		module_upgrade_selection_label.text = LocalizationManager.tr_key("ui.upgrade.module.select_prompt", "Select a module to upgrade.")
+
+func _build_module_upgrade_row_text(module_instance: Module) -> String:
+	var price := _get_module_upgrade_price(module_instance)
+	return "%s Lv.%d -> Lv.%d    %s" % [
+		LocalizationManager.get_module_name(module_instance),
+		int(module_instance.module_level),
+		int(module_instance.module_level) + 1,
+		LocalizationManager.tr_format("ui.upgrade.cost", {"value": price}, "Cost: %s" % price),
+	]
+
+func _get_module_upgrade_price(module_instance: Module) -> int:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return 0
+	if GlobalVariables.economy_data:
+		return GlobalVariables.economy_data.get_module_upgrade_gold(int(module_instance.cost))
+	return EconomyConfig.new().get_module_upgrade_gold(int(module_instance.cost))
 
 func _on_temporary_module_selected(module_instance: Module) -> void:
 	selected_temporary_module = module_instance
@@ -1439,14 +1724,27 @@ func _update_cursor_presentation() -> void:
 func _apply_battle_hardware_cursor() -> void:
 	if _battle_hardware_cursor_applied:
 		return
-	if _battle_hardware_cursor_tex == null:
-		_battle_hardware_cursor_tex = _build_battle_hardware_cursor_texture()
-	if _battle_hardware_cursor_tex == null:
+	if not _refresh_battle_hardware_cursor_texture(false, 1.0):
 		return
 	var hotspot := Vector2(BATTLE_HARDWARE_CURSOR_SIZE * 0.5, BATTLE_HARDWARE_CURSOR_SIZE * 0.5)
 	for shape in [Input.CURSOR_ARROW, Input.CURSOR_POINTING_HAND, Input.CURSOR_IBEAM, Input.CURSOR_WAIT]:
 		Input.set_custom_mouse_cursor(_battle_hardware_cursor_tex, shape, hotspot)
 	_battle_hardware_cursor_applied = true
+
+func _refresh_battle_hardware_cursor_texture(ammo_visible: bool, ammo_progress: float) -> bool:
+	var progress_bucket := clampi(int(round(clampf(ammo_progress, 0.0, 1.0) * 100.0)), 0, 100)
+	var state_key := "%s:%d" % [str(ammo_visible), progress_bucket]
+	if _battle_hardware_cursor_tex != null and state_key == _battle_hardware_cursor_state_key:
+		return true
+	_battle_hardware_cursor_tex = _build_battle_hardware_cursor_texture(ammo_visible, float(progress_bucket) / 100.0)
+	_battle_hardware_cursor_state_key = state_key
+	if _battle_hardware_cursor_tex == null:
+		return false
+	if _battle_hardware_cursor_applied:
+		var hotspot := Vector2(BATTLE_HARDWARE_CURSOR_SIZE * 0.5, BATTLE_HARDWARE_CURSOR_SIZE * 0.5)
+		for shape in [Input.CURSOR_ARROW, Input.CURSOR_POINTING_HAND, Input.CURSOR_IBEAM, Input.CURSOR_WAIT]:
+			Input.set_custom_mouse_cursor(_battle_hardware_cursor_tex, shape, hotspot)
+	return true
 
 func _clear_battle_hardware_cursor() -> void:
 	if not _battle_hardware_cursor_applied:
@@ -1454,32 +1752,77 @@ func _clear_battle_hardware_cursor() -> void:
 	for shape in [Input.CURSOR_ARROW, Input.CURSOR_POINTING_HAND, Input.CURSOR_IBEAM, Input.CURSOR_WAIT]:
 		Input.set_custom_mouse_cursor(null, shape)
 	_battle_hardware_cursor_applied = false
+	_battle_hardware_cursor_state_key = ""
 
-func _build_battle_hardware_cursor_texture() -> Texture2D:
+func _build_battle_hardware_cursor_texture(ammo_visible: bool = false, ammo_progress: float = 1.0) -> Texture2D:
 	var size: int = maxi(12, BATTLE_HARDWARE_CURSOR_SIZE)
-	var center := int(size / 2)
+	var center := int(round(float(size) * 0.5))
 	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
 	image.fill(Color(0, 0, 0, 0))
 	var c := BATTLE_HARDWARE_CURSOR_COLOR
-	for x in range(size):
-		image.set_pixel(x, center, c)
-	for y in range(size):
-		image.set_pixel(center, y, c)
-	for i in range(-3, 4):
-		image.set_pixel(center + i, center, c)
-		image.set_pixel(center, center + i, c)
-	var outline := Color(0.12, 0.2, 0.28, 0.9)
-	for x in range(size):
-		if center - 1 >= 0:
-			image.set_pixel(x, center - 1, outline)
-		if center + 1 < size:
-			image.set_pixel(x, center + 1, outline)
-	for y in range(size):
-		if center - 1 >= 0:
-			image.set_pixel(center - 1, y, outline)
-		if center + 1 < size:
-			image.set_pixel(center + 1, y, outline)
+	var ring_radius := clampi(int(round(SPREAD_CURSOR_FALLBACK_RADIUS_PX)), 4, maxi(4, center - 3))
+	var center_v := Vector2(center, center)
+	var diamond := [
+		center_v + Vector2(0.0, -ring_radius),
+		center_v + Vector2(ring_radius, 0.0),
+		center_v + Vector2(0.0, ring_radius),
+		center_v + Vector2(-ring_radius, 0.0),
+	]
+	_draw_image_polyline(image, diamond, BATTLE_HARDWARE_CURSOR_OUTLINE_COLOR, 3)
+	_draw_image_polyline(image, diamond, BATTLE_HARDWARE_CURSOR_RING_COLOR, 1)
+	if ammo_visible:
+		_draw_image_diamond_progress(image, diamond, clampf(ammo_progress, 0.0, 1.0), c, 2)
+	_draw_image_line(image, Vector2(center - 4, center), Vector2(center + 4, center), BATTLE_HARDWARE_CURSOR_OUTLINE_COLOR, 3)
+	_draw_image_line(image, Vector2(center, center - 4), Vector2(center, center + 4), BATTLE_HARDWARE_CURSOR_OUTLINE_COLOR, 3)
+	_draw_image_line(image, Vector2(center - 4, center), Vector2(center + 4, center), c, 1)
+	_draw_image_line(image, Vector2(center, center - 4), Vector2(center, center + 4), c, 1)
 	return ImageTexture.create_from_image(image)
+
+func _draw_image_diamond_progress(image: Image, points: Array, progress: float, color: Color, width: int = 1) -> void:
+	if points.size() < 2 or progress <= 0.0:
+		return
+	var ordered := [points[0], points[3], points[2], points[1], points[0]]
+	var total_len := 0.0
+	for index in range(ordered.size() - 1):
+		total_len += (ordered[index] as Vector2).distance_to(ordered[index + 1] as Vector2)
+	var remaining := total_len * clampf(progress, 0.0, 1.0)
+	for index in range(ordered.size() - 1):
+		if remaining <= 0.0:
+			return
+		var from_point := ordered[index] as Vector2
+		var to_point := ordered[index + 1] as Vector2
+		var segment_len := from_point.distance_to(to_point)
+		if remaining >= segment_len:
+			_draw_image_line(image, from_point, to_point, color, width)
+			remaining -= segment_len
+			continue
+		var partial_to := from_point.lerp(to_point, remaining / maxf(segment_len, 0.0001))
+		_draw_image_line(image, from_point, partial_to, color, width)
+		return
+
+func _draw_image_polyline(image: Image, points: Array, color: Color, width: int = 1) -> void:
+	if points.size() < 2:
+		return
+	for index in range(points.size()):
+		var from_point := points[index] as Vector2
+		var to_point := points[(index + 1) % points.size()] as Vector2
+		_draw_image_line(image, from_point, to_point, color, width)
+
+func _draw_image_line(image: Image, from_point: Vector2, to_point: Vector2, color: Color, width: int = 1) -> void:
+	var steps := maxi(int(ceil(from_point.distance_to(to_point))), 1)
+	var radius := maxi(int(floor(float(width) * 0.5)), 0)
+	for step in range(steps + 1):
+		var point := from_point.lerp(to_point, float(step) / float(steps))
+		_draw_image_point(image, point, color, radius)
+
+func _draw_image_point(image: Image, point: Vector2, color: Color, radius: int) -> void:
+	var px := int(round(point.x))
+	var py := int(round(point.y))
+	for y in range(py - radius, py + radius + 1):
+		for x in range(px - radius, px + radius + 1):
+			if x < 0 or y < 0 or x >= image.get_width() or y >= image.get_height():
+				continue
+			image.set_pixel(x, y, color)
 
 
 func _show_game_over() -> void:
@@ -1993,7 +2336,6 @@ func _update_spread_cursor_overlay(mouse_screen_override: Variant = null) -> voi
 		_clear_spread_cursor_ammo_progress()
 		spread_cursor_overlay.visible = false
 		return
-	spread_cursor_overlay.visible = true
 	var mouse_screen := viewport.get_mouse_position()
 	if mouse_screen_override is Vector2:
 		mouse_screen = mouse_screen_override as Vector2
@@ -2001,9 +2343,11 @@ func _update_spread_cursor_overlay(mouse_screen_override: Variant = null) -> voi
 	var main_weapon := _get_main_weapon_node()
 	if main_weapon == null or not is_instance_valid(main_weapon):
 		_clear_spread_cursor_ammo_progress()
+		_refresh_battle_hardware_cursor_texture(false, 1.0)
 		spread_cursor_overlay.set_fallback_screen_radius(SPREAD_CURSOR_FALLBACK_RADIUS_PX)
+		spread_cursor_overlay.visible = false
 		return
-	_update_spread_cursor_ammo_progress(main_weapon)
+	_update_battle_hardware_cursor_ammo_progress(main_weapon)
 	var canvas_inv := viewport.get_canvas_transform().affine_inverse()
 	var mouse_world := canvas_inv * mouse_screen
 	var spread_enabled := false
@@ -2019,25 +2363,25 @@ func _update_spread_cursor_overlay(mouse_screen_override: Variant = null) -> voi
 		spread_enabled = spread_radius_world > 0.0
 	if spread_enabled and spread_radius_world > 0.0:
 		spread_cursor_overlay.set_world_anchor_and_radius(mouse_world, spread_radius_world)
+		spread_cursor_overlay.visible = true
 		return
 	spread_cursor_overlay.set_fallback_screen_radius(SPREAD_CURSOR_FALLBACK_RADIUS_PX)
+	spread_cursor_overlay.visible = false
 
-func _update_spread_cursor_ammo_progress(main_weapon: Node) -> void:
-	if spread_cursor_overlay == null or not is_instance_valid(spread_cursor_overlay):
-		return
+func _update_battle_hardware_cursor_ammo_progress(main_weapon: Node) -> void:
 	if main_weapon == null or not is_instance_valid(main_weapon):
-		_clear_spread_cursor_ammo_progress()
+		_refresh_battle_hardware_cursor_texture(false, 1.0)
 		return
 	if not main_weapon.has_method("get_ammo_status"):
-		_clear_spread_cursor_ammo_progress()
+		_refresh_battle_hardware_cursor_texture(false, 1.0)
 		return
 	var status_variant: Variant = main_weapon.call("get_ammo_status")
 	if not (status_variant is Dictionary):
-		_clear_spread_cursor_ammo_progress()
+		_refresh_battle_hardware_cursor_texture(false, 1.0)
 		return
 	var status: Dictionary = status_variant as Dictionary
 	if not bool(status.get("enabled", false)):
-		_clear_spread_cursor_ammo_progress()
+		_refresh_battle_hardware_cursor_texture(false, 1.0)
 		return
 	var max_ammo: int = max(1, int(status.get("max", 0)))
 	var current_ammo: int = clampi(int(status.get("current", 0)), 0, max_ammo)
@@ -2045,7 +2389,6 @@ func _update_spread_cursor_ammo_progress(main_weapon: Node) -> void:
 	var reload_left: float = maxf(float(status.get("reload_left", 0.0)), 0.0)
 	var weapon_id: int = main_weapon.get_instance_id()
 	var progress: float = 1.0
-	var clockwise: bool = false
 	if is_reloading:
 		var tracked_total := float(_cursor_reload_total_by_weapon.get(weapon_id, 0.0))
 		if tracked_total <= 0.0:
@@ -2056,12 +2399,10 @@ func _update_spread_cursor_ammo_progress(main_weapon: Node) -> void:
 			progress = 0.0
 		else:
 			progress = clampf(1.0 - (reload_left / tracked_total), 0.0, 1.0)
-		clockwise = false
 	else:
 		_cursor_reload_total_by_weapon.erase(weapon_id)
 		progress = clampf(float(current_ammo) / float(max_ammo), 0.0, 1.0)
-		clockwise = false
-	spread_cursor_overlay.set_ammo_progress(progress, clockwise, true)
+	_refresh_battle_hardware_cursor_texture(true, progress)
 
 func _clear_spread_cursor_ammo_progress() -> void:
 	if spread_cursor_overlay != null and is_instance_valid(spread_cursor_overlay):
@@ -2414,12 +2755,12 @@ func _on_language_changed(_new_locale: String) -> void:
 func _refresh_localized_static_text() -> void:
 	_refresh_shop_mode_title()
 	if shop_instruction_label:
-		shop_instruction_label.text = LocalizationManager.tr_key("ui.shop.instruction", "Buy weapons on the left, or manage equipped weapons on the right.")
+		shop_instruction_label.text = LocalizationManager.tr_key("ui.purchase.instruction", "Buy weapons on the left and modules on the right.")
 	var upgrade_title := upgrade_panel.get_node_or_null("Title") as Label
 	if upgrade_title:
-		upgrade_title.text = LocalizationManager.tr_key("ui.panel.upgrade", "Upgrade")
+		upgrade_title.text = LocalizationManager.tr_key("ui.panel.upgrade_combined", "Upgrade Weapons and Modules")
 	if upgrade_instruction_label:
-		upgrade_instruction_label.text = LocalizationManager.tr_key("ui.upgrade.instruction", "Select a weapon on the right, review changes, then upgrade.")
+		upgrade_instruction_label.text = LocalizationManager.tr_key("ui.upgrade.combined_instruction", "Select a weapon or module, review the cost, then upgrade.")
 	var module_title := module_panel.get_node_or_null("Title") as Label
 	if module_title:
 		module_title.text = LocalizationManager.tr_key("ui.panel.module", "Module")
@@ -2448,13 +2789,15 @@ func _refresh_localized_static_text() -> void:
 			shop_refresh.text = LocalizationManager.tr_key("ui.panel.refresh", "Refresh")
 	var module_menu_title := module_primary_panel.get_node_or_null("Title") as Label
 	if module_menu_title:
-		module_menu_title.text = LocalizationManager.tr_key("ui.module.menu.title", "Module Management")
+		module_menu_title.text = LocalizationManager.tr_key("ui.management.menu.title", "Warehouse Management")
 	var module_menu_subtitle := module_primary_panel.get_node_or_null("SubTitle") as Label
 	if module_menu_subtitle:
-		module_menu_subtitle.text = LocalizationManager.tr_key("ui.module.menu.subtitle", "Install or remove weapon modules")
+		module_menu_subtitle.text = LocalizationManager.tr_key("ui.management.menu.subtitle", "Open weapon or module warehouse")
 	var module_menu_open := module_primary_panel.get_node_or_null("OpenModuleButton") as Button
 	if module_menu_open:
-		module_menu_open.text = LocalizationManager.tr_key("ui.module.menu.open", "Manage Modules")
+		module_menu_open.text = LocalizationManager.tr_key("ui.module.warehouse.title", "Module Warehouse")
+	if weapon_warehouse_button:
+		weapon_warehouse_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
 	var module_back := module_panel.get_node_or_null("BackToModuleMenu") as Button
 	if module_back:
 		module_back.text = LocalizationManager.tr_key("ui.panel.back", "Back")
@@ -2462,12 +2805,28 @@ func _refresh_localized_static_text() -> void:
 	if merchant_subtitle:
 		merchant_subtitle.text = LocalizationManager.tr_key(
 			"ui.merchant.subtitle",
-			"Choose Buy or Warehouse"
+			"Buy weapons and modules"
 		)
+	var merchant_title := merchant_primary_panel.get_node_or_null("Title") as Label
+	if merchant_title:
+		merchant_title.text = LocalizationManager.tr_key("ui.panel.purchase", "Purchase")
+	var buy_button := merchant_primary_panel.get_node_or_null("OpenBuyButton") as Button
+	if buy_button:
+		buy_button.text = LocalizationManager.tr_key("ui.purchase.open", "Buy Weapons and Modules")
 	var warehouse_button := merchant_primary_panel.get_node_or_null("OpenSellButton") as Button
 	if warehouse_button:
-		warehouse_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
+		warehouse_button.visible = false
+	var smith_title := smith_primary_panel.get_node_or_null("Title") as Label
+	if smith_title:
+		smith_title.text = LocalizationManager.tr_key("ui.panel.upgrade_combined", "Upgrade Weapons and Modules")
+	var smith_subtitle := smith_primary_panel.get_node_or_null("SubTitle") as Label
+	if smith_subtitle:
+		smith_subtitle.text = LocalizationManager.tr_key("ui.smith.subtitle", "Upgrade owned weapons and modules")
+	var smith_open := smith_primary_panel.get_node_or_null("OpenUpgradeButton") as Button
+	if smith_open:
+		smith_open.text = LocalizationManager.tr_key("ui.upgrade.open", "Upgrade Weapons and Modules")
 	_refresh_upgrade_action()
+	_refresh_module_upgrade_action()
 	_refresh_module_action()
 	var pause_label := pause_menu_panel.get_node_or_null("Paused") as Label
 	if pause_label:

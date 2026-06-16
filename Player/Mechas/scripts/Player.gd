@@ -224,7 +224,7 @@ func _physics_process(delta):
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.echo:
 		return
-	if event.is_action_pressed("SKILL_PLAYER") or event.is_action_pressed("SKILL"):
+	if event.is_action_pressed("SKILL_PLAYER"):
 		_try_cast_player_active_skill()
 	if event.is_action_pressed("SKILL_WEAPON"):
 		_try_reload_main_weapon()

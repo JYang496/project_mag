@@ -9,15 +9,19 @@ const FALLBACK_MODULE_ICON: Texture2D = preload("res://asset/images/test/star.pn
 @export var spawn_ready: bool = false
 @export var auto_collect_on_landing: bool = false
 @export var trajectory_animation_managed: bool = false
+@export var settle_unclaimed_on_battle_start: bool = false
 var item : Node2D
 var module_instance: Module
 var player_near : bool = false
+var _resolved: bool = false
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var detect_area: Area2D = $DetectArea
 @onready var interact_hint: Label = $InteractHint
 
 
 func _ready() -> void:
+	if settle_unclaimed_on_battle_start:
+		add_to_group(&"unclaimed_battle_rewards")
 	if spawn_ready:
 		detect_area.set_collision_mask_value(1, true)
 	if module_scene:
@@ -48,21 +52,44 @@ func _ready() -> void:
 			play_animation()
 
 func _input(event: InputEvent) -> void:
-	if player_near and event.is_action_pressed("INTERACT"):
+	if not _resolved and player_near and event.is_action_pressed("INTERACT"):
 		if module_instance:
 			_pick_module()
 			return
 		_pick_weapon()
 
 func collect_automatically() -> void:
+	if _resolved:
+		return
 	if module_instance:
+		_resolved = true
 		InventoryData.obtain_module(module_instance)
 		module_instance = null
 		queue_free()
 		return
 	_pick_weapon()
 
+func settle_unclaimed() -> void:
+	if _resolved:
+		return
+	_resolved = true
+	set_process_input(false)
+	interact_hint.visible = false
+	player_near = false
+	if module_instance:
+		InventoryData.sell_unclaimed_module(module_instance)
+		module_instance = null
+		queue_free()
+		return
+	if item and is_instance_valid(item):
+		InventoryData.settle_unclaimed_weapon_reward(item as Weapon)
+		item = null
+	queue_free()
+
 func _pick_weapon() -> void:
+	if _resolved:
+		return
+	_resolved = true
 	if item == null or not is_instance_valid(item):
 		queue_free()
 		return
@@ -71,20 +98,26 @@ func _pick_weapon() -> void:
 	queue_free()
 
 func _pick_module() -> void:
+	if _resolved:
+		return
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("request_module_equip_selection"):
 		var opened: bool = bool(ui.request_module_equip_selection(module_instance, Callable(self, "_on_module_selection_completed")))
 		if opened:
+			_resolved = true
 			interact_hint.visible = false
 			player_near = false
 			set_process_input(false)
 			return
+	_resolved = true
 	InventoryData.obtain_module(module_instance)
+	module_instance = null
 	queue_free()
 
 func _on_module_selection_completed(assigned: bool) -> void:
 	if not assigned and module_instance and is_instance_valid(module_instance):
 		InventoryData.obtain_module(module_instance)
+	module_instance = null
 	queue_free()
 	
 func play_animation() -> void:
@@ -92,8 +125,12 @@ func play_animation() -> void:
 	dest_tween.tween_property(self,"rotation_degrees", 1800, 1).set_ease(Tween.EASE_IN_OUT)
 	dest_tween.connect("finished", _on_dest_tween_finished)
 
-func _on_dest_tween_finished():
+func activate_pickup_detection() -> void:
+	spawn_ready = true
 	detect_area.set_collision_mask_value(1,true)
+
+func _on_dest_tween_finished() -> void:
+	activate_pickup_detection()
 
 func _on_detect_area_body_entered(body: Node2D) -> void:
 	if body is Player:

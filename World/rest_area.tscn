@@ -31,7 +31,7 @@ offset_left = 7.0
 offset_top = 45.0
 offset_right = 163.0
 offset_bottom = 103.0
-text = "Shop\nBuy and sell weapons"
+text = "Purchase\nBuy weapons and modules"
 horizontal_alignment = 1
 
 [node name="SmithHintLabel" type="Label" parent="." unique_id=204400002]
@@ -40,7 +40,7 @@ offset_left = 178.0
 offset_top = 45.0
 offset_right = 334.0
 offset_bottom = 103.0
-text = "Weapon Upgrade\nNo upgrades available"
+text = "Upgrade\nNo upgrades available"
 horizontal_alignment = 1
 
 [node name="ModuleHintLabel" type="Label" parent="." unique_id=204400004]

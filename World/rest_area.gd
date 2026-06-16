@@ -28,9 +28,9 @@ signal rest_menu_cancelled
 @export var zone4_hold_track_width: float = 4.0
 @export var zone4_hold_progress_width: float = 8.0
 @export var debug_click_logs: bool = false
-@export var zone_merchant_hint_text: String = "Shop"
-@export var zone_smith_hint_text: String = "Weapon Upgrade"
-@export var zone_module_hint_text: String = "Module Management"
+@export var zone_merchant_hint_text: String = "Purchase"
+@export var zone_smith_hint_text: String = "Upgrade"
+@export var zone_module_hint_text: String = "Warehouses"
 @export var zone_battle_hold_hint_text: String = "Hold left mouse on center to start battle"
 @export var zone_hint_forward_offset: Vector2 = Vector2(0.0, -44.0)
 @export var zone_hint_z_index: int = 80
@@ -150,8 +150,8 @@ func _on_zone_hint_status_changed() -> void:
 func _refresh_scene_hint_labels() -> void:
 	if _merchant_hint_label:
 		_merchant_hint_label.text = "%s\n%s" % [
-			LocalizationManager.tr_key("ui.rest.zone.shop.title", zone_merchant_hint_text),
-			LocalizationManager.tr_key("ui.rest.zone.shop.status", "Buy and sell weapons"),
+			LocalizationManager.tr_key("ui.rest.zone.purchase.title", zone_merchant_hint_text),
+			LocalizationManager.tr_key("ui.rest.zone.purchase.status", "Buy weapons and modules"),
 		]
 	if _smith_hint_label:
 		var upgradable_count := _get_affordable_upgrade_count()
@@ -163,20 +163,20 @@ func _refresh_scene_hint_labels() -> void:
 				"%d upgrades available" % upgradable_count
 			)
 		_smith_hint_label.text = "%s\n%s" % [
-			LocalizationManager.tr_key("ui.rest.zone.upgrade.title", zone_smith_hint_text),
+			LocalizationManager.tr_key("ui.rest.zone.combined_upgrade.title", zone_smith_hint_text),
 			upgrade_status,
 		]
 	if _module_hint_label:
 		var pending_count := InventoryData.temporary_modules.size()
-		var module_status := LocalizationManager.tr_key("ui.rest.zone.module.none", "No pending modules")
+		var module_status := LocalizationManager.tr_key("ui.rest.zone.warehouses.none", "Open weapon and module warehouses")
 		if pending_count > 0:
 			module_status = LocalizationManager.tr_format(
-				"ui.rest.zone.module.pending",
+				"ui.rest.zone.warehouses.pending",
 				{"count": pending_count},
-				"%d pending" % pending_count
+				"%d stored modules" % pending_count
 			)
 		_module_hint_label.text = "%s\n%s" % [
-			LocalizationManager.tr_key("ui.rest.zone.module.title", zone_module_hint_text),
+			LocalizationManager.tr_key("ui.rest.zone.warehouses.title", zone_module_hint_text),
 			module_status,
 		]
 	if _battle_hint_label:
@@ -241,6 +241,12 @@ func _get_affordable_upgrade_count() -> int:
 			continue
 		if PlayerData.player_gold >= _get_weapon_upgrade_cost(weapon):
 			count += 1
+	for module_ref in InventoryData.get_all_owned_modules():
+		var module_instance := module_ref as Module
+		if module_instance == null or not is_instance_valid(module_instance) or int(module_instance.module_level) >= Module.MAX_LEVEL:
+			continue
+		if PlayerData.player_gold >= _get_module_upgrade_cost(module_instance):
+			count += 1
 	return count
 
 func _get_weapon_upgrade_cost(weapon: Weapon) -> int:
@@ -252,21 +258,18 @@ func _get_weapon_upgrade_cost(weapon: Weapon) -> int:
 		return maxi(1, int(round(float(weapon_def.price) * 0.5)))
 	return GlobalVariables.economy_data.get_weapon_upgrade_gold(int(weapon_def.price))
 
+func _get_module_upgrade_cost(module_instance: Module) -> int:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return 1
+	if GlobalVariables.economy_data == null:
+		return maxi(1, int(module_instance.cost))
+	return GlobalVariables.economy_data.get_module_upgrade_gold(int(module_instance.cost))
+
 func _update_zone_hint_visibility() -> void:
-	var show_zone_hints := _is_interaction_enabled() and not _has_visible_blocking_ui()
+	var show_zone_hints := _is_interaction_enabled()
 	for label in [_merchant_hint_label, _smith_hint_label, _module_hint_label, _battle_hint_label]:
 		if label:
 			label.visible = show_zone_hints
-
-func _has_visible_blocking_ui() -> bool:
-	var ui := GlobalVariables.ui as Node
-	if ui == null or not is_instance_valid(ui):
-		return false
-	for root_name in BLOCKING_UI_ROOTS:
-		var root := ui.get_node_or_null("GUI/%s" % root_name) as CanvasItem
-		if root != null and root.is_visible_in_tree():
-			return true
-	return false
 
 func _update_zone_hint_visuals(force: bool = false) -> void:
 	var state := "%d|%d|%s" % [hover_zone_id, selected_zone_id, str(is_auto_moving)]
@@ -556,12 +559,13 @@ func _input(event: InputEvent) -> void:
 			return
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT:
 			_handle_left_click(get_global_mouse_position())
-		elif mouse_event.button_index == MOUSE_BUTTON_RIGHT:
+		elif event.is_action_pressed("CANCEL"):
 			_handle_right_click()
 
 func _handle_left_click(global_pos: Vector2) -> void:
 	if debug_click_logs:
 		print("[RestArea] left click event_pos=", global_pos, " world_mouse=", get_global_mouse_position())
+	_sync_menu_open_with_ui()
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("is_rest_area_zone_navigation_allowed"):
 		var zone_nav_allowed := bool(ui.call("is_rest_area_zone_navigation_allowed"))
@@ -595,17 +599,34 @@ func _handle_left_click(global_pos: Vector2) -> void:
 	get_viewport().set_input_as_handled()
 
 func _handle_right_click() -> void:
+	_sync_menu_open_with_ui()
 	if not menu_open:
 		return
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("handle_rest_area_right_cancel"):
 		var consumed := bool(ui.call("handle_rest_area_right_cancel"))
 		if consumed:
+			_sync_menu_open_with_ui()
+			get_viewport().set_input_as_handled()
 			return
 	menu_open = false
 	rest_menu_cancelled.emit()
 	_begin_zone_move(CENTER_ZONE_ID, false)
 	get_viewport().set_input_as_handled()
+
+func _sync_menu_open_with_ui() -> void:
+	var ui = GlobalVariables.ui
+	if ui == null or not is_instance_valid(ui):
+		return
+	if not ui.has_method("is_rest_area_menu_visible"):
+		return
+	var ui_menu_visible := bool(ui.call("is_rest_area_menu_visible"))
+	if menu_open == ui_menu_visible:
+		return
+	menu_open = ui_menu_visible
+	if not menu_open:
+		_emit_menu_on_arrival = false
+	queue_redraw()
 
 func _begin_zone_move(zone_id: int, open_menu_on_arrival: bool) -> void:
 	_arrival_token += 1

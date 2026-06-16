@@ -105,6 +105,25 @@ func obtain_weapon_reward(weapon: Weapon) -> Dictionary:
 			return {"ok": true, "result": "selection_pending", "weapon": weapon}
 	return store_weapon(weapon)
 
+func settle_unclaimed_weapon_reward(weapon: Weapon) -> Dictionary:
+	if weapon == null or not is_instance_valid(weapon):
+		return {"ok": false, "result": "invalid"}
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	if weapon_id == "":
+		weapon.queue_free()
+		return {"ok": false, "result": "invalid"}
+	if PlayerData.player and is_instance_valid(PlayerData.player):
+		var equipped_result: Dictionary = PlayerData.player.try_auto_fuse_weapon_obtain(weapon_id)
+		if str(equipped_result.get("result", "")) != "not_applicable":
+			weapon.queue_free()
+			return equipped_result
+	var stored_match := _find_stored_weapon_by_id(weapon_id)
+	if stored_match:
+		var stored_result := _merge_stored_weapon_duplicate(stored_match)
+		weapon.queue_free()
+		return stored_result
+	return store_weapon(weapon)
+
 func store_weapon(weapon: Weapon) -> Dictionary:
 	if weapon == null or not is_instance_valid(weapon):
 		return {"ok": false, "result": "invalid"}
@@ -351,6 +370,52 @@ func obtain_module(module_instance: Module, _ignore_weapon: Weapon = null) -> Di
 		))
 	return result
 
+func purchase_module(module_scene: PackedScene) -> Dictionary:
+	if module_scene == null:
+		return {"ok": false, "reason": "Invalid module."}
+	var module_instance := module_scene.instantiate() as Module
+	if module_instance == null:
+		return {"ok": false, "reason": "Invalid module."}
+	module_instance.set_module_level(1)
+	var price := _get_economy_config().get_module_purchase_gold(int(module_instance.cost))
+	if PlayerData.player_gold < price:
+		module_instance.queue_free()
+		return {"ok": false, "reason": "Not enough gold.", "price": price}
+	PlayerData.player_gold -= price
+	var result := obtain_module(module_instance)
+	if not result.get("ok", false):
+		PlayerData.player_gold += price
+		if is_instance_valid(module_instance):
+			_discard_module_instance(module_instance)
+		return result
+	result["price"] = price
+	_refresh_ui()
+	return result
+
+func upgrade_module_with_gold(module_instance: Module) -> Dictionary:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return {"ok": false, "reason": "Invalid module."}
+	if int(module_instance.module_level) >= Module.MAX_LEVEL:
+		return {"ok": false, "reason": "Module is fully upgraded."}
+	var price := _get_economy_config().get_module_upgrade_gold(int(module_instance.cost))
+	if PlayerData.player_gold < price:
+		return {"ok": false, "reason": "Not enough gold.", "price": price}
+	PlayerData.player_gold -= price
+	if not module_instance.increase_module_level(1):
+		PlayerData.player_gold += price
+		return {"ok": false, "reason": "Module is fully upgraded.", "price": price}
+	var owner := _resolve_module_owner_weapon(module_instance)
+	if owner and owner.has_method("calculate_status"):
+		owner.calculate_status()
+	temporary_modules_changed.emit()
+	_notify(LocalizationManager.tr_format(
+		"ui.inventory.upgrade",
+		{"name": LocalizationManager.get_module_name(module_instance), "level": module_instance.module_level},
+		"Upgraded %s to Lv.%d" % [LocalizationManager.get_module_name(module_instance), module_instance.module_level]
+	))
+	_refresh_ui()
+	return {"ok": true, "result": "upgraded", "module": module_instance, "price": price}
+
 func begin_pending_transaction(transaction: Dictionary) -> void:
 	var transaction_id := str(transaction.get("id", ""))
 	if transaction_id != "":
@@ -405,6 +470,22 @@ func sell_temporary_module(module_instance: Module) -> Dictionary:
 	temporary_modules_changed.emit()
 	_refresh_ui()
 	return {"ok": true, "gold": gold}
+
+func sell_unclaimed_module(module_instance: Module) -> Dictionary:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return {"ok": false, "reason": "Invalid module."}
+	var gold := _calculate_module_conversion_coins(module_instance)
+	var module_name := LocalizationManager.get_module_name(module_instance)
+	PlayerData.player_gold += gold
+	PlayerData.run_gold_earned += gold
+	_discard_module_instance(module_instance)
+	_notify(LocalizationManager.tr_format(
+		"ui.inventory.unclaimed_module_sold",
+		{"name": module_name, "gold": gold},
+		"Unclaimed %s sold for +%d Gold" % [module_name, gold]
+	))
+	_refresh_ui()
+	return {"ok": true, "result": "sold", "gold": gold}
 
 func sell_all_temporary_modules() -> Dictionary:
 	var total_gold := 0

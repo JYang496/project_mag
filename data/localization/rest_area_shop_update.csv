@@ -1,0 +1,26 @@
+keys,en,zh_CN
+ui.panel.purchase,Purchase,购买
+ui.panel.upgrade_combined,Upgrade Weapons and Modules,升级武器与模组
+ui.purchase.instruction,"Buy weapons on the left and modules on the right.","左侧购买武器，右侧购买模组。"
+ui.purchase.open,Buy Weapons and Modules,购买武器与模组
+ui.shop.no_valid_modules,No modules available,当前没有可购买模组
+ui.shop.module.price,Price: {value},价格：{value}
+ui.shop.module.buy_hint,Buy module,购买模组
+ui.upgrade.combined_instruction,"Select a weapon or module, review the cost, then upgrade.","选择武器或模组，确认花费后升级。"
+ui.upgrade.open,Upgrade Weapons and Modules,升级武器与模组
+ui.upgrade.module.empty,No modules can be upgraded.,暂无可升级模组。
+ui.upgrade.module.action,Upgrade Module: {value},升级模组：{value}
+ui.upgrade.module.action_empty,Upgrade Module,升级模组
+ui.upgrade.module.selected,{module} Lv.{level},{module} Lv.{level}
+ui.upgrade.module.select_prompt,Select a module to upgrade.,选择要升级的模组。
+ui.merchant.subtitle,Buy weapons and modules,购买武器与模组
+ui.smith.subtitle,Upgrade owned weapons and modules,升级已拥有的武器与模组
+ui.module.warehouse.title,Module Warehouse,模组仓库
+ui.management.menu.title,Warehouse Management,仓库管理
+ui.management.menu.subtitle,Open weapon or module warehouse,打开武器仓库或模组仓库
+ui.rest.zone.purchase.title,Purchase,购买
+ui.rest.zone.purchase.status,Buy weapons and modules,购买武器与模组
+ui.rest.zone.combined_upgrade.title,Upgrade,升级
+ui.rest.zone.warehouses.title,Warehouses,仓库
+ui.rest.zone.warehouses.pending,{count} stored modules,仓库模组 {count}
+ui.rest.zone.warehouses.none,Open weapon and module warehouses,打开武器仓库和模组仓库

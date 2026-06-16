@@ -13,6 +13,7 @@ var module_scene: PackedScene
 var module_level: int = 1
 var resolve_immediately: bool = false
 var auto_collect_on_landing: bool = false
+var settle_unclaimed_on_battle_start: bool = false
 var value : int
 var drop_instance
 @onready var p0 = $p0
@@ -41,6 +42,8 @@ func _ready() -> void:
 		drop_instance.value = value
 	if auto_collect_on_landing:
 		drop_instance.auto_collect_on_landing = true
+	if settle_unclaimed_on_battle_start:
+		drop_instance.settle_unclaimed_on_battle_start = true
 	_set_optional_property(drop_instance, "trajectory_animation_managed", true)
 	if resolve_immediately:
 		_mark_drop_instance_spawn_ready(drop_instance)
@@ -99,6 +102,8 @@ func _set_flight_progress(progress: float) -> void:
 func _on_flight_animation_finished() -> void:
 	if drop_instance and is_instance_valid(drop_instance):
 		drop_instance.global_position = p2.global_position
+		if drop_instance.has_method("activate_pickup_detection"):
+			drop_instance.call("activate_pickup_detection")
 	flight_finished.emit()
 	if auto_collect_on_landing and drop_instance and is_instance_valid(drop_instance) \
 			and drop_instance.has_method("collect_automatically"):
