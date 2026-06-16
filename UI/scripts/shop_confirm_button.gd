@@ -16,4 +16,6 @@ func _on_button_up() -> void:
 			var ui = GlobalVariables.ui
 			if ui and is_instance_valid(ui) and ui.has_method("show_item_message"):
 				ui.show_item_message(str(result.get("reason", "")), 1.8)
-	shop_sell_button._on_button_up()
+	var ui = GlobalVariables.ui
+	if ui and is_instance_valid(ui) and ui.has_method("set_shop_sell_mode"):
+		ui.set_shop_sell_mode(false)

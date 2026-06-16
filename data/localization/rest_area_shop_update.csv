@@ -1,12 +1,27 @@
 keys,en,zh_CN
 ui.panel.purchase,Purchase,购买
+ui.merchant.purchase.title,Purchase,购买
+ui.merchant.purchase.subtitle,Choose purchase category,选择购买类别
 ui.panel.upgrade_combined,Upgrade Weapons and Modules,升级武器与模组
-ui.purchase.instruction,"Buy weapons on the left and modules on the right.","左侧购买武器，右侧购买模组。"
+ui.purchase.instruction,,
 ui.purchase.open,Buy Weapons and Modules,购买武器与模组
+ui.purchase.weapons,Buy Weapons,购买武器
+ui.purchase.modules,Buy Modules,购买模组
+ui.shop.buy,Buy,购买
+ui.shop.buy.select,Buy,购买
+ui.shop.buy.item,Buy,购买
+ui.shop.select_first,Select an item first.,请先选择商品。
+ui.shop.not_enough_gold,Not enough gold.,金币不足。
 ui.shop.no_valid_modules,No modules available,当前没有可购买模组
 ui.shop.module.price,Price: {value},价格：{value}
 ui.shop.module.buy_hint,Buy module,购买模组
 ui.upgrade.combined_instruction,"Select a weapon or module, review the cost, then upgrade.","选择武器或模组，确认花费后升级。"
+ui.upgrade.weapons,Upgrade Weapons,升级武器
+ui.upgrade.modules,Upgrade Modules,升级模组
+ui.upgrade.empty,No upgradeable items.,暂无可升级项目。
+ui.upgrade.select_first,Select an item first.,请先选择升级项目。
+ui.upgrade.action_empty,Upgrade,升级
+ui.upgrade.action_price,Upgrade: {value},升级：{value}
 ui.upgrade.open,Upgrade Weapons and Modules,升级武器与模组
 ui.upgrade.module.empty,No modules can be upgraded.,暂无可升级模组。
 ui.upgrade.module.action,Upgrade Module: {value},升级模组：{value}
@@ -15,6 +30,10 @@ ui.upgrade.module.selected,{module} Lv.{level},{module} Lv.{level}
 ui.upgrade.module.select_prompt,Select a module to upgrade.,选择要升级的模组。
 ui.merchant.subtitle,Buy weapons and modules,购买武器与模组
 ui.smith.subtitle,Upgrade owned weapons and modules,升级已拥有的武器与模组
+ui.smith.upgrade.title,Upgrade,升级
+ui.smith.upgrade.subtitle,Choose upgrade category,选择升级类别
+ui.smith.upgrade.weapon,Weapon,武器
+ui.smith.upgrade.module,Module,模组
 ui.module.warehouse.title,Module Warehouse,模组仓库
 ui.management.menu.title,Warehouse Management,仓库管理
 ui.management.menu.subtitle,Open weapon or module warehouse,打开武器仓库或模组仓库

@@ -22,6 +22,7 @@ const HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hud_presenter
 const WEAPON_PASSIVE_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_passive_presenter.gd")
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const SPREAD_CURSOR_OVERLAY_SCRIPT := preload("res://UI/scripts/spread_cursor_overlay.gd")
+const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const SPREAD_CURSOR_FALLBACK_RADIUS_PX := 10.0
 const BATTLE_HARDWARE_CURSOR_SIZE := 32
 const BATTLE_HARDWARE_CURSOR_COLOR := Color(0.9, 0.98, 1.0, 1.0)
@@ -92,6 +93,17 @@ var shop_sell_summary_modules: Label
 var shop_sell_mode_active: bool = false
 var shop_instruction_label: Label
 var module_shop: VBoxContainer
+var shop_mode_buttons: HBoxContainer
+var shop_weapon_mode_button: Button
+var shop_module_mode_button: Button
+var shop_detail_panel: PanelContainer
+var shop_detail_title: Label
+var shop_detail_subtitle: Label
+var shop_detail_body: VBoxContainer
+var shop_detail_scroll: ScrollContainer
+var _shop_purchase_mode: StringName = &"weapon"
+var _shop_hover_item: Dictionary = {}
+var _shop_selected_item: Dictionary = {}
 signal reset_cost
 
 # Upgrade
@@ -99,6 +111,18 @@ signal reset_cost
 @onready var upgrade_preview: MarginContainer = $GUI/UpgradeRootv2/Panel/UpgradePreview
 var upgrade_instruction_label: Label
 var upgrade_action_button: Button
+var upgrade_mode_buttons: HBoxContainer
+var upgrade_weapon_mode_button: Button
+var upgrade_module_mode_button: Button
+var upgrade_item_scroll: ScrollContainer
+var upgrade_item_list: VBoxContainer
+var upgrade_detail_panel: PanelContainer
+var upgrade_detail_title: Label
+var upgrade_detail_subtitle: Label
+var upgrade_detail_body: VBoxContainer
+var _upgrade_mode: StringName = &"weapon"
+var _upgrade_hover_item: Dictionary = {}
+var _upgrade_selected_item: Dictionary = {}
 var module_upgrade_scroll: ScrollContainer
 var module_upgrade_list: VBoxContainer
 var module_upgrade_selection_label: Label
@@ -115,6 +139,7 @@ var module_equip_button: Button
 var module_sell_button: Button
 var selected_temporary_module: Module
 var weapon_warehouse_button: Button
+var smith_module_upgrade_button: Button
 
 # Pause menu
 @onready var resume_button = $GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton
@@ -406,10 +431,16 @@ func set_shop_sell_mode(enabled: bool) -> void:
 		var module_scroll := module_shop.get_parent() as Control
 		if module_scroll:
 			module_scroll.visible = not enabled
+	if shop_mode_buttons:
+		shop_mode_buttons.visible = not enabled
+	if shop_detail_panel:
+		shop_detail_panel.visible = not enabled
 	if shop_sell_summary_panel:
 		shop_sell_summary_panel.visible = enabled
 	_refresh_shop_mode_title()
 	refresh_shop_sell_summary()
+	if not enabled:
+		_apply_shop_purchase_mode(_shop_purchase_mode)
 
 func _refresh_shop_mode_title() -> void:
 	var shop_title := shopping_panel.get_node_or_null("Title") as Label
@@ -858,6 +889,7 @@ func _physics_process(_delta):
 	_refresh_weapon_passive_panel()
 	_refresh_controls_hint_visibility()
 	_update_rest_area_hover_hint_position()
+	_refresh_shop_purchase_action()
 
 func _init_hud_presenter() -> void:
 	if hud_presenter and is_instance_valid(hud_presenter):
@@ -974,6 +1006,15 @@ func merchant_open_buy_panel() -> void:
 	if should_wait:
 		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	shopping_panel_in()
+	_apply_shop_purchase_mode(&"weapon")
+
+func merchant_open_module_buy_panel() -> void:
+	var should_wait := merchant_root != null and merchant_root.visible
+	_hide_primary_menu(&"merchant", merchant_root, merchant_primary_panel)
+	if should_wait:
+		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
+	shopping_panel_in()
+	_apply_shop_purchase_mode(&"module")
 
 func merchant_open_sell_panel() -> void:
 	var should_wait := merchant_root != null and merchant_root.visible
@@ -1212,15 +1253,18 @@ func upg_panel_in() -> void:
 	if is_branch_selection_blocking_interactions():
 		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
 		return
+	_apply_upgrade_mode(_upgrade_mode)
 	update_upg()
 	if smith_root:
 		smith_root.visible = false
 	upgrade_rootv_2.visible = true
-	equipped_upg.visible = true
+	equipped_upg.visible = false
 
 func upg_panel_out() -> void:
 	upgrade_rootv_2.visible = false
 	InventoryData.clear_on_select()
+	_upgrade_hover_item = {}
+	_upgrade_selected_item = {}
 	refresh_border()
 
 func smith_menu_in() -> void:
@@ -1231,12 +1275,19 @@ func smith_menu_out() -> void:
 	_hide_primary_menu(&"smith", smith_root, smith_primary_panel)
 	upg_panel_out()
 
-func smith_open_upgrade_panel() -> void:
+func smith_open_upgrade_panel(mode: StringName = &"weapon") -> void:
 	var should_wait := smith_root != null and smith_root.visible
 	_hide_primary_menu(&"smith", smith_root, smith_primary_panel)
 	if should_wait:
 		await get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
+	_apply_upgrade_mode(mode)
 	upg_panel_in()
+
+func smith_open_weapon_upgrade_panel() -> void:
+	smith_open_upgrade_panel(&"weapon")
+
+func smith_open_module_upgrade_panel() -> void:
+	smith_open_upgrade_panel(&"module")
 
 func smith_back_to_primary_menu() -> void:
 	upg_panel_out()
@@ -1333,6 +1384,7 @@ func update_upg() -> void:
 	upgrade_preview.update()
 	_refresh_module_upgrade_list()
 	_refresh_upgrade_action()
+	_refresh_upgrade_template()
 func update_modules() -> void:
 	for eq in equipped_m.get_children():
 		eq.update()
@@ -1358,9 +1410,10 @@ func _init_management_ui_polish() -> void:
 	shop_instruction_label = _create_management_instruction(
 		shopping_panel,
 		"ShopInstruction",
-		Vector2(25, 42),
-		Vector2(500, 30)
+		Vector2(25, 40),
+		Vector2(1, 1)
 	)
+	shop_instruction_label.visible = false
 	upgrade_instruction_label = _create_management_instruction(
 		upgrade_panel,
 		"UpgradeInstruction",
@@ -1374,13 +1427,16 @@ func _init_management_ui_polish() -> void:
 		Vector2(500, 30)
 	)
 	_ensure_purchase_module_shop()
+	_ensure_purchase_mode_controls()
+	_ensure_shop_detail_panel()
 	_ensure_module_upgrade_panel()
+	_ensure_upgrade_template_panel()
 	_ensure_management_menu_buttons()
 
 	for button_name in ["ShopRefreshButton", "ShopSellButton", "ShopCancelButton", "ShopConfirmButton", "BackToMerchantMenu"]:
 		_style_management_button(shopping_panel.get_node_or_null(button_name) as Button)
 	_style_management_button(shopping_panel.get_node_or_null("ShopConfirmButton") as Button, true)
-	_position_management_button(shopping_panel.get_node_or_null("ShopRefreshButton") as Button, Vector2(325, 548), Vector2(200, 44))
+	_position_management_button(shopping_panel.get_node_or_null("ShopRefreshButton") as Button, Vector2(325, 532), Vector2(200, 52))
 	_position_management_button(shopping_panel.get_node_or_null("ShopSellButton") as Button, Vector2(540, 532), Vector2(200, 52))
 	_position_management_button(shopping_panel.get_node_or_null("ShopCancelButton") as Button, Vector2(540, 532), Vector2(200, 52))
 	_position_management_button(shopping_panel.get_node_or_null("BackToMerchantMenu") as Button, Vector2(760, 532), Vector2(200, 52))
@@ -1392,8 +1448,8 @@ func _init_management_ui_polish() -> void:
 
 	upgrade_action_button = Button.new()
 	upgrade_action_button.name = "UpgradeActionButton"
-	upgrade_action_button.position = Vector2(127, 522)
-	upgrade_action_button.size = Vector2(300, 52)
+	upgrade_action_button.position = Vector2(540, 532)
+	upgrade_action_button.size = Vector2(200, 52)
 	upgrade_action_button.pressed.connect(_on_upgrade_action_pressed)
 	upgrade_panel.add_child(upgrade_action_button)
 	_style_management_button(upgrade_action_button, true)
@@ -1431,19 +1487,21 @@ func _init_management_ui_polish() -> void:
 			title.add_theme_color_override("font_color", Color(0.86, 0.94, 1.0))
 	_refresh_upgrade_action()
 	_refresh_module_action()
+	_apply_shop_purchase_mode(_shop_purchase_mode)
 
 func _ensure_purchase_module_shop() -> void:
 	if module_shop != null:
 		return
 	equipped_shop.visible = false
-	shop.custom_minimum_size = Vector2(460, 440)
-	shop.position = Vector2(25, 80)
-	shop.size = Vector2(460, 440)
+	shop.custom_minimum_size = Vector2(500, 405)
+	shop.position = Vector2(25, 104)
+	shop.size = Vector2(500, 419)
+	shop.add_theme_constant_override("separation", 8)
 	var module_scroll := ScrollContainer.new()
 	module_scroll.name = "ModuleShopScroll"
-	module_scroll.position = Vector2(540, 80)
-	module_scroll.size = Vector2(440, 440)
-	module_scroll.custom_minimum_size = Vector2(440, 440)
+	module_scroll.position = Vector2(25, 104)
+	module_scroll.size = Vector2(500, 419)
+	module_scroll.custom_minimum_size = Vector2(500, 419)
 	shopping_panel.add_child(module_scroll)
 	module_shop = VBoxContainer.new()
 	module_shop.name = "ModuleShop"
@@ -1454,6 +1512,402 @@ func _ensure_purchase_module_shop() -> void:
 		var slot := SHOP_MODULE_SLOT_SCENE.instantiate()
 		slot.name = "ModuleShopSlot%d" % (index + 1)
 		module_shop.add_child(slot)
+
+func _ensure_purchase_mode_controls() -> void:
+	if shop_mode_buttons != null and is_instance_valid(shop_mode_buttons):
+		return
+	shop_mode_buttons = HBoxContainer.new()
+	shop_mode_buttons.name = "ShopModeButtons"
+	shop_mode_buttons.position = Vector2(25, 54)
+	shop_mode_buttons.size = Vector2(500, 38)
+	shop_mode_buttons.add_theme_constant_override("separation", 8)
+	shopping_panel.add_child(shop_mode_buttons)
+	shop_weapon_mode_button = Button.new()
+	shop_weapon_mode_button.name = "BuyWeaponModeButton"
+	shop_weapon_mode_button.toggle_mode = true
+	shop_weapon_mode_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_weapon_mode_button.pressed.connect(_on_shop_weapon_mode_pressed)
+	shop_mode_buttons.add_child(shop_weapon_mode_button)
+	_style_management_button(shop_weapon_mode_button, true)
+	shop_module_mode_button = Button.new()
+	shop_module_mode_button.name = "BuyModuleModeButton"
+	shop_module_mode_button.toggle_mode = true
+	shop_module_mode_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_module_mode_button.pressed.connect(_on_shop_module_mode_pressed)
+	shop_mode_buttons.add_child(shop_module_mode_button)
+	_style_management_button(shop_module_mode_button)
+
+func _ensure_shop_detail_panel() -> void:
+	if shop_detail_panel != null and is_instance_valid(shop_detail_panel):
+		return
+	shop_detail_panel = PanelContainer.new()
+	shop_detail_panel.name = "ShopDetailPanel"
+	shop_detail_panel.position = Vector2(540, 104)
+	shop_detail_panel.size = Vector2(440, 419)
+	shop_detail_panel.custom_minimum_size = Vector2(440, 419)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.055, 0.071, 0.086, 0.94)
+	style.border_color = Color(0.24, 0.38, 0.46, 0.9)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	shop_detail_panel.add_theme_stylebox_override("panel", style)
+	shopping_panel.add_child(shop_detail_panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	shop_detail_panel.add_child(margin)
+	var root := VBoxContainer.new()
+	root.add_theme_constant_override("separation", 8)
+	margin.add_child(root)
+	shop_detail_title = Label.new()
+	shop_detail_title.add_theme_font_size_override("font_size", 22)
+	shop_detail_title.add_theme_color_override("font_color", Color(0.86, 0.94, 1.0))
+	shop_detail_title.clip_text = true
+	root.add_child(shop_detail_title)
+	shop_detail_subtitle = Label.new()
+	shop_detail_subtitle.add_theme_font_size_override("font_size", 13)
+	shop_detail_subtitle.modulate = Color(0.72, 0.81, 0.86)
+	shop_detail_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(shop_detail_subtitle)
+	var separator := HSeparator.new()
+	root.add_child(separator)
+	shop_detail_scroll = ScrollContainer.new()
+	shop_detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(shop_detail_scroll)
+	shop_detail_body = VBoxContainer.new()
+	shop_detail_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_detail_body.add_theme_constant_override("separation", 8)
+	shop_detail_scroll.add_child(shop_detail_body)
+	_clear_shop_detail()
+
+func _on_shop_weapon_mode_pressed() -> void:
+	_apply_shop_purchase_mode(&"weapon")
+
+func _on_shop_module_mode_pressed() -> void:
+	_apply_shop_purchase_mode(&"module")
+
+func _apply_shop_purchase_mode(mode: StringName) -> void:
+	_shop_purchase_mode = &"module" if mode == &"module" else &"weapon"
+	var show_purchase := not shop_sell_mode_active
+	if shop:
+		shop.visible = show_purchase and _shop_purchase_mode == &"weapon"
+	if module_shop:
+		var module_scroll := module_shop.get_parent() as Control
+		if module_scroll:
+			module_scroll.visible = show_purchase and _shop_purchase_mode == &"module"
+	if shop_detail_panel:
+		shop_detail_panel.visible = show_purchase
+	if shop_weapon_mode_button:
+		shop_weapon_mode_button.button_pressed = _shop_purchase_mode == &"weapon"
+	if shop_module_mode_button:
+		shop_module_mode_button.button_pressed = _shop_purchase_mode == &"module"
+	_shop_hover_item = {}
+	_shop_selected_item = {}
+	_clear_shop_slot_selection()
+	_refresh_shop_detail()
+	_refresh_shop_purchase_action()
+
+func set_shop_hover_item(item_data: Dictionary) -> void:
+	_shop_hover_item = item_data.duplicate(true)
+	_refresh_shop_detail()
+
+func clear_shop_hover_item(item_data: Dictionary = {}) -> void:
+	if item_data.is_empty():
+		_shop_hover_item = {}
+	elif _shop_items_match(_shop_hover_item, item_data):
+		_shop_hover_item = {}
+	_refresh_shop_detail()
+
+func set_shop_selected_item(item_data: Dictionary) -> void:
+	_shop_selected_item = item_data.duplicate(true)
+	_apply_shop_selection_highlight(_shop_selected_item)
+	_refresh_shop_detail()
+	_refresh_shop_purchase_action()
+
+func clear_shop_selected_item(item_data: Dictionary = {}) -> void:
+	if item_data.is_empty():
+		_shop_selected_item = {}
+		_clear_shop_slot_selection()
+	elif _shop_items_match(_shop_selected_item, item_data):
+		_shop_selected_item = {}
+		_clear_shop_slot_selection()
+	_refresh_shop_detail()
+	_refresh_shop_purchase_action()
+
+func purchase_selected_shop_item() -> bool:
+	if _shop_selected_item.is_empty():
+		show_item_message(LocalizationManager.tr_key("ui.shop.select_first", "Select an item first."), 1.3)
+		return false
+	var slot := _shop_selected_item.get("slot", null) as Node
+	if slot == null or not is_instance_valid(slot):
+		_shop_selected_item = {}
+		_clear_shop_slot_selection()
+		_refresh_shop_detail()
+		_refresh_shop_purchase_action()
+		return false
+	if not slot.has_method("try_purchase"):
+		return false
+	var purchased := bool(slot.call("try_purchase"))
+	if purchased:
+		_shop_selected_item = {}
+		_shop_hover_item = {}
+		_clear_shop_slot_selection()
+		_refresh_shop_detail()
+	_refresh_shop_purchase_action()
+	return purchased
+
+func _apply_shop_selection_highlight(item_data: Dictionary) -> void:
+	_clear_shop_slot_selection()
+	var slot := item_data.get("slot", null) as Node
+	if slot != null and is_instance_valid(slot) and slot.has_method("set_selected"):
+		slot.call("set_selected", true)
+
+func _clear_shop_slot_selection() -> void:
+	if shop:
+		for child in shop.get_children():
+			if child.has_method("set_selected"):
+				child.call("set_selected", false)
+	if module_shop:
+		for child in module_shop.get_children():
+			if child.has_method("set_selected"):
+				child.call("set_selected", false)
+
+func _refresh_shop_purchase_action() -> void:
+	if shop_sell_button == null or not is_instance_valid(shop_sell_button):
+		return
+	if shop_sell_mode_active:
+		return
+	var selected_slot := _shop_selected_item.get("slot", null) as Node
+	var has_selection := selected_slot != null and is_instance_valid(selected_slot)
+	var can_buy := false
+	if has_selection and selected_slot.has_method("can_purchase"):
+		can_buy = bool(selected_slot.call("can_purchase"))
+	shop_sell_button.disabled = not can_buy
+	var selected_name := str(_shop_selected_item.get("name", ""))
+	if selected_name == "":
+		shop_sell_button.text = LocalizationManager.tr_key("ui.shop.buy.select", "购买")
+	else:
+		shop_sell_button.text = LocalizationManager.tr_format("ui.shop.buy.item", {"name": selected_name}, "购买")
+
+func _shop_items_match(a: Dictionary, b: Dictionary) -> bool:
+	if a.is_empty() or b.is_empty():
+		return false
+	return str(a.get("type", "")) == str(b.get("type", "")) and str(a.get("id", "")) == str(b.get("id", ""))
+
+func _refresh_shop_detail() -> void:
+	if shop_detail_title == null or shop_detail_body == null:
+		return
+	var active := _shop_hover_item if not _shop_hover_item.is_empty() else _shop_selected_item
+	if active.is_empty():
+		_clear_shop_detail()
+		return
+	shop_detail_title.text = str(active.get("name", ""))
+	shop_detail_title.add_theme_color_override("font_color", active.get("rarity_color", Color(0.86, 0.94, 1.0)))
+	shop_detail_subtitle.text = str(active.get("description", ""))
+	_clear_container(shop_detail_body)
+	match str(active.get("type", "")):
+		"weapon":
+			_fill_weapon_shop_detail(active)
+		"module":
+			_fill_module_shop_detail(active)
+		_:
+			_clear_shop_detail()
+
+func _clear_shop_detail() -> void:
+	if shop_detail_title:
+		shop_detail_title.text = ""
+	if shop_detail_subtitle:
+		shop_detail_subtitle.text = ""
+	if shop_detail_body:
+		_clear_container(shop_detail_body)
+
+func _fill_weapon_shop_detail(item_data: Dictionary) -> void:
+	var weapon_def := item_data.get("definition", null) as WeaponDefinition
+	if weapon_def == null:
+		return
+	_add_shop_detail_section("武器类型", _format_weapon_definition_types(weapon_def))
+	_add_shop_detail_section("购买价格", str(int(item_data.get("price", 0))))
+	var level_rows := _build_weapon_level_rows(weapon_def)
+	if not level_rows.is_empty():
+		_add_shop_detail_header("等级参数 / 升级价格")
+		for row in level_rows:
+			_add_shop_detail_text(row)
+	var branches := DataHandler.read_weapon_branch_options(str(weapon_def.scene_path), 999)
+	if not branches.is_empty():
+		_add_shop_detail_header("分支选择")
+		for branch_def in branches:
+			var branch_name := LocalizationManager.get_branch_display_name(branch_def)
+			var branch_desc := LocalizationManager.get_branch_description(branch_def)
+			var unlock_text := "Fuse %d" % int(branch_def.unlock_fuse)
+			_add_shop_detail_text("%s  [%s]\n%s" % [branch_name, unlock_text, branch_desc])
+
+func _fill_module_shop_detail(item_data: Dictionary) -> void:
+	var module_instance := item_data.get("module", null) as Module
+	if module_instance == null or not is_instance_valid(module_instance):
+		return
+	_add_shop_detail_section("可安装武器类型", _format_module_install_targets(module_instance))
+	_add_shop_detail_section("购买价格", str(int(item_data.get("price", 0))))
+	_add_shop_detail_header("等级参数 / 升级价格")
+	var original_level := int(module_instance.module_level)
+	for level in range(1, Module.MAX_LEVEL + 1):
+		module_instance.set_module_level(level)
+		var effects := module_instance.get_effect_descriptions()
+		var upgrade_price := "-" if level >= Module.MAX_LEVEL else str(_get_module_shop_upgrade_cost(module_instance))
+		_add_shop_detail_text("Lv.%d  升级: %s\n%s" % [level, upgrade_price, "\n".join(effects)])
+	module_instance.set_module_level(original_level)
+
+func _build_weapon_level_rows(weapon_def: WeaponDefinition) -> PackedStringArray:
+	var rows := PackedStringArray()
+	if weapon_def.scene == null:
+		return rows
+	var weapon := weapon_def.scene.instantiate() as Weapon
+	if weapon == null:
+		return rows
+	var weapon_data_variant: Variant = weapon.get("weapon_data")
+	if not (weapon_data_variant is Dictionary):
+		weapon.queue_free()
+		return rows
+	var weapon_data := weapon_data_variant as Dictionary
+	var keys: Array = weapon_data.keys()
+	keys.sort_custom(func(a, b): return int(a) < int(b))
+	for key in keys:
+		var level_data := weapon.get_weapon_level_data(key, weapon_data)
+		if level_data.is_empty():
+			continue
+		var upgrade_price := "-" if int(key) >= keys.size() else str(_get_weapon_shop_upgrade_cost(weapon_def))
+		rows.append("Lv.%s  升级: %s\n%s" % [str(key), upgrade_price, _format_stat_dictionary(level_data)])
+	weapon.queue_free()
+	return rows
+
+func _format_stat_dictionary(data: Dictionary) -> String:
+	var parts := PackedStringArray()
+	for key_variant in data.keys():
+		var key := str(key_variant)
+		parts.append("%s: %s" % [_format_shop_stat_label(key), str(data[key_variant])])
+	return " / ".join(parts)
+
+func _format_shop_stat_label(key: String) -> String:
+	match key:
+		"damage":
+			return "伤害"
+		"speed":
+			return "速度"
+		"projectile_hits":
+			return "命中"
+		"fire_interval_sec":
+			return "间隔"
+		"ammo":
+			return "弹药"
+		"bullet_count":
+			return "弹数"
+		"duration":
+			return "持续"
+		"hit_cd":
+			return "命中间隔"
+		"explosion_scale":
+			return "爆炸"
+		_:
+			return key.replace("_", " ").capitalize()
+
+func _format_weapon_definition_types(weapon_def: WeaponDefinition) -> String:
+	if weapon_def == null or weapon_def.scene == null:
+		return "未知"
+	var weapon := weapon_def.scene.instantiate() as Weapon
+	if weapon == null:
+		return "未知"
+	var parts := PackedStringArray()
+	for value in weapon.get_explicit_weapon_traits():
+		parts.append(_format_type_name(str(value)))
+	for value in weapon.get_explicit_delivery_types():
+		parts.append(_format_type_name(str(value)))
+	for value in weapon.get_explicit_weapon_capabilities():
+		parts.append(_format_type_name(str(value)))
+	weapon.queue_free()
+	return " / ".join(parts) if not parts.is_empty() else "通用"
+
+func _format_module_install_targets(module_instance: Module) -> String:
+	var parts := PackedStringArray()
+	for value in module_instance.get_normalized_required_weapon_traits():
+		parts.append(_format_type_name(str(value)))
+	for value in module_instance.get_normalized_required_delivery_types():
+		parts.append(_format_type_name(str(value)))
+	for value in module_instance.get_normalized_required_weapon_capabilities():
+		parts.append(_format_type_name(str(value)))
+	return " / ".join(parts) if not parts.is_empty() else "任意武器"
+
+func _format_type_name(value: String) -> String:
+	match value:
+		"physical":
+			return "物理"
+		"energy":
+			return "能量"
+		"fire":
+			return "火焰"
+		"freeze":
+			return "冻结"
+		"heat":
+			return "热量"
+		"charge":
+			return "蓄能"
+		"projectile":
+			return "弹体"
+		"melee_contact":
+			return "近战"
+		"beam":
+			return "光束"
+		"area":
+			return "范围"
+		"summon":
+			return "召唤"
+		"trap":
+			return "陷阱"
+		"support":
+			return "支援"
+		"movement":
+			return "位移"
+		_:
+			return value.capitalize()
+
+func _get_weapon_shop_upgrade_cost(weapon_def: WeaponDefinition) -> int:
+	if weapon_def == null:
+		return 0
+	if GlobalVariables.economy_data:
+		return GlobalVariables.economy_data.get_weapon_upgrade_gold(int(weapon_def.price))
+	return maxi(1, int(round(float(weapon_def.price) * 0.5)))
+
+func _get_module_shop_upgrade_cost(module_instance: Module) -> int:
+	if module_instance == null:
+		return 0
+	if GlobalVariables.economy_data:
+		return GlobalVariables.economy_data.get_module_upgrade_gold(int(module_instance.cost))
+	return EconomyConfig.new().get_module_upgrade_gold(int(module_instance.cost))
+
+func _add_shop_detail_section(title: String, value: String) -> void:
+	_add_shop_detail_header(title)
+	_add_shop_detail_text(value)
+
+func _add_shop_detail_header(text: String) -> void:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color(0.63, 0.86, 0.95))
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	shop_detail_body.add_child(label)
+
+func _add_shop_detail_text(text: String) -> void:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color(0.86, 0.9, 0.92))
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	shop_detail_body.add_child(label)
+
+func _clear_container(container: Node) -> void:
+	for child in container.get_children():
+		container.remove_child(child)
+		child.queue_free()
 
 func _ensure_module_upgrade_panel() -> void:
 	if module_upgrade_list != null:
@@ -1486,7 +1940,257 @@ func _ensure_module_upgrade_panel() -> void:
 	upgrade_panel.add_child(module_upgrade_action_button)
 	_style_management_button(module_upgrade_action_button, true)
 
+func _ensure_upgrade_template_panel() -> void:
+	if upgrade_item_list != null:
+		return
+	equipped_upg.visible = false
+	upgrade_preview.visible = false
+	if module_upgrade_scroll:
+		module_upgrade_scroll.visible = false
+	if module_upgrade_selection_label:
+		module_upgrade_selection_label.visible = false
+	if module_upgrade_action_button:
+		module_upgrade_action_button.visible = false
+	if upgrade_instruction_label:
+		upgrade_instruction_label.visible = false
+
+	upgrade_mode_buttons = HBoxContainer.new()
+	upgrade_mode_buttons.name = "UpgradeModeButtons"
+	upgrade_mode_buttons.position = Vector2(25, 54)
+	upgrade_mode_buttons.size = Vector2(500, 38)
+	upgrade_mode_buttons.add_theme_constant_override("separation", 8)
+	upgrade_panel.add_child(upgrade_mode_buttons)
+
+	upgrade_weapon_mode_button = Button.new()
+	upgrade_weapon_mode_button.name = "UpgradeWeaponModeButton"
+	upgrade_weapon_mode_button.toggle_mode = true
+	upgrade_weapon_mode_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	upgrade_weapon_mode_button.pressed.connect(_on_upgrade_weapon_mode_pressed)
+	upgrade_mode_buttons.add_child(upgrade_weapon_mode_button)
+	_style_management_button(upgrade_weapon_mode_button, true)
+
+	upgrade_module_mode_button = Button.new()
+	upgrade_module_mode_button.name = "UpgradeModuleModeButton"
+	upgrade_module_mode_button.toggle_mode = true
+	upgrade_module_mode_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	upgrade_module_mode_button.pressed.connect(_on_upgrade_module_mode_pressed)
+	upgrade_mode_buttons.add_child(upgrade_module_mode_button)
+	_style_management_button(upgrade_module_mode_button)
+
+	upgrade_item_scroll = ScrollContainer.new()
+	upgrade_item_scroll.name = "UpgradeItemScroll"
+	upgrade_item_scroll.position = Vector2(25, 104)
+	upgrade_item_scroll.size = Vector2(500, 419)
+	upgrade_item_scroll.custom_minimum_size = Vector2(500, 419)
+	upgrade_panel.add_child(upgrade_item_scroll)
+
+	upgrade_item_list = VBoxContainer.new()
+	upgrade_item_list.name = "UpgradeItemList"
+	upgrade_item_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	upgrade_item_list.add_theme_constant_override("separation", 8)
+	upgrade_item_scroll.add_child(upgrade_item_list)
+
+	upgrade_detail_panel = PanelContainer.new()
+	upgrade_detail_panel.name = "UpgradeDetailPanel"
+	upgrade_detail_panel.position = Vector2(540, 104)
+	upgrade_detail_panel.size = Vector2(440, 419)
+	upgrade_detail_panel.custom_minimum_size = Vector2(440, 419)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.055, 0.071, 0.086, 0.94)
+	style.border_color = Color(0.24, 0.38, 0.46, 0.9)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	upgrade_detail_panel.add_theme_stylebox_override("panel", style)
+	upgrade_panel.add_child(upgrade_detail_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	upgrade_detail_panel.add_child(margin)
+	var root := VBoxContainer.new()
+	root.add_theme_constant_override("separation", 8)
+	margin.add_child(root)
+	upgrade_detail_title = Label.new()
+	upgrade_detail_title.add_theme_font_size_override("font_size", 22)
+	upgrade_detail_title.add_theme_color_override("font_color", Color(0.86, 0.94, 1.0))
+	upgrade_detail_title.clip_text = true
+	root.add_child(upgrade_detail_title)
+	upgrade_detail_subtitle = Label.new()
+	upgrade_detail_subtitle.add_theme_font_size_override("font_size", 13)
+	upgrade_detail_subtitle.modulate = Color(0.72, 0.81, 0.86)
+	upgrade_detail_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(upgrade_detail_subtitle)
+	root.add_child(HSeparator.new())
+	var detail_scroll := ScrollContainer.new()
+	detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(detail_scroll)
+	upgrade_detail_body = VBoxContainer.new()
+	upgrade_detail_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	upgrade_detail_body.add_theme_constant_override("separation", 8)
+	detail_scroll.add_child(upgrade_detail_body)
+	_apply_upgrade_mode(_upgrade_mode)
+
+func _on_upgrade_weapon_mode_pressed() -> void:
+	_apply_upgrade_mode(&"weapon")
+
+func _on_upgrade_module_mode_pressed() -> void:
+	_apply_upgrade_mode(&"module")
+
+func _apply_upgrade_mode(mode: StringName) -> void:
+	_upgrade_mode = &"module" if mode == &"module" else &"weapon"
+	if upgrade_weapon_mode_button:
+		upgrade_weapon_mode_button.button_pressed = _upgrade_mode == &"weapon"
+	if upgrade_module_mode_button:
+		upgrade_module_mode_button.button_pressed = _upgrade_mode == &"module"
+	_upgrade_hover_item = {}
+	_upgrade_selected_item = {}
+	if _upgrade_mode == &"weapon":
+		selected_upgrade_module = null
+	else:
+		InventoryData.on_select_upg = null
+	_refresh_upgrade_template()
+
+func _refresh_upgrade_template() -> void:
+	if upgrade_item_list == null:
+		return
+	_clear_container(upgrade_item_list)
+	var items := _build_upgrade_items(_upgrade_mode)
+	if items.is_empty():
+		var empty := Label.new()
+		empty.text = LocalizationManager.tr_key("ui.upgrade.empty", "No upgradeable items.")
+		empty.add_theme_color_override("font_color", Color(0.72, 0.81, 0.86))
+		upgrade_item_list.add_child(empty)
+	for item_data in items:
+		_add_upgrade_item_row(item_data)
+	_refresh_upgrade_detail()
+	_refresh_upgrade_action()
+
+func _build_upgrade_items(mode: StringName) -> Array[Dictionary]:
+	var output: Array[Dictionary] = []
+	if mode == &"weapon":
+		for weapon_ref in PlayerData.player_weapon_list:
+			var weapon := weapon_ref as Weapon
+			if weapon == null or not is_instance_valid(weapon):
+				continue
+			output.append(_build_weapon_upgrade_item_data(weapon))
+	else:
+		for module_ref in InventoryData.get_all_owned_modules():
+			var module_instance := module_ref as Module
+			if module_instance == null or not is_instance_valid(module_instance):
+				continue
+			output.append(_build_module_upgrade_item_data(module_instance))
+	return output
+
+func _add_upgrade_item_row(item_data: Dictionary) -> void:
+	var button := Button.new()
+	button.text = _format_upgrade_row_text(item_data)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.custom_minimum_size = Vector2(500, 96)
+	button.expand_icon = true
+	var icon := item_data.get("icon", null) as Texture2D
+	if icon:
+		button.icon = icon
+	button.pressed.connect(_on_upgrade_item_selected.bind(item_data))
+	button.mouse_entered.connect(_on_upgrade_item_hovered.bind(item_data))
+	button.mouse_exited.connect(_on_upgrade_item_unhovered.bind(item_data))
+	upgrade_item_list.add_child(button)
+	item_data["button"] = button
+	_style_management_button(button, _upgrade_items_match(_upgrade_selected_item, item_data))
+
+func _on_upgrade_item_hovered(item_data: Dictionary) -> void:
+	_upgrade_hover_item = item_data.duplicate(true)
+	_refresh_upgrade_detail()
+
+func _on_upgrade_item_unhovered(item_data: Dictionary) -> void:
+	if _upgrade_items_match(_upgrade_hover_item, item_data):
+		_upgrade_hover_item = {}
+	_refresh_upgrade_detail()
+
+func _on_upgrade_item_selected(item_data: Dictionary) -> void:
+	_upgrade_selected_item = item_data.duplicate(true)
+	if str(item_data.get("type", "")) == "weapon":
+		InventoryData.on_select_upg = item_data.get("weapon", null) as Weapon
+		selected_upgrade_module = null
+	else:
+		selected_upgrade_module = item_data.get("module", null) as Module
+		InventoryData.on_select_upg = null
+	_refresh_upgrade_template()
+
+func _refresh_upgrade_detail() -> void:
+	if upgrade_detail_title == null or upgrade_detail_body == null:
+		return
+	var active := _upgrade_hover_item if not _upgrade_hover_item.is_empty() else _upgrade_selected_item
+	if active.is_empty():
+		upgrade_detail_title.text = ""
+		upgrade_detail_subtitle.text = ""
+		_clear_container(upgrade_detail_body)
+		return
+	upgrade_detail_title.text = str(active.get("name", ""))
+	upgrade_detail_title.add_theme_color_override("font_color", active.get("rarity_color", Color(0.86, 0.94, 1.0)))
+	upgrade_detail_subtitle.text = str(active.get("description", ""))
+	_clear_container(upgrade_detail_body)
+	if str(active.get("type", "")) == "weapon":
+		_fill_weapon_upgrade_detail(active)
+	else:
+		_fill_module_upgrade_detail(active)
+
+func _on_upgrade_action_pressed() -> void:
+	if _try_upgrade_selected_template_item():
+		return
+	if upgrade_preview.has_method("try_upgrade_selected_weapon"):
+		upgrade_preview.call("try_upgrade_selected_weapon")
+
+func _try_upgrade_selected_template_item() -> bool:
+	if _upgrade_selected_item.is_empty():
+		show_item_message(LocalizationManager.tr_key("ui.upgrade.select_first", "Select an item first."), 1.3)
+		return false
+	if str(_upgrade_selected_item.get("type", "")) == "weapon":
+		return _try_upgrade_selected_weapon_from_template(_upgrade_selected_item)
+	return _try_upgrade_selected_module_from_template(_upgrade_selected_item)
+
+func _try_upgrade_selected_weapon_from_template(item_data: Dictionary) -> bool:
+	var weapon := item_data.get("weapon", null) as Weapon
+	if weapon == null or not is_instance_valid(weapon):
+		return false
+	if int(weapon.level) >= int(weapon.max_level):
+		show_item_message(LocalizationManager.tr_key("ui.upgrade.fully_upgraded", "Fully upgraded."), 1.4)
+		return false
+	var price := _get_weapon_upgrade_price(weapon)
+	if PlayerData.player_gold < price:
+		show_item_message(LocalizationManager.tr_key("ui.shop.not_enough_gold", "Not enough gold."), 1.4)
+		return false
+	PlayerData.player_gold -= price
+	weapon.set_level(int(weapon.level) + 1)
+	update_upg()
+	return true
+
+func _try_upgrade_selected_module_from_template(item_data: Dictionary) -> bool:
+	var module_instance := item_data.get("module", null) as Module
+	if module_instance == null or not is_instance_valid(module_instance):
+		return false
+	var result := InventoryData.upgrade_module_with_gold(module_instance)
+	if not result.get("ok", false):
+		show_item_message(str(result.get("reason", "")), 1.6)
+		return false
+	update_upg()
+	return true
+
 func _ensure_management_menu_buttons() -> void:
+	var smith_weapon_button := smith_primary_panel.get_node_or_null("OpenUpgradeButton") as Button
+	if smith_weapon_button:
+		smith_weapon_button.position = Vector2(28, 108)
+		smith_weapon_button.size = Vector2(220, 46)
+	if smith_module_upgrade_button == null:
+		smith_module_upgrade_button = Button.new()
+		smith_module_upgrade_button.name = "OpenModuleUpgradeButton"
+		smith_module_upgrade_button.position = Vector2(28, 166)
+		smith_module_upgrade_button.size = Vector2(220, 46)
+		smith_module_upgrade_button.pressed.connect(smith_open_module_upgrade_panel)
+		smith_primary_panel.add_child(smith_module_upgrade_button)
+		_style_management_button(smith_module_upgrade_button)
+
 	var open_module_button := module_primary_panel.get_node_or_null("OpenModuleButton") as Button
 	if open_module_button:
 		open_module_button.position = Vector2(28, 166)
@@ -1546,17 +2250,208 @@ func _create_management_instruction(panel: Panel, node_name: String, position: V
 	panel.add_child(label)
 	return label
 
-func _on_upgrade_action_pressed() -> void:
-	if upgrade_preview.has_method("try_upgrade_selected_weapon"):
-		upgrade_preview.call("try_upgrade_selected_weapon")
-
 func _refresh_upgrade_action() -> void:
 	if upgrade_action_button == null:
 		return
-	var selected := InventoryData.on_select_upg as Weapon
-	var ready := selected != null and is_instance_valid(selected) and bool(upgrade_preview.get("upgradable"))
-	upgrade_action_button.disabled = not ready
-	upgrade_action_button.text = LocalizationManager.tr_key("ui.upgrade.action", "Upgrade Selected Weapon")
+	var ready := false
+	var price := 0
+	if not _upgrade_selected_item.is_empty():
+		if str(_upgrade_selected_item.get("type", "")) == "weapon":
+			var weapon := _upgrade_selected_item.get("weapon", null) as Weapon
+			ready = weapon != null and is_instance_valid(weapon) and int(weapon.level) < int(weapon.max_level)
+			price = _get_weapon_upgrade_price(weapon) if ready else 0
+		else:
+			var module_instance := _upgrade_selected_item.get("module", null) as Module
+			ready = module_instance != null and is_instance_valid(module_instance) and int(module_instance.module_level) < Module.MAX_LEVEL
+			price = _get_module_upgrade_price(module_instance) if ready else 0
+	upgrade_action_button.disabled = not ready or PlayerData.player_gold < price
+	upgrade_action_button.text = LocalizationManager.tr_format(
+		"ui.upgrade.action_price",
+		{"value": price},
+		"升级: %s" % price
+	) if ready else LocalizationManager.tr_key("ui.upgrade.action_empty", "升级")
+
+func _build_weapon_upgrade_item_data(weapon: Weapon) -> Dictionary:
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+	var rarity := weapon_def.get_rarity() if weapon_def else RARITY_UTIL.COMMON
+	return {
+		"type": "weapon",
+		"id": str(weapon.get_instance_id()),
+		"weapon": weapon,
+		"name": LocalizationManager.get_weapon_name_from_node(weapon),
+		"description": LocalizationManager.get_weapon_description_from_definition(weapon_def) if weapon_def else "",
+		"level": int(weapon.level),
+		"max_level": int(weapon.max_level),
+		"price": _get_weapon_upgrade_price(weapon),
+		"icon": weapon.sprite.texture if weapon.sprite else null,
+		"params": _build_weapon_upgrade_param_summary(weapon),
+		"rarity_color": RARITY_UTIL.get_color(rarity),
+	}
+
+func _build_module_upgrade_item_data(module_instance: Module) -> Dictionary:
+	var rarity := module_instance.get_rarity()
+	return {
+		"type": "module",
+		"id": str(module_instance.get_instance_id()),
+		"module": module_instance,
+		"name": LocalizationManager.get_module_name(module_instance),
+		"description": "\n".join(module_instance.get_effect_descriptions()),
+		"level": int(module_instance.module_level),
+		"max_level": Module.MAX_LEVEL,
+		"price": _get_module_upgrade_price(module_instance),
+		"icon": _get_module_texture(module_instance),
+		"params": _build_module_upgrade_param_summary(module_instance),
+		"rarity_color": RARITY_UTIL.get_color(rarity),
+	}
+
+func _format_upgrade_row_text(item_data: Dictionary) -> String:
+	var level := int(item_data.get("level", 0))
+	var max_level := int(item_data.get("max_level", 0))
+	var price := int(item_data.get("price", 0))
+	var price_text := "-" if level >= max_level else str(price)
+	return "%s\nLv.%d/%d    升级: %s\n%s" % [
+		str(item_data.get("name", "")),
+		level,
+		max_level,
+		price_text,
+		str(item_data.get("params", "")),
+	]
+
+func _build_weapon_upgrade_param_summary(weapon: Weapon) -> String:
+	if weapon == null or not is_instance_valid(weapon):
+		return ""
+	var weapon_data_variant: Variant = weapon.get("weapon_data")
+	if not (weapon_data_variant is Dictionary):
+		return ""
+	var weapon_data := weapon_data_variant as Dictionary
+	var current_data := weapon.get_weapon_level_data(weapon.level, weapon_data)
+	var next_data := weapon.get_weapon_level_data(int(weapon.level) + 1, weapon_data)
+	var keys := ["damage", "fire_interval_sec", "ammo", "speed", "projectile_hits", "bullet_count"]
+	var parts := PackedStringArray()
+	for key in keys:
+		if not current_data.has(key):
+			continue
+		var current_value := str(current_data.get(key, "-"))
+		var next_value := str(next_data.get(key, "-")) if not next_data.is_empty() else "-"
+		parts.append("%s %s>%s" % [_format_shop_stat_label(key), current_value, next_value])
+		if parts.size() >= 3:
+			break
+	return " / ".join(parts)
+
+func _build_module_upgrade_param_summary(module_instance: Module) -> String:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return ""
+	var original_level := int(module_instance.module_level)
+	var current_effect := module_instance.get_effect_descriptions()
+	var current_text := current_effect[0] if current_effect.size() > 0 else ""
+	if original_level < Module.MAX_LEVEL:
+		module_instance.set_module_level(original_level + 1)
+		var next_effect := module_instance.get_effect_descriptions()
+		var next_text := next_effect[0] if next_effect.size() > 0 else ""
+		module_instance.set_module_level(original_level)
+		if next_text != "" and next_text != current_text:
+			return "%s > %s" % [current_text, next_text]
+	module_instance.set_module_level(original_level)
+	return current_text
+
+func _get_module_texture(module_instance: Module) -> Texture2D:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return null
+	var sprite := module_instance.get_node_or_null("%Sprite") as Sprite2D
+	return sprite.texture if sprite else null
+
+func _upgrade_items_match(a: Dictionary, b: Dictionary) -> bool:
+	if a.is_empty() or b.is_empty():
+		return false
+	return str(a.get("type", "")) == str(b.get("type", "")) and str(a.get("id", "")) == str(b.get("id", ""))
+
+func _fill_weapon_upgrade_detail(item_data: Dictionary) -> void:
+	var weapon := item_data.get("weapon", null) as Weapon
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	_add_upgrade_detail_section("当前等级", "Lv.%d/%d" % [int(weapon.level), int(weapon.max_level)])
+	_add_upgrade_detail_section("升级价格", "-" if int(weapon.level) >= int(weapon.max_level) else str(_get_weapon_upgrade_price(weapon)))
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+	if weapon_def != null:
+		_add_upgrade_detail_section("武器类型", _format_weapon_definition_types(weapon_def))
+	var weapon_data_variant: Variant = weapon.get("weapon_data")
+	if weapon_data_variant is Dictionary:
+		var weapon_data := weapon_data_variant as Dictionary
+		var current_data := weapon.get_weapon_level_data(weapon.level, weapon_data)
+		var next_data := weapon.get_weapon_level_data(int(weapon.level) + 1, weapon_data)
+		_add_upgrade_detail_header("参数变化")
+		_add_upgrade_detail_text(_format_upgrade_delta(current_data, next_data))
+
+func _fill_module_upgrade_detail(item_data: Dictionary) -> void:
+	var module_instance := item_data.get("module", null) as Module
+	if module_instance == null or not is_instance_valid(module_instance):
+		return
+	_add_upgrade_detail_section("当前等级", "Lv.%d/%d" % [int(module_instance.module_level), Module.MAX_LEVEL])
+	_add_upgrade_detail_section("升级价格", "-" if int(module_instance.module_level) >= Module.MAX_LEVEL else str(_get_module_upgrade_price(module_instance)))
+	_add_upgrade_detail_section("可安装武器类型", _format_module_install_targets(module_instance))
+	var original_level := int(module_instance.module_level)
+	_add_upgrade_detail_header("参数变化")
+	module_instance.set_module_level(original_level)
+	var current_effects := module_instance.get_effect_descriptions()
+	if original_level < Module.MAX_LEVEL:
+		module_instance.set_module_level(original_level + 1)
+		var next_effects := module_instance.get_effect_descriptions()
+		_add_upgrade_detail_text("当前:\n%s\n\n下一级:\n%s" % ["\n".join(current_effects), "\n".join(next_effects)])
+	else:
+		_add_upgrade_detail_text("\n".join(current_effects))
+	module_instance.set_module_level(original_level)
+
+func _format_upgrade_delta(current_data: Dictionary, next_data: Dictionary) -> String:
+	if next_data.is_empty():
+		return _format_stat_dictionary(current_data)
+	var keys := PackedStringArray()
+	for key_variant in current_data.keys():
+		var key := str(key_variant)
+		if not keys.has(key):
+			keys.append(key)
+	for key_variant in next_data.keys():
+		var key := str(key_variant)
+		if not keys.has(key):
+			keys.append(key)
+	var lines := PackedStringArray()
+	for key in keys:
+		var from_value := str(current_data.get(key, "-"))
+		var to_value := str(next_data.get(key, "-"))
+		lines.append("%s: %s -> %s" % [_format_shop_stat_label(key), from_value, to_value])
+	return "\n".join(lines)
+
+func _add_upgrade_detail_section(title: String, value: String) -> void:
+	_add_upgrade_detail_header(title)
+	_add_upgrade_detail_text(value)
+
+func _add_upgrade_detail_header(text: String) -> void:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color(0.63, 0.86, 0.95))
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	upgrade_detail_body.add_child(label)
+
+func _add_upgrade_detail_text(text: String) -> void:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color(0.86, 0.9, 0.92))
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	upgrade_detail_body.add_child(label)
+
+func _get_weapon_upgrade_price(weapon: Weapon) -> int:
+	if weapon == null or not is_instance_valid(weapon):
+		return 0
+	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+	if weapon_def == null:
+		return 0
+	if GlobalVariables.economy_data:
+		return GlobalVariables.economy_data.get_weapon_upgrade_gold(int(weapon_def.price))
+	return maxi(1, int(round(float(weapon_def.price) * 0.5)))
 
 func _refresh_module_upgrade_list() -> void:
 	if module_upgrade_list == null:
@@ -2755,18 +3650,28 @@ func _on_language_changed(_new_locale: String) -> void:
 func _refresh_localized_static_text() -> void:
 	_refresh_shop_mode_title()
 	if shop_instruction_label:
-		shop_instruction_label.text = LocalizationManager.tr_key("ui.purchase.instruction", "Buy weapons on the left and modules on the right.")
+		shop_instruction_label.text = ""
+		shop_instruction_label.visible = false
+	if shop_weapon_mode_button:
+		shop_weapon_mode_button.text = LocalizationManager.tr_key("ui.purchase.weapons", "购买武器")
+	if shop_module_mode_button:
+		shop_module_mode_button.text = LocalizationManager.tr_key("ui.purchase.modules", "购买模组")
 	var upgrade_title := upgrade_panel.get_node_or_null("Title") as Label
 	if upgrade_title:
 		upgrade_title.text = LocalizationManager.tr_key("ui.panel.upgrade_combined", "Upgrade Weapons and Modules")
 	if upgrade_instruction_label:
-		upgrade_instruction_label.text = LocalizationManager.tr_key("ui.upgrade.combined_instruction", "Select a weapon or module, review the cost, then upgrade.")
+		upgrade_instruction_label.text = ""
+		upgrade_instruction_label.visible = false
+	if upgrade_weapon_mode_button:
+		upgrade_weapon_mode_button.text = LocalizationManager.tr_key("ui.upgrade.weapons", "升级武器")
+	if upgrade_module_mode_button:
+		upgrade_module_mode_button.text = LocalizationManager.tr_key("ui.upgrade.modules", "升级模组")
 	var module_title := module_panel.get_node_or_null("Title") as Label
 	if module_title:
 		module_title.text = LocalizationManager.tr_key("ui.panel.module", "Module")
 	if module_instruction_label:
 		module_instruction_label.text = LocalizationManager.tr_key("ui.module.instruction", "Select a temporary module, then choose Equip or Sell.")
-	shop_sell_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
+	shop_sell_button.text = LocalizationManager.tr_key("ui.shop.buy", "购买")
 	shop_cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
 	if shop_sell_summary_title:
 		shop_sell_summary_title.text = LocalizationManager.tr_key("ui.shop.sell.title", "Weapons Marked for Sale")
@@ -2804,27 +3709,30 @@ func _refresh_localized_static_text() -> void:
 	var merchant_subtitle := merchant_primary_panel.get_node_or_null("SubTitle") as Label
 	if merchant_subtitle:
 		merchant_subtitle.text = LocalizationManager.tr_key(
-			"ui.merchant.subtitle",
-			"Buy weapons and modules"
+			"ui.merchant.purchase.subtitle",
+			"选择购买类别"
 		)
 	var merchant_title := merchant_primary_panel.get_node_or_null("Title") as Label
 	if merchant_title:
-		merchant_title.text = LocalizationManager.tr_key("ui.panel.purchase", "Purchase")
+		merchant_title.text = LocalizationManager.tr_key("ui.merchant.purchase.title", "购买")
 	var buy_button := merchant_primary_panel.get_node_or_null("OpenBuyButton") as Button
 	if buy_button:
-		buy_button.text = LocalizationManager.tr_key("ui.purchase.open", "Buy Weapons and Modules")
+		buy_button.text = LocalizationManager.tr_key("ui.purchase.weapons", "购买武器")
 	var warehouse_button := merchant_primary_panel.get_node_or_null("OpenSellButton") as Button
 	if warehouse_button:
-		warehouse_button.visible = false
+		warehouse_button.visible = true
+		warehouse_button.text = LocalizationManager.tr_key("ui.purchase.modules", "购买模组")
 	var smith_title := smith_primary_panel.get_node_or_null("Title") as Label
 	if smith_title:
-		smith_title.text = LocalizationManager.tr_key("ui.panel.upgrade_combined", "Upgrade Weapons and Modules")
+		smith_title.text = LocalizationManager.tr_key("ui.smith.upgrade.title", "升级")
 	var smith_subtitle := smith_primary_panel.get_node_or_null("SubTitle") as Label
 	if smith_subtitle:
-		smith_subtitle.text = LocalizationManager.tr_key("ui.smith.subtitle", "Upgrade owned weapons and modules")
+		smith_subtitle.text = LocalizationManager.tr_key("ui.smith.upgrade.subtitle", "选择升级类别")
 	var smith_open := smith_primary_panel.get_node_or_null("OpenUpgradeButton") as Button
 	if smith_open:
-		smith_open.text = LocalizationManager.tr_key("ui.upgrade.open", "Upgrade Weapons and Modules")
+		smith_open.text = LocalizationManager.tr_key("ui.smith.upgrade.weapon", "武器")
+	if smith_module_upgrade_button:
+		smith_module_upgrade_button.text = LocalizationManager.tr_key("ui.smith.upgrade.module", "模组")
 	_refresh_upgrade_action()
 	_refresh_module_upgrade_action()
 	_refresh_module_action()
