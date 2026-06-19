@@ -37,17 +37,21 @@ const WEAPON_BRANCH_ID_ALIASES := {
 func _ready():
 	load_game()
 
-func prepare_world_data() -> void:
+func prepare_world_data(include_deferred_runtime_data: bool = false) -> void:
 	if GlobalVariables.weapon_list.is_empty():
 		load_weapon_data()
-	if GlobalVariables.weapon_branch_list.is_empty():
-		load_weapon_branch_data()
-	if GlobalVariables.weapon_passive_branch_list.is_empty():
-		load_weapon_passive_branch_data()
 	if GlobalVariables.mecha_list.is_empty():
 		load_mecha_data()
 	if GlobalVariables.economy_data == null:
 		load_economy_data()
+	if include_deferred_runtime_data:
+		prepare_deferred_runtime_data()
+
+func prepare_deferred_runtime_data() -> void:
+	if GlobalVariables.weapon_branch_list.is_empty():
+		load_weapon_branch_data()
+	if GlobalVariables.weapon_passive_branch_list.is_empty():
+		load_weapon_passive_branch_data()
 
 # This function is used for locate weapon file location which stored in data/weapons.
 func load_weapon_data():

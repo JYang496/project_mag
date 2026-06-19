@@ -152,8 +152,8 @@ func _on_exchange(stored_weapon: Weapon, equipped_weapon: Weapon) -> void:
 
 func _on_close_pressed() -> void:
 	var ui = GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("warehouse_back_to_merchant"):
-		ui.call("warehouse_back_to_merchant")
+	if ui and is_instance_valid(ui) and ui.has_method("warehouse_back_to_purchase"):
+		ui.call("warehouse_back_to_purchase")
 	else:
 		close_panel()
 

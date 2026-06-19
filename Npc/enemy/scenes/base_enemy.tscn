@@ -13,6 +13,20 @@ collision_mask = 1
 script = ExtResource("2_31lbh")
 damage = 0
 is_boss = false
+combat_role = "melee"
+loot_value_multiplier = 1.0
+spawn_cost = 3
+spawn_tags = Array[StringName]([])
+spawn_alive_cap = 0
+spawn_batch_cap = 0
+support_role = &""
+body_push_enabled = true
+body_push_strength = 0.45
+body_push_decay = 900.0
+body_push_max_speed = 260.0
+body_push_min_speed_delta = 18.0
+crowd_breakthrough_width_multiplier = 1.5
+crowd_breakthrough_side_push_strength = 0.6
 
 [node name="HurtBox" parent="." index="0"]
 collision_layer = 4

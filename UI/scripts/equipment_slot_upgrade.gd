@@ -7,8 +7,8 @@ func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK"):
 		InventoryData.on_select_upg = item
 		var ui = GlobalVariables.ui
-		if ui and is_instance_valid(ui) and ui.has_method("update_upg"):
-			ui.update_upg()
+		if ui and is_instance_valid(ui) and ui.upgrade_management_controller:
+			ui.upgrade_management_controller.update_upg()
 
 func update() -> void:
 	super.update()

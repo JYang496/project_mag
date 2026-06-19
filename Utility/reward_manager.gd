@@ -486,8 +486,8 @@ func _grant_weapon_upgrade_reward(reward: RewardInfo) -> bool:
 		if weapon.has_method("calculate_status"):
 			weapon.call("calculate_status")
 	if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui):
-		if GlobalVariables.ui.has_method("update_upg"):
-			GlobalVariables.ui.update_upg()
+		if GlobalVariables.ui.upgrade_management_controller:
+			GlobalVariables.ui.upgrade_management_controller.update_upg()
 		if GlobalVariables.ui.has_method("refresh_border"):
 			GlobalVariables.ui.refresh_border()
 	return true

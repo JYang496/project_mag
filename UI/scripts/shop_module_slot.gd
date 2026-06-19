@@ -18,6 +18,9 @@ var purchasable := false
 var hover_over := false
 var selected := false
 
+static var _module_scene_cache_built := false
+static var _module_scene_cache: Array[PackedScene] = []
+
 @export var border_color: Color = Color(1, 1, 0)
 @export var border_width: float = 4.0
 
@@ -150,21 +153,36 @@ func _clear_preview() -> void:
 
 func _build_module_candidates() -> Array[PackedScene]:
 	var candidates: Array[PackedScene] = []
+	_ensure_module_scene_cache()
+	for scene in _module_scene_cache:
+		if scene == null:
+			continue
+		if not _is_owned_full_level(scene.resource_path):
+			candidates.append(scene)
+	return candidates
+
+static func clear_module_scene_cache() -> void:
+	_module_scene_cache_built = false
+	_module_scene_cache.clear()
+
+static func _ensure_module_scene_cache() -> void:
+	if _module_scene_cache_built:
+		return
+	_module_scene_cache_built = true
+	_module_scene_cache.clear()
 	var dir := DirAccess.open(MODULE_DIRECTORY_PATH)
 	if dir == null:
-		return candidates
+		return
 	dir.list_dir_begin()
 	var file_name := dir.get_next()
 	while file_name != "":
 		if not dir.current_is_dir() and file_name.to_lower().ends_with(".tscn") and file_name != "wmod_base.tscn":
 			var scene_path := MODULE_DIRECTORY_PATH + file_name
-			if not _is_owned_full_level(scene_path):
-				var scene := load(scene_path) as PackedScene
-				if scene:
-					candidates.append(scene)
+			var scene := load(scene_path) as PackedScene
+			if scene:
+				_module_scene_cache.append(scene)
 		file_name = dir.get_next()
 	dir.list_dir_end()
-	return candidates
 
 func _is_owned_full_level(scene_path: String) -> bool:
 	for module_instance in InventoryData.get_all_owned_modules():
@@ -208,24 +226,24 @@ func _build_module_requirement_summary(module_instance: Module) -> String:
 
 func _notify_shop_hover() -> void:
 	var ui := GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("set_shop_hover_item"):
-		ui.call("set_shop_hover_item", _build_shop_item_data())
+	if ui and is_instance_valid(ui) and ui.purchase_management_controller:
+		ui.purchase_management_controller.set_hover_item(_build_shop_item_data())
 
 func _notify_shop_hover_clear() -> void:
 	var ui := GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("clear_shop_hover_item"):
-		ui.call("clear_shop_hover_item", _build_shop_item_data())
+	if ui and is_instance_valid(ui) and ui.purchase_management_controller:
+		ui.purchase_management_controller.clear_hover_item(_build_shop_item_data())
 
 func _notify_shop_selected() -> void:
 	var ui := GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("set_shop_selected_item"):
-		ui.call("set_shop_selected_item", _build_shop_item_data())
+	if ui and is_instance_valid(ui) and ui.purchase_management_controller:
+		ui.purchase_management_controller.set_selected_item(_build_shop_item_data())
+		ui.purchase_management_controller.mark_purchase_action_dirty()
 
 func _notify_shop_clear() -> void:
 	var ui := GlobalVariables.ui
-	if ui and is_instance_valid(ui):
+	if ui and is_instance_valid(ui) and ui.purchase_management_controller:
 		var data := _build_shop_item_data()
-		if ui.has_method("clear_shop_hover_item"):
-			ui.call("clear_shop_hover_item", data)
-		if ui.has_method("clear_shop_selected_item"):
-			ui.call("clear_shop_selected_item", data)
+		ui.purchase_management_controller.clear_hover_item(data)
+		ui.purchase_management_controller.clear_selected_item(data)
+		ui.purchase_management_controller.mark_purchase_action_dirty()

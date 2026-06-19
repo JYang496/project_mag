@@ -12,11 +12,21 @@ var time_label: Label
 var equipped_label: Label
 var augments_label: Label
 
+const HUD_MARGIN := 16.0
+const CONTINUOUS_REFRESH_INTERVAL := 0.1
+
+var _continuous_refresh_timer := 0.0
+
 var _hp_bar_display_value: float = 0.0
 var _hp_bar_tween: Tween
+var _last_hp_text: String = ""
 var _last_heat_label_text: String = ""
 var _last_ammo_label_text: String = ""
 var _last_weapon_state_text: String = ""
+var _last_gold_text: String = ""
+var _last_resource_text: String = ""
+var _last_time_text: String = ""
+var _last_augments_text: String = ""
 
 var _hp_bar_anim_time: float = 0.2
 var _hp_bar_trans: Tween.TransitionType = Tween.TRANS_SINE
@@ -50,6 +60,73 @@ func configure_hp_bar_anim(anim_time: float, trans: Tween.TransitionType, ease: 
 	_hp_bar_trans = trans
 	_hp_bar_ease = ease
 
+func layout_hud(viewport_size: Vector2, hp_label_root: Control, weapon_selector: WeaponSelector = null) -> void:
+	if equipped_label and is_instance_valid(equipped_label):
+		equipped_label.position = Vector2(HUD_MARGIN, HUD_MARGIN)
+	if weapon_selector and is_instance_valid(weapon_selector):
+		weapon_selector.set_layout_origin(Vector2(HUD_MARGIN + 12.0, HUD_MARGIN - 2.0))
+	if hp_label_root and is_instance_valid(hp_label_root):
+		hp_label_root.position = Vector2(HUD_MARGIN, viewport_size.y - 120.0)
+	if heat_label and is_instance_valid(heat_label):
+		var heat_spacing := 8.0
+		var heat_height := maxf(heat_label.get_combined_minimum_size().y, 20.0)
+		var hp_y := hp_label_root.position.y if hp_label_root and is_instance_valid(hp_label_root) else viewport_size.y - 120.0
+		heat_label.position = Vector2(HUD_MARGIN, hp_y - heat_height - heat_spacing)
+	if ammo_label and is_instance_valid(ammo_label):
+		ammo_label.position = Vector2(64.0, 64.0)
+	if weapon_state_label and is_instance_valid(weapon_state_label):
+		weapon_state_label.position = Vector2(HUD_MARGIN, viewport_size.y - 300.0)
+	if gold_label and is_instance_valid(gold_label):
+		gold_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN)
+	if time_label and is_instance_valid(time_label):
+		time_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN + 56.0)
+	if resource_label and is_instance_valid(resource_label):
+		resource_label.position = Vector2(64.0, 88.0)
+
+func ensure_heat_label(character_root: Control) -> Label:
+	if heat_label != null and is_instance_valid(heat_label):
+		return heat_label
+	heat_label = Label.new()
+	heat_label.name = "Heat"
+	heat_label.text = LocalizationManager.tr_key("ui.hud.heat_empty", "Heat: --")
+	heat_label.visible = false
+	character_root.add_child(heat_label)
+	return heat_label
+
+func ensure_ammo_label(hp_label_root: Control) -> Label:
+	if ammo_label != null and is_instance_valid(ammo_label):
+		return ammo_label
+	ammo_label = Label.new()
+	ammo_label.name = "Ammo"
+	ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
+	ammo_label.visible = true
+	hp_label_root.add_child(ammo_label)
+	return ammo_label
+
+func ensure_resource_label_under_hp(current_resource_label: Label, hp_label_root: Control) -> Label:
+	resource_label = current_resource_label
+	if resource_label == null or not is_instance_valid(resource_label):
+		return resource_label
+	if hp_label_root == null or not is_instance_valid(hp_label_root):
+		return resource_label
+	if resource_label.get_parent() == hp_label_root:
+		return resource_label
+	var previous_parent := resource_label.get_parent()
+	if previous_parent:
+		previous_parent.remove_child(resource_label)
+	hp_label_root.add_child(resource_label)
+	return resource_label
+
+func ensure_weapon_state_label(character_root: Control) -> Label:
+	if weapon_state_label != null and is_instance_valid(weapon_state_label):
+		return weapon_state_label
+	weapon_state_label = Label.new()
+	weapon_state_label.name = "WeaponState"
+	weapon_state_label.text = LocalizationManager.tr_key("ui.hud.weapon_state_none", "Main: -- | WS: -- | PS: --")
+	weapon_state_label.visible = false
+	character_root.add_child(weapon_state_label)
+	return weapon_state_label
+
 func init_hp_bar() -> void:
 	if hp_bar == null or not is_instance_valid(hp_bar):
 		return
@@ -60,15 +137,61 @@ func init_hp_bar() -> void:
 	_hp_bar_display_value = hp_bar.value
 
 func refresh_static_texts() -> void:
+	_clear_text_cache()
 	if equipped_label and is_instance_valid(equipped_label):
 		equipped_label.text = LocalizationManager.tr_key("ui.hud.equipped", "Equipped:")
 
 func refresh_dynamic_texts() -> void:
+	refresh_hp()
+	refresh_heat()
+	refresh_ammo()
+	refresh_weapon_state()
+	refresh_inventory()
+	refresh_resource()
+	refresh_time()
+
+func refresh_continuous(delta: float) -> bool:
+	_continuous_refresh_timer += maxf(delta, 0.0)
+	if _continuous_refresh_timer < CONTINUOUS_REFRESH_INTERVAL:
+		return false
+	_continuous_refresh_timer = 0.0
+	refresh_heat()
+	refresh_ammo()
+	refresh_weapon_state()
+	refresh_resource()
+	refresh_time()
+	return true
+
+func refresh_hp() -> void:
 	_refresh_hp_hud()
+
+func refresh_heat() -> void:
 	_update_heat_label_text()
+
+func refresh_ammo() -> void:
 	_update_ammo_label_text()
+
+func refresh_weapon_state() -> void:
 	_update_weapon_state_label_text()
-	_refresh_hud_text_values()
+
+func refresh_inventory() -> void:
+	_refresh_inventory_text_values()
+
+func refresh_resource() -> void:
+	_refresh_resource_text_value()
+
+func refresh_time() -> void:
+	_refresh_time_text_value()
+
+func _clear_text_cache() -> void:
+	_last_hp_text = ""
+	_last_heat_label_text = ""
+	_last_ammo_label_text = ""
+	_last_weapon_state_text = ""
+	_last_gold_text = ""
+	_last_resource_text = ""
+	_last_time_text = ""
+	_last_augments_text = ""
 
 func _set_hp_bar_max(max_hp: int) -> void:
 	if hp_bar == null or not is_instance_valid(hp_bar):
@@ -98,7 +221,10 @@ func _refresh_hp_hud() -> void:
 	var max_hp: int = max(1, int(PlayerData.player_max_hp))
 	var current_hp: int = clampi(int(PlayerData.player_hp), 0, max_hp)
 	if hp_label_text and is_instance_valid(hp_label_text):
-		hp_label_text.text = LocalizationManager.tr_format("ui.hud.hp", {"current": current_hp, "max": max_hp}, "HP: %d/%d" % [current_hp, max_hp])
+		var next_text := LocalizationManager.tr_format("ui.hud.hp", {"current": current_hp, "max": max_hp}, "HP: %d/%d" % [current_hp, max_hp])
+		if _last_hp_text != next_text:
+			_last_hp_text = next_text
+			hp_label_text.text = next_text
 	_set_hp_bar_max(max_hp)
 	_animate_hp_bar_to(current_hp)
 
@@ -233,25 +359,42 @@ func _update_weapon_state_label_text() -> void:
 		_last_weapon_state_text = next_state_text
 		weapon_state_label.text = next_state_text
 
-func _refresh_hud_text_values() -> void:
+func _refresh_inventory_text_values() -> void:
 	if equipped_label and is_instance_valid(equipped_label):
 		equipped_label.text = LocalizationManager.tr_key("ui.hud.equipped", "Equipped:")
 	if augments_label and is_instance_valid(augments_label):
-		augments_label.text = str(PlayerData.player_augment_list)
+		var next_augments_text := str(PlayerData.player_augment_list)
+		if _last_augments_text != next_augments_text:
+			_last_augments_text = next_augments_text
+			augments_label.text = next_augments_text
 	if gold_label and is_instance_valid(gold_label):
-		gold_label.text = LocalizationManager.tr_format("ui.hud.gold", {"value": PlayerData.player_gold}, "Gold: %s" % str(PlayerData.player_gold))
+		var next_gold_text := LocalizationManager.tr_format("ui.hud.gold", {"value": PlayerData.player_gold}, "Gold: %s" % str(PlayerData.player_gold))
+		if _last_gold_text != next_gold_text:
+			_last_gold_text = next_gold_text
+			gold_label.text = next_gold_text
+
+func _refresh_resource_text_value() -> void:
 	if resource_label and is_instance_valid(resource_label):
+		var next_resource_text := ""
 		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("get_current_energy"):
-			resource_label.text = LocalizationManager.tr_format(
+			next_resource_text = LocalizationManager.tr_format(
 				"ui.hud.energy",
 				{"value": int(round(PlayerData.player.get_current_energy()))},
 				"Energy: %d" % int(round(PlayerData.player.get_current_energy()))
 			)
 		else:
-			resource_label.text = LocalizationManager.tr_key("ui.hud.energy_none", "Energy: --")
+			next_resource_text = LocalizationManager.tr_key("ui.hud.energy_none", "Energy: --")
+		if _last_resource_text != next_resource_text:
+			_last_resource_text = next_resource_text
+			resource_label.text = next_resource_text
+
+func _refresh_time_text_value() -> void:
 	if time_label and is_instance_valid(time_label):
 		var time_remaining := PhaseManager.get_battle_time_remaining() if PhaseManager.has_method("get_battle_time_remaining") else PhaseManager.battle_time
-		time_label.text = LocalizationManager.tr_format("ui.hud.time", {"value": time_remaining}, "Time Left: %s" % str(time_remaining))
+		var next_time_text := LocalizationManager.tr_format("ui.hud.time", {"value": time_remaining}, "Time Left: %s" % str(time_remaining))
+		if _last_time_text != next_time_text:
+			_last_time_text = next_time_text
+			time_label.text = next_time_text
 
 func refresh_heat_fallback_text() -> void:
 	if heat_label and is_instance_valid(heat_label) and not heat_label.visible:

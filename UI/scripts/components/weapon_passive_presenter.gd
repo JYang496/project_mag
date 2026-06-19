@@ -1,6 +1,8 @@
 extends RefCounted
 class_name WeaponPassivePresenter
 
+var _passive_meta_cache: Dictionary = {}
+
 func get_equipped_weapon_passive_statuses() -> Array[Dictionary]:
 	var output: Array[Dictionary] = []
 	if PlayerData.player_weapon_list == null:
@@ -54,10 +56,14 @@ func _build_presenter_status(weapon: Node, weapon_index: int, passive_status: Di
 func _get_passive_meta(passive_id: String) -> Resource:
 	if passive_id.strip_edges() == "":
 		return null
+	if _passive_meta_cache.has(passive_id):
+		return _passive_meta_cache[passive_id] as Resource
 	if DataHandler == null or not DataHandler.has_method("read_weapon_passive_branch_definition"):
 		return null
 	var meta_variant: Variant = DataHandler.call("read_weapon_passive_branch_definition", passive_id)
-	return meta_variant as Resource
+	var meta := meta_variant as Resource
+	_passive_meta_cache[passive_id] = meta
+	return meta
 
 func _get_meta_string(meta: Resource, key: String, fallback: String) -> String:
 	if meta == null:

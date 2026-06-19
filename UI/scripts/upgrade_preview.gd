@@ -107,7 +107,8 @@ func try_upgrade_selected_weapon() -> bool:
 		return false
 	PlayerData.player_gold -= cost_price
 	upgrade_level.emit(int(weapon_node.level) + 1)
-	GlobalVariables.ui.update_upg()
+	if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.upgrade_management_controller:
+		GlobalVariables.ui.upgrade_management_controller.update_upg()
 	return true
 
 func combine_status(node):

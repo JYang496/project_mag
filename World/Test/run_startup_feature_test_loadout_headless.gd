@@ -15,7 +15,7 @@ func _run() -> void:
 		return
 	get_tree().root.add_child(player)
 	await get_tree().process_frame
-	PLAYER_SPAWNER_SCRIPT.grant_startup_feature_test_loadout(player)
+	PLAYER_SPAWNER_SCRIPT.grant_startup_feature_test_loadout(player, true)
 
 	if PlayerData.player_weapon_list.size() != PLAYER_SPAWNER_SCRIPT.STARTUP_FEATURE_TEST_WEAPON_COUNT:
 		_fail(

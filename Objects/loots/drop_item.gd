@@ -93,6 +93,16 @@ func _pick_weapon() -> void:
 	if item == null or not is_instance_valid(item):
 		queue_free()
 		return
+	var ui = GlobalVariables.ui
+	if ui and is_instance_valid(ui) and ui.has_method("request_weapon_pickup_selection"):
+		var queued := bool(ui.request_weapon_pickup_selection(item as Weapon))
+		if queued:
+			item = null
+			interact_hint.visible = false
+			player_near = false
+			set_process_input(false)
+			queue_free()
+			return
 	InventoryData.obtain_weapon_reward(item as Weapon)
 	item = null
 	queue_free()
@@ -101,6 +111,14 @@ func _pick_module() -> void:
 	if _resolved:
 		return
 	var ui = GlobalVariables.ui
+	if ui and is_instance_valid(ui) and ui.has_method("request_module_pickup_selection"):
+		var queued := bool(ui.request_module_pickup_selection(module_instance, Callable(self, "_on_module_selection_completed")))
+		if queued:
+			_resolved = true
+			interact_hint.visible = false
+			player_near = false
+			set_process_input(false)
+			return
 	if ui and is_instance_valid(ui) and ui.has_method("request_module_equip_selection"):
 		var opened: bool = bool(ui.request_module_equip_selection(module_instance, Callable(self, "_on_module_selection_completed")))
 		if opened:

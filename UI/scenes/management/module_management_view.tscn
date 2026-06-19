@@ -1,0 +1,76 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://UI/scripts/management/module_management_view.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://sedqknpaalyt" path="res://UI/scenes/equipment_slot.tscn" id="2_equipment_slot"]
+[ext_resource type="Script" uid="uid://xk8jc704kfv5" path="res://UI/scripts/equipment_slot_module.gd" id="3_equipment_module"]
+
+[node name="ModuleManagementView" type="Control"]
+offset_right = 1000.0
+offset_bottom = 600.0
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="TemporaryModulesScroll" type="ScrollContainer" parent="."]
+custom_minimum_size = Vector2(500, 392)
+layout_mode = 0
+offset_left = 25.0
+offset_top = 78.0
+offset_right = 525.0
+offset_bottom = 470.0
+
+[node name="Modules" type="GridContainer" parent="TemporaryModulesScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 4
+
+[node name="EquippedM" type="GridContainer" parent="."]
+custom_minimum_size = Vector2(440, 440)
+layout_mode = 0
+offset_left = 540.0
+offset_top = 80.0
+offset_right = 980.0
+offset_bottom = 520.0
+columns = 2
+
+[node name="InvEquipment" parent="EquippedM" instance=ExtResource("2_equipment_slot")]
+layout_mode = 2
+script = ExtResource("3_equipment_module")
+
+[node name="InvEquipment2" parent="EquippedM" instance=ExtResource("2_equipment_slot")]
+layout_mode = 2
+script = ExtResource("3_equipment_module")
+equipment_index = 1
+
+[node name="InvEquipment3" parent="EquippedM" instance=ExtResource("2_equipment_slot")]
+layout_mode = 2
+script = ExtResource("3_equipment_module")
+equipment_index = 2
+
+[node name="InvEquipment4" parent="EquippedM" instance=ExtResource("2_equipment_slot")]
+layout_mode = 2
+script = ExtResource("3_equipment_module")
+equipment_index = 3
+
+[node name="ModuleSelectionLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 25.0
+offset_top = 480.0
+offset_right = 525.0
+offset_bottom = 515.0
+clip_text = true
+
+[node name="ModuleEquipButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 25.0
+offset_top = 522.0
+offset_right = 263.0
+offset_bottom = 574.0
+text = "Equip Selected Module"
+
+[node name="ModuleSellButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 287.0
+offset_top = 522.0
+offset_right = 525.0
+offset_bottom = 574.0
+text = "Sell Selected Module"

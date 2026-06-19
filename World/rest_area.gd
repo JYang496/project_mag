@@ -73,12 +73,12 @@ const ZONE4_HOLD_BOOST_SOURCE_ID: StringName = &"rest_zone4_hold_boost"
 const BLOCKING_UI_ROOTS: Array[StringName] = [
 	&"ShoppingRootv2",
 	&"UpgradeRootv2",
+	&"ModuleManagementRoot",
 	&"ModuleRoot",
 	&"PauseMenuRoot",
 	&"MerchantRoot",
 	&"SmithRoot",
 	&"ModuleMenuRoot",
-	&"BossRoot",
 	&"RouteSelectionPanel",
 	&"RewardSelectionPanel",
 	&"BranchSelectPanel",
@@ -603,8 +603,9 @@ func _handle_right_click() -> void:
 	if not menu_open:
 		return
 	var ui = GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("handle_rest_area_right_cancel"):
-		var consumed := bool(ui.call("handle_rest_area_right_cancel"))
+	var rest_ui_controller = ui.rest_area_ui_controller if ui and is_instance_valid(ui) else null
+	if rest_ui_controller != null:
+		var consumed := bool(rest_ui_controller.handle_right_cancel())
 		if consumed:
 			_sync_menu_open_with_ui()
 			get_viewport().set_input_as_handled()
@@ -618,9 +619,10 @@ func _sync_menu_open_with_ui() -> void:
 	var ui = GlobalVariables.ui
 	if ui == null or not is_instance_valid(ui):
 		return
-	if not ui.has_method("is_rest_area_menu_visible"):
+	var rest_ui_controller = ui.rest_area_ui_controller
+	if rest_ui_controller == null:
 		return
-	var ui_menu_visible := bool(ui.call("is_rest_area_menu_visible"))
+	var ui_menu_visible := bool(rest_ui_controller.is_menu_visible())
 	if menu_open == ui_menu_visible:
 		return
 	menu_open = ui_menu_visible
@@ -734,6 +736,8 @@ func _is_mouse_over_ui() -> bool:
 	var viewport := get_viewport()
 	if viewport == null:
 		return false
+	if _is_mouse_inside_visible_blocking_ui_root(viewport.get_mouse_position()):
+		return true
 	var hovered := viewport.gui_get_hovered_control()
 	if hovered == null or not hovered.is_visible_in_tree():
 		return false
@@ -760,30 +764,40 @@ func _is_inside_blocking_ui_branch(control: Control) -> bool:
 		current = current.get_parent()
 	return false
 
+func _is_mouse_inside_visible_blocking_ui_root(mouse_position: Vector2) -> bool:
+	var ui = GlobalVariables.ui
+	if ui == null or not is_instance_valid(ui):
+		return false
+	var gui := ui.get_node_or_null("GUI") as Control
+	if gui == null:
+		return false
+	return _control_tree_has_blocking_root_at(gui, mouse_position)
+
+func _control_tree_has_blocking_root_at(control: Control, mouse_position: Vector2) -> bool:
+	if control == null or not control.is_visible_in_tree():
+		return false
+	if BLOCKING_UI_ROOTS.has(StringName(control.name)) and control.get_global_rect().has_point(mouse_position):
+		return true
+	for child in control.get_children():
+		var child_control := child as Control
+		if child_control != null and _control_tree_has_blocking_root_at(child_control, mouse_position):
+			return true
+	return false
+
 func _on_rest_menu_requested(zone_id: int, _zone_center_global: Vector2) -> void:
 	var ui = GlobalVariables.ui
 	if ui == null or not is_instance_valid(ui):
 		return
+	if ui.rest_area_ui_controller == null:
+		return
 	if zone_id == ZONE_ID_MERCHANT:
-		if ui.has_method("open_rest_area_merchant_menu"):
-			ui.call("open_rest_area_merchant_menu")
-			return
-		if ui.has_method("merchant_menu_in"):
-			ui.call("merchant_menu_in")
+		ui.rest_area_ui_controller.open_menu(&"purchase")
 		return
 	if zone_id == ZONE_ID_SMITH:
-		if ui.has_method("open_rest_area_smith_menu"):
-			ui.call("open_rest_area_smith_menu")
-			return
-		if ui.has_method("smith_menu_in"):
-			ui.call("smith_menu_in")
+		ui.rest_area_ui_controller.open_menu(&"upgrade")
 		return
 	if zone_id == ZONE_ID_MODULE:
-		if ui.has_method("open_rest_area_module_menu"):
-			ui.call("open_rest_area_module_menu")
-			return
-		if ui.has_method("module_menu_in"):
-			ui.call("module_menu_in")
+		ui.rest_area_ui_controller.open_menu(&"warehouse")
 		return
 
 func _on_rest_menu_cancelled() -> void:
@@ -793,14 +807,9 @@ func _close_rest_area_primary_menu_if_open() -> void:
 	var ui = GlobalVariables.ui
 	if ui == null or not is_instance_valid(ui):
 		return
-	if ui.has_method("close_rest_area_primary_menu"):
-		ui.call("close_rest_area_primary_menu")
+	if ui.rest_area_ui_controller:
+		ui.rest_area_ui_controller.close_primary_menu()
 		return
-	if ui.has_method("close_rest_area_merchant_menu"):
-		ui.call("close_rest_area_merchant_menu")
-		return
-	if ui.has_method("merchant_menu_out"):
-		ui.call("merchant_menu_out")
 
 func _refresh_zone_hover_hint() -> void:
 	var ui = GlobalVariables.ui

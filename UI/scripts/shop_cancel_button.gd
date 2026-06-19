@@ -10,6 +10,6 @@ extends Button
 
 func _on_button_up() -> void:
 	var ui = GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("set_shop_sell_mode"):
-		ui.set_shop_sell_mode(false)
+	if ui and is_instance_valid(ui) and ui.purchase_management_controller:
+		ui.purchase_management_controller.set_sell_mode(false)
 	

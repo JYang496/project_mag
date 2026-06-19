@@ -6,6 +6,8 @@ const UI_SCENE := preload("res://UI/scenes/UI.tscn")
 const TEST_MODULE_SCENE := preload("res://Player/Weapons/Modules/wmod_damage_up_stat.tscn")
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	print("RestAreaZoneHintTest: START")
 	call_deferred("_run")
 
 func _run() -> void:
@@ -30,7 +32,7 @@ func _run() -> void:
 		_fail("zone hint card style is missing")
 		return
 
-	ui.open_rest_area_merchant_menu()
+	ui.rest_area_ui_controller.open_menu(&"purchase")
 	rest_area.menu_open = true
 	rest_area.selected_zone_id = 0
 	await get_tree().process_frame
@@ -39,51 +41,51 @@ func _run() -> void:
 	if rest_area.menu_open:
 		_fail("primary menu cancel left the rest-area menu state open")
 		return
-	if ui.is_rest_area_merchant_active():
+	if ui.rest_area_ui_controller.is_purchase_active():
 		_fail("primary menu cancel did not close the UI menu")
 		return
 
-	ui.open_rest_area_merchant_menu()
+	ui.rest_area_ui_controller.open_menu(&"purchase")
 	rest_area.menu_open = true
 	rest_area.selected_zone_id = 0
-	ui.merchant_open_buy_panel()
+	ui.rest_area_ui_controller.open_purchase_weapon_panel()
 	await get_tree().create_timer(0.25).timeout
-	ui.shopping_panel_out()
+	ui.rest_area_ui_controller.close_purchase_panel()
 	await get_tree().process_frame
 	rest_area._sync_menu_open_with_ui()
 	if rest_area.menu_open:
 		_fail("purchase panel exit left the rest-area menu state open")
 		return
 
-	ui.open_rest_area_smith_menu()
+	ui.rest_area_ui_controller.open_menu(&"upgrade")
 	rest_area.menu_open = true
 	rest_area.selected_zone_id = 1
-	ui.smith_open_upgrade_panel()
+	ui.rest_area_ui_controller.open_upgrade_panel()
 	await get_tree().create_timer(0.25).timeout
-	ui.upg_panel_out()
+	ui.rest_area_ui_controller.close_upgrade_panel()
 	await get_tree().process_frame
 	rest_area._sync_menu_open_with_ui()
 	if rest_area.menu_open:
 		_fail("upgrade panel exit left the rest-area menu state open")
 		return
 
-	ui.open_rest_area_module_menu()
+	ui.rest_area_ui_controller.open_menu(&"warehouse")
 	rest_area.menu_open = true
 	rest_area.selected_zone_id = 2
-	ui.module_open_management_panel()
+	ui.rest_area_ui_controller.open_warehouse_management_panel()
 	await get_tree().create_timer(0.25).timeout
-	ui.module_panel_out()
-	ui.module_menu_root.visible = false
+	ui.rest_area_ui_controller.close_warehouse_panel()
+	ui.warehouse_primary_root.visible = false
 	await get_tree().process_frame
 	rest_area._sync_menu_open_with_ui()
 	if rest_area.menu_open:
 		_fail("module warehouse exit left the rest-area menu state open")
 		return
 
-	ui.open_rest_area_module_menu()
+	ui.rest_area_ui_controller.open_menu(&"warehouse")
 	rest_area.menu_open = true
 	rest_area.selected_zone_id = 2
-	ui.module_menu_root.visible = false
+	ui.warehouse_primary_root.visible = false
 	await get_tree().process_frame
 	rest_area._sync_menu_open_with_ui()
 	if rest_area.menu_open:
@@ -97,10 +99,15 @@ func _run() -> void:
 		_fail("pending module count did not refresh")
 		return
 
-	ui.module_root.visible = true
+	ui.warehouse_management_root.visible = true
 	await get_tree().process_frame
 	if not merchant.visible or not smith.visible or not module.visible:
 		_fail("zone hints were hidden while a rest-area menu was open")
+		return
+	get_viewport().warp_mouse(Vector2(8, 8))
+	await get_tree().process_frame
+	if not rest_area._is_mouse_over_ui():
+		_fail("warehouse secondary menu did not block rest-area map clicks outside the panel")
 		return
 
 	InventoryData.reset_runtime_state()

@@ -1,0 +1,38 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/scripts/management/module_upgrade_view.gd" id="1_script"]
+
+[node name="ModuleUpgradeView" type="Control"]
+offset_right = 1000.0
+offset_bottom = 600.0
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="ModuleUpgradeScroll" type="ScrollContainer" parent="."]
+custom_minimum_size = Vector2(440, 205)
+layout_mode = 0
+offset_left = 540.0
+offset_top = 300.0
+offset_right = 980.0
+offset_bottom = 505.0
+
+[node name="ModuleUpgradeList" type="VBoxContainer" parent="ModuleUpgradeScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ModuleUpgradeSelectionLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 510.0
+offset_right = 740.0
+offset_bottom = 558.0
+clip_text = true
+
+[node name="ModuleUpgradeActionButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 548.0
+offset_right = 740.0
+offset_bottom = 592.0
+text = "Upgrade Module"

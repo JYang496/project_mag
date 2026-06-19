@@ -29,12 +29,12 @@ func _refresh_ui() -> void:
 	var ui = _get_ui()
 	if ui == null:
 		return
-	if ui.has_method("update_modules"):
-		ui.update_modules()
-	if ui.has_method("update_shop"):
-		ui.update_shop()
-	if ui.has_method("update_upg"):
-		ui.update_upg()
+	if ui.module_warehouse_controller:
+		ui.module_warehouse_controller.update_modules()
+	if ui.purchase_management_controller:
+		ui.purchase_management_controller.update_shop()
+	if ui.upgrade_management_controller:
+		ui.upgrade_management_controller.update_upg()
 	if ui.has_method("refresh_border"):
 		ui.refresh_border()
 
@@ -81,7 +81,7 @@ func get_stored_weapons() -> Array[Weapon]:
 			result.append(weapon)
 	return result
 
-func obtain_weapon_reward(weapon: Weapon) -> Dictionary:
+func obtain_weapon_reward(weapon: Weapon, on_pending_complete: Callable = Callable()) -> Dictionary:
 	if weapon == null or not is_instance_valid(weapon):
 		return {"ok": false, "result": "invalid"}
 	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
@@ -100,7 +100,7 @@ func obtain_weapon_reward(weapon: Weapon) -> Dictionary:
 		return stored_result
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
-		var opened := bool(ui.call("request_weapon_replacement", weapon, false))
+		var opened := bool(ui.call("request_weapon_replacement", weapon, false, on_pending_complete))
 		if opened:
 			return {"ok": true, "result": "selection_pending", "weapon": weapon}
 	return store_weapon(weapon)

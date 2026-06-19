@@ -2,6 +2,8 @@ extends Node
 
 signal main_weapon_index_changed(old_index: int, new_index: int, step: int)
 signal weapon_list_changed()
+signal player_health_changed(current_hp: int, max_hp: int)
+signal player_gold_changed(value: int)
 
 @onready var player = null
 var select_mecha_id :int = 1
@@ -40,12 +42,22 @@ var player_max_hp := 5 :
 	get:
 		return player_max_hp
 	set(value):
-		player_max_hp = clampi(int(value), 1, 999)
+		var next_max := clampi(int(value), 1, 999)
+		if player_max_hp == next_max:
+			return
+		player_max_hp = next_max
+		if player_hp > player_max_hp:
+			player_hp = player_max_hp
+		player_health_changed.emit(player_hp, player_max_hp)
 var player_hp := player_max_hp :
 	get:
 		return player_hp
 	set(value):
-		player_hp = clampi(int(value), 0, player_max_hp)
+		var next_hp := clampi(int(value), 0, player_max_hp)
+		if player_hp == next_hp:
+			return
+		player_hp = next_hp
+		player_health_changed.emit(player_hp, player_max_hp)
 
 var hp_regen := 0
 var hp_bonus_regen := 0
@@ -114,7 +126,15 @@ var grab_radius_mutifactor := 1.0 :
 
 var total_grab_radius := grab_radius * grab_radius_mutifactor
 
-var player_gold := 0
+var player_gold := 0 :
+	get:
+		return player_gold
+	set(value):
+		var next_gold := int(value)
+		if player_gold == next_gold:
+			return
+		player_gold = next_gold
+		player_gold_changed.emit(player_gold)
 var round_coin_collected := 0
 var round_chip_collected := 0
 var run_total_damage_dealt := 0

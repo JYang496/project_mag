@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/scripts/components/controls_hint_view.gd" id="1_script"]
+
+[node name="ControlsHintPanel" type="Panel"]
+mouse_filter = 2
+z_index = 35
+script = ExtResource("1_script")
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 0
+horizontal_alignment = 0
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 18
+
+[node name="Body" type="Label" parent="."]
+layout_mode = 0
+horizontal_alignment = 0
+vertical_alignment = 0
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 2

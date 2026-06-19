@@ -48,7 +48,8 @@ func _input(_event):
 			PlayerData.player_gold -= price
 			#emit_signal("select_weapon",item_id)
 			select_weapon.emit(item_id)
-			GlobalVariables.ui.shopping_panel_out()
+			if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.rest_area_ui_controller:
+				GlobalVariables.ui.rest_area_ui_controller.close_purchase_panel()
 
 
 func _on_item_card_mouse_entered():

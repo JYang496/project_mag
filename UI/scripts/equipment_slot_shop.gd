@@ -57,8 +57,8 @@ func click_sell_equipment() -> void:
 		ready_to_sell = false
 	sell_selected_label.visible = ready_to_sell
 	var ui = GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("refresh_shop_sell_summary"):
-		ui.refresh_shop_sell_summary()
+	if ui and is_instance_valid(ui) and ui.purchase_management_controller:
+		ui.purchase_management_controller.refresh_sell_summary()
 			
 func reset_sell_status():
 	hover_off_color = Color(0,0,0)

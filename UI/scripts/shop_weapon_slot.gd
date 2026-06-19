@@ -226,24 +226,24 @@ func _build_shop_item_data() -> Dictionary:
 
 func _notify_shop_hover() -> void:
 	var ui := GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("set_shop_hover_item"):
-		ui.call("set_shop_hover_item", _build_shop_item_data())
+	if ui and is_instance_valid(ui) and ui.purchase_management_controller:
+		ui.purchase_management_controller.set_hover_item(_build_shop_item_data())
 
 func _notify_shop_hover_clear() -> void:
 	var ui := GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("clear_shop_hover_item"):
-		ui.call("clear_shop_hover_item", _build_shop_item_data())
+	if ui and is_instance_valid(ui) and ui.purchase_management_controller:
+		ui.purchase_management_controller.clear_hover_item(_build_shop_item_data())
 
 func _notify_shop_selected() -> void:
 	var ui := GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("set_shop_selected_item"):
-		ui.call("set_shop_selected_item", _build_shop_item_data())
+	if ui and is_instance_valid(ui) and ui.purchase_management_controller:
+		ui.purchase_management_controller.set_selected_item(_build_shop_item_data())
+		ui.purchase_management_controller.mark_purchase_action_dirty()
 
 func _notify_shop_clear() -> void:
 	var ui := GlobalVariables.ui
-	if ui and is_instance_valid(ui):
+	if ui and is_instance_valid(ui) and ui.purchase_management_controller:
 		var data := _build_shop_item_data()
-		if ui.has_method("clear_shop_hover_item"):
-			ui.call("clear_shop_hover_item", data)
-		if ui.has_method("clear_shop_selected_item"):
-			ui.call("clear_shop_selected_item", data)
+		ui.purchase_management_controller.clear_hover_item(data)
+		ui.purchase_management_controller.clear_selected_item(data)
+		ui.purchase_management_controller.mark_purchase_action_dirty()

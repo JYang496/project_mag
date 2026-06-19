@@ -1,6 +1,6 @@
 extends Node2D
 
-const STARTUP_FEATURE_TEST_ENABLED: bool = true
+const STARTUP_FEATURE_TEST_ENABLED: bool = false
 const STARTUP_FEATURE_TEST_WEAPON_COUNT: int = 2
 const STARTUP_FEATURE_TEST_WEAPON_IDS: PackedStringArray = ["1", "5", "7", "26"]
 const STARTUP_FEATURE_TEST_MODULE_PATHS: PackedStringArray = [
@@ -122,8 +122,8 @@ func _add_player_to_root(player_instance: Node) -> void:
 	grant_startup_feature_test_loadout(player_instance as Player)
 	TaskRewardManager.restore_snapshot_after_player_spawn()
 
-static func grant_startup_feature_test_loadout(player: Player) -> void:
-	if not STARTUP_FEATURE_TEST_ENABLED or player == null or not is_instance_valid(player):
+static func grant_startup_feature_test_loadout(player: Player, force_enabled: bool = false) -> void:
+	if (not force_enabled and not STARTUP_FEATURE_TEST_ENABLED) or player == null or not is_instance_valid(player):
 		return
 	for weapon_id in STARTUP_FEATURE_TEST_WEAPON_IDS:
 		if PlayerData.player_weapon_list.size() >= STARTUP_FEATURE_TEST_WEAPON_COUNT:

@@ -31,6 +31,22 @@ func _run() -> void:
 			if SpawnData.level_list.is_empty():
 				_fail("SpawnData was not prepared before entering world.")
 				return
+			if not GlobalVariables.weapon_branch_list.is_empty():
+				_fail("Weapon branch data was loaded during title-to-world startup.")
+				return
+			var ui := current.get_node_or_null("UI") as UI
+			if ui != null and ui.module_shop_list_view != null:
+				_fail("Module shop UI was created during title-to-world startup.")
+				return
+			var player_deadline := Time.get_ticks_msec() + 3000
+			while (PlayerData.player == null or PlayerData.player_weapon_list.is_empty()) and Time.get_ticks_msec() < player_deadline:
+				await get_tree().process_frame
+			if PlayerData.player_weapon_list.size() != 1:
+				_fail("Startup feature test loadout ran during normal world startup.")
+				return
+			if not InventoryData.temporary_modules.is_empty():
+				_fail("Temporary test modules were loaded during normal world startup.")
+				return
 			print("PASS: threaded world load entered world with spawn data ready")
 			get_tree().quit(0)
 			return

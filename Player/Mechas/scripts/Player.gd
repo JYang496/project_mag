@@ -414,8 +414,8 @@ func _refresh_weapon_related_ui() -> void:
 		return
 	if ui.has_method("update_inventory"):
 		ui.update_inventory()
-	if ui.has_method("update_upg"):
-		ui.update_upg()
+	if ui.upgrade_management_controller:
+		ui.upgrade_management_controller.update_upg()
 	if ui.has_method("refresh_border"):
 		ui.refresh_border()
 
