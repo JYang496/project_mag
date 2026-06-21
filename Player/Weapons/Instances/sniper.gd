@@ -72,21 +72,20 @@ func _on_shoot() -> void:
 func set_last_projectile_hit_damage(value: int) -> void:
 	_last_projectile_hit_damage = max(0, int(value))
 
+func on_projectile_hit_damage_dealt(_projectile: Node, _target: Node, _hit_damage_type: StringName, final_damage: int) -> void:
+	set_last_projectile_hit_damage(final_damage)
+
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
 	_try_trigger_far_hit(target)
-	_apply_distance_bonus_damage(target)
 	branch_runtime.notify_branch_target_hit(target)
 
 func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
 	super.on_hit_target_with_damage_type(target, damage_type)
 	_try_trigger_far_hit(target)
-	_apply_distance_bonus_damage(target)
 	branch_runtime.notify_branch_target_hit(target)
 
 func _try_trigger_far_hit(target: Node) -> void:
-	if not is_main_weapon():
-		return
 	var target_node := target as Node2D
 	if target_node == null or not is_instance_valid(target_node):
 		return
@@ -110,21 +109,43 @@ func _try_trigger_far_hit(target: Node) -> void:
 
 func get_passive_status() -> Dictionary:
 	var state := "ready"
-	if not is_main_weapon():
-		state = "inactive"
-	elif not is_passive_ready():
+	if not is_passive_ready():
 		state = "waiting_refresh"
-	return {
+	var charge_current := passive_controller.get_passive_charge_current()
+	var charge_max := passive_controller.get_passive_charge_max()
+	return with_passive_charge_status({
 		"id": "sniper_far_hit_triggered",
 		"display_name": "Far Hit",
 		"state": state,
+		"progress": float(charge_current) / float(maxi(charge_max, 1)),
 		"ready": state == "ready",
 		"condition_type": "distance_threshold",
 		"required": maxf(far_hit_trigger_distance, 0.0),
 		"comparison": ">=",
 		"trigger_hint": "hit_distance",
 		"refresh_hint": "reload",
-	}
+		"charge_current": charge_current,
+		"charge_max": charge_max,
+		"charges_current": charge_current,
+		"charges_max": charge_max,
+	})
+
+func get_passive_max_charges() -> int:
+	return 3
+
+func get_sniper_distance_scaled_damage(target: Node, base_damage: int) -> int:
+	return max(1, int(round(float(maxi(base_damage, 1)) * _get_distance_damage_multiplier(target))))
+
+func _get_distance_damage_multiplier(target: Node) -> float:
+	var target_node := target as Node2D
+	if target_node == null or not is_instance_valid(target_node):
+		return 1.0
+	var far_distance: float = maxf(attack_range, NEAR_DISTANCE_THRESHOLD + 1.0)
+	var distance: float = global_position.distance_to(target_node.global_position)
+	var t: float = clampf((distance - NEAR_DISTANCE_THRESHOLD) / maxf(far_distance - NEAR_DISTANCE_THRESHOLD, 1.0), 0.0, 1.0)
+	if _has_any_mark(target):
+		t = 1.0
+	return lerpf(1.0, FAR_DAMAGE_MULTIPLIER, t)
 
 func _apply_distance_bonus_damage(target: Node) -> void:
 	if target == null or not is_instance_valid(target):
@@ -133,12 +154,7 @@ func _apply_distance_bonus_damage(target: Node) -> void:
 	if target_node == null:
 		return
 	var base_hit_damage: int = maxi(1, _last_projectile_hit_damage)
-	var far_distance: float = maxf(attack_range, NEAR_DISTANCE_THRESHOLD + 1.0)
-	var distance: float = global_position.distance_to(target_node.global_position)
-	var t: float = clampf((distance - NEAR_DISTANCE_THRESHOLD) / maxf(far_distance - NEAR_DISTANCE_THRESHOLD, 1.0), 0.0, 1.0)
-	if _has_any_mark(target):
-		t = 1.0
-	var multiplier: float = lerpf(1.0, FAR_DAMAGE_MULTIPLIER, t)
+	var multiplier: float = _get_distance_damage_multiplier(target)
 	var bonus_damage: int = int(round(float(base_hit_damage) * maxf(multiplier - 1.0, 0.0)))
 	if bonus_damage <= 0:
 		return

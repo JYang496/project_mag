@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="WeaponBranchDefinition" format=3]
 
-[ext_resource type="Texture2D" uid="uid://frvb0gd4mcia" path="res://asset/images/test/laser.png" id="1_icon"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/laser.png" id="1_icon"]
 [ext_resource type="Script" uid="uid://bi2n1qvhoukj3" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
 
 [resource]

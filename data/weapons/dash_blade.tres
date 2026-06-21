@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
 
-[ext_resource type="Texture2D" uid="uid://c8y0klvqommi8" path="res://asset/images/test/short_knife.png" id="1_vj6a5"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/dash_blade.png" id="1_vj6a5"]
 [ext_resource type="Script" uid="uid://cf8w6uadvmajn" path="res://data/WeaponDefinition.gd" id="3_wu5jv"]
 
 [resource]

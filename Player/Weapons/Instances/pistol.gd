@@ -53,10 +53,10 @@ func _update_pierce_mark_window(delta: float) -> void:
 		_pierce_mark_cycle_elapsed_sec = 0.0
 		_pierce_mark_window_remaining_sec = 0.0
 		return
-	if not is_main_weapon():
-		return
 	if _pierce_mark_window_remaining_sec > 0.0:
 		_pierce_mark_window_remaining_sec = maxf(_pierce_mark_window_remaining_sec - maxf(delta, 0.0), 0.0)
+		return
+	if not is_offhand_skill_ready():
 		return
 	_pierce_mark_cycle_elapsed_sec += maxf(delta, 0.0)
 	var required_sec := maxf(pierce_mark_cycle_sec, 0.1)
@@ -64,21 +64,24 @@ func _update_pierce_mark_window(delta: float) -> void:
 		return
 	_pierce_mark_cycle_elapsed_sec = 0.0
 	_pierce_mark_window_remaining_sec = maxf(pierce_mark_window_sec, 0.1)
+	notify_offhand_skill_triggered(0.0)
 	emit_passive_trigger(&"pistol_continuous_move_triggered", {
 		"window_duration": _pierce_mark_window_remaining_sec,
 		"mark_duration": maxf(pierce_mark_duration_sec, 0.1),
-		"refresh": "time",
+		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
 	var required_sec := maxf(pierce_mark_cycle_sec, 0.1)
 	var current_sec := clampf(_pierce_mark_cycle_elapsed_sec, 0.0, required_sec)
 	var state := "charging"
-	if not is_main_weapon():
-		state = "inactive"
-	elif _pierce_mark_window_remaining_sec > 0.0:
+	if _pierce_mark_window_remaining_sec > 0.0:
 		state = "active"
-	return {
+	elif not is_passive_ready():
+		state = "waiting_refresh"
+	var charge_current := passive_controller.get_passive_charge_current()
+	var charge_max := passive_controller.get_passive_charge_max()
+	return with_passive_charge_status({
 		"id": "pistol_continuous_move_triggered",
 		"display_name": "Pierce Mark",
 		"state": state,
@@ -87,8 +90,15 @@ func get_passive_status() -> Dictionary:
 		"required": required_sec,
 		"ready": state == "active",
 		"trigger_hint": "periodic_auto_pistol_hits_mark_targets",
-		"refresh_hint": "time",
-	}
+		"refresh_hint": "reload",
+		"charge_current": charge_current,
+		"charge_max": charge_max,
+		"charges_current": charge_current,
+		"charges_max": charge_max,
+	})
+
+func get_passive_max_charges() -> int:
+	return 3
 
 func _is_battle_phase() -> bool:
 	if PhaseManager == null or not PhaseManager.has_method("current_state"):

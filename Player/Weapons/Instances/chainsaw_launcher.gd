@@ -107,8 +107,6 @@ func _try_apply_close_vulnerability(target: Node) -> void:
 	CLOSE_CHAIN_RULES.apply_chainsaw_vulnerability(target, close_vulnerability_multiplier, close_vulnerability_duration_sec)
 
 func on_projectile_hit_wall(projectile: Projectile, wall_hit: Dictionary) -> void:
-	if not is_main_weapon():
-		return
 	if projectile == null or not is_instance_valid(projectile):
 		return
 	if not is_offhand_skill_ready():
@@ -124,20 +122,19 @@ func on_projectile_hit_wall(projectile: Projectile, wall_hit: Dictionary) -> voi
 
 func get_passive_status() -> Dictionary:
 	var state := "ready"
-	if not is_main_weapon():
-		state = "inactive"
-	elif not is_passive_ready():
+	if not is_passive_ready():
 		state = "waiting_refresh"
-	return {
+	return with_passive_charge_status({
 		"id": "chainsaw_wall_contact_triggered",
 		"display_name": "Wall Contact",
 		"state": state,
+		"progress": 1.0 if state == "ready" else 0.0,
 		"ready": state == "ready",
 		"trigger_hint": "projectile_wall_contact",
 		"refresh_hint": "reload",
 		"vulnerability_multiplier": maxf(close_vulnerability_multiplier, 1.0),
 		"vulnerability_duration": maxf(close_vulnerability_duration_sec, 0.1),
-	}
+	})
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)

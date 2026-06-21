@@ -7,6 +7,7 @@ const FIRE := &"fire"
 const FREEZE := &"freeze"
 const HEAT := &"heat"
 const CHARGE := &"charge"
+const AUTO_FIRE := &"auto_fire"
 
 const ALL: Array[StringName] = [
 	PHYSICAL,
@@ -15,6 +16,7 @@ const ALL: Array[StringName] = [
 	FREEZE,
 	HEAT,
 	CHARGE,
+	AUTO_FIRE,
 ]
 
 static func normalize(value: Variant) -> StringName:

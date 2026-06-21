@@ -8,6 +8,7 @@ signal calculate_weapon_size(size)
 
 const AIM_ROTATION_OFFSET := deg_to_rad(90)
 const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_rules.gd")
+const BLADE_SPRITE_TARGET_HEIGHT := 40.0
 
 var ITEM_NAME := "Dash Blade"
 
@@ -68,6 +69,7 @@ func _ready() -> void:
 	if sprite:
 		sprite.visible = false
 	_apply_fuse_sprite()
+	_adjust_blade_sprite_height()
 	hit_box.hitbox_owner = self
 	hit_box.set_collision_mask_value(3, true)
 	hit_box.collision.disabled = true
@@ -136,6 +138,19 @@ func _get_current_hitbox_size() -> Vector2:
 	if hit_box and hit_box.collision and hit_box.collision.shape is RectangleShape2D:
 		return (hit_box.collision.shape as RectangleShape2D).size
 	return Vector2.ONE
+
+func _adjust_blade_sprite_height() -> void:
+	if not blade_sprite or not blade_sprite.texture:
+		return
+	var tex_height := float(blade_sprite.texture.get_height())
+	if tex_height <= 0.0:
+		return
+	var scale_factor := BLADE_SPRITE_TARGET_HEIGHT / tex_height
+	_base_blade_scale = Vector2(scale_factor, scale_factor)
+	blade_sprite.scale = _base_blade_scale
+
+func _on_fuse_texture_changed() -> void:
+	_adjust_blade_sprite_height()
 
 func _physics_process(delta: float) -> void:
 	center_melee_attack_range_area(attack_range_area)
@@ -259,8 +274,6 @@ func _apply_close_chain_slow(target: Node) -> void:
 	CLOSE_CHAIN_RULES.apply_dash_slow(target, close_chain_slow_multiplier, close_chain_slow_duration_sec)
 
 func _try_trigger_long_dash_hit(target: Node) -> void:
-	if not is_main_weapon():
-		return
 	if not is_offhand_skill_ready():
 		return
 	if target == null or not is_instance_valid(target):
@@ -281,14 +294,13 @@ func _try_trigger_long_dash_hit(target: Node) -> void:
 func get_passive_status() -> Dictionary:
 	var threshold := attack_range * maxf(long_dash_trigger_range_ratio, 0.0)
 	var state := "ready"
-	if not is_main_weapon():
-		state = "inactive"
-	elif not is_passive_ready():
+	if not is_passive_ready():
 		state = "waiting_refresh"
 	var status := {
 		"id": "dash_blade_long_dash_hit_triggered",
 		"display_name": "Long Dash Hit",
 		"state": state,
+		"progress": 1.0 if state == "ready" else 0.0,
 		"ready": state == "ready",
 		"condition_type": "distance_threshold",
 		"required": threshold,
@@ -302,7 +314,7 @@ func get_passive_status() -> Dictionary:
 		var current_distance := maxf(_dash_start_distance, 0.0)
 		status["current"] = current_distance
 		status["progress"] = clampf(current_distance / maxf(threshold, 0.001), 0.0, 1.0)
-	return status
+	return with_passive_charge_status(status)
 
 func _update_attack_range_shape() -> void:
 	var circle_shape := attack_range_shape.shape as CircleShape2D

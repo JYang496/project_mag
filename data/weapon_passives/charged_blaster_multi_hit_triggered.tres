@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "charged_blaster_multi_hit_triggered"
 display_name = "Beam Multi Hit"
-description = "One beam cast must hit multiple different targets."
+description = "Has 3 charges. One beam cast must hit multiple different targets to spend 1 charge and trigger. Reloading restores all charges."
 condition_type = "unique_hit_count"
 refresh_type = "reload"
 ui_mode = "progress"

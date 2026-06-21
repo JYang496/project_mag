@@ -8,9 +8,10 @@ var parent_overlap : bool = false
 
 
 func projectile_effect_ready() -> void:
-	projectile.connect("overlapping_signal",Callable(self,"_on_projectile_overlapping_change"))
+	var overlap_callback := Callable(self, "_on_projectile_overlapping_change")
+	if not projectile.overlapping_signal.is_connected(overlap_callback):
+		projectile.overlapping_signal.connect(overlap_callback)
 	saved_speed_adjustment = projectile.base_displacement
-	prints("saved_speed_adjustment",saved_speed_adjustment)
 
 func _on_projectile_overlapping_change() -> void:
 	if projectile.overlapping:

@@ -19,7 +19,6 @@ class_name EconomyConfig
 @export var coin_bonus_augment_gold_per_level: int = 1
 @export var objective_economy_gold_by_level: PackedInt32Array = PackedInt32Array([3, 4, 6, 7, 8, 10, 11, 13, 14, 15])
 @export var kill_gold_target_by_level: PackedInt32Array = PackedInt32Array([56, 56, 39, 43, 52, 62, 72, 83, 95, 108])
-@export var kill_gold_expected_kills_by_level: PackedInt32Array = PackedInt32Array([48, 129, 93, 134, 79, 113, 183, 129, 197, 182])
 @export var kill_gold_target_increment_after_table: int = 12
 @export_range(0.0, 1.0, 0.01) var kill_gold_budget_variance: float = 0.1
 @export_range(0.05, 1.0, 0.01) var kill_gold_max_drop_chance: float = 0.65

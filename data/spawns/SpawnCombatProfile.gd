@@ -10,7 +10,7 @@ class_name SpawnCombatProfile
 @export var max_hp_budget_carryover_seconds: int = 3
 
 @export_group("Batch Limits")
-@export var max_same_type_per_batch: int = 4
+@export var max_same_type_per_batch: int = 15
 @export var max_ranged_per_batch: int = 4
 @export var max_selection_attempts: int = 96
 

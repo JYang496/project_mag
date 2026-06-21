@@ -641,6 +641,7 @@ func load_runtime_state() -> void:
 		var weapon := DataHandler.instantiate_weapon_from_save_payload(weapon_variant as Dictionary)
 		if weapon:
 			add_child(weapon)
+			DataHandler.restore_weapon_runtime_from_save_payload(weapon, weapon_variant as Dictionary)
 			_transfer_weapon_modules_to_temporary(weapon)
 			weapon.visible = false
 			weapon.process_mode = Node.PROCESS_MODE_DISABLED

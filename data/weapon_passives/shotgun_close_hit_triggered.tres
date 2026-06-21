@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "shotgun_close_hit_triggered"
 display_name = "Close Hit"
-description = "Shotgun pellets from the same shot deal bonus final damage when multiple base pellets hit the same target. The close-hit passive event still triggers inside the close-range threshold."
+description = "Has 3 charges. Shotgun pellets from the same shot deal bonus final damage when multiple base pellets hit the same target. Close-range hits spend 1 charge to trigger; reloading restores all charges."
 condition_type = "distance_threshold"
 refresh_type = "reload"
 ui_mode = "threshold"

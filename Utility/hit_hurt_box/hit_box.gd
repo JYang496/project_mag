@@ -16,10 +16,13 @@ func _ready() -> void:
 # Set Mask to detect hurt boxes
 func _on_area_entered(area):
 	if area is HurtBox:
-		hitbox_owner.overlapping = true
+		if hitbox_owner and is_instance_valid(hitbox_owner):
+			hitbox_owner.overlapping = true
 		apply_attack(area)
 
 func apply_attack(area) -> void:
+	if hitbox_owner == null or not is_instance_valid(hitbox_owner):
+		return
 	var target: Node = null
 	if area is HurtBox and area.has_method("get_damage_target"):
 		target = area.call("get_damage_target")
@@ -47,7 +50,12 @@ func apply_attack(area) -> void:
 		if base_damage_variant != null:
 			outgoing_damage = int(hitbox_owner.call("get_runtime_damage_value", float(base_damage_variant)))
 	outgoing_damage = _apply_spear_pierce_mark_bonus(target, outgoing_damage)
-	var damage_data := DamageManager.build_damage_data(
+	if hitbox_owner and hitbox_owner.has_method("get_hitbox_damage_value"):
+		outgoing_damage = int(hitbox_owner.call("get_hitbox_damage_value", target, outgoing_damage, damage_type))
+	var damage_manager := get_node_or_null("/root/DamageManager")
+	if damage_manager == null:
+		return
+	var damage_data: DamageData = damage_manager.build_damage_data(
 		hitbox_owner,
 		max(1, outgoing_damage),
 		damage_type,
@@ -60,9 +68,9 @@ func apply_attack(area) -> void:
 	damage_data.dedupe_window_sec = 0.02
 	var damage_result: DamageResult
 	if area is HurtBox:
-		damage_result = DamageManager.apply_to_hurt_box_result(area, damage_data)
+		damage_result = damage_manager.apply_to_hurt_box_result(area, damage_data)
 	else:
-		damage_result = DamageManager.apply_to_target_result(target, damage_data)
+		damage_result = damage_manager.apply_to_target_result(target, damage_data)
 	if hitbox_owner and damage_result.applied and hitbox_owner.has_method("on_hit_target_damage_dealt"):
 		hitbox_owner.call("on_hit_target_damage_dealt", target, damage_type, damage_result.final_damage)
 	var owner_player := damage_data.source_player as Player
@@ -113,7 +121,11 @@ func _on_area_exited(_exited_area: Area2D) -> void:
 	check_overlapping()
 
 func check_overlapping() -> void:
+	if hitbox_owner == null or not is_instance_valid(hitbox_owner):
+		return
+	var has_hurt_box := false
 	for area in get_overlapping_areas():
 		if area is HurtBox:
-			hitbox_owner.overlapping = true
-		hitbox_owner.overlapping = false
+			has_hurt_box = true
+			break
+	hitbox_owner.overlapping = has_hurt_box

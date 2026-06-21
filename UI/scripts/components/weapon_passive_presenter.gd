@@ -47,6 +47,9 @@ func _build_presenter_status(weapon: Node, weapon_index: int, passive_status: Di
 		"current": passive_status.get("current", null),
 		"required": passive_status.get("required", null),
 		"ready": ready,
+		"charge_current": int(passive_status.get("charge_current", passive_status.get("charges_current", 1 if ready else 0))),
+		"charge_max": int(passive_status.get("charge_max", passive_status.get("charges_max", 1))),
+		"charge_based": bool(passive_status.get("charge_based", true)),
 		"trigger_hint": str(passive_status.get("trigger_hint", "")),
 		"refresh_hint": str(passive_status.get("refresh_hint", "")),
 		"radial_projectile_count": passive_status.get("radial_projectile_count", 0),
@@ -99,14 +102,14 @@ func _is_main_weapon(weapon: Node, weapon_index: int) -> bool:
 	return weapon_index == PlayerData.main_weapon_index
 
 func _get_weapon_id(weapon: Node) -> String:
-	if DataHandler != null and DataHandler.has_method("get_weapon_id_from_instance"):
+	if weapon is Weapon and DataHandler != null and DataHandler.has_method("get_weapon_id_from_instance"):
 		var id := str(DataHandler.call("get_weapon_id_from_instance", weapon))
 		if id.strip_edges() != "":
 			return id
 	return str(weapon.get_instance_id())
 
 func _get_weapon_name(weapon: Node) -> String:
-	if LocalizationManager != null and LocalizationManager.has_method("get_weapon_name_from_node"):
+	if weapon is Weapon and LocalizationManager != null and LocalizationManager.has_method("get_weapon_name_from_node"):
 		var localized_name := str(LocalizationManager.call("get_weapon_name_from_node", weapon))
 		if localized_name.strip_edges() != "":
 			return localized_name

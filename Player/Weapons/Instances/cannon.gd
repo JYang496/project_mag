@@ -10,11 +10,15 @@ const BULLET_PIXEL_SIZE := Vector2(11.0, 11.0)
 
 @export var windup_sec: float = 0.15
 @export var idle_fire_trigger_sec: float = 6.0
-@export var idle_fire_empowered_shots: int = 3
-@export var idle_fire_attack_speed_multiplier: float = 3.0
-@export var idle_fire_aoe_radius: float = 160.0
-@export var idle_fire_aoe_damage_ratio: float = 0.5
+@export var idle_fire_empowered_shots: int = 1
+@export var idle_fire_attack_speed_multiplier: float = 1.0
+@export var idle_fire_direct_damage_multiplier: float = 1.45
+@export var idle_fire_breach_multiplier: float = 1.2
+@export var idle_fire_breach_duration_sec: float = 4.0
+@export var idle_fire_aoe_radius: float = 70.0
+@export var idle_fire_aoe_damage_ratio: float = 0.15
 @export var idle_fire_aoe_duration: float = 0.14
+const IDLE_FIRE_BREACH_STATUS_ID := &"cannon_breach"
 var attack_range: float = 920.0
 var _windup_in_progress: bool = false
 var _idle_fire_ready: bool = false
@@ -23,15 +27,15 @@ var _idle_fire_empowered_shots_remaining: int = 0
 var _idle_fire_aoe_sequence: int = 0
 
 var weapon_data := {
-	"1": {"damage": "50", "speed": "1120", "projectile_hits": "2", "fire_interval_sec": "1.667", "ammo": "6"},
-	"2": {"damage": "60", "speed": "1140", "projectile_hits": "2", "fire_interval_sec": "1.600", "ammo": "6"},
-	"3": {"damage": "67", "speed": "1170", "projectile_hits": "2", "fire_interval_sec": "1.533", "ammo": "9"},
-	"4": {"damage": "80", "speed": "1200", "projectile_hits": "2", "fire_interval_sec": "1.467", "ammo": "9"},
-	"5": {"damage": "100", "speed": "1230", "projectile_hits": "2", "fire_interval_sec": "1.400", "ammo": "12"},
-	"6": {"damage": "120", "speed": "1260", "projectile_hits": "2", "fire_interval_sec": "1.333", "ammo": "12"},
-	"7": {"damage": "140", "speed": "1290", "projectile_hits": "3", "fire_interval_sec": "1.267", "ammo": "12"},
-	"8": {"damage": "160", "speed": "1320", "projectile_hits": "4", "fire_interval_sec": "1.201", "ammo": "12"},
-	"9": {"damage": "180", "speed": "1350", "projectile_hits": "5", "fire_interval_sec": "1.135", "ammo": "12"}
+	"1": {"damage": "50", "speed": "1120", "projectile_hits": "2", "fire_interval_sec": "1.667", "ammo": "4"},
+	"2": {"damage": "60", "speed": "1140", "projectile_hits": "2", "fire_interval_sec": "1.600", "ammo": "4"},
+	"3": {"damage": "67", "speed": "1170", "projectile_hits": "2", "fire_interval_sec": "1.533", "ammo": "4"},
+	"4": {"damage": "80", "speed": "1200", "projectile_hits": "2", "fire_interval_sec": "1.467", "ammo": "4"},
+	"5": {"damage": "100", "speed": "1230", "projectile_hits": "2", "fire_interval_sec": "1.400", "ammo": "4"},
+	"6": {"damage": "120", "speed": "1260", "projectile_hits": "2", "fire_interval_sec": "1.333", "ammo": "4"},
+	"7": {"damage": "140", "speed": "1290", "projectile_hits": "3", "fire_interval_sec": "1.267", "ammo": "4"},
+	"8": {"damage": "160", "speed": "1320", "projectile_hits": "4", "fire_interval_sec": "1.201", "ammo": "4"},
+	"9": {"damage": "180", "speed": "1350", "projectile_hits": "5", "fire_interval_sec": "1.135", "ammo": "4"}
 }
 
 @onready var windup_timer: Timer = $WindupTimer
@@ -116,6 +120,8 @@ func _on_shoot() -> void:
 	var runtime_damage := get_runtime_shot_damage()
 	var damage_multiplier := branch_runtime.get_branch_projectile_damage_multiplier()
 	damage_multiplier *= _consume_branch_heat_spend_multiplier()
+	if idle_empowered_shot:
+		damage_multiplier *= maxf(idle_fire_direct_damage_multiplier, 0.05)
 	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
 	var damage_type: StringName = branch_runtime.get_branch_damage_type_override(Attack.TYPE_PHYSICAL)
 	spawn_projectile.damage_type = damage_type
@@ -154,6 +160,7 @@ func on_projectile_hit_damage_dealt(projectile: Node, target: Node, hit_damage_t
 		return
 	if final_damage <= 0:
 		return
+	_apply_idle_fire_breach(target)
 	_apply_idle_fire_aoe(projectile, target, hit_damage_type, final_damage)
 
 func _on_cooldown_timer_timeout() -> void:
@@ -190,6 +197,7 @@ func _try_emit_idle_fire_trigger() -> bool:
 		return false
 	_idle_fire_ready = false
 	_idle_fire_reload_ready = false
+	notify_offhand_skill_triggered(0.0)
 	_idle_fire_empowered_shots_remaining = maxi(1, idle_fire_empowered_shots)
 	if idle_fire_timer != null:
 		idle_fire_timer.stop()
@@ -199,6 +207,9 @@ func _try_emit_idle_fire_trigger() -> bool:
 		"refresh": "reload",
 		"empowered_shots": maxi(1, idle_fire_empowered_shots),
 		"attack_speed_multiplier": maxf(idle_fire_attack_speed_multiplier, 0.05),
+		"direct_damage_multiplier": maxf(idle_fire_direct_damage_multiplier, 0.05),
+		"breach_multiplier": maxf(idle_fire_breach_multiplier, 1.0),
+		"breach_duration": maxf(idle_fire_breach_duration_sec, 0.1),
 		"aoe_radius": maxf(idle_fire_aoe_radius, 1.0),
 		"aoe_damage_ratio": maxf(idle_fire_aoe_damage_ratio, 0.0),
 	}, PASSIVE_SCOPE_BODY)
@@ -209,6 +220,18 @@ func _consume_idle_empowered_shot() -> bool:
 		return false
 	_idle_fire_empowered_shots_remaining -= 1
 	return true
+
+func _apply_idle_fire_breach(target: Node) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if not target.has_method("apply_damage_taken_multiplier_status"):
+		return
+	target.call(
+		"apply_damage_taken_multiplier_status",
+		IDLE_FIRE_BREACH_STATUS_ID,
+		maxf(idle_fire_breach_multiplier, 1.0),
+		maxf(idle_fire_breach_duration_sec, 0.1)
+	)
 
 func _apply_idle_fire_aoe(projectile: Node, direct_target: Node, hit_damage_type: StringName, direct_final_damage: int) -> void:
 	var direct_node := direct_target as Node2D
@@ -281,6 +304,34 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	_idle_fire_empowered_shots_remaining = 0
 	_idle_fire_reload_ready = true
 	_restart_idle_fire_timer()
+
+func get_passive_status() -> Dictionary:
+	var state := "charging"
+	var progress := 0.0
+	if not _idle_fire_reload_ready:
+		state = "waiting_refresh"
+		progress = 0.0
+	elif _idle_fire_ready:
+		state = "ready_pending_action"
+		progress = 1.0
+	elif idle_fire_timer != null and idle_fire_timer.time_left > 0.0:
+		var required_sec := maxf(idle_fire_trigger_sec, 0.1)
+		progress = 1.0 - clampf(idle_fire_timer.time_left / required_sec, 0.0, 1.0)
+	return with_passive_charge_status({
+		"id": "cannon_idle_fire_triggered",
+		"display_name": "Breach Shot",
+		"state": state,
+		"progress": progress,
+		"current": progress * maxf(idle_fire_trigger_sec, 0.1),
+		"required": maxf(idle_fire_trigger_sec, 0.1),
+		"ready": state == "ready_pending_action",
+		"trigger_hint": "next_cannon_fire_after_idle",
+		"refresh_hint": "reload",
+		"empowered_shots": maxi(1, idle_fire_empowered_shots),
+		"direct_damage_multiplier": maxf(idle_fire_direct_damage_multiplier, 0.05),
+		"breach_multiplier": maxf(idle_fire_breach_multiplier, 1.0),
+		"breach_duration": maxf(idle_fire_breach_duration_sec, 0.1),
+	})
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()

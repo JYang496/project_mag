@@ -16,6 +16,8 @@ func apply_fuse_sprite() -> void:
 		var blade_sprite_node := weapon.get_node_or_null("BladeAnchor/BladeSprite")
 		if blade_sprite_node is Sprite2D:
 			(blade_sprite_node as Sprite2D).texture = tex
+		if weapon.has_method("_on_fuse_texture_changed"):
+			weapon.call("_on_fuse_texture_changed")
 
 func load_fuse_sprites() -> bool:
 	fuse_sprites.clear()

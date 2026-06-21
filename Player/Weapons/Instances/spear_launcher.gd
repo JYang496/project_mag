@@ -139,7 +139,7 @@ func on_projectile_hit_damage_dealt(
 
 
 func _try_gain_charge_from_same_target_hits(projectile: Node, target: Node) -> void:
-	if not is_main_weapon() or is_reloading:
+	if is_reloading:
 		return
 	if _piercing_blade_dance_charge >= maxi(charge_max, 1):
 		return
@@ -193,8 +193,6 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	if event_name != &"on_reload_started":
 		return
 	if detail.get("source_weapon", null) != self:
-		return
-	if not is_main_weapon():
 		return
 	_try_start_piercing_blade_dance()
 
@@ -328,13 +326,12 @@ func get_passive_status() -> Dictionary:
 	var max_charge := maxi(charge_max, 1)
 	var charge := clampi(_piercing_blade_dance_charge, 0, max_charge)
 	var state := "charging"
-	if not is_main_weapon():
-		state = "inactive"
-	elif is_reloading:
+	if is_reloading:
 		state = "waiting_refresh"
 	elif charge >= maxi(radial_charge_cost, 1):
 		state = "ready_pending_action"
-	return {
+	var hud_charge_current := 1 if state == "ready_pending_action" else 0
+	return with_passive_charge_status({
 		"id": str(PASSIVE_ID),
 		"display_name": "Piercing Blade Dance",
 		"state": state,
@@ -344,8 +341,12 @@ func get_passive_status() -> Dictionary:
 		"ready": state == "ready_pending_action",
 		"trigger_hint": "reload_started",
 		"refresh_hint": "gain_charge_from_repeat_projectile_damage",
+		"charge_current": hud_charge_current,
+		"charge_max": 1,
+		"charges_current": hud_charge_current,
+		"charges_max": 1,
 		"radial_projectile_count": _get_next_radial_projectile_count(),
-	}
+	})
 
 
 func _get_next_radial_projectile_count() -> int:

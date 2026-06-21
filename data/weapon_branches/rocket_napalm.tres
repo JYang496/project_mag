@@ -1,13 +1,13 @@
 [gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=5 format=3]
 
-[ext_resource type="Texture2D" path="res://asset/images/weapons/cannon2.png" id="1_icon"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/rocket_launcher.png" id="1_icon"]
 [ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="4_script"]
 
 [resource]
 script = ExtResource("4_script")
 branch_id = "napalm_rocket"
 display_name = "Napalm Rocket"
-description = "Explosions persist as burning zones that deal periodic damage."
+description = "Explosions persist as burning zones for area denial and grouped enemy cleanup."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

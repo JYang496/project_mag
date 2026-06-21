@@ -195,8 +195,6 @@ func _on_enter_main_weapon_role() -> void:
 func register_shot_heat(multiplier: float = 1.0) -> void:
 	var heat_before := get_heat_value()
 	super.register_shot_heat(multiplier)
-	if not is_main_weapon():
-		return
 	if not _heat_prepared_reload_ready:
 		return
 	var heat_after := get_heat_value()
@@ -216,13 +214,11 @@ func get_passive_status() -> Dictionary:
 	var current_heat := maxf(_heat_prepared_accumulated_heat, 0.0)
 	var progress := clampf(current_heat / required_heat, 0.0, 1.0)
 	var state := "charging"
-	if not is_main_weapon():
-		state = "inactive"
-	elif not _heat_prepared_reload_ready:
+	if not _heat_prepared_reload_ready:
 		state = "waiting_refresh"
 	elif current_heat >= required_heat:
 		state = "ready_pending_action"
-	return {
+	return with_passive_charge_status({
 		"id": "flamethrower_heat_prepared",
 		"display_name": "Heat Prepared",
 		"state": state,
@@ -232,7 +228,7 @@ func get_passive_status() -> Dictionary:
 		"ready": state == "ready_pending_action",
 		"trigger_hint": "reload_started",
 		"refresh_hint": "reload_finished",
-	}
+	})
 
 func _draw() -> void:
 	if not debug_mode:
@@ -350,9 +346,6 @@ func _stop_flame_vfx() -> void:
 		_flame_vfx.call("stop")
 
 func _try_apply_heat_prepared() -> void:
-	if not is_main_weapon():
-		_heat_prepared_accumulated_heat = 0.0
-		return
 	if not _heat_prepared_reload_ready:
 		_heat_prepared_accumulated_heat = 0.0
 		return
@@ -368,6 +361,7 @@ func _try_apply_heat_prepared() -> void:
 		return
 	_heat_prepared_ready_at_msec = now_msec + int(maxf(heat_prepared_icd_sec, 0.0) * 1000.0)
 	_heat_prepared_reload_ready = false
+	notify_offhand_skill_triggered(0.0)
 	if player.has_method("apply_heat_prepared"):
 		player.call(
 			"apply_heat_prepared",

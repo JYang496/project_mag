@@ -46,14 +46,22 @@ func _run() -> void:
 		"state": "ready_pending_action",
 		"progress": 1.0,
 		"ready": true,
+		"trigger_hint": "test_trigger_hint",
+		"refresh_hint": "test_refresh_hint",
+		"charge_current": 2,
+		"charge_max": 3,
+		"charge_based": true,
 	}
 	var offhand_weapon := FakeWeapon.new()
 	offhand_weapon.name = "OffhandPassiveWeapon"
 	offhand_weapon.passive_status = {
-		"id": "test_ready_no_charge",
-		"display_name": "Ready No Charge Passive",
+		"id": "test_ready_single_charge",
+		"display_name": "Ready Single Charge Passive",
 		"state": "waiting_refresh",
 		"ready": false,
+		"trigger_hint": "test_single_trigger",
+		"refresh_hint": "test_single_refresh",
+		"charge_based": true,
 	}
 	get_tree().root.add_child(main_weapon)
 	get_tree().root.add_child(offhand_weapon)
@@ -62,6 +70,23 @@ func _run() -> void:
 	selector.refresh_slots()
 	selector.call("_update_slot_cooldown_progress")
 	selector.call("_update_slot_passive_progress")
+	if ui.weapon_passive_presenter == null:
+		_fail("Weapon passive presenter should be initialized.")
+		return
+	var presenter_statuses: Array = ui.weapon_passive_presenter.get_equipped_weapon_passive_statuses()
+	if presenter_statuses.size() < 2:
+		_fail("Weapon passive presenter should expose equipped weapon passive statuses.")
+		return
+	var main_presenter_status := presenter_statuses[0] as Dictionary
+	if str(main_presenter_status.get("trigger_hint", "")) != "test_trigger_hint":
+		_fail("Passive presenter should preserve trigger_hint from get_passive_status().")
+		return
+	if str(main_presenter_status.get("refresh_hint", "")) != "test_refresh_hint":
+		_fail("Passive presenter should preserve refresh_hint from get_passive_status().")
+		return
+	if int(main_presenter_status.get("charge_current", 0)) != 2 or int(main_presenter_status.get("charge_max", 0)) != 3:
+		_fail("Passive presenter should preserve charge fields from get_passive_status().")
+		return
 
 	var overlay := selector.get_node_or_null("CooldownOverlay") as Control
 	if overlay == null or overlay.get_parent() != selector:
@@ -82,22 +107,42 @@ func _run() -> void:
 	if str(main_passive.get("fill_color")) != str(WeaponSelector.PASSIVE_READY_COLOR):
 		_fail("Main weapon ready passive state should use the ready color.")
 		return
+	var main_charges := overlay.get_node_or_null("PassiveChargeBeans0") as Control
+	if main_charges == null or not main_charges.visible:
+		_fail("Charge-based passive weapons should render beans below the passive ring.")
+		return
+	if int(main_charges.get("max_charges")) != 3 or int(main_charges.get("current_charges")) != 2:
+		_fail("Charge beans should mirror current and max passive charges.")
+		return
 	var offhand_passive := overlay.get_node_or_null("PassiveDiamond3") as Control
 	if offhand_passive == null or not offhand_passive.visible:
 		_fail("Offhand passive layer should render while equipped.")
 		return
-	if str(offhand_passive.get("fill_color")) != str(WeaponSelector.PASSIVE_UNAVAILABLE_COLOR):
-		_fail("Offhand non-ready passive layer should render as unavailable.")
+	if str(offhand_passive.get("fill_color")) != str(WeaponSelector.PASSIVE_COOLDOWN_COLOR):
+		_fail("Offhand waiting-refresh passive layer should render its real cooldown state.")
+		return
+	var offhand_charges := overlay.get_node_or_null("PassiveChargeBeans3") as Control
+	if offhand_charges == null:
+		_fail("Offhand charge bean node should exist inside the selector overlay.")
+		return
+	if not offhand_charges.visible:
+		_fail("Single-charge passive weapons should render one charge bean.")
+		return
+	if int(offhand_charges.get("max_charges")) != 1 or int(offhand_charges.get("current_charges")) != 0:
+		_fail("Default single-charge passive beans should render as 0/1 while waiting refresh.")
 		return
 	offhand_weapon.passive_status = {
-		"id": "test_ready_no_charge",
-		"display_name": "Ready No Charge Passive",
+		"id": "test_ready_single_charge",
+		"display_name": "Ready Single Charge Passive",
 		"state": "ready",
 		"ready": true,
 	}
 	selector.call("_update_slot_passive_progress")
+	if int(offhand_charges.get("max_charges")) != 1 or int(offhand_charges.get("current_charges")) != 1:
+		_fail("Default single-charge passive beans should refill to 1/1 when ready.")
+		return
 	if str(offhand_passive.get("fill_color")) != str(WeaponSelector.PASSIVE_READY_COLOR):
-		_fail("No-charge ready weapons should keep a full ready inner ring.")
+		_fail("Single-charge ready weapons should keep a full ready inner ring.")
 		return
 	var offhand_flash := overlay.get_node_or_null("PassiveFlash3") as Control
 	if offhand_flash == null or not offhand_flash.visible:

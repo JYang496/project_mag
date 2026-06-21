@@ -8,6 +8,7 @@ extends Ranger
 
 # Weapon
 var ITEM_NAME = "Laser"
+const PASSIVE_ID: StringName = &"laser_focus_channel_triggered"
 
 var weapon_data = {
 	"1": {"damage": "1", "fire_interval_sec": "2", "ammo": "5"},
@@ -97,3 +98,27 @@ func _on_oc_timer_timeout() -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	if target == null or not is_instance_valid(target):
+		return
+	if not is_passive_ready():
+		return
+	notify_offhand_skill_triggered(0.0)
+	emit_passive_trigger(PASSIVE_ID, {
+		"trigger": "beam_hit",
+		"target": target,
+		"cooldown": 0.0,
+	})
+
+func get_passive_status() -> Dictionary:
+	var state := "ready" if is_passive_ready() else "waiting_refresh"
+	return with_passive_charge_status({
+		"id": str(PASSIVE_ID),
+		"display_name": "Focus Channel",
+		"state": state,
+		"progress": 1.0 if state == "ready" else 0.0,
+		"current": 1 if state == "ready" else 0,
+		"required": 1,
+		"ready": state == "ready",
+		"trigger_hint": "beam_hit",
+		"refresh_hint": "reload",
+	})

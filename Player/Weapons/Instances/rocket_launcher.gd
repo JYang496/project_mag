@@ -12,15 +12,15 @@ var explosion_scale : float = 2.0
 
 
 var weapon_data = {
-	"1": {"damage": "10", "speed": "500", "projectile_hits": "1", "fire_interval_sec": "2.4", "ammo": "14", "explosion_scale": "2.0"},
-	"2": {"damage": "13", "speed": "560", "projectile_hits": "1", "fire_interval_sec": "2.2", "ammo": "16", "explosion_scale": "2.1"},
-	"3": {"damage": "16", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "2.0", "ammo": "18", "explosion_scale": "2.2"},
-	"4": {"damage": "20", "speed": "650", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "20", "explosion_scale": "2.35"},
-	"5": {"damage": "25", "speed": "700", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "22", "explosion_scale": "2.5"},
-	"6": {"damage": "31", "speed": "750", "projectile_hits": "2", "fire_interval_sec": "1.4", "ammo": "24", "explosion_scale": "2.65"},
-	"7": {"damage": "39", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "1.2", "ammo": "26", "explosion_scale": "2.8"},
-	"8": {"damage": "47", "speed": "850", "projectile_hits": "2", "fire_interval_sec": "1.0", "ammo": "28", "explosion_scale": "2.95"},
-	"9": {"damage": "55", "speed": "900", "projectile_hits": "2", "fire_interval_sec": "0.8", "ammo": "30", "explosion_scale": "3.10"}
+	"1": {"damage": "8", "speed": "460", "projectile_hits": "1", "fire_interval_sec": "2.4", "ammo": "12", "explosion_scale": "2.20"},
+	"2": {"damage": "10", "speed": "500", "projectile_hits": "1", "fire_interval_sec": "2.3", "ammo": "13", "explosion_scale": "2.35"},
+	"3": {"damage": "13", "speed": "540", "projectile_hits": "1", "fire_interval_sec": "2.2", "ammo": "14", "explosion_scale": "2.50"},
+	"4": {"damage": "16", "speed": "580", "projectile_hits": "1", "fire_interval_sec": "2.1", "ammo": "15", "explosion_scale": "2.70"},
+	"5": {"damage": "20", "speed": "620", "projectile_hits": "1", "fire_interval_sec": "2.0", "ammo": "16", "explosion_scale": "2.90"},
+	"6": {"damage": "25", "speed": "650", "projectile_hits": "1", "fire_interval_sec": "1.9", "ammo": "17", "explosion_scale": "3.10"},
+	"7": {"damage": "30", "speed": "680", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "18", "explosion_scale": "3.35"},
+	"8": {"damage": "36", "speed": "700", "projectile_hits": "1", "fire_interval_sec": "1.7", "ammo": "19", "explosion_scale": "3.60"},
+	"9": {"damage": "43", "speed": "720", "projectile_hits": "1", "fire_interval_sec": "1.6", "ammo": "20", "explosion_scale": "3.90"}
 }
 
 
@@ -90,7 +90,7 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	if event_name != &"on_enemy_killed":
 		return
 	var source_weapon := detail.get("source_weapon", null) as Weapon
-	if source_weapon != self or not is_main_weapon():
+	if source_weapon != self:
 		return
 	var death_position_variant: Variant = detail.get("position", null)
 	if not (death_position_variant is Vector2):
@@ -111,19 +111,27 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 
 func get_passive_status() -> Dictionary:
 	var state := "ready"
-	if not is_main_weapon():
-		state = "inactive"
-	elif not is_passive_ready():
+	if not is_passive_ready():
 		state = "waiting_refresh"
-	return {
+	var charge_current := passive_controller.get_passive_charge_current()
+	var charge_max := passive_controller.get_passive_charge_max()
+	return with_passive_charge_status({
 		"id": "rocket_cluster_kill_triggered",
 		"display_name": "Cluster Kill",
 		"state": state,
+		"progress": float(charge_current) / float(maxi(charge_max, 1)),
 		"ready": state == "ready",
 		"trigger_hint": "enemy_killed_nearby_enemy",
 		"refresh_hint": "reload",
+		"charge_current": charge_current,
+		"charge_max": charge_max,
+		"charges_current": charge_current,
+		"charges_max": charge_max,
 		"radius": maxf(cluster_kill_radius, 0.0),
-	}
+	})
+
+func get_passive_max_charges() -> int:
+	return 3
 
 func _count_other_enemies_near(position: Vector2, killed_enemy: Variant) -> int:
 	var tree := get_tree()

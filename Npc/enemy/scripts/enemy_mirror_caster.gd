@@ -10,7 +10,7 @@ const MIRROR_CLONE_SCENE := preload("res://Npc/enemy/scenes/enemy_mirror_clone.t
 @export var mirror_duration: float = 6.0
 @export var mirror_spawn_radius: float = 95.0
 @export var reposition_distance: float = 180.0
-@export var cast_range: float = 480.0
+@export var cast_range: float = 200.0
 @export var random_move_change_interval_sec: float = 3.0
 
 var _cooldown_remaining: float = 1.8

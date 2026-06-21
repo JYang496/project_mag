@@ -4,6 +4,7 @@ class_name EnemySpawner
 @onready var timer = $Timer
 @export var debug_print_spawn_stats := true
 @export var debug_print_kill_gold_stats := true
+@export var debug_print_kill_gold_drop_stats := false
 @export var min_spawn_distance_from_player: float = 180.0
 @export var spawn_point_attempts_per_enemy: int = 12
 @export var spawn_edge_margin: float = 28.0
@@ -27,7 +28,6 @@ var _rng := RandomNumberGenerator.new()
 var _enemy_metadata_cache: Dictionary = {}
 var _kill_gold_budget: int = 0
 var _kill_gold_paid: int = 0
-var _kill_gold_expected_kills: int = 1
 var _kill_gold_battle_timeout: int = 1
 var _kill_gold_budget_active: bool = false
 var _warned_inactive_kill_gold_budget: bool = false
@@ -212,7 +212,7 @@ func record_kill_gold_coin_spawned(value: int) -> void:
 	var gold_value := maxi(value, 0)
 	if gold_value <= 0:
 		return
-	if debug_print_kill_gold_stats:
+	if debug_print_kill_gold_drop_stats:
 		print("[KillGoldDrop] level=%d value=%d generated_total=%d collected_total=%d remaining_coin_value=%d" % [
 			maxi(PhaseManager.current_level, 0),
 			gold_value,
@@ -244,9 +244,7 @@ func _resolve_enemy_kill_gold_hp(enemy_instance: Node) -> int:
 		var hp_value: Variant = enemy_instance.get("hp")
 		if hp_value != null:
 			return maxi(int(hp_value), 1)
-	var level_index := maxi(PhaseManager.current_level, 0)
-	var average_hp := float(_resolve_kill_gold_target_total_hp_for_level(level_index)) / float(maxi(_kill_gold_expected_kills, 1))
-	return maxi(int(round(average_hp)), 1)
+	return 0
 
 func _resolve_kill_gold_target_total_hp_for_level(level_index: int) -> int:
 	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
@@ -272,7 +270,6 @@ func get_kill_gold_budget_snapshot() -> Dictionary:
 		"budget": _kill_gold_budget,
 		"paid": _kill_gold_paid,
 		"remaining": maxi(_kill_gold_budget - _kill_gold_paid, 0),
-		"expected_kills": _kill_gold_expected_kills,
 		"battle_timeout": _kill_gold_battle_timeout,
 	}
 
@@ -284,7 +281,6 @@ func _start_kill_gold_budget(level_index: int, effective_time_out: int) -> void:
 	_kill_gold_budget = maxi(0, int(round(float(target) * randf_range(roll_min, roll_max))))
 	_kill_gold_paid = 0
 	_kill_gold_collected = 0
-	_kill_gold_expected_kills = maxi(_resolve_expected_kills_for_level(level_index), 1)
 	_kill_gold_battle_timeout = maxi(effective_time_out, 1)
 	_kill_gold_budget_active = _kill_gold_budget > 0
 	_warned_inactive_kill_gold_budget = false
@@ -306,16 +302,6 @@ func _resolve_kill_gold_target_for_level(level_index: int) -> int:
 	var increment := maxi(int(economy.kill_gold_target_increment_after_table), 0)
 	return maxi(int(targets[targets.size() - 1]) + increment * (safe_level - targets.size() + 1), 0)
 
-func _resolve_expected_kills_for_level(level_index: int) -> int:
-	var economy := _get_economy_config()
-	var expected: PackedInt32Array = economy.kill_gold_expected_kills_by_level
-	if expected.is_empty():
-		return 1
-	var safe_level := maxi(level_index, 0)
-	if safe_level < expected.size():
-		return maxi(int(expected[safe_level]), 1)
-	return maxi(int(expected[expected.size() - 1]), 1)
-
 func _get_kill_gold_budget_variance() -> float:
 	var economy := _get_economy_config()
 	return clampf(float(economy.kill_gold_budget_variance), 0.0, 1.0)
@@ -332,11 +318,6 @@ func _get_economy_config() -> EconomyConfig:
 	if GlobalVariables.economy_data:
 		return GlobalVariables.economy_data
 	return EconomyConfig.new()
-
-func _estimate_remaining_kill_count() -> int:
-	var progress := clampf(float(PhaseManager.battle_time) / float(maxi(_kill_gold_battle_timeout, 1)), 0.0, 1.0)
-	var expected_done := int(round(float(_kill_gold_expected_kills) * progress))
-	return maxi(_kill_gold_expected_kills - expected_done, 1)
 
 func _get_state_entry(state: Dictionary) -> EnemySpawnEntry:
 	return state.get("entry") as EnemySpawnEntry

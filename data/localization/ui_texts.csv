@@ -3,9 +3,9 @@ ui.passive.next_radial_volley,Next volley: {count},下次环射：{count}根
 ui.language.en,English,English
 ui.language.zh_cn,Simplified Chinese,简体中文
 ui.start.title,Project Mag Title,Project Mag 标题
-ui.start.continue,Continue,继续
+ui.start.continue,Continue Game,继续游戏
 ui.start.start_game,Start Game,开始游戏
-ui.start.new_game,Erase Data,清除存档
+ui.start.new_game,New Game,全新游戏
 ui.start.hp_safety,Keep HP > 1: {state},保留生命值 > 1：{state}
 ui.start.resolution,Resolution,分辨率
 ui.start.resolution_tooltip,Run standalone or exported build to change window resolution.,请在独立运行或导出版本中修改窗口分辨率。

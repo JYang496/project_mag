@@ -134,8 +134,6 @@ func on_beam_hit_target(target: Node, beam_profile: Dictionary = {}, hit_damage:
 		behavior.on_charged_beam_hit(target, beam_profile, hit_damage)
 
 func _try_trigger_simultaneous_beam_hits(target: Node, beam_node: Node) -> void:
-	if not is_main_weapon():
-		return
 	if target == null or not is_instance_valid(target):
 		return
 	if beam_node == null or not is_instance_valid(beam_node):
@@ -171,13 +169,13 @@ func get_passive_status() -> Dictionary:
 	var required_hits := maxi(1, simultaneous_hit_trigger_count)
 	var current_hits := mini(_beam_multi_hit_target_ids.size(), required_hits)
 	var state := "charging"
-	if not is_main_weapon():
-		state = "inactive"
-	elif _beam_multi_hit_triggered or not is_passive_ready():
+	if _beam_multi_hit_triggered or not is_passive_ready():
 		state = "waiting_refresh"
 	elif current_hits >= required_hits:
 		state = "ready_pending_action"
-	return {
+	var charge_current := passive_controller.get_passive_charge_current()
+	var charge_max := passive_controller.get_passive_charge_max()
+	return with_passive_charge_status({
 		"id": "charged_blaster_multi_hit_triggered",
 		"display_name": "Beam Multi Hit",
 		"state": state,
@@ -187,7 +185,14 @@ func get_passive_status() -> Dictionary:
 		"ready": state == "ready_pending_action",
 		"trigger_hint": "same_beam_unique_targets",
 		"refresh_hint": "reload",
-	}
+		"charge_current": charge_current,
+		"charge_max": charge_max,
+		"charges_current": charge_current,
+		"charges_max": charge_max,
+	})
+
+func get_passive_max_charges() -> int:
+	return 3
 
 func reduce_cooldown_remaining(seconds: float) -> float:
 	if seconds <= 0.0:

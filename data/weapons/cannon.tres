@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="WeaponDefinition" format=3 uid="uid://bjhiu5w8gb54x"]
 
-[ext_resource type="Texture2D" uid="uid://bo8agyho2ubhi" path="res://asset/images/weapons/pistol.png" id="1_icon"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/cannon2.png" id="1_icon"]
 [ext_resource type="Script" uid="uid://cf8w6uadvmajn" path="res://data/WeaponDefinition.gd" id="3_def"]
 
 [resource]
@@ -9,5 +9,5 @@ weapon_id = "25"
 display_name = "Cannon"
 icon = ExtResource("1_icon")
 price = 80
-description = "Heavy physical cannon with a short windup before each shot."
+description = "Heavy precision cannon. Idle long enough to prime a breach shot with stronger direct damage and short vulnerability on the target."
 scene_path = "res://Player/Weapons/Instances/cannon.tscn"

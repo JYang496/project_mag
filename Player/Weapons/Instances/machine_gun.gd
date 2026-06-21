@@ -188,13 +188,11 @@ func get_passive_status() -> Dictionary:
 	var spent: int = max(0, effective_capacity - current_ammo)
 	var progress: float = clampf(float(spent) / float(effective_capacity), 0.0, 1.0)
 	var state := "charging"
-	if not is_main_weapon():
-		state = "inactive"
-	elif not is_passive_ready():
+	if not is_passive_ready():
 		state = "waiting_refresh"
 	elif spent > 0:
 		state = "ready_pending_action"
-	return {
+	return with_passive_charge_status({
 		"id": "machine_gun_heat_expansion",
 		"display_name": "Heat Expansion",
 		"state": state,
@@ -204,7 +202,7 @@ func get_passive_status() -> Dictionary:
 		"ready": state == "ready_pending_action",
 		"trigger_hint": "reload_started",
 		"refresh_hint": "reload_finished",
-	}
+	})
 
 func _get_level_data(lv: String) -> Dictionary:
 	return get_weapon_level_data(lv, weapon_data)

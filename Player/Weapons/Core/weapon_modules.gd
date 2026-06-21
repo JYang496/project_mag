@@ -7,7 +7,8 @@ class_name WeaponModules
 	"fire",
 	"freeze",
 	"heat",
-	"charge"
+	"charge",
+	"auto_fire"
 ) var weapon_traits: int = 0
 
 func get_normalized_weapon_traits() -> Array[StringName]:

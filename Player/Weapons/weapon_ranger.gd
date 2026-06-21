@@ -249,6 +249,9 @@ func _adjust_sprite_height() -> void:
 	var scale_factor := SPRITE_TARGET_HEIGHT / tex_height
 	sprite.scale = Vector2(scale_factor, scale_factor)
 
+func _on_fuse_texture_changed() -> void:
+	_adjust_sprite_height()
+
 func _update_weapon_rotation() -> void:
 	var mouse_direction := get_global_mouse_position() - global_position
 	if mouse_direction == Vector2.ZERO:

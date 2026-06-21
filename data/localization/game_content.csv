@@ -1,6 +1,6 @@
 keys,en,zh_CN
 weapon.25.name,Cannon,Cannon
-weapon.25.desc,Heavy physical cannon with a short windup before each shot.,Heavy physical cannon with a short windup before each shot.
+weapon.25.desc,Heavy precision cannon. Idle long enough to prime a breach shot with stronger direct damage and short vulnerability on the target.,Heavy precision cannon. Idle long enough to prime a breach shot with stronger direct damage and short vulnerability on the target.
 weapon.10.name,Chainsaw Launcher,Chainsaw Launcher
 weapon.10.desc,chainsaw launcher test,chainsaw launcher test
 weapon.2.name,Charged Blaster,Charged Blaster
@@ -22,7 +22,7 @@ weapon.5.desc,Auto-targeting sidearm that fires at the nearest enemy in range. M
 weapon.17.name,Plasma Lance,Plasma Lance
 weapon.17.desc,Slow heavy piercing lance. Projectile damage increases after each penetration.,Slow heavy piercing lance. Projectile damage increases after each penetration.
 weapon.8.name,Rocket Launcher,Rocket Launcher
-weapon.8.desc,test: rocket launcher,test: rocket launcher
+weapon.8.desc,"Area-control launcher with slow rockets, growing blast radius, and Cluster Kill charges for clearing enemy groups.","Area-control launcher with slow rockets, growing blast radius, and Cluster Kill charges for clearing enemy groups."
 weapon.4.name,shotgun,shotgun
 weapon.4.desc,shotgun test: muti shoot,shotgun test: muti shoot
 weapon.26.name,Sniper,Sniper
@@ -70,9 +70,9 @@ branch.arc_coil.desc,Energy branch: each hit chains arc damage to nearby enemies
 branch.cryo_carbine.name,Cryo Carbine,Cryo Carbine
 branch.cryo_carbine.desc,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.
 branch.napalm_rocket.name,Napalm Rocket,Napalm Rocket
-branch.napalm_rocket.desc,Explosions persist as burning zones that deal periodic damage.,Explosions persist as burning zones that deal periodic damage.
+branch.napalm_rocket.desc,Explosions persist as burning zones for area denial and grouped enemy cleanup.,Explosions persist as burning zones for area denial and grouped enemy cleanup.
 branch.salvo_rocket.name,Salvo Rocket,Salvo Rocket
-branch.salvo_rocket.desc,Fires a spread of rockets per trigger pull with reduced per-rocket damage.,Fires a spread of rockets per trigger pull with reduced per-rocket damage.
+branch.salvo_rocket.desc,Fires a spread of reduced-damage rockets to saturate a wider enemy group.,Fires a spread of reduced-damage rockets to saturate a wider enemy group.
 branch.shatter_buckshot.name,Shatter Buckshot,Shatter Buckshot
 branch.shatter_buckshot.desc,Freeze pellets can shatter targets after rapid multi-hit bursts.,Freeze pellets can shatter targets after rapid multi-hit bursts.
 branch.sniper_deep_pierce.name,Deep Pierce,Deep Pierce

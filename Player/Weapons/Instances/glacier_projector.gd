@@ -115,8 +115,6 @@ func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> vo
 	_try_trigger_main_freeze_hit(target, damage_type)
 
 func _try_trigger_main_freeze_hit(target: Node, damage_type: StringName) -> void:
-	if not is_main_weapon():
-		return
 	if Attack.normalize_damage_type(damage_type) != Attack.TYPE_FREEZE:
 		return
 	if not is_offhand_skill_ready():
@@ -141,8 +139,6 @@ func _trigger_cold_snap(target: Node) -> void:
 	_try_emit_cold_snap_trigger(target)
 
 func _try_emit_cold_snap_trigger(target: Node) -> void:
-	if not is_main_weapon():
-		return
 	if not is_offhand_skill_ready():
 		return
 	notify_offhand_skill_triggered(0.0)
@@ -177,11 +173,9 @@ func get_passive_status() -> Dictionary:
 	var recharge_sec := maxf(cold_snap_recharge_sec, 0.0)
 	var cooldown_remaining := maxf(_cold_snap_recharge_remaining_sec, 0.0)
 	var state := "ready"
-	if not is_main_weapon():
-		state = "inactive"
-	elif not is_passive_ready():
+	if not is_passive_ready():
 		state = "cooldown"
-	return {
+	return with_passive_charge_status({
 		"id": "glacier_cold_snap_triggered",
 		"display_name": "Cold Snap",
 		"state": state,
@@ -191,7 +185,7 @@ func get_passive_status() -> Dictionary:
 		"cooldown_remaining": cooldown_remaining,
 		"cooldown_duration": recharge_sec,
 		"progress": 1.0 if recharge_sec <= 0.0 else 1.0 - clampf(cooldown_remaining / recharge_sec, 0.0, 1.0),
-	}
+	})
 
 func _collect_targets_in_cone(forward: Vector2) -> Array[Node]:
 	var output: Array[Node] = []
@@ -260,7 +254,7 @@ func _update_cold_snap_recharge(delta: float) -> void:
 		return
 	_cold_snap_recharge_remaining_sec = maxf(_cold_snap_recharge_remaining_sec - maxf(delta, 0.0), 0.0)
 	if _cold_snap_recharge_remaining_sec <= 0.0:
-		_offhand_skill_ready = true
+		passive_controller.force_ready()
 
 func _ensure_glacier_vfx() -> void:
 	if _glacier_vfx != null and is_instance_valid(_glacier_vfx):

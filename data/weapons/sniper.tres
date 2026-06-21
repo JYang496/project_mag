@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="WeaponDefinition" format=3 uid="uid://c5w57t1r7cbi4"]
 
-[ext_resource type="Texture2D" uid="uid://sw3knqg1x4to" path="res://asset/images/test/sniper.png" id="1_icon"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/sniper.png" id="1_icon"]
 [ext_resource type="Script" uid="uid://cf8w6uadvmajn" path="res://data/WeaponDefinition.gd" id="3_def"]
 
 [resource]

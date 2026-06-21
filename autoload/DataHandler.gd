@@ -257,6 +257,12 @@ func instantiate_weapon_from_save_payload(payload: Dictionary) -> Weapon:
 		push_warning("Cannot instantiate saved weapon id=%s." % weapon_id)
 		return null
 	weapon.fuse = clampi(int(payload.get("fuse", 1)), 1, int(weapon.FINAL_MAX_FUSE))
+	weapon.level = int(payload.get("level", 1))
+	return weapon
+
+func restore_weapon_runtime_from_save_payload(weapon: Weapon, payload: Dictionary) -> void:
+	if weapon == null or not is_instance_valid(weapon):
+		return
 	if weapon.has_method("refresh_max_level_from_data"):
 		weapon.call("refresh_max_level_from_data")
 	var saved_level := clampi(int(payload.get("level", 1)), 1, int(weapon.max_level))
@@ -270,7 +276,6 @@ func instantiate_weapon_from_save_payload(payload: Dictionary) -> Weapon:
 		_restore_weapon_modules_from_payload(weapon, payload.get("modules", []))
 	if weapon.has_method("calculate_status"):
 		weapon.call("calculate_status")
-	return weapon
 
 func _restore_weapon_modules_from_payload(weapon: Weapon, module_payloads: Array) -> void:
 	if weapon == null or weapon.modules == null:

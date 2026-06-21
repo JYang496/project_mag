@@ -297,9 +297,11 @@ func _restore_player_state(payload: Dictionary) -> void:
 		for weapon_variant in payload.get("weapons", []):
 			if not (weapon_variant is Dictionary):
 				continue
-			var weapon := DataHandler.instantiate_weapon_from_save_payload(weapon_variant as Dictionary)
+			var weapon_payload := weapon_variant as Dictionary
+			var weapon := DataHandler.instantiate_weapon_from_save_payload(weapon_payload)
 			if weapon:
 				player.create_weapon(weapon)
+				DataHandler.restore_weapon_runtime_from_save_payload(weapon, weapon_payload)
 		PlayerData.set_main_weapon_index(int(payload.get("main_weapon_index", 0)))
 
 func _restore_inventory_state(payload: Dictionary) -> void:
@@ -324,9 +326,11 @@ func _restore_inventory_state(payload: Dictionary) -> void:
 	for weapon_variant in payload.get("weapon_storage", []):
 		if not (weapon_variant is Dictionary):
 			continue
-		var weapon := DataHandler.instantiate_weapon_from_save_payload(weapon_variant as Dictionary)
+		var weapon_payload := weapon_variant as Dictionary
+		var weapon := DataHandler.instantiate_weapon_from_save_payload(weapon_payload)
 		if weapon:
 			InventoryData.add_child(weapon)
+			DataHandler.restore_weapon_runtime_from_save_payload(weapon, weapon_payload)
 			InventoryData.call("_transfer_weapon_modules_to_temporary", weapon)
 			weapon.visible = false
 			weapon.process_mode = Node.PROCESS_MODE_DISABLED

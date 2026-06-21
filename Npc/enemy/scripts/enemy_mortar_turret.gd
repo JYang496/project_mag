@@ -4,8 +4,8 @@ class_name EnemyMortarTurret
 const AREA_EFFECT_SCENE := preload("res://Utility/area_effect/area_effect.tscn")
 const WARNING_SCENE := preload("res://Npc/enemy/scenes/target_warning.tscn")
 
-@export var detect_range: float = 760.0
-@export var attack_range: float = 480.0
+@export var detect_range: float = 560.0
+@export var attack_range: float = 360.0
 @export_range(0.1, 1.0, 0.01) var stationary_enter_range_ratio: float = 0.8
 @export var cast_delay: float = 1.25
 @export var cooldown_duration: float = 2.9

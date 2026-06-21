@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_4h80h"]
 [ext_resource type="Script" uid="uid://cgt5h2lpnxfs0" path="res://Player/Weapons/Instances/orbit.gd" id="1_lxm1t"]
-[ext_resource type="Texture2D" path="res://asset/images/weapons/pistol.png" id="2_d4sd2"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/orbit.png" id="2_d4sd2"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_8qu7o"]
 
 [node name="Orbit" unique_id=80514895 instance=ExtResource("1_4h80h")]

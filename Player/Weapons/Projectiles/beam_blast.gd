@@ -37,6 +37,7 @@ func _ready() -> void:
 	clip_to_nearest_target = bool(beam_profile.get("clip_to_nearest_target", false))
 	var safe_hit_cd: float = maxf(float(hit_cd) if hit_cd != null else 0.2, 0.01)
 	if hitbox_dot:
+		hitbox_dot.hitbox_owner = self
 		var dot_hitbox := hitbox_dot as HitBoxDot
 		if dot_hitbox != null:
 			dot_hitbox.dot_cd = safe_hit_cd

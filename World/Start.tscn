@@ -97,11 +97,9 @@ text = "Start"
 script = ExtResource("2_jyp4w")
 
 [node name="New Game" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=2016277216]
-visible = false
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-disabled = true
-text = "Erase Data"
+text = "New Game"
 script = ExtResource("1_y1dix")
 
 [node name="HpSafetyToggle" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=1322643656]

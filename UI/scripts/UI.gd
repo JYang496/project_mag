@@ -269,10 +269,11 @@ func _restore_pending_equipment_transactions() -> void:
 	var transaction := InventoryData.pending_transactions[0] as Dictionary
 	match str(transaction.get("type", "")):
 		"weapon_replacement":
-			var weapon := DataHandler.instantiate_weapon_from_save_payload(
-				transaction.get("weapon", {}) as Dictionary
-			)
+			var weapon_payload := transaction.get("weapon", {}) as Dictionary
+			var weapon := DataHandler.instantiate_weapon_from_save_payload(weapon_payload)
 			if weapon:
+				add_child(weapon)
+				DataHandler.restore_weapon_runtime_from_save_payload(weapon, weapon_payload)
 				request_weapon_replacement(
 					weapon,
 					bool(transaction.get("allow_cancel", true))

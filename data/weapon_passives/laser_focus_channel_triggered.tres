@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WeaponPassiveBranchDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/WeaponPassiveBranchDefinition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+passive_id = "laser_focus_channel_triggered"
+display_name = "Focus Channel"
+description = "Has 1 charge. Laser beam hits spend the charge to trigger a focus event. Reloading restores the charge."
+condition_type = "beam_hit"
+refresh_type = "reload"
+ui_mode = "state"

@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "pistol_continuous_move_triggered"
 display_name = "Pierce Mark"
-description = "Periodically enters a short window. Auto Pistol hits during the window mark enemies; projectiles do not spend durability when hitting marked enemies."
+description = "Has 3 charges. Periodically spends 1 charge to enter a short window; Auto Pistol hits during the window mark enemies. Reloading restores all charges."
 condition_type = "periodic_window"
-refresh_type = "time"
+refresh_type = "reload"
 ui_mode = "progress"

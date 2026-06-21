@@ -90,9 +90,9 @@ func _ensure_language_option() -> void:
 
 func _configure_visible_controls() -> void:
 	if new_game_button:
-		new_game_button.visible = false
-		new_game_button.disabled = true
-		new_game_button.focus_mode = Control.FOCUS_NONE
+		new_game_button.visible = true
+		new_game_button.disabled = false
+		new_game_button.focus_mode = Control.FOCUS_ALL
 	if hp_safety_button:
 		hp_safety_button.visible = false
 		hp_safety_button.disabled = true
@@ -132,9 +132,9 @@ func _on_language_changed(_locale: String) -> void:
 
 func _apply_localized_text() -> void:
 	title_label.text = LocalizationManager.tr_key("ui.start.title", title_label.text)
-	start_button.text = LocalizationManager.tr_key("ui.start.start_game", "Start Game")
+	start_button.text = LocalizationManager.tr_key("ui.start.continue", "Continue Game")
 	if new_game_button:
-		new_game_button.text = LocalizationManager.tr_key("ui.start.new_game", new_game_button.text)
+		new_game_button.text = LocalizationManager.tr_key("ui.start.new_game", "New Game")
 	resolution_label.text = LocalizationManager.tr_key("ui.start.resolution", resolution_label.text)
 	if mechas_label:
 		mechas_label.text = LocalizationManager.tr_key("ui.start.mechas", mechas_label.text)

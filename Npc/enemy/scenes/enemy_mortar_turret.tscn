@@ -12,8 +12,8 @@ size = Vector2(24, 24)
 
 [node name="EnemyMortarTurret" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-detect_range = 760.0
-attack_range = 480.0
+detect_range = 560.0
+attack_range = 360.0
 stationary_enter_range_ratio = 0.8
 damage = 4
 spawn_cost = 5

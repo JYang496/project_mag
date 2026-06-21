@@ -11,11 +11,15 @@ const DROP_SCENE := preload("res://Objects/loots/drop.tscn")
 const DROP_ITEM_SCENE := preload("res://Objects/loots/drop_item.tscn")
 
 var _last_phase := ""
+var _module_candidate_cache: Array[Dictionary] = []
+var _module_candidate_cache_ready := false
+var _module_candidate_cache_building := false
 
 func _ready() -> void:
 	_last_phase = PhaseManager.current_state()
 	if not PhaseManager.phase_changed.is_connected(_on_phase_changed):
 		PhaseManager.phase_changed.connect(_on_phase_changed)
+	call_deferred("_warm_module_candidate_cache")
 
 func _exit_tree() -> void:
 	if PhaseManager.phase_changed.is_connected(_on_phase_changed):
@@ -93,6 +97,11 @@ func _build_all_weapon_drop_candidates() -> Array[Dictionary]:
 	return candidates
 
 func _build_all_module_drop_candidates() -> Array[Dictionary]:
+	if _module_candidate_cache_ready:
+		return _copy_module_candidate_cache(false)
+	return _build_module_candidates_uncached(false)
+
+func _build_module_candidates_uncached(filter_unavailable_rewards: bool) -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
 	var dir := DirAccess.open(MODULE_DIRECTORY_PATH)
 	if dir == null:
@@ -102,21 +111,73 @@ func _build_all_module_drop_candidates() -> Array[Dictionary]:
 	while file_name != "":
 		if not dir.current_is_dir() and file_name.ends_with(".tscn") and file_name != "wmod_base.tscn":
 			var scene_path := MODULE_DIRECTORY_PATH + file_name
-			var module_scene := load(scene_path) as PackedScene
-			var module_instance := module_scene.instantiate() as Module if module_scene else null
-			if module_instance and module_instance.get_drop_weight() > 0.0:
-				candidates.append({
-					"type": REWARD_TYPE_MODULE,
-					"scene": module_scene,
-					"scene_path": scene_path,
-					"rarity": module_instance.get_rarity(),
-					"weight": module_instance.get_drop_weight(),
-				})
-			if module_instance:
-				module_instance.free()
+			var candidate := _build_module_candidate_from_scene(scene_path, filter_unavailable_rewards)
+			if not candidate.is_empty():
+				candidates.append(candidate)
 		file_name = dir.get_next()
 	dir.list_dir_end()
 	return candidates
+
+func _warm_module_candidate_cache() -> void:
+	if _module_candidate_cache_ready or _module_candidate_cache_building:
+		return
+	_module_candidate_cache_building = true
+	var candidates: Array[Dictionary] = []
+	var scene_paths := _collect_module_candidate_scene_paths()
+	for scene_path in scene_paths:
+		var candidate := _build_module_candidate_from_scene(scene_path, false)
+		if not candidate.is_empty():
+			candidates.append(candidate)
+		if is_inside_tree():
+			await get_tree().process_frame
+	_module_candidate_cache = candidates
+	_module_candidate_cache_ready = true
+	_module_candidate_cache_building = false
+
+func _collect_module_candidate_scene_paths() -> PackedStringArray:
+	var paths := PackedStringArray()
+	var dir := DirAccess.open(MODULE_DIRECTORY_PATH)
+	if dir == null:
+		return paths
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir() and file_name.ends_with(".tscn") and file_name != "wmod_base.tscn":
+			paths.append(MODULE_DIRECTORY_PATH + file_name)
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	return paths
+
+func _copy_module_candidate_cache(filter_unavailable_rewards: bool) -> Array[Dictionary]:
+	var output: Array[Dictionary] = []
+	for candidate in _module_candidate_cache:
+		var scene_path := str(candidate.get("scene_path", ""))
+		if filter_unavailable_rewards and not _can_offer_module_reward(scene_path):
+			continue
+		output.append(candidate.duplicate(false))
+	return output
+
+func _build_module_candidate_from_scene(scene_path: String, filter_unavailable_rewards: bool) -> Dictionary:
+	if filter_unavailable_rewards and not _can_offer_module_reward(scene_path):
+		return {}
+	var module_scene := load(scene_path) as PackedScene
+	if module_scene == null:
+		return {}
+	var module_instance := module_scene.instantiate() as Module
+	if module_instance == null:
+		return {}
+	var weight := module_instance.get_drop_weight()
+	var rarity: String = module_instance.get_rarity()
+	module_instance.free()
+	if weight <= 0.0:
+		return {}
+	return {
+		"type": REWARD_TYPE_MODULE,
+		"scene": module_scene,
+		"scene_path": scene_path,
+		"rarity": rarity,
+		"weight": weight,
+	}
 
 func _resolve_rest_area_drop_origin() -> Vector2:
 	for node in get_tree().get_nodes_in_group("rest_area"):
@@ -299,44 +360,12 @@ func _build_weapon_reward_candidates() -> Array[Dictionary]:
 	return candidates
 
 func _build_module_reward_candidates() -> Array[Dictionary]:
-	var candidates: Array[Dictionary] = []
-	var dir := DirAccess.open(MODULE_DIRECTORY_PATH)
-	if dir == null:
-		push_warning("Unable to open module reward directory: %s" % MODULE_DIRECTORY_PATH)
-		return candidates
-	dir.list_dir_begin()
-	var file_name := dir.get_next()
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.to_lower().ends_with(".tscn") and file_name != "wmod_base.tscn":
-			var scene_path := MODULE_DIRECTORY_PATH + file_name
-			var candidate := _build_module_reward_candidate(scene_path)
-			if not candidate.is_empty():
-				candidates.append(candidate)
-		file_name = dir.get_next()
-	dir.list_dir_end()
-	return candidates
+	if _module_candidate_cache_ready:
+		return _copy_module_candidate_cache(true)
+	return _build_module_candidates_uncached(true)
 
 func _build_module_reward_candidate(scene_path: String) -> Dictionary:
-	if not _can_offer_module_reward(scene_path):
-		return {}
-	var module_scene := load(scene_path) as PackedScene
-	if module_scene == null:
-		return {}
-	var module_instance := module_scene.instantiate() as Module
-	if module_instance == null:
-		return {}
-	var weight := module_instance.get_drop_weight()
-	var rarity: String = module_instance.get_rarity()
-	module_instance.free()
-	if weight <= 0.0:
-		return {}
-	return {
-		"type": REWARD_TYPE_MODULE,
-		"scene": module_scene,
-		"scene_path": scene_path,
-		"rarity": rarity,
-		"weight": weight,
-	}
+	return _build_module_candidate_from_scene(scene_path, true)
 
 func _roll_reward_option(
 	weapon_candidates: Array[Dictionary],

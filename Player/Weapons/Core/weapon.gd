@@ -670,6 +670,9 @@ func get_weapon_active_hit_window_progress() -> Dictionary:
 func get_passive_status() -> Dictionary:
 	return passive_controller.get_passive_status()
 
+func with_passive_charge_status(status: Dictionary) -> Dictionary:
+	return passive_controller.with_passive_charge_status(status)
+
 func is_passive_ready() -> bool:
 	return passive_controller.is_passive_ready()
 
@@ -687,6 +690,9 @@ func get_offhand_skill_cd_progress() -> float:
 
 func is_offhand_skill_ready() -> bool:
 	return is_passive_ready()
+
+func get_passive_max_charges() -> int:
+	return 1
 
 func _refresh_offhand_skill_on_reload() -> void:
 	refresh_passive_on_reload()

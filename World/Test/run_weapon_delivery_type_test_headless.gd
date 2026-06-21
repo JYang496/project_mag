@@ -13,7 +13,7 @@ const EXPECTED_CLASSIFICATION_BY_SCENE_PATH := {
 		"traits": [&"energy", &"charge"], "delivery": [&"beam"], "capabilities": [],
 	},
 	"res://Player/Weapons/Instances/dash_blade.tscn": {
-		"traits": [&"physical"], "delivery": [&"melee_contact"], "capabilities": [],
+		"traits": [&"physical", &"auto_fire"], "delivery": [&"melee_contact"], "capabilities": [],
 	},
 	"res://Player/Weapons/Instances/flamethrower.tscn": {
 		"traits": [&"fire", &"heat"], "delivery": [&"area"], "capabilities": [],
@@ -31,7 +31,7 @@ const EXPECTED_CLASSIFICATION_BY_SCENE_PATH := {
 		"traits": [&"physical"], "delivery": [&"projectile"], "capabilities": [&"summon"],
 	},
 	"res://Player/Weapons/Instances/pistol.tscn": {
-		"traits": [&"physical"], "delivery": [&"projectile"], "capabilities": [],
+		"traits": [&"physical", &"auto_fire"], "delivery": [&"projectile"], "capabilities": [],
 	},
 	"res://Player/Weapons/Instances/plasma_lance.tscn": {
 		"traits": [&"energy", &"heat"], "delivery": [&"projectile"], "capabilities": [],

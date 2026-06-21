@@ -187,8 +187,6 @@ func _get_level_data(lv: String) -> Dictionary:
 	return get_weapon_level_data(lv, weapon_data)
 
 func _try_trigger_heat_spend_chain(spent: float) -> void:
-	if not is_main_weapon():
-		return
 	if spent <= 0.0:
 		return
 	if not is_offhand_skill_ready():
@@ -202,8 +200,6 @@ func _try_trigger_heat_spend_chain(spent: float) -> void:
 
 func _trigger_pending_heat_spend_chain() -> void:
 	if not _heat_spend_chain_pending:
-		return
-	if not is_main_weapon():
 		return
 	if not is_offhand_skill_ready():
 		return
@@ -237,13 +233,11 @@ func get_passive_status() -> Dictionary:
 	var required_count := maxi(1, heat_spend_attacks_trigger_count)
 	var current_count := mini(_heat_spend_attack_count, required_count)
 	var state := "charging"
-	if not is_main_weapon():
-		state = "inactive"
-	elif not is_passive_ready():
+	if not is_passive_ready():
 		state = "waiting_refresh"
 	elif _heat_spend_chain_pending or current_count >= required_count:
 		state = "ready_pending_action"
-	return {
+	return with_passive_charge_status({
 		"id": "plasma_lance_heat_spend_chain_triggered",
 		"display_name": "Heat Spend Chain",
 		"state": state,
@@ -253,7 +247,7 @@ func get_passive_status() -> Dictionary:
 		"ready": state == "ready_pending_action",
 		"trigger_hint": "reload_finished",
 		"refresh_hint": "reload",
-	}
+	})
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)

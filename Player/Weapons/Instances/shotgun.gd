@@ -174,8 +174,6 @@ func _cleanup_old_shotgun_volleys(current_volley_id: int) -> void:
 			_shotgun_volley_hit_counts.erase(key)
 
 func _try_trigger_close_hit(target: Node) -> void:
-	if not is_main_weapon():
-		return
 	var target_node := target as Node2D
 	if target_node == null or not is_instance_valid(target_node):
 		return
@@ -197,19 +195,27 @@ func _try_trigger_close_hit(target: Node) -> void:
 
 func get_passive_status() -> Dictionary:
 	var state := "ready"
-	if not is_main_weapon():
-		state = "inactive"
-	elif not is_passive_ready():
+	if not is_passive_ready():
 		state = "waiting_refresh"
-	return {
+	var charge_current := passive_controller.get_passive_charge_current()
+	var charge_max := passive_controller.get_passive_charge_max()
+	return with_passive_charge_status({
 		"id": "shotgun_close_hit_triggered",
 		"display_name": "Close Hit",
 		"state": state,
+		"progress": float(charge_current) / float(maxi(charge_max, 1)),
 		"ready": state == "ready",
 		"condition_type": "distance_threshold",
 		"required": maxf(close_hit_trigger_distance, 0.0),
 		"comparison": "<",
 		"trigger_hint": "hit_distance",
 		"refresh_hint": "reload",
+		"charge_current": charge_current,
+		"charge_max": charge_max,
+		"charges_current": charge_current,
+		"charges_max": charge_max,
 		"same_volley_repeat_hit_bonus_ratio": maxf(same_volley_repeat_hit_bonus_ratio, 0.0),
-	}
+	})
+
+func get_passive_max_charges() -> int:
+	return 3

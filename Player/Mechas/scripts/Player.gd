@@ -105,7 +105,8 @@ var _last_visual_position: Vector2 = Vector2.ZERO
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 @export var player_max_energy: float = 100.0
 @export var player_energy_regen_per_sec: float = 8.0
-@export var debug_weapon_passive_trigger_prints: bool = true
+@export var debug_weapon_passive_trigger_prints: bool = false
+@export var debug_weapon_passive_trigger_event_prints: bool = false
 var _player_energy: float = 100.0
 var _last_weapon_skill_fail_reason: String = ""
 var _last_player_skill_fail_reason: String = ""
@@ -629,7 +630,8 @@ func try_shift_main_weapon(step: int) -> bool:
 	if not can_switch_main_weapon():
 		return false
 	var old_main := get_main_weapon()
-	PlayerData.shift_main_weapon(step)
+	if not PlayerData.shift_main_weapon(step):
+		return false
 	_apply_weapon_roles()
 	var new_main := get_main_weapon()
 	_broadcast_weapon_passive_event(&"on_main_swapped", {
@@ -804,7 +806,7 @@ func _resolve_weapon_runtime_damage_for_global_effect(weapon: Weapon) -> int:
 	return 1
 
 func _debug_connect_weapon_passive_triggers() -> void:
-	if not debug_weapon_passive_trigger_prints:
+	if not debug_weapon_passive_trigger_event_prints:
 		return
 	var active_ids := {}
 	for weapon_ref in PlayerData.player_weapon_list:
@@ -824,7 +826,7 @@ func _debug_connect_weapon_passive_triggers() -> void:
 			_debug_passive_connected_weapon_ids.erase(connected_id)
 
 func _debug_on_weapon_passive_triggered(event_name: StringName, detail: Dictionary, weapon: Weapon) -> void:
-	if not debug_weapon_passive_trigger_prints:
+	if not debug_weapon_passive_trigger_event_prints:
 		return
 	if not _debug_is_weapon_passive_trigger_event(event_name):
 		return

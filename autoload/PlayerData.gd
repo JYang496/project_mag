@@ -259,18 +259,61 @@ func set_main_weapon_index(value: int) -> void:
 	if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui):
 		GlobalVariables.ui.refresh_border()
 
-func shift_main_weapon(step: int) -> void:
+func shift_main_weapon(step: int) -> bool:
+	_sanitize_weapon_list_for_switch()
 	if not can_switch_main_weapon():
 		sanitize_main_weapon_index()
 		on_select_weapon = main_weapon_index
-		return
+		return false
 	if main_weapon_index < 0:
 		main_weapon_index = 0
+	if step == 0:
+		on_select_weapon = main_weapon_index
+		return false
 	var size := player_weapon_list.size()
-	var next := (main_weapon_index + step) % size
-	if next < 0:
-		next += size
-	set_main_weapon_index(next)
+	var original_index := main_weapon_index
+	var next := original_index
+	for i in range(size - 1):
+		next = (next + step) % size
+		if next < 0:
+			next += size
+		var candidate := player_weapon_list[next] as Weapon
+		if candidate == null or not is_instance_valid(candidate):
+			continue
+		if _is_auto_fire_weapon(candidate):
+			continue
+		set_main_weapon_index(next)
+		return main_weapon_index != original_index
+	on_select_weapon = main_weapon_index
+	if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui):
+		GlobalVariables.ui.refresh_border()
+	return false
+
+func _sanitize_weapon_list_for_switch() -> void:
+	var current_main: Weapon = null
+	if main_weapon_index >= 0 and main_weapon_index < player_weapon_list.size():
+		current_main = player_weapon_list[main_weapon_index] as Weapon
+	var valid_weapons: Array = []
+	for weapon_variant in player_weapon_list:
+		var weapon := weapon_variant as Weapon
+		if weapon != null and is_instance_valid(weapon):
+			valid_weapons.append(weapon)
+	if valid_weapons.size() == player_weapon_list.size():
+		return
+	player_weapon_list = valid_weapons
+	if current_main != null and is_instance_valid(current_main):
+		main_weapon_index = player_weapon_list.find(current_main)
+	else:
+		main_weapon_index = clampi(main_weapon_index, -1, player_weapon_list.size() - 1)
+	on_select_weapon = main_weapon_index
+	weapon_list_changed.emit()
+
+func _is_auto_fire_weapon(weapon: Weapon) -> bool:
+	if weapon == null or not is_instance_valid(weapon):
+		return false
+	if not weapon.has_method("has_weapon_trait"):
+		return false
+	return bool(weapon.call("has_weapon_trait", WeaponTrait.AUTO_FIRE))
 
 func notify_weapon_list_changed() -> void:
 	weapon_list_changed.emit()
