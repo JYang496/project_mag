@@ -972,9 +972,10 @@ func _get_farthest_boundary_point(player_position: Vector2) -> Vector2:
 	return best_point
 
 func erase_all_enemies():
-	var enemies = get_tree().get_nodes_in_group("enemies")
-	for e : BaseEnemy in enemies:
-		e.erase()
+	for enemy in _get_registered_enemies():
+		var base_enemy := enemy as BaseEnemy
+		if base_enemy != null and is_instance_valid(base_enemy):
+			base_enemy.erase()
 	for runtime_node in get_tree().get_nodes_in_group("enemy_runtime_cleanup"):
 		if runtime_node == null or not is_instance_valid(runtime_node):
 			continue
@@ -982,6 +983,23 @@ func erase_all_enemies():
 			runtime_node.call_deferred("erase")
 		else:
 			runtime_node.call_deferred("queue_free")
+
+func _get_registered_enemies() -> Array[Node2D]:
+	var output: Array[Node2D] = []
+	var registry := get_node_or_null("/root/EnemyRegistry")
+	if registry != null and registry.has_method("get_enemies"):
+		var registered_enemies: Variant = registry.call("get_enemies")
+		if registered_enemies is Array:
+			for enemy_ref in registered_enemies:
+				var enemy := enemy_ref as Node2D
+				if enemy != null and is_instance_valid(enemy):
+					output.append(enemy)
+			return output
+	for enemy_ref in get_tree().get_nodes_in_group("enemies"):
+		var enemy := enemy_ref as Node2D
+		if enemy != null and is_instance_valid(enemy):
+			output.append(enemy)
+	return output
 
 func _apply_level_scaling(state: Dictionary, enemy_instance) -> void:
 	if enemy_instance is BaseEnemy:

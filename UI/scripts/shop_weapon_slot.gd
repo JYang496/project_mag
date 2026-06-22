@@ -64,12 +64,16 @@ func set_selected(value: bool) -> void:
 func _ready():
 	if background:
 		CursorManager.register_control_rule(background, Callable(self, "_cursor_can_click"))
+	_connect_gold_signal()
 	if not item_id and PlayerData.player != null:
 		new_item()
+	else:
+		refresh_affordability()
 
 func _exit_tree() -> void:
 	if background:
 		CursorManager.unregister_control_rule(background)
+	_disconnect_gold_signal()
 
 func empty_item() -> void:
 	_notify_shop_clear()
@@ -81,6 +85,7 @@ func empty_item() -> void:
 	lbl_description.text = ""
 	price_label.text = ""
 	price = 0
+	refresh_affordability()
 	update()
 
 func new_item() -> void:
@@ -118,15 +123,25 @@ func new_item() -> void:
 	var final_price := int(round(float(base_price) * _get_purchase_price_multiplier()))
 	price = max(1, final_price)
 	price_label.text = LocalizationManager.tr_format("ui.shop.weapon.price", {"value": price}, "价格: %s" % price)
+	refresh_affordability()
 	
 
-func _physics_process(_delta) -> void:
-	if PlayerData.player_gold < price: # Unable to purchase if player does not have enough gold
-		price_label.set("theme_override_colors/font_color",Color(1.0,0.0,0.0,1.0))
-		purchasable = false
-	else:
-		price_label.set("theme_override_colors/font_color",Color(1.0,1.0,1.0,1.0))
-		purchasable = true
+func refresh_affordability(_value: int = 0) -> void:
+	purchasable = item_id != null and PlayerData.player_gold >= price
+	price_label.set(
+		"theme_override_colors/font_color",
+		Color(1.0, 1.0, 1.0, 1.0) if purchasable else Color(1.0, 0.0, 0.0, 1.0)
+	)
+
+func _connect_gold_signal() -> void:
+	var callback := Callable(self, "refresh_affordability")
+	if not PlayerData.player_gold_changed.is_connected(callback):
+		PlayerData.player_gold_changed.connect(callback)
+
+func _disconnect_gold_signal() -> void:
+	var callback := Callable(self, "refresh_affordability")
+	if PlayerData.player_gold_changed.is_connected(callback):
+		PlayerData.player_gold_changed.disconnect(callback)
 
 func _on_color_rect_mouse_entered() -> void:
 	hover_over = true

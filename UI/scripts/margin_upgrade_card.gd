@@ -22,6 +22,7 @@ signal upgrade_level(level)
 func _ready():
 	if upgrade_card:
 		CursorManager.register_control_rule(upgrade_card, Callable(self, "_cursor_can_click"))
+	_connect_gold_signal()
 	if weapon_node != null:
 		connect("upgrade_level",Callable(weapon_node,"set_level"))
 		cost_price = _get_upgrade_cost(weapon_node)
@@ -37,18 +38,30 @@ func _ready():
 			status_container.add_child(status_label)
 		itemIcon.texture = weapon_node.sprite.texture
 		lblName.text = LocalizationManager.get_weapon_name_from_node(weapon_node)
+	refresh_affordability()
 
 func _exit_tree() -> void:
 	if upgrade_card:
 		CursorManager.unregister_control_rule(upgrade_card)
+	_disconnect_gold_signal()
 
-func _physics_process(_delta: float) -> void:
+func refresh_affordability(_value: int = 0) -> void:
 	if PlayerData.player_gold < cost_price: # Unable to purchase if player does not have enough gold
 		cost.set("theme_override_colors/font_color",Color(1.0,0.0,0.0,1.0))
 		upgradable = false
 	else:
 		cost.set("theme_override_colors/font_color",Color(1.0,1.0,1.0,1.0))
 		upgradable = true
+
+func _connect_gold_signal() -> void:
+	var callback := Callable(self, "refresh_affordability")
+	if not PlayerData.player_gold_changed.is_connected(callback):
+		PlayerData.player_gold_changed.connect(callback)
+
+func _disconnect_gold_signal() -> void:
+	var callback := Callable(self, "refresh_affordability")
+	if PlayerData.player_gold_changed.is_connected(callback):
+		PlayerData.player_gold_changed.disconnect(callback)
 		
 
 		

@@ -17,15 +17,15 @@ var _last_hit_projectile: Projectile
 @export var close_vulnerability_duration_sec: float = 6.0
 
 var weapon_data = {
-	"1": {"damage": "3", "speed": "200", "projectile_hits": "15", "dot_cd": "0.1", "fire_interval_sec": "1", "ammo": "28"},
-	"2": {"damage": "4", "speed": "200", "projectile_hits": "15", "dot_cd": "0.1", "fire_interval_sec": "1", "ammo": "30"},
-	"3": {"damage": "5", "speed": "200", "projectile_hits": "20", "dot_cd": "0.1", "fire_interval_sec": "1", "ammo": "32"},
-	"4": {"damage": "7", "speed": "200", "projectile_hits": "25", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "34"},
-	"5": {"damage": "9", "speed": "200", "projectile_hits": "25", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "36"},
-	"6": {"damage": "12", "speed": "200", "projectile_hits": "30", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "38"},
-	"7": {"damage": "15", "speed": "200", "projectile_hits": "30", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "40"},
-	"8": {"damage": "18", "speed": "200", "projectile_hits": "30", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "42"},
-	"9": {"damage": "21", "speed": "200", "projectile_hits": "30", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "44"}
+	"1": {"damage": "3", "speed": "200", "projectile_hits": "15", "dot_cd": "0.1", "fire_interval_sec": "1", "ammo": "12"},
+	"2": {"damage": "4", "speed": "200", "projectile_hits": "15", "dot_cd": "0.1", "fire_interval_sec": "1", "ammo": "12"},
+	"3": {"damage": "5", "speed": "200", "projectile_hits": "20", "dot_cd": "0.1", "fire_interval_sec": "1", "ammo": "12"},
+	"4": {"damage": "7", "speed": "200", "projectile_hits": "25", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "18"},
+	"5": {"damage": "9", "speed": "200", "projectile_hits": "25", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "18"},
+	"6": {"damage": "12", "speed": "200", "projectile_hits": "30", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "18"},
+	"7": {"damage": "15", "speed": "200", "projectile_hits": "30", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "18"},
+	"8": {"damage": "18", "speed": "200", "projectile_hits": "30", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "18"},
+	"9": {"damage": "21", "speed": "200", "projectile_hits": "30", "dot_cd": "0.1", "fire_interval_sec": "0.75", "ammo": "18"}
 }
 
 

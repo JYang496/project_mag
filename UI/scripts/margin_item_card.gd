@@ -16,7 +16,7 @@ var price : int
 
 signal select_weapon(item_id)
 
-func _physics_process(_delta) -> void:
+func refresh_affordability(_value: int = 0) -> void:
 	if PlayerData.player_gold < price: # Unable to purchase if player does not have enough gold
 		price_label.set("theme_override_colors/font_color",Color(1.0,0.0,0.0,1.0))
 		purchasable = false
@@ -29,6 +29,7 @@ func _physics_process(_delta) -> void:
 func _ready():
 	if item_card:
 		CursorManager.register_control_rule(item_card, Callable(self, "_cursor_can_click"))
+	_connect_gold_signal()
 	connect("select_weapon",Callable(PlayerData.player,"create_weapon"))
 	if item_id == null:
 		item_id = var_to_str(randi_range(1,10))
@@ -37,10 +38,22 @@ func _ready():
 	lbl_description.text = DataHandler.weapon_list.data[item_id]["description"]
 	price_label.text = DataHandler.weapon_list.data[item_id]["price"]
 	price = int(DataHandler.weapon_list.data[item_id]["price"])
+	refresh_affordability()
 
 func _exit_tree() -> void:
 	if item_card:
 		CursorManager.unregister_control_rule(item_card)
+	_disconnect_gold_signal()
+
+func _connect_gold_signal() -> void:
+	var callback := Callable(self, "refresh_affordability")
+	if not PlayerData.player_gold_changed.is_connected(callback):
+		PlayerData.player_gold_changed.connect(callback)
+
+func _disconnect_gold_signal() -> void:
+	var callback := Callable(self, "refresh_affordability")
+	if PlayerData.player_gold_changed.is_connected(callback):
+		PlayerData.player_gold_changed.disconnect(callback)
 
 func _input(_event):
 	if Input.is_action_just_released("CLICK"):

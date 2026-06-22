@@ -122,6 +122,11 @@ var _suppress_attack_until_released: bool = false
 const ELITE_HIT_SLOW_SOURCE_ID: StringName = &"elite_hit_stagger"
 var _elite_hit_slow_until_msec: int = 0
 var _debug_passive_connected_weapon_ids: Dictionary = {}
+var _weapon_list_dirty := true
+var _weapon_roles_dirty := true
+var _weapon_orbit_states_dirty := true
+var _weapon_orbit_force_reset := true
+var _tracked_weapon_exit_ids: Dictionary = {}
 var _global_weapon_passive_effects: Dictionary = {}
 var _global_weapon_passive_applied: Dictionary = {}
 var _heat_prepared_until_msec: int = 0
@@ -154,6 +159,7 @@ func _ready():
 		push_error("PlayerData autoload missing.")
 		return
 	PlayerData.player = self
+	_connect_weapon_structure_signals()
 	_incoming_damage_pipeline = DamagePipeline.new() as DamagePipeline
 	_setup_incoming_damage_profile()
 	_setup_default_active_skill()
@@ -199,11 +205,10 @@ func custom_ready():
 	create_weapon("1")
 
 func _physics_process(delta):
-	_sanitize_weapon_list_and_roles()
+	_refresh_weapon_structure_if_needed()
 	_update_global_weapon_passives()
 	_update_heat_statuses()
 	_process_combat_input(delta)
-	_sync_weapon_orbit_states()
 	_update_shared_heat_pool(delta)
 	_update_incoming_elemental_effects(delta)
 	_regen_energy(delta)
@@ -294,8 +299,9 @@ func create_weapon(item_id, level := 1, auto_fuse := false):
 	PlayerData.player_weapon_list.append(weapon)
 	if PlayerData.player_weapon_list.size() == 1:
 		PlayerData.set_main_weapon_index(0)
-	_apply_weapon_roles()
-	_sync_weapon_orbit_states(true)
+	PlayerData.notify_weapon_list_changed()
+	_mark_weapon_structure_dirty(true)
+	_refresh_weapon_structure_if_needed()
 	_rebuild_shared_heat_pool()
 	_refresh_weapon_related_ui()
 
@@ -445,8 +451,9 @@ func swap_weapon_position(weapon1, weapon2) -> void:
 	elif PlayerData.main_weapon_index == slot2_index:
 		PlayerData.main_weapon_index = slot1_index
 	PlayerData.on_select_weapon = PlayerData.main_weapon_index
-	_apply_weapon_roles()
-	_sync_weapon_orbit_states(true)
+	PlayerData.notify_weapon_list_changed()
+	_mark_weapon_structure_dirty(true)
+	_refresh_weapon_structure_if_needed()
 	_rebuild_shared_heat_pool()
 
 func _process_combat_input(delta: float) -> void:
@@ -579,16 +586,85 @@ func _ensure_elemental_effect_system() -> void:
 		ENERGY_MARK_TRIGGER_COOLDOWN_SEC
 	)
 
-func _sanitize_weapon_list_and_roles() -> void:
+func _refresh_weapon_structure_if_needed() -> void:
+	if not _weapon_list_dirty and not _weapon_roles_dirty and not _weapon_orbit_states_dirty:
+		return
+	var list_changed := false
+	if _weapon_list_dirty:
+		list_changed = _sanitize_weapon_list()
+		_sync_tracked_weapon_exit_signals()
+	if list_changed:
+		_weapon_roles_dirty = true
+		_weapon_orbit_states_dirty = true
+	if _weapon_roles_dirty:
+		_apply_weapon_roles()
+	if _weapon_orbit_states_dirty:
+		_sync_weapon_orbit_states(_weapon_orbit_force_reset)
+	_weapon_list_dirty = false
+	_weapon_roles_dirty = false
+	_weapon_orbit_states_dirty = false
+	_weapon_orbit_force_reset = false
+
+func _sanitize_weapon_list() -> bool:
 	var valid_weapons: Array = []
 	for weapon in PlayerData.player_weapon_list:
 		if is_instance_valid(weapon):
 			valid_weapons.append(weapon)
-	PlayerData.player_weapon_list = valid_weapons
+	var changed: bool = valid_weapons.size() != PlayerData.player_weapon_list.size()
+	if changed:
+		PlayerData.player_weapon_list = valid_weapons
 	PlayerData.sanitize_main_weapon_index()
 	if valid_weapons.size() == 1:
 		PlayerData.main_weapon_index = 0
-	_apply_weapon_roles()
+	return changed
+
+func _mark_weapon_structure_dirty(force_orbit_reset := false) -> void:
+	_weapon_list_dirty = true
+	_weapon_roles_dirty = true
+	_weapon_orbit_states_dirty = true
+	_weapon_orbit_force_reset = _weapon_orbit_force_reset or force_orbit_reset
+
+func _mark_weapon_roles_dirty() -> void:
+	_weapon_roles_dirty = true
+	_weapon_orbit_states_dirty = true
+
+func _connect_weapon_structure_signals() -> void:
+	if not PlayerData.weapon_list_changed.is_connected(Callable(self, "_on_player_weapon_list_changed")):
+		PlayerData.weapon_list_changed.connect(Callable(self, "_on_player_weapon_list_changed"))
+	if not PlayerData.main_weapon_index_changed.is_connected(Callable(self, "_on_main_weapon_index_changed")):
+		PlayerData.main_weapon_index_changed.connect(Callable(self, "_on_main_weapon_index_changed"))
+
+func _disconnect_weapon_structure_signals() -> void:
+	if PlayerData != null and PlayerData.weapon_list_changed.is_connected(Callable(self, "_on_player_weapon_list_changed")):
+		PlayerData.weapon_list_changed.disconnect(Callable(self, "_on_player_weapon_list_changed"))
+	if PlayerData != null and PlayerData.main_weapon_index_changed.is_connected(Callable(self, "_on_main_weapon_index_changed")):
+		PlayerData.main_weapon_index_changed.disconnect(Callable(self, "_on_main_weapon_index_changed"))
+
+func _on_player_weapon_list_changed() -> void:
+	_mark_weapon_structure_dirty(true)
+
+func _on_main_weapon_index_changed(_old_index: int, _new_index: int, _step: int) -> void:
+	_mark_weapon_roles_dirty()
+
+func _sync_tracked_weapon_exit_signals() -> void:
+	var active_ids: Dictionary = {}
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon := weapon_ref as Weapon
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		var instance_id := weapon.get_instance_id()
+		active_ids[instance_id] = true
+		if _tracked_weapon_exit_ids.has(instance_id):
+			continue
+		_tracked_weapon_exit_ids[instance_id] = true
+		weapon.tree_exiting.connect(_on_tracked_weapon_tree_exiting.bind(instance_id), CONNECT_ONE_SHOT)
+	for tracked_id in _tracked_weapon_exit_ids.keys():
+		if not active_ids.has(tracked_id):
+			_tracked_weapon_exit_ids.erase(tracked_id)
+
+func _on_tracked_weapon_tree_exiting(instance_id: int) -> void:
+	_tracked_weapon_exit_ids.erase(instance_id)
+	_mark_weapon_structure_dirty(true)
 
 func _apply_weapon_roles() -> void:
 	for i in range(PlayerData.player_weapon_list.size()):
@@ -632,7 +708,8 @@ func try_shift_main_weapon(step: int) -> bool:
 	var old_main := get_main_weapon()
 	if not PlayerData.shift_main_weapon(step):
 		return false
-	_apply_weapon_roles()
+	_mark_weapon_roles_dirty()
+	_refresh_weapon_structure_if_needed()
 	var new_main := get_main_weapon()
 	_broadcast_weapon_passive_event(&"on_main_swapped", {
 		"old_main": old_main,
@@ -1989,6 +2066,8 @@ func _on_collision_cd_timeout() -> void:
 	pass
 
 func _exit_tree() -> void:
+	_disconnect_weapon_structure_signals()
+	_tracked_weapon_exit_ids.clear()
 	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
 		_status_hint_manager.clear_all()
 

@@ -27,11 +27,13 @@ static var _module_scene_cache: Array[PackedScene] = []
 func _ready() -> void:
 	if background:
 		CursorManager.register_control_rule(background, Callable(self, "_cursor_can_click"))
+	_connect_gold_signal()
 	new_item()
 
 func _exit_tree() -> void:
 	if background:
 		CursorManager.unregister_control_rule(background)
+	_disconnect_gold_signal()
 	_clear_preview()
 
 func _draw() -> void:
@@ -75,6 +77,7 @@ func new_item() -> void:
 	preview_module.visible = false
 	price = _get_module_purchase_price(preview_module)
 	_refresh_labels()
+	refresh_affordability()
 	queue_redraw()
 
 func empty_item(message: String = "") -> void:
@@ -88,11 +91,22 @@ func empty_item(message: String = "") -> void:
 	price_label.text = ""
 	effect_label.text = ""
 	detail_label.text = ""
+	refresh_affordability()
 	queue_redraw()
 
-func _physics_process(_delta: float) -> void:
+func refresh_affordability(_value: int = 0) -> void:
 	purchasable = module_scene != null and PlayerData.player_gold >= price
 	price_label.set("theme_override_colors/font_color", Color(1.0, 1.0, 1.0, 1.0) if purchasable else Color(1.0, 0.0, 0.0, 1.0))
+
+func _connect_gold_signal() -> void:
+	var callback := Callable(self, "refresh_affordability")
+	if not PlayerData.player_gold_changed.is_connected(callback):
+		PlayerData.player_gold_changed.connect(callback)
+
+func _disconnect_gold_signal() -> void:
+	var callback := Callable(self, "refresh_affordability")
+	if PlayerData.player_gold_changed.is_connected(callback):
+		PlayerData.player_gold_changed.disconnect(callback)
 
 func _on_background_gui_input(event: InputEvent) -> void:
 	if event.is_action_pressed("CLICK") and module_scene != null:

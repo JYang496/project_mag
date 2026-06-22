@@ -75,8 +75,6 @@ func _on_shoot():
 	# Guard against default branch fallback returning a single forward direction.
 	if shot_count > 1 and shot_directions.size() <= 1:
 		shot_directions = _build_spread_directions(base_direction, shot_count, spread_arc)
-	if OS.is_debug_build():
-		print("[Shotgun] shot_count=", shot_count, " dirs=", shot_directions.size(), " spread_arc=", spread_arc)
 	var runtime_damage := get_runtime_shot_damage()
 	var damage_multiplier := branch_runtime.get_branch_projectile_damage_multiplier()
 	var damage_type: StringName = branch_runtime.get_branch_damage_type_override(Attack.TYPE_PHYSICAL)

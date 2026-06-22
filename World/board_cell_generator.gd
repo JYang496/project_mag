@@ -581,11 +581,27 @@ func _get_polygon_local_aabb(polygon_points: PackedVector2Array) -> Rect2:
 func _enforce_traversable_bounds_for_existing_units() -> void:
 	if PlayerData.player and is_instance_valid(PlayerData.player):
 		PlayerData.player.global_position = project_point_to_player_traversable_area(PlayerData.player.global_position)
-	for enemy_node in get_tree().get_nodes_in_group("enemies"):
-		var enemy_2d := enemy_node as Node2D
+	for enemy_2d in _get_registered_enemies():
 		if enemy_2d == null or not is_instance_valid(enemy_2d):
 			continue
 		enemy_2d.global_position = project_point_to_enemy_traversable_area(enemy_2d.global_position)
+
+func _get_registered_enemies() -> Array[Node2D]:
+	var output: Array[Node2D] = []
+	var registry := get_node_or_null("/root/EnemyRegistry")
+	if registry != null and registry.has_method("get_enemies"):
+		var registered_enemies: Variant = registry.call("get_enemies")
+		if registered_enemies is Array:
+			for enemy_ref in registered_enemies:
+				var enemy := enemy_ref as Node2D
+				if enemy != null and is_instance_valid(enemy):
+					output.append(enemy)
+			return output
+	for enemy_ref in get_tree().get_nodes_in_group("enemies"):
+		var enemy := enemy_ref as Node2D
+		if enemy != null and is_instance_valid(enemy):
+			output.append(enemy)
+	return output
 
 func _cell_contains_point(cell: Cell, point: Vector2) -> bool:
 	var capture_polygon: CollisionPolygon2D = cell.get_node_or_null("Area2D/CapturePolygon")
