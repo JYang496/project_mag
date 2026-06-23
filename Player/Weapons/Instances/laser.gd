@@ -37,7 +37,7 @@ func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 
 func _on_shoot():
-	fire_laser_toward(get_global_mouse_position() - global_position)
+	fire_laser_toward(get_mouse_target() - global_position)
 	is_on_cooldown = true
 	cooldown_timer.start()
 

@@ -53,6 +53,8 @@ ui.panel.pause,Paused,已暂停
 ui.panel.resume,Resume,继续
 ui.settings.language,Language,语言
 ui.settings.confirm_temporary_module_sale,Confirm temporary module sale before battle,开始战斗前确认临时模组出售
+ui.settings.auto_aim_continuous_fire,Auto aim continuous fire,自动瞄准持续开火
+ui.settings.auto_reload_switch,Auto reload and switch weapon,空弹自动换弹切枪
 ui.panel.refresh,Refresh,刷新
 ui.panel.refresh_cost,Refresh: {value},刷新：{value}
 ui.panel.sell,Sell,出售

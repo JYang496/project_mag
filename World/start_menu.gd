@@ -22,6 +22,8 @@ const START_UI_THEME := preload("res://UI/themes/start_menu_theme.tres")
 @onready var mecha_container: Control = get_node_or_null("CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer")
 var language_label: Label
 var language_option: OptionButton
+var auto_aim_continuous_fire_toggle: CheckButton
+var auto_reload_switch_toggle: CheckButton
 var _start_hover_tween: Tween
 
 func _ready() -> void:
@@ -30,6 +32,7 @@ func _ready() -> void:
 	_set_full_rect(background)
 	_set_full_rect(margin_root)
 	_ensure_language_option()
+	_ensure_assist_options()
 	_configure_visible_controls()
 	_apply_localized_text()
 	_populate_resolution_options()
@@ -142,6 +145,42 @@ func _apply_localized_text() -> void:
 		language_label.text = LocalizationManager.tr_key("ui.start.language", "Language")
 	if hp_safety_button and hp_safety_button.has_method("_update_text"):
 		hp_safety_button.call("_update_text")
+	if auto_aim_continuous_fire_toggle:
+		auto_aim_continuous_fire_toggle.text = LocalizationManager.tr_key(
+			"ui.settings.auto_aim_continuous_fire",
+			"Auto aim continuous fire"
+		)
+	if auto_reload_switch_toggle:
+		auto_reload_switch_toggle.text = LocalizationManager.tr_key(
+			"ui.settings.auto_reload_switch",
+			"Auto reload and switch weapon"
+		)
+
+func _ensure_assist_options() -> void:
+	auto_aim_continuous_fire_toggle = _ensure_assist_toggle("AutoAimContinuousFireToggle")
+	auto_reload_switch_toggle = _ensure_assist_toggle("AutoReloadSwitchToggle")
+	if not auto_aim_continuous_fire_toggle.toggled.is_connected(_on_auto_aim_continuous_fire_toggled):
+		auto_aim_continuous_fire_toggle.toggled.connect(_on_auto_aim_continuous_fire_toggled)
+	if not auto_reload_switch_toggle.toggled.is_connected(_on_auto_reload_switch_toggled):
+		auto_reload_switch_toggle.toggled.connect(_on_auto_reload_switch_toggled)
+	auto_aim_continuous_fire_toggle.button_pressed = bool(PlayerAssistSettings.auto_aim_continuous_fire)
+	auto_reload_switch_toggle.button_pressed = bool(PlayerAssistSettings.auto_reload_switch)
+
+func _ensure_assist_toggle(node_name: String) -> CheckButton:
+	var existing := menu_vbox.get_node_or_null(node_name)
+	if existing is CheckButton:
+		return existing as CheckButton
+	var toggle := CheckButton.new()
+	toggle.name = node_name
+	toggle.focus_mode = Control.FOCUS_ALL
+	menu_vbox.add_child(toggle)
+	return toggle
+
+func _on_auto_aim_continuous_fire_toggled(enabled: bool) -> void:
+	PlayerAssistSettings.set_auto_aim_continuous_fire(enabled)
+
+func _on_auto_reload_switch_toggled(enabled: bool) -> void:
+	PlayerAssistSettings.set_auto_reload_switch(enabled)
 
 func _find_resolution_index(resolution: Vector2i) -> int:
 	for i: int in range(RESOLUTION_PRESETS.size()):

@@ -17,6 +17,9 @@ func get_melee_range_center() -> Vector2:
 	_ensure_components()
 	return melee_contact_helper.get_range_center()
 
+func get_auto_fire_target_origin() -> Vector2:
+	return get_melee_range_center()
+
 func setup_melee_attack_range_area(area: Area2D) -> void:
 	_ensure_components()
 	melee_contact_helper.setup_attack_range_area(area)

@@ -1,8 +1,8 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://b4ihq70cvi501"]
 
-[ext_resource type="PackedScene" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_base"]
-[ext_resource type="Script" path="res://Npc/enemy/scripts/enemy_mortar_turret.gd" id="2_script"]
-[ext_resource type="Texture2D" path="res://asset/images/enemies/mortar_turret.png" id="3_tex"]
+[ext_resource type="PackedScene" uid="uid://ck0p2ef0sv3a0" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://c256g3usthho8" path="res://Npc/enemy/scripts/enemy_mortar_turret.gd" id="2_script"]
+[ext_resource type="Texture2D" uid="uid://cummmp16iykgw" path="res://asset/images/enemies/mortar_turret.png" id="3_tex"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hurt"]
 size = Vector2(26, 26)
@@ -10,11 +10,16 @@ size = Vector2(26, 26)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(24, 24)
 
-[node name="EnemyMortarTurret" instance=ExtResource("1_base")]
+[node name="EnemyMortarTurret" unique_id=2049836422 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
 detect_range = 560.0
 attack_range = 360.0
 stationary_enter_range_ratio = 0.8
+cast_delay = 1.25
+cooldown_duration = 2.9
+aoe_radius = 62.0
+aoe_damage_multiplier = 1.8
+screen_fire_margin = 28.0
 damage = 4
 spawn_cost = 5
 spawn_tags = Array[StringName]([&"ranged"])

@@ -306,6 +306,23 @@ func find_closest_enemy(origin: Vector2, radius: float = INF) -> Node2D:
 			nearest_dist_sq = dist_sq
 			nearest = enemy
 	return nearest
+
+func get_auto_fire_target_origin() -> Vector2:
+	return global_position
+
+func get_auto_fire_target_range() -> float:
+	if has_method("_get_effective_attack_range"):
+		return maxf(float(call("_get_effective_attack_range")), 1.0)
+	var attack_range_value: Variant = get("attack_range")
+	if attack_range_value != null:
+		return maxf(float(attack_range_value), 1.0)
+	var auto_fire_range_value: Variant = get("auto_fire_range")
+	if auto_fire_range_value != null:
+		return maxf(float(auto_fire_range_value), 1.0)
+	return INF
+
+func find_auto_fire_target() -> Node2D:
+	return find_closest_enemy(get_auto_fire_target_origin(), get_auto_fire_target_range())
 #endregion
 
 #region Lifecycle And Processing

@@ -53,7 +53,7 @@ weight = 3
 [sub_resource type="Resource" id="Level_3"]
 script = ExtResource("2_level")
 time_out_sec = 49
-target_total_hp = 700
+target_total_hp = 800
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_roll_chaser"), SubResource("Entry_shield_tutorial"), SubResource("Entry_spike_main")])
 
 [sub_resource type="Resource" id="Entry_bomber_main"]
@@ -76,7 +76,7 @@ weight = 3
 [sub_resource type="Resource" id="Level_4"]
 script = ExtResource("2_level")
 time_out_sec = 52
-target_total_hp = 800
+target_total_hp = 900
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_bomber_main"), SubResource("Entry_repair_tutorial"), SubResource("Entry_mine_zone")])
 
 [sub_resource type="Resource" id="Entry_mortar_lane"]
@@ -105,7 +105,6 @@ weight = 2
 [sub_resource type="Resource" id="Level_5"]
 script = ExtResource("2_level")
 time_out_sec = 53
-target_total_hp = 900
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_lane"), SubResource("Entry_interceptor_tutorial"), SubResource("Entry_orbit_interceptor_tutorial"), SubResource("Entry_mirror_peak")])
 
 [sub_resource type="Resource" id="Entry_wheel_breaker"]
@@ -134,6 +133,7 @@ weight = 3
 [sub_resource type="Resource" id="Level_6"]
 script = ExtResource("2_level")
 time_out_sec = 55
+target_total_hp = 1200
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_breaker"), SubResource("Entry_shield_charge"), SubResource("Entry_spike_wall"), SubResource("Entry_orbit_harass")])
 
 [sub_resource type="Resource" id="Entry_bomber_push"]
@@ -162,7 +162,7 @@ weight = 2
 [sub_resource type="Resource" id="Level_7"]
 script = ExtResource("2_level")
 time_out_sec = 60
-target_total_hp = 1100
+target_total_hp = 1400
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_bomber_push"), SubResource("Entry_mine_flood"), SubResource("Entry_repair_hazard"), SubResource("Entry_elite_anchor")])
 
 [sub_resource type="Resource" id="Entry_mortar_matrix"]
@@ -197,7 +197,7 @@ weight = 2
 [sub_resource type="Resource" id="Level_8"]
 script = ExtResource("2_level")
 time_out_sec = 67
-target_total_hp = 1250
+target_total_hp = 1600
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_matrix"), SubResource("Entry_interceptor_ranged"), SubResource("Entry_orbit_ranged"), SubResource("Entry_tar_drag"), SubResource("Entry_mirror_split")])
 
 [sub_resource type="Resource" id="Entry_wheel_press"]
@@ -238,7 +238,7 @@ weight = 3
 [sub_resource type="Resource" id="Level_9"]
 script = ExtResource("2_level")
 time_out_sec = 75
-target_total_hp = 1400
+target_total_hp = 1800
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_press"), SubResource("Entry_shield_mix"), SubResource("Entry_spike_screen"), SubResource("Entry_repair_mix"), SubResource("Entry_orbit_cover"), SubResource("Entry_interceptor_mix")])
 
 [sub_resource type="Resource" id="Entry_mortar_core"]
@@ -285,7 +285,7 @@ weight = 2
 [sub_resource type="Resource" id="Level_10"]
 script = ExtResource("2_level")
 time_out_sec = 84
-target_total_hp = 1600
+target_total_hp = 2000
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_mortar_core"), SubResource("Entry_bomber_storm"), SubResource("Entry_shield_finale"), SubResource("Entry_elite_hunt"), SubResource("Entry_repair_finale"), SubResource("Entry_interceptor_finale"), SubResource("Entry_mirror_collapse")])
 
 [sub_resource type="Resource" id="Pressure_early"]
@@ -303,6 +303,5 @@ multiplier = 1.2
 
 [resource]
 script = ExtResource("1_profile")
-max_same_type_per_batch = 15
 levels = Array[ExtResource("2_level")]([SubResource("Level_1"), SubResource("Level_2"), SubResource("Level_3"), SubResource("Level_4"), SubResource("Level_5"), SubResource("Level_6"), SubResource("Level_7"), SubResource("Level_8"), SubResource("Level_9"), SubResource("Level_10")])
 pressure_points = Array[ExtResource("4_pressure")]([SubResource("Pressure_early"), SubResource("Pressure_mid"), SubResource("Pressure_late")])

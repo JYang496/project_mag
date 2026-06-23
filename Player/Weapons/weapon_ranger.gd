@@ -31,6 +31,7 @@ var projectile_scene
 
 const SPRITE_TARGET_HEIGHT := 40.0
 const AIM_ROTATION_OFFSET := deg_to_rad(90)
+const PLAYER_ASSIST_AUTO_AIM_TARGET_META: StringName = &"_player_assist_auto_aim_target"
 
 signal shoot()
 
@@ -98,11 +99,19 @@ func _on_shoot():
 		get_projectile_spawn_parent().call_deferred("add_child", projectile)
 
 func get_mouse_target():
+	if has_meta(PLAYER_ASSIST_AUTO_AIM_TARGET_META):
+		var assist_target: Variant = get_meta(PLAYER_ASSIST_AUTO_AIM_TARGET_META)
+		if assist_target is Vector2:
+			return assist_target
 	if has_meta("_benchmark_mouse_target"):
 		var override_target: Variant = get_meta("_benchmark_mouse_target")
 		if override_target is Vector2:
 			return override_target
 	if PlayerData.player and is_instance_valid(PlayerData.player):
+		if PlayerData.player.has_meta(PLAYER_ASSIST_AUTO_AIM_TARGET_META):
+			var assist_player_target: Variant = PlayerData.player.get_meta(PLAYER_ASSIST_AUTO_AIM_TARGET_META)
+			if assist_player_target is Vector2:
+				return assist_player_target
 		if PlayerData.player.has_meta("_benchmark_mouse_target"):
 			var player_override: Variant = PlayerData.player.get_meta("_benchmark_mouse_target")
 			if player_override is Vector2:
@@ -253,7 +262,7 @@ func _on_fuse_texture_changed() -> void:
 	_adjust_sprite_height()
 
 func _update_weapon_rotation() -> void:
-	var mouse_direction := get_global_mouse_position() - global_position
+	var mouse_direction: Vector2 = get_mouse_target() - global_position
 	if mouse_direction == Vector2.ZERO:
 		return
 	rotation = mouse_direction.angle() + AIM_ROTATION_OFFSET

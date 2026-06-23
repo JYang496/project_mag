@@ -168,11 +168,18 @@ func _physics_process(delta: float) -> void:
 
 func _process_idle() -> void:
 	blade_anchor.position = Vector2.ZERO
-	if not can_run_active_behavior():
+	if not _can_run_dash_attack():
 		return
 	if _target and is_instance_valid(_target):
 		_point_blade_to(_target.global_position)
 		_start_dash()
+
+func _can_run_dash_attack() -> bool:
+	if not is_attack_phase_allowed():
+		return false
+	if is_main_weapon():
+		return true
+	return has_weapon_trait(WeaponTrait.AUTO_FIRE)
 
 func _process_dashing(delta: float) -> void:
 	if not _target or not is_instance_valid(_target):

@@ -37,9 +37,14 @@ func _physics_process(delta):
 	super._physics_process(delta)
 	_update_smoothed_rotation(delta)
 
-# Charged Blaster drives its own smoothed rotation, so skip Ranger's instant snap-to-mouse rotation.
+# Charged Blaster drives normal aiming through smoothed rotation, but assist fire
+# needs an immediate snap so the shot is committed toward the selected target.
 func _update_weapon_rotation() -> void:
-	pass
+	var target_direction: Vector2 = get_mouse_target() - global_position
+	if target_direction == Vector2.ZERO:
+		return
+	beam_local_forward = target_direction.normalized()
+	rotation = target_direction.angle() + AIM_ROTATION_OFFSET
 
 func set_level(lv):
 	lv = str(lv)
@@ -60,6 +65,7 @@ func _on_shoot():
 	is_on_cooldown = true
 	_feedback_refund_accum_sec = 0.0
 	_reset_beam_multi_hit_trigger()
+	_update_beam_forward_from_target()
 	var base_profile := {
 		"direction": beam_local_forward.normalized(),
 		"range_multiplier": 1.0,
@@ -87,14 +93,21 @@ func _on_charged_blast_timer_timeout() -> void:
 
 
 func _update_smoothed_rotation(delta: float) -> void:
-	var mouse_direction := get_global_mouse_position() - global_position
+	var mouse_direction: Vector2 = get_mouse_target() - global_position
 	if mouse_direction == Vector2.ZERO:
 		return
+	beam_local_forward = mouse_direction.normalized()
 	var target_rotation := mouse_direction.angle() + AIM_ROTATION_OFFSET
 	var firing_turn_speed := normal_turn_speed * clampf(firing_rotation_slow_multiplier, 0.05, 1.0)
 	var turn_speed := firing_turn_speed if is_firing_beam else normal_turn_speed
 	turn_speed *= _get_charged_turn_speed_multiplier()
 	rotation = lerp_angle(rotation, target_rotation, clamp(turn_speed * delta, 0.0, 1.0))
+
+func _update_beam_forward_from_target() -> void:
+	var target_direction: Vector2 = get_mouse_target() - global_position
+	if target_direction == Vector2.ZERO:
+		return
+	beam_local_forward = target_direction.normalized()
 
 
 func _start_firing_turn_slowdown(active_duration: float) -> void:

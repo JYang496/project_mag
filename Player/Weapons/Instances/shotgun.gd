@@ -217,3 +217,6 @@ func get_passive_status() -> Dictionary:
 
 func get_passive_max_charges() -> int:
 	return 3
+
+func get_auto_fire_target_range() -> float:
+	return maxf(float(speed) * 0.3, maxf(close_hit_trigger_distance, 1.0))

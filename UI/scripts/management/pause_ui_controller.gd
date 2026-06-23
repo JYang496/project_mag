@@ -7,6 +7,8 @@ var resume_button: Button
 var pause_language_label: Label
 var pause_language_option: OptionButton
 var temporary_module_confirm_toggle: CheckButton
+var auto_aim_continuous_fire_toggle: CheckButton
+var auto_reload_switch_toggle: CheckButton
 
 func bind(ui: UI, panel: Panel, resume: Button) -> void:
 	owner_ui = ui
@@ -44,6 +46,14 @@ func ensure_language_controls() -> void:
 		pause_menu_panel.add_child(temporary_module_confirm_toggle)
 	if not temporary_module_confirm_toggle.toggled.is_connected(on_temporary_module_confirm_toggled):
 		temporary_module_confirm_toggle.toggled.connect(on_temporary_module_confirm_toggled)
+	auto_aim_continuous_fire_toggle = _ensure_assist_toggle(
+		"AutoAimContinuousFireToggle",
+		on_auto_aim_continuous_fire_toggled
+	)
+	auto_reload_switch_toggle = _ensure_assist_toggle(
+		"AutoReloadSwitchToggle",
+		on_auto_reload_switch_toggled
+	)
 	refresh_language_options()
 	_sync_public_fields_to_owner()
 
@@ -85,6 +95,22 @@ func refresh_language_options() -> void:
 			"Confirm temporary module sale before battle"
 		)
 		temporary_module_confirm_toggle.button_pressed = _is_temporary_module_confirmation_enabled()
+	if auto_aim_continuous_fire_toggle:
+		auto_aim_continuous_fire_toggle.position = Vector2(72.0, 404.0)
+		auto_aim_continuous_fire_toggle.size = Vector2(310.0, 30.0)
+		auto_aim_continuous_fire_toggle.text = LocalizationManager.tr_key(
+			"ui.settings.auto_aim_continuous_fire",
+			"Auto aim continuous fire"
+		)
+		auto_aim_continuous_fire_toggle.button_pressed = bool(PlayerAssistSettings.auto_aim_continuous_fire)
+	if auto_reload_switch_toggle:
+		auto_reload_switch_toggle.position = Vector2(72.0, 442.0)
+		auto_reload_switch_toggle.size = Vector2(310.0, 30.0)
+		auto_reload_switch_toggle.text = LocalizationManager.tr_key(
+			"ui.settings.auto_reload_switch",
+			"Auto reload and switch weapon"
+		)
+		auto_reload_switch_toggle.button_pressed = bool(PlayerAssistSettings.auto_reload_switch)
 	_sync_public_fields_to_owner()
 
 func on_language_option_item_selected(index: int) -> void:
@@ -97,6 +123,24 @@ func on_language_option_item_selected(index: int) -> void:
 func on_temporary_module_confirm_toggled(enabled: bool) -> void:
 	_set_temporary_module_confirmation_enabled(enabled)
 	_sync_public_fields_to_owner()
+
+func on_auto_aim_continuous_fire_toggled(enabled: bool) -> void:
+	PlayerAssistSettings.set_auto_aim_continuous_fire(enabled)
+	_sync_public_fields_to_owner()
+
+func on_auto_reload_switch_toggled(enabled: bool) -> void:
+	PlayerAssistSettings.set_auto_reload_switch(enabled)
+	_sync_public_fields_to_owner()
+
+func _ensure_assist_toggle(node_name: String, callback: Callable) -> CheckButton:
+	var toggle := pause_menu_panel.get_node_or_null(node_name) as CheckButton
+	if toggle == null:
+		toggle = CheckButton.new()
+		toggle.name = node_name
+		pause_menu_panel.add_child(toggle)
+	if not toggle.toggled.is_connected(callback):
+		toggle.toggled.connect(callback)
+	return toggle
 
 func _is_temporary_module_confirmation_enabled() -> bool:
 	if owner_ui != null:

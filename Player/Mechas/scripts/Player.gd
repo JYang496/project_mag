@@ -1,6 +1,7 @@
 extends CharacterBody2D
 class_name Player
 
+const PLAYER_ASSIST_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_assist_system.gd")
 
 var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
@@ -66,6 +67,7 @@ var _base_hurtbox_shape_position := Vector2.ZERO
 var _hurtbox_shape_base_cached: bool = false
 var _incoming_damage_pipeline: DamagePipeline
 var _incoming_damage_profile: DamageProfile
+var _assist_system: RefCounted
 var _passive_time_tick_accum: float = 0.0
 enum MechaVisualState {
 	IDLE,
@@ -76,7 +78,8 @@ var _last_mecha_facing_direction: Vector2 = Vector2(-1.0, 1.0)
 var _current_move_animation: StringName = StringName()
 var _last_visual_position: Vector2 = Vector2.ZERO
 @export var camera_zoom_lerp_speed: float = 1.0
-@export var rest_phase_camera_zoom_factor: float = 1.3
+@export var battle_camera_view_mul: float = 0.8
+@export var rest_phase_camera_zoom_factor: float = 1.4
 @export var rest_camera_zoom_enter_duration: float = 0.42
 @export var rest_camera_zoom_exit_duration: float = 0.30
 @export var rest_camera_zoom_transition_enabled: bool = true
@@ -193,6 +196,7 @@ func _ready():
 	_ensure_movement_system()
 	_ensure_camera_system()
 	_ensure_loot_system()
+	_ensure_assist_system()
 	_systems_strict_ready = true
 	if not _require_movement_system_or_halt():
 		return
@@ -472,8 +476,22 @@ func _process_combat_input(delta: float) -> void:
 			_suppress_attack_until_released = false
 	if pressed:
 		_try_show_reload_block_hint(main_weapon)
+	var was_reloading_before_input := bool(main_weapon.get("is_reloading")) if main_weapon.get("is_reloading") != null else false
+	var fired := false
+	_ensure_assist_system()
+	if _assist_system != null and pressed:
+		_assist_system.process_combat_assist(main_weapon, true, delta)
 	if main_weapon.has_method("handle_primary_input"):
 		main_weapon.call("handle_primary_input", pressed, just_pressed, just_released, delta)
+	elif pressed and main_weapon.has_method("request_primary_fire"):
+		fired = bool(main_weapon.call("request_primary_fire"))
+	if pressed and main_weapon.has_method("request_primary_fire"):
+		fired = _did_manual_fire_start_reload(main_weapon, was_reloading_before_input)
+	if _assist_system != null:
+		if pressed:
+			_assist_system.handle_post_fire(main_weapon, fired)
+		else:
+			_assist_system.process_combat_assist(main_weapon, pressed, delta)
 
 func _try_show_reload_block_hint(main_weapon: Weapon) -> void:
 	if main_weapon == null or not is_instance_valid(main_weapon):
@@ -585,6 +603,21 @@ func _ensure_elemental_effect_system() -> void:
 		ENERGY_MARK_MAX_HP_RATIO,
 		ENERGY_MARK_TRIGGER_COOLDOWN_SEC
 	)
+
+func _ensure_assist_system() -> void:
+	if _assist_system == null:
+		_assist_system = PLAYER_ASSIST_SYSTEM_SCRIPT.new()
+	if _assist_system != null:
+		_assist_system.setup(self)
+
+func _did_manual_fire_start_reload(main_weapon: Weapon, was_reloading_before_input: bool) -> bool:
+	if main_weapon == null or not is_instance_valid(main_weapon):
+		return false
+	if not main_weapon.has_method("uses_ammo_system") or not bool(main_weapon.call("uses_ammo_system")):
+		return false
+	if was_reloading_before_input:
+		return false
+	return bool(main_weapon.get("is_reloading"))
 
 func _refresh_weapon_structure_if_needed() -> void:
 	if not _weapon_list_dirty and not _weapon_roles_dirty and not _weapon_orbit_states_dirty:
@@ -716,6 +749,15 @@ func try_shift_main_weapon(step: int) -> bool:
 		"new_main": new_main
 	})
 	return true
+
+func mark_weapon_roles_dirty_for_assist() -> void:
+	_mark_weapon_roles_dirty()
+
+func refresh_weapon_structure_for_assist() -> void:
+	_refresh_weapon_structure_if_needed()
+
+func broadcast_weapon_passive_event_for_assist(event_name: StringName, detail: Dictionary = {}) -> void:
+	_broadcast_weapon_passive_event(event_name, detail)
 
 func _broadcast_weapon_passive_event(event_name: StringName, detail: Dictionary = {}) -> void:
 	for weapon in PlayerData.player_weapon_list:
@@ -967,7 +1009,12 @@ func _try_reload_main_weapon() -> void:
 		return
 	if not main_weapon.has_method("request_reload"):
 		return
-	main_weapon.call("request_reload")
+	var reload_started := bool(main_weapon.call("request_reload"))
+	if not reload_started:
+		return
+	_ensure_assist_system()
+	if _assist_system != null:
+		_assist_system.handle_post_fire(main_weapon, true)
 
 func _ensure_input_actions() -> void:
 	_ensure_input_action("SKILL_PLAYER", [KEY_SPACE])
@@ -1326,7 +1373,8 @@ func force_recover_battle_camera_zoom() -> void:
 	if not _require_camera_system_or_halt():
 		return
 	var vision_mul := maxf(get_total_vision_mul(), 0.05)
-	var target_zoom := _base_camera_zoom * (1.0 / vision_mul)
+	var battle_view_mul := maxf(battle_camera_view_mul, 0.05)
+	var target_zoom := _base_camera_zoom * (1.0 / (vision_mul * battle_view_mul))
 	_camera_system.force_zoom_now(target_zoom)
 
 func update_grab_radius() -> void:

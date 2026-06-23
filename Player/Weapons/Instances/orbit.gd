@@ -244,6 +244,9 @@ func get_satellites() -> Array[Node2D]:
 		valid_satellites.append(satellite)
 	return valid_satellites
 
+func get_auto_fire_target_range() -> float:
+	return maxf(radius + maxf(orbit_radius_jitter, 0.0), 1.0)
+
 func _get_branch_spin_speed_multiplier() -> float:
 	return branch_runtime.get_branch_orbit_spin_speed_multiplier()
 

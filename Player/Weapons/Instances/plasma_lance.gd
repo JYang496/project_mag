@@ -26,15 +26,15 @@ var _overcharge_lance_stack_count: int = 0
 var _overcharge_lance_remaining_sec: float = 0.0
 
 var weapon_data := {
-	"1": {"damage": "26", "speed": "1100", "projectile_hits": "3", "fire_interval_sec": "1.5", "ammo": "16"},
-	"2": {"damage": "32", "speed": "1140", "projectile_hits": "3", "fire_interval_sec": "1.45", "ammo": "18"},
-	"3": {"damage": "38", "speed": "1180", "projectile_hits": "3", "fire_interval_sec": "1.38", "ammo": "20"},
-	"4": {"damage": "45", "speed": "1220", "projectile_hits": "3", "fire_interval_sec": "1.30", "ammo": "22"},
-	"5": {"damage": "54", "speed": "1260", "projectile_hits": "3", "fire_interval_sec": "1.20", "ammo": "24"},
-	"6": {"damage": "64", "speed": "1300", "projectile_hits": "3", "fire_interval_sec": "1.09", "ammo": "26"},
-	"7": {"damage": "76", "speed": "1340", "projectile_hits": "3", "fire_interval_sec": "0.97", "ammo": "28"},
-	"8": {"damage": "88", "speed": "1380", "projectile_hits": "3", "fire_interval_sec": "0.85", "ammo": "30"},
-	"9": {"damage": "100", "speed": "1420", "projectile_hits": "3", "fire_interval_sec": "0.73", "ammo": "32"}
+	"1": {"damage": "26", "speed": "1100", "projectile_hits": "3", "fire_interval_sec": "1.5", "ammo": "6"},
+	"2": {"damage": "32", "speed": "1140", "projectile_hits": "3", "fire_interval_sec": "1.5", "ammo": "6"},
+	"3": {"damage": "38", "speed": "1180", "projectile_hits": "3", "fire_interval_sec": "1.30", "ammo": "6"},
+	"4": {"damage": "45", "speed": "1220", "projectile_hits": "3", "fire_interval_sec": "1.30", "ammo": "7"},
+	"5": {"damage": "54", "speed": "1260", "projectile_hits": "3", "fire_interval_sec": "1.20", "ammo": "7"},
+	"6": {"damage": "64", "speed": "1300", "projectile_hits": "3", "fire_interval_sec": "1.20", "ammo": "8"},
+	"7": {"damage": "76", "speed": "1340", "projectile_hits": "3", "fire_interval_sec": "1.10", "ammo": "8"},
+	"8": {"damage": "88", "speed": "1380", "projectile_hits": "3", "fire_interval_sec": "1.10", "ammo": "9"},
+	"9": {"damage": "100", "speed": "1420", "projectile_hits": "3", "fire_interval_sec": "1.00", "ammo": "9"}
 }
 
 func _physics_process(delta: float) -> void:

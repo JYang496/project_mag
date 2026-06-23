@@ -110,7 +110,7 @@ func update_zoom_target_by_vision(vision_mul: float) -> void:
 		return
 	if _base_zoom == Vector2.ZERO:
 		_base_zoom = Vector2.ONE
-	var zoom_factor := 1.0 / maxf(vision_mul, 0.05)
+	var zoom_factor := 1.0 / _get_effective_vision_mul(vision_mul)
 	_zoom_target = _base_zoom * zoom_factor * _get_phase_camera_zoom_factor()
 	if _is_zoom_transition_enabled() and _camera.zoom.distance_to(_zoom_target) > 0.001:
 		var is_prepare := _is_prepare_phase()
@@ -131,6 +131,14 @@ func _get_phase_camera_zoom_factor() -> float:
 		if str(PhaseManager.current_state()) == str(PhaseManager.PREPARE):
 			return clampf(_player.rest_phase_camera_zoom_factor, 0.2, 2.0)
 	return 1.0
+
+func _get_effective_vision_mul(vision_mul: float) -> float:
+	var effective_mul := maxf(vision_mul, 0.05)
+	if _is_prepare_phase():
+		return effective_mul
+	if _player != null:
+		effective_mul *= maxf(float(_player.get("battle_camera_view_mul")), 0.05)
+	return effective_mul
 
 func _update_zoom(delta: float) -> void:
 	if _is_zoom_transition_enabled():
@@ -174,7 +182,7 @@ func _refresh_zoom_target_from_context() -> void:
 	var vision_mul := 1.0
 	if _player.has_method("get_total_vision_mul"):
 		vision_mul = maxf(float(_player.call("get_total_vision_mul")), 0.05)
-	var zoom_factor := 1.0 / vision_mul
+	var zoom_factor := 1.0 / _get_effective_vision_mul(vision_mul)
 	_zoom_target = _base_zoom * zoom_factor * _get_phase_camera_zoom_factor()
 
 func _is_zoom_transition_enabled() -> bool:
