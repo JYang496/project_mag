@@ -7,6 +7,7 @@ const ROLLBACK_PATH := "user://battle_rollback_snapshot.json"
 const NORMAL_ROUTE_PATH := "res://data/routes/normal_route.tres"
 
 var _pending_level: int = -1
+var _pending_reward_count: int = 0
 var _pending_options: Array[RewardInfo] = []
 var _reward_unlocked := false
 var _reward_panel_open := false
@@ -38,8 +39,7 @@ func get_pending_reward_options() -> Array[RewardInfo]:
 func notify_objective_completed(_cell_id: String = "") -> void:
 	if not is_enabled() or PhaseManager.current_state() != PhaseManager.BATTLE:
 		return
-	if _reward_unlocked:
-		return
+	_pending_reward_count += 1
 	_reward_unlocked = true
 	_pending_level = int(PhaseManager.current_level)
 	_pending_options = _build_reward_options_from_current_state()
@@ -164,9 +164,29 @@ func _retry_open_later() -> void:
 
 func _on_reward_selected(reward: RewardInfo) -> void:
 	_reward_panel_open = false
-	var manager := _resolve_reward_manager()
-	var grant_reward := _prepare_reward_for_grant(reward)
-	if manager == null or grant_reward == null or not manager.grant_reward_immediately(grant_reward):
+	if reward == null:
+		call_deferred("_try_open_pending_reward")
+		return
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		if not CellEffectRuntime.grant_effect(reward.cell_effect_id):
+			call_deferred("_try_open_pending_reward")
+			return
+		var definition := CellEffectRuntime.get_definition(reward.cell_effect_id)
+		var message_ui = GlobalVariables.ui
+		if definition != null and message_ui and is_instance_valid(message_ui) and message_ui.has_method("show_item_message"):
+			message_ui.show_item_message("Cell effect obtained: %s" % definition.get_display_name(), 2.1)
+	else:
+		var manager := _resolve_reward_manager()
+		var grant_reward := _prepare_reward_for_grant(reward)
+		if manager == null or grant_reward == null or not manager.grant_reward_immediately(grant_reward):
+			call_deferred("_try_open_pending_reward")
+			return
+	_pending_reward_count = maxi(_pending_reward_count - 1, 0)
+	if _pending_reward_count > 0:
+		_pending_options = _build_reward_options_from_current_state()
+		_reward_unlocked = true
+		_save_state()
+		DataHandler.save_game(DataHandler.save_data)
 		call_deferred("_try_open_pending_reward")
 		return
 	_clear_pending_reward(true)
@@ -177,11 +197,7 @@ func _on_reward_selected(reward: RewardInfo) -> void:
 		ui.call_deferred("resume_pending_weapon_branch_selection")
 
 func _build_reward_options_from_current_state() -> Array[RewardInfo]:
-	var manager := _resolve_reward_manager()
-	if manager == null:
-		return []
-	var route := load(NORMAL_ROUTE_PATH) as RunRouteDefinition
-	return manager.build_reward_selection_options(int(PhaseManager.current_level), route, 3)
+	return CellEffectRuntime.build_reward_options(int(PhaseManager.current_level), 3)
 
 func _resolve_reward_manager() -> BonusManager:
 	if _reward_manager and is_instance_valid(_reward_manager):
@@ -368,6 +384,7 @@ func _serialize_reward(reward: RewardInfo) -> Dictionary:
 		"target_weapon_name": reward.target_weapon_name,
 		"target_from": int(reward.target_weapon_from_level),
 		"target_to": int(reward.target_weapon_to_level),
+		"cell_effect_id": reward.cell_effect_id,
 	}
 
 func _deserialize_reward(payload: Dictionary) -> RewardInfo:
@@ -387,6 +404,7 @@ func _deserialize_reward(payload: Dictionary) -> RewardInfo:
 	reward.target_weapon_name = str(payload.get("target_weapon_name", ""))
 	reward.target_weapon_from_level = int(payload.get("target_from", 0))
 	reward.target_weapon_to_level = int(payload.get("target_to", 0))
+	reward.cell_effect_id = str(payload.get("cell_effect_id", ""))
 	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
 		var weapon := _find_equipped_weapon(reward.target_weapon_id)
 		if weapon:
@@ -425,6 +443,7 @@ func _save_state() -> void:
 		"battle_in_progress": _battle_in_progress,
 		"reward_unlocked": _reward_unlocked,
 		"pending_level": _pending_level,
+		"pending_reward_count": _pending_reward_count,
 		"options": option_payloads,
 	}
 	var file := FileAccess.open(STATE_PATH, FileAccess.WRITE)
@@ -438,6 +457,7 @@ func _load_state() -> void:
 	_battle_in_progress = bool(payload.get("battle_in_progress", false))
 	_reward_unlocked = bool(payload.get("reward_unlocked", false))
 	_pending_level = int(payload.get("pending_level", -1))
+	_pending_reward_count = int(payload.get("pending_reward_count", 1 if _reward_unlocked else 0))
 	_pending_options.clear()
 	for option_variant in payload.get("options", []):
 		if option_variant is Dictionary:
@@ -445,6 +465,7 @@ func _load_state() -> void:
 
 func _clear_pending_reward(save_after: bool) -> void:
 	_pending_level = -1
+	_pending_reward_count = 0
 	_pending_options.clear()
 	_reward_unlocked = false
 	_reward_panel_open = false

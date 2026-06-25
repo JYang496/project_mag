@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="CellEffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://data/cell_effects/CellEffectDefinition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://asset/images/cells/fact1.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+effect_id = "regen_2"
+family_id = "regen"
+tier = 2
+display_name = "Regen II"
+description = "Restores 1 HP every 5 seconds while the player stands in this cell."
+terrain_type = 4
+icon_texture = ExtResource("2")
+unlock_level = 4
+drop_weight = 0.35
+rarity = "rare"
+aura_regen_interval_sec = 5.0
+aura_regen_heal_amount = 1

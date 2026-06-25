@@ -31,6 +31,7 @@ signal rest_menu_cancelled
 @export var zone_merchant_hint_text: String = "Purchase"
 @export var zone_smith_hint_text: String = "Upgrade"
 @export var zone_module_hint_text: String = "Warehouses"
+@export var zone_board_hint_text: String = "Board Edit"
 @export var zone_battle_hold_hint_text: String = "Hold left mouse on center to start battle"
 @export var zone_hint_forward_offset: Vector2 = Vector2(0.0, -44.0)
 @export var zone_hint_z_index: int = 80
@@ -60,6 +61,7 @@ var _zone_hint_visual_state := ""
 @onready var _merchant_hint_label: Label = get_node_or_null("MerchantHintLabel")
 @onready var _smith_hint_label: Label = get_node_or_null("SmithHintLabel")
 @onready var _module_hint_label: Label = get_node_or_null("ModuleHintLabel")
+@onready var _board_hint_label: Label = get_node_or_null("BoardHintLabel")
 @onready var _battle_hint_label: Label = get_node_or_null("BattleHintLabel")
 @onready var _reward_manager: BonusManager = get_tree().current_scene.get_node_or_null("RewardManager") as BonusManager
 
@@ -68,6 +70,7 @@ const ZONE_COUNT := GRID_DIM * GRID_DIM
 const ZONE_ID_MERCHANT := 0
 const ZONE_ID_SMITH := 1
 const ZONE_ID_MODULE := 2
+const ZONE_ID_BOARD_EDIT := 6
 const CENTER_ZONE_ID := 4
 const ZONE4_HOLD_BOOST_SOURCE_ID: StringName = &"rest_zone4_hold_boost"
 const BLOCKING_UI_ROOTS: Array[StringName] = [
@@ -81,6 +84,7 @@ const BLOCKING_UI_ROOTS: Array[StringName] = [
 	&"ModuleMenuRoot",
 	&"RouteSelectionPanel",
 	&"RewardSelectionPanel",
+	&"BoardEditPanel",
 	&"BranchSelectPanel",
 	&"ModuleEquipSelectionPanel",
 	&"WeaponReplacementPanel",
@@ -103,6 +107,10 @@ func _ready() -> void:
 		InventoryData.temporary_modules_changed.connect(_on_zone_hint_status_changed)
 	if not PlayerData.weapon_list_changed.is_connected(_on_zone_hint_status_changed):
 		PlayerData.weapon_list_changed.connect(_on_zone_hint_status_changed)
+	if not CellEffectRuntime.inventory_changed.is_connected(_on_zone_hint_status_changed):
+		CellEffectRuntime.inventory_changed.connect(_on_zone_hint_status_changed)
+	if not CellEffectRuntime.pending_changed.is_connected(_on_zone_hint_status_changed):
+		CellEffectRuntime.pending_changed.connect(_on_zone_hint_status_changed)
 	var area := get_node_or_null("Area2D") as Area2D
 	if area:
 		area.monitoring = false
@@ -138,6 +146,10 @@ func _exit_tree() -> void:
 		InventoryData.temporary_modules_changed.disconnect(_on_zone_hint_status_changed)
 	if PlayerData and PlayerData.weapon_list_changed.is_connected(_on_zone_hint_status_changed):
 		PlayerData.weapon_list_changed.disconnect(_on_zone_hint_status_changed)
+	if CellEffectRuntime and CellEffectRuntime.inventory_changed.is_connected(_on_zone_hint_status_changed):
+		CellEffectRuntime.inventory_changed.disconnect(_on_zone_hint_status_changed)
+	if CellEffectRuntime and CellEffectRuntime.pending_changed.is_connected(_on_zone_hint_status_changed):
+		CellEffectRuntime.pending_changed.disconnect(_on_zone_hint_status_changed)
 
 func _on_language_changed(_new_locale: String) -> void:
 	_zone_hint_status_signature = ""
@@ -179,19 +191,34 @@ func _refresh_scene_hint_labels() -> void:
 			LocalizationManager.tr_key("ui.rest.zone.warehouses.title", zone_module_hint_text),
 			module_status,
 		]
+	if _board_hint_label:
+		var board_status := LocalizationManager.tr_key("ui.rest.zone.board.none", "No cell effect items")
+		var pending_edits := CellEffectRuntime.get_pending_snapshot().size()
+		if pending_edits > 0:
+			board_status = LocalizationManager.tr_format(
+				"ui.rest.zone.board.pending",
+				{"count": pending_edits},
+				"%d pending board edits" % pending_edits
+			)
+		elif not CellEffectRuntime.get_inventory_snapshot().is_empty():
+			board_status = LocalizationManager.tr_key("ui.rest.zone.board.available", "Install cell effects")
+		_board_hint_label.text = "%s\n%s" % [
+			LocalizationManager.tr_key("ui.rest.zone.board.title", zone_board_hint_text),
+			board_status,
+		]
 	if _battle_hint_label:
 		_battle_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.battle_hold", zone_battle_hold_hint_text)
 	_zone_hint_status_signature = _build_zone_hint_status_signature()
 	_layout_scene_hint_labels()
 
 func _setup_scene_hint_labels() -> void:
-	for label in [_merchant_hint_label, _smith_hint_label, _module_hint_label, _battle_hint_label]:
+	for label in [_merchant_hint_label, _smith_hint_label, _module_hint_label, _board_hint_label, _battle_hint_label]:
 		if label == null:
 			continue
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		label.z_as_relative = false
 		label.z_index = zone_hint_z_index
-	for zone_label in [_merchant_hint_label, _smith_hint_label, _module_hint_label]:
+	for zone_label in [_merchant_hint_label, _smith_hint_label, _module_hint_label, _board_hint_label]:
 		if zone_label == null:
 			continue
 		zone_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -207,6 +234,7 @@ func _layout_scene_hint_labels() -> void:
 	_place_zone_hint_label(_merchant_hint_label, ZONE_ID_MERCHANT)
 	_place_zone_hint_label(_smith_hint_label, ZONE_ID_SMITH)
 	_place_zone_hint_label(_module_hint_label, ZONE_ID_MODULE)
+	_place_zone_hint_label(_board_hint_label, ZONE_ID_BOARD_EDIT)
 	_place_zone_hint_label(_battle_hint_label, CENTER_ZONE_ID)
 
 func _place_zone_hint_label(label: Label, zone_id: int) -> void:
@@ -227,9 +255,11 @@ func _build_zone_hint_status_signature() -> String:
 		var weapon := weapon_ref as Weapon
 		if weapon != null and is_instance_valid(weapon):
 			weapon_parts.append("%d:%d" % [int(weapon.level), int(weapon.max_level)])
-	return "%d|%d|%s" % [
+	return "%d|%d|%d|%d|%s" % [
 		int(PlayerData.player_gold),
 		InventoryData.temporary_modules.size(),
+		CellEffectRuntime.get_inventory_snapshot().size(),
+		CellEffectRuntime.get_pending_snapshot().size(),
 		",".join(weapon_parts),
 	]
 
@@ -267,7 +297,7 @@ func _get_module_upgrade_cost(module_instance: Module) -> int:
 
 func _update_zone_hint_visibility() -> void:
 	var show_zone_hints := _is_interaction_enabled()
-	for label in [_merchant_hint_label, _smith_hint_label, _module_hint_label, _battle_hint_label]:
+	for label in [_merchant_hint_label, _smith_hint_label, _module_hint_label, _board_hint_label, _battle_hint_label]:
 		if label:
 			label.visible = show_zone_hints
 
@@ -279,6 +309,7 @@ func _update_zone_hint_visuals(force: bool = false) -> void:
 	_style_zone_hint(_merchant_hint_label, ZONE_ID_MERCHANT)
 	_style_zone_hint(_smith_hint_label, ZONE_ID_SMITH)
 	_style_zone_hint(_module_hint_label, ZONE_ID_MODULE)
+	_style_zone_hint(_board_hint_label, ZONE_ID_BOARD_EDIT)
 
 func _style_zone_hint(label: Label, zone_id: int) -> void:
 	if label == null:
@@ -465,6 +496,13 @@ func _on_battle_start_cancelled() -> void:
 func _continue_start_battle() -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE or _route_selection_pending:
 		return
+	_commit_board_edits_and_continue_start_battle()
+
+func _commit_board_edits_and_continue_start_battle() -> void:
+	if PhaseManager.current_state() != PhaseManager.PREPARE or _route_selection_pending:
+		return
+	if CellEffectRuntime.has_pending_edits():
+		CellEffectRuntime.commit_pending(_board)
 	_route_selection_pending = true
 	_on_route_confirmed("normal")
 
@@ -585,15 +623,15 @@ func _handle_left_click(global_pos: Vector2) -> void:
 	if zone_id == CENTER_ZONE_ID and selected_zone_id == CENTER_ZONE_ID and not is_auto_moving:
 		# Center zone enters battle by hold, not click-to-open-menu.
 		return
-	if menu_open and zone_id == selected_zone_id and _zone_opens_primary_menu(zone_id):
-		# Already inside this zone with its primary menu open; ignore repeated click.
+	if menu_open and zone_id == selected_zone_id and _zone_opens_interaction(zone_id):
+		# Already inside this zone with its interaction open; ignore repeated click.
 		if debug_click_logs:
 			print("[RestArea] left click ignored: primary menu already open for zone=", zone_id)
 		return
 	if menu_open and zone_id != selected_zone_id:
 		_close_rest_area_primary_menu_if_open()
 		menu_open = false
-	_begin_zone_move(zone_id, _zone_opens_primary_menu(zone_id))
+	_begin_zone_move(zone_id, _zone_opens_interaction(zone_id))
 	if debug_click_logs:
 		print("[RestArea] left click accepted: zone_id=", zone_id, " target=", _get_zone_center_global(zone_id))
 	get_viewport().set_input_as_handled()
@@ -799,6 +837,9 @@ func _on_rest_menu_requested(zone_id: int, _zone_center_global: Vector2) -> void
 	if zone_id == ZONE_ID_MODULE:
 		ui.rest_area_ui_controller.open_menu(&"warehouse")
 		return
+	if zone_id == ZONE_ID_BOARD_EDIT:
+		ui.rest_area_ui_controller.open_board_edit_panel()
+		return
 
 func _on_rest_menu_cancelled() -> void:
 	_close_rest_area_primary_menu_if_open()
@@ -899,8 +940,11 @@ func _get_bounds_local_rect() -> Rect2:
 	var size := Vector2(rect_shape.size.x * abs_scale.x, rect_shape.size.y * abs_scale.y)
 	return Rect2(shape_node.position - size * 0.5, size)
 
-func _zone_opens_primary_menu(zone_id: int) -> bool:
-	return zone_id == ZONE_ID_MERCHANT or zone_id == ZONE_ID_SMITH or zone_id == ZONE_ID_MODULE
+func _zone_opens_interaction(zone_id: int) -> bool:
+	return zone_id == ZONE_ID_MERCHANT \
+		or zone_id == ZONE_ID_SMITH \
+		or zone_id == ZONE_ID_MODULE \
+		or zone_id == ZONE_ID_BOARD_EDIT
 
 func _update_zone4_hold(delta: float) -> void:
 	if not _is_zone4_hold_available():
@@ -977,7 +1021,7 @@ func _ensure_camera_owner_binding() -> void:
 func _try_open_menu_for_zone(zone_id: int, zone_center: Vector2, source: String) -> void:
 	if not _emit_menu_on_arrival:
 		return
-	if not _zone_opens_primary_menu(zone_id):
+	if not _zone_opens_interaction(zone_id):
 		return
 	var now_msec := Time.get_ticks_msec()
 	if now_msec - _last_menu_open_msec < max(menu_open_cooldown_msec, 0):
@@ -1124,7 +1168,7 @@ func _is_zone_clickable_for_cursor(zone_id: int) -> bool:
 				return bool(ui.call("is_rest_area_zone_navigation_allowed"))
 			return true
 		return _is_zone4_hold_available()
-	if not _zone_opens_primary_menu(zone_id):
+	if not _zone_opens_interaction(zone_id):
 		return false
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("is_rest_area_zone_navigation_allowed"):

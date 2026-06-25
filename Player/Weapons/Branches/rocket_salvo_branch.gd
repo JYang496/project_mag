@@ -31,18 +31,10 @@ func get_projectile_damage_multiplier() -> float:
 
 # Splits one rocket shot into multiple directions for a salvo pattern.
 func get_shot_directions(base_direction: Vector2, shot_count: int = -1) -> Array[Vector2]:
-	var dirs: Array[Vector2] = []
 	var count := projectile_count if shot_count < 0 else shot_count
 	count = clampi(count, 1, 12)
-	var normalized_base := base_direction.normalized()
-	if count == 1:
-		return [normalized_base]
 	var spread_step := deg_to_rad(spread_deg)
-	var center_offset := float(count - 1) * 0.5
-	for i in range(count):
-		var angle := (float(i) - center_offset) * spread_step
-		dirs.append(normalized_base.rotated(angle))
-	return dirs
+	return build_centered_spread_directions(base_direction, count, spread_step)
 
 func _ensure_enemy_seek_effect() -> void:
 	if weapon == null or not is_instance_valid(weapon):

@@ -11,16 +11,10 @@
 
 [sub_resource type="Resource" id="Resource_h2aik"]
 script = ExtResource("4_lo5ox")
-terrain_type = 5
 metadata/_custom_type_script = "uid://ytgqpjri2ckf"
 
 [sub_resource type="Resource" id="Resource_lo5ox"]
 script = ExtResource("4_lo5ox")
-task_type = 5
-reward_type = 2
-terrain_type = 2
-objective_enabled = true
-aura_enabled = true
 metadata/_custom_type_script = "uid://ytgqpjri2ckf"
 
 [sub_resource type="Resource" id="Resource_0wqet"]
@@ -29,12 +23,10 @@ metadata/_custom_type_script = "uid://ytgqpjri2ckf"
 
 [sub_resource type="Resource" id="Resource_awrha"]
 script = ExtResource("4_lo5ox")
-terrain_type = 3
 metadata/_custom_type_script = "uid://ytgqpjri2ckf"
 
 [sub_resource type="Resource" id="Resource_f23eu"]
 script = ExtResource("4_lo5ox")
-terrain_type = 4
 metadata/_custom_type_script = "uid://ytgqpjri2ckf"
 
 [sub_resource type="Resource" id="Resource_oeat8"]
@@ -74,10 +66,10 @@ board_path = NodePath("../Board")
 [node name="EnemySpawner" parent="." unique_id=236369448 instance=ExtResource("12_dyxss")]
 debug_print_spawn_stats = false
 
-[node name="TopLeft" parent="EnemySpawner" index="1"]
+[node name="TopLeft" parent="EnemySpawner" index="1" unique_id=207267487]
 position = Vector2(-982, -519)
 
-[node name="BottomRight" parent="EnemySpawner" index="2"]
+[node name="BottomRight" parent="EnemySpawner" index="2" unique_id=1477745255]
 position = Vector2(548, 1002)
 
 [node name="RewardManager" parent="." unique_id=113647262 instance=ExtResource("22_n13dc")]

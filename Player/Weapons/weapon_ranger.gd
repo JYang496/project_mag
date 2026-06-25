@@ -118,6 +118,13 @@ func get_mouse_target():
 				return player_override
 	return get_global_mouse_position()
 
+func get_fire_feedback_direction() -> Vector2:
+	var target_position: Vector2 = get_mouse_target()
+	var direction := global_position.direction_to(target_position)
+	if direction == Vector2.ZERO:
+		return super.get_fire_feedback_direction()
+	return direction.normalized()
+
 func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	if not can_run_active_behavior():
 		return

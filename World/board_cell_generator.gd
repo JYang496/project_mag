@@ -60,6 +60,7 @@ func _ready() -> void:
 	if auto_assign_enemy_on_battle and not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 	set_board_active(PhaseManager.current_state() == PhaseManager.BATTLE, true)
+	apply_cell_effect_runtime_state(PhaseManager.current_state() == PhaseManager.PREPARE)
 
 func _spawn_cells() -> void:
 	var center_index := Vector2i(grid_size.x / 2, grid_size.y / 2)
@@ -361,11 +362,13 @@ func _on_phase_changed(new_phase: String) -> void:
 		_clear_rest_area_target_center()
 	_refresh_active_cells_for_current_level()
 	if new_phase == PhaseManager.BATTLE:
+		apply_cell_effect_runtime_state(false)
 		if _last_phase == PhaseManager.PREPARE:
 			recenter_board_around_player()
 		set_board_active(true)
 		_unlock_defense_cells_for_battle()
 	else:
+		apply_cell_effect_runtime_state(true)
 		if _last_phase == PhaseManager.BATTLE:
 			_reset_cells_after_battle()
 		set_board_active(false)
@@ -469,6 +472,21 @@ func _get_active_cell_ids_for_level(level_one_based: int) -> PackedInt32Array:
 	for i in range(1, grid_size.x * grid_size.y + 1):
 		all_ids.append(i)
 	return all_ids
+
+func apply_cell_effect_runtime_state(include_pending_preview: bool = true) -> void:
+	for cell in _cells:
+		if cell == null:
+			continue
+		var effect_id := CellEffectRuntime.get_effect_for_cell(cell.logical_id, include_pending_preview)
+		if effect_id.strip_edges() == "":
+			cell.restore_profile_terrain_effect()
+			continue
+		var definition := CellEffectRuntime.get_definition(effect_id)
+		if definition == null:
+			cell.restore_profile_terrain_effect()
+			continue
+		var preview_only := include_pending_preview and CellEffectRuntime.get_pending_snapshot().has(str(cell.logical_id))
+		cell.apply_runtime_cell_effect(definition, preview_only)
 
 func _refresh_active_cells_for_current_level(force: bool = false) -> void:
 	var level_one_based := maxi(PhaseManager.current_level + 1, 1)

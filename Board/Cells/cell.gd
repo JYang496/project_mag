@@ -34,16 +34,20 @@ const PROGRESS_STEP := 1
 const PROGRESS_LIMIT := 100
 const CONTESTED_PROGRESS_MULTIPLIER := 0.5
 const TERRAIN_TEXTURE_PATHS := {
+	TerrainType.NONE: "res://asset/images/cells/default.png",
+	TerrainType.CORROSION: "res://asset/images/cells/dirt2.png",
 	TerrainType.JUNGLE: "res://asset/images/cells/glass.png",
 	TerrainType.SPEED_BOOST: "res://asset/images/cells/ice.png",
 	TerrainType.LOW_HP_BERSERK: "res://asset/images/cells/lava.png",
 	TerrainType.LUCKY_STRIKE: "res://asset/images/cells/gold1.png",
-	TerrainType.REGEN: "res://asset/images/cells/fact1.png"
+	TerrainType.REGEN: "res://asset/images/cells/fact1.png",
+	TerrainType.DOUBLE_LOOT: "res://asset/images/cells/gold2.png"
 }
 
 var _progress_timer: Timer
 var _module_root: Node
 var _progress_accumulator := 0.0
+var _runtime_effect_id := ""
 
 func set_state(value: int) -> void:
 	if state == value:
@@ -239,6 +243,72 @@ func _setup_profile_and_modules() -> void:
 		if module_instance:
 			_module_root.add_child(module_instance)
 			_apply_module_parameters(module_instance)
+
+func apply_runtime_cell_effect(definition: CellEffectDefinition, preview_only: bool = false) -> void:
+	_ensure_module_root()
+	_remove_aura_modules()
+	if definition == null:
+		_runtime_effect_id = ""
+		_restore_profile_terrain_effect()
+		return
+	_runtime_effect_id = definition.effect_id
+	terrain_type = definition.terrain_type
+	aura_enabled = not preview_only
+	_apply_terrain_texture()
+	if preview_only:
+		return
+	_add_aura_module_for_terrain(terrain_type, definition.get_aura_parameters())
+
+func restore_profile_terrain_effect() -> void:
+	_runtime_effect_id = ""
+	_ensure_module_root()
+	_remove_aura_modules()
+	_restore_profile_terrain_effect()
+
+func _restore_profile_terrain_effect() -> void:
+	if profile == null:
+		terrain_type = TerrainType.NONE
+		aura_enabled = false
+		_apply_terrain_texture()
+		return
+	terrain_type = profile.terrain_type
+	aura_enabled = profile.aura_enabled
+	_apply_terrain_texture()
+	if aura_enabled:
+		_add_aura_module_for_terrain(terrain_type, profile.get_aura_parameters())
+
+func _ensure_module_root() -> void:
+	if _module_root != null and is_instance_valid(_module_root):
+		return
+	_module_root = get_node_or_null("Modules")
+	if _module_root == null:
+		_module_root = Node.new()
+		_module_root.name = "Modules"
+		add_child(_module_root)
+
+func _remove_aura_modules() -> void:
+	if _module_root == null:
+		return
+	for child in _module_root.get_children().duplicate():
+		if child is CellAuraModule:
+			_module_root.remove_child(child)
+			child.free()
+
+func _add_aura_module_for_terrain(target_terrain_type: int, aura_parameters: Dictionary) -> void:
+	if not CellProfile.TERRAIN_AURA_REGISTRY.has(target_terrain_type):
+		return
+	var scene_path := str(CellProfile.TERRAIN_AURA_REGISTRY[target_terrain_type])
+	var scene := load(scene_path) as PackedScene
+	if scene == null:
+		return
+	var module_instance := scene.instantiate()
+	if module_instance == null:
+		return
+	_module_root.add_child(module_instance)
+	if module_instance.has_method("set_aura_parameters"):
+		module_instance.set_aura_parameters(aura_parameters)
+	if module_instance is CellAuraModule:
+		(module_instance as CellAuraModule).aura_enabled = true
 
 func _apply_module_parameters(module_instance: Node) -> void:
 	if profile == null:

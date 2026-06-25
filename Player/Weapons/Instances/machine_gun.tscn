@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://q1auvvjq4ncn" path="res://Player/Weapons/Instances/machine_gun.gd" id="2_0tkjt"]
 [ext_resource type="Texture2D" uid="uid://iwsjsdr2j4wi" path="res://asset/images/weapons/machine_gun.png" id="3_0tkjt"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_mhges"]
+[ext_resource type="Resource" path="res://Player/Weapons/Feedback/machine_gun_fire_feedback.tres" id="5_feedback"]
 
 [node name="MachineGun" unique_id=2042815985 instance=ExtResource("1_hyv6l")]
 script = ExtResource("2_0tkjt")
@@ -12,6 +13,7 @@ heat_accumulation = 4.0
 heat_accumulation_per_sec = 25.0
 max_heat = 50.0
 heat_cooldown_rate = 20.0
+fire_feedback_profile = ExtResource("5_feedback")
 front_fire_half_angle_deg = 35.0
 heat_expansion_duration_sec = 8.0
 heat_expansion_max_heat_multiplier = 2.0
@@ -35,5 +37,8 @@ texture = ExtResource("3_0tkjt")
 fuse_texture_1 = ExtResource("3_0tkjt")
 fuse_texture_2 = ExtResource("3_0tkjt")
 fuse_texture_3 = ExtResource("3_0tkjt")
+
+[node name="Muzzle" type="Marker2D" parent="." index="5"]
+position = Vector2(0, -26)
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

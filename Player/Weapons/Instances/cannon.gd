@@ -75,6 +75,7 @@ func request_primary_fire() -> bool:
 		return false
 	if windup_sec <= 0.0:
 		emit_signal("shoot")
+		play_fire_feedback()
 		notify_main_weapon_fired()
 		register_shot_heat()
 		if uses_ammo_system() and current_ammo <= 0:
@@ -94,6 +95,7 @@ func _on_windup_timer_timeout() -> void:
 		return
 	_windup_in_progress = false
 	emit_signal("shoot")
+	play_fire_feedback()
 	notify_main_weapon_fired()
 	register_shot_heat()
 	if uses_ammo_system() and current_ammo <= 0:

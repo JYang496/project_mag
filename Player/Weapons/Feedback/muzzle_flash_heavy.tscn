@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Player/Weapons/Feedback/muzzle_flash_vfx.gd" id="1_heavy"]
+
+[node name="MuzzleFlashHeavy" type="Node2D"]
+script = ExtResource("1_heavy")
+color = Color(1, 0.78, 0.32, 0.9)
+secondary_color = Color(1, 0.22, 0.05, 0.5)
+length_px = 42.0
+width_px = 22.0
+duration_sec = 0.1
+smoke_color = Color(0.38, 0.38, 0.38, 0.32)
+smoke_radius = 12.0

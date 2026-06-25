@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CellEffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://data/cell_effects/CellEffectDefinition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://asset/images/cells/dirt2.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+effect_id = "corrosion_3"
+family_id = "corrosion"
+tier = 3
+display_name = "Corrosion III"
+description = "Creates rough corrosive terrain that heavily slows the player inside this cell."
+terrain_type = 1
+icon_texture = ExtResource("2")
+unlock_level = 9
+drop_weight = 0.16
+rarity = "epic"
+aura_corrosion_move_speed_mul = 0.7

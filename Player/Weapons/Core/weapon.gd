@@ -1,6 +1,8 @@
 extends Node2D
 class_name Weapon
 
+const WeaponFireFeedbackPlayerScript := preload("res://Player/Weapons/Feedback/weapon_fire_feedback_player.gd")
+
 #region Runtime State
 @onready var modules: WeaponModules = $Modules
 var branch_runtime: WeaponBranchRuntime = WeaponBranchRuntime.new()
@@ -11,6 +13,7 @@ var plugin_dispatcher: WeaponPluginDispatcher = WeaponPluginDispatcher.new()
 var ammo_controller: WeaponAmmoController = WeaponAmmoController.new()
 var passive_controller: WeaponPassiveController = WeaponPassiveController.new()
 var fuse_visual_controller: WeaponFuseVisualController = WeaponFuseVisualController.new()
+var fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
 var MAX_MODULE_NUMBER = 3
 @onready var sprite: Sprite2D = $Sprite
 @onready var fuse_sprite_holder: FuseSpriteHolder = get_node_or_null("FuseSprites")
@@ -42,6 +45,7 @@ var heat_cool_rate: float = 20.0
 @export var weapon_active_hit_window_required_hits: int = 0
 @export var weapon_active_hit_window_timeout_sec: float = 6.0
 @export var weapon_active_hit_window_bonus_multiplier: float = 1.35
+@export var fire_feedback_profile: Resource
 @export_flags("projectile", "melee_contact", "beam", "area") var delivery_type_flags: int = 0
 @export_flags("summon", "trap", "support", "movement") var weapon_capability_flags: int = 0
 var runtime_delivery_additions: Dictionary = {}
@@ -78,6 +82,7 @@ func _init() -> void:
 	ammo_controller.setup(self)
 	passive_controller.setup(self)
 	fuse_visual_controller.setup(self)
+	fire_feedback_player.setup(self)
 
 func set_level(lv):
 	pass
@@ -176,6 +181,23 @@ func notify_main_weapon_fired() -> void:
 			"source_weapon": self,
 			"_suppress_default_emit": true,
 		})
+
+func play_fire_feedback(direction: Vector2 = Vector2.ZERO) -> bool:
+	if fire_feedback_profile == null:
+		return false
+	if fire_feedback_player == null:
+		fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
+		fire_feedback_player.setup(self)
+	return fire_feedback_player.play(fire_feedback_profile, direction)
+
+func get_fire_feedback_direction() -> Vector2:
+	return Vector2.RIGHT.rotated(global_rotation)
+
+func get_muzzle_global_position() -> Vector2:
+	var muzzle := get_node_or_null("Muzzle") as Node2D
+	if muzzle != null:
+		return muzzle.global_position
+	return global_position
 #endregion
 
 #region Capabilities And Enemy Queries
@@ -520,13 +542,9 @@ func get_module_shot_directions(base_direction: Vector2, base_count: int = 1) ->
 	var effective_count := get_effective_projectile_count(base_count)
 	if effective_count <= 1:
 		return [direction]
-	var directions: Array[Vector2] = []
 	var total_arc_deg := minf(12.0 * float(effective_count - 1), 60.0)
-	var start_angle := direction.angle() - deg_to_rad(total_arc_deg) * 0.5
 	var step := deg_to_rad(total_arc_deg) / float(effective_count - 1)
-	for index in range(effective_count):
-		directions.append(Vector2.RIGHT.rotated(start_angle + step * float(index)).normalized())
-	return directions
+	return WeaponBranchBehavior.build_centered_spread_directions(direction, effective_count, step)
 
 func apply_external_damage_mul(source_id: StringName, mul: float) -> void:
 	stat_pipeline.apply_external_damage_mul(source_id, mul)

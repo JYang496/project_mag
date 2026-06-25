@@ -4,9 +4,11 @@
 [ext_resource type="Script" uid="uid://cgt5h2lpnxfs0" path="res://Player/Weapons/Instances/orbit.gd" id="1_lxm1t"]
 [ext_resource type="Texture2D" path="res://asset/images/weapons/orbit.png" id="2_d4sd2"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_8qu7o"]
+[ext_resource type="Resource" path="res://Player/Weapons/Feedback/special_pulse_feedback.tres" id="4_feedback"]
 
 [node name="Orbit" unique_id=80514895 instance=ExtResource("1_4h80h")]
 script = ExtResource("1_lxm1t")
+fire_feedback_profile = ExtResource("4_feedback")
 delivery_type_flags = 1
 weapon_capability_flags = 1
 reload_duration_sec = 8.0

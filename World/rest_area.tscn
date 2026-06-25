@@ -52,6 +52,15 @@ offset_bottom = 103.0
 text = "Module Management\nNo pending modules"
 horizontal_alignment = 1
 
+[node name="BoardHintLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(156, 58)
+offset_left = 7.0
+offset_top = 387.0
+offset_right = 163.0
+offset_bottom = 445.0
+text = "Board Edit\nInstall cell effects"
+horizontal_alignment = 1
+
 [node name="BattleHintLabel" type="Label" parent="." unique_id=204400003]
 offset_left = 162.0
 offset_top = 230.0

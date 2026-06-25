@@ -34,6 +34,7 @@ const GAME_OVER_VIEW_PATH := "res://UI/scenes/components/game_over_view.tscn"
 const HINT_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hint_presenter.gd")
 const BATTLE_CURSOR_PRESENTER_SCRIPT := preload("res://UI/scripts/components/battle_cursor_presenter.gd")
 const CONTROLS_HINT_VIEW_PATH := "res://UI/scenes/components/controls_hint_view.tscn"
+const BOARD_EDIT_PANEL_PATH := "res://UI/scenes/board_edit_panel.tscn"
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overlay.gd"
 
@@ -181,6 +182,10 @@ var controls_hint_panel: Panel
 var controls_hint_title_label: Label
 var controls_hint_body_label: Label
 var controls_hint_view
+var board_edit_panel: Control
+var cell_effect_commit_dialog: ConfirmationDialog
+var _pending_cell_effect_commit := Callable()
+var _pending_cell_effect_cancel := Callable()
 var _primary_menu_tweens: Dictionary = {}
 var spread_cursor_overlay
 var _cursor_reload_total_by_weapon: Dictionary = {}
@@ -342,6 +347,105 @@ func _init_route_selection_panel() -> void:
 func _init_reward_selection_panel() -> void:
 	_init_modal_ui_controller()
 	modal_ui_controller.ensure_reward_selection_panel()
+
+func _init_board_edit_panel() -> void:
+	if board_edit_panel != null and is_instance_valid(board_edit_panel):
+		return
+	var panel_scene := load(BOARD_EDIT_PANEL_PATH) as PackedScene
+	board_edit_panel = panel_scene.instantiate() as Control if panel_scene else null
+	if board_edit_panel == null:
+		push_warning("Failed to create BoardEditPanel.")
+		return
+	gui_root.add_child(board_edit_panel)
+	board_edit_panel.visible = false
+	if board_edit_panel.has_signal("close_requested"):
+		var callback := Callable(self, "_on_board_edit_panel_close_requested")
+		if not board_edit_panel.is_connected("close_requested", callback):
+			board_edit_panel.connect("close_requested", callback)
+
+func open_board_edit_panel() -> bool:
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return false
+	if TaskRewardManager.is_reward_blocking_interactions():
+		show_item_message("Choose objective rewards first.", 1.6)
+		return false
+	_init_board_edit_panel()
+	if board_edit_panel == null:
+		return false
+	return bool(board_edit_panel.open_panel(_find_board()))
+
+func request_close_board_edit_panel(confirm_pending: bool = true) -> bool:
+	if board_edit_panel == null or not is_instance_valid(board_edit_panel) or not board_edit_panel.visible:
+		return false
+	if confirm_pending and CellEffectRuntime.has_pending_edits():
+		return request_cell_effect_commit_confirmation(
+			Callable(self, "_close_board_edit_panel_without_confirmation"),
+			Callable()
+		)
+	_close_board_edit_panel_without_confirmation()
+	return true
+
+func _on_board_edit_panel_close_requested() -> void:
+	request_close_board_edit_panel(true)
+
+func _close_board_edit_panel_without_confirmation() -> void:
+	if board_edit_panel and is_instance_valid(board_edit_panel):
+		board_edit_panel.close_panel()
+	if rest_area_ui_controller != null:
+		rest_area_ui_controller.cancel_menu_level()
+
+func _find_board() -> BoardCellGenerator:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return null
+	return scene.get_node_or_null("Board") as BoardCellGenerator
+
+func request_cell_effect_commit_confirmation(on_confirm: Callable, on_cancel: Callable = Callable()) -> bool:
+	if not CellEffectRuntime.has_pending_edits():
+		if on_confirm.is_valid():
+			on_confirm.call_deferred()
+		return true
+	_init_cell_effect_commit_dialog()
+	if cell_effect_commit_dialog == null:
+		return false
+	cell_effect_commit_dialog.title = LocalizationManager.tr_key("ui.board_edit.commit_title", "Pending Board Edits")
+	cell_effect_commit_dialog.ok_button_text = LocalizationManager.tr_key("ui.board_edit.leave_panel", "Leave Panel")
+	cell_effect_commit_dialog.cancel_button_text = LocalizationManager.tr_key("ui.common.cancel", "Cancel")
+	_pending_cell_effect_commit = on_confirm
+	_pending_cell_effect_cancel = on_cancel
+	var lines := CellEffectRuntime.build_pending_commit_lines()
+	var text := LocalizationManager.tr_key("ui.board_edit.commit_prompt", "Leave the board edit panel with these pending edits?") + "\n\n"
+	text += "\n".join(lines)
+	text += "\n\n" + LocalizationManager.tr_key("ui.board_edit.commit_warning", "These edits stay pending after you leave. Cell effect items are consumed only when battle starts.")
+	cell_effect_commit_dialog.dialog_text = text
+	cell_effect_commit_dialog.popup_centered(Vector2i(560, 360))
+	return true
+
+func _init_cell_effect_commit_dialog() -> void:
+	if cell_effect_commit_dialog != null and is_instance_valid(cell_effect_commit_dialog):
+		return
+	cell_effect_commit_dialog = ConfirmationDialog.new()
+	cell_effect_commit_dialog.title = LocalizationManager.tr_key("ui.board_edit.commit_title", "Pending Board Edits")
+	cell_effect_commit_dialog.ok_button_text = LocalizationManager.tr_key("ui.board_edit.leave_panel", "Leave Panel")
+	cell_effect_commit_dialog.cancel_button_text = LocalizationManager.tr_key("ui.common.cancel", "Cancel")
+	gui_root.add_child(cell_effect_commit_dialog)
+	cell_effect_commit_dialog.confirmed.connect(_on_cell_effect_commit_confirmed)
+	cell_effect_commit_dialog.canceled.connect(_on_cell_effect_commit_cancelled)
+	cell_effect_commit_dialog.close_requested.connect(_on_cell_effect_commit_cancelled)
+
+func _on_cell_effect_commit_confirmed() -> void:
+	var callback := _pending_cell_effect_commit
+	_pending_cell_effect_commit = Callable()
+	_pending_cell_effect_cancel = Callable()
+	if callback.is_valid():
+		callback.call_deferred()
+
+func _on_cell_effect_commit_cancelled() -> void:
+	var callback := _pending_cell_effect_cancel
+	_pending_cell_effect_commit = Callable()
+	_pending_cell_effect_cancel = Callable()
+	if callback.is_valid():
+		callback.call_deferred()
 
 func _init_weapon_replacement_panel() -> void:
 	_init_modal_ui_controller()
@@ -887,6 +991,10 @@ func _cancel_top_level_non_battle_ui() -> bool:
 	if reward_selection_panel and reward_selection_panel.visible:
 		reward_selection_panel.call("_on_cancel_pressed")
 		return not reward_selection_panel.visible
+	if board_edit_panel and is_instance_valid(board_edit_panel) and board_edit_panel.visible:
+		if board_edit_panel.has_method("clear_selection_if_any") and bool(board_edit_panel.call("clear_selection_if_any")):
+			return true
+		return request_close_board_edit_panel(true)
 	if module_equip_selection_panel and module_equip_selection_panel.visible:
 		module_equip_selection_panel.close_without_assignment()
 		return true
@@ -1043,6 +1151,8 @@ func _on_resume_button_pressed() -> void:
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase != PhaseManager.PREPARE:
 		_close_module_management_ui()
+		if board_edit_panel and is_instance_valid(board_edit_panel):
+			board_edit_panel.close_panel()
 	if new_phase == PhaseManager.GAMEOVER:
 		_show_game_over()
 	_request_next_queued_weapon_branch_selection()
@@ -1067,6 +1177,8 @@ func _should_use_battle_ring_cursor() -> bool:
 	if route_selection_panel and is_instance_valid(route_selection_panel) and route_selection_panel.visible:
 		return false
 	if reward_selection_panel and is_instance_valid(reward_selection_panel) and reward_selection_panel.visible:
+		return false
+	if board_edit_panel and is_instance_valid(board_edit_panel) and board_edit_panel.visible:
 		return false
 	return true
 

@@ -43,3 +43,31 @@ ui.rest.zone.combined_upgrade.title,Upgrade,升级
 ui.rest.zone.warehouses.title,Warehouses,仓库
 ui.rest.zone.warehouses.pending,{count} stored modules,仓库模组 {count}
 ui.rest.zone.warehouses.none,Open weapon and module warehouses,打开武器仓库和模组仓库
+ui.rest.zone.board.title,Board Edit,格子面板
+ui.rest.zone.board.none,No cell effect items,暂无格子效果
+ui.rest.zone.board.available,Install cell effects,安装格子效果
+ui.rest.zone.board.pending,{count} pending board edits,待提交调整 {count}
+ui.board_edit.title,Board Edit,格子面板
+ui.board_edit.subtitle,Install earned cell effects onto active board cells before starting battle.,开战前把已获得的格子效果安装到已激活格子上。
+ui.board_edit.inventory_title,Cell Effects,格子效果
+ui.board_edit.empty_inventory,No cell effects yet. Complete objectives to earn them.,暂无格子效果。完成目标后可获得。
+ui.board_edit.effect_counts,{name}  owned {owned} / pending {pending} / available {available},{name}  拥有 {owned} / 待提交 {pending} / 可用 {available}
+ui.board_edit.selected_effect,Selected effect: {name},已选效果：{name}
+ui.board_edit.selected_cell,Selected cell: {cell},已选格子：{cell}
+ui.board_edit.preview,Preview: {name},预览：{name}
+ui.board_edit.select_hint,"Select a cell effect, then click or drag it onto an active cell.",选择一个格子效果后，点击或拖到已激活格子上。
+ui.board_edit.default_cell,Default,默认
+ui.board_edit.locked_cell,Locked,未激活
+ui.board_edit.pending_badge,PENDING,待提交
+ui.board_edit.installed_badge,Installed,已安装
+ui.board_edit.cell_label,Cell {cell}\n{status},格子 {cell}\n{status}
+ui.board_edit.undo,Undo Cell Pending,撤销当前格子
+ui.board_edit.clear,Clear Pending,清空待提交
+ui.board_edit.install_rejected,Cannot install this effect here.,无法在这里安装该效果。
+ui.board_edit.install_failed,Cannot install.,无法安装。
+ui.board_edit.commit_title,Pending Board Edits,格子调整待提交
+ui.board_edit.commit_prompt,Leave the board edit panel with these pending edits?,带着这些待提交的格子调整离开面板？
+ui.board_edit.commit_warning,These edits stay pending after you leave. Cell effect items are consumed only when battle starts.,离开后这些调整会保持待提交状态。格子效果道具只会在进入战斗时消耗。
+ui.board_edit.leave_panel,Leave Panel,离开面板
+ui.common.close,Close,关闭
+ui.common.cancel,Cancel,取消

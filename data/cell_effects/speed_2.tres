@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CellEffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://data/cell_effects/CellEffectDefinition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://asset/images/cells/ice.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+effect_id = "speed_2"
+family_id = "speed"
+tier = 2
+display_name = "Speed II"
+description = "Boosts movement speed while the player stands in this cell."
+terrain_type = 3
+icon_texture = ExtResource("2")
+unlock_level = 4
+drop_weight = 0.35
+rarity = "rare"
+aura_speed_move_speed_mul = 1.2

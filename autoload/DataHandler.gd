@@ -370,6 +370,7 @@ func read_autosave_mecha_data(id : String) -> Dictionary:
 
 func save_game(_data : SaveData = save_data, _file_path: String = "res://data/savedata/autosave.tres") -> void:
 	InventoryData.save_runtime_state()
+	CellEffectRuntime.save_runtime_state()
 	return
 
 func new_save(_file_path: String = "res://data/savedata/autosave.tres") -> void:

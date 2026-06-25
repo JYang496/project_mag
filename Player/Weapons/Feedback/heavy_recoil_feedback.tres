@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="WeaponFireFeedbackProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Player/Weapons/Feedback/weapon_fire_feedback_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+recoil_distance = 9.0
+recoil_duration = 0.045
+recoil_recover_duration = 0.13
+recoil_rotation_deg = -2.0
+camera_trauma = 0.0
+feedback_cooldown_sec = 0.0
+fire_category = &"recoil_heavy"

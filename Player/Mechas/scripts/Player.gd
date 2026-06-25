@@ -1369,6 +1369,16 @@ func get_restarea_camera_world_position() -> Vector2:
 		return global_position
 	return _camera_system.get_camera_world_position()
 
+func request_camera_shake(amount: float, source_global_position: Vector2 = Vector2.ZERO, max_distance: float = 900.0) -> void:
+	if not _require_camera_system_or_halt():
+		return
+	_camera_system.request_camera_shake(amount, source_global_position, max_distance)
+
+func get_camera_shake_trauma() -> float:
+	if not _require_camera_system_or_halt():
+		return 0.0
+	return _camera_system.get_camera_shake_trauma()
+
 func force_recover_battle_camera_zoom() -> void:
 	if not _require_camera_system_or_halt():
 		return

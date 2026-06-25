@@ -17,6 +17,13 @@ var _restarea_camera_speed_mul: float = 1.0
 var _restarea_camera_min_speed: float = 900.0
 var _restarea_camera_max_speed: float = 3200.0
 var _restarea_camera_speed_curve: float = 4.2
+var _shake_trauma: float = 0.0
+var _shake_offset := Vector2.ZERO
+var _shake_time: float = 0.0
+var _shake_seed: float = 0.0
+var _shake_max_trauma: float = 0.35
+var _shake_decay_per_sec: float = 1.9
+var _shake_max_offset := Vector2(14.0, 10.0)
 
 func has_camera_binding() -> bool:
 	return _camera != null
@@ -48,6 +55,21 @@ func tick(delta: float) -> void:
 		return
 	_update_zoom(delta)
 	_update_lookahead(delta)
+
+func request_camera_shake(amount: float, source_global_position: Vector2 = Vector2.ZERO, max_distance: float = 900.0) -> void:
+	if _camera == null:
+		return
+	var distance_mul := 1.0
+	if source_global_position != Vector2.ZERO and max_distance > 0.0:
+		var distance := _camera.global_position.distance_to(source_global_position)
+		distance_mul = 1.0 - clampf(distance / maxf(max_distance, 1.0), 0.0, 1.0)
+	var scaled_amount := maxf(amount, 0.0) * distance_mul
+	if scaled_amount <= 0.0:
+		return
+	_shake_trauma = minf(_shake_max_trauma, _shake_trauma + scaled_amount)
+
+func get_camera_shake_trauma() -> float:
+	return _shake_trauma
 
 func configure_restarea_camera_motion(min_speed: float, max_speed: float, speed_curve: float) -> void:
 	_restarea_camera_min_speed = maxf(min_speed, 1.0)
@@ -223,13 +245,28 @@ func _on_zoom_tween_finished() -> void:
 func _update_lookahead(delta: float) -> void:
 	# Camera no longer uses movement-based lookahead/inertia offset.
 	_offset_target = Vector2.ZERO
-	var t := clampf(maxf(_player.camera_lookahead_lerp_speed, 0.0) * maxf(delta, 0.0), 0.0, 1.0)
-	_camera.offset = _camera.offset.lerp(_offset_target, t)
+	_update_shake(delta)
+	_camera.offset = _offset_target + _shake_offset
 
 func _reset_offset_for_restarea(delta: float) -> void:
 	var reset_t := clampf(maxf(_player.camera_lookahead_lerp_speed, 0.0) * maxf(delta, 0.0), 0.0, 1.0)
 	_offset_target = Vector2.ZERO
+	_shake_trauma = 0.0
+	_shake_offset = Vector2.ZERO
 	_camera.offset = _camera.offset.lerp(Vector2.ZERO, reset_t)
+
+func _update_shake(delta: float) -> void:
+	if _shake_trauma <= 0.001:
+		_shake_trauma = 0.0
+		_shake_offset = Vector2.ZERO
+		return
+	_shake_time += maxf(delta, 0.0) * 48.0
+	var strength := _shake_trauma * _shake_trauma
+	_shake_offset = Vector2(
+		sin(_shake_time + _shake_seed) * _shake_max_offset.x * strength,
+		cos(_shake_time * 1.37 + _shake_seed) * _shake_max_offset.y * strength
+	)
+	_shake_trauma = maxf(0.0, _shake_trauma - _shake_decay_per_sec * maxf(delta, 0.0))
 
 func _update_restarea_camera_move(delta: float) -> void:
 	if not _restarea_camera_moving or _camera == null:

@@ -129,6 +129,22 @@ func resolve_module_scenes() -> Array[PackedScene]:
 				resolved.append(scene)
 	return _dedupe_module_scenes(resolved)
 
+func get_aura_parameters() -> Dictionary:
+	return {
+		"aura_corrosion_move_speed_mul": aura_corrosion_move_speed_mul,
+		"aura_jungle_vision_mul": aura_jungle_vision_mul,
+		"aura_speed_move_speed_mul": aura_speed_move_speed_mul,
+		"aura_regen_interval_sec": aura_regen_interval_sec,
+		"aura_regen_heal_amount": aura_regen_heal_amount,
+		"aura_lucky_strike_chance": aura_lucky_strike_chance,
+		"aura_lucky_strike_extra_damage": aura_lucky_strike_extra_damage,
+		"aura_double_loot_coin_chance": aura_double_loot_coin_chance,
+		"aura_double_loot_chip_chance": aura_double_loot_chip_chance,
+		"aura_double_loot_multiplier": aura_double_loot_multiplier,
+		"aura_low_hp_min_hp_ratio": aura_low_hp_min_hp_ratio,
+		"aura_low_hp_max_damage_mul": aura_low_hp_max_damage_mul,
+	}
+
 func _append_from_registry(output: Array[PackedScene], registry: Dictionary, enum_value: int) -> void:
 	if not registry.has(enum_value):
 		return

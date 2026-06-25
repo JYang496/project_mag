@@ -144,6 +144,14 @@ func _build_reward_summary(reward: RewardInfo) -> String:
 				int(reward.target_weapon_to_level),
 			]
 		))
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		var definition := CellEffectRuntime.get_definition(reward.cell_effect_id)
+		if definition != null:
+			chunks.append("%s x1" % definition.get_display_name())
+			if definition.description.strip_edges() != "":
+				chunks.append(definition.description)
+		else:
+			chunks.append("Cell Effect")
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
 		var weapon_text := LocalizationManager.tr_format(

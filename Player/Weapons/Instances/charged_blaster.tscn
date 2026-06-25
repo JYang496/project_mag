@@ -4,9 +4,11 @@
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_thakn"]
 [ext_resource type="Texture2D" path="res://asset/images/weapons/blaster.png" id="2_qghy1"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_o5lrl"]
+[ext_resource type="Resource" path="res://Player/Weapons/Feedback/heavy_recoil_feedback.tres" id="4_feedback"]
 
 [node name="ChargedBlaster" unique_id=1610258449 instance=ExtResource("1_thakn")]
 script = ExtResource("1_48de6")
+fire_feedback_profile = ExtResource("4_feedback")
 delivery_type_flags = 4
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]

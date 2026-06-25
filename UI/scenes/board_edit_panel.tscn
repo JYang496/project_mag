@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/scripts/board_edit_panel.gd" id="1"]
+
+[node name="BoardEditPanel" type="Control"]
+process_mode = 3
+visible = false
+script = ExtResource("1")

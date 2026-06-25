@@ -20,15 +20,15 @@ var _shotgun_volley_sequence: int = 0
 var _shotgun_volley_hit_counts: Dictionary = {}
 
 var weapon_data = {
-	"1": {"damage": "14", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "2", "ammo": "24", "bullet_count": "3"},
-	"2": {"damage": "16", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "2", "ammo": "26", "bullet_count": "4"},
-	"3": {"damage": "18", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "28", "bullet_count": "5"},
-	"4": {"damage": "20", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "30", "bullet_count": "6"},
-	"5": {"damage": "22", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "32", "bullet_count": "7"},
-	"6": {"damage": "24", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "34", "bullet_count": "8"},
-	"7": {"damage": "26", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "36", "bullet_count": "9"},
-	"8": {"damage": "28", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "38", "bullet_count": "10"},
-	"9": {"damage": "30", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "40", "bullet_count": "11"}
+	"1": {"damage": "14", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "2", "ammo": "5", "bullet_count": "4"},
+	"2": {"damage": "16", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "2", "ammo": "5", "bullet_count": "4"},
+	"3": {"damage": "18", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "6", "bullet_count": "5"},
+	"4": {"damage": "20", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "6", "bullet_count": "5"},
+	"5": {"damage": "22", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "7", "bullet_count": "6"},
+	"6": {"damage": "24", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "7", "bullet_count": "6"},
+	"7": {"damage": "26", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "7", "bullet_count": "7"},
+	"8": {"damage": "28", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "7", "bullet_count": "7"},
+	"9": {"damage": "28", "speed": "1000", "projectile_hits": "2", "fire_interval_sec": "1.6", "ammo": "7", "bullet_count": "8"}
 }
 
 
@@ -103,18 +103,11 @@ func supports_multi_launcher_module() -> bool:
 	return true
 
 func _build_spread_directions(base_direction: Vector2, shot_count: int, spread_arc: float) -> Array[Vector2]:
-	var dirs: Array[Vector2] = []
 	var count: int = maxi(1, shot_count)
 	if count == 1:
-		dirs.append(base_direction.normalized())
-		return dirs
-	var start_angle := base_direction.angle()
-	var angle_step := deg_to_rad(spread_arc) / maxf(float(max(1, count - 1)), 1.0)
-	var start_offset := -deg_to_rad(spread_arc) / 2.0
-	for i in range(count):
-		var current_angle := start_angle + start_offset + (angle_step * float(i))
-		dirs.append(Vector2.RIGHT.rotated(current_angle).normalized())
-	return dirs
+		return [base_direction.normalized()]
+	var angle_step := deg_to_rad(spread_arc) / maxf(float(count), 1.0)
+	return WeaponBranchBehavior.build_centered_spread_directions(base_direction, count, angle_step)
 
 func get_random_position_in_circle(radius: float = 50.0) -> Vector2:
 	var angle = randf_range(0, TAU)  # TAU is 2*PI in Godot

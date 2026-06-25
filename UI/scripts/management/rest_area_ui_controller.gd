@@ -33,6 +33,31 @@ func open_menu(menu_id: StringName) -> void:
 		_:
 			purchase_menu_in()
 
+func open_board_edit_panel() -> bool:
+	active = true
+	primary_menu_id = &"board_edit"
+	_sync_state_to_shell()
+	_sync_public_fields_to_owner()
+	PlayerData.is_interacting = true
+	_close_all_rest_area_panels()
+	var opened := owner_ui.open_board_edit_panel()
+	if not opened:
+		_clear_active()
+	return opened
+
+func _close_all_rest_area_panels() -> void:
+	if owner_ui.weapon_warehouse_panel:
+		owner_ui.weapon_warehouse_panel.close_panel()
+	if owner_ui.module_equip_selection_panel and owner_ui.module_equip_selection_panel.visible:
+		owner_ui.module_equip_selection_panel.close_without_assignment()
+	for root in [owner_ui.purchase_primary_root, owner_ui.upgrade_primary_root, owner_ui.warehouse_primary_root]:
+		if root:
+			root.visible = false
+	for root in [owner_ui.purchase_management_root, owner_ui.upgrade_management_root, owner_ui.warehouse_management_root]:
+		if root:
+			root.visible = false
+	InventoryData.clear_on_select()
+
 func purchase_panel_in() -> void:
 	if owner_ui.purchase_management_root == null:
 		return
@@ -256,6 +281,10 @@ func set_primary_root_visible(root_id: StringName, visible: bool) -> void:
 func is_menu_visible() -> bool:
 	_sync_state_from_shell()
 	var visible := false
+	if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel) and owner_ui.board_edit_panel.visible:
+		visible = true
+		_sync_public_fields_to_owner()
+		return visible
 	if shell != null:
 		visible = shell.is_menu_visible(
 			is_primary_menu_open() or is_secondary_menu_open(),
@@ -264,11 +293,17 @@ func is_menu_visible() -> bool:
 		)
 	else:
 		visible = active and _has_open_rest_area_menu()
+	if not visible and primary_menu_id == &"board_edit":
+		_clear_active()
+		return false
 	_sync_public_fields_to_owner()
 	return visible
 
 func is_zone_navigation_allowed() -> bool:
 	_sync_state_from_shell()
+	if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel) and owner_ui.board_edit_panel.visible:
+		_sync_public_fields_to_owner()
+		return false
 	var allowed := true
 	if shell != null:
 		allowed = shell.is_zone_navigation_allowed(owner_ui.purchase_primary_root, owner_ui.upgrade_primary_root, owner_ui.warehouse_primary_root)
@@ -290,6 +325,10 @@ func is_module_management_available() -> bool:
 
 func handle_right_cancel() -> bool:
 	sync_state_from_owner()
+	if primary_menu_id == &"board_edit" and owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel) and owner_ui.board_edit_panel.visible:
+		if owner_ui.board_edit_panel.has_method("clear_selection_if_any") and bool(owner_ui.board_edit_panel.call("clear_selection_if_any")):
+			return true
+		return owner_ui.request_close_board_edit_panel(true)
 	if owner_ui._cancel_top_level_non_battle_ui():
 		sync_state_from_owner()
 		return true
@@ -334,6 +373,9 @@ func cancel_menu_level() -> bool:
 		if owner_ui.warehouse_primary_root and owner_ui.warehouse_primary_root.visible:
 			close_primary_menu()
 			return true
+	elif primary_menu_id == &"board_edit":
+		_clear_active()
+		return true
 	return false
 
 func is_primary_menu_open() -> bool:
@@ -343,6 +385,8 @@ func is_primary_menu_open() -> bool:
 	return false
 
 func is_secondary_menu_open() -> bool:
+	if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel) and owner_ui.board_edit_panel.visible:
+		return true
 	for root in [owner_ui.purchase_management_root, owner_ui.upgrade_management_root, owner_ui.warehouse_management_root]:
 		if root and is_instance_valid(root) and root.visible:
 			return true
@@ -386,6 +430,8 @@ func _clear_active() -> void:
 func _has_open_rest_area_menu() -> bool:
 	if not active:
 		return false
+	if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel) and owner_ui.board_edit_panel.visible:
+		return true
 	if is_primary_menu_open() or is_secondary_menu_open():
 		return true
 	if owner_ui.weapon_warehouse_panel and is_instance_valid(owner_ui.weapon_warehouse_panel) and owner_ui.weapon_warehouse_panel.visible:
@@ -405,6 +451,8 @@ func _is_zone_navigation_allowed_without_shell() -> bool:
 		return true
 	if primary_menu_id == &"warehouse" and owner_ui.warehouse_primary_root and owner_ui.warehouse_primary_root.visible:
 		return true
+	if primary_menu_id == &"board_edit":
+		return false
 	return false
 
 func _sync_state_from_shell() -> void:

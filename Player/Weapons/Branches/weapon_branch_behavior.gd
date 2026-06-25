@@ -66,6 +66,22 @@ func get_shot_directions(_base_direction: Vector2, _shot_count: int = -1) -> Arr
 func get_additional_shot_directions(_base_direction: Vector2, _shot_count: int = -1) -> Array[Vector2]:
 	return []
 
+static func build_centered_spread_directions(base_direction: Vector2, shot_count: int, spread_step_rad: float) -> Array[Vector2]:
+	var dirs: Array[Vector2] = []
+	var count := maxi(1, shot_count)
+	var normalized_base := base_direction.normalized()
+	if normalized_base == Vector2.ZERO:
+		normalized_base = Vector2.UP
+	dirs.append(normalized_base)
+	var offset_distance := 1
+	while dirs.size() < count:
+		dirs.append(normalized_base.rotated(-spread_step_rad * float(offset_distance)).normalized())
+		if dirs.size() >= count:
+			break
+		dirs.append(normalized_base.rotated(spread_step_rad * float(offset_distance)).normalized())
+		offset_distance += 1
+	return dirs
+
 func get_cooldown_multiplier() -> float:
 	return 1.0
 

@@ -1,11 +1,13 @@
-[gd_scene load_steps=4 format=3 uid="uid://7g3a65vo7yfl"]
+[gd_scene load_steps=5 format=3 uid="uid://7g3a65vo7yfl"]
 
 [ext_resource type="Script" uid="uid://blfkh56b4cirv" path="res://Player/Weapons/Instances/pistol.gd" id="1_224q5"]
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_bqbbe"]
 [ext_resource type="Texture2D" path="res://asset/images/weapons/pistol.png" id="2_jnw81"]
+[ext_resource type="Resource" path="res://Player/Weapons/Feedback/light_recoil_feedback.tres" id="4_feedback"]
 
 [node name="Pistol" instance=ExtResource("1_bqbbe")]
 script = ExtResource("1_224q5")
+fire_feedback_profile = ExtResource("4_feedback")
 delivery_type_flags = 1
 
 [node name="Modules" parent="."]

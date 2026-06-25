@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CellEffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://data/cell_effects/CellEffectDefinition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://asset/images/cells/gold2.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+effect_id = "double_loot_1"
+family_id = "double_loot"
+tier = 1
+display_name = "Double Loot I"
+description = "Coins and chips have a small chance to double while the player stands in this cell."
+terrain_type = 6
+icon_texture = ExtResource("2")
+unlock_level = 6
+drop_weight = 1.0
+rarity = "common"
+aura_double_loot_coin_chance = 0.1
+aura_double_loot_chip_chance = 0.1
+aura_double_loot_multiplier = 2

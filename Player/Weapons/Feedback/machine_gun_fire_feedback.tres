@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponFireFeedbackProfile" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Player/Weapons/Feedback/weapon_fire_feedback_profile.gd" id="1_profile"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Feedback/muzzle_flash_light.tscn" id="2_flash"]
+
+[resource]
+script = ExtResource("1_profile")
+muzzle_flash_scene = ExtResource("2_flash")
+recoil_distance = 2.5
+recoil_duration = 0.025
+recoil_recover_duration = 0.055
+recoil_rotation_deg = 0.0
+camera_trauma = 0.006
+camera_max_distance = 700.0
+feedback_cooldown_sec = 0.025
+fire_category = &"projectile_light"

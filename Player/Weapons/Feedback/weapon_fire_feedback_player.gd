@@ -1,0 +1,154 @@
+extends RefCounted
+class_name WeaponFireFeedbackPlayer
+
+const MuzzleFlashVfxScript := preload("res://Player/Weapons/Feedback/muzzle_flash_vfx.gd")
+
+var weapon: Node2D
+var _last_feedback_msec: int = -1000000
+var _sprite_tween: Tween
+var _fuse_tween: Tween
+var _sprite_base_position := Vector2.ZERO
+var _sprite_base_rotation: float = 0.0
+var _sprite_base_cached: bool = false
+var _fuse_base_position := Vector2.ZERO
+var _fuse_base_rotation: float = 0.0
+var _fuse_base_cached: bool = false
+
+
+func setup(source_weapon: Node2D) -> void:
+	weapon = source_weapon
+
+
+func play(profile: Resource, direction: Vector2 = Vector2.ZERO) -> bool:
+	if weapon == null or not is_instance_valid(weapon):
+		return false
+	if profile == null:
+		return false
+	var now := Time.get_ticks_msec()
+	var cooldown_msec := int(round(maxf(float(profile.get("feedback_cooldown_sec")), 0.0) * 1000.0))
+	if cooldown_msec > 0 and now - _last_feedback_msec < cooldown_msec:
+		return false
+	_last_feedback_msec = now
+	var resolved_direction := _resolve_direction(direction)
+	_spawn_muzzle_flash(profile, resolved_direction)
+	_play_recoil(profile, resolved_direction)
+	_request_camera_shake(profile)
+	weapon.set_meta(&"_last_fire_feedback_msec", now)
+	return true
+
+
+func _resolve_direction(direction: Vector2) -> Vector2:
+	if direction != Vector2.ZERO:
+		return direction.normalized()
+	if weapon != null and weapon.has_method("get_fire_feedback_direction"):
+		var value: Variant = weapon.call("get_fire_feedback_direction")
+		if value is Vector2 and value != Vector2.ZERO:
+			return (value as Vector2).normalized()
+	return Vector2.RIGHT.rotated(weapon.global_rotation)
+
+
+func _spawn_muzzle_flash(profile: Resource, direction: Vector2) -> void:
+	var muzzle_flash_scene := profile.get("muzzle_flash_scene") as PackedScene
+	if muzzle_flash_scene == null:
+		return
+	var tree := weapon.get_tree()
+	if tree == null:
+		return
+	var vfx := muzzle_flash_scene.instantiate() as Node2D
+	if vfx == null:
+		return
+	tree.root.add_child(vfx)
+	vfx.global_position = _get_muzzle_global_position(direction)
+	if vfx.has_method("setup"):
+		vfx.call("setup", direction)
+	else:
+		vfx.global_rotation = direction.angle()
+
+
+func _get_muzzle_global_position(direction: Vector2) -> Vector2:
+	if weapon.has_method("get_muzzle_global_position"):
+		var value: Variant = weapon.call("get_muzzle_global_position")
+		if value is Vector2:
+			return value as Vector2
+	var muzzle := weapon.get_node_or_null("Muzzle") as Node2D
+	if muzzle != null:
+		return muzzle.global_position
+	return weapon.global_position + direction.normalized() * 18.0
+
+
+func _play_recoil(profile: Resource, direction: Vector2) -> void:
+	var recoil_distance := float(profile.get("recoil_distance"))
+	var recoil_rotation_deg := float(profile.get("recoil_rotation_deg"))
+	if recoil_distance <= 0.0 and is_zero_approx(recoil_rotation_deg):
+		return
+	var sprite := weapon.get("sprite") as Node2D
+	_play_node_recoil(sprite, true, profile, direction)
+	var fuse_holder := weapon.get("fuse_sprite_holder") as Node2D
+	if fuse_holder != null:
+		_play_node_recoil(fuse_holder, false, profile, direction)
+
+
+func _play_node_recoil(node: Node2D, is_primary_sprite: bool, profile: Resource, direction: Vector2) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	if is_primary_sprite:
+		_cache_sprite_base(node)
+		if _sprite_tween != null:
+			_sprite_tween.kill()
+			_sprite_tween = null
+	else:
+		_cache_fuse_base(node)
+		if _fuse_tween != null:
+			_fuse_tween.kill()
+			_fuse_tween = null
+	var base_position := _sprite_base_position if is_primary_sprite else _fuse_base_position
+	var base_rotation := _sprite_base_rotation if is_primary_sprite else _fuse_base_rotation
+	var local_recoil := _global_delta_to_parent_space(node, -direction.normalized() * maxf(float(profile.get("recoil_distance")), 0.0))
+	if local_recoil == Vector2.ZERO:
+		local_recoil = Vector2(0.0, maxf(float(profile.get("recoil_distance")), 0.0))
+	var rotation_recoil := deg_to_rad(float(profile.get("recoil_rotation_deg")))
+	var tween := node.create_tween()
+	tween.set_parallel(false)
+	tween.tween_property(node, "position", base_position + local_recoil, maxf(float(profile.get("recoil_duration")), 0.001)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(node, "rotation", base_rotation + rotation_recoil, maxf(float(profile.get("recoil_duration")), 0.001)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(node, "position", base_position, maxf(float(profile.get("recoil_recover_duration")), 0.001)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(node, "rotation", base_rotation, maxf(float(profile.get("recoil_recover_duration")), 0.001)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	if is_primary_sprite:
+		_sprite_tween = tween
+	else:
+		_fuse_tween = tween
+
+
+func _cache_sprite_base(node: Node2D) -> void:
+	if _sprite_base_cached:
+		return
+	_sprite_base_position = node.position
+	_sprite_base_rotation = node.rotation
+	_sprite_base_cached = true
+
+
+func _global_delta_to_parent_space(node: Node2D, global_delta: Vector2) -> Vector2:
+	var parent_node := node.get_parent() as Node2D
+	if parent_node == null:
+		return global_delta
+	var base_global := node.global_position
+	return parent_node.to_local(base_global + global_delta) - parent_node.to_local(base_global)
+
+
+func _cache_fuse_base(node: Node2D) -> void:
+	if _fuse_base_cached:
+		return
+	_fuse_base_position = node.position
+	_fuse_base_rotation = node.rotation
+	_fuse_base_cached = true
+
+
+func _request_camera_shake(profile: Resource) -> void:
+	var camera_trauma := float(profile.get("camera_trauma"))
+	if camera_trauma <= 0.0:
+		return
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return
+	if not PlayerData.player.has_method("request_camera_shake"):
+		return
+	PlayerData.player.call("request_camera_shake", camera_trauma, weapon.global_position, float(profile.get("camera_max_distance")))

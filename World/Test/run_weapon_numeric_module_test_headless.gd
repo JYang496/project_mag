@@ -1,6 +1,7 @@
 extends Node
 
 const TEST_WEAPON_SCRIPT := preload("res://World/Test/weapon_numeric_module_test_weapon.gd")
+const SHOTGUN_SCENE := preload("res://Player/Weapons/Instances/shotgun.tscn")
 const MODULE_CASES: Array[Dictionary] = [
 	{"path": "res://Player/Weapons/Modules/wmod_quick_cycle.tscn", "stat": "attack_cooldown", "base": 2.0, "lv1": 1.76, "lv3": 1.52},
 	{"path": "res://Player/Weapons/Modules/wmod_heat_throttle.tscn", "stat": "heat_per_shot", "base": 10.0, "lv1": 8.5, "lv3": 7.1},
@@ -29,6 +30,8 @@ func _run() -> void:
 	await _test_area_effect_runtime()
 	_test_knockback_runtime()
 	_test_projectile_directions()
+	_test_branch_centered_shot_directions()
+	_test_shotgun_centered_spread()
 
 	_weapon.queue_free()
 	InventoryData.reset_runtime_state()
@@ -104,15 +107,42 @@ func _test_knockback_runtime() -> void:
 
 func _test_projectile_directions() -> void:
 	var module := _instantiate_module("res://Player/Weapons/Modules/wmod_multi_launcher.tscn")
-	module.set_module_level(3)
 	_weapon.modules.add_child(module)
+	var even_directions := _weapon.branch_runtime.get_branch_shot_directions(Vector2.RIGHT)
+	if even_directions.size() != 2:
+		_fail("Multi Launcher expected 2 level-1 directions, got %d." % even_directions.size())
+	_assert_first_direction(even_directions, Vector2.RIGHT, "Multi Launcher level-1 centered direction")
+	module.set_module_level(3)
 	var directions := _weapon.branch_runtime.get_branch_shot_directions(Vector2.RIGHT)
 	if directions.size() != 3:
 		_fail("Multi Launcher expected 3 directions, got %d." % directions.size())
+	_assert_first_direction(directions, Vector2.RIGHT, "Multi Launcher level-3 centered direction")
 	var shotgun_directions := _weapon.branch_runtime.get_branch_shot_directions(Vector2.RIGHT, 5)
 	if shotgun_directions.size() != 7:
 		_fail("Multi Launcher expected 7 directions from a base count of 5, got %d." % shotgun_directions.size())
+	_assert_first_direction(shotgun_directions, Vector2.RIGHT, "Multi Launcher shotgun centered direction")
 	module.queue_free()
+
+func _test_branch_centered_shot_directions() -> void:
+	var gatling := MachineGunGatlingBranch.new()
+	_assert_first_direction(gatling.get_shot_directions(Vector2.RIGHT, 2), Vector2.RIGHT, "Gatling even centered direction")
+	gatling.queue_free()
+	var salvo := RocketSalvoBranch.new()
+	_assert_first_direction(salvo.get_shot_directions(Vector2.RIGHT, 2), Vector2.RIGHT, "Rocket salvo even centered direction")
+	salvo.queue_free()
+	var spear := SpearMultiPierceBranch.new()
+	_assert_first_direction(spear.get_shot_directions(Vector2.RIGHT, 4), Vector2.RIGHT, "Spear multi-pierce even centered direction")
+	spear.queue_free()
+
+func _test_shotgun_centered_spread() -> void:
+	var shotgun := SHOTGUN_SCENE.instantiate()
+	var directions_variant: Variant = shotgun.call("_build_spread_directions", Vector2.RIGHT, 4, 30.0)
+	var directions := directions_variant as Array
+	if directions.size() != 4:
+		shotgun.queue_free()
+		_fail("Shotgun expected 4 spread directions, got %d." % directions.size())
+	_assert_first_direction(directions, Vector2.RIGHT, "Shotgun even centered spread")
+	shotgun.queue_free()
 
 func _create_test_weapon() -> Ranger:
 	var weapon := TEST_WEAPON_SCRIPT.new() as Ranger
@@ -144,6 +174,14 @@ func _instantiate_module(path: String) -> Module:
 func _assert_approx(actual: float, expected: float, label: String) -> void:
 	if not is_equal_approx(actual, expected):
 		_fail("%s expected %.3f, got %.3f." % [label, expected, actual])
+
+func _assert_first_direction(directions: Array, expected: Vector2, label: String) -> void:
+	if directions.is_empty():
+		_fail("%s returned no directions." % label)
+	var actual := (directions[0] as Vector2).normalized()
+	var target := expected.normalized()
+	if not actual.is_equal_approx(target):
+		_fail("%s expected first direction %s, got %s." % [label, target, actual])
 
 func _fail(message: String) -> void:
 	push_error(message)

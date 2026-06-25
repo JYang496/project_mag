@@ -1,11 +1,13 @@
-[gd_scene load_steps=4 format=3 uid="uid://cect8lp5abtw"]
+[gd_scene load_steps=5 format=3 uid="uid://cect8lp5abtw"]
 
 [ext_resource type="Texture2D" path="res://asset/images/weapons/spear_launcher.png" id="1_1rx0e"]
 [ext_resource type="Script" uid="uid://ck17tkx32o6ft" path="res://Player/Weapons/Instances/spear_launcher.gd" id="1_wrx6n"]
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_yntmd"]
+[ext_resource type="Resource" path="res://Player/Weapons/Feedback/light_recoil_feedback.tres" id="2_feedback"]
 
 [node name="SpearLauncher" instance=ExtResource("1_yntmd")]
 script = ExtResource("1_wrx6n")
+fire_feedback_profile = ExtResource("2_feedback")
 delivery_type_flags = 1
 
 [node name="Modules" parent="."]

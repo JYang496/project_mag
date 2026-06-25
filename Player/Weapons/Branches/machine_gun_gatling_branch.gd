@@ -11,18 +11,10 @@ func get_added_weapon_traits() -> Array[StringName]:
 	return [WeaponTrait.FIRE]
 
 func get_shot_directions(base_direction: Vector2, shot_count: int = -1) -> Array[Vector2]:
-	var dirs: Array[Vector2] = []
 	var count := projectile_count if shot_count < 0 else shot_count
 	count = clampi(count, 1, 16)
-	var normalized_base := base_direction.normalized()
-	if count == 1:
-		return [normalized_base]
 	var spread_step := deg_to_rad(spread_deg)
-	var center_offset := float(count - 1) * 0.5
-	for i in range(count):
-		var angle := (float(i) - center_offset) * spread_step
-		dirs.append(normalized_base.rotated(angle))
-	return dirs
+	return build_centered_spread_directions(base_direction, count, spread_step)
 
 func get_cooldown_multiplier() -> float:
 	# Remove branch-only cooldown bonus; keep base weapon cadence.

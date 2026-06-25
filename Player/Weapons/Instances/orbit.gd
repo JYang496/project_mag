@@ -112,6 +112,7 @@ func request_primary_fire() -> bool:
 		return false
 	_pending_satellite_spawn_count = spent_ammo
 	emit_signal("shoot")
+	play_fire_feedback()
 	notify_main_weapon_fired()
 	register_shot_heat()
 	if uses_ammo_system() and current_ammo <= 0:

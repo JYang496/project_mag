@@ -3,9 +3,11 @@
 [ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_ranger"]
 [ext_resource type="Script" uid="uid://bnj412fl7jiol" path="res://Player/Weapons/Instances/cannon.gd" id="2_script"]
 [ext_resource type="Texture2D" uid="uid://ibu0avxj67o0" path="res://asset/images/weapons/cannon2.png" id="4_icon"]
+[ext_resource type="Resource" path="res://Player/Weapons/Feedback/heavy_recoil_feedback.tres" id="5_feedback"]
 
 [node name="Cannon" unique_id=2056242882 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
+fire_feedback_profile = ExtResource("5_feedback")
 windup_sec = 0.15
 idle_fire_trigger_sec = 6.0
 idle_fire_empowered_shots = 1

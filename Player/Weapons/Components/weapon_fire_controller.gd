@@ -36,6 +36,8 @@ func request_primary_fire() -> bool:
 	if cooldown_timer:
 		cooldown_timer.wait_time = maxf(get_effective_cooldown(float(weapon.get("attack_cooldown"))), 0.01)
 	weapon.emit_signal("shoot")
+	if weapon.has_method("play_fire_feedback"):
+		weapon.call("play_fire_feedback")
 	if weapon.has_method("notify_main_weapon_fired"):
 		weapon.call("notify_main_weapon_fired")
 	if weapon.has_method("register_shot_heat"):

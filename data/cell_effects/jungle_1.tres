@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CellEffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://data/cell_effects/CellEffectDefinition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://asset/images/cells/glass.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+effect_id = "jungle_1"
+family_id = "jungle"
+tier = 1
+display_name = "Jungle I"
+description = "Creates dense terrain that slightly narrows player vision inside this cell."
+terrain_type = 2
+icon_texture = ExtResource("2")
+unlock_level = 2
+drop_weight = 1.0
+rarity = "common"
+aura_jungle_vision_mul = 0.9

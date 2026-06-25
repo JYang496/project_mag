@@ -4,9 +4,11 @@
 [ext_resource type="Script" uid="uid://cltknaqte646o" path="res://Player/Weapons/Instances/sniper.gd" id="2_script"]
 [ext_resource type="Texture2D" path="res://asset/images/weapons/sniper.png" id="3_icon"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_qi27u"]
+[ext_resource type="Resource" path="res://Player/Weapons/Feedback/precision_recoil_feedback.tres" id="4_feedback"]
 
 [node name="Sniper" unique_id=326992049 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
+fire_feedback_profile = ExtResource("4_feedback")
 delivery_type_flags = 1
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]

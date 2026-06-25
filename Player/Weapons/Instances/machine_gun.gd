@@ -84,6 +84,7 @@ func request_primary_fire() -> bool:
 			request_reload()
 		return false
 	emit_signal("shoot")
+	play_fire_feedback()
 	notify_main_weapon_fired()
 	if uses_ammo_system() and current_ammo <= 0:
 		request_reload()
