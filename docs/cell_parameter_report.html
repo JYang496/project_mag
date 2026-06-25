@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cell Parameter Report</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #64748b;
+      --line: #d9e0ea;
+      --head: #edf2f7;
+      --accent: #0f766e;
+      --accent-soft: #d9f3ee;
+      --warn: #9a3412;
+      --warn-soft: #ffedd5;
+      --code: #f1f5f9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.55 "Segoe UI", Arial, sans-serif;
+    }
+    header {
+      padding: 28px 32px 18px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 28px 44px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 30px 0 12px;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 20px 0 10px;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+    p { margin: 8px 0; }
+    code {
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--code);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 0.92em;
+    }
+    .meta {
+      color: var(--muted);
+      margin: 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 12px;
+    }
+    .summary {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .summary strong {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .summary span {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .note {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 10px 12px;
+      border-radius: 6px;
+    }
+    .warn {
+      border-left: 4px solid var(--warn);
+      background: var(--warn-soft);
+      padding: 10px 12px;
+      border-radius: 6px;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      margin: 10px 0 18px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--head);
+      font-size: 12px;
+      color: #334155;
+      white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: 0; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pill {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--code);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .common { background: #e8f3ff; color: #1d4ed8; }
+    .rare { background: #f0eaff; color: #6d28d9; }
+    .epic { background: #fff2cc; color: #92400e; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Cell 参数报告</h1>
+    <p class="meta">Source snapshot: <code>Board/Cells</code>, <code>World/board_cell_generator.gd</code>, <code>World/world.tscn</code>, <code>data/cell_effects/*.tres</code></p>
+  </header>
+
+  <main>
+    <section class="grid">
+      <div class="summary"><strong>棋盘尺寸</strong><span>3 x 3</span></div>
+      <div class="summary"><strong>格子间距</strong><span>Vector2(510, 510)</span></div>
+      <div class="summary"><strong>初始 CellProfile 数量</strong><span>9</span></div>
+      <div class="summary"><strong>可掉落/安装 Cell Effect</strong><span>21</span></div>
+    </section>
+
+    <p class="note">当前 <code>World/world.tscn</code> 的 9 个 <code>initial_cell_profiles</code> 都只引用 <code>CellProfile</code> 脚本，没有覆盖任何导出字段。因此初始 9 个格子的任务、奖励、地形和 aura 参数都等于 <code>Board/Cells/cell_profile.gd</code> 的默认值。</p>
+
+    <h2>棋盘与 Cell 运行参数</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>参数</th><th>当前值</th><th>来源</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>grid_size</code></td><td>Vector2i(3, 3)</td><td><code>World/board_cell_generator.gd</code></td><td>运行时固定变量，不是 export。必须是奇数尺寸以确定中心格。</td></tr>
+          <tr><td><code>cell_spacing</code></td><td>Vector2(510, 510)</td><td><code>World/board_cell_generator.gd</code></td><td>每个 Cell 的网格间距。</td></tr>
+          <tr><td><code>center_spawn_offset</code></td><td>Vector2(255, 258)</td><td><code>World/board_cell_generator.gd</code></td><td>玩家生成点 reparent 到中心 Cell 后的本地偏移。</td></tr>
+          <tr><td><code>auto_assign_enemy_on_battle</code></td><td>true</td><td><code>World/board_cell_generator.gd</code></td><td>自动响应 phase 切换并启用战斗格子。</td></tr>
+          <tr><td><code>blocker_collision_layer</code></td><td>32</td><td><code>World/board_cell_generator.gd</code></td><td>棋盘边界墙碰撞层。</td></tr>
+          <tr><td><code>blocker_collision_mask</code></td><td>0</td><td><code>World/board_cell_generator.gd</code></td><td>棋盘边界墙碰撞 mask。</td></tr>
+          <tr><td><code>corner_pillar_size</code></td><td>Vector2(48, 48)</td><td><code>World/board_cell_generator.gd</code></td><td>格子角点阻挡块尺寸，也用于生成 Cell 捕获多边形的圆角截角半径。</td></tr>
+          <tr><td><code>border_wall_thickness</code></td><td>48.0</td><td><code>World/board_cell_generator.gd</code></td><td>棋盘外边界墙厚度。</td></tr>
+          <tr><td><code>enemy_traversable_inset</code></td><td>6.0</td><td><code>World/board_cell_generator.gd</code></td><td>敌人投影到可走区域时的内缩边距。</td></tr>
+          <tr><td><code>blocker_visual_z_index</code></td><td>5</td><td><code>World/board_cell_generator.gd</code></td><td>阻挡块可视层级。</td></tr>
+          <tr><td><code>pillar_visual_color</code></td><td>Color(0.20, 0.20, 0.20, 0.85)</td><td><code>World/board_cell_generator.gd</code></td><td>角点阻挡块颜色。</td></tr>
+          <tr><td><code>wall_visual_color</code></td><td>Color(0.15, 0.15, 0.15, 0.75)</td><td><code>World/board_cell_generator.gd</code></td><td>边界墙颜色。</td></tr>
+          <tr><td><code>fade_duration</code></td><td>0.35</td><td><code>World/board_cell_generator.gd</code></td><td>棋盘显示/隐藏渐变时长。</td></tr>
+          <tr><td><code>PROGRESS_INTERVAL</code></td><td>0.2</td><td><code>Board/Cells/cell.gd</code></td><td>Cell 进度计时器 tick 间隔。</td></tr>
+          <tr><td><code>PROGRESS_STEP</code></td><td>1</td><td><code>Board/Cells/cell.gd</code></td><td>玩家单独占领时每 tick 进度增加量。</td></tr>
+          <tr><td><code>PROGRESS_LIMIT</code></td><td>100</td><td><code>Board/Cells/cell.gd</code></td><td>Cell 进度上限。</td></tr>
+          <tr><td><code>CONTESTED_PROGRESS_MULTIPLIER</code></td><td>0.5</td><td><code>Board/Cells/cell.gd</code></td><td>玩家与敌人同时在格内时的进度倍率。</td></tr>
+          <tr><td><code>Area2D.collision_mask</code></td><td>16</td><td><code>Board/Cells/cell.tscn</code></td><td>Cell 的进入/离开检测 mask，对应项目设置中的 Cell 相关层。</td></tr>
+          <tr><td><code>Texture/Sprite2D.texture</code></td><td><code>asset/images/cells/default.png</code></td><td><code>Board/Cells/cell.tscn</code></td><td>默认格子贴图，运行时会按 terrain 覆盖。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>逻辑 ID 与等级激活规则</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>项目</th><th>规则</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>逻辑 ID 排列</td><td><code>7,8,9 / 4,5,6 / 1,2,3</code>，左上到右下的 3x3 映射。</td></tr>
+          <tr><td>Level 1-2</td><td>Active cells: <code>[5, 6]</code></td></tr>
+          <tr><td>Level 3-4</td><td>Active cells: <code>[4, 5, 6]</code></td></tr>
+          <tr><td>Level 5-6</td><td>Active cells: <code>[4, 5, 6, 8]</code></td></tr>
+          <tr><td>Level 7-8</td><td>Active cells: <code>[2, 4, 5, 6, 8]</code></td></tr>
+          <tr><td>Level 9+</td><td>Active cells: <code>[1, 2, 3, 4, 5, 6, 7, 8, 9]</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>CellProfile 默认参数</h2>
+    <h3>基础分类</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>参数</th><th>默认值</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>task_type</code></td><td>NONE / 0</td><td>任务类型：NONE, OFFENSE, DEFENSE, CLEAR, HUNT, DODGE。</td></tr>
+          <tr><td><code>reward_type</code></td><td>NONE / 0</td><td>任务奖励类型：NONE, COMBAT, ECONOMY。</td></tr>
+          <tr><td><code>terrain_type</code></td><td>NONE / 0</td><td>地形/aura 类型：NONE, CORROSION, JUNGLE, SPEED_BOOST, REGEN, LUCKY_STRIKE, DOUBLE_LOOT, LOW_HP_BERSERK。</td></tr>
+          <tr><td><code>objective_enabled</code></td><td>false</td><td>是否启用目标模块。</td></tr>
+          <tr><td><code>aura_enabled</code></td><td>false</td><td>是否启用地形 aura。</td></tr>
+          <tr><td><code>use_auto_module_mapping</code></td><td>true</td><td>按 task/terrain 自动加载目标模块和 aura 模块。</td></tr>
+          <tr><td><code>use_manual_module_scenes</code></td><td>false</td><td>是否额外使用手动配置的模块 scene。</td></tr>
+          <tr><td><code>module_scenes</code></td><td>[]</td><td>手动模块列表。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>任务参数</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>任务</th><th>参数</th><th>默认值</th><th>传入模块字段</th></tr></thead>
+        <tbody>
+          <tr><td>OFFENSE</td><td><code>offense_required_kill_count</code></td><td class="num">10</td><td><code>required_kill_count</code></td></tr>
+          <tr><td>OFFENSE</td><td><code>offense_count_kill_only_when_player_inside</code></td><td>true</td><td><code>count_kill_only_when_player_inside</code></td></tr>
+          <tr><td>DEFENSE</td><td><code>defense_required_hold_seconds</code></td><td class="num">8.0</td><td><code>required_hold_seconds</code></td></tr>
+          <tr><td>DEFENSE</td><td><code>defense_required_progress</code></td><td class="num">50</td><td><code>required_progress</code></td></tr>
+          <tr><td>CLEAR</td><td><code>clear_enemy_count</code></td><td class="num">6</td><td><code>clear_enemy_count</code></td></tr>
+          <tr><td>CLEAR</td><td><code>clear_completion_ratio</code></td><td class="num">0.8</td><td><code>clear_completion_ratio</code></td></tr>
+          <tr><td>CLEAR</td><td><code>clear_pre_entry_damage_mul</code></td><td class="num">0.5</td><td><code>clear_pre_entry_damage_mul</code></td></tr>
+          <tr><td>CLEAR</td><td><code>clear_freeze_before_entry</code></td><td>true</td><td><code>clear_freeze_before_entry</code></td></tr>
+          <tr><td>HUNT</td><td><code>hunt_elite_count</code></td><td class="num">1</td><td><code>hunt_elite_count</code></td></tr>
+          <tr><td>HUNT</td><td><code>hunt_pre_entry_damage_mul</code></td><td class="num">0.5</td><td><code>hunt_pre_entry_damage_mul</code></td></tr>
+          <tr><td>HUNT</td><td><code>hunt_freeze_before_entry</code></td><td>true</td><td><code>hunt_freeze_before_entry</code></td></tr>
+          <tr><td>DODGE</td><td><code>dodge_required_survival_seconds</code></td><td class="num">10.0</td><td><code>dodge_required_survival_seconds</code></td></tr>
+          <tr><td>DODGE</td><td><code>dodge_aoe_damage</code></td><td class="num">1</td><td><code>dodge_aoe_damage</code></td></tr>
+          <tr><td>DODGE</td><td><code>dodge_aoe_damage_type</code></td><td><code>fire</code></td><td><code>dodge_aoe_damage_type</code></td></tr>
+          <tr><td>DODGE</td><td><code>dodge_aoe_radius</code></td><td class="num">72.0</td><td><code>dodge_aoe_radius</code></td></tr>
+          <tr><td>DODGE</td><td><code>dodge_aoe_warning_seconds</code></td><td class="num">1.1</td><td><code>dodge_aoe_warning_seconds</code></td></tr>
+          <tr><td>DODGE</td><td><code>dodge_aoe_interval_min</code></td><td class="num">0.9</td><td><code>dodge_aoe_interval_min</code></td></tr>
+          <tr><td>DODGE</td><td><code>dodge_aoe_interval_max</code></td><td class="num">1.6</td><td><code>dodge_aoe_interval_max</code></td></tr>
+          <tr><td>DODGE</td><td><code>dodge_aoe_impact_duration</code></td><td class="num">0.2</td><td><code>dodge_aoe_impact_duration</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>奖励参数</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>类别</th><th>参数</th><th>默认值</th><th>备注</th></tr></thead>
+        <tbody>
+          <tr><td>COMBAT</td><td><code>combat_heal_hp</code></td><td class="num">1</td><td>完成后恢复 HP。</td></tr>
+          <tr><td>COMBAT</td><td><code>combat_bonus_speed</code></td><td class="num">20.0</td><td>临时速度奖励。</td></tr>
+          <tr><td>COMBAT</td><td><code>combat_bonus_duration</code></td><td class="num">10.0</td><td>临时战斗奖励持续时间。</td></tr>
+          <tr><td>COMBAT</td><td><code>combat_bonus_armor</code></td><td class="num">0</td><td>护甲奖励。</td></tr>
+          <tr><td>COMBAT</td><td><code>combat_bonus_crit_rate</code></td><td class="num">0.0</td><td>暴击率奖励。</td></tr>
+          <tr><td>COMBAT</td><td><code>combat_bonus_crit_damage</code></td><td class="num">0.0</td><td>暴击伤害奖励。</td></tr>
+          <tr><td>COMBAT</td><td><code>combat_bonus_shield</code></td><td class="num">0</td><td>护盾奖励。</td></tr>
+          <tr><td>COMBAT</td><td><code>combat_bonus_damage_reduction</code></td><td class="num">1.0</td><td>小于 1.0 时提供伤害减免倍率。</td></tr>
+          <tr><td>ECONOMY</td><td><code>economy_gold</code></td><td class="num">0</td><td>运行时会优先使用 <code>economy_data.objective_economy_gold_by_level</code> 的按等级覆盖值。</td></tr>
+          <tr><td>ECONOMY</td><td><code>economy_exp</code></td><td class="num">0</td><td>直接经验奖励。</td></tr>
+          <tr><td>ECONOMY</td><td><code>economy_drop_coin</code></td><td class="num">0</td><td>掉落 coin 数。</td></tr>
+          <tr><td>ECONOMY</td><td><code>economy_drop_chip</code></td><td class="num">0</td><td>掉落 chip 数。</td></tr>
+          <tr><td>ECONOMY</td><td><code>economy_drop_coin_value</code></td><td class="num">1</td><td>每个 coin 价值。</td></tr>
+          <tr><td>ECONOMY</td><td><code>economy_drop_chip_value</code></td><td class="num">1</td><td>每个 chip 价值。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Aura 参数默认值</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Terrain</th><th>参数</th><th>CellProfile 默认值</th><th>模块运行效果</th></tr></thead>
+        <tbody>
+          <tr><td>CORROSION</td><td><code>aura_corrosion_move_speed_mul</code></td><td class="num">0.7</td><td>玩家移速倍率。</td></tr>
+          <tr><td>JUNGLE</td><td><code>aura_jungle_vision_mul</code></td><td class="num">0.7</td><td>玩家视野倍率。</td></tr>
+          <tr><td>SPEED_BOOST</td><td><code>aura_speed_move_speed_mul</code></td><td class="num">1.2</td><td>玩家移速倍率。</td></tr>
+          <tr><td>REGEN</td><td><code>aura_regen_interval_sec</code></td><td class="num">5.0</td><td>回血 tick 间隔。</td></tr>
+          <tr><td>REGEN</td><td><code>aura_regen_heal_amount</code></td><td class="num">1</td><td>每 tick 回血量。</td></tr>
+          <tr><td>LUCKY_STRIKE</td><td><code>aura_lucky_strike_chance</code></td><td class="num">0.3</td><td>额外伤害触发概率。</td></tr>
+          <tr><td>LUCKY_STRIKE</td><td><code>aura_lucky_strike_extra_damage</code></td><td class="num">1</td><td>触发时额外伤害。</td></tr>
+          <tr><td>DOUBLE_LOOT</td><td><code>aura_double_loot_coin_chance</code></td><td class="num">0.2</td><td>coin 翻倍概率。</td></tr>
+          <tr><td>DOUBLE_LOOT</td><td><code>aura_double_loot_chip_chance</code></td><td class="num">0.2</td><td>chip 翻倍概率。</td></tr>
+          <tr><td>DOUBLE_LOOT</td><td><code>aura_double_loot_multiplier</code></td><td class="num">2</td><td>掉落倍数，模块中最小值为 2。</td></tr>
+          <tr><td>LOW_HP_BERSERK</td><td><code>aura_low_hp_min_hp_ratio</code></td><td class="num">0.25</td><td>低血量阈值。</td></tr>
+          <tr><td>LOW_HP_BERSERK</td><td><code>aura_low_hp_max_damage_mul</code></td><td class="num">1.5</td><td>低血量最大伤害倍率。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Terrain 类型与贴图/模块映射</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Terrain</th><th>贴图</th><th>Aura 模块</th></tr></thead>
+        <tbody>
+          <tr><td class="num">0</td><td>NONE</td><td><code>asset/images/cells/default.png</code></td><td>无</td></tr>
+          <tr><td class="num">1</td><td>CORROSION</td><td><code>asset/images/cells/dirt2.png</code></td><td><code>cell_aura_corrosion.tscn</code></td></tr>
+          <tr><td class="num">2</td><td>JUNGLE</td><td><code>asset/images/cells/glass.png</code></td><td><code>cell_aura_jungle.tscn</code></td></tr>
+          <tr><td class="num">3</td><td>SPEED_BOOST</td><td><code>asset/images/cells/ice.png</code></td><td><code>cell_aura_speed_boost.tscn</code></td></tr>
+          <tr><td class="num">4</td><td>REGEN</td><td><code>asset/images/cells/fact1.png</code></td><td><code>cell_aura_regen.tscn</code></td></tr>
+          <tr><td class="num">5</td><td>LUCKY_STRIKE</td><td><code>asset/images/cells/gold1.png</code></td><td><code>cell_aura_lucky_strike.tscn</code></td></tr>
+          <tr><td class="num">6</td><td>DOUBLE_LOOT</td><td><code>asset/images/cells/gold2.png</code></td><td><code>cell_aura_double_loot.tscn</code></td></tr>
+          <tr><td class="num">7</td><td>LOW_HP_BERSERK</td><td><code>asset/images/cells/lava.png</code></td><td><code>cell_aura_low_hp_berserk.tscn</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Cell Effect 实际资源参数</h2>
+    <p class="warn">这些值来自 <code>data/cell_effects/*.tres</code>。未在表中展示的 aura 字段使用 <code>CellEffectDefinition.gd</code> 默认值：speed 1.0, regen interval 5.0, heal 0, vision 1.0, lucky chance 0.0, lucky damage 0, double chance 0.0, multiplier 1, low HP ratio 0.25, low HP max damage 1.0, corrosion speed 1.0。</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>effect_id</th><th>显示名</th><th>Family</th><th>Tier</th><th>Rarity</th><th>Unlock</th><th>Weight</th><th>Terrain</th><th>有效 Aura 参数</th><th>描述</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>speed_1</code></td><td>Speed I</td><td>speed</td><td class="num">1</td><td><span class="pill common">common</span></td><td class="num">1</td><td class="num">1.0</td><td>SPEED_BOOST</td><td><code>aura_speed_move_speed_mul=1.1</code></td><td>Boosts movement speed while the player stands in this cell.</td></tr>
+          <tr><td><code>speed_2</code></td><td>Speed II</td><td>speed</td><td class="num">2</td><td><span class="pill rare">rare</span></td><td class="num">4</td><td class="num">0.35</td><td>SPEED_BOOST</td><td><code>aura_speed_move_speed_mul=1.2</code></td><td>Boosts movement speed while the player stands in this cell.</td></tr>
+          <tr><td><code>speed_3</code></td><td>Speed III</td><td>speed</td><td class="num">3</td><td><span class="pill epic">epic</span></td><td class="num">9</td><td class="num">0.16</td><td>SPEED_BOOST</td><td><code>aura_speed_move_speed_mul=1.3</code></td><td>Greatly boosts movement speed while the player stands in this cell.</td></tr>
+          <tr><td><code>regen_1</code></td><td>Regen I</td><td>regen</td><td class="num">1</td><td><span class="pill common">common</span></td><td class="num">1</td><td class="num">1.0</td><td>REGEN</td><td><code>interval=6.0</code>, <code>heal=1</code></td><td>Restores 1 HP every 6 seconds while the player stands in this cell.</td></tr>
+          <tr><td><code>regen_2</code></td><td>Regen II</td><td>regen</td><td class="num">2</td><td><span class="pill rare">rare</span></td><td class="num">4</td><td class="num">0.35</td><td>REGEN</td><td><code>interval=5.0</code>, <code>heal=1</code></td><td>Restores 1 HP every 5 seconds while the player stands in this cell.</td></tr>
+          <tr><td><code>regen_3</code></td><td>Regen III</td><td>regen</td><td class="num">3</td><td><span class="pill epic">epic</span></td><td class="num">9</td><td class="num">0.16</td><td>REGEN</td><td><code>interval=4.0</code>, <code>heal=1</code></td><td>Restores 1 HP every 4 seconds while the player stands in this cell.</td></tr>
+          <tr><td><code>jungle_1</code></td><td>Jungle I</td><td>jungle</td><td class="num">1</td><td><span class="pill common">common</span></td><td class="num">2</td><td class="num">1.0</td><td>JUNGLE</td><td><code>aura_jungle_vision_mul=0.9</code></td><td>Creates dense terrain that slightly narrows player vision inside this cell.</td></tr>
+          <tr><td><code>jungle_2</code></td><td>Jungle II</td><td>jungle</td><td class="num">2</td><td><span class="pill rare">rare</span></td><td class="num">4</td><td class="num">0.35</td><td>JUNGLE</td><td><code>aura_jungle_vision_mul=0.8</code></td><td>Creates denser terrain that narrows player vision inside this cell.</td></tr>
+          <tr><td><code>jungle_3</code></td><td>Jungle III</td><td>jungle</td><td class="num">3</td><td><span class="pill epic">epic</span></td><td class="num">9</td><td class="num">0.16</td><td>JUNGLE</td><td><code>aura_jungle_vision_mul=0.7</code></td><td>Creates very dense terrain that heavily narrows player vision inside this cell.</td></tr>
+          <tr><td><code>lucky_strike_1</code></td><td>Lucky Strike I</td><td>lucky_strike</td><td class="num">1</td><td><span class="pill common">common</span></td><td class="num">6</td><td class="num">1.0</td><td>LUCKY_STRIKE</td><td><code>chance=0.15</code>, <code>extra_damage=1</code></td><td>Attacks have a small chance to add 1 bonus damage while the player stands in this cell.</td></tr>
+          <tr><td><code>lucky_strike_2</code></td><td>Lucky Strike II</td><td>lucky_strike</td><td class="num">2</td><td><span class="pill rare">rare</span></td><td class="num">6</td><td class="num">0.35</td><td>LUCKY_STRIKE</td><td><code>chance=0.25</code>, <code>extra_damage=1</code></td><td>Attacks have a moderate chance to add 1 bonus damage while the player stands in this cell.</td></tr>
+          <tr><td><code>lucky_strike_3</code></td><td>Lucky Strike III</td><td>lucky_strike</td><td class="num">3</td><td><span class="pill epic">epic</span></td><td class="num">9</td><td class="num">0.16</td><td>LUCKY_STRIKE</td><td><code>chance=0.35</code>, <code>extra_damage=1</code></td><td>Attacks have a high chance to add 1 bonus damage while the player stands in this cell.</td></tr>
+          <tr><td><code>double_loot_1</code></td><td>Double Loot I</td><td>double_loot</td><td class="num">1</td><td><span class="pill common">common</span></td><td class="num">6</td><td class="num">1.0</td><td>DOUBLE_LOOT</td><td><code>coin=0.1</code>, <code>chip=0.1</code>, <code>mult=2</code></td><td>Coins and chips have a small chance to double while the player stands in this cell.</td></tr>
+          <tr><td><code>double_loot_2</code></td><td>Double Loot II</td><td>double_loot</td><td class="num">2</td><td><span class="pill rare">rare</span></td><td class="num">6</td><td class="num">0.35</td><td>DOUBLE_LOOT</td><td><code>coin=0.18</code>, <code>chip=0.18</code>, <code>mult=2</code></td><td>Coins and chips have a moderate chance to double while the player stands in this cell.</td></tr>
+          <tr><td><code>double_loot_3</code></td><td>Double Loot III</td><td>double_loot</td><td class="num">3</td><td><span class="pill epic">epic</span></td><td class="num">9</td><td class="num">0.16</td><td>DOUBLE_LOOT</td><td><code>coin=0.25</code>, <code>chip=0.25</code>, <code>mult=2</code></td><td>Coins and chips have a high chance to double while the player stands in this cell.</td></tr>
+          <tr><td><code>corrosion_1</code></td><td>Corrosion I</td><td>corrosion</td><td class="num">1</td><td><span class="pill common">common</span></td><td class="num">8</td><td class="num">1.0</td><td>CORROSION</td><td><code>aura_corrosion_move_speed_mul=0.9</code></td><td>Creates rough corrosive terrain that slightly slows the player inside this cell.</td></tr>
+          <tr><td><code>corrosion_2</code></td><td>Corrosion II</td><td>corrosion</td><td class="num">2</td><td><span class="pill rare">rare</span></td><td class="num">8</td><td class="num">0.35</td><td>CORROSION</td><td><code>aura_corrosion_move_speed_mul=0.8</code></td><td>Creates rough corrosive terrain that slows the player inside this cell.</td></tr>
+          <tr><td><code>corrosion_3</code></td><td>Corrosion III</td><td>corrosion</td><td class="num">3</td><td><span class="pill epic">epic</span></td><td class="num">9</td><td class="num">0.16</td><td>CORROSION</td><td><code>aura_corrosion_move_speed_mul=0.7</code></td><td>Creates rough corrosive terrain that heavily slows the player inside this cell.</td></tr>
+          <tr><td><code>low_hp_berserk_1</code></td><td>Low HP Berserk I</td><td>low_hp_berserk</td><td class="num">1</td><td><span class="pill common">common</span></td><td class="num">8</td><td class="num">1.0</td><td>LOW_HP_BERSERK</td><td><code>min_hp_ratio=0.25</code>, <code>max_damage_mul=1.2</code></td><td>At low HP, damage can scale up to x1.20 while the player stands in this cell.</td></tr>
+          <tr><td><code>low_hp_berserk_2</code></td><td>Low HP Berserk II</td><td>low_hp_berserk</td><td class="num">2</td><td><span class="pill rare">rare</span></td><td class="num">8</td><td class="num">0.35</td><td>LOW_HP_BERSERK</td><td><code>min_hp_ratio=0.25</code>, <code>max_damage_mul=1.35</code></td><td>At low HP, damage can scale up to x1.35 while the player stands in this cell.</td></tr>
+          <tr><td><code>low_hp_berserk_3</code></td><td>Low HP Berserk III</td><td>low_hp_berserk</td><td class="num">3</td><td><span class="pill epic">epic</span></td><td class="num">9</td><td class="num">0.16</td><td>LOW_HP_BERSERK</td><td><code>min_hp_ratio=0.25</code>, <code>max_damage_mul=1.5</code></td><td>At low HP, damage can scale up to x1.50 while the player stands in this cell.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>模块自动映射</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>类型</th><th>枚举值</th><th>自动加载 Scene</th><th>触发条件</th></tr></thead>
+        <tbody>
+          <tr><td>Task</td><td>OFFENSE</td><td><code>Board/Cells/Modules/cell_obj_offense_kill.tscn</code></td><td><code>objective_enabled=true</code></td></tr>
+          <tr><td>Task</td><td>DEFENSE</td><td><code>Board/Cells/Modules/cell_obj_defense_hold.tscn</code></td><td><code>objective_enabled=true</code></td></tr>
+          <tr><td>Task</td><td>CLEAR</td><td><code>Board/Cells/Modules/cell_obj_clear_cell.tscn</code></td><td><code>objective_enabled=true</code></td></tr>
+          <tr><td>Task</td><td>HUNT</td><td><code>Board/Cells/Modules/cell_obj_hunt_elite.tscn</code></td><td><code>objective_enabled=true</code></td></tr>
+          <tr><td>Task</td><td>DODGE</td><td><code>Board/Cells/Modules/cell_obj_dodge_survival.tscn</code></td><td><code>objective_enabled=true</code></td></tr>
+          <tr><td>Aura</td><td>CORROSION</td><td><code>Board/Cells/Modules/cell_aura_corrosion.tscn</code></td><td><code>aura_enabled=true</code> 或运行时安装对应 Cell Effect。</td></tr>
+          <tr><td>Aura</td><td>JUNGLE</td><td><code>Board/Cells/Modules/cell_aura_jungle.tscn</code></td><td><code>aura_enabled=true</code> 或运行时安装对应 Cell Effect。</td></tr>
+          <tr><td>Aura</td><td>SPEED_BOOST</td><td><code>Board/Cells/Modules/cell_aura_speed_boost.tscn</code></td><td><code>aura_enabled=true</code> 或运行时安装对应 Cell Effect。</td></tr>
+          <tr><td>Aura</td><td>REGEN</td><td><code>Board/Cells/Modules/cell_aura_regen.tscn</code></td><td><code>aura_enabled=true</code> 或运行时安装对应 Cell Effect。</td></tr>
+          <tr><td>Aura</td><td>LUCKY_STRIKE</td><td><code>Board/Cells/Modules/cell_aura_lucky_strike.tscn</code></td><td><code>aura_enabled=true</code> 或运行时安装对应 Cell Effect。</td></tr>
+          <tr><td>Aura</td><td>DOUBLE_LOOT</td><td><code>Board/Cells/Modules/cell_aura_double_loot.tscn</code></td><td><code>aura_enabled=true</code> 或运行时安装对应 Cell Effect。</td></tr>
+          <tr><td>Aura</td><td>LOW_HP_BERSERK</td><td><code>Board/Cells/Modules/cell_aura_low_hp_berserk.tscn</code></td><td><code>aura_enabled=true</code> 或运行时安装对应 Cell Effect。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</body>
+</html>

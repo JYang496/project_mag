@@ -39,6 +39,8 @@ func get_pending_reward_options() -> Array[RewardInfo]:
 func notify_objective_completed(_cell_id: String = "") -> void:
 	if not is_enabled() or PhaseManager.current_state() != PhaseManager.BATTLE:
 		return
+	if CellTaskModuleRuntime != null and CellTaskModuleRuntime.has_method("record_objective_completed"):
+		CellTaskModuleRuntime.record_objective_completed(_cell_id)
 	_pending_reward_count += 1
 	_reward_unlocked = true
 	_pending_level = int(PhaseManager.current_level)
@@ -175,12 +177,36 @@ func _on_reward_selected(reward: RewardInfo) -> void:
 		var message_ui = GlobalVariables.ui
 		if definition != null and message_ui and is_instance_valid(message_ui) and message_ui.has_method("show_item_message"):
 			message_ui.show_item_message("Cell effect obtained: %s" % definition.get_display_name(), 2.1)
+	elif reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		var grant_result: Dictionary = CellTaskModuleRuntime.grant_module(reward.task_module_id)
+		if not bool(grant_result.get("ok", false)):
+			var ui = GlobalVariables.ui
+			if bool(grant_result.get("needs_replace", false)) and ui and is_instance_valid(ui) and ui.has_method("request_task_module_replacement"):
+				var opened := bool(ui.call(
+					"request_task_module_replacement",
+					reward.task_module_id,
+					Callable(self, "_on_task_module_replacement_selected").bind(reward)
+				))
+				if opened:
+					return
+			call_deferred("_try_open_pending_reward")
+			return
 	else:
 		var manager := _resolve_reward_manager()
 		var grant_reward := _prepare_reward_for_grant(reward)
 		if manager == null or grant_reward == null or not manager.grant_reward_immediately(grant_reward):
 			call_deferred("_try_open_pending_reward")
 			return
+	_complete_selected_reward()
+
+func _on_task_module_replacement_selected(replace_index: int, reward: RewardInfo) -> void:
+	var result: Dictionary = CellTaskModuleRuntime.replace_inventory_module(replace_index, reward.task_module_id)
+	if not bool(result.get("ok", false)):
+		call_deferred("_try_open_pending_reward")
+		return
+	_complete_selected_reward()
+
+func _complete_selected_reward() -> void:
 	_pending_reward_count = maxi(_pending_reward_count - 1, 0)
 	if _pending_reward_count > 0:
 		_pending_options = _build_reward_options_from_current_state()
@@ -197,7 +223,25 @@ func _on_reward_selected(reward: RewardInfo) -> void:
 		ui.call_deferred("resume_pending_weapon_branch_selection")
 
 func _build_reward_options_from_current_state() -> Array[RewardInfo]:
-	return CellEffectRuntime.build_reward_options(int(PhaseManager.current_level), 3)
+	var rewards: Array[RewardInfo] = CellEffectRuntime.build_reward_options(int(PhaseManager.current_level), 2)
+	var task_reward := CellTaskModuleRuntime.build_reward_option(int(PhaseManager.current_level))
+	if task_reward != null:
+		rewards.append(task_reward)
+	if rewards.size() < 3:
+		var more_effects: Array[RewardInfo] = CellEffectRuntime.build_reward_options(int(PhaseManager.current_level), 3)
+		for reward in more_effects:
+			if rewards.size() >= 3:
+				break
+			if reward == null:
+				continue
+			var duplicate := false
+			for existing in rewards:
+				if existing != null and existing.reward_key_override == reward.reward_key_override:
+					duplicate = true
+					break
+			if not duplicate:
+				rewards.append(reward)
+	return rewards
 
 func _resolve_reward_manager() -> BonusManager:
 	if _reward_manager and is_instance_valid(_reward_manager):
@@ -385,6 +429,7 @@ func _serialize_reward(reward: RewardInfo) -> Dictionary:
 		"target_from": int(reward.target_weapon_from_level),
 		"target_to": int(reward.target_weapon_to_level),
 		"cell_effect_id": reward.cell_effect_id,
+		"task_module_id": reward.task_module_id,
 	}
 
 func _deserialize_reward(payload: Dictionary) -> RewardInfo:
@@ -405,6 +450,7 @@ func _deserialize_reward(payload: Dictionary) -> RewardInfo:
 	reward.target_weapon_from_level = int(payload.get("target_from", 0))
 	reward.target_weapon_to_level = int(payload.get("target_to", 0))
 	reward.cell_effect_id = str(payload.get("cell_effect_id", ""))
+	reward.task_module_id = str(payload.get("task_module_id", ""))
 	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
 		var weapon := _find_equipped_weapon(reward.target_weapon_id)
 		if weapon:

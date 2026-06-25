@@ -4,6 +4,7 @@ const PLAYER_SCENE := preload("res://Player/Mechas/scenes/Player.tscn")
 const UI_SCENE := preload("res://UI/scenes/UI.tscn")
 const TEST_MODULE_SCENE := preload("res://Player/Weapons/Modules/wmod_damage_up_stat.tscn")
 const EQUIPPED_MODULE_SCENE := preload("res://Player/Weapons/Modules/wmod_fast_reload.tscn")
+const REUSABLE_PRIMARY_MENU_SCRIPT := preload("res://UI/scripts/management/reusable_primary_menu.gd")
 
 class RestAreaAvailabilityStub:
 	extends Node
@@ -63,6 +64,21 @@ func _run() -> void:
 	]):
 		_fail(54, "ManagementUIPolishTest: warehouse primary menu layout does not match the shared style.")
 		return
+	var reusable_menu := REUSABLE_PRIMARY_MENU_SCRIPT.new()
+	ui.gui_root.add_child(reusable_menu)
+	reusable_menu.configure(
+		"Service",
+		"Choose an action",
+		[
+			{"id": &"first", "text": "First"},
+			{"id": &"second", "text": "Second"},
+		],
+		ui.management_ui_style_helper
+	)
+	if not _primary_menu_layout_matches(reusable_menu.get_panel(), reusable_menu.get_buttons()):
+		_fail(55, "ManagementUIPolishTest: reusable primary menu layout does not match the shared style.")
+		return
+	reusable_menu.queue_free()
 	var warehouse_tabs := ui.module_management_view.get_node_or_null("WarehouseTabs") as Control
 	if warehouse_tabs == null or warehouse_tabs.visible:
 		_fail(39, "ManagementUIPolishTest: secondary warehouse view still shows internal tabs.")

@@ -48,6 +48,7 @@ var _progress_timer: Timer
 var _module_root: Node
 var _progress_accumulator := 0.0
 var _runtime_effect_id := ""
+var _runtime_task_module_id := ""
 
 func set_state(value: int) -> void:
 	if state == value:
@@ -130,7 +131,7 @@ func get_enemy_count() -> int:
 	return _enemy_bodies.size()
 
 func emit_objective_completed() -> void:
-	objective_completed.emit(name)
+	objective_completed.emit(str(logical_id))
 
 func _evaluate_cell_state() -> void:
 	if state == CellState.LOCKED:
@@ -265,6 +266,31 @@ func restore_profile_terrain_effect() -> void:
 	_remove_aura_modules()
 	_restore_profile_terrain_effect()
 
+func apply_runtime_task_module(definition: TaskModuleDefinition) -> void:
+	_ensure_module_root()
+	_remove_objective_modules()
+	if definition == null:
+		restore_profile_task_module()
+		return
+	_runtime_task_module_id = definition.module_id
+	task_type = definition.task_type
+	objective_enabled = true
+	_add_objective_module_for_task(task_type)
+
+func restore_profile_task_module() -> void:
+	_runtime_task_module_id = ""
+	_ensure_module_root()
+	_remove_objective_modules()
+	if profile == null:
+		task_type = TaskType.NONE
+		objective_enabled = false
+		return
+	task_type = profile.task_type
+	reward_type = profile.reward_type
+	objective_enabled = profile.objective_enabled
+	if objective_enabled:
+		_add_objective_module_for_task(task_type)
+
 func _restore_profile_terrain_effect() -> void:
 	if profile == null:
 		terrain_type = TerrainType.NONE
@@ -294,6 +320,14 @@ func _remove_aura_modules() -> void:
 			_module_root.remove_child(child)
 			child.free()
 
+func _remove_objective_modules() -> void:
+	if _module_root == null:
+		return
+	for child in _module_root.get_children().duplicate():
+		if child is CellObjectiveModule:
+			_module_root.remove_child(child)
+			child.queue_free()
+
 func _add_aura_module_for_terrain(target_terrain_type: int, aura_parameters: Dictionary) -> void:
 	if not CellProfile.TERRAIN_AURA_REGISTRY.has(target_terrain_type):
 		return
@@ -309,6 +343,21 @@ func _add_aura_module_for_terrain(target_terrain_type: int, aura_parameters: Dic
 		module_instance.set_aura_parameters(aura_parameters)
 	if module_instance is CellAuraModule:
 		(module_instance as CellAuraModule).aura_enabled = true
+
+func _add_objective_module_for_task(target_task_type: int) -> void:
+	if not CellProfile.TASK_OBJECTIVE_REGISTRY.has(target_task_type):
+		return
+	var scene_path := str(CellProfile.TASK_OBJECTIVE_REGISTRY[target_task_type])
+	var scene := load(scene_path) as PackedScene
+	if scene == null:
+		return
+	var module_instance := scene.instantiate()
+	if module_instance == null:
+		return
+	_module_root.add_child(module_instance)
+	if module_instance is CellObjectiveModule:
+		(module_instance as CellObjectiveModule).objective_enabled = true
+	_apply_module_parameters(module_instance)
 
 func _apply_module_parameters(module_instance: Node) -> void:
 	if profile == null:

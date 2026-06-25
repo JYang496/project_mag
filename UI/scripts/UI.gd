@@ -25,6 +25,7 @@ const UPGRADE_MANAGEMENT_CONTROLLER_SCRIPT := preload("res://UI/scripts/manageme
 const MODULE_WAREHOUSE_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/module_warehouse_controller.gd")
 const MANAGEMENT_UI_STYLE_HELPER_SCRIPT := preload("res://UI/scripts/management/management_ui_style_helper.gd")
 const MANAGEMENT_UI_BOOTSTRAP_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/management_ui_bootstrap_controller.gd")
+const REUSABLE_PRIMARY_MENU_SCRIPT := preload("res://UI/scripts/management/reusable_primary_menu.gd")
 const MODAL_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/modal_ui_controller.gd")
 const UI_LAYOUT_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/ui_layout_controller.gd")
 const PAUSE_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/pause_ui_controller.gd")
@@ -35,6 +36,7 @@ const HINT_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hint_present
 const BATTLE_CURSOR_PRESENTER_SCRIPT := preload("res://UI/scripts/components/battle_cursor_presenter.gd")
 const CONTROLS_HINT_VIEW_PATH := "res://UI/scenes/components/controls_hint_view.tscn"
 const BOARD_EDIT_PANEL_PATH := "res://UI/scenes/board_edit_panel.tscn"
+const CELL_MANAGEMENT_PANEL_SCRIPT := preload("res://UI/scripts/cell_management_panel.gd")
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overlay.gd"
 
@@ -183,9 +185,16 @@ var controls_hint_title_label: Label
 var controls_hint_body_label: Label
 var controls_hint_view
 var board_edit_panel: Control
+var cell_management_panel: Control
 var cell_effect_commit_dialog: ConfirmationDialog
 var _pending_cell_effect_commit := Callable()
 var _pending_cell_effect_cancel := Callable()
+var task_module_unassigned_dialog: ConfirmationDialog
+var _pending_task_module_unassigned_confirm := Callable()
+var _pending_task_module_unassigned_cancel := Callable()
+var task_module_replacement_dialog: Window
+var _pending_task_module_replacement_callback := Callable()
+var _pending_task_module_replacement_new_module_id := ""
 var _primary_menu_tweens: Dictionary = {}
 var spread_cursor_overlay
 var _cursor_reload_total_by_weapon: Dictionary = {}
@@ -363,6 +372,51 @@ func _init_board_edit_panel() -> void:
 		if not board_edit_panel.is_connected("close_requested", callback):
 			board_edit_panel.connect("close_requested", callback)
 
+func _init_cell_management_panel() -> void:
+	if cell_management_panel != null and is_instance_valid(cell_management_panel):
+		return
+	cell_management_panel = CELL_MANAGEMENT_PANEL_SCRIPT.new() as Control
+	cell_management_panel.name = "CellManagementPanel"
+	gui_root.add_child(cell_management_panel)
+	cell_management_panel.visible = false
+	if cell_management_panel.has_method("bind"):
+		cell_management_panel.call("bind", self)
+	if cell_management_panel.has_signal("close_requested"):
+		var close_callback := Callable(self, "_on_cell_management_panel_close_requested")
+		if not cell_management_panel.is_connected("close_requested", close_callback):
+			cell_management_panel.connect("close_requested", close_callback)
+	if cell_management_panel.has_signal("board_management_requested"):
+		var board_callback := Callable(self, "_on_cell_management_board_requested")
+		if not cell_management_panel.is_connected("board_management_requested", board_callback):
+			cell_management_panel.connect("board_management_requested", board_callback)
+
+func open_cell_management_panel() -> bool:
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return false
+	if TaskRewardManager.is_reward_blocking_interactions():
+		show_item_message("Choose objective rewards first.", 1.6)
+		return false
+	_init_cell_management_panel()
+	if cell_management_panel == null:
+		return false
+	return bool(cell_management_panel.call("open_panel", _find_board()))
+
+func request_close_cell_management_panel() -> bool:
+	if cell_management_panel == null or not is_instance_valid(cell_management_panel) or not cell_management_panel.visible:
+		return false
+	cell_management_panel.call("close_panel")
+	if rest_area_ui_controller != null:
+		rest_area_ui_controller.cancel_menu_level()
+	return true
+
+func _on_cell_management_panel_close_requested() -> void:
+	request_close_cell_management_panel()
+
+func _on_cell_management_board_requested() -> void:
+	if cell_management_panel and is_instance_valid(cell_management_panel):
+		cell_management_panel.call("close_panel")
+	open_board_edit_panel()
+
 func open_board_edit_panel() -> bool:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return false
@@ -374,14 +428,9 @@ func open_board_edit_panel() -> bool:
 		return false
 	return bool(board_edit_panel.open_panel(_find_board()))
 
-func request_close_board_edit_panel(confirm_pending: bool = true) -> bool:
+func request_close_board_edit_panel(_confirm_pending: bool = true) -> bool:
 	if board_edit_panel == null or not is_instance_valid(board_edit_panel) or not board_edit_panel.visible:
 		return false
-	if confirm_pending and CellEffectRuntime.has_pending_edits():
-		return request_cell_effect_commit_confirmation(
-			Callable(self, "_close_board_edit_panel_without_confirmation"),
-			Callable()
-		)
 	_close_board_edit_panel_without_confirmation()
 	return true
 
@@ -391,6 +440,11 @@ func _on_board_edit_panel_close_requested() -> void:
 func _close_board_edit_panel_without_confirmation() -> void:
 	if board_edit_panel and is_instance_valid(board_edit_panel):
 		board_edit_panel.close_panel()
+	if rest_area_ui_controller != null and rest_area_ui_controller.primary_menu_id == &"board_edit":
+		if open_cell_management_panel():
+			return
+		rest_area_ui_controller.cancel_menu_level()
+		return
 	if rest_area_ui_controller != null:
 		rest_area_ui_controller.cancel_menu_level()
 
@@ -1104,13 +1158,126 @@ func _style_primary_menu_controls() -> void:
 	)
 
 func _style_primary_menu_panel(panel: Panel, buttons: Array) -> void:
-	management_ui_style_helper.style_primary_menu_panel(
+	REUSABLE_PRIMARY_MENU_SCRIPT.apply_shared_layout(
 		panel,
 		buttons,
-		PRIMARY_MENU_BUTTON_POSITION_1,
-		PRIMARY_MENU_BUTTON_POSITION_2,
-		PRIMARY_MENU_BUTTON_SIZE
+		management_ui_style_helper
 	)
+
+func request_task_module_unassigned_confirmation(
+	unassigned_count: int,
+	on_confirm: Callable,
+	on_cancel: Callable = Callable()
+) -> bool:
+	_init_task_module_unassigned_dialog()
+	if task_module_unassigned_dialog == null:
+		return false
+	_pending_task_module_unassigned_confirm = on_confirm
+	_pending_task_module_unassigned_cancel = on_cancel
+	task_module_unassigned_dialog.title = LocalizationManager.tr_key("ui.task_module.unassigned_title", "Unassigned Task Modules")
+	task_module_unassigned_dialog.ok_button_text = LocalizationManager.tr_key("ui.common.continue", "Continue")
+	task_module_unassigned_dialog.cancel_button_text = LocalizationManager.tr_key("ui.common.cancel", "Cancel")
+	task_module_unassigned_dialog.dialog_text = LocalizationManager.tr_format(
+		"ui.task_module.unassigned_warning",
+		{"count": unassigned_count},
+		"You have %d unassigned task module(s). Starting battle will discard them." % unassigned_count
+	)
+	task_module_unassigned_dialog.popup_centered(Vector2i(520, 260))
+	return true
+
+func _init_task_module_unassigned_dialog() -> void:
+	if task_module_unassigned_dialog != null and is_instance_valid(task_module_unassigned_dialog):
+		return
+	task_module_unassigned_dialog = ConfirmationDialog.new()
+	gui_root.add_child(task_module_unassigned_dialog)
+	task_module_unassigned_dialog.confirmed.connect(_on_task_module_unassigned_confirmed)
+	task_module_unassigned_dialog.canceled.connect(_on_task_module_unassigned_cancelled)
+	task_module_unassigned_dialog.close_requested.connect(_on_task_module_unassigned_cancelled)
+
+func _on_task_module_unassigned_confirmed() -> void:
+	var callback := _pending_task_module_unassigned_confirm
+	_pending_task_module_unassigned_confirm = Callable()
+	_pending_task_module_unassigned_cancel = Callable()
+	if callback.is_valid():
+		callback.call_deferred()
+
+func request_task_module_replacement(new_module_id: String, on_replace: Callable) -> bool:
+	_init_task_module_replacement_dialog()
+	if task_module_replacement_dialog == null:
+		return false
+	_pending_task_module_replacement_callback = on_replace
+	_pending_task_module_replacement_new_module_id = new_module_id
+	_rebuild_task_module_replacement_dialog()
+	task_module_replacement_dialog.popup_centered(Vector2i(520, 340))
+	return true
+
+func _init_task_module_replacement_dialog() -> void:
+	if task_module_replacement_dialog != null and is_instance_valid(task_module_replacement_dialog):
+		return
+	task_module_replacement_dialog = Window.new()
+	task_module_replacement_dialog.title = LocalizationManager.tr_key("ui.task_module.replace_title", "Replace Task Module")
+	task_module_replacement_dialog.exclusive = true
+	task_module_replacement_dialog.unresizable = true
+	gui_root.add_child(task_module_replacement_dialog)
+	task_module_replacement_dialog.close_requested.connect(_on_task_module_replacement_cancelled)
+
+func _rebuild_task_module_replacement_dialog() -> void:
+	for child in task_module_replacement_dialog.get_children():
+		child.queue_free()
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	task_module_replacement_dialog.add_child(margin)
+	var root := VBoxContainer.new()
+	root.add_theme_constant_override("separation", 10)
+	margin.add_child(root)
+	var new_definition := CellTaskModuleRuntime.get_definition(_pending_task_module_replacement_new_module_id)
+	var title := Label.new()
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.text = "Inventory full. Choose one existing task module to discard.\nIncoming: %s" % _format_task_module_for_dialog(new_definition, _pending_task_module_replacement_new_module_id)
+	root.add_child(title)
+	var inventory := CellTaskModuleRuntime.get_inventory_snapshot()
+	for index in range(inventory.size()):
+		var module_id := str(inventory[index])
+		var definition := CellTaskModuleRuntime.get_definition(module_id)
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(0, 48)
+		button.text = "Discard slot %d: %s" % [index + 1, _format_task_module_for_dialog(definition, module_id)]
+		button.pressed.connect(_on_task_module_replacement_index_selected.bind(index))
+		root.add_child(button)
+	var cancel := Button.new()
+	cancel.text = LocalizationManager.tr_key("ui.common.cancel", "Cancel")
+	cancel.custom_minimum_size = Vector2(0, 42)
+	cancel.pressed.connect(_on_task_module_replacement_cancelled)
+	root.add_child(cancel)
+
+func _format_task_module_for_dialog(definition: TaskModuleDefinition, fallback_id: String) -> String:
+	if definition == null:
+		return fallback_id
+	return "[%s] %s" % [definition.get_rarity(), definition.get_display_name()]
+
+func _on_task_module_replacement_index_selected(index: int) -> void:
+	var callback := _pending_task_module_replacement_callback
+	_pending_task_module_replacement_callback = Callable()
+	_pending_task_module_replacement_new_module_id = ""
+	task_module_replacement_dialog.hide()
+	if callback.is_valid():
+		callback.call_deferred(index)
+
+func _on_task_module_replacement_cancelled() -> void:
+	_pending_task_module_replacement_callback = Callable()
+	_pending_task_module_replacement_new_module_id = ""
+	if task_module_replacement_dialog and is_instance_valid(task_module_replacement_dialog):
+		task_module_replacement_dialog.hide()
+
+func _on_task_module_unassigned_cancelled() -> void:
+	var callback := _pending_task_module_unassigned_cancel
+	_pending_task_module_unassigned_confirm = Callable()
+	_pending_task_module_unassigned_cancel = Callable()
+	if callback.is_valid():
+		callback.call_deferred()
 
 func _style_management_panel(panel: Panel) -> void:
 	management_ui_style_helper.style_management_panel(panel)

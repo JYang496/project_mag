@@ -424,7 +424,8 @@ func _unlock_defense_cells_for_battle() -> void:
 			cell.set_locked(true)
 			continue
 		cell.progress = 0
-		if cell.task_type == Cell.TaskType.DEFENSE or cell.task_type == Cell.TaskType.CLEAR or cell.task_type == Cell.TaskType.HUNT or cell.task_type == Cell.TaskType.DODGE:
+		var has_runtime_task := CellTaskModuleRuntime.has_active_task_for_cell(cell.logical_id)
+		if has_runtime_task or cell.task_type == Cell.TaskType.OFFENSE or cell.task_type == Cell.TaskType.DEFENSE or cell.task_type == Cell.TaskType.CLEAR or cell.task_type == Cell.TaskType.HUNT or cell.task_type == Cell.TaskType.DODGE:
 			cell.set_locked(false)
 		else:
 			cell.set_locked(true)
@@ -487,6 +488,16 @@ func apply_cell_effect_runtime_state(include_pending_preview: bool = true) -> vo
 			continue
 		var preview_only := include_pending_preview and CellEffectRuntime.get_pending_snapshot().has(str(cell.logical_id))
 		cell.apply_runtime_cell_effect(definition, preview_only)
+
+func apply_task_module_runtime_state() -> void:
+	for cell in _cells:
+		if cell == null:
+			continue
+		var definition := CellTaskModuleRuntime.get_active_task_definition(cell.logical_id)
+		if definition != null:
+			cell.apply_runtime_task_module(definition)
+		else:
+			cell.restore_profile_task_module()
 
 func _refresh_active_cells_for_current_level(force: bool = false) -> void:
 	var level_one_based := maxi(PhaseManager.current_level + 1, 1)

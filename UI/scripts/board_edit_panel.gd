@@ -10,6 +10,7 @@ const MANAGEMENT_PANEL_BG := Color(0.045, 0.065, 0.09, 0.98)
 const MANAGEMENT_PANEL_BORDER := Color(0.18, 0.38, 0.52, 1.0)
 const MANAGEMENT_BUTTON_BG := Color(0.12, 0.18, 0.25)
 const MANAGEMENT_BUTTON_BORDER := Color(0.28, 0.42, 0.55)
+const MANAGEMENT_PANEL_SIZE := Vector2(1000, 600)
 const SIDE_CONTENT_WIDTH := 380.0
 
 var _board: BoardCellGenerator
@@ -150,11 +151,11 @@ func _build_layout() -> void:
 	add_child(dim)
 	_root_panel = PanelContainer.new()
 	_root_panel.name = "BoardEditPanel"
-	_root_panel.custom_minimum_size = Vector2(980, 600)
+	_root_panel.custom_minimum_size = MANAGEMENT_PANEL_SIZE
 	_root_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_root_panel.offset_left = -490
+	_root_panel.offset_left = -500
 	_root_panel.offset_top = -300
-	_root_panel.offset_right = 490
+	_root_panel.offset_right = 500
 	_root_panel.offset_bottom = 300
 	_root_panel.add_theme_stylebox_override("panel", _make_management_panel_style())
 	add_child(_root_panel)
@@ -475,6 +476,9 @@ func _make_management_panel_style() -> StyleBoxFlat:
 	return style
 
 func _style_management_button(button: Button) -> void:
+	if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.has_method("_style_management_button"):
+		GlobalVariables.ui.call("_style_management_button", button, false)
+		return
 	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 44.0)
 	button.add_theme_font_size_override("font_size", 18)
 	var normal := StyleBoxFlat.new()
@@ -552,7 +556,7 @@ func _refresh_static_texts() -> void:
 	if _clear_button:
 		_clear_button.text = LocalizationManager.tr_key("ui.board_edit.clear", "Clear Pending")
 	if _close_button:
-		_close_button.text = LocalizationManager.tr_key("ui.common.close", "Close")
+		_close_button.text = LocalizationManager.tr_key("ui.common.back", "Back")
 
 func _on_language_changed(_new_locale: String) -> void:
 	_refresh_static_texts()

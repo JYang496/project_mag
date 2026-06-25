@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TaskModuleDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/task_modules/TaskModuleDefinition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = "task_kill_common"
+task_type = 1
+rarity = "common"
+display_name = "Kill Task Module"
+description = "Deploy to an active cell to add a kill objective for the next battle."
+unlock_level = 1
+drop_weight = 1.15
+

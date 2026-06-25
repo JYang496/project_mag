@@ -152,6 +152,15 @@ func _build_reward_summary(reward: RewardInfo) -> String:
 				chunks.append(definition.description)
 		else:
 			chunks.append("Cell Effect")
+	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		var task_definition := CellTaskModuleRuntime.get_definition(reward.task_module_id)
+		if task_definition != null:
+			chunks.append("%s x1" % task_definition.get_display_name())
+			chunks.append("Task: %s" % task_definition.get_task_label())
+			if task_definition.description.strip_edges() != "":
+				chunks.append(task_definition.description)
+		else:
+			chunks.append("Task Module")
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
 		var weapon_text := LocalizationManager.tr_format(

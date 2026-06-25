@@ -59,8 +59,21 @@ func _run() -> void:
 	if not ui.rest_area_ui_controller.open_board_edit_panel():
 		_fail("board edit zone controller did not open the panel")
 		return
+	if ui.cell_management_panel == null or not ui.cell_management_panel.visible:
+		_fail("cell management primary menu is not visible after zone entry")
+		return
+	var cell_primary_panel := ui.cell_management_panel.get_node_or_null("PrimaryMenu/Panel") as Panel
+	if cell_primary_panel == null:
+		_fail("cell management primary menu panel is missing")
+		return
+	var open_grid_button := cell_primary_panel.get_node_or_null("OpenGridManagementButton") as Button
+	if open_grid_button == null:
+		_fail("cell management primary menu is missing the grid management entry")
+		return
+	open_grid_button.emit_signal("pressed")
+	await get_tree().process_frame
 	if ui.board_edit_panel == null or not ui.board_edit_panel.visible:
-		_fail("board edit panel is not visible after zone entry")
+		_fail("board edit panel is not visible after selecting grid management")
 		return
 	var board_panel := ui.board_edit_panel.get_node_or_null("BoardEditPanel") as PanelContainer
 	if board_panel == null:
@@ -94,8 +107,16 @@ func _run() -> void:
 	rest_area.selected_zone_id = 6
 	rest_area._handle_right_click()
 	await get_tree().process_frame
-	if ui.board_edit_panel.visible or rest_area.menu_open:
-		_fail("board edit cancel did not close the panel and rest-area menu state")
+	if ui.board_edit_panel.visible:
+		_fail("board edit cancel did not close the board edit panel")
+		return
+	if ui.cell_management_panel == null or not ui.cell_management_panel.visible:
+		_fail("board edit cancel did not return to the cell primary menu")
+		return
+	rest_area._handle_right_click()
+	await get_tree().process_frame
+	if ui.cell_management_panel.visible or rest_area.menu_open:
+		_fail("cell primary cancel did not close the panel and rest-area menu state")
 		return
 	LocalizationManager.set_locale("en", false)
 	await get_tree().process_frame

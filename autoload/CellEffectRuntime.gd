@@ -70,6 +70,48 @@ func get_pending_count(effect_id: String) -> int:
 func get_available_count(effect_id: String) -> int:
 	return maxi(get_owned_count(effect_id) - get_pending_count(effect_id), 0)
 
+func get_available_effect_ids_by_rarity(rarity: String) -> PackedStringArray:
+	var output := PackedStringArray()
+	var normalized_rarity := rarity.strip_edges()
+	for effect_id_variant in _inventory.keys():
+		var effect_id := str(effect_id_variant)
+		var definition := get_definition(effect_id)
+		if definition == null or definition.rarity != normalized_rarity:
+			continue
+		var count := get_available_count(effect_id)
+		for _i in range(count):
+			output.append(effect_id)
+	return output
+
+func consume_available_effects(effect_ids: PackedStringArray) -> Dictionary:
+	var required: Dictionary = {}
+	for effect_id in effect_ids:
+		var normalized := effect_id.strip_edges()
+		if get_definition(normalized) == null:
+			return {"ok": false, "reason": "Missing cell effect."}
+		required[normalized] = int(required.get(normalized, 0)) + 1
+	for effect_id in required.keys():
+		if get_available_count(str(effect_id)) < int(required[effect_id]):
+			return {"ok": false, "reason": "Not enough available cell effects."}
+	for effect_id in required.keys():
+		var remaining := maxi(int(_inventory.get(str(effect_id), 0)) - int(required[effect_id]), 0)
+		if remaining <= 0:
+			_inventory.erase(str(effect_id))
+		else:
+			_inventory[str(effect_id)] = remaining
+	save_runtime_state()
+	inventory_changed.emit()
+	return {"ok": true, "reason": ""}
+
+func consume_available_effects_by_rarity(rarity: String, count: int) -> Dictionary:
+	var available := get_available_effect_ids_by_rarity(rarity)
+	if available.size() < count:
+		return {"ok": false, "reason": "Not enough %s cell effects." % rarity}
+	var selected := PackedStringArray()
+	for index in range(count):
+		selected.append(available[index])
+	return consume_available_effects(selected)
+
 func has_pending_edits() -> bool:
 	return not _pending.is_empty()
 

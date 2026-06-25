@@ -501,10 +501,28 @@ func _continue_start_battle() -> void:
 func _commit_board_edits_and_continue_start_battle() -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE or _route_selection_pending:
 		return
+	if CellTaskModuleRuntime.has_unassigned_modules():
+		var unassigned_count := CellTaskModuleRuntime.get_inventory_size()
+		var ui = GlobalVariables.ui
+		if ui and is_instance_valid(ui) and ui.has_method("request_task_module_unassigned_confirmation"):
+			var opened := bool(ui.call(
+				"request_task_module_unassigned_confirmation",
+				unassigned_count,
+				Callable(self, "_discard_unassigned_task_modules_and_continue_start_battle"),
+				Callable(self, "_on_battle_start_cancelled")
+			))
+			if opened:
+				return
+		CellTaskModuleRuntime.clear_unassigned_modules()
 	if CellEffectRuntime.has_pending_edits():
 		CellEffectRuntime.commit_pending(_board)
+	CellTaskModuleRuntime.commit_deployments_for_battle(_board, true)
 	_route_selection_pending = true
 	_on_route_confirmed("normal")
+
+func _discard_unassigned_task_modules_and_continue_start_battle() -> void:
+	CellTaskModuleRuntime.clear_unassigned_modules()
+	_commit_board_edits_and_continue_start_battle()
 
 func _on_route_selection_cancelled() -> void:
 	_route_selection_pending = false

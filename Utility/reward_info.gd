@@ -7,6 +7,7 @@ const KIND_STANDARD: StringName = &"standard"
 const KIND_WEAPON_UPGRADE: StringName = &"weapon_upgrade"
 const KIND_ECONOMY: StringName = &"economy"
 const KIND_CELL_EFFECT: StringName = &"cell_effect"
+const KIND_TASK_MODULE: StringName = &"task_module"
 
 @export var total_chip_value : int = 0
 @export var item_id : String = ""
@@ -23,6 +24,7 @@ var target_weapon_name: String = ""
 var target_weapon_from_level: int = 0
 var target_weapon_to_level: int = 0
 var cell_effect_id: String = ""
+var task_module_id: String = ""
 
 func get_rarity() -> String:
 	return RARITY_UTIL.normalize(rarity)

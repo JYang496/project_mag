@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TaskModuleDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/task_modules/TaskModuleDefinition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = "task_dodge_epic"
+task_type = 5
+rarity = "epic"
+display_name = "Dodge Task Module"
+description = "Deploy to an active cell to add a dodge survival objective for the next battle."
+unlock_level = 1
+drop_weight = 0.55
+
