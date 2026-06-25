@@ -71,4 +71,10 @@ func ensure_management_menu_buttons() -> void:
 		owner_ui.weapon_warehouse_button.name = "OpenWeaponWarehouseButton"
 		owner_ui.weapon_warehouse_button.pressed.connect(owner_ui.rest_area_ui_controller.open_warehouse_weapon_panel)
 		owner_ui.warehouse_primary_panel.add_child(owner_ui.weapon_warehouse_button)
+	var open_grid_button := owner_ui.board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button
+	if open_grid_button and not open_grid_button.pressed.is_connected(owner_ui.rest_area_ui_controller.open_cell_grid_panel):
+		open_grid_button.pressed.connect(owner_ui.rest_area_ui_controller.open_cell_grid_panel)
+	var open_task_button := owner_ui.board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button
+	if open_task_button and not open_task_button.pressed.is_connected(owner_ui.rest_area_ui_controller.open_cell_task_panel):
+		open_task_button.pressed.connect(owner_ui.rest_area_ui_controller.open_cell_task_panel)
 	owner_ui._style_primary_menu_controls()

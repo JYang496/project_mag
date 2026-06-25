@@ -59,21 +59,24 @@ func _run() -> void:
 	if not ui.rest_area_ui_controller.open_board_edit_panel():
 		_fail("board edit zone controller did not open the panel")
 		return
-	if ui.cell_management_panel == null or not ui.cell_management_panel.visible:
-		_fail("cell management primary menu is not visible after zone entry")
+	if not ui.board_edit_primary_root.visible:
+		_fail("board edit primary menu is not visible after zone entry")
 		return
-	var cell_primary_panel := ui.cell_management_panel.get_node_or_null("PrimaryMenu/Panel") as Panel
-	if cell_primary_panel == null:
-		_fail("cell management primary menu panel is missing")
+	if not ui.is_rest_area_zone_navigation_allowed():
+		_fail("board edit primary menu should allow switching rest-area zones")
 		return
-	var open_grid_button := cell_primary_panel.get_node_or_null("OpenGridManagementButton") as Button
+	var board_primary_panel := ui.board_edit_primary_panel
+	var open_grid_button := board_primary_panel.get_node_or_null("OpenGridManagementButton") as Button
 	if open_grid_button == null:
-		_fail("cell management primary menu is missing the grid management entry")
+		_fail("board edit primary menu is missing the grid management entry")
 		return
 	open_grid_button.emit_signal("pressed")
-	await get_tree().process_frame
+	await get_tree().create_timer(0.25).timeout
 	if ui.board_edit_panel == null or not ui.board_edit_panel.visible:
 		_fail("board edit panel is not visible after selecting grid management")
+		return
+	if ui.is_rest_area_zone_navigation_allowed():
+		_fail("board edit secondary panel should lock rest-area zone switching")
 		return
 	var board_panel := ui.board_edit_panel.get_node_or_null("BoardEditPanel") as PanelContainer
 	if board_panel == null:
@@ -94,15 +97,13 @@ func _run() -> void:
 		_fail("board edit detail label can collapse into narrow vertical text")
 		return
 	var empty_label := board_panel.get_node_or_null("ContentMargin/MainLayout/Body/SideContent/InventoryScroll/InventoryList/EmptyInventoryLabel") as Label
-	if empty_label == null:
-		_fail("board edit empty inventory label is missing")
-		return
-	if empty_label.text.contains("then click") or not empty_label.text.contains("暂无格子效果"):
-		_fail("board edit empty inventory text did not localize cleanly to zh_CN")
-		return
-	if empty_label.custom_minimum_size.x < 300.0:
-		_fail("board edit empty inventory label can collapse into narrow vertical text")
-		return
+	if empty_label != null:
+		if empty_label.text.contains("then click") or not empty_label.text.contains("暂无格子效果"):
+			_fail("board edit empty inventory text did not localize cleanly to zh_CN")
+			return
+		if empty_label.custom_minimum_size.x < 300.0:
+			_fail("board edit empty inventory label can collapse into narrow vertical text")
+			return
 	rest_area.menu_open = true
 	rest_area.selected_zone_id = 6
 	rest_area._handle_right_click()
@@ -110,13 +111,36 @@ func _run() -> void:
 	if ui.board_edit_panel.visible:
 		_fail("board edit cancel did not close the board edit panel")
 		return
-	if ui.cell_management_panel == null or not ui.cell_management_panel.visible:
-		_fail("board edit cancel did not return to the cell primary menu")
+	if not ui.board_edit_primary_root.visible:
+		_fail("board edit cancel did not return to the board edit primary menu")
 		return
 	rest_area._handle_right_click()
+	await get_tree().create_timer(0.25).timeout
+	if ui.board_edit_primary_root.visible or rest_area.menu_open:
+		_fail("board edit primary cancel did not close the panel and rest-area menu state")
+		return
+
+	if not ui.rest_area_ui_controller.open_board_edit_panel():
+		_fail("board edit zone controller did not reopen the primary menu")
+		return
+	var open_task_button := ui.board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button
+	if open_task_button == null:
+		_fail("board edit primary menu is missing the task management entry")
+		return
+	open_task_button.emit_signal("pressed")
+	await get_tree().create_timer(0.25).timeout
+	if ui.cell_management_panel == null or not ui.cell_management_panel.visible:
+		_fail("task management panel is not visible after selecting task management")
+		return
+	if ui.is_rest_area_zone_navigation_allowed():
+		_fail("task management secondary panel should lock rest-area zone switching")
+		return
+	rest_area.menu_open = true
+	rest_area.selected_zone_id = 6
+	rest_area._handle_right_click()
 	await get_tree().process_frame
-	if ui.cell_management_panel.visible or rest_area.menu_open:
-		_fail("cell primary cancel did not close the panel and rest-area menu state")
+	if ui.cell_management_panel.visible or not ui.board_edit_primary_root.visible:
+		_fail("task management cancel did not return to the board edit primary menu")
 		return
 	LocalizationManager.set_locale("en", false)
 	await get_tree().process_frame

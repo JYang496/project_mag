@@ -46,24 +46,17 @@ func _run() -> void:
 	if warehouse_module_button == null:
 		_fail(37, "ManagementUIPolishTest: warehouse primary menu is missing the module warehouse button.")
 		return
-	if not _primary_menu_layout_matches(ui.purchase_primary_panel, [
-		ui.purchase_primary_panel.get_node_or_null("OpenBuyButton") as Button,
-		ui.purchase_primary_panel.get_node_or_null("OpenSellButton") as Button,
-	]):
-		_fail(38, "ManagementUIPolishTest: purchase primary menu layout does not match the shared style.")
+	var service_menu_ids: Array[StringName] = ui.rest_area_ui_controller.get_registered_service_menu_ids()
+	if service_menu_ids != [&"purchase", &"upgrade", &"warehouse", &"board_edit"]:
+		_fail(57, "ManagementUIPolishTest: rest-area service registry is missing an expected service menu.")
 		return
-	if not _primary_menu_layout_matches(ui.upgrade_primary_panel, [
-		ui.upgrade_primary_panel.get_node_or_null("OpenUpgradeButton") as Button,
-		ui.upgrade_module_button,
-	]):
-		_fail(53, "ManagementUIPolishTest: upgrade primary menu layout does not match the shared style.")
-		return
-	if not _primary_menu_layout_matches(ui.warehouse_primary_panel, [
-		ui.weapon_warehouse_button,
-		warehouse_module_button,
-	]):
-		_fail(54, "ManagementUIPolishTest: warehouse primary menu layout does not match the shared style.")
-		return
+	for menu_id in service_menu_ids:
+		if not _primary_menu_layout_matches(
+			ui.rest_area_ui_controller.get_service_primary_panel(menu_id),
+			ui.rest_area_ui_controller.get_service_primary_buttons(menu_id)
+		):
+			_fail(38, "ManagementUIPolishTest: %s primary menu layout does not match the shared style." % str(menu_id))
+			return
 	var reusable_menu := REUSABLE_PRIMARY_MENU_SCRIPT.new()
 	ui.gui_root.add_child(reusable_menu)
 	reusable_menu.configure(

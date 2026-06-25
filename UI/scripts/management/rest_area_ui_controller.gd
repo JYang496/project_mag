@@ -2,6 +2,7 @@ extends RefCounted
 class_name RestAreaUiController
 
 const PRIMARY_MENU_ANIM_TIME := 0.2
+const SERVICE_MENU_IDS: Array[StringName] = [&"purchase", &"upgrade", &"warehouse", &"board_edit"]
 
 var owner_ui: UI
 var shell: RestAreaManagementShell
@@ -17,6 +18,39 @@ func bind(ui: UI, management_shell: RestAreaManagementShell, ui_layout_controlle
 
 func set_layout_controller(ui_layout_controller: UiLayoutController) -> void:
 	layout_controller = ui_layout_controller
+
+func get_registered_service_menu_ids() -> Array[StringName]:
+	return SERVICE_MENU_IDS.duplicate()
+
+func get_service_primary_root(menu_id: StringName) -> Control:
+	return _get_primary_root(menu_id)
+
+func get_service_primary_panel(menu_id: StringName) -> Control:
+	return _get_primary_panel(menu_id)
+
+func get_service_primary_buttons(menu_id: StringName) -> Array:
+	match _normalize_menu_id(menu_id):
+		&"purchase":
+			return [
+				owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyButton") as Button,
+				owner_ui.purchase_primary_panel.get_node_or_null("OpenSellButton") as Button,
+			]
+		&"upgrade":
+			return [
+				owner_ui.upgrade_primary_panel.get_node_or_null("OpenUpgradeButton") as Button,
+				owner_ui.upgrade_module_button,
+			]
+		&"warehouse":
+			return [
+				owner_ui.weapon_warehouse_button,
+				owner_ui.warehouse_primary_panel.get_node_or_null("OpenModuleButton") as Button,
+			]
+		&"board_edit":
+			return [
+				owner_ui.board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button,
+				owner_ui.board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button,
+			]
+	return []
 
 func open_menu(menu_id: StringName) -> void:
 	menu_id = _normalize_menu_id(menu_id)
@@ -34,18 +68,22 @@ func open_board_edit_panel() -> bool:
 	_sync_state_to_shell()
 	_sync_public_fields_to_owner()
 	PlayerData.is_interacting = true
-	_close_all_rest_area_panels()
-	var opened := owner_ui.open_cell_management_panel()
-	if not opened:
+	if not _open_primary_menu_by_id(&"board_edit"):
 		_clear_active()
-	return opened
+		return false
+	return true
 
 func _close_all_rest_area_panels() -> void:
 	if owner_ui.weapon_warehouse_panel:
 		owner_ui.weapon_warehouse_panel.close_panel()
 	if owner_ui.module_equip_selection_panel and owner_ui.module_equip_selection_panel.visible:
 		owner_ui.module_equip_selection_panel.close_without_assignment()
-	for root in [owner_ui.purchase_primary_root, owner_ui.upgrade_primary_root, owner_ui.warehouse_primary_root]:
+	if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel):
+		owner_ui.cell_management_panel.call("close_panel")
+	if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel):
+		owner_ui.board_edit_panel.call("close_panel")
+	for menu_id in SERVICE_MENU_IDS:
+		var root := _get_primary_root(menu_id)
 		if root:
 			root.visible = false
 	for root in [owner_ui.purchase_management_root, owner_ui.upgrade_management_root, owner_ui.warehouse_management_root]:
@@ -237,6 +275,29 @@ func back_to_warehouse_primary_menu() -> void:
 	warehouse_panel_out()
 	_show_primary_menu(&"warehouse", owner_ui.warehouse_primary_root, owner_ui.warehouse_primary_panel)
 
+func open_cell_grid_panel() -> void:
+	var should_wait := owner_ui.board_edit_primary_root != null and owner_ui.board_edit_primary_root.visible
+	_hide_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
+	if should_wait:
+		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
+	if not owner_ui.open_board_edit_panel():
+		back_to_board_primary_menu()
+
+func open_cell_task_panel() -> void:
+	var should_wait := owner_ui.board_edit_primary_root != null and owner_ui.board_edit_primary_root.visible
+	_hide_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
+	if should_wait:
+		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
+	if not owner_ui.open_cell_management_panel(&"task"):
+		back_to_board_primary_menu()
+
+func back_to_board_primary_menu() -> void:
+	if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel):
+		owner_ui.cell_management_panel.call("close_panel")
+	if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel):
+		owner_ui.board_edit_panel.call("close_panel")
+	_show_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
+
 func close_purchase_menu() -> void:
 	if not active:
 		return
@@ -247,6 +308,12 @@ func close_primary_menu() -> void:
 	if not active:
 		return
 	match primary_menu_id:
+		&"board_edit":
+			_hide_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
+			if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel):
+				owner_ui.cell_management_panel.call("close_panel")
+			if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel):
+				owner_ui.board_edit_panel.call("close_panel")
 		&"upgrade":
 			upgrade_menu_out()
 		&"warehouse":
@@ -305,7 +372,12 @@ func is_zone_navigation_allowed() -> bool:
 		return false
 	var allowed := true
 	if shell != null:
-		allowed = shell.is_zone_navigation_allowed(owner_ui.purchase_primary_root, owner_ui.upgrade_primary_root, owner_ui.warehouse_primary_root)
+		allowed = shell.is_zone_navigation_allowed(
+			owner_ui.purchase_primary_root,
+			owner_ui.upgrade_primary_root,
+			owner_ui.warehouse_primary_root,
+			owner_ui.board_edit_primary_root
+		)
 	else:
 		allowed = _is_zone_navigation_allowed_without_shell()
 	_sync_public_fields_to_owner()
@@ -377,16 +449,25 @@ func cancel_menu_level() -> bool:
 			close_primary_menu()
 			return true
 	elif primary_menu_id == &"board_edit":
+		if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel) and owner_ui.board_edit_panel.visible:
+			if owner_ui.board_edit_panel.has_method("clear_selection_if_any") and bool(owner_ui.board_edit_panel.call("clear_selection_if_any")):
+				return true
+			back_to_board_primary_menu()
+			return true
 		if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel) and owner_ui.cell_management_panel.visible:
 			if owner_ui.cell_management_panel.has_method("cancel_menu_level") and bool(owner_ui.cell_management_panel.call("cancel_menu_level")):
 				return true
 			return owner_ui.request_close_cell_management_panel()
+		if owner_ui.board_edit_primary_root and owner_ui.board_edit_primary_root.visible:
+			close_primary_menu()
+			return true
 		_clear_active()
 		return true
 	return false
 
 func is_primary_menu_open() -> bool:
-	for root in [owner_ui.purchase_primary_root, owner_ui.upgrade_primary_root, owner_ui.warehouse_primary_root]:
+	for menu_id in SERVICE_MENU_IDS:
+		var root := _get_primary_root(menu_id)
 		if root and is_instance_valid(root) and root.visible:
 			return true
 	return false
@@ -472,8 +553,8 @@ func _is_zone_navigation_allowed_without_shell() -> bool:
 		return true
 	if primary_menu_id == &"warehouse" and owner_ui.warehouse_primary_root and owner_ui.warehouse_primary_root.visible:
 		return true
-	if primary_menu_id == &"board_edit":
-		return false
+	if primary_menu_id == &"board_edit" and owner_ui.board_edit_primary_root and owner_ui.board_edit_primary_root.visible:
+		return true
 	return false
 
 func _sync_state_from_shell() -> void:
@@ -502,6 +583,8 @@ func _normalize_menu_id(menu_id: StringName) -> StringName:
 			return &"upgrade"
 		&"module":
 			return &"warehouse"
+		&"board":
+			return &"board_edit"
 		_:
 			return menu_id
 
@@ -513,6 +596,8 @@ func _get_management_root(root_id: StringName) -> Control:
 			return owner_ui.upgrade_management_root
 		&"warehouse":
 			return owner_ui.warehouse_management_root
+		&"board_edit":
+			return null
 		_:
 			return null
 
@@ -524,6 +609,8 @@ func _get_primary_root(root_id: StringName) -> Control:
 			return owner_ui.upgrade_primary_root
 		&"warehouse":
 			return owner_ui.warehouse_primary_root
+		&"board_edit":
+			return owner_ui.board_edit_primary_root
 		_:
 			return null
 
@@ -535,10 +622,13 @@ func _get_primary_panel(root_id: StringName) -> Control:
 			return owner_ui.upgrade_primary_panel
 		&"warehouse":
 			return owner_ui.warehouse_primary_panel
+		&"board_edit":
+			return owner_ui.board_edit_primary_panel
 		_:
 			return null
 
 func _prepare_primary_menu_open(menu_id: StringName) -> void:
+	_close_all_rest_area_panels()
 	match _normalize_menu_id(menu_id):
 		&"purchase":
 			purchase_panel_out()

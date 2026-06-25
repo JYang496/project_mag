@@ -48,6 +48,7 @@ const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overl
 @onready var upgrade_primary_root: Control = $GUI/UpgradeRoot/PrimaryMenuRoot
 @onready var purchase_primary_root: Control = $GUI/PurchaseRoot/PrimaryMenuRoot
 @onready var warehouse_primary_root: Control = $GUI/WarehouseRoot/PrimaryMenuRoot
+@onready var board_edit_primary_root: Control = $GUI/BoardEditRoot/PrimaryMenuRoot
 @onready var pause_menu_root : Control = $GUI/PauseMenuRoot
 @onready var warehouse_management_root: Control = $GUI/WarehouseRoot/ModuleManagementRoot
 @onready var purchase_panel: Panel = $GUI/PurchaseRoot/ShoppingRootv2/Panel
@@ -57,6 +58,7 @@ const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overl
 @onready var purchase_primary_panel: Panel = $GUI/PurchaseRoot/PrimaryMenuRoot/Panel
 @onready var upgrade_primary_panel: Panel = $GUI/UpgradeRoot/PrimaryMenuRoot/Panel
 @onready var warehouse_primary_panel: Panel = $GUI/WarehouseRoot/PrimaryMenuRoot/Panel
+@onready var board_edit_primary_panel: Panel = $GUI/BoardEditRoot/PrimaryMenuRoot/Panel
 var game_over_root: Control
 var game_over_total_damage_label: Label
 var game_over_completed_levels_label: Label
@@ -390,7 +392,7 @@ func _init_cell_management_panel() -> void:
 		if not cell_management_panel.is_connected("board_management_requested", board_callback):
 			cell_management_panel.connect("board_management_requested", board_callback)
 
-func open_cell_management_panel() -> bool:
+func open_cell_management_panel(mode: StringName = &"task") -> bool:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return false
 	if TaskRewardManager.is_reward_blocking_interactions():
@@ -399,13 +401,15 @@ func open_cell_management_panel() -> bool:
 	_init_cell_management_panel()
 	if cell_management_panel == null:
 		return false
-	return bool(cell_management_panel.call("open_panel", _find_board()))
+	return bool(cell_management_panel.call("open_panel", _find_board(), mode))
 
 func request_close_cell_management_panel() -> bool:
 	if cell_management_panel == null or not is_instance_valid(cell_management_panel) or not cell_management_panel.visible:
 		return false
 	cell_management_panel.call("close_panel")
-	if rest_area_ui_controller != null:
+	if rest_area_ui_controller != null and rest_area_ui_controller.primary_menu_id == &"board_edit":
+		rest_area_ui_controller.back_to_board_primary_menu()
+	elif rest_area_ui_controller != null:
 		rest_area_ui_controller.cancel_menu_level()
 	return true
 
@@ -415,7 +419,10 @@ func _on_cell_management_panel_close_requested() -> void:
 func _on_cell_management_board_requested() -> void:
 	if cell_management_panel and is_instance_valid(cell_management_panel):
 		cell_management_panel.call("close_panel")
-	open_board_edit_panel()
+	if rest_area_ui_controller != null:
+		rest_area_ui_controller.open_cell_grid_panel()
+	else:
+		open_board_edit_panel()
 
 func open_board_edit_panel() -> bool:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
@@ -441,9 +448,7 @@ func _close_board_edit_panel_without_confirmation() -> void:
 	if board_edit_panel and is_instance_valid(board_edit_panel):
 		board_edit_panel.close_panel()
 	if rest_area_ui_controller != null and rest_area_ui_controller.primary_menu_id == &"board_edit":
-		if open_cell_management_panel():
-			return
-		rest_area_ui_controller.cancel_menu_level()
+		rest_area_ui_controller.back_to_board_primary_menu()
 		return
 	if rest_area_ui_controller != null:
 		rest_area_ui_controller.cancel_menu_level()
@@ -1135,6 +1140,14 @@ func _ensure_management_menu_buttons() -> void:
 	management_ui_bootstrap_controller.ensure_management_menu_buttons()
 
 func _style_primary_menu_controls() -> void:
+	_refresh_board_edit_primary_texts()
+	if rest_area_ui_controller != null:
+		for menu_id in rest_area_ui_controller.get_registered_service_menu_ids():
+			_style_primary_menu_panel(
+				rest_area_ui_controller.get_service_primary_panel(menu_id),
+				rest_area_ui_controller.get_service_primary_buttons(menu_id)
+			)
+		return
 	_style_primary_menu_panel(
 		purchase_primary_panel,
 		[
@@ -1156,6 +1169,40 @@ func _style_primary_menu_controls() -> void:
 			warehouse_primary_panel.get_node_or_null("OpenModuleButton") as Button,
 		]
 	)
+	_style_primary_menu_panel(
+		board_edit_primary_panel,
+		[
+			board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button,
+			board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button,
+		]
+	)
+
+func is_rest_area_zone_navigation_allowed() -> bool:
+	_init_rest_area_ui_controller()
+	return rest_area_ui_controller.is_zone_navigation_allowed()
+
+func is_rest_area_menu_visible() -> bool:
+	_init_rest_area_ui_controller()
+	return rest_area_ui_controller.is_menu_visible()
+
+func _refresh_board_edit_primary_texts() -> void:
+	if board_edit_primary_panel == null:
+		return
+	var title := board_edit_primary_panel.get_node_or_null("Title") as Label
+	if title:
+		title.text = LocalizationManager.tr_key("ui.cell_management.title", "Cell Management")
+	var subtitle := board_edit_primary_panel.get_node_or_null("SubTitle") as Label
+	if subtitle:
+		subtitle.text = LocalizationManager.tr_key(
+			"ui.cell_management.subtitle",
+			"Manage terrain effects or deploy short-lived task modules for the next battle."
+		)
+	var grid_button := board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button
+	if grid_button:
+		grid_button.text = LocalizationManager.tr_key("ui.cell_management.board_entry", "Grid Management")
+	var task_button := board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button
+	if task_button:
+		task_button.text = LocalizationManager.tr_key("ui.cell_management.task_entry", "Task Management")
 
 func _style_primary_menu_panel(panel: Panel, buttons: Array) -> void:
 	REUSABLE_PRIMARY_MENU_SCRIPT.apply_shared_layout(

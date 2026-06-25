@@ -51,7 +51,12 @@ func is_menu_visible(secondary_open: bool, warehouse_panel: Control, module_equi
 		return true
 	return false
 
-func is_zone_navigation_allowed(purchase_primary_root: Control, upgrade_primary_root: Control, warehouse_primary_root: Control) -> bool:
+func is_zone_navigation_allowed(
+	purchase_primary_root: Control,
+	upgrade_primary_root: Control,
+	warehouse_primary_root: Control,
+	board_edit_primary_root: Control = null
+) -> bool:
 	if TaskRewardManager.is_reward_blocking_interactions():
 		return false
 	if not active:
@@ -61,6 +66,8 @@ func is_zone_navigation_allowed(purchase_primary_root: Control, upgrade_primary_
 	if primary_menu_id == &"upgrade" and upgrade_primary_root and upgrade_primary_root.visible:
 		return true
 	if primary_menu_id == &"warehouse" and warehouse_primary_root and warehouse_primary_root.visible:
+		return true
+	if primary_menu_id == &"board_edit" and board_edit_primary_root and board_edit_primary_root.visible:
 		return true
 	return false
 

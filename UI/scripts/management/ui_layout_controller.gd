@@ -25,9 +25,14 @@ func apply_responsive_layout() -> void:
 	fit_center_panel(owner_ui.purchase_panel, viewport_size, PANEL_TARGET_SIZE)
 	fit_center_panel(owner_ui.upgrade_panel, viewport_size, PANEL_TARGET_SIZE)
 	fit_center_panel(owner_ui.module_panel, viewport_size, PANEL_TARGET_SIZE)
-	fit_left_panel(owner_ui.purchase_primary_panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
-	fit_left_panel(owner_ui.upgrade_primary_panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
-	fit_left_panel(owner_ui.warehouse_primary_panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
+	if owner_ui.rest_area_ui_controller != null:
+		for menu_id in owner_ui.rest_area_ui_controller.get_registered_service_menu_ids():
+			fit_left_panel(
+				owner_ui.rest_area_ui_controller.get_service_primary_panel(menu_id),
+				viewport_size,
+				PRIMARY_MENU_TARGET_SIZE,
+				PRIMARY_MENU_LEFT_MARGIN
+			)
 	fit_pause_layout(viewport_size)
 	owner_ui._ensure_hud_presenter_instance()
 	owner_ui.hud_presenter.layout_hud(viewport_size, owner_ui.hp_label_label, owner_ui.weapon_selector)

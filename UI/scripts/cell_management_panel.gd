@@ -33,13 +33,13 @@ func _ready() -> void:
 func bind(ui: UI) -> void:
 	owner_ui = ui
 
-func open_panel(board: BoardCellGenerator) -> bool:
+func open_panel(board: BoardCellGenerator, mode: StringName = &"task") -> bool:
 	_board = board
 	if _board == null and owner_ui != null:
 		_board = owner_ui.call("_find_board") as BoardCellGenerator
 	if _board == null:
 		return false
-	_mode = &"home"
+	_mode = &"task" if mode != &"home" else &"home"
 	_selected_inventory_index = -1
 	visible = true
 	_refresh()
@@ -60,8 +60,7 @@ func cancel_menu_level() -> bool:
 	if clear_selection_if_any():
 		return true
 	if _mode == &"task":
-		_on_back_pressed()
-		return true
+		return _return_to_primary_menu()
 	return false
 
 func _build_layout() -> void:
@@ -358,9 +357,16 @@ func _on_task_entry_pressed() -> void:
 	_refresh()
 
 func _on_back_pressed() -> void:
-	_mode = &"home"
+	_return_to_primary_menu()
+
+func _return_to_primary_menu() -> bool:
 	_selected_inventory_index = -1
+	if owner_ui != null and owner_ui.rest_area_ui_controller != null:
+		owner_ui.rest_area_ui_controller.back_to_board_primary_menu()
+		return true
+	_mode = &"home"
 	_refresh()
+	return true
 
 func _on_inventory_pressed(index: int) -> void:
 	_selected_inventory_index = index

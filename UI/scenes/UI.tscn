@@ -543,6 +543,70 @@ offset_bottom = 64.0
 text = "Back"
 script = ExtResource("30_mback")
 
+[node name="BoardEditRoot" type="Control" parent="GUI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PrimaryMenuRoot" type="Control" parent="GUI/BoardEditRoot"]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Panel" type="Panel" parent="GUI/BoardEditRoot/PrimaryMenuRoot"]
+custom_minimum_size = Vector2(312, 320)
+layout_mode = 0
+offset_left = 316.0
+offset_top = 170.0
+offset_right = 836.0
+offset_bottom = 490.0
+theme = ExtResource("28_pm_btn")
+
+[node name="Title" type="Label" parent="GUI/BoardEditRoot/PrimaryMenuRoot/Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 16.0
+offset_right = -28.0
+offset_bottom = 44.0
+grow_horizontal = 2
+text = "Cell Management"
+vertical_alignment = 1
+
+[node name="SubTitle" type="Label" parent="GUI/BoardEditRoot/PrimaryMenuRoot/Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 48.0
+offset_right = -28.0
+offset_bottom = 76.0
+grow_horizontal = 2
+text = "Choose a grid action"
+vertical_alignment = 1
+
+[node name="OpenGridManagementButton" type="Button" parent="GUI/BoardEditRoot/PrimaryMenuRoot/Panel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 108.0
+offset_right = 248.0
+offset_bottom = 154.0
+text = "Grid Management"
+
+[node name="OpenTaskManagementButton" type="Button" parent="GUI/BoardEditRoot/PrimaryMenuRoot/Panel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 166.0
+offset_right = 248.0
+offset_bottom = 212.0
+text = "Task Management"
+
 [node name="PauseMenuRoot" type="Control" parent="GUI" unique_id=1775346363]
 process_mode = 2
 visible = false
