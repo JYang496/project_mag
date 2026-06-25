@@ -20,7 +20,56 @@ func _run() -> void:
 		_fail("missing task_hold_common definition")
 		return
 
+	CellTaskModuleRuntime.grant_starting_cell_loadout(0)
+	if _get_total_cell_effect_count() != 2:
+		_fail("starting loadout should grant two cell effects")
+		return
+	if not CellEffectRuntime.get_pending_snapshot().has("5"):
+		_fail("starting loadout should preinstall one cell effect on cell 5")
+		return
+	if not CellTaskModuleRuntime.get_deployment_snapshot().has("5"):
+		_fail("starting loadout should deploy one task module to cell 5")
+		return
+	if CellTaskModuleRuntime.get_inventory_size() != 1:
+		_fail("starting loadout should leave one installable task module in inventory")
+		return
+	CellTaskModuleRuntime.reset_runtime_state()
+	CellEffectRuntime.reset_runtime_state()
+
 	var result: Dictionary = CellTaskModuleRuntime.grant_module("task_kill_common")
+	if not bool(result.get("ok", false)):
+		_fail("failed to grant replace source task module: %s" % str(result))
+		return
+	result = CellTaskModuleRuntime.grant_module("task_hold_common")
+	if not bool(result.get("ok", false)):
+		_fail("failed to grant replacement task module: %s" % str(result))
+		return
+	result = CellTaskModuleRuntime.deploy_inventory_module(0, 5, null)
+	if not bool(result.get("ok", false)):
+		_fail("failed to deploy task module before replacement: %s" % str(result))
+		return
+	result = CellTaskModuleRuntime.replace_deployment_with_inventory_module(0, 5, null)
+	if not bool(result.get("ok", false)):
+		_fail("failed to replace deployed task module: %s" % str(result))
+		return
+	var replacement_snapshot := CellTaskModuleRuntime.get_deployment_snapshot()
+	if str(replacement_snapshot.get("5", "")) != "task_hold_common":
+		_fail("deployment replacement did not overwrite the cell task")
+		return
+	if CellTaskModuleRuntime.get_inventory_size() != 0:
+		_fail("deployment replacement should consume the replacement module")
+		return
+	result = CellTaskModuleRuntime.cancel_deployment(5)
+	if bool(result.get("ok", false)):
+		_fail("deployed task modules should not be removable")
+		return
+	replacement_snapshot = CellTaskModuleRuntime.get_deployment_snapshot()
+	if str(replacement_snapshot.get("5", "")) != "task_hold_common":
+		_fail("failed deployment removal should keep the cell task installed")
+		return
+	CellTaskModuleRuntime.reset_runtime_state()
+
+	result = CellTaskModuleRuntime.grant_module("task_kill_common")
 	if not bool(result.get("ok", false)):
 		_fail("failed to grant first task module: %s" % str(result))
 		return
@@ -158,3 +207,9 @@ func _fail(message: String) -> void:
 	TaskRewardManager.reset_runtime_state()
 	CellEffectRuntime.reset_runtime_state()
 	get_tree().quit(1)
+
+func _get_total_cell_effect_count() -> int:
+	var total := 0
+	for value in CellEffectRuntime.get_inventory_snapshot().values():
+		total += int(value)
+	return total

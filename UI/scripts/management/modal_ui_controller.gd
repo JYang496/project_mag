@@ -7,6 +7,10 @@ const ROUTE_SELECTION_PANEL_PATH := "res://UI/scenes/route_selection_panel.tscn"
 const REWARD_SELECTION_PANEL_PATH := "res://UI/scenes/reward_selection_panel.tscn"
 const WEAPON_REPLACEMENT_PANEL_PATH := "res://UI/scenes/weapon_replacement_panel.tscn"
 const WEAPON_WAREHOUSE_PANEL_PATH := "res://UI/scenes/weapon_warehouse_panel.tscn"
+const GAME_OVER_VIEW_PATH := "res://UI/scenes/components/game_over_view.tscn"
+const CONTROLS_HINT_VIEW_PATH := "res://UI/scenes/components/controls_hint_view.tscn"
+const BOARD_EDIT_PANEL_PATH := "res://UI/scenes/board_edit_panel.tscn"
+const CELL_MANAGEMENT_PANEL_SCRIPT := preload("res://UI/scripts/cell_management_panel.gd")
 
 var owner_ui: UI
 var gui_root: Control
@@ -16,6 +20,10 @@ var route_selection_panel: RouteSelectionPanel
 var reward_selection_panel: RewardSelectionPanel
 var weapon_replacement_panel: WeaponReplacementPanel
 var weapon_warehouse_panel: WeaponWarehousePanel
+var game_over_view
+var controls_hint_view
+var board_edit_panel: Control
+var cell_management_panel: Control
 
 func bind(ui: UI, root: Control) -> void:
 	owner_ui = ui
@@ -102,6 +110,157 @@ func ensure_weapon_warehouse_panel() -> bool:
 	_sync_public_fields_to_owner()
 	return true
 
+func ensure_board_edit_panel() -> bool:
+	if board_edit_panel != null and is_instance_valid(board_edit_panel):
+		return true
+	var panel_scene := load(BOARD_EDIT_PANEL_PATH) as PackedScene
+	board_edit_panel = panel_scene.instantiate() as Control if panel_scene else null
+	if board_edit_panel == null:
+		push_warning("Failed to create BoardEditPanel.")
+		return false
+	gui_root.add_child(board_edit_panel)
+	board_edit_panel.visible = false
+	if board_edit_panel.has_signal("close_requested"):
+		var callback := Callable(owner_ui, "_on_board_edit_panel_close_requested")
+		if not board_edit_panel.is_connected("close_requested", callback):
+			board_edit_panel.connect("close_requested", callback)
+	_sync_public_fields_to_owner()
+	return true
+
+func ensure_cell_management_panel() -> bool:
+	if cell_management_panel != null and is_instance_valid(cell_management_panel):
+		return true
+	cell_management_panel = CELL_MANAGEMENT_PANEL_SCRIPT.new() as Control
+	cell_management_panel.name = "CellManagementPanel"
+	gui_root.add_child(cell_management_panel)
+	cell_management_panel.visible = false
+	if cell_management_panel.has_method("bind"):
+		cell_management_panel.call("bind", owner_ui)
+	if cell_management_panel.has_signal("close_requested"):
+		var close_callback := Callable(owner_ui, "_on_cell_management_panel_close_requested")
+		if not cell_management_panel.is_connected("close_requested", close_callback):
+			cell_management_panel.connect("close_requested", close_callback)
+	if cell_management_panel.has_signal("board_management_requested"):
+		var board_callback := Callable(owner_ui, "_on_cell_management_board_requested")
+		if not cell_management_panel.is_connected("board_management_requested", board_callback):
+			cell_management_panel.connect("board_management_requested", board_callback)
+	_sync_public_fields_to_owner()
+	return true
+
+func open_board_edit_panel() -> bool:
+	if owner_ui == null:
+		return false
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return false
+	if TaskRewardManager.is_reward_blocking_interactions():
+		owner_ui.show_item_message("Choose objective rewards first.", 1.6)
+		return false
+	if not ensure_board_edit_panel():
+		return false
+	return bool(board_edit_panel.open_panel(owner_ui._find_board()))
+
+func request_close_board_edit_panel() -> bool:
+	if board_edit_panel == null or not is_instance_valid(board_edit_panel) or not board_edit_panel.visible:
+		return false
+	close_board_edit_panel_without_confirmation()
+	return true
+
+func close_board_edit_panel_without_confirmation() -> void:
+	if owner_ui == null:
+		return
+	if board_edit_panel and is_instance_valid(board_edit_panel):
+		board_edit_panel.close_panel()
+	if owner_ui.rest_area_ui_controller != null and owner_ui.rest_area_ui_controller.primary_menu_id == &"board_edit":
+		owner_ui.rest_area_ui_controller.back_to_board_primary_menu()
+		return
+	if owner_ui.rest_area_ui_controller != null:
+		owner_ui.rest_area_ui_controller.cancel_menu_level()
+
+func open_cell_management_panel(mode: StringName = &"task") -> bool:
+	if owner_ui == null:
+		return false
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return false
+	if TaskRewardManager.is_reward_blocking_interactions():
+		owner_ui.show_item_message("Choose objective rewards first.", 1.6)
+		return false
+	if not ensure_cell_management_panel():
+		return false
+	return bool(cell_management_panel.call("open_panel", owner_ui._find_board(), mode))
+
+func request_close_cell_management_panel() -> bool:
+	if owner_ui == null:
+		return false
+	if cell_management_panel == null or not is_instance_valid(cell_management_panel) or not cell_management_panel.visible:
+		return false
+	cell_management_panel.call("close_panel")
+	if owner_ui.rest_area_ui_controller != null and owner_ui.rest_area_ui_controller.primary_menu_id == &"board_edit":
+		owner_ui.rest_area_ui_controller.back_to_board_primary_menu()
+	elif owner_ui.rest_area_ui_controller != null:
+		owner_ui.rest_area_ui_controller.cancel_menu_level()
+	return true
+
+func open_cell_board_management() -> void:
+	if owner_ui == null:
+		return
+	if cell_management_panel and is_instance_valid(cell_management_panel):
+		cell_management_panel.call("close_panel")
+	if owner_ui.rest_area_ui_controller != null:
+		owner_ui.rest_area_ui_controller.open_cell_grid_panel()
+	else:
+		open_board_edit_panel()
+
+func ensure_game_over_view() -> bool:
+	if game_over_view != null and is_instance_valid(game_over_view):
+		return true
+	var view_scene := load(GAME_OVER_VIEW_PATH) as PackedScene
+	game_over_view = view_scene.instantiate() if view_scene else null
+	if game_over_view == null:
+		push_warning("Failed to create GameOverView.")
+		return false
+	gui_root.add_child(game_over_view)
+	game_over_view.bind(owner_ui)
+	_sync_public_fields_to_owner()
+	return true
+
+func show_game_over() -> void:
+	if owner_ui == null:
+		return
+	if not ensure_game_over_view():
+		return
+	owner_ui.pause_menu_root.visible = false
+	owner_ui._set_management_root_visible(&"purchase", false)
+	owner_ui._set_management_root_visible(&"upgrade", false)
+	owner_ui._set_management_root_visible(&"warehouse", false)
+	if game_over_view != null and is_instance_valid(game_over_view):
+		game_over_view.show_game_over()
+		owner_ui.get_tree().paused = true
+	_sync_public_fields_to_owner()
+
+func ensure_controls_hint_view() -> bool:
+	if controls_hint_view != null and is_instance_valid(controls_hint_view):
+		return true
+	var view_scene := load(CONTROLS_HINT_VIEW_PATH) as PackedScene
+	controls_hint_view = view_scene.instantiate() if view_scene else null
+	if controls_hint_view == null:
+		push_warning("Failed to create ControlsHintView.")
+		return false
+	gui_root.add_child(controls_hint_view)
+	_sync_public_fields_to_owner()
+	return true
+
+func layout_controls_hint_panel(viewport_size: Vector2) -> void:
+	if controls_hint_view != null and is_instance_valid(controls_hint_view):
+		controls_hint_view.layout_for_viewport(viewport_size)
+
+func update_controls_guide_for_phase(phase: String, primary_open: bool, secondary_open: bool) -> void:
+	if controls_hint_view != null and is_instance_valid(controls_hint_view):
+		controls_hint_view.refresh_for_phase(phase, primary_open, secondary_open)
+
+func refresh_controls_hint_visibility(secondary_open: bool) -> void:
+	if controls_hint_view != null and is_instance_valid(controls_hint_view):
+		controls_hint_view.refresh_visibility(secondary_open)
+
 func sync_state_from_owner() -> void:
 	if owner_ui == null:
 		return
@@ -111,6 +270,10 @@ func sync_state_from_owner() -> void:
 	reward_selection_panel = owner_ui.reward_selection_panel
 	weapon_replacement_panel = owner_ui.weapon_replacement_panel
 	weapon_warehouse_panel = owner_ui.weapon_warehouse_panel
+	game_over_view = owner_ui.game_over_view
+	controls_hint_view = owner_ui.controls_hint_view
+	board_edit_panel = owner_ui.board_edit_panel
+	cell_management_panel = owner_ui.cell_management_panel
 
 func _sync_public_fields_to_owner() -> void:
 	if owner_ui == null:
@@ -121,3 +284,7 @@ func _sync_public_fields_to_owner() -> void:
 	owner_ui.reward_selection_panel = reward_selection_panel
 	owner_ui.weapon_replacement_panel = weapon_replacement_panel
 	owner_ui.weapon_warehouse_panel = weapon_warehouse_panel
+	owner_ui.game_over_view = game_over_view
+	owner_ui.controls_hint_view = controls_hint_view
+	owner_ui.board_edit_panel = board_edit_panel
+	owner_ui.cell_management_panel = cell_management_panel

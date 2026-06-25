@@ -4,6 +4,7 @@ signal inventory_changed
 signal pending_changed
 signal installed_changed
 
+const RESOURCE_CATALOG := preload("res://autoload/ResourceCatalog.gd")
 const EFFECT_DIRECTORY_PATH := "res://data/cell_effects/"
 const STATE_PATH := "user://cell_effect_runtime_state.json"
 const REWARD_KIND_CELL_EFFECT: StringName = &"cell_effect"
@@ -21,20 +22,10 @@ func _ready() -> void:
 
 func load_definitions() -> void:
 	_definitions_by_id.clear()
-	var dir := DirAccess.open(EFFECT_DIRECTORY_PATH)
-	if dir == null:
-		push_warning("CellEffectRuntime: missing effect directory: %s" % EFFECT_DIRECTORY_PATH)
-		return
-	dir.list_dir_begin()
-	var file_name := dir.get_next()
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".tres"):
-			var path := EFFECT_DIRECTORY_PATH + file_name
-			var definition := load(path) as CellEffectDefinition
-			if definition != null and definition.effect_id.strip_edges() != "":
-				_definitions_by_id[definition.effect_id.strip_edges()] = definition
-		file_name = dir.get_next()
-	dir.list_dir_end()
+	for path in RESOURCE_CATALOG.collect_resource_paths(EFFECT_DIRECTORY_PATH, ".tres", [], true, "CellEffectRuntime"):
+		var definition := load(path) as CellEffectDefinition
+		if definition != null and definition.effect_id.strip_edges() != "":
+			_definitions_by_id[definition.effect_id.strip_edges()] = definition
 
 func get_definition(effect_id: String) -> CellEffectDefinition:
 	var normalized := effect_id.strip_edges()

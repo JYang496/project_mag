@@ -13,6 +13,9 @@ class_name EnemySpawner
 @onready var bottom_right_marker: Node2D = $BottomRight
 
 const SpawnCombatProfileScript := preload("res://data/spawns/SpawnCombatProfile.gd")
+const SPAWN_POINT_PICKER_SCRIPT := preload("res://Utility/spawn_point_picker.gd")
+const SPAWN_BUDGET_RUNTIME_SCRIPT := preload("res://Utility/spawn_budget_runtime.gd")
+const KILL_GOLD_BUDGET_RUNTIME_SCRIPT := preload("res://Utility/kill_gold_budget_runtime.gd")
 
 var instance_list : Array
 var _runtime_spawn_states: Array[Dictionary] = []
@@ -24,6 +27,7 @@ var x_min: float = 0.0
 var y_min: float = 0.0
 var x_max: float = 0.0
 var y_max: float = 0.0
+var _spawn_point_picker: RefCounted
 var _rng := RandomNumberGenerator.new()
 var _enemy_metadata_cache: Dictionary = {}
 var _kill_gold_budget: int = 0
@@ -32,6 +36,7 @@ var _kill_gold_battle_timeout: int = 1
 var _kill_gold_budget_active: bool = false
 var _warned_inactive_kill_gold_budget: bool = false
 var _kill_gold_collected: int = 0
+var _kill_gold_budget_runtime: RefCounted
 var _combat_budget_active: bool = true
 var _planned_target_total_hp: int = 0
 var _spawned_total_hp: int = 0
@@ -42,15 +47,124 @@ var _budget_release_duration_sec: int = 1
 var _budget_release_finished: bool = false
 var _spawn_budget_stopped: bool = false
 var _budget_summary_printed: bool = false
+var _spawn_budget_runtime: RefCounted
 
 func _ready():
 	GlobalVariables.enemy_spawner = self
 	_rng.randomize()
+	_init_spawn_point_picker()
+	_init_spawn_budget_runtime()
+	_init_kill_gold_budget_runtime()
 	_cache_board_cells()
 	if board and board.has_signal("active_cells_changed") and not board.is_connected("active_cells_changed", Callable(self, "_on_board_active_cells_changed")):
 		board.connect("active_cells_changed", Callable(self, "_on_board_active_cells_changed"))
 	_refresh_fallback_bounds()
 	_refresh_spawn_tables()
+
+func _init_spawn_point_picker() -> void:
+	if _spawn_point_picker != null:
+		return
+	_spawn_point_picker = SPAWN_POINT_PICKER_SCRIPT.new()
+	_spawn_point_picker.bind(self, board, top_left_marker, bottom_right_marker)
+	_sync_spawn_point_picker_config()
+
+func _sync_spawn_point_picker_config() -> void:
+	if _spawn_point_picker == null:
+		return
+	_spawn_point_picker.configure(
+		min_spawn_distance_from_player,
+		spawn_point_attempts_per_enemy,
+		spawn_edge_margin
+	)
+
+func _sync_spawn_point_picker_state() -> void:
+	if _spawn_point_picker == null:
+		return
+	board_cells = _spawn_point_picker.board_cells
+	_last_spawn_cell = _spawn_point_picker.last_spawn_cell
+	x_min = _spawn_point_picker.x_min
+	y_min = _spawn_point_picker.y_min
+	x_max = _spawn_point_picker.x_max
+	y_max = _spawn_point_picker.y_max
+
+func _init_spawn_budget_runtime() -> void:
+	if _spawn_budget_runtime != null:
+		return
+	_spawn_budget_runtime = SPAWN_BUDGET_RUNTIME_SCRIPT.new()
+	_spawn_budget_runtime.bind(
+		Callable(self, "_get_spawn_combat_profile"),
+		Callable(self, "_resolve_budget_candidate_hp_from_spawner"),
+		Callable(self, "_print_kill_gold_debug_summary")
+	)
+	_sync_spawn_budget_runtime_state()
+
+func _sync_spawn_budget_runtime_state() -> void:
+	if _spawn_budget_runtime == null:
+		return
+	_combat_budget_active = bool(_spawn_budget_runtime.combat_budget_active)
+	_planned_target_total_hp = int(_spawn_budget_runtime.planned_target_total_hp)
+	_spawned_total_hp = int(_spawn_budget_runtime.spawned_total_hp)
+	_killed_total_hp = int(_spawn_budget_runtime.killed_total_hp)
+	_available_hp_budget = float(_spawn_budget_runtime.available_hp_budget)
+	_pressure_budget_total = float(_spawn_budget_runtime.pressure_budget_total)
+	_budget_release_duration_sec = int(_spawn_budget_runtime.budget_release_duration_sec)
+	_budget_release_finished = bool(_spawn_budget_runtime.budget_release_finished)
+	_spawn_budget_stopped = bool(_spawn_budget_runtime.spawn_budget_stopped)
+	_budget_summary_printed = bool(_spawn_budget_runtime.budget_summary_printed)
+
+func _sync_spawn_budget_owner_state_to_runtime() -> void:
+	if _spawn_budget_runtime == null:
+		return
+	_spawn_budget_runtime.combat_budget_active = _combat_budget_active
+	_spawn_budget_runtime.planned_target_total_hp = _planned_target_total_hp
+	_spawn_budget_runtime.spawned_total_hp = _spawned_total_hp
+	_spawn_budget_runtime.killed_total_hp = _killed_total_hp
+	_spawn_budget_runtime.available_hp_budget = _available_hp_budget
+	_spawn_budget_runtime.pressure_budget_total = _pressure_budget_total
+	_spawn_budget_runtime.budget_release_duration_sec = _budget_release_duration_sec
+	_spawn_budget_runtime.budget_release_finished = _budget_release_finished
+	_spawn_budget_runtime.spawn_budget_stopped = _spawn_budget_stopped
+	_spawn_budget_runtime.budget_summary_printed = _budget_summary_printed
+
+func _init_kill_gold_budget_runtime() -> void:
+	if _kill_gold_budget_runtime != null:
+		return
+	_kill_gold_budget_runtime = KILL_GOLD_BUDGET_RUNTIME_SCRIPT.new()
+	_kill_gold_budget_runtime.bind(
+		self,
+		Callable(self, "_get_spawn_combat_profile"),
+		Callable(self, "_get_economy_config")
+	)
+	_sync_kill_gold_budget_config()
+	_sync_kill_gold_budget_runtime_state()
+
+func _sync_kill_gold_budget_config() -> void:
+	if _kill_gold_budget_runtime == null:
+		return
+	_kill_gold_budget_runtime.configure(
+		debug_print_kill_gold_stats,
+		debug_print_kill_gold_drop_stats
+	)
+
+func _sync_kill_gold_budget_runtime_state() -> void:
+	if _kill_gold_budget_runtime == null:
+		return
+	_kill_gold_budget = int(_kill_gold_budget_runtime.kill_gold_budget)
+	_kill_gold_paid = int(_kill_gold_budget_runtime.kill_gold_paid)
+	_kill_gold_battle_timeout = int(_kill_gold_budget_runtime.kill_gold_battle_timeout)
+	_kill_gold_budget_active = bool(_kill_gold_budget_runtime.kill_gold_budget_active)
+	_warned_inactive_kill_gold_budget = bool(_kill_gold_budget_runtime.warned_inactive_kill_gold_budget)
+	_kill_gold_collected = int(_kill_gold_budget_runtime.kill_gold_collected)
+
+func _sync_kill_gold_owner_state_to_runtime() -> void:
+	if _kill_gold_budget_runtime == null:
+		return
+	_kill_gold_budget_runtime.kill_gold_budget = _kill_gold_budget
+	_kill_gold_budget_runtime.kill_gold_paid = _kill_gold_paid
+	_kill_gold_budget_runtime.kill_gold_battle_timeout = _kill_gold_battle_timeout
+	_kill_gold_budget_runtime.kill_gold_budget_active = _kill_gold_budget_active
+	_kill_gold_budget_runtime.warned_inactive_kill_gold_budget = _warned_inactive_kill_gold_budget
+	_kill_gold_budget_runtime.kill_gold_collected = _kill_gold_collected
 
 func _on_board_active_cells_changed(_active_cell_ids: PackedInt32Array) -> void:
 	_refresh_fallback_bounds()
@@ -103,10 +217,14 @@ func _on_timer_timeout():
 		PhaseManager.enter_prepare()
 
 func _is_runtime_spawn_budget_spent() -> bool:
-	return _is_combat_budget_ready() and _spawned_total_hp >= _planned_target_total_hp
+	_init_spawn_budget_runtime()
+	_sync_spawn_budget_owner_state_to_runtime()
+	return bool(_spawn_budget_runtime.is_runtime_spawn_budget_spent())
 
 func _should_end_after_spawn_budget_stopped() -> bool:
-	return _spawn_budget_stopped and _get_total_runtime_alive_count() <= 0
+	_init_spawn_budget_runtime()
+	_sync_spawn_budget_owner_state_to_runtime()
+	return bool(_spawn_budget_runtime.should_end_after_spawn_budget_stopped(_get_total_runtime_alive_count()))
 
 func _spawn_with_random_wave_template(level_index: int, effective_time_out: int) -> void:
 	if not _is_combat_budget_ready():
@@ -165,97 +283,65 @@ func _build_random_spawn_batch(level_index: int, effective_time_out: int) -> Dic
 			ranged_count += 1
 		if _is_spawn_elite(candidate):
 			elite_count += 1
-		_available_hp_budget -= float(spawned_hp)
-		_spawned_total_hp += spawned_hp
+		_spawn_budget_runtime.consume_spawned_hp(spawned_hp)
+		_sync_spawn_budget_runtime_state()
 		_update_spawn_budget_stop_state()
 	return batch
 
 func _resolve_batch_hp_budget(level_index: int, _effective_time_out: int) -> float:
-	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
-	var target_hp := float(maxi(int(profile.call("get_target_total_hp", level_index)), 1))
-	var release_duration: int = maxi(_budget_release_duration_sec, 1)
-	var progress := clampf(float(PhaseManager.battle_time) / float(release_duration), 0.0, 1.0)
-	var pressure_multiplier: float = float(profile.call("get_pressure_multiplier", progress))
-	return target_hp * pressure_multiplier / maxf(_pressure_budget_total, 0.001)
+	_init_spawn_budget_runtime()
+	_sync_spawn_budget_owner_state_to_runtime()
+	return float(_spawn_budget_runtime.resolve_batch_hp_budget(level_index, _effective_time_out))
 
 func _release_hp_budget_for_current_tick(level_index: int, effective_time_out: int) -> void:
-	if _spawn_budget_stopped:
-		return
-	if _budget_release_finished:
-		return
-	if PhaseManager.battle_time >= _budget_release_duration_sec:
-		_release_remaining_spawn_budget()
-		_budget_release_finished = true
-		_update_spawn_budget_stop_state()
-		return
-	var current_budget := _resolve_batch_hp_budget(level_index, effective_time_out)
-	_available_hp_budget += current_budget
-	var max_carryover_seconds := maxi(int(_get_spawn_combat_profile().get("max_hp_budget_carryover_seconds")), 1)
-	var max_available := current_budget * float(max_carryover_seconds)
-	_available_hp_budget = minf(_available_hp_budget, max_available)
-	_update_spawn_budget_stop_state()
+	_init_spawn_budget_runtime()
+	_sync_spawn_budget_owner_state_to_runtime()
+	_spawn_budget_runtime.release_hp_budget_for_current_tick(level_index, effective_time_out)
+	_sync_spawn_budget_runtime_state()
 
 func roll_enemy_kill_gold(enemy_instance: Node = null) -> int:
-	if not _kill_gold_budget_active:
-		return 0
-	var expected_gold := _resolve_enemy_kill_expected_gold(enemy_instance)
-	if expected_gold <= 0.0:
-		return 0
-	var max_drop_chance := _get_kill_gold_max_drop_chance()
-	var drop_value := maxi(int(ceil(expected_gold / max_drop_chance)), 1)
-	var drop_chance := clampf(expected_gold / float(drop_value), 0.0, max_drop_chance)
-	var gold := drop_value if randf() < drop_chance else 0
-	_kill_gold_paid += gold
+	_init_kill_gold_budget_runtime()
+	_sync_kill_gold_budget_config()
+	_sync_kill_gold_owner_state_to_runtime()
+	var gold: int = _kill_gold_budget_runtime.roll_enemy_kill_gold(enemy_instance)
+	_sync_kill_gold_budget_runtime_state()
 	return gold
 
 func record_kill_gold_coin_spawned(value: int) -> void:
-	var gold_value := maxi(value, 0)
-	if gold_value <= 0:
-		return
-	if debug_print_kill_gold_drop_stats:
-		print("[KillGoldDrop] level=%d value=%d generated_total=%d collected_total=%d remaining_coin_value=%d" % [
-			maxi(PhaseManager.current_level, 0),
-			gold_value,
-			_kill_gold_paid,
-			_kill_gold_collected,
-			_get_remaining_coin_value(),
-		])
+	_init_kill_gold_budget_runtime()
+	_sync_kill_gold_budget_config()
+	_sync_kill_gold_owner_state_to_runtime()
+	_kill_gold_budget_runtime.record_kill_gold_coin_spawned(value)
+	_sync_kill_gold_budget_runtime_state()
 
 func record_kill_gold_coin_collected(value: int) -> void:
-	var gold_value := maxi(value, 0)
-	if gold_value <= 0:
-		return
-	_kill_gold_collected += gold_value
+	_init_kill_gold_budget_runtime()
+	_sync_kill_gold_budget_config()
+	_sync_kill_gold_owner_state_to_runtime()
+	_kill_gold_budget_runtime.record_kill_gold_coin_collected(value)
+	_sync_kill_gold_budget_runtime_state()
 
 func _resolve_enemy_kill_expected_gold(enemy_instance: Node) -> float:
-	var level_index := maxi(PhaseManager.current_level, 0)
-	var target_total_hp := _resolve_kill_gold_target_total_hp_for_level(level_index)
-	if target_total_hp <= 0:
-		return 0.0
-	var enemy_hp := _resolve_enemy_kill_gold_hp(enemy_instance)
-	if enemy_hp <= 0:
-		return 0.0
-	return float(_kill_gold_budget) * float(enemy_hp) / float(target_total_hp)
+	_init_kill_gold_budget_runtime()
+	_sync_kill_gold_owner_state_to_runtime()
+	return float(_kill_gold_budget_runtime.resolve_enemy_kill_expected_gold(enemy_instance))
 
 func _resolve_enemy_kill_gold_hp(enemy_instance: Node) -> int:
-	if enemy_instance != null:
-		if enemy_instance.has_meta("_spawn_budget_scaled_hp"):
-			return maxi(int(enemy_instance.get_meta("_spawn_budget_scaled_hp")), 1)
-		var hp_value: Variant = enemy_instance.get("hp")
-		if hp_value != null:
-			return maxi(int(hp_value), 1)
-	return 0
+	_init_kill_gold_budget_runtime()
+	return int(_kill_gold_budget_runtime.resolve_enemy_kill_gold_hp(enemy_instance))
 
 func _resolve_kill_gold_target_total_hp_for_level(level_index: int) -> int:
-	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
-	if profile == null:
-		return 0
-	return maxi(int(profile.call("get_target_total_hp", level_index)), 0)
+	_init_kill_gold_budget_runtime()
+	return int(_kill_gold_budget_runtime.resolve_kill_gold_target_total_hp_for_level(level_index))
 
 func is_kill_gold_budget_active() -> bool:
-	return _kill_gold_budget_active
+	_init_kill_gold_budget_runtime()
+	_sync_kill_gold_owner_state_to_runtime()
+	return bool(_kill_gold_budget_runtime.is_kill_gold_budget_active())
 
 func ensure_kill_gold_budget_active() -> bool:
+	_init_kill_gold_budget_runtime()
+	_sync_kill_gold_owner_state_to_runtime()
 	if _kill_gold_budget_active:
 		return true
 	var level_index := maxi(PhaseManager.current_level, 0)
@@ -266,49 +352,35 @@ func ensure_kill_gold_budget_active() -> bool:
 	return _kill_gold_budget_active
 
 func get_kill_gold_budget_snapshot() -> Dictionary:
-	return {
-		"budget": _kill_gold_budget,
-		"paid": _kill_gold_paid,
-		"remaining": maxi(_kill_gold_budget - _kill_gold_paid, 0),
-		"battle_timeout": _kill_gold_battle_timeout,
-	}
+	_init_kill_gold_budget_runtime()
+	_sync_kill_gold_owner_state_to_runtime()
+	var snapshot: Dictionary = _kill_gold_budget_runtime.get_kill_gold_budget_snapshot()
+	_sync_kill_gold_budget_runtime_state()
+	return snapshot
 
 func _start_kill_gold_budget(level_index: int, effective_time_out: int) -> void:
-	var target := _resolve_kill_gold_target_for_level(level_index)
-	var variance := _get_kill_gold_budget_variance()
-	var roll_min := maxf(0.0, 1.0 - variance)
-	var roll_max := maxf(roll_min, 1.0 + variance)
-	_kill_gold_budget = maxi(0, int(round(float(target) * randf_range(roll_min, roll_max))))
-	_kill_gold_paid = 0
-	_kill_gold_collected = 0
-	_kill_gold_battle_timeout = maxi(effective_time_out, 1)
-	_kill_gold_budget_active = _kill_gold_budget > 0
-	_warned_inactive_kill_gold_budget = false
+	_init_kill_gold_budget_runtime()
+	_sync_kill_gold_budget_config()
+	_kill_gold_budget_runtime.start_kill_gold_budget(level_index, effective_time_out)
+	_sync_kill_gold_budget_runtime_state()
 
 func warn_inactive_kill_gold_budget() -> void:
-	if _warned_inactive_kill_gold_budget:
-		return
-	_warned_inactive_kill_gold_budget = true
-	push_warning("Enemy kill gold budget is inactive; kill gold drops are disabled for this battle.")
+	_init_kill_gold_budget_runtime()
+	_sync_kill_gold_owner_state_to_runtime()
+	_kill_gold_budget_runtime.warn_inactive_kill_gold_budget()
+	_sync_kill_gold_budget_runtime_state()
 
 func _resolve_kill_gold_target_for_level(level_index: int) -> int:
-	var economy := _get_economy_config()
-	var targets: PackedInt32Array = economy.kill_gold_target_by_level
-	if targets.is_empty():
-		return 0
-	var safe_level := maxi(level_index, 0)
-	if safe_level < targets.size():
-		return maxi(int(targets[safe_level]), 0)
-	var increment := maxi(int(economy.kill_gold_target_increment_after_table), 0)
-	return maxi(int(targets[targets.size() - 1]) + increment * (safe_level - targets.size() + 1), 0)
+	_init_kill_gold_budget_runtime()
+	return int(_kill_gold_budget_runtime.resolve_kill_gold_target_for_level(level_index))
 
 func _get_kill_gold_budget_variance() -> float:
-	var economy := _get_economy_config()
-	return clampf(float(economy.kill_gold_budget_variance), 0.0, 1.0)
+	_init_kill_gold_budget_runtime()
+	return float(_kill_gold_budget_runtime.get_kill_gold_budget_variance())
 
 func _get_kill_gold_max_drop_chance() -> float:
-	var economy := _get_economy_config()
-	return clampf(float(economy.kill_gold_max_drop_chance), 0.05, 1.0)
+	_init_kill_gold_budget_runtime()
+	return float(_kill_gold_budget_runtime.get_kill_gold_max_drop_chance())
 
 func _get_economy_config() -> EconomyConfig:
 	if GlobalVariables.economy_data:
@@ -530,446 +602,147 @@ func _spawn_from_state(state: Dictionary, requested_count: int) -> int:
 	return spawned_hp
 
 func get_random_position() -> Vector2:
-	var player : Player = PlayerData.player
-	if player == null:
-		_last_spawn_cell = null
-		return Vector2.ZERO
-	_refresh_fallback_bounds()
-	var spawn_cell = _pick_spawn_cell_near_player(player)
-	if spawn_cell:
-		_last_spawn_cell = spawn_cell
-		return _apply_spawn_safety_margin(_get_random_point_in_cell_away_from_player(spawn_cell, player.global_position))
-	_last_spawn_cell = null
-	return _apply_spawn_safety_margin(_get_fallback_spawn_position(player))
+	_init_spawn_point_picker()
+	_sync_spawn_point_picker_config()
+	var position: Vector2 = _spawn_point_picker.get_random_position()
+	_sync_spawn_point_picker_state()
+	return position
 
 func _cache_board_cells() -> void:
-	board_cells.clear()
-	if board:
-		for child in board.get_children():
-			if child is Cell:
-				board_cells.append(child)
-	_refresh_fallback_bounds()
+	_init_spawn_point_picker()
+	_spawn_point_picker.cache_board_cells()
+	_sync_spawn_point_picker_state()
 
 func _refresh_fallback_bounds() -> void:
-	var bounds_set := false
-	var min_x := 0.0
-	var min_y := 0.0
-	var max_x := 0.0
-	var max_y := 0.0
-	var effective_cells := _get_effective_board_cells()
-	for cell in effective_cells:
-		if cell == null:
-			continue
-		var cell_rect: Rect2 = _get_cell_aabb(cell)
-		if cell_rect.size == Vector2.ZERO:
-			continue
-		if not bounds_set:
-			min_x = cell_rect.position.x
-			min_y = cell_rect.position.y
-			max_x = cell_rect.end.x
-			max_y = cell_rect.end.y
-			bounds_set = true
-			continue
-		min_x = minf(min_x, cell_rect.position.x)
-		min_y = minf(min_y, cell_rect.position.y)
-		max_x = maxf(max_x, cell_rect.end.x)
-		max_y = maxf(max_y, cell_rect.end.y)
-	if not bounds_set:
-		if top_left_marker != null and bottom_right_marker != null:
-			min_x = minf(top_left_marker.global_position.x, bottom_right_marker.global_position.x)
-			min_y = minf(top_left_marker.global_position.y, bottom_right_marker.global_position.y)
-			max_x = maxf(top_left_marker.global_position.x, bottom_right_marker.global_position.x)
-			max_y = maxf(top_left_marker.global_position.y, bottom_right_marker.global_position.y)
-		else:
-			min_x = -1000.0
-			min_y = -1000.0
-			max_x = 1000.0
-			max_y = 1000.0
-	x_min = min_x
-	y_min = min_y
-	x_max = max_x
-	y_max = max_y
+	_init_spawn_point_picker()
+	_spawn_point_picker.refresh_fallback_bounds()
+	_sync_spawn_point_picker_state()
 
 func _pick_spawn_cell_near_player(player: Player) -> Cell:
-	var effective_cells := _get_effective_board_cells()
-	if effective_cells.is_empty():
-		_cache_board_cells()
-		effective_cells = _get_effective_board_cells()
-	if effective_cells.is_empty():
-		return null
-	var player_position = player.global_position
-	var player_cell = _get_cell_at_position(player_position, effective_cells)
-	var neighbor_cells = _get_neighbor_cells(player_cell, effective_cells)
-	var neighbor_candidates : Array[Cell] = []
-	var fallback_candidates : Array[Cell] = []
-	for cell in effective_cells:
-		if cell == null:
-			continue
-		if cell == player_cell:
-			continue
-		if not _cell_can_spawn_away_from_player(cell, player_position):
-			continue
-		if not neighbor_cells.is_empty() and neighbor_cells.has(cell):
-			neighbor_candidates.append(cell)
-		else:
-			fallback_candidates.append(cell)
-	if not neighbor_candidates.is_empty():
-		return neighbor_candidates.pick_random()
-	if not fallback_candidates.is_empty():
-		return fallback_candidates.pick_random()
-	return null
+	_init_spawn_point_picker()
+	var cell: Cell = _spawn_point_picker.pick_spawn_cell_near_player(player)
+	_sync_spawn_point_picker_state()
+	return cell
 
 func _get_cell_at_position(position: Vector2, cells: Array[Cell]) -> Cell:
-	for cell in cells:
-		if _cell_contains_point(cell, position):
-			return cell
-	return null
+	_init_spawn_point_picker()
+	return _spawn_point_picker.get_cell_at_position(position, cells)
 
 func _cell_contains_point(cell: Cell, position: Vector2) -> bool:
-	if cell == null:
-		return false
-	var capture_polygon: CollisionPolygon2D = _get_cell_capture_polygon(cell)
-	if capture_polygon:
-		return _is_point_inside_capture_polygon(capture_polygon, position)
-	var collision_shape : CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
-	if collision_shape == null:
-		return false
-	var rect_shape := collision_shape.shape
-	if rect_shape is RectangleShape2D:
-		var half_size = rect_shape.size * 0.5
-		var local_point = collision_shape.global_transform.affine_inverse() * position
-		return absf(local_point.x) <= half_size.x and absf(local_point.y) <= half_size.y
-	return false
+	_init_spawn_point_picker()
+	return _spawn_point_picker.cell_contains_point(cell, position)
 
 func _get_random_point_in_cell(cell: Cell) -> Vector2:
-	var capture_polygon: CollisionPolygon2D = _get_cell_capture_polygon(cell)
-	if capture_polygon:
-		return _get_random_point_in_capture_polygon(capture_polygon)
-	var collision_shape : CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
-	if collision_shape and collision_shape.shape is RectangleShape2D:
-		var rect_shape : RectangleShape2D = collision_shape.shape
-		var half_size = rect_shape.size * 0.5
-		var random_local = Vector2(
-			randf_range(-half_size.x, half_size.x),
-			randf_range(-half_size.y, half_size.y)
-		)
-		return collision_shape.global_transform * random_local
-	return cell.global_position
+	_init_spawn_point_picker()
+	return _spawn_point_picker.get_random_point_in_cell(cell)
 
 func _get_random_point_in_cell_away_from_player(cell: Cell, player_position: Vector2) -> Vector2:
-	var attempts: int = max(spawn_point_attempts_per_enemy, 1)
-	var best_point: Vector2 = _get_random_point_in_cell(cell)
-	var best_distance: float = best_point.distance_to(player_position)
-	for _i in range(attempts):
-		var candidate: Vector2 = _get_random_point_in_cell(cell)
-		var distance_to_player: float = candidate.distance_to(player_position)
-		if distance_to_player >= min_spawn_distance_from_player:
-			return candidate
-		if distance_to_player > best_distance:
-			best_distance = distance_to_player
-			best_point = candidate
-	return best_point
+	_init_spawn_point_picker()
+	_sync_spawn_point_picker_config()
+	return _spawn_point_picker.get_random_point_in_cell_away_from_player(cell, player_position)
 
 func _cell_can_spawn_away_from_player(cell: Cell, player_position: Vector2) -> bool:
-	var cell_rect: Rect2 = _get_cell_aabb(cell)
-	if cell_rect.size == Vector2.ZERO:
-		return cell.global_position.distance_to(player_position) >= min_spawn_distance_from_player
-	var farthest_point := Vector2(
-		cell_rect.position.x if absf(player_position.x - cell_rect.position.x) > absf(player_position.x - cell_rect.end.x) else cell_rect.end.x,
-		cell_rect.position.y if absf(player_position.y - cell_rect.position.y) > absf(player_position.y - cell_rect.end.y) else cell_rect.end.y
-	)
-	return farthest_point.distance_to(player_position) >= min_spawn_distance_from_player
+	_init_spawn_point_picker()
+	_sync_spawn_point_picker_config()
+	return _spawn_point_picker.cell_can_spawn_away_from_player(cell, player_position)
 
 func _get_neighbor_cells(player_cell: Cell, cells: Array[Cell]) -> Array[Cell]:
-	var neighbors : Array[Cell] = []
-	if player_cell == null:
-		return neighbors
-	var max_neighbor_distance: float = _estimate_neighbor_distance(player_cell, cells)
-	for cell in cells:
-		if cell == null or cell == player_cell:
-			continue
-		if cell.global_position.distance_to(player_cell.global_position) <= max_neighbor_distance:
-			neighbors.append(cell)
-	return neighbors
+	_init_spawn_point_picker()
+	return _spawn_point_picker.get_neighbor_cells(player_cell, cells)
 
 func _estimate_neighbor_distance(player_cell: Cell, cells: Array[Cell]) -> float:
-	var nearest_distance: float = INF
-	for cell in cells:
-		if cell == null or cell == player_cell:
-			continue
-		var distance: float = cell.global_position.distance_to(player_cell.global_position)
-		if distance > 0.0 and distance < nearest_distance:
-			nearest_distance = distance
-	if nearest_distance == INF:
-		return 0.0
-	return nearest_distance * 1.1
+	_init_spawn_point_picker()
+	return _spawn_point_picker.estimate_neighbor_distance(player_cell, cells)
 
 func _project_point_into_cell(cell: Cell, position: Vector2) -> Vector2:
-	var capture_polygon: CollisionPolygon2D = _get_cell_capture_polygon(cell)
-	if capture_polygon:
-		return _project_point_into_capture_polygon(capture_polygon, position)
-	var collision_shape : CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
-	if collision_shape == null:
-		return position
-	var rect_shape := collision_shape.shape
-	if rect_shape is RectangleShape2D:
-		var half_size = rect_shape.size * 0.5
-		var local_point = collision_shape.global_transform.affine_inverse() * position
-		local_point.x = clampf(local_point.x, -half_size.x, half_size.x)
-		local_point.y = clampf(local_point.y, -half_size.y, half_size.y)
-		return collision_shape.global_transform * local_point
-	return position
+	_init_spawn_point_picker()
+	return _spawn_point_picker.project_point_into_cell(cell, position)
 
 func _get_player_view_rect(player: Player) -> Rect2:
-	var viewport_size = get_viewport_rect().size
-	var half_size = viewport_size * 0.5
-	var top_left = player.global_position - half_size
-	return Rect2(top_left, viewport_size)
+	_init_spawn_point_picker()
+	return _spawn_point_picker.get_player_view_rect(player)
 
 func _cell_intersects_rect(cell: Cell, rect: Rect2) -> bool:
-	var cell_rect := _get_cell_aabb(cell)
-	if cell_rect.size == Vector2.ZERO:
-		return rect.has_point(cell.global_position)
-	return cell_rect.intersects(rect)
+	_init_spawn_point_picker()
+	return _spawn_point_picker.cell_intersects_rect(cell, rect)
 
 func _get_cell_aabb(cell: Cell) -> Rect2:
-	var capture_polygon: CollisionPolygon2D = _get_cell_capture_polygon(cell)
-	if capture_polygon:
-		return _get_capture_polygon_aabb(capture_polygon)
-	var collision_shape : CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
-	if collision_shape and collision_shape.shape is RectangleShape2D:
-		var rect_shape : RectangleShape2D = collision_shape.shape
-		var half_size = rect_shape.size * 0.5
-		var gt := collision_shape.global_transform
-		var points = [
-			gt * Vector2(-half_size.x, -half_size.y),
-			gt * Vector2(half_size.x, -half_size.y),
-			gt * Vector2(half_size.x, half_size.y),
-			gt * Vector2(-half_size.x, half_size.y)
-		]
-		var min_x = points[0].x
-		var max_x = points[0].x
-		var min_y = points[0].y
-		var max_y = points[0].y
-		for p in points:
-			min_x = min(min_x, p.x)
-			max_x = max(max_x, p.x)
-			min_y = min(min_y, p.y)
-			max_y = max(max_y, p.y)
-		return Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
-	return Rect2(cell.global_position, Vector2.ZERO)
+	_init_spawn_point_picker()
+	return _spawn_point_picker.get_cell_aabb(cell)
 
 func _get_cell_capture_polygon(cell: Cell) -> CollisionPolygon2D:
-	if cell == null:
-		return null
-	return cell.get_node_or_null("Area2D/CapturePolygon") as CollisionPolygon2D
+	_init_spawn_point_picker()
+	return _spawn_point_picker.get_cell_capture_polygon(cell)
 
 func _is_point_inside_capture_polygon(capture_polygon: CollisionPolygon2D, world_position: Vector2) -> bool:
-	if capture_polygon == null or capture_polygon.polygon.is_empty():
-		return false
-	var local_point: Vector2 = capture_polygon.global_transform.affine_inverse() * world_position
-	return Geometry2D.is_point_in_polygon(local_point, capture_polygon.polygon)
+	_init_spawn_point_picker()
+	return _spawn_point_picker.is_point_inside_capture_polygon(capture_polygon, world_position)
 
 func _get_random_point_in_capture_polygon(capture_polygon: CollisionPolygon2D) -> Vector2:
-	if capture_polygon == null or capture_polygon.polygon.is_empty():
-		return Vector2.ZERO
-	var local_aabb: Rect2 = _get_polygon_local_aabb(capture_polygon.polygon)
-	var attempts: int = max(spawn_point_attempts_per_enemy * 2, 12)
-	for _i in range(attempts):
-		var candidate_local: Vector2 = Vector2(
-			randf_range(local_aabb.position.x, local_aabb.end.x),
-			randf_range(local_aabb.position.y, local_aabb.end.y)
-		)
-		if Geometry2D.is_point_in_polygon(candidate_local, capture_polygon.polygon):
-			return capture_polygon.global_transform * candidate_local
-	var centroid_local: Vector2 = _get_polygon_centroid(capture_polygon.polygon)
-	return capture_polygon.global_transform * centroid_local
+	_init_spawn_point_picker()
+	_sync_spawn_point_picker_config()
+	return _spawn_point_picker.get_random_point_in_capture_polygon(capture_polygon)
 
 func _project_point_into_capture_polygon(capture_polygon: CollisionPolygon2D, world_position: Vector2) -> Vector2:
-	if capture_polygon == null or capture_polygon.polygon.is_empty():
-		return world_position
-	if _is_point_inside_capture_polygon(capture_polygon, world_position):
-		return world_position
-	var local_aabb: Rect2 = _get_polygon_local_aabb(capture_polygon.polygon)
-	var local_point: Vector2 = capture_polygon.global_transform.affine_inverse() * world_position
-	local_point.x = clampf(local_point.x, local_aabb.position.x, local_aabb.end.x)
-	local_point.y = clampf(local_point.y, local_aabb.position.y, local_aabb.end.y)
-	if Geometry2D.is_point_in_polygon(local_point, capture_polygon.polygon):
-		return capture_polygon.global_transform * local_point
-	var nearest_polygon_point: Vector2 = capture_polygon.polygon[0]
-	var nearest_distance: float = nearest_polygon_point.distance_squared_to(local_point)
-	for polygon_point in capture_polygon.polygon:
-		var point_distance: float = polygon_point.distance_squared_to(local_point)
-		if point_distance < nearest_distance:
-			nearest_distance = point_distance
-			nearest_polygon_point = polygon_point
-	return capture_polygon.global_transform * nearest_polygon_point
+	_init_spawn_point_picker()
+	return _spawn_point_picker.project_point_into_capture_polygon(capture_polygon, world_position)
 
 func _get_capture_polygon_aabb(capture_polygon: CollisionPolygon2D) -> Rect2:
-	var polygon_points: PackedVector2Array = capture_polygon.polygon
-	if polygon_points.is_empty():
-		return Rect2(capture_polygon.global_position, Vector2.ZERO)
-	var first_point: Vector2 = capture_polygon.global_transform * polygon_points[0]
-	var min_x: float = first_point.x
-	var max_x: float = first_point.x
-	var min_y: float = first_point.y
-	var max_y: float = first_point.y
-	for local_point in polygon_points:
-		var world_point: Vector2 = capture_polygon.global_transform * local_point
-		min_x = minf(min_x, world_point.x)
-		max_x = maxf(max_x, world_point.x)
-		min_y = minf(min_y, world_point.y)
-		max_y = maxf(max_y, world_point.y)
-	return Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+	_init_spawn_point_picker()
+	return _spawn_point_picker.get_capture_polygon_aabb(capture_polygon)
 
 func _get_polygon_local_aabb(polygon_points: PackedVector2Array) -> Rect2:
-	if polygon_points.is_empty():
-		return Rect2(Vector2.ZERO, Vector2.ZERO)
-	var min_x: float = polygon_points[0].x
-	var max_x: float = polygon_points[0].x
-	var min_y: float = polygon_points[0].y
-	var max_y: float = polygon_points[0].y
-	for polygon_point in polygon_points:
-		min_x = minf(min_x, polygon_point.x)
-		max_x = maxf(max_x, polygon_point.x)
-		min_y = minf(min_y, polygon_point.y)
-		max_y = maxf(max_y, polygon_point.y)
-	return Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+	_init_spawn_point_picker()
+	return _spawn_point_picker.get_polygon_local_aabb(polygon_points)
 
 func _get_polygon_centroid(polygon_points: PackedVector2Array) -> Vector2:
-	if polygon_points.is_empty():
-		return Vector2.ZERO
-	var center: Vector2 = Vector2.ZERO
-	for polygon_point in polygon_points:
-		center += polygon_point
-	return center / float(polygon_points.size())
+	_init_spawn_point_picker()
+	return _spawn_point_picker.get_polygon_centroid(polygon_points)
 
 func _get_fallback_spawn_position(player: Player) -> Vector2:
-	var far_cell := _pick_farthest_cell_from_player(player.global_position)
-	if far_cell:
-		_last_spawn_cell = far_cell
-		return _get_random_point_in_cell_away_from_player(far_cell, player.global_position)
-	var attempts: int = max(spawn_point_attempts_per_enemy, 1)
-	var best_pos: Vector2 = _get_farthest_boundary_point(player.global_position)
-	var best_distance: float = 0.0
-	for _i in range(attempts):
-		var candidate: Vector2 = _get_random_boundary_position_away_from_player(player.global_position)
-		var distance_to_player: float = candidate.distance_to(player.global_position)
-		if distance_to_player >= min_spawn_distance_from_player:
-			return candidate
-		if distance_to_player > best_distance:
-			best_distance = distance_to_player
-			best_pos = candidate
-	return best_pos
-
-func _pick_farthest_cell_from_player(player_position: Vector2) -> Cell:
-	var effective_cells := _get_effective_board_cells()
-	if effective_cells.is_empty():
-		_cache_board_cells()
-		effective_cells = _get_effective_board_cells()
-	if effective_cells.is_empty():
-		return null
-	var best_cell: Cell = null
-	var best_distance := -1.0
-	for cell in effective_cells:
-		if cell == null:
-			continue
-		if not _cell_can_spawn_away_from_player(cell, player_position):
-			continue
-		var distance_to_player: float = cell.global_position.distance_to(player_position)
-		if distance_to_player > best_distance:
-			best_distance = distance_to_player
-			best_cell = cell
-	return best_cell
-
-func _get_effective_board_cells() -> Array[Cell]:
-	if board and board.has_method("get_active_cells"):
-		var active_cells_variant: Variant = board.call("get_active_cells")
-		if active_cells_variant is Array:
-			var active_cells_raw := active_cells_variant as Array
-			var active_cells: Array[Cell] = []
-			for node in active_cells_raw:
-				if node is Cell:
-					active_cells.append(node as Cell)
-			if not active_cells.is_empty():
-				return active_cells
-	return board_cells
-
-func get_nearby_position(A: Vector2, min_distance: float = 0.0, max_distance: float = 100.0) -> Vector2:
-	var player : Player = PlayerData.player
-	var attempts: int = max(spawn_point_attempts_per_enemy, 1)
-	var best_position: Vector2 = A
-	var best_distance: float = 0.0
-	for _i in range(attempts):
-		var angle: float = randf() * 2.0 * PI
-		var distance: float = randf_range(min_distance, max_distance)
-		var nearby_pos: Vector2 = A + Vector2(cos(angle), sin(angle)) * distance
-		var candidate: Vector2 = nearby_pos
-		if _last_spawn_cell:
-			candidate = _project_point_into_cell(_last_spawn_cell, nearby_pos)
-		else:
-			candidate = clamp_position(nearby_pos.x, nearby_pos.y)
-		candidate = _apply_spawn_safety_margin(candidate)
-		if player == null:
-			return candidate
-		var distance_to_player: float = candidate.distance_to(player.global_position)
-		if distance_to_player >= min_spawn_distance_from_player:
-			return candidate
-		if distance_to_player > best_distance:
-			best_distance = distance_to_player
-			best_position = candidate
-	return best_position
-
-func _apply_spawn_safety_margin(position: Vector2) -> Vector2:
-	var margin := maxf(spawn_edge_margin, 0.0)
-	if margin <= 0.001:
-		return position
-	if board != null and board.has_method("project_point_to_enemy_traversable_area_with_margin"):
-		var projected_with_margin: Variant = board.call("project_point_to_enemy_traversable_area_with_margin", position, margin)
-		if projected_with_margin is Vector2:
-			return projected_with_margin as Vector2
-	if _last_spawn_cell != null:
-		var center: Vector2 = _last_spawn_cell.global_position
-		if position.distance_squared_to(center) > 0.0001:
-			var moved := position.move_toward(center, margin)
-			if _cell_contains_point(_last_spawn_cell, moved):
-				return moved
+	_init_spawn_point_picker()
+	_sync_spawn_point_picker_config()
+	var position: Vector2 = _spawn_point_picker.get_fallback_spawn_position(player)
+	_sync_spawn_point_picker_state()
 	return position
 
+func _pick_farthest_cell_from_player(player_position: Vector2) -> Cell:
+	_init_spawn_point_picker()
+	var cell: Cell = _spawn_point_picker.pick_farthest_cell_from_player(player_position)
+	_sync_spawn_point_picker_state()
+	return cell
+
+func _get_effective_board_cells() -> Array[Cell]:
+	_init_spawn_point_picker()
+	var cells: Array[Cell] = _spawn_point_picker.get_effective_board_cells()
+	_sync_spawn_point_picker_state()
+	return cells
+
+func get_nearby_position(A: Vector2, min_distance: float = 0.0, max_distance: float = 100.0) -> Vector2:
+	_init_spawn_point_picker()
+	_sync_spawn_point_picker_config()
+	var position: Vector2 = _spawn_point_picker.get_nearby_position(A, min_distance, max_distance)
+	_sync_spawn_point_picker_state()
+	return position
+
+func _apply_spawn_safety_margin(position: Vector2) -> Vector2:
+	_init_spawn_point_picker()
+	_sync_spawn_point_picker_config()
+	var projected: Vector2 = _spawn_point_picker.apply_spawn_safety_margin(position)
+	_sync_spawn_point_picker_state()
+	return projected
+
 func clamp_position(x_value :float, y_value :float) -> Vector2:
-	return Vector2(clampf(x_value,x_min,x_max),clampf(y_value,y_min,y_max))
+	_init_spawn_point_picker()
+	return _spawn_point_picker.clamp_position(x_value, y_value)
 
 func _get_random_boundary_position_away_from_player(player_position: Vector2) -> Vector2:
-	var boundary_points := [
-		Vector2(randf_range(x_min, x_max), y_min),
-		Vector2(randf_range(x_min, x_max), y_max),
-		Vector2(x_min, randf_range(y_min, y_max)),
-		Vector2(x_max, randf_range(y_min, y_max))
-	]
-	var best_point: Vector2 = boundary_points[0]
-	var best_distance: float = best_point.distance_to(player_position)
-	for point in boundary_points:
-		var point_distance: float = point.distance_to(player_position)
-		if point_distance > best_distance:
-			best_distance = point_distance
-			best_point = point
-	return best_point
+	_init_spawn_point_picker()
+	return _spawn_point_picker.get_random_boundary_position_away_from_player(player_position)
 
 func _get_farthest_boundary_point(player_position: Vector2) -> Vector2:
-	var corners := [
-		Vector2(x_min, y_min),
-		Vector2(x_max, y_min),
-		Vector2(x_min, y_max),
-		Vector2(x_max, y_max)
-	]
-	var best_point: Vector2 = corners[0]
-	var best_distance: float = best_point.distance_to(player_position)
-	for point in corners:
-		var point_distance: float = point.distance_to(player_position)
-		if point_distance > best_distance:
-			best_distance = point_distance
-			best_point = point
-	return best_point
+	_init_spawn_point_picker()
+	return _spawn_point_picker.get_farthest_boundary_point(player_position)
 
 func erase_all_enemies():
 	for enemy in _get_registered_enemies():
@@ -1028,124 +801,59 @@ func calculate_scaled_enemy_stats(
 	return {"hp": scaled_hp, "damage": scaled_damage}
 
 func _prepare_level_combat_budget(level_index: int, effective_time_out: int) -> void:
-	_combat_budget_active = true
-	_planned_target_total_hp = 0
-	_spawned_total_hp = 0
-	_killed_total_hp = 0
-	_available_hp_budget = 0.0
-	_pressure_budget_total = 1.0
-	_budget_release_duration_sec = 1
-	_budget_release_finished = false
-	_spawn_budget_stopped = false
-	_budget_summary_printed = false
-	var budget_profile := _get_spawn_combat_profile()
-	if budget_profile == null:
-		return
-	var target_total_hp := int(budget_profile.call("get_target_total_hp", level_index))
-	if target_total_hp <= 0:
-		return
-	_planned_target_total_hp = target_total_hp
-	var release_ratio := clampf(float(budget_profile.get("budget_release_completion_ratio")), 0.05, 1.0)
-	_budget_release_duration_sec = clampi(int(round(float(maxi(effective_time_out, 1)) * release_ratio)), 1, maxi(effective_time_out, 1))
-	_pressure_budget_total = _calculate_pressure_budget_total(_budget_release_duration_sec)
-	_combat_budget_active = true
-	if bool(budget_profile.get("enable_hp_per_sec_report")):
-		var target_hps := float(target_total_hp) / float(maxi(_budget_release_duration_sec, 1))
-		print("[SpawnBudget] level=%d target_hp=%d target_hps=%.2f release_sec=%d timeout=%d pressure_sum=%.2f" % [
-			level_index,
-			target_total_hp,
-			target_hps,
-			_budget_release_duration_sec,
-			effective_time_out,
-			_pressure_budget_total,
-		])
+	_init_spawn_budget_runtime()
+	_spawn_budget_runtime.prepare_level_combat_budget(level_index, effective_time_out)
+	_sync_spawn_budget_runtime_state()
 
 func _record_enemy_death_for_budget_summary(enemy_instance: Node, was_killed: bool) -> void:
-	if not was_killed:
-		return
-	if enemy_instance == null:
-		return
-	var scaled_hp := 1
-	if enemy_instance.has_meta("_spawn_budget_scaled_hp"):
-		scaled_hp = maxi(int(enemy_instance.get_meta("_spawn_budget_scaled_hp")), 1)
-	elif enemy_instance.get("hp") != null:
-		scaled_hp = maxi(int(enemy_instance.get("hp")), 1)
-	_killed_total_hp += scaled_hp
+	_init_spawn_budget_runtime()
+	_sync_spawn_budget_owner_state_to_runtime()
+	_spawn_budget_runtime.record_enemy_death_for_budget_summary(enemy_instance, was_killed)
+	_sync_spawn_budget_runtime_state()
 
 func _print_spawn_budget_battle_summary(level_index: int, effective_time_out: int) -> void:
-	if not _is_combat_budget_ready():
-		return
-	if _budget_summary_printed:
-		return
-	_budget_summary_printed = true
-	print("[SpawnBudgetSummary] level=%d killed_hp=%d target_hp=%d spawned_hp=%d battle_time=%d timeout=%d release_sec=%d stopped=%s" % [
-		level_index,
-		_killed_total_hp,
-		_planned_target_total_hp,
-		_spawned_total_hp,
-		PhaseManager.battle_time,
-		effective_time_out,
-		_budget_release_duration_sec,
-		str(_spawn_budget_stopped),
-	])
-	_print_kill_gold_debug_summary("battle_end", level_index)
+	_init_spawn_budget_runtime()
+	_sync_spawn_budget_owner_state_to_runtime()
+	_spawn_budget_runtime.print_spawn_budget_battle_summary(level_index, effective_time_out)
+	_sync_spawn_budget_runtime_state()
 
 func print_kill_gold_debug_summary(context: String = "manual") -> void:
 	_print_kill_gold_debug_summary(context, maxi(PhaseManager.current_level, 0))
 
 func _print_kill_gold_debug_summary(context: String, level_index: int) -> void:
-	if not debug_print_kill_gold_stats:
-		return
-	var remaining_coin_value := _get_remaining_coin_value()
-	print("[KillGoldSummary] context=%s level=%d budget=%d generated=%d collected=%d player_round=%d player_gold=%d remaining_coin_value=%d remaining_coin_count=%d" % [
-		context,
-		level_index,
-		_kill_gold_budget,
-		_kill_gold_paid,
-		_kill_gold_collected,
-		PlayerData.round_coin_collected,
-		PlayerData.player_gold,
-		remaining_coin_value,
-		_get_remaining_coin_count(),
-	])
+	_init_kill_gold_budget_runtime()
+	_sync_kill_gold_budget_config()
+	_sync_kill_gold_owner_state_to_runtime()
+	_kill_gold_budget_runtime.print_kill_gold_debug_summary(context, level_index)
+	_sync_kill_gold_budget_runtime_state()
 
 func _get_remaining_coin_value() -> int:
-	var total := 0
-	for collectable in get_tree().get_nodes_in_group("collectables"):
-		if not is_instance_valid(collectable):
-			continue
-		if _is_uncollected_coin(collectable):
-			var coin := collectable as Coin
-			total += maxi(int(coin.value), 0)
-	return total
+	_init_kill_gold_budget_runtime()
+	return int(_kill_gold_budget_runtime.get_remaining_coin_value())
 
 func _get_remaining_coin_count() -> int:
-	var total := 0
-	for collectable in get_tree().get_nodes_in_group("collectables"):
-		if is_instance_valid(collectable) and _is_uncollected_coin(collectable):
-			total += 1
-	return total
+	_init_kill_gold_budget_runtime()
+	return int(_kill_gold_budget_runtime.get_remaining_coin_count())
+
+func _get_registered_coins() -> Array[Coin]:
+	_init_kill_gold_budget_runtime()
+	return _kill_gold_budget_runtime.get_registered_coins()
 
 func _is_uncollected_coin(collectable: Node) -> bool:
-	var coin := collectable as Coin
-	if coin == null:
-		return false
-	if coin.sprite != null and not coin.sprite.visible:
-		return false
-	return true
+	_init_kill_gold_budget_runtime()
+	return bool(_kill_gold_budget_runtime.is_uncollected_coin(collectable))
 
 func _release_remaining_spawn_budget() -> void:
-	var remaining_hp := maxi(_planned_target_total_hp - _spawned_total_hp, 0)
-	if remaining_hp <= 0:
-		return
-	_available_hp_budget += float(remaining_hp)
+	_init_spawn_budget_runtime()
+	_sync_spawn_budget_owner_state_to_runtime()
+	_spawn_budget_runtime.release_remaining_spawn_budget()
+	_sync_spawn_budget_runtime_state()
 
 func _update_spawn_budget_stop_state() -> void:
-	if not _is_combat_budget_ready():
-		return
-	if _spawned_total_hp >= _planned_target_total_hp:
-		_spawn_budget_stopped = true
-		_available_hp_budget = 0.0
+	_init_spawn_budget_runtime()
+	_sync_spawn_budget_owner_state_to_runtime()
+	_spawn_budget_runtime.update_spawn_budget_stop_state()
+	_sync_spawn_budget_runtime_state()
 
 func _try_finish_battle_after_spawn_budget_stop() -> void:
 	if PhaseManager == null or PhaseManager.current_state() != PhaseManager.BATTLE:
@@ -1161,15 +869,15 @@ func _try_finish_battle_after_spawn_budget_stop() -> void:
 	PhaseManager.enter_prepare()
 
 func _calculate_pressure_budget_total(release_duration_sec: int) -> float:
-	var profile: SpawnCombatProfile = _get_spawn_combat_profile()
-	var timeout := maxi(release_duration_sec, 1)
-	var total := 0.0
-	for tick in range(1, timeout):
-		var progress := clampf(float(tick) / float(timeout), 0.0, 1.0)
-		total += maxf(float(profile.call("get_pressure_multiplier", progress)), 0.001)
-	return maxf(total, 0.001)
+	_init_spawn_budget_runtime()
+	_sync_spawn_budget_owner_state_to_runtime()
+	return float(_spawn_budget_runtime.calculate_pressure_budget_total(release_duration_sec))
 
 func _resolve_budget_candidate_hp(state: Dictionary, level_index: int) -> int:
+	_init_spawn_budget_runtime()
+	return int(_spawn_budget_runtime.resolve_budget_candidate_hp(state, level_index))
+
+func _resolve_budget_candidate_hp_from_spawner(state: Dictionary, level_index: int) -> int:
 	var fallback_hp := _get_enemy_scene_default_hp(state)
 	var fallback_damage := _get_enemy_scene_default_damage(state)
 	var scaled_stats := calculate_scaled_enemy_stats(fallback_hp, fallback_damage, level_index)
@@ -1194,7 +902,9 @@ func _get_same_type_batch_limit(scene_path: String, profile: SpawnCombatProfile)
 	return base_limit
 
 func _is_combat_budget_ready() -> bool:
-	return _combat_budget_active and _planned_target_total_hp > 0
+	_init_spawn_budget_runtime()
+	_sync_spawn_budget_owner_state_to_runtime()
+	return bool(_spawn_budget_runtime.is_combat_budget_ready())
 
 func get_effective_time_out(base_time_out: int, level_index: int) -> int:
 	var safe_base: int = max(base_time_out, 1)

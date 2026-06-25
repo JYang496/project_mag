@@ -1,6 +1,8 @@
 extends Node
 
+const RESOURCE_CATALOG := preload("res://autoload/ResourceCatalog.gd")
 var save_data : SaveData
+var _weapon_id_by_scene_path: Dictionary = {}
 const WEAPON_RESOURCE_PATHS := [
 	"res://data/weapons/machine_gun.tres",
 	"res://data/weapons/charged_blaster.tres",
@@ -55,70 +57,31 @@ func prepare_deferred_runtime_data() -> void:
 
 # This function is used for locate weapon file location which stored in data/weapons.
 func load_weapon_data():
-	var dir := DirAccess.open("res://data/weapons/")
 	GlobalVariables.weapon_list = {}
-	if dir:
-		dir.list_dir_begin()
-		var file_name := dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				_register_weapon_resource(load("res://data/weapons/%s" % file_name), "res://data/weapons/%s" % file_name)
-			file_name = dir.get_next()
-		dir.list_dir_end()
-	if GlobalVariables.weapon_list.is_empty():
-		for path: String in WEAPON_RESOURCE_PATHS:
-			_register_weapon_resource(load(path), path)
+	_weapon_id_by_scene_path.clear()
+	for path in RESOURCE_CATALOG.collect_resource_paths("res://data/weapons/", ".tres", WEAPON_RESOURCE_PATHS):
+		_register_weapon_resource(load(path), path)
 	if GlobalVariables.weapon_list.is_empty():
 		push_warning("No weapon data loaded. Check exported resources and script paths in data/weapons/*.tres.")
 
 func load_mecha_data():
 	GlobalVariables.mecha_list = {}
-	var dir := DirAccess.open("res://data/mechas/")
-	if dir:
-		dir.list_dir_begin()
-		var mecha_name = dir.get_next()
-		while mecha_name != "":
-			if mecha_name.ends_with(".tres"):
-				_register_mecha_resource(load("res://data/mechas/%s" % mecha_name), "res://data/mechas/%s" % mecha_name)
-			mecha_name = dir.get_next()
-		dir.list_dir_end()
-	if GlobalVariables.mecha_list.is_empty():
-		for path: String in MECHA_RESOURCE_PATHS:
-			_register_mecha_resource(load(path), path)
+	for path in RESOURCE_CATALOG.collect_resource_paths("res://data/mechas/", ".tres", MECHA_RESOURCE_PATHS):
+		_register_mecha_resource(load(path), path)
 	if GlobalVariables.mecha_list.is_empty():
 		push_warning("No mecha data loaded. Check exported resources and script paths in data/mechas/*.tres.")
 
 func load_weapon_branch_data() -> void:
 	GlobalVariables.weapon_branch_list = {}
-	var dir := DirAccess.open("res://data/weapon_branches/")
-	if dir:
-		dir.list_dir_begin()
-		var file_name := dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				_register_weapon_branch_resource(load("res://data/weapon_branches/%s" % file_name), "res://data/weapon_branches/%s" % file_name)
-			file_name = dir.get_next()
-		dir.list_dir_end()
-	if GlobalVariables.weapon_branch_list.is_empty():
-		for path: String in WEAPON_BRANCH_RESOURCE_PATHS:
-			_register_weapon_branch_resource(load(path), path)
+	for path in RESOURCE_CATALOG.collect_resource_paths("res://data/weapon_branches/", ".tres", WEAPON_BRANCH_RESOURCE_PATHS):
+		_register_weapon_branch_resource(load(path), path)
 	if GlobalVariables.weapon_branch_list.is_empty():
 		push_warning("No weapon branch data loaded. Check resources in data/weapon_branches/*.tres.")
 
 func load_weapon_passive_branch_data() -> void:
 	GlobalVariables.weapon_passive_branch_list = {}
-	var dir := DirAccess.open("res://data/weapon_passives/")
-	if dir:
-		dir.list_dir_begin()
-		var file_name := dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				_register_weapon_passive_branch_resource(load("res://data/weapon_passives/%s" % file_name), "res://data/weapon_passives/%s" % file_name)
-			file_name = dir.get_next()
-		dir.list_dir_end()
-	if GlobalVariables.weapon_passive_branch_list.is_empty():
-		for path: String in WEAPON_PASSIVE_BRANCH_RESOURCE_PATHS:
-			_register_weapon_passive_branch_resource(load(path), path)
+	for path in RESOURCE_CATALOG.collect_resource_paths("res://data/weapon_passives/", ".tres", WEAPON_PASSIVE_BRANCH_RESOURCE_PATHS):
+		_register_weapon_passive_branch_resource(load(path), path)
 
 func load_economy_data() -> void:
 	GlobalVariables.economy_data = null
@@ -197,13 +160,8 @@ func get_weapon_id_from_scene_path(scene_path: String) -> String:
 		return ""
 	if GlobalVariables.weapon_list.is_empty():
 		load_weapon_data()
-	for key_variant in GlobalVariables.weapon_list.keys():
-		var weapon_id := str(key_variant)
-		var weapon_def := read_weapon_data(weapon_id) as WeaponDefinition
-		if weapon_def == null:
-			continue
-		if weapon_def.scene_path == normalized_path:
-			return weapon_id
+	if _weapon_id_by_scene_path.has(normalized_path):
+		return str(_weapon_id_by_scene_path[normalized_path])
 	return ""
 
 func get_weapon_id_from_instance(weapon: Weapon) -> String:
@@ -311,6 +269,9 @@ func _register_weapon_resource(resource: Resource, source_path: String) -> void:
 		push_warning("Weapon resource has empty weapon_id: %s" % source_path)
 		return
 	GlobalVariables.weapon_list[weapon_id] = resource
+	var scene_path := str(resource.get("scene_path")).strip_edges()
+	if scene_path != "":
+		_weapon_id_by_scene_path[scene_path] = weapon_id
 
 func _register_mecha_resource(resource: Resource, source_path: String) -> void:
 	if resource == null:

@@ -66,13 +66,32 @@ func run_battle_end_auto_collect() -> void:
 func attract_all_coins() -> void:
 	if _player == null or not _player.collect_area:
 		return
-	for collectable in _player.get_tree().get_nodes_in_group("collectables"):
+	for collectable in _get_collectable_candidates():
 		if not is_instance_valid(collectable):
 			continue
 		if collectable is Coin:
 			collectable.target = _player.collect_area
 		elif collectable is Chip:
 			collectable.target = _player
+
+func _get_collectable_candidates() -> Array[Node2D]:
+	var output: Array[Node2D] = []
+	if _player == null or not _player.is_inside_tree():
+		return output
+	var registry: Node = _player.get_node_or_null("/root/CollectableRegistry")
+	if registry != null and registry.has_method("get_collectables"):
+		var registered_collectables: Variant = registry.call("get_collectables")
+		if registered_collectables is Array:
+			for collectable_ref in registered_collectables:
+				var collectable := collectable_ref as Node2D
+				if collectable != null and is_instance_valid(collectable):
+					output.append(collectable)
+			return output
+	for collectable_ref in _player.get_tree().get_nodes_in_group("collectables"):
+		var collectable := collectable_ref as Node2D
+		if collectable != null and is_instance_valid(collectable):
+			output.append(collectable)
+	return output
 
 func expand_collect_ranges_for_auto_loot() -> void:
 	var grab_circle := _player.grab_radius.shape as CircleShape2D

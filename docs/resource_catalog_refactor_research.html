@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>资源加载与目录扫描优化研究</title>
+  <style>
+    body { margin: 0; background: #f7f8fa; color: #1f2933; font-family: "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif; line-height: 1.65; }
+    main { max-width: 1120px; margin: 0 auto; padding: 30px 22px 54px; }
+    h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.25; }
+    h2 { margin: 30px 0 10px; padding-left: 10px; border-left: 4px solid #0f766e; font-size: 21px; }
+    code { background: #eef2ff; color: #172554; border-radius: 4px; padding: 1px 5px; font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #d9dee7; margin: 12px 0 18px; }
+    th, td { border-bottom: 1px solid #d9dee7; padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: #eef3f7; white-space: nowrap; }
+    tr:last-child td { border-bottom: none; }
+    .meta { color: #667085; font-size: 14px; }
+    .note { background: #e6f4f1; border: 1px solid #b7ddd6; border-radius: 8px; padding: 12px 14px; margin: 14px 0; }
+    ul { margin: 8px 0 12px 24px; padding: 0; }
+    li { margin: 5px 0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>资源加载与目录扫描优化研究</h1>
+  <div class="meta">生成日期：2026-06-25；范围：DataHandler、CellEffectRuntime、CellTaskModuleRuntime、RunRouteManager</div>
+
+  <section>
+    <h2>结论</h2>
+    <div class="note">四处 autoload 的重复点主要集中在 <code>DirAccess.open()</code>、后缀过滤、排序、fallback 路径处理。本次新增 <code>ResourceCatalog</code>，统一输出稳定排序后的资源路径；业务侧仍保留各自的类型校验、id 校验和注册逻辑。</div>
+  </section>
+
+  <section>
+    <h2>本次改造</h2>
+    <ul>
+      <li>新增 <code>autoload/ResourceCatalog.gd</code>，提供 <code>collect_resource_paths(directory, extension, fallback_paths, warn_missing_directory, context)</code>。</li>
+      <li><code>DataHandler.gd</code> 的 weapon、mecha、weapon branch、weapon passive 加载改为统一路径收集。</li>
+      <li><code>DataHandler.gd</code> 新增 <code>_weapon_id_by_scene_path</code>，加载武器资源时建立 scene_path 到 weapon_id 的反向索引。</li>
+      <li><code>CellEffectRuntime.gd</code> 和 <code>CellTaskModuleRuntime.gd</code> 改为通过 <code>ResourceCatalog</code> 稳定列出定义资源。</li>
+      <li><code>RunRouteManager.gd</code> 移除手写排序目录扫描，改用同一工具，并保留原有 fallback route 行为。</li>
+      <li>新增 <code>World/Test/run_resource_catalog_test_headless.gd</code>，验证路径排序、定义加载和武器反向索引。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>设计边界</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>问题</th>
+          <th>处理方式</th>
+          <th>原因</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>是否让 ResourceCatalog 直接按 id 注册资源</td>
+          <td>未做</td>
+          <td>各业务资源的 id 字段、类型、分组结构不同。路径收集可通用，业务校验保持在原 autoload 内更清晰。</td>
+        </tr>
+        <tr>
+          <td>是否删除 fallback</td>
+          <td>保留</td>
+          <td>fallback 对导出包和历史资源路径有保护作用，统一工具只改变路径来源，不改变容错策略。</td>
+        </tr>
+        <tr>
+          <td>是否依赖 <code>class_name ResourceCatalog</code></td>
+          <td>调用方使用显式 <code>preload()</code></td>
+          <td>这些脚本都是早期 autoload，显式 preload 避免全局类注册顺序问题。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>验证结果</h2>
+    <ul>
+      <li><code>Godot --headless --path . --quit</code>：通过。</li>
+      <li><code>World/Test/run_resource_catalog_test_headless.gd</code>：通过。</li>
+      <li><code>World/Test/run_weapon_delivery_type_test_headless.gd</code>：通过，验证 15 个武器分类与模块。该既有测试退出时仍有资源泄漏警告，属于原测试清理问题。</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

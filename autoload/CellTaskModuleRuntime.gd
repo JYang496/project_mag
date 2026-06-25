@@ -5,10 +5,13 @@ signal deployment_changed
 signal active_tasks_changed
 signal completed_tasks_changed
 
+const RESOURCE_CATALOG := preload("res://autoload/ResourceCatalog.gd")
 const TASK_MODULE_DIRECTORY_PATH := "res://data/task_modules/"
 const INVENTORY_LIMIT := 2
 const ACTIVE_LIMIT := 2
 const REWARD_KIND_TASK_MODULE: StringName = &"task_module"
+const STARTING_TASK_CELL_ID := 5
+const STARTING_CELL_EFFECT_COUNT := 2
 
 var _definitions_by_id: Dictionary = {}
 var _inventory: PackedStringArray = PackedStringArray()
@@ -26,20 +29,10 @@ func _ready() -> void:
 
 func load_definitions() -> void:
 	_definitions_by_id.clear()
-	var dir := DirAccess.open(TASK_MODULE_DIRECTORY_PATH)
-	if dir == null:
-		push_warning("CellTaskModuleRuntime: missing task module directory: %s" % TASK_MODULE_DIRECTORY_PATH)
-		return
-	dir.list_dir_begin()
-	var file_name := dir.get_next()
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".tres"):
-			var path := TASK_MODULE_DIRECTORY_PATH + file_name
-			var definition := load(path) as TaskModuleDefinition
-			if definition != null and definition.module_id.strip_edges() != "":
-				_definitions_by_id[definition.module_id.strip_edges()] = definition
-		file_name = dir.get_next()
-	dir.list_dir_end()
+	for path in RESOURCE_CATALOG.collect_resource_paths(TASK_MODULE_DIRECTORY_PATH, ".tres", [], true, "CellTaskModuleRuntime"):
+		var definition := load(path) as TaskModuleDefinition
+		if definition != null and definition.module_id.strip_edges() != "":
+			_definitions_by_id[definition.module_id.strip_edges()] = definition
 
 func get_definition(module_id: String) -> TaskModuleDefinition:
 	return _definitions_by_id.get(module_id.strip_edges(), null) as TaskModuleDefinition
@@ -88,6 +81,36 @@ func grant_module(module_id: String) -> Dictionary:
 	inventory_changed.emit()
 	return {"ok": true, "reason": ""}
 
+func grant_random_unlocked_module(level_index: int = 0) -> String:
+	var reward := build_reward_option(level_index)
+	if reward == null or reward.task_module_id.strip_edges() == "":
+		push_warning("CellTaskModuleRuntime: no unlocked task module available to grant.")
+		return ""
+	var module_id := reward.task_module_id.strip_edges()
+	var result := grant_module(module_id)
+	if not bool(result.get("ok", false)):
+		push_warning("CellTaskModuleRuntime: failed to grant random task module '%s': %s" % [module_id, str(result.get("reason", ""))])
+		return ""
+	return module_id
+
+func grant_starting_cell_loadout(level_index: int = 0) -> void:
+	CellEffectRuntime.reset_runtime_state()
+	reset_runtime_state()
+
+	var first_effect_id := ""
+	for index in range(STARTING_CELL_EFFECT_COUNT):
+		var effect_id := CellEffectRuntime.grant_random_unlocked_effect(level_index, 1)
+		if index == 0:
+			first_effect_id = effect_id
+
+	if first_effect_id.strip_edges() != "":
+		CellEffectRuntime.set_pending_effect(STARTING_TASK_CELL_ID, first_effect_id)
+
+	var deployed_module_id := grant_random_unlocked_module(level_index)
+	if deployed_module_id.strip_edges() != "":
+		deploy_inventory_module(0, STARTING_TASK_CELL_ID, null)
+	grant_random_unlocked_module(level_index)
+
 func replace_inventory_module(index: int, module_id: String) -> Dictionary:
 	var definition := get_definition(module_id)
 	if definition == null:
@@ -134,17 +157,41 @@ func deploy_inventory_module(index: int, cell_id: int, board: BoardCellGenerator
 	deployment_changed.emit()
 	return {"ok": true, "reason": ""}
 
+func can_replace_deployment_with_inventory_module(index: int, cell_id: int, board: BoardCellGenerator = null) -> Dictionary:
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return {"ok": false, "reason": "Task modules can only be deployed during prepare."}
+	if index < 0 or index >= _inventory.size():
+		return {"ok": false, "reason": "Invalid task module slot."}
+	if cell_id <= 0:
+		return {"ok": false, "reason": "Invalid cell."}
+	var key := str(cell_id)
+	if not _deployments.has(key):
+		return {"ok": false, "reason": "No deployed task on this cell."}
+	if board != null and not board.is_cell_active_by_id(cell_id):
+		return {"ok": false, "reason": "Task modules can only target active cells."}
+	var definition := get_definition(_inventory[index])
+	if definition == null:
+		return {"ok": false, "reason": "Missing task module."}
+	return {"ok": true, "reason": ""}
+
+func replace_deployment_with_inventory_module(index: int, cell_id: int, board: BoardCellGenerator = null) -> Dictionary:
+	var validation := can_replace_deployment_with_inventory_module(index, cell_id, board)
+	if not bool(validation.get("ok", false)):
+		return validation
+	var key := str(cell_id)
+	var previous_module_id := str(_deployments[key])
+	var module_id := str(_inventory[index])
+	_inventory.remove_at(index)
+	_deployments[key] = module_id
+	inventory_changed.emit()
+	deployment_changed.emit()
+	return {"ok": true, "reason": "", "replaced_module_id": previous_module_id}
+
 func cancel_deployment(cell_id: int) -> Dictionary:
 	var key := str(cell_id)
 	if not _deployments.has(key):
 		return {"ok": false, "reason": "No deployed task on this cell."}
-	if _inventory.size() >= INVENTORY_LIMIT:
-		return {"ok": false, "reason": "Task module inventory is full."}
-	_inventory.append(str(_deployments[key]))
-	_deployments.erase(key)
-	inventory_changed.emit()
-	deployment_changed.emit()
-	return {"ok": true, "reason": ""}
+	return {"ok": false, "reason": "Deployed task modules cannot be removed."}
 
 func clear_unassigned_modules() -> int:
 	var count := _inventory.size()

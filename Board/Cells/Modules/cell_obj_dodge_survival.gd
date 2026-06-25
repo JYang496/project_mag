@@ -186,16 +186,36 @@ func _resolve_strike_damage(strike_point: Vector2) -> void:
 			player_attack.damage_type = aoe_damage_type
 			player.call("damaged", player_attack)
 
-	for enemy_node in get_tree().get_nodes_in_group("enemies"):
+	for enemy_node in _get_enemy_candidates_in_radius(strike_point, aoe_radius):
 		var enemy := enemy_node as BaseEnemy
 		if enemy == null or not is_instance_valid(enemy) or enemy.is_dead:
-			continue
-		if enemy.global_position.distance_squared_to(strike_point) > radius_sq:
 			continue
 		var attack := Attack.new()
 		attack.damage = max(aoe_damage, 0)
 		attack.damage_type = aoe_damage_type
 		enemy.damaged(attack)
+
+func _get_enemy_candidates_in_radius(origin: Vector2, radius: float) -> Array[Node2D]:
+	var output: Array[Node2D] = []
+	var tree := get_tree()
+	if tree == null:
+		return output
+	var registry: Node = tree.root.get_node_or_null("EnemyRegistry")
+	if registry != null and registry.has_method("get_enemies_in_radius"):
+		var registered_enemies: Variant = registry.call("get_enemies_in_radius", origin, radius)
+		if registered_enemies is Array:
+			for enemy_ref in registered_enemies:
+				var enemy := enemy_ref as Node2D
+				if enemy != null and is_instance_valid(enemy):
+					output.append(enemy)
+			return output
+	var radius_sq := maxf(radius, 1.0)
+	radius_sq *= radius_sq
+	for enemy_ref in tree.get_nodes_in_group("enemies"):
+		var enemy := enemy_ref as Node2D
+		if enemy != null and is_instance_valid(enemy) and enemy.global_position.distance_squared_to(origin) <= radius_sq:
+			output.append(enemy)
+	return output
 
 func _spawn_impact_flash(strike_point: Vector2) -> void:
 	var flash := Node2D.new()

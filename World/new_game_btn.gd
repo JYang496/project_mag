@@ -19,8 +19,7 @@ func _on_pressed() -> void:
 	PlayerData.reset_runtime_state()
 	InventoryData.reset_runtime_state()
 	TaskRewardManager.reset_runtime_state(false)
-	CellEffectRuntime.reset_runtime_state()
-	CellEffectRuntime.grant_random_unlocked_effect(0, 1)
+	CellTaskModuleRuntime.grant_starting_cell_loadout(0)
 	PlayerData.select_mecha_id = selected_mecha_id
 	PlayerData.set_hp_safety_for_testing(keep_hp_safety)
 	DataHandler.save_data.last_mecha_selected = str(PlayerData.select_mecha_id)

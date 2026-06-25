@@ -135,6 +135,97 @@ func _run() -> void:
 	if ui.is_rest_area_zone_navigation_allowed():
 		_fail("task management secondary panel should lock rest-area zone switching")
 		return
+	var task_panel := ui.cell_management_panel.get_node_or_null("TaskManagementPanel") as Panel
+	if task_panel == null:
+		_fail("task management panel root is missing")
+		return
+	CellTaskModuleRuntime.reset_runtime_state()
+	var task_grant_result: Dictionary = CellTaskModuleRuntime.grant_module("task_kill_common")
+	if not bool(task_grant_result.get("ok", false)):
+		_fail("failed to grant task module for panel size test")
+		return
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var task_inventory_list := ui.cell_management_panel.find_child("TaskInventoryList", true, false) as VBoxContainer
+	if task_inventory_list == null or task_inventory_list.get_child_count() <= 0:
+		_fail("task management inventory list missing module button for panel size test")
+		return
+	var task_button := task_inventory_list.get_child(0) as Button
+	if task_button == null:
+		_fail("task management inventory entry is not a button")
+		return
+	task_button.emit_signal("pressed")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if task_panel.size.y > 600.0:
+		_fail("task management panel grew beyond its fixed height after selecting a task module")
+		return
+	ui.cell_management_panel.call("clear_selection_if_any")
+	await get_tree().process_frame
+	var deploy_result: Dictionary = CellTaskModuleRuntime.deploy_inventory_module(0, 5, board)
+	if not bool(deploy_result.get("ok", false)):
+		_fail("failed to deploy task module for panel size test")
+		return
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if task_panel.size.y > 600.0:
+		_fail("task management panel grew beyond its fixed height after deployment")
+		return
+	var deployed_cell_button: Button = null
+	for child in ui.cell_management_panel.find_children("*", "Button", true, false):
+		var button := child as Button
+		for nested in button.find_children("*", "Label", true, false):
+			var label := nested as Label
+			if label != null and label.text == "Cell 5":
+				deployed_cell_button = button
+				break
+		if deployed_cell_button != null:
+			break
+	if deployed_cell_button == null:
+		_fail("task management could not find deployed cell 5 preview button")
+		return
+	ui.cell_management_panel.call("_on_cell_pressed", 5)
+	await get_tree().process_frame
+	var deployments := CellTaskModuleRuntime.get_deployment_snapshot()
+	if not deployments.has("5"):
+		_fail("clicking a deployed task cell without inventory selection should not cancel deployment")
+		return
+	if deployed_cell_button.toggle_mode or deployed_cell_button.button_pressed:
+		_fail("clicking a cell without inventory selection should not change button pressed UI state")
+		return
+	task_grant_result = CellTaskModuleRuntime.grant_module("task_hold_common")
+	if not bool(task_grant_result.get("ok", false)):
+		_fail("failed to grant replacement task module for overwrite test")
+		return
+	await get_tree().process_frame
+	await get_tree().process_frame
+	task_inventory_list = ui.cell_management_panel.find_child("TaskInventoryList", true, false) as VBoxContainer
+	if task_inventory_list == null or task_inventory_list.get_child_count() <= 0:
+		_fail("task management inventory list missing replacement module button")
+		return
+	task_button = task_inventory_list.get_child(0) as Button
+	if task_button == null:
+		_fail("task management replacement inventory entry is not a button")
+		return
+	task_button.emit_signal("pressed")
+	await get_tree().process_frame
+	ui.cell_management_panel.call("_on_cell_pressed", 5)
+	await get_tree().process_frame
+	var overwrite_dialog := ui.cell_management_panel.find_child("TaskOverwriteConfirmDialog", true, false) as ConfirmationDialog
+	if overwrite_dialog == null or not overwrite_dialog.visible:
+		_fail("task management overwrite should request confirmation before replacing a deployed task")
+		return
+	deployments = CellTaskModuleRuntime.get_deployment_snapshot()
+	if str(deployments.get("5", "")) != "task_kill_common":
+		_fail("task management overwrite replaced deployment before confirmation")
+		return
+	overwrite_dialog.emit_signal("confirmed")
+	await get_tree().process_frame
+	deployments = CellTaskModuleRuntime.get_deployment_snapshot()
+	if str(deployments.get("5", "")) != "task_hold_common":
+		_fail("task management overwrite confirmation did not replace deployed task")
+		return
+	CellTaskModuleRuntime.reset_runtime_state()
 	rest_area.menu_open = true
 	rest_area.selected_zone_id = 6
 	rest_area._handle_right_click()
@@ -144,6 +235,19 @@ func _run() -> void:
 		return
 	LocalizationManager.set_locale("en", false)
 	await get_tree().process_frame
+
+	PhaseManager.phase = PhaseManager.BATTLE
+	TaskRewardManager.notify_objective_completed("5")
+	PhaseManager.phase = PhaseManager.PREPARE
+	await get_tree().process_frame
+	if rest_area.is_processing_input():
+		_fail("rest area input stayed enabled while objective reward was pending")
+		return
+	TaskRewardManager.reset_runtime_state()
+	await get_tree().process_frame
+	if not rest_area.is_processing_input():
+		_fail("rest area input did not recover after objective reward was cleared")
+		return
 
 	ui.rest_area_ui_controller.open_menu(&"purchase")
 	rest_area.menu_open = true

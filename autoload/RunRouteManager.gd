@@ -1,5 +1,6 @@
 extends Node
 
+const RESOURCE_CATALOG := preload("res://autoload/ResourceCatalog.gd")
 const ROUTE_DIRECTORY_PATH := "res://data/routes/"
 const ROUTE_RESOURCE_PATHS := [
 	"res://data/routes/normal_route.tres",
@@ -19,22 +20,8 @@ func reset_runtime_state() -> void:
 
 func reload_route_definitions() -> void:
 	_routes_by_id.clear()
-	var dir := DirAccess.open(ROUTE_DIRECTORY_PATH)
-	if dir:
-		var route_files: Array[String] = []
-		dir.list_dir_begin()
-		var file_name := dir.get_next()
-		while file_name != "":
-			if not dir.current_is_dir() and file_name.to_lower().ends_with(".tres"):
-				route_files.append(file_name)
-			file_name = dir.get_next()
-		dir.list_dir_end()
-		route_files.sort()
-		for route_file in route_files:
-			_register_route_resource(load(ROUTE_DIRECTORY_PATH + route_file), ROUTE_DIRECTORY_PATH + route_file)
-	if _routes_by_id.is_empty():
-		for fallback_path: String in ROUTE_RESOURCE_PATHS:
-			_register_route_resource(load(fallback_path), fallback_path)
+	for path in RESOURCE_CATALOG.collect_resource_paths(ROUTE_DIRECTORY_PATH, ".tres", ROUTE_RESOURCE_PATHS):
+		_register_route_resource(load(path), path)
 	if _routes_by_id.is_empty():
 		var fallback := RunRouteDefinition.new()
 		fallback.route_id = DEFAULT_ROUTE_ID

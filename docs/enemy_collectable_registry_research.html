@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>敌人/收集物全局查询优化研究</title>
+  <style>
+    body {
+      margin: 0;
+      background: #f7f8fa;
+      color: #1f2933;
+      font-family: "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif;
+      line-height: 1.65;
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 30px 22px 54px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.25;
+    }
+    h2 {
+      margin: 30px 0 10px;
+      padding-left: 10px;
+      border-left: 4px solid #0f766e;
+      font-size: 21px;
+    }
+    h3 {
+      margin: 20px 0 8px;
+      font-size: 17px;
+    }
+    code {
+      background: #eef2ff;
+      color: #172554;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.92em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid #d9dee7;
+      margin: 12px 0 18px;
+    }
+    th, td {
+      border-bottom: 1px solid #d9dee7;
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #eef3f7;
+      white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: none; }
+    .meta { color: #667085; font-size: 14px; }
+    .note {
+      background: #e6f4f1;
+      border: 1px solid #b7ddd6;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 14px 0;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .done { color: #05603a; background: #d1fadf; }
+    .fallback { color: #7a2e0e; background: #fffaeb; }
+    .keep { color: #344054; background: #f2f4f7; }
+    ul, ol { margin: 8px 0 12px 24px; padding: 0; }
+    li { margin: 5px 0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>敌人/收集物全局查询优化研究</h1>
+  <div class="meta">生成日期：2026-06-25；项目：Godot / GDScript；范围：敌人查询、收集物查询、战斗结束金币统计</div>
+
+  <section>
+    <h2>研究结论</h2>
+    <div class="note">敌人查询侧已有 <code>EnemyRegistry</code> 基础设施，敌人通过 <code>BaseEnemy._enter_tree()</code> / <code>_exit_tree()</code> 自动注册注销。本次将剩余热路径之一的任务 AoE 伤害改为 registry 优先。收集物侧此前没有 registry，本次新增 <code>CollectableRegistry</code>，并接入 Coin/Chip、玩家自动吸附、EnemySpawner 剩余金币统计。</div>
+  </section>
+
+  <section>
+    <h2>查询分类</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>类别</th>
+          <th>代表位置</th>
+          <th>判断</th>
+          <th>处理</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>攻击/范围效果找敌人</td>
+          <td><code>wmod_runtime_utils.gd</code>、<code>trail_area_effect.gd</code>、<code>cell_obj_dodge_survival.gd</code></td>
+          <td>战斗热路径，敌人数量增加时 group 扫描成本明显。</td>
+          <td><span class="tag done">已处理</span> 现有工具类和 trail 已 registry 优先；本次补齐 dodge objective。</td>
+        </tr>
+        <tr>
+          <td>棋盘/刷怪清理敌人</td>
+          <td><code>board_cell_generator.gd</code>、<code>enemy_spawner.gd</code></td>
+          <td>非每帧，但场景切换/战斗结束时会触发。</td>
+          <td><span class="tag fallback">已有 fallback</span> 两处已经封装为 registry 优先、group fallback。</td>
+        </tr>
+        <tr>
+          <td>敌人移动避让</td>
+          <td><code>enemy_movement_runtime.gd</code></td>
+          <td>运行时路径，半径查询更适合 registry 或空间网格。</td>
+          <td><span class="tag fallback">已有 fallback</span> 当前 registry 优先；后续可加空间网格。</td>
+        </tr>
+        <tr>
+          <td>玩家自动吸附收集物</td>
+          <td><code>player_loot_system.gd</code></td>
+          <td>战斗结束短时间循环调用，原来每次扫所有 collectables。</td>
+          <td><span class="tag done">已处理</span> 改为 <code>CollectableRegistry.get_collectables()</code> 优先。</td>
+        </tr>
+        <tr>
+          <td>剩余金币统计</td>
+          <td><code>enemy_spawner.gd</code></td>
+          <td>用于 KillGoldSummary，原来 value/count 各扫一次 collectables。</td>
+          <td><span class="tag done">已处理</span> 改为 <code>CollectableRegistry.get_coins()</code> 优先。</td>
+        </tr>
+        <tr>
+          <td>测试对照/registry 初始化</td>
+          <td><code>EnemyRegistry.gd</code>、<code>CollectableRegistry.gd</code>、benchmark/test 脚本</td>
+          <td>需要保留 group 扫描作为重建和基准对照。</td>
+          <td><span class="tag keep">保留</span> 不属于待迁移热路径。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>本次改造</h2>
+    <ul>
+      <li>新增 <code>autoload/CollectableRegistry.gd</code>，提供 <code>register_collectable()</code>、<code>unregister_collectable()</code>、<code>get_collectables()</code>、<code>get_coins()</code>。</li>
+      <li>在 <code>project.godot</code> 中注册 <code>CollectableRegistry</code> autoload。</li>
+      <li><code>Objects/loots/coin.gd</code> 与 <code>Objects/loots/chip.gd</code> 在进入/退出树时自动登记注销。</li>
+      <li><code>Player/Mechas/scripts/player_loot_system.gd</code> 的 <code>attract_all_coins()</code> 改为 registry 优先，保留 group fallback。</li>
+      <li><code>Utility/enemy_spawner.gd</code> 的剩余金币 value/count 统计改为 registry 优先，保留 group fallback。</li>
+      <li><code>Board/Cells/Modules/cell_obj_dodge_survival.gd</code> 的敌人 AoE 命中候选改为 <code>EnemyRegistry.get_enemies_in_radius()</code> 优先。</li>
+      <li>新增 <code>World/Test/run_collectable_registry_test_headless.gd</code>，覆盖 Coin/Chip 注册、Coin 查询和释放清理。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>剩余 group 查询说明</h2>
+    <p>改造后仍能搜索到少量 <code>get_nodes_in_group("enemies")</code> 和 <code>get_nodes_in_group("collectables")</code>。这些主要分为三类：</p>
+    <ul>
+      <li>registry 初始化或 fallback：例如 <code>EnemyRegistry._rebuild_from_group()</code>、<code>CollectableRegistry._rebuild_from_group()</code>。</li>
+      <li>已有 registry 优先封装的 fallback：例如 <code>wmod_runtime_utils.gd</code>、<code>trail_area_effect.gd</code>、<code>enemy_movement_runtime.gd</code>、<code>enemy_spawner.gd</code>。</li>
+      <li>测试和 benchmark 对照：例如 <code>run_enemy_registry_many_enemy_benchmark_headless.gd</code>。</li>
+    </ul>
+    <p>这些不建议机械删除，否则会降低无 autoload、测试夹具或 registry 重建场景下的鲁棒性。</p>
+  </section>
+
+  <section>
+    <h2>后续建议</h2>
+    <ol>
+      <li>如果敌人半径查询继续增多，在 <code>EnemyRegistry</code> 内部增加可选空间网格索引，而不是让每个调用点自己实现网格。</li>
+      <li><code>CollectableRegistry</code> 可继续扩展 <code>get_chips()</code>、<code>get_collectables_in_radius()</code>，用于更细粒度的自动拾取和清理。</li>
+      <li>若 KillGoldSummary 只关心金币，可以在 Coin collect/free 时维护未收集金币总值，进一步把统计从 O(n) 降为 O(1)。当前 registry 方案已经避免了从 SceneTree group 全局扫描。</li>
+      <li>将 registry 类 fallback 查询保留为兼容层，避免 headless 测试、动态夹具或 autoload 初始化顺序导致空结果。</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>验证结果</h2>
+    <ul>
+      <li><code>Godot --headless --path . --quit</code>：通过。</li>
+      <li><code>World/Test/run_enemy_registry_test_headless.gd</code>：通过。</li>
+      <li><code>World/Test/run_collectable_registry_test_headless.gd</code>：通过。</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

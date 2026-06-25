@@ -11,6 +11,16 @@ class_name Chip
 var target = null
 var speed = 0
 
+func _enter_tree() -> void:
+	var registry: Node = get_node_or_null("/root/CollectableRegistry")
+	if registry != null and registry.has_method("register_collectable"):
+		registry.call("register_collectable", self)
+
+func _exit_tree() -> void:
+	var registry: Node = get_node_or_null("/root/CollectableRegistry")
+	if registry != null and registry.has_method("unregister_collectable"):
+		registry.call("unregister_collectable", self)
+
 func _ready():
 	if spawn_ready:
 		collision.call_deferred("set","disabled",false)

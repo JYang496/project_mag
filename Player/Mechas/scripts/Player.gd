@@ -2,6 +2,9 @@ extends CharacterBody2D
 class_name Player
 
 const PLAYER_ASSIST_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_assist_system.gd")
+const PLAYER_ACTIVE_SKILL_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_active_skill_runtime.gd")
+const PLAYER_WEAPON_INVENTORY_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_inventory_runtime.gd")
+const PLAYER_WEAPON_PASSIVE_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_passive_runtime.gd")
 
 var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
@@ -68,7 +71,6 @@ var _hurtbox_shape_base_cached: bool = false
 var _incoming_damage_pipeline: DamagePipeline
 var _incoming_damage_profile: DamageProfile
 var _assist_system: RefCounted
-var _passive_time_tick_accum: float = 0.0
 enum MechaVisualState {
 	IDLE,
 	MOVING
@@ -110,12 +112,8 @@ var _last_visual_position: Vector2 = Vector2.ZERO
 @export var player_energy_regen_per_sec: float = 8.0
 @export var debug_weapon_passive_trigger_prints: bool = false
 @export var debug_weapon_passive_trigger_event_prints: bool = false
-var _player_energy: float = 100.0
-var _last_weapon_skill_fail_reason: String = ""
-var _last_player_skill_fail_reason: String = ""
 var _last_phase: String = ""
 var _board_generator_ref: Node = null
-var _reload_block_hint_ready_at_msec: int = 0
 var _last_move_input_dir: Vector2 = Vector2.ZERO
 var _last_move_input_msec: int = -1
 var _last_face_horizontal_sign: int = -1
@@ -124,14 +122,11 @@ var _last_move_anim_is_top: bool = false
 var _suppress_attack_until_released: bool = false
 const ELITE_HIT_SLOW_SOURCE_ID: StringName = &"elite_hit_stagger"
 var _elite_hit_slow_until_msec: int = 0
-var _debug_passive_connected_weapon_ids: Dictionary = {}
 var _weapon_list_dirty := true
 var _weapon_roles_dirty := true
 var _weapon_orbit_states_dirty := true
 var _weapon_orbit_force_reset := true
 var _tracked_weapon_exit_ids: Dictionary = {}
-var _global_weapon_passive_effects: Dictionary = {}
-var _global_weapon_passive_applied: Dictionary = {}
 var _heat_prepared_until_msec: int = 0
 var _heat_expansion_until_msec: int = 0
 var _heat_expansion_max_mul: float = 1.0
@@ -140,6 +135,8 @@ var _plasma_lance_heat_feedback_threshold: float = 0.7
 var _plasma_lance_heat_feedback_low_mul: float = 1.2
 var _plasma_lance_heat_feedback_high_mul: float = 0.8
 var PlayerData = null
+var _weapon_inventory_runtime: RefCounted
+var _weapon_passive_runtime: RefCounted
 var _status_hint_manager
 var _status_modifier_system
 var _elemental_effect_system
@@ -148,6 +145,7 @@ var _camera_system: PlayerCameraSystem
 var _shared_heat_system: PlayerSharedHeatSystem
 var _loot_system: PlayerLootSystem
 var _damage_reaction_system: PlayerDamageReactionSystem
+var _active_skill_runtime: RefCounted
 var _suppress_status_hints: bool = false
 var _systems_strict_ready: bool = false
 # Signals
@@ -156,18 +154,42 @@ signal player_active_skill()
 signal weapon_active_skill()
 signal coin_collected()
 
+func _ensure_weapon_inventory_runtime() -> void:
+	if _weapon_inventory_runtime == null:
+		_weapon_inventory_runtime = PLAYER_WEAPON_INVENTORY_RUNTIME_SCRIPT.new()
+	if _weapon_inventory_runtime != null:
+		_weapon_inventory_runtime.setup(self)
+
+func _ensure_weapon_passive_runtime() -> void:
+	if _weapon_passive_runtime == null:
+		_weapon_passive_runtime = PLAYER_WEAPON_PASSIVE_RUNTIME_SCRIPT.new()
+	if _weapon_passive_runtime != null:
+		_weapon_passive_runtime.setup(self)
+
+func _ensure_active_skill_runtime() -> void:
+	if _active_skill_runtime != null:
+		_active_skill_runtime.setup(self)
+		return
+	_active_skill_runtime = PLAYER_ACTIVE_SKILL_RUNTIME_SCRIPT.new()
+	if _active_skill_runtime != null:
+		_active_skill_runtime.setup(self)
+
 func _ready():
 	PlayerData = get_node_or_null("/root/PlayerData")
 	if PlayerData == null:
 		push_error("PlayerData autoload missing.")
 		return
 	PlayerData.player = self
+	_ensure_weapon_inventory_runtime()
+	_ensure_weapon_passive_runtime()
 	_connect_weapon_structure_signals()
 	_incoming_damage_pipeline = DamagePipeline.new() as DamagePipeline
 	_setup_incoming_damage_profile()
+	_ensure_active_skill_runtime()
 	_setup_default_active_skill()
 	_ensure_input_actions()
-	_player_energy = player_max_energy
+	if _active_skill_runtime != null:
+		_active_skill_runtime.reset_energy_to_max()
 	mecha_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_resize_mecha_sprite()
 	_setup_mecha_move_sprite()
@@ -234,157 +256,38 @@ func _physics_process(delta):
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.echo:
 		return
-	if event.is_action_pressed("SKILL_PLAYER"):
-		_try_cast_player_active_skill()
-	if event.is_action_pressed("SKILL_WEAPON"):
-		_try_reload_main_weapon()
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime != null:
+		_active_skill_runtime.process_input_event(event)
 
 func _setup_default_active_skill() -> void:
-	if active_skill_holder == null:
-		push_warning("ActiveSkill node is missing, default active skill will not be loaded.")
-		return
-	if active_skill_holder.get_child_count() > 0:
-		return
-	var scene_path := default_active_skill_path
-	if not scene_path.ends_with(".tscn"):
-		scene_path += ".tscn"
-	var scene_resource := load(scene_path)
-	var skill_scene := scene_resource as PackedScene
-	if skill_scene == null:
-		push_warning("Failed to load default active skill scene: %s" % scene_path)
-		return
-	var skill_instance := skill_scene.instantiate()
-	if not (skill_instance is Skills):
-		push_warning("Default active skill must inherit Skills: %s" % scene_path)
-		return
-	active_skill_holder.add_child(skill_instance)
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime != null:
+		_active_skill_runtime.setup_default_active_skill()
 
 func create_weapon(item_id, level := 1, auto_fuse := false):
-	# Create a new weapon when assign string, otherwise node.
-	var weapon: Weapon
-	var incoming_weapon_id := ""
-	if item_id is String:
-		incoming_weapon_id = str(item_id).strip_edges()
-		if auto_fuse or _find_equipped_weapon_by_id(incoming_weapon_id) != null:
-			var auto_fuse_result := try_auto_fuse_weapon_obtain(incoming_weapon_id)
-			var result_type := str(auto_fuse_result.get("result", "not_applicable"))
-			if result_type == "fused" or result_type == "converted_to_gold":
-				return
-		var weapon_def := DataHandler.read_weapon_data(incoming_weapon_id) as WeaponDefinition
-		if weapon_def == null:
-			push_warning("create_weapon failed: weapon id %s not found." % str(item_id))
-			return
-		weapon = weapon_def.scene.instantiate() as Weapon
-		if weapon == null:
-			push_warning("create_weapon failed: weapon scene instantiate returned null for id %s." % incoming_weapon_id)
-			return
-		weapon.level = int(level)
-	else:
-		# Parameter is weapon node instead of String, common case when get weapon from inventory.
-		weapon = item_id as Weapon
-		if weapon == null or not is_instance_valid(weapon):
-			push_warning("create_weapon failed: invalid weapon instance input.")
-			return
-		incoming_weapon_id = DataHandler.get_weapon_id_from_instance(weapon)
-
-	# A full weapon bar now requires an explicit replacement transaction.
-	if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num:
-		var ui = GlobalVariables.ui
-		if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
-			ui.call("request_weapon_replacement", weapon)
-		else:
-			push_warning("Weapon bar is full and no replacement UI is available.")
-			weapon.queue_free()
-		_refresh_weapon_related_ui()
-		return
-
-	_attach_weapon_to_equipped_holder(weapon)
-	weapon.position = Vector2.ZERO
-	PlayerData.player_weapon_list.append(weapon)
-	if PlayerData.player_weapon_list.size() == 1:
-		PlayerData.set_main_weapon_index(0)
-	PlayerData.notify_weapon_list_changed()
-	_mark_weapon_structure_dirty(true)
-	_refresh_weapon_structure_if_needed()
-	_rebuild_shared_heat_pool()
-	_refresh_weapon_related_ui()
+	_ensure_weapon_inventory_runtime()
+	_weapon_inventory_runtime.create_weapon(item_id, level, auto_fuse)
 
 func try_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
-	var prediction := predict_auto_fuse_weapon_obtain(weapon_id)
-	var result_type := str(prediction.get("result", "not_applicable"))
-	if result_type == "not_applicable" or result_type == "invalid":
-		return prediction
-	var subject := prediction.get("weapon", null) as Weapon
-	if subject == null or not is_instance_valid(subject):
-		return {"result": "invalid", "weapon_id": weapon_id}
-	if result_type == "fused":
-		var target_fuse := int(prediction.get("target_fuse", int(subject.fuse)))
-		subject.fuse = target_fuse
-		if subject.has_method("refresh_max_level_from_data"):
-			subject.call("refresh_max_level_from_data")
-		var clamped_level := clampi(int(subject.level), 1, int(subject.max_level))
-		if subject.has_method("set_level"):
-			subject.call("set_level", clamped_level)
-		else:
-			subject.level = clamped_level
-			if subject.has_method("calculate_status"):
-				subject.call("calculate_status")
-		_try_prompt_branch_selection(subject, target_fuse)
-	elif result_type == "converted_to_gold":
-		var converted_gold := int(prediction.get("gold", 0))
-		PlayerData.player_gold += converted_gold
-	_notify_weapon_duplicate_result(subject, weapon_id, prediction)
-	_refresh_weapon_related_ui()
-	return prediction
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.try_auto_fuse_weapon_obtain(weapon_id)
 
 func predict_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
-	var normalized_id := str(weapon_id).strip_edges()
-	if normalized_id == "":
-		return {"result": "invalid", "weapon_id": normalized_id}
-	var equipped_weapon := _find_equipped_weapon_by_id(normalized_id)
-	if equipped_weapon == null:
-		return {"result": "not_applicable", "weapon_id": normalized_id}
-	var max_fuse: int = max(1, int(equipped_weapon.FINAL_MAX_FUSE))
-	if int(equipped_weapon.fuse) < max_fuse:
-		var target_fuse := int(equipped_weapon.fuse) + 1
-		return {
-			"result": "fused",
-			"weapon_id": normalized_id,
-			"weapon": equipped_weapon,
-			"from_fuse": int(equipped_weapon.fuse),
-			"target_fuse": target_fuse,
-			"has_branch_options": _has_branch_options_for_fuse(equipped_weapon, target_fuse),
-		}
-	return {
-		"result": "converted_to_gold",
-		"weapon_id": normalized_id,
-		"weapon": equipped_weapon,
-		"gold": _calculate_duplicate_weapon_gold(normalized_id),
-	}
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.predict_auto_fuse_weapon_obtain(weapon_id)
 
 func _has_branch_options_for_fuse(weapon: Weapon, target_fuse: int) -> bool:
-	if weapon == null or not is_instance_valid(weapon):
-		return false
-	return not weapon.branch_runtime.get_available_branch_options_for_fuse(target_fuse).is_empty()
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.has_branch_options_for_fuse(weapon, target_fuse)
 
 func _find_equipped_weapon_by_id(weapon_id: String) -> Weapon:
-	var normalized_id := str(weapon_id).strip_edges()
-	if normalized_id == "":
-		return null
-	for equipped_weapon_ref in PlayerData.player_weapon_list:
-		var equipped_weapon := equipped_weapon_ref as Weapon
-		if equipped_weapon == null or not is_instance_valid(equipped_weapon):
-			continue
-		if DataHandler.get_weapon_id_from_instance(equipped_weapon) == normalized_id:
-			return equipped_weapon
-	return null
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.find_equipped_weapon_by_id(weapon_id)
 
 func _calculate_duplicate_weapon_gold(weapon_id: String) -> int:
-	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
-	var base_price := 0
-	if weapon_def != null:
-		base_price = max(0, int(weapon_def.price))
-	return _get_economy_config().get_duplicate_weapon_gold(base_price)
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.calculate_duplicate_weapon_gold(weapon_id)
 
 func _get_economy_config() -> EconomyConfig:
 	if GlobalVariables.economy_data:
@@ -392,73 +295,20 @@ func _get_economy_config() -> EconomyConfig:
 	return EconomyConfig.new()
 
 func _notify_weapon_duplicate_result(existing_weapon: Weapon, weapon_id: String, result: Dictionary) -> void:
-	var ui := GlobalVariables.ui
-	if ui == null or not is_instance_valid(ui) or not ui.has_method("show_item_message"):
-		return
-	var resolved_id := str(weapon_id).strip_edges()
-	var fallback_name := LocalizationManager.get_weapon_name_from_node(existing_weapon)
-	var weapon_name := LocalizationManager.get_weapon_name_by_id(resolved_id, fallback_name)
-	var result_type := str(result.get("result", ""))
-	var message := ""
-	match result_type:
-		"fused":
-			var fuse_value := int(result.get("target_fuse", max(1, int(existing_weapon.fuse))))
-			message = LocalizationManager.tr_format(
-				"ui.weapon.duplicate.fuse_up",
-				{"name": weapon_name, "fuse": fuse_value},
-				"Duplicate %s reinforced to Fuse %d" % [weapon_name, fuse_value]
-			)
-		"converted_to_gold":
-			var gold_value := int(result.get("gold", 0))
-			message = LocalizationManager.tr_format(
-				"ui.weapon.duplicate.convert",
-				{"name": weapon_name, "gold": gold_value},
-				"Duplicate %s converted to +%d Gold" % [weapon_name, gold_value]
-			)
-		_:
-			return
-	ui.show_item_message(message, 1.8)
+	_ensure_weapon_inventory_runtime()
+	_weapon_inventory_runtime.notify_weapon_duplicate_result(existing_weapon, weapon_id, result)
 
 func _refresh_weapon_related_ui() -> void:
-	var ui := GlobalVariables.ui
-	if ui == null or not is_instance_valid(ui):
-		return
-	if ui.has_method("update_inventory"):
-		ui.update_inventory()
-	if ui.upgrade_management_controller:
-		ui.upgrade_management_controller.update_upg()
-	if ui.has_method("refresh_border"):
-		ui.refresh_border()
+	_ensure_weapon_inventory_runtime()
+	_weapon_inventory_runtime.refresh_weapon_related_ui()
 
 func _try_prompt_branch_selection(weapon: Weapon, target_fuse: int = 0) -> void:
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	var ui := GlobalVariables.ui
-	if ui == null or not is_instance_valid(ui):
-		return
-	if not ui.has_method("request_weapon_branch_selection"):
-		return
-	if target_fuse <= 0:
-		target_fuse = int(weapon.fuse)
-	ui.request_weapon_branch_selection(weapon, target_fuse)
+	_ensure_weapon_inventory_runtime()
+	_weapon_inventory_runtime.try_prompt_branch_selection(weapon, target_fuse)
 
 func swap_weapon_position(weapon1, weapon2) -> void:
-	if weapon1 == weapon2:
-		return
-	var slot1_index = PlayerData.player_weapon_list.find(weapon1)
-	var slot2_index = PlayerData.player_weapon_list.find(weapon2)
-	var temp = PlayerData.player_weapon_list[slot1_index]
-	PlayerData.player_weapon_list[slot1_index] = PlayerData.player_weapon_list[slot2_index]
-	PlayerData.player_weapon_list[slot2_index] = temp
-	if PlayerData.main_weapon_index == slot1_index:
-		PlayerData.main_weapon_index = slot2_index
-	elif PlayerData.main_weapon_index == slot2_index:
-		PlayerData.main_weapon_index = slot1_index
-	PlayerData.on_select_weapon = PlayerData.main_weapon_index
-	PlayerData.notify_weapon_list_changed()
-	_mark_weapon_structure_dirty(true)
-	_refresh_weapon_structure_if_needed()
-	_rebuild_shared_heat_pool()
+	_ensure_weapon_inventory_runtime()
+	_weapon_inventory_runtime.swap_weapon_position(weapon1, weapon2)
 
 func _process_combat_input(delta: float) -> void:
 	var main_weapon := get_main_weapon()
@@ -494,21 +344,9 @@ func _process_combat_input(delta: float) -> void:
 			_assist_system.process_combat_assist(main_weapon, pressed, delta)
 
 func _try_show_reload_block_hint(main_weapon: Weapon) -> void:
-	if main_weapon == null or not is_instance_valid(main_weapon):
-		return
-	if not main_weapon.has_method("uses_ammo_system") or not bool(main_weapon.call("uses_ammo_system")):
-		return
-	var reloading_variant: Variant = main_weapon.get("is_reloading")
-	if reloading_variant == null or not bool(reloading_variant):
-		return
-	var now_msec := Time.get_ticks_msec()
-	if now_msec < _reload_block_hint_ready_at_msec:
-		return
-	_reload_block_hint_ready_at_msec = now_msec + int(maxf(reload_block_hint_interval_sec, 0.05) * 1000.0)
-	var hint_text := "正在换弹中"
-	if LocalizationManager and LocalizationManager.has_method("tr_key"):
-		hint_text = LocalizationManager.tr_key("ui.hud.reloading_now", "正在换弹中")
-	_spawn_keyed_player_floating_hint(hint_text, &"reload_blocked", reload_block_hint_interval_sec)
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime != null:
+		_active_skill_runtime.try_show_reload_block_hint(main_weapon)
 
 func _spawn_player_floating_hint(text: String) -> void:
 	_ensure_status_hint_manager()
@@ -620,58 +458,28 @@ func _did_manual_fire_start_reload(main_weapon: Weapon, was_reloading_before_inp
 	return bool(main_weapon.get("is_reloading"))
 
 func _refresh_weapon_structure_if_needed() -> void:
-	if not _weapon_list_dirty and not _weapon_roles_dirty and not _weapon_orbit_states_dirty:
-		return
-	var list_changed := false
-	if _weapon_list_dirty:
-		list_changed = _sanitize_weapon_list()
-		_sync_tracked_weapon_exit_signals()
-	if list_changed:
-		_weapon_roles_dirty = true
-		_weapon_orbit_states_dirty = true
-	if _weapon_roles_dirty:
-		_apply_weapon_roles()
-	if _weapon_orbit_states_dirty:
-		_sync_weapon_orbit_states(_weapon_orbit_force_reset)
-	_weapon_list_dirty = false
-	_weapon_roles_dirty = false
-	_weapon_orbit_states_dirty = false
-	_weapon_orbit_force_reset = false
+	_ensure_weapon_inventory_runtime()
+	_weapon_inventory_runtime.refresh_weapon_structure_if_needed()
 
 func _sanitize_weapon_list() -> bool:
-	var valid_weapons: Array = []
-	for weapon in PlayerData.player_weapon_list:
-		if is_instance_valid(weapon):
-			valid_weapons.append(weapon)
-	var changed: bool = valid_weapons.size() != PlayerData.player_weapon_list.size()
-	if changed:
-		PlayerData.player_weapon_list = valid_weapons
-	PlayerData.sanitize_main_weapon_index()
-	if valid_weapons.size() == 1:
-		PlayerData.main_weapon_index = 0
-	return changed
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.sanitize_weapon_list()
 
 func _mark_weapon_structure_dirty(force_orbit_reset := false) -> void:
-	_weapon_list_dirty = true
-	_weapon_roles_dirty = true
-	_weapon_orbit_states_dirty = true
-	_weapon_orbit_force_reset = _weapon_orbit_force_reset or force_orbit_reset
+	_ensure_weapon_inventory_runtime()
+	_weapon_inventory_runtime.mark_weapon_structure_dirty(force_orbit_reset)
 
 func _mark_weapon_roles_dirty() -> void:
-	_weapon_roles_dirty = true
-	_weapon_orbit_states_dirty = true
+	_ensure_weapon_inventory_runtime()
+	_weapon_inventory_runtime.mark_weapon_roles_dirty()
 
 func _connect_weapon_structure_signals() -> void:
-	if not PlayerData.weapon_list_changed.is_connected(Callable(self, "_on_player_weapon_list_changed")):
-		PlayerData.weapon_list_changed.connect(Callable(self, "_on_player_weapon_list_changed"))
-	if not PlayerData.main_weapon_index_changed.is_connected(Callable(self, "_on_main_weapon_index_changed")):
-		PlayerData.main_weapon_index_changed.connect(Callable(self, "_on_main_weapon_index_changed"))
+	_ensure_weapon_inventory_runtime()
+	_weapon_inventory_runtime.connect_weapon_structure_signals()
 
 func _disconnect_weapon_structure_signals() -> void:
-	if PlayerData != null and PlayerData.weapon_list_changed.is_connected(Callable(self, "_on_player_weapon_list_changed")):
-		PlayerData.weapon_list_changed.disconnect(Callable(self, "_on_player_weapon_list_changed"))
-	if PlayerData != null and PlayerData.main_weapon_index_changed.is_connected(Callable(self, "_on_main_weapon_index_changed")):
-		PlayerData.main_weapon_index_changed.disconnect(Callable(self, "_on_main_weapon_index_changed"))
+	if _weapon_inventory_runtime != null:
+		_weapon_inventory_runtime.disconnect_weapon_structure_signals()
 
 func _on_player_weapon_list_changed() -> void:
 	_mark_weapon_structure_dirty(true)
@@ -680,75 +488,32 @@ func _on_main_weapon_index_changed(_old_index: int, _new_index: int, _step: int)
 	_mark_weapon_roles_dirty()
 
 func _sync_tracked_weapon_exit_signals() -> void:
-	var active_ids: Dictionary = {}
-	for weapon_ref in PlayerData.player_weapon_list:
-		var weapon := weapon_ref as Weapon
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		var instance_id := weapon.get_instance_id()
-		active_ids[instance_id] = true
-		if _tracked_weapon_exit_ids.has(instance_id):
-			continue
-		_tracked_weapon_exit_ids[instance_id] = true
-		weapon.tree_exiting.connect(_on_tracked_weapon_tree_exiting.bind(instance_id), CONNECT_ONE_SHOT)
-	for tracked_id in _tracked_weapon_exit_ids.keys():
-		if not active_ids.has(tracked_id):
-			_tracked_weapon_exit_ids.erase(tracked_id)
+	_ensure_weapon_inventory_runtime()
+	_weapon_inventory_runtime.sync_tracked_weapon_exit_signals()
 
 func _on_tracked_weapon_tree_exiting(instance_id: int) -> void:
-	_tracked_weapon_exit_ids.erase(instance_id)
-	_mark_weapon_structure_dirty(true)
+	if _weapon_inventory_runtime != null:
+		_weapon_inventory_runtime.on_tracked_weapon_tree_exiting(instance_id)
 
 func _apply_weapon_roles() -> void:
-	for i in range(PlayerData.player_weapon_list.size()):
-		var weapon: Variant = PlayerData.player_weapon_list[i]
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		if weapon.has_method("set_weapon_role"):
-			weapon.call("set_weapon_role", "main" if i == PlayerData.main_weapon_index else "offhand")
-	_debug_connect_weapon_passive_triggers()
+	_ensure_weapon_inventory_runtime()
+	_weapon_inventory_runtime.apply_weapon_roles()
 
 func get_main_weapon() -> Weapon:
-	if PlayerData == null:
-		return null
-	if PlayerData.player_weapon_list.is_empty():
-		return null
-	PlayerData.sanitize_main_weapon_index()
-	var idx: int = int(PlayerData.main_weapon_index)
-	if idx < 0 or idx >= PlayerData.player_weapon_list.size():
-		return null
-	var weapon: Variant = PlayerData.player_weapon_list[idx]
-	if weapon is Weapon:
-		return weapon as Weapon
-	return null
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.get_main_weapon()
 
 func get_offhand_weapons() -> Array:
-	var result: Array = []
-	for i in range(PlayerData.player_weapon_list.size()):
-		if i == PlayerData.main_weapon_index:
-			continue
-		var weapon: Variant = PlayerData.player_weapon_list[i]
-		if weapon and is_instance_valid(weapon):
-			result.append(weapon)
-	return result
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.get_offhand_weapons()
 
 func can_switch_main_weapon() -> bool:
-	return PlayerData.can_switch_main_weapon()
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.can_switch_main_weapon()
 
 func try_shift_main_weapon(step: int) -> bool:
-	if not can_switch_main_weapon():
-		return false
-	var old_main := get_main_weapon()
-	if not PlayerData.shift_main_weapon(step):
-		return false
-	_mark_weapon_roles_dirty()
-	_refresh_weapon_structure_if_needed()
-	var new_main := get_main_weapon()
-	_broadcast_weapon_passive_event(&"on_main_swapped", {
-		"old_main": old_main,
-		"new_main": new_main
-	})
-	return true
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.try_shift_main_weapon(step)
 
 func mark_weapon_roles_dirty_for_assist() -> void:
 	_mark_weapon_roles_dirty()
@@ -760,213 +525,68 @@ func broadcast_weapon_passive_event_for_assist(event_name: StringName, detail: D
 	_broadcast_weapon_passive_event(event_name, detail)
 
 func _broadcast_weapon_passive_event(event_name: StringName, detail: Dictionary = {}) -> void:
-	for weapon in PlayerData.player_weapon_list:
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		if weapon.has_method("dispatch_passive_event"):
-			weapon.call("dispatch_passive_event", event_name, detail)
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.broadcast_weapon_passive_event(event_name, detail)
 
 func apply_global_weapon_passive_effect(source_id: StringName, stat_type: StringName, multiplier: float, duration_sec: float = 0.0, source_weapon: Weapon = null, include_source_weapon: bool = true) -> void:
-	if source_id == StringName() or stat_type == StringName():
-		return
-	var now_msec := Time.get_ticks_msec()
-	var expires_at_msec := 0
-	if duration_sec > 0.0:
-		expires_at_msec = now_msec + int(maxf(duration_sec, 0.01) * 1000.0)
-	_global_weapon_passive_effects[source_id] = {
-		"stat_type": stat_type,
-		"multiplier": maxf(multiplier, 0.01),
-		"expires_at_msec": expires_at_msec,
-		"source_weapon": weakref(source_weapon) if source_weapon != null else null,
-		"include_source_weapon": include_source_weapon,
-	}
-	_sync_global_weapon_passive_source(source_id)
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.apply_global_weapon_passive_effect(source_id, stat_type, multiplier, duration_sec, source_weapon, include_source_weapon)
 
 func remove_global_weapon_passive_effect(source_id: StringName) -> void:
-	if source_id == StringName():
-		return
-	_global_weapon_passive_effects.erase(source_id)
-	_remove_global_weapon_passive_source(source_id)
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.remove_global_weapon_passive_effect(source_id)
 
 func clear_global_weapon_passives() -> void:
-	var applied_source_ids := _global_weapon_passive_applied.keys()
-	for source_id_variant in applied_source_ids:
-		_remove_global_weapon_passive_source(StringName(str(source_id_variant)))
-	_global_weapon_passive_effects.clear()
-	_global_weapon_passive_applied.clear()
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.clear_global_weapon_passives()
 
 func _update_global_weapon_passives() -> void:
-	if _global_weapon_passive_effects.is_empty() and _global_weapon_passive_applied.is_empty():
-		return
-	var now_msec := Time.get_ticks_msec()
-	var expired_sources: Array[StringName] = []
-	for source_id_variant in _global_weapon_passive_effects.keys():
-		var source_id := StringName(str(source_id_variant))
-		var effect: Dictionary = _global_weapon_passive_effects[source_id]
-		var expires_at_msec := int(effect.get("expires_at_msec", 0))
-		if (expires_at_msec > 0 and now_msec >= expires_at_msec) or _effect_source_weapon_is_stale(effect):
-			expired_sources.append(source_id)
-			continue
-		_sync_global_weapon_passive_source(source_id)
-	for source_id in expired_sources:
-		remove_global_weapon_passive_effect(source_id)
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.update_global_weapon_passives()
 
 func _sync_global_weapon_passive_source(source_id: StringName) -> void:
-	if not _global_weapon_passive_effects.has(source_id):
-		_remove_global_weapon_passive_source(source_id)
-		return
-	var effect: Dictionary = _global_weapon_passive_effects[source_id]
-	var valid_weapon_ids: Dictionary = {}
-	for weapon_ref in PlayerData.player_weapon_list:
-		var weapon := weapon_ref as Weapon
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		if not bool(effect.get("include_source_weapon", true)) and _effect_source_weapon_equals(effect, weapon):
-			continue
-		valid_weapon_ids[weapon.get_instance_id()] = true
-		_apply_global_weapon_passive_to_weapon(source_id, effect, weapon)
-	var applied: Dictionary = _global_weapon_passive_applied.get(source_id, {})
-	for weapon_id_variant in applied.keys():
-		var weapon_id := int(weapon_id_variant)
-		if valid_weapon_ids.has(weapon_id):
-			continue
-		var applied_entry: Dictionary = applied[weapon_id]
-		var weapon_ref: WeakRef = applied_entry.get("weapon_ref", null)
-		var weapon: Weapon = weapon_ref.get_ref() as Weapon if weapon_ref else null
-		if weapon != null and is_instance_valid(weapon):
-			_remove_global_weapon_passive_from_weapon(source_id, StringName(str(applied_entry.get("stat_type", ""))), weapon)
-		applied.erase(weapon_id)
-	_global_weapon_passive_applied[source_id] = applied
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.sync_global_weapon_passive_source(source_id)
 
 func _apply_global_weapon_passive_to_weapon(source_id: StringName, effect: Dictionary, weapon: Weapon) -> void:
-	var stat_type := StringName(str(effect.get("stat_type", "")))
-	var multiplier := float(effect.get("multiplier", 1.0))
-	match stat_type:
-		&"damage_mul":
-			if weapon.has_method("apply_external_damage_mul"):
-				weapon.call("apply_external_damage_mul", source_id, multiplier)
-		&"damage_flat":
-			if weapon.has_method("apply_external_damage_mul"):
-				var runtime_damage := _resolve_weapon_runtime_damage_for_global_effect(weapon)
-				var bonus_flat: int = max(0, int(round(multiplier)))
-				if bonus_flat <= 0:
-					return
-				var damage_mul := float(runtime_damage + bonus_flat) / float(runtime_damage)
-				weapon.call("apply_external_damage_mul", source_id, damage_mul)
-		&"attack_speed_mul":
-			if weapon.has_method("apply_external_attack_speed_mul"):
-				weapon.call("apply_external_attack_speed_mul", source_id, multiplier)
-		&"spread_mul":
-			if weapon.has_method("apply_external_spread_mul"):
-				weapon.call("apply_external_spread_mul", source_id, multiplier)
-		_:
-			return
-	var applied: Dictionary = _global_weapon_passive_applied.get(source_id, {})
-	applied[weapon.get_instance_id()] = {
-		"weapon_ref": weakref(weapon),
-		"stat_type": stat_type,
-	}
-	_global_weapon_passive_applied[source_id] = applied
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.apply_global_weapon_passive_to_weapon(source_id, effect, weapon)
 
 func _remove_global_weapon_passive_source(source_id: StringName) -> void:
-	var applied: Dictionary = _global_weapon_passive_applied.get(source_id, {})
-	for applied_entry_variant in applied.values():
-		var applied_entry: Dictionary = applied_entry_variant
-		var weapon_ref: WeakRef = applied_entry.get("weapon_ref", null)
-		var weapon: Weapon = weapon_ref.get_ref() as Weapon if weapon_ref else null
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		_remove_global_weapon_passive_from_weapon(source_id, StringName(str(applied_entry.get("stat_type", ""))), weapon)
-	_global_weapon_passive_applied.erase(source_id)
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.remove_global_weapon_passive_source(source_id)
 
 func _remove_global_weapon_passive_from_weapon(source_id: StringName, stat_type: StringName, weapon: Weapon) -> void:
-	match stat_type:
-		&"damage_mul":
-			if weapon.has_method("remove_external_damage_mul"):
-				weapon.call("remove_external_damage_mul", source_id)
-		&"damage_flat":
-			if weapon.has_method("remove_external_damage_mul"):
-				weapon.call("remove_external_damage_mul", source_id)
-		&"attack_speed_mul":
-			if weapon.has_method("remove_external_attack_speed_mul"):
-				weapon.call("remove_external_attack_speed_mul", source_id)
-		&"spread_mul":
-			if weapon.has_method("remove_external_spread_mul"):
-				weapon.call("remove_external_spread_mul", source_id)
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.remove_global_weapon_passive_from_weapon(source_id, stat_type, weapon)
 
 func _effect_source_weapon_equals(effect: Dictionary, weapon: Weapon) -> bool:
-	var source_ref: WeakRef = effect.get("source_weapon", null)
-	if source_ref == null:
-		return false
-	var source_weapon: Weapon = source_ref.get_ref() as Weapon
-	return source_weapon != null and is_instance_valid(source_weapon) and source_weapon == weapon
+	_ensure_weapon_passive_runtime()
+	return _weapon_passive_runtime.effect_source_weapon_equals(effect, weapon)
 
 func _effect_source_weapon_is_stale(effect: Dictionary) -> bool:
-	var source_ref: WeakRef = effect.get("source_weapon", null)
-	if source_ref == null:
-		return false
-	var source_weapon: Weapon = source_ref.get_ref() as Weapon
-	return source_weapon == null or not is_instance_valid(source_weapon)
+	_ensure_weapon_passive_runtime()
+	return _weapon_passive_runtime.effect_source_weapon_is_stale(effect)
 
 func _resolve_weapon_runtime_damage_for_global_effect(weapon: Weapon) -> int:
-	if weapon == null or not is_instance_valid(weapon):
-		return 1
-	if weapon.has_method("get_runtime_shot_damage"):
-		return max(1, int(weapon.call("get_runtime_shot_damage")))
-	if weapon.has_method("get_runtime_damage_value"):
-		var base_damage_value := 1.0
-		if weapon.get("base_damage") != null:
-			base_damage_value = maxf(1.0, float(weapon.get("base_damage")))
-		elif weapon.get("damage") != null:
-			base_damage_value = maxf(1.0, float(weapon.get("damage")))
-		return max(1, int(weapon.call("get_runtime_damage_value", base_damage_value)))
-	if weapon.get("damage") != null:
-		return max(1, int(weapon.get("damage")))
-	return 1
+	_ensure_weapon_passive_runtime()
+	return _weapon_passive_runtime.resolve_weapon_runtime_damage_for_global_effect(weapon)
 
 func _debug_connect_weapon_passive_triggers() -> void:
-	if not debug_weapon_passive_trigger_event_prints:
-		return
-	var active_ids := {}
-	for weapon_ref in PlayerData.player_weapon_list:
-		var weapon := weapon_ref as Weapon
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		var weapon_instance_id := weapon.get_instance_id()
-		active_ids[weapon_instance_id] = true
-		if _debug_passive_connected_weapon_ids.has(weapon_instance_id):
-			continue
-		var callback := Callable(self, "_debug_on_weapon_passive_triggered").bind(weapon)
-		if not weapon.passive_triggered.is_connected(callback):
-			weapon.passive_triggered.connect(callback)
-		_debug_passive_connected_weapon_ids[weapon_instance_id] = true
-	for connected_id in _debug_passive_connected_weapon_ids.keys():
-		if not active_ids.has(connected_id):
-			_debug_passive_connected_weapon_ids.erase(connected_id)
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.debug_connect_weapon_passive_triggers()
 
 func _debug_on_weapon_passive_triggered(event_name: StringName, detail: Dictionary, weapon: Weapon) -> void:
-	if not debug_weapon_passive_trigger_event_prints:
-		return
-	if not _debug_is_weapon_passive_trigger_event(event_name):
-		return
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon) if DataHandler != null else ""
-	var weapon_name = weapon.get("ITEM_NAME")
-	if weapon_name == null or str(weapon_name).strip_edges() == "":
-		weapon_name = weapon.name
-	print("[WEAPON PASSIVE TRIGGERED] id=", weapon_id, " name=", weapon_name, " event=", event_name, " scope=", detail.get("passive_scope", Weapon.PASSIVE_SCOPE_BODY), " detail=", detail)
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.debug_on_weapon_passive_triggered(event_name, detail, weapon)
 
 func _debug_is_weapon_passive_trigger_event(event_name: StringName) -> bool:
-	var event_text := str(event_name)
-	return event_text.ends_with("_triggered") or event_text.ends_with("_spend")
+	_ensure_weapon_passive_runtime()
+	return _weapon_passive_runtime.debug_is_weapon_passive_trigger_event(event_name)
 
 func _update_passive_time_tick(delta: float) -> void:
-	_passive_time_tick_accum += maxf(delta, 0.0)
-	if _passive_time_tick_accum < 1.0:
-		return
-	_passive_time_tick_accum = 0.0
-	_broadcast_weapon_passive_event(&"on_time_tick", {})
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.update_passive_time_tick(delta)
 
 func notify_enemy_killed_nearby(enemy: Node = null) -> void:
 	_broadcast_weapon_passive_event(&"on_enemy_killed_nearby", {
@@ -974,100 +594,70 @@ func notify_enemy_killed_nearby(enemy: Node = null) -> void:
 	})
 
 func _try_cast_player_active_skill() -> void:
-	player_active_skill.emit()
-	active_skill.emit()
-	_last_player_skill_fail_reason = ""
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime != null:
+		_active_skill_runtime.try_cast_player_active_skill()
 
 func _try_cast_main_weapon_active_skill() -> void:
-	var main_weapon := get_main_weapon()
-	if main_weapon == null:
-		_last_weapon_skill_fail_reason = "no_main_weapon"
-		return
-	if not main_weapon.has_method("request_weapon_active"):
-		_last_weapon_skill_fail_reason = "unsupported"
-		return
-	var result_variant: Variant = main_weapon.call("request_weapon_active")
-	if result_variant is Dictionary:
-		var result := result_variant as Dictionary
-		if bool(result.get("ok", false)):
-			weapon_active_skill.emit()
-			_last_weapon_skill_fail_reason = ""
-		else:
-			_last_weapon_skill_fail_reason = str(result.get("reason", "condition"))
-			_broadcast_weapon_passive_event(&"on_main_active_cast_failed", {
-				"reason": _last_weapon_skill_fail_reason
-			})
-	else:
-		_last_weapon_skill_fail_reason = "condition"
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime != null:
+		_active_skill_runtime.try_cast_main_weapon_active_skill()
 
 func _try_reload_main_weapon() -> void:
-	if PhaseManager != null and PhaseManager.has_method("current_state"):
-		if str(PhaseManager.current_state()) != str(PhaseManager.BATTLE):
-			return
-	var main_weapon := get_main_weapon()
-	if main_weapon == null:
-		return
-	if not main_weapon.has_method("request_reload"):
-		return
-	var reload_started := bool(main_weapon.call("request_reload"))
-	if not reload_started:
-		return
-	_ensure_assist_system()
-	if _assist_system != null:
-		_assist_system.handle_post_fire(main_weapon, true)
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime != null:
+		_active_skill_runtime.try_reload_main_weapon()
 
 func _ensure_input_actions() -> void:
-	_ensure_input_action("SKILL_PLAYER", [KEY_SPACE])
-	_ensure_input_action("SKILL_WEAPON", [KEY_R])
-
-func _ensure_input_action(action_name: StringName, keycodes: Array[int]) -> void:
-	if not InputMap.has_action(action_name):
-		InputMap.add_action(action_name)
-	if InputMap.action_get_events(action_name).is_empty():
-		for keycode in keycodes:
-			var ev := InputEventKey.new()
-			ev.physical_keycode = keycode
-			InputMap.action_add_event(action_name, ev)
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime != null:
+		_active_skill_runtime.ensure_input_actions()
 
 func get_current_energy() -> float:
-	return _player_energy
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime == null:
+		return player_max_energy
+	return _active_skill_runtime.get_current_energy()
 
 func get_max_energy() -> float:
-	return maxf(player_max_energy, 1.0)
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime == null:
+		return maxf(player_max_energy, 1.0)
+	return _active_skill_runtime.get_max_energy()
 
 func consume_energy(amount: float) -> bool:
-	var required := maxf(amount, 0.0)
-	if _player_energy < required:
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime == null:
 		return false
-	_player_energy -= required
-	return true
+	return _active_skill_runtime.consume_energy(amount)
 
 func add_energy(amount: float) -> void:
-	_player_energy = clampf(_player_energy + maxf(amount, 0.0), 0.0, get_max_energy())
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime != null:
+		_active_skill_runtime.add_energy(amount)
 
 func _regen_energy(delta: float) -> void:
-	if player_energy_regen_per_sec <= 0.0:
-		return
-	add_energy(player_energy_regen_per_sec * maxf(delta, 0.0))
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime != null:
+		_active_skill_runtime.regen_energy(delta)
 
 func get_last_weapon_skill_fail_reason() -> String:
-	return _last_weapon_skill_fail_reason
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime == null:
+		return ""
+	return _active_skill_runtime.get_last_weapon_skill_fail_reason()
 
 func get_weapon_active_cd_remaining() -> float:
-	var weapon := get_main_weapon()
-	if weapon == null:
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime == null:
 		return 0.0
-	if not weapon.has_method("get_weapon_active_cd_remaining"):
-		return 0.0
-	return float(weapon.call("get_weapon_active_cd_remaining"))
+	return _active_skill_runtime.get_weapon_active_cd_remaining()
 
 func get_weapon_active_cd_ratio() -> float:
-	var weapon := get_main_weapon()
-	if weapon == null:
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime == null:
 		return 0.0
-	if not weapon.has_method("get_weapon_active_cd_ratio"):
-		return 0.0
-	return float(weapon.call("get_weapon_active_cd_ratio"))
+	return _active_skill_runtime.get_weapon_active_cd_ratio()
 
 func apply_move_speed_mul(source_id: StringName, mul: float) -> void:
 	_ensure_status_modifier_system()
@@ -2125,6 +1715,8 @@ func _on_collision_cd_timeout() -> void:
 
 func _exit_tree() -> void:
 	_disconnect_weapon_structure_signals()
+	if _weapon_inventory_runtime != null:
+		_weapon_inventory_runtime.clear_tracked_weapon_exit_ids()
 	_tracked_weapon_exit_ids.clear()
 	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
 		_status_hint_manager.clear_all()

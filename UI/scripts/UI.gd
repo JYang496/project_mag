@@ -31,12 +31,8 @@ const UI_LAYOUT_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/ui_lay
 const PAUSE_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/pause_ui_controller.gd")
 const LOCALIZATION_REFRESH_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/localization_refresh_controller.gd")
 const UI_BOOTSTRAP_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/ui_bootstrap_controller.gd")
-const GAME_OVER_VIEW_PATH := "res://UI/scenes/components/game_over_view.tscn"
 const HINT_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hint_presenter.gd")
 const BATTLE_CURSOR_PRESENTER_SCRIPT := preload("res://UI/scripts/components/battle_cursor_presenter.gd")
-const CONTROLS_HINT_VIEW_PATH := "res://UI/scenes/components/controls_hint_view.tscn"
-const BOARD_EDIT_PANEL_PATH := "res://UI/scenes/board_edit_panel.tscn"
-const CELL_MANAGEMENT_PANEL_SCRIPT := preload("res://UI/scripts/cell_management_panel.gd")
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overlay.gd"
 
@@ -59,18 +55,6 @@ const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overl
 @onready var upgrade_primary_panel: Panel = $GUI/UpgradeRoot/PrimaryMenuRoot/Panel
 @onready var warehouse_primary_panel: Panel = $GUI/WarehouseRoot/PrimaryMenuRoot/Panel
 @onready var board_edit_primary_panel: Panel = $GUI/BoardEditRoot/PrimaryMenuRoot/Panel
-var game_over_root: Control
-var game_over_total_damage_label: Label
-var game_over_completed_levels_label: Label
-var game_over_enemy_kills_label: Label
-var game_over_elite_kills_label: Label
-var game_over_gold_earned_label: Label
-var quest_hint_label: Label
-var rest_area_hover_hint_label: Label
-var _rest_area_hover_hint_anchor_world := Vector2.ZERO
-var _rest_area_hover_hint_use_world_anchor := false
-var _rest_area_zone_hint_labels: Array[Label] = []
-var _rest_area_zone_hint_anchors: Array[Vector2] = []
 var item_message_timer: Timer
 
 
@@ -169,8 +153,6 @@ var _equipment_pickup_processing := false
 var _equipment_pickup_dispatch_scheduled := false
 var _rest_area_menu_active := false
 var _rest_area_primary_menu_id: StringName = &""
-var game_over_title_label: Label
-var game_over_new_game_button: Button
 var game_over_view
 var pause_language_label: Label
 var pause_language_option: OptionButton
@@ -182,9 +164,6 @@ var temporary_module_settlement_checkbox: CheckBox
 var _pending_module_action := Callable()
 var _pending_battle_start := Callable()
 var _pending_battle_start_cancel := Callable()
-var controls_hint_panel: Panel
-var controls_hint_title_label: Label
-var controls_hint_body_label: Label
 var controls_hint_view
 var board_edit_panel: Control
 var cell_management_panel: Control
@@ -199,7 +178,6 @@ var _pending_task_module_replacement_callback := Callable()
 var _pending_task_module_replacement_new_module_id := ""
 var _primary_menu_tweens: Dictionary = {}
 var spread_cursor_overlay
-var _cursor_reload_total_by_weapon: Dictionary = {}
 var hud_presenter: HudPresenter
 var ui_dirty_signal_controller
 var weapon_passive_presenter
@@ -360,98 +338,42 @@ func _init_reward_selection_panel() -> void:
 	modal_ui_controller.ensure_reward_selection_panel()
 
 func _init_board_edit_panel() -> void:
-	if board_edit_panel != null and is_instance_valid(board_edit_panel):
-		return
-	var panel_scene := load(BOARD_EDIT_PANEL_PATH) as PackedScene
-	board_edit_panel = panel_scene.instantiate() as Control if panel_scene else null
-	if board_edit_panel == null:
-		push_warning("Failed to create BoardEditPanel.")
-		return
-	gui_root.add_child(board_edit_panel)
-	board_edit_panel.visible = false
-	if board_edit_panel.has_signal("close_requested"):
-		var callback := Callable(self, "_on_board_edit_panel_close_requested")
-		if not board_edit_panel.is_connected("close_requested", callback):
-			board_edit_panel.connect("close_requested", callback)
+	_init_modal_ui_controller()
+	modal_ui_controller.ensure_board_edit_panel()
 
 func _init_cell_management_panel() -> void:
-	if cell_management_panel != null and is_instance_valid(cell_management_panel):
-		return
-	cell_management_panel = CELL_MANAGEMENT_PANEL_SCRIPT.new() as Control
-	cell_management_panel.name = "CellManagementPanel"
-	gui_root.add_child(cell_management_panel)
-	cell_management_panel.visible = false
-	if cell_management_panel.has_method("bind"):
-		cell_management_panel.call("bind", self)
-	if cell_management_panel.has_signal("close_requested"):
-		var close_callback := Callable(self, "_on_cell_management_panel_close_requested")
-		if not cell_management_panel.is_connected("close_requested", close_callback):
-			cell_management_panel.connect("close_requested", close_callback)
-	if cell_management_panel.has_signal("board_management_requested"):
-		var board_callback := Callable(self, "_on_cell_management_board_requested")
-		if not cell_management_panel.is_connected("board_management_requested", board_callback):
-			cell_management_panel.connect("board_management_requested", board_callback)
+	_init_modal_ui_controller()
+	modal_ui_controller.ensure_cell_management_panel()
 
 func open_cell_management_panel(mode: StringName = &"task") -> bool:
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
-		return false
-	if TaskRewardManager.is_reward_blocking_interactions():
-		show_item_message("Choose objective rewards first.", 1.6)
-		return false
-	_init_cell_management_panel()
-	if cell_management_panel == null:
-		return false
-	return bool(cell_management_panel.call("open_panel", _find_board(), mode))
+	_init_modal_ui_controller()
+	return modal_ui_controller.open_cell_management_panel(mode)
 
 func request_close_cell_management_panel() -> bool:
-	if cell_management_panel == null or not is_instance_valid(cell_management_panel) or not cell_management_panel.visible:
-		return false
-	cell_management_panel.call("close_panel")
-	if rest_area_ui_controller != null and rest_area_ui_controller.primary_menu_id == &"board_edit":
-		rest_area_ui_controller.back_to_board_primary_menu()
-	elif rest_area_ui_controller != null:
-		rest_area_ui_controller.cancel_menu_level()
-	return true
+	_init_modal_ui_controller()
+	return modal_ui_controller.request_close_cell_management_panel()
 
 func _on_cell_management_panel_close_requested() -> void:
 	request_close_cell_management_panel()
 
 func _on_cell_management_board_requested() -> void:
-	if cell_management_panel and is_instance_valid(cell_management_panel):
-		cell_management_panel.call("close_panel")
-	if rest_area_ui_controller != null:
-		rest_area_ui_controller.open_cell_grid_panel()
-	else:
-		open_board_edit_panel()
+	_init_modal_ui_controller()
+	modal_ui_controller.open_cell_board_management()
 
 func open_board_edit_panel() -> bool:
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
-		return false
-	if TaskRewardManager.is_reward_blocking_interactions():
-		show_item_message("Choose objective rewards first.", 1.6)
-		return false
-	_init_board_edit_panel()
-	if board_edit_panel == null:
-		return false
-	return bool(board_edit_panel.open_panel(_find_board()))
+	_init_modal_ui_controller()
+	return modal_ui_controller.open_board_edit_panel()
 
 func request_close_board_edit_panel(_confirm_pending: bool = true) -> bool:
-	if board_edit_panel == null or not is_instance_valid(board_edit_panel) or not board_edit_panel.visible:
-		return false
-	_close_board_edit_panel_without_confirmation()
-	return true
+	_init_modal_ui_controller()
+	return modal_ui_controller.request_close_board_edit_panel()
 
 func _on_board_edit_panel_close_requested() -> void:
 	request_close_board_edit_panel(true)
 
 func _close_board_edit_panel_without_confirmation() -> void:
-	if board_edit_panel and is_instance_valid(board_edit_panel):
-		board_edit_panel.close_panel()
-	if rest_area_ui_controller != null and rest_area_ui_controller.primary_menu_id == &"board_edit":
-		rest_area_ui_controller.back_to_board_primary_menu()
-		return
-	if rest_area_ui_controller != null:
-		rest_area_ui_controller.cancel_menu_level()
+	_init_modal_ui_controller()
+	modal_ui_controller.close_board_edit_panel_without_confirmation()
 
 func _find_board() -> BoardCellGenerator:
 	var scene := get_tree().current_scene
@@ -957,22 +879,6 @@ func _init_battle_cursor_presenter() -> void:
 	battle_cursor_presenter = BATTLE_CURSOR_PRESENTER_SCRIPT.new()
 	battle_cursor_presenter.bind(self, spread_cursor_overlay)
 
-func _sync_hint_presenter_refs() -> void:
-	if hint_presenter == null:
-		return
-	quest_hint_label = hint_presenter.quest_hint_label
-	rest_area_hover_hint_label = hint_presenter.rest_area_hover_hint_label
-	_rest_area_hover_hint_anchor_world = hint_presenter.rest_area_hover_hint_anchor_world
-	_rest_area_hover_hint_use_world_anchor = hint_presenter.rest_area_hover_hint_use_world_anchor
-	_rest_area_zone_hint_labels = hint_presenter.rest_area_zone_hint_labels
-	_rest_area_zone_hint_anchors = hint_presenter.rest_area_zone_hint_anchors
-
-func _sync_battle_cursor_presenter_refs() -> void:
-	if battle_cursor_presenter == null:
-		return
-	spread_cursor_overlay = battle_cursor_presenter.spread_cursor_overlay
-	_cursor_reload_total_by_weapon = battle_cursor_presenter.cursor_reload_total_by_weapon
-
 func _process(_delta: float) -> void:
 	# Cursor-follow visuals should run on render frames to minimize perceived mouse lag.
 	_update_spread_cursor_overlay()
@@ -1380,7 +1286,7 @@ func _should_use_battle_ring_cursor() -> bool:
 		return false
 	if pause_menu_root and is_instance_valid(pause_menu_root) and pause_menu_root.visible:
 		return false
-	if game_over_root and is_instance_valid(game_over_root) and game_over_root.visible:
+	if game_over_view and is_instance_valid(game_over_view) and game_over_view.visible:
 		return false
 	if _is_primary_menu_open() or _is_secondary_menu_open():
 		return false
@@ -1407,10 +1313,6 @@ func _apply_battle_hardware_cursor() -> void:
 	_init_battle_cursor_presenter()
 	battle_cursor_presenter.apply_battle_hardware_cursor()
 
-func _refresh_battle_hardware_cursor_texture(ammo_visible: bool, ammo_progress: float) -> bool:
-	_init_battle_cursor_presenter()
-	return battle_cursor_presenter.refresh_battle_hardware_cursor_texture(ammo_visible, ammo_progress)
-
 func _clear_battle_hardware_cursor() -> void:
 	if battle_cursor_presenter == null:
 		return
@@ -1420,34 +1322,13 @@ func _clear_battle_hardware_cursor() -> void:
 # Game-over and controls hint views
 
 func _show_game_over() -> void:
-	if game_over_root == null:
-		return
-	pause_menu_root.visible = false
-	_set_management_root_visible(&"purchase", false)
-	_set_management_root_visible(&"upgrade", false)
-	_set_management_root_visible(&"warehouse", false)
-	if game_over_view != null and is_instance_valid(game_over_view):
-		game_over_view.show_game_over()
-		get_tree().paused = true
+	_init_modal_ui_controller()
+	modal_ui_controller.show_game_over()
 
 
 func _create_game_over_layout() -> void:
-	if game_over_view != null and is_instance_valid(game_over_view):
-		return
-	var view_scene := load(GAME_OVER_VIEW_PATH) as PackedScene
-	game_over_view = view_scene.instantiate() if view_scene else null
-	if game_over_view != null:
-		$GUI.add_child(game_over_view)
-		game_over_view.bind(self)
-		game_over_root = game_over_view
-		game_over_title_label = game_over_view.title_label
-		game_over_total_damage_label = game_over_view.total_damage_label
-		game_over_completed_levels_label = game_over_view.completed_levels_label
-		game_over_enemy_kills_label = game_over_view.enemy_kills_label
-		game_over_elite_kills_label = game_over_view.elite_kills_label
-		game_over_gold_earned_label = game_over_view.gold_earned_label
-		game_over_new_game_button = game_over_view.new_game_button
-		return
+	_init_modal_ui_controller()
+	modal_ui_controller.ensure_game_over_view()
 
 
 func _on_game_over_new_game_pressed() -> void:
@@ -1455,27 +1336,20 @@ func _on_game_over_new_game_pressed() -> void:
 	get_tree().change_scene_to_file("res://World/Start.tscn")
 
 func _create_controls_hint_panel() -> void:
-	if controls_hint_view != null and is_instance_valid(controls_hint_view):
-		return
-	var view_scene := load(CONTROLS_HINT_VIEW_PATH) as PackedScene
-	controls_hint_view = view_scene.instantiate() if view_scene else null
-	if controls_hint_view != null:
-		$GUI.add_child(controls_hint_view)
-		controls_hint_panel = controls_hint_view
-		controls_hint_title_label = controls_hint_view.title_label
-		controls_hint_body_label = controls_hint_view.body_label
+	_init_modal_ui_controller()
+	modal_ui_controller.ensure_controls_hint_view()
 
 func _layout_controls_hint_panel(viewport_size: Vector2) -> void:
-	if controls_hint_view != null and is_instance_valid(controls_hint_view):
-		controls_hint_view.layout_for_viewport(viewport_size)
+	_init_modal_ui_controller()
+	modal_ui_controller.layout_controls_hint_panel(viewport_size)
 
 func _update_controls_guide_for_phase(phase: String) -> void:
-	if controls_hint_view != null and is_instance_valid(controls_hint_view):
-		controls_hint_view.refresh_for_phase(phase, _is_primary_menu_open(), _is_secondary_menu_open())
+	_init_modal_ui_controller()
+	modal_ui_controller.update_controls_guide_for_phase(phase, _is_primary_menu_open(), _is_secondary_menu_open())
 
 func _refresh_controls_hint_visibility() -> void:
-	if controls_hint_view != null and is_instance_valid(controls_hint_view):
-		controls_hint_view.refresh_visibility(_is_secondary_menu_open())
+	_init_modal_ui_controller()
+	modal_ui_controller.refresh_controls_hint_visibility(_is_secondary_menu_open())
 
 func _is_primary_menu_open() -> bool:
 	if rest_area_ui_controller:
@@ -1584,58 +1458,35 @@ func _apply_responsive_layout() -> void:
 
 func _create_quest_hint() -> void:
 	_init_hint_presenter()
-	quest_hint_label = hint_presenter.ensure_quest_hint()
+	hint_presenter.ensure_quest_hint()
 
 func _ensure_rest_area_hover_hint() -> void:
 	_init_hint_presenter()
-	rest_area_hover_hint_label = hint_presenter.ensure_rest_area_hover_hint()
-	_sync_hint_presenter_refs()
-
-func _create_rest_area_zone_hint_label() -> Label:
-	_init_hint_presenter()
-	var label: Label = hint_presenter.create_rest_area_zone_hint_label()
-	_sync_hint_presenter_refs()
-	return label
-
-func _ensure_rest_area_zone_hint_capacity(count: int) -> void:
-	_init_hint_presenter()
-	hint_presenter.ensure_rest_area_zone_hint_capacity(count)
-	_sync_hint_presenter_refs()
-
-func _hide_rest_area_zone_hint_labels() -> void:
-	_init_hint_presenter()
-	hint_presenter.hide_rest_area_zone_hint_labels()
-	_sync_hint_presenter_refs()
+	hint_presenter.ensure_rest_area_hover_hint()
 
 func set_rest_area_zone_hints_at_world(hints: Array) -> void:
 	_init_hint_presenter()
 	hint_presenter.set_rest_area_zone_hints_at_world(hints)
-	_sync_hint_presenter_refs()
 
 func set_rest_area_hover_hint(text: String) -> void:
 	_init_hint_presenter()
 	hint_presenter.set_rest_area_hover_hint(text)
-	_sync_hint_presenter_refs()
 
 func set_rest_area_hover_hint_at_world(text: String, world_pos: Vector2) -> void:
 	_init_hint_presenter()
 	hint_presenter.set_rest_area_hover_hint_at_world(text, world_pos)
-	_sync_hint_presenter_refs()
 
 func clear_rest_area_hover_hint() -> void:
 	_init_hint_presenter()
 	hint_presenter.clear_rest_area_hover_hint()
-	_sync_hint_presenter_refs()
 
 func _layout_rest_area_hover_hint(viewport_size: Vector2) -> void:
 	_init_hint_presenter()
 	hint_presenter.layout_rest_area_hover_hint(viewport_size)
-	_sync_hint_presenter_refs()
 
 func _update_rest_area_hover_hint_position() -> void:
 	_init_hint_presenter()
 	hint_presenter.update_rest_area_hover_hint_position()
-	_sync_hint_presenter_refs()
 
 func _ensure_spread_cursor_overlay() -> void:
 	if spread_cursor_overlay != null and is_instance_valid(spread_cursor_overlay):
@@ -1659,27 +1510,14 @@ func _update_spread_cursor_overlay(mouse_screen_override: Variant = null) -> voi
 	_init_battle_cursor_presenter()
 	_update_cursor_presentation()
 	battle_cursor_presenter.update_spread_cursor_overlay(mouse_screen_override)
-	_sync_battle_cursor_presenter_refs()
-
-func _update_battle_hardware_cursor_ammo_progress(main_weapon: Node) -> void:
-	_init_battle_cursor_presenter()
-	battle_cursor_presenter.update_battle_hardware_cursor_ammo_progress(main_weapon)
-	_sync_battle_cursor_presenter_refs()
-
-func _clear_spread_cursor_ammo_progress() -> void:
-	_init_battle_cursor_presenter()
-	battle_cursor_presenter.clear_spread_cursor_ammo_progress()
-	_sync_battle_cursor_presenter_refs()
 
 func _layout_quest_hint(viewport_size: Vector2) -> void:
 	_init_hint_presenter()
 	hint_presenter.layout_quest_hint(viewport_size)
-	_sync_hint_presenter_refs()
 
 func set_quest_hint(text: String) -> void:
 	_init_hint_presenter()
 	hint_presenter.set_quest_hint(text)
-	_sync_hint_presenter_refs()
 
 func show_item_message(text: String, duration: float = 1.8) -> void:
 	set_quest_hint(text)
@@ -1766,27 +1604,11 @@ func _refresh_localized_static_text() -> void:
 func _refresh_game_over_static_text() -> void:
 	if game_over_view != null and is_instance_valid(game_over_view):
 		game_over_view.refresh_static_texts()
-		return
-	if game_over_title_label and is_instance_valid(game_over_title_label):
-		game_over_title_label.text = LocalizationManager.tr_key("ui.gameover.title", "Game Over")
-	if game_over_new_game_button and is_instance_valid(game_over_new_game_button):
-		game_over_new_game_button.text = LocalizationManager.tr_key("ui.gameover.new_game", "New Game")
 
 func debug_get_game_over_stat_texts() -> PackedStringArray:
 	if game_over_view != null and is_instance_valid(game_over_view):
 		return game_over_view.debug_get_stat_texts()
-	var output := PackedStringArray()
-	if game_over_total_damage_label and is_instance_valid(game_over_total_damage_label):
-		output.append(game_over_total_damage_label.text)
-	if game_over_completed_levels_label and is_instance_valid(game_over_completed_levels_label):
-		output.append(game_over_completed_levels_label.text)
-	if game_over_enemy_kills_label and is_instance_valid(game_over_enemy_kills_label):
-		output.append(game_over_enemy_kills_label.text)
-	if game_over_elite_kills_label and is_instance_valid(game_over_elite_kills_label):
-		output.append(game_over_elite_kills_label.text)
-	if game_over_gold_earned_label and is_instance_valid(game_over_gold_earned_label):
-		output.append(game_over_gold_earned_label.text)
-	return output
+	return PackedStringArray()
 
 func _refresh_heat_fallback_text() -> void:
 	hud_presenter.refresh_heat_fallback_text()

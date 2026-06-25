@@ -73,8 +73,13 @@ func _run() -> bool:
 	PhaseManager.current_level = 0
 	reload_spawner.call("_start_kill_gold_budget", 0, 60)
 	var reload_budget := int(reload_spawner.get_kill_gold_budget_snapshot().get("budget", 0))
-	if reload_budget < 72 or reload_budget > 88:
-		push_error("KillGoldDropProbe: economy reload budget should use resource target 80, got %d." % reload_budget)
+	var reloaded_economy := GlobalVariables.economy_data as EconomyConfig
+	var expected_reload_target := int(reloaded_economy.kill_gold_target_by_level[0]) if reloaded_economy and not reloaded_economy.kill_gold_target_by_level.is_empty() else 0
+	var reload_variance := clampf(float(reloaded_economy.kill_gold_budget_variance), 0.0, 1.0) if reloaded_economy else 0.0
+	var reload_min := int(round(float(expected_reload_target) * maxf(0.0, 1.0 - reload_variance)))
+	var reload_max := int(round(float(expected_reload_target) * (1.0 + reload_variance)))
+	if reload_budget < reload_min or reload_budget > reload_max:
+		push_error("KillGoldDropProbe: economy reload budget should use resource target %d, got %d." % [expected_reload_target, reload_budget])
 		return false
 	print("KillGoldDropProbe: level=1 trials=%d enemy_count=%d hp=%d average_ratio=%.3f zero=%d positive=%d | lazy active=%s first=%d budget=%d" % [
 		trial_count,
