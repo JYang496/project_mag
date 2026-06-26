@@ -39,6 +39,12 @@ func _run() -> void:
 	if ui.shop.position != Vector2(25, 104) or ui.shop.size != Vector2(500, 419):
 		_fail(29, "ManagementUIPolishTest: first weapon purchase list layout starts from the mode buttons.")
 		return
+	if ui.equipped_shop != null and ui.equipped_shop.visible:
+		_fail(58, "ManagementUIPolishTest: weapon purchase mode still shows the legacy equipped grid.")
+		return
+	if ui.shop_detail_panel == null or not ui.shop_detail_panel.visible:
+		_fail(59, "ManagementUIPolishTest: weapon purchase mode is missing the detail panel.")
+		return
 	var warehouse_module_button := ui.warehouse_primary_panel.get_node_or_null("OpenModuleButton") as Button
 	if ui.weapon_warehouse_button == null or not is_instance_valid(ui.weapon_warehouse_button):
 		_fail(36, "ManagementUIPolishTest: warehouse primary menu is missing the weapon warehouse button.")
@@ -75,6 +81,10 @@ func _run() -> void:
 	var warehouse_tabs := ui.module_management_view.get_node_or_null("WarehouseTabs") as Control
 	if warehouse_tabs == null or warehouse_tabs.visible:
 		_fail(39, "ManagementUIPolishTest: secondary warehouse view still shows internal tabs.")
+		return
+	var legacy_module_back := ui.module_panel.get_node_or_null("BackToModuleMenu") as Button
+	if legacy_module_back != null and legacy_module_back.visible:
+		_fail(60, "ManagementUIPolishTest: secondary warehouse view still shows the legacy BackToModuleMenu button.")
 		return
 
 	for path in [
@@ -168,9 +178,15 @@ func _run() -> void:
 	if not _is_primary_button(ui.shop_module_mode_button) or _is_primary_button(ui.shop_weapon_mode_button):
 		_fail(25, "ManagementUIPolishTest: module purchase mode button highlight is invalid.")
 		return
+	if ui.equipped_shop != null and ui.equipped_shop.visible:
+		_fail(61, "ManagementUIPolishTest: module purchase mode still shows the legacy equipped grid.")
+		return
 	ui.purchase_management_controller.apply_purchase_mode(&"weapon")
 	if not _is_primary_button(ui.shop_weapon_mode_button) or _is_primary_button(ui.shop_module_mode_button):
 		_fail(26, "ManagementUIPolishTest: weapon purchase mode button highlight is invalid.")
+		return
+	if ui.equipped_shop != null and ui.equipped_shop.visible:
+		_fail(62, "ManagementUIPolishTest: returning to weapon purchase mode re-shows the legacy equipped grid.")
 		return
 	if not _has_item_with_location(weapon_items, stored_weapon, "weapon", "仓库"):
 		_fail(10, "ManagementUIPolishTest: stored weapon was missing from upgrade list.")

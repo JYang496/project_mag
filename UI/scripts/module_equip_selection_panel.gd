@@ -38,6 +38,14 @@ func _ready() -> void:
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.language_changed.connect(_on_language_changed)
 
+func _input(event: InputEvent) -> void:
+	if not is_modal_open():
+		return
+	if not ModalUiController.is_cancel_input(event):
+		return
+	cancel_visible_modal()
+	get_viewport().set_input_as_handled()
+
 func open_for_module(
 	module_instance: Module,
 	on_complete: Callable = Callable(),
@@ -235,6 +243,18 @@ func _on_cancel_pressed() -> void:
 func close_without_assignment() -> void:
 	if visible:
 		_complete(false)
+
+func is_modal_open() -> bool:
+	return visible
+
+func can_cancel_modal() -> bool:
+	return true
+
+func cancel_visible_modal() -> bool:
+	if not is_modal_open() or not can_cancel_modal():
+		return false
+	close_without_assignment()
+	return true
 
 func _complete(assigned: bool) -> void:
 	visible = false

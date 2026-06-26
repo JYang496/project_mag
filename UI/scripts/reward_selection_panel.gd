@@ -31,6 +31,14 @@ func _ready() -> void:
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.language_changed.connect(_on_language_changed)
 
+func _input(event: InputEvent) -> void:
+	if not is_modal_open():
+		return
+	if not ModalUiController.is_cancel_input(event):
+		return
+	cancel_visible_modal()
+	get_viewport().set_input_as_handled()
+
 func open_for_rewards(
 	route_display_name: String,
 	reward_options: Array[RewardInfo],
@@ -95,6 +103,18 @@ func close_panel() -> void:
 	_title_override_cache = ""
 	_subtitle_override_cache = ""
 
+func is_modal_open() -> bool:
+	return visible
+
+func can_cancel_modal() -> bool:
+	return _allow_cancel
+
+func cancel_visible_modal() -> bool:
+	if not is_modal_open() or not can_cancel_modal():
+		return false
+	_on_cancel_pressed()
+	return true
+
 func _on_reward_button_pressed(index: int, source_button: Button) -> void:
 	_selected_index = index
 	for child in options_box.get_children():
@@ -126,7 +146,8 @@ func _on_cancel_pressed() -> void:
 
 func _build_reward_summary(reward: RewardInfo) -> String:
 	var chunks: PackedStringArray = []
-	chunks.append("[%s]" % RARITY_UTIL.get_display_name(reward.get_rarity()))
+	if reward.reward_kind != RewardInfo.KIND_TASK_MODULE:
+		chunks.append("[%s]" % RARITY_UTIL.get_display_name(reward.get_rarity()))
 	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
 		var weapon_name := reward.target_weapon_name
 		if weapon_name.strip_edges() == "":

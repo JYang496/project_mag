@@ -18,6 +18,7 @@ const WEAPON_PASSIVE_PANEL_VIEW_SCRIPT := preload("res://UI/scripts/components/w
 const EQUIPMENT_PICKUP_FLOW_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/equipment_pickup_flow_controller.gd")
 const WEAPON_BRANCH_SELECTION_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/weapon_branch_selection_controller.gd")
 const MODULE_TRANSACTION_DIALOG_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/module_transaction_dialog_controller.gd")
+const MODAL_DIALOG_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/modal_dialog_controller.gd")
 const REST_AREA_MANAGEMENT_SHELL_SCRIPT := preload("res://UI/scripts/management/rest_area_management_shell.gd")
 const REST_AREA_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/rest_area_ui_controller.gd")
 const PURCHASE_MANAGEMENT_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/purchase_management_controller.gd")
@@ -34,6 +35,7 @@ const UI_BOOTSTRAP_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/ui_
 const HINT_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hint_presenter.gd")
 const BATTLE_CURSOR_PRESENTER_SCRIPT := preload("res://UI/scripts/components/battle_cursor_presenter.gd")
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
+const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overlay.gd"
 
 # Roots
@@ -170,12 +172,12 @@ var cell_management_panel: Control
 var cell_effect_commit_dialog: ConfirmationDialog
 var _pending_cell_effect_commit := Callable()
 var _pending_cell_effect_cancel := Callable()
-var task_module_unassigned_dialog: ConfirmationDialog
 var _pending_task_module_unassigned_confirm := Callable()
 var _pending_task_module_unassigned_cancel := Callable()
-var task_module_replacement_dialog: Window
 var _pending_task_module_replacement_callback := Callable()
 var _pending_task_module_replacement_new_module_id := ""
+var _pending_task_module_replacement_confirm_index := -1
+var _task_module_replacement_custom_buttons: Array[Button] = []
 var _primary_menu_tweens: Dictionary = {}
 var spread_cursor_overlay
 var hud_presenter: HudPresenter
@@ -185,6 +187,7 @@ var weapon_passive_panel_view
 var equipment_pickup_flow_controller
 var weapon_branch_selection_controller
 var module_transaction_dialog_controller
+var modal_dialog_controller
 var rest_area_management_shell
 var rest_area_ui_controller
 var purchase_management_controller
@@ -513,11 +516,60 @@ func _complete_queued_module_pickup(assigned: bool, on_complete: Callable = Call
 	equipment_pickup_flow_controller.complete_module_pickup(assigned, on_complete)
 
 func _init_module_action_dialogs() -> void:
+	_init_modal_dialog_controller()
 	if module_transaction_dialog_controller == null:
 		module_transaction_dialog_controller = MODULE_TRANSACTION_DIALOG_CONTROLLER_SCRIPT.new()
-		module_transaction_dialog_controller.bind(self, gui_root)
+		module_transaction_dialog_controller.bind(self, gui_root, modal_dialog_controller)
+	else:
+		module_transaction_dialog_controller.set_modal_dialog_controller(modal_dialog_controller)
 	module_transaction_dialog_controller.ensure_dialogs()
 	_sync_module_transaction_dialog_refs()
+
+func _init_modal_dialog_controller() -> void:
+	if modal_dialog_controller != null:
+		return
+	modal_dialog_controller = MODAL_DIALOG_CONTROLLER_SCRIPT.new()
+	modal_dialog_controller.bind(self, gui_root)
+
+func confirm(spec: Dictionary) -> bool:
+	_init_modal_dialog_controller()
+	return modal_dialog_controller.confirm(spec)
+
+func request_confirmation(
+	id: StringName,
+	title: String,
+	body: String,
+	confirm_text: String = "OK",
+	cancel_text: String = "Cancel",
+	on_confirm: Callable = Callable(),
+	on_cancel: Callable = Callable(),
+	destructive: bool = false,
+	size = null,
+	checkbox_text: String = "",
+	checkbox_callback: Callable = Callable()
+) -> bool:
+	_init_modal_dialog_controller()
+	return modal_dialog_controller.request_confirmation(
+		id,
+		title,
+		body,
+		confirm_text,
+		cancel_text,
+		on_confirm,
+		on_cancel,
+		destructive,
+		size,
+		checkbox_text,
+		checkbox_callback
+	)
+
+func is_dialog_visible() -> bool:
+	return modal_dialog_controller != null and modal_dialog_controller.is_dialog_visible()
+
+func cancel_visible_dialog() -> bool:
+	if modal_dialog_controller == null:
+		return false
+	return modal_dialog_controller.cancel_visible_dialog()
 
 func _sync_module_transaction_dialog_refs() -> void:
 	if module_transaction_dialog_controller == null:
@@ -939,6 +991,8 @@ func _cancel_top_level_non_battle_ui() -> bool:
 	if module_transaction_dialog_controller != null and module_transaction_dialog_controller.cancel_visible_dialog():
 		_sync_module_transaction_dialog_refs()
 		return true
+	if cancel_visible_dialog():
+		return true
 	if temporary_module_settlement_dialog and temporary_module_settlement_dialog.visible:
 		temporary_module_settlement_dialog.hide()
 		_on_temporary_module_settlement_cancelled()
@@ -1122,32 +1176,25 @@ func request_task_module_unassigned_confirmation(
 	on_confirm: Callable,
 	on_cancel: Callable = Callable()
 ) -> bool:
-	_init_task_module_unassigned_dialog()
-	if task_module_unassigned_dialog == null:
-		return false
 	_pending_task_module_unassigned_confirm = on_confirm
 	_pending_task_module_unassigned_cancel = on_cancel
-	task_module_unassigned_dialog.title = LocalizationManager.tr_key("ui.task_module.unassigned_title", "Unassigned Task Modules")
-	task_module_unassigned_dialog.ok_button_text = LocalizationManager.tr_key("ui.common.continue", "Continue")
-	task_module_unassigned_dialog.cancel_button_text = LocalizationManager.tr_key("ui.common.cancel", "Cancel")
-	task_module_unassigned_dialog.dialog_text = LocalizationManager.tr_format(
-		"ui.task_module.unassigned_warning",
-		{"count": unassigned_count},
-		"You have %d unassigned task module(s). Starting battle will discard them." % unassigned_count
+	return request_confirmation(
+		&"task_module_unassigned_start_battle",
+		LocalizationManager.tr_key("ui.task_module.unassigned_title", "Unassigned Task Modules"),
+		LocalizationManager.tr_format(
+			"ui.task_module.unassigned_warning",
+			{"count": unassigned_count},
+			"You have %d unassigned task module(s). Starting battle will discard them." % unassigned_count
+		),
+		LocalizationManager.tr_key("ui.common.continue", "Continue"),
+		LocalizationManager.tr_key("ui.common.cancel", "Cancel"),
+		Callable(self, "_on_task_module_unassigned_confirmed"),
+		Callable(self, "_on_task_module_unassigned_cancelled"),
+		true,
+		Vector2i(520, 260)
 	)
-	task_module_unassigned_dialog.popup_centered(Vector2i(520, 260))
-	return true
 
-func _init_task_module_unassigned_dialog() -> void:
-	if task_module_unassigned_dialog != null and is_instance_valid(task_module_unassigned_dialog):
-		return
-	task_module_unassigned_dialog = ConfirmationDialog.new()
-	gui_root.add_child(task_module_unassigned_dialog)
-	task_module_unassigned_dialog.confirmed.connect(_on_task_module_unassigned_confirmed)
-	task_module_unassigned_dialog.canceled.connect(_on_task_module_unassigned_cancelled)
-	task_module_unassigned_dialog.close_requested.connect(_on_task_module_unassigned_cancelled)
-
-func _on_task_module_unassigned_confirmed() -> void:
+func _on_task_module_unassigned_confirmed(_dialog_id: StringName = &"") -> void:
 	var callback := _pending_task_module_unassigned_confirm
 	_pending_task_module_unassigned_confirm = Callable()
 	_pending_task_module_unassigned_cancel = Callable()
@@ -1155,77 +1202,110 @@ func _on_task_module_unassigned_confirmed() -> void:
 		callback.call_deferred()
 
 func request_task_module_replacement(new_module_id: String, on_replace: Callable) -> bool:
-	_init_task_module_replacement_dialog()
-	if task_module_replacement_dialog == null:
-		return false
 	_pending_task_module_replacement_callback = on_replace
 	_pending_task_module_replacement_new_module_id = new_module_id
-	_rebuild_task_module_replacement_dialog()
-	task_module_replacement_dialog.popup_centered(Vector2i(520, 340))
+	var new_definition := CellTaskModuleRuntime.get_definition(_pending_task_module_replacement_new_module_id)
+	var inventory := CellTaskModuleRuntime.get_inventory_snapshot()
+	if inventory.is_empty():
+		_on_task_module_replacement_cancelled()
+		return false
+	_pending_task_module_replacement_confirm_index = 0
+	var body_lines := [
+		LocalizationManager.tr_format(
+			"ui.task_module.inventory_full_choose_discard",
+			{"module": _format_task_module_for_dialog(new_definition, _pending_task_module_replacement_new_module_id)},
+			"Inventory full. Choose one existing task module to discard.\nIncoming: %s" % _format_task_module_for_dialog(new_definition, _pending_task_module_replacement_new_module_id)
+		),
+		"",
+		LocalizationManager.tr_key("ui.task_module.old_module_discarded", "The old module will be discarded.")
+	]
+	var opened := request_confirmation(
+		&"task_module_inventory_replacement",
+		LocalizationManager.tr_key("ui.task_module.replace_title", "Replace Task Module"),
+		"\n".join(body_lines),
+		_format_task_module_discard_slot_button(0, str(inventory[0])),
+		LocalizationManager.tr_key("ui.common.cancel", "Cancel"),
+		Callable(self, "_on_task_module_replacement_primary_confirmed"),
+		Callable(self, "_on_task_module_replacement_cancelled"),
+		true,
+		Vector2i(620, 320)
+	)
+	if not opened:
+		_on_task_module_replacement_cancelled()
+		return false
+	_attach_task_module_replacement_slot_buttons(inventory)
 	return true
 
-func _init_task_module_replacement_dialog() -> void:
-	if task_module_replacement_dialog != null and is_instance_valid(task_module_replacement_dialog):
+func _attach_task_module_replacement_slot_buttons(inventory: PackedStringArray) -> void:
+	_clear_task_module_replacement_custom_buttons()
+	if modal_dialog_controller == null or modal_dialog_controller.dialog == null:
 		return
-	task_module_replacement_dialog = Window.new()
-	task_module_replacement_dialog.title = LocalizationManager.tr_key("ui.task_module.replace_title", "Replace Task Module")
-	task_module_replacement_dialog.exclusive = true
-	task_module_replacement_dialog.unresizable = true
-	gui_root.add_child(task_module_replacement_dialog)
-	task_module_replacement_dialog.close_requested.connect(_on_task_module_replacement_cancelled)
+	var dialog: ConfirmationDialog = modal_dialog_controller.dialog
+	for index in range(1, inventory.size()):
+		var action := "discard_slot_%d" % index
+		var button := dialog.add_button(
+			_format_task_module_discard_slot_button(index, str(inventory[index])),
+			false,
+			action
+		)
+		_task_module_replacement_custom_buttons.append(button)
+	var custom_callback := Callable(self, "_on_task_module_replacement_custom_action")
+	if not dialog.custom_action.is_connected(custom_callback):
+		dialog.custom_action.connect(custom_callback)
 
-func _rebuild_task_module_replacement_dialog() -> void:
-	for child in task_module_replacement_dialog.get_children():
-		child.queue_free()
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_top", 14)
-	margin.add_theme_constant_override("margin_bottom", 14)
-	task_module_replacement_dialog.add_child(margin)
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 10)
-	margin.add_child(root)
-	var new_definition := CellTaskModuleRuntime.get_definition(_pending_task_module_replacement_new_module_id)
-	var title := Label.new()
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.text = "Inventory full. Choose one existing task module to discard.\nIncoming: %s" % _format_task_module_for_dialog(new_definition, _pending_task_module_replacement_new_module_id)
-	root.add_child(title)
-	var inventory := CellTaskModuleRuntime.get_inventory_snapshot()
-	for index in range(inventory.size()):
-		var module_id := str(inventory[index])
-		var definition := CellTaskModuleRuntime.get_definition(module_id)
-		var button := Button.new()
-		button.custom_minimum_size = Vector2(0, 48)
-		button.text = "Discard slot %d: %s" % [index + 1, _format_task_module_for_dialog(definition, module_id)]
-		button.pressed.connect(_on_task_module_replacement_index_selected.bind(index))
-		root.add_child(button)
-	var cancel := Button.new()
-	cancel.text = LocalizationManager.tr_key("ui.common.cancel", "Cancel")
-	cancel.custom_minimum_size = Vector2(0, 42)
-	cancel.pressed.connect(_on_task_module_replacement_cancelled)
-	root.add_child(cancel)
+func _format_task_module_discard_slot_button(index: int, module_id: String) -> String:
+	return LocalizationManager.tr_format(
+		"ui.task_module.discard_slot",
+		{
+			"slot": index + 1,
+			"module": _format_task_module_for_dialog(CellTaskModuleRuntime.get_definition(module_id), module_id)
+		},
+		"Discard slot %d: %s" % [index + 1, _format_task_module_for_dialog(CellTaskModuleRuntime.get_definition(module_id), module_id)]
+	)
+
+func _clear_task_module_replacement_custom_buttons() -> void:
+	for button in _task_module_replacement_custom_buttons:
+		if button != null and is_instance_valid(button):
+			button.queue_free()
+	_task_module_replacement_custom_buttons.clear()
+	if modal_dialog_controller != null and modal_dialog_controller.dialog != null:
+		var custom_callback := Callable(self, "_on_task_module_replacement_custom_action")
+		if modal_dialog_controller.dialog.custom_action.is_connected(custom_callback):
+			modal_dialog_controller.dialog.custom_action.disconnect(custom_callback)
 
 func _format_task_module_for_dialog(definition: TaskModuleDefinition, fallback_id: String) -> String:
 	if definition == null:
 		return fallback_id
-	return "[%s] %s" % [definition.get_rarity(), definition.get_display_name()]
+	return definition.get_display_name()
+
+func _on_task_module_replacement_primary_confirmed(_dialog_id: StringName = &"") -> void:
+	_on_task_module_replacement_index_selected(_pending_task_module_replacement_confirm_index)
+
+func _on_task_module_replacement_custom_action(action: StringName) -> void:
+	var action_text := str(action)
+	if not action_text.begins_with("discard_slot_"):
+		return
+	var index := int(action_text.trim_prefix("discard_slot_"))
+	_on_task_module_replacement_index_selected(index)
 
 func _on_task_module_replacement_index_selected(index: int) -> void:
 	var callback := _pending_task_module_replacement_callback
+	_clear_task_module_replacement_custom_buttons()
 	_pending_task_module_replacement_callback = Callable()
 	_pending_task_module_replacement_new_module_id = ""
-	task_module_replacement_dialog.hide()
+	_pending_task_module_replacement_confirm_index = -1
+	if modal_dialog_controller != null:
+		modal_dialog_controller.cancel_visible_dialog()
 	if callback.is_valid():
 		callback.call_deferred(index)
 
-func _on_task_module_replacement_cancelled() -> void:
+func _on_task_module_replacement_cancelled(_dialog_id: StringName = &"") -> void:
+	_clear_task_module_replacement_custom_buttons()
 	_pending_task_module_replacement_callback = Callable()
 	_pending_task_module_replacement_new_module_id = ""
-	if task_module_replacement_dialog and is_instance_valid(task_module_replacement_dialog):
-		task_module_replacement_dialog.hide()
+	_pending_task_module_replacement_confirm_index = -1
 
-func _on_task_module_unassigned_cancelled() -> void:
+func _on_task_module_unassigned_cancelled(_dialog_id: StringName = &"") -> void:
 	var callback := _pending_task_module_unassigned_cancel
 	_pending_task_module_unassigned_confirm = Callable()
 	_pending_task_module_unassigned_cancel = Callable()

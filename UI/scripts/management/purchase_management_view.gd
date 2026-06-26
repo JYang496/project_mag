@@ -62,6 +62,8 @@ func set_module_shop(module_shop_list: VBoxContainer) -> void:
 
 func set_sell_mode_active(enabled: bool) -> void:
 	sell_mode_active = enabled
+	if equipped_shop:
+		equipped_shop.visible = enabled
 	if enabled:
 		hover_item = {}
 		selected_item = {}
@@ -70,6 +72,8 @@ func set_sell_mode_active(enabled: bool) -> void:
 func apply_purchase_mode(mode: StringName) -> void:
 	purchase_mode = &"module" if mode == &"module" else &"weapon"
 	var show_purchase := not sell_mode_active
+	if equipped_shop:
+		equipped_shop.visible = sell_mode_active
 	if weapon_shop:
 		weapon_shop.visible = show_purchase and purchase_mode == &"weapon"
 	if module_shop:

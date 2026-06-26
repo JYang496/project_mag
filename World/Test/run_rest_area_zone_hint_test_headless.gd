@@ -139,6 +139,11 @@ func _run() -> void:
 	if task_panel == null:
 		_fail("task management panel root is missing")
 		return
+	get_viewport().warp_mouse(Vector2(8, 8))
+	await get_tree().process_frame
+	if not rest_area._is_mouse_over_ui():
+		_fail("task management secondary menu did not block rest-area map hover outside the panel")
+		return
 	CellTaskModuleRuntime.reset_runtime_state()
 	var task_grant_result: Dictionary = CellTaskModuleRuntime.grant_module("task_kill_common")
 	if not bool(task_grant_result.get("ok", false)):
@@ -154,6 +159,9 @@ func _run() -> void:
 	if task_button == null:
 		_fail("task management inventory entry is not a button")
 		return
+	if _node_tree_text_contains(task_button, "Deploy to an active cell"):
+		_fail("task management inventory card should not show detailed task descriptions")
+		return
 	task_button.emit_signal("pressed")
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -162,12 +170,24 @@ func _run() -> void:
 		return
 	ui.cell_management_panel.call("clear_selection_if_any")
 	await get_tree().process_frame
-	var deploy_result: Dictionary = CellTaskModuleRuntime.deploy_inventory_module(0, 5, board)
-	if not bool(deploy_result.get("ok", false)):
-		_fail("failed to deploy task module for panel size test")
+	var task_drag_payload: Dictionary = task_button.get("drag_payload")
+	var task_drag_data: Dictionary = ui.cell_management_panel.call("build_drag_data", task_drag_payload, null)
+	if task_drag_data.is_empty():
+		_fail("task management inventory entry did not build drag data")
+		return
+	if not bool(ui.cell_management_panel.call("can_drop_payload", {"kind": "task_cell", "cell_id": 5}, task_drag_data)):
+		_fail("task management cell did not accept a valid dragged task module")
+		return
+	var dropped_task := bool(ui.cell_management_panel.call("drop_payload", {"kind": "task_cell", "cell_id": 5}, task_drag_data))
+	if not dropped_task:
+		_fail("dragging a task module onto an empty cell did not deploy it")
 		return
 	await get_tree().process_frame
 	await get_tree().process_frame
+	var deployments := CellTaskModuleRuntime.get_deployment_snapshot()
+	if str(deployments.get("5", "")) != "task_kill_common":
+		_fail("dragging a task module onto an empty cell deployed the wrong module")
+		return
 	if task_panel.size.y > 600.0:
 		_fail("task management panel grew beyond its fixed height after deployment")
 		return
@@ -184,14 +204,37 @@ func _run() -> void:
 	if deployed_cell_button == null:
 		_fail("task management could not find deployed cell 5 preview button")
 		return
+	ui.cell_management_panel.call("_on_cell_hovered", 5)
+	await get_tree().process_frame
+	var task_detail_window := ui.cell_management_panel.find_child("TaskDetailWindow", true, false) as Control
+	if task_detail_window == null or not task_detail_window.visible:
+		_fail("hovering a deployed task cell should show the task detail window")
+		return
+	if not _node_tree_text_contains(task_detail_window, "Cell 5") or not _node_tree_text_contains(task_detail_window, "Kill Task Module"):
+		_fail("task detail hover window title does not identify the cell and task module")
+		return
+	if not _node_tree_text_contains(task_detail_window, "Complete to receive a cell task reward."):
+		_fail("task detail window is missing the reward summary")
+		return
+	ui.cell_management_panel.call("_on_cell_unhovered", 5)
+	await get_tree().process_frame
+	if task_detail_window.visible:
+		_fail("task detail hover window should close when hover leaves without a locked cell")
+		return
 	ui.cell_management_panel.call("_on_cell_pressed", 5)
 	await get_tree().process_frame
-	var deployments := CellTaskModuleRuntime.get_deployment_snapshot()
+	if not task_detail_window.visible:
+		_fail("clicking a deployed task cell should lock the task detail window open")
+		return
+	deployments = CellTaskModuleRuntime.get_deployment_snapshot()
 	if not deployments.has("5"):
 		_fail("clicking a deployed task cell without inventory selection should not cancel deployment")
 		return
 	if deployed_cell_button.toggle_mode or deployed_cell_button.button_pressed:
 		_fail("clicking a cell without inventory selection should not change button pressed UI state")
+		return
+	if not bool(ui.cell_management_panel.call("clear_selection_if_any")) or task_detail_window.visible:
+		_fail("task detail window should close through the panel cancel path")
 		return
 	task_grant_result = CellTaskModuleRuntime.grant_module("task_hold_common")
 	if not bool(task_grant_result.get("ok", false)):
@@ -207,9 +250,14 @@ func _run() -> void:
 	if task_button == null:
 		_fail("task management replacement inventory entry is not a button")
 		return
-	task_button.emit_signal("pressed")
-	await get_tree().process_frame
-	ui.cell_management_panel.call("_on_cell_pressed", 5)
+	task_drag_payload = task_button.get("drag_payload")
+	task_drag_data = ui.cell_management_panel.call("build_drag_data", task_drag_payload, null)
+	if task_drag_data.is_empty():
+		_fail("task management replacement inventory entry did not build drag data")
+		return
+	if not bool(ui.cell_management_panel.call("drop_payload", {"kind": "task_cell", "cell_id": 5}, task_drag_data)):
+		_fail("dragging a task module onto an occupied cell should open overwrite confirmation")
+		return
 	await get_tree().process_frame
 	var overwrite_dialog := ui.cell_management_panel.find_child("TaskOverwriteConfirmDialog", true, false) as ConfirmationDialog
 	if overwrite_dialog == null or not overwrite_dialog.visible:
@@ -267,6 +315,12 @@ func _run() -> void:
 	rest_area.selected_zone_id = 0
 	ui.rest_area_ui_controller.open_purchase_weapon_panel()
 	await get_tree().create_timer(0.25).timeout
+	if ui.equipped_shop != null and ui.equipped_shop.visible:
+		_fail("first purchase weapon panel open still shows legacy equipped-grid UI")
+		return
+	if ui.shop_detail_panel == null or not ui.shop_detail_panel.visible:
+		_fail("first purchase weapon panel open should show the purchase detail panel")
+		return
 	ui.rest_area_ui_controller.close_purchase_panel()
 	await get_tree().process_frame
 	rest_area._sync_menu_open_with_ui()
@@ -330,6 +384,20 @@ func _run() -> void:
 	InventoryData.reset_runtime_state()
 	print("RestAreaZoneHintTest: PASS")
 	get_tree().quit(0)
+
+func _node_tree_text_contains(root: Node, text: String) -> bool:
+	if root == null:
+		return false
+	var label := root as Label
+	if label != null and label.text.contains(text):
+		return true
+	var button := root as Button
+	if button != null and button.text.contains(text):
+		return true
+	for child in root.get_children():
+		if _node_tree_text_contains(child, text):
+			return true
+	return false
 
 func _fail(message: String) -> void:
 	push_error("RestAreaZoneHintTest: " + message)

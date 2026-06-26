@@ -71,3 +71,24 @@ ui.board_edit.commit_warning,These edits stay pending after you leave. Cell effe
 ui.board_edit.leave_panel,Leave Panel,离开面板
 ui.common.close,Close,关闭
 ui.common.cancel,Cancel,取消
+ui.common.continue,Continue,继续
+ui.task_module.unassigned_title,Unassigned Task Modules,未部署任务模组
+ui.task_module.unassigned_warning,You have {count} unassigned task module(s). Starting battle will discard them.,你有 {count} 个未部署任务模组。开始战斗会将其丢弃。
+ui.task_module.replace_title,Replace Task Module,替换任务模组
+ui.task_module.replace_action,Replace,替换
+ui.task_module.inventory_full_choose_discard,"Inventory full. Choose one existing task module to discard.
+Incoming: {module}","库存已满。选择一个已有任务模组丢弃。
+即将获得：{module}"
+ui.task_module.discard_slot,Discard slot {slot}: {module},丢弃槽位 {slot}：{module}
+ui.task_module.old_module_discarded,The old module will be discarded.,旧任务模组会被丢弃。
+ui.task_module.cell_replace_warning,"Cell {cell} already has a task module.
+
+Current: {current}
+New: {new}
+
+Replace the current module? The old module will be discarded.","格子 {cell} 已经有任务模组。
+
+当前：{current}
+新的：{new}
+
+要替换当前任务模组吗？旧任务模组会被丢弃。"

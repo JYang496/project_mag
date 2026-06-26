@@ -25,6 +25,14 @@ func _ready() -> void:
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.language_changed.connect(_on_language_changed)
 
+func _input(event: InputEvent) -> void:
+	if not is_modal_open():
+		return
+	if not ModalUiController.is_cancel_input(event):
+		return
+	cancel_visible_modal()
+	get_viewport().set_input_as_handled()
+
 func open_for_routes(
 	route_defs: Array[RunRouteDefinition],
 	default_route_id: String,
@@ -75,6 +83,18 @@ func close_panel() -> void:
 	_selected_route_id = ""
 	_on_confirm = Callable()
 	_on_cancel = Callable()
+
+func is_modal_open() -> bool:
+	return visible
+
+func can_cancel_modal() -> bool:
+	return true
+
+func cancel_visible_modal() -> bool:
+	if not is_modal_open() or not can_cancel_modal():
+		return false
+	_on_cancel_pressed()
+	return true
 
 func _on_route_button_pressed(route_id: String, source_button: Button) -> void:
 	_selected_route_id = route_id

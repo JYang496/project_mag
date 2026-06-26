@@ -25,6 +25,14 @@ var controls_hint_view
 var board_edit_panel: Control
 var cell_management_panel: Control
 
+static func is_cancel_input(event: InputEvent) -> bool:
+	if event == null:
+		return false
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("CANCEL") or event.is_action_pressed("ESC"):
+		return true
+	var mouse_button := event as InputEventMouseButton
+	return mouse_button != null and mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_RIGHT
+
 func bind(ui: UI, root: Control) -> void:
 	owner_ui = ui
 	gui_root = root
@@ -200,6 +208,23 @@ func request_close_cell_management_panel() -> bool:
 		owner_ui.rest_area_ui_controller.cancel_menu_level()
 	return true
 
+func is_modal_open() -> bool:
+	sync_state_from_owner()
+	for panel in _selection_modal_panels():
+		if _panel_is_modal_open(panel):
+			return true
+	return false
+
+func cancel_visible_modal() -> bool:
+	sync_state_from_owner()
+	for panel in _selection_modal_panels():
+		if not _panel_is_modal_open(panel):
+			continue
+		if panel.has_method("cancel_visible_modal"):
+			panel.call("cancel_visible_modal")
+		return true
+	return false
+
 func open_cell_board_management() -> void:
 	if owner_ui == null:
 		return
@@ -274,6 +299,22 @@ func sync_state_from_owner() -> void:
 	controls_hint_view = owner_ui.controls_hint_view
 	board_edit_panel = owner_ui.board_edit_panel
 	cell_management_panel = owner_ui.cell_management_panel
+
+func _selection_modal_panels() -> Array:
+	return [
+		branch_select_panel,
+		weapon_replacement_panel,
+		route_selection_panel,
+		reward_selection_panel,
+		module_equip_selection_panel,
+	]
+
+func _panel_is_modal_open(panel) -> bool:
+	if panel == null or not is_instance_valid(panel):
+		return false
+	if panel.has_method("is_modal_open"):
+		return bool(panel.call("is_modal_open"))
+	return bool(panel.get("visible"))
 
 func _sync_public_fields_to_owner() -> void:
 	if owner_ui == null:

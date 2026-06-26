@@ -7,11 +7,15 @@ signal completed_tasks_changed
 
 const RESOURCE_CATALOG := preload("res://autoload/ResourceCatalog.gd")
 const TASK_MODULE_DIRECTORY_PATH := "res://data/task_modules/"
-const INVENTORY_LIMIT := 2
 const ACTIVE_LIMIT := 2
 const REWARD_KIND_TASK_MODULE: StringName = &"task_module"
 const STARTING_TASK_CELL_ID := 5
 const STARTING_CELL_EFFECT_COUNT := 2
+const STARTING_TASK_MODULE_IDS := [
+	"task_kill_common",
+	"task_hold_common",
+	"task_clear_rare",
+]
 
 var _definitions_by_id: Dictionary = {}
 var _inventory: PackedStringArray = PackedStringArray()
@@ -75,8 +79,6 @@ func grant_module(module_id: String) -> Dictionary:
 	var definition := get_definition(module_id)
 	if definition == null:
 		return {"ok": false, "reason": "Missing task module."}
-	if _inventory.size() >= INVENTORY_LIMIT:
-		return {"ok": false, "reason": "Task module inventory is full.", "needs_replace": true}
 	_inventory.append(definition.module_id)
 	inventory_changed.emit()
 	return {"ok": true, "reason": ""}
@@ -106,10 +108,10 @@ func grant_starting_cell_loadout(level_index: int = 0) -> void:
 	if first_effect_id.strip_edges() != "":
 		CellEffectRuntime.set_pending_effect(STARTING_TASK_CELL_ID, first_effect_id)
 
-	var deployed_module_id := grant_random_unlocked_module(level_index)
-	if deployed_module_id.strip_edges() != "":
-		deploy_inventory_module(0, STARTING_TASK_CELL_ID, null)
-	grant_random_unlocked_module(level_index)
+	for module_id in STARTING_TASK_MODULE_IDS:
+		var result := grant_module(str(module_id))
+		if not bool(result.get("ok", false)):
+			push_warning("CellTaskModuleRuntime: failed to grant starting task module '%s': %s" % [str(module_id), str(result.get("reason", ""))])
 
 func replace_inventory_module(index: int, module_id: String) -> Dictionary:
 	var definition := get_definition(module_id)
@@ -299,8 +301,6 @@ func can_purchase_special_shop_offer() -> Dictionary:
 	var definition := get_special_shop_offer_definition()
 	if definition == null:
 		return {"ok": false, "reason": "No task module offer."}
-	if _inventory.size() >= INVENTORY_LIMIT:
-		return {"ok": false, "reason": "Task module inventory is full.", "needs_replace": true}
 	var cost := get_special_shop_cost_count(definition.module_id)
 	var available := CellEffectRuntime.get_available_effect_ids_by_rarity(definition.get_rarity())
 	if available.size() < cost:

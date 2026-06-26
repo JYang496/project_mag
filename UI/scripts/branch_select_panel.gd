@@ -17,6 +17,13 @@ func _ready() -> void:
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.language_changed.connect(_on_language_changed)
 
+func _input(event: InputEvent) -> void:
+	if not is_modal_open():
+		return
+	if not ModalUiController.is_cancel_input(event):
+		return
+	get_viewport().set_input_as_handled()
+
 func open_for_weapon(target_weapon: Weapon, branch_defs: Array[WeaponBranchDefinition]) -> void:
 	_weapon = target_weapon
 	_branch_ids.clear()
@@ -55,6 +62,15 @@ func close_panel(choose_default_if_pending: bool = false) -> void:
 	visible = false
 	_weapon = null
 	_branch_ids.clear()
+
+func is_modal_open() -> bool:
+	return visible
+
+func can_cancel_modal() -> bool:
+	return false
+
+func cancel_visible_modal() -> bool:
+	return false
 
 func _on_branch_button_pressed(branch_id: String) -> void:
 	if _weapon == null or not is_instance_valid(_weapon):

@@ -27,11 +27,15 @@ func _run() -> void:
 	if not CellEffectRuntime.get_pending_snapshot().has("5"):
 		_fail("starting loadout should preinstall one cell effect on cell 5")
 		return
-	if not CellTaskModuleRuntime.get_deployment_snapshot().has("5"):
-		_fail("starting loadout should deploy one task module to cell 5")
+	if CellTaskModuleRuntime.get_deployment_snapshot().has("5"):
+		_fail("starting loadout should leave task modules in inventory for panel testing")
 		return
-	if CellTaskModuleRuntime.get_inventory_size() != 1:
-		_fail("starting loadout should leave one installable task module in inventory")
+	var starting_inventory := CellTaskModuleRuntime.get_inventory_snapshot()
+	if starting_inventory.size() != 3:
+		_fail("starting loadout should leave three installable task modules in inventory")
+		return
+	if str(starting_inventory[0]) != "task_kill_common" or str(starting_inventory[1]) != "task_hold_common" or str(starting_inventory[2]) != "task_clear_rare":
+		_fail("starting loadout should provide deterministic task modules for UI testing")
 		return
 	CellTaskModuleRuntime.reset_runtime_state()
 	CellEffectRuntime.reset_runtime_state()
@@ -78,16 +82,16 @@ func _run() -> void:
 		_fail("failed to grant second task module: %s" % str(result))
 		return
 	result = CellTaskModuleRuntime.grant_module("task_clear_rare")
-	if bool(result.get("ok", false)) or not bool(result.get("needs_replace", false)):
-		_fail("third task module should require replacement")
-		return
-	result = CellTaskModuleRuntime.replace_inventory_module(1, "task_clear_rare")
 	if not bool(result.get("ok", false)):
-		_fail("failed to replace task module: %s" % str(result))
+		_fail("failed to grant third task module: %s" % str(result))
+		return
+	result = CellTaskModuleRuntime.grant_module("task_dodge_epic")
+	if not bool(result.get("ok", false)):
+		_fail("failed to grant fourth task module without inventory limit: %s" % str(result))
 		return
 	var inventory := CellTaskModuleRuntime.get_inventory_snapshot()
-	if inventory.size() != 2 or str(inventory[1]) != "task_clear_rare":
-		_fail("inventory replacement did not preserve the expected modules")
+	if inventory.size() != 4 or str(inventory[3]) != "task_dodge_epic":
+		_fail("task module inventory should accept more than three modules")
 		return
 
 	var board_script := load("res://World/board_cell_generator.gd") as Script
@@ -102,11 +106,11 @@ func _run() -> void:
 	if not bool(result.get("ok", false)):
 		_fail("failed to deploy task module to active cell 5: %s" % str(result))
 		return
-	if CellTaskModuleRuntime.get_inventory_size() != 1:
+	if CellTaskModuleRuntime.get_inventory_size() != 3:
 		_fail("deployment should remove one task module from inventory")
 		return
 	if not CellTaskModuleRuntime.has_unassigned_modules():
-		_fail("one undeployed task module should remain before battle")
+		_fail("undeployed task modules should remain before battle")
 		return
 	result = CellTaskModuleRuntime.commit_deployments_for_battle(board, true)
 	if not bool(result.get("ok", false)):

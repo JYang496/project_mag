@@ -20,6 +20,14 @@ func _ready() -> void:
 	_store_button.pressed.connect(_on_store_selected)
 	cancel_button.add_sibling(_store_button)
 
+func _input(event: InputEvent) -> void:
+	if not is_modal_open():
+		return
+	if not ModalUiController.is_cancel_input(event):
+		return
+	cancel_visible_modal()
+	get_viewport().set_input_as_handled()
+
 func open_for_weapon(
 	new_weapon: Weapon,
 	allow_cancel: bool = true,
@@ -110,6 +118,18 @@ func _on_cancel_pressed() -> void:
 		_new_weapon.queue_free()
 	_new_weapon = null
 	_complete(false, result)
+
+func is_modal_open() -> bool:
+	return visible
+
+func can_cancel_modal() -> bool:
+	return _allow_cancel
+
+func cancel_visible_modal() -> bool:
+	if not is_modal_open() or not can_cancel_modal():
+		return false
+	_on_cancel_pressed()
+	return true
 
 func _complete(accepted: bool, result: Dictionary) -> void:
 	visible = false

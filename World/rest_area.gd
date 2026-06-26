@@ -89,6 +89,8 @@ const BLOCKING_UI_ROOTS: Array[StringName] = [
 	&"RouteSelectionPanel",
 	&"RewardSelectionPanel",
 	&"BoardEditPanel",
+	&"CellManagementPanel",
+	&"TaskManagementPanel",
 	&"BranchSelectPanel",
 	&"ModuleEquipSelectionPanel",
 	&"WeaponReplacementPanel",
