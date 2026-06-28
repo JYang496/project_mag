@@ -40,9 +40,10 @@ func init_management_ui_polish() -> void:
 	owner_ui.module_warehouse_controller.ensure_view()
 	ensure_management_menu_buttons()
 
-	owner_ui._style_management_button(owner_ui.upgrade_panel.get_node_or_null("BackToSmithMenu") as Button)
-	owner_ui._position_management_button(owner_ui.upgrade_panel.get_node_or_null("BackToSmithMenu") as Button, Vector2(760, 532), Vector2(200, 52))
-	var legacy_module_back := owner_ui.module_panel.get_node_or_null("BackToModuleMenu") as Button
+	var upgrade_back := owner_ui.upgrade_panel.get_node_or_null("BackToUpgradeMenu") as Button
+	owner_ui._style_management_button(upgrade_back)
+	owner_ui._position_management_button(upgrade_back, Vector2(760, 532), Vector2(200, 52))
+	var legacy_module_back := owner_ui.module_panel.get_node_or_null("BackToWarehouseMenu") as Button
 	if legacy_module_back:
 		legacy_module_back.visible = false
 
@@ -58,23 +59,37 @@ func init_management_ui_polish() -> void:
 func ensure_management_menu_buttons() -> void:
 	if owner_ui == null:
 		return
+	var buy_button := owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyButton") as Button
+	_connect_button_pressed(buy_button, owner_ui.rest_area_ui_controller.open_purchase_weapon_panel)
+	var buy_module_button := owner_ui.purchase_primary_panel.get_node_or_null("OpenSellButton") as Button
+	_connect_button_pressed(buy_module_button, owner_ui.rest_area_ui_controller.open_purchase_module_panel)
 	var upgrade_weapon_button := owner_ui.upgrade_primary_panel.get_node_or_null("OpenUpgradeButton") as Button
+	_connect_button_pressed(upgrade_weapon_button, owner_ui.rest_area_ui_controller.open_upgrade_panel.bind(&"weapon"))
 	if owner_ui.upgrade_module_button == null:
 		owner_ui.upgrade_module_button = Button.new()
 		owner_ui.upgrade_module_button.name = "OpenModuleUpgradeButton"
-		owner_ui.upgrade_module_button.pressed.connect(owner_ui.rest_area_ui_controller.open_upgrade_panel.bind(&"module"))
 		owner_ui.upgrade_primary_panel.add_child(owner_ui.upgrade_module_button)
+	_connect_button_pressed(owner_ui.upgrade_module_button, owner_ui.rest_area_ui_controller.open_upgrade_panel.bind(&"module"))
+	var upgrade_back := owner_ui.upgrade_panel.get_node_or_null("BackToUpgradeMenu") as Button
+	_connect_button_pressed(upgrade_back, owner_ui.rest_area_ui_controller.back_to_upgrade_primary_menu)
 
 	var open_module_button := owner_ui.warehouse_primary_panel.get_node_or_null("OpenModuleButton") as Button
+	_connect_button_pressed(open_module_button, owner_ui.rest_area_ui_controller.open_warehouse_management_panel)
 	if owner_ui.weapon_warehouse_button == null or not is_instance_valid(owner_ui.weapon_warehouse_button):
 		owner_ui.weapon_warehouse_button = Button.new()
 		owner_ui.weapon_warehouse_button.name = "OpenWeaponWarehouseButton"
-		owner_ui.weapon_warehouse_button.pressed.connect(owner_ui.rest_area_ui_controller.open_warehouse_weapon_panel)
 		owner_ui.warehouse_primary_panel.add_child(owner_ui.weapon_warehouse_button)
+	_connect_button_pressed(owner_ui.weapon_warehouse_button, owner_ui.rest_area_ui_controller.open_warehouse_weapon_panel)
+	var warehouse_back := owner_ui.module_panel.get_node_or_null("BackToWarehouseMenu") as Button
+	_connect_button_pressed(warehouse_back, owner_ui.rest_area_ui_controller.back_to_warehouse_primary_menu)
 	var open_grid_button := owner_ui.board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button
-	if open_grid_button and not open_grid_button.pressed.is_connected(owner_ui.rest_area_ui_controller.open_cell_grid_panel):
-		open_grid_button.pressed.connect(owner_ui.rest_area_ui_controller.open_cell_grid_panel)
+	_connect_button_pressed(open_grid_button, owner_ui.rest_area_ui_controller.open_cell_grid_panel)
 	var open_task_button := owner_ui.board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button
-	if open_task_button and not open_task_button.pressed.is_connected(owner_ui.rest_area_ui_controller.open_cell_task_panel):
-		open_task_button.pressed.connect(owner_ui.rest_area_ui_controller.open_cell_task_panel)
+	_connect_button_pressed(open_task_button, owner_ui.rest_area_ui_controller.open_cell_task_panel)
 	owner_ui._style_primary_menu_controls()
+
+func _connect_button_pressed(button: Button, target: Callable) -> void:
+	if button == null or not target.is_valid():
+		return
+	if not button.pressed.is_connected(target):
+		button.pressed.connect(target)

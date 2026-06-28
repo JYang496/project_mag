@@ -50,6 +50,12 @@ func clear_hover_hint() -> void:
 	if ui != null and ui.has_method("clear_rest_area_hover_hint"):
 		ui.call("clear_rest_area_hover_hint")
 
+func is_world_interaction_blocked(_viewport: Viewport, _blocking_root_names: Array[StringName]) -> bool:
+	var ui: Node = _get_ui()
+	if ui != null and ui.has_method("is_world_interaction_blocked"):
+		return bool(ui.call("is_world_interaction_blocked"))
+	return false
+
 func is_mouse_over_blocking_ui(viewport: Viewport, blocking_root_names: Array[StringName]) -> bool:
 	if viewport == null:
 		return false

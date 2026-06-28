@@ -36,7 +36,10 @@ func _run() -> void:
 	await get_tree().process_frame
 	ui.purchase_management_controller.update_shop()
 
-	var panel := ui.get_node("GUI/PurchaseRoot/ShoppingRootv2/Panel")
+	var panel := ui.purchase_panel
+	if panel == null:
+		_fail(16, "ShopSellFlowTest: purchase management panel is missing.")
+		return
 	var sell_button := ui.shop_sell_button
 	var confirm_button := ui.shop_confirm_button
 	var cancel_button := ui.shop_cancel_button

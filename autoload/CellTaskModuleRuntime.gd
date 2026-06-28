@@ -4,6 +4,7 @@ signal inventory_changed
 signal deployment_changed
 signal active_tasks_changed
 signal completed_tasks_changed
+signal active_task_status_changed(cell_id: int)
 
 const RESOURCE_CATALOG := preload("res://autoload/ResourceCatalog.gd")
 const TASK_MODULE_DIRECTORY_PATH := "res://data/task_modules/"
@@ -226,9 +227,22 @@ func commit_deployments_for_battle(board: BoardCellGenerator = null, clear_unass
 	deployment_changed.emit()
 	active_tasks_changed.emit()
 	completed_tasks_changed.emit()
+	active_task_status_changed.emit(0)
 	if board != null and board.has_method("apply_task_module_runtime_state"):
 		board.call("apply_task_module_runtime_state")
 	return {"ok": true, "reason": "", "active_count": _active_tasks.size()}
+
+func get_active_task_statuses(board: BoardCellGenerator = null) -> Array[Dictionary]:
+	var statuses: Array[Dictionary] = []
+	for cell_id in _get_sorted_active_task_cell_ids():
+		if statuses.size() >= ACTIVE_LIMIT:
+			break
+		var module_id := get_active_task_module_id(cell_id)
+		if module_id.strip_edges() == "":
+			continue
+		var status := _build_status_for_active_task(cell_id, module_id, board)
+		statuses.append(_normalize_task_status(status, cell_id, module_id))
+	return statuses
 
 func get_active_task_module_id(cell_id: int) -> String:
 	return str(_active_tasks.get(str(cell_id), ""))
@@ -251,6 +265,7 @@ func record_objective_completed(cell_id_text: String) -> void:
 	_completed_cells[key] = _active_tasks[key]
 	_last_completed_count += 1
 	completed_tasks_changed.emit()
+	active_task_status_changed.emit(cell_id)
 
 func clear_active_tasks(board: BoardCellGenerator = null) -> void:
 	if _active_tasks.is_empty() and _completed_cells.is_empty():
@@ -259,6 +274,7 @@ func clear_active_tasks(board: BoardCellGenerator = null) -> void:
 	_completed_cells.clear()
 	active_tasks_changed.emit()
 	completed_tasks_changed.emit()
+	active_task_status_changed.emit(0)
 	if board != null and board.has_method("apply_task_module_runtime_state"):
 		board.call("apply_task_module_runtime_state")
 
@@ -334,6 +350,14 @@ func reset_runtime_state() -> void:
 	deployment_changed.emit()
 	active_tasks_changed.emit()
 	completed_tasks_changed.emit()
+	active_task_status_changed.emit(0)
+
+func notify_active_task_status_changed(cell_id: int) -> void:
+	if cell_id <= 0:
+		return
+	if not _active_tasks.has(str(cell_id)):
+		return
+	active_task_status_changed.emit(cell_id)
 
 func build_reward_option(level_index: int = 0, rarity_filter: String = "") -> RewardInfo:
 	var candidates: Array[TaskModuleDefinition] = []
@@ -390,3 +414,182 @@ func _extract_cell_id(cell_id_text: String) -> int:
 		if character >= "0" and character <= "9":
 			digits += character
 	return int(digits) if digits != "" else 0
+
+func _get_sorted_active_task_cell_ids() -> Array[int]:
+	var cell_ids: Array[int] = []
+	for cell_key in _active_tasks.keys():
+		var cell_id := int(str(cell_key))
+		if cell_id > 0:
+			cell_ids.append(cell_id)
+	cell_ids.sort()
+	return cell_ids
+
+func _build_status_for_active_task(cell_id: int, module_id: String, board: BoardCellGenerator) -> Dictionary:
+	var cell := _get_status_cell(cell_id, board)
+	var objective := _get_cell_objective_module(cell)
+	if objective != null and objective.has_method("get_combat_task_status"):
+		var status: Variant = objective.call("get_combat_task_status")
+		if status is Dictionary:
+			return (status as Dictionary).duplicate(true)
+	return _build_fallback_task_status(cell_id, module_id, cell)
+
+func _get_status_cell(cell_id: int, board: BoardCellGenerator) -> Cell:
+	if board == null:
+		return null
+	if not board.has_method("get_cell_by_logical_id"):
+		return null
+	return board.get_cell_by_logical_id(cell_id)
+
+func _get_cell_objective_module(cell: Cell) -> CellObjectiveModule:
+	if cell == null:
+		return null
+	var module_root := cell.get_node_or_null("Modules")
+	if module_root == null:
+		return null
+	for child in module_root.get_children():
+		if child is CellObjectiveModule:
+			return child as CellObjectiveModule
+	return null
+
+func _build_fallback_task_status(cell_id: int, module_id: String, cell: Cell) -> Dictionary:
+	var definition := get_definition(module_id)
+	var icon_key := "fallback"
+	var label := ""
+	if definition != null:
+		icon_key = _task_type_to_status_key(definition.task_type)
+		label = _task_type_to_status_label(definition.task_type)
+	var state := "waiting"
+	if cell != null and (not cell.board_enabled or cell.state == Cell.CellState.LOCKED):
+		state = "blocked"
+	return {
+		"cell_id": cell_id,
+		"module_id": module_id,
+		"type": icon_key,
+		"icon_key": icon_key,
+		"label": label,
+		"instruction_key": _status_type_to_instruction_key(icon_key),
+		"instruction": _status_type_to_instruction(icon_key),
+		"progress": 0.0,
+		"value_text": _default_status_value_text(icon_key),
+		"state": state
+	}
+
+func _normalize_task_status(status: Dictionary, cell_id: int, module_id: String) -> Dictionary:
+	var normalized := status.duplicate(true)
+	normalized["cell_id"] = int(normalized.get("cell_id", cell_id))
+	if int(normalized["cell_id"]) <= 0:
+		normalized["cell_id"] = cell_id
+	normalized["module_id"] = str(normalized.get("module_id", module_id))
+	if str(normalized["module_id"]).strip_edges() == "":
+		normalized["module_id"] = module_id
+	var type_text := str(normalized.get("type", "fallback"))
+	if type_text.strip_edges() == "":
+		type_text = "fallback"
+	normalized["type"] = type_text
+	var icon_key := str(normalized.get("icon_key", type_text))
+	normalized["icon_key"] = icon_key if icon_key.strip_edges() != "" else "fallback"
+	normalized["label"] = str(normalized.get("label", "")).strip_edges()
+	if str(normalized["label"]) == "":
+		normalized["label"] = _status_type_to_label(type_text)
+	var instruction_key := str(normalized.get("instruction_key", "")).strip_edges()
+	if instruction_key == "":
+		instruction_key = _status_type_to_instruction_key(type_text)
+	normalized["instruction_key"] = instruction_key
+	var instruction_text := str(normalized.get("instruction", "")).strip_edges()
+	if instruction_text == "":
+		instruction_text = _status_type_to_instruction(type_text, instruction_key)
+	normalized["instruction"] = instruction_text
+	normalized["progress"] = clampf(float(normalized.get("progress", 0.0)), 0.0, 1.0)
+	normalized["value_text"] = str(normalized.get("value_text", "")).strip_edges()
+	var state := str(normalized.get("state", "waiting"))
+	if not ["waiting", "active", "complete", "blocked"].has(state):
+		state = "waiting"
+	if _completed_cells.has(str(cell_id)):
+		state = "complete"
+		normalized["progress"] = 1.0
+		normalized["value_text"] = "完成"
+	elif str(normalized["value_text"]) == "":
+		normalized["value_text"] = _default_status_value_text(type_text)
+	normalized["state"] = state
+	return normalized
+
+func _task_type_to_status_key(task_type: int) -> String:
+	match task_type:
+		Cell.TaskType.OFFENSE:
+			return "kill"
+		Cell.TaskType.DEFENSE:
+			return "hold"
+		Cell.TaskType.CLEAR:
+			return "clear"
+		Cell.TaskType.HUNT:
+			return "hunt"
+		Cell.TaskType.DODGE:
+			return "dodge"
+		_:
+			return "fallback"
+
+func _task_type_to_status_label(task_type: int) -> String:
+	return _status_type_to_label(_task_type_to_status_key(task_type))
+
+func _status_type_to_label(status_type: String) -> String:
+	match status_type:
+		"kill":
+			return "击杀"
+		"hold":
+			return "守点"
+		"clear":
+			return "清场"
+		"hunt":
+			return "精英"
+		"dodge":
+			return "闪避"
+		_:
+			return "任务"
+
+func _status_type_to_instruction_key(status_type: String) -> String:
+	match status_type:
+		"kill":
+			return "ui.task_objective.instruction.kill"
+		"hold":
+			return "ui.task_objective.instruction.hold"
+		"clear":
+			return "ui.task_objective.instruction.clear"
+		"hunt":
+			return "ui.task_objective.instruction.hunt"
+		"dodge":
+			return "ui.task_objective.instruction.dodge"
+		_:
+			return ""
+
+func _status_type_to_instruction(status_type: String, instruction_key: String = "") -> String:
+	var fallback := _status_type_to_instruction_fallback(status_type)
+	var key := instruction_key.strip_edges()
+	if key == "":
+		key = _status_type_to_instruction_key(status_type)
+	if key == "":
+		return fallback
+	return LocalizationManager.tr_key(key, fallback)
+
+func _status_type_to_instruction_fallback(status_type: String) -> String:
+	match status_type:
+		"kill":
+			return "Kill enemies"
+		"hold":
+			return "Stay inside the marked cell"
+		"clear":
+			return "Clear enemies near this cell"
+		"hunt":
+			return "Defeat the marked elite"
+		"dodge":
+			return "Avoid damage until timer ends"
+		_:
+			return ""
+
+func _default_status_value_text(status_type: String) -> String:
+	match status_type:
+		"hold":
+			return "0/100%"
+		"dodge":
+			return "0/1秒"
+		_:
+			return "0/1"

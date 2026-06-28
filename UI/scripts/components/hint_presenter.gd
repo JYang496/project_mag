@@ -2,8 +2,8 @@ extends RefCounted
 class_name HintPresenter
 
 const HUD_MARGIN := 16.0
-const REST_HINT_SIZE := Vector2(460, 108)
-const REST_HINT_OFFSET := Vector2(12, 212)
+const REST_HINT_SIZE := Vector2(560, 82)
+const REST_HINT_TOP_MARGIN := 88.0
 const REST_ZONE_HINT_SIZE := Vector2(240, 30)
 
 var owner_ui: Node
@@ -44,6 +44,9 @@ func ensure_rest_area_hover_hint() -> Label:
 	rest_area_hover_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	rest_area_hover_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rest_area_hover_hint_label.add_theme_font_size_override("font_size", 15)
+	rest_area_hover_hint_label.add_theme_constant_override("line_spacing", 3)
+	rest_area_hover_hint_label.add_theme_color_override("font_color", Color(0.88, 0.96, 1.0, 1.0))
+	rest_area_hover_hint_label.add_theme_stylebox_override("normal", _build_rest_area_hint_style())
 	rest_area_hover_hint_label.size = REST_HINT_SIZE
 	gui_root.add_child(rest_area_hover_hint_label)
 	return rest_area_hover_hint_label
@@ -134,13 +137,27 @@ func layout_rest_area_hover_hint(viewport_size: Vector2) -> void:
 	if rest_area_hover_hint_label == null:
 		return
 	rest_area_hover_hint_label.size = REST_HINT_SIZE
-	var target := REST_HINT_OFFSET
+	var target := Vector2((viewport_size.x - rest_area_hover_hint_label.size.x) * 0.5, REST_HINT_TOP_MARGIN)
 	var max_x := maxf(0.0, viewport_size.x - rest_area_hover_hint_label.size.x - 8.0)
 	var max_y := maxf(0.0, viewport_size.y - rest_area_hover_hint_label.size.y - 8.0)
 	rest_area_hover_hint_label.position = Vector2(
 		clampf(target.x, 8.0, max_x),
 		clampf(target.y, 8.0, max_y)
 	)
+
+func _build_rest_area_hint_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.035, 0.055, 0.075, 0.90)
+	style.border_color = Color(0.32, 0.48, 0.62, 0.92)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 14.0
+	style.content_margin_right = 14.0
+	style.content_margin_top = 8.0
+	style.content_margin_bottom = 8.0
+	style.shadow_color = Color(0, 0, 0, 0.42)
+	style.shadow_size = 8
+	return style
 
 func update_rest_area_hover_hint_position() -> void:
 	if owner_ui == null:

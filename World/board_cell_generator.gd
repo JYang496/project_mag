@@ -16,6 +16,7 @@ signal active_cells_changed(active_cell_ids: PackedInt32Array)
 @export var blocker_collision_mask: int = 0
 @export var corner_pillar_size: Vector2 = Vector2(48, 48)
 @export var border_wall_thickness: float = 48.0
+@export var internal_boundary_wall_thickness: float = 18.0
 @export var enemy_traversable_inset: float = 6.0
 @export_group("Blocker Visuals")
 @export var blocker_visual_z_index: int = 5
@@ -54,6 +55,7 @@ func _enter_tree() -> void:
 	_spawn_cells()
 
 func _ready() -> void:
+	_connect_cell_task_runtime_signals()
 	_resolve_rest_area()
 	_refresh_active_cells_for_current_level(true)
 	_last_phase = PhaseManager.current_state()
@@ -61,6 +63,7 @@ func _ready() -> void:
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 	set_board_active(PhaseManager.current_state() == PhaseManager.BATTLE, true)
 	apply_cell_effect_runtime_state(PhaseManager.current_state() == PhaseManager.PREPARE)
+	call_deferred("_refresh_cell_task_markers")
 
 func _spawn_cells() -> void:
 	var center_index := Vector2i(grid_size.x / 2, grid_size.y / 2)
@@ -142,7 +145,7 @@ func project_point_to_enemy_traversable_area_with_margin(world_point: Vector2, m
 		return world_point
 	for cell in active_cells:
 		if _cell_contains_point(cell, world_point):
-			return world_point
+			return _project_point_away_from_active_boundaries(cell, world_point, margin)
 	return _project_point_to_nearest_cells(active_cells, world_point, margin)
 
 func project_point_to_player_traversable_area(world_point: Vector2) -> Vector2:
@@ -211,14 +214,17 @@ func _set_blocker_collision(active: bool) -> void:
 	var blocker_root: Node = get_node_or_null("NavigationBlockers")
 	if blocker_root == null:
 		return
-	for child in blocker_root.get_children():
+	_set_blocker_collision_recursive(blocker_root, active)
+
+func _set_blocker_collision_recursive(node: Node, active: bool) -> void:
+	for child in node.get_children():
 		var body := child as StaticBody2D
-		if body == null:
-			continue
-		var enable_collision := bool(body.get_meta("board_collision_enabled", true))
-		var should_enable := active and enable_collision
-		body.collision_layer = blocker_collision_layer if should_enable else 0
-		body.collision_mask = blocker_collision_mask if should_enable else 0
+		if body != null:
+			var enable_collision := bool(body.get_meta("board_collision_enabled", true))
+			var should_enable := active and enable_collision
+			body.collision_layer = blocker_collision_layer if should_enable else 0
+			body.collision_mask = blocker_collision_mask if should_enable else 0
+		_set_blocker_collision_recursive(child, active)
 
 func _build_navigation_blockers() -> void:
 	var blocker_root: Node2D = get_node_or_null("NavigationBlockers") as Node2D
@@ -253,7 +259,7 @@ func _add_blocker_body(
 	blocker_size: Vector2,
 	visual_color: Color,
 	enable_collision: bool = true
-) -> void:
+) -> StaticBody2D:
 	var body: StaticBody2D = StaticBody2D.new()
 	body.name = blocker_name
 	body.position = blocker_position
@@ -267,6 +273,7 @@ func _add_blocker_body(
 	body.add_child(shape)
 	body.add_child(_create_blocker_visual(blocker_size, visual_color))
 	parent.add_child(body)
+	return body
 
 func _configure_cell_capture_shape(cell: Cell) -> void:
 	if cell == null:
@@ -377,6 +384,7 @@ func _on_phase_changed(new_phase: String) -> void:
 	if not entered_prepare_from_battle:
 		_enforce_traversable_bounds_for_existing_units()
 	_last_phase = new_phase
+	call_deferred("_refresh_cell_task_markers")
 
 func _capture_rest_area_target_from_player_cell() -> void:
 	_clear_rest_area_target_center()
@@ -496,8 +504,10 @@ func apply_task_module_runtime_state() -> void:
 		var definition := CellTaskModuleRuntime.get_active_task_definition(cell.logical_id)
 		if definition != null:
 			cell.apply_runtime_task_module(definition)
+			_connect_cell_objective_status_signal(cell)
 		else:
 			cell.restore_profile_task_module()
+	call_deferred("_refresh_cell_task_markers")
 
 func _refresh_active_cells_for_current_level(force: bool = false) -> void:
 	var level_one_based := maxi(PhaseManager.current_level + 1, 1)
@@ -516,7 +526,252 @@ func _apply_active_cell_flags() -> void:
 		cell.set_board_enabled(is_active)
 		if not is_active:
 			cell.set_locked(true)
+	_refresh_active_cell_boundaries()
+	_refresh_active_boundary_blockers()
 	_set_cells_monitoring(_board_active)
+	_set_blocker_collision(_board_active)
+	call_deferred("_refresh_cell_task_markers")
+
+func _refresh_active_boundary_blockers() -> void:
+	var blocker_root := get_node_or_null("NavigationBlockers") as Node2D
+	if blocker_root == null:
+		return
+	_clear_active_boundary_blockers(blocker_root)
+	for cell in _cells:
+		if cell == null or not is_cell_active_by_id(cell.logical_id):
+			continue
+		var grid_pos := _get_grid_pos_for_logical_id(cell.logical_id)
+		var edges := _get_inactive_neighbor_edges(cell.logical_id)
+		for edge in edges:
+			_add_active_boundary_blocker(blocker_root, grid_pos, String(edge))
+
+func _clear_active_boundary_blockers(blocker_root: Node2D) -> void:
+	for child in blocker_root.get_children().duplicate():
+		var body := child as StaticBody2D
+		if body == null:
+			continue
+		if bool(body.get_meta("active_boundary_blocker", false)):
+			blocker_root.remove_child(body)
+			body.queue_free()
+
+func _add_active_boundary_blocker(blocker_root: Node2D, grid_pos: Vector2i, edge: String) -> void:
+	var cell_origin := Vector2(grid_pos.x * cell_spacing.x, grid_pos.y * cell_spacing.y)
+	var cell_size := _get_cell_capture_size()
+	var thickness := maxf(internal_boundary_wall_thickness, 1.0)
+	var half_thickness := thickness * 0.5
+	var blocker_position := Vector2.ZERO
+	var blocker_size := Vector2.ZERO
+	match edge:
+		"top":
+			blocker_position = cell_origin + Vector2(cell_size.x * 0.5, half_thickness)
+			blocker_size = Vector2(cell_size.x, thickness)
+		"right":
+			blocker_position = cell_origin + Vector2(cell_size.x - half_thickness, cell_size.y * 0.5)
+			blocker_size = Vector2(thickness, cell_size.y)
+		"bottom":
+			blocker_position = cell_origin + Vector2(cell_size.x * 0.5, cell_size.y - half_thickness)
+			blocker_size = Vector2(cell_size.x, thickness)
+		"left":
+			blocker_position = cell_origin + Vector2(half_thickness, cell_size.y * 0.5)
+			blocker_size = Vector2(thickness, cell_size.y)
+		_:
+			return
+	var body := _add_blocker_body(
+		blocker_root,
+		"ActiveBoundaryWall_%d_%d_%s" % [grid_pos.x, grid_pos.y, edge],
+		blocker_position,
+		blocker_size,
+		Color(wall_visual_color.r, wall_visual_color.g, wall_visual_color.b, 0.0),
+		true
+	)
+	body.set_meta("active_boundary_blocker", true)
+
+func _get_cell_capture_size() -> Vector2:
+	return Vector2(cell_spacing.x, cell_spacing.y)
+
+func _refresh_active_cell_boundaries() -> void:
+	for cell in _cells:
+		if cell == null:
+			continue
+		if not cell.board_enabled:
+			cell.set_active_boundary_edges(PackedStringArray())
+			continue
+		cell.set_active_boundary_edges(_get_inactive_neighbor_edges(cell.logical_id))
+
+func _get_inactive_neighbor_edges(logical_id: int) -> PackedStringArray:
+	var edges := PackedStringArray()
+	var grid_pos := _get_grid_pos_for_logical_id(logical_id)
+	var neighbors := [
+		{"edge": "top", "position": grid_pos + Vector2i(0, -1)},
+		{"edge": "right", "position": grid_pos + Vector2i(1, 0)},
+		{"edge": "bottom", "position": grid_pos + Vector2i(0, 1)},
+		{"edge": "left", "position": grid_pos + Vector2i(-1, 0)}
+	]
+	for neighbor in neighbors:
+		var neighbor_pos := neighbor["position"] as Vector2i
+		if neighbor_pos.x < 0 or neighbor_pos.y < 0 or neighbor_pos.x >= grid_size.x or neighbor_pos.y >= grid_size.y:
+			continue
+		var neighbor_id := _compute_logical_cell_id(neighbor_pos)
+		if not is_cell_active_by_id(neighbor_id):
+			edges.append(str(neighbor["edge"]))
+	return edges
+
+func _get_grid_pos_for_logical_id(logical_id: int) -> Vector2i:
+	var zero_based := logical_id - 1
+	if zero_based < 0:
+		return Vector2i.ZERO
+	var x := zero_based % grid_size.x
+	var y_from_bottom := int(zero_based / grid_size.x)
+	return Vector2i(x, grid_size.y - y_from_bottom - 1)
+
+func _connect_cell_task_runtime_signals() -> void:
+	var active_callback := Callable(self, "_on_cell_task_runtime_changed")
+	var completed_callback := Callable(self, "_on_cell_task_runtime_changed")
+	var status_callback := Callable(self, "_on_cell_task_status_changed")
+	if not CellTaskModuleRuntime.active_tasks_changed.is_connected(active_callback):
+		CellTaskModuleRuntime.active_tasks_changed.connect(active_callback)
+	if not CellTaskModuleRuntime.completed_tasks_changed.is_connected(completed_callback):
+		CellTaskModuleRuntime.completed_tasks_changed.connect(completed_callback)
+	if CellTaskModuleRuntime.has_signal("active_task_status_changed") and not CellTaskModuleRuntime.active_task_status_changed.is_connected(status_callback):
+		CellTaskModuleRuntime.active_task_status_changed.connect(status_callback)
+
+func _on_cell_task_runtime_changed() -> void:
+	call_deferred("_refresh_cell_task_markers")
+
+func _on_cell_task_status_changed(_cell_id: int) -> void:
+	call_deferred("_refresh_cell_task_markers")
+
+func _connect_cell_objective_status_signal(cell: Cell) -> void:
+	if cell == null:
+		return
+	var module_root := cell.get_node_or_null("Modules")
+	if module_root == null:
+		return
+	var callback := Callable(self, "_on_objective_task_status_changed")
+	for child in module_root.get_children():
+		if child is CellObjectiveModule and child.has_signal("task_status_changed"):
+			if not child.is_connected("task_status_changed", callback):
+				child.connect("task_status_changed", callback)
+
+func _on_objective_task_status_changed(cell_id: int) -> void:
+	if CellTaskModuleRuntime.has_method("notify_active_task_status_changed"):
+		CellTaskModuleRuntime.call("notify_active_task_status_changed", cell_id)
+	else:
+		call_deferred("_refresh_cell_task_markers")
+
+func _refresh_cell_task_markers() -> void:
+	var statuses := _collect_active_task_statuses()
+	for cell in _cells:
+		if cell == null:
+			continue
+		var cell_key := str(cell.logical_id)
+		if statuses.has(cell_key):
+			cell.set_task_marker_status(statuses[cell_key] as Dictionary)
+		else:
+			cell.clear_task_marker_status()
+
+func _collect_active_task_statuses() -> Dictionary:
+	if CellTaskModuleRuntime.has_method("get_active_task_statuses"):
+		var runtime_statuses: Variant = CellTaskModuleRuntime.call("get_active_task_statuses", self)
+		var normalized := _normalize_task_status_collection(runtime_statuses)
+		if not normalized.is_empty():
+			return normalized
+	return _build_active_task_statuses_from_runtime_snapshots()
+
+func _normalize_task_status_collection(runtime_statuses: Variant) -> Dictionary:
+	var normalized: Dictionary = {}
+	if runtime_statuses is Dictionary:
+		for key in (runtime_statuses as Dictionary).keys():
+			var value: Variant = (runtime_statuses as Dictionary)[key]
+			if value is Dictionary:
+				var status := (value as Dictionary).duplicate(true)
+				var cell_id := int(status.get("cell_id", int(str(key))))
+				if cell_id > 0:
+					normalized[str(cell_id)] = status
+	elif runtime_statuses is Array:
+		for value in runtime_statuses:
+			if value is Dictionary:
+				var status := (value as Dictionary).duplicate(true)
+				var cell_id := int(status.get("cell_id", 0))
+				if cell_id > 0:
+					normalized[str(cell_id)] = status
+	return normalized
+
+func _build_active_task_statuses_from_runtime_snapshots() -> Dictionary:
+	var statuses: Dictionary = {}
+	var active_snapshot := CellTaskModuleRuntime.get_active_tasks_snapshot()
+	var completed_snapshot := CellTaskModuleRuntime.get_completed_cells_snapshot()
+	for cell_key in active_snapshot.keys():
+		var cell_id := int(str(cell_key))
+		if cell_id <= 0:
+			continue
+		var cell := get_cell_by_logical_id(cell_id)
+		if cell == null or not cell.board_enabled:
+			continue
+		var status := cell.get_active_task_marker_status()
+		if status.is_empty():
+			status = _build_definition_task_marker_status(cell_id)
+		if completed_snapshot.has(str(cell_id)):
+			status["state"] = "complete"
+			status["progress"] = 1.0
+			status["value_text"] = "完成"
+		statuses[str(cell_id)] = status
+	return statuses
+
+func _build_definition_task_marker_status(cell_id: int) -> Dictionary:
+	var definition := CellTaskModuleRuntime.get_active_task_definition(cell_id)
+	if definition == null:
+		return {}
+	var icon_key := _task_type_to_marker_key(definition.task_type)
+	return {
+		"cell_id": cell_id,
+		"module_id": definition.module_id,
+		"type": icon_key,
+		"icon_key": icon_key,
+		"label": _marker_key_to_label(icon_key),
+		"progress": 0.0,
+		"value_text": _default_marker_value_text(icon_key),
+		"state": "waiting"
+	}
+
+func _task_type_to_marker_key(task_type: int) -> String:
+	match task_type:
+		Cell.TaskType.OFFENSE:
+			return "kill"
+		Cell.TaskType.DEFENSE:
+			return "hold"
+		Cell.TaskType.CLEAR:
+			return "clear"
+		Cell.TaskType.HUNT:
+			return "hunt"
+		Cell.TaskType.DODGE:
+			return "dodge"
+		_:
+			return "fallback"
+
+func _marker_key_to_label(marker_key: String) -> String:
+	match marker_key:
+		"kill":
+			return "击杀"
+		"hold":
+			return "守点"
+		"clear":
+			return "清场"
+		"hunt":
+			return "精英"
+		"dodge":
+			return "闪避"
+		_:
+			return "任务"
+
+func _default_marker_value_text(marker_key: String) -> String:
+	match marker_key:
+		"hold":
+			return "0/100%"
+		"dodge":
+			return "0/1秒"
+		_:
+			return "0/1"
 
 func _resolve_rest_area() -> void:
 	if is_inside_tree():
@@ -560,6 +815,104 @@ func _project_point_to_cell(cell: Cell, world_point: Vector2, margin: float = 0.
 		local_point.y = clampf(local_point.y, -half_size.y, half_size.y)
 		return collision_shape.global_transform * local_point
 	return _push_point_inside_cell(cell, _get_cell_center_global(cell), margin)
+
+func _project_point_away_from_active_boundaries(cell: Cell, world_point: Vector2, margin: float) -> Vector2:
+	if cell == null:
+		return world_point
+	var boundary_edges := _get_enemy_traversable_boundary_edges(cell.logical_id)
+	if boundary_edges.is_empty():
+		return world_point
+	var safe_margin := _get_active_boundary_safe_margin(margin)
+	if safe_margin <= 0.001:
+		return world_point
+	var capture_polygon: CollisionPolygon2D = cell.get_node_or_null("Area2D/CapturePolygon")
+	if capture_polygon and not capture_polygon.polygon.is_empty():
+		return _project_polygon_point_away_from_edges(cell, capture_polygon, world_point, boundary_edges, safe_margin)
+	var collision_shape: CollisionShape2D = cell.get_node_or_null("Area2D/CollisionShape2D")
+	if collision_shape and collision_shape.shape is RectangleShape2D:
+		return _project_rect_point_away_from_edges(cell, collision_shape, world_point, boundary_edges, safe_margin)
+	return world_point
+
+func _get_active_boundary_safe_margin(margin: float) -> float:
+	var wall_clearance := maxf(internal_boundary_wall_thickness, 0.0) + maxf(enemy_traversable_inset, 0.0)
+	return maxf(maxf(margin, 0.0), wall_clearance)
+
+func _get_enemy_traversable_boundary_edges(logical_id: int) -> PackedStringArray:
+	var edges := PackedStringArray()
+	var grid_pos := _get_grid_pos_for_logical_id(logical_id)
+	var neighbors := [
+		{"edge": "top", "position": grid_pos + Vector2i(0, -1)},
+		{"edge": "right", "position": grid_pos + Vector2i(1, 0)},
+		{"edge": "bottom", "position": grid_pos + Vector2i(0, 1)},
+		{"edge": "left", "position": grid_pos + Vector2i(-1, 0)}
+	]
+	for neighbor in neighbors:
+		var neighbor_pos := neighbor["position"] as Vector2i
+		var edge := str(neighbor["edge"])
+		if neighbor_pos.x < 0 or neighbor_pos.y < 0 or neighbor_pos.x >= grid_size.x or neighbor_pos.y >= grid_size.y:
+			edges.append(edge)
+			continue
+		var neighbor_id := _compute_logical_cell_id(neighbor_pos)
+		if not is_cell_active_by_id(neighbor_id):
+			edges.append(edge)
+	return edges
+
+func _project_polygon_point_away_from_edges(
+	cell: Cell,
+	capture_polygon: CollisionPolygon2D,
+	world_point: Vector2,
+	boundary_edges: PackedStringArray,
+	safe_margin: float
+) -> Vector2:
+	var local_aabb := _get_polygon_local_aabb(capture_polygon.polygon)
+	if local_aabb.size == Vector2.ZERO:
+		return world_point
+	var local_point: Vector2 = capture_polygon.global_transform.affine_inverse() * world_point
+	var adjusted_point := _clamp_local_point_away_from_edges(local_point, local_aabb, boundary_edges, safe_margin)
+	if adjusted_point.distance_squared_to(local_point) <= 0.0001:
+		return world_point
+	var adjusted_world: Vector2 = capture_polygon.global_transform * adjusted_point
+	if _cell_contains_point(cell, adjusted_world):
+		return adjusted_world
+	return _push_point_inside_cell(cell, _project_point_into_capture_polygon(capture_polygon, adjusted_world), 0.0)
+
+func _project_rect_point_away_from_edges(
+	cell: Cell,
+	collision_shape: CollisionShape2D,
+	world_point: Vector2,
+	boundary_edges: PackedStringArray,
+	safe_margin: float
+) -> Vector2:
+	var rectangle := collision_shape.shape as RectangleShape2D
+	var half_size := rectangle.size * 0.5 * collision_shape.scale.abs()
+	var local_aabb := Rect2(-half_size, half_size * 2.0)
+	var local_point := collision_shape.global_transform.affine_inverse() * world_point
+	var adjusted_point := _clamp_local_point_away_from_edges(local_point, local_aabb, boundary_edges, safe_margin)
+	if adjusted_point.distance_squared_to(local_point) <= 0.0001:
+		return world_point
+	var adjusted_world: Vector2 = collision_shape.global_transform * adjusted_point
+	if _cell_contains_point(cell, adjusted_world):
+		return adjusted_world
+	return _push_point_inside_cell(cell, adjusted_world, 0.0)
+
+func _clamp_local_point_away_from_edges(
+	local_point: Vector2,
+	local_aabb: Rect2,
+	boundary_edges: PackedStringArray,
+	safe_margin: float
+) -> Vector2:
+	var adjusted_point := local_point
+	var x_margin := minf(safe_margin, maxf(local_aabb.size.x * 0.5 - 1.0, 0.0))
+	var y_margin := minf(safe_margin, maxf(local_aabb.size.y * 0.5 - 1.0, 0.0))
+	if boundary_edges.has("left"):
+		adjusted_point.x = maxf(adjusted_point.x, local_aabb.position.x + x_margin)
+	if boundary_edges.has("right"):
+		adjusted_point.x = minf(adjusted_point.x, local_aabb.end.x - x_margin)
+	if boundary_edges.has("top"):
+		adjusted_point.y = maxf(adjusted_point.y, local_aabb.position.y + y_margin)
+	if boundary_edges.has("bottom"):
+		adjusted_point.y = minf(adjusted_point.y, local_aabb.end.y - y_margin)
+	return adjusted_point
 
 func _project_point_into_capture_polygon(capture_polygon: CollisionPolygon2D, world_point: Vector2) -> Vector2:
 	if capture_polygon == null or capture_polygon.polygon.is_empty():

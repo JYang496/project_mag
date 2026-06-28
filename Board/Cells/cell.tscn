@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://d382rsvvo0j8d"]
+[gd_scene load_steps=5 format=3 uid="uid://d382rsvvo0j8d"]
 
 [ext_resource type="Script" uid="uid://pjql3h4nrpm5" path="res://Board/Cells/cell.gd" id="1_bsmxj"]
 [ext_resource type="Texture2D" path="res://asset/images/cells/default.png" id="2_tgu0a"]
+[ext_resource type="PackedScene" path="res://Board/Cells/cell_activation_visual.tscn" id="3_c5sgo"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hnton"]
 
@@ -15,6 +16,8 @@ scale = Vector2(0.5, 0.5)
 [node name="Sprite2D" type="Sprite2D" parent="Texture"]
 texture_filter = 1
 texture = ExtResource("2_tgu0a")
+
+[node name="ActivationVisual" parent="." instance=ExtResource("3_c5sgo")]
 
 [node name="Area2D" type="Area2D" parent="."]
 collision_layer = 0

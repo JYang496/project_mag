@@ -1,0 +1,52 @@
+Project: project_mag
+Task: Clean up deprecated weapon resources without touching live weapon behavior.
+
+Context:
+- Current project root is `D:\Godot Projects\project_mag`.
+- The repository may already contain unrelated user changes. Do not revert or overwrite changes outside this prompt's scope.
+- This checkout currently has a broad dirty worktree. Treat pre-existing modified/deleted/untracked files as unrelated unless they are inside this worker's writable scope.
+- Do not assume `godot` is on PATH. Use the shell validation executable `D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`.
+- Godot MCP may report a different Godot version than the shell executable. If you use MCP for inspection, still use the shell command below as the final validation baseline and report any version mismatch.
+- Previous structure audit found `Player/Weapons/Deprecated/` contains old weapon scenes. At least `frost_dash_blade.tscn` and `cryo_carbine.tscn` reference missing scripts under the same directory.
+
+Writable scope:
+- `Player/Weapons/Deprecated/**`
+- Optional docs note only if needed: `docs/audits/**` or `docs/reports/**`
+
+Forbidden scope:
+- Live weapon directories outside `Player/Weapons/Deprecated/`
+- `data/weapons/**`
+- `Player/Weapons/Branches/**`
+- `Player/Weapons/Modules/**`
+- `Player/Weapons/Core/**`
+- `World/Test/**`, except if you add a focused deprecated-resource validation script and can justify it
+
+Required workflow:
+1. Run `git status --short` first and identify unrelated dirty files.
+2. Audit all resources in `Player/Weapons/Deprecated/`.
+3. Search repo-wide for references to:
+   - `res://Player/Weapons/Deprecated`
+   - `Deprecated/`
+   - `frost_dash_blade`
+   - `cryo_carbine`
+   - `ranger_unused`
+   - `spear_launcher_old`
+4. Decide one of these outcomes per resource:
+   - Delete it if it is unreferenced and no longer useful.
+   - Restore/fix its missing script reference only if it is intentionally kept as an archival playable scene.
+   - Keep it but document why, with a clear warning that it is not part of live gameplay.
+5. Prefer deleting broken unreferenced resources over preserving scenes that cannot load.
+6. If you keep the directory, add a short README explaining its status and rules for future use.
+
+Validation:
+- Run `rg -n "res://Player/Weapons/Deprecated|Deprecated/" -S .`.
+- When interpreting the `rg` results, separate production/resource references from matches inside `docs/prompt/**`.
+- Run `& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit`.
+- If Godot check fails due to unrelated dirty work, report the exact error and whether it is inside this worker's scope.
+
+Final report:
+- List every file changed or deleted.
+- State whether any deprecated resources remain and why.
+- State whether broken script references remain.
+- State which dirty files were pre-existing and outside this worker's scope.
+- Include validation commands and results.

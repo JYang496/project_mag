@@ -82,19 +82,20 @@ func _run() -> void:
 	if warehouse_tabs == null or warehouse_tabs.visible:
 		_fail(39, "ManagementUIPolishTest: secondary warehouse view still shows internal tabs.")
 		return
-	var legacy_module_back := ui.module_panel.get_node_or_null("BackToModuleMenu") as Button
+	var legacy_module_back := ui.module_panel.get_node_or_null("BackToWarehouseMenu") as Button
 	if legacy_module_back != null and legacy_module_back.visible:
-		_fail(60, "ManagementUIPolishTest: secondary warehouse view still shows the legacy BackToModuleMenu button.")
+		_fail(60, "ManagementUIPolishTest: secondary warehouse view still shows the legacy BackToWarehouseMenu button.")
 		return
 
-	for path in [
-		"GUI/PurchaseRoot/ShoppingRootv2/Panel/ShopInstruction",
-		"GUI/UpgradeRoot/UpgradeRootv2/Panel/UpgradeInstruction",
-		"GUI/WarehouseRoot/ModuleManagementRoot/Panel/ModuleInstruction",
+	for entry in [
+		{"panel": ui.purchase_panel, "name": "ShopInstruction"},
+		{"panel": ui.upgrade_panel, "name": "UpgradeInstruction"},
+		{"panel": ui.module_panel, "name": "ModuleInstruction"},
 	]:
-		var instruction := ui.get_node_or_null(path) as Label
+		var panel := entry["panel"] as Control
+		var instruction := panel.get_node_or_null(str(entry["name"])) as Label if panel != null else null
 		if instruction == null:
-			_fail(1, "ManagementUIPolishTest: missing management instruction at %s." % path)
+			_fail(1, "ManagementUIPolishTest: missing management instruction %s." % str(entry["name"]))
 			return
 
 	for button in [

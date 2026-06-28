@@ -8,6 +8,7 @@ class_name HuntEliteObjectiveModule
 
 var _quest_elites: Array[BaseEnemy] = []
 var _remaining_elites := 0
+var _killed_elites := 0
 var _spawned := false
 var _player_entered := false
 
@@ -23,13 +24,22 @@ func set_task_parameters(params: Dictionary) -> void:
 		pre_entry_damage_mul = float(params["hunt_pre_entry_damage_mul"])
 	if params.has("hunt_freeze_before_entry"):
 		freeze_before_entry = bool(params["hunt_freeze_before_entry"])
+	_emit_task_status_changed()
 
 func reset_objective_runtime() -> void:
 	super.reset_objective_runtime()
 	_cleanup_quest_elites()
 	_remaining_elites = 0
+	_killed_elites = 0
 	_spawned = false
 	_player_entered = false
+	_emit_task_status_changed()
+
+func get_combat_task_status() -> Dictionary:
+	var total := maxi(elite_count, 1)
+	var killed := mini(_killed_elites, total)
+	var progress := float(killed) / float(total)
+	return _build_combat_task_status("hunt", "hunt", "精英", progress, "%d/%d" % [killed, total], _spawned and _player_entered)
 
 func _process_objective(_delta: float) -> void:
 	if not _spawned:
@@ -41,6 +51,7 @@ func _on_phase_changed(new_phase: String) -> void:
 		_cleanup_quest_elites()
 		_spawned = false
 		_player_entered = false
+		_emit_task_status_changed()
 
 func _on_player_presence_changed(_cell_ref: Cell, player_count: int) -> void:
 	if player_count <= 0:
@@ -48,6 +59,7 @@ func _on_player_presence_changed(_cell_ref: Cell, player_count: int) -> void:
 	if not _player_entered:
 		_player_entered = true
 		_unlock_quest_elites()
+		_emit_task_status_changed()
 
 func _try_spawn_quest_elites() -> void:
 	if _spawned:
@@ -61,6 +73,8 @@ func _try_spawn_quest_elites() -> void:
 func _spawn_quest_elites() -> void:
 	_spawned = true
 	_cleanup_quest_elites()
+	_killed_elites = 0
+	_emit_task_status_changed()
 
 	var elite_candidates := _get_elite_spawn_infos()
 	if elite_candidates.is_empty():
@@ -76,6 +90,7 @@ func _spawn_quest_elites() -> void:
 			_register_quest_elite(elite)
 
 	_remaining_elites = _quest_elites.size()
+	_emit_task_status_changed()
 	if _remaining_elites <= 0:
 		# Nothing was spawned for this objective in this level, so keep it inactive.
 		push_warning("HuntEliteObjectiveModule: spawned zero elites; objective skipped for this battle.")
@@ -105,8 +120,11 @@ func _on_quest_elite_death(was_killed: bool, enemy: BaseEnemy) -> void:
 	_quest_elites.erase(enemy)
 	if not was_killed:
 		_remaining_elites = _quest_elites.size()
+		_emit_task_status_changed()
 		return
 	_remaining_elites = _quest_elites.size()
+	_killed_elites += 1
+	_emit_task_status_changed()
 	if _remaining_elites <= 0 and not _completed:
 		_complete_objective()
 
@@ -123,17 +141,30 @@ func _cleanup_quest_elites() -> void:
 	_quest_elites.clear()
 
 func _get_elite_spawn_infos() -> Array[EnemySpawnEntry]:
+	SpawnData.ensure_loaded()
 	if SpawnData.level_list.is_empty():
 		return []
 	var level_index := clampi(PhaseManager.current_level, 0, SpawnData.level_list.size() - 1)
 	var level_config := SpawnData.level_list[level_index]
-	if level_config == null:
-		return []
 	var elite_infos: Array[EnemySpawnEntry] = []
-	for entry in level_config.spawns:
+	if level_config != null:
+		_append_elite_spawn_infos(elite_infos, level_config.spawns)
+	if elite_infos.is_empty():
+		_append_fallback_elite_spawn_infos(elite_infos)
+	return elite_infos
+
+func _append_fallback_elite_spawn_infos(elite_infos: Array[EnemySpawnEntry]) -> void:
+	for level_config in SpawnData.level_list:
+		if level_config == null:
+			continue
+		_append_elite_spawn_infos(elite_infos, level_config.spawns)
+		if not elite_infos.is_empty():
+			return
+
+func _append_elite_spawn_infos(elite_infos: Array[EnemySpawnEntry], spawn_entries: Array[EnemySpawnEntry]) -> void:
+	for entry in spawn_entries:
 		if entry != null and _is_elite_spawn(entry):
 			elite_infos.append(entry)
-	return elite_infos
 
 func _is_elite_spawn(entry: EnemySpawnEntry) -> bool:
 	if entry == null:

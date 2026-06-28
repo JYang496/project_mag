@@ -11,6 +11,7 @@ const HP_BAR_ANIM_TIME := 0.2
 const HP_BAR_TRANS := Tween.TRANS_SINE
 const HP_BAR_EASE := Tween.EASE_OUT
 const HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hud_presenter.gd")
+const TASK_OBJECTIVE_HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/task_objective_hud_presenter.gd")
 const UI_REFRESH_DEBUG_COUNTER_SCRIPT := preload("res://UI/scripts/components/ui_refresh_debug_counter.gd")
 const UI_DIRTY_SIGNAL_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/ui_dirty_signal_controller.gd")
 const WEAPON_PASSIVE_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_passive_presenter.gd")
@@ -153,6 +154,7 @@ var _branch_selection_queue: Array[Dictionary] = []
 var _equipment_pickup_queue: Array[Dictionary] = []
 var _equipment_pickup_processing := false
 var _equipment_pickup_dispatch_scheduled := false
+# Compatibility mirrors written by RestAreaUiController for tests/external probes.
 var _rest_area_menu_active := false
 var _rest_area_primary_menu_id: StringName = &""
 var game_over_view
@@ -181,6 +183,7 @@ var _task_module_replacement_custom_buttons: Array[Button] = []
 var _primary_menu_tweens: Dictionary = {}
 var spread_cursor_overlay
 var hud_presenter: HudPresenter
+var task_objective_hud_presenter
 var ui_dirty_signal_controller
 var weapon_passive_presenter
 var weapon_passive_panel_view
@@ -227,6 +230,7 @@ func _ready():
 	gui_root.theme = GLOBAL_UI_THEME
 	_init_ui_bootstrap_controller()
 	ui_bootstrap_controller.bootstrap()
+	_init_task_objective_hud_presenter()
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
@@ -256,7 +260,8 @@ func _refresh_initial_prepare_shop() -> void:
 	await get_tree().process_frame
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
-	reset_purchase_refresh_cost()
+	_init_rest_area_ui_controller()
+	rest_area_ui_controller.reset_purchase_refresh_cost()
 
 func _restore_pending_equipment_transactions() -> void:
 	await get_tree().process_frame
@@ -566,6 +571,17 @@ func request_confirmation(
 func is_dialog_visible() -> bool:
 	return modal_dialog_controller != null and modal_dialog_controller.is_dialog_visible()
 
+func is_world_interaction_blocked() -> bool:
+	if is_dialog_visible():
+		return true
+	if _has_pending_module_transaction_dialog():
+		return true
+	if _is_modal_selection_world_interaction_blocked():
+		return true
+	if _is_rest_area_world_interaction_blocked():
+		return true
+	return false
+
 func cancel_visible_dialog() -> bool:
 	if modal_dialog_controller == null:
 		return false
@@ -656,6 +672,46 @@ func has_pending_blocking_transaction() -> bool:
 		return true
 	return false
 
+func _has_pending_module_transaction_dialog() -> bool:
+	if module_transaction_dialog_controller != null:
+		if module_transaction_dialog_controller.active_dialog_id != &"":
+			return true
+		if module_transaction_dialog_controller.pending_module_action.is_valid():
+			return true
+		if module_transaction_dialog_controller.pending_battle_start.is_valid():
+			return true
+		if module_transaction_dialog_controller.pending_battle_start_cancel.is_valid():
+			return true
+	if _pending_module_action.is_valid():
+		return true
+	if _pending_battle_start.is_valid():
+		return true
+	if _pending_battle_start_cancel.is_valid():
+		return true
+	if module_action_dialog and is_instance_valid(module_action_dialog) and module_action_dialog.visible:
+		return true
+	if temporary_module_settlement_dialog and is_instance_valid(temporary_module_settlement_dialog) and temporary_module_settlement_dialog.visible:
+		return true
+	return false
+
+func _is_modal_selection_world_interaction_blocked() -> bool:
+	if modal_ui_controller != null:
+		return modal_ui_controller.is_world_interaction_blocking_modal_open()
+	for panel in [
+		branch_select_panel,
+		weapon_replacement_panel,
+		route_selection_panel,
+		reward_selection_panel,
+		module_equip_selection_panel,
+	]:
+		if panel == null or not is_instance_valid(panel):
+			continue
+		if panel.has_method("is_modal_open") and bool(panel.call("is_modal_open")):
+			return true
+		if bool(panel.get("visible")):
+			return true
+	return false
+
 func _is_temporary_module_confirmation_enabled() -> bool:
 	if module_transaction_dialog_controller != null:
 		return module_transaction_dialog_controller.is_temporary_module_confirmation_enabled()
@@ -705,7 +761,8 @@ func request_module_equip_selection(
 ) -> bool:
 	if module_instance == null or not is_instance_valid(module_instance):
 		return false
-	if not allow_reward_transaction and not is_rest_area_module_management_available():
+	_init_rest_area_ui_controller()
+	if not allow_reward_transaction and not rest_area_ui_controller.is_module_management_available():
 		show_item_message(LocalizationManager.tr_key(
 			"ui.module.reason.rest_area_only",
 			"Modules can only be managed in the Rest Area."
@@ -772,7 +829,9 @@ func request_reward_selection(
 
 func request_task_reward_selection(
 	reward_options: Array[RewardInfo],
-	on_confirm: Callable
+	on_confirm: Callable,
+	progress_index: int = 0,
+	progress_total: int = 0
 ) -> bool:
 	_init_reward_selection_panel()
 	if reward_selection_panel == null or not is_instance_valid(reward_selection_panel):
@@ -783,11 +842,10 @@ func request_task_reward_selection(
 		on_confirm,
 		Callable(),
 		false,
-		LocalizationManager.tr_key("ui.task_reward.title", "Objective Reward"),
-		LocalizationManager.tr_key(
-			"ui.task_reward.subtitle",
-			"Choose one reward for completing an objective this battle."
-		)
+		LocalizationManager.tr_key("ui.task_reward.title", "Objective Complete"),
+		LocalizationManager.tr_key("ui.task_reward.subtitle", "Choose 1 reward"),
+		progress_index,
+		progress_total
 	)
 
 func resume_pending_weapon_branch_selection() -> void:
@@ -807,6 +865,7 @@ func _finalize_branch_selected_weapon(weapon: Weapon) -> void:
 
 func _physics_process(delta: float) -> void:
 	_refresh_hud_if_needed(delta)
+	_refresh_task_objective_hud_if_needed(delta)
 	_refresh_weapon_passive_panel_if_needed(delta)
 	_refresh_controls_hint_visibility()
 	_update_rest_area_hover_hint_position()
@@ -835,6 +894,18 @@ func _refresh_hud_if_needed(delta: float) -> void:
 		_hud_weapon_dirty = false
 	if hud_presenter.refresh_continuous(delta):
 		_increment_ui_refresh_debug_count("hud_continuous")
+
+func _refresh_task_objective_hud_if_needed(delta: float) -> void:
+	if task_objective_hud_presenter == null:
+		return
+	if task_objective_hud_presenter.refresh_if_needed(delta):
+		_increment_ui_refresh_debug_count("task_objective_hud")
+
+func _refresh_task_objective_hud(force: bool = false) -> void:
+	if task_objective_hud_presenter == null:
+		return
+	task_objective_hud_presenter.mark_dirty()
+	task_objective_hud_presenter.refresh(force)
 
 func _increment_ui_refresh_debug_count(key: String) -> void:
 	_ui_refresh_debug_counter.increment(key)
@@ -869,6 +940,13 @@ func _init_hud_presenter() -> void:
 	hud_presenter.configure_hp_bar_anim(HP_BAR_ANIM_TIME, HP_BAR_TRANS, HP_BAR_EASE)
 	hud_presenter.init_hp_bar()
 	hud_presenter.refresh_static_texts()
+
+func _init_task_objective_hud_presenter() -> void:
+	if task_objective_hud_presenter != null:
+		return
+	task_objective_hud_presenter = TASK_OBJECTIVE_HUD_PRESENTER_SCRIPT.new()
+	task_objective_hud_presenter.bind(self, character_root)
+	task_objective_hud_presenter.layout(get_viewport().get_visible_rect().size)
 
 func _init_ui_dirty_signal_controller() -> void:
 	if ui_dirty_signal_controller != null:
@@ -1017,43 +1095,20 @@ func _cancel_top_level_non_battle_ui() -> bool:
 	if module_equip_selection_panel and module_equip_selection_panel.visible:
 		module_equip_selection_panel.close_without_assignment()
 		return true
-	if _rest_area_menu_active:
+	if rest_area_ui_controller != null and rest_area_ui_controller.active:
 		return rest_area_ui_controller.cancel_menu_level()
 	return false
 
 func reset_purchase_refresh_cost() -> void:
+	# Compatibility entrypoint for PhaseManager prepare refresh.
 	_init_rest_area_ui_controller()
 	rest_area_ui_controller.reset_purchase_refresh_cost()
-
-func refresh_shop_items_for_prepare() -> void:
-	_init_rest_area_ui_controller()
-	rest_area_ui_controller.refresh_shop_items_for_prepare()
-
-func upgrade_panel_out() -> void:
-	_init_rest_area_ui_controller()
-	rest_area_ui_controller.upgrade_panel_out()
-
-func is_rest_area_module_management_available() -> bool:
-	_init_rest_area_ui_controller()
-	return rest_area_ui_controller.is_module_management_available()
 
 func _show_module_rest_area_only_message() -> void:
 	show_item_message(LocalizationManager.tr_key(
 		"ui.module.reason.rest_area_only",
 		"Modules can only be managed in the Rest Area."
 	), 1.8)
-
-func _close_module_management_ui() -> void:
-	_init_rest_area_ui_controller()
-	rest_area_ui_controller.close_module_management_ui()
-
-func _set_management_root_visible(root_id: StringName, visible: bool) -> void:
-	_init_rest_area_ui_controller()
-	rest_area_ui_controller.set_management_root_visible(root_id, visible)
-
-func _set_primary_root_visible(root_id: StringName, visible: bool) -> void:
-	_init_rest_area_ui_controller()
-	rest_area_ui_controller.set_primary_root_visible(root_id, visible)
 
 # Management view polish and controller bridges
 
@@ -1138,10 +1193,12 @@ func _style_primary_menu_controls() -> void:
 	)
 
 func is_rest_area_zone_navigation_allowed() -> bool:
+	# Compatibility entrypoint for RestArea/world-blocking tests.
 	_init_rest_area_ui_controller()
 	return rest_area_ui_controller.is_zone_navigation_allowed()
 
 func is_rest_area_menu_visible() -> bool:
+	# Compatibility entrypoint for RestArea menu state sync and tests.
 	_init_rest_area_ui_controller()
 	return rest_area_ui_controller.is_menu_visible()
 
@@ -1150,12 +1207,12 @@ func _refresh_board_edit_primary_texts() -> void:
 		return
 	var title := board_edit_primary_panel.get_node_or_null("Title") as Label
 	if title:
-		title.text = LocalizationManager.tr_key("ui.cell_management.title", "Cell Management")
+		title.text = LocalizationManager.tr_key("ui.cell_management.title", "Board")
 	var subtitle := board_edit_primary_panel.get_node_or_null("SubTitle") as Label
 	if subtitle:
 		subtitle.text = LocalizationManager.tr_key(
 			"ui.cell_management.subtitle",
-			"Manage terrain effects or deploy short-lived task modules for the next battle."
+			"Install cell effects or deploy task modules."
 		)
 	var grid_button := board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button
 	if grid_button:
@@ -1184,7 +1241,7 @@ func request_task_module_unassigned_confirmation(
 		LocalizationManager.tr_format(
 			"ui.task_module.unassigned_warning",
 			{"count": unassigned_count},
-			"You have %d unassigned task module(s). Starting battle will discard them." % unassigned_count
+			"You have %d unassigned task module(s). Starting battle will discard them. Deployed tasks will be consumed for the next battle." % unassigned_count
 		),
 		LocalizationManager.tr_key("ui.common.continue", "Continue"),
 		LocalizationManager.tr_key("ui.common.cancel", "Cancel"),
@@ -1350,7 +1407,8 @@ func _on_resume_button_pressed() -> void:
 
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase != PhaseManager.PREPARE:
-		_close_module_management_ui()
+		_init_rest_area_ui_controller()
+		rest_area_ui_controller.close_module_management_ui()
 		if board_edit_panel and is_instance_valid(board_edit_panel):
 			board_edit_panel.close_panel()
 	if new_phase == PhaseManager.GAMEOVER:
@@ -1358,6 +1416,7 @@ func _on_phase_changed(new_phase: String) -> void:
 	_request_next_queued_weapon_branch_selection()
 	_update_controls_guide_for_phase(new_phase)
 	_update_cursor_presentation()
+	_refresh_task_objective_hud(true)
 
 func _should_use_battle_ring_cursor() -> bool:
 	if PhaseManager.current_state() != PhaseManager.BATTLE:
@@ -1368,17 +1427,7 @@ func _should_use_battle_ring_cursor() -> bool:
 		return false
 	if game_over_view and is_instance_valid(game_over_view) and game_over_view.visible:
 		return false
-	if _is_primary_menu_open() or _is_secondary_menu_open():
-		return false
-	if branch_select_panel and is_instance_valid(branch_select_panel) and branch_select_panel.visible:
-		return false
-	if module_equip_selection_panel and is_instance_valid(module_equip_selection_panel) and module_equip_selection_panel.visible:
-		return false
-	if route_selection_panel and is_instance_valid(route_selection_panel) and route_selection_panel.visible:
-		return false
-	if reward_selection_panel and is_instance_valid(reward_selection_panel) and reward_selection_panel.visible:
-		return false
-	if board_edit_panel and is_instance_valid(board_edit_panel) and board_edit_panel.visible:
+	if _is_primary_menu_open() or is_world_interaction_blocked():
 		return false
 	return true
 
@@ -1425,11 +1474,11 @@ func _layout_controls_hint_panel(viewport_size: Vector2) -> void:
 
 func _update_controls_guide_for_phase(phase: String) -> void:
 	_init_modal_ui_controller()
-	modal_ui_controller.update_controls_guide_for_phase(phase, _is_primary_menu_open(), _is_secondary_menu_open())
+	modal_ui_controller.update_controls_guide_for_phase(phase, _is_primary_menu_open(), _get_secondary_menu_context())
 
 func _refresh_controls_hint_visibility() -> void:
 	_init_modal_ui_controller()
-	modal_ui_controller.refresh_controls_hint_visibility(_is_secondary_menu_open())
+	modal_ui_controller.refresh_controls_hint_visibility(_is_primary_menu_open(), _get_secondary_menu_context())
 
 func _is_primary_menu_open() -> bool:
 	if rest_area_ui_controller:
@@ -1439,6 +1488,25 @@ func _is_primary_menu_open() -> bool:
 func _is_secondary_menu_open() -> bool:
 	if rest_area_ui_controller:
 		return rest_area_ui_controller.is_secondary_menu_open()
+	return false
+
+func _get_secondary_menu_context() -> StringName:
+	if rest_area_ui_controller:
+		return rest_area_ui_controller.get_secondary_menu_context()
+	return &""
+
+func _is_rest_area_world_interaction_blocked() -> bool:
+	if rest_area_ui_controller:
+		return rest_area_ui_controller.is_world_interaction_blocking_panel_visible()
+	if board_edit_panel and is_instance_valid(board_edit_panel) and board_edit_panel.visible:
+		return true
+	if cell_management_panel and is_instance_valid(cell_management_panel) and cell_management_panel.visible:
+		return true
+	if weapon_warehouse_panel and is_instance_valid(weapon_warehouse_panel) and weapon_warehouse_panel.visible:
+		return true
+	for root in [purchase_management_root, upgrade_management_root, warehouse_management_root]:
+		if root and is_instance_valid(root) and root.visible:
+			return true
 	return false
 
 func _refresh_controls_guide_texts() -> void:
@@ -1533,6 +1601,8 @@ func _on_viewport_size_changed() -> void:
 func _apply_responsive_layout() -> void:
 	_init_ui_layout_controller()
 	ui_layout_controller.apply_responsive_layout()
+	if task_objective_hud_presenter != null:
+		task_objective_hud_presenter.layout(get_viewport().get_visible_rect().size)
 
 # Quest, rest-area hints, and cursor overlays
 
@@ -1678,6 +1748,8 @@ func _refresh_localized_static_text() -> void:
 	_init_localization_refresh_controller()
 	localization_refresh_controller.refresh_texts()
 	_mark_all_hud_dirty()
+	if task_objective_hud_presenter != null:
+		task_objective_hud_presenter.mark_dirty()
 	_refresh_controls_guide_texts()
 	_refresh_game_over_static_text()
 

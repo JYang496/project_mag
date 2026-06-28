@@ -3,18 +3,22 @@ class_name RestAreaUiController
 
 const PRIMARY_MENU_ANIM_TIME := 0.2
 const SERVICE_MENU_IDS: Array[StringName] = [&"purchase", &"upgrade", &"warehouse", &"board_edit"]
+const SECONDARY_MENU_DIM_OVERLAY_NAME := "SecondaryMenuDimOverlay"
+const SECONDARY_MENU_DIM_COLOR := Color(0.0, 0.0, 0.0, 0.42)
 
 var owner_ui: UI
 var shell: RestAreaManagementShell
 var layout_controller: UiLayoutController
 var active := false
 var primary_menu_id: StringName = &""
+var _secondary_menu_dim_overlay: ColorRect
 
 func bind(ui: UI, management_shell: RestAreaManagementShell, ui_layout_controller: UiLayoutController = null) -> void:
 	owner_ui = ui
 	shell = management_shell
 	layout_controller = ui_layout_controller
-	sync_state_from_owner()
+	_sync_public_fields_to_owner()
+	sync_secondary_menu_dim_overlay()
 
 func set_layout_controller(ui_layout_controller: UiLayoutController) -> void:
 	layout_controller = ui_layout_controller
@@ -56,7 +60,6 @@ func open_menu(menu_id: StringName) -> void:
 	menu_id = _normalize_menu_id(menu_id)
 	active = true
 	primary_menu_id = menu_id
-	_sync_state_to_shell()
 	_sync_public_fields_to_owner()
 	PlayerData.is_interacting = true
 	if not _open_primary_menu_by_id(menu_id):
@@ -65,7 +68,6 @@ func open_menu(menu_id: StringName) -> void:
 func open_board_edit_panel() -> bool:
 	active = true
 	primary_menu_id = &"board_edit"
-	_sync_state_to_shell()
 	_sync_public_fields_to_owner()
 	PlayerData.is_interacting = true
 	if not _open_primary_menu_by_id(&"board_edit"):
@@ -90,6 +92,7 @@ func _close_all_rest_area_panels() -> void:
 		if root:
 			root.visible = false
 	InventoryData.clear_on_select()
+	sync_secondary_menu_dim_overlay()
 
 func purchase_panel_in() -> void:
 	if owner_ui.purchase_management_root == null:
@@ -120,7 +123,6 @@ func purchase_menu_out() -> void:
 	active = false
 	if primary_menu_id == &"purchase":
 		primary_menu_id = &""
-	_sync_state_to_shell()
 	_sync_public_fields_to_owner()
 
 func warehouse_back_to_purchase() -> void:
@@ -176,7 +178,7 @@ func warehouse_menu_out() -> void:
 	InventoryData.clear_on_select()
 
 func warehouse_panel_in(tab: StringName = &"") -> void:
-	if not owner_ui.is_rest_area_module_management_available():
+	if not is_module_management_available():
 		owner_ui._show_module_rest_area_only_message()
 		return
 	if tab != &"":
@@ -197,10 +199,7 @@ func close_module_management_ui() -> void:
 		_stop_primary_menu_tween(&"warehouse")
 		active = false
 		primary_menu_id = &""
-		if shell != null:
-			shell.clear_module_state_if_active()
 		PlayerData.is_interacting = false
-	_sync_state_to_shell()
 	_sync_public_fields_to_owner()
 
 func open_purchase_weapon_panel() -> void:
@@ -250,7 +249,7 @@ func back_to_upgrade_primary_menu() -> void:
 	_show_primary_menu(&"upgrade", owner_ui.upgrade_primary_root, owner_ui.upgrade_primary_panel)
 
 func open_warehouse_management_panel() -> void:
-	if not owner_ui.is_rest_area_module_management_available():
+	if not is_module_management_available():
 		owner_ui._show_module_rest_area_only_message()
 		return
 	var should_wait := owner_ui.warehouse_primary_root != null and owner_ui.warehouse_primary_root.visible
@@ -282,6 +281,7 @@ func open_cell_grid_panel() -> void:
 		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	if not owner_ui.open_board_edit_panel():
 		back_to_board_primary_menu()
+	sync_secondary_menu_dim_overlay()
 
 func open_cell_task_panel() -> void:
 	var should_wait := owner_ui.board_edit_primary_root != null and owner_ui.board_edit_primary_root.visible
@@ -290,6 +290,7 @@ func open_cell_task_panel() -> void:
 		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	if not owner_ui.open_cell_management_panel(&"task"):
 		back_to_board_primary_menu()
+	sync_secondary_menu_dim_overlay()
 
 func back_to_board_primary_menu() -> void:
 	if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel):
@@ -297,6 +298,7 @@ func back_to_board_primary_menu() -> void:
 	if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel):
 		owner_ui.board_edit_panel.call("close_panel")
 	_show_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
+	sync_secondary_menu_dim_overlay()
 
 func close_purchase_menu() -> void:
 	if not active:
@@ -323,7 +325,6 @@ func close_primary_menu() -> void:
 	_clear_active()
 
 func is_purchase_active() -> bool:
-	_sync_state_from_shell()
 	_sync_public_fields_to_owner()
 	return active
 
@@ -331,6 +332,17 @@ func set_management_root_visible(root_id: StringName, visible: bool) -> void:
 	var root := _get_management_root(root_id)
 	if root:
 		root.visible = visible
+	sync_secondary_menu_dim_overlay()
+
+func sync_secondary_menu_dim_overlay() -> void:
+	if owner_ui == null:
+		return
+	var overlay := _ensure_secondary_menu_dim_overlay()
+	if overlay == null:
+		return
+	overlay.visible = is_secondary_menu_open()
+	if overlay.visible:
+		_send_secondary_menu_dim_overlay_to_back()
 
 func set_primary_root_visible(root_id: StringName, visible: bool) -> void:
 	var root := _get_primary_root(root_id)
@@ -338,7 +350,6 @@ func set_primary_root_visible(root_id: StringName, visible: bool) -> void:
 		root.visible = visible
 
 func is_menu_visible() -> bool:
-	_sync_state_from_shell()
 	var visible := false
 	if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel) and owner_ui.cell_management_panel.visible:
 		visible = true
@@ -348,38 +359,21 @@ func is_menu_visible() -> bool:
 		visible = true
 		_sync_public_fields_to_owner()
 		return visible
-	if shell != null:
-		visible = shell.is_menu_visible(
-			is_primary_menu_open() or is_secondary_menu_open(),
-			owner_ui.weapon_warehouse_panel,
-			owner_ui.module_equip_selection_panel
-		)
-	else:
-		visible = active and _has_open_rest_area_menu()
-	if not visible and primary_menu_id == &"board_edit":
+	visible = _has_open_rest_area_menu()
+	if not visible and active:
 		_clear_active()
 		return false
 	_sync_public_fields_to_owner()
 	return visible
 
 func is_zone_navigation_allowed() -> bool:
-	_sync_state_from_shell()
 	if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel) and owner_ui.cell_management_panel.visible:
 		_sync_public_fields_to_owner()
 		return false
 	if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel) and owner_ui.board_edit_panel.visible:
 		_sync_public_fields_to_owner()
 		return false
-	var allowed := true
-	if shell != null:
-		allowed = shell.is_zone_navigation_allowed(
-			owner_ui.purchase_primary_root,
-			owner_ui.upgrade_primary_root,
-			owner_ui.warehouse_primary_root,
-			owner_ui.board_edit_primary_root
-		)
-	else:
-		allowed = _is_zone_navigation_allowed_without_shell()
+	var allowed := _is_zone_navigation_allowed_without_shell()
 	_sync_public_fields_to_owner()
 	return allowed
 
@@ -395,7 +389,6 @@ func is_module_management_available() -> bool:
 	return false
 
 func handle_right_cancel() -> bool:
-	sync_state_from_owner()
 	if primary_menu_id == &"board_edit" and owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel) and owner_ui.board_edit_panel.visible:
 		if owner_ui.board_edit_panel.has_method("clear_selection_if_any") and bool(owner_ui.board_edit_panel.call("clear_selection_if_any")):
 			return true
@@ -405,14 +398,13 @@ func handle_right_cancel() -> bool:
 			return true
 		return owner_ui.request_close_cell_management_panel()
 	if owner_ui._cancel_top_level_non_battle_ui():
-		sync_state_from_owner()
+		_sync_public_fields_to_owner()
 		return true
 	if not active:
 		return false
 	return cancel_menu_level()
 
 func cancel_menu_level() -> bool:
-	sync_state_from_owner()
 	if primary_menu_id == &"purchase":
 		if owner_ui.weapon_warehouse_panel and owner_ui.weapon_warehouse_panel.visible:
 			owner_ui.weapon_warehouse_panel.close_panel()
@@ -477,10 +469,35 @@ func is_secondary_menu_open() -> bool:
 		return true
 	if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel) and owner_ui.cell_management_panel.visible:
 		return true
+	if owner_ui.weapon_warehouse_panel and is_instance_valid(owner_ui.weapon_warehouse_panel) and owner_ui.weapon_warehouse_panel.visible:
+		return true
 	for root in [owner_ui.purchase_management_root, owner_ui.upgrade_management_root, owner_ui.warehouse_management_root]:
 		if root and is_instance_valid(root) and root.visible:
 			return true
 	return false
+
+func get_secondary_menu_context() -> StringName:
+	if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel) and owner_ui.board_edit_panel.visible:
+		return &"grid_management"
+	if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel) and owner_ui.cell_management_panel.visible:
+		return &"task_management"
+	if owner_ui.weapon_warehouse_panel and is_instance_valid(owner_ui.weapon_warehouse_panel) and owner_ui.weapon_warehouse_panel.visible:
+		return &"warehouse"
+	if owner_ui.purchase_management_root and is_instance_valid(owner_ui.purchase_management_root) and owner_ui.purchase_management_root.visible:
+		return &"purchase"
+	if owner_ui.upgrade_management_root and is_instance_valid(owner_ui.upgrade_management_root) and owner_ui.upgrade_management_root.visible:
+		return &"upgrade"
+	if owner_ui.warehouse_management_root and is_instance_valid(owner_ui.warehouse_management_root) and owner_ui.warehouse_management_root.visible:
+		return &"warehouse"
+	if owner_ui.module_equip_selection_panel and is_instance_valid(owner_ui.module_equip_selection_panel) and owner_ui.module_equip_selection_panel.visible:
+		return &"warehouse"
+	return &""
+
+func is_world_interaction_blocking_panel_visible() -> bool:
+	return is_secondary_menu_open()
+
+func get_secondary_menu_dim_overlay() -> ColorRect:
+	return _ensure_secondary_menu_dim_overlay()
 
 func _show_primary_menu(menu_id: StringName, root: Control, panel: Control) -> void:
 	_ensure_layout_controller()
@@ -513,18 +530,36 @@ func _ensure_layout_controller() -> void:
 	owner_ui._init_ui_layout_controller()
 	layout_controller = owner_ui.ui_layout_controller
 
-func sync_state_from_owner() -> void:
-	if owner_ui == null:
+func _ensure_secondary_menu_dim_overlay() -> ColorRect:
+	if _secondary_menu_dim_overlay != null and is_instance_valid(_secondary_menu_dim_overlay):
+		return _secondary_menu_dim_overlay
+	if owner_ui == null or owner_ui.gui_root == null:
+		return null
+	var existing := owner_ui.gui_root.get_node_or_null(SECONDARY_MENU_DIM_OVERLAY_NAME) as ColorRect
+	if existing != null:
+		_secondary_menu_dim_overlay = existing
+	else:
+		_secondary_menu_dim_overlay = ColorRect.new()
+		_secondary_menu_dim_overlay.name = SECONDARY_MENU_DIM_OVERLAY_NAME
+		_secondary_menu_dim_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_secondary_menu_dim_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_secondary_menu_dim_overlay.z_index = -50
+		owner_ui.gui_root.add_child(_secondary_menu_dim_overlay)
+	_secondary_menu_dim_overlay.color = SECONDARY_MENU_DIM_COLOR
+	_secondary_menu_dim_overlay.visible = false
+	_send_secondary_menu_dim_overlay_to_back()
+	return _secondary_menu_dim_overlay
+
+func _send_secondary_menu_dim_overlay_to_back() -> void:
+	if _secondary_menu_dim_overlay == null or not is_instance_valid(_secondary_menu_dim_overlay):
 		return
-	active = owner_ui._rest_area_menu_active
-	primary_menu_id = _normalize_menu_id(owner_ui._rest_area_primary_menu_id)
-	_sync_state_to_shell()
+	if _secondary_menu_dim_overlay.get_parent() == owner_ui.gui_root:
+		owner_ui.gui_root.move_child(_secondary_menu_dim_overlay, 0)
 
 func _clear_active() -> void:
 	PlayerData.is_interacting = false
 	active = false
 	primary_menu_id = &""
-	_sync_state_to_shell()
 	_sync_public_fields_to_owner()
 
 func _has_open_rest_area_menu() -> bool:
@@ -556,18 +591,6 @@ func _is_zone_navigation_allowed_without_shell() -> bool:
 	if primary_menu_id == &"board_edit" and owner_ui.board_edit_primary_root and owner_ui.board_edit_primary_root.visible:
 		return true
 	return false
-
-func _sync_state_from_shell() -> void:
-	if shell == null:
-		return
-	active = shell.active
-	primary_menu_id = _normalize_menu_id(shell.primary_menu_id)
-
-func _sync_state_to_shell() -> void:
-	if shell == null:
-		return
-	shell.active = active
-	shell.primary_menu_id = primary_menu_id
 
 func _sync_public_fields_to_owner() -> void:
 	if owner_ui == null:

@@ -118,6 +118,8 @@ func _on_modal_visibility_changed() -> void:
 	if ignore_next_modal_hide:
 		ignore_next_modal_hide = false
 		return
+	if active_dialog_id == &"":
+		return
 	_on_modal_cancelled()
 
 func request_module_unequip_confirmation(module_instance: Module, weapon: Weapon) -> bool:

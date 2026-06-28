@@ -42,8 +42,8 @@ func _run() -> void:
 		return
 	get_viewport().warp_mouse(Vector2(8, 8))
 	await get_tree().process_frame
-	if not rest_area._is_mouse_over_ui():
-		_fail("task management panel did not block rest-area hover outside the panel")
+	if not rest_area._is_world_interaction_blocked():
+		_fail("task management panel did not block rest-area world interaction")
 		return
 
 	print("RestAreaTaskManagementBlockingTest: PASS")

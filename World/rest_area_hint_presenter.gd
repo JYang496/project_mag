@@ -4,7 +4,7 @@ var _owner: Node2D
 var _zone_merchant_hint_text := "Purchase"
 var _zone_smith_hint_text := "Upgrade"
 var _zone_module_hint_text := "Warehouses"
-var _zone_board_hint_text := "Board Edit"
+var _zone_board_hint_text := "Board"
 var _zone_battle_hold_hint_text := "Hold left mouse on center to start battle"
 var _zone_hint_forward_offset := Vector2(0.0, -44.0)
 var _zone_hint_z_index := 80
@@ -94,19 +94,9 @@ func refresh() -> void:
 			module_status,
 		]
 	if _board_hint_label:
-		var board_status := LocalizationManager.tr_key("ui.rest.zone.board.none", "No cell effect items")
-		var pending_edits := CellEffectRuntime.get_pending_snapshot().size()
-		if pending_edits > 0:
-			board_status = LocalizationManager.tr_format(
-				"ui.rest.zone.board.pending",
-				{"count": pending_edits},
-				"%d pending board edits" % pending_edits
-			)
-		elif not CellEffectRuntime.get_inventory_snapshot().is_empty():
-			board_status = LocalizationManager.tr_key("ui.rest.zone.board.available", "Install cell effects")
 		_board_hint_label.text = "%s\n%s" % [
 			LocalizationManager.tr_key("ui.rest.zone.board.title", _zone_board_hint_text),
-			board_status,
+			_get_board_status_text(),
 		]
 	if _battle_hint_label:
 		_battle_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.battle_hold", _zone_battle_hold_hint_text)
@@ -140,10 +130,16 @@ func layout() -> void:
 	_place_zone_hint_label(_battle_hint_label, int(_zone_ids.get("center", 4)))
 
 func update_visibility() -> void:
-	var show_zone_hints := bool(_owner.call("_is_interaction_enabled")) if _is_owner_valid() else false
+	if not _is_owner_valid():
+		for label in _all_hint_labels():
+			if label:
+				label.visible = false
+		_clear_hud_zone_hint()
+		return
 	for label in _all_hint_labels():
 		if label:
-			label.visible = show_zone_hints
+			label.visible = false
+	_update_hud_zone_hint()
 
 func update_visuals(force: bool = false) -> void:
 	if not _is_owner_valid():
@@ -174,6 +170,121 @@ func _all_hint_labels() -> Array[Label]:
 		_board_hint_label,
 		_battle_hint_label,
 	]
+
+func _set_hint_label_visible(label: Label, zone_id: int, is_center_hold_hint: bool = false) -> void:
+	if label == null:
+		return
+	label.visible = bool(_owner.call("_should_show_zone_hint_label", zone_id, is_center_hold_hint))
+
+func _update_hud_zone_hint() -> void:
+	var ui := _get_ui()
+	if ui == null or not ui.has_method("set_rest_area_hover_hint"):
+		return
+	var zone_id := _get_hud_zone_hint_id()
+	if zone_id < 0:
+		_clear_hud_zone_hint()
+		return
+	ui.call("set_rest_area_hover_hint", _build_hud_zone_hint_text(zone_id))
+
+func _clear_hud_zone_hint() -> void:
+	var ui := _get_ui()
+	if ui != null and ui.has_method("clear_rest_area_hover_hint"):
+		ui.call("clear_rest_area_hover_hint")
+
+func _get_hud_zone_hint_id() -> int:
+	if not _is_owner_valid():
+		return -1
+	if not bool(_owner.call("_is_interaction_enabled")):
+		return -1
+	if bool(_owner.call("_are_zone_hints_suppressed_by_ui")):
+		return -1
+	var hover_zone_id := int(_owner.get("hover_zone_id"))
+	if hover_zone_id >= 0:
+		return hover_zone_id
+	var center_zone_id := int(_zone_ids.get("center", 4))
+	var selected_zone_id := int(_owner.get("selected_zone_id"))
+	if selected_zone_id >= 0 and selected_zone_id != center_zone_id:
+		return selected_zone_id
+	if bool(_owner.call("_is_zone_hint_intro_active")) or float(_owner.get("_zone4_hold_elapsed")) > 0.0:
+		return center_zone_id
+	return -1
+
+func _build_hud_zone_hint_text(zone_id: int) -> String:
+	var parts := _get_zone_hint_text_parts(zone_id)
+	var lines: PackedStringArray = []
+	for part in parts:
+		var text := str(part).strip_edges()
+		if text != "" and not lines.has(text):
+			lines.append(text)
+	return "\n".join(lines)
+
+func _get_zone_hint_text_parts(zone_id: int) -> Array[String]:
+	if zone_id == int(_zone_ids.get("merchant", 0)):
+		return [
+			LocalizationManager.tr_key("ui.rest.zone.purchase.title", _zone_merchant_hint_text),
+			LocalizationManager.tr_key("ui.rest.zone.purchase.status", "Buy weapons and modules"),
+			LocalizationManager.tr_key("ui.purchase.open", "Buy Weapons and Modules"),
+		]
+	if zone_id == int(_zone_ids.get("smith", 1)):
+		return [
+			LocalizationManager.tr_key("ui.rest.zone.combined_upgrade.title", _zone_smith_hint_text),
+			_get_upgrade_status_text(),
+			LocalizationManager.tr_key("ui.upgrade.open", "Upgrade Weapons and Modules"),
+		]
+	if zone_id == int(_zone_ids.get("module", 2)):
+		return [
+			LocalizationManager.tr_key("ui.rest.zone.warehouses.title", _zone_module_hint_text),
+			_get_module_status_text(),
+			LocalizationManager.tr_key("ui.management.menu.subtitle", "Open weapon or module warehouse"),
+		]
+	if zone_id == int(_zone_ids.get("board", 6)):
+		return [
+			LocalizationManager.tr_key("ui.rest.zone.board.title", _zone_board_hint_text),
+			_get_board_status_text(),
+			LocalizationManager.tr_key("ui.rest.zone.board.action", "Open Grid Management or Task Management"),
+		]
+	if zone_id == int(_zone_ids.get("center", 4)):
+		var hold_hint := LocalizationManager.tr_key("ui.tutorial.ctx.battle_hold", _zone_battle_hold_hint_text)
+		return [
+			hold_hint,
+			hold_hint,
+			hold_hint,
+		]
+	return []
+
+func _get_upgrade_status_text() -> String:
+	var upgradable_count := _get_affordable_upgrade_count()
+	if upgradable_count > 0:
+		return LocalizationManager.tr_format(
+			"ui.rest.zone.upgrade.available",
+			{"count": upgradable_count},
+			"%d upgrades available" % upgradable_count
+		)
+	return LocalizationManager.tr_key("ui.rest.zone.upgrade.none", "No upgrades available")
+
+func _get_module_status_text() -> String:
+	var pending_count := InventoryData.temporary_modules.size()
+	if pending_count > 0:
+		return LocalizationManager.tr_format(
+			"ui.rest.zone.warehouses.pending",
+			{"count": pending_count},
+			"%d stored modules" % pending_count
+		)
+	return LocalizationManager.tr_key("ui.rest.zone.warehouses.none", "Open weapon and module warehouses")
+
+func _get_board_status_text() -> String:
+	return LocalizationManager.tr_key(
+		"ui.rest.zone.board.status",
+		"Install cell effects or deploy task modules"
+	)
+
+func _get_ui() -> Node:
+	if GlobalVariables == null:
+		return null
+	var ui := GlobalVariables.ui
+	if ui != null and is_instance_valid(ui):
+		return ui
+	return null
 
 func _place_zone_hint_label(label: Label, zone_id: int) -> void:
 	if label == null or not _is_owner_valid():

@@ -122,7 +122,7 @@ func ensure_weapon_state_label(character_root: Control) -> Label:
 		return weapon_state_label
 	weapon_state_label = Label.new()
 	weapon_state_label.name = "WeaponState"
-	weapon_state_label.text = LocalizationManager.tr_key("ui.hud.weapon_state_none", "Main: -- | WS: -- | PS: --")
+	weapon_state_label.text = LocalizationManager.tr_key("ui.hud.weapon_state_none", "Main: -- | PS: --")
 	weapon_state_label.visible = false
 	character_root.add_child(weapon_state_label)
 	return weapon_state_label
@@ -320,7 +320,7 @@ func _update_weapon_state_label_text() -> void:
 	if weapon_state_label == null or not is_instance_valid(weapon_state_label):
 		return
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
-		weapon_state_label.text = LocalizationManager.tr_key("ui.hud.weapon_state_none", "Main: -- | WS: -- | PS: --")
+		weapon_state_label.text = LocalizationManager.tr_key("ui.hud.weapon_state_none", "Main: -- | PS: --")
 		return
 	var weapon_count := PlayerData.player_weapon_list.size()
 	var main_text := LocalizationManager.tr_key("ui.hud.weapon.main.none", "None")
@@ -328,7 +328,6 @@ func _update_weapon_state_label_text() -> void:
 		main_text = LocalizationManager.tr_key("ui.hud.weapon.main.locked", "W1 (locked)")
 	elif PlayerData.main_weapon_index >= 0:
 		main_text = LocalizationManager.tr_format("ui.hud.weapon.main.slot", {"index": PlayerData.main_weapon_index + 1}, "W%s" % str(PlayerData.main_weapon_index + 1))
-	var ws_cd: float = PlayerData.player.get_weapon_active_cd_remaining() if PlayerData.player.has_method("get_weapon_active_cd_remaining") else 0.0
 	var ps_cd := 0.0
 	var active_skill_node: Node = null
 	if PlayerData.player.active_skill_holder and PlayerData.player.active_skill_holder.get_child_count() > 0:
@@ -349,11 +348,10 @@ func _update_weapon_state_label_text() -> void:
 			"main": main_text,
 			"offhand": maxi(0, weapon_count - 1),
 			"swap": lock_text,
-			"ws": "%.1fs" % ws_cd,
 			"ps": ps_text,
 			"fail": fail_text
 		},
-		"Main:%s Offhand:%d Swap:%s WS:%.1fs PS:%s%s" % [main_text, maxi(0, weapon_count - 1), lock_text, ws_cd, ps_text, fail_text]
+		"Main:%s Offhand:%d Swap:%s PS:%s%s" % [main_text, maxi(0, weapon_count - 1), lock_text, ps_text, fail_text]
 	)
 	if _last_weapon_state_text != next_state_text:
 		_last_weapon_state_text = next_state_text

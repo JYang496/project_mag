@@ -43,11 +43,10 @@ ui.rest.zone.combined_upgrade.title,Upgrade,升级
 ui.rest.zone.warehouses.title,Warehouses,仓库
 ui.rest.zone.warehouses.pending,{count} stored modules,仓库模组 {count}
 ui.rest.zone.warehouses.none,Open weapon and module warehouses,打开武器仓库和模组仓库
-ui.rest.zone.board.title,Board Edit,格子面板
-ui.rest.zone.board.none,No cell effect items,暂无格子效果
-ui.rest.zone.board.available,Install cell effects,安装格子效果
-ui.rest.zone.board.pending,{count} pending board edits,待提交调整 {count}
-ui.board_edit.title,Board Edit,格子面板
+ui.rest.zone.board.title,Board,格子
+ui.rest.zone.board.status,Install cell effects or deploy task modules,安装格子效果或部署任务模组
+ui.rest.zone.board.action,Open Grid Management or Task Management,进入格子管理或任务管理
+ui.board_edit.title,Grid Management,格子管理
 ui.board_edit.subtitle,Install earned cell effects onto active board cells before starting battle.,开战前把已获得的格子效果安装到已激活格子上。
 ui.board_edit.inventory_title,Cell Effects,格子效果
 ui.board_edit.empty_inventory,No cell effects yet. Complete objectives to earn them.,暂无格子效果。完成目标后可获得。

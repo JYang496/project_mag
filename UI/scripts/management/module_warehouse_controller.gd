@@ -113,7 +113,7 @@ func refresh_texts() -> void:
 		warehouse_menu_open.text = LocalizationManager.tr_key("ui.module.warehouse.title", "Module Warehouse")
 	if owner_ui.weapon_warehouse_button:
 		owner_ui.weapon_warehouse_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
-	var module_back := module_panel.get_node_or_null("BackToModuleMenu") as Button
+	var module_back := module_panel.get_node_or_null("BackToWarehouseMenu") as Button
 	if module_back:
 		module_back.text = LocalizationManager.tr_key("ui.panel.back", "Back")
 	if owner_ui != null and owner_ui.has_method("_style_primary_menu_controls"):

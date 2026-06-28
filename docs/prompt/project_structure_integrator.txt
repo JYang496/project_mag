@@ -1,0 +1,50 @@
+Project: project_mag
+Task: Integrate parallel project-structure cleanup workers.
+
+Context:
+- Multiple workers may have run in parallel from prompt files under `docs/prompt/`.
+- The repository may contain unrelated user edits. Do not revert user changes.
+- Integration goal: preserve working gameplay and Godot loadability while accepting only coherent structure cleanups.
+- Current environment note: do not assume `godot` is on PATH. Use `D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe` for shell validation.
+- Godot MCP may report a different Godot version than the shell executable. If workers used MCP, compare it against the shell validation result instead of treating MCP as the sole source of truth.
+- The current checkout can be heavily dirty. The integrator must distinguish pre-existing user changes from worker output before accepting or rejecting anything.
+
+Recommended execution order:
+1. Integrate Worker C and Worker D first because they are narrow path moves with clear Godot validation.
+2. Integrate Worker A after C/D because deprecated weapon cleanup can be judged mostly by reference search plus check-only.
+3. Integrate Worker B only after confirming existing docs deletions/additions are intentional.
+4. Treat Worker E as plan-only unless the user explicitly approves a test migration.
+
+Inputs to collect:
+- Worker A final report: deprecated weapon cleanup.
+- Worker B final report: docs reorganization.
+- Worker C final report: enemy HP bar UI path cleanup.
+- Worker D final report: DisplaySettings autoload consistency.
+- Worker E final report: test reorganization plan.
+
+Integrator writable scope:
+- Files touched by workers A-D only when resolving conflicts or path-reference inconsistencies.
+- `docs/audits/**`, `docs/reports/**`, and `docs/README.md` for final documentation fixes.
+- Do not perform the full `World/Test` migration unless explicitly requested after reviewing Worker E.
+
+Required workflow:
+1. Run `git status --short` and group changes by worker scope.
+2. Check for accidental cross-scope edits. If a worker touched forbidden files, inspect and either justify or ask for rollback approval.
+3. Verify path references:
+   - `rg -n "res://Player/Weapons/Deprecated|Deprecated/" -S .`
+   - `rg -n "res://UI/enemy_hp_bar.tscn|UI/enemy_hp_bar.tscn" -S .`
+   - `rg -n "res://Utility/display_settings.gd|Utility/display_settings.gd" -S .`
+   - `rg -n "docs/(dps_reports|cell_task_module_design|cell_task_combat_hud_solution|player_operation_guidance_audit|weapon_module_audit|weapon_system_positioning_advice|module_icon_preview)" -S .`
+4. Confirm docs prompt files remain under `docs/prompt/`.
+5. Review any `.uid` churn and keep only UID changes that correspond to actual moved Godot resources.
+6. Run validation:
+   - `git diff --check`
+   - `& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit`
+7. If tests were moved despite Worker E being plan-only, run the affected headless test scenes explicitly.
+
+Final report:
+- Summarize accepted changes by worker.
+- List unresolved risks or files intentionally left for a later phase.
+- Report validation results with exact commands.
+- Report the shell Godot version used and whether any MCP version mismatch was observed by workers.
+- Call out any mismatch between worker claims and repo state.

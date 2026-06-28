@@ -70,7 +70,10 @@ func _input(_event):
 		if mouse_over and upgradable:
 			PlayerData.player_gold -= cost_price
 			upgrade_level.emit(int(weapon_node.level) + 1)
-			GlobalVariables.ui.upgrade_panel_out()
+			var ui = GlobalVariables.ui
+			if ui:
+				ui._init_rest_area_ui_controller()
+				ui.rest_area_ui_controller.upgrade_panel_out()
 
 func combine_status(node):
 	weapon_data = node.weapon_data

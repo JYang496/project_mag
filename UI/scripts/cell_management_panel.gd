@@ -88,10 +88,6 @@ func cancel_menu_level() -> bool:
 func _build_layout() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var dim := ColorRect.new()
-	dim.color = Color(0.0, 0.0, 0.0, 0.42)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(dim)
 
 	_primary_menu = PRIMARY_MENU_SCRIPT.new()
 	_primary_menu.name = "PrimaryMenu"
@@ -157,8 +153,8 @@ func _refresh_home() -> void:
 	if owner_ui != null:
 		helper = owner_ui.management_ui_style_helper
 	_primary_menu.configure(
-		LocalizationManager.tr_key("ui.cell_management.title", "Cell Management"),
-		LocalizationManager.tr_key("ui.cell_management.subtitle", "Manage terrain effects or deploy short-lived task modules for the next battle."),
+		LocalizationManager.tr_key("ui.cell_management.title", "Board"),
+		LocalizationManager.tr_key("ui.cell_management.subtitle", "Install cell effects or deploy task modules."),
 		[
 			{
 				"id": &"board",
@@ -176,7 +172,7 @@ func _refresh_home() -> void:
 
 func _refresh_task_management() -> void:
 	_title_label.text = LocalizationManager.tr_key("ui.task_management.title", "Task Management")
-	_subtitle_label.text = LocalizationManager.tr_key("ui.task_management.subtitle", "Select a task module, then choose an active cell. Battle start consumes deployed modules and discards unassigned modules.")
+	_subtitle_label.text = LocalizationManager.tr_key("ui.task_management.subtitle", "Install task modules on active cells before the next battle.")
 	var body := HBoxContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 18)
@@ -236,35 +232,25 @@ func _build_task_module_side(parent: HBoxContainer) -> void:
 	side.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side.add_theme_constant_override("separation", 12)
 	parent.add_child(side)
-	_build_special_shop_offer(side)
 	_build_inventory_column(side)
 
-func _build_special_shop_offer(parent: Container = null) -> void:
-	var target := parent if parent != null else _content
-	var definition := CellTaskModuleRuntime.get_special_shop_offer_definition()
-	if definition == null:
-		return
-	var title := Label.new()
-	title.text = "Special Exchange"
-	title.add_theme_font_size_override("font_size", 16)
-	title.add_theme_color_override("font_color", Color(0.86, 0.96, 1.0, 1.0))
-	target.add_child(title)
-
-	var button := _make_task_module_card(definition.module_id, false)
-	var cost := CellTaskModuleRuntime.get_special_shop_cost_count(definition.module_id)
-	button.tooltip_text = "Cost: %d matching uninstalled cell effect(s)" % cost
-	_add_task_card_footer(button, "Cost: %d matching uninstalled cell effect(s)" % cost)
-	var validation := CellTaskModuleRuntime.can_purchase_special_shop_offer()
-	button.disabled = not bool(validation.get("ok", false))
-	button.pressed.connect(_on_special_shop_offer_pressed)
-	target.add_child(button)
-
 func _build_inventory_column(parent: Container) -> void:
+	var inventory := CellTaskModuleRuntime.get_inventory_snapshot()
+	var deployed_count := CellTaskModuleRuntime.get_deployment_snapshot().size()
+	var deploy_limit := int(CellTaskModuleRuntime.ACTIVE_LIMIT)
+
 	var title := Label.new()
-	title.text = "Ready To Install"
+	title.name = "TaskInventoryTitle"
+	title.text = LocalizationManager.tr_format(
+		"ui.task_management.ready_title",
+		{"count": inventory.size()},
+		"Ready To Install (%d)" % inventory.size()
+	)
 	title.add_theme_font_size_override("font_size", 18)
 	title.add_theme_color_override("font_color", Color(0.86, 0.96, 1.0, 1.0))
 	parent.add_child(title)
+
+	_build_task_management_guidance(parent, inventory.size(), deployed_count, deploy_limit)
 
 	var scroll := ScrollContainer.new()
 	scroll.name = "TaskInventoryScroll"
@@ -280,9 +266,11 @@ func _build_inventory_column(parent: Container) -> void:
 	column.add_theme_constant_override("separation", 8)
 	scroll.add_child(column)
 
-	var inventory := CellTaskModuleRuntime.get_inventory_snapshot()
 	if inventory.is_empty():
-		column.add_child(_make_muted_label("No task modules. Complete cell objectives to earn more."))
+		column.add_child(_make_muted_label(LocalizationManager.tr_key(
+			"ui.task_management.empty_inventory",
+			"No task modules. Complete cell objectives to earn more."
+		)))
 		return
 	for index in range(inventory.size()):
 		var module_id := str(inventory[index])
@@ -293,8 +281,49 @@ func _build_inventory_column(parent: Container) -> void:
 		)
 		button.pressed.connect(_on_inventory_pressed.bind(index))
 		column.add_child(button)
+
+func _build_task_management_guidance(parent: Container, ready_count: int, deployed_count: int, deploy_limit: int) -> void:
+	var status := _make_muted_label(LocalizationManager.tr_format(
+		"ui.task_management.status",
+		{"ready": ready_count, "deployed": deployed_count, "limit": deploy_limit},
+		"Ready To Install: %d    Deployed: %d/%d" % [ready_count, deployed_count, deploy_limit]
+	))
+	status.name = "TaskManagementStatus"
+	status.add_theme_color_override("font_color", Color(0.82, 0.92, 0.96, 1.0))
+	parent.add_child(status)
+
+	var instruction_text := ""
 	if _selected_inventory_index >= 0:
-		parent.add_child(_make_selection_hint())
+		instruction_text = LocalizationManager.tr_key(
+			"ui.task_management.selected_hint",
+			"Click a highlighted active cell to deploy. Right click to cancel selection."
+		)
+	else:
+		instruction_text = LocalizationManager.tr_format(
+			"ui.task_management.unselected_hint",
+			{"limit": deploy_limit},
+			"Select or drag a task module to an active cell. Up to %d tasks can be deployed for the next battle." % deploy_limit
+		)
+	var instruction := _make_muted_label(instruction_text)
+	instruction.name = "TaskManagementInstruction"
+	instruction.add_theme_color_override("font_color", Color(0.88, 0.96, 0.72, 1.0))
+	parent.add_child(instruction)
+
+	if deployed_count > 0:
+		var detail_hint := _make_muted_label(LocalizationManager.tr_key(
+			"ui.task_management.detail_hint",
+			"Hover a deployed task cell to preview details. Click to pin the detail window."
+		))
+		detail_hint.name = "TaskManagementDetailHint"
+		parent.add_child(detail_hint)
+
+	var battle_warning := _make_muted_label(LocalizationManager.tr_key(
+		"ui.task_management.battle_warning",
+		"Deployed tasks are consumed when battle starts. Undeployed Ready To Install tasks will be discarded."
+	))
+	battle_warning.name = "TaskManagementBattleWarning"
+	battle_warning.add_theme_color_override("font_color", Color(0.95, 0.78, 0.56, 1.0))
+	parent.add_child(battle_warning)
 
 func _make_muted_label(text: String) -> Label:
 	var label := Label.new()
@@ -583,15 +612,6 @@ func _rebuild_task_detail_window(cell_id: int, definition: TaskModuleDefinition)
 	title.add_theme_color_override("font_color", RARITY_UTIL.get_color(definition.get_rarity()))
 	header.add_child(title)
 
-	var close_x := Button.new()
-	close_x.name = "TaskDetailCloseX"
-	close_x.text = "X"
-	close_x.custom_minimum_size = Vector2(30, 28)
-	close_x.focus_mode = Control.FOCUS_NONE
-	_style_button(close_x)
-	close_x.pressed.connect(_on_task_detail_close_requested)
-	header.add_child(close_x)
-
 	var badges := HBoxContainer.new()
 	badges.add_theme_constant_override("separation", 8)
 	badges.add_child(_make_task_badge(definition.get_task_label()))
@@ -736,6 +756,13 @@ func _make_cell_preview_style(cell_id: int, hover: bool, disabled: bool) -> Styl
 	elif _selected_cell_has_deployment(cell_id):
 		style.bg_color = Color(0.08, 0.12, 0.10, 0.96)
 		style.border_color = _get_cell_task_color(cell_id, Color(0.44, 0.85, 0.52, 1.0))
+	elif _selected_inventory_index >= 0:
+		style.bg_color = Color(0.10, 0.15, 0.14, 0.96)
+		style.border_color = Color(0.78, 0.92, 0.58, 1.0)
+		style.border_width_left = 3
+		style.border_width_top = 3
+		style.border_width_right = 3
+		style.border_width_bottom = 3
 	elif hover:
 		style.bg_color = Color(0.10, 0.15, 0.18, 0.96)
 		style.border_color = Color(0.50, 0.76, 0.92, 1.0)
@@ -966,9 +993,3 @@ func _format_task_module_for_dialog(module_id: String) -> String:
 	if definition == null:
 		return module_id
 	return "%s / %s" % [definition.get_task_label(), definition.get_display_name()]
-
-func _on_special_shop_offer_pressed() -> void:
-	var result := CellTaskModuleRuntime.purchase_special_shop_offer()
-	if not bool(result.get("ok", false)) and owner_ui != null:
-		owner_ui.show_item_message(str(result.get("reason", "Cannot exchange task module.")), 1.6)
-	_refresh()

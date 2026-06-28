@@ -18,10 +18,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -320.0
-offset_top = -180.0
-offset_right = 320.0
-offset_bottom = 180.0
+offset_left = -420.0
+offset_top = -270.0
+offset_right = 420.0
+offset_bottom = 270.0
 
 [node name="VBox" type="VBoxContainer" parent="Panel"]
 anchors_preset = 15
@@ -40,9 +40,36 @@ horizontal_alignment = 1
 text = "Pick one reward."
 horizontal_alignment = 1
 
-[node name="Options" type="VBoxContainer" parent="Panel/VBox"]
+[node name="Options" type="HBoxContainer" parent="Panel/VBox"]
 size_flags_vertical = 3
-theme_override_constants/separation = 8
+theme_override_constants/separation = 12
+
+[node name="DetailPanel" type="PanelContainer" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 116)
+size_flags_horizontal = 3
+
+[node name="Margin" type="MarginContainer" parent="Panel/VBox/DetailPanel"]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="DetailVBox" type="VBoxContainer" parent="Panel/VBox/DetailPanel/Margin"]
+theme_override_constants/separation = 5
+
+[node name="DetailTitle" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailVBox"]
+text = "Reward Details"
+theme_override_font_sizes/font_size = 15
+
+[node name="DetailBody" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailVBox"]
+size_flags_vertical = 3
+text = "Select a reward to view details."
+autowrap_mode = 3
+
+[node name="DetailOutcome" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailVBox"]
+text = "Added to inventory"
+theme_override_colors/font_color = Color(0.72, 0.88, 0.78, 1)
+autowrap_mode = 3
 
 [node name="Footer" type="HBoxContainer" parent="Panel/VBox"]
 alignment = 2

@@ -145,10 +145,6 @@ func build_effect_drag_preview(definition: CellEffectDefinition, fallback_id: St
 func _build_layout() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var dim := ColorRect.new()
-	dim.color = Color(0.0, 0.0, 0.0, 0.42)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(dim)
 	_root_panel = PanelContainer.new()
 	_root_panel.name = "BoardEditPanel"
 	_root_panel.custom_minimum_size = MANAGEMENT_PANEL_SIZE
@@ -546,7 +542,7 @@ func _show_message(message: String) -> void:
 
 func _refresh_static_texts() -> void:
 	if _title_label:
-		_title_label.text = LocalizationManager.tr_key("ui.board_edit.title", "Board Edit")
+		_title_label.text = LocalizationManager.tr_key("ui.board_edit.title", "Grid Management")
 	if _subtitle_label:
 		_subtitle_label.text = LocalizationManager.tr_key("ui.board_edit.subtitle", "Install earned cell effects onto active board cells before starting battle.")
 	if _inventory_title_label:

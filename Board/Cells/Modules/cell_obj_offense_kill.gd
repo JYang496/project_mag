@@ -12,16 +12,25 @@ func set_task_parameters(params: Dictionary) -> void:
 		required_kill_count = params["required_kill_count"]
 	if params.has("count_kill_only_when_player_inside"):
 		count_kill_only_when_player_inside = params["count_kill_only_when_player_inside"]
+	_emit_task_status_changed()
 
 func reset_objective_runtime() -> void:
 	super.reset_objective_runtime()
 	_kill_count = 0
 	_last_debug_snapshot = ""
+	_emit_task_status_changed()
+
+func get_combat_task_status() -> Dictionary:
+	var required := maxi(required_kill_count, 1)
+	var progress := float(_kill_count) / float(required)
+	var value_text := "%d/%d" % [mini(_kill_count, required), required]
+	return _build_combat_task_status("kill", "kill", "击杀", progress, value_text, _kill_count > 0)
 
 func _on_objective_enemy_killed(_enemy: BaseEnemy) -> void:
 	if count_kill_only_when_player_inside and not _cell.has_player_inside():
 		return
 	_kill_count += 1
+	_emit_task_status_changed()
 	if _kill_count >= required_kill_count:
 		_complete_objective()
 

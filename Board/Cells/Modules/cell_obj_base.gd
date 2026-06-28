@@ -1,6 +1,8 @@
 extends Node
 class_name CellObjectiveModule
 
+signal task_status_changed(cell_id: int)
+
 @export var objective_enabled := false
 @export var reward_type_override: int = -1
 @export var bonus_scene: PackedScene = preload("res://Board/Cells/Bonus/objective_reward_bonus.tscn")
@@ -12,6 +14,7 @@ var _cell: Cell
 var _completed := false
 var _bonus_module: CellBonusModule
 var _debug_elapsed := 0.0
+var _last_status_signature := ""
 
 func _ready() -> void:
 	_cell = get_parent().get_parent() as Cell if get_parent() and get_parent().name == "Modules" else get_parent() as Cell
@@ -48,6 +51,7 @@ func reset_objective_runtime() -> void:
 	if _bonus_module:
 		_bonus_module.reset_runtime()
 	_debug_elapsed = 0.0
+	_emit_task_status_changed()
 
 func _on_enemy_killed_in_cell(cell: Cell, _enemy: BaseEnemy) -> void:
 	if cell != _cell:
@@ -68,6 +72,7 @@ func _complete_objective() -> void:
 	if debug_mode:
 		_on_debug_completed(_resolve_reward_type())
 	TaskRewardManager.notify_objective_completed(_cell.name)
+	_emit_task_status_changed()
 
 func _grant_reward() -> void:
 	# Legacy immediate reward hook retained for future reward modes.
@@ -94,7 +99,100 @@ func _resolve_reward_type() -> int:
 	return _cell.reward_type
 
 func _is_objective_active() -> bool:
+	if _cell == null:
+		return false
 	return (objective_enabled or _cell.objective_enabled) and not _completed
+
+func get_combat_task_status() -> Dictionary:
+	return _build_combat_task_status("fallback", "fallback", "", 0.0, "", false)
+
+func _build_combat_task_status(task_type: String, icon_key: String, label: String, progress: float, value_text: String, active: bool = false, instruction_key: String = "") -> Dictionary:
+	var resolved_instruction_key := instruction_key.strip_edges()
+	if resolved_instruction_key == "":
+		resolved_instruction_key = _instruction_key_for_status_type(task_type)
+	return {
+		"cell_id": _safe_cell_id(),
+		"module_id": _safe_module_id(),
+		"type": task_type,
+		"icon_key": icon_key,
+		"label": label,
+		"instruction_key": resolved_instruction_key,
+		"instruction": _localized_instruction_for_status_type(task_type, resolved_instruction_key),
+		"progress": _clamped_progress(progress),
+		"value_text": value_text,
+		"state": _resolve_task_status_state(active)
+	}
+
+func _instruction_key_for_status_type(status_type: String) -> String:
+	match status_type:
+		"kill":
+			return "ui.task_objective.instruction.kill"
+		"hold":
+			return "ui.task_objective.instruction.hold"
+		"clear":
+			return "ui.task_objective.instruction.clear"
+		"hunt":
+			return "ui.task_objective.instruction.hunt"
+		"dodge":
+			return "ui.task_objective.instruction.dodge"
+		_:
+			return ""
+
+func _localized_instruction_for_status_type(status_type: String, instruction_key: String) -> String:
+	var fallback := _instruction_fallback_for_status_type(status_type)
+	if instruction_key.strip_edges() == "":
+		return fallback
+	return LocalizationManager.tr_key(instruction_key, fallback)
+
+func _instruction_fallback_for_status_type(status_type: String) -> String:
+	match status_type:
+		"kill":
+			return "Kill enemies"
+		"hold":
+			return "Stay inside the marked cell"
+		"clear":
+			return "Clear enemies near this cell"
+		"hunt":
+			return "Defeat the marked elite"
+		"dodge":
+			return "Avoid damage until timer ends"
+		_:
+			return ""
+
+func _safe_cell_id() -> int:
+	if _cell == null:
+		return 0
+	return int(_cell.logical_id)
+
+func _safe_module_id() -> String:
+	var cell_id := _safe_cell_id()
+	if cell_id > 0 and CellTaskModuleRuntime != null:
+		return CellTaskModuleRuntime.get_active_task_module_id(cell_id)
+	return ""
+
+func _clamped_progress(value: float) -> float:
+	return clampf(value, 0.0, 1.0)
+
+func _resolve_task_status_state(active: bool = false) -> String:
+	if _completed:
+		return "complete"
+	if _cell == null:
+		return "blocked"
+	if not _is_active_phase():
+		return "waiting"
+	if _cell.state == Cell.CellState.LOCKED or not _cell.board_enabled:
+		return "blocked"
+	if active and _is_objective_active():
+		return "active"
+	return "waiting"
+
+func _emit_task_status_changed() -> void:
+	var status := get_combat_task_status()
+	var signature := JSON.stringify(status)
+	if signature == _last_status_signature:
+		return
+	_last_status_signature = signature
+	task_status_changed.emit(_safe_cell_id())
 
 func _on_phase_changed(new_phase: String) -> void:
 	if _bonus_module:

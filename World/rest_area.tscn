@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://yxbtuupv8h0y" path="res://World/rest_area.gd" id="1_5q1gc"]
 [ext_resource type="Texture2D" uid="uid://d2ssct86rwnpo" path="res://asset/images/cells/default.png" id="2_tgu0a"]
+[ext_resource type="Script" path="res://World/rest_area_zone_visuals.gd" id="3_zone_visuals"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hnton"]
 
@@ -24,6 +25,19 @@ collision_mask = 16
 position = Vector2(256, 256)
 scale = Vector2(25.5, 25.5)
 shape = SubResource("RectangleShape2D_hnton")
+
+[node name="ZoneVisuals" type="Node2D" parent="."]
+script = ExtResource("3_zone_visuals")
+
+[node name="GroundMarks" type="Node2D" parent="ZoneVisuals"]
+
+[node name="Props" type="Node2D" parent="ZoneVisuals"]
+
+[node name="Icons" type="Node2D" parent="ZoneVisuals"]
+
+[node name="Lights" type="Node2D" parent="ZoneVisuals"]
+
+[node name="SelectionEffects" type="Node2D" parent="ZoneVisuals"]
 
 [node name="MerchantHintLabel" type="Label" parent="." unique_id=204400001]
 custom_minimum_size = Vector2(156, 58)
@@ -58,7 +72,7 @@ offset_left = 7.0
 offset_top = 387.0
 offset_right = 163.0
 offset_bottom = 445.0
-text = "Board Edit\nInstall cell effects"
+text = "Board\nInstall cell effects or deploy task modules"
 horizontal_alignment = 1
 
 [node name="BattleHintLabel" type="Label" parent="." unique_id=204400003]

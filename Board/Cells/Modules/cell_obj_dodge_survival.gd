@@ -44,10 +44,19 @@ func set_task_parameters(params: Dictionary) -> void:
 		aoe_interval_max = float(params["dodge_aoe_interval_max"])
 	if params.has("dodge_aoe_impact_duration"):
 		aoe_impact_duration = float(params["dodge_aoe_impact_duration"])
+	_emit_task_status_changed()
 
 func reset_objective_runtime() -> void:
 	super.reset_objective_runtime()
 	_deactivate_challenge(true)
+	_emit_task_status_changed()
+
+func get_combat_task_status() -> Dictionary:
+	var total_time := maxf(required_survival_seconds, 0.1)
+	var elapsed := clampf(_survival_elapsed, 0.0, total_time)
+	var progress := elapsed / total_time
+	var value_text := "%d/%d秒" % [int(floor(elapsed)), int(ceil(total_time))]
+	return _build_combat_task_status("dodge", "dodge", "闪避", progress, value_text, _active)
 
 func _process_objective(delta: float) -> void:
 	if _cell == null:
@@ -61,6 +70,7 @@ func _process_objective(delta: float) -> void:
 		return
 	_survival_elapsed += delta
 	_update_ui_hint()
+	_emit_task_status_changed()
 	if _survival_elapsed >= maxf(required_survival_seconds, 0.1):
 		_clear_pending_warnings()
 		_hide_ui_hint()
@@ -92,6 +102,7 @@ func _activate_challenge() -> void:
 	_survival_elapsed = 0.0
 	_schedule_next_strike()
 	_show_ui_hint()
+	_emit_task_status_changed()
 
 func _deactivate_challenge(reset_progress: bool) -> void:
 	_active = false
@@ -100,6 +111,7 @@ func _deactivate_challenge(reset_progress: bool) -> void:
 	_hide_ui_hint()
 	if reset_progress:
 		_survival_elapsed = 0.0
+	_emit_task_status_changed()
 
 func _schedule_next_strike() -> void:
 	var min_interval := maxf(aoe_interval_min, 0.05)

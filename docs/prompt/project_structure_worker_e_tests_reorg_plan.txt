@@ -1,0 +1,50 @@
+Project: project_mag
+Task: Prepare a safe test-folder reorganization plan for parallel implementation.
+
+Context:
+- Current project root is `D:\Godot Projects\project_mag`.
+- `World/Test/` currently contains more than 200 files and covers world tests, UI tests, weapon tests, benchmark scenes, probes, and headless runners.
+- This worker should not perform a mass migration by default. The goal is to produce a precise implementation plan and optionally do only no-risk scaffolding.
+- This checkout currently has a broad dirty worktree and recently reported `World/Test` at roughly 206 files. Recount live before writing the plan.
+- Do not assume `godot` is on PATH. This plan-only task should not need Godot validation, but any future implementation command should use `D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`.
+- Godot MCP may report a different Godot version than the shell executable. Future migration validation should name the chosen baseline explicitly.
+
+Writable scope:
+- `docs/audits/**`
+- `docs/reports/**`
+- Optional: `tests/README.md` or `World/Test/README.md` if creating documentation-only scaffolding
+
+Forbidden scope:
+- Do not move files out of `World/Test/` in this task unless the integrator explicitly approves.
+- Do not edit test runners, `.tscn`, `.gd`, or `project.godot`.
+- Do not update hundreds of references opportunistically.
+
+Required workflow:
+1. Run `git status --short` first and identify unrelated dirty files.
+2. Inventory `World/Test/` into categories:
+   - headless runners (`run_*_headless.gd`)
+   - test scenes
+   - benchmark scenes/scripts
+   - probes
+   - showcases
+   - fixtures/helpers
+3. Search for `res://World/Test/` references repo-wide and estimate migration blast radius.
+4. Propose a staged migration plan. Prefer one stage per category or feature family.
+5. Include exact destination conventions, for example:
+   - `tests/headless/`
+   - `tests/scenes/`
+   - `tests/benchmarks/`
+   - `tests/probes/`
+   - `tests/fixtures/`
+6. Identify which paths require Godot scene UID or resource path handling.
+
+Validation:
+- Run `rg -n "res://World/Test/" -S .` and summarize count/patterns.
+- Run `rg --files World/Test` and summarize category counts.
+- Run `git diff --check` if any docs files are created or edited.
+
+Final report:
+- Save the plan under `docs/audits/` or `docs/reports/`.
+- Include proposed directory tree, migration stages, risk areas, and validation commands for the future implementation.
+- Future implementation validation commands should use the explicit Steam Godot executable, not bare `godot`.
+- Explicitly say whether this worker moved any test files. It should normally be "no".

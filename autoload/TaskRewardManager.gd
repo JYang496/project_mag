@@ -8,6 +8,7 @@ const NORMAL_ROUTE_PATH := "res://data/routes/normal_route.tres"
 
 var _pending_level: int = -1
 var _pending_reward_count: int = 0
+var _pending_reward_batch_total: int = 0
 var _pending_options: Array[RewardInfo] = []
 var _reward_unlocked := false
 var _reward_panel_open := false
@@ -42,6 +43,7 @@ func notify_objective_completed(_cell_id: String = "") -> void:
 	if CellTaskModuleRuntime != null and CellTaskModuleRuntime.has_method("record_objective_completed"):
 		CellTaskModuleRuntime.record_objective_completed(_cell_id)
 	_pending_reward_count += 1
+	_pending_reward_batch_total = maxi(_pending_reward_batch_total + 1, _pending_reward_count)
 	_reward_unlocked = true
 	_pending_level = int(PhaseManager.current_level)
 	_pending_options = _build_reward_options_from_current_state()
@@ -105,6 +107,8 @@ func reset_runtime_state(preserve_persistent_state: bool = false) -> void:
 	if preserve_persistent_state:
 		return
 	_pending_level = -1
+	_pending_reward_count = 0
+	_pending_reward_batch_total = 0
 	_pending_options.clear()
 	_reward_unlocked = false
 	_battle_in_progress = false
@@ -155,7 +159,9 @@ func _try_open_pending_reward() -> void:
 		return
 	_reward_panel_open = bool(ui.request_task_reward_selection(
 		_pending_options,
-		Callable(self, "_on_reward_selected")
+		Callable(self, "_on_reward_selected"),
+		_get_pending_reward_progress_index(),
+		_get_pending_reward_progress_total()
 	))
 	if not _reward_panel_open:
 		_retry_open_later()
@@ -242,6 +248,15 @@ func _build_reward_options_from_current_state() -> Array[RewardInfo]:
 			if not duplicate:
 				rewards.append(reward)
 	return rewards
+
+func _get_pending_reward_progress_index() -> int:
+	var total := _get_pending_reward_progress_total()
+	if total <= 0:
+		return 0
+	return clampi(total - _pending_reward_count + 1, 1, total)
+
+func _get_pending_reward_progress_total() -> int:
+	return maxi(_pending_reward_batch_total, _pending_reward_count)
 
 func _resolve_reward_manager() -> BonusManager:
 	if _reward_manager and is_instance_valid(_reward_manager):
@@ -490,6 +505,7 @@ func _save_state() -> void:
 		"reward_unlocked": _reward_unlocked,
 		"pending_level": _pending_level,
 		"pending_reward_count": _pending_reward_count,
+		"pending_reward_batch_total": _get_pending_reward_progress_total(),
 		"options": option_payloads,
 	}
 	var file := FileAccess.open(STATE_PATH, FileAccess.WRITE)
@@ -504,6 +520,10 @@ func _load_state() -> void:
 	_reward_unlocked = bool(payload.get("reward_unlocked", false))
 	_pending_level = int(payload.get("pending_level", -1))
 	_pending_reward_count = int(payload.get("pending_reward_count", 1 if _reward_unlocked else 0))
+	_pending_reward_batch_total = maxi(
+		int(payload.get("pending_reward_batch_total", _pending_reward_count)),
+		_pending_reward_count
+	)
 	_pending_options.clear()
 	for option_variant in payload.get("options", []):
 		if option_variant is Dictionary:
@@ -512,6 +532,7 @@ func _load_state() -> void:
 func _clear_pending_reward(save_after: bool) -> void:
 	_pending_level = -1
 	_pending_reward_count = 0
+	_pending_reward_batch_total = 0
 	_pending_options.clear()
 	_reward_unlocked = false
 	_reward_panel_open = false

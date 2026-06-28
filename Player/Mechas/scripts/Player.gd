@@ -251,7 +251,6 @@ func _physics_process(delta):
 		return
 	_camera_system.tick(delta)
 	_update_collect_area_anchor_to_screen_top()
-	_constrain_to_board_traversable_area()
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.echo:

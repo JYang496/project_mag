@@ -9,67 +9,10 @@ const PRIMARY_MENU_ANIM_TRANS := Tween.TRANS_CUBIC
 const PRIMARY_MENU_ANIM_EASE := Tween.EASE_OUT
 
 var owner_ui: Node
-var active := false
-var primary_menu_id: StringName = &""
 var primary_menu_tweens: Dictionary = {}
 
 func bind(owner: Node) -> void:
 	owner_ui = owner
-
-func open_primary(menu_id: StringName, root: Control, panel: Control) -> void:
-	menu_id = _normalize_menu_id(menu_id)
-	active = true
-	primary_menu_id = menu_id
-	PlayerData.is_interacting = true
-	if owner_ui and owner_ui.has_method("%s_menu_in" % str(menu_id)):
-		owner_ui.call("%s_menu_in" % str(menu_id))
-		return
-	show_primary_menu(menu_id, root, panel)
-
-func close_primary(purchase_primary_root: Control, purchase_panel: Control, upgrade_primary_root: Control, upgrade_panel: Control, warehouse_primary_root: Control, warehouse_panel: Control) -> void:
-	if not active:
-		return
-	match primary_menu_id:
-		&"upgrade":
-			hide_primary_menu(&"upgrade", upgrade_primary_root, upgrade_panel)
-		&"warehouse":
-			hide_primary_menu(&"warehouse", warehouse_primary_root, warehouse_panel)
-		_:
-			hide_primary_menu(&"purchase", purchase_primary_root, purchase_panel)
-	PlayerData.is_interacting = false
-	active = false
-	primary_menu_id = &""
-
-func is_menu_visible(secondary_open: bool, warehouse_panel: Control, module_equip_panel: Control) -> bool:
-	if not active:
-		return false
-	if secondary_open:
-		return true
-	if warehouse_panel and is_instance_valid(warehouse_panel) and warehouse_panel.visible:
-		return true
-	if module_equip_panel and is_instance_valid(module_equip_panel) and module_equip_panel.visible:
-		return true
-	return false
-
-func is_zone_navigation_allowed(
-	purchase_primary_root: Control,
-	upgrade_primary_root: Control,
-	warehouse_primary_root: Control,
-	board_edit_primary_root: Control = null
-) -> bool:
-	if TaskRewardManager.is_reward_blocking_interactions():
-		return false
-	if not active:
-		return true
-	if primary_menu_id == &"purchase" and purchase_primary_root and purchase_primary_root.visible:
-		return true
-	if primary_menu_id == &"upgrade" and upgrade_primary_root and upgrade_primary_root.visible:
-		return true
-	if primary_menu_id == &"warehouse" and warehouse_primary_root and warehouse_primary_root.visible:
-		return true
-	if primary_menu_id == &"board_edit" and board_edit_primary_root and board_edit_primary_root.visible:
-		return true
-	return false
 
 func show_primary_menu(menu_id: StringName, root: Control, panel: Control) -> void:
 	menu_id = _normalize_menu_id(menu_id)
@@ -117,13 +60,6 @@ func stop_primary_menu_tween(menu_id: StringName) -> void:
 	if active_tween and is_instance_valid(active_tween):
 		active_tween.kill()
 	primary_menu_tweens.erase(menu_id)
-
-func clear_module_state_if_active() -> void:
-	if primary_menu_id == &"warehouse":
-		stop_primary_menu_tween(&"warehouse")
-		active = false
-		primary_menu_id = &""
-		PlayerData.is_interacting = false
 
 func _on_primary_menu_hidden(menu_id: StringName, root: Control, panel: Control, hidden_pos: Vector2) -> void:
 	if root:

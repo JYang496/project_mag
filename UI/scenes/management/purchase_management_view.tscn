@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://UI/scripts/management/purchase_management_view.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://dfnpmefqatyye" path="res://UI/scenes/shop_weapon_slot.tscn" id="2_shop_slot"]
@@ -8,7 +8,6 @@
 [ext_resource type="Script" uid="uid://4xfiek31loix" path="res://UI/scripts/shop_sell_button.gd" id="6_sell"]
 [ext_resource type="Script" uid="uid://4s7d5ehiu4vp" path="res://UI/scripts/shop_cancel_button.gd" id="7_cancel"]
 [ext_resource type="Script" uid="uid://bg0ssyqms6h0n" path="res://UI/scripts/shop_confirm_button.gd" id="8_confirm"]
-[ext_resource type="Script" uid="uid://dcdn7aulipk8y" path="res://UI/scripts/merchant_back_button.gd" id="9_back"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_detail"]
 bg_color = Color(0.055, 0.071, 0.086, 0.94)
@@ -149,14 +148,13 @@ offset_bottom = 584.0
 text = "Confirm"
 script = ExtResource("8_confirm")
 
-[node name="BackToMerchantMenu" type="Button" parent="."]
+[node name="BackToPurchaseMenu" type="Button" parent="."]
 layout_mode = 0
 offset_left = 760.0
 offset_top = 532.0
 offset_right = 960.0
 offset_bottom = 584.0
 text = "Back"
-script = ExtResource("9_back")
 
 [node name="ShopDetailPanel" type="PanelContainer" parent="."]
 custom_minimum_size = Vector2(440, 419)
@@ -258,4 +256,3 @@ theme_override_font_sizes/font_size = 22
 [connection signal="button_up" from="ShopSellButton" to="ShopSellButton" method="_on_button_up"]
 [connection signal="button_up" from="ShopCancelButton" to="ShopCancelButton" method="_on_button_up"]
 [connection signal="button_up" from="ShopConfirmButton" to="ShopConfirmButton" method="_on_button_up"]
-[connection signal="button_up" from="BackToMerchantMenu" to="BackToMerchantMenu" method="_on_button_up"]

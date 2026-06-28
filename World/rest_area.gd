@@ -21,11 +21,12 @@ signal rest_menu_cancelled
 @export var rest_camera_enter_speed_curve: float = 2.4
 @export var rest_camera_enter_speed_mul: float = 0.8
 @export var zone4_hold_move_boost_mul: float = 2.2
-@export var zone_grid_color: Color = Color(0.70, 0.84, 1.0, 0.60)
+@export var zone_grid_color: Color = Color(0.70, 0.84, 1.0, 0.18)
 @export var zone_hover_color: Color = Color(0.44, 0.88, 1.0, 1.0)
 @export var zone_selected_color: Color = Color(0.38, 1.0, 0.58, 0.95)
-@export var zone_grid_line_width: float = 2.0
+@export var zone_grid_line_width: float = 1.0
 @export var zone_outline_line_width: float = 4.0
+@export var zone_grid_inner_alpha_multiplier: float = 0.45
 @export var zone_hover_fill_alpha: float = 0.12
 @export var zone_selected_fill_alpha: float = 0.16
 @export var zone4_hold_duration: float = 1.0
@@ -37,10 +38,11 @@ signal rest_menu_cancelled
 @export var zone_merchant_hint_text: String = "Purchase"
 @export var zone_smith_hint_text: String = "Upgrade"
 @export var zone_module_hint_text: String = "Warehouses"
-@export var zone_board_hint_text: String = "Board Edit"
+@export var zone_board_hint_text: String = "Board"
 @export var zone_battle_hold_hint_text: String = "Hold left mouse on center to start battle"
 @export var zone_hint_forward_offset: Vector2 = Vector2(0.0, -44.0)
 @export var zone_hint_z_index: int = 80
+@export var zone_hint_intro_duration: float = 1.5
 
 var _board: BoardCellGenerator
 var _fade_tween: Tween
@@ -60,6 +62,7 @@ var _last_menu_open_msec: int = -1000000
 var _zone4_hold_elapsed := 0.0
 var _zone4_hold_triggered := false
 var _zone4_hold_boost_active: bool = false
+var _zone_hint_intro_remaining := 0.0
 var _zone_helper: RefCounted
 var _menu_bridge: RefCounted
 var _auto_navigation: RefCounted
@@ -77,15 +80,11 @@ const ZONE_ID_MODULE := 2
 const ZONE_ID_BOARD_EDIT := 6
 const CENTER_ZONE_ID := 4
 const ZONE4_HOLD_BOOST_SOURCE_ID: StringName = &"rest_zone4_hold_boost"
-const BLOCKING_UI_ROOTS: Array[StringName] = [
+const LEGACY_BLOCKING_UI_ROOTS: Array[StringName] = [
 	&"ShoppingRootv2",
 	&"UpgradeRootv2",
 	&"ModuleManagementRoot",
-	&"ModuleRoot",
 	&"PauseMenuRoot",
-	&"MerchantRoot",
-	&"SmithRoot",
-	&"ModuleMenuRoot",
 	&"RouteSelectionPanel",
 	&"RewardSelectionPanel",
 	&"BoardEditPanel",
@@ -143,6 +142,7 @@ func _ready() -> void:
 		rest_menu_cancelled.connect(Callable(self, "_on_rest_menu_cancelled"))
 	if should_show:
 		_reset_prepare_state(true)
+		_start_zone_hint_intro()
 	_refresh_scene_hint_labels()
 	_refresh_interaction_state()
 	queue_redraw()
@@ -276,12 +276,14 @@ func _enter_prepare_phase() -> void:
 	_set_camera_owner_active(true)
 	call_deferred("_ensure_camera_owner_binding")
 	_reset_prepare_state(true)
+	_start_zone_hint_intro()
 	_refresh_interaction_state()
 	if _start_battle_button:
 		_start_battle_button.reset_state()
 
 func _enter_non_prepare_phase() -> void:
 	_clear_zone4_hold_move_boost()
+	_zone_hint_intro_remaining = 0.0
 	_set_active(false, false)
 	_set_camera_owner_active(false)
 	call_deferred("_ensure_camera_owner_binding")
@@ -448,14 +450,17 @@ func _process(delta: float) -> void:
 	_ensure_camera_owner_binding()
 	if not _is_interaction_enabled():
 		_reset_zone4_hold()
+		_zone_hint_intro_remaining = 0.0
+		_update_zone_hint_visibility()
 		CursorManager.clear_world_state(self)
 		return
 	if _hint_presenter != null and bool(_hint_presenter.call("has_status_changed")):
 		_refresh_scene_hint_labels()
-	_update_zone_hint_visibility()
 	_update_hover_from_mouse()
 	_update_auto_move()
 	_update_zone4_hold(delta)
+	_update_zone_hint_intro(delta)
+	_update_zone_hint_visibility()
 	_refresh_cursor_state()
 
 func _input(event: InputEvent) -> void:
@@ -474,13 +479,13 @@ func _handle_left_click(global_pos: Vector2) -> void:
 	if debug_click_logs:
 		print("[RestArea] left click event_pos=", global_pos, " world_mouse=", get_global_mouse_position())
 	_sync_menu_open_with_ui()
+	if _is_world_interaction_blocked():
+		if debug_click_logs:
+			print("[RestArea] left click ignored: world interaction blocked")
+		return
 	if _menu_bridge != null and not bool(_menu_bridge.call("is_navigation_allowed")):
 		if debug_click_logs:
 			print("[RestArea] left click ignored: zone navigation locked by submenu depth")
-		return
-	if _is_mouse_over_ui():
-		if debug_click_logs:
-			print("[RestArea] left click ignored: mouse over blocking UI")
 		return
 	var zone_id := _get_zone_id_for_global_point(get_global_mouse_position())
 	if zone_id < 0:
@@ -490,31 +495,35 @@ func _handle_left_click(global_pos: Vector2) -> void:
 	if zone_id == CENTER_ZONE_ID and selected_zone_id == CENTER_ZONE_ID and not is_auto_moving:
 		# Center zone enters battle by hold, not click-to-open-menu.
 		return
-	if menu_open and zone_id == selected_zone_id and _zone_opens_interaction(zone_id):
+	var current_menu_open := _is_menu_open()
+	if current_menu_open and zone_id == selected_zone_id and _zone_opens_interaction(zone_id):
 		# Already inside this zone with its interaction open; ignore repeated click.
 		if debug_click_logs:
 			print("[RestArea] left click ignored: primary menu already open for zone=", zone_id)
 		return
-	if menu_open and zone_id != selected_zone_id:
+	if current_menu_open and zone_id != selected_zone_id:
 		_close_rest_area_primary_menu_if_open()
-		menu_open = false
+		_sync_menu_open_with_ui()
 	_begin_zone_move(zone_id, _zone_opens_interaction(zone_id))
 	if debug_click_logs:
 		print("[RestArea] left click accepted: zone_id=", zone_id, " target=", _get_zone_center_global(zone_id))
 	get_viewport().set_input_as_handled()
 
 func _handle_right_click() -> void:
-	_sync_menu_open_with_ui()
-	if not menu_open:
+	if not _is_menu_open():
 		return
 	if _menu_bridge != null and bool(_menu_bridge.call("handle_right_cancel")):
 		_sync_menu_open_with_ui()
 		get_viewport().set_input_as_handled()
 		return
-	menu_open = false
 	rest_menu_cancelled.emit()
+	_sync_menu_open_with_ui()
 	_begin_zone_move(CENTER_ZONE_ID, false)
 	get_viewport().set_input_as_handled()
+
+func _is_menu_open() -> bool:
+	_sync_menu_open_with_ui()
+	return menu_open
 
 func _sync_menu_open_with_ui() -> void:
 	if _menu_bridge == null:
@@ -533,7 +542,7 @@ func _sync_menu_open_with_ui() -> void:
 func _begin_zone_move(zone_id: int, open_menu_on_arrival: bool) -> void:
 	_arrival_token += 1
 	selected_zone_id = zone_id
-	menu_open = false
+	_sync_menu_open_with_ui()
 	_update_zone_hint_visuals()
 	move_target_global = _get_zone_center_global(zone_id)
 	player_move_target_global = move_target_global
@@ -597,6 +606,8 @@ func _refresh_interaction_state() -> void:
 	if not enabled:
 		_set_hover_zone(-1)
 		_reset_zone4_hold()
+		_zone_hint_intro_remaining = 0.0
+		_update_zone_hint_visibility()
 		CursorManager.clear_world_state(self)
 
 func _is_interaction_enabled() -> bool:
@@ -609,7 +620,7 @@ func is_module_management_available() -> bool:
 	return _is_interaction_enabled()
 
 func _update_hover_from_mouse() -> void:
-	if _is_mouse_over_ui():
+	if _is_world_interaction_blocked():
 		_set_hover_zone(-1)
 		return
 	_set_hover_zone(_get_zone_id_for_global_point(get_global_mouse_position()))
@@ -623,21 +634,57 @@ func _set_hover_zone(zone_id: int) -> void:
 	if hover_zone_id != CENTER_ZONE_ID:
 		_reset_zone4_hold()
 	_update_zone_hint_visuals()
+	_update_zone_hint_visibility()
 	_refresh_zone_hover_hint()
 	queue_redraw()
 
+func _start_zone_hint_intro() -> void:
+	_zone_hint_intro_remaining = maxf(zone_hint_intro_duration, 0.0)
+	_update_zone_hint_visibility()
+
+func _update_zone_hint_intro(delta: float) -> void:
+	if _zone_hint_intro_remaining <= 0.0:
+		return
+	var previous_remaining := _zone_hint_intro_remaining
+	_zone_hint_intro_remaining = maxf(_zone_hint_intro_remaining - maxf(delta, 0.0), 0.0)
+	if previous_remaining > 0.0 and _zone_hint_intro_remaining <= 0.0:
+		_update_zone_hint_visibility()
+
+func _is_zone_hint_intro_active() -> bool:
+	return _zone_hint_intro_remaining > 0.0
+
+func _should_show_zone_hint_label(zone_id: int, is_center_hold_hint: bool = false) -> bool:
+	if not _is_interaction_enabled():
+		return false
+	if _are_zone_hints_suppressed_by_ui():
+		return false
+	if _is_zone_hint_intro_active():
+		return true
+	if is_center_hold_hint:
+		return hover_zone_id == CENTER_ZONE_ID or _zone4_hold_elapsed > 0.0
+	if hover_zone_id == zone_id:
+		return true
+	return selected_zone_id == zone_id and zone_id != CENTER_ZONE_ID
+
+func _are_zone_hints_suppressed_by_ui() -> bool:
+	return _is_menu_open() or _is_world_interaction_blocked()
+
 func _is_mouse_over_ui() -> bool:
 	var viewport := get_viewport()
-	return bool(_menu_bridge.call("is_mouse_over_blocking_ui", viewport, BLOCKING_UI_ROOTS)) if _menu_bridge != null else false
+	return bool(_menu_bridge.call("is_mouse_over_blocking_ui", viewport, LEGACY_BLOCKING_UI_ROOTS)) if _menu_bridge != null else false
+
+func _is_world_interaction_blocked() -> bool:
+	var viewport := get_viewport()
+	return bool(_menu_bridge.call("is_world_interaction_blocked", viewport, LEGACY_BLOCKING_UI_ROOTS)) if _menu_bridge != null else false
 
 func _is_inside_blocking_ui_branch(control: Control) -> bool:
-	return bool(_menu_bridge.call("_is_inside_blocking_ui_branch", control, BLOCKING_UI_ROOTS)) if _menu_bridge != null else false
+	return bool(_menu_bridge.call("_is_inside_blocking_ui_branch", control, LEGACY_BLOCKING_UI_ROOTS)) if _menu_bridge != null else false
 
 func _is_mouse_inside_visible_blocking_ui_root(mouse_position: Vector2) -> bool:
-	return bool(_menu_bridge.call("_is_mouse_inside_visible_blocking_ui_root", mouse_position, BLOCKING_UI_ROOTS)) if _menu_bridge != null else false
+	return bool(_menu_bridge.call("_is_mouse_inside_visible_blocking_ui_root", mouse_position, LEGACY_BLOCKING_UI_ROOTS)) if _menu_bridge != null else false
 
 func _control_tree_has_blocking_root_at(control: Control, mouse_position: Vector2) -> bool:
-	return bool(_menu_bridge.call("_control_tree_has_blocking_root_at", control, mouse_position, BLOCKING_UI_ROOTS)) if _menu_bridge != null else false
+	return bool(_menu_bridge.call("_control_tree_has_blocking_root_at", control, mouse_position, LEGACY_BLOCKING_UI_ROOTS)) if _menu_bridge != null else false
 
 func _on_rest_menu_requested(zone_id: int, _zone_center_global: Vector2) -> void:
 	if _menu_bridge != null:
@@ -661,19 +708,25 @@ func _draw() -> void:
 	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
 		return
 	_draw_zone_grid(bounds)
-	_draw_zone_outline(selected_zone_id, zone_selected_color, zone_outline_line_width)
+	if selected_zone_id != CENTER_ZONE_ID or hover_zone_id == CENTER_ZONE_ID or _zone4_hold_elapsed > 0.0:
+		_draw_zone_outline(selected_zone_id, zone_selected_color, zone_outline_line_width)
 	_draw_zone_outline(hover_zone_id, zone_hover_color, zone_outline_line_width)
 	_draw_zone4_hold_progress()
 
 func _draw_zone_grid(bounds: Rect2) -> void:
-	draw_rect(bounds, zone_grid_color, false, zone_grid_line_width)
+	var line_width := maxf(zone_grid_line_width, 0.5)
+	var outer_color := zone_grid_color
+	outer_color.a = clampf(outer_color.a, 0.0, 1.0)
+	draw_rect(bounds, outer_color, false, line_width)
 	var zone_w := bounds.size.x / float(GRID_DIM)
 	var zone_h := bounds.size.y / float(GRID_DIM)
+	var inner_color := outer_color
+	inner_color.a = clampf(zone_grid_color.a * zone_grid_inner_alpha_multiplier, 0.0, 1.0)
 	for line_idx in range(1, GRID_DIM):
 		var x := bounds.position.x + float(line_idx) * zone_w
-		draw_line(Vector2(x, bounds.position.y), Vector2(x, bounds.end.y), zone_grid_color, zone_grid_line_width)
+		draw_line(Vector2(x, bounds.position.y), Vector2(x, bounds.end.y), inner_color, line_width)
 		var y := bounds.position.y + float(line_idx) * zone_h
-		draw_line(Vector2(bounds.position.x, y), Vector2(bounds.end.x, y), zone_grid_color, zone_grid_line_width)
+		draw_line(Vector2(bounds.position.x, y), Vector2(bounds.end.x, y), inner_color, line_width)
 
 func _draw_zone_outline(zone_id: int, color: Color, width: float) -> void:
 	var zone_rect := _get_zone_rect_local(zone_id)
@@ -732,11 +785,11 @@ func _is_zone4_hold_available() -> bool:
 		return false
 	if hover_zone_id != CENTER_ZONE_ID:
 		return false
-	if menu_open:
+	if _is_menu_open():
 		return false
 	if _route_selection_pending:
 		return false
-	if _is_mouse_over_ui():
+	if _is_world_interaction_blocked():
 		return false
 	return true
 
@@ -792,15 +845,15 @@ func _open_menu_after_stable_frames(zone_id: int, zone_center: Vector2, source: 
 		return
 	if token != _arrival_token:
 		return
-	if menu_open:
+	if _is_menu_open():
 		return
 	if not _emit_menu_on_arrival:
 		return
-	menu_open = true
 	_emit_menu_on_arrival = false
 	if debug_click_logs:
 		print("[RestArea] open menu source=", source, " zone=", zone_id)
 	rest_menu_requested.emit(zone_id, zone_center)
+	_sync_menu_open_with_ui()
 	queue_redraw()
 
 func _reset_zone4_hold() -> void:
@@ -829,7 +882,7 @@ func _clear_zone_move_speed_override() -> void:
 		_auto_navigation.call("clear_zone_move_speed_override")
 
 func _draw_zone4_hold_progress() -> void:
-	if selected_zone_id != CENTER_ZONE_ID and hover_zone_id != CENTER_ZONE_ID and _zone4_hold_elapsed <= 0.0:
+	if hover_zone_id != CENTER_ZONE_ID and _zone4_hold_elapsed <= 0.0:
 		return
 	var zone_rect := _get_zone_rect_local(CENTER_ZONE_ID)
 	if zone_rect.size.x <= 0.0 or zone_rect.size.y <= 0.0:
@@ -878,7 +931,7 @@ func _refresh_cursor_state() -> void:
 	if not _is_interaction_enabled():
 		CursorManager.clear_world_state(self)
 		return
-	if _is_mouse_over_ui():
+	if _is_world_interaction_blocked():
 		CursorManager.clear_world_state(self)
 		return
 	if _zone4_hold_elapsed > 0.0 and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and _is_zone4_hold_available():
@@ -896,7 +949,7 @@ func _is_zone_clickable_for_cursor(zone_id: int) -> bool:
 		# When the player is not on center, center zone is still clickable for move-in.
 		# Hold-to-start is only available after arriving at center.
 		if selected_zone_id != CENTER_ZONE_ID:
-			if is_auto_moving or _is_mouse_over_ui():
+			if is_auto_moving or _is_world_interaction_blocked():
 				return false
 			var ui = GlobalVariables.ui
 			if ui and is_instance_valid(ui) and ui.has_method("is_rest_area_zone_navigation_allowed"):

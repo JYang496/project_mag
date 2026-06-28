@@ -10,7 +10,7 @@ class_name PurchaseManagementView
 @onready var shop_sell_button: Button = $ShopSellButton
 @onready var shop_cancel_button: Button = $ShopCancelButton
 @onready var shop_confirm_button: Button = $ShopConfirmButton
-@onready var shop_back_button: Button = $BackToMerchantMenu
+@onready var shop_back_button: Button = $BackToPurchaseMenu
 @onready var shop_detail_panel: PanelContainer = $ShopDetailPanel
 @onready var shop_detail_title: Label = $ShopDetailPanel/Margin/Root/Title
 @onready var shop_detail_subtitle: Label = $ShopDetailPanel/Margin/Root/Subtitle
@@ -45,6 +45,10 @@ func bind(owner_ui: Node, purchase_controller: PurchaseManagementController = nu
 			shop_weapon_mode_button.pressed.connect(weapon_pressed)
 		if not shop_module_mode_button.pressed.is_connected(module_pressed):
 			shop_module_mode_button.pressed.connect(module_pressed)
+	if owner_ui.get("rest_area_ui_controller") != null:
+		var back_pressed := Callable(owner_ui.rest_area_ui_controller, "back_to_purchase_primary_menu")
+		if not shop_back_button.pressed.is_connected(back_pressed):
+			shop_back_button.pressed.connect(back_pressed)
 	owner_ui.call("_style_management_button", shop_weapon_mode_button, true)
 	owner_ui.call("_style_management_button", shop_module_mode_button)
 	owner_ui.call("_style_management_button", shop_refresh_button)

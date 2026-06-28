@@ -165,7 +165,10 @@ func open_board_edit_panel() -> bool:
 		return false
 	if not ensure_board_edit_panel():
 		return false
-	return bool(board_edit_panel.open_panel(owner_ui._find_board()))
+	var opened := bool(board_edit_panel.open_panel(owner_ui._find_board()))
+	if owner_ui.rest_area_ui_controller != null:
+		owner_ui.rest_area_ui_controller.sync_secondary_menu_dim_overlay()
+	return opened
 
 func request_close_board_edit_panel() -> bool:
 	if board_edit_panel == null or not is_instance_valid(board_edit_panel) or not board_edit_panel.visible:
@@ -194,7 +197,10 @@ func open_cell_management_panel(mode: StringName = &"task") -> bool:
 		return false
 	if not ensure_cell_management_panel():
 		return false
-	return bool(cell_management_panel.call("open_panel", owner_ui._find_board(), mode))
+	var opened := bool(cell_management_panel.call("open_panel", owner_ui._find_board(), mode))
+	if owner_ui.rest_area_ui_controller != null:
+		owner_ui.rest_area_ui_controller.sync_secondary_menu_dim_overlay()
+	return opened
 
 func request_close_cell_management_panel() -> bool:
 	if owner_ui == null:
@@ -214,6 +220,9 @@ func is_modal_open() -> bool:
 		if _panel_is_modal_open(panel):
 			return true
 	return false
+
+func is_world_interaction_blocking_modal_open() -> bool:
+	return is_modal_open()
 
 func cancel_visible_modal() -> bool:
 	sync_state_from_owner()
@@ -254,9 +263,10 @@ func show_game_over() -> void:
 	if not ensure_game_over_view():
 		return
 	owner_ui.pause_menu_root.visible = false
-	owner_ui._set_management_root_visible(&"purchase", false)
-	owner_ui._set_management_root_visible(&"upgrade", false)
-	owner_ui._set_management_root_visible(&"warehouse", false)
+	owner_ui._init_rest_area_ui_controller()
+	owner_ui.rest_area_ui_controller.set_management_root_visible(&"purchase", false)
+	owner_ui.rest_area_ui_controller.set_management_root_visible(&"upgrade", false)
+	owner_ui.rest_area_ui_controller.set_management_root_visible(&"warehouse", false)
 	if game_over_view != null and is_instance_valid(game_over_view):
 		game_over_view.show_game_over()
 		owner_ui.get_tree().paused = true
@@ -278,13 +288,13 @@ func layout_controls_hint_panel(viewport_size: Vector2) -> void:
 	if controls_hint_view != null and is_instance_valid(controls_hint_view):
 		controls_hint_view.layout_for_viewport(viewport_size)
 
-func update_controls_guide_for_phase(phase: String, primary_open: bool, secondary_open: bool) -> void:
+func update_controls_guide_for_phase(phase: String, primary_open: bool, secondary_menu_context: StringName = &"") -> void:
 	if controls_hint_view != null and is_instance_valid(controls_hint_view):
-		controls_hint_view.refresh_for_phase(phase, primary_open, secondary_open)
+		controls_hint_view.refresh_for_phase(phase, primary_open, secondary_menu_context)
 
-func refresh_controls_hint_visibility(secondary_open: bool) -> void:
+func refresh_controls_hint_visibility(primary_open: bool, secondary_menu_context: StringName = &"") -> void:
 	if controls_hint_view != null and is_instance_valid(controls_hint_view):
-		controls_hint_view.refresh_visibility(secondary_open)
+		controls_hint_view.refresh_visibility(primary_open, secondary_menu_context)
 
 func sync_state_from_owner() -> void:
 	if owner_ui == null:

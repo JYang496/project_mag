@@ -31,6 +31,7 @@ func set_task_parameters(params: Dictionary) -> void:
 		pre_entry_damage_mul = float(params["clear_pre_entry_damage_mul"])
 	if params.has("clear_freeze_before_entry"):
 		freeze_before_entry = bool(params["clear_freeze_before_entry"])
+	_emit_task_status_changed()
 
 func reset_objective_runtime() -> void:
 	super.reset_objective_runtime()
@@ -41,6 +42,15 @@ func reset_objective_runtime() -> void:
 	_player_entered = false
 	_pending_spawn_after_phase_change = false
 	_finishing_objective = false
+	_emit_task_status_changed()
+
+func get_combat_task_status() -> Dictionary:
+	var total := _get_status_required_progress()
+	var current := mini(int(floor(_progress)), total)
+	var progress := 0.0
+	if total > 0:
+		progress = float(current) / float(total)
+	return _build_combat_task_status("clear", "clear", "清场", progress, "%d/%d" % [current, total], _spawned and _player_entered)
 
 func _process_objective(_delta: float) -> void:
 	if _pending_spawn_after_phase_change:
@@ -59,6 +69,7 @@ func _on_phase_changed(new_phase: String) -> void:
 	_spawned = false
 	_player_entered = false
 	_finishing_objective = false
+	_emit_task_status_changed()
 
 func _spawn_after_phase_change() -> void:
 	if not is_inside_tree():
@@ -73,6 +84,7 @@ func _on_player_presence_changed(_cell_ref: Cell, player_count: int) -> void:
 	if not _player_entered:
 		_player_entered = true
 		_unlock_quest_enemies()
+		_emit_task_status_changed()
 	_show_ui_hint()
 
 func _try_spawn_quest_enemies() -> void:
@@ -90,6 +102,7 @@ func _spawn_quest_enemies() -> void:
 	_required_progress = 0.0
 	_quest_enemies.clear()
 	_quest_enemy_weights.clear()
+	_emit_task_status_changed()
 
 	var spawn_infos := _get_level_spawn_infos()
 	if spawn_infos.is_empty():
@@ -120,6 +133,7 @@ func _spawn_quest_enemies() -> void:
 	for weight in _quest_enemy_weights.values():
 		total_weight += float(weight)
 	_required_progress = maxf(total_weight * clampf(completion_ratio, 0.0, 1.0), 0.0)
+	_emit_task_status_changed()
 
 	if _cell and _cell.has_player_inside():
 		_player_entered = true
@@ -156,6 +170,7 @@ func _on_quest_enemy_death(was_killed: bool, enemy: BaseEnemy) -> void:
 		return
 	_progress += weight
 	_update_ui_hint()
+	_emit_task_status_changed()
 	if _progress >= _required_progress and not _completed:
 		_finish_objective()
 
@@ -334,3 +349,9 @@ func _set_ui_hint_text(text: String) -> void:
 		return
 	if GlobalVariables.ui.has_method("set_quest_hint"):
 		GlobalVariables.ui.set_quest_hint(text)
+
+func _get_status_required_progress() -> int:
+	if _required_progress > 0.0:
+		return maxi(int(ceil(_required_progress)), 1)
+	var estimated_total := int(ceil(float(maxi(quest_enemy_count, 0)) * clampf(completion_ratio, 0.0, 1.0)))
+	return maxi(estimated_total, 1)

@@ -1,0 +1,46 @@
+Project: project_mag
+Task: Make autoload service locations consistent.
+
+Context:
+- Current project root is `D:\Godot Projects\project_mag`.
+- This checkout currently has a broad dirty worktree. Treat pre-existing modified/deleted/untracked files as unrelated unless they are inside this worker's writable scope.
+- Do not assume `godot` is on PATH. Use the shell validation executable `D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`.
+- Godot MCP may report a different Godot version than the shell executable. If you use MCP for inspection, still use the shell command below as the final validation baseline and report any version mismatch.
+- `project.godot` autoload entries mostly point to `autoload/*.gd`, but `DisplaySettings` currently points to `res://Utility/display_settings.gd`.
+- The goal is location consistency only, not behavior changes.
+
+Writable scope:
+- `Utility/display_settings.gd`
+- `Utility/display_settings.gd.uid`
+- `autoload/DisplaySettings.gd`
+- `autoload/DisplaySettings.gd.uid`
+- `project.godot`
+- Direct references to the old path, if any
+
+Forbidden scope:
+- Do not change settings behavior or API.
+- Do not rename the autoload singleton from `DisplaySettings`.
+- Do not edit start menu behavior except for direct path/reference updates if required.
+- Do not reorganize other Utility scripts.
+
+Required workflow:
+1. Run `git status --short` first and identify unrelated dirty files.
+2. Inspect `project.godot` autoload section and current `Utility/display_settings.gd`.
+3. Search for:
+   - `res://Utility/display_settings.gd`
+   - `display_settings.gd`
+   - `DisplaySettings`
+4. Move the script to `autoload/DisplaySettings.gd`.
+5. Update `project.godot` so the `DisplaySettings` autoload points to `res://autoload/DisplaySettings.gd`.
+6. Keep the singleton name and public API stable.
+
+Validation:
+- Run `rg -n "res://Utility/display_settings.gd|Utility/display_settings.gd" -S .` and confirm no stale path remains.
+- Run `rg -n "DisplaySettings=\"\\*res://autoload/DisplaySettings.gd\"" project.godot`.
+- Run `& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit`.
+
+Final report:
+- List files moved and config entries updated.
+- State whether the singleton name/API changed. It should not.
+- State which dirty files were pre-existing and outside this worker's scope.
+- Include validation commands and results.
