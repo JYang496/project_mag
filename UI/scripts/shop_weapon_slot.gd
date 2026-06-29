@@ -10,7 +10,6 @@ const RARITY_UTIL := preload("res://data/LootRarity.gd")
 @onready var socket_2: Label = $Background/Socket2
 @onready var lbl_description: Label = $Background/Socket3
 @export var inventory_index : int = 0
-@onready var equipped: GridContainer = $"../../Equipped"
 
 var item
 var item_id = null
@@ -194,8 +193,6 @@ func try_purchase() -> bool:
 			if not opened:
 				new_weapon.queue_free()
 				return false
-	for eq : EquipmentSlotShop in equipped.get_children():
-		eq.reset_sell_status()
 	if str(outcome.get("result", "not_applicable")) != "not_applicable":
 		self.empty_item()
 	return true

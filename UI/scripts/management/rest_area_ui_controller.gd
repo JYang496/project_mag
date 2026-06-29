@@ -37,7 +37,7 @@ func get_service_primary_buttons(menu_id: StringName) -> Array:
 		&"purchase":
 			return [
 				owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyButton") as Button,
-				owner_ui.purchase_primary_panel.get_node_or_null("OpenSellButton") as Button,
+				owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyModuleButton") as Button,
 			]
 		&"upgrade":
 			return [
@@ -100,7 +100,6 @@ func purchase_panel_in() -> void:
 	if owner_ui.is_branch_selection_blocking_interactions():
 		owner_ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
 		return
-	owner_ui.purchase_management_controller.set_sell_mode(false)
 	owner_ui.purchase_management_controller.update_shop()
 	owner_ui._mark_shop_purchase_action_dirty()
 	set_primary_root_visible(&"purchase", false)
@@ -218,13 +217,6 @@ func open_purchase_module_panel() -> void:
 	owner_ui.purchase_management_controller.ensure_module_shop()
 	purchase_panel_in()
 	owner_ui.purchase_management_controller.apply_purchase_mode(&"module")
-
-func open_purchase_sell_panel() -> void:
-	var should_wait := owner_ui.purchase_primary_root != null and owner_ui.purchase_primary_root.visible
-	_hide_primary_menu(&"purchase", owner_ui.purchase_primary_root, owner_ui.purchase_primary_panel)
-	if should_wait:
-		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
-	warehouse_panel_in(&"weapon")
 
 func close_purchase_panel() -> void:
 	purchase_panel_out()
@@ -411,9 +403,6 @@ func cancel_menu_level() -> bool:
 			_show_primary_menu(&"purchase", owner_ui.purchase_primary_root, owner_ui.purchase_primary_panel)
 			return true
 		if owner_ui.purchase_management_root and owner_ui.purchase_management_root.visible:
-			if owner_ui.shop_sell_mode_active:
-				owner_ui.purchase_management_controller.set_sell_mode(false)
-				return true
 			back_to_purchase_primary_menu()
 			return true
 		if owner_ui.purchase_primary_root and owner_ui.purchase_primary_root.visible:
@@ -659,4 +648,3 @@ func _prepare_primary_menu_open(menu_id: StringName) -> void:
 			upgrade_panel_out()
 		&"warehouse":
 			warehouse_panel_out()
-

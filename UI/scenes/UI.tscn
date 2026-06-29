@@ -339,7 +339,7 @@ offset_right = 248.0
 offset_bottom = 154.0
 text = "Buy"
 
-[node name="OpenSellButton" type="Button" parent="GUI/PurchaseRoot/PrimaryMenuRoot/Panel" unique_id=1047985539]
+[node name="OpenBuyModuleButton" type="Button" parent="GUI/PurchaseRoot/PrimaryMenuRoot/Panel" unique_id=1047985539]
 layout_mode = 0
 offset_left = 28.0
 offset_top = 166.0

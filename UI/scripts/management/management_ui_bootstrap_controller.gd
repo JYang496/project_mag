@@ -61,7 +61,7 @@ func ensure_management_menu_buttons() -> void:
 		return
 	var buy_button := owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyButton") as Button
 	_connect_button_pressed(buy_button, owner_ui.rest_area_ui_controller.open_purchase_weapon_panel)
-	var buy_module_button := owner_ui.purchase_primary_panel.get_node_or_null("OpenSellButton") as Button
+	var buy_module_button := owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyModuleButton") as Button
 	_connect_button_pressed(buy_module_button, owner_ui.rest_area_ui_controller.open_purchase_module_panel)
 	var upgrade_weapon_button := owner_ui.upgrade_primary_panel.get_node_or_null("OpenUpgradeButton") as Button
 	_connect_button_pressed(upgrade_weapon_button, owner_ui.rest_area_ui_controller.open_upgrade_panel.bind(&"weapon"))

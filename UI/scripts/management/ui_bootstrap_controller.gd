@@ -37,7 +37,6 @@ func bootstrap() -> void:
 	owner_ui._create_controls_hint_panel()
 	owner_ui._ensure_pause_language_controls()
 	owner_ui._init_module_action_dialogs()
-	owner_ui.purchase_management_controller.init_sell_summary()
 	owner_ui._init_management_ui_polish()
 	owner_ui._refresh_localized_static_text()
 	owner_ui._create_quest_hint()

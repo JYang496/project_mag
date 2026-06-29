@@ -31,6 +31,7 @@ func ensure_panel() -> PanelContainer:
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.custom_minimum_size = PANEL_SIZE
 	panel.size = PANEL_SIZE
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_END
 	panel.visible = false
 	panel.z_index = 40
 	panel.add_theme_stylebox_override("panel", _build_panel_style())
@@ -58,6 +59,10 @@ func layout(viewport_size: Vector2) -> void:
 	if panel == null:
 		return
 	panel.size = PANEL_SIZE
+	if panel.get_parent() is Container:
+		panel.custom_minimum_size = PANEL_SIZE
+		panel.size_flags_horizontal = Control.SIZE_SHRINK_END
+		return
 	var x: float = maxf(12.0, viewport_size.x - PANEL_SIZE.x - 16.0)
 	panel.position = Vector2(x, 116.0)
 

@@ -3,9 +3,13 @@ extends Node
 signal settings_changed
 
 const SETTINGS_PATH := "user://player_assist_settings.cfg"
+const CONTROLS_HINT_ALWAYS: StringName = &"always"
+const CONTROLS_HINT_ADAPTIVE: StringName = &"adaptive"
+const CONTROLS_HINT_HIDDEN: StringName = &"hidden"
 
 var auto_aim_continuous_fire: bool = false
 var auto_reload_switch: bool = false
+var controls_hint_mode: StringName = CONTROLS_HINT_ADAPTIVE
 
 func _ready() -> void:
 	load_settings()
@@ -24,6 +28,14 @@ func set_auto_reload_switch(enabled: bool) -> void:
 	save_settings()
 	settings_changed.emit()
 
+func set_controls_hint_mode(mode: StringName) -> void:
+	var normalized := _normalize_controls_hint_mode(mode)
+	if controls_hint_mode == normalized:
+		return
+	controls_hint_mode = normalized
+	save_settings()
+	settings_changed.emit()
+
 func load_settings() -> void:
 	var cfg := ConfigFile.new()
 	var err := cfg.load(SETTINGS_PATH)
@@ -31,10 +43,19 @@ func load_settings() -> void:
 		return
 	auto_aim_continuous_fire = bool(cfg.get_value("assist", "auto_aim_continuous_fire", false))
 	auto_reload_switch = bool(cfg.get_value("assist", "auto_reload_switch", false))
+	controls_hint_mode = _normalize_controls_hint_mode(
+		StringName(str(cfg.get_value("assist", "controls_hint_mode", CONTROLS_HINT_ADAPTIVE)))
+	)
 	settings_changed.emit()
 
 func save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("assist", "auto_aim_continuous_fire", auto_aim_continuous_fire)
 	cfg.set_value("assist", "auto_reload_switch", auto_reload_switch)
+	cfg.set_value("assist", "controls_hint_mode", str(controls_hint_mode))
 	cfg.save(SETTINGS_PATH)
+
+func _normalize_controls_hint_mode(mode: StringName) -> StringName:
+	if mode == CONTROLS_HINT_ALWAYS or mode == CONTROLS_HINT_HIDDEN:
+		return mode
+	return CONTROLS_HINT_ADAPTIVE

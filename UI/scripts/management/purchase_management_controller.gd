@@ -10,18 +10,9 @@ var purchase_panel: Panel
 var purchase_management_view
 var module_shop_list_view
 var shop: VBoxContainer
-var equipped_shop: GridContainer
 var shop_refresh_button: Button
-var shop_sell_button: Button
-var shop_cancel_button: Button
-var shop_confirm_button: Button
+var shop_purchase_button: Button
 var shop_back_button: Button
-var shop_sell_summary_panel: PanelContainer
-var shop_sell_summary_title: Label
-var shop_sell_summary_hint: Label
-var shop_sell_summary_list: VBoxContainer
-var shop_sell_summary_total: Label
-var shop_sell_summary_modules: Label
 var module_shop: VBoxContainer
 var shop_mode_buttons: HBoxContainer
 var shop_weapon_mode_button: Button
@@ -31,7 +22,6 @@ var shop_detail_title: Label
 var shop_detail_subtitle: Label
 var shop_detail_body: VBoxContainer
 var shop_detail_scroll: ScrollContainer
-var shop_sell_mode_active := false
 var purchase_mode: StringName = &"weapon"
 var hover_item: Dictionary = {}
 var selected_item: Dictionary = {}
@@ -52,121 +42,17 @@ func ensure_view() -> bool:
 	purchase_management_view.bind(owner_ui, self)
 	_bind_view_fields()
 	_sync_public_fields_to_owner()
-	purchase_management_view.set_shop_context(shop, shop_sell_button)
+	purchase_management_view.set_shop_context(shop, shop_purchase_button)
 	if owner_ui != null and shop_refresh_button != null:
 		var reset_callable := Callable(shop_refresh_button, "_on_ui_reset_cost")
 		if not owner_ui.reset_cost.is_connected(reset_callable):
 			owner_ui.reset_cost.connect(reset_callable)
 	return true
 
-func init_sell_summary() -> void:
-	if ensure_view():
-		refresh_sell_summary()
-
-func set_sell_mode(enabled: bool) -> void:
-	if not ensure_view():
-		return
-	shop_sell_mode_active = enabled
-	owner_ui.shop_sell_mode_active = enabled
-	purchase_management_view.set_sell_mode_active(enabled)
-	InventoryData.clear_on_select()
-	for slot: EquipmentSlotShop in equipped_shop.get_children():
-		slot.sell_mode = enabled
-		slot.reset_sell_status()
-	shop_sell_button.visible = not enabled
-	if shop_confirm_button:
-		shop_confirm_button.visible = enabled
-	shop_cancel_button.visible = enabled
-	if shop_back_button:
-		shop_back_button.visible = not enabled
-	if shop_refresh_button:
-		shop_refresh_button.visible = not enabled
-	shop.visible = not enabled
-	if module_shop:
-		var module_scroll := module_shop.get_parent() as Control
-		if module_scroll:
-			module_scroll.visible = not enabled
-	if shop_mode_buttons:
-		shop_mode_buttons.visible = not enabled
-	if shop_detail_panel:
-		shop_detail_panel.visible = not enabled
-	if shop_sell_summary_panel:
-		shop_sell_summary_panel.visible = enabled
-	refresh_mode_title()
-	refresh_sell_summary()
-	if not enabled:
-		apply_purchase_mode(purchase_mode)
-
 func refresh_mode_title() -> void:
 	var shop_title := purchase_panel.get_node_or_null("Title") as Label
 	if shop_title:
-		shop_title.text = LocalizationManager.tr_key(
-			"ui.shop.sell.panel_title" if shop_sell_mode_active else "ui.panel.purchase",
-			"Sell Weapons" if shop_sell_mode_active else "Purchase"
-		)
-
-func refresh_sell_summary() -> void:
-	if shop_sell_summary_list == null:
-		return
-	for child in shop_sell_summary_list.get_children():
-		shop_sell_summary_list.remove_child(child)
-		child.queue_free()
-	var total_gold := 0
-	var module_count := 0
-	var valid_count := 0
-	for weapon_ref in InventoryData.ready_to_sell_list:
-		var weapon := weapon_ref as Weapon
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		valid_count += 1
-		var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
-		var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
-		var base_price := int(weapon_def.price) if weapon_def else 0
-		var gold := GlobalVariables.economy_data.get_duplicate_weapon_gold(base_price) \
-			if GlobalVariables.economy_data else EconomyConfig.new().get_duplicate_weapon_gold(base_price)
-		var weapon_modules := weapon.get_module_count()
-		total_gold += gold
-		module_count += weapon_modules
-		var row := Label.new()
-		row.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		row.text = LocalizationManager.tr_format(
-			"ui.shop.sell.row",
-			{
-				"name": LocalizationManager.get_weapon_name_from_node(weapon),
-				"level": int(weapon.level),
-				"fuse": int(weapon.fuse),
-				"gold": gold,
-				"modules": weapon_modules,
-			},
-			"%s  Lv.%d  Fuse %d  |  +%d Gold  |  %d modules" % [
-				LocalizationManager.get_weapon_name_from_node(weapon),
-				int(weapon.level),
-				int(weapon.fuse),
-				gold,
-				weapon_modules,
-			]
-		)
-		shop_sell_summary_list.add_child(row)
-	if valid_count == 0:
-		var empty := Label.new()
-		empty.text = LocalizationManager.tr_key(
-			"ui.shop.sell.empty",
-			"Click a weapon on the right to mark it for sale."
-		)
-		empty.modulate = Color(0.68, 0.72, 0.76)
-		shop_sell_summary_list.add_child(empty)
-	shop_sell_summary_modules.text = LocalizationManager.tr_format(
-		"ui.shop.sell.modules",
-		{"count": module_count},
-		"Equipped modules moved to temporary storage: %d" % module_count
-	)
-	shop_sell_summary_total.text = LocalizationManager.tr_format(
-		"ui.shop.sell.total",
-		{"count": valid_count, "gold": total_gold},
-		"Selected: %d    Total refund: +%d Gold" % [valid_count, total_gold]
-	)
-	if shop_confirm_button:
-		shop_confirm_button.disabled = valid_count == 0
+		shop_title.text = LocalizationManager.tr_key("ui.panel.purchase", "Purchase")
 
 func refresh_items_for_prepare() -> void:
 	if not ensure_view():
@@ -190,8 +76,6 @@ func refresh_items_for_prepare() -> void:
 func update_shop() -> void:
 	if not ensure_view():
 		return
-	for eq in equipped_shop.get_children():
-		eq.update()
 	for sh in shop.get_children():
 		sh.update()
 	if module_shop:
@@ -205,7 +89,6 @@ func ensure_module_shop() -> bool:
 	if not ensure_view():
 		return false
 	apply_shop_list_layout()
-	equipped_shop.visible = false
 	var view_scene := load(MODULE_SHOP_LIST_VIEW_PATH) as PackedScene
 	module_shop_list_view = view_scene.instantiate() as ScrollContainer if view_scene else null
 	if module_shop_list_view == null:
@@ -246,8 +129,7 @@ func apply_purchase_mode(mode: StringName) -> void:
 		return
 	purchase_mode = &"module" if mode == &"module" else &"weapon"
 	apply_shop_list_layout()
-	purchase_management_view.set_sell_mode_active(shop_sell_mode_active)
-	purchase_management_view.set_shop_context(shop, shop_sell_button)
+	purchase_management_view.set_shop_context(shop, shop_purchase_button)
 	if module_shop:
 		purchase_management_view.set_module_shop(module_shop)
 	purchase_management_view.apply_purchase_mode(purchase_mode)
@@ -313,23 +195,8 @@ func refresh_texts() -> void:
 		shop_weapon_mode_button.text = LocalizationManager.tr_key("ui.purchase.weapons", "购买武器")
 	if shop_module_mode_button:
 		shop_module_mode_button.text = LocalizationManager.tr_key("ui.purchase.modules", "购买模组")
-	if shop_sell_button:
-		shop_sell_button.text = LocalizationManager.tr_key("ui.shop.buy", "购买")
-	if shop_cancel_button:
-		shop_cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
-	if shop_sell_summary_title:
-		shop_sell_summary_title.text = LocalizationManager.tr_key("ui.shop.sell.title", "Weapons Marked for Sale")
-	if shop_sell_summary_hint:
-		shop_sell_summary_hint.text = LocalizationManager.tr_key(
-			"ui.shop.sell.hint",
-			"Select weapons on the right. Confirming sells all marked weapons."
-		)
-	if equipped_shop:
-		for slot: EquipmentSlotShop in equipped_shop.get_children():
-			slot.refresh_sell_label_text()
-	refresh_sell_summary()
-	if shop_confirm_button:
-		shop_confirm_button.text = LocalizationManager.tr_key("ui.panel.confirm", "Confirm")
+	if shop_purchase_button:
+		shop_purchase_button.text = LocalizationManager.tr_key("ui.shop.buy", "购买")
 	if shop_refresh_button:
 		if shop_refresh_button.has_method("refresh_button_label"):
 			shop_refresh_button.call("refresh_button_label")
@@ -347,10 +214,10 @@ func refresh_texts() -> void:
 	var buy_button := owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyButton") as Button
 	if buy_button:
 		buy_button.text = LocalizationManager.tr_key("ui.purchase.weapons", "购买武器")
-	var warehouse_button := owner_ui.purchase_primary_panel.get_node_or_null("OpenSellButton") as Button
-	if warehouse_button:
-		warehouse_button.visible = true
-		warehouse_button.text = LocalizationManager.tr_key("ui.purchase.modules", "购买模组")
+	var buy_module_button := owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyModuleButton") as Button
+	if buy_module_button:
+		buy_module_button.visible = true
+		buy_module_button.text = LocalizationManager.tr_key("ui.purchase.modules", "购买模组")
 
 	sync_primary_menu_style()
 
@@ -371,11 +238,8 @@ func sync_view_state() -> void:
 
 func _bind_view_fields() -> void:
 	shop = purchase_management_view.shop
-	equipped_shop = purchase_management_view.equipped_shop
 	shop_refresh_button = purchase_management_view.shop_refresh_button
-	shop_sell_button = purchase_management_view.shop_sell_button
-	shop_cancel_button = purchase_management_view.shop_cancel_button
-	shop_confirm_button = purchase_management_view.shop_confirm_button
+	shop_purchase_button = purchase_management_view.shop_purchase_button
 	shop_back_button = purchase_management_view.shop_back_button
 	shop_mode_buttons = purchase_management_view.shop_mode_buttons
 	shop_weapon_mode_button = purchase_management_view.shop_weapon_mode_button
@@ -385,12 +249,6 @@ func _bind_view_fields() -> void:
 	shop_detail_subtitle = purchase_management_view.shop_detail_subtitle
 	shop_detail_scroll = purchase_management_view.shop_detail_scroll
 	shop_detail_body = purchase_management_view.shop_detail_body
-	shop_sell_summary_panel = purchase_management_view.shop_sell_summary_panel
-	shop_sell_summary_title = purchase_management_view.shop_sell_summary_title
-	shop_sell_summary_hint = purchase_management_view.shop_sell_summary_hint
-	shop_sell_summary_list = purchase_management_view.shop_sell_summary_list
-	shop_sell_summary_modules = purchase_management_view.shop_sell_summary_modules
-	shop_sell_summary_total = purchase_management_view.shop_sell_summary_total
 
 func _sync_public_fields_to_owner() -> void:
 	if owner_ui == null:
@@ -398,18 +256,9 @@ func _sync_public_fields_to_owner() -> void:
 	owner_ui.purchase_management_view = purchase_management_view
 	owner_ui.module_shop_list_view = module_shop_list_view
 	owner_ui.shop = shop
-	owner_ui.equipped_shop = equipped_shop
 	owner_ui.shop_refresh_button = shop_refresh_button
-	owner_ui.shop_sell_button = shop_sell_button
-	owner_ui.shop_cancel_button = shop_cancel_button
-	owner_ui.shop_confirm_button = shop_confirm_button
+	owner_ui.shop_purchase_button = shop_purchase_button
 	owner_ui.shop_back_button = shop_back_button
-	owner_ui.shop_sell_summary_panel = shop_sell_summary_panel
-	owner_ui.shop_sell_summary_title = shop_sell_summary_title
-	owner_ui.shop_sell_summary_hint = shop_sell_summary_hint
-	owner_ui.shop_sell_summary_list = shop_sell_summary_list
-	owner_ui.shop_sell_summary_modules = shop_sell_summary_modules
-	owner_ui.shop_sell_summary_total = shop_sell_summary_total
 	owner_ui.module_shop = module_shop
 	owner_ui.shop_mode_buttons = shop_mode_buttons
 	owner_ui.shop_weapon_mode_button = shop_weapon_mode_button
@@ -419,4 +268,3 @@ func _sync_public_fields_to_owner() -> void:
 	owner_ui.shop_detail_subtitle = shop_detail_subtitle
 	owner_ui.shop_detail_scroll = shop_detail_scroll
 	owner_ui.shop_detail_body = shop_detail_body
-

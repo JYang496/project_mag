@@ -5,30 +5,20 @@ class_name PurchaseManagementView
 @onready var shop_weapon_mode_button: Button = $ShopModeButtons/BuyWeaponModeButton
 @onready var shop_module_mode_button: Button = $ShopModeButtons/BuyModuleModeButton
 @onready var shop: VBoxContainer = $Shop
-@onready var equipped_shop: GridContainer = $Equipped
 @onready var shop_refresh_button: Button = $ShopRefreshButton
-@onready var shop_sell_button: Button = $ShopSellButton
-@onready var shop_cancel_button: Button = $ShopCancelButton
-@onready var shop_confirm_button: Button = $ShopConfirmButton
+@onready var shop_purchase_button: Button = $ShopPurchaseButton
 @onready var shop_back_button: Button = $BackToPurchaseMenu
 @onready var shop_detail_panel: PanelContainer = $ShopDetailPanel
 @onready var shop_detail_title: Label = $ShopDetailPanel/Margin/Root/Title
 @onready var shop_detail_subtitle: Label = $ShopDetailPanel/Margin/Root/Subtitle
 @onready var shop_detail_scroll: ScrollContainer = $ShopDetailPanel/Margin/Root/DetailScroll
 @onready var shop_detail_body: VBoxContainer = $ShopDetailPanel/Margin/Root/DetailScroll/DetailBody
-@onready var shop_sell_summary_panel: PanelContainer = $ShopSellSummary
-@onready var shop_sell_summary_title: Label = $ShopSellSummary/Margin/Content/Title
-@onready var shop_sell_summary_hint: Label = $ShopSellSummary/Margin/Content/Hint
-@onready var shop_sell_summary_list: VBoxContainer = $ShopSellSummary/Margin/Content/ListScroll/List
-@onready var shop_sell_summary_modules: Label = $ShopSellSummary/Margin/Content/Modules
-@onready var shop_sell_summary_total: Label = $ShopSellSummary/Margin/Content/Total
 
 var owner_ui: Node
 var controller: PurchaseManagementController
 var weapon_shop: VBoxContainer
 var module_shop: VBoxContainer
 var purchase_action_button: Button
-var sell_mode_active := false
 var purchase_mode: StringName = &"weapon"
 var hover_item: Dictionary = {}
 var selected_item: Dictionary = {}
@@ -52,9 +42,7 @@ func bind(owner_ui: Node, purchase_controller: PurchaseManagementController = nu
 	owner_ui.call("_style_management_button", shop_weapon_mode_button, true)
 	owner_ui.call("_style_management_button", shop_module_mode_button)
 	owner_ui.call("_style_management_button", shop_refresh_button)
-	owner_ui.call("_style_management_button", shop_sell_button)
-	owner_ui.call("_style_management_button", shop_cancel_button)
-	owner_ui.call("_style_management_button", shop_confirm_button, true)
+	owner_ui.call("_style_management_button", shop_purchase_button, true)
 	owner_ui.call("_style_management_button", shop_back_button)
 
 func set_shop_context(weapon_shop_list: VBoxContainer, action_button: Button) -> void:
@@ -64,27 +52,15 @@ func set_shop_context(weapon_shop_list: VBoxContainer, action_button: Button) ->
 func set_module_shop(module_shop_list: VBoxContainer) -> void:
 	module_shop = module_shop_list
 
-func set_sell_mode_active(enabled: bool) -> void:
-	sell_mode_active = enabled
-	if equipped_shop:
-		equipped_shop.visible = enabled
-	if enabled:
-		hover_item = {}
-		selected_item = {}
-		clear_slot_selection()
-
 func apply_purchase_mode(mode: StringName) -> void:
 	purchase_mode = &"module" if mode == &"module" else &"weapon"
-	var show_purchase := not sell_mode_active
-	if equipped_shop:
-		equipped_shop.visible = sell_mode_active
 	if weapon_shop:
-		weapon_shop.visible = show_purchase and purchase_mode == &"weapon"
+		weapon_shop.visible = purchase_mode == &"weapon"
 	if module_shop:
 		var module_scroll := module_shop.get_parent() as Control
 		if module_scroll:
-			module_scroll.visible = show_purchase and purchase_mode == &"module"
-	shop_detail_panel.visible = show_purchase
+			module_scroll.visible = purchase_mode == &"module"
+	shop_detail_panel.visible = true
 	shop_weapon_mode_button.button_pressed = purchase_mode == &"weapon"
 	shop_module_mode_button.button_pressed = purchase_mode == &"module"
 	if owner_ui:
@@ -176,8 +152,6 @@ func clear_slot_selection() -> void:
 
 func refresh_purchase_action() -> void:
 	if purchase_action_button == null or not is_instance_valid(purchase_action_button):
-		return
-	if sell_mode_active:
 		return
 	var selected_slot := selected_item.get("slot", null) as Node
 	var has_selection := selected_slot != null and is_instance_valid(selected_slot)

@@ -21,9 +21,9 @@ func _run() -> void:
 		_fail(2, "ShopSellFlowTest: failed to prepare two equipped weapons.")
 		return
 
-	var weapon_to_sell := PlayerData.player_weapon_list[1] as Weapon
+	var protected_weapon := PlayerData.player_weapon_list[1] as Weapon
 	var module_instance := TEST_MODULE_SCENE.instantiate() as Module
-	var equip_result := InventoryData.equip_module_to_weapon(module_instance, weapon_to_sell, null, true)
+	var equip_result := InventoryData.equip_module_to_weapon(module_instance, protected_weapon, null, true)
 	if not equip_result.get("ok", false):
 		_fail(3, "ShopSellFlowTest: failed to equip module fixture.")
 		return
@@ -34,75 +34,45 @@ func _run() -> void:
 		return
 	get_tree().root.add_child(ui)
 	await get_tree().process_frame
-	ui.purchase_management_controller.update_shop()
 
-	var panel := ui.purchase_panel
-	if panel == null:
-		_fail(16, "ShopSellFlowTest: purchase management panel is missing.")
+	var view := ui.purchase_management_view as PurchaseManagementView
+	if view == null:
+		_fail(5, "ShopSellFlowTest: purchase management view is missing.")
 		return
-	var sell_button := ui.shop_sell_button
-	var confirm_button := ui.shop_confirm_button
-	var cancel_button := ui.shop_cancel_button
-	var refresh_button := ui.shop_refresh_button
-	var back_button := ui.shop_back_button
-	var shop := ui.shop
-	var first_slot := ui.equipped_shop.get_node("EquipmentSlotShop") as EquipmentSlotShop
-	var sell_slot := ui.equipped_shop.get_node("EquipmentSlotShop2") as EquipmentSlotShop
-	var sell_summary := ui.shop_sell_summary_panel
-	var title := panel.get_node("Title") as Label
+	for legacy_node_name in [
+		"Equipped",
+		"ShopSellButton",
+		"ShopCancelButton",
+		"ShopConfirmButton",
+		"ShopSellSummary",
+	]:
+		if view.get_node_or_null(legacy_node_name) != null:
+			_fail(6, "ShopSellFlowTest: purchase shell still exposes %s." % legacy_node_name)
+			return
+	if ui.purchase_management_controller.has_method("set_sell_mode"):
+		_fail(7, "ShopSellFlowTest: purchase controller still exposes the legacy sell mode.")
+		return
+	if ui.shop_purchase_button == null or not ui.shop_purchase_button.visible \
+			or ui.shop_refresh_button == null or not ui.shop_refresh_button.visible \
+			or ui.shop_back_button == null or not ui.shop_back_button.visible:
+		_fail(8, "ShopSellFlowTest: purchase shell is missing a supported merchant action.")
+		return
+	if ui.shop_purchase_button.text != LocalizationManager.tr_key("ui.shop.buy", "购买"):
+		_fail(9, "ShopSellFlowTest: merchant action is not labeled as a purchase.")
+		return
+
 	var starting_gold := int(PlayerData.player_gold)
-
-	ui.purchase_management_controller.set_sell_mode(true)
-	if not sell_summary.visible or not confirm_button.visible or back_button.visible or not confirm_button.disabled \
-			or title.text != LocalizationManager.tr_key("ui.shop.sell.panel_title", "Sell Weapons"):
-		_fail(5, "ShopSellFlowTest: sell mode did not show an unobstructed confirm action.")
+	var sell_result := InventoryData.sell_equipped_weapon(protected_weapon)
+	if sell_result.get("ok", false):
+		_fail(10, "ShopSellFlowTest: warehouse-managed equipped weapon was sold.")
 		return
-	sell_slot.click_sell_equipment()
-	var selected_label := sell_slot.background.get_node("SellSelectedLabel") as Label
-	if not selected_label.visible or confirm_button.disabled:
-		_fail(6, "ShopSellFlowTest: selected weapon did not receive clear sell feedback.")
+	if not PlayerData.player_weapon_list.has(protected_weapon) \
+			or int(PlayerData.player_gold) != starting_gold:
+		_fail(11, "ShopSellFlowTest: rejected weapon sale mutated player inventory or gold.")
 		return
-	if ui.shop_sell_summary_list.get_child_count() != 1 \
-			or not str(ui.shop_sell_summary_list.get_child(0).text).contains(
-				LocalizationManager.get_weapon_name_from_node(weapon_to_sell)
-			):
-		_fail(7, "ShopSellFlowTest: sell summary did not list the selected weapon.")
-		return
-	first_slot.click_sell_equipment()
-	if InventoryData.ready_to_sell_list.size() != 1 or first_slot.ready_to_sell:
-		_fail(8, "ShopSellFlowTest: sell mode allowed every equipped weapon to be selected.")
-		return
-	sell_slot.click_sell_equipment()
-	if not InventoryData.ready_to_sell_list.is_empty() or not confirm_button.disabled \
-			or selected_label.visible:
-		_fail(9, "ShopSellFlowTest: deselect did not restore the empty summary state.")
-		return
-	sell_slot.click_sell_equipment()
-	confirm_button.call("_on_button_up")
-	await get_tree().process_frame
-
-	if PlayerData.player_weapon_list.size() != 2 or not PlayerData.player_weapon_list.has(weapon_to_sell):
-		_fail(10, "ShopSellFlowTest: disabled legacy sell flow removed an equipped weapon.")
-		return
-	if int(PlayerData.player_gold) != starting_gold:
-		_fail(11, "ShopSellFlowTest: disabled legacy sell flow changed gold.")
-		return
-	if not InventoryData.temporary_modules.is_empty() or module_instance.get_parent() != weapon_to_sell.modules:
-		_fail(12, "ShopSellFlowTest: disabled legacy sell flow moved weapon modules.")
-		return
-	if not InventoryData.ready_to_sell_list.is_empty():
-		_fail(13, "ShopSellFlowTest: ready-to-sell list was not cleared.")
-		return
-	if not sell_button.visible or confirm_button.visible or cancel_button.visible \
-			or not back_button.visible or not refresh_button.visible or not shop.visible or sell_slot.sell_mode \
-			or sell_summary.visible:
-		_fail(14, "ShopSellFlowTest: disabled legacy sell flow did not return to purchase mode.")
-		return
-
-	var last_weapon := PlayerData.player_weapon_list[0] as Weapon
-	var last_weapon_result := InventoryData.sell_equipped_weapon(last_weapon)
-	if last_weapon_result.get("ok", false) or not PlayerData.player_weapon_list.has(last_weapon):
-		_fail(15, "ShopSellFlowTest: the last equipped weapon was allowed to be sold.")
+	if not InventoryData.temporary_modules.is_empty() \
+			or module_instance.get_parent() != protected_weapon.modules:
+		_fail(12, "ShopSellFlowTest: rejected weapon sale moved an equipped module.")
 		return
 
 	InventoryData.reset_runtime_state()

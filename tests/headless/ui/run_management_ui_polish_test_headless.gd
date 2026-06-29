@@ -39,7 +39,7 @@ func _run() -> void:
 	if ui.shop.position != Vector2(25, 104) or ui.shop.size != Vector2(500, 419):
 		_fail(29, "ManagementUIPolishTest: first weapon purchase list layout starts from the mode buttons.")
 		return
-	if ui.equipped_shop != null and ui.equipped_shop.visible:
+	if ui.purchase_management_view.get_node_or_null("Equipped") != null:
 		_fail(58, "ManagementUIPolishTest: weapon purchase mode still shows the legacy equipped grid.")
 		return
 	if ui.shop_detail_panel == null or not ui.shop_detail_panel.visible:
@@ -99,7 +99,7 @@ func _run() -> void:
 			return
 
 	for button in [
-		ui.shop_sell_button,
+		ui.shop_purchase_button,
 		ui.upgrade_action_button,
 		ui.module_equip_button,
 		ui.module_sell_button,

@@ -111,6 +111,9 @@ func try_show_reload_block_hint(main_weapon: Weapon) -> void:
 		hint_text = LocalizationManager.tr_key("ui.hud.reloading_now", "正在换弹中")
 	if _player.has_method("_spawn_keyed_player_floating_hint"):
 		_player.call("_spawn_keyed_player_floating_hint", hint_text, &"reload_blocked", _player.reload_block_hint_interval_sec)
+	if GlobalVariables.ui != null and is_instance_valid(GlobalVariables.ui) \
+			and GlobalVariables.ui.has_method("show_controls_context_reminder"):
+		GlobalVariables.ui.call("show_controls_context_reminder", &"SKILL_WEAPON", hint_text)
 
 func ensure_input_actions() -> void:
 	_ensure_input_action("SKILL_PLAYER", [KEY_SPACE])

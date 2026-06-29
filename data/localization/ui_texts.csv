@@ -217,6 +217,25 @@ ui.tutorial.panel.battle.line2,[LMB] Attack,[鼠标左键] 攻击
 ui.tutorial.panel.battle.line3,[Space] Skill,[空格] 角色技能
 ui.tutorial.panel.battle.line4,[R] Reload,[R] 装填
 ui.tutorial.panel.battle.line5,[Q/E] Switch Weapon  [Esc] Pause,[Q/E] 切换武器  [Esc] 暂停
+ui.controls.title,Controls,操作
+ui.controls.move,Move,移动
+ui.controls.attack,Attack,攻击
+ui.controls.skill,Player Skill,角色技能
+ui.controls.reload,Reload,装填
+ui.controls.auto_reload,Auto Reload On,自动装填已开启
+ui.controls.switch_weapon,Switch Weapon,切换武器
+ui.controls.pause,Pause,暂停
+ui.controls.expand,Expand,展开
+ui.controls.collapse,Collapse,收起
+ui.controls.collapse_tooltip,Collapse controls hint (F1),收起操作提示（F1）
+ui.controls.key.space,Space,空格
+ui.controls.key.lmb,LMB,左键
+ui.controls.key.rmb,RMB,右键
+ui.controls.key.mmb,MMB,中键
+ui.settings.controls_hint,Controls,操作指引
+ui.settings.controls_hint.adaptive,Adaptive,智能显示
+ui.settings.controls_hint.always,Always Expanded,始终展开
+ui.settings.controls_hint.hidden,Hidden,隐藏
 ui.tutorial.overlay.title,How To Play,操作指引
 ui.tutorial.overlay.intro,Rest area uses mouse-first interaction. Battle uses keyboard + mouse.,休息区以鼠标交互为主；战斗使用键盘+鼠标。
 ui.tutorial.overlay.rest.title,Rest Area,休息区
@@ -234,7 +253,7 @@ ui.tutorial.ctx.smith,Click to open upgrade,点击打开强化
 ui.tutorial.ctx.module,Click to manage modules,点击管理模组
 ui.tutorial.ctx.battle_hold,Hold left mouse on center to start battle,按住中央区域开始战斗
 ui.rest.zone.shop.title,Shop,商店
-ui.rest.zone.shop.status,Buy and sell weapons,购买与出售武器
+ui.rest.zone.shop.status,Buy weapons and modules,购买武器与模组
 ui.rest.zone.upgrade.title,Weapon Upgrade,武器升级
 ui.rest.zone.upgrade.available,{count} upgrades available,可升级 {count}
 ui.rest.zone.upgrade.none,No upgrades available,暂无可升级

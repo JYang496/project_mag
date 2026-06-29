@@ -276,7 +276,10 @@ func ensure_controls_hint_view() -> bool:
 	if controls_hint_view == null:
 		push_warning("Failed to create ControlsHintView.")
 		return false
-	gui_root.add_child(controls_hint_view)
+	var parent: Control = owner_ui._ensure_right_hud_stack() if owner_ui != null else gui_root
+	parent.add_child(controls_hint_view)
+	if parent is Container:
+		parent.move_child(controls_hint_view, 0)
 	_sync_public_fields_to_owner()
 	return true
 

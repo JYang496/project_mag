@@ -80,19 +80,9 @@ var weapon_passive_list: VBoxContainer
 
 # Shopping
 var shop: VBoxContainer
-var equipped_shop: GridContainer
 var shop_refresh_button: Button
-var shop_sell_button: Button
-var shop_cancel_button: Button
-var shop_confirm_button: Button
+var shop_purchase_button: Button
 var shop_back_button: Button
-var shop_sell_summary_panel: PanelContainer
-var shop_sell_summary_title: Label
-var shop_sell_summary_hint: Label
-var shop_sell_summary_list: VBoxContainer
-var shop_sell_summary_total: Label
-var shop_sell_summary_modules: Label
-var shop_sell_mode_active: bool = false
 var shop_instruction_label: Label
 var module_shop: VBoxContainer
 var shop_mode_buttons: HBoxContainer
@@ -182,6 +172,7 @@ var _pending_module_action := Callable()
 var _pending_battle_start := Callable()
 var _pending_battle_start_cancel := Callable()
 var controls_hint_view
+var right_hud_stack: VBoxContainer
 var board_edit_panel: Control
 var cell_management_panel: Control
 var cell_effect_commit_dialog: ConfirmationDialog
@@ -880,6 +871,8 @@ func _physics_process(delta: float) -> void:
 	_refresh_task_objective_hud_if_needed(delta)
 	_refresh_weapon_passive_panel_if_needed(delta)
 	_refresh_controls_hint_visibility()
+	if controls_hint_view != null and is_instance_valid(controls_hint_view):
+		controls_hint_view.tick(delta)
 	_update_rest_area_hover_hint_position()
 
 func _refresh_hud_if_needed(delta: float) -> void:
@@ -957,7 +950,7 @@ func _init_task_objective_hud_presenter() -> void:
 	if task_objective_hud_presenter != null:
 		return
 	task_objective_hud_presenter = TASK_OBJECTIVE_HUD_PRESENTER_SCRIPT.new()
-	task_objective_hud_presenter.bind(self, character_root)
+	task_objective_hud_presenter.bind(self, _ensure_right_hud_stack())
 	task_objective_hud_presenter.layout(get_viewport().get_visible_rect().size)
 
 func _init_ui_dirty_signal_controller() -> void:
@@ -1028,6 +1021,10 @@ func _input(_event) -> void:
 	if _event is InputEventMouseMotion:
 		var motion := _event as InputEventMouseMotion
 		_update_spread_cursor_overlay(motion.position)
+	if controls_hint_view != null and is_instance_valid(controls_hint_view) \
+			and controls_hint_view.handle_input_event(_event):
+		get_viewport().set_input_as_handled()
+		return
 
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
 		return
@@ -1179,7 +1176,7 @@ func _style_primary_menu_controls() -> void:
 		purchase_primary_panel,
 		[
 			purchase_primary_panel.get_node_or_null("OpenBuyButton") as Button,
-			purchase_primary_panel.get_node_or_null("OpenSellButton") as Button,
+			purchase_primary_panel.get_node_or_null("OpenBuyModuleButton") as Button,
 		]
 	)
 	_style_primary_menu_panel(
@@ -1478,10 +1475,32 @@ func _on_game_over_new_game_pressed() -> void:
 
 func _create_controls_hint_panel() -> void:
 	_init_modal_ui_controller()
+	_ensure_right_hud_stack()
 	modal_ui_controller.ensure_controls_hint_view()
+
+func _ensure_right_hud_stack() -> VBoxContainer:
+	if right_hud_stack != null and is_instance_valid(right_hud_stack):
+		return right_hud_stack
+	right_hud_stack = VBoxContainer.new()
+	right_hud_stack.name = "RightHudStack"
+	right_hud_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_hud_stack.z_index = 35
+	right_hud_stack.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	right_hud_stack.offset_left = -376.0
+	right_hud_stack.offset_top = 16.0
+	right_hud_stack.offset_right = -16.0
+	right_hud_stack.offset_bottom = 420.0
+	right_hud_stack.add_theme_constant_override("separation", 8)
+	gui_root.add_child(right_hud_stack)
+	return right_hud_stack
 
 func _layout_controls_hint_panel(viewport_size: Vector2) -> void:
 	_init_modal_ui_controller()
+	if right_hud_stack != null and is_instance_valid(right_hud_stack):
+		var available_width := maxf(1.0, viewport_size.x - 32.0)
+		var stack_width := minf(360.0, available_width)
+		right_hud_stack.offset_left = -16.0 - stack_width
+		right_hud_stack.offset_right = -16.0
 	modal_ui_controller.layout_controls_hint_panel(viewport_size)
 
 func _update_controls_guide_for_phase(phase: String) -> void:
@@ -1491,6 +1510,11 @@ func _update_controls_guide_for_phase(phase: String) -> void:
 func _refresh_controls_hint_visibility() -> void:
 	_init_modal_ui_controller()
 	modal_ui_controller.refresh_controls_hint_visibility(_is_primary_menu_open(), _get_secondary_menu_context())
+
+func show_controls_context_reminder(action: StringName, message: String, force: bool = false) -> bool:
+	if controls_hint_view == null or not is_instance_valid(controls_hint_view):
+		return false
+	return bool(controls_hint_view.show_context_reminder(action, message, force))
 
 func _is_primary_menu_open() -> bool:
 	if rest_area_ui_controller:

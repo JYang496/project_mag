@@ -9,6 +9,8 @@ var pause_language_option: OptionButton
 var temporary_module_confirm_toggle: CheckButton
 var auto_aim_continuous_fire_toggle: CheckButton
 var auto_reload_switch_toggle: CheckButton
+var controls_hint_label: Label
+var controls_hint_option: OptionButton
 
 func bind(ui: UI, panel: Panel, resume: Button) -> void:
 	owner_ui = ui
@@ -54,6 +56,18 @@ func ensure_language_controls() -> void:
 		"AutoReloadSwitchToggle",
 		on_auto_reload_switch_toggled
 	)
+	controls_hint_label = pause_menu_panel.get_node_or_null("ControlsHintLabel") as Label
+	if controls_hint_label == null:
+		controls_hint_label = Label.new()
+		controls_hint_label.name = "ControlsHintLabel"
+		pause_menu_panel.add_child(controls_hint_label)
+	controls_hint_option = pause_menu_panel.get_node_or_null("ControlsHintOption") as OptionButton
+	if controls_hint_option == null:
+		controls_hint_option = OptionButton.new()
+		controls_hint_option.name = "ControlsHintOption"
+		pause_menu_panel.add_child(controls_hint_option)
+	if not controls_hint_option.item_selected.is_connected(on_controls_hint_option_selected):
+		controls_hint_option.item_selected.connect(on_controls_hint_option_selected)
 	refresh_language_options()
 	_sync_public_fields_to_owner()
 
@@ -111,6 +125,27 @@ func refresh_language_options() -> void:
 			"Auto reload and switch weapon"
 		)
 		auto_reload_switch_toggle.button_pressed = bool(PlayerAssistSettings.auto_reload_switch)
+	if controls_hint_label:
+		controls_hint_label.position = Vector2(72.0, 482.0)
+		controls_hint_label.size = Vector2(110.0, 30.0)
+		controls_hint_label.text = LocalizationManager.tr_key("ui.settings.controls_hint", "Controls")
+	if controls_hint_option:
+		controls_hint_option.position = Vector2(184.0, 480.0)
+		controls_hint_option.size = Vector2(148.0, 30.0)
+		controls_hint_option.clear()
+		var modes: Array[StringName] = [
+			PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE,
+			PlayerAssistSettings.CONTROLS_HINT_ALWAYS,
+			PlayerAssistSettings.CONTROLS_HINT_HIDDEN,
+		]
+		var selected_mode_index := 0
+		for index in range(modes.size()):
+			var mode := modes[index]
+			controls_hint_option.add_item(_controls_hint_mode_label(mode))
+			controls_hint_option.set_item_metadata(index, mode)
+			if mode == PlayerAssistSettings.controls_hint_mode:
+				selected_mode_index = index
+		controls_hint_option.select(selected_mode_index)
 	_sync_public_fields_to_owner()
 
 func on_language_option_item_selected(index: int) -> void:
@@ -131,6 +166,21 @@ func on_auto_aim_continuous_fire_toggled(enabled: bool) -> void:
 func on_auto_reload_switch_toggled(enabled: bool) -> void:
 	PlayerAssistSettings.set_auto_reload_switch(enabled)
 	_sync_public_fields_to_owner()
+
+func on_controls_hint_option_selected(index: int) -> void:
+	if controls_hint_option == null or index < 0 or index >= controls_hint_option.item_count:
+		return
+	var mode := StringName(str(controls_hint_option.get_item_metadata(index)))
+	PlayerAssistSettings.set_controls_hint_mode(mode)
+
+func _controls_hint_mode_label(mode: StringName) -> String:
+	match mode:
+		PlayerAssistSettings.CONTROLS_HINT_ALWAYS:
+			return LocalizationManager.tr_key("ui.settings.controls_hint.always", "Always Expanded")
+		PlayerAssistSettings.CONTROLS_HINT_HIDDEN:
+			return LocalizationManager.tr_key("ui.settings.controls_hint.hidden", "Hidden")
+		_:
+			return LocalizationManager.tr_key("ui.settings.controls_hint.adaptive", "Adaptive")
 
 func _ensure_assist_toggle(node_name: String, callback: Callable) -> CheckButton:
 	var toggle := pause_menu_panel.get_node_or_null(node_name) as CheckButton
