@@ -19,7 +19,7 @@ Forbidden scope:
 - `Player/Weapons/Branches/**`
 - `Player/Weapons/Modules/**`
 - `Player/Weapons/Core/**`
-- `World/Test/**`, except if you add a focused deprecated-resource validation script and can justify it
+- `tests/**`, except if you add a focused deprecated-resource validation script and can justify it
 
 Required workflow:
 1. Run `git status --short` first and identify unrelated dirty files.

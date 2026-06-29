@@ -1,7 +1,6 @@
 extends Control
 class_name CellManagementPanel
 
-signal close_requested
 signal board_management_requested
 
 const PANEL_BG := Color(0.045, 0.065, 0.09, 0.98)
@@ -742,7 +741,7 @@ func _get_cell_terrain_texture(cell_id: int) -> Texture2D:
 	if _board != null:
 		var cell := _board.get_cell_by_logical_id(cell_id)
 		if cell != null:
-			terrain_type = int(cell.terrain_type)
+			terrain_type = int(cell.terrain_type) as Cell.TerrainType
 	if not Cell.TERRAIN_TEXTURE_PATHS.has(terrain_type):
 		return null
 	var loaded := load(str(Cell.TERRAIN_TEXTURE_PATHS[terrain_type]))

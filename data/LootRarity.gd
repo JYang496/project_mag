@@ -50,7 +50,7 @@ static func get_weight_summary() -> String:
 static func get_default_weight(rarity: String) -> float:
 	return float(DEFAULT_WEIGHT_BY_RARITY.get(normalize(rarity), DEFAULT_WEIGHT_BY_RARITY[COMMON]))
 
-static func sanitize_weight(weight: float, rarity: String) -> float:
+static func sanitize_weight(weight: float, _rarity: String) -> float:
 	if weight < 0.0:
 		return 0.0
 	return weight

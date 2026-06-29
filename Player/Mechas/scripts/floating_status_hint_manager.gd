@@ -53,7 +53,7 @@ func enqueue_keyed_raw_hint(text: String, hint_key: StringName, throttle_sec: fl
 	})
 	_try_play_next_status_hint()
 
-func notify_status_hint(owner: StringName, stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
+func notify_status_hint(status_owner: StringName, stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
 	if source_id == StringName():
 		return
 	var meta := _status_hint_meta(stat_type)
@@ -63,7 +63,7 @@ func notify_status_hint(owner: StringName, stat_type: StringName, source_id: Str
 	var polarity := int(meta.get("polarity", 0))
 	if family == StringName() or polarity == 0:
 		return
-	var state_key := "%s|%s|%s" % [str(owner), str(family), str(source_id)]
+	var state_key := "%s|%s|%s" % [str(status_owner), str(family), str(source_id)]
 	var prev_state := int(_status_hint_state_by_source.get(state_key, 0))
 	if is_gain:
 		if prev_state == polarity:
@@ -71,9 +71,9 @@ func notify_status_hint(owner: StringName, stat_type: StringName, source_id: Str
 		if prev_state != 0 and prev_state != polarity:
 			var prev_type := _status_type_from_family_state(family, prev_state)
 			if prev_type != StringName():
-				_emit_status_hint(owner, prev_type, source_id, false)
+				_emit_status_hint(status_owner, prev_type, source_id, false)
 		_status_hint_state_by_source[state_key] = polarity
-		_emit_status_hint(owner, stat_type, source_id, true)
+		_emit_status_hint(status_owner, stat_type, source_id, true)
 		return
 	if prev_state == 0:
 		return
@@ -81,7 +81,7 @@ func notify_status_hint(owner: StringName, stat_type: StringName, source_id: Str
 	_status_hint_state_by_source.erase(state_key)
 	if loss_type == StringName():
 		loss_type = stat_type
-	_emit_status_hint(owner, loss_type, source_id, false)
+	_emit_status_hint(status_owner, loss_type, source_id, false)
 
 func clear_all() -> void:
 	_status_hint_queue.clear()
@@ -91,13 +91,13 @@ func clear_all() -> void:
 	_queued_raw_hint_keys.clear()
 	_is_status_hint_playing = false
 
-func _emit_status_hint(owner: StringName, stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
+func _emit_status_hint(status_owner: StringName, stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
 	var status_label := _resolve_status_hint_label(stat_type)
 	if status_label == "":
 		return
 	var now_msec := Time.get_ticks_msec()
 	var throttle_msec := int(_status_hint_throttle_sec * 1000.0)
-	var hint_key := "%s|%s|%s|%s" % [str(owner), str(stat_type), str(source_id), "gain" if is_gain else "loss"]
+	var hint_key := "%s|%s|%s|%s" % [str(status_owner), str(stat_type), str(source_id), "gain" if is_gain else "loss"]
 	var ready_at := int(_status_hint_ready_at_msec.get(hint_key, 0))
 	if now_msec < ready_at:
 		return

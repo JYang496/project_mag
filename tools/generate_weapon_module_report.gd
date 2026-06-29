@@ -3,7 +3,7 @@ extends SceneTree
 const MODULE_DIR := "res://Player/Weapons/Modules/"
 const WEAPON_DIR := "res://data/weapons/"
 const BRANCH_DIR := "res://data/weapon_branches/"
-const OUTPUT_PATH := "res://docs/weapon_module_audit.html"
+const OUTPUT_PATH := "res://docs/reports/weapon_module_audit.html"
 const MODULE_MAX_LEVEL := 3
 const BASE_PARAMETER_ORDER: PackedStringArray = [
 	"required_weapon_traits",

@@ -1,0 +1,63 @@
+Project: project_mag
+Task: Finish deprecated weapon cleanup without touching live weapon behavior.
+
+Environment:
+
+- Project root: `D:\Godot Projects\project_mag`
+- Shell: PowerShell
+- Godot executable: `D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`
+- Worktree may show deleted deprecated scenes from earlier cleanup work.
+
+Current known state:
+
+- `git status` may show deleted files under `Player/Weapons/Deprecated/`:
+  - `cryo_carbine.tscn`
+  - `frost_dash_blade.tscn`
+  - `ranger_unused.tscn`
+  - `spear_launcher_old.tscn`
+- Current inventory may show `Player/Weapons/Deprecated/` as empty.
+- A text match for `Deprecated` may still appear in `Player/Weapons/Branches/machine_gun_twin_branch.gd` as a compatibility-wrapper comment. That is not the deprecated weapon folder.
+
+Goal:
+
+- Ensure deleted deprecated weapon scenes are truly unreferenced.
+- Remove only broken, unused deprecated folder content.
+- Do not alter live weapon/module/branch behavior.
+
+Writable scope:
+
+- `Player/Weapons/Deprecated/**`
+- Optional documentation note only if needed: `docs/audits/**`
+
+Forbidden scope:
+
+- `Player/Weapons/Core/**`
+- `Player/Weapons/Instances/**`
+- `Player/Weapons/Branches/**`, except do not edit compatibility wrapper comments unless required by validation
+- `Player/Weapons/Modules/**`
+- `data/weapons/**`
+- `tests/**`
+
+Required workflow:
+
+1. Run `git status --short`.
+2. Inventory deprecated folder:
+   `rg --files Player/Weapons/Deprecated`
+3. Search references:
+   - `rg -n "res://Player/Weapons/Deprecated|Player/Weapons/Deprecated|cryo_carbine|frost_dash_blade|ranger_unused|spear_launcher_old" -S .`
+4. If no active references remain, keep the deletions.
+5. If references remain in live resources, stop and report them instead of guessing a fix.
+6. If the folder is empty and tracked only by deleted files, do not create placeholder files unless the user explicitly wants an archive folder.
+
+Validation:
+
+- `rg -n "res://Player/Weapons/Deprecated|Player/Weapons/Deprecated|cryo_carbine|frost_dash_blade|ranger_unused|spear_launcher_old" -S .`
+- `git diff --check -- Player/Weapons docs/audits`
+- `& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit`
+
+Final report:
+
+- List deprecated files deleted or confirmed absent.
+- State whether any live references remain.
+- If `Deprecated` appears only as generic wording or prompt history, say so.
+- Include validation commands and results.

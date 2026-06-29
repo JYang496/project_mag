@@ -232,7 +232,7 @@ func _resolve_bonus_module() -> CellBonusModule:
 	push_warning("bonus_scene must instantiate CellBonusModule.")
 	return null
 
-func set_task_parameters(params: Dictionary) -> void:
+func set_task_parameters(_params: Dictionary) -> void:
 	# Override in subclasses
 	pass
 

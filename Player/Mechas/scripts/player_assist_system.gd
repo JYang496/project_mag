@@ -84,11 +84,11 @@ func _request_auto_fire_at_target(main_weapon: Weapon, target: Node2D, delta: fl
 	var target_position := target.global_position
 	var ammo_before_input := int(main_weapon.get("current_ammo")) if main_weapon.get("current_ammo") != null else 0
 	var was_reloading_before_input := bool(main_weapon.get("is_reloading")) if main_weapon.get("is_reloading") != null else false
-	var shot_observed := false
+	var shot_state := {"observed": false}
 	var shot_connection := _connect_auto_fire_shot_callback(
 		main_weapon,
 		func() -> void:
-			shot_observed = true
+			shot_state["observed"] = true
 	)
 	main_weapon.set_meta(AUTO_FIRE_PENDING_META, true)
 	_set_auto_aim_target(main_weapon, target_position)
@@ -98,7 +98,7 @@ func _request_auto_fire_at_target(main_weapon: Weapon, target: Node2D, delta: fl
 	if main_weapon.has_method("handle_primary_input"):
 		main_weapon.call("handle_primary_input", true, false, false, delta)
 		fired = (
-			shot_observed
+			bool(shot_state.get("observed", false))
 			or _did_auto_fire_spend_ammo(main_weapon, ammo_before_input, was_reloading_before_input)
 			or _did_auto_fire_start_reload(main_weapon, was_reloading_before_input)
 		)
@@ -110,7 +110,7 @@ func _request_auto_fire_at_target(main_weapon: Weapon, target: Node2D, delta: fl
 		_disconnect_auto_fire_shot_callback(main_weapon, shot_connection)
 		_clear_auto_fire_pending(main_weapon)
 		handle_post_fire(main_weapon, fired)
-	elif not shot_observed:
+	elif not bool(shot_state.get("observed", false)):
 		# Delayed-fire weapons such as Cannon keep the target meta until their windup emits shoot.
 		return
 	else:

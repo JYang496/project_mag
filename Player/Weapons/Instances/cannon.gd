@@ -3,7 +3,7 @@ class_name Cannon
 
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
 var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/plasma.png")
-var area_effect_scene: PackedScene = preload("res://Utility/area_effect/area_effect.tscn")
+var area_effect_scene: PackedScene = preload("res://Combat/area_effect/area_effect.tscn")
 
 var ITEM_NAME := "Cannon"
 const BULLET_PIXEL_SIZE := Vector2(11.0, 11.0)

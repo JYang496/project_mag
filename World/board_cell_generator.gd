@@ -66,7 +66,7 @@ func _ready() -> void:
 	call_deferred("_refresh_cell_task_markers")
 
 func _spawn_cells() -> void:
-	var center_index := Vector2i(grid_size.x / 2, grid_size.y / 2)
+	var center_index := Vector2i(floori(float(grid_size.x) / 2.0), floori(float(grid_size.y) / 2.0))
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
 			var cell := cell_scene.instantiate() as Cell
@@ -358,7 +358,7 @@ func _get_grid_pos_from_index(index: int) -> Vector2i:
 	if grid_size.x <= 0:
 		return Vector2i.ZERO
 	var x := index % grid_size.x
-	var y := int(index / grid_size.x)
+	var y := floori(float(index) / float(grid_size.x))
 	return Vector2i(x, y)
 
 func _on_phase_changed(new_phase: String) -> void:
@@ -621,7 +621,7 @@ func _get_grid_pos_for_logical_id(logical_id: int) -> Vector2i:
 	if zero_based < 0:
 		return Vector2i.ZERO
 	var x := zero_based % grid_size.x
-	var y_from_bottom := int(zero_based / grid_size.x)
+	var y_from_bottom := floori(float(zero_based) / float(grid_size.x))
 	return Vector2i(x, grid_size.y - y_from_bottom - 1)
 
 func _connect_cell_task_runtime_signals() -> void:

@@ -1,0 +1,64 @@
+Project: project_mag
+Task: Settle the already-started UI component and DisplaySettings path moves.
+
+Environment:
+
+- Project root: `D:\Godot Projects\project_mag`
+- Shell: PowerShell
+- Godot executable: `D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`
+- Worktree is dirty. Preserve unrelated changes.
+
+Current known state:
+
+- `UI/scenes/components/enemy_hp_bar.tscn` exists.
+- `Npc/components/npc_damage_feedback_controller.gd` currently preloads `res://UI/scenes/components/enemy_hp_bar.tscn`.
+- `project.godot` currently has `DisplaySettings="*res://autoload/DisplaySettings.gd"`.
+- `autoload/DisplaySettings.gd` exists.
+- Old files are deleted in `git status`: `UI/enemy_hp_bar.tscn`, `Utility/display_settings.gd`, and `Utility/display_settings.gd.uid`.
+
+Goal:
+
+- Confirm the path moves are coherent and remove any active stale references.
+- Do not change UI behavior or DisplaySettings behavior.
+
+Writable scope:
+
+- `Npc/components/npc_damage_feedback_controller.gd`
+- `UI/scenes/components/enemy_hp_bar.tscn`
+- `autoload/DisplaySettings.gd`
+- `autoload/DisplaySettings.gd.uid`
+- `project.godot`
+- Direct stale reference updates only if found by search
+
+Forbidden scope:
+
+- Do not reorganize the rest of `UI/`.
+- Do not edit reward panels, RestArea UI, task HUD, or management controllers unless there is a direct stale path reference.
+- Do not reorganize other `Utility` files.
+- Do not rename the `DisplaySettings` singleton.
+
+Required workflow:
+
+1. Run `git status --short`.
+2. Search stale and current UI paths:
+   - `rg -n "res://UI/enemy_hp_bar.tscn|UI/enemy_hp_bar.tscn|enemy_hp_bar.tscn" -S .`
+3. Search stale and current DisplaySettings paths:
+   - `rg -n "res://Utility/display_settings.gd|Utility/display_settings.gd|res://autoload/DisplaySettings.gd|DisplaySettings" -S project.godot autoload Utility UI World Player Npc data`
+4. Confirm only the new enemy HP bar path is used by active runtime code.
+5. Confirm `project.godot` points the singleton at `res://autoload/DisplaySettings.gd`.
+6. If a stale path remains only in `docs/prompt/**`, leave it and report it as historical prompt text.
+
+Validation:
+
+- `rg -n "res://UI/enemy_hp_bar.tscn|res://Utility/display_settings.gd" -S .`
+- `rg -n "res://UI/scenes/components/enemy_hp_bar.tscn" -S .`
+- `rg -n "DisplaySettings=\"\\*res://autoload/DisplaySettings.gd\"" project.godot`
+- `git diff --check -- Npc UI autoload Utility project.godot`
+- `& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit`
+
+Final report:
+
+- List changed files, or say no edits were needed.
+- State whether old UI and DisplaySettings paths remain.
+- State that `DisplaySettings` singleton name/API was preserved.
+- Include validation commands and results.

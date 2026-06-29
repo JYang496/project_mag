@@ -103,9 +103,13 @@ var shop_detail_title: Label
 var shop_detail_subtitle: Label
 var shop_detail_body: VBoxContainer
 var shop_detail_scroll: ScrollContainer
+@warning_ignore("unused_private_class_variable")
 var _shop_purchase_mode: StringName = &"weapon"
+@warning_ignore("unused_private_class_variable")
 var _shop_hover_item: Dictionary = {}
+@warning_ignore("unused_private_class_variable")
 var _shop_selected_item: Dictionary = {}
+@warning_ignore("unused_signal")
 signal reset_cost
 
 # Upgrade
@@ -120,8 +124,11 @@ var upgrade_detail_panel: PanelContainer
 var upgrade_detail_title: Label
 var upgrade_detail_subtitle: Label
 var upgrade_detail_body: VBoxContainer
+@warning_ignore("unused_private_class_variable")
 var _upgrade_mode: StringName = &"weapon"
+@warning_ignore("unused_private_class_variable")
 var _upgrade_hover_item: Dictionary = {}
+@warning_ignore("unused_private_class_variable")
 var _upgrade_selected_item: Dictionary = {}
 var selected_upgrade_module: Module
 
@@ -150,12 +157,18 @@ var purchase_management_view
 var module_shop_list_view
 var upgrade_management_view
 var module_management_view
+@warning_ignore("unused_private_class_variable")
 var _branch_selection_queue: Array[Dictionary] = []
+@warning_ignore("unused_private_class_variable")
 var _equipment_pickup_queue: Array[Dictionary] = []
+@warning_ignore("unused_private_class_variable")
 var _equipment_pickup_processing := false
+@warning_ignore("unused_private_class_variable")
 var _equipment_pickup_dispatch_scheduled := false
 # Compatibility mirrors written by RestAreaUiController for tests/external probes.
+@warning_ignore("unused_private_class_variable")
 var _rest_area_menu_active := false
+@warning_ignore("unused_private_class_variable")
 var _rest_area_primary_menu_id: StringName = &""
 var game_over_view
 var pause_language_label: Label
@@ -180,6 +193,7 @@ var _pending_task_module_replacement_callback := Callable()
 var _pending_task_module_replacement_new_module_id := ""
 var _pending_task_module_replacement_confirm_index := -1
 var _task_module_replacement_custom_buttons: Array[Button] = []
+@warning_ignore("unused_private_class_variable")
 var _primary_menu_tweens: Dictionary = {}
 var spread_cursor_overlay
 var hud_presenter: HudPresenter
@@ -215,6 +229,7 @@ var _hud_static_dirty := true
 var _hud_hp_dirty := true
 var _hud_inventory_dirty := true
 var _hud_weapon_dirty := true
+@warning_ignore("unused_private_class_variable")
 var _passive_status_signal_weapons: Array[Node] = []
 var _upgrade_action_dirty := true
 var _warehouse_action_dirty := true
@@ -360,9 +375,6 @@ func open_cell_management_panel(mode: StringName = &"task") -> bool:
 func request_close_cell_management_panel() -> bool:
 	_init_modal_ui_controller()
 	return modal_ui_controller.request_close_cell_management_panel()
-
-func _on_cell_management_panel_close_requested() -> void:
-	request_close_cell_management_panel()
 
 func _on_cell_management_board_requested() -> void:
 	_init_modal_ui_controller()

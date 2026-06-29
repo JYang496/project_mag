@@ -121,11 +121,6 @@ var _last_face_vertical_sign: int = 1
 var _last_move_anim_is_top: bool = false
 var _suppress_attack_until_released: bool = false
 const ELITE_HIT_SLOW_SOURCE_ID: StringName = &"elite_hit_stagger"
-var _elite_hit_slow_until_msec: int = 0
-var _weapon_list_dirty := true
-var _weapon_roles_dirty := true
-var _weapon_orbit_states_dirty := true
-var _weapon_orbit_force_reset := true
 var _tracked_weapon_exit_ids: Dictionary = {}
 var _heat_prepared_until_msec: int = 0
 var _heat_expansion_until_msec: int = 0
@@ -149,9 +144,13 @@ var _active_skill_runtime: RefCounted
 var _suppress_status_hints: bool = false
 var _systems_strict_ready: bool = false
 # Signals
+@warning_ignore("unused_signal")
 signal active_skill()
+@warning_ignore("unused_signal")
 signal player_active_skill()
+@warning_ignore("unused_signal")
 signal weapon_active_skill()
+@warning_ignore("unused_signal")
 signal coin_collected()
 
 func _ensure_weapon_inventory_runtime() -> void:
@@ -365,13 +364,13 @@ func _spawn_keyed_player_floating_hint(text: String, hint_key: StringName, throt
 func notify_weapon_status_change(stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
 	_notify_status_hint(&"weapon", stat_type, source_id, is_gain)
 
-func _notify_status_hint(owner: StringName, stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
+func _notify_status_hint(status_owner: StringName, stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
 	if _suppress_status_hints:
 		return
 	_ensure_status_hint_manager()
 	if _status_hint_manager == null:
 		return
-	_status_hint_manager.notify_status_hint(owner, stat_type, source_id, is_gain)
+	_status_hint_manager.notify_status_hint(status_owner, stat_type, source_id, is_gain)
 
 func clear_timed_statuses_for_prepare() -> void:
 	_suppress_status_hints = true
@@ -1250,16 +1249,16 @@ func _update_weapon_orbits(delta: float) -> void:
 		if state.is_empty():
 			continue
 		var current_angle: float = state.get("angle", base_angle)
-		var velocity: float = state.get("velocity", 0.0)
+		var angular_velocity: float = state.get("velocity", 0.0)
 		var offset: float = state.get("offset", 0.0)
 		var target_angle := wrapf(base_angle + offset, -PI, PI)
 		var angle_diff := _shortest_angle(current_angle, target_angle)
-		velocity += clamp(angle_diff * ORBIT_ACCEL, -ORBIT_ACCEL, ORBIT_ACCEL) * delta
-		velocity = clamp(velocity, -ORBIT_MAX_SPEED, ORBIT_MAX_SPEED)
-		velocity = lerp(velocity, 0.0, clamp(ORBIT_FRICTION * delta, 0.0, 1.0))
-		current_angle = wrapf(current_angle + velocity * delta, -PI, PI)
+		angular_velocity += clamp(angle_diff * ORBIT_ACCEL, -ORBIT_ACCEL, ORBIT_ACCEL) * delta
+		angular_velocity = clamp(angular_velocity, -ORBIT_MAX_SPEED, ORBIT_MAX_SPEED)
+		angular_velocity = lerp(angular_velocity, 0.0, clamp(ORBIT_FRICTION * delta, 0.0, 1.0))
+		current_angle = wrapf(current_angle + angular_velocity * delta, -PI, PI)
 		state["angle"] = current_angle
-		state["velocity"] = velocity
+		state["velocity"] = angular_velocity
 		weapon.position = _get_orbit_position(current_angle)
 
 func _remove_missing_weapon_states(valid_weapons: Array) -> void:
@@ -1357,9 +1356,6 @@ func _apply_elite_hit_slow_if_needed(attack: Attack) -> void:
 	_ensure_damage_reaction_system()
 	if _damage_reaction_system != null:
 		_damage_reaction_system.apply_elite_hit_slow_if_needed(attack)
-
-func _clear_elite_hit_slow_after_delay(token_until_msec: int) -> void:
-	pass
 
 func _is_attack_from_player(attack: Attack) -> bool:
 	return attack != null and attack.is_from_player()

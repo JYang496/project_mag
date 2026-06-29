@@ -279,8 +279,8 @@ func get_weapon_module_assignment_feedback(
 		return {"ok": false, "reason": "Modules can only be managed in the Rest Area."}
 	if weapon.modules == null:
 		return {"ok": false, "reason": "Weapon has no module container."}
-	var duplicate := find_owned_module_by_scene_path(str(module_instance.scene_file_path), module_instance)
-	if duplicate != null and duplicate != replaced_module:
+	var duplicate_module := find_owned_module_by_scene_path(str(module_instance.scene_file_path), module_instance)
+	if duplicate_module != null and duplicate_module != replaced_module:
 		return {"ok": false, "reason": "Only one module of each type can be owned."}
 	var projected_count := weapon.get_module_count()
 	if replaced_module != null and replaced_module.get_parent() == weapon.modules:
@@ -404,9 +404,9 @@ func upgrade_module_with_gold(module_instance: Module) -> Dictionary:
 	if not module_instance.increase_module_level(1):
 		PlayerData.player_gold += price
 		return {"ok": false, "reason": "Module is fully upgraded.", "price": price}
-	var owner := _resolve_module_owner_weapon(module_instance)
-	if owner and owner.has_method("calculate_status"):
-		owner.calculate_status()
+	var owner_weapon := _resolve_module_owner_weapon(module_instance)
+	if owner_weapon and owner_weapon.has_method("calculate_status"):
+		owner_weapon.calculate_status()
 	temporary_modules_changed.emit()
 	_notify(LocalizationManager.tr_format(
 		"ui.inventory.upgrade",
@@ -436,9 +436,9 @@ func finish_pending_transaction(transaction_id: String) -> void:
 func _merge_duplicate_module(existing: Module, incoming: Module) -> Dictionary:
 	if existing.increase_module_level(1):
 		_discard_module_instance(incoming, existing)
-		var owner := _resolve_module_owner_weapon(existing)
-		if owner and owner.has_method("calculate_status"):
-			owner.calculate_status()
+		var owner_weapon := _resolve_module_owner_weapon(existing)
+		if owner_weapon and owner_weapon.has_method("calculate_status"):
+			owner_weapon.calculate_status()
 		_notify(LocalizationManager.tr_format(
 			"ui.inventory.upgrade",
 			{"name": LocalizationManager.get_module_name(existing), "level": existing.module_level},
@@ -497,7 +497,7 @@ func sell_all_temporary_modules() -> Dictionary:
 			sold_count += 1
 	return {"ok": true, "gold": total_gold, "count": sold_count}
 
-func sell_equipped_weapon(weapon: Weapon) -> Dictionary:
+func sell_equipped_weapon(_weapon: Weapon) -> Dictionary:
 	return {
 		"ok": false,
 		"reason": LocalizationManager.tr_key(

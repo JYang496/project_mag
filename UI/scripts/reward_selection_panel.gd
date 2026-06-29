@@ -437,7 +437,7 @@ func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool
 		style.set_corner_radius_all(6)
 		button.add_theme_stylebox_override(state, style)
 
-func _set_mouse_filter_recursive(root: Control, mouse_filter_value: int) -> void:
+func _set_mouse_filter_recursive(root: Control, mouse_filter_value: Control.MouseFilter) -> void:
 	for child in root.get_children():
 		var control := child as Control
 		if control == null:

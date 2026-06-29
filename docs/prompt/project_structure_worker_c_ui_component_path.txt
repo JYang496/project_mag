@@ -6,13 +6,13 @@ Context:
 - This checkout currently has a broad dirty worktree. Treat pre-existing modified/deleted/untracked files as unrelated unless they are inside this worker's writable scope.
 - Do not assume `godot` is on PATH. Use the shell validation executable `D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`.
 - Godot MCP may report a different Godot version than the shell executable. If you use MCP for inspection, still use the shell command below as the final validation baseline and report any version mismatch.
-- Structure audit found `UI/enemy_hp_bar.tscn` is the only top-level UI scene file. It is currently preloaded by `Npc/components/npc_damage_feedback_controller.gd`.
+- Structure audit found `UI/scenes/components/enemy_hp_bar.tscn` is the enemy HP bar UI scene file. It is currently preloaded by `Npc/components/npc_damage_feedback_controller.gd`.
 - The intended destination is `UI/scenes/components/enemy_hp_bar.tscn`.
 
 Writable scope:
-- `UI/enemy_hp_bar.tscn`
+- `UI/scenes/components/enemy_hp_bar.tscn`
 - `UI/scenes/components/**`
-- Files that directly reference `res://UI/enemy_hp_bar.tscn`, currently expected around `Npc/components/npc_damage_feedback_controller.gd`
+- Files that directly reference `res://UI/scenes/components/enemy_hp_bar.tscn`, currently expected around `Npc/components/npc_damage_feedback_controller.gd`
 
 Forbidden scope:
 - Other UI management refactors
@@ -22,14 +22,14 @@ Forbidden scope:
 Required workflow:
 1. Run `git status --short` first and identify unrelated dirty files.
 2. Search for all references to:
-   - `res://UI/enemy_hp_bar.tscn`
+   - `res://UI/scenes/components/enemy_hp_bar.tscn`
    - `enemy_hp_bar.tscn`
-3. Move `UI/enemy_hp_bar.tscn` to `UI/scenes/components/enemy_hp_bar.tscn`.
+3. Keep `UI/scenes/components/enemy_hp_bar.tscn` as the enemy HP bar scene location.
 4. Update all direct preload/load references.
 5. Preserve the scene's UID/import metadata behavior. If Godot generates or updates `.uid` files, include them only if required.
 
 Validation:
-- Run `rg -n "res://UI/enemy_hp_bar.tscn|UI/enemy_hp_bar.tscn" -S .` and confirm no stale path remains.
+- Run the stale enemy HP bar path grep from the validation checklist and confirm no stale path remains.
 - Run `rg -n "res://UI/scenes/components/enemy_hp_bar.tscn" -S .` and confirm the new path is used.
 - Run `& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit`.
 

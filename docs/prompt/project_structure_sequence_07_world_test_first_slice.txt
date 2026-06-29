@@ -1,0 +1,73 @@
+Project: project_mag
+Task: Move the first low-risk legacy test folder probe slice into the new tests tree.
+
+Environment:
+
+- Project root: `D:\Godot Projects\project_mag`
+- Shell: PowerShell
+- Godot executable: `D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`
+- Worktree may be dirty. Do not revert or overwrite unrelated changes.
+
+Current known state:
+
+- `docs/audits/world_test_reorganization_plan.md` defines the future `tests/` tree.
+- `tests/probes/economy/kill_gold_drop_probe.tscn` is a small economy probe scene.
+- `tests/probes/economy/run_kill_gold_drop_probe_headless.gd` is its primary runner.
+- `tests/probes/economy/run_kill_gold_drop_probe_headless.gd.uid` is the runner UID sidecar.
+- The scene has a direct ext_resource path to `res://tests/probes/economy/run_kill_gold_drop_probe_headless.gd`.
+- The runner loads `res://Utility/enemy_spawner.tscn`; that Utility path is not part of this migration slice.
+
+Goal:
+
+- Move exactly the kill-gold economy probe slice from `legacy test folder ` to `tests/probes/economy/`.
+- Preserve behavior, PASS/FAIL text, and the current scene-backed entrypoint.
+- Do not move any other legacy test folder files.
+
+Writable scope:
+
+- `tests/probes/economy/kill_gold_drop_probe.tscn`
+- `tests/probes/economy/run_kill_gold_drop_probe_headless.gd`
+- `tests/probes/economy/run_kill_gold_drop_probe_headless.gd.uid`
+- `tests/probes/economy/kill_gold_drop_probe.tscn`
+- `tests/probes/economy/run_kill_gold_drop_probe_headless.gd`
+- `tests/probes/economy/run_kill_gold_drop_probe_headless.gd.uid`
+- Optional docs/prompt status note only if needed
+
+Forbidden scope:
+
+- Do not move any other `legacy test folder ` files.
+- Do not edit `Utility/`, `World/world.tscn`, `Player/`, `Npc/`, `data/`, or `project.godot`.
+- Do not change kill-gold logic, spawn logic, economy data, or test assertions.
+- Do not run `git reset`, `git checkout --`, or any destructive cleanup command.
+
+Required workflow:
+
+1. Run `git status --short`.
+2. Confirm current files:
+   - `rg --files legacy test folder | rg "kill_gold_drop_probe|run_kill_gold_drop_probe_headless"`
+   - `rg -n "kill_gold_drop_probe|run_kill_gold_drop_probe_headless|res://tests/probes/economy/run_kill_gold_drop_probe_headless.gd" -S .`
+3. Create `tests/probes/economy/` if it does not exist.
+4. Move the three allowed files to:
+   - `tests/probes/economy/kill_gold_drop_probe.tscn`
+   - `tests/probes/economy/run_kill_gold_drop_probe_headless.gd`
+   - `tests/probes/economy/run_kill_gold_drop_probe_headless.gd.uid`
+5. Update only the moved scene's script ext_resource path:
+   - from `res://tests/probes/economy/run_kill_gold_drop_probe_headless.gd`
+   - to `res://tests/probes/economy/run_kill_gold_drop_probe_headless.gd`
+6. Do not edit the runner's `res://Utility/enemy_spawner.tscn` load path.
+7. Move the `.gd.uid` sidecar with the runner. Do not create or delete scene UIDs unless Godot explicitly changes the scene during validation.
+
+Validation:
+
+- `rg -n "res://tests/probes/economy/run_kill_gold_drop_probe_headless.gd|legacy test folder kill_gold_drop_probe|legacy test folder run_kill_gold_drop_probe_headless" -S .`
+- `rg -n "res://tests/probes/economy/run_kill_gold_drop_probe_headless.gd|tests/probes/economy/kill_gold_drop_probe" -S .`
+- `git diff --check -- legacy test folder tests docs/prompt`
+- `& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit`
+- `& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --scene res://tests/probes/economy/kill_gold_drop_probe.tscn`
+
+Final report:
+
+- List the three moved files and the new paths.
+- State whether any old kill-gold probe paths remain and where.
+- State that no other `legacy test folder` files were moved.
+- Include validation commands and results.

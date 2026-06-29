@@ -55,10 +55,10 @@ func bind_nodes(
 	equipped_label = p_equipped_label
 	augments_label = p_augments_label
 
-func configure_hp_bar_anim(anim_time: float, trans: Tween.TransitionType, ease: Tween.EaseType) -> void:
+func configure_hp_bar_anim(anim_time: float, trans: Tween.TransitionType, ease_type: Tween.EaseType) -> void:
 	_hp_bar_anim_time = anim_time
 	_hp_bar_trans = trans
-	_hp_bar_ease = ease
+	_hp_bar_ease = ease_type
 
 func layout_hud(viewport_size: Vector2, hp_label_root: Control, weapon_selector: WeaponSelector = null) -> void:
 	if equipped_label and is_instance_valid(equipped_label):

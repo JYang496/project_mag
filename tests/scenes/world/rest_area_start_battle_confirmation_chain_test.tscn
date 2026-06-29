@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/headless/world/run_rest_area_start_battle_confirmation_chain_test_headless.gd" id="1"]
+
+[node name="RestAreaStartBattleConfirmationChainTest" type="Node"]
+script = ExtResource("1")

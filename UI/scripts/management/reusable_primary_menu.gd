@@ -50,7 +50,7 @@ static func apply_shared_layout(
 
 static func _apply_label_layout(
 	label: Label,
-	position: Vector2,
+	label_position: Vector2,
 	label_size: Vector2,
 	font_size: int,
 	color: Color
@@ -58,7 +58,7 @@ static func _apply_label_layout(
 	if label == null:
 		return
 	label.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	label.position = position
+	label.position = label_position
 	label.size = label_size
 	label.clip_text = true
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF if font_size >= 20 else TextServer.AUTOWRAP_WORD_SMART

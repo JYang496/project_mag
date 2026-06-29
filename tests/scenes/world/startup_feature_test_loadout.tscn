@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/headless/world/run_startup_feature_test_loadout_headless.gd" id="1_script"]
+
+[node name="StartupFeatureTestLoadout" type="Node"]
+script = ExtResource("1_script")

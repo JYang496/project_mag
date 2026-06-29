@@ -42,8 +42,8 @@ var overlapping : bool :
 signal overlapping_signal()
 
 # Preloads
-@onready var hitbox_once = preload("res://Utility/hit_hurt_box/hit_box.tscn")
-@onready var hitbox_dot = preload("res://Utility/hit_hurt_box/hit_box_dot.tscn")
+@onready var hitbox_once = preload("res://Combat/collision/hit_box.tscn")
+@onready var hitbox_dot = preload("res://Combat/collision/hit_box_dot.tscn")
 
 # Children
 @onready var expire_timer = $ExpireTimer

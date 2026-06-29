@@ -93,10 +93,10 @@ func _notification(what: int) -> void:
 		if _drag_coordinator != null:
 			_drag_coordinator.handle_drag_end()
 
-func bind(owner_ui: Node, module_controller: ModuleWarehouseController = null) -> void:
-	if owner_ui == null:
+func bind(target_owner_ui: Node, module_controller: ModuleWarehouseController = null) -> void:
+	if target_owner_ui == null:
 		return
-	self.owner_ui = owner_ui
+	self.owner_ui = target_owner_ui
 	controller = module_controller
 	_ensure_card_factory()
 	_build_unified_layout()

@@ -25,15 +25,15 @@ Inputs to collect:
 Integrator writable scope:
 - Files touched by workers A-D only when resolving conflicts or path-reference inconsistencies.
 - `docs/audits/**`, `docs/reports/**`, and `docs/README.md` for final documentation fixes.
-- Do not perform the full `World/Test` migration unless explicitly requested after reviewing Worker E.
+- Do not perform the full `legacy test folder` migration unless explicitly requested after reviewing Worker E.
 
 Required workflow:
 1. Run `git status --short` and group changes by worker scope.
 2. Check for accidental cross-scope edits. If a worker touched forbidden files, inspect and either justify or ask for rollback approval.
 3. Verify path references:
    - `rg -n "res://Player/Weapons/Deprecated|Deprecated/" -S .`
-   - `rg -n "res://UI/enemy_hp_bar.tscn|UI/enemy_hp_bar.tscn" -S .`
-   - `rg -n "res://Utility/display_settings.gd|Utility/display_settings.gd" -S .`
+   - Run the stale enemy HP bar path grep from the worker checklist and confirm it has no matches.
+   - Run the stale DisplaySettings path grep from the worker checklist and confirm it has no matches.
    - `rg -n "docs/(dps_reports|cell_task_module_design|cell_task_combat_hud_solution|player_operation_guidance_audit|weapon_module_audit|weapon_system_positioning_advice|module_icon_preview)" -S .`
 4. Confirm docs prompt files remain under `docs/prompt/`.
 5. Review any `.uid` churn and keep only UID changes that correspond to actual moved Godot resources.

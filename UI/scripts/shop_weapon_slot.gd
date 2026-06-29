@@ -164,9 +164,9 @@ func try_purchase() -> bool:
 	if item_id == null:
 		return false
 	if not purchasable:
-		var ui := GlobalVariables.ui
-		if ui and is_instance_valid(ui) and ui.has_method("show_item_message"):
-			ui.show_item_message(LocalizationManager.tr_key("ui.shop.not_enough_gold", "Not enough gold."), 1.4)
+		var active_ui := GlobalVariables.ui
+		if active_ui and is_instance_valid(active_ui) and active_ui.has_method("show_item_message"):
+			active_ui.show_item_message(LocalizationManager.tr_key("ui.shop.not_enough_gold", "Not enough gold."), 1.4)
 		return false
 	var ui := GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("is_branch_selection_blocking_interactions") and ui.is_branch_selection_blocking_interactions():

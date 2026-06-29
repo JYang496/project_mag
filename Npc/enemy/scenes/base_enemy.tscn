@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://4sd4d8lkbkls" path="res://Npc/base_npc.tscn" id="1_y1wsb"]
 [ext_resource type="Script" uid="uid://ytvpcus0icms" path="res://Npc/enemy/scripts/BaseEnemy.gd" id="2_31lbh"]
-[ext_resource type="PackedScene" uid="uid://072a80habhhh" path="res://Utility/hit_hurt_box/hit_box_dot.tscn" id="3_7rcs0"]
+[ext_resource type="PackedScene" uid="uid://072a80habhhh" path="res://Combat/collision/hit_box_dot.tscn" id="3_7rcs0"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hlneu"]
 size = Vector2(19, 19)

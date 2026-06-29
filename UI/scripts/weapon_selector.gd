@@ -732,12 +732,12 @@ func _get_passive_visual_state(weapon: Variant, _is_mainhand_weapon: bool) -> Di
 		return output
 	var status := status_variant as Dictionary
 	var state := str(status.get("state", "inactive"))
-	var ready := bool(status.get("ready", false))
+	var is_ready := bool(status.get("ready", false))
 	var charge_max := int(status.get("charge_max", status.get("charges_max", 1)))
-	var charge_current := int(status.get("charge_current", status.get("charges_current", 1 if ready else 0)))
+	var charge_current := int(status.get("charge_current", status.get("charges_current", 1 if is_ready else 0)))
 	output["charge_max"] = maxi(charge_max, 0)
 	output["charge_current"] = clampi(charge_current, 0, maxi(charge_max, 0))
-	output["ready"] = ready or state == "ready_pending_action" or state == "ready"
+	output["ready"] = is_ready or state == "ready_pending_action" or state == "ready"
 	var progress := clampf(float(status.get("progress", 1.0)), 0.0, 1.0)
 	output["progress"] = progress
 	if bool(output.get("ready", false)):
@@ -777,9 +777,9 @@ func _apply_passive_charge_state(charge_node: Control, visual_state: Dictionary)
 func _apply_passive_visual_state(slot_idx: int, passive_node: Control, visual_state: Dictionary) -> void:
 	if passive_node == null:
 		return
-	var visible := bool(visual_state.get("visible", true))
-	passive_node.visible = visible
-	if not visible:
+	var should_show := bool(visual_state.get("visible", true))
+	passive_node.visible = should_show
+	if not should_show:
 		return
 	var kind := str(visual_state.get("kind", "unavailable"))
 	var progress := clampf(float(visual_state.get("progress", 0.0)), 0.0, 1.0)
@@ -820,11 +820,11 @@ func _track_passive_visual_transition(slot_idx: int, weapon: Variant, visual_sta
 		return
 	var weapon_id := int(weapon.get_instance_id())
 	var kind := str(visual_state.get("kind", "unavailable"))
-	var ready := bool(visual_state.get("ready", false))
+	var is_ready := bool(visual_state.get("ready", false))
 	var previous := str(_passive_visual_state_by_weapon.get(weapon_id, ""))
 	var previous_ready := previous == "ready"
-	_passive_visual_state_by_weapon[weapon_id] = "ready" if ready else kind
-	if ready and previous != "" and not previous_ready:
+	_passive_visual_state_by_weapon[weapon_id] = "ready" if is_ready else kind
+	if is_ready and previous != "" and not previous_ready:
 		_play_passive_ready_glow(slot_idx)
 
 func _play_ready_glow(slot_idx: int, is_mainhand_weapon: bool) -> void:

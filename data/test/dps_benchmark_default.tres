@@ -87,7 +87,7 @@ aoe_cluster_radius = 40.0
 single_target_hp = 3500
 aoe_target_hp = 1800
 aoe_target_count = 5
-report_dir = "res://docs/dps_reports"
+report_dir = "res://docs/reports/dps"
 report_file_prefix = "dps_benchmark"
 
 

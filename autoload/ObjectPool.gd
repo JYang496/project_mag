@@ -2,7 +2,6 @@ extends Node
 class_name ObjectPoolService
 
 @export var max_cached_per_scene: int = 128
-var _available: Dictionary = {}
 var _in_use: Dictionary = {}
 
 func acquire(scene: PackedScene) -> Node:

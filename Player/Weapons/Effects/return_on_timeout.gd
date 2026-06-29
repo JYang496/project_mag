@@ -1,7 +1,7 @@
 extends Effect
 class_name ReturnOnTimeout
 
-@onready var hitbox_once = preload("res://Utility/hit_hurt_box/hit_box.tscn")
+@onready var hitbox_once = preload("res://Combat/collision/hit_box.tscn")
 
 @onready var return_timer: Timer = $ReturnTimer
 @onready var stop_timer: Timer = $StopTimer

@@ -1,0 +1,66 @@
+Project: project_mag
+Task: Finish documentation/report path consistency after the docs reorganization.
+
+Environment:
+
+- Project root: `D:\Godot Projects\project_mag`
+- Shell: PowerShell
+- Godot executable if needed: `D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`
+- The worktree may already contain deleted root docs and untracked files under `docs/audits`, `docs/design`, and `docs/reports`.
+
+Current known state:
+
+- `docs/README.md` exists and defines:
+  - `docs/design/`
+  - `docs/audits/`
+  - `docs/reports/`
+  - `docs/reports/dps/`
+  - `docs/prompt/`
+- Moved report snapshots exist under `docs/reports/` and `docs/reports/dps/`.
+- The current stale runtime/report path is `res://docs/dps_reports`, found in benchmark scripts/configs and backup `.tres.bak_*` files.
+
+Goal:
+
+- Make the active benchmark output path match the new docs layout: `res://docs/reports/dps`.
+- Do not broaden this into a general docs rewrite.
+
+Writable scope:
+
+- `tests/benchmarks\dps\real_combat_dps_benchmark.gd`
+- `tests/benchmarks\dps\real_combat_module_output_benchmark.tscn`
+- `data/test/dps_benchmark_config.gd`
+- `data/test/dps_benchmark_default.tres`
+- Optional docs updates only if needed: `docs/README.md`, `docs/audits/**`
+
+Forbidden scope:
+
+- Do not move files in `legacy test folder `.
+- Do not edit weapon, UI, autoload, enemy, or gameplay systems.
+- Do not modify `.bak_curve` or `.bak_ovr` backup files unless the user explicitly wants backup path churn.
+- Do not delete existing docs/report files.
+
+Required workflow:
+
+1. Run `git status --short`.
+2. Search current stale references:
+   `rg -n "docs/dps_reports|res://docs/dps_reports" -S .`
+3. Update active source/config paths from `res://docs/dps_reports` to `res://docs/reports/dps`.
+4. Leave backup files alone unless they are used by live tooling. If they remain as the only stale matches, report that explicitly.
+5. Search for old root docs paths that should already be moved:
+   `rg -n "docs/(cell_task_module_design|cell_task_combat_hud_solution|player_operation_guidance_audit|weapon_module_audit|weapon_system_positioning_advice|module_icon_preview)" -S .`
+6. Only update stale references that are outside `docs/prompt/**` and refer to live docs/report locations.
+
+Validation:
+
+- `rg -n "res://docs/dps_reports" -S World data tools project.godot`
+- `rg -n "docs/dps_reports" -S .`
+- `git diff --check -- tests/benchmarks\dps\real_combat_dps_benchmark.gd tests/benchmarks\dps\real_combat_module_output_benchmark.tscn data/test/dps_benchmark_config.gd data/test/dps_benchmark_default.tres docs`
+- Because this phase touches `.gd` and `.tscn`, run:
+  `& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit`
+
+Final report:
+
+- List every changed file.
+- State whether stale `docs/dps_reports` references remain and whether they are only in backup files or prompt docs.
+- State that `legacy test folder` files were not moved.
+- Include exact validation commands and results.

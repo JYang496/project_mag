@@ -79,5 +79,5 @@ func _refresh_players_in_area() -> void:
 			_apply_aura_to_player(player)
 
 func _make_modifier_id(tag: String) -> StringName:
-	var cell_name: String = _cell.name if _cell else "Cell"
+	var cell_name: String = str(_cell.name) if _cell else "Cell"
 	return StringName("%s_%s_%s" % [cell_name, tag, str(get_instance_id())])

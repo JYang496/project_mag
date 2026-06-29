@@ -1,7 +1,7 @@
 extends Effect
 class_name ExplosionEffect
 
-@onready var area_effect_scene = preload("res://Utility/area_effect/area_effect.tscn")
+@onready var area_effect_scene = preload("res://Combat/area_effect/area_effect.tscn")
 @export var damage = 10
 @export var explosion_size = 2.0
 @export var base_radius: float = 24.0

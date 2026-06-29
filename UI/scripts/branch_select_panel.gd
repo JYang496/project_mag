@@ -58,7 +58,7 @@ func open_for_weapon(target_weapon: Weapon, branch_defs: Array[WeaponBranchDefin
 		var branch_card := _build_branch_card(def)
 		row.add_child(branch_card)
 
-func close_panel(choose_default_if_pending: bool = false) -> void:
+func close_panel(_choose_default_if_pending: bool = false) -> void:
 	visible = false
 	_weapon = null
 	_branch_ids.clear()

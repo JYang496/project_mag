@@ -144,10 +144,6 @@ func ensure_cell_management_panel() -> bool:
 	cell_management_panel.visible = false
 	if cell_management_panel.has_method("bind"):
 		cell_management_panel.call("bind", owner_ui)
-	if cell_management_panel.has_signal("close_requested"):
-		var close_callback := Callable(owner_ui, "_on_cell_management_panel_close_requested")
-		if not cell_management_panel.is_connected("close_requested", close_callback):
-			cell_management_panel.connect("close_requested", close_callback)
 	if cell_management_panel.has_signal("board_management_requested"):
 		var board_callback := Callable(owner_ui, "_on_cell_management_board_requested")
 		if not cell_management_panel.is_connected("board_management_requested", board_callback):

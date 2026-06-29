@@ -17,7 +17,6 @@ var fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
 var MAX_MODULE_NUMBER = 3
 @onready var sprite: Sprite2D = $Sprite
 @onready var fuse_sprite_holder: FuseSpriteHolder = get_node_or_null("FuseSprites")
-@onready var _fuse_sprites_initialized = _load_fuse_sprites()
 const PASSIVE_SCOPE_BODY: StringName = &"body"
 const PASSIVE_SCOPE_GLOBAL: StringName = &"global"
 const LAST_HIT_WEAPON_META: StringName = &"_last_player_weapon_hit_id"
@@ -66,10 +65,15 @@ var fuse : int:
 		_apply_fuse_sprite()
 
 signal weapon_role_changed(next_role: String)
+@warning_ignore("unused_signal")
 signal weapon_active_status_changed(cooldown_remaining: float, ready: bool)
+@warning_ignore("unused_signal")
 signal weapon_active_triggered(success: bool, reason: String)
+@warning_ignore("unused_signal")
 signal passive_triggered(event_name: StringName, detail: Dictionary)
+@warning_ignore("unused_signal")
 signal weapon_reload_completed(weapon: Weapon)
+@warning_ignore("unused_signal")
 signal offhand_refreshed_by_reload(weapon: Weapon)
 #endregion
 
@@ -84,7 +88,7 @@ func _init() -> void:
 	fuse_visual_controller.setup(self)
 	fire_feedback_player.setup(self)
 
-func set_level(lv):
+func set_level(_lv):
 	pass
 
 func get_weapon_level_key(requested_level: Variant, data: Dictionary = {}) -> String:
@@ -359,6 +363,7 @@ func _initialize_heat_runtime() -> void:
 	add_child(heat_runtime)
 
 func _ready() -> void:
+	_load_fuse_sprites()
 	_initialize_branch_runtime()
 	_initialize_heat_runtime()
 	refresh_max_level_from_data()
@@ -724,7 +729,13 @@ func get_offhand_skill_cd_progress() -> float:
 	return passive_controller.get_offhand_skill_cd_progress()
 
 func is_offhand_skill_ready() -> bool:
-	return is_passive_ready()
+	return _offhand_skill_ready and is_passive_ready()
+
+func set_offhand_skill_ready(is_ready: bool) -> void:
+	_offhand_skill_ready = is_ready
+
+func get_offhand_skill_ready_flag() -> bool:
+	return _offhand_skill_ready
 
 func get_passive_max_charges() -> int:
 	return 1

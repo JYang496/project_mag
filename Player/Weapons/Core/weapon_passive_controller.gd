@@ -103,11 +103,11 @@ func is_passive_ready() -> bool:
 func notify_passive_triggered(_cooldown_sec := 0.0) -> void:
 	var charge_max := get_passive_charge_max()
 	passive_charge_count = clampi(max(0, get_passive_charge_current() - 1), 0, charge_max)
-	weapon._offhand_skill_ready = passive_charge_count > 0
+	weapon.set_offhand_skill_ready(passive_charge_count > 0)
 
 func refresh_passive_on_reload() -> void:
 	passive_charge_count = get_passive_charge_max()
-	weapon._offhand_skill_ready = true
+	weapon.set_offhand_skill_ready(true)
 	weapon.offhand_refreshed_by_reload.emit(weapon)
 
 func get_offhand_skill_cd_progress() -> float:
@@ -115,7 +115,7 @@ func get_offhand_skill_cd_progress() -> float:
 
 func force_ready() -> void:
 	passive_charge_count = get_passive_charge_max()
-	weapon._offhand_skill_ready = true
+	weapon.set_offhand_skill_ready(true)
 
 func clear_for_weapon_exit() -> void:
 	passive_icd_msec.clear()
@@ -130,5 +130,5 @@ func get_passive_charge_max() -> int:
 func get_passive_charge_current() -> int:
 	var charge_max := get_passive_charge_max()
 	if passive_charge_count < 0 or passive_charge_count > charge_max:
-		passive_charge_count = charge_max if weapon != null and is_instance_valid(weapon) and weapon._offhand_skill_ready else 0
+		passive_charge_count = charge_max if weapon != null and is_instance_valid(weapon) and weapon.get_offhand_skill_ready_flag() else 0
 	return clampi(passive_charge_count, 0, charge_max)

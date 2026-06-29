@@ -1,7 +1,7 @@
 extends WeaponBranchBehavior
 class_name FlamethrowerFireAuraBranch
 
-const AREA_EFFECT_SCENE: PackedScene = preload("res://Utility/area_effect/area_effect.tscn")
+const AREA_EFFECT_SCENE: PackedScene = preload("res://Combat/area_effect/area_effect.tscn")
 
 @export var pulse_interval_sec: float = 0.8
 @export var pulse_radius: float = 140.0

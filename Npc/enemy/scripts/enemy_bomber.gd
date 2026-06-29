@@ -1,7 +1,7 @@
 extends BaseEnemy
 class_name EnemyBomber
 
-const AREA_EFFECT_SCENE := preload("res://Utility/area_effect/area_effect.tscn")
+const AREA_EFFECT_SCENE := preload("res://Combat/area_effect/area_effect.tscn")
 
 @export var chase_acceleration: float = 34.0
 @export var max_speed_multiplier: float = 2.0

@@ -1,7 +1,7 @@
 extends BaseEnemy
 class_name EnemyMortarTurret
 
-const AREA_EFFECT_SCENE := preload("res://Utility/area_effect/area_effect.tscn")
+const AREA_EFFECT_SCENE := preload("res://Combat/area_effect/area_effect.tscn")
 const WARNING_SCENE := preload("res://Npc/enemy/scenes/target_warning.tscn")
 
 @export var detect_range: float = 560.0

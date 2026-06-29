@@ -199,11 +199,11 @@ func set_outline_highlight(enabled: bool, color: Color = Color.WHITE, width: flo
 	sprite_body.material = _quest_outline_original_material
 
 func _build_quest_outline_material(color: Color, width: float) -> ShaderMaterial:
-	var material := ShaderMaterial.new()
-	material.shader = QUEST_OUTLINE_SHADER
-	material.set_shader_parameter("outline_color", color)
-	material.set_shader_parameter("outline_width", width)
-	return material
+	var outline_material := ShaderMaterial.new()
+	outline_material.shader = QUEST_OUTLINE_SHADER
+	outline_material.set_shader_parameter("outline_color", color)
+	outline_material.set_shader_parameter("outline_width", width)
+	return outline_material
 
 func has_spawn_tag(tag: StringName) -> bool:
 	return spawn_tags.has(tag)

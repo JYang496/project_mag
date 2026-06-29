@@ -2,7 +2,7 @@ extends RefCounted
 class_name NpcDamageFeedbackController
 
 const HIT_LABEL_SCENE := preload("res://UI/labels/hit_label.tscn")
-const ENEMY_HP_BAR_SCENE := preload("res://UI/enemy_hp_bar.tscn")
+const ENEMY_HP_BAR_SCENE := preload("res://UI/scenes/components/enemy_hp_bar.tscn")
 
 var npc
 var _pending_hit_label_damage: int = 0

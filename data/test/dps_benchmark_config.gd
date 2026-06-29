@@ -42,7 +42,7 @@ class_name DpsBenchmarkConfig
 @export var aoe_target_hp: int = 1800
 @export var aoe_target_count: int = 5
 
-@export var report_dir: String = "res://docs/dps_reports"
+@export var report_dir: String = "res://docs/reports/dps"
 @export var report_file_prefix: String = "dps_benchmark"
 
 func build_case_queue() -> Array[Dictionary]:

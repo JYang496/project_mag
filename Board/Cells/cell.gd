@@ -2,7 +2,6 @@ extends Node2D
 class_name Cell
 
 signal cell_state_changed(cell: Cell, old_state: int, new_state: int)
-signal effect_triggered(cell: Cell, effect: Node, actor: Node)
 signal player_presence_changed(cell: Cell, player_count: int)
 signal enemy_presence_changed(cell: Cell, enemy_count: int)
 signal enemy_killed_in_cell(cell: Cell, enemy: BaseEnemy)

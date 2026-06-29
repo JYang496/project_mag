@@ -1,7 +1,7 @@
 extends Module
 
 const UTILS := preload("res://Player/Weapons/Modules/wmod_runtime_utils.gd")
-const TRAIL_AREA_EFFECT_SCRIPT := preload("res://Utility/area_effect/trail_area_effect.gd")
+const TRAIL_AREA_EFFECT_SCRIPT := preload("res://Combat/area_effect/trail_area_effect.gd")
 
 var ITEM_NAME := "Frost Trail"
 

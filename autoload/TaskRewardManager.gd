@@ -240,12 +240,12 @@ func _build_reward_options_from_current_state() -> Array[RewardInfo]:
 				break
 			if reward == null:
 				continue
-			var duplicate := false
+			var has_duplicate := false
 			for existing in rewards:
 				if existing != null and existing.reward_key_override == reward.reward_key_override:
-					duplicate = true
+					has_duplicate = true
 					break
-			if not duplicate:
+			if not has_duplicate:
 				rewards.append(reward)
 	return rewards
 

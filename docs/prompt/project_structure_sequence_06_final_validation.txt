@@ -1,0 +1,48 @@
+Project: project_mag
+Task: Final validation after sequential project-structure cleanup phases.
+
+Environment:
+
+- Project root: `D:\Godot Projects\project_mag`
+- Shell: PowerShell
+- Godot executable: `D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`
+- Worktree may remain dirty because the project is being edited in stages.
+
+Goal:
+
+- Verify that the sequential cleanup did not leave broken paths or obvious formatting issues.
+- Summarize unresolved structure work for the next pass.
+
+Writable scope:
+
+- None by default.
+- If a tiny docs-only correction is needed, restrict it to `docs/audits/**` or `docs/prompt/**` and report it.
+
+Forbidden scope:
+
+- Do not make broad code changes.
+- Do not perform the `legacy test folder` migration.
+- Do not revert unrelated dirty files.
+
+Required workflow:
+
+1. Run `git status --short`.
+2. Run path checks:
+   - `rg -n "res://docs/dps_reports" -S World data tools project.godot`
+   - `rg -n "res://UI/enemy_hp_bar.tscn|res://Utility/display_settings.gd" -S .`
+   - `rg -n "res://Player/Weapons/Deprecated|Player/Weapons/Deprecated|cryo_carbine|frost_dash_blade|ranger_unused|spear_launcher_old" -S .`
+   - `rg -n "docs/(cell_task_module_design|cell_task_combat_hud_solution|player_operation_guidance_audit|weapon_module_audit|weapon_system_positioning_advice|module_icon_preview)" -S .`
+3. Interpret matches inside `docs/prompt/**` as prompt history unless they represent a live instruction that is now wrong.
+4. Run:
+   `git diff --check`
+5. Run:
+   `& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit`
+6. If Godot check fails, identify whether the error is in a file touched by the sequential cleanup or an unrelated dirty file.
+
+Final report:
+
+- Summarize phase outcomes.
+- List remaining stale references by category.
+- Report `git diff --check` result.
+- Report Godot check result with exact command.
+- List recommended next phase, especially whether to proceed with the first `legacy test folder` slice.

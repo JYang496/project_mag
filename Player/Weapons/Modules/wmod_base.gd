@@ -213,14 +213,14 @@ func get_effect_descriptions() -> PackedStringArray:
 		var raw_multiplier: float = float(stat_multipliers[key_variant])
 		var final_multiplier: float = get_effective_multiplier(raw_multiplier)
 		var delta_percent := (final_multiplier - 1.0) * 100.0
-		var sign := "+" if delta_percent >= 0.0 else ""
-		descriptions.append("%s %s%.0f%%" % [_format_stat_label(key), sign, delta_percent])
+		var value_sign := "+" if delta_percent >= 0.0 else ""
+		descriptions.append("%s %s%.0f%%" % [_format_stat_label(key), value_sign, delta_percent])
 	for key_variant in stat_additives.keys():
 		var key := str(key_variant)
 		var raw_add: float = float(stat_additives[key_variant])
 		var final_add: float = get_effective_additive(raw_add)
-		var sign := "+" if final_add >= 0.0 else ""
-		descriptions.append("%s %s%.1f" % [_format_stat_label(key), sign, final_add])
+		var value_sign := "+" if final_add >= 0.0 else ""
+		descriptions.append("%s %s%.1f" % [_format_stat_label(key), value_sign, final_add])
 	return descriptions
 
 func get_level_effect_description(level: int = module_level) -> String:

@@ -23,7 +23,7 @@ var _control_rules: Dictionary = {}
 var _active_state: int = STATE_DEFAULT
 var _active_shape: int = Input.CURSOR_ARROW
 var _hover_shape_control: Control
-var _hover_shape_original: int = Input.CURSOR_ARROW
+var _hover_shape_original: Control.CursorShape = Control.CURSOR_ARROW
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -33,23 +33,23 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	_refresh_if_needed()
 
-func set_world_state(owner: Object, state: int, priority: int = _WORLD_PRIORITY_DEFAULT) -> void:
-	if owner == null:
+func set_world_state(state_owner: Object, state: int, priority: int = _WORLD_PRIORITY_DEFAULT) -> void:
+	if state_owner == null:
 		return
 	if state == STATE_DEFAULT:
-		clear_world_state(owner)
+		clear_world_state(state_owner)
 		return
-	_world_states[owner] = {
+	_world_states[state_owner] = {
 		"state": state,
 		"priority": priority
 	}
 	_refresh_if_needed()
 
-func clear_world_state(owner: Object) -> void:
-	if owner == null:
+func clear_world_state(state_owner: Object) -> void:
+	if state_owner == null:
 		return
-	if _world_states.has(owner):
-		_world_states.erase(owner)
+	if _world_states.has(state_owner):
+		_world_states.erase(state_owner)
 		_refresh_if_needed()
 
 func register_control_rule(control: Control, can_click: Callable, priority: int = 100) -> void:
@@ -192,11 +192,11 @@ func _get_hovered_control() -> Control:
 
 func _cleanup_invalid_entries() -> void:
 	var invalid_world: Array = []
-	for owner in _world_states.keys():
-		if not is_instance_valid(owner):
-			invalid_world.append(owner)
-	for owner in invalid_world:
-		_world_states.erase(owner)
+	for state_owner in _world_states.keys():
+		if not is_instance_valid(state_owner):
+			invalid_world.append(state_owner)
+	for state_owner in invalid_world:
+		_world_states.erase(state_owner)
 	var invalid_rules: Array = []
 	for control in _control_rules.keys():
 		if not is_instance_valid(control):
@@ -270,7 +270,7 @@ func _apply_hover_control_shape(target: Control, shape: int) -> void:
 	if _hover_shape_control == null:
 		_hover_shape_control = target
 		_hover_shape_original = target.mouse_default_cursor_shape
-	target.mouse_default_cursor_shape = shape
+	target.mouse_default_cursor_shape = shape as Control.CursorShape
 
 func _restore_hover_control_shape() -> void:
 	if _hover_shape_control == null:

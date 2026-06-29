@@ -13,7 +13,7 @@ func get_added_delivery_types() -> Array[StringName]:
 @export var explosion_damage_ratio: float = 1.0
 @export var explosion_duration: float = 0.08
 
-var area_effect_scene: PackedScene = preload("res://Utility/area_effect/area_effect.tscn")
+var area_effect_scene: PackedScene = preload("res://Combat/area_effect/area_effect.tscn")
 var _armed_projectiles: Dictionary = {}
 
 func on_removed() -> void:

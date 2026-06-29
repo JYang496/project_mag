@@ -325,6 +325,6 @@ func _calculate_step_sign(old_index: int, new_index: int, list_size: int) -> int
 	if diff == 0:
 		return 0
 	var abs_diff := absi(diff)
-	if abs_diff > list_size / 2:
+	if abs_diff > floori(float(list_size) / 2.0):
 		return -1 if diff > 0 else 1
 	return 1 if diff > 0 else -1

@@ -2,6 +2,7 @@ extends RefCounted
 class_name PlayerDamageReactionSystem
 
 var _player
+var _elite_hit_slow_until_msec: int = 0
 
 func setup(player) -> void:
 	_player = player
@@ -111,15 +112,15 @@ func _apply_elite_hit_slow_if_needed(attack: Attack) -> void:
 	var duration_msec := int(maxf(_player.elite_hit_slow_duration_sec, 0.0) * 1000.0)
 	if duration_msec <= 0:
 		return
-	_player._elite_hit_slow_until_msec = Time.get_ticks_msec() + duration_msec
+	_elite_hit_slow_until_msec = Time.get_ticks_msec() + duration_msec
 	_player.apply_move_speed_mul(_player.ELITE_HIT_SLOW_SOURCE_ID, clampf(_player.elite_hit_slow_mul, 0.05, 1.0))
-	_clear_elite_hit_slow_after_delay(_player._elite_hit_slow_until_msec)
+	_clear_elite_hit_slow_after_delay(_elite_hit_slow_until_msec)
 
 func _clear_elite_hit_slow_after_delay(token_until_msec: int) -> void:
 	await _player.get_tree().create_timer(maxf(_player.elite_hit_slow_duration_sec, 0.0)).timeout
 	if not _player.is_inside_tree():
 		return
-	if token_until_msec != _player._elite_hit_slow_until_msec:
+	if token_until_msec != _elite_hit_slow_until_msec:
 		return
 	_player.remove_move_speed_mul(_player.ELITE_HIT_SLOW_SOURCE_ID)
 
