@@ -66,15 +66,49 @@ func _physics_process(delta: float) -> void:
 		
 		# Hitbox
 		var rect_shape  = RectangleShape2D.new()
-		rect_shape.extents = Vector2(length / 2, maxf(width * 0.5, 2.0)) # Half length and width
+		rect_shape.size = Vector2(length, maxf(width, 4.0))
 		hitbox_collision_shape.shape = rect_shape
-		
+
 		hitbox_dot.position = start + direction * length / 2
 		hitbox_dot.rotation = direction.angle()
+		hitbox_dot.check_hits()
+		_check_manual_beam_hits(start, end, maxf(width, 4.0))
 
 
 func _on_expire_timer_timeout() -> void:
 	queue_free()
+
+func _check_manual_beam_hits(start: Vector2, end: Vector2, beam_width: float) -> void:
+	if hitbox_dot == null or not is_instance_valid(hitbox_dot):
+		return
+	if hitbox_dot.cooldown:
+		return
+	var segment := end - start
+	var length := segment.length()
+	if length <= 0.001:
+		return
+	var direction := segment / length
+	var half_width := maxf(beam_width * 0.5, 2.0)
+	var applied_hit := false
+	for enemy_variant in get_tree().get_nodes_in_group("enemies"):
+		var enemy := enemy_variant as Node2D
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var hurt_box := enemy.get_node_or_null("HurtBox") as HurtBox
+		if hurt_box == null or not is_instance_valid(hurt_box):
+			continue
+		var local_pos := to_local(enemy.global_position)
+		var along := direction.dot(local_pos - start)
+		if along < 0.0 or along > length:
+			continue
+		var closest := start + direction * along
+		if closest.distance_to(local_pos) > half_width + 16.0:
+			continue
+		hitbox_dot.apply_attack(hurt_box)
+		applied_hit = true
+	if applied_hit:
+		hitbox_dot.cooldown = true
+		hitbox_dot.hit_timer.start()
 
 func can_hit_target(target: Node) -> bool:
 	if target == null or not is_instance_valid(target):

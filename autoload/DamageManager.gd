@@ -183,7 +183,7 @@ func resolve_source_weapon(source_node: Node) -> Weapon:
 			return current as Weapon
 		current = current.get_parent()
 	var source_weapon_value: Variant = source_node.get("source_weapon")
-	if source_weapon_value is Weapon and is_instance_valid(source_weapon_value):
+	if typeof(source_weapon_value) == TYPE_OBJECT and is_instance_valid(source_weapon_value) and source_weapon_value is Weapon:
 		return source_weapon_value as Weapon
 	return null
 
@@ -196,8 +196,8 @@ func _resolve_player_by_walk(source_node: Node) -> Node:
 		current = current.get_parent()
 
 	var source_weapon_value: Variant = source_node.get("source_weapon")
-	if source_weapon_value != null and source_weapon_value is Node and is_instance_valid(source_weapon_value):
-		current = source_weapon_value
+	if typeof(source_weapon_value) == TYPE_OBJECT and is_instance_valid(source_weapon_value) and source_weapon_value is Node:
+		current = source_weapon_value as Node
 		while current:
 			if current is Player:
 				return current

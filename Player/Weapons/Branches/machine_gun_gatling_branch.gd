@@ -4,7 +4,7 @@ class_name MachineGunGatlingBranch
 # Gatling branch: higher fire cadence, split lanes, and heat-based fire conversion.
 @export var projectile_count: int = 2
 @export var spread_deg: float = 7.0
-@export_range(0.0, 1.0, 0.05) var extra_heat_shot_multiplier: float = 0.45
+@export_range(0.0, 1.0, 0.05) var extra_heat_shot_multiplier: float = 0.25
 @export_range(0.05, 2.0, 0.01) var base_damage_multiplier: float = 0.80
 @export_range(0.0, 1.0, 0.01) var fire_mode_heat_ratio: float = 0.50
 func get_added_weapon_traits() -> Array[StringName]:

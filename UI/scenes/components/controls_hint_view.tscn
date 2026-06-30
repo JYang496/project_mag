@@ -35,7 +35,7 @@ theme_override_font_sizes/font_size = 16
 custom_minimum_size = Vector2(76, 28)
 layout_mode = 2
 mouse_filter = 0
-text = "Collapse −"
+text = "F1 Collapse"
 
 [node name="HeaderDivider" type="ColorRect" parent="Margin/Content"]
 custom_minimum_size = Vector2(0, 1)

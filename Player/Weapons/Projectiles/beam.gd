@@ -28,6 +28,7 @@ func _ready() -> void:
 	if oc_mode:
 		expire_timer.wait_time = 5
 	expire_timer.start()
+	raycast.enabled = true
 	raycast.target_position = 42 * target_position
 	line.width = maxf(line.width * beam_width_multiplier, 1.0)
 	if beam_tag.contains("focus"):
@@ -42,12 +43,13 @@ func _physics_process(delta: float) -> void:
 	if oc_mode and PlayerData.cloestest_enemy != null:
 		raycast.target_position = to_local(PlayerData.cloestest_enemy.global_position)
 		beam_start_position = to_local(beam_owner.global_position)
+	raycast.force_raycast_update()
 	if raycast.is_colliding():
 		var collision_point = raycast.get_collision_point()
 		var collider = raycast.get_collider()
 		line.points = [beam_start_position, to_local(collision_point)]
 		if collider is HurtBox:
-			var target = collider.get_owner()
+			var target: Node = collider.get_damage_target() if collider.has_method("get_damage_target") else collider.get_owner()
 			var damage_data := DamageManager.build_damage_data(
 				self,
 				int(damage),

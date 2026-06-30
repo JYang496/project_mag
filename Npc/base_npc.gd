@@ -196,7 +196,7 @@ func _attack_is_from_player_weapon_source(attack: Attack) -> bool:
 	if source is Weapon:
 		return true
 	var source_weapon_value: Variant = source.get("source_weapon")
-	return source_weapon_value is Weapon and is_instance_valid(source_weapon_value)
+	return typeof(source_weapon_value) == TYPE_OBJECT and is_instance_valid(source_weapon_value) and source_weapon_value is Weapon
 
 func _profile_get_is_dead() -> bool:
 	return is_dead

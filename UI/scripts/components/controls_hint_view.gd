@@ -47,6 +47,8 @@ var _context_last_shown_msec: Dictionary = {}
 var _context_show_counts: Dictionary = {}
 var _action_items: Dictionary = {}
 var _render_signature := ""
+var _text_context_signature := ""
+var _manual_text_context_collapsed := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -72,11 +74,14 @@ func layout_for_viewport(viewport_size: Vector2) -> void:
 
 func refresh_for_phase(phase: String, primary_menu_open: bool, secondary_menu_context: StringName = &"") -> void:
 	var phase_changed := _current_phase != phase
+	var previous_context_identity := _text_context_identity()
 	_current_phase = phase
 	_primary_menu_open = primary_menu_open
 	_secondary_menu_context = _normalize_secondary_menu_context(secondary_menu_context)
 	if phase_changed and phase == PhaseManager.BATTLE:
 		_begin_battle_guidance()
+	if phase_changed or previous_context_identity != _text_context_identity():
+		_manual_text_context_collapsed = false
 	_render_current_context()
 
 func refresh_visibility(primary_menu_open: bool, secondary_menu_context: StringName = &"") -> void:
@@ -129,13 +134,16 @@ func toggle_expanded() -> void:
 	if PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_HIDDEN:
 		PlayerAssistSettings.set_controls_hint_mode(PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE)
 		_manual_expanded = true
+		_manual_text_context_collapsed = false
 		set_display_state(DisplayState.EXPANDED, false)
 		return
 	if display_state == DisplayState.EXPANDED:
 		_manual_expanded = false
+		_manual_text_context_collapsed = _current_phase != PhaseManager.BATTLE
 		set_display_state(DisplayState.COMPACT, false)
 	else:
 		_manual_expanded = true
+		_manual_text_context_collapsed = false
 		set_display_state(DisplayState.EXPANDED, false)
 
 func set_display_state(next_state: DisplayState, persist_manual_choice: bool = true) -> void:
@@ -155,7 +163,7 @@ func set_display_state(next_state: DisplayState, persist_manual_choice: bool = t
 	expanded_content.visible = next_state == DisplayState.EXPANDED
 	compact_content.visible = next_state == DisplayState.COMPACT
 	context_content.visible = next_state == DisplayState.CONTEXT_REMINDER
-	collapse_button.text = "%s −" % _tr("ui.controls.collapse", "Collapse")
+	collapse_button.text = "%s %s" % [_input_label(&"TOGGLE_CONTROLS"), _tr("ui.controls.collapse", "Collapse")]
 	display_state_changed.emit(display_state)
 
 func show_context_reminder(action: StringName, message: String, force: bool = false) -> bool:
@@ -199,7 +207,7 @@ func refresh_input_glyphs() -> void:
 		_tr("ui.controls.switch_weapon", "Switch Weapon")
 	)
 	_set_action_item(&"pause", _input_label(&"ESC"), _tr("ui.controls.pause", "Pause"))
-	compact_text.text = "%s %s · %s %s" % [
+	compact_text.text = "%s %s / %s %s" % [
 		move_label,
 		_tr("ui.controls.move", "Move"),
 		_input_label(&"ATTACK"),
@@ -210,7 +218,7 @@ func refresh_input_glyphs() -> void:
 		_tr("ui.controls.expand", "Expand"),
 	]
 	title_label.text = _tr("ui.controls.title", "Controls")
-	collapse_button.text = "%s −" % _tr("ui.controls.collapse", "Collapse")
+	collapse_button.text = "%s %s" % [_input_label(&"TOGGLE_CONTROLS"), _tr("ui.controls.collapse", "Collapse")]
 	collapse_button.tooltip_text = _tr("ui.controls.collapse_tooltip", "Collapse controls hint (F1)")
 
 func _begin_battle_guidance() -> void:
@@ -218,6 +226,7 @@ func _begin_battle_guidance() -> void:
 	_used_move = false
 	_used_attack = false
 	_manual_expanded = false
+	_manual_text_context_collapsed = false
 	_context_show_counts.clear()
 	_context_last_shown_msec.clear()
 	_apply_saved_mode(false)
@@ -289,18 +298,34 @@ func _render_secondary_menu_hint(context_name: StringName) -> void:
 	_render_text_context(LocalizationManager.tr_key(title_key, fallback_title), lines)
 
 func _render_text_context(context_title: String, lines: Array[String]) -> void:
+	var context_signature := "%s|%s" % [context_title, "|".join(PackedStringArray(lines))]
+	var context_changed := _text_context_signature != context_signature
+	_text_context_signature = context_signature
 	title_label.text = context_title
 	_clear_action_items()
 	for line in lines:
 		var item := _create_hint_item("", line)
 		item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		expanded_content.add_child(item)
-	header.visible = true
-	header_divider.visible = true
-	expanded_content.visible = true
-	compact_content.visible = false
-	context_content.visible = false
-	display_state = DisplayState.EXPANDED
+	compact_text.text = _compact_text_context(context_title, lines)
+	compact_expand.text = "%s %s" % [
+		_input_label(&"TOGGLE_CONTROLS"),
+		_tr("ui.controls.expand", "Expand"),
+	]
+	var next_state := display_state
+	if context_changed and not _manual_text_context_collapsed:
+		next_state = DisplayState.EXPANDED
+	if next_state == DisplayState.HIDDEN or next_state == DisplayState.CONTEXT_REMINDER:
+		next_state = DisplayState.EXPANDED
+	set_display_state(next_state, false)
+
+func _compact_text_context(context_title: String, lines: Array[String]) -> String:
+	if lines.is_empty():
+		return context_title
+	return "%s - %s" % [context_title, lines[0]]
+
+func _text_context_identity() -> String:
+	return "%s|%s|%s" % [_current_phase, str(_primary_menu_open), str(_secondary_menu_context)]
 
 func _build_action_items() -> void:
 	_clear_action_items()
@@ -417,7 +442,7 @@ func _keycap_text(text: String) -> String:
 func _compact_key_name(text: String) -> String:
 	var compact := text.replace(" + ", "+").replace("Mouse Button", "M")
 	if compact.length() > 12:
-		return compact.substr(0, 11) + "…"
+		return compact.substr(0, 11) + "..."
 	return compact
 
 func _configure_text_constraints() -> void:

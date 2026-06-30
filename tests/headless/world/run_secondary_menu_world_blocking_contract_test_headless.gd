@@ -274,16 +274,16 @@ func _assert_unified_secondary_dim_hidden(label: String) -> void:
 		_record("%s left unified secondary dim overlay visible" % label)
 
 func _assert_controls_hint_context(label: String, title_key: String, title_fallback: String, body_keys: Array) -> void:
-	var panel := _ui.controls_hint_view as Control
+	var panel := _ui.controls_hint_view as ControlsHintView
 	if panel == null or not is_instance_valid(panel):
 		_record("%s has no controls hint view" % label)
 		return
 	if not panel.visible:
 		_record("%s hid the controls hint view" % label)
 		return
-	var title := panel.get_node_or_null("Title") as Label
-	var body := panel.get_node_or_null("Body") as Label
-	if title == null or body == null:
+	var title := panel.title_label
+	var body_text := _controls_hint_body_text(panel)
+	if title == null or body_text == "":
 		_record("%s controls hint view is missing labels" % label)
 		return
 	var expected_title := LocalizationManager.tr_key(title_key, title_fallback)
@@ -294,8 +294,16 @@ func _assert_controls_hint_context(label: String, title_key: String, title_fallb
 		if expected_line == "":
 			_record("%s missing localization for %s" % [label, str(key)])
 			continue
-		if not body.text.contains(expected_line):
-			_record("%s controls hint body missing '%s' in '%s'" % [label, expected_line, body.text])
+		if not body_text.contains(expected_line):
+			_record("%s controls hint body missing '%s' in '%s'" % [label, expected_line, body_text])
+
+func _controls_hint_body_text(panel: ControlsHintView) -> String:
+	var lines := PackedStringArray()
+	for item in panel.expanded_content.get_children():
+		var action_label := item.get_node_or_null("Action") as Label
+		if action_label != null and action_label.text.strip_edges() != "":
+			lines.append(action_label.text)
+	return "\n".join(lines)
 
 func _assert_blocked_click_is_ignored(label: String) -> void:
 	var selected_before := _rest_area.selected_zone_id

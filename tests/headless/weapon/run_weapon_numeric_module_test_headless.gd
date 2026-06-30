@@ -126,6 +126,7 @@ func _test_projectile_directions() -> void:
 func _test_branch_centered_shot_directions() -> void:
 	var gatling := MachineGunGatlingBranch.new()
 	_assert_first_direction(gatling.get_shot_directions(Vector2.RIGHT, 2), Vector2.RIGHT, "Gatling even centered direction")
+	_assert_approx(gatling.get_extra_heat_shot_multiplier(), 0.25, "Gatling extra heat shot multiplier")
 	gatling.queue_free()
 	var salvo := RocketSalvoBranch.new()
 	_assert_first_direction(salvo.get_shot_directions(Vector2.RIGHT, 2), Vector2.RIGHT, "Rocket salvo even centered direction")

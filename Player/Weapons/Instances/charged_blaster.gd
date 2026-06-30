@@ -279,7 +279,8 @@ func _spawn_beam_from_profile(profile: Dictionary) -> float:
 	beam_blast_ins.beam_profile = profile.duplicate(true)
 	beam_blast_ins.target_lock_mode = StringName(str(profile.get("target_lock_mode", "none")))
 	beam_blast_ins.target_lock_release_multiplier = maxf(float(profile.get("target_lock_release_multiplier", 1.8)), 1.0)
-	call_deferred("add_child", beam_blast_ins)
+	beam_blast_ins.global_position = global_position
+	get_projectile_spawn_parent().call_deferred("add_child", beam_blast_ins)
 	return beam_duration
 
 func _get_full_power_beam_width() -> float:

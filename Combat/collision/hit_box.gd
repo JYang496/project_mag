@@ -88,8 +88,10 @@ func apply_attack(area) -> void:
 func _resolve_source_weapon() -> Weapon:
 	if hitbox_owner is Weapon:
 		return hitbox_owner as Weapon
-	if hitbox_owner != null and hitbox_owner.get("source_weapon") is Weapon:
-		return hitbox_owner.get("source_weapon") as Weapon
+	if hitbox_owner != null:
+		var source_weapon_value: Variant = hitbox_owner.get("source_weapon")
+		if typeof(source_weapon_value) == TYPE_OBJECT and is_instance_valid(source_weapon_value) and source_weapon_value is Weapon:
+			return source_weapon_value as Weapon
 	return null
 
 func _resolve_delivery_type() -> StringName:
@@ -122,6 +124,9 @@ func _on_area_exited(_exited_area: Area2D) -> void:
 
 func check_overlapping() -> void:
 	if hitbox_owner == null or not is_instance_valid(hitbox_owner):
+		return
+	if not monitoring:
+		hitbox_owner.overlapping = false
 		return
 	var has_hurt_box := false
 	for area in get_overlapping_areas():

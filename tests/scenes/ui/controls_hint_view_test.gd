@@ -145,6 +145,39 @@ func _run() -> void:
 		"Context reminder should expire."
 	)
 
+	PhaseManager.phase = PhaseManager.PREPARE
+	hint.refresh_for_phase(PhaseManager.PREPARE, true, &"warehouse")
+	_assert_equal(
+		ControlsHintView.DisplayState.EXPANDED,
+		hint.display_state,
+		"Secondary menu controls context should open expanded."
+	)
+	hint.handle_input_event(toggle_event)
+	_assert_equal(
+		ControlsHintView.DisplayState.COMPACT,
+		hint.display_state,
+		"F1 should collapse a secondary menu controls context."
+	)
+	_assert_true(
+		hint.compact_text.text.contains(LocalizationManager.tr_key("ui.tutorial.state.secondary.warehouse", "Current: Warehouse")),
+		"Collapsed secondary menu controls should keep the current context title."
+	)
+	hint.refresh_for_phase(PhaseManager.PREPARE, true, &"warehouse")
+	_assert_equal(
+		ControlsHintView.DisplayState.COMPACT,
+		hint.display_state,
+		"Refreshing the same secondary menu should not force the controls context open again."
+	)
+	hint.handle_input_event(toggle_event)
+	_assert_equal(
+		ControlsHintView.DisplayState.EXPANDED,
+		hint.display_state,
+		"Second F1 press should expand a secondary menu controls context."
+	)
+	PhaseManager.phase = PhaseManager.BATTLE
+	hint.refresh_for_phase(PhaseManager.BATTLE, false)
+	reload_item = hint._action_items.get(&"reload", null) as HBoxContainer
+
 	PlayerAssistSettings.auto_reload_switch = true
 	hint.refresh_input_glyphs()
 	var reload_action := reload_item.get_node_or_null("Action") as Label if reload_item else null

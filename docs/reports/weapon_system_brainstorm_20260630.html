@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>武器系统头脑风暴回顾报告</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fa;
+      --paper: #ffffff;
+      --ink: #1f2933;
+      --muted: #5f6b7a;
+      --line: #d9e0ea;
+      --head: #111827;
+      --accent: #1d4ed8;
+      --accent-soft: #eaf1ff;
+      --green: #147a42;
+      --green-soft: #eaf7ef;
+      --amber: #a15c07;
+      --amber-soft: #fff4df;
+      --red: #b42318;
+      --red-soft: #fff0ed;
+      --chip: #eef2f7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "Noto Sans SC", Arial, sans-serif;
+      line-height: 1.65;
+    }
+
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 38px 24px 72px;
+    }
+
+    header {
+      margin-bottom: 24px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: var(--head);
+      line-height: 1.25;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+    }
+
+    h2 {
+      margin: 34px 0 14px;
+      font-size: 23px;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    ul,
+    ol {
+      margin: 8px 0 0;
+      padding-left: 22px;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    code {
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: #f0f3f8;
+      color: #24324a;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.95em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--paper);
+      border: 1px solid var(--line);
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      background: #edf2f7;
+      color: #263445;
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .summary {
+      max-width: 920px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .paper {
+      margin: 16px 0;
+      padding: 20px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .callout {
+      margin: 18px 0;
+      padding: 16px 18px;
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      padding: 17px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--chip);
+      color: #334155;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .good {
+      background: var(--green-soft);
+      border-left-color: var(--green);
+    }
+
+    .warn {
+      background: var(--amber-soft);
+      border-left-color: var(--amber);
+    }
+
+    .risk {
+      background: var(--red-soft);
+      border-left-color: var(--red);
+    }
+
+    .steps {
+      counter-reset: step;
+      display: grid;
+      gap: 12px;
+    }
+
+    .step {
+      position: relative;
+      padding: 16px 18px 16px 54px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      text-align: center;
+      line-height: 24px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .nowrap {
+      white-space: nowrap;
+    }
+
+    @media (max-width: 760px) {
+      main {
+        padding: 28px 16px 56px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>武器系统头脑风暴回顾报告</h1>
+      <p class="meta">生成日期：2026-06-30 ｜ 目的：沉淀当前武器开发思路，作为后续分支、模组、奖励与测试设计的回顾材料。</p>
+      <p class="summary">本报告总结当前武器系统的建议方向：保持武器本体、分支、模组、武器组合四层职责清晰，避免所有成长路径都退化成直接增伤；同时让 DPS 测试从总榜比较升级为按职责、场景和输出形态比较。</p>
+    </header>
+
+    <section>
+      <h2>核心结论</h2>
+      <div class="callout">
+        <p><strong>推荐继续采用四层职责：</strong><code>武器本体 = 手感和触发源</code>、<code>分支 = 玩法路线</code>、<code>模组 = 中后期输出引擎</code>、<code>武器组合 = 后期上限</code>。</p>
+        <p>最大的设计风险不是某一把武器数值偏高，而是分支、模组、融合都变成同一种“加伤害”。短期容易平衡，长期会让构筑只剩 DPS 排名。</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <h3>保留差异</h3>
+          <p>每把武器都要有可感知的输出方式、节奏、命中形态和协同钩子。不要让所有分支都只是在同一个攻击模板上换倍率。</p>
+        </article>
+        <article class="card">
+          <h3>测试分组</h3>
+          <p>DPS 报告应按输出职责分组比较。贴脸爆发、持续光束、范围覆盖、蓄力窗口、状态 payoff 不应只放进一个总榜判断强弱。</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>职责分层</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>系统层</th>
+            <th>主要职责</th>
+            <th>推荐边界</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="nowrap">武器本体</td>
+            <td>决定手感、射击节奏、命中形态、基础事件来源。</td>
+            <td>负责“这把武器为什么和别的武器不同”，不要承载太多后期复杂成长。</td>
+          </tr>
+          <tr>
+            <td class="nowrap">武器分支</td>
+            <td>改变玩法路线，例如单体、覆盖、控制、防御、状态入口或资源消耗。</td>
+            <td>优先改变条件和形态，少做纯倍率分支；同一武器的两个分支不要强化同一条轴。</td>
+          </tr>
+          <tr>
+            <td class="nowrap">模组</td>
+            <td>把武器事件、trait 和状态转换为中后期输出引擎。</td>
+            <td>强模组应依赖条件、trait 或状态消耗，而不是所有武器都能稳定吃满的常驻增伤。</td>
+          </tr>
+          <tr>
+            <td class="nowrap">武器组合</td>
+            <td>形成后期构筑上限，例如热量生成与消耗、冻结控制与爆发、标记与处决。</td>
+            <td>组合价值要能被玩家读懂，伤害来源、触发条件和 payoff 都需要明确归因。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>DPS 测试解读</h2>
+      <div class="paper">
+        <p>新的分支 DPS 测试已经解决“武器无法完整输出”的基础问题，但它仍然是特定窗口下的单目标测量。后续不建议只看总榜来改数值，而应按职责建立多个测试类别。</p>
+        <div>
+          <span class="tag">近战/贴脸单体</span>
+          <span class="tag">默认单体</span>
+          <span class="tag">多目标/覆盖</span>
+          <span class="tag">蓄力/窗口爆发</span>
+          <span class="tag">状态/资源 payoff</span>
+          <span class="tag">移动目标/追踪</span>
+        </div>
+      </div>
+      <div class="callout warn">
+        <p><strong>判断原则：</strong>Shotgun、Dash Blade、Chainsaw 这类近距离武器在贴脸测试里高是合理信号；Orbit、Glacier、Prism Fan 这类覆盖型武器如果单体 DPS 不高，也不一定代表弱。报告需要展示它们各自负责的场景。</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>武器身份建议</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>武器/武器族</th>
+            <th>建议主身份</th>
+            <th>建议协同钩子</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Machine Gun</td>
+            <td>高频触发器，稳定输出与热量/命中事件来源。</td>
+            <td>热量生成、on-hit 模组、护盾或支援分支。</td>
+          </tr>
+          <tr>
+            <td>Flamethrower / Glacier</td>
+            <td>范围持续压制，状态铺设，近中距离区域控制。</td>
+            <td>燃烧、冻结、减速、状态扩散和控制 payoff。</td>
+          </tr>
+          <tr>
+            <td>Plasma Lance / Cannon / Sniper</td>
+            <td>精准、穿透或窗口爆发，承担资源消耗后的 payoff。</td>
+            <td>热量消耗、标记、破甲、reload 节奏和处决。</td>
+          </tr>
+          <tr>
+            <td>Shotgun / Dash Blade / Chainsaw</td>
+            <td>近距离风险回报，强调位置、贴身窗口和高命中密度。</td>
+            <td>破甲、冰冻近战协同、防御补偿、击杀连锁。</td>
+          </tr>
+          <tr>
+            <td>Laser / Orbit / Charged Blaster</td>
+            <td>几何控制，依赖角度、锁定、光束持续或覆盖形态。</td>
+            <td>追踪、折射、分裂、持续照射、多目标覆盖。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>分支设计建议</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Machine Gun</h3>
+          <p>一个分支走热量/触发引擎，一个分支走护盾/支援/压制。避免两个分支都只是提高射速或伤害。</p>
+        </article>
+        <article class="card">
+          <h3>Charged Blaster</h3>
+          <p>Focus Lance 可以保留单体高爆发定位；Prism Fan 应该赢在覆盖、角度和多目标，而不是和 Focus Lance 比单体 DPS。</p>
+        </article>
+        <article class="card">
+          <h3>Shotgun</h3>
+          <p>如果 Shatter Buckshot 和 base 单体 DPS 接近，应通过破甲、碎裂、冻结或近战协同拉开玩法差异。</p>
+        </article>
+        <article class="card">
+          <h3>Laser</h3>
+          <p>Tracking Lens 这类改变命中方式并影响后续几何行为的分支值得保留。它比简单倍率更容易形成可读构筑。</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>模组预算</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>模组类型</th>
+            <th>预算建议</th>
+            <th>设计说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>通用常驻属性</td>
+            <td>低</td>
+            <td>适合作为基础补强，不应成为最优解。</td>
+          </tr>
+          <tr>
+            <td>特定 trait 限制</td>
+            <td>中</td>
+            <td>需要玩家围绕武器标签或分支路线选择。</td>
+          </tr>
+          <tr>
+            <td>跨武器条件协同</td>
+            <td>高</td>
+            <td>依赖两把或多把武器互相喂事件、状态或资源。</td>
+          </tr>
+          <tr>
+            <td>状态消耗 payoff</td>
+            <td>最高</td>
+            <td>需要先铺设状态，再消耗状态产生爆发，适合做后期构筑核心。</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout good">
+        <p>强模组优先读取真实事件和状态，例如 <code>hit</code>、<code>damage_dealt</code>、<code>reload_started</code>、<code>heat</code>、<code>freeze</code>、<code>mark</code>、<code>kill</code>。避免依赖武器 id 写死效果。</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>融合与奖励节奏</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>融合职责</h3>
+          <p>融合更适合负责增加 trait、解锁分支、打开新兼容性或改变行为入口。武器等级上限仍应由武器数据本身决定。</p>
+        </article>
+        <article class="card">
+          <h3>奖励节奏</h3>
+          <p>武器池和模组池保持分离。早期给主武器和基础模组，中期帮助重复武器与 trait 成型，后期放出跨武器协同和稀有 payoff。</p>
+        </article>
+      </div>
+      <div class="callout warn">
+        <p>稀有度建议影响出现时机、组合门槛和复杂度，而不是直接等同于强度。否则玩家会只看颜色，不看构筑机制。</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>技术与测试护栏</h2>
+      <ul>
+        <li>分支逻辑继续走 <code>WeaponBranchBehavior</code> 这类扩展点，避免在武器脚本里硬编码分支 id。</li>
+        <li>光束、散射、多段命中等几何逻辑要尽量复用公共路径，降低命中检测分散导致 DPS 为 0 的风险。</li>
+        <li>DPS 报告应记录 <code>target_distance</code>、分支 id、触发次数、命中次数和伤害来源归因。</li>
+        <li>每次新增分支时，至少跑一个能完整输出的 headless 场景测试，再看数值是否需要调整。</li>
+        <li>运行时避免用大量重复 <code>get_nodes_in_group("enemies")</code> 扫描作为武器主逻辑依赖。</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>推荐后续行动</h2>
+      <div class="steps">
+        <div class="step">
+          <h3>建立武器身份矩阵</h3>
+          <p>为每把武器写明主身份、输出形态、协同钩子、推荐测试类别和不应跨越的设计边界。</p>
+        </div>
+        <div class="step">
+          <h3>改造 DPS 报告视角</h3>
+          <p>保留总榜，但新增按职责分组的排名和说明，避免用单体 DPS 误判覆盖型或控制型武器。</p>
+        </div>
+        <div class="step">
+          <h3>审计分支差异</h3>
+          <p>检查每个分支是否真的改变玩法条件。对“表现几乎等同 base”的分支补上状态、几何、资源或协同差异。</p>
+        </div>
+        <div class="step">
+          <h3>沉淀三类协同模板</h3>
+          <p>优先沉淀状态铺设/消耗、reload 支援/payoff、热量生成/消耗三类模板，后续武器和模组按模板扩展。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>一句话回顾</h2>
+      <div class="callout risk">
+        <p>武器系统的目标不是让每个分支在同一张 DPS 总榜上公平，而是让每条构筑路线在自己的战斗场景里有明确价值、可读触发和可验证输出。</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
