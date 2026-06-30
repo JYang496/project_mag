@@ -145,14 +145,20 @@ func _assert_first_batch_weapon_behaviors(player_node: FakePlayer) -> bool:
 	var hp_before := int(far_damage_target.get("hp"))
 	var sniper_projectile := load("res://Player/Weapons/Projectiles/sniper_projectile.tscn").instantiate() as Projectile
 	sniper_projectile.source_weapon = sniper
-	sniper_projectile.damage = 12
+	var level_one_damage := int(sniper.call("get_runtime_shot_damage"))
+	var expected_far_damage := int(round(float(level_one_damage) * 1.8))
+	sniper_projectile.damage = level_one_damage
 	sniper_projectile.damage_type = Attack.TYPE_PHYSICAL
 	var hitbox := load("res://Combat/collision/hit_box.tscn").instantiate() as HitBox
 	hitbox.hitbox_owner = sniper_projectile
 	hitbox.apply_attack(far_damage_target.get_node("HurtBox"))
 	var dealt_damage := hp_before - int(far_damage_target.get("hp"))
-	if dealt_damage != 22:
-		_fail("Sniper far-distance hitbox damage should scale level-1 damage from 12 to 22, got %d." % dealt_damage)
+	if dealt_damage != expected_far_damage:
+		_fail("Sniper far-distance hitbox damage should scale level-1 damage from %d to %d, got %d." % [
+			level_one_damage,
+			expected_far_damage,
+			dealt_damage,
+		])
 		return false
 	sniper_projectile.queue_free()
 	hitbox.queue_free()

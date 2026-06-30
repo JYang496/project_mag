@@ -13,15 +13,15 @@ var attack_range: float = 900.0
 var _last_projectile_hit_damage: int = 0
 
 var weapon_data := {
-	"1": {"damage": "12", "speed": "1700", "projectile_hits": "5", "fire_interval_sec": "3.0", "ammo": "5"},
-	"2": {"damage": "15", "speed": "1700", "projectile_hits": "6", "fire_interval_sec": "2.8", "ammo": "6"},
-	"3": {"damage": "19", "speed": "1800", "projectile_hits": "7", "fire_interval_sec": "2.6", "ammo": "7"},
-	"4": {"damage": "24", "speed": "1800", "projectile_hits": "8", "fire_interval_sec": "2.4", "ammo": "8"},
-	"5": {"damage": "30", "speed": "1900", "projectile_hits": "9", "fire_interval_sec": "2.2", "ammo": "9"},
-	"6": {"damage": "37", "speed": "1900", "projectile_hits": "10", "fire_interval_sec": "2.1", "ammo": "10"},
-	"7": {"damage": "45", "speed": "2000", "projectile_hits": "11", "fire_interval_sec": "2.0", "ammo": "12"},
-	"8": {"damage": "53", "speed": "2100", "projectile_hits": "12", "fire_interval_sec": "1.9", "ammo": "14"},
-	"9": {"damage": "61", "speed": "2200", "projectile_hits": "13", "fire_interval_sec": "1.8", "ammo": "16"}
+	"1": {"damage": "23", "speed": "1700", "projectile_hits": "5", "fire_interval_sec": "3.0", "ammo": "5"},
+	"2": {"damage": "29", "speed": "1700", "projectile_hits": "6", "fire_interval_sec": "2.8", "ammo": "6"},
+	"3": {"damage": "36", "speed": "1800", "projectile_hits": "7", "fire_interval_sec": "2.6", "ammo": "7"},
+	"4": {"damage": "46", "speed": "1800", "projectile_hits": "8", "fire_interval_sec": "2.4", "ammo": "8"},
+	"5": {"damage": "57", "speed": "1900", "projectile_hits": "9", "fire_interval_sec": "2.2", "ammo": "9"},
+	"6": {"damage": "70", "speed": "1900", "projectile_hits": "10", "fire_interval_sec": "2.1", "ammo": "10"},
+	"7": {"damage": "86", "speed": "2000", "projectile_hits": "11", "fire_interval_sec": "2.0", "ammo": "12"},
+	"8": {"damage": "101", "speed": "2100", "projectile_hits": "12", "fire_interval_sec": "1.9", "ammo": "14"},
+	"9": {"damage": "116", "speed": "2200", "projectile_hits": "13", "fire_interval_sec": "1.8", "ammo": "16"}
 }
 
 func set_level(lv) -> void:

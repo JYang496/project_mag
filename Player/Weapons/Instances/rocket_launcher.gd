@@ -12,15 +12,15 @@ var explosion_scale : float = 2.0
 
 
 var weapon_data = {
-	"1": {"damage": "8", "speed": "460", "projectile_hits": "1", "fire_interval_sec": "2.4", "ammo": "6", "explosion_scale": "2.20"},
-	"2": {"damage": "10", "speed": "500", "projectile_hits": "1", "fire_interval_sec": "2.3", "ammo": "6", "explosion_scale": "2.35"},
-	"3": {"damage": "13", "speed": "540", "projectile_hits": "1", "fire_interval_sec": "2.2", "ammo": "6", "explosion_scale": "2.50"},
-	"4": {"damage": "16", "speed": "580", "projectile_hits": "1", "fire_interval_sec": "2.1", "ammo": "8", "explosion_scale": "2.70"},
-	"5": {"damage": "20", "speed": "620", "projectile_hits": "1", "fire_interval_sec": "2.0", "ammo": "8", "explosion_scale": "2.90"},
-	"6": {"damage": "25", "speed": "650", "projectile_hits": "1", "fire_interval_sec": "1.9", "ammo": "8", "explosion_scale": "3.10"},
-	"7": {"damage": "30", "speed": "680", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "10", "explosion_scale": "3.35"},
-	"8": {"damage": "36", "speed": "700", "projectile_hits": "1", "fire_interval_sec": "1.7", "ammo": "10", "explosion_scale": "3.60"},
-	"9": {"damage": "43", "speed": "720", "projectile_hits": "1", "fire_interval_sec": "1.6", "ammo": "10", "explosion_scale": "3.90"}
+	"1": {"damage": "42", "speed": "460", "projectile_hits": "1", "fire_interval_sec": "2.4", "ammo": "6", "explosion_scale": "2.20"},
+	"2": {"damage": "53", "speed": "500", "projectile_hits": "1", "fire_interval_sec": "2.3", "ammo": "6", "explosion_scale": "2.35"},
+	"3": {"damage": "68", "speed": "540", "projectile_hits": "1", "fire_interval_sec": "2.2", "ammo": "6", "explosion_scale": "2.50"},
+	"4": {"damage": "84", "speed": "580", "projectile_hits": "1", "fire_interval_sec": "2.1", "ammo": "8", "explosion_scale": "2.70"},
+	"5": {"damage": "105", "speed": "620", "projectile_hits": "1", "fire_interval_sec": "2.0", "ammo": "8", "explosion_scale": "2.90"},
+	"6": {"damage": "131", "speed": "650", "projectile_hits": "1", "fire_interval_sec": "1.9", "ammo": "8", "explosion_scale": "3.10"},
+	"7": {"damage": "158", "speed": "680", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "10", "explosion_scale": "3.35"},
+	"8": {"damage": "189", "speed": "700", "projectile_hits": "1", "fire_interval_sec": "1.7", "ammo": "10", "explosion_scale": "3.60"},
+	"9": {"damage": "226", "speed": "720", "projectile_hits": "1", "fire_interval_sec": "1.6", "ammo": "10", "explosion_scale": "3.90"}
 }
 
 
