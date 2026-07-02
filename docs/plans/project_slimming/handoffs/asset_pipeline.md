@@ -70,3 +70,5 @@
 - 记录 sidecar SHA-256 和处理前提交以便恢复。
 - 只删除该孤儿 sidecar，不顺带处理 OTF、ZIP 或 PNG。
 - 运行 check-only、启动/相关资源加载、冷导入对照和 `git diff --check`。
+
+Follow-up status: completed in Asset-2. The orphan sidecar was deleted alone; fonts, ZIPs, source images, and importer settings were not changed.

@@ -35,6 +35,15 @@ function ConvertTo-PowerShellLiteral {
     return "'$($Value.Replace("'", "''"))'"
 }
 
+function ConvertTo-ProcessArgument {
+    param([Parameter(Mandatory)][AllowEmptyString()][string]$Value)
+
+    if ($Value -notmatch '[\s"]') {
+        return $Value
+    }
+    return '"' + $Value.Replace('\', '\\').Replace('"', '\"') + '"'
+}
+
 function Get-TestOutputDiagnostics {
     [CmdletBinding()]
     param([Parameter(Mandatory)][AllowEmptyString()][string]$Output)
@@ -182,8 +191,14 @@ function New-TestProcess {
     $startInfo.Environment['GODOT_USER_HOME'] = $userDataRoot
     $startInfo.Environment['APPDATA'] = $appDataRoot
     $startInfo.Environment['LOCALAPPDATA'] = $localAppDataRoot
-    foreach ($argument in $arguments) {
-        $startInfo.ArgumentList.Add($argument)
+    if ($startInfo.PSObject.Properties.Name -contains 'ArgumentList') {
+        foreach ($argument in $arguments) {
+            $startInfo.ArgumentList.Add($argument)
+        }
+    } else {
+        $startInfo.Arguments = (@($arguments) | ForEach-Object {
+            ConvertTo-ProcessArgument -Value $_
+        }) -join ' '
     }
 
     $process = [System.Diagnostics.Process]::new()
@@ -231,16 +246,33 @@ function Complete-TestProcess {
     )
 
     if ($TimedOut -and -not $Worker.process.HasExited) {
-        $Worker.process.Kill($true)
+        try {
+            $Worker.process.Kill($true)
+        } catch {
+            & taskkill.exe /PID $Worker.process.Id /T /F | Out-Null
+        }
+        if (-not $Worker.process.WaitForExit(5000) -and -not $Worker.process.HasExited) {
+            & taskkill.exe /PID $Worker.process.Id /T /F | Out-Null
+            [void]$Worker.process.WaitForExit(5000)
+        }
+    } else {
+        $Worker.process.WaitForExit()
     }
-    $Worker.process.WaitForExit()
     $Worker.stopwatch.Stop()
-    $stdout = $Worker.stdout_task.GetAwaiter().GetResult()
-    $stderr = $Worker.stderr_task.GetAwaiter().GetResult()
+    $stdout = if ($Worker.stdout_task.Wait(5000)) {
+        $Worker.stdout_task.GetAwaiter().GetResult()
+    } else {
+        ''
+    }
+    $stderr = if ($Worker.stderr_task.Wait(5000)) {
+        $Worker.stderr_task.GetAwaiter().GetResult()
+    } else {
+        ''
+    }
     Set-Content -LiteralPath $Worker.stdout_path -Value $stdout -NoNewline
     Set-Content -LiteralPath $Worker.stderr_path -Value $stderr -NoNewline
     $combined = if ([string]::IsNullOrEmpty($stderr)) { $stdout } else { "$stdout`n$stderr" }
-    $exitCode = $Worker.process.ExitCode
+    $exitCode = if ($Worker.process.HasExited) { $Worker.process.ExitCode } else { -1 }
     $outcome = Get-TestOutcome -ExitCode $exitCode -Output $combined -TimedOut $TimedOut
 
     $metadata = [ordered]@{

@@ -1,0 +1,302 @@
+你在 Windows 本地 Godot 项目 `D:\Godot Projects\project_mag` 工作。
+
+任务：按既定顺序完成项目瘦身计划的剩余任务。当前目标不是采用 `ponytail` 的进一步裁剪建议，而是先把瘦身计划收口到可验证、可维护、可交接的状态。`ponytail` 只在全部阶段完成后作为复盘优化建议使用。
+
+开始前必须执行：
+
+```powershell
+git status --short --branch
+git rev-parse HEAD
+```
+
+不要回滚或覆盖其他人的改动。当前工作区可能已经包含上一阶段 Stage 4 的未提交改动；先识别它们，不要混入无关改动。
+
+开始前阅读：
+
+- `docs/plans/project_slimming/overall_progress.md`
+- `docs/plans/project_slimming/ui_progress.md`
+- `docs/plans/project_slimming/player_progress.md`
+- `docs/plans/project_slimming/test_infrastructure_progress.md`
+- `docs/plans/project_slimming/startup_progress.md`
+- `docs/plans/project_slimming/asset_pipeline_progress.md`
+- `docs/plans/project_slimming/handoffs/*.md`
+- `tests/README.md`
+- `tests/infrastructure/test_manifest.json`
+- `tests/infrastructure/source_domain_map.json`
+
+## 总原则
+
+- 每次只执行一个可独立验证、可独立回滚的批次。
+- 行数是软指标；职责边界、依赖方向、测试覆盖和启动/验证可重复性是硬验收。
+- 不为了减少行数裸拆 `UI.gd` 或 `Player.gd`。
+- 高风险职责迁移前必须先补 focused scene-backed gate。
+- 不新增 Autoload、服务定位器、万能 Context 或每帧临时容器。
+- 不删除历史测试、资源或工具，除非该批次明确包含审计、恢复方案和验证。
+- 每批结束必须更新对应 progress 文件和 `docs/plans/project_slimming/overall_progress.md`。
+
+## 阶段 0：固定当前 Stage 4 checkpoint
+
+目标：确认上一阶段改动是完整、干净、可继续开发的基线。
+
+执行：
+
+1. 查看 `git status --short` 和 `git diff --stat`。
+2. 确认当前改动只属于 Stage 4：
+   - Player 死代码清理
+   - 孤儿 `.import` 删除
+   - manifest 扩到 19 个 gate
+   - Windows PowerShell 测试基础设施兼容修复
+   - progress/handoff 文档同步
+3. 运行验证：
+
+```powershell
+git diff --check
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/infrastructure/tests/test_selection_test.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/infrastructure/tests/test_worker_test.ps1 -GodotPath 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe'
+& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit
+```
+
+4. 如果用户允许提交，则提交为一个独立 checkpoint；如果不允许提交，只在最终报告中标记为 Stage 4 baseline。
+
+验收：
+
+- 工作区改动边界清楚。
+- 所有验证 PASS。
+- 没有残留 headless Godot worker 进程。
+
+## 阶段 1：补全历史 scene manifest
+
+目标：把 `tests/scenes/**.tscn` 中仍未登记的活跃自动化 scene 分批加入 `tests/infrastructure/test_manifest.json`，让 selected-test 机制从 pilot 代表集走向可信 full。
+
+执行：
+
+1. 生成未登记清单：
+
+```powershell
+rg --files tests/scenes -g "*.tscn"
+```
+
+对比 `tests/infrastructure/test_manifest.json` 中已有 `path`。
+
+2. 按 domain 分批登记，不一次性全塞：
+   - UI
+   - Player
+   - Weapon
+   - World
+   - Reward
+   - Cell
+   - Startup
+   - Spawn
+   - Enemy
+   - Combat
+
+3. 每个条目必须设置：
+   - `id`
+   - `entry_type: "scene"`
+   - `path`
+   - `domain`
+   - `dependency_domains`
+   - `parallel_safe`
+   - `writes_user_data`
+   - `timeout_seconds`
+
+4. 不确定依赖时保守处理：
+   - `parallel_safe: false`
+   - `writes_user_data: true`
+   - `dependency_domains` 宁可多写，不要少写。
+
+5. 每批验证：
+
+```powershell
+(Get-Content -Encoding UTF8 -Raw -Path tests/infrastructure/test_manifest.json | ConvertFrom-Json).tests.Count
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/infrastructure/tests/test_selection_test.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/infrastructure/tests/test_worker_test.ps1 -GodotPath 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe'
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/infrastructure/run_test_workers.ps1 -TestId '<new_id_1>','<new_id_2>' -GodotPath 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' -Jobs 2 -OutputRoot 'test-results\manifest-registration-<domain>'
+git diff --check
+```
+
+6. 更新：
+   - `tests/README.md`
+   - `docs/plans/project_slimming/test_infrastructure_progress.md`
+   - `docs/plans/project_slimming/overall_progress.md`
+
+验收：
+
+- 所有活跃 scene-backed 自动化测试均登记。
+- `catalog_status` 仍保持 `pilot`，直到确认登记完整。
+- `full` 模式的含义在文档中清楚说明。
+
+## 阶段 2：确认 manifest 可以升级语义
+
+目标：在登记完整后，决定是否把 manifest 从 pilot 升级为完整测试目录的可信入口。
+
+执行：
+
+1. 复查是否还有未登记 scene。
+2. 复查是否有 runner-only script 需要补 scene wrapper。
+3. 运行全 manifest Worker：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/infrastructure/run_test_workers.ps1 -GodotPath 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' -Jobs 2 -OutputRoot 'test-results\manifest-full-candidate'
+```
+
+4. 如果全部 PASS，才考虑将 `catalog_status` 改为更强语义，例如 `active`.
+5. 如果仍有未迁移历史测试，保持 `pilot`，并写明剩余清单。
+
+验收：
+
+- manifest 状态语义与实际覆盖一致。
+- 不能提前把 pilot 改成 full。
+
+## 阶段 3：继续 Player 瘦身
+
+目标：继续降低 `Player.gd` 职责，但必须先用 focused gate 保护行为。
+
+推荐顺序：
+
+1. camera/rest-area control
+2. incoming elemental damage reaction
+3. damage profile/pipeline ownership
+
+每个 Player 批次固定流程：
+
+1. 搜索调用方：
+
+```powershell
+rg -n "<target_method_or_field>" Player tests World UI
+```
+
+2. 记录修改前指标：
+
+```powershell
+(Get-Content -Encoding UTF8 -Path Player/Mechas/scripts/Player.gd).Count
+```
+
+3. 如果没有 focused gate，先新增或扩展 `tests/scenes/player/**.tscn`。
+4. 迁移一个责任块，不迁移多个责任块。
+5. 保留公开兼容门面，直到调用方迁移完成。
+6. 验证：
+
+```powershell
+& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/infrastructure/run_selected_tests.ps1 -ChangedPath 'Player/Mechas/scripts/Player.gd' -GodotPath 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' -Jobs 2 -OutputRoot 'test-results\player-slimming-<batch>'
+git diff --check
+```
+
+验收：
+
+- `Player.gd` 减少一个真实职责。
+- 新系统不反向读取 Player 私有状态。
+- 行为 gate PASS。
+
+## 阶段 4：继续 UI 瘦身
+
+目标：继续把 `UI.gd` 收敛为组件装配、生命周期协调和公开兼容门面。
+
+推荐顺序：
+
+1. HUD refresh coordination
+2. localization refresh
+3. pause/settings UI
+4. remaining management compatibility wrappers
+
+每个 UI 批次固定流程：
+
+1. 先查现有 gate：
+   - `ui.hud_dirty_refresh`
+   - `ui.unified_modal_behavior`
+   - `ui.task_module_dialog_controller`
+   - `ui.player_health_meter_contract`
+   - `ui.skill_energy_meter_contract`
+   - `ui.combat_resource_meter_contract`
+   - `ui.module_fit_display_contract`
+   - visual baseline gate if layout changes
+2. 没有 gate 时先补 scene-backed test。
+3. 只迁移一个 UI 子系统。
+4. 不让新 controller 反向读写 `UI.gd` 私有字段。
+5. 验证：
+
+```powershell
+& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/infrastructure/run_selected_tests.ps1 -ChangedPath 'UI/scripts/UI.gd' -GodotPath 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' -Jobs 2 -OutputRoot 'test-results\ui-slimming-<batch>'
+git diff --check
+```
+
+验收：
+
+- `UI.gd` 减少一个真实职责。
+- 公开门面兼容。
+- 行为/视觉 gate PASS。
+
+## 阶段 5：资源管线后续清理
+
+目标：只在独立批准和恢复方案明确时继续资源瘦身。
+
+允许的后续批次：
+
+1. OTF 字体候选
+   - 必须有 UI 四组视觉门禁。
+   - 不能直接用 Regular OTF 替换当前 Thin TTF。
+2. ZIP 仓库归档候选
+   - 先确认导出 manifest 和制作源用途。
+   - 不能声称冷导入收益，除非 benchmark 证明。
+3. 未引用 PNG
+   - 按类别逐批审计。
+   - 不批量删除。
+
+每批验证：
+
+```powershell
+git diff --check
+& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit
+```
+
+如果影响 UI 或启动，必须额外跑对应 visual/startup gates。
+
+验收：
+
+- 每个资源改动都有恢复路径。
+- 不混批处理字体、ZIP、PNG。
+
+## 阶段 6：启动与性能最终复测
+
+目标：在 Player/UI/manifest/asset 收口后，重新测量启动收益和回退风险。
+
+执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/benchmark_startup_loading.ps1
+```
+
+保持与 `startup_progress.md` 中 Startup-1/Startup-4 相同口径：
+
+- cold import
+- hot start median
+- directed startup median
+- loaded resource count
+- runtime error count
+- shutdown diagnostics separated from runtime errors
+
+验收：
+
+- 结果写入 `docs/plans/project_slimming/startup_progress.md` 和 `overall_progress.md`。
+- 如果启动收益有限，也要如实记录；不要继续无目标优化。
+
+## 最终收口报告
+
+全部阶段完成后，更新或新增：
+
+- `docs/plans/project_slimming/overall_progress.md`
+- 各范围 progress
+- 必要时新增 `docs/reports/project_slimming_completion_report.md`
+
+最终报告必须包含：
+
+- 完成批次列表
+- `UI.gd` / `Player.gd` 修改前后行数和职责变化
+- manifest 最终条目数和状态语义
+- Startup benchmark 对比
+- 资源管线实际删除/保留项
+- 所有验证命令和结果
+- 仍保留的风险
+- 哪些 `ponytail` 建议可以在计划完成后另行考虑

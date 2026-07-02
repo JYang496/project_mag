@@ -64,6 +64,12 @@ The temporary `Player.gd` increase is the explicit engine-adapter code and two r
 - Final Player-2B validation used Godot 4.7. Earlier Player-1 notes used Godot 4.6.2.
 - The first Godot import rewrote four tracked localization translations as format noise. Those changes were restored immediately and are not part of this batch.
 
+### Player-3: dead damage-reaction wrapper cleanup
+
+- Removed dead `Player.gd` elite-hit helper wrappers after repository search showed no live caller outside `PlayerDamageReactionSystem`.
+- Kept incoming damage pipeline/profile ownership unchanged because moving that state would require a dedicated damage-reaction characterization gate.
+- `Player.gd`: 1828 -> 1805 lines.
+
 ## Next recommended batch
 
-Player-3: continue reducing `Player.gd` through another behavior-protected responsibility slice. Good candidates are camera/rest-area control or incoming elemental damage reaction, because active-skill and movement contracts now have focused characterization coverage.
+Continue reducing `Player.gd` through another behavior-protected responsibility slice. Good candidates are camera/rest-area control or incoming elemental damage reaction, but add a focused gate before moving state ownership.

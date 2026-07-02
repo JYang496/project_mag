@@ -1368,29 +1368,6 @@ func damaged(attack:Attack):
 	if _damage_reaction_system != null:
 		_damage_reaction_system.damaged(attack)
 
-func _apply_elite_hit_slow_if_needed(attack: Attack) -> void:
-	_ensure_damage_reaction_system()
-	if _damage_reaction_system != null:
-		_damage_reaction_system.apply_elite_hit_slow_if_needed(attack)
-
-func _is_attack_from_player(attack: Attack) -> bool:
-	return attack != null and attack.is_from_player()
-
-func _is_attack_from_elite_or_boss(attack: Attack) -> bool:
-	if attack == null or attack.source_node == null or not is_instance_valid(attack.source_node):
-		return false
-	var current: Node = attack.source_node
-	while current != null:
-		if current is EliteEnemy:
-			return true
-		if current.is_in_group("boss"):
-			return true
-		var is_boss_variant: Variant = current.get("is_boss")
-		if is_boss_variant != null and bool(is_boss_variant):
-			return true
-		current = current.get_parent()
-	return false
-
 func _get_total_armor() -> int:
 	return max(0, int(PlayerData.armor) + int(PlayerData.bonus_armor))
 

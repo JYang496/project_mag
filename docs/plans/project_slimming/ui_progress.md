@@ -67,4 +67,11 @@ UI-2 后：
 - PASS: Godot 4.7 `--headless --path . --check-only --quit`.
 - PASS: Worker single-test `ui.unified_modal_behavior` with PASS=1, FAIL=0, ERROR=0; shutdown diagnostics=3 retained.
 
-- 下一安全批次：UI-4 HUD 刷新协调，继续保持公开门面兼容。
+### UI-4: HUD dirty-refresh gate registration
+
+- Reused the existing `hud_dirty_refresh_test.tscn` gate instead of adding a second HUD refresh system.
+- Registered `ui.hud_dirty_refresh` in `tests/infrastructure/test_manifest.json`.
+- Also registered existing UI contract scenes for player health, skill energy, combat resource, and module-fit display.
+- `UI.gd` remains at 1599 lines; this batch improves selected-test coverage, not UI ownership size.
+
+- 下一安全批次：继续在已有行为/视觉门禁保护下迁移 HUD 或管理 UI 职责，不为行数目标裸拆。

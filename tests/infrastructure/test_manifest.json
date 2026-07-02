@@ -34,6 +34,56 @@
       "timeout_seconds": 60
     },
     {
+      "id": "ui.hud_dirty_refresh",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/hud_dirty_refresh_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["data", "player", "weapon"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 60
+    },
+    {
+      "id": "ui.player_health_meter_contract",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/player_health_meter_contract_test.tscn",
+      "domain": "ui",
+      "dependency_domains": [],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "ui.skill_energy_meter_contract",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/skill_energy_meter_contract_test.tscn",
+      "domain": "ui",
+      "dependency_domains": [],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "ui.combat_resource_meter_contract",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/combat_resource_meter_contract_test.tscn",
+      "domain": "ui",
+      "dependency_domains": [],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "ui.module_fit_display_contract",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/module_fit_display_contract_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["data", "weapon"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 30
+    },
+    {
       "id": "player.movement_system",
       "entry_type": "scene",
       "path": "res://tests/scenes/player/player_movement_system_test.tscn",

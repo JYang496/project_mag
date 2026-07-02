@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string[]]$TestId = @(),
-    [string]$ManifestPath = (Join-Path $PSScriptRoot 'test_manifest.json'),
+    [string]$ManifestPath,
     [string]$GodotPath,
     [ValidateRange(1, 32)][int]$Jobs = 2,
     [string]$OutputRoot,
@@ -15,6 +15,9 @@ Import-Module (Join-Path $PSScriptRoot 'TestSelection.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'TestWorker.psm1') -Force
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
+    $ManifestPath = Join-Path $PSScriptRoot 'test_manifest.json'
+}
 $manifest = Get-Content -Raw -LiteralPath $ManifestPath | ConvertFrom-Json
 Assert-TestManifest -Manifest $manifest
 $testsById = @{}

@@ -74,6 +74,14 @@
 - Test infrastructure Batch 3 is integrated: `run_selected_tests.ps1` runs changed-path selection, Godot check-only with runtime/script error scanning, and isolated Workers for selected manifest entries in one command.
 - Added `startup.world_entry_prepare_gate` to the pilot manifest. The pilot manifest now has 14 entries and remains representative rather than full historical coverage.
 
+## Stage four checkpoint
+
+- Startup-4 measurements were recorded in `startup_progress.md`. Hot-start resource load count improved from 258 to 215; hot-start time regressed 4.8%, below the 5% rollback threshold, and directed startup improved 7.5%. Cold import was not accepted as a clean signal because the worktree contained broad unrelated changes.
+- UI-4 is accepted through the existing HUD dirty-refresh gate instead of a new refresh system. `ui.hud_dirty_refresh` now belongs to the manifest, alongside four existing UI meter/fit contract gates.
+- Player-3 took the smallest safe cleanup slice: removed dead Player-owned elite-hit helper wrappers after confirming `PlayerDamageReactionSystem` owns the only live call path.
+- Test infrastructure Batch 4 expands the pilot manifest from 14 to 19 representative entries. It is still a pilot manifest, not a complete historical inventory.
+- Asset pipeline Batch 2 removed only the audited orphan import sidecar `asset/images/weapons/Remove_background_to_create_transparent_PNG-1777246945516.png.import`; no source asset, font, ZIP, image, or importer setting was changed.
+
 ## Coordinator integration
 
 - Verified range ownership before integration; no two ranges changed the same business file.
@@ -95,6 +103,8 @@
 - Current 13 registered pilot scenes through the Worker after Player-2B/UI-2/Startup-2B: PASS=13, FAIL=0, ERROR=0 with isolated process roots; shutdown diagnostics=19 retained as diagnostics; runtime errors=0. Result root: `test-results/worker-13-manifest-player2b`.
 - Current 14 registered pilot scenes through the Worker after Batch 3: PASS=14, FAIL=0, ERROR=0 with isolated process roots; shutdown diagnostics=19 retained as diagnostics; runtime errors=0. Result root: `test-results/worker-14-manifest-batch3`.
 - Selected world run through `run_selected_tests.ps1`: PASS=5, FAIL=0, ERROR=0; shutdown diagnostics=11; runtime errors=0. Result root: `test-results/batch3-selected-world-2`.
+- Stage 4 selected UI run through `run_selected_tests.ps1`: PASS=19, FAIL=0, ERROR=0; shutdown diagnostics=26; runtime errors=0. Result root: `test-results/slimming-stage4-selected-ui-final`.
+- Stage 4 focused Worker run for UI HUD/meter/fit gates plus player active-skill characterization: PASS=6, FAIL=0, ERROR=0; shutdown diagnostics=7; runtime errors=0. Result root: `test-results/slimming-stage4-focused`.
 - UI-2 visual gate: 1280x720 and 1920x1080 in English and Simplified Chinese matched baseline on the non-headless Vulkan render path.
 - Existing weapon smoke: PASS.
 - Expected existing shutdown diagnostics remain on several scene tests: leaked CanvasItem/font/texture RIDs, ObjectDB instances, and 4 or 14 resources still in use.
@@ -115,18 +125,23 @@ Registered milestone scenes:
 12. `weapon.numeric_module`
 13. `world.player_assist_settings`
 14. `world.threaded_world_load`
+15. `ui.hud_dirty_refresh`
+16. `ui.player_health_meter_contract`
+17. `ui.skill_energy_meter_contract`
+18. `ui.combat_resource_meter_contract`
+19. `ui.module_fit_display_contract`
 
 ## Open risks and acceptance status
 
 - Final Batch 2 validation used the project-standard Godot 4.7 binary available on this machine.
-- The manifest is a 14-entry representative pilot, not a complete historical test inventory.
-- `UI.gd` is 1599 lines and `Player.gd` is 1828 lines; final soft targets of approximately 600/700 lines are not yet reached.
+- The manifest is a 19-entry representative pilot, not a complete historical test inventory.
+- `UI.gd` is 1599 lines and `Player.gd` is 1805 lines; final soft targets of approximately 600/700 lines are not yet reached.
 - Startup manifests are runtime-consumed for the eight registered startup catalogs; world-entry prepare failure now gates title-to-world transition, while deferred branch/passive data remains out of title-to-world startup.
 - Existing shutdown resource leaks remain visible and are not classified as runtime behavior failures.
 
 ## Next safe batches
 
-1. Startup-4: rerun cold-import/hot-start/directed startup measurements and compare against Startup-1 baseline without broadening scope if gains are insufficient.
-2. UI-4: move HUD refresh coordination behind behavior and refresh-count gates.
-3. Test infrastructure: expand the pilot manifest before treating selected runs as full-suite coverage.
-4. Asset pipeline: only after explicit approval, handle the single orphan `.import` as its own reversible batch.
+1. Test infrastructure: continue registering remaining active scenes before treating selected runs as full-suite coverage.
+2. Player: continue with a behavior-protected camera/rest-area or incoming-damage slice; do not chase the 700-line target without a focused gate.
+3. UI: continue subsystem-by-subsystem extraction only where an existing or new behavior/visual gate protects the move.
+4. Asset pipeline: leave OTF, ZIP, and image cleanup untouched until each has its own explicit approval and visual/import recovery gate.

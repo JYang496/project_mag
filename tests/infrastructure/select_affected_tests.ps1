@@ -3,14 +3,21 @@ param(
     [string]$BaseRef,
     [string[]]$ChangedPath,
     [string[]]$IncludeTest = @(),
-    [string]$ManifestPath = (Join-Path $PSScriptRoot 'test_manifest.json'),
-    [string]$SourceMapPath = (Join-Path $PSScriptRoot 'source_domain_map.json'),
+    [string]$ManifestPath,
+    [string]$SourceMapPath,
     [switch]$Json
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'TestSelection.psm1') -Force
+
+if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
+    $ManifestPath = Join-Path $PSScriptRoot 'test_manifest.json'
+}
+if ([string]::IsNullOrWhiteSpace($SourceMapPath)) {
+    $SourceMapPath = Join-Path $PSScriptRoot 'source_domain_map.json'
+}
 
 function Get-GitChangedPath {
     param([string]$ComparisonBase)

@@ -3,8 +3,8 @@ param(
     [string]$BaseRef,
     [string[]]$ChangedPath,
     [string[]]$IncludeTest = @(),
-    [string]$ManifestPath = (Join-Path $PSScriptRoot 'test_manifest.json'),
-    [string]$SourceMapPath = (Join-Path $PSScriptRoot 'source_domain_map.json'),
+    [string]$ManifestPath,
+    [string]$SourceMapPath,
     [string]$GodotPath,
     [ValidateRange(1, 32)][int]$Jobs = 2,
     [string]$OutputRoot,
@@ -19,6 +19,12 @@ Import-Module (Join-Path $PSScriptRoot 'TestSelection.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'TestWorker.psm1') -Force
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
+    $ManifestPath = Join-Path $PSScriptRoot 'test_manifest.json'
+}
+if ([string]::IsNullOrWhiteSpace($SourceMapPath)) {
+    $SourceMapPath = Join-Path $PSScriptRoot 'source_domain_map.json'
+}
 
 function Get-GitChangedPath {
     param([string]$ComparisonBase)
@@ -55,7 +61,12 @@ function Invoke-GodotCheckOnly {
     )
 
     $output = & $ResolvedGodotPath --headless --path $ResolvedRepoRoot --check-only --quit 2>&1
-    $exitCode = $LASTEXITCODE
+    $lastExitCodeVariable = Get-Variable -Name LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
+    $exitCode = if ($lastExitCodeVariable -eq $null) {
+        0
+    } else {
+        [int]$lastExitCodeVariable.Value
+    }
     $outputText = (@($output) | ForEach-Object { $_.ToString() }) -join "`n"
     $diagnostics = Get-TestOutputDiagnostics -Output $outputText
     return [pscustomobject]@{

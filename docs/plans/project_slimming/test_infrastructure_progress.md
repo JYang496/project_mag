@@ -26,12 +26,20 @@
 - Empty or docs-only selections still run check-only by default and skip Worker execution.
 - Added `tests/infrastructure/tests/test_selected_runner_test.ps1`, which builds a temporary fixture manifest and verifies changed-path selection through a real Worker run.
 
+### 2026-07-02 - Batch 4: UI gate registration expansion
+
+- Registered five existing UI scene-backed tests: `ui.hud_dirty_refresh`, `ui.player_health_meter_contract`, `ui.skill_energy_meter_contract`, `ui.combat_resource_meter_contract`, and `ui.module_fit_display_contract`.
+- Manifest entries now cover 19 representative gates.
+- Catalog status remains `pilot`.
+- Fixed Windows PowerShell compatibility in the Worker scripts: default manifest/source-map paths are resolved after `$PSScriptRoot` is available, process arguments fall back to `ProcessStartInfo.Arguments`, and timeout termination uses `taskkill /T /F` when needed.
+
 ## Metrics
 
 - Infrastructure files: 0 -> 4 implementation/configuration files plus 1 self-test.
 - Registered manifest entries: 0 -> 5 representative gates.
 - Worker files: 0 -> 1 runner, 1 Worker module, 1 self-test, and 4 fixtures.
 - Registered manifest entries after coordinator integration: 13 representative gates.
+- Registered manifest entries after Batch 4: 19 representative gates.
 - Explicit source-domain rules: 0 -> 32.
 - Automated selector scenarios: 0 -> 10.
 - Existing discovered inventory remains unchanged: 64 headless `.gd` scripts and 47 scene `.tscn` entries.
@@ -48,6 +56,8 @@
 - Full 13-entry Worker manifest after Batch 2 integration: PASS=13, FAIL=0, ERROR=0, shutdown diagnostics=19 retained as diagnostics, runtime errors=0.
 - Full 14-entry Worker manifest after Batch 3 integration: PASS=14, FAIL=0, ERROR=0, shutdown diagnostics=19 retained as diagnostics, runtime errors=0.
 - Selected world run through `run_selected_tests.ps1`: PASS=5, FAIL=0, ERROR=0, shutdown diagnostics=11, runtime errors=0.
+- Worker parser/process self-test after Windows PowerShell compatibility fix: PASS.
+- Selected UI run after Batch 4 registration: PASS=19, FAIL=0, ERROR=0, shutdown diagnostics=26, runtime errors=0.
 - `git diff --check`: PASS.
 - First import rewrote two generated `data/localization/rest_area_shop_update.*.translation` files. Those out-of-scope changes were restored and are excluded from this batch.
 
@@ -59,4 +69,4 @@
 
 ## Next recommended batch
 
-Expand the manifest beyond representative pilot coverage before treating selected runs as a full-suite replacement.
+Continue expanding the manifest beyond representative pilot coverage before treating selected runs as a full-suite replacement.
