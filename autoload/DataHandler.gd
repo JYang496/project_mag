@@ -3,97 +3,198 @@ extends Node
 const RESOURCE_CATALOG := preload("res://autoload/ResourceCatalog.gd")
 var save_data : SaveData
 var _weapon_id_by_scene_path: Dictionary = {}
-const WEAPON_RESOURCE_PATHS := [
-	"res://data/weapons/machine_gun.tres",
-	"res://data/weapons/charged_blaster.tres",
-	"res://data/weapons/Spear.tres",
-	"res://data/weapons/shotgun.tres",
-	"res://data/weapons/pistol.tres",
-	"res://data/weapons/orbit.tres",
-	"res://data/weapons/rocket_luncher.tres",
-	"res://data/weapons/laser.tres",
-	"res://data/weapons/chainsaw_luncher.tres",
-	"res://data/weapons/dash_blade.tres",
-	"res://data/weapons/flamethrower.tres",
-	"res://data/weapons/plasma_lance.tres",
-	"res://data/weapons/glacier_projector.tres",
-	"res://data/weapons/cannon.tres",
-]
-const MECHA_RESOURCE_PATHS := [
-	"res://data/mechas/HeavyAssault.tres",
-	"res://data/mechas/Ranger.tres",
-	"res://data/mechas/Melee.tres",
-	"res://data/mechas/Collector.tres",
-	"res://data/mechas/Turret.tres",
-]
-const WEAPON_BRANCH_RESOURCE_PATHS := [
-	"res://data/weapon_branches/machine_gun_shield.tres",
-]
-const WEAPON_PASSIVE_BRANCH_RESOURCE_PATHS := []
-const ECONOMY_RESOURCE_PATH := "res://data/economy/economy_config.tres"
+const WEAPON_DIRECTORY_PATH := "res://data/weapons/"
+const MECHA_DIRECTORY_PATH := "res://data/mechas/"
+const ECONOMY_DIRECTORY_PATH := "res://data/economy/"
+const WEAPON_BRANCH_DIRECTORY_PATH := "res://data/weapon_branches/"
+const WEAPON_PASSIVE_BRANCH_DIRECTORY_PATH := "res://data/weapon_passives/"
 const WEAPON_BRANCH_ID_ALIASES := {
 	"twin_mg": "gatling_mg",
 	"gatling_mg": "gatling_mg",
 }
+var _weapon_prepare_result: Dictionary = {"ok": false, "errors": PackedStringArray(), "count": 0}
+var _mecha_prepare_result: Dictionary = {"ok": false, "errors": PackedStringArray(), "count": 0}
+var _economy_prepare_result: Dictionary = {"ok": false, "errors": PackedStringArray(), "count": 0}
+var _weapon_branch_prepare_result: Dictionary = {"ok": false, "errors": PackedStringArray(), "count": 0}
+var _weapon_passive_branch_prepare_result: Dictionary = {"ok": false, "errors": PackedStringArray(), "count": 0}
 
 func _ready():
 	load_game()
 
-func prepare_world_data(include_deferred_runtime_data: bool = false) -> void:
+func prepare_world_data(include_deferred_runtime_data: bool = false) -> Dictionary:
+	var errors := PackedStringArray()
 	if GlobalVariables.weapon_list.is_empty():
-		load_weapon_data()
+		_collect_prepare_errors(prepare_weapon_data(), errors)
 	if GlobalVariables.mecha_list.is_empty():
-		load_mecha_data()
+		_collect_prepare_errors(prepare_mecha_data(), errors)
 	if GlobalVariables.economy_data == null:
-		load_economy_data()
+		_collect_prepare_errors(prepare_economy_data(), errors)
 	if include_deferred_runtime_data:
-		prepare_deferred_runtime_data()
+		_collect_prepare_errors(prepare_deferred_runtime_data(), errors)
+	return _build_prepare_result(errors.is_empty(), errors, 0)
 
-func prepare_deferred_runtime_data() -> void:
+func prepare_deferred_runtime_data() -> Dictionary:
+	var errors := PackedStringArray()
 	if GlobalVariables.weapon_branch_list.is_empty():
-		load_weapon_branch_data()
+		_collect_prepare_errors(prepare_weapon_branch_data(), errors)
 	if GlobalVariables.weapon_passive_branch_list.is_empty():
-		load_weapon_passive_branch_data()
+		_collect_prepare_errors(prepare_weapon_passive_branch_data(), errors)
+	return _build_prepare_result(errors.is_empty(), errors, 0)
 
 # This function is used for locate weapon file location which stored in data/weapons.
-func load_weapon_data():
-	GlobalVariables.weapon_list = {}
-	_weapon_id_by_scene_path.clear()
-	for path in RESOURCE_CATALOG.collect_resource_paths("res://data/weapons/", ".tres", WEAPON_RESOURCE_PATHS):
-		_register_weapon_resource(load(path), path)
-	if GlobalVariables.weapon_list.is_empty():
-		push_warning("No weapon data loaded. Check exported resources and script paths in data/weapons/*.tres.")
+func load_weapon_data() -> Dictionary:
+	return prepare_weapon_data(true)
 
-func load_mecha_data():
-	GlobalVariables.mecha_list = {}
-	for path in RESOURCE_CATALOG.collect_resource_paths("res://data/mechas/", ".tres", MECHA_RESOURCE_PATHS):
-		_register_mecha_resource(load(path), path)
-	if GlobalVariables.mecha_list.is_empty():
-		push_warning("No mecha data loaded. Check exported resources and script paths in data/mechas/*.tres.")
+func prepare_weapon_data(force: bool = false) -> Dictionary:
+	if not force and bool(_weapon_prepare_result.get("ok", false)) and not GlobalVariables.weapon_list.is_empty():
+		return _weapon_prepare_result.duplicate(true)
+	var catalog_result: Dictionary = RESOURCE_CATALOG.collect_startup_catalog_paths(
+		"weapons",
+		WEAPON_DIRECTORY_PATH,
+		".tres"
+	)
+	var errors := PackedStringArray()
+	if not bool(catalog_result.get("ok", false)):
+		errors.append_array(catalog_result.get("errors", PackedStringArray()))
+	var loaded_weapons := {}
+	var loaded_scene_ids := {}
+	for path in catalog_result.get("paths", PackedStringArray()):
+		_register_weapon_resource(load(str(path)), str(path), loaded_weapons, loaded_scene_ids, errors)
+	if loaded_weapons.is_empty():
+		errors.append("no weapon data loaded")
+	if not errors.is_empty():
+		_weapon_prepare_result = _build_prepare_result(false, errors, 0)
+		push_error("DataHandler: failed to prepare weapons: %s" % "; ".join(errors))
+		return _weapon_prepare_result.duplicate(true)
+	GlobalVariables.weapon_list = loaded_weapons
+	_weapon_id_by_scene_path = loaded_scene_ids
+	_weapon_prepare_result = _build_prepare_result(true, errors, GlobalVariables.weapon_list.size())
+	return _weapon_prepare_result.duplicate(true)
 
-func load_weapon_branch_data() -> void:
-	GlobalVariables.weapon_branch_list = {}
-	for path in RESOURCE_CATALOG.collect_resource_paths("res://data/weapon_branches/", ".tres", WEAPON_BRANCH_RESOURCE_PATHS):
-		_register_weapon_branch_resource(load(path), path)
-	if GlobalVariables.weapon_branch_list.is_empty():
-		push_warning("No weapon branch data loaded. Check resources in data/weapon_branches/*.tres.")
+func load_mecha_data() -> Dictionary:
+	return prepare_mecha_data(true)
 
-func load_weapon_passive_branch_data() -> void:
-	GlobalVariables.weapon_passive_branch_list = {}
-	for path in RESOURCE_CATALOG.collect_resource_paths("res://data/weapon_passives/", ".tres", WEAPON_PASSIVE_BRANCH_RESOURCE_PATHS):
-		_register_weapon_passive_branch_resource(load(path), path)
+func prepare_mecha_data(force: bool = false) -> Dictionary:
+	if not force and bool(_mecha_prepare_result.get("ok", false)) and not GlobalVariables.mecha_list.is_empty():
+		return _mecha_prepare_result.duplicate(true)
+	var catalog_result: Dictionary = RESOURCE_CATALOG.collect_startup_catalog_paths(
+		"mechas",
+		MECHA_DIRECTORY_PATH,
+		".tres"
+	)
+	var errors := PackedStringArray()
+	if not bool(catalog_result.get("ok", false)):
+		errors.append_array(catalog_result.get("errors", PackedStringArray()))
+	var loaded_mechas := {}
+	for path in catalog_result.get("paths", PackedStringArray()):
+		_register_mecha_resource(load(str(path)), str(path), loaded_mechas, errors)
+	if loaded_mechas.is_empty():
+		errors.append("no mecha data loaded")
+	if not errors.is_empty():
+		_mecha_prepare_result = _build_prepare_result(false, errors, 0)
+		push_error("DataHandler: failed to prepare mechas: %s" % "; ".join(errors))
+		return _mecha_prepare_result.duplicate(true)
+	GlobalVariables.mecha_list = loaded_mechas
+	_mecha_prepare_result = _build_prepare_result(true, errors, GlobalVariables.mecha_list.size())
+	return _mecha_prepare_result.duplicate(true)
 
-func load_economy_data() -> void:
-	GlobalVariables.economy_data = null
-	var resource := load(ECONOMY_RESOURCE_PATH)
-	if resource == null:
-		push_warning("Failed to load economy config: %s" % ECONOMY_RESOURCE_PATH)
-		return
-	var economy := resource as EconomyConfig
+func load_weapon_branch_data() -> Dictionary:
+	return prepare_weapon_branch_data(true)
+
+func prepare_weapon_branch_data(force: bool = false) -> Dictionary:
+	if not force and bool(_weapon_branch_prepare_result.get("ok", false)) and not GlobalVariables.weapon_branch_list.is_empty():
+		return _weapon_branch_prepare_result.duplicate(true)
+	var catalog_result: Dictionary = RESOURCE_CATALOG.collect_startup_catalog_paths(
+		"weapon_branches",
+		WEAPON_BRANCH_DIRECTORY_PATH,
+		".tres"
+	)
+	var errors := PackedStringArray()
+	if not bool(catalog_result.get("ok", false)):
+		errors.append_array(catalog_result.get("errors", PackedStringArray()))
+	var loaded_branches := {}
+	var seen_branch_ids := {}
+	for path in catalog_result.get("paths", PackedStringArray()):
+		_register_weapon_branch_resource(load(str(path)), str(path), loaded_branches, seen_branch_ids, errors)
+	if loaded_branches.is_empty():
+		errors.append("no weapon branch data loaded")
+	if not errors.is_empty():
+		_weapon_branch_prepare_result = _build_prepare_result(false, errors, 0)
+		push_error("DataHandler: failed to prepare weapon branches: %s" % "; ".join(errors))
+		return _weapon_branch_prepare_result.duplicate(true)
+	GlobalVariables.weapon_branch_list = loaded_branches
+	_weapon_branch_prepare_result = _build_prepare_result(true, errors, seen_branch_ids.size())
+	return _weapon_branch_prepare_result.duplicate(true)
+
+func load_weapon_passive_branch_data() -> Dictionary:
+	return prepare_weapon_passive_branch_data(true)
+
+func prepare_weapon_passive_branch_data(force: bool = false) -> Dictionary:
+	if not force and bool(_weapon_passive_branch_prepare_result.get("ok", false)) and not GlobalVariables.weapon_passive_branch_list.is_empty():
+		return _weapon_passive_branch_prepare_result.duplicate(true)
+	var catalog_result: Dictionary = RESOURCE_CATALOG.collect_startup_catalog_paths(
+		"weapon_passives",
+		WEAPON_PASSIVE_BRANCH_DIRECTORY_PATH,
+		".tres"
+	)
+	var errors := PackedStringArray()
+	if not bool(catalog_result.get("ok", false)):
+		errors.append_array(catalog_result.get("errors", PackedStringArray()))
+	var loaded_passives := {}
+	for path in catalog_result.get("paths", PackedStringArray()):
+		_register_weapon_passive_branch_resource(load(str(path)), str(path), loaded_passives, errors)
+	if loaded_passives.is_empty():
+		errors.append("no weapon passive branch data loaded")
+	if not errors.is_empty():
+		_weapon_passive_branch_prepare_result = _build_prepare_result(false, errors, 0)
+		push_error("DataHandler: failed to prepare weapon passive branches: %s" % "; ".join(errors))
+		return _weapon_passive_branch_prepare_result.duplicate(true)
+	GlobalVariables.weapon_passive_branch_list = loaded_passives
+	_weapon_passive_branch_prepare_result = _build_prepare_result(true, errors, GlobalVariables.weapon_passive_branch_list.size())
+	return _weapon_passive_branch_prepare_result.duplicate(true)
+
+func load_economy_data() -> Dictionary:
+	return prepare_economy_data(true)
+
+func prepare_economy_data(force: bool = false) -> Dictionary:
+	if not force and bool(_economy_prepare_result.get("ok", false)) and GlobalVariables.economy_data != null:
+		return _economy_prepare_result.duplicate(true)
+	var catalog_result: Dictionary = RESOURCE_CATALOG.collect_startup_catalog_paths(
+		"economy",
+		ECONOMY_DIRECTORY_PATH,
+		".tres"
+	)
+	var errors := PackedStringArray()
+	if not bool(catalog_result.get("ok", false)):
+		errors.append_array(catalog_result.get("errors", PackedStringArray()))
+	var paths: PackedStringArray = catalog_result.get("paths", PackedStringArray())
+	if paths.size() != 1:
+		errors.append("economy catalog must contain exactly one resource; got %d" % paths.size())
+	var economy: EconomyConfig = null
+	if paths.size() >= 1:
+		var resource := load(paths[0])
+		if resource == null:
+			errors.append("failed to load economy config: %s" % paths[0])
+		else:
+			economy = resource as EconomyConfig
 	if economy == null:
-		push_warning("Economy config has invalid type: %s" % ECONOMY_RESOURCE_PATH)
-		return
+		errors.append("economy config has invalid type")
+	if not errors.is_empty():
+		_economy_prepare_result = _build_prepare_result(false, errors, 0)
+		push_error("DataHandler: failed to prepare economy: %s" % "; ".join(errors))
+		return _economy_prepare_result.duplicate(true)
 	GlobalVariables.economy_data = economy
+	_economy_prepare_result = _build_prepare_result(true, errors, 1)
+	return _economy_prepare_result.duplicate(true)
+
+func get_world_prepare_results() -> Dictionary:
+	return {
+		"weapons": _weapon_prepare_result.duplicate(true),
+		"mechas": _mecha_prepare_result.duplicate(true),
+		"economy": _economy_prepare_result.duplicate(true),
+		"weapon_branches": _weapon_branch_prepare_result.duplicate(true),
+		"weapon_passives": _weapon_passive_branch_prepare_result.duplicate(true),
+	}
 
 func read_weapon_branch_options(scene_path: String, current_fuse: int = 1) -> Array[WeaponBranchDefinition]:
 	if GlobalVariables.weapon_branch_list.is_empty():
@@ -256,68 +357,120 @@ func _restore_weapon_modules_from_payload(weapon: Weapon, module_payloads: Array
 		module_instance.set_module_level(int(module_payload.get("level", 1)))
 		weapon.modules.add_child(module_instance)
 
-func _register_weapon_resource(resource: Resource, source_path: String) -> void:
+func _register_weapon_resource(
+	resource: Resource,
+	source_path: String,
+	output: Dictionary,
+	scene_id_output: Dictionary,
+	errors: PackedStringArray
+) -> void:
 	if resource == null:
-		push_warning("Failed to load weapon resource: %s" % source_path)
+		errors.append("failed to load weapon resource: %s" % source_path)
 		return
 	var weapon_id_value = resource.get("weapon_id")
 	if weapon_id_value == null:
-		push_warning("Weapon resource missing weapon_id: %s" % source_path)
+		errors.append("weapon resource missing weapon_id: %s" % source_path)
 		return
-	var weapon_id := str(weapon_id_value)
+	var weapon_id := str(weapon_id_value).strip_edges()
 	if weapon_id == "":
-		push_warning("Weapon resource has empty weapon_id: %s" % source_path)
+		errors.append("weapon resource has empty weapon_id: %s" % source_path)
 		return
-	GlobalVariables.weapon_list[weapon_id] = resource
+	if output.has(weapon_id):
+		errors.append("duplicate weapon_id '%s': %s" % [weapon_id, source_path])
+		return
+	output[weapon_id] = resource
 	var scene_path := str(resource.get("scene_path")).strip_edges()
 	if scene_path != "":
-		_weapon_id_by_scene_path[scene_path] = weapon_id
+		if scene_id_output.has(scene_path):
+			errors.append("duplicate weapon scene_path '%s': %s" % [scene_path, source_path])
+			return
+		scene_id_output[scene_path] = weapon_id
 
-func _register_mecha_resource(resource: Resource, source_path: String) -> void:
+func _register_mecha_resource(
+	resource: Resource,
+	source_path: String,
+	output: Dictionary,
+	errors: PackedStringArray
+) -> void:
 	if resource == null:
-		push_warning("Failed to load mecha resource: %s" % source_path)
+		errors.append("failed to load mecha resource: %s" % source_path)
 		return
 	var mecha_id_value = resource.get("mecha_id")
 	if mecha_id_value == null:
-		push_warning("Mecha resource missing mecha_id: %s" % source_path)
+		errors.append("mecha resource missing mecha_id: %s" % source_path)
 		return
-	var mecha_id := str(mecha_id_value)
+	var mecha_id := str(mecha_id_value).strip_edges()
 	if mecha_id == "":
-		push_warning("Mecha resource has empty mecha_id: %s" % source_path)
+		errors.append("mecha resource has empty mecha_id: %s" % source_path)
 		return
-	GlobalVariables.mecha_list[mecha_id] = resource
+	if output.has(mecha_id):
+		errors.append("duplicate mecha_id '%s': %s" % [mecha_id, source_path])
+		return
+	output[mecha_id] = resource
 
-func _register_weapon_branch_resource(resource: Resource, source_path: String) -> void:
+func _register_weapon_branch_resource(
+	resource: Resource,
+	source_path: String,
+	output: Dictionary,
+	seen_branch_ids: Dictionary,
+	errors: PackedStringArray
+) -> void:
 	var branch_def := resource as WeaponBranchDefinition
 	if branch_def == null:
-		push_warning("Failed to load weapon branch resource: %s" % source_path)
+		errors.append("failed to load weapon branch resource: %s" % source_path)
 		return
-	if branch_def.branch_id == "":
-		push_warning("Weapon branch resource has empty branch_id: %s" % source_path)
+	var branch_id := str(branch_def.branch_id).strip_edges()
+	if branch_id == "":
+		errors.append("weapon branch resource has empty branch_id: %s" % source_path)
 		return
 	var scene_path := branch_def.weapon_scene_path
 	if scene_path == "":
-		push_warning("Weapon branch resource missing weapon_scene_path: %s" % source_path)
+		errors.append("weapon branch resource missing weapon_scene_path: %s" % source_path)
 		return
-	if not GlobalVariables.weapon_branch_list.has(scene_path):
-		GlobalVariables.weapon_branch_list[scene_path] = []
-	var branch_list: Array = GlobalVariables.weapon_branch_list[scene_path]
+	if seen_branch_ids.has(branch_id):
+		errors.append("duplicate weapon branch_id '%s': %s" % [branch_id, source_path])
+		return
+	seen_branch_ids[branch_id] = source_path
+	if not output.has(scene_path):
+		output[scene_path] = []
+	var branch_list: Array = output[scene_path]
 	branch_list.append(branch_def)
-	GlobalVariables.weapon_branch_list[scene_path] = branch_list
+	output[scene_path] = branch_list
 
-func _register_weapon_passive_branch_resource(resource: Resource, source_path: String) -> void:
+func _register_weapon_passive_branch_resource(
+	resource: Resource,
+	source_path: String,
+	output: Dictionary,
+	errors: PackedStringArray
+) -> void:
 	if resource == null:
-		push_warning("Failed to load weapon passive resource: %s" % source_path)
+		errors.append("failed to load weapon passive resource: %s" % source_path)
 		return
 	var passive_id_value: Variant = resource.get("passive_id")
 	if passive_id_value == null:
-		push_warning("Weapon passive resource missing passive_id: %s" % source_path)
+		errors.append("weapon passive resource missing passive_id: %s" % source_path)
 		return
-	var passive_id := str(passive_id_value)
+	var passive_id := str(passive_id_value).strip_edges()
 	if passive_id == "":
-		push_warning("Weapon passive resource has empty passive_id: %s" % source_path)
+		errors.append("weapon passive resource has empty passive_id: %s" % source_path)
 		return
-	GlobalVariables.weapon_passive_branch_list[passive_id] = resource
+	if output.has(passive_id):
+		errors.append("duplicate weapon passive_id '%s': %s" % [passive_id, source_path])
+		return
+	output[passive_id] = resource
+
+func _collect_prepare_errors(result: Dictionary, errors: PackedStringArray) -> void:
+	if bool(result.get("ok", false)):
+		return
+	for error in result.get("errors", PackedStringArray()):
+		errors.append(str(error))
+
+func _build_prepare_result(ok: bool, errors: PackedStringArray, count: int) -> Dictionary:
+	return {
+		"ok": ok,
+		"errors": errors,
+		"count": count,
+	}
 
 # Return mecha autosave data, will be called in Start menu.
 func read_autosave_mecha_data(id : String) -> Dictionary:

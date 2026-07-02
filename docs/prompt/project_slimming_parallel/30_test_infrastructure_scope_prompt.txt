@@ -1,0 +1,110 @@
+你负责 `project_mag` 瘦身计划的活跃测试基础设施范围。
+
+目标：缩短本地定向测试反馈，同时保持保守回退，不能通过减少覆盖伪造提速。
+
+开始前阅读：
+- `docs/prompt/project_slimming_incremental_execution_prompt.txt`
+- `docs/prompt/project_slimming_parallel/00_parallel_coordinator_prompt.txt`
+- `tests/README.md`
+- 现有 `tests/scenes/**`、`tests/headless/**` 入口模式
+
+开始前执行：
+
+```powershell
+git status --short --branch
+git rev-parse HEAD
+```
+
+## 允许修改
+
+- 新增测试清单和源码域映射
+- 新增测试选择器与并行执行工具
+- `tests/README.md`
+- `tests/infrastructure/**`
+- 测试基础设施自身的工具测试
+- `docs/plans/project_slimming/test_infrastructure_progress.md`
+- `docs/plans/project_slimming/handoffs/test_infrastructure.md`
+
+## 禁止修改
+
+- `project.godot`
+- `UI/**`
+- `Player/**`
+- 生产 Autoload 和 World 逻辑
+- 各业务域已有行为测试，除非只为适配统一入口且行为不变
+- `tests/headless/ui/**`、`tests/scenes/ui/**`
+- `tests/headless/player/**`、`tests/scenes/player/**`
+- `tests/headless/weapon/**`、`tests/scenes/weapon/**`
+- `tests/headless/startup/**`、`tests/scenes/startup/**`
+- 其他范围进度文件
+
+业务域新增测试由对应范围负责。本范围提供登记格式；并行期间不要抢改业务测试文件。
+
+## 交付内容
+
+### 测试清单
+
+每个条目包含：
+- ID
+- scene 或 script 入口
+- 路径
+- 所属领域
+- 依赖领域
+- 是否可并行
+- 是否写入 `user://`
+- 超时
+
+### 受影响测试选择器
+
+- 根据 Git 改动映射到测试领域。
+- 支持显式追加测试。
+- 输出选择原因。
+- 未匹配生产文件时不得静默返回空集合。
+
+全量回退条件：
+- `project.godot`
+- Autoload 或核心契约
+- 测试清单或选择器
+- 未映射生产文件
+- 依赖不确定
+
+### 有限并行 Worker
+
+- 使用独立 Godot 进程。
+- 隔离每个 Worker 的用户数据目录。
+- 默认并行度保守。
+- 捕获退出码、PASS/FAIL/ERROR、超时和日志。
+- 失败时保留可单独复现命令。
+- 不把所有测试合并成一个巨型场景。
+
+### 基线与验收
+
+- 选择代表性 UI、Player、Weapon、World 测试集。
+- 修改前后各运行五次。
+- 比较中位数。
+- 目标至少改善 20%，但不得牺牲覆盖。
+- 无法达到时报告启动开销和测试本体耗时，不扩大范围。
+
+## 并行协作
+
+UI、Player、启动范围会在 handoff 中提供新测试条目建议。
+
+本范围：
+- 定义格式和登记流程。
+- 不在并行工作未合并时猜测其最终路径。
+- 把待登记项写入自己的 handoff。
+- 由协调者确定合并顺序。
+
+## 每批验证
+
+- 选择器自身测试。
+- 空改动、单域改动、多域改动、核心改动和未知文件测试。
+- Worker 成功、失败、超时和 `user://` 隔离测试。
+- `git diff --check`。
+
+## 停止条件
+
+- 需要修改业务实现来适配选择器。
+- 并行执行造成共享状态串扰且无法隔离。
+- 选择器可能漏掉核心改动。
+- 提速依赖跳过失败日志或降低覆盖。

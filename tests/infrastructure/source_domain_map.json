@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "full_fallback": {
+    "exact_paths": [
+      "project.godot",
+      "UI/scripts/UI.gd",
+      "Player/Mechas/scripts/Player.gd",
+      "tests/infrastructure/test_manifest.json",
+      "tests/infrastructure/source_domain_map.json",
+      "tests/infrastructure/TestSelection.psm1",
+      "tests/infrastructure/select_affected_tests.ps1"
+    ],
+    "prefixes": [
+      "autoload/",
+      "tests/infrastructure/tests/"
+    ]
+  },
+  "ignored_prefixes": [
+    ".git/",
+    ".github/",
+    ".godot/",
+    "docs/"
+  ],
+  "ignored_exact_paths": [
+    ".gitattributes",
+    ".gitignore",
+    "README.md",
+    "tests/README.md"
+  ],
+  "domain_rules": [
+    {"prefix": "tests/headless/ui/", "domain": "ui", "certainty": "known"},
+    {"prefix": "tests/scenes/ui/", "domain": "ui", "certainty": "known"},
+    {"prefix": "tests/headless/player/", "domain": "player", "certainty": "known"},
+    {"prefix": "tests/scenes/player/", "domain": "player", "certainty": "known"},
+    {"prefix": "tests/headless/weapon/", "domain": "weapon", "certainty": "known"},
+    {"prefix": "tests/scenes/weapon/", "domain": "weapon", "certainty": "known"},
+    {"prefix": "tests/headless/startup/", "domain": "startup", "certainty": "known"},
+    {"prefix": "tests/scenes/startup/", "domain": "startup", "certainty": "known"},
+    {"prefix": "tests/headless/world/", "domain": "world", "certainty": "known"},
+    {"prefix": "tests/scenes/world/", "domain": "world", "certainty": "known"},
+    {"prefix": "tests/headless/cell/", "domain": "cell", "certainty": "known"},
+    {"prefix": "tests/scenes/cell/", "domain": "cell", "certainty": "known"},
+    {"prefix": "tests/headless/combat/", "domain": "combat", "certainty": "known"},
+    {"prefix": "tests/scenes/combat/", "domain": "combat", "certainty": "known"},
+    {"prefix": "tests/headless/enemy/", "domain": "enemy", "certainty": "known"},
+    {"prefix": "tests/scenes/enemy/", "domain": "enemy", "certainty": "known"},
+    {"prefix": "tests/headless/reward/", "domain": "reward", "certainty": "known"},
+    {"prefix": "tests/scenes/reward/", "domain": "reward", "certainty": "known"},
+    {"prefix": "tests/headless/spawn/", "domain": "spawn", "certainty": "known"},
+    {"prefix": "tests/scenes/spawn/", "domain": "spawn", "certainty": "known"},
+    {"prefix": "Player/Weapons/", "domain": "weapon", "certainty": "known"},
+    {"prefix": "Player/Skills/", "domain": "player", "certainty": "known"},
+    {"prefix": "Player/Mechas/", "domain": "player", "certainty": "known"},
+    {"prefix": "UI/", "domain": "ui", "certainty": "known"},
+    {"prefix": "World/", "domain": "world", "certainty": "known"},
+    {"prefix": "Board/Cells/", "domain": "cell", "certainty": "known"},
+    {"prefix": "Combat/", "domain": "combat", "certainty": "known"},
+    {"prefix": "Npc/", "domain": "enemy", "certainty": "known"},
+    {"prefix": "Objects/", "domain": "spawn", "certainty": "uncertain"},
+    {"prefix": "data/", "domain": "data", "certainty": "uncertain"},
+    {"prefix": "asset/", "domain": "asset", "certainty": "uncertain"},
+    {"prefix": "Shaders/", "domain": "asset", "certainty": "uncertain"}
+  ]
+}

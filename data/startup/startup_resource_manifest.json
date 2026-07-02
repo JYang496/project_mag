@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "status": "runtime_full",
+  "runtime_consumed": true,
+  "runtime_consumed_domains": ["weapons", "mechas", "economy", "routes", "cell_effects", "task_modules", "weapon_branches", "weapon_passives"],
+  "ordering": "consumer_must_sort_paths",
+  "catalogs": [
+    {
+      "domain": "weapons",
+      "prepare_phase": "world",
+      "directory": "res://data/weapons/",
+      "extension": ".tres",
+      "expected_type": "WeaponDefinition",
+      "id_property": "weapon_id",
+      "paths": [
+        "res://data/weapons/cannon.tres",
+        "res://data/weapons/chainsaw_luncher.tres",
+        "res://data/weapons/charged_blaster.tres",
+        "res://data/weapons/dash_blade.tres",
+        "res://data/weapons/flamethrower.tres",
+        "res://data/weapons/glacier_projector.tres",
+        "res://data/weapons/laser.tres",
+        "res://data/weapons/machine_gun.tres",
+        "res://data/weapons/orbit.tres",
+        "res://data/weapons/pistol.tres",
+        "res://data/weapons/plasma_lance.tres",
+        "res://data/weapons/rocket_luncher.tres",
+        "res://data/weapons/shotgun.tres",
+        "res://data/weapons/sniper.tres",
+        "res://data/weapons/Spear.tres"
+      ]
+    },
+    {
+      "domain": "mechas",
+      "prepare_phase": "world",
+      "directory": "res://data/mechas/",
+      "extension": ".tres",
+      "expected_type": "MechaDefinition",
+      "id_property": "mecha_id",
+      "paths": [
+        "res://data/mechas/Collector.tres",
+        "res://data/mechas/HeavyAssault.tres",
+        "res://data/mechas/Melee.tres",
+        "res://data/mechas/Ranger.tres",
+        "res://data/mechas/Turret.tres"
+      ]
+    },
+    {
+      "domain": "economy",
+      "prepare_phase": "world",
+      "directory": "res://data/economy/",
+      "extension": ".tres",
+      "expected_type": "EconomyConfig",
+      "id_property": "",
+      "paths": [
+        "res://data/economy/economy_config.tres"
+      ]
+    },
+    {
+      "domain": "routes",
+      "prepare_phase": "world",
+      "directory": "res://data/routes/",
+      "extension": ".tres",
+      "expected_type": "RunRouteDefinition",
+      "id_property": "route_id",
+      "paths": [
+        "res://data/routes/bonus_route.tres",
+        "res://data/routes/difficult_route.tres",
+        "res://data/routes/normal_route.tres"
+      ]
+    },
+    {
+      "domain": "cell_effects",
+      "prepare_phase": "world",
+      "directory": "res://data/cell_effects/",
+      "extension": ".tres",
+      "expected_type": "CellEffectDefinition",
+      "id_property": "effect_id",
+      "paths": [
+        "res://data/cell_effects/corrosion_1.tres",
+        "res://data/cell_effects/corrosion_2.tres",
+        "res://data/cell_effects/corrosion_3.tres",
+        "res://data/cell_effects/double_loot_1.tres",
+        "res://data/cell_effects/double_loot_2.tres",
+        "res://data/cell_effects/double_loot_3.tres",
+        "res://data/cell_effects/jungle_1.tres",
+        "res://data/cell_effects/jungle_2.tres",
+        "res://data/cell_effects/jungle_3.tres",
+        "res://data/cell_effects/low_hp_berserk_1.tres",
+        "res://data/cell_effects/low_hp_berserk_2.tres",
+        "res://data/cell_effects/low_hp_berserk_3.tres",
+        "res://data/cell_effects/lucky_strike_1.tres",
+        "res://data/cell_effects/lucky_strike_2.tres",
+        "res://data/cell_effects/lucky_strike_3.tres",
+        "res://data/cell_effects/regen_1.tres",
+        "res://data/cell_effects/regen_2.tres",
+        "res://data/cell_effects/regen_3.tres",
+        "res://data/cell_effects/speed_1.tres",
+        "res://data/cell_effects/speed_2.tres",
+        "res://data/cell_effects/speed_3.tres"
+      ]
+    },
+    {
+      "domain": "task_modules",
+      "prepare_phase": "world",
+      "directory": "res://data/task_modules/",
+      "extension": ".tres",
+      "expected_type": "TaskModuleDefinition",
+      "id_property": "module_id",
+      "paths": [
+        "res://data/task_modules/task_clear_rare.tres",
+        "res://data/task_modules/task_dodge_epic.tres",
+        "res://data/task_modules/task_hold_common.tres",
+        "res://data/task_modules/task_hunt_rare.tres",
+        "res://data/task_modules/task_kill_common.tres"
+      ]
+    },
+    {
+      "domain": "weapon_branches",
+      "prepare_phase": "world_deferred",
+      "directory": "res://data/weapon_branches/",
+      "extension": ".tres",
+      "expected_type": "WeaponBranchDefinition",
+      "id_property": "branch_id",
+      "paths": [
+        "res://data/weapon_branches/cannon_thermal.tres",
+        "res://data/weapon_branches/cannon_zero.tres",
+        "res://data/weapon_branches/chainsaw_explosive.tres",
+        "res://data/weapon_branches/chainsaw_ricochet.tres",
+        "res://data/weapon_branches/charged_blaster_focus_lance.tres",
+        "res://data/weapon_branches/charged_blaster_prism_fan.tres",
+        "res://data/weapon_branches/dash_frost.tres",
+        "res://data/weapon_branches/flamethrower_fire_aura.tres",
+        "res://data/weapon_branches/flamethrower_long_cone.tres",
+        "res://data/weapon_branches/glacier_subzero_battery.tres",
+        "res://data/weapon_branches/glacier_whiteout_expansion.tres",
+        "res://data/weapon_branches/laser_prism_splitter.tres",
+        "res://data/weapon_branches/laser_tracking_lens.tres",
+        "res://data/weapon_branches/machine_gun_shield.tres",
+        "res://data/weapon_branches/machine_gun_twin.tres",
+        "res://data/weapon_branches/orbit_energy.tres",
+        "res://data/weapon_branches/orbit_frost.tres",
+        "res://data/weapon_branches/pistol_arc_coil.tres",
+        "res://data/weapon_branches/pistol_cryo_carbine.tres",
+        "res://data/weapon_branches/plasma_overcharge_lance.tres",
+        "res://data/weapon_branches/plasma_piercing_lance.tres",
+        "res://data/weapon_branches/rocket_napalm.tres",
+        "res://data/weapon_branches/rocket_salvo.tres",
+        "res://data/weapon_branches/shotgun_shatter.tres",
+        "res://data/weapon_branches/sniper_deep_pierce.tres",
+        "res://data/weapon_branches/sniper_impact_burst.tres",
+        "res://data/weapon_branches/spear_multi_pierce.tres",
+        "res://data/weapon_branches/spear_rending.tres"
+      ]
+    },
+    {
+      "domain": "weapon_passives",
+      "prepare_phase": "world_deferred",
+      "directory": "res://data/weapon_passives/",
+      "extension": ".tres",
+      "expected_type": "WeaponPassiveBranchDefinition",
+      "id_property": "passive_id",
+      "paths": [
+        "res://data/weapon_passives/cannon_idle_fire_triggered.tres",
+        "res://data/weapon_passives/chainsaw_wall_contact_triggered.tres",
+        "res://data/weapon_passives/charged_blaster_multi_hit_triggered.tres",
+        "res://data/weapon_passives/dash_blade_long_dash_hit_triggered.tres",
+        "res://data/weapon_passives/flamethrower_heat_prepared.tres",
+        "res://data/weapon_passives/glacier_cold_snap_triggered.tres",
+        "res://data/weapon_passives/laser_focus_channel_triggered.tres",
+        "res://data/weapon_passives/machine_gun_heat_expansion.tres",
+        "res://data/weapon_passives/orbit_player_damaged_triggered.tres",
+        "res://data/weapon_passives/piercing_blade_dance.tres",
+        "res://data/weapon_passives/pistol_continuous_move_triggered.tres",
+        "res://data/weapon_passives/plasma_lance_heat_spend_chain_triggered.tres",
+        "res://data/weapon_passives/rocket_cluster_kill_triggered.tres",
+        "res://data/weapon_passives/shotgun_close_hit_triggered.tres",
+        "res://data/weapon_passives/sniper_far_hit_triggered.tres"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+你负责 `project_mag` 瘦身计划的 Player 范围。
+
+每次运行只完成一个 Player 批次。开始前阅读：
+- `docs/prompt/project_slimming_incremental_execution_prompt.txt`
+- `docs/prompt/project_slimming_parallel/00_parallel_coordinator_prompt.txt`
+- `Player/Mechas/scripts/Player.gd`
+- 当前目标子系统、直接调用方和测试
+
+开始前执行：
+
+```powershell
+git status --short --branch
+git rev-parse HEAD
+```
+
+## 允许修改
+
+- `Player/Mechas/scripts/**`
+- 当前批次确有必要的 `Player/Skills/**`
+- `tests/headless/player/**`
+- `tests/scenes/player/**`
+- 与 Player 武器行为直接相关的 `tests/headless/weapon/**`
+- 与 Player 武器行为直接相关的 `tests/scenes/weapon/**`
+- `docs/plans/project_slimming/player_progress.md`
+- `docs/plans/project_slimming/handoffs/player.md`
+
+## 禁止修改
+
+- `project.godot`
+- `UI/**`
+- `autoload/**`
+- 全局测试清单、执行器和 `tests/README.md`
+- UI、Startup 和跨域集成测试
+- 其他范围进度文件
+- 并行提示词
+
+需要 UI 输入、全局配置或测试清单改动时，只写入 Player handoff。
+
+## 目标
+
+- `Player.gd` 只保留引擎节点适配、组件装配、生命周期和公开兼容门面。
+- 软目标约 700 行。
+- 子系统不读取 Player 私有字段或调用 Player 私有方法。
+- 不创建万能 `PlayerContext`、服务定位器或全局事件总线。
+- 不改变移动、Dash、技能、伤害、武器和存档行为。
+
+## 执行顺序
+
+### Player-1：移动系统试点
+
+Player 继续持有：
+- `movement_enabled`
+- `moveto_enabled`
+- `moveto_dest`
+- CharacterBody2D 的位置与速度应用
+
+移动系统：
+- 不持有 Player 引用。
+- 接收循环复用的强类型 `MovementFrameInput`。
+- 写入循环复用的强类型 `MovementFrameResult`。
+- 返回下一速度、到达状态和可选位置吸附结果。
+- 不创建每帧 Dictionary、Array 或对象。
+
+测试：
+- 加速、减速和反向转向惩罚。
+- PREPARE 禁止手动输入。
+- 自动导航到达与位置吸附。
+- Dash 集成。
+- 重复 Tick 分配与性能检查。
+
+### Player-2：主动技能运行时
+
+保留现有公开门面，内部拆分：
+- `SkillEnergyState`
+- `PlayerSkillController`
+- `WeaponActionController`
+
+规则：
+- `project.godot` 仍是输入动作唯一来源，本范围不得修改它。
+- Runtime 只校验动作是否存在，不修改 InputMap。
+- `WeaponActionController` 返回强类型 `WeaponActionResult`。
+- Player 应用信号、Assist、被动事件和提示命令。
+- 不访问 `GlobalVariables.ui`。
+- 不修改 UI；把输入接线需求写入 handoff。
+- 不修改 UI 测试；跨域输入测试由协调者在合并后处理。
+
+测试：
+- 重构前特征测试。
+- 能量边界和恢复。
+- 默认技能加载。
+- 技能施放和换弹。
+- 信号次数。
+- Assist 和提示节流。
+- InputMap 缺失报告。
+
+### Player 后续批次
+
+按顺序执行：
+1. 状态、拾取、相机
+2. 视觉、武器轨道、碰撞体同步
+3. 伤害反应与元素效果
+4. 武器库存、武器被动、共享热量
+
+每批必须：
+- 先锁定行为。
+- 使用窄输入和强类型结果。
+- 由 Player 应用 Node 状态。
+- 保留公开兼容门面。
+- 移除对应 `_player` 私有访问。
+
+## 每批验证
+
+- 记录 `Player.gd` 行数、函数数、字段数。
+- 记录目标系统 `_player` 引用数。
+- 运行直接单元、场景和战斗测试。
+- 运行 Godot 语法/资源检查。
+- 执行 `git diff --check`。
+- 更新 Player progress 和 handoff。
+
+## 停止条件
+
+- 需要修改 UI、Autoload 或 `project.godot`。
+- 需要改变玩法、数值、输入手感或存档。
+- 新系统仍需访问 Player 私有状态。
+- 现有行为没有测试且无法建立特征测试。
+- 当前批次开始跨越两个独立战斗职责。

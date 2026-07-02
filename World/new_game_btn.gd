@@ -3,6 +3,7 @@ extends Button
 signal erase_button_pressed
 
 const WORLD_SCENE_PATH := "res://World/world.tscn"
+const WORLD_ENTRY_PREPARE_GATE_SCRIPT := preload("res://World/world_entry_prepare_gate.gd")
 
 func _on_pressed() -> void:
 	if disabled:
@@ -20,12 +21,17 @@ func _on_pressed() -> void:
 	InventoryData.reset_runtime_state()
 	TaskRewardManager.reset_runtime_state(false)
 	RewardDraftRuntime.reset_runtime_state(false)
-	CellTaskModuleRuntime.grant_starting_cell_loadout(0)
 	PlayerData.select_mecha_id = selected_mecha_id
 	PlayerData.set_hp_safety_for_testing(keep_hp_safety)
 	DataHandler.save_data.last_mecha_selected = str(PlayerData.select_mecha_id)
 	erase_button_pressed.emit()
-	DataHandler.prepare_world_data()
+	var prepare_result: Dictionary = WORLD_ENTRY_PREPARE_GATE_SCRIPT.prepare_world_entry()
+	if not bool(prepare_result.get("ok", false)):
+		push_error("World entry prepare failed: %s" % WORLD_ENTRY_PREPARE_GATE_SCRIPT.format_errors(prepare_result))
+		text = original_text
+		disabled = false
+		return
+	CellTaskModuleRuntime.grant_starting_cell_loadout(0)
 	SpawnData.ensure_loaded()
 	var request_error := ResourceLoader.load_threaded_request(WORLD_SCENE_PATH, "PackedScene", true)
 	if request_error != OK:

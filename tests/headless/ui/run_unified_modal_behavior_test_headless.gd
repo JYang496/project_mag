@@ -40,6 +40,7 @@ func _run() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
+	_test_modal_registry_contract()
 	await _test_inventory_replacement_dialog()
 	await _test_cell_overwrite_dialog_paths()
 	await _test_unassigned_start_battle_confirmation()
@@ -83,6 +84,30 @@ func _test_inventory_replacement_dialog() -> void:
 		await get_tree().process_frame
 		if _task_replacement_index != -1:
 			_record("task inventory replacement %s path still replaced slot %d" % [cancel_mode, _task_replacement_index])
+
+func _test_modal_registry_contract() -> void:
+	if _ui.modal_ui_controller == null:
+		_record("modal ui controller was not initialized")
+		return
+	var snapshot: Array = _ui.modal_ui_controller.get_modal_registry_snapshot()
+	var expected_ids := [
+		&"branch_select",
+		&"weapon_replacement",
+		&"route_selection",
+		&"reward_selection",
+		&"module_equip_selection",
+	]
+	if snapshot.size() != expected_ids.size():
+		_record("modal registry size mismatch: expected=%d actual=%d" % [expected_ids.size(), snapshot.size()])
+		return
+	for index in range(expected_ids.size()):
+		var entry := snapshot[index] as Dictionary
+		if StringName(entry.get("id", &"")) != expected_ids[index]:
+			_record("modal registry order mismatch at %d: expected=%s actual=%s" % [index, str(expected_ids[index]), str(entry.get("id", &""))])
+		if not bool(entry.get("blocks_world_interaction", false)):
+			_record("modal registry entry does not block world interaction: %s" % str(entry.get("id", &"")))
+		if not bool(entry.get("can_cancel", false)):
+			_record("modal registry entry is not cancellable: %s" % str(entry.get("id", &"")))
 
 func _test_cell_overwrite_dialog_paths() -> void:
 	for mode in ["confirm", "cancel", "right_click", "window_right_click", "esc"]:

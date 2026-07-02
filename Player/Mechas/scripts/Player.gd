@@ -5,6 +5,8 @@ const PLAYER_ASSIST_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player
 const PLAYER_ACTIVE_SKILL_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_active_skill_runtime.gd")
 const PLAYER_WEAPON_INVENTORY_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_inventory_runtime.gd")
 const PLAYER_WEAPON_PASSIVE_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_passive_runtime.gd")
+const MovementFrameInputType := preload("res://Player/Mechas/scripts/movement_frame_input.gd")
+const MovementFrameResultType := preload("res://Player/Mechas/scripts/movement_frame_result.gd")
 
 var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
@@ -136,6 +138,8 @@ var _status_hint_manager
 var _status_modifier_system
 var _elemental_effect_system
 var _movement_system: PlayerMovementSystem
+var _movement_frame_input: MovementFrameInputType
+var _movement_frame_result: MovementFrameResultType
 var _camera_system: PlayerCameraSystem
 var _shared_heat_system: PlayerSharedHeatSystem
 var _loot_system: PlayerLootSystem
@@ -241,7 +245,7 @@ func _physics_process(delta):
 	_update_collect_area_anchor_to_screen_top()
 	if not _require_movement_system_or_halt():
 		return
-	_movement_system.tick(delta)
+	_tick_movement(delta)
 	move_and_slide()
 	distance_mouse_player = get_global_mouse_position() - global_position
 	_update_mecha_visual_state(distance_mouse_player)
@@ -921,17 +925,23 @@ func _get_low_hp_damage_mul() -> float:
 func start_auto_nav(dest: Vector2) -> void:
 	if not _require_movement_system_or_halt():
 		return
-	_movement_system.start_auto_nav(dest)
+	movement_enabled = false
+	moveto_enabled = true
+	moveto_dest = dest
 
 func stop_auto_nav() -> void:
 	if not _require_movement_system_or_halt():
 		return
-	_movement_system.stop_auto_nav()
+	movement_enabled = true
+	moveto_enabled = false
+	moveto_dest = Vector2.ZERO
+	velocity = Vector2.ZERO
+	_movement_system.reset_auto_nav_speed_mul()
 
 func is_auto_nav_active() -> bool:
 	if not _require_movement_system_or_halt():
 		return false
-	return _movement_system.is_auto_navigating()
+	return moveto_enabled
 
 func configure_auto_nav_speed_mul(speed_mul: float) -> void:
 	if not _require_movement_system_or_halt():
@@ -1581,12 +1591,44 @@ func _on_phase_changed(new_phase: String) -> void:
 		_loot_system.on_phase_changed(new_phase, previous_phase)
 
 func _ensure_movement_system() -> void:
-	if _movement_system != null:
-		_movement_system.setup(self)
-		return
-	_movement_system = PlayerMovementSystem.new() as PlayerMovementSystem
-	if _movement_system != null:
-		_movement_system.setup(self)
+	if _movement_system == null:
+		_movement_system = PlayerMovementSystem.new() as PlayerMovementSystem
+	if _movement_frame_input == null:
+		_movement_frame_input = MovementFrameInputType.new()
+	if _movement_frame_result == null:
+		_movement_frame_result = MovementFrameResultType.new()
+
+func _tick_movement(delta: float) -> void:
+	var manual_input_allowed := true
+	var manual_direction := Vector2.ZERO
+	if not moveto_enabled and movement_enabled:
+		if PhaseManager != null and PhaseManager.has_method("current_state"):
+			manual_input_allowed = str(PhaseManager.current_state()) != str(PhaseManager.PREPARE)
+		if manual_input_allowed:
+			manual_direction = _resolve_buffered_move_input() + extra_direction
+	_movement_frame_input.delta = delta
+	_movement_frame_input.current_velocity = velocity
+	_movement_frame_input.current_position = global_position
+	_movement_frame_input.movement_enabled = movement_enabled
+	_movement_frame_input.auto_navigation_enabled = moveto_enabled
+	_movement_frame_input.auto_navigation_destination = moveto_dest
+	_movement_frame_input.manual_input_allowed = manual_input_allowed
+	_movement_frame_input.manual_direction = manual_direction
+	_movement_frame_input.move_speed = (
+		PlayerData.player_speed + PlayerData.player_bonus_speed
+	) * get_total_move_speed_mul()
+	_movement_frame_input.move_accel = move_accel
+	_movement_frame_input.move_decel = move_decel
+	_movement_frame_input.move_turn_penalty = move_turn_penalty
+	_movement_system.tick(_movement_frame_input, _movement_frame_result)
+	velocity = _movement_frame_result.next_velocity
+	if _movement_frame_result.should_snap_position:
+		global_position = _movement_frame_result.snap_position
+	if _movement_frame_result.auto_navigation_completed:
+		movement_enabled = true
+		moveto_enabled = false
+		moveto_dest = Vector2.ZERO
+		_movement_system.reset_auto_nav_speed_mul()
 
 func _ensure_camera_system() -> void:
 	if _camera_system != null:

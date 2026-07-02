@@ -1,71 +1,65 @@
 extends RefCounted
 class_name PlayerMovementSystem
 
-var _player
+const MovementFrameInputType := preload("res://Player/Mechas/scripts/movement_frame_input.gd")
+const MovementFrameResultType := preload("res://Player/Mechas/scripts/movement_frame_result.gd")
+
 var _auto_nav_speed_mul: float = 1.0
 
-func setup(player) -> void:
-	_player = player
-
-func tick(delta: float) -> void:
-	if _player == null:
-		return
-	if _player.moveto_enabled:
-		_update_auto_navigation(delta)
-	elif _player.movement_enabled:
-		_update_manual_movement(delta)
+func tick(frame_input: MovementFrameInputType, frame_result: MovementFrameResultType) -> void:
+	frame_result.reset(frame_input.current_velocity)
+	if frame_input.auto_navigation_enabled:
+		_update_auto_navigation(frame_input, frame_result)
+	elif frame_input.movement_enabled:
+		_update_manual_movement(frame_input, frame_result)
 	else:
-		_player.velocity = _player.velocity.move_toward(Vector2.ZERO, maxf(_player.move_decel, 0.0) * maxf(delta, 0.0))
+		frame_result.next_velocity = _decelerate(frame_input)
 
-func start_auto_nav(dest: Vector2) -> void:
-	if _player == null:
-		return
-	_player.movement_enabled = false
-	_player.moveto_enabled = true
-	_player.moveto_dest = dest
-
-func stop_auto_nav() -> void:
-	if _player == null:
-		return
-	_player.movement_enabled = true
-	_player.moveto_enabled = false
-	_player.moveto_dest = Vector2.ZERO
-	_player.velocity = Vector2.ZERO
+func reset_auto_nav_speed_mul() -> void:
 	_auto_nav_speed_mul = 1.0
-
-func is_auto_navigating() -> bool:
-	if _player == null:
-		return false
-	return bool(_player.moveto_enabled)
 
 func configure_auto_nav_speed_mul(speed_mul: float) -> void:
 	_auto_nav_speed_mul = maxf(speed_mul, 0.05)
 
-func _update_manual_movement(delta: float) -> void:
-	var allow_manual_input := true
-	if PhaseManager != null and PhaseManager.has_method("current_state"):
-		allow_manual_input = str(PhaseManager.current_state()) != str(PhaseManager.PREPARE)
-	if allow_manual_input:
-		var mov: Vector2 = _player._resolve_buffered_move_input() + _player.extra_direction
-		var speed: float = (_player.PlayerData.player_speed + _player.PlayerData.player_bonus_speed) * _player.get_total_move_speed_mul()
-		var target_velocity: Vector2 = mov.normalized() * speed if mov.length_squared() > 0.0001 else Vector2.ZERO
-		var is_turning: bool = _player.velocity.length_squared() > 1.0 and target_velocity.length_squared() > 1.0 and _player.velocity.dot(target_velocity) < 0.0
-		var accel: float = _player.move_accel if target_velocity.length_squared() > 0.0 else _player.move_decel
+func _update_manual_movement(frame_input: MovementFrameInputType, frame_result: MovementFrameResultType) -> void:
+	if frame_input.manual_input_allowed:
+		var target_velocity := Vector2.ZERO
+		if frame_input.manual_direction.length_squared() > 0.0001:
+			target_velocity = frame_input.manual_direction.normalized() * frame_input.move_speed
+		var is_turning := (
+			frame_input.current_velocity.length_squared() > 1.0
+			and target_velocity.length_squared() > 1.0
+			and frame_input.current_velocity.dot(target_velocity) < 0.0
+		)
+		var accel := frame_input.move_accel if target_velocity.length_squared() > 0.0 else frame_input.move_decel
 		if is_turning:
-			accel *= (1.0 - clampf(_player.move_turn_penalty, 0.0, 0.9))
-		_player.velocity = _player.velocity.move_toward(target_velocity, maxf(accel, 0.0) * maxf(delta, 0.0))
+			accel *= 1.0 - clampf(frame_input.move_turn_penalty, 0.0, 0.9)
+		frame_result.next_velocity = frame_input.current_velocity.move_toward(
+			target_velocity,
+			maxf(accel, 0.0) * maxf(frame_input.delta, 0.0)
+		)
 	else:
-		_player.velocity = _player.velocity.move_toward(Vector2.ZERO, maxf(_player.move_decel, 0.0) * maxf(delta, 0.0))
+		frame_result.next_velocity = _decelerate(frame_input)
 
-func _update_auto_navigation(delta: float) -> void:
-	var to_dest: Vector2 = _player.moveto_dest - _player.global_position
-	var distance_to_dest: float = to_dest.length()
-	var reach_distance: float = maxf(3.0, _player.velocity.length() * 0.03)
+func _update_auto_navigation(frame_input: MovementFrameInputType, frame_result: MovementFrameResultType) -> void:
+	var to_dest := frame_input.auto_navigation_destination - frame_input.current_position
+	var distance_to_dest := to_dest.length()
+	var reach_distance := maxf(3.0, frame_input.current_velocity.length() * 0.03)
 	if distance_to_dest <= reach_distance:
-		_player.global_position = _player.moveto_dest
-		_player.velocity = Vector2.ZERO
-		stop_auto_nav()
+		frame_result.next_velocity = Vector2.ZERO
+		frame_result.reached_target = true
+		frame_result.should_snap_position = true
+		frame_result.snap_position = frame_input.auto_navigation_destination
+		frame_result.auto_navigation_completed = true
 		return
-	var speed: float = (_player.PlayerData.player_speed + _player.PlayerData.player_bonus_speed) * _player.get_total_move_speed_mul() * _auto_nav_speed_mul
-	var target_velocity: Vector2 = to_dest.normalized() * speed
-	_player.velocity = _player.velocity.move_toward(target_velocity, maxf(_player.move_accel, 0.0) * maxf(delta, 0.0))
+	var target_velocity := to_dest.normalized() * frame_input.move_speed * _auto_nav_speed_mul
+	frame_result.next_velocity = frame_input.current_velocity.move_toward(
+		target_velocity,
+		maxf(frame_input.move_accel, 0.0) * maxf(frame_input.delta, 0.0)
+	)
+
+func _decelerate(frame_input: MovementFrameInputType) -> Vector2:
+	return frame_input.current_velocity.move_toward(
+		Vector2.ZERO,
+		maxf(frame_input.move_decel, 0.0) * maxf(frame_input.delta, 0.0)
+	)

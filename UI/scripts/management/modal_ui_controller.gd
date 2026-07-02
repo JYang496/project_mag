@@ -24,6 +24,7 @@ var game_over_view
 var controls_hint_view
 var board_edit_panel: Control
 var cell_management_panel: Control
+var _modal_registry: Array = []
 
 static func is_cancel_input(event: InputEvent) -> bool:
 	if event == null:
@@ -36,7 +37,33 @@ static func is_cancel_input(event: InputEvent) -> bool:
 func bind(ui: UI, root: Control) -> void:
 	owner_ui = ui
 	gui_root = root
+	_configure_default_modal_registry()
 	sync_state_from_owner()
+
+func register_modal_entry(
+	id: StringName,
+	owner_field: String,
+	blocks_world_interaction: bool = true,
+	can_cancel: bool = true
+) -> void:
+	unregister_modal_entry(id)
+	_modal_registry.append({
+		"id": id,
+		"owner_field": owner_field,
+		"blocks_world_interaction": blocks_world_interaction,
+		"can_cancel": can_cancel,
+	})
+
+func unregister_modal_entry(id: StringName) -> void:
+	for index in range(_modal_registry.size() - 1, -1, -1):
+		if StringName(_modal_registry[index].get("id", &"")) == id:
+			_modal_registry.remove_at(index)
+
+func clear_modal_registry() -> void:
+	_modal_registry.clear()
+
+func get_modal_registry_snapshot() -> Array:
+	return _modal_registry.duplicate(true)
 
 func ensure_branch_select_panel() -> bool:
 	if branch_select_panel != null and is_instance_valid(branch_select_panel):
@@ -212,22 +239,29 @@ func request_close_cell_management_panel() -> bool:
 
 func is_modal_open() -> bool:
 	sync_state_from_owner()
-	for panel in _selection_modal_panels():
-		if _panel_is_modal_open(panel):
+	for entry in _modal_registry:
+		if _registered_modal_is_open(entry):
 			return true
 	return false
 
 func is_world_interaction_blocking_modal_open() -> bool:
-	return is_modal_open()
+	sync_state_from_owner()
+	for entry in _modal_registry:
+		if not bool(entry.get("blocks_world_interaction", true)):
+			continue
+		if _registered_modal_is_open(entry):
+			return true
+	return false
 
 func cancel_visible_modal() -> bool:
 	sync_state_from_owner()
-	for panel in _selection_modal_panels():
-		if not _panel_is_modal_open(panel):
+	for entry in _modal_registry:
+		if not _registered_modal_is_open(entry):
 			continue
-		if panel.has_method("cancel_visible_modal"):
-			panel.call("cancel_visible_modal")
-		return true
+		if not _registered_modal_can_cancel(entry):
+			continue
+		return _cancel_registered_modal(entry)
+	return false
 	return false
 
 func open_cell_board_management() -> void:
@@ -309,14 +343,40 @@ func sync_state_from_owner() -> void:
 	board_edit_panel = owner_ui.board_edit_panel
 	cell_management_panel = owner_ui.cell_management_panel
 
-func _selection_modal_panels() -> Array:
-	return [
-		branch_select_panel,
-		weapon_replacement_panel,
-		route_selection_panel,
-		reward_selection_panel,
-		module_equip_selection_panel,
-	]
+func _configure_default_modal_registry() -> void:
+	clear_modal_registry()
+	register_modal_entry(&"branch_select", "branch_select_panel")
+	register_modal_entry(&"weapon_replacement", "weapon_replacement_panel")
+	register_modal_entry(&"route_selection", "route_selection_panel")
+	register_modal_entry(&"reward_selection", "reward_selection_panel")
+	register_modal_entry(&"module_equip_selection", "module_equip_selection_panel")
+
+func _registered_modal_is_open(entry: Dictionary) -> bool:
+	return _panel_is_modal_open(_resolve_registered_modal(entry))
+
+func _registered_modal_can_cancel(entry: Dictionary) -> bool:
+	if not bool(entry.get("can_cancel", true)):
+		return false
+	var panel: Variant = _resolve_registered_modal(entry)
+	if panel == null or not is_instance_valid(panel):
+		return false
+	if panel.has_method("can_cancel_modal"):
+		return bool(panel.call("can_cancel_modal"))
+	return true
+
+func _cancel_registered_modal(entry: Dictionary) -> bool:
+	var panel: Variant = _resolve_registered_modal(entry)
+	if panel == null or not is_instance_valid(panel):
+		return false
+	if panel.has_method("cancel_visible_modal"):
+		return bool(panel.call("cancel_visible_modal"))
+	return false
+
+func _resolve_registered_modal(entry: Dictionary):
+	var owner_field := str(entry.get("owner_field", ""))
+	if owner_field.is_empty():
+		return null
+	return get(owner_field)
 
 func _panel_is_modal_open(panel) -> bool:
 	if panel == null or not is_instance_valid(panel):

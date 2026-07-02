@@ -1,6 +1,8 @@
 extends RefCounted
 class_name ManagementUiBootstrapController
 
+const REUSABLE_PRIMARY_MENU_SCRIPT := preload("res://UI/scripts/management/reusable_primary_menu.gd")
+
 var owner_ui: UI
 
 func bind(ui: UI) -> void:
@@ -9,19 +11,23 @@ func bind(ui: UI) -> void:
 func init_management_ui_polish() -> void:
 	if owner_ui == null:
 		return
-	owner_ui._style_management_panel(owner_ui.purchase_panel)
-	owner_ui._style_management_panel(owner_ui.upgrade_panel)
-	owner_ui._style_management_panel(owner_ui.module_panel)
-	owner_ui._connect_management_panel_input_blockers()
+	var style_helper: ManagementUiStyleHelper = owner_ui.management_ui_style_helper
+	style_helper.style_management_panel(owner_ui.purchase_panel)
+	style_helper.style_management_panel(owner_ui.upgrade_panel)
+	style_helper.style_management_panel(owner_ui.module_panel)
+	style_helper.connect_management_panel_input_blockers(
+		owner_ui,
+		[owner_ui.purchase_panel, owner_ui.upgrade_panel, owner_ui.module_panel]
+	)
 
-	owner_ui.shop_instruction_label = owner_ui._create_management_instruction(
+	owner_ui.shop_instruction_label = style_helper.create_management_instruction(
 		owner_ui.purchase_panel,
 		"ShopInstruction",
 		Vector2(25, 40),
 		Vector2(1, 1)
 	)
 	owner_ui.shop_instruction_label.visible = false
-	owner_ui.upgrade_instruction_label = owner_ui._create_management_instruction(
+	owner_ui.upgrade_instruction_label = style_helper.create_management_instruction(
 		owner_ui.upgrade_panel,
 		"UpgradeInstruction",
 		Vector2(25, 42),
@@ -29,7 +35,7 @@ func init_management_ui_polish() -> void:
 	)
 	owner_ui._init_upgrade_management_controller()
 	owner_ui.upgrade_management_controller.set_instruction_label(owner_ui.upgrade_instruction_label)
-	owner_ui.module_instruction_label = owner_ui._create_management_instruction(
+	owner_ui.module_instruction_label = style_helper.create_management_instruction(
 		owner_ui.module_panel,
 		"ModuleInstruction",
 		Vector2(25, 42),
@@ -41,17 +47,16 @@ func init_management_ui_polish() -> void:
 	ensure_management_menu_buttons()
 
 	var upgrade_back := owner_ui.upgrade_panel.get_node_or_null("BackToUpgradeMenu") as Button
-	owner_ui._style_management_button(upgrade_back)
-	owner_ui._position_management_button(upgrade_back, Vector2(760, 532), Vector2(200, 52))
+	style_helper.style_management_button(upgrade_back)
+	style_helper.position_management_button(upgrade_back, Vector2(760, 532), Vector2(200, 52))
 	var legacy_module_back := owner_ui.module_panel.get_node_or_null("BackToWarehouseMenu") as Button
 	if legacy_module_back:
 		legacy_module_back.visible = false
 
 	for title_panel in [owner_ui.purchase_panel, owner_ui.upgrade_panel, owner_ui.module_panel]:
-		var title := title_panel.get_node_or_null("Title") as Label
-		if title:
-			title.add_theme_font_size_override("font_size", 26)
-			title.add_theme_color_override("font_color", Color(0.86, 0.94, 1.0))
+		style_helper.style_management_title(
+			title_panel.get_node_or_null("Title") as Label
+		)
 	owner_ui.upgrade_management_controller.refresh_action()
 	owner_ui.module_warehouse_controller.refresh_action()
 	owner_ui.purchase_management_controller.apply_purchase_mode(owner_ui._shop_purchase_mode)
@@ -86,7 +91,53 @@ func ensure_management_menu_buttons() -> void:
 	_connect_button_pressed(open_grid_button, owner_ui.rest_area_ui_controller.open_cell_grid_panel)
 	var open_task_button := owner_ui.board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button
 	_connect_button_pressed(open_task_button, owner_ui.rest_area_ui_controller.open_cell_task_panel)
-	owner_ui._style_primary_menu_controls()
+	style_primary_menu_controls()
+
+func style_primary_menu_controls() -> void:
+	if owner_ui == null:
+		return
+	if owner_ui.rest_area_ui_controller != null:
+		for menu_id in owner_ui.rest_area_ui_controller.get_registered_service_menu_ids():
+			_apply_primary_menu_layout(
+				owner_ui.rest_area_ui_controller.get_service_primary_panel(menu_id) as Panel,
+				owner_ui.rest_area_ui_controller.get_service_primary_buttons(menu_id)
+			)
+		return
+	_apply_primary_menu_layout(
+		owner_ui.purchase_primary_panel,
+		[
+			owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyButton") as Button,
+			owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyModuleButton") as Button,
+		]
+	)
+	_apply_primary_menu_layout(
+		owner_ui.upgrade_primary_panel,
+		[
+			owner_ui.upgrade_primary_panel.get_node_or_null("OpenUpgradeButton") as Button,
+			owner_ui.upgrade_module_button,
+		]
+	)
+	_apply_primary_menu_layout(
+		owner_ui.warehouse_primary_panel,
+		[
+			owner_ui.weapon_warehouse_button,
+			owner_ui.warehouse_primary_panel.get_node_or_null("OpenModuleButton") as Button,
+		]
+	)
+	_apply_primary_menu_layout(
+		owner_ui.board_edit_primary_panel,
+		[
+			owner_ui.board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button,
+			owner_ui.board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button,
+		]
+	)
+
+func _apply_primary_menu_layout(panel: Panel, buttons: Array) -> void:
+	REUSABLE_PRIMARY_MENU_SCRIPT.apply_shared_layout(
+		panel,
+		buttons,
+		owner_ui.management_ui_style_helper
+	)
 
 func _connect_button_pressed(button: Button, target: Callable) -> void:
 	if button == null or not target.is_valid():

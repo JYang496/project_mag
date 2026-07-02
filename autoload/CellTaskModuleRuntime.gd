@@ -26,18 +26,52 @@ var _completed_cells: Dictionary = {}
 var _last_completed_count: int = 0
 var _special_shop_offer_module_id := ""
 var _special_shop_offer_checks: int = 0
+var _definition_prepare_result: Dictionary = {"ok": false, "errors": PackedStringArray(), "count": 0}
 
 func _ready() -> void:
-	load_definitions()
 	if not PhaseManager.phase_changed.is_connected(_on_phase_changed):
 		PhaseManager.phase_changed.connect(_on_phase_changed)
 
 func load_definitions() -> void:
-	_definitions_by_id.clear()
-	for path in RESOURCE_CATALOG.collect_resource_paths(TASK_MODULE_DIRECTORY_PATH, ".tres", [], true, "CellTaskModuleRuntime"):
-		var definition := load(path) as TaskModuleDefinition
-		if definition != null and definition.module_id.strip_edges() != "":
-			_definitions_by_id[definition.module_id.strip_edges()] = definition
+	prepare_definitions(true)
+
+func prepare_definitions(force: bool = false) -> Dictionary:
+	if not force and bool(_definition_prepare_result.get("ok", false)):
+		return _definition_prepare_result.duplicate(true)
+	var catalog_result: Dictionary = RESOURCE_CATALOG.collect_startup_catalog_paths(
+		"task_modules",
+		TASK_MODULE_DIRECTORY_PATH,
+		".tres"
+	)
+	var errors := PackedStringArray()
+	if not bool(catalog_result.get("ok", false)):
+		errors.append_array(catalog_result.get("errors", PackedStringArray()))
+	var loaded_definitions := {}
+	for path in catalog_result.get("paths", PackedStringArray()):
+		var definition := load(str(path)) as TaskModuleDefinition
+		if definition == null:
+			errors.append("invalid task module resource: %s" % str(path))
+			continue
+		var module_id := definition.module_id.strip_edges()
+		if module_id == "":
+			errors.append("task module resource missing module_id: %s" % str(path))
+			continue
+		if loaded_definitions.has(module_id):
+			errors.append("duplicate module_id '%s': %s" % [module_id, str(path)])
+			continue
+		loaded_definitions[module_id] = definition
+	if loaded_definitions.is_empty():
+		errors.append("no task module definitions were prepared")
+	if not errors.is_empty():
+		_definition_prepare_result = _build_prepare_result(false, errors, 0)
+		push_error("CellTaskModuleRuntime: failed to prepare definitions: %s" % "; ".join(errors))
+		return _definition_prepare_result.duplicate(true)
+	_definitions_by_id = loaded_definitions
+	_definition_prepare_result = _build_prepare_result(true, errors, _definitions_by_id.size())
+	return _definition_prepare_result.duplicate(true)
+
+func get_definition_prepare_result() -> Dictionary:
+	return _definition_prepare_result.duplicate(true)
 
 func get_definition(module_id: String) -> TaskModuleDefinition:
 	return _definitions_by_id.get(module_id.strip_edges(), null) as TaskModuleDefinition
@@ -593,3 +627,10 @@ func _default_status_value_text(status_type: String) -> String:
 			return "0/1秒"
 		_:
 			return "0/1"
+
+func _build_prepare_result(ok: bool, errors: PackedStringArray, count: int) -> Dictionary:
+	return {
+		"ok": ok,
+		"errors": errors,
+		"count": count,
+	}

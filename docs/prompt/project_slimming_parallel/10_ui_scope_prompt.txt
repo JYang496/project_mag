@@ -1,0 +1,118 @@
+你负责 `project_mag` 瘦身计划的 UI 范围。
+
+每次运行只完成一个 UI 批次。开始前阅读：
+- `docs/prompt/project_slimming_incremental_execution_prompt.txt`
+- `docs/prompt/project_slimming_parallel/00_parallel_coordinator_prompt.txt`
+- `UI/scripts/UI.gd`
+- 当前批次涉及的 Controller、场景和测试
+
+开始前执行：
+
+```powershell
+git status --short --branch
+git rev-parse HEAD
+```
+
+## 允许修改
+
+- `UI/**`
+- `tests/headless/ui/**`
+- `tests/scenes/ui/**`
+- `docs/plans/project_slimming/ui_progress.md`
+- `docs/plans/project_slimming/handoffs/ui.md`
+
+## 禁止修改
+
+- `project.godot`
+- `Player/**`
+- `autoload/**`
+- 全局测试清单和测试执行器
+- `tests/README.md`
+- Player、Weapon、World、Startup 等其他测试目录
+- 其他范围进度文件
+- 并行提示词
+
+需要跨范围改动时，只写入 UI handoff。
+
+## 目标
+
+- `UI.gd` 只保留组件装配、生命周期协调和公开兼容门面。
+- 软目标约 600 行。
+- Controller 不持有用于回写私有状态的 `owner_ui`。
+- 保持 UI 行为、输入优先级、视觉和本地化结果不变。
+
+## 执行顺序
+
+### UI-1：任务模块对话框
+
+- 新增专用 `TaskModuleDialogController`。
+- 使用 `RefCounted`。
+- 只注入现有 `ModalDialogController`。
+- Controller 自己拥有 pending callback、模块 ID、索引和动态按钮。
+- `UI.gd` 保留两个同名公开薄门面。
+- 删除旧的六个状态字段及内部实现，不保留镜像。
+
+测试：
+- 统一模态行为测试。
+- 新 Controller 契约测试。
+- 确认、取消、右键、Esc、重复打开、按钮清理、回调一次性。
+
+### UI-2：管理菜单样式与布局
+
+- 把样式、本地化文本刷新和布局移入现有管理 Helper/Controller。
+- 重复静态样式使用共享 Theme/StyleBox。
+- 动态状态和布局留在 Controller。
+- 不做全量场景重建。
+
+视觉门禁：
+- 1280x720 英文与简体中文
+- 1920x1080 英文与简体中文
+
+### UI-3：统一模态协调
+
+- 扩展现有 `ModalUiController`。
+- 使用声明式有序注册表。
+- 统一可见、阻塞和取消能力。
+- 保持当前语义优先级。
+- `UI.gd` 负责启动注册和退出清理。
+- 删除重复 fallback 与长取消链。
+- 不新增 Autoload。
+
+### UI-4：HUD 刷新协调
+
+- 新协调器拥有信号、dirty 状态、调度、Presenter 调用和调试计数。
+- 离散状态由信号驱动。
+- 连续值最多 10 Hz 采样。
+- 隐藏或无关时停止采样。
+- 不产生每帧临时对象。
+
+### UI-5：输入协调
+
+- 新增 `UiInputCoordinator`。
+- 使用传入的 `InputEvent`，返回 consumed。
+- `UI.gd._input()` 只转发。
+- 不使用全局 Input 轮询。
+- 保持提示、模态取消、暂停和武器切换优先级。
+
+Player 主动技能输入的接线属于跨域集成：
+- 本范围只提供稳定的 UI 输入协调接口。
+- 不修改 Player。
+- 在 handoff 中写明建议接线和契约。
+- 不修改 Player 测试或跨域集成测试。
+
+## 每批验证
+
+- 先记录 `UI.gd` 行数、函数数、状态字段数和 Owner 反向依赖。
+- 缺少保护时先补特征测试。
+- 运行相关 UI 测试。
+- 运行 Godot 语法/资源检查。
+- 执行 `git diff --check`。
+- 更新 UI progress 和 handoff。
+
+## 停止条件
+
+- 需要修改 Player、Autoload 或 `project.godot`。
+- 需要改变可见布局或输入语义。
+- Controller 仍需回写 `UI.gd` 私有状态。
+- 当前批次开始包含两个独立职责。
+- 视觉或交互测试无法确定预期结果。

@@ -13,19 +13,55 @@ var _definitions_by_id: Dictionary = {}
 var _inventory: Dictionary = {}
 var _installed: Dictionary = {}
 var _pending: Dictionary = {}
+var _definition_prepare_result: Dictionary = {"ok": false, "errors": PackedStringArray(), "count": 0}
+var _runtime_state_loaded := false
 
 func _ready() -> void:
-	load_definitions()
-	load_runtime_state()
 	if not PhaseManager.phase_changed.is_connected(_on_phase_changed):
 		PhaseManager.phase_changed.connect(_on_phase_changed)
 
 func load_definitions() -> void:
-	_definitions_by_id.clear()
-	for path in RESOURCE_CATALOG.collect_resource_paths(EFFECT_DIRECTORY_PATH, ".tres", [], true, "CellEffectRuntime"):
-		var definition := load(path) as CellEffectDefinition
-		if definition != null and definition.effect_id.strip_edges() != "":
-			_definitions_by_id[definition.effect_id.strip_edges()] = definition
+	prepare_definitions(true)
+
+func prepare_definitions(force: bool = false) -> Dictionary:
+	if not force and bool(_definition_prepare_result.get("ok", false)):
+		_ensure_runtime_state_loaded()
+		return _definition_prepare_result.duplicate(true)
+	var catalog_result: Dictionary = RESOURCE_CATALOG.collect_startup_catalog_paths(
+		"cell_effects",
+		EFFECT_DIRECTORY_PATH,
+		".tres"
+	)
+	var errors := PackedStringArray()
+	if not bool(catalog_result.get("ok", false)):
+		errors.append_array(catalog_result.get("errors", PackedStringArray()))
+	var loaded_definitions := {}
+	for path in catalog_result.get("paths", PackedStringArray()):
+		var definition := load(str(path)) as CellEffectDefinition
+		if definition == null:
+			errors.append("invalid cell effect resource: %s" % str(path))
+			continue
+		var effect_id := definition.effect_id.strip_edges()
+		if effect_id == "":
+			errors.append("cell effect resource missing effect_id: %s" % str(path))
+			continue
+		if loaded_definitions.has(effect_id):
+			errors.append("duplicate effect_id '%s': %s" % [effect_id, str(path)])
+			continue
+		loaded_definitions[effect_id] = definition
+	if loaded_definitions.is_empty():
+		errors.append("no cell effect definitions were prepared")
+	if not errors.is_empty():
+		_definition_prepare_result = _build_prepare_result(false, errors, 0)
+		push_error("CellEffectRuntime: failed to prepare definitions: %s" % "; ".join(errors))
+		return _definition_prepare_result.duplicate(true)
+	_definitions_by_id = loaded_definitions
+	_definition_prepare_result = _build_prepare_result(true, errors, _definitions_by_id.size())
+	_ensure_runtime_state_loaded()
+	return _definition_prepare_result.duplicate(true)
+
+func get_definition_prepare_result() -> Dictionary:
+	return _definition_prepare_result.duplicate(true)
 
 func get_definition(effect_id: String) -> CellEffectDefinition:
 	var normalized := effect_id.strip_edges()
@@ -290,10 +326,12 @@ func save_runtime_state() -> void:
 func load_runtime_state() -> void:
 	var payload := _read_json_dictionary(STATE_PATH)
 	if payload.is_empty():
+		_runtime_state_loaded = true
 		return
 	_inventory = _sanitize_effect_count_dictionary(payload.get("inventory", {}))
 	_installed = _sanitize_cell_effect_dictionary(payload.get("installed", {}))
 	_pending = _sanitize_cell_effect_dictionary(payload.get("pending", {}))
+	_runtime_state_loaded = true
 	inventory_changed.emit()
 	pending_changed.emit()
 	installed_changed.emit()
@@ -304,9 +342,15 @@ func reset_runtime_state() -> void:
 	_pending.clear()
 	if FileAccess.file_exists(STATE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(STATE_PATH))
+	_runtime_state_loaded = true
 	inventory_changed.emit()
 	pending_changed.emit()
 	installed_changed.emit()
+
+func _ensure_runtime_state_loaded() -> void:
+	if _runtime_state_loaded:
+		return
+	load_runtime_state()
 
 func _pick_weighted_families(families: Dictionary, option_count: int) -> PackedStringArray:
 	var remaining := families.keys()
@@ -391,3 +435,10 @@ func _read_json_dictionary(path: String) -> Dictionary:
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.GAMEOVER:
 		reset_runtime_state()
+
+func _build_prepare_result(ok: bool, errors: PackedStringArray, count: int) -> Dictionary:
+	return {
+		"ok": ok,
+		"errors": errors,
+		"count": count,
+	}

@@ -63,6 +63,9 @@ func _run() -> void:
 		):
 			_fail(38, "ManagementUIPolishTest: %s primary menu layout does not match the shared style." % str(menu_id))
 			return
+	if not _shared_management_style_resources_match(ui):
+		_fail(63, "ManagementUIPolishTest: static management StyleBox resources are not shared.")
+		return
 	var reusable_menu := REUSABLE_PRIMARY_MENU_SCRIPT.new()
 	ui.gui_root.add_child(reusable_menu)
 	reusable_menu.configure(
@@ -179,14 +182,14 @@ func _run() -> void:
 	if not _is_primary_button(ui.shop_module_mode_button) or _is_primary_button(ui.shop_weapon_mode_button):
 		_fail(25, "ManagementUIPolishTest: module purchase mode button highlight is invalid.")
 		return
-	if ui.equipped_shop != null and ui.equipped_shop.visible:
+	if _legacy_equipped_shop_is_visible(ui):
 		_fail(61, "ManagementUIPolishTest: module purchase mode still shows the legacy equipped grid.")
 		return
 	ui.purchase_management_controller.apply_purchase_mode(&"weapon")
 	if not _is_primary_button(ui.shop_weapon_mode_button) or _is_primary_button(ui.shop_module_mode_button):
 		_fail(26, "ManagementUIPolishTest: weapon purchase mode button highlight is invalid.")
 		return
-	if ui.equipped_shop != null and ui.equipped_shop.visible:
+	if _legacy_equipped_shop_is_visible(ui):
 		_fail(62, "ManagementUIPolishTest: returning to weapon purchase mode re-shows the legacy equipped grid.")
 		return
 	if not _has_item_with_location(weapon_items, stored_weapon, "weapon", "仓库"):
@@ -350,6 +353,12 @@ func _detail_text(ui: UI) -> String:
 			parts.append(label.text)
 	return "\n".join(parts)
 
+func _legacy_equipped_shop_is_visible(ui: UI) -> bool:
+	if ui == null or ui.purchase_management_view == null:
+		return false
+	var equipped := ui.purchase_management_view.get_node_or_null("Equipped") as Control
+	return equipped != null and equipped.visible
+
 func _is_primary_button(button: Button) -> bool:
 	if button == null:
 		return false
@@ -384,6 +393,25 @@ func _primary_menu_layout_matches(panel: Panel, buttons: Array) -> bool:
 			print("Primary menu style mismatch: ", panel.get_path(), " index=", index, " color=", style.bg_color if style else Color.BLACK)
 			return false
 	return true
+
+func _shared_management_style_resources_match(ui: UI) -> bool:
+	var purchase_panel_style := ui.purchase_panel.get_theme_stylebox("panel")
+	if purchase_panel_style == null \
+			or purchase_panel_style != ui.upgrade_panel.get_theme_stylebox("panel") \
+			or purchase_panel_style != ui.module_panel.get_theme_stylebox("panel"):
+		return false
+	var purchase_button := ui.purchase_primary_panel.get_node_or_null("OpenBuyButton") as Button
+	var upgrade_button := ui.upgrade_primary_panel.get_node_or_null("OpenUpgradeButton") as Button
+	if purchase_button == null or upgrade_button == null:
+		return false
+	return (
+		purchase_button.get_theme_stylebox("normal")
+		== upgrade_button.get_theme_stylebox("normal")
+		and purchase_button.get_theme_stylebox("hover")
+		== upgrade_button.get_theme_stylebox("hover")
+		and purchase_button.get_theme_stylebox("pressed")
+		== upgrade_button.get_theme_stylebox("pressed")
+	)
 
 func _find_first_enabled_socket(view: ModuleManagementView) -> Button:
 	if view == null:

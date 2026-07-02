@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://Player/Weapons/weapon.tscn" id="1_weapon"]
+[ext_resource type="Script" path="res://tests/headless/player/player_active_skill_test_weapon.gd" id="2_script"]
+
+[node name="PlayerActiveSkillTestWeapon" instance=ExtResource("1_weapon")]
+script = ExtResource("2_script")
+weapon_active_cooldown_sec = 8.0
+weapon_active_resource_type = "energy"
+weapon_active_resource_cost = 20.0
+magazine_capacity = 6
+reload_duration_sec = 1.0

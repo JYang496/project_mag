@@ -2,33 +2,47 @@ extends Node
 
 const RESOURCE_CATALOG := preload("res://autoload/ResourceCatalog.gd")
 const ROUTE_DIRECTORY_PATH := "res://data/routes/"
-const ROUTE_RESOURCE_PATHS := [
-	"res://data/routes/normal_route.tres",
-	"res://data/routes/bonus_route.tres",
-	"res://data/routes/difficult_route.tres",
-]
 const DEFAULT_ROUTE_ID := "normal"
 
 var _routes_by_id: Dictionary = {}
 var _route_history_by_level: Dictionary = {}
+var _route_prepare_result: Dictionary = {"ok": false, "errors": PackedStringArray(), "count": 0}
 
 func _ready() -> void:
-	reload_route_definitions()
+	pass
 
 func reset_runtime_state() -> void:
 	_route_history_by_level.clear()
 
 func reload_route_definitions() -> void:
-	_routes_by_id.clear()
-	for path in RESOURCE_CATALOG.collect_resource_paths(ROUTE_DIRECTORY_PATH, ".tres", ROUTE_RESOURCE_PATHS):
-		_register_route_resource(load(path), path)
-	if _routes_by_id.is_empty():
-		var fallback := RunRouteDefinition.new()
-		fallback.route_id = DEFAULT_ROUTE_ID
-		fallback.display_name = "Normal Route"
-		fallback.description = "Fallback route definition"
-		fallback.sanitize()
-		_routes_by_id[fallback.route_id] = fallback
+	prepare_route_definitions(true)
+
+func prepare_route_definitions(force: bool = false) -> Dictionary:
+	if not force and bool(_route_prepare_result.get("ok", false)):
+		return _route_prepare_result.duplicate(true)
+	var catalog_result: Dictionary = RESOURCE_CATALOG.collect_startup_catalog_paths(
+		"routes",
+		ROUTE_DIRECTORY_PATH,
+		".tres"
+	)
+	var errors := PackedStringArray()
+	if not bool(catalog_result.get("ok", false)):
+		errors.append_array(catalog_result.get("errors", PackedStringArray()))
+	var loaded_routes := {}
+	for path in catalog_result.get("paths", PackedStringArray()):
+		_register_route_resource(load(str(path)), str(path), loaded_routes, errors)
+	if loaded_routes.is_empty():
+		errors.append("no route definitions were prepared")
+	if not errors.is_empty():
+		_route_prepare_result = _build_prepare_result(false, errors, 0)
+		push_error("RunRouteManager: failed to prepare routes: %s" % "; ".join(errors))
+		return _route_prepare_result.duplicate(true)
+	_routes_by_id = loaded_routes
+	_route_prepare_result = _build_prepare_result(true, errors, _routes_by_id.size())
+	return _route_prepare_result.duplicate(true)
+
+func get_route_prepare_result() -> Dictionary:
+	return _route_prepare_result.duplicate(true)
 
 func get_default_route_id() -> String:
 	return DEFAULT_ROUTE_ID
@@ -105,13 +119,24 @@ func _resolve_route_definition(route_id: String) -> RunRouteDefinition:
 	fallback.sanitize()
 	return fallback
 
-func _register_route_resource(resource: Resource, source_path: String) -> void:
+func _register_route_resource(resource: Resource, source_path: String, output: Dictionary, errors: PackedStringArray) -> void:
 	var route_def := resource as RunRouteDefinition
 	if route_def == null:
-		push_warning("Invalid route resource skipped: %s" % source_path)
+		errors.append("invalid route resource: %s" % source_path)
+		return
+	var raw_route_id := route_def.route_id.strip_edges().to_lower()
+	if raw_route_id == "":
+		errors.append("route resource missing route_id: %s" % source_path)
 		return
 	route_def.sanitize()
-	if route_def.route_id == "":
-		push_warning("Route resource missing route_id: %s" % source_path)
+	if output.has(route_def.route_id):
+		errors.append("duplicate route_id '%s': %s" % [route_def.route_id, source_path])
 		return
-	_routes_by_id[route_def.route_id] = route_def
+	output[route_def.route_id] = route_def
+
+func _build_prepare_result(ok: bool, errors: PackedStringArray, count: int) -> Dictionary:
+	return {
+		"ok": ok,
+		"errors": errors,
+		"count": count,
+	}

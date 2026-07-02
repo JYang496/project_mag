@@ -4,9 +4,6 @@ class_name UI
 # Top-level UI coordinator. Keep legacy fields and methods stable while moving
 # subsystem behavior into controllers, presenters, and views.
 
-const PRIMARY_MENU_BUTTON_POSITION_1 := Vector2(28, 108)
-const PRIMARY_MENU_BUTTON_POSITION_2 := Vector2(28, 166)
-const PRIMARY_MENU_BUTTON_SIZE := Vector2(220, 46)
 const HP_BAR_ANIM_TIME := 0.2
 const HP_BAR_TRANS := Tween.TRANS_SINE
 const HP_BAR_EASE := Tween.EASE_OUT
@@ -20,6 +17,7 @@ const EQUIPMENT_PICKUP_FLOW_CONTROLLER_SCRIPT := preload("res://UI/scripts/compo
 const WEAPON_BRANCH_SELECTION_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/weapon_branch_selection_controller.gd")
 const MODULE_TRANSACTION_DIALOG_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/module_transaction_dialog_controller.gd")
 const MODAL_DIALOG_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/modal_dialog_controller.gd")
+const TASK_MODULE_DIALOG_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/task_module_dialog_controller.gd")
 const REST_AREA_MANAGEMENT_SHELL_SCRIPT := preload("res://UI/scripts/management/rest_area_management_shell.gd")
 const REST_AREA_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/rest_area_ui_controller.gd")
 const PURCHASE_MANAGEMENT_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/purchase_management_controller.gd")
@@ -27,7 +25,6 @@ const UPGRADE_MANAGEMENT_CONTROLLER_SCRIPT := preload("res://UI/scripts/manageme
 const MODULE_WAREHOUSE_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/module_warehouse_controller.gd")
 const MANAGEMENT_UI_STYLE_HELPER_SCRIPT := preload("res://UI/scripts/management/management_ui_style_helper.gd")
 const MANAGEMENT_UI_BOOTSTRAP_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/management_ui_bootstrap_controller.gd")
-const REUSABLE_PRIMARY_MENU_SCRIPT := preload("res://UI/scripts/management/reusable_primary_menu.gd")
 const MODAL_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/modal_ui_controller.gd")
 const UI_LAYOUT_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/ui_layout_controller.gd")
 const PAUSE_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/pause_ui_controller.gd")
@@ -178,12 +175,6 @@ var cell_management_panel: Control
 var cell_effect_commit_dialog: ConfirmationDialog
 var _pending_cell_effect_commit := Callable()
 var _pending_cell_effect_cancel := Callable()
-var _pending_task_module_unassigned_confirm := Callable()
-var _pending_task_module_unassigned_cancel := Callable()
-var _pending_task_module_replacement_callback := Callable()
-var _pending_task_module_replacement_new_module_id := ""
-var _pending_task_module_replacement_confirm_index := -1
-var _task_module_replacement_custom_buttons: Array[Button] = []
 @warning_ignore("unused_private_class_variable")
 var _primary_menu_tweens: Dictionary = {}
 var spread_cursor_overlay
@@ -196,6 +187,7 @@ var equipment_pickup_flow_controller
 var weapon_branch_selection_controller
 var module_transaction_dialog_controller
 var modal_dialog_controller
+var task_module_dialog_controller
 var rest_area_management_shell
 var rest_area_ui_controller
 var purchase_management_controller
@@ -247,6 +239,10 @@ func _ready():
 func _exit_tree() -> void:
 	_disconnect_ui_dirty_signals()
 	_disconnect_weapon_passive_status_signals()
+	if modal_ui_controller != null:
+		modal_ui_controller.clear_modal_registry()
+	if task_module_dialog_controller != null:
+		task_module_dialog_controller.dispose()
 	if GlobalVariables.ui == self:
 		GlobalVariables.ui = null
 
@@ -525,6 +521,7 @@ func _complete_queued_module_pickup(assigned: bool, on_complete: Callable = Call
 
 func _init_module_action_dialogs() -> void:
 	_init_modal_dialog_controller()
+	_init_task_module_dialog_controller()
 	if module_transaction_dialog_controller == null:
 		module_transaction_dialog_controller = MODULE_TRANSACTION_DIALOG_CONTROLLER_SCRIPT.new()
 		module_transaction_dialog_controller.bind(self, gui_root, modal_dialog_controller)
@@ -538,6 +535,13 @@ func _init_modal_dialog_controller() -> void:
 		return
 	modal_dialog_controller = MODAL_DIALOG_CONTROLLER_SCRIPT.new()
 	modal_dialog_controller.bind(self, gui_root)
+
+func _init_task_module_dialog_controller() -> void:
+	_init_modal_dialog_controller()
+	if task_module_dialog_controller != null:
+		return
+	task_module_dialog_controller = TASK_MODULE_DIALOG_CONTROLLER_SCRIPT.new()
+	task_module_dialog_controller.bind(modal_dialog_controller)
 
 func confirm(spec: Dictionary) -> bool:
 	_init_modal_dialog_controller()
@@ -1080,6 +1084,8 @@ func _cancel_top_level_non_battle_ui() -> bool:
 		return true
 	if cancel_visible_dialog():
 		return true
+	if modal_ui_controller != null and modal_ui_controller.cancel_visible_modal():
+		return true
 	if temporary_module_settlement_dialog and temporary_module_settlement_dialog.visible:
 		temporary_module_settlement_dialog.hide()
 		_on_temporary_module_settlement_cancelled()
@@ -1088,22 +1094,10 @@ func _cancel_top_level_non_battle_ui() -> bool:
 		module_action_dialog.hide()
 		_pending_module_action = Callable()
 		return true
-	if weapon_replacement_panel and weapon_replacement_panel.visible:
-		weapon_replacement_panel.call("_on_cancel_pressed")
-		return not weapon_replacement_panel.visible
-	if route_selection_panel and route_selection_panel.visible:
-		route_selection_panel.call("_on_cancel_pressed")
-		return not route_selection_panel.visible
-	if reward_selection_panel and reward_selection_panel.visible:
-		reward_selection_panel.call("_on_cancel_pressed")
-		return not reward_selection_panel.visible
 	if board_edit_panel and is_instance_valid(board_edit_panel) and board_edit_panel.visible:
 		if board_edit_panel.has_method("clear_selection_if_any") and bool(board_edit_panel.call("clear_selection_if_any")):
 			return true
 		return request_close_board_edit_panel(true)
-	if module_equip_selection_panel and module_equip_selection_panel.visible:
-		module_equip_selection_panel.close_without_assignment()
-		return true
 	if rest_area_ui_controller != null and rest_area_ui_controller.active:
 		return rest_area_ui_controller.cancel_menu_level()
 	return false
@@ -1164,42 +1158,8 @@ func _ensure_management_menu_buttons() -> void:
 	management_ui_bootstrap_controller.ensure_management_menu_buttons()
 
 func _style_primary_menu_controls() -> void:
-	_refresh_board_edit_primary_texts()
-	if rest_area_ui_controller != null:
-		for menu_id in rest_area_ui_controller.get_registered_service_menu_ids():
-			_style_primary_menu_panel(
-				rest_area_ui_controller.get_service_primary_panel(menu_id),
-				rest_area_ui_controller.get_service_primary_buttons(menu_id)
-			)
-		return
-	_style_primary_menu_panel(
-		purchase_primary_panel,
-		[
-			purchase_primary_panel.get_node_or_null("OpenBuyButton") as Button,
-			purchase_primary_panel.get_node_or_null("OpenBuyModuleButton") as Button,
-		]
-	)
-	_style_primary_menu_panel(
-		upgrade_primary_panel,
-		[
-			upgrade_primary_panel.get_node_or_null("OpenUpgradeButton") as Button,
-			upgrade_module_button,
-		]
-	)
-	_style_primary_menu_panel(
-		warehouse_primary_panel,
-		[
-			weapon_warehouse_button,
-			warehouse_primary_panel.get_node_or_null("OpenModuleButton") as Button,
-		]
-	)
-	_style_primary_menu_panel(
-		board_edit_primary_panel,
-		[
-			board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button,
-			board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button,
-		]
-	)
+	_init_management_ui_bootstrap_controller()
+	management_ui_bootstrap_controller.style_primary_menu_controls()
 
 func is_rest_area_zone_navigation_allowed() -> bool:
 	# Compatibility entrypoint for RestArea/world-blocking tests.
@@ -1211,178 +1171,21 @@ func is_rest_area_menu_visible() -> bool:
 	_init_rest_area_ui_controller()
 	return rest_area_ui_controller.is_menu_visible()
 
-func _refresh_board_edit_primary_texts() -> void:
-	if board_edit_primary_panel == null:
-		return
-	var title := board_edit_primary_panel.get_node_or_null("Title") as Label
-	if title:
-		title.text = LocalizationManager.tr_key("ui.cell_management.title", "Board")
-	var subtitle := board_edit_primary_panel.get_node_or_null("SubTitle") as Label
-	if subtitle:
-		subtitle.text = LocalizationManager.tr_key(
-			"ui.cell_management.subtitle",
-			"Install cell effects or deploy task modules."
-		)
-	var grid_button := board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button
-	if grid_button:
-		grid_button.text = LocalizationManager.tr_key("ui.cell_management.board_entry", "Grid Management")
-	var task_button := board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button
-	if task_button:
-		task_button.text = LocalizationManager.tr_key("ui.cell_management.task_entry", "Task Management")
-
-func _style_primary_menu_panel(panel: Panel, buttons: Array) -> void:
-	REUSABLE_PRIMARY_MENU_SCRIPT.apply_shared_layout(
-		panel,
-		buttons,
-		management_ui_style_helper
-	)
-
 func request_task_module_unassigned_confirmation(
 	unassigned_count: int,
 	on_confirm: Callable,
 	on_cancel: Callable = Callable()
 ) -> bool:
-	_pending_task_module_unassigned_confirm = on_confirm
-	_pending_task_module_unassigned_cancel = on_cancel
-	return request_confirmation(
-		&"task_module_unassigned_start_battle",
-		LocalizationManager.tr_key("ui.task_module.unassigned_title", "Unassigned Task Modules"),
-		LocalizationManager.tr_format(
-			"ui.task_module.unassigned_warning",
-			{"count": unassigned_count},
-			"You have %d unassigned task module(s). Starting battle will discard them. Deployed tasks will be consumed for the next battle." % unassigned_count
-		),
-		LocalizationManager.tr_key("ui.common.continue", "Continue"),
-		LocalizationManager.tr_key("ui.common.cancel", "Cancel"),
-		Callable(self, "_on_task_module_unassigned_confirmed"),
-		Callable(self, "_on_task_module_unassigned_cancelled"),
-		true,
-		Vector2i(520, 260)
+	_init_task_module_dialog_controller()
+	return task_module_dialog_controller.request_unassigned_confirmation(
+		unassigned_count,
+		on_confirm,
+		on_cancel
 	)
-
-func _on_task_module_unassigned_confirmed(_dialog_id: StringName = &"") -> void:
-	var callback := _pending_task_module_unassigned_confirm
-	_pending_task_module_unassigned_confirm = Callable()
-	_pending_task_module_unassigned_cancel = Callable()
-	if callback.is_valid():
-		callback.call_deferred()
 
 func request_task_module_replacement(new_module_id: String, on_replace: Callable) -> bool:
-	_pending_task_module_replacement_callback = on_replace
-	_pending_task_module_replacement_new_module_id = new_module_id
-	var new_definition := CellTaskModuleRuntime.get_definition(_pending_task_module_replacement_new_module_id)
-	var inventory := CellTaskModuleRuntime.get_inventory_snapshot()
-	if inventory.is_empty():
-		_on_task_module_replacement_cancelled()
-		return false
-	_pending_task_module_replacement_confirm_index = 0
-	var body_lines := [
-		LocalizationManager.tr_format(
-			"ui.task_module.inventory_full_choose_discard",
-			{"module": _format_task_module_for_dialog(new_definition, _pending_task_module_replacement_new_module_id)},
-			"Inventory full. Choose one existing task module to discard.\nIncoming: %s" % _format_task_module_for_dialog(new_definition, _pending_task_module_replacement_new_module_id)
-		),
-		"",
-		LocalizationManager.tr_key("ui.task_module.old_module_discarded", "The old module will be discarded.")
-	]
-	var opened := request_confirmation(
-		&"task_module_inventory_replacement",
-		LocalizationManager.tr_key("ui.task_module.replace_title", "Replace Task Module"),
-		"\n".join(body_lines),
-		_format_task_module_discard_slot_button(0, str(inventory[0])),
-		LocalizationManager.tr_key("ui.common.cancel", "Cancel"),
-		Callable(self, "_on_task_module_replacement_primary_confirmed"),
-		Callable(self, "_on_task_module_replacement_cancelled"),
-		true,
-		Vector2i(620, 320)
-	)
-	if not opened:
-		_on_task_module_replacement_cancelled()
-		return false
-	_attach_task_module_replacement_slot_buttons(inventory)
-	return true
-
-func _attach_task_module_replacement_slot_buttons(inventory: PackedStringArray) -> void:
-	_clear_task_module_replacement_custom_buttons()
-	if modal_dialog_controller == null or modal_dialog_controller.dialog == null:
-		return
-	var dialog: ConfirmationDialog = modal_dialog_controller.dialog
-	for index in range(1, inventory.size()):
-		var action := "discard_slot_%d" % index
-		var button := dialog.add_button(
-			_format_task_module_discard_slot_button(index, str(inventory[index])),
-			false,
-			action
-		)
-		_task_module_replacement_custom_buttons.append(button)
-	var custom_callback := Callable(self, "_on_task_module_replacement_custom_action")
-	if not dialog.custom_action.is_connected(custom_callback):
-		dialog.custom_action.connect(custom_callback)
-
-func _format_task_module_discard_slot_button(index: int, module_id: String) -> String:
-	return LocalizationManager.tr_format(
-		"ui.task_module.discard_slot",
-		{
-			"slot": index + 1,
-			"module": _format_task_module_for_dialog(CellTaskModuleRuntime.get_definition(module_id), module_id)
-		},
-		"Discard slot %d: %s" % [index + 1, _format_task_module_for_dialog(CellTaskModuleRuntime.get_definition(module_id), module_id)]
-	)
-
-func _clear_task_module_replacement_custom_buttons() -> void:
-	for button in _task_module_replacement_custom_buttons:
-		if button != null and is_instance_valid(button):
-			button.queue_free()
-	_task_module_replacement_custom_buttons.clear()
-	if modal_dialog_controller != null and modal_dialog_controller.dialog != null:
-		var custom_callback := Callable(self, "_on_task_module_replacement_custom_action")
-		if modal_dialog_controller.dialog.custom_action.is_connected(custom_callback):
-			modal_dialog_controller.dialog.custom_action.disconnect(custom_callback)
-
-func _format_task_module_for_dialog(definition: TaskModuleDefinition, fallback_id: String) -> String:
-	if definition == null:
-		return fallback_id
-	return definition.get_display_name()
-
-func _on_task_module_replacement_primary_confirmed(_dialog_id: StringName = &"") -> void:
-	_on_task_module_replacement_index_selected(_pending_task_module_replacement_confirm_index)
-
-func _on_task_module_replacement_custom_action(action: StringName) -> void:
-	var action_text := str(action)
-	if not action_text.begins_with("discard_slot_"):
-		return
-	var index := int(action_text.trim_prefix("discard_slot_"))
-	_on_task_module_replacement_index_selected(index)
-
-func _on_task_module_replacement_index_selected(index: int) -> void:
-	var callback := _pending_task_module_replacement_callback
-	_clear_task_module_replacement_custom_buttons()
-	_pending_task_module_replacement_callback = Callable()
-	_pending_task_module_replacement_new_module_id = ""
-	_pending_task_module_replacement_confirm_index = -1
-	if modal_dialog_controller != null:
-		modal_dialog_controller.cancel_visible_dialog()
-	if callback.is_valid():
-		callback.call_deferred(index)
-
-func _on_task_module_replacement_cancelled(_dialog_id: StringName = &"") -> void:
-	_clear_task_module_replacement_custom_buttons()
-	_pending_task_module_replacement_callback = Callable()
-	_pending_task_module_replacement_new_module_id = ""
-	_pending_task_module_replacement_confirm_index = -1
-
-func _on_task_module_unassigned_cancelled(_dialog_id: StringName = &"") -> void:
-	var callback := _pending_task_module_unassigned_cancel
-	_pending_task_module_unassigned_confirm = Callable()
-	_pending_task_module_unassigned_cancel = Callable()
-	if callback.is_valid():
-		callback.call_deferred()
-
-func _style_management_panel(panel: Panel) -> void:
-	management_ui_style_helper.style_management_panel(panel)
-
-func _connect_management_panel_input_blockers() -> void:
-	management_ui_style_helper.connect_management_panel_input_blockers(self, [purchase_panel, upgrade_panel, module_panel])
+	_init_task_module_dialog_controller()
+	return task_module_dialog_controller.request_replacement(new_module_id, on_replace)
 
 func _on_management_panel_gui_input(event: InputEvent, panel: Panel) -> void:
 	if event is InputEventMouseButton or event is InputEventScreenTouch:
@@ -1397,12 +1200,6 @@ func _refresh_mode_button_styles(
 	weapon_mode_active: bool
 ) -> void:
 	management_ui_style_helper.refresh_mode_button_styles(weapon_button, module_button, weapon_mode_active)
-
-func _position_management_button(button: Button, position: Vector2, button_size: Vector2) -> void:
-	management_ui_style_helper.position_management_button(button, position, button_size)
-
-func _create_management_instruction(panel: Panel, node_name: String, position: Vector2, label_size: Vector2) -> Label:
-	return management_ui_style_helper.create_management_instruction(panel, node_name, position, label_size)
 
 func _on_resume_button_pressed() -> void:
 	if get_tree().paused:
