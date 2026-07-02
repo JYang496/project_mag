@@ -19,6 +19,7 @@ func _on_pressed() -> void:
 	PlayerData.reset_runtime_state()
 	InventoryData.reset_runtime_state()
 	TaskRewardManager.reset_runtime_state(false)
+	RewardDraftRuntime.reset_runtime_state(false)
 	CellTaskModuleRuntime.grant_starting_cell_loadout(0)
 	PlayerData.select_mecha_id = selected_mecha_id
 	PlayerData.set_hp_safety_for_testing(keep_hp_safety)

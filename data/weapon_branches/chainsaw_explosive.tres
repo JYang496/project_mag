@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "explosive_saw"
 display_name = "Explosive Saw"
-description = "First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE."
+description = "Area branch. First hit arms the saw so it slows, grows, then explodes, trading chase pressure for grouped Close/Area cleanup."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

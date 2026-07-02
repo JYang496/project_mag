@@ -226,13 +226,20 @@ ui.controls.auto_reload,Auto Reload On,自动装填已开启
 ui.controls.switch_weapon,Switch Weapon,切换武器
 ui.controls.pause,Pause,暂停
 ui.controls.expand,Expand,展开
+ui.controls.expand_tooltip,Expand controls hint (F1),展开操作提示（F1）
 ui.controls.collapse,Collapse,收起
-ui.controls.collapse_tooltip,Collapse controls hint (F1),收起操作提示（F1）
+ui.controls.collapse_tooltip,Temporarily collapse controls hint (F1),临时收起操作提示（F1）
+ui.controls.hidden,Hidden,隐藏
+ui.controls.hidden_tooltip,Controls hint is hidden by setting.,操作提示已被设置隐藏。
+ui.controls.always_expanded,Always Expanded,始终展开
+ui.controls.always_expanded_tooltip,Controls setting is Always Expanded. Change it to Adaptive to collapse hints.,当前设置为始终展开；切换为智能显示后才能收起提示。
+ui.controls.compact_context,{context} controls,{context}操作
 ui.controls.key.space,Space,空格
 ui.controls.key.lmb,LMB,左键
 ui.controls.key.rmb,RMB,右键
 ui.controls.key.mmb,MMB,中键
 ui.settings.controls_hint,Controls,操作指引
+ui.settings.controls_hint.tooltip,Adaptive opens new hints and lets F1 collapse them. Always Expanded keeps hints open. Hidden hides the panel.,智能显示会展开新提示，F1 只临时收起；始终展开会保持提示展开；隐藏会关闭提示面板。
 ui.settings.controls_hint.adaptive,Adaptive,智能显示
 ui.settings.controls_hint.always,Always Expanded,始终展开
 ui.settings.controls_hint.hidden,Hidden,隐藏

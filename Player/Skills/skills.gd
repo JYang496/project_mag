@@ -2,6 +2,7 @@ extends Node2D
 class_name Skills
 
 @export var cooldown: float = 0.0
+@export var energy_cost: float = 50.0
 
 var _player: Player
 var _on_cooldown := false
@@ -45,6 +46,8 @@ func _on_player_active_skill_requested() -> void:
 		return
 	if not can_activate():
 		return
+	if not _pay_energy_cost():
+		return
 	activate_skill()
 	if cooldown > 0.0:
 		_start_cooldown()
@@ -78,6 +81,19 @@ func can_activate() -> bool:
 
 func activate_skill() -> void:
 	pass
+
+func get_energy_cost() -> float:
+	return maxf(energy_cost, 0.0)
+
+func _pay_energy_cost() -> bool:
+	var required := get_energy_cost()
+	if required <= 0.0:
+		return true
+	if _player == null or not is_instance_valid(_player):
+		return false
+	if not _player.has_method("consume_energy"):
+		return false
+	return bool(_player.call("consume_energy", required))
 
 func get_cooldown_remaining() -> float:
 	return _cooldown_remaining

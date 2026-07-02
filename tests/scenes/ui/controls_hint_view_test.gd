@@ -15,6 +15,7 @@ func _run() -> void:
 	_original_mode = PlayerAssistSettings.controls_hint_mode
 	_original_auto_reload = PlayerAssistSettings.auto_reload_switch
 	_original_locale = LocalizationManager.get_locale()
+	LocalizationManager.set_locale("en", false)
 	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE
 	PlayerAssistSettings.auto_reload_switch = false
 	PhaseManager.phase = PhaseManager.BATTLE
@@ -58,11 +59,41 @@ func _run() -> void:
 	_assert_visible_labels_within(hint, "Expanded long text")
 	hint.refresh_input_glyphs()
 
-	hint.set_display_state(ControlsHintView.DisplayState.COMPACT, false)
+	hint.set_display_state(ControlsHintView.DisplayState.EXPANDED, false)
+	hint._on_toggle_button_pressed()
+	_assert_equal(
+		ControlsHintView.DisplayState.COMPACT,
+		hint.display_state,
+		"Header collapse button should use the same temporary collapse path."
+	)
+	_assert_equal(
+		PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE,
+		PlayerAssistSettings.controls_hint_mode,
+		"Header collapse button should preserve adaptive mode."
+	)
 	hint.compact_text.text = "WASD Move · Left Mouse Attack · Space Player Skill · Q/E Switch Weapon · R Reload"
 	hint.compact_expand.text = "F1 Expand Controls"
 	await get_tree().process_frame
 	_assert_visible_labels_within(hint, "Compact long text")
+	_assert_false(
+		hint.gui_input.is_connected(Callable(hint, "_on_panel_gui_input")),
+		"Controls hint panel should not be the click target."
+	)
+	_assert_false(
+		hint.expanded_content.gui_input.is_connected(Callable(hint, "_on_panel_gui_input")),
+		"Expanded controls hint content should not be the click target."
+	)
+	_assert_true(
+		hint.compact_expand.pressed.is_connected(Callable(hint, "_on_compact_expand_button_pressed")),
+		"Compact controls hint should expose a dedicated expand button."
+	)
+	hint._on_compact_expand_button_pressed()
+	_assert_equal(
+		ControlsHintView.DisplayState.EXPANDED,
+		hint.display_state,
+		"Pressing the compact expand button should expand the controls hint."
+	)
+	hint._request_display_state(ControlsHintView.DisplayState.COMPACT)
 	hint.set_display_state(ControlsHintView.DisplayState.EXPANDED, false)
 
 	var reload_item := hint._action_items.get(&"reload", null) as HBoxContainer
@@ -114,14 +145,25 @@ func _run() -> void:
 		hint.display_state,
 		"Second F1 press should release the manual lock and collapse the hint."
 	)
-	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_HIDDEN
-	hint.set_display_state(ControlsHintView.DisplayState.HIDDEN, false)
-	hint.handle_input_event(toggle_event)
 	_assert_equal(
 		PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE,
 		PlayerAssistSettings.controls_hint_mode,
-		"F1 should recover controls after hidden mode."
+		"Temporary F1 collapse should preserve adaptive mode."
 	)
+	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_HIDDEN
+	hint.set_display_state(ControlsHintView.DisplayState.HIDDEN, false)
+	_assert_false(hint.handle_input_event(toggle_event), "F1 should not be consumed while controls hint is hidden by setting.")
+	_assert_equal(
+		PlayerAssistSettings.CONTROLS_HINT_HIDDEN,
+		PlayerAssistSettings.controls_hint_mode,
+		"F1 should not rewrite the persistent hidden mode."
+	)
+	_assert_equal(
+		ControlsHintView.DisplayState.HIDDEN,
+		hint.display_state,
+		"Hidden mode should remain hidden until the persistent setting changes."
+	)
+	_assert_true(hint.collapse_button.disabled, "Hidden mode should disable the header button affordance.")
 
 	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE
 	_assert_true(
@@ -150,29 +192,100 @@ func _run() -> void:
 	_assert_equal(
 		ControlsHintView.DisplayState.EXPANDED,
 		hint.display_state,
-		"Secondary menu controls context should open expanded."
+		"Warehouse controls context should open expanded the first time."
 	)
 	hint.handle_input_event(toggle_event)
 	_assert_equal(
 		ControlsHintView.DisplayState.COMPACT,
 		hint.display_state,
-		"F1 should collapse a secondary menu controls context."
+		"F1 should collapse the warehouse controls context."
 	)
 	_assert_true(
-		hint.compact_text.text.contains(LocalizationManager.tr_key("ui.tutorial.state.secondary.warehouse", "Current: Warehouse")),
-		"Collapsed secondary menu controls should keep the current context title."
+		hint.compact_text.text == "Warehouse controls",
+		"Collapsed secondary menu controls should keep a compact context summary."
+	)
+	_assert_true(
+		hint.compact_expand.text == "F1 Expand",
+		"Collapsed secondary menu controls should expose the F1 expand action."
+	)
+	_assert_false(
+		hint.compact_text.text.contains(LocalizationManager.tr_key("ui.tutorial.panel.secondary.warehouse.line1", "")),
+		"Collapsed secondary menu controls should not include full tutorial text."
 	)
 	hint.refresh_for_phase(PhaseManager.PREPARE, true, &"warehouse")
 	_assert_equal(
 		ControlsHintView.DisplayState.COMPACT,
 		hint.display_state,
-		"Refreshing the same secondary menu should not force the controls context open again."
+		"Refreshing the same warehouse context should not force the controls context open again."
+	)
+	hint.refresh_for_phase(PhaseManager.PREPARE, true, &"upgrade")
+	_assert_equal(
+		ControlsHintView.DisplayState.EXPANDED,
+		hint.display_state,
+		"Switching to upgrade should open expanded the first time."
+	)
+	hint.handle_input_event(toggle_event)
+	_assert_equal(
+		ControlsHintView.DisplayState.COMPACT,
+		hint.display_state,
+		"F1 should collapse the upgrade controls context."
+	)
+	hint.refresh_for_phase(PhaseManager.PREPARE, true, &"warehouse")
+	_assert_equal(
+		ControlsHintView.DisplayState.COMPACT,
+		hint.display_state,
+		"Returning to a collapsed warehouse context should keep it compact."
+	)
+	hint.refresh_for_phase(PhaseManager.PREPARE, true, &"task_management")
+	_assert_equal(
+		ControlsHintView.DisplayState.EXPANDED,
+		hint.display_state,
+		"Switching to task management should open expanded the first time."
+	)
+	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_ALWAYS
+	hint.refresh_for_phase(PhaseManager.PREPARE, true, &"warehouse")
+	_assert_equal(
+		ControlsHintView.DisplayState.EXPANDED,
+		hint.display_state,
+		"Always Expanded should override per-context compact memory."
+	)
+	_assert_true(hint.collapse_button.disabled, "Always Expanded should disable the collapse button.")
+	_assert_false(
+		hint.collapse_button.text.contains(LocalizationManager.tr_key("ui.controls.collapse", "Collapse")),
+		"Always Expanded button text should not promise collapse."
+	)
+	_assert_false(
+		hint._request_display_state(ControlsHintView.DisplayState.COMPACT),
+		"Unified display request should reject compact while Always Expanded is selected."
+	)
+	_assert_true(
+		hint._request_display_state(ControlsHintView.DisplayState.EXPANDED),
+		"Unified display request should allow expanded while Always Expanded is selected."
+	)
+	_assert_false(hint.handle_input_event(toggle_event), "F1 should not be consumed while Always Expanded is selected.")
+	hint._on_toggle_button_pressed()
+	_assert_equal(
+		ControlsHintView.DisplayState.EXPANDED,
+		hint.display_state,
+		"F1 and the header button should not compact controls while Always Expanded is selected."
+	)
+	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE
+	hint.refresh_for_phase(PhaseManager.PREPARE, true, &"warehouse")
+	_assert_equal(
+		ControlsHintView.DisplayState.COMPACT,
+		hint.display_state,
+		"Adaptive mode should restore the remembered warehouse compact state."
 	)
 	hint.handle_input_event(toggle_event)
 	_assert_equal(
 		ControlsHintView.DisplayState.EXPANDED,
 		hint.display_state,
-		"Second F1 press should expand a secondary menu controls context."
+		"F1 should expand a compact secondary menu controls context."
+	)
+	_assert_equal(
+		PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE,
+		PlayerAssistSettings.controls_hint_mode,
+		"Temporary F1 expansion in text context should preserve adaptive mode."
 	)
 	PhaseManager.phase = PhaseManager.BATTLE
 	hint.refresh_for_phase(PhaseManager.BATTLE, false)
@@ -192,10 +305,34 @@ func _run() -> void:
 	var attack_key := attack_item.get_node_or_null("Key") as Label if attack_item else null
 	_assert_equal("左键", attack_key.text if attack_key else "", "Chinese mouse key label should use the short name.")
 	_assert_true(hint.collapse_button.text.contains("收起"), "Collapse button should have an explicit Chinese label.")
+	PhaseManager.phase = PhaseManager.PREPARE
+	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE
+	hint.refresh_for_phase(PhaseManager.PREPARE, true, &"warehouse")
+	hint.handle_input_event(toggle_event)
+	var zh_context_name := hint._compact_context_name(LocalizationManager.tr_key("ui.tutorial.state.secondary.warehouse", "Current: Warehouse"))
+	var zh_expected_compact := LocalizationManager.tr_key("ui.controls.compact_context", "{context} controls").format({
+		"context": zh_context_name,
+	})
+	_assert_equal(zh_expected_compact, hint.compact_text.text, "Chinese compact text should use the current context.")
+	await get_tree().process_frame
+	_assert_visible_labels_within(hint, "Chinese compact text context")
 	LocalizationManager.set_locale(_original_locale, false)
 
 	var controls_option: OptionButton = ui.pause_ui_controller.controls_hint_option as OptionButton
 	_assert_true(controls_option != null and controls_option.item_count == 3, "Pause settings should expose three hint modes.")
+	LocalizationManager.set_locale("en", false)
+	ui.pause_ui_controller.refresh_language_options()
+	_assert_equal("Adaptive", controls_option.get_item_text(0), "English pause settings should label adaptive mode.")
+	_assert_equal("Always Expanded", controls_option.get_item_text(1), "English pause settings should label always-expanded mode.")
+	_assert_equal("Hidden", controls_option.get_item_text(2), "English pause settings should label hidden mode.")
+	_assert_true(controls_option.tooltip_text.contains("F1"), "Controls hint settings tooltip should explain F1 scope.")
+	LocalizationManager.set_locale("zh_CN", false)
+	ui.pause_ui_controller.refresh_language_options()
+	_assert_equal(LocalizationManager.tr_key("ui.settings.controls_hint.adaptive", "Adaptive"), controls_option.get_item_text(0), "Chinese pause settings should label adaptive mode.")
+	_assert_equal(LocalizationManager.tr_key("ui.settings.controls_hint.always", "Always Expanded"), controls_option.get_item_text(1), "Chinese pause settings should label always-expanded mode.")
+	_assert_equal(LocalizationManager.tr_key("ui.settings.controls_hint.hidden", "Hidden"), controls_option.get_item_text(2), "Chinese pause settings should label hidden mode.")
+	LocalizationManager.set_locale(_original_locale, false)
+	ui.pause_ui_controller.refresh_language_options()
 	ui._layout_controls_hint_panel(Vector2(320.0, 720.0))
 	await get_tree().process_frame
 	_assert_true(hint.custom_minimum_size.x <= 288.0, "Narrow layout should respect available width.")

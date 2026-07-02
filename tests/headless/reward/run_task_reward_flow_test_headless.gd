@@ -276,9 +276,18 @@ func _assert_regular_reward_selection_entry_still_opens() -> bool:
 	if reward_manager == null:
 		_fail(34, "TaskRewardFlowTest: missing reward manager for regular reward entry smoke.")
 		return false
+	var economy := EconomyConfig.new()
+	economy.reward_module_options_enabled = true
+	economy.reward_weapon_option_chance = 0.0
+	economy.reward_economy_option_chance = 0.0
+	GlobalVariables.economy_data = economy
 	var battle_options := reward_manager.build_reward_selection_options(0, RunRouteManager.get_route_for_level(0), 3)
 	if battle_options.is_empty():
 		_fail(35, "TaskRewardFlowTest: regular reward entry did not build any reward options.")
+		return false
+	var module_index := _find_module_reward_index(battle_options)
+	if module_index < 0:
+		_fail(42, "TaskRewardFlowTest: regular reward draft did not include a module option when enabled.")
 		return false
 	if not _ui.request_reward_selection("Battle Reward", battle_options, Callable(), Callable(), true):
 		_fail(36, "TaskRewardFlowTest: regular reward selection entry did not open.")
@@ -288,9 +297,29 @@ func _assert_regular_reward_selection_entry_still_opens() -> bool:
 	if panel == null or not panel.is_modal_open() or not panel.can_cancel_modal():
 		_fail(37, "TaskRewardFlowTest: regular reward selection panel did not remain cancelable.")
 		return false
+	await _select_reward_card(panel, module_index)
+	if panel.detail_body_label == null or panel.detail_body_label.text.find("Effect Tags:") < 0:
+		_fail(43, "TaskRewardFlowTest: module reward detail did not show effect tags.")
+		return false
+	if panel.detail_body_label.text.find("Fit:") < 0:
+		_fail(44, "TaskRewardFlowTest: module reward detail did not show fit status.")
+		return false
+	if panel.detail_body_label.text.find("Best On:") >= 0:
+		_fail(46, "TaskRewardFlowTest: module reward detail still showed best-fit recommendation text.")
+		return false
+	if not _detail_outcome_contains(panel, "Temporary Modules"):
+		_fail(45, "TaskRewardFlowTest: module reward detail did not show its inventory landing.")
+		return false
 	panel.close_panel()
 	await get_tree().process_frame
 	return true
+
+func _find_module_reward_index(options: Array[RewardInfo]) -> int:
+	for index in range(options.size()):
+		var reward := options[index]
+		if reward != null and reward.module_scene != null:
+			return index
+	return -1
 
 func _assert_uncancelable_task_reward_ignores_cancel_inputs(panel: RewardSelectionPanel) -> bool:
 	var action_event := InputEventAction.new()

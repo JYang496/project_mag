@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "laser_focus_channel_triggered"
 display_name = "Focus Channel"
-description = "Has 1 charge. Laser beam hits spend the charge to trigger a focus event. Reloading restores the charge."
+description = "Beam trigger. Has 1 charge; Laser beam hits spend it to trigger Focus Channel. Reloading restores the charge."
 condition_type = "beam_hit"
 refresh_type = "reload"
 ui_mode = "state"

@@ -3,6 +3,8 @@ class_name ShopModuleSlot
 
 const MODULE_DIRECTORY_PATH := "res://Player/Weapons/Modules/"
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
+const MODULE_FIT_FORMATTER := preload("res://UI/scripts/module_fit_formatter.gd")
+const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 
 @onready var background: ColorRect = $Background
 @onready var image: TextureRect = $Background/Image
@@ -17,6 +19,7 @@ var price := 0
 var purchasable := false
 var hover_over := false
 var selected := false
+var _effect_chip_row: HBoxContainer
 
 static var _module_scene_cache_built := false
 static var _module_scene_cache: Array[PackedScene] = []
@@ -91,6 +94,8 @@ func empty_item(message: String = "") -> void:
 	price_label.text = ""
 	effect_label.text = ""
 	detail_label.text = ""
+	detail_label.visible = true
+	_clear_effect_chips()
 	refresh_affordability()
 	queue_redraw()
 
@@ -155,7 +160,16 @@ func _refresh_labels() -> void:
 	price_label.text = LocalizationManager.tr_format("ui.shop.module.price", {"value": price}, "价格: %s" % price)
 	var effects := preview_module.get_effect_descriptions()
 	effect_label.text = effects[0] if effects.size() > 0 else ""
-	detail_label.text = _build_module_requirement_summary(preview_module)
+	var fit_data: Dictionary = MODULE_FIT_FORMATTER.build_display_data(preview_module, MODULE_FIT_FORMATTER.get_current_weapon())
+	var chips: Array = []
+	chips.append(fit_data.get("fit_badge", {}))
+	for chip in fit_data.get("effect_chips", []):
+		chips.append(chip)
+	_refresh_effect_chips(chips)
+	var requirement_summary := _build_module_requirement_summary(preview_module)
+	detail_label.text = requirement_summary
+	detail_label.visible = chips.is_empty()
+	tooltip_text = requirement_summary
 
 func _clear_preview() -> void:
 	if preview_module and is_instance_valid(preview_module):
@@ -224,6 +238,7 @@ func _build_shop_item_data() -> Dictionary:
 		"slot": self,
 		"rarity": rarity,
 		"rarity_color": RARITY_UTIL.get_color(rarity),
+		"effect_chips": MODULE_FIT_FORMATTER.build_display_data(preview_module, MODULE_FIT_FORMATTER.get_current_weapon()).get("effect_chips", []),
 	}
 
 func _build_module_requirement_summary(module_instance: Module) -> String:
@@ -261,3 +276,23 @@ func _notify_shop_clear() -> void:
 		ui.purchase_management_controller.clear_hover_item(data)
 		ui.purchase_management_controller.clear_selected_item(data)
 		ui.purchase_management_controller.mark_purchase_action_dirty()
+
+func _refresh_effect_chips(chips: Array) -> void:
+	if background == null:
+		return
+	var row := _ensure_effect_chip_row()
+	BUILD_TAG_DISPLAY.populate_chip_row(row, chips, 4)
+
+func _clear_effect_chips() -> void:
+	if _effect_chip_row != null and is_instance_valid(_effect_chip_row):
+		BUILD_TAG_DISPLAY.populate_chip_row(_effect_chip_row, [], 0)
+
+func _ensure_effect_chip_row() -> HBoxContainer:
+	if _effect_chip_row != null and is_instance_valid(_effect_chip_row):
+		return _effect_chip_row
+	_effect_chip_row = BUILD_TAG_DISPLAY.make_chip_row([], 4)
+	_effect_chip_row.name = "EffectChipRow"
+	_effect_chip_row.position = Vector2(90.0, 60.0)
+	_effect_chip_row.size = Vector2(398.0, 24.0)
+	background.add_child(_effect_chip_row)
+	return _effect_chip_row

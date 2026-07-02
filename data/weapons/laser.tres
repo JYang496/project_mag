@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("3_reql6")
 weapon_id = "9"
-display_name = "laser"
+display_name = "Laser"
 icon = ExtResource("1_awlad")
 price = 60
-description = "laser test"
+description = "Mid-range beam weapon. Fits Beam and Area builds; beam hits spend Focus Channel charges, while branches add tracking or prism coverage."
 scene_path = "res://Player/Weapons/Instances/laser.tscn"

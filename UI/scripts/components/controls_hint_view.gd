@@ -14,7 +14,7 @@ const PANEL_WIDTH := 360.0
 const FALLBACK_MARGIN := 16.0
 const TWO_COLUMN_MIN_WIDTH := 420.0
 const KEYCAP_WIDTH := 64.0
-const COMPACT_EXPAND_WIDTH := 72.0
+const COMPACT_EXPAND_WIDTH := 96.0
 const AUTO_COLLAPSE_SECONDS := 8.0
 const CONTEXT_DURATION_SECONDS := 3.0
 const CONTEXT_COOLDOWN_SECONDS := 15.0
@@ -28,7 +28,7 @@ const MAX_CONTEXT_REPEATS := 2
 @onready var expanded_content: GridContainer = $Margin/Content/ExpandedContent
 @onready var compact_content: HBoxContainer = $Margin/Content/CompactContent
 @onready var compact_text: Label = $Margin/Content/CompactContent/CompactText
-@onready var compact_expand: Label = $Margin/Content/CompactContent/CompactExpand
+@onready var compact_expand: Button = $Margin/Content/CompactContent/CompactExpand
 @onready var context_content: HBoxContainer = $Margin/Content/ContextContent
 @onready var context_key: Label = $Margin/Content/ContextContent/ContextKey
 @onready var context_message: Label = $Margin/Content/ContextContent/ContextMessage
@@ -48,15 +48,17 @@ var _context_show_counts: Dictionary = {}
 var _action_items: Dictionary = {}
 var _render_signature := ""
 var _text_context_signature := ""
-var _manual_text_context_collapsed := false
+var _collapsed_text_contexts: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	size_flags_horizontal = Control.SIZE_FILL
 	add_theme_stylebox_override("panel", _build_panel_style())
 	_configure_text_constraints()
+	_configure_button_click_targets()
 	_configure_visual_hierarchy()
-	collapse_button.pressed.connect(toggle_expanded)
+	collapse_button.pressed.connect(_on_toggle_button_pressed)
+	compact_expand.pressed.connect(_on_compact_expand_button_pressed)
 	_build_action_items()
 	_connect_settings_signal()
 	refresh_input_glyphs()
@@ -74,14 +76,11 @@ func layout_for_viewport(viewport_size: Vector2) -> void:
 
 func refresh_for_phase(phase: String, primary_menu_open: bool, secondary_menu_context: StringName = &"") -> void:
 	var phase_changed := _current_phase != phase
-	var previous_context_identity := _text_context_identity()
 	_current_phase = phase
 	_primary_menu_open = primary_menu_open
 	_secondary_menu_context = _normalize_secondary_menu_context(secondary_menu_context)
 	if phase_changed and phase == PhaseManager.BATTLE:
 		_begin_battle_guidance()
-	if phase_changed or previous_context_identity != _text_context_identity():
-		_manual_text_context_collapsed = false
 	_render_current_context()
 
 func refresh_visibility(primary_menu_open: bool, secondary_menu_context: StringName = &"") -> void:
@@ -120,8 +119,7 @@ func handle_input_event(event: InputEvent) -> bool:
 	if event == null:
 		return false
 	if event.is_action_pressed("TOGGLE_CONTROLS"):
-		toggle_expanded()
-		return true
+		return _request_toggle_display()
 	if _current_phase == PhaseManager.BATTLE:
 		if event.is_action_pressed("UP") or event.is_action_pressed("DOWN") \
 				or event.is_action_pressed("LEFT") or event.is_action_pressed("RIGHT"):
@@ -130,21 +128,27 @@ func handle_input_event(event: InputEvent) -> bool:
 			_used_attack = true
 	return false
 
-func toggle_expanded() -> void:
-	if PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_HIDDEN:
-		PlayerAssistSettings.set_controls_hint_mode(PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE)
-		_manual_expanded = true
-		_manual_text_context_collapsed = false
-		set_display_state(DisplayState.EXPANDED, false)
-		return
+func _on_toggle_button_pressed() -> void:
+	_request_display_state(DisplayState.COMPACT)
+
+func _on_compact_expand_button_pressed() -> void:
+	_request_display_state(DisplayState.EXPANDED)
+
+func _request_toggle_display() -> bool:
 	if display_state == DisplayState.EXPANDED:
-		_manual_expanded = false
-		_manual_text_context_collapsed = _current_phase != PhaseManager.BATTLE
-		set_display_state(DisplayState.COMPACT, false)
-	else:
-		_manual_expanded = true
-		_manual_text_context_collapsed = false
-		set_display_state(DisplayState.EXPANDED, false)
+		return _request_display_state(DisplayState.COMPACT)
+	return _request_display_state(DisplayState.EXPANDED)
+
+func _request_display_state(next_state: DisplayState, persist_manual_choice: bool = false) -> bool:
+	if not _can_request_display_state(next_state):
+		return false
+	if PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE:
+		_apply_manual_display_request(next_state)
+	set_display_state(next_state, persist_manual_choice)
+	return true
+
+func toggle_expanded() -> void:
+	_request_toggle_display()
 
 func set_display_state(next_state: DisplayState, persist_manual_choice: bool = true) -> void:
 	if next_state == DisplayState.HIDDEN:
@@ -152,6 +156,7 @@ func set_display_state(next_state: DisplayState, persist_manual_choice: bool = t
 		display_state = next_state
 		if persist_manual_choice:
 			PlayerAssistSettings.set_controls_hint_mode(PlayerAssistSettings.CONTROLS_HINT_HIDDEN)
+		_sync_toggle_affordance()
 		display_state_changed.emit(display_state)
 		return
 	display_state = next_state
@@ -163,7 +168,7 @@ func set_display_state(next_state: DisplayState, persist_manual_choice: bool = t
 	expanded_content.visible = next_state == DisplayState.EXPANDED
 	compact_content.visible = next_state == DisplayState.COMPACT
 	context_content.visible = next_state == DisplayState.CONTEXT_REMINDER
-	collapse_button.text = "%s %s" % [_input_label(&"TOGGLE_CONTROLS"), _tr("ui.controls.collapse", "Collapse")]
+	_sync_toggle_affordance()
 	display_state_changed.emit(display_state)
 
 func show_context_reminder(action: StringName, message: String, force: bool = false) -> bool:
@@ -218,15 +223,13 @@ func refresh_input_glyphs() -> void:
 		_tr("ui.controls.expand", "Expand"),
 	]
 	title_label.text = _tr("ui.controls.title", "Controls")
-	collapse_button.text = "%s %s" % [_input_label(&"TOGGLE_CONTROLS"), _tr("ui.controls.collapse", "Collapse")]
-	collapse_button.tooltip_text = _tr("ui.controls.collapse_tooltip", "Collapse controls hint (F1)")
+	_sync_toggle_affordance()
 
 func _begin_battle_guidance() -> void:
 	_auto_collapse_remaining = AUTO_COLLAPSE_SECONDS
 	_used_move = false
 	_used_attack = false
 	_manual_expanded = false
-	_manual_text_context_collapsed = false
 	_context_show_counts.clear()
 	_context_last_shown_msec.clear()
 	_apply_saved_mode(false)
@@ -298,9 +301,9 @@ func _render_secondary_menu_hint(context_name: StringName) -> void:
 	_render_text_context(LocalizationManager.tr_key(title_key, fallback_title), lines)
 
 func _render_text_context(context_title: String, lines: Array[String]) -> void:
-	var context_signature := "%s|%s" % [context_title, "|".join(PackedStringArray(lines))]
-	var context_changed := _text_context_signature != context_signature
-	_text_context_signature = context_signature
+	var context_identity := _text_context_identity()
+	var context_changed := _text_context_signature != context_identity
+	_text_context_signature = context_identity
 	title_label.text = context_title
 	_clear_action_items()
 	for line in lines:
@@ -313,19 +316,92 @@ func _render_text_context(context_title: String, lines: Array[String]) -> void:
 		_tr("ui.controls.expand", "Expand"),
 	]
 	var next_state := display_state
-	if context_changed and not _manual_text_context_collapsed:
+	if PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_ALWAYS:
+		next_state = DisplayState.EXPANDED
+	elif bool(_collapsed_text_contexts.get(context_identity, false)):
+		next_state = DisplayState.COMPACT
+	elif context_changed:
 		next_state = DisplayState.EXPANDED
 	if next_state == DisplayState.HIDDEN or next_state == DisplayState.CONTEXT_REMINDER:
 		next_state = DisplayState.EXPANDED
 	set_display_state(next_state, false)
 
-func _compact_text_context(context_title: String, lines: Array[String]) -> String:
-	if lines.is_empty():
-		return context_title
-	return "%s - %s" % [context_title, lines[0]]
+func _compact_text_context(context_title: String, _lines: Array[String]) -> String:
+	return _tr("ui.controls.compact_context", "{context} controls").format({
+		"context": _compact_context_name(context_title),
+	})
+
+func _compact_context_name(context_title: String) -> String:
+	var compact := context_title.strip_edges()
+	var prefixes := PackedStringArray([
+		"Current: ",
+		"当前状态：",
+		"當前狀態：",
+	])
+	for prefix in prefixes:
+		if compact.begins_with(prefix):
+			return compact.substr(prefix.length()).strip_edges()
+	return compact
 
 func _text_context_identity() -> String:
 	return "%s|%s|%s" % [_current_phase, str(_primary_menu_open), str(_secondary_menu_context)]
+
+func _is_text_context_active() -> bool:
+	return _current_phase != PhaseManager.BATTLE
+
+func _set_text_context_collapsed(context_identity: String, collapsed: bool) -> void:
+	if context_identity == "":
+		return
+	if collapsed:
+		_collapsed_text_contexts[context_identity] = true
+	else:
+		_collapsed_text_contexts.erase(context_identity)
+
+func _can_request_display_state(next_state: DisplayState) -> bool:
+	var mode := PlayerAssistSettings.controls_hint_mode
+	if mode == PlayerAssistSettings.CONTROLS_HINT_HIDDEN:
+		return false
+	if mode == PlayerAssistSettings.CONTROLS_HINT_ALWAYS:
+		return next_state == DisplayState.EXPANDED
+	return next_state == DisplayState.EXPANDED or next_state == DisplayState.COMPACT
+
+func _apply_manual_display_request(next_state: DisplayState) -> void:
+	match next_state:
+		DisplayState.EXPANDED:
+			_manual_expanded = true
+			if _is_text_context_active():
+				_set_text_context_collapsed(_text_context_identity(), false)
+		DisplayState.COMPACT:
+			_manual_expanded = false
+			if _is_text_context_active():
+				_set_text_context_collapsed(_text_context_identity(), true)
+		DisplayState.HIDDEN:
+			_manual_expanded = false
+		_:
+			pass
+
+func _sync_toggle_affordance() -> void:
+	if collapse_button == null:
+		return
+	if PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_HIDDEN:
+		collapse_button.disabled = true
+		collapse_button.text = _tr("ui.controls.hidden", "Hidden")
+		collapse_button.tooltip_text = _tr(
+			"ui.controls.hidden_tooltip",
+			"Controls hint is hidden by setting."
+		)
+		return
+	if PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_ALWAYS:
+		collapse_button.disabled = true
+		collapse_button.text = _tr("ui.controls.always_expanded", "Always Expanded")
+		collapse_button.tooltip_text = _tr(
+			"ui.controls.always_expanded_tooltip",
+			"Controls setting is Always Expanded. Change it to Adaptive to collapse hints."
+		)
+		return
+	collapse_button.disabled = false
+	collapse_button.text = "%s %s" % [_input_label(&"TOGGLE_CONTROLS"), _tr("ui.controls.collapse", "Collapse")]
+	collapse_button.tooltip_text = _tr("ui.controls.collapse_tooltip", "Temporarily collapse controls hint (F1)")
 
 func _build_action_items() -> void:
 	_clear_action_items()
@@ -348,6 +424,7 @@ func _create_hint_item(key_text: String, action_text: String) -> HBoxContainer:
 	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var key_label := Label.new()
 	key_label.name = "Key"
+	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	key_label.custom_minimum_size = Vector2(KEYCAP_WIDTH, 26.0)
 	key_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -362,6 +439,7 @@ func _create_hint_item(key_text: String, action_text: String) -> HBoxContainer:
 	item.add_child(key_label)
 	var action_label := Label.new()
 	action_label.name = "Action"
+	action_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	action_label.custom_minimum_size = Vector2(0.0, 26.0)
 	action_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	action_label.size_flags_vertical = Control.SIZE_FILL
@@ -457,9 +535,6 @@ func _configure_text_constraints() -> void:
 	compact_text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	compact_expand.custom_minimum_size.x = COMPACT_EXPAND_WIDTH
 	compact_expand.size_flags_horizontal = Control.SIZE_SHRINK_END
-	compact_expand.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	compact_expand.clip_text = true
-	compact_expand.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	context_key.custom_minimum_size.x = KEYCAP_WIDTH
 	context_key.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	context_key.clip_text = true
@@ -472,19 +547,36 @@ func _configure_text_constraints() -> void:
 	context_message.clip_text = true
 	context_message.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 
+func _configure_button_click_targets() -> void:
+	mouse_filter = Control.MOUSE_FILTER_PASS
+	content.mouse_filter = Control.MOUSE_FILTER_PASS
+	header.mouse_filter = Control.MOUSE_FILTER_PASS
+	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	expanded_content.mouse_filter = Control.MOUSE_FILTER_PASS
+	compact_content.mouse_filter = Control.MOUSE_FILTER_PASS
+	context_content.mouse_filter = Control.MOUSE_FILTER_PASS
+	compact_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	compact_expand.mouse_filter = Control.MOUSE_FILTER_STOP
+	compact_expand.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	compact_expand.tooltip_text = _tr("ui.controls.expand_tooltip", "Expand controls hint (F1)")
+
 func _configure_visual_hierarchy() -> void:
 	title_label.add_theme_color_override("font_color", Color(0.94, 0.98, 1.0, 1.0))
-	collapse_button.add_theme_font_size_override("font_size", 12)
-	collapse_button.add_theme_color_override("font_color", Color(0.82, 0.91, 0.94, 1.0))
-	collapse_button.add_theme_stylebox_override(
+	_apply_hint_button_style(collapse_button)
+	_apply_hint_button_style(compact_expand)
+
+func _apply_hint_button_style(button: Button) -> void:
+	button.add_theme_font_size_override("font_size", 12)
+	button.add_theme_color_override("font_color", Color(0.82, 0.91, 0.94, 1.0))
+	button.add_theme_stylebox_override(
 		"normal",
 		_build_button_style(Color(0.08, 0.16, 0.20, 0.92), Color(0.28, 0.48, 0.56, 0.92))
 	)
-	collapse_button.add_theme_stylebox_override(
+	button.add_theme_stylebox_override(
 		"hover",
 		_build_button_style(Color(0.12, 0.25, 0.30, 0.98), Color(0.38, 0.72, 0.82, 1.0))
 	)
-	collapse_button.add_theme_stylebox_override(
+	button.add_theme_stylebox_override(
 		"pressed",
 		_build_button_style(Color(0.08, 0.20, 0.25, 1.0), Color(0.45, 0.82, 0.90, 1.0))
 	)

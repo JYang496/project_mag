@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "shatter_buckshot"
 display_name = "Shatter Buckshot"
-description = "Freeze pellets can shatter targets after rapid multi-hit bursts."
+description = "Freeze branch. Shotgun pellets can shatter targets after rapid multi-hit bursts, turning Close pellet overlap into Freeze payoff."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "frost_orbit"
 display_name = "Frost Orbit"
-description = "Orbit hits become freeze damage and apply a small player-to-target knockback."
+description = "Freeze branch. Orbit hits become Freeze damage and add knockback, turning satellites into Close control tools."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

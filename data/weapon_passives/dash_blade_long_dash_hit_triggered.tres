@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "dash_blade_long_dash_hit_triggered"
 display_name = "Long Dash Hit"
-description = "Dash Blade hits slow enemies. Dash far enough before landing the blade hit to trigger the long-dash passive event."
+description = "Close trigger. Dash Blade hits slow enemies; dash far enough before the melee hit to trigger. Reloading refreshes the threshold cycle."
 condition_type = "distance_threshold"
 refresh_type = "reload"
 ui_mode = "threshold"

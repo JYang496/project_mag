@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "fire_pulse_aura"
 display_name = "Fire Pulse Aura"
-description = "Periodically emits a fire pulse centered on the mech, scorching nearby enemies."
+description = "Close Area branch. Adds periodic fire pulses around the mech, pushing Flamethrower toward point-blank Area control."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

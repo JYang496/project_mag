@@ -9,5 +9,5 @@ weapon_id = "8"
 display_name = "Rocket Launcher"
 icon = ExtResource("1_l3ko5")
 price = 60
-description = "Area-control launcher with slow rockets, growing blast radius, and Cluster Kill charges for clearing enemy groups."
+description = "Long-range Area launcher. Slow rockets and growing blasts clear groups, while Cluster Kill charges reward grouped enemy cleanup."
 scene_path = "res://Player/Weapons/Instances/rocket_launcher.tscn"

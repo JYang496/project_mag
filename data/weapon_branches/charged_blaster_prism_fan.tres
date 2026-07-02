@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "prism_fan"
 display_name = "Prism Fan"
-description = "Main beam plus two side beams for wide-area coverage, with reduced single-target focus."
+description = "Area branch. Adds two side beams for lane coverage and multi-target hits, sacrificing single-target focus."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

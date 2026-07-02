@@ -35,18 +35,85 @@ func _run() -> void:
 			get_tree().quit(4)
 			return
 
-	if not _assert_full_fuse_weapon_filter(reward_manager):
+	if not _assert_module_option_gate(reward_manager, route):
 		get_tree().quit(5)
 		return
-	if not _assert_full_level_module_filter(reward_manager):
+	if not _assert_weapon_progress_floor_with_module_draft(reward_manager, route):
 		get_tree().quit(6)
 		return
-	if not _assert_hidden_weapon_filter(reward_manager):
+	if not _assert_standard_rewards_do_not_include_task_rewards(reward_manager, route):
+		get_tree().quit(10)
+		return
+	if not _assert_full_fuse_weapon_filter(reward_manager):
 		get_tree().quit(7)
+		return
+	if not _assert_full_level_module_filter(reward_manager):
+		get_tree().quit(8)
+		return
+	if not _assert_hidden_weapon_filter(reward_manager):
+		get_tree().quit(9)
 		return
 
 	print("LootRarityRewardTest: PASS")
 	get_tree().quit(0)
+
+func _assert_module_option_gate(reward_manager: BonusManager, route: RunRouteDefinition) -> bool:
+	var economy := EconomyConfig.new()
+	economy.reward_module_options_enabled = false
+	economy.reward_weapon_option_chance = 0.0
+	economy.reward_economy_option_chance = 0.0
+	GlobalVariables.economy_data = economy
+	var closed_options := reward_manager.build_reward_selection_options(0, route, 3)
+	for reward in closed_options:
+		if reward != null and reward.module_scene != null:
+			push_error("LootRarityRewardTest: module option appeared while module draft was disabled.")
+			return false
+	economy.reward_module_options_enabled = true
+	var open_options := reward_manager.build_reward_selection_options(0, route, 3)
+	if not _has_module_reward(open_options):
+		push_error("LootRarityRewardTest: module option did not appear when module draft was enabled and preferred.")
+		return false
+	return true
+
+func _assert_weapon_progress_floor_with_module_draft(reward_manager: BonusManager, route: RunRouteDefinition) -> bool:
+	var weapon := _instantiate_first_rewardable_weapon()
+	if weapon == null:
+		push_error("LootRarityRewardTest: failed to create weapon progress fixture.")
+		return false
+	weapon.level = 1
+	weapon.refresh_max_level_from_data()
+	PlayerData.player_weapon_list.append(weapon)
+	var economy := EconomyConfig.new()
+	economy.reward_module_options_enabled = true
+	economy.reward_weapon_option_chance = 0.0
+	economy.reward_economy_option_chance = 0.0
+	GlobalVariables.economy_data = economy
+	var options := reward_manager.build_reward_selection_options(0, route, 3)
+	PlayerData.player_weapon_list.erase(weapon)
+	weapon.free()
+	if not _has_weapon_progress_reward(options):
+		push_error("LootRarityRewardTest: module draft removed the guaranteed weapon progress option.")
+		return false
+	if not _has_module_reward(options):
+		push_error("LootRarityRewardTest: module draft did not include a module beside weapon progress.")
+		return false
+	return true
+
+func _assert_standard_rewards_do_not_include_task_rewards(reward_manager: BonusManager, route: RunRouteDefinition) -> bool:
+	var economy := EconomyConfig.new()
+	economy.reward_module_options_enabled = true
+	economy.reward_weapon_option_chance = 0.0
+	economy.reward_economy_option_chance = 0.0
+	GlobalVariables.economy_data = economy
+	var options := reward_manager.build_reward_selection_options(0, route, 3)
+	for reward in options:
+		if reward != null and reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+			push_error("LootRarityRewardTest: standard battle reward included a task module.")
+			return false
+		if reward != null and reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+			push_error("LootRarityRewardTest: standard battle reward included a cell effect.")
+			return false
+	return true
 
 func _assert_hidden_weapon_filter(reward_manager: BonusManager) -> bool:
 	var hidden_ids: PackedStringArray = []
@@ -121,11 +188,39 @@ func _has_duplicate_rewards(options: Array[RewardInfo]) -> bool:
 	return false
 
 func _reward_key(reward: RewardInfo) -> String:
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		return "upgrade:%s" % reward.target_weapon_id
 	if reward.item_id.strip_edges() != "":
 		return "weapon:%s" % reward.item_id.strip_edges()
 	if reward.module_scene != null:
 		return "module:%s" % str(reward.module_scene.resource_path)
 	return "chip:%d" % int(reward.total_chip_value)
+
+func _has_module_reward(options: Array[RewardInfo]) -> bool:
+	for reward in options:
+		if reward != null and reward.module_scene != null:
+			return true
+	return false
+
+func _has_weapon_progress_reward(options: Array[RewardInfo]) -> bool:
+	for reward in options:
+		if reward == null:
+			continue
+		if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+			return true
+		if reward.item_id.strip_edges() != "":
+			return true
+	return false
+
+func _instantiate_first_rewardable_weapon() -> Weapon:
+	for weapon_id in DataHandler.get_weapon_ids():
+		var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+		if weapon_def == null or weapon_def.scene == null:
+			continue
+		var weapon := weapon_def.scene.instantiate() as Weapon
+		if weapon != null:
+			return weapon
+	return null
 
 func _find_first_module_scene_path() -> String:
 	var dir := DirAccess.open(MODULE_DIRECTORY_PATH)

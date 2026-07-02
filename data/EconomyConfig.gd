@@ -22,7 +22,7 @@ class_name EconomyConfig
 @export var kill_gold_target_increment_after_table: int = 12
 @export_range(0.0, 1.0, 0.01) var kill_gold_budget_variance: float = 0.1
 @export_range(0.05, 1.0, 0.01) var kill_gold_max_drop_chance: float = 0.65
-@export var reward_module_options_enabled: bool = false
+@export var reward_module_options_enabled: bool = true
 @export var task_reward_options_enabled: bool = true
 @export_range(0.0, 1.0, 0.01) var battle_drop_weapon_chance: float = 0.75
 @export_range(0.0, 1.0, 0.01) var battle_drop_module_chance: float = 0.5
@@ -30,6 +30,11 @@ class_name EconomyConfig
 @export_range(0.0, 1.0, 0.01) var reward_economy_option_chance: float = 0.15
 @export var reward_economy_exp: int = 5
 @export var reward_economy_gold: int = 7
+@export var early_standard_draft_count: int = 3
+@export var early_weapon_progress_slot_enabled: bool = true
+@export var early_module_option_chances: PackedFloat32Array = PackedFloat32Array([0.0, 0.2, -1.0])
+@export var early_economy_option_enabled: bool = false
+@export var early_allow_fallback_economy: bool = true
 
 func get_default_player_gold() -> int:
 	return maxi(default_player_gold, 0)
@@ -76,3 +81,16 @@ func get_reward_economy_exp() -> int:
 
 func get_reward_economy_gold() -> int:
 	return maxi(reward_economy_gold, 0)
+
+func get_early_standard_draft_count() -> int:
+	return maxi(early_standard_draft_count, 0)
+
+func get_early_module_option_chance(draft_index: int) -> float:
+	var safe_index := maxi(draft_index, 1)
+	var array_index := safe_index - 1
+	if array_index < 0 or array_index >= early_module_option_chances.size():
+		return 1.0 - get_reward_weapon_option_chance()
+	var configured := float(early_module_option_chances[array_index])
+	if configured < 0.0:
+		return 1.0 - get_reward_weapon_option_chance()
+	return clampf(configured, 0.0, 1.0)

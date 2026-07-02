@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("3_tohqg")
 weapon_id = "7"
-display_name = "orbit"
+display_name = "Orbit"
 icon = ExtResource("1_gkkp3")
 price = 60
-description = "Consumes the current magazine to deploy one slowing orbiting satellite per ammo spent."
+description = "Close support summon. Consumes magazine ammo to deploy slowing satellites, then rewards Defense and On Hit builds when the player is pressured."
 scene_path = "res://Player/Weapons/Instances/orbit.tscn"

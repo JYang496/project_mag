@@ -89,6 +89,8 @@ func restore_snapshot_after_player_spawn() -> bool:
 	var preserve_pending_reward := _reward_unlocked
 	_restore_player_state(snapshot.get("player", {}) as Dictionary)
 	_restore_inventory_state(snapshot.get("inventory", {}) as Dictionary)
+	if snapshot.get("reward_draft_runtime", {}) is Dictionary:
+		RewardDraftRuntime.restore_battle_rollback_snapshot(snapshot.get("reward_draft_runtime", {}) as Dictionary)
 	PhaseManager.current_level = maxi(int(snapshot.get("level", 0)), 0)
 	RunRouteManager.restore_route_history(snapshot.get("route_history", {}) as Dictionary)
 	_battle_in_progress = false
@@ -326,6 +328,7 @@ func _build_rollback_snapshot() -> Dictionary:
 			"weapon_storage": stored_weapon_payloads,
 			"pending_transactions": InventoryData.pending_transactions.duplicate(true),
 		},
+		"reward_draft_runtime": RewardDraftRuntime.build_battle_rollback_snapshot(),
 	}
 
 func _write_rollback_snapshot() -> bool:

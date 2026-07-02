@@ -9,6 +9,6 @@ weapon_id = "3"
 display_name = "Spear Launcher"
 icon = ExtResource("1_ji2p0")
 price = 60
-description = "Returning spears build charge through repeat hits. Reload with enough charge to launch a marking radial volley."
+description = "Mid-range Projectile spear. Repeat hits build Mark charge; reload with enough charge to launch a marking radial volley."
 scene_path = "res://Player/Weapons/Instances/spear_launcher.tscn"
 is_hidden = false

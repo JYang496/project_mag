@@ -9,5 +9,5 @@ weapon_id = "5"
 display_name = "Auto Pistol"
 icon = ExtResource("1_dybqt")
 price = 80
-description = "Auto-targeting sidearm that fires at the nearest enemy in range. Moving continuously primes its passive."
+description = "Mid-range auto sidearm. Fits Mark and On Hit builds: movement primes Pierce Mark windows, then hits during the window mark enemies."
 scene_path = "res://Player/Weapons/Instances/pistol.tscn"

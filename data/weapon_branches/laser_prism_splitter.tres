@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "laser_prism_splitter"
 display_name = "Prism Splitter"
-description = "Laser shots split into a central beam and two angled prism beams, allowing one shot to sweep multiple lanes."
+description = "Beam Area branch. Laser shots split into a central beam and two angled prism beams, letting one shot sweep multiple lanes."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "gatling_mg"
 display_name = "Gatling Thermal"
-description = "Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup."
+description = "Heat Projectile branch. Thermal twin-barrel retrofit adds faster cadence, split lanes, and extra heat buildup."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

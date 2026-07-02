@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "salvo_rocket"
 display_name = "Salvo Rocket"
-description = "Fires a spread of reduced-damage rockets to saturate a wider enemy group."
+description = "Area branch. Fires a spread of reduced-damage rockets to saturate wider enemy groups instead of focusing one target."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

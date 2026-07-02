@@ -149,10 +149,14 @@ func _create_card() -> Dictionary:
 	header.add_theme_constant_override("separation", 8)
 	body.add_child(header)
 
-	var marker: ColorRect = ColorRect.new()
+	var marker: Label = Label.new()
 	marker.name = "Marker"
-	marker.custom_minimum_size = Vector2(10.0, 10.0)
-	marker.size = Vector2(10.0, 10.0)
+	marker.custom_minimum_size = Vector2(22.0, 22.0)
+	marker.size = Vector2(22.0, 22.0)
+	marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	marker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	marker.add_theme_font_size_override("font_size", 12)
+	marker.add_theme_color_override("font_color", Color(0.92, 0.97, 1.0, 1.0))
 	header.add_child(marker)
 
 	var label: Label = Label.new()
@@ -206,7 +210,7 @@ func _create_card() -> Dictionary:
 
 func _apply_status(row: Dictionary, status: Dictionary) -> void:
 	var root := row.get("root", null) as PanelContainer
-	var marker := row.get("marker", null) as ColorRect
+	var marker := row.get("marker", null) as Label
 	var label := row.get("label", null) as Label
 	var value := row.get("value", null) as Label
 	var instruction := row.get("instruction", null) as Label
@@ -225,7 +229,7 @@ func _apply_status(row: Dictionary, status: Dictionary) -> void:
 	instruction.visible = instruction_text != ""
 	value.text = value_text
 	progress.value = progress_value
-	marker.color = _marker_color(str(status.get("icon_key", status.get("type", ""))), state)
+	_apply_marker_icon(marker, str(status.get("icon_key", status.get("type", ""))), state)
 	_apply_state_visual(root, progress, state)
 
 func _sanitize_display_text(text: String, fallback: String) -> String:
@@ -262,14 +266,70 @@ func _apply_state_visual(root: PanelContainer, progress: ProgressBar, state: Str
 		root.add_theme_stylebox_override("panel", _build_card_style(Color(0.08, 0.11, 0.13, 0.74), Color(0.30, 0.46, 0.54, 0.78)))
 		progress.add_theme_stylebox_override("fill", _build_progress_style(Color(0.35, 0.84, 0.70, 0.95)))
 
+func _apply_marker_icon(marker: Label, key: String, state: String) -> void:
+	if marker == null:
+		return
+	var color := _marker_color(key, state)
+	marker.text = _marker_text(key)
+	marker.tooltip_text = _marker_tooltip(key)
+	marker.add_theme_stylebox_override("normal", _build_marker_style(color))
+
 func _marker_color(key: String, state: String) -> Color:
 	if state == "complete" or state == "completed":
 		return Color(0.58, 1.0, 0.55, 1.0)
 	if state == "waiting" or state == "blocked":
 		return Color(0.45, 0.52, 0.56, 1.0)
-	var hash_value: int = absi(hash(key))
-	var hue: float = float(hash_value % 1000) / 1000.0
-	return Color.from_hsv(hue, 0.42, 0.92, 1.0)
+	match key.strip_edges().to_lower():
+		"kill", "offense":
+			return Color(0.96, 0.42, 0.32, 1.0)
+		"hold", "defense":
+			return Color(0.38, 0.72, 1.0, 1.0)
+		"clear":
+			return Color(0.58, 0.84, 0.46, 1.0)
+		"hunt":
+			return Color(0.92, 0.62, 0.26, 1.0)
+		"dodge":
+			return Color(0.72, 0.56, 1.0, 1.0)
+		_:
+			return Color(0.54, 0.64, 0.72, 1.0)
+
+func _marker_text(key: String) -> String:
+	match key.strip_edges().to_lower():
+		"kill", "offense":
+			return "K"
+		"hold", "defense":
+			return "H"
+		"clear":
+			return "C"
+		"hunt":
+			return "E"
+		"dodge":
+			return "D"
+		_:
+			return "?"
+
+func _marker_tooltip(key: String) -> String:
+	match key.strip_edges().to_lower():
+		"kill", "offense":
+			return "Kill"
+		"hold", "defense":
+			return "Hold"
+		"clear":
+			return "Clear"
+		"hunt":
+			return "Hunt"
+		"dodge":
+			return "Dodge"
+		_:
+			return "Task"
+
+func _build_marker_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r, color.g, color.b, 0.20)
+	style.border_color = Color(color.r, color.g, color.b, 0.82)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(4)
+	return style
 
 func _build_panel_style() -> StyleBoxFlat:
 	var style: StyleBoxFlat = StyleBoxFlat.new()

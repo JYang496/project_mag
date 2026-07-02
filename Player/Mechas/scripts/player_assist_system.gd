@@ -20,6 +20,10 @@ func process_combat_assist(main_weapon: Weapon, manual_fire_pressed: bool, delta
 	if not _is_auto_aim_continuous_fire_enabled():
 		_clear_auto_assist_state(main_weapon)
 		return
+	if _is_auto_reload_switch_enabled() and _is_weapon_reloading(main_weapon):
+		_clear_auto_assist_state(main_weapon)
+		shift_to_next_ready_weapon(main_weapon, 1)
+		return
 	var target := _find_auto_aim_target(main_weapon)
 	if target == null:
 		_clear_auto_assist_state(main_weapon)

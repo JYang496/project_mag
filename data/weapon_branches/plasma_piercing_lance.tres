@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "plasma_piercing_lance"
 display_name = "Piercing Lance"
-description = "Multi-target lance tuning: restores high pierce and increases damage after each pierce."
+description = "Projectile branch. Restores high pierce and increases damage after each pierce, favoring lined-up multi-target fights over burst Heat spending."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

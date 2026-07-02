@@ -127,6 +127,14 @@ func get_max_energy() -> float:
 		return 1.0
 	return maxf(float(_player.player_max_energy), 1.0)
 
+func get_active_skill_energy_cost() -> float:
+	var skill := _get_first_active_skill()
+	if skill == null:
+		return 0.0
+	if skill.has_method("get_energy_cost"):
+		return maxf(float(skill.call("get_energy_cost")), 0.0)
+	return maxf(float(skill.get("energy_cost")), 0.0)
+
 func consume_energy(amount: float) -> bool:
 	var required := maxf(amount, 0.0)
 	if _player_energy < required:
@@ -166,6 +174,16 @@ func get_weapon_active_cd_ratio() -> float:
 	if not weapon.has_method("get_weapon_active_cd_ratio"):
 		return 0.0
 	return float(weapon.call("get_weapon_active_cd_ratio"))
+
+func _get_first_active_skill() -> Skills:
+	if _player == null or not is_instance_valid(_player):
+		return null
+	if _player.active_skill_holder == null or not is_instance_valid(_player.active_skill_holder):
+		return null
+	for child in _player.active_skill_holder.get_children():
+		if child is Skills:
+			return child as Skills
+	return null
 
 func _ensure_input_action(action_name: StringName, keycodes: Array[int]) -> void:
 	if not InputMap.has_action(action_name):

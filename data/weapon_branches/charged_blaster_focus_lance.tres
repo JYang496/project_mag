@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "focus_lance"
 display_name = "Focus Lance"
-description = "Single-target boss beam: thinner, longer, harder-hitting sustained lance with first-hit lock."
+description = "Beam branch. Narrows Charged Blaster into a longer, harder sustained lance for single-target pressure, sacrificing wide Area coverage."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

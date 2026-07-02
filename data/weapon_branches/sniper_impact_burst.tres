@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "sniper_impact_burst"
 display_name = "Impact Burst"
-description = "Sniper hits trigger physical burst damage around the target."
+description = "Area branch. Sniper hits create physical burst damage around the target, trading some single-target identity for grouped enemy cleanup."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

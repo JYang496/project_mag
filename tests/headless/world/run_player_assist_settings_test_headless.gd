@@ -238,6 +238,26 @@ func _run() -> void:
 		return
 
 	EnemyRegistry.unregister_enemy(enemy)
+	PlayerData.set_main_weapon_index(1)
+	player.refresh_weapon_structure_for_assist()
+	cannon.is_reloading = true
+	cannon.reload_time_left = 1.0
+	cannon.set_meta(PlayerAssistSystem.AUTO_AIM_TARGET_META, Vector2(12.0, 0.0))
+	cannon.set_meta(PlayerAssistSystem.AUTO_FIRE_PENDING_META, true)
+	shotgun.current_ammo = maxi(shotgun.current_ammo, 1)
+	if shotgun.get("is_on_cooldown") != null:
+		shotgun.set("is_on_cooldown", false)
+	player.assist_system.process_combat_assist(cannon, false, 0.016)
+	_assert_equal(2, PlayerData.main_weapon_index, "Auto reload switch should recover when the main weapon is already reloading without a current target.")
+	if _failed:
+		return
+	_assert_true(not cannon.has_meta(PlayerAssistSystem.AUTO_AIM_TARGET_META), "Reload recovery switch should clear stale Cannon auto aim target.")
+	if _failed:
+		return
+	_assert_true(not cannon.has_meta(PlayerAssistSystem.AUTO_FIRE_PENDING_META), "Reload recovery switch should clear stale Cannon pending state.")
+	if _failed:
+		return
+
 	_pass()
 
 func _add_weapon(scene: PackedScene, index: int) -> Weapon:

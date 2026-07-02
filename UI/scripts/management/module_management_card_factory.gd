@@ -3,6 +3,8 @@ class_name ModuleManagementCardFactory
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const WAREHOUSE_DRAG_CONTROLS := preload("res://UI/scripts/management/warehouse_drag_controls.gd")
+const MODULE_FIT_FORMATTER := preload("res://UI/scripts/module_fit_formatter.gd")
+const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 
 var view: Node
 var owner_ui: Node
@@ -79,6 +81,10 @@ func make_module_button(module_instance: Module, selected: bool, pressed_callbac
 	targets.add_theme_color_override("font_color", Color(0.68, 0.78, 0.84))
 	targets.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text_box.add_child(targets)
+	var effect_chips := MODULE_FIT_FORMATTER.build_effect_chips(module_instance, 3)
+	if not effect_chips.is_empty():
+		var chip_row := BUILD_TAG_DISPLAY.make_chip_row(effect_chips, 3)
+		text_box.add_child(chip_row)
 	_style_button(button, selected)
 	return button
 

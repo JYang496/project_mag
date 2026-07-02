@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "sniper_far_hit_triggered"
 display_name = "Far Hit"
-description = "Has 3 charges. Deal bonus damage based on distance. Far or marked-target hits spend 1 charge to trigger; reloading restores all charges."
+description = "Mark/Projectile trigger. Has 3 charges; far or marked-target hits spend 1 charge for distance-based bonus damage. Reloading restores all charges."
 condition_type = "distance_or_mark"
 refresh_type = "reload"
 ui_mode = "threshold"

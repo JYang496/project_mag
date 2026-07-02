@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "energy_orbit"
 display_name = "Energy Orbit"
-description = "Enemies near satellites take bonus energy damage when hit."
+description = "On Hit branch. Enemies near satellites take bonus energy damage when hit, rewarding satellite placement and multi-weapon focus fire."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

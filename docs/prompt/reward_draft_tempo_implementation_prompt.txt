@@ -1,0 +1,182 @@
+Reward Draft Tempo Implementation Prompt
+
+Working directory:
+D:\Godot Projects\project_mag
+
+Start with:
+git status --short
+
+Do not revert or overwrite unrelated dirty work. Treat the current worktree as shared. Keep edits scoped to the files needed for this reward draft tempo feature and its tests/reports.
+
+Goal
+Implement the locked standard battle reward draft tempo design from:
+docs/reports/reward_draft_tempo_design_20260702.html
+
+This is direction 2: reward draft tempo. The goal is to make early standard battle rewards first support weapon growth, then gradually introduce module build choices. Do not implement route identity, enemy pressure changes, HUD teaching copy, or long-term pity in this task.
+
+Locked Product Rules
+1. Scope: standard battle completion rewards are converted to the standard reward draft flow.
+2. Draft replaces the current automatic standard battle-end ground weapon/module drop. Do not let one standard battle completion produce both ground drops and a draft reward.
+3. Excluded flows: task rewards, cell effects, task modules, Bonus no-combat route rewards, shop/warehouse flows, and special-source drops are not part of this tempo gate.
+4. Special-source drops means rewards that do not come from the generic standard battle-complete settlement path, such as enemy-specific drops, chest/event rewards, shop purchases, task rewards, script-authored rewards, or any explicitly placed/triggered drop source.
+5. Tempo counter: count only standard battle reward draft openings.
+6. Count increment timing: increment when reward options are generated and successfully handed to UI. If UI is unavailable and the first option is granted immediately, that still consumes the draft count.
+7. Persistence: draft count and pending standard draft options must persist for the run and participate in battle rollback/continue recovery.
+8. Owner: create a dedicated RewardDraftRuntime autoload for standard battle draft state. Do not put this state into TaskRewardManager or the RewardManager scene node.
+9. First 3 standard battle drafts:
+   - always reserve exactly 1 weapon-progress slot
+   - normal economy weight is disabled
+   - fallback economy is allowed only if weapon/module candidates cannot fill the required option count
+10. Module tempo:
+   - draft 1: module chance is 0%
+   - draft 2: module chance is 20%
+   - draft 3: module chance uses normal long-term module probability
+   - draft 4+: return to long-term weights
+11. Weapon-progress slot:
+   - build a unified weapon-progress pool containing existing weapon upgrade candidates, existing weapon fuse candidates, and new weapon obtain candidates
+   - draw from this pool using each target weapon's drop_weight
+   - upgrade/fuse candidates use the target weapon definition rarity/weight
+   - new weapon candidates use WeaponDefinition rarity/weight
+12. Draft 4+:
+   - no fixed weapon-progress slot
+   - no pity system
+   - keep the current approximate long-term split: weapon about 50%, module about 35%, economy about 15%
+13. UI:
+   - do not show an Early Draft label
+   - do not add a first-module teaching prompt
+   - keep existing reward card/detail display behavior
+14. Pending draft restore:
+   - pending options must restore without rerolling
+   - if an option cannot be rebound during restore, convert only that option to an economy fallback
+   - do not reroll the whole draft
+15. Enemy config:
+   - do not adjust enemies in this implementation
+   - later adjustment is allowed only if reward simulation or battle smoke proves early pressure is wrong
+
+Recommended File Scope
+Allowed production files:
+- data/EconomyConfig.gd
+- data/economy/economy_config.tres
+- World/rewards/reward_manager.gd
+- World/rewards/reward_info.gd only if serialization helpers need a small shared method
+- autoload/RewardDraftRuntime.gd new
+- project.godot only if required to register RewardDraftRuntime autoload
+- autoload/TaskRewardManager.gd only for rollback snapshot integration hooks, not for owning standard draft state
+- autoload/DataHandler.gd only if save_game needs to call RewardDraftRuntime save/reset consistently
+
+Allowed tests/tools/docs:
+- tests/headless/reward/*
+- tests/scenes/reward/* or existing scene-backed reward test locations
+- tools/generate_reward_draft_simulation_report.gd new
+- docs/reports/reward_draft_simulation_*.html generated
+- docs/design/reward_draft_rules.md may be updated to reflect the locked tempo rules
+- tests/README.md only if a new validation entrypoint needs documentation
+
+Forbidden unless explicitly needed:
+- data/routes/*
+- data/spawns/*
+- Npc/*
+- UI reward teaching copy
+- reward card visual redesigns
+- task reward behavior changes
+- weapon/module numeric balance changes
+
+Implementation Shape
+1. Add EconomyConfig fields:
+   - early_standard_draft_count: int = 3
+   - early_weapon_progress_slot_enabled: bool = true
+   - early_module_option_chances: PackedFloat32Array or Array[float] = [0.0, 0.2, -1.0]
+   - early_economy_option_enabled: bool = false
+   - early_allow_fallback_economy: bool = true
+   Use helper methods to sanitize values.
+
+2. Add RewardDraftRuntime autoload:
+   Suggested responsibilities:
+   - store standard_draft_count
+   - store pending_standard_draft_options payloads
+   - expose get_next_standard_draft_number()
+   - expose build_stage_rules(economy: EconomyConfig) -> Dictionary
+   - expose set_pending_standard_draft(options: Array[RewardInfo], context: Dictionary)
+   - expose consume_pending_standard_draft() or record_standard_draft_consumed()
+   - expose clear_pending_standard_draft()
+   - expose serialize/deserialize reward payload helpers or local equivalents
+   - expose build_snapshot()/restore_snapshot(snapshot)
+   - expose reset_runtime_state(preserve_persistent_state := false)
+
+3. Reuse RewardInfo serialization logic already proven in TaskRewardManager:
+   - save kind, item_id, item_level, module_path, module_level, gold/chip values, rarity, reward_key, target_weapon_id, target weapon display metadata
+   - never JSON serialize PackedScene or WeakRef directly
+   - on restore, load module_path back to PackedScene
+   - for weapon upgrade, rebind target_weapon_ref by target_weapon_id against current equipped weapons
+   - if rebind fails, convert that option to economy fallback
+
+4. Update RewardManager generation:
+   - standard battle completion should request/open a standard reward draft instead of spawning automatic standard battle ground weapon/module drops
+   - keep the ability to build/spawn drops for special sources if existing code needs it, but do not call the generic battle-complete ground drop path as the standard completion reward
+   - if keeping build_completed_battle_drop_rewards() for compatibility or special sources, rename/document its new boundary or gate its standard battle-complete caller so it does not double-pay rewards
+   - before generating a standard draft, ask RewardDraftRuntime for stage rules
+   - for early drafts, insert/draw one weapon-progress slot before rolling remaining slots
+   - for remaining slots, use stage-specific module chance and economy availability
+   - keep duplicate option key rejection
+   - persist pending draft options before opening UI
+   - consume the draft count only after the options are handed to UI or fallback grant happens
+   - clear pending draft after reward selection succeeds
+
+5. Keep existing route option_count behavior:
+   - early rules apply regardless of route option count
+   - only one weapon-progress slot is guaranteed
+   - remaining slots roll according to that draft stage
+
+6. Add reward draft simulation report:
+   - fixed RNG seed shown in report
+   - simulate 1000 runs, first 6 standard battle drafts
+   - report config snapshot
+   - report draft 1/2/3/4/5/6 distribution
+   - report normal economy vs fallback economy separately
+   - report weapon-progress slot presence
+   - PASS/WARN/FAIL using wide thresholds:
+     * first 3 drafts weapon-progress presence must be 100%
+     * draft 1 module appearance must be 0%
+     * draft 2 module appearance accepts 15%-25%
+     * draft 3 module appearance accepts target +/- 7%
+     * first 3 normal economy appearance must be 0%
+     * fallback economy is recorded, not fail, unless obviously high due to candidate exhaustion
+
+7. Tests:
+   Required contract coverage:
+   - draft 1 contains weapon-progress and no module/normal economy when candidates exist
+   - draft 2 uses 20% module chance under fixed seed or deterministic injected roll path
+   - draft 3 uses normal module chance
+   - draft 4+ has no fixed weapon-progress slot
+   - normal economy disabled in first 3 drafts
+   - fallback economy only appears when candidates cannot fill slots
+   - pending draft restore does not reroll
+   - invalid restored option converts to economy fallback
+   - task rewards, Bonus no-combat route rewards, and special-source drops do not advance standard draft count
+   - standard battle completion does not produce both a draft and a generic ground drop
+
+Validation Commands
+Prefer scene-backed tests through Godot MCP when available. Read debug output for PASS/FAIL/ERROR.
+
+Shell gates:
+git diff --check
+& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit
+
+Run focused reward tests. If adding a scene-backed reward test, run that scene. If only a headless script exists and is intentionally script-driven, run it with --script and document why.
+
+Also verify generated report file:
+- path exists under docs/reports/
+- file size is non-trivial
+- contains seed, sample count, draft 1-6 table, and PASS/WARN/FAIL markers
+
+Final Report Requirements
+Report back:
+- files changed
+- exact EconomyConfig fields added
+- RewardDraftRuntime ownership and persistence behavior
+- how pending RewardInfo options are serialized and restored
+- how invalid restored options convert to economy fallback
+- which flows are explicitly unaffected
+- how standard battle ground drops were replaced by draft without deleting special-source drop support
+- validation commands and results
+- generated reward simulation report path

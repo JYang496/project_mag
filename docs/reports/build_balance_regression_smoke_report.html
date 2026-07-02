@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Build Balance Regression Smoke Report</title>
+  <style>
+    body { margin: 0; padding: 28px; background: #f5f7fb; color: #1f2937; font-family: Arial, "Microsoft YaHei", sans-serif; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    h2 { margin: 28px 0 12px; font-size: 20px; }
+    .meta, .note { color: #64748b; line-height: 1.45; margin: 0 0 16px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #d8dee9; }
+    th, td { border-bottom: 1px solid #e5eaf1; padding: 8px 9px; text-align: left; vertical-align: top; font-size: 12px; }
+    th { background: #eef2f7; position: sticky; top: 0; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .ok { color: #166534; font-weight: 700; }
+    .warn { color: #92400e; font-weight: 700; }
+    .bad { color: #991b1b; font-weight: 700; }
+    .panel { background: #fff; border: 1px solid #d8dee9; padding: 14px; }
+    code { background: #eef2f7; padding: 1px 4px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>Build Balance Regression Smoke Report</h1>
+  <p class="meta">Source: res://data/test/build_validation_matrix_default.tres | Version: 2026-06-30-phase6-contract | Builds: 6 | Encounter types: 6</p>
+  <p class="note">This report is generated from the Phase 6 validation matrix. It is a balance-regression smoke report: it checks coverage shape and omnibuild risk from declared build expectations. It is not measured combat DPS, survival, or route timing data.</p>
+
+  <h2>Build Coverage</h2>
+  <table>
+    <thead><tr><th>Build</th><th class="num">Strong</th><th class="num">Neutral</th><th class="num">Weak</th><th class="num">Smoke Score</th><th>Regression Read</th></tr></thead>
+    <tbody><tr><td><strong>Heat Loop</strong><br><code>heat_loop</code></td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num">6</td><td class="ok">OK: has defined strengths and weaknesses.</td></tr>
+<tr><td><strong>Mark Execute</strong><br><code>mark_execute</code></td><td class="num">2</td><td class="num">1</td><td class="num">3</td><td class="num">5</td><td class="ok">OK: has defined strengths and weaknesses.</td></tr>
+<tr><td><strong>Freeze Control</strong><br><code>freeze_control</code></td><td class="num">3</td><td class="num">2</td><td class="num">1</td><td class="num">8</td><td class="ok">OK: has defined strengths and weaknesses.</td></tr>
+<tr><td><strong>Close Risk</strong><br><code>close_risk</code></td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num">6</td><td class="ok">OK: has defined strengths and weaknesses.</td></tr>
+<tr><td><strong>Area Control</strong><br><code>area_control</code></td><td class="num">3</td><td class="num">1</td><td class="num">2</td><td class="num">7</td><td class="ok">OK: has defined strengths and weaknesses.</td></tr>
+<tr><td><strong>Reload Rhythm</strong><br><code>reload_rhythm</code></td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num">6</td><td class="ok">OK: has defined strengths and weaknesses.</td></tr></tbody>
+  </table>
+
+  <h2>Encounter Coverage</h2>
+  <table>
+    <thead><tr><th>Encounter</th><th class="num">Strong Builds</th><th class="num">Weak Builds</th><th>Coverage Read</th></tr></thead>
+    <tbody><tr><td><strong>60s Swarm Clear</strong><br><code>swarm_60s</code></td><td class="num">3</td><td class="num">2</td><td class="ok">OK: at least one build is favored and at least one is pressured.</td></tr>
+<tr><td><strong>Single High-HP Elite</strong><br><code>elite_high_hp</code></td><td class="num">2</td><td class="num">3</td><td class="ok">OK: at least one build is favored and at least one is pressured.</td></tr>
+<tr><td><strong>Support Enemy + Shield Core</strong><br><code>support_shield_core</code></td><td class="num">3</td><td class="num">1</td><td class="ok">OK: at least one build is favored and at least one is pressured.</td></tr>
+<tr><td><strong>Ranged Siege</strong><br><code>ranged_siege</code></td><td class="num">2</td><td class="num">2</td><td class="ok">OK: at least one build is favored and at least one is pressured.</td></tr>
+<tr><td><strong>Close Pressure</strong><br><code>close_pressure</code></td><td class="num">2</td><td class="num">3</td><td class="ok">OK: at least one build is favored and at least one is pressured.</td></tr>
+<tr><td><strong>Task Objective Combat</strong><br><code>task_objective_combat</code></td><td class="num">2</td><td class="num">1</td><td class="ok">OK: at least one build is favored and at least one is pressured.</td></tr></tbody>
+  </table>
+
+  <h2>Risk Summary</h2>
+  <div class="panel"><ul><li><span class="ok">No omnibuild risk in the declared matrix.</span></li>
+<li><span class="ok">Every encounter should remain both a reward target and a pressure source before weapon value tuning.</span></li>
+<li><span class="warn">Reward-pool and route-timing risk is still unmeasured in this smoke report.</span></li></ul></div>
+
+  <h2>Next Adjustment Direction</h2>
+  <div class="panel">
+    <p>Do not tune weapon numbers from this smoke report alone. The next Phase 6 pass should run measured combat cases from the same matrix, then decide whether the first adjustment belongs to enemy composition, reward weights, route pressure, text clarity, or weapon values.</p>
+  </div>
+</body>
+</html>

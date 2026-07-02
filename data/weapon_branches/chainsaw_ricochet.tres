@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "ricochet_saw"
 display_name = "Ricochet Saw"
-description = "On first hit, saw splits once. The split saw chases the nearest enemy."
+description = "Projectile branch. First hit splits the saw once and sends the split saw after a nearby target, favoring On Hit chains over one-target pressure."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

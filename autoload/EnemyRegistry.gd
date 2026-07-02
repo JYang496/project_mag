@@ -1,5 +1,8 @@
 extends Node
 
+signal enemy_registered(enemy: Node2D)
+signal enemy_unregistered(enemy: Node2D)
+
 var _enemies: Array[Node2D] = []
 var _enemy_ids: Dictionary = {}
 
@@ -17,6 +20,7 @@ func register_enemy(enemy: Node) -> void:
 	_enemies.append(enemy2d)
 	if not enemy2d.tree_exiting.is_connected(_on_enemy_tree_exiting.bind(instance_id)):
 		enemy2d.tree_exiting.connect(_on_enemy_tree_exiting.bind(instance_id), CONNECT_ONE_SHOT)
+	enemy_registered.emit(enemy2d)
 
 func unregister_enemy(enemy: Node) -> void:
 	if enemy == null:
@@ -77,6 +81,8 @@ func _unregister_enemy_id(instance_id: int) -> void:
 	for i in range(_enemies.size() - 1, -1, -1):
 		var enemy := _enemies[i]
 		if enemy == null or not is_instance_valid(enemy) or enemy.get_instance_id() == instance_id:
+			if enemy != null and is_instance_valid(enemy):
+				enemy_unregistered.emit(enemy)
 			_enemies.remove_at(i)
 
 func _prune_invalid() -> void:

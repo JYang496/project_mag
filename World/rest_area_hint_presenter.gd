@@ -63,43 +63,42 @@ func has_status_changed() -> bool:
 
 func refresh() -> void:
 	if _merchant_hint_label:
-		_merchant_hint_label.text = "%s\n%s" % [
+		_merchant_hint_label.text = _format_zone_label(
+			"$",
 			LocalizationManager.tr_key("ui.rest.zone.purchase.title", _zone_merchant_hint_text),
-			LocalizationManager.tr_key("ui.rest.zone.purchase.status", "Buy weapons and modules"),
-		]
+			"Shop",
+			0
+		)
 	if _smith_hint_label:
 		var upgradable_count := _get_affordable_upgrade_count()
-		var upgrade_status := LocalizationManager.tr_key("ui.rest.zone.upgrade.none", "No upgrades available")
-		if upgradable_count > 0:
-			upgrade_status = LocalizationManager.tr_format(
-				"ui.rest.zone.upgrade.available",
-				{"count": upgradable_count},
-				"%d upgrades available" % upgradable_count
-			)
-		_smith_hint_label.text = "%s\n%s" % [
+		_smith_hint_label.text = _format_zone_label(
+			"^",
 			LocalizationManager.tr_key("ui.rest.zone.combined_upgrade.title", _zone_smith_hint_text),
-			upgrade_status,
-		]
+			"UP",
+			upgradable_count
+		)
 	if _module_hint_label:
 		var pending_count := InventoryData.temporary_modules.size()
-		var module_status := LocalizationManager.tr_key("ui.rest.zone.warehouses.none", "Open weapon and module warehouses")
-		if pending_count > 0:
-			module_status = LocalizationManager.tr_format(
-				"ui.rest.zone.warehouses.pending",
-				{"count": pending_count},
-				"%d stored modules" % pending_count
-			)
-		_module_hint_label.text = "%s\n%s" % [
+		_module_hint_label.text = _format_zone_label(
+			"[]",
 			LocalizationManager.tr_key("ui.rest.zone.warehouses.title", _zone_module_hint_text),
-			module_status,
-		]
+			"MOD",
+			pending_count
+		)
 	if _board_hint_label:
-		_board_hint_label.text = "%s\n%s" % [
+		_board_hint_label.text = _format_zone_label(
+			"#",
 			LocalizationManager.tr_key("ui.rest.zone.board.title", _zone_board_hint_text),
-			_get_board_status_text(),
-		]
+			"BOARD",
+			_get_board_badge_count()
+		)
 	if _battle_hint_label:
-		_battle_hint_label.text = LocalizationManager.tr_key("ui.tutorial.ctx.battle_hold", _zone_battle_hold_hint_text)
+		_battle_hint_label.text = _format_zone_label(
+			">",
+			LocalizationManager.tr_key("ui.rest.zone.battle.title", "Start Battle"),
+			"HOLD",
+			0
+		)
 	_zone_hint_status_signature = _build_zone_hint_status_signature()
 	layout()
 
@@ -115,6 +114,7 @@ func setup_labels() -> void:
 			continue
 		zone_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		zone_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		zone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		zone_label.add_theme_font_size_override("font_size", 16)
 		zone_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 		zone_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -278,6 +278,18 @@ func _get_board_status_text() -> String:
 		"Install cell effects or deploy task modules"
 	)
 
+func _format_zone_label(icon_text: String, title: String, badge_label: String, count: int) -> String:
+	var lines := PackedStringArray()
+	lines.append("%s  %s" % [icon_text, title])
+	if count > 0:
+		lines.append("%s %d" % [badge_label, count])
+	else:
+		lines.append(badge_label)
+	return "\n".join(lines)
+
+func _get_board_badge_count() -> int:
+	return CellEffectRuntime.get_pending_snapshot().size() + (1 if TaskRewardManager.has_pending_reward() else 0)
+
 func _get_ui() -> Node:
 	if GlobalVariables == null:
 		return null
@@ -304,11 +316,12 @@ func _build_zone_hint_status_signature() -> String:
 		var weapon := weapon_ref as Weapon
 		if weapon != null and is_instance_valid(weapon):
 			weapon_parts.append("%d:%d" % [int(weapon.level), int(weapon.max_level)])
-	return "%d|%d|%d|%d|%s" % [
+	return "%d|%d|%d|%d|%d|%s" % [
 		int(PlayerData.player_gold),
 		InventoryData.temporary_modules.size(),
 		CellEffectRuntime.get_inventory_snapshot().size(),
 		CellEffectRuntime.get_pending_snapshot().size(),
+		1 if TaskRewardManager.has_pending_reward() else 0,
 		",".join(weapon_parts),
 	]
 

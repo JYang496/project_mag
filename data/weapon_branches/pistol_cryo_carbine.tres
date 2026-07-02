@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "cryo_carbine"
 display_name = "Cryo Carbine"
-description = "Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies."
+description = "Freeze branch. Pistol shots apply Freeze and every third hit releases a shard, shifting the weapon toward control and splash."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

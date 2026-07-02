@@ -109,7 +109,7 @@ var _last_visual_position: Vector2 = Vector2.ZERO
 @export var status_hint_queue_interval_sec: float = 0.5
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 @export var player_max_energy: float = 100.0
-@export var player_energy_regen_per_sec: float = 8.0
+@export var player_energy_regen_per_sec: float = 10.0
 @export var debug_weapon_passive_trigger_prints: bool = false
 @export var debug_weapon_passive_trigger_event_prints: bool = false
 var _last_phase: String = ""
@@ -622,6 +622,12 @@ func get_max_energy() -> float:
 	if _active_skill_runtime == null:
 		return maxf(player_max_energy, 1.0)
 	return _active_skill_runtime.get_max_energy()
+
+func get_active_skill_energy_cost() -> float:
+	_ensure_active_skill_runtime()
+	if _active_skill_runtime == null:
+		return 0.0
+	return _active_skill_runtime.get_active_skill_energy_cost()
 
 func consume_energy(amount: float) -> bool:
 	_ensure_active_skill_runtime()

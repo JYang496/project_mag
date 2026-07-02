@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("3_wu5jv")
 weapon_id = "11"
-display_name = "dash blade"
+display_name = "Dash Blade"
 icon = ExtResource("1_vj6a5")
 price = 80
-description = "Dash to nearby target and deal melee hit on contact."
+description = "Close melee dash weapon. Triggers on long dash hits, fits Close and Melee builds, and can branch into Freeze control."
 scene_path = "res://Player/Weapons/Instances/dash_blade.tscn"

@@ -7,7 +7,7 @@
 script = ExtResource("2_script")
 passive_id = "piercing_blade_dance"
 display_name = "Piercing Blade Dance"
-description = "Repeated damage from the same spear builds charge. Reload at 10 or 20 charge to launch an 8- or 16-direction marking volley."
+description = "Mark/Reload trigger. Repeated damage from the same spear builds charge; start reload at 10 or 20 charge to launch an 8- or 16-direction marking volley."
 icon = ExtResource("1_icon")
 condition_type = "same_projectile_same_target_damage_twice"
 refresh_type = "reload_started"

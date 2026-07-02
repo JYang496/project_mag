@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "shield_mg"
 display_name = "Shield Machine Gun"
-description = "Deploys a frontal shield that blocks hostile shots and interrupts enemy movement."
+description = "Defense branch. Adds a frontal shield to sustained fire, trading pure Heat offense for projectile blocking and enemy interruption."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

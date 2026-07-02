@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "spear_multi_pierce"
 display_name = "Multi-Pierce"
-description = "Fires 3-5 spears in a spread pattern. Each spear deals reduced damage."
+description = "Projectile Area branch. Fires 3-5 reduced-damage spears in a spread, favoring coverage and mark setup over focused repeat hits."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "orbit_player_damaged_triggered"
 display_name = "Damage Reaction"
-description = "Trigger when the player takes damage."
+description = "Defense trigger. Triggers when the player takes damage, making Orbit a pressure-response support weapon; reload refreshes the state."
 condition_type = "event_reaction"
 refresh_type = "reload"
 ui_mode = "state"

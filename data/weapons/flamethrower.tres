@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("3_def")
 weapon_id = "13"
-display_name = "flamethrower"
+display_name = "Flamethrower"
 icon = ExtResource("1_icon")
 price = 60
-description = "short-range cone burst with fire aoe and heat management"
+description = "Short-range fire cone. Core Heat and Area weapon that builds heat during combat, then reloads to turn stored heat into a damage window."
 scene_path = "res://Player/Weapons/Instances/flamethrower.tscn"

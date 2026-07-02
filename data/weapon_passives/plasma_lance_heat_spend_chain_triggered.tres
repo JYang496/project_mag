@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "plasma_lance_heat_spend_chain_triggered"
 display_name = "Heat Spend Chain"
-description = "Spend heat on attacks several times, then finish a reload to trigger heat feedback."
+description = "Heat/Reload trigger. Spend heat on attacks several times, then finish a reload to trigger heat feedback."
 condition_type = "heat_spend_count"
 refresh_type = "reload_finished"
 ui_mode = "progress"

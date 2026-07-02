@@ -9,5 +9,5 @@ weapon_id = "10"
 display_name = "Chainsaw Launcher"
 icon = ExtResource("1_m0vjd")
 price = 60
-description = "chainsaw launcher test"
+description = "Close-range projectile saw. Best for Close and Area builds that want wall-contact pressure, slows, and vulnerability payoffs."
 scene_path = "res://Player/Weapons/Instances/chainsaw_launcher.tscn"

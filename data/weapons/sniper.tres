@@ -9,5 +9,5 @@ weapon_id = "26"
 display_name = "Sniper"
 icon = ExtResource("1_icon")
 price = 80
-description = "High-damage long-range rifle. Deals more damage to distant targets."
+description = "Long-range Projectile rifle. Fits Mark and Execute-adjacent builds by rewarding far or marked-target hits with charge-based bonus damage."
 scene_path = "res://Player/Weapons/Instances/sniper.tscn"

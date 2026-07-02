@@ -2,6 +2,8 @@ extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Use on hit-capable weapons to apply stacking DOT damage over time.
 class_name Erosion
 
+var ITEM_NAME := "Erosion"
+
 @export var base_tick: int = 5
 @export var base_damage: int = 1
 @export var tick_per_fuse: int = 0

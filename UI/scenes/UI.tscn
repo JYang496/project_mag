@@ -212,14 +212,16 @@ scale = Vector2(0.8, 0.64)
 texture = ExtResource("3_dqn0w")
 
 [node name="Hp" type="Label" parent="GUI/CharacterRoot/HpLabel" unique_id=1902588253]
+visible = false
 layout_mode = 0
 offset_left = 64.99999
 offset_top = 37.5
 offset_right = 86.99999
 offset_bottom = 60.5
-text = "HP"
+text = ""
 
 [node name="HpBar" type="ProgressBar" parent="GUI/CharacterRoot/HpLabel" unique_id=1213377119]
+visible = false
 layout_mode = 0
 offset_left = 175.0
 offset_top = 42.187492

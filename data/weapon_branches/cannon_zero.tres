@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "zero_cannon_branch"
 display_name = "Zero Cannon"
-description = "Energy cannon branch with low-HP execute bursts against marked enemies."
+description = "Execute branch. Pushes Cannon toward Mark/Execute play by bursting low-HP marked enemies instead of only landing heavy direct shots."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

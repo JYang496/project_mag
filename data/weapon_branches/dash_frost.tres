@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "frost_dash"
 display_name = "Frost Dash Blade"
-description = "Dash attacks inflict bonus freeze finish and leave a short-lived frost field."
+description = "Freeze branch. Dash Blade becomes a Close/Freeze control tool: dash hits add freeze finish pressure and leave a short frost field."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

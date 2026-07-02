@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "napalm_rocket"
 display_name = "Napalm Rocket"
-description = "Explosions persist as burning zones for area denial and grouped enemy cleanup."
+description = "Area branch. Rocket explosions persist as burning zones for area denial and grouped enemy cleanup."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

@@ -17,6 +17,7 @@ func _on_pressed() -> void:
 	PlayerData.reset_runtime_state()
 	InventoryData.reset_runtime_state()
 	TaskRewardManager.reset_runtime_state(restore_battle_snapshot)
+	RewardDraftRuntime.reset_runtime_state(restore_battle_snapshot)
 	PlayerData.select_mecha_id = selected_mecha_id
 	PlayerData.set_hp_safety_for_testing(keep_hp_safety)
 	DataHandler.save_data.last_mecha_selected = PlayerData.select_mecha_id

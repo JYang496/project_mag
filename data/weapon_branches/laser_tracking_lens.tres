@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "laser_tracking_lens"
 display_name = "Tracking Lens"
-description = "Laser beams independently correct  degrees toward nearby enemies. When combined with Prism Splitter, each split beam tracks its own target without damage loss."
+description = "Beam control branch. Laser beams independently correct toward nearby enemies; with Prism Splitter, each beam tracks its own target without damage loss."
 icon = ExtResource("1_icon")
 sort_order = 10
 weapon_scene_path = "res://Player/Weapons/Instances/laser.tscn"

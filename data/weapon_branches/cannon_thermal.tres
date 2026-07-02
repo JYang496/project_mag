@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "thermal_cannon_branch"
 display_name = "Thermal Cannon"
-description = "Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output."
+description = "Heat branch. Turns Cannon into a Heat/Fire weapon: shots gain heat-scaled output, sacrificing pure physical identity for Heat build synergy."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

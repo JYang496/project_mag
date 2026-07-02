@@ -5,6 +5,7 @@ const CORE: Array[StringName] = [
 	&"trigger", &"buff", &"debuff", &"dot", &"duration", &"stacking", &"movement",
 	&"physical", &"energy", &"fire", &"freeze", &"heat", &"charge",
 	&"projectile", &"melee_contact", &"beam", &"area", &"summon", &"trap", &"support",
+	&"mark", &"reload", &"close", &"on_hit", &"execute", &"defense", &"economy",
 ]
 
 static func normalize_array(values: Variant) -> Array[StringName]:

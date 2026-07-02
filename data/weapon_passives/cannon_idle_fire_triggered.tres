@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "cannon_idle_fire_triggered"
 display_name = "Breach Shot"
-description = "Stand still long enough, then fire one empowered cannon shot with stronger direct damage. The direct target becomes briefly vulnerable; splash damage is minor."
+description = "Defense/Execute setup. Stand still long enough, then fire one empowered cannon shot with stronger direct damage; reload refreshes the setup cycle."
 condition_type = "idle_time_threshold"
 refresh_type = "reload"
 ui_mode = "threshold"

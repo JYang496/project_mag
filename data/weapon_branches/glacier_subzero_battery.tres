@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "glacier_subzero_battery"
 display_name = "Subzero Battery"
-description = "Cold Snap restores 6 ammo, capped by the current magazine."
+description = "Reload branch. Cold Snap restores ammo up to the magazine cap, pushing Glacier toward sustained Freeze uptime between reloads."
 icon = ExtResource("1_icon")
 sort_order = 20
 weapon_scene_path = "res://Player/Weapons/Instances/glacier_projector.tscn"

@@ -1,0 +1,129 @@
+[gd_resource type="Resource" script_class="BuildValidationMatrix" format=3]
+
+[ext_resource type="Script" path="res://data/test/build_validation_matrix.gd" id="1_matrix"]
+
+[resource]
+script = ExtResource("1_matrix")
+version = "2026-06-30-phase6-contract"
+encounter_types = [{
+"id": "swarm_60s",
+"label": "60s Swarm Clear",
+"pressure_tags": PackedStringArray("swarm", "area", "chain", "pierce"),
+"primary_question": "Can the build clear dense low-HP groups before they surround the player?"
+}, {
+"id": "elite_high_hp",
+"label": "Single High-HP Elite",
+"pressure_tags": PackedStringArray("elite", "single_target", "execute"),
+"primary_question": "Can the build convert focus fire into reliable elite kills?"
+}, {
+"id": "support_shield_core",
+"label": "Support Enemy + Shield Core",
+"pressure_tags": PackedStringArray("support", "priority_target", "shield_core"),
+"primary_question": "Can the build reach or burst priority support targets without wasting output?"
+}, {
+"id": "ranged_siege",
+"label": "Ranged Siege",
+"pressure_tags": PackedStringArray("ranged", "projectile_pressure", "mobility"),
+"primary_question": "Can the build keep output while avoiding ranged pressure?"
+}, {
+"id": "close_pressure",
+"label": "Close Pressure",
+"pressure_tags": PackedStringArray("melee", "dash", "risk_management"),
+"primary_question": "Can the build survive and control melee rush pressure?"
+}, {
+"id": "task_objective_combat",
+"label": "Task Objective Combat",
+"pressure_tags": PackedStringArray("task_objective", "split_attention", "holdout"),
+"primary_question": "Can the build fight while a task objective changes movement or target priority?"
+}]
+build_cases = [{
+"id": "heat_loop",
+"label": "Heat Loop",
+"weapons": PackedStringArray("1", "13", "17", "7"),
+"branches": {
+"1": "gatling_mg",
+"13": "long_cone_flame",
+"17": "plasma_overcharge_lance",
+"7": "energy_orbit"
+},
+"modules": PackedStringArray("res://Player/Weapons/Modules/wmod_heat_capacity_heat.tscn", "res://Player/Weapons/Modules/wmod_overheat_boost_heat.tscn", "res://Player/Weapons/Modules/wmod_heat_vent_heat.tscn"),
+"target_encounters": PackedStringArray("swarm_60s", "elite_high_hp", "support_shield_core", "ranged_siege", "close_pressure", "task_objective_combat"),
+"expected_strengths": PackedStringArray("swarm_60s", "task_objective_combat"),
+"expected_weaknesses": PackedStringArray("elite_high_hp", "ranged_siege"),
+"notes": "Tests shared heat pacing, sustained cone pressure, and heat spend conversion without priming special states."
+}, {
+"id": "mark_execute",
+"label": "Mark Execute",
+"weapons": PackedStringArray("5", "3", "26", "25"),
+"branches": {
+"5": "arc_coil",
+"3": "spear_multi_pierce",
+"26": "sniper_deep_pierce",
+"25": "thermal_cannon_branch"
+},
+"modules": PackedStringArray("res://Player/Weapons/Modules/wmod_weakness_relay.tscn", "res://Player/Weapons/Modules/wmod_battle_focus_buff.tscn", "res://Player/Weapons/Modules/wmod_overkill_recovery.tscn"),
+"target_encounters": PackedStringArray("swarm_60s", "elite_high_hp", "support_shield_core", "ranged_siege", "close_pressure", "task_objective_combat"),
+"expected_strengths": PackedStringArray("elite_high_hp", "support_shield_core"),
+"expected_weaknesses": PackedStringArray("swarm_60s", "close_pressure", "task_objective_combat"),
+"notes": "Tests focused target selection, mark/execute payoff, and priority support removal."
+}, {
+"id": "freeze_control",
+"label": "Freeze Control",
+"weapons": PackedStringArray("21", "4", "11", "7"),
+"branches": {
+"21": "glacier_whiteout_expansion",
+"4": "shatter_buckshot",
+"11": "frost_dash",
+"7": "frost_orbit"
+},
+"modules": PackedStringArray("res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.tscn", "res://Player/Weapons/Modules/wmod_chill_chain_freeze.tscn", "res://Player/Weapons/Modules/wmod_ice_prison_freeze.tscn"),
+"target_encounters": PackedStringArray("swarm_60s", "elite_high_hp", "support_shield_core", "ranged_siege", "close_pressure", "task_objective_combat"),
+"expected_strengths": PackedStringArray("ranged_siege", "close_pressure", "support_shield_core"),
+"expected_weaknesses": PackedStringArray("elite_high_hp"),
+"notes": "Tests whether control windows solve pressure without pretending to be top single-target DPS."
+}, {
+"id": "close_risk",
+"label": "Close Risk",
+"weapons": PackedStringArray("11", "10", "4", "13"),
+"branches": {
+"11": "frost_dash",
+"10": "explosive_saw",
+"4": "shatter_buckshot",
+"13": "fire_pulse_aura"
+},
+"modules": PackedStringArray("res://Player/Weapons/Modules/wmod_dash_cooler.tscn", "res://Player/Weapons/Modules/wmod_lifesteal_on_hit.tscn", "res://Player/Weapons/Modules/wmod_vampiric_surge.tscn"),
+"target_encounters": PackedStringArray("swarm_60s", "elite_high_hp", "support_shield_core", "ranged_siege", "close_pressure", "task_objective_combat"),
+"expected_strengths": PackedStringArray("close_pressure", "swarm_60s"),
+"expected_weaknesses": PackedStringArray("ranged_siege", "support_shield_core"),
+"notes": "Tests close-range payoff and the Dash/Chainsaw/Shotgun chain against pressure that can punish commitment."
+}, {
+"id": "area_control",
+"label": "Area Control",
+"weapons": PackedStringArray("8", "9", "13", "7"),
+"branches": {
+"8": "salvo_rocket",
+"9": "laser_prism_splitter",
+"13": "long_cone_flame",
+"7": "energy_orbit"
+},
+"modules": PackedStringArray("res://Player/Weapons/Modules/wmod_area_expander.tscn", "res://Player/Weapons/Modules/wmod_firepower_diffusion.tscn", "res://Player/Weapons/Modules/wmod_molten_splash_fire.tscn"),
+"target_encounters": PackedStringArray("swarm_60s", "elite_high_hp", "support_shield_core", "ranged_siege", "close_pressure", "task_objective_combat"),
+"expected_strengths": PackedStringArray("swarm_60s", "support_shield_core", "task_objective_combat"),
+"expected_weaknesses": PackedStringArray("elite_high_hp", "close_pressure"),
+"notes": "Tests broad coverage and layered area damage without allowing area output to erase elite checks."
+}, {
+"id": "reload_rhythm",
+"label": "Reload Rhythm",
+"weapons": PackedStringArray("25", "8", "26", "1"),
+"branches": {
+"25": "zero_cannon_branch",
+"8": "napalm_rocket",
+"26": "sniper_impact_burst",
+"1": "shield_mg"
+},
+"modules": PackedStringArray("res://Player/Weapons/Modules/wmod_expanded_magazine.tscn", "res://Player/Weapons/Modules/wmod_reload_speed_link.tscn", "res://Player/Weapons/Modules/wmod_reload_offhand_boost.tscn", "res://Player/Weapons/Modules/wmod_reload_blast_damage.tscn", "res://Player/Weapons/Modules/wmod_reload_shield_boost.tscn"),
+"target_encounters": PackedStringArray("swarm_60s", "elite_high_hp", "support_shield_core", "ranged_siege", "close_pressure", "task_objective_combat"),
+"expected_strengths": PackedStringArray("elite_high_hp", "ranged_siege"),
+"expected_weaknesses": PackedStringArray("swarm_60s", "close_pressure"),
+"notes": "Tests reload-triggered output and protection windows with large-magazine weapons."
+}]

@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "sniper_deep_pierce"
 display_name = "Deep Pierce"
-description = "Each pierce increases projectile damage for the remaining hits."
+description = "Projectile branch. Each pierce increases remaining-hit damage, rewarding long lanes and stacked enemies over pure single-target sniping."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

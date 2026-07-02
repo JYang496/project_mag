@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "arc_coil"
 display_name = "Arc Coil"
-description = "Energy branch: each hit chains arc damage to nearby enemies with falloff."
+description = "On Hit Area branch. Pistol hits chain energy damage to nearby enemies with falloff, favoring frequent hit triggers over mark setup."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

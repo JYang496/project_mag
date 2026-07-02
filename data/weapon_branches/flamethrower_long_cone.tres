@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "long_cone_flame"
 display_name = "Long Cone Flame"
-description = "Extends flamethrower cone reach for safer mid-range burn control."
+description = "Area reach branch. Extends cone reach so Flamethrower can keep Heat/Area pressure from safer mid-range spacing."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

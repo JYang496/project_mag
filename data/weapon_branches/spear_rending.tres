@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "spear_rending"
 display_name = "Rending Thrust"
-description = "Repeated hits on the same target increase damage. Resets after a time window."
+description = "Mark pressure branch. Repeated hits on the same target increase damage for a short window, favoring elite focus and spear return control."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

@@ -7,6 +7,7 @@
 [node name="FasterSpeed" instance=ExtResource("1_25te3")]
 script = ExtResource("2_ep60x")
 level_effects = PackedStringArray("Projectile travel speed +50%", "Projectile travel speed +67.5%", "Projectile travel speed +85%")
+module_tags = PackedStringArray("buff", "projectile")
 mult_by = 1.2
 
 [node name="Sprite" parent="." index="0"]

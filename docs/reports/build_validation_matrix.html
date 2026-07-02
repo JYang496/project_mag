@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Build Validation Matrix</title>
+  <style>
+    body { margin: 0; padding: 28px; background: #f5f7fb; color: #1f2937; font-family: Arial, "Microsoft YaHei", sans-serif; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    h2 { margin: 28px 0 12px; font-size: 20px; }
+    h3 { margin: 0 0 8px; font-size: 16px; }
+    .meta, .note { color: #64748b; line-height: 1.45; margin: 0 0 16px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #d8dee9; }
+    th, td { border-bottom: 1px solid #e5eaf1; padding: 8px 9px; text-align: left; vertical-align: top; font-size: 12px; }
+    th { background: #eef2f7; position: sticky; top: 0; z-index: 1; }
+    td.status { font-weight: 700; text-align: center; white-space: nowrap; }
+    .strong { background: #dcfce7; color: #166534; }
+    .neutral { background: #f8fafc; color: #475569; }
+    .weak { background: #fee2e2; color: #991b1b; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+    .card { background: #fff; border: 1px solid #d8dee9; padding: 12px; }
+    .list { margin: 6px 0 0; padding-left: 18px; }
+    .small { color: #64748b; font-size: 12px; line-height: 1.45; }
+    code { background: #eef2f7; padding: 1px 4px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>Build Validation Matrix</h1>
+  <p class="meta">Source: res://data/test/build_validation_matrix_default.tres | Version: 2026-06-30-phase6-contract | Builds: 6 | Encounter types: 6</p>
+  <p class="note">This is a Phase 6 validation matrix report. It records expected strengths and weaknesses for multi-weapon builds using current repo resources. It is not a measured combat DPS or survival report yet.</p>
+
+  <h2>Build x Encounter Matrix</h2>
+  <table>
+    <thead><tr><th>Build</th><th>Weapons</th><th>60s Swarm Clear</th><th>Single High-HP Elite</th><th>Support Enemy + Shield Core</th><th>Ranged Siege</th><th>Close Pressure</th><th>Task Objective Combat</th></tr></thead>
+    <tbody><tr><td><strong>Heat Loop</strong><br><span class="small"><code>heat_loop</code></span></td><td>Machine Gun, Flamethrower, Plasma Lance, Orbit</td><td class="status strong">Strong</td><td class="status weak">Weak</td><td class="status neutral">Neutral</td><td class="status weak">Weak</td><td class="status neutral">Neutral</td><td class="status strong">Strong</td></tr>
+<tr><td><strong>Mark Execute</strong><br><span class="small"><code>mark_execute</code></span></td><td>Auto Pistol, Spear Launcher, Sniper, Cannon</td><td class="status weak">Weak</td><td class="status strong">Strong</td><td class="status strong">Strong</td><td class="status neutral">Neutral</td><td class="status weak">Weak</td><td class="status weak">Weak</td></tr>
+<tr><td><strong>Freeze Control</strong><br><span class="small"><code>freeze_control</code></span></td><td>Glacier Projector, Shotgun, Dash Blade, Orbit</td><td class="status neutral">Neutral</td><td class="status weak">Weak</td><td class="status strong">Strong</td><td class="status strong">Strong</td><td class="status strong">Strong</td><td class="status neutral">Neutral</td></tr>
+<tr><td><strong>Close Risk</strong><br><span class="small"><code>close_risk</code></span></td><td>Dash Blade, Chainsaw Launcher, Shotgun, Flamethrower</td><td class="status strong">Strong</td><td class="status neutral">Neutral</td><td class="status weak">Weak</td><td class="status weak">Weak</td><td class="status strong">Strong</td><td class="status neutral">Neutral</td></tr>
+<tr><td><strong>Area Control</strong><br><span class="small"><code>area_control</code></span></td><td>Rocket Launcher, Laser, Flamethrower, Orbit</td><td class="status strong">Strong</td><td class="status weak">Weak</td><td class="status strong">Strong</td><td class="status neutral">Neutral</td><td class="status weak">Weak</td><td class="status strong">Strong</td></tr>
+<tr><td><strong>Reload Rhythm</strong><br><span class="small"><code>reload_rhythm</code></span></td><td>Cannon, Rocket Launcher, Sniper, Machine Gun</td><td class="status weak">Weak</td><td class="status strong">Strong</td><td class="status neutral">Neutral</td><td class="status strong">Strong</td><td class="status weak">Weak</td><td class="status neutral">Neutral</td></tr></tbody>
+  </table>
+
+  <h2>Build Details</h2>
+  <div class="cards"><section class="card">
+  <h3>Heat Loop</h3>
+  <div class="small"><code>heat_loop</code></div>
+  <p class="small">Tests shared heat pacing, sustained cone pressure, and heat spend conversion without priming special states.</p>
+  <strong>Weapons / branches</strong>
+  <ul class="list"><li>Machine Gun / Gatling Thermal (gatling_mg)</li><li>Flamethrower / Long Cone Flame (long_cone_flame)</li><li>Plasma Lance / Overcharge Lance (plasma_overcharge_lance)</li><li>Orbit / Energy Orbit (energy_orbit)</li></ul>
+  <strong>Modules</strong>
+  <ul class="list"><li>Heat Capacity <span class="small"><code>res://Player/Weapons/Modules/wmod_heat_capacity_heat.tscn</code></span></li><li>Overheat Boost <span class="small"><code>res://Player/Weapons/Modules/wmod_overheat_boost_heat.tscn</code></span></li><li>Heat Vent <span class="small"><code>res://Player/Weapons/Modules/wmod_heat_vent_heat.tscn</code></span></li></ul>
+</section>
+<section class="card">
+  <h3>Mark Execute</h3>
+  <div class="small"><code>mark_execute</code></div>
+  <p class="small">Tests focused target selection, mark/execute payoff, and priority support removal.</p>
+  <strong>Weapons / branches</strong>
+  <ul class="list"><li>Auto Pistol / Arc Coil (arc_coil)</li><li>Spear Launcher / Multi-Pierce (spear_multi_pierce)</li><li>Sniper / Deep Pierce (sniper_deep_pierce)</li><li>Cannon / Thermal Cannon (thermal_cannon_branch)</li></ul>
+  <strong>Modules</strong>
+  <ul class="list"><li>Weakness Relay <span class="small"><code>res://Player/Weapons/Modules/wmod_weakness_relay.tscn</code></span></li><li>Battle Focus <span class="small"><code>res://Player/Weapons/Modules/wmod_battle_focus_buff.tscn</code></span></li><li>Overkill Recovery <span class="small"><code>res://Player/Weapons/Modules/wmod_overkill_recovery.tscn</code></span></li></ul>
+</section>
+<section class="card">
+  <h3>Freeze Control</h3>
+  <div class="small"><code>freeze_control</code></div>
+  <p class="small">Tests whether control windows solve pressure without pretending to be top single-target DPS.</p>
+  <strong>Weapons / branches</strong>
+  <ul class="list"><li>Glacier Projector / Whiteout Expansion (glacier_whiteout_expansion)</li><li>Shotgun / Shatter Buckshot (shatter_buckshot)</li><li>Dash Blade / Frost Dash Blade (frost_dash)</li><li>Orbit / Frost Orbit (frost_orbit)</li></ul>
+  <strong>Modules</strong>
+  <ul class="list"><li>Brittle Trigger <span class="small"><code>res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.tscn</code></span></li><li>Chill Chain <span class="small"><code>res://Player/Weapons/Modules/wmod_chill_chain_freeze.tscn</code></span></li><li>Ice Prison <span class="small"><code>res://Player/Weapons/Modules/wmod_ice_prison_freeze.tscn</code></span></li></ul>
+</section>
+<section class="card">
+  <h3>Close Risk</h3>
+  <div class="small"><code>close_risk</code></div>
+  <p class="small">Tests close-range payoff and the Dash/Chainsaw/Shotgun chain against pressure that can punish commitment.</p>
+  <strong>Weapons / branches</strong>
+  <ul class="list"><li>Dash Blade / Frost Dash Blade (frost_dash)</li><li>Chainsaw Launcher / Explosive Saw (explosive_saw)</li><li>Shotgun / Shatter Buckshot (shatter_buckshot)</li><li>Flamethrower / Fire Pulse Aura (fire_pulse_aura)</li></ul>
+  <strong>Modules</strong>
+  <ul class="list"><li>Dash Cooler <span class="small"><code>res://Player/Weapons/Modules/wmod_dash_cooler.tscn</code></span></li><li>Life Steal <span class="small"><code>res://Player/Weapons/Modules/wmod_lifesteal_on_hit.tscn</code></span></li><li>Vampiric Surge <span class="small"><code>res://Player/Weapons/Modules/wmod_vampiric_surge.tscn</code></span></li></ul>
+</section>
+<section class="card">
+  <h3>Area Control</h3>
+  <div class="small"><code>area_control</code></div>
+  <p class="small">Tests broad coverage and layered area damage without allowing area output to erase elite checks.</p>
+  <strong>Weapons / branches</strong>
+  <ul class="list"><li>Rocket Launcher / Salvo Rocket (salvo_rocket)</li><li>Laser / Prism Splitter (laser_prism_splitter)</li><li>Flamethrower / Long Cone Flame (long_cone_flame)</li><li>Orbit / Energy Orbit (energy_orbit)</li></ul>
+  <strong>Modules</strong>
+  <ul class="list"><li>Area Expander <span class="small"><code>res://Player/Weapons/Modules/wmod_area_expander.tscn</code></span></li><li>Firepower Diffusion <span class="small"><code>res://Player/Weapons/Modules/wmod_firepower_diffusion.tscn</code></span></li><li>Molten Splash <span class="small"><code>res://Player/Weapons/Modules/wmod_molten_splash_fire.tscn</code></span></li></ul>
+</section>
+<section class="card">
+  <h3>Reload Rhythm</h3>
+  <div class="small"><code>reload_rhythm</code></div>
+  <p class="small">Tests reload-triggered output and protection windows with large-magazine weapons.</p>
+  <strong>Weapons / branches</strong>
+  <ul class="list"><li>Cannon / Zero Cannon (zero_cannon_branch)</li><li>Rocket Launcher / Napalm Rocket (napalm_rocket)</li><li>Sniper / Impact Burst (sniper_impact_burst)</li><li>Machine Gun / Shield Machine Gun (shield_mg)</li></ul>
+  <strong>Modules</strong>
+  <ul class="list"><li>Expanded Magazine <span class="small"><code>res://Player/Weapons/Modules/wmod_expanded_magazine.tscn</code></span></li><li>Reload Link <span class="small"><code>res://Player/Weapons/Modules/wmod_reload_speed_link.tscn</code></span></li><li>Reload Relay <span class="small"><code>res://Player/Weapons/Modules/wmod_reload_offhand_boost.tscn</code></span></li><li>Reload Burst <span class="small"><code>res://Player/Weapons/Modules/wmod_reload_blast_damage.tscn</code></span></li><li>Reload Barrier <span class="small"><code>res://Player/Weapons/Modules/wmod_reload_shield_boost.tscn</code></span></li></ul>
+</section></div>
+
+  <h2>Encounter Questions</h2>
+  <div class="cards"><section class="card">
+  <h3>60s Swarm Clear</h3>
+  <div class="small"><code>swarm_60s</code></div>
+  <p class="small">Can the build clear dense low-HP groups before they surround the player?</p>
+  <p class="small"><code>swarm</code> <code>area</code> <code>chain</code> <code>pierce</code></p>
+</section>
+<section class="card">
+  <h3>Single High-HP Elite</h3>
+  <div class="small"><code>elite_high_hp</code></div>
+  <p class="small">Can the build convert focus fire into reliable elite kills?</p>
+  <p class="small"><code>elite</code> <code>single_target</code> <code>execute</code></p>
+</section>
+<section class="card">
+  <h3>Support Enemy + Shield Core</h3>
+  <div class="small"><code>support_shield_core</code></div>
+  <p class="small">Can the build reach or burst priority support targets without wasting output?</p>
+  <p class="small"><code>support</code> <code>priority_target</code> <code>shield_core</code></p>
+</section>
+<section class="card">
+  <h3>Ranged Siege</h3>
+  <div class="small"><code>ranged_siege</code></div>
+  <p class="small">Can the build keep output while avoiding ranged pressure?</p>
+  <p class="small"><code>ranged</code> <code>projectile_pressure</code> <code>mobility</code></p>
+</section>
+<section class="card">
+  <h3>Close Pressure</h3>
+  <div class="small"><code>close_pressure</code></div>
+  <p class="small">Can the build survive and control melee rush pressure?</p>
+  <p class="small"><code>melee</code> <code>dash</code> <code>risk_management</code></p>
+</section>
+<section class="card">
+  <h3>Task Objective Combat</h3>
+  <div class="small"><code>task_objective_combat</code></div>
+  <p class="small">Can the build fight while a task objective changes movement or target priority?</p>
+  <p class="small"><code>task_objective</code> <code>split_attention</code> <code>holdout</code></p>
+</section></div>
+</body>
+</html>

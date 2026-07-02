@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "rocket_cluster_kill_triggered"
 display_name = "Cluster Kill"
-description = "Has 3 charges. Rocket kills near other enemies spend 1 charge to reward clustered group clears. Reloading restores all charges."
+description = "Area trigger. Has 3 charges; rocket kills near other enemies spend 1 charge to reward clustered group clears. Reloading restores all charges."
 condition_type = "event_reaction"
 refresh_type = "reload"
 ui_mode = "state"

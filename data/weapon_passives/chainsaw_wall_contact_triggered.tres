@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "chainsaw_wall_contact_triggered"
 display_name = "Wall Contact"
-description = "Chainsaw hits against slowed enemies apply a short all-source vulnerability. The wall-contact passive event still triggers when a chainsaw projectile hits a wall."
+description = "Close debuff trigger. Chainsaw hits against slowed enemies apply short all-source vulnerability; reload refreshes the state, and wall hits still emit the passive event."
 condition_type = "event_reaction"
 refresh_type = "reload"
 ui_mode = "state"

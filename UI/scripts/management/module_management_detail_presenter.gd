@@ -2,6 +2,8 @@ extends RefCounted
 class_name ModuleManagementDetailPresenter
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
+const MODULE_FIT_FORMATTER := preload("res://UI/scripts/module_fit_formatter.gd")
+const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 
 var owner_view: Node
 var detail_title: Label
@@ -49,8 +51,18 @@ func refresh_module_detail(selected_module: Module, selected_equipped_module: Mo
 	_add_detail_line("Level", "Lv.%d/%d" % [int(active_module.module_level), Module.MAX_LEVEL])
 	_add_detail_line("Rarity", RARITY_UTIL.get_display_name(active_module.get_rarity()))
 	_add_detail_line("Install Targets", format_module_install_targets(active_module))
+	var fit_weapon := selected_equipped_module_weapon if selected_equipped_module_weapon != null else MODULE_FIT_FORMATTER.get_current_weapon()
+	var fit_data: Dictionary = MODULE_FIT_FORMATTER.build_display_data(active_module, fit_weapon)
+	var effect_chips: Array = fit_data.get("effect_chips", [])
+	_add_detail_line("Fit", str(fit_data.get("fit_label", "No current weapon")))
+	if not effect_chips.is_empty():
+		_add_detail_chip_row(effect_chips)
+	for warning in fit_data.get("fit_warnings", PackedStringArray()):
+		_add_detail_line("Warning", str(warning))
 	for description in active_module.get_effect_descriptions():
-		_add_detail_text(str(description))
+		var line := str(description)
+		if MODULE_FIT_FORMATTER.filter_effect_description(line):
+			_add_detail_text(line)
 
 func get_module_texture(module_instance: Module) -> Texture2D:
 	if module_instance == null or not is_instance_valid(module_instance):
@@ -129,3 +141,9 @@ func _add_detail_text(text: String) -> void:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Color(0.82, 0.88, 0.9))
 	detail_body.add_child(label)
+
+func _add_detail_chip_row(chips: Array) -> void:
+	if chips.is_empty() or detail_body == null:
+		return
+	var row := BUILD_TAG_DISPLAY.make_chip_row(chips, 5)
+	detail_body.add_child(row)

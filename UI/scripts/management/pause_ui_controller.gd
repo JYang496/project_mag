@@ -129,9 +129,17 @@ func refresh_language_options() -> void:
 		controls_hint_label.position = Vector2(72.0, 482.0)
 		controls_hint_label.size = Vector2(110.0, 30.0)
 		controls_hint_label.text = LocalizationManager.tr_key("ui.settings.controls_hint", "Controls")
+		controls_hint_label.tooltip_text = LocalizationManager.tr_key(
+			"ui.settings.controls_hint.tooltip",
+			"Adaptive opens new hints and lets F1 collapse them. Always Expanded keeps hints open. Hidden hides the panel."
+		)
 	if controls_hint_option:
 		controls_hint_option.position = Vector2(184.0, 480.0)
 		controls_hint_option.size = Vector2(148.0, 30.0)
+		controls_hint_option.tooltip_text = LocalizationManager.tr_key(
+			"ui.settings.controls_hint.tooltip",
+			"Adaptive opens new hints and lets F1 collapse them. Always Expanded keeps hints open. Hidden hides the panel."
+		)
 		controls_hint_option.clear()
 		var modes: Array[StringName] = [
 			PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE,

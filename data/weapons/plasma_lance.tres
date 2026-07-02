@@ -9,5 +9,5 @@ weapon_id = "17"
 display_name = "Plasma Lance"
 icon = ExtResource("1_icon")
 price = 60
-description = "Slow heavy energy lance with light pierce and heat-spend chain feedback."
+description = "Long-range heavy energy lance. Fits Heat and Projectile builds by spending heat on attacks, then reloading to trigger chain feedback."
 scene_path = "res://Player/Weapons/Instances/plasma_lance.tscn"

@@ -221,6 +221,7 @@ func get_effect_descriptions() -> PackedStringArray:
 		var final_add: float = get_effective_additive(raw_add)
 		var value_sign := "+" if final_add >= 0.0 else ""
 		descriptions.append("%s %s%.1f" % [_format_stat_label(key), value_sign, final_add])
+	_append_build_readability_descriptions(descriptions)
 	return descriptions
 
 func get_level_effect_description(level: int = module_level) -> String:
@@ -235,8 +236,159 @@ func with_level_effect_descriptions(descriptions: PackedStringArray) -> PackedSt
 	if level_effect != "":
 		output.append(level_effect)
 	output.append_array(descriptions)
+	_append_build_readability_descriptions(output)
 	return output
 
 func _format_stat_label(stat_key: String) -> String:
 	var pretty := stat_key.replace("_", " ")
 	return pretty.capitalize()
+
+func _append_build_readability_descriptions(descriptions: PackedStringArray) -> void:
+	var tag_labels := _format_build_tags()
+	if not tag_labels.is_empty():
+		descriptions.append("Build Tags: %s" % " / ".join(tag_labels))
+	var fit_labels := _format_install_targets()
+	if not fit_labels.is_empty():
+		descriptions.append("Best On: %s" % " / ".join(fit_labels))
+	var hook_labels := _format_required_hooks()
+	if not hook_labels.is_empty():
+		descriptions.append("Triggers: %s" % " / ".join(hook_labels))
+
+func _format_build_tags() -> PackedStringArray:
+	var labels := PackedStringArray()
+	for tag in get_normalized_module_tags():
+		var label := _format_taxonomy_label(tag)
+		if label != "" and not labels.has(label):
+			labels.append(label)
+	for hook in get_normalized_required_hooks():
+		var hook_label := _format_hook_tag(hook)
+		if hook_label != "" and not labels.has(hook_label):
+			labels.append(hook_label)
+	for delivery in get_normalized_required_delivery_types():
+		var delivery_label := _format_taxonomy_label(delivery)
+		if delivery_label != "" and not labels.has(delivery_label):
+			labels.append(delivery_label)
+	var has_generic_buff_text := not level_effects.is_empty()
+	has_generic_buff_text = has_generic_buff_text or not stat_multipliers.is_empty()
+	has_generic_buff_text = has_generic_buff_text or not stat_additives.is_empty()
+	if labels.is_empty() and has_generic_buff_text:
+		labels.append("Buff")
+	return labels
+
+func _format_install_targets() -> PackedStringArray:
+	var labels := PackedStringArray()
+	for required_trait in get_normalized_required_weapon_traits():
+		var trait_label := _format_taxonomy_label(required_trait)
+		if trait_label != "" and not labels.has(trait_label):
+			labels.append(trait_label)
+	for required_delivery in get_normalized_required_delivery_types():
+		var delivery_label := _format_taxonomy_label(required_delivery)
+		if delivery_label != "" and not labels.has(delivery_label):
+			labels.append(delivery_label)
+	for required_capability in get_normalized_required_weapon_capabilities():
+		var capability_label := _format_taxonomy_label(required_capability)
+		if capability_label != "" and not labels.has(capability_label):
+			labels.append(capability_label)
+	return labels
+
+func _format_required_hooks() -> PackedStringArray:
+	var labels := PackedStringArray()
+	for hook in get_normalized_required_hooks():
+		var label := _format_hook_label(hook)
+		if label != "" and not labels.has(label):
+			labels.append(label)
+	return labels
+
+func _format_hook_tag(hook: StringName) -> String:
+	if hook == ModuleHook.HIT \
+			or hook == ModuleHook.DAMAGE_DEALT \
+			or hook == ModuleHook.AREA_DAMAGE \
+			or hook == ModuleHook.BEAM_HIT:
+		return "On Hit"
+	if hook == ModuleHook.RELOAD_START or hook == ModuleHook.RELOAD_DURATION:
+		return "Reload"
+	if hook == ModuleHook.KILL:
+		return "Execute"
+	return ""
+
+func _format_hook_label(hook: StringName) -> String:
+	match hook:
+		ModuleHook.PROJECTILE_SPAWN:
+			return "Projectile spawn"
+		ModuleHook.HIT:
+			return "Weapon hit"
+		ModuleHook.DAMAGE_DEALT:
+			return "Damage dealt"
+		ModuleHook.AREA_DAMAGE:
+			return "Area damage"
+		ModuleHook.BEAM_HIT:
+			return "Beam hit"
+		ModuleHook.RELOAD_START:
+			return "Reload start"
+		ModuleHook.RELOAD_DURATION:
+			return "Reload duration"
+		ModuleHook.KILL:
+			return "Kill"
+		_:
+			return _format_taxonomy_label(hook)
+
+func _format_taxonomy_label(value: StringName) -> String:
+	var key := StringName(str(value))
+	match key:
+		"heat":
+			return "Heat"
+		"mark":
+			return "Mark"
+		"freeze":
+			return "Freeze"
+		"reload":
+			return "Reload"
+		"close":
+			return "Close"
+		"area":
+			return "Area"
+		"beam":
+			return "Beam"
+		"projectile":
+			return "Projectile"
+		"melee_contact":
+			return "Melee"
+		"on_hit":
+			return "On Hit"
+		"execute":
+			return "Execute"
+		"defense":
+			return "Defense"
+		"economy":
+			return "Economy"
+		"physical":
+			return "Physical"
+		"energy":
+			return "Energy"
+		"fire":
+			return "Fire"
+		"charge":
+			return "Charge"
+		"summon":
+			return "Summon"
+		"trap":
+			return "Trap"
+		"support":
+			return "Support"
+		"movement":
+			return "Movement"
+		"buff":
+			return "Buff"
+		"debuff":
+			return "Debuff"
+		"dot":
+			return "DoT"
+		"duration":
+			return "Duration"
+		"stacking":
+			return "Stacking"
+		"trigger":
+			return "Trigger"
+		_:
+			var pretty := str(value).replace("_", " ")
+			return pretty.capitalize()

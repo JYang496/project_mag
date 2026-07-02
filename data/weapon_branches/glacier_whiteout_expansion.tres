@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "glacier_whiteout_expansion"
 display_name = "Whiteout Expansion"
-description = "Glacier Projector cone angle expands by 20% without reducing range or damage."
+description = "Area branch. Expands the freeze cone without reducing range or damage, improving Freeze control against wider enemy groups."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10
