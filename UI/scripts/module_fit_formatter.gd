@@ -7,38 +7,64 @@ const STATUS_UNKNOWN: StringName = &"unknown"
 const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 
 static func build_display_data(module_instance: Module, target_weapon: Weapon = null) -> Dictionary:
+	var no_weapon := LocalizationManager.tr_key("ui.module.fit.no_weapon", "No current weapon")
 	var data := {
 		"effect_chips": [],
-		"fit_badge": BUILD_TAG_DISPLAY.build_fit_status_badge(STATUS_UNKNOWN, "No current weapon"),
+		"fit_badge": BUILD_TAG_DISPLAY.build_fit_status_badge(STATUS_UNKNOWN, no_weapon),
 		"fit_status": STATUS_UNKNOWN,
-		"fit_label": "No current weapon",
+		"fit_label": no_weapon,
 		"fit_warnings": PackedStringArray(),
 		"detail_lines": PackedStringArray(),
 	}
 	if module_instance == null or not is_instance_valid(module_instance):
-		data["fit_label"] = "Invalid module"
-		data["fit_badge"] = BUILD_TAG_DISPLAY.build_fit_status_badge(STATUS_UNKNOWN, "Invalid module")
+		var invalid_module := LocalizationManager.tr_key("ui.module.fit.invalid_module", "Invalid module")
+		data["fit_label"] = invalid_module
+		data["fit_badge"] = BUILD_TAG_DISPLAY.build_fit_status_badge(STATUS_UNKNOWN, invalid_module)
 		return data
 	var effect_chips := build_effect_chips(module_instance)
 	data["effect_chips"] = effect_chips
 	if target_weapon == null or not is_instance_valid(target_weapon):
-		data["detail_lines"] = PackedStringArray(["Fit: No current weapon"])
+		data["detail_lines"] = PackedStringArray([
+			LocalizationManager.tr_key("ui.module.fit.detail.no_weapon", "Fit: No current weapon")
+		])
 		return data
 	var reason := ""
 	if module_instance.has_method("get_incompatibility_reason"):
 		reason = str(module_instance.get_incompatibility_reason(target_weapon)).strip_edges()
 	if reason == "":
 		data["fit_status"] = STATUS_FITS
-		data["fit_label"] = "Fits current"
-		data["fit_badge"] = BUILD_TAG_DISPLAY.build_fit_status_badge(STATUS_FITS, "Fits")
-		data["detail_lines"] = PackedStringArray(["Fit: Current weapon satisfies module requirements"])
+		data["fit_label"] = LocalizationManager.tr_key("ui.module.fit.current", "Fits current")
+		data["fit_badge"] = BUILD_TAG_DISPLAY.build_fit_status_badge(
+			STATUS_FITS,
+			LocalizationManager.tr_key("ui.module.fit.fits", "Fits")
+		)
+		data["detail_lines"] = PackedStringArray([
+			LocalizationManager.tr_key(
+				"ui.module.fit.detail.compatible",
+				"Fit: Current weapon satisfies module requirements"
+			)
+		])
 	else:
-		var warnings := PackedStringArray([reason])
+		var localized_reason := LocalizationManager.localize_module_reason(reason)
+		var warnings := PackedStringArray([localized_reason])
 		data["fit_status"] = STATUS_BLOCKED
-		data["fit_label"] = "Not compatible"
-		data["fit_badge"] = BUILD_TAG_DISPLAY.build_fit_status_badge(STATUS_BLOCKED, "Blocked")
+		data["fit_label"] = LocalizationManager.tr_key("ui.module.fit.not_compatible", "Not compatible")
+		data["fit_badge"] = BUILD_TAG_DISPLAY.build_fit_status_badge(
+			STATUS_BLOCKED,
+			LocalizationManager.tr_key("ui.module.fit.blocked", "Blocked")
+		)
 		data["fit_warnings"] = warnings
-		data["detail_lines"] = PackedStringArray(["Fit: Current weapon does not satisfy module requirements", "Warning: %s" % reason])
+		data["detail_lines"] = PackedStringArray([
+			LocalizationManager.tr_key(
+				"ui.module.fit.detail.incompatible",
+				"Fit: Current weapon does not satisfy module requirements"
+			),
+			LocalizationManager.tr_format(
+				"ui.module.fit.warning",
+				{"reason": localized_reason},
+				"Warning: %s" % localized_reason
+			),
+		])
 	return data
 
 static func build_effect_chips(module_instance: Module, limit: int = 0) -> Array:
@@ -54,7 +80,13 @@ static func build_effect_chips(module_instance: Module, limit: int = 0) -> Array
 		_append_unique_chip(chips, BUILD_TAG_DISPLAY.build_tag_chip(delivery, _format_taxonomy_label(delivery)))
 	_append_stat_chips(chips, module_instance)
 	if chips.is_empty():
-		_append_unique_chip(chips, BUILD_TAG_DISPLAY.build_tag_chip(&"buff", "Buff"))
+		_append_unique_chip(
+			chips,
+			BUILD_TAG_DISPLAY.build_tag_chip(
+				&"buff",
+				LocalizationManager.get_module_term(&"buff", "Buff")
+			)
+		)
 	if limit > 0 and chips.size() > limit:
 		return chips.slice(0, limit)
 	return chips
@@ -83,12 +115,20 @@ static func filter_effect_description(line: String) -> bool:
 	var text := line.strip_edges()
 	if text == "":
 		return false
-	return not (
-		text.begins_with("Build Tags:")
-		or text.begins_with("Effect Tags:")
-		or text.begins_with("Best On:")
-		or text.begins_with("Triggers:")
-	)
+	var hidden_prefixes := PackedStringArray([
+		"Build Tags:",
+		"Effect Tags:",
+		"Best On:",
+		"Triggers:",
+		LocalizationManager.tr_key("ui.module.build_tags_prefix", "Build Tags:"),
+		LocalizationManager.tr_key("ui.module.effect_tags_prefix", "Effect Tags:"),
+		LocalizationManager.tr_key("ui.module.best_on_prefix", "Best On:"),
+		LocalizationManager.tr_key("ui.module.triggers_prefix", "Triggers:"),
+	])
+	for prefix in hidden_prefixes:
+		if text.begins_with(prefix):
+			return false
+	return true
 
 static func _append_stat_chips(chips: Array, module_instance: Module) -> void:
 	for key_variant in module_instance.stat_multipliers.keys():
@@ -96,40 +136,47 @@ static func _append_stat_chips(chips: Array, module_instance: Module) -> void:
 	for key_variant in module_instance.stat_additives.keys():
 		_append_unique_chip(chips, BUILD_TAG_DISPLAY.build_tag_chip(str(key_variant), _format_stat_key_label(str(key_variant))))
 	if chips.is_empty() and not module_instance.level_effects.is_empty():
-		_append_unique_chip(chips, BUILD_TAG_DISPLAY.build_tag_chip(&"buff", "Buff"))
+		_append_unique_chip(
+			chips,
+			BUILD_TAG_DISPLAY.build_tag_chip(
+				&"buff",
+				LocalizationManager.get_module_term(&"buff", "Buff")
+			)
+		)
 
 static func _format_stat_key_label(stat_key: String) -> String:
 	var normalized := stat_key.strip_edges().to_lower()
 	if normalized.contains("damage"):
-		return "Damage"
+		return LocalizationManager.get_module_term(&"stat.damage", "Damage")
 	if normalized.contains("reload"):
-		return "Reload"
+		return LocalizationManager.get_module_term(&"reload", "Reload")
 	if normalized.contains("heat"):
-		return "Heat"
+		return LocalizationManager.get_module_term(&"heat", "Heat")
 	if normalized.contains("ammo") or normalized.contains("magazine"):
-		return "Ammo"
+		return LocalizationManager.get_module_term(&"ammo", "Ammo")
 	if normalized.contains("size") or normalized.contains("speed") or normalized.contains("bullet"):
-		return "Projectile"
+		return LocalizationManager.get_module_term(&"projectile", "Projectile")
 	if normalized.contains("crit"):
-		return "Crit"
+		return LocalizationManager.get_module_term(&"crit", "Crit")
 	if normalized.contains("shield") or normalized.contains("armor") or normalized.contains("hp"):
-		return "Defense"
+		return LocalizationManager.get_module_term(&"defense", "Defense")
 	if normalized.contains("radius") or normalized.contains("area") or normalized.contains("angle"):
-		return "Area"
-	return stat_key.replace("_", " ").capitalize()
+		return LocalizationManager.get_module_term(&"area", "Area")
+	var fallback := stat_key.replace("_", " ").capitalize()
+	return LocalizationManager.get_module_term(StringName("stat.%s" % normalized), fallback)
 
 static func _format_hook_tag(hook: StringName) -> String:
 	if hook == ModuleHook.HIT \
 			or hook == ModuleHook.DAMAGE_DEALT \
 			or hook == ModuleHook.AREA_DAMAGE \
 			or hook == ModuleHook.BEAM_HIT:
-		return "On Hit"
+		return LocalizationManager.get_module_term(&"on_hit", "On Hit")
 	if hook == ModuleHook.RELOAD_START or hook == ModuleHook.RELOAD_DURATION:
-		return "Reload"
+		return LocalizationManager.get_module_term(&"reload", "Reload")
 	if hook == ModuleHook.KILL:
-		return "Execute"
+		return LocalizationManager.get_module_term(&"execute", "Execute")
 	if hook == ModuleHook.PROJECTILE_SPAWN:
-		return "Projectile"
+		return LocalizationManager.get_module_term(&"projectile", "Projectile")
 	return ""
 
 static func _format_hook_tag_key(hook: StringName) -> StringName:
@@ -147,63 +194,65 @@ static func _format_hook_tag_key(hook: StringName) -> StringName:
 	return hook
 
 static func _format_taxonomy_label(value: StringName) -> String:
+	var fallback := ""
 	match StringName(str(value)):
 		&"heat":
-			return "Heat"
+			fallback = "Heat"
 		&"mark":
-			return "Mark"
+			fallback = "Mark"
 		&"freeze":
-			return "Freeze"
+			fallback = "Freeze"
 		&"reload":
-			return "Reload"
+			fallback = "Reload"
 		&"close":
-			return "Close"
+			fallback = "Close"
 		&"area":
-			return "Area"
+			fallback = "Area"
 		&"beam":
-			return "Beam"
+			fallback = "Beam"
 		&"projectile":
-			return "Projectile"
+			fallback = "Projectile"
 		&"melee_contact":
-			return "Melee"
+			fallback = "Melee"
 		&"on_hit":
-			return "On Hit"
+			fallback = "On Hit"
 		&"execute":
-			return "Execute"
+			fallback = "Execute"
 		&"defense":
-			return "Defense"
+			fallback = "Defense"
 		&"economy":
-			return "Economy"
+			fallback = "Economy"
 		&"physical":
-			return "Physical"
+			fallback = "Physical"
 		&"energy":
-			return "Energy"
+			fallback = "Energy"
 		&"fire":
-			return "Fire"
+			fallback = "Fire"
 		&"charge":
-			return "Charge"
+			fallback = "Charge"
 		&"summon":
-			return "Summon"
+			fallback = "Summon"
 		&"trap":
-			return "Trap"
+			fallback = "Trap"
 		&"support":
-			return "Support"
+			fallback = "Support"
 		&"movement":
-			return "Movement"
+			fallback = "Movement"
 		&"buff":
-			return "Buff"
+			fallback = "Buff"
 		&"debuff":
-			return "Debuff"
+			fallback = "Debuff"
 		&"dot":
-			return "DoT"
+			fallback = "DoT"
 		&"duration":
-			return "Duration"
+			fallback = "Duration"
 		&"stacking":
-			return "Stacking"
+			fallback = "Stacking"
 		&"trigger":
-			return "Trigger"
+			fallback = "Trigger"
 		_:
-			return str(value).replace("_", " ").capitalize()
+			fallback = str(value).replace("_", " ").capitalize()
+	return LocalizationManager.get_module_term(value, fallback)
 
 static func _append_unique_chip(chips: Array, chip: Dictionary) -> void:
 	var source_key := str(chip.get("source_key", "")).strip_edges()

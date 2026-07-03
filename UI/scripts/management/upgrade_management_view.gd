@@ -418,8 +418,8 @@ func refresh_action() -> void:
 	upgrade_action_button.text = LocalizationManager.tr_format(
 		"ui.upgrade.action_price",
 		{"value": price},
-		"升级: %s" % price
-	) if ready else LocalizationManager.tr_key("ui.upgrade.action_empty", "升级")
+		"Upgrade: %s" % price
+	) if ready else LocalizationManager.tr_key("ui.upgrade.action_empty", "Upgrade")
 
 func _build_weapon_item_data(weapon: Weapon, location_text: String = "") -> Dictionary:
 	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
@@ -466,48 +466,41 @@ func _build_module_param_summary(module_instance: Module) -> String:
 	return _detail_presenter.build_module_param_summary(module_instance)
 
 func _get_weapon_location_text(weapon: Weapon) -> String:
-	if weapon != null and is_instance_valid(weapon):
-		var equipped_index_for_view := PlayerData.player_weapon_list.find(weapon)
-		if equipped_index_for_view >= 0:
-			return "已装备%d" % (equipped_index_for_view + 1)
-		if InventoryData.weapon_storage.has(weapon):
-			return "仓库"
-		return "未知"
 	if weapon == null or not is_instance_valid(weapon):
 		return ""
 	var equipped_index := PlayerData.player_weapon_list.find(weapon)
 	if equipped_index >= 0:
-		return "已装备%d" % (equipped_index + 1)
+		return LocalizationManager.tr_format(
+			"ui.service.location.equipped_slot",
+			{"slot": equipped_index + 1},
+			"Equipped %d" % (equipped_index + 1)
+		)
 	if InventoryData.weapon_storage.has(weapon):
-		return "仓库"
-	return "未知"
+		return LocalizationManager.tr_key("ui.service.location.storage", "Storage")
+	return LocalizationManager.tr_key("ui.service.value.unknown", "Unknown")
 
 func _get_module_location_text(module_instance: Module) -> String:
-	if module_instance != null and is_instance_valid(module_instance):
-		if InventoryData.temporary_modules.has(module_instance):
-			return "临时仓库"
-		var owner_for_view := _resolve_module_owner_weapon(module_instance)
-		if owner_for_view != null:
-			var owner_weapon_name := LocalizationManager.get_weapon_name_from_node(owner_for_view)
-			if PlayerData.player_weapon_list.has(owner_for_view):
-				return "已装备: %s" % owner_weapon_name
-			if InventoryData.weapon_storage.has(owner_for_view):
-				return "仓库武器: %s" % owner_weapon_name
-			return owner_weapon_name
-		return "未知"
 	if module_instance == null or not is_instance_valid(module_instance):
 		return ""
 	if InventoryData.temporary_modules.has(module_instance):
-		return "临时仓库"
+		return LocalizationManager.tr_key("ui.service.location.temporary_storage", "Temporary Storage")
 	var owner := _resolve_module_owner_weapon(module_instance)
 	if owner != null:
 		var weapon_name := LocalizationManager.get_weapon_name_from_node(owner)
 		if PlayerData.player_weapon_list.has(owner):
-			return "已装备 %s" % weapon_name
+			return LocalizationManager.tr_format(
+				"ui.service.location.equipped_weapon",
+				{"weapon": weapon_name},
+				"Equipped: %s" % weapon_name
+			)
 		if InventoryData.weapon_storage.has(owner):
-			return "仓库武器: %s" % weapon_name
+			return LocalizationManager.tr_format(
+				"ui.service.location.stored_weapon",
+				{"weapon": weapon_name},
+				"Stored Weapon: %s" % weapon_name
+			)
 		return weapon_name
-	return "未知"
+	return LocalizationManager.tr_key("ui.service.value.unknown", "Unknown")
 
 func _resolve_module_owner_weapon(module_instance: Module) -> Weapon:
 	var current: Node = module_instance

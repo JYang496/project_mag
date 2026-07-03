@@ -13,6 +13,7 @@ var _definitions_by_id: Dictionary = {}
 var _inventory: Dictionary = {}
 var _installed: Dictionary = {}
 var _pending: Dictionary = {}
+var _granted_reward_ids: Dictionary = {}
 var _definition_prepare_result: Dictionary = {"ok": false, "errors": PackedStringArray(), "count": 0}
 var _runtime_state_loaded := false
 
@@ -149,6 +150,21 @@ func grant_effect(effect_id: String, amount: int = 1) -> bool:
 		return false
 	var normalized := definition.effect_id
 	_inventory[normalized] = maxi(int(_inventory.get(normalized, 0)), 0) + maxi(amount, 1)
+	save_runtime_state()
+	inventory_changed.emit()
+	return true
+
+func grant_effect_once(reward_entry_id: String, effect_id: String, amount: int = 1) -> bool:
+	var entry_id := reward_entry_id.strip_edges()
+	if entry_id != "" and _granted_reward_ids.has(entry_id):
+		return true
+	var definition := get_definition(effect_id)
+	if definition == null:
+		return false
+	var normalized := definition.effect_id
+	_inventory[normalized] = maxi(int(_inventory.get(normalized, 0)), 0) + maxi(amount, 1)
+	if entry_id != "":
+		_granted_reward_ids[entry_id] = true
 	save_runtime_state()
 	inventory_changed.emit()
 	return true
@@ -318,6 +334,7 @@ func save_runtime_state() -> void:
 		"inventory": _inventory,
 		"installed": _installed,
 		"pending": _pending,
+		"granted_reward_ids": _granted_reward_ids,
 	}
 	var file := FileAccess.open(STATE_PATH, FileAccess.WRITE)
 	if file:
@@ -331,6 +348,8 @@ func load_runtime_state() -> void:
 	_inventory = _sanitize_effect_count_dictionary(payload.get("inventory", {}))
 	_installed = _sanitize_cell_effect_dictionary(payload.get("installed", {}))
 	_pending = _sanitize_cell_effect_dictionary(payload.get("pending", {}))
+	_granted_reward_ids = (payload.get("granted_reward_ids", {}) as Dictionary).duplicate(true) \
+		if payload.get("granted_reward_ids", {}) is Dictionary else {}
 	_runtime_state_loaded = true
 	inventory_changed.emit()
 	pending_changed.emit()
@@ -340,6 +359,7 @@ func reset_runtime_state() -> void:
 	_inventory.clear()
 	_installed.clear()
 	_pending.clear()
+	_granted_reward_ids.clear()
 	if FileAccess.file_exists(STATE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(STATE_PATH))
 	_runtime_state_loaded = true

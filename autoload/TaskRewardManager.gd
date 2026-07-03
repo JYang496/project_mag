@@ -5,16 +5,20 @@ signal pending_reward_changed(has_pending: bool)
 const STATE_PATH := "user://task_reward_state.json"
 const ROLLBACK_PATH := "user://battle_rollback_snapshot.json"
 const NORMAL_ROUTE_PATH := "res://data/routes/normal_route.tres"
+const ENTRY_PENDING := "pending"
+const ENTRY_GRANTED := "granted"
+const ENTRY_WAITING := "waiting"
 
 var _pending_level: int = -1
-var _pending_reward_count: int = 0
-var _pending_reward_batch_total: int = 0
-var _pending_options: Array[RewardInfo] = []
+var _pending_reward_entries: Array[Dictionary] = []
+var _unbuilt_bundle_count: int = 0
+var _next_reward_entry_id: int = 1
 var _reward_unlocked := false
 var _reward_panel_open := false
 var _battle_in_progress := false
 var _restore_snapshot_on_world_start := false
 var _reward_manager: BonusManager
+var _bundle_generation_warning_emitted := false
 
 func _ready() -> void:
 	_load_state()
@@ -35,25 +39,29 @@ func has_pending_reward() -> bool:
 	return _reward_unlocked
 
 func get_pending_reward_options() -> Array[RewardInfo]:
-	return _pending_options.duplicate()
+	var rewards: Array[RewardInfo] = []
+	for entry in _pending_reward_entries:
+		var reward := entry.get("reward", null) as RewardInfo
+		if reward != null:
+			rewards.append(reward)
+	return rewards
 
 func notify_objective_completed(_cell_id: String = "") -> void:
 	if not is_enabled() or PhaseManager.current_state() != PhaseManager.BATTLE:
 		return
 	if CellTaskModuleRuntime != null and CellTaskModuleRuntime.has_method("record_objective_completed"):
 		CellTaskModuleRuntime.record_objective_completed(_cell_id)
-	_pending_reward_count += 1
-	_pending_reward_batch_total = maxi(_pending_reward_batch_total + 1, _pending_reward_count)
+	_unbuilt_bundle_count += 1
 	_reward_unlocked = true
 	_pending_level = int(PhaseManager.current_level)
-	_pending_options = _build_reward_options_from_current_state()
+	_build_pending_reward_bundles()
 	_save_state()
 	pending_reward_changed.emit(true)
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("show_item_message"):
 		ui.show_item_message(LocalizationManager.tr_key(
 			"ui.task_reward.unlocked",
-			"Objective complete. Reward choice unlocked for the Rest Area."
+			"Objective complete. Rewards will be delivered in the Rest Area."
 		), 2.6)
 
 func begin_battle_snapshot() -> bool:
@@ -109,12 +117,13 @@ func reset_runtime_state(preserve_persistent_state: bool = false) -> void:
 	if preserve_persistent_state:
 		return
 	_pending_level = -1
-	_pending_reward_count = 0
-	_pending_reward_batch_total = 0
-	_pending_options.clear()
+	_pending_reward_entries.clear()
+	_unbuilt_bundle_count = 0
+	_next_reward_entry_id = 1
 	_reward_unlocked = false
 	_battle_in_progress = false
 	_restore_snapshot_on_world_start = false
+	_bundle_generation_warning_emitted = false
 	_delete_file(STATE_PATH)
 	_delete_file(ROLLBACK_PATH)
 	pending_reward_changed.emit(false)
@@ -150,20 +159,27 @@ func _try_open_pending_reward() -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
 	var ui = GlobalVariables.ui
-	if ui == null or not is_instance_valid(ui) or not ui.has_method("request_task_reward_selection"):
+	if ui == null or not is_instance_valid(ui) or not ui.has_method("request_task_reward_summary"):
 		_retry_open_later()
 		return
-	if _pending_options.is_empty():
-		_pending_options = _build_reward_options_from_current_state()
+	if _unbuilt_bundle_count > 0:
+		_build_pending_reward_bundles()
 		_save_state()
-	if _pending_options.is_empty():
+	if _pending_reward_entries.is_empty() or _unbuilt_bundle_count > 0:
 		_retry_open_later()
 		return
-	_reward_panel_open = bool(ui.request_task_reward_selection(
-		_pending_options,
-		Callable(self, "_on_reward_selected"),
-		_get_pending_reward_progress_index(),
-		_get_pending_reward_progress_total()
+	var settlement_status := _settle_pending_reward_entries()
+	if settlement_status != ENTRY_GRANTED:
+		if settlement_status == ENTRY_PENDING:
+			_retry_open_later()
+		return
+	var summary_rewards := _build_summary_rewards()
+	if summary_rewards.is_empty():
+		_retry_open_later()
+		return
+	_reward_panel_open = bool(ui.request_task_reward_summary(
+		summary_rewards,
+		Callable(self, "_on_reward_summary_closed")
 	))
 	if not _reward_panel_open:
 		_retry_open_later()
@@ -172,57 +188,8 @@ func _retry_open_later() -> void:
 	await get_tree().create_timer(0.2).timeout
 	_try_open_pending_reward()
 
-func _on_reward_selected(reward: RewardInfo) -> void:
+func _on_reward_summary_closed() -> void:
 	_reward_panel_open = false
-	if reward == null:
-		call_deferred("_try_open_pending_reward")
-		return
-	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
-		if not CellEffectRuntime.grant_effect(reward.cell_effect_id):
-			call_deferred("_try_open_pending_reward")
-			return
-		var definition := CellEffectRuntime.get_definition(reward.cell_effect_id)
-		var message_ui = GlobalVariables.ui
-		if definition != null and message_ui and is_instance_valid(message_ui) and message_ui.has_method("show_item_message"):
-			message_ui.show_item_message("Cell effect obtained: %s" % definition.get_display_name(), 2.1)
-	elif reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
-		var grant_result: Dictionary = CellTaskModuleRuntime.grant_module(reward.task_module_id)
-		if not bool(grant_result.get("ok", false)):
-			var ui = GlobalVariables.ui
-			if bool(grant_result.get("needs_replace", false)) and ui and is_instance_valid(ui) and ui.has_method("request_task_module_replacement"):
-				var opened := bool(ui.call(
-					"request_task_module_replacement",
-					reward.task_module_id,
-					Callable(self, "_on_task_module_replacement_selected").bind(reward)
-				))
-				if opened:
-					return
-			call_deferred("_try_open_pending_reward")
-			return
-	else:
-		var manager := _resolve_reward_manager()
-		var grant_reward := _prepare_reward_for_grant(reward)
-		if manager == null or grant_reward == null or not manager.grant_reward_immediately(grant_reward):
-			call_deferred("_try_open_pending_reward")
-			return
-	_complete_selected_reward()
-
-func _on_task_module_replacement_selected(replace_index: int, reward: RewardInfo) -> void:
-	var result: Dictionary = CellTaskModuleRuntime.replace_inventory_module(replace_index, reward.task_module_id)
-	if not bool(result.get("ok", false)):
-		call_deferred("_try_open_pending_reward")
-		return
-	_complete_selected_reward()
-
-func _complete_selected_reward() -> void:
-	_pending_reward_count = maxi(_pending_reward_count - 1, 0)
-	if _pending_reward_count > 0:
-		_pending_options = _build_reward_options_from_current_state()
-		_reward_unlocked = true
-		_save_state()
-		DataHandler.save_game(DataHandler.save_data)
-		call_deferred("_try_open_pending_reward")
-		return
 	_clear_pending_reward(true)
 	DataHandler.save_game(DataHandler.save_data)
 	_delete_file(ROLLBACK_PATH)
@@ -230,35 +197,176 @@ func _complete_selected_reward() -> void:
 	if ui and is_instance_valid(ui) and ui.has_method("resume_pending_weapon_branch_selection"):
 		ui.call_deferred("resume_pending_weapon_branch_selection")
 
-func _build_reward_options_from_current_state() -> Array[RewardInfo]:
-	var rewards: Array[RewardInfo] = CellEffectRuntime.build_reward_options(int(PhaseManager.current_level), 2)
-	var task_reward := CellTaskModuleRuntime.build_reward_option(int(PhaseManager.current_level))
-	if task_reward != null:
-		rewards.append(task_reward)
-	if rewards.size() < 3:
-		var more_effects: Array[RewardInfo] = CellEffectRuntime.build_reward_options(int(PhaseManager.current_level), 3)
-		for reward in more_effects:
-			if rewards.size() >= 3:
-				break
-			if reward == null:
-				continue
-			var has_duplicate := false
-			for existing in rewards:
-				if existing != null and existing.reward_key_override == reward.reward_key_override:
-					has_duplicate = true
-					break
-			if not has_duplicate:
-				rewards.append(reward)
+func _settle_pending_reward_entries() -> String:
+	for index in range(_pending_reward_entries.size()):
+		var entry := _pending_reward_entries[index]
+		if str(entry.get("status", ENTRY_PENDING)) == ENTRY_GRANTED:
+			continue
+		var reward := entry.get("reward", null) as RewardInfo
+		if not _is_reward_valid(reward):
+			reward = _build_invalid_reward_fallback(str(entry.get("id", "")))
+			entry["reward"] = reward
+			entry["status"] = ENTRY_PENDING
+			_pending_reward_entries[index] = entry
+			_save_state()
+		var grant_result := _grant_reward_entry(str(entry.get("id", "")), reward)
+		var status := str(grant_result.get("status", ENTRY_PENDING))
+		if status == ENTRY_GRANTED:
+			entry["status"] = ENTRY_GRANTED
+			_pending_reward_entries[index] = entry
+			_save_state()
+			continue
+		entry["status"] = status
+		_pending_reward_entries[index] = entry
+		_save_state()
+		return status
+	DataHandler.save_game(DataHandler.save_data)
+	return ENTRY_GRANTED
+
+func _grant_reward_entry(entry_id: String, reward: RewardInfo) -> Dictionary:
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		return {"status": ENTRY_GRANTED} \
+			if CellEffectRuntime.grant_effect_once(entry_id, reward.cell_effect_id) \
+			else {"status": ENTRY_PENDING}
+	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		var result := CellTaskModuleRuntime.grant_module_once(entry_id, reward.task_module_id)
+		return {"status": ENTRY_GRANTED} if bool(result.get("ok", false)) else {"status": ENTRY_PENDING}
+	var manager := _resolve_reward_manager()
+	var grant_reward := _prepare_reward_for_grant(reward)
+	if manager != null and grant_reward != null and manager.grant_reward_immediately(grant_reward):
+		return {"status": ENTRY_GRANTED}
+	return {"status": ENTRY_PENDING}
+
+func _build_pending_reward_bundles() -> void:
+	while _unbuilt_bundle_count > 0:
+		var bundle := _build_task_reward_bundle(_pending_level)
+		if bundle.size() != 2:
+			if not _bundle_generation_warning_emitted:
+				push_warning("TaskRewardManager: reward bundle could not be generated; settlement remains pending.")
+				_bundle_generation_warning_emitted = true
+			return
+		_bundle_generation_warning_emitted = false
+		for reward in bundle:
+			_pending_reward_entries.append({
+				"id": "task_reward_%d" % _next_reward_entry_id,
+				"status": ENTRY_PENDING,
+				"reward": reward,
+			})
+			_next_reward_entry_id += 1
+		_unbuilt_bundle_count -= 1
+
+func _build_task_reward_bundle(level_index: int) -> Array[RewardInfo]:
+	var guaranteed_task := CellTaskModuleRuntime.build_reward_option(level_index)
+	if guaranteed_task == null:
+		return []
+	var secondary: RewardInfo
+	var task_chance := _get_economy_config().get_task_reward_secondary_task_module_chance()
+	if randf() < task_chance:
+		secondary = CellTaskModuleRuntime.build_reward_option(level_index)
+		if secondary == null:
+			secondary = _build_cell_effect_reward(level_index)
+	else:
+		secondary = _build_cell_effect_reward(level_index)
+		if secondary == null:
+			secondary = CellTaskModuleRuntime.build_reward_option(level_index)
+	if secondary == null:
+		return []
+	return [guaranteed_task, secondary]
+
+func _build_cell_effect_reward(level_index: int) -> RewardInfo:
+	var rewards := CellEffectRuntime.build_reward_options(level_index, 1)
+	return rewards[0] if not rewards.is_empty() else null
+
+func _is_reward_valid(reward: RewardInfo) -> bool:
+	if reward == null:
+		return false
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		return CellEffectRuntime.get_definition(reward.cell_effect_id) != null
+	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		return CellTaskModuleRuntime.get_definition(reward.task_module_id) != null
+	if reward.item_id.strip_edges() != "":
+		return DataHandler.read_weapon_data(reward.item_id) != null
+	if reward.module_scene != null:
+		return true
+	return reward.total_chip_value > 0 or reward.gold_value > 0 or reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE
+
+func _build_invalid_reward_fallback(entry_id: String) -> RewardInfo:
+	push_warning("TaskRewardManager: replaced invalid pending reward '%s' with economy compensation." % entry_id)
+	var fallback := RewardInfo.new()
+	fallback.reward_kind = RewardInfo.KIND_ECONOMY
+	fallback.gold_value = _get_economy_config().get_reward_economy_gold()
+	fallback.reward_key_override = "task_reward_fallback_economy"
+	return fallback
+
+func _build_summary_rewards() -> Array[RewardInfo]:
+	var grouped: Dictionary = {}
+	for entry in _pending_reward_entries:
+		if str(entry.get("status", "")) != ENTRY_GRANTED:
+			continue
+		var reward := entry.get("reward", null) as RewardInfo
+		if reward == null:
+			continue
+		var key := _get_reward_summary_key(reward)
+		if grouped.has(key):
+			var existing := grouped[key] as RewardInfo
+			existing.set_meta("summary_count", int(existing.get_meta("summary_count", 1)) + 1)
+		else:
+			reward.set_meta("summary_count", 1)
+			grouped[key] = reward
+	var rewards: Array[RewardInfo] = []
+	for value in grouped.values():
+		rewards.append(value as RewardInfo)
+	rewards.sort_custom(func(a: RewardInfo, b: RewardInfo) -> bool:
+		var category_delta := _get_reward_category_rank(a) - _get_reward_category_rank(b)
+		if category_delta != 0:
+			return category_delta < 0
+		var rarity_delta := _get_rarity_rank(a.get_rarity()) - _get_rarity_rank(b.get_rarity())
+		if rarity_delta != 0:
+			return rarity_delta > 0
+		return _get_reward_summary_key(a) < _get_reward_summary_key(b)
+	)
 	return rewards
 
-func _get_pending_reward_progress_index() -> int:
-	var total := _get_pending_reward_progress_total()
-	if total <= 0:
-		return 0
-	return clampi(total - _pending_reward_count + 1, 1, total)
+func _get_reward_summary_key(reward: RewardInfo) -> String:
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		return "cell_effect:%s" % reward.cell_effect_id
+	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		return "task_module:%s" % reward.task_module_id
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		return "weapon_upgrade:%s:%d:%d" % [
+			reward.target_weapon_id,
+			reward.target_weapon_from_level,
+			reward.target_weapon_to_level,
+		]
+	if reward.item_id.strip_edges() != "":
+		return "weapon:%s:%d" % [reward.item_id, reward.item_level]
+	if reward.module_scene != null:
+		return "module:%s:%d" % [reward.module_scene.resource_path, reward.module_level]
+	if reward.total_chip_value > 0 or reward.gold_value > 0:
+		return "economy:%d:%d" % [reward.total_chip_value, reward.gold_value]
+	return reward.reward_key_override
 
-func _get_pending_reward_progress_total() -> int:
-	return maxi(_pending_reward_batch_total, _pending_reward_count)
+func _get_reward_category_rank(reward: RewardInfo) -> int:
+	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		return 0
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		return 1
+	if reward.item_id.strip_edges() != "" or reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		return 2
+	if reward.module_scene != null:
+		return 3
+	return 4
+
+func _get_rarity_rank(rarity: String) -> int:
+	match rarity.to_lower():
+		"legendary":
+			return 3
+		"epic":
+			return 2
+		"rare":
+			return 1
+		_:
+			return 0
 
 func _resolve_reward_manager() -> BonusManager:
 	if _reward_manager and is_instance_valid(_reward_manager):
@@ -500,16 +608,20 @@ func _prepare_reward_for_grant(reward: RewardInfo) -> RewardInfo:
 	return converted
 
 func _save_state() -> void:
-	var option_payloads: Array[Dictionary] = []
-	for reward in _pending_options:
-		option_payloads.append(_serialize_reward(reward))
+	var entry_payloads: Array[Dictionary] = []
+	for entry in _pending_reward_entries:
+		entry_payloads.append({
+			"id": str(entry.get("id", "")),
+			"status": str(entry.get("status", ENTRY_PENDING)),
+			"reward": _serialize_reward(entry.get("reward", null) as RewardInfo),
+		})
 	var payload := {
 		"battle_in_progress": _battle_in_progress,
 		"reward_unlocked": _reward_unlocked,
 		"pending_level": _pending_level,
-		"pending_reward_count": _pending_reward_count,
-		"pending_reward_batch_total": _get_pending_reward_progress_total(),
-		"options": option_payloads,
+		"unbuilt_bundle_count": _unbuilt_bundle_count,
+		"next_reward_entry_id": _next_reward_entry_id,
+		"entries": entry_payloads,
 	}
 	var file := FileAccess.open(STATE_PATH, FileAccess.WRITE)
 	if file:
@@ -522,23 +634,38 @@ func _load_state() -> void:
 	_battle_in_progress = bool(payload.get("battle_in_progress", false))
 	_reward_unlocked = bool(payload.get("reward_unlocked", false))
 	_pending_level = int(payload.get("pending_level", -1))
-	_pending_reward_count = int(payload.get("pending_reward_count", 1 if _reward_unlocked else 0))
-	_pending_reward_batch_total = maxi(
-		int(payload.get("pending_reward_batch_total", _pending_reward_count)),
-		_pending_reward_count
-	)
-	_pending_options.clear()
-	for option_variant in payload.get("options", []):
-		if option_variant is Dictionary:
-			_pending_options.append(_deserialize_reward(option_variant as Dictionary))
+	_pending_reward_entries.clear()
+	_unbuilt_bundle_count = maxi(int(payload.get("unbuilt_bundle_count", 0)), 0)
+	_next_reward_entry_id = maxi(int(payload.get("next_reward_entry_id", 1)), 1)
+	for entry_variant in payload.get("entries", []):
+		if not (entry_variant is Dictionary):
+			continue
+		var entry_payload := entry_variant as Dictionary
+		var reward_payload := entry_payload.get("reward", {}) as Dictionary
+		var status := str(entry_payload.get("status", ENTRY_PENDING))
+		if status == ENTRY_WAITING:
+			status = ENTRY_PENDING
+		_pending_reward_entries.append({
+			"id": str(entry_payload.get("id", "task_reward_%d" % _next_reward_entry_id)),
+			"status": status,
+			"reward": _deserialize_reward(reward_payload),
+		})
+		_next_reward_entry_id += 1
+	if payload.has("entries"):
+		return
+	var legacy_count := maxi(int(payload.get("pending_reward_count", 1 if _reward_unlocked else 0)), 0)
+	_unbuilt_bundle_count = legacy_count
+	_pending_reward_entries.clear()
+	_next_reward_entry_id = 1
 
 func _clear_pending_reward(save_after: bool) -> void:
 	_pending_level = -1
-	_pending_reward_count = 0
-	_pending_reward_batch_total = 0
-	_pending_options.clear()
+	_pending_reward_entries.clear()
+	_unbuilt_bundle_count = 0
+	_next_reward_entry_id = 1
 	_reward_unlocked = false
 	_reward_panel_open = false
+	_bundle_generation_warning_emitted = false
 	pending_reward_changed.emit(false)
 	if save_after:
 		_save_state()

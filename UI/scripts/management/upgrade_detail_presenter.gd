@@ -15,30 +15,30 @@ func fill_weapon_detail(item_data: Dictionary) -> void:
 	var weapon := item_data.get("weapon", null) as Weapon
 	if weapon == null or not is_instance_valid(weapon):
 		return
-	_add_detail_section("当前等级", "Lv.%d/%d" % [int(weapon.level), int(weapon.max_level)])
-	_add_detail_section("升级价格", "-" if int(weapon.level) >= int(weapon.max_level) else str(_get_weapon_upgrade_price(weapon)))
-	_add_detail_section("位置", str(item_data.get("location", "")))
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.current_level", "Current Level"), "Lv.%d/%d" % [int(weapon.level), int(weapon.max_level)])
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.upgrade_price", "Upgrade Price"), "-" if int(weapon.level) >= int(weapon.max_level) else str(_get_weapon_upgrade_price(weapon)))
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.location", "Location"), str(item_data.get("location", "")))
 	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
 	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
 	if weapon_def != null:
-		_add_detail_section("武器类型", format_weapon_definition_types(weapon_def))
+		_add_detail_section(LocalizationManager.tr_key("ui.service.detail.weapon_type", "Weapon Type"), format_weapon_definition_types(weapon_def))
 	var weapon_data_variant: Variant = weapon.get("weapon_data")
 	if weapon_data_variant is Dictionary:
 		var weapon_data := weapon_data_variant as Dictionary
 		var current_data := weapon.get_weapon_level_data(weapon.level, weapon_data)
-		_add_detail_header("当前属性")
+		_add_detail_header(LocalizationManager.tr_key("ui.service.detail.current_stats", "Current Stats"))
 		_add_detail_text(format_stat_dictionary(current_data))
 
 func fill_module_detail(item_data: Dictionary) -> void:
 	var module_instance := item_data.get("module", null) as Module
 	if module_instance == null or not is_instance_valid(module_instance):
 		return
-	_add_detail_section("当前等级", "Lv.%d/%d" % [int(module_instance.module_level), Module.MAX_LEVEL])
-	_add_detail_section("升级价格", "-" if int(module_instance.module_level) >= Module.MAX_LEVEL else str(_get_module_upgrade_price(module_instance)))
-	_add_detail_section("位置", str(item_data.get("location", "")))
-	_add_detail_section("可安装武器类型", format_module_install_targets(module_instance))
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.current_level", "Current Level"), "Lv.%d/%d" % [int(module_instance.module_level), Module.MAX_LEVEL])
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.upgrade_price", "Upgrade Price"), "-" if int(module_instance.module_level) >= Module.MAX_LEVEL else str(_get_module_upgrade_price(module_instance)))
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.location", "Location"), str(item_data.get("location", "")))
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.install_targets", "Compatible Weapons"), format_module_install_targets(module_instance))
 	var original_level := int(module_instance.module_level)
-	_add_detail_header("当前属性")
+	_add_detail_header(LocalizationManager.tr_key("ui.service.detail.current_stats", "Current Stats"))
 	module_instance.set_module_level(original_level)
 	var current_effects := module_instance.get_effect_descriptions()
 	_add_detail_text("\n".join(current_effects))
@@ -76,34 +76,17 @@ func format_stat_dictionary(data: Dictionary) -> String:
 	return " / ".join(parts)
 
 func format_stat_label(key: String) -> String:
-	match key:
-		"damage":
-			return "伤害"
-		"speed":
-			return "速度"
-		"projectile_hits":
-			return "命中"
-		"fire_interval_sec":
-			return "间隔"
-		"ammo":
-			return "弹药"
-		"bullet_count":
-			return "弹数"
-		"duration":
-			return "持续"
-		"hit_cd":
-			return "命中间隔"
-		"explosion_scale":
-			return "爆炸"
-		_:
-			return key.replace("_", " ").capitalize()
+	return LocalizationManager.get_module_term(
+		StringName("stat.%s" % key),
+		key.replace("_", " ").capitalize()
+	)
 
 func format_weapon_definition_types(weapon_def: WeaponDefinition) -> String:
 	if weapon_def == null or weapon_def.scene == null:
-		return "未知"
+		return LocalizationManager.tr_key("ui.service.value.unknown", "Unknown")
 	var weapon := weapon_def.scene.instantiate() as Weapon
 	if weapon == null:
-		return "未知"
+		return LocalizationManager.tr_key("ui.service.value.unknown", "Unknown")
 	var parts := PackedStringArray()
 	for value in weapon.get_explicit_weapon_traits():
 		parts.append(format_type_name(str(value)))
@@ -112,7 +95,7 @@ func format_weapon_definition_types(weapon_def: WeaponDefinition) -> String:
 	for value in weapon.get_explicit_weapon_capabilities():
 		parts.append(format_type_name(str(value)))
 	weapon.queue_free()
-	return " / ".join(parts) if not parts.is_empty() else "通用"
+	return " / ".join(parts) if not parts.is_empty() else LocalizationManager.tr_key("ui.service.value.universal", "Universal")
 
 func format_module_install_targets(module_instance: Module) -> String:
 	var parts := PackedStringArray()
@@ -122,40 +105,10 @@ func format_module_install_targets(module_instance: Module) -> String:
 		parts.append(format_type_name(str(value)))
 	for value in module_instance.get_normalized_required_weapon_capabilities():
 		parts.append(format_type_name(str(value)))
-	return " / ".join(parts) if not parts.is_empty() else "任意武器"
+	return " / ".join(parts) if not parts.is_empty() else LocalizationManager.tr_key("ui.service.value.any_weapon", "Any Weapon")
 
 func format_type_name(value: String) -> String:
-	match value:
-		"physical":
-			return "物理"
-		"energy":
-			return "能量"
-		"fire":
-			return "火焰"
-		"freeze":
-			return "冻结"
-		"heat":
-			return "热量"
-		"charge":
-			return "蓄能"
-		"projectile":
-			return "弹体"
-		"melee_contact":
-			return "近战"
-		"beam":
-			return "光束"
-		"area":
-			return "范围"
-		"summon":
-			return "召唤"
-		"trap":
-			return "陷阱"
-		"support":
-			return "支援"
-		"movement":
-			return "位移"
-		_:
-			return value.capitalize()
+	return LocalizationManager.get_module_term(StringName(value), value.replace("_", " ").capitalize())
 
 func _add_detail_section(title: String, value: String) -> void:
 	_add_detail_header(title)

@@ -29,9 +29,11 @@ var terrain_type: int = Cell.TerrainType.NONE
 @export var aura_corrosion_move_speed_mul: float = 1.0
 
 func get_display_name() -> String:
-	if display_name.strip_edges() != "":
-		return display_name
-	return effect_id.replace("_", " ").capitalize()
+	var fallback := display_name if display_name.strip_edges() != "" else effect_id.replace("_", " ").capitalize()
+	return _translated("cell_effect.%s.name" % effect_id, fallback)
+
+func get_description() -> String:
+	return _translated("cell_effect.%s.desc" % effect_id, description.strip_edges())
 
 func get_family_id() -> String:
 	if family_id.strip_edges() != "":
@@ -56,3 +58,7 @@ func get_aura_parameters() -> Dictionary:
 		"aura_low_hp_max_damage_mul": aura_low_hp_max_damage_mul,
 		"aura_corrosion_move_speed_mul": aura_corrosion_move_speed_mul,
 	}
+
+func _translated(key: String, fallback: String) -> String:
+	var translated := str(TranslationServer.translate(key))
+	return fallback if translated == key else translated

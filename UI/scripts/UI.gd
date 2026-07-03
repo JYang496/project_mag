@@ -851,6 +851,20 @@ func request_task_reward_selection(
 		progress_total
 	)
 
+func request_task_reward_summary(
+	rewards: Array[RewardInfo],
+	on_close: Callable
+) -> bool:
+	_init_reward_selection_panel()
+	if reward_selection_panel == null or not is_instance_valid(reward_selection_panel):
+		return false
+	return reward_selection_panel.open_for_summary(
+		rewards,
+		on_close,
+		LocalizationManager.tr_key("ui.task_reward.summary_title", "Objective Rewards"),
+		LocalizationManager.tr_key("ui.task_reward.summary_subtitle", "Rewards added to inventory.")
+	)
+
 func resume_pending_weapon_branch_selection() -> void:
 	_init_weapon_branch_selection_controller()
 	weapon_branch_selection_controller.request_next()

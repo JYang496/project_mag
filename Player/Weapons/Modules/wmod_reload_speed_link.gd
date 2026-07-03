@@ -30,7 +30,9 @@ func get_reload_duration_multiplier(source_weapon: Weapon, _base_duration: float
 
 func get_effect_descriptions() -> PackedStringArray:
 	return with_level_effect_descriptions(PackedStringArray([
-		"Reloads faster while another weapon is reloading",
+		LocalizationManager.get_module_detail(
+			self, "detail.1", {}, "Reloads faster while another weapon is reloading"
+		),
 	]))
 
 func _register_plugin() -> void:

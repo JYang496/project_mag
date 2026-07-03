@@ -42,6 +42,8 @@ func _ready() -> void:
 		CellTaskModuleRuntime.deployment_changed.connect(_refresh)
 	if not CellTaskModuleRuntime.active_tasks_changed.is_connected(_refresh):
 		CellTaskModuleRuntime.active_tasks_changed.connect(_refresh)
+	if not LocalizationManager.language_changed.is_connected(_on_language_changed):
+		LocalizationManager.language_changed.connect(_on_language_changed)
 
 func bind(ui: UI) -> void:
 	owner_ui = ui
@@ -63,6 +65,10 @@ func close_panel() -> void:
 	_selected_inventory_index = -1
 	_close_task_detail_window(true)
 	_cancel_overwrite_confirmation()
+
+func _on_language_changed(_new_locale: String) -> void:
+	if visible:
+		_refresh()
 	_clear_pending_overwrite()
 
 func clear_selection_if_any() -> bool:
@@ -342,17 +348,6 @@ func _add_footer_back_button() -> void:
 	button.pressed.connect(_on_back_pressed)
 	_footer.add_child(button)
 
-func _format_task_module(definition: TaskModuleDefinition, fallback_id: String) -> String:
-	if definition == null:
-		return fallback_id
-	var lines := PackedStringArray([
-		definition.get_display_name(),
-		"Task: %s" % definition.get_task_label(),
-	])
-	if definition.description.strip_edges() != "":
-		lines.append(definition.description.strip_edges())
-	return "\n".join(lines)
-
 func _make_task_module_card(module_id: String, selected: bool, drag_payload: Dictionary = {}) -> Button:
 	var definition := CellTaskModuleRuntime.get_definition(module_id)
 	var button: Button
@@ -444,36 +439,11 @@ func _make_detail_section_label(text: String) -> Label:
 func _format_task_module_description(definition: TaskModuleDefinition, fallback_id: String) -> String:
 	if definition == null:
 		return fallback_id
-	if definition.description.strip_edges() != "":
-		return definition.description.strip_edges()
-	return "Deploy to an active cell for the next battle."
-
-func _add_task_card_footer(button: Button, text: String) -> void:
-	var margin := button.get_child(0) as MarginContainer if button.get_child_count() > 0 else null
-	if margin == null or margin.get_child_count() <= 0:
-		return
-	var content := margin.get_child(0) as VBoxContainer
-	if content == null:
-		return
-	var footer := Label.new()
-	footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	footer.text = text
-	footer.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	footer.add_theme_font_size_override("font_size", 11)
-	footer.add_theme_color_override("font_color", Color(0.72, 0.84, 0.88, 1.0))
-	content.add_child(footer)
-	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, TASK_MODULE_CARD_HEIGHT + 24.0)
-
-func _make_selection_hint() -> Label:
-	var inventory := CellTaskModuleRuntime.get_inventory_snapshot()
-	var selected_name := "Selected task module"
-	if _selected_inventory_index >= 0 and _selected_inventory_index < inventory.size():
-		var definition := CellTaskModuleRuntime.get_definition(str(inventory[_selected_inventory_index]))
-		if definition != null:
-			selected_name = definition.get_display_name()
-	var label := _make_muted_label("Selected: %s. Choose an active cell on the grid to deploy it." % selected_name)
-	label.add_theme_color_override("font_color", Color(0.88, 0.96, 0.72, 1.0))
-	return label
+	var description := definition.get_description()
+	return description if description != "" else LocalizationManager.tr_key(
+		"ui.task_management.default_description",
+		"Deploy to an active cell for the next battle."
+	)
 
 func build_drag_data(payload: Dictionary, source_control: Control = null) -> Dictionary:
 	if str(payload.get("kind", "")) != "task_inventory_module":
@@ -494,7 +464,12 @@ func drop_payload(target: Dictionary, data: Variant) -> bool:
 	var feedback := _get_task_drag_drop_feedback(target, data)
 	if not bool(feedback.get("ok", false)):
 		if owner_ui != null:
-			owner_ui.show_item_message(str(feedback.get("reason", "Cannot deploy task module.")), 1.6)
+			owner_ui.show_item_message(LocalizationManager.localize_cell_management_reason(
+				str(feedback.get("reason", LocalizationManager.tr_key(
+					"ui.task_management.deploy_failed",
+					"Cannot deploy task module."
+				)))
+			), 1.6)
 		return false
 	var payload: Dictionary = data.get("payload", {})
 	var index := _resolve_task_drag_inventory_index(payload)
@@ -505,7 +480,12 @@ func drop_payload(target: Dictionary, data: Variant) -> bool:
 		return true
 	var result := CellTaskModuleRuntime.deploy_inventory_module(index, cell_id, _board)
 	if not bool(result.get("ok", false)) and owner_ui != null:
-		owner_ui.show_item_message(str(result.get("reason", "Cannot deploy task module.")), 1.6)
+		owner_ui.show_item_message(LocalizationManager.localize_cell_management_reason(
+			str(result.get("reason", LocalizationManager.tr_key(
+				"ui.task_management.deploy_failed",
+				"Cannot deploy task module."
+			)))
+		), 1.6)
 	_refresh()
 	return bool(result.get("ok", false))
 
@@ -604,7 +584,11 @@ func _rebuild_task_detail_window(cell_id: int, definition: TaskModuleDefinition)
 
 	var title := Label.new()
 	title.name = "TaskDetailTitle"
-	title.text = "Cell %d - %s" % [cell_id, definition.get_display_name()]
+	title.text = LocalizationManager.tr_format(
+		"ui.task_management.detail_title",
+		{"cell": cell_id, "name": definition.get_display_name()},
+		"Cell %d - %s" % [cell_id, definition.get_display_name()]
+	)
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.add_theme_font_size_override("font_size", 17)
@@ -617,7 +601,10 @@ func _rebuild_task_detail_window(cell_id: int, definition: TaskModuleDefinition)
 	badges.add_child(_make_rarity_swatch(definition.get_rarity()))
 	root.add_child(badges)
 
-	root.add_child(_make_detail_section_label("Objective"))
+	root.add_child(_make_detail_section_label(LocalizationManager.tr_key(
+		"ui.task_management.objective",
+		"Objective"
+	)))
 	var description := Label.new()
 	description.text = _format_task_module_description(definition, definition.module_id)
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -626,9 +613,15 @@ func _rebuild_task_detail_window(cell_id: int, definition: TaskModuleDefinition)
 	description.add_theme_color_override("font_color", Color(0.76, 0.86, 0.90, 1.0))
 	root.add_child(description)
 
-	root.add_child(_make_detail_section_label("Reward"))
+	root.add_child(_make_detail_section_label(LocalizationManager.tr_key(
+		"ui.task_management.reward",
+		"Reward"
+	)))
 	var reward := Label.new()
-	reward.text = "Complete to receive a cell task reward."
+	reward.text = LocalizationManager.tr_key(
+		"ui.task_management.reward_description",
+		"Complete to receive a cell task reward."
+	)
 	reward.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	reward.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	reward.add_theme_font_size_override("font_size", 13)
@@ -642,7 +635,7 @@ func _rebuild_task_detail_window(cell_id: int, definition: TaskModuleDefinition)
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(spacer)
 	var close_button := Button.new()
-	close_button.text = "Close"
+	close_button.text = LocalizationManager.tr_key("ui.common.close", "Close")
 	close_button.custom_minimum_size = Vector2(112, 38)
 	_style_button(close_button)
 	close_button.pressed.connect(_on_task_detail_close_requested)
@@ -690,7 +683,11 @@ func _make_cell_preview_content(cell_id: int, disabled: bool) -> Control:
 
 	var title := Label.new()
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title.text = "Cell %d" % cell_id
+	title.text = LocalizationManager.tr_format(
+		"ui.task_management.cell_label",
+		{"cell": cell_id},
+		"Cell %d" % cell_id
+	)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 12)
 	title.add_theme_color_override("font_color", Color(0.86, 0.96, 1.0, 1.0))
@@ -717,7 +714,13 @@ func _make_cell_preview_content(cell_id: int, disabled: bool) -> Control:
 func _format_cell_preview_status(cell_id: int, disabled: bool) -> String:
 	var module_id := _get_cell_task_module_id(cell_id)
 	if module_id == "":
-		return "Locked" if disabled else "Available"
+		return LocalizationManager.tr_key(
+			"ui.task_management.locked",
+			"Locked"
+		) if disabled else LocalizationManager.tr_key(
+			"ui.task_management.available",
+			"Available"
+		)
 	var definition := CellTaskModuleRuntime.get_definition(module_id)
 	if definition == null:
 		return module_id
@@ -889,7 +892,12 @@ func _on_cell_pressed(cell_id: int) -> void:
 		return
 	var result := CellTaskModuleRuntime.deploy_inventory_module(_selected_inventory_index, cell_id, _board)
 	if not bool(result.get("ok", false)) and owner_ui != null:
-		owner_ui.show_item_message(str(result.get("reason", "Cannot deploy task module.")), 1.6)
+		owner_ui.show_item_message(LocalizationManager.localize_cell_management_reason(
+			str(result.get("reason", LocalizationManager.tr_key(
+				"ui.task_management.deploy_failed",
+				"Cannot deploy task module."
+			)))
+		), 1.6)
 	_selected_inventory_index = -1
 	_refresh()
 
@@ -909,7 +917,12 @@ func _request_overwrite_confirmation(index: int, cell_id: int) -> void:
 	var validation := CellTaskModuleRuntime.can_replace_deployment_with_inventory_module(index, cell_id, _board)
 	if not bool(validation.get("ok", false)):
 		if owner_ui != null:
-			owner_ui.show_item_message(str(validation.get("reason", "Cannot replace task module.")), 1.6)
+			owner_ui.show_item_message(LocalizationManager.localize_cell_management_reason(
+				str(validation.get("reason", LocalizationManager.tr_key(
+					"ui.task_management.replace_failed",
+					"Cannot replace task module."
+				)))
+			), 1.6)
 		return
 	_pending_overwrite_inventory_index = index
 	_pending_overwrite_cell_id = cell_id
@@ -949,7 +962,10 @@ func _request_overwrite_confirmation(index: int, cell_id: int) -> void:
 func _on_overwrite_confirmed(_dialog_id: StringName = &"") -> void:
 	if not _pending_overwrite_inventory_matches():
 		if owner_ui != null:
-			owner_ui.show_item_message("Selected task module is no longer available.", 1.6)
+			owner_ui.show_item_message(LocalizationManager.tr_key(
+				"ui.task_management.selection_unavailable",
+				"Selected task module is no longer available."
+			), 1.6)
 		_clear_pending_overwrite()
 		_selected_inventory_index = -1
 		_refresh()
@@ -960,7 +976,12 @@ func _on_overwrite_confirmed(_dialog_id: StringName = &"") -> void:
 		_board
 	)
 	if not bool(result.get("ok", false)) and owner_ui != null:
-		owner_ui.show_item_message(str(result.get("reason", "Cannot replace task module.")), 1.6)
+		owner_ui.show_item_message(LocalizationManager.localize_cell_management_reason(
+			str(result.get("reason", LocalizationManager.tr_key(
+				"ui.task_management.replace_failed",
+				"Cannot replace task module."
+			)))
+		), 1.6)
 	_clear_pending_overwrite()
 	_selected_inventory_index = -1
 	_refresh()

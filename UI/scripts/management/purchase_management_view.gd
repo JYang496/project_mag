@@ -161,9 +161,13 @@ func refresh_purchase_action() -> void:
 	purchase_action_button.disabled = not can_buy
 	var selected_name := str(selected_item.get("name", ""))
 	if selected_name == "":
-		purchase_action_button.text = LocalizationManager.tr_key("ui.shop.buy.select", "购买")
+		purchase_action_button.text = LocalizationManager.tr_key("ui.shop.buy.select", "Buy")
 	else:
-		purchase_action_button.text = LocalizationManager.tr_format("ui.shop.buy.item", {"name": selected_name}, "购买")
+		purchase_action_button.text = LocalizationManager.tr_format(
+			"ui.shop.buy.item",
+			{"name": selected_name},
+			"Buy %s" % selected_name
+		)
 
 func refresh_detail() -> void:
 	if shop_detail_title == null or shop_detail_body == null:
@@ -196,16 +200,16 @@ func _fill_weapon_detail(item_data: Dictionary) -> void:
 	var weapon_def := item_data.get("definition", null) as WeaponDefinition
 	if weapon_def == null:
 		return
-	_add_detail_section("武器类型", _format_weapon_definition_types(weapon_def))
-	_add_detail_section("购买价格", str(int(item_data.get("price", 0))))
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.weapon_type", "Weapon Type"), _format_weapon_definition_types(weapon_def))
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.purchase_price", "Purchase Price"), str(int(item_data.get("price", 0))))
 	var level_rows := _build_weapon_level_rows(weapon_def)
 	if not level_rows.is_empty():
-		_add_detail_header("等级参数 / 升级价格")
+		_add_detail_header(LocalizationManager.tr_key("ui.service.detail.levels_and_costs", "Level Stats / Upgrade Cost"))
 		for row in level_rows:
 			_add_detail_text(row)
 	var branches := DataHandler.read_weapon_branch_options(str(weapon_def.scene_path), 999)
 	if not branches.is_empty():
-		_add_detail_header("分支选择")
+		_add_detail_header(LocalizationManager.tr_key("ui.service.detail.branches", "Branches"))
 		for branch_def in branches:
 			var branch_name := LocalizationManager.get_branch_display_name(branch_def)
 			var branch_desc := LocalizationManager.get_branch_description(branch_def)
@@ -216,15 +220,19 @@ func _fill_module_detail(item_data: Dictionary) -> void:
 	var module_instance := item_data.get("module", null) as Module
 	if module_instance == null or not is_instance_valid(module_instance):
 		return
-	_add_detail_section("可安装武器类型", _format_module_install_targets(module_instance))
-	_add_detail_section("购买价格", str(int(item_data.get("price", 0))))
-	_add_detail_header("等级参数 / 升级价格")
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.install_targets", "Compatible Weapons"), _format_module_install_targets(module_instance))
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.purchase_price", "Purchase Price"), str(int(item_data.get("price", 0))))
+	_add_detail_header(LocalizationManager.tr_key("ui.service.detail.levels_and_costs", "Level Stats / Upgrade Cost"))
 	var original_level := int(module_instance.module_level)
 	for level in range(1, Module.MAX_LEVEL + 1):
 		module_instance.set_module_level(level)
 		var effects := module_instance.get_effect_descriptions()
 		var upgrade_price := "-" if level >= Module.MAX_LEVEL else str(_get_module_upgrade_cost(module_instance))
-		_add_detail_text("Lv.%d  升级: %s\n%s" % [level, upgrade_price, "\n".join(effects)])
+		_add_detail_text(LocalizationManager.tr_format(
+			"ui.service.detail.upgrade_row",
+			{"level": level, "price": upgrade_price, "effects": "\n".join(effects)},
+			"Lv.%d  Upgrade: %s\n%s" % [level, upgrade_price, "\n".join(effects)]
+		))
 	module_instance.set_module_level(original_level)
 
 func _build_weapon_level_rows(weapon_def: WeaponDefinition) -> PackedStringArray:
@@ -246,7 +254,11 @@ func _build_weapon_level_rows(weapon_def: WeaponDefinition) -> PackedStringArray
 		if level_data.is_empty():
 			continue
 		var upgrade_price := "-" if int(key) >= keys.size() else str(_get_weapon_upgrade_cost(weapon_def))
-		rows.append("Lv.%s  升级: %s\n%s" % [str(key), upgrade_price, _format_stat_dictionary(level_data)])
+		rows.append(LocalizationManager.tr_format(
+			"ui.service.detail.upgrade_row",
+			{"level": str(key), "price": upgrade_price, "effects": _format_stat_dictionary(level_data)},
+			"Lv.%s  Upgrade: %s\n%s" % [str(key), upgrade_price, _format_stat_dictionary(level_data)]
+		))
 	weapon.queue_free()
 	return rows
 
@@ -258,34 +270,17 @@ func _format_stat_dictionary(data: Dictionary) -> String:
 	return " / ".join(parts)
 
 func _format_stat_label(key: String) -> String:
-	match key:
-		"damage":
-			return "伤害"
-		"speed":
-			return "速度"
-		"projectile_hits":
-			return "命中"
-		"fire_interval_sec":
-			return "间隔"
-		"ammo":
-			return "弹药"
-		"bullet_count":
-			return "弹数"
-		"duration":
-			return "持续"
-		"hit_cd":
-			return "命中间隔"
-		"explosion_scale":
-			return "爆炸"
-		_:
-			return key.replace("_", " ").capitalize()
+	return LocalizationManager.get_module_term(
+		StringName("stat.%s" % key),
+		key.replace("_", " ").capitalize()
+	)
 
 func _format_weapon_definition_types(weapon_def: WeaponDefinition) -> String:
 	if weapon_def == null or weapon_def.scene == null:
-		return "未知"
+		return LocalizationManager.tr_key("ui.service.value.unknown", "Unknown")
 	var weapon := weapon_def.scene.instantiate() as Weapon
 	if weapon == null:
-		return "未知"
+		return LocalizationManager.tr_key("ui.service.value.unknown", "Unknown")
 	var parts := PackedStringArray()
 	for value in weapon.get_explicit_weapon_traits():
 		parts.append(_format_type_name(str(value)))
@@ -294,7 +289,7 @@ func _format_weapon_definition_types(weapon_def: WeaponDefinition) -> String:
 	for value in weapon.get_explicit_weapon_capabilities():
 		parts.append(_format_type_name(str(value)))
 	weapon.queue_free()
-	return " / ".join(parts) if not parts.is_empty() else "通用"
+	return " / ".join(parts) if not parts.is_empty() else LocalizationManager.tr_key("ui.service.value.universal", "Universal")
 
 func _format_module_install_targets(module_instance: Module) -> String:
 	var parts := PackedStringArray()
@@ -304,40 +299,10 @@ func _format_module_install_targets(module_instance: Module) -> String:
 		parts.append(_format_type_name(str(value)))
 	for value in module_instance.get_normalized_required_weapon_capabilities():
 		parts.append(_format_type_name(str(value)))
-	return " / ".join(parts) if not parts.is_empty() else "任意武器"
+	return " / ".join(parts) if not parts.is_empty() else LocalizationManager.tr_key("ui.service.value.any_weapon", "Any Weapon")
 
 func _format_type_name(value: String) -> String:
-	match value:
-		"physical":
-			return "物理"
-		"energy":
-			return "能量"
-		"fire":
-			return "火焰"
-		"freeze":
-			return "冻结"
-		"heat":
-			return "热量"
-		"charge":
-			return "蓄能"
-		"projectile":
-			return "弹体"
-		"melee_contact":
-			return "近战"
-		"beam":
-			return "光束"
-		"area":
-			return "范围"
-		"summon":
-			return "召唤"
-		"trap":
-			return "陷阱"
-		"support":
-			return "支援"
-		"movement":
-			return "位移"
-		_:
-			return value.capitalize()
+	return LocalizationManager.get_module_term(StringName(value), value.replace("_", " ").capitalize())
 
 func _get_weapon_upgrade_cost(weapon_def: WeaponDefinition) -> int:
 	if weapon_def == null:

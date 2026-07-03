@@ -401,32 +401,12 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 		granted_any = true
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_id := reward.item_id.strip_edges()
-		if PlayerData.player and is_instance_valid(PlayerData.player):
-			var outcome: Dictionary = PlayerData.player.try_auto_fuse_weapon_obtain(weapon_id)
-			if str(outcome.get("result", "")) == "not_applicable":
-				var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
-				var weapon: Weapon
-				if weapon_def and weapon_def.scene:
-					weapon = weapon_def.scene.instantiate() as Weapon
-				if weapon:
-					weapon.level = max(1, int(reward.item_level))
-					var ui = GlobalVariables.ui
-					if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
-						ui.call("request_weapon_replacement", weapon, false)
-					else:
-						PlayerData.player.create_weapon(weapon)
+		var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+		var weapon := weapon_def.scene.instantiate() as Weapon if weapon_def and weapon_def.scene else null
+		if weapon:
+			weapon.level = max(1, int(reward.item_level))
+			InventoryData.obtain_weapon_reward(weapon)
 			granted_any = true
-		else:
-			var weapon_def = DataHandler.read_weapon_data(weapon_id)
-			if weapon_def and weapon_def.scene:
-				var weapon = weapon_def.scene.instantiate()
-				weapon.level = max(1, int(reward.item_level))
-				var ui = GlobalVariables.ui
-				if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
-					ui.call("request_weapon_replacement", weapon)
-				else:
-					weapon.queue_free()
-				granted_any = true
 	if reward.module_scene:
 		var module_instance := reward.module_scene.instantiate() as Module
 		if module_instance:

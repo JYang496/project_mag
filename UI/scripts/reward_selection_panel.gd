@@ -11,7 +11,8 @@ const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 
 @onready var title_label: Label = $Panel/VBox/Title
 @onready var subtitle_label: Label = $Panel/VBox/SubTitle
-@onready var options_box: BoxContainer = $Panel/VBox/Options
+@onready var options_scroll: ScrollContainer = $Panel/VBox/OptionsScroll
+@onready var options_box: GridContainer = $Panel/VBox/OptionsScroll/Options
 @onready var detail_title_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailVBox/DetailTitle") as Label
 @onready var detail_vbox: VBoxContainer = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailVBox") as VBoxContainer
 @onready var detail_body_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailVBox/DetailBody") as Label
@@ -30,6 +31,10 @@ var _subtitle_override_cache: String = ""
 var _progress_index_cache: int = 0
 var _progress_total_cache: int = 0
 var _detail_chip_row: HBoxContainer
+var _summary_mode := false
+var _pinned_index := 0
+var _hover_index := -1
+var _focus_index := -1
 
 func _ready() -> void:
 	visible = false
@@ -39,6 +44,8 @@ func _ready() -> void:
 		cancel_button.pressed.connect(_on_cancel_pressed)
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.language_changed.connect(_on_language_changed)
+	if not options_scroll.resized.is_connected(_update_grid_columns):
+		options_scroll.resized.connect(_update_grid_columns)
 
 func _input(event: InputEvent) -> void:
 	if not is_modal_open():
@@ -59,6 +66,43 @@ func open_for_rewards(
 	progress_index: int = 0,
 	progress_total: int = 0
 ) -> bool:
+	if visible:
+		return false
+	_summary_mode = false
+	return _open_rewards(
+		route_display_name,
+		reward_options,
+		on_confirm,
+		on_cancel,
+		allow_cancel,
+		title_override,
+		subtitle_override,
+		progress_index,
+		progress_total
+	)
+
+func open_for_summary(
+	rewards: Array[RewardInfo],
+	on_close: Callable = Callable(),
+	title_override: String = "",
+	subtitle_override: String = ""
+) -> bool:
+	if visible:
+		return false
+	_summary_mode = true
+	return _open_rewards("", rewards, on_close, Callable(), true, title_override, subtitle_override)
+
+func _open_rewards(
+	route_display_name: String,
+	reward_options: Array[RewardInfo],
+	on_confirm: Callable,
+	on_cancel: Callable,
+	allow_cancel: bool,
+	title_override: String,
+	subtitle_override: String,
+	progress_index: int = 0,
+	progress_total: int = 0
+) -> bool:
 	if reward_options.is_empty():
 		return false
 	if visible:
@@ -72,13 +116,22 @@ func open_for_rewards(
 	_progress_index_cache = progress_index
 	_progress_total_cache = progress_total
 	_selected_index = -1
+	_pinned_index = 0
+	_hover_index = -1
+	_focus_index = -1
 	_reward_options.clear()
-	title_label.text = title_override if title_override != "" else LocalizationManager.tr_key("ui.reward.title", "Choose Reward")
+	title_label.text = title_override if title_override != "" else LocalizationManager.tr_key(
+		"ui.task_reward.summary_title" if _summary_mode else "ui.reward.title",
+		"Objective Rewards" if _summary_mode else "Choose Reward"
+	)
 	subtitle_label.text = _build_subtitle_text(route_display_name, subtitle_override, progress_index, progress_total)
-	confirm_button.text = LocalizationManager.tr_key("ui.reward.confirm", "Confirm Reward")
+	confirm_button.text = LocalizationManager.tr_key(
+		"ui.task_reward.summary_confirm" if _summary_mode else "ui.reward.confirm",
+		"Continue" if _summary_mode else "Confirm Reward"
+	)
 	cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
-	cancel_button.visible = _allow_cancel
-	cancel_button.disabled = not _allow_cancel
+	cancel_button.visible = _allow_cancel and not _summary_mode
+	cancel_button.disabled = not _allow_cancel or _summary_mode
 	_update_detail_panel({})
 	for child in options_box.get_children():
 		options_box.remove_child(child)
@@ -93,11 +146,17 @@ func open_for_rewards(
 	for idx in range(_reward_options.size()):
 		var button := _build_reward_card_button(_reward_options[idx])
 		button.pressed.connect(Callable(self, "_on_reward_button_pressed").bind(idx, button))
+		if _summary_mode:
+			button.mouse_entered.connect(_on_reward_hover_entered.bind(idx))
+			button.mouse_exited.connect(_on_reward_hover_exited.bind(idx))
+			button.focus_entered.connect(_on_reward_focus_entered.bind(idx))
+			button.focus_exited.connect(_on_reward_focus_exited.bind(idx))
 		options_box.add_child(button)
 	if options_box.get_child_count() > 0:
 		var first := options_box.get_child(0) as Button
 		if first:
 			_on_reward_button_pressed(0, first)
+	_update_grid_columns()
 	_confirm_button_state()
 	visible = true
 	return true
@@ -109,9 +168,9 @@ func _build_subtitle_text(
 	progress_total: int
 ) -> String:
 	var subtitle := subtitle_override if subtitle_override != "" else LocalizationManager.tr_format(
-		"ui.reward.subtitle",
-		{"route": route_display_name},
-		"%s - pick one reward." % route_display_name
+		"ui.task_reward.summary_subtitle" if _summary_mode else "ui.reward.subtitle",
+		{} if _summary_mode else {"route": route_display_name},
+		"Rewards added to inventory." if _summary_mode else "%s - pick one reward." % route_display_name
 	)
 	if progress_index <= 0 or progress_total <= 0:
 		return subtitle
@@ -129,6 +188,10 @@ func close_panel() -> void:
 	_on_confirm = Callable()
 	_on_cancel = Callable()
 	_allow_cancel = true
+	_summary_mode = false
+	_pinned_index = 0
+	_hover_index = -1
+	_focus_index = -1
 	_title_override_cache = ""
 	_subtitle_override_cache = ""
 	_progress_index_cache = 0
@@ -144,13 +207,19 @@ func can_cancel_modal() -> bool:
 func cancel_visible_modal() -> bool:
 	if not is_modal_open() or not can_cancel_modal():
 		return false
+	if _summary_mode:
+		_on_confirm_pressed()
+		return true
 	_on_cancel_pressed()
 	return true
 
 func _on_reward_button_pressed(index: int, source_button: Button) -> void:
-	_selected_index = index
+	if _summary_mode:
+		_pinned_index = index
+	else:
+		_selected_index = index
 	if index >= 0 and index < _reward_options.size():
-		_update_detail_panel(_build_reward_display_data(_reward_options[index]))
+		_update_summary_detail()
 	else:
 		_update_detail_panel({})
 	var child_index := 0
@@ -158,17 +227,54 @@ func _on_reward_button_pressed(index: int, source_button: Button) -> void:
 		var button := child as Button
 		if button == null:
 			continue
-		var selected := button == source_button
+		var selected := child_index == (_pinned_index if _summary_mode else _selected_index)
 		button.button_pressed = selected
 		if child_index < _reward_options.size():
 			_apply_reward_card_style(button, _reward_options[child_index], selected)
 		child_index += 1
 	_confirm_button_state()
 
+func _on_reward_hover_entered(index: int) -> void:
+	_hover_index = index
+	_update_summary_detail()
+
+func _on_reward_hover_exited(index: int) -> void:
+	if _hover_index == index:
+		_hover_index = -1
+	_update_summary_detail()
+
+func _on_reward_focus_entered(index: int) -> void:
+	_focus_index = index
+	_update_summary_detail()
+
+func _on_reward_focus_exited(index: int) -> void:
+	if _focus_index == index:
+		_focus_index = -1
+	_update_summary_detail()
+
+func _update_summary_detail() -> void:
+	var index := _selected_index
+	if _summary_mode:
+		index = _hover_index if _hover_index >= 0 else (_focus_index if _focus_index >= 0 else _pinned_index)
+	if index >= 0 and index < _reward_options.size():
+		_update_detail_panel(_build_reward_display_data(_reward_options[index]))
+	else:
+		_update_detail_panel({})
+
+func _update_grid_columns() -> void:
+	if options_box == null or options_scroll == null:
+		return
+	options_box.columns = clampi(int(options_scroll.size.x / 222.0), 1, 4)
+
 func _confirm_button_state() -> void:
-	confirm_button.disabled = _selected_index < 0 or _selected_index >= _reward_options.size()
+	confirm_button.disabled = false if _summary_mode else _selected_index < 0 or _selected_index >= _reward_options.size()
 
 func _on_confirm_pressed() -> void:
+	if _summary_mode:
+		if _on_confirm.is_valid():
+			_on_confirm.call_deferred()
+		close_panel()
+		return
 	if _selected_index < 0 or _selected_index >= _reward_options.size():
 		return
 	var reward := _reward_options[_selected_index]
@@ -232,6 +338,9 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 	text_box.add_child(type_label)
 
 	var name_label := _make_card_label(str(card_data.get("title", "Reward")), 16, Color(0.94, 0.97, 1.0, 1.0))
+	var summary_count := int(reward.get_meta("summary_count", 1))
+	if _summary_mode and summary_count > 1:
+		name_label.text += " ×%d" % summary_count
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_label.clip_text = true
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -358,6 +467,8 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		"meta_text": "",
 		"icon_texture": null,
 		"fallback_icon_key": "reward",
+		"icon_badge_text": "",
+		"icon_badge_color": Color(0.42, 0.78, 0.48, 1.0),
 	}
 	if reward == null:
 		return data
@@ -371,6 +482,8 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["short_tag"] = "Lv.%d -> Lv.%d" % [int(reward.target_weapon_from_level), int(reward.target_weapon_to_level)]
 		data["meta_text"] = "%s · %s" % [str(data["short_tag"]), LocalizationManager.tr_key("ui.branch.weapon", "Weapon")]
 		data["fallback_icon_key"] = "weapon"
+		data["icon_badge_text"] = "^"
+		data["icon_badge_color"] = Color(0.94, 0.68, 0.24, 1.0)
 		var upgrade_detail := PackedStringArray([str(data["short_tag"])])
 		var target_definition := DataHandler.read_weapon_data(reward.target_weapon_id) as WeaponDefinition
 		if target_definition != null:
@@ -385,7 +498,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		var definition := CellEffectRuntime.get_definition(reward.cell_effect_id)
 		if definition != null:
 			data["title"] = definition.get_display_name()
-			data["detail_text"] = definition.description.strip_edges()
+			data["detail_text"] = definition.get_description()
 			data["icon_texture"] = definition.icon_texture
 		else:
 			data["title"] = "Cell Effect"
@@ -401,7 +514,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		if task_definition != null:
 			data["title"] = task_definition.get_display_name()
 			data["short_tag"] = "Task: %s" % task_definition.get_task_label()
-			data["detail_text"] = task_definition.description.strip_edges()
+			data["detail_text"] = task_definition.get_description()
 			data["icon_texture"] = task_definition.icon_texture
 			data["meta_text"] = "%s Task Module" % task_definition.get_task_label()
 		else:
@@ -438,6 +551,8 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["type_label"] = _format_reward_type_label(reward, "Weapon")
 		data["meta_text"] = "Lv.%d · %s" % [int(reward.item_level), LocalizationManager.tr_key("ui.branch.weapon", "Weapon")]
 		data["fallback_icon_key"] = "weapon"
+		data["icon_badge_text"] = "+"
+		data["icon_badge_color"] = Color(0.42, 0.78, 0.48, 1.0)
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.weapon_obtain", "Auto equip / fuse / store")
 	if reward.module_scene:
 		var module_data := _build_module_reward_display_data(reward.module_scene, reward.module_level)
@@ -562,11 +677,17 @@ func _make_reward_icon(card_data: Dictionary) -> Control:
 	var fallback_key := str(card_data.get("fallback_icon_key", "reward")).strip_edges()
 	var chip := BUILD_TAG_DISPLAY.build_tag_chip(fallback_key)
 	var accent: Color = chip.get("color", Color(0.54, 0.64, 0.72, 1.0))
+	var root := Control.new()
+	root.name = "RewardIcon"
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.custom_minimum_size = Vector2(56.0, 56.0)
 	var frame := PanelContainer.new()
 	frame.name = "RewardIconFrame"
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	frame.custom_minimum_size = Vector2(56.0, 56.0)
 	frame.add_theme_stylebox_override("panel", _make_icon_frame_style(accent))
+	root.add_child(frame)
 
 	var margin := MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -593,7 +714,24 @@ func _make_reward_icon(card_data: Dictionary) -> Control:
 		fallback.add_theme_font_size_override("font_size", 17)
 		fallback.add_theme_color_override("font_color", Color(0.9, 0.96, 1.0, 1.0))
 		margin.add_child(fallback)
-	return frame
+	var badge_text := str(card_data.get("icon_badge_text", "")).strip_edges()
+	if badge_text != "":
+		var badge := Label.new()
+		badge.name = "RewardIconBadge"
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.text = badge_text
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge.add_theme_font_size_override("font_size", 13)
+		badge.add_theme_color_override("font_color", Color(0.98, 1.0, 0.96, 1.0))
+		badge.add_theme_stylebox_override("normal", _make_icon_badge_style(card_data.get("icon_badge_color", accent) as Color))
+		badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		badge.offset_left = -18.0
+		badge.offset_top = -3.0
+		badge.offset_right = 3.0
+		badge.offset_bottom = 18.0
+		root.add_child(badge)
+	return root
 
 func _make_icon_frame_style(accent: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -601,6 +739,14 @@ func _make_icon_frame_style(accent: Color) -> StyleBoxFlat:
 	style.border_color = Color(accent.r, accent.g, accent.b, 0.64)
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(6)
+	return style
+
+func _make_icon_badge_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r, color.g, color.b, 0.92)
+	style.border_color = Color(0.04, 0.05, 0.06, 0.9)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(5)
 	return style
 
 func _fallback_icon_text(icon_key: String) -> String:
@@ -707,15 +853,30 @@ func _format_weapon_obtain_prediction(base_text: String, weapon_name: String, ou
 	return PREVIEW_FORMATTER.format_obtain_preview(base_text, weapon_name, outcome)
 
 func _on_language_changed(_locale: String) -> void:
-	if visible:
+	if not visible:
+		return
+	var rewards := _reward_options.duplicate()
+	var on_confirm := _on_confirm
+	var on_cancel := _on_cancel
+	var summary_mode := _summary_mode
+	var route_name := _route_display_name_cache
+	var allow_cancel := _allow_cancel
+	var title_override := _title_override_cache
+	var subtitle_override := _subtitle_override_cache
+	var progress_index := _progress_index_cache
+	var progress_total := _progress_total_cache
+	visible = false
+	if summary_mode:
+		open_for_summary(rewards, on_confirm, title_override, subtitle_override)
+	else:
 		open_for_rewards(
-			_route_display_name_cache,
-			_reward_options,
-			_on_confirm,
-			_on_cancel,
-			_allow_cancel,
-			_title_override_cache,
-			_subtitle_override_cache,
-			_progress_index_cache,
-			_progress_total_cache
+			route_name,
+			rewards,
+			on_confirm,
+			on_cancel,
+			allow_cancel,
+			title_override,
+			subtitle_override,
+			progress_index,
+			progress_total
 		)

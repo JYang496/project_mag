@@ -30,6 +30,7 @@ class_name EconomyConfig
 @export_range(0.0, 1.0, 0.01) var reward_economy_option_chance: float = 0.15
 @export var reward_economy_exp: int = 5
 @export var reward_economy_gold: int = 7
+@export_range(0.0, 1.0, 0.01) var task_reward_secondary_task_module_chance: float = 0.5
 @export var early_standard_draft_count: int = 3
 @export var early_weapon_progress_slot_enabled: bool = true
 @export var early_module_option_chances: PackedFloat32Array = PackedFloat32Array([0.0, 0.2, -1.0])
@@ -81,6 +82,9 @@ func get_reward_economy_exp() -> int:
 
 func get_reward_economy_gold() -> int:
 	return maxi(reward_economy_gold, 0)
+
+func get_task_reward_secondary_task_module_chance() -> float:
+	return clampf(task_reward_secondary_task_module_chance, 0.0, 1.0)
 
 func get_early_standard_draft_count() -> int:
 	return maxi(early_standard_draft_count, 0)

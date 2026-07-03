@@ -83,31 +83,31 @@ branch.spear_multi_pierce.name,Multi-Pierce,Multi-Pierce
 branch.spear_multi_pierce.desc,Fires 3-5 spears in a spread pattern. Each spear deals reduced damage.,Fires 3-5 spears in a spread pattern. Each spear deals reduced damage.
 branch.spear_rending.name,Rending Thrust,Rending Thrust
 branch.spear_rending.desc,Repeated hits on the same target increase damage. Resets after a time window.,Repeated hits on the same target increase damage. Resets after a time window.
-module.wmod_base.name,wmod_base,wmod_base
-module.wmod_brittle_trigger_freeze.name,Brittle Trigger,Brittle Trigger
-module.wmod_bullet_size_stat.name,Size Up,Size Up
-module.wmod_cryo_infuser_freeze.name,Cryo Infuser,Cryo Infuser
-module.wmod_damage_up_stat.name,Damage Up,Damage Up
-module.wmod_reload_blast_damage.name,Reload Burst,Reload Burst
-module.wmod_reload_blast_knockback.name,Reload Shockwave,Reload Shockwave
-module.wmod_reload_damage_boost.name,Reloaded Force,Reloaded Force
-module.wmod_reload_move_boost.name,Reload Sprint,Reload Sprint
-module.wmod_reload_offhand_boost.name,Reload Relay,Reload Relay
-module.wmod_reload_shield_boost.name,Reload Barrier,Reload Barrier
-module.wmod_reload_speed_link.name,Reload Link,Reload Link
-module.wmod_trail_aoe_freeze.name,Frost Trail,Frost Trail
-module.wmod_dot_on_hit.name,wmod_dot_on_hit,wmod_dot_on_hit
-module.wmod_heat_capacity_heat.name,Heat Capacity,Heat Capacity
-module.wmod_heat_concentration_heat.name,Heat Concentration,Heat Concentration
-module.wmod_heat_vent_heat.name,Heat Vent,Heat Vent
-module.wmod_lifesteal_on_hit.name,Life Steal,Life Steal
-module.wmod_lightning_chain_on_hit.name,Lightning Chain,Lightning Chain
-module.wmod_overheat_boost_heat.name,Overheat Boost,Overheat Boost
-module.wmod_permafrost_field_freeze.name,Permafrost Field,Permafrost Field
-module.wmod_pierce_stat.name,Pierce,Pierce
-module.wmod_projectile_speed_stat.name,Faster Speed,Faster Speed
-module.wmod_stun_on_hit.name,Stun On Hit,Stun On Hit
-module.wmod_subzero_extension_freeze.name,Subzero Extension,Subzero Extension
+module.wmod_base.name,Base Module,基础模组
+module.wmod_brittle_trigger_freeze.name,Brittle Trigger,脆化触发器
+module.wmod_bullet_size_stat.name,Size Up,弹体增幅
+module.wmod_cryo_infuser_freeze.name,Cryo Infuser,冷冻灌注器
+module.wmod_damage_up_stat.name,Damage Up,伤害增幅
+module.wmod_reload_blast_damage.name,Reload Burst,换弹爆破
+module.wmod_reload_blast_knockback.name,Reload Shockwave,换弹震波
+module.wmod_reload_damage_boost.name,Reloaded Force,换弹强袭
+module.wmod_reload_move_boost.name,Reload Sprint,换弹疾行
+module.wmod_reload_offhand_boost.name,Reload Relay,换弹接力
+module.wmod_reload_shield_boost.name,Reload Barrier,换弹屏障
+module.wmod_reload_speed_link.name,Reload Link,换弹联动
+module.wmod_trail_aoe_freeze.name,Frost Trail,霜冻轨迹
+module.wmod_dot_on_hit.name,Damage Over Time,持续伤害
+module.wmod_heat_capacity_heat.name,Heat Capacity,热容量
+module.wmod_heat_concentration_heat.name,Heat Concentration,热量聚焦
+module.wmod_heat_vent_heat.name,Heat Vent,热量排放
+module.wmod_lifesteal_on_hit.name,Life Steal,生命汲取
+module.wmod_lightning_chain_on_hit.name,Lightning Chain,闪电链
+module.wmod_overheat_boost_heat.name,Overheat Boost,过热增幅
+module.wmod_permafrost_field_freeze.name,Permafrost Field,永冻领域
+module.wmod_pierce_stat.name,Pierce,贯穿
+module.wmod_projectile_speed_stat.name,Faster Speed,弹速提升
+module.wmod_stun_on_hit.name,Stun On Hit,命中眩晕
+module.wmod_subzero_extension_freeze.name,Subzero Extension,极寒延伸
 module.wmod_battle_focus_buff.name,Battle Focus,战斗专注
 module.wmod_bleed_edge_physical.name,Bleed Edge,流血锋刃
 module.wmod_chill_chain_freeze.name,Chill Chain,寒意链
@@ -140,6 +140,189 @@ module.wmod_magazine_pressure.name,Magazine Pressure,弹仓余压
 module.wmod_inertial_aim.name,Inertial Aim,惯性瞄准
 module.wmod_crossfire.name,Crossfire,交叉火力
 module.wmod_kill_endurance.name,Kill Endurance,击杀续航
+module.wmod_area_expander.effect.1,"Area effect radius +15%","范围效果半径 +15%"
+module.wmod_area_expander.effect.2,"Area effect radius +22%","范围效果半径 +22%"
+module.wmod_area_expander.effect.3,"Area effect radius +29%","范围效果半径 +29%"
+module.wmod_battle_focus_buff.effect.1,"Crit chance +1.5% per stack, up to 6 stacks","每层暴击率 +1.5%，最多 6 层"
+module.wmod_battle_focus_buff.effect.2,"Crit chance +2.0% per stack, up to 6 stacks","每层暴击率 +2.0%，最多 6 层"
+module.wmod_battle_focus_buff.effect.3,"Crit chance +2.5% per stack, up to 6 stacks","每层暴击率 +2.5%，最多 6 层"
+module.wmod_bleed_edge_physical.effect.1,"Bleed lasts 2.4s and deals 2 damage per movement trigger","流血持续 2.4 秒，每次移动触发造成 2 点伤害"
+module.wmod_bleed_edge_physical.effect.2,"Bleed lasts 3.0s and deals 3 damage per movement trigger","流血持续 3.0 秒，每次移动触发造成 3 点伤害"
+module.wmod_bleed_edge_physical.effect.3,"Bleed lasts 3.8s and deals 4 damage per movement trigger","流血持续 3.8 秒，每次移动触发造成 4 点伤害"
+module.wmod_brittle_trigger_freeze.effect.1,"Brittle bonus damage equals 20% of weapon damage","脆化额外伤害等于武器伤害的 20%"
+module.wmod_brittle_trigger_freeze.effect.2,"Brittle bonus damage equals 28% of weapon damage","脆化额外伤害等于武器伤害的 28%"
+module.wmod_brittle_trigger_freeze.effect.3,"Brittle bonus damage equals 36% of weapon damage","脆化额外伤害等于武器伤害的 36%"
+module.wmod_bullet_size_stat.effect.1,"Projectile size +50%","投射物尺寸 +50%"
+module.wmod_bullet_size_stat.effect.2,"Projectile size +67.5%","投射物尺寸 +67.5%"
+module.wmod_bullet_size_stat.effect.3,"Projectile size +85%","投射物尺寸 +85%"
+module.wmod_chill_chain_freeze.effect.1,"Chain slow to 88% speed for 1.2s","连锁减速至 88% 移动速度，持续 1.2 秒"
+module.wmod_chill_chain_freeze.effect.2,"Chain slow to 82% speed for 1.5s","连锁减速至 82% 移动速度，持续 1.5 秒"
+module.wmod_chill_chain_freeze.effect.3,"Chain slow to 76% speed for 1.8s","连锁减速至 76% 移动速度，持续 1.8 秒"
+module.wmod_corrosive_touch_energy.effect.1,"Corrosion lasts 2.8s; -1 armor and +4% damage taken per stack","腐蚀持续 2.8 秒；每层护甲 -1，受到伤害 +4%"
+module.wmod_corrosive_touch_energy.effect.2,"Corrosion lasts 3.5s; -1 armor and +6% damage taken per stack","腐蚀持续 3.5 秒；每层护甲 -1，受到伤害 +6%"
+module.wmod_corrosive_touch_energy.effect.3,"Corrosion lasts 4.2s; -2 armor and +8% damage taken per stack","腐蚀持续 4.2 秒；每层护甲 -2，受到伤害 +8%"
+module.wmod_crit_amplifier.effect.1,"While host weapon is main: player crit damage +15%","宿主武器为主武器时：玩家暴击伤害 +15%"
+module.wmod_crit_amplifier.effect.2,"While host weapon is main: player crit damage +25%","宿主武器为主武器时：玩家暴击伤害 +25%"
+module.wmod_crit_amplifier.effect.3,"While host weapon is main: player crit damage +35%","宿主武器为主武器时：玩家暴击伤害 +35%"
+module.wmod_crit_calibrator.effect.1,"While host weapon is main: player crit chance +4%","宿主武器为主武器时：玩家暴击率 +4%"
+module.wmod_crit_calibrator.effect.2,"While host weapon is main: player crit chance +6%","宿主武器为主武器时：玩家暴击率 +6%"
+module.wmod_crit_calibrator.effect.3,"While host weapon is main: player crit chance +8%","宿主武器为主武器时：玩家暴击率 +8%"
+module.wmod_crossfire.effect.1,"Hit an enemy recently hit by another weapon: +16% damage for 2.5s","命中刚被其他武器击中的敌人：伤害 +16%，持续 2.5 秒"
+module.wmod_crossfire.effect.2,"Hit an enemy recently hit by another weapon: +23% damage for 2.5s","命中刚被其他武器击中的敌人：伤害 +23%，持续 2.5 秒"
+module.wmod_crossfire.effect.3,"Hit an enemy recently hit by another weapon: +30% damage for 2.5s","命中刚被其他武器击中的敌人：伤害 +30%，持续 2.5 秒"
+module.wmod_cryo_infuser_freeze.effect.1,"Adds 3 freeze damage on hit","命中时附加 3 点冻结伤害"
+module.wmod_cryo_infuser_freeze.effect.2,"Adds 4 freeze damage on hit","命中时附加 4 点冻结伤害"
+module.wmod_cryo_infuser_freeze.effect.3,"Adds 5 freeze damage on hit","命中时附加 5 点冻结伤害"
+module.wmod_dash_cooler.effect.1,"While host weapon is main: player dash cooldown -15%","宿主武器为主武器时：玩家冲刺冷却 -15%"
+module.wmod_dash_cooler.effect.2,"While host weapon is main: player dash cooldown -22%","宿主武器为主武器时：玩家冲刺冷却 -22%"
+module.wmod_dash_cooler.effect.3,"While host weapon is main: player dash cooldown -29%","宿主武器为主武器时：玩家冲刺冷却 -29%"
+module.wmod_dot_on_hit.effect.1,"Applies 5 ticks of 1 damage","施加 5 次持续伤害，每次 1 点"
+module.wmod_dot_on_hit.effect.2,"Applies 7 ticks of 1 damage","施加 7 次持续伤害，每次 1 点"
+module.wmod_dot_on_hit.effect.3,"Applies 9 ticks of 2 damage","施加 9 次持续伤害，每次 2 点"
+module.wmod_diffusion_nozzle.effect.1,"Cone attack angle +15%","锥形攻击角度 +15%"
+module.wmod_diffusion_nozzle.effect.2,"Cone attack angle +22%","锥形攻击角度 +22%"
+module.wmod_diffusion_nozzle.effect.3,"Cone attack angle +29%","锥形攻击角度 +29%"
+module.wmod_ember_mark_fire.effect.1,"4 marks trigger a 30% weapon-damage fire burst","4 层标记触发相当于 30% 武器伤害的火焰爆发"
+module.wmod_ember_mark_fire.effect.2,"3 marks trigger a 42% weapon-damage fire burst","3 层标记触发相当于 42% 武器伤害的火焰爆发"
+module.wmod_ember_mark_fire.effect.3,"3 marks trigger a 55% weapon-damage fire burst","3 层标记触发相当于 55% 武器伤害的火焰爆发"
+module.wmod_damage_up_stat.effect.1,"Weapon damage +50%","武器伤害 +50%"
+module.wmod_damage_up_stat.effect.2,"Weapon damage +67.5%","武器伤害 +67.5%"
+module.wmod_damage_up_stat.effect.3,"Weapon damage +85%","武器伤害 +85%"
+module.wmod_expanded_magazine.effect.1,"Magazine capacity +20%","弹匣容量 +20%"
+module.wmod_expanded_magazine.effect.2,"Magazine capacity +30%","弹匣容量 +30%"
+module.wmod_expanded_magazine.effect.3,"Magazine capacity +40%","弹匣容量 +40%"
+module.wmod_fast_reload.effect.1,"Reload duration -15%","换弹时长 -15%"
+module.wmod_fast_reload.effect.2,"Reload duration -22%","换弹时长 -22%"
+module.wmod_fast_reload.effect.3,"Reload duration -29%","换弹时长 -29%"
+module.wmod_firepower_diffusion.effect.1,"Hit 2+ unique targets within 1s: +5% damage per extra target for 2.5s","1 秒内命中至少 2 个不同目标：每个额外目标使伤害 +5%，持续 2.5 秒"
+module.wmod_firepower_diffusion.effect.2,"Hit 2+ unique targets within 1s: +7% damage per extra target for 2.5s","1 秒内命中至少 2 个不同目标：每个额外目标使伤害 +7%，持续 2.5 秒"
+module.wmod_firepower_diffusion.effect.3,"Hit 2+ unique targets within 1s: +9% damage per extra target for 2.5s","1 秒内命中至少 2 个不同目标：每个额外目标使伤害 +9%，持续 2.5 秒"
+module.wmod_heat_capacity_heat.effect.1,"Maximum heat +50%","热量上限 +50%"
+module.wmod_heat_capacity_heat.effect.2,"Maximum heat +67.5%","热量上限 +67.5%"
+module.wmod_heat_capacity_heat.effect.3,"Maximum heat +85%","热量上限 +85%"
+module.wmod_heat_concentration_heat.effect.1,"Up to +140% damage at full heat","满热量时伤害最高 +140%"
+module.wmod_heat_concentration_heat.effect.2,"Up to +189% damage at full heat","满热量时伤害最高 +189%"
+module.wmod_heat_concentration_heat.effect.3,"Up to +238% damage at full heat","满热量时伤害最高 +238%"
+module.wmod_heat_throttle.effect.1,"Heat generated per attack -15%","每次攻击产生的热量 -15%"
+module.wmod_heat_throttle.effect.2,"Heat generated per attack -22%","每次攻击产生的热量 -22%"
+module.wmod_heat_throttle.effect.3,"Heat generated per attack -29%","每次攻击产生的热量 -29%"
+module.wmod_heat_vent_heat.effect.1,"Up to +50% cooling rate at full heat","满热量时冷却速度最高 +50%"
+module.wmod_heat_vent_heat.effect.2,"Up to +67.5% cooling rate at full heat","满热量时冷却速度最高 +67.5%"
+module.wmod_heat_vent_heat.effect.3,"Up to +85% cooling rate at full heat","满热量时冷却速度最高 +85%"
+module.wmod_ice_prison_freeze.effect.1,"At 3 frost stacks: 22% chance to root for 0.55s","达到 3 层霜冻时：22% 概率定身 0.55 秒"
+module.wmod_ice_prison_freeze.effect.2,"At 3 frost stacks: 30% chance to root for 0.75s","达到 3 层霜冻时：30% 概率定身 0.75 秒"
+module.wmod_ice_prison_freeze.effect.3,"At 2 frost stacks: 38% chance to root for 0.95s","达到 2 层霜冻时：38% 概率定身 0.95 秒"
+module.wmod_impact_coil.effect.1,"Weapon knockback +25%","武器击退 +25%"
+module.wmod_impact_coil.effect.2,"Weapon knockback +35%","武器击退 +35%"
+module.wmod_impact_coil.effect.3,"Weapon knockback +45%","武器击退 +45%"
+module.wmod_kill_endurance.effect.1,"Kills have a 35% chance to refund 1 ammo","击杀有 35% 概率返还 1 发弹药"
+module.wmod_kill_endurance.effect.2,"Kills have a 55% chance to refund 1 ammo","击杀有 55% 概率返还 1 发弹药"
+module.wmod_kill_endurance.effect.3,"Kills have a 75% chance to refund 1 ammo","击杀有 75% 概率返还 1 发弹药"
+module.wmod_inertial_aim.effect.1,"Stationary: +15% damage; moving: +10% attack speed","静止时：伤害 +15%；移动时：攻击速度 +10%"
+module.wmod_inertial_aim.effect.2,"Stationary: +22% damage; moving: +15% attack speed","静止时：伤害 +22%；移动时：攻击速度 +15%"
+module.wmod_inertial_aim.effect.3,"Stationary: +29% damage; moving: +20% attack speed","静止时：伤害 +29%；移动时：攻击速度 +20%"
+module.wmod_lifesteal_on_hit.effect.1,"Heal for 10% of weapon damage, minimum 1 HP","恢复相当于武器伤害 10% 的生命，至少恢复 1 点"
+module.wmod_lifesteal_on_hit.effect.2,"Heal for 13.5% of weapon damage, minimum 1 HP","恢复相当于武器伤害 13.5% 的生命，至少恢复 1 点"
+module.wmod_lifesteal_on_hit.effect.3,"Heal for 17% of weapon damage, minimum 2 HP","恢复相当于武器伤害 17% 的生命，至少恢复 2 点"
+module.wmod_lightning_chain_on_hit.effect.1,"Chains to 2 targets within 140 range for 30% damage","连锁至 140 范围内的 2 个目标，造成 30% 伤害"
+module.wmod_lightning_chain_on_hit.effect.2,"Chains to 3 targets within 175 range for 39% damage","连锁至 175 范围内的 3 个目标，造成 39% 伤害"
+module.wmod_lightning_chain_on_hit.effect.3,"Chains to 3 targets within 210 range for 48% damage","连锁至 210 范围内的 3 个目标，造成 48% 伤害"
+module.wmod_magazine_pressure.effect.1,"Damage rises as the magazine empties, up to +20%","弹匣越空伤害越高，最高 +20%"
+module.wmod_magazine_pressure.effect.2,"Damage rises as the magazine empties, up to +30%","弹匣越空伤害越高，最高 +30%"
+module.wmod_magazine_pressure.effect.3,"Damage rises as the magazine empties, up to +40%","弹匣越空伤害越高，最高 +40%"
+module.wmod_molten_splash_fire.effect.1,"Creates a 105-length splash for 25% weapon damage","产生长度为 105 的飞溅，造成 25% 武器伤害"
+module.wmod_molten_splash_fire.effect.2,"Creates a 132-length splash for 36% weapon damage","产生长度为 132 的飞溅，造成 36% 武器伤害"
+module.wmod_molten_splash_fire.effect.3,"Creates a 156-length splash for 46% weapon damage","产生长度为 156 的飞溅，造成 46% 武器伤害"
+module.wmod_momentum_haste.effect.1,"+4% move speed and +3% attack speed per stack","每层移动速度 +4%，攻击速度 +3%"
+module.wmod_momentum_haste.effect.2,"+5.5% move speed and +4.5% attack speed per stack","每层移动速度 +5.5%，攻击速度 +4.5%"
+module.wmod_momentum_haste.effect.3,"+7% move speed and +6% attack speed per stack","每层移动速度 +7%，攻击速度 +6%"
+module.wmod_overheat_boost_heat.effect.1,"Can fire while overheated at 50% damage","过热时仍可射击，但仅造成 50% 伤害"
+module.wmod_overheat_boost_heat.effect.2,"Can fire while overheated at 65% damage","过热时仍可射击，但仅造成 65% 伤害"
+module.wmod_overheat_boost_heat.effect.3,"Can fire while overheated at 80% damage","过热时仍可射击，但仅造成 80% 伤害"
+module.wmod_overkill_recovery.effect.1,"Convert overkill into up to +30% damage for 4s","将过量伤害转化为最高 +30% 伤害，持续 4 秒"
+module.wmod_overkill_recovery.effect.2,"Convert overkill into up to +45% damage for 4s","将过量伤害转化为最高 +45% 伤害，持续 4 秒"
+module.wmod_overkill_recovery.effect.3,"Convert overkill into up to +60% damage for 4s","将过量伤害转化为最高 +60% 伤害，持续 4 秒"
+module.wmod_multi_launcher.effect.1,"Projectiles per attack +1","每次攻击的投射物数量 +1"
+module.wmod_multi_launcher.effect.2,"Projectiles per attack +1","每次攻击的投射物数量 +1"
+module.wmod_multi_launcher.effect.3,"Projectiles per attack +2","每次攻击的投射物数量 +2"
+module.wmod_penetration_momentum.effect.1,"Rapidly hit a different target: +8% damage per chain for 1.5s","快速命中不同目标：每次连锁伤害 +8%，持续 1.5 秒"
+module.wmod_penetration_momentum.effect.2,"Rapidly hit a different target: +11% damage per chain for 1.5s","快速命中不同目标：每次连锁伤害 +11%，持续 1.5 秒"
+module.wmod_penetration_momentum.effect.3,"Rapidly hit a different target: +14% damage per chain for 1.5s","快速命中不同目标：每次连锁伤害 +14%，持续 1.5 秒"
+module.wmod_permafrost_field_freeze.effect.1,"Frosted kills create fields dealing 2 freeze damage per tick","击杀霜冻目标会生成领域，每次造成 2 点冻结伤害"
+module.wmod_permafrost_field_freeze.effect.2,"Frosted kills create fields dealing 3 freeze damage per tick","击杀霜冻目标会生成领域，每次造成 3 点冻结伤害"
+module.wmod_permafrost_field_freeze.effect.3,"Frosted kills create fields dealing 4 freeze damage per tick","击杀霜冻目标会生成领域，每次造成 4 点冻结伤害"
+module.wmod_pierce_stat.effect.1,"Projectile pierce +2","投射物贯穿 +2"
+module.wmod_pierce_stat.effect.2,"Projectile pierce +3","投射物贯穿 +3"
+module.wmod_pierce_stat.effect.3,"Projectile pierce +4","投射物贯穿 +4"
+module.wmod_plague_seed_dot.effect.1,"Plague seed deals 1 damage for 3 ticks","瘟疫种子造成 3 次伤害，每次 1 点"
+module.wmod_plague_seed_dot.effect.2,"Plague seed deals 2 damage for 4 ticks","瘟疫种子造成 4 次伤害，每次 2 点"
+module.wmod_plague_seed_dot.effect.3,"Plague seed deals 3 damage for 5 ticks","瘟疫种子造成 5 次伤害，每次 3 点"
+module.wmod_projectile_speed_stat.effect.1,"Projectile travel speed +50%","投射物飞行速度 +50%"
+module.wmod_projectile_speed_stat.effect.2,"Projectile travel speed +67.5%","投射物飞行速度 +67.5%"
+module.wmod_projectile_speed_stat.effect.3,"Projectile travel speed +85%","投射物飞行速度 +85%"
+module.wmod_quick_cycle.effect.1,"Attack interval -12%","攻击间隔 -12%"
+module.wmod_quick_cycle.effect.2,"Attack interval -18%","攻击间隔 -18%"
+module.wmod_quick_cycle.effect.3,"Attack interval -24%","攻击间隔 -24%"
+module.wmod_recovery_magnet.effect.1,"While host weapon is main: player pickup radius +25%","宿主武器为主武器时：玩家拾取半径 +25%"
+module.wmod_recovery_magnet.effect.2,"While host weapon is main: player pickup radius +40%","宿主武器为主武器时：玩家拾取半径 +40%"
+module.wmod_recovery_magnet.effect.3,"While host weapon is main: player pickup radius +55%","宿主武器为主武器时：玩家拾取半径 +55%"
+module.wmod_reload_blast_damage.effect.1,"Reload burst deals up to 65% weapon damage","换弹爆破最高造成 65% 武器伤害"
+module.wmod_reload_blast_damage.effect.2,"Reload burst deals up to 85% weapon damage","换弹爆破最高造成 85% 武器伤害"
+module.wmod_reload_blast_damage.effect.3,"Reload burst deals up to 110% weapon damage","换弹爆破最高造成 110% 武器伤害"
+module.wmod_reload_damage_boost.effect.1,"Reload grants up to +20% damage for 3s","换弹使伤害最高 +20%，持续 3 秒"
+module.wmod_reload_damage_boost.effect.2,"Reload grants up to +30% damage for 4s","换弹使伤害最高 +30%，持续 4 秒"
+module.wmod_reload_damage_boost.effect.3,"Reload grants up to +40% damage for 5s","换弹使伤害最高 +40%，持续 5 秒"
+module.wmod_reload_blast_knockback.effect.1,"Reload shockwave applies up to 150 knockback","换弹震波最高施加 150 点击退"
+module.wmod_reload_blast_knockback.effect.2,"Reload shockwave applies up to 210 knockback","换弹震波最高施加 210 点击退"
+module.wmod_reload_blast_knockback.effect.3,"Reload shockwave applies up to 280 knockback","换弹震波最高施加 280 点击退"
+module.wmod_reload_offhand_boost.effect.1,"Reload grants other weapons up to +12% damage for 3s","换弹使其他武器伤害最高 +12%，持续 3 秒"
+module.wmod_reload_offhand_boost.effect.2,"Reload grants other weapons up to +18% damage for 4s","换弹使其他武器伤害最高 +18%，持续 4 秒"
+module.wmod_reload_offhand_boost.effect.3,"Reload grants other weapons up to +24% damage for 5s","换弹使其他武器伤害最高 +24%，持续 5 秒"
+module.wmod_reload_move_boost.effect.1,"Reload grants up to +12% move speed for 3s","换弹使移动速度最高 +12%，持续 3 秒"
+module.wmod_reload_move_boost.effect.2,"Reload grants up to +18% move speed for 4s","换弹使移动速度最高 +18%，持续 4 秒"
+module.wmod_reload_move_boost.effect.3,"Reload grants up to +24% move speed for 5s","换弹使移动速度最高 +24%，持续 5 秒"
+module.wmod_reload_shield_boost.effect.1,"Reload grants shield equal to up to 10% max HP for 3s","换弹获得最高相当于生命上限 10% 的护盾，持续 3 秒"
+module.wmod_reload_shield_boost.effect.2,"Reload grants shield equal to up to 14% max HP for 4s","换弹获得最高相当于生命上限 14% 的护盾，持续 4 秒"
+module.wmod_reload_shield_boost.effect.3,"Reload grants shield equal to up to 18% max HP for 5s","换弹获得最高相当于生命上限 18% 的护盾，持续 5 秒"
+module.wmod_rhythm_converter.effect.1,"After a 0.8s attack pause, stored hits grant +3% damage each for 2s","停止攻击 0.8 秒后，每次储存命中使伤害 +3%，持续 2 秒"
+module.wmod_rhythm_converter.effect.2,"After a 0.8s attack pause, stored hits grant +4% damage each for 2s","停止攻击 0.8 秒后，每次储存命中使伤害 +4%，持续 2 秒"
+module.wmod_rhythm_converter.effect.3,"After a 0.8s attack pause, stored hits grant +5% damage each for 2s","停止攻击 0.8 秒后，每次储存命中使伤害 +5%，持续 2 秒"
+module.wmod_reload_speed_link.effect.1,"Reload duration -18% while another weapon reloads","其他武器换弹时，自身换弹时长 -18%"
+module.wmod_reload_speed_link.effect.2,"Reload duration -24% while another weapon reloads","其他武器换弹时，自身换弹时长 -24%"
+module.wmod_reload_speed_link.effect.3,"Reload duration -30% while another weapon reloads","其他武器换弹时，自身换弹时长 -30%"
+module.wmod_shatter_strike_freeze.effect.1,"Shatter adds 6% weapon damage per frost stack","碎裂每层霜冻附加 6% 武器伤害"
+module.wmod_shatter_strike_freeze.effect.2,"Shatter adds 8% weapon damage per frost stack","碎裂每层霜冻附加 8% 武器伤害"
+module.wmod_shatter_strike_freeze.effect.3,"Shatter adds 10% weapon damage per frost stack","碎裂每层霜冻附加 10% 武器伤害"
+module.wmod_stun_on_hit.effect.1,"25% chance to stun for 0.5s","25% 概率眩晕 0.5 秒"
+module.wmod_stun_on_hit.effect.2,"33.75% chance to stun for 0.7s","33.75% 概率眩晕 0.7 秒"
+module.wmod_stun_on_hit.effect.3,"42.5% chance to stun for 0.9s","42.5% 概率眩晕 0.9 秒"
+module.wmod_subzero_extension_freeze.effect.1,"Extend frost by 0.6s and strengthen slow by 10%","霜冻延长 0.6 秒，减速效果增强 10%"
+module.wmod_subzero_extension_freeze.effect.2,"Extend frost by 0.9s and strengthen slow by 15%","霜冻延长 0.9 秒，减速效果增强 15%"
+module.wmod_subzero_extension_freeze.effect.3,"Extend frost by 1.2s and strengthen slow by 20%","霜冻延长 1.2 秒，减速效果增强 20%"
+module.wmod_trail_aoe_freeze.effect.1,"Freeze trail lasts 1.6s and deals 18% weapon damage","冻结轨迹持续 1.6 秒，造成 18% 武器伤害"
+module.wmod_trail_aoe_freeze.effect.2,"Freeze trail lasts 2.0s and deals 24% weapon damage","冻结轨迹持续 2.0 秒，造成 24% 武器伤害"
+module.wmod_trail_aoe_freeze.effect.3,"Freeze trail lasts 2.4s and deals 30% weapon damage","冻结轨迹持续 2.4 秒，造成 30% 武器伤害"
+module.wmod_weakness_relay.effect.1,"Hit a debuffed enemy: +12% damage for 2.5s","命中带有减益的敌人：伤害 +12%，持续 2.5 秒"
+module.wmod_weakness_relay.effect.2,"Hit a debuffed enemy: +18% damage for 2.5s","命中带有减益的敌人：伤害 +18%，持续 2.5 秒"
+module.wmod_weakness_relay.effect.3,"Hit a debuffed enemy: +24% damage for 2.5s","命中带有减益的敌人：伤害 +24%，持续 2.5 秒"
+module.wmod_vampiric_surge.effect.1,"Convert 40% of overkill damage into temporary shield","将 40% 过量伤害转化为临时护盾"
+module.wmod_vampiric_surge.effect.2,"Convert 55% of overkill damage into temporary shield","将 55% 过量伤害转化为临时护盾"
+module.wmod_vampiric_surge.effect.3,"Convert 70% of overkill damage into temporary shield","将 70% 过量伤害转化为临时护盾"
+module.wmod_reload_blast_damage.detail.1,"Reload burst damages nearby enemies","换弹爆破对附近敌人造成伤害"
+module.wmod_reload_blast_damage.detail.2,"Damage scales with spent ammo","伤害随已消耗弹药量提高"
+module.wmod_reload_blast_knockback.detail.1,"Reload shockwave knocks back nearby enemies","换弹震波击退附近敌人"
+module.wmod_reload_blast_knockback.detail.2,"Knockback scales with spent ammo","击退随已消耗弹药量提高"
+module.wmod_reload_damage_boost.detail.1,"Reload grants temporary weapon damage","换弹获得临时武器伤害加成"
+module.wmod_reload_damage_boost.detail.2,"Bonus scales with spent ammo","加成随已消耗弹药量提高"
+module.wmod_reload_move_boost.detail.1,"Reload grants temporary move speed","换弹获得临时移动速度加成"
+module.wmod_reload_move_boost.detail.2,"Bonus scales with spent ammo","加成随已消耗弹药量提高"
+module.wmod_reload_offhand_boost.detail.1,"Reload grants temporary damage to other weapons","换弹使其他武器获得临时伤害加成"
+module.wmod_reload_offhand_boost.detail.2,"Bonus scales with spent ammo","加成随已消耗弹药量提高"
+module.wmod_reload_shield_boost.detail.1,"Reload grants temporary shield","换弹获得临时护盾"
+module.wmod_reload_shield_boost.detail.2,"Shield scales with spent ammo","护盾随已消耗弹药量提高"
+module.wmod_reload_speed_link.detail.1,"Reloads faster while another weapon is reloading","其他武器换弹时，自身换弹更快"
+module.wmod_trail_aoe_freeze.detail.1,"Projectiles leave freeze AoE trails","投射物会留下冻结范围轨迹"
+module.wmod_trail_aoe_freeze.detail.2,"Trail duration {duration}s","轨迹持续 {duration} 秒"
 mecha.4.name,Tank,Tank
 mecha.1.name,Heavy Assault,Heavy Assault
 mecha.3.name,Melee,Melee
@@ -151,3 +334,55 @@ route.difficult.name,Difficult Route,Difficult Route
 route.difficult.desc,Harder combat and tighter pacing with better rewards.,Harder combat and tighter pacing with better rewards.
 route.normal.name,Normal Route,普通路线
 route.normal.desc,Standard battle flow with default rewards.,标准战斗流程，使用默认奖励。
+task_module.task_kill_common.name,Kill Task Module,击杀任务模组
+task_module.task_kill_common.desc,Deploy to an active cell to add a kill objective for the next battle.,部署到已激活格子，为下一场战斗添加击杀任务。
+task_module.task_hold_common.name,Hold Task Module,坚守任务模组
+task_module.task_hold_common.desc,Deploy to an active cell to add a hold objective for the next battle.,部署到已激活格子，为下一场战斗添加坚守任务。
+task_module.task_clear_rare.name,Clear Task Module,清理任务模组
+task_module.task_clear_rare.desc,Deploy to an active cell to add a clear-cell objective for the next battle.,部署到已激活格子，为下一场战斗添加区域清理任务。
+task_module.task_hunt_rare.name,Hunt Task Module,狩猎任务模组
+task_module.task_hunt_rare.desc,Deploy to an active cell to add an elite hunt objective for the next battle.,部署到已激活格子，为下一场战斗添加精英狩猎任务。
+task_module.task_dodge_epic.name,Dodge Task Module,闪避任务模组
+task_module.task_dodge_epic.desc,Deploy to an active cell to add a dodge survival objective for the next battle.,部署到已激活格子，为下一场战斗添加闪避生存任务。
+cell_effect.corrosion_1.name,Corrosion I,腐蚀 I
+cell_effect.corrosion_1.desc,Creates rough corrosive terrain that slightly slows the player inside this cell.,生成腐蚀地形，使玩家在该格子内小幅减速。
+cell_effect.corrosion_2.name,Corrosion II,腐蚀 II
+cell_effect.corrosion_2.desc,Creates rough corrosive terrain that slows the player inside this cell.,生成腐蚀地形，使玩家在该格子内减速。
+cell_effect.corrosion_3.name,Corrosion III,腐蚀 III
+cell_effect.corrosion_3.desc,Creates rough corrosive terrain that heavily slows the player inside this cell.,生成腐蚀地形，使玩家在该格子内大幅减速。
+cell_effect.jungle_1.name,Jungle I,丛林 I
+cell_effect.jungle_1.desc,Creates dense terrain that slightly narrows player vision inside this cell.,生成茂密地形，使玩家在该格子内的视野小幅缩小。
+cell_effect.jungle_2.name,Jungle II,丛林 II
+cell_effect.jungle_2.desc,Creates denser terrain that narrows player vision inside this cell.,生成更茂密的地形，使玩家在该格子内的视野缩小。
+cell_effect.jungle_3.name,Jungle III,丛林 III
+cell_effect.jungle_3.desc,Creates very dense terrain that heavily narrows player vision inside this cell.,生成极茂密的地形，使玩家在该格子内的视野大幅缩小。
+cell_effect.speed_1.name,Speed I,加速 I
+cell_effect.speed_1.desc,Boosts movement speed while the player stands in this cell.,玩家站在该格子内时提高移动速度。
+cell_effect.speed_2.name,Speed II,加速 II
+cell_effect.speed_2.desc,Boosts movement speed while the player stands in this cell.,玩家站在该格子内时提高移动速度。
+cell_effect.speed_3.name,Speed III,加速 III
+cell_effect.speed_3.desc,Greatly boosts movement speed while the player stands in this cell.,玩家站在该格子内时大幅提高移动速度。
+cell_effect.regen_1.name,Regen I,生命恢复 I
+cell_effect.regen_1.desc,Restores 1 HP every 6 seconds while the player stands in this cell.,玩家站在该格子内时，每 6 秒恢复 1 点生命值。
+cell_effect.regen_2.name,Regen II,生命恢复 II
+cell_effect.regen_2.desc,Restores 1 HP every 5 seconds while the player stands in this cell.,玩家站在该格子内时，每 5 秒恢复 1 点生命值。
+cell_effect.regen_3.name,Regen III,生命恢复 III
+cell_effect.regen_3.desc,Restores 1 HP every 4 seconds while the player stands in this cell.,玩家站在该格子内时，每 4 秒恢复 1 点生命值。
+cell_effect.lucky_strike_1.name,Lucky Strike I,幸运一击 I
+cell_effect.lucky_strike_1.desc,Attacks have a small chance to add 1 bonus damage while the player stands in this cell.,玩家站在该格子内时，攻击有较低概率额外造成 1 点伤害。
+cell_effect.lucky_strike_2.name,Lucky Strike II,幸运一击 II
+cell_effect.lucky_strike_2.desc,Attacks have a moderate chance to add 1 bonus damage while the player stands in this cell.,玩家站在该格子内时，攻击有中等概率额外造成 1 点伤害。
+cell_effect.lucky_strike_3.name,Lucky Strike III,幸运一击 III
+cell_effect.lucky_strike_3.desc,Attacks have a high chance to add 1 bonus damage while the player stands in this cell.,玩家站在该格子内时，攻击有较高概率额外造成 1 点伤害。
+cell_effect.double_loot_1.name,Double Loot I,双倍掉落 I
+cell_effect.double_loot_1.desc,Coins and chips have a small chance to double while the player stands in this cell.,玩家站在该格子内时，金币和芯片有较低概率翻倍。
+cell_effect.double_loot_2.name,Double Loot II,双倍掉落 II
+cell_effect.double_loot_2.desc,Coins and chips have a moderate chance to double while the player stands in this cell.,玩家站在该格子内时，金币和芯片有中等概率翻倍。
+cell_effect.double_loot_3.name,Double Loot III,双倍掉落 III
+cell_effect.double_loot_3.desc,Coins and chips have a high chance to double while the player stands in this cell.,玩家站在该格子内时，金币和芯片有较高概率翻倍。
+cell_effect.low_hp_berserk_1.name,Low HP Berserk I,残血狂暴 I
+cell_effect.low_hp_berserk_1.desc,"At low HP, damage can scale up to x1.20 while the player stands in this cell.","玩家站在该格子内且处于低生命值时，伤害最高提升至 x1.20。"
+cell_effect.low_hp_berserk_2.name,Low HP Berserk II,残血狂暴 II
+cell_effect.low_hp_berserk_2.desc,"At low HP, damage can scale up to x1.35 while the player stands in this cell.","玩家站在该格子内且处于低生命值时，伤害最高提升至 x1.35。"
+cell_effect.low_hp_berserk_3.name,Low HP Berserk III,残血狂暴 III
+cell_effect.low_hp_berserk_3.desc,"At low HP, damage can scale up to x1.50 while the player stands in this cell.","玩家站在该格子内且处于低生命值时，伤害最高提升至 x1.50。"

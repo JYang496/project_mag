@@ -9,16 +9,23 @@ const ACTIVE_EDGE := Color(0.58, 0.78, 0.82, 0.16)
 const ACTIVE_BOUNDARY := Color(0.34, 0.82, 0.92, 0.36)
 const PLAYER_EDGE := Color(0.38, 0.88, 1.0, 0.58)
 const TASK_NODE := Color(1.0, 0.76, 0.32, 0.44)
+const HIGHLIGHT_FADE_SECONDS := 0.22
 
 var cell_rect: Rect2 = DEFAULT_CELL_RECT:
 	set(value):
 		cell_rect = value
 		queue_redraw()
 
+var highlight_amount := 0.0:
+	set(value):
+		highlight_amount = clampf(value, 0.0, 1.0)
+		queue_redraw()
+
 var _active := true
 var _player_highlighted := false
 var _has_task := false
 var _active_boundary_edges: PackedStringArray = PackedStringArray()
+var _highlight_tween: Tween
 
 func _ready() -> void:
 	z_index = 8
@@ -34,7 +41,7 @@ func set_player_highlighted(highlighted: bool) -> void:
 	if _player_highlighted == highlighted:
 		return
 	_player_highlighted = highlighted
-	queue_redraw()
+	_tween_highlight_amount(1.0 if highlighted else 0.0)
 
 func set_task_or_objective_present(has_task: bool) -> void:
 	if _has_task == has_task:
@@ -48,9 +55,9 @@ func set_active_boundary_edges(edges: PackedStringArray) -> void:
 
 func configure(active: bool, highlighted: bool, has_task: bool, new_cell_rect: Rect2 = DEFAULT_CELL_RECT) -> void:
 	_active = active
-	_player_highlighted = highlighted
 	_has_task = has_task
 	cell_rect = new_cell_rect
+	set_player_highlighted(highlighted)
 	queue_redraw()
 
 func _draw() -> void:
@@ -60,7 +67,7 @@ func _draw() -> void:
 		_draw_active_state()
 	else:
 		_draw_inactive_state()
-	if _player_highlighted:
+	if highlight_amount > 0.0:
 		_draw_player_highlight()
 	if _has_task:
 		_draw_task_presence_node()
@@ -77,8 +84,9 @@ func _draw_active_state() -> void:
 
 func _draw_player_highlight() -> void:
 	var inset_rect := cell_rect.grow(-12.0)
-	draw_arc(inset_rect.get_center(), minf(inset_rect.size.x, inset_rect.size.y) * 0.47, -PI * 0.50, TAU * 0.72, 48, PLAYER_EDGE, 3.0, true)
-	_draw_corner_code(PLAYER_EDGE, 40.0, 3.0)
+	var edge_color := Color(PLAYER_EDGE.r, PLAYER_EDGE.g, PLAYER_EDGE.b, PLAYER_EDGE.a * highlight_amount)
+	draw_arc(inset_rect.get_center(), minf(inset_rect.size.x, inset_rect.size.y) * 0.47, -PI * 0.50, TAU * 0.72, 48, edge_color, 3.0, true)
+	_draw_corner_code(edge_color, lerpf(32.0, 40.0, highlight_amount), lerpf(2.5, 3.0, highlight_amount))
 
 func _draw_task_presence_node() -> void:
 	var center := cell_rect.position + Vector2(cell_rect.size.x * 0.82, cell_rect.size.y * 0.18)
@@ -140,3 +148,11 @@ func _draw_active_boundary_edges() -> void:
 				draw_line(Vector2(inset_rect.position.x, inset_rect.end.y), inset_rect.end, ACTIVE_BOUNDARY, 2.5, true)
 			"left":
 				draw_line(inset_rect.position, Vector2(inset_rect.position.x, inset_rect.end.y), ACTIVE_BOUNDARY, 2.5, true)
+
+func _tween_highlight_amount(target: float) -> void:
+	if _highlight_tween:
+		_highlight_tween.kill()
+	_highlight_tween = create_tween()
+	_highlight_tween.tween_property(self, "highlight_amount", target, HIGHLIGHT_FADE_SECONDS)\
+		.set_trans(Tween.TRANS_SINE)\
+		.set_ease(Tween.EASE_OUT)

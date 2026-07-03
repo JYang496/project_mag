@@ -8,6 +8,7 @@ signal active_task_status_changed(cell_id: int)
 
 const RESOURCE_CATALOG := preload("res://autoload/ResourceCatalog.gd")
 const TASK_MODULE_DIRECTORY_PATH := "res://data/task_modules/"
+const STATE_PATH := "user://cell_task_module_runtime_state.json"
 const ACTIVE_LIMIT := 2
 const REWARD_KIND_TASK_MODULE: StringName = &"task_module"
 const STARTING_TASK_CELL_ID := 5
@@ -26,7 +27,9 @@ var _completed_cells: Dictionary = {}
 var _last_completed_count: int = 0
 var _special_shop_offer_module_id := ""
 var _special_shop_offer_checks: int = 0
+var _granted_reward_ids: Dictionary = {}
 var _definition_prepare_result: Dictionary = {"ok": false, "errors": PackedStringArray(), "count": 0}
+var _runtime_state_loaded := false
 
 func _ready() -> void:
 	if not PhaseManager.phase_changed.is_connected(_on_phase_changed):
@@ -68,6 +71,7 @@ func prepare_definitions(force: bool = false) -> Dictionary:
 		return _definition_prepare_result.duplicate(true)
 	_definitions_by_id = loaded_definitions
 	_definition_prepare_result = _build_prepare_result(true, errors, _definitions_by_id.size())
+	_ensure_runtime_state_loaded()
 	return _definition_prepare_result.duplicate(true)
 
 func get_definition_prepare_result() -> Dictionary:
@@ -115,6 +119,21 @@ func grant_module(module_id: String) -> Dictionary:
 	if definition == null:
 		return {"ok": false, "reason": "Missing task module."}
 	_inventory.append(definition.module_id)
+	save_runtime_state()
+	inventory_changed.emit()
+	return {"ok": true, "reason": ""}
+
+func grant_module_once(reward_entry_id: String, module_id: String) -> Dictionary:
+	var entry_id := reward_entry_id.strip_edges()
+	if entry_id != "" and _granted_reward_ids.has(entry_id):
+		return {"ok": true, "reason": "", "already_granted": true}
+	var definition := get_definition(module_id)
+	if definition == null:
+		return {"ok": false, "reason": "Missing task module."}
+	_inventory.append(definition.module_id)
+	if entry_id != "":
+		_granted_reward_ids[entry_id] = true
+	save_runtime_state()
 	inventory_changed.emit()
 	return {"ok": true, "reason": ""}
 
@@ -155,6 +174,7 @@ func replace_inventory_module(index: int, module_id: String) -> Dictionary:
 	if index < 0 or index >= _inventory.size():
 		return {"ok": false, "reason": "Invalid task module slot."}
 	_inventory[index] = definition.module_id
+	save_runtime_state()
 	inventory_changed.emit()
 	return {"ok": true, "reason": ""}
 
@@ -162,6 +182,7 @@ func discard_inventory_module(index: int) -> Dictionary:
 	if index < 0 or index >= _inventory.size():
 		return {"ok": false, "reason": "Invalid task module slot."}
 	_inventory.remove_at(index)
+	save_runtime_state()
 	inventory_changed.emit()
 	return {"ok": true, "reason": ""}
 
@@ -190,6 +211,7 @@ func deploy_inventory_module(index: int, cell_id: int, board: BoardCellGenerator
 	var module_id := str(_inventory[index])
 	_inventory.remove_at(index)
 	_deployments[str(cell_id)] = module_id
+	save_runtime_state()
 	inventory_changed.emit()
 	deployment_changed.emit()
 	return {"ok": true, "reason": ""}
@@ -220,6 +242,7 @@ func replace_deployment_with_inventory_module(index: int, cell_id: int, board: B
 	var module_id := str(_inventory[index])
 	_inventory.remove_at(index)
 	_deployments[key] = module_id
+	save_runtime_state()
 	inventory_changed.emit()
 	deployment_changed.emit()
 	return {"ok": true, "reason": "", "replaced_module_id": previous_module_id}
@@ -235,6 +258,7 @@ func clear_unassigned_modules() -> int:
 	if count <= 0:
 		return 0
 	_inventory.clear()
+	save_runtime_state()
 	inventory_changed.emit()
 	return count
 
@@ -258,6 +282,7 @@ func commit_deployments_for_battle(board: BoardCellGenerator = null, clear_unass
 		_active_tasks[str(cell_id)] = module_id
 	_deployments.clear()
 	_completed_cells.clear()
+	save_runtime_state()
 	deployment_changed.emit()
 	active_tasks_changed.emit()
 	completed_tasks_changed.emit()
@@ -298,6 +323,7 @@ func record_objective_completed(cell_id_text: String) -> void:
 		return
 	_completed_cells[key] = _active_tasks[key]
 	_last_completed_count += 1
+	save_runtime_state()
 	completed_tasks_changed.emit()
 	active_task_status_changed.emit(cell_id)
 
@@ -306,6 +332,7 @@ func clear_active_tasks(board: BoardCellGenerator = null) -> void:
 		return
 	_active_tasks.clear()
 	_completed_cells.clear()
+	save_runtime_state()
 	active_tasks_changed.emit()
 	completed_tasks_changed.emit()
 	active_task_status_changed.emit(0)
@@ -326,11 +353,14 @@ func prepare_special_shop_offer(force: bool = false) -> String:
 			break
 	_special_shop_offer_checks = checks
 	if not should_offer:
+		save_runtime_state()
 		return ""
 	var reward := build_reward_option(PhaseManager.current_level)
 	if reward == null:
+		save_runtime_state()
 		return ""
 	_special_shop_offer_module_id = reward.task_module_id
+	save_runtime_state()
 	deployment_changed.emit()
 	return _special_shop_offer_module_id
 
@@ -339,6 +369,7 @@ func clear_special_shop_offer() -> void:
 		return
 	_special_shop_offer_module_id = ""
 	_special_shop_offer_checks = 0
+	save_runtime_state()
 	deployment_changed.emit()
 
 func get_special_shop_cost_count(module_id: String = "") -> int:
@@ -380,11 +411,84 @@ func reset_runtime_state() -> void:
 	_last_completed_count = 0
 	_special_shop_offer_module_id = ""
 	_special_shop_offer_checks = 0
+	_granted_reward_ids.clear()
+	if FileAccess.file_exists(STATE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(STATE_PATH))
+	_runtime_state_loaded = true
 	inventory_changed.emit()
 	deployment_changed.emit()
 	active_tasks_changed.emit()
 	completed_tasks_changed.emit()
 	active_task_status_changed.emit(0)
+
+func save_runtime_state() -> void:
+	var payload := {
+		"inventory": _inventory,
+		"deployments": _deployments,
+		"active_tasks": _active_tasks,
+		"completed_cells": _completed_cells,
+		"last_completed_count": _last_completed_count,
+		"special_shop_offer_module_id": _special_shop_offer_module_id,
+		"special_shop_offer_checks": _special_shop_offer_checks,
+		"granted_reward_ids": _granted_reward_ids,
+	}
+	var file := FileAccess.open(STATE_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(payload))
+
+func load_runtime_state() -> void:
+	var payload := _read_json_dictionary(STATE_PATH)
+	if payload.is_empty():
+		_runtime_state_loaded = true
+		return
+	_inventory = _sanitize_inventory(payload.get("inventory", []))
+	_deployments = _sanitize_module_dictionary(payload.get("deployments", {}))
+	_active_tasks = _sanitize_module_dictionary(payload.get("active_tasks", {}))
+	_completed_cells = _sanitize_module_dictionary(payload.get("completed_cells", {}))
+	_last_completed_count = maxi(int(payload.get("last_completed_count", 0)), 0)
+	_special_shop_offer_module_id = str(payload.get("special_shop_offer_module_id", ""))
+	if get_definition(_special_shop_offer_module_id) == null:
+		_special_shop_offer_module_id = ""
+	_special_shop_offer_checks = maxi(int(payload.get("special_shop_offer_checks", 0)), 0)
+	_granted_reward_ids = (payload.get("granted_reward_ids", {}) as Dictionary).duplicate(true) \
+		if payload.get("granted_reward_ids", {}) is Dictionary else {}
+	_runtime_state_loaded = true
+	inventory_changed.emit()
+	deployment_changed.emit()
+	active_tasks_changed.emit()
+	completed_tasks_changed.emit()
+
+func _ensure_runtime_state_loaded() -> void:
+	if not _runtime_state_loaded:
+		load_runtime_state()
+
+func _sanitize_inventory(raw: Variant) -> PackedStringArray:
+	var output := PackedStringArray()
+	if raw is Array:
+		for value in raw:
+			var module_id := str(value)
+			if get_definition(module_id) != null:
+				output.append(module_id)
+	return output
+
+func _sanitize_module_dictionary(raw: Variant) -> Dictionary:
+	var output := {}
+	if not (raw is Dictionary):
+		return output
+	for key in (raw as Dictionary).keys():
+		var module_id := str((raw as Dictionary)[key])
+		if get_definition(module_id) != null:
+			output[str(key)] = module_id
+	return output
+
+func _read_json_dictionary(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed = JSON.parse_string(file.get_as_text())
+	return parsed as Dictionary if parsed is Dictionary else {}
 
 func notify_active_task_status_changed(cell_id: int) -> void:
 	if cell_id <= 0:
@@ -522,9 +626,7 @@ func _normalize_task_status(status: Dictionary, cell_id: int, module_id: String)
 	normalized["type"] = type_text
 	var icon_key := str(normalized.get("icon_key", type_text))
 	normalized["icon_key"] = icon_key if icon_key.strip_edges() != "" else "fallback"
-	normalized["label"] = str(normalized.get("label", "")).strip_edges()
-	if str(normalized["label"]) == "":
-		normalized["label"] = _status_type_to_label(type_text)
+	normalized["label"] = _localized_status_label(type_text, str(normalized.get("label", "")).strip_edges())
 	var instruction_key := str(normalized.get("instruction_key", "")).strip_edges()
 	if instruction_key == "":
 		instruction_key = _status_type_to_instruction_key(type_text)
@@ -541,9 +643,11 @@ func _normalize_task_status(status: Dictionary, cell_id: int, module_id: String)
 	if _completed_cells.has(str(cell_id)):
 		state = "complete"
 		normalized["progress"] = 1.0
-		normalized["value_text"] = "完成"
+		normalized["value_text"] = LocalizationManager.tr_key("ui.task_objective.complete", "Complete")
 	elif str(normalized["value_text"]) == "":
 		normalized["value_text"] = _default_status_value_text(type_text)
+	else:
+		normalized["value_text"] = _localized_status_value_text(str(normalized["value_text"]))
 	normalized["state"] = state
 	return normalized
 
@@ -568,17 +672,22 @@ func _task_type_to_status_label(task_type: int) -> String:
 func _status_type_to_label(status_type: String) -> String:
 	match status_type:
 		"kill":
-			return "击杀"
+			return LocalizationManager.tr_key("ui.task_type.kill", "Kill")
 		"hold":
-			return "守点"
+			return LocalizationManager.tr_key("ui.task_type.hold", "Hold")
 		"clear":
-			return "清场"
+			return LocalizationManager.tr_key("ui.task_type.clear", "Clear")
 		"hunt":
-			return "精英"
+			return LocalizationManager.tr_key("ui.task_type.hunt", "Hunt")
 		"dodge":
-			return "闪避"
+			return LocalizationManager.tr_key("ui.task_type.dodge", "Dodge")
 		_:
-			return "任务"
+			return LocalizationManager.tr_key("ui.task_type.task", "Task")
+
+func _localized_status_label(status_type: String, raw_label: String) -> String:
+	if raw_label == "占领" or raw_label == "Capture":
+		return LocalizationManager.tr_key("ui.task_type.capture", "Capture")
+	return _status_type_to_label(status_type)
 
 func _status_type_to_instruction_key(status_type: String) -> String:
 	match status_type:
@@ -624,9 +733,14 @@ func _default_status_value_text(status_type: String) -> String:
 		"hold":
 			return "0/100%"
 		"dodge":
-			return "0/1秒"
+			return "0/1%s" % LocalizationManager.tr_key("ui.task_objective.unit.second", "s")
 		_:
 			return "0/1"
+
+func _localized_status_value_text(value_text: String) -> String:
+	if value_text.ends_with("秒"):
+		return value_text.trim_suffix("秒") + LocalizationManager.tr_key("ui.task_objective.unit.second", "s")
+	return value_text
 
 func _build_prepare_result(ok: bool, errors: PackedStringArray, count: int) -> Dictionary:
 	return {

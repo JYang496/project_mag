@@ -157,7 +157,7 @@ func _refresh_labels() -> void:
 	image.texture = sprite.texture if sprite else null
 	item_name.text = "%s Lv.1" % LocalizationManager.get_module_name(preview_module)
 	item_name.set("theme_override_colors/font_color", RARITY_UTIL.get_color(preview_module.get_rarity()))
-	price_label.text = LocalizationManager.tr_format("ui.shop.module.price", {"value": price}, "价格: %s" % price)
+	price_label.text = LocalizationManager.tr_format("ui.shop.module.price", {"value": price}, "Price: %s" % price)
 	var effects := preview_module.get_effect_descriptions()
 	effect_label.text = effects[0] if effects.size() > 0 else ""
 	var fit_data: Dictionary = MODULE_FIT_FORMATTER.build_display_data(preview_module, MODULE_FIT_FORMATTER.get_current_weapon())
@@ -250,8 +250,12 @@ func _build_module_requirement_summary(module_instance: Module) -> String:
 	for value in module_instance.get_normalized_required_weapon_capabilities():
 		parts.append(str(value))
 	if parts.is_empty():
-		return LocalizationManager.tr_key("ui.shop.module.any_weapon", "任意武器")
-	return LocalizationManager.tr_format("ui.shop.module.requires", {"value": " / ".join(parts)}, "适配: {value}")
+		return LocalizationManager.tr_key("ui.shop.module.any_weapon", "Any Weapon")
+	return LocalizationManager.tr_format(
+		"ui.shop.module.requires",
+		{"value": " / ".join(parts)},
+		"Fits: %s" % " / ".join(parts)
+	)
 
 func _notify_shop_hover() -> void:
 	var ui := GlobalVariables.ui

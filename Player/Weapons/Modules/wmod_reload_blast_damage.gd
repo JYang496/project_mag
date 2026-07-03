@@ -25,8 +25,12 @@ func _exit_tree() -> void:
 
 func get_effect_descriptions() -> PackedStringArray:
 	return with_level_effect_descriptions(PackedStringArray([
-		"Reload burst damages nearby enemies",
-		"Damage scales with spent ammo",
+		LocalizationManager.get_module_detail(
+			self, "detail.1", {}, "Reload burst damages nearby enemies"
+		),
+		LocalizationManager.get_module_detail(
+			self, "detail.2", {}, "Damage scales with spent ammo"
+		),
 	]))
 
 func _register_hook() -> void:

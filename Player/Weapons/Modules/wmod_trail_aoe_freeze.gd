@@ -63,8 +63,15 @@ func on_projectile_spawned(source_weapon: Weapon, projectile: Node2D) -> void:
 
 func get_effect_descriptions() -> PackedStringArray:
 	return with_level_effect_descriptions(PackedStringArray([
-		"Projectiles leave freeze AoE trails",
-		"Trail duration %.1fs" % _get_duration(),
+		LocalizationManager.get_module_detail(
+			self, "detail.1", {}, "Projectiles leave freeze AoE trails"
+		),
+		LocalizationManager.get_module_detail(
+			self,
+			"detail.2",
+			{"duration": "%.1f" % _get_duration()},
+			"Trail duration %.1fs" % _get_duration()
+		),
 	]))
 
 func _register_plugin() -> void:

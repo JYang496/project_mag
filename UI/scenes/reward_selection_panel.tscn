@@ -50,9 +50,15 @@ horizontal_alignment = 1
 text = "Pick one reward."
 horizontal_alignment = 1
 
-[node name="Options" type="HBoxContainer" parent="Panel/VBox"]
+[node name="OptionsScroll" type="ScrollContainer" parent="Panel/VBox"]
 custom_minimum_size = Vector2(0, 178)
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Options" type="GridContainer" parent="Panel/VBox/OptionsScroll"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 3
 theme_override_constants/separation = 12
 
 [node name="DetailPanel" type="PanelContainer" parent="Panel/VBox"]

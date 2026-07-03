@@ -36,8 +36,12 @@ func _physics_process(_delta: float) -> void:
 
 func get_effect_descriptions() -> PackedStringArray:
 	return with_level_effect_descriptions(PackedStringArray([
-		"Reload grants temporary move speed",
-		"Bonus scales with spent ammo",
+		LocalizationManager.get_module_detail(
+			self, "detail.1", {}, "Reload grants temporary move speed"
+		),
+		LocalizationManager.get_module_detail(
+			self, "detail.2", {}, "Bonus scales with spent ammo"
+		),
 	]))
 
 func _register_hook() -> void:

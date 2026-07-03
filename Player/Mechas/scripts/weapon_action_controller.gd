@@ -66,9 +66,9 @@ func try_show_reload_block_hint(main_weapon: Weapon) -> void:
 	if now_msec < _reload_block_hint_ready_at_msec:
 		return
 	_reload_block_hint_ready_at_msec = now_msec + int(maxf(float(_player.reload_block_hint_interval_sec), 0.05) * 1000.0)
-	var hint_text := "正在换弹中"
+	var hint_text := "Reloading"
 	if LocalizationManager and LocalizationManager.has_method("tr_key"):
-		hint_text = LocalizationManager.tr_key("ui.hud.reloading_now", "正在换弹中")
+		hint_text = LocalizationManager.tr_key("ui.hud.reloading_now", "Reloading")
 	if _player.has_method("_spawn_keyed_player_floating_hint"):
 		_player.call("_spawn_keyed_player_floating_hint", hint_text, &"reload_blocked", _player.reload_block_hint_interval_sec)
 	if GlobalVariables.ui != null and is_instance_valid(GlobalVariables.ui) \

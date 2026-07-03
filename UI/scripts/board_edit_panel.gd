@@ -81,7 +81,9 @@ func install_effect_on_cell(effect_id: String, cell_id: int) -> void:
 		return
 	var result := CellEffectRuntime.set_pending_effect(cell_id, effect_id)
 	if not bool(result.get("ok", false)):
-		_show_message(str(result.get("reason", LocalizationManager.tr_key("ui.board_edit.install_failed", "Cannot install."))))
+		_show_message(LocalizationManager.localize_cell_management_reason(
+			str(result.get("reason", LocalizationManager.tr_key("ui.board_edit.install_failed", "Cannot install.")))
+		))
 		return
 	_selected_cell_id = cell_id
 	CellEffectRuntime.apply_to_board(_board, true)
@@ -103,7 +105,9 @@ func swap_installed_effect_between_cells(from_cell_id: int, to_cell_id: int) -> 
 		return
 	var result: Dictionary = CellEffectRuntime.swap_installed_effects(from_cell_id, to_cell_id)
 	if not bool(result.get("ok", false)):
-		_show_message(str(result.get("reason", LocalizationManager.tr_key("ui.board_edit.swap_failed", "Cannot swap."))))
+		_show_message(LocalizationManager.localize_cell_management_reason(
+			str(result.get("reason", LocalizationManager.tr_key("ui.board_edit.swap_failed", "Cannot swap.")))
+		))
 		return
 	_selected_cell_id = to_cell_id
 	CellEffectRuntime.apply_to_board(_board, true)
@@ -400,18 +404,32 @@ func _refresh_detail() -> void:
 
 func _build_effect_detail_lines(definition: CellEffectDefinition) -> PackedStringArray:
 	var lines := PackedStringArray()
-	if definition.description.strip_edges() != "":
-		lines.append(definition.description)
-	lines.append("Tier: %d    Rarity: %s" % [int(definition.tier), str(definition.rarity)])
+	var description := definition.get_description()
+	if description != "":
+		lines.append(description)
+	lines.append(LocalizationManager.tr_format(
+		"ui.board_edit.effect_meta",
+		{"tier": int(definition.tier), "rarity": LocalizationManager.get_rarity_name(definition.rarity)},
+		"Tier: %d    Rarity: %s" % [int(definition.tier), LocalizationManager.get_rarity_name(definition.rarity)]
+	))
 	var params := PackedStringArray()
 	for key in definition.get_aura_parameters().keys():
 		var value: Variant = definition.get_aura_parameters()[key]
+		var parameter_id := str(key).trim_prefix("aura_")
+		var parameter_name := LocalizationManager.tr_key(
+			"ui.board_edit.parameter.%s" % parameter_id,
+			parameter_id.replace("_", " ").capitalize()
+		)
 		if value is float and not is_equal_approx(float(value), 0.0) and not is_equal_approx(float(value), 1.0):
-			params.append("%s: %.2f" % [str(key).replace("aura_", "").replace("_", " "), float(value)])
+			params.append("%s: %.2f" % [parameter_name, float(value)])
 		elif value is int and int(value) != 0 and int(value) != 1:
-			params.append("%s: %d" % [str(key).replace("aura_", "").replace("_", " "), int(value)])
+			params.append("%s: %d" % [parameter_name, int(value)])
 	if not params.is_empty():
-		lines.append("Parameters: %s" % ", ".join(params))
+		lines.append(LocalizationManager.tr_format(
+			"ui.board_edit.parameters",
+			{"parameters": ", ".join(params)},
+			"Parameters: %s" % ", ".join(params)
+		))
 	return lines
 
 func _build_cell_button_text(cell_id: int, disabled: bool) -> String:

@@ -192,11 +192,11 @@ func refresh_texts() -> void:
 		owner_ui.shop_instruction_label.text = ""
 		owner_ui.shop_instruction_label.visible = false
 	if shop_weapon_mode_button:
-		shop_weapon_mode_button.text = LocalizationManager.tr_key("ui.purchase.weapons", "购买武器")
+		shop_weapon_mode_button.text = LocalizationManager.tr_key("ui.purchase.weapons", "Buy Weapons")
 	if shop_module_mode_button:
-		shop_module_mode_button.text = LocalizationManager.tr_key("ui.purchase.modules", "购买模组")
+		shop_module_mode_button.text = LocalizationManager.tr_key("ui.purchase.modules", "Buy Modules")
 	if shop_purchase_button:
-		shop_purchase_button.text = LocalizationManager.tr_key("ui.shop.buy", "购买")
+		shop_purchase_button.text = LocalizationManager.tr_key("ui.shop.buy", "Buy")
 	if shop_refresh_button:
 		if shop_refresh_button.has_method("refresh_button_label"):
 			shop_refresh_button.call("refresh_button_label")
@@ -206,18 +206,18 @@ func refresh_texts() -> void:
 	if merchant_subtitle:
 		merchant_subtitle.text = LocalizationManager.tr_key(
 			"ui.merchant.purchase.subtitle",
-			"选择购买类别"
+			"Choose purchase category"
 		)
 	var merchant_title := owner_ui.purchase_primary_panel.get_node_or_null("Title") as Label
 	if merchant_title:
-		merchant_title.text = LocalizationManager.tr_key("ui.merchant.purchase.title", "购买")
+		merchant_title.text = LocalizationManager.tr_key("ui.merchant.purchase.title", "Purchase")
 	var buy_button := owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyButton") as Button
 	if buy_button:
-		buy_button.text = LocalizationManager.tr_key("ui.purchase.weapons", "购买武器")
+		buy_button.text = LocalizationManager.tr_key("ui.purchase.weapons", "Buy Weapons")
 	var buy_module_button := owner_ui.purchase_primary_panel.get_node_or_null("OpenBuyModuleButton") as Button
 	if buy_module_button:
 		buy_module_button.visible = true
-		buy_module_button.text = LocalizationManager.tr_key("ui.purchase.modules", "购买模组")
+		buy_module_button.text = LocalizationManager.tr_key("ui.purchase.modules", "Buy Modules")
 
 	sync_primary_menu_style()
 

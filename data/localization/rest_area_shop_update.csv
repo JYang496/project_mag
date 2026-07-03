@@ -13,8 +13,11 @@ ui.shop.buy.item,Buy,购买
 ui.shop.select_first,Select an item first.,请先选择商品。
 ui.shop.not_enough_gold,Not enough gold.,金币不足。
 ui.shop.no_valid_modules,No modules available,当前没有可购买模组
+ui.shop.weapon.price,Price: {value},价格：{value}
 ui.shop.module.price,Price: {value},价格：{value}
 ui.shop.module.buy_hint,Buy module,购买模组
+ui.shop.module.any_weapon,Any Weapon,任意武器
+ui.shop.module.requires,Fits: {value},适配：{value}
 ui.upgrade.combined_instruction,"Select a weapon or module, review the cost, then upgrade.","选择武器或模组，确认花费后升级。"
 ui.upgrade.weapons,Upgrade Weapons,升级武器
 ui.upgrade.modules,Upgrade Modules,升级模组
@@ -28,6 +31,24 @@ ui.upgrade.module.action,Upgrade Module: {value},升级模组：{value}
 ui.upgrade.module.action_empty,Upgrade Module,升级模组
 ui.upgrade.module.selected,{module} Lv.{level},{module} Lv.{level}
 ui.upgrade.module.select_prompt,Select a module to upgrade.,选择要升级的模组。
+ui.service.detail.weapon_type,Weapon Type,武器类型
+ui.service.detail.install_targets,Compatible Weapons,可安装武器类型
+ui.service.detail.purchase_price,Purchase Price,购买价格
+ui.service.detail.upgrade_price,Upgrade Price,升级价格
+ui.service.detail.current_level,Current Level,当前等级
+ui.service.detail.location,Location,位置
+ui.service.detail.current_stats,Current Stats,当前属性
+ui.service.detail.levels_and_costs,Level Stats / Upgrade Cost,等级参数 / 升级价格
+ui.service.detail.branches,Branches,分支选择
+ui.service.detail.upgrade_row,"Lv.{level}  Upgrade: {price}\n{effects}","Lv.{level}  升级：{price}\n{effects}"
+ui.service.value.unknown,Unknown,未知
+ui.service.value.universal,Universal,通用
+ui.service.value.any_weapon,Any Weapon,任意武器
+ui.service.location.equipped_slot,Equipped {slot},已装备 {slot}
+ui.service.location.storage,Storage,仓库
+ui.service.location.temporary_storage,Temporary Storage,临时仓库
+ui.service.location.equipped_weapon,Equipped: {weapon},已装备：{weapon}
+ui.service.location.stored_weapon,Stored Weapon: {weapon},仓库武器：{weapon}
 ui.merchant.subtitle,Buy weapons and modules,购买武器与模组
 ui.smith.subtitle,Upgrade owned weapons and modules,升级已拥有的武器与模组
 ui.smith.upgrade.title,Upgrade,升级

@@ -56,7 +56,11 @@ static func sanitize_weight(weight: float, _rarity: String) -> float:
 	return weight
 
 static func get_display_name(rarity: String) -> String:
-	return str(DISPLAY_NAME_BY_RARITY.get(normalize(rarity), DISPLAY_NAME_BY_RARITY[COMMON]))
+	var normalized := normalize(rarity)
+	var fallback := str(DISPLAY_NAME_BY_RARITY.get(normalized, DISPLAY_NAME_BY_RARITY[COMMON]))
+	var key := "ui.rarity.%s" % normalized
+	var translated := str(TranslationServer.translate(key))
+	return fallback if translated == key else translated
 
 static func get_color(rarity: String) -> Color:
 	return COLOR_BY_RARITY.get(normalize(rarity), COLOR_BY_RARITY[COMMON])

@@ -10,6 +10,7 @@ battle_drop_weapon_chance = 1.0
 battle_drop_module_chance = 0.2
 reward_module_options_enabled = true
 reward_weapon_option_chance = 0.6
+task_reward_secondary_task_module_chance = 0.5
 early_standard_draft_count = 3
 early_weapon_progress_slot_enabled = true
 early_module_option_chances = PackedFloat32Array(0, 0.2, -1)

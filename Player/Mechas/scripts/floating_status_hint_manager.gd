@@ -103,9 +103,13 @@ func _emit_status_hint(status_owner: StringName, stat_type: StringName, source_i
 		return
 	_status_hint_ready_at_msec[hint_key] = now_msec + throttle_msec
 	var prefix_key := "ui.status_hint.gain_prefix" if is_gain else "ui.status_hint.loss_prefix"
-	var prefix_fallback := "获得" if is_gain else "失去"
+	var prefix_fallback := "Gained" if is_gain else "Lost"
 	var prefix := LocalizationManager.tr_key(prefix_key, prefix_fallback)
-	enqueue_raw_hint("%s：%s" % [prefix, status_label])
+	enqueue_raw_hint(LocalizationManager.tr_format(
+		"ui.status_hint.message",
+		{"prefix": prefix, "status": status_label},
+		"%s: %s" % [prefix, status_label]
+	))
 
 func _try_play_next_status_hint() -> void:
 	if _is_status_hint_playing:
@@ -228,30 +232,19 @@ func _status_type_from_family_state(family: StringName, state: int) -> StringNam
 			return StringName()
 
 func _resolve_status_hint_label(stat_type: StringName) -> String:
-	match stat_type:
-		&"move_speed_up":
-			return LocalizationManager.tr_key("ui.status_hint.move_speed_up", "移速提升")
-		&"move_speed_down":
-			return LocalizationManager.tr_key("ui.status_hint.move_speed_down", "移速降低")
-		&"vision_up":
-			return LocalizationManager.tr_key("ui.status_hint.vision_up", "视野提升")
-		&"vision_down":
-			return LocalizationManager.tr_key("ui.status_hint.vision_down", "视野降低")
-		&"damage_up":
-			return LocalizationManager.tr_key("ui.status_hint.damage_up", "伤害提升")
-		&"damage_down":
-			return LocalizationManager.tr_key("ui.status_hint.damage_down", "伤害降低")
-		&"attack_speed_up":
-			return LocalizationManager.tr_key("ui.status_hint.attack_speed_up", "攻速提升")
-		&"attack_speed_down":
-			return LocalizationManager.tr_key("ui.status_hint.attack_speed_down", "攻速降低")
-		&"spread_down":
-			return LocalizationManager.tr_key("ui.status_hint.spread_down", "扩散减小")
-		&"spread_up":
-			return LocalizationManager.tr_key("ui.status_hint.spread_up", "扩散增大")
-		&"weapon_damage_up":
-			return LocalizationManager.tr_key("ui.status_hint.weapon_damage_up", "武器伤害提升")
-		&"weapon_damage_down":
-			return LocalizationManager.tr_key("ui.status_hint.weapon_damage_down", "武器伤害降低")
-		_:
-			return ""
+	var fallbacks := {
+		&"move_speed_up": "Movement Speed Up",
+		&"move_speed_down": "Movement Speed Down",
+		&"vision_up": "Vision Up",
+		&"vision_down": "Vision Down",
+		&"damage_up": "Damage Up",
+		&"damage_down": "Damage Down",
+		&"attack_speed_up": "Attack Speed Up",
+		&"attack_speed_down": "Attack Speed Down",
+		&"spread_down": "Spread Reduced",
+		&"spread_up": "Spread Increased",
+		&"weapon_damage_up": "Weapon Damage Up",
+		&"weapon_damage_down": "Weapon Damage Down",
+	}
+	var fallback := str(fallbacks.get(stat_type, ""))
+	return LocalizationManager.tr_key("ui.status_hint.%s" % stat_type, fallback) if fallback != "" else ""

@@ -242,20 +242,20 @@ func refresh_texts() -> void:
 		upgrade_instruction_label.text = ""
 		upgrade_instruction_label.visible = false
 	if upgrade_weapon_mode_button:
-		upgrade_weapon_mode_button.text = LocalizationManager.tr_key("ui.upgrade.weapons", "升级武器")
+		upgrade_weapon_mode_button.text = LocalizationManager.tr_key("ui.upgrade.weapons", "Upgrade Weapons")
 	if upgrade_module_mode_button:
-		upgrade_module_mode_button.text = LocalizationManager.tr_key("ui.upgrade.modules", "升级模组")
+		upgrade_module_mode_button.text = LocalizationManager.tr_key("ui.upgrade.modules", "Upgrade Modules")
 	var upgrade_title := owner_ui.upgrade_primary_panel.get_node_or_null("Title") as Label
 	if upgrade_title:
-		upgrade_title.text = LocalizationManager.tr_key("ui.smith.upgrade.title", "升级")
+		upgrade_title.text = LocalizationManager.tr_key("ui.smith.upgrade.title", "Upgrade")
 	var upgrade_subtitle := owner_ui.upgrade_primary_panel.get_node_or_null("SubTitle") as Label
 	if upgrade_subtitle:
-		upgrade_subtitle.text = LocalizationManager.tr_key("ui.smith.upgrade.subtitle", "选择升级类别")
+		upgrade_subtitle.text = LocalizationManager.tr_key("ui.smith.upgrade.subtitle", "Choose upgrade category")
 	var upgrade_open := owner_ui.upgrade_primary_panel.get_node_or_null("OpenUpgradeButton") as Button
 	if upgrade_open:
-		upgrade_open.text = LocalizationManager.tr_key("ui.smith.upgrade.weapon", "武器")
+		upgrade_open.text = LocalizationManager.tr_key("ui.smith.upgrade.weapon", "Weapon")
 	if owner_ui.upgrade_module_button:
-		owner_ui.upgrade_module_button.text = LocalizationManager.tr_key("ui.smith.upgrade.module", "模组")
+		owner_ui.upgrade_module_button.text = LocalizationManager.tr_key("ui.smith.upgrade.module", "Module")
 	sync_primary_menu_style()
 	refresh_action()
 
@@ -312,4 +312,3 @@ func _sync_public_fields_to_owner() -> void:
 	owner_ui._upgrade_hover_item = hover_item
 	owner_ui._upgrade_selected_item = selected_item
 	owner_ui.selected_upgrade_module = selected_module
-

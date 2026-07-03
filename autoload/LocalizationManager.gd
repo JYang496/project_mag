@@ -131,6 +131,33 @@ func get_module_name(module_instance: Module) -> String:
 		return fallback
 	return tr_key("module.%s.name" % module_id, fallback)
 
+func get_module_effect_description(
+	module_instance: Module,
+	level: int,
+	fallback: String = ""
+) -> String:
+	var module_id := get_module_id_from_instance(module_instance)
+	if module_id == "":
+		return fallback
+	return tr_key("module.%s.effect.%d" % [module_id, clampi(level, 1, Module.MAX_LEVEL)], fallback)
+
+func get_module_detail(
+	module_instance: Module,
+	detail_id: String,
+	params: Dictionary = {},
+	fallback: String = ""
+) -> String:
+	var module_id := get_module_id_from_instance(module_instance)
+	if module_id == "":
+		return fallback
+	return tr_format("module.%s.%s" % [module_id, detail_id], params, fallback)
+
+func get_module_term(term: StringName, fallback: String = "") -> String:
+	var normalized := str(term).strip_edges().to_lower()
+	if normalized == "":
+		return fallback
+	return tr_key("ui.module.term.%s" % normalized, fallback)
+
 func get_route_display_name(route_def: RunRouteDefinition) -> String:
 	if route_def == null:
 		return ""
@@ -161,14 +188,69 @@ func localize_module_reason(reason: String) -> String:
 		"Not compatible with melee weapons.": "ui.module.reason.not_melee",
 		"Not compatible with ranged weapons.": "ui.module.reason.not_ranged",
 		"Weapon does not match required traits.": "ui.module.reason.trait_required",
+		"Requires an ammo-based weapon.": "ui.module.reason.ammo_required",
+		"Requires a weapon with shared multi-projectile firing.": "ui.module.reason.multi_projectile_required",
 	}
 	if exact_map.has(normalized):
 		return tr_key(str(exact_map[normalized]), normalized)
-	var prefix := "Requires one of: "
-	if normalized.begins_with(prefix):
-		var tail := normalized.trim_prefix(prefix)
-		return tr_format("ui.module.reason.requires_one_of", {"traits": tail}, normalized)
+	var dynamic_prefixes := {
+		"Requires one of: ": "ui.module.reason.requires_one_of",
+		"Requires delivery type: ": "ui.module.reason.requires_delivery",
+		"Requires one of capabilities: ": "ui.module.reason.requires_capability",
+		"Requires weapon property: ": "ui.module.reason.requires_property",
+	}
+	for prefix_variant in dynamic_prefixes.keys():
+		var prefix := str(prefix_variant)
+		if normalized.begins_with(prefix):
+			var localized_terms := PackedStringArray()
+			for raw_term in normalized.trim_prefix(prefix).split(",", false):
+				var term := raw_term.strip_edges()
+				localized_terms.append(get_module_term(StringName(term), term))
+			return tr_format(
+				str(dynamic_prefixes[prefix_variant]),
+				{"requirements": ", ".join(localized_terms)},
+				normalized
+			)
 	return normalized
+
+func localize_cell_management_reason(reason: String) -> String:
+	var normalized := reason.strip_edges()
+	var exact_map := {
+		"Missing cell effect.": "ui.management.reason.missing_cell_effect",
+		"Not enough available cell effects.": "ui.management.reason.not_enough_cell_effects",
+		"Invalid cell.": "ui.management.reason.invalid_cell",
+		"No available copies.": "ui.management.reason.no_available_copies",
+		"Same cell.": "ui.management.reason.same_cell",
+		"Finish or cancel pending edits on these cells first.": "ui.management.reason.pending_edits",
+		"Source cell has no installed effect.": "ui.management.reason.source_empty",
+		"Source effect is missing.": "ui.management.reason.source_effect_missing",
+		"This effect cannot be swapped.": "ui.management.reason.effect_not_swappable",
+		"Target effect is missing.": "ui.management.reason.target_effect_missing",
+		"Target effect cannot be swapped.": "ui.management.reason.target_not_swappable",
+		"Missing task module.": "ui.management.reason.missing_task_module",
+		"Invalid task module slot.": "ui.management.reason.invalid_task_slot",
+		"Task modules can only be deployed during prepare.": "ui.management.reason.prepare_only",
+		"Cell already has a deployed task.": "ui.management.reason.cell_has_task",
+		"Maximum deployed tasks reached.": "ui.management.reason.task_limit",
+		"Task modules can only target active cells.": "ui.management.reason.active_cells_only",
+		"No deployed task on this cell.": "ui.management.reason.no_deployed_task",
+		"Deployed task modules cannot be removed.": "ui.management.reason.cannot_remove_deployed",
+		"Drop this task module on an active cell.": "ui.management.reason.drop_on_active_cell",
+	}
+	if exact_map.has(normalized):
+		return tr_key(str(exact_map[normalized]), normalized)
+	if normalized.begins_with("Not enough ") and normalized.ends_with(" cell effects."):
+		var rarity := normalized.trim_prefix("Not enough ").trim_suffix(" cell effects.")
+		return tr_format(
+			"ui.management.reason.not_enough_rarity",
+			{"rarity": get_rarity_name(rarity)},
+			normalized
+		)
+	return normalized
+
+func get_rarity_name(rarity: String) -> String:
+	var normalized := rarity.strip_edges().to_lower()
+	return tr_key("ui.rarity.%s" % normalized, rarity.capitalize())
 
 func _normalize_locale(locale: String) -> String:
 	var normalized := locale.strip_edges()

@@ -228,7 +228,8 @@ func get_level_effect_description(level: int = module_level) -> String:
 	var index := clampi(level, 1, MAX_LEVEL) - 1
 	if index >= level_effects.size():
 		return ""
-	return str(level_effects[index]).strip_edges()
+	var fallback := str(level_effects[index]).strip_edges()
+	return LocalizationManager.get_module_effect_description(self, level, fallback)
 
 func with_level_effect_descriptions(descriptions: PackedStringArray) -> PackedStringArray:
 	var output := PackedStringArray()
@@ -241,18 +242,30 @@ func with_level_effect_descriptions(descriptions: PackedStringArray) -> PackedSt
 
 func _format_stat_label(stat_key: String) -> String:
 	var pretty := stat_key.replace("_", " ")
-	return pretty.capitalize()
+	return LocalizationManager.get_module_term(StringName("stat.%s" % stat_key), pretty.capitalize())
 
 func _append_build_readability_descriptions(descriptions: PackedStringArray) -> void:
 	var tag_labels := _format_build_tags()
 	if not tag_labels.is_empty():
-		descriptions.append("Build Tags: %s" % " / ".join(tag_labels))
+		descriptions.append(LocalizationManager.tr_format(
+			"ui.module.build_tags",
+			{"tags": " / ".join(tag_labels)},
+			"Build Tags: %s" % " / ".join(tag_labels)
+		))
 	var fit_labels := _format_install_targets()
 	if not fit_labels.is_empty():
-		descriptions.append("Best On: %s" % " / ".join(fit_labels))
+		descriptions.append(LocalizationManager.tr_format(
+			"ui.module.best_on",
+			{"targets": " / ".join(fit_labels)},
+			"Best On: %s" % " / ".join(fit_labels)
+		))
 	var hook_labels := _format_required_hooks()
 	if not hook_labels.is_empty():
-		descriptions.append("Triggers: %s" % " / ".join(hook_labels))
+		descriptions.append(LocalizationManager.tr_format(
+			"ui.module.triggers",
+			{"hooks": " / ".join(hook_labels)},
+			"Triggers: %s" % " / ".join(hook_labels)
+		))
 
 func _format_build_tags() -> PackedStringArray:
 	var labels := PackedStringArray()
@@ -272,7 +285,7 @@ func _format_build_tags() -> PackedStringArray:
 	has_generic_buff_text = has_generic_buff_text or not stat_multipliers.is_empty()
 	has_generic_buff_text = has_generic_buff_text or not stat_additives.is_empty()
 	if labels.is_empty() and has_generic_buff_text:
-		labels.append("Buff")
+		labels.append(LocalizationManager.get_module_term(&"buff", "Buff"))
 	return labels
 
 func _format_install_targets() -> PackedStringArray:
@@ -304,91 +317,93 @@ func _format_hook_tag(hook: StringName) -> String:
 			or hook == ModuleHook.DAMAGE_DEALT \
 			or hook == ModuleHook.AREA_DAMAGE \
 			or hook == ModuleHook.BEAM_HIT:
-		return "On Hit"
+		return LocalizationManager.get_module_term(&"on_hit", "On Hit")
 	if hook == ModuleHook.RELOAD_START or hook == ModuleHook.RELOAD_DURATION:
-		return "Reload"
+		return LocalizationManager.get_module_term(&"reload", "Reload")
 	if hook == ModuleHook.KILL:
-		return "Execute"
+		return LocalizationManager.get_module_term(&"execute", "Execute")
 	return ""
 
 func _format_hook_label(hook: StringName) -> String:
 	match hook:
 		ModuleHook.PROJECTILE_SPAWN:
-			return "Projectile spawn"
+			return LocalizationManager.get_module_term(&"hook.projectile_spawn", "Projectile spawn")
 		ModuleHook.HIT:
-			return "Weapon hit"
+			return LocalizationManager.get_module_term(&"hook.hit", "Weapon hit")
 		ModuleHook.DAMAGE_DEALT:
-			return "Damage dealt"
+			return LocalizationManager.get_module_term(&"hook.damage_dealt", "Damage dealt")
 		ModuleHook.AREA_DAMAGE:
-			return "Area damage"
+			return LocalizationManager.get_module_term(&"hook.area_damage", "Area damage")
 		ModuleHook.BEAM_HIT:
-			return "Beam hit"
+			return LocalizationManager.get_module_term(&"hook.beam_hit", "Beam hit")
 		ModuleHook.RELOAD_START:
-			return "Reload start"
+			return LocalizationManager.get_module_term(&"hook.reload_start", "Reload start")
 		ModuleHook.RELOAD_DURATION:
-			return "Reload duration"
+			return LocalizationManager.get_module_term(&"hook.reload_duration", "Reload duration")
 		ModuleHook.KILL:
-			return "Kill"
+			return LocalizationManager.get_module_term(&"hook.kill", "Kill")
 		_:
 			return _format_taxonomy_label(hook)
 
 func _format_taxonomy_label(value: StringName) -> String:
 	var key := StringName(str(value))
+	var fallback := ""
 	match key:
 		"heat":
-			return "Heat"
+			fallback = "Heat"
 		"mark":
-			return "Mark"
+			fallback = "Mark"
 		"freeze":
-			return "Freeze"
+			fallback = "Freeze"
 		"reload":
-			return "Reload"
+			fallback = "Reload"
 		"close":
-			return "Close"
+			fallback = "Close"
 		"area":
-			return "Area"
+			fallback = "Area"
 		"beam":
-			return "Beam"
+			fallback = "Beam"
 		"projectile":
-			return "Projectile"
+			fallback = "Projectile"
 		"melee_contact":
-			return "Melee"
+			fallback = "Melee"
 		"on_hit":
-			return "On Hit"
+			fallback = "On Hit"
 		"execute":
-			return "Execute"
+			fallback = "Execute"
 		"defense":
-			return "Defense"
+			fallback = "Defense"
 		"economy":
-			return "Economy"
+			fallback = "Economy"
 		"physical":
-			return "Physical"
+			fallback = "Physical"
 		"energy":
-			return "Energy"
+			fallback = "Energy"
 		"fire":
-			return "Fire"
+			fallback = "Fire"
 		"charge":
-			return "Charge"
+			fallback = "Charge"
 		"summon":
-			return "Summon"
+			fallback = "Summon"
 		"trap":
-			return "Trap"
+			fallback = "Trap"
 		"support":
-			return "Support"
+			fallback = "Support"
 		"movement":
-			return "Movement"
+			fallback = "Movement"
 		"buff":
-			return "Buff"
+			fallback = "Buff"
 		"debuff":
-			return "Debuff"
+			fallback = "Debuff"
 		"dot":
-			return "DoT"
+			fallback = "DoT"
 		"duration":
-			return "Duration"
+			fallback = "Duration"
 		"stacking":
-			return "Stacking"
+			fallback = "Stacking"
 		"trigger":
-			return "Trigger"
+			fallback = "Trigger"
 		_:
 			var pretty := str(value).replace("_", " ")
-			return pretty.capitalize()
+			fallback = pretty.capitalize()
+	return LocalizationManager.get_module_term(key, fallback)

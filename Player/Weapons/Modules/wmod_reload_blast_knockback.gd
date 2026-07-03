@@ -24,8 +24,12 @@ func _exit_tree() -> void:
 
 func get_effect_descriptions() -> PackedStringArray:
 	return with_level_effect_descriptions(PackedStringArray([
-		"Reload shockwave knocks back nearby enemies",
-		"Knockback scales with spent ammo",
+		LocalizationManager.get_module_detail(
+			self, "detail.1", {}, "Reload shockwave knocks back nearby enemies"
+		),
+		LocalizationManager.get_module_detail(
+			self, "detail.2", {}, "Knockback scales with spent ammo"
+		),
 	]))
 
 func _register_hook() -> void:

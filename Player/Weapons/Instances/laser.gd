@@ -11,15 +11,15 @@ var ITEM_NAME = "Laser"
 const PASSIVE_ID: StringName = &"laser_focus_channel_triggered"
 
 var weapon_data = {
-	"1": {"damage": "13", "fire_interval_sec": "2", "ammo": "5"},
-	"2": {"damage": "13", "fire_interval_sec": "1.7", "ammo": "6"},
-	"3": {"damage": "13", "fire_interval_sec": "1.5", "ammo": "7"},
-	"4": {"damage": "26", "fire_interval_sec": "1.4", "ammo": "7"},
-	"5": {"damage": "26", "fire_interval_sec": "1.3", "ammo": "8"},
-	"6": {"damage": "26", "fire_interval_sec": "1.2", "ammo": "9"},
-	"7": {"damage": "39", "fire_interval_sec": "1.0", "ammo": "10"},
-	"8": {"damage": "39", "fire_interval_sec": "0.9", "ammo": "13"},
-	"9": {"damage": "39", "fire_interval_sec": "0.85", "ammo": "16"}
+	"1": {"damage": "3", "fire_interval_sec": "2", "ammo": "5"},
+	"2": {"damage": "3", "fire_interval_sec": "1.7", "ammo": "6"},
+	"3": {"damage": "3", "fire_interval_sec": "1.5", "ammo": "7"},
+	"4": {"damage": "4", "fire_interval_sec": "1.4", "ammo": "7"},
+	"5": {"damage": "4", "fire_interval_sec": "1.3", "ammo": "8"},
+	"6": {"damage": "4", "fire_interval_sec": "1.2", "ammo": "9"},
+	"7": {"damage": "6", "fire_interval_sec": "1.0", "ammo": "10"},
+	"8": {"damage": "6", "fire_interval_sec": "0.9", "ammo": "11"},
+	"9": {"damage": "6", "fire_interval_sec": "0.85", "ammo": "12"}
 }
 
 

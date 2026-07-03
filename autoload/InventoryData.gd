@@ -98,12 +98,17 @@ func obtain_weapon_reward(weapon: Weapon, on_pending_complete: Callable = Callab
 		var stored_result := _merge_stored_weapon_duplicate(stored_match)
 		weapon.queue_free()
 		return stored_result
+	if PlayerData.player and is_instance_valid(PlayerData.player) and has_open_weapon_slot():
+		return equip_incoming_weapon_to_slot(weapon)
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
 		var opened := bool(ui.call("request_weapon_replacement", weapon, false, on_pending_complete))
 		if opened:
 			return {"ok": true, "result": "selection_pending", "weapon": weapon}
 	return store_weapon(weapon)
+
+func has_open_weapon_slot() -> bool:
+	return PlayerData.player_weapon_list.size() < PlayerData.max_weapon_num
 
 func settle_unclaimed_weapon_reward(weapon: Weapon) -> Dictionary:
 	if weapon == null or not is_instance_valid(weapon):

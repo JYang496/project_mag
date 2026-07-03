@@ -121,7 +121,7 @@ func new_item() -> void:
 	var base_price := int(weapon_def.price)
 	var final_price := int(round(float(base_price) * _get_purchase_price_multiplier()))
 	price = max(1, final_price)
-	price_label.text = LocalizationManager.tr_format("ui.shop.weapon.price", {"value": price}, "价格: %s" % price)
+	price_label.text = LocalizationManager.tr_format("ui.shop.weapon.price", {"value": price}, "Price: %s" % price)
 	refresh_affordability()
 	
 
