@@ -820,7 +820,8 @@ func request_reward_selection(
 	reward_options: Array[RewardInfo],
 	on_confirm: Callable = Callable(),
 	on_cancel: Callable = Callable(),
-	allow_cancel: bool = true
+	allow_cancel: bool = true,
+	show_draft_hint: bool = false
 ) -> bool:
 	if is_branch_selection_blocking_interactions():
 		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
@@ -828,7 +829,18 @@ func request_reward_selection(
 	_init_reward_selection_panel()
 	if reward_selection_panel == null or not is_instance_valid(reward_selection_panel):
 		return false
-	return reward_selection_panel.open_for_rewards(route_display_name, reward_options, on_confirm, on_cancel, allow_cancel)
+	return reward_selection_panel.open_for_rewards(
+		route_display_name,
+		reward_options,
+		on_confirm,
+		on_cancel,
+		allow_cancel,
+		"",
+		"",
+		0,
+		0,
+		show_draft_hint
+	)
 
 func request_task_reward_selection(
 	reward_options: Array[RewardInfo],

@@ -32,6 +32,7 @@ var _progress_index_cache: int = 0
 var _progress_total_cache: int = 0
 var _detail_chip_row: HBoxContainer
 var _summary_mode := false
+var _show_draft_hint_cache := false
 var _pinned_index := 0
 var _hover_index := -1
 var _focus_index := -1
@@ -64,7 +65,8 @@ func open_for_rewards(
 	title_override: String = "",
 	subtitle_override: String = "",
 	progress_index: int = 0,
-	progress_total: int = 0
+	progress_total: int = 0,
+	show_draft_hint: bool = false
 ) -> bool:
 	if visible:
 		return false
@@ -78,7 +80,8 @@ func open_for_rewards(
 		title_override,
 		subtitle_override,
 		progress_index,
-		progress_total
+		progress_total,
+		show_draft_hint
 	)
 
 func open_for_summary(
@@ -101,7 +104,8 @@ func _open_rewards(
 	title_override: String,
 	subtitle_override: String,
 	progress_index: int = 0,
-	progress_total: int = 0
+	progress_total: int = 0,
+	show_draft_hint: bool = false
 ) -> bool:
 	if reward_options.is_empty():
 		return false
@@ -115,6 +119,7 @@ func _open_rewards(
 	_subtitle_override_cache = subtitle_override
 	_progress_index_cache = progress_index
 	_progress_total_cache = progress_total
+	_show_draft_hint_cache = show_draft_hint
 	_selected_index = -1
 	_pinned_index = 0
 	_hover_index = -1
@@ -124,7 +129,7 @@ func _open_rewards(
 		"ui.task_reward.summary_title" if _summary_mode else "ui.reward.title",
 		"Objective Rewards" if _summary_mode else "Choose Reward"
 	)
-	subtitle_label.text = _build_subtitle_text(route_display_name, subtitle_override, progress_index, progress_total)
+	subtitle_label.text = _build_subtitle_text(route_display_name, subtitle_override, progress_index, progress_total, show_draft_hint)
 	confirm_button.text = LocalizationManager.tr_key(
 		"ui.task_reward.summary_confirm" if _summary_mode else "ui.reward.confirm",
 		"Continue" if _summary_mode else "Confirm Reward"
@@ -165,13 +170,21 @@ func _build_subtitle_text(
 	route_display_name: String,
 	subtitle_override: String,
 	progress_index: int,
-	progress_total: int
+	progress_total: int,
+	show_draft_hint: bool
 ) -> String:
 	var subtitle := subtitle_override if subtitle_override != "" else LocalizationManager.tr_format(
 		"ui.task_reward.summary_subtitle" if _summary_mode else "ui.reward.subtitle",
 		{} if _summary_mode else {"route": route_display_name},
 		"Rewards added to inventory." if _summary_mode else "%s - pick one reward." % route_display_name
 	)
+	if show_draft_hint and not _summary_mode:
+		var hint := LocalizationManager.tr_key(
+			"ui.reward.draft.weapon_evolution_hint",
+			"Newly obtained weapons trigger the current weapon's evolution effects."
+		)
+		if hint.strip_edges() != "":
+			subtitle = "%s\n%s" % [subtitle, hint]
 	if progress_index <= 0 or progress_total <= 0:
 		return subtitle
 	var progress_text := LocalizationManager.tr_format(
@@ -196,6 +209,7 @@ func close_panel() -> void:
 	_subtitle_override_cache = ""
 	_progress_index_cache = 0
 	_progress_total_cache = 0
+	_show_draft_hint_cache = false
 	_update_detail_panel({})
 
 func is_modal_open() -> bool:
@@ -865,6 +879,7 @@ func _on_language_changed(_locale: String) -> void:
 	var subtitle_override := _subtitle_override_cache
 	var progress_index := _progress_index_cache
 	var progress_total := _progress_total_cache
+	var show_draft_hint := _show_draft_hint_cache
 	visible = false
 	if summary_mode:
 		open_for_summary(rewards, on_confirm, title_override, subtitle_override)
@@ -878,5 +893,6 @@ func _on_language_changed(_locale: String) -> void:
 			title_override,
 			subtitle_override,
 			progress_index,
-			progress_total
+			progress_total,
+			show_draft_hint
 		)

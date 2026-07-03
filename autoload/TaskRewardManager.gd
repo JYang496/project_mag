@@ -8,6 +8,7 @@ const NORMAL_ROUTE_PATH := "res://data/routes/normal_route.tres"
 const ENTRY_PENDING := "pending"
 const ENTRY_GRANTED := "granted"
 const ENTRY_WAITING := "waiting"
+const BATTLE_END_REWARD_DELAY_SEC := 1.5
 
 var _pending_level: int = -1
 var _pending_reward_entries: Array[Dictionary] = []
@@ -141,7 +142,7 @@ func _on_phase_changed(new_phase: String) -> void:
 	if _reward_unlocked and _pending_level == int(PhaseManager.current_level) - 1:
 		_write_rollback_snapshot()
 		_save_state()
-		call_deferred("_try_open_pending_reward")
+		call_deferred("_try_open_pending_reward_after_battle_outro")
 		return
 	_save_state()
 	_clear_pending_reward(true)
@@ -183,6 +184,10 @@ func _try_open_pending_reward() -> void:
 	))
 	if not _reward_panel_open:
 		_retry_open_later()
+
+func _try_open_pending_reward_after_battle_outro() -> void:
+	await get_tree().create_timer(BATTLE_END_REWARD_DELAY_SEC).timeout
+	_try_open_pending_reward()
 
 func _retry_open_later() -> void:
 	await get_tree().create_timer(0.2).timeout

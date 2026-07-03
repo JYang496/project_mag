@@ -8,6 +8,7 @@ const REWARD_TYPE_WEAPON_UPGRADE := "weapon_upgrade"
 const REWARD_TYPE_MODULE := "module"
 const REWARD_TYPE_ECONOMY := "economy"
 const MAX_REWARD_ROLL_ATTEMPTS: int = 64
+const BATTLE_END_REWARD_DELAY_SEC := 1.5
 const DROP_SCENE := preload("res://Objects/loots/drop.tscn")
 const DROP_ITEM_SCENE := preload("res://Objects/loots/drop_item.tscn")
 
@@ -38,6 +39,7 @@ func _on_phase_changed(new_phase: String) -> void:
 func _request_completed_battle_standard_draft() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
+	await get_tree().create_timer(BATTLE_END_REWARD_DELAY_SEC).timeout
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
 	if TaskRewardManager.is_reward_blocking_interactions():
@@ -125,7 +127,8 @@ func _request_standard_battle_reward_selection(level_index: int, route_def: RunR
 		reward_options,
 		Callable(self, "_on_standard_battle_reward_selected"),
 		Callable(),
-		false
+		false,
+		true
 	))
 	if opened:
 		RewardDraftRuntime.record_standard_draft_consumed()
