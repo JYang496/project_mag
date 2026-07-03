@@ -1,34 +1,34 @@
 keys,en,zh_CN
-weapon.25.name,Cannon,Cannon
-weapon.25.desc,Heavy precision cannon. Idle long enough to prime a breach shot with stronger direct damage and short vulnerability on the target.,Heavy precision cannon. Idle long enough to prime a breach shot with stronger direct damage and short vulnerability on the target.
-weapon.10.name,Chainsaw Launcher,Chainsaw Launcher
-weapon.10.desc,chainsaw launcher test,chainsaw launcher test
-weapon.2.name,Charged Blaster,Charged Blaster
-weapon.2.desc,charged blaster,charged blaster
-weapon.11.name,dash blade,dash blade
-weapon.11.desc,Dash to nearby target and deal melee hit on contact.,Dash to nearby target and deal melee hit on contact.
-weapon.13.name,flamethrower,flamethrower
-weapon.13.desc,short-range cone burst with fire aoe and heat management,short-range cone burst with fire aoe and heat management
-weapon.21.name,Glacier Projector,Glacier Projector
-weapon.21.desc,Sustained freeze cone; freeze hits trigger Cold Snap as it recharges.,Sustained freeze cone; freeze hits trigger Cold Snap as it recharges.
-weapon.9.name,laser,laser
-weapon.9.desc,laser test,laser test
-weapon.1.name,machine gun,machine gun
-weapon.1.desc,machine gun test,machine gun test
-weapon.7.name,orbit,orbit
-weapon.7.desc,Consumes the current magazine to deploy one slowing orbiting satellite per ammo spent.,Consumes the current magazine to deploy one slowing orbiting satellite per ammo spent.
+weapon.25.name,Cannon,重炮
+weapon.25.desc,"Long-range heavy cannon. Fits Defense and Execute setups: idle long enough to prime Breach Shot, then reload to refresh the setup cycle.","远程重型火炮。适合防御和处决构筑：停火蓄势后触发破口射击，再通过换弹刷新循环。"
+weapon.10.name,Chainsaw Launcher,链锯发射器
+weapon.10.desc,"Close-range projectile saw. Best for Close and Area builds that want wall-contact pressure, slows, and vulnerability payoffs.","近距离投射锯刃。适合近战和范围构筑，通过贴墙压制、减速和易伤收益处理敌群。"
+weapon.2.name,Charged Blaster,蓄能爆破枪
+weapon.2.desc,"Mid-range charge beam. Builds around Beam and Area choices: Focus Lance pushes single-target pressure, while Prism Fan widens lane control.","中距离蓄能光束武器。围绕光束和范围构筑展开：聚焦长枪强化单体压制，棱镜扇面扩大控场覆盖。"
+weapon.11.name,Dash Blade,冲刺刃
+weapon.11.desc,"Close melee dash weapon. Triggers on long dash hits, fits Close and Melee builds, and can branch into Freeze control.","近战冲刺武器。长距离冲刺命中时触发收益，适合近战和接触构筑，也可分支为冻结控制。"
+weapon.13.name,Flamethrower,喷火器
+weapon.13.desc,"Short-range fire cone. Core Heat and Area weapon that builds heat during combat, then reloads to turn stored heat into a damage window.","短距离火焰锥形喷射。核心热量和范围武器，在战斗中积累热量，再通过换弹把储热转化为爆发窗口。"
+weapon.21.name,Glacier Projector,冰川投射器
+weapon.21.desc,"Mid-range Freeze cone. Freeze hits trigger Cold Snap as it recharges, supporting Freeze and Area control builds.","中距离冻结锥形武器。冻结命中会在冷冽回响充能时触发它，支撑冻结和范围控制构筑。"
+weapon.9.name,Laser,激光
+weapon.9.desc,"Mid-range beam weapon. Fits Beam and Area builds; beam hits spend Focus Channel charges, while branches add tracking or prism coverage.","中距离光束武器。适合光束和范围构筑；光束命中会消耗聚焦通道充能，分支可补充追踪或棱镜覆盖。"
+weapon.1.name,Machine Gun,机枪
+weapon.1.desc,"Sustained mid-range automatic fire. Core Heat and Projectile weapon: spending magazine ammo before reload expands shared heat capacity.","中距离持续自动火力。核心热量和投射物武器：换弹前消耗弹匣弹药可扩展共享热量容量。"
+weapon.7.name,Orbit,轨道卫星
+weapon.7.desc,"Close support summon. Consumes magazine ammo to deploy slowing satellites, then rewards Defense and On Hit builds when the player is pressured.","近身支援召唤物。消耗弹匣弹药部署减速卫星，在玩家承压时为防御和命中流构筑提供收益。"
 weapon.5.name,Auto Pistol,自动手枪
-weapon.5.desc,Auto-targeting sidearm that fires at the nearest enemy in range. Moving continuously primes its passive.,自动索敌副枪，会攻击范围内最近敌人；连续移动可预热被动。
-weapon.17.name,Plasma Lance,Plasma Lance
-weapon.17.desc,Slow heavy piercing lance. Projectile damage increases after each penetration.,Slow heavy piercing lance. Projectile damage increases after each penetration.
-weapon.8.name,Rocket Launcher,Rocket Launcher
-weapon.8.desc,"Area-control launcher with slow rockets, growing blast radius, and Cluster Kill charges for clearing enemy groups.","Area-control launcher with slow rockets, growing blast radius, and Cluster Kill charges for clearing enemy groups."
-weapon.4.name,shotgun,shotgun
-weapon.4.desc,shotgun test: muti shoot,shotgun test: muti shoot
-weapon.26.name,Sniper,Sniper
-weapon.26.desc,High-damage long-range rifle. Deals more damage to distant targets.,High-damage long-range rifle. Deals more damage to distant targets.
-weapon.3.name,Spear Launcher,Spear Launcher
-weapon.3.desc,Returning spears build charge through repeat hits. Reload with enough charge to launch a marking radial volley.,回旋长矛通过重复命中积累充能；充能充足时换弹会发射施加标记的环形齐射。
+weapon.5.desc,"Auto-targeting sidearm that fires at the nearest enemy in range. Moving continuously primes its passive.","自动索敌副枪，会攻击范围内最近敌人；连续移动可预热被动。"
+weapon.17.name,Plasma Lance,等离子长枪
+weapon.17.desc,"Long-range heavy energy lance. Fits Heat and Projectile builds by spending heat on attacks, then reloading to trigger chain feedback.","远程重型能量长枪。适合热量和投射物构筑，通过攻击消耗热量，再借由换弹触发连锁反馈。"
+weapon.8.name,Rocket Launcher,火箭发射器
+weapon.8.desc,"Long-range Area launcher. Slow rockets and growing blasts clear groups, while Cluster Kill charges reward grouped enemy cleanup.","远程范围发射器。慢速火箭和逐步扩大的爆炸用于清理敌群，集群击杀充能奖励成群清场。"
+weapon.4.name,Shotgun,霰弹枪
+weapon.4.desc,"Close-range pellet burst. Fits Close and Projectile builds; multiple pellets on one target spend Close Hit charges for bonus final damage.","近距离弹丸爆发。适合近战和投射物构筑；多个弹丸命中同一目标时消耗近距命中充能，获得额外最终伤害。"
+weapon.26.name,Sniper,狙击枪
+weapon.26.desc,"Long-range Projectile rifle. Fits Mark and Execute-adjacent builds by rewarding far or marked-target hits with charge-based bonus damage.","远程投射物步枪。适合标记和处决相关构筑，远距离或标记目标命中可获得基于充能的额外伤害。"
+weapon.3.name,Spear Launcher,长矛发射器
+weapon.3.desc,"Mid-range Projectile spear. Repeat hits build Mark charge; reload with enough charge to launch a marking radial volley.","中距离投射长矛。重复命中会积累标记充能；充能足够时换弹会发射施加标记的环形齐射。"
 passive.piercing_blade_dance.name,Piercing Blade Dance,穿刺轮舞
 passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds charge. Reload at 10 or 20 charge to launch an 8- or 16-direction volley. Its hits mark surviving enemies for 20 seconds and knock them away.","同一根长矛重复伤害同一敌人可积累充能。充能达到10或20点时换弹，发射8或16方向齐射；命中存活敌人后施加持续20秒的标记并将其击退。"
 branch.thermal_cannon_branch.name,Thermal Cannon,Thermal Cannon
@@ -149,5 +149,5 @@ route.bonus.name,Bonus Route,Bonus Route
 route.bonus.desc,No combat. Choose 1 reward option and move to the next level.,No combat. Choose 1 reward option and move to the next level.
 route.difficult.name,Difficult Route,Difficult Route
 route.difficult.desc,Harder combat and tighter pacing with better rewards.,Harder combat and tighter pacing with better rewards.
-route.normal.name,Normal Route,Normal Route
-route.normal.desc,Standard battle flow with default rewards.,Standard battle flow with default rewards.
+route.normal.name,Normal Route,普通路线
+route.normal.desc,Standard battle flow with default rewards.,标准战斗流程，使用默认奖励。

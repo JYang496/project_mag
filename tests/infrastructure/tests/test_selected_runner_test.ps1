@@ -52,6 +52,7 @@ $sourceMap | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $sourceMapPath
 
 $arguments = @(
     '-NoProfile',
+    '-ExecutionPolicy', 'Bypass',
     '-File', $runScript,
     '-ChangedPath', 'tests/infrastructure/fixtures/worker_success.gd',
     '-ManifestPath', $manifestPath,
@@ -62,7 +63,11 @@ $arguments = @(
     '-SkipCheckOnly',
     '-Json'
 )
-$output = & pwsh @arguments
+$powerShellCommand = Get-Command pwsh -ErrorAction SilentlyContinue
+if ($null -eq $powerShellCommand) {
+    $powerShellCommand = Get-Command powershell -ErrorAction Stop
+}
+$output = & $powerShellCommand.Source @arguments
 if ($LASTEXITCODE -ne 0) {
     Write-Error "run_selected_tests.ps1 exited with $LASTEXITCODE. Output:`n$($output -join "`n")"
     exit 1

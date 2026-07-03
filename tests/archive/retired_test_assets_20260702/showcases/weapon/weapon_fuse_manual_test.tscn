@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cbv662de68dxj"]
+
+[ext_resource type="Script" uid="uid://ch8lvfceauoec" path="res://tests/showcases/weapon/weapon_fuse_manual_test.gd" id="1_script"]
+
+[node name="WeaponFuseManualTest" type="Node" unique_id=394847157]
+script = ExtResource("1_script")

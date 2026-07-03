@@ -40,9 +40,18 @@ func _request_completed_battle_standard_draft() -> void:
 	await get_tree().process_frame
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
+	if TaskRewardManager.is_reward_blocking_interactions():
+		_retry_completed_battle_standard_draft_after_task_reward()
+		return
 	var level_index := maxi(int(PhaseManager.current_level) - 1, 0)
 	var route_def := RunRouteManager.get_route_for_level(level_index)
 	_request_standard_battle_reward_selection(level_index, route_def)
+
+func _retry_completed_battle_standard_draft_after_task_reward() -> void:
+	await TaskRewardManager.pending_reward_changed
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return
+	call_deferred("_request_completed_battle_standard_draft")
 
 func _spawn_completed_battle_drops() -> void:
 	push_warning("Standard battle-complete ground drops are disabled; standard settlement now uses RewardDraftRuntime draft selection.")
@@ -110,7 +119,7 @@ func _request_standard_battle_reward_selection(level_index: int, route_def: RunR
 		if grant_reward_immediately(reward_options[0]):
 			RewardDraftRuntime.clear_pending_standard_draft()
 		return
-	var route_name := route_def.display_name if route_def else "Battle Reward"
+	var route_name := LocalizationManager.get_route_display_name(route_def) if route_def else "Battle Reward"
 	var opened: bool = bool(ui.request_reward_selection(
 		route_name,
 		reward_options,
@@ -121,9 +130,22 @@ func _request_standard_battle_reward_selection(level_index: int, route_def: RunR
 	if opened:
 		RewardDraftRuntime.record_standard_draft_consumed()
 		return
+	if _is_reward_selection_panel_open(ui):
+		call_deferred("_request_standard_battle_reward_selection", level_index, route_def)
+		return
 	RewardDraftRuntime.record_standard_draft_consumed()
 	if grant_reward_immediately(reward_options[0]):
 		RewardDraftRuntime.clear_pending_standard_draft()
+
+func _is_reward_selection_panel_open(ui: Node) -> bool:
+	if ui == null or not is_instance_valid(ui):
+		return false
+	var panel = ui.get("reward_selection_panel")
+	if panel == null or not is_instance_valid(panel):
+		return false
+	if panel.has_method("is_modal_open"):
+		return bool(panel.call("is_modal_open"))
+	return bool(panel.get("visible"))
 
 func _build_all_weapon_drop_candidates() -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []

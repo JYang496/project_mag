@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/headless/cell/run_offense_kill_objective_global_count_test_headless.gd" id="1_script"]
+
+[node name="OffenseKillObjectiveGlobalCountTest" type="Node"]
+script = ExtResource("1_script")

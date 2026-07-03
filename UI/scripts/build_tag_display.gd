@@ -96,6 +96,7 @@ static func populate_chip_row(row: Container, chips: Array, limit: int = 0) -> v
 	if row == null:
 		return
 	for child in row.get_children():
+		row.remove_child(child)
 		child.queue_free()
 	var max_count := chips.size()
 	if limit > 0:
@@ -107,10 +108,14 @@ static func populate_chip_row(row: Container, chips: Array, limit: int = 0) -> v
 
 static func make_chip(chip_data: Dictionary) -> PanelContainer:
 	var color: Color = chip_data.get("color", DEFAULT_COLOR)
+	var text := str(chip_data.get("label", "Tag")).strip_edges()
+	if text == "":
+		text = "Tag"
 	var panel := PanelContainer.new()
 	panel.name = "BuildChip"
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.custom_minimum_size = Vector2(0.0, 22.0)
+	panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	panel.custom_minimum_size = Vector2(maxf(32.0, text.length() * 6.0 + 16.0), 22.0)
+	panel.tooltip_text = text
 	panel.add_theme_stylebox_override("panel", _make_chip_style(color))
 
 	var margin := MarginContainer.new()
@@ -123,8 +128,8 @@ static func make_chip(chip_data: Dictionary) -> PanelContainer:
 
 	var label := Label.new()
 	label.name = "Label"
-	label.text = str(chip_data.get("label", "Tag"))
-	label.clip_text = true
+	label.text = text
+	label.clip_text = false
 	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", Color(0.92, 0.97, 1.0, 1.0))

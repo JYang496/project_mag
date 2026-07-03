@@ -1,23 +1,20 @@
 # Test Directory
 
-This folder is the canonical home for project test, probe, benchmark, fixture, and showcase resources.
+This folder keeps the project test infrastructure and archived historical test assets.
 
 ## Layout
 
 ```text
 tests/
-  fixtures/      Shared test-only scenes and scripts.
-  scenes/        Scene-backed regression tests grouped by domain.
-  headless/      Headless runner scripts grouped by domain.
-  benchmarks/    Measurement and balance tooling.
-  probes/        Focused probes and smoke checks.
-  showcases/     Manual or visual review scenes.
-  archive/       Preserved legacy tools pending deletion review.
+  infrastructure/  Test selection and Worker runner infrastructure.
+  archive/         Preserved retired tests, probes, benchmarks, fixtures, and showcases.
 ```
 
 ## Conventions
 
-- Put new automated regression scenes under `tests/scenes/<domain>/`.
+- There are currently no active registered test scenes or runner scripts.
+- Historical assets retired on 2026-07-02 live under `tests/archive/retired_test_assets_20260702/`.
+- Put new automated regression scenes under `tests/scenes/<domain>/` only when reintroducing active tests.
 - Put their runner scripts under `tests/headless/<domain>/` unless the scene script is intentionally self-contained.
 - Put shared dummy resources under `tests/fixtures/<domain>/`.
 - Put one-off probes under `tests/probes/<domain>/` and promote them to `tests/scenes/<domain>/` if they become permanent regression gates.
@@ -27,18 +24,18 @@ tests/
 
 ## Validation
 
-Prefer Godot MCP for feature, behavior, UI, reward, combat, route, and spawn tests:
+There are no active scene-backed tests at this time. Use Godot MCP for focused runtime validation when a new active scene is added:
 
 ```text
 get_project_info(projectPath="D:\Godot Projects\project_mag")
-run_project(projectPath="D:\Godot Projects\project_mag", scene="res://tests/scenes/weapon/weapon_numeric_module_test.tscn")
+run_project(projectPath="D:\Godot Projects\project_mag", scene="res://tests/scenes/<domain>/<test>.tscn")
 get_debug_output()
 stop_project()
 ```
 
 Read the debug output before calling a run successful. Check for explicit `PASS`, `FAIL`, `ERROR`, or assertion logs; do not trust startup alone.
 
-Use scene-backed tests as the MCP entrypoint:
+Use scene-backed tests as the MCP entrypoint when active tests exist:
 
 ```text
 res://tests/scenes/<domain>/<test>.tscn
@@ -52,10 +49,10 @@ Use the shell Godot command as the repo-wide syntax/resource gate, or when MCP c
 & 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit
 ```
 
-Run an intentional headless runner script with shell only when needed:
+Run an intentional headless runner script with shell only when one exists:
 
 ```powershell
-& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --script res://tests/headless/weapon/run_weapon_numeric_module_test_headless.gd
+& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --script res://tests/headless/<domain>/<runner>.gd
 ```
 
 ## Affected-test selection
@@ -68,30 +65,9 @@ The pilot manifest at `tests/infrastructure/test_manifest.json` defines the regi
 - `parallel_safe` and `writes_user_data` flags;
 - a positive `timeout_seconds`.
 
-The current catalog deliberately contains registered Worker-compatible gates only and has `catalog_status: "pilot"`. It does not replace existing manual full-suite gates. As of the Stage 3 Player camera gate, 49 scene-backed tests are registered; `full` mode means every registered manifest entry, not every historical scene under `tests/scenes`.
+The current catalog has `catalog_status: "archived"` and intentionally registers zero active tests. `full` mode means every registered manifest entry, so it currently selects no test workers.
 
-The previous unregistered one-off scene-backed files were removed instead of promoted into the Worker catalog. The manifest is still not a complete test-directory entrypoint because runner-only scripts under `tests/headless` still do not have scene wrappers or manifest entries:
-
-- `tests/headless/cell/run_cell_activation_visual_test_headless.gd`
-- `tests/headless/combat/run_build_validation_matrix_report_test_headless.gd`
-- `tests/headless/combat/run_build_validation_matrix_test_headless.gd`
-- `tests/headless/combat/run_hitbox_owner_test_headless.gd`
-- `tests/headless/combat/run_mark_status_effect_test_headless.gd`
-- `tests/headless/spawn/run_collectable_registry_test_headless.gd`
-- `tests/headless/spawn/run_enemy_registry_test_headless.gd`
-- `tests/headless/spawn/run_resource_catalog_test_headless.gd`
-- `tests/headless/spawn/run_spawn_combat_profile_validation_headless.gd`
-- `tests/headless/ui/run_build_text_contract_test_headless.gd`
-- `tests/headless/ui/run_ui_icon_scaling_test_headless.gd`
-- `tests/headless/weapon/run_close_quarters_chain_test_headless.gd`
-- `tests/headless/weapon/run_glacier_branch_test_headless.gd`
-- `tests/headless/weapon/run_laser_branch_test_headless.gd`
-- `tests/headless/weapon/run_orbit_ammo_deploy_test_headless.gd`
-- `tests/headless/weapon/run_orbit_close_chain_test_headless.gd`
-- `tests/headless/weapon/run_spear_piercing_blade_dance_test_headless.gd`
-- `tests/headless/weapon/run_weapon_ammo_gate_test_headless.gd`
-- `tests/headless/weapon/run_weapon_delivery_type_test_headless.gd`
-- `tests/headless/world/run_rest_area_helper_test_headless.gd`
+Historical scene-backed files, runner scripts, fixtures, probes, benchmarks, and showcases were moved to `tests/archive/retired_test_assets_20260702/`. The obsolete `run_build_validation_matrix_report_test_headless.gd` artifact check was retired because its tracked HTML report inputs are no longer present.
 
 Use the selector from the repository root. Without `-ChangedPath`, it reads unstaged, staged, untracked, and optional base-ref changes:
 

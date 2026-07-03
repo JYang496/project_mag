@@ -19,7 +19,8 @@
     ".git/",
     ".github/",
     ".godot/",
-    "docs/"
+    "docs/",
+    "tests/archive/"
   ],
   "ignored_exact_paths": [
     ".gitattributes",

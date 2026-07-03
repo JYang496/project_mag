@@ -1,0 +1,17 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://tests/benchmarks/dps/real_combat_dps_benchmark.tscn" id="1_base"]
+[ext_resource type="Script" path="res://tests/benchmarks/dps/real_combat_module_output_benchmark.gd" id="2_script"]
+
+[node name="RealCombatModuleOutputBenchmark" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+quit_on_completion = false
+test_duration_sec = 4.0
+warmup_sec = 2.0
+min_weapon_level = 1
+max_weapon_level = 1
+player_position = Vector2(480, 360)
+target_hp = 1000000000
+accelerated_mode = true
+simulation_time_scale = 8.0
+report_dir = "res://docs/reports/dps"

@@ -30,13 +30,13 @@ static func build_display_data(module_instance: Module, target_weapon: Weapon = 
 	if reason == "":
 		data["fit_status"] = STATUS_FITS
 		data["fit_label"] = "Fits current"
-		data["fit_badge"] = BUILD_TAG_DISPLAY.build_fit_status_badge(STATUS_FITS, "Fits current")
+		data["fit_badge"] = BUILD_TAG_DISPLAY.build_fit_status_badge(STATUS_FITS, "Fits")
 		data["detail_lines"] = PackedStringArray(["Fit: Current weapon satisfies module requirements"])
 	else:
 		var warnings := PackedStringArray([reason])
 		data["fit_status"] = STATUS_BLOCKED
 		data["fit_label"] = "Not compatible"
-		data["fit_badge"] = BUILD_TAG_DISPLAY.build_fit_status_badge(STATUS_BLOCKED, "Not compatible")
+		data["fit_badge"] = BUILD_TAG_DISPLAY.build_fit_status_badge(STATUS_BLOCKED, "Blocked")
 		data["fit_warnings"] = warnings
 		data["detail_lines"] = PackedStringArray(["Fit: Current weapon does not satisfy module requirements", "Warning: %s" % reason])
 	return data

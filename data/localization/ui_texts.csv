@@ -129,6 +129,12 @@ ui.weapon.sell_disabled,Weapon selling has been replaced by the weapon warehouse
 ui.reward.exp,EXP +{value},经验 +{value}
 ui.reward.gold,Gold +{value},金币 +{value}
 ui.reward.message,Reward: {content},奖励：{content}
+ui.reward.outcome.weapon_upgrade,Upgrade equipped weapon,升级已装备武器
+ui.reward.outcome.cell_effect,Added to cell effects,已加入格子效果
+ui.reward.outcome.task_module,Added to Ready To Install,已加入待部署
+ui.reward.outcome.weapon_obtain,Auto equip / fuse / store,自动装备 / 融合 / 入库
+ui.reward.outcome.module_obtain,Added to temporary modules,已加入临时模组
+ui.reward.outcome.resource,Added to resources,已加入资源
 ui.module.title,Equip Module,装备模组
 ui.module.no_effect,No direct stat changes.,无直接属性变化。
 ui.module.effects,Effects: {effects},效果：{effects}
@@ -152,8 +158,13 @@ ui.module.settlement.title,Temporary Module Settlement,临时模组结算
 ui.module.settlement.confirm,Sell {count} temporary modules for {gold} Gold and start battle?,出售 {count} 个临时模组并获得 {gold} 金币，然后开始战斗？
 ui.module.settlement.dont_show,Do not show this confirmation again,今后不再显示此确认
 ui.transaction.pending,Finish or cancel the current equipment transaction first.,请先完成或取消当前装备事务。
+ui.weapon.replace.install_title,Install Weapon,安装武器
+ui.weapon.replace.incoming,{weapon},{weapon}
 ui.weapon.replace.title,Choose Weapon Slot,选择武器槽位
 ui.weapon.replace.description,Equip {weapon} or replace an equipped weapon.,装备 {weapon} 或替换一把已装备武器。
+ui.weapon.replace.slot_label,Slot {slot},槽位 {slot}
+ui.weapon.replace.action_replace,Replace,替换
+ui.weapon.replace.action_equip,Equip,装备
 ui.weapon.replace.slot,Slot {slot}: {old} -> {new},槽位 {slot}：{old} → {new}
 ui.weapon.replace.empty_slot,Slot {slot}: Empty,槽位 {slot}：空
 ui.module.compatible,Compatible,兼容

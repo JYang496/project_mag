@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/probes/weapon/run_machine_gun_spread_probe_headless.gd" id="1_script"]
+
+[node name="MachineGunSpreadProbe" type="Node"]
+script = ExtResource("1_script")

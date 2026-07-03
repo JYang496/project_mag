@@ -47,6 +47,8 @@ function Select-ForTest {
 }
 
 Assert-TestManifest -Manifest $manifest
+Assert-Equal 'archived' $manifest.catalog_status 'Current manifest should declare the archived catalog state.'
+Assert-Equal 0 @($manifest.tests).Count 'Archived manifest should have no active test entries.'
 foreach ($test in @($manifest.tests)) {
     $relativeEntryPath = ([string]$test.path).Substring('res://'.Length).Replace(
         '/',
@@ -63,18 +65,19 @@ Assert-Equal 0 $empty.tests.Count 'Empty change set should have an empty test li
 Assert-True ([bool]($empty.reasons -match 'no changed paths')) 'Empty selection must explain why it is empty.'
 
 $singleDomain = Select-ForTest -Path 'UI/scripts/controllers/example_controller.gd'
-Assert-Equal 'affected' $singleDomain.mode 'Known UI source should use affected selection.'
+Assert-Equal 'full' $singleDomain.mode 'Known UI source should fail closed when no active tests are registered.'
 Assert-True ($singleDomain.domains -contains 'ui') 'Known UI source should map to ui.'
-Assert-True ($singleDomain.tests.id -contains 'ui.unified_modal_behavior') 'UI source should select the UI representative gate.'
+Assert-Equal 0 $singleDomain.tests.Count 'Archived catalog should select no worker entries.'
+Assert-True ([bool]($singleDomain.reasons -match 'mapped domains have no registered test coverage')) 'Archived catalog must explain missing registered coverage.'
 
 $multiDomain = Select-ForTest -Path @(
     'UI/scripts/controllers/example_controller.gd',
     'Player/Weapons/scripts/example_weapon.gd'
 )
-Assert-Equal 'affected' $multiDomain.mode 'Known multi-domain changes should use affected selection.'
+Assert-Equal 'full' $multiDomain.mode 'Known multi-domain changes should fail closed when no active tests are registered.'
 Assert-True ($multiDomain.domains -contains 'ui') 'Multi-domain selection should include ui.'
 Assert-True ($multiDomain.domains -contains 'weapon') 'Multi-domain selection should include weapon.'
-Assert-True ($multiDomain.tests.id -contains 'weapon.numeric_module') 'Weapon impact should select the weapon representative gate.'
+Assert-Equal 0 $multiDomain.tests.Count 'Archived catalog should select no worker entries for multi-domain changes.'
 
 $projectCore = Select-ForTest -Path 'project.godot'
 Assert-Equal 'full' $projectCore.mode 'project.godot must force a full fallback.'
@@ -97,13 +100,6 @@ $docsOnly = Select-ForTest -Path 'docs/notes/example.md'
 Assert-Equal 'none' $docsOnly.mode 'Documentation-only changes should not run tests.'
 Assert-True ([bool]($docsOnly.reasons -match 'ignored non-production')) 'Ignored documentation must have an explicit reason.'
 
-$explicit = Select-ForTest `
-    -Path 'UI/scripts/controllers/example_controller.gd' `
-    -Include 'world.threaded_world_load'
-Assert-Equal 'affected' $explicit.mode 'Explicit append should preserve affected mode.'
-Assert-True ($explicit.tests.id -contains 'world.threaded_world_load') 'Explicit test id must be appended.'
-Assert-True ([bool]($explicit.reasons -match "explicitly included 'world.threaded_world_load'")) 'Explicit append must be explained.'
-
 $invalidExplicitThrew = $false
 try {
     $null = Select-ForTest -Include 'missing.test'
@@ -121,5 +117,5 @@ if ($failures.Count -gt 0) {
 }
 
 Write-Output 'TestSelection self-test: PASS'
-Write-Output 'Covered: schema, empty, single-domain, multi-domain, core, manifest, uncertain, unknown, docs-only, explicit append.'
+Write-Output 'Covered: archived schema, empty, single-domain, multi-domain, core, manifest, uncertain, unknown, docs-only, invalid explicit id.'
 exit 0

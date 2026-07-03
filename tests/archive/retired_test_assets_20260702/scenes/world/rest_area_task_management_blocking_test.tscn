@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/headless/world/run_rest_area_task_management_blocking_test_headless.gd" id="1_script"]
+
+[node name="RestAreaTaskManagementBlockingTest" type="Node"]
+script = ExtResource("1_script")
