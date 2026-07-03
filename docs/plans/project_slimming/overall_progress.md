@@ -81,6 +81,51 @@
 - Player-3 took the smallest safe cleanup slice: removed dead Player-owned elite-hit helper wrappers after confirming `PlayerDamageReactionSystem` owns the only live call path.
 - Test infrastructure Batch 4 expands the pilot manifest from 14 to 19 representative entries. It is still a pilot manifest, not a complete historical inventory.
 - Asset pipeline Batch 2 removed only the audited orphan import sidecar `asset/images/weapons/Remove_background_to_create_transparent_PNG-1777246945516.png.import`; no source asset, font, ZIP, image, or importer setting was changed.
+- Stage 4 baseline rechecked on 2026-07-02 at `f425b1fb2ed10da837372cd643c2f1c24e0086f2`; the remaining uncommitted worktree changes were limited to completion prompt/handoff split files.
+
+## Completion Stage 1 checkpoint
+
+- Registered 29 additional Worker-compatible historical scene-backed tests, bringing `tests/infrastructure/test_manifest.json` from 19 to 48 entries.
+- Registration was split by domain: UI, Weapon, World, Reward, Cell, Spawn, and Enemy. Startup and Combat had no remaining unregistered scene-backed tests.
+- `catalog_status` remains `pilot`; manifest `full` mode means every registered entry, not every historical scene under `tests/scenes`.
+- Ten scene files remain unregistered with explicit reasons in `tests/README.md`: fixture-only, non-terminating, non-headless visual, current assertion failures, missing doc dependency, or runtime script errors.
+
+## Completion Stage 2 checkpoint
+
+- Rechecked all scene-backed tests and runner scripts before changing manifest status.
+- Did not upgrade `catalog_status`: 10 scene-backed files remain unregistered and 23 runner-only scripts still lack scene wrappers or manifest entries.
+- The 48-entry registered manifest is healthy as a pilot set, but it is not yet a complete test-directory entrypoint.
+
+## Completion Stage 3 checkpoint
+
+- Continued Player slimming with one behavior-protected camera/rest-area slice.
+- Added `PlayerCameraConfig` and changed `PlayerCameraSystem` to receive explicit camera config plus vision updates instead of storing a Player owner or reading Player fields dynamically.
+- Added `player.camera_system` to the pilot manifest, bringing registered Worker-compatible gates from 48 to 49 while keeping `catalog_status: "pilot"`.
+- `Player.gd`: 1822 -> 1813 lines for this camera/rest-area slice. The accepted reduction is Player-owned camera state and reverse dependency direction, not the full Player line-count target.
+
+## Completion Stage 4 checkpoint
+
+- Continued UI slimming with one behavior-protected HUD refresh coordination slice.
+- Added `HudRefreshController` to own HUD dirty flags, refresh ordering, continuous refresh cadence, and HUD refresh debug counters.
+- `UI.gd` now keeps HUD refresh compatibility entrypoints as delegating facades, while `UiDirtySignalController` routes HUD invalidation through narrow mark methods instead of writing HUD dirty state directly.
+- `UI.gd`: 1599 -> 1588 lines.
+
+## Completion Stage 5 checkpoint
+
+- Rechecked the asset-pipeline follow-up gate for one category only: `asset/images/characters/characters_move.zip`.
+- No asset was deleted, moved, compressed, or rewritten because ZIP archival has not been explicitly approved.
+- Current evidence still classifies the ZIP as a repository archival candidate: no `.import`/`.uid`, no runtime path reference outside docs/prompts, no export preset in the checkout, and ZIP file hashes match the 42 already-extracted runtime frames.
+- No cold-import benefit was claimed; ZIP has no importer and needs a separate benchmark if future work wants to claim startup/import impact.
+
+## Completion Stage 6 checkpoint
+
+- Ran the final startup benchmark after Player/UI/manifest/asset closure. Raw JSON: `test-results/startup-final-benchmark-full.json`.
+- Fixed `tools/benchmark_startup_loading.ps1` so the documented repo-root command works under Windows PowerShell and verbose Godot output is parsed from redirected log files instead of in-memory native pipes.
+- Stage 6 benchmark on Godot `4.6.1.stable.steam.14d19694e`: cold import 48,455 ms, hot start median 5,056 ms, directed startup median 7,090 ms.
+- Loaded resource counts stayed aligned with the post-manifest shape: cold 66, hot 215, directed 353.
+- Runtime errors remained 0 for cold import, hot start, directed startup, and the selected startup validation run.
+- Shutdown diagnostics stayed separate from runtime errors: benchmark directed runs reported 50 error-class shutdown diagnostics plus 10 warnings across 5 runs; selected 49-entry validation reported 74 shutdown diagnostics and 0 runtime errors.
+- No further startup optimization was attempted from this checkpoint; remaining startup risk is cleanup/leak diagnostics, not a new manifest target.
 
 ## Coordinator integration
 
@@ -105,6 +150,17 @@
 - Selected world run through `run_selected_tests.ps1`: PASS=5, FAIL=0, ERROR=0; shutdown diagnostics=11; runtime errors=0. Result root: `test-results/batch3-selected-world-2`.
 - Stage 4 selected UI run through `run_selected_tests.ps1`: PASS=19, FAIL=0, ERROR=0; shutdown diagnostics=26; runtime errors=0. Result root: `test-results/slimming-stage4-selected-ui-final`.
 - Stage 4 focused Worker run for UI HUD/meter/fit gates plus player active-skill characterization: PASS=6, FAIL=0, ERROR=0; shutdown diagnostics=7; runtime errors=0. Result root: `test-results/slimming-stage4-focused`.
+- Stage 4 checkpoint revalidation on 2026-07-02: `git diff --check`, selector self-test, Worker parser/process self-test with the project Godot 4.7 binary, and Godot `--headless --path . --check-only --quit` all PASS; no residual `godot.windows.opt.tools.64.exe` worker process was found.
+- Completion Stage 1 registration batches: UI PASS=7, Weapon PASS=8, World PASS=3, Reward PASS=6, Cell PASS=2, Spawn PASS=2, Enemy PASS=1; all final domain batches had FAIL=0 and ERROR=0.
+- Completion Stage 1 per-batch validation reran manifest count, selector self-test, Worker parser/process self-test, and `git diff --check`; final manifest count is 48 with no duplicate ids or paths.
+- Completion Stage 1 full 48-entry Worker manifest: PASS=48, FAIL=0, ERROR=0; shutdown diagnostics=74; runtime errors=0. Result root: `test-results/manifest-registration-full-48`.
+- Completion Stage 2 full manifest candidate: PASS=48, FAIL=0, ERROR=0; shutdown diagnostics=74; runtime errors=0. Result root: `test-results/manifest-full-candidate`.
+- Completion Stage 3 focused Player camera gate: direct `res://tests/scenes/player/player_camera_system_test.tscn` PASS; Worker entry `player.camera_system` PASS=1, FAIL=0, ERROR=0, runtime errors=0 inside `test-results/player-slimming-camera-focused`.
+- Completion Stage 3 required selected command was executed with `-ChangedPath 'Player/Mechas/scripts/Player.gd' -Jobs 2`, but it selected the full 49-entry pilot catalog and did not produce an acceptable green run: first result `test-results/player-slimming-camera` was PASS=48, FAIL=0, ERROR=1 due to unrelated `reward.loot_rarity`; later reruns showed unrelated `exit code -1` runner/process failures while `player.camera_system` stayed PASS.
+- Completion Stage 4 selected UI run through `run_selected_tests.ps1 -ChangedPath 'UI/scripts/UI.gd'`: PASS=49, FAIL=0, ERROR=0; shutdown diagnostics=74; runtime errors=0. Result root: `test-results/ui-slimming-hud-refresh`.
+- Completion Stage 5 ZIP audit validation: `git diff --check` PASS; Godot `--headless --path . --check-only --quit` PASS. No startup or UI visual gate was required because no resource or runtime path changed.
+- Completion Stage 6 final startup benchmark: PASS. Cold import 48,455 ms; hot start median 5,056 ms; directed startup median 7,090 ms; runtime errors=0; directed shutdown diagnostics kept separate from runtime errors. Result JSON: `test-results/startup-final-benchmark-full.json`.
+- Completion Stage 6 selected startup validation: `run_selected_tests.ps1 -ChangedPath 'data/startup/startup_resource_manifest.json' -Jobs 2` PASS=49, FAIL=0, ERROR=0; shutdown diagnostics=74; runtime errors=0. Result root: `test-results/startup-final-benchmark`.
 - UI-2 visual gate: 1280x720 and 1920x1080 in English and Simplified Chinese matched baseline on the non-headless Vulkan render path.
 - Existing weapon smoke: PASS.
 - Expected existing shutdown diagnostics remain on several scene tests: leaked CanvasItem/font/texture RIDs, ObjectDB instances, and 4 or 14 resources still in use.
@@ -130,18 +186,58 @@ Registered milestone scenes:
 17. `ui.skill_energy_meter_contract`
 18. `ui.combat_resource_meter_contract`
 19. `ui.module_fit_display_contract`
+20. `cell.task_module_runtime`
+21. `cell.offense_kill_objective_global_count`
+22. `ui.branch_select_panel`
+23. `ui.controls_hint_view`
+24. `ui.management_polish`
+25. `ui.shop_sell_flow`
+26. `ui.temporary_module_settlement_dialog`
+27. `ui.upgrade_preview_refresh`
+28. `ui.weapon_selector_layer`
+29. `enemy.support_behavior`
+30. `weapon.auto_fire_switch`
+31. `weapon.dash_blade_offhand_auto_attack`
+32. `weapon.on_hit_module_lifecycle`
+33. `weapon.player_stat_module`
+34. `weapon.synergy_module`
+35. `weapon.smoke`
+36. `weapon.auto_fuse`
+37. `weapon.fire_feedback`
+38. `world.rest_area_task_management_blocking`
+39. `world.secondary_menu_world_blocking`
+40. `world.startup_feature_loadout`
+41. `reward.battle_drop_storage`
+42. `reward.equipment_pickup_queue`
+43. `reward.loot_rarity`
+44. `reward.draft_runtime_contract`
+45. `reward.draft_simulation_report`
+46. `reward.temporary_module_lifecycle`
+47. `spawn.ranged_spawn_limits`
+48. `spawn.boundary_projection`
+49. `player.camera_system`
 
 ## Open risks and acceptance status
 
 - Final Batch 2 validation used the project-standard Godot 4.7 binary available on this machine.
-- The manifest is a 19-entry representative pilot, not a complete historical test inventory.
-- `UI.gd` is 1599 lines and `Player.gd` is 1805 lines; final soft targets of approximately 600/700 lines are not yet reached.
+- The manifest is a 49-entry Worker-compatible pilot, not a complete historical test inventory until the 10 still-unregistered scene files and 23 runner-only scripts are resolved or explicitly retired.
+- `UI.gd` is 1588 lines and `Player.gd` is 1813 lines; final soft targets of approximately 600/700 lines are not yet reached.
 - Startup manifests are runtime-consumed for the eight registered startup catalogs; world-entry prepare failure now gates title-to-world transition, while deferred branch/passive data remains out of title-to-world startup.
 - Existing shutdown resource leaks remain visible and are not classified as runtime behavior failures.
 
+## Completion Stage 7 checkpoint
+
+- Added the independent completion report: `docs/reports/project_slimming_completion_report.md`.
+- Recorded the final report baseline from `git status --short --branch` and `git rev-parse HEAD`: branch `master...origin/master`, HEAD `f425b1fb2ed10da837372cd643c2f1c24e0086f2`.
+- Current manifest remains `catalog_status: "pilot"` with 49 registered Worker-compatible entries.
+- Final line-count snapshot: `UI.gd` 1802 plan-baseline lines -> 1588 final lines; `Player.gd` 1786 plan-baseline lines -> 1813 final lines.
+- Stage 7 made documentation-only changes and did not change business code.
+- Post-plan `ponytail` items are documented as optional follow-ups, not as unfinished acceptance blockers.
+- Stage 7 final validation: `git diff --check` PASS; Godot `--headless --path . --check-only --quit` PASS; full 49-entry Worker run PASS=49, FAIL=0, ERROR=0, shutdown diagnostics=74, runtime errors=0 in `test-results/project-slimming-final`.
+
 ## Next safe batches
 
-1. Test infrastructure: continue registering remaining active scenes before treating selected runs as full-suite coverage.
-2. Player: continue with a behavior-protected camera/rest-area or incoming-damage slice; do not chase the 700-line target without a focused gate.
-3. UI: continue subsystem-by-subsystem extraction only where an existing or new behavior/visual gate protects the move.
-4. Asset pipeline: leave OTF, ZIP, and image cleanup untouched until each has its own explicit approval and visual/import recovery gate.
+1. Test infrastructure: resolve or retire the 10 still-unregistered scene files and 23 runner-only scripts before changing `catalog_status`.
+2. Player: continue with a behavior-protected incoming-damage or damage-pipeline slice; do not chase the 700-line target without a focused gate.
+3. UI: continue with behavior-protected localization refresh or pause/settings UI extraction; use a visual baseline only if layout changes.
+4. Asset pipeline: leave OTF, ZIP, and image cleanup untouched until each has its own explicit approval and visual/import recovery gate; ZIP archival also needs export/manufacturing-source approval before any move/delete.

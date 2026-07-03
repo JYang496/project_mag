@@ -111,12 +111,12 @@ func _on_main_weapon_index_changed(_old_index: int, _new_index: int, _step: int)
 
 func _on_player_health_changed(_current_hp: int, _max_hp: int) -> void:
 	if owner_ui != null:
-		owner_ui._hud_hp_dirty = true
+		owner_ui._mark_hud_hp_dirty()
 
 func _on_player_gold_changed(_value: int) -> void:
 	if owner_ui == null:
 		return
-	owner_ui._hud_inventory_dirty = true
+	owner_ui._mark_hud_inventory_dirty()
 	owner_ui._mark_shop_purchase_action_dirty()
 	owner_ui._mark_upgrade_action_dirty()
 	owner_ui._mark_warehouse_action_dirty()

@@ -8,8 +8,8 @@ const HP_BAR_ANIM_TIME := 0.2
 const HP_BAR_TRANS := Tween.TRANS_SINE
 const HP_BAR_EASE := Tween.EASE_OUT
 const HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hud_presenter.gd")
+const HUD_REFRESH_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/hud_refresh_controller.gd")
 const TASK_OBJECTIVE_HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/task_objective_hud_presenter.gd")
-const UI_REFRESH_DEBUG_COUNTER_SCRIPT := preload("res://UI/scripts/components/ui_refresh_debug_counter.gd")
 const UI_DIRTY_SIGNAL_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/ui_dirty_signal_controller.gd")
 const WEAPON_PASSIVE_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_passive_presenter.gd")
 const WEAPON_PASSIVE_PANEL_VIEW_SCRIPT := preload("res://UI/scripts/components/weapon_passive_panel_view.gd")
@@ -179,6 +179,7 @@ var _pending_cell_effect_cancel := Callable()
 var _primary_menu_tweens: Dictionary = {}
 var spread_cursor_overlay
 var hud_presenter: HudPresenter
+var hud_refresh_controller
 var task_objective_hud_presenter
 var ui_dirty_signal_controller
 var weapon_passive_presenter
@@ -208,15 +209,10 @@ var _weapon_passive_panel_refresh_timer := 0.0
 const WEAPON_PASSIVE_PANEL_REFRESH_INTERVAL := 1.0
 var _shop_purchase_action_dirty := true
 var _management_action_refresh_scheduled := false
-var _hud_static_dirty := true
-var _hud_hp_dirty := true
-var _hud_inventory_dirty := true
-var _hud_weapon_dirty := true
 @warning_ignore("unused_private_class_variable")
 var _passive_status_signal_weapons: Array[Node] = []
 var _upgrade_action_dirty := true
 var _warehouse_action_dirty := true
-var _ui_refresh_debug_counter = UI_REFRESH_DEBUG_COUNTER_SCRIPT.new()
 
 
 # Lifecycle and bootstrap
@@ -880,29 +876,8 @@ func _physics_process(delta: float) -> void:
 	_update_rest_area_hover_hint_position()
 
 func _refresh_hud_if_needed(delta: float) -> void:
-	if hud_presenter == null:
-		return
-	if _hud_static_dirty:
-		hud_presenter.refresh_static_texts()
-		_hud_static_dirty = false
-		_hud_hp_dirty = true
-		_hud_inventory_dirty = true
-		_hud_weapon_dirty = true
-	if _hud_hp_dirty:
-		hud_presenter.refresh_hp()
-		_increment_ui_refresh_debug_count("hud_hp")
-		_hud_hp_dirty = false
-	if _hud_inventory_dirty:
-		hud_presenter.refresh_inventory()
-		_increment_ui_refresh_debug_count("hud_inventory")
-		_hud_inventory_dirty = false
-	if _hud_weapon_dirty:
-		hud_presenter.refresh_weapon_state()
-		hud_presenter.refresh_ammo()
-		_increment_ui_refresh_debug_count("hud_weapon")
-		_hud_weapon_dirty = false
-	if hud_presenter.refresh_continuous(delta):
-		_increment_ui_refresh_debug_count("hud_continuous")
+	_init_hud_refresh_controller()
+	hud_refresh_controller.refresh_if_needed(delta)
 
 func _refresh_task_objective_hud_if_needed(delta: float) -> void:
 	if task_objective_hud_presenter == null:
@@ -917,13 +892,16 @@ func _refresh_task_objective_hud(force: bool = false) -> void:
 	task_objective_hud_presenter.refresh(force)
 
 func _increment_ui_refresh_debug_count(key: String) -> void:
-	_ui_refresh_debug_counter.increment(key)
+	_init_hud_refresh_controller()
+	hud_refresh_controller.increment_debug_count(key)
 
 func reset_ui_refresh_debug_counts() -> void:
-	_ui_refresh_debug_counter.reset()
+	_init_hud_refresh_controller()
+	hud_refresh_controller.reset_debug_counts()
 
 func get_ui_refresh_debug_counts() -> Dictionary:
-	return _ui_refresh_debug_counter.snapshot()
+	_init_hud_refresh_controller()
+	return hud_refresh_controller.get_debug_counts()
 
 func _ensure_hud_presenter_instance() -> void:
 	if hud_presenter and is_instance_valid(hud_presenter):
@@ -949,6 +927,13 @@ func _init_hud_presenter() -> void:
 	hud_presenter.configure_hp_bar_anim(HP_BAR_ANIM_TIME, HP_BAR_TRANS, HP_BAR_EASE)
 	hud_presenter.init_hp_bar()
 	hud_presenter.refresh_static_texts()
+	_init_hud_refresh_controller()
+
+func _init_hud_refresh_controller() -> void:
+	_ensure_hud_presenter_instance()
+	if hud_refresh_controller == null:
+		hud_refresh_controller = HUD_REFRESH_CONTROLLER_SCRIPT.new()
+	hud_refresh_controller.bind(hud_presenter)
 
 func _init_task_objective_hud_presenter() -> void:
 	if task_objective_hud_presenter != null:
@@ -1400,17 +1385,21 @@ func _on_inventory_weapon_storage_changed() -> void:
 	_init_ui_dirty_signal_controller()
 	ui_dirty_signal_controller.call("_on_inventory_weapon_storage_changed")
 
+func _mark_hud_hp_dirty() -> void:
+	_init_hud_refresh_controller()
+	hud_refresh_controller.mark_hp_dirty()
+
 func _mark_hud_inventory_dirty() -> void:
-	_hud_inventory_dirty = true
+	_init_hud_refresh_controller()
+	hud_refresh_controller.mark_inventory_dirty()
 
 func _mark_hud_weapon_dirty() -> void:
-	_hud_weapon_dirty = true
+	_init_hud_refresh_controller()
+	hud_refresh_controller.mark_weapon_dirty()
 
 func _mark_all_hud_dirty() -> void:
-	_hud_static_dirty = true
-	_hud_hp_dirty = true
-	_hud_inventory_dirty = true
-	_hud_weapon_dirty = true
+	_init_hud_refresh_controller()
+	hud_refresh_controller.mark_all_dirty()
 
 func _rebind_weapon_passive_status_signals() -> void:
 	_init_ui_dirty_signal_controller()

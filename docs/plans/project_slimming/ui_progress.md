@@ -74,4 +74,23 @@ UI-2 后：
 - Also registered existing UI contract scenes for player health, skill energy, combat resource, and module-fit display.
 - `UI.gd` remains at 1599 lines; this batch improves selected-test coverage, not UI ownership size.
 
-- 下一安全批次：继续在已有行为/视觉门禁保护下迁移 HUD 或管理 UI 职责，不为行数目标裸拆。
+### UI-5: HUD refresh coordination controller
+
+- Added `UI/scripts/components/hud_refresh_controller.gd` to own HUD dirty flags, HUD refresh ordering, continuous refresh cadence, and HUD refresh debug counters.
+- `UI.gd` keeps compatibility entrypoints such as `_refresh_hud_if_needed`, `_mark_all_hud_dirty`, `_mark_hud_hp_dirty`, `_mark_hud_inventory_dirty`, `_mark_hud_weapon_dirty`, `reset_ui_refresh_debug_counts`, and `get_ui_refresh_debug_counts`, but those now delegate to the controller.
+- `UiDirtySignalController` no longer writes HUD dirty state directly; it calls the narrow UI mark methods.
+- Updated `ui.hud_dirty_refresh` to assert the controller-owned dirty state instead of private `UI.gd` fields.
+- `UI.gd`: 1599 -> 1588 lines.
+- PASS: Godot `--headless --path . --check-only --quit`.
+- PASS: `run_selected_tests.ps1 -ChangedPath 'UI/scripts/UI.gd' -Jobs 2`: PASS=49, FAIL=0, ERROR=0, shutdown diagnostics=74, runtime errors=0. Result root: `test-results/ui-slimming-hud-refresh`.
+- PASS: `git diff --check`.
+- No layout or visual output changed; non-headless visual baseline was not required.
+
+### UI-6: final closure report
+
+- Final report path: `docs/reports/project_slimming_completion_report.md`.
+- Final `UI.gd` line-count snapshot: 1802 plan-baseline lines -> 1588 final lines; 1599 lines at Stage 7 start -> 1588 final lines.
+- Final responsibility state: `UI.gd` remains the scene-level facade, while task-module dialog state, management style/layout work, selection-modal registry behavior, and HUD dirty-refresh coordination now live in extracted controllers/helpers.
+- No Stage 7 UI runtime code changed.
+
+- 下一安全批次：继续在已有行为/视觉门禁保护下迁移 localization refresh 或 pause/settings UI 职责，不为行数目标裸拆。

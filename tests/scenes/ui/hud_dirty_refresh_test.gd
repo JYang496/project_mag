@@ -20,9 +20,9 @@ func _run() -> void:
 	ui.reset_ui_refresh_debug_counts()
 	ui._mark_all_hud_dirty()
 	ui._refresh_hud_if_needed(0.2)
-	_assert_false(ui._hud_hp_dirty, "HUD HP dirty flag should be consumed after refresh.")
-	_assert_false(ui._hud_inventory_dirty, "HUD inventory dirty flag should be consumed after refresh.")
-	_assert_false(ui._hud_weapon_dirty, "HUD weapon dirty flag should be consumed after refresh.")
+	_assert_false(ui.hud_refresh_controller.hp_dirty, "HUD HP dirty flag should be consumed after refresh.")
+	_assert_false(ui.hud_refresh_controller.inventory_dirty, "HUD inventory dirty flag should be consumed after refresh.")
+	_assert_false(ui.hud_refresh_controller.weapon_dirty, "HUD weapon dirty flag should be consumed after refresh.")
 	var counts := ui.get_ui_refresh_debug_counts()
 	_assert_equal(1, int(counts.get("hud_hp", 0)), "HUD HP refresh should be counted once.")
 	_assert_equal(1, int(counts.get("hud_inventory", 0)), "HUD inventory refresh should be counted once.")
@@ -30,20 +30,20 @@ func _run() -> void:
 	_assert_equal(1, int(counts.get("hud_continuous", 0)), "HUD continuous refresh should be counted once.")
 
 	PlayerData.player_hp = maxi(0, PlayerData.player_hp - 1)
-	_assert_true(ui._hud_hp_dirty, "Changing player HP should mark only the HP HUD block dirty.")
+	_assert_true(ui.hud_refresh_controller.hp_dirty, "Changing player HP should mark only the HP HUD block dirty.")
 	ui.reset_ui_refresh_debug_counts()
 	ui._refresh_hud_if_needed(0.0)
-	_assert_false(ui._hud_hp_dirty, "HUD HP dirty flag should be consumed after HP refresh.")
+	_assert_false(ui.hud_refresh_controller.hp_dirty, "HUD HP dirty flag should be consumed after HP refresh.")
 	counts = ui.get_ui_refresh_debug_counts()
 	_assert_equal(1, int(counts.get("hud_hp", 0)), "HP-only dirty refresh should not refresh the whole HUD.")
 	_assert_equal(0, int(counts.get("hud_inventory", 0)), "HP-only dirty refresh should skip inventory.")
 
 	PlayerData.player_gold += 7
-	_assert_true(ui._hud_inventory_dirty, "Changing player gold should mark inventory HUD dirty.")
+	_assert_true(ui.hud_refresh_controller.inventory_dirty, "Changing player gold should mark inventory HUD dirty.")
 	_assert_true(ui._upgrade_action_dirty, "Changing player gold should mark upgrade action dirty.")
 	_assert_true(ui._warehouse_action_dirty, "Changing player gold should mark warehouse action dirty.")
 	ui._refresh_hud_if_needed(0.0)
-	_assert_false(ui._hud_inventory_dirty, "HUD inventory dirty flag should be consumed after inventory refresh.")
+	_assert_false(ui.hud_refresh_controller.inventory_dirty, "HUD inventory dirty flag should be consumed after inventory refresh.")
 
 	ui._upgrade_action_dirty = false
 	ui._warehouse_action_dirty = false

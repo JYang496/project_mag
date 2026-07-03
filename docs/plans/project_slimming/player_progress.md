@@ -70,6 +70,25 @@ The temporary `Player.gd` increase is the explicit engine-adapter code and two r
 - Kept incoming damage pipeline/profile ownership unchanged because moving that state would require a dedicated damage-reaction characterization gate.
 - `Player.gd`: 1828 -> 1805 lines.
 
+### Player-4: camera/rest-area configuration boundary
+
+- Added `PlayerCameraConfig` as the explicit camera configuration object passed into `PlayerCameraSystem`.
+- `PlayerCameraSystem` no longer stores a Player owner, calls `Player.get(...)`, or reads `Player.get_total_vision_mul()` during phase/rest-area transitions.
+- Player keeps the public camera facades and exported camera tuning fields, but now syncs those values into the narrow config object and passes vision changes through `update_zoom_target_by_vision`.
+- `force_recover_battle_camera_zoom` now delegates battle zoom recovery/base-zoom ownership to the camera system instead of recalculating the base camera zoom in `Player.gd`.
+- Added `player.camera_system` as a focused scene-backed gate for battle/prepare zoom, rest-area top-level snap/move/exit behavior, shake reset, and the no-Player-owner source contract.
+- Updated `weapon.fire_feedback` to construct the camera system through the same explicit config boundary.
+- `Player.gd`: 1822 -> 1813 lines for the completed camera-rest-area batch.
+- Validation: Godot `--headless --path . --check-only --quit` PASS; direct focused scene `res://tests/scenes/player/player_camera_system_test.tscn` PASS; `player.camera_system` focused Worker entry PASS with runtime errors 0.
+- Broader selected runner note: the required `run_selected_tests.ps1 -ChangedPath 'Player/Mechas/scripts/Player.gd' -Jobs 2` command was executed, but it selected the full 49-entry pilot catalog and failed outside this camera slice (`reward.loot_rarity` duplicate reward runtime marker on the first run; subsequent full/affected runs produced multiple unrelated `exit code -1` runner/process failures). In all inspected runs, `player.camera_system` remained PASS.
+
+### Player-5: final closure report
+
+- Final report path: `docs/reports/project_slimming_completion_report.md`.
+- Final `Player.gd` line-count snapshot: 1786 plan-baseline lines -> 1813 final lines; 1805 lines at Stage 7 start -> 1813 final lines.
+- Final responsibility state: `Player.gd` still owns the engine-facing CharacterBody2D boundary and exported tuning facades, while movement calculation, active-skill subresponsibilities, dead damage-reaction wrappers, and camera-system reverse dependency have been reduced or extracted.
+- No Stage 7 Player runtime code changed.
+
 ## Next recommended batch
 
-Continue reducing `Player.gd` through another behavior-protected responsibility slice. Good candidates are camera/rest-area control or incoming elemental damage reaction, but add a focused gate before moving state ownership.
+Continue reducing `Player.gd` through another behavior-protected responsibility slice. Good candidates are incoming elemental damage reaction or damage profile/pipeline ownership, but add or extend a focused gate before moving state ownership.

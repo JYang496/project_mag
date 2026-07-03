@@ -1,8 +1,11 @@
 extends RefCounted
 class_name PlayerCameraSystem
 
-var _player
+const PlayerCameraConfigType := preload("res://Player/Mechas/scripts/player_camera_config.gd")
+
 var _camera: Camera2D
+var _config
+var _current_vision_mul: float = 1.0
 var _base_zoom := Vector2.ONE
 var _zoom_target := Vector2.ONE
 var _offset_target := Vector2.ZERO
@@ -28,12 +31,13 @@ var _shake_max_offset := Vector2(14.0, 10.0)
 func has_camera_binding() -> bool:
 	return _camera != null
 
-func setup(player, camera: Camera2D) -> void:
-	_player = player
+func setup(camera: Camera2D, config, vision_mul: float = 1.0) -> void:
 	if _zoom_tween != null:
 		_zoom_tween.kill()
 		_zoom_tween = null
 	_camera = camera
+	_config = config
+	_current_vision_mul = maxf(vision_mul, 0.05)
 	if _camera != null:
 		_base_zoom = _camera.zoom
 		_zoom_target = _base_zoom
@@ -130,9 +134,10 @@ func get_camera_world_position() -> Vector2:
 func update_zoom_target_by_vision(vision_mul: float) -> void:
 	if _camera == null:
 		return
+	_current_vision_mul = maxf(vision_mul, 0.05)
 	if _base_zoom == Vector2.ZERO:
 		_base_zoom = Vector2.ONE
-	var zoom_factor := 1.0 / _get_effective_vision_mul(vision_mul)
+	var zoom_factor := 1.0 / _get_effective_vision_mul(_current_vision_mul)
 	_zoom_target = _base_zoom * zoom_factor * _get_phase_camera_zoom_factor()
 	if _is_zoom_transition_enabled() and _camera.zoom.distance_to(_zoom_target) > 0.001:
 		var is_prepare := _is_prepare_phase()
@@ -148,18 +153,21 @@ func force_zoom_now(target_zoom: Vector2) -> void:
 	_zoom_target = target_zoom
 	_camera.zoom = target_zoom
 
+func force_recover_battle_zoom(vision_mul: float) -> void:
+	var zoom_factor := 1.0 / (maxf(vision_mul, 0.05) * maxf(_get_config().battle_camera_view_mul, 0.05))
+	force_zoom_now(_base_zoom * zoom_factor)
+
 func _get_phase_camera_zoom_factor() -> float:
 	if PhaseManager != null and PhaseManager.has_method("current_state"):
 		if str(PhaseManager.current_state()) == str(PhaseManager.PREPARE):
-			return clampf(_player.rest_phase_camera_zoom_factor, 0.2, 2.0)
+			return clampf(_get_config().rest_phase_camera_zoom_factor, 0.2, 2.0)
 	return 1.0
 
 func _get_effective_vision_mul(vision_mul: float) -> float:
 	var effective_mul := maxf(vision_mul, 0.05)
 	if _is_prepare_phase():
 		return effective_mul
-	if _player != null:
-		effective_mul *= maxf(float(_player.get("battle_camera_view_mul")), 0.05)
+	effective_mul *= maxf(_get_config().battle_camera_view_mul, 0.05)
 	return effective_mul
 
 func _update_zoom(delta: float) -> void:
@@ -168,7 +176,7 @@ func _update_zoom(delta: float) -> void:
 			var duration := _get_zoom_transition_duration(_is_prepare_phase())
 			_rebuild_zoom_transition(_zoom_target, duration)
 		return
-	var t := clampf(_player.camera_zoom_lerp_speed * delta, 0.0, 1.0)
+	var t := clampf(_get_config().camera_zoom_lerp_speed * delta, 0.0, 1.0)
 	_camera.zoom = _camera.zoom.lerp(_zoom_target, t)
 
 func _sync_zoom_transition_phase_edge() -> void:
@@ -199,18 +207,13 @@ func on_phase_changed() -> void:
 	_rebuild_zoom_transition(_zoom_target, duration)
 
 func _refresh_zoom_target_from_context() -> void:
-	if _camera == null or _player == null:
+	if _camera == null:
 		return
-	var vision_mul := 1.0
-	if _player.has_method("get_total_vision_mul"):
-		vision_mul = maxf(float(_player.call("get_total_vision_mul")), 0.05)
-	var zoom_factor := 1.0 / _get_effective_vision_mul(vision_mul)
+	var zoom_factor := 1.0 / _get_effective_vision_mul(_current_vision_mul)
 	_zoom_target = _base_zoom * zoom_factor * _get_phase_camera_zoom_factor()
 
 func _is_zoom_transition_enabled() -> bool:
-	if _player == null:
-		return false
-	return bool(_player.get("rest_camera_zoom_transition_enabled"))
+	return _get_config().rest_camera_zoom_transition_enabled
 
 func _is_prepare_phase() -> bool:
 	if PhaseManager == null or not PhaseManager.has_method("current_state"):
@@ -218,13 +221,11 @@ func _is_prepare_phase() -> bool:
 	return str(PhaseManager.current_state()) == str(PhaseManager.PREPARE)
 
 func _get_zoom_transition_duration(is_prepare: bool) -> float:
-	if _player == null:
-		return 0.01
 	var value: float = 0.0
 	if is_prepare:
-		value = float(_player.get("rest_camera_zoom_enter_duration"))
+		value = _get_config().rest_camera_zoom_enter_duration
 	else:
-		value = float(_player.get("rest_camera_zoom_exit_duration"))
+		value = _get_config().rest_camera_zoom_exit_duration
 	return maxf(value, 0.01)
 
 func _rebuild_zoom_transition(to_zoom: Vector2, duration: float) -> void:
@@ -249,11 +250,16 @@ func _update_lookahead(delta: float) -> void:
 	_camera.offset = _offset_target + _shake_offset
 
 func _reset_offset_for_restarea(delta: float) -> void:
-	var reset_t := clampf(maxf(_player.camera_lookahead_lerp_speed, 0.0) * maxf(delta, 0.0), 0.0, 1.0)
+	var reset_t := clampf(maxf(_get_config().camera_lookahead_lerp_speed, 0.0) * maxf(delta, 0.0), 0.0, 1.0)
 	_offset_target = Vector2.ZERO
 	_shake_trauma = 0.0
 	_shake_offset = Vector2.ZERO
 	_camera.offset = _camera.offset.lerp(Vector2.ZERO, reset_t)
+
+func _get_config():
+	if _config == null:
+		_config = PlayerCameraConfigType.new()
+	return _config
 
 func _update_shake(delta: float) -> void:
 	if _shake_trauma <= 0.001:

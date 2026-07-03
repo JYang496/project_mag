@@ -1,0 +1,53 @@
+你在 Windows 本地 Godot 项目 `D:\Godot Projects\project_mag` 工作。
+
+阶段 2：确认 manifest 可以升级语义。
+
+目标：在阶段 1 登记完整后，决定是否把 manifest 从 `pilot` 升级为完整测试目录的可信入口。
+
+开始前必须执行：
+
+```powershell
+git status --short --branch
+git rev-parse HEAD
+```
+
+开始前阅读：
+
+- `tests/README.md`
+- `tests/infrastructure/test_manifest.json`
+- `tests/infrastructure/source_domain_map.json`
+- `docs/plans/project_slimming/test_infrastructure_progress.md`
+- `docs/plans/project_slimming/overall_progress.md`
+
+## 执行
+
+1. 复查是否还有未登记 scene：
+
+```powershell
+rg --files tests/scenes -g "*.tscn"
+```
+
+2. 复查是否有 runner-only script 需要补 scene wrapper：
+
+```powershell
+rg --files tests/headless -g "*.gd"
+```
+
+3. 运行全 manifest Worker：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/infrastructure/run_test_workers.ps1 -GodotPath 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' -Jobs 2 -OutputRoot 'test-results\manifest-full-candidate'
+```
+
+4. 如果全部 PASS，才考虑将 `catalog_status` 改为更强语义，例如 `active`。
+5. 如果仍有未迁移历史测试，保持 `pilot`，并写明剩余清单。
+6. 更新：
+   - `tests/README.md`
+   - `docs/plans/project_slimming/test_infrastructure_progress.md`
+   - `docs/plans/project_slimming/overall_progress.md`
+
+## 验收
+
+- manifest 状态语义与实际覆盖一致。
+- 不能提前把 pilot 改成 full。
+- 全 manifest Worker 结果、shutdown diagnostics 和 runtime errors 均写入进度文档。

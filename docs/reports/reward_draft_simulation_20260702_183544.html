@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reward Draft Simulation</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 32px; color: #1f2937; background: #f8fafc; }
+table { border-collapse: collapse; width: 100%; background: white; }
+th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
+th { background: #e2e8f0; }
+.status { display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: 700; background: #e0f2fe; }
+pre { background: #111827; color: #f8fafc; padding: 14px; overflow: auto; }
+</style>
+</head>
+<body>
+<h1>Reward Draft Simulation</h1>
+<p>Status: <span class="status">PASS</span></p>
+<p>Seed: 20260702</p>
+<p>Sample count: 1000 runs, first 6 standard battle Drafts per run.</p>
+<h2>Config Snapshot</h2>
+<pre>{
+	"early_allow_fallback_economy": true,
+	"early_economy_option_enabled": false,
+	"early_module_option_chances": [
+		0.0,
+		0.200000002980232,
+		-1.0
+	],
+	"early_standard_draft_count": 3,
+	"early_weapon_progress_slot_enabled": true,
+	"reward_economy_option_chance": 0.15,
+	"reward_module_options_enabled": true,
+	"reward_weapon_option_chance": 0.6
+}</pre>
+<h2>Draft 1-6 Distribution</h2>
+<table>
+<thead><tr><th>Draft</th><th>Options</th><th>Weapon</th><th>Module / All Options</th><th>Module / Rollable Slots</th><th>Normal Economy</th><th>Fallback Economy</th><th>Weapon-Progress Presence</th></tr></thead>
+<tbody><tr><td>Draft 1</td><td>3000</td><td>100.00%</td><td>0.00%</td><td>0.00%</td><td>0.00%</td><td>0.00%</td><td>100.00%</td></tr>
+<tr><td>Draft 2</td><td>3000</td><td>87.27%</td><td>12.73%</td><td>19.10%</td><td>0.00%</td><td>0.00%</td><td>100.00%</td></tr>
+<tr><td>Draft 3</td><td>3000</td><td>74.03%</td><td>25.97%</td><td>38.95%</td><td>0.00%</td><td>0.00%</td><td>100.00%</td></tr>
+<tr><td>Draft 4</td><td>3000</td><td>53.03%</td><td>34.93%</td><td>34.93%</td><td>12.03%</td><td>0.00%</td><td>89.90%</td></tr>
+<tr><td>Draft 5</td><td>3000</td><td>52.17%</td><td>35.57%</td><td>35.57%</td><td>12.27%</td><td>0.00%</td><td>89.10%</td></tr>
+<tr><td>Draft 6</td><td>3000</td><td>51.53%</td><td>34.50%</td><td>34.50%</td><td>13.97%</td><td>0.00%</td><td>88.70%</td></tr></tbody>
+</table>
+<h2>Failures</h2>
+<p>No failures.</p>
+<h2>Warnings</h2>
+<p>No warnings.</p>
+</body>
+</html>

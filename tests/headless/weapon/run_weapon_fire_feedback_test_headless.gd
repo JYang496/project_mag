@@ -87,6 +87,7 @@ const WEAPON_CASES := [
 	},
 ]
 const MUZZLE_FLASH_SCRIPT := preload("res://Player/Weapons/Feedback/muzzle_flash_vfx.gd")
+const PlayerCameraConfigType := preload("res://Player/Mechas/scripts/player_camera_config.gd")
 
 class FakePlayer:
 	extends Node2D
@@ -100,20 +101,6 @@ class FakePlayer:
 
 	func apply_heat_expansion(_duration_sec: float, _max_heat_mul: float) -> bool:
 		return true
-
-class FakeCameraPlayer:
-	extends Node2D
-
-	var camera_lookahead_lerp_speed: float = 16.0
-	var camera_zoom_lerp_speed: float = 16.0
-	var rest_camera_zoom_transition_enabled: bool = false
-	var rest_camera_zoom_enter_duration: float = 0.12
-	var rest_camera_zoom_exit_duration: float = 0.12
-	var rest_phase_camera_zoom_factor: float = 1.0
-	var battle_camera_view_mul: float = 1.0
-
-	func get_total_vision_mul() -> float:
-		return 1.0
 
 var _failed: bool = false
 var _fake_player: FakePlayer
@@ -256,12 +243,20 @@ func _assert_weapon_feedback_lifecycle(weapon_case: Dictionary) -> void:
 
 
 func _assert_camera_trauma_limit() -> void:
-	var fake := FakeCameraPlayer.new()
+	var fake := Node2D.new()
 	var camera := Camera2D.new()
 	fake.add_child(camera)
 	get_tree().root.add_child(fake)
+	var config := PlayerCameraConfigType.new()
+	config.camera_lookahead_lerp_speed = 16.0
+	config.camera_zoom_lerp_speed = 16.0
+	config.rest_camera_zoom_transition_enabled = false
+	config.rest_camera_zoom_enter_duration = 0.12
+	config.rest_camera_zoom_exit_duration = 0.12
+	config.rest_phase_camera_zoom_factor = 1.0
+	config.battle_camera_view_mul = 1.0
 	var camera_system := PlayerCameraSystem.new()
-	camera_system.setup(fake, camera)
+	camera_system.setup(camera, config, 1.0)
 	for i in range(20):
 		camera_system.request_camera_shake(0.2, Vector2.ZERO, 900.0)
 	var trauma := camera_system.get_camera_shake_trauma()

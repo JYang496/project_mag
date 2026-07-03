@@ -1,0 +1,66 @@
+你在 Windows 本地 Godot 项目 `D:\Godot Projects\project_mag` 工作。
+
+阶段 4：继续 UI 瘦身。
+
+目标：继续把 `UI/scripts/UI.gd` 收敛为组件装配、生命周期协调和公开兼容门面。
+
+开始前必须执行：
+
+```powershell
+git status --short --branch
+git rev-parse HEAD
+```
+
+开始前阅读：
+
+- `docs/plans/project_slimming/ui_progress.md`
+- `docs/plans/project_slimming/overall_progress.md`
+- `UI/scripts/UI.gd`
+- `UI/scripts/components/**`
+- `UI/scripts/management/**`
+- `tests/scenes/ui/**`
+- `tests/headless/ui/**`
+
+不要为了行数裸拆。每批只迁移一个 UI 子系统。
+
+## 推荐顺序
+
+1. HUD refresh coordination
+2. localization refresh
+3. pause/settings UI
+4. remaining management compatibility wrappers
+
+## 每个 UI 批次固定流程
+
+1. 先查现有 gate：
+   - `ui.hud_dirty_refresh`
+   - `ui.unified_modal_behavior`
+   - `ui.task_module_dialog_controller`
+   - `ui.player_health_meter_contract`
+   - `ui.skill_energy_meter_contract`
+   - `ui.combat_resource_meter_contract`
+   - `ui.module_fit_display_contract`
+   - visual baseline gate if layout changes
+2. 没有 gate 时先补 scene-backed test。
+3. 只迁移一个 UI 子系统。
+4. 不让新 controller 反向读写 `UI.gd` 私有字段。
+5. 保留公开兼容门面，直到调用方迁移完成。
+6. 验证：
+
+```powershell
+& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/infrastructure/run_selected_tests.ps1 -ChangedPath 'UI/scripts/UI.gd' -GodotPath 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' -Jobs 2 -OutputRoot 'test-results\ui-slimming-<batch>'
+git diff --check
+```
+
+7. 如果涉及布局或视觉，补跑非-headless visual baseline gate，并在报告中记录截图/hash 结果。
+8. 更新：
+   - `docs/plans/project_slimming/ui_progress.md`
+   - `docs/plans/project_slimming/overall_progress.md`
+
+## 验收
+
+- `UI.gd` 减少一个真实职责。
+- 公开门面兼容。
+- 行为/视觉 gate PASS。
+- 最终报告包含行数变化、职责变化、验证结果和剩余风险。

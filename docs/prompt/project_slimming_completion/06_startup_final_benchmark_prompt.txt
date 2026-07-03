@@ -1,0 +1,51 @@
+你在 Windows 本地 Godot 项目 `D:\Godot Projects\project_mag` 工作。
+
+阶段 6：启动与性能最终复测。
+
+目标：在 Player/UI/manifest/asset 收口后，重新测量启动收益和回退风险。
+
+开始前必须执行：
+
+```powershell
+git status --short --branch
+git rev-parse HEAD
+```
+
+开始前阅读：
+
+- `docs/plans/project_slimming/startup_progress.md`
+- `docs/plans/project_slimming/overall_progress.md`
+- `tools/benchmark_startup_loading.ps1`
+- `tests/scenes/startup/**`
+- `tests/headless/startup/**`
+
+## 执行
+
+运行启动 benchmark：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/benchmark_startup_loading.ps1
+```
+
+保持与 `startup_progress.md` 中 Startup-1/Startup-4 相同口径：
+
+- cold import
+- hot start median
+- directed startup median
+- loaded resource count
+- runtime error count
+- shutdown diagnostics separated from runtime errors
+
+同时运行基础验证：
+
+```powershell
+git diff --check
+& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/infrastructure/run_selected_tests.ps1 -ChangedPath 'data/startup/startup_resource_manifest.json' -GodotPath 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' -Jobs 2 -OutputRoot 'test-results\startup-final-benchmark'
+```
+
+## 验收
+
+- 结果写入 `docs/plans/project_slimming/startup_progress.md` 和 `overall_progress.md`。
+- 如果启动收益有限，也要如实记录；不要继续无目标优化。
+- 报告区分 runtime errors 和 shutdown diagnostics。

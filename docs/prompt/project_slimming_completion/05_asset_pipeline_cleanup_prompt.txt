@@ -1,0 +1,57 @@
+你在 Windows 本地 Godot 项目 `D:\Godot Projects\project_mag` 工作。
+
+阶段 5：资源管线后续清理。
+
+目标：只在独立批准和恢复方案明确时继续资源瘦身。
+
+开始前必须执行：
+
+```powershell
+git status --short --branch
+git rev-parse HEAD
+```
+
+开始前阅读：
+
+- `docs/plans/project_slimming/asset_pipeline_audit.md`
+- `docs/plans/project_slimming/asset_pipeline_progress.md`
+- `docs/plans/project_slimming/handoffs/asset_pipeline.md`
+- `docs/plans/project_slimming/overall_progress.md`
+
+不要混批处理字体、ZIP、PNG。不要删除资源，除非该类别已经被用户明确批准。
+
+## 允许的后续批次
+
+1. OTF 字体候选
+   - 必须有 UI 四组视觉门禁。
+   - 不能直接用 Regular OTF 替换当前 Thin TTF。
+2. ZIP 仓库归档候选
+   - 先确认导出 manifest 和制作源用途。
+   - 不能声称冷导入收益，除非 benchmark 证明。
+3. 未引用 PNG
+   - 按类别逐批审计。
+   - 不批量删除。
+
+## 每批固定流程
+
+1. 再次确认目标资源的引用、UID、import、导出或动态加载风险。
+2. 写明恢复路径。
+3. 只处理一个资源类别。
+4. 运行验证：
+
+```powershell
+git diff --check
+& 'D:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe' --headless --path . --check-only --quit
+```
+
+5. 如果影响 UI 或启动，必须额外跑对应 visual/startup gates。
+6. 更新：
+   - `docs/plans/project_slimming/asset_pipeline_progress.md`
+   - `docs/plans/project_slimming/overall_progress.md`
+
+## 验收
+
+- 每个资源改动都有恢复路径。
+- 不混批处理字体、ZIP、PNG。
+- 不伪报冷导入收益。
+- 验证命令和结果写入进度文档。

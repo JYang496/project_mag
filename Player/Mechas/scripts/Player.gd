@@ -7,6 +7,7 @@ const PLAYER_WEAPON_INVENTORY_RUNTIME_SCRIPT := preload("res://Player/Mechas/scr
 const PLAYER_WEAPON_PASSIVE_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_passive_runtime.gd")
 const MovementFrameInputType := preload("res://Player/Mechas/scripts/movement_frame_input.gd")
 const MovementFrameResultType := preload("res://Player/Mechas/scripts/movement_frame_result.gd")
+const PlayerCameraConfigType := preload("res://Player/Mechas/scripts/player_camera_config.gd")
 
 var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
@@ -66,7 +67,6 @@ const HEAT_PREPARED_DAMAGE_SOURCE: StringName = &"heat_prepared_damage"
 const HEAT_PREPARED_FLAT_DAMAGE_SOURCE: StringName = &"heat_prepared_flat_damage"
 var weapon_orbit_states: Dictionary = {}
 var _base_detect_shape_size := Vector2.ZERO
-var _base_camera_zoom := Vector2.ONE
 var _base_hurtbox_shape_size := Vector2.ZERO
 var _base_hurtbox_shape_position := Vector2.ZERO
 var _hurtbox_shape_base_cached: bool = false
@@ -141,6 +141,7 @@ var _movement_system: PlayerMovementSystem
 var _movement_frame_input: MovementFrameInputType
 var _movement_frame_result: MovementFrameResultType
 var _camera_system: PlayerCameraSystem
+var _camera_config
 var _shared_heat_system: PlayerSharedHeatSystem
 var _loot_system: PlayerLootSystem
 var _damage_reaction_system: PlayerDamageReactionSystem
@@ -197,7 +198,6 @@ func _ready():
 	_resize_mecha_sprite()
 	_setup_mecha_move_sprite()
 	_last_visual_position = global_position
-	_cache_camera_zoom_base()
 	_cache_detect_shape_base()
 	_update_vision_effect()
 	_sync_weapon_orbit_states(true)
@@ -986,10 +986,8 @@ func get_camera_shake_trauma() -> float:
 func force_recover_battle_camera_zoom() -> void:
 	if not _require_camera_system_or_halt():
 		return
-	var vision_mul := maxf(get_total_vision_mul(), 0.05)
-	var battle_view_mul := maxf(battle_camera_view_mul, 0.05)
-	var target_zoom := _base_camera_zoom * (1.0 / (vision_mul * battle_view_mul))
-	_camera_system.force_zoom_now(target_zoom)
+	_sync_camera_config()
+	_camera_system.force_recover_battle_zoom(get_total_vision_mul())
 
 func update_grab_radius() -> void:
 	grab_radius.shape.radius = PlayerData.total_grab_radius
@@ -1000,11 +998,6 @@ func _cache_detect_shape_base() -> void:
 	var rect := detect_shape.shape as RectangleShape2D
 	if rect:
 		_base_detect_shape_size = rect.size
-
-func _cache_camera_zoom_base() -> void:
-	if player_camera == null:
-		return
-	_base_camera_zoom = player_camera.zoom
 
 func _update_vision_effect() -> void:
 	var vision_mul := get_total_vision_mul()
@@ -1022,6 +1015,7 @@ func _update_vision_effect() -> void:
 func _update_camera_zoom_by_vision(vision_mul: float) -> void:
 	if not _require_camera_system_or_halt():
 		return
+	_sync_camera_config()
 	_camera_system.update_zoom_target_by_vision(vision_mul)
 
 func _resolve_buffered_move_input() -> Vector2:
@@ -1608,15 +1602,29 @@ func _tick_movement(delta: float) -> void:
 		_movement_system.reset_auto_nav_speed_mul()
 
 func _ensure_camera_system() -> void:
+	_sync_camera_config()
 	if _camera_system != null:
 		if player_camera != null:
 			var bound := _camera_system.has_camera_binding()
 			if not bound:
-				_camera_system.setup(self, player_camera)
+				_camera_system.setup(player_camera, _camera_config, 1.0)
 		return
 	_camera_system = PlayerCameraSystem.new() as PlayerCameraSystem
 	if _camera_system != null:
-		_camera_system.setup(self, player_camera)
+		_camera_system.setup(player_camera, _camera_config, 1.0)
+
+func _sync_camera_config() -> void:
+	if _camera_config == null:
+		_camera_config = PlayerCameraConfigType.new()
+	if _camera_config == null:
+		return
+	_camera_config.camera_zoom_lerp_speed = camera_zoom_lerp_speed
+	_camera_config.battle_camera_view_mul = battle_camera_view_mul
+	_camera_config.rest_phase_camera_zoom_factor = rest_phase_camera_zoom_factor
+	_camera_config.rest_camera_zoom_enter_duration = rest_camera_zoom_enter_duration
+	_camera_config.rest_camera_zoom_exit_duration = rest_camera_zoom_exit_duration
+	_camera_config.rest_camera_zoom_transition_enabled = rest_camera_zoom_transition_enabled
+	_camera_config.camera_lookahead_lerp_speed = camera_lookahead_lerp_speed
 
 func _ensure_shared_heat_system() -> void:
 	if _shared_heat_system != null:

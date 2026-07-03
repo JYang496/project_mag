@@ -68,7 +68,30 @@ The pilot manifest at `tests/infrastructure/test_manifest.json` defines the regi
 - `parallel_safe` and `writes_user_data` flags;
 - a positive `timeout_seconds`.
 
-The current catalog deliberately contains representative gates only and has `catalog_status: "pilot"`. It does not replace existing manual full-suite gates. Register the remaining active tests before treating manifest `full` mode as the repository's complete test suite.
+The current catalog deliberately contains registered Worker-compatible gates only and has `catalog_status: "pilot"`. It does not replace existing manual full-suite gates. As of the Stage 3 Player camera gate, 49 scene-backed tests are registered; `full` mode means every registered manifest entry, not every historical scene under `tests/scenes`.
+
+The previous unregistered one-off scene-backed files were removed instead of promoted into the Worker catalog. The manifest is still not a complete test-directory entrypoint because runner-only scripts under `tests/headless` still do not have scene wrappers or manifest entries:
+
+- `tests/headless/cell/run_cell_activation_visual_test_headless.gd`
+- `tests/headless/combat/run_build_validation_matrix_report_test_headless.gd`
+- `tests/headless/combat/run_build_validation_matrix_test_headless.gd`
+- `tests/headless/combat/run_hitbox_owner_test_headless.gd`
+- `tests/headless/combat/run_mark_status_effect_test_headless.gd`
+- `tests/headless/spawn/run_collectable_registry_test_headless.gd`
+- `tests/headless/spawn/run_enemy_registry_test_headless.gd`
+- `tests/headless/spawn/run_resource_catalog_test_headless.gd`
+- `tests/headless/spawn/run_spawn_combat_profile_validation_headless.gd`
+- `tests/headless/ui/run_build_text_contract_test_headless.gd`
+- `tests/headless/ui/run_ui_icon_scaling_test_headless.gd`
+- `tests/headless/weapon/run_close_quarters_chain_test_headless.gd`
+- `tests/headless/weapon/run_glacier_branch_test_headless.gd`
+- `tests/headless/weapon/run_laser_branch_test_headless.gd`
+- `tests/headless/weapon/run_orbit_ammo_deploy_test_headless.gd`
+- `tests/headless/weapon/run_orbit_close_chain_test_headless.gd`
+- `tests/headless/weapon/run_spear_piercing_blade_dance_test_headless.gd`
+- `tests/headless/weapon/run_weapon_ammo_gate_test_headless.gd`
+- `tests/headless/weapon/run_weapon_delivery_type_test_headless.gd`
+- `tests/headless/world/run_rest_area_helper_test_headless.gd`
 
 Use the selector from the repository root. Without `-ChangedPath`, it reads unstaged, staged, untracked, and optional base-ref changes:
 

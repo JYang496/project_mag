@@ -1,7 +1,8 @@
 extends Node
 
 const PLAYER_SCENE := preload("res://Player/Mechas/scenes/Player.tscn")
-const TEST_WEAPON_SCENE := preload("res://tests/scenes/player/player_active_skill_test_weapon.tscn")
+const WEAPON_BASE_SCENE := preload("res://Player/Weapons/weapon.tscn")
+const TEST_WEAPON_SCRIPT := preload("res://tests/headless/player/player_active_skill_test_weapon.gd")
 const ACTIVE_SKILL_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_active_skill_runtime.gd")
 
 var _failed: bool = false
@@ -173,8 +174,8 @@ func _test_weapon_active_reload_and_assist(player: Player) -> bool:
 			existing_weapon.queue_free()
 	PlayerData.player_weapon_list.clear()
 	await get_tree().process_frame
-	var first_weapon := TEST_WEAPON_SCENE.instantiate() as Weapon
-	var second_weapon := TEST_WEAPON_SCENE.instantiate() as Weapon
+	var first_weapon := _instantiate_test_weapon()
+	var second_weapon := _instantiate_test_weapon()
 	if first_weapon == null or second_weapon == null:
 		return _fail("active skill test weapons did not instantiate")
 	player.equppied_weapons.add_child(first_weapon)
@@ -229,7 +230,7 @@ func _test_reload_hint_throttle() -> bool:
 	GlobalVariables.ui = null
 	var hint_player := HintRecorderPlayer.new()
 	add_child(hint_player)
-	var weapon := TEST_WEAPON_SCENE.instantiate() as Weapon
+	var weapon := _instantiate_test_weapon()
 	add_child(weapon)
 	weapon.is_reloading = true
 	var runtime := ACTIVE_SKILL_RUNTIME_SCRIPT.new() as PlayerActiveSkillRuntime
@@ -249,6 +250,13 @@ func _test_reload_hint_throttle() -> bool:
 	weapon.queue_free()
 	hint_player.queue_free()
 	return true
+
+func _instantiate_test_weapon() -> Weapon:
+	var weapon := WEAPON_BASE_SCENE.instantiate() as Weapon
+	if weapon == null:
+		return null
+	weapon.set_script(TEST_WEAPON_SCRIPT)
+	return weapon as Weapon
 
 func _on_player_active_signal() -> void:
 	_player_active_signal_count += 1

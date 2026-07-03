@@ -33,6 +33,36 @@
 - Catalog status remains `pilot`.
 - Fixed Windows PowerShell compatibility in the Worker scripts: default manifest/source-map paths are resolved after `$PSScriptRoot` is available, process arguments fall back to `ProcessStartInfo.Arguments`, and timeout termination uses `taskkill /T /F` when needed.
 
+### 2026-07-02 - Stage 1: historical scene manifest registration
+
+- Registered 29 additional Worker-compatible scene-backed tests across UI, Weapon, World, Reward, Cell, Spawn, and Enemy domains.
+- Manifest entries now cover 48 scene-backed gates.
+- `catalog_status` remains `pilot`; manifest `full` mode means every registered entry, not every historical `tests/scenes/**/*.tscn` file.
+- Startup and Combat had no remaining unregistered scene-backed tests in this pass.
+- Kept 10 scene files unregistered with explicit reasons: one Player fixture scene, one non-terminating UI scene, one non-headless visual UI gate, and seven currently failing or runtime-erroring historical gates.
+
+### 2026-07-02 - Stage 2: manifest status review
+
+- Rechecked all `tests/scenes/**/*.tscn` paths against the 48-entry manifest.
+- Rechecked all `tests/headless/**/*.gd` runner scripts for missing scene wrappers.
+- Did not upgrade `catalog_status`; it remains `pilot` because 10 scene-backed files are still unregistered and 23 runner-only scripts still lack scene wrappers or manifest entries.
+- Full 48-entry Worker candidate passed, so the registered pilot set is healthy, but it is not a complete test-directory entrypoint.
+
+### 2026-07-02 - Stage 3: Player camera gate registration
+
+- Added `player.camera_system` as a focused scene-backed Player gate while continuing Player slimming.
+- Manifest entries now cover 49 Worker-compatible gates.
+- `catalog_status` remains `pilot`; manifest `full` mode still means every registered entry, not every historical `tests/scenes/**/*.tscn` file.
+- The unresolved historical inventory remains 10 scene-backed files and 23 runner-only scripts outside the manifest.
+
+### 2026-07-02 - Stage 7: final closure report
+
+- Final report path: `docs/reports/project_slimming_completion_report.md`.
+- Final manifest count remains 49 Worker-compatible entries.
+- `catalog_status` remains `pilot`; a Worker `full` run still means every registered manifest entry, not every historical test entrypoint in the repository.
+- Domain counts at closure: `cell=3`, `enemy=1`, `player=5`, `reward=6`, `spawn=2`, `startup=4`, `ui=14`, `weapon=9`, `world=5`.
+- No Stage 7 infrastructure script or manifest change was made.
+
 ## Metrics
 
 - Infrastructure files: 0 -> 4 implementation/configuration files plus 1 self-test.
@@ -40,9 +70,12 @@
 - Worker files: 0 -> 1 runner, 1 Worker module, 1 self-test, and 4 fixtures.
 - Registered manifest entries after coordinator integration: 13 representative gates.
 - Registered manifest entries after Batch 4: 19 representative gates.
+- Registered manifest entries after Stage 1 registration: 48 Worker-compatible gates.
+- Registered manifest entries after Stage 2 status review: 48 Worker-compatible gates; status remains `pilot`.
+- Registered manifest entries after Stage 3 Player camera gate: 49 Worker-compatible gates; status remains `pilot`.
 - Explicit source-domain rules: 0 -> 32.
 - Automated selector scenarios: 0 -> 10.
-- Existing discovered inventory remains unchanged: 64 headless `.gd` scripts and 47 scene `.tscn` entries.
+- Current discovered inventory: 76 headless `.gd` scripts and 59 scene `.tscn` entries; 10 scene-backed files and 23 runner-only scripts remain outside the manifest.
 
 ## Tests and results
 
@@ -60,12 +93,25 @@
 - Selected UI run after Batch 4 registration: PASS=19, FAIL=0, ERROR=0, shutdown diagnostics=26, runtime errors=0.
 - `git diff --check`: PASS.
 - First import rewrote two generated `data/localization/rest_area_shop_update.*.translation` files. Those out-of-scope changes were restored and are excluded from this batch.
+- Stage 1 UI registration batch: PASS=7, FAIL=0, ERROR=0, shutdown diagnostics=17, runtime errors=0. Result root: `test-results/manifest-registration-ui-final`.
+- Stage 1 Weapon registration batch: PASS=8, FAIL=0, ERROR=0, shutdown diagnostics=12, runtime errors=0. Result root: `test-results/manifest-registration-weapon-final`.
+- Stage 1 World registration batch: PASS=3, FAIL=0, ERROR=0, shutdown diagnostics=8, runtime errors=0. Result root: `test-results/manifest-registration-world-final`.
+- Stage 1 Reward registration batch: PASS=6, FAIL=0, ERROR=0, shutdown diagnostics=11, runtime errors=0. Result root: `test-results/manifest-registration-reward-final`.
+- Stage 1 Cell registration batch: PASS=2, FAIL=0, ERROR=0, shutdown diagnostics=0, runtime errors=0. Result root: `test-results/manifest-registration-cell-final`.
+- Stage 1 Spawn registration batch: PASS=2, FAIL=0, ERROR=0, shutdown diagnostics=0, runtime errors=0. Result root: `test-results/manifest-registration-spawn`.
+- Stage 1 Enemy registration batch: PASS=1, FAIL=0, ERROR=0, shutdown diagnostics=0, runtime errors=0. Result root: `test-results/manifest-registration-enemy`.
+- Stage 1 per-batch validation also reran manifest count, selector self-test, Worker parser/process self-test, and `git diff --check`.
+- Stage 1 full 48-entry Worker manifest: PASS=48, FAIL=0, ERROR=0, shutdown diagnostics=74, runtime errors=0. Result root: `test-results/manifest-registration-full-48`.
+- Stage 2 full manifest candidate: PASS=48, FAIL=0, ERROR=0, shutdown diagnostics=74, runtime errors=0. Result root: `test-results/manifest-full-candidate`.
+- Stage 3 focused Player camera gate: PASS=1, FAIL=0, ERROR=0, shutdown diagnostics=0, runtime errors=0. Result root: `test-results/player-camera-system-gate-2`.
+- Stage 3 selected Player run through `run_selected_tests.ps1`: PASS=49, FAIL=0, ERROR=0, shutdown diagnostics=74, runtime errors=0. Result root: `test-results/player-slimming-camera-config-final-2`.
+- Stage 3 post-run process check found leftover headless Godot Worker processes after the PASS summary; all project `godot.windows.opt.tools.64.exe` processes were terminated and the final process check was empty.
 
 ## Known risks
 
-- `catalog_status` is `pilot`; a `full` result currently means every registered pilot entry, not every historical active test.
+- `catalog_status` is `pilot`; a `full` result currently means every registered manifest entry, not every historical active test.
 - Domain dependencies are intentionally coarse. Broad data, asset, shader, object, Autoload, core facade, and unknown paths force full fallback.
-- Selector-to-Worker orchestration uses the representative pilot manifest; it is not full historical test coverage.
+- Selector-to-Worker orchestration uses the registered Worker-compatible pilot manifest; it is not full historical test coverage until the 10 still-unregistered scene files and 23 runner-only scripts are resolved or explicitly retired.
 
 ## Next recommended batch
 

@@ -2,7 +2,7 @@
 param(
 	[int]$Runs = 5,
 	[int]$QuitAfterFrames = 2,
-	[string]$ProjectPath = (Join-Path $PSScriptRoot '..'),
+	[string]$ProjectPath = '.',
 	[string]$GodotPath,
 	[string]$HotScene = 'res://World/Start.tscn',
 	[string]$DirectedTestScene = 'res://tests/scenes/startup/startup_baseline_probe.tscn',
@@ -63,44 +63,22 @@ function Get-Median {
 	return ([double]$sorted[$middle - 1] + [double]$sorted[$middle]) / 2.0
 }
 
-function Get-OutputMetrics {
+function Get-MeasurementMetricsFromFiles {
 	param(
 		[Parameter(Mandatory)]
 		[AllowEmptyCollection()]
-		[AllowEmptyString()]
-		[string[]]$Output
+		[string[]]$Paths
 	)
 
-	$resourcePaths = @(
-		$Output |
-			ForEach-Object {
-				if ($_ -match '^Loading resource:\s*(.+)$') {
-					$Matches[1].Trim()
-				}
-			} |
-			Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
-			Sort-Object -Unique
-	)
+	$resourcePaths = @{}
 	$errorLines = @()
 	$runtimeErrorLines = @()
 	$shutdownLeakLines = @()
-	$inShutdownLeakDump = $false
-	foreach ($line in $Output) {
-		if ($line -match '(?i)^(Leaked instance:|Orphan StringName:|StringName: \d+ unclaimed)') {
-			$inShutdownLeakDump = $true
-		}
-		if ($line -notmatch '(?i)(SCRIPT ERROR:|ERROR:|Failed loading resource|Failed to load)') {
-			continue
-		}
-		$errorLines += $line
-		$isDirectShutdownLeak = $line -match '(?i)(allocations?.*leaked at exit|resources? still in use at exit|ObjectDB instances were leaked)'
-		if ($inShutdownLeakDump -or $isDirectShutdownLeak) {
-			$shutdownLeakLines += $line
-		} else {
-			$runtimeErrorLines += $line
-		}
-	}
-	$warningLines = @($Output | Where-Object { $_ -match '(?i)(WARNING:|WARN:)' })
+	$warningLines = @()
+	$reportedStages = @()
+	$passMarkers = @()
+	$failMarkers = @()
+	$outputTail = [System.Collections.Queue]::new()
 	$stageNames = @(
 		'first_scan_filesystem',
 		'update_scripts_classes',
@@ -108,33 +86,86 @@ function Get-OutputMetrics {
 		'reimport',
 		'loading_editor_layout'
 	)
-	$observedStages = @(
-		$stageNames |
-			Where-Object {
-				$stage = $_
-				[bool]($Output | Where-Object { $_ -match [regex]::Escape($stage) } | Select-Object -First 1)
-			}
-	)
-	$reportedStages = @(
-		$Output |
-			Where-Object { $_ -match '^StartupBaselineStage:' } |
-			ForEach-Object { $_.Trim() }
-	)
+	$observedStageMap = @{}
+	$inShutdownLeakDump = $false
 
+	foreach ($path in $Paths) {
+		if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+			continue
+		}
+		foreach ($line in [IO.File]::ReadLines($path)) {
+			if ([string]::IsNullOrEmpty($line)) {
+				continue
+			}
+			$outputTail.Enqueue($line)
+			while ($outputTail.Count -gt 20) {
+				$null = $outputTail.Dequeue()
+			}
+			if ($line -match '^Loading resource:\s*(.+)$') {
+				$resourcePaths[$Matches[1].Trim()] = $true
+			}
+			if ($line -match '(?i)^(Leaked instance:|Orphan StringName:|StringName: \d+ unclaimed)') {
+				$inShutdownLeakDump = $true
+			}
+			if ($line -match '(?i)(SCRIPT ERROR:|ERROR:|Failed loading resource|Failed to load)') {
+				$errorLines += $line
+				$isDirectShutdownLeak = $line -match '(?i)(allocations?.*leaked at exit|resources? still in use at exit|ObjectDB instances were leaked)'
+				if ($inShutdownLeakDump -or $isDirectShutdownLeak) {
+					$shutdownLeakLines += $line
+				} else {
+					$runtimeErrorLines += $line
+				}
+			}
+			if ($line -match '(?i)(WARNING:|WARN:)') {
+				$warningLines += $line
+			}
+			foreach ($stage in $stageNames) {
+				if ($line -match [regex]::Escape($stage)) {
+					$observedStageMap[$stage] = $true
+				}
+			}
+			if ($line -match '^StartupBaselineStage:') {
+				$reportedStages += $line.Trim()
+			}
+			if ($line -match '(?i)\bPASS\b') {
+				$passMarkers += $line
+			}
+			if ($line -match '(?i)\b(FAIL|ERROR)\b') {
+				$failMarkers += $line
+			}
+		}
+	}
+	$resourceList = @($resourcePaths.Keys)
 	return [pscustomobject]@{
-		unique_resources = $resourcePaths.Count
-		data_resources = @($resourcePaths | Where-Object { $_ -like 'res://data/*' }).Count
-		weapon_resources = @($resourcePaths | Where-Object { $_ -like 'res://Player/Weapons/*' }).Count
-		enemy_resources = @($resourcePaths | Where-Object { $_ -like 'res://Npc/enemy/*' }).Count
-		ui_resources = @($resourcePaths | Where-Object { $_ -like 'res://UI/*' }).Count
-		asset_resources = @($resourcePaths | Where-Object { $_ -like 'res://asset/*' }).Count
+		unique_resources = $resourceList.Count
+		data_resources = @($resourceList | Where-Object { $_ -like 'res://data/*' }).Count
+		weapon_resources = @($resourceList | Where-Object { $_ -like 'res://Player/Weapons/*' }).Count
+		enemy_resources = @($resourceList | Where-Object { $_ -like 'res://Npc/enemy/*' }).Count
+		ui_resources = @($resourceList | Where-Object { $_ -like 'res://UI/*' }).Count
+		asset_resources = @($resourceList | Where-Object { $_ -like 'res://asset/*' }).Count
 		error_count = $errorLines.Count
 		runtime_error_count = $runtimeErrorLines.Count
 		shutdown_leak_error_count = $shutdownLeakLines.Count
 		warning_count = $warningLines.Count
-		observed_editor_stages = $observedStages
+		observed_editor_stages = @($stageNames | Where-Object { $observedStageMap.ContainsKey($_) })
 		reported_runtime_stages = $reportedStages
+		pass_markers = $passMarkers
+		fail_markers = $failMarkers
+		output_tail = @($outputTail.ToArray())
 	}
+}
+
+function Join-ProcessArguments {
+	param([Parameter(Mandatory)][AllowEmptyCollection()][string[]]$Arguments)
+
+	$escaped = foreach ($argument in $Arguments) {
+		if ($argument -notmatch '[\s"]') {
+			$argument
+			continue
+		}
+		'"' + ($argument -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"'
+	}
+	return ($escaped -join ' ')
 }
 
 function Invoke-GodotMeasurement {
@@ -148,15 +179,28 @@ function Invoke-GodotMeasurement {
 	New-Item -ItemType Directory -Path $UserHome -Force | Out-Null
 	$previousUserHome = $env:GODOT_USER_HOME
 	$env:GODOT_USER_HOME = $UserHome
+	$process = $null
+	$stdoutPath = Join-Path $UserHome "$Name.stdout.log"
+	$stderrPath = Join-Path $UserHome "$Name.stderr.log"
 	try {
 		$stopwatch = [Diagnostics.Stopwatch]::StartNew()
-		$output = @(& $script:GodotExecutable @Arguments 2>&1 | ForEach-Object { $_.ToString() })
-		$exitCode = $LASTEXITCODE
+		$process = Start-Process `
+			-FilePath $script:GodotExecutable `
+			-ArgumentList (Join-ProcessArguments -Arguments $Arguments) `
+			-RedirectStandardOutput $stdoutPath `
+			-RedirectStandardError $stderrPath `
+			-NoNewWindow `
+			-Wait `
+			-PassThru
 		$stopwatch.Stop()
+		$exitCode = $process.ExitCode
+		$metrics = Get-MeasurementMetricsFromFiles -Paths @($stdoutPath, $stderrPath)
 	} finally {
 		$env:GODOT_USER_HOME = $previousUserHome
+		if ($process -ne $null) {
+			$process.Dispose()
+		}
 	}
-	$metrics = Get-OutputMetrics -Output $output
 	return [pscustomobject]@{
 		name = $Name
 		duration_ms = $stopwatch.ElapsedMilliseconds
@@ -173,9 +217,9 @@ function Invoke-GodotMeasurement {
 		warning_count = $metrics.warning_count
 		observed_editor_stages = $metrics.observed_editor_stages
 		reported_runtime_stages = $metrics.reported_runtime_stages
-		pass_markers = @($output | Where-Object { $_ -match '(?i)\bPASS\b' })
-		fail_markers = @($output | Where-Object { $_ -match '(?i)\b(FAIL|ERROR)\b' })
-		output_tail = @($output | Select-Object -Last 20)
+		pass_markers = $metrics.pass_markers
+		fail_markers = $metrics.fail_markers
+		output_tail = $metrics.output_tail
 	}
 }
 
