@@ -172,9 +172,6 @@ var controls_hint_view
 var right_hud_stack: VBoxContainer
 var board_edit_panel: Control
 var cell_management_panel: Control
-var cell_effect_commit_dialog: ConfirmationDialog
-var _pending_cell_effect_commit := Callable()
-var _pending_cell_effect_cancel := Callable()
 @warning_ignore("unused_private_class_variable")
 var _primary_menu_tweens: Dictionary = {}
 var spread_cursor_overlay
@@ -389,47 +386,21 @@ func request_cell_effect_commit_confirmation(on_confirm: Callable, on_cancel: Ca
 		if on_confirm.is_valid():
 			on_confirm.call_deferred()
 		return true
-	_init_cell_effect_commit_dialog()
-	if cell_effect_commit_dialog == null:
-		return false
-	cell_effect_commit_dialog.title = LocalizationManager.tr_key("ui.board_edit.commit_title", "Pending Board Edits")
-	cell_effect_commit_dialog.ok_button_text = LocalizationManager.tr_key("ui.board_edit.leave_panel", "Leave Panel")
-	cell_effect_commit_dialog.cancel_button_text = LocalizationManager.tr_key("ui.common.cancel", "Cancel")
-	_pending_cell_effect_commit = on_confirm
-	_pending_cell_effect_cancel = on_cancel
 	var lines := CellEffectRuntime.build_pending_commit_lines()
 	var text := LocalizationManager.tr_key("ui.board_edit.commit_prompt", "Leave the board edit panel with these pending edits?") + "\n\n"
 	text += "\n".join(lines)
 	text += "\n\n" + LocalizationManager.tr_key("ui.board_edit.commit_warning", "These edits stay pending after you leave. Cell effect items are consumed only when battle starts.")
-	cell_effect_commit_dialog.dialog_text = text
-	cell_effect_commit_dialog.popup_centered(Vector2i(560, 360))
-	return true
-
-func _init_cell_effect_commit_dialog() -> void:
-	if cell_effect_commit_dialog != null and is_instance_valid(cell_effect_commit_dialog):
-		return
-	cell_effect_commit_dialog = ConfirmationDialog.new()
-	cell_effect_commit_dialog.title = LocalizationManager.tr_key("ui.board_edit.commit_title", "Pending Board Edits")
-	cell_effect_commit_dialog.ok_button_text = LocalizationManager.tr_key("ui.board_edit.leave_panel", "Leave Panel")
-	cell_effect_commit_dialog.cancel_button_text = LocalizationManager.tr_key("ui.common.cancel", "Cancel")
-	gui_root.add_child(cell_effect_commit_dialog)
-	cell_effect_commit_dialog.confirmed.connect(_on_cell_effect_commit_confirmed)
-	cell_effect_commit_dialog.canceled.connect(_on_cell_effect_commit_cancelled)
-	cell_effect_commit_dialog.close_requested.connect(_on_cell_effect_commit_cancelled)
-
-func _on_cell_effect_commit_confirmed() -> void:
-	var callback := _pending_cell_effect_commit
-	_pending_cell_effect_commit = Callable()
-	_pending_cell_effect_cancel = Callable()
-	if callback.is_valid():
-		callback.call_deferred()
-
-func _on_cell_effect_commit_cancelled() -> void:
-	var callback := _pending_cell_effect_cancel
-	_pending_cell_effect_commit = Callable()
-	_pending_cell_effect_cancel = Callable()
-	if callback.is_valid():
-		callback.call_deferred()
+	return request_confirmation(
+		&"cell_effect_commit",
+		LocalizationManager.tr_key("ui.board_edit.commit_title", "Pending Board Edits"),
+		text,
+		LocalizationManager.tr_key("ui.board_edit.leave_panel", "Leave Panel"),
+		LocalizationManager.tr_key("ui.common.cancel", "Cancel"),
+		on_confirm,
+		on_cancel,
+		false,
+		Vector2i(560, 360)
+	)
 
 func _init_weapon_replacement_panel() -> void:
 	_init_modal_ui_controller()

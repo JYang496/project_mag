@@ -111,8 +111,12 @@ func _ready() -> void:
 		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
 	if not InventoryData.temporary_modules_changed.is_connected(_on_zone_hint_status_changed):
 		InventoryData.temporary_modules_changed.connect(_on_zone_hint_status_changed)
+	if not InventoryData.weapon_storage_changed.is_connected(_on_zone_hint_status_changed):
+		InventoryData.weapon_storage_changed.connect(_on_zone_hint_status_changed)
 	if not PlayerData.weapon_list_changed.is_connected(_on_zone_hint_status_changed):
 		PlayerData.weapon_list_changed.connect(_on_zone_hint_status_changed)
+	if not PlayerData.player_gold_changed.is_connected(_on_zone_hint_status_changed):
+		PlayerData.player_gold_changed.connect(_on_zone_hint_status_changed)
 	if not CellEffectRuntime.inventory_changed.is_connected(_on_zone_hint_status_changed):
 		CellEffectRuntime.inventory_changed.connect(_on_zone_hint_status_changed)
 	if not CellEffectRuntime.pending_changed.is_connected(_on_zone_hint_status_changed):
@@ -194,8 +198,12 @@ func _exit_tree() -> void:
 		LocalizationManager.disconnect("language_changed", Callable(self, "_on_language_changed"))
 	if InventoryData and InventoryData.temporary_modules_changed.is_connected(_on_zone_hint_status_changed):
 		InventoryData.temporary_modules_changed.disconnect(_on_zone_hint_status_changed)
+	if InventoryData and InventoryData.weapon_storage_changed.is_connected(_on_zone_hint_status_changed):
+		InventoryData.weapon_storage_changed.disconnect(_on_zone_hint_status_changed)
 	if PlayerData and PlayerData.weapon_list_changed.is_connected(_on_zone_hint_status_changed):
 		PlayerData.weapon_list_changed.disconnect(_on_zone_hint_status_changed)
+	if PlayerData and PlayerData.player_gold_changed.is_connected(_on_zone_hint_status_changed):
+		PlayerData.player_gold_changed.disconnect(_on_zone_hint_status_changed)
 	if CellEffectRuntime and CellEffectRuntime.inventory_changed.is_connected(_on_zone_hint_status_changed):
 		CellEffectRuntime.inventory_changed.disconnect(_on_zone_hint_status_changed)
 	if CellEffectRuntime and CellEffectRuntime.pending_changed.is_connected(_on_zone_hint_status_changed):
@@ -208,12 +216,13 @@ func _on_language_changed(_new_locale: String) -> void:
 		_hint_presenter.call("invalidate_status")
 	_refresh_scene_hint_labels()
 
-func _on_zone_hint_status_changed() -> void:
+func _on_zone_hint_status_changed(_unused: Variant = null) -> void:
 	if _hint_presenter != null:
 		_hint_presenter.call("invalidate_status")
 	_refresh_scene_hint_labels()
 
 func _on_pending_reward_changed(_has_pending: bool) -> void:
+	_on_zone_hint_status_changed()
 	_refresh_interaction_state()
 	_update_zone_hint_visuals(true)
 	queue_redraw()

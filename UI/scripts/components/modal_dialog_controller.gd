@@ -16,7 +16,9 @@ var checkbox: CheckBox
 var current_id: StringName = &""
 var on_confirm := Callable()
 var on_cancel := Callable()
+var on_custom_action := Callable()
 var checkbox_callback := Callable()
+var custom_action_buttons: Array[Button] = []
 var cancel_dispatched := false
 var suppress_checkbox_callback := false
 
@@ -70,8 +72,10 @@ func _show(spec: Dictionary) -> bool:
 	current_id = StringName(str(spec.get("id", "")))
 	on_confirm = spec.get("on_confirm", Callable()) as Callable
 	on_cancel = spec.get("on_cancel", Callable()) as Callable
+	on_custom_action = spec.get("on_custom_action", Callable()) as Callable
 	checkbox_callback = spec.get("checkbox_callback", Callable()) as Callable
 	cancel_dispatched = false
+	_clear_custom_action_buttons()
 	dialog.title = str(spec.get("title", ""))
 	dialog.ok_button_text = str(spec.get("confirm_text", "OK"))
 	dialog.cancel_button_text = str(spec.get("cancel_text", "Cancel"))
@@ -82,6 +86,7 @@ func _show(spec: Dictionary) -> bool:
 	checkbox.button_pressed = bool(spec.get("checkbox_checked", false))
 	suppress_checkbox_callback = false
 	checkbox.visible = checkbox.text != ""
+	_add_custom_actions(spec.get("custom_actions", []))
 	_apply_destructive_state(bool(spec.get("destructive", false)))
 	dialog.popup_centered_clamped(_resolve_size(spec.get("size", null)), 0.9)
 	return true
@@ -111,6 +116,7 @@ func ensure_dialog() -> void:
 	content.add_child(checkbox)
 	dialog.add_child(content)
 	dialog.confirmed.connect(_on_confirmed)
+	dialog.custom_action.connect(_on_custom_action)
 	dialog.canceled.connect(_on_cancelled)
 	dialog.close_requested.connect(_on_cancelled)
 	if dialog.has_signal("window_input"):
@@ -154,6 +160,16 @@ func _on_confirmed() -> void:
 	if callback.is_valid():
 		callback.call_deferred()
 
+func _on_custom_action(action: StringName) -> void:
+	if not is_dialog_visible():
+		return
+	if dialog != null and is_instance_valid(dialog):
+		dialog.hide()
+	var callback := on_custom_action
+	_clear_callbacks()
+	if callback.is_valid():
+		callback.call_deferred(action)
+
 func _on_cancelled() -> void:
 	_cancel_current_dialog()
 
@@ -171,8 +187,10 @@ func _cancel_current_dialog() -> void:
 func _clear_callbacks() -> void:
 	on_confirm = Callable()
 	on_cancel = Callable()
+	on_custom_action = Callable()
 	checkbox_callback = Callable()
 	current_id = &""
+	_clear_custom_action_buttons()
 
 func _on_window_input(event: InputEvent) -> void:
 	_handle_cancel_input(event)
@@ -196,3 +214,29 @@ func _on_checkbox_toggled(pressed: bool) -> void:
 		return
 	if checkbox_callback.is_valid():
 		checkbox_callback.call_deferred(pressed)
+
+func _add_custom_actions(actions) -> void:
+	if dialog == null or not (actions is Array):
+		return
+	for action in actions:
+		if not (action is Dictionary):
+			continue
+		var action_id := StringName(str(action.get("id", "")))
+		if action_id == &"":
+			continue
+		var button := dialog.add_button(
+			str(action.get("text", action_id)),
+			bool(action.get("right", false)),
+			action_id
+		)
+		custom_action_buttons.append(button)
+
+func _clear_custom_action_buttons() -> void:
+	for button in custom_action_buttons:
+		if button == null or not is_instance_valid(button):
+			continue
+		var parent := button.get_parent()
+		if parent != null:
+			parent.remove_child(button)
+		button.queue_free()
+	custom_action_buttons.clear()

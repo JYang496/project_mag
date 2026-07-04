@@ -476,6 +476,25 @@ func sell_temporary_module(module_instance: Module) -> Dictionary:
 	_refresh_ui()
 	return {"ok": true, "gold": gold}
 
+func sell_module(module_instance: Module) -> Dictionary:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return {"ok": false, "reason": "Invalid module."}
+	if temporary_modules.has(module_instance):
+		return sell_temporary_module(module_instance)
+	var owner_weapon := _resolve_module_owner_weapon(module_instance)
+	if owner_weapon == null or owner_weapon.modules == null or module_instance.get_parent() != owner_weapon.modules:
+		return {"ok": false, "reason": "Invalid module."}
+	var gold := _calculate_module_conversion_coins(module_instance)
+	owner_weapon.modules.remove_child(module_instance)
+	PlayerData.player_gold += gold
+	PlayerData.run_gold_earned += gold
+	_discard_module_instance(module_instance)
+	if owner_weapon.has_method("calculate_status"):
+		owner_weapon.calculate_status()
+	temporary_modules_changed.emit()
+	_refresh_ui()
+	return {"ok": true, "result": "sold", "gold": gold}
+
 func sell_unclaimed_module(module_instance: Module) -> Dictionary:
 	if module_instance == null or not is_instance_valid(module_instance):
 		return {"ok": false, "reason": "Invalid module."}

@@ -21,15 +21,15 @@ var _beam_multi_hit_targets: Array[Node] = []
 var _beam_multi_hit_triggered: bool = false
 
 var weapon_data = {
-	"1": {"damage": "6", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "10", "duration": "1.0"},
-	"2": {"damage": "8", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "10", "duration": "1.2"},
-	"3": {"damage": "12", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "12", "duration": "1.2"},
-	"4": {"damage": "15", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "12", "duration": "1.4"},
-	"5": {"damage": "18", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "14", "duration": "1.6"},
-	"6": {"damage": "28", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "14", "duration": "1.8"},
-	"7": {"damage": "32", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "16", "duration": "2.0"},
-	"8": {"damage": "36", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "18", "duration": "2.2"},
-	"9": {"damage": "40", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "20", "duration": "2.4"}
+	"1": {"damage": "6", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "6", "duration": "1.0"},
+	"2": {"damage": "8", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "6", "duration": "1.2"},
+	"3": {"damage": "10", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "6", "duration": "1.2"},
+	"4": {"damage": "12", "hit_cd": "0.2", "fire_interval_sec": "3.6", "ammo": "6", "duration": "1.4"},
+	"5": {"damage": "14", "hit_cd": "0.2", "fire_interval_sec": "3.6", "ammo": "6", "duration": "1.4"},
+	"6": {"damage": "16", "hit_cd": "0.2", "fire_interval_sec": "3.6", "ammo": "6", "duration": "1.6"},
+	"7": {"damage": "18", "hit_cd": "0.2", "fire_interval_sec": "3.3", "ammo": "6", "duration": "1.6"},
+	"8": {"damage": "20", "hit_cd": "0.2", "fire_interval_sec": "3.3", "ammo": "6", "duration": "1.8"},
+	"9": {"damage": "22", "hit_cd": "0.2", "fire_interval_sec": "3.3", "ammo": "6", "duration": "1.8"}
 }
 
 

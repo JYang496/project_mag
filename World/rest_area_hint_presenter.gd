@@ -115,7 +115,10 @@ func setup_labels() -> void:
 		zone_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		zone_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		zone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		zone_label.add_theme_font_size_override("font_size", 16)
+		zone_label.max_lines_visible = 1
+		zone_label.clip_text = true
+		zone_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		zone_label.add_theme_font_size_override("font_size", 20)
 		zone_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 		zone_label.add_theme_constant_override("shadow_offset_x", 1)
 		zone_label.add_theme_constant_override("shadow_offset_y", 2)
@@ -211,12 +214,11 @@ func _get_hud_zone_hint_id() -> int:
 
 func _build_hud_zone_hint_text(zone_id: int) -> String:
 	var parts := _get_zone_hint_text_parts(zone_id)
-	var lines: PackedStringArray = []
 	for part in parts:
 		var text := str(part).strip_edges()
-		if text != "" and not lines.has(text):
-			lines.append(text)
-	return "\n".join(lines)
+		if text != "":
+			return text
+	return ""
 
 func _get_zone_hint_text_parts(zone_id: int) -> Array[String]:
 	if zone_id == int(_zone_ids.get("merchant", 0)):
@@ -278,14 +280,8 @@ func _get_board_status_text() -> String:
 		"Install cell effects or deploy task modules"
 	)
 
-func _format_zone_label(icon_text: String, title: String, badge_label: String, count: int) -> String:
-	var lines := PackedStringArray()
-	lines.append("%s  %s" % [icon_text, title])
-	if count > 0:
-		lines.append("%s %d" % [badge_label, count])
-	else:
-		lines.append(badge_label)
-	return "\n".join(lines)
+func _format_zone_label(icon_text: String, title: String, _badge_label: String, _count: int) -> String:
+	return "%s  %s" % [icon_text, title]
 
 func _get_board_badge_count() -> int:
 	return CellEffectRuntime.get_pending_snapshot().size() + (1 if TaskRewardManager.has_pending_reward() else 0)
@@ -312,10 +308,8 @@ func _place_zone_hint_label(label: Label, zone_id: int) -> void:
 
 func _build_zone_hint_status_signature() -> String:
 	var weapon_parts: PackedStringArray = []
-	for weapon_ref in PlayerData.player_weapon_list:
-		var weapon := weapon_ref as Weapon
-		if weapon != null and is_instance_valid(weapon):
-			weapon_parts.append("%d:%d" % [int(weapon.level), int(weapon.max_level)])
+	for weapon in _get_owned_weapons_for_upgrade():
+		weapon_parts.append("%d:%d" % [int(weapon.level), int(weapon.max_level)])
 	return "%d|%d|%d|%d|%d|%s" % [
 		int(PlayerData.player_gold),
 		InventoryData.temporary_modules.size(),
@@ -327,9 +321,8 @@ func _build_zone_hint_status_signature() -> String:
 
 func _get_affordable_upgrade_count() -> int:
 	var count := 0
-	for weapon_ref in PlayerData.player_weapon_list:
-		var weapon := weapon_ref as Weapon
-		if weapon == null or not is_instance_valid(weapon) or weapon.level >= weapon.max_level:
+	for weapon in _get_owned_weapons_for_upgrade():
+		if weapon.level >= weapon.max_level:
 			continue
 		if PlayerData.player_gold >= _get_weapon_upgrade_cost(weapon):
 			count += 1
@@ -340,6 +333,17 @@ func _get_affordable_upgrade_count() -> int:
 		if PlayerData.player_gold >= _get_module_upgrade_cost(module_instance):
 			count += 1
 	return count
+
+func _get_owned_weapons_for_upgrade() -> Array[Weapon]:
+	var result: Array[Weapon] = []
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon := weapon_ref as Weapon
+		if weapon != null and is_instance_valid(weapon):
+			result.append(weapon)
+	for weapon in InventoryData.get_stored_weapons():
+		if weapon != null and is_instance_valid(weapon):
+			result.append(weapon)
+	return result
 
 func _get_weapon_upgrade_cost(weapon: Weapon) -> int:
 	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
@@ -372,13 +376,13 @@ func _style_zone_hint(label: Label, zone_id: int) -> void:
 		style.bg_color = Color(0.045, 0.20, 0.13, 0.96)
 		style.border_color = _zone_selected_color
 	style.set_border_width_all(2)
-	style.set_corner_radius_all(8)
-	style.content_margin_left = 10.0
-	style.content_margin_right = 10.0
-	style.content_margin_top = 6.0
-	style.content_margin_bottom = 6.0
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 8.0
+	style.content_margin_right = 8.0
+	style.content_margin_top = 4.0
+	style.content_margin_bottom = 4.0
 	style.shadow_color = Color(0, 0, 0, 0.5)
-	style.shadow_size = 6
+	style.shadow_size = 4
 	label.add_theme_stylebox_override("normal", style)
 	label.add_theme_color_override(
 		"font_color",

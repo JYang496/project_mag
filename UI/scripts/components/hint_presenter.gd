@@ -2,7 +2,7 @@ extends RefCounted
 class_name HintPresenter
 
 const HUD_MARGIN := 16.0
-const REST_HINT_SIZE := Vector2(560, 82)
+const REST_HINT_SIZE := Vector2(320, 44)
 const REST_HINT_TOP_MARGIN := 88.0
 const REST_ZONE_HINT_SIZE := Vector2(240, 30)
 
@@ -40,11 +40,14 @@ func ensure_rest_area_hover_hint() -> Label:
 	rest_area_hover_hint_label.visible = false
 	rest_area_hover_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rest_area_hover_hint_label.z_index = 50
-	rest_area_hover_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	rest_area_hover_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	rest_area_hover_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	rest_area_hover_hint_label.add_theme_font_size_override("font_size", 15)
-	rest_area_hover_hint_label.add_theme_constant_override("line_spacing", 3)
+	rest_area_hover_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rest_area_hover_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	rest_area_hover_hint_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	rest_area_hover_hint_label.max_lines_visible = 1
+	rest_area_hover_hint_label.clip_text = true
+	rest_area_hover_hint_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	rest_area_hover_hint_label.add_theme_font_size_override("font_size", 18)
+	rest_area_hover_hint_label.add_theme_constant_override("line_spacing", 0)
 	rest_area_hover_hint_label.add_theme_color_override("font_color", Color(0.88, 0.96, 1.0, 1.0))
 	rest_area_hover_hint_label.add_theme_stylebox_override("normal", _build_rest_area_hint_style())
 	rest_area_hover_hint_label.size = REST_HINT_SIZE
@@ -150,13 +153,13 @@ func _build_rest_area_hint_style() -> StyleBoxFlat:
 	style.bg_color = Color(0.035, 0.055, 0.075, 0.90)
 	style.border_color = Color(0.32, 0.48, 0.62, 0.92)
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(8)
-	style.content_margin_left = 14.0
-	style.content_margin_right = 14.0
-	style.content_margin_top = 8.0
-	style.content_margin_bottom = 8.0
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 10.0
+	style.content_margin_right = 10.0
+	style.content_margin_top = 5.0
+	style.content_margin_bottom = 5.0
 	style.shadow_color = Color(0, 0, 0, 0.42)
-	style.shadow_size = 8
+	style.shadow_size = 5
 	return style
 
 func update_rest_area_hover_hint_position() -> void:

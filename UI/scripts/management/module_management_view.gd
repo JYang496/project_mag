@@ -139,15 +139,30 @@ func clear_if_missing() -> void:
 		selected_equipped_module_weapon = null
 	_sync_owner_selection()
 
+func clear_module_selection(module_instance: Module) -> void:
+	if module_instance == null:
+		return
+	if selected_module == module_instance:
+		selected_module = null
+	if selected_equipped_module == module_instance:
+		selected_equipped_module = null
+		selected_equipped_module_weapon = null
+	_sync_owner_selection()
+
 func trigger_equip() -> bool:
 	return false
 
 func trigger_sell() -> bool:
-	if selected_module == null or not is_instance_valid(selected_module):
+	var module_to_sell := selected_module
+	if module_to_sell == null or not is_instance_valid(module_to_sell):
+		module_to_sell = selected_equipped_module
+	if module_to_sell == null or not is_instance_valid(module_to_sell):
 		return false
 	if owner_ui and owner_ui.has_method("request_temporary_module_sell_confirmation"):
-		owner_ui.call("request_temporary_module_sell_confirmation", selected_module)
-		return true
+		var opened := bool(owner_ui.call("request_temporary_module_sell_confirmation", module_to_sell))
+		if not opened:
+			_show_message(LocalizationManager.tr_key("ui.module.sell.unavailable", "This module cannot be sold."), 1.6)
+		return opened
 	return false
 
 func apply_tab(tab: StringName) -> void:

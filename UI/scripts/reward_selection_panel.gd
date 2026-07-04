@@ -422,10 +422,16 @@ func _build_reward_card_data(reward: RewardInfo) -> Dictionary:
 			"Weapon %s Lv.%d" % [weapon_name, reward.item_level]
 		)
 		var weapon_text := base_weapon_text
-		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("predict_auto_fuse_weapon_obtain"):
-			var outcome: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(reward.item_id)
+		var outcome := _get_weapon_obtain_prediction(reward.item_id)
+		var result_type := str(outcome.get("result", "not_applicable"))
+		if not outcome.is_empty():
 			weapon_text = _format_weapon_obtain_prediction(base_weapon_text, weapon_name, outcome)
-		data["type"] = _format_reward_type_label(reward, "Weapon")
+		if result_type == "fused":
+			data["type"] = _format_reward_type_label(reward, LocalizationManager.tr_key("ui.reward.type.weapon_fusion", "Weapon Fusion"))
+		elif result_type == "converted_to_gold":
+			data["type"] = _format_reward_type_label(reward, LocalizationManager.tr_key("ui.reward.type.duplicate_weapon", "Duplicate Weapon"))
+		else:
+			data["type"] = _format_reward_type_label(reward, "Weapon")
 		data["name"] = weapon_name
 		data["tag"] = weapon_text if weapon_text != base_weapon_text else "Lv.%d" % int(reward.item_level)
 		return data
@@ -496,8 +502,8 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["short_tag"] = "Lv.%d -> Lv.%d" % [int(reward.target_weapon_from_level), int(reward.target_weapon_to_level)]
 		data["meta_text"] = "%s · %s" % [str(data["short_tag"]), LocalizationManager.tr_key("ui.branch.weapon", "Weapon")]
 		data["fallback_icon_key"] = "weapon"
-		data["icon_badge_text"] = "^"
-		data["icon_badge_color"] = Color(0.94, 0.68, 0.24, 1.0)
+		data["icon_badge_text"] = "Lv"
+		data["icon_badge_color"] = _get_reward_action_color(reward)
 		var upgrade_detail := PackedStringArray([str(data["short_tag"])])
 		var target_definition := DataHandler.read_weapon_data(reward.target_weapon_id) as WeaponDefinition
 		if target_definition != null:
@@ -552,8 +558,9 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			"Weapon %s Lv.%d" % [weapon_name, reward.item_level]
 		)
 		var weapon_text := base_weapon_text
-		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("predict_auto_fuse_weapon_obtain"):
-			var outcome: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(reward.item_id)
+		var outcome := _get_weapon_obtain_prediction(reward.item_id)
+		var result_type := str(outcome.get("result", "not_applicable"))
+		if not outcome.is_empty():
 			weapon_text = _format_weapon_obtain_prediction(base_weapon_text, weapon_name, outcome)
 		summary_chunks.append(weapon_name)
 		detail_chunks.append(weapon_text)
@@ -568,6 +575,37 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["icon_badge_text"] = "+"
 		data["icon_badge_color"] = Color(0.42, 0.78, 0.48, 1.0)
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.weapon_obtain", "Auto equip / fuse / store")
+		if result_type == "fused":
+			var from_fuse := int(outcome.get("from_fuse", 1))
+			var target_fuse := int(outcome.get("target_fuse", 1))
+			data["type_label"] = _format_reward_type_label(reward, LocalizationManager.tr_key("ui.reward.type.weapon_fusion", "Weapon Fusion"))
+			data["meta_text"] = LocalizationManager.tr_format(
+				"ui.reward.meta.weapon_fuse",
+				{"from": from_fuse, "to": target_fuse},
+				"Fuse %d -> %d" % [from_fuse, target_fuse]
+			)
+			data["icon_badge_text"] = "^"
+			data["icon_badge_color"] = _get_reward_action_color(reward)
+			data["outcome_text"] = LocalizationManager.tr_format(
+				"ui.reward.outcome.weapon_fuse",
+				{"name": weapon_name, "fuse": target_fuse},
+				"Fuse equipped %s to Fuse %d" % [weapon_name, target_fuse]
+			)
+		elif result_type == "converted_to_gold":
+			var gold_value := int(outcome.get("gold", 0))
+			data["type_label"] = _format_reward_type_label(reward, LocalizationManager.tr_key("ui.reward.type.duplicate_weapon", "Duplicate Weapon"))
+			data["meta_text"] = LocalizationManager.tr_format(
+				"ui.reward.meta.duplicate_gold",
+				{"gold": gold_value},
+				"+%d Gold / Duplicate" % gold_value
+			)
+			data["icon_badge_text"] = "$"
+			data["icon_badge_color"] = _get_reward_action_color(reward)
+			data["outcome_text"] = LocalizationManager.tr_format(
+				"ui.reward.outcome.duplicate_gold",
+				{"name": weapon_name, "gold": gold_value},
+				"Duplicate %s converts to +%d Gold" % [weapon_name, gold_value]
+			)
 	if reward.module_scene:
 		var module_data := _build_module_reward_display_data(reward.module_scene, reward.module_level)
 		var module_name := str(module_data.get("name", _extract_scene_name(reward.module_scene.resource_path)))
@@ -832,20 +870,35 @@ func _append_display_chip(existing: Variant, chip: Dictionary) -> Array:
 func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool) -> void:
 	if button == null or reward == null:
 		return
-	var rarity_color: Color = RARITY_UTIL.get_color(reward.get_rarity())
+	var action_color := _get_reward_action_color(reward)
 	for state in ["normal", "hover", "pressed", "focus"]:
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.055, 0.065, 0.072, 0.96)
+		style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.10)
 		if selected:
-			style.bg_color = Color(0.105, 0.13, 0.145, 0.98)
+			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.18)
 		elif state == "hover" or state == "focus":
-			style.bg_color = Color(0.08, 0.095, 0.105, 0.97)
+			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.14)
 		elif state == "pressed":
-			style.bg_color = Color(0.095, 0.115, 0.13, 0.98)
-		style.border_color = rarity_color
+			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.16)
+		style.border_color = action_color
 		style.set_border_width_all(2 if selected else 1)
 		style.set_corner_radius_all(6)
 		button.add_theme_stylebox_override(state, style)
+
+func _get_reward_action_color(reward: RewardInfo) -> Color:
+	if reward == null:
+		return Color(0.54, 0.64, 0.72, 1.0)
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		return Color(0.36, 0.62, 0.95, 1.0)
+	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
+		var outcome := _get_weapon_obtain_prediction(reward.item_id)
+		var result_type := str(outcome.get("result", "not_applicable"))
+		if result_type == "fused":
+			return Color(0.94, 0.68, 0.24, 1.0)
+		if result_type == "converted_to_gold":
+			return Color(0.93, 0.72, 0.22, 1.0)
+		return Color(0.42, 0.78, 0.48, 1.0)
+	return RARITY_UTIL.get_color(reward.get_rarity())
 
 func _set_mouse_filter_recursive(root: Control, mouse_filter_value: Control.MouseFilter) -> void:
 	for child in root.get_children():
@@ -862,6 +915,13 @@ func _extract_scene_name(scene_path: String) -> String:
 	if file_name == "":
 		return "Unknown"
 	return file_name.replace("_", " ").capitalize()
+
+func _get_weapon_obtain_prediction(weapon_id: String) -> Dictionary:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return {}
+	if not PlayerData.player.has_method("predict_auto_fuse_weapon_obtain"):
+		return {}
+	return PlayerData.player.predict_auto_fuse_weapon_obtain(weapon_id)
 
 func _format_weapon_obtain_prediction(base_text: String, weapon_name: String, outcome: Dictionary) -> String:
 	return PREVIEW_FORMATTER.format_obtain_preview(base_text, weapon_name, outcome)

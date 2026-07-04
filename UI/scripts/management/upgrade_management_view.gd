@@ -325,11 +325,13 @@ func _populate_module_card(button: Button, item_data: Dictionary) -> void:
 func _on_item_hovered(item_data: Dictionary) -> void:
 	hover_item = item_data.duplicate(true)
 	refresh_detail()
+	_sync_controller_state()
 
 func _on_item_unhovered(item_data: Dictionary) -> void:
 	if items_match(hover_item, item_data):
 		hover_item = {}
 	refresh_detail()
+	_sync_controller_state()
 
 func _on_item_selected(item_data: Dictionary) -> void:
 	selected_item = item_data.duplicate(true)
@@ -340,6 +342,7 @@ func _on_item_selected(item_data: Dictionary) -> void:
 		selected_module = item_data.get("module", null) as Module
 		InventoryData.on_select_upg = null
 	refresh_template()
+	_sync_controller_state()
 
 func refresh_detail() -> void:
 	if upgrade_detail_title == null or upgrade_detail_body == null:
@@ -582,6 +585,10 @@ func _add_detail_text(text: String) -> void:
 func _show_message(text: String, duration: float) -> void:
 	if owner_ui and owner_ui.has_method("show_item_message"):
 		owner_ui.call("show_item_message", text, duration)
+
+func _sync_controller_state() -> void:
+	if controller != null:
+		controller.sync_view_state()
 
 func _clear_container(container: Node) -> void:
 	for child in container.get_children():

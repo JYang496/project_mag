@@ -12,6 +12,7 @@ var layout_controller: UiLayoutController
 var active := false
 var primary_menu_id: StringName = &""
 var _secondary_menu_dim_overlay: ColorRect
+var _menu_transition_locked := false
 
 func bind(ui: UI, management_shell: RestAreaManagementShell, ui_layout_controller: UiLayoutController = null) -> void:
 	owner_ui = ui
@@ -57,6 +58,8 @@ func get_service_primary_buttons(menu_id: StringName) -> Array:
 	return []
 
 func open_menu(menu_id: StringName) -> void:
+	if _menu_transition_locked and active:
+		return
 	menu_id = _normalize_menu_id(menu_id)
 	active = true
 	primary_menu_id = menu_id
@@ -66,6 +69,8 @@ func open_menu(menu_id: StringName) -> void:
 		purchase_menu_in()
 
 func open_board_edit_panel() -> bool:
+	if _menu_transition_locked and active:
+		return false
 	active = true
 	primary_menu_id = &"board_edit"
 	_sync_public_fields_to_owner()
@@ -102,7 +107,8 @@ func purchase_panel_in() -> void:
 		return
 	owner_ui.purchase_management_controller.update_shop()
 	owner_ui._mark_shop_purchase_action_dirty()
-	set_primary_root_visible(&"purchase", false)
+	if not _menu_transition_locked:
+		set_primary_root_visible(&"purchase", false)
 	set_management_root_visible(&"purchase", true)
 
 func purchase_panel_out() -> void:
@@ -149,7 +155,8 @@ func upgrade_panel_in() -> void:
 		return
 	owner_ui.upgrade_management_controller.apply_mode(owner_ui._upgrade_mode)
 	owner_ui.upgrade_management_controller.update_upg()
-	set_primary_root_visible(&"upgrade", false)
+	if not _menu_transition_locked:
+		set_primary_root_visible(&"upgrade", false)
 	set_management_root_visible(&"upgrade", true)
 
 func upgrade_panel_out() -> void:
@@ -202,95 +209,148 @@ func close_module_management_ui() -> void:
 	_sync_public_fields_to_owner()
 
 func open_purchase_weapon_panel() -> void:
-	var should_wait := owner_ui.purchase_primary_root != null and owner_ui.purchase_primary_root.visible
+	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
+		if owner_ui.is_branch_selection_blocking_interactions():
+			owner_ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
+		return
+	_menu_transition_locked = true
 	_hide_primary_menu(&"purchase", owner_ui.purchase_primary_root, owner_ui.purchase_primary_panel)
-	if should_wait:
-		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	purchase_panel_in()
 	owner_ui.purchase_management_controller.apply_purchase_mode(&"weapon")
+	await _animate_secondary_root_in(owner_ui.purchase_management_root)
+	_menu_transition_locked = false
 
 func open_purchase_module_panel() -> void:
-	var should_wait := owner_ui.purchase_primary_root != null and owner_ui.purchase_primary_root.visible
+	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
+		if owner_ui.is_branch_selection_blocking_interactions():
+			owner_ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
+		return
+	_menu_transition_locked = true
 	_hide_primary_menu(&"purchase", owner_ui.purchase_primary_root, owner_ui.purchase_primary_panel)
-	if should_wait:
-		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	owner_ui.purchase_management_controller.ensure_module_shop()
 	purchase_panel_in()
 	owner_ui.purchase_management_controller.apply_purchase_mode(&"module")
+	await _animate_secondary_root_in(owner_ui.purchase_management_root)
+	_menu_transition_locked = false
 
 func close_purchase_panel() -> void:
 	purchase_panel_out()
 
 func back_to_purchase_primary_menu() -> void:
-	purchase_panel_out()
+	if _menu_transition_locked:
+		return
+	_menu_transition_locked = true
+	var tween := _animate_secondary_root_out(owner_ui.purchase_management_root)
 	_show_primary_menu(&"purchase", owner_ui.purchase_primary_root, owner_ui.purchase_primary_panel)
+	if tween != null:
+		await tween.finished
+	purchase_panel_out()
+	_menu_transition_locked = false
 
 func open_upgrade_panel(mode: StringName = &"weapon") -> void:
-	var should_wait := owner_ui.upgrade_primary_root != null and owner_ui.upgrade_primary_root.visible
+	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
+		if owner_ui.is_branch_selection_blocking_interactions():
+			owner_ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
+		return
+	_menu_transition_locked = true
 	_hide_primary_menu(&"upgrade", owner_ui.upgrade_primary_root, owner_ui.upgrade_primary_panel)
-	if should_wait:
-		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	owner_ui.upgrade_management_controller.apply_mode(mode)
 	upgrade_panel_in()
+	await _animate_secondary_root_in(owner_ui.upgrade_management_root)
+	_menu_transition_locked = false
 
 func close_upgrade_panel() -> void:
 	upgrade_panel_out()
 
 func back_to_upgrade_primary_menu() -> void:
-	upgrade_panel_out()
+	if _menu_transition_locked:
+		return
+	_menu_transition_locked = true
+	var tween := _animate_secondary_root_out(owner_ui.upgrade_management_root)
 	_show_primary_menu(&"upgrade", owner_ui.upgrade_primary_root, owner_ui.upgrade_primary_panel)
+	if tween != null:
+		await tween.finished
+	upgrade_panel_out()
+	_menu_transition_locked = false
 
 func open_warehouse_management_panel() -> void:
+	if _menu_transition_locked:
+		return
 	if not is_module_management_available():
 		owner_ui._show_module_rest_area_only_message()
 		return
-	var should_wait := owner_ui.warehouse_primary_root != null and owner_ui.warehouse_primary_root.visible
+	_menu_transition_locked = true
 	_hide_primary_menu(&"warehouse", owner_ui.warehouse_primary_root, owner_ui.warehouse_primary_panel)
-	if should_wait:
-		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	warehouse_panel_in(&"module")
+	await _animate_secondary_root_in(owner_ui.warehouse_management_root)
+	_menu_transition_locked = false
 
 func open_warehouse_weapon_panel() -> void:
-	var should_wait := owner_ui.warehouse_primary_root != null and owner_ui.warehouse_primary_root.visible
+	if _menu_transition_locked:
+		return
+	_menu_transition_locked = true
 	_hide_primary_menu(&"warehouse", owner_ui.warehouse_primary_root, owner_ui.warehouse_primary_panel)
-	if should_wait:
-		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	warehouse_panel_in(&"weapon")
+	await _animate_secondary_root_in(owner_ui.warehouse_management_root)
+	_menu_transition_locked = false
 
 func close_warehouse_panel() -> void:
 	warehouse_panel_out()
 
 func back_to_warehouse_primary_menu() -> void:
+	if _menu_transition_locked:
+		return
+	_menu_transition_locked = true
 	if owner_ui.module_equip_selection_panel and owner_ui.module_equip_selection_panel.visible:
 		owner_ui.module_equip_selection_panel.close_without_assignment()
-	warehouse_panel_out()
+	var tween := _animate_secondary_root_out(owner_ui.warehouse_management_root)
 	_show_primary_menu(&"warehouse", owner_ui.warehouse_primary_root, owner_ui.warehouse_primary_panel)
+	if tween != null:
+		await tween.finished
+	warehouse_panel_out()
+	_menu_transition_locked = false
 
 func open_cell_grid_panel() -> void:
-	var should_wait := owner_ui.board_edit_primary_root != null and owner_ui.board_edit_primary_root.visible
+	if _menu_transition_locked:
+		return
+	_menu_transition_locked = true
 	_hide_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
-	if should_wait:
-		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	if not owner_ui.open_board_edit_panel():
-		back_to_board_primary_menu()
+		_show_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
+		_menu_transition_locked = false
+		return
+	await _animate_secondary_root_in(owner_ui.board_edit_panel)
 	sync_secondary_menu_dim_overlay()
+	_menu_transition_locked = false
 
 func open_cell_task_panel() -> void:
-	var should_wait := owner_ui.board_edit_primary_root != null and owner_ui.board_edit_primary_root.visible
+	if _menu_transition_locked:
+		return
+	_menu_transition_locked = true
 	_hide_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
-	if should_wait:
-		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
 	if not owner_ui.open_cell_management_panel(&"task"):
-		back_to_board_primary_menu()
+		_show_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
+		_menu_transition_locked = false
+		return
+	await _animate_secondary_root_in(owner_ui.cell_management_panel)
 	sync_secondary_menu_dim_overlay()
+	_menu_transition_locked = false
 
 func back_to_board_primary_menu() -> void:
+	if _menu_transition_locked:
+		return
+	_menu_transition_locked = true
+	var visible_panel := _get_visible_board_secondary_panel()
+	var tween := _animate_secondary_root_out(visible_panel)
+	_show_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
+	if tween != null:
+		await tween.finished
 	if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel):
 		owner_ui.cell_management_panel.call("close_panel")
 	if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel):
 		owner_ui.board_edit_panel.call("close_panel")
-	_show_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
 	sync_secondary_menu_dim_overlay()
+	_menu_transition_locked = false
 
 func close_purchase_menu() -> void:
 	if not active:
@@ -299,22 +359,54 @@ func close_purchase_menu() -> void:
 	_clear_active()
 
 func close_primary_menu() -> void:
-	if not active:
+	if _menu_transition_locked or not active:
 		return
-	match primary_menu_id:
+	_menu_transition_locked = true
+	var primary_close_started := false
+	var closing_menu_id := primary_menu_id
+	_clear_active()
+	match closing_menu_id:
 		&"board_edit":
-			_hide_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
+			var board_tween := _animate_secondary_root_out(_get_visible_board_secondary_panel())
+			if board_tween != null:
+				await board_tween.finished
+			else:
+				_hide_primary_menu(&"board_edit", owner_ui.board_edit_primary_root, owner_ui.board_edit_primary_panel)
+				primary_close_started = true
 			if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel):
 				owner_ui.cell_management_panel.call("close_panel")
 			if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel):
 				owner_ui.board_edit_panel.call("close_panel")
 		&"upgrade":
-			upgrade_menu_out()
+			if owner_ui.upgrade_management_root and owner_ui.upgrade_management_root.visible:
+				var upgrade_tween := _animate_secondary_root_out(owner_ui.upgrade_management_root)
+				if upgrade_tween != null:
+					await upgrade_tween.finished
+				upgrade_panel_out()
+			else:
+				upgrade_menu_out()
+				primary_close_started = true
 		&"warehouse":
-			warehouse_menu_out()
+			if owner_ui.warehouse_management_root and owner_ui.warehouse_management_root.visible:
+				var warehouse_tween := _animate_secondary_root_out(owner_ui.warehouse_management_root)
+				if warehouse_tween != null:
+					await warehouse_tween.finished
+				warehouse_panel_out()
+			else:
+				warehouse_menu_out()
+				primary_close_started = true
 		_:
-			purchase_menu_out()
-	_clear_active()
+			if owner_ui.purchase_management_root and owner_ui.purchase_management_root.visible:
+				var purchase_tween := _animate_secondary_root_out(owner_ui.purchase_management_root)
+				if purchase_tween != null:
+					await purchase_tween.finished
+				purchase_panel_out()
+			else:
+				purchase_menu_out()
+				primary_close_started = true
+	if primary_close_started:
+		await owner_ui.get_tree().create_timer(PRIMARY_MENU_ANIM_TIME).timeout
+	_menu_transition_locked = false
 
 func is_purchase_active() -> bool:
 	_sync_public_fields_to_owner()
@@ -381,6 +473,8 @@ func is_module_management_available() -> bool:
 	return false
 
 func handle_right_cancel() -> bool:
+	if _menu_transition_locked:
+		return true
 	if primary_menu_id == &"board_edit" and owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel) and owner_ui.board_edit_panel.visible:
 		if owner_ui.board_edit_panel.has_method("clear_selection_if_any") and bool(owner_ui.board_edit_panel.call("clear_selection_if_any")):
 			return true
@@ -507,6 +601,33 @@ func _hide_primary_menu(menu_id: StringName, root: Control, panel: Control) -> v
 	_ensure_layout_controller()
 	if layout_controller != null:
 		layout_controller.hide_primary_menu(menu_id, root, panel)
+
+func _animate_secondary_root_in(root: Control) -> void:
+	_ensure_layout_controller()
+	if root == null:
+		return
+	if layout_controller == null:
+		root.visible = true
+		return
+	var tween := layout_controller.show_secondary_menu(root)
+	if tween != null:
+		await tween.finished
+
+func _animate_secondary_root_out(root: Control) -> Tween:
+	_ensure_layout_controller()
+	if root == null:
+		return null
+	if layout_controller == null:
+		root.visible = false
+		return null
+	return layout_controller.hide_secondary_menu(root)
+
+func _get_visible_board_secondary_panel() -> Control:
+	if owner_ui.board_edit_panel and is_instance_valid(owner_ui.board_edit_panel) and owner_ui.board_edit_panel.visible:
+		return owner_ui.board_edit_panel
+	if owner_ui.cell_management_panel and is_instance_valid(owner_ui.cell_management_panel) and owner_ui.cell_management_panel.visible:
+		return owner_ui.cell_management_panel
+	return null
 
 func _stop_primary_menu_tween(menu_id: StringName) -> void:
 	_ensure_layout_controller()

@@ -9,10 +9,12 @@ const PRIMARY_MENU_LEFT_MARGIN := 16.0
 const PRIMARY_MENU_ANIM_TIME := 0.2
 const PRIMARY_MENU_ANIM_TRANS := Tween.TRANS_CUBIC
 const PRIMARY_MENU_ANIM_EASE := Tween.EASE_OUT
+const SECONDARY_MENU_SLIDE_OFFSET := Vector2(-36.0, 0.0)
 
 var owner_ui: UI
 var shell: RestAreaManagementShell
 var primary_menu_tweens: Dictionary = {}
+var secondary_menu_tweens: Dictionary = {}
 
 func bind(ui: UI, management_shell: RestAreaManagementShell) -> void:
 	owner_ui = ui
@@ -107,6 +109,58 @@ func stop_primary_menu_tween(menu_id: StringName) -> void:
 		active_tween.kill()
 	primary_menu_tweens.erase(menu_id)
 	_sync_public_fields_to_owner()
+
+func show_secondary_menu(root: Control) -> Tween:
+	if owner_ui == null or root == null:
+		return null
+	stop_secondary_menu_tween(root)
+	root.visible = true
+	root.position = SECONDARY_MENU_SLIDE_OFFSET
+	root.modulate.a = 0.0
+	var tween := owner_ui.create_tween()
+	tween.set_trans(PRIMARY_MENU_ANIM_TRANS)
+	tween.set_ease(PRIMARY_MENU_ANIM_EASE)
+	tween.parallel().tween_property(root, "position", Vector2.ZERO, PRIMARY_MENU_ANIM_TIME)
+	tween.parallel().tween_property(root, "modulate:a", 1.0, PRIMARY_MENU_ANIM_TIME)
+	tween.finished.connect(on_secondary_menu_tween_finished.bind(root))
+	secondary_menu_tweens[root] = tween
+	return tween
+
+func hide_secondary_menu(root: Control) -> Tween:
+	if owner_ui == null or root == null:
+		return null
+	stop_secondary_menu_tween(root)
+	if not root.visible:
+		root.position = Vector2.ZERO
+		root.modulate.a = 1.0
+		return null
+	var tween := owner_ui.create_tween()
+	tween.set_trans(PRIMARY_MENU_ANIM_TRANS)
+	tween.set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(root, "position", SECONDARY_MENU_SLIDE_OFFSET, PRIMARY_MENU_ANIM_TIME)
+	tween.parallel().tween_property(root, "modulate:a", 0.0, PRIMARY_MENU_ANIM_TIME)
+	tween.tween_callback(on_secondary_menu_hidden.bind(root))
+	tween.finished.connect(on_secondary_menu_tween_finished.bind(root))
+	secondary_menu_tweens[root] = tween
+	return tween
+
+func stop_secondary_menu_tween(root: Control) -> void:
+	if root == null or not secondary_menu_tweens.has(root):
+		return
+	var active_tween := secondary_menu_tweens[root] as Tween
+	if active_tween and is_instance_valid(active_tween):
+		active_tween.kill()
+	secondary_menu_tweens.erase(root)
+
+func on_secondary_menu_hidden(root: Control) -> void:
+	if root:
+		root.visible = false
+		root.position = Vector2.ZERO
+		root.modulate.a = 1.0
+	secondary_menu_tweens.erase(root)
+
+func on_secondary_menu_tween_finished(root: Control) -> void:
+	secondary_menu_tweens.erase(root)
 
 func on_primary_menu_hidden(menu_id: StringName, root: Control, panel: Control, hidden_pos: Vector2) -> void:
 	if shell != null:

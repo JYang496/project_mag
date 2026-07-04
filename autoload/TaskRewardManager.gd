@@ -28,13 +28,27 @@ func _ready() -> void:
 		_clear_pending_reward(false)
 	if not PhaseManager.phase_changed.is_connected(_on_phase_changed):
 		PhaseManager.phase_changed.connect(_on_phase_changed)
+	call_deferred("_connect_reward_draft_runtime")
 
 func is_enabled() -> bool:
 	var economy := _get_economy_config()
 	return economy.task_reward_options_enabled
 
-func is_reward_blocking_interactions() -> bool:
+func is_task_reward_blocking_interactions() -> bool:
 	return _reward_unlocked and PhaseManager.current_state() == PhaseManager.PREPARE
+
+func is_reward_blocking_interactions() -> bool:
+	return is_task_reward_blocking_interactions() \
+		or RewardDraftRuntime.is_standard_draft_blocking_interactions()
+
+func _connect_reward_draft_runtime() -> void:
+	if RewardDraftRuntime == null:
+		return
+	if not RewardDraftRuntime.pending_standard_draft_changed.is_connected(_on_standard_draft_blocking_changed):
+		RewardDraftRuntime.pending_standard_draft_changed.connect(_on_standard_draft_blocking_changed)
+
+func _on_standard_draft_blocking_changed(_has_pending: bool) -> void:
+	pending_reward_changed.emit(is_reward_blocking_interactions())
 
 func has_pending_reward() -> bool:
 	return _reward_unlocked

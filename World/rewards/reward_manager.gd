@@ -2,6 +2,7 @@ extends Node2D
 class_name BonusManager
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
+const PREVIEW_FORMATTER := preload("res://UI/scripts/weapon_obtain_preview_formatter.gd")
 const MODULE_DIRECTORY_PATH := "res://Player/Weapons/Modules/"
 const REWARD_TYPE_WEAPON := "weapon"
 const REWARD_TYPE_WEAPON_UPGRADE := "weapon_upgrade"
@@ -34,6 +35,7 @@ func _on_phase_changed(new_phase: String) -> void:
 	if leaving_rest_area:
 		_settle_unclaimed_battle_drops()
 	if completed_battle:
+		RewardDraftRuntime.begin_standard_draft_opening()
 		call_deferred("_request_completed_battle_standard_draft")
 
 func _request_completed_battle_standard_draft() -> void:
@@ -41,8 +43,9 @@ func _request_completed_battle_standard_draft() -> void:
 	await get_tree().process_frame
 	await get_tree().create_timer(BATTLE_END_REWARD_DELAY_SEC).timeout
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		RewardDraftRuntime.clear_standard_draft_opening()
 		return
-	if TaskRewardManager.is_reward_blocking_interactions():
+	if TaskRewardManager.is_task_reward_blocking_interactions():
 		_retry_completed_battle_standard_draft_after_task_reward()
 		return
 	var level_index := maxi(int(PhaseManager.current_level) - 1, 0)
@@ -106,6 +109,7 @@ func _request_standard_battle_reward_selection(level_index: int, route_def: RunR
 	else:
 		reward_options = build_standard_battle_draft_options(level_index, route_def)
 		if reward_options.is_empty():
+			RewardDraftRuntime.clear_standard_draft_opening()
 			return
 		var draft_index := RewardDraftRuntime.get_next_standard_draft_index()
 		RewardDraftRuntime.set_pending_standard_draft(reward_options, {
@@ -114,6 +118,7 @@ func _request_standard_battle_reward_selection(level_index: int, route_def: RunR
 			"route_id": route_def.route_id if route_def else "",
 		})
 	if reward_options.is_empty():
+		RewardDraftRuntime.clear_standard_draft_opening()
 		return
 	var ui = GlobalVariables.ui
 	if ui == null or not is_instance_valid(ui) or not ui.has_method("request_reward_selection"):
@@ -131,6 +136,7 @@ func _request_standard_battle_reward_selection(level_index: int, route_def: RunR
 		true
 	))
 	if opened:
+		RewardDraftRuntime.clear_standard_draft_opening()
 		RewardDraftRuntime.record_standard_draft_consumed()
 		return
 	if _is_reward_selection_panel_open(ui):
@@ -847,19 +853,4 @@ func _get_module_name_from_reward_scene(module_scene: PackedScene) -> String:
 	return LocalizationManager.tr_key("module.%s.name" % module_id, fallback)
 
 func _format_weapon_obtain_prediction(base_text: String, weapon_name: String, outcome: Dictionary) -> String:
-	var result_type := str(outcome.get("result", "not_applicable"))
-	match result_type:
-		"fused":
-			return LocalizationManager.tr_format(
-				"ui.weapon.obtain_preview.fuse",
-				{"name": weapon_name, "fuse": int(outcome.get("target_fuse", 1))},
-				"%s -> Fuse %d" % [weapon_name, int(outcome.get("target_fuse", 1))]
-			)
-		"converted_to_gold":
-			return LocalizationManager.tr_format(
-				"ui.weapon.obtain_preview.gold",
-				{"name": weapon_name, "gold": int(outcome.get("gold", 0))},
-				"%s -> +%d Gold" % [weapon_name, int(outcome.get("gold", 0))]
-			)
-		_:
-			return base_text
+	return PREVIEW_FORMATTER.format_obtain_preview(base_text, weapon_name, outcome)

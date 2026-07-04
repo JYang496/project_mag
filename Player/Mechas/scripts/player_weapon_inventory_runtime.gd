@@ -1,6 +1,8 @@
 extends RefCounted
 class_name PlayerWeaponInventoryRuntime
 
+const PREVIEW_FORMATTER := preload("res://UI/scripts/weapon_obtain_preview_formatter.gd")
+
 var _player
 var _weapon_list_dirty := true
 var _weapon_roles_dirty := true
@@ -151,24 +153,11 @@ func notify_weapon_duplicate_result(existing_weapon: Weapon, weapon_id: String, 
 	var fallback_name := LocalizationManager.get_weapon_name_from_node(existing_weapon)
 	var weapon_name := LocalizationManager.get_weapon_name_by_id(resolved_id, fallback_name)
 	var result_type := str(result.get("result", ""))
-	var message := ""
-	match result_type:
-		"fused":
-			var fuse_value := int(result.get("target_fuse", max(1, int(existing_weapon.fuse))))
-			message = LocalizationManager.tr_format(
-				"ui.weapon.duplicate.fuse_up",
-				{"name": weapon_name, "fuse": fuse_value},
-				"Duplicate %s reinforced to Fuse %d" % [weapon_name, fuse_value]
-			)
-		"converted_to_gold":
-			var gold_value := int(result.get("gold", 0))
-			message = LocalizationManager.tr_format(
-				"ui.weapon.duplicate.convert",
-				{"name": weapon_name, "gold": gold_value},
-				"Duplicate %s converted to +%d Gold" % [weapon_name, gold_value]
-			)
-		_:
-			return
+	if result_type != "fused" and result_type != "converted_to_gold":
+		return
+	var message := PREVIEW_FORMATTER.format_obtain_preview("", weapon_name, result)
+	if message.strip_edges() == "":
+		return
 	ui.show_item_message(message, 1.8)
 
 func refresh_weapon_related_ui() -> void:

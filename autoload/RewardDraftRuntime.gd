@@ -10,6 +10,7 @@ var _pending_standard_draft_payloads: Array[Dictionary] = []
 var _pending_context: Dictionary = {}
 var _pending_draft_index: int = 0
 var _pending_consumed_recorded := false
+var _standard_draft_opening := false
 
 func _ready() -> void:
 	_load_state()
@@ -46,11 +47,26 @@ func set_pending_standard_draft(options: Array[RewardInfo], context: Dictionary 
 	_pending_context = context.duplicate(true)
 	_pending_draft_index = int(_pending_context.get("draft_index", get_next_standard_draft_index()))
 	_pending_consumed_recorded = false
+	_standard_draft_opening = false
 	_save_state()
 	pending_standard_draft_changed.emit(true)
 
 func has_pending_standard_draft() -> bool:
 	return not _pending_standard_draft_payloads.is_empty()
+
+func begin_standard_draft_opening() -> void:
+	_standard_draft_opening = true
+	pending_standard_draft_changed.emit(true)
+
+func clear_standard_draft_opening() -> void:
+	if not _standard_draft_opening:
+		return
+	_standard_draft_opening = false
+	pending_standard_draft_changed.emit(has_pending_standard_draft())
+
+func is_standard_draft_blocking_interactions() -> bool:
+	return PhaseManager.current_state() == PhaseManager.PREPARE \
+		and (_standard_draft_opening or has_pending_standard_draft())
 
 func get_pending_standard_draft_options() -> Array[RewardInfo]:
 	var options: Array[RewardInfo] = []
@@ -73,6 +89,7 @@ func clear_pending_standard_draft(save_after: bool = true) -> void:
 	_pending_context.clear()
 	_pending_draft_index = 0
 	_pending_consumed_recorded = false
+	_standard_draft_opening = false
 	pending_standard_draft_changed.emit(false)
 	if save_after:
 		_save_state()
@@ -83,6 +100,7 @@ func save_runtime_state() -> void:
 func reset_runtime_state(preserve_persistent_state: bool = false) -> void:
 	if preserve_persistent_state:
 		_load_state()
+		_standard_draft_opening = false
 		return
 	standard_draft_count = 0
 	clear_pending_standard_draft(false)
@@ -108,12 +126,15 @@ func restore_battle_rollback_snapshot(payload: Dictionary) -> void:
 		if payload.get("pending_context", {}) is Dictionary else {}
 	_pending_draft_index = maxi(int(payload.get("pending_draft_index", 0)), 0)
 	_pending_consumed_recorded = bool(payload.get("pending_consumed_recorded", false))
+	_standard_draft_opening = false
 	_save_state()
 	pending_standard_draft_changed.emit(has_pending_standard_draft())
 
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.GAMEOVER:
 		reset_runtime_state(false)
+	elif new_phase != PhaseManager.PREPARE:
+		clear_standard_draft_opening()
 
 func _serialize_reward(reward: RewardInfo) -> Dictionary:
 	if reward == null:

@@ -11,11 +11,15 @@ enum DisplayState {
 }
 
 const PANEL_WIDTH := 360.0
+const COMPACT_PANEL_WIDTH := 240.0
 const FALLBACK_MARGIN := 16.0
 const TWO_COLUMN_MIN_WIDTH := 420.0
 const KEYCAP_WIDTH := 64.0
 const COMPACT_EXPAND_WIDTH := 96.0
-const AUTO_COLLAPSE_SECONDS := 8.0
+const PANEL_TRANSITION_SECONDS := 0.18
+const CONTENT_FADE_SECONDS := 0.08
+const AUTO_COLLAPSE_SECONDS := 4.0
+const REST_AUTO_COLLAPSE_SECONDS := 4.0
 const CONTEXT_DURATION_SECONDS := 3.0
 const CONTEXT_COOLDOWN_SECONDS := 15.0
 const MAX_CONTEXT_REPEATS := 2
@@ -49,10 +53,13 @@ var _action_items: Dictionary = {}
 var _render_signature := ""
 var _text_context_signature := ""
 var _collapsed_text_contexts: Dictionary = {}
+var _last_viewport_size := Vector2.ZERO
+var _panel_tween: Tween
+var _content_tween: Tween
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	size_flags_horizontal = Control.SIZE_FILL
+	size_flags_horizontal = Control.SIZE_SHRINK_END
 	add_theme_stylebox_override("panel", _build_panel_style())
 	_configure_text_constraints()
 	_configure_button_click_targets()
@@ -65,10 +72,13 @@ func _ready() -> void:
 	_apply_saved_mode(false)
 
 func layout_for_viewport(viewport_size: Vector2) -> void:
+	_last_viewport_size = viewport_size
 	var available_width := maxf(1.0, viewport_size.x - 2.0 * FALLBACK_MARGIN)
-	var target_width := minf(PANEL_WIDTH, available_width)
-	custom_minimum_size.x = target_width
-	expanded_content.columns = 2 if target_width >= TWO_COLUMN_MIN_WIDTH else 1
+	var expanded_width := minf(PANEL_WIDTH, available_width)
+	var target_width := _target_panel_width(display_state)
+	if _panel_tween == null or not _panel_tween.is_running():
+		custom_minimum_size.x = target_width
+	expanded_content.columns = 2 if expanded_width >= TWO_COLUMN_MIN_WIDTH else 1
 	if get_parent() is Container:
 		return
 	size.x = target_width
@@ -98,7 +108,7 @@ func refresh_visibility(primary_menu_open: bool, secondary_menu_context: StringN
 	refresh_for_phase(next_phase, primary_menu_open, secondary_menu_context)
 
 func tick(delta: float) -> void:
-	if _current_phase != PhaseManager.BATTLE or get_tree().paused:
+	if not _can_auto_collapse_current_phase() or get_tree().paused:
 		return
 	if display_state == DisplayState.CONTEXT_REMINDER:
 		_context_remaining -= maxf(delta, 0.0)
@@ -151,7 +161,9 @@ func toggle_expanded() -> void:
 	_request_toggle_display()
 
 func set_display_state(next_state: DisplayState, persist_manual_choice: bool = true) -> void:
+	var previous_state := display_state
 	if next_state == DisplayState.HIDDEN:
+		_kill_transition_tweens()
 		visible = false
 		display_state = next_state
 		if persist_manual_choice:
@@ -163,11 +175,7 @@ func set_display_state(next_state: DisplayState, persist_manual_choice: bool = t
 	if persist_manual_choice and next_state == DisplayState.EXPANDED:
 		PlayerAssistSettings.set_controls_hint_mode(PlayerAssistSettings.CONTROLS_HINT_ALWAYS)
 	visible = _should_be_visible()
-	header.visible = next_state == DisplayState.EXPANDED
-	header_divider.visible = next_state == DisplayState.EXPANDED
-	expanded_content.visible = next_state == DisplayState.EXPANDED
-	compact_content.visible = next_state == DisplayState.COMPACT
-	context_content.visible = next_state == DisplayState.CONTEXT_REMINDER
+	_apply_display_state_visuals(next_state, previous_state)
 	_sync_toggle_affordance()
 	display_state_changed.emit(display_state)
 
@@ -218,6 +226,8 @@ func refresh_input_glyphs() -> void:
 		_input_label(&"ATTACK"),
 		_tr("ui.controls.attack", "Attack"),
 	]
+	if _current_phase == PhaseManager.BATTLE:
+		compact_text.text = _tr("ui.controls.compact_battle", "Battle Controls Hint")
 	compact_expand.text = "%s %s" % [
 		_input_label(&"TOGGLE_CONTROLS"),
 		_tr("ui.controls.expand", "Expand"),
@@ -233,6 +243,10 @@ func _begin_battle_guidance() -> void:
 	_context_show_counts.clear()
 	_context_last_shown_msec.clear()
 	_apply_saved_mode(false)
+
+func _begin_rest_guidance() -> void:
+	_auto_collapse_remaining = REST_AUTO_COLLAPSE_SECONDS
+	_manual_expanded = false
 
 func _apply_saved_mode(emit_change: bool = true) -> void:
 	var mode: StringName = PlayerAssistSettings.controls_hint_mode
@@ -318,6 +332,10 @@ func _render_text_context(context_title: String, lines: Array[String]) -> void:
 	var next_state := display_state
 	if PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_ALWAYS:
 		next_state = DisplayState.EXPANDED
+	elif _current_phase == PhaseManager.PREPARE:
+		if context_changed and display_state == DisplayState.EXPANDED:
+			_begin_rest_guidance()
+		next_state = display_state
 	elif bool(_collapsed_text_contexts.get(context_identity, false)):
 		next_state = DisplayState.COMPACT
 	elif context_changed:
@@ -364,6 +382,9 @@ func _can_request_display_state(next_state: DisplayState) -> bool:
 	if mode == PlayerAssistSettings.CONTROLS_HINT_ALWAYS:
 		return next_state == DisplayState.EXPANDED
 	return next_state == DisplayState.EXPANDED or next_state == DisplayState.COMPACT
+
+func _can_auto_collapse_current_phase() -> bool:
+	return _current_phase == PhaseManager.BATTLE or _current_phase == PhaseManager.PREPARE
 
 func _apply_manual_display_request(next_state: DisplayState) -> void:
 	match next_state:
@@ -546,6 +567,53 @@ func _configure_text_constraints() -> void:
 	context_message.max_lines_visible = 2
 	context_message.clip_text = true
 	context_message.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+
+func _target_panel_width(state: DisplayState) -> float:
+	var available_width := PANEL_WIDTH
+	if _last_viewport_size.x > 0.0:
+		available_width = maxf(1.0, _last_viewport_size.x - 2.0 * FALLBACK_MARGIN)
+	var base_width := COMPACT_PANEL_WIDTH if state == DisplayState.COMPACT else PANEL_WIDTH
+	return minf(base_width, available_width)
+
+func _apply_display_state_visuals(next_state: DisplayState, previous_state: DisplayState) -> void:
+	var target_width := _target_panel_width(next_state)
+	var should_animate := is_inside_tree() and is_node_ready() and visible and previous_state != next_state
+	if should_animate:
+		_animate_display_state(next_state, target_width)
+		return
+	_kill_transition_tweens()
+	custom_minimum_size.x = target_width
+	content.modulate.a = 1.0
+	_show_display_state_content(next_state)
+
+func _animate_display_state(next_state: DisplayState, target_width: float) -> void:
+	_kill_transition_tweens()
+	_panel_tween = create_tween()
+	_panel_tween.set_trans(Tween.TRANS_CUBIC)
+	_panel_tween.set_ease(Tween.EASE_OUT)
+	_panel_tween.tween_property(self, "custom_minimum_size:x", target_width, PANEL_TRANSITION_SECONDS)
+
+	_content_tween = create_tween()
+	_content_tween.set_trans(Tween.TRANS_SINE)
+	_content_tween.set_ease(Tween.EASE_OUT)
+	_content_tween.tween_property(content, "modulate:a", 0.0, CONTENT_FADE_SECONDS)
+	_content_tween.tween_callback(Callable(self, "_show_display_state_content").bind(next_state))
+	_content_tween.tween_property(content, "modulate:a", 1.0, CONTENT_FADE_SECONDS)
+
+func _kill_transition_tweens() -> void:
+	if _panel_tween != null and _panel_tween.is_running():
+		_panel_tween.kill()
+	if _content_tween != null and _content_tween.is_running():
+		_content_tween.kill()
+	_panel_tween = null
+	_content_tween = null
+
+func _show_display_state_content(state: DisplayState) -> void:
+	header.visible = state == DisplayState.EXPANDED
+	header_divider.visible = state == DisplayState.EXPANDED
+	expanded_content.visible = state == DisplayState.EXPANDED
+	compact_content.visible = state == DisplayState.COMPACT
+	context_content.visible = state == DisplayState.CONTEXT_REMINDER
 
 func _configure_button_click_targets() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS

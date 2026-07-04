@@ -92,6 +92,10 @@ ui.reward.default,Reward,奖励
 ui.reward.weapon,Weapon {id} Lv.{level},武器 {id} Lv.{level}
 ui.reward.weapon_upgrade,Upgrade {name} Lv.{from} -> Lv.{to},升级 {name} Lv.{from} -> Lv.{to}
 ui.reward.module,Module {name} Lv.{level},模组 {name} Lv.{level}
+ui.reward.type.weapon_fusion,Weapon Fusion,武器融合
+ui.reward.type.duplicate_weapon,Duplicate Weapon,重复武器
+ui.reward.meta.weapon_fuse,Fuse {from} -> {to},融合 {from} -> {to}
+ui.reward.meta.duplicate_gold,+{gold} Gold / Duplicate,+{gold} 金币 / 重复
 ui.task_reward.title,Objective Reward,任务奖励
 ui.task_reward.source,Completed Objective,已完成任务
 ui.task_reward.subtitle,Choose one reward for completing an objective this battle.,选择一项本轮完成任务获得的奖励。
@@ -136,6 +140,8 @@ ui.reward.exp,EXP +{value},经验 +{value}
 ui.reward.gold,Gold +{value},金币 +{value}
 ui.reward.message,Reward: {content},奖励：{content}
 ui.reward.outcome.weapon_upgrade,Upgrade equipped weapon,升级已装备武器
+ui.reward.outcome.weapon_fuse,Fuse equipped {name} to Fuse {fuse},融合已装备 {name} 到融合 {fuse}
+ui.reward.outcome.duplicate_gold,Duplicate {name} converts to +{gold} Gold,重复 {name} 转为 +{gold} 金币
 ui.reward.outcome.cell_effect,Added to cell effects,已加入格子效果
 ui.reward.outcome.task_module,Added to Ready To Install,已加入待部署
 ui.reward.outcome.weapon_obtain,Auto equip / fuse / store,自动装备 / 融合 / 入库
@@ -322,6 +328,7 @@ ui.controls.hidden,Hidden,隐藏
 ui.controls.hidden_tooltip,Controls hint is hidden by setting.,操作提示已被设置隐藏。
 ui.controls.always_expanded,Always Expanded,始终展开
 ui.controls.always_expanded_tooltip,Controls setting is Always Expanded. Change it to Adaptive to collapse hints.,当前设置为始终展开；切换为智能显示后才能收起提示。
+ui.controls.compact_battle,Battle Controls Hint,战斗操作提示
 ui.controls.compact_context,{context} controls,{context}操作
 ui.controls.key.space,Space,空格
 ui.controls.key.lmb,LMB,左键
