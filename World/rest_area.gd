@@ -676,7 +676,7 @@ func _should_show_zone_hint_label(zone_id: int, is_center_hold_hint: bool = fals
 	return selected_zone_id == zone_id and zone_id != CENTER_ZONE_ID
 
 func _are_zone_hints_suppressed_by_ui() -> bool:
-	return _is_menu_open() or _is_world_interaction_blocked()
+	return _is_world_interaction_blocked()
 
 func _is_mouse_over_ui() -> bool:
 	var viewport := get_viewport()
