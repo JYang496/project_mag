@@ -1,17 +1,44 @@
-[gd_scene load_steps=5 format=3 uid="uid://30h1411j5ie1"]
+[gd_scene load_steps=9 format=3 uid="uid://30h1411j5ie1"]
 
 [ext_resource type="Script" uid="uid://btvfb13ln7c4a" path="res://Objects/loots/coin.gd" id="1_ncwku"]
-[ext_resource type="Texture2D" uid="uid://d0j6niqs7u06l" path="res://asset/images/test/coin.png" id="1_vjq55"]
+[ext_resource type="Texture2D" path="res://asset/images/loot/credit_coin_01.png" id="2_frame1"]
+[ext_resource type="Texture2D" path="res://asset/images/loot/credit_coin_02.png" id="3_frame2"]
+[ext_resource type="Texture2D" path="res://asset/images/loot/credit_coin_03.png" id="4_frame3"]
+[ext_resource type="Texture2D" path="res://asset/images/loot/credit_coin_04.png" id="5_frame4"]
 [ext_resource type="AudioStream" uid="uid://utmsnfe5n0vx" path="res://asset/sounds/collectgem.mp3" id="3_xwqkn"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_otdol"]
 size = Vector2(16, 16)
 
+[sub_resource type="SpriteFrames" id="SpriteFrames_coin"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_frame1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_frame2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_frame3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_frame4")
+}],
+"loop": true,
+"name": &"shine",
+"speed": 6.0
+}]
+
 [node name="Coin" type="Area2D" groups=["collectables"]]
 script = ExtResource("1_ncwku")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("1_vjq55")
+[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+texture_filter = 2
+scale = Vector2(0.75, 0.75)
+sprite_frames = SubResource("SpriteFrames_coin")
+animation = &"shine"
+autoplay = "shine"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_otdol")

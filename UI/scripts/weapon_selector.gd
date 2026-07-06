@@ -54,7 +54,7 @@ var _selector_reload_total_by_weapon: Dictionary = {}
 var _connected_reload_weapon_ids: Dictionary = {}
 var _connected_passive_weapon_ids: Dictionary = {}
 
-var _empty_weapon_pic: Texture2D = preload("res://asset/images/test/empty_wp.png")
+var _missing_weapon_icon: Texture2D = preload("res://asset/images/ui/missing_weapon_icon.png")
 var _mainhand_slot_bg: Texture2D = preload("res://asset/images/ui/mainhand.png")
 var _offhand_slot_bg: Texture2D = preload("res://asset/images/ui/offhand.png")
 
@@ -255,7 +255,7 @@ func _get_weapon_texture(weapon: Variant) -> Texture2D:
 			var sprite_texture: Variant = sprite_node.get("texture")
 			if sprite_texture is Texture2D:
 				return sprite_texture as Texture2D
-	return _empty_weapon_pic
+	return _missing_weapon_icon
 
 func _target_slot_index_for_step(slot_index: int, step: int) -> int:
 	var cycle_index := SLOT_CYCLE.find(slot_index)

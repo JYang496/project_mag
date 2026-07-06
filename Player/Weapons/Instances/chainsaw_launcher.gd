@@ -1,13 +1,14 @@
 extends Ranger
 
 const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_rules.gd")
+const CHAINSAW_SPIN_FRAMES := preload("res://Player/Weapons/Projectiles/chainsaw_spin_frames.tres")
+const CHAINSAW_PROJECTILE_PIXEL_SIZE := Vector2(32.0, 32.0)
 
-var spin_effect = preload("res://Player/Weapons/Effects/spin_effect.tscn")
 var scale_up_by_time_effect = preload("res://Player/Weapons/Effects/scale_up_by_time.tscn")
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://asset/images/test/chainsaw_spin.png")
+var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/chainsaw_spin_01.png")
 
 # Weapon
 var ITEM_NAME = "Chainsaw Launcher"
@@ -64,19 +65,15 @@ func _on_shoot():
 	spawn_projectile.hp = projectile_hits
 	spawn_projectile.global_position = global_position
 	spawn_projectile.projectile_texture = projectile_texture_resource
+	spawn_projectile.projectile_frames = CHAINSAW_SPIN_FRAMES
+	spawn_projectile.desired_pixel_size = CHAINSAW_PROJECTILE_PIXEL_SIZE
 	spawn_projectile.size = size
 	spawn_projectile.hitbox_type = "dot"
 	spawn_projectile.dot_cd = dot_cd
 	spawn_projectile.wall_collision_mask = chainsaw_wall_collision_mask
-	apply_spin(spawn_projectile)
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 	branch_runtime.notify_branch_weapon_shot(projectile_direction)
-
-func apply_spin(projectile_node) -> void:
-	var spin_movement_ins = spin_effect.instantiate()
-	projectile_node.call_deferred("add_child",spin_movement_ins)
-	projectile_node.module_list.append(spin_movement_ins)
 
 func apply_scale_up_by_time(projectile_node) -> void:
 	var scale_up_by_time = scale_up_by_time_effect.instantiate()
@@ -170,6 +167,7 @@ func _spawn_split_projectile_from(source: Projectile) -> Projectile:
 	split_projectile.hp = maxi(1, int(source.hp))
 	split_projectile.global_position = source.global_position
 	split_projectile.projectile_texture = source.projectile_texture
+	split_projectile.projectile_frames = source.projectile_frames
 	split_projectile.size = source.size
 	split_projectile.desired_pixel_size = source.desired_pixel_size
 	split_projectile.hitbox_type = source.hitbox_type
@@ -183,7 +181,6 @@ func _spawn_split_projectile_from(source: Projectile) -> Projectile:
 	# Keep base motion unless caller overrides for ricochet behavior.
 	split_projectile.base_displacement = source.base_displacement
 	split_projectile.projectile_displacement = source.projectile_displacement
-	apply_spin(split_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", split_projectile)
 	return split_projectile
 

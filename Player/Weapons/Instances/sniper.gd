@@ -2,7 +2,7 @@ extends Ranger
 class_name Sniper
 
 var projectile_template: PackedScene = preload("res://Player/Weapons/Projectiles/sniper_projectile.tscn")
-var projectile_texture_resource: Texture2D = preload("res://asset/images/test/sniper_bullet.png")
+var projectile_texture_resource: Texture2D = preload("res://asset/images/weapons/projectiles/sniper_projectile.png")
 
 var ITEM_NAME := "Sniper"
 const NEAR_DISTANCE_THRESHOLD: float = 220.0

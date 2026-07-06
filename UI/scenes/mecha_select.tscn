@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://05u30gc3rp15"]
 
 [ext_resource type="Script" uid="uid://dlyqi6y1up4qg" path="res://World/mecha_select.gd" id="1_lus60"]
-[ext_resource type="Texture2D" uid="uid://gr13ex3fw4lx" path="res://asset/images/test/player.png" id="2_wrwct"]
+[ext_resource type="Texture2D" path="res://asset/images/ui/unknown_mecha.png" id="2_wrwct"]
 
 [node name="MechaSelect" type="MarginContainer"]
 custom_minimum_size = Vector2(120, 120)

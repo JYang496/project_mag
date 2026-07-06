@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://crqvkd0ptq13i"]
 
 [ext_resource type="Script" uid="uid://wxh4436y5d7q" path="res://Objects/loots/chip.gd" id="1_fq3cb"]
-[ext_resource type="Texture2D" uid="uid://0310yks02a0g" path="res://asset/images/test/chip.png" id="2_686d1"]
+[ext_resource type="Texture2D" path="res://asset/images/loot/chip.png" id="2_686d1"]
 [ext_resource type="AudioStream" uid="uid://utmsnfe5n0vx" path="res://asset/sounds/collectgem.mp3" id="3_686d1"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fq3cb"]
@@ -15,6 +15,7 @@ disabled = true
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_686d1")
+scale = Vector2(0.75, 0.75)
 
 [node name="Snd_collected" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("3_686d1")

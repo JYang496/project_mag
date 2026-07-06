@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cc2atf53a3a6p"]
 
 [ext_resource type="Script" uid="uid://cwvt7611e6y3o" path="res://Player/Weapons/Branches/machine_gun_front_shield.gd" id="1_shield_area"]
-[ext_resource type="Texture2D" uid="uid://bmuw2m4jla4ac" path="res://asset/images/test/more_hp.png" id="2_j4bmj"]
+[ext_resource type="Texture2D" path="res://asset/images/effects/machine_gun_front_shield.png" id="2_j4bmj"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_shield"]
 radius = 34.0

@@ -1,6 +1,6 @@
 extends Node2D
 
-const FALLBACK_MODULE_ICON: Texture2D = preload("res://asset/images/test/star.png")
+const FALLBACK_MODULE_ICON: Texture2D = preload("res://asset/images/modules/missing_module.png")
 
 @export var item_id : String = "1"
 @export var level := 3

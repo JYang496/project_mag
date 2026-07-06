@@ -16,6 +16,7 @@ var expire_time : float = DEFAULT_EXPIRE_TIME
 var base_displacement = Vector2.ZERO
 var projectile_displacement = Vector2.ZERO
 var projectile_texture
+var projectile_frames: SpriteFrames
 var size : float = 1.0
 var desired_pixel_size : Vector2 = Vector2.ZERO
 var module_list = []
@@ -49,6 +50,7 @@ signal overlapping_signal()
 @onready var expire_timer = $ExpireTimer
 @onready var projectile_root: Node2D = $Bullet
 @onready var projectile_sprite: Sprite2D = $Bullet/BulletSprite
+@onready var projectile_animation: AnimatedSprite2D = $Bullet/BulletAnimation
 
 var hitbox_ins
 
@@ -62,6 +64,11 @@ func _prepare_for_spawn() -> void:
 	expire_timer.wait_time = expire_time
 	projectile_sprite.texture = projectile_texture
 	projectile_sprite.scale = _resolve_projectile_scale()
+	projectile_sprite.visible = false
+	projectile_animation.sprite_frames = projectile_frames
+	projectile_animation.scale = projectile_sprite.scale
+	projectile_animation.visible = false
+	projectile_animation.stop()
 	projectile_root.position = Vector2.ZERO
 	_clear_hitbox()
 	init_hitbox(hitbox_type)
@@ -141,7 +148,11 @@ func on_hit_target_damage_dealt(target: Node, hit_damage_type: StringName, final
 			source_weapon.call("on_projectile_hit_damage_dealt", self, target, hit_damage_type, final_damage)
 
 func show_projectile() -> void:
-	projectile_sprite.visible = true
+	if projectile_frames:
+		projectile_animation.visible = true
+		projectile_animation.play(&"spin")
+	else:
+		projectile_sprite.visible = true
 
 func _on_expire_timer_timeout() -> void:
 	call_deferred("despawn")
@@ -182,6 +193,7 @@ func _on_before_pooled() -> void:
 	size = 1.0
 	desired_pixel_size = Vector2.ZERO
 	projectile_texture = null
+	projectile_frames = null
 	hitbox_type = "once"
 	dot_cd = 0.0
 	base_displacement = Vector2.ZERO
@@ -189,6 +201,10 @@ func _on_before_pooled() -> void:
 	projectile_root.position = Vector2.ZERO
 	projectile_sprite.scale = Vector2.ONE
 	projectile_sprite.texture = null
+	projectile_animation.stop()
+	projectile_animation.visible = false
+	projectile_animation.scale = Vector2.ONE
+	projectile_animation.sprite_frames = null
 	source_weapon = null
 	wall_collision_mask = 0
 	_wall_hit_reported = false

@@ -4,7 +4,7 @@ const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_ru
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://asset/images/test/sniper_bullet.png")
+var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/shotgun_pellet.png")
 
 # Weapon
 var ITEM_NAME = "Shotgun"

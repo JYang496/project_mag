@@ -4,6 +4,7 @@ extends Node2D
 @onready var item_preload = preload("res://Objects/loots/drop_item.tscn")
 @onready var drop_preload = preload("res://Objects/loots/drop.tscn")
 @onready var disapear_timer: Timer = $DisapearTimer
+@onready var sprite: Sprite2D = $Sprite2D
 
 @export var total_value:int = 0
 var number_of_collectables := 5
@@ -13,6 +14,7 @@ var remainder := 0
 @export var module_scene: PackedScene
 @export var module_level: int = 1
 @export var resolve_immediately: bool = false
+@export var opened_texture: Texture2D
 
 func _ready() -> void:
 	number_of_collectables = 5 + total_value/10
@@ -33,6 +35,8 @@ func animation() -> void:
 	tween.connect("finished",_on_tween_finished)
 
 func _on_tween_finished() -> void:
+	if opened_texture:
+		sprite.texture = opened_texture
 	drops()
 	disapear_timer.start()
 

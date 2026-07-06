@@ -12,7 +12,7 @@ const MARK_VISUAL_SCRIPT := preload("res://Player/Weapons/Effects/spear_pierce_m
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://asset/images/test/spear.png")
+var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/spear_projectile.png")
 var return_on_timeout = preload("res://Player/Weapons/Effects/return_on_timeout.tscn")
 
 # Weapon

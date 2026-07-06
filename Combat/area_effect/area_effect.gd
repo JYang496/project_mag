@@ -10,6 +10,7 @@ enum TargetGroup {
 }
 
 @export var duration: float = 0.1
+@export var visual_duration: float = 0.0
 @export var radius: float = 24.0:
 	set(value):
 		radius = maxf(value, 1.0)
@@ -73,6 +74,7 @@ enum TargetGroup {
 }
 
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
+@onready var damage_timer: Timer = $DamageTimer
 @onready var life_timer: Timer = $LifeTimer
 @onready var visual_root: Node2D = $VisualRoot
 @onready var visual_sprite: Sprite2D = $VisualRoot/Sprite
@@ -83,11 +85,13 @@ var source_category: StringName = StringName()
 var delivery_type: StringName = DamageDeliveryType.AREA
 var _affected_target_ids: Dictionary = {}
 var _tick_elapsed: float = 0.0
+var _damage_active: bool = true
 
 signal target_affected(target: Node)
 
 
 func _ready() -> void:
+	_damage_active = true
 	if source_node is BaseEnemy:
 		add_to_group("enemy_runtime_cleanup")
 	if source_category == DamageData.SOURCE_PLAYER_WEAPON:
@@ -97,7 +101,10 @@ func _ready() -> void:
 	_sync_radius()
 	_sync_collision_mask()
 	_sync_visual_nodes()
-	life_timer.wait_time = maxf(duration, 0.01)
+	var damage_duration := maxf(duration, 0.01)
+	damage_timer.wait_time = damage_duration
+	damage_timer.start()
+	life_timer.wait_time = maxf(damage_duration, visual_duration)
 	life_timer.start()
 	call_deferred("_apply_to_current_overlaps")
 
@@ -116,12 +123,23 @@ func _on_life_timer_timeout() -> void:
 	queue_free()
 
 
+func _on_damage_timer_timeout() -> void:
+	_damage_active = false
+	set_deferred("monitoring", false)
+	if collision_shape != null:
+		collision_shape.set_deferred("disabled", true)
+
+
 func _apply_to_current_overlaps() -> void:
+	if not _damage_active:
+		return
 	for area in get_overlapping_areas():
 		_try_apply_on_hurt_box(area)
 
 
 func _try_apply_on_hurt_box(area: Area2D) -> void:
+	if not _damage_active:
+		return
 	if not area is HurtBox:
 		return
 	var hurt_box: HurtBox = area
@@ -169,6 +187,8 @@ func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
 
 # Applies periodic area damage for persistent zones like napalm.
 func _apply_periodic_damage(delta: float) -> void:
+	if not _damage_active:
+		return
 	if tick_damage <= 0:
 		return
 	if tick_interval <= 0.0:

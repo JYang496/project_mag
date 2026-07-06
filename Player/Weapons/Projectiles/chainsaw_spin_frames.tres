@@ -1,0 +1,34 @@
+[gd_resource type="SpriteFrames" load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://asset/images/weapons/projectiles/chainsaw_spin_01.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/projectiles/chainsaw_spin_02.png" id="2_frame"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/projectiles/chainsaw_spin_03.png" id="3_frame"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/projectiles/chainsaw_spin_04.png" id="4_frame"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/projectiles/chainsaw_spin_05.png" id="5_frame"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/projectiles/chainsaw_spin_06.png" id="6_frame"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_frame")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_frame")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_frame")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_frame")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_frame")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_frame")
+}],
+"loop": true,
+"name": &"spin",
+"speed": 24.0
+}]

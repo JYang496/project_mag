@@ -2,7 +2,7 @@ extends Ranger
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://asset/images/test/minigun_bullet.png")
+var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/rocket_projectile.png")
 
 
 # Weapon

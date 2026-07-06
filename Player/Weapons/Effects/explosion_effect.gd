@@ -6,17 +6,18 @@ class_name ExplosionEffect
 @export var explosion_size = 2.0
 @export var base_radius: float = 24.0
 @export var duration: float = 0.1
+@export var visual_duration: float = 0.4
 @export var area_tick_damage: int = 0
 @export var area_tick_interval: float = 0.4
 @export var damage_type: StringName = Attack.TYPE_PHYSICAL
 @export var visual_enabled: bool = true
-@export var use_animated_visual: bool = false
-@export var visual_texture: Texture2D = preload("res://asset/images/test/bullet.png")
-@export var visual_frames: SpriteFrames
-@export var visual_animation: StringName = &"default"
+@export var use_animated_visual: bool = true
+@export var visual_texture: Texture2D = preload("res://asset/images/effects/explosion/explosion_01.png")
+@export var visual_frames: SpriteFrames = preload("res://asset/images/effects/explosion/explosion_frames.tres")
+@export var visual_animation: StringName = &"explode"
 @export var visual_playback_speed: float = 1.0
-@export var visual_modulate: Color = Color(1.0, 0.55, 0.2, 0.45)
-@export var visual_rotation_speed_deg: float = 240.0
+@export var visual_modulate: Color = Color.WHITE
+@export var visual_rotation_speed_deg: float = 0.0
 @export var visual_size_multiplier: float = 1.0
 var oc_mode : bool = false
 var _detonated: bool = false
@@ -35,6 +36,7 @@ func on_projectile_will_despawn() -> void:
 	area_effect.damage_type = Attack.normalize_damage_type(damage_type)
 	area_effect.radius = maxf(base_radius * explosion_size, 1.0)
 	area_effect.duration = duration
+	area_effect.visual_duration = visual_duration
 	area_effect.target_group = AreaEffect.TargetGroup.ENEMIES
 	area_effect.visual_enabled = visual_enabled
 	area_effect.use_animated_visual = use_animated_visual

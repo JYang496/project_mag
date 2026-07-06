@@ -1,7 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://dk1c4rp3qky24"]
+[gd_scene load_steps=2 format=3 uid="uid://dk1c4rp3qky24"]
 
 [ext_resource type="Script" uid="uid://cmynflw3rmepb" path="res://Player/Weapons/Projectiles/projectile.gd" id="1_7ggqm"]
-[ext_resource type="Texture2D" uid="uid://bdqglnp8spwlo" path="res://asset/images/test/sniper_bullet.png" id="2_t5sb3"]
 
 [node name="Projectile" type="Node2D"]
 script = ExtResource("1_7ggqm")
@@ -11,7 +10,10 @@ script = ExtResource("1_7ggqm")
 [node name="BulletSprite" type="Sprite2D" parent="Bullet"]
 visible = false
 texture_filter = 1
-texture = ExtResource("2_t5sb3")
+
+[node name="BulletAnimation" type="AnimatedSprite2D" parent="Bullet"]
+visible = false
+texture_filter = 2
 
 [node name="ExpireTimer" type="Timer" parent="."]
 wait_time = 2.5
