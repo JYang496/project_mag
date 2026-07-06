@@ -65,7 +65,7 @@ func make_module_button(module_instance: Module, selected: bool, pressed_callbac
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text_box.add_child(name_label)
 	var level := Label.new()
-	level.text = "Lv.%d  %s" % [int(module_instance.module_level), RARITY_UTIL.get_display_name(module_instance.get_rarity())]
+	level.text = _format_module_meta(module_instance)
 	level.add_theme_font_size_override("font_size", 12)
 	level.add_theme_color_override("font_color", Color(0.74, 0.84, 0.9))
 	level.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -73,7 +73,7 @@ func make_module_button(module_instance: Module, selected: bool, pressed_callbac
 	var targets := Label.new()
 	targets.name = "InstallTargets"
 	targets.text = "%s: %s" % [
-		LocalizationManager.tr_key("ui.module.install_targets", "可安装武器类型"),
+		LocalizationManager.tr_key("ui.module.install_targets", "Install Targets"),
 		_format_module_install_targets(module_instance),
 	]
 	targets.clip_text = true
@@ -208,17 +208,17 @@ func build_drag_preview(payload: Dictionary) -> Control:
 		icon.texture = _get_module_texture(module_instance)
 		name_label.text = LocalizationManager.get_module_name(module_instance)
 		name_label.add_theme_color_override("font_color", RARITY_UTIL.get_color(module_instance.get_rarity()))
-		sub_label.text = "Lv.%d  %s" % [int(module_instance.module_level), RARITY_UTIL.get_display_name(module_instance.get_rarity())]
+		sub_label.text = _format_module_meta(module_instance)
 	elif weapon != null and is_instance_valid(weapon):
 		icon.texture = weapon.sprite.texture if weapon.sprite else null
 		name_label.text = LocalizationManager.get_weapon_name_from_node(weapon)
 		name_label.add_theme_color_override("font_color", _get_weapon_rarity_color(weapon))
-		sub_label.text = "Lv.%d/%d  Fuse %d" % [int(weapon.level), int(weapon.max_level), int(weapon.fuse)]
+		sub_label.text = _format_weapon_meta(weapon)
 	elif module_instance != null and is_instance_valid(module_instance):
 		icon.texture = _get_module_texture(module_instance)
 		name_label.text = LocalizationManager.get_module_name(module_instance)
 		name_label.add_theme_color_override("font_color", RARITY_UTIL.get_color(module_instance.get_rarity()))
-		sub_label.text = "Lv.%d  %s" % [int(module_instance.module_level), RARITY_UTIL.get_display_name(module_instance.get_rarity())]
+		sub_label.text = _format_module_meta(module_instance)
 	return panel
 
 func _is_module_drag_kind(payload_kind: String) -> bool:
@@ -244,7 +244,7 @@ func _populate_weapon_button(button: Button, weapon: Weapon, selected: bool) -> 
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text_box.add_child(name_label)
 	var stats := Label.new()
-	stats.text = "Lv.%d/%d  Fuse %d" % [int(weapon.level), int(weapon.max_level), int(weapon.fuse)]
+	stats.text = _format_weapon_meta(weapon)
 	stats.add_theme_font_size_override("font_size", 12)
 	stats.add_theme_color_override("font_color", Color(0.74, 0.84, 0.9))
 	stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -302,3 +302,24 @@ func _format_module_install_targets(module_instance: Module) -> String:
 
 func _can_drag_module_install_on_weapon(module_instance: Module, weapon: Weapon) -> bool:
 	return bool(view.call("_can_drag_module_install_on_weapon", module_instance, weapon)) if view != null else false
+
+func _format_module_meta(module_instance: Module) -> String:
+	return LocalizationManager.tr_format(
+		"ui.module.meta.level_rarity",
+		{
+			"level": int(module_instance.module_level),
+			"rarity": RARITY_UTIL.get_display_name(module_instance.get_rarity()),
+		},
+		"Lv.%d  %s" % [int(module_instance.module_level), RARITY_UTIL.get_display_name(module_instance.get_rarity())]
+	)
+
+func _format_weapon_meta(weapon: Weapon) -> String:
+	return LocalizationManager.tr_format(
+		"ui.weapon.meta.level_fuse",
+		{
+			"level": int(weapon.level),
+			"max": int(weapon.max_level),
+			"fuse": int(weapon.fuse),
+		},
+		"Lv.%d/%d  Fuse %d" % [int(weapon.level), int(weapon.max_level), int(weapon.fuse)]
+	)

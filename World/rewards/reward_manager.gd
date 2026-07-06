@@ -42,8 +42,14 @@ func _request_completed_battle_standard_draft() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await get_tree().create_timer(BATTLE_END_REWARD_DELAY_SEC).timeout
+	_open_completed_battle_standard_draft_if_ready()
+
+func _open_completed_battle_standard_draft_if_ready() -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		RewardDraftRuntime.clear_standard_draft_opening()
+		return
+	if PhaseManager.is_post_battle_collect_gate_active():
+		_retry_completed_battle_standard_draft_after_collect_gate()
 		return
 	if TaskRewardManager.is_task_reward_blocking_interactions():
 		_retry_completed_battle_standard_draft_after_task_reward()
@@ -56,7 +62,13 @@ func _retry_completed_battle_standard_draft_after_task_reward() -> void:
 	await TaskRewardManager.pending_reward_changed
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
-	call_deferred("_request_completed_battle_standard_draft")
+	call_deferred("_open_completed_battle_standard_draft_if_ready")
+
+func _retry_completed_battle_standard_draft_after_collect_gate() -> void:
+	await PhaseManager.post_battle_collect_gate_changed
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return
+	call_deferred("_open_completed_battle_standard_draft_if_ready")
 
 func _spawn_completed_battle_drops() -> void:
 	push_warning("Standard battle-complete ground drops are disabled; standard settlement now uses RewardDraftRuntime draft selection.")

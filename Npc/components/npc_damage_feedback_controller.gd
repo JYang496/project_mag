@@ -11,6 +11,8 @@ var _pending_hit_label_damage_by_type: Dictionary = {}
 var _enemy_hp_bar: EnemyHpBar
 var _hit_flash_tween: Tween
 var _hit_flash_overlay: Sprite2D
+var _warning_flash_tween: Tween
+var _warning_flash_overlay: Sprite2D
 
 func setup(source_npc) -> void:
 	npc = source_npc
@@ -80,20 +82,16 @@ func play_hit_flash() -> void:
 	var sprite_body := npc.sprite_body as Sprite2D
 	if sprite_body == null or not is_instance_valid(sprite_body):
 		return
-	var overlay := _ensure_hit_flash_overlay(sprite_body)
+	var overlay := _ensure_flash_overlay(sprite_body, "HitFlashOverlay", _hit_flash_overlay)
 	if overlay == null:
 		return
+	_hit_flash_overlay = overlay
 	if _hit_flash_tween != null and is_instance_valid(_hit_flash_tween):
 		_hit_flash_tween.kill()
 	var flash_in := maxf(npc.hit_flash_in_duration_sec, 0.0)
 	var flash_out := maxf(npc.hit_flash_out_duration_sec, 0.0)
 	var peak_alpha := clampf(npc.hit_flash_peak_alpha, 0.0, 1.0)
-	overlay.texture = sprite_body.texture
-	overlay.position = sprite_body.position
-	overlay.scale = sprite_body.scale
-	overlay.rotation = sprite_body.rotation
-	overlay.flip_h = sprite_body.flip_h
-	overlay.flip_v = sprite_body.flip_v
+	_sync_flash_overlay(overlay, sprite_body)
 	overlay.visible = true
 	overlay.modulate = Color(npc.hit_flash_peak_color.r, npc.hit_flash_peak_color.g, npc.hit_flash_peak_color.b, 0.0)
 	_hit_flash_tween = npc.create_tween()
@@ -111,11 +109,40 @@ func play_hit_flash() -> void:
 		_hit_flash_tween = null
 	)
 
-func _ensure_hit_flash_overlay(sprite_body: Sprite2D) -> Sprite2D:
-	if _hit_flash_overlay != null and is_instance_valid(_hit_flash_overlay):
-		return _hit_flash_overlay
+func start_warning_flash(color: Color = Color(1.0, 0.05, 0.03, 1.0), peak_alpha: float = 0.9, pulse_duration_sec: float = 0.12) -> void:
+	if npc == null:
+		return
+	var sprite_body := npc.sprite_body as Sprite2D
+	if sprite_body == null or not is_instance_valid(sprite_body):
+		return
+	var overlay := _ensure_flash_overlay(sprite_body, "WarningFlashOverlay", _warning_flash_overlay)
+	if overlay == null:
+		return
+	_warning_flash_overlay = overlay
+	if _warning_flash_tween != null and is_instance_valid(_warning_flash_tween):
+		_warning_flash_tween.kill()
+	var safe_duration := maxf(pulse_duration_sec, 0.03)
+	_sync_flash_overlay(overlay, sprite_body)
+	overlay.visible = true
+	overlay.modulate = Color(color.r, color.g, color.b, 0.0)
+	_warning_flash_tween = npc.create_tween()
+	_warning_flash_tween.set_loops()
+	_warning_flash_tween.tween_property(overlay, "modulate:a", clampf(peak_alpha, 0.0, 1.0), safe_duration)
+	_warning_flash_tween.tween_property(overlay, "modulate:a", 0.0, safe_duration)
+
+func stop_warning_flash() -> void:
+	if _warning_flash_tween != null and is_instance_valid(_warning_flash_tween):
+		_warning_flash_tween.kill()
+	_warning_flash_tween = null
+	if _warning_flash_overlay != null and is_instance_valid(_warning_flash_overlay):
+		_warning_flash_overlay.visible = false
+		_warning_flash_overlay.modulate.a = 0.0
+
+func _ensure_flash_overlay(sprite_body: Sprite2D, overlay_name: String, existing_overlay: Sprite2D) -> Sprite2D:
+	if existing_overlay != null and is_instance_valid(existing_overlay):
+		return existing_overlay
 	var overlay := Sprite2D.new()
-	overlay.name = "HitFlashOverlay"
+	overlay.name = overlay_name
 	overlay.centered = sprite_body.centered
 	overlay.offset = sprite_body.offset
 	overlay.texture_filter = sprite_body.texture_filter
@@ -126,8 +153,15 @@ func _ensure_hit_flash_overlay(sprite_body: Sprite2D) -> Sprite2D:
 	overlay.visible = false
 	overlay.modulate = Color(npc.hit_flash_peak_color.r, npc.hit_flash_peak_color.g, npc.hit_flash_peak_color.b, 0.0)
 	npc.add_child(overlay)
-	_hit_flash_overlay = overlay
-	return _hit_flash_overlay
+	return overlay
+
+func _sync_flash_overlay(overlay: Sprite2D, sprite_body: Sprite2D) -> void:
+	overlay.texture = sprite_body.texture
+	overlay.position = sprite_body.position
+	overlay.scale = sprite_body.scale
+	overlay.rotation = sprite_body.rotation
+	overlay.flip_h = sprite_body.flip_h
+	overlay.flip_v = sprite_body.flip_v
 
 func sync_enemy_hp_bar() -> void:
 	var hp_bar := _ensure_enemy_hp_bar()

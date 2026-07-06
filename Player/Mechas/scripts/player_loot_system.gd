@@ -55,11 +55,16 @@ func run_battle_end_auto_collect() -> void:
 	expand_collect_ranges_for_auto_loot()
 	var elapsed := 0.0
 	while elapsed < _player.AUTO_LOOT_DURATION_SEC and _auto_loot_running and _player.is_inside_tree():
+		attract_all_coins()
 		process_auto_loot_grab_overlaps()
+		if _are_collectables_cleared():
+			break
 		await _player.get_tree().create_timer(_player.AUTO_LOOT_TICK_SEC).timeout
 		elapsed += _player.AUTO_LOOT_TICK_SEC
 	restore_collect_ranges_after_auto_loot()
 	_auto_loot_running = false
+	if PhaseManager != null and PhaseManager.has_method("complete_post_battle_collect_gate"):
+		PhaseManager.complete_post_battle_collect_gate()
 	if GlobalVariables.enemy_spawner and is_instance_valid(GlobalVariables.enemy_spawner) and GlobalVariables.enemy_spawner.has_method("print_kill_gold_debug_summary"):
 		GlobalVariables.enemy_spawner.print_kill_gold_debug_summary("auto_loot_end")
 
@@ -92,6 +97,9 @@ func _get_collectable_candidates() -> Array[Node2D]:
 		if collectable != null and is_instance_valid(collectable):
 			output.append(collectable)
 	return output
+
+func _are_collectables_cleared() -> bool:
+	return _get_collectable_candidates().is_empty()
 
 func expand_collect_ranges_for_auto_loot() -> void:
 	var grab_circle := _player.grab_radius.shape as CircleShape2D

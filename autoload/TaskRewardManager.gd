@@ -39,7 +39,8 @@ func is_task_reward_blocking_interactions() -> bool:
 
 func is_reward_blocking_interactions() -> bool:
 	return is_task_reward_blocking_interactions() \
-		or RewardDraftRuntime.is_standard_draft_blocking_interactions()
+		or RewardDraftRuntime.is_standard_draft_blocking_interactions() \
+		or PhaseManager.is_post_battle_collect_gate_active()
 
 func _connect_reward_draft_runtime() -> void:
 	if RewardDraftRuntime == null:
@@ -172,6 +173,9 @@ func _try_open_pending_reward() -> void:
 	if not _reward_unlocked or _reward_panel_open:
 		return
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return
+	if PhaseManager.is_post_battle_collect_gate_active():
+		_retry_open_later()
 		return
 	var ui = GlobalVariables.ui
 	if ui == null or not is_instance_valid(ui) or not ui.has_method("request_task_reward_summary"):

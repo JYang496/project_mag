@@ -23,6 +23,8 @@ func _ready() -> void:
 		confirm_button.pressed.connect(_on_confirm_pressed)
 	if not cancel_button.is_connected("pressed", Callable(self, "_on_cancel_pressed")):
 		cancel_button.pressed.connect(_on_cancel_pressed)
+	_apply_action_button_style(confirm_button, true)
+	_apply_action_button_style(cancel_button, false)
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.language_changed.connect(_on_language_changed)
 
@@ -96,7 +98,11 @@ func _on_route_button_pressed(route_id: String, source_button: Button) -> void:
 		var button := child as Button
 		if button == null:
 			continue
-		button.button_pressed = (button == source_button)
+		var selected := button == source_button
+		button.button_pressed = selected
+		var route_def := button.get_meta("route_def", null) as RunRouteDefinition
+		if route_def != null:
+			_apply_route_card_style(button, route_def, selected)
 	_confirm_button_state()
 
 func _confirm_button_state() -> void:
@@ -129,6 +135,7 @@ func _build_route_card(route_def: RunRouteDefinition) -> Button:
 	button.text = ""
 	button.tooltip_text = LocalizationManager.get_route_description(route_def)
 	button.set_meta("route_id", route_def.route_id)
+	button.set_meta("route_def", route_def)
 
 	var margin := MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -173,6 +180,7 @@ func _build_route_card(route_def: RunRouteDefinition) -> Button:
 	body.add_child(metrics)
 	for metric in _build_route_metrics(route_def):
 		metrics.add_child(_make_metric_badge(metric))
+	_apply_route_card_style(button, route_def, false)
 	return button
 
 func _find_route_def(route_defs: Array[RunRouteDefinition], route_id: String) -> RunRouteDefinition:
@@ -253,6 +261,44 @@ func _make_badge_style(color: Color, bg_alpha: float, border_alpha: float, radiu
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(radius)
 	return style
+
+func _apply_route_card_style(button: Button, route_def: RunRouteDefinition, selected: bool) -> void:
+	_apply_route_card_style_with_color(button, _route_color(route_def), selected)
+
+func _apply_route_card_style_with_color(button: Button, color: Color, selected: bool) -> void:
+	for state in ["normal", "hover", "pressed", "focus"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(color.r, color.g, color.b, 0.10)
+		if selected:
+			style.bg_color = Color(color.r, color.g, color.b, 0.18)
+		elif state == "hover" or state == "focus":
+			style.bg_color = Color(color.r, color.g, color.b, 0.14)
+		elif state == "pressed":
+			style.bg_color = Color(color.r, color.g, color.b, 0.16)
+		style.border_color = color
+		style.set_border_width_all(2 if selected else 1)
+		style.set_corner_radius_all(6)
+		button.add_theme_stylebox_override(state, style)
+
+func _apply_action_button_style(button: Button, primary: bool) -> void:
+	var color := Color(0.42, 0.78, 0.92, 1.0) if primary else Color(0.56, 0.64, 0.70, 1.0)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var style := StyleBoxFlat.new()
+		var state_color := color
+		style.bg_color = Color(state_color.r, state_color.g, state_color.b, 0.15 if primary else 0.10)
+		if state == "hover" or state == "focus":
+			style.bg_color = Color(state_color.r, state_color.g, state_color.b, 0.22 if primary else 0.16)
+		elif state == "pressed":
+			style.bg_color = Color(state_color.r, state_color.g, state_color.b, 0.28 if primary else 0.20)
+		elif state == "disabled":
+			state_color = Color(0.40, 0.46, 0.50, 1.0)
+			style.bg_color = Color(0.10, 0.12, 0.14, 0.64)
+		style.border_color = Color(state_color.r, state_color.g, state_color.b, 0.78)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(5)
+		button.add_theme_stylebox_override(state, style)
+	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		button.add_theme_color_override(color_name, Color(0.94, 0.98, 1.0, 1.0))
 
 func _get_route_identity(route_def: RunRouteDefinition) -> String:
 	if not route_def.battle_enabled:

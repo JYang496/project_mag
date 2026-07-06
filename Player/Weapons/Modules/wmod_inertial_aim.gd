@@ -22,7 +22,7 @@ func _exit_tree() -> void:
 
 func on_synergy_physics_process() -> void:
 	var player: Node = PlayerData.player
-	var moving_now: bool = player != null and is_instance_valid(player) and player.get("velocity") != null and (player.get("velocity") as Vector2).length() >= moving_threshold
+	var moving_now := _is_player_moving(player)
 	if moving_now == _moving:
 		return
 	_moving = moving_now
@@ -41,3 +41,17 @@ func apply_stat_modifiers(stat_block: Dictionary) -> Dictionary:
 func _clear_attack_speed() -> void:
 	if weapon is Ranger:
 		(weapon as Ranger).remove_external_attack_speed_mul(_attack_speed_source_id)
+
+func _is_player_moving(player: Node) -> bool:
+	if player == null or not is_instance_valid(player):
+		return false
+	if player.has_method("get_movement_status"):
+		var status: Dictionary = player.call("get_movement_status")
+		var mode: StringName = status.get("mode", StringName())
+		if mode == &"idle" or mode == &"immobilized":
+			return false
+		var status_velocity: Vector2 = status.get("velocity", Vector2.ZERO)
+		return status_velocity.length() >= moving_threshold
+	if player.get("velocity") == null:
+		return false
+	return (player.get("velocity") as Vector2).length() >= moving_threshold

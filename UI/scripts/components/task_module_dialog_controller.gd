@@ -74,7 +74,32 @@ func request_replacement(new_module_id: String, on_replace: Callable) -> bool:
 		)
 	]
 	var custom_actions: Array[Dictionary] = []
+	var details: Array[Dictionary] = [
+		{
+			"label": LocalizationManager.tr_key("ui.dialog.detail.incoming", "Incoming"),
+			"value": formatted_new_module,
+			"tone": &"secondary",
+		},
+	]
+	details.append({
+		"label": LocalizationManager.tr_format(
+			"ui.dialog.detail.discard_slot",
+			{"slot": 1},
+			"Slot 1"
+		),
+		"value": _format_module(CellTaskModuleRuntime.get_definition(str(inventory[0])), str(inventory[0])),
+		"tone": &"destructive",
+	})
 	for index in range(1, inventory.size()):
+		details.append({
+			"label": LocalizationManager.tr_format(
+				"ui.dialog.detail.discard_slot",
+				{"slot": index + 1},
+				"Slot %d" % (index + 1)
+			),
+			"value": _format_module(CellTaskModuleRuntime.get_definition(str(inventory[index])), str(inventory[index])),
+			"tone": &"destructive",
+		})
 		custom_actions.append({
 			"id": StringName("discard_slot_%d" % index),
 			"text": _format_discard_slot_button(index, str(inventory[index])),
@@ -90,7 +115,8 @@ func request_replacement(new_module_id: String, on_replace: Callable) -> bool:
 		"on_custom_action": Callable(self, "_on_replacement_custom_action"),
 		"custom_actions": custom_actions,
 		"destructive": true,
-		"size": Vector2i(620, 320),
+		"size": Vector2i(660, 420),
+		"details": details,
 	}))
 	if not opened:
 		_clear_pending_state()

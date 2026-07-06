@@ -10,6 +10,7 @@ const MODULE_FIT_FORMATTER := preload("res://UI/scripts/module_fit_formatter.gd"
 const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 
 @onready var title_label: Label = $Panel/VBox/Title
+@onready var panel: Panel = $Panel
 @onready var subtitle_label: Label = $Panel/VBox/SubTitle
 @onready var options_scroll: ScrollContainer = $Panel/VBox/OptionsScroll
 @onready var options_box: GridContainer = $Panel/VBox/OptionsScroll/Options
@@ -36,6 +37,7 @@ var _show_draft_hint_cache := false
 var _pinned_index := 0
 var _hover_index := -1
 var _focus_index := -1
+var _entry_tween: Tween
 
 func _ready() -> void:
 	visible = false
@@ -43,6 +45,8 @@ func _ready() -> void:
 		confirm_button.pressed.connect(_on_confirm_pressed)
 	if not cancel_button.is_connected("pressed", Callable(self, "_on_cancel_pressed")):
 		cancel_button.pressed.connect(_on_cancel_pressed)
+	_apply_action_button_style(confirm_button, true)
+	_apply_action_button_style(cancel_button, false)
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.language_changed.connect(_on_language_changed)
 	if not options_scroll.resized.is_connected(_update_grid_columns):
@@ -164,6 +168,7 @@ func _open_rewards(
 	_update_grid_columns()
 	_confirm_button_state()
 	visible = true
+	_play_entry_animation()
 	return true
 
 func _build_subtitle_text(
@@ -195,7 +200,10 @@ func _build_subtitle_text(
 	return "%s\n%s" % [subtitle, progress_text]
 
 func close_panel() -> void:
+	_kill_entry_tween()
 	visible = false
+	modulate.a = 1.0
+	panel.scale = Vector2.ONE
 	_reward_options.clear()
 	_selected_index = -1
 	_on_confirm = Callable()
@@ -211,6 +219,22 @@ func close_panel() -> void:
 	_progress_total_cache = 0
 	_show_draft_hint_cache = false
 	_update_detail_panel({})
+
+func _play_entry_animation() -> void:
+	_kill_entry_tween()
+	modulate.a = 0.0
+	panel.pivot_offset = panel.size * 0.5
+	panel.scale = Vector2(0.96, 0.96)
+	_entry_tween = create_tween()
+	_entry_tween.set_trans(Tween.TRANS_QUAD)
+	_entry_tween.set_ease(Tween.EASE_OUT)
+	_entry_tween.parallel().tween_property(self, "modulate:a", 1.0, 0.18)
+	_entry_tween.parallel().tween_property(panel, "scale", Vector2.ONE, 0.18)
+
+func _kill_entry_tween() -> void:
+	if _entry_tween != null:
+		_entry_tween.kill()
+		_entry_tween = null
 
 func is_modal_open() -> bool:
 	return visible
@@ -884,6 +908,26 @@ func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool
 		style.set_border_width_all(2 if selected else 1)
 		style.set_corner_radius_all(6)
 		button.add_theme_stylebox_override(state, style)
+
+func _apply_action_button_style(button: Button, primary: bool) -> void:
+	var color := Color(0.42, 0.78, 0.92, 1.0) if primary else Color(0.56, 0.64, 0.70, 1.0)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var style := StyleBoxFlat.new()
+		var state_color := color
+		style.bg_color = Color(state_color.r, state_color.g, state_color.b, 0.15 if primary else 0.10)
+		if state == "hover" or state == "focus":
+			style.bg_color = Color(state_color.r, state_color.g, state_color.b, 0.22 if primary else 0.16)
+		elif state == "pressed":
+			style.bg_color = Color(state_color.r, state_color.g, state_color.b, 0.28 if primary else 0.20)
+		elif state == "disabled":
+			state_color = Color(0.40, 0.46, 0.50, 1.0)
+			style.bg_color = Color(0.10, 0.12, 0.14, 0.64)
+		style.border_color = Color(state_color.r, state_color.g, state_color.b, 0.78)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(5)
+		button.add_theme_stylebox_override(state, style)
+	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		button.add_theme_color_override(color_name, Color(0.94, 0.98, 1.0, 1.0))
 
 func _get_reward_action_color(reward: RewardInfo) -> Color:
 	if reward == null:

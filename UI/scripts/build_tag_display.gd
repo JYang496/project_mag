@@ -11,6 +11,11 @@ const DEFAULT_COLOR: Color = Color(0.54, 0.64, 0.72, 1.0)
 const FIT_COLOR: Color = Color(0.38, 0.86, 0.58, 1.0)
 const BLOCKED_COLOR: Color = Color(1.0, 0.34, 0.28, 1.0)
 const UNKNOWN_COLOR: Color = Color(0.62, 0.68, 0.74, 1.0)
+const CHIP_HORIZONTAL_PADDING: float = 18.0
+const CHIP_MIN_WIDTH: float = 42.0
+const CHIP_MAX_WIDTH: float = 118.0
+const CHIP_ASCII_CHAR_WIDTH: float = 6.5
+const CHIP_WIDE_CHAR_WIDTH: float = 12.0
 
 const TAG_SPECS := {
 	"heat": {"label": "Heat", "color": Color(1.0, 0.42, 0.18, 1.0), "icon_key": "heat", "sort_weight": 10},
@@ -114,7 +119,7 @@ static func make_chip(chip_data: Dictionary) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.name = "BuildChip"
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	panel.custom_minimum_size = Vector2(maxf(32.0, text.length() * 6.0 + 16.0), 22.0)
+	panel.custom_minimum_size = Vector2(_estimate_chip_width(text), 22.0)
 	panel.tooltip_text = text
 	panel.add_theme_stylebox_override("panel", _make_chip_style(color))
 
@@ -129,7 +134,8 @@ static func make_chip(chip_data: Dictionary) -> PanelContainer:
 	var label := Label.new()
 	label.name = "Label"
 	label.text = text
-	label.clip_text = false
+	label.custom_minimum_size = Vector2(maxf(0.0, panel.custom_minimum_size.x - CHIP_HORIZONTAL_PADDING), 0.0)
+	label.clip_text = true
 	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", Color(0.92, 0.97, 1.0, 1.0))
@@ -172,6 +178,13 @@ static func _make_chip_style(color: Color) -> StyleBoxFlat:
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(5)
 	return style
+
+static func _estimate_chip_width(text: String) -> float:
+	var width := CHIP_HORIZONTAL_PADDING
+	for index in range(text.length()):
+		var code := text.unicode_at(index)
+		width += CHIP_ASCII_CHAR_WIDTH if code <= 0x7f else CHIP_WIDE_CHAR_WIDTH
+	return clampf(width, CHIP_MIN_WIDTH, CHIP_MAX_WIDTH)
 
 static func _normalize_source_key(source_value: Variant) -> String:
 	var text := str(source_value).strip_edges().to_lower()

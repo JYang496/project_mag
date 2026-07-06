@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cx30l5sv1vx1d"]
+
+[ext_resource type="Script" path="res://tests/probes/enemy/run_wheel_cart_contact_damage_probe.gd" id="1_probe"]
+
+[node name="WheelCartContactDamageProbe" type="Node"]
+script = ExtResource("1_probe")

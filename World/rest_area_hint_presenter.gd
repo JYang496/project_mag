@@ -5,7 +5,7 @@ var _zone_merchant_hint_text := "Purchase"
 var _zone_smith_hint_text := "Upgrade"
 var _zone_module_hint_text := "Warehouses"
 var _zone_board_hint_text := "Board"
-var _zone_battle_hold_hint_text := "Hold left mouse on center to start battle"
+var _zone_battle_hold_hint_text := "Open battle menu"
 var _zone_hint_forward_offset := Vector2(0.0, -44.0)
 var _zone_hint_z_index := 80
 var _zone_hover_color := Color(0.44, 0.88, 1.0, 1.0)
@@ -96,7 +96,7 @@ func refresh() -> void:
 		_battle_hint_label.text = _format_zone_label(
 			">",
 			LocalizationManager.tr_key("ui.rest.zone.battle.title", "Start Battle"),
-			"HOLD",
+			"GO",
 			0
 		)
 	_zone_hint_status_signature = _build_zone_hint_status_signature()

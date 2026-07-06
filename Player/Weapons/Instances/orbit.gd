@@ -78,7 +78,9 @@ func remove_weapon() -> void:
 func _on_tree_exiting() -> void:
 	# Remove satellites when weapon node exits.
 	for s in satellites:
-		s.queue_free()
+		var satellite := _get_valid_satellite_node(s)
+		if satellite != null:
+			satellite.queue_free()
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
@@ -154,8 +156,9 @@ func _update_satellite_runtime_state() -> void:
 	var damage_type: StringName = branch_runtime.get_branch_damage_type_override(Attack.TYPE_PHYSICAL)
 	var effective_spin_speed: float = _get_effective_orbit_spin_speed()
 	for item in satellites:
-		var satellite: Projectile = item as Projectile
-		if satellite == null or not is_instance_valid(satellite):
+		var satellite_node := _get_valid_satellite_node(item)
+		var satellite: Projectile = satellite_node as Projectile
+		if satellite == null:
 			continue
 		satellite.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
 		satellite.damage_type = damage_type
@@ -172,15 +175,17 @@ func _find_rotate_module(satellite: Projectile) -> RotateAroundPlayer:
 
 func _clear_satellites() -> void:
 	for s in satellites:
-		if s and is_instance_valid(s):
-			s.queue_free()
+		var satellite := _get_valid_satellite_node(s)
+		if satellite != null:
+			satellite.queue_free()
 	satellites.clear()
 
 func _prune_satellites() -> void:
 	var kept: Array = []
 	for s in satellites:
-		if s and is_instance_valid(s):
-			kept.append(s)
+		var satellite := _get_valid_satellite_node(s)
+		if satellite != null:
+			kept.append(satellite)
 	satellites = kept
 
 func _rebalance_new_satellite_offsets(new_satellites: Array[Projectile]) -> void:
@@ -239,11 +244,16 @@ func get_passive_status() -> Dictionary:
 func get_satellites() -> Array[Node2D]:
 	var valid_satellites: Array[Node2D] = []
 	for item in satellites:
-		var satellite: Node2D = item as Node2D
-		if satellite == null or not is_instance_valid(satellite):
+		var satellite := _get_valid_satellite_node(item)
+		if satellite == null:
 			continue
 		valid_satellites.append(satellite)
 	return valid_satellites
+
+func _get_valid_satellite_node(item: Variant) -> Node2D:
+	if typeof(item) != TYPE_OBJECT or not is_instance_valid(item):
+		return null
+	return item as Node2D
 
 func get_auto_fire_target_range() -> float:
 	return maxf(radius + maxf(orbit_radius_jitter, 0.0), 1.0)

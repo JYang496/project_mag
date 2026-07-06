@@ -59,7 +59,11 @@ func configure_zone_move_speed(zone_move_speed: float) -> void:
 	var base_speed := 1.0
 	if "player_speed" in PlayerData and "player_bonus_speed" in PlayerData:
 		base_speed = maxf(float(PlayerData.player_speed) + float(PlayerData.player_bonus_speed), 1.0)
-	var target_speed := maxf(zone_move_speed, 1.0)
+	var rest_speed_bonus := 0.0
+	if player.has_method("get_rest_phase_move_speed_bonus"):
+		rest_speed_bonus = maxf(float(player.call("get_rest_phase_move_speed_bonus")), 0.0)
+	base_speed += rest_speed_bonus
+	var target_speed := maxf(zone_move_speed + rest_speed_bonus, 1.0)
 	var speed_mul := clampf(target_speed / base_speed, 0.1, 8.0)
 	player.call("configure_auto_nav_speed_mul", speed_mul)
 

@@ -81,5 +81,5 @@ offset_top = 230.0
 offset_right = 350.0
 offset_bottom = 254.0
 theme_override_font_sizes/font_size = 14
-text = "Hold left mouse on center to start battle"
+text = "Open battle menu"
 horizontal_alignment = 1

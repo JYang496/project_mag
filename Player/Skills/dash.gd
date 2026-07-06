@@ -2,10 +2,7 @@ extends Skills
 
 @export var dash_distance: float = 220.0
 @export var dash_duration: float = 0.12
-@export var disable_movement_while_dashing := true
 @export var default_cooldown: float = 5.0
-
-var _is_dashing := false
 
 func on_skill_ready() -> void:
 	var data_cooldown := float(PlayerData.dash_cooldown)
@@ -15,7 +12,12 @@ func on_skill_ready() -> void:
 		cooldown = default_cooldown
 
 func can_activate() -> bool:
-	return not _is_dashing and _get_dash_direction() != Vector2.ZERO
+	var direction := _get_dash_direction()
+	if direction == Vector2.ZERO or _is_player_dashing():
+		return false
+	if _player.has_method("can_request_dash"):
+		return bool(_player.call("can_request_dash", direction, dash_distance))
+	return true
 
 func activate_skill() -> void:
 	if _player == null or not is_instance_valid(_player):
@@ -23,19 +25,8 @@ func activate_skill() -> void:
 	var dash_direction := _get_dash_direction()
 	if dash_direction == Vector2.ZERO:
 		return
-	_is_dashing = true
-	var start_pos := _player.global_position
-	var target_pos := start_pos + dash_direction * dash_distance
-	var prev_movement_enabled: bool = bool(_player.movement_enabled)
-	if disable_movement_while_dashing:
-		_player.movement_enabled = false
-	var tween := create_tween()
-	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_player, "global_position", target_pos, dash_duration)
-	await tween.finished
-	if disable_movement_while_dashing and is_instance_valid(_player):
-		_player.movement_enabled = prev_movement_enabled
-	_is_dashing = false
+	if _player.has_method("request_dash"):
+		_player.call("request_dash", dash_direction, dash_distance, dash_duration, &"active_dash")
 
 func _get_dash_direction() -> Vector2:
 	if _player == null or not is_instance_valid(_player):
@@ -48,3 +39,11 @@ func _get_dash_direction() -> Vector2:
 	if input_direction == Vector2.ZERO:
 		return Vector2.ZERO
 	return input_direction.normalized()
+
+func _is_player_dashing() -> bool:
+	if _player == null or not is_instance_valid(_player):
+		return false
+	if not _player.has_method("get_movement_status"):
+		return false
+	var status: Dictionary = _player.call("get_movement_status")
+	return status.get("mode", StringName()) == &"dash"

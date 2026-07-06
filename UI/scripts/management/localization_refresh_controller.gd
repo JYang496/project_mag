@@ -16,6 +16,7 @@ func refresh_texts() -> void:
 	owner_ui._init_module_warehouse_controller()
 	owner_ui.module_warehouse_controller.refresh_texts()
 	refresh_board_edit_primary_texts()
+	refresh_battle_start_primary_texts()
 	owner_ui._init_management_ui_bootstrap_controller()
 	owner_ui.management_ui_bootstrap_controller.style_primary_menu_controls()
 	owner_ui._init_pause_ui_controller()
@@ -49,3 +50,19 @@ func refresh_board_edit_primary_texts() -> void:
 			"ui.cell_management.task_entry",
 			"Task Management"
 		)
+
+func refresh_battle_start_primary_texts() -> void:
+	if owner_ui == null or owner_ui.battle_start_primary_panel == null:
+		return
+	var title := owner_ui.battle_start_primary_panel.get_node_or_null("Title") as Label
+	if title:
+		title.text = LocalizationManager.tr_key("ui.rest.zone.battle.title", "Start Battle")
+	var subtitle := owner_ui.battle_start_primary_panel.get_node_or_null("SubTitle") as Label
+	if subtitle:
+		subtitle.text = LocalizationManager.tr_key(
+			"ui.rest.zone.battle.subtitle",
+			"Leave the rest area and begin the next fight."
+		)
+	var start_button := owner_ui.battle_start_primary_panel.get_node_or_null("StartBattleButton") as Button
+	if start_button:
+		start_button.text = LocalizationManager.tr_key("ui.dialog.action.start_battle", "Start battle")

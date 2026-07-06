@@ -1,6 +1,27 @@
 {
   "schema_version": 1,
-  "catalog_status": "archived",
-  "catalog_note": "Active test scenes and runner scripts have been retired to tests/archive/retired_test_assets_20260702. The manifest is intentionally empty; test infrastructure remains available for future registration.",
-  "tests": []
+  "catalog_status": "active",
+  "catalog_note": "Active regression coverage has been reintroduced for focused reward/UI flows. Historical assets remain under tests/archive/retired_test_assets_20260702.",
+  "tests": [
+    {
+      "id": "reward.fuse_branch_selection",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/reward/reward_fuse_branch_selection_test.tscn",
+      "domain": "reward",
+      "dependency_domains": ["ui", "player", "weapon", "world"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "reward.post_battle_collect_gate",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/reward/post_battle_collect_gate_test.tscn",
+      "domain": "reward",
+      "dependency_domains": ["ui", "player", "world", "spawn"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 30
+    }
+  ]
 }

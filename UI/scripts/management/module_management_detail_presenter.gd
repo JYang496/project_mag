@@ -32,9 +32,15 @@ func refresh_weapon_detail(selected_equipped_weapon: Weapon, selected_stored_wea
 	detail_title.text = LocalizationManager.get_weapon_name_from_node(active_weapon)
 	detail_title.add_theme_color_override("font_color", get_weapon_rarity_color(active_weapon))
 	detail_subtitle.text = _get_weapon_location(active_weapon)
-	_add_detail_line("Level", "Lv.%d/%d" % [int(active_weapon.level), int(active_weapon.max_level)])
-	_add_detail_line("Fuse", str(int(active_weapon.fuse)))
-	_add_detail_line("Modules", LocalizationManager.tr_key("ui.weapon.warehouse.modules_removed", "Stored weapons do not keep modules."))
+	_add_detail_line(
+		LocalizationManager.tr_key("ui.common.level", "Level"),
+		"Lv.%d/%d" % [int(active_weapon.level), int(active_weapon.max_level)]
+	)
+	_add_detail_line(LocalizationManager.tr_key("ui.weapon.fuse", "Fuse"), str(int(active_weapon.fuse)))
+	_add_detail_line(
+		LocalizationManager.tr_key("ui.weapon.modules", "Modules"),
+		LocalizationManager.tr_key("ui.weapon.warehouse.modules_removed", "Stored weapons do not keep modules.")
+	)
 	_add_detail_text(build_weapon_param_summary(active_weapon))
 
 func refresh_module_detail(selected_module: Module, selected_equipped_module: Module, selected_equipped_module_weapon: Weapon) -> void:
@@ -48,17 +54,29 @@ func refresh_module_detail(selected_module: Module, selected_equipped_module: Mo
 	detail_title.text = LocalizationManager.get_module_name(active_module)
 	detail_title.add_theme_color_override("font_color", RARITY_UTIL.get_color(active_module.get_rarity()))
 	detail_subtitle.text = _get_module_location(active_module, selected_equipped_module_weapon)
-	_add_detail_line("Level", "Lv.%d/%d" % [int(active_module.module_level), Module.MAX_LEVEL])
-	_add_detail_line("Rarity", RARITY_UTIL.get_display_name(active_module.get_rarity()))
-	_add_detail_line("Install Targets", format_module_install_targets(active_module))
+	_add_detail_line(
+		LocalizationManager.tr_key("ui.common.level", "Level"),
+		"Lv.%d/%d" % [int(active_module.module_level), Module.MAX_LEVEL]
+	)
+	_add_detail_line(
+		LocalizationManager.tr_key("ui.common.rarity", "Rarity"),
+		RARITY_UTIL.get_display_name(active_module.get_rarity())
+	)
+	_add_detail_line(
+		LocalizationManager.tr_key("ui.module.install_targets", "Install Targets"),
+		format_module_install_targets(active_module)
+	)
 	var fit_weapon := selected_equipped_module_weapon if selected_equipped_module_weapon != null else MODULE_FIT_FORMATTER.get_current_weapon()
 	var fit_data: Dictionary = MODULE_FIT_FORMATTER.build_display_data(active_module, fit_weapon)
 	var effect_chips: Array = fit_data.get("effect_chips", [])
-	_add_detail_line("Fit", str(fit_data.get("fit_label", "No current weapon")))
+	_add_detail_line(
+		LocalizationManager.tr_key("ui.module.fit.label", "Fit"),
+		str(fit_data.get("fit_label", LocalizationManager.tr_key("ui.module.fit.no_weapon", "No current weapon")))
+	)
 	if not effect_chips.is_empty():
 		_add_detail_chip_row(effect_chips)
 	for warning in fit_data.get("fit_warnings", PackedStringArray()):
-		_add_detail_line("Warning", str(warning))
+		_add_detail_line(LocalizationManager.tr_key("ui.common.warning", "Warning"), str(warning))
 	for description in active_module.get_effect_descriptions():
 		var line := str(description)
 		if MODULE_FIT_FORMATTER.filter_effect_description(line):
@@ -101,11 +119,11 @@ func format_module_install_targets(module_instance: Module) -> String:
 		return ""
 	var parts := PackedStringArray()
 	for value in module_instance.get_normalized_required_weapon_traits():
-		parts.append(str(value))
+		parts.append(LocalizationManager.get_module_term(StringName(value), str(value).replace("_", " ").capitalize()))
 	for value in module_instance.get_normalized_required_delivery_types():
-		parts.append(str(value))
+		parts.append(LocalizationManager.get_module_term(StringName(value), str(value).replace("_", " ").capitalize()))
 	for value in module_instance.get_normalized_required_weapon_capabilities():
-		parts.append(str(value))
+		parts.append(LocalizationManager.get_module_term(StringName(value), str(value).replace("_", " ").capitalize()))
 	if parts.is_empty():
 		return LocalizationManager.tr_key("ui.shop.module.any_weapon", "Any weapon")
 	return " / ".join(parts)

@@ -276,12 +276,12 @@ ui.gameover.status,Status  HP: {hp}/{max_hp}  Level: {level}  EXP: {exp},状态 
 ui.gameover.coin,Coin Collected: {value},金币获取：{value}
 ui.gameover.chip,Chip Collected: {value},芯片获取：{value}
 ui.gameover.new_game,New Game,新游戏
-ui.start_battle.hold_f,Hold F to Start,按住 F 开始战斗
+ui.start_battle.hold_f,Open Battle Menu,打开战斗菜单
 ui.tutorial.state.rest,Current: Rest Area,当前状态：休息区
 ui.tutorial.state.battle,Current: Battle,当前状态：战斗中
 ui.tutorial.state.primary_menu,Current: Primary Menu,当前状态：一级菜单
 ui.tutorial.panel.rest.line1,[LMB] Click menu and zones,[鼠标左键] 点击菜单与区域
-ui.tutorial.panel.rest.line2,[LMB Hold Center] Start battle,[鼠标左键按住中央区域] 开始战斗
+ui.tutorial.panel.rest.line2,[LMB] Open battle menu,[鼠标左键] 打开战斗菜单
 ui.tutorial.panel.rest.line3,[Esc] Pause,[Esc] 暂停
 ui.tutorial.panel.primary_menu.line1,[LMB] Click buttons,[鼠标左键] 点击按钮
 ui.tutorial.panel.primary_menu.line2,[RMB] Exit current menu,[鼠标右键] 退出当前菜单
@@ -344,7 +344,7 @@ ui.tutorial.overlay.intro,Rest area uses mouse-first interaction. Battle uses ke
 ui.tutorial.overlay.rest.title,Rest Area,休息区
 ui.tutorial.overlay.rest.line1,- [LMB] Click shop/upgrade/module zones,- [鼠标左键] 点击商店/强化/模组区域
 ui.tutorial.overlay.rest.line2,- [LMB] Click buttons and cards,- [鼠标左键] 点击按钮与卡片
-ui.tutorial.overlay.rest.line3,- [LMB Hold Center] Start battle,- [鼠标左键按住中央区域] 开始战斗
+ui.tutorial.overlay.rest.line3,- [LMB] Open battle menu,- [鼠标左键] 打开战斗菜单
 ui.tutorial.overlay.battle.title,Battle,战斗
 ui.tutorial.overlay.battle.line1,- [WASD] Move   [LMB] Attack,- [WASD] 移动   [鼠标左键] 攻击
 ui.tutorial.overlay.battle.line2,- [Space] Player skill   [R] Reload,- [空格] 角色技能   [R] 装填
@@ -352,9 +352,64 @@ ui.tutorial.overlay.battle.line3,- [Q/E] Switch weapon   [Esc] Pause,- [Q/E] 切
 ui.tutorial.overlay.dont_show_session,Don't show again this run,本次运行不再提示
 ui.tutorial.overlay.confirm,Got it,知道了
 ui.tutorial.ctx.merchant,Click to open shop,点击打开商店
+ui.common.selected,Selected,已选择
+ui.common.level,Level,等级
+ui.common.rarity,Rarity,稀有度
+ui.common.warning,Warning,警告
+ui.management.menu.title,Warehouse Management,仓库管理
+ui.management.menu.subtitle,Open weapon and module warehouses,打开武器仓库与模组仓库
+ui.warehouse.instruction,Manage the selected warehouse.,管理所选仓库。
+ui.warehouse.detail.empty,Select an item,选择一个项目
+ui.warehouse.drag.invalid_target,Drop this item on a compatible warehouse target.,将该项目拖到兼容的仓库目标上。
+ui.weapon.warehouse.row,{name}  Lv.{level}  Fuse {fuse},{name}  Lv.{level}  融合 {fuse}
+ui.weapon.warehouse.empty_slot,Empty weapon slot {index},空武器槽 {index}
+ui.weapon.warehouse.drop_to_equip,Drop a stored weapon here to equip it.,将仓库武器拖到这里以装备。
+ui.weapon.warehouse.select_hint,Select a held weapon to store, or a stored weapon to equip or exchange.,选择持有武器可存入仓库；选择仓库武器可装备或交换。
+ui.weapon.warehouse.modules_removed,Stored weapons do not keep modules.,仓库武器不会保留模组。
+ui.weapon.warehouse.equip_empty,Equip to Empty Slot,装备到空槽
+ui.weapon.warehouse.exchange_selected,Exchange with Selected,与所选武器交换
+ui.weapon.warehouse.exchange_preview,Exchange stored weapon with selected held weapon.,将仓库武器与所选持有武器交换。
+ui.weapon.warehouse.select_exchange_target,Select a held weapon on the left to exchange.,在左侧选择一把持有武器进行交换。
+ui.weapon.warehouse.keep_one,At least one weapon must remain equipped.,至少需要保留一把已装备武器。
+ui.weapon.warehouse.action,Manage Weapon,管理武器
+ui.weapon.warehouse.invalid_equipped,Invalid held weapon.,无效的持有武器。
+ui.weapon.warehouse.invalid_stored,Invalid stored weapon.,无效的仓库武器。
+ui.weapon.warehouse.invalid_exchange,Invalid weapon exchange.,无效的武器交换。
+ui.weapon.warehouse.no_empty_slot,No weapon slots available.,没有可用武器槽。
+ui.weapon.warehouse.drop_store,Release to store this weapon.,松开以存入这把武器。
+ui.weapon.warehouse.drop_equip,Release to equip this weapon.,松开以装备这把武器。
+ui.weapon.warehouse.drop_exchange,Release to exchange these weapons.,松开以交换这两把武器。
+ui.weapon.warehouse.drop_stored_only,Only stored weapons can be equipped into an empty slot.,只有仓库武器可以装备到空槽。
+ui.weapon.warehouse.drop_stored_exchange,Drop a stored weapon on a held weapon to exchange.,将仓库武器拖到持有武器上进行交换。
+ui.weapon.location.equipped,Held weapon,持有武器
+ui.weapon.location.stored,Stored weapon,仓库武器
+ui.weapon.meta.level_fuse,Lv.{level}/{max}  Fuse {fuse},Lv.{level}/{max}  融合 {fuse}
+ui.weapon.fuse,Fuse,融合
+ui.weapon.modules,Modules,模组
+ui.module.action.unequip,Unequip Module,卸下模组
+ui.module.warehouse.title,Module Warehouse,模组仓库
+ui.module.targets,Weapons and Module Slots,武器与模组槽
+ui.module.temporary_modules,Temporary Modules,临时模组
+ui.module.empty_storage,No temporary modules.,没有临时模组。
+ui.module.install_targets,Install Targets,可安装目标
+ui.module.slot_empty,Slot {index},槽位 {index}
+ui.module.meta.level_rarity,Lv.{level}  {rarity},Lv.{level}  {rarity}
+ui.module.select_first,Select a temporary module first.,请先选择一个临时模组。
+ui.module.sell.unavailable,This module cannot be sold.,该模组无法出售。
+ui.module.slot_click_hint,Click a highlighted slot on the left to install or replace.,点击左侧高亮槽位以安装或替换。
+ui.module.equipped_action_hint,Sell this module or unequip it back to temporary storage.,出售该模组，或将其卸回临时仓库。
+ui.module.location.temporary,Temporary module,临时模组
+ui.module.location.weapon,Installed on {weapon},已安装在 {weapon}
+ui.module.drag.drop_temp_only,Drop a temporary module on a weapon slot to install it.,将临时模组拖到武器槽上以安装。
+ui.module.drag.drop_equipped_only,Drop an installed module here to unequip it.,将已安装模组拖到这里以卸下。
+ui.module.drag.invalid_module,Invalid module.,无效模组。
+ui.module.drag.not_equipped,Module is not equipped.,模组尚未装备。
+ui.module.drag.drop_unequip,Release to unequip this module.,松开以卸下该模组。
+ui.shop.module.any_weapon,Any weapon,任意武器
+ui.module.fit.label,Fit,适配
 ui.tutorial.ctx.smith,Click to open upgrade,点击打开强化
 ui.tutorial.ctx.module,Click to manage modules,点击管理模组
-ui.tutorial.ctx.battle_hold,Hold left mouse on center to start battle,按住中央区域开始战斗
+ui.tutorial.ctx.battle_hold,Click center to open battle menu,点击中央区域打开战斗菜单
 ui.rest.zone.shop.title,Shop,商店
 ui.rest.zone.shop.status,Buy weapons and modules,购买武器与模组
 ui.rest.zone.upgrade.title,Weapon Upgrade,武器升级
@@ -411,6 +466,17 @@ ui.common.back,Back,返回
 ui.common.cancel,Cancel,取消
 ui.common.continue,Continue,继续
 ui.common.close,Close,关闭
+ui.dialog.detail.module,Module,模组
+ui.dialog.detail.location,Location,位置
+ui.dialog.detail.action,Action,操作
+ui.dialog.detail.level,Level,等级
+ui.dialog.detail.gold,Gold,金币
+ui.dialog.detail.count,Count,数量
+ui.dialog.detail.incoming,Incoming,即将获得
+ui.dialog.detail.discard_slot,Slot {slot},栏位 {slot}
+ui.dialog.action.move_temporary,Move to temporary area,移至临时区域
+ui.dialog.action.start_battle,Start battle,开始战斗
+ui.rest.zone.battle.subtitle,Leave the rest area and begin the next fight.,离开休息区并开始下一场战斗。
 ui.rarity.common,Common,普通
 ui.rarity.rare,Rare,稀有
 ui.rarity.epic,Epic,史诗

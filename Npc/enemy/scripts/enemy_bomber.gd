@@ -9,11 +9,13 @@ const AREA_EFFECT_SCENE := preload("res://Combat/area_effect/area_effect.tscn")
 @export var fuse_time: float = 1.0
 @export var blast_radius: float = 74.0
 @export var blast_damage_multiplier: float = 2.4
+@export var fuse_warning_color: Color = Color(1.0, 0.04, 0.02, 1.0)
+@export_range(0.0, 1.0, 0.01) var fuse_warning_peak_alpha: float = 0.92
+@export var fuse_warning_pulse_sec: float = 0.11
 
 var _current_speed: float = 0.0
 var _is_fusing: bool = false
 var _fuse_remaining: float = 0.0
-var _fuse_elapsed: float = 0.0
 
 func _physics_process(delta: float) -> void:
 	if is_stunned():
@@ -21,8 +23,6 @@ func _physics_process(delta: float) -> void:
 		move_with_body_push(Vector2.ZERO, delta)
 		return
 	if _is_fusing:
-		_fuse_elapsed += maxf(delta, 0.0)
-		_update_fuse_flash()
 		_fuse_remaining -= maxf(delta, 0.0)
 		decay_knockback()
 		move_with_body_push(Vector2.ZERO, delta)
@@ -45,21 +45,17 @@ func _start_fuse() -> void:
 		return
 	_is_fusing = true
 	_fuse_remaining = maxf(fuse_time, 0.1)
-	_fuse_elapsed = 0.0
 	_current_speed = 0.0
-
-func _update_fuse_flash() -> void:
-	if sprite_body == null:
-		return
-	var flash_step: int = int(floor(_fuse_elapsed * 10.0))
-	if flash_step % 2 == 0:
-		sprite_body.modulate = Color(1.0, 0.45, 0.45, 1.0)
-	else:
-		sprite_body.modulate = Color.WHITE
+	damage_feedback.start_warning_flash(
+		fuse_warning_color,
+		fuse_warning_peak_alpha,
+		fuse_warning_pulse_sec
+	)
 
 func _explode() -> void:
 	if not is_inside_tree():
 		return
+	damage_feedback.stop_warning_flash()
 	if sprite_body != null:
 		sprite_body.modulate = Color.WHITE
 	var area := AREA_EFFECT_SCENE.instantiate() as AreaEffect
@@ -80,5 +76,6 @@ func _explode() -> void:
 	death(null)
 
 func _before_death(_killing_attack: Attack) -> void:
+	damage_feedback.stop_warning_flash()
 	if sprite_body != null:
 		sprite_body.modulate = Color.WHITE

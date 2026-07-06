@@ -44,9 +44,12 @@ func _draw() -> void:
 		var zone_rect := rest_area.call("_get_zone_rect_local", zone_id) as Rect2
 		if zone_rect.size.x <= 0.0 or zone_rect.size.y <= 0.0:
 			continue
-		var is_hovered := zone_id == hover_zone_id
-		var is_selected := zone_id == selected_zone_id
+		var is_selected := _is_service_zone(zone_id) and zone_id == selected_zone_id
+		var is_hovered := _is_service_zone(zone_id) and zone_id == hover_zone_id
 		_draw_zone_visual(zone_id, zone_rect, is_hovered, is_selected)
+
+func _is_service_zone(zone_id: int) -> bool:
+	return VISUAL_ZONE_IDS.has(zone_id)
 
 func _draw_zone_visual(zone_id: int, rect: Rect2, hovered: bool, selected: bool) -> void:
 	var color := ZONE_COLORS.get(zone_id, Color.WHITE) as Color

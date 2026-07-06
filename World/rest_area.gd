@@ -39,7 +39,7 @@ signal rest_menu_cancelled
 @export var zone_smith_hint_text: String = "Upgrade"
 @export var zone_module_hint_text: String = "Warehouses"
 @export var zone_board_hint_text: String = "Board"
-@export var zone_battle_hold_hint_text: String = "Hold left mouse on center to start battle"
+@export var zone_battle_hold_hint_text: String = "Open battle menu"
 @export var zone_hint_forward_offset: Vector2 = Vector2(0.0, -44.0)
 @export var zone_hint_z_index: int = 80
 @export var zone_hint_intro_duration: float = 1.5
@@ -107,6 +107,8 @@ func _ready() -> void:
 		_board = get_node_or_null(board_path) as BoardCellGenerator
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
+	if not PhaseManager.post_battle_collect_gate_changed.is_connected(_on_post_battle_collect_gate_changed):
+		PhaseManager.post_battle_collect_gate_changed.connect(_on_post_battle_collect_gate_changed)
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
 	if not InventoryData.temporary_modules_changed.is_connected(_on_zone_hint_status_changed):
@@ -156,6 +158,7 @@ func _setup_helpers() -> void:
 		ZONE_ID_MERCHANT,
 		ZONE_ID_SMITH,
 		ZONE_ID_MODULE,
+		CENTER_ZONE_ID,
 		ZONE_ID_BOARD_EDIT,
 	]
 	_zone_helper = REST_AREA_ZONE_HELPER.new()
@@ -210,6 +213,8 @@ func _exit_tree() -> void:
 		CellEffectRuntime.pending_changed.disconnect(_on_zone_hint_status_changed)
 	if TaskRewardManager and TaskRewardManager.pending_reward_changed.is_connected(_on_pending_reward_changed):
 		TaskRewardManager.pending_reward_changed.disconnect(_on_pending_reward_changed)
+	if PhaseManager and PhaseManager.post_battle_collect_gate_changed.is_connected(_on_post_battle_collect_gate_changed):
+		PhaseManager.post_battle_collect_gate_changed.disconnect(_on_post_battle_collect_gate_changed)
 
 func _on_language_changed(_new_locale: String) -> void:
 	if _hint_presenter != null:
@@ -225,6 +230,17 @@ func _on_pending_reward_changed(_has_pending: bool) -> void:
 	_on_zone_hint_status_changed()
 	_refresh_interaction_state()
 	_update_zone_hint_visuals(true)
+	queue_redraw()
+
+func _on_post_battle_collect_gate_changed(blocking: bool) -> void:
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return
+	if blocking:
+		_refresh_interaction_state()
+		return
+	_reset_prepare_state(true)
+	_start_zone_hint_intro()
+	_refresh_interaction_state()
 	queue_redraw()
 
 func _refresh_scene_hint_labels() -> void:
@@ -284,7 +300,7 @@ func _enter_prepare_phase() -> void:
 	_set_active(true, false)
 	_set_camera_owner_active(true)
 	call_deferred("_ensure_camera_owner_binding")
-	_reset_prepare_state(true)
+	_reset_prepare_state(not PhaseManager.is_post_battle_collect_gate_active())
 	_start_zone_hint_intro()
 	_refresh_interaction_state()
 	if _start_battle_button:
@@ -411,9 +427,10 @@ func _get_reward_manager() -> BonusManager:
 func _setup_start_battle_button() -> void:
 	if _start_battle_button == null:
 		return
-	if not _start_battle_button.is_connected("activated", Callable(self, "_on_start_battle_button_activated")):
-		_start_battle_button.connect("activated", Callable(self, "_on_start_battle_button_activated"))
-	_snap_start_battle_button()
+	_start_battle_button.visible = false
+	_start_battle_button.monitoring = false
+	_start_battle_button.monitorable = false
+	_start_battle_button.set_physics_process(false)
 
 func _on_start_battle_button_activated() -> void:
 	if _route_flow != null:
@@ -467,7 +484,6 @@ func _process(delta: float) -> void:
 		_refresh_scene_hint_labels()
 	_update_hover_from_mouse()
 	_update_auto_move()
-	_update_zone4_hold(delta)
 	_update_zone_hint_intro(delta)
 	_update_zone_hint_visibility()
 	_refresh_cursor_state()
@@ -500,9 +516,6 @@ func _handle_left_click(global_pos: Vector2) -> void:
 	if zone_id < 0:
 		if debug_click_logs:
 			print("[RestArea] left click ignored: outside 3x3 bounds")
-		return
-	if zone_id == CENTER_ZONE_ID and selected_zone_id == CENTER_ZONE_ID and not is_auto_moving:
-		# Center zone enters battle by hold, not click-to-open-menu.
 		return
 	var current_menu_open := _is_menu_open()
 	if current_menu_open and zone_id == selected_zone_id and _zone_opens_interaction(zone_id):
@@ -697,7 +710,7 @@ func _control_tree_has_blocking_root_at(control: Control, mouse_position: Vector
 
 func _on_rest_menu_requested(zone_id: int, _zone_center_global: Vector2) -> void:
 	if _menu_bridge != null:
-		_menu_bridge.call("open_zone_menu", zone_id, ZONE_ID_MERCHANT, ZONE_ID_SMITH, ZONE_ID_MODULE, ZONE_ID_BOARD_EDIT)
+		_menu_bridge.call("open_zone_menu", zone_id, ZONE_ID_MERCHANT, ZONE_ID_SMITH, ZONE_ID_MODULE, ZONE_ID_BOARD_EDIT, CENTER_ZONE_ID)
 
 func _on_rest_menu_cancelled() -> void:
 	_close_rest_area_primary_menu_if_open()
@@ -717,10 +730,19 @@ func _draw() -> void:
 	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
 		return
 	_draw_zone_grid(bounds)
-	if selected_zone_id != CENTER_ZONE_ID or hover_zone_id == CENTER_ZONE_ID or _zone4_hold_elapsed > 0.0:
+	if _should_draw_selected_service_highlight():
 		_draw_zone_outline(selected_zone_id, zone_selected_color, zone_outline_line_width)
-	_draw_zone_outline(hover_zone_id, zone_hover_color, zone_outline_line_width)
-	_draw_zone4_hold_progress()
+	if _should_draw_hover_service_highlight():
+		_draw_zone_outline(hover_zone_id, zone_hover_color, zone_outline_line_width)
+
+func _should_draw_selected_service_highlight() -> bool:
+	return _is_service_zone_highlightable(selected_zone_id)
+
+func _should_draw_hover_service_highlight() -> bool:
+	return hover_zone_id != selected_zone_id and _is_service_zone_highlightable(hover_zone_id)
+
+func _is_service_zone_highlightable(zone_id: int) -> bool:
+	return _zone_opens_interaction(zone_id)
 
 func _draw_zone_grid(bounds: Rect2) -> void:
 	var line_width := maxf(zone_grid_line_width, 0.5)
@@ -943,9 +965,6 @@ func _refresh_cursor_state() -> void:
 	if _is_world_interaction_blocked():
 		CursorManager.clear_world_state(self)
 		return
-	if _zone4_hold_elapsed > 0.0 and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and _is_zone4_hold_available():
-		CursorManager.set_world_state(self, CursorManager.STATE_HOLD_ACTIVE, 60)
-		return
 	if _is_zone_clickable_for_cursor(hover_zone_id):
 		CursorManager.set_world_state(self, CursorManager.STATE_CLICKABLE, 50)
 		return
@@ -964,7 +983,7 @@ func _is_zone_clickable_for_cursor(zone_id: int) -> bool:
 			if ui and is_instance_valid(ui) and ui.has_method("is_rest_area_zone_navigation_allowed"):
 				return bool(ui.call("is_rest_area_zone_navigation_allowed"))
 			return true
-		return _is_zone4_hold_available()
+		return not _is_menu_open() and not _route_selection_pending and not _is_world_interaction_blocked()
 	if not _zone_opens_interaction(zone_id):
 		return false
 	return bool(_menu_bridge.call("is_navigation_allowed")) if _menu_bridge != null else true

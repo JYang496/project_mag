@@ -87,9 +87,11 @@ var _last_visual_position: Vector2 = Vector2.ZERO
 @export var rest_camera_zoom_enter_duration: float = 0.42
 @export var rest_camera_zoom_exit_duration: float = 0.30
 @export var rest_camera_zoom_transition_enabled: bool = true
-@export var move_accel: float = 2800.0
-@export var move_decel: float = 3200.0
+@export var move_accel: float = 450.0
+@export var move_decel: float = 2400.0
 @export var move_turn_penalty: float = 0.15
+@export var rest_phase_move_speed_bonus: float = 150.0
+@export var rest_phase_move_accel_bonus: float = 1200.0
 @export var move_input_buffer_sec: float = 0.1
 @export var camera_lookahead_distance: float = 18.0
 @export var camera_lookahead_lerp_speed: float = 5.0
@@ -118,6 +120,7 @@ var _last_phase: String = ""
 var _board_generator_ref: Node = null
 var _last_move_input_dir: Vector2 = Vector2.ZERO
 var _last_move_input_msec: int = -1
+var _last_movement_mode: StringName = &"idle"
 var _last_face_horizontal_sign: int = -1
 var _last_face_vertical_sign: int = 1
 var _last_move_anim_is_top: bool = false
@@ -157,6 +160,14 @@ signal player_active_skill()
 signal weapon_active_skill()
 @warning_ignore("unused_signal")
 signal coin_collected()
+@warning_ignore("unused_signal")
+signal movement_state_changed(previous_mode: StringName, current_mode: StringName, status: Dictionary)
+@warning_ignore("unused_signal")
+signal dash_started(data: Dictionary)
+@warning_ignore("unused_signal")
+signal dash_finished(data: Dictionary)
+@warning_ignore("unused_signal")
+signal hard_turn_triggered(data: Dictionary)
 
 func _ensure_weapon_inventory_runtime() -> void:
 	if _weapon_inventory_runtime == null:
@@ -925,6 +936,7 @@ func _get_low_hp_damage_mul() -> float:
 func start_auto_nav(dest: Vector2) -> void:
 	if not _require_movement_system_or_halt():
 		return
+	_movement_system.cancel_dash()
 	movement_enabled = false
 	moveto_enabled = true
 	moveto_dest = dest
@@ -947,6 +959,42 @@ func configure_auto_nav_speed_mul(speed_mul: float) -> void:
 	if not _require_movement_system_or_halt():
 		return
 	_movement_system.configure_auto_nav_speed_mul(speed_mul)
+
+func get_rest_phase_move_speed_bonus() -> float:
+	return maxf(rest_phase_move_speed_bonus, 0.0)
+
+func request_dash(direction: Vector2, distance: float, duration_sec: float, source_id: StringName = StringName()) -> bool:
+	if not _require_movement_system_or_halt():
+		return false
+	if direction.length_squared() <= 0.0001:
+		return false
+	var target_position := _project_player_traversable_point(
+		global_position + direction.normalized() * maxf(distance, 0.0)
+	)
+	var start_position := global_position
+	var started := _movement_system.request_dash(start_position, target_position, duration_sec, source_id)
+	if started:
+		dash_started.emit({
+			"source_id": source_id,
+			"start_position": start_position,
+			"target_position": target_position,
+			"direction": direction.normalized(),
+			"duration_sec": maxf(duration_sec, 0.01),
+		})
+	return started
+
+func can_request_dash(direction: Vector2, distance: float) -> bool:
+	if direction.length_squared() <= 0.0001:
+		return false
+	var target_position := _project_player_traversable_point(
+		global_position + direction.normalized() * maxf(distance, 0.0)
+	)
+	return target_position.distance_squared_to(global_position) > 0.25
+
+func get_movement_status() -> Dictionary:
+	if not _require_movement_system_or_halt():
+		return {}
+	return _movement_system.get_status()
 
 func set_restarea_camera_control_enabled(enabled: bool, snap_target: Vector2 = Vector2.ZERO, snap_now: bool = false) -> void:
 	if not _require_camera_system_or_halt():
@@ -1043,6 +1091,17 @@ func _get_board_generator() -> Node:
 	if scene_root:
 		_board_generator_ref = scene_root.get_node_or_null("Board")
 	return _board_generator_ref
+
+func _project_player_traversable_point(world_point: Vector2) -> Vector2:
+	var board := _get_board_generator()
+	if board == null:
+		return world_point
+	if not board.has_method("project_point_to_player_traversable_area"):
+		return world_point
+	var projected: Variant = board.call("project_point_to_player_traversable_area", world_point)
+	if projected is Vector2:
+		return projected as Vector2
+	return world_point
 
 func _constrain_to_board_traversable_area() -> void:
 	var board := _get_board_generator()
@@ -1572,11 +1631,20 @@ func _ensure_movement_system() -> void:
 func _tick_movement(delta: float) -> void:
 	var manual_input_allowed := true
 	var manual_direction := Vector2.ZERO
+	var rest_phase_active := false
 	if not moveto_enabled and movement_enabled:
 		if PhaseManager != null and PhaseManager.has_method("current_state"):
-			manual_input_allowed = str(PhaseManager.current_state()) != str(PhaseManager.PREPARE)
+			rest_phase_active = str(PhaseManager.current_state()) == str(PhaseManager.PREPARE)
+			manual_input_allowed = not rest_phase_active
 		if manual_input_allowed:
 			manual_direction = _resolve_buffered_move_input() + extra_direction
+	elif PhaseManager != null and PhaseManager.has_method("current_state"):
+		rest_phase_active = str(PhaseManager.current_state()) == str(PhaseManager.PREPARE)
+	var effective_move_speed: float = (PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul()
+	var effective_move_accel: float = move_accel
+	if rest_phase_active:
+		effective_move_speed += get_rest_phase_move_speed_bonus()
+		effective_move_accel += maxf(rest_phase_move_accel_bonus, 0.0)
 	_movement_frame_input.delta = delta
 	_movement_frame_input.current_velocity = velocity
 	_movement_frame_input.current_position = global_position
@@ -1585,21 +1653,32 @@ func _tick_movement(delta: float) -> void:
 	_movement_frame_input.auto_navigation_destination = moveto_dest
 	_movement_frame_input.manual_input_allowed = manual_input_allowed
 	_movement_frame_input.manual_direction = manual_direction
-	_movement_frame_input.move_speed = (
-		PlayerData.player_speed + PlayerData.player_bonus_speed
-	) * get_total_move_speed_mul()
-	_movement_frame_input.move_accel = move_accel
+	_movement_frame_input.move_speed = effective_move_speed
+	_movement_frame_input.move_accel = effective_move_accel
 	_movement_frame_input.move_decel = move_decel
 	_movement_frame_input.move_turn_penalty = move_turn_penalty
 	_movement_system.tick(_movement_frame_input, _movement_frame_result)
 	velocity = _movement_frame_result.next_velocity
 	if _movement_frame_result.should_snap_position:
 		global_position = _movement_frame_result.snap_position
+	_sync_movement_events()
 	if _movement_frame_result.auto_navigation_completed:
 		movement_enabled = true
 		moveto_enabled = false
 		moveto_dest = Vector2.ZERO
 		_movement_system.reset_auto_nav_speed_mul()
+
+func _sync_movement_events() -> void:
+	var status := _movement_system.get_status()
+	var current_mode: StringName = status.get("mode", &"idle")
+	var previous_mode := _last_movement_mode
+	if current_mode != previous_mode:
+		movement_state_changed.emit(previous_mode, current_mode, status)
+		if current_mode == &"turn":
+			hard_turn_triggered.emit(status)
+		if previous_mode == &"dash":
+			dash_finished.emit(status)
+	_last_movement_mode = current_mode
 
 func _ensure_camera_system() -> void:
 	_sync_camera_config()

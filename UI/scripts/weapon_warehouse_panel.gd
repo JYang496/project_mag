@@ -130,11 +130,19 @@ func _make_weapon_row(parent: VBoxContainer, weapon: Weapon) -> VBoxContainer:
 	row.add_theme_constant_override("separation", 5)
 	panel.add_child(row)
 	var label := Label.new()
-	label.text = "%s  Lv.%d  Fuse %d" % [
-		LocalizationManager.get_weapon_name_from_node(weapon),
-		int(weapon.level),
-		int(weapon.fuse),
-	]
+	label.text = LocalizationManager.tr_format(
+		"ui.weapon.warehouse.row",
+		{
+			"name": LocalizationManager.get_weapon_name_from_node(weapon),
+			"level": int(weapon.level),
+			"fuse": int(weapon.fuse),
+		},
+		"%s  Lv.%d  Fuse %d" % [
+			LocalizationManager.get_weapon_name_from_node(weapon),
+			int(weapon.level),
+			int(weapon.fuse),
+		]
+	)
 	row.add_child(label)
 	return row
 

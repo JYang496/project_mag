@@ -295,7 +295,7 @@ func _render_current_context() -> void:
 		_tr("ui.tutorial.state.rest", "Rest Area"),
 		[
 			_tr("ui.tutorial.panel.rest.line1", "[LMB] Click menu and zones"),
-			_tr("ui.tutorial.panel.rest.line2", "[LMB Hold Center] Start battle"),
+			_tr("ui.tutorial.panel.rest.line2", "[LMB] Open battle menu"),
 			_tr("ui.tutorial.panel.rest.line3", "[Esc] Pause"),
 		]
 	)

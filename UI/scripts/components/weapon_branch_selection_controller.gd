@@ -44,7 +44,7 @@ func request_next() -> void:
 		return
 	if owner_ui.branch_select_panel.visible:
 		return
-	if TaskRewardManager.is_reward_blocking_interactions():
+	if TaskRewardManager.is_task_reward_blocking_interactions():
 		return
 	if not _is_safe_state():
 		return

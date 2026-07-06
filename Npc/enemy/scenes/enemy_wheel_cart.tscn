@@ -14,6 +14,7 @@ size = Vector2(16, 16)
 size = Vector2(150, 150)
 
 [node name="EnemyWheelCart" unique_id=1509861233 instance=ExtResource("1_jdgf0")]
+collision_mask = 0
 script = ExtResource("2_m5ns1")
 chase_acceleration = 25.0
 slowdown_deceleration = 96.0

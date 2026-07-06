@@ -91,6 +91,8 @@ func ensure_management_menu_buttons() -> void:
 	_connect_button_pressed(open_grid_button, owner_ui.rest_area_ui_controller.open_cell_grid_panel)
 	var open_task_button := owner_ui.board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button
 	_connect_button_pressed(open_task_button, owner_ui.rest_area_ui_controller.open_cell_task_panel)
+	var start_battle_button := owner_ui.battle_start_primary_panel.get_node_or_null("StartBattleButton") as Button
+	_connect_button_pressed(start_battle_button, owner_ui.rest_area_ui_controller.start_battle_from_primary_menu)
 	style_primary_menu_controls()
 
 func style_primary_menu_controls() -> void:
@@ -129,6 +131,12 @@ func style_primary_menu_controls() -> void:
 		[
 			owner_ui.board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button,
 			owner_ui.board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button,
+		]
+	)
+	_apply_primary_menu_layout(
+		owner_ui.battle_start_primary_panel,
+		[
+			owner_ui.battle_start_primary_panel.get_node_or_null("StartBattleButton") as Button,
 		]
 	)
 

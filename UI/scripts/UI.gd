@@ -45,6 +45,7 @@ const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overl
 @onready var purchase_primary_root: Control = $GUI/PurchaseRoot/PrimaryMenuRoot
 @onready var warehouse_primary_root: Control = $GUI/WarehouseRoot/PrimaryMenuRoot
 @onready var board_edit_primary_root: Control = $GUI/BoardEditRoot/PrimaryMenuRoot
+@onready var battle_start_primary_root: Control = $GUI/BattleStartRoot/PrimaryMenuRoot
 @onready var pause_menu_root : Control = $GUI/PauseMenuRoot
 @onready var warehouse_management_root: Control = $GUI/WarehouseRoot/ModuleManagementRoot
 @onready var purchase_panel: Panel = $GUI/PurchaseRoot/ShoppingRootv2/Panel
@@ -55,6 +56,7 @@ const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overl
 @onready var upgrade_primary_panel: Panel = $GUI/UpgradeRoot/PrimaryMenuRoot/Panel
 @onready var warehouse_primary_panel: Panel = $GUI/WarehouseRoot/PrimaryMenuRoot/Panel
 @onready var board_edit_primary_panel: Panel = $GUI/BoardEditRoot/PrimaryMenuRoot/Panel
+@onready var battle_start_primary_panel: Panel = $GUI/BattleStartRoot/PrimaryMenuRoot/Panel
 var item_message_timer: Timer
 
 

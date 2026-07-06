@@ -61,17 +61,32 @@ func request_module_unequip_confirmation(module_instance: Module, weapon: Weapon
 	)
 	pending_module_action = Callable(self, "_confirm_module_unequip").bind(module_instance, weapon)
 	active_dialog_id = &"module_action"
-	var result: bool = modal_dialog_controller.request_confirmation(
-		&"module_action",
-		LocalizationManager.tr_key("ui.module.unequip.title", "Unequip Module"),
-		body,
-		"OK",
-		"Cancel",
-		Callable(self, "_on_module_action_confirmed"),
-		Callable(self, "_on_module_action_cancelled"),
-		false,
-		&"medium"
-	)
+	var result: bool = modal_dialog_controller.confirm({
+		"id": &"module_action",
+		"title": LocalizationManager.tr_key("ui.module.unequip.title", "Unequip Module"),
+		"message": body,
+		"confirm_text": "OK",
+		"cancel_text": "Cancel",
+		"on_confirm": Callable(self, "_on_module_action_confirmed"),
+		"on_cancel": Callable(self, "_on_module_action_cancelled"),
+		"destructive": false,
+		"size": &"medium",
+		"details": [
+			{
+				"label": LocalizationManager.tr_key("ui.dialog.detail.module", "Module"),
+				"value": LocalizationManager.get_module_name(module_instance),
+			},
+			{
+				"label": LocalizationManager.tr_key("ui.dialog.detail.location", "Location"),
+				"value": LocalizationManager.get_weapon_name_from_node(weapon),
+			},
+			{
+				"label": LocalizationManager.tr_key("ui.dialog.detail.action", "Action"),
+				"value": LocalizationManager.tr_key("ui.dialog.action.move_temporary", "Move to temporary area"),
+				"tone": &"secondary",
+			},
+		],
+	})
 	_sync_legacy_dialog_refs()
 	if not result:
 		_on_module_action_cancelled()
@@ -105,17 +120,32 @@ func request_temporary_module_sell_confirmation(module_instance: Module) -> bool
 	)
 	pending_module_action = Callable(self, "_confirm_temporary_module_sell").bind(module_instance)
 	active_dialog_id = &"module_action"
-	var result: bool = modal_dialog_controller.request_confirmation(
-		&"module_action",
-		LocalizationManager.tr_key("ui.module.sell.title", "Sell Module"),
-		body,
-		"Sell",
-		"Cancel",
-		Callable(self, "_on_module_action_confirmed"),
-		Callable(self, "_on_module_action_cancelled"),
-		true,
-		&"medium"
-	)
+	var result: bool = modal_dialog_controller.confirm({
+		"id": &"module_action",
+		"title": LocalizationManager.tr_key("ui.module.sell.title", "Sell Module"),
+		"message": body,
+		"confirm_text": "Sell",
+		"cancel_text": "Cancel",
+		"on_confirm": Callable(self, "_on_module_action_confirmed"),
+		"on_cancel": Callable(self, "_on_module_action_cancelled"),
+		"destructive": true,
+		"size": &"medium",
+		"details": [
+			{
+				"label": LocalizationManager.tr_key("ui.dialog.detail.module", "Module"),
+				"value": LocalizationManager.get_module_name(module_instance),
+			},
+			{
+				"label": LocalizationManager.tr_key("ui.dialog.detail.level", "Level"),
+				"value": "Lv.%d" % int(module_instance.module_level),
+			},
+			{
+				"label": LocalizationManager.tr_key("ui.dialog.detail.gold", "Gold"),
+				"value": "+%d" % gold,
+				"tone": &"reward",
+			},
+		],
+	})
 	_sync_legacy_dialog_refs()
 	if not result:
 		_on_module_action_cancelled()
@@ -180,21 +210,37 @@ func request_temporary_module_settlement(on_complete: Callable, on_cancel: Calla
 		]
 	)
 	active_dialog_id = &"temporary_module_settlement"
-	var result: bool = modal_dialog_controller.request_confirmation(
-		&"temporary_module_settlement",
-		LocalizationManager.tr_key("ui.module.settlement.title", "Temporary Module Settlement"),
-		body,
-		"Sell",
-		"Cancel",
-		Callable(self, "_on_temporary_module_settlement_confirmed"),
-		Callable(self, "_on_temporary_module_settlement_cancelled"),
-		false,
-		Vector2i(560, 260),
-		LocalizationManager.tr_key(
+	var result: bool = modal_dialog_controller.confirm({
+		"id": &"temporary_module_settlement",
+		"title": LocalizationManager.tr_key("ui.module.settlement.title", "Temporary Module Settlement"),
+		"message": body,
+		"confirm_text": "Sell",
+		"cancel_text": "Cancel",
+		"on_confirm": Callable(self, "_on_temporary_module_settlement_confirmed"),
+		"on_cancel": Callable(self, "_on_temporary_module_settlement_cancelled"),
+		"destructive": false,
+		"size": Vector2i(560, 300),
+		"checkbox_text": LocalizationManager.tr_key(
 			"ui.module.settlement.dont_show",
 			"Do not show this confirmation again"
-		)
-	)
+		),
+		"details": [
+			{
+				"label": LocalizationManager.tr_key("ui.dialog.detail.count", "Count"),
+				"value": str(InventoryData.temporary_modules.size()),
+			},
+			{
+				"label": LocalizationManager.tr_key("ui.dialog.detail.gold", "Gold"),
+				"value": "+%d" % total_gold,
+				"tone": &"reward",
+			},
+			{
+				"label": LocalizationManager.tr_key("ui.dialog.detail.action", "Action"),
+				"value": LocalizationManager.tr_key("ui.dialog.action.start_battle", "Start battle"),
+				"tone": &"secondary",
+			},
+		],
+	})
 	_sync_legacy_dialog_refs()
 	if not result:
 		cancel_temporary_module_settlement()

@@ -23,9 +23,12 @@ func handle_right_cancel() -> bool:
 		return false
 	return bool(controller.call("handle_right_cancel"))
 
-func open_zone_menu(zone_id: int, merchant_id: int, smith_id: int, module_id: int, board_edit_id: int) -> void:
+func open_zone_menu(zone_id: int, merchant_id: int, smith_id: int, module_id: int, board_edit_id: int, battle_start_id: int = -1) -> void:
 	var controller: Variant = _get_rest_ui_controller()
 	if controller == null:
+		return
+	if zone_id == battle_start_id:
+		controller.open_menu(&"battle_start")
 		return
 	if zone_id == merchant_id:
 		controller.open_menu(&"purchase")

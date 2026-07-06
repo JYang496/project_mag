@@ -2,7 +2,7 @@ extends RefCounted
 class_name RestAreaUiController
 
 const PRIMARY_MENU_ANIM_TIME := 0.2
-const SERVICE_MENU_IDS: Array[StringName] = [&"purchase", &"upgrade", &"warehouse", &"board_edit"]
+const SERVICE_MENU_IDS: Array[StringName] = [&"purchase", &"upgrade", &"warehouse", &"board_edit", &"battle_start"]
 const SECONDARY_MENU_DIM_OVERLAY_NAME := "SecondaryMenuDimOverlay"
 const SECONDARY_MENU_DIM_COLOR := Color(0.0, 0.0, 0.0, 0.42)
 
@@ -54,6 +54,10 @@ func get_service_primary_buttons(menu_id: StringName) -> Array:
 			return [
 				owner_ui.board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button,
 				owner_ui.board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button,
+			]
+		&"battle_start":
+			return [
+				owner_ui.battle_start_primary_panel.get_node_or_null("StartBattleButton") as Button,
 			]
 	return []
 
@@ -352,6 +356,17 @@ func back_to_board_primary_menu() -> void:
 	sync_secondary_menu_dim_overlay()
 	_menu_transition_locked = false
 
+func start_battle_from_primary_menu() -> void:
+	if _menu_transition_locked:
+		return
+	var root := owner_ui.battle_start_primary_root
+	if root:
+		root.visible = false
+	_clear_active()
+	var rest_area := _find_active_rest_area()
+	if rest_area != null and rest_area.has_method("_on_start_battle_button_activated"):
+		rest_area.call("_on_start_battle_button_activated")
+
 func close_purchase_menu() -> void:
 	if not active:
 		return
@@ -395,6 +410,9 @@ func close_primary_menu() -> void:
 			else:
 				warehouse_menu_out()
 				primary_close_started = true
+		&"battle_start":
+			_hide_primary_menu(&"battle_start", owner_ui.battle_start_primary_root, owner_ui.battle_start_primary_panel)
+			primary_close_started = true
 		_:
 			if owner_ui.purchase_management_root and owner_ui.purchase_management_root.visible:
 				var purchase_tween := _animate_secondary_root_out(owner_ui.purchase_management_root)
@@ -538,6 +556,10 @@ func cancel_menu_level() -> bool:
 			return true
 		_clear_active()
 		return true
+	elif primary_menu_id == &"battle_start":
+		if owner_ui.battle_start_primary_root and owner_ui.battle_start_primary_root.visible:
+			close_primary_menu()
+			return true
 	return false
 
 func is_primary_menu_open() -> bool:
@@ -700,6 +722,8 @@ func _is_zone_navigation_allowed_without_shell() -> bool:
 		return true
 	if primary_menu_id == &"board_edit" and owner_ui.board_edit_primary_root and owner_ui.board_edit_primary_root.visible:
 		return true
+	if primary_menu_id == &"battle_start" and owner_ui.battle_start_primary_root and owner_ui.battle_start_primary_root.visible:
+		return true
 	return false
 
 func _sync_public_fields_to_owner() -> void:
@@ -718,6 +742,8 @@ func _normalize_menu_id(menu_id: StringName) -> StringName:
 			return &"warehouse"
 		&"board":
 			return &"board_edit"
+		&"battle":
+			return &"battle_start"
 		_:
 			return menu_id
 
@@ -730,6 +756,8 @@ func _get_management_root(root_id: StringName) -> Control:
 		&"warehouse":
 			return owner_ui.warehouse_management_root
 		&"board_edit":
+			return null
+		&"battle_start":
 			return null
 		_:
 			return null
@@ -744,6 +772,8 @@ func _get_primary_root(root_id: StringName) -> Control:
 			return owner_ui.warehouse_primary_root
 		&"board_edit":
 			return owner_ui.board_edit_primary_root
+		&"battle_start":
+			return owner_ui.battle_start_primary_root
 		_:
 			return null
 
@@ -757,6 +787,8 @@ func _get_primary_panel(root_id: StringName) -> Control:
 			return owner_ui.warehouse_primary_panel
 		&"board_edit":
 			return owner_ui.board_edit_primary_panel
+		&"battle_start":
+			return owner_ui.battle_start_primary_panel
 		_:
 			return null
 
@@ -769,3 +801,11 @@ func _prepare_primary_menu_open(menu_id: StringName) -> void:
 			upgrade_panel_out()
 		&"warehouse":
 			warehouse_panel_out()
+
+func _find_active_rest_area() -> Node:
+	if owner_ui == null:
+		return null
+	for node in owner_ui.get_tree().get_nodes_in_group("rest_area"):
+		if node and is_instance_valid(node) and node.has_method("is_active") and bool(node.call("is_active")):
+			return node
+	return null
