@@ -8,7 +8,8 @@ var ammo_label: Label
 var weapon_state_label: Label
 var gold_label: Label
 var resource_label: Label
-var time_label: Label
+var time_label: Control
+var battle_time_meter: Control
 var equipped_label: Label
 var augments_label: Label
 var health_meter
@@ -27,6 +28,7 @@ const HEALTH_METER_ORIGIN := Vector2(38.0, 16.0)
 const COMBAT_RESOURCE_METER_SCRIPT := preload("res://UI/scripts/components/combat_resource_meter.gd")
 const PLAYER_HEALTH_METER_SCRIPT := preload("res://UI/scripts/components/player_health_meter.gd")
 const SKILL_ENERGY_METER_SCRIPT := preload("res://UI/scripts/components/skill_energy_meter.gd")
+const BATTLE_TIME_METER_SCRIPT := preload("res://UI/scripts/components/battle_time_meter.gd")
 
 var _continuous_refresh_timer := 0.0
 
@@ -54,7 +56,7 @@ func bind_nodes(
 	p_weapon_state_label: Label,
 	p_gold_label: Label,
 	p_resource_label: Label,
-	p_time_label: Label,
+	p_time_label: Control,
 	p_equipped_label: Label,
 	p_augments_label: Label
 ) -> void:
@@ -68,6 +70,7 @@ func bind_nodes(
 	time_label = p_time_label
 	equipped_label = p_equipped_label
 	augments_label = p_augments_label
+	_ensure_battle_time_meter()
 
 func configure_hp_bar_anim(anim_time: float, trans: Tween.TransitionType, ease_type: Tween.EaseType) -> void:
 	_hp_bar_anim_time = anim_time
@@ -88,8 +91,9 @@ func layout_hud(viewport_size: Vector2, hp_label_root: Control, weapon_selector:
 		weapon_state_label.position = Vector2(HUD_MARGIN, viewport_size.y - 300.0)
 	if gold_label and is_instance_valid(gold_label):
 		gold_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN)
-	if time_label and is_instance_valid(time_label):
-		time_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN + 56.0)
+	var time_display := _get_time_display_control()
+	if time_display and is_instance_valid(time_display):
+		time_display.position = Vector2(viewport_size.x * 0.5 - 58.0, HUD_MARGIN + 22.0)
 	if resource_label and is_instance_valid(resource_label):
 		resource_label.position = Vector2(64.0, 88.0)
 	if combat_resource_slot_container and is_instance_valid(combat_resource_slot_container):
@@ -269,6 +273,34 @@ func refresh_resource() -> void:
 
 func refresh_time() -> void:
 	_refresh_time_text_value()
+
+func _ensure_battle_time_meter() -> Control:
+	if battle_time_meter != null and is_instance_valid(battle_time_meter):
+		return battle_time_meter
+	if time_label == null or not is_instance_valid(time_label):
+		return null
+	if time_label.has_method("set_time"):
+		battle_time_meter = time_label
+		return battle_time_meter
+	var anchor_label := time_label as Label
+	var parent := time_label.get_parent() as Control
+	if parent == null:
+		return null
+	battle_time_meter = BATTLE_TIME_METER_SCRIPT.new() as Control
+	battle_time_meter.name = "BattleTimeMeter"
+	battle_time_meter.position = time_label.position
+	battle_time_meter.visible = false
+	parent.add_child(battle_time_meter)
+	if anchor_label != null:
+		anchor_label.visible = false
+		anchor_label.text = ""
+	return battle_time_meter
+
+func _get_time_display_control() -> Control:
+	var meter := _ensure_battle_time_meter()
+	if meter != null and is_instance_valid(meter):
+		return meter
+	return time_label
 
 func _clear_text_cache() -> void:
 	_last_hp_text = ""
@@ -726,12 +758,21 @@ func _update_skill_energy_meter(current_energy: float, max_energy: float, skill_
 	energy_meter.call("set_cooldown_ratio", cooldown_ratio)
 
 func _refresh_time_text_value() -> void:
-	if time_label and is_instance_valid(time_label):
-		var time_remaining := PhaseManager.get_battle_time_remaining() if PhaseManager.has_method("get_battle_time_remaining") else PhaseManager.battle_time
+	var time_display := _get_time_display_control()
+	if time_display == null or not is_instance_valid(time_display):
+		return
+	var time_remaining := PhaseManager.get_battle_time_remaining() if PhaseManager.has_method("get_battle_time_remaining") else PhaseManager.battle_time
+	var time_duration := maxi(int(PhaseManager.time_out), 1) if PhaseManager != null else 1
+	var phase := PhaseManager.current_state() if PhaseManager.has_method("current_state") else str(PhaseManager.phase)
+	var next_signature := "%s:%d:%d" % [phase, time_remaining, time_duration]
+	if _last_time_text == next_signature:
+		return
+	_last_time_text = next_signature
+	if time_display.has_method("set_time"):
+		time_display.call("set_time", time_remaining, time_duration, phase)
+	elif time_display is Label:
 		var next_time_text := LocalizationManager.tr_format("ui.hud.time", {"value": time_remaining}, "Time Left: %s" % str(time_remaining))
-		if _last_time_text != next_time_text:
-			_last_time_text = next_time_text
-			time_label.text = next_time_text
+		(time_display as Label).text = next_time_text
 
 func refresh_heat_fallback_text() -> void:
 	if heat_label and is_instance_valid(heat_label) and not heat_label.visible:

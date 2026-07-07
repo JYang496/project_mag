@@ -75,7 +75,7 @@ static func collect_startup_catalog_paths(
 		if not path.to_lower().ends_with(extension):
 			errors.append("%s path has unexpected extension: %s" % [domain, path])
 			continue
-		if not FileAccess.file_exists(path):
+		if not ResourceLoader.exists(path):
 			errors.append("%s missing resource: %s" % [domain, path])
 			continue
 		paths.append(path)

@@ -238,7 +238,6 @@ func _on_post_battle_collect_gate_changed(blocking: bool) -> void:
 	if blocking:
 		_refresh_interaction_state()
 		return
-	_reset_prepare_state(true)
 	_start_zone_hint_intro()
 	_refresh_interaction_state()
 	queue_redraw()
@@ -300,7 +299,7 @@ func _enter_prepare_phase() -> void:
 	_set_active(true, false)
 	_set_camera_owner_active(true)
 	call_deferred("_ensure_camera_owner_binding")
-	_reset_prepare_state(not PhaseManager.is_post_battle_collect_gate_active())
+	_reset_prepare_state(true)
 	_start_zone_hint_intro()
 	_refresh_interaction_state()
 	if _start_battle_button:

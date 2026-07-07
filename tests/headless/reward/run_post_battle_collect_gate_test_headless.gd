@@ -2,11 +2,16 @@ extends Node
 
 const UI_SCENE := preload("res://UI/scenes/UI.tscn")
 const PLAYER_SCENE := preload("res://Player/Mechas/scenes/Player.tscn")
+const REST_AREA_SCENE := preload("res://World/rest_area.tscn")
+const BOARD_GENERATOR_SCRIPT := preload("res://World/board_cell_generator.gd")
+const CELL_SCENE := preload("res://Board/Cells/cell.tscn")
 
 var _failures: PackedStringArray = []
 var _ui: UI
 var _player: Player
 var _reward_manager: BonusManager
+var _board: BoardCellGenerator
+var _rest_area: RestArea
 
 func _ready() -> void:
 	call_deferred("_run")
@@ -16,10 +21,8 @@ func _run() -> void:
 	DataHandler.load_weapon_data()
 	DataHandler.load_weapon_branch_data()
 	DataHandler.load_economy_data()
-	PhaseManager.phase = PhaseManager.PREPARE
-	PhaseManager.begin_post_battle_collect_gate(5.0)
-	_expect(PhaseManager.is_post_battle_collect_gate_active(), "expected collect gate to be active")
-	_expect(TaskRewardManager.is_reward_blocking_interactions(), "expected collect gate to block rest rewards")
+	PhaseManager.post_battle_collect_gate_timeout_sec = 5.0
+	PhaseManager.phase = PhaseManager.BATTLE
 
 	_player = PLAYER_SCENE.instantiate() as Player
 	add_child(_player)
@@ -32,9 +35,36 @@ func _run() -> void:
 	await get_tree().process_frame
 	GlobalVariables.ui = _ui
 
+	_board = BOARD_GENERATOR_SCRIPT.new() as BoardCellGenerator
+	_board.name = "Board"
+	_board.cell_scene = CELL_SCENE
+	add_child(_board)
+	await get_tree().process_frame
+
+	_rest_area = REST_AREA_SCENE.instantiate() as RestArea
+	_rest_area.name = "RestArea"
+	_rest_area.board_path = NodePath("../Board")
+	add_child(_rest_area)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
 	_reward_manager = BonusManager.new()
 	add_child(_reward_manager)
 	await get_tree().process_frame
+
+	var rest_center := _rest_area.get_spawn_position()
+	_player.global_position = rest_center + Vector2(180.0, 0.0)
+	PhaseManager.phase = PhaseManager.PREPARE
+	PhaseManager.begin_post_battle_collect_gate(5.0)
+	_rest_area.call("_on_phase_changed", PhaseManager.PREPARE)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	_expect(PhaseManager.is_post_battle_collect_gate_active(), "expected collect gate to be active")
+	_expect(TaskRewardManager.is_reward_blocking_interactions(), "expected collect gate to block rest rewards")
+	_expect(_player.is_auto_nav_active(), "player should auto-navigate to rest center while collect gate is active")
+	_expect(not bool(_player.movement_enabled), "manual player movement should remain disabled during collect gate auto-navigation")
+	_expect(_player.moveto_dest.distance_to(rest_center) <= 1.0, "auto-navigation target should be rest center")
 
 	var reward := RewardInfo.new()
 	reward.gold_value = 1
