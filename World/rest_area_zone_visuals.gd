@@ -5,6 +5,10 @@ const ZONE_ID_UPGRADE := 1
 const ZONE_ID_WAREHOUSE := 2
 const ZONE_ID_BOARD_EDIT := 6
 const ZONE_ID_START_BATTLE := 4
+const PURCHASE_PROP_TEXTURE: Texture2D = preload("res://asset/images/ui/rest_area/purchase_shop.png")
+const UPGRADE_PROP_TEXTURE: Texture2D = preload("res://asset/images/ui/rest_area/upgrade_gunsmith.png")
+const WAREHOUSE_PROP_TEXTURE: Texture2D = preload("res://asset/images/ui/rest_area/warehouse_armory.png")
+const BOARD_PROP_TEXTURE: Texture2D = preload("res://asset/images/ui/rest_area/board_tactical.png")
 const VISUAL_ZONE_IDS: Array[int] = [
 	ZONE_ID_PURCHASE,
 	ZONE_ID_UPGRADE,
@@ -63,10 +67,65 @@ func _draw_zone_visual(zone_id: int, rect: Rect2, hovered: bool, selected: bool)
 	elif selected:
 		alpha = 0.28
 	_draw_ground_mark(zone_id, center, ground_radius, Color(color.r, color.g, color.b, alpha))
-	_draw_prop(zone_id, rect, color, hovered, selected)
-	_draw_icon(zone_id, center + Vector2(0.0, -min_side * 0.18), min_side * 0.10, color, hovered or selected)
+	if _has_service_prop_texture(zone_id):
+		_draw_service_prop_texture(zone_id, rect, color, hovered, selected)
+	else:
+		_draw_prop(zone_id, rect, color, hovered, selected)
+		_draw_icon(zone_id, center + Vector2(0.0, -min_side * 0.18), min_side * 0.10, color, hovered or selected)
 	if hovered or selected:
 		_draw_selection_effect(center, ground_radius, color, hovered, selected)
+
+func _has_service_prop_texture(zone_id: int) -> bool:
+	return zone_id == ZONE_ID_PURCHASE or zone_id == ZONE_ID_UPGRADE or zone_id == ZONE_ID_WAREHOUSE or zone_id == ZONE_ID_BOARD_EDIT
+
+func _get_service_prop_texture(zone_id: int) -> Texture2D:
+	match zone_id:
+		ZONE_ID_PURCHASE:
+			return PURCHASE_PROP_TEXTURE
+		ZONE_ID_UPGRADE:
+			return UPGRADE_PROP_TEXTURE
+		ZONE_ID_WAREHOUSE:
+			return WAREHOUSE_PROP_TEXTURE
+		ZONE_ID_BOARD_EDIT:
+			return BOARD_PROP_TEXTURE
+	return null
+
+func _draw_service_prop_texture(zone_id: int, rect: Rect2, color: Color, hovered: bool, selected: bool) -> void:
+	var texture := _get_service_prop_texture(zone_id)
+	if texture == null:
+		return
+	var center := rect.get_center()
+	var min_side := minf(rect.size.x, rect.size.y)
+	var scale := 0.68
+	if hovered:
+		scale = 0.76
+	elif selected:
+		scale = 0.72
+	var asset_size := Vector2.ONE * min_side * scale
+	var texture_rect := Rect2(center - asset_size * 0.5 + Vector2(0.0, -min_side * 0.03), asset_size)
+	var shadow_rect := Rect2(
+		center + Vector2(-asset_size.x * 0.35, asset_size.y * 0.22),
+		Vector2(asset_size.x * 0.70, maxf(4.0, asset_size.y * 0.10))
+	)
+	_draw_shadow_ellipse(shadow_rect, Color(0.0, 0.0, 0.0, 0.24 if hovered or selected else 0.16))
+	var alpha := 0.92
+	if hovered:
+		alpha = 1.0
+	elif selected:
+		alpha = 0.98
+	draw_texture_rect(texture, texture_rect, false, Color(1.0, 1.0, 1.0, alpha))
+	if hovered or selected:
+		var glow_rect := texture_rect.grow(min_side * 0.03)
+		draw_rect(glow_rect, Color(color.r, color.g, color.b, 0.20), false, 2.0)
+
+func _draw_shadow_ellipse(rect: Rect2, color: Color) -> void:
+	var center := rect.get_center()
+	var radius := rect.size * 0.5
+	var points := PackedVector2Array()
+	for idx in range(24):
+		var angle := TAU * float(idx) / 24.0
+		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
+	draw_colored_polygon(points, color)
 
 func _draw_ground_mark(zone_id: int, center: Vector2, radius: float, color: Color) -> void:
 	match zone_id:

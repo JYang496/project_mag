@@ -127,6 +127,19 @@ func _populate_damage_result(result: DamageResult, target: Node, data: DamageDat
 		result.final_damage = max(0, int(data.amount))
 	if target != null and is_instance_valid(target) and target.get("is_dead") != null:
 		result.killed = bool(target.get("is_dead"))
+	_play_player_weapon_hit_feedback(target, data, result)
+
+
+func _play_player_weapon_hit_feedback(target: Node, data: DamageData, result: DamageResult) -> void:
+	if data.source_category != DamageData.SOURCE_PLAYER_WEAPON:
+		return
+	if result == null or result.final_damage <= 0:
+		return
+	var source_weapon := resolve_source_weapon(data.source_node)
+	if source_weapon == null:
+		return
+	if source_weapon.has_method("play_hit_feedback"):
+		source_weapon.call("play_hit_feedback", target)
 
 
 func _read_target_hp(target: Node) -> Variant:

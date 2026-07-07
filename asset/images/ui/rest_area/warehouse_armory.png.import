@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cdoh3f46p4lls"
-path="res://.godot/imported/bullet.png-2303c3775d335616917d42271cdebed3.ctex"
+uid="uid://bxxqbyxc8c20b"
+path="res://.godot/imported/warehouse_armory.png-fdad1e27933d2b34a3b247e47ba8c95a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://asset/images/test/bullet.png"
-dest_files=["res://.godot/imported/bullet.png-2303c3775d335616917d42271cdebed3.ctex"]
+source_file="res://asset/images/ui/rest_area/warehouse_armory.png"
+dest_files=["res://.godot/imported/warehouse_armory.png-fdad1e27933d2b34a3b247e47ba8c95a.ctex"]
 
 [params]
 

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bti7r07ljp64d" path="res://UI/scripts/UI.gd" id="1_y6r0f"]
 [ext_resource type="Texture2D" uid="uid://cvg2x8vpjf05m" path="res://asset/images/ui/status frame.png" id="3_dqn0w"]
+[ext_resource type="Script" path="res://UI/scripts/components/gold_hud_display.gd" id="4_gold"]
 [ext_resource type="Script" uid="uid://d0l44sn57n767" path="res://UI/scripts/weapon_selector.gd" id="19_wsel"]
 [ext_resource type="Texture2D" uid="uid://btuvlcm8esh3v" path="res://asset/images/ui/mainhand.png" id="20_mainh"]
 [ext_resource type="Texture2D" uid="uid://6nk1oq1063xs" path="res://asset/images/ui/offhand.png" id="21_offh"]
@@ -236,9 +237,9 @@ show_percentage = false
 layout_mode = 0
 offset_left = 461.0
 offset_top = 2.0
-offset_right = 561.0
-offset_bottom = 35.0
-text = "Gold"
+offset_right = 615.0
+offset_bottom = 40.0
+script = ExtResource("4_gold")
 
 [node name="Resource" type="Label" parent="GUI/CharacterRoot" unique_id=1404810870]
 layout_mode = 0

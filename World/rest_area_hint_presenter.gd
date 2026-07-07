@@ -187,7 +187,16 @@ func _update_hud_zone_hint() -> void:
 	if zone_id < 0:
 		_clear_hud_zone_hint()
 		return
-	ui.call("set_rest_area_hover_hint", _build_hud_zone_hint_text(zone_id))
+	var text := _build_hud_zone_hint_text(zone_id)
+	if ui.has_method("set_rest_area_hover_hint_at_world"):
+		ui.call("set_rest_area_hover_hint_at_world", text, _get_zone_hint_anchor_world(zone_id))
+	else:
+		ui.call("set_rest_area_hover_hint", text)
+
+func _get_zone_hint_anchor_world(zone_id: int) -> Vector2:
+	if _is_owner_valid() and _owner.has_method("_get_zone_center_global"):
+		return _owner.call("_get_zone_center_global", zone_id) as Vector2
+	return Vector2.ZERO
 
 func _clear_hud_zone_hint() -> void:
 	var ui := _get_ui()

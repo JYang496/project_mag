@@ -5,6 +5,7 @@ const MuzzleFlashVfxScript := preload("res://Player/Weapons/Feedback/muzzle_flas
 
 var weapon: Node2D
 var _last_feedback_msec: int = -1000000
+var _last_hit_feedback_msec: int = -1000000
 var _sprite_tween: Tween
 var _fuse_tween: Tween
 var _sprite_base_position := Vector2.ZERO
@@ -19,7 +20,7 @@ func setup(source_weapon: Node2D) -> void:
 	weapon = source_weapon
 
 
-func play(profile: Resource, direction: Vector2 = Vector2.ZERO) -> bool:
+func play(profile: Resource, direction: Vector2 = Vector2.ZERO, play_audio: bool = true) -> bool:
 	if weapon == null or not is_instance_valid(weapon):
 		return false
 	if profile == null:
@@ -33,7 +34,38 @@ func play(profile: Resource, direction: Vector2 = Vector2.ZERO) -> bool:
 	_spawn_muzzle_flash(profile, resolved_direction)
 	_play_recoil(profile, resolved_direction)
 	_request_camera_shake(profile)
+	if play_audio:
+		_play_fire_audio(profile)
 	weapon.set_meta(&"_last_fire_feedback_msec", now)
+	return true
+
+
+func play_hit(profile: Resource, target: Node = null) -> bool:
+	if weapon == null or not is_instance_valid(weapon):
+		return false
+	if profile == null:
+		return false
+	var stream := profile.get("hit_audio_stream") as AudioStream
+	if stream == null:
+		return false
+	var now := Time.get_ticks_msec()
+	var cooldown_msec := int(round(maxf(float(profile.get("hit_feedback_cooldown_sec")), 0.0) * 1000.0))
+	if cooldown_msec > 0 and now - _last_hit_feedback_msec < cooldown_msec:
+		return false
+	_last_hit_feedback_msec = now
+	var audio_position := weapon.global_position
+	if target is Node2D and is_instance_valid(target):
+		audio_position = (target as Node2D).global_position
+	_play_audio_stream(
+		stream,
+		audio_position,
+		float(profile.get("hit_audio_volume_db")),
+		float(profile.get("hit_audio_pitch_scale")),
+		float(profile.get("hit_audio_pitch_random")),
+		float(profile.get("audio_max_distance")),
+		float(profile.get("audio_attenuation"))
+	)
+	weapon.set_meta(&"_last_hit_feedback_msec", now)
 	return true
 
 
@@ -152,3 +184,45 @@ func _request_camera_shake(profile: Resource) -> void:
 	if not PlayerData.player.has_method("request_camera_shake"):
 		return
 	PlayerData.player.call("request_camera_shake", camera_trauma, weapon.global_position, float(profile.get("camera_max_distance")))
+
+
+func _play_fire_audio(profile: Resource) -> void:
+	var stream := profile.get("fire_audio_stream") as AudioStream
+	if stream == null:
+		return
+	_play_audio_stream(
+		stream,
+		_get_muzzle_global_position(_resolve_direction(Vector2.ZERO)),
+		float(profile.get("fire_audio_volume_db")),
+		float(profile.get("fire_audio_pitch_scale")),
+		float(profile.get("fire_audio_pitch_random")),
+		float(profile.get("audio_max_distance")),
+		float(profile.get("audio_attenuation"))
+	)
+
+
+func _play_audio_stream(
+	stream: AudioStream,
+	audio_position: Vector2,
+	volume_db: float,
+	pitch_scale: float,
+	pitch_random: float,
+	max_distance: float,
+	attenuation: float
+) -> void:
+	if stream == null:
+		return
+	var tree := weapon.get_tree()
+	if tree == null:
+		return
+	var player := AudioStreamPlayer2D.new()
+	player.stream = stream
+	player.global_position = audio_position
+	player.volume_db = volume_db
+	player.pitch_scale = maxf(pitch_scale + randf_range(-absf(pitch_random), absf(pitch_random)), 0.05)
+	player.max_distance = maxf(max_distance, 1.0)
+	player.attenuation = maxf(attenuation, 0.0)
+	player.bus = "Master"
+	tree.root.add_child(player)
+	player.finished.connect(Callable(player, "queue_free"))
+	player.play()

@@ -1,7 +1,9 @@
-[gd_resource type="Resource" script_class="WeaponFireFeedbackProfile" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="WeaponFireFeedbackProfile" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://Player/Weapons/Feedback/weapon_fire_feedback_profile.gd" id="1_profile"]
 [ext_resource type="PackedScene" path="res://Player/Weapons/Feedback/muzzle_flash_light.tscn" id="2_flash"]
+[ext_resource type="AudioStream" path="res://asset/sounds/01_extremely_small_firepower_single.wav" id="3_fire"]
+[ext_resource type="AudioStream" path="res://asset/sounds/01_enemy_hit_tiny.wav" id="4_hit"]
 
 [resource]
 script = ExtResource("1_profile")
@@ -14,3 +16,8 @@ camera_trauma = 0.006
 camera_max_distance = 700.0
 feedback_cooldown_sec = 0.025
 fire_category = &"projectile_light"
+fire_audio_stream = ExtResource("3_fire")
+fire_audio_volume_db = -12.0
+hit_audio_stream = ExtResource("4_hit")
+hit_audio_volume_db = -13.0
+hit_feedback_cooldown_sec = 0.035

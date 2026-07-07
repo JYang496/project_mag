@@ -3,6 +3,10 @@ class_name HintPresenter
 
 const HUD_MARGIN := 16.0
 const REST_HINT_SIZE := Vector2(320, 44)
+const REST_HINT_WORLD_SIZE := Vector2(156, 44)
+const REST_HINT_WORLD_MAX_WIDTH := 220.0
+const REST_HINT_WORLD_FONT_SIZE := 18
+const REST_HINT_WORLD_MIN_FONT_SIZE := 14
 const REST_HINT_TOP_MARGIN := 88.0
 const REST_ZONE_HINT_SIZE := Vector2(240, 30)
 
@@ -111,6 +115,8 @@ func set_rest_area_zone_hints_at_world(hints: Array) -> void:
 func set_rest_area_hover_hint(text: String) -> void:
 	ensure_rest_area_hover_hint()
 	hide_rest_area_zone_hint_labels()
+	rest_area_hover_hint_label.add_theme_font_size_override("font_size", REST_HINT_WORLD_FONT_SIZE)
+	rest_area_hover_hint_label.size = REST_HINT_SIZE
 	rest_area_hover_hint_label.text = text
 	rest_area_hover_hint_label.visible = text.strip_edges() != ""
 	rest_area_hover_hint_use_world_anchor = false
@@ -122,11 +128,31 @@ func set_rest_area_hover_hint(text: String) -> void:
 func set_rest_area_hover_hint_at_world(text: String, world_pos: Vector2) -> void:
 	ensure_rest_area_hover_hint()
 	hide_rest_area_zone_hint_labels()
+	_fit_rest_area_hover_hint_to_world_text(text)
 	rest_area_hover_hint_label.text = text
 	rest_area_hover_hint_label.visible = text.strip_edges() != ""
 	rest_area_hover_hint_anchor_world = world_pos
 	rest_area_hover_hint_use_world_anchor = rest_area_hover_hint_label.visible
 	update_rest_area_hover_hint_position()
+
+func _fit_rest_area_hover_hint_to_world_text(text: String) -> void:
+	var font_size := REST_HINT_WORLD_FONT_SIZE
+	var text_width := _measure_rest_area_hover_hint_text(text, font_size)
+	var max_text_width := REST_HINT_WORLD_MAX_WIDTH - 20.0
+	while text_width > max_text_width and font_size > REST_HINT_WORLD_MIN_FONT_SIZE:
+		font_size -= 1
+		text_width = _measure_rest_area_hover_hint_text(text, font_size)
+	rest_area_hover_hint_label.add_theme_font_size_override("font_size", font_size)
+	rest_area_hover_hint_label.size = Vector2(
+		clampf(text_width + 24.0, REST_HINT_WORLD_SIZE.x, REST_HINT_WORLD_MAX_WIDTH),
+		REST_HINT_WORLD_SIZE.y
+	)
+
+func _measure_rest_area_hover_hint_text(text: String, font_size: int) -> float:
+	var font := rest_area_hover_hint_label.get_theme_font("font")
+	if font == null:
+		return float(text.length() * font_size)
+	return font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size).x
 
 func clear_rest_area_hover_hint() -> void:
 	hide_rest_area_zone_hint_labels()
@@ -173,7 +199,7 @@ func update_rest_area_hover_hint_position() -> void:
 		var screen_pos := viewport.get_canvas_transform() * rest_area_hover_hint_anchor_world
 		var pos := Vector2(
 			screen_pos.x - rest_area_hover_hint_label.size.x * 0.5,
-			screen_pos.y - rest_area_hover_hint_label.size.y - 10.0
+			screen_pos.y - rest_area_hover_hint_label.size.y * 0.5
 		)
 		var max_x := maxf(0.0, viewport_size.x - rest_area_hover_hint_label.size.x - 8.0)
 		var max_y := maxf(0.0, viewport_size.y - rest_area_hover_hint_label.size.y - 8.0)

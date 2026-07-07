@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bw0hnnd44woxg"
-path="res://.godot/imported/empty_wp.png-098baedcb693896eccec7313c709e9cb.ctex"
+uid="uid://do0rw6ei5n4my"
+path="res://.godot/imported/upgrade_gunsmith.png-50f7c9bb49118dbe8b05080d5633cb35.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://asset/images/test/empty_wp.png"
-dest_files=["res://.godot/imported/empty_wp.png-098baedcb693896eccec7313c709e9cb.ctex"]
+source_file="res://asset/images/ui/rest_area/upgrade_gunsmith.png"
+dest_files=["res://.godot/imported/upgrade_gunsmith.png-50f7c9bb49118dbe8b05080d5633cb35.ctex"]
 
 [params]
 

@@ -192,7 +192,22 @@ func play_fire_feedback(direction: Vector2 = Vector2.ZERO) -> bool:
 	if fire_feedback_player == null:
 		fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
 		fire_feedback_player.setup(self)
-	return fire_feedback_player.play(fire_feedback_profile, direction)
+	return fire_feedback_player.play(fire_feedback_profile, direction, _should_play_weapon_audio_feedback())
+
+func play_hit_feedback(target: Node = null) -> bool:
+	if fire_feedback_profile == null:
+		return false
+	if not _should_play_weapon_audio_feedback():
+		return false
+	if fire_feedback_player == null:
+		fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
+		fire_feedback_player.setup(self)
+	if not fire_feedback_player.has_method("play_hit"):
+		return false
+	return fire_feedback_player.play_hit(fire_feedback_profile, target)
+
+func _should_play_weapon_audio_feedback() -> bool:
+	return has_delivery_type(DELIVERY_PROJECTILE)
 
 func get_fire_feedback_direction() -> Vector2:
 	return Vector2.RIGHT.rotated(global_rotation)

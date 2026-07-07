@@ -26,8 +26,8 @@ animations = [{
 "texture": ExtResource("5_frame4")
 }],
 "loop": true,
-"name": &"shine",
-"speed": 6.0
+"name": &"flip",
+"speed": 10.0
 }]
 
 [node name="Coin" type="Area2D" groups=["collectables"]]
@@ -37,8 +37,7 @@ script = ExtResource("1_ncwku")
 texture_filter = 2
 scale = Vector2(0.75, 0.75)
 sprite_frames = SubResource("SpriteFrames_coin")
-animation = &"shine"
-autoplay = "shine"
+animation = &"flip"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_otdol")

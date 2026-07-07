@@ -83,6 +83,8 @@ func _start_flight_animation() -> void:
 	var start_rotation := float(drop_instance.rotation)
 	var tween := create_tween()
 	flight_started.emit()
+	if drop_instance.has_method("start_drop_flip"):
+		drop_instance.call("start_drop_flip")
 	tween.tween_method(_set_flight_progress, 0.0, 1.0, duration)\
 		.set_trans(Tween.TRANS_SINE)\
 		.set_ease(Tween.EASE_IN_OUT)

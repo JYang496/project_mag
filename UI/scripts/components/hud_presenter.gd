@@ -678,10 +678,13 @@ func _refresh_inventory_text_values() -> void:
 			_last_augments_text = next_augments_text
 			augments_label.text = next_augments_text
 	if gold_label and is_instance_valid(gold_label):
-		var next_gold_text := LocalizationManager.tr_format("ui.hud.gold", {"value": PlayerData.player_gold}, "Gold: %s" % str(PlayerData.player_gold))
+		var next_gold_text := str(PlayerData.player_gold)
 		if _last_gold_text != next_gold_text:
 			_last_gold_text = next_gold_text
-			gold_label.text = next_gold_text
+			if gold_label.has_method("set_gold_value"):
+				gold_label.call("set_gold_value", PlayerData.player_gold, true)
+			else:
+				gold_label.text = LocalizationManager.tr_format("ui.hud.gold", {"value": PlayerData.player_gold}, "Gold: %s" % str(PlayerData.player_gold))
 
 func _refresh_resource_text_value() -> void:
 	if resource_label and is_instance_valid(resource_label):
