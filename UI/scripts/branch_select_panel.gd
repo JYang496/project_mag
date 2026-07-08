@@ -180,7 +180,11 @@ func _build_branch_card(def: WeaponBranchDefinition) -> Button:
 	fuse_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	fuse_label.add_theme_font_size_override("font_size", 12)
 	fuse_label.add_theme_color_override("font_color", _get_branch_accent(def))
-	fuse_label.text = "FUSE %d" % int(def.unlock_fuse)
+	fuse_label.text = LocalizationManager.tr_format(
+		"ui.weapon.fuse_value",
+		{"fuse": int(def.unlock_fuse)},
+		"Fuse %d" % int(def.unlock_fuse)
+	).to_upper()
 	vbox.add_child(fuse_label)
 
 	return button

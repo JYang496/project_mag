@@ -631,7 +631,7 @@ offset_top = 16.0
 offset_right = -28.0
 offset_bottom = 44.0
 grow_horizontal = 2
-text = "Start Battle"
+text = "ui.rest.zone.battle.title"
 vertical_alignment = 1
 
 [node name="SubTitle" type="Label" parent="GUI/BattleStartRoot/PrimaryMenuRoot/Panel"]
@@ -643,7 +643,7 @@ offset_top = 48.0
 offset_right = -28.0
 offset_bottom = 76.0
 grow_horizontal = 2
-text = "Leave the rest area and begin the next fight."
+text = "ui.rest.zone.battle.subtitle"
 vertical_alignment = 1
 
 [node name="StartBattleButton" type="Button" parent="GUI/BattleStartRoot/PrimaryMenuRoot/Panel"]
@@ -652,7 +652,7 @@ offset_left = 28.0
 offset_top = 108.0
 offset_right = 248.0
 offset_bottom = 154.0
-text = "Start battle"
+text = "ui.dialog.action.start_battle"
 
 [node name="PauseMenuRoot" type="Control" parent="GUI" unique_id=1775346363]
 process_mode = 2

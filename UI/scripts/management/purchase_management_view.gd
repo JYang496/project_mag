@@ -213,7 +213,11 @@ func _fill_weapon_detail(item_data: Dictionary) -> void:
 		for branch_def in branches:
 			var branch_name := LocalizationManager.get_branch_display_name(branch_def)
 			var branch_desc := LocalizationManager.get_branch_description(branch_def)
-			var unlock_text := "Fuse %d" % int(branch_def.unlock_fuse)
+			var unlock_text := LocalizationManager.tr_format(
+				"ui.weapon.fuse_value",
+				{"fuse": int(branch_def.unlock_fuse)},
+				"Fuse %d" % int(branch_def.unlock_fuse)
+			)
 			_add_detail_text("%s  [%s]\n%s" % [branch_name, unlock_text, branch_desc])
 
 func _fill_module_detail(item_data: Dictionary) -> void:

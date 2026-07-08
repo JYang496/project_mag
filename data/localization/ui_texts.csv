@@ -92,9 +92,11 @@ ui.reward.default,Reward,奖励
 ui.reward.weapon,Weapon {id} Lv.{level},武器 {id} Lv.{level}
 ui.reward.weapon_upgrade,Upgrade {name} Lv.{from} -> Lv.{to},升级 {name} Lv.{from} -> Lv.{to}
 ui.reward.module,Module {name} Lv.{level},模组 {name} Lv.{level}
+ui.reward.type.weapon_upgrade,Weapon Upgrade,武器升级
 ui.reward.type.weapon_fusion,Weapon Fusion,武器融合
 ui.reward.type.duplicate_weapon,Duplicate Weapon,重复武器
 ui.reward.meta.weapon_fuse,Fuse {from} -> {to},融合 {from} -> {to}
+ui.reward.meta.equipped_weapon_upgrade,Equipped weapon upgrade: Lv.{from} -> Lv.{to},已装备武器升级：Lv.{from} -> Lv.{to}
 ui.reward.meta.duplicate_gold,+{gold} Gold / Duplicate,+{gold} 金币 / 重复
 ui.task_reward.title,Objective Reward,任务奖励
 ui.task_reward.source,Completed Objective,已完成任务
@@ -139,12 +141,12 @@ ui.weapon.sell_disabled,Weapon selling has been replaced by the weapon warehouse
 ui.reward.exp,EXP +{value},经验 +{value}
 ui.reward.gold,Gold +{value},金币 +{value}
 ui.reward.message,Reward: {content},奖励：{content}
-ui.reward.outcome.weapon_upgrade,Upgrade equipped weapon,升级已装备武器
-ui.reward.outcome.weapon_fuse,Fuse equipped {name} to Fuse {fuse},融合已装备 {name} 到融合 {fuse}
+ui.reward.outcome.weapon_upgrade,Upgrade equipped weapon level,升级已装备武器等级
+ui.reward.outcome.weapon_fuse,Fuse equipped {name} to Fuse {fuse}; choose a branch next if one is available,融合已装备 {name} 到融合 {fuse}；如有新分支，将继续选择分支
 ui.reward.outcome.duplicate_gold,Duplicate {name} converts to +{gold} Gold,重复 {name} 转为 +{gold} 金币
 ui.reward.outcome.cell_effect,Added to cell effects,已加入格子效果
 ui.reward.outcome.task_module,Added to Ready To Install,已加入待部署
-ui.reward.outcome.weapon_obtain,Auto equip / fuse / store,自动装备 / 融合 / 入库
+ui.reward.outcome.weapon_obtain,Obtain new weapon,获得新武器
 ui.reward.outcome.module_obtain,Added to temporary modules,已加入临时模组
 ui.reward.outcome.resource,Added to resources,已加入资源
 ui.module.title,Equip Module,装备模组
@@ -384,7 +386,10 @@ ui.weapon.warehouse.drop_stored_exchange,Drop a stored weapon on a held weapon t
 ui.weapon.location.equipped,Held weapon,持有武器
 ui.weapon.location.stored,Stored weapon,仓库武器
 ui.weapon.meta.level_fuse,Lv.{level}/{max}  Fuse {fuse},Lv.{level}/{max}  融合 {fuse}
+ui.weapon.meta.level_fuse_mods,Lv.{level}/{max}  Fuse {fuse}  Mods {modules}/{module_max},Lv.{level}/{max}  融合 {fuse}  模组 {modules}/{module_max}
+ui.weapon.meta.upgrade_header,[{rarity}] {name}  Fuse {fuse}  Lv.{level}/{max},[{rarity}] {name}  融合 {fuse}  Lv.{level}/{max}
 ui.weapon.fuse,Fuse,融合
+ui.weapon.fuse_value,Fuse {fuse},融合 {fuse}
 ui.weapon.modules,Modules,模组
 ui.module.action.unequip,Unequip Module,卸下模组
 ui.module.warehouse.title,Module Warehouse,模组仓库
@@ -438,16 +443,18 @@ ui.inventory.obtain,Obtained {name} Lv.{level},获得 {name} Lv.{level}
 ui.inventory.upgrade,Upgraded {name} to Lv.{level},升级 {name} 到 Lv.{level}
 ui.inventory.convert,Converted duplicate {name} into +{gold} Gold,重复 {name} 已转换为 +{gold} 金币
 ui.inventory.unclaimed_module_sold,Unclaimed {name} sold for +{gold} Gold,未拾取的 {name} 已自动出售，获得 +{gold} 金币
-ui.weapon.duplicate.fuse_up,Duplicate {name} reinforced to Fuse {fuse},重复 {name} 强化至 融合{fuse}
+ui.weapon.duplicate.fuse_up,Duplicate {name} fused to Fuse {fuse},重复 {name} 已融合至 {fuse}
 ui.weapon.duplicate.convert,Duplicate {name} converted to +{gold} Gold,重复 {name} 已转换为 +{gold} 金币
 ui.weapon.obtain_preview.new,New weapon,新武器
-ui.weapon.obtain_preview.fuse,{name} -> Fuse {fuse},{name} -> 融合{fuse}
+ui.weapon.obtain_preview.fuse,{name} -> Fuse {fuse},{name} -> 融合 {fuse}
 ui.weapon.obtain_preview.gold,{name} -> +{gold} Gold,{name} -> +{gold} 金币
 ui.weapon.obtain_preview.new_named,Obtain new {name},获得新武器 {name}
-ui.weapon.obtain_preview.fuse_branch,{name}: Add Fuse {fuse} trait; choose a branch to continue,{name}：添加融合{fuse}特性，选择分支后继续
-ui.weapon.obtain_preview.fuse_no_branch,{name}: Add Fuse {fuse} trait; no branch available,{name}：添加融合{fuse}特性，无可选分支
+ui.weapon.obtain_preview.new_equip,Obtain new {name}; equips to an empty slot,获得新武器 {name}；将装备到空槽
+ui.weapon.obtain_preview.new_replace,Obtain new {name}; choose replace or store next,获得新武器 {name}；确认后选择替换或入库
+ui.weapon.obtain_preview.fuse_branch,{name}: Fuse {from} -> {to}; choose a branch next if one is available,{name}：融合 {from} -> {to}；如有新分支，将继续选择分支
+ui.weapon.obtain_preview.fuse_no_branch,{name}: Fuse {from} -> {to}; choose a branch next if one is available,{name}：融合 {from} -> {to}；如有新分支，将继续选择分支
 ui.weapon.obtain_preview.gold_action,{name}: Fuse maxed; convert to +{gold} Gold,{name}：融合已满，转为 +{gold} 金币
-ui.upgrade.need_duplicate,Duplicate weapons add fuse traits and branch choices.,重复武器会增加 fuse 特性和分支选择。
+ui.upgrade.need_duplicate,Duplicate weapons add Fuse traits and branch choices.,重复武器会增加融合特性和分支选择。
 ui.upgrade.fully_upgraded,Fully upgraded.,已完全升级。
 ui.branch.no_options,No evolution branch is configured for this weapon.,该武器尚未配置进化分支。
 ui.branch.missing_weapon,Evolution choice skipped because the weapon is no longer available.,武器已不存在，已跳过进化选择。
@@ -476,6 +483,7 @@ ui.dialog.detail.incoming,Incoming,即将获得
 ui.dialog.detail.discard_slot,Slot {slot},栏位 {slot}
 ui.dialog.action.move_temporary,Move to temporary area,移至临时区域
 ui.dialog.action.start_battle,Start battle,开始战斗
+ui.rest.zone.battle.title,Start Battle,开始战斗
 ui.rest.zone.battle.subtitle,Leave the rest area and begin the next fight.,离开休息区并开始下一场战斗。
 ui.rarity.common,Common,普通
 ui.rarity.rare,Rare,稀有

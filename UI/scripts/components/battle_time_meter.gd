@@ -6,8 +6,6 @@ const NORMAL_FILL := Color(0.36, 0.82, 1.0, 0.95)
 const NORMAL_EDGE := Color(0.70, 0.94, 1.0, 1.0)
 const WARNING_FILL := Color(1.0, 0.67, 0.24, 1.0)
 const WARNING_EDGE := Color(1.0, 0.84, 0.42, 1.0)
-const CRITICAL_FILL := Color(1.0, 0.22, 0.16, 1.0)
-const CRITICAL_EDGE := Color(1.0, 0.45, 0.34, 1.0)
 const BACK_FILL := Color(0.025, 0.035, 0.045, 0.82)
 const BACK_EDGE := Color(0.15, 0.24, 0.28, 0.82)
 const INACTIVE_EDGE := Color(0.30, 0.36, 0.38, 0.65)
@@ -46,12 +44,12 @@ func set_time(remaining: int, duration: int, phase: String) -> void:
 
 func _process(delta: float) -> void:
 	var safe_delta := maxf(delta, 0.0)
-	if _state == &"warning" or _state == &"critical":
+	if _state == &"warning":
 		_pulse_time += safe_delta
 	if _hit_pulse > 0.0:
 		_hit_pulse = maxf(0.0, _hit_pulse - safe_delta * 4.6)
 		_update_digit_label()
-	if visible and (_state == &"warning" or _state == &"critical" or _hit_pulse > 0.0):
+	if visible and (_state == &"warning" or _hit_pulse > 0.0):
 		queue_redraw()
 
 func _draw() -> void:
@@ -63,7 +61,6 @@ func _draw() -> void:
 	_draw_shell(center, radius, edge_color, pulse)
 	_draw_progress_ring(center, radius, fill_color, edge_color, pulse)
 	_draw_tick_marks(center, radius + 6.0, edge_color)
-	_draw_bottom_bar(fill_color, edge_color, pulse)
 
 func _draw_shell(center: Vector2, radius: float, edge_color: Color, pulse: float) -> void:
 	var panel_rect := Rect2(Vector2(7.0, 7.0), Vector2(size.x - 14.0, size.y - 14.0))
@@ -89,13 +86,6 @@ func _draw_tick_marks(center: Vector2, radius: float, edge_color: Color) -> void
 		var color := edge_color if active else INACTIVE_EDGE
 		draw_line(from_point, to_point, color, 1.2)
 
-func _draw_bottom_bar(fill_color: Color, edge_color: Color, pulse: float) -> void:
-	var bar_rect := Rect2(Vector2(18.0, size.y - 13.0), Vector2(size.x - 36.0, 4.0))
-	draw_rect(bar_rect, Color(0.04, 0.06, 0.07, 0.90), true)
-	draw_rect(bar_rect, Color(edge_color.r, edge_color.g, edge_color.b, 0.45 + pulse * 0.24), false, 1.0)
-	if _ratio > 0.0:
-		draw_rect(Rect2(bar_rect.position, Vector2(bar_rect.size.x * _ratio, bar_rect.size.y)), fill_color, true)
-
 func _ensure_digit_label() -> void:
 	if _digit_label != null and is_instance_valid(_digit_label):
 		return
@@ -118,34 +108,26 @@ func _update_digit_label() -> void:
 		return
 	_digit_label.text = str(_remaining)
 	_digit_label.add_theme_color_override("font_color", _edge_color())
-	var scale_value := 1.0 + _hit_pulse * (0.18 if _state == &"critical" else 0.10)
+	var scale_value := 1.0 + _hit_pulse * 0.10
 	_digit_label.pivot_offset = _digit_label.size * 0.5
 	_digit_label.scale = Vector2(scale_value, scale_value)
 
 func _resolve_state() -> StringName:
-	if _remaining <= 5:
-		return &"critical"
 	if _remaining <= 10:
 		return &"warning"
 	return &"normal"
 
 func _fill_color() -> Color:
-	if _state == &"critical":
-		return CRITICAL_FILL
 	if _state == &"warning":
 		return WARNING_FILL
 	return NORMAL_FILL
 
 func _edge_color() -> Color:
-	if _state == &"critical":
-		return CRITICAL_EDGE
 	if _state == &"warning":
 		return WARNING_EDGE
 	return NORMAL_EDGE
 
 func _pulse_strength() -> float:
-	if _state == &"critical":
-		return (sin(_pulse_time * 10.0) + 1.0) * 0.5
 	if _state == &"warning":
 		return (sin(_pulse_time * 6.0) + 1.0) * 0.25
 	return 0.0

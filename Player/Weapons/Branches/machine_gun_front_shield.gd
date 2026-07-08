@@ -5,10 +5,12 @@ class_name MachineGunFrontShield
 @export var block_stun_seconds: float = 0.5
 @export var block_knockback_amount: float = 140.0
 @export_range(10.0, 89.0, 1.0) var block_half_angle_degrees: float = 60.0
-@export var debug_draw_enabled: bool = true
+@export var debug_draw_enabled: bool = false
 @export var debug_arc_radius: float = 60.0
 @export var debug_arc_steps: int = 20
 @export var consume_same_target_cooldown_ms: int = 120
+@export var cracked_texture: Texture2D = preload("res://asset/images/effects/machine_gun_front_shield_cracked.png")
+@export_range(0.05, 1.0, 0.05) var cracked_ratio_threshold: float = 0.35
 
 var weapon: Weapon
 @onready var shield_sprite: Sprite2D = $ShieldSprite
@@ -20,13 +22,19 @@ var _recharge_elapsed: float = 0.0
 var _charge_consumed_frame: int = -1
 var _consumed_target_ids: Dictionary = {}
 var _target_last_consume_ms: Dictionary = {}
+var _intact_texture: Texture2D
+var _base_sprite_modulate: Color = Color(0.45, 0.85, 1.0, 0.55)
 
 func _ready() -> void:
 	# Detach local transform inheritance so shield rotation always matches weapon exactly.
 	top_level = true
+	if shield_sprite:
+		_intact_texture = shield_sprite.texture
+		_base_sprite_modulate = shield_sprite.modulate
 	_refresh_capacity_from_weapon()
 	current_charges = max_charges
 	_recharge_elapsed = 0.0
+	_refresh_shield_visual_state()
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 
@@ -35,6 +43,7 @@ func setup(target_weapon: Weapon) -> void:
 	_refresh_capacity_from_weapon()
 	current_charges = max_charges
 	_recharge_elapsed = 0.0
+	_refresh_shield_visual_state()
 
 func _physics_process(_delta: float) -> void:
 	if weapon == null or not is_instance_valid(weapon):
@@ -198,6 +207,7 @@ func _refresh_capacity_from_weapon() -> void:
 		max_charges = 2
 		recharge_interval_seconds = 10.0
 	current_charges = clampi(current_charges, 0, max_charges)
+	_refresh_shield_visual_state()
 
 func _update_recharge(delta: float) -> void:
 	if current_charges >= max_charges:
@@ -208,6 +218,7 @@ func _update_recharge(delta: float) -> void:
 		return
 	_recharge_elapsed = 0.0
 	current_charges = mini(current_charges + 1, max_charges)
+	_refresh_shield_visual_state()
 
 func _can_block() -> bool:
 	return current_charges > 0
@@ -215,6 +226,28 @@ func _can_block() -> bool:
 func _consume_charge() -> void:
 	current_charges = maxi(0, current_charges - 1)
 	_recharge_elapsed = 0.0
+	_refresh_shield_visual_state()
+
+func _refresh_shield_visual_state() -> void:
+	if shield_sprite == null or not is_instance_valid(shield_sprite):
+		return
+	var ratio := 0.0
+	if max_charges > 0:
+		ratio = clampf(float(current_charges) / float(max_charges), 0.0, 1.0)
+	var is_cracked := current_charges > 0 and ratio <= cracked_ratio_threshold
+	if is_cracked and cracked_texture != null:
+		shield_sprite.texture = cracked_texture
+	else:
+		shield_sprite.texture = _intact_texture
+	var alpha := 0.0
+	if current_charges > 0:
+		alpha = lerpf(0.32, _base_sprite_modulate.a, ratio)
+	shield_sprite.modulate = Color(
+		_base_sprite_modulate.r,
+		_base_sprite_modulate.g,
+		_base_sprite_modulate.b,
+		alpha
+	)
 
 func _try_consume_charge_for_target(target_key: int) -> bool:
 	if not _can_block():

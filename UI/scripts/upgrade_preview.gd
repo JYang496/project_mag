@@ -156,13 +156,23 @@ func _build_weapon_header(weapon: Weapon) -> String:
 	var weapon_name := LocalizationManager.get_weapon_name_from_node(weapon)
 	var rarity: String = _get_weapon_rarity(weapon)
 	lblName.set("theme_override_colors/font_color", RARITY_UTIL.get_color(rarity))
-	return "[%s] %s  Fuse %d  Lv.%d/%d" % [
-		RARITY_UTIL.get_display_name(rarity),
-		weapon_name,
-		int(weapon.fuse),
-		int(weapon.level),
-		int(weapon.max_level),
-	]
+	return LocalizationManager.tr_format(
+		"ui.weapon.meta.upgrade_header",
+		{
+			"rarity": RARITY_UTIL.get_display_name(rarity),
+			"name": weapon_name,
+			"fuse": int(weapon.fuse),
+			"level": int(weapon.level),
+			"max": int(weapon.max_level),
+		},
+		"[%s] %s  Fuse %d  Lv.%d/%d" % [
+			RARITY_UTIL.get_display_name(rarity),
+			weapon_name,
+			int(weapon.fuse),
+			int(weapon.level),
+			int(weapon.max_level),
+		]
+	)
 
 func _build_cap_reason(weapon: Weapon) -> String:
 	return LocalizationManager.tr_key("ui.upgrade.fully_upgraded", "Fully upgraded.")

@@ -245,13 +245,23 @@ func _format_weapon_meta(weapon: Weapon) -> String:
 	var module_count := 0
 	if weapon.modules != null:
 		module_count = weapon.modules.get_child_count()
-	return "Lv.%d/%d  Fuse %d  Mods %d/%d" % [
-		int(weapon.level),
-		int(weapon.max_level),
-		int(weapon.fuse),
-		module_count,
-		int(weapon.MAX_MODULE_NUMBER),
-	]
+	return LocalizationManager.tr_format(
+		"ui.weapon.meta.level_fuse_mods",
+		{
+			"level": int(weapon.level),
+			"max": int(weapon.max_level),
+			"fuse": int(weapon.fuse),
+			"modules": module_count,
+			"module_max": int(weapon.MAX_MODULE_NUMBER),
+		},
+		"Lv.%d/%d  Fuse %d  Mods %d/%d" % [
+			int(weapon.level),
+			int(weapon.max_level),
+			int(weapon.fuse),
+			module_count,
+			int(weapon.MAX_MODULE_NUMBER),
+		]
+	)
 
 func _on_empty_slot_selected() -> void:
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
