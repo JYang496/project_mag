@@ -6,6 +6,7 @@
 
 [node name="AreaExpander" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 8
 item_name = "Area Expander"
 stat_key = "area_radius"
 multiplier_lv1 = 1.15

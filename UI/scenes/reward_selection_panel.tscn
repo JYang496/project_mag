@@ -49,6 +49,7 @@ horizontal_alignment = 1
 [node name="SubTitle" type="Label" parent="Panel/VBox"]
 text = "Pick one reward."
 horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.78, 0.86, 0.9, 1)
 
 [node name="OptionsScroll" type="ScrollContainer" parent="Panel/VBox"]
 custom_minimum_size = Vector2(0, 178)
@@ -62,7 +63,7 @@ columns = 3
 theme_override_constants/separation = 12
 
 [node name="DetailPanel" type="PanelContainer" parent="Panel/VBox"]
-custom_minimum_size = Vector2(0, 154)
+custom_minimum_size = Vector2(0, 178)
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
@@ -72,34 +73,40 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 10
 
-[node name="DetailVBox" type="VBoxContainer" parent="Panel/VBox/DetailPanel/Margin"]
+[node name="DetailHBox" type="HBoxContainer" parent="Panel/VBox/DetailPanel/Margin"]
+theme_override_constants/separation = 14
+
+[node name="DetailVBox" type="VBoxContainer" parent="Panel/VBox/DetailPanel/Margin/DetailHBox"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 5
 
-[node name="DetailTitle" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailVBox"]
+[node name="DetailTitle" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox"]
 text = "Reward Details"
 theme_override_font_sizes/font_size = 15
 
-[node name="DetailBody" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailVBox"]
+[node name="DetailBody" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox"]
 size_flags_vertical = 3
 text = "Select a reward to view details."
 autowrap_mode = 3
-max_lines_visible = 4
+max_lines_visible = 6
 
-[node name="DetailOutcome" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailVBox"]
+[node name="DetailOutcome" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox"]
 text = "Added to inventory"
 theme_override_colors/font_color = Color(0.72, 0.88, 0.78, 1)
 autowrap_mode = 3
 max_lines_visible = 2
 
+[node name="ConfirmButton" type="Button" parent="Panel/VBox/DetailPanel/Margin/DetailHBox"]
+custom_minimum_size = Vector2(160, 42)
+size_flags_vertical = 8
+text = "Confirm Reward"
+
 [node name="Footer" type="HBoxContainer" parent="Panel/VBox"]
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 38)
 alignment = 2
 theme_override_constants/separation = 10
 
 [node name="CancelButton" type="Button" parent="Panel/VBox/Footer"]
 custom_minimum_size = Vector2(120, 38)
 text = "Cancel"
-
-[node name="ConfirmButton" type="Button" parent="Panel/VBox/Footer"]
-custom_minimum_size = Vector2(160, 38)
-text = "Confirm Reward"

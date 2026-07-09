@@ -6,6 +6,7 @@
 
 [node name="ChillChainFreeze" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 7
 level_effects = PackedStringArray("Chain slow to 88% speed for 1.2s", "Chain slow to 82% speed for 1.5s", "Chain slow to 76% speed for 1.8s")
 required_weapon_traits = 8
 required_hooks = 2

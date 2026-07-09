@@ -6,6 +6,7 @@
 
 [node name="KillEndurance" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 9
 level_effects = PackedStringArray("Kills have a 35% chance to refund 1 ammo", "Kills have a 55% chance to refund 1 ammo", "Kills have a 75% chance to refund 1 ammo")
 required_hooks = 2
 module_tags = PackedStringArray("trigger", "buff")

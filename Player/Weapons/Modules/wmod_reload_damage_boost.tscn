@@ -6,6 +6,7 @@
 
 [node name="ReloadDamageBoost" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 8
 level_effects = PackedStringArray("Reload grants up to +20% damage for 3s", "Reload grants up to +30% damage for 4s", "Reload grants up to +40% damage for 5s")
 required_delivery_types = 13
 required_hooks = 32

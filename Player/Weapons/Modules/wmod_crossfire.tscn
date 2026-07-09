@@ -6,6 +6,7 @@
 
 [node name="Crossfire" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 9
 level_effects = PackedStringArray("Hit an enemy recently hit by another weapon: +16% damage for 2.5s", "Hit an enemy recently hit by another weapon: +23% damage for 2.5s", "Hit an enemy recently hit by another weapon: +30% damage for 2.5s")
 required_hooks = 2
 module_tags = PackedStringArray("trigger", "buff", "duration")

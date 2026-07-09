@@ -6,6 +6,7 @@
 
 [node name="QuickCycle" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 10
 item_name = "Quick Cycle"
 stat_key = "attack_cooldown"
 multiplier_lv1 = 0.88

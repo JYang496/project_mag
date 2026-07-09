@@ -6,6 +6,7 @@
 
 [node name="PermafrostField" unique_id=989868125 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 11
 level_effects = PackedStringArray("Frosted kills create fields dealing 2 freeze damage per tick", "Frosted kills create fields dealing 3 freeze damage per tick", "Frosted kills create fields dealing 4 freeze damage per tick")
 required_weapon_traits = 8
 required_hooks = 2

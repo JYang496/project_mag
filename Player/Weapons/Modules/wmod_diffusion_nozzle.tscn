@@ -6,6 +6,7 @@
 
 [node name="DiffusionNozzle" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 7
 item_name = "Diffusion Nozzle"
 stat_key = "cone_half_angle_deg"
 multiplier_lv1 = 1.15

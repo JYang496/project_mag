@@ -6,6 +6,7 @@
 
 [node name="Pierce" unique_id=966335507 instance=ExtResource("1_4bmpc")]
 script = ExtResource("2_r0310")
+cost = 12
 level_effects = PackedStringArray("Projectile pierce +2", "Projectile pierce +3", "Projectile pierce +4")
 required_delivery_types = 1
 pierce_add_by = 2

@@ -6,6 +6,7 @@
 
 [node name="MagazinePressure" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 9
 level_effects = PackedStringArray("Damage rises as the magazine empties, up to +20%", "Damage rises as the magazine empties, up to +30%", "Damage rises as the magazine empties, up to +40%")
 module_tags = PackedStringArray("buff")
 

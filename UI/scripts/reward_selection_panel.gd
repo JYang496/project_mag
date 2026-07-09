@@ -14,11 +14,11 @@ const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 @onready var subtitle_label: Label = $Panel/VBox/SubTitle
 @onready var options_scroll: ScrollContainer = $Panel/VBox/OptionsScroll
 @onready var options_box: GridContainer = $Panel/VBox/OptionsScroll/Options
-@onready var detail_title_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailVBox/DetailTitle") as Label
-@onready var detail_vbox: VBoxContainer = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailVBox") as VBoxContainer
-@onready var detail_body_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailVBox/DetailBody") as Label
-@onready var detail_outcome_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailVBox/DetailOutcome") as Label
-@onready var confirm_button: Button = $Panel/VBox/Footer/ConfirmButton
+@onready var detail_title_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox/DetailTitle") as Label
+@onready var detail_vbox: VBoxContainer = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox") as VBoxContainer
+@onready var detail_body_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox/DetailBody") as Label
+@onready var detail_outcome_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox/DetailOutcome") as Label
+@onready var confirm_button: Button = $Panel/VBox/DetailPanel/Margin/DetailHBox/ConfirmButton
 @onready var cancel_button: Button = $Panel/VBox/Footer/CancelButton
 
 var _reward_options: Array[RewardInfo] = []
@@ -134,10 +134,7 @@ func _open_rewards(
 		"Objective Rewards" if _summary_mode else "Choose Reward"
 	)
 	subtitle_label.text = _build_subtitle_text(route_display_name, subtitle_override, progress_index, progress_total, show_draft_hint)
-	confirm_button.text = LocalizationManager.tr_key(
-		"ui.task_reward.summary_confirm" if _summary_mode else "ui.reward.confirm",
-		"Continue" if _summary_mode else "Confirm Reward"
-	)
+	confirm_button.text = _get_confirm_button_text()
 	cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
 	cancel_button.visible = _allow_cancel and not _summary_mode
 	cancel_button.disabled = not _allow_cancel or _summary_mode
@@ -181,12 +178,14 @@ func _build_subtitle_text(
 	var subtitle := subtitle_override if subtitle_override != "" else LocalizationManager.tr_format(
 		"ui.task_reward.summary_subtitle" if _summary_mode else "ui.reward.subtitle",
 		{} if _summary_mode else {"route": route_display_name},
-		"Rewards added to inventory." if _summary_mode else "%s - pick one reward." % route_display_name
+		"Rewards added to inventory." if _summary_mode else "Pick 1 option"
 	)
+	if not _summary_mode and subtitle_override == "":
+		subtitle = LocalizationManager.tr_key("ui.reward.pick_one", "Pick 1 option")
 	if show_draft_hint and not _summary_mode:
 		var hint := LocalizationManager.tr_key(
 			"ui.reward.draft.weapon_evolution_hint",
-			"Newly obtained weapons trigger the current weapon's evolution effects."
+			"New weapons may trigger evolution effects."
 		)
 		if hint.strip_edges() != "":
 			subtitle = "%s\n%s" % [subtitle, hint]
@@ -306,6 +305,14 @@ func _update_grid_columns() -> void:
 
 func _confirm_button_state() -> void:
 	confirm_button.disabled = false if _summary_mode else _selected_index < 0 or _selected_index >= _reward_options.size()
+	confirm_button.text = _get_confirm_button_text()
+
+func _get_confirm_button_text() -> String:
+	if _summary_mode:
+		return LocalizationManager.tr_key("ui.task_reward.summary_confirm", "Continue")
+	if _selected_index < 0 or _selected_index >= _reward_options.size():
+		return LocalizationManager.tr_key("ui.reward.select_prompt", "Select a reward")
+	return LocalizationManager.tr_key("ui.reward.confirm", "Confirm Reward")
 
 func _on_confirm_pressed() -> void:
 	if _summary_mode:
@@ -333,7 +340,7 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 	var card_data: Dictionary = _build_reward_display_data(reward)
 	var button := Button.new()
 	button.toggle_mode = true
-	button.custom_minimum_size = Vector2(210, 148)
+	button.custom_minimum_size = Vector2(230, 176)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_ALL
@@ -349,7 +356,7 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 	button.add_child(margin)
 
 	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 8)
+	body.add_theme_constant_override("separation", 7)
 	margin.add_child(body)
 
 	var rarity_bar := ColorRect.new()
@@ -358,11 +365,24 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 	rarity_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(rarity_bar)
 
+	var top_row := HBoxContainer.new()
+	top_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_row.add_theme_constant_override("separation", 8)
+	body.add_child(top_row)
+
+	var type_badge := _make_badge_label(str(card_data.get("type_label", "Reward")).to_upper(), Color(0.58, 0.76, 0.92, 1.0))
+	type_badge.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_row.add_child(type_badge)
+
+	var selected_badge := _make_badge_label(LocalizationManager.tr_key("ui.reward.selected", "SELECTED"), _get_reward_action_color(reward))
+	selected_badge.name = "SelectedBadge"
+	selected_badge.visible = false
+	top_row.add_child(selected_badge)
+
 	var header := HBoxContainer.new()
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	header.add_theme_constant_override("separation", 10)
 	body.add_child(header)
-
 	header.add_child(_make_reward_icon(card_data))
 
 	var text_box := VBoxContainer.new()
@@ -370,10 +390,6 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_box.add_theme_constant_override("separation", 2)
 	header.add_child(text_box)
-
-	var type_label := _make_card_label(str(card_data.get("type_label", "Reward")), 11, Color(0.72, 0.82, 0.9, 1.0))
-	type_label.clip_text = true
-	text_box.add_child(type_label)
 
 	var name_label := _make_card_label(str(card_data.get("title", "Reward")), 16, Color(0.94, 0.97, 1.0, 1.0))
 	var summary_count := int(reward.get_meta("summary_count", 1))
@@ -386,10 +402,16 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 	text_box.add_child(name_label)
 
 	var meta_text := str(card_data.get("meta_text", "")).strip_edges()
-	if meta_text != "":
-		var meta_label := _make_card_label(meta_text, 11, Color(0.74, 0.84, 0.88, 1.0))
-		meta_label.clip_text = true
-		text_box.add_child(meta_label)
+	var level_text := str(card_data.get("level_text", "")).strip_edges()
+	var meta_label := _make_card_label(level_text if level_text != "" else meta_text, 12, Color(0.74, 0.84, 0.88, 1.0))
+	meta_label.clip_text = true
+	text_box.add_child(meta_label)
+
+	var summary_label := _make_card_label(str(card_data.get("summary_text", "")).strip_edges(), 12, Color(0.80, 0.88, 0.92, 1.0))
+	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary_label.max_lines_visible = 2
+	summary_label.custom_minimum_size = Vector2(0.0, 34.0)
+	body.add_child(summary_label)
 
 	var tag_text := str(card_data.get("short_tag", "")).strip_edges()
 	var chips: Array = card_data.get("chips", [])
@@ -509,6 +531,9 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		"rarity": RARITY_UTIL.COMMON,
 		"chips": [],
 		"meta_text": "",
+		"level_text": "",
+		"summary_text": "",
+		"detail_bullets": PackedStringArray(),
 		"icon_texture": null,
 		"fallback_icon_key": "reward",
 		"icon_badge_text": "",
@@ -524,6 +549,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["title"] = weapon_name
 		data["type_label"] = _format_reward_type_label(reward, LocalizationManager.tr_key("ui.reward.type.weapon_upgrade", "Weapon Upgrade"))
 		data["short_tag"] = "Lv.%d -> Lv.%d" % [int(reward.target_weapon_from_level), int(reward.target_weapon_to_level)]
+		data["level_text"] = str(data["short_tag"])
 		data["meta_text"] = LocalizationManager.tr_format(
 			"ui.reward.meta.equipped_weapon_upgrade",
 			{"from": int(reward.target_weapon_from_level), "to": int(reward.target_weapon_to_level)},
@@ -541,6 +567,8 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 				upgrade_detail.append(description)
 		data["detail_text"] = "\n".join(upgrade_detail)
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.weapon_upgrade", "Upgrade equipped weapon level")
+		data["summary_text"] = _first_sentence(str(data["detail_text"]), "Upgrade equipped weapon level.")
+		data["detail_bullets"] = _fallback_detail_bullets(reward)
 		return data
 	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
 		var definition := CellEffectRuntime.get_definition(reward.cell_effect_id)
@@ -552,10 +580,13 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			data["title"] = "Cell Effect"
 		data["type_label"] = _format_reward_type_label(reward, "Terrain")
 		data["short_tag"] = "Cell Effect"
+		data["level_text"] = str(data["short_tag"])
 		data["meta_text"] = LocalizationManager.tr_key("ui.reward.cell_effect_meta", "Terrain Effect")
 		data["fallback_icon_key"] = "terrain"
 		data["chips"] = [BUILD_TAG_DISPLAY.build_tag_chip(&"terrain", "Terrain")]
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.cell_effect", "Added to cell effects")
+		data["summary_text"] = _first_sentence(str(data["detail_text"]), "Adds a terrain effect.")
+		data["detail_bullets"] = _fallback_detail_bullets(reward)
 		return data
 	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
 		var task_definition := CellTaskModuleRuntime.get_definition(reward.task_module_id)
@@ -573,6 +604,9 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["fallback_icon_key"] = "task"
 		data["chips"] = [BUILD_TAG_DISPLAY.build_tag_chip(&"task", "Task")]
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.task_module", "Added to Ready To Install")
+		data["level_text"] = str(data["short_tag"])
+		data["summary_text"] = _first_sentence(str(data["detail_text"]), "Adds a task module.")
+		data["detail_bullets"] = _fallback_detail_bullets(reward)
 		return data
 	var summary_chunks: PackedStringArray = []
 	var detail_chunks: PackedStringArray = []
@@ -599,8 +633,9 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			var weapon_description := LocalizationManager.get_weapon_description_from_definition(weapon_definition).strip_edges()
 			if weapon_description != "":
 				detail_chunks.append(weapon_description)
-		data["type_label"] = _format_reward_type_label(reward, "Weapon")
-		data["meta_text"] = "Lv.%d · %s" % [int(reward.item_level), LocalizationManager.tr_key("ui.branch.weapon", "Weapon")]
+		data["type_label"] = _format_reward_type_label(reward, "New Weapon")
+		data["level_text"] = "Lv.%d" % int(reward.item_level)
+		data["meta_text"] = "%s · %s" % [str(data["level_text"]), LocalizationManager.tr_key("ui.branch.weapon", "Weapon")]
 		data["fallback_icon_key"] = "weapon"
 		data["icon_badge_text"] = "+"
 		data["icon_badge_color"] = Color(0.42, 0.78, 0.48, 1.0)
@@ -660,6 +695,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["fallback_icon_key"] = "module"
 		data["meta_text"] = "Lv.%d · %s" % [max(1, reward.module_level), _format_reward_type_label(reward, "Module")]
 		data["type_label"] = _format_reward_type_label(reward, "Module")
+		data["level_text"] = "Lv.%d" % max(1, reward.module_level)
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.module_obtain", "Added to temporary modules")
 	if reward.total_chip_value > 0:
 		summary_chunks.append(LocalizationManager.tr_format(
@@ -689,6 +725,10 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			data["short_tag"] = " + ".join(summary_chunks.slice(1))
 		var detail_source: PackedStringArray = detail_chunks if not detail_chunks.is_empty() else summary_chunks
 		data["detail_text"] = " + ".join(detail_source)
+	data["summary_text"] = _first_sentence(str(data["detail_text"]), _fallback_summary(reward))
+	if str(data["level_text"]).strip_edges() == "":
+		data["level_text"] = _derive_level_text(reward, data)
+	data["detail_bullets"] = _fallback_detail_bullets(reward)
 	return data
 
 func _build_module_reward_display_data(module_scene: PackedScene, module_level: int) -> Dictionary:
@@ -867,15 +907,45 @@ func _make_card_label(text: String, font_size: int, font_color: Color) -> Label:
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
+func _make_badge_label(text: String, color: Color) -> Label:
+	var label := _make_card_label(text, 10, Color(0.94, 0.98, 1.0, 1.0))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.clip_text = true
+	label.custom_minimum_size = Vector2(54.0, 22.0)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r, color.g, color.b, 0.22)
+	style.border_color = Color(color.r, color.g, color.b, 0.72)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(5)
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	label.add_theme_stylebox_override("normal", style)
+	return label
+
 func _update_detail_panel(display_data: Dictionary) -> void:
 	if detail_title_label == null or detail_body_label == null or detail_outcome_label == null:
 		return
 	var title := str(display_data.get("title", "")).strip_edges()
 	var detail_text := str(display_data.get("detail_text", "")).strip_edges()
 	var outcome_text := str(display_data.get("outcome_text", "")).strip_edges()
+	var type_label := str(display_data.get("type_label", "")).strip_edges()
+	var level_text := str(display_data.get("level_text", "")).strip_edges()
+	var meta_line := type_label
+	if level_text != "":
+		meta_line = "%s · %s" % [type_label, level_text] if type_label != "" else level_text
+	var body_lines := PackedStringArray()
+	if meta_line != "":
+		body_lines.append(meta_line)
+	if detail_text != "":
+		body_lines.append(detail_text)
+	for bullet in display_data.get("detail_bullets", PackedStringArray()):
+		var line := str(bullet).strip_edges()
+		if line != "":
+			body_lines.append("• %s" % line)
 	detail_title_label.text = title if title != "" else LocalizationManager.tr_key("ui.reward.detail.title", "Reward Details")
 	_update_detail_chip_row(display_data.get("chips", []))
-	detail_body_label.text = detail_text if detail_text != "" else LocalizationManager.tr_key("ui.reward.detail.empty", "Select a reward to view details.")
+	detail_body_label.text = "\n".join(body_lines) if not body_lines.is_empty() else LocalizationManager.tr_key("ui.reward.detail.empty", "Select a reward to view details.")
 	detail_outcome_label.text = outcome_text
 	detail_outcome_label.visible = outcome_text != ""
 
@@ -900,18 +970,76 @@ func _append_display_chip(existing: Variant, chip: Dictionary) -> Array:
 	chips.append(chip)
 	return chips
 
+func _first_sentence(text: String, fallback: String) -> String:
+	var clean := text.replace("\n", " ").strip_edges()
+	if clean == "":
+		return fallback
+	var dot := clean.find(".")
+	if dot >= 0 and dot < clean.length() - 1:
+		return clean.substr(0, dot + 1)
+	return clean
+
+func _fallback_summary(reward: RewardInfo) -> String:
+	if reward == null:
+		return ""
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		return "Upgrade equipped weapon level."
+	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		return "Gain a new task module."
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		return "Gain a terrain effect."
+	if reward.module_scene:
+		return "Gain a new weapon module."
+	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
+		return "New weapon added to your loadout."
+	if reward.total_chip_value > 0 or reward.gold_value > 0:
+		return "Gain run resources."
+	return ""
+
+func _derive_level_text(reward: RewardInfo, data: Dictionary) -> String:
+	if reward == null:
+		return ""
+	var short_tag := str(data.get("short_tag", "")).strip_edges()
+	if short_tag.begins_with("Lv."):
+		return short_tag
+	if reward.item_level > 0:
+		return "Lv.%d" % int(reward.item_level)
+	if reward.module_scene:
+		return "Lv.%d" % max(1, reward.module_level)
+	return ""
+
+func _fallback_detail_bullets(reward: RewardInfo) -> PackedStringArray:
+	if reward == null:
+		return PackedStringArray()
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		return PackedStringArray(["Increases weapon level", "Improves the equipped weapon's performance", "Strengthens the current build direction"])
+	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		return PackedStringArray(["Adds a task module", "Creates route objective options", "Can improve future rewards"])
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		return PackedStringArray(["Adds a cell effect", "Changes board options", "Supports route planning"])
+	if reward.module_scene:
+		return PackedStringArray(["Adds a weapon modifier", "Changes or improves weapon behavior", "Can create build synergy"])
+	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
+		return PackedStringArray(["Adds a new weapon to your loadout", "Expands build options", "May trigger evolution effects"])
+	if reward.total_chip_value > 0 or reward.gold_value > 0:
+		return PackedStringArray(["Adds resources immediately", "Supports current run progression"])
+	return PackedStringArray()
+
 func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool) -> void:
 	if button == null or reward == null:
 		return
 	var action_color := _get_reward_action_color(reward)
 	var recommended_fuse := _is_recommended_fuse_reward(reward)
+	var selected_badge := button.find_child("SelectedBadge", true, false) as Control
+	if selected_badge != null:
+		selected_badge.visible = selected
 	for state in ["normal", "hover", "pressed", "focus"]:
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.10)
 		if recommended_fuse:
 			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.20)
 		if selected:
-			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.18)
+			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.30)
 		elif state == "hover" or state == "focus":
 			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.14)
 		elif state == "pressed":
@@ -922,8 +1050,8 @@ func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool
 			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.26)
 		if recommended_fuse and selected:
 			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.28)
-		style.border_color = action_color
-		style.set_border_width_all(3 if recommended_fuse else (2 if selected else 1))
+		style.border_color = Color(action_color.r, action_color.g, action_color.b, 1.0 if selected else 0.78)
+		style.set_border_width_all(3 if selected or recommended_fuse else 1)
 		style.set_corner_radius_all(6)
 		button.add_theme_stylebox_override(state, style)
 

@@ -6,6 +6,7 @@
 
 [node name="PenetrationMomentum" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 10
 level_effects = PackedStringArray("Rapidly hit a different target: +8% damage per chain for 1.5s", "Rapidly hit a different target: +11% damage per chain for 1.5s", "Rapidly hit a different target: +14% damage per chain for 1.5s")
 required_hooks = 2
 module_tags = PackedStringArray("trigger", "buff", "stacking", "projectile", "duration")

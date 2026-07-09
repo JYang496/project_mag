@@ -13,12 +13,9 @@ var battle_time_meter: Control
 var equipped_label: Label
 var augments_label: Label
 var health_meter
-var ammo_meter
 var energy_meter
-var heat_meter
+var primary_resource_meter
 var combat_resource_slot_container: VBoxContainer
-var heat_resource_row: HBoxContainer
-var heat_resource_bar: ProgressBar
 
 const HUD_MARGIN := 16.0
 const CONTINUOUS_REFRESH_INTERVAL := 0.1
@@ -105,7 +102,7 @@ func ensure_heat_label(character_root: Control) -> Label:
 		return heat_label
 	heat_label = Label.new()
 	heat_label.name = "Heat"
-	heat_label.text = LocalizationManager.tr_key("ui.hud.heat_empty", "Heat: --")
+	heat_label.text = ""
 	heat_label.visible = false
 	heat_label.custom_minimum_size = Vector2(156.0, 26.0)
 	character_root.add_child(heat_label)
@@ -115,14 +112,12 @@ func ensure_ammo_label(hp_label_root: Control) -> Label:
 	_ensure_combat_resource_slot_container(hp_label_root)
 	if ammo_label != null and is_instance_valid(ammo_label):
 		ammo_label.visible = false
-		_ensure_ammo_meter_under_hp(hp_label_root)
 		return ammo_label
 	ammo_label = Label.new()
 	ammo_label.name = "Ammo"
-	ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
+	ammo_label.text = ""
 	ammo_label.visible = false
 	ammo_label.custom_minimum_size = Vector2(128.0, 24.0)
-	_ensure_ammo_meter_under_hp(hp_label_root)
 	return ammo_label
 
 func ensure_resource_label_under_hp(current_resource_label: Label, hp_label_root: Control) -> Label:
@@ -157,20 +152,6 @@ func _ensure_energy_meter_under_hp(hp_label_root: Control) -> void:
 	energy_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	combat_resource_slot_container.add_child(energy_meter)
 
-func _ensure_ammo_meter_under_hp(hp_label_root: Control) -> void:
-	_ensure_combat_resource_slot_container(hp_label_root)
-	if ammo_meter != null and is_instance_valid(ammo_meter):
-		if ammo_meter.get_parent() != combat_resource_slot_container:
-			var current_parent: Node = ammo_meter.get_parent()
-			if current_parent:
-				current_parent.remove_child(ammo_meter)
-			combat_resource_slot_container.add_child(ammo_meter)
-		return
-	ammo_meter = COMBAT_RESOURCE_METER_SCRIPT.new()
-	ammo_meter.name = "AmmoMeter"
-	ammo_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	combat_resource_slot_container.add_child(ammo_meter)
-
 func _ensure_combat_resource_slot_container(hp_label_root: Control) -> void:
 	if hp_label_root == null or not is_instance_valid(hp_label_root):
 		return
@@ -188,17 +169,6 @@ func _ensure_combat_resource_slot_container(hp_label_root: Control) -> void:
 	combat_resource_slot_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	combat_resource_slot_container.add_theme_constant_override("separation", 5)
 	hp_label_root.add_child(combat_resource_slot_container)
-
-func _place_ammo_label_in_resource_dock() -> void:
-	if ammo_label == null or not is_instance_valid(ammo_label):
-		return
-	if combat_resource_slot_container == null or not is_instance_valid(combat_resource_slot_container):
-		return
-	if ammo_label.get_parent() != combat_resource_slot_container:
-		var previous_parent := ammo_label.get_parent()
-		if previous_parent:
-			previous_parent.remove_child(ammo_label)
-		combat_resource_slot_container.add_child(ammo_label)
 
 func ensure_weapon_state_label(character_root: Control) -> Label:
 	if weapon_state_label != null and is_instance_valid(weapon_state_label):
@@ -260,7 +230,7 @@ func refresh_heat() -> void:
 	_update_heat_label_text()
 
 func refresh_ammo() -> void:
-	_update_ammo_label_text()
+	_hide_legacy_ammo_slot()
 
 func refresh_weapon_state() -> void:
 	_update_weapon_state_label_text()
@@ -369,225 +339,89 @@ func _ensure_health_meter() -> void:
 	hp_label_root.add_child(health_meter)
 
 func _update_heat_label_text() -> void:
-	_sync_combat_resource_slots(_collect_combat_resource_slots())
+	_sync_primary_resource_slot(_select_primary_resource_slot(_collect_primary_weapon_resource_slots()))
 
-func _collect_combat_resource_slots() -> Array[Dictionary]:
+func _collect_primary_weapon_resource_slots() -> Array[Dictionary]:
 	var slots: Array[Dictionary] = []
-	var heat_slot := _build_heat_resource_slot()
-	if not heat_slot.is_empty():
-		slots.append(heat_slot)
+	var active_weapon := _get_active_weapon()
+	if active_weapon == null:
+		return slots
+	if active_weapon.has_method("get_combat_resource_slots"):
+		var value: Variant = active_weapon.call("get_combat_resource_slots")
+		if value is Array:
+			for slot in value:
+				if slot is Dictionary:
+					slots.append(slot)
 	return slots
 
-func _build_heat_resource_slot() -> Dictionary:
+func _get_active_weapon() -> Node:
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
-		return {}
-	if not PlayerData.player.has_method("get_total_heat_max"):
-		return {}
-	var heat_max: float = float(PlayerData.player.call("get_total_heat_max"))
-	if heat_max <= 0.0:
-		return {}
-	var heat_value: float = float(PlayerData.player.call("get_total_heat_value"))
-	var ratio := clampf(heat_value / heat_max, 0.0, 1.0)
-	var percent: int = int(round(ratio * 100.0))
-	var overheated := _any_heat_weapon_overheated()
-	var overheat_text := LocalizationManager.tr_key("ui.hud.heat_overheat", " (OVERHEAT)") if overheated else ""
-	var long_text := LocalizationManager.tr_format(
-		"ui.hud.heat",
-		{
-			"value": int(round(heat_value)),
-			"max": int(round(heat_max)),
-			"percent": percent,
-			"overheat": overheat_text
-		},
-		"Heat: %d/%d (%d%%)%s" % [int(round(heat_value)), int(round(heat_max)), percent, overheat_text]
-	)
-	var state := "normal"
-	if overheated:
-		state = "locked"
-	elif ratio >= 0.8:
-		state = "warning"
-	var short_text := ""
-	if overheated:
-		short_text = "LOCK"
-	elif ratio >= 0.8:
-		short_text = "%d%%" % percent
-	return {
-		"id": "heat",
-		"label": "",
-		"text": short_text,
-		"current": heat_value,
-		"max": heat_max,
-		"ratio": ratio,
-		"presentation": "bar",
-		"state": state,
-		"color": _heat_status_color(ratio, overheated),
-		"tooltip": long_text
-	}
+		return null
+	if PlayerData.player.has_method("get_main_weapon"):
+		var value: Variant = PlayerData.player.call("get_main_weapon")
+		if value is Node and is_instance_valid(value):
+			return value as Node
+	return null
 
-func _sync_combat_resource_slots(slots: Array[Dictionary]) -> void:
-	_hide_heat_resource_slot()
+func _select_primary_resource_slot(slots: Array[Dictionary]) -> Dictionary:
+	if slots.is_empty():
+		return {}
+	var best := slots[0]
 	for slot in slots:
-		var slot_id := str(slot.get("id", ""))
-		match slot_id:
-			"heat":
-				_sync_heat_resource_slot(slot)
+		if int(slot.get("priority", 0)) > int(best.get("priority", 0)):
+			best = slot
+	return best
 
-func _sync_heat_resource_slot(slot: Dictionary) -> void:
-	_ensure_heat_meter()
-	if heat_meter == null or not is_instance_valid(heat_meter):
+func _sync_primary_resource_slot(slot: Dictionary) -> void:
+	if slot.is_empty():
+		_hide_primary_resource_slot()
 		return
+	_ensure_primary_resource_meter()
+	if primary_resource_meter == null or not is_instance_valid(primary_resource_meter):
+		return
+	var resource_type := StringName(str(slot.get("type", slot.get("id", "ammo"))))
 	var ratio := clampf(float(slot.get("ratio", 0.0)), 0.0, 1.0)
 	var tooltip := str(slot.get("tooltip", ""))
 	var state := StringName(str(slot.get("state", "normal")))
-	var text := str(slot.get("text", ""))
-	heat_meter.call("set_resource", &"heat", ratio, state, text, tooltip)
-	heat_meter.visible = true
+	var text := str(slot.get("short_text", slot.get("text", "")))
+	primary_resource_meter.call("set_resource", resource_type, ratio, state, text, tooltip)
+	primary_resource_meter.visible = true
 	if heat_label and is_instance_valid(heat_label):
 		heat_label.visible = false
 		heat_label.text = ""
-	if heat_resource_bar and is_instance_valid(heat_resource_bar):
-		heat_resource_bar.visible = false
 
-func _hide_heat_resource_slot() -> void:
-	if heat_meter and is_instance_valid(heat_meter):
-		heat_meter.call("set_resource", &"heat", 0.0, &"normal", "", "")
-	if heat_resource_row and is_instance_valid(heat_resource_row):
-		heat_resource_row.visible = false
+func _hide_primary_resource_slot() -> void:
+	if primary_resource_meter and is_instance_valid(primary_resource_meter):
+		primary_resource_meter.call("set_resource", &"ammo", 0.0, &"normal", "", "")
+		primary_resource_meter.visible = false
 	if heat_label and is_instance_valid(heat_label):
 		heat_label.visible = false
-	if heat_resource_bar and is_instance_valid(heat_resource_bar):
-		heat_resource_bar.value = 0.0
 	_last_heat_label_text = ""
 
-func _ensure_heat_meter() -> void:
+func _ensure_primary_resource_meter() -> void:
 	if combat_resource_slot_container == null or not is_instance_valid(combat_resource_slot_container):
 		return
-	if heat_meter != null and is_instance_valid(heat_meter):
-		if heat_meter.get_parent() != combat_resource_slot_container:
-			var previous_parent: Node = heat_meter.get_parent()
+	if primary_resource_meter != null and is_instance_valid(primary_resource_meter):
+		if primary_resource_meter.get_parent() != combat_resource_slot_container:
+			var previous_parent: Node = primary_resource_meter.get_parent()
 			if previous_parent:
-				previous_parent.remove_child(heat_meter)
-			combat_resource_slot_container.add_child(heat_meter)
+				previous_parent.remove_child(primary_resource_meter)
+			combat_resource_slot_container.add_child(primary_resource_meter)
 		return
-	heat_meter = COMBAT_RESOURCE_METER_SCRIPT.new()
-	heat_meter.name = "HeatMeter"
-	heat_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	combat_resource_slot_container.add_child(heat_meter)
-
-func _ensure_heat_resource_slot() -> void:
-	if combat_resource_slot_container == null or not is_instance_valid(combat_resource_slot_container):
-		return
-	if heat_resource_row != null and is_instance_valid(heat_resource_row):
-		return
-	heat_resource_row = HBoxContainer.new()
-	heat_resource_row.name = "HeatResourceSlot"
-	heat_resource_row.custom_minimum_size = Vector2(COMBAT_RESOURCE_WIDTH, 18.0)
-	heat_resource_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	heat_resource_row.add_theme_constant_override("separation", 8)
-	combat_resource_slot_container.add_child(heat_resource_row)
-	if heat_label == null or not is_instance_valid(heat_label):
-		heat_label = Label.new()
-		heat_label.name = "Heat"
-	if heat_label.get_parent() != heat_resource_row:
-		var previous_parent := heat_label.get_parent()
-		if previous_parent:
-			previous_parent.remove_child(heat_label)
-		heat_resource_row.add_child(heat_label)
-	heat_label.custom_minimum_size = Vector2(78.0, 18.0)
-	heat_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	heat_label.visible = true
-	heat_resource_bar = ProgressBar.new()
-	heat_resource_bar.name = "Bar"
-	heat_resource_bar.min_value = 0.0
-	heat_resource_bar.max_value = 1.0
-	heat_resource_bar.value = 0.0
-	heat_resource_bar.show_percentage = false
-	heat_resource_bar.custom_minimum_size = Vector2(96.0, 10.0)
-	heat_resource_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	heat_resource_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	heat_resource_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	heat_resource_row.add_child(heat_resource_bar)
-	heat_resource_row.visible = false
+	primary_resource_meter = COMBAT_RESOURCE_METER_SCRIPT.new()
+	primary_resource_meter.name = "PrimaryResourceMeter"
+	primary_resource_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	combat_resource_slot_container.add_child(primary_resource_meter)
 
 func _update_ammo_label_text() -> void:
-	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
-		_sync_ammo_meter(0.0, &"normal", "", LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --"))
-		return
-	if not PlayerData.player.has_method("get_main_weapon"):
-		_sync_ammo_meter(0.0, &"normal", "", LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --"))
-		return
-	var main_weapon_variant: Variant = PlayerData.player.call("get_main_weapon")
-	if not (main_weapon_variant is Node):
-		_sync_ammo_meter(0.0, &"normal", "", LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --"))
-		return
-	var main_weapon := main_weapon_variant as Node
-	if main_weapon == null or not is_instance_valid(main_weapon):
-		_sync_ammo_meter(0.0, &"normal", "", LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --"))
-		return
-	if not main_weapon.has_method("get_ammo_status"):
-		_sync_ammo_meter(0.0, &"normal", "", LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --"))
-		return
-	var status_variant: Variant = main_weapon.call("get_ammo_status")
-	if not (status_variant is Dictionary):
-		_sync_ammo_meter(0.0, &"normal", "", LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --"))
-		return
-	var status := status_variant as Dictionary
-	if not bool(status.get("enabled", false)):
-		_sync_ammo_meter(0.0, &"normal", "", LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --"))
-		return
-	var current := int(status.get("current", 0))
-	var max_ammo := int(status.get("max", 0))
-	var is_reloading := bool(status.get("is_reloading", false))
-	var reload_left := maxf(float(status.get("reload_left", 0.0)), 0.0)
-	var reload_text := ""
-	if is_reloading:
-		reload_text = LocalizationManager.tr_format("ui.hud.ammo_reloading", {"sec": snappedf(reload_left, 0.1)}, " (Reloading %.1fs)" % reload_left)
-	var long_ammo_text := LocalizationManager.tr_format(
-		"ui.hud.ammo",
-		{"current": current, "max": max_ammo, "reload": reload_text},
-		"Ammo: %d/%d%s" % [current, max_ammo, reload_text]
-	)
-	var ratio := 0.0
-	if max_ammo > 0:
-		ratio = clampf(float(current) / float(max_ammo), 0.0, 1.0)
-	var state := &"normal"
-	var next_ammo_text := ""
-	if is_reloading:
-		state = &"reloading"
-		next_ammo_text = "%.1fs" % reload_left
-	elif max_ammo > 0 and current <= maxi(1, int(ceil(float(max_ammo) * 0.25))):
-		state = &"warning"
-		next_ammo_text = "%d/%d" % [current, max_ammo]
-	_sync_ammo_meter(ratio, state, next_ammo_text, long_ammo_text)
+	_hide_legacy_ammo_slot()
 
-func _sync_ammo_meter(ratio: float, state: StringName, short_text: String, tooltip: String) -> void:
-	_ensure_ammo_meter_under_hp(_get_hp_label_root())
-	if ammo_meter != null and is_instance_valid(ammo_meter):
-		ammo_meter.call("set_resource", &"ammo", ratio, state, short_text, tooltip)
-		ammo_meter.visible = true
+func _hide_legacy_ammo_slot() -> void:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return
 	if ammo_label and is_instance_valid(ammo_label):
 		ammo_label.visible = false
 		ammo_label.text = ""
-		ammo_label.tooltip_text = tooltip
-
-func _get_hp_label_root() -> Control:
-	if hp_bar != null and is_instance_valid(hp_bar):
-		return hp_bar.get_parent() as Control
-	if hp_label_text != null and is_instance_valid(hp_label_text):
-		return hp_label_text.get_parent() as Control
-	return null
-
-func _any_heat_weapon_overheated() -> bool:
-	for weapon in PlayerData.player_weapon_list:
-		if weapon == null or not is_instance_valid(weapon):
-			continue
-		if not weapon.has_method("has_heat_system"):
-			continue
-		if not bool(weapon.call("has_heat_system")):
-			continue
-		if weapon.has_method("is_weapon_overheated") and bool(weapon.call("is_weapon_overheated")):
-			return true
-	return false
 
 func _style_status_label(label: Label, color: Color, urgent: bool) -> void:
 	if label == null or not is_instance_valid(label):
@@ -606,54 +440,6 @@ func _style_status_label(label: Label, color: Color, urgent: bool) -> void:
 	style.content_margin_top = 3.0
 	style.content_margin_bottom = 3.0
 	label.add_theme_stylebox_override("normal", style)
-
-func _style_resource_slot_label(label: Label, color: Color) -> void:
-	if label == null or not is_instance_valid(label):
-		return
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 11)
-	label.add_theme_color_override("font_color", Color(0.94, 0.97, 1.0, 1.0))
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, 0.13)
-	style.border_color = Color(color.r, color.g, color.b, 0.58)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(4)
-	style.content_margin_left = 6.0
-	style.content_margin_right = 6.0
-	style.content_margin_top = 1.0
-	style.content_margin_bottom = 1.0
-	label.add_theme_stylebox_override("normal", style)
-
-func _style_resource_slot_bar(bar: ProgressBar, color: Color, urgent: bool) -> void:
-	if bar == null or not is_instance_valid(bar):
-		return
-	var background := StyleBoxFlat.new()
-	background.bg_color = Color(0.03, 0.06, 0.07, 0.76)
-	background.border_color = Color(color.r, color.g, color.b, 0.45)
-	background.set_border_width_all(1)
-	background.set_corner_radius_all(4)
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = Color(color.r, color.g, color.b, 0.92 if not urgent else 1.0)
-	fill.border_color = Color(color.r, color.g, color.b, 1.0)
-	fill.set_border_width_all(0)
-	fill.set_corner_radius_all(4)
-	bar.add_theme_stylebox_override("background", background)
-	bar.add_theme_stylebox_override("fill", fill)
-
-func _heat_status_color(ratio: float, overheated: bool) -> Color:
-	if overheated:
-		return Color(1.0, 0.22, 0.16, 1.0)
-	if ratio >= 0.8:
-		return Color(1.0, 0.48, 0.22, 1.0)
-	return Color(0.92, 0.62, 0.24, 1.0)
-
-func _ammo_status_color(current: int, max_ammo: int, is_reloading: bool) -> Color:
-	if is_reloading:
-		return Color(0.60, 0.66, 1.0, 1.0)
-	if max_ammo > 0 and current <= maxi(1, int(ceil(float(max_ammo) * 0.25))):
-		return Color(1.0, 0.48, 0.22, 1.0)
-	return Color(0.42, 0.74, 1.0, 1.0)
 
 func _update_weapon_state_label_text() -> void:
 	if weapon_state_label == null or not is_instance_valid(weapon_state_label):
@@ -776,7 +562,7 @@ func _refresh_time_text_value() -> void:
 
 func refresh_heat_fallback_text() -> void:
 	if heat_label and is_instance_valid(heat_label) and not heat_label.visible:
-		heat_label.text = LocalizationManager.tr_key("ui.hud.heat_empty", "Heat: --")
+		heat_label.text = ""
 	if ammo_label and is_instance_valid(ammo_label):
-		if PlayerData.player == null or not is_instance_valid(PlayerData.player):
-			ammo_label.text = LocalizationManager.tr_key("ui.hud.ammo_empty", "Ammo: --")
+		if PlayerData.player == null or not is_instance_valid(PlayerData.player) or not ammo_label.visible:
+			ammo_label.text = ""

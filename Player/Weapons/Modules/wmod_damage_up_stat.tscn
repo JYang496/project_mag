@@ -6,6 +6,7 @@
 
 [node name="DamageUp" instance=ExtResource("1_2t80l")]
 script = ExtResource("2_sw4r6")
+cost = 12
 level_effects = PackedStringArray("Weapon damage +50%", "Weapon damage +67.5%", "Weapon damage +85%")
 module_tags = PackedStringArray("buff")
 

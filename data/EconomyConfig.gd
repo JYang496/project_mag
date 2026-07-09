@@ -11,10 +11,12 @@ class_name EconomyConfig
 @export var duplicate_weapon_gold_minimum: int = 4
 @export_range(0.0, 1.0, 0.01) var duplicate_weapon_gold_refund_ratio: float = 0.5
 @export var duplicate_module_gold_minimum: int = 4
-@export var duplicate_module_gold_cost_multiplier: float = 6.0
+@export var duplicate_module_gold_cost_multiplier: float = 2.0
 @export_range(0.0, 1.0, 0.01) var duplicate_module_gold_refund_ratio: float = 0.5
 @export var module_purchase_price_multiplier: float = 1.0
 @export_range(0.0, 10.0, 0.01) var module_upgrade_price_ratio: float = 1.0
+@export_range(0.0, 10.0, 0.01) var module_upgrade_level_2_ratio: float = 1.25
+@export_range(0.0, 10.0, 0.01) var module_upgrade_level_3_ratio: float = 1.75
 @export_range(0.0, 1.0, 0.01) var coin_bonus_augment_chance: float = 0.3
 @export var coin_bonus_augment_gold_per_level: int = 1
 @export var objective_economy_gold_by_level: PackedInt32Array = PackedInt32Array([3, 4, 6, 7, 8, 10, 11, 13, 14, 15])
@@ -60,9 +62,13 @@ func get_module_purchase_gold(module_cost: int) -> int:
 	var purchase_value := int(round(float(maxi(module_cost, 0)) * maxf(module_purchase_price_multiplier, 0.0)))
 	return maxi(purchase_value, 1)
 
-func get_module_upgrade_gold(module_cost: int) -> int:
+func get_module_upgrade_gold(module_cost: int, current_level: int = 1) -> int:
 	var purchase_value := float(get_module_purchase_gold(module_cost))
-	var upgrade_value := int(round(purchase_value * maxf(module_upgrade_price_ratio, 0.0)))
+	var safe_level := clampi(current_level, 1, 2)
+	var ratio := module_upgrade_level_2_ratio
+	if safe_level >= 2:
+		ratio = module_upgrade_level_3_ratio
+	var upgrade_value := int(round(purchase_value * maxf(ratio, 0.0)))
 	return maxi(upgrade_value, 1)
 
 func get_coin_bonus_augment_chance() -> float:

@@ -6,6 +6,7 @@
 
 [node name="HeatCapacity" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 8
 level_effects = PackedStringArray("Maximum heat +50%", "Maximum heat +67.5%", "Maximum heat +85%")
 required_weapon_traits = 16
 

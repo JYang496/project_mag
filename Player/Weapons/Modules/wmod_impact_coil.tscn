@@ -6,6 +6,7 @@
 
 [node name="ImpactCoil" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 5
 item_name = "Impact Coil"
 stat_key = "knockback"
 multiplier_lv1 = 1.25

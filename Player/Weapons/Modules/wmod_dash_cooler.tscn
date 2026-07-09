@@ -6,6 +6,7 @@
 
 [node name="DashCooler" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 6
 item_name = "Dash Cooler"
 player_stat = 2
 value_lv1 = 0.15

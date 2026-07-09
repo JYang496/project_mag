@@ -6,6 +6,7 @@
 
 [node name="ErosionApply" instance=ExtResource("1_t6qi5")]
 script = ExtResource("2_vpd86")
+cost = 7
 level_effects = PackedStringArray("Applies 5 ticks of 1 damage", "Applies 7 ticks of 1 damage", "Applies 9 ticks of 2 damage")
 required_hooks = 2
 module_tags = PackedStringArray("trigger", "dot", "debuff", "on_hit")

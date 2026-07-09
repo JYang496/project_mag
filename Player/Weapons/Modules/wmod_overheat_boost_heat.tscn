@@ -6,6 +6,7 @@
 
 [node name="OverheatBoost" unique_id=391975178 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 14
 level_effects = PackedStringArray("Can fire while overheated at 50% damage", "Can fire while overheated at 65% damage", "Can fire while overheated at 80% damage")
 required_weapon_traits = 16
 

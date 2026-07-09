@@ -6,6 +6,7 @@
 
 [node name="ExpandedMagazine" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 7
 item_name = "Expanded Magazine"
 stat_key = "magazine_capacity"
 multiplier_lv1 = 1.20

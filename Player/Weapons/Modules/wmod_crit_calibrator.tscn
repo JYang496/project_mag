@@ -6,6 +6,7 @@
 
 [node name="CritCalibrator" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 8
 item_name = "Crit Calibrator"
 player_stat = 0
 value_lv1 = 0.04

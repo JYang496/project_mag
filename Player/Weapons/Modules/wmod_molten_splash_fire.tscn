@@ -6,6 +6,7 @@
 
 [node name="MoltenSplashFire" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 9
 level_effects = PackedStringArray("Creates a 105-length splash for 25% weapon damage", "Creates a 132-length splash for 36% weapon damage", "Creates a 156-length splash for 46% weapon damage")
 required_weapon_traits = 4
 required_hooks = 2

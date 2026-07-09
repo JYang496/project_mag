@@ -6,6 +6,7 @@
 
 [node name="RecoveryMagnet" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 4
 item_name = "Recovery Magnet"
 player_stat = 3
 value_lv1 = 0.25

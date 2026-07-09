@@ -489,6 +489,84 @@ func is_weapon_overheated() -> bool:
 
 func lock_heat_value(value: float, duration_sec: float) -> void:
 	heat_runtime.lock_heat_value(value, duration_sec)
+
+func get_combat_resource_slots() -> Array[Dictionary]:
+	var slots: Array[Dictionary] = []
+	if has_heat_system():
+		slots.append(_build_heat_resource_slot())
+	var ammo_slot := _build_ammo_resource_slot()
+	if not ammo_slot.is_empty():
+		slots.append(ammo_slot)
+	return slots
+
+func _build_heat_resource_slot() -> Dictionary:
+	var heat_max := maxf(get_heat_max_value(), 0.0)
+	if heat_max <= 0.0:
+		return {}
+	var heat_value := maxf(get_heat_value(), 0.0)
+	var ratio := clampf(heat_value / heat_max, 0.0, 1.0)
+	var percent := int(round(ratio * 100.0))
+	var overheated := is_weapon_overheated()
+	var state := &"normal"
+	var priority := 40
+	var short_text := ""
+	if overheated:
+		state = &"locked"
+		priority = 100
+		short_text = "LOCK"
+	elif ratio >= 0.8:
+		state = &"warning"
+		priority = 80
+		short_text = "%d%%" % percent
+	return {
+		"id": "%s_heat" % str(get_instance_id()),
+		"type": &"heat",
+		"display_name": "Heat",
+		"current": heat_value,
+		"max": heat_max,
+		"ratio": ratio,
+		"state": state,
+		"short_text": short_text,
+		"tooltip": "Heat: %d/%d (%d%%)%s" % [int(round(heat_value)), int(round(heat_max)), percent, " (OVERHEAT)" if overheated else ""],
+		"priority": priority,
+		"visibility": "active_weapon",
+	}
+
+func _build_ammo_resource_slot() -> Dictionary:
+	var status := get_ammo_status()
+	if not bool(status.get("enabled", false)):
+		return {}
+	var current := maxi(int(status.get("current", 0)), 0)
+	var max_ammo := maxi(int(status.get("max", 0)), 0)
+	if max_ammo <= 0:
+		return {}
+	var is_reloading := bool(status.get("is_reloading", false))
+	var reload_left := maxf(float(status.get("reload_left", 0.0)), 0.0)
+	var ratio := clampf(float(current) / float(max_ammo), 0.0, 1.0)
+	var state := &"normal"
+	var priority := 40
+	var short_text := ""
+	if is_reloading:
+		state = &"reloading"
+		priority = 60
+		short_text = "%.1fs" % reload_left
+	elif current <= maxi(1, int(ceil(float(max_ammo) * 0.25))):
+		state = &"warning"
+		priority = 80
+		short_text = "%d/%d" % [current, max_ammo]
+	return {
+		"id": "%s_ammo" % str(get_instance_id()),
+		"type": &"ammo",
+		"display_name": "Ammo",
+		"current": current,
+		"max": max_ammo,
+		"ratio": ratio,
+		"state": state,
+		"short_text": short_text,
+		"tooltip": "Ammo: %d/%d%s" % [current, max_ammo, " (Reloading %.1fs)" % reload_left if is_reloading else ""],
+		"priority": priority,
+		"visibility": "active_weapon",
+	}
 #endregion
 
 #region Traits And Module Stats

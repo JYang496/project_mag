@@ -6,6 +6,7 @@
 
 [node name="ReloadOffhandBoost" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 9
 level_effects = PackedStringArray("Reload grants other weapons up to +12% damage for 3s", "Reload grants other weapons up to +18% damage for 4s", "Reload grants other weapons up to +24% damage for 5s")
 required_delivery_types = 13
 required_hooks = 32

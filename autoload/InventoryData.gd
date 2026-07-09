@@ -402,7 +402,10 @@ func upgrade_module_with_gold(module_instance: Module) -> Dictionary:
 		return {"ok": false, "reason": "Invalid module."}
 	if int(module_instance.module_level) >= Module.MAX_LEVEL:
 		return {"ok": false, "reason": "Module is fully upgraded."}
-	var price := _get_economy_config().get_module_upgrade_gold(int(module_instance.cost))
+	var price := _get_economy_config().get_module_upgrade_gold(
+		int(module_instance.cost),
+		int(module_instance.module_level)
+	)
 	if PlayerData.player_gold < price:
 		return {"ok": false, "reason": "Not enough gold.", "price": price}
 	PlayerData.player_gold -= price

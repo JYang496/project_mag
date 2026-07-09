@@ -6,6 +6,7 @@
 
 [node name="OverkillRecovery" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 9
 level_effects = PackedStringArray("Convert overkill into up to +30% damage for 4s", "Convert overkill into up to +45% damage for 4s", "Convert overkill into up to +60% damage for 4s")
 required_hooks = 2
 module_tags = PackedStringArray("trigger", "buff", "duration")

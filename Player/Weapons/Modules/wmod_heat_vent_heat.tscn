@@ -6,6 +6,7 @@
 
 [node name="HeatVent" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 7
 level_effects = PackedStringArray("Up to +50% cooling rate at full heat", "Up to +67.5% cooling rate at full heat", "Up to +85% cooling rate at full heat")
 required_weapon_traits = 16
 

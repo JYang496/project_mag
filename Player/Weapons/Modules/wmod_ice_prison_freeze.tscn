@@ -6,6 +6,7 @@
 
 [node name="IcePrisonFreeze" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 10
 level_effects = PackedStringArray("At 3 frost stacks: 22% chance to root for 0.55s", "At 3 frost stacks: 30% chance to root for 0.75s", "At 2 frost stacks: 38% chance to root for 0.95s")
 required_weapon_traits = 8
 required_hooks = 2

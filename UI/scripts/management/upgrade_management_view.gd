@@ -567,8 +567,14 @@ func _get_module_upgrade_price(module_instance: Module) -> int:
 	if module_instance == null or not is_instance_valid(module_instance):
 		return 0
 	if GlobalVariables.economy_data:
-		return GlobalVariables.economy_data.get_module_upgrade_gold(int(module_instance.cost))
-	return EconomyConfig.new().get_module_upgrade_gold(int(module_instance.cost))
+		return GlobalVariables.economy_data.get_module_upgrade_gold(
+			int(module_instance.cost),
+			int(module_instance.module_level)
+		)
+	return EconomyConfig.new().get_module_upgrade_gold(
+		int(module_instance.cost),
+		int(module_instance.module_level)
+	)
 
 func _add_detail_section(title: String, value: String) -> void:
 	_ensure_detail_presenter()

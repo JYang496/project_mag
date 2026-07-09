@@ -85,9 +85,12 @@ ui.route.title,Choose Route,选择路线
 ui.route.subtitle,Select one route for this level.,为本关选择一条路线。
 ui.route.confirm,Confirm Route,确认路线
 ui.reward.title,Choose Reward,选择奖励
-ui.reward.subtitle,{route} - pick one reward.,{route} - 请选择一个奖励。
-ui.reward.draft.weapon_evolution_hint,Newly obtained weapons trigger the current weapon's evolution effects.,新获得的武器会触发当前武器的进化效果。
+ui.reward.subtitle,Pick 1 option,选择 1 个选项
+ui.reward.pick_one,Pick 1 option,选择 1 个选项
+ui.reward.draft.weapon_evolution_hint,New weapons may trigger evolution effects.,新武器可能触发进化效果。
 ui.reward.confirm,Confirm Reward,确认奖励
+ui.reward.select_prompt,Select a reward,选择一个奖励
+ui.reward.selected,SELECTED,已选择
 ui.reward.default,Reward,奖励
 ui.reward.weapon,Weapon {id} Lv.{level},武器 {id} Lv.{level}
 ui.reward.weapon_upgrade,Upgrade {name} Lv.{from} -> Lv.{to},升级 {name} Lv.{from} -> Lv.{to}

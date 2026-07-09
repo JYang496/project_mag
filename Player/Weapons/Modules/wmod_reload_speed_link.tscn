@@ -6,6 +6,7 @@
 
 [node name="ReloadSpeedLink" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 6
 level_effects = PackedStringArray("Reload duration -18% while another weapon reloads", "Reload duration -24% while another weapon reloads", "Reload duration -30% while another weapon reloads")
 required_delivery_types = 13
 required_hooks = 64

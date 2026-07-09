@@ -6,6 +6,7 @@
 
 [node name="InertialAim" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 10
 level_effects = PackedStringArray("Stationary: +15% damage; moving: +10% attack speed", "Stationary: +22% damage; moving: +15% attack speed", "Stationary: +29% damage; moving: +20% attack speed")
 module_tags = PackedStringArray("buff", "movement")
 

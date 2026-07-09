@@ -6,6 +6,7 @@
 
 [node name="PlagueSeedDot" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 11
 level_effects = PackedStringArray("Plague seed deals 1 damage for 3 ticks", "Plague seed deals 2 damage for 4 ticks", "Plague seed deals 3 damage for 5 ticks")
 required_hooks = 2
 module_tags = PackedStringArray("trigger", "dot", "debuff", "stacking", "duration")

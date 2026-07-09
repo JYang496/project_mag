@@ -46,6 +46,7 @@ var _slot_glow_nodes: Array[Control] = []
 var _slot_passive_nodes: Array[Control] = []
 var _slot_passive_glow_nodes: Array[Control] = []
 var _slot_passive_charge_nodes: Array[Control] = []
+var _slot_resource_indicator_nodes: Array[Label] = []
 var _cooldown_overlay: Control
 var _slot_glow_tweens: Dictionary = {}
 var _slot_passive_glow_tweens: Dictionary = {}
@@ -72,6 +73,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	_update_slot_cooldown_progress()
 	_update_slot_passive_progress()
+	_update_slot_resource_indicators()
 
 func set_layout_origin(origin: Vector2) -> void:
 	position = origin
@@ -312,6 +314,8 @@ func _ensure_slot_cooldown_nodes() -> void:
 		_slot_passive_glow_nodes.resize(SLOT_COUNT)
 	if _slot_passive_charge_nodes.size() != SLOT_COUNT:
 		_slot_passive_charge_nodes.resize(SLOT_COUNT)
+	if _slot_resource_indicator_nodes.size() != SLOT_COUNT:
+		_slot_resource_indicator_nodes.resize(SLOT_COUNT)
 	for slot_idx in range(SLOT_COUNT):
 		var existing := _slot_cd_nodes[slot_idx]
 		if existing != null and is_instance_valid(existing):
@@ -329,6 +333,7 @@ func _ensure_slot_cooldown_nodes() -> void:
 			_slot_cd_nodes[slot_idx].set("clockwise", false)
 		_ensure_slot_passive_nodes(slot_idx)
 		_ensure_slot_passive_charge_node(slot_idx)
+		_ensure_slot_resource_indicator_node(slot_idx)
 		var existing_glow := _slot_glow_nodes[slot_idx]
 		if existing_glow != null and is_instance_valid(existing_glow):
 			continue
@@ -403,6 +408,23 @@ func _ensure_slot_passive_charge_node(slot_idx: int) -> void:
 	charge_node.set("outline_color", PASSIVE_CHARGE_BEAN_OUTLINE_COLOR)
 	_cooldown_overlay.add_child(charge_node)
 	_slot_passive_charge_nodes[slot_idx] = charge_node
+
+func _ensure_slot_resource_indicator_node(slot_idx: int) -> void:
+	if slot_idx < 0 or slot_idx >= _slot_resource_indicator_nodes.size():
+		return
+	var existing := _slot_resource_indicator_nodes[slot_idx]
+	if existing != null and is_instance_valid(existing):
+		return
+	var label := Label.new()
+	label.name = "ResourceIndicator%d" % slot_idx
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.visible = false
+	label.z_index = 1
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 9)
+	_cooldown_overlay.add_child(label)
+	_slot_resource_indicator_nodes[slot_idx] = label
 
 func _get_slot_cooldown_node(slot_node: Control) -> Control:
 	if slot_node == null:
@@ -545,6 +567,103 @@ func _update_slot_passive_progress() -> void:
 		_apply_passive_visual_state(slot_idx, passive_node, visual_state)
 		_apply_passive_charge_state(charge_node, visual_state)
 		_track_passive_visual_transition(slot_idx, weapon, visual_state)
+
+func _update_slot_resource_indicators() -> void:
+	_sync_cooldown_overlay_layout()
+	var weapons: Array = PlayerData.player_weapon_list
+	for slot_idx in range(SLOT_COUNT):
+		var indicator := _get_slot_resource_indicator_node(slot_idx)
+		if indicator == null:
+			continue
+		var slot_node := _slot_nodes[slot_idx]
+		if slot_node == null:
+			indicator.visible = false
+			continue
+		indicator.position = slot_node.position + Vector2(slot_node.size.x - 30.0, -2.0)
+		indicator.size = Vector2(30.0, 15.0)
+		var weapon_idx := -1
+		if slot_idx < logical_order.size():
+			weapon_idx = logical_order[slot_idx]
+		if weapon_idx < 0 or weapon_idx >= weapons.size() or weapon_idx == PlayerData.main_weapon_index:
+			indicator.visible = false
+			continue
+		var weapon: Variant = weapons[weapon_idx]
+		var slot := _select_weapon_indicator_resource(weapon)
+		if slot.is_empty():
+			indicator.visible = false
+			continue
+		indicator.visible = true
+		indicator.text = _resource_indicator_text(slot)
+		_style_resource_indicator(indicator, _resource_indicator_color(slot))
+
+func _get_slot_resource_indicator_node(slot_idx: int) -> Label:
+	if slot_idx < 0 or slot_idx >= _slot_resource_indicator_nodes.size():
+		return null
+	var cached := _slot_resource_indicator_nodes[slot_idx]
+	if cached != null and is_instance_valid(cached):
+		return cached
+	return null
+
+func _select_weapon_indicator_resource(weapon: Variant) -> Dictionary:
+	if weapon == null or not is_instance_valid(weapon):
+		return {}
+	if not weapon.has_method("get_combat_resource_slots"):
+		return {}
+	var value: Variant = weapon.call("get_combat_resource_slots")
+	if not (value is Array):
+		return {}
+	var best: Dictionary = {}
+	for slot in value:
+		if not (slot is Dictionary):
+			continue
+		var slot_dict := slot as Dictionary
+		var state := StringName(str(slot_dict.get("state", "normal")))
+		if state == &"normal":
+			continue
+		if best.is_empty() or int(slot_dict.get("priority", 0)) > int(best.get("priority", 0)):
+			best = slot_dict
+	return best
+
+func _resource_indicator_text(slot: Dictionary) -> String:
+	var state := StringName(str(slot.get("state", "normal")))
+	var resource_type := StringName(str(slot.get("type", "")))
+	if state == &"locked":
+		return "HOT" if resource_type == &"heat" else "LOCK"
+	if state == &"reloading":
+		return "RLD"
+	if state == &"charging":
+		return "CHG"
+	if state == &"cooling":
+		return "COOL"
+	if state == &"warning":
+		return "LOW" if resource_type == &"ammo" else "!"
+	return str(slot.get("short_text", ""))
+
+func _resource_indicator_color(slot: Dictionary) -> Color:
+	var state := StringName(str(slot.get("state", "normal")))
+	var resource_type := StringName(str(slot.get("type", "")))
+	if state == &"locked":
+		return Color(1.0, 0.22, 0.16, 1.0)
+	if state == &"warning":
+		return Color(1.0, 0.62, 0.24, 1.0)
+	if state == &"reloading" or state == &"cooling":
+		return Color(0.60, 0.72, 1.0, 1.0)
+	if resource_type == &"charge" or state == &"charging":
+		return Color(0.58, 0.86, 1.0, 1.0)
+	return Color(0.86, 0.9, 0.92, 1.0)
+
+func _style_resource_indicator(label: Label, color: Color) -> void:
+	label.add_theme_color_override("font_color", Color(0.04, 0.05, 0.06, 1.0))
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r, color.g, color.b, 0.9)
+	style.border_color = Color(0.02, 0.03, 0.04, 0.82)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 3.0
+	style.content_margin_right = 3.0
+	style.content_margin_top = 1.0
+	style.content_margin_bottom = 1.0
+	label.add_theme_stylebox_override("normal", style)
 
 func _ensure_cooldown_overlay() -> void:
 	if _cooldown_overlay != null and is_instance_valid(_cooldown_overlay):

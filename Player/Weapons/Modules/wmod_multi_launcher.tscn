@@ -6,6 +6,7 @@
 
 [node name="MultiLauncher" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
+cost = 16
 item_name = "Multi Launcher"
 stat_key = "projectile_count"
 additive_lv1 = 1.0
