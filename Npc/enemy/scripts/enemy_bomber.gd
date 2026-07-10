@@ -2,6 +2,7 @@ extends BaseEnemy
 class_name EnemyBomber
 
 const AREA_EFFECT_SCENE := preload("res://Combat/area_effect/area_effect.tscn")
+const EXPLOSION_VISUAL_FRAMES := preload("res://asset/images/effects/explosion/explosion_frames.tres")
 
 @export var chase_acceleration: float = 34.0
 @export var max_speed_multiplier: float = 2.0
@@ -66,7 +67,11 @@ func _explode() -> void:
 		area.target_group = AreaEffect.TargetGroup.ALLIES
 		area.one_shot_damage = max(1, int(round(float(max(1, damage)) * maxf(blast_damage_multiplier, 1.0))))
 		area.tick_damage = 0
-		area.visual_enabled = false
+		area.visual_enabled = true
+		area.use_animated_visual = true
+		area.visual_frames = EXPLOSION_VISUAL_FRAMES
+		area.visual_animation = &"explode"
+		area.visual_duration = 0.4
 		area.draw_enabled = true
 		area.debug_fill_color = Color(1.0, 0.35, 0.15, 0.24)
 		area.debug_line_color = Color(1.0, 0.7, 0.25, 1.0)

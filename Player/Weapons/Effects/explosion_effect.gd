@@ -10,6 +10,7 @@ class_name ExplosionEffect
 @export var area_tick_damage: int = 0
 @export var area_tick_interval: float = 0.4
 @export var damage_type: StringName = Attack.TYPE_PHYSICAL
+@export var draw_enabled: bool = true
 @export var visual_enabled: bool = true
 @export var use_animated_visual: bool = true
 @export var visual_texture: Texture2D = preload("res://asset/images/effects/explosion/explosion_01.png")
@@ -36,6 +37,7 @@ func on_projectile_will_despawn() -> void:
 	area_effect.damage_type = Attack.normalize_damage_type(damage_type)
 	area_effect.radius = maxf(base_radius * explosion_size, 1.0)
 	area_effect.duration = duration
+	area_effect.draw_enabled = draw_enabled
 	area_effect.visual_duration = visual_duration
 	area_effect.target_group = AreaEffect.TargetGroup.ENEMIES
 	area_effect.visual_enabled = visual_enabled

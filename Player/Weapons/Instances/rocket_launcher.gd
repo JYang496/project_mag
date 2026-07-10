@@ -83,6 +83,7 @@ func _sync_explosion_effect_config(projectile_damage: int = damage) -> void:
 		explosion_config.damage = projectile_damage
 		explosion_config.damage_type = Attack.TYPE_FIRE
 		explosion_config.explosion_size = size * explosion_scale
+		explosion_config.draw_enabled = false
 		branch_runtime.apply_branch_explosion_modifiers(explosion_config)
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:

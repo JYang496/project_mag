@@ -394,7 +394,11 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 	var name_label := _make_card_label(str(card_data.get("title", "Reward")), 16, Color(0.94, 0.97, 1.0, 1.0))
 	var summary_count := int(reward.get_meta("summary_count", 1))
 	if _summary_mode and summary_count > 1:
-		name_label.text += " ×%d" % summary_count
+		name_label.text += " " + LocalizationManager.tr_format(
+			"ui.reward.summary.count_suffix",
+			{"count": summary_count},
+			"x%d" % summary_count
+		)
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_label.clip_text = true
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -512,19 +516,48 @@ func _build_reward_card_data(reward: RewardInfo) -> Dictionary:
 	return data
 
 func _format_reward_type_label(_reward: RewardInfo, category: String) -> String:
+	var localized_category := _localize_reward_category(category)
 	if _reward == null:
-		return category
+		return localized_category
 	if _reward.reward_kind == RewardInfo.KIND_CELL_EFFECT or _reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
-		return category
+		return localized_category
 	var rarity_label := RARITY_UTIL.get_display_name(_reward.get_rarity())
 	if rarity_label == "" or rarity_label == RARITY_UTIL.get_display_name(RARITY_UTIL.COMMON):
-		return category
-	return "%s %s" % [rarity_label, category]
+		return localized_category
+	return LocalizationManager.tr_format(
+		"ui.reward.type.with_rarity",
+		{"rarity": rarity_label, "category": localized_category},
+		"%s %s" % [rarity_label, localized_category]
+	)
+
+func _localize_reward_category(category: String) -> String:
+	var normalized := category.strip_edges()
+	match normalized:
+		"Weapon":
+			return LocalizationManager.tr_key("ui.reward.category.weapon", normalized)
+		"Module":
+			return LocalizationManager.tr_key("ui.reward.category.module", normalized)
+		"Terrain":
+			return LocalizationManager.tr_key("ui.reward.category.terrain", normalized)
+		"Task":
+			return LocalizationManager.tr_key("ui.reward.category.task", normalized)
+		"Task Module":
+			return LocalizationManager.tr_key("ui.reward.category.task_module", normalized)
+		"Economy":
+			return LocalizationManager.tr_key("ui.reward.category.economy", normalized)
+		"Supply":
+			return LocalizationManager.tr_key("ui.reward.category.supply", normalized)
+		"Cell Effect":
+			return LocalizationManager.tr_key("ui.reward.category.cell_effect", normalized)
+		"Reward":
+			return LocalizationManager.tr_key("ui.reward.default", normalized)
+		_:
+			return normalized
 
 func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 	var data := {
 		"title": LocalizationManager.tr_key("ui.reward.default", "Reward"),
-		"type_label": "Supply",
+		"type_label": _localize_reward_category("Supply"),
 		"short_tag": "",
 		"detail_text": "",
 		"outcome_text": "",
@@ -577,13 +610,13 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			data["detail_text"] = definition.get_description()
 			data["icon_texture"] = definition.icon_texture
 		else:
-			data["title"] = "Cell Effect"
+			data["title"] = _localize_reward_category("Cell Effect")
 		data["type_label"] = _format_reward_type_label(reward, "Terrain")
-		data["short_tag"] = "Cell Effect"
+		data["short_tag"] = _localize_reward_category("Cell Effect")
 		data["level_text"] = str(data["short_tag"])
 		data["meta_text"] = LocalizationManager.tr_key("ui.reward.cell_effect_meta", "Terrain Effect")
 		data["fallback_icon_key"] = "terrain"
-		data["chips"] = [BUILD_TAG_DISPLAY.build_tag_chip(&"terrain", "Terrain")]
+		data["chips"] = [BUILD_TAG_DISPLAY.build_tag_chip(&"terrain", _localize_reward_category("Terrain"))]
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.cell_effect", "Added to cell effects")
 		data["summary_text"] = _first_sentence(str(data["detail_text"]), "Adds a terrain effect.")
 		data["detail_bullets"] = _fallback_detail_bullets(reward)
@@ -592,17 +625,29 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		var task_definition := CellTaskModuleRuntime.get_definition(reward.task_module_id)
 		if task_definition != null:
 			data["title"] = task_definition.get_display_name()
-			data["short_tag"] = "Task: %s" % task_definition.get_task_label()
+			data["short_tag"] = LocalizationManager.tr_format(
+				"ui.reward.task_tag",
+				{"task": task_definition.get_task_label()},
+				"Task: %s" % task_definition.get_task_label()
+			)
 			data["detail_text"] = task_definition.get_description()
 			data["icon_texture"] = task_definition.icon_texture
-			data["meta_text"] = "%s Task Module" % task_definition.get_task_label()
+			data["meta_text"] = LocalizationManager.tr_format(
+				"ui.reward.task_module_meta",
+				{"task": task_definition.get_task_label()},
+				"%s Task Module" % task_definition.get_task_label()
+			)
 		else:
-			data["title"] = "Task Module"
-			data["short_tag"] = "Task: Unknown"
-			data["meta_text"] = "Task Module"
-		data["type_label"] = "Task Module"
+			data["title"] = _localize_reward_category("Task Module")
+			data["short_tag"] = LocalizationManager.tr_format(
+				"ui.reward.task_tag",
+				{"task": LocalizationManager.tr_key("ui.common.unknown", "Unknown")},
+				"Task: Unknown"
+			)
+			data["meta_text"] = _localize_reward_category("Task Module")
+		data["type_label"] = _localize_reward_category("Task Module")
 		data["fallback_icon_key"] = "task"
-		data["chips"] = [BUILD_TAG_DISPLAY.build_tag_chip(&"task", "Task")]
+		data["chips"] = [BUILD_TAG_DISPLAY.build_tag_chip(&"task", _localize_reward_category("Task"))]
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.task_module", "Added to Ready To Install")
 		data["level_text"] = str(data["short_tag"])
 		data["summary_text"] = _first_sentence(str(data["detail_text"]), "Adds a task module.")
@@ -635,7 +680,11 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 				detail_chunks.append(weapon_description)
 		data["type_label"] = _format_reward_type_label(reward, "New Weapon")
 		data["level_text"] = "Lv.%d" % int(reward.item_level)
-		data["meta_text"] = "%s · %s" % [str(data["level_text"]), LocalizationManager.tr_key("ui.branch.weapon", "Weapon")]
+		data["meta_text"] = LocalizationManager.tr_format(
+			"ui.reward.level_category_meta",
+			{"level": int(reward.item_level), "category": LocalizationManager.tr_key("ui.branch.weapon", "Weapon")},
+			"Lv.%d - %s" % [int(reward.item_level), LocalizationManager.tr_key("ui.branch.weapon", "Weapon")]
+		)
 		data["fallback_icon_key"] = "weapon"
 		data["icon_badge_text"] = "+"
 		data["icon_badge_color"] = Color(0.42, 0.78, 0.48, 1.0)
@@ -693,7 +742,11 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["chips"] = module_data.get("chips", [])
 		data["icon_texture"] = module_data.get("icon_texture", null)
 		data["fallback_icon_key"] = "module"
-		data["meta_text"] = "Lv.%d · %s" % [max(1, reward.module_level), _format_reward_type_label(reward, "Module")]
+		data["meta_text"] = LocalizationManager.tr_format(
+			"ui.reward.level_category_meta",
+			{"level": max(1, reward.module_level), "category": _format_reward_type_label(reward, "Module")},
+			"Lv.%d - %s" % [max(1, reward.module_level), _format_reward_type_label(reward, "Module")]
+		)
 		data["type_label"] = _format_reward_type_label(reward, "Module")
 		data["level_text"] = "Lv.%d" % max(1, reward.module_level)
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.module_obtain", "Added to temporary modules")
@@ -703,7 +756,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			{"value": reward.total_chip_value},
 			"EXP +%d" % reward.total_chip_value
 		))
-		data["chips"] = _append_display_chip(data.get("chips", []), BUILD_TAG_DISPLAY.build_tag_chip(&"economy", "Economy"))
+		data["chips"] = _append_display_chip(data.get("chips", []), BUILD_TAG_DISPLAY.build_tag_chip(&"economy", _localize_reward_category("Economy")))
 		data["type_label"] = _format_reward_type_label(reward, "Economy")
 		data["meta_text"] = LocalizationManager.tr_key("ui.reward.economy_meta", "Run Resource")
 		data["fallback_icon_key"] = "economy"
@@ -714,7 +767,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			{"value": reward.gold_value},
 			"Gold +%d" % reward.gold_value
 		))
-		data["chips"] = _append_display_chip(data.get("chips", []), BUILD_TAG_DISPLAY.build_tag_chip(&"economy", "Economy"))
+		data["chips"] = _append_display_chip(data.get("chips", []), BUILD_TAG_DISPLAY.build_tag_chip(&"economy", _localize_reward_category("Economy")))
 		data["type_label"] = _format_reward_type_label(reward, "Economy")
 		data["meta_text"] = LocalizationManager.tr_key("ui.reward.economy_meta", "Run Resource")
 		data["fallback_icon_key"] = "economy"
@@ -793,9 +846,17 @@ func _format_module_chip_summary(effect_chips: Array) -> String:
 			tags.append(label)
 	var lines := PackedStringArray()
 	if not tags.is_empty():
-		lines.append("Tags: %s" % " / ".join(tags.slice(0, 4)))
+		lines.append(LocalizationManager.tr_format(
+			"ui.reward.detail.tags",
+			{"tags": " / ".join(tags.slice(0, 4))},
+			"Tags: %s" % " / ".join(tags.slice(0, 4))
+		))
 	if not compatibility.is_empty():
-		lines.append("Compatible With: %s" % " / ".join(compatibility))
+		lines.append(LocalizationManager.tr_format(
+			"ui.reward.detail.compatible_with",
+			{"types": " / ".join(compatibility)},
+			"Compatible With: %s" % " / ".join(compatibility)
+		))
 	return "\n".join(lines)
 
 func _make_reward_icon(card_data: Dictionary) -> Control:
@@ -1108,10 +1169,10 @@ func _set_mouse_filter_recursive(root: Control, mouse_filter_value: Control.Mous
 
 func _extract_scene_name(scene_path: String) -> String:
 	if scene_path == "":
-		return "Unknown"
+		return LocalizationManager.tr_key("ui.common.unknown", "Unknown")
 	var file_name := scene_path.get_file().get_basename()
 	if file_name == "":
-		return "Unknown"
+		return LocalizationManager.tr_key("ui.common.unknown", "Unknown")
 	return file_name.replace("_", " ").capitalize()
 
 func _get_weapon_obtain_prediction(weapon_id: String) -> Dictionary:

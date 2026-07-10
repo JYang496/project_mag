@@ -101,6 +101,25 @@ ui.reward.type.duplicate_weapon,Duplicate Weapon,重复武器
 ui.reward.meta.weapon_fuse,Fuse {from} -> {to},融合 {from} -> {to}
 ui.reward.meta.equipped_weapon_upgrade,Equipped weapon upgrade: Lv.{from} -> Lv.{to},已装备武器升级：Lv.{from} -> Lv.{to}
 ui.reward.meta.duplicate_gold,+{gold} Gold / Duplicate,+{gold} 金币 / 重复
+ui.reward.type.with_rarity,{rarity} {category},{rarity}{category}
+ui.reward.category.weapon,Weapon,武器
+ui.reward.category.module,Module,模组
+ui.reward.category.terrain,Terrain,地形
+ui.reward.category.task,Task,任务
+ui.reward.category.task_module,Task Module,任务模组
+ui.reward.category.economy,Economy,经济
+ui.reward.category.supply,Supply,补给
+ui.reward.category.cell_effect,Cell Effect,格子效果
+ui.reward.cell_effect_meta,Terrain Effect,地形效果
+ui.reward.economy_meta,Run Resource,本局资源
+ui.reward.summary.count_suffix,x{count},x{count}
+ui.reward.task_tag,Task: {task},任务：{task}
+ui.reward.task_module_meta,{task} Task Module,{task}任务模组
+ui.reward.level_category_meta,Lv.{level} - {category},Lv.{level} - {category}
+ui.reward.detail.title,Reward Details,奖励详情
+ui.reward.detail.empty,Select a reward to view details.,选择一个奖励查看详情。
+ui.reward.detail.tags,Tags: {tags},标签：{tags}
+ui.reward.detail.compatible_with,Compatible With: {types},兼容：{types}
 ui.task_reward.title,Objective Reward,任务奖励
 ui.task_reward.source,Completed Objective,已完成任务
 ui.task_reward.subtitle,Choose one reward for completing an objective this battle.,选择一项本轮完成任务获得的奖励。

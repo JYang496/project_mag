@@ -9,6 +9,7 @@ class_name ExplosionEffectConfig
 @export var area_tick_damage: int = 0
 @export var area_tick_interval: float = 0.4
 @export var damage_type: StringName = Attack.TYPE_PHYSICAL
+@export var draw_enabled: bool = true
 
 func _init() -> void:
 	effect_id = &"explosion_effect"
@@ -23,5 +24,5 @@ func build_params() -> Dictionary:
 		"area_tick_damage": area_tick_damage,
 		"area_tick_interval": area_tick_interval,
 		"damage_type": damage_type,
+		"draw_enabled": draw_enabled,
 	}
-
