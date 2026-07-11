@@ -32,6 +32,7 @@ const LOCALIZATION_REFRESH_CONTROLLER_SCRIPT := preload("res://UI/scripts/manage
 const UI_BOOTSTRAP_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/ui_bootstrap_controller.gd")
 const HINT_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hint_presenter.gd")
 const BATTLE_CURSOR_PRESENTER_SCRIPT := preload("res://UI/scripts/components/battle_cursor_presenter.gd")
+const VICTORY_TRANSITION_SCRIPT := preload("res://UI/scripts/components/victory_transition.gd")
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overlay.gd"
@@ -202,6 +203,7 @@ var localization_refresh_controller
 var ui_bootstrap_controller
 var hint_presenter
 var battle_cursor_presenter
+var victory_transition: VictoryTransition
 var _weapon_passive_rows: Array[Dictionary] = []
 var _weapon_passive_panel_dirty := true
 var _weapon_passive_panel_refresh_timer := 0.0
@@ -221,6 +223,7 @@ func _ready():
 	# Reduce input-to-render latency for custom cursor overlays.
 	Input.use_accumulated_input = false
 	gui_root.theme = GLOBAL_UI_THEME
+	_init_victory_transition()
 	_init_ui_bootstrap_controller()
 	ui_bootstrap_controller.bootstrap()
 	_init_task_objective_hud_presenter()
@@ -230,6 +233,19 @@ func _ready():
 		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
 	call_deferred("_refresh_initial_prepare_shop")
 	call_deferred("_restore_pending_equipment_transactions")
+
+func _init_victory_transition() -> void:
+	if victory_transition != null and is_instance_valid(victory_transition):
+		return
+	victory_transition = VICTORY_TRANSITION_SCRIPT.new() as VictoryTransition
+	victory_transition.name = "VictoryTransition"
+	add_child(victory_transition)
+
+func play_victory_transition() -> void:
+	_init_victory_transition()
+	if victory_transition == null:
+		return
+	await victory_transition.play()
 
 func _exit_tree() -> void:
 	_disconnect_ui_dirty_signals()

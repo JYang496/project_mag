@@ -31,7 +31,7 @@ func open_for_weapon(target_weapon: Weapon, branch_defs: Array[WeaponBranchDefin
 	visible = true
 	if _weapon and is_instance_valid(_weapon):
 		title_label.text = LocalizationManager.tr_key("ui.branch.title", "Choose Evolution Branch")
-		var weapon_name := LocalizationManager.get_weapon_name_from_node(_weapon)
+		var weapon_name := LocalizationManager.get_weapon_instance_display_name(_weapon)
 		var selected_summary := _build_selected_branch_summary(_weapon)
 		subtitle_label.text = weapon_name if weapon_name != "" else LocalizationManager.tr_key("ui.branch.weapon", "Weapon")
 		if selected_summary != "":

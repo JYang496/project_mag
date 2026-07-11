@@ -48,6 +48,7 @@ var _budget_release_finished: bool = false
 var _spawn_budget_stopped: bool = false
 var _budget_summary_printed: bool = false
 var _spawn_budget_runtime: RefCounted
+var _battle_victory_transition_active := false
 
 func _ready():
 	GlobalVariables.enemy_spawner = self
@@ -203,18 +204,12 @@ func _on_timer_timeout():
 	var base_time_out: int = _runtime_base_time_out
 	var effective_time_out: int = get_effective_time_out(base_time_out, level_index)
 	if PhaseManager.battle_time >= effective_time_out or _should_end_after_spawn_budget_stopped():
-		timer.stop()
-		_print_spawn_budget_battle_summary(level_index, effective_time_out)
-		erase_all_enemies()
-		PhaseManager.enter_prepare()
+		_finish_battle_with_victory(level_index, effective_time_out)
 		return
 	_tick_spawn_intervals()
 	_spawn_with_random_wave_template(level_index, effective_time_out)
 	if _should_end_after_spawn_budget_stopped():
-		timer.stop()
-		_print_spawn_budget_battle_summary(level_index, effective_time_out)
-		erase_all_enemies()
-		PhaseManager.enter_prepare()
+		_finish_battle_with_victory(level_index, effective_time_out)
 
 func _is_runtime_spawn_budget_spent() -> bool:
 	_init_spawn_budget_runtime()
@@ -862,11 +857,22 @@ func _try_finish_battle_after_spawn_budget_stop() -> void:
 		return
 	var level_index := maxi(PhaseManager.current_level, 0)
 	var effective_time_out := get_effective_time_out(_runtime_base_time_out, level_index)
+	_finish_battle_with_victory(level_index, effective_time_out)
+
+func _finish_battle_with_victory(level_index: int, effective_time_out: int) -> void:
+	if _battle_victory_transition_active or PhaseManager.current_state() != PhaseManager.BATTLE:
+		return
+	_battle_victory_transition_active = true
 	if timer != null:
 		timer.stop()
 	_print_spawn_budget_battle_summary(level_index, effective_time_out)
 	erase_all_enemies()
-	PhaseManager.enter_prepare()
+	var ui := GlobalVariables.ui
+	if ui != null and is_instance_valid(ui) and ui.has_method("play_victory_transition"):
+		await ui.call("play_victory_transition")
+	if PhaseManager.current_state() == PhaseManager.BATTLE:
+		PhaseManager.enter_prepare()
+	_battle_victory_transition_active = false
 
 func _calculate_pressure_budget_total(release_duration_sec: int) -> float:
 	_init_spawn_budget_runtime()

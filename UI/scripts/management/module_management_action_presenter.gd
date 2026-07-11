@@ -33,7 +33,7 @@ func refresh_weapon_action() -> void:
 			primary_action_button.disabled = false
 			status_label.text = LocalizationManager.tr_format(
 				"ui.weapon.warehouse.exchange_preview",
-				{"stored": LocalizationManager.get_weapon_name_from_node(selected_stored_weapon), "equipped": LocalizationManager.get_weapon_name_from_node(selected_equipped_weapon)},
+				{"stored": LocalizationManager.get_weapon_instance_display_name(selected_stored_weapon), "equipped": LocalizationManager.get_weapon_instance_display_name(selected_equipped_weapon)},
 				"Exchange stored weapon with selected held weapon."
 			)
 		else:

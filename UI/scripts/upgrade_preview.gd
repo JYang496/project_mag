@@ -153,7 +153,7 @@ func _cursor_can_click() -> bool:
 	return hover_over and weapon_node != null and is_instance_valid(weapon_node) and upgradable
 
 func _build_weapon_header(weapon: Weapon) -> String:
-	var weapon_name := LocalizationManager.get_weapon_name_from_node(weapon)
+	var weapon_name := LocalizationManager.get_weapon_instance_display_name(weapon)
 	var rarity: String = _get_weapon_rarity(weapon)
 	lblName.set("theme_override_colors/font_color", RARITY_UTIL.get_color(rarity))
 	return LocalizationManager.tr_format(

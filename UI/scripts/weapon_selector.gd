@@ -238,17 +238,20 @@ func _set_all_slot_backgrounds_offhand() -> void:
 
 func _apply_weapon_icons_from_logical_order(weapons: Array) -> void:
 	for slot_idx in range(SLOT_COUNT):
-		var icon := _get_slot_icon(_slot_nodes[slot_idx])
+		var slot_node := _slot_nodes[slot_idx]
+		var icon := _get_slot_icon(slot_node)
 		var weapon_idx := logical_order[slot_idx]
 		if icon == null:
 			continue
 		if weapon_idx < 0 or weapon_idx >= weapons.size():
 			icon.texture = null
 			icon.visible = false
+			slot_node.tooltip_text = ""
 			continue
-		var weapon: Variant = weapons[weapon_idx]
+		var weapon: Weapon = weapons[weapon_idx] as Weapon
 		icon.visible = true
 		icon.texture = _get_weapon_texture(weapon)
+		slot_node.tooltip_text = LocalizationManager.get_weapon_instance_display_name(weapon)
 
 func _get_weapon_texture(weapon: Variant) -> Texture2D:
 	if is_instance_valid(weapon) and weapon.has_node("Sprite"):

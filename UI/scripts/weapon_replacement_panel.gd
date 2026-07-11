@@ -55,7 +55,7 @@ func open_for_weapon(
 		"weapon": DataHandler.build_weapon_save_payload(new_weapon),
 		"allow_cancel": allow_cancel,
 	})
-	var weapon_name := LocalizationManager.get_weapon_name_from_node(new_weapon)
+	var weapon_name := LocalizationManager.get_weapon_instance_display_name(new_weapon)
 	title_label.text = LocalizationManager.tr_key("ui.weapon.replace.install_title", "Install Weapon")
 	description_label.text = LocalizationManager.tr_format(
 		"ui.weapon.replace.incoming",
@@ -118,7 +118,7 @@ func _make_incoming_weapon_card(weapon: Weapon) -> PanelContainer:
 	text_column.add_theme_constant_override("separation", 2)
 	row.add_child(text_column)
 
-	var name_label := _make_slot_label(LocalizationManager.get_weapon_name_from_node(weapon), 18, Color(0.96, 0.99, 1.0, 1.0))
+	var name_label := _make_slot_label(LocalizationManager.get_weapon_instance_display_name(weapon), 18, Color(0.96, 0.99, 1.0, 1.0))
 	text_column.add_child(name_label)
 
 	var meta_label := _make_slot_label(_format_weapon_meta(weapon), 12, Color(0.68, 0.77, 0.82, 1.0))
@@ -159,7 +159,7 @@ func _make_slot_button(slot_index: int, weapon: Weapon, action_text: String, is_
 	text_column.add_theme_constant_override("separation", 1)
 	row.add_child(text_column)
 
-	var current_text := LocalizationManager.tr_key("ui.inventory.slot.empty", "Empty") if is_empty else LocalizationManager.get_weapon_name_from_node(weapon)
+	var current_text := LocalizationManager.tr_key("ui.inventory.slot.empty", "Empty") if is_empty else LocalizationManager.get_weapon_instance_display_name(weapon)
 	var current_label := _make_slot_label(current_text, 15, Color(0.93, 0.96, 0.96, 1.0))
 	text_column.add_child(current_label)
 

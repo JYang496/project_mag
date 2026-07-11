@@ -68,7 +68,7 @@ func _on_gui_input(event: InputEvent) -> void:
 			return
 		var weapon: Weapon = equipment_slot.item
 		var module_display_name: String = LocalizationManager.get_module_name(selected_module)
-		var weapon_display_name: String = LocalizationManager.get_weapon_name_from_node(weapon)
+		var weapon_display_name: String = LocalizationManager.get_weapon_instance_display_name(weapon)
 		var ui = GlobalVariables.ui
 		if ui and is_instance_valid(ui) and ui.has_method("request_module_unequip_confirmation"):
 			ui.request_module_unequip_confirmation(selected_module, weapon)

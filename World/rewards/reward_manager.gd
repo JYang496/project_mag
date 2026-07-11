@@ -138,7 +138,7 @@ func _request_standard_battle_reward_selection(level_index: int, route_def: RunR
 		if grant_reward_immediately(reward_options[0]):
 			RewardDraftRuntime.clear_pending_standard_draft()
 		return
-	var route_name := LocalizationManager.get_route_display_name(route_def) if route_def else "Battle Reward"
+	var route_name := LocalizationManager.get_route_display_name(route_def) if route_def else LocalizationManager.tr_key("ui.reward.battle_source", "Battle Reward")
 	var opened: bool = bool(ui.request_reward_selection(
 		route_name,
 		reward_options,
@@ -320,7 +320,7 @@ func _request_battle_reward_selection() -> void:
 	if ui == null or not is_instance_valid(ui) or not ui.has_method("request_reward_selection"):
 		grant_reward_immediately(reward_options[0])
 		return
-	var route_name := route_def.display_name if route_def else "Battle Reward"
+	var route_name := LocalizationManager.get_route_display_name(route_def) if route_def else LocalizationManager.tr_key("ui.reward.battle_source", "Battle Reward")
 	var opened: bool = bool(ui.request_reward_selection(
 		route_name,
 		reward_options,

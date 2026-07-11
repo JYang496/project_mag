@@ -269,7 +269,7 @@ func _clear_list(container: VBoxContainer) -> void:
 		child.queue_free()
 
 func _get_weapon_display_name(weapon: Weapon) -> String:
-	return LocalizationManager.get_weapon_name_from_node(weapon)
+	return LocalizationManager.get_weapon_instance_display_name(weapon)
 
 func _build_equipped_modules_line(weapon: Weapon) -> String:
 	var equipped_names: PackedStringArray = []

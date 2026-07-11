@@ -29,7 +29,7 @@ func refresh_weapon_detail(selected_equipped_weapon: Weapon, selected_stored_wea
 			LocalizationManager.tr_key("ui.weapon.warehouse.select_hint", "Select a held weapon to store, or a stored weapon to equip or exchange.")
 		)
 		return
-	detail_title.text = LocalizationManager.get_weapon_name_from_node(active_weapon)
+	detail_title.text = LocalizationManager.get_weapon_instance_display_name(active_weapon)
 	detail_title.add_theme_color_override("font_color", get_weapon_rarity_color(active_weapon))
 	detail_subtitle.text = _get_weapon_location(active_weapon)
 	_add_detail_line(
@@ -143,7 +143,7 @@ func _get_module_location(module_instance: Module, selected_equipped_module_weap
 	if selected_equipped_module_weapon:
 		return LocalizationManager.tr_format(
 			"ui.module.location.weapon",
-			{"weapon": LocalizationManager.get_weapon_name_from_node(selected_equipped_module_weapon)},
+			{"weapon": LocalizationManager.get_weapon_instance_display_name(selected_equipped_module_weapon)},
 			"Installed on weapon"
 		)
 	return ""

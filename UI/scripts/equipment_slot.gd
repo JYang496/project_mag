@@ -70,7 +70,7 @@ func update() -> void:
 			var rarity: String = _get_weapon_rarity(item)
 			equip_name.text = "[%s] %s" % [
 				RARITY_UTIL.get_display_name(rarity),
-				LocalizationManager.get_weapon_name_from_node(item)
+				LocalizationManager.get_weapon_instance_display_name(item)
 			]
 			equip_name.set("theme_override_colors/font_color", RARITY_UTIL.get_color(rarity))
 			for s in range(item.fuse):

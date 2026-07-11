@@ -37,7 +37,7 @@ func _ready():
 			)
 			status_container.add_child(status_label)
 		itemIcon.texture = weapon_node.sprite.texture
-		lblName.text = LocalizationManager.get_weapon_name_from_node(weapon_node)
+		lblName.text = LocalizationManager.get_weapon_instance_display_name(weapon_node)
 	refresh_affordability()
 
 func _exit_tree() -> void:

@@ -3,11 +3,11 @@ class_name GoldHudDisplay
 
 const COIN_TEXTURE := preload("res://asset/images/loot/credit_coin_01.png")
 
-const DISPLAY_SIZE := Vector2(154.0, 38.0)
-const ICON_SIZE := Vector2(28.0, 28.0)
-const ICON_POSITION := Vector2(8.0, 5.0)
-const VALUE_POSITION := Vector2(42.0, 2.0)
-const VALUE_SIZE := Vector2(98.0, 34.0)
+const DISPLAY_SIZE := Vector2(112.0, 38.0)
+const ICON_SIZE := Vector2(30.0, 30.0)
+const ICON_POSITION := Vector2(2.0, 4.0)
+const VALUE_POSITION := Vector2(38.0, 2.0)
+const VALUE_SIZE := Vector2(72.0, 34.0)
 const GAIN_COLOR := Color(1.0, 0.84, 0.25, 1.0)
 const SPEND_COLOR := Color(1.0, 0.42, 0.22, 1.0)
 
@@ -64,12 +64,6 @@ func set_gold_value(value: int, animate: bool = true) -> void:
 func get_target_gold() -> int:
 	return _target_gold
 
-func _draw() -> void:
-	var rect := Rect2(Vector2.ZERO, DISPLAY_SIZE)
-	draw_rect(rect, Color(0.03, 0.05, 0.06, 0.78), true)
-	draw_rect(Rect2(Vector2(1.0, 1.0), DISPLAY_SIZE - Vector2(2.0, 2.0)), Color(0.94, 0.70, 0.20, 0.48), false, 1.5)
-	draw_circle(ICON_POSITION + ICON_SIZE * 0.5, 18.0, Color(1.0, 0.76, 0.20, 0.14))
-
 func _ensure_children() -> void:
 	if _icon == null or not is_instance_valid(_icon):
 		_icon = TextureRect.new()
@@ -91,10 +85,12 @@ func _ensure_children() -> void:
 		_value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_value_label.add_theme_font_size_override("font_size", 21)
-		_value_label.add_theme_color_override("font_color", Color(1.0, 0.93, 0.62, 1.0))
-		_value_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.72))
+		_value_label.add_theme_color_override("font_color", Color(0.965, 0.91, 0.69, 1.0))
+		_value_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.82))
+		_value_label.add_theme_constant_override("outline_size", 2)
+		_value_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.52))
 		_value_label.add_theme_constant_override("shadow_offset_x", 1)
-		_value_label.add_theme_constant_override("shadow_offset_y", 1)
+		_value_label.add_theme_constant_override("shadow_offset_y", 2)
 		add_child(_value_label)
 
 func _update_value_label() -> void:

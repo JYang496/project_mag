@@ -63,9 +63,11 @@ func _draw() -> void:
 	_draw_tick_marks(center, radius + 6.0, edge_color)
 
 func _draw_shell(center: Vector2, radius: float, edge_color: Color, pulse: float) -> void:
-	var panel_rect := Rect2(Vector2(7.0, 7.0), Vector2(size.x - 14.0, size.y - 14.0))
-	draw_rect(panel_rect, BACK_FILL, true)
-	draw_rect(panel_rect, Color(edge_color.r, edge_color.g, edge_color.b, 0.42 + pulse * 0.28), false, 1.2 + pulse)
+	# Keep the timer visually circular: a soft shadow and dark core replace the
+	# former rectangular HUD plate.
+	draw_circle(center + Vector2(0.0, 3.0), radius + 3.5, Color(0.0, 0.0, 0.0, 0.38))
+	draw_circle(center, radius - 2.5, BACK_FILL)
+	draw_arc(center, radius - 2.0, 0.0, TAU, 56, Color(edge_color.r, edge_color.g, edge_color.b, 0.16 + pulse * 0.12), 1.0, true)
 	if pulse > 0.0 or _hit_pulse > 0.0:
 		var glow_alpha := 0.10 + pulse * 0.18 + _hit_pulse * 0.12
 		draw_circle(center, radius + 8.0, Color(edge_color.r, edge_color.g, edge_color.b, glow_alpha))
@@ -97,6 +99,8 @@ func _ensure_digit_label() -> void:
 	_digit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_digit_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_digit_label.add_theme_font_size_override("font_size", 30)
+	_digit_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.82))
+	_digit_label.add_theme_constant_override("outline_size", 2)
 	_digit_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.72))
 	_digit_label.add_theme_constant_override("shadow_offset_x", 1)
 	_digit_label.add_theme_constant_override("shadow_offset_y", 2)

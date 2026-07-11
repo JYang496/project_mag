@@ -15,12 +15,17 @@ var augments_label: Label
 var health_meter
 var energy_meter
 var primary_resource_meter
+var ammo_resource_meter
 var combat_resource_slot_container: VBoxContainer
+var special_resource_slot_container: Control
+var character_hud_root: Control
 
 const HUD_MARGIN := 16.0
 const CONTINUOUS_REFRESH_INTERVAL := 0.1
 const COMBAT_RESOURCE_ORIGIN := Vector2(64.0, 88.0)
 const COMBAT_RESOURCE_WIDTH := 192.0
+const SPECIAL_RESOURCE_OFFSET := Vector2(96.0, 76.0)
+const SPECIAL_RESOURCE_OPACITY := 0.62
 const HEALTH_METER_ORIGIN := Vector2(38.0, 16.0)
 const COMBAT_RESOURCE_METER_SCRIPT := preload("res://UI/scripts/components/combat_resource_meter.gd")
 const PLAYER_HEALTH_METER_SCRIPT := preload("res://UI/scripts/components/player_health_meter.gd")
@@ -86,17 +91,21 @@ func layout_hud(viewport_size: Vector2, hp_label_root: Control, weapon_selector:
 		hp_label_root.position = Vector2(HUD_MARGIN, viewport_size.y - dock_height - HUD_MARGIN)
 	if weapon_state_label and is_instance_valid(weapon_state_label):
 		weapon_state_label.position = Vector2(HUD_MARGIN, viewport_size.y - 300.0)
-	if gold_label and is_instance_valid(gold_label):
-		gold_label.position = Vector2(viewport_size.x * 0.4, HUD_MARGIN)
 	var time_display := _get_time_display_control()
 	if time_display and is_instance_valid(time_display):
 		time_display.position = Vector2(viewport_size.x * 0.5 - 58.0, HUD_MARGIN + 22.0)
+	if gold_label and is_instance_valid(gold_label):
+		var timer_left := viewport_size.x * 0.5 - 58.0
+		gold_label.position = Vector2(timer_left - gold_label.size.x - 18.0, HUD_MARGIN + 8.0)
 	if resource_label and is_instance_valid(resource_label):
 		resource_label.position = Vector2(64.0, 88.0)
 	if combat_resource_slot_container and is_instance_valid(combat_resource_slot_container):
 		combat_resource_slot_container.position = COMBAT_RESOURCE_ORIGIN
+	if special_resource_slot_container and is_instance_valid(special_resource_slot_container):
+		special_resource_slot_container.position = viewport_size * 0.5 + SPECIAL_RESOURCE_OFFSET
 
 func ensure_heat_label(character_root: Control) -> Label:
+	character_hud_root = character_root
 	if heat_label != null and is_instance_valid(heat_label):
 		heat_label.visible = false
 		return heat_label
@@ -230,7 +239,7 @@ func refresh_heat() -> void:
 	_update_heat_label_text()
 
 func refresh_ammo() -> void:
-	_hide_legacy_ammo_slot()
+	_sync_ammo_resource_slot(_find_resource_slot(_collect_primary_weapon_resource_slots(), &"ammo"))
 
 func refresh_weapon_state() -> void:
 	_update_weapon_state_label_text()
@@ -339,7 +348,7 @@ func _ensure_health_meter() -> void:
 	hp_label_root.add_child(health_meter)
 
 func _update_heat_label_text() -> void:
-	_sync_primary_resource_slot(_select_primary_resource_slot(_collect_primary_weapon_resource_slots()))
+	_sync_primary_resource_slot(_select_special_resource_slot(_collect_primary_weapon_resource_slots()))
 
 func _collect_primary_weapon_resource_slots() -> Array[Dictionary]:
 	var slots: Array[Dictionary] = []
@@ -372,6 +381,19 @@ func _select_primary_resource_slot(slots: Array[Dictionary]) -> Dictionary:
 			best = slot
 	return best
 
+func _find_resource_slot(slots: Array[Dictionary], resource_type: StringName) -> Dictionary:
+	for slot in slots:
+		if StringName(str(slot.get("type", ""))) == resource_type:
+			return slot
+	return {}
+
+func _select_special_resource_slot(slots: Array[Dictionary]) -> Dictionary:
+	var special_slots: Array[Dictionary] = []
+	for slot in slots:
+		if StringName(str(slot.get("type", ""))) != &"ammo":
+			special_slots.append(slot)
+	return _select_primary_resource_slot(special_slots)
+
 func _sync_primary_resource_slot(slot: Dictionary) -> void:
 	if slot.is_empty():
 		_hide_primary_resource_slot()
@@ -399,19 +421,54 @@ func _hide_primary_resource_slot() -> void:
 	_last_heat_label_text = ""
 
 func _ensure_primary_resource_meter() -> void:
-	if combat_resource_slot_container == null or not is_instance_valid(combat_resource_slot_container):
+	_ensure_special_resource_slot_container()
+	if special_resource_slot_container == null or not is_instance_valid(special_resource_slot_container):
 		return
 	if primary_resource_meter != null and is_instance_valid(primary_resource_meter):
-		if primary_resource_meter.get_parent() != combat_resource_slot_container:
+		if primary_resource_meter.get_parent() != special_resource_slot_container:
 			var previous_parent: Node = primary_resource_meter.get_parent()
 			if previous_parent:
 				previous_parent.remove_child(primary_resource_meter)
-			combat_resource_slot_container.add_child(primary_resource_meter)
+			special_resource_slot_container.add_child(primary_resource_meter)
 		return
 	primary_resource_meter = COMBAT_RESOURCE_METER_SCRIPT.new()
-	primary_resource_meter.name = "PrimaryResourceMeter"
+	primary_resource_meter.name = "SpecialResourceMeter"
 	primary_resource_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	combat_resource_slot_container.add_child(primary_resource_meter)
+	primary_resource_meter.modulate.a = SPECIAL_RESOURCE_OPACITY
+	special_resource_slot_container.add_child(primary_resource_meter)
+
+func _ensure_special_resource_slot_container() -> void:
+	if special_resource_slot_container != null and is_instance_valid(special_resource_slot_container):
+		return
+	var parent := character_hud_root
+	if parent == null:
+		return
+	special_resource_slot_container = Control.new()
+	special_resource_slot_container.name = "SpecialResourceSlot"
+	special_resource_slot_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	special_resource_slot_container.position = parent.get_viewport_rect().size * 0.5 + SPECIAL_RESOURCE_OFFSET
+	parent.add_child(special_resource_slot_container)
+
+func _sync_ammo_resource_slot(slot: Dictionary) -> void:
+	if slot.is_empty():
+		if ammo_resource_meter and is_instance_valid(ammo_resource_meter):
+			ammo_resource_meter.visible = false
+		return
+	_ensure_ammo_resource_meter()
+	if ammo_resource_meter == null or not is_instance_valid(ammo_resource_meter):
+		return
+	ammo_resource_meter.call("set_resource", &"ammo", clampf(float(slot.get("ratio", 0.0)), 0.0, 1.0), StringName(str(slot.get("state", "normal"))), str(slot.get("short_text", "")), str(slot.get("tooltip", "")))
+	ammo_resource_meter.visible = true
+
+func _ensure_ammo_resource_meter() -> void:
+	if combat_resource_slot_container == null or not is_instance_valid(combat_resource_slot_container):
+		return
+	if ammo_resource_meter != null and is_instance_valid(ammo_resource_meter):
+		return
+	ammo_resource_meter = COMBAT_RESOURCE_METER_SCRIPT.new()
+	ammo_resource_meter.name = "AmmoResourceMeter"
+	ammo_resource_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	combat_resource_slot_container.add_child(ammo_resource_meter)
 
 func _update_ammo_label_text() -> void:
 	_hide_legacy_ammo_slot()

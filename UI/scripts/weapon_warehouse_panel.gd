@@ -117,8 +117,8 @@ func _add_stored_row(weapon: Weapon) -> void:
 		var swap_button := Button.new()
 		swap_button.text = LocalizationManager.tr_format(
 			"ui.weapon.warehouse.swap",
-			{"name": LocalizationManager.get_weapon_name_from_node(equipped)},
-			"Swap with %s" % LocalizationManager.get_weapon_name_from_node(equipped)
+			{"name": LocalizationManager.get_weapon_instance_display_name(equipped)},
+			"Swap with %s" % LocalizationManager.get_weapon_instance_display_name(equipped)
 		)
 		swap_button.pressed.connect(_on_exchange.bind(weapon, equipped))
 		row.add_child(swap_button)
@@ -133,12 +133,12 @@ func _make_weapon_row(parent: VBoxContainer, weapon: Weapon) -> VBoxContainer:
 	label.text = LocalizationManager.tr_format(
 		"ui.weapon.warehouse.row",
 		{
-			"name": LocalizationManager.get_weapon_name_from_node(weapon),
+			"name": LocalizationManager.get_weapon_instance_display_name(weapon),
 			"level": int(weapon.level),
 			"fuse": int(weapon.fuse),
 		},
 		"%s  Lv.%d  Fuse %d" % [
-			LocalizationManager.get_weapon_name_from_node(weapon),
+			LocalizationManager.get_weapon_instance_display_name(weapon),
 			int(weapon.level),
 			int(weapon.fuse),
 		]

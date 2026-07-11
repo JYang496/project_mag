@@ -602,3 +602,32 @@ ui.status_hint.spread_up,Spread Increased,扩散增大
 ui.status_hint.weapon_damage_up,Weapon Damage Up,武器伤害提升
 ui.status_hint.weapon_damage_down,Weapon Damage Down,武器伤害降低
 ui.hud.reloading_now,Reloading,正在换弹中
+ui.battle_victory.title,VICTORY,战斗胜利
+ui.battle_victory.subtitle,BATTLE COMPLETE,战斗完成
+ui.weapon.name_with_branches,{weapon} · {branches},{weapon} · {branches}
+ui.reward.category.new_weapon,New Weapon,新武器
+ui.reward.summary.weapon_upgrade,Upgrade equipped weapon level.,提升已装备武器的等级。
+ui.reward.summary.task_module,Gain a new task module.,获得一个新的任务模组。
+ui.reward.summary.cell_effect,Gain a terrain effect.,获得一个地形效果。
+ui.reward.summary.module,Gain a new weapon module.,获得一个新的武器模组。
+ui.reward.summary.weapon,New weapon added to your loadout.,新武器将加入你的装备。
+ui.reward.summary.economy,Gain run resources.,获得本局资源。
+ui.reward.detail.bullet.weapon_upgrade.1,Increases weapon level,提升武器等级
+ui.reward.detail.bullet.weapon_upgrade.2,Improves the equipped weapon's performance,提高已装备武器的性能
+ui.reward.detail.bullet.weapon_upgrade.3,Strengthens the current build direction,强化当前构筑方向
+ui.reward.detail.bullet.task_module.1,Adds a task module,添加一个任务模组
+ui.reward.detail.bullet.task_module.2,Creates route objective options,提供路线任务选项
+ui.reward.detail.bullet.task_module.3,Can improve future rewards,可以提升后续奖励
+ui.reward.detail.bullet.cell_effect.1,Adds a cell effect,添加一个格子效果
+ui.reward.detail.bullet.cell_effect.2,Changes board options,改变棋盘选项
+ui.reward.detail.bullet.cell_effect.3,Supports route planning,辅助路线规划
+ui.reward.detail.bullet.module.1,Adds a weapon modifier,添加一个武器强化效果
+ui.reward.detail.bullet.module.2,Changes or improves weapon behavior,改变或强化武器行为
+ui.reward.detail.bullet.module.3,Can create build synergy,可以形成构筑联动
+ui.reward.detail.bullet.weapon.1,Adds a new weapon to your loadout,将新武器加入装备
+ui.reward.detail.bullet.weapon.2,Expands build options,扩展构筑选项
+ui.reward.detail.bullet.weapon.3,May trigger evolution effects,可能触发进化效果
+ui.reward.detail.bullet.economy.1,Adds resources immediately,立即获得资源
+ui.reward.detail.bullet.economy.2,Supports current run progression,帮助推进本局成长
+ui.common.tag,Tag,标签
+ui.reward.battle_source,Battle Reward,战斗奖励

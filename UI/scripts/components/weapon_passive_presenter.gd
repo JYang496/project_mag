@@ -109,8 +109,8 @@ func _get_weapon_id(weapon: Node) -> String:
 	return str(weapon.get_instance_id())
 
 func _get_weapon_name(weapon: Node) -> String:
-	if weapon is Weapon and LocalizationManager != null and LocalizationManager.has_method("get_weapon_name_from_node"):
-		var localized_name := str(LocalizationManager.call("get_weapon_name_from_node", weapon))
+	if weapon is Weapon and LocalizationManager != null and LocalizationManager.has_method("get_weapon_instance_display_name"):
+		var localized_name := str(LocalizationManager.call("get_weapon_instance_display_name", weapon))
 		if localized_name.strip_edges() != "":
 			return localized_name
 	var item_name: Variant = weapon.get("ITEM_NAME")

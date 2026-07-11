@@ -35,7 +35,7 @@ func configure_weapon_upgrade(weapon: Weapon) -> void:
 	reward_kind = KIND_WEAPON_UPGRADE
 	target_weapon_ref = weakref(weapon)
 	target_weapon_id = DataHandler.get_weapon_id_from_instance(weapon)
-	target_weapon_name = LocalizationManager.get_weapon_name_from_node(weapon)
+	target_weapon_name = LocalizationManager.get_weapon_instance_display_name(weapon)
 	target_weapon_from_level = int(weapon.level)
 	target_weapon_to_level = mini(int(weapon.level) + 1, int(weapon.max_level))
 	reward_key_override = "upgrade:%s" % str(weapon.get_instance_id())

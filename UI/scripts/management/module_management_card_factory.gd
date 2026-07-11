@@ -104,7 +104,7 @@ func make_module_weapon_card(weapon: Weapon, active_drag_module: Module, socket_
 	root.add_theme_constant_override("separation", 6)
 	margin.add_child(root)
 	var name_label := Label.new()
-	name_label.text = "%s  Lv.%d" % [LocalizationManager.get_weapon_name_from_node(weapon), int(weapon.level)]
+	name_label.text = "%s  Lv.%d" % [LocalizationManager.get_weapon_instance_display_name(weapon), int(weapon.level)]
 	name_label.clip_text = true
 	name_label.add_theme_color_override("font_color", _get_weapon_rarity_color(weapon))
 	root.add_child(name_label)
@@ -211,7 +211,7 @@ func build_drag_preview(payload: Dictionary) -> Control:
 		sub_label.text = _format_module_meta(module_instance)
 	elif weapon != null and is_instance_valid(weapon):
 		icon.texture = weapon.sprite.texture if weapon.sprite else null
-		name_label.text = LocalizationManager.get_weapon_name_from_node(weapon)
+		name_label.text = LocalizationManager.get_weapon_instance_display_name(weapon)
 		name_label.add_theme_color_override("font_color", _get_weapon_rarity_color(weapon))
 		sub_label.text = _format_weapon_meta(weapon)
 	elif module_instance != null and is_instance_valid(module_instance):
@@ -238,7 +238,7 @@ func _populate_weapon_button(button: Button, weapon: Weapon, selected: bool) -> 
 	var text_box := _make_text_box()
 	row.add_child(text_box)
 	var name_label := Label.new()
-	name_label.text = LocalizationManager.get_weapon_name_from_node(weapon)
+	name_label.text = LocalizationManager.get_weapon_instance_display_name(weapon)
 	name_label.clip_text = true
 	name_label.add_theme_color_override("font_color", _get_weapon_rarity_color(weapon))
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE

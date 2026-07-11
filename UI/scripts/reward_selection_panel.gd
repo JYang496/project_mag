@@ -434,7 +434,7 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 
 func _build_reward_card_data(reward: RewardInfo) -> Dictionary:
 	var data := {
-		"type": "Economy",
+		"type": _localize_reward_category("Economy"),
 		"name": LocalizationManager.tr_key("ui.reward.default", "Reward"),
 		"tag": "",
 	}
@@ -450,9 +450,9 @@ func _build_reward_card_data(reward: RewardInfo) -> Dictionary:
 		return data
 	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
 		var definition := CellEffectRuntime.get_definition(reward.cell_effect_id)
-		data["name"] = definition.get_display_name() if definition != null else "Cell Effect"
+		data["name"] = definition.get_display_name() if definition != null else _localize_reward_category("Cell Effect")
 		data["type"] = _format_reward_type_label(reward, "Terrain")
-		data["tag"] = "Cell Effect"
+		data["tag"] = _localize_reward_category("Cell Effect")
 		return data
 	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
 		var task_definition := CellTaskModuleRuntime.get_definition(reward.task_module_id)
@@ -460,9 +460,9 @@ func _build_reward_card_data(reward: RewardInfo) -> Dictionary:
 			data["name"] = task_definition.get_display_name()
 			data["tag"] = task_definition.get_task_label()
 		else:
-			data["name"] = "Task Module"
-			data["tag"] = "Task"
-		data["type"] = "Task"
+			data["name"] = _localize_reward_category("Task Module")
+			data["tag"] = _localize_reward_category("Task")
+		data["type"] = _localize_reward_category("Task")
 		return data
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
@@ -549,6 +549,8 @@ func _localize_reward_category(category: String) -> String:
 			return LocalizationManager.tr_key("ui.reward.category.supply", normalized)
 		"Cell Effect":
 			return LocalizationManager.tr_key("ui.reward.category.cell_effect", normalized)
+		"New Weapon":
+			return LocalizationManager.tr_key("ui.reward.category.new_weapon", normalized)
 		"Reward":
 			return LocalizationManager.tr_key("ui.reward.default", normalized)
 		_:
@@ -600,7 +602,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 				upgrade_detail.append(description)
 		data["detail_text"] = "\n".join(upgrade_detail)
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.weapon_upgrade", "Upgrade equipped weapon level")
-		data["summary_text"] = _first_sentence(str(data["detail_text"]), "Upgrade equipped weapon level.")
+		data["summary_text"] = _first_sentence(str(data["detail_text"]), LocalizationManager.tr_key("ui.reward.summary.weapon_upgrade", "Upgrade equipped weapon level."))
 		data["detail_bullets"] = _fallback_detail_bullets(reward)
 		return data
 	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
@@ -618,7 +620,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["fallback_icon_key"] = "terrain"
 		data["chips"] = [BUILD_TAG_DISPLAY.build_tag_chip(&"terrain", _localize_reward_category("Terrain"))]
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.cell_effect", "Added to cell effects")
-		data["summary_text"] = _first_sentence(str(data["detail_text"]), "Adds a terrain effect.")
+		data["summary_text"] = _first_sentence(str(data["detail_text"]), LocalizationManager.tr_key("ui.reward.summary.cell_effect", "Adds a terrain effect."))
 		data["detail_bullets"] = _fallback_detail_bullets(reward)
 		return data
 	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
@@ -650,7 +652,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["chips"] = [BUILD_TAG_DISPLAY.build_tag_chip(&"task", _localize_reward_category("Task"))]
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.task_module", "Added to Ready To Install")
 		data["level_text"] = str(data["short_tag"])
-		data["summary_text"] = _first_sentence(str(data["detail_text"]), "Adds a task module.")
+		data["summary_text"] = _first_sentence(str(data["detail_text"]), LocalizationManager.tr_key("ui.reward.summary.task_module", "Adds a task module."))
 		data["detail_bullets"] = _fallback_detail_bullets(reward)
 		return data
 	var summary_chunks: PackedStringArray = []
@@ -1044,17 +1046,17 @@ func _fallback_summary(reward: RewardInfo) -> String:
 	if reward == null:
 		return ""
 	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
-		return "Upgrade equipped weapon level."
+		return LocalizationManager.tr_key("ui.reward.summary.weapon_upgrade", "Upgrade equipped weapon level.")
 	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
-		return "Gain a new task module."
+		return LocalizationManager.tr_key("ui.reward.summary.task_module", "Gain a new task module.")
 	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
-		return "Gain a terrain effect."
+		return LocalizationManager.tr_key("ui.reward.summary.cell_effect", "Gain a terrain effect.")
 	if reward.module_scene:
-		return "Gain a new weapon module."
+		return LocalizationManager.tr_key("ui.reward.summary.module", "Gain a new weapon module.")
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
-		return "New weapon added to your loadout."
+		return LocalizationManager.tr_key("ui.reward.summary.weapon", "New weapon added to your loadout.")
 	if reward.total_chip_value > 0 or reward.gold_value > 0:
-		return "Gain run resources."
+		return LocalizationManager.tr_key("ui.reward.summary.economy", "Gain run resources.")
 	return ""
 
 func _derive_level_text(reward: RewardInfo, data: Dictionary) -> String:
@@ -1073,18 +1075,27 @@ func _fallback_detail_bullets(reward: RewardInfo) -> PackedStringArray:
 	if reward == null:
 		return PackedStringArray()
 	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
-		return PackedStringArray(["Increases weapon level", "Improves the equipped weapon's performance", "Strengthens the current build direction"])
+		return _localized_reward_bullets("weapon_upgrade", ["Increases weapon level", "Improves the equipped weapon's performance", "Strengthens the current build direction"])
 	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
-		return PackedStringArray(["Adds a task module", "Creates route objective options", "Can improve future rewards"])
+		return _localized_reward_bullets("task_module", ["Adds a task module", "Creates route objective options", "Can improve future rewards"])
 	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
-		return PackedStringArray(["Adds a cell effect", "Changes board options", "Supports route planning"])
+		return _localized_reward_bullets("cell_effect", ["Adds a cell effect", "Changes board options", "Supports route planning"])
 	if reward.module_scene:
-		return PackedStringArray(["Adds a weapon modifier", "Changes or improves weapon behavior", "Can create build synergy"])
+		return _localized_reward_bullets("module", ["Adds a weapon modifier", "Changes or improves weapon behavior", "Can create build synergy"])
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
-		return PackedStringArray(["Adds a new weapon to your loadout", "Expands build options", "May trigger evolution effects"])
+		return _localized_reward_bullets("weapon", ["Adds a new weapon to your loadout", "Expands build options", "May trigger evolution effects"])
 	if reward.total_chip_value > 0 or reward.gold_value > 0:
-		return PackedStringArray(["Adds resources immediately", "Supports current run progression"])
+		return _localized_reward_bullets("economy", ["Adds resources immediately", "Supports current run progression"])
 	return PackedStringArray()
+
+func _localized_reward_bullets(category: String, fallbacks: Array) -> PackedStringArray:
+	var output := PackedStringArray()
+	for index in range(fallbacks.size()):
+		output.append(LocalizationManager.tr_key(
+			"ui.reward.detail.bullet.%s.%d" % [category, index + 1],
+			str(fallbacks[index])
+		))
+	return output
 
 func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool) -> void:
 	if button == null or reward == null:

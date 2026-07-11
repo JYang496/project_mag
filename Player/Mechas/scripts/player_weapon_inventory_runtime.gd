@@ -150,7 +150,7 @@ func notify_weapon_duplicate_result(existing_weapon: Weapon, weapon_id: String, 
 	if ui == null or not is_instance_valid(ui) or not ui.has_method("show_item_message"):
 		return
 	var resolved_id := str(weapon_id).strip_edges()
-	var fallback_name := LocalizationManager.get_weapon_name_from_node(existing_weapon)
+	var fallback_name := LocalizationManager.get_weapon_instance_display_name(existing_weapon)
 	var weapon_name := LocalizationManager.get_weapon_name_by_id(resolved_id, fallback_name)
 	var result_type := str(result.get("result", ""))
 	if result_type != "fused" and result_type != "converted_to_gold":

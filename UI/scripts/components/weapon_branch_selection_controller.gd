@@ -62,6 +62,8 @@ func on_branch_selected(weapon: Weapon, branch_id: String) -> void:
 		return
 	if not weapon.branch_runtime.set_branch(branch_id):
 		push_warning("Failed to apply branch '%s' for weapon '%s'." % [branch_id, weapon.name])
+	else:
+		PlayerData.weapon_list_changed.emit()
 	owner_ui.call_deferred("_finalize_branch_selected_weapon", weapon)
 
 func finalize_branch_selected_weapon(weapon: Weapon) -> void:

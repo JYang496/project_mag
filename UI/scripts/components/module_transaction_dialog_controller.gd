@@ -52,11 +52,11 @@ func request_module_unequip_confirmation(module_instance: Module, weapon: Weapon
 		"ui.module.unequip.confirm",
 		{
 			"module": LocalizationManager.get_module_name(module_instance),
-			"weapon": LocalizationManager.get_weapon_name_from_node(weapon),
+			"weapon": LocalizationManager.get_weapon_instance_display_name(weapon),
 		},
 		"Move %s from %s to the temporary area? Unsold modules are sold when battle starts." % [
 			LocalizationManager.get_module_name(module_instance),
-			LocalizationManager.get_weapon_name_from_node(weapon),
+			LocalizationManager.get_weapon_instance_display_name(weapon),
 		]
 	)
 	pending_module_action = Callable(self, "_confirm_module_unequip").bind(module_instance, weapon)
@@ -78,7 +78,7 @@ func request_module_unequip_confirmation(module_instance: Module, weapon: Weapon
 			},
 			{
 				"label": LocalizationManager.tr_key("ui.dialog.detail.location", "Location"),
-				"value": LocalizationManager.get_weapon_name_from_node(weapon),
+				"value": LocalizationManager.get_weapon_instance_display_name(weapon),
 			},
 			{
 				"label": LocalizationManager.tr_key("ui.dialog.detail.action", "Action"),

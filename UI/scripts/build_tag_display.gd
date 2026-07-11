@@ -44,9 +44,10 @@ static func build_tag_chip(source_value: Variant, label_override: String = "") -
 	var spec: Dictionary = TAG_SPECS.get(source_key, {})
 	var label := label_override.strip_edges()
 	if label == "":
-		label = str(spec.get("label", _label_from_key(source_key))).strip_edges()
+		var fallback_label := str(spec.get("label", _label_from_key(source_key))).strip_edges()
+		label = _localized_tag_label(source_key, fallback_label)
 	if label == "":
-		label = "Tag"
+		label = LocalizationManager.tr_key("ui.common.tag", "Tag")
 	var known := not spec.is_empty()
 	return {
 		"label": label,
@@ -56,6 +57,13 @@ static func build_tag_chip(source_value: Variant, label_override: String = "") -
 		"status": STATUS_EFFECT if known else STATUS_FALLBACK,
 		"source_key": source_key,
 	}
+
+static func _localized_tag_label(source_key: String, fallback: String) -> String:
+	match source_key:
+		"weapon", "module", "terrain", "task", "economy":
+			return LocalizationManager.tr_key("ui.reward.category.%s" % source_key, fallback)
+		_:
+			return LocalizationManager.get_module_term(StringName(source_key), fallback)
 
 static func build_fit_status_badge(status: StringName, label: String) -> Dictionary:
 	var clean_label := label.strip_edges()

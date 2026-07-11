@@ -432,7 +432,7 @@ func _build_weapon_item_data(weapon: Weapon, location_text: String = "") -> Dict
 		"type": "weapon",
 		"id": str(weapon.get_instance_id()),
 		"weapon": weapon,
-		"name": LocalizationManager.get_weapon_name_from_node(weapon),
+		"name": LocalizationManager.get_weapon_instance_display_name(weapon),
 		"description": LocalizationManager.get_weapon_description_from_definition(weapon_def) if weapon_def else "",
 		"level": int(weapon.level),
 		"max_level": int(weapon.max_level),
@@ -489,7 +489,7 @@ func _get_module_location_text(module_instance: Module) -> String:
 		return LocalizationManager.tr_key("ui.service.location.temporary_storage", "Temporary Storage")
 	var owner := _resolve_module_owner_weapon(module_instance)
 	if owner != null:
-		var weapon_name := LocalizationManager.get_weapon_name_from_node(owner)
+		var weapon_name := LocalizationManager.get_weapon_instance_display_name(owner)
 		if PlayerData.player_weapon_list.has(owner):
 			return LocalizationManager.tr_format(
 				"ui.service.location.equipped_weapon",

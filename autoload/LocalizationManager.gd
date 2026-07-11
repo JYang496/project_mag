@@ -86,6 +86,31 @@ func get_weapon_name_from_node(weapon: Weapon) -> String:
 		return fallback_name
 	return get_weapon_name_by_id(weapon_id, fallback_name)
 
+func get_weapon_instance_display_name(weapon: Weapon) -> String:
+	var base_name := get_weapon_name_from_node(weapon)
+	if weapon == null or not is_instance_valid(weapon):
+		return base_name
+	var runtime: WeaponBranchRuntime = weapon.branch_runtime
+	if runtime == null:
+		return base_name
+	var selected_ids: Array[String] = runtime.branch_ids
+	if selected_ids.is_empty():
+		return base_name
+	var branch_names := PackedStringArray()
+	for branch_id_variant in selected_ids:
+		var branch_id := str(branch_id_variant).strip_edges()
+		if branch_id == "":
+			continue
+		var branch_def := DataHandler.read_weapon_branch_definition(weapon.scene_file_path, branch_id)
+		branch_names.append(get_branch_display_name(branch_def) if branch_def != null else branch_id)
+	if branch_names.is_empty():
+		return base_name
+	return tr_format(
+		"ui.weapon.name_with_branches",
+		{"weapon": base_name, "branches": " / ".join(branch_names)},
+		"%s · %s" % [base_name, " / ".join(branch_names)]
+	)
+
 func get_branch_display_name(branch_def: WeaponBranchDefinition) -> String:
 	if branch_def == null:
 		return ""
