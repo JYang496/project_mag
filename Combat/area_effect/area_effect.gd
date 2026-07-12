@@ -91,6 +91,7 @@ signal target_affected(target: Node)
 
 
 func _ready() -> void:
+	add_to_group(&"hybrid_ground_area_effect")
 	_damage_active = true
 	if source_node is BaseEnemy:
 		add_to_group("enemy_runtime_cleanup")

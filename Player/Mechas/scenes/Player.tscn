@@ -4,6 +4,18 @@
 [ext_resource type="Texture2D" uid="uid://dckpubjv7tbtk" path="res://asset/images/characters/f.png" id="2_we6y6"]
 [ext_resource type="PackedScene" uid="uid://dr2gmtpibgjy1" path="res://Combat/collision/hurt_box.tscn" id="3_cj848"]
 [ext_resource type="SpriteFrames" path="res://Player/Mechas/animations/mecha_move_frames.tres" id="4_movef"]
+[ext_resource type="Script" uid="uid://d0mi57vowckgd" path="res://Visual/Oblique/billboard_visual_2d.gd" id="5_billboard"]
+[ext_resource type="Script" uid="uid://dft4s2hjge0th" path="res://Visual/Oblique/hybrid_ground_shadow_2d.gd" id="6_shadow"]
+
+[sub_resource type="Gradient" id="Gradient_shadow"]
+colors = PackedColorArray(0, 0, 0, 0.28, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture_shadow"]
+gradient = SubResource("Gradient_shadow")
+height = 32
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_e43ux"]
 size = Vector2(19, 27)
@@ -28,10 +40,20 @@ collision_layer = 17
 collision_mask = 32
 motion_mode = 1
 script = ExtResource("1_ds3ra")
+rest_phase_camera_zoom_factor = 0.7
+fixed_vertical_scale = 0.8
+
+[node name="GroundShadow" type="Sprite2D" parent="." unique_id=1750728442 groups=["hybrid_ground_shadow"]]
+z_index = -1
+position = Vector2(0, 8)
+scale = Vector2(0.65, 0.35)
+texture = SubResource("GradientTexture_shadow")
+script = ExtResource("6_shadow")
 
 [node name="MechaSprite" type="Sprite2D" parent="." unique_id=1424985253]
 position = Vector2(0.5, -5)
 texture = ExtResource("2_we6y6")
+script = ExtResource("5_billboard")
 
 [node name="MechaMoveSprite" type="AnimatedSprite2D" parent="." unique_id=1888365619]
 visible = false
@@ -39,6 +61,7 @@ texture_filter = 2
 position = Vector2(0.5, -5)
 sprite_frames = ExtResource("4_movef")
 animation = &"move_top"
+script = ExtResource("5_billboard")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=665109581]
 position_smoothing_speed = 10.0

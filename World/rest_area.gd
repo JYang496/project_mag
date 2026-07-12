@@ -68,6 +68,8 @@ var _menu_bridge: RefCounted
 var _auto_navigation: RefCounted
 var _hint_presenter: RefCounted
 var _route_flow: RefCounted
+var _hybrid_hint_canvas: CanvasLayer
+var _hybrid_hint_zones: Dictionary = {}
 @onready var _start_battle_button: StartBattleButton = get_node_or_null("StartBattleButton")
 @onready var _texture_root: Node2D = get_node_or_null("Texture")
 @onready var _reward_manager: BonusManager = get_tree().current_scene.get_node_or_null("RewardManager") as BonusManager
@@ -152,6 +154,7 @@ func _ready() -> void:
 	_refresh_scene_hint_labels()
 	_refresh_interaction_state()
 	queue_redraw()
+	call_deferred("_setup_hybrid_hint_canvas")
 
 func _setup_helpers() -> void:
 	var interactive_zone_ids: Array[int] = [
@@ -473,6 +476,7 @@ func _on_bonus_reward_selected(reward: RewardInfo) -> void:
 
 func _process(delta: float) -> void:
 	_ensure_camera_owner_binding()
+	_sync_hybrid_hint_positions()
 	if not _is_interaction_enabled():
 		_reset_zone4_hold()
 		_zone_hint_intro_remaining = 0.0
@@ -495,7 +499,7 @@ func _input(event: InputEvent) -> void:
 		if not mouse_event.pressed:
 			return
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT:
-			_handle_left_click(get_global_mouse_position())
+			_handle_left_click(_get_interaction_mouse_world())
 		elif event.is_action_pressed("CANCEL"):
 			_handle_right_click()
 
@@ -511,7 +515,7 @@ func _handle_left_click(global_pos: Vector2) -> void:
 		if debug_click_logs:
 			print("[RestArea] left click ignored: zone navigation locked by submenu depth")
 		return
-	var zone_id := _get_zone_id_for_global_point(get_global_mouse_position())
+	var zone_id := _get_zone_id_for_global_point(global_pos)
 	if zone_id < 0:
 		if debug_click_logs:
 			print("[RestArea] left click ignored: outside 3x3 bounds")
@@ -644,7 +648,53 @@ func _update_hover_from_mouse() -> void:
 	if _is_world_interaction_blocked():
 		_set_hover_zone(-1)
 		return
-	_set_hover_zone(_get_zone_id_for_global_point(get_global_mouse_position()))
+	_set_hover_zone(_get_zone_id_for_global_point(_get_interaction_mouse_world()))
+
+func _get_hybrid_ground_view() -> Node:
+	if not is_inside_tree():
+		return null
+	var views := get_tree().get_nodes_in_group(&"hybrid_ground_view_3d")
+	return views[0] as Node if not views.is_empty() else null
+
+func _get_interaction_mouse_world() -> Vector2:
+	var hybrid_view := _get_hybrid_ground_view()
+	if hybrid_view == null:
+		return get_global_mouse_position()
+	return hybrid_view.call("screen_to_world_2d", get_viewport().get_mouse_position()) as Vector2
+
+func _setup_hybrid_hint_canvas() -> void:
+	if _get_hybrid_ground_view() == null or _hybrid_hint_canvas != null:
+		return
+	_hybrid_hint_canvas = CanvasLayer.new()
+	_hybrid_hint_canvas.name = "HybridRestHintCanvas"
+	_hybrid_hint_canvas.layer = 20
+	add_child(_hybrid_hint_canvas)
+	_hybrid_hint_zones = {
+		0: get_node_or_null("MerchantHintLabel"),
+		1: get_node_or_null("SmithHintLabel"),
+		2: get_node_or_null("ModuleHintLabel"),
+		4: get_node_or_null("BattleHintLabel"),
+		6: get_node_or_null("BoardHintLabel"),
+	}
+	for label_variant in _hybrid_hint_zones.values():
+		var label := label_variant as Label
+		if label != null:
+			label.reparent(_hybrid_hint_canvas, false)
+	_sync_hybrid_hint_positions()
+
+func _sync_hybrid_hint_positions() -> void:
+	if _hybrid_hint_canvas == null:
+		return
+	var hybrid_view := _get_hybrid_ground_view()
+	if hybrid_view == null:
+		return
+	for zone_id in _hybrid_hint_zones:
+		var label := _hybrid_hint_zones[zone_id] as Label
+		if label == null:
+			continue
+		var anchor_world := _get_zone_center_global(int(zone_id)) + zone_hint_forward_offset
+		var screen_position := hybrid_view.call("project_world_to_screen", anchor_world) as Vector2
+		label.position = screen_position - label.size * Vector2(0.5, 1.0)
 
 func _set_hover_zone(zone_id: int) -> void:
 	if hover_zone_id == zone_id:
@@ -723,6 +773,8 @@ func _refresh_zone_hover_hint() -> void:
 		_menu_bridge.call("clear_hover_hint")
 
 func _draw() -> void:
+	if _get_hybrid_ground_view() != null:
+		return
 	if not _is_interaction_enabled():
 		return
 	var bounds := _get_bounds_local_rect()

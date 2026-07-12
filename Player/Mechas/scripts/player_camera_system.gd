@@ -2,11 +2,13 @@ extends RefCounted
 class_name PlayerCameraSystem
 
 const PlayerCameraConfigType := preload("res://Player/Mechas/scripts/player_camera_config.gd")
+const FixedObliqueProjectionType := preload("res://Visual/Oblique/fixed_oblique_projection_2d.gd")
 
 var _camera: Camera2D
 var _config
 var _current_vision_mul: float = 1.0
 var _base_zoom := Vector2.ONE
+var _initial_uniform_zoom: float = 1.0
 var _zoom_target := Vector2.ONE
 var _offset_target := Vector2.ZERO
 var _zoom_tween: Tween
@@ -39,7 +41,8 @@ func setup(camera: Camera2D, config, vision_mul: float = 1.0) -> void:
 	_config = config
 	_current_vision_mul = maxf(vision_mul, 0.05)
 	if _camera != null:
-		_base_zoom = _camera.zoom
+		_initial_uniform_zoom = maxf(_camera.zoom.x, 0.001)
+		_apply_fixed_oblique_configuration()
 		_zoom_target = _base_zoom
 		if _restarea_control_enabled:
 			_apply_restarea_control_enabled(_restarea_pending_snap_target, _restarea_pending_snap_now)
@@ -47,6 +50,34 @@ func setup(camera: Camera2D, config, vision_mul: float = 1.0) -> void:
 			_apply_restarea_control_disabled()
 	_last_phase_is_prepare = _is_prepare_phase()
 	_refresh_zoom_target_from_context()
+
+func _apply_fixed_oblique_configuration() -> void:
+	var config = _get_config()
+	var initial_uniform_zoom := _initial_uniform_zoom
+	if config.hybrid_ground_enabled:
+		_camera.rotation = 0.0
+		_base_zoom = Vector2.ONE * initial_uniform_zoom
+	elif config.fixed_oblique_enabled:
+		_camera.rotation_degrees = config.fixed_camera_yaw_degrees
+		# Camera2D zoom multiplies canvas axes. A smaller Y component compresses
+		# the ground vertically in screen space while billboards compensate it.
+		_base_zoom = Vector2(initial_uniform_zoom, initial_uniform_zoom * maxf(config.fixed_vertical_scale, 0.001)) * config.fixed_camera_overscan
+	else:
+		_camera.rotation = 0.0
+		_base_zoom = Vector2.ONE * initial_uniform_zoom
+	FixedObliqueProjectionType.configure(config.fixed_oblique_enabled and not config.hybrid_ground_enabled, config.fixed_camera_yaw_degrees, config.fixed_vertical_scale, config.billboard_scale)
+	_zoom_target = _base_zoom
+
+func reconfigure_oblique(config) -> void:
+	if _camera == null:
+		return
+	_config = config
+	if _zoom_tween != null:
+		_zoom_tween.kill()
+		_zoom_tween = null
+	_apply_fixed_oblique_configuration()
+	_refresh_zoom_target_from_context()
+	_camera.zoom = _zoom_target
 
 func tick(delta: float) -> void:
 	if _camera == null:
@@ -160,7 +191,9 @@ func force_recover_battle_zoom(vision_mul: float) -> void:
 func _get_phase_camera_zoom_factor() -> float:
 	if PhaseManager != null and PhaseManager.has_method("current_state"):
 		if str(PhaseManager.current_state()) == str(PhaseManager.PREPARE):
-			return clampf(_get_config().rest_phase_camera_zoom_factor, 0.2, 2.0)
+			# This setting is a view multiplier: values above one must reveal more
+			# of the rest area, which means a smaller Camera2D zoom value.
+			return 1.0 / clampf(_get_config().rest_phase_camera_zoom_factor, 0.2, 2.0)
 	return 1.0
 
 func _get_effective_vision_mul(vision_mul: float) -> float:

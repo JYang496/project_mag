@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://blnhp33uq0sgq"]
+[gd_scene load_steps=10 format=3 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Script" uid="uid://ytgqpjri2ckf" path="res://Board/Cells/cell_profile.gd" id="4_lo5ox"]
 [ext_resource type="PackedScene" uid="uid://cdpdxvviop3ok" path="res://UI/scenes/UI.tscn" id="9_h4135"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://d382rsvvo0j8d" path="res://Board/Cells/cell.tscn" id="14_dqu5g"]
 [ext_resource type="PackedScene" uid="uid://cat80ev8yltf7" path="res://World/rest_area.tscn" id="15_6p52w"]
 [ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://World/rewards/reward_manager.tscn" id="22_n13dc"]
+[ext_resource type="Script" path="res://Visual/Oblique/hybrid_ground_view_3d.gd" id="23_hybrid"]
 
 [sub_resource type="Resource" id="Resource_h2aik"]
 script = ExtResource("4_lo5ox")
@@ -55,6 +56,9 @@ script = ExtResource("13_mj5tj")
 cell_scene = ExtResource("14_dqu5g")
 player_spawner_path = NodePath("PlayerSpawner")
 initial_cell_profiles = Array[ExtResource("4_lo5ox")]([SubResource("Resource_h2aik"), SubResource("Resource_lo5ox"), SubResource("Resource_0wqet"), SubResource("Resource_awrha"), SubResource("Resource_f23eu"), SubResource("Resource_oeat8"), SubResource("Resource_5xkvv"), SubResource("Resource_kcyjf"), SubResource("Resource_xw5lg")])
+
+[node name="HybridGroundView3D" type="Node3D" parent="."]
+script = ExtResource("23_hybrid")
 
 [node name="PlayerSpawner" type="Node2D" parent="Board" unique_id=1320556918]
 script = ExtResource("14_26uyv")

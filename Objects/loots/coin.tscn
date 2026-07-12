@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://30h1411j5ie1"]
+[gd_scene load_steps=10 format=3 uid="uid://30h1411j5ie1"]
 
 [ext_resource type="Script" uid="uid://btvfb13ln7c4a" path="res://Objects/loots/coin.gd" id="1_ncwku"]
 [ext_resource type="Texture2D" path="res://asset/images/loot/credit_coin_01.png" id="2_frame1"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" path="res://asset/images/loot/credit_coin_03.png" id="4_frame3"]
 [ext_resource type="Texture2D" path="res://asset/images/loot/credit_coin_04.png" id="5_frame4"]
 [ext_resource type="AudioStream" uid="uid://utmsnfe5n0vx" path="res://asset/sounds/collectgem.mp3" id="3_xwqkn"]
+[ext_resource type="Script" path="res://Visual/Oblique/billboard_visual_2d.gd" id="6_billboard"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_otdol"]
 size = Vector2(12.8, 12.8)
@@ -38,6 +39,7 @@ texture_filter = 2
 scale = Vector2(0.6, 0.6)
 sprite_frames = SubResource("SpriteFrames_coin")
 animation = &"flip"
+script = ExtResource("6_billboard")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_otdol")

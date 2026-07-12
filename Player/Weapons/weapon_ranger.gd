@@ -116,6 +116,8 @@ func get_mouse_target():
 			var player_override: Variant = PlayerData.player.get_meta("_benchmark_mouse_target")
 			if player_override is Vector2:
 				return player_override
+	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("get_aim_world_position"):
+		return PlayerData.player.call("get_aim_world_position") as Vector2
 	return get_global_mouse_position()
 
 func get_fire_feedback_direction() -> Vector2:

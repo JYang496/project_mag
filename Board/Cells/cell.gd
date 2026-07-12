@@ -6,6 +6,7 @@ signal player_presence_changed(cell: Cell, player_count: int)
 signal enemy_presence_changed(cell: Cell, enemy_count: int)
 signal enemy_killed_in_cell(cell: Cell, enemy: BaseEnemy)
 signal objective_completed(cell_id: String)
+signal terrain_visual_changed(cell: Cell, texture: Texture2D)
 
 enum CellState {IDLE, PLAYER, CONTESTED, LOCKED}
 enum TaskType {NONE, OFFENSE, DEFENSE, CLEAR, HUNT, DODGE}
@@ -279,7 +280,9 @@ func _apply_terrain_texture() -> void:
 	var texture_path := str(TERRAIN_TEXTURE_PATHS[terrain_type])
 	var loaded := load(texture_path)
 	if loaded is Texture2D:
-		_sprite.texture = loaded
+		var texture := loaded as Texture2D
+		_sprite.texture = texture
+		terrain_visual_changed.emit(self, texture)
 
 func set_locked(is_locked: bool) -> void:
 	if is_locked:

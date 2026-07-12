@@ -21,6 +21,7 @@ var _wave_line: Line2D = null
 
 func _ready() -> void:
 	add_to_group("enemy_runtime_cleanup")
+	add_to_group(&"hybrid_ground_warning_circle")
 	if visual_preset == VisualPreset.DODGE_STYLE:
 		_build_dodge_style_visuals()
 	set_process(true)

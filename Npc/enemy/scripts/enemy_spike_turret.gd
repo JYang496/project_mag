@@ -34,6 +34,8 @@ func _ready() -> void:
 	_aim_warning_line.end_cap_mode = Line2D.LINE_CAP_ROUND
 	_aim_warning_line.z_index = 8
 	_aim_warning_line.visible = false
+	_aim_warning_line.add_to_group(&"hybrid_ground_segment")
+	_aim_warning_line.set_meta("hybrid_ground_visible", false)
 	add_child(_aim_warning_line)
 
 func _physics_process(delta: float) -> void:
@@ -131,6 +133,7 @@ func _update_aim_warning_visual() -> void:
 	if _aim_warning_line == null:
 		return
 	if not _is_locking:
+		_aim_warning_line.set_meta("hybrid_ground_visible", false)
 		_aim_warning_line.visible = false
 		_aim_warning_line.clear_points()
 		return
@@ -142,4 +145,5 @@ func _update_aim_warning_visual() -> void:
 	var line_start := _locked_direction * muzzle_offset
 	var line_end := _locked_direction * maxf(_locked_warning_distance, muzzle_offset + 24.0)
 	_aim_warning_line.points = PackedVector2Array([line_start, line_end])
-	_aim_warning_line.visible = true
+	_aim_warning_line.set_meta("hybrid_ground_visible", true)
+	_aim_warning_line.visible = get_tree().get_nodes_in_group(&"hybrid_ground_view_3d").is_empty()

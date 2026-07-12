@@ -77,6 +77,8 @@ func _exit_tree() -> void:
 
 func _process(delta: float) -> void:
 	movement_runtime.update_statuses(delta)
+	if FixedObliqueProjectionType.is_enabled():
+		z_index = int(round(FixedObliqueProjectionType.get_projected_depth(global_position) / 16.0))
 
 func _notification(what: int) -> void:
 	if what != NOTIFICATION_PHYSICS_PROCESS:

@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://c4oj2glaup5b3"]
+[gd_scene load_steps=8 format=3 uid="uid://c4oj2glaup5b3"]
 
 [ext_resource type="Script" uid="uid://dlgx3bmsdvdgr" path="res://Player/Weapons/Core/weapon.gd" id="1_xgcik"]
 [ext_resource type="Texture2D" uid="uid://bo8agyho2ubhi" path="res://asset/images/weapons/pistol.png" id="2_xgcik"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://ibu0avxj67o0" path="res://asset/images/weapons/cannon2.png" id="4_xgcik"]
 [ext_resource type="Texture2D" uid="uid://cl6fpuet5temg" path="res://asset/images/weapons/cannon3.png" id="5_xgcik"]
 [ext_resource type="Script" uid="uid://dm6sksr3q1us5" path="res://Player/Weapons/Core/weapon_modules.gd" id="6_82ygd"]
+[ext_resource type="Script" path="res://Visual/Oblique/billboard_visual_2d.gd" id="7_billboard"]
 
 [node name="Weapon" type="Node2D" unique_id=495213386]
 script = ExtResource("1_xgcik")
@@ -16,6 +17,8 @@ script = ExtResource("6_82ygd")
 [node name="Sprite" type="Sprite2D" parent="." unique_id=1522898652]
 unique_name_in_owner = true
 texture = ExtResource("2_xgcik")
+script = ExtResource("7_billboard")
+mode = 1
 
 [node name="FuseSprites" type="Node" parent="." unique_id=50406900]
 script = ExtResource("3_xgcik")

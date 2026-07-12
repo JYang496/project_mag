@@ -1,6 +1,8 @@
 extends Node2D
 class_name EnemyHpBar
 
+const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd")
+
 @export var offset_y: float = -30.0
 
 @onready var bar: ProgressBar = $Bar
@@ -10,6 +12,18 @@ func _ready() -> void:
 	visible = false
 	position = Vector2(0.0, offset_y)
 	hide_timer.one_shot = true
+
+func _process(_delta: float) -> void:
+	var owner_2d := get_parent() as Node2D
+	if owner_2d == null or not is_inside_tree():
+		return
+	var hybrid_view := ProjectedUi.get_hybrid_view(get_tree())
+	if hybrid_view == null:
+		return
+	var anchor_canvas := hybrid_view.call("project_world_to_canvas", owner_2d.global_position, get_viewport()) as Vector2
+	var canvas := get_viewport().get_canvas_transform()
+	global_position = anchor_canvas + canvas.basis_xform_inv(Vector2(0.0, offset_y))
+	global_rotation = 0.0
 
 func set_max_hp(value: int) -> void:
 	var max_value: int = max(1, value)

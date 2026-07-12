@@ -90,11 +90,20 @@ func _spawn_muzzle_flash(profile: Resource, direction: Vector2) -> void:
 	if vfx == null:
 		return
 	tree.root.add_child(vfx)
-	vfx.global_position = _get_muzzle_global_position(direction)
+	var muzzle_position := _get_muzzle_global_position(direction)
+	var visual_position := muzzle_position
+	var visual_direction := direction
+	var hybrid_view := _get_hybrid_view()
+	if hybrid_view != null:
+		visual_position = hybrid_view.call("project_world_to_canvas", muzzle_position, weapon.get_viewport()) as Vector2
+		visual_direction = hybrid_view.call("world_vector_to_screen", direction, muzzle_position) as Vector2
+		if visual_direction != Vector2.ZERO:
+			visual_direction = visual_direction.normalized()
+	vfx.global_position = visual_position
 	if vfx.has_method("setup"):
-		vfx.call("setup", direction)
+		vfx.call("setup", visual_direction)
 	else:
-		vfx.global_rotation = direction.angle()
+		vfx.global_rotation = visual_direction.angle()
 
 
 func _get_muzzle_global_position(direction: Vector2) -> Vector2:
@@ -141,6 +150,20 @@ func _play_node_recoil(node: Node2D, is_primary_sprite: bool, profile: Resource,
 	var rotation_recoil := deg_to_rad(float(profile.get("recoil_rotation_deg")))
 	var tween := node.create_tween()
 	tween.set_parallel(false)
+	if node.has_method("world_direction_to_screen"):
+		var screen_direction := node.call("world_direction_to_screen", direction) as Vector2
+		if screen_direction == Vector2.ZERO:
+			screen_direction = Vector2.RIGHT
+		var screen_recoil := -screen_direction.normalized() * maxf(float(profile.get("recoil_distance")), 0.0)
+		tween.tween_property(node, "screen_feedback_offset", screen_recoil, maxf(float(profile.get("recoil_duration")), 0.001)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.parallel().tween_property(node, "screen_feedback_rotation", rotation_recoil, maxf(float(profile.get("recoil_duration")), 0.001)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(node, "screen_feedback_offset", Vector2.ZERO, maxf(float(profile.get("recoil_recover_duration")), 0.001)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tween.parallel().tween_property(node, "screen_feedback_rotation", 0.0, maxf(float(profile.get("recoil_recover_duration")), 0.001)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		if is_primary_sprite:
+			_sprite_tween = tween
+		else:
+			_fuse_tween = tween
+		return
 	tween.tween_property(node, "position", base_position + local_recoil, maxf(float(profile.get("recoil_duration")), 0.001)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(node, "rotation", base_rotation + rotation_recoil, maxf(float(profile.get("recoil_duration")), 0.001)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(node, "position", base_position, maxf(float(profile.get("recoil_recover_duration")), 0.001)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
@@ -173,6 +196,12 @@ func _cache_fuse_base(node: Node2D) -> void:
 	_fuse_base_position = node.position
 	_fuse_base_rotation = node.rotation
 	_fuse_base_cached = true
+
+func _get_hybrid_view() -> Node:
+	if weapon == null or not weapon.is_inside_tree():
+		return null
+	var views := weapon.get_tree().get_nodes_in_group(&"hybrid_ground_view_3d")
+	return views[0] as Node if not views.is_empty() else null
 
 
 func _request_camera_shake(profile: Resource) -> void:
