@@ -55,14 +55,14 @@ func _attach_drop_instance() -> void:
 	if drop_instance == null or not is_instance_valid(self):
 		return
 	add_sibling(drop_instance)
-	drop_instance.global_position = p0.global_position
+	_set_drop_global_position(p0.global_position)
 	_start_flight_animation()
 
 func _attach_drop_instance_immediate() -> void:
 	if drop_instance == null or not is_instance_valid(self):
 		return
 	add_sibling(drop_instance)
-	drop_instance.global_position = p2.global_position
+	_set_drop_global_position(p2.global_position)
 	queue_free()
 
 func _mark_drop_instance_spawn_ready(instance: Node) -> void:
@@ -99,11 +99,16 @@ func _start_flight_animation() -> void:
 func _set_flight_progress(progress: float) -> void:
 	if drop_instance == null or not is_instance_valid(drop_instance):
 		return
-	drop_instance.global_position = _quadratic_bezier(clampf(progress, 0.0, 1.0))
+	_set_drop_global_position(_quadratic_bezier(clampf(progress, 0.0, 1.0)))
+
+func _set_drop_global_position(target_position: Vector2) -> void:
+	drop_instance.global_position = target_position
+	if drop_instance.has_method("sync_trajectory_visual"):
+		drop_instance.call("sync_trajectory_visual")
 
 func _on_flight_animation_finished() -> void:
 	if drop_instance and is_instance_valid(drop_instance):
-		drop_instance.global_position = p2.global_position
+		_set_drop_global_position(p2.global_position)
 		if drop_instance.has_method("activate_pickup_detection"):
 			drop_instance.call("activate_pickup_detection")
 	flight_finished.emit()

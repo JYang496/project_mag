@@ -68,6 +68,10 @@ func start_drop_flip() -> void:
 	sprite.visible = true
 	sprite.play(&"flip")
 
+func sync_trajectory_visual() -> void:
+	if sprite != null:
+		sprite.call("_apply_compensation")
+
 func stop_drop_flip() -> void:
 	if sprite == null:
 		return

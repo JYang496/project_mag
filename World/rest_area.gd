@@ -83,6 +83,7 @@ const ZONE_ID_BOARD_EDIT := 6
 const CENTER_ZONE_ID := 4
 const ZONE4_HOLD_BOOST_SOURCE_ID: StringName = &"rest_zone4_hold_boost"
 const LEGACY_BLOCKING_UI_ROOTS: Array[StringName] = [
+	&"PrimaryMenuRoot",
 	&"ShoppingRootv2",
 	&"UpgradeRootv2",
 	&"ModuleManagementRoot",
@@ -507,6 +508,8 @@ func _handle_left_click(global_pos: Vector2) -> void:
 	if debug_click_logs:
 		print("[RestArea] left click event_pos=", global_pos, " world_mouse=", get_global_mouse_position())
 	_sync_menu_open_with_ui()
+	if _is_mouse_over_ui():
+		return
 	if _is_world_interaction_blocked():
 		if debug_click_logs:
 			print("[RestArea] left click ignored: world interaction blocked")
