@@ -9,6 +9,8 @@ script = ExtResource("1_7ggqm")
 [node name="Bullet" type="Node2D" parent="."]
 script = ExtResource("2_billboard")
 mode = 1
+directional_forward_degrees = -90.0
+depth_sort_step_pixels = 24.0
 
 [node name="HitboxAnchor" type="Node2D" parent="."]
 

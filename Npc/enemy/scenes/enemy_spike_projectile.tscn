@@ -20,6 +20,8 @@ scale = Vector2(0.8, 0.8)
 texture = ExtResource("2_tex")
 script = ExtResource("3_billboard")
 mode = 1
+directional_forward_degrees = -90.0
+depth_sort_step_pixels = 24.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_proj")

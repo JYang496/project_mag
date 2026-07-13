@@ -42,6 +42,16 @@
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 20
+    },
+    {
+      "id": "enemy.hybrid_visual_matrix",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/enemy/hybrid_enemy_visual_matrix_test.tscn",
+      "domain": "enemy",
+      "dependency_domains": ["world", "ui", "combat"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 45
     }
   ]
 }

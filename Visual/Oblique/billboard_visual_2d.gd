@@ -9,15 +9,20 @@ enum BillboardMode { UPRIGHT, DIRECTIONAL, SCREEN_UI }
 @export var extra_scale: Vector2 = Vector2.ONE
 @export var enabled: bool = true
 @export var hide_behind_camera: bool = true
+@export_range(-180.0, 180.0, 1.0) var directional_forward_degrees: float = 0.0
 @export_range(0.0, 1.0, 0.05) var perspective_scale_amount: float = 0.0
 @export_range(0.5, 1.0, 0.01) var perspective_min_scale: float = 0.95
 @export_range(1.0, 1.5, 0.01) var perspective_max_scale: float = 1.05
+@export var depth_sort_enabled: bool = true
+@export_range(1.0, 64.0, 1.0) var depth_sort_step_pixels: float = 8.0
+@export var depth_sort_offset: int = 0
 var _base_transform := Transform2D.IDENTITY
 var _last_applied_transform := Transform2D.IDENTITY
 var _has_applied_transform: bool = false
 var screen_feedback_offset: Vector2 = Vector2.ZERO
 var screen_feedback_rotation: float = 0.0
 var screen_offset: Vector2 = Vector2.ZERO
+var _world_direction_override: Vector2 = Vector2.ZERO
 var _hybrid_view_cache: Node
 var _projection_hidden: bool = false
 var _visible_before_projection_hide: bool = true
@@ -44,15 +49,20 @@ func _apply_compensation() -> void:
 			global_position = hybrid_view.call("project_world_to_canvas", logical_anchor, get_viewport()) as Vector2
 			_apply_optional_perspective_scale(hybrid_view.call("project_world_to_screen", logical_anchor) as Vector2)
 			if mode == BillboardMode.DIRECTIONAL:
-				var logical_axis := Vector2.RIGHT.rotated(parent_2d.global_rotation)
+				var authored_rotation := _base_transform.get_rotation()
+				var forward_angle := deg_to_rad(directional_forward_degrees)
+				var logical_axis := _world_direction_override
+				if logical_axis == Vector2.ZERO:
+					logical_axis = Vector2.RIGHT.rotated(parent_2d.global_rotation + authored_rotation + forward_angle)
 				var screen_axis := hybrid_view.call("world_vector_to_screen", logical_axis, logical_anchor) as Vector2
 				if screen_axis.length_squared() > 0.0001:
-					global_rotation = screen_axis.angle() + _base_transform.get_rotation()
+					global_rotation = screen_axis.angle() - forward_angle
 			else:
 				global_rotation = _base_transform.get_rotation()
 			var canvas := get_viewport().get_canvas_transform()
 			global_position += canvas.basis_xform_inv(screen_offset + screen_feedback_offset)
 			global_rotation += screen_feedback_rotation
+			_apply_stable_depth_sort(hybrid_view.call("project_world_to_screen", logical_anchor) as Vector2)
 		_last_applied_transform = transform
 		_has_applied_transform = true
 		return
@@ -114,10 +124,18 @@ func set_logical_local_position(logical_position: Vector2) -> void:
 func set_screen_offset(value: Vector2) -> void:
 	screen_offset = value
 
+func set_world_direction(direction: Vector2) -> void:
+	if direction.length_squared() > 0.0001:
+		_world_direction_override = direction.normalized()
+
+func clear_world_direction() -> void:
+	_world_direction_override = Vector2.ZERO
+
 func reset_projection_state() -> void:
 	screen_feedback_offset = Vector2.ZERO
 	screen_feedback_rotation = 0.0
 	screen_offset = Vector2.ZERO
+	_world_direction_override = Vector2.ZERO
 	_hybrid_view_cache = null
 	_set_projection_hidden(false)
 
@@ -150,3 +168,12 @@ func _apply_optional_perspective_scale(screen_position: Vector2) -> void:
 	var target_scale := lerpf(perspective_min_scale, perspective_max_scale, depth)
 	var applied_scale := lerpf(1.0, target_scale, perspective_scale_amount)
 	scale *= applied_scale
+
+func _apply_stable_depth_sort(screen_position: Vector2) -> void:
+	if not depth_sort_enabled:
+		return
+	# Quantization prevents fast projectiles and camera shake from changing
+	# z_index on every sub-pixel movement while preserving footpoint ordering.
+	var step := maxf(depth_sort_step_pixels, 1.0)
+	z_as_relative = false
+	z_index = clampi(int(floor(screen_position.y / step)) + depth_sort_offset, RenderingServer.CANVAS_ITEM_Z_MIN, RenderingServer.CANVAS_ITEM_Z_MAX)

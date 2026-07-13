@@ -9,8 +9,8 @@ func _ready() -> void:
 func _register_with_hybrid_ground() -> void:
 	if not is_inside_tree():
 		return
-	var views := get_tree().get_nodes_in_group(&"hybrid_ground_view_3d")
-	if views.is_empty():
-		return
-	visible = false
-	(views[0] as Node).call("register_shadow", self)
+	if HybridGroundRegistration.register(self, &"register_shadow"):
+		visible = false
+
+func _exit_tree() -> void:
+	HybridGroundRegistration.unregister(self)

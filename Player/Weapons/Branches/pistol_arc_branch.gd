@@ -1,6 +1,8 @@
 extends WeaponBranchBehavior
 class_name PistolArcBranch
 
+const GroundConnectionEffectType := preload("res://Visual/Oblique/ground_connection_effect_2d.gd")
+
 func get_added_weapon_traits() -> Array[StringName]:
 	return [WeaponTrait.ENERGY]
 
@@ -65,6 +67,14 @@ func on_target_hit(target: Node) -> void:
 			DamageDeliveryType.BEAM
 		)
 		if DamageManager.apply_to_target(candidates[i], chain_data):
+			_spawn_arc_visual(center.global_position, candidates[i].global_position)
 			var owner_player := chain_data.source_player as Player
 			if owner_player and is_instance_valid(owner_player):
 				owner_player.apply_bonus_hit_if_needed(candidates[i])
+
+func _spawn_arc_visual(start: Vector2, end: Vector2) -> void:
+	if weapon == null or not is_instance_valid(weapon) or not weapon.is_inside_tree():
+		return
+	var visual := GroundConnectionEffectType.new()
+	visual.configure(start, end, trail_color, trail_width, trail_fade_sec)
+	weapon.get_tree().root.add_child(visual)

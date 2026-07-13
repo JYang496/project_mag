@@ -599,7 +599,10 @@ func get_secondary_menu_context() -> StringName:
 	return &""
 
 func is_world_interaction_blocking_panel_visible() -> bool:
-	return is_secondary_menu_open()
+	# Primary service menus own pointer input while visible. Allowing the RestArea
+	# world handler to run underneath them makes a click close/switch zones before
+	# the menu control receives it. Both menu depths therefore outrank world zones.
+	return is_primary_menu_open() or is_secondary_menu_open()
 
 func get_secondary_menu_dim_overlay() -> ColorRect:
 	return _ensure_secondary_menu_dim_overlay()

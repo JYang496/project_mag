@@ -13,8 +13,10 @@ var _dash_distance := 0.0
 var _charge_duration := 1.0
 var _elapsed := 0.0
 var _half_width := 32.0
+var _hybrid_registered: bool = false
 
 func _ready() -> void:
+	add_to_group(&"hybrid_ground_dash_telegraph")
 	z_index = telegraph_z_index
 	_warning_polygon = Polygon2D.new()
 	_warning_polygon.name = "WarningPolygon"
@@ -30,6 +32,7 @@ func _ready() -> void:
 	add_child(_progress_line)
 
 	visible = false
+	call_deferred("_register_with_hybrid_ground")
 
 func show_dash_warning(origin: Vector2, direction: Vector2, dash_distance: float, charge_duration: float, half_width: float = -1.0) -> void:
 	_active = true
@@ -41,7 +44,7 @@ func show_dash_warning(origin: Vector2, direction: Vector2, dash_distance: float
 	_update_pose(origin, direction)
 	_update_warning_polygon()
 	_update_progress_line(0.0)
-	visible = true
+	visible = not _uses_hybrid_ground()
 
 func update_dash_warning(origin: Vector2, direction: Vector2, delta: float) -> void:
 	if not _active:
@@ -55,6 +58,33 @@ func clear_warning() -> void:
 	visible = false
 	_warning_polygon.polygon = PackedVector2Array()
 	_progress_line.clear_points()
+
+func _register_with_hybrid_ground() -> void:
+	if not is_inside_tree():
+		return
+	_hybrid_registered = HybridGroundRegistration.register(self, &"register_dash_telegraph")
+	if _hybrid_registered:
+		visible = false
+
+func _uses_hybrid_ground() -> bool:
+	return bool(get_meta(&"hybrid_ground_registered", false))
+
+func _exit_tree() -> void:
+	HybridGroundRegistration.unregister(self)
+	_hybrid_registered = false
+
+func get_hybrid_dash_telegraph_visual() -> Dictionary:
+	var direction := Vector2.RIGHT.rotated(global_rotation)
+	return {
+		"active": _active,
+		"origin": global_position,
+		"direction": direction,
+		"distance": _dash_distance,
+		"half_width": _half_width,
+		"progress": clampf(_elapsed / maxf(_charge_duration, 0.01), 0.0, 1.0),
+		"warning_color": warning_color,
+		"progress_color": progress_color,
+	}
 
 func _update_pose(origin: Vector2, direction: Vector2) -> void:
 	global_position = origin

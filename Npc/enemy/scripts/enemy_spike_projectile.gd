@@ -23,6 +23,8 @@ func _ready() -> void:
 	rotation = direction.angle() + deg_to_rad(90.0)
 
 func _physics_process(delta: float) -> void:
+	if sprite != null and sprite.has_method("set_world_direction"):
+		sprite.call("set_world_direction", direction)
 	global_position += direction * speed * maxf(delta, 0.0)
 	_life_remaining -= maxf(delta, 0.0)
 	if _life_remaining <= 0.0:

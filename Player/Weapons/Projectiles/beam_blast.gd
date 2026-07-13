@@ -30,8 +30,14 @@ signal overlapping_signal()
 
 var frame_counter = 0
 var frames_until_show = 1
+var _hybrid_registered: bool = false
 
 func _ready() -> void:
+	line2d.add_to_group(&"hybrid_ground_segment")
+	line2d.set_meta("hybrid_ground_visible", false)
+	line2d.set_meta("hybrid_segment_style", &"beam")
+	line2d.set_meta("hybrid_segment_endpoints", true)
+	call_deferred("_register_hybrid_segment")
 	expire_timer.wait_time = duration
 	line2d.width = width
 	clip_to_nearest_target = bool(beam_profile.get("clip_to_nearest_target", false))
@@ -46,11 +52,17 @@ func _ready() -> void:
 			hit_timer.wait_time = safe_hit_cd
 	expire_timer.start()
 
+func _register_hybrid_segment() -> void:
+	_hybrid_registered = HybridGroundRegistration.register(line2d, &"register_ground_segment")
+	if _hybrid_registered:
+		line2d.visible = false
+
 func _physics_process(delta: float) -> void:
 	_update_target_lock_timeout()
 	frame_counter += 1
 	if frame_counter > frames_until_show:
-		line2d.show()
+		line2d.set_meta("hybrid_ground_visible", true)
+		line2d.visible = not bool(line2d.get_meta(&"hybrid_ground_registered", false))
 	if hitbox_dot:
 		hitbox_dot.hitbox_owner = self
 		var full_end: Vector2 = target_position * 9.0
@@ -77,6 +89,11 @@ func _physics_process(delta: float) -> void:
 
 func _on_expire_timer_timeout() -> void:
 	queue_free()
+
+func _exit_tree() -> void:
+	if line2d != null:
+		HybridGroundRegistration.unregister(line2d)
+	_hybrid_registered = false
 
 func _check_manual_beam_hits(start: Vector2, end: Vector2, beam_width: float) -> void:
 	if hitbox_dot == null or not is_instance_valid(hitbox_dot):

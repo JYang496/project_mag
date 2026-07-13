@@ -115,6 +115,8 @@ func _physics_process(delta: float) -> void:
 	position += base_displacement * delta
 	if base_displacement != Vector2.ZERO:
 		rotation = base_displacement.angle() + deg_to_rad(90)
+		if projectile_root.has_method("set_world_direction"):
+			projectile_root.call("set_world_direction", base_displacement)
 	hitbox_anchor.position += projectile_displacement * delta
 	if projectile_root.has_method("set_logical_local_position"):
 		projectile_root.call("set_logical_local_position", hitbox_anchor.position)

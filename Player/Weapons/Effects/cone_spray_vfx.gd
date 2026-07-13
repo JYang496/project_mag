@@ -22,10 +22,13 @@ var _fade_remaining_sec: float = 0.0
 var _last_direction: Vector2 = Vector2.RIGHT
 var _last_range: float = 1.0
 var _last_half_angle_deg: float = 1.0
+var _ground_rays: Array[Line2D] = []
+var _hybrid_registered: bool = false
 
 
 func _ready() -> void:
 	_configure_sprite()
+	_ensure_ground_rays()
 	_hide_now()
 
 
@@ -40,6 +43,7 @@ func start_or_refresh(source_global_position: Vector2, direction: Vector2, spray
 	visible = true
 	modulate = visible_modulate
 	_update_transform(source_global_position)
+	_update_ground_rays()
 	if sprite != null and not sprite.is_playing():
 		sprite.play()
 
@@ -52,6 +56,7 @@ func update_aim(source_global_position: Vector2, direction: Vector2, spray_range
 	_last_range = maxf(spray_range, 1.0)
 	_last_half_angle_deg = maxf(half_angle_deg, 1.0)
 	_update_transform(source_global_position)
+	_update_ground_rays()
 
 
 func is_visible_or_fading() -> bool:
@@ -114,6 +119,29 @@ func _update_transform(source_global_position: Vector2) -> void:
 	var angle_scale: float = _last_half_angle_deg / maxf(base_half_angle_deg, 1.0)
 	var width_scale: float = clampf(angle_scale * maxf(visual_width_multiplier, 0.01), min_width_scale, max_width_scale)
 	spray_root.scale = Vector2(maxf(length_scale, 0.01), maxf(width_scale, 0.01))
+	spray_root.visible = not bool(get_meta(&"hybrid_ground_registered", false))
+
+func _ensure_ground_rays() -> void:
+	add_to_group(&"hybrid_ground_cone_effect")
+	_hybrid_registered = HybridGroundRegistration.register(self, &"register_ground_cone_effect")
+
+func _update_ground_rays() -> void:
+	pass
+
+func get_hybrid_ground_cone_visual() -> Dictionary:
+	var color := modulate * visible_modulate
+	return {
+		"visible": visible,
+		"origin": global_position,
+		"direction": _last_direction,
+		"range": _last_range,
+		"half_angle_degrees": _last_half_angle_deg,
+		"color": color,
+	}
+
+func _exit_tree() -> void:
+	HybridGroundRegistration.unregister(self)
+	_hybrid_registered = false
 
 
 func _hide_now() -> void:
@@ -122,3 +150,6 @@ func _hide_now() -> void:
 	_fade_remaining_sec = 0.0
 	if sprite != null:
 		sprite.stop()
+	for line in _ground_rays:
+		line.set_meta("hybrid_ground_visible", false)
+		line.visible = false

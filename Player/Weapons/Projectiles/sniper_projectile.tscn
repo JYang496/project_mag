@@ -10,6 +10,7 @@ script = ExtResource("1_script")
 [node name="Bullet" type="Node2D" parent="."]
 script = ExtResource("3_billboard")
 mode = 1
+directional_forward_degrees = -90.0
 
 [node name="HitboxAnchor" type="Node2D" parent="."]
 

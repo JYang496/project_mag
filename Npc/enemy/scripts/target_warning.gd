@@ -27,6 +27,14 @@ func _ready() -> void:
 	set_process(true)
 	if visual_preset == VisualPreset.BASIC:
 		queue_redraw()
+	call_deferred("_register_with_hybrid_ground")
+
+func _register_with_hybrid_ground() -> void:
+	if HybridGroundRegistration.register(self, &"register_warning_circle"):
+		visible = false
+
+func _exit_tree() -> void:
+	HybridGroundRegistration.unregister(self)
 
 func _process(delta: float) -> void:
 	_elapsed += maxf(delta, 0.0)

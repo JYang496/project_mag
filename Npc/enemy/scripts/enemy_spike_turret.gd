@@ -22,6 +22,7 @@ var _is_stationary_mode: bool = false
 var _locked_direction: Vector2 = Vector2.RIGHT
 var _locked_warning_distance: float = 0.0
 var _aim_warning_line: Line2D = null
+var _hybrid_warning_registered: bool = false
 
 func _ready() -> void:
 	super._ready()
@@ -37,6 +38,17 @@ func _ready() -> void:
 	_aim_warning_line.add_to_group(&"hybrid_ground_segment")
 	_aim_warning_line.set_meta("hybrid_ground_visible", false)
 	add_child(_aim_warning_line)
+	call_deferred("_register_aim_warning_with_hybrid_ground")
+
+func _register_aim_warning_with_hybrid_ground() -> void:
+	if _aim_warning_line != null and HybridGroundRegistration.register(_aim_warning_line, &"register_ground_segment"):
+		_aim_warning_line.visible = false
+		_hybrid_warning_registered = true
+
+func _exit_tree() -> void:
+	if _aim_warning_line != null:
+		HybridGroundRegistration.unregister(_aim_warning_line)
+	_hybrid_warning_registered = false
 
 func _physics_process(delta: float) -> void:
 	decay_knockback()
@@ -146,4 +158,4 @@ func _update_aim_warning_visual() -> void:
 	var line_end := _locked_direction * maxf(_locked_warning_distance, muzzle_offset + 24.0)
 	_aim_warning_line.points = PackedVector2Array([line_start, line_end])
 	_aim_warning_line.set_meta("hybrid_ground_visible", true)
-	_aim_warning_line.visible = get_tree().get_nodes_in_group(&"hybrid_ground_view_3d").is_empty()
+	_aim_warning_line.visible = not bool(_aim_warning_line.get_meta(&"hybrid_ground_registered", false))

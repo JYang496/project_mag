@@ -29,6 +29,7 @@ var _shake_seed: float = 0.0
 var _shake_max_trauma: float = 0.35
 var _shake_decay_per_sec: float = 1.9
 var _shake_max_offset := Vector2(14.0, 10.0)
+var _hybrid_view: Node
 
 func has_camera_binding() -> bool:
 	return _camera != null
@@ -83,6 +84,7 @@ func tick(delta: float) -> void:
 	if _camera == null:
 		return
 	_sync_zoom_transition_phase_edge()
+	_resolve_hybrid_view()
 	if _restarea_control_enabled:
 		_update_zoom(delta)
 		_reset_offset_for_restarea(delta)
@@ -166,6 +168,10 @@ func update_zoom_target_by_vision(vision_mul: float) -> void:
 	if _camera == null:
 		return
 	_current_vision_mul = maxf(vision_mul, 0.05)
+	_sync_hybrid_view_multiplier(_get_zoom_transition_duration(_is_prepare_phase()) if _is_zoom_transition_enabled() else 0.0)
+	if _get_config().hybrid_ground_enabled:
+		_zoom_target = _base_zoom
+		return
 	if _base_zoom == Vector2.ZERO:
 		_base_zoom = Vector2.ONE
 	var zoom_factor := 1.0 / _get_effective_vision_mul(_current_vision_mul)
@@ -185,6 +191,11 @@ func force_zoom_now(target_zoom: Vector2) -> void:
 	_camera.zoom = target_zoom
 
 func force_recover_battle_zoom(vision_mul: float) -> void:
+	if _get_config().hybrid_ground_enabled:
+		_current_vision_mul = maxf(vision_mul, 0.05)
+		_sync_hybrid_view_multiplier(0.0)
+		force_zoom_now(_base_zoom)
+		return
 	var zoom_factor := 1.0 / (maxf(vision_mul, 0.05) * maxf(_get_config().battle_camera_view_mul, 0.05))
 	force_zoom_now(_base_zoom * zoom_factor)
 
@@ -221,6 +232,9 @@ func _sync_zoom_transition_phase_edge() -> void:
 		return
 	_last_phase_is_prepare = is_prepare
 	var duration := _get_zoom_transition_duration(is_prepare)
+	_sync_hybrid_view_multiplier(duration)
+	if _get_config().hybrid_ground_enabled:
+		return
 	_rebuild_zoom_transition(_zoom_target, duration)
 
 func on_phase_changed() -> void:
@@ -234,6 +248,10 @@ func on_phase_changed() -> void:
 		return
 	var is_prepare := _is_prepare_phase()
 	_last_phase_is_prepare = is_prepare
+	_sync_hybrid_view_multiplier(_get_zoom_transition_duration(is_prepare))
+	if _get_config().hybrid_ground_enabled:
+		_camera.zoom = _base_zoom
+		return
 	if _camera.zoom.distance_to(_zoom_target) <= 0.001:
 		return
 	var duration := _get_zoom_transition_duration(is_prepare)
@@ -241,6 +259,10 @@ func on_phase_changed() -> void:
 
 func _refresh_zoom_target_from_context() -> void:
 	if _camera == null:
+		return
+	if _get_config().hybrid_ground_enabled:
+		_zoom_target = _base_zoom
+		_sync_hybrid_view_multiplier(0.0)
 		return
 	var zoom_factor := 1.0 / _get_effective_vision_mul(_current_vision_mul)
 	_zoom_target = _base_zoom * zoom_factor * _get_phase_camera_zoom_factor()
@@ -287,6 +309,7 @@ func _reset_offset_for_restarea(delta: float) -> void:
 	_offset_target = Vector2.ZERO
 	_shake_trauma = 0.0
 	_shake_offset = Vector2.ZERO
+	_sync_hybrid_shake()
 	_camera.offset = _camera.offset.lerp(Vector2.ZERO, reset_t)
 
 func _get_config():
@@ -298,6 +321,7 @@ func _update_shake(delta: float) -> void:
 	if _shake_trauma <= 0.001:
 		_shake_trauma = 0.0
 		_shake_offset = Vector2.ZERO
+		_sync_hybrid_shake()
 		return
 	_shake_time += maxf(delta, 0.0) * 48.0
 	var strength := _shake_trauma * _shake_trauma
@@ -306,6 +330,32 @@ func _update_shake(delta: float) -> void:
 		cos(_shake_time * 1.37 + _shake_seed) * _shake_max_offset.y * strength
 	)
 	_shake_trauma = maxf(0.0, _shake_trauma - _shake_decay_per_sec * maxf(delta, 0.0))
+	_sync_hybrid_shake()
+
+func _resolve_hybrid_view() -> void:
+	if not _get_config().hybrid_ground_enabled or _camera == null or not _camera.is_inside_tree():
+		_hybrid_view = null
+		return
+	if _hybrid_view != null and is_instance_valid(_hybrid_view) and _hybrid_view.is_inside_tree():
+		return
+	_hybrid_view = null
+	var views := _camera.get_tree().get_nodes_in_group(&"hybrid_ground_view_3d")
+	if not views.is_empty():
+		_hybrid_view = views[0] as Node
+		_sync_hybrid_view_multiplier(0.0)
+
+func _sync_hybrid_view_multiplier(duration: float) -> void:
+	_resolve_hybrid_view()
+	if _hybrid_view == null or not _hybrid_view.has_method("set_view_multiplier"):
+		return
+	var view_multiplier := _get_effective_vision_mul(_current_vision_mul)
+	if _is_prepare_phase():
+		view_multiplier *= clampf(_get_config().rest_phase_camera_zoom_factor, 0.2, 2.0)
+	_hybrid_view.call("set_view_multiplier", view_multiplier, duration)
+
+func _sync_hybrid_shake() -> void:
+	if _hybrid_view != null and is_instance_valid(_hybrid_view) and _hybrid_view.has_method("set_screen_shake_offset"):
+		_hybrid_view.call("set_screen_shake_offset", _shake_offset)
 
 func _update_restarea_camera_move(delta: float) -> void:
 	if not _restarea_camera_moving or _camera == null:
