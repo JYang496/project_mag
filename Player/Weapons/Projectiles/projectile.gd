@@ -1,6 +1,8 @@
 extends Node2D
 class_name Projectile
 
+enum ProjectileVisualMode { UPRIGHT, DIRECTIONAL, GROUND, SEGMENT, CUSTOM }
+
 const DEFAULT_EXPIRE_TIME: float = 2.5
 const PISTOL_PIERCE_MARK_ID := &"pistol_pierce"
 const INITIAL_PROJECTILE_HITS_META := "initial_projectile_hits"
@@ -31,6 +33,7 @@ var debug_effect_names: Array[String] = []
 var debug_effect_params: Dictionary = {}
 @export var debug_overlay_enabled: bool = false
 var wall_collision_mask: int = 0
+@export var visual_mode: ProjectileVisualMode = ProjectileVisualMode.DIRECTIONAL
 var _debug_label: Label
 var _wall_hit_reported: bool = false
 var overlapping : bool :
@@ -49,6 +52,7 @@ signal overlapping_signal()
 # Children
 @onready var expire_timer = $ExpireTimer
 @onready var projectile_root: Node2D = $Bullet
+@onready var hitbox_anchor: Node2D = $HitboxAnchor
 @onready var projectile_sprite: Sprite2D = $Bullet/BulletSprite
 @onready var projectile_animation: AnimatedSprite2D = $Bullet/BulletAnimation
 
@@ -59,6 +63,7 @@ func _ready() -> void:
 	_is_pooled = true
 
 func _prepare_for_spawn() -> void:
+	_reset_projectile_visual_state()
 	overlapping = false
 	_capture_initial_projectile_hits()
 	expire_timer.wait_time = expire_time
@@ -70,6 +75,9 @@ func _prepare_for_spawn() -> void:
 	projectile_animation.visible = false
 	projectile_animation.stop()
 	projectile_root.position = Vector2.ZERO
+	hitbox_anchor.position = Vector2.ZERO
+	if projectile_root.has_method("set_logical_local_position"):
+		projectile_root.call("set_logical_local_position", Vector2.ZERO)
 	_clear_hitbox()
 	init_hitbox(hitbox_type)
 	_apply_debug_overlay()
@@ -90,7 +98,7 @@ func _resolve_projectile_scale() -> Vector2:
 
 func init_hitbox(hb_type = "once") -> void:
 	var shape = RectangleShape2D.new()
-	shape.size = projectile_sprite.texture.get_size()
+	shape.size = projectile_sprite.texture.get_size() * projectile_sprite.scale.abs()
 	match hb_type:
 		"dot":
 			hitbox_ins = hitbox_dot.instantiate()
@@ -100,14 +108,20 @@ func init_hitbox(hb_type = "once") -> void:
 	hitbox_ins.get_child(0).shape = shape
 	hitbox_ins.set_collision_mask_value(3, true)
 	hitbox_ins.hitbox_owner = self
-	projectile_sprite.call_deferred("add_child", hitbox_ins)
+	hitbox_anchor.call_deferred("add_child", hitbox_ins)
 
 func _physics_process(delta: float) -> void:
 	_check_wall_contact(delta)
 	position += base_displacement * delta
 	if base_displacement != Vector2.ZERO:
 		rotation = base_displacement.angle() + deg_to_rad(90)
-	projectile_root.position += projectile_displacement * delta
+		if projectile_root.has_method("set_world_direction"):
+			projectile_root.call("set_world_direction", base_displacement)
+	hitbox_anchor.position += projectile_displacement * delta
+	if projectile_root.has_method("set_logical_local_position"):
+		projectile_root.call("set_logical_local_position", hitbox_anchor.position)
+	else:
+		projectile_root.position = hitbox_anchor.position
 
 func enemy_hit(charge : int = 1):
 	hp -= charge
@@ -199,6 +213,11 @@ func _on_before_pooled() -> void:
 	base_displacement = Vector2.ZERO
 	projectile_displacement = Vector2.ZERO
 	projectile_root.position = Vector2.ZERO
+	if projectile_root.has_method("reset_projection_state"):
+		projectile_root.call("reset_projection_state")
+	hitbox_anchor.position = Vector2.ZERO
+	if projectile_root.has_method("set_logical_local_position"):
+		projectile_root.call("set_logical_local_position", Vector2.ZERO)
 	projectile_sprite.scale = Vector2.ONE
 	projectile_sprite.texture = null
 	projectile_animation.stop()
@@ -217,9 +236,23 @@ func _on_before_pooled() -> void:
 	_active_movement_controller = null
 	_reset_runtime_meta_flags()
 	_remove_debug_overlay()
+	_reset_projectile_visual_state()
 
 func _on_acquired_from_pool() -> void:
 	visible = true
+	if projectile_root != null and projectile_root.has_method("reset_projection_state"):
+		projectile_root.call("reset_projection_state")
+
+func _reset_projectile_visual_state() -> void:
+	if projectile_root == null:
+		return
+	if projectile_root.has_method("reset_projection_state"):
+		projectile_root.call("reset_projection_state")
+	if projectile_root.has_method("set_logical_local_position"):
+		projectile_root.call("set_logical_local_position", Vector2.ZERO)
+	projectile_root.position = Vector2.ZERO
+	if hitbox_anchor != null:
+		hitbox_anchor.position = Vector2.ZERO
 	_reset_runtime_meta_flags()
 	_wall_hit_reported = false
 

@@ -16,6 +16,9 @@ var _heal_target: BaseEnemy = null
 func _ready() -> void:
 	super._ready()
 	support_role = &"repair_unit"
+	add_to_group(&"hybrid_enemy_aura_source")
+	add_to_group(&"hybrid_enemy_link_source")
+	call_deferred("register_hybrid_support_visuals")
 
 func _physics_process(delta: float) -> void:
 	queue_redraw()
@@ -90,6 +93,23 @@ func _get_nearby_enemies(radius: float) -> Array[Node2D]:
 	return []
 
 func _draw() -> void:
+	if uses_hybrid_ground_visuals():
+		return
 	draw_arc(Vector2.ZERO, heal_radius, 0.0, TAU, 48, Color(0.25, 1.0, 0.45, 0.18), 1.5, true)
 	if _heal_target != null and is_instance_valid(_heal_target):
 		draw_line(Vector2.ZERO, to_local(_heal_target.global_position), heal_line_color, 3.0, true)
+
+func get_hybrid_aura_visual() -> Dictionary:
+	return {
+		"visible": true,
+		"radius": heal_radius,
+		"fill_color": Color(0.25, 1.0, 0.45, 0.0),
+		"line_color": Color(0.25, 1.0, 0.45, 0.18),
+		"line_width": 1.5,
+	}
+
+func get_hybrid_link_visuals() -> Array[Dictionary]:
+	var links: Array[Dictionary] = []
+	if _heal_target != null and is_instance_valid(_heal_target):
+		links.append({"target": _heal_target, "color": heal_line_color, "width": 3.0})
+	return links

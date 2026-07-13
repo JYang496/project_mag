@@ -71,12 +71,15 @@ func _ready() -> void:
 	hit_box_dot.hitbox_owner = self
 
 func _exit_tree() -> void:
+	HybridGroundRegistration.unregister(self)
 	var enemy_registry := get_node_or_null("/root/EnemyRegistry")
 	if enemy_registry != null and enemy_registry.has_method("unregister_enemy"):
 		enemy_registry.call("unregister_enemy", self)
 
 func _process(delta: float) -> void:
 	movement_runtime.update_statuses(delta)
+	if FixedObliqueProjectionType.is_enabled():
+		z_index = int(round(FixedObliqueProjectionType.get_projected_depth(global_position) / 16.0))
 
 func _notification(what: int) -> void:
 	if what != NOTIFICATION_PHYSICS_PROCESS:
@@ -103,6 +106,14 @@ func erase() -> void:
 func _on_enable_collision_timer_timeout() -> void:
 	self.set_collision_mask_value(6,true)
 	self.set_collision_mask_value(3,true)
+
+func register_hybrid_support_visuals() -> void:
+	if not is_inside_tree():
+		return
+	HybridGroundRegistration.register(self, &"register_enemy_support_visual")
+
+func uses_hybrid_ground_visuals() -> bool:
+	return is_inside_tree() and not get_tree().get_nodes_in_group(&"hybrid_ground_view_3d").is_empty()
 
 func apply_stun(duration: float) -> void:
 	movement_runtime.apply_stun(duration)

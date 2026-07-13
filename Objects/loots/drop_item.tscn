@@ -1,13 +1,28 @@
-[gd_scene load_steps=3 format=3 uid="uid://ddbjcv3wsci50"]
+[gd_scene load_steps=6 format=3 uid="uid://ddbjcv3wsci50"]
 
 [ext_resource type="Script" uid="uid://drnkrll6ndcqc" path="res://Objects/loots/drop_item.gd" id="1_jnmds"]
+[ext_resource type="Script" path="res://Visual/Oblique/billboard_visual_2d.gd" id="2_billboard"]
+[ext_resource type="Script" path="res://Visual/Oblique/hybrid_ground_shadow_2d.gd" id="3_shadow"]
+[ext_resource type="Script" path="res://Visual/Oblique/projected_world_hint_label.gd" id="4_hint"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_xap8g"]
 
 [node name="DropItem" type="Node2D"]
 script = ExtResource("1_jnmds")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="GroundShadow" type="Polygon2D" parent="." groups=["hybrid_ground_shadow"]]
+z_index = -1
+position = Vector2(0, 8)
+polygon = PackedVector2Array(-14, 0, -10, -4, 0, -6, 10, -4, 14, 0, 10, 4, 0, 6, -10, 4)
+color = Color(0, 0, 0, 0.2)
+script = ExtResource("3_shadow")
+
+[node name="BillboardVisual" type="Node2D" parent="."]
+script = ExtResource("2_billboard")
+
+[node name="SpinRoot" type="Node2D" parent="BillboardVisual"]
+
+[node name="Sprite2D" type="Sprite2D" parent="BillboardVisual/SpinRoot"]
 
 [node name="DetectArea" type="Area2D" parent="."]
 collision_layer = 0
@@ -17,13 +32,15 @@ collision_mask = 0
 scale = Vector2(5, 5)
 shape = SubResource("CircleShape2D_xap8g")
 
-[node name="InteractHint" type="Label" parent="."]
+[node name="InteractHint" type="Label" parent="BillboardVisual"]
 visible = false
 offset_left = -3.0
 offset_top = -34.0
 offset_right = 37.0
 offset_bottom = -11.0
 text = "F"
+script = ExtResource("4_hint")
+target_parent_levels = 2
 
 [connection signal="body_entered" from="DetectArea" to="." method="_on_detect_area_body_entered"]
 [connection signal="body_exited" from="DetectArea" to="." method="_on_detect_area_body_exited"]

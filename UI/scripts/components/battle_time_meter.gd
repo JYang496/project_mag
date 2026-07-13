@@ -16,7 +16,6 @@ var _phase: String = ""
 var _ratio: float = 0.0
 var _state: StringName = &"normal"
 var _pulse_time: float = 0.0
-var _hit_pulse: float = 0.0
 var _digit_label: Label
 
 func _ready() -> void:
@@ -30,15 +29,12 @@ func _ready() -> void:
 func set_time(remaining: int, duration: int, phase: String) -> void:
 	var safe_duration: int = maxi(duration, 1)
 	var safe_remaining: int = clampi(remaining, 0, safe_duration)
-	var previous_remaining := _remaining
 	_remaining = safe_remaining
 	_duration = safe_duration
 	_phase = phase
 	_ratio = clampf(float(_remaining) / float(_duration), 0.0, 1.0)
 	_state = _resolve_state()
 	visible = _phase == "battle"
-	if previous_remaining != _remaining:
-		_hit_pulse = 1.0
 	_update_digit_label()
 	queue_redraw()
 
@@ -46,10 +42,7 @@ func _process(delta: float) -> void:
 	var safe_delta := maxf(delta, 0.0)
 	if _state == &"warning":
 		_pulse_time += safe_delta
-	if _hit_pulse > 0.0:
-		_hit_pulse = maxf(0.0, _hit_pulse - safe_delta * 4.6)
-		_update_digit_label()
-	if visible and (_state == &"warning" or _hit_pulse > 0.0):
+	if visible and _state == &"warning":
 		queue_redraw()
 
 func _draw() -> void:
@@ -57,7 +50,7 @@ func _draw() -> void:
 	var pulse := _pulse_strength()
 	var edge_color := _edge_color()
 	var fill_color := _fill_color()
-	var radius := 28.0 + pulse * 2.0 + _hit_pulse * 1.8
+	var radius := 28.0 + pulse * 2.0
 	_draw_shell(center, radius, edge_color, pulse)
 	_draw_progress_ring(center, radius, fill_color, edge_color, pulse)
 	_draw_tick_marks(center, radius + 6.0, edge_color)
@@ -68,8 +61,8 @@ func _draw_shell(center: Vector2, radius: float, edge_color: Color, pulse: float
 	draw_circle(center + Vector2(0.0, 3.0), radius + 3.5, Color(0.0, 0.0, 0.0, 0.38))
 	draw_circle(center, radius - 2.5, BACK_FILL)
 	draw_arc(center, radius - 2.0, 0.0, TAU, 56, Color(edge_color.r, edge_color.g, edge_color.b, 0.16 + pulse * 0.12), 1.0, true)
-	if pulse > 0.0 or _hit_pulse > 0.0:
-		var glow_alpha := 0.10 + pulse * 0.18 + _hit_pulse * 0.12
+	if pulse > 0.0:
+		var glow_alpha := 0.10 + pulse * 0.18
 		draw_circle(center, radius + 8.0, Color(edge_color.r, edge_color.g, edge_color.b, glow_alpha))
 
 func _draw_progress_ring(center: Vector2, radius: float, fill_color: Color, edge_color: Color, pulse: float) -> void:
@@ -112,9 +105,8 @@ func _update_digit_label() -> void:
 		return
 	_digit_label.text = str(_remaining)
 	_digit_label.add_theme_color_override("font_color", _edge_color())
-	var scale_value := 1.0 + _hit_pulse * 0.10
 	_digit_label.pivot_offset = _digit_label.size * 0.5
-	_digit_label.scale = Vector2(scale_value, scale_value)
+	_digit_label.scale = Vector2.ONE
 
 func _resolve_state() -> StringName:
 	if _remaining <= 10:

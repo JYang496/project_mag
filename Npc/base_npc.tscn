@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://4sd4d8lkbkls"]
+[gd_scene load_steps=5 format=3 uid="uid://4sd4d8lkbkls"]
 
 [ext_resource type="PackedScene" uid="uid://dr2gmtpibgjy1" path="res://Combat/collision/hurt_box.tscn" id="1_1tbjg"]
 [ext_resource type="Script" uid="uid://brsjr02v2w5u0" path="res://Npc/base_npc.gd" id="1_irpyh"]
+[ext_resource type="Script" path="res://Visual/Oblique/billboard_visual_2d.gd" id="2_billboard"]
+[ext_resource type="Script" path="res://Visual/Oblique/hybrid_ground_shadow_2d.gd" id="3_shadow"]
 
 [node name="BaseNPC" type="CharacterBody2D" groups=["npc"]]
 collision_layer = 0
@@ -13,7 +15,15 @@ script = ExtResource("1_irpyh")
 
 [node name="HurtBox" parent="." instance=ExtResource("1_1tbjg")]
 
+[node name="GroundShadow" type="Polygon2D" parent="." groups=["hybrid_ground_shadow"]]
+z_index = -1
+position = Vector2(0, 8)
+polygon = PackedVector2Array(-14, 0, -10, -4, 0, -6, 10, -4, 14, 0, 10, 4, 0, 6, -10, 4)
+color = Color(0, 0, 0, 0.2)
+script = ExtResource("3_shadow")
+
 [node name="Body" type="Sprite2D" parent="."]
+script = ExtResource("2_billboard")
 
 [node name="NPCCollision" type="CollisionShape2D" parent="."]
 

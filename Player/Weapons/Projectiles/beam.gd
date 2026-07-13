@@ -18,6 +18,7 @@ var beam_start_position : Vector2 = Vector2.ZERO
 var oc_mode : bool = false
 var beam_width_multiplier: float = 1.0
 var beam_tag: String = "main"
+var _hybrid_registered: bool = false
 
 func configure_laser_beam(profile: Dictionary) -> void:
 	beam_width_multiplier = maxf(float(profile.get("width_multiplier", 1.0)), 0.05)
@@ -25,6 +26,11 @@ func configure_laser_beam(profile: Dictionary) -> void:
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	line.add_to_group(&"hybrid_ground_segment")
+	line.set_meta("hybrid_ground_visible", false)
+	line.set_meta("hybrid_segment_style", &"beam")
+	line.set_meta("hybrid_segment_endpoints", true)
+	call_deferred("_register_hybrid_segment")
 	if oc_mode:
 		expire_timer.wait_time = 5
 	expire_timer.start()
@@ -36,10 +42,16 @@ func _ready() -> void:
 	elif beam_tag.contains("prism_side"):
 		line.default_color = Color(0.85, 0.55, 1.0, 0.9)
 
+func _register_hybrid_segment() -> void:
+	_hybrid_registered = HybridGroundRegistration.register(line, &"register_ground_segment")
+	if _hybrid_registered:
+		line.visible = false
+
 func _physics_process(delta: float) -> void:
 	frame_counter += 1
 	if frame_counter > frames_until_show:
-		line.show()
+		line.set_meta("hybrid_ground_visible", true)
+		line.visible = not bool(line.get_meta(&"hybrid_ground_registered", false))
 	if oc_mode and PlayerData.cloestest_enemy != null:
 		raycast.target_position = to_local(PlayerData.cloestest_enemy.global_position)
 		beam_start_position = to_local(beam_owner.global_position)
@@ -69,3 +81,8 @@ func _physics_process(delta: float) -> void:
 
 func _on_expire_timer_timeout() -> void:
 	self.call_deferred("queue_free")
+
+func _exit_tree() -> void:
+	if line != null:
+		HybridGroundRegistration.unregister(line)
+	_hybrid_registered = false

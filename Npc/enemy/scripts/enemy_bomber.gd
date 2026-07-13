@@ -72,7 +72,9 @@ func _explode() -> void:
 		area.visual_frames = EXPLOSION_VISUAL_FRAMES
 		area.visual_animation = &"explode"
 		area.visual_duration = 0.4
-		area.draw_enabled = true
+		# The animated explosion is the complete visual. The legacy 2D debug
+		# circle must not be drawn over the hybrid ground.
+		area.draw_enabled = false
 		area.debug_fill_color = Color(1.0, 0.35, 0.15, 0.24)
 		area.debug_line_color = Color(1.0, 0.7, 0.25, 1.0)
 		area.apply_once_per_target = true

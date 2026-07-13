@@ -1,6 +1,7 @@
 extends Node2D
 
 const FALLBACK_MODULE_ICON: Texture2D = preload("res://asset/images/modules/missing_module.png")
+const FixedObliqueProjectionType := preload("res://Visual/Oblique/fixed_oblique_projection_2d.gd")
 
 @export var item_id : String = "1"
 @export var level := 3
@@ -14,12 +15,14 @@ var item : Node2D
 var module_instance: Module
 var player_near : bool = false
 var _resolved: bool = false
-@onready var sprite: Sprite2D = $Sprite2D
+@onready var spin_root: Node2D = $BillboardVisual/SpinRoot
+@onready var sprite: Sprite2D = $BillboardVisual/SpinRoot/Sprite2D
 @onready var detect_area: Area2D = $DetectArea
-@onready var interact_hint: Label = $InteractHint
+@onready var interact_hint: Label = $BillboardVisual/InteractHint
 
 
 func _ready() -> void:
+	z_index = int(round(FixedObliqueProjectionType.get_projected_depth(global_position) / 16.0))
 	if settle_unclaimed_on_battle_start:
 		add_to_group(&"unclaimed_battle_rewards")
 	if spawn_ready:
@@ -140,7 +143,10 @@ func _on_module_selection_completed(assigned: bool) -> void:
 	
 func play_animation() -> void:
 	var dest_tween = create_tween()
-	dest_tween.tween_property(self,"rotation_degrees", 1800, 1).set_ease(Tween.EASE_IN_OUT)
+	if spin_root == null:
+		activate_pickup_detection()
+		return
+	dest_tween.tween_property(spin_root, "rotation_degrees", 1800, 1).set_ease(Tween.EASE_IN_OUT)
 	dest_tween.connect("finished", _on_dest_tween_finished)
 
 func activate_pickup_detection() -> void:

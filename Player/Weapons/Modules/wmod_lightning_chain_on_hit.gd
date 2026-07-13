@@ -1,6 +1,8 @@
 extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Use on hit-capable weapons to chain bonus lightning damage to nearby enemies.
 
+const GroundConnectionEffectType := preload("res://Visual/Oblique/ground_connection_effect_2d.gd")
+
 var ITEM_NAME := "Lightning Chain"
 
 @export var chain_count: int = 2
@@ -75,22 +77,9 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 				owner_player.apply_bonus_hit_if_needed(chained_target)
 
 func _draw_chain_line(from_pos: Vector2, to_pos: Vector2) -> void:
-	var line: Line2D = Line2D.new()
-	line.top_level = true
-	line.global_position = Vector2.ZERO
-	line.default_color = Color.WHITE
-	line.width = line_width
-	line.z_index = 200
-	line.points = PackedVector2Array([from_pos, to_pos])
-
+	var visual := GroundConnectionEffectType.new()
+	visual.configure(from_pos, to_pos, Color.WHITE, line_width, line_duration)
 	var parent: Node = get_tree().current_scene
 	if parent == null:
 		parent = get_tree().root
-	parent.add_child(line)
-
-	var tween: Tween = line.create_tween()
-	tween.tween_property(line, "modulate:a", 0.0, line_duration)
-	tween.finished.connect(func() -> void:
-		if is_instance_valid(line):
-			line.queue_free()
-	)
+	parent.add_child(visual)

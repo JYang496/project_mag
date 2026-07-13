@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://t2fjrybq8fpp"]
+[gd_scene load_steps=5 format=3 uid="uid://t2fjrybq8fpp"]
 
 [ext_resource type="PackedScene" uid="uid://4sd4d8lkbkls" path="res://Npc/base_npc.tscn" id="1_jftvo"]
 [ext_resource type="Script" uid="uid://bluk0p8rfn31b" path="res://Npc/friendly/scripts/FriendlyNpc.gd" id="2_iyyjk"]
+[ext_resource type="Script" path="res://Visual/Oblique/projected_world_hint_label.gd" id="3_hint"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pnknk"]
 size = Vector2(138, 113)
@@ -28,6 +29,7 @@ theme_override_font_sizes/font_size = 24
 text = "F"
 horizontal_alignment = 1
 vertical_alignment = 1
+script = ExtResource("3_hint")
 
 [connection signal="body_entered" from="ShoppingArea" to="." method="_on_shopping_area_body_entered"]
 [connection signal="body_exited" from="ShoppingArea" to="." method="_on_shopping_area_body_exited"]

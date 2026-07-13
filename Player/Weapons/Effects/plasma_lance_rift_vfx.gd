@@ -53,6 +53,7 @@ func _add_line(width: float, color: Color, order: int) -> void:
 	line.antialiased = true
 	line.z_index = order
 	add_child(line)
+	_register_ground_line(line)
 
 
 func _build_sparks() -> void:
@@ -83,3 +84,15 @@ func _build_sparks() -> void:
 		spark.antialiased = true
 		spark.z_index = 3
 		add_child(spark)
+		_register_ground_line(spark)
+
+func _register_ground_line(line: Line2D) -> void:
+	line.add_to_group(&"hybrid_ground_segment")
+	line.set_meta("hybrid_ground_visible", true)
+	if HybridGroundRegistration.register(line, &"register_ground_segment"):
+		line.visible = false
+
+func _exit_tree() -> void:
+	for child in get_children():
+		if child is Line2D:
+			HybridGroundRegistration.unregister(child)

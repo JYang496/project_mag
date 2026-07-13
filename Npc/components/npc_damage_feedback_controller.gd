@@ -3,6 +3,7 @@ class_name NpcDamageFeedbackController
 
 const HIT_LABEL_SCENE := preload("res://UI/labels/hit_label.tscn")
 const ENEMY_HP_BAR_SCENE := preload("res://UI/scenes/components/enemy_hp_bar.tscn")
+const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd")
 
 var npc
 var _pending_hit_label_damage: int = 0
@@ -47,12 +48,27 @@ func flush_pending_hit_label() -> void:
 	if tree == null or tree.root == null:
 		return
 	var hit_label_ins = HIT_LABEL_SCENE.instantiate()
-	hit_label_ins.global_position = npc.global_position
+	var ui_parent := _get_hit_label_parent(tree)
+	var label_color := _resolve_hit_label_color()
+	var target_id: int = int(npc.get_instance_id())
+	for item in tree.get_nodes_in_group(&"active_hit_labels"):
+		if is_instance_valid(item) and item.has_method("get_target_instance_id") and int(item.call("get_target_instance_id")) == target_id:
+			item.call("merge_damage", _pending_hit_label_damage, label_color)
+			_pending_hit_label_damage = 0
+			_pending_hit_label_damage_by_type.clear()
+			return
+	var label_position: Vector2 = npc.global_position
+	label_position = ProjectedUi.project_to_screen(tree, npc.global_position, label_position)
+	hit_label_ins.position = label_position
+	hit_label_ins.set_target_instance_id(target_id)
 	hit_label_ins.setNumber(_pending_hit_label_damage)
-	hit_label_ins.setColor(_resolve_hit_label_color())
+	hit_label_ins.setColor(label_color)
 	_pending_hit_label_damage = 0
 	_pending_hit_label_damage_by_type.clear()
-	tree.root.call_deferred("add_child", hit_label_ins)
+	ui_parent.call_deferred("add_child", hit_label_ins)
+
+func _get_hit_label_parent(tree: SceneTree) -> Node:
+	return ProjectedUi.ensure_layer(tree)
 
 func _resolve_hit_label_color() -> Color:
 	if _pending_hit_label_damage <= 0:
@@ -146,22 +162,24 @@ func _ensure_flash_overlay(sprite_body: Sprite2D, overlay_name: String, existing
 	overlay.centered = sprite_body.centered
 	overlay.offset = sprite_body.offset
 	overlay.texture_filter = sprite_body.texture_filter
-	overlay.z_index = sprite_body.z_index + 1
+	overlay.z_index = 1
 	var add_mat := CanvasItemMaterial.new()
 	add_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	overlay.material = add_mat
 	overlay.visible = false
 	overlay.modulate = Color(npc.hit_flash_peak_color.r, npc.hit_flash_peak_color.g, npc.hit_flash_peak_color.b, 0.0)
-	npc.add_child(overlay)
+	sprite_body.add_child(overlay)
 	return overlay
 
 func _sync_flash_overlay(overlay: Sprite2D, sprite_body: Sprite2D) -> void:
 	overlay.texture = sprite_body.texture
-	overlay.position = sprite_body.position
-	overlay.scale = sprite_body.scale
-	overlay.rotation = sprite_body.rotation
+	overlay.position = Vector2.ZERO
+	overlay.scale = Vector2.ONE
+	overlay.rotation = 0.0
 	overlay.flip_h = sprite_body.flip_h
 	overlay.flip_v = sprite_body.flip_v
+	overlay.offset = sprite_body.offset
+	overlay.centered = sprite_body.centered
 
 func sync_enemy_hp_bar() -> void:
 	var hp_bar := _ensure_enemy_hp_bar()

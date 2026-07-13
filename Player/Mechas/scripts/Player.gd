@@ -8,11 +8,14 @@ const PLAYER_WEAPON_PASSIVE_RUNTIME_SCRIPT := preload("res://Player/Mechas/scrip
 const MovementFrameInputType := preload("res://Player/Mechas/scripts/movement_frame_input.gd")
 const MovementFrameResultType := preload("res://Player/Mechas/scripts/movement_frame_result.gd")
 const PlayerCameraConfigType := preload("res://Player/Mechas/scripts/player_camera_config.gd")
+const FixedObliqueProjectionType := preload("res://Visual/Oblique/fixed_oblique_projection_2d.gd")
+const ObliqueDebugPanelType := preload("res://Visual/Oblique/oblique_debug_panel.gd")
+const HybridCameraDefaultsType := preload("res://Visual/Oblique/hybrid_camera_defaults.gd")
 
 var extra_direction = Vector2.ZERO
 @onready var equppied_weapons = $EquippedWeapons
 @onready var equppied_augments = $EquippedAugments
-@onready var mecha_sprite = $MechaSprite
+@onready var mecha_sprite: Sprite2D = $MechaSprite
 @onready var mecha_move_sprite: AnimatedSprite2D = $MechaMoveSprite
 @onready var player_camera: Camera2D = $Camera2D
 @onready var collect_area = get_node("%CollectArea")
@@ -83,10 +86,19 @@ var _current_move_animation: StringName = StringName()
 var _last_visual_position: Vector2 = Vector2.ZERO
 @export var camera_zoom_lerp_speed: float = 1.0
 @export var battle_camera_view_mul: float = 0.8
-@export var rest_phase_camera_zoom_factor: float = 1.4
+@export var rest_phase_camera_zoom_factor: float = 1.12
 @export var rest_camera_zoom_enter_duration: float = 0.42
 @export var rest_camera_zoom_exit_duration: float = 0.30
 @export var rest_camera_zoom_transition_enabled: bool = true
+@export var fixed_oblique_enabled: bool = true
+@export var fixed_camera_yaw_degrees: float = 0.0
+@export_range(0.6, 1.0, 0.01) var fixed_vertical_scale: float = 0.90
+@export_range(1.0, 1.3, 0.01) var fixed_camera_overscan: float = 1.03
+@export_range(0.5, 2.0, 0.05) var billboard_scale: float = 1.0
+@export var show_oblique_debug_panel: bool = true
+@export var hybrid_ground_enabled: bool = true
+@export_range(25.0, 75.0, 0.5) var hybrid_camera_pitch_degrees: float = 52.0
+@export_range(5.0, 40.0, 0.5) var hybrid_camera_distance: float = HybridCameraDefaultsType.CAMERA_DISTANCE
 @export var move_accel: float = 450.0
 @export var move_decel: float = 2400.0
 @export var move_turn_penalty: float = 0.15
@@ -231,6 +243,7 @@ func _ready():
 	_ensure_damage_reaction_system()
 	_ensure_movement_system()
 	_ensure_camera_system()
+	_ensure_oblique_debug_panel()
 	_ensure_loot_system()
 	_ensure_assist_system()
 	_systems_strict_ready = true
@@ -258,8 +271,15 @@ func _physics_process(delta):
 		return
 	_tick_movement(delta)
 	move_and_slide()
-	distance_mouse_player = get_global_mouse_position() - global_position
-	_update_mecha_visual_state(distance_mouse_player)
+	distance_mouse_player = get_aim_world_position() - global_position
+	var visual_facing: Vector2 = distance_mouse_player
+	var hybrid_view := _get_hybrid_ground_view()
+	if hybrid_view != null:
+		visual_facing = hybrid_view.call("world_vector_to_screen", distance_mouse_player, global_position) as Vector2
+	elif fixed_oblique_enabled:
+		visual_facing = FixedObliqueProjectionType.world_vector_to_screen(distance_mouse_player)
+	_update_mecha_visual_state(visual_facing)
+	_update_projected_depth()
 	_update_weapon_orbits(delta)
 	if not _require_camera_system_or_halt():
 		return
@@ -1037,6 +1057,34 @@ func force_recover_battle_camera_zoom() -> void:
 	_sync_camera_config()
 	_camera_system.force_recover_battle_zoom(get_total_vision_mul())
 
+func apply_hybrid_camera_debug_settings(yaw_degrees: float, hybrid_pitch: float, hybrid_distance: float) -> void:
+	fixed_camera_yaw_degrees = yaw_degrees
+	hybrid_camera_pitch_degrees = hybrid_pitch
+	hybrid_camera_distance = hybrid_distance
+	var hybrid_view := _get_hybrid_ground_view()
+	if hybrid_view != null:
+		hybrid_view.call("configure", hybrid_camera_pitch_degrees, fixed_camera_yaw_degrees, hybrid_camera_distance)
+
+func _ensure_oblique_debug_panel() -> void:
+	if not OS.is_debug_build() or not show_oblique_debug_panel:
+		return
+	var panel := ObliqueDebugPanelType.new()
+	panel.name = "ObliqueDebugPanel"
+	add_child(panel)
+	panel.setup(self)
+
+func _get_hybrid_ground_view() -> Node:
+	if not hybrid_ground_enabled or not is_inside_tree():
+		return null
+	var views := get_tree().get_nodes_in_group(&"hybrid_ground_view_3d")
+	return views[0] as Node if not views.is_empty() else null
+
+func get_aim_world_position() -> Vector2:
+	var hybrid_view := _get_hybrid_ground_view()
+	if hybrid_view != null:
+		return hybrid_view.call("screen_to_world_2d", get_viewport().get_mouse_position()) as Vector2
+	return get_global_mouse_position()
+
 func update_grab_radius() -> void:
 	grab_radius.shape.radius = PlayerData.total_grab_radius
 
@@ -1070,6 +1118,11 @@ func _resolve_buffered_move_input() -> Vector2:
 	var x_mov := Input.get_action_strength("RIGHT") - Input.get_action_strength("LEFT")
 	var y_mov := Input.get_action_strength("DOWN") - Input.get_action_strength("UP")
 	var raw_input := Vector2(x_mov, y_mov)
+	var hybrid_view := _get_hybrid_ground_view()
+	if hybrid_view != null:
+		raw_input = hybrid_view.call("screen_vector_to_world", raw_input) as Vector2
+	elif fixed_oblique_enabled:
+		raw_input = FixedObliqueProjectionType.screen_vector_to_world(raw_input)
 	var now_msec := Time.get_ticks_msec()
 	if raw_input.length_squared() > 0.0001:
 		_last_move_input_dir = raw_input.normalized()
@@ -1124,12 +1177,20 @@ func _update_collect_area_anchor_to_screen_top() -> void:
 	var viewport := get_viewport()
 	if viewport == null:
 		return
-	var world_top_left: Vector2 = viewport.get_canvas_transform().affine_inverse() * Vector2.ZERO
-	var target_global := Vector2(
-		global_position.x,
-		world_top_left.y + COLLECT_AREA_TOP_PADDING
-	)
+	var inverse_canvas := viewport.get_canvas_transform().affine_inverse()
+	var viewport_width := viewport.get_visible_rect().size.x
+	var world_top_left: Vector2 = inverse_canvas * Vector2.ZERO
+	var world_top_right: Vector2 = inverse_canvas * Vector2(viewport_width, 0.0)
+	var player_screen_x := (viewport.get_canvas_transform() * global_position).x
+	var edge_t := clampf(player_screen_x / maxf(viewport_width, 1.0), 0.0, 1.0)
+	var target_global := world_top_left.lerp(world_top_right, edge_t)
+	target_global += (world_top_right - world_top_left).orthogonal().normalized() * COLLECT_AREA_TOP_PADDING
 	collect_area.global_position = target_global
+
+func _update_projected_depth() -> void:
+	if not fixed_oblique_enabled:
+		return
+	z_index = 10 + int(round(FixedObliqueProjectionType.get_projected_depth(global_position) / 16.0))
 
 func _refresh_detected_enemies() -> void:
 	if detect_area == null:
@@ -1362,7 +1423,7 @@ func _get_formation_angle_offsets(count: int) -> Array:
 			return offsets
 
 func _get_mouse_angle() -> float:
-	return global_position.direction_to(get_global_mouse_position()).angle()
+	return global_position.direction_to(get_aim_world_position()).angle()
 
 func _get_orbit_position(angle: float) -> Vector2:
 	var cos_a := cos(angle)
@@ -1704,6 +1765,12 @@ func _sync_camera_config() -> void:
 	_camera_config.rest_camera_zoom_exit_duration = rest_camera_zoom_exit_duration
 	_camera_config.rest_camera_zoom_transition_enabled = rest_camera_zoom_transition_enabled
 	_camera_config.camera_lookahead_lerp_speed = camera_lookahead_lerp_speed
+	_camera_config.fixed_oblique_enabled = fixed_oblique_enabled
+	_camera_config.fixed_camera_yaw_degrees = fixed_camera_yaw_degrees
+	_camera_config.fixed_vertical_scale = fixed_vertical_scale
+	_camera_config.fixed_camera_overscan = fixed_camera_overscan
+	_camera_config.billboard_scale = billboard_scale
+	_camera_config.hybrid_ground_enabled = hybrid_ground_enabled
 
 func _ensure_shared_heat_system() -> void:
 	if _shared_heat_system != null:

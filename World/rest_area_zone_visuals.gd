@@ -1,5 +1,7 @@
 extends Node2D
 
+const BillboardVisualType := preload("res://Visual/Oblique/billboard_visual_2d.gd")
+
 const ZONE_ID_PURCHASE := 0
 const ZONE_ID_UPGRADE := 1
 const ZONE_ID_WAREHOUSE := 2
@@ -31,12 +33,15 @@ func _ready() -> void:
 	z_as_relative = true
 	z_index = 8
 	set_process(true)
+	call_deferred("_ensure_hybrid_props")
 
 func _process(delta: float) -> void:
 	_pulse_time = fmod(_pulse_time + maxf(delta, 0.0), TAU)
 	queue_redraw()
 
 func _draw() -> void:
+	if bool(get_meta("hybrid_ground_active", false)):
+		return
 	var rest_area := get_parent()
 	if rest_area == null or not is_instance_valid(rest_area):
 		return
@@ -51,6 +56,40 @@ func _draw() -> void:
 		var is_selected := _is_service_zone(zone_id) and zone_id == selected_zone_id
 		var is_hovered := _is_service_zone(zone_id) and zone_id == hover_zone_id
 		_draw_zone_visual(zone_id, zone_rect, is_hovered, is_selected)
+
+func _ensure_hybrid_props() -> void:
+	if not bool(get_meta("hybrid_ground_active", false)):
+		return
+	var rest_area := get_parent()
+	if rest_area == null:
+		return
+	var prop_data := {
+		ZONE_ID_PURCHASE: PURCHASE_PROP_TEXTURE,
+		ZONE_ID_UPGRADE: UPGRADE_PROP_TEXTURE,
+		ZONE_ID_WAREHOUSE: WAREHOUSE_PROP_TEXTURE,
+		ZONE_ID_BOARD_EDIT: BOARD_PROP_TEXTURE,
+	}
+	for zone_id in prop_data:
+		var rect := rest_area.call("_get_zone_rect_local", zone_id) as Rect2
+		var prop_name := "HybridProp%d" % int(zone_id)
+		var existing := get_node_or_null(prop_name) as Sprite2D
+		if existing != null:
+			continue
+		var sprite := Sprite2D.new()
+		sprite.name = prop_name
+		sprite.texture = prop_data[zone_id] as Texture2D
+		sprite.position = rect.get_center() + Vector2(0.0, -minf(rect.size.x, rect.size.y) * 0.03)
+		var texture_size := sprite.texture.get_size()
+		var target_size := minf(rect.size.x, rect.size.y) * 0.60
+		var uniform_scale := target_size / maxf(maxf(texture_size.x, texture_size.y), 1.0)
+		sprite.scale = Vector2.ONE * uniform_scale
+		sprite.set_script(BillboardVisualType)
+		sprite.set("perspective_scale_amount", 0.0)
+		sprite.set("perspective_min_scale", 0.95)
+		sprite.set("perspective_max_scale", 1.05)
+		sprite.set_meta(&"hybrid_rest_prop", true)
+		sprite.set_meta(&"rest_zone_id", int(zone_id))
+		add_child(sprite)
 
 func _is_service_zone(zone_id: int) -> bool:
 	return VISUAL_ZONE_IDS.has(zone_id)

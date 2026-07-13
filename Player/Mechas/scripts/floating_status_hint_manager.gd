@@ -1,6 +1,8 @@
 extends Node
 class_name FloatingStatusHintManager
 
+const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd")
+
 var _host: Node2D
 var _floating_hint_duration_sec: float = 1.0
 var _floating_hint_rise_px: float = 26.0
@@ -163,10 +165,12 @@ func _spawn_player_floating_hint(text: String) -> void:
 	label.add_theme_font_size_override("font_size", 16)
 	label.z_as_relative = false
 	label.z_index = 200
-	_host.add_child.call_deferred(label)
+	var layer := ProjectedUi.ensure_layer(_host.get_tree())
+	layer.add_child(label)
 	var min_size := label.get_combined_minimum_size()
 	label.size = Vector2(maxf(min_size.x + 18.0, 96.0), maxf(min_size.y + 6.0, 26.0))
-	label.position = Vector2(-label.size.x * 0.5, -80.0 - label.size.y * 0.5)
+	var anchor := ProjectedUi.project_to_screen(_host.get_tree(), _host.global_position, _host.global_position)
+	label.position = anchor + Vector2(-label.size.x * 0.5, -80.0 - label.size.y * 0.5)
 	var tween := _host.create_tween()
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_OUT)

@@ -9,6 +9,8 @@ enum TargetGroup {
 	BOTH
 }
 
+enum VisualShape { CIRCLE, RECTANGLE, CONE }
+
 @export var duration: float = 0.1
 @export var visual_duration: float = 0.0
 @export var radius: float = 24.0:
@@ -30,6 +32,14 @@ enum TargetGroup {
 	set(value):
 		use_animated_visual = value
 		_sync_visual_nodes()
+@export var animated_visual_is_ground: bool = false
+@export_group("Hybrid Ground Layers")
+@export var ground_detail_texture: Texture2D
+@export var ground_detail_color: Color = Color(1.0, 1.0, 1.0, 0.35)
+@export var ground_detail_scale: Vector2 = Vector2(2.0, 2.0)
+@export var ground_flow_speed: Vector2 = Vector2(0.12, -0.08)
+@export_range(0.0, 0.25, 0.005) var ground_uv_distortion: float = 0.025
+@export_group("")
 @export var visual_texture: Texture2D:
 	set(value):
 		visual_texture = value
@@ -51,6 +61,26 @@ enum TargetGroup {
 		visual_modulate = value
 		_sync_visual_nodes()
 @export var visual_rotation_speed_deg: float = 0.0
+@export var visual_shape: VisualShape = VisualShape.CIRCLE:
+	set(value):
+		visual_shape = value
+		_sync_visual_shape_collision()
+@export var rectangle_size: Vector2 = Vector2(96.0, 48.0):
+	set(value):
+		rectangle_size = value.abs()
+		_sync_visual_shape_collision()
+@export var cone_direction: Vector2 = Vector2.RIGHT:
+	set(value):
+		cone_direction = value
+		_sync_visual_shape_collision()
+@export_range(1.0, 89.0, 1.0) var cone_half_angle_deg: float = 35.0:
+	set(value):
+		cone_half_angle_deg = clampf(value, 1.0, 89.0)
+		_sync_visual_shape_collision()
+@export var cone_range: float = 180.0:
+	set(value):
+		cone_range = maxf(value, 1.0)
+		_sync_visual_shape_collision()
 @export var visual_size_multiplier: float = 1.0:
 	set(value):
 		visual_size_multiplier = maxf(value, 0.01)
@@ -91,6 +121,13 @@ signal target_affected(target: Node)
 
 
 func _ready() -> void:
+	add_to_group(&"hybrid_ground_area_effect")
+	var hybrid_views := get_tree().get_nodes_in_group(&"hybrid_ground_view_3d")
+	if not hybrid_views.is_empty():
+		# Prevent a one-frame legacy range circle before the ground service has
+		# classified this effect as animated billboard or ground patch.
+		draw_enabled = false
+		call_deferred("_register_with_hybrid_ground")
 	_damage_active = true
 	if source_node is BaseEnemy:
 		add_to_group("enemy_runtime_cleanup")
@@ -99,6 +136,7 @@ func _ready() -> void:
 		if source_weapon != null and source_weapon.has_method("get_effective_area_radius"):
 			radius = float(source_weapon.call("get_effective_area_radius", radius))
 	_sync_radius()
+	_sync_visual_shape_collision()
 	_sync_collision_mask()
 	_sync_visual_nodes()
 	var damage_duration := maxf(duration, 0.01)
@@ -107,6 +145,14 @@ func _ready() -> void:
 	life_timer.wait_time = maxf(damage_duration, visual_duration)
 	life_timer.start()
 	call_deferred("_apply_to_current_overlaps")
+
+func _register_with_hybrid_ground() -> void:
+	if not is_inside_tree():
+		return
+	HybridGroundRegistration.register(self, &"register_area_effect")
+
+func _exit_tree() -> void:
+	HybridGroundRegistration.unregister(self)
 
 func _process(delta: float) -> void:
 	if visual_root and is_instance_valid(visual_root) and not is_zero_approx(visual_rotation_speed_deg):
@@ -341,6 +387,41 @@ func _sync_visual_scale() -> void:
 		target_diameter / base_size.x,
 		target_diameter / base_size.y
 	)
+
+func _sync_visual_shape_collision() -> void:
+	if not is_node_ready() or collision_shape == null:
+		return
+	var polygon := get_node_or_null("VisualShapeCollisionPolygon") as CollisionPolygon2D
+	if visual_shape == VisualShape.CIRCLE:
+		collision_shape.disabled = false
+		if not collision_shape.shape is CircleShape2D:
+			collision_shape.shape = CircleShape2D.new()
+		_sync_radius()
+		if polygon != null:
+			polygon.disabled = true
+		return
+	if visual_shape == VisualShape.RECTANGLE:
+		collision_shape.disabled = false
+		var rectangle := collision_shape.shape as RectangleShape2D
+		if rectangle == null:
+			rectangle = RectangleShape2D.new()
+			collision_shape.shape = rectangle
+		rectangle.size = rectangle_size
+		if polygon != null:
+			polygon.disabled = true
+		return
+	collision_shape.disabled = true
+	if polygon == null:
+		polygon = CollisionPolygon2D.new()
+		polygon.name = "VisualShapeCollisionPolygon"
+		add_child(polygon)
+	polygon.disabled = false
+	var direction := cone_direction.normalized() if cone_direction != Vector2.ZERO else Vector2.RIGHT
+	var half_angle := deg_to_rad(cone_half_angle_deg)
+	var points := PackedVector2Array([Vector2.ZERO])
+	for index in range(17):
+		points.append(direction.rotated(lerpf(-half_angle, half_angle, float(index) / 16.0)) * cone_range)
+	polygon.polygon = points
 
 
 func _resolve_visual_source_size() -> Vector2:

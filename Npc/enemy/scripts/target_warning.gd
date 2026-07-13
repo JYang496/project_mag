@@ -21,11 +21,20 @@ var _wave_line: Line2D = null
 
 func _ready() -> void:
 	add_to_group("enemy_runtime_cleanup")
+	add_to_group(&"hybrid_ground_warning_circle")
 	if visual_preset == VisualPreset.DODGE_STYLE:
 		_build_dodge_style_visuals()
 	set_process(true)
 	if visual_preset == VisualPreset.BASIC:
 		queue_redraw()
+	call_deferred("_register_with_hybrid_ground")
+
+func _register_with_hybrid_ground() -> void:
+	if HybridGroundRegistration.register(self, &"register_warning_circle"):
+		visible = false
+
+func _exit_tree() -> void:
+	HybridGroundRegistration.unregister(self)
 
 func _process(delta: float) -> void:
 	_elapsed += maxf(delta, 0.0)

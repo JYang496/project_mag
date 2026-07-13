@@ -13,6 +13,9 @@ var _protected_targets: Array[BaseEnemy] = []
 func _ready() -> void:
 	super._ready()
 	support_role = &"shield_core"
+	add_to_group(&"hybrid_enemy_aura_source")
+	add_to_group(&"hybrid_enemy_link_source")
+	call_deferred("register_hybrid_support_visuals")
 
 func _physics_process(delta: float) -> void:
 	queue_redraw()
@@ -55,8 +58,26 @@ func _get_nearby_enemies(radius: float) -> Array[Node2D]:
 	return []
 
 func _draw() -> void:
+	if uses_hybrid_ground_visuals():
+		return
 	draw_circle(Vector2.ZERO, aura_radius, aura_fill_color)
 	draw_arc(Vector2.ZERO, aura_radius, 0.0, TAU, 56, aura_line_color, 2.5, true)
 	for target in _protected_targets:
 		if is_instance_valid(target):
 			draw_line(Vector2.ZERO, to_local(target.global_position), protected_line_color, 1.5, true)
+
+func get_hybrid_aura_visual() -> Dictionary:
+	return {
+		"visible": true,
+		"radius": aura_radius,
+		"fill_color": aura_fill_color,
+		"line_color": aura_line_color,
+		"line_width": 2.5,
+	}
+
+func get_hybrid_link_visuals() -> Array[Dictionary]:
+	var links: Array[Dictionary] = []
+	for target in _protected_targets:
+		if is_instance_valid(target):
+			links.append({"target": target, "color": protected_line_color, "width": 1.5})
+	return links

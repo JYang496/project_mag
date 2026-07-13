@@ -1,6 +1,8 @@
 extends CharacterBody2D
 class_name BaseNPC
 
+const FixedObliqueProjectionType := preload("res://Visual/Oblique/fixed_oblique_projection_2d.gd")
+
 @onready var sprite_body = $Body
 @onready var hurt_box = $HurtBox
 
@@ -38,6 +40,10 @@ var status_runtime: NpcStatusRuntime = NpcStatusRuntime.new()
 func _init() -> void:
 	damage_feedback.setup(self)
 	status_runtime.setup(self)
+
+func _process(_delta: float) -> void:
+	if FixedObliqueProjectionType.is_enabled():
+		z_index = int(round(FixedObliqueProjectionType.get_projected_depth(global_position) / 16.0))
 
 func damaged(attack:Attack):
 	if _incoming_damage_pipeline == null:

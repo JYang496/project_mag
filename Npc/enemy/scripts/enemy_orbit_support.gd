@@ -24,6 +24,8 @@ var _buffed_targets: Array[BaseEnemy] = []
 func _ready() -> void:
 	super._ready()
 	support_role = &"speed_support"
+	add_to_group(&"hybrid_enemy_aura_source")
+	call_deferred("register_hybrid_support_visuals")
 	if speed_buff_shape and speed_buff_shape.shape is CircleShape2D:
 		var aura_shape := speed_buff_shape.shape as CircleShape2D
 		aura_shape.radius = aura_radius
@@ -151,7 +153,7 @@ func _remove_speed_aura(target_ref) -> void:
 	_buffed_targets.erase(target)
 
 func _draw() -> void:
-	if not aura_visual_enabled:
+	if not aura_visual_enabled or uses_hybrid_ground_visuals():
 		return
 	draw_circle(Vector2.ZERO, maxf(aura_radius, 1.0), aura_fill_color)
 	draw_arc(
@@ -164,3 +166,12 @@ func _draw() -> void:
 		maxf(aura_line_width, 1.0),
 		true
 	)
+
+func get_hybrid_aura_visual() -> Dictionary:
+	return {
+		"visible": aura_visual_enabled,
+		"radius": aura_radius,
+		"fill_color": aura_fill_color,
+		"line_color": aura_line_color,
+		"line_width": aura_line_width,
+	}

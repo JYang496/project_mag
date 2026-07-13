@@ -1,12 +1,18 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://Player/Weapons/Projectiles/plasma_lance_projectile.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://asset/images/weapons/projectiles/plasma.png" id="2_texture"]
+[ext_resource type="Script" path="res://Visual/Oblique/billboard_visual_2d.gd" id="3_billboard"]
 
 [node name="PlasmaLanceProjectile" type="Node2D"]
 script = ExtResource("1_script")
+visual_mode = 0
 
 [node name="Bullet" type="Node2D" parent="."]
+script = ExtResource("3_billboard")
+mode = 0
+
+[node name="HitboxAnchor" type="Node2D" parent="."]
 
 [node name="BulletSprite" type="Sprite2D" parent="Bullet"]
 visible = false

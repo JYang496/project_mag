@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://Combat/area_effect/area_effect.gd" id="1_area_effect_script"]
+[ext_resource type="Script" path="res://Visual/Oblique/billboard_visual_2d.gd" id="2_billboard"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_area_effect"]
 radius = 24.0
@@ -11,6 +12,7 @@ collision_mask = 4
 script = ExtResource("1_area_effect_script")
 
 [node name="VisualRoot" type="Node2D" parent="."]
+script = ExtResource("2_billboard")
 
 [node name="Sprite" type="Sprite2D" parent="VisualRoot"]
 visible = false

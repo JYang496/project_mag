@@ -2,6 +2,8 @@ extends Node2D
 class_name BoardCellGenerator
 
 signal active_cells_changed(active_cell_ids: PackedInt32Array)
+signal board_visual_active_changed(active: bool, immediate: bool)
+signal board_recentered(offset: Vector2)
 
 @export var cell_scene: PackedScene
 @export var cell_spacing: Vector2 = Vector2(510, 510)
@@ -164,6 +166,7 @@ func set_board_active(active: bool, immediate: bool = false) -> void:
 	if _board_active == active and not immediate:
 		return
 	_board_active = active
+	board_visual_active_changed.emit(active, immediate)
 	_set_cells_monitoring(active)
 	_set_blocker_collision(active)
 	if _fade_tween:
@@ -313,6 +316,7 @@ func _configure_cell_capture_shape(cell: Cell) -> void:
 
 func _create_blocker_visual(blocker_size: Vector2, visual_color: Color) -> Polygon2D:
 	var polygon: Polygon2D = Polygon2D.new()
+	polygon.add_to_group(&"legacy_board_boundary_visual")
 	var half_size: Vector2 = blocker_size * 0.5
 	polygon.polygon = PackedVector2Array([
 		Vector2(-half_size.x, -half_size.y),
@@ -416,6 +420,7 @@ func recenter_board_around_player() -> void:
 		_log_recenter_debug(board_position_before, global_position, player_position, PlayerData.player.global_position, recenter_offset, 0.0)
 		return
 	global_position += recenter_offset
+	board_recentered.emit(recenter_offset)
 	var board_position_after: Vector2 = global_position
 	var player_position_after: Vector2 = PlayerData.player.global_position
 	var center_after: Vector2 = _get_cell_center_global(_center_cell)

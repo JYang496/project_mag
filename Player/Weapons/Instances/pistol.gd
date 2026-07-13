@@ -196,7 +196,7 @@ func _update_weapon_rotation() -> void:
 	if target != null:
 		direction = target.global_position - global_position
 	else:
-		direction = get_global_mouse_position() - global_position
+		direction = get_mouse_target() - global_position
 	if direction == Vector2.ZERO:
 		return
 	rotation = direction.angle() + deg_to_rad(90)
