@@ -407,6 +407,7 @@ func _sync_primary_resource_slot(slot: Dictionary) -> void:
 	var state := StringName(str(slot.get("state", "normal")))
 	var text := str(slot.get("short_text", slot.get("text", "")))
 	primary_resource_meter.call("set_resource", resource_type, ratio, state, text, tooltip)
+	primary_resource_meter.modulate.a = 1.0 if resource_type == &"heat" else SPECIAL_RESOURCE_OPACITY
 	primary_resource_meter.visible = true
 	if heat_label and is_instance_valid(heat_label):
 		heat_label.visible = false

@@ -57,21 +57,17 @@ func get_total_heat_max() -> float:
 		return 0.0
 	return float(_shared_heat_pool.max_heat)
 
-func set_heat_max_multiplier(multiplier: float, scale_current_heat: bool, preserve_overheat: bool = true) -> void:
+func set_heat_max_multiplier(multiplier: float, scale_current_heat: bool, _preserve_overheat: bool = true) -> void:
 	if _shared_heat_pool == null:
 		return
 	var old_heat_value := float(_shared_heat_pool.heat_value)
-	var old_overheated := bool(_shared_heat_pool.overheated)
 	_heat_max_multiplier = maxf(multiplier, 0.01)
 	rebuild()
 	if scale_current_heat:
 		_shared_heat_pool.heat_value = clampf(old_heat_value * _heat_max_multiplier, 0.0, _shared_heat_pool.max_heat)
 	else:
 		_shared_heat_pool.heat_value = clampf(old_heat_value, 0.0, _shared_heat_pool.max_heat)
-	if preserve_overheat:
-		_shared_heat_pool.overheated = old_overheated
-	else:
-		_shared_heat_pool.overheated = _shared_heat_pool.heat_value >= _shared_heat_pool.max_heat
+	_shared_heat_pool.overheated = false
 
 func get_heat_max_multiplier() -> float:
 	return _heat_max_multiplier

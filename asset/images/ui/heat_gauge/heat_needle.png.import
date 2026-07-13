@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://be3rvxrqcy5h7"
-path="res://.godot/imported/wmod_overheat_boost_heat.svg-711c9c69b7e8e18dc84c6ba19d3348ae.ctex"
+uid="uid://ddqeh80ly1qyf"
+path="res://.godot/imported/heat_needle.png-be3f1d7bdc29d5547fb39311fcb94315.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://asset/images/modules/wmod_overheat_boost_heat.svg"
-dest_files=["res://.godot/imported/wmod_overheat_boost_heat.svg-711c9c69b7e8e18dc84c6ba19d3348ae.ctex"]
+source_file="res://asset/images/ui/heat_gauge/heat_needle.png"
+dest_files=["res://.godot/imported/heat_needle.png-be3f1d7bdc29d5547fb39311fcb94315.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

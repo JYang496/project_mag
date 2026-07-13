@@ -36,15 +36,12 @@ func has_contributors() -> bool:
 func add_heat_amount(amount: float) -> void:
 	if _lock_remaining_sec > 0.0:
 		return
-	if overheated:
-		return
 	var multiplier := 1.0
 	if heat_gain_multiplier_provider.is_valid():
 		multiplier = maxf(float(heat_gain_multiplier_provider.call()), 0.0)
 	var added: float = maxf(amount, 0.0) * multiplier
 	heat_value = clampf(heat_value + added, 0.0, max_heat)
-	if heat_value >= max_heat:
-		overheated = true
+	overheated = false
 
 func _clear_state() -> void:
 	heat_value = 0.0

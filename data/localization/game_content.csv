@@ -102,7 +102,6 @@ module.wmod_heat_concentration_heat.name,Heat Concentration,热量聚焦
 module.wmod_heat_vent_heat.name,Heat Vent,热量排放
 module.wmod_lifesteal_on_hit.name,Life Steal,生命汲取
 module.wmod_lightning_chain_on_hit.name,Lightning Chain,闪电链
-module.wmod_overheat_boost_heat.name,Overheat Boost,过热增幅
 module.wmod_permafrost_field_freeze.name,Permafrost Field,永冻领域
 module.wmod_pierce_stat.name,Pierce,贯穿
 module.wmod_projectile_speed_stat.name,Faster Speed,弹速提升
@@ -236,9 +235,6 @@ module.wmod_molten_splash_fire.effect.3,"Creates a 156-length splash for 46% wea
 module.wmod_momentum_haste.effect.1,"+4% move speed and +3% attack speed per stack","每层移动速度 +4%，攻击速度 +3%"
 module.wmod_momentum_haste.effect.2,"+5.5% move speed and +4.5% attack speed per stack","每层移动速度 +5.5%，攻击速度 +4.5%"
 module.wmod_momentum_haste.effect.3,"+7% move speed and +6% attack speed per stack","每层移动速度 +7%，攻击速度 +6%"
-module.wmod_overheat_boost_heat.effect.1,"Can fire while overheated at 50% damage","过热时仍可射击，但仅造成 50% 伤害"
-module.wmod_overheat_boost_heat.effect.2,"Can fire while overheated at 65% damage","过热时仍可射击，但仅造成 65% 伤害"
-module.wmod_overheat_boost_heat.effect.3,"Can fire while overheated at 80% damage","过热时仍可射击，但仅造成 80% 伤害"
 module.wmod_overkill_recovery.effect.1,"Convert overkill into up to +30% damage for 4s","将过量伤害转化为最高 +30% 伤害，持续 4 秒"
 module.wmod_overkill_recovery.effect.2,"Convert overkill into up to +45% damage for 4s","将过量伤害转化为最高 +45% 伤害，持续 4 秒"
 module.wmod_overkill_recovery.effect.3,"Convert overkill into up to +60% damage for 4s","将过量伤害转化为最高 +60% 伤害，持续 4 秒"

@@ -16,6 +16,7 @@ var auto_collect_on_landing: bool = false
 var settle_unclaimed_on_battle_start: bool = false
 var value : int
 var drop_instance
+var _trajectory_height: float = 0.0
 @onready var p0 = $p0
 @onready var p1 = $p1
 @onready var p2 = $p2
@@ -26,10 +27,11 @@ func _ready() -> void:
 		p2.position = get_random_position_in_ring(90.0, 160.0)
 	else:
 		p2.position = get_random_position_in_circle()
-	p1.position.x = (p0.position.x + p2.position.x) / 2
-	p1.position.y = (p0.position.y + p2.position.y) / 2 - randf_range(120.0, 180.0)
-
 	drop_instance = drop.instantiate()
+	_trajectory_height = randf_range(120.0, 180.0)
+	p1.position = (p0.position + p2.position) * 0.5
+	if not drop_instance.has_method("set_trajectory_screen_height"):
+		p1.position.y -= _trajectory_height
 	if module_scene:
 		drop_instance.module_scene = module_scene
 		drop_instance.module_level = module_level
@@ -99,7 +101,13 @@ func _start_flight_animation() -> void:
 func _set_flight_progress(progress: float) -> void:
 	if drop_instance == null or not is_instance_valid(drop_instance):
 		return
-	_set_drop_global_position(_quadratic_bezier(clampf(progress, 0.0, 1.0)))
+	var eased_progress := clampf(progress, 0.0, 1.0)
+	_set_trajectory_screen_height(4.0 * _trajectory_height * eased_progress * (1.0 - eased_progress))
+	_set_drop_global_position(_quadratic_bezier(eased_progress))
+
+func _set_trajectory_screen_height(height: float) -> void:
+	if drop_instance.has_method("set_trajectory_screen_height"):
+		drop_instance.call("set_trajectory_screen_height", height)
 
 func _set_drop_global_position(target_position: Vector2) -> void:
 	drop_instance.global_position = target_position
@@ -108,6 +116,7 @@ func _set_drop_global_position(target_position: Vector2) -> void:
 
 func _on_flight_animation_finished() -> void:
 	if drop_instance and is_instance_valid(drop_instance):
+		_set_trajectory_screen_height(0.0)
 		_set_drop_global_position(p2.global_position)
 		if drop_instance.has_method("activate_pickup_detection"):
 			drop_instance.call("activate_pickup_detection")

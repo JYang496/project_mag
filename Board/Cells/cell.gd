@@ -14,7 +14,7 @@ enum RewardType {NONE, COMBAT, ECONOMY}
 enum TerrainType {NONE, CORROSION, JUNGLE, SPEED_BOOST, REGEN, LUCKY_STRIKE, DOUBLE_LOOT, LOW_HP_BERSERK}
 
 class TaskMarkerVisual:
-	extends Node2D
+	extends BillboardVisual2D
 
 	const ACTIVE_MARKER_SIZE := Vector2(58.0, 58.0)
 	const COMPLETE_MARKER_SIZE := Vector2(36.0, 36.0)
@@ -45,6 +45,7 @@ class TaskMarkerVisual:
 		status = new_status.duplicate(true)
 		cell_rect = new_cell_rect
 		player_highlight = is_player_highlighted
+		set_logical_local_position(_resolve_marker_center(COMPLETE_MARKER_SIZE if _is_completed() else ACTIVE_MARKER_SIZE))
 		visible = not status.is_empty()
 		queue_redraw()
 
@@ -53,10 +54,10 @@ class TaskMarkerVisual:
 			return
 		var icon_key := str(status.get("icon_key", status.get("type", "fallback")))
 		var state_text := str(status.get("state", "waiting"))
-		var completed := state_text == "complete" or state_text == "completed"
+		var completed := _is_completed()
 		var marker_size := COMPLETE_MARKER_SIZE if completed else ACTIVE_MARKER_SIZE
 		var base_color := _get_task_color(icon_key)
-		var marker_center := _resolve_marker_center(marker_size)
+		var marker_center := Vector2.ZERO
 		var progress := clampf(float(status.get("progress", 0.0)), 0.0, 1.0)
 		if completed:
 			progress = 1.0
@@ -92,6 +93,10 @@ class TaskMarkerVisual:
 				draw_rect(Rect2(bar_rect.position, Vector2(bar_rect.size.x * progress, bar_rect.size.y)), Color(marker_color.r, marker_color.g, marker_color.b, 0.86), true)
 		if flash_alpha > 0.0:
 			draw_circle(marker_rect.get_center(), marker_size.x * (0.70 + flash_alpha * 0.42), Color(marker_color.r, marker_color.g, marker_color.b, flash_alpha * 0.36))
+
+	func _is_completed() -> bool:
+		var state_text := str(status.get("state", "waiting"))
+		return state_text == "complete" or state_text == "completed"
 
 	func _resolve_marker_center(marker_size: Vector2) -> Vector2:
 		var target := cell_rect.position + cell_rect.size * Vector2(0.50, 0.32)

@@ -46,7 +46,7 @@ build_cases = [{
 "17": "plasma_overcharge_lance",
 "7": "energy_orbit"
 },
-"modules": PackedStringArray("res://Player/Weapons/Modules/wmod_heat_capacity_heat.tscn", "res://Player/Weapons/Modules/wmod_overheat_boost_heat.tscn", "res://Player/Weapons/Modules/wmod_heat_vent_heat.tscn"),
+"modules": PackedStringArray("res://Player/Weapons/Modules/wmod_heat_capacity_heat.tscn", "res://Player/Weapons/Modules/wmod_heat_concentration_heat.tscn", "res://Player/Weapons/Modules/wmod_heat_vent_heat.tscn"),
 "target_encounters": PackedStringArray("swarm_60s", "elite_high_hp", "support_shield_core", "ranged_siege", "close_pressure", "task_objective_combat"),
 "expected_strengths": PackedStringArray("swarm_60s", "task_objective_combat"),
 "expected_weaknesses": PackedStringArray("elite_high_hp", "ranged_siege"),

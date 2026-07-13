@@ -5,7 +5,6 @@ const HEAT_SCRIPT := preload("res://Player/Weapons/Heat/heat.gd")
 
 var weapon: Weapon
 var heat_core: Heat
-var _overheat_fire_bypass_sources: Array[Node] = []
 
 func setup(source_weapon: Weapon) -> void:
 	weapon = source_weapon
@@ -23,30 +22,7 @@ func can_fire() -> bool:
 	var core := get_active_heat_core()
 	if core == null:
 		return true
-	if bool(core.overheated) and has_overheat_fire_bypass():
-		return true
 	return core.can_fire()
-
-func register_overheat_fire_bypass(source: Node) -> void:
-	if source == null:
-		return
-	if not _overheat_fire_bypass_sources.has(source):
-		_overheat_fire_bypass_sources.append(source)
-
-func unregister_overheat_fire_bypass(source: Node) -> void:
-	_overheat_fire_bypass_sources.erase(source)
-
-func has_overheat_fire_bypass() -> bool:
-	for i in range(_overheat_fire_bypass_sources.size() - 1, -1, -1):
-		var source := _overheat_fire_bypass_sources[i]
-		if source == null or not is_instance_valid(source):
-			_overheat_fire_bypass_sources.remove_at(i)
-	if _overheat_fire_bypass_sources.is_empty():
-		return false
-	for source in _overheat_fire_bypass_sources:
-		if source and is_instance_valid(source):
-			return true
-	return false
 
 func configure(per_shot: float, max_value: float, cool_rate: float) -> void:
 	if not _has_valid_weapon():
@@ -155,7 +131,6 @@ func notify_shared_heat_pool_dirty() -> void:
 		PlayerData.player.call("mark_shared_heat_pool_dirty")
 
 func clear_for_weapon_exit() -> void:
-	_overheat_fire_bypass_sources.clear()
 	heat_core = null
 	_sync_weapon_heat_core()
 

@@ -457,15 +457,6 @@ func _initialize_ammo_system() -> void:
 #endregion
 
 #region Heat Runtime
-func register_overheat_fire_bypass(source: Node) -> void:
-	heat_runtime.register_overheat_fire_bypass(source)
-
-func unregister_overheat_fire_bypass(source: Node) -> void:
-	heat_runtime.unregister_overheat_fire_bypass(source)
-
-func _has_overheat_fire_bypass() -> bool:
-	return heat_runtime.has_overheat_fire_bypass()
-
 func configure_heat(per_shot: float, max_value: float, cool_rate: float) -> void:
 	heat_runtime.configure(per_shot, max_value, cool_rate)
 

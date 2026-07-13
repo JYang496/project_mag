@@ -10,6 +10,24 @@ const AuraRendererType := preload("res://Visual/Oblique/aura_renderer.gd")
 const AreaEffectRendererType := preload("res://Visual/Oblique/area_effect_renderer.gd")
 const RestAreaZoneGroundShader := preload("res://Shaders/rest_area_zone_ground.gdshader")
 const LayeredAreaGroundShader := preload("res://Shaders/layered_area_ground.gdshader")
+const ACTIVATION_OUTLINE_SHADER := """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never;
+uniform vec4 outline_color : source_color;
+uniform float outline_alpha = 0.0;
+uniform float fill_alpha = 0.0;
+void fragment() {
+	vec2 edge_uv = min(UV, vec2(1.0) - UV);
+	float edge = 1.0 - smoothstep(0.012, 0.035, min(edge_uv.x, edge_uv.y));
+	float sweep = 0.68 + 0.32 * sin(TIME * 2.4 + (UV.x + UV.y) * 10.0);
+	vec2 corner_uv = min(UV, vec2(1.0) - UV);
+	float corner_band = (1.0 - step(0.18, min(corner_uv.x, corner_uv.y))) * step(0.055, max(corner_uv.x, corner_uv.y));
+	float circuit = corner_band * step(0.55, fract((UV.x + UV.y) * 18.0));
+	float alpha = fill_alpha + max(edge * sweep, circuit * 0.72) * outline_alpha;
+	ALBEDO = outline_color.rgb * (0.82 + sweep * 0.18);
+	ALPHA = clamp(alpha, 0.0, 1.0);
+}
+"""
 @export var enabled: bool = true
 const DEFAULT_CAMERA_FOV: float = 34.0
 const DEFAULT_WORLD_SCALE: float = 0.01
@@ -355,11 +373,13 @@ func _create_activation_mesh(cell: Node2D) -> void:
 	var quad := QuadMesh.new()
 	quad.orientation = PlaneMesh.FACE_Y
 	quad.size = Vector2(512.0, 512.0) * world_scale * 0.96
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_color = Color(0.2, 0.9, 0.45, 0.0)
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var shader := Shader.new()
+	shader.code = ACTIVATION_OUTLINE_SHADER
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("outline_color", Color(0.38, 0.88, 1.0, 1.0))
+	material.set_shader_parameter("outline_alpha", 0.0)
+	material.set_shader_parameter("fill_alpha", 0.0)
 	quad.material = material
 	mesh.mesh = quad
 	mesh.set_meta(&"hybrid_board_visual", true)
@@ -380,7 +400,7 @@ func _sync_activation_visuals() -> void:
 		var cell_ref := entry.cell as WeakRef
 		var cell := cell_ref.get_ref() as Node2D
 		var mesh := entry.mesh as MeshInstance3D
-		var material := entry.material as StandardMaterial3D
+		var material := entry.material as ShaderMaterial
 		if activation == null or cell == null or mesh == null:
 			continue
 		mesh.position = world_2d_to_3d(cell.global_position + Vector2(256.0, 256.0)) + Vector3.UP * 0.012
@@ -388,17 +408,21 @@ func _sync_activation_visuals() -> void:
 		var active := bool(activation.get("_active"))
 		var has_task := bool(activation.get("_has_task"))
 		var alpha := 0.0
-		var color := Color(0.2, 0.9, 0.45, 1.0)
+		var fill_alpha := 0.0
+		var color := Color(0.38, 0.88, 1.0, 1.0)
 		if highlighted > 0.001:
-			alpha = 0.16 + highlighted * 0.14
+			alpha = (0.54 + highlighted * 0.32) * highlighted
 		elif not active:
 			color = Color(0.04, 0.09, 0.12, 1.0)
 			alpha = 0.34
+			fill_alpha = 0.12
 		elif has_task:
 			color = Color(1.0, 0.7, 0.2, 1.0)
-			alpha = 0.08
-		material.albedo_color = Color(color.r, color.g, color.b, alpha)
-		mesh.visible = _board_visual_active and bool(cell.get("board_enabled")) and alpha > 0.001
+			alpha = 0.18
+		material.set_shader_parameter("outline_color", color)
+		material.set_shader_parameter("outline_alpha", alpha)
+		material.set_shader_parameter("fill_alpha", fill_alpha)
+		mesh.visible = _board_visual_active and bool(cell.get("board_enabled")) and (alpha > 0.001 or fill_alpha > 0.001)
 
 func _connect_board_signals() -> void:
 	if _board == null:

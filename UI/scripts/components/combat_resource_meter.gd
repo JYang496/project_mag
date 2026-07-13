@@ -8,6 +8,12 @@ const MODE_ENERGY := &"energy"
 const MODE_BATTERY := &"battery"
 const MODE_PRESSURE := &"pressure"
 const METER_SIZE := Vector2(190.0, 18.0)
+const HEAT_GAUGE_SIZE := Vector2(152.0, 152.0)
+const HEAT_GAUGE_PIVOT := HEAT_GAUGE_SIZE * 0.5
+const HEAT_NEEDLE_MIN_DEGREES := -143.0
+const HEAT_NEEDLE_MAX_DEGREES := 143.0
+const HEAT_GAUGE_TEXTURE := preload("res://asset/images/ui/heat_gauge/heat_gauge.png")
+const HEAT_NEEDLE_TEXTURE := preload("res://asset/images/ui/heat_gauge/heat_needle.png")
 const ICON_RECT := Rect2(Vector2(0.0, 2.0), Vector2(22.0, 14.0))
 const BAR_RECT := Rect2(Vector2(30.0, 5.0), Vector2(112.0, 8.0))
 const LABEL_OFFSET := Vector2(148.0, 0.0)
@@ -38,13 +44,20 @@ var _ratio: float = 0.0
 var _state: StringName = &"normal"
 var _short_text: String = ""
 var _status_label: Label
+var _heat_gauge: TextureRect
+var _heat_needle: TextureRect
 var _pulse_time: float = 0.0
+@export_range(0.1, 1.0, 0.05) var heat_gauge_opacity: float = 0.82:
+	set(value):
+		heat_gauge_opacity = clampf(value, 0.1, 1.0)
+		_apply_heat_gauge_opacity()
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	custom_minimum_size = METER_SIZE
 	size = METER_SIZE
 	_ensure_status_label()
+	_ensure_heat_gauge()
 	set_process(true)
 
 func set_resource(mode: StringName, ratio: float, state: StringName = &"normal", short_text: String = "", tooltip: String = "") -> void:
@@ -53,6 +66,7 @@ func set_resource(mode: StringName, ratio: float, state: StringName = &"normal",
 	_state = state
 	_short_text = short_text
 	tooltip_text = tooltip
+	_update_heat_gauge()
 	_update_status_label()
 	queue_redraw()
 
@@ -62,12 +76,17 @@ func is_status_visible() -> bool:
 func get_ratio() -> float:
 	return _ratio
 
+func set_heat_gauge_opacity(opacity: float) -> void:
+	heat_gauge_opacity = opacity
+
 func _process(delta: float) -> void:
 	if _state == &"warning" or _state == &"locked" or _state == &"reloading" or _state == &"charging" or _state == &"cooling":
 		_pulse_time += maxf(delta, 0.0)
 		queue_redraw()
 
 func _draw() -> void:
+	if _mode == MODE_HEAT:
+		return
 	var fill_color: Color = _fill_color()
 	var edge_color: Color = _edge_color()
 	var pulse: float = _pulse_strength()
@@ -179,11 +198,51 @@ func _ensure_status_label() -> void:
 	add_child(_status_label)
 	_update_status_label()
 
+func _ensure_heat_gauge() -> void:
+	if _heat_gauge != null and is_instance_valid(_heat_gauge):
+		return
+	_heat_gauge = TextureRect.new()
+	_heat_gauge.name = "HeatGauge"
+	_heat_gauge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_heat_gauge.texture = HEAT_GAUGE_TEXTURE
+	_heat_gauge.size = HEAT_GAUGE_SIZE
+	_heat_gauge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_heat_gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_heat_gauge)
+	_heat_needle = TextureRect.new()
+	_heat_needle.name = "HeatNeedle"
+	_heat_needle.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_heat_needle.texture = HEAT_NEEDLE_TEXTURE
+	_heat_needle.size = HEAT_GAUGE_SIZE
+	_heat_needle.pivot_offset = HEAT_GAUGE_PIVOT
+	_heat_needle.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_heat_needle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_heat_needle)
+	_apply_heat_gauge_opacity()
+	_update_heat_gauge()
+
+func _apply_heat_gauge_opacity() -> void:
+	if _heat_gauge != null:
+		_heat_gauge.modulate.a = heat_gauge_opacity
+	if _heat_needle != null:
+		_heat_needle.modulate.a = heat_gauge_opacity
+
+func _update_heat_gauge() -> void:
+	var is_heat := _mode == MODE_HEAT
+	custom_minimum_size = HEAT_GAUGE_SIZE if is_heat else METER_SIZE
+	size = custom_minimum_size
+	if _heat_gauge == null or _heat_needle == null:
+		return
+	_heat_gauge.visible = is_heat
+	_heat_needle.visible = is_heat
+	if is_heat:
+		_heat_needle.rotation = deg_to_rad(lerpf(HEAT_NEEDLE_MIN_DEGREES, HEAT_NEEDLE_MAX_DEGREES, _ratio))
+
 func _update_status_label() -> void:
 	if _status_label == null or not is_instance_valid(_status_label):
 		return
 	_status_label.text = _short_text
-	_status_label.visible = _short_text != ""
+	_status_label.visible = _mode != MODE_HEAT and _short_text != ""
 	_status_label.add_theme_color_override("font_color", _edge_color())
 
 func _fill_color() -> Color:

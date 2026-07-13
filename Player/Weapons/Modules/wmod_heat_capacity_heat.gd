@@ -1,5 +1,5 @@
 extends Module
-# Use on HEAT weapons to raise max heat capacity before overheat triggers.
+# Use on HEAT weapons to raise the capped heat resource capacity.
 
 var ITEM_NAME := "Heat Capacity"
 

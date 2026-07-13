@@ -72,6 +72,10 @@ func sync_trajectory_visual() -> void:
 	if sprite != null:
 		sprite.call("_apply_compensation")
 
+func set_trajectory_screen_height(height: float) -> void:
+	if sprite != null and sprite.has_method("set_screen_offset"):
+		sprite.call("set_screen_offset", Vector2(0.0, -maxf(height, 0.0)))
+
 func stop_drop_flip() -> void:
 	if sprite == null:
 		return
