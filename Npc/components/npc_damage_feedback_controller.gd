@@ -185,8 +185,7 @@ func sync_enemy_hp_bar() -> void:
 	var hp_bar := _ensure_enemy_hp_bar()
 	if hp_bar == null:
 		return
-	hp_bar.offset_y = npc.hp_bar_vertical_offset
-	hp_bar.position = Vector2(0.0, npc.hp_bar_vertical_offset)
+	hp_bar.set_vertical_offset(npc.hp_bar_vertical_offset)
 	hp_bar.set_max_hp(max(1, npc.get_incoming_damage_max_hp()))
 	hp_bar.set_hp(max(0, int(npc.hp)))
 

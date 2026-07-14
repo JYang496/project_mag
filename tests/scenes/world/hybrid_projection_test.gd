@@ -40,6 +40,9 @@ class DummyRestArea:
 		var row := zone_id / 3
 		return Rect2(Vector2(column, row) * 170.0, Vector2(170.0, 170.0))
 
+	func get_spawn_position() -> Vector2:
+		return global_position
+
 func _ready() -> void:
 	var player := Node2D.new()
 	player.add_to_group(&"player")
@@ -300,9 +303,22 @@ func _ready() -> void:
 		failed = _check(not ground_mesh.visible, "3D Cell must hide with the 2D Board") or failed
 		board.board_visual_active_changed.emit(true, true)
 		failed = _check(ground_mesh.visible, "3D Cell must become visible with the 2D Board") or failed
-	var screen := view.project_world_to_screen(player.position)
 	var viewport_center := get_viewport().get_visible_rect().size * 0.5
-	failed = _check(screen.distance_to(viewport_center) < 2.0, "camera target must project to viewport center") or failed
+	var original_phase: String = PhaseManager.current_state()
+	PhaseManager.phase = PhaseManager.PREPARE
+	await get_tree().process_frame
+	var rest_screen := view.project_world_to_screen(rest_area.get_spawn_position())
+	failed = _check(rest_screen.distance_to(viewport_center) < 2.0, "rest-area center must remain the camera target during prepare") or failed
+	player.position += Vector2(180.0, -120.0)
+	await get_tree().process_frame
+	rest_screen = view.project_world_to_screen(rest_area.get_spawn_position())
+	failed = _check(rest_screen.distance_to(viewport_center) < 2.0, "prepare camera must not follow player movement") or failed
+	PhaseManager.phase = PhaseManager.BATTLE
+	await get_tree().process_frame
+	var player_screen := view.project_world_to_screen(player.position)
+	failed = _check(player_screen.distance_to(viewport_center) < 2.0, "battle camera must resume following the player") or failed
+	PhaseManager.phase = original_phase
+	await get_tree().process_frame
 	var points := [Vector2.ZERO, Vector2(120.0, -90.0), Vector2(-240.0, 310.0)]
 	for point: Vector2 in points:
 		var projected := view.project_world_to_screen(point)

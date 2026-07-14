@@ -1,7 +1,7 @@
 extends Skills
 class_name HeavyAssaultHeatLock
 
-@export_range(0.0, 1.0, 0.01) var lock_heat_ratio: float = 0.5
+@export_range(0.0, 1.0, 0.01) var lock_heat_ratio: float = 1.0
 @export var lock_duration_sec: float = 3.0
 @export var base_cooldown: float = 8.0
 @export var passive_peak_mul: float = 1.2

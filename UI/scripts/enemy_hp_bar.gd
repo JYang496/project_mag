@@ -10,15 +10,25 @@ const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd
 
 func _ready() -> void:
 	visible = false
-	position = Vector2(0.0, offset_y)
 	hide_timer.one_shot = true
+	_sync_position()
 
 func _process(_delta: float) -> void:
+	_sync_position()
+
+func set_vertical_offset(value: float) -> void:
+	offset_y = value
+	_sync_position()
+
+func _sync_position() -> void:
 	var owner_2d := get_parent() as Node2D
 	if owner_2d == null or not is_inside_tree():
+		position = Vector2(0.0, offset_y)
 		return
 	var hybrid_view := ProjectedUi.get_hybrid_view(get_tree())
 	if hybrid_view == null:
+		position = Vector2(0.0, offset_y)
+		global_rotation = 0.0
 		return
 	var anchor_canvas := hybrid_view.call("project_world_to_canvas", owner_2d.global_position, get_viewport()) as Vector2
 	var canvas := get_viewport().get_canvas_transform()

@@ -16,10 +16,6 @@ signal rest_menu_cancelled
 @export var zone_move_speed: float = 500.0
 @export var zone_reach_distance: float = 6.0
 @export var menu_open_cooldown_msec: int = 150
-@export var rest_camera_enter_min_speed: float = 160.0
-@export var rest_camera_enter_max_speed: float = 680.0
-@export var rest_camera_enter_speed_curve: float = 2.4
-@export var rest_camera_enter_speed_mul: float = 0.8
 @export var zone4_hold_move_boost_mul: float = 2.2
 @export var zone_grid_color: Color = Color(0.70, 0.84, 1.0, 0.18)
 @export var zone_hover_color: Color = Color(0.44, 0.88, 1.0, 1.0)
@@ -891,18 +887,8 @@ func _set_camera_owner_active(active: bool) -> void:
 		"set_restarea_camera_control_enabled",
 		active,
 		center_target,
-		false
+		active
 	)
-	if active:
-		if PlayerData.player.has_method("configure_restarea_camera_motion"):
-			PlayerData.player.call(
-				"configure_restarea_camera_motion",
-				rest_camera_enter_min_speed,
-				rest_camera_enter_max_speed,
-				rest_camera_enter_speed_curve
-			)
-		if PlayerData.player.has_method("move_restarea_camera_to"):
-			PlayerData.player.call("move_restarea_camera_to", center_target, maxf(rest_camera_enter_speed_mul, 0.05))
 	_camera_owner_bound = true
 
 func _ensure_camera_owner_binding() -> void:

@@ -127,7 +127,7 @@ func _process(delta: float) -> void:
 	if _ground_renderers_initialized and HybridGroundRegistration.pending_count() > 0:
 		HybridGroundRegistration.flush_pending(self)
 	_resolve_player()
-	var target_2d := _player.global_position if _player != null else Vector2.ZERO
+	var target_2d := _resolve_camera_target_2d()
 	var target_3d := world_2d_to_3d(target_2d)
 	var pitch := deg_to_rad(camera_pitch_degrees)
 	var yaw := deg_to_rad(camera_yaw_degrees)
@@ -140,6 +140,23 @@ func _process(delta: float) -> void:
 	_apply_screen_shake_offset(effective_distance)
 	_camera.look_at(target_3d, Vector3.UP)
 	_projection_ready = true
+
+func _resolve_camera_target_2d() -> Vector2:
+	if PhaseManager != null and PhaseManager.current_state() == PhaseManager.PREPARE:
+		return _resolve_rest_area_center()
+	return _player.global_position if _player != null else Vector2.ZERO
+
+func _resolve_rest_area_center() -> Vector2:
+	if _rest_area == null or not is_instance_valid(_rest_area) or not _rest_area.is_inside_tree():
+		var rest_areas: Array[Node] = get_tree().get_nodes_in_group(&"rest_area")
+		_rest_area = rest_areas[0] as Node2D if not rest_areas.is_empty() else null
+	if _rest_area != null:
+		if _rest_area.has_method("get_spawn_position"):
+			return _rest_area.call("get_spawn_position") as Vector2
+		return _rest_area.global_position
+	if _board != null and _board.has_method("get_rest_area_target_center_global_position"):
+		return _board.call("get_rest_area_target_center_global_position") as Vector2
+	return _player.global_position if _player != null else Vector2.ZERO
 
 func sync_late_visuals(_delta: float) -> void:
 	if not enabled or _camera == null:
