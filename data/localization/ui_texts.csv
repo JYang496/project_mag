@@ -81,9 +81,6 @@ ui.upgrade.action,Upgrade Selected Weapon,强化所选武器
 ui.upgrade.selected,SELECTED,已选择
 ui.branch.title,Choose Evolution Branch,选择进化分支
 ui.branch.weapon,Weapon,武器
-ui.route.title,Choose Route,选择路线
-ui.route.subtitle,Select one route for this level.,为本关选择一条路线。
-ui.route.confirm,Confirm Route,确认路线
 ui.reward.title,Choose Reward,选择奖励
 ui.reward.subtitle,Pick 1 option,选择 1 个选项
 ui.reward.pick_one,Pick 1 option,选择 1 个选项

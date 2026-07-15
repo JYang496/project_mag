@@ -28,7 +28,6 @@ var _current_cell: Cell
 var _highlight_active := false
 
 func _ready() -> void:
-	RunRouteManager.reset_runtime_state()
 	PlayerData.player_weapon_list.clear()
 	PlayerData.detected_enemies.clear()
 	PlayerData.cloestest_enemy = null

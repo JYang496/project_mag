@@ -3,7 +3,6 @@ class_name ModalUiController
 
 const BRANCH_SELECT_PANEL_PATH := "res://UI/scenes/branch_select_panel.tscn"
 const MODULE_EQUIP_SELECTION_PANEL_PATH := "res://UI/scenes/module_equip_selection_panel.tscn"
-const ROUTE_SELECTION_PANEL_PATH := "res://UI/scenes/route_selection_panel.tscn"
 const REWARD_SELECTION_PANEL_PATH := "res://UI/scenes/reward_selection_panel.tscn"
 const WEAPON_REPLACEMENT_PANEL_PATH := "res://UI/scenes/weapon_replacement_panel.tscn"
 const WEAPON_WAREHOUSE_PANEL_PATH := "res://UI/scenes/weapon_warehouse_panel.tscn"
@@ -16,7 +15,6 @@ var owner_ui: UI
 var gui_root: Control
 var branch_select_panel: BranchSelectPanel
 var module_equip_selection_panel: ModuleEquipSelectionPanel
-var route_selection_panel: RouteSelectionPanel
 var reward_selection_panel: RewardSelectionPanel
 var weapon_replacement_panel: WeaponReplacementPanel
 var weapon_warehouse_panel: WeaponWarehousePanel
@@ -91,19 +89,6 @@ func ensure_module_equip_selection_panel() -> bool:
 		return false
 	gui_root.add_child(module_equip_selection_panel)
 	module_equip_selection_panel.visible = false
-	_sync_public_fields_to_owner()
-	return true
-
-func ensure_route_selection_panel() -> bool:
-	if route_selection_panel != null and is_instance_valid(route_selection_panel):
-		return true
-	var panel_scene := load(ROUTE_SELECTION_PANEL_PATH) as PackedScene
-	route_selection_panel = panel_scene.instantiate() as RouteSelectionPanel if panel_scene else null
-	if route_selection_panel == null:
-		push_warning("Failed to create RouteSelectionPanel.")
-		return false
-	gui_root.add_child(route_selection_panel)
-	route_selection_panel.visible = false
 	_sync_public_fields_to_owner()
 	return true
 
@@ -334,7 +319,6 @@ func sync_state_from_owner() -> void:
 		return
 	branch_select_panel = owner_ui.branch_select_panel
 	module_equip_selection_panel = owner_ui.module_equip_selection_panel
-	route_selection_panel = owner_ui.route_selection_panel
 	reward_selection_panel = owner_ui.reward_selection_panel
 	weapon_replacement_panel = owner_ui.weapon_replacement_panel
 	weapon_warehouse_panel = owner_ui.weapon_warehouse_panel
@@ -347,7 +331,6 @@ func _configure_default_modal_registry() -> void:
 	clear_modal_registry()
 	register_modal_entry(&"branch_select", "branch_select_panel")
 	register_modal_entry(&"weapon_replacement", "weapon_replacement_panel")
-	register_modal_entry(&"route_selection", "route_selection_panel")
 	register_modal_entry(&"reward_selection", "reward_selection_panel")
 	register_modal_entry(&"module_equip_selection", "module_equip_selection_panel")
 
@@ -390,7 +373,6 @@ func _sync_public_fields_to_owner() -> void:
 		return
 	owner_ui.branch_select_panel = branch_select_panel
 	owner_ui.module_equip_selection_panel = module_equip_selection_panel
-	owner_ui.route_selection_panel = route_selection_panel
 	owner_ui.reward_selection_panel = reward_selection_panel
 	owner_ui.weapon_replacement_panel = weapon_replacement_panel
 	owner_ui.weapon_warehouse_panel = weapon_warehouse_panel

@@ -4,7 +4,6 @@ signal pending_reward_changed(has_pending: bool)
 
 const STATE_PATH := "user://task_reward_state.json"
 const ROLLBACK_PATH := "user://battle_rollback_snapshot.json"
-const NORMAL_ROUTE_PATH := "res://data/routes/normal_route.tres"
 const ENTRY_PENDING := "pending"
 const ENTRY_GRANTED := "granted"
 const ENTRY_WAITING := "waiting"
@@ -116,7 +115,6 @@ func restore_snapshot_after_player_spawn() -> bool:
 	if snapshot.get("reward_draft_runtime", {}) is Dictionary:
 		RewardDraftRuntime.restore_battle_rollback_snapshot(snapshot.get("reward_draft_runtime", {}) as Dictionary)
 	PhaseManager.current_level = maxi(int(snapshot.get("level", 0)), 0)
-	RunRouteManager.restore_route_history(snapshot.get("route_history", {}) as Dictionary)
 	_battle_in_progress = false
 	_save_state()
 	InventoryData.save_runtime_state()
@@ -419,7 +417,6 @@ func _build_rollback_snapshot() -> Dictionary:
 			stored_weapon_payloads.append(DataHandler.build_weapon_save_payload(weapon))
 	return {
 		"level": int(PhaseManager.current_level),
-		"route_history": RunRouteManager.get_route_history_snapshot(),
 		"player": {
 			"level": int(PlayerData.player_level),
 			"exp": int(PlayerData.player_exp),

@@ -57,19 +57,6 @@
       ]
     },
     {
-      "domain": "routes",
-      "prepare_phase": "world",
-      "directory": "res://data/routes/",
-      "extension": ".tres",
-      "expected_type": "RunRouteDefinition",
-      "id_property": "route_id",
-      "paths": [
-        "res://data/routes/bonus_route.tres",
-        "res://data/routes/difficult_route.tres",
-        "res://data/routes/normal_route.tres"
-      ]
-    },
-    {
       "domain": "cell_effects",
       "prepare_phase": "world",
       "directory": "res://data/cell_effects/",

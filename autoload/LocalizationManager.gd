@@ -183,16 +183,6 @@ func get_module_term(term: StringName, fallback: String = "") -> String:
 		return fallback
 	return tr_key("ui.module.term.%s" % normalized, fallback)
 
-func get_route_display_name(route_def: RunRouteDefinition) -> String:
-	if route_def == null:
-		return ""
-	return tr_key("route.%s.name" % route_def.route_id, str(route_def.display_name))
-
-func get_route_description(route_def: RunRouteDefinition) -> String:
-	if route_def == null:
-		return ""
-	return tr_key("route.%s.desc" % route_def.route_id, str(route_def.description))
-
 func get_mecha_display_name(mecha_def: MechaDefinition) -> String:
 	if mecha_def == null:
 		return ""

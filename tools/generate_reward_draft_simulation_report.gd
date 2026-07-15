@@ -9,10 +9,8 @@ var _data_handler: Node
 var _player_data: Node
 var _inventory_data: Node
 var _reward_draft_runtime: Node
-var _run_route_manager: Node
 var _global_variables: Node
 var _reward_manager: Node
-var _route: Resource
 
 func _ready() -> void:
 	call_deferred("_run")
@@ -26,8 +24,6 @@ func _run() -> void:
 	_player_data.call("reset_runtime_state")
 	_inventory_data.call("reset_runtime_state")
 	_reward_draft_runtime.call("reset_runtime_state")
-	_run_route_manager.call("reset_runtime_state")
-	_run_route_manager.call("reload_route_definitions")
 	_configure_economy()
 	var reward_manager_scene := load(REWARD_MANAGER_SCENE_PATH) as PackedScene
 	if reward_manager_scene == null:
@@ -43,7 +39,6 @@ func _run() -> void:
 	var module_cache: Array = _reward_manager.call("_build_module_candidates_uncached", true)
 	_reward_manager.set("_module_candidate_cache", module_cache)
 	_reward_manager.set("_module_candidate_cache_ready", true)
-	_route = _run_route_manager.call("get_route_for_level", 0) as Resource
 	var stats := _simulate()
 	var findings := _evaluate(stats)
 	var output_path := _write_report(stats, findings)
@@ -56,13 +51,11 @@ func _resolve_autoloads() -> bool:
 	_player_data = get_node_or_null("/root/PlayerData")
 	_inventory_data = get_node_or_null("/root/InventoryData")
 	_reward_draft_runtime = get_node_or_null("/root/RewardDraftRuntime")
-	_run_route_manager = get_node_or_null("/root/RunRouteManager")
 	_global_variables = get_node_or_null("/root/GlobalVariables")
 	if _data_handler == null \
 			or _player_data == null \
 			or _inventory_data == null \
 			or _reward_draft_runtime == null \
-			or _run_route_manager == null \
 			or _global_variables == null:
 		push_error("Missing required autoload for reward draft simulation report.")
 		return false
@@ -100,7 +93,7 @@ func _simulate() -> Array[Dictionary]:
 		for draft_index in range(1, DRAFTS_PER_RUN + 1):
 			_reward_draft_runtime.set("standard_draft_count", draft_index - 1)
 			_reward_draft_runtime.call("clear_pending_standard_draft")
-			var options: Array = _reward_manager.call("build_standard_battle_draft_options", 0, _route, 3)
+			var options: Array = _reward_manager.call("build_standard_battle_draft_options", 0, 3)
 			var stat := stats[draft_index - 1]
 			stat["options"] = int(stat["options"]) + options.size()
 			stat["rollable_options"] = int(stat["rollable_options"]) + maxi(options.size() - (1 if draft_index <= 3 else 0), 0)

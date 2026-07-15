@@ -2,14 +2,12 @@ extends RefCounted
 class_name WorldEntryPrepareGate
 
 const STEP_DATA := "data"
-const STEP_ROUTES := "routes"
 const STEP_CELL_EFFECTS := "cell_effects"
 const STEP_TASK_MODULES := "task_modules"
 
 static func prepare_world_entry() -> Dictionary:
 	return aggregate_prepare_results([
 		_build_step_result(STEP_DATA, DataHandler.prepare_world_data(false)),
-		_build_step_result(STEP_ROUTES, RunRouteManager.prepare_route_definitions()),
 		_build_step_result(STEP_CELL_EFFECTS, CellEffectRuntime.prepare_definitions()),
 		_build_step_result(STEP_TASK_MODULES, CellTaskModuleRuntime.prepare_definitions()),
 	])

@@ -209,10 +209,6 @@ func _apply_level_scaling(enemy_instance: BaseEnemy) -> void:
 	if enemy_instance == null:
 		return
 	var level_index: int = maxi(PhaseManager.current_level, 0)
-	var route_def := RunRouteManager.get_route_for_level(level_index)
-	if route_def:
-		enemy_instance.hp = max(1, int(round(float(enemy_instance.hp) * route_def.enemy_hp_multiplier)))
-		enemy_instance.damage = max(1, int(round(float(enemy_instance.damage) * route_def.enemy_damage_multiplier)))
 	var profile := SpawnData.get_spawn_combat_profile()
 	if profile != null:
 		var overflow_level := int(profile.get_infinite_overflow_level(level_index))

@@ -139,7 +139,6 @@ var upgrade_module_button: Button
 # Misc
 var branch_select_panel: BranchSelectPanel
 var module_equip_selection_panel: ModuleEquipSelectionPanel
-var route_selection_panel: RouteSelectionPanel
 var reward_selection_panel: RewardSelectionPanel
 var weapon_replacement_panel: WeaponReplacementPanel
 var weapon_warehouse_panel: WeaponWarehousePanel
@@ -349,10 +348,6 @@ func _init_branch_select_panel() -> void:
 func _init_module_equip_selection_panel() -> void:
 	_init_modal_ui_controller()
 	modal_ui_controller.ensure_module_equip_selection_panel()
-
-func _init_route_selection_panel() -> void:
-	_init_modal_ui_controller()
-	modal_ui_controller.ensure_route_selection_panel()
 
 func _init_reward_selection_panel() -> void:
 	_init_modal_ui_controller()
@@ -692,7 +687,6 @@ func _is_modal_selection_world_interaction_blocked() -> bool:
 	for panel in [
 		branch_select_panel,
 		weapon_replacement_panel,
-		route_selection_panel,
 		reward_selection_panel,
 		module_equip_selection_panel,
 	]:
@@ -787,22 +781,6 @@ func _on_module_assignment_completed(
 	InventoryData.finish_pending_transaction(transaction_id)
 	if on_complete.is_valid():
 		on_complete.call_deferred(assigned)
-
-func request_route_selection(
-	route_defs: Array[RunRouteDefinition],
-	default_route_id: String,
-	on_confirm: Callable = Callable(),
-	on_cancel: Callable = Callable()
-) -> bool:
-	if TaskRewardManager.is_reward_blocking_interactions():
-		return false
-	if is_branch_selection_blocking_interactions():
-		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
-		return false
-	_init_route_selection_panel()
-	if route_selection_panel == null or not is_instance_valid(route_selection_panel):
-		return false
-	return route_selection_panel.open_for_routes(route_defs, default_route_id, on_confirm, on_cancel)
 
 func request_reward_selection(
 	route_display_name: String,
@@ -1572,8 +1550,6 @@ func _on_language_changed(_new_locale: String) -> void:
 	_refresh_heat_fallback_text()
 	_mark_all_hud_dirty()
 	_mark_weapon_passive_panel_dirty()
-	if route_selection_panel and is_instance_valid(route_selection_panel) and route_selection_panel.visible:
-		route_selection_panel._on_language_changed(LocalizationManager.get_locale())
 	if reward_selection_panel and is_instance_valid(reward_selection_panel) and reward_selection_panel.visible:
 		reward_selection_panel._on_language_changed(LocalizationManager.get_locale())
 	if branch_select_panel and is_instance_valid(branch_select_panel) and branch_select_panel.visible:

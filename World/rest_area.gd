@@ -43,7 +43,6 @@ signal rest_menu_cancelled
 var _board: BoardCellGenerator
 var _fade_tween: Tween
 var _active := false
-var _route_selection_pending := false
 var hover_zone_id := -1
 var selected_zone_id := 4
 var menu_open := false
@@ -84,7 +83,6 @@ const LEGACY_BLOCKING_UI_ROOTS: Array[StringName] = [
 	&"UpgradeRootv2",
 	&"ModuleManagementRoot",
 	&"PauseMenuRoot",
-	&"RouteSelectionPanel",
 	&"RewardSelectionPanel",
 	&"BoardEditPanel",
 	&"CellManagementPanel",
@@ -411,12 +409,6 @@ func _reset_start_battle_button() -> void:
 	if _start_battle_button:
 		_start_battle_button.reset_state()
 
-func _is_route_selection_pending() -> bool:
-	return _route_selection_pending
-
-func _set_route_selection_pending(pending: bool) -> void:
-	_route_selection_pending = pending
-
 func _get_rest_area_board() -> BoardCellGenerator:
 	return _board
 
@@ -450,26 +442,6 @@ func _commit_board_edits_and_continue_start_battle() -> void:
 func _discard_unassigned_task_modules_and_continue_start_battle() -> void:
 	if _route_flow != null:
 		_route_flow.call("discard_unassigned_task_modules_and_continue_start_battle")
-
-func _on_route_selection_cancelled() -> void:
-	if _route_flow != null:
-		_route_flow.call("on_route_selection_cancelled")
-
-func _on_route_confirmed(route_id: String) -> void:
-	if _route_flow != null:
-		_route_flow.call("on_route_confirmed", route_id)
-
-func _start_bonus_route_flow(route_def: RunRouteDefinition) -> void:
-	if _route_flow != null:
-		_route_flow.call("start_bonus_route_flow", route_def)
-
-func _on_bonus_reward_selection_cancelled() -> void:
-	if _route_flow != null:
-		_route_flow.call("on_bonus_reward_selection_cancelled")
-
-func _on_bonus_reward_selected(reward: RewardInfo) -> void:
-	if _route_flow != null:
-		_route_flow.call("on_bonus_reward_selected", reward)
 
 func _process(delta: float) -> void:
 	_ensure_camera_owner_binding()
@@ -612,7 +584,6 @@ func _start_return_to_center_after_battle() -> void:
 
 func _reset_prepare_state(move_player_to_center: bool) -> void:
 	menu_open = false
-	_route_selection_pending = false
 	_stop_auto_move()
 	_reset_zone4_hold()
 	selected_zone_id = CENTER_ZONE_ID
@@ -868,8 +839,6 @@ func _is_zone4_hold_available() -> bool:
 		return false
 	if _is_menu_open():
 		return false
-	if _route_selection_pending:
-		return false
 	if _is_world_interaction_blocked():
 		return false
 	return true
@@ -1023,7 +992,7 @@ func _is_zone_clickable_for_cursor(zone_id: int) -> bool:
 			if ui and is_instance_valid(ui) and ui.has_method("is_rest_area_zone_navigation_allowed"):
 				return bool(ui.call("is_rest_area_zone_navigation_allowed"))
 			return true
-		return not _is_menu_open() and not _route_selection_pending and not _is_world_interaction_blocked()
+		return not _is_menu_open() and not _is_world_interaction_blocked()
 	if not _zone_opens_interaction(zone_id):
 		return false
 	return bool(_menu_bridge.call("is_navigation_allowed")) if _menu_bridge != null else true

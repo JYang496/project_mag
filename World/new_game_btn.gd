@@ -15,7 +15,6 @@ func _on_pressed() -> void:
 	var selected_mecha_id = PlayerData.select_mecha_id
 	DataHandler.new_save()
 	PhaseManager.reset_runtime_state()
-	RunRouteManager.reset_runtime_state()
 	GlobalVariables.reset_runtime_state()
 	PlayerData.reset_runtime_state()
 	InventoryData.reset_runtime_state()

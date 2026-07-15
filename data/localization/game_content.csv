@@ -324,12 +324,6 @@ mecha.1.name,Heavy Assault,Heavy Assault
 mecha.3.name,Melee,Melee
 mecha.2.name,Long-Range Firepower,远距火力型
 mecha.5.name,Turret,Turret
-route.bonus.name,Bonus Route,Bonus Route
-route.bonus.desc,No combat. Choose 1 reward option and move to the next level.,No combat. Choose 1 reward option and move to the next level.
-route.difficult.name,Difficult Route,Difficult Route
-route.difficult.desc,Harder combat and tighter pacing with better rewards.,Harder combat and tighter pacing with better rewards.
-route.normal.name,Normal Route,普通路线
-route.normal.desc,Standard battle flow with default rewards.,标准战斗流程，使用默认奖励。
 task_module.task_kill_common.name,Kill Task Module,击杀任务模组
 task_module.task_kill_common.desc,Deploy to an active cell to add a kill objective for the next battle.,部署到已激活格子，为下一场战斗添加击杀任务。
 task_module.task_hold_common.name,Hold Task Module,坚守任务模组

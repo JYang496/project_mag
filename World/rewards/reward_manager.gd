@@ -55,8 +55,7 @@ func _open_completed_battle_standard_draft_if_ready() -> void:
 		_retry_completed_battle_standard_draft_after_task_reward()
 		return
 	var level_index := maxi(int(PhaseManager.current_level) - 1, 0)
-	var route_def := RunRouteManager.get_route_for_level(level_index)
-	_request_standard_battle_reward_selection(level_index, route_def)
+	_request_standard_battle_reward_selection(level_index)
 
 func _retry_completed_battle_standard_draft_after_task_reward() -> void:
 	await TaskRewardManager.pending_reward_changed
@@ -73,10 +72,7 @@ func _retry_completed_battle_standard_draft_after_collect_gate() -> void:
 func _spawn_completed_battle_drops() -> void:
 	push_warning("Standard battle-complete ground drops are disabled; standard settlement now uses RewardDraftRuntime draft selection.")
 
-func build_special_ground_drop_rewards(
-	_level_index: int,
-	route_def: RunRouteDefinition = null
-) -> Array[RewardInfo]:
+func build_special_ground_drop_rewards(_level_index: int) -> Array[RewardInfo]:
 	var economy := _get_economy_config()
 	var weapon_candidates := _build_all_weapon_drop_candidates()
 	var module_candidates := _build_all_module_drop_candidates()
@@ -97,29 +93,26 @@ func build_special_ground_drop_rewards(
 	var rewards: Array[RewardInfo] = []
 	if drop_weapon:
 		var weapon_candidate := _pick_weighted_candidate(weapon_candidates, {})
-		var weapon_reward := _build_reward_from_candidate(weapon_candidate, route_def)
+		var weapon_reward := _build_reward_from_candidate(weapon_candidate)
 		if weapon_reward:
 			rewards.append(weapon_reward)
 	if drop_module:
 		var module_candidate := _pick_weighted_candidate(module_candidates, {})
-		var module_reward := _build_reward_from_candidate(module_candidate, route_def)
+		var module_reward := _build_reward_from_candidate(module_candidate)
 		if module_reward:
 			rewards.append(module_reward)
 	return rewards
 
-func build_completed_battle_drop_rewards(
-	level_index: int,
-	route_def: RunRouteDefinition = null
-) -> Array[RewardInfo]:
+func build_completed_battle_drop_rewards(level_index: int) -> Array[RewardInfo]:
 	push_warning("build_completed_battle_drop_rewards() is legacy compatibility for special ground-drop tests/sources; standard battle completion does not call it.")
-	return build_special_ground_drop_rewards(level_index, route_def)
+	return build_special_ground_drop_rewards(level_index)
 
-func _request_standard_battle_reward_selection(level_index: int, route_def: RunRouteDefinition = null) -> void:
+func _request_standard_battle_reward_selection(level_index: int) -> void:
 	var reward_options: Array[RewardInfo] = []
 	if RewardDraftRuntime.has_pending_standard_draft():
 		reward_options = RewardDraftRuntime.get_pending_standard_draft_options()
 	else:
-		reward_options = build_standard_battle_draft_options(level_index, route_def)
+		reward_options = build_standard_battle_draft_options(level_index)
 		if reward_options.is_empty():
 			RewardDraftRuntime.clear_standard_draft_opening()
 			return
@@ -127,7 +120,6 @@ func _request_standard_battle_reward_selection(level_index: int, route_def: RunR
 		RewardDraftRuntime.set_pending_standard_draft(reward_options, {
 			"draft_index": draft_index,
 			"level_index": level_index,
-			"route_id": route_def.route_id if route_def else "",
 		})
 	if reward_options.is_empty():
 		RewardDraftRuntime.clear_standard_draft_opening()
@@ -138,9 +130,9 @@ func _request_standard_battle_reward_selection(level_index: int, route_def: RunR
 		if grant_reward_immediately(reward_options[0]):
 			RewardDraftRuntime.clear_pending_standard_draft()
 		return
-	var route_name := LocalizationManager.get_route_display_name(route_def) if route_def else LocalizationManager.tr_key("ui.reward.battle_source", "Battle Reward")
+	var reward_source_name := LocalizationManager.tr_key("ui.reward.battle_source", "Battle Reward")
 	var opened: bool = bool(ui.request_reward_selection(
-		route_name,
+		reward_source_name,
 		reward_options,
 		Callable(self, "_on_standard_battle_reward_selected"),
 		Callable(),
@@ -152,7 +144,7 @@ func _request_standard_battle_reward_selection(level_index: int, route_def: RunR
 		RewardDraftRuntime.record_standard_draft_consumed()
 		return
 	if _is_reward_selection_panel_open(ui):
-		call_deferred("_request_standard_battle_reward_selection", level_index, route_def)
+		call_deferred("_request_standard_battle_reward_selection", level_index)
 		return
 	RewardDraftRuntime.record_standard_draft_consumed()
 	if grant_reward_immediately(reward_options[0]):
@@ -304,25 +296,19 @@ func create_loot_box() -> void:
 	if PhaseManager.current_state() == PhaseManager.BATTLE:
 		_request_battle_reward_selection()
 		return
-	var level_index := int(PhaseManager.current_level)
-	if not RunRouteManager.should_spawn_prepare_loot_for_level(level_index):
-		return
 
 func _request_battle_reward_selection() -> void:
 	var level_index := int(PhaseManager.current_level)
-	if not RunRouteManager.should_spawn_prepare_loot_for_level(level_index):
-		return
-	var route_def := RunRouteManager.get_route_for_level(level_index)
-	var reward_options := build_reward_selection_options(level_index, route_def)
+	var reward_options := build_reward_selection_options(level_index)
 	if reward_options.is_empty():
 		return
 	var ui = GlobalVariables.ui
 	if ui == null or not is_instance_valid(ui) or not ui.has_method("request_reward_selection"):
 		grant_reward_immediately(reward_options[0])
 		return
-	var route_name := LocalizationManager.get_route_display_name(route_def) if route_def else LocalizationManager.tr_key("ui.reward.battle_source", "Battle Reward")
+	var reward_source_name := LocalizationManager.tr_key("ui.reward.battle_source", "Battle Reward")
 	var opened: bool = bool(ui.request_reward_selection(
-		route_name,
+		reward_source_name,
 		reward_options,
 		Callable(self, "_on_battle_reward_selected"),
 		Callable(),
@@ -340,29 +326,25 @@ func _on_battle_reward_selected(reward: RewardInfo) -> void:
 
 func build_standard_battle_draft_options(
 	level_index: int,
-	route_def: RunRouteDefinition = null,
 	option_count_override: int = -1
 ) -> Array[RewardInfo]:
 	var rules := RewardDraftRuntime.get_standard_draft_stage_rules(_get_economy_config())
-	return _build_reward_selection_options_internal(level_index, route_def, option_count_override, rules)
+	return _build_reward_selection_options_internal(level_index, option_count_override, rules)
 
 func build_reward_selection_options(
 	level_index: int,
-	route_def: RunRouteDefinition = null,
 	option_count_override: int = -1
 ) -> Array[RewardInfo]:
-	return _build_reward_selection_options_internal(level_index, route_def, option_count_override, {})
+	return _build_reward_selection_options_internal(level_index, option_count_override, {})
 
 func _build_reward_selection_options_internal(
-	level_index: int,
-	route_def: RunRouteDefinition = null,
+	_level_index: int,
 	option_count_override: int = -1,
 	stage_rules: Dictionary = {}
 ) -> Array[RewardInfo]:
-	var resolved_route := route_def if route_def != null else RunRouteManager.get_route_for_level(level_index)
 	var target_count := option_count_override
 	if target_count <= 0:
-		target_count = resolved_route.reward_option_count if resolved_route else 3
+		target_count = 3
 	target_count = clampi(target_count, 1, 6)
 	var standard_draft_rules_enabled := not stage_rules.is_empty()
 	var weapon_candidates := _build_weapon_progress_candidates() if standard_draft_rules_enabled else _build_weapon_reward_candidates()
@@ -372,9 +354,9 @@ func _build_reward_selection_options_internal(
 	var options: Array[RewardInfo] = []
 	var selected_keys: Dictionary = {}
 	if standard_draft_rules_enabled and bool(stage_rules.get("reserve_weapon_progress_slot", false)):
-		var guaranteed_reward := _roll_reward_from_candidates(weapon_candidates, selected_keys, resolved_route)
+		var guaranteed_reward := _roll_reward_from_candidates(weapon_candidates, selected_keys)
 		if guaranteed_reward == null and bool(stage_rules.get("allow_fallback_economy", true)):
-			guaranteed_reward = _build_fallback_economy_reward(options.size(), resolved_route)
+			guaranteed_reward = _build_fallback_economy_reward(options.size())
 		if guaranteed_reward != null:
 			_mark_reward_selected(guaranteed_reward, selected_keys)
 			options.append(guaranteed_reward)
@@ -387,17 +369,15 @@ func _build_reward_selection_options_internal(
 			weapon_candidates,
 			module_candidates,
 			selected_keys,
-			resolved_route,
 			stage_rules
 		) if standard_draft_rules_enabled else _roll_reward_option(
 			weapon_candidates,
 			module_candidates,
-			selected_keys,
-			resolved_route
+			selected_keys
 		)
 		if reward == null:
 			if not standard_draft_rules_enabled or bool(stage_rules.get("allow_fallback_economy", true)):
-				reward = _build_fallback_economy_reward(options.size(), resolved_route)
+			reward = _build_fallback_economy_reward(options.size())
 			else:
 				break
 		selected_keys[_get_reward_key(reward)] = true
@@ -499,62 +479,58 @@ func _build_module_reward_candidate(scene_path: String) -> Dictionary:
 func _roll_reward_option(
 	weapon_candidates: Array[Dictionary],
 	module_candidates: Array[Dictionary],
-	selected_keys: Dictionary,
-	route_def: RunRouteDefinition
+	selected_keys: Dictionary
 ) -> RewardInfo:
 	var economy := _get_economy_config()
 	if randf() < economy.get_reward_economy_option_chance() and not _has_selected_economy_reward(selected_keys):
-		var economy_reward := _build_economy_reward(selected_keys.size(), route_def, false)
+		var economy_reward := _build_economy_reward(selected_keys.size(), false)
 		if not selected_keys.has(_get_reward_key(economy_reward)):
 			return economy_reward
 	if not economy.reward_module_options_enabled or module_candidates.is_empty():
-		return _roll_reward_from_type(REWARD_TYPE_WEAPON, weapon_candidates, module_candidates, selected_keys, route_def)
+		return _roll_reward_from_type(REWARD_TYPE_WEAPON, weapon_candidates, module_candidates, selected_keys)
 	var prefer_weapon := randf() < economy.get_reward_weapon_option_chance()
 	var first_type := REWARD_TYPE_WEAPON if prefer_weapon else REWARD_TYPE_MODULE
 	var second_type := REWARD_TYPE_MODULE if prefer_weapon else REWARD_TYPE_WEAPON
-	var reward := _roll_reward_from_type(first_type, weapon_candidates, module_candidates, selected_keys, route_def)
+	var reward := _roll_reward_from_type(first_type, weapon_candidates, module_candidates, selected_keys)
 	if reward != null:
 		return reward
-	return _roll_reward_from_type(second_type, weapon_candidates, module_candidates, selected_keys, route_def)
+	return _roll_reward_from_type(second_type, weapon_candidates, module_candidates, selected_keys)
 
 func _roll_staged_reward_option(
 	weapon_candidates: Array[Dictionary],
 	module_candidates: Array[Dictionary],
 	selected_keys: Dictionary,
-	route_def: RunRouteDefinition,
 	stage_rules: Dictionary
 ) -> RewardInfo:
 	if bool(stage_rules.get("normal_economy_enabled", true)):
 		var economy := _get_economy_config()
 		if randf() < economy.get_reward_economy_option_chance() and not _has_selected_economy_reward(selected_keys):
-			var economy_reward := _build_economy_reward(selected_keys.size(), route_def, false)
+			var economy_reward := _build_economy_reward(selected_keys.size(), false)
 			if not selected_keys.has(_get_reward_key(economy_reward)):
 				return economy_reward
 	var module_chance := clampf(float(stage_rules.get("module_option_chance", 1.0 - _get_economy_config().get_reward_weapon_option_chance())), 0.0, 1.0)
 	var can_roll_module := _get_economy_config().reward_module_options_enabled and not module_candidates.is_empty()
 	var first_type := REWARD_TYPE_MODULE if can_roll_module and randf() < module_chance else REWARD_TYPE_WEAPON
 	var second_type := REWARD_TYPE_WEAPON if first_type == REWARD_TYPE_MODULE else REWARD_TYPE_MODULE
-	var reward := _roll_reward_from_type(first_type, weapon_candidates, module_candidates, selected_keys, route_def)
+	var reward := _roll_reward_from_type(first_type, weapon_candidates, module_candidates, selected_keys)
 	if reward != null:
 		return reward
 	if second_type == REWARD_TYPE_MODULE and not can_roll_module:
 		return null
-	return _roll_reward_from_type(second_type, weapon_candidates, module_candidates, selected_keys, route_def)
+	return _roll_reward_from_type(second_type, weapon_candidates, module_candidates, selected_keys)
 
 func _roll_reward_from_type(
 	reward_type: String,
 	weapon_candidates: Array[Dictionary],
 	module_candidates: Array[Dictionary],
-	selected_keys: Dictionary,
-	route_def: RunRouteDefinition
+	selected_keys: Dictionary
 ) -> RewardInfo:
 	var candidates := weapon_candidates if reward_type == REWARD_TYPE_WEAPON else module_candidates
-	return _roll_reward_from_candidates(candidates, selected_keys, route_def)
+	return _roll_reward_from_candidates(candidates, selected_keys)
 
 func _roll_reward_from_candidates(
 	candidates: Array[Dictionary],
-	selected_keys: Dictionary,
-	route_def: RunRouteDefinition
+	selected_keys: Dictionary
 ) -> RewardInfo:
 	for _attempt in range(MAX_REWARD_ROLL_ATTEMPTS):
 		var candidate := _pick_weighted_candidate(candidates, selected_keys)
@@ -563,7 +539,7 @@ func _roll_reward_from_candidates(
 		var key := _get_candidate_key(candidate)
 		if selected_keys.has(key):
 			continue
-		var reward := _build_reward_from_candidate(candidate, route_def)
+		var reward := _build_reward_from_candidate(candidate)
 		if reward == null:
 			continue
 		selected_keys[key] = true
@@ -588,7 +564,7 @@ func _pick_weighted_candidate(candidates: Array[Dictionary], selected_keys: Dict
 			return candidate
 	return {}
 
-func _build_reward_from_candidate(candidate: Dictionary, route_def: RunRouteDefinition) -> RewardInfo:
+func _build_reward_from_candidate(candidate: Dictionary) -> RewardInfo:
 	var reward := RewardInfo.new()
 	reward.rarity = RARITY_UTIL.normalize(str(candidate.get("rarity", RARITY_UTIL.COMMON)))
 	match str(candidate.get("type", "")):
@@ -600,18 +576,18 @@ func _build_reward_from_candidate(candidate: Dictionary, route_def: RunRouteDefi
 			reward.reward_key_override = "upgrade:%s" % str(candidate.get("id", reward.target_weapon_id))
 		REWARD_TYPE_WEAPON:
 			reward.item_id = str(candidate.get("id", ""))
-			reward.item_level = max(1, 1 + (int(route_def.reward_item_level_bonus) if route_def else 0))
+			reward.item_level = 1
 		REWARD_TYPE_MODULE:
 			reward.module_scene = candidate.get("scene", null) as PackedScene
-			reward.module_level = _sanitize_module_level(1 + (int(route_def.reward_module_level_bonus) if route_def else 0))
+			reward.module_level = 1
 		_:
 			return null
 	return reward
 
-func _build_fallback_economy_reward(option_index: int, _route_def: RunRouteDefinition) -> RewardInfo:
-	return _build_economy_reward(option_index, _route_def, true)
+func _build_fallback_economy_reward(option_index: int) -> RewardInfo:
+	return _build_economy_reward(option_index, true)
 
-func _build_economy_reward(option_index: int, _route_def: RunRouteDefinition, is_fallback: bool) -> RewardInfo:
+func _build_economy_reward(option_index: int, is_fallback: bool) -> RewardInfo:
 	var economy := _get_economy_config()
 	var fallback := RewardInfo.new()
 	fallback.reward_kind = RewardInfo.KIND_ECONOMY
@@ -648,7 +624,7 @@ func _build_guaranteed_weapon_progress_reward(selected_keys: Dictionary) -> Rewa
 		reward.rarity = _get_weapon_rarity_by_instance(fuse_weapon)
 		_mark_reward_selected(reward, selected_keys)
 		return reward
-	var fallback := _build_fallback_economy_reward(0, null)
+	var fallback := _build_fallback_economy_reward(0)
 	_mark_reward_selected(fallback, selected_keys)
 	return fallback
 

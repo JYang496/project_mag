@@ -784,10 +784,6 @@ func calculate_scaled_enemy_stats(
 ) -> Dictionary:
 	var scaled_hp := maxi(fallback_hp, 1)
 	var scaled_damage := maxi(fallback_damage, 0)
-	var route_def := RunRouteManager.get_route_for_level(level_index)
-	if route_def:
-		scaled_hp = max(1, int(round(float(scaled_hp) * route_def.enemy_hp_multiplier)))
-		scaled_damage = max(1, int(round(float(scaled_damage) * route_def.enemy_damage_multiplier)))
 	var overflow_level := _resolve_infinite_overflow_level(level_index)
 	if overflow_level > 0:
 		var profile: SpawnCombatProfile = _get_spawn_combat_profile()
@@ -914,10 +910,7 @@ func _is_combat_budget_ready() -> bool:
 
 func get_effective_time_out(base_time_out: int, level_index: int) -> int:
 	var safe_base: int = max(base_time_out, 1)
-	var route_def := RunRouteManager.get_route_for_level(level_index)
-	if route_def == null:
-		return safe_base
-	return max(1, int(round(float(safe_base) * route_def.battle_timeout_multiplier)))
+	return safe_base
 
 func _debug_log_spawned_enemy(enemy_instance) -> void:
 	if not debug_print_spawn_stats:
