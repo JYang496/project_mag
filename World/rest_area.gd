@@ -89,6 +89,7 @@ const LEGACY_BLOCKING_UI_ROOTS: Array[StringName] = [
 	&"TaskManagementPanel",
 	&"BranchSelectPanel",
 	&"ModuleEquipSelectionPanel",
+	&"BattleContractSelectionPanel",
 	&"WeaponReplacementPanel",
 	&"WeaponWarehousePanel"
 ]

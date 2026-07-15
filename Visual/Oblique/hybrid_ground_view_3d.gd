@@ -84,9 +84,6 @@ func _ready() -> void:
 	_camera.projection = Camera3D.PROJECTION_PERSPECTIVE
 	_camera.current = enabled
 	add_child(_camera)
-	_camera.position = Vector3(0.0, 14.0, 11.0)
-	_camera.look_at(Vector3.ZERO, Vector3.UP)
-	_projection_ready = true
 	_ground_root = Node3D.new()
 	_ground_root.name = "GroundMeshes"
 	add_child(_ground_root)
@@ -110,6 +107,7 @@ func _ready() -> void:
 		var active_value: Variant = _board.get("_board_active")
 		if active_value != null:
 			_board_visual_active = bool(active_value)
+	_sync_camera_projection()
 	call_deferred("_initialize_ground_renderers")
 
 func _initialize_ground_renderers() -> void:
@@ -127,6 +125,9 @@ func _process(delta: float) -> void:
 	if _ground_renderers_initialized and HybridGroundRegistration.pending_count() > 0:
 		HybridGroundRegistration.flush_pending(self)
 	_resolve_player()
+	_sync_camera_projection()
+
+func _sync_camera_projection() -> void:
 	var target_2d := _resolve_camera_target_2d()
 	var target_3d := world_2d_to_3d(target_2d)
 	var pitch := deg_to_rad(camera_pitch_degrees)
@@ -1012,7 +1013,7 @@ func _sync_area_meshes() -> void:
 			continue
 		var visual_shape := int(entry.get("visual_shape", 0))
 		var radius := maxf(float(area.get("radius")), 1.0) * world_scale
-		mesh.position = world_2d_to_3d(area.global_position) + Vector3.UP * 0.022
+		mesh.position = world_2d_to_3d(area.global_position) + Vector3.UP * (0.022 + float(area.get("ground_height_offset")))
 		if visual_shape == 0:
 			mesh.scale = Vector3(radius, 1.0, radius)
 		else:

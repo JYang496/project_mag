@@ -1,4 +1,28 @@
 keys,en,zh_CN
+battle_contract.ui.title,Choose Battle Contract,选择战斗协议
+battle_contract.ui.subtitle,Decide the victory condition for the next battle,决定下一场战斗的胜利条件
+battle_contract.ui.cancel,Back to Prepare,返回准备
+battle_contract.ui.confirm,Launch Selected Contract,启动所选协议
+battle_contract.ui.build_tags,Build tags: {tags},构筑标签：{tags}
+battle_contract.elimination.name,Elimination Protocol,歼灭协议
+battle_contract.elimination.description,Eliminate every enemy in the encounter.,消灭本场全部敌人。
+battle_contract.elimination.pace,Finite enemy budget · 3–5 batches,有限敌人预算 · 3–5 批次
+battle_contract.elimination.reward,Performance: small bonus for an early clear.,表现奖励：提前清场获得少量奖励。
+battle_contract.survival.name,Survival Protocol,坚守协议
+battle_contract.survival.description,Survive until the combat timer expires.,在持续敌潮中坚持至倒计时结束。
+battle_contract.survival.pace,Continuous pressure · approximately 45–65 seconds,持续压力 · 约 45–65 秒
+battle_contract.survival.reward,Performance: small bonus for effective kills.,表现奖励：有效击杀获得少量奖励。
+battle_contract.operation.name,Operation Protocol,行动协议
+battle_contract.operation.description,Activate two tactical beacons in sequence.,依次激活两个战术信标。
+battle_contract.operation.pace,Mobile objective · two 10–14 second captures,移动目标 · 两次 10–14 秒充能
+battle_contract.operation.reward,Performance: small bonus for steady progress.,表现奖励：持续推进获得少量奖励。
+battle_contract.hud.elimination,Remaining {remaining} · Wave {current}/{total},剩余敌人 {remaining} · 波次 {current}/{total}
+battle_contract.hud.survival,Time {seconds}s · Threat {threat},剩余 {seconds} 秒 · 威胁等级 {threat}
+battle_contract.hud.operation,Beacon {current}/{total},信标 {current}/{total}
+battle_contract.hud.completed,Contract Complete,协议完成
+battle_contract.reward.summary,Performance reward: {amount} {type},表现奖励：{amount} {type}
+battle_contract.reward.gold,gold,金币
+battle_contract.reward.experience,experience,经验
 ui.passive.next_radial_volley,Next volley: {count},下次环射：{count}根
 ui.language.en,English,English
 ui.language.zh_cn,Simplified Chinese,简体中文

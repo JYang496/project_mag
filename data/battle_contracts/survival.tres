@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BattleContractDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Combat/battle_contract/BattleContractDefinition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+contract_id = &"survival"
+name_key = "battle_contract.survival.name"
+description_key = "battle_contract.survival.description"
+accent_color = Color(0.302, 0.722, 0.784, 1)
+weight = 1.0
+build_tags = Array[StringName]([&"survival", &"control", &"sustain"])
+parameters = {"duration_early_sec": 45, "duration_mid_sec": 55, "duration_late_sec": 65, "threat_step_sec": 15}
+

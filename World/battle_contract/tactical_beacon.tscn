@@ -1,0 +1,28 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://World/battle_contract/tactical_beacon.gd" id="1"]
+[ext_resource type="Script" path="res://World/battle_contract/beacon_ground_visual.gd" id="2"]
+
+[sub_resource type="CircleShape2D" id="1"]
+radius = 70.0
+
+[node name="TacticalBeacon" type="Area2D" groups=["battle_contract_runtime"]]
+collision_layer = 0
+collision_mask = 5
+monitoring = true
+monitorable = false
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")
+
+[node name="OuterGround" type="Node2D" parent="."]
+script = ExtResource("2")
+radius = 70.0
+visual_modulate = Color(0.22, 0.68, 0.82, 0.18)
+
+[node name="ProgressGround" type="Node2D" parent="."]
+script = ExtResource("2")
+radius = 10.0
+visual_modulate = Color(0.48, 0.9, 1, 0.68)
+ground_height_offset = 0.006

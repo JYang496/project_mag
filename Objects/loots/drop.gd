@@ -23,11 +23,14 @@ var _trajectory_height: float = 0.0
 
 func _ready() -> void:
 	global_position = spawn_global_position
-	if auto_collect_on_landing or resolve_immediately:
+	drop_instance = drop.instantiate()
+	var drop_at_origin := drop_instance is Coin
+	if drop_at_origin:
+		p2.position = Vector2.ZERO
+	elif auto_collect_on_landing or resolve_immediately:
 		p2.position = get_random_position_in_ring(90.0, 160.0)
 	else:
 		p2.position = get_random_position_in_circle()
-	drop_instance = drop.instantiate()
 	_trajectory_height = randf_range(120.0, 180.0)
 	p1.position = (p0.position + p2.position) * 0.5
 	if not drop_instance.has_method("set_trajectory_screen_height"):
@@ -47,7 +50,7 @@ func _ready() -> void:
 	if settle_unclaimed_on_battle_start:
 		drop_instance.settle_unclaimed_on_battle_start = true
 	_set_optional_property(drop_instance, "trajectory_animation_managed", true)
-	if resolve_immediately:
+	if resolve_immediately or drop_at_origin:
 		_mark_drop_instance_spawn_ready(drop_instance)
 		call_deferred("_attach_drop_instance_immediate")
 		return

@@ -1,5 +1,7 @@
 # Player Movement System Investigation
 
+> Status: dated investigation snapshot. Recommendations below are not proof that the corresponding phases remain unimplemented; verify against current `Player/` runtime code before acting.
+
 Date: 2026-07-05
 
 ## Scope

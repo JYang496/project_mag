@@ -377,7 +377,7 @@ func _build_reward_selection_options_internal(
 		)
 		if reward == null:
 			if not standard_draft_rules_enabled or bool(stage_rules.get("allow_fallback_economy", true)):
-			reward = _build_fallback_economy_reward(options.size())
+				reward = _build_fallback_economy_reward(options.size())
 			else:
 				break
 		selected_keys[_get_reward_key(reward)] = true

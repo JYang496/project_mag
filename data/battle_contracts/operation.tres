@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BattleContractDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Combat/battle_contract/BattleContractDefinition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+contract_id = &"operation"
+name_key = "battle_contract.operation.name"
+description_key = "battle_contract.operation.description"
+accent_color = Color(0.545, 0.424, 0.878, 1)
+weight = 0.8
+build_tags = Array[StringName]([&"mobility", &"knockback", &"control"])
+parameters = {"beacon_count": 2, "charge_time_min_sec": 10, "charge_time_max_sec": 14}

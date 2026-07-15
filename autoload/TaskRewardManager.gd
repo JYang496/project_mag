@@ -17,7 +17,7 @@ var _reward_unlocked := false
 var _reward_panel_open := false
 var _battle_in_progress := false
 var _restore_snapshot_on_world_start := false
-var _reward_manager: BonusManager
+var _reward_manager: Node
 var _bundle_generation_warning_emitted := false
 
 func _ready() -> void:
@@ -114,6 +114,8 @@ func restore_snapshot_after_player_spawn() -> bool:
 	_restore_inventory_state(snapshot.get("inventory", {}) as Dictionary)
 	if snapshot.get("reward_draft_runtime", {}) is Dictionary:
 		RewardDraftRuntime.restore_battle_rollback_snapshot(snapshot.get("reward_draft_runtime", {}) as Dictionary)
+	if snapshot.get("battle_contract", {}) is Dictionary:
+		BattleContractManager.restore_rollback_snapshot(snapshot.get("battle_contract", {}) as Dictionary)
 	PhaseManager.current_level = maxi(int(snapshot.get("level", 0)), 0)
 	_battle_in_progress = false
 	_save_state()
@@ -389,12 +391,12 @@ func _get_rarity_rank(rarity: String) -> int:
 		_:
 			return 0
 
-func _resolve_reward_manager() -> BonusManager:
+func _resolve_reward_manager() -> Node:
 	if _reward_manager and is_instance_valid(_reward_manager):
 		return _reward_manager
 	var scene := get_tree().current_scene
 	if scene:
-		_reward_manager = scene.get_node_or_null("RewardManager") as BonusManager
+		_reward_manager = scene.get_node_or_null("RewardManager")
 	return _reward_manager
 
 func _build_rollback_snapshot() -> Dictionary:
@@ -457,6 +459,7 @@ func _build_rollback_snapshot() -> Dictionary:
 			"pending_transactions": InventoryData.pending_transactions.duplicate(true),
 		},
 		"reward_draft_runtime": RewardDraftRuntime.build_battle_rollback_snapshot(),
+		"battle_contract": BattleContractManager.build_rollback_snapshot(),
 	}
 
 func _write_rollback_snapshot() -> bool:

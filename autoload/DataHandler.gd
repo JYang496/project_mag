@@ -491,6 +491,7 @@ func save_game(_data : SaveData = save_data, _file_path: String = "res://data/sa
 func new_save(_file_path: String = "res://data/savedata/autosave.tres") -> void:
 	save_data = _create_fresh_runtime_save()
 	RewardDraftRuntime.reset_runtime_state(false)
+	BattleContractManager.reset_persistent_state()
 	return
 	
 

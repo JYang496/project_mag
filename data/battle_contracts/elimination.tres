@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BattleContractDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Combat/battle_contract/BattleContractDefinition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+contract_id = &"elimination"
+name_key = "battle_contract.elimination.name"
+description_key = "battle_contract.elimination.description"
+accent_color = Color(0.788, 0.31, 0.353, 1)
+weight = 1.0
+build_tags = Array[StringName]([&"damage", &"kill_trigger"])
+parameters = {"batch_count_min": 3, "batch_count_max": 5, "early_release_ratio": 0.8}
+

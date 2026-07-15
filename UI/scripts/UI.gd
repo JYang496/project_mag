@@ -10,6 +10,7 @@ const HP_BAR_EASE := Tween.EASE_OUT
 const HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hud_presenter.gd")
 const HUD_REFRESH_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/hud_refresh_controller.gd")
 const TASK_OBJECTIVE_HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/task_objective_hud_presenter.gd")
+const BATTLE_CONTRACT_HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/battle_contract_hud_presenter.gd")
 const UI_DIRTY_SIGNAL_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/ui_dirty_signal_controller.gd")
 const WEAPON_PASSIVE_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_passive_presenter.gd")
 const WEAPON_PASSIVE_PANEL_VIEW_SCRIPT := preload("res://UI/scripts/components/weapon_passive_panel_view.gd")
@@ -33,6 +34,7 @@ const UI_BOOTSTRAP_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/ui_
 const HINT_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hint_presenter.gd")
 const BATTLE_CURSOR_PRESENTER_SCRIPT := preload("res://UI/scripts/components/battle_cursor_presenter.gd")
 const VICTORY_TRANSITION_SCRIPT := preload("res://UI/scripts/components/victory_transition.gd")
+const BATTLE_CONTRACT_SELECTION_PANEL_SCENE := preload("res://UI/scenes/battle_contract_selection_panel.tscn")
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overlay.gd"
@@ -180,6 +182,7 @@ var spread_cursor_overlay
 var hud_presenter: HudPresenter
 var hud_refresh_controller
 var task_objective_hud_presenter
+var battle_contract_hud_presenter
 var ui_dirty_signal_controller
 var weapon_passive_presenter
 var weapon_passive_panel_view
@@ -203,6 +206,7 @@ var ui_bootstrap_controller
 var hint_presenter
 var battle_cursor_presenter
 var victory_transition: VictoryTransition
+var battle_contract_selection_panel: Control
 var _weapon_passive_rows: Array[Dictionary] = []
 var _weapon_passive_panel_dirty := true
 var _weapon_passive_panel_refresh_timer := 0.0
@@ -223,9 +227,13 @@ func _ready():
 	Input.use_accumulated_input = false
 	gui_root.theme = GLOBAL_UI_THEME
 	_init_victory_transition()
+	_init_battle_contract_selection_panel()
 	_init_ui_bootstrap_controller()
 	ui_bootstrap_controller.bootstrap()
 	_init_task_objective_hud_presenter()
+	_init_battle_contract_hud_presenter()
+	if not BattleContractManager.performance_reward_granted.is_connected(_on_battle_contract_reward):
+		BattleContractManager.performance_reward_granted.connect(_on_battle_contract_reward)
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
@@ -245,6 +253,23 @@ func play_victory_transition() -> void:
 	if victory_transition == null:
 		return
 	await victory_transition.play()
+
+func _init_battle_contract_selection_panel() -> void:
+	if battle_contract_selection_panel != null and is_instance_valid(battle_contract_selection_panel):
+		return
+	battle_contract_selection_panel = BATTLE_CONTRACT_SELECTION_PANEL_SCENE.instantiate()
+	gui_root.add_child(battle_contract_selection_panel)
+
+func request_battle_contract_selection(options: Array, confirmed: Callable, cancelled: Callable) -> void:
+	_init_battle_contract_selection_panel()
+	battle_contract_selection_panel.call("open", options, confirmed, cancelled)
+
+func _on_battle_contract_reward(summary: Dictionary) -> void:
+	show_item_message(LocalizationManager.tr_format("battle_contract.reward.summary", {"amount": summary.get("amount", 0), "type": LocalizationManager.tr_key("battle_contract.reward.%s" % str(summary.get("type", "gold")), str(summary.get("type", "gold")))}, "Performance reward: {amount} {type}"), 2.6)
+
+func close_battle_contract_selection() -> void:
+	if battle_contract_selection_panel != null and is_instance_valid(battle_contract_selection_panel):
+		battle_contract_selection_panel.call("dismiss")
 
 func _exit_tree() -> void:
 	_disconnect_ui_dirty_signals()
@@ -559,6 +584,10 @@ func is_dialog_visible() -> bool:
 	return modal_dialog_controller != null and modal_dialog_controller.is_dialog_visible()
 
 func is_world_interaction_blocked() -> bool:
+	if battle_contract_selection_panel != null \
+			and is_instance_valid(battle_contract_selection_panel) \
+			and battle_contract_selection_panel.visible:
+		return true
 	if is_dialog_visible():
 		return true
 	if _has_pending_module_transaction_dialog():
@@ -862,6 +891,7 @@ func _finalize_branch_selected_weapon(weapon: Weapon) -> void:
 func _physics_process(delta: float) -> void:
 	_refresh_hud_if_needed(delta)
 	_refresh_task_objective_hud_if_needed(delta)
+	if battle_contract_hud_presenter != null: battle_contract_hud_presenter.refresh()
 	_refresh_weapon_passive_panel_if_needed(delta)
 	_refresh_controls_hint_visibility()
 	if controls_hint_view != null and is_instance_valid(controls_hint_view):
@@ -935,6 +965,12 @@ func _init_task_objective_hud_presenter() -> void:
 	task_objective_hud_presenter.bind(self, _ensure_right_hud_stack())
 	task_objective_hud_presenter.layout(get_viewport().get_visible_rect().size)
 
+func _init_battle_contract_hud_presenter() -> void:
+	if battle_contract_hud_presenter != null: return
+	battle_contract_hud_presenter = BATTLE_CONTRACT_HUD_PRESENTER_SCRIPT.new()
+	battle_contract_hud_presenter.bind(gui_root)
+	battle_contract_hud_presenter.layout(get_viewport().get_visible_rect().size)
+
 func _init_ui_dirty_signal_controller() -> void:
 	if ui_dirty_signal_controller != null:
 		return
@@ -1000,6 +1036,11 @@ func _process(_delta: float) -> void:
 	# Cursor-follow visuals should run on render frames to minimize perceived mouse lag.
 	_update_spread_cursor_overlay()
 func _input(_event) -> void:
+	if battle_contract_selection_panel != null and battle_contract_selection_panel.visible \
+			and (_event.is_action_pressed("ESC") or _event.is_action_pressed("CANCEL")):
+		if bool(battle_contract_selection_panel.call("cancel")):
+			get_viewport().set_input_as_handled()
+		return
 	if _event is InputEventMouseMotion:
 		var motion := _event as InputEventMouseMotion
 		_update_spread_cursor_overlay(motion.position)
@@ -1057,6 +1098,8 @@ func handle_non_battle_right_cancel() -> bool:
 	return _cancel_top_level_non_battle_ui()
 
 func _cancel_top_level_non_battle_ui() -> bool:
+	if battle_contract_selection_panel != null and battle_contract_selection_panel.visible:
+		return bool(battle_contract_selection_panel.call("cancel"))
 	if module_transaction_dialog_controller != null and module_transaction_dialog_controller.cancel_visible_dialog():
 		_sync_module_transaction_dialog_refs()
 		return true
@@ -1418,6 +1461,8 @@ func _apply_responsive_layout() -> void:
 	ui_layout_controller.apply_responsive_layout()
 	if task_objective_hud_presenter != null:
 		task_objective_hud_presenter.layout(get_viewport().get_visible_rect().size)
+	if battle_contract_hud_presenter != null:
+		battle_contract_hud_presenter.layout(get_viewport().get_visible_rect().size)
 
 # Quest, rest-area hints, and cursor overlays
 

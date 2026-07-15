@@ -4,6 +4,8 @@ class_name LevelCombatPlan
 @export var time_out_sec: int = 30
 @export var target_total_hp: int = 1000
 @export var spawns: Array[EnemySpawnEntry] = []
+@export var is_boss: bool = false
+@export var allowed_contracts: Array[StringName] = []
 
 func sanitize() -> void:
 	time_out_sec = maxi(time_out_sec, 1)

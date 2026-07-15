@@ -1,6 +1,12 @@
 extends Node2D
 class_name EnemySpawner
 
+signal combat_tick
+signal enemy_spawned(enemy: Node)
+signal enemy_died(enemy: Node, was_killed: bool)
+signal spawn_budget_stopped
+signal combat_frame(delta_sec: float)
+
 @onready var timer = $Timer
 @export var debug_print_spawn_stats := true
 @export var debug_print_kill_gold_stats := true
@@ -16,6 +22,7 @@ const SpawnCombatProfileScript := preload("res://data/spawns/SpawnCombatProfile.
 const SPAWN_POINT_PICKER_SCRIPT := preload("res://World/spawn/spawn_point_picker.gd")
 const SPAWN_BUDGET_RUNTIME_SCRIPT := preload("res://World/spawn/spawn_budget_runtime.gd")
 const KILL_GOLD_BUDGET_RUNTIME_SCRIPT := preload("res://World/spawn/kill_gold_budget_runtime.gd")
+const BATTLE_CONTRACT_COMBAT_BRIDGE_SCRIPT := preload("res://Combat/battle_contract/BattleContractCombatBridge.gd")
 
 var instance_list : Array
 var _runtime_spawn_states: Array[Dictionary] = []
@@ -49,6 +56,15 @@ var _spawn_budget_stopped: bool = false
 var _budget_summary_printed: bool = false
 var _spawn_budget_runtime: RefCounted
 var _battle_victory_transition_active := false
+var _contract_bridge: RefCounted
+var _contract_duration_override_sec: int = 0
+var _spawn_budget_stop_emitted := false
+var _contract_continuous_spawning := false
+var _contract_threat_multiplier := 1.0
+var _contract_external_victory := false
+var _contract_prefer_final_elite := false
+var _contract_batch_count := 0
+var _contract_released_batches := 0
 
 func _ready():
 	GlobalVariables.enemy_spawner = self
@@ -61,6 +77,20 @@ func _ready():
 		board.connect("active_cells_changed", Callable(self, "_on_board_active_cells_changed"))
 	_refresh_fallback_bounds()
 	_refresh_spawn_tables()
+	_contract_bridge = BATTLE_CONTRACT_COMBAT_BRIDGE_SCRIPT.new()
+	_contract_bridge.bind(self)
+	BattleContractManager.bind_combat_port(_contract_bridge)
+
+func _exit_tree() -> void:
+	BattleContractManager.abort_current_contract({"reason": "scene_exit"})
+	if BattleContractManager.get_combat_port() == _contract_bridge:
+		BattleContractManager.unbind_combat_port()
+	if _contract_bridge != null:
+		_contract_bridge.unbind()
+
+func _process(delta: float) -> void:
+	if PhaseManager.current_state() == PhaseManager.BATTLE:
+		combat_frame.emit(maxf(delta, 0.0))
 
 func _init_spawn_point_picker() -> void:
 	if _spawn_point_picker != null:
@@ -191,6 +221,7 @@ func start_timer() -> void:
 	var effective_time_out := get_effective_time_out(_runtime_base_time_out, level_index)
 	PhaseManager.start_battle_timer(effective_time_out)
 	_prepare_level_combat_budget(level_index, effective_time_out)
+	_spawn_budget_stop_emitted = false
 	_start_kill_gold_budget(level_index, effective_time_out)
 	timer.start()
 
@@ -201,15 +232,16 @@ func _on_timer_timeout():
 		return
 	var level_index := maxi(PhaseManager.current_level, 0)
 	PhaseManager.advance_battle_time(1)
+	combat_tick.emit()
 	var base_time_out: int = _runtime_base_time_out
 	var effective_time_out: int = get_effective_time_out(base_time_out, level_index)
-	if PhaseManager.battle_time >= effective_time_out or _should_end_after_spawn_budget_stopped():
-		_finish_battle_with_victory(level_index, effective_time_out)
+	if not _contract_external_victory and (PhaseManager.battle_time >= effective_time_out or _should_end_after_spawn_budget_stopped()):
+		finish_battle_with_victory(level_index, effective_time_out)
 		return
 	_tick_spawn_intervals()
 	_spawn_with_random_wave_template(level_index, effective_time_out)
-	if _should_end_after_spawn_budget_stopped():
-		_finish_battle_with_victory(level_index, effective_time_out)
+	if not _contract_external_victory and _should_end_after_spawn_budget_stopped():
+		finish_battle_with_victory(level_index, effective_time_out)
 
 func _is_runtime_spawn_budget_spent() -> bool:
 	_init_spawn_budget_runtime()
@@ -291,7 +323,10 @@ func _resolve_batch_hp_budget(level_index: int, _effective_time_out: int) -> flo
 func _release_hp_budget_for_current_tick(level_index: int, effective_time_out: int) -> void:
 	_init_spawn_budget_runtime()
 	_sync_spawn_budget_owner_state_to_runtime()
+	var budget_before := float(_spawn_budget_runtime.available_hp_budget)
 	_spawn_budget_runtime.release_hp_budget_for_current_tick(level_index, effective_time_out)
+	var released := maxf(float(_spawn_budget_runtime.available_hp_budget) - budget_before, 0.0)
+	_spawn_budget_runtime.available_hp_budget += released * (_contract_threat_multiplier - 1.0)
 	_sync_spawn_budget_runtime_state()
 
 func roll_enemy_kill_gold(enemy_instance: Node = null) -> int:
@@ -428,6 +463,7 @@ func _add_enemy_with_state_signal(state: Dictionary, enemy_instance: Node) -> vo
 		enemy_instance.connect("enemy_death", func(was_killed: bool) -> void:
 			state["alive"] = maxi(int(state.get("alive", 0)) - 1, 0)
 			_record_enemy_death_for_budget_summary(enemy_instance, was_killed)
+			enemy_died.emit(enemy_instance, was_killed)
 			call_deferred("_try_finish_battle_after_spawn_budget_stop")
 		)
 
@@ -476,6 +512,10 @@ func _pick_weighted_candidate(
 			continue
 		var entry := _get_state_entry(state)
 		var weight := maxf(float(entry.weight), 1.0)
+		if _contract_prefer_final_elite and _planned_target_total_hp > 0 \
+				and float(_spawned_total_hp) / float(_planned_target_total_hp) >= 0.8 \
+				and _is_spawn_elite(state):
+			weight *= 8.0
 		weighted_candidates.append({"state": state, "weight": weight})
 		total_weight += weight
 	if weighted_candidates.is_empty() or total_weight <= 0.0:
@@ -512,6 +552,10 @@ func _can_pick_candidate(
 	elite_count: int,
 	level_index: int
 ) -> bool:
+	if _contract_batch_count > 0 and _planned_target_total_hp > 0:
+		var released_hp := ceili(float(_planned_target_total_hp) * float(_contract_released_batches) / float(_contract_batch_count))
+		if _spawned_total_hp >= released_hp:
+			return false
 	var entry := _get_state_entry(state)
 	if entry == null:
 		return false
@@ -593,6 +637,7 @@ func _spawn_from_state(state: Dictionary, requested_count: int) -> int:
 		enemy_spawn.global_position = get_nearby_position(random_position_center)
 		self.call_deferred("add_child", enemy_spawn)
 		_add_enemy_with_state_signal(state, enemy_spawn)
+		enemy_spawned.emit(enemy_spawn)
 		counter += 1
 	return spawned_hp
 
@@ -752,6 +797,82 @@ func erase_all_enemies():
 		else:
 			runtime_node.call_deferred("queue_free")
 
+func stop_spawning() -> void:
+	if timer != null:
+		timer.stop()
+
+func get_active_enemy_count() -> int:
+	return _get_total_runtime_alive_count()
+
+func get_spawn_budget_snapshot() -> Dictionary:
+	return {
+		"planned_total_hp": _planned_target_total_hp,
+		"spawned_total_hp": _spawned_total_hp,
+		"killed_total_hp": _killed_total_hp,
+		"available_hp_budget": _available_hp_budget,
+		"stopped": _spawn_budget_stopped,
+	}
+
+func get_contract_legal_region_count() -> int:
+	return _get_effective_board_cells().size()
+
+func get_contract_beacon_points() -> PackedVector2Array:
+	var points := PackedVector2Array()
+	var player_position: Vector2 = PlayerData.player.global_position if PlayerData.player != null else Vector2.ZERO
+	for cell in _get_effective_board_cells():
+		if cell != null:
+			var cell_center := cell.global_transform * Vector2(256.0, 256.0)
+			if cell_center.distance_to(player_position) >= 180.0:
+				points.append(cell_center)
+	if points.size() < 2:
+		return PackedVector2Array()
+	var best := PackedVector2Array([points[0], points[1]])
+	var best_distance := best[0].distance_to(best[1])
+	for first in points:
+		for second in points:
+			var distance := first.distance_to(second)
+			if distance > best_distance:
+				best = PackedVector2Array([first, second])
+				best_distance = distance
+	return best if best_distance >= 300.0 else PackedVector2Array()
+
+func configure_contract_finite_budget(total_budget: float) -> void:
+	_init_spawn_budget_runtime()
+	_spawn_budget_runtime.planned_target_total_hp = maxi(int(round(total_budget)), 1)
+	_spawn_budget_runtime.combat_budget_active = true
+	_sync_spawn_budget_runtime_state()
+
+func configure_contract_batches(batch_count: int) -> void:
+	_contract_batch_count = maxi(batch_count, 1)
+	_contract_released_batches = 1
+
+func release_contract_next_batch() -> void:
+	_contract_released_batches = mini(_contract_released_batches + 1, _contract_batch_count)
+
+func configure_contract_duration(duration_sec: float) -> void:
+	_contract_duration_override_sec = maxi(int(round(duration_sec)), 1)
+
+func configure_contract_continuous_spawning(enabled: bool) -> void:
+	_contract_continuous_spawning = enabled
+
+func configure_contract_threat_multiplier(multiplier: float) -> void:
+	_contract_threat_multiplier = maxf(multiplier, 0.1)
+
+func configure_contract_external_victory(enabled: bool) -> void:
+	_contract_external_victory = enabled
+
+func configure_contract_prefer_final_elite(enabled: bool) -> void:
+	_contract_prefer_final_elite = enabled
+
+func reset_contract_configuration() -> void:
+	_contract_duration_override_sec = 0
+	_contract_continuous_spawning = false
+	_contract_threat_multiplier = 1.0
+	_contract_external_victory = false
+	_contract_prefer_final_elite = false
+	_contract_batch_count = 0
+	_contract_released_batches = 0
+
 func _get_registered_enemies() -> Array[Node2D]:
 	var output: Array[Node2D] = []
 	var registry := get_node_or_null("/root/EnemyRegistry")
@@ -844,20 +965,33 @@ func _update_spawn_budget_stop_state() -> void:
 	_init_spawn_budget_runtime()
 	_sync_spawn_budget_owner_state_to_runtime()
 	_spawn_budget_runtime.update_spawn_budget_stop_state()
+	if _spawn_budget_runtime.spawn_budget_stopped and _contract_continuous_spawning:
+		_spawn_budget_runtime.planned_target_total_hp += maxi(_spawn_budget_runtime.planned_target_total_hp, 1)
+		_spawn_budget_runtime.spawn_budget_stopped = false
+		_spawn_budget_runtime.budget_release_finished = false
 	_sync_spawn_budget_runtime_state()
+	if _spawn_budget_stopped and not _spawn_budget_stop_emitted:
+		_spawn_budget_stop_emitted = true
+		spawn_budget_stopped.emit()
 
 func _try_finish_battle_after_spawn_budget_stop() -> void:
+	if _contract_external_victory:
+		return
 	if PhaseManager == null or PhaseManager.current_state() != PhaseManager.BATTLE:
 		return
 	if not _should_end_after_spawn_budget_stopped():
 		return
 	var level_index := maxi(PhaseManager.current_level, 0)
 	var effective_time_out := get_effective_time_out(_runtime_base_time_out, level_index)
-	_finish_battle_with_victory(level_index, effective_time_out)
+	finish_battle_with_victory(level_index, effective_time_out)
 
-func _finish_battle_with_victory(level_index: int, effective_time_out: int) -> void:
+func finish_battle_with_victory(level_index: int = -1, effective_time_out: int = -1) -> void:
 	if _battle_victory_transition_active or PhaseManager.current_state() != PhaseManager.BATTLE:
 		return
+	if level_index < 0:
+		level_index = maxi(PhaseManager.current_level, 0)
+	if effective_time_out < 0:
+		effective_time_out = get_effective_time_out(_runtime_base_time_out, level_index)
 	_battle_victory_transition_active = true
 	if timer != null:
 		timer.stop()
@@ -909,6 +1043,8 @@ func _is_combat_budget_ready() -> bool:
 	return bool(_spawn_budget_runtime.is_combat_budget_ready())
 
 func get_effective_time_out(base_time_out: int, level_index: int) -> int:
+	if _contract_duration_override_sec > 0:
+		return _contract_duration_override_sec
 	var safe_base: int = max(base_time_out, 1)
 	return safe_base
 
