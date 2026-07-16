@@ -8,6 +8,8 @@ const WEAPON_REPLACEMENT_PANEL_PATH := "res://UI/scenes/weapon_replacement_panel
 const WEAPON_WAREHOUSE_PANEL_PATH := "res://UI/scenes/weapon_warehouse_panel.tscn"
 const GAME_OVER_VIEW_PATH := "res://UI/scenes/components/game_over_view.tscn"
 const CONTROLS_HINT_VIEW_PATH := "res://UI/scenes/components/controls_hint_view.tscn"
+static var _controls_hint_scene_cache: PackedScene
+static var _controls_hint_scene_requested := false
 const BOARD_EDIT_PANEL_PATH := "res://UI/scenes/board_edit_panel.tscn"
 const CELL_MANAGEMENT_PANEL_SCRIPT := preload("res://UI/scripts/cell_management_panel.gd")
 
@@ -20,6 +22,28 @@ var weapon_replacement_panel: WeaponReplacementPanel
 var weapon_warehouse_panel: WeaponWarehousePanel
 var game_over_view
 var controls_hint_view
+
+static func prewarm_controls_hint_scene() -> bool:
+	if _controls_hint_scene_cache != null:
+		return true
+	if _controls_hint_scene_requested:
+		return _get_controls_hint_scene() != null
+	var error := ResourceLoader.load_threaded_request(CONTROLS_HINT_VIEW_PATH, "PackedScene", true)
+	if error == OK:
+		_controls_hint_scene_requested = true
+	return error == OK and _get_controls_hint_scene() != null
+
+static func _get_controls_hint_scene() -> PackedScene:
+	if _controls_hint_scene_cache != null:
+		return _controls_hint_scene_cache
+	if _controls_hint_scene_requested:
+		var status := ResourceLoader.load_threaded_get_status(CONTROLS_HINT_VIEW_PATH)
+		if status == ResourceLoader.THREAD_LOAD_LOADED or status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			_controls_hint_scene_cache = ResourceLoader.load_threaded_get(CONTROLS_HINT_VIEW_PATH) as PackedScene
+		_controls_hint_scene_requested = false
+	if _controls_hint_scene_cache == null:
+		_controls_hint_scene_cache = load(CONTROLS_HINT_VIEW_PATH) as PackedScene
+	return _controls_hint_scene_cache
 var board_edit_panel: Control
 var cell_management_panel: Control
 var _modal_registry: Array = []
@@ -290,7 +314,7 @@ func show_game_over() -> void:
 func ensure_controls_hint_view() -> bool:
 	if controls_hint_view != null and is_instance_valid(controls_hint_view):
 		return true
-	var view_scene := load(CONTROLS_HINT_VIEW_PATH) as PackedScene
+	var view_scene := _get_controls_hint_scene()
 	controls_hint_view = view_scene.instantiate() if view_scene else null
 	if controls_hint_view == null:
 		push_warning("Failed to create ControlsHintView.")

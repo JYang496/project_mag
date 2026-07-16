@@ -4,6 +4,7 @@ class_name Projectile
 enum ProjectileVisualMode { UPRIGHT, DIRECTIONAL, GROUND, SEGMENT, CUSTOM }
 
 const DEFAULT_EXPIRE_TIME: float = 2.5
+const MIN_EXPIRE_TIME: float = 0.001
 const PISTOL_PIERCE_MARK_ID := &"pistol_pierce"
 const INITIAL_PROJECTILE_HITS_META := "initial_projectile_hits"
 
@@ -66,6 +67,9 @@ func _prepare_for_spawn() -> void:
 	_reset_projectile_visual_state()
 	overlapping = false
 	_capture_initial_projectile_hits()
+	# Timer rejects zero/negative wait times. Keep the projectile boundary safe even
+	# when a weapon's runtime range or lifetime modifier temporarily resolves to 0.
+	expire_time = maxf(expire_time, MIN_EXPIRE_TIME)
 	expire_timer.wait_time = expire_time
 	projectile_sprite.texture = projectile_texture
 	projectile_sprite.scale = _resolve_projectile_scale()

@@ -7,7 +7,10 @@ const RESOLUTION_PRESETS: Array[Vector2i] = [
 	Vector2i(2560, 1440),
 ]
 const START_UI_THEME := preload("res://UI/themes/start_menu_theme.tres")
+const WORLD_SCENE_PATH := "res://World/world.tscn"
 const WORLD_ENTRY_PREPARE_GATE_SCRIPT := preload("res://World/world_entry_prepare_gate.gd")
+const WORLD_SCENE_LOADER_SCRIPT := preload("res://World/world_scene_loader.gd")
+const MODAL_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/modal_ui_controller.gd")
 
 enum PrewarmState { NOT_STARTED, RUNNING, SUCCEEDED, FAILED }
 
@@ -60,15 +63,25 @@ func _prewarm_world_entry() -> void:
 	var result: Dictionary = WORLD_ENTRY_PREPARE_GATE_SCRIPT.prepare_world_entry()
 	await get_tree().process_frame
 	SpawnData.ensure_loaded()
-	if bool(result.get("ok", false)) and SpawnData.spawn_combat_profile != null:
+	DataHandler.prewarm_mecha_default_weapon(str(PlayerData.select_mecha_id))
+	MODAL_UI_CONTROLLER_SCRIPT.prewarm_controls_hint_scene()
+	# Finish synchronous preparation before the World dependency graph starts
+	# loading on worker threads. Loading both graphs together can race shared
+	# weapon and UI resources and surface nondeterministic parse failures.
+	var world_request_error := WORLD_SCENE_LOADER_SCRIPT.preload_world(WORLD_SCENE_PATH)
+	if bool(result.get("ok", false)) and SpawnData.spawn_combat_profile != null and world_request_error == OK:
 		prewarm_state = PrewarmState.SUCCEEDED
 	else:
 		prewarm_state = PrewarmState.FAILED
 		prewarm_error = WORLD_ENTRY_PREPARE_GATE_SCRIPT.format_errors(result)
 		if prewarm_error.is_empty():
-			prewarm_error = "Spawn data failed to load."
+			prewarm_error = "World entry resources failed to prewarm."
 		push_error("World entry prewarm failed: %s" % prewarm_error)
 	LoadingPerformance.mark("prewarm_finished")
+	if OS.get_cmdline_user_args().has("--loading-benchmark") and new_game_button != null:
+		if OS.get_cmdline_user_args().has("--loading-benchmark-idle"):
+			await get_tree().create_timer(1.5).timeout
+		new_game_button.call_deferred("_on_pressed")
 
 func _set_full_rect(control: Control) -> void:
 	control.set_anchors_preset(Control.PRESET_FULL_RECT)

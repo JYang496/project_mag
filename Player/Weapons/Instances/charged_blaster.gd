@@ -11,6 +11,8 @@ var beam_range : float = 450.0
 var beam_local_forward := Vector2.UP
 var normal_turn_speed := 12.0
 @export_range(0.05, 1.0, 0.01) var firing_rotation_slow_multiplier: float = 0.1
+@export_range(0.05, 1.0, 0.01) var firing_move_speed_multiplier: float = 0.75
+@export_range(0.1, 1.0, 0.05) var minimum_committed_fire_sec: float = 0.35
 var is_firing_beam := false
 var firing_turn_timer: Timer
 var _force_active_cast: bool = false
@@ -112,6 +114,7 @@ func _update_beam_forward_from_target() -> void:
 
 func _start_firing_turn_slowdown(active_duration: float) -> void:
 	is_firing_beam = true
+	_apply_firing_move_slowdown()
 	if firing_turn_timer == null:
 		firing_turn_timer = Timer.new()
 		firing_turn_timer.one_shot = true
@@ -123,6 +126,27 @@ func _start_firing_turn_slowdown(active_duration: float) -> void:
 
 func _on_firing_turn_timeout() -> void:
 	is_firing_beam = false
+	_remove_firing_move_slowdown()
+
+func _apply_firing_move_slowdown() -> void:
+	var player: Node = PlayerData.player
+	if player == null or not is_instance_valid(player):
+		return
+	if player.has_method("apply_move_speed_mul"):
+		player.call("apply_move_speed_mul", _get_firing_move_slow_source_id(), clampf(firing_move_speed_multiplier, 0.05, 1.0))
+
+func _remove_firing_move_slowdown() -> void:
+	var player: Node = PlayerData.player
+	if player == null or not is_instance_valid(player):
+		return
+	if player.has_method("remove_move_speed_mul"):
+		player.call("remove_move_speed_mul", _get_firing_move_slow_source_id())
+
+func _get_firing_move_slow_source_id() -> StringName:
+	return StringName("charged_blaster_firing_%s" % str(get_instance_id()))
+
+func _exit_tree() -> void:
+	_remove_firing_move_slowdown()
 
 func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	if not can_run_active_behavior():
@@ -267,7 +291,9 @@ func _spawn_beam_from_profile(profile: Dictionary) -> float:
 	var hit_cd_multiplier: float = maxf(float(profile.get("hit_cd_multiplier", 1.0)), 0.05)
 	var duration_multiplier: float = maxf(float(profile.get("duration_multiplier", 1.0)), 0.05)
 	var fixed_width_no_charge: bool = bool(profile.get("fixed_width_no_charge", false))
-	var beam_duration: float = maxf(duration * duration_multiplier, 0.05)
+	# A charged shot is committed long enough to preserve its deliberate placement
+	# cost even if a future branch supplies an unusually short duration multiplier.
+	var beam_duration: float = maxf(duration * duration_multiplier, minimum_committed_fire_sec)
 	var beam_hit_cd: float = maxf(hit_cd * hit_cd_multiplier, 0.01)
 	var base_beam_width: float = 6.0 if fixed_width_no_charge else _get_full_power_beam_width()
 	beam_blast_ins.target_position = dir * beam_range * range_multiplier

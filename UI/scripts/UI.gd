@@ -228,14 +228,19 @@ var _warehouse_action_dirty := true
 # Lifecycle and bootstrap
 
 func _ready():
+	LoadingPerformance.begin_segment("ui_ready")
 	GlobalVariables.ui = self
 	# Reduce input-to-render latency for custom cursor overlays.
 	Input.use_accumulated_input = false
 	gui_root.theme = GLOBAL_UI_THEME
 	_init_victory_transition()
 	_init_ui_bootstrap_controller()
+	LoadingPerformance.begin_segment("ui_bootstrap_core")
 	ui_bootstrap_controller.bootstrap_core()
+	LoadingPerformance.end_segment("ui_bootstrap_core")
+	LoadingPerformance.begin_segment("ui_bootstrap_pause")
 	ui_bootstrap_controller.bootstrap_pause()
+	LoadingPerformance.end_segment("ui_bootstrap_pause")
 	_init_task_objective_hud_presenter()
 	_init_battle_contract_hud_presenter()
 	if not BattleContractManager.performance_reward_granted.is_connected(_on_battle_contract_reward):
@@ -245,6 +250,7 @@ func _ready():
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
 	call_deferred("_restore_pending_equipment_transactions")
+	LoadingPerformance.end_segment("ui_ready")
 
 func _init_victory_transition() -> void:
 	if victory_transition != null and is_instance_valid(victory_transition):

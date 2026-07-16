@@ -1,8 +1,12 @@
 extends Node
 
+func _enter_tree() -> void:
+	LoadingPerformance.mark("world_tree_entered")
+
 func _ready() -> void:
 	for frame in range(120):
 		if _is_world_ready():
+			await RenderingServer.frame_post_draw
 			LoadingPerformance.mark("world_ready")
 			await get_tree().process_frame
 			LoadingPerformance.mark("first_stable_frame")
@@ -22,5 +26,5 @@ func _is_world_ready() -> bool:
 	var camera_ready: bool = get_viewport().get_camera_2d() != null or get_viewport().get_camera_3d() != null
 	var hud_ready: bool = ui != null and ui.get("battle_hud") != null
 	var board_ready: bool = board != null and board.get_child_count() > 0
-	var ground_ready: bool = ground != null and ground.get_child_count() > 0
+	var ground_ready: bool = ground != null and bool(ground.get("_ground_renderers_initialized"))
 	return player_ready and camera_ready and hud_ready and board_ready and ground_ready

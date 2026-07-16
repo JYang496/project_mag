@@ -56,6 +56,7 @@ func update_labels() -> void:
 
 func _on_mecha_select_update_on_select(id) -> void:
 	mecha_id = int(id)
+	DataHandler.prewarm_mecha_default_weapon(str(mecha_id))
 	update_labels()
 	on_select_id = int(id)
 	for mechaselect : MechaSelect in icon_container.get_children():

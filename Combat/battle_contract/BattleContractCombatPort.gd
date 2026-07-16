@@ -50,6 +50,9 @@ func request_configure_threat_multiplier(multiplier: float) -> void:
 func request_release_reinforcement_budget(multiplier: float = 1.0) -> void:
 	pass
 
+func request_spawn_pursuit_wave(min_count: int, max_count: int) -> int:
+	return 0
+
 func request_configure_contract_economy(kill_gold_multiplier: float) -> void:
 	pass
 
@@ -66,6 +69,9 @@ func request_evacuate_enemies(options: Dictionary = {}) -> void:
 	pass
 
 func request_relocate_enemies(options: Dictionary = {}) -> void:
+	pass
+
+func request_monitor_enemy_stalls(enabled: bool) -> void:
 	pass
 
 func request_finish_battle(result: Dictionary = {}) -> void:

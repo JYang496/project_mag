@@ -354,16 +354,17 @@ func _ready() -> void:
 	view.call("_setup_rest_area_ground")
 	failed = _check(rest_zone_entries.size() == 5, "RestArea visual setup must be idempotent") or failed
 	var center_zone_entry := rest_zone_entries.get(4) as Dictionary
-	var center_zone_material := center_zone_entry.get("material") as ShaderMaterial
-	failed = _check(center_zone_entry.get("quad") is QuadMesh and center_zone_material != null, "RestArea zone must use one radial UV quad shader") or failed
+	var center_zone_mesh := center_zone_entry.get("mesh") as MeshInstance3D
+	var shared_zone_quad := view.get("_rest_zone_quad") as QuadMesh
+	failed = _check(center_zone_mesh != null and center_zone_mesh.mesh == shared_zone_quad and shared_zone_quad.material is ShaderMaterial, "RestArea zones must share one radial UV quad shader") or failed
 	rest_area.hover_zone_id = 4
 	rest_area._zone4_hold_elapsed = 0.5
 	view.sync_late_visuals(0.0)
-	failed = _check(is_equal_approx(float(center_zone_material.get_shader_parameter("hovered")), 1.0), "RestArea shader must receive hover emphasis") or failed
-	failed = _check(is_equal_approx(float(center_zone_material.get_shader_parameter("hold_progress")), 0.5), "RestArea center ring must receive hold progress") or failed
+	failed = _check(is_equal_approx(float(center_zone_mesh.get_instance_shader_parameter("hovered")), 1.0), "RestArea shader must receive hover emphasis") or failed
+	failed = _check(is_equal_approx(float(center_zone_mesh.get_instance_shader_parameter("hold_progress")), 0.5), "RestArea center ring must receive hold progress") or failed
 	rest_area.modulate.a = 0.4
 	view.sync_late_visuals(0.0)
-	failed = _check(is_equal_approx(float(center_zone_material.get_shader_parameter("visibility_alpha")), 0.4), "RestArea shader must follow area fade alpha") or failed
+	failed = _check(is_equal_approx(float(center_zone_mesh.get_instance_shader_parameter("visibility_alpha")), 0.4), "RestArea shader must follow area fade alpha") or failed
 	rest_area.visible = false
 	view.sync_late_visuals(0.0)
 	failed = _check(not (center_zone_entry.get("mesh") as MeshInstance3D).visible and not rest_ground.visible, "RestArea ground and zones must hide together") or failed

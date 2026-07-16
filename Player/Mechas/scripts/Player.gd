@@ -202,11 +202,14 @@ func _ensure_active_skill_runtime() -> void:
 		_active_skill_runtime.setup(self)
 
 func _ready():
+	LoadingPerformance.begin_segment("player_ready")
 	PlayerData = get_node_or_null("/root/PlayerData")
 	if PlayerData == null:
 		push_error("PlayerData autoload missing.")
+		LoadingPerformance.end_segment("player_ready")
 		return
 	PlayerData.player = self
+	LoadingPerformance.begin_segment("player_ready_runtime_core")
 	_ensure_weapon_inventory_runtime()
 	_ensure_weapon_passive_runtime()
 	_connect_weapon_structure_signals()
@@ -215,8 +218,10 @@ func _ready():
 	_ensure_active_skill_runtime()
 	_setup_default_active_skill()
 	_ensure_input_actions()
+	LoadingPerformance.end_segment("player_ready_runtime_core")
 	if _active_skill_runtime != null:
 		_active_skill_runtime.reset_energy_to_max()
+	LoadingPerformance.begin_segment("player_ready_visual_setup")
 	mecha_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_resize_mecha_sprite()
 	_setup_mecha_move_sprite()
@@ -225,9 +230,14 @@ func _ready():
 	_update_vision_effect()
 	_sync_weapon_orbit_states(true)
 	update_grab_radius()
+	LoadingPerformance.end_segment("player_ready_visual_setup")
+	LoadingPerformance.begin_segment("player_ready_custom")
 	custom_ready()
+	LoadingPerformance.end_segment("player_ready_custom")
+	LoadingPerformance.begin_segment("player_ready_shared_heat")
 	_ensure_shared_heat_system()
 	_rebuild_shared_heat_pool()
+	LoadingPerformance.end_segment("player_ready_shared_heat")
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 	_last_phase = PhaseManager.current_state()
@@ -237,6 +247,7 @@ func _ready():
 	_update_collect_area_anchor_to_screen_top()
 	_cache_hurtbox_shape_base()
 	_sync_hurtbox_to_idle_sprite_scale()
+	LoadingPerformance.begin_segment("player_ready_systems")
 	_ensure_status_hint_manager()
 	_ensure_status_modifier_system()
 	_ensure_elemental_effect_system()
@@ -246,12 +257,16 @@ func _ready():
 	_ensure_oblique_debug_panel()
 	_ensure_loot_system()
 	_ensure_assist_system()
+	LoadingPerformance.end_segment("player_ready_systems")
 	_systems_strict_ready = true
 	if not _require_movement_system_or_halt():
+		LoadingPerformance.end_segment("player_ready")
 		return
 	if not _require_camera_system_or_halt():
+		LoadingPerformance.end_segment("player_ready")
 		return
 	_update_vision_effect()
+	LoadingPerformance.end_segment("player_ready")
 
 # overwrite the function on child class
 func custom_ready():

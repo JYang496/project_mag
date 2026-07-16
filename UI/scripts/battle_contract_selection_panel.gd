@@ -29,7 +29,6 @@ func open(options: Array, confirmed: Callable, cancelled: Callable) -> void:
 	cancel_button.text = LocalizationManager.tr_key("battle_contract.ui.cancel", "Back to Prepare")
 	confirm_button.text = LocalizationManager.tr_key("battle_contract.ui.confirm", "Launch Selected Contract")
 	for index in cards.size():
-		cards[index].button_pressed = false
 		if index < options.size():
 			cards[index].call("setup", options[index])
 		else:
@@ -64,12 +63,11 @@ func _on_card_pressed(card: Button) -> void:
 		return
 	if not BattleContractManager.select_contract(card.definition):
 		for candidate in cards:
-			candidate.button_pressed = candidate.definition == BattleContractManager.selected_contract
+			candidate.call("set_selected", candidate.definition == BattleContractManager.selected_contract)
 		return
 	for candidate in cards:
-		candidate.button_pressed = candidate == card
+		candidate.call("set_selected", candidate == card)
 	confirm_button.disabled = false
-	confirm_button.grab_focus()
 
 func _on_confirm_pressed() -> void:
 	if _locked or confirm_button.disabled:

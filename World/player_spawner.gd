@@ -28,6 +28,7 @@ var _current_cell: Cell
 var _highlight_active := false
 
 func _ready() -> void:
+	LoadingPerformance.begin_segment("player_spawner_ready")
 	PlayerData.player_weapon_list.clear()
 	PlayerData.detected_enemies.clear()
 	PlayerData.cloestest_enemy = null
@@ -44,6 +45,7 @@ func _ready() -> void:
 	call_deferred("_add_player_to_root", ins)
 	_setup_cell_monitor()
 	_connect_phase_signals()
+	LoadingPerformance.end_segment("player_spawner_ready")
 	
 func set_start_up_status():
 	var lvl_index = int(GlobalVariables.autosave_data["current_level"]) - 1
@@ -113,6 +115,7 @@ func _try_enter_prepare_state() -> void:
 	_refresh_cell_highlight()
 
 func _add_player_to_root(player_instance: Node) -> void:
+	LoadingPerformance.begin_segment("player_add_to_tree")
 	var root := get_tree().current_scene
 	if root:
 		root.add_child(player_instance)
@@ -120,6 +123,7 @@ func _add_player_to_root(player_instance: Node) -> void:
 		get_tree().root.add_child(player_instance)
 	grant_startup_feature_test_loadout(player_instance as Player)
 	TaskRewardManager.restore_snapshot_after_player_spawn()
+	LoadingPerformance.end_segment("player_add_to_tree")
 
 static func grant_startup_feature_test_loadout(player: Player, force_enabled: bool = false) -> void:
 	if (not force_enabled and not STARTUP_FEATURE_TEST_ENABLED) or player == null or not is_instance_valid(player):

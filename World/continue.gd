@@ -39,5 +39,6 @@ func _on_pressed() -> void:
 		text = original_text
 		disabled = false
 		return
+	LoadingPerformance.show_world_build_overlay()
 	LoadingPerformance.mark("world_scene_changed")
 	get_tree().change_scene_to_packed(load_result.get("scene") as PackedScene)

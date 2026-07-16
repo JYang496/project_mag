@@ -1,7 +1,7 @@
 [gd_scene load_steps=11 format=3 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Script" uid="uid://ytgqpjri2ckf" path="res://Board/Cells/cell_profile.gd" id="4_lo5ox"]
-[ext_resource type="PackedScene" uid="uid://cdpdxvviop3ok" path="res://UI/scenes/UI.tscn" id="9_h4135"]
+[ext_resource type="PackedScene" path="res://UI/scenes/UI.tscn" id="9_h4135"]
 [ext_resource type="PackedScene" uid="uid://dkelpi3n3ysnh" path="res://World/spawn/enemy_spawner.tscn" id="12_dyxss"]
 [ext_resource type="Script" uid="uid://dabf8pyg4rbvt" path="res://World/board_cell_generator.gd" id="13_mj5tj"]
 [ext_resource type="Script" uid="uid://dxdn6jvfdd656" path="res://World/player_spawner.gd" id="14_26uyv"]

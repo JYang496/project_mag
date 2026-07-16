@@ -20,11 +20,14 @@ func bootstrap_core() -> void:
 	_core_ready = true
 	if owner_ui == null:
 		return
+	LoadingPerformance.begin_segment("ui_bootstrap_hud")
 	owner_ui._ensure_hud_presenter_instance()
 	owner_ui.heat_label = owner_ui.hud_presenter.ensure_heat_label(owner_ui.character_root)
 	owner_ui.ammo_label = owner_ui.hud_presenter.ensure_ammo_label(owner_ui.hp_label_label)
 	owner_ui.resource_label = owner_ui.hud_presenter.ensure_resource_label_under_hp(owner_ui.resource_label, owner_ui.hp_label_label)
 	owner_ui.weapon_state_label = owner_ui.hud_presenter.ensure_weapon_state_label(owner_ui.character_root)
+	LoadingPerformance.end_segment("ui_bootstrap_hud")
+	LoadingPerformance.begin_segment("ui_bootstrap_controllers")
 	owner_ui._init_weapon_passive_presenter()
 	owner_ui._init_equipment_pickup_flow_controller()
 	owner_ui._init_weapon_branch_selection_controller()
@@ -36,10 +39,12 @@ func bootstrap_core() -> void:
 	owner_ui._init_ui_dirty_signal_controller()
 	owner_ui._ensure_spread_cursor_overlay()
 	owner_ui._init_battle_cursor_presenter()
-	owner_ui._create_game_over_layout()
+	LoadingPerformance.end_segment("ui_bootstrap_controllers")
+	LoadingPerformance.begin_segment("ui_bootstrap_aux_views")
 	owner_ui._create_controls_hint_panel()
+	LoadingPerformance.end_segment("ui_bootstrap_aux_views")
+	LoadingPerformance.begin_segment("ui_bootstrap_finalize")
 	owner_ui._refresh_localized_static_text()
-	owner_ui._create_quest_hint()
 	owner_ui._connect_ui_dirty_signals()
 	owner_ui._connect_viewport_signals()
 	owner_ui._apply_responsive_layout()
@@ -48,6 +53,7 @@ func bootstrap_core() -> void:
 	owner_ui._update_cursor_presentation()
 	owner_ui._bind_weapon_selector()
 	owner_ui.refresh_border()
+	LoadingPerformance.end_segment("ui_bootstrap_finalize")
 
 func bootstrap_pause() -> void:
 	if _pause_ready or owner_ui == null:

@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 passive_id = "glacier_cold_snap_triggered"
 display_name = "Cold Snap"
-description = "Freeze trigger. A freeze hit spends the available Cold Snap charge; it recharges after 6 seconds or when reloading finishes."
+description = "Control trigger. Build 5 Chill stacks to freeze a target. Cold Snap shatters it and spreads 2 Chill to nearby enemies; it recharges after 6 seconds or when reloading finishes."
 condition_type = "event_reaction"
 refresh_type = "time_or_reload"
 ui_mode = "cooldown"

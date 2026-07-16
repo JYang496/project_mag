@@ -151,14 +151,15 @@ func refresh() -> void:
 				progress.visible = true
 				progress.value = clampf(1.0 - remaining / duration, 0.0, 1.0)
 			else:
-				var ratio := clampf(float(snapshot.get("progress", 0.0)), 0.0, 1.0)
-				value.text = LocalizationManager.tr_format("battle_contract.hud.extraction.active", {"percent": int(round(ratio * 100.0)), "count": snapshot.get("enemy_count", 0)}, "Extraction {percent}% · Enemies {count}")
-				if not bool(snapshot.get("player_inside", false)):
-					detail.text = LocalizationManager.tr_key("battle_contract.hud.extraction.enter", "Move to the extraction zone")
-				elif int(snapshot.get("enemy_count", 0)) > 0:
-					detail.text = LocalizationManager.tr_key("battle_contract.hud.extraction.contested", "Enemies are slowing extraction")
+				var escape_remaining := float(snapshot.get("escape_remaining_sec", 0.0))
+				var escape_duration := maxf(float(snapshot.get("escape_duration_sec", 1.0)), 1.0)
+				var ratio := clampf(escape_remaining / escape_duration, 0.0, 1.0)
+				var overtime := float(snapshot.get("overtime_sec", 0.0))
+				if overtime > 0.0:
+					value.text = LocalizationManager.tr_format("battle_contract.hud.extraction.overtime", {"seconds": floori(overtime)}, "Extraction overdue by {seconds}s")
 				else:
-					detail.text = LocalizationManager.tr_key("battle_contract.hud.extraction.charging", "Hold position for extraction")
+					value.text = LocalizationManager.tr_format("battle_contract.hud.extraction.escape", {"seconds": ceili(escape_remaining)}, "Reach extraction within {seconds}s")
+				detail.text = LocalizationManager.tr_key("battle_contract.hud.extraction.enter", "Move to the extraction zone")
 				progress.visible = true
 				progress.value = ratio
 			_set_progress_color(Color("63a8e8"))

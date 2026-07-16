@@ -10,14 +10,15 @@ var port
 var phase: StringName = HOLDING
 var duration_sec := 32.0
 var remaining_sec := 32.0
-var charge_duration_sec := 6.0
-var progress := 0.0
+var escape_duration_sec := 18.0
+var escape_remaining_sec := 18.0
+var overtime_sec := 0.0
+var pursuit_wave_min := 6
+var pursuit_wave_max := 10
 var player_inside := false
-var enemy_count := 0
 var elapsed_sec := 0.0
 var extraction_started_sec := 0.0
 var time_to_reach_zone_sec := 0.0
-var _reached_zone := false
 var _completion_guard := false
 
 func start(combat_port, parameters: Dictionary) -> void:
@@ -27,7 +28,11 @@ func start(combat_port, parameters: Dictionary) -> void:
 	var level := int(port.get_level_index())
 	duration_sec = float(parameters.get("survival_duration_early_sec", 32.0)) if level < 4 else (float(parameters.get("survival_duration_mid_sec", 40.0)) if level < 8 else float(parameters.get("survival_duration_late_sec", 48.0)))
 	remaining_sec = duration_sec
-	charge_duration_sec = maxf(float(parameters.get("extraction_charge_sec", 6.0)), 1.0)
+	escape_duration_sec = float(parameters.get("escape_duration_early_sec", 18.0)) if level < 4 else (float(parameters.get("escape_duration_mid_sec", 16.0)) if level < 8 else float(parameters.get("escape_duration_late_sec", 14.0)))
+	escape_duration_sec = maxf(escape_duration_sec, 1.0)
+	escape_remaining_sec = escape_duration_sec
+	pursuit_wave_min = maxi(int(parameters.get("pursuit_wave_min", 6)), 0)
+	pursuit_wave_max = maxi(int(parameters.get("pursuit_wave_max", 10)), pursuit_wave_min)
 	# Spawn pressure must be released across the holding phase. External victory
 	# control already allows the extraction phase to continue past this timer.
 	port.request_configure_duration(duration_sec)
@@ -59,32 +64,31 @@ func _on_tick(snapshot: Dictionary) -> void:
 		if remaining_sec <= 0.0:
 			_open_extraction()
 	else:
-		if not _reached_zone:
-			time_to_reach_zone_sec = elapsed_sec - extraction_started_sec
-		if player_inside:
-			_reached_zone = true
-			var speed := maxf(1.0 - 0.15 * float(enemy_count), 0.35)
-			progress = minf(progress + delta * speed / charge_duration_sec, 1.0)
-			port.request_update_beacon(1, progress)
-		if progress >= 1.0:
-			_complete()
+		time_to_reach_zone_sec = elapsed_sec - extraction_started_sec
+		escape_remaining_sec = maxf(escape_remaining_sec - delta, 0.0)
+		overtime_sec = maxf(time_to_reach_zone_sec - escape_duration_sec, 0.0)
 	_emit_snapshot()
 
 func _open_extraction() -> void:
 	phase = EXTRACTING
 	extraction_started_sec = elapsed_sec
-	port.request_configure_threat_multiplier(1.45)
+	port.request_configure_continuous_spawning(false)
+	port.request_stop_spawning()
+	port.request_configure_threat_multiplier(1.0)
 	var points: PackedVector2Array = port.get_battlefield_capabilities().get("extraction_points", PackedVector2Array())
 	if points.is_empty():
 		push_warning("Extraction contract has no legal extraction point.")
 		return
 	port.request_spawn_objective(1, points[0])
+	port.request_update_beacon(1, 1.0)
+	port.request_spawn_pursuit_wave(pursuit_wave_min, pursuit_wave_max)
 
 func _on_presence_changed(snapshot: Dictionary) -> void:
 	if phase != EXTRACTING or int(snapshot.get("beacon_id", 0)) != 1:
 		return
 	player_inside = bool(snapshot.get("player_inside", false))
-	enemy_count = int(snapshot.get("enemy_count", 0))
+	if player_inside:
+		_complete()
 
 func _complete() -> void:
 	if _completion_guard:
@@ -93,7 +97,8 @@ func _complete() -> void:
 	port.request_stop_spawning()
 	port.request_evacuate_enemies({"grant_kill_rewards": false})
 	var result := _snapshot()
-	result["performance_ratio"] = clampf(1.0 - time_to_reach_zone_sec / 20.0, 0.0, 1.0)
+	var arrival_ratio := clampf(time_to_reach_zone_sec / escape_duration_sec, 0.0, 1.0)
+	result["performance_ratio"] = lerpf(1.0, 0.6, arrival_ratio)
 	result["reward_type"] = &"gold"
 	completed.emit(result)
 
@@ -103,9 +108,10 @@ func _snapshot() -> Dictionary:
 		"phase": phase,
 		"remaining_sec": remaining_sec,
 		"duration_sec": duration_sec,
-		"progress": progress,
+		"escape_remaining_sec": escape_remaining_sec,
+		"escape_duration_sec": escape_duration_sec,
+		"overtime_sec": overtime_sec,
 		"player_inside": player_inside,
-		"enemy_count": enemy_count,
 		"elapsed_sec": elapsed_sec,
 		"time_to_reach_zone_sec": time_to_reach_zone_sec,
 	}

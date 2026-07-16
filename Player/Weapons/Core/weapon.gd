@@ -1,6 +1,14 @@
 extends Node2D
 class_name Weapon
 
+enum RangeMode {
+	UNSPECIFIED,
+	FIXED_DISTANCE,
+	FIXED_LIFETIME,
+	BEAM_LENGTH,
+	ATTACHED_RADIUS,
+}
+
 const WeaponFireFeedbackPlayerScript := preload("res://Player/Weapons/Feedback/weapon_fire_feedback_player.gd")
 
 #region Runtime State
@@ -45,6 +53,9 @@ var heat_cool_rate: float = 20.0
 @export var weapon_active_hit_window_timeout_sec: float = 6.0
 @export var weapon_active_hit_window_bonus_multiplier: float = 1.35
 @export var fire_feedback_profile: Resource
+@export var range_mode: RangeMode = RangeMode.UNSPECIFIED
+@export var configured_attack_range: float = 0.0
+@export var projectile_lifetime_sec: float = 0.0
 @export_flags("projectile", "melee_contact", "beam", "area") var delivery_type_flags: int = 0
 @export_flags("summon", "trap", "support", "movement") var weapon_capability_flags: int = 0
 var runtime_delivery_additions: Dictionary = {}
@@ -351,7 +362,34 @@ func find_closest_enemy(origin: Vector2, radius: float = INF) -> Node2D:
 func get_auto_fire_target_origin() -> Vector2:
 	return global_position
 
+func get_effective_attack_range() -> float:
+	match range_mode:
+		RangeMode.FIXED_DISTANCE, RangeMode.BEAM_LENGTH, RangeMode.ATTACHED_RADIUS:
+			return maxf(configured_attack_range, 0.0)
+		RangeMode.FIXED_LIFETIME:
+			return maxf(_get_range_reference_speed() * projectile_lifetime_sec, 0.0)
+	var legacy_attack_range: Variant = get("attack_range")
+	if legacy_attack_range != null:
+		return maxf(float(legacy_attack_range), 0.0)
+	return 0.0
+
+func get_effective_projectile_lifetime() -> float:
+	if range_mode == RangeMode.FIXED_DISTANCE:
+		return maxf(configured_attack_range / maxf(_get_range_reference_speed(), 1.0), 0.01)
+	if range_mode == RangeMode.FIXED_LIFETIME:
+		return maxf(projectile_lifetime_sec, 0.01)
+	return maxf(projectile_lifetime_sec, 0.0)
+
+func _get_range_reference_speed() -> float:
+	var speed_value: Variant = get("speed")
+	if speed_value != null:
+		return maxf(float(speed_value), 0.0)
+	return 0.0
+
 func get_auto_fire_target_range() -> float:
+	var effective_range := get_effective_attack_range()
+	if effective_range > 0.0:
+		return effective_range
 	if has_method("_get_effective_attack_range"):
 		return maxf(float(call("_get_effective_attack_range")), 1.0)
 	var attack_range_value: Variant = get("attack_range")

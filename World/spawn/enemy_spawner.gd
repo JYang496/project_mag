@@ -921,6 +921,55 @@ func release_contract_reinforcement_budget(multiplier: float = 1.0) -> void:
 	_spawn_budget_runtime.available_hp_budget += reinforcement_budget
 	_sync_spawn_budget_runtime_state()
 
+func spawn_contract_pursuit_wave(min_count: int, max_count: int) -> int:
+	var safe_min := maxi(min_count, 0)
+	var safe_max := maxi(max_count, safe_min)
+	var target_count := _rng.randi_range(safe_min, safe_max)
+	var spawned_count := 0
+	var ranged_count := 0
+	var count_by_scene: Dictionary = {}
+	var profile := _get_spawn_combat_profile()
+	while spawned_count < target_count:
+		if _get_total_runtime_alive_count() >= profile.default_total_alive_cap:
+			break
+		var candidates: Array[Dictionary] = []
+		var total_weight := 0.0
+		for state in _runtime_spawn_states:
+			var entry := _get_state_entry(state)
+			if entry == null or entry.enemy == null or PhaseManager.battle_time < entry.start_sec:
+				continue
+			if int(state.get("alive", 0)) >= _get_state_alive_cap(state):
+				continue
+			var scene_path := _get_spawn_scene_path(state)
+			if int(count_by_scene.get(scene_path, 0)) >= _get_same_type_batch_limit(scene_path, profile):
+				continue
+			if _is_spawn_ranged(state):
+				if ranged_count >= int(profile.get("max_ranged_per_batch")):
+					continue
+				var ranged_alive_cap := int(profile.get("max_ranged_alive_total"))
+				if ranged_alive_cap > 0 and _get_total_runtime_ranged_alive_count() >= ranged_alive_cap:
+					continue
+			var weight := maxf(float(entry.weight), 1.0)
+			candidates.append({"state": state, "weight": weight})
+			total_weight += weight
+		if candidates.is_empty() or total_weight <= 0.0:
+			break
+		var roll := _rng.randf_range(0.0, total_weight)
+		var selected: Dictionary = candidates.back()["state"]
+		for candidate in candidates:
+			roll -= float(candidate["weight"])
+			if roll <= 0.0:
+				selected = candidate["state"]
+				break
+		if _spawn_from_state(selected, 1) <= 0:
+			break
+		var selected_path := _get_spawn_scene_path(selected)
+		count_by_scene[selected_path] = int(count_by_scene.get(selected_path, 0)) + 1
+		if _is_spawn_ranged(selected):
+			ranged_count += 1
+		spawned_count += 1
+	return spawned_count
+
 func configure_contract_external_victory(enabled: bool) -> void:
 	_contract_external_victory = enabled
 

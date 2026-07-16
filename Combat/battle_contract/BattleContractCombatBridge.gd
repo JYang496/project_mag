@@ -6,6 +6,8 @@ var _next_enemy_id := 1
 var _enemy_by_id: Dictionary = {}
 var _requested_config: Dictionary = {}
 var _enemy_motion: Dictionary = {}
+var _monitor_enemy_stalls := false
+var _stall_sample_elapsed_sec := 0.0
 var _beacons: Dictionary = {}
 var _beacon_beam: Line2D
 const BEACON_SCENE := preload("res://World/battle_contract/tactical_beacon.tscn")
@@ -33,6 +35,8 @@ func unbind() -> void:
 	_spawner = null
 	_enemy_by_id.clear()
 	_enemy_motion.clear()
+	_monitor_enemy_stalls = false
+	_stall_sample_elapsed_sec = 0.0
 	request_remove_beacons()
 
 func get_level_index() -> int:
@@ -109,6 +113,11 @@ func request_release_reinforcement_budget(multiplier: float = 1.0) -> void:
 	if _spawner != null:
 		_spawner.release_contract_reinforcement_budget(multiplier)
 
+func request_spawn_pursuit_wave(min_count: int, max_count: int) -> int:
+	if _spawner == null:
+		return 0
+	return _spawner.spawn_contract_pursuit_wave(min_count, max_count)
+
 func request_configure_contract_economy(kill_gold_multiplier: float) -> void:
 	if _spawner != null:
 		_spawner.configure_contract_kill_gold_multiplier(kill_gold_multiplier)
@@ -134,6 +143,12 @@ func request_relocate_enemies(options: Dictionary = {}) -> void:
 	var enemy := _enemy_by_id.get(enemy_id) as Node2D
 	if enemy != null and is_instance_valid(enemy):
 		enemy.global_position = _spawner.get_random_position()
+
+func request_monitor_enemy_stalls(enabled: bool) -> void:
+	_monitor_enemy_stalls = enabled
+	_stall_sample_elapsed_sec = 0.0
+	if not enabled:
+		_enemy_motion.clear()
 
 func request_finish_battle(_result: Dictionary = {}) -> void:
 	if _spawner != null:
@@ -211,7 +226,8 @@ func _on_enemy_spawned(enemy: Node) -> void:
 	var enemy_id := _next_enemy_id
 	_next_enemy_id += 1
 	_enemy_by_id[enemy_id] = enemy
-	_enemy_motion[enemy_id] = {"position": enemy.global_position, "stalled_sec": 0.0}
+	if _monitor_enemy_stalls:
+		_enemy_motion[enemy_id] = {"position": enemy.global_position, "stalled_sec": 0.0}
 	enemy.set_meta("_battle_contract_enemy_id", enemy_id)
 	enemy_spawned.emit(_enemy_snapshot(enemy, enemy_id))
 
@@ -227,18 +243,28 @@ func _on_spawn_budget_stopped() -> void:
 	spawn_budget_exhausted.emit(get_spawn_budget_snapshot())
 
 func _on_combat_frame(delta_sec: float) -> void:
-	var states: Array[Dictionary] = []
+	battle_tick.emit({"delta_sec": delta_sec, "active_enemy_count": get_active_enemy_count()})
+	if not _monitor_enemy_stalls:
+		return
+	_stall_sample_elapsed_sec += delta_sec
+	if _stall_sample_elapsed_sec < 0.25:
+		return
+	var sample_delta := _stall_sample_elapsed_sec
+	_stall_sample_elapsed_sec = 0.0
 	for enemy_id in _enemy_by_id:
 		var enemy := _enemy_by_id[enemy_id] as Node2D
 		if enemy == null or not is_instance_valid(enemy):
 			continue
-		var motion: Dictionary = _enemy_motion.get(enemy_id, {})
+		var motion: Dictionary = _enemy_motion.get(enemy_id, {"position": enemy.global_position, "stalled_sec": 0.0})
 		var previous: Vector2 = motion.get("position", enemy.global_position)
 		var stalled := float(motion.get("stalled_sec", 0.0))
-		stalled = stalled + delta_sec if previous.distance_to(enemy.global_position) < 2.0 else 0.0
-		_enemy_motion[enemy_id] = {"position": enemy.global_position, "stalled_sec": stalled}
-		states.append({"enemy_id": enemy_id, "stalled_sec": stalled})
-	battle_tick.emit({"delta_sec": delta_sec, "active_enemy_count": get_active_enemy_count(), "enemy_states": states})
+		stalled = stalled + sample_delta if previous.distance_squared_to(enemy.global_position) < 4.0 else 0.0
+		if stalled >= 8.0:
+			enemy.global_position = _spawner.get_random_position()
+			stalled = 0.0
+		motion["position"] = enemy.global_position
+		motion["stalled_sec"] = stalled
+		_enemy_motion[enemy_id] = motion
 
 func _on_beacon_presence_changed(beacon_id: int, player_inside: bool, enemy_count: int) -> void:
 	beacon_presence_changed.emit({"beacon_id": beacon_id, "player_inside": player_inside, "enemy_count": enemy_count})

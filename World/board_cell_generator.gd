@@ -68,12 +68,14 @@ func _ready() -> void:
 	call_deferred("_refresh_cell_task_markers")
 
 func _spawn_cells() -> void:
+	LoadingPerformance.begin_segment("board_spawn_cells")
 	var center_index := Vector2i(floori(float(grid_size.x) / 2.0), floori(float(grid_size.y) / 2.0))
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
 			var cell := cell_scene.instantiate() as Cell
 			if not cell:
 				push_error("cell_scene must instantiate a Cell.")
+				LoadingPerformance.end_segment("board_spawn_cells")
 				return
 			var cell_index := _cells.size()
 			if cell_index == 0:
@@ -92,6 +94,7 @@ func _spawn_cells() -> void:
 	_build_navigation_blockers()
 	if _center_cell:
 		_attach_spawner(_center_cell)
+	LoadingPerformance.end_segment("board_spawn_cells")
 
 func _attach_spawner(target_cell: Cell) -> void:
 	if not _player_spawner:

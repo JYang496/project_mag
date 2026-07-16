@@ -19,6 +19,11 @@ const VOLLEY_PROJECTILE_META := "shotgun_base_volley_projectile"
 var _shotgun_volley_sequence: int = 0
 var _shotgun_volley_hit_counts: Dictionary = {}
 
+func _init() -> void:
+	super._init()
+	range_mode = RangeMode.FIXED_LIFETIME
+	projectile_lifetime_sec = 0.3
+
 var weapon_data = {
 	"1": {"damage": "14", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "2", "ammo": "5", "bullet_count": "4"},
 	"2": {"damage": "16", "speed": "1000", "projectile_hits": "1", "fire_interval_sec": "2", "ammo": "5", "bullet_count": "4"},
@@ -92,7 +97,7 @@ func _on_shoot():
 		spawn_projectile.projectile_texture = projectile_texture_resource
 		spawn_projectile.size = size
 		spawn_projectile.hp = projectile_hits
-		spawn_projectile.expire_time = 0.3
+		spawn_projectile.expire_time = get_effective_projectile_lifetime()
 		spawn_projectile.set_meta(VOLLEY_ID_META, volley_id)
 		spawn_projectile.set_meta(VOLLEY_PROJECTILE_META, true)
 		apply_effects_on_projectile(spawn_projectile)

@@ -22,6 +22,7 @@ var _configured := false
 
 func start(combat_port, _parameters: Dictionary) -> void:
 	port = combat_port
+	port.request_monitor_enemy_stalls(true)
 	port.request_external_victory_control(true)
 	port.request_prefer_elite_final_batch(true)
 	total_batches = clampi(3 + port.get_level_index() / 4, 3, 5)
@@ -34,6 +35,7 @@ func start(combat_port, _parameters: Dictionary) -> void:
 func stop() -> void:
 	_disconnect_all()
 	if port != null:
+		port.request_monitor_enemy_stalls(false)
 		port.request_external_victory_control(false)
 		port.request_prefer_elite_final_batch(false)
 	port = null
@@ -70,9 +72,6 @@ func _on_tick(snapshot: Dictionary) -> void:
 			_configured = true
 	elapsed_sec += delta
 	_batch_wait_sec += delta
-	for enemy_state in snapshot.get("enemy_states", []):
-		if float(enemy_state.get("stalled_sec", 0.0)) >= 8.0:
-			port.request_relocate_enemies({"enemy_id": int(enemy_state.get("enemy_id", 0))})
 	_try_advance_batch()
 	_emit_snapshot()
 

@@ -247,6 +247,17 @@ func read_mecha_data(id: String) -> MechaDefinition:
 		return null
 	return data as MechaDefinition
 
+func prewarm_mecha_default_weapon(id: String) -> bool:
+	var mecha := read_mecha_data(id)
+	if mecha == null or mecha.default_weapon_id.is_empty():
+		return false
+	var weapon := read_weapon_data(mecha.default_weapon_id) as WeaponDefinition
+	if weapon == null or weapon.request_scene() != OK:
+		return false
+	# Prewarm means the default weapon must be fully loaded and cached before
+	# callers begin another threaded scene graph load (not merely requested).
+	return weapon.get_scene() != null
+
 func read_weapon_data(id: String):
 	if GlobalVariables.weapon_list.is_empty():
 		load_weapon_data()

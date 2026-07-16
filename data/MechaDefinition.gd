@@ -5,6 +5,7 @@ class_name MechaDefinition
 @export var mecha_id := ""
 @export var display_name := ""
 @export_file("*.tscn") var scene_path := ""
+@export var default_weapon_id := ""
 @export var max_level := 10
 @export var next_level_exp: PackedInt32Array = []
 @export var player_max_hp: PackedInt32Array = []

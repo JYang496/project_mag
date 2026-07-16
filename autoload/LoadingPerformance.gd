@@ -12,8 +12,29 @@ var _run_id := 0
 var _flow := ""
 var _current_phase := "idle"
 var _marks: Dictionary = {}
+var _segments: Dictionary = {}
 var _long_frames: Array[Dictionary] = []
 var _monitor_frames := false
+var _world_build_overlay: CanvasLayer
+
+func _ready() -> void:
+	_world_build_overlay = CanvasLayer.new()
+	_world_build_overlay.name = "WorldBuildOverlay"
+	_world_build_overlay.layer = 1000
+	_world_build_overlay.visible = false
+	add_child(_world_build_overlay)
+	var background := ColorRect.new()
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.color = Color(0.015, 0.02, 0.03, 1.0)
+	background.mouse_filter = Control.MOUSE_FILTER_STOP
+	_world_build_overlay.add_child(background)
+	var label := Label.new()
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.text = "Loading..."
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 28)
+	background.add_child(label)
 
 func _process(delta: float) -> void:
 	if not enabled or not _monitor_frames:
@@ -37,26 +58,59 @@ func begin_flow(flow: String) -> void:
 	_monitor_frames = true
 
 func begin_menu_session() -> void:
+	hide_world_build_overlay()
 	_run_id += 1
 	_flow = "menu"
 	_current_phase = "menu_startup"
 	_marks.clear()
+	_segments.clear()
 	_long_frames.clear()
 	_monitor_frames = false
 	mark("start_menu_ready")
 
 func mark(label: String) -> void:
+	if label == "world_ready":
+		hide_world_build_overlay()
 	if not enabled or _marks.has(label):
 		return
 	_marks[label] = Time.get_ticks_usec()
 	_current_phase = _phase_after_mark(label)
 	print("[LoadingPerformance] run=%d flow=%s mark=%s" % [_run_id, _flow, label])
 
+func show_world_build_overlay() -> void:
+	if _world_build_overlay != null:
+		_world_build_overlay.visible = true
+
+func hide_world_build_overlay() -> void:
+	if _world_build_overlay != null:
+		_world_build_overlay.visible = false
+
+func begin_segment(label: String) -> void:
+	if not enabled:
+		return
+	_segments[label] = Time.get_ticks_usec()
+	print("[LoadingPerformance] run=%d flow=%s segment=%s event=started" % [_run_id, _flow, label])
+
+func end_segment(label: String) -> void:
+	if not enabled:
+		return
+	if not _segments.has(label):
+		push_warning("LoadingPerformance segment ended without a start: %s" % label)
+		return
+	var duration_us := Time.get_ticks_usec() - int(_segments[label])
+	_segments.erase(label)
+	print("[LoadingPerformance] run=%d flow=%s segment=%s event=finished duration_us=%d duration_ms=%.3f" % [
+		_run_id, _flow, label, duration_us, duration_us / 1000.0,
+	])
+
 func finish_flow() -> void:
+	hide_world_build_overlay()
 	if not enabled:
 		return
 	_monitor_frames = false
 	print_summary()
+	if OS.get_cmdline_user_args().has("--loading-benchmark"):
+		get_tree().quit()
 
 func print_summary() -> void:
 	if not enabled:

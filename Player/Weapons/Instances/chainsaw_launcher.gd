@@ -17,6 +17,11 @@ var _last_hit_projectile: Projectile
 @export var close_vulnerability_multiplier: float = 1.15
 @export var close_vulnerability_duration_sec: float = 6.0
 
+func _init() -> void:
+	super._init()
+	range_mode = RangeMode.FIXED_LIFETIME
+	projectile_lifetime_sec = 2.5
+
 var weapon_data = {
 	"1": {"damage": "3", "speed": "200", "projectile_hits": "15", "dot_cd": "0.1", "fire_interval_sec": "1", "ammo": "12"},
 	"2": {"damage": "4", "speed": "200", "projectile_hits": "15", "dot_cd": "0.1", "fire_interval_sec": "1", "ammo": "12"},
@@ -71,6 +76,7 @@ func _on_shoot():
 	spawn_projectile.hitbox_type = "dot"
 	spawn_projectile.dot_cd = dot_cd
 	spawn_projectile.wall_collision_mask = chainsaw_wall_collision_mask
+	spawn_projectile.expire_time = get_effective_projectile_lifetime()
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 	branch_runtime.notify_branch_weapon_shot(projectile_direction)

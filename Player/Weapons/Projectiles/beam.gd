@@ -19,6 +19,9 @@ var oc_mode : bool = false
 var beam_width_multiplier: float = 1.0
 var beam_tag: String = "main"
 var _hybrid_registered: bool = false
+@export_range(0.01, 0.12, 0.005) var damage_tick_interval_sec: float = 0.03
+var _elapsed_sec: float = 0.0
+var _last_damage_tick_by_target: Dictionary = {}
 
 func configure_laser_beam(profile: Dictionary) -> void:
 	beam_width_multiplier = maxf(float(profile.get("width_multiplier", 1.0)), 0.05)
@@ -48,6 +51,7 @@ func _register_hybrid_segment() -> void:
 		line.visible = false
 
 func _physics_process(delta: float) -> void:
+	_elapsed_sec += maxf(delta, 0.0)
 	frame_counter += 1
 	if frame_counter > frames_until_show:
 		line.set_meta("hybrid_ground_visible", true)
@@ -62,6 +66,14 @@ func _physics_process(delta: float) -> void:
 		line.points = [beam_start_position, to_local(collision_point)]
 		if collider is HurtBox:
 			var target: Node = collider.get_damage_target() if collider.has_method("get_damage_target") else collider.get_owner()
+			if target == null or not is_instance_valid(target):
+				return
+			var target_id := target.get_instance_id()
+			var tick_interval := maxf(damage_tick_interval_sec, 0.01)
+			var current_tick := int(floor(_elapsed_sec / tick_interval))
+			if int(_last_damage_tick_by_target.get(target_id, -1)) == current_tick:
+				return
+			_last_damage_tick_by_target[target_id] = current_tick
 			var damage_data := DamageManager.build_damage_data(
 				self,
 				int(damage),

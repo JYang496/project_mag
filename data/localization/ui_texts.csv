@@ -9,30 +9,43 @@ battle_contract.ui.reward_slot.unavailable,No reward protocol was discovered thi
 battle_contract.ui.reward_slot.chance,25% chance each round,每轮有 25% 概率出现
 battle_contract.ui.reward_slot.exclusive,Exclusive slot: Reward Protocol,专属槽位：仅限奖励协议
 battle_contract.ui.reward_slot.next,A new chance is rolled next round,下一轮将重新判定
+battle_contract.ui.reward_slot.summary,Not available this round (25% chance each round),本轮未出现（每轮 25% 概率）
 battle_contract.elimination.name,Elimination Protocol,歼灭协议
 battle_contract.elimination.description,Eliminate every enemy in the encounter.,消灭本场全部敌人。
 battle_contract.elimination.pace,Finite enemy budget · 3–5 batches,有限敌人预算 · 3–5 批次
 battle_contract.elimination.reward,Gold: primarily earned by defeating all enemies; early clears add a small bonus.,金币：主要通过消灭全部敌人获得；提前清场提供少量额外奖励。
+battle_contract.card.elimination.summary,Eliminate all enemies · 3–5 batches,消灭全部敌人 · 3–5 批次
+battle_contract.card.elimination.reward_hint,Early clears grant bonus gold.,提前清场可获得额外金币。
 battle_contract.survival.name,Survival Protocol,坚守协议
 battle_contract.survival.description,Survive until the combat timer expires.,在持续敌潮中坚持至倒计时结束。
 battle_contract.survival.pace,Continuous pressure · approximately 45–65 seconds,持续压力 · 约 45–65 秒
 battle_contract.survival.reward,Gold: primarily awarded for surviving the full duration; enemy drops are limited.,金币：主要在坚持完整时限后结算；敌人掉落存在上限。
+battle_contract.card.survival.summary,Survive continuous waves for approximately 45–65 seconds.,在持续敌潮中坚守约 45–65 秒。
+battle_contract.card.survival.reward_hint,Enemy drops are limited.,敌人掉落存在上限。
 battle_contract.operation.name,Operation Protocol,行动协议
 battle_contract.operation.description,Activate two tactical beacons in sequence.,依次激活两个战术信标。
 battle_contract.operation.pace,Mobile objective · two 10–14 second captures,移动目标 · 两次 10–14 秒充能
 battle_contract.operation.reward,Gold: primarily awarded for securing both beacons; efficient captures add a bonus.,金币：主要通过占领两个信标获得；高效占领提供额外奖励。
+battle_contract.card.operation.summary,Secure 2 beacons in sequence · 10–14 seconds each,依次占领 2 个信标 · 每次约 10–14 秒
+battle_contract.card.operation.reward_hint,Fast captures grant bonus gold.,快速占领可获得额外金币。
 battle_contract.containment.name,Containment Protocol,封锁协议
 battle_contract.containment.description,Seal three unstable rifts before their pressure overwhelms the arena.,封锁三个不稳定裂隙，阻止其压力淹没战场。
 battle_contract.containment.pace,Multi-point objective · escalating rift surges,多点目标 · 裂隙增援逐步升级
 battle_contract.containment.reward,Gold: primarily awarded for sealing every rift; limiting surges adds a bonus.,金币：主要通过封锁全部裂隙获得；减少裂隙增援提供额外奖励。
+battle_contract.card.containment.summary,Seal 3 rifts as enemy surges escalate.,封锁 3 个裂隙 · 敌人增援逐步升级
+battle_contract.card.containment.reward_hint,Limiting surges grants bonus gold.,减少裂隙增援可获得额外金币。
 battle_contract.extraction.name,Extraction Protocol,撤离协议
-battle_contract.extraction.description,Survive until extraction opens then secure the extraction zone.,坚持至撤离点开放，随后守住撤离区域。
+battle_contract.extraction.description,Survive until extraction opens then break through to the exit before time runs out.,坚持至撤离点开放，随后在时限内突围至出口。
 battle_contract.extraction.pace,Two-stage combat · survive then relocate,两阶段战斗 · 生存后转移
 battle_contract.extraction.reward,Gold: primarily awarded for completing extraction; reaching the zone quickly adds a bonus.,金币：主要通过完成撤离获得；快速抵达撤离区提供额外奖励。
+battle_contract.card.extraction.summary,Survive first, then break through to extraction before time runs out.,先坚持生存，再在时限内突围至撤离点。
+battle_contract.card.extraction.reward_hint,Reaching the zone quickly grants bonus gold.,快速抵达撤离区可获得额外金币。
 battle_contract.reward.name,Reward Protocol,奖励协议
 battle_contract.reward.description,Hunt harmless moving reward targets before time expires.,在倒计时结束前猎杀不会攻击的移动奖励目标。
 battle_contract.reward.pace,Bonus stage · double HP budget · 45 seconds,奖励关 · 双倍生命值预算 · 45 秒
 battle_contract.reward.reward,Double expected combat rewards.,预期战斗奖励翻倍。
+battle_contract.card.reward.summary,Hunt harmless moving targets within 45 seconds.,在 45 秒内猎杀不会攻击的移动目标。
+battle_contract.card.reward.reward_hint,Expected combat rewards are doubled.,预期战斗奖励翻倍。
 battle_contract.hud.elimination,Remaining {remaining} · Wave {current}/{total},剩余敌人 {remaining} · 波次 {current}/{total}
 battle_contract.hud.survival,Time {seconds}s · Threat {threat},剩余 {seconds} 秒 · 威胁等级 {threat}
 battle_contract.hud.operation,Beacon {current}/{total} · {percent}%,信标 {current}/{total} · {percent}%
@@ -50,6 +63,8 @@ battle_contract.hud.containment.contested,Contested by {count} enemies · sealin
 battle_contract.hud.containment.sealing,Sealing rift,正在封锁裂隙
 battle_contract.hud.extraction.holding,Extraction opens in {seconds}s,撤离点将在 {seconds} 秒后开放
 battle_contract.hud.extraction.hold,Survive until the extraction signal is established,坚持至撤离信号建立
+battle_contract.hud.extraction.escape,Reach extraction within {seconds}s,在 {seconds} 秒内抵达撤离点
+battle_contract.hud.extraction.overtime,Extraction overdue by {seconds}s,撤离已超时 {seconds} 秒
 battle_contract.hud.extraction.active,Extraction {percent}% · Enemies {count},撤离进度 {percent}% · 区域内敌人 {count}
 battle_contract.hud.extraction.enter,Move to the extraction zone,前往撤离区域
 battle_contract.hud.extraction.contested,Enemies are slowing extraction,敌人正在减缓撤离进度

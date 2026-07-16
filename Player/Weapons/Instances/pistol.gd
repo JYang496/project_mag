@@ -14,6 +14,11 @@ var ITEM_NAME = "Auto Pistol"
 var _pierce_mark_cycle_elapsed_sec: float = 0.0
 var _pierce_mark_window_remaining_sec: float = 0.0
 
+func _init() -> void:
+	super._init()
+	range_mode = RangeMode.FIXED_DISTANCE
+	configured_attack_range = 800.0
+
 
 var weapon_data = {
 	"1": {"damage": "4", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "45"},
@@ -153,6 +158,7 @@ func _on_shoot() -> void:
 	spawn_projectile.global_position = global_position
 	spawn_projectile.size = size
 	spawn_projectile.projectile_texture = projectile_texture_resource
+	spawn_projectile.expire_time = get_effective_projectile_lifetime()
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 
@@ -188,7 +194,8 @@ func _resolve_auto_aim_direction() -> Vector2:
 	return fallback
 
 func _find_closest_enemy() -> Node2D:
-	return find_closest_enemy(global_position, maxf(auto_fire_range, 1.0))
+	var target_range := minf(maxf(auto_fire_range, 1.0), maxf(get_effective_attack_range(), 1.0))
+	return find_closest_enemy(global_position, target_range)
 
 func _update_weapon_rotation() -> void:
 	var direction := Vector2.ZERO

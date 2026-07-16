@@ -1,11 +1,11 @@
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_prepass_alpha;
 
-uniform vec4 zone_color : source_color = vec4(0.42, 1.0, 0.48, 1.0);
-uniform float hovered = 0.0;
-uniform float selected = 0.0;
-uniform float hold_progress : hint_range(0.0, 1.0) = 0.0;
-uniform float visibility_alpha : hint_range(0.0, 1.0) = 1.0;
+instance uniform vec4 zone_color : source_color = vec4(0.42, 1.0, 0.48, 1.0);
+instance uniform float hovered = 0.0;
+instance uniform float selected = 0.0;
+instance uniform float hold_progress : hint_range(0.0, 1.0) = 0.0;
+instance uniform float visibility_alpha : hint_range(0.0, 1.0) = 1.0;
 uniform float pulse_speed = 1.8;
 
 void fragment() {

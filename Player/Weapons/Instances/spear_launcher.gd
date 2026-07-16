@@ -1,5 +1,8 @@
 extends Ranger
 
+const SPEAR_RETURN_TIME_SEC := 1.0
+const SPEAR_RETURN_EXPIRY_MARGIN_SEC := 0.25
+
 const PASSIVE_ID := &"piercing_blade_dance"
 const CHARGE_GAINED_EVENT := &"piercing_blade_dance_charge_gained"
 const TRIGGERED_EVENT := &"piercing_blade_dance_triggered"
@@ -33,6 +36,11 @@ var ITEM_NAME = "Spear Launcher"
 
 var _piercing_blade_dance_charge: int = 0
 var _projectile_hit_state: Dictionary = {}
+
+func _init() -> void:
+	super._init()
+	range_mode = RangeMode.FIXED_DISTANCE
+	configured_attack_range = 800.0
 
 var weapon_data = {
 	"1": {"damage": "6", "speed": "900", "projectile_hits": "4", "fire_interval_sec": "0.6", "ammo": "30"},
@@ -99,7 +107,9 @@ func _spawn_spear_projectile(
 	spawn_projectile.projectile_texture = projectile_texture_resource
 	spawn_projectile.set_meta(RADIAL_PROJECTILE_META, is_radial_projectile)
 	projectile_direction = direction.normalized()
-	apply_return_on_timeout(spawn_projectile)
+	var outbound_time := get_effective_projectile_lifetime()
+	spawn_projectile.expire_time = outbound_time + SPEAR_RETURN_TIME_SEC + SPEAR_RETURN_EXPIRY_MARGIN_SEC
+	apply_return_on_timeout(spawn_projectile, outbound_time, SPEAR_RETURN_TIME_SEC)
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 	return spawn_projectile

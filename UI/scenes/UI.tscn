@@ -1,4 +1,4 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cdpdxvviop3ok"]
 
 [ext_resource type="Script" path="res://UI/scripts/UI.gd" id="1_l38d8"]
 [ext_resource type="PackedScene" path="res://UI/scenes/runtime/battle_hud.tscn" id="2_bdf3o"]

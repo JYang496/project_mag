@@ -10,6 +10,11 @@ var ITEM_NAME = "Rocket Launcher"
 var explosion_scale : float = 2.0
 @export var cluster_kill_radius: float = 180.0
 
+func _init() -> void:
+	super._init()
+	range_mode = RangeMode.FIXED_DISTANCE
+	configured_attack_range = 800.0
+
 
 var weapon_data = {
 	"1": {"damage": "42", "speed": "460", "projectile_hits": "1", "fire_interval_sec": "2.4", "ammo": "6", "explosion_scale": "2.20"},
@@ -71,6 +76,7 @@ func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> 
 	spawn_projectile.global_position = global_position
 	spawn_projectile.projectile_texture = projectile_texture_resource
 	spawn_projectile.size = size
+	spawn_projectile.expire_time = get_effective_projectile_lifetime()
 	_sync_explosion_effect_config(projectile_damage)
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)

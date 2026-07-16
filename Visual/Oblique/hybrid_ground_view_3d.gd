@@ -61,6 +61,12 @@ var _rest_area: Node2D
 var _rest_ground_mesh: MeshInstance3D
 var _rest_ground_material: StandardMaterial3D
 var _rest_ground_sprite: WeakRef
+var _rest_zone_quad: QuadMesh
+var _rest_zone_material: ShaderMaterial
+var _activation_quad: QuadMesh
+var _activation_material: ShaderMaterial
+var _border_material: StandardMaterial3D
+var _border_meshes: Dictionary = {}
 var _projection_ready: bool = false
 var _board_visual_active: bool = true
 var _late_sync: Node
@@ -75,6 +81,7 @@ var _view_multiplier_tween: Tween
 var _screen_shake_offset := Vector2.ZERO
 
 func _ready() -> void:
+	LoadingPerformance.begin_segment("ground_ready")
 	# Camera projection must be ready before BillboardVisual2D processes, while
 	# ground attachments are synchronized by a separate late-process node.
 	process_priority = -100
@@ -109,15 +116,27 @@ func _ready() -> void:
 			_board_visual_active = bool(active_value)
 	_sync_camera_projection()
 	call_deferred("_initialize_ground_renderers")
+	LoadingPerformance.end_segment("ground_ready")
 
 func _initialize_ground_renderers() -> void:
+	LoadingPerformance.begin_segment("ground_initialize_renderers")
 	if _board_renderer == null:
+		LoadingPerformance.end_segment("ground_initialize_renderers")
 		return
+	LoadingPerformance.begin_segment("ground_rebuild")
 	_board_renderer.rebuild()
+	LoadingPerformance.end_segment("ground_rebuild")
+	LoadingPerformance.begin_segment("ground_setup_rest_area")
 	_board_renderer.setup_rest_area()
+	LoadingPerformance.end_segment("ground_setup_rest_area")
+	LoadingPerformance.begin_segment("ground_hide_legacy_boundaries")
 	_board_renderer.hide_legacy_boundaries()
+	LoadingPerformance.end_segment("ground_hide_legacy_boundaries")
+	LoadingPerformance.begin_segment("ground_flush_pending_registrations")
 	_ground_renderers_initialized = true
 	_flush_pending_ground_registrations()
+	LoadingPerformance.end_segment("ground_flush_pending_registrations")
+	LoadingPerformance.end_segment("ground_initialize_renderers")
 
 func _process(delta: float) -> void:
 	if not enabled or _camera == null:
@@ -287,16 +306,21 @@ func _rebuild_ground() -> void:
 	_clear_ground_visual_caches()
 	for child in _ground_root.get_children():
 		if not child.is_queued_for_deletion():
+			_ground_root.remove_child(child)
 			child.queue_free()
 	if not enabled or not _board.has_method("get_cells"):
 		return
-	for cell_variant in _board.call("get_cells"):
+	var cells: Array = _board.call("get_cells")
+	for cell_index in range(cells.size()):
+		var cell_variant: Variant = cells[cell_index]
 		var cell := cell_variant as Node2D
 		if cell == null:
 			continue
 		var texture_sprite := cell.get_node_or_null("Texture/Sprite2D") as Sprite2D
 		if texture_sprite == null or texture_sprite.texture == null:
 			continue
+		var cell_segment := "ground_rebuild_cell_%d" % cell_index
+		LoadingPerformance.begin_segment(cell_segment)
 		var texture_root := cell.get_node_or_null("Texture") as CanvasItem
 		if texture_root != null:
 			texture_root.visible = false
@@ -332,6 +356,7 @@ func _rebuild_ground() -> void:
 		if cell_enabled:
 			_create_cell_border_meshes(cell, center, texture_size)
 		_create_activation_mesh(cell)
+		LoadingPerformance.end_segment(cell_segment)
 	if _board_renderer != null:
 		_board_renderer.setup_rest_area()
 		_board_renderer.hide_legacy_boundaries()
@@ -354,22 +379,26 @@ func _clear_ground_visual_caches() -> void:
 	_rest_area = null
 
 func _create_cell_border_meshes(cell: Node2D, center: Vector2, cell_size: Vector2) -> void:
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = cell_border_color
+	if _border_material == null:
+		_border_material = StandardMaterial3D.new()
+		_border_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_border_material.albedo_color = cell_border_color
 	var half_size := cell_size * 0.5
 	var thickness := maxf(cell_border_width_2d, 1.0)
-	_create_ground_border_strip("%sBorderTop" % cell.name, center + Vector2(0.0, -half_size.y), Vector2(cell_size.x, thickness), material)
-	_create_ground_border_strip("%sBorderBottom" % cell.name, center + Vector2(0.0, half_size.y), Vector2(cell_size.x, thickness), material)
-	_create_ground_border_strip("%sBorderLeft" % cell.name, center + Vector2(-half_size.x, 0.0), Vector2(thickness, cell_size.y), material)
-	_create_ground_border_strip("%sBorderRight" % cell.name, center + Vector2(half_size.x, 0.0), Vector2(thickness, cell_size.y), material)
+	_create_ground_border_strip("%sBorderTop" % cell.name, center + Vector2(0.0, -half_size.y), Vector2(cell_size.x, thickness))
+	_create_ground_border_strip("%sBorderBottom" % cell.name, center + Vector2(0.0, half_size.y), Vector2(cell_size.x, thickness))
+	_create_ground_border_strip("%sBorderLeft" % cell.name, center + Vector2(-half_size.x, 0.0), Vector2(thickness, cell_size.y))
+	_create_ground_border_strip("%sBorderRight" % cell.name, center + Vector2(half_size.x, 0.0), Vector2(thickness, cell_size.y))
 
-func _create_ground_border_strip(strip_name: String, center: Vector2, size_2d: Vector2, material: Material) -> void:
+func _create_ground_border_strip(strip_name: String, center: Vector2, size_2d: Vector2) -> void:
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.name = strip_name
-	var box := BoxMesh.new()
-	box.size = Vector3(size_2d.x * world_scale, 0.006, size_2d.y * world_scale)
-	box.material = material
+	var box := _border_meshes.get(size_2d) as BoxMesh
+	if box == null:
+		box = BoxMesh.new()
+		box.size = Vector3(size_2d.x * world_scale, 0.006, size_2d.y * world_scale)
+		box.material = _border_material
+		_border_meshes[size_2d] = box
 	mesh_instance.mesh = box
 	mesh_instance.set_meta(&"hybrid_board_visual", true)
 	mesh_instance.visible = _board_visual_active
@@ -391,18 +420,19 @@ func _create_activation_mesh(cell: Node2D) -> void:
 	activation.visible = false
 	var mesh := MeshInstance3D.new()
 	mesh.name = "%sActivation" % cell.name
-	var quad := QuadMesh.new()
-	quad.orientation = PlaneMesh.FACE_Y
-	quad.size = Vector2(512.0, 512.0) * world_scale * 0.96
-	var shader := Shader.new()
-	shader.code = ACTIVATION_OUTLINE_SHADER
-	var material := ShaderMaterial.new()
-	material.shader = shader
-	material.set_shader_parameter("outline_color", Color(0.38, 0.88, 1.0, 1.0))
-	material.set_shader_parameter("outline_alpha", 0.0)
-	material.set_shader_parameter("fill_alpha", 0.0)
-	quad.material = material
-	mesh.mesh = quad
+	if _activation_quad == null:
+		_activation_quad = QuadMesh.new()
+		_activation_quad.orientation = PlaneMesh.FACE_Y
+		_activation_quad.size = Vector2(512.0, 512.0) * world_scale * 0.96
+		var shader := Shader.new()
+		shader.code = ACTIVATION_OUTLINE_SHADER
+		_activation_material = ShaderMaterial.new()
+		_activation_material.shader = shader
+		_activation_quad.material = _activation_material
+	mesh.mesh = _activation_quad
+	mesh.set_instance_shader_parameter("outline_color", Color(0.38, 0.88, 1.0, 1.0))
+	mesh.set_instance_shader_parameter("outline_alpha", 0.0)
+	mesh.set_instance_shader_parameter("fill_alpha", 0.0)
 	mesh.set_meta(&"hybrid_board_visual", true)
 	mesh.position = world_2d_to_3d(cell.global_position + Vector2(256.0, 256.0)) + Vector3.UP * 0.012
 	_ground_root.add_child(mesh)
@@ -410,7 +440,6 @@ func _create_activation_mesh(cell: Node2D) -> void:
 		"source": weakref(activation),
 		"cell": weakref(cell),
 		"mesh": mesh,
-		"material": material,
 	}
 
 func _sync_activation_visuals() -> void:
@@ -421,7 +450,6 @@ func _sync_activation_visuals() -> void:
 		var cell_ref := entry.cell as WeakRef
 		var cell := cell_ref.get_ref() as Node2D
 		var mesh := entry.mesh as MeshInstance3D
-		var material := entry.material as ShaderMaterial
 		if activation == null or cell == null or mesh == null:
 			continue
 		mesh.position = world_2d_to_3d(cell.global_position + Vector2(256.0, 256.0)) + Vector3.UP * 0.012
@@ -440,9 +468,9 @@ func _sync_activation_visuals() -> void:
 		elif has_task:
 			color = Color(1.0, 0.7, 0.2, 1.0)
 			alpha = 0.18
-		material.set_shader_parameter("outline_color", color)
-		material.set_shader_parameter("outline_alpha", alpha)
-		material.set_shader_parameter("fill_alpha", fill_alpha)
+		mesh.set_instance_shader_parameter("outline_color", color)
+		mesh.set_instance_shader_parameter("outline_alpha", alpha)
+		mesh.set_instance_shader_parameter("fill_alpha", fill_alpha)
 		mesh.visible = _board_visual_active and bool(cell.get("board_enabled")) and (alpha > 0.001 or fill_alpha > 0.001)
 
 func _connect_board_signals() -> void:
@@ -889,22 +917,21 @@ func _setup_rest_area_ground() -> void:
 		4: Color(0.42, 1.0, 0.48, 0.24),
 		6: Color(0.34, 1.0, 0.78, 0.20),
 	}
+	_rest_zone_quad = QuadMesh.new()
+	_rest_zone_quad.orientation = PlaneMesh.FACE_Y
+	_rest_zone_quad.size = Vector2.ONE
+	_rest_zone_material = ShaderMaterial.new()
+	_rest_zone_material.shader = RestAreaZoneGroundShader
+	_rest_zone_material.render_priority = 3
+	_rest_zone_quad.material = _rest_zone_material
 	for zone_id in zone_colors:
 		var mesh := MeshInstance3D.new()
-		var quad := QuadMesh.new()
-		quad.orientation = PlaneMesh.FACE_Y
-		var material := ShaderMaterial.new()
-		material.shader = RestAreaZoneGroundShader
-		material.render_priority = 3
-		material.set_shader_parameter("zone_color", zone_colors[zone_id] as Color)
-		quad.material = material
-		mesh.mesh = quad
+		mesh.mesh = _rest_zone_quad
+		mesh.set_instance_shader_parameter("zone_color", zone_colors[zone_id] as Color)
 		mesh.visible = false
 		_ground_root.add_child(mesh)
 		_rest_zone_meshes[zone_id] = {
 			"mesh": mesh,
-			"quad": quad,
-			"material": material,
 			"color": zone_colors[zone_id],
 		}
 
@@ -972,19 +999,15 @@ func _sync_rest_zone_meshes() -> void:
 		var radius := minf(rect.size.x, rect.size.y) * (0.30 if int(zone_id) == 4 else 0.24) * world_scale
 		var emphasis := 1.12 if int(zone_id) == hovered or int(zone_id) == selected else 1.0
 		var diameter := radius * 2.65 * emphasis
-		var quad := entry.get("quad") as QuadMesh
-		if quad != null:
-			quad.size = Vector2(diameter, diameter)
-		var material := entry.get("material") as ShaderMaterial
-		if material != null:
-			material.set_shader_parameter("hovered", 1.0 if int(zone_id) == hovered else 0.0)
-			material.set_shader_parameter("selected", 1.0 if int(zone_id) == selected else 0.0)
-			material.set_shader_parameter("visibility_alpha", clampf(float(_rest_area.modulate.a), 0.0, 1.0))
-			var hold_progress := 0.0
-			if int(zone_id) == 4:
-				var hold_duration := maxf(float(_rest_area.get("zone4_hold_duration")), 0.01)
-				hold_progress = clampf(float(_rest_area.get("_zone4_hold_elapsed")) / hold_duration, 0.0, 1.0)
-			material.set_shader_parameter("hold_progress", hold_progress)
+		mesh.scale = Vector3(diameter, 1.0, diameter)
+		mesh.set_instance_shader_parameter("hovered", 1.0 if int(zone_id) == hovered else 0.0)
+		mesh.set_instance_shader_parameter("selected", 1.0 if int(zone_id) == selected else 0.0)
+		mesh.set_instance_shader_parameter("visibility_alpha", clampf(float(_rest_area.modulate.a), 0.0, 1.0))
+		var hold_progress := 0.0
+		if int(zone_id) == 4:
+			var hold_duration := maxf(float(_rest_area.get("zone4_hold_duration")), 0.01)
+			hold_progress = clampf(float(_rest_area.get("_zone4_hold_elapsed")) / hold_duration, 0.0, 1.0)
+		mesh.set_instance_shader_parameter("hold_progress", hold_progress)
 
 func _sync_shadow_meshes() -> void:
 	for id in _shadow_meshes.keys():
@@ -1016,7 +1039,9 @@ func _sync_area_meshes() -> void:
 			continue
 		var visual_shape := int(entry.get("visual_shape", 0))
 		var radius := maxf(float(area.get("radius")), 1.0) * world_scale
-		mesh.position = world_2d_to_3d(area.global_position) + Vector3.UP * (0.022 + float(area.get("ground_height_offset")))
+		var height_offset_value: Variant = area.get("ground_height_offset")
+		var height_offset := float(height_offset_value) if height_offset_value != null else 0.0
+		mesh.position = world_2d_to_3d(area.global_position) + Vector3.UP * (0.022 + height_offset)
 		if visual_shape == 0:
 			mesh.scale = Vector3(radius, 1.0, radius)
 		else:
