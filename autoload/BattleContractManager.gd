@@ -5,9 +5,15 @@ const BattleContractCombatPort = preload("res://Combat/battle_contract/BattleCon
 const ELIMINATION := preload("res://data/battle_contracts/elimination.tres")
 const SURVIVAL := preload("res://data/battle_contracts/survival.tres")
 const OPERATION := preload("res://data/battle_contracts/operation.tres")
+const CONTAINMENT := preload("res://data/battle_contracts/containment.tres")
+const EXTRACTION := preload("res://data/battle_contracts/extraction.tres")
+const REWARD := preload("res://data/battle_contracts/reward.tres")
 const ELIMINATION_RUNTIME := preload("res://Combat/battle_contract/runtime/elimination_contract_runtime.gd")
 const SURVIVAL_RUNTIME := preload("res://Combat/battle_contract/runtime/survival_contract_runtime.gd")
 const OPERATION_RUNTIME := preload("res://Combat/battle_contract/runtime/operation_contract_runtime.gd")
+const CONTAINMENT_RUNTIME := preload("res://Combat/battle_contract/runtime/containment_contract_runtime.gd")
+const EXTRACTION_RUNTIME := preload("res://Combat/battle_contract/runtime/extraction_contract_runtime.gd")
+const REWARD_RUNTIME := preload("res://Combat/battle_contract/runtime/reward_contract_runtime.gd")
 
 signal state_changed(state: StringName)
 signal offer_changed(options: Array[BattleContractDefinition])
@@ -22,6 +28,7 @@ const SELECTED := &"selected"
 const ACTIVE := &"active"
 const COMPLETED := &"completed"
 const VALID_STATES: Array[StringName] = [IDLE, OFFERED, SELECTED, ACTIVE, COMPLETED]
+const REWARD_CONTRACT_THIRD_SLOT_CHANCE := 0.25
 
 var state: StringName = IDLE
 var current_options: Array[BattleContractDefinition] = []
@@ -31,6 +38,8 @@ var last_selected_id: StringName = &""
 var consecutive_selection_count := 0
 var missed_offer_counts: Dictionary = {}
 var restored_selection_pending := false
+var _reward_offer_roll_level := -1
+var _reward_offer_available := false
 
 var _combat_port: BattleContractCombatPort
 var _completion_guard := false
@@ -43,6 +52,8 @@ const STATE_PATH := "user://battle_contract_state.json"
 func _ready() -> void:
 	_rng.randomize()
 	for definition in _get_catalog():
+		if definition.contract_id == &"reward":
+			continue
 		missed_offer_counts[definition.contract_id] = 0
 	_load_persistent_state()
 
@@ -54,9 +65,12 @@ func request_offer() -> Array[BattleContractDefinition]:
 	var allowed := _combat_port.get_allowed_contracts()
 	var candidates: Array[BattleContractDefinition] = []
 	for definition in _get_catalog():
+		if definition.contract_id == &"reward":
+			continue
 		if not allowed.is_empty() and definition.contract_id not in allowed:
 			continue
-		if definition.contract_id == &"operation" and not bool(capabilities.get("supports_operation", false)):
+		var required_capability := str(definition.parameters.get("required_capability", ""))
+		if not required_capability.is_empty() and not bool(capabilities.get(required_capability, false)):
 			continue
 		if definition.contract_id == last_selected_id and consecutive_selection_count >= 2:
 			continue
@@ -64,11 +78,14 @@ func request_offer() -> Array[BattleContractDefinition]:
 	if candidates.size() < 2:
 		push_warning("Battle contract candidates below two; falling back to elimination and survival.")
 		candidates = [ELIMINATION, SURVIVAL]
+	var target_option_count := 2
 	var options: Array[BattleContractDefinition] = []
-	while options.size() < 2 and not candidates.is_empty():
+	while options.size() < target_option_count and not candidates.is_empty():
 		var picked := _pick_weighted(candidates)
 		options.append(picked)
 		candidates.erase(picked)
+	if _is_reward_offer_available_for_current_level():
+		options.append(REWARD)
 	set_offer(options)
 	return current_options.duplicate()
 
@@ -112,7 +129,7 @@ func start_current_battle() -> bool:
 	return true
 
 func _get_catalog() -> Array[BattleContractDefinition]:
-	return [ELIMINATION, SURVIVAL, OPERATION]
+	return [ELIMINATION, SURVIVAL, OPERATION, CONTAINMENT, EXTRACTION, REWARD]
 
 func _pick_weighted(candidates: Array[BattleContractDefinition]) -> BattleContractDefinition:
 	var total := 0.0
@@ -133,6 +150,13 @@ func _effective_weight(definition: BattleContractDefinition) -> float:
 		result *= 1.75
 	return result
 
+func _is_reward_offer_available_for_current_level() -> bool:
+	var level := maxi(PhaseManager.current_level, 0)
+	if _reward_offer_roll_level != level:
+		_reward_offer_roll_level = level
+		_reward_offer_available = _rng.randf() < REWARD_CONTRACT_THIRD_SLOT_CHANCE
+	return _reward_offer_available
+
 func set_offer(options: Array[BattleContractDefinition]) -> bool:
 	if state == ACTIVE:
 		return false
@@ -145,7 +169,7 @@ func set_offer(options: Array[BattleContractDefinition]) -> bool:
 	return state == OFFERED
 
 func select_contract(definition: BattleContractDefinition) -> bool:
-	if state != OFFERED or definition == null or not current_options.has(definition):
+	if state not in [OFFERED, SELECTED] or definition == null or not current_options.has(definition):
 		return false
 	selected_contract = definition
 	_set_state(SELECTED)
@@ -155,6 +179,10 @@ func select_contract(definition: BattleContractDefinition) -> bool:
 func activate_contract(snapshot: Dictionary = {}) -> bool:
 	if state != SELECTED or selected_contract == null:
 		return false
+	if _combat_port != null:
+		var economy: EconomyConfig = GlobalVariables.economy_data
+		var plan := economy.get_contract_gold_plan(selected_contract.contract_id, maxi(PhaseManager.current_level, 0))
+		_combat_port.request_configure_contract_economy(float(plan.get("kill_gold_multiplier", 1.0)))
 	runtime_snapshot = snapshot.duplicate(true)
 	_completion_guard = false
 	_reward_settled = false
@@ -172,6 +200,7 @@ func complete_contract(snapshot: Dictionary = {}) -> bool:
 	_completion_guard = true
 	runtime_snapshot = snapshot.duplicate(true)
 	_set_state(COMPLETED)
+	_save_persistent_state()
 	contract_completed.emit(runtime_snapshot.duplicate(true))
 	return true
 
@@ -189,6 +218,9 @@ func _start_selected_runtime() -> void:
 		&"elimination": _runtime = ELIMINATION_RUNTIME.new()
 		&"survival": _runtime = SURVIVAL_RUNTIME.new()
 		&"operation": _runtime = OPERATION_RUNTIME.new()
+		&"containment": _runtime = CONTAINMENT_RUNTIME.new()
+		&"extraction": _runtime = EXTRACTION_RUNTIME.new()
+		&"reward": _runtime = REWARD_RUNTIME.new()
 	if _runtime == null:
 		return
 	_runtime.snapshot_changed.connect(update_runtime_snapshot)
@@ -215,25 +247,27 @@ func _settle_performance_reward(result: Dictionary) -> void:
 		return
 	_reward_settled = true
 	var economy: EconomyConfig = GlobalVariables.economy_data
-	var values: PackedInt32Array = economy.kill_gold_target_by_level
 	var level := maxi(PhaseManager.current_level, 0)
-	var base_value := int(values[mini(level, values.size() - 1)]) if not values.is_empty() else 0
-	if level >= values.size() and not values.is_empty(): base_value += (level - values.size() + 1) * economy.kill_gold_target_increment_after_table
-	var cap := maxi(int(floor(float(base_value) * 0.1)), 0)
+	var contract_id := StringName(result.get("contract_id", &""))
+	if contract_id == &"reward":
+		return
+	var plan := economy.get_contract_gold_plan(contract_id, level)
+	var completion_gold := int(plan.get("completion_gold", 0))
+	var performance_cap := int(plan.get("performance_gold_cap", 0))
 	var ratio := 0.0
-	var reward_type := &"gold"
-	match str(result.get("contract_id", "")):
+	match str(contract_id):
 		"elimination": ratio = clampf((float(result.get("standard_duration_sec", 45.0)) - float(result.get("actual_completion_sec", 45.0))) / maxf(float(result.get("standard_duration_sec", 45.0)), 1.0), 0.0, 1.0)
-		"survival":
-			reward_type = &"experience"
-			ratio = clampf(float(result.get("killed_hp", 0)) / maxf(float(_combat_port.get_spawn_budget_snapshot().get("planned_total_hp", 1)), 1.0), 0.0, 1.0)
+		"survival": ratio = 0.0
 		"operation": ratio = clampf(float(result.get("actual_progress_sec", 0.0)) / maxf(float(result.get("available_progress_sec", 1.0)), 1.0), 0.0, 1.0)
-	var amount := clampi(int(round(float(cap) * ratio)), 0, cap)
+		"containment", "extraction":
+			ratio = clampf(float(result.get("performance_ratio", 0.0)), 0.0, 1.0)
+	var performance_gold := clampi(int(round(float(performance_cap) * ratio)), 0, performance_cap)
+	var amount := maxi(completion_gold + performance_gold, 0)
 	if amount <= 0:
 		return
-	if reward_type == &"experience": PlayerData.player_exp += amount
-	else: PlayerData.player_gold += amount
-	performance_reward_granted.emit({"type": reward_type, "amount": amount, "contract_id": result.get("contract_id", "")})
+	PlayerData.player_gold += amount
+	PlayerData.run_gold_earned += amount
+	performance_reward_granted.emit({"type": &"gold", "amount": amount, "contract_id": contract_id, "completion_gold": completion_gold, "performance_gold": performance_gold})
 
 func get_history_snapshot() -> Dictionary:
 	return {"last_selected_id": last_selected_id, "consecutive_selection_count": consecutive_selection_count, "missed_offer_counts": missed_offer_counts.duplicate(true)}
@@ -261,6 +295,8 @@ func reset_persistent_state() -> void:
 	for definition in _get_catalog(): missed_offer_counts[definition.contract_id] = 0
 	_history_before_offer = {}
 	restored_selection_pending = false
+	_reward_offer_roll_level = -1
+	_reward_offer_available = false
 	if FileAccess.file_exists(STATE_PATH): DirAccess.remove_absolute(STATE_PATH)
 	reset_runtime_state()
 

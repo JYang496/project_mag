@@ -13,13 +13,19 @@ extends Node
 @onready var SPAWN_PATN : String = "res://data/spawns/"
 
 
-func reset_runtime_state() -> void:
+func reset_run_state() -> void:
 	ui = null
 	mech_data = null
 	autosave_data = {}
+	enemy_spawner = null
+
+func clear_resource_cache() -> void:
 	weapon_list = {}
 	weapon_branch_list = {}
 	weapon_passive_branch_list = {}
 	mecha_list = {}
 	economy_data = null
-	enemy_spawner = null
+
+func reset_runtime_state() -> void:
+	# Compatibility entry point. Runtime resets intentionally retain immutable definitions.
+	reset_run_state()

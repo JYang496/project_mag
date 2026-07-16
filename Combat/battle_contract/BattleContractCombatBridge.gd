@@ -48,13 +48,19 @@ func get_allowed_contracts() -> Array[StringName]:
 
 func get_battlefield_capabilities() -> Dictionary:
 	var points := PackedVector2Array()
+	var objective_points := PackedVector2Array()
 	if _spawner != null:
 		points = _spawner.get_contract_beacon_points()
+		objective_points = _spawner.get_contract_objective_points()
 	return {
 		"allowed_contracts": get_allowed_contracts(),
 		"legal_region_count": points.size(),
 		"supports_operation": points.size() >= 2,
 		"operation_beacon_points": points,
+		"supports_containment": objective_points.size() >= 3,
+		"containment_points": objective_points,
+		"supports_extraction": not objective_points.is_empty(),
+		"extraction_points": objective_points,
 	}
 
 func request_start_spawning() -> void:
@@ -98,6 +104,18 @@ func request_configure_threat_multiplier(multiplier: float) -> void:
 	_requested_config["threat_multiplier"] = maxf(multiplier, 0.0)
 	if _spawner != null:
 		_spawner.configure_contract_threat_multiplier(multiplier)
+
+func request_release_reinforcement_budget(multiplier: float = 1.0) -> void:
+	if _spawner != null:
+		_spawner.release_contract_reinforcement_budget(multiplier)
+
+func request_configure_contract_economy(kill_gold_multiplier: float) -> void:
+	if _spawner != null:
+		_spawner.configure_contract_kill_gold_multiplier(kill_gold_multiplier)
+
+func request_configure_reward_stage(enabled: bool, hp_budget_multiplier: float = 2.0, reward_multiplier: float = 2.0) -> void:
+	if _spawner != null:
+		_spawner.configure_contract_reward_stage(enabled, hp_budget_multiplier, reward_multiplier)
 
 func get_active_enemy_count() -> int:
 	return _spawner.get_active_enemy_count() if _spawner != null else 0
@@ -148,6 +166,16 @@ func request_spawn_beacon(beacon_id: int, position: Vector2) -> void:
 		var tween := _beacon_beam.create_tween()
 		tween.tween_property(_beacon_beam, "modulate:a", 0.0, 0.8)
 		tween.finished.connect(_beacon_beam.queue_free)
+
+func request_spawn_objective(objective_id: int, position: Vector2) -> void:
+	if _spawner == null or _beacons.has(objective_id):
+		return
+	var beacon = BEACON_SCENE.instantiate()
+	beacon.position = position
+	beacon.beacon_id = objective_id
+	beacon.presence_changed.connect(_on_beacon_presence_changed)
+	_spawner.get_parent().add_child(beacon)
+	_beacons[objective_id] = beacon
 
 func request_update_beacon(beacon_id: int, progress: float) -> void:
 	var beacon = _beacons.get(beacon_id)

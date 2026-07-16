@@ -54,6 +54,7 @@ func to_attack() -> Attack:
 	attack.source_player = source_player
 	attack.damage_is_final = damage_is_final
 	attack.suppress_reactive_effects = suppress_reactive_effects
+	attack.feedback_batch_id = int(get_instance_id())
 	return attack
 
 

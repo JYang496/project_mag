@@ -4,6 +4,7 @@ signal erase_button_pressed
 
 const WORLD_SCENE_PATH := "res://World/world.tscn"
 const WORLD_ENTRY_PREPARE_GATE_SCRIPT := preload("res://World/world_entry_prepare_gate.gd")
+const WORLD_SCENE_LOADER_SCRIPT := preload("res://World/world_scene_loader.gd")
 
 func _on_pressed() -> void:
 	if disabled:
@@ -11,11 +12,12 @@ func _on_pressed() -> void:
 	disabled = true
 	var original_text := text
 	text = "Loading 0%"
+	LoadingPerformance.begin_flow("new_game")
 	var keep_hp_safety = PlayerData.testing_keep_hp_above_zero
 	var selected_mecha_id = PlayerData.select_mecha_id
 	DataHandler.new_save()
 	PhaseManager.reset_runtime_state()
-	GlobalVariables.reset_runtime_state()
+	GlobalVariables.reset_run_state()
 	PlayerData.reset_runtime_state()
 	InventoryData.reset_runtime_state()
 	TaskRewardManager.reset_runtime_state(false)
@@ -31,30 +33,15 @@ func _on_pressed() -> void:
 		disabled = false
 		return
 	CellTaskModuleRuntime.grant_starting_cell_loadout(0)
-	SpawnData.ensure_loaded()
-	var request_error := ResourceLoader.load_threaded_request(WORLD_SCENE_PATH, "PackedScene", true)
-	if request_error != OK:
-		push_error("Failed to request threaded world load: %s" % request_error)
+	var loader := WORLD_SCENE_LOADER_SCRIPT.new()
+	add_child(loader)
+	loader.progress_changed.connect(func(ratio: float): text = "Loading %d%%" % int(round(10.0 + ratio * 70.0)))
+	var load_result: Dictionary = await loader.load_world(WORLD_SCENE_PATH)
+	loader.queue_free()
+	if not bool(load_result.get("ok", false)):
+		push_error(str(load_result.get("error", "World load failed")))
 		text = original_text
 		disabled = false
 		return
-	var progress: Array = []
-	while true:
-		var status := ResourceLoader.load_threaded_get_status(WORLD_SCENE_PATH, progress)
-		if status == ResourceLoader.THREAD_LOAD_LOADED:
-			break
-		if status == ResourceLoader.THREAD_LOAD_FAILED or status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
-			push_error("Threaded world load failed with status: %s" % status)
-			text = original_text
-			disabled = false
-			return
-		var ratio := float(progress[0]) if not progress.is_empty() else 0.0
-		text = "Loading %d%%" % int(round(ratio * 100.0))
-		await get_tree().process_frame
-	var world_scene := ResourceLoader.load_threaded_get(WORLD_SCENE_PATH) as PackedScene
-	if world_scene == null:
-		push_error("Threaded world load returned an invalid PackedScene.")
-		text = original_text
-		disabled = false
-		return
-	get_tree().change_scene_to_packed(world_scene)
+	LoadingPerformance.mark("world_scene_changed")
+	get_tree().change_scene_to_packed(load_result.get("scene") as PackedScene)

@@ -1,0 +1,139 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://UI/scripts/management/management_shell_view.gd" id="1_f27x0"]
+
+[node name="ManagementShell" type="Control" unique_id=1346801814]
+layout_mode = 3
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("1_f27x0")
+
+[node name="PurchaseRoot" type="Control" parent="." unique_id=192401279]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ShoppingRootv2" type="Control" parent="PurchaseRoot" unique_id=1309213749]
+visible = false
+custom_minimum_size = Vector2(1000, 640)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="PurchaseRoot/ShoppingRootv2" unique_id=1776602350]
+custom_minimum_size = Vector2(1000, 600)
+layout_mode = 0
+offset_left = 86.0
+offset_top = 30.0
+offset_right = 1086.0
+offset_bottom = 630.0
+
+[node name="Title" type="Label" parent="PurchaseRoot/ShoppingRootv2/Panel" unique_id=533358428]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0002
+offset_bottom = 33.0002
+grow_horizontal = 2
+text = "Shop"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="UpgradeRoot" type="Control" parent="." unique_id=850168718]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="UpgradeRootv2" type="Control" parent="UpgradeRoot" unique_id=113070022]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="UpgradeRoot/UpgradeRootv2" unique_id=895639610]
+custom_minimum_size = Vector2(1000, 600)
+layout_mode = 0
+offset_left = 86.0
+offset_top = 30.0
+offset_right = 1086.0
+offset_bottom = 630.0
+
+[node name="Title" type="Label" parent="UpgradeRoot/UpgradeRootv2/Panel" unique_id=425941768]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0002
+offset_bottom = 33.0002
+grow_horizontal = 2
+text = "Upgrade"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BackToUpgradeMenu" type="Button" parent="UpgradeRoot/UpgradeRootv2/Panel" unique_id=1836082639]
+layout_mode = 0
+offset_left = 752.0
+offset_top = 33.0002
+offset_right = 850.0
+offset_bottom = 64.0002
+text = "Back"
+
+[node name="WarehouseRoot" type="Control" parent="." unique_id=658488380]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ModuleManagementRoot" type="Control" parent="WarehouseRoot" unique_id=1074484278]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="WarehouseRoot/ModuleManagementRoot" unique_id=854258448]
+custom_minimum_size = Vector2(1000, 600)
+layout_mode = 0
+offset_left = 86.0
+offset_top = 30.0
+offset_right = 1086.0
+offset_bottom = 630.0
+
+[node name="Title" type="Label" parent="WarehouseRoot/ModuleManagementRoot/Panel" unique_id=1803435389]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0002
+offset_bottom = 33.0002
+grow_horizontal = 2
+text = "Module"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BackToWarehouseMenu" type="Button" parent="WarehouseRoot/ModuleManagementRoot/Panel" unique_id=2073477089]
+layout_mode = 0
+offset_left = 752.0
+offset_top = 33.0
+offset_right = 850.0
+offset_bottom = 64.0
+text = "Back"

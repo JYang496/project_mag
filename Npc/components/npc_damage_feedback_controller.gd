@@ -6,9 +6,8 @@ const ENEMY_HP_BAR_SCENE := preload("res://UI/scenes/components/enemy_hp_bar.tsc
 const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd")
 
 var npc
-var _pending_hit_label_damage: int = 0
-var _hit_label_batch_id: int = 0
-var _pending_hit_label_damage_by_type: Dictionary = {}
+var _pending_hit_label_batches: Dictionary = {}
+var _anonymous_batch_id := 0
 var _enemy_hp_bar: EnemyHpBar
 var _hit_flash_tween: Tween
 var _hit_flash_overlay: Sprite2D
@@ -18,69 +17,82 @@ var _warning_flash_overlay: Sprite2D
 func setup(source_npc) -> void:
 	npc = source_npc
 
-func queue_hit_label_damage(damage_value: int, damage_type: StringName) -> void:
+func queue_hit_label_damage(damage_value: int, damage_type: StringName, attack_batch_id: int = 0) -> void:
 	if damage_value <= 0 or npc == null:
 		return
 	sync_enemy_hp_bar()
 	show_enemy_hp_bar_on_damage()
 	var normalized_type := Attack.normalize_damage_type(damage_type)
-	_pending_hit_label_damage += damage_value
-	_pending_hit_label_damage_by_type[normalized_type] = int(_pending_hit_label_damage_by_type.get(normalized_type, 0)) + damage_value
+	var batch_id := attack_batch_id
+	if batch_id <= 0:
+		_anonymous_batch_id += 1
+		batch_id = -_anonymous_batch_id
+	var batch: Dictionary = _pending_hit_label_batches.get(batch_id, {
+		"damage": 0,
+		"damage_by_type": {},
+	})
+	batch["damage"] = int(batch.get("damage", 0)) + damage_value
+	var damage_by_type: Dictionary = batch.get("damage_by_type", {})
+	damage_by_type[normalized_type] = int(damage_by_type.get(normalized_type, 0)) + damage_value
+	batch["damage_by_type"] = damage_by_type
+	_pending_hit_label_batches[batch_id] = batch
 	if npc.is_dead:
 		flush_pending_hit_label()
 		return
-	_hit_label_batch_id += 1
-	_flush_hit_label_after_delay(_hit_label_batch_id)
+	_flush_hit_label_after_delay(batch_id)
 
 func _flush_hit_label_after_delay(batch_id: int) -> void:
 	var tree: SceneTree = npc.get_tree()
 	if tree == null:
 		return
 	await tree.create_timer(maxf(npc.hit_label_merge_window_sec, 0.0)).timeout
-	if npc == null or not npc.is_inside_tree() or batch_id != _hit_label_batch_id:
+	if npc == null or not npc.is_inside_tree():
 		return
-	flush_pending_hit_label()
+	_flush_hit_label_batch(batch_id)
 
 func flush_pending_hit_label() -> void:
-	if _pending_hit_label_damage <= 0 or npc == null:
+	if npc == null:
+		return
+	for batch_id in _pending_hit_label_batches.keys().duplicate():
+		_flush_hit_label_batch(int(batch_id))
+
+func _flush_hit_label_batch(batch_id: int) -> void:
+	if not _pending_hit_label_batches.has(batch_id) or npc == null:
+		return
+	var batch: Dictionary = _pending_hit_label_batches[batch_id]
+	_pending_hit_label_batches.erase(batch_id)
+	var damage_value := int(batch.get("damage", 0))
+	if damage_value <= 0:
 		return
 	var tree: SceneTree = npc.get_tree()
 	if tree == null or tree.root == null:
 		return
 	var hit_label_ins = HIT_LABEL_SCENE.instantiate()
 	var ui_parent := _get_hit_label_parent(tree)
-	var label_color := _resolve_hit_label_color()
+	var label_color := _resolve_hit_label_color(damage_value, batch.get("damage_by_type", {}) as Dictionary)
 	var target_id: int = int(npc.get_instance_id())
-	for item in tree.get_nodes_in_group(&"active_hit_labels"):
-		if is_instance_valid(item) and item.has_method("get_target_instance_id") and int(item.call("get_target_instance_id")) == target_id:
-			item.call("merge_damage", _pending_hit_label_damage, label_color)
-			_pending_hit_label_damage = 0
-			_pending_hit_label_damage_by_type.clear()
-			return
 	var label_position: Vector2 = npc.global_position
 	label_position = ProjectedUi.project_to_screen(tree, npc.global_position, label_position)
 	hit_label_ins.position = label_position
 	hit_label_ins.set_target_instance_id(target_id)
-	hit_label_ins.setNumber(_pending_hit_label_damage)
+	hit_label_ins.setNumber(damage_value)
 	hit_label_ins.setColor(label_color)
-	_pending_hit_label_damage = 0
-	_pending_hit_label_damage_by_type.clear()
 	ui_parent.call_deferred("add_child", hit_label_ins)
 
 func _get_hit_label_parent(tree: SceneTree) -> Node:
 	return ProjectedUi.ensure_layer(tree)
 
-func _resolve_hit_label_color() -> Color:
-	if _pending_hit_label_damage <= 0:
+func _resolve_hit_label_color(total_damage: int, damage_by_type: Dictionary) -> Color:
+	if total_damage <= 0:
 		return Color.WHITE
 	var dominant_type: StringName = Attack.TYPE_PHYSICAL
 	var dominant_damage: int = 0
-	for type_key in _pending_hit_label_damage_by_type.keys():
-		var type_damage := int(_pending_hit_label_damage_by_type[type_key])
+	for type_key in damage_by_type.keys():
+		var type_damage := int(damage_by_type[type_key])
 		if type_damage > dominant_damage:
 			dominant_damage = type_damage
 			dominant_type = Attack.normalize_damage_type(type_key)
-	if float(dominant_damage) <= float(_pending_hit_label_damage) * 0.5:
+	if float(dominant_damage) <= float(total_damage) * 0.5:
 		return Color(0.65, 0.65, 0.65, 1.0)
 	match dominant_type:
 		Attack.TYPE_ENERGY:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://blnhp33uq0sgq"]
+[gd_scene load_steps=11 format=3 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Script" uid="uid://ytgqpjri2ckf" path="res://Board/Cells/cell_profile.gd" id="4_lo5ox"]
 [ext_resource type="PackedScene" uid="uid://cdpdxvviop3ok" path="res://UI/scenes/UI.tscn" id="9_h4135"]
@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://cat80ev8yltf7" path="res://World/rest_area.tscn" id="15_6p52w"]
 [ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://World/rewards/reward_manager.tscn" id="22_n13dc"]
 [ext_resource type="Script" path="res://Visual/Oblique/hybrid_ground_view_3d.gd" id="23_hybrid"]
+[ext_resource type="Script" path="res://World/world_ready_coordinator.gd" id="24_ready"]
 
 [sub_resource type="Resource" id="Resource_h2aik"]
 script = ExtResource("4_lo5ox")
@@ -47,6 +48,9 @@ script = ExtResource("4_lo5ox")
 metadata/_custom_type_script = "uid://ytgqpjri2ckf"
 
 [node name="World" type="Node2D" unique_id=727876851]
+
+[node name="WorldReadyCoordinator" type="Node" parent="."]
+script = ExtResource("24_ready")
 
 [node name="UI" parent="." unique_id=825817152 instance=ExtResource("9_h4135")]
 

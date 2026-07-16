@@ -149,6 +149,10 @@ func reset_purchase_refresh_cost() -> void:
 	refresh_shop_items_for_prepare()
 
 func refresh_shop_items_for_prepare() -> void:
+	if owner_ui.management_shell_view == null or owner_ui.purchase_panel == null:
+		owner_ui._purchase_prepare_refresh_pending = true
+		owner_ui._mark_shop_purchase_action_dirty()
+		return
 	owner_ui._init_purchase_management_controller()
 	owner_ui.purchase_management_controller.refresh_items_for_prepare()
 	owner_ui._mark_shop_purchase_action_dirty()
@@ -213,6 +217,7 @@ func close_module_management_ui() -> void:
 	_sync_public_fields_to_owner()
 
 func open_purchase_weapon_panel() -> void:
+	owner_ui.ensure_purchase_management()
 	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
 		if owner_ui.is_branch_selection_blocking_interactions():
 			owner_ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
@@ -225,6 +230,7 @@ func open_purchase_weapon_panel() -> void:
 	_menu_transition_locked = false
 
 func open_purchase_module_panel() -> void:
+	owner_ui.ensure_purchase_management()
 	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
 		if owner_ui.is_branch_selection_blocking_interactions():
 			owner_ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
@@ -252,6 +258,7 @@ func back_to_purchase_primary_menu() -> void:
 	_menu_transition_locked = false
 
 func open_upgrade_panel(mode: StringName = &"weapon") -> void:
+	owner_ui.ensure_upgrade_management()
 	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
 		if owner_ui.is_branch_selection_blocking_interactions():
 			owner_ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
@@ -278,6 +285,7 @@ func back_to_upgrade_primary_menu() -> void:
 	_menu_transition_locked = false
 
 func open_warehouse_management_panel() -> void:
+	owner_ui.ensure_warehouse_management()
 	if _menu_transition_locked:
 		return
 	if not is_module_management_available():
@@ -290,6 +298,7 @@ func open_warehouse_management_panel() -> void:
 	_menu_transition_locked = false
 
 func open_warehouse_weapon_panel() -> void:
+	owner_ui.ensure_warehouse_management()
 	if _menu_transition_locked:
 		return
 	_menu_transition_locked = true

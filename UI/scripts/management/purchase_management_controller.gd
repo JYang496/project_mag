@@ -33,6 +33,9 @@ func bind(ui: UI, panel: Panel) -> void:
 func ensure_view() -> bool:
 	if purchase_management_view != null and is_instance_valid(purchase_management_view):
 		return true
+	if purchase_panel == null or not is_instance_valid(purchase_panel):
+		push_warning("Cannot create PurchaseManagementView before Management Shell is loaded.")
+		return false
 	var view_scene := load(PURCHASE_MANAGEMENT_VIEW_PATH) as PackedScene
 	purchase_management_view = view_scene.instantiate() as Control if view_scene else null
 	if purchase_management_view == null:
@@ -202,6 +205,8 @@ func refresh_texts() -> void:
 			shop_refresh_button.call("refresh_button_label")
 		else:
 			shop_refresh_button.text = LocalizationManager.tr_key("ui.panel.refresh", "Refresh")
+	if shop_back_button:
+		shop_back_button.text = LocalizationManager.tr_key("ui.panel.back", "Back")
 	var merchant_subtitle := owner_ui.purchase_primary_panel.get_node_or_null("SubTitle") as Label
 	if merchant_subtitle:
 		merchant_subtitle.text = LocalizationManager.tr_key(

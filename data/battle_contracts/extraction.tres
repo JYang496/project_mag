@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BattleContractDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Combat/battle_contract/BattleContractDefinition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+contract_id = &"extraction"
+name_key = "battle_contract.extraction.name"
+description_key = "battle_contract.extraction.description"
+accent_color = Color(0.388, 0.659, 0.91, 1)
+weight = 0.85
+build_tags = Array[StringName]([&"survival", &"mobility", &"control", &"knockback"])
+parameters = {"required_capability": "supports_extraction", "survival_duration_early_sec": 32.0, "survival_duration_mid_sec": 40.0, "survival_duration_late_sec": 48.0, "extraction_charge_sec": 6.0}

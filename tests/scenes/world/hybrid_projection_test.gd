@@ -1,6 +1,10 @@
 extends Node
 
 const ConeSprayScene := preload("res://Player/Weapons/Effects/cone_spray_vfx.tscn")
+const OperationContractRuntime := preload("res://Combat/battle_contract/runtime/operation_contract_runtime.gd")
+const ExtractionContractRuntime := preload("res://Combat/battle_contract/runtime/extraction_contract_runtime.gd")
+const ContainmentContractRuntime := preload("res://Combat/battle_contract/runtime/containment_contract_runtime.gd")
+const SpawnCombatProfileResource := preload("res://data/spawns/spawn_combat_profile.tres")
 
 const HybridView := preload("res://Visual/Oblique/hybrid_ground_view_3d.gd")
 const HybridCameraDefaultsType := preload("res://Visual/Oblique/hybrid_camera_defaults.gd")
@@ -43,7 +47,69 @@ class DummyRestArea:
 	func get_spawn_position() -> Vector2:
 		return global_position
 
+class OperationPortStub:
+	extends BattleContractCombatPort
+
+	var beacon_points := PackedVector2Array()
+	var containment_points := PackedVector2Array()
+	var spawned_beacons: Array[Dictionary] = []
+	var spawned_objectives: Array[Dictionary] = []
+	var configured_duration_sec := 0.0
+	var continuous_spawning := false
+	var reinforcement_requests := 0
+
+	func get_battlefield_capabilities() -> Dictionary:
+		return {"operation_beacon_points": beacon_points, "containment_points": containment_points}
+
+	func request_spawn_beacon(beacon_id: int, position: Vector2) -> void:
+		spawned_beacons.append({"id": beacon_id, "position": position})
+
+	func request_configure_duration(duration_sec: float) -> void:
+		configured_duration_sec = duration_sec
+
+	func request_configure_continuous_spawning(enabled: bool) -> void:
+		continuous_spawning = enabled
+
+	func request_spawn_objective(objective_id: int, position: Vector2) -> void:
+		spawned_objectives.append({"id": objective_id, "position": position})
+
+	func request_release_reinforcement_budget(_multiplier: float = 1.0) -> void:
+		reinforcement_requests += 1
+
 func _ready() -> void:
+	var containment_port := OperationPortStub.new()
+	containment_port.containment_points = PackedVector2Array([Vector2(100.0, 80.0), Vector2(400.0, 80.0), Vector2(700.0, 80.0)])
+	var containment_runtime := ContainmentContractRuntime.new()
+	containment_runtime.start(containment_port, {"rift_count": 3, "seal_duration_sec": 8.0, "reinforcement_interval_sec": 9.0})
+	var containment_failed := _check(containment_port.configured_duration_sec == 36.0, "containment spawn pressure must match objective time instead of a fixed 120-second window")
+	containment_port.containment_points = PackedVector2Array([Vector2(260.0, 180.0), Vector2(560.0, 180.0), Vector2(860.0, 180.0)])
+	containment_port.battle_tick.emit({"delta_sec": 0.1})
+	containment_failed = _check(containment_port.spawned_objectives.size() == 3 and containment_port.spawned_objectives[0].get("position") == Vector2(260.0, 180.0), "containment objectives must resolve positions after battlefield recentering") or containment_failed
+	containment_port.battle_tick.emit({"delta_sec": 9.0})
+	containment_failed = _check(containment_port.reinforcement_requests > 0, "containment reinforcement waves must release explicit spawn budget") or containment_failed
+	containment_runtime.stop()
+	var extraction_port := OperationPortStub.new()
+	var extraction_runtime := ExtractionContractRuntime.new()
+	extraction_runtime.start(extraction_port, {"survival_duration_early_sec": 32.0, "extraction_charge_sec": 6.0})
+	var extraction_failed := _check(extraction_port.configured_duration_sec == 32.0, "extraction spawn pressure must be released across the holding duration without a 45-second dilution")
+	extraction_runtime.stop()
+	extraction_failed = _check(SpawnCombatProfileResource.get_target_total_hp(2) == 1000, "level 3 must expose an explicit nonzero spawn HP budget") or extraction_failed
+	var operation_port := OperationPortStub.new()
+	operation_port.beacon_points = PackedVector2Array([Vector2(100.0, 100.0), Vector2(500.0, 100.0)])
+	var operation_runtime := OperationContractRuntime.new()
+	operation_runtime.start(operation_port, {"charge_time_min_sec": 10.0, "charge_time_max_sec": 14.0})
+	var operation_config_failed := _check(operation_runtime.charge_duration_sec == 12.0 and operation_port.configured_duration_sec == 36.0 and operation_port.continuous_spawning, "operation must honor its charge range and match spawn pressure to two captures plus travel time")
+	operation_port.beacon_points = PackedVector2Array([Vector2(350.0, 220.0), Vector2(750.0, 220.0)])
+	operation_port.battle_tick.emit({"delta_sec": 0.0})
+	var operation_failed := operation_config_failed or _check(operation_port.spawned_beacons.size() == 1 and operation_port.spawned_beacons[0].get("position") == Vector2(350.0, 220.0), "operation beacon must resolve its first position after battlefield recentering")
+	operation_port.beacon_points = PackedVector2Array([Vector2(420.0, 260.0)])
+	operation_port.beacon_presence_changed.emit({"beacon_id": 1, "player_inside": true, "enemy_count": 0})
+	operation_port.battle_tick.emit({"delta_sec": 12.0})
+	operation_failed = _check(operation_port.spawned_beacons.size() == 1, "operation runtime must wait when the next current beacon point is temporarily unavailable") or operation_failed
+	operation_port.beacon_points = PackedVector2Array([Vector2(420.0, 260.0), Vector2(820.0, 260.0)])
+	operation_port.battle_tick.emit({"delta_sec": 0.0})
+	operation_failed = _check(operation_port.spawned_beacons.size() == 2 and operation_port.spawned_beacons[1].get("position") == Vector2(820.0, 260.0), "operation beacon must resolve its second position when it is spawned") or operation_failed
+	operation_runtime.stop()
 	var player := Node2D.new()
 	player.add_to_group(&"player")
 	player.position = Vector2(320.0, 180.0)
@@ -82,7 +148,7 @@ func _ready() -> void:
 	pending_line.points = PackedVector2Array([Vector2.ZERO, Vector2(60.0, 10.0)])
 	pending_line.set_meta("hybrid_ground_visible", true)
 	add_child(pending_line)
-	var failed := false
+	var failed := containment_failed or extraction_failed or operation_failed
 	HybridGroundRegistration.queue_registration(pending_line, &"register_ground_segment")
 	var view := HybridView.new()
 	view.board_path = NodePath("../Board")
@@ -95,6 +161,20 @@ func _ready() -> void:
 	failed = _check(view.get("_connected_renderer") is ConnectedEffectRenderer, "Beam, link and cone visuals must use ConnectedEffectRenderer") or failed
 	failed = _check(view.get("_aura_renderer") is AuraRenderer, "Aura and enemy link visuals must use AuraRenderer") or failed
 	failed = _check(view.get("_area_renderer") is AreaEffectRenderer, "Area, shadow and telegraph visuals must use AreaEffectRenderer") or failed
+	var mesh_pool := (view.get("_mesh_registry") as GroundMeshRegistry).mesh_pool
+	var freed_pooled_mesh := mesh_pool.acquire(&"freed_candidate_regression")
+	mesh_pool.release(freed_pooled_mesh)
+	freed_pooled_mesh.free()
+	var replacement_mesh := mesh_pool.acquire(&"freed_candidate_regression")
+	failed = _check(replacement_mesh != null and is_instance_valid(replacement_mesh), "mesh pool must discard freed available candidates before reuse") or failed
+	mesh_pool.release(replacement_mesh)
+	var freed_before_rebuild := mesh_pool.acquire(&"rebuild_clear_regression")
+	mesh_pool.release(freed_before_rebuild)
+	freed_before_rebuild.free()
+	view.call("_rebuild_ground")
+	await get_tree().process_frame
+	failed = _check(mesh_pool.available_count(&"freed_candidate_regression") == 0, "ground rebuild must clear pooled mesh references before freeing ground children") or failed
+	failed = _check(mesh_pool.available_count(&"rebuild_clear_regression") == 0, "ground rebuild must purge already-freed pooled mesh references") or failed
 	failed = _check(view.process_priority < 0, "Camera3D projection must update before Billboard visuals") or failed
 	var late_sync := view.get_node_or_null("LateGroundVisualSync")
 	failed = _check(late_sync != null and late_sync.process_priority > 0, "ground attachments must use a separate late sync") or failed

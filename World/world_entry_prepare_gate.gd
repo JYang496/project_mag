@@ -5,12 +5,20 @@ const STEP_DATA := "data"
 const STEP_CELL_EFFECTS := "cell_effects"
 const STEP_TASK_MODULES := "task_modules"
 
+static var _cached_result: Dictionary = {}
+
 static func prepare_world_entry() -> Dictionary:
-	return aggregate_prepare_results([
+	if not _cached_result.is_empty() and bool(_cached_result.get("ok", false)):
+		return _cached_result.duplicate(true)
+	_cached_result = aggregate_prepare_results([
 		_build_step_result(STEP_DATA, DataHandler.prepare_world_data(false)),
 		_build_step_result(STEP_CELL_EFFECTS, CellEffectRuntime.prepare_definitions()),
 		_build_step_result(STEP_TASK_MODULES, CellTaskModuleRuntime.prepare_definitions()),
 	])
+	return _cached_result.duplicate(true)
+
+static func clear_cached_result() -> void:
+	_cached_result.clear()
 
 static func aggregate_prepare_results(step_results: Array) -> Dictionary:
 	var errors := PackedStringArray()

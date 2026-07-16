@@ -73,7 +73,7 @@ func request_battle_contract() -> void:
 		_on_contract_confirmed()
 		return
 	var options := BattleContractManager.request_offer()
-	if options.size() != 2:
+	if options.size() < 2 or options.size() > 3:
 		_owner.call("_reset_start_battle_button")
 		return
 	var ui = GlobalVariables.ui

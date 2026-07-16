@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://UI/scripts/battle_contract_card.gd" id="1"]
 
 [node name="BattleContractCard" type="Button"]
-custom_minimum_size = Vector2(390, 300)
+custom_minimum_size = Vector2(330, 300)
 toggle_mode = true
 script = ExtResource("1")
 
@@ -41,4 +41,3 @@ autowrap_mode = 2
 [node name="Reward" type="Label" parent="Margin/Content"]
 layout_mode = 2
 autowrap_mode = 2
-

@@ -27,9 +27,9 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -440.0
+offset_left = -560.0
 offset_top = -250.0
-offset_right = 440.0
+offset_right = 560.0
 offset_bottom = 250.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -61,6 +61,9 @@ layout_mode = 2
 theme_override_constants/separation = 24
 
 [node name="CardLeft" parent="Shade/Panel/Margin/Content/Cards" instance=ExtResource("2")]
+layout_mode = 2
+
+[node name="CardMiddle" parent="Shade/Panel/Margin/Content/Cards" instance=ExtResource("2")]
 layout_mode = 2
 
 [node name="CardRight" parent="Shade/Panel/Margin/Content/Cards" instance=ExtResource("2")]

@@ -1,0 +1,245 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://UI/scripts/components/battle_hud_view.gd" id="1_fh7no"]
+[ext_resource type="Script" path="res://UI/scripts/weapon_selector.gd" id="2_86ani"]
+[ext_resource type="Texture2D" path="res://asset/images/ui/mainhand.png" id="3_gar8u"]
+[ext_resource type="Texture2D" path="res://asset/images/ui/offhand.png" id="4_btbbh"]
+[ext_resource type="Texture2D" path="res://asset/images/ui/status frame.png" id="5_xocvv"]
+[ext_resource type="Script" path="res://UI/scripts/components/gold_hud_display.gd" id="6_jiqn8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bar_bg"]
+bg_color = Color(0.08, 0.08, 0.08, 0.82)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bar_fill"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[node name="BattleHud" type="Control" unique_id=1096268923]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_fh7no")
+
+[node name="Equipped" type="Label" parent="." unique_id=321428590]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Weapons"
+
+[node name="WeaponSelector" type="Control" parent="." unique_id=673123269]
+anchors_preset = 0
+offset_left = 6.0
+offset_top = 5.0
+offset_right = 206.0
+offset_bottom = 205.0
+scale = Vector2(1.2, 1.2)
+script = ExtResource("2_86ani")
+
+[node name="Slot0" type="Control" parent="WeaponSelector" unique_id=315579612]
+anchors_preset = 0
+offset_left = 56.0
+offset_top = 108.0
+offset_right = 136.0
+offset_bottom = 188.0
+
+[node name="Background" type="TextureRect" parent="WeaponSelector/Slot0" unique_id=417292939]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3_gar8u")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Icon" type="TextureRect" parent="WeaponSelector/Slot0" unique_id=239398316]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -25.0
+offset_top = -25.0
+offset_right = 25.0
+offset_bottom = 25.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Slot1" type="Control" parent="WeaponSelector" unique_id=568142288]
+anchors_preset = 0
+offset_left = 56.0
+offset_top = 20.0
+offset_right = 136.0
+offset_bottom = 100.0
+
+[node name="Background" type="TextureRect" parent="WeaponSelector/Slot1" unique_id=591956055]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("4_btbbh")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Icon" type="TextureRect" parent="WeaponSelector/Slot1" unique_id=1013111834]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -25.0
+offset_top = -25.0
+offset_right = 25.0
+offset_bottom = 25.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Slot2" type="Control" parent="WeaponSelector" unique_id=1763285441]
+anchors_preset = 0
+offset_left = 12.0
+offset_top = 64.0
+offset_right = 92.0
+offset_bottom = 144.0
+
+[node name="Background" type="TextureRect" parent="WeaponSelector/Slot2" unique_id=2053267405]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("4_btbbh")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Icon" type="TextureRect" parent="WeaponSelector/Slot2" unique_id=1527058606]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -25.0
+offset_top = -25.0
+offset_right = 25.0
+offset_bottom = 25.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Slot3" type="Control" parent="WeaponSelector" unique_id=2127302516]
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 64.0
+offset_right = 180.0
+offset_bottom = 144.0
+
+[node name="Background" type="TextureRect" parent="WeaponSelector/Slot3" unique_id=1800182055]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("4_btbbh")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Icon" type="TextureRect" parent="WeaponSelector/Slot3" unique_id=1196682410]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -25.0
+offset_top = -25.0
+offset_right = 25.0
+offset_bottom = 25.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Augments" type="Label" parent="." unique_id=360447397]
+visible = false
+layout_mode = 0
+offset_left = 2.0
+offset_top = 109.0
+offset_right = 81.0
+offset_bottom = 132.0
+text = "Augments"
+
+[node name="HpLabel" type="TextureRect" parent="." unique_id=889654884]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 535.0
+offset_right = 435.0
+offset_bottom = 704.0
+scale = Vector2(0.8, 0.64)
+texture = ExtResource("5_xocvv")
+
+[node name="Hp" type="Label" parent="HpLabel" unique_id=1902588253]
+visible = false
+layout_mode = 0
+offset_left = 64.99999
+offset_top = 37.5
+offset_right = 86.99999
+offset_bottom = 60.5
+
+[node name="HpBar" type="ProgressBar" parent="HpLabel" unique_id=1213377119]
+visible = false
+layout_mode = 0
+offset_left = 175.0
+offset_top = 42.187492
+offset_right = 337.0
+offset_bottom = 54.187492
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bar_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_bar_fill")
+value = 100.0
+show_percentage = false
+
+[node name="Gold" type="Label" parent="." unique_id=1807235609]
+layout_mode = 0
+offset_left = 461.0
+offset_top = 2.0
+offset_right = 615.0
+offset_bottom = 40.0
+script = ExtResource("6_jiqn8")
+
+[node name="Resource" type="Label" parent="." unique_id=1404810870]
+layout_mode = 0
+offset_left = 1056.0
+offset_top = 595.0
+offset_right = 1128.0
+offset_bottom = 618.0
+text = "Resource"
+
+[node name="Time" type="Label" parent="." unique_id=2040564488]
+layout_mode = 0
+offset_left = 462.0
+offset_top = 58.0
+offset_right = 562.0
+offset_bottom = 91.0
+text = "Time"

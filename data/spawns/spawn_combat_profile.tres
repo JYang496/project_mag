@@ -53,6 +53,7 @@ weight = 3
 [sub_resource type="Resource" id="Level_3"]
 script = ExtResource("2_level")
 time_out_sec = 50
+target_total_hp = 1000
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_roll_chaser"), SubResource("Entry_shield_tutorial"), SubResource("Entry_spike_main")])
 
 [sub_resource type="Resource" id="Entry_bomber_main"]

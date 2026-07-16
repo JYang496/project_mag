@@ -282,9 +282,12 @@ func _exit_tree() -> void:
 func _rebuild_ground() -> void:
 	if _ground_root == null or _board == null:
 		return
+	if _mesh_registry != null:
+		_mesh_registry.clear()
 	_clear_ground_visual_caches()
 	for child in _ground_root.get_children():
-		child.queue_free()
+		if not child.is_queued_for_deletion():
+			child.queue_free()
 	if not enabled or not _board.has_method("get_cells"):
 		return
 	for cell_variant in _board.call("get_cells"):

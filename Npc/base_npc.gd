@@ -55,7 +55,7 @@ func damaged(attack:Attack):
 		return
 	if attack != null and attack.is_from_player():
 		PlayerData.run_total_damage_dealt += max(0, result.final_damage)
-	_queue_hit_label_damage(result.final_damage, result.damage_type)
+	_queue_hit_label_damage(result.final_damage, result.damage_type, attack.feedback_batch_id if attack != null else 0)
 	knockback.amount = attack.knock_back.amount
 	knockback.angle = attack.knock_back.angle
 	_play_hit_flash()
@@ -65,8 +65,8 @@ func damaged(attack:Attack):
 		status_runtime.start_timer_if_needed()
 
 
-func _queue_hit_label_damage(damage_value: int, damage_type: StringName) -> void:
-	damage_feedback.queue_hit_label_damage(damage_value, damage_type)
+func _queue_hit_label_damage(damage_value: int, damage_type: StringName, attack_batch_id: int = 0) -> void:
+	damage_feedback.queue_hit_label_damage(damage_value, damage_type, attack_batch_id)
 
 func _flush_pending_hit_label() -> void:
 	damage_feedback.flush_pending_hit_label()

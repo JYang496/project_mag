@@ -52,3 +52,16 @@ Use the existing test infrastructure when possible:
 ```powershell
 pwsh -NoProfile -File tests/infrastructure/select_affected_tests.ps1
 pwsh -NoProfile -File tests/infrastructure/run_selected_tests.ps1 -BaseRef origin/master
+```
+
+The local Godot 4.7.1 console executable is:
+
+```text
+E:\Godot_v4.7.1-stable_win64\Godot_v4.7.1-stable_win64_console.exe
+```
+
+Use it for the project-wide script and resource compilation gate:
+
+```powershell
+& 'E:\Godot_v4.7.1-stable_win64\Godot_v4.7.1-stable_win64_console.exe' --headless --path . --check-only --quit
+```

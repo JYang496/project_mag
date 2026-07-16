@@ -21,6 +21,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+LoadingPerformance="*res://autoload/LoadingPerformance.gd"
 GlobalVariables="*res://autoload/GlobalVariables.gd"
 PlayerData="*res://autoload/PlayerData.gd"
 DataHandler="*res://autoload/DataHandler.gd"

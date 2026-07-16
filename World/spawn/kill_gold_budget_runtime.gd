@@ -10,6 +10,8 @@ var kill_gold_battle_timeout: int = 1
 var kill_gold_budget_active: bool = false
 var warned_inactive_kill_gold_budget: bool = false
 var kill_gold_collected: int = 0
+var target_hp_multiplier := 1.0
+var target_gold_multiplier := 1.0
 
 var _profile_provider := Callable()
 var _economy_provider := Callable()
@@ -23,8 +25,15 @@ func configure(print_stats: bool, print_drop_stats: bool) -> void:
 	debug_print_kill_gold_stats = print_stats
 	debug_print_kill_gold_drop_stats = print_drop_stats
 
+func configure_target_multipliers(hp_multiplier: float, gold_multiplier: float) -> void:
+	target_hp_multiplier = maxf(hp_multiplier, 0.01)
+	target_gold_multiplier = maxf(gold_multiplier, 0.0)
+
 func roll_enemy_kill_gold(enemy_instance: Node = null) -> int:
 	if not kill_gold_budget_active:
+		return 0
+	var remaining_budget := maxi(kill_gold_budget - kill_gold_paid, 0)
+	if remaining_budget <= 0:
 		return 0
 	var expected_gold := resolve_enemy_kill_expected_gold(enemy_instance)
 	if expected_gold <= 0.0:
@@ -32,7 +41,7 @@ func roll_enemy_kill_gold(enemy_instance: Node = null) -> int:
 	var max_drop_chance := get_kill_gold_max_drop_chance()
 	var drop_value := maxi(int(ceil(expected_gold / max_drop_chance)), 1)
 	var drop_chance := clampf(expected_gold / float(drop_value), 0.0, max_drop_chance)
-	var gold := drop_value if randf() < drop_chance else 0
+	var gold := mini(drop_value, remaining_budget) if randf() < drop_chance else 0
 	kill_gold_paid += gold
 	return gold
 
@@ -78,7 +87,7 @@ func resolve_kill_gold_target_total_hp_for_level(level_index: int) -> int:
 	var profile := _get_spawn_combat_profile()
 	if profile == null:
 		return 0
-	return maxi(int(profile.call("get_target_total_hp", level_index)), 0)
+	return maxi(int(round(float(profile.call("get_target_total_hp", level_index)) * target_hp_multiplier)), 0)
 
 func is_kill_gold_budget_active() -> bool:
 	return kill_gold_budget_active
@@ -92,7 +101,7 @@ func get_kill_gold_budget_snapshot() -> Dictionary:
 	}
 
 func start_kill_gold_budget(level_index: int, effective_time_out: int) -> void:
-	var target := resolve_kill_gold_target_for_level(level_index)
+	var target := int(round(float(resolve_kill_gold_target_for_level(level_index)) * target_gold_multiplier))
 	var variance := get_kill_gold_budget_variance()
 	var roll_min := maxf(0.0, 1.0 - variance)
 	var roll_max := maxf(roll_min, 1.0 + variance)

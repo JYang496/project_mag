@@ -14,9 +14,9 @@ func acquire(pool_key: StringName, mesh_resource: Mesh = null) -> MeshInstance3D
 	var bucket := _available.get(pool_key, []) as Array
 	var instance: MeshInstance3D
 	while not bucket.is_empty() and instance == null:
-		var candidate := bucket.pop_back() as MeshInstance3D
-		if candidate != null and is_instance_valid(candidate):
-			instance = candidate
+		var candidate_variant: Variant = bucket.pop_back()
+		if is_instance_valid(candidate_variant) and candidate_variant is MeshInstance3D:
+			instance = candidate_variant as MeshInstance3D
 	_available[pool_key] = bucket
 	if instance == null:
 		instance = MeshInstance3D.new()
@@ -53,11 +53,11 @@ func available_count(pool_key: StringName) -> int:
 
 func clear() -> void:
 	for instance in _in_use.values():
-		if instance is MeshInstance3D and is_instance_valid(instance):
+		if is_instance_valid(instance) and instance is MeshInstance3D:
 			(instance as MeshInstance3D).queue_free()
 	for bucket_variant in _available.values():
 		for instance in bucket_variant as Array:
-			if instance is MeshInstance3D and is_instance_valid(instance):
+			if is_instance_valid(instance) and instance is MeshInstance3D:
 				(instance as MeshInstance3D).queue_free()
 	_in_use.clear()
 	_available.clear()

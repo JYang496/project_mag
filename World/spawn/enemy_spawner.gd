@@ -23,6 +23,7 @@ const SPAWN_POINT_PICKER_SCRIPT := preload("res://World/spawn/spawn_point_picker
 const SPAWN_BUDGET_RUNTIME_SCRIPT := preload("res://World/spawn/spawn_budget_runtime.gd")
 const KILL_GOLD_BUDGET_RUNTIME_SCRIPT := preload("res://World/spawn/kill_gold_budget_runtime.gd")
 const BATTLE_CONTRACT_COMBAT_BRIDGE_SCRIPT := preload("res://Combat/battle_contract/BattleContractCombatBridge.gd")
+const REWARD_ENEMY_SCENE := preload("res://Npc/enemy/scenes/reward_enemy.tscn")
 
 var instance_list : Array
 var _runtime_spawn_states: Array[Dictionary] = []
@@ -65,6 +66,12 @@ var _contract_external_victory := false
 var _contract_prefer_final_elite := false
 var _contract_batch_count := 0
 var _contract_released_batches := 0
+var _contract_spawn_plan: Array[int] = []
+var _contract_spawn_plan_cursor := 0
+var _contract_reward_stage := false
+var _contract_reward_hp_multiplier := 1.0
+var _contract_reward_multiplier := 1.0
+var _contract_kill_gold_multiplier := 1.0
 
 func _ready():
 	GlobalVariables.enemy_spawner = self
@@ -176,6 +183,7 @@ func _sync_kill_gold_budget_config() -> void:
 		debug_print_kill_gold_stats,
 		debug_print_kill_gold_drop_stats
 	)
+	_kill_gold_budget_runtime.configure_target_multipliers(_contract_reward_hp_multiplier, _contract_reward_multiplier * _contract_kill_gold_multiplier)
 
 func _sync_kill_gold_budget_runtime_state() -> void:
 	if _kill_gold_budget_runtime == null:
@@ -294,7 +302,9 @@ func _build_random_spawn_batch(level_index: int, _effective_time_out: int) -> Di
 	for _attempt in range(int(profile.get("max_selection_attempts"))):
 		if _available_hp_budget <= 0.0 or _spawn_budget_stopped:
 			break
-		var candidate := _pick_weighted_candidate(available, count_by_scene, ranged_count, elite_count, level_index)
+		var candidate := _get_next_contract_planned_candidate(available)
+		if candidate.is_empty() and _contract_spawn_plan.is_empty():
+			candidate = _pick_weighted_candidate(available, count_by_scene, ranged_count, elite_count, level_index)
 		if candidate.is_empty():
 			break
 		var scene_path := _get_spawn_scene_path(candidate)
@@ -303,6 +313,8 @@ func _build_random_spawn_batch(level_index: int, _effective_time_out: int) -> Di
 		if spawned_hp <= 0:
 			available.erase(candidate)
 			continue
+		if not _contract_spawn_plan.is_empty():
+			_contract_spawn_plan_cursor += 1
 		candidate["cooldown"] = 1
 		batch[candidate_id] = int(batch.get(candidate_id, 0)) + 1
 		count_by_scene[scene_path] = int(count_by_scene.get(scene_path, 0)) + 1
@@ -810,6 +822,8 @@ func get_spawn_budget_snapshot() -> Dictionary:
 		"spawned_total_hp": _spawned_total_hp,
 		"killed_total_hp": _killed_total_hp,
 		"available_hp_budget": _available_hp_budget,
+		"planned_enemy_count": _contract_spawn_plan.size(),
+		"spawned_enemy_count": _contract_spawn_plan_cursor,
 		"stopped": _spawn_budget_stopped,
 	}
 
@@ -836,11 +850,46 @@ func get_contract_beacon_points() -> PackedVector2Array:
 				best_distance = distance
 	return best if best_distance >= 300.0 else PackedVector2Array()
 
+func get_contract_objective_points() -> PackedVector2Array:
+	var candidates := PackedVector2Array()
+	var player_position: Vector2 = PlayerData.player.global_position if PlayerData.player != null else Vector2.ZERO
+	for cell in _get_effective_board_cells():
+		if cell == null:
+			continue
+		var cell_center := cell.global_transform * Vector2(256.0, 256.0)
+		if cell_center.distance_to(player_position) >= 180.0:
+			candidates.append(cell_center)
+	if candidates.is_empty():
+		return PackedVector2Array()
+	var selected := PackedVector2Array()
+	var first := candidates[0]
+	for point in candidates:
+		if point.distance_to(player_position) > first.distance_to(player_position):
+			first = point
+	selected.append(first)
+	while selected.size() < 3 and selected.size() < candidates.size():
+		var best_point := Vector2.INF
+		var best_min_distance := -1.0
+		for candidate in candidates:
+			if selected.has(candidate):
+				continue
+			var min_distance := INF
+			for existing in selected:
+				min_distance = minf(min_distance, candidate.distance_to(existing))
+			if min_distance > best_min_distance:
+				best_min_distance = min_distance
+				best_point = candidate
+		if best_point == Vector2.INF or best_min_distance < 220.0:
+			break
+		selected.append(best_point)
+	return selected
+
 func configure_contract_finite_budget(total_budget: float) -> void:
 	_init_spawn_budget_runtime()
 	_spawn_budget_runtime.planned_target_total_hp = maxi(int(round(total_budget)), 1)
 	_spawn_budget_runtime.combat_budget_active = true
 	_sync_spawn_budget_runtime_state()
+	_build_contract_spawn_plan(_spawn_budget_runtime.planned_target_total_hp, maxi(PhaseManager.current_level, 0))
 
 func configure_contract_batches(batch_count: int) -> void:
 	_contract_batch_count = maxi(batch_count, 1)
@@ -858,6 +907,20 @@ func configure_contract_continuous_spawning(enabled: bool) -> void:
 func configure_contract_threat_multiplier(multiplier: float) -> void:
 	_contract_threat_multiplier = maxf(multiplier, 0.1)
 
+func release_contract_reinforcement_budget(multiplier: float = 1.0) -> void:
+	_init_spawn_budget_runtime()
+	_sync_spawn_budget_owner_state_to_runtime()
+	if not _spawn_budget_runtime.is_combat_budget_ready():
+		return
+	var level_index := maxi(PhaseManager.current_level, 0)
+	var effective_time_out := get_effective_time_out(_runtime_base_time_out, level_index)
+	var reinforcement_budget: float = (
+		float(_spawn_budget_runtime.resolve_batch_hp_budget(level_index, effective_time_out))
+		* clampf(multiplier, 0.0, 10.0)
+	)
+	_spawn_budget_runtime.available_hp_budget += reinforcement_budget
+	_sync_spawn_budget_runtime_state()
+
 func configure_contract_external_victory(enabled: bool) -> void:
 	_contract_external_victory = enabled
 
@@ -872,6 +935,74 @@ func reset_contract_configuration() -> void:
 	_contract_prefer_final_elite = false
 	_contract_batch_count = 0
 	_contract_released_batches = 0
+	_contract_spawn_plan.clear()
+	_contract_spawn_plan_cursor = 0
+	_contract_reward_stage = false
+	_contract_reward_hp_multiplier = 1.0
+	_contract_reward_multiplier = 1.0
+	_contract_kill_gold_multiplier = 1.0
+	if _kill_gold_budget_runtime != null:
+		_kill_gold_budget_runtime.configure_target_multipliers(1.0, 1.0)
+
+func configure_contract_reward_stage(enabled: bool, hp_budget_multiplier: float = 2.0, reward_multiplier: float = 2.0) -> void:
+	_contract_reward_stage = enabled
+	_contract_reward_hp_multiplier = maxf(hp_budget_multiplier, 1.0) if enabled else 1.0
+	_contract_reward_multiplier = maxf(reward_multiplier, 1.0) if enabled else 1.0
+	_init_kill_gold_budget_runtime()
+	_kill_gold_budget_runtime.configure_target_multipliers(_contract_reward_hp_multiplier, _contract_reward_multiplier * _contract_kill_gold_multiplier)
+
+func configure_contract_kill_gold_multiplier(multiplier: float) -> void:
+	_contract_kill_gold_multiplier = clampf(multiplier, 0.0, 1.0)
+	_init_kill_gold_budget_runtime()
+	_kill_gold_budget_runtime.configure_target_multipliers(_contract_reward_hp_multiplier, _contract_reward_multiplier * _contract_kill_gold_multiplier)
+
+func _build_contract_spawn_plan(total_hp: int, level_index: int) -> void:
+	_contract_spawn_plan.clear()
+	_contract_spawn_plan_cursor = 0
+	if total_hp <= 0 or _runtime_spawn_states.is_empty():
+		return
+	var planned_hp := 0
+	while planned_hp < total_hp:
+		var weighted: Array[Dictionary] = []
+		var total_weight := 0.0
+		for state in _runtime_spawn_states:
+			var entry := _get_state_entry(state)
+			if entry == null or entry.enemy == null:
+				continue
+			var weight := maxf(float(entry.weight), 1.0)
+			if _contract_prefer_final_elite and float(planned_hp) / float(total_hp) >= 0.8 and _is_spawn_elite(state):
+				weight *= 8.0
+			weighted.append({"state": state, "weight": weight})
+			total_weight += weight
+		if weighted.is_empty() or total_weight <= 0.0:
+			break
+		var roll := _rng.randf_range(0.0, total_weight)
+		var selected := weighted.back()["state"] as Dictionary
+		for item in weighted:
+			roll -= float(item["weight"])
+			if roll <= 0.0:
+				selected = item["state"] as Dictionary
+				break
+		_contract_spawn_plan.append(int(selected.get("id", -1)))
+		planned_hp += _resolve_budget_candidate_hp(selected, level_index)
+
+func _get_next_contract_planned_candidate(available: Array[Dictionary]) -> Dictionary:
+	if _contract_spawn_plan.is_empty() or _contract_spawn_plan_cursor >= _contract_spawn_plan.size():
+		return {}
+	if _contract_batch_count > 0:
+		var released_count := ceili(float(_contract_spawn_plan.size()) * float(_contract_released_batches) / float(_contract_batch_count))
+		if _contract_spawn_plan_cursor >= released_count:
+			return {}
+	for plan_index in range(_contract_spawn_plan_cursor, _contract_spawn_plan.size()):
+		var planned_id := _contract_spawn_plan[plan_index]
+		for state in available:
+			if int(state.get("id", -1)) != planned_id:
+				continue
+			if plan_index != _contract_spawn_plan_cursor:
+				_contract_spawn_plan[plan_index] = _contract_spawn_plan[_contract_spawn_plan_cursor]
+				_contract_spawn_plan[_contract_spawn_plan_cursor] = planned_id
+			return state
+	return {}
 
 func _get_registered_enemies() -> Array[Node2D]:
 	var output: Array[Node2D] = []
@@ -915,6 +1046,8 @@ func calculate_scaled_enemy_stats(
 func _prepare_level_combat_budget(level_index: int, effective_time_out: int) -> void:
 	_init_spawn_budget_runtime()
 	_spawn_budget_runtime.prepare_level_combat_budget(level_index, effective_time_out)
+	if _contract_reward_stage:
+		_spawn_budget_runtime.planned_target_total_hp = maxi(int(round(float(_spawn_budget_runtime.planned_target_total_hp) * _contract_reward_hp_multiplier)), 1)
 	_sync_spawn_budget_runtime_state()
 
 func _record_enemy_death_for_budget_summary(enemy_instance: Node, was_killed: bool) -> void:
@@ -1064,6 +1197,7 @@ func _build_runtime_spawn_context(level_index: int) -> bool:
 	var safe_level_index := maxi(level_index, 0)
 	if safe_level_index < instance_list.size():
 		_runtime_spawn_states = _build_runtime_states(instance_list[safe_level_index])
+		_apply_reward_stage_spawn_override()
 		var fallback_timeout := 30
 		var level_config := SpawnData.level_list[safe_level_index]
 		if level_config != null:
@@ -1077,6 +1211,7 @@ func _build_runtime_spawn_context(level_index: int) -> bool:
 		for entry in level_spawns_variant as Array:
 			mixed_spawns.append(entry)
 	_runtime_spawn_states = _build_runtime_states(mixed_spawns)
+	_apply_reward_stage_spawn_override()
 	var overflow_fallback := 30
 	if not SpawnData.level_list.is_empty():
 		var last_level_config: LevelCombatPlan = SpawnData.level_list.back() as LevelCombatPlan
@@ -1084,6 +1219,15 @@ func _build_runtime_spawn_context(level_index: int) -> bool:
 			overflow_fallback = max(1, int(last_level_config.time_out_sec))
 	_runtime_base_time_out = _resolve_level_time_out_for_budget(safe_level_index, overflow_fallback)
 	return not _runtime_spawn_states.is_empty()
+
+func _apply_reward_stage_spawn_override() -> void:
+	if not _contract_reward_stage:
+		return
+	var entry := EnemySpawnEntry.new()
+	entry.enemy = REWARD_ENEMY_SCENE
+	entry.start_sec = 1
+	entry.weight = 1
+	_runtime_spawn_states = _build_runtime_states([entry])
 
 func _resolve_level_time_out_for_budget(level_index: int, fallback_time_out: int) -> int:
 	var safe_fallback: int = maxi(int(fallback_time_out), 1)

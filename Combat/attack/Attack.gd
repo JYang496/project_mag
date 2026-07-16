@@ -22,6 +22,8 @@ var knock_back = {
 }
 var damage_is_final: bool = false
 var suppress_reactive_effects: bool = false
+# Stable for every application derived from the same DamageData event.
+var feedback_batch_id: int = 0
 
 static func normalize_damage_type(value: Variant) -> StringName:
 	if value == null:

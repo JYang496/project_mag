@@ -4,7 +4,6 @@ signal snapshot_changed(snapshot: Dictionary)
 signal completed(snapshot: Dictionary)
 
 var port
-var points := PackedVector2Array()
 var beacon_index := 0
 var progress := 0.0
 var charge_duration_sec := 12.0
@@ -13,13 +12,16 @@ var enemy_count := 0
 var available_progress_sec := 0.0
 var actual_progress_sec := 0.0
 var stalled_sec := 0.0
-var _started := false
+var _beacon_spawned := false
 
 func start(combat_port, parameters: Dictionary) -> void:
 	port = combat_port
 	port.request_external_victory_control(true)
-	points = port.get_battlefield_capabilities().get("operation_beacon_points", PackedVector2Array())
-	charge_duration_sec = clampf(float(parameters.get("charge_time_sec", 12.0)), 10.0, 14.0)
+	port.request_configure_continuous_spawning(true)
+	var minimum_charge := maxf(float(parameters.get("charge_time_min_sec", 10.0)), 1.0)
+	var maximum_charge := maxf(float(parameters.get("charge_time_max_sec", 14.0)), minimum_charge)
+	charge_duration_sec = clampf(float(parameters.get("charge_time_sec", (minimum_charge + maximum_charge) * 0.5)), minimum_charge, maximum_charge)
+	port.request_configure_duration(charge_duration_sec * 2.0 + 12.0)
 	port.battle_tick.connect(_on_tick)
 	port.beacon_presence_changed.connect(_on_presence_changed)
 	_emit_snapshot()
@@ -29,15 +31,15 @@ func stop() -> void:
 		if port.battle_tick.is_connected(_on_tick): port.battle_tick.disconnect(_on_tick)
 		if port.beacon_presence_changed.is_connected(_on_presence_changed): port.beacon_presence_changed.disconnect(_on_presence_changed)
 		port.request_remove_beacons()
+		port.request_configure_continuous_spawning(false)
 		port.request_external_victory_control(false)
 	port = null
 
 func _on_tick(snapshot: Dictionary) -> void:
 	var delta := float(snapshot.get("delta_sec", 0.0))
-	if not _started and points.size() >= 2:
-		_started = true
-		port.request_spawn_beacon(1, points[0])
-	if not _started:
+	if not _beacon_spawned:
+		_try_spawn_current_beacon()
+	if not _beacon_spawned:
 		return
 	available_progress_sec += delta
 	if player_inside:
@@ -63,15 +65,40 @@ func _advance_beacon() -> void:
 	progress = 0.0
 	player_inside = false
 	enemy_count = 0
+	_beacon_spawned = false
 	if beacon_index >= 2:
 		port.request_stop_spawning()
 		port.request_evacuate_enemies({"grant_kill_rewards": false})
 		completed.emit(_snapshot())
 		return
-	port.request_spawn_beacon(2, points[1])
+	_try_spawn_current_beacon()
+
+func _try_spawn_current_beacon() -> void:
+	var beacon_position := _resolve_beacon_position(beacon_index)
+	if beacon_position == Vector2.INF:
+		return
+	_beacon_spawned = true
+	port.request_spawn_beacon(beacon_index + 1, beacon_position)
+
+func _resolve_beacon_position(index: int) -> Vector2:
+	if port == null:
+		return Vector2.INF
+	var capabilities: Dictionary = port.get_battlefield_capabilities()
+	var current_points: PackedVector2Array = capabilities.get("operation_beacon_points", PackedVector2Array())
+	return current_points[index] if index >= 0 and index < current_points.size() else Vector2.INF
 
 func _snapshot() -> Dictionary:
-	return {"contract_id": &"operation", "current_beacon": mini(beacon_index + 1, 2), "total_beacons": 2, "progress": progress, "available_progress_sec": available_progress_sec, "actual_progress_sec": actual_progress_sec, "stalled_sec": stalled_sec}
+	return {
+		"contract_id": &"operation",
+		"current_beacon": mini(beacon_index + 1, 2),
+		"total_beacons": 2,
+		"progress": progress,
+		"player_inside": player_inside,
+		"enemy_count": enemy_count,
+		"available_progress_sec": available_progress_sec,
+		"actual_progress_sec": actual_progress_sec,
+		"stalled_sec": stalled_sec,
+	}
 
 func _emit_snapshot() -> void:
 	snapshot_changed.emit(_snapshot())

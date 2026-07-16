@@ -24,6 +24,27 @@ class_name EconomyConfig
 @export var kill_gold_target_increment_after_table: int = 12
 @export_range(0.0, 1.0, 0.01) var kill_gold_budget_variance: float = 0.1
 @export_range(0.05, 1.0, 0.01) var kill_gold_max_drop_chance: float = 0.65
+@export var contract_total_gold_multipliers: Dictionary = {
+	&"elimination": 1.00,
+	&"survival": 1.05,
+	&"operation": 1.00,
+	&"containment": 1.15,
+	&"extraction": 1.05,
+}
+@export var contract_kill_gold_shares: Dictionary = {
+	&"elimination": 0.90,
+	&"survival": 0.20,
+	&"operation": 0.15,
+	&"containment": 0.15,
+	&"extraction": 0.20,
+}
+@export var contract_performance_gold_shares: Dictionary = {
+	&"elimination": 0.03,
+	&"survival": 0.00,
+	&"operation": 0.10,
+	&"containment": 0.15,
+	&"extraction": 0.10,
+}
 @export var reward_module_options_enabled: bool = true
 @export var task_reward_options_enabled: bool = true
 @export_range(0.0, 1.0, 0.01) var battle_drop_weapon_chance: float = 0.75
@@ -41,6 +62,32 @@ class_name EconomyConfig
 
 func get_default_player_gold() -> int:
 	return maxi(default_player_gold, 0)
+
+func get_contract_gold_plan(contract_id: StringName, level_index: int) -> Dictionary:
+	var base_target := _get_kill_gold_target(level_index)
+	var total_multiplier := maxf(float(contract_total_gold_multipliers.get(contract_id, 1.0)), 0.0)
+	var kill_share := clampf(float(contract_kill_gold_shares.get(contract_id, 1.0)), 0.0, total_multiplier)
+	var performance_share := clampf(float(contract_performance_gold_shares.get(contract_id, 0.0)), 0.0, maxf(total_multiplier - kill_share, 0.0))
+	var total_gold := maxi(int(round(float(base_target) * total_multiplier)), 0)
+	var kill_gold_cap := clampi(int(round(float(base_target) * kill_share)), 0, total_gold)
+	var performance_gold_cap := clampi(int(round(float(base_target) * performance_share)), 0, maxi(total_gold - kill_gold_cap, 0))
+	var completion_gold := maxi(total_gold - kill_gold_cap - performance_gold_cap, 0)
+	return {
+		"base_target": base_target,
+		"total_gold": total_gold,
+		"kill_gold_cap": kill_gold_cap,
+		"kill_gold_multiplier": float(kill_gold_cap) / float(maxi(base_target, 1)),
+		"completion_gold": completion_gold,
+		"performance_gold_cap": performance_gold_cap,
+	}
+
+func _get_kill_gold_target(level_index: int) -> int:
+	if kill_gold_target_by_level.is_empty():
+		return 0
+	var safe_level := maxi(level_index, 0)
+	if safe_level < kill_gold_target_by_level.size():
+		return maxi(int(kill_gold_target_by_level[safe_level]), 0)
+	return maxi(int(kill_gold_target_by_level[-1]) + maxi(kill_gold_target_increment_after_table, 0) * (safe_level - kill_gold_target_by_level.size() + 1), 0)
 
 func get_duplicate_weapon_gold(base_price: int) -> int:
 	var purchase_value := float(maxi(base_price, 0)) * maxf(weapon_purchase_price_multiplier, 0.0)

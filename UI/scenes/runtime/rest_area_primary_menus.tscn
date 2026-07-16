@@ -1,0 +1,281 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://UI/scripts/management/rest_area_primary_menus_view.gd" id="1_8ml83"]
+[ext_resource type="Theme" path="res://UI/themes/primary_menu_button_theme.tres" id="2_t1bqh"]
+
+[node name="RestAreaPrimaryMenus" type="Control" unique_id=1254884039]
+layout_mode = 3
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("1_8ml83")
+
+[node name="PurchasePrimaryRoot" type="Control" parent="." unique_id=1114808495]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Panel" type="Panel" parent="PurchasePrimaryRoot" unique_id=1490538187]
+custom_minimum_size = Vector2(312, 320)
+layout_mode = 0
+offset_left = 316.0
+offset_top = 170.0
+offset_right = 836.0
+offset_bottom = 490.0
+theme = ExtResource("2_t1bqh")
+
+[node name="Title" type="Label" parent="PurchasePrimaryRoot/Panel" unique_id=618611466]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 16.0
+offset_right = -28.0
+offset_bottom = 44.0
+grow_horizontal = 2
+text = "Merchant Menu"
+vertical_alignment = 1
+
+[node name="SubTitle" type="Label" parent="PurchasePrimaryRoot/Panel" unique_id=488877880]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 48.0
+offset_right = -28.0
+offset_bottom = 76.0
+grow_horizontal = 2
+text = "Choose Buy or Warehouse"
+vertical_alignment = 1
+
+[node name="OpenBuyButton" type="Button" parent="PurchasePrimaryRoot/Panel" unique_id=1278877826]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 108.0
+offset_right = 248.0
+offset_bottom = 154.0
+text = "Buy"
+
+[node name="OpenBuyModuleButton" type="Button" parent="PurchasePrimaryRoot/Panel" unique_id=1047985539]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 166.0
+offset_right = 248.0
+offset_bottom = 212.0
+text = "Warehouse"
+
+[node name="UpgradePrimaryRoot" type="Control" parent="." unique_id=54050891]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Panel" type="Panel" parent="UpgradePrimaryRoot" unique_id=274877522]
+custom_minimum_size = Vector2(312, 320)
+layout_mode = 0
+offset_left = 316.0
+offset_top = 170.0
+offset_right = 836.0
+offset_bottom = 490.0
+theme = ExtResource("2_t1bqh")
+
+[node name="Title" type="Label" parent="UpgradePrimaryRoot/Panel" unique_id=1996948769]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 16.0
+offset_right = -28.0
+offset_bottom = 44.0
+grow_horizontal = 2
+text = "Smith Menu"
+vertical_alignment = 1
+
+[node name="SubTitle" type="Label" parent="UpgradePrimaryRoot/Panel" unique_id=2019963235]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 48.0
+offset_right = -28.0
+offset_bottom = 76.0
+grow_horizontal = 2
+text = "Choose an operation"
+vertical_alignment = 1
+
+[node name="OpenUpgradeButton" type="Button" parent="UpgradePrimaryRoot/Panel" unique_id=1916617296]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 108.0
+offset_right = 248.0
+offset_bottom = 154.0
+text = "Upgrade"
+
+[node name="WarehousePrimaryRoot" type="Control" parent="." unique_id=1319409131]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Panel" type="Panel" parent="WarehousePrimaryRoot" unique_id=1198692889]
+custom_minimum_size = Vector2(312, 320)
+layout_mode = 0
+offset_left = 316.0
+offset_top = 170.0
+offset_right = 836.0
+offset_bottom = 490.0
+theme = ExtResource("2_t1bqh")
+
+[node name="Title" type="Label" parent="WarehousePrimaryRoot/Panel" unique_id=326982518]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 16.0
+offset_right = -28.0
+offset_bottom = 44.0
+grow_horizontal = 2
+text = "Module Management"
+vertical_alignment = 1
+
+[node name="SubTitle" type="Label" parent="WarehousePrimaryRoot/Panel" unique_id=1408043006]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 48.0
+offset_right = -28.0
+offset_bottom = 76.0
+grow_horizontal = 2
+text = "Install or remove weapon modules"
+vertical_alignment = 1
+
+[node name="OpenModuleButton" type="Button" parent="WarehousePrimaryRoot/Panel" unique_id=1768691571]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 108.0
+offset_right = 248.0
+offset_bottom = 154.0
+text = "Manage Modules"
+
+[node name="BoardEditRoot" type="Control" parent="." unique_id=1279544841]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PrimaryMenuRoot" type="Control" parent="BoardEditRoot" unique_id=1064637804]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Panel" type="Panel" parent="BoardEditRoot/PrimaryMenuRoot" unique_id=426736105]
+custom_minimum_size = Vector2(312, 320)
+layout_mode = 0
+offset_left = 316.0
+offset_top = 170.0
+offset_right = 836.0
+offset_bottom = 490.0
+theme = ExtResource("2_t1bqh")
+
+[node name="Title" type="Label" parent="BoardEditRoot/PrimaryMenuRoot/Panel" unique_id=931270195]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 16.0
+offset_right = -28.0
+offset_bottom = 44.0
+grow_horizontal = 2
+text = "Board"
+vertical_alignment = 1
+
+[node name="SubTitle" type="Label" parent="BoardEditRoot/PrimaryMenuRoot/Panel" unique_id=942124654]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 48.0
+offset_right = -28.0
+offset_bottom = 76.0
+grow_horizontal = 2
+text = "Choose a grid action"
+vertical_alignment = 1
+
+[node name="OpenGridManagementButton" type="Button" parent="BoardEditRoot/PrimaryMenuRoot/Panel" unique_id=205349106]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 108.0
+offset_right = 248.0
+offset_bottom = 154.0
+text = "Grid Management"
+
+[node name="OpenTaskManagementButton" type="Button" parent="BoardEditRoot/PrimaryMenuRoot/Panel" unique_id=1382933047]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 166.0
+offset_right = 248.0
+offset_bottom = 212.0
+text = "Task Management"
+
+[node name="BattleStartRoot" type="Control" parent="." unique_id=1554838435]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PrimaryMenuRoot" type="Control" parent="BattleStartRoot" unique_id=1102158406]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Panel" type="Panel" parent="BattleStartRoot/PrimaryMenuRoot" unique_id=57609745]
+custom_minimum_size = Vector2(312, 320)
+layout_mode = 0
+offset_left = 316.0
+offset_top = 170.0
+offset_right = 836.0
+offset_bottom = 490.0
+theme = ExtResource("2_t1bqh")
+
+[node name="Title" type="Label" parent="BattleStartRoot/PrimaryMenuRoot/Panel" unique_id=1511291816]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 16.0
+offset_right = -28.0
+offset_bottom = 44.0
+grow_horizontal = 2
+text = "ui.rest.zone.battle.title"
+vertical_alignment = 1
+
+[node name="SubTitle" type="Label" parent="BattleStartRoot/PrimaryMenuRoot/Panel" unique_id=1264634456]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 48.0
+offset_right = -28.0
+offset_bottom = 76.0
+grow_horizontal = 2
+text = "ui.rest.zone.battle.subtitle"
+vertical_alignment = 1
+
+[node name="StartBattleButton" type="Button" parent="BattleStartRoot/PrimaryMenuRoot/Panel" unique_id=1479193389]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 108.0
+offset_right = 248.0
+offset_bottom = 154.0
+text = "ui.dialog.action.start_battle"

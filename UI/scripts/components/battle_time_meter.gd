@@ -17,6 +17,7 @@ var _ratio: float = 0.0
 var _state: StringName = &"normal"
 var _pulse_time: float = 0.0
 var _digit_label: Label
+var _suppressed := false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -34,8 +35,18 @@ func set_time(remaining: int, duration: int, phase: String) -> void:
 	_phase = phase
 	_ratio = clampf(float(_remaining) / float(_duration), 0.0, 1.0)
 	_state = _resolve_state()
-	visible = _phase == "battle"
+	visible = _phase == "battle" and not _suppressed
 	_update_digit_label()
+	queue_redraw()
+
+func set_suppressed(suppressed: bool) -> void:
+	if _suppressed == suppressed:
+		return
+	_suppressed = suppressed
+	visible = _phase == "battle" and not _suppressed
+	set_process(not _suppressed)
+	if _suppressed:
+		_pulse_time = 0.0
 	queue_redraw()
 
 func _process(delta: float) -> void:

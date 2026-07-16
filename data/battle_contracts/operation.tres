@@ -10,4 +10,4 @@ description_key = "battle_contract.operation.description"
 accent_color = Color(0.545, 0.424, 0.878, 1)
 weight = 0.8
 build_tags = Array[StringName]([&"mobility", &"knockback", &"control"])
-parameters = {"beacon_count": 2, "charge_time_min_sec": 10, "charge_time_max_sec": 14}
+parameters = {"beacon_count": 2, "charge_time_min_sec": 10, "charge_time_max_sec": 14, "required_capability": "supports_operation"}

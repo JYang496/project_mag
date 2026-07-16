@@ -608,7 +608,13 @@ func _refresh_time_text_value() -> void:
 	var time_remaining := PhaseManager.get_battle_time_remaining() if PhaseManager.has_method("get_battle_time_remaining") else PhaseManager.battle_time
 	var time_duration := maxi(int(PhaseManager.time_out), 1) if PhaseManager != null else 1
 	var phase := PhaseManager.current_state() if PhaseManager.has_method("current_state") else str(PhaseManager.phase)
-	var next_signature := "%s:%d:%d" % [phase, time_remaining, time_duration]
+	var contract_owns_timer: bool = phase == PhaseManager.BATTLE and BattleContractManager.state in [
+		BattleContractManager.ACTIVE,
+		BattleContractManager.COMPLETED,
+	]
+	if time_display.has_method("set_suppressed"):
+		time_display.call("set_suppressed", contract_owns_timer)
+	var next_signature := "%s:%d:%d:%s" % [phase, time_remaining, time_duration, str(BattleContractManager.state)]
 	if _last_time_text == next_signature:
 		return
 	_last_time_text = next_signature
@@ -617,6 +623,8 @@ func _refresh_time_text_value() -> void:
 	elif time_display is Label:
 		var next_time_text := LocalizationManager.tr_format("ui.hud.time", {"value": time_remaining}, "Time Left: %s" % str(time_remaining))
 		(time_display as Label).text = next_time_text
+	# Keep the final visibility authoritative even if a legacy display changes it in set_time().
+	time_display.visible = phase == PhaseManager.BATTLE and not contract_owns_timer
 
 func refresh_heat_fallback_text() -> void:
 	if heat_label and is_instance_valid(heat_label) and not heat_label.visible:

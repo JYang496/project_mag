@@ -73,20 +73,25 @@ func ensure_management_menu_buttons() -> void:
 	if owner_ui.upgrade_module_button == null:
 		owner_ui.upgrade_module_button = Button.new()
 		owner_ui.upgrade_module_button.name = "OpenModuleUpgradeButton"
+		owner_ui.upgrade_module_button.text = LocalizationManager.tr_key("ui.smith.upgrade.module", "Module")
 		owner_ui.upgrade_primary_panel.add_child(owner_ui.upgrade_module_button)
 	_connect_button_pressed(owner_ui.upgrade_module_button, owner_ui.rest_area_ui_controller.open_upgrade_panel.bind(&"module"))
-	var upgrade_back := owner_ui.upgrade_panel.get_node_or_null("BackToUpgradeMenu") as Button
-	_connect_button_pressed(upgrade_back, owner_ui.rest_area_ui_controller.back_to_upgrade_primary_menu)
+	# Secondary management panels are loaded later with Management Shell.
+	if owner_ui.upgrade_panel != null:
+		var upgrade_back := owner_ui.upgrade_panel.get_node_or_null("BackToUpgradeMenu") as Button
+		_connect_button_pressed(upgrade_back, owner_ui.rest_area_ui_controller.back_to_upgrade_primary_menu)
 
 	var open_module_button := owner_ui.warehouse_primary_panel.get_node_or_null("OpenModuleButton") as Button
 	_connect_button_pressed(open_module_button, owner_ui.rest_area_ui_controller.open_warehouse_management_panel)
 	if owner_ui.weapon_warehouse_button == null or not is_instance_valid(owner_ui.weapon_warehouse_button):
 		owner_ui.weapon_warehouse_button = Button.new()
 		owner_ui.weapon_warehouse_button.name = "OpenWeaponWarehouseButton"
+		owner_ui.weapon_warehouse_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
 		owner_ui.warehouse_primary_panel.add_child(owner_ui.weapon_warehouse_button)
 	_connect_button_pressed(owner_ui.weapon_warehouse_button, owner_ui.rest_area_ui_controller.open_warehouse_weapon_panel)
-	var warehouse_back := owner_ui.module_panel.get_node_or_null("BackToWarehouseMenu") as Button
-	_connect_button_pressed(warehouse_back, owner_ui.rest_area_ui_controller.back_to_warehouse_primary_menu)
+	if owner_ui.module_panel != null:
+		var warehouse_back := owner_ui.module_panel.get_node_or_null("BackToWarehouseMenu") as Button
+		_connect_button_pressed(warehouse_back, owner_ui.rest_area_ui_controller.back_to_warehouse_primary_menu)
 	var open_grid_button := owner_ui.board_edit_primary_panel.get_node_or_null("OpenGridManagementButton") as Button
 	_connect_button_pressed(open_grid_button, owner_ui.rest_area_ui_controller.open_cell_grid_panel)
 	var open_task_button := owner_ui.board_edit_primary_panel.get_node_or_null("OpenTaskManagementButton") as Button

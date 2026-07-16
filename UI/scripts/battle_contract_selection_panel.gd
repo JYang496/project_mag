@@ -4,7 +4,7 @@ var _confirmed := Callable()
 var _cancelled := Callable()
 var _locked := false
 
-@onready var cards: Array[Button] = [$Shade/Panel/Margin/Content/Cards/CardLeft, $Shade/Panel/Margin/Content/Cards/CardRight]
+@onready var cards: Array[Button] = [$Shade/Panel/Margin/Content/Cards/CardLeft, $Shade/Panel/Margin/Content/Cards/CardMiddle, $Shade/Panel/Margin/Content/Cards/CardRight]
 @onready var confirm_button: Button = $Shade/Panel/Margin/Content/Actions/Confirm
 @onready var title_label: Label = $Shade/Panel/Margin/Content/Title
 @onready var subtitle_label: Label = $Shade/Panel/Margin/Content/Subtitle
@@ -18,7 +18,7 @@ func _ready() -> void:
 	cancel_button.pressed.connect(cancel)
 
 func open(options: Array, confirmed: Callable, cancelled: Callable) -> void:
-	if visible or options.size() != 2:
+	if visible or options.size() < 2 or options.size() > 3:
 		return
 	_confirmed = confirmed
 	_cancelled = cancelled
@@ -28,9 +28,12 @@ func open(options: Array, confirmed: Callable, cancelled: Callable) -> void:
 	subtitle_label.text = LocalizationManager.tr_key("battle_contract.ui.subtitle", "Decide the victory condition for the next battle")
 	cancel_button.text = LocalizationManager.tr_key("battle_contract.ui.cancel", "Back to Prepare")
 	confirm_button.text = LocalizationManager.tr_key("battle_contract.ui.confirm", "Launch Selected Contract")
-	for index in 2:
+	for index in cards.size():
 		cards[index].button_pressed = false
-		cards[index].call("setup", options[index])
+		if index < options.size():
+			cards[index].call("setup", options[index])
+		else:
+			cards[index].call("setup_reward_unavailable")
 	visible = true
 	cards[0].grab_focus()
 
@@ -59,9 +62,12 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_card_pressed(card: Button) -> void:
 	if _locked:
 		return
+	if not BattleContractManager.select_contract(card.definition):
+		for candidate in cards:
+			candidate.button_pressed = candidate.definition == BattleContractManager.selected_contract
+		return
 	for candidate in cards:
 		candidate.button_pressed = candidate == card
-	BattleContractManager.select_contract(card.definition)
 	confirm_button.disabled = false
 	confirm_button.grab_focus()
 

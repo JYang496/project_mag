@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BattleContractDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Combat/battle_contract/BattleContractDefinition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+contract_id = &"reward"
+name_key = "battle_contract.reward.name"
+description_key = "battle_contract.reward.description"
+accent_color = Color(0.94, 0.72, 0.20, 1)
+weight = 0.0
+build_tags = Array[StringName]([&"reward", &"damage", &"mobility"])
+parameters = {"duration_sec": 45.0, "hp_budget_multiplier": 2.0, "reward_multiplier": 2.0}

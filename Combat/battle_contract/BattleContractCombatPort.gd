@@ -47,6 +47,15 @@ func request_configure_duration(duration_sec: float) -> void:
 func request_configure_threat_multiplier(multiplier: float) -> void:
 	pass
 
+func request_release_reinforcement_budget(multiplier: float = 1.0) -> void:
+	pass
+
+func request_configure_contract_economy(kill_gold_multiplier: float) -> void:
+	pass
+
+func request_configure_reward_stage(enabled: bool, hp_budget_multiplier: float = 2.0, reward_multiplier: float = 2.0) -> void:
+	pass
+
 func get_active_enemy_count() -> int:
 	return 0
 
@@ -66,6 +75,9 @@ func request_player_heal(amount: int) -> void:
 	pass
 
 func request_spawn_beacon(beacon_id: int, position: Vector2) -> void:
+	pass
+
+func request_spawn_objective(objective_id: int, position: Vector2) -> void:
 	pass
 
 func request_update_beacon(beacon_id: int, progress: float) -> void:

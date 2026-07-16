@@ -38,41 +38,44 @@ const BATTLE_CONTRACT_SELECTION_PANEL_SCENE := preload("res://UI/scenes/battle_c
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overlay.gd"
+const REST_AREA_PRIMARY_MENUS_SCENE := preload("res://UI/scenes/runtime/rest_area_primary_menus.tscn")
+const MANAGEMENT_SHELL_SCENE := preload("res://UI/scenes/runtime/management_shell.tscn")
 
 # Roots
 @onready var gui_root: Control = $GUI
-@onready var character_root : Control = $GUI/CharacterRoot
-@onready var purchase_management_root: Control = $GUI/PurchaseRoot/ShoppingRootv2
-@onready var upgrade_management_root: Control = $GUI/UpgradeRoot/UpgradeRootv2
-@onready var upgrade_primary_root: Control = $GUI/UpgradeRoot/PrimaryMenuRoot
-@onready var purchase_primary_root: Control = $GUI/PurchaseRoot/PrimaryMenuRoot
-@onready var warehouse_primary_root: Control = $GUI/WarehouseRoot/PrimaryMenuRoot
-@onready var board_edit_primary_root: Control = $GUI/BoardEditRoot/PrimaryMenuRoot
-@onready var battle_start_primary_root: Control = $GUI/BattleStartRoot/PrimaryMenuRoot
+@onready var battle_hud: BattleHudView = $GUI/BattleHud
+@onready var character_root : Control = battle_hud
+var purchase_management_root: Control
+var upgrade_management_root: Control
+var upgrade_primary_root: Control
+var purchase_primary_root: Control
+var warehouse_primary_root: Control
+var board_edit_primary_root: Control
+var battle_start_primary_root: Control
 @onready var pause_menu_root : Control = $GUI/PauseMenuRoot
-@onready var warehouse_management_root: Control = $GUI/WarehouseRoot/ModuleManagementRoot
-@onready var purchase_panel: Panel = $GUI/PurchaseRoot/ShoppingRootv2/Panel
-@onready var upgrade_panel: Panel = $GUI/UpgradeRoot/UpgradeRootv2/Panel
-@onready var module_panel: Panel = $GUI/WarehouseRoot/ModuleManagementRoot/Panel
+var warehouse_management_root: Control
+var purchase_panel: Panel
+var upgrade_panel: Panel
+var module_panel: Panel
 @onready var pause_menu_panel: Panel = $GUI/PauseMenuRoot/PauseMenuPanel
-@onready var purchase_primary_panel: Panel = $GUI/PurchaseRoot/PrimaryMenuRoot/Panel
-@onready var upgrade_primary_panel: Panel = $GUI/UpgradeRoot/PrimaryMenuRoot/Panel
-@onready var warehouse_primary_panel: Panel = $GUI/WarehouseRoot/PrimaryMenuRoot/Panel
-@onready var board_edit_primary_panel: Panel = $GUI/BoardEditRoot/PrimaryMenuRoot/Panel
-@onready var battle_start_primary_panel: Panel = $GUI/BattleStartRoot/PrimaryMenuRoot/Panel
+var purchase_primary_panel: Panel
+var upgrade_primary_panel: Panel
+var warehouse_primary_panel: Panel
+var board_edit_primary_panel: Panel
+var battle_start_primary_panel: Panel
 var item_message_timer: Timer
 
 
 # Character
-@onready var equipped_label = $GUI/CharacterRoot/Equipped
-@onready var weapon_selector: WeaponSelector = $GUI/CharacterRoot/WeaponSelector
-@onready var augments_label = $GUI/CharacterRoot/Augments
-@onready var hp_label_label = $GUI/CharacterRoot/HpLabel
-@onready var hp_label_text = $GUI/CharacterRoot/HpLabel/Hp
-@onready var hp_bar: ProgressBar = $GUI/CharacterRoot/HpLabel/HpBar
-@onready var gold_label = $GUI/CharacterRoot/Gold
-@onready var resource_label = $GUI/CharacterRoot/Resource
-@onready var time_label = $GUI/CharacterRoot/Time
+@onready var equipped_label = battle_hud.get_node("Equipped")
+@onready var weapon_selector: WeaponSelector = battle_hud.weapon_selector
+@onready var augments_label = battle_hud.get_node("Augments")
+@onready var hp_label_label = battle_hud.hp_label
+@onready var hp_label_text = battle_hud.hp_text
+@onready var hp_bar: ProgressBar = battle_hud.hp_bar
+@onready var gold_label = battle_hud.gold_label
+@onready var resource_label = battle_hud.resource_label
+@onready var time_label = battle_hud.time_label
 var heat_label: Label
 var ammo_label: Label
 var weapon_state_label: Label
@@ -207,11 +210,14 @@ var hint_presenter
 var battle_cursor_presenter
 var victory_transition: VictoryTransition
 var battle_contract_selection_panel: Control
+var rest_area_primary_menus: RestAreaPrimaryMenusView
+var management_shell_view: ManagementShellView
 var _weapon_passive_rows: Array[Dictionary] = []
 var _weapon_passive_panel_dirty := true
 var _weapon_passive_panel_refresh_timer := 0.0
 const WEAPON_PASSIVE_PANEL_REFRESH_INTERVAL := 1.0
 var _shop_purchase_action_dirty := true
+var _purchase_prepare_refresh_pending := false
 var _management_action_refresh_scheduled := false
 @warning_ignore("unused_private_class_variable")
 var _passive_status_signal_weapons: Array[Node] = []
@@ -227,9 +233,9 @@ func _ready():
 	Input.use_accumulated_input = false
 	gui_root.theme = GLOBAL_UI_THEME
 	_init_victory_transition()
-	_init_battle_contract_selection_panel()
 	_init_ui_bootstrap_controller()
-	ui_bootstrap_controller.bootstrap()
+	ui_bootstrap_controller.bootstrap_core()
+	ui_bootstrap_controller.bootstrap_pause()
 	_init_task_objective_hud_presenter()
 	_init_battle_contract_hud_presenter()
 	if not BattleContractManager.performance_reward_granted.is_connected(_on_battle_contract_reward):
@@ -238,7 +244,6 @@ func _ready():
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
-	call_deferred("_refresh_initial_prepare_shop")
 	call_deferred("_restore_pending_equipment_transactions")
 
 func _init_victory_transition() -> void:
@@ -348,7 +353,6 @@ func _init_modal_ui_controller() -> void:
 func _init_ui_layout_controller() -> void:
 	if ui_layout_controller != null:
 		return
-	_init_rest_area_management_shell()
 	ui_layout_controller = UI_LAYOUT_CONTROLLER_SCRIPT.new()
 	ui_layout_controller.bind(self, rest_area_management_shell)
 	if rest_area_ui_controller != null:
@@ -968,7 +972,7 @@ func _init_task_objective_hud_presenter() -> void:
 func _init_battle_contract_hud_presenter() -> void:
 	if battle_contract_hud_presenter != null: return
 	battle_contract_hud_presenter = BATTLE_CONTRACT_HUD_PRESENTER_SCRIPT.new()
-	battle_contract_hud_presenter.bind(gui_root)
+	battle_contract_hud_presenter.bind(_ensure_right_hud_stack())
 	battle_contract_hud_presenter.layout(get_viewport().get_visible_rect().size)
 
 func _init_ui_dirty_signal_controller() -> void:
@@ -1016,6 +1020,10 @@ func _init_rest_area_management_shell() -> void:
 func _init_rest_area_ui_controller() -> void:
 	if rest_area_ui_controller != null:
 		return
+	if ui_bootstrap_controller != null:
+		ui_bootstrap_controller.bootstrap_rest_area()
+		if rest_area_ui_controller != null:
+			return
 	_init_rest_area_management_shell()
 	rest_area_ui_controller = REST_AREA_UI_CONTROLLER_SCRIPT.new()
 	rest_area_ui_controller.bind(self, rest_area_management_shell, ui_layout_controller)
@@ -1139,6 +1147,56 @@ func _show_module_rest_area_only_message() -> void:
 func _init_management_ui_polish() -> void:
 	_init_management_ui_bootstrap_controller()
 	management_ui_bootstrap_controller.init_management_ui_polish()
+
+func ensure_rest_area_ui() -> void:
+	_init_ui_bootstrap_controller()
+	ui_bootstrap_controller.bootstrap_rest_area()
+
+func _ensure_rest_area_view_instance() -> void:
+	if rest_area_primary_menus != null and is_instance_valid(rest_area_primary_menus):
+		return
+	rest_area_primary_menus = REST_AREA_PRIMARY_MENUS_SCENE.instantiate() as RestAreaPrimaryMenusView
+	gui_root.add_child(rest_area_primary_menus)
+	purchase_primary_root = rest_area_primary_menus.purchase_root
+	upgrade_primary_root = rest_area_primary_menus.upgrade_root
+	warehouse_primary_root = rest_area_primary_menus.warehouse_root
+	board_edit_primary_root = rest_area_primary_menus.board_edit_root
+	battle_start_primary_root = rest_area_primary_menus.battle_start_root
+	purchase_primary_panel = purchase_primary_root.get_node("Panel") as Panel
+	upgrade_primary_panel = upgrade_primary_root.get_node("Panel") as Panel
+	warehouse_primary_panel = warehouse_primary_root.get_node("Panel") as Panel
+	board_edit_primary_panel = board_edit_primary_root.get_node("Panel") as Panel
+	battle_start_primary_panel = battle_start_primary_root.get_node("Panel") as Panel
+	if ui_layout_controller != null:
+		ui_layout_controller.apply_responsive_layout()
+	_refresh_localized_static_text()
+
+func ensure_purchase_management() -> void:
+	_init_ui_bootstrap_controller()
+	ui_bootstrap_controller.bootstrap_management()
+	if _purchase_prepare_refresh_pending and purchase_management_controller != null:
+		_purchase_prepare_refresh_pending = false
+		purchase_management_controller.refresh_items_for_prepare()
+
+func ensure_upgrade_management() -> void:
+	ensure_purchase_management()
+
+func ensure_warehouse_management() -> void:
+	ensure_purchase_management()
+
+func _ensure_management_shell_instance() -> void:
+	if management_shell_view != null and is_instance_valid(management_shell_view):
+		return
+	management_shell_view = MANAGEMENT_SHELL_SCENE.instantiate() as ManagementShellView
+	gui_root.add_child(management_shell_view)
+	purchase_management_root = management_shell_view.purchase_root
+	upgrade_management_root = management_shell_view.upgrade_root
+	warehouse_management_root = management_shell_view.warehouse_root
+	purchase_panel = purchase_management_root.get_node("Panel") as Panel
+	upgrade_panel = upgrade_management_root.get_node("Panel") as Panel
+	module_panel = warehouse_management_root.get_node("Panel") as Panel
+	if ui_layout_controller != null:
+		ui_layout_controller.apply_responsive_layout()
 
 func _refresh_shop_purchase_action_if_needed() -> void:
 	if not _shop_purchase_action_dirty:

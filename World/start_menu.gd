@@ -7,6 +7,9 @@ const RESOLUTION_PRESETS: Array[Vector2i] = [
 	Vector2i(2560, 1440),
 ]
 const START_UI_THEME := preload("res://UI/themes/start_menu_theme.tres")
+const WORLD_ENTRY_PREPARE_GATE_SCRIPT := preload("res://World/world_entry_prepare_gate.gd")
+
+enum PrewarmState { NOT_STARTED, RUNNING, SUCCEEDED, FAILED }
 
 @onready var gui_root: Control = $CanvasLayer/GUI
 @onready var background: ColorRect = $CanvasLayer/GUI/Background
@@ -25,6 +28,8 @@ var language_option: OptionButton
 var auto_aim_continuous_fire_toggle: CheckButton
 var auto_reload_switch_toggle: CheckButton
 var _start_hover_tween: Tween
+var prewarm_state := PrewarmState.NOT_STARTED
+var prewarm_error := ""
 
 func _ready() -> void:
 	gui_root.theme = START_UI_THEME
@@ -43,6 +48,27 @@ func _ready() -> void:
 		get_viewport().connect("size_changed", Callable(self, "_on_viewport_size_changed"))
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.language_changed.connect(_on_language_changed)
+	LoadingPerformance.begin_menu_session()
+	call_deferred("_prewarm_world_entry")
+
+func _prewarm_world_entry() -> void:
+	if prewarm_state == PrewarmState.RUNNING or prewarm_state == PrewarmState.SUCCEEDED:
+		return
+	prewarm_state = PrewarmState.RUNNING
+	prewarm_error = ""
+	LoadingPerformance.mark("prewarm_started")
+	var result: Dictionary = WORLD_ENTRY_PREPARE_GATE_SCRIPT.prepare_world_entry()
+	await get_tree().process_frame
+	SpawnData.ensure_loaded()
+	if bool(result.get("ok", false)) and SpawnData.spawn_combat_profile != null:
+		prewarm_state = PrewarmState.SUCCEEDED
+	else:
+		prewarm_state = PrewarmState.FAILED
+		prewarm_error = WORLD_ENTRY_PREPARE_GATE_SCRIPT.format_errors(result)
+		if prewarm_error.is_empty():
+			prewarm_error = "Spawn data failed to load."
+		push_error("World entry prewarm failed: %s" % prewarm_error)
+	LoadingPerformance.mark("prewarm_finished")
 
 func _set_full_rect(control: Control) -> void:
 	control.set_anchors_preset(Control.PRESET_FULL_RECT)

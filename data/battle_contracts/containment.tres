@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BattleContractDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Combat/battle_contract/BattleContractDefinition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+contract_id = &"containment"
+name_key = "battle_contract.containment.name"
+description_key = "battle_contract.containment.description"
+accent_color = Color(0.706, 0.365, 0.808, 1)
+weight = 0.75
+build_tags = Array[StringName]([&"area_damage", &"control", &"mobility", &"sustain"])
+parameters = {"required_capability": "supports_containment", "rift_count": 3, "seal_duration_sec": 8.0, "reinforcement_interval_sec": 9.0}
