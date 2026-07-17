@@ -44,6 +44,16 @@
       "timeout_seconds": 20
     },
     {
+      "id": "weapon.pistol_auto_fire",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/weapon/pistol_auto_fire_test.tscn",
+      "domain": "weapon",
+      "dependency_domains": ["enemy", "combat", "world"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
       "id": "enemy.hybrid_visual_matrix",
       "entry_type": "scene",
       "path": "res://tests/scenes/enemy/hybrid_enemy_visual_matrix_test.tscn",

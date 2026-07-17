@@ -3,9 +3,36 @@
 [ext_resource type="Script" path="res://UI/scripts/battle_contract_card.gd" id="1"]
 
 [node name="BattleContractCard" type="Button"]
-custom_minimum_size = Vector2(330, 230)
+custom_minimum_size = Vector2(330, 220)
+size_flags_horizontal = 3
 toggle_mode = true
 script = ExtResource("1")
+
+[node name="AccentLine" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 10
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 6.0
+offset_bottom = -2.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="RareFrame" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = 5.0
+offset_right = -5.0
+offset_bottom = -5.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="SelectedBadge" type="Label" parent="."]
 visible = false
@@ -13,10 +40,10 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -42.0
+offset_left = -104.0
 offset_top = 12.0
-offset_right = -12.0
-offset_bottom = 42.0
+offset_right = -14.0
+offset_bottom = 40.0
 grow_horizontal = 0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.92, 1, 0.94, 1)
@@ -24,7 +51,7 @@ theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 24
-text = "✓"
+text = "已选择  ✓"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -34,23 +61,71 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 24.0
-offset_top = 20.0
+offset_top = 14.0
 offset_right = -24.0
-offset_bottom = -20.0
+offset_bottom = -14.0
 mouse_filter = 2
 
 [node name="Content" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 9
+
+[node name="ContractIcon" type="Control" parent="Margin/Content/Header"]
+custom_minimum_size = Vector2(25, 25)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TypeLabel" type="Label" parent="Margin/Content/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+text = "CONTRACT"
+vertical_alignment = 1
+
+[node name="RareBadge" type="Label" parent="Margin/Content/Header"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "RARE // 稀有"
+vertical_alignment = 1
 
 [node name="Title" type="Label" parent="Margin/Content"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 27
 
 [node name="Description" type="Label" parent="Margin/Content"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 18
 autowrap_mode = 2
 
 [node name="Reward" type="Label" parent="Margin/Content"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 2
+
+[node name="RewardDetails" type="HBoxContainer" parent="Margin/Content"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 28
+
+[node name="Objective" type="Label" parent="Margin/Content/RewardDetails"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 2
+
+[node name="Rule" type="Label" parent="Margin/Content/RewardDetails"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 2
+
+[node name="Reward" type="Label" parent="Margin/Content/RewardDetails"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
 autowrap_mode = 2

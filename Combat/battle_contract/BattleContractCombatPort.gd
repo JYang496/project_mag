@@ -14,6 +14,9 @@ func get_level_index() -> int:
 func is_boss_battle() -> bool:
 	return false
 
+func get_battle_intro_snapshot() -> Dictionary:
+	return {}
+
 func get_allowed_contracts() -> Array[StringName]:
 	return []
 

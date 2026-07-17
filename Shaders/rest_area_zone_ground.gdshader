@@ -7,17 +7,18 @@ instance uniform float selected = 0.0;
 instance uniform float hold_progress : hint_range(0.0, 1.0) = 0.0;
 instance uniform float visibility_alpha : hint_range(0.0, 1.0) = 1.0;
 uniform float pulse_speed = 1.8;
+uniform float animation_time = 0.0;
 
 void fragment() {
 	vec2 centered = UV * 2.0 - 1.0;
 	float radius = length(centered);
 	float angle = atan(centered.y, centered.x);
 	float normalized_angle = fract(angle / 6.2831853 + 0.25);
-	float pulse = 0.5 + 0.5 * sin(TIME * pulse_speed * 6.2831853);
+	float pulse = 0.5 + 0.5 * sin(animation_time * pulse_speed * 6.2831853);
 	float active = max(hovered, selected);
 
 	float disc = 1.0 - smoothstep(0.72, 0.82, radius);
-	float scan = 0.5 + 0.5 * sin(radius * 30.0 - TIME * 5.0);
+	float scan = 0.5 + 0.5 * sin(radius * 30.0 - animation_time * 5.0);
 	float inner_ring = 1.0 - smoothstep(0.018, 0.055, abs(radius - (0.61 + pulse * 0.025)));
 	float border = 1.0 - smoothstep(0.018, 0.060, abs(radius - 0.82));
 	float glow = (1.0 - smoothstep(0.72, 1.0, radius)) * smoothstep(0.66, 0.82, radius);

@@ -6,6 +6,10 @@ var _core_ready := false
 var _pause_ready := false
 var _rest_area_ready := false
 var _management_ready := false
+var _management_shell_ready := false
+var _purchase_management_ready := false
+var _upgrade_management_ready := false
+var _warehouse_management_ready := false
 
 func bind(ui: UI) -> void:
 	owner_ui = ui
@@ -83,17 +87,53 @@ func bootstrap_rest_area() -> void:
 func bootstrap_management() -> void:
 	if _management_ready or owner_ui == null:
 		return
+	bootstrap_purchase_management()
+	bootstrap_upgrade_management()
+	bootstrap_warehouse_management()
+	_management_ready = true
+	owner_ui._refresh_localized_static_text()
+
+func bootstrap_purchase_management() -> void:
+	if _purchase_management_ready or owner_ui == null:
+		return
+	if not _bootstrap_management_shell():
+		return
+	owner_ui._init_purchase_management_controller()
+	owner_ui._init_purchase_management_ui_polish()
+	_purchase_management_ready = true
+	owner_ui._refresh_localized_static_text()
+
+func bootstrap_upgrade_management() -> void:
+	if _upgrade_management_ready or owner_ui == null:
+		return
+	if not _bootstrap_management_shell():
+		return
+	owner_ui._init_upgrade_management_controller()
+	owner_ui._init_upgrade_management_ui_polish()
+	_upgrade_management_ready = true
+	owner_ui._refresh_localized_static_text()
+
+func bootstrap_warehouse_management() -> void:
+	if _warehouse_management_ready or owner_ui == null:
+		return
+	if not _bootstrap_management_shell():
+		return
+	owner_ui._init_module_warehouse_controller()
+	owner_ui._init_warehouse_management_ui_polish()
+	_warehouse_management_ready = true
+	owner_ui._refresh_localized_static_text()
+
+func _bootstrap_management_shell() -> bool:
+	if _management_shell_ready:
+		return true
 	bootstrap_rest_area()
 	owner_ui._ensure_management_shell_instance()
 	if owner_ui.management_shell_view == null:
 		push_error("Management Shell failed to instantiate.")
-		return
-	owner_ui._init_purchase_management_controller()
-	owner_ui._init_upgrade_management_controller()
-	owner_ui._init_module_warehouse_controller()
+		return false
 	owner_ui._init_management_ui_bootstrap_controller()
 	owner_ui._init_modal_ui_controller()
 	owner_ui._init_module_action_dialogs()
 	owner_ui._init_management_ui_polish()
-	_management_ready = true
-	owner_ui._refresh_localized_static_text()
+	_management_shell_ready = true
+	return true

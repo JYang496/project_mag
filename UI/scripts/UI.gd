@@ -218,6 +218,7 @@ var _weapon_passive_panel_refresh_timer := 0.0
 const WEAPON_PASSIVE_PANEL_REFRESH_INTERVAL := 1.0
 var _shop_purchase_action_dirty := true
 var _purchase_prepare_refresh_pending := false
+var _rest_area_purchase_prewarm_generation := 0
 var _management_action_refresh_scheduled := false
 @warning_ignore("unused_private_class_variable")
 var _passive_status_signal_weapons: Array[Node] = []
@@ -250,6 +251,8 @@ func _ready():
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
 	call_deferred("_restore_pending_equipment_transactions")
+	if PhaseManager.current_state() == PhaseManager.PREPARE:
+		_schedule_rest_area_purchase_prewarm()
 	LoadingPerformance.end_segment("ui_ready")
 
 func _init_victory_transition() -> void:
@@ -282,7 +285,22 @@ func close_battle_contract_selection() -> void:
 	if battle_contract_selection_panel != null and is_instance_valid(battle_contract_selection_panel):
 		battle_contract_selection_panel.call("dismiss")
 
+func prepare_battle_contract_intro() -> void:
+	if battle_contract_selection_panel == null or not is_instance_valid(battle_contract_selection_panel):
+		return
+	var card := battle_contract_selection_panel.call("detach_selected_card", gui_root) as Button
+	if card != null and battle_contract_hud_presenter != null:
+		battle_contract_hud_presenter.prepare_contract_intro(card, BattleContractManager.selected_contract)
+
+func play_battle_entry_intro(is_boss: bool = false) -> void:
+	if battle_contract_hud_presenter == null:
+		return
+	if is_boss:
+		battle_contract_hud_presenter.prepare_boss_intro(BattleContractManager.get_battle_intro_snapshot())
+	battle_contract_hud_presenter.play_prepared_intro()
+
 func _exit_tree() -> void:
+	_rest_area_purchase_prewarm_generation += 1
 	_disconnect_ui_dirty_signals()
 	_disconnect_weapon_passive_status_signals()
 	if modal_ui_controller != null:
@@ -594,6 +612,8 @@ func is_dialog_visible() -> bool:
 	return modal_dialog_controller != null and modal_dialog_controller.is_dialog_visible()
 
 func is_world_interaction_blocked() -> bool:
+	if get_tree().paused:
+		return true
 	if battle_contract_selection_panel != null \
 			and is_instance_valid(battle_contract_selection_panel) \
 			and battle_contract_selection_panel.visible:
@@ -978,7 +998,7 @@ func _init_task_objective_hud_presenter() -> void:
 func _init_battle_contract_hud_presenter() -> void:
 	if battle_contract_hud_presenter != null: return
 	battle_contract_hud_presenter = BATTLE_CONTRACT_HUD_PRESENTER_SCRIPT.new()
-	battle_contract_hud_presenter.bind(_ensure_right_hud_stack())
+	battle_contract_hud_presenter.bind(_ensure_right_hud_stack(), gui_root)
 	battle_contract_hud_presenter.layout(get_viewport().get_visible_rect().size)
 
 func _init_ui_dirty_signal_controller() -> void:
@@ -1072,16 +1092,8 @@ func _input(_event) -> void:
 		return
 	
 	# Pause / Menu
-	if Input.is_action_just_pressed("ESC"):
-		if get_tree().paused:
-			# Unpause and hide UI
-			get_tree().paused = false
-			pause_menu_root.visible = false
-		else:
-			# Pause and show UI
-			get_tree().paused = true
-			pause_menu_root.visible = true
-		_update_cursor_presentation()
+	if _event.is_action_pressed("ESC") and not _event.is_echo():
+		_set_pause_menu_open(not get_tree().paused)
 	
 	# Switch weapon
 	if Input.is_action_just_pressed("SWITCH_LEFT"):
@@ -1154,6 +1166,18 @@ func _init_management_ui_polish() -> void:
 	_init_management_ui_bootstrap_controller()
 	management_ui_bootstrap_controller.init_management_ui_polish()
 
+func _init_purchase_management_ui_polish() -> void:
+	_init_management_ui_bootstrap_controller()
+	management_ui_bootstrap_controller.init_purchase_ui_polish()
+
+func _init_upgrade_management_ui_polish() -> void:
+	_init_management_ui_bootstrap_controller()
+	management_ui_bootstrap_controller.init_upgrade_ui_polish()
+
+func _init_warehouse_management_ui_polish() -> void:
+	_init_management_ui_bootstrap_controller()
+	management_ui_bootstrap_controller.init_warehouse_ui_polish()
+
 func ensure_rest_area_ui() -> void:
 	_init_ui_bootstrap_controller()
 	ui_bootstrap_controller.bootstrap_rest_area()
@@ -1179,16 +1203,48 @@ func _ensure_rest_area_view_instance() -> void:
 
 func ensure_purchase_management() -> void:
 	_init_ui_bootstrap_controller()
-	ui_bootstrap_controller.bootstrap_management()
+	var had_purchase_view := purchase_management_view != null and is_instance_valid(purchase_management_view)
+	ui_bootstrap_controller.bootstrap_purchase_management()
 	if _purchase_prepare_refresh_pending and purchase_management_controller != null:
 		_purchase_prepare_refresh_pending = false
-		purchase_management_controller.refresh_items_for_prepare()
+		# A newly instantiated shop populates its slots from _ready(). Only an
+		# existing view needs the deferred prepare refresh applied explicitly.
+		if had_purchase_view:
+			purchase_management_controller.refresh_items_for_prepare()
+
+func _schedule_rest_area_purchase_prewarm() -> void:
+	_rest_area_purchase_prewarm_generation += 1
+	var generation := _rest_area_purchase_prewarm_generation
+	call_deferred("_prewarm_purchase_for_rest_area", generation)
+
+func _prewarm_purchase_for_rest_area(generation: int) -> void:
+	# Allow the rest-area world, camera and HUD to submit their initial frames
+	# before allocating secondary management views.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not _is_rest_area_purchase_prewarm_current(generation):
+		return
+	ensure_purchase_management()
+	await get_tree().process_frame
+	if not _is_rest_area_purchase_prewarm_current(generation):
+		return
+	if purchase_management_controller != null:
+		purchase_management_controller.ensure_module_shop()
+
+func _is_rest_area_purchase_prewarm_current(generation: int) -> bool:
+	return (
+		generation == _rest_area_purchase_prewarm_generation
+		and is_inside_tree()
+		and PhaseManager.current_state() == PhaseManager.PREPARE
+	)
 
 func ensure_upgrade_management() -> void:
-	ensure_purchase_management()
+	_init_ui_bootstrap_controller()
+	ui_bootstrap_controller.bootstrap_upgrade_management()
 
 func ensure_warehouse_management() -> void:
-	ensure_purchase_management()
+	_init_ui_bootstrap_controller()
+	ui_bootstrap_controller.bootstrap_warehouse_management()
 
 func _ensure_management_shell_instance() -> void:
 	if management_shell_view != null and is_instance_valid(management_shell_view):
@@ -1288,7 +1344,20 @@ func _refresh_mode_button_styles(
 
 func _on_resume_button_pressed() -> void:
 	if get_tree().paused:
-		# Unpause and hide UI
+		_set_pause_menu_open(false)
+
+func _set_pause_menu_open(open: bool) -> void:
+	if pause_menu_root == null or not is_instance_valid(pause_menu_root):
+		return
+	if open:
+		# Runtime menus are appended to GUI. Keep the pause blocker last in the
+		# Control tree so its input order matches its topmost visual z-index.
+		gui_root.move_child(pause_menu_root, gui_root.get_child_count() - 1)
+		pause_menu_root.mouse_filter = Control.MOUSE_FILTER_STOP
+		pause_menu_root.visible = true
+		clear_rest_area_hover_hint()
+		get_tree().paused = true
+	else:
 		get_tree().paused = false
 		pause_menu_root.visible = false
 	_update_cursor_presentation()
@@ -1297,6 +1366,10 @@ func _on_resume_button_pressed() -> void:
 # Phase changes, pause state, and battle cursor
 
 func _on_phase_changed(new_phase: String) -> void:
+	if new_phase == PhaseManager.PREPARE:
+		_schedule_rest_area_purchase_prewarm()
+	else:
+		_rest_area_purchase_prewarm_generation += 1
 	if new_phase != PhaseManager.PREPARE:
 		_init_rest_area_ui_controller()
 		rest_area_ui_controller.close_module_management_ui()
@@ -1390,6 +1463,12 @@ func _update_controls_guide_for_phase(phase: String) -> void:
 	modal_ui_controller.update_controls_guide_for_phase(phase, _is_primary_menu_open(), _get_secondary_menu_context())
 
 func _refresh_controls_hint_visibility() -> void:
+	if battle_contract_selection_panel != null \
+			and is_instance_valid(battle_contract_selection_panel) \
+			and battle_contract_selection_panel.visible:
+		if controls_hint_view != null and is_instance_valid(controls_hint_view):
+			controls_hint_view.visible = false
+		return
 	_init_modal_ui_controller()
 	modal_ui_controller.refresh_controls_hint_visibility(_is_primary_menu_open(), _get_secondary_menu_context())
 

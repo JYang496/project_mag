@@ -1,6 +1,8 @@
 extends RefCounted
 class_name WeaponPassivePanelView
 
+const SmoothProgressBarScript := preload("res://UI/scripts/components/smooth_progress_bar.gd")
+
 var parent_root: Control
 var weapon_passive_panel: PanelContainer
 var weapon_passive_list: VBoxContainer
@@ -82,7 +84,7 @@ func create_row() -> Dictionary:
 	state_label.custom_minimum_size = Vector2(98.0, 0.0)
 	header.add_child(state_label)
 
-	var progress_bar := ProgressBar.new()
+	var progress_bar: ProgressBar = SmoothProgressBarScript.new()
 	progress_bar.name = "Progress"
 	progress_bar.min_value = 0.0
 	progress_bar.max_value = 1.0
@@ -132,7 +134,7 @@ func apply_row(row: Dictionary, status: Dictionary) -> void:
 	var progress := float(status.get("progress", -1.0))
 	progress_bar.visible = progress >= 0.0
 	if progress_bar.visible:
-		progress_bar.value = clampf(progress, 0.0, 1.0)
+		progress_bar.call("set_target_value", clampf(progress, 0.0, 1.0))
 	detail_label.text = format_detail(status)
 	if is_main:
 		root.modulate = Color(1.0, 1.0, 1.0, 1.0)

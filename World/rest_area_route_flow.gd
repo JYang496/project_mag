@@ -66,7 +66,7 @@ func request_battle_contract() -> void:
 	if _battle_start_pending or PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
 	if BattleContractManager.is_boss_battle():
-		start_battle(false)
+		start_battle(false, true)
 		return
 	if BattleContractManager.restored_selection_pending and BattleContractManager.selected_contract != null:
 		_battle_start_pending = true
@@ -94,7 +94,7 @@ func _on_contract_confirmed() -> void:
 		return
 	start_battle(true)
 
-func start_battle(has_contract: bool = false) -> void:
+func start_battle(has_contract: bool = false, is_boss: bool = false) -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return
 	if has_contract and BattleContractManager.selected_contract == null:
@@ -110,6 +110,8 @@ func start_battle(has_contract: bool = false) -> void:
 	if has_contract:
 		BattleContractManager.activate_contract()
 		var ui = GlobalVariables.ui
+		if ui != null and is_instance_valid(ui) and ui.has_method("prepare_battle_contract_intro"):
+			ui.call("prepare_battle_contract_intro")
 		if ui != null and is_instance_valid(ui) and ui.has_method("close_battle_contract_selection"):
 			ui.call("close_battle_contract_selection")
 	if PlayerData.player != null and is_instance_valid(PlayerData.player):
@@ -117,6 +119,9 @@ func start_battle(has_contract: bool = false) -> void:
 			PlayerData.player.call("set_restarea_camera_control_enabled", false)
 	PhaseManager.enter_battle()
 	BattleContractManager.start_current_battle()
+	var battle_ui = GlobalVariables.ui
+	if battle_ui != null and is_instance_valid(battle_ui) and battle_ui.has_method("play_battle_entry_intro"):
+		battle_ui.call_deferred("play_battle_entry_intro", is_boss)
 	if PlayerData.player != null and is_instance_valid(PlayerData.player):
 		if PlayerData.player.has_method("_update_vision_effect"):
 			PlayerData.player.call_deferred("_update_vision_effect")

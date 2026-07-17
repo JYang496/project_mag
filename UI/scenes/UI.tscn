@@ -8,6 +8,7 @@ process_mode = 3
 script = ExtResource("1_l38d8")
 
 [node name="GUI" type="Control" parent="." unique_id=1914569511]
+process_mode = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

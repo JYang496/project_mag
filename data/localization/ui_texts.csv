@@ -1,9 +1,27 @@
 keys,en,zh_CN
 battle_contract.ui.title,Choose Battle Contract,选择战斗协议
+battle_contract.ui.main_contracts,Main Contracts,主要协议
+battle_contract.ui.extra_contracts,Extra Contract,额外协议
 battle_contract.ui.subtitle,Decide the victory condition for the next battle,决定下一场战斗的胜利条件
 battle_contract.ui.cancel,Back to Prepare,返回准备
 battle_contract.ui.confirm,Launch Selected Contract,启动所选协议
+battle_contract.intro.parameters,Dynamic parameters: {parameters},动态参数：{parameters}
+battle_contract.intro.unit.waves,waves,波次
+battle_contract.intro.boss.name,Boss Battle,BOSS 战
+battle_contract.intro.boss.objective,Defeat the boss and clear the current level.,击败 BOSS，完成当前关卡。
+battle_contract.intro.boss.hud,Defeat the boss,击败 BOSS
+battle_contract.intro.boss.parameters,Level {level} · Time limit {seconds}s · Target vitality {hp},第 {level} 关 · 时限 {seconds} 秒 · 目标生命 {hp}
 battle_contract.ui.build_tags,Build tags: {tags},构筑标签：{tags}
+battle_contract.card.label.objective,OBJECTIVE,核心目标
+battle_contract.card.label.rule,SPECIAL RULE,特殊规则
+battle_contract.card.label.reward,REWARD,协议奖励
+battle_contract.card.type.elimination,ELIMINATION,歼灭
+battle_contract.card.type.survival,SURVIVAL,坚守
+battle_contract.card.type.operation,OPERATION,行动
+battle_contract.card.type.containment,CONTAINMENT,封锁
+battle_contract.card.type.extraction,EXTRACTION,撤离
+battle_contract.card.type.reward,BONUS,奖励
+battle_contract.card.badge.rare,RARE CONTRACT,稀有协议
 battle_contract.ui.reward_slot.title,Reward Slot,奖励协议槽
 battle_contract.ui.reward_slot.unavailable,No reward protocol was discovered this round.,本轮未发现奖励协议。
 battle_contract.ui.reward_slot.chance,25% chance each round,每轮有 25% 概率出现
@@ -38,14 +56,15 @@ battle_contract.extraction.name,Extraction Protocol,撤离协议
 battle_contract.extraction.description,Survive until extraction opens then break through to the exit before time runs out.,坚持至撤离点开放，随后在时限内突围至出口。
 battle_contract.extraction.pace,Two-stage combat · survive then relocate,两阶段战斗 · 生存后转移
 battle_contract.extraction.reward,Gold: primarily awarded for completing extraction; reaching the zone quickly adds a bonus.,金币：主要通过完成撤离获得；快速抵达撤离区提供额外奖励。
-battle_contract.card.extraction.summary,Survive first, then break through to extraction before time runs out.,先坚持生存，再在时限内突围至撤离点。
+battle_contract.card.extraction.summary,"Survive first, then break through to extraction before time runs out.",先坚持生存，再在时限内突围至撤离点。
 battle_contract.card.extraction.reward_hint,Reaching the zone quickly grants bonus gold.,快速抵达撤离区可获得额外金币。
 battle_contract.reward.name,Reward Protocol,奖励协议
-battle_contract.reward.description,Hunt harmless moving reward targets before time expires.,在倒计时结束前猎杀不会攻击的移动奖励目标。
-battle_contract.reward.pace,Bonus stage · double HP budget · 45 seconds,奖励关 · 双倍生命值预算 · 45 秒
-battle_contract.reward.reward,Double expected combat rewards.,预期战斗奖励翻倍。
-battle_contract.card.reward.summary,Hunt harmless moving targets within 45 seconds.,在 45 秒内猎杀不会攻击的移动目标。
-battle_contract.card.reward.reward_hint,Expected combat rewards are doubled.,预期战斗奖励翻倍。
+battle_contract.reward.description,Hunt every moving reward target within 45 seconds.,在 45 秒内猎杀全部移动奖励目标。
+battle_contract.reward.pace,Bonus stage · targets cannot attack,奖励关 · 目标不会攻击
+battle_contract.reward.reward,Expected combat rewards ×2,预期战斗奖励 ×2
+battle_contract.card.reward.summary,Hunt all reward targets within 45 seconds.,在 45 秒内猎杀全部奖励目标。
+battle_contract.card.reward.special_rule,Targets move but cannot attack.,目标会移动，但不会攻击。
+battle_contract.card.reward.reward_hint,Expected combat rewards ×2,预期战斗奖励 ×2
 battle_contract.hud.elimination,Remaining {remaining} · Wave {current}/{total},剩余敌人 {remaining} · 波次 {current}/{total}
 battle_contract.hud.survival,Time {seconds}s · Threat {threat},剩余 {seconds} 秒 · 威胁等级 {threat}
 battle_contract.hud.operation,Beacon {current}/{total} · {percent}%,信标 {current}/{total} · {percent}%

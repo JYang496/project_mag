@@ -7,7 +7,7 @@ const MODE_CHARGE := &"charge"
 const MODE_ENERGY := &"energy"
 const MODE_BATTERY := &"battery"
 const MODE_PRESSURE := &"pressure"
-const METER_SIZE := Vector2(190.0, 18.0)
+const METER_SIZE := Vector2(250.0, 20.0)
 const HEAT_GAUGE_SIZE := Vector2(152.0, 152.0)
 const HEAT_GAUGE_PIVOT := HEAT_GAUGE_SIZE * 0.5
 const HEAT_NEEDLE_MIN_DEGREES := -143.0
@@ -15,9 +15,10 @@ const HEAT_NEEDLE_MAX_DEGREES := 143.0
 const HEAT_GAUGE_TEXTURE := preload("res://asset/images/ui/heat_gauge/heat_gauge.png")
 const HEAT_NEEDLE_TEXTURE := preload("res://asset/images/ui/heat_gauge/heat_needle.png")
 const ICON_RECT := Rect2(Vector2(0.0, 2.0), Vector2(22.0, 14.0))
-const BAR_RECT := Rect2(Vector2(30.0, 5.0), Vector2(112.0, 8.0))
-const LABEL_OFFSET := Vector2(148.0, 0.0)
-const LABEL_SIZE := Vector2(42.0, 18.0)
+const BAR_RECT := Rect2(Vector2(30.0, 5.0), Vector2(160.0, 10.0))
+const LABEL_OFFSET := Vector2(196.0, 0.0)
+const LABEL_SIZE := Vector2(52.0, 20.0)
+const DISPLAY_LERP_SPEED := 14.0
 
 const BACK_FILL := Color(0.03, 0.05, 0.06, 0.80)
 const BACK_EDGE := Color(0.18, 0.24, 0.27, 0.85)
@@ -41,6 +42,7 @@ const PRESSURE_EDGE := Color(1.0, 0.92, 0.64, 1.0)
 
 var _mode: StringName = MODE_AMMO
 var _ratio: float = 0.0
+var _display_ratio: float = 0.0
 var _state: StringName = &"normal"
 var _short_text: String = ""
 var _status_label: Label
@@ -80,8 +82,16 @@ func set_heat_gauge_opacity(opacity: float) -> void:
 	heat_gauge_opacity = opacity
 
 func _process(delta: float) -> void:
+	var safe_delta := maxf(delta, 0.0)
+	var previous_display := _display_ratio
+	_display_ratio = lerpf(_display_ratio, _ratio, 1.0 - exp(-DISPLAY_LERP_SPEED * safe_delta))
+	if absf(_display_ratio - _ratio) <= 0.0005:
+		_display_ratio = _ratio
+	if not is_equal_approx(previous_display, _display_ratio):
+		_update_heat_gauge()
+		queue_redraw()
 	if _state == &"warning" or _state == &"locked" or _state == &"reloading" or _state == &"charging" or _state == &"cooling":
-		_pulse_time += maxf(delta, 0.0)
+		_pulse_time += safe_delta
 		queue_redraw()
 
 func _draw() -> void:
@@ -109,7 +119,7 @@ func _draw_ammo_icon(fill_color: Color, edge_color: Color, pulse: float) -> void
 	var cap := Rect2(Vector2(ICON_RECT.position.x + ICON_RECT.size.x - 3.0, ICON_RECT.position.y + 5.0), Vector2(3.0, 4.0))
 	draw_rect(body, EMPTY_ICON_FILL, true)
 	draw_rect(cap, EMPTY_ICON_FILL, true)
-	var filled_width: float = maxf(2.0, body.size.x * _ratio)
+	var filled_width: float = maxf(2.0, body.size.x * _display_ratio)
 	draw_rect(Rect2(body.position, Vector2(filled_width, body.size.y)), fill_color, true)
 	draw_rect(body, Color(edge_color.r, edge_color.g, edge_color.b, 0.75 + pulse * 0.25), false, 1.2 + pulse)
 	draw_rect(cap, Color(edge_color.r, edge_color.g, edge_color.b, 0.75 + pulse * 0.25), false, 1.0)
@@ -173,16 +183,18 @@ func _draw_gauge_icon(fill_color: Color, edge_color: Color, pulse: float) -> voi
 	var center := ICON_RECT.position + Vector2(11.0, 8.0)
 	draw_circle(center, 8.0, EMPTY_ICON_FILL)
 	draw_arc(center, 8.0, PI, TAU, 16, Color(edge_color.r, edge_color.g, edge_color.b, 0.75 + pulse * 0.25), 1.4 + pulse)
-	var angle := lerpf(PI, TAU, _ratio)
+	var angle := lerpf(PI, TAU, _display_ratio)
 	draw_line(center, center + Vector2(cos(angle), sin(angle)) * 6.0, fill_color, 2.0 + pulse)
 
 func _draw_bar(fill_color: Color, edge_color: Color, pulse: float) -> void:
+	draw_rect(BAR_RECT.grow(2.0), Color(0.01, 0.025, 0.03, 0.90), true)
 	draw_rect(BAR_RECT, BACK_FILL, true)
 	draw_rect(BAR_RECT, Color(edge_color.r, edge_color.g, edge_color.b, 0.48 + pulse * 0.30), false, 1.0 + pulse)
-	if _ratio > 0.0:
-		var fill_rect := Rect2(BAR_RECT.position, Vector2(BAR_RECT.size.x * _ratio, BAR_RECT.size.y))
+	if _display_ratio > 0.0:
+		var fill_rect := Rect2(BAR_RECT.position, Vector2(BAR_RECT.size.x * _display_ratio, BAR_RECT.size.y))
 		draw_rect(fill_rect, fill_color, true)
 		draw_rect(Rect2(fill_rect.position, Vector2(fill_rect.size.x, 2.0)), Color(1.0, 1.0, 1.0, 0.14), true)
+		draw_line(fill_rect.position + Vector2(1.0, fill_rect.size.y - 1.0), fill_rect.end - Vector2(1.0, 1.0), Color(0.0, 0.0, 0.0, 0.20), 1.0)
 
 func _ensure_status_label() -> void:
 	if _status_label != null and is_instance_valid(_status_label):
@@ -192,9 +204,12 @@ func _ensure_status_label() -> void:
 	_status_label.position = LABEL_OFFSET
 	_status_label.size = LABEL_SIZE
 	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_status_label.add_theme_font_size_override("font_size", 10)
+	_status_label.add_theme_font_size_override("font_size", 11)
+	_status_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
+	_status_label.add_theme_constant_override("shadow_offset_x", 1)
+	_status_label.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(_status_label)
 	_update_status_label()
 
@@ -236,7 +251,7 @@ func _update_heat_gauge() -> void:
 	_heat_gauge.visible = is_heat
 	_heat_needle.visible = is_heat
 	if is_heat:
-		_heat_needle.rotation = deg_to_rad(lerpf(HEAT_NEEDLE_MIN_DEGREES, HEAT_NEEDLE_MAX_DEGREES, _ratio))
+		_heat_needle.rotation = deg_to_rad(lerpf(HEAT_NEEDLE_MIN_DEGREES, HEAT_NEEDLE_MAX_DEGREES, _display_ratio))
 
 func _update_status_label() -> void:
 	if _status_label == null or not is_instance_valid(_status_label):

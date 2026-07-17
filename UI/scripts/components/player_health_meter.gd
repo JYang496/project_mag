@@ -1,12 +1,12 @@
 extends Control
 class_name PlayerHealthMeter
 
-const METER_SIZE := Vector2(260.0, 64.0)
+const METER_SIZE := Vector2(310.0, 64.0)
 const ICON_CENTER := Vector2(32.0, 32.0)
 const ICON_RADIUS := 14.0
-const BAR_RECT := Rect2(Vector2(58.0, 24.0), Vector2(158.0, 13.0))
-const VALUE_OFFSET := Vector2(58.0, 39.0)
-const VALUE_SIZE := Vector2(158.0, 18.0)
+const BAR_RECT := Rect2(Vector2(58.0, 22.0), Vector2(190.0, 14.0))
+const VALUE_OFFSET := Vector2(254.0, 18.0)
+const VALUE_SIZE := Vector2(54.0, 22.0)
 const WARNING_RATIO := 0.35
 const CRITICAL_RATIO := 0.18
 const RECENT_CHANGE_DURATION := 0.85
@@ -118,6 +118,8 @@ func _draw_core(fill_color: Color, edge_color: Color, pulse: float) -> void:
 	draw_polyline(border_points, edge_color, 2.0 + pulse)
 
 func _draw_bar(fill_color: Color, edge_color: Color, pulse: float) -> void:
+	# A dark outer rail keeps the value readable over bright battle backgrounds.
+	draw_rect(BAR_RECT.grow(2.0), Color(0.01, 0.025, 0.03, 0.92), true)
 	draw_rect(BAR_RECT, BACK_FILL, true)
 	draw_rect(BAR_RECT, Color(edge_color.r, edge_color.g, edge_color.b, 0.62 + pulse * 0.32), false, 1.5 + pulse)
 	if _ghost_ratio > _display_ratio:
@@ -128,6 +130,7 @@ func _draw_bar(fill_color: Color, edge_color: Color, pulse: float) -> void:
 		draw_rect(fill_rect, fill_color, true)
 		var shine_rect := Rect2(fill_rect.position, Vector2(fill_rect.size.x, maxf(2.0, fill_rect.size.y * 0.28)))
 		draw_rect(shine_rect, Color(1.0, 1.0, 1.0, 0.16), true)
+		draw_line(fill_rect.position + Vector2(1.0, fill_rect.size.y - 1.0), fill_rect.end - Vector2(1.0, 1.0), Color(0.0, 0.0, 0.0, 0.18), 1.0)
 	if pulse > 0.0:
 		draw_rect(BAR_RECT.grow(3.0), Color(edge_color.r, edge_color.g, edge_color.b, 0.08 + pulse * 0.18), false, 2.0)
 
@@ -139,17 +142,20 @@ func _ensure_value_label() -> void:
 	_health_value_label.position = VALUE_OFFSET
 	_health_value_label.size = VALUE_SIZE
 	_health_value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_health_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_health_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_health_value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_health_value_label.add_theme_font_size_override("font_size", 11)
+	_health_value_label.add_theme_font_size_override("font_size", 12)
+	_health_value_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
+	_health_value_label.add_theme_constant_override("shadow_offset_x", 1)
+	_health_value_label.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(_health_value_label)
 	_update_value_label()
 
 func _update_value_label() -> void:
 	if _health_value_label == null or not is_instance_valid(_health_value_label):
 		return
-	_health_value_label.text = "%d / %d" % [_current_hp, _max_hp]
-	_health_value_label.visible = _should_show_value()
+	_health_value_label.text = "%d/%d" % [_current_hp, _max_hp]
+	_health_value_label.visible = true
 	_health_value_label.add_theme_color_override("font_color", _status_edge_color())
 
 func _should_show_value() -> bool:

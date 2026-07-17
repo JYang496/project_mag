@@ -194,8 +194,7 @@ func _resolve_auto_aim_direction() -> Vector2:
 	return fallback
 
 func _find_closest_enemy() -> Node2D:
-	var target_range := minf(maxf(auto_fire_range, 1.0), maxf(get_effective_attack_range(), 1.0))
-	return find_closest_enemy(global_position, target_range)
+	return find_closest_enemy(global_position, maxf(auto_fire_range, 1.0))
 
 func _update_weapon_rotation() -> void:
 	var direction := Vector2.ZERO

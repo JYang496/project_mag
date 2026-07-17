@@ -76,7 +76,9 @@ func finalize_branch_selected_weapon(weapon: Weapon) -> void:
 	var is_already_owned := PlayerData.player_weapon_list.has(weapon)
 	if not is_already_owned:
 		PlayerData.player.create_weapon(weapon)
-	owner_ui.upgrade_management_controller.update_upg()
+	owner_ui._init_upgrade_management_controller()
+	if owner_ui.upgrade_management_controller != null:
+		owner_ui.upgrade_management_controller.update_upg()
 	owner_ui.refresh_border()
 	request_next()
 

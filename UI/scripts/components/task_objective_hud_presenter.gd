@@ -1,6 +1,8 @@
 extends RefCounted
 class_name TaskObjectiveHudPresenter
 
+const SmoothProgressBarScript := preload("res://UI/scripts/components/smooth_progress_bar.gd")
+
 const MAX_CARDS := 2
 const PANEL_SIZE := Vector2(248.0, 144.0)
 const CARD_SIZE := Vector2(232.0, 64.0)
@@ -187,7 +189,7 @@ func _create_card() -> Dictionary:
 	instruction.add_theme_color_override("font_color", Color(0.78, 0.86, 0.88, 0.95))
 	body.add_child(instruction)
 
-	var progress: ProgressBar = ProgressBar.new()
+	var progress: ProgressBar = SmoothProgressBarScript.new()
 	progress.name = "Progress"
 	progress.min_value = 0.0
 	progress.max_value = 1.0
@@ -228,7 +230,7 @@ func _apply_status(row: Dictionary, status: Dictionary) -> void:
 	instruction.text = instruction_text
 	instruction.visible = instruction_text != ""
 	value.text = value_text
-	progress.value = progress_value
+	progress.call("set_target_value", progress_value)
 	_apply_marker_icon(marker, str(status.get("icon_key", status.get("type", ""))), state)
 	_apply_state_visual(root, progress, state)
 

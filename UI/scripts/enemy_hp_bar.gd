@@ -39,10 +39,10 @@ func set_max_hp(value: int) -> void:
 	var max_value: int = max(1, value)
 	bar.max_value = float(max_value)
 	if bar.value > bar.max_value:
-		bar.value = bar.max_value
+		bar.call("set_target_value", bar.max_value, true)
 
 func set_hp(value: int) -> void:
-	bar.value = clampf(float(value), 0.0, bar.max_value)
+	bar.call("set_target_value", clampf(float(value), 0.0, bar.max_value))
 
 func show_for(duration_sec: float) -> void:
 	visible = true

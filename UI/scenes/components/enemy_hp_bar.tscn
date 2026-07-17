@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://UI/scripts/enemy_hp_bar.gd" id="1_script"]
+[ext_resource type="Script" path="res://UI/scripts/components/smooth_progress_bar.gd" id="2_smooth"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
 bg_color = Color(0.08, 0.08, 0.08, 0.9)
@@ -28,6 +29,7 @@ value = 100.0
 show_percentage = false
 theme_override_styles/background = SubResource("StyleBoxFlat_bg")
 theme_override_styles/fill = SubResource("StyleBoxFlat_fill")
+script = ExtResource("2_smooth")
 
 [node name="HideTimer" type="Timer" parent="."]
 one_shot = true

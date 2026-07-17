@@ -122,6 +122,9 @@ func abort_current_contract(_snapshot: Dictionary = {}) -> void:
 func is_boss_battle() -> bool:
 	return _combat_port != null and _combat_port.is_boss_battle()
 
+func get_battle_intro_snapshot() -> Dictionary:
+	return _combat_port.get_battle_intro_snapshot() if _combat_port != null else {}
+
 func start_current_battle() -> bool:
 	if _combat_port == null:
 		return false

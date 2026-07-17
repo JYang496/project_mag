@@ -1,7 +1,103 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://UI/scripts/battle_contract_selection_panel.gd" id="1"]
 [ext_resource type="PackedScene" path="res://UI/scenes/battle_contract_card.tscn" id="2"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_terminal"]
+bg_color = Color(0.055, 0.071, 0.086, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.24, 0.38, 0.46, 0.9)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_normal"]
+bg_color = Color(0.055, 0.1, 0.125, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.15, 0.38, 0.45, 0.85)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_hover"]
+bg_color = Color(0.075, 0.16, 0.19, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.25, 0.67, 0.76, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_pressed"]
+bg_color = Color(0.04, 0.22, 0.25, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.76, 0.84, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_disabled"]
+bg_color = Color(0.045, 0.06, 0.07, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.16, 0.2, 0.22, 0.65)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_confirm_normal"]
+bg_color = Color(0.31, 0.75, 0.82, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.47, 0.9, 0.95, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_confirm_hover"]
+bg_color = Color(0.4, 0.84, 0.9, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.68, 0.96, 1, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_confirm_pressed"]
+bg_color = Color(0.22, 0.62, 0.7, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.57, 0.91, 0.96, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 
 [node name="BattleContractSelectionPanel" type="Control"]
 layout_mode = 3
@@ -18,7 +114,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.03, 0.04, 0.07, 0.72)
+color = Color(0, 0, 0, 0.58)
 
 [node name="Panel" type="PanelContainer" parent="Shade"]
 layout_mode = 1
@@ -28,45 +124,107 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -560.0
-offset_top = -215.0
+offset_top = -250.0
 offset_right = 560.0
-offset_bottom = 215.0
+offset_bottom = 250.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_terminal")
+
+[node name="TopSignal" type="ColorRect" parent="Shade/Panel"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 2.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.2, 0.62, 0.72, 0.85)
+
+[node name="BottomSignal" type="ColorRect" parent="Shade/Panel"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -2.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+color = Color(0.14, 0.4, 0.48, 0.5)
 
 [node name="Margin" type="MarginContainer" parent="Shade/Panel"]
 layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_left = 34
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 34
+theme_override_constants/margin_bottom = 18
 
 [node name="Content" type="VBoxContainer" parent="Shade/Panel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 8
+
+[node name="TerminalStatus" type="Label" parent="Shade/Panel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.34, 0.66, 0.72, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "TACTICAL LINK // ACQUIRING CONTRACTS"
+uppercase = true
 
 [node name="Title" type="Label" parent="Shade/Panel/Margin/Content"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
+theme_override_colors/font_color = Color(0.9, 0.95, 0.96, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 32
 text = "Choose Battle Contract"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="Shade/Panel/Margin/Content"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.81, 0.84, 1)
+theme_override_font_sizes/font_size = 16
 text = "Decide the victory condition for the next battle"
 horizontal_alignment = 1
 
-[node name="Cards" type="HBoxContainer" parent="Shade/Panel/Margin/Content"]
+[node name="Divider" type="ColorRect" parent="Shade/Panel/Margin/Content"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.18, 0.48, 0.55, 0.35)
+
+[node name="MainContractsLabel" type="Label" parent="Shade/Panel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.78, 0.83, 1)
+theme_override_font_sizes/font_size = 14
+text = "主要协议"
+
+[node name="MainCards" type="HBoxContainer" parent="Shade/Panel/Margin/Content"]
 layout_mode = 2
 theme_override_constants/separation = 24
+alignment = 1
 
-[node name="CardLeft" parent="Shade/Panel/Margin/Content/Cards" instance=ExtResource("2")]
+[node name="CardLeft" parent="Shade/Panel/Margin/Content/MainCards" instance=ExtResource("2")]
 layout_mode = 2
 
-[node name="CardMiddle" parent="Shade/Panel/Margin/Content/Cards" instance=ExtResource("2")]
+[node name="CardMiddle" parent="Shade/Panel/Margin/Content/MainCards" instance=ExtResource("2")]
 layout_mode = 2
 
-[node name="CardRight" parent="Shade/Panel/Margin/Content/Cards" instance=ExtResource("2")]
+[node name="ExtraContracts" type="VBoxContainer" parent="Shade/Panel/Margin/Content"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Label" type="Label" parent="Shade/Panel/Margin/Content/ExtraContracts"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.7, 0.28, 1)
+theme_override_font_sizes/font_size = 14
+text = "额外协议"
+
+[node name="CardRight" parent="Shade/Panel/Margin/Content/ExtraContracts" instance=ExtResource("2")]
+custom_minimum_size = Vector2(0, 170)
 layout_mode = 2
 
 [node name="Actions" type="HBoxContainer" parent="Shade/Panel/Margin/Content"]
@@ -75,10 +233,24 @@ alignment = 1
 theme_override_constants/separation = 16
 
 [node name="Cancel" type="Button" parent="Shade/Panel/Margin/Content/Actions"]
+custom_minimum_size = Vector2(136, 44)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.68, 0.76, 0.78, 1)
+theme_override_colors/font_hover_color = Color(0.9, 0.96, 0.97, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_action_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_action_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_action_pressed")
 text = "Back to Prepare"
 
 [node name="Confirm" type="Button" parent="Shade/Panel/Margin/Content/Actions"]
+custom_minimum_size = Vector2(190, 46)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.03, 0.14, 0.16, 1)
+theme_override_colors/font_hover_color = Color(0.95, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.3, 0.36, 0.38, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_confirm_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_confirm_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_confirm_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_action_disabled")
 text = "Launch Selected Contract"
 disabled = true

@@ -4,13 +4,18 @@ class_name ManagementUiBootstrapController
 const REUSABLE_PRIMARY_MENU_SCRIPT := preload("res://UI/scripts/management/reusable_primary_menu.gd")
 
 var owner_ui: UI
+var _shell_polish_ready := false
+var _purchase_polish_ready := false
+var _upgrade_polish_ready := false
+var _warehouse_polish_ready := false
 
 func bind(ui: UI) -> void:
 	owner_ui = ui
 
 func init_management_ui_polish() -> void:
-	if owner_ui == null:
+	if owner_ui == null or _shell_polish_ready:
 		return
+	_shell_polish_ready = true
 	var style_helper: ManagementUiStyleHelper = owner_ui.management_ui_style_helper
 	style_helper.style_management_panel(owner_ui.purchase_panel)
 	style_helper.style_management_panel(owner_ui.upgrade_panel)
@@ -20,30 +25,6 @@ func init_management_ui_polish() -> void:
 		[owner_ui.purchase_panel, owner_ui.upgrade_panel, owner_ui.module_panel]
 	)
 
-	owner_ui.shop_instruction_label = style_helper.create_management_instruction(
-		owner_ui.purchase_panel,
-		"ShopInstruction",
-		Vector2(25, 40),
-		Vector2(1, 1)
-	)
-	owner_ui.shop_instruction_label.visible = false
-	owner_ui.upgrade_instruction_label = style_helper.create_management_instruction(
-		owner_ui.upgrade_panel,
-		"UpgradeInstruction",
-		Vector2(25, 42),
-		Vector2(480, 30)
-	)
-	owner_ui._init_upgrade_management_controller()
-	owner_ui.upgrade_management_controller.set_instruction_label(owner_ui.upgrade_instruction_label)
-	owner_ui.module_instruction_label = style_helper.create_management_instruction(
-		owner_ui.module_panel,
-		"ModuleInstruction",
-		Vector2(25, 42),
-		Vector2(500, 30)
-	)
-	owner_ui.purchase_management_controller.ensure_view()
-	owner_ui.upgrade_management_controller.ensure_view()
-	owner_ui.module_warehouse_controller.ensure_view()
 	ensure_management_menu_buttons()
 
 	var upgrade_back := owner_ui.upgrade_panel.get_node_or_null("BackToUpgradeMenu") as Button
@@ -57,9 +38,50 @@ func init_management_ui_polish() -> void:
 		style_helper.style_management_title(
 			title_panel.get_node_or_null("Title") as Label
 		)
-	owner_ui.upgrade_management_controller.refresh_action()
-	owner_ui.module_warehouse_controller.refresh_action()
+
+func init_purchase_ui_polish() -> void:
+	init_management_ui_polish()
+	if owner_ui == null or _purchase_polish_ready:
+		return
+	owner_ui.shop_instruction_label = owner_ui.management_ui_style_helper.create_management_instruction(
+		owner_ui.purchase_panel, "ShopInstruction", Vector2(25, 40), Vector2(1, 1)
+	)
+	owner_ui.shop_instruction_label.visible = false
+	if not owner_ui.purchase_management_controller.ensure_view():
+		owner_ui.shop_instruction_label.queue_free()
+		owner_ui.shop_instruction_label = null
+		return
 	owner_ui.purchase_management_controller.apply_purchase_mode(owner_ui._shop_purchase_mode)
+	_purchase_polish_ready = true
+
+func init_upgrade_ui_polish() -> void:
+	init_management_ui_polish()
+	if owner_ui == null or _upgrade_polish_ready:
+		return
+	owner_ui.upgrade_instruction_label = owner_ui.management_ui_style_helper.create_management_instruction(
+		owner_ui.upgrade_panel, "UpgradeInstruction", Vector2(25, 42), Vector2(480, 30)
+	)
+	owner_ui.upgrade_management_controller.set_instruction_label(owner_ui.upgrade_instruction_label)
+	if not owner_ui.upgrade_management_controller.ensure_view():
+		owner_ui.upgrade_instruction_label.queue_free()
+		owner_ui.upgrade_instruction_label = null
+		return
+	owner_ui.upgrade_management_controller.refresh_action()
+	_upgrade_polish_ready = true
+
+func init_warehouse_ui_polish() -> void:
+	init_management_ui_polish()
+	if owner_ui == null or _warehouse_polish_ready:
+		return
+	owner_ui.module_instruction_label = owner_ui.management_ui_style_helper.create_management_instruction(
+		owner_ui.module_panel, "ModuleInstruction", Vector2(25, 42), Vector2(500, 30)
+	)
+	if not owner_ui.module_warehouse_controller.ensure_view():
+		owner_ui.module_instruction_label.queue_free()
+		owner_ui.module_instruction_label = null
+		return
+	owner_ui.module_warehouse_controller.refresh_action()
+	_warehouse_polish_ready = true
 
 func ensure_management_menu_buttons() -> void:
 	if owner_ui == null:

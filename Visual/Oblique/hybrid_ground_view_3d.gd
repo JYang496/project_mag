@@ -13,13 +13,14 @@ const LayeredAreaGroundShader := preload("res://Shaders/layered_area_ground.gdsh
 const ACTIVATION_OUTLINE_SHADER := """
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never;
-uniform vec4 outline_color : source_color;
-uniform float outline_alpha = 0.0;
-uniform float fill_alpha = 0.0;
+	uniform vec4 outline_color : source_color;
+	uniform float outline_alpha = 0.0;
+	uniform float fill_alpha = 0.0;
+	uniform float animation_time = 0.0;
 void fragment() {
 	vec2 edge_uv = min(UV, vec2(1.0) - UV);
 	float edge = 1.0 - smoothstep(0.012, 0.035, min(edge_uv.x, edge_uv.y));
-	float sweep = 0.68 + 0.32 * sin(TIME * 2.4 + (UV.x + UV.y) * 10.0);
+		float sweep = 0.68 + 0.32 * sin(animation_time * 2.4 + (UV.x + UV.y) * 10.0);
 	vec2 corner_uv = min(UV, vec2(1.0) - UV);
 	float corner_band = (1.0 - step(0.18, min(corner_uv.x, corner_uv.y))) * step(0.055, max(corner_uv.x, corner_uv.y));
 	float circuit = corner_band * step(0.55, fract((UV.x + UV.y) * 18.0));
@@ -65,6 +66,7 @@ var _rest_zone_quad: QuadMesh
 var _rest_zone_material: ShaderMaterial
 var _activation_quad: QuadMesh
 var _activation_material: ShaderMaterial
+var _shader_animation_time := 0.0
 var _border_material: StandardMaterial3D
 var _border_meshes: Dictionary = {}
 var _projection_ready: bool = false
@@ -141,6 +143,11 @@ func _initialize_ground_renderers() -> void:
 func _process(delta: float) -> void:
 	if not enabled or _camera == null:
 		return
+	_shader_animation_time += maxf(delta, 0.0)
+	if _rest_zone_material != null:
+		_rest_zone_material.set_shader_parameter("animation_time", _shader_animation_time)
+	if _activation_material != null:
+		_activation_material.set_shader_parameter("animation_time", _shader_animation_time)
 	if _ground_renderers_initialized and HybridGroundRegistration.pending_count() > 0:
 		HybridGroundRegistration.flush_pending(self)
 	_resolve_player()

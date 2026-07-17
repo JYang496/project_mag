@@ -22,8 +22,8 @@ var character_hud_root: Control
 
 const HUD_MARGIN := 16.0
 const CONTINUOUS_REFRESH_INTERVAL := 0.1
-const COMBAT_RESOURCE_ORIGIN := Vector2(64.0, 88.0)
-const COMBAT_RESOURCE_WIDTH := 192.0
+const COMBAT_RESOURCE_ORIGIN := Vector2(64.0, 82.0)
+const COMBAT_RESOURCE_WIDTH := 250.0
 const SPECIAL_RESOURCE_OFFSET := Vector2(96.0, 76.0)
 const SPECIAL_RESOURCE_OPACITY := 0.62
 const HEALTH_METER_ORIGIN := Vector2(38.0, 16.0)
@@ -176,7 +176,7 @@ func _ensure_combat_resource_slot_container(hp_label_root: Control) -> void:
 	combat_resource_slot_container.position = COMBAT_RESOURCE_ORIGIN
 	combat_resource_slot_container.custom_minimum_size = Vector2(COMBAT_RESOURCE_WIDTH, 0.0)
 	combat_resource_slot_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	combat_resource_slot_container.add_theme_constant_override("separation", 5)
+	combat_resource_slot_container.add_theme_constant_override("separation", 8)
 	hp_label_root.add_child(combat_resource_slot_container)
 
 func ensure_weapon_state_label(character_root: Control) -> Label:

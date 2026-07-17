@@ -46,6 +46,17 @@ func is_boss_battle() -> bool:
 	var plan := _get_level_plan()
 	return plan != null and plan.is_boss
 
+func get_battle_intro_snapshot() -> Dictionary:
+	var plan := _get_level_plan()
+	if plan == null:
+		return {}
+	return {
+		"is_boss": plan.is_boss,
+		"time_out_sec": plan.time_out_sec,
+		"target_total_hp": plan.target_total_hp,
+		"level": get_level_index() + 1,
+	}
+
 func get_allowed_contracts() -> Array[StringName]:
 	var plan := _get_level_plan()
 	return plan.allowed_contracts.duplicate() if plan != null else []
