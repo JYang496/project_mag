@@ -8,7 +8,7 @@ const ENEMY_SCENES: PackedStringArray = [
 	"res://Npc/enemy/scenes/elite_enemy.tscn",
 	"res://Npc/enemy/scenes/dummy.tscn",
 	"res://Npc/enemy/scenes/enemy_bomber.tscn",
-	"res://Npc/enemy/scenes/enemy_interceptor_heavy.tscn",
+	"res://Npc/enemy/scenes/enemy_interceptor.tscn",
 	"res://Npc/enemy/scenes/enemy_mine_crawler.tscn",
 	"res://Npc/enemy/scenes/enemy_mirror_caster.tscn",
 	"res://Npc/enemy/scenes/enemy_mirror_clone.tscn",
@@ -38,6 +38,7 @@ func _ready() -> void:
 	add_child(_view)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	_validate_warning_layer_contract()
 	for index in range(ENEMY_SCENES.size()):
 		await _validate_enemy_scene(ENEMY_SCENES[index], index)
 	PlayerData.player = null
@@ -47,6 +48,26 @@ func _ready() -> void:
 	else:
 		print("PASS hybrid enemy visual matrix (%d scenes)" % ENEMY_SCENES.size())
 		get_tree().quit(0)
+
+func _validate_warning_layer_contract() -> void:
+	var warning := TargetWarning.new()
+	warning.position = Vector2(40.0, 25.0)
+	add_child(warning)
+	_view.register_warning_circle(warning)
+	_view.sync_late_visuals(0.0)
+	var entries := _view.get("_area_meshes") as Dictionary
+	var entry_variant: Variant = entries.get(warning.get_instance_id())
+	_failed = _check(entry_variant is Dictionary, "circular attack warning must register a 3D mesh") or _failed
+	if entry_variant is Dictionary:
+		var entry := entry_variant as Dictionary
+		var mesh := entry.get("mesh") as MeshInstance3D
+		var material := mesh.mesh.surface_get_material(0) as StandardMaterial3D if mesh != null else null
+		var expected_position := _view.world_2d_to_3d(warning.global_position) + Vector3.UP * HybridView.DANGER_WARNING_HEIGHT
+		_failed = _check(mesh != null and mesh.position.distance_to(expected_position) < 0.002, "circular attack warning must sit above ground areas") or _failed
+		_failed = _check(material != null and material.render_priority == HybridView.DANGER_WARNING_RENDER_PRIORITY, "circular attack warning must render above ground areas") or _failed
+	_failed = _check(HybridView.DANGER_WARNING_HEIGHT > HybridView.GROUND_AREA_HEIGHT + 0.006, "attack warnings must sit above beacon progress") or _failed
+	_failed = _check(HybridView.DANGER_WARNING_RENDER_PRIORITY > HybridView.GROUND_AREA_RENDER_PRIORITY, "attack warnings must have higher material priority than contract areas") or _failed
+	warning.queue_free()
 
 func _validate_enemy_scene(scene_path: String, index: int) -> void:
 	var packed := load(scene_path) as PackedScene
@@ -135,10 +156,14 @@ func _validate_dash_telegraph(enemy: BaseEnemy, scene_path: String) -> void:
 		var warning_box := entry.get("warning_box") as BoxMesh
 		var progress_mesh := entry.get("progress_mesh") as MeshInstance3D
 		var progress_box := entry.get("progress_box") as BoxMesh
-		var expected_midpoint := _view.world_2d_to_3d(enemy.global_position + direction * 210.0) + Vector3.UP * 0.026
+		var expected_midpoint := _view.world_2d_to_3d(enemy.global_position + direction * 210.0) + Vector3.UP * HybridView.DANGER_WARNING_HEIGHT
 		_failed = _check(warning_mesh != null and warning_mesh.visible and warning_mesh.position.distance_to(expected_midpoint) < 0.002, "%s 3D dash warning position mismatch" % scene_path) or _failed
+		var warning_material := entry.get("warning_material") as StandardMaterial3D
+		_failed = _check(warning_material != null and warning_material.render_priority == HybridView.DANGER_WARNING_RENDER_PRIORITY, "%s dash warning must render above ground areas" % scene_path) or _failed
 		_failed = _check(warning_box != null and absf(warning_box.size.x - 420.0 * _view.world_scale) < 0.002, "%s 3D dash warning length mismatch" % scene_path) or _failed
 		_failed = _check(progress_mesh != null and progress_mesh.visible, "%s 3D dash progress must be visible" % scene_path) or _failed
+		var progress_material := entry.get("progress_material") as StandardMaterial3D
+		_failed = _check(progress_material != null and progress_material.render_priority == HybridView.DANGER_PROGRESS_RENDER_PRIORITY, "%s dash progress must have highest danger priority" % scene_path) or _failed
 		_failed = _check(progress_box != null and absf(progress_box.size.x - 210.0 * _view.world_scale) < 0.002, "%s 3D dash progress length mismatch" % scene_path) or _failed
 	telegraph.clear_warning()
 	_view.sync_late_visuals(0.0)

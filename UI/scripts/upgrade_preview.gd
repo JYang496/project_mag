@@ -105,7 +105,8 @@ func _input(_event):
 func try_upgrade_selected_weapon() -> bool:
 	if weapon_node == null or not is_instance_valid(weapon_node) or not upgradable:
 		return false
-	PlayerData.player_gold -= cost_price
+	if not PlayerData.spend_gold(cost_price):
+		return false
 	upgrade_level.emit(int(weapon_node.level) + 1)
 	if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.upgrade_management_controller:
 		GlobalVariables.ui.upgrade_management_controller.update_upg()

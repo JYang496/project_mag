@@ -67,7 +67,8 @@ func set_start_up_status():
 	PlayerData.crit_rate = float(GlobalVariables.mech_data.crit_rate[lvl_index])
 	PlayerData.crit_damage = float(GlobalVariables.mech_data.crit_damage[lvl_index])
 	PlayerData.grab_radius = float(GlobalVariables.mech_data.grab_radius[lvl_index])
-	PlayerData.player_gold = int(GlobalVariables.mech_data.player_gold[lvl_index])
+	# Starting gold is run economy state, not a per-mecha combat stat.
+	# PlayerData.reset_runtime_state() initializes it from EconomyConfig.
 
 func _setup_cell_monitor() -> void:
 	var cell := _find_parent_cell()
@@ -123,6 +124,7 @@ func _add_player_to_root(player_instance: Node) -> void:
 		get_tree().root.add_child(player_instance)
 	grant_startup_feature_test_loadout(player_instance as Player)
 	TaskRewardManager.restore_snapshot_after_player_spawn()
+	SaveManager.restore_after_player_spawn()
 	LoadingPerformance.end_segment("player_add_to_tree")
 
 static func grant_startup_feature_test_loadout(player: Player, force_enabled: bool = false) -> void:

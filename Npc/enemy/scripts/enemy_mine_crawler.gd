@@ -13,9 +13,14 @@ const SLOW_ZONE_SCENE := preload("res://Npc/enemy/scenes/tar_slow_zone.tscn")
 var _current_speed: float = 0.0
 
 func _physics_process(delta: float) -> void:
+	var ai_delta := consume_ai_update_delta(delta)
+	if ai_delta <= 0.0:
+		continue_lod_movement(delta)
+		return
+	delta = ai_delta
 	if is_stunned():
 		decay_knockback()
-		move_with_body_push(Vector2.ZERO, delta)
+		move_enemy(Vector2.ZERO, delta)
 		return
 	if PlayerData.player == null:
 		return
@@ -24,7 +29,7 @@ func _physics_process(delta: float) -> void:
 	_current_speed = minf(_current_speed + chase_acceleration * delta, max_speed)
 	var direction := global_position.direction_to(PlayerData.player.global_position)
 	decay_knockback()
-	move_with_body_push(direction * _current_speed, delta)
+	move_enemy(direction * _current_speed, delta)
 
 func _before_death(_killing_attack: Attack) -> void:
 	if not is_inside_tree():

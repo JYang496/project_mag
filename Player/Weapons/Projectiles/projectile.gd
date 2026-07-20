@@ -288,7 +288,10 @@ func _clear_hitbox() -> void:
 func _release_effects() -> void:
 	var children := get_children()
 	for child in children:
-		if child == projectile_root or child == expire_timer:
+		# These nodes are permanent parts of every projectile scene. In particular,
+		# freeing HitboxAnchor here corrupts the cached instance: request_ready() will
+		# then resolve $HitboxAnchor again on the next acquire and fail.
+		if child == projectile_root or child == hitbox_anchor or child == expire_timer:
 			continue
 		if child is Label:
 			continue

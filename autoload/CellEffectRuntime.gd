@@ -340,6 +340,24 @@ func save_runtime_state() -> void:
 	if file:
 		file.store_string(JSON.stringify(payload))
 
+func export_save_state() -> Dictionary:
+	return {
+		"inventory": _inventory.duplicate(true),
+		"installed": _installed.duplicate(true),
+		"pending": _pending.duplicate(true),
+		"granted_reward_ids": _granted_reward_ids.duplicate(true),
+	}
+
+func import_save_state(payload: Dictionary) -> void:
+	_inventory = _sanitize_effect_count_dictionary(payload.get("inventory", {}))
+	_installed = _sanitize_cell_effect_dictionary(payload.get("installed", {}))
+	_pending = _sanitize_cell_effect_dictionary(payload.get("pending", {}))
+	_granted_reward_ids = (payload.get("granted_reward_ids", {}) as Dictionary).duplicate(true) if payload.get("granted_reward_ids", {}) is Dictionary else {}
+	_runtime_state_loaded = true
+	inventory_changed.emit()
+	pending_changed.emit()
+	installed_changed.emit()
+
 func load_runtime_state() -> void:
 	var payload := _read_json_dictionary(STATE_PATH)
 	if payload.is_empty():

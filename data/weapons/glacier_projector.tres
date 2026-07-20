@@ -8,6 +8,6 @@ script = ExtResource("3_script")
 weapon_id = "21"
 display_name = "Glacier Projector"
 icon = ExtResource("1_icon")
-price = 60
+price = 45
 description = "Mid-range Freeze cone. Freeze hits trigger Cold Snap as it recharges, supporting Freeze and Area control builds."
 scene_path = "res://Player/Weapons/Instances/glacier_projector.tscn"

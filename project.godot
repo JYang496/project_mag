@@ -42,6 +42,7 @@ TimeImpactController="*res://autoload/TimeImpactController.gd"
 DamageManager="*res://autoload/DamageManager.gd"
 CursorManager="*res://autoload/CursorManager.gd"
 BattleContractManager="*res://autoload/BattleContractManager.gd"
+SaveManager="*res://autoload/SaveManager.gd"
 
 [display]
 

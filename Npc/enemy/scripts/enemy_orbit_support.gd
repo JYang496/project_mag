@@ -1,9 +1,6 @@
 extends BaseEnemy
 class_name EnemyOrbitSupport
 
-const META_AURA_SOURCES := "_speed_aura_sources"
-const META_AURA_BASE_SPEED := "_speed_aura_base_speed"
-
 @export var orbit_radius: float = 170.0
 @export var orbit_correction: float = 2.5
 @export var orbit_clockwise: bool = true
@@ -18,12 +15,12 @@ const META_AURA_BASE_SPEED := "_speed_aura_base_speed"
 
 @onready var speed_buff_area: Area2D = $SpeedBuffArea
 @onready var speed_buff_shape: CollisionShape2D = $SpeedBuffArea/CollisionShape2D
-
 var _buffed_targets: Array[BaseEnemy] = []
 
 func _ready() -> void:
 	super._ready()
 	support_role = &"speed_support"
+	EnemyRegistry.refresh_enemy_roles(self)
 	add_to_group(&"hybrid_enemy_aura_source")
 	call_deferred("register_hybrid_support_visuals")
 	if speed_buff_shape and speed_buff_shape.shape is CircleShape2D:
@@ -31,14 +28,16 @@ func _ready() -> void:
 		aura_shape.radius = aura_radius
 
 func _physics_process(delta: float) -> void:
-	if aura_visual_enabled:
-		queue_redraw()
+	var ai_delta := consume_ai_update_delta(delta)
+	if ai_delta <= 0.0:
+		continue_lod_movement(delta)
+		return
+	delta = ai_delta
 	if PlayerData.player == null:
 		return
 	if is_stunned():
 		decay_knockback()
-		move_with_body_push(Vector2.ZERO, delta)
-		_sync_aura_overlaps()
+		move_enemy(Vector2.ZERO, delta)
 		return
 
 	var to_player: Vector2 = PlayerData.player.global_position - global_position
@@ -59,8 +58,7 @@ func _physics_process(delta: float) -> void:
 		desired_velocity = radial_dir * move_speed
 	else:
 		desired_velocity = orbit_velocity + radial_velocity
-	move_with_body_push(desired_velocity, delta)
-	_sync_aura_overlaps()
+	move_enemy(desired_velocity, delta)
 
 func _on_speed_buff_area_body_entered(body: Node2D) -> void:
 	if debug_aura_detection:
@@ -69,88 +67,24 @@ func _on_speed_buff_area_body_entered(body: Node2D) -> void:
 			script_name = body.get_script().get_global_name()
 		print("[AuraEnter] engine=", body.get_class(), " script=", script_name)
 	if body is BaseEnemy:
-		_apply_speed_aura(body)
+		var target := body as BaseEnemy
+		if target != self and target.can_receive_support_from(self):
+			target.add_speed_bonus_source(self, 1.0 + aura_speed_bonus)
+			if not _buffed_targets.has(target):
+				_buffed_targets.append(target)
 
 func _on_speed_buff_area_body_exited(body: Node2D) -> void:
 	if body is BaseEnemy:
-		_remove_speed_aura(body)
-
-func _sync_aura_overlaps() -> void:
-	if speed_buff_area == null:
-		return
-	for body in speed_buff_area.get_overlapping_bodies():
-		if body is BaseEnemy:
-			_apply_speed_aura(body)
-	for target in _buffed_targets.duplicate():
-		if not is_instance_valid(target):
-			_remove_speed_aura(target)
-			continue
-		if not speed_buff_area.overlaps_body(target):
-			_remove_speed_aura(target)
+		var target := body as BaseEnemy
+		target.remove_speed_bonus_source(self)
+		_buffed_targets.erase(target)
 
 func _exit_tree() -> void:
-	for target in _buffed_targets.duplicate():
-		_remove_speed_aura(target)
-
-func _apply_speed_aura(target_ref) -> void:
-	if target_ref == null:
-		return
-	if not is_instance_valid(target_ref):
-		return
-
-	var target := target_ref as BaseEnemy
-	if target == self or target is EnemyOrbitSupport:
-		return
-
-	var source_id := get_instance_id()
-	var sources = target.get_meta(META_AURA_SOURCES, [])
-	if not (sources is Array):
-		sources = []
-
-	if not sources.has(source_id):
-		sources.append(source_id)
-	target.set_meta(META_AURA_SOURCES, sources)
-
-	if not target.has_meta(META_AURA_BASE_SPEED):
-		target.set_meta(META_AURA_BASE_SPEED, target.movement_speed)
-
-	var base_speed := float(target.get_meta(META_AURA_BASE_SPEED))
-	target.movement_speed = base_speed * (1.0 + aura_speed_bonus)
-
-	if not _buffed_targets.has(target):
-		_buffed_targets.append(target)
-
-func _remove_speed_aura(target_ref) -> void:
-	if target_ref == null:
-		return
-	if not is_instance_valid(target_ref):
-		_buffed_targets.erase(target_ref)
-		return
-
-	var target := target_ref as BaseEnemy
-	if target == null:
-		_buffed_targets.erase(target_ref)
-		return
-
-	var source_id := get_instance_id()
-	var sources = target.get_meta(META_AURA_SOURCES, [])
-	if not (sources is Array):
-		sources = []
-
-	if sources.has(source_id):
-		sources.erase(source_id)
-
-	if sources.is_empty():
-		if target.has_meta(META_AURA_BASE_SPEED):
-			target.movement_speed = float(target.get_meta(META_AURA_BASE_SPEED))
-			target.remove_meta(META_AURA_BASE_SPEED)
-		target.remove_meta(META_AURA_SOURCES)
-	else:
-		target.set_meta(META_AURA_SOURCES, sources)
-		var base_speed := float(target.get_meta(META_AURA_BASE_SPEED, target.movement_speed))
-		target.movement_speed = base_speed * (1.0 + aura_speed_bonus)
-
-	_buffed_targets.erase(target)
+	for target in _buffed_targets:
+		if target != null and is_instance_valid(target):
+			target.remove_speed_bonus_source(self)
+	_buffed_targets.clear()
+	super._exit_tree()
 
 func _draw() -> void:
 	if not aura_visual_enabled or uses_hybrid_ground_visuals():

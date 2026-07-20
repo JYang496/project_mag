@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://UI/scripts/weapon_selector.gd" id="2_86ani"]
 [ext_resource type="Texture2D" path="res://asset/images/ui/mainhand.png" id="3_gar8u"]
 [ext_resource type="Texture2D" path="res://asset/images/ui/offhand.png" id="4_btbbh"]
-[ext_resource type="Texture2D" path="res://asset/images/ui/status frame.png" id="5_xocvv"]
+[ext_resource type="Texture2D" path="res://UI/themes/player_status_hud/generated/ui_frame_clean_panel.png" id="5_xocvv"]
 [ext_resource type="Script" path="res://UI/scripts/components/gold_hud_display.gd" id="6_jiqn8"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bar_bg"]
@@ -194,11 +194,12 @@ text = "Augments"
 [node name="HpLabel" type="TextureRect" parent="." unique_id=889654884]
 layout_mode = 0
 offset_left = 4.0
-offset_top = 535.0
-offset_right = 435.0
+offset_top = 577.0
+offset_right = 448.0
 offset_bottom = 704.0
-scale = Vector2(0.8, 0.64)
+scale = Vector2(0.8, 0.8)
 texture = ExtResource("5_xocvv")
+expand_mode = 1
 
 [node name="Hp" type="Label" parent="HpLabel" unique_id=1902588253]
 visible = false

@@ -436,6 +436,35 @@ func save_runtime_state() -> void:
 	if file:
 		file.store_string(JSON.stringify(payload))
 
+func export_save_state() -> Dictionary:
+	return {
+		"inventory": Array(_inventory),
+		"deployments": _deployments.duplicate(true),
+		"active_tasks": _active_tasks.duplicate(true),
+		"completed_cells": _completed_cells.duplicate(true),
+		"last_completed_count": _last_completed_count,
+		"special_shop_offer_module_id": _special_shop_offer_module_id,
+		"special_shop_offer_checks": _special_shop_offer_checks,
+		"granted_reward_ids": _granted_reward_ids.duplicate(true),
+	}
+
+func import_save_state(payload: Dictionary) -> void:
+	_inventory = _sanitize_inventory(payload.get("inventory", []))
+	_deployments = _sanitize_module_dictionary(payload.get("deployments", {}))
+	_active_tasks = _sanitize_module_dictionary(payload.get("active_tasks", {}))
+	_completed_cells = _sanitize_module_dictionary(payload.get("completed_cells", {}))
+	_last_completed_count = maxi(int(payload.get("last_completed_count", 0)), 0)
+	_special_shop_offer_module_id = str(payload.get("special_shop_offer_module_id", ""))
+	if get_definition(_special_shop_offer_module_id) == null:
+		_special_shop_offer_module_id = ""
+	_special_shop_offer_checks = maxi(int(payload.get("special_shop_offer_checks", 0)), 0)
+	_granted_reward_ids = (payload.get("granted_reward_ids", {}) as Dictionary).duplicate(true) if payload.get("granted_reward_ids", {}) is Dictionary else {}
+	_runtime_state_loaded = true
+	inventory_changed.emit()
+	deployment_changed.emit()
+	active_tasks_changed.emit()
+	completed_tasks_changed.emit()
+
 func load_runtime_state() -> void:
 	var payload := _read_json_dictionary(STATE_PATH)
 	if payload.is_empty():

@@ -47,6 +47,8 @@
     {"prefix": "tests/scenes/enemy/", "domain": "enemy", "certainty": "known"},
     {"prefix": "tests/headless/reward/", "domain": "reward", "certainty": "known"},
     {"prefix": "tests/scenes/reward/", "domain": "reward", "certainty": "known"},
+    {"prefix": "tests/headless/persistence/", "domain": "persistence", "certainty": "known"},
+    {"prefix": "tests/scenes/persistence/", "domain": "persistence", "certainty": "known"},
     {"prefix": "tests/headless/spawn/", "domain": "spawn", "certainty": "known"},
     {"prefix": "tests/scenes/spawn/", "domain": "spawn", "certainty": "known"},
     {"prefix": "Player/Weapons/", "domain": "weapon", "certainty": "known"},

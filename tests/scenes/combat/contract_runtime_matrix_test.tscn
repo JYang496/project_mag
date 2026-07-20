@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://tests/scenes/combat/contract_runtime_matrix_test.gd" type="Script" id="1"]
+
+[node name="ContractRuntimeMatrixTest" type="Node"]
+script = ExtResource("1")

@@ -42,6 +42,7 @@ func _ready() -> void:
 	_ensure_language_option()
 	_ensure_assist_options()
 	_configure_visible_controls()
+	start_button.disabled = not SaveManager.has_run()
 	_apply_localized_text()
 	_populate_resolution_options()
 	_populate_language_options()

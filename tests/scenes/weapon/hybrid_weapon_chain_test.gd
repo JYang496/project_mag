@@ -32,7 +32,7 @@ func _ready() -> void:
 	weapon.play_fire_feedback(Vector2.RIGHT)
 	await get_tree().create_timer(0.03).timeout
 	failed = _check(weapon.get_muzzle_global_position().is_equal_approx(muzzle_before), "visual recoil must not move logical muzzle") or failed
-	var projectile := ProjectileScene.instantiate() as Projectile
+	var projectile := ObjectPool.acquire(ProjectileScene) as Projectile
 	projectile.projectile_texture = ProjectileTexture
 	projectile.base_displacement = Vector2.RIGHT * 100.0
 	add_child(projectile)
@@ -40,6 +40,16 @@ func _ready() -> void:
 	await get_tree().physics_frame
 	failed = _check(projectile.projectile_root.has_method("set_logical_local_position"), "projectile visual must be billboard") or failed
 	failed = _check(projectile.hitbox_ins != null and projectile.hitbox_ins.get_parent() == projectile.hitbox_anchor, "projectile hitbox must stay under logical anchor") or failed
+	var pooled_projectile_id := projectile.get_instance_id()
+	ObjectPool.release(projectile)
+	await get_tree().process_frame
+	var reused_projectile := ObjectPool.acquire(ProjectileScene) as Projectile
+	reused_projectile.projectile_texture = ProjectileTexture
+	add_child(reused_projectile)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	failed = _check(reused_projectile.get_instance_id() == pooled_projectile_id, "projectile pool must reuse the released instance") or failed
+	failed = _check(reused_projectile.get_node_or_null("HitboxAnchor") == reused_projectile.hitbox_anchor, "pooled projectile must preserve its logical HitboxAnchor") or failed
 	var machine_gun := MachineGunScene.instantiate() as Weapon
 	add_child(machine_gun)
 	await get_tree().process_frame

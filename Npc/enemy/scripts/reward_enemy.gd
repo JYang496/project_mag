@@ -12,19 +12,19 @@ func _ready() -> void:
 	super._ready()
 	damage = 0
 	set_collision_mask_value(1, false)
-	if hit_box_dot != null:
-		hit_box_dot.process_mode = Node.PROCESS_MODE_DISABLED
-		hit_box_dot.collision_layer = 0
-		hit_box_dot.collision_mask = 0
 	_pick_next_waypoint()
 
 func _physics_process(delta: float) -> void:
+	var ai_delta := consume_ai_update_delta(delta)
+	if ai_delta <= 0.0:
+		continue_lod_movement(delta)
+		return
+	delta = ai_delta
 	_waypoint_time_left -= maxf(delta, 0.0)
 	if _waypoint_time_left <= 0.0 or global_position.distance_to(_waypoint) <= arrival_distance:
 		_pick_next_waypoint()
 	var direction := global_position.direction_to(_waypoint)
-	velocity = direction * get_current_movement_speed()
-	move_and_slide()
+	move_enemy(direction * get_current_movement_speed(), delta)
 
 func _pick_next_waypoint() -> void:
 	_waypoint_time_left = randf_range(waypoint_interval_min, waypoint_interval_max)

@@ -53,7 +53,6 @@ void fragment() {
 """
 
 func _ready():
-	hit_box_dot.hitbox_owner = self
 	if sprite_body == null:
 		push_warning("EliteEnemy missing Body sprite; highlight disabled.")
 		return

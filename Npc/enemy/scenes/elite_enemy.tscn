@@ -11,4 +11,3 @@ script = ExtResource("2_u46xm")
 [connection signal="timeout" from="SkillTimer" to="." method="_on_skill_timer_timeout"]
 
 [editable path="HurtBox"]
-[editable path="HitBoxDot"]

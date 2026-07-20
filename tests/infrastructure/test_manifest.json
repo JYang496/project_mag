@@ -34,6 +34,16 @@
       "timeout_seconds": 20
     },
     {
+      "id": "world.rest_area_shop_visibility",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/world/rest_area_shop_visibility_test.tscn",
+      "domain": "world",
+      "dependency_domains": ["ui"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
       "id": "weapon.hybrid_chain",
       "entry_type": "scene",
       "path": "res://tests/scenes/weapon/hybrid_weapon_chain_test.tscn",
@@ -62,6 +72,116 @@
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 45
+    },
+    {
+      "id": "enemy.body_collision_policy",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/enemy/enemy_body_collision_policy_test.tscn",
+      "domain": "enemy",
+      "dependency_domains": ["combat", "player", "world"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
+      "id": "enemy.registry_spatial_hash",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/enemy/enemy_registry_spatial_hash_test.tscn",
+      "domain": "enemy",
+      "dependency_domains": ["world", "spawn", "combat"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "enemy.event_driven_registry",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/enemy/enemy_snapshot_runtime_test.tscn",
+      "domain": "enemy",
+      "dependency_domains": ["world", "spawn"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "enemy.board_constraint_cache",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/enemy/enemy_board_constraint_cache_test.tscn",
+      "domain": "enemy",
+      "dependency_domains": ["world", "spawn"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "enemy.ai_distance_lod",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/enemy/enemy_ai_lod_test.tscn",
+      "domain": "enemy",
+      "dependency_domains": ["player", "world", "combat"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "enemy.contact_and_pool",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/enemy/enemy_contact_and_pool_test.tscn",
+      "domain": "enemy",
+      "dependency_domains": ["player", "combat", "weapon"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "combat.contract_runtime_matrix",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/combat/contract_runtime_matrix_test.tscn",
+      "domain": "combat",
+      "dependency_domains": ["world", "spawn"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
+      "id": "world.battle_loop_smoke",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/world/battle_loop_smoke_test.tscn",
+      "domain": "world",
+      "dependency_domains": ["combat", "reward", "spawn", "cell", "ui", "player"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "world.battle_rollback_roundtrip",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/world/battle_rollback_roundtrip_test.tscn",
+      "domain": "world",
+      "dependency_domains": ["player", "weapon", "reward", "combat"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "persistence.runtime_roundtrip",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/persistence/runtime_roundtrip_test.tscn",
+      "domain": "persistence",
+      "dependency_domains": ["player", "weapon", "cell", "reward", "combat"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "persistence.save_manager_storage",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/persistence/save_manager_storage_test.tscn",
+      "domain": "persistence",
+      "dependency_domains": ["player", "weapon", "cell", "reward", "combat", "world"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 20
     }
   ]
 }

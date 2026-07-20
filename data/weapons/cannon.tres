@@ -8,6 +8,6 @@ script = ExtResource("3_def")
 weapon_id = "25"
 display_name = "Cannon"
 icon = ExtResource("1_icon")
-price = 80
+price = 60
 description = "Long-range heavy cannon. Fits Defense and Execute setups: idle long enough to prime Breach Shot, then reload to refresh the setup cycle."
 scene_path = "res://Player/Weapons/Instances/cannon.tscn"

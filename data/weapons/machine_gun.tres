@@ -8,6 +8,6 @@ script = ExtResource("3_t7mxl")
 weapon_id = "1"
 display_name = "Machine Gun"
 icon = ExtResource("1_42wdo")
-price = 40
+price = 30
 description = "Sustained mid-range automatic fire. Core Heat and Projectile weapon: spending magazine ammo before reload expands shared heat capacity."
 scene_path = "res://Player/Weapons/Instances/machine_gun.tscn"

@@ -166,7 +166,6 @@ func _on_phase_changed(new_phase: String) -> void:
 func _finalize_success_without_reward() -> void:
 	if PhaseManager.current_state() != PhaseManager.PREPARE or _reward_unlocked:
 		return
-	DataHandler.save_game(DataHandler.save_data)
 	_delete_file(ROLLBACK_PATH)
 
 func _try_open_pending_reward() -> void:
@@ -214,7 +213,6 @@ func _retry_open_later() -> void:
 func _on_reward_summary_closed() -> void:
 	_reward_panel_open = false
 	_clear_pending_reward(true)
-	DataHandler.save_game(DataHandler.save_data)
 	_delete_file(ROLLBACK_PATH)
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("resume_pending_weapon_branch_selection"):
@@ -243,7 +241,6 @@ func _settle_pending_reward_entries() -> String:
 		_pending_reward_entries[index] = entry
 		_save_state()
 		return status
-	DataHandler.save_game(DataHandler.save_data)
 	return ENTRY_GRANTED
 
 func _grant_reward_entry(entry_id: String, reward: RewardInfo) -> Dictionary:
@@ -450,6 +447,9 @@ func _build_rollback_snapshot() -> Dictionary:
 			"run_elite_kills": int(PlayerData.run_elite_kills),
 			"run_completed_levels": int(PlayerData.run_completed_levels),
 			"run_gold": int(PlayerData.run_gold_earned),
+			"run_gold_recycled": int(PlayerData.run_gold_recycled),
+			"run_gold_spent": int(PlayerData.run_gold_spent),
+			"rounds_without_weapon_progress": int(PlayerData.rounds_without_weapon_progress),
 			"main_weapon_index": int(PlayerData.main_weapon_index),
 			"weapons": weapon_payloads,
 		},
@@ -461,6 +461,46 @@ func _build_rollback_snapshot() -> Dictionary:
 		"reward_draft_runtime": RewardDraftRuntime.build_battle_rollback_snapshot(),
 		"battle_contract": BattleContractManager.build_rollback_snapshot(),
 	}
+
+func build_run_snapshot() -> Dictionary:
+	return _build_rollback_snapshot()
+
+func restore_run_snapshot_after_player_spawn(payload: Dictionary) -> void:
+	_restore_player_state(payload.get("player", {}) as Dictionary)
+	_restore_inventory_state(payload.get("inventory", {}) as Dictionary)
+
+func export_save_state() -> Dictionary:
+	var entries: Array[Dictionary] = []
+	for entry in _pending_reward_entries:
+		entries.append({
+			"id": str(entry.get("id", "")),
+			"status": str(entry.get("status", ENTRY_PENDING)),
+			"reward": _serialize_reward(entry.get("reward", null) as RewardInfo),
+		})
+	return {
+		"pending_level": _pending_level,
+		"entries": entries,
+		"unbuilt_bundle_count": _unbuilt_bundle_count,
+		"next_reward_entry_id": _next_reward_entry_id,
+		"reward_unlocked": _reward_unlocked,
+	}
+
+func import_save_state(payload: Dictionary) -> void:
+	_pending_level = int(payload.get("pending_level", -1))
+	_pending_reward_entries.clear()
+	for value in payload.get("entries", []):
+		if value is Dictionary:
+			var entry := value as Dictionary
+			_pending_reward_entries.append({
+				"id": str(entry.get("id", "")),
+				"status": str(entry.get("status", ENTRY_PENDING)),
+				"reward": _deserialize_reward(entry.get("reward", {}) as Dictionary),
+			})
+	_unbuilt_bundle_count = maxi(int(payload.get("unbuilt_bundle_count", 0)), 0)
+	_next_reward_entry_id = maxi(int(payload.get("next_reward_entry_id", 1)), 1)
+	_reward_unlocked = bool(payload.get("reward_unlocked", false))
+	_battle_in_progress = false
+	pending_reward_changed.emit(_reward_unlocked)
 
 func _write_rollback_snapshot() -> bool:
 	var file := FileAccess.open(ROLLBACK_PATH, FileAccess.WRITE)
@@ -500,6 +540,9 @@ func _restore_player_state(payload: Dictionary) -> void:
 	PlayerData.run_elite_kills = int(payload.get("run_elite_kills", 0))
 	PlayerData.run_completed_levels = int(payload.get("run_completed_levels", 0))
 	PlayerData.run_gold_earned = int(payload.get("run_gold", 0))
+	PlayerData.run_gold_recycled = int(payload.get("run_gold_recycled", 0))
+	PlayerData.run_gold_spent = int(payload.get("run_gold_spent", 0))
+	PlayerData.rounds_without_weapon_progress = int(payload.get("rounds_without_weapon_progress", 0))
 	_clear_equipped_weapons()
 	var player := PlayerData.player as Player
 	if player:
@@ -512,6 +555,11 @@ func _restore_player_state(payload: Dictionary) -> void:
 				player.create_weapon(weapon)
 				DataHandler.restore_weapon_runtime_from_save_payload(weapon, weapon_payload)
 		PlayerData.set_main_weapon_index(int(payload.get("main_weapon_index", 0)))
+	# Rebuilding weapon levels can emit normal progression side effects. The
+	# rollback snapshot remains authoritative, so restore progression last.
+	PlayerData.player_level = int(payload.get("level", PlayerData.player_level))
+	PlayerData.next_level_exp = int(payload.get("next_exp", PlayerData.next_level_exp))
+	PlayerData.player_exp = int(payload.get("exp", PlayerData.player_exp))
 
 func _restore_inventory_state(payload: Dictionary) -> void:
 	for module_instance in InventoryData.temporary_modules.duplicate():
@@ -699,7 +747,10 @@ func _read_json_dictionary(path: String) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return {}
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parser := JSON.new()
+	if parser.parse(file.get_as_text()) != OK:
+		return {}
+	var parsed = parser.data
 	return parsed as Dictionary if parsed is Dictionary else {}
 
 func _delete_file(path: String) -> void:

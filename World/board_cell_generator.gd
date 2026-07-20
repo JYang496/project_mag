@@ -153,6 +153,77 @@ func project_point_to_enemy_traversable_area_with_margin(world_point: Vector2, m
 			return _project_point_away_from_active_boundaries(cell, world_point, margin)
 	return _project_point_to_nearest_cells(active_cells, world_point, margin)
 
+func build_enemy_traversable_cache(world_point: Vector2) -> Dictionary:
+	var projected_position := project_point_to_enemy_traversable_area(world_point)
+	var cell := _find_cell_containing_point(projected_position)
+	if cell == null or not is_cell_active_by_id(cell.logical_id):
+		return {
+			"position": projected_position,
+			"cell_id": -1,
+			"safe_rect": Rect2(),
+		}
+	return {
+		"position": projected_position,
+		"cell_id": cell.logical_id,
+		"safe_rect": _get_enemy_traversable_safe_rect(cell),
+	}
+
+func _get_enemy_traversable_safe_rect(cell: Cell) -> Rect2:
+	if cell == null:
+		return Rect2()
+	var local_rect := Rect2()
+	var shape_transform := Transform2D.IDENTITY
+	var capture_polygon := cell.get_node_or_null("Area2D/CapturePolygon") as CollisionPolygon2D
+	if capture_polygon != null and not capture_polygon.polygon.is_empty():
+		local_rect = _get_polygon_local_aabb(capture_polygon.polygon)
+		shape_transform = capture_polygon.global_transform
+	else:
+		var collision_shape := cell.get_node_or_null("Area2D/CollisionShape2D") as CollisionShape2D
+		if collision_shape == null or not collision_shape.shape is RectangleShape2D:
+			return Rect2()
+		var rectangle := collision_shape.shape as RectangleShape2D
+		var half_size := rectangle.size * 0.5
+		local_rect = Rect2(-half_size, rectangle.size)
+		shape_transform = collision_shape.global_transform
+	if local_rect.size.x <= 0.0 or local_rect.size.y <= 0.0:
+		return Rect2()
+	var boundary_edges := _get_enemy_traversable_boundary_edges(cell.logical_id)
+	var safe_margin := _get_active_boundary_safe_margin(enemy_traversable_inset)
+	var minimum := local_rect.position
+	var maximum := local_rect.end
+	if boundary_edges.has("left"):
+		minimum.x += safe_margin
+	if boundary_edges.has("top"):
+		minimum.y += safe_margin
+	if boundary_edges.has("right"):
+		maximum.x -= safe_margin
+	if boundary_edges.has("bottom"):
+		maximum.y -= safe_margin
+	if maximum.x <= minimum.x or maximum.y <= minimum.y:
+		return Rect2()
+	return _transform_rect_to_world_aabb(Rect2(minimum, maximum - minimum), shape_transform)
+
+func _transform_rect_to_world_aabb(local_rect: Rect2, world_transform: Transform2D) -> Rect2:
+	# A world AABB is only a conservative inside region while the board shapes stay
+	# axis-aligned. Rotated or skewed boards deliberately fall back to exact projection.
+	if absf(world_transform.x.y) > 0.0001 or absf(world_transform.y.x) > 0.0001:
+		return Rect2()
+	var first := world_transform * local_rect.position
+	var minimum := first
+	var maximum := first
+	var corners := PackedVector2Array([
+		Vector2(local_rect.end.x, local_rect.position.y),
+		local_rect.end,
+		Vector2(local_rect.position.x, local_rect.end.y),
+	])
+	for local_point: Vector2 in corners:
+		var world_point: Vector2 = world_transform * local_point
+		minimum.x = minf(minimum.x, world_point.x)
+		minimum.y = minf(minimum.y, world_point.y)
+		maximum.x = maxf(maximum.x, world_point.x)
+		maximum.y = maxf(maximum.y, world_point.y)
+	return Rect2(minimum, maximum - minimum)
+
 func project_point_to_player_traversable_area(world_point: Vector2) -> Vector2:
 	var best_point := project_point_to_enemy_traversable_area_with_margin(world_point, enemy_traversable_inset)
 	var best_distance := best_point.distance_squared_to(world_point)
@@ -975,6 +1046,7 @@ func _enforce_traversable_bounds_for_existing_units() -> void:
 		if enemy_2d == null or not is_instance_valid(enemy_2d):
 			continue
 		enemy_2d.global_position = project_point_to_enemy_traversable_area(enemy_2d.global_position)
+		EnemyRegistry.update_enemy_position(enemy_2d)
 
 func _get_registered_enemies() -> Array[Node2D]:
 	var output: Array[Node2D] = []

@@ -7,10 +7,12 @@ const COMPACT_SIZE := Vector2(340.0, 64.0)
 const EXPANDED_SIZE := Vector2(340.0, 112.0)
 const INTRO_EXPANDED_SEC := 2.8
 const COMPLETED_VISIBLE_SEC := 1.8
-const INTRO_MOVE_SEC := 0.48
-const INTRO_HOLD_SEC := 3.0
-const INTRO_COLLAPSE_SEC := 0.42
-const INTRO_SIZE := Vector2(640.0, 180.0)
+const PROGRESS_SMOOTHING_SPEED := 7.0
+const INTRO_MOVE_SEC := 0.42
+const INTRO_HOLD_SEC := 1.8
+const INTRO_COLLAPSE_SEC := 0.52
+const INTRO_SIZE := Vector2(560.0, 160.0)
+const INTRO_TOP_Y := 24.0
 
 var panel: PanelContainer
 var title: Label
@@ -68,6 +70,8 @@ func bind(root: Control, overlay_root: Control = null) -> void:
 	progress = SmoothProgressBarScript.new()
 	progress.custom_minimum_size = Vector2(0.0, 5.0)
 	progress.max_value = 1.0
+	progress.step = 0.001
+	progress.set("smoothing_speed", PROGRESS_SMOOTHING_SPEED)
 	progress.show_percentage = false
 	progress.add_theme_stylebox_override("background", _build_progress_style(Color(0.03, 0.10, 0.15, 0.9)))
 	progress.add_theme_stylebox_override("fill", _build_progress_style(Color("4db8d1")))
@@ -271,31 +275,63 @@ func play_prepared_intro() -> void:
 	_intro_playing = true
 	panel.visible = false
 	var viewport_size := panel.get_viewport_rect().size
-	var target_position := Vector2((viewport_size.x - INTRO_SIZE.x) * 0.5, 24.0)
+	var target_position := Vector2((viewport_size.x - INTRO_SIZE.x) * 0.5, INTRO_TOP_Y)
 	var intro := _intro_control
+	intro.pivot_offset = intro.size * 0.5
+	intro.scale = Vector2.ONE
+	intro.modulate = Color.WHITE
 	var move := intro.create_tween().set_parallel(true)
-	move.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	move.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
 	move.tween_property(intro, "position", target_position, INTRO_MOVE_SEC)
 	move.tween_property(intro, "size", INTRO_SIZE, INTRO_MOVE_SEC)
+	move.tween_property(intro, "scale", Vector2(1.04, 1.04), INTRO_MOVE_SEC * 0.42).from(Vector2(0.98, 0.98))
 	await move.finished
+	if not is_instance_valid(intro):
+		_intro_playing = false
+		return
+	intro.pivot_offset = intro.size * 0.5
+	var settle := intro.create_tween()
+	settle.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	settle.tween_property(intro, "scale", Vector2.ONE, 0.16)
+	await settle.finished
 	await intro.get_tree().create_timer(INTRO_HOLD_SEC).timeout
 	if not is_instance_valid(intro):
 		_intro_playing = false
 		return
+	# Populate the destination before moving so the card visibly transforms into
+	# the HUD instead of disappearing and being replaced a frame later.
+	var handoff_to_contract_hud := not _boss_intro and BattleContractManager.state == BattleContractManager.ACTIVE
+	if handoff_to_contract_hud:
+		_last_snapshot = {}
+		_intro_playing = false
+		refresh()
+		_intro_playing = true
+		panel.modulate.a = 0.0
+		panel.visible = true
 	var final_position := Vector2(viewport_size.x - COMPACT_SIZE.x - 16.0, 16.0)
+	var intro_parent := intro.get_parent() as Control
+	if handoff_to_contract_hud and intro_parent != null and panel.is_inside_tree():
+		final_position = intro_parent.get_global_transform_with_canvas().affine_inverse() * panel.get_global_position()
+	if intro.has_method("begin_intro_collapse"):
+		intro.call("begin_intro_collapse", INTRO_COLLAPSE_SEC)
 	var collapse := intro.create_tween().set_parallel(true)
-	collapse.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	collapse.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	collapse.tween_property(intro, "position", final_position, INTRO_COLLAPSE_SEC)
 	collapse.tween_property(intro, "size", COMPACT_SIZE, INTRO_COLLAPSE_SEC)
-	collapse.tween_property(intro, "modulate:a", 0.0, INTRO_COLLAPSE_SEC).set_delay(INTRO_COLLAPSE_SEC * 0.55)
+	collapse.tween_property(intro, "modulate:a", 0.28, INTRO_COLLAPSE_SEC * 0.42).set_delay(INTRO_COLLAPSE_SEC * 0.58)
+	if handoff_to_contract_hud:
+		collapse.tween_property(panel, "modulate:a", 1.0, INTRO_COLLAPSE_SEC * 0.45).set_delay(INTRO_COLLAPSE_SEC * 0.48)
 	await collapse.finished
 	if is_instance_valid(intro):
 		intro.queue_free()
 	_intro_control = null
 	_intro_playing = false
 	if BattleContractManager.state == BattleContractManager.ACTIVE:
-		_last_snapshot = {}
-		refresh()
+		panel.modulate.a = 1.0
+		var hud_settle := panel.create_tween()
+		panel.pivot_offset = panel.size
+		hud_settle.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		hud_settle.tween_property(panel, "scale", Vector2.ONE, 0.15).from(Vector2(0.96, 0.96))
 	elif _boss_intro and PhaseManager.current_state() == PhaseManager.BATTLE:
 		_show_boss_hud()
 

@@ -157,6 +157,7 @@ func store_weapon(weapon: Weapon) -> Dictionary:
 		{"name": LocalizationManager.get_weapon_name_by_id(weapon_id, weapon.name)},
 		"Stored %s in the weapon warehouse" % LocalizationManager.get_weapon_name_by_id(weapon_id, weapon.name)
 	))
+	PlayerData.record_weapon_progress()
 	return {"ok": true, "result": "stored", "weapon": weapon}
 
 func equip_stored_weapon(weapon: Weapon) -> Dictionary:
@@ -244,6 +245,7 @@ func _find_stored_weapon_by_id(weapon_id: String) -> Weapon:
 func _merge_stored_weapon_duplicate(weapon: Weapon) -> Dictionary:
 	if int(weapon.fuse) < int(weapon.FINAL_MAX_FUSE):
 		weapon.fuse += 1
+		PlayerData.record_weapon_progress()
 		if weapon.has_method("refresh_max_level_from_data"):
 			weapon.call("refresh_max_level_from_data")
 		if weapon.has_method("calculate_status"):
@@ -254,8 +256,7 @@ func _merge_stored_weapon_duplicate(weapon: Weapon) -> Dictionary:
 	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
 	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
 	var gold := _get_economy_config().get_duplicate_weapon_gold(int(weapon_def.price) if weapon_def else 0)
-	PlayerData.player_gold += gold
-	PlayerData.run_gold_earned += gold
+	PlayerData.recycle_gold(gold)
 	_refresh_ui()
 	return {"ok": true, "result": "converted_to_gold", "weapon": weapon, "gold": gold}
 
@@ -386,10 +387,12 @@ func purchase_module(module_scene: PackedScene) -> Dictionary:
 	if PlayerData.player_gold < price:
 		module_instance.queue_free()
 		return {"ok": false, "reason": "Not enough gold.", "price": price}
-	PlayerData.player_gold -= price
+	if not PlayerData.spend_gold(price):
+		module_instance.queue_free()
+		return {"ok": false, "reason": "Not enough gold.", "price": price}
 	var result := obtain_module(module_instance)
 	if not result.get("ok", false):
-		PlayerData.player_gold += price
+		PlayerData.refund_gold_spending(price)
 		if is_instance_valid(module_instance):
 			_discard_module_instance(module_instance)
 		return result
@@ -408,9 +411,10 @@ func upgrade_module_with_gold(module_instance: Module) -> Dictionary:
 	)
 	if PlayerData.player_gold < price:
 		return {"ok": false, "reason": "Not enough gold.", "price": price}
-	PlayerData.player_gold -= price
+	if not PlayerData.spend_gold(price):
+		return {"ok": false, "reason": "Not enough gold.", "price": price}
 	if not module_instance.increase_module_level(1):
-		PlayerData.player_gold += price
+		PlayerData.refund_gold_spending(price)
 		return {"ok": false, "reason": "Module is fully upgraded.", "price": price}
 	var owner_weapon := _resolve_module_owner_weapon(module_instance)
 	if owner_weapon and owner_weapon.has_method("calculate_status"):
@@ -456,8 +460,7 @@ func _merge_duplicate_module(existing: Module, incoming: Module) -> Dictionary:
 		_refresh_ui()
 		return {"ok": true, "result": "upgraded", "module": existing}
 	var gold := _calculate_module_conversion_coins(incoming)
-	PlayerData.player_gold += gold
-	PlayerData.run_gold_earned += gold
+	PlayerData.recycle_gold(gold)
 	_discard_module_instance(incoming, existing)
 	_notify(LocalizationManager.tr_format(
 		"ui.inventory.convert",
@@ -472,8 +475,7 @@ func sell_temporary_module(module_instance: Module) -> Dictionary:
 		return {"ok": false, "reason": "Invalid module."}
 	var gold := _calculate_module_conversion_coins(module_instance)
 	temporary_modules.erase(module_instance)
-	PlayerData.player_gold += gold
-	PlayerData.run_gold_earned += gold
+	PlayerData.recycle_gold(gold)
 	_discard_module_instance(module_instance)
 	temporary_modules_changed.emit()
 	_refresh_ui()
@@ -489,8 +491,7 @@ func sell_module(module_instance: Module) -> Dictionary:
 		return {"ok": false, "reason": "Invalid module."}
 	var gold := _calculate_module_conversion_coins(module_instance)
 	owner_weapon.modules.remove_child(module_instance)
-	PlayerData.player_gold += gold
-	PlayerData.run_gold_earned += gold
+	PlayerData.recycle_gold(gold)
 	_discard_module_instance(module_instance)
 	if owner_weapon.has_method("calculate_status"):
 		owner_weapon.calculate_status()
@@ -503,8 +504,7 @@ func sell_unclaimed_module(module_instance: Module) -> Dictionary:
 		return {"ok": false, "reason": "Invalid module."}
 	var gold := _calculate_module_conversion_coins(module_instance)
 	var module_name := LocalizationManager.get_module_name(module_instance)
-	PlayerData.player_gold += gold
-	PlayerData.run_gold_earned += gold
+	PlayerData.recycle_gold(gold)
 	_discard_module_instance(module_instance)
 	_notify(LocalizationManager.tr_format(
 		"ui.inventory.unclaimed_module_sold",

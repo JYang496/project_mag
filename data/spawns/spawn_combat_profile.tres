@@ -86,7 +86,7 @@ weight = 2
 
 [sub_resource type="Resource" id="Entry_interceptor_tutorial"]
 script = ExtResource("3_entry")
-enemy_scene_path = "res://Npc/enemy/scenes/enemy_interceptor_heavy.tscn"
+enemy_scene_path = "res://Npc/enemy/scenes/enemy_interceptor.tscn"
 start_sec = 10
 weight = 3
 
@@ -173,7 +173,7 @@ weight = 3
 
 [sub_resource type="Resource" id="Entry_interceptor_ranged"]
 script = ExtResource("3_entry")
-enemy_scene_path = "res://Npc/enemy/scenes/enemy_interceptor_heavy.tscn"
+enemy_scene_path = "res://Npc/enemy/scenes/enemy_interceptor.tscn"
 start_sec = 12
 weight = 3
 
@@ -232,7 +232,7 @@ weight = 3
 
 [sub_resource type="Resource" id="Entry_interceptor_mix"]
 script = ExtResource("3_entry")
-enemy_scene_path = "res://Npc/enemy/scenes/enemy_interceptor_heavy.tscn"
+enemy_scene_path = "res://Npc/enemy/scenes/enemy_interceptor.tscn"
 start_sec = 28
 weight = 3
 
@@ -273,7 +273,7 @@ weight = 2
 
 [sub_resource type="Resource" id="Entry_interceptor_finale"]
 script = ExtResource("3_entry")
-enemy_scene_path = "res://Npc/enemy/scenes/enemy_interceptor_heavy.tscn"
+enemy_scene_path = "res://Npc/enemy/scenes/enemy_interceptor.tscn"
 start_sec = 26
 weight = 3
 

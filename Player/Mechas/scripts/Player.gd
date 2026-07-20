@@ -273,6 +273,7 @@ func custom_ready():
 	create_weapon("1")
 
 func _physics_process(delta):
+	_process_centralized_enemy_contact_damage(delta)
 	_refresh_weapon_structure_if_needed()
 	_update_global_weapon_passives()
 	_update_heat_statuses()
@@ -300,6 +301,36 @@ func _physics_process(delta):
 		return
 	_camera_system.tick(delta)
 	_update_collect_area_anchor_to_screen_top()
+
+var _enemy_contact_tick_accumulator := 0.0
+const ENEMY_CONTACT_TICK_INTERVAL := 0.2
+const ENEMY_CONTACT_QUERY_RADIUS := 30.0
+
+func _process_centralized_enemy_contact_damage(delta: float) -> void:
+	if PhaseManager.current_state() != PhaseManager.BATTLE:
+		_enemy_contact_tick_accumulator = 0.0
+		return
+	_enemy_contact_tick_accumulator += maxf(delta, 0.0)
+	if _enemy_contact_tick_accumulator < ENEMY_CONTACT_TICK_INTERVAL:
+		return
+	_enemy_contact_tick_accumulator = fmod(_enemy_contact_tick_accumulator, ENEMY_CONTACT_TICK_INTERVAL)
+	var registry := get_node_or_null("/root/EnemyRegistry")
+	if registry == null or not registry.has_method("get_enemies_in_radius"):
+		return
+	for enemy_value in registry.call("get_enemies_in_radius", global_position, ENEMY_CONTACT_QUERY_RADIUS):
+		var enemy := enemy_value as BaseEnemy
+		if enemy == null or enemy.is_dead or enemy.damage <= 0:
+			continue
+		var direction := enemy.global_position.direction_to(global_position)
+		var damage_data := DamageManager.build_damage_data(
+			enemy,
+			maxi(enemy.damage, 1),
+			Attack.TYPE_PHYSICAL,
+			{"amount": 0.0, "angle": direction}
+		)
+		damage_data.dedupe_token = StringName("enemy_contact_%d_%d" % [enemy.get_instance_id(), get_instance_id()])
+		damage_data.dedupe_window_sec = ENEMY_CONTACT_TICK_INTERVAL * 0.9
+		DamageManager.apply_to_target(self, damage_data)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.echo:

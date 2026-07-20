@@ -52,7 +52,8 @@ func update_labels() -> void:
 	crit_rate.text = LocalizationManager.tr_format("ui.mecha.crit_rate", {"value": String.num(crit_rate_value * 100.0, 1)}, "Crit Rate: %s%%" % [String.num(crit_rate_value * 100.0, 1)])
 	crit_damage.text = LocalizationManager.tr_format("ui.mecha.crit_damage", {"value": mech_data.crit_damage[lvl_index]}, "Crit Damage: %s" % [mech_data.crit_damage[lvl_index]])
 	grab_radius.text = LocalizationManager.tr_format("ui.mecha.grab_radius", {"value": mech_data.grab_radius[lvl_index]}, "Grab Radius: %s" % [mech_data.grab_radius[lvl_index]])
-	player_gold.text = LocalizationManager.tr_format("ui.mecha.gold", {"value": mech_data.player_gold[lvl_index]}, "Gold: %s" % [mech_data.player_gold[lvl_index]])
+	var starting_gold := GlobalVariables.economy_data.get_default_player_gold() if GlobalVariables.economy_data else EconomyConfig.new().get_default_player_gold()
+	player_gold.text = LocalizationManager.tr_format("ui.mecha.gold", {"value": starting_gold}, "Gold: %s" % [starting_gold])
 
 func _on_mecha_select_update_on_select(id) -> void:
 	mecha_id = int(id)

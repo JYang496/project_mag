@@ -141,7 +141,7 @@ func _grant_combat_reward() -> void:
 func _grant_economy_reward() -> void:
 	# 直接增加金币
 	if economy_gold > 0:
-		PlayerData.player_gold += economy_gold
+		PlayerData.earn_gold(economy_gold)
 
 	# 直接增加经验值
 	if economy_exp > 0:

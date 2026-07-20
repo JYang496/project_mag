@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="PackedScene" path="res://Npc/enemy/scenes/base_enemy.tscn" id="1_base"]
 [ext_resource type="Script" path="res://Npc/enemy/scripts/enemy_shield_core.gd" id="2_script"]
@@ -9,6 +9,9 @@ size = Vector2(27, 27)
 
 [sub_resource type="RectangleShape2D" id="Shape_body"]
 size = Vector2(25, 25)
+
+[sub_resource type="CircleShape2D" id="Shape_aura"]
+radius = 180.0
 
 [node name="EnemyShieldCore" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
@@ -30,5 +33,15 @@ texture = ExtResource("3_tex")
 [node name="NPCCollision" parent="." index="2"]
 shape = SubResource("Shape_body")
 
+[node name="ShieldArea" type="Area2D" parent="." index="3"]
+collision_layer = 0
+collision_mask = 20
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ShieldArea"]
+shape = SubResource("Shape_aura")
+
+[connection signal="body_entered" from="ShieldArea" to="." method="_on_shield_area_body_entered"]
+[connection signal="body_exited" from="ShieldArea" to="." method="_on_shield_area_body_exited"]
+
 [editable path="HurtBox"]
-[editable path="HitBoxDot"]

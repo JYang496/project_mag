@@ -58,7 +58,8 @@ func _disconnect_gold_signal() -> void:
 func _input(_event):
 	if Input.is_action_just_released("CLICK"):
 		if mouse_over and purchasable and PlayerData.player_gold >= price:
-			PlayerData.player_gold -= price
+			if not PlayerData.spend_gold(price):
+				return
 			#emit_signal("select_weapon",item_id)
 			select_weapon.emit(item_id)
 			if GlobalVariables.ui and is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.rest_area_ui_controller:

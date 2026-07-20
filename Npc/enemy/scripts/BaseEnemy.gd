@@ -19,33 +19,41 @@ const QUEST_OUTLINE_SHADER: Shader = preload("res://Shaders/quest_outline.gdshad
 @export_group("Support")
 @export var support_role: StringName = &""
 @export_group("")
-@export_group("Body Push")
-@export var body_push_enabled: bool = true
-@export var body_push_strength: float = 0.45
-@export var body_push_decay: float = 900.0
-@export var body_push_max_speed: float = 260.0
-@export var body_push_min_speed_delta: float = 18.0
-@export_group("Crowd Breakthrough")
-@export var crowd_breakthrough_width_multiplier: float = 1.5
-@export var crowd_breakthrough_side_push_strength: float = 0.6
+@export_group("Crowd Motion")
+@export_range(0.0, 30.0, 0.5) var crowd_lateral_speed: float = 6.0
+@export_group("AI Distance LOD")
+@export var ai_near_distance: float = 900.0
+@export var ai_mid_distance: float = 1800.0
+@export_range(10.0, 30.0, 1.0) var ai_mid_hz: float = 30.0
+@export_range(5.0, 15.0, 1.0) var ai_far_hz: float = 12.0
 @export_group("")
 signal enemy_death(was_killed: bool)
 
-@onready var hit_box_dot: HitBoxDot = $HitBoxDot
 @onready var enable_collision_timer: Timer = $EnableCollisionTimer
 var stun_remaining: float:
-	get: return movement_runtime.stun_remaining
-	set(value): movement_runtime.stun_remaining = value
+	get: return movement_runtime.get_stun_remaining()
+	set(value): movement_runtime.set_stun_remaining(value)
 var slow_remaining: float:
-	get: return movement_runtime.slow_remaining
-	set(value): movement_runtime.slow_remaining = value
+	get: return movement_runtime.get_slow_remaining()
+	set(value): movement_runtime.set_slow_remaining(value)
 var slow_multiplier: float:
-	get: return movement_runtime.slow_multiplier
+	get: return movement_runtime.get_current_slow_multiplier()
 	set(value): movement_runtime.slow_multiplier = value
 var _ranged_wander_dir: Vector2 = Vector2.ZERO
 var _ranged_wander_time_left: float = 0.0
 var _board_generator_ref: Node = null
 var _constraint_pending_physics_tick: bool = true
+var _constraint_cache_valid := false
+var _constraint_cached_cell_id := -1
+var _constraint_safe_rect := Rect2()
+var _constraint_fast_accepts := 0
+var _constraint_full_refreshes := 0
+var _ai_tick_accumulator := 0.0
+var _ai_tier_refresh_remaining := 0.0
+var _ai_tick_interval := 0.0
+var _ai_is_far_tier := false
+var _ai_logic_ticks := 0
+var _ai_cached_movement_ticks := 0
 var movement_runtime: EnemyMovementRuntime = EnemyMovementRuntime.new()
 var death_runtime: EnemyDeathRuntime = EnemyDeathRuntime.new()
 var _quest_lock_active := false
@@ -55,6 +63,8 @@ var _quest_outline_enabled := false
 var _quest_outline_original_material: Material
 var _quest_outline_material: ShaderMaterial
 var _support_damage_reduction_sources: Dictionary = {}
+var _speed_bonus_sources: Dictionary = {}
+var _slow_field_sources: Dictionary = {}
 
 func _init() -> void:
 	super._init()
@@ -68,16 +78,15 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_incoming_damage_max_hp = max(1, int(hp))
-	hit_box_dot.hitbox_owner = self
 
 func _exit_tree() -> void:
+	_disconnect_board_constraint_signals()
 	HybridGroundRegistration.unregister(self)
 	var enemy_registry := get_node_or_null("/root/EnemyRegistry")
 	if enemy_registry != null and enemy_registry.has_method("unregister_enemy"):
 		enemy_registry.call("unregister_enemy", self)
 
 func _process(delta: float) -> void:
-	movement_runtime.update_statuses(delta)
 	if FixedObliqueProjectionType.is_enabled():
 		z_index = int(round(FixedObliqueProjectionType.get_projected_depth(global_position) / 16.0))
 
@@ -105,7 +114,9 @@ func erase() -> void:
 
 func _on_enable_collision_timer_timeout() -> void:
 	self.set_collision_mask_value(6,true)
-	self.set_collision_mask_value(3,true)
+	# Enemy CharacterBody2D instances never solve contacts against each other.
+	# Player contact damage is resolved centrally by Player against EnemyRegistry.
+	self.set_collision_mask_value(3,false)
 
 func register_hybrid_support_visuals() -> void:
 	if not is_inside_tree():
@@ -130,22 +141,68 @@ func is_slowed() -> bool:
 func get_current_movement_speed() -> float:
 	if is_quest_movement_locked():
 		return 0.0
-	return movement_speed * slow_multiplier
+	return movement_speed * slow_multiplier * _get_speed_bonus_multiplier() * _get_field_slow_multiplier()
 
 func decay_knockback() -> void:
 	knockback.amount = clampf(float(knockback.amount) - maxf(float(knockback_recover), 0.0), 0.0, float(knockback.amount))
 
-func move_with_body_push(desired_velocity: Vector2, delta: float) -> void:
-	movement_runtime.move_with_body_push(desired_velocity, delta)
+func move_enemy(desired_velocity: Vector2, delta: float) -> void:
+	movement_runtime.move_enemy(desired_velocity, delta)
 
-func apply_body_push(push_velocity: Vector2) -> void:
-	movement_runtime.apply_body_push(push_velocity)
+func consume_ai_update_delta(delta: float) -> float:
+	var safe_delta := maxf(delta, 0.0)
+	_ai_tier_refresh_remaining -= safe_delta
+	if _ai_tier_refresh_remaining <= 0.0:
+		_ai_tier_refresh_remaining = 0.25
+		_ai_tick_interval = _resolve_ai_tick_interval()
+	_ai_tick_accumulator += safe_delta
+	if _ai_tick_interval <= 0.0 or _ai_tick_accumulator + 0.00001 >= _ai_tick_interval:
+		var accumulated := _ai_tick_accumulator
+		_ai_tick_accumulator = 0.0
+		_ai_logic_ticks += 1
+		return accumulated
+	return 0.0
 
-func get_body_push_collision_velocity() -> Vector2:
-	return movement_runtime.body_push_collision_velocity
+func continue_lod_movement(delta: float) -> void:
+	_ai_cached_movement_ticks += 1
+	decay_knockback()
+	if is_stunned() or is_quest_movement_locked():
+		movement_runtime.move_enemy(Vector2.ZERO, delta)
+		return
+	movement_runtime.continue_cached_movement(delta)
 
-func set_crowd_breakthrough_active(active: bool) -> void:
-	movement_runtime.set_crowd_breakthrough_active(active)
+func _resolve_ai_tick_interval() -> float:
+	if self is EliteEnemy or is_boss or is_in_group("boss"):
+		_ai_is_far_tier = false
+		return 0.0
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		_ai_is_far_tier = true
+		return 1.0 / maxf(ai_far_hz, 1.0)
+	var distance_sq := global_position.distance_squared_to(PlayerData.player.global_position)
+	if distance_sq <= maxf(ai_near_distance, 1.0) ** 2 or is_world_position_in_player_screen(global_position, 64.0):
+		_ai_is_far_tier = false
+		return 0.0
+	if distance_sq <= maxf(ai_mid_distance, ai_near_distance) ** 2:
+		_ai_is_far_tier = false
+		return 1.0 / maxf(ai_mid_hz, 1.0)
+	_ai_is_far_tier = true
+	return 1.0 / maxf(ai_far_hz, 1.0)
+
+func uses_simplified_far_movement() -> bool:
+	return _ai_is_far_tier and not is_boss and not (self is EliteEnemy)
+
+func reset_ai_lod_debug_metrics() -> void:
+	_ai_tick_accumulator = 0.0
+	_ai_tier_refresh_remaining = 0.0
+	_ai_logic_ticks = 0
+	_ai_cached_movement_ticks = 0
+
+func get_ai_lod_debug_metrics() -> Dictionary:
+	return {
+		"logic_ticks": _ai_logic_ticks,
+		"cached_movement_ticks": _ai_cached_movement_ticks,
+		"tick_interval": _ai_tick_interval,
+	}
 
 func interrupt_movement() -> void:
 	if has_method("_finish_dash"):
@@ -167,8 +224,6 @@ func apply_status_payload(status_name: StringName, status_data: Variant) -> void
 				float(payload.get("duration", 0.0))
 			)
 
-func _update_knockback_overlap_mode() -> void:
-	movement_runtime.update_knockback_overlap_mode()
 
 func set_quest_highlight(enabled: bool, color: Color = Color.WHITE) -> void:
 	set_outline_highlight(enabled, color, 1.0)
@@ -248,6 +303,34 @@ func get_support_damage_taken_multiplier() -> float:
 		strongest = minf(strongest, float(entry.get("multiplier", 1.0)))
 	return strongest
 
+func add_speed_bonus_source(source: Node, multiplier: float) -> void:
+	if source != null and source != self:
+		_speed_bonus_sources[source.get_instance_id()] = maxf(multiplier, 0.0)
+
+func remove_speed_bonus_source(source: Node) -> void:
+	if source != null:
+		_speed_bonus_sources.erase(source.get_instance_id())
+
+func add_slow_field_source(source: Node, multiplier: float) -> void:
+	if source != null:
+		_slow_field_sources[source.get_instance_id()] = clampf(multiplier, 0.05, 1.0)
+
+func remove_slow_field_source(source: Node) -> void:
+	if source != null:
+		_slow_field_sources.erase(source.get_instance_id())
+
+func _get_speed_bonus_multiplier() -> float:
+	var strongest := 1.0
+	for value in _speed_bonus_sources.values():
+		strongest = maxf(strongest, float(value))
+	return strongest
+
+func _get_field_slow_multiplier() -> float:
+	var strongest := 1.0
+	for value in _slow_field_sources.values():
+		strongest = minf(strongest, float(value))
+	return strongest
+
 func is_support_unit() -> bool:
 	return support_role != &""
 
@@ -304,18 +387,63 @@ func _get_board_generator() -> Node:
 	var scene_root := get_tree().current_scene
 	if scene_root:
 		_board_generator_ref = scene_root.get_node_or_null("Board")
+		_connect_board_constraint_signals()
 	return _board_generator_ref
 
 func _constrain_to_board_traversable_area() -> void:
 	var board := _get_board_generator()
 	if board == null:
 		return
-	if not board.has_method("project_point_to_enemy_traversable_area"):
+	if _constraint_cache_valid and _constraint_safe_rect.has_point(global_position):
+		_constraint_fast_accepts += 1
 		return
-	var projected: Variant = board.call("project_point_to_enemy_traversable_area", global_position)
-	if not (projected is Vector2):
+	if not board.has_method("build_enemy_traversable_cache"):
 		return
-	var projected_pos: Vector2 = projected as Vector2
-	if projected_pos.distance_squared_to(global_position) <= 0.25:
+	_constraint_full_refreshes += 1
+	var cache_value: Variant = board.call("build_enemy_traversable_cache", global_position)
+	if not (cache_value is Dictionary):
+		_constraint_cache_valid = false
 		return
-	global_position = projected_pos
+	var cache := cache_value as Dictionary
+	var projected_pos: Vector2 = cache.get("position", global_position)
+	_constraint_cached_cell_id = int(cache.get("cell_id", -1))
+	_constraint_safe_rect = cache.get("safe_rect", Rect2()) as Rect2
+	_constraint_cache_valid = _constraint_cached_cell_id >= 0 and _constraint_safe_rect.size.x > 0.0 and _constraint_safe_rect.size.y > 0.0
+	if projected_pos.distance_squared_to(global_position) > 0.25:
+		global_position = projected_pos
+		var enemy_registry := get_node_or_null("/root/EnemyRegistry")
+		if enemy_registry != null and enemy_registry.has_method("update_enemy_position"):
+			enemy_registry.call("update_enemy_position", self)
+
+func invalidate_board_constraint_cache(_unused: Variant = null) -> void:
+	_constraint_cache_valid = false
+	_constraint_cached_cell_id = -1
+	_constraint_safe_rect = Rect2()
+
+func get_board_constraint_debug_metrics() -> Dictionary:
+	return {
+		"cache_valid": _constraint_cache_valid,
+		"cached_cell_id": _constraint_cached_cell_id,
+		"fast_accepts": _constraint_fast_accepts,
+		"full_refreshes": _constraint_full_refreshes,
+	}
+
+func _connect_board_constraint_signals() -> void:
+	var board := _board_generator_ref
+	if board == null or not is_instance_valid(board):
+		return
+	var invalidate_callable := Callable(self, "invalidate_board_constraint_cache")
+	if board.has_signal("active_cells_changed") and not board.is_connected("active_cells_changed", invalidate_callable):
+		board.connect("active_cells_changed", invalidate_callable)
+	if board.has_signal("board_recentered") and not board.is_connected("board_recentered", invalidate_callable):
+		board.connect("board_recentered", invalidate_callable)
+
+func _disconnect_board_constraint_signals() -> void:
+	var board := _board_generator_ref
+	if board == null or not is_instance_valid(board):
+		return
+	var invalidate_callable := Callable(self, "invalidate_board_constraint_cache")
+	if board.has_signal("active_cells_changed") and board.is_connected("active_cells_changed", invalidate_callable):
+		board.disconnect("active_cells_changed", invalidate_callable)
+	if board.has_signal("board_recentered") and board.is_connected("board_recentered", invalidate_callable):
+		board.disconnect("board_recentered", invalidate_callable)

@@ -16,19 +16,19 @@ var health_meter
 var energy_meter
 var primary_resource_meter
 var ammo_resource_meter
-var combat_resource_slot_container: VBoxContainer
+var combat_resource_slot_container: Control
 var special_resource_slot_container: Control
 var character_hud_root: Control
 
 const HUD_MARGIN := 16.0
 const CONTINUOUS_REFRESH_INTERVAL := 0.1
-const COMBAT_RESOURCE_ORIGIN := Vector2(64.0, 82.0)
-const COMBAT_RESOURCE_WIDTH := 250.0
+const COMBAT_RESOURCE_ORIGIN := Vector2(104.0, 18.0)
 const SPECIAL_RESOURCE_OFFSET := Vector2(96.0, 76.0)
 const SPECIAL_RESOURCE_OPACITY := 0.62
-const HEALTH_METER_ORIGIN := Vector2(38.0, 16.0)
+const HEALTH_METER_ORIGIN := Vector2(104.0, 18.0)
 const COMBAT_RESOURCE_METER_SCRIPT := preload("res://UI/scripts/components/combat_resource_meter.gd")
 const PLAYER_HEALTH_METER_SCRIPT := preload("res://UI/scripts/components/player_health_meter.gd")
+const PLAYER_STATUS_HUD_SCRIPT := preload("res://UI/scripts/components/player_status_hud.gd")
 const SKILL_ENERGY_METER_SCRIPT := preload("res://UI/scripts/components/skill_energy_meter.gd")
 const BATTLE_TIME_METER_SCRIPT := preload("res://UI/scripts/components/battle_time_meter.gd")
 
@@ -148,18 +148,8 @@ func ensure_resource_label_under_hp(current_resource_label: Label, hp_label_root
 	return resource_label
 
 func _ensure_energy_meter_under_hp(hp_label_root: Control) -> void:
-	_ensure_combat_resource_slot_container(hp_label_root)
-	if energy_meter != null and is_instance_valid(energy_meter):
-		if energy_meter.get_parent() != combat_resource_slot_container:
-			var current_parent: Node = energy_meter.get_parent()
-			if current_parent:
-				current_parent.remove_child(energy_meter)
-			combat_resource_slot_container.add_child(energy_meter)
-		return
-	energy_meter = SKILL_ENERGY_METER_SCRIPT.new()
-	energy_meter.name = "SkillEnergyMeter"
-	energy_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	combat_resource_slot_container.add_child(energy_meter)
+	_ensure_health_meter()
+	energy_meter = health_meter
 
 func _ensure_combat_resource_slot_container(hp_label_root: Control) -> void:
 	if hp_label_root == null or not is_instance_valid(hp_label_root):
@@ -171,12 +161,11 @@ func _ensure_combat_resource_slot_container(hp_label_root: Control) -> void:
 				previous_parent.remove_child(combat_resource_slot_container)
 			hp_label_root.add_child(combat_resource_slot_container)
 		return
-	combat_resource_slot_container = VBoxContainer.new()
+	combat_resource_slot_container = Control.new()
 	combat_resource_slot_container.name = "CombatResourceSlots"
 	combat_resource_slot_container.position = COMBAT_RESOURCE_ORIGIN
-	combat_resource_slot_container.custom_minimum_size = Vector2(COMBAT_RESOURCE_WIDTH, 0.0)
+	combat_resource_slot_container.custom_minimum_size = Vector2.ZERO
 	combat_resource_slot_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	combat_resource_slot_container.add_theme_constant_override("separation", 8)
 	hp_label_root.add_child(combat_resource_slot_container)
 
 func ensure_weapon_state_label(character_root: Control) -> Label:
@@ -225,6 +214,7 @@ func refresh_continuous(delta: float) -> bool:
 	if _continuous_refresh_timer < CONTINUOUS_REFRESH_INTERVAL:
 		return false
 	_continuous_refresh_timer = 0.0
+	refresh_hp()
 	refresh_heat()
 	refresh_ammo()
 	refresh_weapon_state()
@@ -329,7 +319,7 @@ func _refresh_hp_hud() -> void:
 		hp_bar.visible = false
 	_ensure_health_meter()
 	if health_meter != null and is_instance_valid(health_meter):
-		health_meter.call("set_health", current_hp, max_hp)
+		health_meter.call("set_health", current_hp, max_hp, _get_current_shield(), max_hp)
 
 func _ensure_health_meter() -> void:
 	if health_meter != null and is_instance_valid(health_meter):
@@ -341,11 +331,16 @@ func _ensure_health_meter() -> void:
 		hp_label_root = hp_label_text.get_parent() as Control
 	if hp_label_root == null:
 		return
-	health_meter = PLAYER_HEALTH_METER_SCRIPT.new()
-	health_meter.name = "PlayerHealthMeter"
+	health_meter = PLAYER_STATUS_HUD_SCRIPT.new()
+	health_meter.name = "PlayerStatusHud"
 	health_meter.position = HEALTH_METER_ORIGIN
 	health_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hp_label_root.add_child(health_meter)
+	energy_meter = health_meter
+	ammo_resource_meter = health_meter
+
+func _get_current_shield() -> int:
+	return maxi(0, int(PlayerData.shield) + int(PlayerData.bonus_shield))
 
 func _update_heat_label_text() -> void:
 	_sync_primary_resource_slot(_select_special_resource_slot(_collect_primary_weapon_resource_slots()))
@@ -453,23 +448,19 @@ func _ensure_special_resource_slot_container() -> void:
 func _sync_ammo_resource_slot(slot: Dictionary) -> void:
 	if slot.is_empty():
 		if ammo_resource_meter and is_instance_valid(ammo_resource_meter):
-			ammo_resource_meter.visible = false
+			ammo_resource_meter.call("set_ammo", 0, 0, false)
 		return
 	_ensure_ammo_resource_meter()
 	if ammo_resource_meter == null or not is_instance_valid(ammo_resource_meter):
 		return
-	ammo_resource_meter.call("set_resource", &"ammo", clampf(float(slot.get("ratio", 0.0)), 0.0, 1.0), StringName(str(slot.get("state", "normal"))), str(slot.get("short_text", "")), str(slot.get("tooltip", "")))
+	ammo_resource_meter.call("set_ammo", int(slot.get("current", 0)), int(slot.get("max", 0)), true, StringName(str(slot.get("state", "normal"))), str(slot.get("tooltip", "")))
 	ammo_resource_meter.visible = true
 
 func _ensure_ammo_resource_meter() -> void:
-	if combat_resource_slot_container == null or not is_instance_valid(combat_resource_slot_container):
-		return
 	if ammo_resource_meter != null and is_instance_valid(ammo_resource_meter):
 		return
-	ammo_resource_meter = COMBAT_RESOURCE_METER_SCRIPT.new()
-	ammo_resource_meter.name = "AmmoResourceMeter"
-	ammo_resource_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	combat_resource_slot_container.add_child(ammo_resource_meter)
+	_ensure_health_meter()
+	ammo_resource_meter = health_meter
 
 func _update_ammo_label_text() -> void:
 	_hide_legacy_ammo_slot()

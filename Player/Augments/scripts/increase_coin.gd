@@ -18,7 +18,7 @@ func _on_update_aug_status() -> void:
 
 func increase_random_coin() -> void:
 	if randf() < probability:
-		PlayerData.player_gold += increased_coin
+		PlayerData.earn_gold(increased_coin)
 
 func remove_augment() -> void:
 	if PlayerData.player.is_connected("coin_collected",Callable(self,"increase_random_coin")):

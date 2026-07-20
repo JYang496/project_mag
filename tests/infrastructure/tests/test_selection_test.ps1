@@ -48,7 +48,7 @@ function Select-ForTest {
 
 Assert-TestManifest -Manifest $manifest
 Assert-Equal 'active' $manifest.catalog_status 'Current manifest should declare the active catalog state.'
-Assert-Equal 1 @($manifest.tests).Count 'Active manifest should register the reward fuse branch regression.'
+Assert-True (@($manifest.tests).Count -gt 0) 'Active manifest should register at least one regression.'
 foreach ($test in @($manifest.tests)) {
     $relativeEntryPath = ([string]$test.path).Substring('res://'.Length).Replace(
         '/',
@@ -67,8 +67,8 @@ Assert-True ([bool]($empty.reasons -match 'no changed paths')) 'Empty selection 
 $singleDomain = Select-ForTest -Path 'UI/scripts/controllers/example_controller.gd'
 Assert-Equal 'affected' $singleDomain.mode 'Known UI source should select affected registered tests.'
 Assert-True ($singleDomain.domains -contains 'ui') 'Known UI source should map to ui.'
-Assert-Equal 1 $singleDomain.tests.Count 'Known UI source should select the reward fuse branch regression through dependency coverage.'
-Assert-Equal 'reward.fuse_branch_selection' $singleDomain.tests[0].id 'UI source should select reward fuse branch regression.'
+Assert-True ($singleDomain.tests.Count -gt 0) 'Known UI source should select registered dependency coverage.'
+Assert-True ($singleDomain.tests.id -contains 'reward.fuse_branch_selection') 'UI source should include reward fuse branch regression.'
 
 $multiDomain = Select-ForTest -Path @(
     'UI/scripts/controllers/example_controller.gd',
@@ -77,7 +77,8 @@ $multiDomain = Select-ForTest -Path @(
 Assert-Equal 'affected' $multiDomain.mode 'Known multi-domain changes should select affected registered tests.'
 Assert-True ($multiDomain.domains -contains 'ui') 'Multi-domain selection should include ui.'
 Assert-True ($multiDomain.domains -contains 'weapon') 'Multi-domain selection should include weapon.'
-Assert-Equal 1 $multiDomain.tests.Count 'Known multi-domain changes should select the reward fuse branch regression once.'
+Assert-True ($multiDomain.tests.id -contains 'reward.fuse_branch_selection') 'Known multi-domain changes should include reward fuse branch coverage.'
+Assert-Equal @($multiDomain.tests.id | Sort-Object -Unique).Count $multiDomain.tests.Count 'Known multi-domain changes must not duplicate selected tests.'
 
 $projectCore = Select-ForTest -Path 'project.godot'
 Assert-Equal 'full' $projectCore.mode 'project.godot must force a full fallback.'

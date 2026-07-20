@@ -22,9 +22,14 @@ func _ready() -> void:
 	combat_role = "ranged"
 
 func _physics_process(delta: float) -> void:
+	var ai_delta := consume_ai_update_delta(delta)
+	if ai_delta <= 0.0:
+		continue_lod_movement(delta)
+		return
+	delta = ai_delta
 	if is_stunned():
 		decay_knockback()
-		move_with_body_push(Vector2.ZERO, delta)
+		move_enemy(Vector2.ZERO, delta)
 		return
 	if PlayerData.player == null:
 		return
@@ -39,7 +44,7 @@ func _physics_process(delta: float) -> void:
 	)
 	decay_knockback()
 	var cast_move_mul := 0.55 if _is_casting else 1.0
-	move_with_body_push(ranged_move_velocity * cast_move_mul, delta)
+	move_enemy(ranged_move_velocity * cast_move_mul, delta)
 
 func _process_casting(delta: float) -> void:
 	if _is_casting:

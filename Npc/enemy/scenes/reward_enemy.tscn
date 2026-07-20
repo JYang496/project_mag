@@ -18,7 +18,6 @@ combat_role = "ranged"
 spawn_cost = 1
 spawn_alive_cap = 48
 spawn_batch_cap = 12
-body_push_enabled = false
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
 shape = SubResource("RectangleShape2D_hurt")

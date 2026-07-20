@@ -129,6 +129,7 @@ func _request_standard_battle_reward_selection(level_index: int) -> void:
 		RewardDraftRuntime.record_standard_draft_consumed()
 		if grant_reward_immediately(reward_options[0]):
 			RewardDraftRuntime.clear_pending_standard_draft()
+			_commit_victory_reward_save()
 		return
 	var reward_source_name := LocalizationManager.tr_key("ui.reward.battle_source", "Battle Reward")
 	var opened: bool = bool(ui.request_reward_selection(
@@ -149,6 +150,7 @@ func _request_standard_battle_reward_selection(level_index: int) -> void:
 	RewardDraftRuntime.record_standard_draft_consumed()
 	if grant_reward_immediately(reward_options[0]):
 		RewardDraftRuntime.clear_pending_standard_draft()
+		_commit_victory_reward_save()
 
 func _is_reward_selection_panel_open(ui: Node) -> bool:
 	if ui == null or not is_instance_valid(ui):
@@ -320,9 +322,18 @@ func _request_battle_reward_selection() -> void:
 func _on_standard_battle_reward_selected(reward: RewardInfo) -> void:
 	if grant_reward_immediately(reward):
 		RewardDraftRuntime.clear_pending_standard_draft()
+		_commit_victory_reward_save()
 
 func _on_battle_reward_selected(reward: RewardInfo) -> void:
-	grant_reward_immediately(reward)
+	if grant_reward_immediately(reward):
+		_commit_victory_reward_save()
+
+func _commit_victory_reward_save() -> void:
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return
+	var result := SaveManager.commit_battle_success()
+	if not bool(result.get("ok", false)):
+		push_warning("Unable to update victory save after reward settlement: %s" % str(result.get("error_code", "unknown")))
 
 func build_standard_battle_draft_options(
 	level_index: int,
@@ -397,8 +408,7 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 		granted_any = true
 	if reward.gold_value > 0:
 		var gold_value: int = max(0, int(reward.gold_value))
-		PlayerData.player_gold += gold_value
-		PlayerData.run_gold_earned += gold_value
+		PlayerData.earn_gold(gold_value)
 		granted_any = true
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var weapon_id := reward.item_id.strip_edges()

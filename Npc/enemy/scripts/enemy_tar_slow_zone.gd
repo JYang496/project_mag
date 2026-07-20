@@ -16,28 +16,18 @@ class_name EnemyTarSlowZone
 
 var _field_source_id: StringName
 var _slowed_players: Dictionary = {}
+var _slowed_enemies: Array[BaseEnemy] = []
 
 func _ready() -> void:
 	add_to_group("enemy_runtime_cleanup")
+	set_collision_mask_value(1, true)
+	set_collision_mask_value(3, true)
 	_field_source_id = StringName("tar_zone_%d" % get_instance_id())
 	if collision_shape and collision_shape.shape is CircleShape2D:
 		var circle := collision_shape.shape as CircleShape2D
 		circle.radius = maxf(radius, 1.0)
 	life_timer.wait_time = maxf(duration, 0.1)
 	life_timer.start()
-
-func _physics_process(_delta: float) -> void:
-	if draw_zone:
-		queue_redraw()
-	for area in get_overlapping_areas():
-		if not (area is HurtBox):
-			continue
-		var target := _resolve_target(area as HurtBox)
-		if target == null or not is_instance_valid(target):
-			continue
-		if target is BaseEnemy:
-			var enemy := target as BaseEnemy
-			enemy.apply_slow(clampf(enemy_slow_multiplier, 0.05, 1.0), enemy_refresh_duration)
 
 func _on_area_entered(area: Area2D) -> void:
 	if not (area is HurtBox):
@@ -49,6 +39,11 @@ func _on_area_entered(area: Area2D) -> void:
 		var player := target as Player
 		player.apply_move_speed_mul(_field_source_id, clampf(player_slow_multiplier, 0.05, 1.0))
 		_slowed_players[player.get_instance_id()] = player
+	elif target is BaseEnemy:
+		var enemy := target as BaseEnemy
+		enemy.add_slow_field_source(self, enemy_slow_multiplier)
+		if not _slowed_enemies.has(enemy):
+			_slowed_enemies.append(enemy)
 
 func _on_area_exited(area: Area2D) -> void:
 	if not (area is HurtBox):
@@ -58,6 +53,10 @@ func _on_area_exited(area: Area2D) -> void:
 		return
 	if target is Player:
 		_remove_player_slow(target as Player)
+	elif target is BaseEnemy:
+		var enemy := target as BaseEnemy
+		enemy.remove_slow_field_source(self)
+		_slowed_enemies.erase(enemy)
 
 func _on_life_timer_timeout() -> void:
 	_cleanup_all_player_slow()
@@ -65,6 +64,10 @@ func _on_life_timer_timeout() -> void:
 
 func _exit_tree() -> void:
 	_cleanup_all_player_slow()
+	for enemy in _slowed_enemies:
+		if enemy != null and is_instance_valid(enemy):
+			enemy.remove_slow_field_source(self)
+	_slowed_enemies.clear()
 
 func _resolve_target(hurt_box: HurtBox) -> Node:
 	if hurt_box.has_method("get_damage_target"):

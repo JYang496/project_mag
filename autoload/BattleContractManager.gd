@@ -268,12 +268,18 @@ func _settle_performance_reward(result: Dictionary) -> void:
 	var amount := maxi(completion_gold + performance_gold, 0)
 	if amount <= 0:
 		return
-	PlayerData.player_gold += amount
-	PlayerData.run_gold_earned += amount
+	PlayerData.earn_gold(amount)
 	performance_reward_granted.emit({"type": &"gold", "amount": amount, "contract_id": contract_id, "completion_gold": completion_gold, "performance_gold": performance_gold})
 
 func get_history_snapshot() -> Dictionary:
 	return {"last_selected_id": last_selected_id, "consecutive_selection_count": consecutive_selection_count, "missed_offer_counts": missed_offer_counts.duplicate(true)}
+
+func export_save_state() -> Dictionary:
+	return get_history_snapshot()
+
+func import_save_state(payload: Dictionary) -> void:
+	_apply_history(payload)
+	reset_runtime_state()
 
 func build_rollback_snapshot() -> Dictionary:
 	return {"history_before_confirmation": _history_before_offer.duplicate(true), "option_ids": current_options.map(func(item): return str(item.contract_id)), "selected_id": str(selected_contract.contract_id) if selected_contract != null else ""}

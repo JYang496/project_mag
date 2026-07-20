@@ -58,6 +58,7 @@ func create_weapon(item_id, level := 1, auto_fuse := false) -> void:
 	if player_data.player_weapon_list.size() == 1:
 		player_data.set_main_weapon_index(0)
 	player_data.notify_weapon_list_changed()
+	player_data.record_weapon_progress()
 	mark_weapon_structure_dirty(true)
 	refresh_weapon_structure_if_needed()
 	_player._rebuild_shared_heat_pool()
@@ -75,6 +76,7 @@ func try_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
 	if subject == null or not is_instance_valid(subject):
 		return {"result": "invalid", "weapon_id": weapon_id}
 	if result_type == "fused":
+		player_data.record_weapon_progress()
 		var target_fuse := int(prediction.get("target_fuse", int(subject.fuse)))
 		subject.fuse = target_fuse
 		if subject.has_method("refresh_max_level_from_data"):
@@ -89,7 +91,7 @@ func try_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
 		try_prompt_branch_selection(subject, target_fuse)
 	elif result_type == "converted_to_gold":
 		var converted_gold := int(prediction.get("gold", 0))
-		player_data.player_gold += converted_gold
+		player_data.recycle_gold(converted_gold)
 	notify_weapon_duplicate_result(subject, weapon_id, prediction)
 	refresh_weapon_related_ui()
 	return prediction

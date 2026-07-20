@@ -2,10 +2,6 @@
 
 [ext_resource type="PackedScene" uid="uid://4sd4d8lkbkls" path="res://Npc/base_npc.tscn" id="1_y1wsb"]
 [ext_resource type="Script" uid="uid://ytvpcus0icms" path="res://Npc/enemy/scripts/BaseEnemy.gd" id="2_31lbh"]
-[ext_resource type="PackedScene" uid="uid://072a80habhhh" path="res://Combat/collision/hit_box_dot.tscn" id="3_7rcs0"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_hlneu"]
-size = Vector2(19, 19)
 
 [node name="BaseEnemy" unique_id=1931075508 groups=["enemies"] instance=ExtResource("1_y1wsb")]
 collision_layer = 20
@@ -20,24 +16,11 @@ spawn_tags = Array[StringName]([])
 spawn_alive_cap = 0
 spawn_batch_cap = 0
 support_role = &""
-body_push_enabled = true
-body_push_strength = 0.45
-body_push_decay = 900.0
-body_push_max_speed = 260.0
-body_push_min_speed_delta = 18.0
-crowd_breakthrough_width_multiplier = 1.5
-crowd_breakthrough_side_push_strength = 0.6
 
 [node name="HurtBox" parent="." index="0"]
 collision_layer = 4
 
-[node name="HitBoxDot" parent="." index="3" unique_id=728839487 instance=ExtResource("3_7rcs0")]
-collision_mask = 1
-
-[node name="CollisionShape2D" parent="HitBoxDot" index="0"]
-shape = SubResource("RectangleShape2D_hlneu")
-
-[node name="EnableCollisionTimer" type="Timer" parent="." index="4" unique_id=2059076023]
+[node name="EnableCollisionTimer" type="Timer" parent="." index="3" unique_id=2059076023]
 wait_time = 0.2
 one_shot = true
 autostart = true
@@ -45,4 +28,3 @@ autostart = true
 [connection signal="timeout" from="EnableCollisionTimer" to="." method="_on_enable_collision_timer_timeout"]
 
 [editable path="HurtBox"]
-[editable path="HitBoxDot"]

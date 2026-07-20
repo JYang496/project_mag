@@ -385,7 +385,8 @@ func _try_upgrade_weapon(item_data: Dictionary) -> bool:
 	if PlayerData.player_gold < price:
 		_show_message(LocalizationManager.tr_key("ui.shop.not_enough_gold", "Not enough gold."), 1.4)
 		return false
-	PlayerData.player_gold -= price
+	if not PlayerData.spend_gold(price):
+		return false
 	weapon.set_level(int(weapon.level) + 1)
 	if controller != null:
 		controller.update_upg()

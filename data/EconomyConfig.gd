@@ -5,9 +5,10 @@ class_name EconomyConfig
 @export var default_player_gold: int = 10
 @export var weapon_purchase_price_multiplier: float = 1.0
 @export_range(0.0, 10.0, 0.01) var weapon_upgrade_price_ratio: float = 0.75
-@export var shop_refresh_start_cost: int = 8
+@export var shop_refresh_start_cost: int = 4
 @export var shop_refresh_step: int = 4
-@export var shop_refresh_cost_cap: int = 20
+@export var shop_refresh_cost_cap: int = 16
+@export_range(1.0, 10.0, 0.1) var shop_synergy_weight_after_dry_streak: float = 3.0
 @export var duplicate_weapon_gold_minimum: int = 4
 @export_range(0.0, 1.0, 0.01) var duplicate_weapon_gold_refund_ratio: float = 0.5
 @export var duplicate_module_gold_minimum: int = 4

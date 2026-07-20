@@ -37,6 +37,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_pulse_time = fmod(_pulse_time + maxf(delta, 0.0), TAU)
+	_sync_hybrid_prop_visibility()
 	queue_redraw()
 
 func _draw() -> void:
@@ -50,6 +51,8 @@ func _draw() -> void:
 	var hover_zone_id := int(rest_area.get("hover_zone_id"))
 	var selected_zone_id := int(rest_area.get("selected_zone_id"))
 	for zone_id in VISUAL_ZONE_IDS:
+		if not _is_zone_available(rest_area, zone_id):
+			continue
 		var zone_rect := rest_area.call("_get_zone_rect_local", zone_id) as Rect2
 		if zone_rect.size.x <= 0.0 or zone_rect.size.y <= 0.0:
 			continue
@@ -90,6 +93,20 @@ func _ensure_hybrid_props() -> void:
 		sprite.set_meta(&"hybrid_rest_prop", true)
 		sprite.set_meta(&"rest_zone_id", int(zone_id))
 		add_child(sprite)
+	_sync_hybrid_prop_visibility()
+
+func _sync_hybrid_prop_visibility() -> void:
+	var rest_area := get_parent()
+	if rest_area == null or not is_instance_valid(rest_area):
+		return
+	for zone_id in VISUAL_ZONE_IDS:
+		var sprite := get_node_or_null("HybridProp%d" % zone_id) as Sprite2D
+		if sprite != null:
+			sprite.visible = _is_zone_available(rest_area, zone_id)
+
+func _is_zone_available(rest_area: Node, zone_id: int) -> bool:
+	return not rest_area.has_method("_is_zone_available") \
+		or bool(rest_area.call("_is_zone_available", zone_id))
 
 func _is_service_zone(zone_id: int) -> bool:
 	return VISUAL_ZONE_IDS.has(zone_id)

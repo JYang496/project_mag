@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cowp3jt7yrffh"
-path="res://.godot/imported/interceptor_heavy.png-1d93d55e72aa4a10b3c3f55d71b6f69b.ctex"
+uid="uid://cqr023tkmk2le"
+path="res://.godot/imported/interceptor.png-99bad83518941a465570e1e98dc42cba.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://asset/images/enemies/interceptor_heavy.png"
-dest_files=["res://.godot/imported/interceptor_heavy.png-1d93d55e72aa4a10b3c3f55d71b6f69b.ctex"]
+source_file="res://asset/images/enemies/interceptor.png"
+dest_files=["res://.godot/imported/interceptor.png-99bad83518941a465570e1e98dc42cba.ctex"]
 
 [params]
 

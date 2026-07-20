@@ -13,9 +13,7 @@ func on_collect_area_entered(area) -> void:
 	if area.is_in_group("collectables") and area is Coin:
 		var value: int = area.collect()
 		value = _player.apply_loot_bonus(value, &"coin")
-		_player.PlayerData.player_gold += value
-		_player.PlayerData.round_coin_collected += value
-		_player.PlayerData.run_gold_earned += value
+		_player.PlayerData.earn_gold(value, true)
 		if GlobalVariables.enemy_spawner and is_instance_valid(GlobalVariables.enemy_spawner) and GlobalVariables.enemy_spawner.has_method("record_kill_gold_coin_collected"):
 			GlobalVariables.enemy_spawner.record_kill_gold_coin_collected(value)
 		_player.coin_collected.emit()

@@ -48,4 +48,3 @@ shape = SubResource("CircleShape2D_buff")
 [connection signal="body_exited" from="SpeedBuffArea" to="." method="_on_speed_buff_area_body_exited"]
 
 [editable path="HurtBox"]
-[editable path="HitBoxDot"]

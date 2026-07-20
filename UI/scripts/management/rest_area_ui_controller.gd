@@ -65,6 +65,9 @@ func open_menu(menu_id: StringName) -> void:
 	if _menu_transition_locked and active:
 		return
 	menu_id = _normalize_menu_id(menu_id)
+	if menu_id == &"purchase" and not PhaseManager.is_full_shop_open():
+		owner_ui.show_item_message(LocalizationManager.tr_key("ui.shop.closed_until_cycle", "Full shop opens after every third battle."), 1.8)
+		return
 	active = true
 	primary_menu_id = menu_id
 	_sync_public_fields_to_owner()
@@ -217,6 +220,9 @@ func close_module_management_ui() -> void:
 	_sync_public_fields_to_owner()
 
 func open_purchase_weapon_panel() -> void:
+	if not PhaseManager.is_full_shop_open():
+		owner_ui.show_item_message(LocalizationManager.tr_key("ui.shop.closed_until_cycle", "Full shop opens after every third battle."), 1.8)
+		return
 	owner_ui.ensure_purchase_management()
 	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
 		if owner_ui.is_branch_selection_blocking_interactions():
@@ -230,6 +236,9 @@ func open_purchase_weapon_panel() -> void:
 	_menu_transition_locked = false
 
 func open_purchase_module_panel() -> void:
+	if not PhaseManager.is_full_shop_open():
+		owner_ui.show_item_message(LocalizationManager.tr_key("ui.shop.closed_until_cycle", "Full shop opens after every third battle."), 1.8)
+		return
 	owner_ui.ensure_purchase_management()
 	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
 		if owner_ui.is_branch_selection_blocking_interactions():

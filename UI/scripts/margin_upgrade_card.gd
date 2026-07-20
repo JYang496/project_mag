@@ -68,7 +68,8 @@ func _disconnect_gold_signal() -> void:
 func _input(_event):
 	if Input.is_action_just_released("CLICK"):
 		if mouse_over and upgradable:
-			PlayerData.player_gold -= cost_price
+			if not PlayerData.spend_gold(cost_price):
+				return
 			upgrade_level.emit(int(weapon_node.level) + 1)
 			var ui = GlobalVariables.ui
 			if ui:

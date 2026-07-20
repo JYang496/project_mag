@@ -8,6 +8,6 @@ script = ExtResource("3_nupfu")
 weapon_id = "5"
 display_name = "Auto Pistol"
 icon = ExtResource("1_dybqt")
-price = 80
+price = 60
 description = "Mid-range auto sidearm. Fits Mark and On Hit builds: movement primes Pierce Mark windows, then hits during the window mark enemies."
 scene_path = "res://Player/Weapons/Instances/pistol.tscn"

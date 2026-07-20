@@ -16,12 +16,16 @@ var charge_elapsed: float = 0.0
 @onready var direction = Vector2.ZERO
 
 func _physics_process(delta: float) -> void:
+	var ai_delta := consume_ai_update_delta(delta)
+	if ai_delta <= 0.0:
+		continue_lod_movement(delta)
+		return
+	delta = ai_delta
 	if is_stunned():
-		set_crowd_breakthrough_active(false)
 		if preparing_dash:
 			_update_dash_prepare(delta)
 		decay_knockback()
-		move_with_body_push(Vector2.ZERO, delta)
+		move_enemy(Vector2.ZERO, delta)
 		return
 	if not charging:
 		direction = global_position.direction_to(PlayerData.player.global_position)
@@ -30,7 +34,7 @@ func _physics_process(delta: float) -> void:
 	decay_knockback()
 	var desired_velocity: Vector2 = direction * (get_current_movement_speed() + bonus_speed)
 	var previous_position := global_position
-	move_with_body_push(desired_velocity, delta)
+	move_enemy(desired_velocity, delta)
 	if charging:
 		var moved_distance := global_position.distance_to(previous_position)
 		dash_remaining_distance -= moved_distance
@@ -59,8 +63,6 @@ func _finish_dash() -> void:
 	if not charging and not preparing_dash:
 		return
 	highlight_material.set_shader_parameter("outline_color", Color.YELLOW)
-	set_crowd_breakthrough_active(false)
-	self.set_collision_mask_value(3,true)
 	charging = false
 	preparing_dash = false
 	bonus_speed = 0.0
@@ -72,14 +74,12 @@ func _finish_dash() -> void:
 
 func _start_dash_prepare() -> void:
 	skill_ready = false
-	set_crowd_breakthrough_active(false)
 	preparing_dash = true
 	charge_elapsed = 0.0
 	if PlayerData.player and direction == Vector2.ZERO:
 		direction = global_position.direction_to(PlayerData.player.global_position)
 	bonus_speed = -0.7 * movement_speed
 	highlight_material.set_shader_parameter("outline_color", Color.RED)
-	self.set_collision_mask_value(3,false)
 	if skill_warning_telegraph:
 		skill_warning_telegraph.show_dash_warning(
 			global_position,
@@ -100,7 +100,6 @@ func _update_dash_prepare(delta: float) -> void:
 func _begin_dash() -> void:
 	preparing_dash = false
 	charging = true
-	set_crowd_breakthrough_active(true)
 	bonus_speed = dash_speed_multiplier * movement_speed
 	dash_remaining_distance = dash_distance
 	charge_elapsed = 0.0

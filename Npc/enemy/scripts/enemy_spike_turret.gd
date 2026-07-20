@@ -51,13 +51,18 @@ func _exit_tree() -> void:
 	_hybrid_warning_registered = false
 
 func _physics_process(delta: float) -> void:
+	var ai_delta := consume_ai_update_delta(delta)
+	if ai_delta <= 0.0:
+		continue_lod_movement(delta)
+		return
+	delta = ai_delta
 	decay_knockback()
 	if is_stunned():
-		move_with_body_push(Vector2.ZERO, delta)
+		move_enemy(Vector2.ZERO, delta)
 		return
 	_update_stationary_mode()
 	var chase_velocity := _get_chase_velocity()
-	move_with_body_push(chase_velocity, delta)
+	move_enemy(chase_velocity, delta)
 	_process_attack(delta)
 	_update_aim_warning_visual()
 

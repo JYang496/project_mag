@@ -37,14 +37,24 @@ func enter_prepare() -> void:
 		begin_post_battle_collect_gate(post_battle_collect_gate_timeout_sec)
 	if previous_phase == BATTLE:
 		PlayerData.run_completed_levels += 1
+		if PlayerData.weapon_progress_this_battle:
+			PlayerData.rounds_without_weapon_progress = 0
+		else:
+			PlayerData.record_battle_without_weapon_progress()
+		PlayerData.weapon_progress_this_battle = false
 	current_level += 1
 	phase = PREPARE
 	phase_changed.emit(phase)
-	DataHandler.save_game(DataHandler.save_data)
-	GlobalVariables.ui.reset_purchase_refresh_cost()
+	SaveManager.commit_battle_success()
+	if is_full_shop_open():
+		GlobalVariables.ui.reset_purchase_refresh_cost()
+
+func is_full_shop_open() -> bool:
+	return PlayerData.run_completed_levels > 0 and PlayerData.run_completed_levels % 3 == 0
 
 func enter_battle() -> void:
 	complete_post_battle_collect_gate()
+	PlayerData.weapon_progress_this_battle = false
 	phase = BATTLE
 	phase_changed.emit(phase)
 
@@ -52,7 +62,6 @@ func enter_gameover() -> void:
 	complete_post_battle_collect_gate()
 	phase = GAMEOVER
 	phase_changed.emit(phase)
-	InventoryData.reset_runtime_state()
 
 func begin_post_battle_collect_gate(timeout_sec: float) -> void:
 	_post_battle_collect_gate_token += 1

@@ -10,19 +10,24 @@ func _ready() -> void:
 	_life_remaining = maxf(life_time, 0.2)
 
 func _physics_process(delta: float) -> void:
+	var ai_delta := consume_ai_update_delta(delta)
+	if ai_delta <= 0.0:
+		continue_lod_movement(delta)
+		return
+	delta = ai_delta
 	_life_remaining -= maxf(delta, 0.0)
 	if _life_remaining <= 0.0:
 		erase()
 		return
 	if is_stunned():
 		decay_knockback()
-		move_with_body_push(Vector2.ZERO, delta)
+		move_enemy(Vector2.ZERO, delta)
 		return
 	if PlayerData.player == null:
 		return
 	var direction := global_position.direction_to(PlayerData.player.global_position)
 	decay_knockback()
-	move_with_body_push(direction * get_current_movement_speed(), delta)
+	move_enemy(direction * get_current_movement_speed(), delta)
 
 func _grants_standard_death_rewards() -> bool:
 	return false

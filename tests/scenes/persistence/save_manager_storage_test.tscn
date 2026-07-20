@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/scenes/persistence/save_manager_storage_test.gd" id="1"]
+
+[node name="SaveManagerStorageTest" type="Node"]
+script = ExtResource("1")

@@ -32,6 +32,12 @@ void fragment() {
 @export var enabled: bool = true
 const DEFAULT_CAMERA_FOV: float = 34.0
 const DEFAULT_WORLD_SCALE: float = 0.01
+const GROUND_AREA_HEIGHT: float = 0.022
+const GROUND_AREA_RENDER_PRIORITY: int = 2
+const DANGER_WARNING_HEIGHT: float = 0.032
+const DANGER_WARNING_RENDER_PRIORITY: int = 20
+const DANGER_PROGRESS_HEIGHT: float = 0.034
+const DANGER_PROGRESS_RENDER_PRIORITY: int = 21
 
 var camera_fov: float = DEFAULT_CAMERA_FOV
 @export_range(25.0, 75.0, 0.5) var camera_pitch_degrees: float = 52.0
@@ -603,7 +609,8 @@ func _register_area_effect(area: Node2D) -> void:
 		color = area.get("debug_fill_color") as Color
 	color.a = maxf(color.a, 0.18)
 	var visual_shape := int(area.get("visual_shape"))
-	var mesh := _create_disc_mesh(color) if visual_shape == 0 else _create_polygon_ground_mesh(_build_area_polygon_points(area), color)
+	var render_priority := GROUND_AREA_RENDER_PRIORITY
+	var mesh := _create_disc_mesh(color, render_priority) if visual_shape == 0 else _create_polygon_ground_mesh(_build_area_polygon_points(area), color, render_priority)
 	_ground_root.add_child(mesh)
 	var visual_root := area.get_node_or_null("VisualRoot") as CanvasItem
 	if visual_root != null:
@@ -614,7 +621,7 @@ func _register_area_effect(area: Node2D) -> void:
 	if detail_texture != null and mesh.mesh != null and mesh.mesh.get_surface_count() > 0:
 		var layered_material := ShaderMaterial.new()
 		layered_material.shader = LayeredAreaGroundShader
-		layered_material.render_priority = 2
+		layered_material.render_priority = render_priority
 		layered_material.set_shader_parameter("base_texture", _get_area_ground_texture(area))
 		layered_material.set_shader_parameter("detail_texture", detail_texture)
 		layered_material.set_shader_parameter("base_color", color)
@@ -630,6 +637,7 @@ func _register_area_effect(area: Node2D) -> void:
 		"visual_shape": visual_shape,
 		"material": material,
 		"animated_ground": animated_ground,
+		"height": GROUND_AREA_HEIGHT,
 	}
 	area.set_meta(&"hybrid_ground_registered", true)
 
@@ -684,6 +692,7 @@ func _register_dash_telegraph(source: Node2D) -> void:
 	var warning_material := StandardMaterial3D.new()
 	warning_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	warning_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	warning_material.render_priority = DANGER_WARNING_RENDER_PRIORITY
 	warning_box.material = warning_material
 	warning_mesh.mesh = warning_box
 	warning_mesh.visible = false
@@ -693,6 +702,7 @@ func _register_dash_telegraph(source: Node2D) -> void:
 	var progress_material := StandardMaterial3D.new()
 	progress_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	progress_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	progress_material.render_priority = DANGER_PROGRESS_RENDER_PRIORITY
 	progress_box.material = progress_material
 	progress_mesh.mesh = progress_box
 	progress_mesh.visible = false
@@ -729,10 +739,14 @@ func _register_warning_circle(warning: Node2D) -> void:
 		return
 	var color: Color = warning.get("fill_color") as Color
 	color.a = maxf(color.a, 0.18)
-	var mesh := _create_disc_mesh(color)
+	var mesh := _create_disc_mesh(color, DANGER_WARNING_RENDER_PRIORITY)
 	_ground_root.add_child(mesh)
 	warning.modulate.a = 0.0
-	_area_meshes[warning.get_instance_id()] = {"source": weakref(warning), "mesh": mesh}
+	_area_meshes[warning.get_instance_id()] = {
+		"source": weakref(warning),
+		"mesh": mesh,
+		"height": DANGER_WARNING_HEIGHT,
+	}
 	warning.set_meta(&"hybrid_ground_registered", true)
 
 func _register_ground_segment(line: Line2D) -> void:
@@ -815,7 +829,7 @@ func _erase_visual_entry(cache: Dictionary, key: Variant) -> void:
 					mesh.queue_free()
 	cache.erase(key)
 
-func _create_disc_mesh(color: Color) -> MeshInstance3D:
+func _create_disc_mesh(color: Color, render_priority: int = 0) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
 	var cylinder := CylinderMesh.new()
 	cylinder.top_radius = 1.0
@@ -825,6 +839,7 @@ func _create_disc_mesh(color: Color) -> MeshInstance3D:
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.render_priority = render_priority
 	material.albedo_color = color
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	cylinder.material = material
@@ -845,11 +860,12 @@ func _create_ring_mesh(color: Color) -> MeshInstance3D:
 	mesh.mesh = torus
 	return mesh
 
-func _create_polygon_ground_mesh(points: PackedVector2Array, color: Color) -> MeshInstance3D:
+func _create_polygon_ground_mesh(points: PackedVector2Array, color: Color, render_priority: int = 0) -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.render_priority = render_priority
 	material.albedo_color = color
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mesh_instance.mesh = _build_ground_polygon_array_mesh(points, material)
@@ -1048,7 +1064,8 @@ func _sync_area_meshes() -> void:
 		var radius := maxf(float(area.get("radius")), 1.0) * world_scale
 		var height_offset_value: Variant = area.get("ground_height_offset")
 		var height_offset := float(height_offset_value) if height_offset_value != null else 0.0
-		mesh.position = world_2d_to_3d(area.global_position) + Vector3.UP * (0.022 + height_offset)
+		var base_height := float(entry.get("height", GROUND_AREA_HEIGHT))
+		mesh.position = world_2d_to_3d(area.global_position) + Vector3.UP * (base_height + height_offset)
 		if visual_shape == 0:
 			mesh.scale = Vector3(radius, 1.0, radius)
 		else:
@@ -1235,14 +1252,14 @@ func _sync_dash_telegraph_meshes() -> void:
 		var width := maxf(float(config.get("half_width", 1.0)) * 2.0, 1.0)
 		var warning_box := entry.get("warning_box") as BoxMesh
 		warning_box.size = Vector3(maxf(distance * world_scale, 0.01), 0.008, width * world_scale)
-		warning_mesh.position = world_2d_to_3d(origin + direction * distance * 0.5) + Vector3.UP * 0.026
+		warning_mesh.position = world_2d_to_3d(origin + direction * distance * 0.5) + Vector3.UP * DANGER_WARNING_HEIGHT
 		warning_mesh.rotation.y = -direction.angle()
 		var warning_material := entry.get("warning_material") as StandardMaterial3D
 		warning_material.albedo_color = config.get("warning_color", Color(1.0, 0.1, 0.1, 0.28)) as Color
 		var reach := distance * clampf(float(config.get("progress", 0.0)), 0.0, 1.0)
 		var progress_box := entry.get("progress_box") as BoxMesh
 		progress_box.size = Vector3(maxf(reach * world_scale, 0.01), 0.006, width * world_scale)
-		progress_mesh.position = world_2d_to_3d(origin + direction * reach * 0.5) + Vector3.UP * 0.028
+		progress_mesh.position = world_2d_to_3d(origin + direction * reach * 0.5) + Vector3.UP * DANGER_PROGRESS_HEIGHT
 		progress_mesh.rotation.y = -direction.angle()
 		var progress_material := entry.get("progress_material") as StandardMaterial3D
 		progress_material.albedo_color = config.get("progress_color", Color(1.0, 0.15, 0.15, 0.95)) as Color

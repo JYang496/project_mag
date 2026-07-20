@@ -494,20 +494,19 @@ func read_autosave_mecha_data(id : String) -> Dictionary:
 	return {"current_exp": "0", "current_level": "1"}
 
 func save_game(_data : SaveData = save_data, _file_path: String = "res://data/savedata/autosave.tres") -> void:
-	InventoryData.save_runtime_state()
-	CellEffectRuntime.save_runtime_state()
-	RewardDraftRuntime.save_runtime_state()
+	# Compatibility entrypoint only. Main-run persistence is intentionally
+	# committed exclusively by PhaseManager after a battle victory.
 	return
 
 func new_save(_file_path: String = "res://data/savedata/autosave.tres") -> void:
 	save_data = _create_fresh_runtime_save()
 	RewardDraftRuntime.reset_runtime_state(false)
 	BattleContractManager.reset_persistent_state()
-	return
 	
 
 func load_game(_file_path: String = "res://data/savedata/autosave.tres") -> void:
-	# Persistent save loading is disabled: always start from a fresh runtime state.
+	# SaveManager owns persisted run restoration. This legacy facade remains an
+	# in-memory menu model and is synchronized by the new/continue entry flows.
 	save_data = _create_fresh_runtime_save()
 
 func _create_fresh_runtime_save() -> SaveData:

@@ -12,7 +12,7 @@ tests/
 
 ## Conventions
 
-- There are currently no active registered test scenes or runner scripts.
+- Active regression scenes are registered in `tests/infrastructure/test_manifest.json`.
 - Historical assets retired on 2026-07-02 live under `tests/archive/retired_test_assets_20260702/`.
 - Put new automated regression scenes under `tests/scenes/<domain>/` only when reintroducing active tests.
 - Put their runner scripts under `tests/headless/<domain>/` unless the scene script is intentionally self-contained.
@@ -24,7 +24,7 @@ tests/
 
 ## Validation
 
-There are no active scene-backed tests at this time. Use Godot MCP for focused runtime validation when a new active scene is added:
+Use the registered scene-backed tests for focused runtime validation:
 
 ```text
 get_project_info(projectPath="D:\Godot Projects\project_mag")
@@ -65,7 +65,7 @@ The pilot manifest at `tests/infrastructure/test_manifest.json` defines the regi
 - `parallel_safe` and `writes_user_data` flags;
 - a positive `timeout_seconds`.
 
-The current catalog has `catalog_status: "archived"` and intentionally registers zero active tests. `full` mode means every registered manifest entry, so it currently selects no test workers.
+The current catalog has `catalog_status: "active"`. `full` mode means every registered manifest entry, including focused reward, presentation, weapon, protocol, battle-loop, rollback, atomic save storage, and integrated persistence coverage.
 
 Historical scene-backed files, runner scripts, fixtures, probes, benchmarks, and showcases were moved to `tests/archive/retired_test_assets_20260702/`. The obsolete `run_build_validation_matrix_report_test_headless.gd` artifact check was retired because its tracked HTML report inputs are no longer present.
 

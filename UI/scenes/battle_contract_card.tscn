@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://UI/scripts/battle_contract_card.gd" id="1"]
 
 [node name="BattleContractCard" type="Button"]
-custom_minimum_size = Vector2(330, 220)
+custom_minimum_size = Vector2(360, 220)
 size_flags_horizontal = 3
 toggle_mode = true
 script = ExtResource("1")
@@ -97,14 +97,53 @@ vertical_alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 27
 
-[node name="Description" type="Label" parent="Margin/Content"]
+[node name="InfoGrid" type="HBoxContainer" parent="Margin/Content"]
 layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="Description" type="Label" parent="Margin/Content/InfoGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.15
 theme_override_font_sizes/font_size = 18
 autowrap_mode = 2
+vertical_alignment = 1
 
-[node name="Reward" type="Label" parent="Margin/Content"]
+[node name="Divider" type="ColorRect" parent="Margin/Content/InfoGrid"]
+custom_minimum_size = Vector2(1, 0)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.22, 0.38, 0.42, 0.72)
+
+[node name="Reward" type="Label" parent="Margin/Content/InfoGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.85
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 2
+vertical_alignment = 1
+
+[node name="IntroContent" type="VBoxContainer" parent="Margin/Content"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="Objective" type="Label" parent="Margin/Content/IntroContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Complete the contract objective."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="Parameters" type="Label" parent="Margin/Content/IntroContent"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+vertical_alignment = 1
 autowrap_mode = 2
 
 [node name="RewardDetails" type="HBoxContainer" parent="Margin/Content"]

@@ -13,6 +13,7 @@ var available_progress_sec := 0.0
 var actual_progress_sec := 0.0
 var stalled_sec := 0.0
 var _beacon_spawned := false
+var _completion_guard := false
 
 func start(combat_port, parameters: Dictionary) -> void:
 	port = combat_port
@@ -36,6 +37,8 @@ func stop() -> void:
 	port = null
 
 func _on_tick(snapshot: Dictionary) -> void:
+	if _completion_guard:
+		return
 	var delta := float(snapshot.get("delta_sec", 0.0))
 	if not _beacon_spawned:
 		_try_spawn_current_beacon()
@@ -67,6 +70,7 @@ func _advance_beacon() -> void:
 	enemy_count = 0
 	_beacon_spawned = false
 	if beacon_index >= 2:
+		_completion_guard = true
 		port.request_stop_spawning()
 		port.request_evacuate_enemies({"grant_kill_rewards": false})
 		completed.emit(_snapshot())

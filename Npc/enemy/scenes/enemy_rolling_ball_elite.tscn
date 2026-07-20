@@ -32,9 +32,6 @@ texture = ExtResource("3_ojmbw")
 [node name="NPCCollision" parent="." index="2"]
 shape = SubResource("RectangleShape2D_0j2si")
 
-[node name="CollisionShape2D" parent="HitBoxDot" parent_id_path=PackedInt32Array(728839487) index="0"]
-position = Vector2(0.5, 0.5)
-
 [node name="SkillTimer" parent="." index="5"]
 wait_time = 6.0
 one_shot = true
@@ -57,4 +54,3 @@ script = ExtResource("4_skill_telegraph")
 [connection signal="body_exited" from="SkillArea" to="." method="_on_skill_area_body_exited"]
 
 [editable path="HurtBox"]
-[editable path="HitBoxDot"]

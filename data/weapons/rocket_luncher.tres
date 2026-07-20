@@ -8,6 +8,6 @@ script = ExtResource("3_1guoo")
 weapon_id = "8"
 display_name = "Rocket Launcher"
 icon = ExtResource("1_l3ko5")
-price = 60
+price = 45
 description = "Long-range Area launcher. Slow rockets and growing blasts clear groups, while Cluster Kill charges reward grouped enemy cleanup."
 scene_path = "res://Player/Weapons/Instances/rocket_launcher.tscn"

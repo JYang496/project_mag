@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://tests/probes/enemy/wheel_cart_shared_separation_probe.tscn" id="1"]
+
+[node name="WheelCartSharedSeparationShowcase" instance=ExtResource("1")]

@@ -211,11 +211,13 @@ func _get_hud_zone_hint_id() -> int:
 	if bool(_owner.call("_are_zone_hints_suppressed_by_ui")):
 		return -1
 	var hover_zone_id := int(_owner.get("hover_zone_id"))
-	if hover_zone_id >= 0:
+	if hover_zone_id >= 0 and bool(_owner.call("_is_zone_available", hover_zone_id)):
 		return hover_zone_id
 	var center_zone_id := int(_zone_ids.get("center", 4))
 	var selected_zone_id := int(_owner.get("selected_zone_id"))
-	if selected_zone_id >= 0 and selected_zone_id != center_zone_id:
+	if selected_zone_id >= 0 \
+			and selected_zone_id != center_zone_id \
+			and bool(_owner.call("_is_zone_available", selected_zone_id)):
 		return selected_zone_id
 	if bool(_owner.call("_is_zone_hint_intro_active")) or float(_owner.get("_zone4_hold_elapsed")) > 0.0:
 		return center_zone_id

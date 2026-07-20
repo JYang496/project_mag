@@ -8,6 +8,6 @@ script = ExtResource("3_yk741")
 weapon_id = "4"
 display_name = "Shotgun"
 icon = ExtResource("1_r2q5u")
-price = 60
+price = 45
 description = "Close-range pellet burst. Fits Close and Projectile builds; multiple pellets on one target spend Close Hit charges for bonus final damage."
 scene_path = "res://Player/Weapons/Instances/shotgun.tscn"

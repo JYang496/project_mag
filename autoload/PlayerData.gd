@@ -142,8 +142,56 @@ var run_enemy_kills := 0
 var run_elite_kills := 0
 var run_completed_levels := 0
 var run_gold_earned := 0
+var run_gold_recycled := 0
+var run_gold_spent := 0
+var rounds_without_weapon_progress := 0
+var weapon_progress_this_battle := false
 var testing_keep_hp_above_zero := false
 var is_interacting : bool = false
+
+func earn_gold(amount: int, count_as_collected_coin: bool = false) -> int:
+	var safe_amount := maxi(amount, 0)
+	if safe_amount <= 0:
+		return 0
+	player_gold += safe_amount
+	run_gold_earned += safe_amount
+	if count_as_collected_coin:
+		round_coin_collected += safe_amount
+	return safe_amount
+
+func recycle_gold(amount: int) -> int:
+	var safe_amount := maxi(amount, 0)
+	if safe_amount <= 0:
+		return 0
+	player_gold += safe_amount
+	run_gold_recycled += safe_amount
+	return safe_amount
+
+func spend_gold(amount: int) -> bool:
+	var safe_amount := maxi(amount, 0)
+	if safe_amount <= 0:
+		return true
+	if player_gold < safe_amount:
+		return false
+	player_gold -= safe_amount
+	run_gold_spent += safe_amount
+	return true
+
+func refund_gold_spending(amount: int) -> int:
+	var safe_amount := clampi(amount, 0, run_gold_spent)
+	if safe_amount <= 0:
+		return 0
+	player_gold += safe_amount
+	run_gold_spent -= safe_amount
+	return safe_amount
+
+func record_battle_without_weapon_progress() -> void:
+	rounds_without_weapon_progress += 1
+
+func record_weapon_progress() -> void:
+	rounds_without_weapon_progress = 0
+	if PhaseManager.current_state() == PhaseManager.BATTLE:
+		weapon_progress_this_battle = true
 
 var detected_enemies : Array = []
 var cloestest_enemy : Area2D = null
@@ -215,6 +263,10 @@ func reset_runtime_state() -> void:
 	run_elite_kills = 0
 	run_completed_levels = 0
 	run_gold_earned = 0
+	run_gold_recycled = 0
+	run_gold_spent = 0
+	rounds_without_weapon_progress = 0
+	weapon_progress_this_battle = false
 	is_interacting = false
 	detected_enemies.clear()
 	cloestest_enemy = null

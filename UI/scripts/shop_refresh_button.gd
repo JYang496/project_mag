@@ -13,8 +13,7 @@ func _ready() -> void:
 	refresh_button_label()
 
 func _on_button_up() -> void:
-	if PlayerData.player_gold >= cost:
-		PlayerData.player_gold -= cost
+	if PlayerData.spend_gold(cost):
 		cost = _compute_next_refresh_cost(cost)
 		refresh_shop_items()
 		refresh_button_label()

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/headless/enemy/enemy_contact_and_pool_test.gd" id="1"]
+
+[node name="EnemyContactAndPoolTest" type="Node"]
+script = ExtResource("1")

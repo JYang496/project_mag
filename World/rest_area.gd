@@ -492,6 +492,10 @@ func _handle_left_click(global_pos: Vector2) -> void:
 		if debug_click_logs:
 			print("[RestArea] left click ignored: outside 3x3 bounds")
 		return
+	if not _is_zone_available(zone_id):
+		if debug_click_logs:
+			print("[RestArea] left click ignored: zone unavailable zone_id=", zone_id)
+		return
 	var current_menu_open := _is_menu_open()
 	if current_menu_open and zone_id == selected_zone_id and _zone_opens_interaction(zone_id):
 		# Already inside this zone with its interaction open; ignore repeated click.
@@ -619,7 +623,8 @@ func _update_hover_from_mouse() -> void:
 	if _is_world_interaction_blocked():
 		_set_hover_zone(-1)
 		return
-	_set_hover_zone(_get_zone_id_for_global_point(_get_interaction_mouse_world()))
+	var zone_id := _get_zone_id_for_global_point(_get_interaction_mouse_world())
+	_set_hover_zone(zone_id if _is_zone_available(zone_id) else -1)
 
 func _get_hybrid_ground_view() -> Node:
 	if not is_inside_tree():
@@ -697,6 +702,8 @@ func _is_zone_hint_intro_active() -> bool:
 
 func _should_show_zone_hint_label(zone_id: int, is_center_hold_hint: bool = false) -> bool:
 	if not _is_interaction_enabled():
+		return false
+	if not _is_zone_available(zone_id):
 		return false
 	if _are_zone_hints_suppressed_by_ui():
 		return false
@@ -806,7 +813,13 @@ func _get_bounds_local_rect() -> Rect2:
 	return _zone_helper.call("get_bounds_local_rect") if _zone_helper != null else Rect2()
 
 func _zone_opens_interaction(zone_id: int) -> bool:
-	return bool(_zone_helper.call("zone_opens_interaction", zone_id)) if _zone_helper != null else false
+	return _is_zone_available(zone_id) \
+		and (bool(_zone_helper.call("zone_opens_interaction", zone_id)) if _zone_helper != null else false)
+
+func _is_zone_available(zone_id: int) -> bool:
+	if zone_id == ZONE_ID_MERCHANT:
+		return PhaseManager.is_full_shop_open()
+	return true
 
 func _update_zone4_hold(delta: float) -> void:
 	if not _is_zone4_hold_available():

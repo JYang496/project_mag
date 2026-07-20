@@ -720,3 +720,4 @@ ui.reward.detail.bullet.economy.1,Adds resources immediately,立即获得资源
 ui.reward.detail.bullet.economy.2,Supports current run progression,帮助推进本局成长
 ui.common.tag,Tag,标签
 ui.reward.battle_source,Battle Reward,战斗奖励
+ui.shop.closed_until_cycle,Full shop opens after every third battle.,完整商店每完成三场战斗开放一次。

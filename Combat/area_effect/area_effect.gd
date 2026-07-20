@@ -138,6 +138,9 @@ func _ready() -> void:
 	_sync_radius()
 	_sync_visual_shape_collision()
 	_sync_collision_mask()
+	if target_group == TargetGroup.ENEMIES:
+		monitoring = false
+		monitorable = false
 	_sync_visual_nodes()
 	var damage_duration := maxf(duration, 0.01)
 	damage_timer.wait_time = damage_duration
@@ -178,6 +181,10 @@ func _on_damage_timer_timeout() -> void:
 
 func _apply_to_current_overlaps() -> void:
 	if not _damage_active:
+		return
+	if target_group == TargetGroup.ENEMIES:
+		for target in _get_registry_enemy_targets():
+			_try_apply_enemy_target(target)
 		return
 	for area in get_overlapping_areas():
 		_try_apply_on_hurt_box(area)
@@ -246,6 +253,20 @@ func _apply_periodic_damage(delta: float) -> void:
 
 
 func _apply_tick_to_current_overlaps() -> void:
+	if target_group == TargetGroup.ENEMIES:
+		for target in _get_registry_enemy_targets():
+			var valid_source_node: Node = _resolve_valid_source_node()
+			var damage_data := DamageManager.build_damage_data(
+				valid_source_node,
+				tick_damage,
+				Attack.normalize_damage_type(damage_type),
+				knock_back,
+				source_category,
+				delivery_type
+			)
+			if DamageManager.apply_to_target(target, damage_data):
+				target_affected.emit(target)
+		return
 	for area in get_overlapping_areas():
 		if not area is HurtBox:
 			continue
@@ -272,6 +293,46 @@ func _apply_tick_to_current_overlaps() -> void:
 		)
 		if DamageManager.apply_to_target(target, damage_data):
 			target_affected.emit(target)
+
+func _try_apply_enemy_target(target: BaseEnemy) -> void:
+	if target == null or not is_instance_valid(target) or target.is_dead:
+		return
+	var target_id := target.get_instance_id()
+	if apply_once_per_target and _affected_target_ids.has(target_id):
+		return
+	_affected_target_ids[target_id] = true
+	_apply_to_target(target, true)
+	target_affected.emit(target)
+
+func _get_registry_enemy_targets() -> Array[BaseEnemy]:
+	var output: Array[BaseEnemy] = []
+	var registry := get_node_or_null("/root/EnemyRegistry")
+	if registry == null or not registry.has_method("get_enemies_in_rect"):
+		return output
+	var extent := Vector2(radius, radius)
+	if visual_shape == VisualShape.RECTANGLE:
+		extent = rectangle_size * 0.5
+	elif visual_shape == VisualShape.CONE:
+		extent = Vector2.ONE * cone_range
+	var bounds := Rect2(global_position - extent, extent * 2.0)
+	for enemy_value in registry.call("get_enemies_in_rect", bounds):
+		var enemy := enemy_value as BaseEnemy
+		if enemy != null and is_instance_valid(enemy) and _contains_enemy_point(enemy.global_position):
+			output.append(enemy)
+	return output
+
+func _contains_enemy_point(world_point: Vector2) -> bool:
+	var local_point := to_local(world_point)
+	match visual_shape:
+		VisualShape.RECTANGLE:
+			return Rect2(-rectangle_size * 0.5, rectangle_size).has_point(local_point)
+		VisualShape.CONE:
+			if local_point.length_squared() > cone_range * cone_range:
+				return false
+			var direction := cone_direction.normalized()
+			return direction != Vector2.ZERO and absf(direction.angle_to(local_point.normalized())) <= deg_to_rad(cone_half_angle_deg)
+		_:
+			return local_point.length_squared() <= radius * radius
 
 func _resolve_valid_source_node() -> Node:
 	if source_node != null and is_instance_valid(source_node):

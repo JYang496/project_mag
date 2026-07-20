@@ -8,6 +8,6 @@ script = ExtResource("3_def")
 weapon_id = "26"
 display_name = "Sniper"
 icon = ExtResource("1_icon")
-price = 80
+price = 60
 description = "Long-range Projectile rifle. Fits Mark and Execute-adjacent builds by rewarding far or marked-target hits with charge-based bonus damage."
 scene_path = "res://Player/Weapons/Instances/sniper.tscn"

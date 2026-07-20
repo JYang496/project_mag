@@ -22,9 +22,13 @@ func _on_pressed() -> void:
 	InventoryData.reset_runtime_state()
 	TaskRewardManager.reset_runtime_state(false)
 	RewardDraftRuntime.reset_runtime_state(false)
+	CellEffectRuntime.reset_runtime_state()
+	CellTaskModuleRuntime.reset_runtime_state()
 	PlayerData.select_mecha_id = selected_mecha_id
 	PlayerData.set_hp_safety_for_testing(keep_hp_safety)
 	DataHandler.save_data.last_mecha_selected = str(PlayerData.select_mecha_id)
+	# A run becomes continuable only after the first victory returns to prepare.
+	SaveManager.clear_run()
 	erase_button_pressed.emit()
 	var prepare_result: Dictionary = WORLD_ENTRY_PREPARE_GATE_SCRIPT.prepare_world_entry()
 	if not bool(prepare_result.get("ok", false)):

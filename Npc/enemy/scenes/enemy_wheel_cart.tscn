@@ -10,15 +10,13 @@ size = Vector2(30, 25)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_5l3jp"]
 size = Vector2(16, 16)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_yef5u"]
-size = Vector2(150, 150)
-
 [node name="EnemyWheelCart" unique_id=1509861233 instance=ExtResource("1_jdgf0")]
 collision_mask = 0
 script = ExtResource("2_m5ns1")
 chase_acceleration = 25.0
 slowdown_deceleration = 96.0
 max_speed_multiplier = 3.0
+slowdown_trigger_distance = 84.6
 damage = 4
 combat_role = "melee"
 loot_value_multiplier = 1.0
@@ -44,13 +42,4 @@ texture = ExtResource("2_1at03")
 position = Vector2(0, -2)
 shape = SubResource("RectangleShape2D_5l3jp")
 
-[node name="SlowDownArea" type="Area2D" parent="." index="3" unique_id=593321342]
-collision_layer = 0
-
-[node name="SlowDownShape" type="CollisionShape2D" parent="SlowDownArea" index="0" unique_id=1650695760]
-shape = SubResource("RectangleShape2D_yef5u")
-
-[connection signal="body_entered" from="SlowDownArea" to="." method="_on_slow_down_area_body_entered"]
-
 [editable path="HurtBox"]
-[editable path="HitBoxDot"]

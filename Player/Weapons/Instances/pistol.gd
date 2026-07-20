@@ -134,6 +134,9 @@ func _on_shoot() -> void:
 	var target := _find_closest_enemy()
 	if target != null:
 		target_pos = target.global_position
+	projectile_direction = global_position.direction_to(target_pos).normalized()
+	if projectile_direction == Vector2.ZERO:
+		projectile_direction = _resolve_auto_aim_direction()
 
 	is_on_cooldown = true
 	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
@@ -145,9 +148,6 @@ func _on_shoot() -> void:
 	if spawn_projectile == null:
 		return
 
-	projectile_direction = global_position.direction_to(target_pos).normalized()
-	if projectile_direction == Vector2.ZERO:
-		return
 	spawn_projectile.damage = get_runtime_shot_damage()
 	spawn_projectile.damage = max(
 		1,

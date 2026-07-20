@@ -8,6 +8,6 @@ script = ExtResource("3_bqdxw")
 weapon_id = "2"
 display_name = "Charged Blaster"
 icon = ExtResource("1_rnx7b")
-price = 60
+price = 45
 description = "Mid-range charge beam. Builds around Beam and Area choices: Focus Lance pushes single-target pressure, while Prism Fan widens lane control."
 scene_path = "res://Player/Weapons/Instances/charged_blaster.tscn"

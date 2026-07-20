@@ -154,6 +154,7 @@ func request_relocate_enemies(options: Dictionary = {}) -> void:
 	var enemy := _enemy_by_id.get(enemy_id) as Node2D
 	if enemy != null and is_instance_valid(enemy):
 		enemy.global_position = _spawner.get_random_position()
+		EnemyRegistry.update_enemy_position(enemy)
 
 func request_monitor_enemy_stalls(enabled: bool) -> void:
 	_monitor_enemy_stalls = enabled
@@ -272,6 +273,7 @@ func _on_combat_frame(delta_sec: float) -> void:
 		stalled = stalled + sample_delta if previous.distance_squared_to(enemy.global_position) < 4.0 else 0.0
 		if stalled >= 8.0:
 			enemy.global_position = _spawner.get_random_position()
+			EnemyRegistry.update_enemy_position(enemy)
 			stalled = 0.0
 		motion["position"] = enemy.global_position
 		motion["stalled_sec"] = stalled

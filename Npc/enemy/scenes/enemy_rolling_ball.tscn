@@ -33,4 +33,3 @@ texture = ExtResource("3_h8otr")
 shape = SubResource("RectangleShape2D_uhp8g")
 
 [editable path="HurtBox"]
-[editable path="HitBoxDot"]

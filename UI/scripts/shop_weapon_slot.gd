@@ -106,7 +106,7 @@ func new_item() -> void:
 			"No weapons available"
 		)
 		return
-	item_id = candidate_ids.pick_random()
+	item_id = _pick_weighted_candidate(candidate_ids)
 	var weapon_def = DataHandler.read_weapon_data(item_id)
 	if weapon_def == null:
 		push_warning("ShopWeaponSlot failed to load weapon id=%s" % item_id)
@@ -123,6 +123,30 @@ func new_item() -> void:
 	price = max(1, final_price)
 	price_label.text = LocalizationManager.tr_format("ui.shop.weapon.price", {"value": price}, "Price: %s" % price)
 	refresh_affordability()
+
+func _pick_weighted_candidate(candidate_ids: Array[String]) -> String:
+	if PlayerData.rounds_without_weapon_progress < 3:
+		return candidate_ids.pick_random()
+	var equipped_ids: Dictionary = {}
+	for weapon_ref in PlayerData.player_weapon_list:
+		var equipped := weapon_ref as Weapon
+		if equipped != null and is_instance_valid(equipped):
+			equipped_ids[DataHandler.get_weapon_id_from_instance(equipped)] = true
+	var synergy_multiplier := 3.0
+	if GlobalVariables.economy_data:
+		synergy_multiplier = maxf(float(GlobalVariables.economy_data.shop_synergy_weight_after_dry_streak), 1.0)
+	var total_weight := 0.0
+	var weights: Array[float] = []
+	for candidate_id in candidate_ids:
+		var weight := synergy_multiplier if equipped_ids.has(candidate_id) else 1.0
+		weights.append(weight)
+		total_weight += weight
+	var roll := randf() * total_weight
+	for index in range(candidate_ids.size()):
+		roll -= weights[index]
+		if roll <= 0.0:
+			return candidate_ids[index]
+	return candidate_ids[-1]
 	
 
 func refresh_affordability(_value: int = 0) -> void:
@@ -175,7 +199,8 @@ func try_purchase() -> bool:
 	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("try_auto_fuse_weapon_obtain"):
 		var prediction: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(str(item_id))
 		if str(prediction.get("result", "not_applicable")) != "not_applicable":
-			PlayerData.player_gold -= price
+			if not PlayerData.spend_gold(price):
+				return false
 			outcome = PlayerData.player.try_auto_fuse_weapon_obtain(str(item_id))
 		else:
 			var weapon_def := DataHandler.read_weapon_data(str(item_id)) as WeaponDefinition
@@ -200,7 +225,8 @@ func try_purchase() -> bool:
 func _on_purchase_replacement_completed(accepted: bool, _result: Dictionary, purchase_price: int) -> void:
 	if not accepted:
 		return
-	PlayerData.player_gold -= purchase_price
+	if not PlayerData.spend_gold(purchase_price):
+		return
 	empty_item()
 
 func _get_purchase_price_multiplier() -> float:
