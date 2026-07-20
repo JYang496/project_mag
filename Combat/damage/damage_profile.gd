@@ -14,6 +14,7 @@ var get_armor: Callable
 var get_damage_reduction: Callable
 var get_damage_taken_multiplier: Callable
 var get_is_dead: Callable
+var get_is_invulnerable: Callable
 var set_is_dead: Callable
 
 var on_death: Callable
@@ -50,6 +51,10 @@ func read_damage_taken_multiplier() -> float:
 
 func read_is_dead() -> bool:
 	return bool(_call_or_default(get_is_dead, false))
+
+
+func read_is_invulnerable() -> bool:
+	return bool(_call_or_default(get_is_invulnerable, false))
 
 func write_is_dead(value: bool) -> void:
 	if set_is_dead == Callable() or not set_is_dead.is_valid():

@@ -11,14 +11,22 @@ enum DisplayState {
 }
 
 const PANEL_WIDTH := 360.0
-const COMPACT_PANEL_WIDTH := 240.0
+const MIN_EXPANDED_WIDTH := 252.0
+const MAX_EXPANDED_WIDTH := 360.0
+const COMPACT_PANEL_WIDTH := 132.0
 const FALLBACK_MARGIN := 16.0
 const TWO_COLUMN_MIN_WIDTH := 420.0
 const KEYCAP_WIDTH := 64.0
+const MIN_KEYCAP_WIDTH := 56.0
+const MAX_KEYCAP_WIDTH := 96.0
+const PANEL_HORIZONTAL_PADDING := 24.0
+const ACTION_ITEM_SEPARATION := 7.0
+const HEADER_SEPARATION := 8.0
 const COMPACT_EXPAND_WIDTH := 96.0
 const PANEL_TRANSITION_SECONDS := 0.18
 const CONTENT_FADE_SECONDS := 0.08
-const AUTO_COLLAPSE_SECONDS := 4.0
+const STACK_REFLOW_SECONDS := 0.42
+const AUTO_COLLAPSE_SECONDS := 8.0
 const REST_AUTO_COLLAPSE_SECONDS := 4.0
 const CONTEXT_DURATION_SECONDS := 3.0
 const CONTEXT_COOLDOWN_SECONDS := 15.0
@@ -54,8 +62,10 @@ var _render_signature := ""
 var _text_context_signature := ""
 var _collapsed_text_contexts: Dictionary = {}
 var _last_viewport_size := Vector2.ZERO
+var _expanded_panel_width := PANEL_WIDTH
 var _panel_tween: Tween
 var _content_tween: Tween
+var _stack_reflow_tween: Tween
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -83,6 +93,26 @@ func layout_for_viewport(viewport_size: Vector2) -> void:
 		return
 	size.x = target_width
 	position = Vector2(viewport_size.x - size.x - FALLBACK_MARGIN, FALLBACK_MARGIN)
+
+func animate_stack_reflow_from(previous_global_position: Vector2) -> bool:
+	if not is_inside_tree() or not visible or get_parent() == null:
+		return false
+	var parent_control := get_parent() as Control
+	if parent_control == null:
+		return false
+	var target_position := position
+	var previous_local_position := parent_control.get_global_transform_with_canvas().affine_inverse() \
+			* previous_global_position
+	if previous_local_position.distance_to(target_position) < 0.5:
+		return false
+	if _stack_reflow_tween != null and _stack_reflow_tween.is_running():
+		_stack_reflow_tween.kill()
+	position = previous_local_position
+	_stack_reflow_tween = create_tween()
+	_stack_reflow_tween.set_trans(Tween.TRANS_QUART)
+	_stack_reflow_tween.set_ease(Tween.EASE_OUT)
+	_stack_reflow_tween.tween_property(self, "position", target_position, STACK_REFLOW_SECONDS)
+	return true
 
 func refresh_for_phase(phase: String, primary_menu_open: bool, secondary_menu_context: StringName = &"") -> void:
 	var phase_changed := _current_phase != phase
@@ -133,10 +163,39 @@ func handle_input_event(event: InputEvent) -> bool:
 	if _current_phase == PhaseManager.BATTLE:
 		if event.is_action_pressed("UP") or event.is_action_pressed("DOWN") \
 				or event.is_action_pressed("LEFT") or event.is_action_pressed("RIGHT"):
-			_used_move = true
+			_complete_battle_guidance_action(&"move")
 		if event.is_action_pressed("ATTACK"):
-			_used_attack = true
+			_complete_battle_guidance_action(&"attack")
 	return false
+
+func _complete_battle_guidance_action(action_id: StringName) -> void:
+	if PlayerAssistSettings.controls_hint_mode != PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE:
+		return
+	if action_id == &"move":
+		if _used_move:
+			return
+		_used_move = true
+	elif action_id == &"attack":
+		if _used_attack:
+			return
+		_used_attack = true
+	else:
+		return
+	if _used_move and _used_attack:
+		set_display_state(DisplayState.COMPACT, false)
+		return
+	_fade_completed_action_item(action_id)
+
+func _fade_completed_action_item(action_id: StringName) -> void:
+	var item := _action_items.get(action_id, null) as Control
+	if item == null or not is_instance_valid(item):
+		return
+	var tween := create_tween()
+	tween.tween_property(item, "modulate:a", 0.0, CONTENT_FADE_SECONDS)
+	tween.tween_callback(func() -> void:
+		item.visible = false
+		_recalculate_expanded_width()
+	)
 
 func _on_toggle_button_pressed() -> void:
 	_request_display_state(DisplayState.COMPACT)
@@ -220,6 +279,7 @@ func refresh_input_glyphs() -> void:
 		_tr("ui.controls.switch_weapon", "Switch Weapon")
 	)
 	_set_action_item(&"pause", _input_label(&"ESC"), _tr("ui.controls.pause", "Pause"))
+	_sync_battle_guidance_items()
 	compact_text.text = "%s %s / %s %s" % [
 		move_label,
 		_tr("ui.controls.move", "Move"),
@@ -227,13 +287,20 @@ func refresh_input_glyphs() -> void:
 		_tr("ui.controls.attack", "Attack"),
 	]
 	if _current_phase == PhaseManager.BATTLE:
-		compact_text.text = _tr("ui.controls.compact_battle", "Battle Controls Hint")
-	compact_expand.text = "%s %s" % [
-		_input_label(&"TOGGLE_CONTROLS"),
-		_tr("ui.controls.expand", "Expand"),
-	]
+		compact_text.visible = false
+		compact_expand.text = "%s %s" % [
+			_input_label(&"TOGGLE_CONTROLS"),
+			_tr("ui.controls.title", "Controls"),
+		]
+	else:
+		compact_text.visible = true
+		compact_expand.text = "%s %s" % [
+			_input_label(&"TOGGLE_CONTROLS"),
+			_tr("ui.controls.expand", "Expand"),
+		]
 	title_label.text = _tr("ui.controls.title", "Controls")
 	_sync_toggle_affordance()
+	_recalculate_expanded_width()
 
 func _begin_battle_guidance() -> void:
 	_auto_collapse_remaining = AUTO_COLLAPSE_SECONDS
@@ -243,6 +310,23 @@ func _begin_battle_guidance() -> void:
 	_context_show_counts.clear()
 	_context_last_shown_msec.clear()
 	_apply_saved_mode(false)
+	_sync_battle_guidance_items()
+
+func _sync_battle_guidance_items() -> void:
+	var adaptive_battle := _current_phase == PhaseManager.BATTLE \
+			and PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE \
+			and not _manual_expanded
+	for action_id in _action_items:
+		var item := _action_items.get(action_id, null) as Control
+		if item == null or not is_instance_valid(item):
+			continue
+		item.modulate.a = 1.0
+		if adaptive_battle:
+			item.visible = (action_id == &"move" and not _used_move) \
+					or (action_id == &"attack" and not _used_attack)
+		else:
+			item.visible = true
+	_recalculate_expanded_width()
 
 func _begin_rest_guidance() -> void:
 	_auto_collapse_remaining = REST_AUTO_COLLAPSE_SECONDS
@@ -342,6 +426,7 @@ func _render_text_context(context_title: String, lines: Array[String]) -> void:
 		next_state = DisplayState.EXPANDED
 	if next_state == DisplayState.HIDDEN or next_state == DisplayState.CONTEXT_REMINDER:
 		next_state = DisplayState.EXPANDED
+	_recalculate_expanded_width()
 	set_display_state(next_state, false)
 
 func _compact_text_context(context_title: String, _lines: Array[String]) -> String:
@@ -400,6 +485,7 @@ func _apply_manual_display_request(next_state: DisplayState) -> void:
 			_manual_expanded = false
 		_:
 			pass
+	_sync_battle_guidance_items()
 
 func _sync_toggle_affordance() -> void:
 	if collapse_button == null:
@@ -572,8 +658,100 @@ func _target_panel_width(state: DisplayState) -> float:
 	var available_width := PANEL_WIDTH
 	if _last_viewport_size.x > 0.0:
 		available_width = maxf(1.0, _last_viewport_size.x - 2.0 * FALLBACK_MARGIN)
-	var base_width := COMPACT_PANEL_WIDTH if state == DisplayState.COMPACT else PANEL_WIDTH
+	var base_width := _expanded_panel_width
+	if state == DisplayState.COMPACT and _current_phase == PhaseManager.BATTLE:
+		base_width = COMPACT_PANEL_WIDTH
 	return minf(base_width, available_width)
+
+func _recalculate_expanded_width() -> void:
+	if not is_node_ready():
+		return
+	var keycap_width := MIN_KEYCAP_WIDTH
+	var widest_action_row := 0.0
+	for child in expanded_content.get_children():
+		var item := child as HBoxContainer
+		if item == null or not item.visible:
+			continue
+		var key_label := item.get_node_or_null("Key") as Label
+		if key_label != null and key_label.visible:
+			keycap_width = maxf(keycap_width, _label_text_width(key_label) + 12.0)
+	keycap_width = clampf(keycap_width, MIN_KEYCAP_WIDTH, MAX_KEYCAP_WIDTH)
+	for child in expanded_content.get_children():
+		var item := child as HBoxContainer
+		if item == null:
+			continue
+		var key_label := item.get_node_or_null("Key") as Label
+		if key_label != null:
+			key_label.custom_minimum_size.x = keycap_width
+		if not item.visible:
+			continue
+		var action_label := item.get_node_or_null("Action") as Label
+		if action_label != null:
+			var row_width := _label_text_width(action_label)
+			if key_label != null and key_label.visible:
+				row_width += keycap_width + ACTION_ITEM_SEPARATION
+			widest_action_row = maxf(widest_action_row, row_width)
+		else:
+			widest_action_row = maxf(widest_action_row, _visible_row_label_width(item))
+	var header_width := _label_text_width(title_label) + HEADER_SEPARATION \
+			+ collapse_button.get_combined_minimum_size().x
+	var measured_width := maxf(header_width, widest_action_row) + PANEL_HORIZONTAL_PADDING
+	var next_width := clampf(measured_width, MIN_EXPANDED_WIDTH, MAX_EXPANDED_WIDTH)
+	_update_action_row_heights(next_width, keycap_width)
+	if absf(next_width - _expanded_panel_width) < 0.5:
+		return
+	_expanded_panel_width = next_width
+	if display_state != DisplayState.EXPANDED:
+		return
+	var target_width := _target_panel_width(DisplayState.EXPANDED)
+	if is_inside_tree() and visible:
+		if _panel_tween != null and _panel_tween.is_running():
+			_panel_tween.kill()
+		_panel_tween = create_tween()
+		_panel_tween.set_trans(Tween.TRANS_CUBIC)
+		_panel_tween.set_ease(Tween.EASE_OUT)
+		_panel_tween.tween_property(self, "custom_minimum_size:x", target_width, PANEL_TRANSITION_SECONDS)
+	else:
+		custom_minimum_size.x = target_width
+
+func _visible_row_label_width(row: HBoxContainer) -> float:
+	var width := 0.0
+	var visible_label_count := 0
+	for child in row.get_children():
+		var label := child as Label
+		if label == null or not label.visible:
+			continue
+		width += _label_text_width(label)
+		visible_label_count += 1
+	if visible_label_count > 1:
+		width += float(visible_label_count - 1) * float(row.get_theme_constant("separation"))
+	return width
+
+func _update_action_row_heights(panel_width: float, keycap_width: float) -> void:
+	var content_width := maxf(1.0, panel_width - PANEL_HORIZONTAL_PADDING)
+	for child in expanded_content.get_children():
+		var row := child as HBoxContainer
+		if row == null or not row.visible:
+			continue
+		var action_label := row.get_node_or_null("Action") as Label
+		if action_label == null:
+			continue
+		var available_text_width := content_width
+		var key_label := row.get_node_or_null("Key") as Label
+		if key_label != null and key_label.visible:
+			available_text_width -= keycap_width + ACTION_ITEM_SEPARATION
+		var wraps := _label_text_width(action_label) > available_text_width + 0.5
+		var font := action_label.get_theme_font("font")
+		var font_size := action_label.get_theme_font_size("font_size")
+		var required_height := ceilf(font.get_height(font_size) * 2.0) if wraps else 26.0
+		action_label.custom_minimum_size.y = maxf(26.0, required_height)
+
+func _label_text_width(label: Label) -> float:
+	if label == null or label.text == "":
+		return 0.0
+	var font := label.get_theme_font("font")
+	var font_size := label.get_theme_font_size("font_size")
+	return font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 
 func _apply_display_state_visuals(next_state: DisplayState, previous_state: DisplayState) -> void:
 	var target_width := _target_panel_width(next_state)

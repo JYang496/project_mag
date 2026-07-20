@@ -38,7 +38,12 @@ func _apply_plague_dot(target: Node, source_weapon: Weapon) -> void:
 	var ticks: int = _get_dot_ticks()
 	var damage: int = _get_dot_damage()
 	var owner_player: Node = DamageManager.resolve_source_player(source_weapon)
-	var effect := DotStatusEffect.new().setup_dot_effect(ticks, damage, Attack.TYPE_PHYSICAL)
+	var effect := DotStatusEffect.new().setup_dot_effect(
+		ticks,
+		damage,
+		Attack.TYPE_PHYSICAL,
+		&"plague_seed_dot"
+	)
 	effect.set_source_context(owner_player, source_weapon)
 	target.call("apply_status_effect", effect)
 

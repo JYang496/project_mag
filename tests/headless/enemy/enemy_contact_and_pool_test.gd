@@ -23,9 +23,24 @@ func _run() -> void:
 	enemy.global_position = player.global_position
 	add_child(enemy)
 	enemy.set_physics_process(false)
+	var stronger_enemy := EnemyScene.instantiate() as BaseEnemy
+	stronger_enemy.damage = 4
+	stronger_enemy.global_position = player.global_position
+	add_child(stronger_enemy)
+	stronger_enemy.set_physics_process(false)
+	var nearby_but_not_overlapping := EnemyScene.instantiate() as BaseEnemy
+	nearby_but_not_overlapping.damage = 99
+	nearby_but_not_overlapping.global_position = player.global_position + Vector2(29.0, 0.0)
+	add_child(nearby_but_not_overlapping)
+	nearby_but_not_overlapping.set_physics_process(false)
 	_expect(enemy.get_node_or_null("HitBoxDot") == null, "enemy still owns a per-instance contact Area2D")
+	_expect(stronger_enemy.get_node_or_null("HitBoxDot") == null, "second enemy still owns a per-instance contact Area2D")
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	player.call("_process_centralized_enemy_contact_damage", 0.21)
-	_expect(PlayerData.player_hp < 5, "centralized contact query did not damage the player")
+	_expect(PlayerData.player_hp == 1, "HurtBox contact batch did not select exactly one strongest overlapping enemy hit")
+	player.call("_process_centralized_enemy_contact_damage", 0.21)
+	_expect(PlayerData.player_hp == 1, "contact damage bypassed the player's invulnerability deadline")
 	var packed := PackedScene.new()
 	var template := Node2D.new()
 	packed.pack(template)

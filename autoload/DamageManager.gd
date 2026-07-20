@@ -87,28 +87,44 @@ func apply_to_target(target: Node, data: DamageData) -> bool:
 func apply_to_target_result(target: Node, data: DamageData) -> DamageResult:
 	var result := DamageResult.new()
 	if target == null or not is_instance_valid(target):
+		result.rejection_reason = DamageResult.REASON_INVALID
 		return result
 	if data == null:
+		result.rejection_reason = DamageResult.REASON_INVALID
 		return result
 	if not data.has_valid_player_weapon_context():
 		push_error("Player weapon damage is missing a valid delivery_type.")
+		result.rejection_reason = DamageResult.REASON_INVALID
 		return result
 	if _is_player_attack_blocked_by_phase(data):
+		result.rejection_reason = DamageResult.REASON_PHASE_BLOCKED
 		return result
 	if _is_duplicate_damage(target, data):
+		result.rejection_reason = DamageResult.REASON_DUPLICATE
 		return result
 	var hp_before: Variant = _read_target_hp(target)
 
 	# Prefer a Damageable component when present for extensibility.
 	var component := target.get_node_or_null("Damageable")
 	if component and component.has_method("apply_damage_data"):
-		result.applied = bool(component.apply_damage_data(data))
+		var component_result: Variant = component.apply_damage_data(data)
+		if component_result is DamageResult:
+			result = component_result as DamageResult
+		else:
+			result.applied = bool(component_result)
+			result.accepted = result.applied
 		_populate_damage_result(result, target, data, hp_before)
 		return result
 
 	if target.has_method("damaged"):
-		target.damaged(data.to_attack())
-		result.applied = true
+		var target_result: Variant = target.damaged(data.to_attack())
+		if target_result is DamageResult:
+			result = target_result as DamageResult
+		else:
+			# Compatibility for legacy void damage receivers. HP delta below remains
+			# authoritative where the target exposes an hp property.
+			result.applied = true
+			result.accepted = true
 		_populate_damage_result(result, target, data, hp_before)
 		return result
 	return result
@@ -118,6 +134,7 @@ func _populate_damage_result(result: DamageResult, target: Node, data: DamageDat
 	if result == null or data == null:
 		return
 	result.damage_type = Attack.normalize_damage_type(data.damage_type)
+	result.damage_kind = data.damage_kind
 	if not result.applied:
 		return
 	var hp_after: Variant = _read_target_hp(target)

@@ -3,7 +3,11 @@ extends Node
 signal enemy_registered(enemy: Node2D)
 signal enemy_unregistered(enemy: Node2D)
 
-const SPATIAL_CELL_SIZE := 128.0
+# Match the default crowd-separation query radius so each spatial bucket tracks
+# approximately one neighborhood instead of several overlapping neighborhoods.
+const SPATIAL_CELL_SIZE := 48.0
+const MAX_ENEMIES_PER_SPATIAL_CELL := 24
+const CAPACITY_SEARCH_RING_LIMIT := 4
 
 var _enemies: Array[Node2D] = []
 var _enemy_ids: Dictionary = {}
@@ -37,7 +41,14 @@ func register_enemy(enemy: Node) -> void:
 	_next_enemy_order += 1
 	_enemy_index_by_id[instance_id] = _enemies.size()
 	_enemies.append(enemy2d)
-	_add_to_spatial_bucket(enemy2d, _world_to_cell(enemy2d.global_position))
+	var target_cell := _world_to_cell(enemy2d.global_position)
+	if _get_bucket_size(target_cell) >= MAX_ENEMIES_PER_SPATIAL_CELL:
+		var available_cell := _find_nearest_available_cell(target_cell)
+		if available_cell != target_cell:
+			var local_offset := enemy2d.global_position - Vector2(target_cell) * SPATIAL_CELL_SIZE
+			enemy2d.global_position = Vector2(available_cell) * SPATIAL_CELL_SIZE + local_offset
+			target_cell = available_cell
+	_add_to_spatial_bucket(enemy2d, target_cell)
 	refresh_enemy_roles(enemy2d)
 	if not enemy2d.tree_exiting.is_connected(_on_enemy_tree_exiting.bind(instance_id)):
 		enemy2d.tree_exiting.connect(_on_enemy_tree_exiting.bind(instance_id), CONNECT_ONE_SHOT)
@@ -59,8 +70,61 @@ func update_enemy_position(enemy: Node) -> void:
 	var old_cell: Variant = _enemy_cell_by_id.get(instance_id)
 	if old_cell is Vector2i and old_cell == new_cell:
 		return
+	if _get_bucket_size(new_cell) >= MAX_ENEMIES_PER_SPATIAL_CELL:
+		var available_cell := _find_nearest_available_cell(new_cell)
+		var local_offset := enemy2d.global_position - Vector2(new_cell) * SPATIAL_CELL_SIZE
+		enemy2d.global_position = Vector2(available_cell) * SPATIAL_CELL_SIZE + local_offset
+		new_cell = available_cell
 	_remove_from_spatial_bucket(instance_id, old_cell)
 	_add_to_spatial_bucket(enemy2d, new_cell)
+
+func can_accept_position(world_position: Vector2, moving_enemy: Node = null) -> bool:
+	var target_cell := _world_to_cell(world_position)
+	if moving_enemy != null:
+		var current_cell: Variant = _enemy_cell_by_id.get(moving_enemy.get_instance_id())
+		if current_cell is Vector2i and current_cell == target_cell:
+			return true
+	return _get_bucket_size(target_cell) < MAX_ENEMIES_PER_SPATIAL_CELL
+
+func get_separation_vector(requester: Node2D, radius: float, max_neighbors: int = 12) -> Vector2:
+	if requester == null or radius <= 0.0 or max_neighbors <= 0:
+		return Vector2.ZERO
+	var radius_sq := radius * radius
+	var accumulated := Vector2.ZERO
+	var processed := 0
+	_query_count += 1
+	var minimum := requester.global_position - Vector2.ONE * radius
+	var maximum := requester.global_position + Vector2.ONE * radius
+	var min_cell := _world_to_cell(minimum)
+	var max_cell := _world_to_cell(maximum)
+	for cell_y in range(min_cell.y, max_cell.y + 1):
+		for cell_x in range(min_cell.x, max_cell.x + 1):
+			_bucket_visits += 1
+			var bucket_value: Variant = _spatial_buckets.get(Vector2i(cell_x, cell_y))
+			if not (bucket_value is Array):
+				continue
+			for candidate_value in bucket_value as Array:
+				_candidate_checks += 1
+				var candidate := candidate_value as Node2D
+				if candidate == null or candidate == requester or not is_instance_valid(candidate):
+					continue
+				var away := requester.global_position - candidate.global_position
+				var distance_sq := away.length_squared()
+				if distance_sq > radius_sq:
+					continue
+				if distance_sq <= 0.0001:
+					var pair_seed := requester.get_instance_id() ^ candidate.get_instance_id()
+					away = Vector2.RIGHT.rotated(float(pair_seed % 360) * PI / 180.0)
+					if requester.get_instance_id() < candidate.get_instance_id():
+						away = -away
+					distance_sq = 1.0
+				var distance := sqrt(distance_sq)
+				var weight := 1.0 - clampf(distance / radius, 0.0, 1.0)
+				accumulated += away / distance * weight
+				processed += 1
+				if processed >= max_neighbors:
+					return accumulated.normalized() * minf(accumulated.length(), 1.0)
+	return accumulated.normalized() * minf(accumulated.length(), 1.0) if accumulated != Vector2.ZERO else Vector2.ZERO
 
 func refresh_enemy_roles(enemy: Node) -> void:
 	var base_enemy := enemy as BaseEnemy
@@ -164,8 +228,11 @@ func get_query_metrics() -> Dictionary:
 
 func get_spatial_debug_snapshot() -> Dictionary:
 	var bucket_entry_count := 0
+	var max_bucket_occupancy := 0
 	for bucket_value in _spatial_buckets.values():
-		bucket_entry_count += (bucket_value as Array).size()
+		var bucket_size := (bucket_value as Array).size()
+		bucket_entry_count += bucket_size
+		max_bucket_occupancy = maxi(max_bucket_occupancy, bucket_size)
 	return {
 		"enemy_count": _enemies.size(),
 		"indexed_enemy_count": _enemy_cell_by_id.size(),
@@ -173,6 +240,8 @@ func get_spatial_debug_snapshot() -> Dictionary:
 		"bucket_entry_count": bucket_entry_count,
 		"support_count": _support_enemies.size(),
 		"cell_size": SPATIAL_CELL_SIZE,
+		"max_bucket_occupancy": max_bucket_occupancy,
+		"bucket_capacity": MAX_ENEMIES_PER_SPATIAL_CELL,
 		"has_frame_processing": is_physics_processing() or is_processing(),
 	}
 
@@ -194,6 +263,28 @@ func _get_spatial_candidates(minimum: Vector2, maximum: Vector2) -> Array[Node2D
 
 func _world_to_cell(world_position: Vector2) -> Vector2i:
 	return Vector2i(floori(world_position.x / SPATIAL_CELL_SIZE), floori(world_position.y / SPATIAL_CELL_SIZE))
+
+func _get_bucket_size(cell: Vector2i) -> int:
+	var bucket_value: Variant = _spatial_buckets.get(cell)
+	return (bucket_value as Array).size() if bucket_value is Array else 0
+
+func _find_nearest_available_cell(origin: Vector2i) -> Vector2i:
+	if _get_bucket_size(origin) < MAX_ENEMIES_PER_SPATIAL_CELL:
+		return origin
+	for ring in range(1, CAPACITY_SEARCH_RING_LIMIT + 1):
+		for y in range(-ring, ring + 1):
+			for x in range(-ring, ring + 1):
+				if absi(x) != ring and absi(y) != ring:
+					continue
+				var candidate := origin + Vector2i(x, y)
+				if _get_bucket_size(candidate) < MAX_ENEMIES_PER_SPATIAL_CELL:
+					return candidate
+	# 240 enemies cannot fill this search area at the configured capacity, but
+	# retain a deterministic fallback if a caller bypasses the combat alive cap.
+	var fallback := origin + Vector2i(CAPACITY_SEARCH_RING_LIMIT + 1, 0)
+	while _get_bucket_size(fallback) >= MAX_ENEMIES_PER_SPATIAL_CELL:
+		fallback.x += 1
+	return fallback
 
 func _sort_by_registration_order(enemies: Array[Node2D]) -> void:
 	enemies.sort_custom(func(a: Node2D, b: Node2D) -> bool:

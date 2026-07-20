@@ -303,8 +303,8 @@ func _physics_process(delta):
 	_update_collect_area_anchor_to_screen_top()
 
 var _enemy_contact_tick_accumulator := 0.0
+var _invulnerable_until_msec := 0
 const ENEMY_CONTACT_TICK_INTERVAL := 0.2
-const ENEMY_CONTACT_QUERY_RADIUS := 30.0
 
 func _process_centralized_enemy_contact_damage(delta: float) -> void:
 	if PhaseManager.current_state() != PhaseManager.BATTLE:
@@ -314,13 +314,21 @@ func _process_centralized_enemy_contact_damage(delta: float) -> void:
 	if _enemy_contact_tick_accumulator < ENEMY_CONTACT_TICK_INTERVAL:
 		return
 	_enemy_contact_tick_accumulator = fmod(_enemy_contact_tick_accumulator, ENEMY_CONTACT_TICK_INTERVAL)
-	var registry := get_node_or_null("/root/EnemyRegistry")
-	if registry == null or not registry.has_method("get_enemies_in_radius"):
+	if hurt_box == null or not is_instance_valid(hurt_box):
 		return
-	for enemy_value in registry.call("get_enemies_in_radius", global_position, ENEMY_CONTACT_QUERY_RADIUS):
-		var enemy := enemy_value as BaseEnemy
+	var contact_candidates: Array[DamageData] = []
+	var seen_enemy_ids := {}
+	for area in hurt_box.get_overlapping_areas():
+		var enemy_hurt_box := area as HurtBox
+		if enemy_hurt_box == null:
+			continue
+		var enemy := enemy_hurt_box.get_damage_target() as BaseEnemy
 		if enemy == null or enemy.is_dead or enemy.damage <= 0:
 			continue
+		var enemy_id := enemy.get_instance_id()
+		if seen_enemy_ids.has(enemy_id):
+			continue
+		seen_enemy_ids[enemy_id] = true
 		var direction := enemy.global_position.direction_to(global_position)
 		var damage_data := DamageManager.build_damage_data(
 			enemy,
@@ -330,7 +338,14 @@ func _process_centralized_enemy_contact_damage(delta: float) -> void:
 		)
 		damage_data.dedupe_token = StringName("enemy_contact_%d_%d" % [enemy.get_instance_id(), get_instance_id()])
 		damage_data.dedupe_window_sec = ENEMY_CONTACT_TICK_INTERVAL * 0.9
-		DamageManager.apply_to_target(self, damage_data)
+		if "arbitration_group" in damage_data:
+			damage_data.set("arbitration_group", &"player_direct_hit")
+		contact_candidates.append(damage_data)
+	if not contact_candidates.is_empty():
+		hurt_box.submit_damage_batch(contact_candidates)
+
+func is_invulnerable() -> bool:
+	return Time.get_ticks_msec() < _invulnerable_until_msec
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.echo:
@@ -462,6 +477,8 @@ func clear_timed_statuses_for_prepare() -> void:
 	_ensure_elemental_effect_system()
 	if _elemental_effect_system != null and _elemental_effect_system.has_method("clear_timed_effects_for_prepare"):
 		_elemental_effect_system.call("clear_timed_effects_for_prepare")
+	if _incoming_damage_pipeline != null:
+		_incoming_damage_pipeline.clear_periodic_effects(self, _incoming_damage_profile)
 	for weapon in PlayerData.player_weapon_list:
 		if weapon == null or not is_instance_valid(weapon):
 			continue
@@ -1523,10 +1540,11 @@ func _compute_stable_mecha_direction(direction: Vector2) -> String:
 	return "top_right" if _last_face_vertical_sign < 0 else "bottom_right"
 
 # Player does not have death atm
-func damaged(attack:Attack):
+func damaged(attack: Attack) -> DamageResult:
 	_ensure_damage_reaction_system()
 	if _damage_reaction_system != null:
-		_damage_reaction_system.damaged(attack)
+		return _damage_reaction_system.damaged(attack)
+	return DamageResult.new()
 
 func _get_total_armor() -> int:
 	return max(0, int(PlayerData.armor) + int(PlayerData.bonus_armor))
@@ -1603,6 +1621,7 @@ func _setup_incoming_damage_profile() -> void:
 	profile.get_armor = Callable(self, "_profile_get_armor")
 	profile.get_damage_reduction = Callable(self, "_profile_get_damage_reduction")
 	profile.get_damage_taken_multiplier = Callable(self, "_profile_get_damage_taken_multiplier")
+	profile.get_is_invulnerable = Callable(self, "is_invulnerable")
 	profile.get_is_dead = Callable(self, "_profile_get_is_dead")
 	profile.set_is_dead = Callable(self, "_profile_set_is_dead")
 	profile.on_death = Callable(self, "_profile_on_death")
@@ -1647,6 +1666,7 @@ func _profile_on_death(_attack: Attack) -> void:
 	PhaseManager.enter_gameover()
 
 func _profile_on_trigger_invuln() -> void:
+	_invulnerable_until_msec = Time.get_ticks_msec() + int(maxf(PlayerData.hurt_cd, 0.0) * 1000.0)
 	hurt_box.set_collision_layer_value(1,false)
 	hurt_cd.start(PlayerData.hurt_cd)
 	collision_cd.start(PlayerData.collision_cd)
@@ -1927,6 +1947,7 @@ func _on_detect_area_area_exited(area: Area2D) -> void:
 
 
 func _on_hurt_cd_timeout() -> void:
+	_invulnerable_until_msec = 0
 	hurt_box.set_collision_layer_value(1,true)
 
 

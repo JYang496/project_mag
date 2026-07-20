@@ -99,6 +99,8 @@ shape = SubResource("CircleShape2D_up5oj")
 
 [node name="HurtBox" parent="." unique_id=2034184633 instance=ExtResource("3_cj848")]
 collision_layer = 1
+collision_mask = 4
+monitoring = true
 
 [node name="CollisionShape2D" parent="HurtBox" index="0"]
 position = Vector2(1.5, -3.5)

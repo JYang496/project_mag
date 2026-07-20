@@ -11,6 +11,11 @@ const PROGRESS_SMOOTHING_SPEED := 7.0
 const INTRO_MOVE_SEC := 0.42
 const INTRO_HOLD_SEC := 1.8
 const INTRO_COLLAPSE_SEC := 0.52
+const INTRO_SHELL_MOVE_DELAY_SEC := 0.14
+const HUD_CROSSFADE_DELAY_SEC := 0.22
+const HUD_CROSSFADE_SEC := 0.22
+const HUD_PROGRESS_STAGGER_SEC := 0.08
+const HUD_PROGRESS_FADE_SEC := 0.14
 const INTRO_SIZE := Vector2(560.0, 160.0)
 const INTRO_TOP_Y := 24.0
 
@@ -301,13 +306,18 @@ func play_prepared_intro() -> void:
 	# Populate the destination before moving so the card visibly transforms into
 	# the HUD instead of disappearing and being replaced a frame later.
 	var handoff_to_contract_hud := not _boss_intro and BattleContractManager.state == BattleContractManager.ACTIVE
+	var stack_positions_before_handoff: Dictionary = {}
 	if handoff_to_contract_hud:
+		stack_positions_before_handoff = _capture_stack_sibling_positions()
 		_last_snapshot = {}
 		_intro_playing = false
 		refresh()
 		_intro_playing = true
 		panel.modulate.a = 0.0
+		progress.modulate.a = 0.0
 		panel.visible = true
+		await panel.get_tree().process_frame
+		_animate_stack_sibling_reflow(stack_positions_before_handoff)
 	var final_position := Vector2(viewport_size.x - COMPACT_SIZE.x - 16.0, 16.0)
 	var intro_parent := intro.get_parent() as Control
 	if handoff_to_contract_hud and intro_parent != null and panel.is_inside_tree():
@@ -316,11 +326,17 @@ func play_prepared_intro() -> void:
 		intro.call("begin_intro_collapse", INTRO_COLLAPSE_SEC)
 	var collapse := intro.create_tween().set_parallel(true)
 	collapse.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
-	collapse.tween_property(intro, "position", final_position, INTRO_COLLAPSE_SEC)
-	collapse.tween_property(intro, "size", COMPACT_SIZE, INTRO_COLLAPSE_SEC)
-	collapse.tween_property(intro, "modulate:a", 0.28, INTRO_COLLAPSE_SEC * 0.42).set_delay(INTRO_COLLAPSE_SEC * 0.58)
+	var shell_move_sec := INTRO_COLLAPSE_SEC - INTRO_SHELL_MOVE_DELAY_SEC
+	collapse.tween_property(intro, "position", final_position, shell_move_sec) \
+			.set_delay(INTRO_SHELL_MOVE_DELAY_SEC)
+	collapse.tween_property(intro, "size", COMPACT_SIZE, shell_move_sec) \
+			.set_delay(INTRO_SHELL_MOVE_DELAY_SEC)
+	collapse.tween_property(intro, "modulate:a", 0.18, 0.16).set_delay(INTRO_COLLAPSE_SEC - 0.16)
 	if handoff_to_contract_hud:
-		collapse.tween_property(panel, "modulate:a", 1.0, INTRO_COLLAPSE_SEC * 0.45).set_delay(INTRO_COLLAPSE_SEC * 0.48)
+		collapse.tween_property(panel, "modulate:a", 1.0, HUD_CROSSFADE_SEC) \
+				.set_delay(HUD_CROSSFADE_DELAY_SEC)
+		collapse.tween_property(progress, "modulate:a", 1.0, HUD_PROGRESS_FADE_SEC) \
+				.set_delay(HUD_CROSSFADE_DELAY_SEC + HUD_PROGRESS_STAGGER_SEC)
 	await collapse.finished
 	if is_instance_valid(intro):
 		intro.queue_free()
@@ -328,12 +344,34 @@ func play_prepared_intro() -> void:
 	_intro_playing = false
 	if BattleContractManager.state == BattleContractManager.ACTIVE:
 		panel.modulate.a = 1.0
-		var hud_settle := panel.create_tween()
-		panel.pivot_offset = panel.size
-		hud_settle.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		hud_settle.tween_property(panel, "scale", Vector2.ONE, 0.15).from(Vector2(0.96, 0.96))
+		progress.modulate.a = 1.0
+		panel.scale = Vector2.ONE
 	elif _boss_intro and PhaseManager.current_state() == PhaseManager.BATTLE:
 		_show_boss_hud()
+
+func _capture_stack_sibling_positions() -> Dictionary:
+	var positions := {}
+	if panel == null or panel.get_parent() == null:
+		return positions
+	for sibling in panel.get_parent().get_children():
+		var control := sibling as Control
+		if control == null or control == panel or not control.visible:
+			continue
+		positions[control.get_instance_id()] = control.get_global_position()
+	return positions
+
+func _animate_stack_sibling_reflow(previous_positions: Dictionary) -> void:
+	if panel == null or panel.get_parent() == null:
+		return
+	for sibling in panel.get_parent().get_children():
+		var control := sibling as Control
+		if control == null or not control.visible:
+			continue
+		var instance_id := control.get_instance_id()
+		if not previous_positions.has(instance_id):
+			continue
+		if control.has_method("animate_stack_reflow_from"):
+			control.call("animate_stack_reflow_from", previous_positions[instance_id])
 
 func _build_contract_parameters(id: String, parameters: Dictionary) -> String:
 	var text := ""

@@ -1,6 +1,7 @@
 extends Button
 
 const BattleContractDefinition = preload("res://Combat/battle_contract/BattleContractDefinition.gd")
+const INTRO_DETAIL_FADE_MAX_SEC := 0.14
 
 var definition: BattleContractDefinition
 var _accent_color := Color(0.45, 0.65, 0.85)
@@ -68,7 +69,10 @@ func begin_intro_collapse(duration_sec: float) -> void:
 	## Fade secondary copy before the card becomes the compact objective HUD. Keeping
 	## the title/header readable preserves the visual identity during the hand-off.
 	clip_contents = true
-	var fade_duration := maxf(duration_sec * 0.46, 0.08)
+	var fade_duration := minf(
+		INTRO_DETAIL_FADE_MAX_SEC,
+		maxf(duration_sec, 0.08)
+	)
 	var tween := create_tween().set_parallel(true)
 	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.tween_property($Margin/Content/IntroContent/Objective, "modulate:a", 0.0, fade_duration)

@@ -22,6 +22,10 @@ var knock_back = {
 }
 var damage_is_final: bool = false
 var suppress_reactive_effects: bool = false
+var damage_kind: StringName = DamageData.KIND_DIRECT
+var invulnerability_policy: StringName = DamageData.INVULN_RESPECT
+var triggers_invulnerability: bool = true
+var arbitration_group: StringName = StringName()
 # Stable for every application derived from the same DamageData event.
 var feedback_batch_id: int = 0
 

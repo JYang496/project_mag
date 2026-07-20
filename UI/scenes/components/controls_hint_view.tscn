@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://UI/scripts/components/controls_hint_view.gd" id="1_script"]
 
 [node name="ControlsHintPanel" type="PanelContainer"]
-custom_minimum_size = Vector2(360, 40)
+custom_minimum_size = Vector2(252, 40)
 mouse_filter = 2
 z_index = 35
 script = ExtResource("1_script")

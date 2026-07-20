@@ -2,6 +2,11 @@ extends RefCounted
 class_name DamageData
 
 const SOURCE_PLAYER_WEAPON := &"player_weapon"
+const KIND_DIRECT := &"direct"
+const KIND_PERIODIC := &"periodic"
+const KIND_ENVIRONMENT := &"environment"
+const INVULN_RESPECT := &"respect"
+const INVULN_BYPASS := &"bypass"
 
 var amount: int = 0
 var damage_type: StringName = Attack.TYPE_PHYSICAL
@@ -19,6 +24,10 @@ var dedupe_token: StringName = StringName()
 var dedupe_window_sec: float = 0.0
 var damage_is_final: bool = false
 var suppress_reactive_effects: bool = false
+var damage_kind: StringName = KIND_DIRECT
+var invulnerability_policy: StringName = INVULN_RESPECT
+var triggers_invulnerability: bool = true
+var arbitration_group: StringName = StringName()
 
 
 func setup(
@@ -45,6 +54,13 @@ func has_valid_player_weapon_context() -> bool:
 	return delivery_type != StringName()
 
 
+func configure_periodic_damage() -> DamageData:
+	damage_kind = KIND_PERIODIC
+	invulnerability_policy = INVULN_BYPASS
+	triggers_invulnerability = false
+	return self
+
+
 func to_attack() -> Attack:
 	var attack := Attack.new()
 	attack.damage = amount
@@ -54,6 +70,10 @@ func to_attack() -> Attack:
 	attack.source_player = source_player
 	attack.damage_is_final = damage_is_final
 	attack.suppress_reactive_effects = suppress_reactive_effects
+	attack.damage_kind = damage_kind
+	attack.invulnerability_policy = invulnerability_policy
+	attack.triggers_invulnerability = triggers_invulnerability
+	attack.arbitration_group = arbitration_group
 	attack.feedback_batch_id = int(get_instance_id())
 	return attack
 

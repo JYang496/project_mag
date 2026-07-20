@@ -21,6 +21,10 @@ const QUEST_OUTLINE_SHADER: Shader = preload("res://Shaders/quest_outline.gdshad
 @export_group("")
 @export_group("Crowd Motion")
 @export_range(0.0, 30.0, 0.5) var crowd_lateral_speed: float = 6.0
+@export_range(0.0, 96.0, 1.0) var separation_radius: float = 48.0
+@export_range(0.0, 80.0, 1.0) var separation_speed: float = 36.0
+@export_range(1, 24, 1) var separation_max_neighbors: int = 12
+@export_range(0.02, 0.2, 0.01) var separation_update_interval: float = 0.05
 @export_group("AI Distance LOD")
 @export var ai_near_distance: float = 900.0
 @export var ai_mid_distance: float = 1800.0
@@ -114,8 +118,9 @@ func erase() -> void:
 
 func _on_enable_collision_timer_timeout() -> void:
 	self.set_collision_mask_value(6,true)
-	# Enemy CharacterBody2D instances never solve contacts against each other.
-	# Player contact damage is resolved centrally by Player against EnemyRegistry.
+	# Enemy bodies pass through both players and other enemies. Player contact
+	# damage is resolved centrally from HurtBox overlaps.
+	self.set_collision_mask_value(1,false)
 	self.set_collision_mask_value(3,false)
 
 func register_hybrid_support_visuals() -> void:

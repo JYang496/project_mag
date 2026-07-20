@@ -43,10 +43,12 @@ func _run() -> void:
 		get_tree().quit(1)
 		return
 	PlayerData.player = null
-	print("PASS: enemy CharacterBody mask 3 remains disabled while terrain mask 6 enables across spawn, knockback, and elite dash states")
+	print("PASS: enemy bodies pass through players and enemies while retaining terrain collision across spawn, knockback, and elite dash states")
 	get_tree().quit(0)
 
 func _check_policy(enemy: BaseEnemy, label: String) -> void:
+	if enemy.get_collision_mask_value(1):
+		_fail("%s enabled player CharacterBody mask 1" % label)
 	if enemy.get_collision_mask_value(3):
 		_fail("%s enabled enemy CharacterBody mask 3" % label)
 	if enemy.enable_collision_timer.is_stopped() and not enemy.get_collision_mask_value(6):

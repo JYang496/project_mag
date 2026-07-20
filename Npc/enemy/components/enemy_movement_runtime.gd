@@ -6,9 +6,12 @@ var stun_end_msec := 0
 var slow_end_msec := 0
 var slow_multiplier: float = 1.0
 var last_desired_velocity := Vector2.ZERO
+var cached_separation := Vector2.ZERO
+var separation_time_left := 0.0
 
 func setup(source_enemy) -> void:
 	enemy = source_enemy
+	separation_time_left = float(source_enemy.get_instance_id() % 5) * 0.01
 
 func get_stun_remaining() -> float:
 	return maxf(float(stun_end_msec - Time.get_ticks_msec()) / 1000.0, 0.0)
@@ -48,11 +51,14 @@ func move_enemy(desired_velocity: Vector2, _delta: float) -> void:
 	last_desired_velocity = desired_velocity
 	var knockback_velocity: Vector2 = enemy.knockback.amount * enemy.knockback.angle
 	var crowd_drift := Vector2.ZERO
+	if desired_velocity.length_squared() > 0.01:
+		cached_separation = _get_cached_separation(maxf(_delta, 0.0))
+		crowd_drift += cached_separation * enemy.separation_speed
 	if desired_velocity.length_squared() > 0.01 and enemy.crowd_lateral_speed > 0.0:
 		var direction := desired_velocity.normalized()
 		var tangent := Vector2(-direction.y, direction.x)
 		var lateral_sign := -1.0 if enemy.get_instance_id() % 2 == 0 else 1.0
-		crowd_drift = tangent * lateral_sign * enemy.crowd_lateral_speed
+		crowd_drift += tangent * lateral_sign * enemy.crowd_lateral_speed
 	enemy.velocity = desired_velocity + crowd_drift + knockback_velocity
 	if enemy.velocity.length_squared() <= 0.0001:
 		return
@@ -61,6 +67,10 @@ func move_enemy(desired_velocity: Vector2, _delta: float) -> void:
 		enemy.global_position += enemy.velocity * maxf(_delta, 0.0)
 	else:
 		enemy.move_and_slide()
+	var registry := _get_registry()
+	if registry != null and registry.has_method("can_accept_position") and not registry.call("can_accept_position", enemy.global_position, enemy):
+		enemy.global_position = previous_position
+		enemy.velocity = Vector2.ZERO
 	if enemy.global_position != previous_position:
 		_sync_spatial_position()
 
@@ -68,9 +78,28 @@ func continue_cached_movement(delta: float) -> void:
 	move_enemy(last_desired_velocity, delta)
 
 func _sync_spatial_position() -> void:
-	var tree: SceneTree = enemy.get_tree()
-	if tree == null:
-		return
-	var registry := tree.root.get_node_or_null("EnemyRegistry")
+	var registry := _get_registry()
 	if registry != null and registry.has_method("update_enemy_position"):
 		registry.call("update_enemy_position", enemy)
+
+func _get_cached_separation(delta: float) -> Vector2:
+	separation_time_left -= delta
+	if separation_time_left > 0.0:
+		return cached_separation
+	var interval := maxf(enemy.separation_update_interval, 0.02)
+	if enemy.uses_simplified_far_movement():
+		interval = maxf(interval, 0.1)
+	separation_time_left = interval
+	var registry := _get_registry()
+	if registry == null or not registry.has_method("get_separation_vector"):
+		return Vector2.ZERO
+	return registry.call(
+		"get_separation_vector",
+		enemy,
+		enemy.separation_radius,
+		enemy.separation_max_neighbors
+	) as Vector2
+
+func _get_registry() -> Node:
+	var tree: SceneTree = enemy.get_tree()
+	return tree.root.get_node_or_null("EnemyRegistry") if tree != null else null

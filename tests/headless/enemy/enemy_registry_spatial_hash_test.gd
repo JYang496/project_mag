@@ -43,6 +43,8 @@ func _run() -> void:
 
 	_test_candidate_locality()
 	print("EnemyRegistry spatial hash test: locality complete")
+	_test_separation_and_capacity()
+	print("EnemyRegistry spatial hash test: separation and capacity complete")
 	var freed: Node2D = _created.pop_back() as Node2D
 	var freed_id: int = freed.get_instance_id()
 	freed.queue_free()
@@ -60,7 +62,7 @@ func _run() -> void:
 		push_error("FAIL: EnemyRegistry spatial hash regression")
 		get_tree().quit(1)
 		return
-	print("PASS: EnemyRegistry spatial hash matches brute-force radius/rect semantics, tracks movement and cleanup, and candidate checks depend on local density")
+	print("PASS: EnemyRegistry spatial hash matches query semantics, provides bounded separation, caps bucket occupancy, and tracks movement and cleanup")
 	get_tree().quit(0)
 
 func _test_candidate_locality() -> void:
@@ -78,6 +80,24 @@ func _test_candidate_locality() -> void:
 	var global_checks := int(EnemyRegistry.get_query_metrics().get("candidate_checks", -1))
 	if local_checks != 12 or global_checks != local_checks:
 		_fail("candidate checks scaled with global count: local=%d after_far=%d" % [local_checks, global_checks])
+
+func _test_separation_and_capacity() -> void:
+	_cleanup_created()
+	var requester := _create_enemy(Vector2(32.0, 32.0))
+	_create_enemy(Vector2(42.0, 32.0))
+	_create_enemy(Vector2(32.0, 42.0))
+	var separation := EnemyRegistry.get_separation_vector(requester, 48.0, 12)
+	if separation.x >= 0.0 or separation.y >= 0.0 or separation.length() > 1.0001:
+		_fail("unexpected separation vector: %s" % separation)
+	_cleanup_created()
+	var capacity := int(EnemyRegistry.get_spatial_debug_snapshot().get("bucket_capacity", -1))
+	for index in range(capacity + 9):
+		_create_enemy(Vector2(16.0 + float(index % 3), 16.0))
+	var snapshot := EnemyRegistry.get_spatial_debug_snapshot()
+	if int(snapshot.get("max_bucket_occupancy", capacity + 1)) > capacity:
+		_fail("bucket capacity exceeded: %s" % snapshot)
+	if int(snapshot.get("enemy_count", -1)) != capacity + 9:
+		_fail("capacity relocation lost enemies: %s" % snapshot)
 
 func _compare_radius(origin: Vector2, radius: float, excluded: Node, label: String) -> void:
 	var expected: Array[int] = []

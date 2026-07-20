@@ -14,12 +14,25 @@ const ENERGY_EXECUTE_DAMAGE_MULT: float = 1.2
 
 func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile, is_periodic: bool = false) -> DamageResult:
 	var result := DamageResult.new()
-	result.is_periodic = is_periodic
+	var periodic := is_periodic or (attack != null and attack.damage_kind == DamageData.KIND_PERIODIC)
+	result.is_periodic = periodic
+	result.damage_kind = DamageData.KIND_PERIODIC if periodic else (attack.damage_kind if attack != null else DamageData.KIND_DIRECT)
 	if target == null or not is_instance_valid(target) or attack == null or profile == null:
+		result.rejection_reason = DamageResult.REASON_INVALID
 		return result
 
 	if profile.read_is_dead():
+		result.rejection_reason = DamageResult.REASON_DEAD
 		return result
+	var bypasses_invuln := attack.invulnerability_policy == DamageData.INVULN_BYPASS
+	# Legacy periodic callers inherit the profile's DOT policy until all producers
+	# carry explicit event semantics.
+	if periodic and profile.dot_bypasses_invuln:
+		bypasses_invuln = true
+	if profile.use_invuln and not bypasses_invuln and profile.read_is_invulnerable():
+		result.rejection_reason = DamageResult.REASON_INVULNERABLE
+		return result
+	result.accepted = true
 
 	var normalized_type := Attack.normalize_damage_type(attack.damage_type)
 	var state := _get_or_create_state(target, profile)
@@ -40,6 +53,7 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 	if _has_energy_damage_breakpoint(state, hp):
 		incoming_damage = max(1, int(round(float(incoming_damage) * ENERGY_EXECUTE_DAMAGE_MULT)))
 	if incoming_damage <= 0:
+		result.rejection_reason = DamageResult.REASON_ZERO_DAMAGE
 		_save_state(target, state)
 		return result
 
@@ -57,7 +71,7 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 		profile.call_on_death(attack)
 		return result
 
-	if not is_periodic and not attack.suppress_reactive_effects:
+	if not periodic and not attack.suppress_reactive_effects:
 		match normalized_type:
 			Attack.TYPE_FIRE:
 				if not bool(state.get("processing_scorch_dot", false)):
@@ -67,7 +81,7 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 			Attack.TYPE_ENERGY:
 				_record_energy_damage_on_hit(state, incoming_damage)
 
-	if profile.use_invuln and not (is_periodic and profile.dot_bypasses_invuln):
+	if profile.use_invuln and attack.triggers_invulnerability and not bypasses_invuln:
 		profile.call_trigger_invuln()
 		result.triggered_invuln = true
 
@@ -92,6 +106,9 @@ func process_periodic_effects(target: Node, profile: DamageProfile, delta_sec: f
 			var dot_attack := Attack.new()
 			dot_attack.damage = dot_damage
 			dot_attack.damage_type = Attack.TYPE_FIRE
+			dot_attack.damage_kind = DamageData.KIND_PERIODIC
+			dot_attack.invulnerability_policy = DamageData.INVULN_BYPASS
+			dot_attack.triggers_invulnerability = false
 			var scorch_source_node: Variant = state.get("scorch_source_node", null)
 			if scorch_source_node != null and is_instance_valid(scorch_source_node):
 				dot_attack.source_node = scorch_source_node as Node
@@ -123,6 +140,14 @@ func has_active_effects(target: Node) -> bool:
 	var state: Dictionary = target.get_meta(DAMAGE_STATE_META, {})
 	return int(state.get("scorch_stacks", 0)) > 0 \
 		or int(state.get("frost_stacks", 0)) > 0
+
+func clear_periodic_effects(target: Node, profile: DamageProfile = null) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if profile != null:
+		profile.call_clear_frost_slow()
+	if target.has_meta(DAMAGE_STATE_META):
+		target.remove_meta(DAMAGE_STATE_META)
 
 func _read_target_source_damage_taken_multiplier(target: Node, attack: Attack) -> float:
 	if target == null or not is_instance_valid(target):

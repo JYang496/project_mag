@@ -5,7 +5,7 @@ class_name Damageable
 @export var damage_target: Node
 
 
-func apply_damage_data(data: DamageData) -> bool:
+func apply_damage_data(data: DamageData) -> Variant:
 	if data == null:
 		return false
 	var target := damage_target
@@ -17,5 +17,7 @@ func apply_damage_data(data: DamageData) -> bool:
 		return false
 	if not target.has_method("damaged"):
 		return false
-	target.damaged(data.to_attack())
+	var result: Variant = target.damaged(data.to_attack())
+	if result is DamageResult:
+		return result
 	return true

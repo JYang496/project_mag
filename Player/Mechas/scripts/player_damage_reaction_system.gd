@@ -7,18 +7,21 @@ var _elite_hit_slow_until_msec: int = 0
 func setup(player) -> void:
 	_player = player
 
-func damaged(attack: Attack) -> void:
+func damaged(attack: Attack) -> DamageResult:
+	var rejected := DamageResult.new()
+	rejected.rejection_reason = DamageResult.REASON_INVALID
 	if _player == null or not is_instance_valid(_player):
-		return
+		return rejected
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
-		return
+		rejected.rejection_reason = DamageResult.REASON_DEAD
+		return rejected
 	if _player._incoming_damage_pipeline == null:
 		_player._incoming_damage_pipeline = DamagePipeline.new() as DamagePipeline
 	if _player._incoming_damage_profile == null:
 		_player._setup_incoming_damage_profile()
 	var result: DamageResult = _player._incoming_damage_pipeline.apply_incoming_damage(_player, attack, _player._incoming_damage_profile)
 	if not result.applied:
-		return
+		return result
 	if _player.has_method("_broadcast_weapon_passive_event"):
 		_player.call("_broadcast_weapon_passive_event", &"on_player_damaged", {
 			"attack": attack,
@@ -30,8 +33,9 @@ func damaged(attack: Attack) -> void:
 		_player.PlayerData.player_hp = 1
 	if _player.PlayerData.player_hp <= 0:
 		PhaseManager.enter_gameover()
-		return
+		return result
 	print(_player, _player.PlayerData.player_hp)
+	return result
 
 func apply_elite_hit_slow_if_needed(attack: Attack) -> void:
 	_apply_elite_hit_slow_if_needed(attack)
