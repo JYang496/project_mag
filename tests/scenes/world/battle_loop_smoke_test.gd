@@ -3,6 +3,7 @@ extends Node
 const FakeUI = preload("res://tests/fixtures/world/fake_battle_loop_ui.gd")
 const FakePort = preload("res://tests/fixtures/world/fake_battle_loop_port.gd")
 const FakeOwner = preload("res://tests/fixtures/world/fake_rest_area_route_owner.gd")
+const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _failures: PackedStringArray = []
 var _ui: Node
@@ -97,16 +98,17 @@ func _expect(condition: bool, message: String) -> void:
 		_failures.append(message)
 
 func _finish() -> void:
-	BattleContractManager.unbind_combat_port()
-	_reset_runtime_state()
-	SaveManager.clear_run()
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var exit_code := 0
 	if _failures.is_empty():
 		printerr("PASS world.battle_loop_smoke")
-		get_tree().quit(0)
-		return
-	for failure in _failures:
-		push_error(failure)
-	printerr("FAIL world.battle_loop_smoke")
-	get_tree().quit(1)
+	else:
+		exit_code = 1
+		for failure in _failures:
+			push_error(failure)
+		printerr("FAIL world.battle_loop_smoke")
+	SaveManager.clear_run()
+	await TEST_TEARDOWN.finish(self, exit_code, _reset_runtime_state, [_ui, _port])
+	_ui = null
+	_port = null
+	_owner = null
+	_reward_manager = null

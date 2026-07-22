@@ -47,5 +47,6 @@ disabled = true
 
 [node name="Snd_collected" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("3_xwqkn")
+bus = &"SFX"
 
 [connection signal="finished" from="Snd_collected" to="." method="_on_snd_collected_finished"]

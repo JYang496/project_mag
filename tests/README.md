@@ -35,6 +35,27 @@ stop_project()
 
 Read the debug output before calling a run successful. Check for explicit `PASS`, `FAIL`, `ERROR`, or assertion logs; do not trust startup alone.
 
+## Unified teardown
+
+Tests that instantiate runtime scenes, detached nodes, UI, timers, tweens, audio,
+or pooled objects must exit through
+`res://tests/infrastructure/test_teardown.gd` instead of calling
+`get_tree().quit()` directly. Pass a domain-specific reset callback and list any
+nodes created outside the test scene tree:
+
+```gdscript
+const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
+
+func _finish(exit_code: int) -> void:
+	await TEST_TEARDOWN.finish(self, exit_code, _reset_runtime_state, [_detached_ui])
+	_detached_ui = null
+```
+
+The helper unbinds combat signals, clears global references and `ObjectPool`,
+stops transient tweens/audio, frees scene and orphan nodes, waits for deferred
+cleanup, and only then exits. A successful Worker run must report
+`SHUTDOWN_DIAGNOSTICS=0`.
+
 Use scene-backed tests as the MCP entrypoint when active tests exist:
 
 ```text

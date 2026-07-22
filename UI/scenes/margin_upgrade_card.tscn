@@ -39,7 +39,7 @@ offset_left = 10.0
 offset_top = 134.0
 offset_right = 270.0
 offset_bottom = 186.0
-text = "Item name"
+text = "No weapon selected"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -56,7 +56,7 @@ offset_left = 10.0
 offset_top = 360.0
 offset_right = 266.0
 offset_bottom = 383.0
-text = "Cost"
+text = "Cost: —"
 horizontal_alignment = 1
 vertical_alignment = 1
 

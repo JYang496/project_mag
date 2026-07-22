@@ -2,6 +2,7 @@ extends Node
 
 const HybridView := preload("res://Visual/Oblique/hybrid_ground_view_3d.gd")
 const BaseEnemyScene := preload("res://Npc/enemy/scenes/base_enemy.tscn")
+const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 const ENEMY_SCENES: PackedStringArray = [
 	"res://Npc/enemy/scenes/base_enemy.tscn",
@@ -44,10 +45,10 @@ func _ready() -> void:
 	PlayerData.player = null
 	if _failed:
 		print("FAIL hybrid enemy visual matrix")
-		get_tree().quit(1)
 	else:
 		print("PASS hybrid enemy visual matrix (%d scenes)" % ENEMY_SCENES.size())
-		get_tree().quit(0)
+	await TEST_TEARDOWN.finish(self, 1 if _failed else 0, PlayerData.reset_runtime_state)
+	_view = null
 
 func _validate_warning_layer_contract() -> void:
 	var warning := TargetWarning.new()

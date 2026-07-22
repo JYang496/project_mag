@@ -14,7 +14,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="MagArena"
+config/name="Protocol: Mag Arena"
 run/main_scene="uid://dwxulua8fpqd0"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
@@ -36,6 +36,7 @@ RewardDraftRuntime="*res://autoload/RewardDraftRuntime.gd"
 CellEffectRuntime="*res://autoload/CellEffectRuntime.gd"
 CellTaskModuleRuntime="*res://autoload/CellTaskModuleRuntime.gd"
 DisplaySettings="*res://autoload/DisplaySettings.gd"
+AudioSettings="*res://autoload/AudioSettings.gd"
 PlayerAssistSettings="*res://autoload/PlayerAssistSettings.gd"
 ObjectPool="*res://autoload/ObjectPool.gd"
 TimeImpactController="*res://autoload/TimeImpactController.gd"

@@ -27,7 +27,7 @@ offset_left = 13.0
 offset_top = 45.0
 offset_right = 110.0
 offset_bottom = 68.0
-text = "====="
+text = "Empty Module Slot"
 
 [connection signal="gui_input" from="Background" to="." method="_on_background_gui_input"]
 [connection signal="mouse_entered" from="Background" to="." method="_on_background_mouse_entered"]

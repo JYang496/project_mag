@@ -2,6 +2,7 @@ extends Node
 
 const UI_SCENE := preload("res://UI/scenes/UI.tscn")
 const PLAYER_SCENE := preload("res://Player/Mechas/scenes/Player.tscn")
+const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _failures: PackedStringArray = []
 var _ui: UI
@@ -69,12 +70,14 @@ func _expect(condition: bool, message: String) -> void:
 		_failures.append(message)
 
 func _finish() -> void:
-	_reset_runtime_state()
+	var exit_code := 0
 	if _failures.is_empty():
 		printerr("PASS reward fuse branch selection")
-		get_tree().quit(0)
-		return
-	for failure in _failures:
-		push_error(failure)
-	printerr("FAIL reward fuse branch selection")
-	get_tree().quit(1)
+	else:
+		exit_code = 1
+		for failure in _failures:
+			push_error(failure)
+		printerr("FAIL reward fuse branch selection")
+	await TEST_TEARDOWN.finish(self, exit_code, _reset_runtime_state)
+	_ui = null
+	_player = null

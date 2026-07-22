@@ -94,7 +94,7 @@ battle_contract.reward.experience,experience,经验
 ui.passive.next_radial_volley,Next volley: {count},下次环射：{count}根
 ui.language.en,English,English
 ui.language.zh_cn,Simplified Chinese,简体中文
-ui.start.title,Project Mag Title,Project Mag 标题
+ui.start.title,Protocol: Mag Arena,协议：磁核竞技场
 ui.start.continue,Continue Game,继续游戏
 ui.start.start_game,Start Game,开始游戏
 ui.start.new_game,New Game,全新游戏
@@ -144,6 +144,9 @@ ui.panel.inventory,Inventory,背包
 ui.panel.pause,Paused,已暂停
 ui.panel.resume,Resume,继续
 ui.settings.language,Language,语言
+ui.settings.volume.master,Master Volume,主音量
+ui.settings.volume.sfx,SFX Volume,音效音量
+ui.settings.volume.music,Music Volume,音乐音量
 ui.settings.confirm_temporary_module_sale,Confirm temporary module sale before battle,开始战斗前确认临时模组出售
 ui.settings.auto_aim_continuous_fire,Auto aim continuous fire,自动瞄准持续开火
 ui.settings.auto_reload_switch,Auto reload and switch weapon,空弹自动换弹切枪

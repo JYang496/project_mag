@@ -12,6 +12,7 @@ const BeamScene := preload("res://Player/Weapons/Projectiles/beam.tscn")
 const BeamBlastScene := preload("res://Player/Weapons/Projectiles/beam_blast.tscn")
 const ConeSprayScene := preload("res://Player/Weapons/Effects/cone_spray_vfx.tscn")
 const DashBladeScene := preload("res://Player/Weapons/Instances/dash_blade.tscn")
+const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 func _ready() -> void:
 	var failed := false
@@ -95,10 +96,9 @@ func _ready() -> void:
 	failed = _validate_all_projectile_scenes() or failed
 	if failed:
 		print("FAIL hybrid weapon chain")
-		get_tree().quit(1)
 	else:
 		print("PASS hybrid weapon chain")
-		get_tree().quit(0)
+	await TEST_TEARDOWN.finish(self, 1 if failed else 0)
 
 func _check(condition: bool, message: String) -> bool:
 	if condition:

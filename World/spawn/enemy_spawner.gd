@@ -8,8 +8,8 @@ signal spawn_budget_stopped
 signal combat_frame(delta_sec: float)
 
 @onready var timer = $Timer
-@export var debug_print_spawn_stats := true
-@export var debug_print_kill_gold_stats := true
+@export var debug_print_spawn_stats := false
+@export var debug_print_kill_gold_stats := false
 @export var debug_print_kill_gold_drop_stats := false
 @export var min_spawn_distance_from_player: float = 180.0
 @export var spawn_point_attempts_per_enemy: int = 12
@@ -23,6 +23,7 @@ const SPAWN_POINT_PICKER_SCRIPT := preload("res://World/spawn/spawn_point_picker
 const SPAWN_BUDGET_RUNTIME_SCRIPT := preload("res://World/spawn/spawn_budget_runtime.gd")
 const KILL_GOLD_BUDGET_RUNTIME_SCRIPT := preload("res://World/spawn/kill_gold_budget_runtime.gd")
 const BATTLE_CONTRACT_COMBAT_BRIDGE_SCRIPT := preload("res://Combat/battle_contract/BattleContractCombatBridge.gd")
+const RUNTIME_DIAGNOSTICS_SCRIPT := preload("res://autoload/RuntimeDiagnostics.gd")
 const REWARD_ENEMY_SCENE := preload("res://Npc/enemy/scenes/reward_enemy.tscn")
 
 var instance_list : Array
@@ -180,8 +181,8 @@ func _sync_kill_gold_budget_config() -> void:
 	if _kill_gold_budget_runtime == null:
 		return
 	_kill_gold_budget_runtime.configure(
-		debug_print_kill_gold_stats,
-		debug_print_kill_gold_drop_stats
+		debug_print_kill_gold_stats or RUNTIME_DIAGNOSTICS_SCRIPT.verbose_logs_enabled(),
+		debug_print_kill_gold_drop_stats or RUNTIME_DIAGNOSTICS_SCRIPT.verbose_logs_enabled()
 	)
 	_kill_gold_budget_runtime.configure_target_multipliers(_contract_reward_hp_multiplier, _contract_reward_multiplier * _contract_kill_gold_multiplier)
 
@@ -1231,7 +1232,7 @@ func get_effective_time_out(base_time_out: int, level_index: int) -> int:
 	return safe_base
 
 func _debug_log_spawned_enemy(enemy_instance) -> void:
-	if not debug_print_spawn_stats:
+	if not debug_print_spawn_stats and not RUNTIME_DIAGNOSTICS_SCRIPT.verbose_logs_enabled():
 		return
 	if enemy_instance is BaseEnemy:
 		var base_enemy := enemy_instance as BaseEnemy

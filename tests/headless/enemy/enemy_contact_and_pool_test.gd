@@ -2,6 +2,7 @@ extends Node
 
 const PlayerScene := preload("res://Player/Mechas/scenes/Player.tscn")
 const EnemyScene := preload("res://Npc/enemy/scenes/enemy_rolling_ball.tscn")
+const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _failed := false
 
@@ -63,10 +64,9 @@ func _run() -> void:
 	PlayerData.player_hp = previous_hp
 	if _failed:
 		push_error("FAIL: centralized contact and object pool")
-		get_tree().quit(1)
-		return
-	print("PASS: centralized enemy contact and reusable object pool")
-	get_tree().quit(0)
+	else:
+		print("PASS: centralized enemy contact and reusable object pool")
+	await TEST_TEARDOWN.finish(self, 1 if _failed else 0)
 
 func _expect(condition: bool, message: String) -> void:
 	if not condition:

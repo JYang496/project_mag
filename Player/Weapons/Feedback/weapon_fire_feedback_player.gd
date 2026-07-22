@@ -251,7 +251,7 @@ func _play_audio_stream(
 	player.pitch_scale = maxf(pitch_scale + randf_range(-absf(pitch_random), absf(pitch_random)), 0.05)
 	player.max_distance = maxf(max_distance, 1.0)
 	player.attenuation = maxf(attenuation, 0.0)
-	player.bus = "Master"
+	player.bus = "SFX"
 	tree.root.add_child(player)
 	player.finished.connect(Callable(player, "queue_free"))
 	player.play()

@@ -85,6 +85,7 @@ func bind(root: Control, overlay_root: Control = null) -> void:
 	if root is Container:
 		root.move_child(panel, 0)
 	audio = AudioStreamPlayer.new()
+	audio.bus = &"SFX"
 	var stream := AudioStreamGenerator.new()
 	stream.mix_rate = 22050.0
 	stream.buffer_length = 0.2

@@ -7,6 +7,7 @@ const PISTOL_BRANCH := "arc_coil"
 const MODULE_SCENE := preload("res://Player/Weapons/Modules/wmod_vampiric_surge.tscn")
 const ELIMINATION := preload("res://data/battle_contracts/elimination.tres")
 const SURVIVAL := preload("res://data/battle_contracts/survival.tres")
+const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var failures: PackedStringArray = []
 var player: Player
@@ -164,11 +165,13 @@ func _expect(condition: bool, message: String) -> void:
 		failures.append(message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("PASS %s" % TEST_ID)
-		get_tree().quit(0)
-		return
-	for failure in failures:
-		push_error(failure)
-	print("FAIL %s" % TEST_ID)
-	get_tree().quit(1)
+	else:
+		exit_code = 1
+		for failure in failures:
+			push_error(failure)
+		print("FAIL %s" % TEST_ID)
+	await TEST_TEARDOWN.finish(self, exit_code, _cleanup.bind(true))
+	player = null

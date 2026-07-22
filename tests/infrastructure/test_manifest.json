@@ -4,6 +4,26 @@
   "catalog_note": "Active regression coverage has been reintroduced for focused reward/UI flows. Historical assets remain under tests/archive/retired_test_assets_20260702.",
   "tests": [
     {
+      "id": "ui.player_facing_copy",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/player_facing_copy_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["world", "player"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "ui.audio_settings",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/audio_settings_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["world", "weapon", "spawn"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 20
+    },
+    {
       "id": "ui.controls_hint_adaptive",
       "entry_type": "scene",
       "path": "res://tests/scenes/ui/controls_hint_adaptive_test.tscn",

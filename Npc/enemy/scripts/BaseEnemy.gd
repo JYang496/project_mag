@@ -85,6 +85,8 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	_disconnect_board_constraint_signals()
+	if damage_feedback != null:
+		damage_feedback.shutdown()
 	HybridGroundRegistration.unregister(self)
 	var enemy_registry := get_node_or_null("/root/EnemyRegistry")
 	if enemy_registry != null and enemy_registry.has_method("unregister_enemy"):

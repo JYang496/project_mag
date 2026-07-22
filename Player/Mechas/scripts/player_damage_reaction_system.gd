@@ -34,7 +34,6 @@ func damaged(attack: Attack) -> DamageResult:
 	if _player.PlayerData.player_hp <= 0:
 		PhaseManager.enter_gameover()
 		return result
-	print(_player, _player.PlayerData.player_hp)
 	return result
 
 func apply_elite_hit_slow_if_needed(attack: Attack) -> void:

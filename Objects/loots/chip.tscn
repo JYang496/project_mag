@@ -19,5 +19,6 @@ scale = Vector2(0.75, 0.75)
 
 [node name="Snd_collected" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("3_686d1")
+bus = &"SFX"
 
 [connection signal="finished" from="Snd_collected" to="." method="_on_snd_collected_finished"]

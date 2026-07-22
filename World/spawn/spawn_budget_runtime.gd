@@ -1,6 +1,8 @@
 extends RefCounted
 class_name SpawnBudgetRuntime
 
+const RUNTIME_DIAGNOSTICS_SCRIPT := preload("res://autoload/RuntimeDiagnostics.gd")
+
 var combat_budget_active: bool = true
 var planned_target_total_hp: int = 0
 var spawned_total_hp: int = 0
@@ -49,7 +51,7 @@ func prepare_level_combat_budget(level_index: int, effective_time_out: int) -> v
 	budget_release_duration_sec = clampi(int(round(float(maxi(effective_time_out, 1)) * release_ratio)), 1, maxi(effective_time_out, 1))
 	pressure_budget_total = calculate_pressure_budget_total(budget_release_duration_sec)
 	combat_budget_active = true
-	if bool(budget_profile.get("enable_hp_per_sec_report")):
+	if bool(budget_profile.get("enable_hp_per_sec_report")) and RUNTIME_DIAGNOSTICS_SCRIPT.verbose_logs_enabled():
 		var target_hps := float(target_total_hp) / float(maxi(budget_release_duration_sec, 1))
 		print("[SpawnBudget] level=%d target_hp=%d target_hps=%.2f release_sec=%d timeout=%d pressure_sum=%.2f" % [
 			level_index,
@@ -103,6 +105,8 @@ func record_enemy_death_for_budget_summary(enemy_instance: Node, was_killed: boo
 	killed_total_hp += scaled_hp
 
 func print_spawn_budget_battle_summary(level_index: int, effective_time_out: int) -> void:
+	if not RUNTIME_DIAGNOSTICS_SCRIPT.verbose_logs_enabled():
+		return
 	if not is_combat_budget_ready():
 		return
 	if budget_summary_printed:

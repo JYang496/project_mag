@@ -1,6 +1,8 @@
 extends RefCounted
 class_name PauseUiController
 
+const AUDIO_SETTINGS_CONTROLS_SCRIPT := preload("res://UI/scripts/components/audio_settings_controls.gd")
+
 var owner_ui: UI
 var pause_menu_panel: Panel
 var resume_button: Button
@@ -11,6 +13,7 @@ var auto_aim_continuous_fire_toggle: CheckButton
 var auto_reload_switch_toggle: CheckButton
 var controls_hint_label: Label
 var controls_hint_option: OptionButton
+var audio_settings_controls: VBoxContainer
 
 func bind(ui: UI, panel: Panel, resume: Button) -> void:
 	owner_ui = ui
@@ -25,6 +28,9 @@ func ensure_language_controls() -> void:
 		pause_label.text = LocalizationManager.tr_key("ui.panel.pause", "Paused")
 	if resume_button:
 		resume_button.text = LocalizationManager.tr_key("ui.panel.resume", "Resume")
+		resume_button.position = Vector2(140.0, 548.0)
+		resume_button.size = Vector2(120.0, 36.0)
+	_ensure_audio_settings_controls()
 	var existing_label := pause_menu_panel.get_node_or_null("LanguageLabel")
 	if existing_label is Label:
 		pause_language_label = existing_label as Label
@@ -80,6 +86,9 @@ func refresh_texts() -> void:
 	refresh_language_options()
 
 func refresh_language_options() -> void:
+	if audio_settings_controls:
+		audio_settings_controls.call("refresh_texts")
+		audio_settings_controls.call("refresh_values")
 	if pause_language_label:
 		pause_language_label.text = LocalizationManager.tr_key("ui.settings.language", "Language")
 		pause_language_label.position = Vector2(72.0, 324.0)
@@ -199,6 +208,17 @@ func _ensure_assist_toggle(node_name: String, callback: Callable) -> CheckButton
 	if not toggle.toggled.is_connected(callback):
 		toggle.toggled.connect(callback)
 	return toggle
+
+func _ensure_audio_settings_controls() -> void:
+	var existing := pause_menu_panel.get_node_or_null("AudioSettingsControls")
+	if existing is VBoxContainer:
+		audio_settings_controls = existing as VBoxContainer
+	else:
+		audio_settings_controls = AUDIO_SETTINGS_CONTROLS_SCRIPT.new() as VBoxContainer
+		audio_settings_controls.name = "AudioSettingsControls"
+		pause_menu_panel.add_child(audio_settings_controls)
+	audio_settings_controls.position = Vector2(40.0, 176.0)
+	audio_settings_controls.size = Vector2(320.0, 132.0)
 
 func _is_temporary_module_confirmation_enabled() -> bool:
 	if owner_ui != null:

@@ -5,6 +5,7 @@ const PLAYER_SCENE := preload("res://Player/Mechas/scenes/Player.tscn")
 const REST_AREA_SCENE := preload("res://World/rest_area.tscn")
 const BOARD_GENERATOR_SCRIPT := preload("res://World/board_cell_generator.gd")
 const CELL_SCENE := preload("res://Board/Cells/cell.tscn")
+const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _failures: PackedStringArray = []
 var _ui: UI
@@ -106,12 +107,17 @@ func _expect(condition: bool, message: String) -> void:
 		_failures.append(message)
 
 func _finish() -> void:
-	_reset_runtime_state()
+	var exit_code := 0
 	if _failures.is_empty():
 		printerr("PASS post battle collect gate")
-		get_tree().quit(0)
-		return
-	for failure in _failures:
-		push_error(failure)
-	printerr("FAIL post battle collect gate")
-	get_tree().quit(1)
+	else:
+		exit_code = 1
+		for failure in _failures:
+			push_error(failure)
+		printerr("FAIL post battle collect gate")
+	await TEST_TEARDOWN.finish(self, exit_code, _reset_runtime_state)
+	_ui = null
+	_player = null
+	_reward_manager = null
+	_board = null
+	_rest_area = null

@@ -4,6 +4,7 @@ const PLAYER_SCENE := preload("res://Player/Mechas/scenes/Player.tscn")
 const MODULE_SCENE := preload("res://Player/Weapons/Modules/wmod_vampiric_surge.tscn")
 const PISTOL_ID := "5"
 const TASK_MODULE_ID := "task_clear_rare"
+const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _failures := PackedStringArray()
 var _player: Player
@@ -156,11 +157,13 @@ func _expect(condition: bool, message: String) -> void:
 		_failures.append(message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if _failures.is_empty():
 		print("PASS persistence runtime roundtrip")
-		get_tree().quit(0)
-		return
-	for failure in _failures:
-		push_error(failure)
-	print("FAIL persistence runtime roundtrip")
-	get_tree().quit(1)
+	else:
+		exit_code = 1
+		for failure in _failures:
+			push_error(failure)
+		print("FAIL persistence runtime roundtrip")
+	await TEST_TEARDOWN.finish(self, exit_code, _reset_runtime)
+	_player = null

@@ -2,7 +2,7 @@ extends RefCounted
 class_name KillGoldBudgetRuntime
 
 var owner: Node
-var debug_print_kill_gold_stats := true
+var debug_print_kill_gold_stats := false
 var debug_print_kill_gold_drop_stats := false
 var kill_gold_budget: int = 0
 var kill_gold_paid: int = 0

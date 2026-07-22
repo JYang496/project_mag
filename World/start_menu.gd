@@ -11,6 +11,7 @@ const WORLD_SCENE_PATH := "res://World/world.tscn"
 const WORLD_ENTRY_PREPARE_GATE_SCRIPT := preload("res://World/world_entry_prepare_gate.gd")
 const WORLD_SCENE_LOADER_SCRIPT := preload("res://World/world_scene_loader.gd")
 const MODAL_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/modal_ui_controller.gd")
+const AUDIO_SETTINGS_CONTROLS_SCRIPT := preload("res://UI/scripts/components/audio_settings_controls.gd")
 
 enum PrewarmState { NOT_STARTED, RUNNING, SUCCEEDED, FAILED }
 
@@ -30,6 +31,7 @@ var language_label: Label
 var language_option: OptionButton
 var auto_aim_continuous_fire_toggle: CheckButton
 var auto_reload_switch_toggle: CheckButton
+var audio_settings_controls: VBoxContainer
 var _start_hover_tween: Tween
 var prewarm_state := PrewarmState.NOT_STARTED
 var prewarm_error := ""
@@ -40,6 +42,7 @@ func _ready() -> void:
 	_set_full_rect(background)
 	_set_full_rect(margin_root)
 	_ensure_language_option()
+	_ensure_audio_settings_controls()
 	_ensure_assist_options()
 	_configure_visible_controls()
 	start_button.disabled = not SaveManager.has_run()
@@ -205,6 +208,18 @@ func _ensure_assist_options() -> void:
 		auto_reload_switch_toggle.toggled.connect(_on_auto_reload_switch_toggled)
 	auto_aim_continuous_fire_toggle.button_pressed = bool(PlayerAssistSettings.auto_aim_continuous_fire)
 	auto_reload_switch_toggle.button_pressed = bool(PlayerAssistSettings.auto_reload_switch)
+
+func _ensure_audio_settings_controls() -> void:
+	var existing := menu_vbox.get_node_or_null("AudioSettingsControls")
+	if existing is VBoxContainer:
+		audio_settings_controls = existing as VBoxContainer
+	else:
+		audio_settings_controls = AUDIO_SETTINGS_CONTROLS_SCRIPT.new() as VBoxContainer
+		audio_settings_controls.name = "AudioSettingsControls"
+		menu_vbox.add_child(audio_settings_controls)
+	var language_option_index := language_option.get_index() if language_option != null else -1
+	if language_option_index >= 0:
+		menu_vbox.move_child(audio_settings_controls, language_option_index + 1)
 
 func _ensure_assist_toggle(node_name: String) -> CheckButton:
 	var existing := menu_vbox.get_node_or_null(node_name)

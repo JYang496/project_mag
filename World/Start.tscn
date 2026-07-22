@@ -82,7 +82,7 @@ theme_override_constants/separation = 22
 [node name="Title" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer" unique_id=525450202]
 layout_mode = 2
 theme_override_font_sizes/font_size = 52
-text = "Project MAG"
+text = "Protocol: Mag Arena"
 horizontal_alignment = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer" unique_id=1290966749]
@@ -131,7 +131,7 @@ layout_mode = 2
 [node name="CharTitile" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas" unique_id=971456419]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
-text = "Mechas"
+text = "Mecha"
 horizontal_alignment = 1
 
 [node name="IconContainer" type="HBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas" unique_id=884047136]
@@ -165,7 +165,7 @@ offset_top = 5.0
 offset_right = 369.0
 offset_bottom = 37.0
 theme_override_font_sizes/font_size = 23
-text = "name : value"
+text = "Name: —"
 horizontal_alignment = 1
 
 [node name="current_exp" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=778456083]
@@ -175,7 +175,7 @@ offset_top = 40.0
 offset_right = 257.0
 offset_bottom = 72.0
 theme_override_font_sizes/font_size = 23
-text = "current_exp : value"
+text = "Experience: —"
 
 [node name="current_level" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=1852031395]
 layout_mode = 0
@@ -184,7 +184,7 @@ offset_top = 40.0
 offset_right = 499.0
 offset_bottom = 72.0
 theme_override_font_sizes/font_size = 23
-text = "current_level : value"
+text = "Level: —"
 horizontal_alignment = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=1734837354]
@@ -198,25 +198,25 @@ alignment = 2
 [node name="player_max_hp" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=408731963]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
-text = "player_max_hp : value"
+text = "Max HP: —"
 horizontal_alignment = 1
 
 [node name="player_speed" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=512407014]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
-text = "player_speed : value"
+text = "Move Speed: —"
 horizontal_alignment = 1
 
 [node name="armor" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=367872730]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
-text = "armor : value"
+text = "Armor: —"
 horizontal_alignment = 1
 
 [node name="shield" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=1881882935]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
-text = "shield : value"
+text = "Shield: —"
 horizontal_alignment = 1
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=785441317]
@@ -230,25 +230,25 @@ alignment = 2
 [node name="crit_rate" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=480665017]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
-text = "crit_rate : value"
+text = "Critical Rate: —"
 horizontal_alignment = 1
 
 [node name="crit_damage" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=224386494]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
-text = "crit_damage : value"
+text = "Critical Damage: —"
 horizontal_alignment = 1
 
 [node name="grab_radius" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=29803766]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
-text = "grab_radius : value"
+text = "Pickup Radius: —"
 horizontal_alignment = 1
 
 [node name="player_gold" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=1600224803]
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
-text = "player_gold : value"
+text = "Starting Gold: —"
 horizontal_alignment = 1
 
 [connection signal="pressed" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Start" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Start" method="_on_pressed"]

@@ -36,7 +36,7 @@ offset_left = 10.0
 offset_top = 140.0
 offset_right = 270.0
 offset_bottom = 192.0
-text = "Item name"
+text = "No item selected"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -46,7 +46,7 @@ offset_left = 10.0
 offset_top = 200.0
 offset_right = 270.0
 offset_bottom = 319.0
-text = "Desription"
+text = "Item details unavailable"
 horizontal_alignment = 1
 
 [node name="Price" type="Label" parent="ItemCard"]
@@ -55,7 +55,7 @@ offset_left = 9.0
 offset_top = 344.0
 offset_right = 269.0
 offset_bottom = 396.0
-text = "Price"
+text = "Price: —"
 horizontal_alignment = 1
 vertical_alignment = 1
 

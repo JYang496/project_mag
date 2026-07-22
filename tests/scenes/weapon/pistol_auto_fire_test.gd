@@ -1,12 +1,16 @@
 extends Node
 
 const PistolScene := preload("res://Player/Weapons/Instances/pistol.tscn")
+const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _shot_count := 0
 
 func _ready() -> void:
 	PhaseManager.enter_battle()
 	var pistol := PistolScene.instantiate() as Weapon
+	# This test validates targeting and projectile emission, not audio playback.
+	# Avoid starting an AudioServer stream that can outlive short headless runs.
+	pistol.fire_feedback_profile = null
 	add_child(pistol)
 	pistol.global_position = Vector2.ZERO
 	pistol.shoot.connect(func() -> void: _shot_count += 1)
@@ -37,10 +41,9 @@ func _ready() -> void:
 		failed = _check(spawned_projectile.global_position != pistol.global_position, "Auto Pistol projectile must move away from the muzzle") or failed
 	if failed:
 		print("FAIL pistol auto fire")
-		get_tree().quit(1)
 	else:
 		print("PASS pistol auto fire")
-		get_tree().quit(0)
+	await TEST_TEARDOWN.finish(self, 1 if failed else 0, PhaseManager.reset_runtime_state)
 
 func _check(condition: bool, message: String) -> bool:
 	if condition:

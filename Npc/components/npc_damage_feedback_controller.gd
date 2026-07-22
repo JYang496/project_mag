@@ -131,11 +131,9 @@ func play_hit_flash() -> void:
 		_hit_flash_tween.tween_property(overlay, "modulate:a", 0.0, flash_out)
 	else:
 		overlay.modulate.a = 0.0
-	_hit_flash_tween.finished.connect(func() -> void:
-		if overlay != null and is_instance_valid(overlay):
-			overlay.visible = false
-		_hit_flash_tween = null
-	)
+	# Connect directly to the overlay so the Tween does not retain this
+	# RefCounted controller through a closure during scene shutdown.
+	_hit_flash_tween.finished.connect(Callable(overlay, "hide"), CONNECT_ONE_SHOT)
 
 func start_warning_flash(color: Color = Color(1.0, 0.05, 0.03, 1.0), peak_alpha: float = 0.9, pulse_duration_sec: float = 0.12) -> void:
 	if npc == null:
@@ -165,6 +163,27 @@ func stop_warning_flash() -> void:
 	if _warning_flash_overlay != null and is_instance_valid(_warning_flash_overlay):
 		_warning_flash_overlay.visible = false
 		_warning_flash_overlay.modulate.a = 0.0
+
+func shutdown() -> void:
+	if _hit_flash_tween != null and is_instance_valid(_hit_flash_tween):
+		_disconnect_tween_finished(_hit_flash_tween)
+		_hit_flash_tween.kill()
+	if _warning_flash_tween != null and is_instance_valid(_warning_flash_tween):
+		_disconnect_tween_finished(_warning_flash_tween)
+		_warning_flash_tween.kill()
+	_hit_flash_tween = null
+	_warning_flash_tween = null
+	_hit_flash_overlay = null
+	_warning_flash_overlay = null
+	_enemy_hp_bar = null
+	_pending_hit_label_batches.clear()
+	npc = null
+
+func _disconnect_tween_finished(tween: Tween) -> void:
+	for connection: Dictionary in tween.finished.get_connections():
+		var callback := connection.get("callable", Callable()) as Callable
+		if tween.finished.is_connected(callback):
+			tween.finished.disconnect(callback)
 
 func _ensure_flash_overlay(sprite_body: Sprite2D, overlay_name: String, existing_overlay: Sprite2D) -> Sprite2D:
 	if existing_overlay != null and is_instance_valid(existing_overlay):

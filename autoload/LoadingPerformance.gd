@@ -1,6 +1,7 @@
 extends Node
 
 const LONG_FRAME_MS := 33.0
+const RUNTIME_DIAGNOSTICS_SCRIPT := preload("res://autoload/RuntimeDiagnostics.gd")
 const ORDER := [
 	"start_menu_ready", "prewarm_started", "prewarm_finished",
 	"start_button_pressed", "threaded_load_started", "threaded_load_finished",
@@ -75,7 +76,8 @@ func mark(label: String) -> void:
 		return
 	_marks[label] = Time.get_ticks_usec()
 	_current_phase = _phase_after_mark(label)
-	print("[LoadingPerformance] run=%d flow=%s mark=%s" % [_run_id, _flow, label])
+	if RUNTIME_DIAGNOSTICS_SCRIPT.verbose_logs_enabled():
+		print("[LoadingPerformance] run=%d flow=%s mark=%s" % [_run_id, _flow, label])
 
 func show_world_build_overlay() -> void:
 	if _world_build_overlay != null:
@@ -89,7 +91,8 @@ func begin_segment(label: String) -> void:
 	if not enabled:
 		return
 	_segments[label] = Time.get_ticks_usec()
-	print("[LoadingPerformance] run=%d flow=%s segment=%s event=started" % [_run_id, _flow, label])
+	if RUNTIME_DIAGNOSTICS_SCRIPT.verbose_logs_enabled():
+		print("[LoadingPerformance] run=%d flow=%s segment=%s event=started" % [_run_id, _flow, label])
 
 func end_segment(label: String) -> void:
 	if not enabled:
@@ -99,9 +102,10 @@ func end_segment(label: String) -> void:
 		return
 	var duration_us := Time.get_ticks_usec() - int(_segments[label])
 	_segments.erase(label)
-	print("[LoadingPerformance] run=%d flow=%s segment=%s event=finished duration_us=%d duration_ms=%.3f" % [
-		_run_id, _flow, label, duration_us, duration_us / 1000.0,
-	])
+	if RUNTIME_DIAGNOSTICS_SCRIPT.verbose_logs_enabled():
+		print("[LoadingPerformance] run=%d flow=%s segment=%s event=finished duration_us=%d duration_ms=%.3f" % [
+			_run_id, _flow, label, duration_us, duration_us / 1000.0,
+		])
 
 func finish_flow() -> void:
 	hide_world_build_overlay()
@@ -140,17 +144,18 @@ func print_summary() -> void:
 	print("[LoadingPerformance] run=%d flow=%s %s long_frames=%d longest=%.2fms" % [
 		_run_id, _flow, " ".join(parts), _long_frames.size(), longest,
 	])
-	for phase in phase_totals:
-		var phase_summary: Dictionary = phase_totals[phase]
-		print("[LoadingPerformance] long_frame_phase=%s count=%d longest=%.2fms" % [
-			phase, int(phase_summary["count"]), float(phase_summary["longest"]),
-		])
-	for frame in _long_frames:
-		print("[LoadingPerformance] long_frame phase=%s duration=%.2fms since_start=%.2fms" % [
-			str(frame.get("phase", "unknown")),
-			float(frame.get("milliseconds", 0.0)),
-			float(frame.get("since_start_ms", -1.0)),
-		])
+	if RUNTIME_DIAGNOSTICS_SCRIPT.verbose_logs_enabled():
+		for phase in phase_totals:
+			var phase_summary: Dictionary = phase_totals[phase]
+			print("[LoadingPerformance] long_frame_phase=%s count=%d longest=%.2fms" % [
+				phase, int(phase_summary["count"]), float(phase_summary["longest"]),
+			])
+		for frame in _long_frames:
+			print("[LoadingPerformance] long_frame phase=%s duration=%.2fms since_start=%.2fms" % [
+				str(frame.get("phase", "unknown")),
+				float(frame.get("milliseconds", 0.0)),
+				float(frame.get("since_start_ms", -1.0)),
+			])
 
 func _phase_after_mark(label: String) -> String:
 	match label:
