@@ -23,6 +23,7 @@ script = ExtResource("2_billboard")
 [node name="SpinRoot" type="Node2D" parent="BillboardVisual"]
 
 [node name="Sprite2D" type="Sprite2D" parent="BillboardVisual/SpinRoot"]
+texture_filter = 1
 
 [node name="DetectArea" type="Area2D" parent="."]
 collision_layer = 0

@@ -31,8 +31,9 @@ func _ready() -> void:
 	_aim_warning_line.name = "AimWarningLine"
 	_aim_warning_line.default_color = aim_warning_color
 	_aim_warning_line.width = maxf(aim_warning_width, 1.0)
-	_aim_warning_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	_aim_warning_line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	_aim_warning_line.begin_cap_mode = Line2D.LINE_CAP_BOX
+	_aim_warning_line.end_cap_mode = Line2D.LINE_CAP_BOX
+	_aim_warning_line.antialiased = false
 	_aim_warning_line.z_index = 8
 	_aim_warning_line.visible = false
 	_aim_warning_line.add_to_group(&"hybrid_ground_segment")

@@ -25,7 +25,7 @@ shape = SubResource("RectangleShape2D_dl2yt")
 
 [node name="Body" parent="." index="1"]
 position = Vector2(0.034549713, -1.4305115e-06)
-scale = Vector2(0.32296523, 0.37362638)
+texture_filter = 1
 z_index = 1
 texture = ExtResource("3_ojmbw")
 

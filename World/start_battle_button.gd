@@ -93,9 +93,9 @@ func _draw() -> void:
 	var ring_color := Color(0.65, 0.84, 1.0, 0.95)
 	var progress_color := Color(0.36, 0.92, 0.56, 1.0)
 	draw_circle(Vector2.ZERO, radius, idle_color)
-	draw_arc(Vector2.ZERO, radius + 2.0, 0.0, TAU, 48, ring_color, 2.0)
+	draw_arc(Vector2.ZERO, radius + 2.0, 0.0, TAU, 24, ring_color, 2.0, false)
 	if ratio > 0.0:
-		draw_arc(Vector2.ZERO, radius + 6.0, -PI * 0.5, -PI * 0.5 + TAU * ratio, 36, progress_color, 4.0)
+		draw_arc(Vector2.ZERO, radius + 6.0, -PI * 0.5, -PI * 0.5 + TAU * ratio, 24, progress_color, 4.0, false)
 
 
 func _get_progress_ratio() -> float:

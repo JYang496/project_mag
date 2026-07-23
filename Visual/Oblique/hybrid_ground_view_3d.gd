@@ -349,7 +349,7 @@ func _rebuild_ground() -> void:
 		var material := StandardMaterial3D.new()
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		material.albedo_texture = texture_sprite.texture
-		material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+		material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 		quad.material = material
 		mesh_instance.mesh = quad
@@ -972,7 +972,7 @@ func _create_rest_ground_mesh() -> void:
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.albedo_texture = sprite.texture
-	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	quad.material = material
 	_rest_ground_mesh = MeshInstance3D.new()

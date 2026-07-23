@@ -22,7 +22,6 @@ shape = SubResource("RectangleShape2D_hurt")
 
 [node name="Body" parent="." index="1"]
 texture_filter = 1
-scale = Vector2(0.95, 0.95)
 texture = ExtResource("3_tex")
 
 [node name="NPCCollision" parent="." index="2"]

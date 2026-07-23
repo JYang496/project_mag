@@ -66,7 +66,7 @@ func _draw() -> void:
 	var outline_color: Color = indicator_outline_color
 	outline_color.a *= life_ratio
 	draw_circle(Vector2.ZERO, radius, fill_color)
-	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 64, outline_color, 2.0)
+	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 24, outline_color, 2.0, false)
 
 func _apply_tick_damage() -> void:
 	var candidates: Array[Node] = []

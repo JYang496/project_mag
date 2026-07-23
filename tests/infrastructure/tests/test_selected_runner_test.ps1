@@ -85,6 +85,10 @@ if ($result.worker.passed -ne 1 -or $result.worker.failed -ne 0 -or $result.work
     Write-Error "Expected selected worker run to pass. Output:`n$($output -join "`n")"
     exit 1
 }
+if (-not [bool]$result.startup_manifest.ok) {
+    Write-Error 'Expected startup manifest audit to pass.'
+    exit 1
+}
 if (-not (Test-Path -LiteralPath (Join-Path $outputRoot 'summary.json') -PathType Leaf)) {
     Write-Error 'Expected worker summary.json to be written.'
     exit 1

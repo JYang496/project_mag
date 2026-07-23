@@ -76,9 +76,9 @@ class TaskMarkerVisual:
 			return
 		var marker_rect := Rect2(marker_center - marker_size * 0.5, marker_size)
 		draw_circle(marker_rect.get_center(), marker_size.x * 0.48, bg_color)
-		draw_arc(marker_rect.get_center(), marker_size.x * 0.48, 0.0, TAU, 32, border_color, 2.0, true)
+		draw_arc(marker_rect.get_center(), marker_size.x * 0.48, 0.0, TAU, 24, border_color, 2.0, false)
 		if player_highlight and not completed:
-			draw_arc(marker_rect.get_center(), marker_size.x * 0.58, -PI * 0.5, TAU * 0.78, 32, Color(marker_color.r, marker_color.g, marker_color.b, 0.45), 3.0, true)
+			draw_arc(marker_rect.get_center(), marker_size.x * 0.58, -PI * 0.5, TAU * 0.78, 24, Color(marker_color.r, marker_color.g, marker_color.b, 0.45), 3.0, false)
 		if completed:
 			_draw_complete_badge(marker_rect, marker_color)
 		else:
@@ -147,15 +147,15 @@ class TaskMarkerVisual:
 		var points := PackedVector2Array([tip, left, right])
 		draw_colored_polygon(points, Color(color.r, color.g, color.b, 0.56))
 		points.append(tip)
-		draw_polyline(points, Color(color.r, color.g, color.b, 0.88), 2.0, true)
+		draw_polyline(points, Color(color.r, color.g, color.b, 0.88), 2.0, false)
 		draw_circle(center, 4.0, Color(color.r, color.g, color.b, 0.82))
 
 	func _draw_task_icon(icon_key: String, center: Vector2, size: float, color: Color) -> void:
 		match icon_key:
 			"kill":
-				draw_arc(center, size, 0.0, TAU, 24, color, 2.5, true)
-				draw_line(center + Vector2(-size * 1.2, 0.0), center + Vector2(size * 1.2, 0.0), color, 2.5, true)
-				draw_line(center + Vector2(0.0, -size * 1.2), center + Vector2(0.0, size * 1.2), color, 2.5, true)
+				draw_arc(center, size, 0.0, TAU, 16, color, 3.0, false)
+				draw_line(center + Vector2(-size * 1.2, 0.0), center + Vector2(size * 1.2, 0.0), color, 3.0, false)
+				draw_line(center + Vector2(0.0, -size * 1.2), center + Vector2(0.0, size * 1.2), color, 3.0, false)
 			"hold":
 				var points := PackedVector2Array([
 					center + Vector2(0.0, -size * 1.35),
@@ -168,11 +168,11 @@ class TaskMarkerVisual:
 				draw_colored_polygon(points, Color(color.r, color.g, color.b, 0.24))
 				var closed_points := points.duplicate()
 				closed_points.append(points[0])
-				draw_polyline(closed_points, color, 2.5, true)
+				draw_polyline(closed_points, color, 3.0, false)
 			"clear":
 				for offset in [-0.55, 0.0, 0.55]:
-					draw_line(center + Vector2(offset * size, -size), center + Vector2(offset * size, size), color, 2.0, true)
-					draw_line(center + Vector2(-size, offset * size), center + Vector2(size, offset * size), color, 2.0, true)
+					draw_line(center + Vector2(offset * size, -size), center + Vector2(offset * size, size), color, 2.0, false)
+					draw_line(center + Vector2(-size, offset * size), center + Vector2(size, offset * size), color, 2.0, false)
 			"hunt":
 				var points := PackedVector2Array([
 					center + Vector2(0.0, -size * 1.35),
@@ -181,13 +181,13 @@ class TaskMarkerVisual:
 					center + Vector2(-size * 1.15, 0.0),
 					center + Vector2(0.0, -size * 1.35)
 				])
-				draw_polyline(points, color, 2.8, true)
+				draw_polyline(points, color, 3.0, false)
 				draw_circle(center, size * 0.25, color)
 			"dodge":
-				draw_line(center + Vector2(-size, -size * 0.85), center + Vector2(size, 0.0), color, 3.0, true)
-				draw_line(center + Vector2(size, 0.0), center + Vector2(-size, size * 0.85), color, 3.0, true)
-				draw_line(center + Vector2(-size * 0.25, -size * 0.85), center + Vector2(size * 0.75, 0.0), color, 2.0, true)
-				draw_line(center + Vector2(size * 0.75, 0.0), center + Vector2(-size * 0.25, size * 0.85), color, 2.0, true)
+				draw_line(center + Vector2(-size, -size * 0.85), center + Vector2(size, 0.0), color, 3.0, false)
+				draw_line(center + Vector2(size, 0.0), center + Vector2(-size, size * 0.85), color, 3.0, false)
+				draw_line(center + Vector2(-size * 0.25, -size * 0.85), center + Vector2(size * 0.75, 0.0), color, 2.0, false)
+				draw_line(center + Vector2(size * 0.75, 0.0), center + Vector2(-size * 0.25, size * 0.85), color, 2.0, false)
 			_:
 				draw_circle(center, size * 0.75, color)
 
@@ -196,10 +196,10 @@ class TaskMarkerVisual:
 		var left := center + Vector2(-marker_rect.size.x * 0.20, 0.0)
 		var mid := center + Vector2(-marker_rect.size.x * 0.04, marker_rect.size.y * 0.16)
 		var right := center + Vector2(marker_rect.size.x * 0.24, -marker_rect.size.y * 0.18)
-		draw_line(left + Vector2(1.0, 1.0), mid + Vector2(1.0, 1.0), Color(0.0, 0.0, 0.0, 0.48), 3.2, true)
-		draw_line(mid + Vector2(1.0, 1.0), right + Vector2(1.0, 1.0), Color(0.0, 0.0, 0.0, 0.48), 3.2, true)
-		draw_line(left, mid, color.lightened(0.14), 2.4, true)
-		draw_line(mid, right, color.lightened(0.14), 2.4, true)
+		draw_line(left + Vector2(1.0, 1.0), mid + Vector2(1.0, 1.0), Color(0.0, 0.0, 0.0, 0.48), 3.0, false)
+		draw_line(mid + Vector2(1.0, 1.0), right + Vector2(1.0, 1.0), Color(0.0, 0.0, 0.0, 0.48), 3.0, false)
+		draw_line(left, mid, color.lightened(0.14), 2.0, false)
+		draw_line(mid, right, color.lightened(0.14), 2.0, false)
 
 var state: int = CellState.LOCKED : set = set_state
 var _player_bodies: Array[Node2D] = []
@@ -224,13 +224,13 @@ const PROGRESS_LIMIT := 100
 const CONTESTED_PROGRESS_MULTIPLIER := 0.5
 const TERRAIN_TEXTURE_PATHS := {
 	TerrainType.NONE: "res://asset/images/cells/default.png",
-	TerrainType.CORROSION: "res://asset/images/cells/dirt2.png",
-	TerrainType.JUNGLE: "res://asset/images/cells/glass.png",
-	TerrainType.SPEED_BOOST: "res://asset/images/cells/ice.png",
-	TerrainType.LOW_HP_BERSERK: "res://asset/images/cells/lava.png",
-	TerrainType.LUCKY_STRIKE: "res://asset/images/cells/gold1.png",
-	TerrainType.REGEN: "res://asset/images/cells/fact1.png",
-	TerrainType.DOUBLE_LOOT: "res://asset/images/cells/gold2.png"
+	TerrainType.CORROSION: "res://asset/images/cells/corrosion.png",
+	TerrainType.JUNGLE: "res://asset/images/cells/jungle.png",
+	TerrainType.SPEED_BOOST: "res://asset/images/cells/speed_boost.png",
+	TerrainType.LOW_HP_BERSERK: "res://asset/images/cells/low_hp_berserk.png",
+	TerrainType.LUCKY_STRIKE: "res://asset/images/cells/lucky_strike.png",
+	TerrainType.REGEN: "res://asset/images/cells/regen.png",
+	TerrainType.DOUBLE_LOOT: "res://asset/images/cells/double_loot.png"
 }
 
 var _progress_timer: Timer

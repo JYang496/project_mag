@@ -29,6 +29,7 @@ func _ready() -> void:
 	_progress_line.default_color = progress_color
 	_progress_line.begin_cap_mode = Line2D.LINE_CAP_BOX
 	_progress_line.end_cap_mode = Line2D.LINE_CAP_BOX
+	_progress_line.antialiased = false
 	add_child(_progress_line)
 
 	visible = false

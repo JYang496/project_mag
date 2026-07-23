@@ -91,9 +91,9 @@ func _interrupt_cast() -> void:
 func _draw() -> void:
 	if uses_hybrid_ground_visuals():
 		return
-	draw_arc(Vector2.ZERO, heal_radius, 0.0, TAU, 48, Color(0.25, 1.0, 0.45, 0.18), 1.5, true)
+	draw_arc(Vector2.ZERO, heal_radius, 0.0, TAU, 24, Color(0.25, 1.0, 0.45, 0.18), 2.0, false)
 	if _heal_target != null and is_instance_valid(_heal_target):
-		draw_line(Vector2.ZERO, to_local(_heal_target.global_position), heal_line_color, 3.0, true)
+		draw_line(Vector2.ZERO, to_local(_heal_target.global_position), heal_line_color, 3.0, false)
 
 func get_hybrid_aura_visual() -> Dictionary:
 	return {

@@ -47,10 +47,10 @@ func _add_line(width: float, color: Color, order: int) -> void:
 	line.width = maxf(width, 1.0)
 	line.default_color = color
 	line.texture_mode = Line2D.LINE_TEXTURE_NONE
-	line.joint_mode = Line2D.LINE_JOINT_ROUND
-	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	line.end_cap_mode = Line2D.LINE_CAP_ROUND
-	line.antialiased = true
+	line.joint_mode = Line2D.LINE_JOINT_SHARP
+	line.begin_cap_mode = Line2D.LINE_CAP_BOX
+	line.end_cap_mode = Line2D.LINE_CAP_BOX
+	line.antialiased = false
 	line.z_index = order
 	add_child(line)
 	_register_ground_line(line)
@@ -79,9 +79,9 @@ func _build_sparks() -> void:
 		])
 		spark.width = maxf(_width * 0.08, 1.4)
 		spark.default_color = SPARK_COLOR
-		spark.begin_cap_mode = Line2D.LINE_CAP_ROUND
-		spark.end_cap_mode = Line2D.LINE_CAP_ROUND
-		spark.antialiased = true
+		spark.begin_cap_mode = Line2D.LINE_CAP_BOX
+		spark.end_cap_mode = Line2D.LINE_CAP_BOX
+		spark.antialiased = false
 		spark.z_index = 3
 		add_child(spark)
 		_register_ground_line(spark)

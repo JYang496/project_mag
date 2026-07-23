@@ -62,11 +62,11 @@ func _draw() -> void:
 	if uses_hybrid_ground_visuals():
 		return
 	draw_circle(Vector2.ZERO, aura_radius, aura_fill_color)
-	draw_arc(Vector2.ZERO, aura_radius, 0.0, TAU, 56, aura_line_color, 2.5, true)
+	draw_arc(Vector2.ZERO, aura_radius, 0.0, TAU, 24, aura_line_color, 3.0, false)
 	for index in mini(_protected_targets.size(), 4):
 		var target := _protected_targets[index]
 		if is_instance_valid(target):
-			draw_line(Vector2.ZERO, to_local(target.global_position), protected_line_color, 1.5, true)
+			draw_line(Vector2.ZERO, to_local(target.global_position), protected_line_color, 2.0, false)
 
 func get_hybrid_aura_visual() -> Dictionary:
 	return {

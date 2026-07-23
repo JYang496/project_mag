@@ -21,7 +21,7 @@ texture = ExtResource("2_texture")
 
 [node name="BulletAnimation" type="AnimatedSprite2D" parent="Bullet"]
 visible = false
-texture_filter = 2
+texture_filter = 1
 
 [node name="ExpireTimer" type="Timer" parent="."]
 wait_time = 2.5

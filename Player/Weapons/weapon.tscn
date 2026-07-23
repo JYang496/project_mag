@@ -16,6 +16,7 @@ script = ExtResource("6_82ygd")
 
 [node name="Sprite" type="Sprite2D" parent="." unique_id=1522898652]
 unique_name_in_owner = true
+texture_filter = 1
 texture = ExtResource("2_xgcik")
 script = ExtResource("7_billboard")
 mode = 1

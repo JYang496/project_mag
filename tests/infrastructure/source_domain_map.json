@@ -8,7 +8,10 @@
       "tests/infrastructure/test_manifest.json",
       "tests/infrastructure/source_domain_map.json",
       "tests/infrastructure/TestSelection.psm1",
-      "tests/infrastructure/select_affected_tests.ps1"
+      "tests/infrastructure/select_affected_tests.ps1",
+      "tests/infrastructure/StartupManifest.psm1",
+      "tests/infrastructure/run_selected_tests.ps1",
+      "tools/update_startup_manifest.ps1"
     ],
     "prefixes": [
       "autoload/",

@@ -21,6 +21,7 @@ visible_modulate = Color(0.78, 0.95, 1, 0.74)
 
 [node name="Sprite" type="AnimatedSprite2D" parent="SprayRoot"]
 position = Vector2(0, -90)
+texture_filter = 1
 sprite_frames = ExtResource("2_frames")
 animation = &"spray"
 centered = false

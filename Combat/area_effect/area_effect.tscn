@@ -16,10 +16,12 @@ script = ExtResource("2_billboard")
 
 [node name="Sprite" type="Sprite2D" parent="VisualRoot"]
 visible = false
+texture_filter = 1
 centered = true
 
 [node name="AnimatedSprite" type="AnimatedSprite2D" parent="VisualRoot"]
 visible = false
+texture_filter = 1
 centered = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]

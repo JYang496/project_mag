@@ -85,13 +85,13 @@ func _draw_active_state() -> void:
 func _draw_player_highlight() -> void:
 	var inset_rect := cell_rect.grow(-12.0)
 	var edge_color := Color(PLAYER_EDGE.r, PLAYER_EDGE.g, PLAYER_EDGE.b, PLAYER_EDGE.a * highlight_amount)
-	draw_arc(inset_rect.get_center(), minf(inset_rect.size.x, inset_rect.size.y) * 0.47, -PI * 0.50, TAU * 0.72, 48, edge_color, 3.0, true)
+	draw_arc(inset_rect.get_center(), minf(inset_rect.size.x, inset_rect.size.y) * 0.47, -PI * 0.50, TAU * 0.72, 32, edge_color, 3.0, false)
 	_draw_corner_code(edge_color, lerpf(32.0, 40.0, highlight_amount), lerpf(2.5, 3.0, highlight_amount))
 
 func _draw_task_presence_node() -> void:
 	var center := cell_rect.position + Vector2(cell_rect.size.x * 0.82, cell_rect.size.y * 0.18)
 	draw_circle(center, 5.5, TASK_NODE)
-	draw_arc(center, 11.0, 0.0, TAU, 20, Color(TASK_NODE.r, TASK_NODE.g, TASK_NODE.b, 0.28), 1.5, true)
+	draw_arc(center, 11.0, 0.0, TAU, 16, Color(TASK_NODE.r, TASK_NODE.g, TASK_NODE.b, 0.28), 2.0, false)
 
 func _draw_corner_code(color: Color, length: float, width: float) -> void:
 	var left := cell_rect.position.x + 18.0
@@ -108,20 +108,20 @@ func _draw_corner_code(color: Color, length: float, width: float) -> void:
 		var origin: Vector2 = corner[0]
 		var horizontal: Vector2 = corner[1]
 		var vertical: Vector2 = corner[2]
-		draw_line(origin, origin + horizontal * length, color, width, true)
-		draw_line(origin, origin + vertical * length, color, width, true)
+		draw_line(origin, origin + horizontal * length, color, roundf(width), false)
+		draw_line(origin, origin + vertical * length, color, roundf(width), false)
 
 func _draw_power_grid_lines() -> void:
 	var left := cell_rect.position.x + 72.0
 	var right := cell_rect.end.x - 72.0
 	var top := cell_rect.position.y + 72.0
 	var bottom := cell_rect.end.y - 72.0
-	draw_line(Vector2(left, top), Vector2(left + 62.0, top), INACTIVE_LINE, 2.0, true)
-	draw_line(Vector2(right - 62.0, top), Vector2(right, top), INACTIVE_LINE, 2.0, true)
-	draw_line(Vector2(left, bottom), Vector2(left + 62.0, bottom), INACTIVE_LINE, 2.0, true)
-	draw_line(Vector2(right - 62.0, bottom), Vector2(right, bottom), INACTIVE_LINE, 2.0, true)
-	draw_line(Vector2(cell_rect.position.x + 96.0, cell_rect.get_center().y), Vector2(cell_rect.position.x + 150.0, cell_rect.get_center().y), INACTIVE_LINE, 1.5, true)
-	draw_line(Vector2(cell_rect.end.x - 150.0, cell_rect.get_center().y), Vector2(cell_rect.end.x - 96.0, cell_rect.get_center().y), INACTIVE_LINE, 1.5, true)
+	draw_line(Vector2(left, top), Vector2(left + 62.0, top), INACTIVE_LINE, 2.0, false)
+	draw_line(Vector2(right - 62.0, top), Vector2(right, top), INACTIVE_LINE, 2.0, false)
+	draw_line(Vector2(left, bottom), Vector2(left + 62.0, bottom), INACTIVE_LINE, 2.0, false)
+	draw_line(Vector2(right - 62.0, bottom), Vector2(right, bottom), INACTIVE_LINE, 2.0, false)
+	draw_line(Vector2(cell_rect.position.x + 96.0, cell_rect.get_center().y), Vector2(cell_rect.position.x + 150.0, cell_rect.get_center().y), INACTIVE_LINE, 2.0, false)
+	draw_line(Vector2(cell_rect.end.x - 150.0, cell_rect.get_center().y), Vector2(cell_rect.end.x - 96.0, cell_rect.get_center().y), INACTIVE_LINE, 2.0, false)
 
 func _draw_sleep_nodes() -> void:
 	var node_color := Color(INACTIVE_EDGE.r, INACTIVE_EDGE.g, INACTIVE_EDGE.b, 0.22)
@@ -141,13 +141,13 @@ func _draw_active_boundary_edges() -> void:
 	for edge in _active_boundary_edges:
 		match String(edge):
 			"top":
-				draw_line(inset_rect.position, Vector2(inset_rect.end.x, inset_rect.position.y), ACTIVE_BOUNDARY, 2.5, true)
+				draw_line(inset_rect.position, Vector2(inset_rect.end.x, inset_rect.position.y), ACTIVE_BOUNDARY, 3.0, false)
 			"right":
-				draw_line(Vector2(inset_rect.end.x, inset_rect.position.y), inset_rect.end, ACTIVE_BOUNDARY, 2.5, true)
+				draw_line(Vector2(inset_rect.end.x, inset_rect.position.y), inset_rect.end, ACTIVE_BOUNDARY, 3.0, false)
 			"bottom":
-				draw_line(Vector2(inset_rect.position.x, inset_rect.end.y), inset_rect.end, ACTIVE_BOUNDARY, 2.5, true)
+				draw_line(Vector2(inset_rect.position.x, inset_rect.end.y), inset_rect.end, ACTIVE_BOUNDARY, 3.0, false)
 			"left":
-				draw_line(inset_rect.position, Vector2(inset_rect.position.x, inset_rect.end.y), ACTIVE_BOUNDARY, 2.5, true)
+				draw_line(inset_rect.position, Vector2(inset_rect.position.x, inset_rect.end.y), ACTIVE_BOUNDARY, 3.0, false)
 
 func _tween_highlight_amount(target: float) -> void:
 	if _highlight_tween:

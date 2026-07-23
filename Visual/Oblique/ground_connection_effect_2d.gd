@@ -12,8 +12,9 @@ func configure(start: Vector2, end: Vector2, color: Color, width: float, duratio
 	_line.points = PackedVector2Array([start, end])
 	_line.default_color = color
 	_line.width = maxf(width, 0.5)
-	_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	_line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	_line.begin_cap_mode = Line2D.LINE_CAP_BOX
+	_line.end_cap_mode = Line2D.LINE_CAP_BOX
+	_line.antialiased = false
 	_line.add_to_group(&"hybrid_ground_segment")
 	_line.set_meta("hybrid_ground_visible", true)
 	add_child(_line)

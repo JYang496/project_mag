@@ -17,6 +17,7 @@ $ErrorActionPreference = 'Stop'
 
 Import-Module (Join-Path $PSScriptRoot 'TestSelection.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'TestWorker.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'StartupManifest.psm1') -Force
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
@@ -79,6 +80,41 @@ function Invoke-GodotCheckOnly {
     }
 }
 
+function Invoke-StartupManifestAudit {
+    param(
+        [Parameter(Mandatory)][string]$ResolvedGodotPath,
+        [Parameter(Mandatory)][string]$ResolvedRepoRoot
+    )
+
+    $startupManifestPath = Join-Path $ResolvedRepoRoot 'data/startup/startup_resource_manifest.json'
+    $structure = Test-StartupManifestStructure `
+        -RepoRoot $ResolvedRepoRoot `
+        -ManifestPath $startupManifestPath
+    if (-not [bool]$structure.ok) {
+        return [pscustomobject]@{
+            ok = $false
+            exit_code = 2
+            structure_errors = @($structure.errors)
+            output = ''
+        }
+    }
+    $auditScript = 'res://tests/headless/startup/run_startup_resource_manifest_audit_headless.gd'
+    $output = & $ResolvedGodotPath `
+        --headless `
+        --path $ResolvedRepoRoot `
+        --script $auditScript `
+        --quit-after 5 `
+        2>&1
+    $exitCode = [int]$LASTEXITCODE
+    $outputText = (@($output) | ForEach-Object { $_.ToString() }) -join "`n"
+    return [pscustomobject]@{
+        ok = $exitCode -eq 0 -and $outputText -match 'STARTUP_MANIFEST_AUDIT: PASS'
+        exit_code = $exitCode
+        structure_errors = @()
+        output = $outputText
+    }
+}
+
 $resolvedGodotPath = Resolve-GodotExecutable -GodotPath $GodotPath
 $effectiveChangedPath = if ($PSBoundParameters.ContainsKey('ChangedPath')) {
     @($ChangedPath)
@@ -125,6 +161,30 @@ if (-not $SkipCheckOnly) {
     }
 }
 
+$startupManifest = Invoke-StartupManifestAudit `
+    -ResolvedGodotPath $resolvedGodotPath `
+    -ResolvedRepoRoot $repoRoot
+if (-not [bool]$startupManifest.ok) {
+    if ($Json) {
+        [pscustomobject]@{
+            selection = $selection
+            check_only = $checkOnly | Select-Object -Property * -ExcludeProperty output
+            startup_manifest = $startupManifest | Select-Object -Property * -ExcludeProperty output
+            worker = $null
+        } | ConvertTo-Json -Depth 8
+    } else {
+        Write-Output "Selection mode: $($selection.mode)"
+        Write-Output "Startup manifest: FAIL exit=$($startupManifest.exit_code)"
+        foreach ($errorMessage in $startupManifest.structure_errors) {
+            Write-Output "  - $errorMessage"
+        }
+        if (-not [string]::IsNullOrWhiteSpace([string]$startupManifest.output)) {
+            Write-Output $startupManifest.output
+        }
+    }
+    exit 2
+}
+
 $workerSummary = $null
 if (@($selection.tests).Count -gt 0) {
     $invokeParameters = @{
@@ -143,6 +203,7 @@ if ($Json) {
     [pscustomobject]@{
         selection = $selection
         check_only = $checkOnly | Select-Object -Property * -ExcludeProperty output
+        startup_manifest = $startupManifest | Select-Object -Property * -ExcludeProperty output
         worker = if ($workerSummary -eq $null) {
             $null
         } else {
@@ -160,6 +221,7 @@ if ($Json) {
     Write-Output "Domains: $(if ($selection.domains.Count -gt 0) { $selection.domains -join ', ' } else { '(none)' })"
     Write-Output "Selected tests: $(@($selection.tests).Count)"
     Write-Output "Check-only: $(if ($SkipCheckOnly) { 'SKIPPED' } else { 'PASS' })"
+    Write-Output 'Startup manifest: PASS'
     if ($workerSummary -eq $null) {
         Write-Output 'Worker: SKIPPED (no selected tests)'
     } else {

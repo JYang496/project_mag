@@ -11,6 +11,7 @@ sprite_frames = ExtResource("2_frames")
 
 [node name="Sprite" type="AnimatedSprite2D" parent="SprayRoot"]
 position = Vector2(0, -80)
+texture_filter = 1
 sprite_frames = ExtResource("2_frames")
 animation = &"spray"
 centered = false

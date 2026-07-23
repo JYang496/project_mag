@@ -163,3 +163,27 @@ pwsh -NoProfile -File tests/infrastructure/tests/test_selected_runner_test.ps1
 ```
 
 The intentional failure and timeout fixtures are infrastructure self-test inputs only; they are not registered in the active pilot manifest.
+
+## Startup resource manifest
+
+The tracked startup manifest remains the runtime source of truth. Validate its JSON contract,
+directory coverage, stable path ordering, resource types, and unique IDs with:
+
+```powershell
+pwsh -NoProfile -File tools/update_startup_manifest.ps1 -Check
+```
+
+After intentionally adding, renaming, or removing a catalog resource, explicitly regenerate all
+path lists or one selected domain, then review the manifest diff:
+
+```powershell
+pwsh -NoProfile -File tools/update_startup_manifest.ps1 -Write
+pwsh -NoProfile -File tools/update_startup_manifest.ps1 -Write -Domain weapons
+```
+
+The selected-test runner performs the read-only startup manifest audit after Godot's check-only
+gate. Validate the PowerShell manifest contract itself with:
+
+```powershell
+pwsh -NoProfile -File tests/infrastructure/tests/test_startup_manifest_test.ps1
+```

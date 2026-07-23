@@ -17,6 +17,7 @@ shape = SubResource("CircleShape2D_shield")
 [node name="ShieldSprite" type="Sprite2D" parent="." unique_id=350913547]
 modulate = Color(0.45, 0.85, 1, 0.55)
 scale = Vector2(0.8, 0.55)
+texture_filter = 1
 texture = ExtResource("2_j4bmj")
 
 [connection signal="area_entered" from="." to="." method="_on_area_entered"]

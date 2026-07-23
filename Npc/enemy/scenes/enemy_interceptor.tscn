@@ -23,7 +23,7 @@ hp = 75
 shape = SubResource("Shape_hurt")
 
 [node name="Body" parent="." index="1"]
-scale = Vector2(0.38, 0.38)
+texture_filter = 1
 texture = ExtResource("3_tex")
 
 [node name="NPCCollision" parent="." index="2"]

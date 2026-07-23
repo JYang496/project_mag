@@ -2,8 +2,16 @@
   "schema_version": 1,
   "status": "runtime_full",
   "runtime_consumed": true,
-  "runtime_consumed_domains": ["weapons", "mechas", "economy", "routes", "cell_effects", "task_modules", "weapon_branches", "weapon_passives"],
-  "ordering": "consumer_must_sort_paths",
+  "runtime_consumed_domains": [
+    "weapons",
+    "mechas",
+    "economy",
+    "cell_effects",
+    "task_modules",
+    "weapon_branches",
+    "weapon_passives"
+  ],
+  "ordering": "manifest_paths_sorted",
   "catalogs": [
     {
       "domain": "weapons",
@@ -13,6 +21,7 @@
       "expected_type": "WeaponDefinition",
       "id_property": "weapon_id",
       "paths": [
+        "res://data/weapons/Spear.tres",
         "res://data/weapons/cannon.tres",
         "res://data/weapons/chainsaw_luncher.tres",
         "res://data/weapons/charged_blaster.tres",
@@ -26,8 +35,7 @@
         "res://data/weapons/plasma_lance.tres",
         "res://data/weapons/rocket_luncher.tres",
         "res://data/weapons/shotgun.tres",
-        "res://data/weapons/sniper.tres",
-        "res://data/weapons/Spear.tres"
+        "res://data/weapons/sniper.tres"
       ]
     },
     {

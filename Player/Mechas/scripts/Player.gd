@@ -38,10 +38,10 @@ const TARGET_MECHA_SIZE = Vector2(96,96)
 const MOVE_ANIMATION_TOP: StringName = &"move_top"
 const MOVE_ANIMATION_BOTTOM: StringName = &"move_bottom"
 const MECHA_DIRECTION_TEXTURES := {
-	"top_left": preload("res://asset/images/characters/2b.png"),
-	"bottom_left": preload("res://asset/images/characters/2f.png"),
-	"top_right": preload("res://asset/images/characters/2b.png"),
-	"bottom_right": preload("res://asset/images/characters/2f.png"),
+	"top_left": preload("res://asset/images/characters/pixel/idle_top.png"),
+	"bottom_left": preload("res://asset/images/characters/pixel/idle_bottom.png"),
+	"top_right": preload("res://asset/images/characters/pixel/idle_top.png"),
+	"bottom_right": preload("res://asset/images/characters/pixel/idle_bottom.png"),
 }
 var current_mecha_direction := ""
 const ORBIT_RADIUS := Vector2(45, 30)
@@ -108,8 +108,8 @@ var _last_visual_position: Vector2 = Vector2.ZERO
 @export var camera_lookahead_distance: float = 18.0
 @export var camera_lookahead_lerp_speed: float = 5.0
 @export var camera_lookahead_min_speed_ratio: float = 0.2
-@export var mecha_scale_reference_pixel_height: float = 1116.0
-@export var idle_mecha_scale_multiplier: float = 0.7
+@export var mecha_scale_reference_pixel_height: float = 128.0
+@export var idle_mecha_scale_multiplier: float = 1.0
 @export var move_animation_scale_multiplier: float = 1.0
 @export var face_axis_hysteresis: float = 0.08
 @export var face_min_distance_px: float = 6.0
@@ -222,7 +222,7 @@ func _ready():
 	if _active_skill_runtime != null:
 		_active_skill_runtime.reset_energy_to_max()
 	LoadingPerformance.begin_segment("player_ready_visual_setup")
-	mecha_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	mecha_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_resize_mecha_sprite()
 	_setup_mecha_move_sprite()
 	_last_visual_position = global_position
@@ -1279,7 +1279,7 @@ func _setup_mecha_move_sprite() -> void:
 	if mecha_move_sprite == null:
 		push_warning("MechaMoveSprite is missing, movement animation disabled.")
 		return
-	mecha_move_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	mecha_move_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	if mecha_move_sprite.sprite_frames == null:
 		push_warning("MechaMoveSprite missing SpriteFrames resource.")
 		return

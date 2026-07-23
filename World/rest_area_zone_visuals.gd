@@ -30,6 +30,7 @@ const ZONE_COLORS := {
 var _pulse_time := 0.0
 
 func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	z_as_relative = true
 	z_index = 8
 	set_process(true)
@@ -80,6 +81,7 @@ func _ensure_hybrid_props() -> void:
 			continue
 		var sprite := Sprite2D.new()
 		sprite.name = prop_name
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		sprite.texture = prop_data[zone_id] as Texture2D
 		sprite.position = rect.get_center() + Vector2(0.0, -minf(rect.size.x, rect.size.y) * 0.03)
 		var texture_size := sprite.texture.get_size()
@@ -178,8 +180,8 @@ func _draw_shadow_ellipse(rect: Rect2, color: Color) -> void:
 	var center := rect.get_center()
 	var radius := rect.size * 0.5
 	var points := PackedVector2Array()
-	for idx in range(24):
-		var angle := TAU * float(idx) / 24.0
+	for idx in range(16):
+		var angle := TAU * float(idx) / 16.0
 		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
 	draw_colored_polygon(points, color)
 
@@ -187,12 +189,12 @@ func _draw_ground_mark(zone_id: int, center: Vector2, radius: float, color: Colo
 	match zone_id:
 		ZONE_ID_START_BATTLE:
 			draw_circle(center, radius, color)
-			draw_arc(center, radius * 1.16, 0.0, TAU, 48, Color(color.r, color.g, color.b, color.a + 0.16), 2.0, true)
+			draw_arc(center, radius * 1.16, 0.0, TAU, 24, Color(color.r, color.g, color.b, color.a + 0.16), 2.0, false)
 		ZONE_ID_BOARD_EDIT:
 			var step := radius * 0.55
 			for idx in range(-1, 2):
-				draw_line(center + Vector2(idx * step, -radius), center + Vector2(idx * step, radius), color, 2.0, true)
-				draw_line(center + Vector2(-radius, idx * step), center + Vector2(radius, idx * step), color, 2.0, true)
+				draw_line(center + Vector2(idx * step, -radius), center + Vector2(idx * step, radius), color, 2.0, false)
+				draw_line(center + Vector2(-radius, idx * step), center + Vector2(radius, idx * step), color, 2.0, false)
 		_:
 			var points: PackedVector2Array = PackedVector2Array([
 				center + Vector2(0.0, -radius),
@@ -203,7 +205,7 @@ func _draw_ground_mark(zone_id: int, center: Vector2, radius: float, color: Colo
 			var outline: PackedVector2Array = points.duplicate()
 			outline.append(points[0])
 			draw_colored_polygon(points, color)
-			draw_polyline(outline, Color(color.r, color.g, color.b, color.a + 0.18), 2.0, true)
+			draw_polyline(outline, Color(color.r, color.g, color.b, color.a + 0.18), 2.0, false)
 
 func _draw_prop(zone_id: int, rect: Rect2, color: Color, hovered: bool, selected: bool) -> void:
 	var center := rect.get_center()
@@ -215,10 +217,10 @@ func _draw_prop(zone_id: int, rect: Rect2, color: Color, hovered: bool, selected
 			var stall := Rect2(center + Vector2(-min_side * 0.19, -min_side * 0.03), Vector2(min_side * 0.38, min_side * 0.18))
 			draw_rect(stall, dark, true)
 			draw_rect(stall, prop_color, false, 2.0)
-			draw_line(stall.position + Vector2(0, -min_side * 0.08), stall.position + Vector2(stall.size.x, -min_side * 0.08), prop_color, 4.0, true)
+			draw_line(stall.position + Vector2(0, -min_side * 0.08), stall.position + Vector2(stall.size.x, -min_side * 0.08), prop_color, 4.0, false)
 		ZONE_ID_UPGRADE:
-			draw_line(center + Vector2(-min_side * 0.17, min_side * 0.10), center + Vector2(min_side * 0.17, min_side * 0.10), prop_color, 5.0, true)
-			draw_line(center + Vector2(0.0, min_side * 0.10), center + Vector2(0.0, -min_side * 0.08), prop_color, 4.0, true)
+			draw_line(center + Vector2(-min_side * 0.17, min_side * 0.10), center + Vector2(min_side * 0.17, min_side * 0.10), prop_color, 5.0, false)
+			draw_line(center + Vector2(0.0, min_side * 0.10), center + Vector2(0.0, -min_side * 0.08), prop_color, 4.0, false)
 			draw_circle(center + Vector2(0.0, -min_side * 0.12), min_side * 0.07, Color(1.0, 0.22, 0.08, 0.38))
 		ZONE_ID_WAREHOUSE:
 			for offset in [Vector2(-0.13, 0.03), Vector2(0.05, 0.03), Vector2(-0.04, -0.11)]:
@@ -229,27 +231,27 @@ func _draw_prop(zone_id: int, rect: Rect2, color: Color, hovered: bool, selected
 			var desk := Rect2(center + Vector2(-min_side * 0.20, -min_side * 0.02), Vector2(min_side * 0.40, min_side * 0.16))
 			draw_rect(desk, dark, true)
 			draw_rect(desk, prop_color, false, 2.0)
-			draw_arc(center + Vector2(0.0, -min_side * 0.04), min_side * 0.18, PI, TAU, 18, prop_color, 2.0, true)
+			draw_arc(center + Vector2(0.0, -min_side * 0.04), min_side * 0.18, PI, TAU, 12, prop_color, 2.0, false)
 		ZONE_ID_START_BATTLE:
-			draw_line(center + Vector2(0.0, min_side * 0.18), center + Vector2(0.0, -min_side * 0.20), prop_color, 5.0, true)
+			draw_line(center + Vector2(0.0, min_side * 0.18), center + Vector2(0.0, -min_side * 0.20), prop_color, 5.0, false)
 			draw_circle(center + Vector2(0.0, -min_side * 0.24), min_side * 0.07, Color(color.r, color.g, color.b, 0.48))
 
 func _draw_icon(zone_id: int, center: Vector2, size: float, color: Color, strong: bool) -> void:
 	var icon_color := Color(color.r, color.g, color.b, 0.95 if strong else 0.68)
 	match zone_id:
 		ZONE_ID_PURCHASE:
-			draw_arc(center, size, PI * 0.10, PI * 0.90, 16, icon_color, 2.0, true)
+			draw_arc(center, size, PI * 0.10, PI * 0.90, 12, icon_color, 2.0, false)
 			draw_rect(Rect2(center + Vector2(-size * 0.75, -size * 0.15), Vector2(size * 1.5, size * 1.2)), icon_color, false, 2.0)
 		ZONE_ID_UPGRADE:
-			draw_line(center + Vector2(-size, size), center + Vector2(size, -size), icon_color, 3.0, true)
+			draw_line(center + Vector2(-size, size), center + Vector2(size, -size), icon_color, 3.0, false)
 			draw_rect(Rect2(center + Vector2(size * 0.15, -size * 1.15), Vector2(size * 0.85, size * 0.45)), icon_color, false, 2.0)
 		ZONE_ID_WAREHOUSE:
 			draw_rect(Rect2(center - Vector2(size, size * 0.65), Vector2(size * 2.0, size * 1.3)), icon_color, false, 2.0)
-			draw_line(center + Vector2(-size, -size * 0.15), center + Vector2(size, -size * 0.15), icon_color, 2.0, true)
+			draw_line(center + Vector2(-size, -size * 0.15), center + Vector2(size, -size * 0.15), icon_color, 2.0, false)
 		ZONE_ID_BOARD_EDIT:
 			for idx in range(-1, 2):
-				draw_line(center + Vector2(idx * size * 0.55, -size), center + Vector2(idx * size * 0.55, size), icon_color, 1.6, true)
-				draw_line(center + Vector2(-size, idx * size * 0.55), center + Vector2(size, idx * size * 0.55), icon_color, 1.6, true)
+				draw_line(center + Vector2(idx * size * 0.55, -size), center + Vector2(idx * size * 0.55, size), icon_color, 2.0, false)
+				draw_line(center + Vector2(-size, idx * size * 0.55), center + Vector2(size, idx * size * 0.55), icon_color, 2.0, false)
 		ZONE_ID_START_BATTLE:
 			var points := PackedVector2Array([
 				center + Vector2(-size * 0.55, -size),
@@ -264,4 +266,4 @@ func _draw_selection_effect(center: Vector2, radius: float, color: Color, hovere
 		ring_alpha = 0.62
 	if selected:
 		ring_alpha = maxf(ring_alpha, 0.58)
-	draw_arc(center, radius * 1.34, 0.0, TAU, 48, Color(color.r, color.g, color.b, ring_alpha), 2.5, true)
+	draw_arc(center, radius * 1.34, 0.0, TAU, 24, Color(color.r, color.g, color.b, ring_alpha), 3.0, false)

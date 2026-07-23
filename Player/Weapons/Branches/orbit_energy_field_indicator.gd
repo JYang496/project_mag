@@ -12,4 +12,4 @@ func _process(_delta: float) -> void:
 func _draw() -> void:
 	var draw_radius: float = maxf(radius, 1.0)
 	draw_circle(Vector2.ZERO, draw_radius, fill_color)
-	draw_arc(Vector2.ZERO, draw_radius, 0.0, TAU, 48, outline_color, maxf(outline_width, 0.5))
+	draw_arc(Vector2.ZERO, draw_radius, 0.0, TAU, 24, outline_color, maxf(roundf(outline_width), 1.0), false)

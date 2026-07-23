@@ -54,7 +54,7 @@ func _draw() -> void:
 	var dynamic_line := line_color
 	dynamic_line.a *= (0.6 + 0.4 * pulse)
 	draw_circle(Vector2.ZERO, radius, dynamic_fill)
-	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 48, dynamic_line, maxf(line_width, 1.0), true)
+	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 24, dynamic_line, maxf(roundf(line_width), 1.0), false)
 
 func _build_dodge_style_visuals() -> void:
 	var safe_radius := maxf(radius, 8.0)
@@ -68,6 +68,7 @@ func _build_dodge_style_visuals() -> void:
 	_outline_line.default_color = line_color
 	_outline_line.closed = true
 	_outline_line.points = _build_circle_polygon(safe_radius, 28)
+	_outline_line.antialiased = false
 	add_child(_outline_line)
 
 	_wave_line = Line2D.new()
@@ -75,6 +76,7 @@ func _build_dodge_style_visuals() -> void:
 	_wave_line.default_color = wave_color
 	_wave_line.closed = true
 	_wave_line.points = _build_circle_polygon(safe_radius, 24)
+	_wave_line.antialiased = false
 	_wave_line.scale = Vector2.ZERO
 	add_child(_wave_line)
 
