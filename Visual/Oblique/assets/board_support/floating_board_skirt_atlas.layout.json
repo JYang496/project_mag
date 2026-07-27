@@ -1,0 +1,76 @@
+{
+  "atlas_size": [
+    256,
+    256
+  ],
+  "tile_size": [
+    64,
+    64
+  ],
+  "logical_module_width": 128,
+  "modules_per_512_unit_board": 4,
+  "modules": {
+    "left_cap": {
+      "column": 0,
+      "row": 0
+    },
+    "plain_middle": {
+      "column": 1,
+      "row": 0
+    },
+    "seam_middle": {
+      "column": 2,
+      "row": 0
+    },
+    "detail_middle_a": {
+      "column": 3,
+      "row": 0
+    },
+    "detail_middle_b": {
+      "column": 0,
+      "row": 1
+    },
+    "right_cap": {
+      "column": 1,
+      "row": 1
+    }
+  },
+  "assembly_examples": {
+    "1": [
+      "left_cap",
+      "plain_middle",
+      "detail_middle_a",
+      "right_cap"
+    ],
+    "2": [
+      "left_cap",
+      "plain_middle",
+      "detail_middle_a",
+      "plain_middle",
+      "seam_middle",
+      "plain_middle",
+      "detail_middle_b",
+      "right_cap"
+    ],
+    "3": [
+      "left_cap",
+      "plain_middle",
+      "detail_middle_a",
+      "plain_middle",
+      "seam_middle",
+      "plain_middle",
+      "detail_middle_b",
+      "plain_middle",
+      "seam_middle",
+      "plain_middle",
+      "detail_middle_a",
+      "right_cap"
+    ]
+  },
+  "rules": [
+    "Use left_cap and right_cap exactly once per exposed bottom segment.",
+    "Use seam_middle at each 512 logical-unit board junction.",
+    "Plain and detail middle modules share an identical edge profile and may alternate.",
+    "Never scale the source atlas with linear filtering or generate mipmaps."
+  ]
+}

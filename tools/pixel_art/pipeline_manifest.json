@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "source_of_truth": "Visual/pixel_art_policy.gd",
+  "tasks": [
+    {
+      "id": "damage_digit_atlas",
+      "status": "active",
+      "runtime": "python",
+      "script": "tools/build_damage_digit_atlas.py",
+      "outputs": ["UI/labels/assets/damage_digits_12px.png"],
+      "description": "Build the runtime damage-number glyph atlas."
+    },
+    {
+      "id": "modern_combat_ui",
+      "status": "active",
+      "runtime": "python",
+      "script": "tools/build_modern_ui_assets.py",
+      "outputs": ["UI/themes/modern"],
+      "description": "Build scalable source textures for the modern combat HUD."
+    },
+    {
+      "id": "module_icons",
+      "status": "active",
+      "runtime": "godot",
+      "script": "tools/build_pixel_module_icons.gd",
+      "outputs": ["asset/images/modules/pixel"],
+      "description": "Render deterministic 32x32 module icons from editable SVG sources."
+    },
+    {
+      "id": "weapon_sprite_samples",
+      "status": "experimental",
+      "runtime": "node",
+      "script": "tools/pixel_art/generate_weapon_sprites.mjs",
+      "arguments": ["tmp/weapon_redraw/hd_complete"],
+      "outputs": ["tmp/weapon_redraw/hd_complete"],
+      "description": "Generate QA weapon samples; output is temporary and must not be committed."
+    },
+    {
+      "id": "legacy_pixel_ui",
+      "status": "archived",
+      "runtime": "python",
+      "script": "tools/build_pixel_ui_assets.py",
+      "outputs": ["UI/themes/pixel/generated"],
+      "description": "Reproduce retired HUD experiments only."
+    },
+    {
+      "id": "legacy_asset_migration",
+      "status": "migration",
+      "runtime": "python",
+      "script": "tools/migrate_pixel_art_assets.py",
+      "outputs": ["archive/deprecated_pixel_sources_20260724"],
+      "description": "One-time destructive migration that replaces active assets and archives originals."
+    }
+  ]
+}

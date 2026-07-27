@@ -10,7 +10,7 @@ var attack_speed : float = 1.0
 
 var max_speed_factor : float = 8.0
 
-const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
+const BULLET_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_STANDARD_SIZE
 const HEAT_SPEED_POINTS: Array[Vector2] = [
 	Vector2(0.0, 1.0),
 	Vector2(10.0, 2.0),

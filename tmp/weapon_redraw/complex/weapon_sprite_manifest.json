@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "max_colors": 12,
+  "sprites": [
+    {
+      "file": "machine_gun.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        20
+      ]
+    },
+    {
+      "file": "mg2.png",
+      "width": 18,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "kinetic",
+      "crystal_core": [
+        8,
+        17
+      ]
+    },
+    {
+      "file": "blaster.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "energy",
+      "crystal_core": [
+        10,
+        16
+      ]
+    },
+    {
+      "file": "spear_launcher.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        17
+      ]
+    },
+    {
+      "file": "shotgun.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        18
+      ]
+    },
+    {
+      "file": "pistol.png",
+      "width": 10,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "kinetic",
+      "crystal_core": [
+        4,
+        17
+      ]
+    },
+    {
+      "file": "orbit.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "support",
+      "crystal_core": [
+        10,
+        10
+      ]
+    },
+    {
+      "file": "rocket_launcher.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "fire",
+      "crystal_core": [
+        10,
+        19
+      ]
+    },
+    {
+      "file": "laser.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "energy",
+      "crystal_core": [
+        10,
+        19
+      ]
+    },
+    {
+      "file": "chainsaw_launcher.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        18
+      ]
+    },
+    {
+      "file": "dash_blade.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "energy",
+      "crystal_core": [
+        10,
+        24
+      ]
+    },
+    {
+      "file": "flamethrower.png",
+      "width": 27,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "fire",
+      "crystal_core": [
+        13,
+        18
+      ]
+    },
+    {
+      "file": "plasma_lance.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "plasma",
+      "crystal_core": [
+        10,
+        20
+      ]
+    },
+    {
+      "file": "glacier_projector.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "freeze",
+      "crystal_core": [
+        10,
+        14
+      ]
+    },
+    {
+      "file": "cannon2.png",
+      "width": 15,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "kinetic",
+      "crystal_core": [
+        7,
+        19
+      ]
+    },
+    {
+      "file": "cannon3.png",
+      "width": 20,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "freeze",
+      "crystal_core": [
+        9,
+        19
+      ]
+    },
+    {
+      "file": "sniper.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        22
+      ]
+    }
+  ]
+}

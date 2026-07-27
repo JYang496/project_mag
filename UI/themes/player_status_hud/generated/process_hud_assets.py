@@ -1,3 +1,10 @@
+"""Legacy processor for archived player-status raster experiments.
+
+Runtime HP, shield, and energy meters are now antialiased code-drawn controls in
+``UI/scripts/components/player_status_hud.gd``. Do not wire these outputs back
+into runtime scenes.
+"""
+
 from pathlib import Path
 from PIL import Image
 
@@ -64,4 +71,3 @@ for filename in ("ui_frame.png", "hp_fill.png", "shield_fill.png", "ammo_icon.pn
     trim(ROOT / filename)
 
 rebuild_energy(ROOT / "energy_125_fill.png")
-

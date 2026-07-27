@@ -3,15 +3,8 @@ class_name ReusablePrimaryMenu
 
 signal entry_pressed(entry_id: StringName)
 
-const PANEL_SIZE := Vector2(312, 320)
-const PANEL_POSITION := Vector2(24, 164)
-const TITLE_POSITION := Vector2(28, 16)
-const TITLE_SIZE := Vector2(256, 28)
-const SUBTITLE_POSITION := Vector2(28, 48)
-const SUBTITLE_SIZE := Vector2(256, 28)
-const BUTTON_POSITION_1 := Vector2(28, 108)
-const BUTTON_POSITION_2 := Vector2(28, 166)
-const BUTTON_SIZE := Vector2(220, 46)
+const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
+const LAYOUT_POLICY := preload("res://UI/scripts/management/ui_layout_policy.gd")
 
 var style_helper: ManagementUiStyleHelper
 var _panel: Panel
@@ -26,27 +19,62 @@ static func apply_shared_layout(
 ) -> void:
 	if panel == null:
 		return
-	panel.position = PANEL_POSITION
-	panel.size = PANEL_SIZE
-	panel.custom_minimum_size = PANEL_SIZE
+	var viewport_size := panel.get_viewport().get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		viewport_size = LAYOUT_POLICY.REFERENCE_VIEWPORT
+	var visible_button_count := 0
+	for value in buttons:
+		var candidate := value as Button
+		if candidate != null and candidate.visible:
+			visible_button_count += 1
+	var panel_rect := LAYOUT_POLICY.primary_menu_rect(viewport_size, visible_button_count)
+	panel.position = panel_rect.position
+	panel.size = panel_rect.size
+	panel.custom_minimum_size = Vector2.ZERO
+	var horizontal_margin := float(TOKENS.SPACE_5)
+	var button_size := Vector2(
+		maxf(panel.size.x - horizontal_margin * 2.0, 0.0),
+		TOKENS.BUTTON_HEIGHT
+	)
+	var first_button_position := Vector2(horizontal_margin, 108.0)
+	var second_button_position := first_button_position + Vector2(
+		0.0,
+		button_size.y + TOKENS.SPACE_3
+	)
 	if helper != null:
 		helper.style_primary_menu_panel(
 			panel,
 			buttons,
-			BUTTON_POSITION_1,
-			BUTTON_POSITION_2,
-			BUTTON_SIZE
+			first_button_position,
+			second_button_position,
+			button_size
 		)
 		return
-	_apply_label_layout(panel.get_node_or_null("Title") as Label, TITLE_POSITION, TITLE_SIZE, 24, Color(0.86, 0.94, 1.0))
-	_apply_label_layout(panel.get_node_or_null("SubTitle") as Label, SUBTITLE_POSITION, SUBTITLE_SIZE, 14, Color(0.62, 0.72, 0.8))
+	_apply_label_layout(
+		panel.get_node_or_null("Title") as Label,
+		Vector2(horizontal_margin, TOKENS.SPACE_4),
+		Vector2(button_size.x, 32.0),
+		TOKENS.FONT_TITLE,
+		TOKENS.COLOR_TEXT_PRIMARY
+	)
+	_apply_label_layout(
+		panel.get_node_or_null("SubTitle") as Label,
+		Vector2(horizontal_margin, 52.0),
+		Vector2(button_size.x, 44.0),
+		TOKENS.FONT_LABEL,
+		TOKENS.COLOR_TEXT_SECONDARY
+	)
 	for index in range(buttons.size()):
 		var button := buttons[index] as Button
 		if button == null:
 			continue
-		button.position = BUTTON_POSITION_1 if index == 0 else BUTTON_POSITION_2
-		button.size = BUTTON_SIZE
-		button.custom_minimum_size = BUTTON_SIZE
+		button.position = first_button_position + Vector2(
+			0.0,
+			float(index) * (button_size.y + TOKENS.SPACE_3)
+		)
+		button.size = button_size
+		button.custom_minimum_size = button_size
+		button.focus_mode = Control.FOCUS_ALL
 
 static func _apply_label_layout(
 	label: Label,
@@ -107,8 +135,6 @@ func _rebuild_buttons(entries: Array) -> void:
 			button.queue_free()
 	_buttons.clear()
 	for entry in entries:
-		if _buttons.size() >= 2:
-			break
 		var button := Button.new()
 		button.name = str(entry.get("node_name", "EntryButton%d" % (_buttons.size() + 1)))
 		button.text = str(entry.get("text", ""))

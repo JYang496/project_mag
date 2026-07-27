@@ -28,6 +28,7 @@ const MANAGEMENT_UI_STYLE_HELPER_SCRIPT := preload("res://UI/scripts/management/
 const MANAGEMENT_UI_BOOTSTRAP_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/management_ui_bootstrap_controller.gd")
 const MODAL_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/modal_ui_controller.gd")
 const UI_LAYOUT_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/ui_layout_controller.gd")
+const UI_LAYOUT_POLICY_SCRIPT := preload("res://UI/scripts/management/ui_layout_policy.gd")
 const PAUSE_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/pause_ui_controller.gd")
 const LOCALIZATION_REFRESH_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/localization_refresh_controller.gd")
 const UI_BOOTSTRAP_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/ui_bootstrap_controller.gd")
@@ -177,6 +178,7 @@ var _pending_battle_start := Callable()
 var _pending_battle_start_cancel := Callable()
 var controls_hint_view
 var right_hud_stack: VBoxContainer
+var left_contract_hud_stack: VBoxContainer
 var board_edit_panel: Control
 var cell_management_panel: Control
 @warning_ignore("unused_private_class_variable")
@@ -998,7 +1000,7 @@ func _init_task_objective_hud_presenter() -> void:
 func _init_battle_contract_hud_presenter() -> void:
 	if battle_contract_hud_presenter != null: return
 	battle_contract_hud_presenter = BATTLE_CONTRACT_HUD_PRESENTER_SCRIPT.new()
-	battle_contract_hud_presenter.bind(_ensure_right_hud_stack(), gui_root)
+	battle_contract_hud_presenter.bind(_ensure_left_contract_hud_stack(), gui_root)
 	battle_contract_hud_presenter.layout(get_viewport().get_visible_rect().size)
 
 func _init_ui_dirty_signal_controller() -> void:
@@ -1441,21 +1443,38 @@ func _ensure_right_hud_stack() -> VBoxContainer:
 	right_hud_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	right_hud_stack.z_index = 35
 	right_hud_stack.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	right_hud_stack.offset_left = -376.0
-	right_hud_stack.offset_top = 16.0
-	right_hud_stack.offset_right = -16.0
-	right_hud_stack.offset_bottom = 420.0
-	right_hud_stack.add_theme_constant_override("separation", 8)
+	right_hud_stack.offset_left = -344.0
+	right_hud_stack.offset_top = 24.0
+	right_hud_stack.offset_right = -24.0
+	right_hud_stack.offset_bottom = 456.0
+	right_hud_stack.add_theme_constant_override("separation", 12)
 	gui_root.add_child(right_hud_stack)
 	return right_hud_stack
+
+func _ensure_left_contract_hud_stack() -> VBoxContainer:
+	if left_contract_hud_stack != null and is_instance_valid(left_contract_hud_stack):
+		return left_contract_hud_stack
+	left_contract_hud_stack = VBoxContainer.new()
+	left_contract_hud_stack.name = "LeftContractHudStack"
+	left_contract_hud_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left_contract_hud_stack.z_index = 50
+	left_contract_hud_stack.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	left_contract_hud_stack.offset_left = 24.0
+	left_contract_hud_stack.offset_top = 24.0
+	left_contract_hud_stack.offset_right = 364.0
+	left_contract_hud_stack.offset_bottom = 144.0
+	gui_root.add_child(left_contract_hud_stack)
+	return left_contract_hud_stack
 
 func _layout_controls_hint_panel(viewport_size: Vector2) -> void:
 	_init_modal_ui_controller()
 	if right_hud_stack != null and is_instance_valid(right_hud_stack):
-		var available_width := maxf(1.0, viewport_size.x - 32.0)
-		var stack_width := minf(360.0, available_width)
-		right_hud_stack.offset_left = -16.0 - stack_width
-		right_hud_stack.offset_right = -16.0
+		var safe_margin := UI_LAYOUT_POLICY_SCRIPT.safe_margin(viewport_size)
+		var available_width := maxf(1.0, viewport_size.x - safe_margin.x * 2.0)
+		var stack_width := minf(UI_LAYOUT_POLICY_SCRIPT.HUD_RIGHT_WIDTH, available_width)
+		right_hud_stack.offset_left = -safe_margin.x - stack_width
+		right_hud_stack.offset_top = safe_margin.y
+		right_hud_stack.offset_right = -safe_margin.x
 	modal_ui_controller.layout_controls_hint_panel(viewport_size)
 
 func _update_controls_guide_for_phase(phase: String) -> void:

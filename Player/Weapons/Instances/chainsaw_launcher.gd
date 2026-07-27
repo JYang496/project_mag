@@ -2,7 +2,7 @@ extends Ranger
 
 const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_rules.gd")
 const CHAINSAW_SPIN_FRAMES := preload("res://Player/Weapons/Projectiles/chainsaw_spin_frames.tres")
-const CHAINSAW_PROJECTILE_PIXEL_SIZE := Vector2(32.0, 32.0)
+const CHAINSAW_PROJECTILE_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_LARGE_SIZE
 
 var scale_up_by_time_effect = preload("res://Player/Weapons/Effects/scale_up_by_time.tscn")
 
@@ -179,6 +179,9 @@ func _spawn_split_projectile_from(source: Projectile) -> Projectile:
 	split_projectile.hitbox_type = source.hitbox_type
 	split_projectile.dot_cd = source.dot_cd
 	split_projectile.knock_back = source.knock_back.duplicate(true)
+	split_projectile.source_weapon = source.source_weapon
+	split_projectile.wall_collision_mask = source.wall_collision_mask
+	split_projectile.collision_arming_delay_sec = source.collision_arming_delay_sec
 	var source_timer: Timer = source.get_node_or_null("ExpireTimer") as Timer
 	if source_timer != null:
 		split_projectile.expire_time = maxf(source_timer.time_left, 0.1)

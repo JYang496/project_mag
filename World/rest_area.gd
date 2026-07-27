@@ -819,6 +819,8 @@ func _zone_opens_interaction(zone_id: int) -> bool:
 func _is_zone_available(zone_id: int) -> bool:
 	if zone_id == ZONE_ID_MERCHANT:
 		return PhaseManager.is_full_shop_open()
+	if zone_id == ZONE_ID_BOARD_EDIT:
+		return _board != null and _board.is_cell_system_visible()
 	return true
 
 func _update_zone4_hold(delta: float) -> void:

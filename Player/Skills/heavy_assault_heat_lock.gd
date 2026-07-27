@@ -29,8 +29,12 @@ func activate_skill() -> void:
 	var max_heat: float = float(pool.max_heat)
 	pool.lock_to_value(max_heat * clampf(lock_heat_ratio, 0.0, 1.0), lock_duration_sec)
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
 	if _player == null or not is_instance_valid(_player):
+		return
+	if PhaseManager.current_state() != PhaseManager.BATTLE:
+		_player.remove_move_speed_mul(_move_mul_source_id)
 		return
 	var heat_ratio: float = 0.0
 	var pool := _get_shared_heat_pool()
@@ -39,6 +43,9 @@ func _physics_process(_delta: float) -> void:
 	var diff: float = absf(heat_ratio - passive_center_ratio)
 	var proximity: float = 1.0 - clampf(diff / maxf(passive_falloff_ratio, 0.01), 0.0, 1.0)
 	var best_mul: float = lerpf(1.0, maxf(passive_peak_mul, 1.0), proximity)
+	if is_equal_approx(best_mul, 1.0):
+		_player.remove_move_speed_mul(_move_mul_source_id)
+		return
 	_player.apply_move_speed_mul(_move_mul_source_id, best_mul)
 
 func _has_heat_weapon() -> bool:

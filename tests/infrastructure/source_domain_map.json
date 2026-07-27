@@ -34,6 +34,8 @@
   "domain_rules": [
     {"prefix": "tests/headless/ui/", "domain": "ui", "certainty": "known"},
     {"prefix": "tests/scenes/ui/", "domain": "ui", "certainty": "known"},
+    {"prefix": "tests/headless/presentation/", "domain": "presentation", "certainty": "known"},
+    {"prefix": "tests/scenes/presentation/", "domain": "presentation", "certainty": "known"},
     {"prefix": "tests/headless/player/", "domain": "player", "certainty": "known"},
     {"prefix": "tests/scenes/player/", "domain": "player", "certainty": "known"},
     {"prefix": "tests/headless/weapon/", "domain": "weapon", "certainty": "known"},
@@ -62,6 +64,7 @@
     {"prefix": "Board/Cells/", "domain": "cell", "certainty": "known"},
     {"prefix": "Combat/", "domain": "combat", "certainty": "known"},
     {"prefix": "Npc/", "domain": "enemy", "certainty": "known"},
+    {"prefix": "Visual/", "domain": "presentation", "certainty": "known"},
     {"prefix": "Objects/", "domain": "spawn", "certainty": "uncertain"},
     {"prefix": "data/", "domain": "data", "certainty": "uncertain"},
     {"prefix": "asset/", "domain": "asset", "certainty": "uncertain"},

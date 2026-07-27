@@ -1,11 +1,15 @@
 extends RefCounted
 class_name PlayerDamageReactionSystem
 
+const DAMAGE_FEEDBACK_CONTROLLER_SCRIPT := preload("res://Player/Mechas/scripts/player_damage_feedback_controller.gd")
+
 var _player
 var _elite_hit_slow_until_msec: int = 0
+var _feedback_controller
 
 func setup(player) -> void:
 	_player = player
+	_ensure_feedback_controller()
 
 func damaged(attack: Attack) -> DamageResult:
 	var rejected := DamageResult.new()
@@ -22,6 +26,12 @@ func damaged(attack: Attack) -> DamageResult:
 	var result: DamageResult = _player._incoming_damage_pipeline.apply_incoming_damage(_player, attack, _player._incoming_damage_profile)
 	if not result.applied:
 		return result
+	var feedback := {}
+	_ensure_feedback_controller()
+	if _feedback_controller != null:
+		feedback = _feedback_controller.play_damage(result, attack)
+	if not feedback.is_empty() and _player.PlayerData != null:
+		_player.PlayerData.player_damage_received.emit(feedback)
 	if _player.has_method("_broadcast_weapon_passive_event"):
 		_player.call("_broadcast_weapon_passive_event", &"on_player_damaged", {
 			"attack": attack,
@@ -151,3 +161,18 @@ func _ensure_elemental_system() -> void:
 	if _player == null:
 		return
 	_player._ensure_elemental_effect_system()
+
+func _ensure_feedback_controller() -> void:
+	if _player == null or not is_instance_valid(_player):
+		return
+	if _feedback_controller != null and is_instance_valid(_feedback_controller):
+		_feedback_controller.setup(_player)
+		return
+	var existing: Node = _player.get_node_or_null("DamageFeedbackController")
+	if existing != null:
+		_feedback_controller = existing
+	else:
+		_feedback_controller = DAMAGE_FEEDBACK_CONTROLLER_SCRIPT.new()
+		_feedback_controller.name = "DamageFeedbackController"
+		_player.add_child(_feedback_controller)
+	_feedback_controller.setup(_player)

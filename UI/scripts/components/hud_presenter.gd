@@ -23,9 +23,11 @@ var character_hud_root: Control
 const HUD_MARGIN := 16.0
 const CONTINUOUS_REFRESH_INTERVAL := 0.1
 const COMBAT_RESOURCE_ORIGIN := Vector2(104.0, 18.0)
-const SPECIAL_RESOURCE_OFFSET := Vector2(96.0, 76.0)
+const SPECIAL_RESOURCE_MAX_SIZE := Vector2(250.0, 152.0)
+const STATUS_DOCK_WIDTH := 420.0
+const STATUS_RESOURCE_GAP := 16.0
 const SPECIAL_RESOURCE_OPACITY := 0.62
-const HEALTH_METER_ORIGIN := Vector2(104.0, 18.0)
+const HEALTH_METER_ORIGIN := Vector2.ZERO
 const COMBAT_RESOURCE_METER_SCRIPT := preload("res://UI/scripts/components/combat_resource_meter.gd")
 const PLAYER_HEALTH_METER_SCRIPT := preload("res://UI/scripts/components/player_health_meter.gd")
 const PLAYER_STATUS_HUD_SCRIPT := preload("res://UI/scripts/components/player_status_hud.gd")
@@ -83,12 +85,23 @@ func layout_hud(viewport_size: Vector2, hp_label_root: Control, weapon_selector:
 	if equipped_label and is_instance_valid(equipped_label):
 		equipped_label.position = Vector2(HUD_MARGIN, HUD_MARGIN)
 	if weapon_selector and is_instance_valid(weapon_selector):
-		weapon_selector.set_layout_origin(Vector2(HUD_MARGIN + 12.0, HUD_MARGIN - 2.0))
+		var selector_height := weapon_selector.size.y * weapon_selector.scale.y
+		if selector_height <= 0.0:
+			selector_height = 72.0
+		weapon_selector.set_layout_origin(Vector2(
+			HUD_MARGIN + 12.0,
+			viewport_size.y - selector_height - HUD_MARGIN
+		))
 	if hp_label_root and is_instance_valid(hp_label_root):
-		var dock_height := hp_label_root.size.y * hp_label_root.scale.y
-		if dock_height <= 0.0:
-			dock_height = 108.0
-		hp_label_root.position = Vector2(HUD_MARGIN, viewport_size.y - dock_height - HUD_MARGIN)
+		var dock_size := hp_label_root.size * hp_label_root.scale
+		if dock_size.x <= 0.0:
+			dock_size.x = 420.0
+		if dock_size.y <= 0.0:
+			dock_size.y = 80.0
+		hp_label_root.position = Vector2(
+			(viewport_size.x - dock_size.x) * 0.5,
+			viewport_size.y - dock_size.y - HUD_MARGIN
+		)
 	if weapon_state_label and is_instance_valid(weapon_state_label):
 		weapon_state_label.position = Vector2(HUD_MARGIN, viewport_size.y - 300.0)
 	var time_display := _get_time_display_control()
@@ -102,7 +115,7 @@ func layout_hud(viewport_size: Vector2, hp_label_root: Control, weapon_selector:
 	if combat_resource_slot_container and is_instance_valid(combat_resource_slot_container):
 		combat_resource_slot_container.position = COMBAT_RESOURCE_ORIGIN
 	if special_resource_slot_container and is_instance_valid(special_resource_slot_container):
-		special_resource_slot_container.position = viewport_size * 0.5 + SPECIAL_RESOURCE_OFFSET
+		special_resource_slot_container.position = _special_resource_position(viewport_size)
 
 func ensure_heat_label(character_root: Control) -> Label:
 	character_hud_root = character_root
@@ -147,7 +160,7 @@ func ensure_resource_label_under_hp(current_resource_label: Label, hp_label_root
 	_ensure_energy_meter_under_hp(hp_label_root)
 	return resource_label
 
-func _ensure_energy_meter_under_hp(hp_label_root: Control) -> void:
+func _ensure_energy_meter_under_hp(_hp_label_root: Control) -> void:
 	_ensure_health_meter()
 	energy_meter = health_meter
 
@@ -442,8 +455,26 @@ func _ensure_special_resource_slot_container() -> void:
 	special_resource_slot_container = Control.new()
 	special_resource_slot_container.name = "SpecialResourceSlot"
 	special_resource_slot_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	special_resource_slot_container.position = parent.get_viewport_rect().size * 0.5 + SPECIAL_RESOURCE_OFFSET
+	special_resource_slot_container.position = _special_resource_position(parent.get_viewport_rect().size)
 	parent.add_child(special_resource_slot_container)
+
+func _special_resource_position(viewport_size: Vector2) -> Vector2:
+	# This meter used to float inside the aiming/play space. It now joins the
+	# bottom status dock, immediately to the right when space permits.
+	var status_right := (viewport_size.x + STATUS_DOCK_WIDTH) * 0.5
+	var center_safe_right := viewport_size.x * 0.72
+	var preferred_x := maxf(
+		status_right + STATUS_RESOURCE_GAP,
+		center_safe_right + STATUS_RESOURCE_GAP
+	)
+	var maximum_x := viewport_size.x - HUD_MARGIN - SPECIAL_RESOURCE_MAX_SIZE.x
+	var x := minf(preferred_x, maximum_x)
+	if x < HUD_MARGIN:
+		x = HUD_MARGIN
+	return Vector2(
+		x,
+		maxf(HUD_MARGIN, viewport_size.y - HUD_MARGIN - SPECIAL_RESOURCE_MAX_SIZE.y)
+	)
 
 func _sync_ammo_resource_slot(slot: Dictionary) -> void:
 	if slot.is_empty():
@@ -561,7 +592,7 @@ func _refresh_resource_text_value() -> void:
 		return
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player) \
 			or not PlayerData.player.has_method("get_current_energy"):
-		_update_skill_energy_meter(0.0, 100.0, 0.0, 0.0)
+		_update_skill_energy_meter(false, 0.0, 100.0, 0.0, 0.0, 0.0, 0.0)
 		return
 	var current_energy := maxf(float(PlayerData.player.call("get_current_energy")), 0.0)
 	var max_energy := current_energy
@@ -571,26 +602,56 @@ func _refresh_resource_text_value() -> void:
 	if PlayerData.player.has_method("get_active_skill_energy_cost"):
 		skill_cost = maxf(float(PlayerData.player.call("get_active_skill_energy_cost")), 0.0)
 	var cooldown_ratio := 0.0
+	var cooldown_remaining := 0.0
+	var cooldown_duration := 0.0
 	var active_skill_node: Node = null
 	if PlayerData.player.active_skill_holder and PlayerData.player.active_skill_holder.get_child_count() > 0:
 		active_skill_node = PlayerData.player.active_skill_holder.get_child(0)
 	if active_skill_node != null and active_skill_node.has_method("get_cooldown_ratio"):
 		cooldown_ratio = clampf(float(active_skill_node.call("get_cooldown_ratio")), 0.0, 1.0)
-	_update_skill_energy_meter(current_energy, max_energy, skill_cost, cooldown_ratio)
+	if active_skill_node != null and active_skill_node.has_method("get_cooldown_remaining"):
+		cooldown_remaining = maxf(float(active_skill_node.call("get_cooldown_remaining")), 0.0)
+	if active_skill_node != null and active_skill_node.has_method("get_cooldown_duration"):
+		cooldown_duration = maxf(float(active_skill_node.call("get_cooldown_duration")), 0.0)
+	_update_skill_energy_meter(
+		active_skill_node != null,
+		current_energy,
+		max_energy,
+		skill_cost,
+		cooldown_ratio,
+		cooldown_remaining,
+		cooldown_duration
+	)
 
-func _update_skill_energy_meter(current_energy: float, max_energy: float, skill_cost: float, cooldown_ratio: float) -> void:
-	var next_signature := "%.1f:%.1f:%.1f:%.2f" % [
+func _update_skill_energy_meter(
+	has_active_skill: bool,
+	current_energy: float,
+	max_energy: float,
+	skill_cost: float,
+	cooldown_ratio: float,
+	cooldown_remaining: float,
+	cooldown_duration: float
+) -> void:
+	var next_signature := "%s:%.1f:%.1f:%.1f:%.2f:%.1f:%.1f" % [
+		str(has_active_skill),
 		snappedf(current_energy, 0.1),
 		snappedf(max_energy, 0.1),
 		snappedf(skill_cost, 0.1),
-		snappedf(cooldown_ratio, 0.01)
+		snappedf(cooldown_ratio, 0.01),
+		snappedf(cooldown_remaining, 0.1),
+		snappedf(cooldown_duration, 0.1)
 	]
 	if _last_energy_signature == next_signature:
 		return
 	_last_energy_signature = next_signature
+	if energy_meter.has_method("set_skill_available"):
+		energy_meter.call("set_skill_available", has_active_skill)
 	energy_meter.call("set_energy", current_energy, max_energy)
 	energy_meter.call("set_skill_cost", skill_cost)
-	energy_meter.call("set_cooldown_ratio", cooldown_ratio)
+	if energy_meter.has_method("set_cooldown") and cooldown_duration > 0.0:
+		energy_meter.call("set_cooldown", cooldown_remaining, cooldown_duration)
+	else:
+		energy_meter.call("set_cooldown_ratio", cooldown_ratio)
 
 func _refresh_time_text_value() -> void:
 	var time_display := _get_time_display_control()

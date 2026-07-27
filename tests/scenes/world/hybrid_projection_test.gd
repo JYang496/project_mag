@@ -121,13 +121,14 @@ func _ready() -> void:
 	cell.name = "DummyCell"
 	var texture_root := Node2D.new()
 	texture_root.name = "Texture"
+	texture_root.position = Vector2(192.0, 128.0)
 	cell.add_child(texture_root)
 	var sprite := Sprite2D.new()
 	sprite.name = "Sprite2D"
-	var texture := GradientTexture2D.new()
-	texture.width = 512
-	texture.height = 512
-	sprite.texture = texture
+	var cell_texture := GradientTexture2D.new()
+	cell_texture.width = 384
+	cell_texture.height = 256
+	sprite.texture = cell_texture
 	texture_root.add_child(sprite)
 	board.add_child(cell)
 	board.cells.append(cell)
@@ -141,6 +142,9 @@ func _ready() -> void:
 	rest_area.add_child(rest_texture_root)
 	var rest_sprite := Sprite2D.new()
 	rest_sprite.name = "Sprite2D"
+	var texture := GradientTexture2D.new()
+	texture.width = 512
+	texture.height = 512
 	rest_sprite.texture = texture
 	rest_texture_root.add_child(rest_sprite)
 	add_child(rest_area)
@@ -158,6 +162,7 @@ func _ready() -> void:
 	failed = _check((view.get("_segment_meshes") as Dictionary).has(pending_line.get_instance_id()), "visual registered before the View must flush from the pending queue") or failed
 	failed = _check(view.get("_mesh_registry") is GroundMeshRegistry, "Hybrid view must delegate registration to GroundMeshRegistry") or failed
 	failed = _check(view.get("_board_renderer") is BoardGroundRenderer, "Board and RestArea ground must use BoardGroundRenderer") or failed
+	failed = _check(view.get("_platform_renderer") is BoardPlatformRenderer, "Board support must use the dynamic BoardPlatformRenderer") or failed
 	failed = _check(view.get("_connected_renderer") is ConnectedEffectRenderer, "Beam, link and cone visuals must use ConnectedEffectRenderer") or failed
 	failed = _check(view.get("_aura_renderer") is AuraRenderer, "Aura and enemy link visuals must use AuraRenderer") or failed
 	failed = _check(view.get("_area_renderer") is AreaEffectRenderer, "Area, shadow and telegraph visuals must use AreaEffectRenderer") or failed
@@ -373,17 +378,56 @@ func _ready() -> void:
 	var ground_mesh := view.get_node_or_null("GroundMeshes/DummyCellGround") as MeshInstance3D
 	failed = _check(ground_mesh != null, "dummy 2D Cell must create a mapped 3D ground mesh") or failed
 	if ground_mesh != null:
+		failed = _check(ground_mesh.position.distance_to(view.world_2d_to_3d(sprite.global_position)) < 0.001, "non-square Cell ground must use the Sprite's actual center instead of a fixed 256 offset") or failed
+		failed = _check((ground_mesh.mesh as QuadMesh).size.distance_to(Vector2(384.0, 256.0) * view.world_scale) < 0.001, "non-square Cell ground must preserve its actual texture dimensions") or failed
+	var support_rim := view.get_node_or_null("GroundMeshes/BoardSupportContactRim") as MeshInstance3D
+	var support_skirt := view.get_node_or_null("GroundMeshes/BoardSupportFrontSkirt") as MeshInstance3D
+	var support_rail := view.get_node_or_null("GroundMeshes/BoardSupportLowProfileRail") as MeshInstance3D
+	var support_transition := view.get_node_or_null("GroundMeshes/BoardSupportTransitionBand") as MeshInstance3D
+	failed = _check(support_rim != null, "active board cells must create a mapped 3D contact rim") or failed
+	failed = _check(support_skirt != null, "active board cells must preserve the original lower skirt") or failed
+	failed = _check(support_rail != null, "active board cells must create a mapped low-profile rail") or failed
+	failed = _check(support_transition != null, "active board cells must create a mapped compact transition band") or failed
+	if ground_mesh != null:
 		var position_before := ground_mesh.position
+		var support_position_before := support_rim.position if support_rim != null else Vector3.ZERO
+		var skirt_position_before := support_skirt.position if support_skirt != null else Vector3.ZERO
+		var rail_position_before := support_rail.position if support_rail != null else Vector3.ZERO
+		var transition_position_before := support_transition.position if support_transition != null else Vector3.ZERO
 		var recenter_offset := Vector2(140.0, -75.0)
 		board.position += recenter_offset
 		board.board_recentered.emit(recenter_offset)
 		await get_tree().process_frame
 		var expected_delta := view.world_2d_to_3d(recenter_offset)
 		failed = _check(ground_mesh.position.distance_to(position_before + expected_delta) < 0.001, "3D Cell must follow 2D Board recenter") or failed
+		if support_rim != null:
+			failed = _check(support_rim.position.distance_to(support_position_before + expected_delta) < 0.001, "3D board support must follow Board recenter without separating from the ground") or failed
+		if support_skirt != null:
+			failed = _check(support_skirt.position.distance_to(skirt_position_before + expected_delta) < 0.001, "Original lower skirt must follow Board recenter without separating from the ground") or failed
+		if support_rail != null:
+			failed = _check(support_rail.position.distance_to(rail_position_before + expected_delta) < 0.001, "3D board rail must follow Board recenter without separating from the ground") or failed
+		if support_transition != null:
+			failed = _check(support_transition.position.distance_to(transition_position_before + expected_delta) < 0.001, "3D board transition must follow Board recenter without separating from the ground") or failed
 		board.board_visual_active_changed.emit(false, true)
 		failed = _check(not ground_mesh.visible, "3D Cell must hide with the 2D Board") or failed
+		if support_rim != null:
+			failed = _check(not support_rim.visible, "3D board support must hide with the Board") or failed
+		if support_skirt != null:
+			failed = _check(not support_skirt.visible, "Original lower skirt must hide with the Board") or failed
+		if support_rail != null:
+			failed = _check(not support_rail.visible, "3D board rail must hide with the Board") or failed
+		if support_transition != null:
+			failed = _check(not support_transition.visible, "3D board transition must hide with the Board") or failed
 		board.board_visual_active_changed.emit(true, true)
 		failed = _check(ground_mesh.visible, "3D Cell must become visible with the 2D Board") or failed
+		if support_rim != null:
+			failed = _check(support_rim.visible, "3D board support must become visible with the Board") or failed
+		if support_skirt != null:
+			failed = _check(support_skirt.visible, "Original lower skirt must become visible with the Board") or failed
+		if support_rail != null:
+			failed = _check(support_rail.visible, "3D board rail must become visible with the Board") or failed
+		if support_transition != null:
+			failed = _check(support_transition.visible, "3D board transition must become visible with the Board") or failed
 	var viewport_center := get_viewport().get_visible_rect().size * 0.5
 	var original_phase: String = PhaseManager.current_state()
 	PhaseManager.phase = PhaseManager.PREPARE

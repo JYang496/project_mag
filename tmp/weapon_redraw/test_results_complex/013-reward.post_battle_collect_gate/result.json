@@ -1,0 +1,23 @@
+{
+  "id": "reward.post_battle_collect_gate",
+  "status": "PASS",
+  "detail": "pass marker",
+  "exit_code": 0,
+  "timed_out": false,
+  "shutdown_diagnostics_present": false,
+  "shutdown_diagnostic_count": 0,
+  "shutdown_diagnostics": [],
+  "runtime_error_count": 0,
+  "runtime_errors": [],
+  "duration_seconds": 4.404,
+  "execution_mode": "exclusive",
+  "parallel_safe": false,
+  "writes_user_data": true,
+  "timeout_seconds": 30,
+  "user_data_dir": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\013-reward.post_battle_collect_gate\\godot-user-home",
+  "app_data_dir": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\013-reward.post_battle_collect_gate\\appdata",
+  "local_app_data_dir": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\013-reward.post_battle_collect_gate\\localappdata",
+  "stdout_path": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\013-reward.post_battle_collect_gate\\stdout.log",
+  "stderr_path": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\013-reward.post_battle_collect_gate\\stderr.log",
+  "reproduction_command": "$env:GODOT_USER_HOME = 'E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\013-reward.post_battle_collect_gate\\godot-user-home'; $env:APPDATA = 'E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\013-reward.post_battle_collect_gate\\appdata'; $env:LOCALAPPDATA = 'E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\013-reward.post_battle_collect_gate\\localappdata'; & 'E:\\Godot_v4.7.1-stable_win64\\Godot_v4.7.1-stable_win64_console.exe' '--headless' '--path' 'E:\\Godot Projects\\project_mag' 'res://tests/scenes/reward/post_battle_collect_gate_test.tscn'"
+}

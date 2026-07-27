@@ -36,8 +36,11 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	var chain_damage_ratio_scaled := chain_damage_ratio * get_effective_additive(1.0, 0.3)
 	var chain_damage: int = max(1, int(round(float(base_damage) * chain_damage_ratio_scaled)))
 	var owner_player := DamageManager.resolve_source_player(source_weapon) as Player
+	var chain_is_critical := false
 	if owner_player and is_instance_valid(owner_player):
-		chain_damage = owner_player.compute_outgoing_damage(chain_damage)
+		var outgoing_result = owner_player.compute_outgoing_damage_result(chain_damage)
+		chain_damage = outgoing_result.damage
+		chain_is_critical = outgoing_result.is_critical
 
 	var candidates: Array[Node] = []
 	var effective_chain_range := chain_range * get_effective_additive(1.0, 0.25)
@@ -71,6 +74,7 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 				DamageData.SOURCE_PLAYER_WEAPON,
 				DamageDeliveryType.BEAM
 			)
+			damage_data.is_critical = chain_is_critical
 			_draw_chain_line(target2d.global_position, (chained_target as Node2D).global_position)
 			DamageManager.apply_to_target(chained_target, damage_data)
 			if owner_player and is_instance_valid(owner_player):

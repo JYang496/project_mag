@@ -121,7 +121,7 @@ clip_text = true
 [node name="Subtitle" type="Label" parent="ShopDetailPanel/Margin/Root"]
 layout_mode = 2
 modulate = Color(0.72, 0.81, 0.86, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 15
 autowrap_mode = 2
 
 [node name="Separator" type="HSeparator" parent="ShopDetailPanel/Margin/Root"]

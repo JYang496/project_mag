@@ -9,6 +9,7 @@ enum RangeMode {
 	ATTACHED_RADIUS,
 }
 
+const DEFAULT_PROJECTILE_LIFETIME_SEC: float = 2.5
 const WeaponFireFeedbackPlayerScript := preload("res://Player/Weapons/Feedback/weapon_fire_feedback_player.gd")
 
 #region Runtime State
@@ -378,7 +379,9 @@ func get_effective_projectile_lifetime() -> float:
 		return maxf(configured_attack_range / maxf(_get_range_reference_speed(), 1.0), 0.01)
 	if range_mode == RangeMode.FIXED_LIFETIME:
 		return maxf(projectile_lifetime_sec, 0.01)
-	return maxf(projectile_lifetime_sec, 0.0)
+	if projectile_lifetime_sec > 0.0:
+		return projectile_lifetime_sec
+	return DEFAULT_PROJECTILE_LIFETIME_SEC
 
 func _get_range_reference_speed() -> float:
 	var speed_value: Variant = get("speed")
@@ -818,6 +821,9 @@ func request_weapon_active() -> Dictionary:
 	return active_controller.request_weapon_active()
 
 func _execute_weapon_active(_damage_multiplier: float) -> bool:
+	return false
+
+func has_weapon_active_skill() -> bool:
 	return false
 
 func get_weapon_active_cd_remaining() -> float:

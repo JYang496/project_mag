@@ -6,7 +6,7 @@ class_name ConeSprayVfx
 @export var linger_sec: float = 0.16
 @export var fade_out_sec: float = 0.1
 @export var muzzle_offset_px: float = 20.0
-@export var base_range_px: float = 512.0
+@export var base_range_px: float = 256.0
 @export var base_half_angle_deg: float = 40.0
 @export var min_width_scale: float = 0.45
 @export var max_width_scale: float = 1.35
@@ -33,6 +33,12 @@ func _ready() -> void:
 
 
 func start_or_refresh(source_global_position: Vector2, direction: Vector2, spray_range: float, half_angle_deg: float) -> void:
+	# Board rebuilds clear the 3D ground-effect cache while this weapon-owned
+	# node survives between battles. Re-registering is idempotent and restores
+	# the cone after the cache has been rebuilt.
+	_hybrid_registered = HybridGroundRegistration.register(self, &"register_ground_cone_effect")
+	if not _hybrid_registered:
+		set_meta(&"hybrid_ground_registered", false)
 	if direction == Vector2.ZERO:
 		direction = _last_direction
 	_last_direction = direction.normalized()
@@ -129,7 +135,7 @@ func _update_ground_rays() -> void:
 	pass
 
 func get_hybrid_ground_cone_visual() -> Dictionary:
-	var color := modulate * visible_modulate
+	var color := modulate
 	return {
 		"visible": visible,
 		"origin": global_position,

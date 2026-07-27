@@ -12,8 +12,8 @@ const HEAT_GAUGE_SIZE := Vector2(152.0, 152.0)
 const HEAT_GAUGE_PIVOT := HEAT_GAUGE_SIZE * 0.5
 const HEAT_NEEDLE_MIN_DEGREES := -143.0
 const HEAT_NEEDLE_MAX_DEGREES := 143.0
-const HEAT_GAUGE_TEXTURE := preload("res://asset/images/ui/heat_gauge/heat_gauge.png")
-const HEAT_NEEDLE_TEXTURE := preload("res://asset/images/ui/heat_gauge/heat_needle.png")
+const HEAT_GAUGE_TEXTURE := preload("res://UI/themes/modern/heat_gauge.png")
+const HEAT_NEEDLE_TEXTURE := preload("res://UI/themes/modern/heat_needle.png")
 const ICON_RECT := Rect2(Vector2(0.0, 2.0), Vector2(22.0, 14.0))
 const BAR_RECT := Rect2(Vector2(30.0, 5.0), Vector2(160.0, 10.0))
 const LABEL_OFFSET := Vector2(196.0, 0.0)
@@ -222,6 +222,7 @@ func _ensure_heat_gauge() -> void:
 	_heat_gauge.texture = HEAT_GAUGE_TEXTURE
 	_heat_gauge.size = HEAT_GAUGE_SIZE
 	_heat_gauge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_heat_gauge.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_heat_gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_heat_gauge)
 	_heat_needle = TextureRect.new()
@@ -230,6 +231,7 @@ func _ensure_heat_gauge() -> void:
 	_heat_needle.texture = HEAT_NEEDLE_TEXTURE
 	_heat_needle.size = HEAT_GAUGE_SIZE
 	_heat_needle.pivot_offset = HEAT_GAUGE_PIVOT
+	_heat_needle.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_heat_needle.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_heat_needle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_heat_needle)

@@ -1,0 +1,6 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+
+PASS: Player-facing scene scan should discover runtime scenes.
+PASS: English title should use the release name. Expected=Protocol: Mag Arena Actual=Protocol: Mag Arena
+PASS: Chinese title should use the release name. Expected=协议：磁核竞技场 Actual=协议：磁核竞技场
+PASS: player-facing copy

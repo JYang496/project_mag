@@ -8,7 +8,8 @@ signal calculate_weapon_size(size)
 
 const AIM_ROTATION_OFFSET := deg_to_rad(90)
 const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_rules.gd")
-const BLADE_SPRITE_TARGET_HEIGHT := 40.0
+const PixelArtPolicyType := preload("res://Visual/pixel_art_policy.gd")
+const BLADE_SPRITE_TARGET_HEIGHT := PixelArtPolicyType.WEAPON_TARGET_HEIGHT_PX
 
 var ITEM_NAME := "Dash Blade"
 

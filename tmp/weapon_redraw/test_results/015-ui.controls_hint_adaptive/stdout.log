@@ -1,0 +1,37 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+
+PASS: Adaptive mode should enter battle with the basic controls expanded. Expected=0 Actual=0
+PASS: Using movement and attack should collapse adaptive guidance. Expected=1 Actual=1
+PASS: Adaptive guidance should collapse after its battle timeout. Expected=1 Actual=1
+PASS: The fallback timeout should remain approximately eight seconds.
+PASS: F1 should temporarily collapse adaptive guidance.
+PASS: The first F1 toggle should collapse expanded guidance. Expected=1 Actual=1
+PASS: Temporary F1 collapse should not change the persistent mode. Expected=adaptive Actual=adaptive
+PASS: F1 should temporarily expand compact guidance.
+PASS: The second F1 toggle should expand compact guidance. Expected=0 Actual=0
+PASS: Temporary F1 expansion should not change the persistent mode. Expected=adaptive Actual=adaptive
+PASS: Hidden mode should stay hidden in battle. Expected=2 Actual=2
+PASS: F1 should not override Hidden mode.
+PASS: Always mode should remain expanded after the adaptive timeout. Expected=0 Actual=0
+PASS: F1 should not collapse Always mode.
+PASS: Control labels should reflect the current InputMap binding. Expected=T Actual=T
+PASS: Short controls text should respect the expanded minimum width.
+PASS: Short controls text should use less than the 360px width cap.
+PASS: Long localized controls text should be capped at 360px. Expected=360.0 Actual=360.0
+PASS: Long controls content should not widen the panel beyond its cap.
+PASS: Header title should remain inside the panel.
+PASS: Header button should remain inside the panel.
+PASS: A longer key label should grow its shared keycap column within the cap.
+PASS: Long action descriptions should retain wrapping.
+PASS: Long action descriptions should wrap onto another line at the width cap.
+PASS: A narrow viewport should constrain the panel inside both 16px margins.
+PASS: A narrow viewport should keep the controls panel on screen.
+PASS: Compact battle controls should remain approximately 132px wide.
+PASS: A short ordinary text context should use adaptive expanded width.
+PASS: A long ordinary text context should use the 360px width cap. Expected=360.0 Actual=360.0
+PASS: Repeated text-context refreshes should settle at a stable width.
+PASS: A narrow viewport should cap text-context target width to available space.
+PASS: Controls should animate when its stack layout target changes.
+PASS: Stack reflow animation should begin from the previous screen position.
+PASS: Stack reflow animation should finish at the container-assigned position.
+PASS: controls hint adaptive guidance

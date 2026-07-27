@@ -38,7 +38,7 @@ func bind(root: Control, overlay_root: Control = null) -> void:
 	panel = PanelContainer.new()
 	panel.name = "BattleContractHud"
 	panel.custom_minimum_size = COMPACT_SIZE
-	panel.size_flags_horizontal = Control.SIZE_SHRINK_END
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.z_index = 50
 	panel.add_theme_stylebox_override("panel", _build_panel_style())
@@ -100,9 +100,9 @@ func layout(viewport_size: Vector2) -> void:
 	if panel == null:
 		return
 	if panel.get_parent() is Container:
-		panel.size_flags_horizontal = Control.SIZE_SHRINK_END
+		panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		return
-	panel.position = Vector2(maxf(16.0, viewport_size.x - panel.custom_minimum_size.x - 16.0), 16.0)
+	panel.position = _hud_target_position(viewport_size)
 
 func refresh() -> void:
 	if panel == null or _intro_playing or PhaseManager.current_state() != PhaseManager.BATTLE or BattleContractManager.state != BattleContractManager.ACTIVE: return
@@ -307,9 +307,7 @@ func play_prepared_intro() -> void:
 	# Populate the destination before moving so the card visibly transforms into
 	# the HUD instead of disappearing and being replaced a frame later.
 	var handoff_to_contract_hud := not _boss_intro and BattleContractManager.state == BattleContractManager.ACTIVE
-	var stack_positions_before_handoff: Dictionary = {}
 	if handoff_to_contract_hud:
-		stack_positions_before_handoff = _capture_stack_sibling_positions()
 		_last_snapshot = {}
 		_intro_playing = false
 		refresh()
@@ -318,8 +316,7 @@ func play_prepared_intro() -> void:
 		progress.modulate.a = 0.0
 		panel.visible = true
 		await panel.get_tree().process_frame
-		_animate_stack_sibling_reflow(stack_positions_before_handoff)
-	var final_position := Vector2(viewport_size.x - COMPACT_SIZE.x - 16.0, 16.0)
+	var final_position := _hud_target_position(viewport_size)
 	var intro_parent := intro.get_parent() as Control
 	if handoff_to_contract_hud and intro_parent != null and panel.is_inside_tree():
 		final_position = intro_parent.get_global_transform_with_canvas().affine_inverse() * panel.get_global_position()
@@ -350,29 +347,8 @@ func play_prepared_intro() -> void:
 	elif _boss_intro and PhaseManager.current_state() == PhaseManager.BATTLE:
 		_show_boss_hud()
 
-func _capture_stack_sibling_positions() -> Dictionary:
-	var positions := {}
-	if panel == null or panel.get_parent() == null:
-		return positions
-	for sibling in panel.get_parent().get_children():
-		var control := sibling as Control
-		if control == null or control == panel or not control.visible:
-			continue
-		positions[control.get_instance_id()] = control.get_global_position()
-	return positions
-
-func _animate_stack_sibling_reflow(previous_positions: Dictionary) -> void:
-	if panel == null or panel.get_parent() == null:
-		return
-	for sibling in panel.get_parent().get_children():
-		var control := sibling as Control
-		if control == null or not control.visible:
-			continue
-		var instance_id := control.get_instance_id()
-		if not previous_positions.has(instance_id):
-			continue
-		if control.has_method("animate_stack_reflow_from"):
-			control.call("animate_stack_reflow_from", previous_positions[instance_id])
+func _hud_target_position(_viewport_size: Vector2) -> Vector2:
+	return Vector2(16.0, 16.0)
 
 func _build_contract_parameters(id: String, parameters: Dictionary) -> String:
 	var text := ""

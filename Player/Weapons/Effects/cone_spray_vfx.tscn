@@ -6,11 +6,12 @@
 [node name="ConeSprayVfx" type="Node2D"]
 script = ExtResource("1_script")
 sprite_frames = ExtResource("2_frames")
+visible_modulate = Color(1, 0.38, 0.06, 0.78)
 
 [node name="SprayRoot" type="Node2D" parent="."]
 
 [node name="Sprite" type="AnimatedSprite2D" parent="SprayRoot"]
-position = Vector2(0, -80)
+position = Vector2(0, -40)
 texture_filter = 1
 sprite_frames = ExtResource("2_frames")
 animation = &"spray"

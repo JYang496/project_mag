@@ -1,6 +1,8 @@
 extends RefCounted
 class_name PlayerStatusModifierSystem
 
+const OutgoingDamageResultType := preload("res://Combat/damage/outgoing_damage_result.gd")
+
 var _player
 var _player_data: Node = null
 var _move_speed_mul_modifiers: Dictionary = {}
@@ -19,6 +21,9 @@ func apply_move_speed_mul(source_id: StringName, mul: float) -> void:
 	if source_id == StringName():
 		return
 	var clamped_mul := clampf(mul, 0.05, 10.0)
+	if is_equal_approx(clamped_mul, 1.0):
+		remove_move_speed_mul(source_id)
+		return
 	_move_speed_mul_modifiers[source_id] = clamped_mul
 	_notify(&"move_speed_up" if clamped_mul >= 1.0 else &"move_speed_down", source_id, true)
 
@@ -38,6 +43,9 @@ func apply_vision_mul(source_id: StringName, mul: float) -> void:
 	if source_id == StringName():
 		return
 	var clamped_mul := clampf(mul, 0.05, 10.0)
+	if is_equal_approx(clamped_mul, 1.0):
+		remove_vision_mul(source_id)
+		return
 	_vision_mul_modifiers[source_id] = clamped_mul
 	_notify(&"vision_up" if clamped_mul >= 1.0 else &"vision_down", source_id, true)
 
@@ -57,6 +65,9 @@ func apply_damage_mul(source_id: StringName, mul: float) -> void:
 	if source_id == StringName():
 		return
 	var clamped_mul := maxf(mul, 0.05)
+	if is_equal_approx(clamped_mul, 1.0):
+		remove_damage_mul(source_id)
+		return
 	_damage_mul_modifiers[source_id] = clamped_mul
 	_notify(&"damage_up" if clamped_mul >= 1.0 else &"damage_down", source_id, true)
 
@@ -104,15 +115,19 @@ func remove_loot_bonus(source_id: StringName) -> void:
 		_loot_bonus_modifiers.erase(source_id)
 
 func compute_outgoing_damage(base_damage: int) -> int:
+	return compute_outgoing_damage_result(base_damage).damage
+
+func compute_outgoing_damage_result(base_damage: int):
 	var total_mul_delta := 0.0
 	for mul in _damage_mul_modifiers.values():
 		total_mul_delta += (float(mul) - 1.0)
 	total_mul_delta += (_get_low_hp_damage_mul() - 1.0)
 	var final_mul := maxf(0.0, 1.0 + total_mul_delta)
 	var final_damage: int = maxi(1, int(round(float(base_damage) * final_mul)))
-	if randf() < clampf(float(PlayerData.total_crit_rate), 0.0, 1.0):
+	var is_critical := randf() < clampf(float(PlayerData.total_crit_rate), 0.0, 1.0)
+	if is_critical:
 		final_damage = maxi(1, int(round(float(final_damage) * maxf(float(PlayerData.total_crit_damage), 1.0))))
-	return final_damage
+	return OutgoingDamageResultType.new(final_damage, is_critical)
 
 func get_low_hp_damage_mul() -> float:
 	return _get_low_hp_damage_mul()

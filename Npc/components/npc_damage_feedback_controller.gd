@@ -4,6 +4,7 @@ class_name NpcDamageFeedbackController
 const HIT_LABEL_SCENE := preload("res://UI/labels/hit_label.tscn")
 const ENEMY_HP_BAR_SCENE := preload("res://UI/scenes/components/enemy_hp_bar.tscn")
 const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd")
+const DamageFeedbackEventType := preload("res://Combat/damage/damage_feedback_event.gd")
 
 var npc
 var _pending_hit_label_batches: Dictionary = {}
@@ -17,24 +18,36 @@ var _warning_flash_overlay: Sprite2D
 func setup(source_npc) -> void:
 	npc = source_npc
 
-func queue_hit_label_damage(damage_value: int, damage_type: StringName, attack_batch_id: int = 0) -> void:
-	if damage_value <= 0 or npc == null:
+func queue_hit_label_damage(
+	damage_value: int,
+	damage_type: StringName,
+	attack_batch_id: int = 0,
+	is_critical: bool = false,
+	is_periodic: bool = false,
+	is_killing_blow: bool = false
+) -> void:
+	var event = DamageFeedbackEventType.new(damage_value, damage_type)
+	event.feedback_batch_id = attack_batch_id
+	event.is_critical = is_critical
+	event.is_periodic = is_periodic
+	event.is_killing_blow = is_killing_blow
+	queue_hit_label_event(event)
+
+func queue_hit_label_event(event) -> void:
+	if event == null or event.final_damage <= 0 or npc == null:
 		return
 	sync_enemy_hp_bar()
 	show_enemy_hp_bar_on_damage()
-	var normalized_type := Attack.normalize_damage_type(damage_type)
-	var batch_id := attack_batch_id
+	var batch_id: int = int(event.feedback_batch_id)
 	if batch_id <= 0:
 		_anonymous_batch_id += 1
 		batch_id = -_anonymous_batch_id
-	var batch: Dictionary = _pending_hit_label_batches.get(batch_id, {
-		"damage": 0,
-		"damage_by_type": {},
-	})
-	batch["damage"] = int(batch.get("damage", 0)) + damage_value
-	var damage_by_type: Dictionary = batch.get("damage_by_type", {})
-	damage_by_type[normalized_type] = int(damage_by_type.get(normalized_type, 0)) + damage_value
-	batch["damage_by_type"] = damage_by_type
+	event.feedback_batch_id = batch_id
+	var batch = _pending_hit_label_batches.get(batch_id)
+	if batch == null:
+		batch = event.duplicate_event()
+	else:
+		batch.merge(event)
 	_pending_hit_label_batches[batch_id] = batch
 	if npc.is_dead:
 		flush_pending_hit_label()
@@ -59,42 +72,32 @@ func flush_pending_hit_label() -> void:
 func _flush_hit_label_batch(batch_id: int) -> void:
 	if not _pending_hit_label_batches.has(batch_id) or npc == null:
 		return
-	var batch: Dictionary = _pending_hit_label_batches[batch_id]
+	var batch = _pending_hit_label_batches[batch_id]
 	_pending_hit_label_batches.erase(batch_id)
-	var damage_value := int(batch.get("damage", 0))
-	if damage_value <= 0:
+	if batch == null or batch.final_damage <= 0:
 		return
 	var tree: SceneTree = npc.get_tree()
 	if tree == null or tree.root == null:
 		return
 	var hit_label_ins = HIT_LABEL_SCENE.instantiate()
 	var ui_parent := _get_hit_label_parent(tree)
-	var label_color := _resolve_hit_label_color(damage_value, batch.get("damage_by_type", {}) as Dictionary)
 	var target_id: int = int(npc.get_instance_id())
 	var label_position: Vector2 = npc.global_position
 	label_position = ProjectedUi.project_to_screen(tree, npc.global_position, label_position)
 	hit_label_ins.position = label_position
 	hit_label_ins.set_target_instance_id(target_id)
-	hit_label_ins.setNumber(damage_value)
-	hit_label_ins.setColor(label_color)
+	batch.target_instance_id = target_id
+	batch.target_max_hp = max(1, npc.get_incoming_damage_max_hp())
+	hit_label_ins.configure(batch)
 	ui_parent.call_deferred("add_child", hit_label_ins)
 
 func _get_hit_label_parent(tree: SceneTree) -> Node:
 	return ProjectedUi.ensure_layer(tree)
 
-func _resolve_hit_label_color(total_damage: int, damage_by_type: Dictionary) -> Color:
-	if total_damage <= 0:
-		return Color.WHITE
-	var dominant_type: StringName = Attack.TYPE_PHYSICAL
-	var dominant_damage: int = 0
-	for type_key in damage_by_type.keys():
-		var type_damage := int(damage_by_type[type_key])
-		if type_damage > dominant_damage:
-			dominant_damage = type_damage
-			dominant_type = Attack.normalize_damage_type(type_key)
-	if float(dominant_damage) <= float(total_damage) * 0.5:
-		return Color(0.65, 0.65, 0.65, 1.0)
-	match dominant_type:
+func _color_for_damage_type(damage_type: StringName) -> Color:
+	match damage_type:
+		&"mixed":
+			return Color(0.82, 0.86, 0.88, 1.0)
 		Attack.TYPE_ENERGY:
 			return Color(0.72, 0.45, 1.0, 1.0)
 		Attack.TYPE_FIRE:

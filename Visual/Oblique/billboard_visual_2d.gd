@@ -39,6 +39,7 @@ func _apply_compensation() -> void:
 	if hybrid_view != null:
 		_capture_external_basis_change()
 		transform = _base_transform
+		scale *= extra_scale
 		var parent_2d := get_parent() as Node2D
 		if parent_2d != null:
 			var logical_anchor := parent_2d.global_transform * _base_transform.origin
@@ -103,8 +104,8 @@ func _capture_external_basis_change() -> void:
 		return
 	# Hybrid projection owns visual position. Only externally authored scale or
 	# rotation is accepted; projected origins must never become logical anchors.
-	_base_transform.x = transform.x
-	_base_transform.y = transform.y
+	_base_transform.x = transform.x / maxf(absf(extra_scale.x), 0.0001)
+	_base_transform.y = transform.y / maxf(absf(extra_scale.y), 0.0001)
 
 func _transforms_are_equal(a: Transform2D, b: Transform2D) -> bool:
 	return a.x.is_equal_approx(b.x) and a.y.is_equal_approx(b.y) and a.origin.is_equal_approx(b.origin)

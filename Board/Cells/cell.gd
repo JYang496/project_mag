@@ -1,6 +1,8 @@
 extends Node2D
 class_name Cell
 
+const CellPresentationControllerType := preload("res://Board/Cells/cell_presentation_controller.gd")
+
 signal cell_state_changed(cell: Cell, old_state: int, new_state: int)
 signal player_presence_changed(cell: Cell, player_count: int)
 signal enemy_presence_changed(cell: Cell, enemy_count: int)
@@ -217,6 +219,9 @@ var progress: int = 0
 @export var profile: CellProfile
 @export var module_scenes: Array[PackedScene] = []
 var board_enabled: bool = true
+var cell_visuals_visible: bool = true
+var default_terrain_only: bool = false
+var _presentation = CellPresentationControllerType.new()
 
 const PROGRESS_INTERVAL := 0.2
 const PROGRESS_STEP := 1
@@ -255,6 +260,7 @@ func set_state(value: int) -> void:
 func _ready() -> void:
 	if _sprite:
 		_apply_terrain_texture()
+	_apply_cell_visual_visibility()
 	_update_activation_visual()
 	_progress_timer = Timer.new()
 	_progress_timer.wait_time = PROGRESS_INTERVAL
@@ -270,12 +276,43 @@ func apply_profile(new_profile: CellProfile) -> void:
 		return
 	task_type = profile.task_type
 	reward_type = profile.reward_type
-	terrain_type = profile.terrain_type
+	terrain_type = _presentation.resolve_profile_terrain(
+		profile.terrain_type,
+		TerrainType.NONE
+	)
 	_apply_terrain_texture()
 	objective_enabled = profile.objective_enabled
-	aura_enabled = profile.aura_enabled
+	aura_enabled = _presentation.resolve_profile_aura(profile.aura_enabled)
 	module_scenes = profile.resolve_module_scenes()
 	_update_activation_visual()
+
+func set_cell_visuals_visible(is_visible: bool) -> void:
+	cell_visuals_visible = is_visible
+	_presentation.visuals_visible = is_visible
+	_apply_cell_visual_visibility()
+
+func set_default_terrain_only(enabled: bool) -> void:
+	default_terrain_only = enabled
+	_presentation.default_terrain_only = enabled
+	if not default_terrain_only:
+		restore_profile_terrain_effect()
+		return
+	terrain_type = TerrainType.NONE
+	aura_enabled = false
+	_ensure_module_root()
+	_remove_aura_modules()
+	_apply_terrain_texture()
+
+func _apply_cell_visual_visibility() -> void:
+	var texture_root := get_node_or_null("Texture") as CanvasItem
+	if _activation_visual == null or not is_instance_valid(_activation_visual):
+		_activation_visual = get_node_or_null("ActivationVisual") as CellActivationVisual
+	_presentation.apply_visibility(
+		texture_root,
+		_activation_visual,
+		_task_marker_visual,
+		not _task_marker_status.is_empty()
+	)
 
 func _apply_terrain_texture() -> void:
 	if not _sprite:
@@ -482,12 +519,21 @@ func _setup_profile_and_modules() -> void:
 			continue
 		var module_instance = module_scene.instantiate()
 		if module_instance:
+			if not _presentation.allows_aura_modules() and module_instance is CellAuraModule:
+				module_instance.free()
+				continue
 			_module_root.add_child(module_instance)
 			_apply_module_parameters(module_instance)
 
 func apply_runtime_cell_effect(definition: CellEffectDefinition, preview_only: bool = false) -> void:
 	_ensure_module_root()
 	_remove_aura_modules()
+	if default_terrain_only:
+		_runtime_effect_id = ""
+		terrain_type = TerrainType.NONE
+		aura_enabled = false
+		_apply_terrain_texture()
+		return
 	if definition == null:
 		_runtime_effect_id = ""
 		_restore_profile_terrain_effect()
@@ -534,6 +580,11 @@ func restore_profile_task_module() -> void:
 	_update_activation_visual()
 
 func _restore_profile_terrain_effect() -> void:
+	if default_terrain_only:
+		terrain_type = TerrainType.NONE
+		aura_enabled = false
+		_apply_terrain_texture()
+		return
 	if profile == null:
 		terrain_type = TerrainType.NONE
 		aura_enabled = false
@@ -725,10 +776,18 @@ func _update_activation_visual() -> void:
 	if _activation_visual == null:
 		return
 	var has_task := objective_enabled or not _task_marker_status.is_empty()
-	_activation_visual.configure(board_enabled, has_player_inside(), has_task, _get_local_cell_rect())
+	_presentation.configure_activation(
+		_activation_visual,
+		board_enabled,
+		has_player_inside(),
+		has_task,
+		_get_local_cell_rect()
+	)
 
 func _update_task_marker_visual(play_complete_flash: bool) -> void:
-	if _task_marker_status.is_empty():
+	if not _presentation.should_render_task_marker(not _task_marker_status.is_empty()):
+		if _task_marker_visual != null and is_instance_valid(_task_marker_visual):
+			_task_marker_visual.visible = false
 		return
 	_ensure_task_marker_visual()
 	_task_marker_visual.configure(_task_marker_status, _get_local_cell_rect(), has_player_inside())

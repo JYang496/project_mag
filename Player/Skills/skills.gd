@@ -98,6 +98,9 @@ func _pay_energy_cost() -> bool:
 func get_cooldown_remaining() -> float:
 	return _cooldown_remaining
 
+func get_cooldown_duration() -> float:
+	return maxf(cooldown, 0.0)
+
 func get_cooldown_ratio() -> float:
 	if cooldown <= 0.0:
 		return 0.0

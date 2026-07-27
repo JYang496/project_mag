@@ -38,7 +38,7 @@ func _ready() -> void:
 		expire_timer.wait_time = 5
 	expire_timer.start()
 	raycast.enabled = true
-	raycast.target_position = 42 * target_position
+	raycast.target_position = target_position
 	line.width = maxf(line.width * beam_width_multiplier, 1.0)
 	if beam_tag.contains("focus"):
 		line.default_color = Color(0.45, 0.95, 1.0, 1.0)
@@ -89,7 +89,7 @@ func _physics_process(delta: float) -> void:
 			if source_weapon and is_instance_valid(source_weapon):
 				source_weapon.on_hit_target_with_damage_type(target, Attack.TYPE_ENERGY)
 	else:
-		line.points = [beam_start_position, to_local(raycast.target_position)]
+		line.points = [beam_start_position, raycast.target_position]
 
 func _on_expire_timer_timeout() -> void:
 	self.call_deferred("queue_free")

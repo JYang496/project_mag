@@ -142,28 +142,44 @@ func _collect_targets_in_cone(forward: Vector2) -> Array[Node]:
 	var touched_ids: Dictionary = {}
 	var max_angle_rad := deg_to_rad(_get_effective_cone_half_angle_deg())
 	var effective_range: float = _get_effective_attack_range()
+	if EnemyRegistry != null and EnemyRegistry.has_method("get_enemies_in_radius"):
+		for enemy in EnemyRegistry.get_enemies_in_radius(global_position, effective_range):
+			_append_target_in_cone(enemy, forward, max_angle_rad, effective_range, touched_ids, output)
+
+	# Keep physics overlaps as a compatibility fallback for isolated scenes or
+	# an enemy that has not reached the event-driven registry yet.
 	for area in detect_area.get_overlapping_areas():
 		if not area is HurtBox:
 			continue
 		var hurt_box := area as HurtBox
 		if not hurt_box.get_collision_layer_value(3):
 			continue
-		var target := hurt_box.get_owner() as Node2D
-		if target == null or not is_instance_valid(target):
-			continue
-		var target_id := target.get_instance_id()
-		if touched_ids.has(target_id):
-			continue
-		var to_target := target.global_position - global_position
-		var distance := to_target.length()
-		if distance > effective_range:
-			continue
-		var dir := to_target.normalized()
-		if absf(forward.angle_to(dir)) > max_angle_rad:
-			continue
-		touched_ids[target_id] = true
-		output.append(target)
+		var target := hurt_box.get_damage_target() as Node2D
+		_append_target_in_cone(target, forward, max_angle_rad, effective_range, touched_ids, output)
 	return output
+
+func _append_target_in_cone(
+	target: Node2D,
+	forward: Vector2,
+	max_angle_rad: float,
+	effective_range: float,
+	touched_ids: Dictionary,
+	output: Array[Node]
+) -> void:
+	if target == null or not is_instance_valid(target) or not target.has_method("damaged"):
+		return
+	var target_id := target.get_instance_id()
+	if touched_ids.has(target_id):
+		return
+	var to_target := target.global_position - global_position
+	var distance := to_target.length()
+	if distance > effective_range:
+		return
+	var dir := to_target.normalized()
+	if dir != Vector2.ZERO and absf(forward.angle_to(dir)) > max_angle_rad:
+		return
+	touched_ids[target_id] = true
+	output.append(target)
 
 func _sync_detect_radius() -> void:
 	if detect_area == null or not is_instance_valid(detect_area):

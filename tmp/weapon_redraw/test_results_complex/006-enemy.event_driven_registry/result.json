@@ -1,0 +1,23 @@
+{
+  "id": "enemy.event_driven_registry",
+  "status": "PASS",
+  "detail": "pass marker",
+  "exit_code": 0,
+  "timed_out": false,
+  "shutdown_diagnostics_present": false,
+  "shutdown_diagnostic_count": 0,
+  "shutdown_diagnostics": [],
+  "runtime_error_count": 0,
+  "runtime_errors": [],
+  "duration_seconds": 3.582,
+  "execution_mode": "parallel",
+  "parallel_safe": true,
+  "writes_user_data": false,
+  "timeout_seconds": 20,
+  "user_data_dir": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\006-enemy.event_driven_registry\\godot-user-home",
+  "app_data_dir": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\006-enemy.event_driven_registry\\appdata",
+  "local_app_data_dir": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\006-enemy.event_driven_registry\\localappdata",
+  "stdout_path": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\006-enemy.event_driven_registry\\stdout.log",
+  "stderr_path": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\006-enemy.event_driven_registry\\stderr.log",
+  "reproduction_command": "$env:GODOT_USER_HOME = 'E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\006-enemy.event_driven_registry\\godot-user-home'; $env:APPDATA = 'E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\006-enemy.event_driven_registry\\appdata'; $env:LOCALAPPDATA = 'E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\006-enemy.event_driven_registry\\localappdata'; & 'E:\\Godot_v4.7.1-stable_win64\\Godot_v4.7.1-stable_win64_console.exe' '--headless' '--path' 'E:\\Godot Projects\\project_mag' 'res://tests/scenes/enemy/enemy_snapshot_runtime_test.tscn'"
+}

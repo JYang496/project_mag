@@ -5,6 +5,7 @@ const HybridCameraDefaultsType := preload("res://Visual/Oblique/hybrid_camera_de
 const HybridGroundLateSyncType := preload("res://Visual/Oblique/hybrid_ground_late_sync.gd")
 const GroundMeshRegistryType := preload("res://Visual/Oblique/ground_mesh_registry.gd")
 const BoardGroundRendererType := preload("res://Visual/Oblique/board_ground_renderer.gd")
+const BoardPlatformRendererType := preload("res://Visual/Oblique/board_platform_renderer.gd")
 const ConnectedEffectRendererType := preload("res://Visual/Oblique/connected_effect_renderer.gd")
 const AuraRendererType := preload("res://Visual/Oblique/aura_renderer.gd")
 const AreaEffectRendererType := preload("res://Visual/Oblique/area_effect_renderer.gd")
@@ -80,6 +81,7 @@ var _board_visual_active: bool = true
 var _late_sync: Node
 var _mesh_registry: GroundMeshRegistry
 var _board_renderer: BoardGroundRenderer
+var _platform_renderer: BoardPlatformRenderer
 var _connected_renderer: ConnectedEffectRenderer
 var _aura_renderer: AuraRenderer
 var _area_renderer: AreaEffectRenderer
@@ -104,6 +106,8 @@ func _ready() -> void:
 	add_child(_ground_root)
 	_board_renderer = BoardGroundRendererType.new()
 	_board_renderer.setup(self)
+	_platform_renderer = BoardPlatformRendererType.new()
+	_platform_renderer.setup(self)
 	_connected_renderer = ConnectedEffectRendererType.new()
 	_connected_renderer.setup(self)
 	_aura_renderer = AuraRendererType.new()
@@ -354,7 +358,7 @@ func _rebuild_ground() -> void:
 		quad.material = material
 		mesh_instance.mesh = quad
 		mesh_instance.set_meta(&"hybrid_board_visual", true)
-		var center := cell.global_position + Vector2(256.0, 256.0)
+		var center := texture_sprite.global_position
 		mesh_instance.position = world_2d_to_3d(center)
 		_ground_root.add_child(mesh_instance)
 		_cell_meshes[cell.get_instance_id()] = {
@@ -368,13 +372,17 @@ func _rebuild_ground() -> void:
 		mesh_instance.visible = _board_visual_active and cell_enabled
 		if cell_enabled:
 			_create_cell_border_meshes(cell, center, texture_size)
-		_create_activation_mesh(cell)
+		_create_activation_mesh(cell, center, texture_size)
 		LoadingPerformance.end_segment(cell_segment)
+	if _platform_renderer != null:
+		_platform_renderer.rebuild(cells)
 	if _board_renderer != null:
 		_board_renderer.setup_rest_area()
 		_board_renderer.hide_legacy_boundaries()
 
 func _clear_ground_visual_caches() -> void:
+	if _platform_renderer != null:
+		_platform_renderer.clear()
 	_activation_meshes.clear()
 	_cell_meshes.clear()
 	_rest_zone_meshes.clear()
@@ -426,7 +434,7 @@ func _hide_legacy_board_boundary_visuals() -> void:
 		if visual != null:
 			visual.visible = false
 
-func _create_activation_mesh(cell: Node2D) -> void:
+func _create_activation_mesh(cell: Node2D, center: Vector2, cell_size: Vector2) -> void:
 	var activation := cell.get_node_or_null("ActivationVisual") as CanvasItem
 	if activation == null:
 		return
@@ -436,7 +444,7 @@ func _create_activation_mesh(cell: Node2D) -> void:
 	if _activation_quad == null:
 		_activation_quad = QuadMesh.new()
 		_activation_quad.orientation = PlaneMesh.FACE_Y
-		_activation_quad.size = Vector2(512.0, 512.0) * world_scale * 0.96
+		_activation_quad.size = Vector2.ONE
 		var shader := Shader.new()
 		shader.code = ACTIVATION_OUTLINE_SHADER
 		_activation_material = ShaderMaterial.new()
@@ -447,12 +455,15 @@ func _create_activation_mesh(cell: Node2D) -> void:
 	mesh.set_instance_shader_parameter("outline_alpha", 0.0)
 	mesh.set_instance_shader_parameter("fill_alpha", 0.0)
 	mesh.set_meta(&"hybrid_board_visual", true)
-	mesh.position = world_2d_to_3d(cell.global_position + Vector2(256.0, 256.0)) + Vector3.UP * 0.012
+	mesh.position = world_2d_to_3d(center) + Vector3.UP * 0.012
+	mesh.scale = Vector3(cell_size.x * world_scale * 0.96, 1.0, cell_size.y * world_scale * 0.96)
 	_ground_root.add_child(mesh)
 	_activation_meshes[cell.get_instance_id()] = {
 		"source": weakref(activation),
 		"cell": weakref(cell),
 		"mesh": mesh,
+		"center_offset": center - cell.global_position,
+		"cell_size": cell_size,
 	}
 
 func _sync_activation_visuals() -> void:
@@ -465,7 +476,10 @@ func _sync_activation_visuals() -> void:
 		var mesh := entry.mesh as MeshInstance3D
 		if activation == null or cell == null or mesh == null:
 			continue
-		mesh.position = world_2d_to_3d(cell.global_position + Vector2(256.0, 256.0)) + Vector3.UP * 0.012
+		var center_offset := entry.get("center_offset", Vector2(256.0, 256.0)) as Vector2
+		var cell_size := entry.get("cell_size", Vector2(512.0, 512.0)) as Vector2
+		mesh.position = world_2d_to_3d(cell.global_position + center_offset) + Vector3.UP * 0.012
+		mesh.scale = Vector3(cell_size.x * world_scale * 0.96, 1.0, cell_size.y * world_scale * 0.96)
 		var highlighted := float(activation.get("highlight_amount"))
 		var active := bool(activation.get("_active"))
 		var has_task := bool(activation.get("_has_task"))
@@ -545,7 +559,7 @@ func _sync_cell_meshes() -> void:
 		var material := entry.get("material") as StandardMaterial3D
 		if cell == null or mesh == null or not is_instance_valid(mesh):
 			continue
-		mesh.position = world_2d_to_3d(cell.global_position + Vector2(256.0, 256.0))
+		mesh.position = world_2d_to_3d(sprite.global_position if sprite != null else cell.global_position)
 		mesh.visible = _board_visual_active and bool(cell.get("board_enabled"))
 		if sprite != null and material != null and material.albedo_texture != sprite.texture:
 			material.albedo_texture = sprite.texture

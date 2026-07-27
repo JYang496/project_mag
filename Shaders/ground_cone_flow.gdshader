@@ -5,17 +5,20 @@ instance uniform vec4 flow_color : source_color = vec4(1.0, 0.28, 0.04, 0.72);
 instance uniform vec4 edge_color : source_color = vec4(1.0, 0.75, 0.15, 0.92);
 uniform float flow_speed = 2.4;
 uniform float flow_density = 9.0;
-uniform float edge_softness = 0.16;
+uniform vec2 pixel_grid = vec2(32.0, 12.0);
 
 void fragment() {
-	float side = abs(UV.y * 2.0 - 1.0);
-	float side_fade = 1.0 - smoothstep(1.0 - edge_softness, 1.0, side);
-	float origin_fade = smoothstep(0.015, 0.10, UV.x);
-	float tip_fade = 1.0 - smoothstep(0.76, 1.0, UV.x);
-	float wave = 0.55 + 0.45 * sin(UV.x * flow_density * 6.28318 - TIME * flow_speed * 6.28318 + UV.y * 5.0);
-	float edge_glow = smoothstep(0.55, 1.0, side);
-	vec4 color = mix(flow_color, edge_color, edge_glow * 0.70 + wave * 0.18);
+	vec2 pixel_uv = (floor(UV * pixel_grid) + vec2(0.5)) / pixel_grid;
+	float side = abs(pixel_uv.y * 2.0 - 1.0);
+	float body_mask = 1.0 - step(0.94, side);
+	float origin_mask = step(0.04, pixel_uv.x);
+	float tip_mask = 1.0 - step(0.94, pixel_uv.x);
+	float phase = pixel_uv.x * flow_density - floor(TIME * flow_speed * 4.0) * 0.25 + pixel_uv.y;
+	float wave_raw = 0.5 + 0.5 * sin(phase * 6.28318);
+	float wave = floor(wave_raw * 3.0) / 3.0;
+	float edge_glow = step(0.66, side);
+	vec4 color = mix(flow_color, edge_color, min(edge_glow * 0.72 + wave * 0.16, 1.0));
 	ALBEDO = color.rgb;
-	EMISSION = color.rgb * (0.25 + wave * 0.35);
-	ALPHA = color.a * side_fade * origin_fade * tip_fade * (0.62 + wave * 0.38);
+	EMISSION = color.rgb * (0.06 + wave * 0.08);
+	ALPHA = color.a * body_mask * origin_mask * tip_mask * (0.48 + wave * 0.24);
 }

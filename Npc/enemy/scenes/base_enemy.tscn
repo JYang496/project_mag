@@ -20,6 +20,9 @@ support_role = &""
 [node name="HurtBox" parent="." index="0"]
 collision_layer = 4
 
+[node name="Body" parent="." index="1"]
+extra_scale = Vector2(1, 1)
+
 [node name="EnableCollisionTimer" type="Timer" parent="." index="3" unique_id=2059076023]
 wait_time = 0.2
 one_shot = true

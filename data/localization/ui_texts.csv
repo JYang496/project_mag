@@ -382,7 +382,7 @@ ui.module.term.cone_half_angle_deg,Cone Half Angle,锥形半角
 ui.module.term.heat_per_shot,Heat Per Shot,单次射击热量
 ui.module.term.attack_cooldown,Attack Cooldown,攻击冷却
 ui.inventory.slot.empty,Empty,空
-ui.gameover.title,Game Over,游戏结束
+ui.gameover.title,Mission Failed,挑战失败
 ui.gameover.total_damage,Total Damage: {value},总伤害：{value}
 ui.gameover.completed_levels,Completed Levels: {value},完成关卡：{value}
 ui.gameover.enemy_kills,Enemy Kills: {value},消灭敌人：{value}
@@ -392,6 +392,13 @@ ui.gameover.status,Status  HP: {hp}/{max_hp}  Level: {level}  EXP: {exp},状态 
 ui.gameover.coin,Coin Collected: {value},金币获取：{value}
 ui.gameover.chip,Chip Collected: {value},芯片获取：{value}
 ui.gameover.new_game,New Game,新游戏
+ui.gameover.subtitle,Run Summary,本局战绩
+ui.gameover.stat.total_damage,Total Damage,总伤害
+ui.gameover.stat.completed_levels,Completed Levels,完成关卡
+ui.gameover.stat.enemy_kills,Enemy Kills,消灭敌人
+ui.gameover.stat.elite_kills,Elite Kills,消灭精英
+ui.gameover.stat.gold_earned,Gold Earned,获得金币
+ui.gameover.return_to_menu,Return to Main Menu,返回主菜单
 ui.start_battle.hold_f,Open Battle Menu,打开战斗菜单
 ui.tutorial.state.rest,Current: Rest Area,当前状态：休息区
 ui.tutorial.state.battle,Current: Battle,当前状态：战斗中
@@ -724,3 +731,18 @@ ui.reward.detail.bullet.economy.2,Supports current run progression,帮助推进�
 ui.common.tag,Tag,标签
 ui.reward.battle_source,Battle Reward,战斗奖励
 ui.shop.closed_until_cycle,Full shop opens after every third battle.,完整商店每完成三场战斗开放一次。
+ui.weapon_hud.controls,Q / E  SWITCH     R  WEAPON SKILL,Q / E  切换武器     R  武器技能
+ui.weapon_hud.switch_hint,[Q / E]  SWITCH,[Q / E]  切换武器
+ui.weapon_hud.skill_hint,[R]  WEAPON SKILL,[R]  武器技能
+ui.weapon_hud.main,MAIN,主武器
+ui.weapon_hud.empty,EMPTY WEAPON SLOT,空武器槽
+ui.weapon_hud.passive,PASSIVE,被动
+ui.weapon_hud.main_tooltip,"{weapon}
+MAIN WEAPON · R: WEAPON SKILL · Q/E: SWITCH","{weapon}
+主武器 · R：武器技能 · Q/E：切换"
+ui.weapon_hud.main_no_skill_tooltip,"{weapon}
+MAIN WEAPON · Q/E: SWITCH","{weapon}
+主武器 · Q/E：切换"
+ui.weapon_hud.reserve_tooltip,"{weapon}
+RESERVE WEAPON · Q/E: SWITCH","{weapon}
+备用武器 · Q/E：切换"

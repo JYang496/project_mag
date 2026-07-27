@@ -1,6 +1,7 @@
 extends CharacterBody2D
 class_name Player
 
+const OutgoingDamageResultType := preload("res://Combat/damage/outgoing_damage_result.gd")
 const PLAYER_ASSIST_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_assist_system.gd")
 const PLAYER_ACTIVE_SKILL_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_active_skill_runtime.gd")
 const PLAYER_WEAPON_INVENTORY_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_inventory_runtime.gd")
@@ -108,7 +109,8 @@ var _last_visual_position: Vector2 = Vector2.ZERO
 @export var camera_lookahead_distance: float = 18.0
 @export var camera_lookahead_lerp_speed: float = 5.0
 @export var camera_lookahead_min_speed_ratio: float = 0.2
-@export var mecha_scale_reference_pixel_height: float = 128.0
+const PixelArtPolicyType := preload("res://Visual/pixel_art_policy.gd")
+@export var mecha_scale_reference_pixel_height: float = PixelArtPolicyType.PLAYER_REFERENCE_HEIGHT_PX
 @export var idle_mecha_scale_multiplier: float = 1.0
 @export var move_animation_scale_multiplier: float = 1.0
 @export var face_axis_hysteresis: float = 0.08
@@ -993,10 +995,13 @@ func remove_loot_bonus(source_id: StringName) -> void:
 		_status_modifier_system.remove_loot_bonus(source_id)
 
 func compute_outgoing_damage(base_damage: int) -> int:
+	return compute_outgoing_damage_result(base_damage).damage
+
+func compute_outgoing_damage_result(base_damage: int):
 	_ensure_status_modifier_system()
 	if _status_modifier_system == null:
-		return max(1, base_damage)
-	return _status_modifier_system.compute_outgoing_damage(base_damage)
+		return OutgoingDamageResultType.new(base_damage, false)
+	return _status_modifier_system.compute_outgoing_damage_result(base_damage)
 
 func apply_bonus_hit_if_needed(target: Node) -> void:
 	_ensure_status_modifier_system()
@@ -1663,6 +1668,8 @@ func _profile_on_death(_attack: Attack) -> void:
 	if PlayerData.testing_keep_hp_above_zero:
 		PlayerData.player_hp = max(1, int(PlayerData.player_hp))
 		return
+	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
+		_status_hint_manager.clear_all()
 	PhaseManager.enter_gameover()
 
 func _profile_on_trigger_invuln() -> void:

@@ -1,6 +1,8 @@
 extends "res://Player/Weapons/Modules/wmod_on_hit_base.gd"
 # Applies bleed on hit; bleeding targets take periodic physical damage while moving.
 
+const OutgoingDamageResultType := preload("res://Combat/damage/outgoing_damage_result.gd")
+
 var ITEM_NAME := "Bleed Edge"
 
 @export var duration_lv1: float = 2.4
@@ -84,8 +86,12 @@ func _apply_bleed_tick(target: Node, entry: Dictionary) -> void:
 	var source_weapon: Weapon = source_weapon_ref.get_ref() as Weapon if source_weapon_ref != null else null
 	var owner_player: Node = DamageManager.resolve_source_player(source_weapon)
 	var base_damage: int = _get_tick_damage()
-	if owner_player != null and is_instance_valid(owner_player) and owner_player.has_method("compute_outgoing_damage"):
-		base_damage = max(1, int(owner_player.call("compute_outgoing_damage", base_damage)))
+	var is_critical := false
+	if owner_player != null and is_instance_valid(owner_player) and owner_player.has_method("compute_outgoing_damage_result"):
+		var outgoing_result = owner_player.call("compute_outgoing_damage_result", base_damage)
+		if outgoing_result != null:
+			base_damage = outgoing_result.damage
+			is_critical = outgoing_result.is_critical
 	var damage_data := DamageData.new().setup(
 		base_damage,
 		Attack.TYPE_PHYSICAL,
@@ -95,6 +101,8 @@ func _apply_bleed_tick(target: Node, entry: Dictionary) -> void:
 		DamageData.SOURCE_PLAYER_WEAPON,
 		resolve_primary_damage_delivery(source_weapon)
 	)
+	damage_data.is_critical = is_critical
+	damage_data.configure_periodic_damage()
 	DamageManager.apply_to_target(target, damage_data)
 
 func _get_duration() -> float:

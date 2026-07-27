@@ -165,6 +165,9 @@ func _execute_weapon_active(damage_multiplier: float) -> bool:
 		_apply_weapon_active_multiplier_buff(damage_multiplier)
 	return is_on_cooldown
 
+func has_weapon_active_skill() -> bool:
+	return true
+
 func on_beam_hit_target(target: Node, beam_profile: Dictionary = {}, hit_damage: int = 0, beam_node: Node = null) -> void:
 	_try_trigger_simultaneous_beam_hits(target, beam_node)
 	for behavior in branch_runtime.get_branch_behaviors():
@@ -217,6 +220,7 @@ func get_passive_status() -> Dictionary:
 		"display_name": "Beam Multi Hit",
 		"state": state,
 		"progress": clampf(float(current_hits) / float(required_hits), 0.0, 1.0),
+		"progress_role": "trigger_condition",
 		"current": current_hits,
 		"required": required_hits,
 		"ready": state == "ready_pending_action",

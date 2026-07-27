@@ -42,7 +42,7 @@ theme_override_font_sizes/font_size = 24
 text = ""
 horizontal_alignment = 1
 autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 16
 
 [node name="Options" type="VBoxContainer" parent="Panel/VBox"]
 size_flags_vertical = 3

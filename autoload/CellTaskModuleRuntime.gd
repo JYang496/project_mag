@@ -11,13 +11,6 @@ const TASK_MODULE_DIRECTORY_PATH := "res://data/task_modules/"
 const STATE_PATH := "user://cell_task_module_runtime_state.json"
 const ACTIVE_LIMIT := 2
 const REWARD_KIND_TASK_MODULE: StringName = &"task_module"
-const STARTING_TASK_CELL_ID := 5
-const STARTING_CELL_EFFECT_COUNT := 2
-const STARTING_TASK_MODULE_IDS := [
-	"task_kill_common",
-	"task_hold_common",
-	"task_clear_rare",
-]
 
 var _definitions_by_id: Dictionary = {}
 var _inventory: PackedStringArray = PackedStringArray()
@@ -148,24 +141,6 @@ func grant_random_unlocked_module(level_index: int = 0) -> String:
 		push_warning("CellTaskModuleRuntime: failed to grant random task module '%s': %s" % [module_id, str(result.get("reason", ""))])
 		return ""
 	return module_id
-
-func grant_starting_cell_loadout(level_index: int = 0) -> void:
-	CellEffectRuntime.reset_runtime_state()
-	reset_runtime_state()
-
-	var first_effect_id := ""
-	for index in range(STARTING_CELL_EFFECT_COUNT):
-		var effect_id := CellEffectRuntime.grant_random_unlocked_effect(level_index, 1)
-		if index == 0:
-			first_effect_id = effect_id
-
-	if first_effect_id.strip_edges() != "":
-		CellEffectRuntime.set_pending_effect(STARTING_TASK_CELL_ID, first_effect_id)
-
-	for module_id in STARTING_TASK_MODULE_IDS:
-		var result := grant_module(str(module_id))
-		if not bool(result.get("ok", false)):
-			push_warning("CellTaskModuleRuntime: failed to grant starting task module '%s': %s" % [str(module_id), str(result.get("reason", ""))])
 
 func replace_inventory_module(index: int, module_id: String) -> Dictionary:
 	var definition := get_definition(module_id)

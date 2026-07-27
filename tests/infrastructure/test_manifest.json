@@ -4,6 +4,26 @@
   "catalog_note": "Active regression coverage has been reintroduced for focused reward/UI flows. Historical assets remain under tests/archive/retired_test_assets_20260702.",
   "tests": [
     {
+      "id": "presentation.pixel_art_policy",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/presentation/pixel_art_policy_test.tscn",
+      "domain": "presentation",
+      "dependency_domains": ["ui", "world", "player", "weapon", "enemy", "combat", "cell", "spawn"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "presentation.board_platform_support",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/presentation/board_platform_support_test.tscn",
+      "domain": "presentation",
+      "dependency_domains": ["world", "cell"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
       "id": "ui.player_facing_copy",
       "entry_type": "scene",
       "path": "res://tests/scenes/ui/player_facing_copy_test.tscn",
@@ -32,6 +52,66 @@
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 45
+    },
+    {
+      "id": "ui.layout_policy",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/ui_layout_policy_test.tscn",
+      "domain": "ui",
+      "dependency_domains": [],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "ui.skill_energy_status",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/skill_energy_status_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["player"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "ui.player_health_feedback",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/player_health_feedback_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["player"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "ui.weapon_selector_status",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/weapon_selector_status_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["weapon"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "ui.damage_label_feedback",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/damage_label_feedback_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["combat", "player", "enemy", "world"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "player.floating_status_hint_cleanup",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/player/floating_status_hint_cleanup_test.tscn",
+      "domain": "player",
+      "dependency_domains": ["ui", "world"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
     },
     {
       "id": "reward.fuse_branch_selection",
@@ -82,6 +162,36 @@
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 20
+    },
+    {
+      "id": "weapon.projectile_range_configuration",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/weapon/projectile_range_configuration_test.tscn",
+      "domain": "weapon",
+      "dependency_domains": ["combat"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
+      "id": "weapon.projectile_collision_arming",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/weapon/projectile_collision_arming_test.tscn",
+      "domain": "weapon",
+      "dependency_domains": ["combat", "world"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
+      "id": "weapon.chainsaw_projectile_lifecycle",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/weapon/chainsaw_projectile_lifecycle_test.tscn",
+      "domain": "weapon",
+      "dependency_domains": ["combat", "world"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
     },
     {
       "id": "weapon.pistol_auto_fire",

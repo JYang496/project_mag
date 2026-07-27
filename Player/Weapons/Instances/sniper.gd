@@ -45,13 +45,13 @@ func _on_shoot() -> void:
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
 
+	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
+	if projectile_direction == Vector2.ZERO:
+		return
 	var spawn_projectile := spawn_projectile_from_scene(projectile_template)
 	if spawn_projectile == null:
 		return
 
-	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
-	if projectile_direction == Vector2.ZERO:
-		return
 	var runtime_damage := get_runtime_shot_damage()
 	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * projectile_damage_multiplier)))
 	spawn_projectile.damage_type = Attack.TYPE_PHYSICAL

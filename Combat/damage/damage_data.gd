@@ -25,6 +25,7 @@ var dedupe_window_sec: float = 0.0
 var damage_is_final: bool = false
 var suppress_reactive_effects: bool = false
 var damage_kind: StringName = KIND_DIRECT
+var is_critical: bool = false
 var invulnerability_policy: StringName = INVULN_RESPECT
 var triggers_invulnerability: bool = true
 var arbitration_group: StringName = StringName()
@@ -71,6 +72,7 @@ func to_attack() -> Attack:
 	attack.damage_is_final = damage_is_final
 	attack.suppress_reactive_effects = suppress_reactive_effects
 	attack.damage_kind = damage_kind
+	attack.is_critical = is_critical
 	attack.invulnerability_policy = invulnerability_policy
 	attack.triggers_invulnerability = triggers_invulnerability
 	attack.arbitration_group = arbitration_group

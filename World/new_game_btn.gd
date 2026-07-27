@@ -36,7 +36,6 @@ func _on_pressed() -> void:
 		text = original_text
 		disabled = false
 		return
-	CellTaskModuleRuntime.grant_starting_cell_loadout(0)
 	var loader := WORLD_SCENE_LOADER_SCRIPT.new()
 	add_child(loader)
 	loader.progress_changed.connect(func(ratio: float): text = "Loading %d%%" % int(round(10.0 + ratio * 70.0)))

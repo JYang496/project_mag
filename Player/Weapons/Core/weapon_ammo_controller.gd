@@ -104,6 +104,7 @@ func get_status() -> Dictionary:
 		"max": _get_effective_capacity(),
 		"is_reloading": weapon.is_reloading,
 		"reload_left": weapon.reload_time_left,
+		"reload_total": get_effective_reload_duration(),
 	}
 
 func initialize_ammo_system() -> void:

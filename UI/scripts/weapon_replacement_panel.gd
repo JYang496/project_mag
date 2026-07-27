@@ -121,7 +121,7 @@ func _make_incoming_weapon_card(weapon: Weapon) -> PanelContainer:
 	var name_label := _make_slot_label(LocalizationManager.get_weapon_instance_display_name(weapon), 18, Color(0.96, 0.99, 1.0, 1.0))
 	text_column.add_child(name_label)
 
-	var meta_label := _make_slot_label(_format_weapon_meta(weapon), 12, Color(0.68, 0.77, 0.82, 1.0))
+	var meta_label := _make_slot_label(_format_weapon_meta(weapon), 14, Color(0.76, 0.84, 0.88, 1.0))
 	text_column.add_child(meta_label)
 	return card
 
@@ -160,13 +160,13 @@ func _make_slot_button(slot_index: int, weapon: Weapon, action_text: String, is_
 	row.add_child(text_column)
 
 	var current_text := LocalizationManager.tr_key("ui.inventory.slot.empty", "Empty") if is_empty else LocalizationManager.get_weapon_instance_display_name(weapon)
-	var current_label := _make_slot_label(current_text, 15, Color(0.93, 0.96, 0.96, 1.0))
+	var current_label := _make_slot_label(current_text, 16, Color(0.93, 0.96, 0.96, 1.0))
 	text_column.add_child(current_label)
 
-	var meta_label := _make_slot_label(LocalizationManager.tr_key("ui.weapon.replace.empty_slot_hint", "Open slot") if is_empty else _format_weapon_meta(weapon), 12, Color(0.58, 0.67, 0.72, 1.0))
+	var meta_label := _make_slot_label(LocalizationManager.tr_key("ui.weapon.replace.empty_slot_hint", "Open slot") if is_empty else _format_weapon_meta(weapon), 14, Color(0.72, 0.80, 0.84, 1.0))
 	text_column.add_child(meta_label)
 
-	var action_label := _make_slot_label(action_text, 13, ACTION_COLOR)
+	var action_label := _make_slot_label(action_text, 15, ACTION_COLOR)
 	action_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	action_label.custom_minimum_size = Vector2(76, 0)
 	row.add_child(action_label)

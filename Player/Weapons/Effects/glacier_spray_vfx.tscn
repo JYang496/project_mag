@@ -9,7 +9,7 @@ sprite_frames = ExtResource("2_frames")
 linger_sec = 0.18
 fade_out_sec = 0.16
 muzzle_offset_px = 14.0
-base_range_px = 512.0
+base_range_px = 256.0
 base_half_angle_deg = 15.0
 min_width_scale = 0.08
 max_width_scale = 0.85
@@ -20,7 +20,7 @@ visible_modulate = Color(0.78, 0.95, 1, 0.74)
 [node name="SprayRoot" type="Node2D" parent="."]
 
 [node name="Sprite" type="AnimatedSprite2D" parent="SprayRoot"]
-position = Vector2(0, -90)
+position = Vector2(0, -45)
 texture_filter = 1
 sprite_frames = ExtResource("2_frames")
 animation = &"spray"

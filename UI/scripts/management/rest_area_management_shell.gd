@@ -1,10 +1,9 @@
 extends RefCounted
 class_name RestAreaManagementShell
 
-const PRIMARY_MENU_TARGET_SIZE := Vector2(312, 320)
-const PANEL_MARGIN := Vector2(24, 24)
-const PRIMARY_MENU_LEFT_MARGIN := 16.0
-const PRIMARY_MENU_ANIM_TIME := 0.2
+const LAYOUT_POLICY := preload("res://UI/scripts/management/ui_layout_policy.gd")
+const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
+const PRIMARY_MENU_ANIM_TIME := TOKENS.MOTION_NORMAL
 const PRIMARY_MENU_ANIM_TRANS := Tween.TRANS_CUBIC
 const PRIMARY_MENU_ANIM_EASE := Tween.EASE_OUT
 
@@ -31,6 +30,7 @@ func show_primary_menu(menu_id: StringName, root: Control, panel: Control) -> vo
 	tween.tween_property(panel, "position", target_pos, PRIMARY_MENU_ANIM_TIME)
 	tween.finished.connect(_on_primary_menu_tween_finished.bind(menu_id))
 	primary_menu_tweens[menu_id] = tween
+	call_deferred("_focus_first_button", panel)
 
 func hide_primary_menu(menu_id: StringName, root: Control, panel: Control) -> void:
 	menu_id = _normalize_menu_id(menu_id)
@@ -85,12 +85,24 @@ func _normalize_menu_id(menu_id: StringName) -> StringName:
 func _fit_left_panel(panel: Control, viewport_size: Vector2) -> void:
 	if panel == null:
 		return
-	var available_size: Vector2 = viewport_size - PANEL_MARGIN * 2.0
-	var width: float = minf(PRIMARY_MENU_TARGET_SIZE.x, available_size.x)
-	var height: float = minf(PRIMARY_MENU_TARGET_SIZE.y, available_size.y)
-	panel.size = Vector2(maxf(width, 0.0), maxf(height, 0.0))
-	panel.position = Vector2(maxf(PRIMARY_MENU_LEFT_MARGIN, PANEL_MARGIN.x), (viewport_size.y - panel.size.y) * 0.5)
+	var panel_rect := LAYOUT_POLICY.primary_menu_rect(viewport_size, _count_visible_buttons(panel))
+	panel.position = panel_rect.position
+	panel.size = panel_rect.size
 
 func _get_primary_menu_hidden_position(panel: Control, target_pos: Vector2) -> Vector2:
-	return Vector2(-panel.size.x - PRIMARY_MENU_LEFT_MARGIN, target_pos.y)
+	return Vector2(-panel.size.x - LAYOUT_POLICY.safe_margin(panel.get_viewport_rect().size).x, target_pos.y)
 
+func _count_visible_buttons(root: Node) -> int:
+	var result := 0
+	for child in root.find_children("*", "Button", true, false):
+		var button := child as Button
+		if button != null and button.visible:
+			result += 1
+	return result
+
+func _focus_first_button(root: Node) -> void:
+	for child in root.find_children("*", "Button", true, false):
+		var button := child as Button
+		if button != null and button.visible and not button.disabled:
+			button.grab_focus()
+			return

@@ -4,7 +4,7 @@ var projectile_template = preload("res://Player/Weapons/Projectiles/plasma_lance
 var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/plasma.png")
 
 var ITEM_NAME := "Plasma Lance"
-const BULLET_PIXEL_SIZE := Vector2(10.0, 10.0)
+const BULLET_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_STANDARD_SIZE
 
 @export var heat_accumulation: float = 10.0
 @export var max_heat: float = 100.0

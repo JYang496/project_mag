@@ -5,6 +5,7 @@ const EnemyScene := preload("res://Npc/enemy/scenes/enemy_rolling_ball.tscn")
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _failed := false
+var _last_player_damage_feedback: Dictionary = {}
 
 func _ready() -> void:
 	_run.call_deferred()
@@ -18,6 +19,8 @@ func _run() -> void:
 	player.set_physics_process(false)
 	PlayerData.player = player
 	PlayerData.player_hp = 5
+	if not PlayerData.player_damage_received.is_connected(_on_player_damage_received):
+		PlayerData.player_damage_received.connect(_on_player_damage_received)
 	PhaseManager.phase = PhaseManager.BATTLE
 	var enemy := EnemyScene.instantiate() as BaseEnemy
 	enemy.damage = 2
@@ -26,7 +29,7 @@ func _run() -> void:
 	enemy.set_physics_process(false)
 	var stronger_enemy := EnemyScene.instantiate() as BaseEnemy
 	stronger_enemy.damage = 4
-	stronger_enemy.global_position = player.global_position
+	stronger_enemy.global_position = player.global_position + Vector2(5.0, 0.0)
 	add_child(stronger_enemy)
 	stronger_enemy.set_physics_process(false)
 	var nearby_but_not_overlapping := EnemyScene.instantiate() as BaseEnemy
@@ -40,6 +43,21 @@ func _run() -> void:
 	await get_tree().physics_frame
 	player.call("_process_centralized_enemy_contact_damage", 0.21)
 	_expect(PlayerData.player_hp == 1, "HurtBox contact batch did not select exactly one strongest overlapping enemy hit")
+	_expect(not _last_player_damage_feedback.is_empty(), "applied player damage did not emit unified feedback data")
+	_expect(int(_last_player_damage_feedback.get("final_damage", 0)) == 4, "feedback did not report the resolved strongest damage")
+	_expect((_last_player_damage_feedback.get("direction", Vector2.ZERO) as Vector2).x > 0.0, "feedback did not preserve the attack's screen direction")
+	var feedback_controller := player.get_node_or_null("DamageFeedbackController")
+	_expect(feedback_controller != null, "player damage feedback controller was not installed")
+	if feedback_controller != null:
+		feedback_controller.call("_process", 0.02)
+		_expect(bool(feedback_controller.call("is_invulnerability_feedback_active")), "hurt cooldown did not activate invulnerability feedback")
+		var screen_layer := feedback_controller.get_node_or_null("PlayerDamageScreenLayer") as CanvasLayer
+		var vignette := screen_layer.get_node_or_null("DamageVignette") if screen_layer != null else null
+		_expect(vignette != null and float(vignette.call("get_feedback_strength")) > 0.0, "player hit did not activate the screen-edge vignette")
+		var damage_audio := feedback_controller.get_node_or_null("PlayerDamageAudio") as AudioStreamPlayer
+		_expect(damage_audio != null and damage_audio.stream != null, "player hit did not prepare its impact audio")
+		_expect(screen_layer != null and screen_layer.get_node_or_null("DamageImpactRing") != null, "player hit did not spawn the character impact ring")
+		_expect(screen_layer != null and screen_layer.get_node_or_null("PlayerDamageNumber") != null, "player hit did not spawn the negative world-space damage number")
 	player.call("_process_centralized_enemy_contact_damage", 0.21)
 	_expect(PlayerData.player_hp == 1, "contact damage bypassed the player's invulnerability deadline")
 	var packed := PackedScene.new()
@@ -60,6 +78,12 @@ func _run() -> void:
 	_expect(replacement != null and is_instance_valid(replacement), "ObjectPool did not recover from a freed cached object")
 	ObjectPool.release(replacement)
 	PhaseManager.phase = previous_phase
+	if feedback_controller != null and feedback_controller.has_method("shutdown"):
+		feedback_controller.call("shutdown")
+	if TimeImpactController.has_method("cancel_active_impact"):
+		TimeImpactController.cancel_active_impact(true)
+	if PlayerData.player_damage_received.is_connected(_on_player_damage_received):
+		PlayerData.player_damage_received.disconnect(_on_player_damage_received)
 	PlayerData.player = previous_player
 	PlayerData.player_hp = previous_hp
 	if _failed:
@@ -72,3 +96,6 @@ func _expect(condition: bool, message: String) -> void:
 	if not condition:
 		_failed = true
 		push_error("FAIL: " + message)
+
+func _on_player_damage_received(feedback: Dictionary) -> void:
+	_last_player_damage_feedback = feedback.duplicate(true)

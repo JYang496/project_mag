@@ -13,10 +13,30 @@ var _recovery_target_scale: float = 1.0
 
 
 func trigger_elite_kill_impact() -> void:
-	var clamped_slow_scale := clampf(elite_kill_slow_scale, 0.05, 1.0)
-	var hold_duration := maxf(elite_kill_slow_duration, 0.0)
-	var recovery_duration := maxf(elite_kill_recovery_duration, 0.01)
+	_trigger_impact(elite_kill_slow_scale, elite_kill_slow_duration, elite_kill_recovery_duration)
 
+
+func trigger_player_damage_impact(severity: float) -> void:
+	var clamped_severity := clampf(severity, 0.0, 1.0)
+	_trigger_impact(
+		lerpf(0.84, 0.68, clamped_severity),
+		lerpf(0.025, 0.055, clamped_severity),
+		lerpf(0.075, 0.11, clamped_severity)
+	)
+
+
+func cancel_active_impact(reset_time_scale: bool = false) -> void:
+	_impact_token += 1
+	_kill_active_tween()
+	_impact_active = false
+	if reset_time_scale:
+		Engine.time_scale = _recovery_target_scale
+
+
+func _trigger_impact(slow_scale: float, hold_seconds: float, recovery_seconds: float) -> void:
+	var clamped_slow_scale := clampf(slow_scale, 0.05, 1.0)
+	var hold_duration := maxf(hold_seconds, 0.0)
+	var recovery_duration := maxf(recovery_seconds, 0.01)
 	# Keep the original baseline while an impact is already active so close kills
 	# refresh the effect instead of drifting to a lower recovery target.
 	if not _impact_active:

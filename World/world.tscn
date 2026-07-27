@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://blnhp33uq0sgq"]
+[gd_scene load_steps=12 format=3 uid="uid://blnhp33uq0sgq"]
 
 [ext_resource type="Script" uid="uid://ytgqpjri2ckf" path="res://Board/Cells/cell_profile.gd" id="4_lo5ox"]
 [ext_resource type="PackedScene" path="res://UI/scenes/UI.tscn" id="9_h4135"]
@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://cds7m5dykt5g7" path="res://World/rewards/reward_manager.tscn" id="22_n13dc"]
 [ext_resource type="Script" path="res://Visual/Oblique/hybrid_ground_view_3d.gd" id="23_hybrid"]
 [ext_resource type="Script" path="res://World/world_ready_coordinator.gd" id="24_ready"]
+[ext_resource type="Script" path="res://Visual/Oblique/unloaded_world_environment.gd" id="25_unloaded_environment"]
 
 [sub_resource type="Resource" id="Resource_h2aik"]
 script = ExtResource("4_lo5ox")
@@ -63,6 +64,9 @@ initial_cell_profiles = Array[ExtResource("4_lo5ox")]([SubResource("Resource_h2a
 
 [node name="HybridGroundView3D" type="Node3D" parent="."]
 script = ExtResource("23_hybrid")
+
+[node name="UnloadedWorldEnvironment" type="Node3D" parent="."]
+script = ExtResource("25_unloaded_environment")
 
 [node name="PlayerSpawner" type="Node2D" parent="Board" unique_id=1320556918]
 script = ExtResource("14_26uyv")

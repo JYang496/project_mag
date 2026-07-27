@@ -55,7 +55,14 @@ func damaged(attack:Attack):
 		return
 	if attack != null and attack.is_from_player():
 		PlayerData.run_total_damage_dealt += max(0, result.final_damage)
-	_queue_hit_label_damage(result.final_damage, result.damage_type, attack.feedback_batch_id if attack != null else 0)
+	_queue_hit_label_damage(
+		result.final_damage,
+		result.damage_type,
+		attack.feedback_batch_id if attack != null else 0,
+		result.is_critical,
+		result.is_periodic,
+		result.killed
+	)
 	knockback.amount = attack.knock_back.amount
 	knockback.angle = attack.knock_back.angle
 	_play_hit_flash()
@@ -65,8 +72,22 @@ func damaged(attack:Attack):
 		status_runtime.start_timer_if_needed()
 
 
-func _queue_hit_label_damage(damage_value: int, damage_type: StringName, attack_batch_id: int = 0) -> void:
-	damage_feedback.queue_hit_label_damage(damage_value, damage_type, attack_batch_id)
+func _queue_hit_label_damage(
+	damage_value: int,
+	damage_type: StringName,
+	attack_batch_id: int = 0,
+	is_critical: bool = false,
+	is_periodic: bool = false,
+	is_killing_blow: bool = false
+) -> void:
+	damage_feedback.queue_hit_label_damage(
+		damage_value,
+		damage_type,
+		attack_batch_id,
+		is_critical,
+		is_periodic,
+		is_killing_blow
+	)
 
 func _flush_pending_hit_label() -> void:
 	damage_feedback.flush_pending_hit_label()
@@ -83,7 +104,14 @@ func _on_status_timer_timeout() -> void:
 	var periodic_results := _incoming_damage_pipeline.process_periodic_effects(self, _incoming_damage_profile, elapsed_sec)
 	for periodic_result in periodic_results:
 		if periodic_result.applied:
-			_queue_hit_label_damage(periodic_result.final_damage, periodic_result.damage_type)
+			_queue_hit_label_damage(
+				periodic_result.final_damage,
+				periodic_result.damage_type,
+				0,
+				periodic_result.is_critical,
+				true,
+				periodic_result.killed
+			)
 	if status_effects.is_empty() and not _incoming_damage_pipeline.has_active_effects(self):
 		status_timer.stop()
 		status_runtime.stop_timer_tracking()

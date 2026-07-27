@@ -23,6 +23,7 @@ var knock_back = {
 var damage_is_final: bool = false
 var suppress_reactive_effects: bool = false
 var damage_kind: StringName = DamageData.KIND_DIRECT
+var is_critical: bool = false
 var invulnerability_policy: StringName = DamageData.INVULN_RESPECT
 var triggers_invulnerability: bool = true
 var arbitration_group: StringName = StringName()

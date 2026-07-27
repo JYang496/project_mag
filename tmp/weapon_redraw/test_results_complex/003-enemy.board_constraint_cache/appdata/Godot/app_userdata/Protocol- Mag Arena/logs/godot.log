@@ -1,0 +1,9 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+
+WARNING: initial_cell_profiles resized from 0 to 9. Slot map: [0] (0,0), [1] (1,0), [2] (2,0), [3] (0,1), [4] (1,1), [5] (2,1), [6] (0,2), [7] (1,2), [8] (2,2)
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _normalize_initial_cell_profiles (res://World/board_cell_generator.gd:429)
+       [1] _enter_tree (res://World/board_cell_generator.gd:59)
+       [2] _run (res://tests/headless/enemy/enemy_board_constraint_cache_test.gd:16)
+PASS: enemy board constraint uses fast cached rectangles and exact invalidation fallback

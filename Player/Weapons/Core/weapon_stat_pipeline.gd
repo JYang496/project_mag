@@ -157,6 +157,9 @@ func apply_external_damage_mul(source_id: StringName, mul: float) -> void:
 	if source_id == StringName():
 		return
 	var clamped_mul := maxf(mul, 0.05)
+	if is_equal_approx(clamped_mul, 1.0):
+		remove_external_damage_mul(source_id)
+		return
 	external_damage_mul_modifiers[source_id] = clamped_mul
 	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("notify_weapon_status_change"):
 		PlayerData.player.call(

@@ -9,6 +9,7 @@ var projectile_texture_resource = preload("res://asset/images/weapons/projectile
 var ITEM_NAME = "Rocket Launcher"
 var explosion_scale : float = 2.0
 @export var cluster_kill_radius: float = 180.0
+const ROCKET_COLLISION_ARMING_DELAY_SEC: float = 0.08
 
 func _init() -> void:
 	super._init()
@@ -63,23 +64,25 @@ func _on_shoot():
 func supports_multi_launcher_module() -> bool:
 	return true
 
-func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> void:
+func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> Node2D:
 	var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 	if spawn_projectile == null:
-		return
+		return null
 	projectile_direction = direction
 	var runtime_damage := get_runtime_shot_damage()
 	var projectile_damage: int = maxi(1, int(round(float(runtime_damage) * maxf(damage_multiplier, 0.05))))
 	spawn_projectile.damage = projectile_damage
 	spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
 	spawn_projectile.hp = projectile_hits
-	spawn_projectile.global_position = global_position
+	spawn_projectile.global_position = get_muzzle_global_position()
 	spawn_projectile.projectile_texture = projectile_texture_resource
 	spawn_projectile.size = size
 	spawn_projectile.expire_time = get_effective_projectile_lifetime()
+	spawn_projectile.collision_arming_delay_sec = ROCKET_COLLISION_ARMING_DELAY_SEC
 	_sync_explosion_effect_config(projectile_damage)
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
+	return spawn_projectile
 
 # Keeps the typed explosion config synced with current weapon runtime stats.
 func _sync_explosion_effect_config(projectile_damage: int = damage) -> void:

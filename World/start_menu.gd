@@ -6,7 +6,7 @@ const RESOLUTION_PRESETS: Array[Vector2i] = [
 	Vector2i(1920, 1080),
 	Vector2i(2560, 1440),
 ]
-const START_UI_THEME := preload("res://UI/themes/start_menu_theme.tres")
+const START_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const WORLD_SCENE_PATH := "res://World/world.tscn"
 const WORLD_ENTRY_PREPARE_GATE_SCRIPT := preload("res://World/world_entry_prepare_gate.gd")
 const WORLD_SCENE_LOADER_SCRIPT := preload("res://World/world_scene_loader.gd")

@@ -6,7 +6,7 @@ var projectile_texture_resource = preload("res://asset/images/weapons/projectile
 var area_effect_scene: PackedScene = preload("res://Combat/area_effect/area_effect.tscn")
 
 var ITEM_NAME := "Cannon"
-const BULLET_PIXEL_SIZE := Vector2(11.0, 11.0)
+const BULLET_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_CANNON_SIZE
 
 @export var windup_sec: float = 0.15
 @export var idle_fire_trigger_sec: float = 6.0

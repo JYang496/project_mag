@@ -23,6 +23,10 @@ func enemy_hit(charge: int = 1):
 	if hp <= 0:
 		call_deferred("despawn")
 
+func _on_before_pooled() -> void:
+	_pierce_damage_stacks = 0
+	super._on_before_pooled()
+
 func _apply_pierce_damage_growth() -> void:
 	if pierce_damage_gain_per_hit <= 0:
 		return

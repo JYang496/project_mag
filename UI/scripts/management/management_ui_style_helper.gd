@@ -1,13 +1,7 @@
 extends RefCounted
 class_name ManagementUiStyleHelper
 
-const PANEL_BACKGROUND_COLOR := Color(0.045, 0.065, 0.09, 0.98)
-const PANEL_BORDER_COLOR := Color(0.18, 0.38, 0.52, 1.0)
-const PANEL_SHADOW_COLOR := Color(0, 0, 0, 0.45)
-const PRIMARY_BUTTON_BACKGROUND_COLOR := Color(0.12, 0.38, 0.58)
-const PRIMARY_BUTTON_BORDER_COLOR := Color(0.3, 0.68, 0.9)
-const SECONDARY_BUTTON_BACKGROUND_COLOR := Color(0.12, 0.18, 0.25)
-const SECONDARY_BUTTON_BORDER_COLOR := Color(0.28, 0.42, 0.55)
+const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
 
 var _management_panel_style: StyleBoxFlat
 var _primary_button_styles: Dictionary = {}
@@ -16,37 +10,46 @@ var _secondary_button_styles: Dictionary = {}
 func style_primary_menu_panel(
 	panel: Panel,
 	buttons: Array,
-	first_button_position: Vector2,
-	second_button_position: Vector2,
-	button_size: Vector2
+	first_button_position: Vector2 = Vector2(28.0, 108.0),
+	second_button_position: Vector2 = Vector2(28.0, 166.0),
+	button_size: Vector2 = Vector2(304.0, TOKENS.BUTTON_HEIGHT)
 ) -> void:
 	if panel == null:
 		return
+	style_management_panel(panel)
+	_ensure_facility_header_decor(panel)
 	var title := panel.get_node_or_null("Title") as Label
 	if title:
 		title.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-		title.position = Vector2(28, 16)
-		title.size = Vector2(256, 28)
+		title.position = Vector2(TOKENS.SPACE_5, TOKENS.SPACE_4)
+		title.size = Vector2(maxf(panel.size.x - 136.0, 0.0), 32.0)
 		title.clip_text = true
 		title.autowrap_mode = TextServer.AUTOWRAP_OFF
-		title.add_theme_font_size_override("font_size", 24)
-		title.add_theme_color_override("font_color", Color(0.86, 0.94, 1.0))
+		title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		TOKENS.style_label(title, TOKENS.FONT_TITLE, TOKENS.COLOR_TEXT_PRIMARY)
 	var subtitle := panel.get_node_or_null("SubTitle") as Label
 	if subtitle:
 		subtitle.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-		subtitle.position = Vector2(28, 48)
-		subtitle.size = Vector2(256, 28)
-		subtitle.clip_text = true
+		subtitle.position = Vector2(TOKENS.SPACE_5, 52.0)
+		subtitle.size = Vector2(maxf(panel.size.x - TOKENS.SPACE_5 * 2.0, 0.0), 44.0)
+		subtitle.clip_text = false
 		subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		subtitle.add_theme_font_size_override("font_size", 14)
-		subtitle.add_theme_color_override("font_color", Color(0.62, 0.72, 0.8))
+		subtitle.max_lines_visible = 2
+		subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		TOKENS.style_label(subtitle, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_SECONDARY)
 	for index in range(buttons.size()):
 		var button := buttons[index] as Button
 		if button == null:
 			continue
-		var target_position := first_button_position if index == 0 else second_button_position
+		var target_position := first_button_position
+		if index > 0:
+			target_position = second_button_position + Vector2(
+				0.0,
+				float(index - 1) * (button_size.y + TOKENS.SPACE_3)
+			)
 		position_management_button(button, target_position, button_size)
 		style_management_button(button)
+	configure_focus_chain(buttons)
 
 func style_management_panel(panel: Panel) -> void:
 	if panel == null:
@@ -57,8 +60,7 @@ func style_management_panel(panel: Panel) -> void:
 func style_management_title(title: Label) -> void:
 	if title == null:
 		return
-	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", Color(0.86, 0.94, 1.0))
+	TOKENS.style_label(title, TOKENS.FONT_TITLE, TOKENS.COLOR_TEXT_PRIMARY)
 
 func connect_management_panel_input_blockers(owner: Object, panels: Array) -> void:
 	if owner == null:
@@ -74,12 +76,17 @@ func connect_management_panel_input_blockers(owner: Object, panels: Array) -> vo
 func style_management_button(button: Button, primary: bool = false) -> void:
 	if button == null:
 		return
-	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 44.0)
-	button.add_theme_font_size_override("font_size", 18)
+	button.focus_mode = Control.FOCUS_ALL
+	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, TOKENS.TOUCH_TARGET_MIN)
+	button.add_theme_font_size_override("font_size", TOKENS.FONT_BUTTON)
+	button.add_theme_color_override("font_color", TOKENS.COLOR_TEXT_PRIMARY)
+	button.add_theme_color_override("font_hover_color", TOKENS.COLOR_TEXT_PRIMARY)
+	button.add_theme_color_override("font_focus_color", TOKENS.COLOR_TEXT_PRIMARY)
 	var styles := _get_management_button_styles(primary)
 	button.add_theme_stylebox_override("normal", styles.get("normal") as StyleBoxFlat)
 	button.add_theme_stylebox_override("hover", styles.get("hover") as StyleBoxFlat)
 	button.add_theme_stylebox_override("pressed", styles.get("pressed") as StyleBoxFlat)
+	button.add_theme_stylebox_override("focus", styles.get("focus") as StyleBoxFlat)
 
 func refresh_mode_button_styles(weapon_button: Button, module_button: Button, weapon_mode_active: bool) -> void:
 	style_management_button(weapon_button, weapon_mode_active)
@@ -90,55 +97,88 @@ func position_management_button(button: Button, position: Vector2, button_size: 
 		return
 	button.position = position
 	button.size = button_size
+	button.custom_minimum_size = button_size
+
+func configure_focus_chain(buttons: Array) -> void:
+	var focusable: Array[Button] = []
+	for value in buttons:
+		var button := value as Button
+		if button == null or not button.visible or button.disabled:
+			continue
+		button.focus_mode = Control.FOCUS_ALL
+		focusable.append(button)
+	if focusable.is_empty():
+		return
+	for index in range(focusable.size()):
+		var button := focusable[index]
+		var previous := focusable[posmod(index - 1, focusable.size())]
+		var next := focusable[posmod(index + 1, focusable.size())]
+		button.focus_neighbor_top = button.get_path_to(previous)
+		button.focus_neighbor_bottom = button.get_path_to(next)
+		button.focus_previous = button.get_path_to(previous)
+		button.focus_next = button.get_path_to(next)
 
 func create_management_instruction(panel: Panel, node_name: String, position: Vector2, label_size: Vector2) -> Label:
 	var label := Label.new()
 	label.name = node_name
 	label.position = position
 	label.size = label_size
-	label.add_theme_color_override("font_color", Color(0.62, 0.72, 0.8))
-	label.add_theme_font_size_override("font_size", 16)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	TOKENS.style_label(label, TOKENS.FONT_BODY, TOKENS.COLOR_TEXT_SECONDARY)
 	panel.add_child(label)
 	return label
+
+func _ensure_facility_header_decor(panel: Panel) -> void:
+	var accent := panel.get_node_or_null("SystemAccent") as ColorRect
+	if accent == null:
+		accent = ColorRect.new()
+		accent.name = "SystemAccent"
+		accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(accent)
+	accent.position = Vector2.ZERO
+	accent.size = Vector2(6.0, panel.size.y)
+	accent.color = TOKENS.COLOR_ACCENT_SYSTEM
+	var code := panel.get_node_or_null("FacilityCode") as Label
+	if code == null:
+		code = Label.new()
+		code.name = "FacilityCode"
+		code.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		code.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		panel.add_child(code)
+	code.position = Vector2(maxf(panel.size.x - 112.0, 0.0), 18.0)
+	code.size = Vector2(88.0, 24.0)
+	code.text = _facility_code(panel)
+	TOKENS.style_label(code, TOKENS.FONT_CAPTION, TOKENS.COLOR_ACCENT_SYSTEM)
+
+func _facility_code(panel: Panel) -> String:
+	var context := ("%s %s" % [panel.get_parent().name if panel.get_parent() else "", panel.name]).to_lower()
+	if "purchase" in context:
+		return "FAC / 01"
+	if "upgrade" in context:
+		return "FAC / 02"
+	if "warehouse" in context or "module" in context:
+		return "FAC / 03"
+	if "board" in context:
+		return "SYS / 04"
+	if "battle" in context:
+		return "OPS / 05"
+	return "SYS / 00"
 
 func _get_management_panel_style() -> StyleBoxFlat:
 	if _management_panel_style != null:
 		return _management_panel_style
-	_management_panel_style = StyleBoxFlat.new()
-	_management_panel_style.bg_color = PANEL_BACKGROUND_COLOR
-	_management_panel_style.border_color = PANEL_BORDER_COLOR
-	_management_panel_style.set_border_width_all(2)
-	_management_panel_style.set_corner_radius_all(12)
-	_management_panel_style.shadow_color = PANEL_SHADOW_COLOR
-	_management_panel_style.shadow_size = 12
+	_management_panel_style = TOKENS.make_panel_style(true, TOKENS.COLOR_BORDER)
 	return _management_panel_style
 
 func _get_management_button_styles(primary: bool) -> Dictionary:
 	var cached := _primary_button_styles if primary else _secondary_button_styles
 	if not cached.is_empty():
 		return cached
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = (
-		PRIMARY_BUTTON_BACKGROUND_COLOR
-		if primary
-		else SECONDARY_BUTTON_BACKGROUND_COLOR
+	cached = TOKENS.make_button_style(
+		Color(0.12, 0.38, 0.58) if primary else TOKENS.COLOR_SURFACE_INTERACTIVE,
+		TOKENS.COLOR_ACCENT_SYSTEM if primary else TOKENS.COLOR_BORDER
 	)
-	normal.border_color = (
-		PRIMARY_BUTTON_BORDER_COLOR
-		if primary
-		else SECONDARY_BUTTON_BORDER_COLOR
-	)
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(7)
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = normal.bg_color.lightened(0.12)
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = normal.bg_color.darkened(0.12)
-	cached = {
-		"normal": normal,
-		"hover": hover,
-		"pressed": pressed,
-	}
 	if primary:
 		_primary_button_styles = cached
 	else:

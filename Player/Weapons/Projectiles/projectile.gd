@@ -27,6 +27,7 @@ var effect_list = []
 var source_weapon: Weapon
 var hitbox_type = "once"
 var dot_cd : float
+var collision_arming_delay_sec: float = 0.0
 var _is_pooled: bool = false
 var _active_movement_controller: Node
 var debug_source_weapon: String = ""
@@ -52,6 +53,7 @@ signal overlapping_signal()
 
 # Children
 @onready var expire_timer = $ExpireTimer
+@onready var collision_arming_timer: Timer = $CollisionArmingTimer
 @onready var projectile_root: Node2D = $Bullet
 @onready var hitbox_anchor: Node2D = $HitboxAnchor
 @onready var projectile_sprite: Sprite2D = $Bullet/BulletSprite
@@ -84,6 +86,7 @@ func _prepare_for_spawn() -> void:
 		projectile_root.call("set_logical_local_position", Vector2.ZERO)
 	_clear_hitbox()
 	init_hitbox(hitbox_type)
+	_start_collision_arming()
 	_apply_debug_overlay()
 	expire_timer.start()
 	await get_tree().physics_frame
@@ -112,7 +115,20 @@ func init_hitbox(hb_type = "once") -> void:
 	hitbox_ins.get_child(0).shape = shape
 	hitbox_ins.set_collision_mask_value(3, true)
 	hitbox_ins.hitbox_owner = self
+	hitbox_ins.monitoring = collision_arming_delay_sec <= 0.0
 	hitbox_anchor.call_deferred("add_child", hitbox_ins)
+
+func _start_collision_arming() -> void:
+	collision_arming_timer.stop()
+	if collision_arming_delay_sec <= 0.0:
+		return
+	collision_arming_timer.wait_time = maxf(collision_arming_delay_sec, MIN_EXPIRE_TIME)
+	collision_arming_timer.start()
+
+func _on_collision_arming_timer_timeout() -> void:
+	if hitbox_ins == null or not is_instance_valid(hitbox_ins):
+		return
+	hitbox_ins.monitoring = true
 
 func _physics_process(delta: float) -> void:
 	_check_wall_contact(delta)
@@ -196,6 +212,7 @@ func despawn() -> void:
 
 func _on_before_pooled() -> void:
 	expire_timer.stop()
+	collision_arming_timer.stop()
 	_clear_hitbox()
 	_release_effects()
 	module_list.clear()
@@ -214,6 +231,7 @@ func _on_before_pooled() -> void:
 	projectile_frames = null
 	hitbox_type = "once"
 	dot_cd = 0.0
+	collision_arming_delay_sec = 0.0
 	base_displacement = Vector2.ZERO
 	projectile_displacement = Vector2.ZERO
 	projectile_root.position = Vector2.ZERO
@@ -291,7 +309,7 @@ func _release_effects() -> void:
 		# These nodes are permanent parts of every projectile scene. In particular,
 		# freeing HitboxAnchor here corrupts the cached instance: request_ready() will
 		# then resolve $HitboxAnchor again on the next acquire and fail.
-		if child == projectile_root or child == hitbox_anchor or child == expire_timer:
+		if child == projectile_root or child == hitbox_anchor or child == expire_timer or child == collision_arming_timer:
 			continue
 		if child is Label:
 			continue

@@ -19,3 +19,4 @@ var is_periodic: bool = false
 var triggered_invuln: bool = false
 var triggered_energy_burst: bool = false
 var damage_kind: StringName = DamageData.KIND_DIRECT
+var is_critical: bool = false

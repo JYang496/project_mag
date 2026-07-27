@@ -9,6 +9,8 @@
 [node name="ChainsawLauncher" unique_id=347628502 instance=ExtResource("1_sq336")]
 script = ExtResource("2_hcjeu")
 fire_feedback_profile = ExtResource("4_feedback")
+range_mode = 2
+projectile_lifetime_sec = 2.5
 delivery_type_flags = 1
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]

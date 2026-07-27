@@ -11,6 +11,9 @@ signal board_recentered(offset: Vector2)
 @export var center_spawn_offset: Vector2 = Vector2(255, 258)
 @export var auto_assign_enemy_on_battle := true
 @export var initial_cell_profiles: Array[CellProfile] = []
+@export_group("Temporary Cell System")
+@export var cell_system_visible := false
+@export var force_default_terrain := true
 @export_group("Debug")
 @export var debug_recenter_logs: bool = false
 @export_group("Board Blockers")
@@ -84,6 +87,8 @@ func _spawn_cells() -> void:
 				cell.name = "Cell%s" % str(cell_index + 1)
 			cell.position = Vector2(x * cell_spacing.x, y * cell_spacing.y)
 			cell.logical_id = _compute_logical_cell_id(Vector2i(x, y))
+			cell.set_default_terrain_only(force_default_terrain)
+			cell.set_cell_visuals_visible(cell_system_visible)
 			add_child(cell)
 			_configure_cell_capture_shape(cell)
 			_cells.append(cell)
@@ -104,6 +109,9 @@ func _attach_spawner(target_cell: Cell) -> void:
 
 func get_cells() -> Array[Cell]:
 	return _cells.duplicate()
+
+func is_cell_system_visible() -> bool:
+	return cell_system_visible
 
 func get_cell_by_logical_id(logical_id: int) -> Cell:
 	return _cell_id_to_node.get(logical_id) as Cell
@@ -400,6 +408,7 @@ func _create_blocker_visual(blocker_size: Vector2, visual_color: Color) -> Polyg
 	])
 	polygon.color = visual_color
 	polygon.z_index = blocker_visual_z_index
+	polygon.visible = cell_system_visible
 	return polygon
 
 func _apply_initial_profile(cell: Cell, cell_index: int) -> void:

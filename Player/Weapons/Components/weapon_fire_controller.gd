@@ -58,6 +58,9 @@ func apply_external_attack_speed_mul(source_id: StringName, multiplier: float) -
 	if source_id == StringName():
 		return
 	var clamped_mul := clampf(multiplier, 0.1, 10.0)
+	if is_equal_approx(clamped_mul, 1.0):
+		remove_external_attack_speed_mul(source_id)
+		return
 	var previous_mul := float(_external_attack_speed_mul_modifiers.get(source_id, 1.0))
 	if _external_attack_speed_mul_modifiers.has(source_id) and is_equal_approx(previous_mul, clamped_mul):
 		return

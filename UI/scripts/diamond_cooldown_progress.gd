@@ -1,6 +1,13 @@
 extends Control
 class_name DiamondCooldownProgress
 
+enum ShapeMode { DIAMOND, RECTANGLE }
+
+@export var shape_mode: ShapeMode = ShapeMode.DIAMOND:
+	set(value):
+		shape_mode = value
+		queue_redraw()
+
 @export_range(0.0, 1.0, 0.001) var progress: float = 1.0:
 	set(value):
 		progress = clampf(value, 0.0, 1.0)
@@ -16,6 +23,9 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _draw() -> void:
+	if shape_mode == ShapeMode.RECTANGLE:
+		_draw_rectangle_progress()
+		return
 	var points := _build_diamond_points()
 	if points.size() < 4:
 		return
@@ -27,6 +37,37 @@ func _draw() -> void:
 	var fill_points := _build_progress_polyline(points, progress, clockwise)
 	if fill_points.size() >= 2:
 		draw_polyline(fill_points, fill_color, maxf(line_width, 0.5), true)
+
+func _draw_rectangle_progress() -> void:
+	var inner := Rect2(Vector2.ZERO, size).grow(-maxf(padding, 0.0))
+	if inner.size.x <= 1.0 or inner.size.y <= 1.0:
+		return
+	draw_rect(inner, base_color, false, maxf(line_width, 0.5), true)
+	if progress <= 0.0:
+		return
+	var points := PackedVector2Array([
+		Vector2(inner.position.x, inner.end.y),
+		inner.end,
+		Vector2(inner.end.x, inner.position.y),
+		inner.position,
+		Vector2(inner.position.x, inner.end.y),
+	])
+	if not clockwise:
+		points = PackedVector2Array([points[0], points[3], points[2], points[1], points[0]])
+	var remaining := (inner.size.x + inner.size.y) * 2.0 * progress
+	var output := PackedVector2Array([points[0]])
+	for index in range(points.size() - 1):
+		var start := points[index]
+		var finish := points[index + 1]
+		var segment := start.distance_to(finish)
+		if remaining >= segment:
+			output.append(finish)
+			remaining -= segment
+			continue
+		output.append(start.lerp(finish, remaining / maxf(segment, 0.0001)))
+		break
+	if output.size() >= 2:
+		draw_polyline(output, fill_color, maxf(line_width, 0.5), true)
 
 func _build_diamond_points() -> PackedVector2Array:
 	var rect := Rect2(Vector2.ZERO, size)

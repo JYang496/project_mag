@@ -15,6 +15,9 @@ var _status_hint_queue: Array[Dictionary] = []
 var _is_status_hint_playing: bool = false
 var _raw_hint_ready_at_msec: Dictionary = {}
 var _queued_raw_hint_keys: Dictionary = {}
+var _active_hint_labels: Array[Label] = []
+var _active_hint_tweens: Array[Tween] = []
+var _active_hint_tracks: Array[Dictionary] = []
 
 func setup(
 	host: Node2D,
@@ -28,6 +31,9 @@ func setup(
 	_floating_hint_rise_px = maxf(floating_hint_rise_px, 0.0)
 	_status_hint_throttle_sec = maxf(status_hint_throttle_sec, 0.05)
 	_status_hint_queue_interval_sec = maxf(status_hint_queue_interval_sec, 0.05)
+
+func _process(delta: float) -> void:
+	_update_active_hint_positions(maxf(delta, 0.0))
 
 func enqueue_raw_hint(text: String) -> void:
 	enqueue_keyed_raw_hint(text, StringName(), 0.0)
@@ -91,6 +97,17 @@ func clear_all() -> void:
 	_status_hint_state_by_source.clear()
 	_raw_hint_ready_at_msec.clear()
 	_queued_raw_hint_keys.clear()
+	for tween in _active_hint_tweens:
+		if tween != null and tween.is_valid():
+			tween.kill()
+	_active_hint_tweens.clear()
+	_active_hint_tracks.clear()
+	for label in _active_hint_labels:
+		if label == null or not is_instance_valid(label):
+			continue
+		label.hide()
+		label.queue_free()
+	_active_hint_labels.clear()
 	_is_status_hint_playing = false
 
 func _emit_status_hint(status_owner: StringName, stat_type: StringName, source_id: StringName, is_gain: bool) -> void:
@@ -167,21 +184,62 @@ func _spawn_player_floating_hint(text: String) -> void:
 	label.z_index = 200
 	var layer := ProjectedUi.ensure_layer(_host.get_tree())
 	layer.add_child(label)
+	_active_hint_labels.append(label)
 	var min_size := label.get_combined_minimum_size()
 	label.size = Vector2(maxf(min_size.x + 18.0, 96.0), maxf(min_size.y + 6.0, 26.0))
-	var anchor := ProjectedUi.project_to_screen(_host.get_tree(), _host.global_position, _host.global_position)
-	label.position = anchor + Vector2(-label.size.x * 0.5, -80.0 - label.size.y * 0.5)
+	_active_hint_tracks.append({
+		"label": label,
+		"elapsed_sec": 0.0,
+	})
+	_position_active_hint(label, 0.0)
 	var tween := _host.create_tween()
+	_active_hint_tweens.append(tween)
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_parallel(true)
-	tween.tween_property(label, "position:y", label.position.y - _floating_hint_rise_px, _floating_hint_duration_sec)
 	tween.tween_property(label, "modulate:a", 0.0, _floating_hint_duration_sec)
 	tween.finished.connect(func() -> void:
+		_active_hint_tweens.erase(tween)
+		_active_hint_labels.erase(label)
+		_remove_active_hint_track(label)
 		if label and is_instance_valid(label):
 			label.queue_free()
 		_on_status_hint_playback_finished()
 	)
+
+func _update_active_hint_positions(delta: float) -> void:
+	for idx in range(_active_hint_tracks.size() - 1, -1, -1):
+		var track: Dictionary = _active_hint_tracks[idx]
+		var label := track.get("label", null) as Label
+		if label == null or not is_instance_valid(label):
+			_active_hint_tracks.remove_at(idx)
+			continue
+		var elapsed_sec := minf(
+			float(track.get("elapsed_sec", 0.0)) + delta,
+			_floating_hint_duration_sec
+		)
+		track["elapsed_sec"] = elapsed_sec
+		_active_hint_tracks[idx] = track
+		_position_active_hint(label, elapsed_sec / _floating_hint_duration_sec)
+
+func _position_active_hint(label: Label, progress: float) -> void:
+	if _host == null or not is_instance_valid(_host) or label == null or not is_instance_valid(label):
+		return
+	var viewport := _host.get_viewport()
+	var fallback := _host.global_position
+	if viewport != null:
+		fallback = viewport.get_canvas_transform() * _host.global_position
+	var anchor := ProjectedUi.project_to_screen(_host.get_tree(), _host.global_position, fallback)
+	var eased_progress := sin(clampf(progress, 0.0, 1.0) * PI * 0.5)
+	label.position = anchor + Vector2(
+		-label.size.x * 0.5,
+		-80.0 - label.size.y * 0.5 - _floating_hint_rise_px * eased_progress
+	)
+
+func _remove_active_hint_track(label: Label) -> void:
+	for idx in range(_active_hint_tracks.size() - 1, -1, -1):
+		if _active_hint_tracks[idx].get("label", null) == label:
+			_active_hint_tracks.remove_at(idx)
 
 func _on_status_hint_playback_finished() -> void:
 	if _host == null or not is_instance_valid(_host):

@@ -2,10 +2,11 @@
 
 [ext_resource type="Script" uid="uid://bwe2srkt3pe4d" path="res://UI/labels/hit_label.gd" id="1_1e3fo"]
 
-[node name="HitLabel" type="Label"]
+[node name="HitLabel" type="Control"]
 z_index = 1
-offset_right = 24.0
-offset_bottom = 23.0
-text = "-10"
-vertical_alignment = 1
+layout_mode = 3
+anchors_preset = 0
+offset_right = 8.0
+offset_bottom = 12.0
+mouse_filter = 2
 script = ExtResource("1_1e3fo")

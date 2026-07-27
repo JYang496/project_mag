@@ -29,7 +29,8 @@ var is_on_cooldown = false
 # Projectile scene that needs to be overwritten in child class.
 var projectile_scene
 
-const SPRITE_TARGET_HEIGHT := 40.0
+const PixelArtPolicyType := preload("res://Visual/pixel_art_policy.gd")
+const SPRITE_TARGET_HEIGHT := PixelArtPolicyType.WEAPON_TARGET_HEIGHT_PX
 const AIM_ROTATION_OFFSET := deg_to_rad(90)
 const PLAYER_ASSIST_AUTO_AIM_TARGET_META: StringName = &"_player_assist_auto_aim_target"
 

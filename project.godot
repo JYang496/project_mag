@@ -51,6 +51,7 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/stretch/scale_mode="integer"
 window/size/min_width=1280
 window/size/min_height=720
 
@@ -167,3 +168,4 @@ locale/translations=PackedStringArray("res://data/localization/ui_texts.en.trans
 [rendering]
 
 renderer/rendering_method="mobile"
+textures/default_filters/use_nearest_mipmap_filter=true

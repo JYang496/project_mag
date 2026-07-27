@@ -3,6 +3,7 @@ extends Node
 signal main_weapon_index_changed(old_index: int, new_index: int, step: int)
 signal weapon_list_changed()
 signal player_health_changed(current_hp: int, max_hp: int)
+signal player_damage_received(feedback: Dictionary)
 signal player_gold_changed(value: int)
 
 @onready var player = null

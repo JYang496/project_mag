@@ -9,6 +9,8 @@ const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd
 @onready var hide_timer: Timer = $HideTimer
 
 func _ready() -> void:
+	z_as_relative = false
+	z_index = RenderingServer.CANVAS_ITEM_Z_MAX - 128
 	visible = false
 	hide_timer.one_shot = true
 	_sync_position()

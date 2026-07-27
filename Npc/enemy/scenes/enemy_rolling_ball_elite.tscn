@@ -27,6 +27,7 @@ shape = SubResource("RectangleShape2D_dl2yt")
 position = Vector2(0.034549713, -1.4305115e-06)
 texture_filter = 1
 z_index = 1
+extra_scale = Vector2(0.75, 0.75)
 texture = ExtResource("3_ojmbw")
 
 [node name="NPCCollision" parent="." index="2"]

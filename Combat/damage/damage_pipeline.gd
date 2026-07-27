@@ -17,6 +17,7 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 	var periodic := is_periodic or (attack != null and attack.damage_kind == DamageData.KIND_PERIODIC)
 	result.is_periodic = periodic
 	result.damage_kind = DamageData.KIND_PERIODIC if periodic else (attack.damage_kind if attack != null else DamageData.KIND_DIRECT)
+	result.is_critical = attack != null and attack.is_critical
 	if target == null or not is_instance_valid(target) or attack == null or profile == null:
 		result.rejection_reason = DamageResult.REASON_INVALID
 		return result

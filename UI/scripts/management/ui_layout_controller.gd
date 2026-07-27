@@ -1,12 +1,10 @@
 extends RefCounted
 class_name UiLayoutController
 
-const PANEL_TARGET_SIZE := Vector2(1000, 600)
-const PANEL_MARGIN := Vector2(24, 24)
+const LAYOUT_POLICY := preload("res://UI/scripts/management/ui_layout_policy.gd")
+const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
 const PAUSE_PANEL_TARGET_SIZE := Vector2(400, 600)
-const PRIMARY_MENU_TARGET_SIZE := Vector2(312, 320)
-const PRIMARY_MENU_LEFT_MARGIN := 16.0
-const PRIMARY_MENU_ANIM_TIME := 0.2
+const PRIMARY_MENU_ANIM_TIME := TOKENS.MOTION_NORMAL
 const PRIMARY_MENU_ANIM_TRANS := Tween.TRANS_CUBIC
 const PRIMARY_MENU_ANIM_EASE := Tween.EASE_OUT
 const SECONDARY_MENU_SLIDE_OFFSET := Vector2(-36.0, 0.0)
@@ -24,17 +22,15 @@ func bind(ui: UI, management_shell: RestAreaManagementShell) -> void:
 
 func apply_responsive_layout() -> void:
 	var viewport_size := owner_ui.get_viewport().get_visible_rect().size
-	fit_center_panel(owner_ui.purchase_panel, viewport_size, PANEL_TARGET_SIZE)
-	fit_center_panel(owner_ui.upgrade_panel, viewport_size, PANEL_TARGET_SIZE)
-	fit_center_panel(owner_ui.module_panel, viewport_size, PANEL_TARGET_SIZE)
+	_apply_rect(owner_ui.purchase_panel, LAYOUT_POLICY.management_panel_rect(viewport_size))
+	_apply_rect(owner_ui.upgrade_panel, LAYOUT_POLICY.management_panel_rect(viewport_size))
+	_apply_rect(owner_ui.module_panel, LAYOUT_POLICY.management_panel_rect(viewport_size))
 	if owner_ui.rest_area_ui_controller != null:
 		for menu_id in owner_ui.rest_area_ui_controller.get_registered_service_menu_ids():
-			fit_left_panel(
-				owner_ui.rest_area_ui_controller.get_service_primary_panel(menu_id),
-				viewport_size,
-				PRIMARY_MENU_TARGET_SIZE,
-				PRIMARY_MENU_LEFT_MARGIN
-			)
+			var panel: Control = owner_ui.rest_area_ui_controller.get_service_primary_panel(menu_id)
+			_apply_rect(panel, LAYOUT_POLICY.primary_menu_rect(viewport_size, _count_visible_buttons(panel)))
+	if owner_ui.management_ui_bootstrap_controller != null:
+		owner_ui.management_ui_bootstrap_controller.style_primary_menu_controls()
 	fit_pause_layout(viewport_size)
 	owner_ui._ensure_hud_presenter_instance()
 	owner_ui.hud_presenter.layout_hud(viewport_size, owner_ui.hp_label_label, owner_ui.weapon_selector)
@@ -53,7 +49,7 @@ func show_primary_menu(menu_id: StringName, root: Control, panel: Control) -> vo
 		return
 	stop_primary_menu_tween(menu_id)
 	var viewport_size := owner_ui.get_viewport().get_visible_rect().size
-	fit_left_panel(panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
+	_apply_rect(panel, LAYOUT_POLICY.primary_menu_rect(viewport_size, _count_visible_buttons(panel)))
 	var target_pos := panel.position
 	var hidden_pos := get_primary_menu_hidden_position(panel, target_pos)
 	root.visible = true
@@ -76,7 +72,7 @@ func hide_primary_menu(menu_id: StringName, root: Control, panel: Control) -> vo
 		return
 	stop_primary_menu_tween(menu_id)
 	var viewport_size := owner_ui.get_viewport().get_visible_rect().size
-	fit_left_panel(panel, viewport_size, PRIMARY_MENU_TARGET_SIZE, PRIMARY_MENU_LEFT_MARGIN)
+	_apply_rect(panel, LAYOUT_POLICY.primary_menu_rect(viewport_size, _count_visible_buttons(panel)))
 	var target_pos := panel.position
 	var hidden_pos := get_primary_menu_hidden_position(panel, target_pos)
 	if not root.visible:
@@ -94,7 +90,7 @@ func hide_primary_menu(menu_id: StringName, root: Control, panel: Control) -> vo
 func get_primary_menu_hidden_position(panel: Control, target_pos: Vector2) -> Vector2:
 	if shell != null:
 		return shell._get_primary_menu_hidden_position(panel, target_pos)
-	return Vector2(-panel.size.x - PRIMARY_MENU_LEFT_MARGIN, target_pos.y)
+	return Vector2(-panel.size.x - LAYOUT_POLICY.safe_margin(panel.get_viewport_rect().size).x, target_pos.y)
 
 func stop_primary_menu_tween(menu_id: StringName) -> void:
 	if shell != null:
@@ -115,6 +111,7 @@ func show_secondary_menu(root: Control) -> Tween:
 		return null
 	stop_secondary_menu_tween(root)
 	root.visible = true
+	_configure_focus_for_root(root)
 	root.position = SECONDARY_MENU_SLIDE_OFFSET
 	root.modulate.a = 0.0
 	var tween := owner_ui.create_tween()
@@ -124,6 +121,7 @@ func show_secondary_menu(root: Control) -> Tween:
 	tween.parallel().tween_property(root, "modulate:a", 1.0, PRIMARY_MENU_ANIM_TIME)
 	tween.finished.connect(on_secondary_menu_tween_finished.bind(root))
 	secondary_menu_tweens[root] = tween
+	call_deferred("_focus_first_button", root)
 	return tween
 
 func hide_secondary_menu(root: Control) -> Tween:
@@ -187,20 +185,17 @@ func on_primary_menu_tween_finished(menu_id: StringName) -> void:
 func fit_center_panel(panel: Control, viewport_size: Vector2, target_size: Vector2) -> void:
 	if panel == null:
 		return
-	var available_size: Vector2 = viewport_size - PANEL_MARGIN * 2.0
-	var width: float = minf(target_size.x, available_size.x)
-	var height: float = minf(target_size.y, available_size.y)
-	panel.size = Vector2(maxf(width, 0.0), maxf(height, 0.0))
-	panel.position = (viewport_size - panel.size) * 0.5
+	_apply_rect(panel, LAYOUT_POLICY.fit_centered_rect(viewport_size, target_size))
 
 func fit_left_panel(panel: Control, viewport_size: Vector2, target_size: Vector2, left_margin: float) -> void:
 	if panel == null:
 		return
-	var available_size: Vector2 = viewport_size - PANEL_MARGIN * 2.0
+	var margin := LAYOUT_POLICY.safe_margin(viewport_size)
+	var available_size: Vector2 = viewport_size - margin * 2.0
 	var width: float = minf(target_size.x, available_size.x)
 	var height: float = minf(target_size.y, available_size.y)
 	panel.size = Vector2(maxf(width, 0.0), maxf(height, 0.0))
-	panel.position = Vector2(maxf(left_margin, PANEL_MARGIN.x), (viewport_size.y - panel.size.y) * 0.5)
+	panel.position = Vector2(maxf(left_margin, margin.x), (viewport_size.y - panel.size.y) * 0.5)
 
 func fit_pause_layout(viewport_size: Vector2) -> void:
 	owner_ui.pause_menu_root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -215,3 +210,44 @@ func _sync_public_fields_to_owner() -> void:
 		return
 	owner_ui._primary_menu_tweens = primary_menu_tweens
 
+func _apply_rect(control: Control, target_rect: Rect2) -> void:
+	if control == null:
+		return
+	control.position = target_rect.position
+	control.size = target_rect.size
+
+func _count_visible_buttons(root: Node) -> int:
+	if root == null:
+		return 0
+	var result := 0
+	for child in root.find_children("*", "Button", true, false):
+		var button := child as Button
+		if button != null and button.visible:
+			result += 1
+	return result
+
+func _configure_focus_for_root(root: Node) -> void:
+	var buttons: Array[Button] = []
+	for child in root.find_children("*", "Button", true, false):
+		var button := child as Button
+		if button == null or not button.visible or button.disabled:
+			continue
+		button.focus_mode = Control.FOCUS_ALL
+		buttons.append(button)
+	if buttons.is_empty():
+		return
+	for index in range(buttons.size()):
+		var button := buttons[index]
+		var previous := buttons[posmod(index - 1, buttons.size())]
+		var next := buttons[posmod(index + 1, buttons.size())]
+		button.focus_neighbor_top = button.get_path_to(previous)
+		button.focus_neighbor_bottom = button.get_path_to(next)
+		button.focus_previous = button.get_path_to(previous)
+		button.focus_next = button.get_path_to(next)
+
+func _focus_first_button(root: Node) -> void:
+	for child in root.find_children("*", "Button", true, false):
+		var button := child as Button
+		if button != null and button.visible and not button.disabled:
+			button.grab_focus()
+			return

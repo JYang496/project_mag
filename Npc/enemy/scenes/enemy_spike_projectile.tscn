@@ -19,6 +19,7 @@ texture_filter = 1
 texture = ExtResource("2_tex")
 script = ExtResource("3_billboard")
 mode = 1
+extra_scale = Vector2(4, 4)
 directional_forward_degrees = -90.0
 depth_sort_step_pixels = 24.0
 

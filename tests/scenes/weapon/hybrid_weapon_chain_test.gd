@@ -60,7 +60,33 @@ func _ready() -> void:
 		var specialized := packed.instantiate() as Projectile
 		failed = _check(specialized != null and specialized.get_node_or_null("HitboxAnchor") != null, "specialized projectile must inherit logical hitbox anchor") or failed
 		failed = _check(specialized != null and specialized.get_node_or_null("Bullet") != null and specialized.get_node("Bullet").has_method("reset_projection_state"), "specialized projectile must inherit billboard reset") or failed
-		specialized.free()
+		specialized.projectile_texture = (specialized.get_node("Bullet/BulletSprite") as Sprite2D).texture
+		add_child(specialized)
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		failed = _check(specialized.hitbox_ins != null and is_instance_valid(specialized.hitbox_ins), "specialized projectile must complete ready-time hitbox initialization") or failed
+		specialized.queue_free()
+		await get_tree().process_frame
+	var pooled_sniper := ObjectPool.acquire(SniperProjectileScene) as SniperProjectile
+	pooled_sniper.projectile_texture = ProjectileTexture
+	pooled_sniper.damage = 10
+	pooled_sniper.hp = 2
+	pooled_sniper.pierce_damage_gain_per_hit = 5
+	pooled_sniper.max_pierce_damage_stacks = 1
+	add_child(pooled_sniper)
+	await get_tree().physics_frame
+	pooled_sniper.enemy_hit()
+	ObjectPool.release(pooled_sniper)
+	var reused_sniper := ObjectPool.acquire(SniperProjectileScene) as SniperProjectile
+	reused_sniper.projectile_texture = ProjectileTexture
+	reused_sniper.damage = 10
+	reused_sniper.hp = 2
+	reused_sniper.pierce_damage_gain_per_hit = 5
+	reused_sniper.max_pierce_damage_stacks = 1
+	add_child(reused_sniper)
+	await get_tree().physics_frame
+	reused_sniper.enemy_hit()
+	failed = _check(reused_sniper.damage == 15, "pooled sniper projectile must reset pierce damage stacks") or failed
 	var sniper := SniperProjectileScene.instantiate() as Projectile
 	failed = _check(float(sniper.get_node("Bullet").get("directional_forward_degrees")) == -90.0, "sniper projectile must declare its upward art axis") or failed
 	sniper.free()
@@ -75,20 +101,33 @@ func _ready() -> void:
 	failed = _check(float(enemy_spike.sprite.get("directional_forward_degrees")) == -90.0, "enemy spike must declare its upward art axis") or failed
 	var beam := BeamScene.instantiate()
 	beam.set("target_position", Vector2.RIGHT * 120.0)
+	beam.position = Vector2(75.0, 35.0)
 	add_child(beam)
 	var beam_blast := BeamBlastScene.instantiate()
 	beam_blast.set("target_position", Vector2.RIGHT * 20.0)
 	beam_blast.set("hit_cd", 0.2)
 	add_child(beam_blast)
 	await get_tree().process_frame
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	var beam_line := beam.get_node("RayCast2D/Line2D") as Line2D
 	var blast_line := beam_blast.get_node("Line2D") as Line2D
+	failed = _check((beam.get_node("RayCast2D") as RayCast2D).target_position.is_equal_approx(Vector2.RIGHT * 120.0), "laser beam must preserve its configured local range") or failed
+	failed = _check(beam_line.points.size() == 2, "laser beam must publish a visible line segment") or failed
+	if beam_line.points.size() == 2:
+		failed = _check(beam_line.points[-1].is_equal_approx(Vector2.RIGHT * 120.0), "laser beam endpoint must remain in beam-local coordinates") or failed
 	failed = _check(beam_line.is_in_group(&"hybrid_ground_segment") and beam_line.get_meta("hybrid_segment_style") == &"beam", "laser beam must request the flowing 3D beam style") or failed
 	failed = _check(blast_line.is_in_group(&"hybrid_ground_segment") and bool(blast_line.get_meta("hybrid_segment_endpoints")), "charged beam must request 3D endpoint glows") or failed
 	var cone := ConeSprayScene.instantiate() as ConeSprayVfx
 	add_child(cone)
 	cone.start_or_refresh(Vector2.ZERO, Vector2.RIGHT, 280.0, 40.0)
 	failed = _check(cone.is_in_group(&"hybrid_ground_cone_effect"), "cone spray must register one 3D fan mesh source") or failed
+	cone.set_meta(&"hybrid_ground_registered", true)
+	cone.start_or_refresh(Vector2.ZERO, Vector2.RIGHT, 280.0, 40.0)
+	failed = _check(
+		not bool(cone.get_meta(&"hybrid_ground_registered", false)),
+		"cone spray must requeue registration when its ground view cache is unavailable"
+	) or failed
 	var dash_blade := DashBladeScene.instantiate()
 	failed = _check(dash_blade.get_node("BladeAnchor/BladeSprite").has_method("world_direction_to_screen"), "dash blade subvisual must use directional billboard") or failed
 	dash_blade.free()
@@ -138,6 +177,7 @@ func _validate_all_projectile_scenes() -> bool:
 			instance.free()
 			continue
 		failed = _check(instance.get_node_or_null("HitboxAnchor") != null, "%s must keep a logical HitboxAnchor" % file_name) or failed
+		failed = _check(instance.get_node_or_null("CollisionArmingTimer") != null, "%s must keep a CollisionArmingTimer" % file_name) or failed
 		var bullet := instance.get_node_or_null("Bullet")
 		failed = _check(bullet != null and bullet.has_method("reset_projection_state"), "%s must classify its Billboard visual" % file_name) or failed
 		instance.free()

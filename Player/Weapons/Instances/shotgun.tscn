@@ -9,6 +9,8 @@
 [node name="Shotgun" unique_id=906790110 instance=ExtResource("1_8d78b")]
 script = ExtResource("2_1ble7")
 fire_feedback_profile = ExtResource("5_feedback")
+range_mode = 2
+projectile_lifetime_sec = 0.3
 delivery_type_flags = 1
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]

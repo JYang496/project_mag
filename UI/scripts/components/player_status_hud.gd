@@ -1,45 +1,51 @@
 extends Control
 class_name PlayerStatusHud
 
-const HUD_SIZE := Vector2(324.0, 88.0)
-const BAR_WIDTH := 198.0
-const HP_HEIGHT := 20.0
-const SHIELD_HEIGHT := 7.0
-const ENERGY_CELL_WIDTH := 54.0
-const ENERGY_HALF_CELL_WIDTH := 27.0
-const ENERGY_CELL_HEIGHT := 20.0
-const ENERGY_CELL_GAP := 5.0
-const HP_GHOST_HOLD_SECONDS := 0.25
-const HP_GHOST_CATCHUP_SECONDS := 0.6
-const DAMAGE_GHOST_COLOR := Color(0.96, 0.98, 1.0, 0.92)
-const HEAL_GHOST_COLOR := Color(0.30, 1.0, 0.82, 0.88)
-const ENERGY_CAPACITIES := [50.0, 50.0, 25.0]
-const ENERGY_SOURCE_REGIONS := [
-	Rect2(8.0, 8.0, 618.0, 136.0),
-	Rect2(642.0, 8.0, 618.0, 136.0),
-	Rect2(1276.0, 8.0, 309.0, 136.0),
-]
-const HP_TEXTURE := preload("res://UI/themes/player_status_hud/generated/hp_fill.png")
-const SHIELD_TEXTURE := preload("res://UI/themes/player_status_hud/generated/shield_fill.png")
-const ENERGY_TEXTURE := preload("res://UI/themes/player_status_hud/generated/energy_125_fill.png")
-const AMMO_TEXTURE := preload("res://UI/themes/player_status_hud/generated/ammo_icon.png")
+const HUD_SIZE := Vector2(420.0, 80.0)
+const BAR_RECT := Rect2(Vector2(43.0, 43.0), Vector2(354.0, 18.0))
+const SHIELD_RECT := Rect2(Vector2(43.0, 65.0), Vector2(354.0, 5.0))
+const ENERGY_Y := 8.0
+const ENERGY_PER_BEAN := 50.0
+const ENERGY_BEAN_SIZE := Vector2(34.0, 9.0)
+const ENERGY_BEAN_GAP := 6.0
+const COOLDOWN_TRACK_HEIGHT := 3.0
+const COOLDOWN_TRACK_GAP := 3.0
+const PANEL_PADDING := 4.0
+const CUT_SIZE := 5.0
+const HP_VALUE_HOLD_SECONDS := 0.8
+const HP_VALUE_FADE_SECONDS := 0.25
+const HP_GHOST_HOLD_SECONDS := 0.22
+const HP_GHOST_CATCHUP_SECONDS := 0.65
+const DAMAGE_FLASH_DURATION := 0.32
 
-var _hp_clip: Control
-var _hp_fill: TextureRect
-var _hp_ghost_clip: Control
-var _hp_ghost_fill: TextureRect
-var _hp_ghost_material: ShaderMaterial
-var _shield_clip: Control
-var _energy_cells: Array[TextureRect] = []
-var _energy_fill_clips: Array[Control] = []
-var _energy_fills: Array[TextureRect] = []
-var _hp_label: Label
-var _ammo_icon: TextureRect
-var _ammo_label: Label
-var _skill_cost := 0.0
+const HP_TRACK := Color(0.018, 0.075, 0.070, 0.96)
+const HP_FILL := Color(0.21, 0.81, 0.91, 0.98)
+const HP_WARNING := Color(1.0, 0.66, 0.18, 0.98)
+const HP_CRITICAL := Color(1.0, 0.22, 0.18, 0.98)
+const HP_DAMAGE_GHOST := Color(1.0, 0.28, 0.20, 0.86)
+const HP_HEAL_GHOST := Color(0.30, 1.0, 0.66, 0.82)
+const SHIELD_TRACK := Color(0.025, 0.10, 0.15, 0.96)
+const SHIELD_COLOR := Color(0.20, 0.76, 1.0, 1.0)
+const ENERGY_EMPTY := Color(0.105, 0.065, 0.018, 0.94)
+const ENERGY_FILL := Color(1.0, 0.55, 0.04, 0.98)
+const ENERGY_EDGE := Color(1.0, 0.76, 0.22, 1.0)
+const ENERGY_FULL_EDGE := Color(1.0, 0.90, 0.38, 1.0)
+const ENERGY_READY_EDGE := Color(1.0, 0.96, 0.68, 1.0)
+const COOLDOWN_TRACK := Color(0.20, 0.29, 0.34, 0.78)
+const COOLDOWN_FILL := Color(0.34, 0.78, 0.88, 1.0)
+
+var _current_hp := 0
+var _max_hp := 1
+var _current_shield := 0
+var _max_shield := 0
 var _current_energy := 0.0
-var _display_energy := 0.0
+var _max_energy := 100.0
+var _skill_cost := 0.0
 var _cooldown_ratio := 0.0
+var _cooldown_remaining := 0.0
+var _cooldown_total := 0.0
+var _cooldown_has_duration := false
+var _skill_available := false
 var _has_health_sample := false
 var _target_hp_ratio := 0.0
 var _display_hp_ratio := 0.0
@@ -47,57 +53,57 @@ var _ghost_hp_ratio := 0.0
 var _hp_animation_start_ratio := 0.0
 var _hp_animation_elapsed := 0.0
 var _hp_animation_mode: StringName = &"none"
+var _hp_value_elapsed := 0.0
+var _hp_label: Label
+var _skill_state_label: Label
+var _damage_delta_label: Label
+var _damage_flash_strength := 0.0
+var _damage_flash_elapsed := DAMAGE_FLASH_DURATION
+var _damage_punch_tween: Tween
+var _damage_label_tween: Tween
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	custom_minimum_size = HUD_SIZE
 	size = HUD_SIZE
-	_hp_clip = _make_clip("HpClip", Vector2.ZERO, Vector2(BAR_WIDTH, HP_HEIGHT))
-	var hp_track := _make_texture(self, "HpTrack", HP_TEXTURE, Vector2(BAR_WIDTH, HP_HEIGHT))
-	hp_track.modulate = Color(0.08, 0.22, 0.14, 0.42)
-	move_child(hp_track, 0)
-	_hp_ghost_clip = _make_clip("HpGhostClip", Vector2.ZERO, Vector2(BAR_WIDTH, HP_HEIGHT))
-	_hp_ghost_fill = _make_texture(_hp_ghost_clip, "HpGhostFill", HP_TEXTURE, Vector2(BAR_WIDTH, HP_HEIGHT))
-	_hp_ghost_material = _create_ghost_material()
-	_hp_ghost_fill.material = _hp_ghost_material
-	move_child(_hp_ghost_clip, _hp_clip.get_index())
-	_hp_fill = _make_texture(_hp_clip, "HpFill", HP_TEXTURE, Vector2(BAR_WIDTH, HP_HEIGHT))
-	_shield_clip = _make_clip("ShieldClip", Vector2(0.0, HP_HEIGHT), Vector2(BAR_WIDTH, SHIELD_HEIGHT))
-	var shield_track := _make_texture(self, "ShieldTrack", SHIELD_TEXTURE, Vector2(BAR_WIDTH, SHIELD_HEIGHT))
-	shield_track.position = Vector2(0.0, HP_HEIGHT)
-	shield_track.modulate = Color(0.15, 0.40, 0.65, 0.48)
-	move_child(shield_track, 1)
-	_make_texture(_shield_clip, "ShieldFill", SHIELD_TEXTURE, Vector2(BAR_WIDTH, SHIELD_HEIGHT))
-	_build_energy_cells()
+	pivot_offset = HUD_SIZE * 0.5
 	_build_hp_label()
-	_build_ammo_display()
-	_hp_clip.size.x = 0.0
-	_hp_ghost_clip.visible = false
-	set_energy(0.0, 125.0)
-	set_ammo(0, 0, false)
+	_build_skill_state_label()
+	_build_damage_delta_label()
+	if PlayerData != null and not PlayerData.player_damage_received.is_connected(_on_player_damage_received):
+		PlayerData.player_damage_received.connect(_on_player_damage_received)
 	set_process(true)
+	queue_redraw()
 
 func set_health(current_hp: int, max_hp: int, current_shield: int = 0, max_shield: int = 0) -> void:
-	var safe_max := maxi(max_hp, 1)
-	var hp_ratio := clampf(float(current_hp) / float(safe_max), 0.0, 1.0)
-	var shield_ratio := clampf(float(current_shield) / float(maxi(max_shield, 1)), 0.0, 1.0)
+	var next_max_hp := maxi(max_hp, 1)
+	var next_current_hp := clampi(current_hp, 0, next_max_hp)
+	var next_ratio := clampf(float(next_current_hp) / float(next_max_hp), 0.0, 1.0)
+	var health_changed := _has_health_sample and (
+		next_current_hp != _current_hp or next_max_hp != _max_hp
+	)
 	if not _has_health_sample:
 		_has_health_sample = true
-		_target_hp_ratio = hp_ratio
-		_display_hp_ratio = hp_ratio
-		_ghost_hp_ratio = hp_ratio
-		_apply_hp_visuals()
-	elif not is_equal_approx(hp_ratio, _target_hp_ratio):
-		_begin_hp_animation(hp_ratio)
-	_shield_clip.size.x = BAR_WIDTH * shield_ratio
-	_shield_clip.visible = current_shield > 0
-	_hp_label.text = "%d / %d" % [maxi(current_hp, 0), safe_max]
-	_hp_fill.modulate = _health_color(_target_hp_ratio)
+		_target_hp_ratio = next_ratio
+		_display_hp_ratio = next_ratio
+		_ghost_hp_ratio = next_ratio
+	elif health_changed:
+		_begin_hp_animation(next_ratio)
+		_show_hp_value()
+	_max_hp = next_max_hp
+	_current_hp = next_current_hp
+	_current_shield = maxi(current_shield, 0)
+	_max_shield = maxi(max_shield, _current_shield)
+	_hp_label.text = "%d / %d" % [_current_hp, _max_hp]
+	queue_redraw()
 
 func _process(delta: float) -> void:
+	var safe_delta := maxf(delta, 0.0)
+	_update_damage_feedback(safe_delta)
+	_update_hp_value_visibility(safe_delta)
 	if _hp_animation_mode == &"none":
 		return
-	_hp_animation_elapsed += maxf(delta, 0.0)
+	_hp_animation_elapsed += safe_delta
 	if _hp_animation_elapsed <= HP_GHOST_HOLD_SECONDS:
 		return
 	var catchup_elapsed := _hp_animation_elapsed - HP_GHOST_HOLD_SECONDS
@@ -107,13 +113,115 @@ func _process(delta: float) -> void:
 		_ghost_hp_ratio = lerpf(_hp_animation_start_ratio, _target_hp_ratio, eased)
 	else:
 		_display_hp_ratio = lerpf(_hp_animation_start_ratio, _target_hp_ratio, eased)
-	_apply_hp_visuals()
 	if progress >= 1.0:
 		_display_hp_ratio = _target_hp_ratio
 		_ghost_hp_ratio = _target_hp_ratio
 		_hp_animation_mode = &"none"
-		_hp_ghost_clip.visible = false
-		_apply_hp_visuals()
+	queue_redraw()
+
+func is_hp_value_visible() -> bool:
+	return _hp_label != null and _hp_label.visible
+
+func has_health_ghost() -> bool:
+	return _hp_animation_mode != &"none" and not is_equal_approx(
+		_display_hp_ratio,
+		_ghost_hp_ratio
+	)
+
+func get_display_health_ratio() -> float:
+	return _display_hp_ratio
+
+func get_ghost_health_ratio() -> float:
+	return _ghost_hp_ratio
+
+func get_damage_flash_strength() -> float:
+	return _damage_flash_strength
+
+func play_damage_feedback(feedback: Dictionary) -> void:
+	var damage := maxi(0, int(feedback.get("final_damage", 0)))
+	if damage <= 0:
+		return
+	var severity := clampf(float(feedback.get("severity", 0.0)), 0.0, 1.0)
+	var is_periodic := bool(feedback.get("is_periodic", false))
+	var is_heavy := bool(feedback.get("is_heavy", false))
+	var current_hp := maxi(0, int(feedback.get("current_hp", _current_hp)))
+	var previous_hp := maxi(current_hp, int(feedback.get("previous_hp", current_hp + damage)))
+	var max_hp := maxi(1, int(feedback.get("max_hp", _max_hp)))
+	var crossed_warning := float(previous_hp) / float(max_hp) > 0.35 and float(current_hp) / float(max_hp) <= 0.35
+	var crossed_critical := float(previous_hp) / float(max_hp) > 0.18 and float(current_hp) / float(max_hp) <= 0.18
+	_damage_flash_strength = maxf(
+		_damage_flash_strength,
+		0.42 if is_periodic else clampf(0.68 + severity * 0.32, 0.0, 1.0)
+	)
+	if crossed_warning or crossed_critical:
+		_damage_flash_strength = 1.0
+	_damage_flash_elapsed = 0.0
+	_play_hud_punch(is_periodic, is_heavy or crossed_warning or crossed_critical)
+	_show_damage_delta(
+		damage,
+		StringName(str(feedback.get("damage_type", Attack.TYPE_PHYSICAL))),
+		is_periodic,
+		is_heavy or crossed_critical
+	)
+	queue_redraw()
+
+func _on_player_damage_received(feedback: Dictionary) -> void:
+	play_damage_feedback(feedback)
+
+func _update_damage_feedback(delta: float) -> void:
+	if _damage_flash_elapsed >= DAMAGE_FLASH_DURATION:
+		return
+	_damage_flash_elapsed = minf(DAMAGE_FLASH_DURATION, _damage_flash_elapsed + delta)
+	var progress := _damage_flash_elapsed / DAMAGE_FLASH_DURATION
+	_damage_flash_strength = maxf(0.0, _damage_flash_strength * (1.0 - clampf(delta * 8.0, 0.0, 1.0)))
+	if progress >= 1.0:
+		_damage_flash_strength = 0.0
+	queue_redraw()
+
+func _play_hud_punch(is_periodic: bool, is_heavy: bool) -> void:
+	if _damage_punch_tween != null and is_instance_valid(_damage_punch_tween):
+		_damage_punch_tween.kill()
+	scale = Vector2.ONE
+	var peak := 1.018 if is_periodic else (1.065 if is_heavy else 1.04)
+	_damage_punch_tween = create_tween()
+	_damage_punch_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	_damage_punch_tween.tween_property(self, "scale", Vector2.ONE * peak, 0.055) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_damage_punch_tween.tween_property(self, "scale", Vector2.ONE, 0.13) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func _show_damage_delta(
+	damage: int,
+	damage_type: StringName,
+	is_periodic: bool,
+	emphasized: bool
+) -> void:
+	if _damage_delta_label == null:
+		return
+	if _damage_label_tween != null and is_instance_valid(_damage_label_tween):
+		_damage_label_tween.kill()
+	_damage_delta_label.text = "-%d%s" % [damage, "!" if emphasized else ""]
+	_damage_delta_label.add_theme_font_size_override("font_size", 15 if emphasized else 13)
+	_damage_delta_label.add_theme_color_override("font_color", _damage_color(damage_type, is_periodic))
+	_damage_delta_label.position = Vector2(BAR_RECT.end.x - 86.0, BAR_RECT.position.y - 23.0)
+	_damage_delta_label.modulate = Color.WHITE
+	_damage_delta_label.visible = true
+	_damage_label_tween = create_tween()
+	_damage_label_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	_damage_label_tween.set_parallel(true)
+	_damage_label_tween.tween_property(
+		_damage_delta_label,
+		"position:y",
+		_damage_delta_label.position.y - 12.0,
+		0.55 if not is_periodic else 0.38
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_damage_label_tween.tween_property(
+		_damage_delta_label,
+		"modulate:a",
+		0.0,
+		0.55 if not is_periodic else 0.38
+	).set_delay(0.16 if not is_periodic else 0.08)
+	_damage_label_tween.chain().tween_callback(_damage_delta_label.hide)
 
 func _begin_hp_animation(next_ratio: float) -> void:
 	var previous_target := _target_hp_ratio
@@ -124,168 +232,377 @@ func _begin_hp_animation(next_ratio: float) -> void:
 		_display_hp_ratio = next_ratio
 		_ghost_hp_ratio = maxf(_ghost_hp_ratio, previous_target)
 		_hp_animation_start_ratio = _ghost_hp_ratio
-		_set_ghost_color(DAMAGE_GHOST_COLOR)
-	else:
+	elif next_ratio > previous_target:
 		_hp_animation_mode = &"heal"
 		_hp_animation_start_ratio = _display_hp_ratio
 		_ghost_hp_ratio = next_ratio
-		_set_ghost_color(HEAL_GHOST_COLOR)
-	_hp_ghost_clip.visible = true
-	_hp_fill.modulate = _health_color(_target_hp_ratio)
-	_apply_hp_visuals()
+	else:
+		_hp_animation_mode = &"none"
+		_display_hp_ratio = next_ratio
+		_ghost_hp_ratio = next_ratio
 
-func _apply_hp_visuals() -> void:
-	_hp_clip.size = Vector2(BAR_WIDTH * clampf(_display_hp_ratio, 0.0, 1.0), HP_HEIGHT)
-	_hp_ghost_clip.size = Vector2(BAR_WIDTH * clampf(_ghost_hp_ratio, 0.0, 1.0), HP_HEIGHT)
+func _show_hp_value() -> void:
+	if _hp_label == null:
+		return
+	_hp_value_elapsed = 0.0
+	_hp_label.visible = true
+	_hp_label.modulate.a = 1.0
 
-func _create_ghost_material() -> ShaderMaterial:
-	var shader := Shader.new()
-	shader.code = """
-shader_type canvas_item;
-
-uniform vec4 ghost_color : source_color = vec4(1.0);
-
-void fragment() {
-	vec4 source = texture(TEXTURE, UV);
-	float luminance = dot(source.rgb, vec3(0.2126, 0.7152, 0.0722));
-	float material_detail = mix(0.72, 1.18, smoothstep(0.0, 0.85, luminance));
-	COLOR = vec4(ghost_color.rgb * material_detail, source.a * ghost_color.a);
-}
-"""
-	var shader_material := ShaderMaterial.new()
-	shader_material.shader = shader
-	shader_material.set_shader_parameter("ghost_color", DAMAGE_GHOST_COLOR)
-	return shader_material
-
-func _set_ghost_color(color: Color) -> void:
-	if _hp_ghost_material != null:
-		_hp_ghost_material.set_shader_parameter("ghost_color", color)
+func _update_hp_value_visibility(delta: float) -> void:
+	if _hp_label == null or not _hp_label.visible:
+		return
+	_hp_value_elapsed += delta
+	if _hp_value_elapsed <= HP_VALUE_HOLD_SECONDS:
+		_hp_label.modulate.a = 1.0
+		return
+	var fade_progress := clampf(
+		(_hp_value_elapsed - HP_VALUE_HOLD_SECONDS) / HP_VALUE_FADE_SECONDS,
+		0.0,
+		1.0
+	)
+	_hp_label.modulate.a = 1.0 - fade_progress
+	if fade_progress >= 1.0:
+		_hp_label.visible = false
 
 func set_energy(current: float, max_value: float) -> void:
-	var safe_max := maxf(max_value, 1.0)
-	_current_energy = clampf(current, 0.0, safe_max)
-	_display_energy = 125.0 * (_current_energy / safe_max)
-	_update_energy_cells()
-	_refresh_energy_tint()
+	_max_energy = maxf(max_value, 1.0)
+	_current_energy = clampf(current, 0.0, _max_energy)
+	_refresh_skill_state_label()
+	queue_redraw()
 
 func set_skill_cost(cost: float) -> void:
 	_skill_cost = maxf(cost, 0.0)
-	_refresh_energy_tint()
+	_refresh_skill_state_label()
+	queue_redraw()
+
+func set_skill_available(available: bool) -> void:
+	_skill_available = available
+	if not _skill_available:
+		_cooldown_ratio = 0.0
+		_cooldown_remaining = 0.0
+		_cooldown_total = 0.0
+		_cooldown_has_duration = false
+	_refresh_skill_state_label()
+	queue_redraw()
+
+func is_skill_rail_visible() -> bool:
+	return _skill_available
 
 func set_cooldown_ratio(ratio: float) -> void:
 	_cooldown_ratio = clampf(ratio, 0.0, 1.0)
-	_refresh_energy_tint()
+	_cooldown_remaining = _cooldown_ratio
+	_cooldown_total = 1.0 if _cooldown_ratio > 0.0 else 0.0
+	_cooldown_has_duration = false
+	_refresh_skill_state_label()
+	queue_redraw()
 
-func set_ammo(current: int, maximum: int, enabled: bool = true, state: StringName = &"normal", tooltip: String = "") -> void:
-	var safe_max := maxi(maximum, 0)
-	var safe_current := clampi(current, 0, safe_max) if safe_max > 0 else 0
-	_ammo_icon.visible = enabled
-	_ammo_label.visible = enabled
-	_ammo_label.text = "%02d / %02d" % [safe_current, safe_max]
-	_ammo_label.tooltip_text = tooltip
-	var warning := state == &"warning" or (safe_max > 0 and safe_current <= maxi(1, int(ceil(float(safe_max) * 0.25))))
-	_ammo_label.add_theme_color_override("font_color", Color(1.0, 0.67, 0.26) if warning else Color(0.72, 0.94, 1.0))
-	_ammo_icon.modulate = Color(1.0, 0.72, 0.35) if state == &"reloading" else Color.WHITE
+func set_cooldown(remaining_seconds: float, total_seconds: float) -> void:
+	_cooldown_remaining = maxf(remaining_seconds, 0.0)
+	_cooldown_total = maxf(total_seconds, 0.0)
+	_cooldown_ratio = (
+		clampf(_cooldown_remaining / _cooldown_total, 0.0, 1.0)
+		if _cooldown_total > 0.0
+		else 0.0
+	)
+	_cooldown_has_duration = _cooldown_total > 0.0
+	_refresh_skill_state_label()
+	queue_redraw()
 
-func _make_clip(node_name: String, node_position: Vector2, node_size: Vector2) -> Control:
-	var clip := Control.new()
-	clip.name = node_name
-	clip.position = node_position
-	clip.size = node_size
-	clip.clip_contents = true
-	clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(clip)
-	return clip
+func is_skill_ready() -> bool:
+	return _skill_available and _has_enough_skill_energy() and _cooldown_remaining <= 0.0
 
-func _make_texture(parent: Control, node_name: String, texture: Texture2D, texture_size: Vector2) -> TextureRect:
-	var rect := TextureRect.new()
-	rect.name = node_name
-	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	rect.stretch_mode = TextureRect.STRETCH_SCALE
-	rect.custom_minimum_size = Vector2.ZERO
-	rect.texture = texture
-	rect.set_deferred("size", texture_size)
-	rect.size = texture_size
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(rect)
-	rect.reset_size()
-	rect.size = texture_size
-	return rect
+func get_skill_state() -> StringName:
+	if not _skill_available:
+		return &"inactive"
+	if _cooldown_remaining > 0.0:
+		return &"cooldown"
+	if _skill_cost <= 0.0:
+		return &"inactive"
+	if _has_enough_skill_energy():
+		return &"ready"
+	return &"charging"
+
+func get_full_energy_bean_count() -> int:
+	if not _skill_available:
+		return 0
+	var full_count := 0
+	var bean_count := maxi(1, int(ceil(_max_energy / ENERGY_PER_BEAN)))
+	for index in range(bean_count):
+		var bean_capacity := minf(ENERGY_PER_BEAN, _max_energy - float(index) * ENERGY_PER_BEAN)
+		var bean_energy := clampf(
+			_current_energy - float(index) * ENERGY_PER_BEAN,
+			0.0,
+			bean_capacity
+		)
+		if bean_energy >= bean_capacity - 0.0001:
+			full_count += 1
+	return full_count
+
+func get_cooldown_remaining() -> float:
+	return _cooldown_remaining
+
+func get_cooldown_progress() -> float:
+	if not _skill_available or _skill_cost <= 0.0:
+		return 0.0
+	return clampf(1.0 - _cooldown_ratio, 0.0, 1.0)
+
+func get_energy_plate_rect() -> Rect2:
+	var row_width := _get_energy_row_width()
+	var origin_x := (size.x - row_width) * 0.5
+	return Rect2(
+		Vector2(origin_x - PANEL_PADDING, ENERGY_Y - PANEL_PADDING),
+		Vector2(
+			row_width + PANEL_PADDING * 2.0,
+			ENERGY_BEAN_SIZE.y
+				+ COOLDOWN_TRACK_GAP
+				+ COOLDOWN_TRACK_HEIGHT
+				+ PANEL_PADDING * 2.0
+		)
+	)
+
+func get_energy_segments_rect() -> Rect2:
+	var row_width := _get_energy_row_width()
+	return Rect2(
+		Vector2((size.x - row_width) * 0.5, ENERGY_Y),
+		Vector2(row_width, ENERGY_BEAN_SIZE.y)
+	)
+
+func get_cooldown_track_rect() -> Rect2:
+	var row_width := _get_energy_row_width()
+	var origin_x := (size.x - row_width) * 0.5
+	return Rect2(
+		Vector2(origin_x, ENERGY_Y + ENERGY_BEAN_SIZE.y + COOLDOWN_TRACK_GAP),
+		Vector2(row_width, COOLDOWN_TRACK_HEIGHT)
+	)
+
+# Kept as a compatibility endpoint for HudPresenter. Ammo deliberately has no HUD.
+func set_ammo(_current: int, _maximum: int, _enabled: bool = true, _state: StringName = &"normal", _tooltip: String = "") -> void:
+	pass
+
+func _draw() -> void:
+	_draw_skill_rail()
+	_draw_health_bar()
+
+func _draw_skill_rail() -> void:
+	if not _skill_available:
+		return
+	var bean_count := maxi(1, int(ceil(_max_energy / ENERGY_PER_BEAN)))
+	var row_width := _get_energy_row_width()
+	var origin_x := (size.x - row_width) * 0.5
+	var plate := get_energy_plate_rect()
+	_draw_cut_panel(plate, Color(0.008, 0.024, 0.030, 0.92), Color(0.12, 0.40, 0.45, 0.82), CUT_SIZE, 1.0)
+	for index in range(bean_count):
+		var rect := Rect2(
+			Vector2(origin_x + float(index) * (ENERGY_BEAN_SIZE.x + ENERGY_BEAN_GAP), ENERGY_Y),
+			ENERGY_BEAN_SIZE
+		)
+		var bean_capacity := minf(ENERGY_PER_BEAN, _max_energy - float(index) * ENERGY_PER_BEAN)
+		var bean_energy := clampf(_current_energy - float(index) * ENERGY_PER_BEAN, 0.0, bean_capacity)
+		var fill_ratio := bean_energy / maxf(bean_capacity, 1.0)
+		_draw_cut_panel(rect, ENERGY_EMPTY, Color(0.40, 0.26, 0.08, 0.95), 3.0, 1.0)
+		if fill_ratio > 0.0:
+			var fill_rect := Rect2(rect.position + Vector2(2.0, 2.0), Vector2((rect.size.x - 4.0) * fill_ratio, rect.size.y - 4.0))
+			if fill_rect.size.x >= 1.0:
+				_draw_cut_panel(fill_rect, ENERGY_FILL, Color(1.0, 0.82, 0.38, 0.82), minf(2.0, fill_rect.size.x * 0.4), 1.0)
+				draw_line(fill_rect.position + Vector2(3.0, 1.0), Vector2(fill_rect.end.x - 2.0, fill_rect.position.y + 1.0), Color(1.0, 0.95, 0.75, 0.38), 1.0, true)
+		if fill_ratio >= 0.999:
+			_draw_cut_outline(rect, ENERGY_FULL_EDGE, 2.0, 3.0)
+			var marker_center := rect.position + Vector2(rect.size.x * 0.5, 2.5)
+			draw_colored_polygon(PackedVector2Array([
+				marker_center + Vector2(0.0, -2.5),
+				marker_center + Vector2(2.5, 0.0),
+				marker_center + Vector2(0.0, 2.5),
+				marker_center + Vector2(-2.5, 0.0),
+			]), ENERGY_FULL_EDGE)
+		var accent_x := rect.end.x - 2.0
+		draw_line(Vector2(accent_x, rect.position.y + 4.0), Vector2(accent_x, rect.end.y - 4.0), ENERGY_EDGE, 1.0, true)
+	if is_skill_ready():
+		_draw_cut_outline(plate.grow(1.5), ENERGY_READY_EDGE, 2.0, CUT_SIZE)
+	_draw_skill_cooldown()
+
+func _draw_skill_cooldown() -> void:
+	var track := get_cooldown_track_rect()
+	if _skill_cost <= 0.0:
+		return
+	draw_rect(track, COOLDOWN_TRACK, true)
+	var cooldown_progress := get_cooldown_progress()
+	if cooldown_progress <= 0.0:
+		return
+	draw_rect(
+		Rect2(track.position, Vector2(track.size.x * cooldown_progress, track.size.y)),
+		COOLDOWN_FILL,
+		true
+	)
+	if cooldown_progress >= 0.999:
+		var cap_x := track.end.x
+		draw_line(
+			Vector2(cap_x, track.position.y - 1.0),
+			Vector2(cap_x, track.end.y + 1.0),
+			ENERGY_READY_EDGE,
+			2.0
+		)
+
+func _draw_health_bar() -> void:
+	var plate := BAR_RECT.grow(PANEL_PADDING)
+	_draw_cut_panel(plate, Color(0.006, 0.026, 0.032, 0.94), Color(0.11, 0.42, 0.48, 0.86), CUT_SIZE, 1.0)
+	_draw_cut_panel(BAR_RECT, HP_TRACK, Color(0.10, 0.38, 0.30, 0.95), 4.0, 1.0)
+	var inner_origin := BAR_RECT.position + Vector2(2.0, 2.0)
+	var inner_size := BAR_RECT.size - Vector2(4.0, 4.0)
+	if has_health_ghost():
+		var ghost_rect := Rect2(
+			inner_origin,
+			Vector2(inner_size.x * _ghost_hp_ratio, inner_size.y)
+		)
+		var ghost_color := HP_DAMAGE_GHOST if _hp_animation_mode == &"damage" else HP_HEAL_GHOST
+		_draw_cut_panel(
+			ghost_rect,
+			ghost_color,
+			Color(1.0, 0.86, 0.68, 0.72),
+			minf(3.0, ghost_rect.size.x * 0.35),
+			1.0
+		)
+	if _display_hp_ratio > 0.0:
+		var fill_rect := Rect2(inner_origin, Vector2(inner_size.x * _display_hp_ratio, inner_size.y))
+		_draw_cut_panel(fill_rect, _health_color(_target_hp_ratio), Color(0.52, 1.0, 0.72, 0.78), minf(3.0, fill_rect.size.x * 0.35), 1.0)
+		draw_line(fill_rect.position + Vector2(4.0, 1.0), Vector2(fill_rect.end.x - 2.0, fill_rect.position.y + 1.0), Color(0.90, 1.0, 0.94, 0.34), 1.0, true)
+	_draw_cut_panel(SHIELD_RECT, SHIELD_TRACK, Color(0.12, 0.42, 0.55, 0.90), 2.0, 1.0)
+	var shield_denominator := float(_max_shield if _max_shield > 0 else _max_hp)
+	var shield_ratio := clampf(float(_current_shield) / maxf(shield_denominator, 1.0), 0.0, 1.0)
+	if shield_ratio > 0.0:
+		var shield_fill := Rect2(SHIELD_RECT.position + Vector2(1.0, 1.0), Vector2((SHIELD_RECT.size.x - 2.0) * shield_ratio, SHIELD_RECT.size.y - 2.0))
+		_draw_cut_panel(shield_fill, SHIELD_COLOR, Color(0.72, 0.96, 1.0, 0.92), minf(1.5, shield_fill.size.x * 0.35), 1.0)
+	if _damage_flash_strength > 0.001:
+		var flash_color := Color(1.0, 0.16, 0.10, 0.24 + _damage_flash_strength * 0.64)
+		_draw_cut_outline(
+			BAR_RECT.grow(3.0 + _damage_flash_strength * 2.0),
+			flash_color,
+			1.5 + _damage_flash_strength * 2.0,
+			CUT_SIZE
+		)
+
+func _draw_cut_panel(rect: Rect2, fill_color: Color, edge_color: Color, cut: float, line_width: float) -> void:
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+		return
+	var points := _cut_rect_points(rect, cut)
+	draw_colored_polygon(points, fill_color)
+	var outline := PackedVector2Array(points)
+	outline.append(points[0])
+	draw_polyline(outline, edge_color, line_width, true)
+
+func _draw_cut_outline(rect: Rect2, color: Color, line_width: float, cut: float) -> void:
+	var points := _cut_rect_points(rect, cut)
+	var outline := PackedVector2Array(points)
+	outline.append(points[0])
+	draw_polyline(outline, color, line_width, true)
+
+func _cut_rect_points(rect: Rect2, requested_cut: float) -> PackedVector2Array:
+	var cut := minf(requested_cut, minf(rect.size.x, rect.size.y) * 0.45)
+	return PackedVector2Array([
+		rect.position + Vector2(cut, 0.0),
+		Vector2(rect.end.x - cut, rect.position.y),
+		Vector2(rect.end.x, rect.position.y + cut),
+		rect.end - Vector2(0.0, cut),
+		rect.end - Vector2(cut, 0.0),
+		Vector2(rect.position.x + cut, rect.end.y),
+		Vector2(rect.position.x, rect.end.y - cut),
+		rect.position + Vector2(0.0, cut),
+	])
 
 func _build_hp_label() -> void:
 	_hp_label = Label.new()
 	_hp_label.name = "HpValue"
-	_hp_label.position = Vector2(BAR_WIDTH + 7.0, -1.0)
-	_hp_label.size = Vector2(79.0, 28.0)
-	_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_hp_label.position = BAR_RECT.position
+	_hp_label.size = BAR_RECT.size
+	_hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_hp_label.add_theme_font_size_override("font_size", 13)
-	_hp_label.add_theme_color_override("font_color", Color(0.80, 1.0, 0.88))
-	_hp_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.95))
+	_hp_label.add_theme_color_override("font_color", Color(0.94, 1.0, 0.96))
+	_hp_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 1.0))
 	_hp_label.add_theme_constant_override("shadow_offset_x", 1)
 	_hp_label.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(_hp_label)
+	_hp_label.text = "0/1"
+	_hp_label.visible = false
 
-func _build_ammo_display() -> void:
-	_ammo_icon = TextureRect.new()
-	_ammo_icon.name = "AmmoIcon"
-	_ammo_icon.position = Vector2(181.0, 40.0)
-	_ammo_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_ammo_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_ammo_icon.custom_minimum_size = Vector2.ZERO
-	_ammo_icon.texture = AMMO_TEXTURE
-	_ammo_icon.size = Vector2(34.0, 28.0)
-	_ammo_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_ammo_icon)
-	_ammo_icon.reset_size()
-	_ammo_icon.size = Vector2(34.0, 28.0)
-	_ammo_label = Label.new()
-	_ammo_label.name = "AmmoValue"
-	_ammo_label.position = Vector2(216.0, 41.0)
-	_ammo_label.size = Vector2(72.0, 25.0)
-	_ammo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_ammo_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_ammo_label.add_theme_font_size_override("font_size", 14)
-	_ammo_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.95))
-	_ammo_label.add_theme_constant_override("shadow_offset_x", 1)
-	_ammo_label.add_theme_constant_override("shadow_offset_y", 1)
-	add_child(_ammo_label)
+func _build_skill_state_label() -> void:
+	_skill_state_label = Label.new()
+	_skill_state_label.name = "SkillState"
+	_skill_state_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_skill_state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_skill_state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_skill_state_label.add_theme_font_size_override("font_size", 11)
+	_skill_state_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.94))
+	_skill_state_label.add_theme_constant_override("shadow_offset_x", 1)
+	_skill_state_label.add_theme_constant_override("shadow_offset_y", 1)
+	add_child(_skill_state_label)
+	_refresh_skill_state_label()
 
-func _refresh_energy_tint() -> void:
-	var can_cast := _skill_cost <= 0.0 or _current_energy >= _skill_cost
-	var alpha := lerpf(1.0, 0.42, _cooldown_ratio)
-	for fill in _energy_fills:
-		fill.modulate = Color(1.0, 1.0, 1.0, alpha) if can_cast else Color(1.0, 0.36, 0.28, alpha)
+func _build_damage_delta_label() -> void:
+	_damage_delta_label = Label.new()
+	_damage_delta_label.name = "DamageDelta"
+	_damage_delta_label.size = Vector2(82.0, 24.0)
+	_damage_delta_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_damage_delta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_damage_delta_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_damage_delta_label.add_theme_font_size_override("font_size", 13)
+	_damage_delta_label.add_theme_color_override("font_color", Color(1.0, 0.30, 0.22, 1.0))
+	_damage_delta_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 1.0))
+	_damage_delta_label.add_theme_constant_override("shadow_offset_x", 1)
+	_damage_delta_label.add_theme_constant_override("shadow_offset_y", 1)
+	_damage_delta_label.visible = false
+	add_child(_damage_delta_label)
 
-func _build_energy_cells() -> void:
-	var x := 0.0
-	for index in range(ENERGY_CAPACITIES.size()):
-		var cell_width := ENERGY_HALF_CELL_WIDTH if index == 2 else ENERGY_CELL_WIDTH
-		var atlas := AtlasTexture.new()
-		atlas.atlas = ENERGY_TEXTURE
-		atlas.region = ENERGY_SOURCE_REGIONS[index]
-		var track := _make_texture(self, "EnergyTrack%d" % index, atlas, Vector2(cell_width, ENERGY_CELL_HEIGHT))
-		track.position = Vector2(x, 40.0)
-		track.modulate = Color(0.55, 0.28, 0.02, 0.38)
-		_energy_cells.append(track)
-		var clip := _make_clip("EnergyClip%d" % index, Vector2(x, 40.0), Vector2(cell_width, ENERGY_CELL_HEIGHT))
-		var fill := _make_texture(clip, "EnergyFill%d" % index, atlas, Vector2(cell_width, ENERGY_CELL_HEIGHT))
-		_energy_fill_clips.append(clip)
-		_energy_fills.append(fill)
-		x += cell_width + ENERGY_CELL_GAP
+func _damage_color(damage_type: StringName, is_periodic: bool) -> Color:
+	var color := Color(1.0, 0.30, 0.22, 1.0)
+	match Attack.normalize_damage_type(damage_type):
+		Attack.TYPE_FIRE:
+			color = Color(1.0, 0.42, 0.10, 1.0)
+		Attack.TYPE_FREEZE:
+			color = Color(0.35, 0.90, 1.0, 1.0)
+		Attack.TYPE_ENERGY:
+			color = Color(0.78, 0.52, 1.0, 1.0)
+	if is_periodic:
+		color.a = 0.78
+	return color
 
-func _update_energy_cells() -> void:
-	var remaining := _display_energy
-	for index in range(ENERGY_CAPACITIES.size()):
-		var capacity: float = ENERGY_CAPACITIES[index]
-		var cell_width := ENERGY_HALF_CELL_WIDTH if index == 2 else ENERGY_CELL_WIDTH
-		var fill_ratio := clampf(remaining / capacity, 0.0, 1.0)
-		_energy_fill_clips[index].size.x = cell_width * fill_ratio
-		remaining = maxf(0.0, remaining - capacity)
+func _exit_tree() -> void:
+	if PlayerData != null and PlayerData.player_damage_received.is_connected(_on_player_damage_received):
+		PlayerData.player_damage_received.disconnect(_on_player_damage_received)
+
+func _refresh_skill_state_label() -> void:
+	if _skill_state_label == null:
+		return
+	var bean_count := maxi(1, int(ceil(_max_energy / ENERGY_PER_BEAN)))
+	var row_width := float(bean_count) * ENERGY_BEAN_SIZE.x + float(bean_count - 1) * ENERGY_BEAN_GAP
+	var origin_x := (size.x - row_width) * 0.5
+	_skill_state_label.position = Vector2(origin_x + row_width + 8.0, ENERGY_Y - 1.0)
+	_skill_state_label.size = Vector2(maxf(size.x - _skill_state_label.position.x, 0.0), ENERGY_BEAN_SIZE.y + 2.0)
+	match get_skill_state():
+		&"cooldown":
+			_skill_state_label.text = _format_cooldown_time() if _cooldown_has_duration else "CD"
+			_skill_state_label.add_theme_color_override("font_color", COOLDOWN_FILL)
+		&"ready":
+			_skill_state_label.text = LocalizationManager.tr_key("ui.hud.skill.ready", "READY")
+			_skill_state_label.add_theme_color_override("font_color", ENERGY_READY_EDGE)
+		_:
+			_skill_state_label.text = ""
+
+func _format_cooldown_time() -> String:
+	if _cooldown_remaining >= 10.0:
+		return "%.0fs" % ceil(_cooldown_remaining)
+	return "%.1fs" % _cooldown_remaining
+
+func _has_enough_skill_energy() -> bool:
+	return _skill_available and _skill_cost > 0.0 and _current_energy >= _skill_cost
+
+func _get_energy_row_width() -> float:
+	var bean_count := maxi(1, int(ceil(_max_energy / ENERGY_PER_BEAN)))
+	return float(bean_count) * ENERGY_BEAN_SIZE.x + float(bean_count - 1) * ENERGY_BEAN_GAP
 
 func _health_color(ratio: float) -> Color:
 	if ratio <= 0.18:
-		return Color(1.0, 0.32, 0.30)
+		return HP_CRITICAL
 	if ratio <= 0.35:
-		return Color(1.0, 0.72, 0.30)
-	return Color.WHITE
+		return HP_WARNING
+	return HP_FILL

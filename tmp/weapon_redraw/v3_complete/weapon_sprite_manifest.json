@@ -1,0 +1,503 @@
+{
+  "schema_version": 2,
+  "canvas": [
+    22,
+    40
+  ],
+  "max_colors": 12,
+  "sprites": [
+    {
+      "file": "machine_gun.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        26
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        7,
+        0,
+        8,
+        21
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "mg2.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        26
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        3,
+        1,
+        16,
+        20
+      ],
+      "branch_of": "machine_gun"
+    },
+    {
+      "file": "blaster.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "energy",
+      "crystal_core": [
+        10,
+        25
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        6,
+        0,
+        10,
+        17
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "spear_launcher.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        26
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        7,
+        0,
+        8,
+        19
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "shotgun.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        26
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        5,
+        0,
+        12,
+        20
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "pistol.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        26
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        8,
+        0,
+        6,
+        20
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "orbit.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 8,
+      "attribute": "support",
+      "crystal_core": [
+        10,
+        8
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        1,
+        1,
+        20,
+        15
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "rocket_launcher.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "fire",
+      "crystal_core": [
+        10,
+        25
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        2,
+        0,
+        18,
+        18
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "laser.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "energy",
+      "crystal_core": [
+        10,
+        26
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        4,
+        1,
+        14,
+        18
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "chainsaw_launcher.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        25
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        5,
+        0,
+        12,
+        18
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "dash_blade.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "energy",
+      "crystal_core": [
+        10,
+        28
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        7,
+        0,
+        8,
+        27
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "flamethrower.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "fire",
+      "crystal_core": [
+        10,
+        25
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        3,
+        0,
+        16,
+        16
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "plasma_lance.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "plasma",
+      "crystal_core": [
+        10,
+        26
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        7,
+        0,
+        8,
+        21
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "glacier_projector.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "freeze",
+      "crystal_core": [
+        10,
+        25
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        1,
+        0,
+        21,
+        16
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "cannon2.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 10,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        26
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        2,
+        0,
+        18,
+        19
+      ],
+      "branch_of": null
+    },
+    {
+      "file": "cannon3.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "freeze",
+      "crystal_core": [
+        10,
+        25
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        1,
+        0,
+        20,
+        18
+      ],
+      "branch_of": "cannon2"
+    },
+    {
+      "file": "sniper.png",
+      "width": 22,
+      "height": 40,
+      "visible_colors": 9,
+      "attribute": "kinetic",
+      "crystal_core": [
+        10,
+        27
+      ],
+      "core_pattern": [
+        "..OOOOO..",
+        ".OODDDOO.",
+        "ODDMLMDDO",
+        "ODMLSLMDO",
+        "ODLMSMLDO",
+        "ODMLMLMDO",
+        "ODDMLMDDO",
+        ".OODDDOO.",
+        "..OOOOO.."
+      ],
+      "attack_bbox": [
+        8,
+        0,
+        10,
+        23
+      ],
+      "branch_of": null
+    }
+  ]
+}

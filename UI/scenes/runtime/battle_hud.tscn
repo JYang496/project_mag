@@ -2,9 +2,8 @@
 
 [ext_resource type="Script" path="res://UI/scripts/components/battle_hud_view.gd" id="1_fh7no"]
 [ext_resource type="Script" path="res://UI/scripts/weapon_selector.gd" id="2_86ani"]
-[ext_resource type="Texture2D" path="res://asset/images/ui/mainhand.png" id="3_gar8u"]
-[ext_resource type="Texture2D" path="res://asset/images/ui/offhand.png" id="4_btbbh"]
-[ext_resource type="Texture2D" path="res://UI/themes/player_status_hud/generated/ui_frame_clean_panel.png" id="5_xocvv"]
+[ext_resource type="Texture2D" path="res://UI/themes/modern/weapon_slot_main.png" id="3_gar8u"]
+[ext_resource type="Texture2D" path="res://UI/themes/modern/weapon_slot_offhand.png" id="4_btbbh"]
 [ext_resource type="Script" path="res://UI/scripts/components/gold_hud_display.gd" id="6_jiqn8"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bar_bg"]
@@ -39,19 +38,16 @@ text = "Weapons"
 
 [node name="WeaponSelector" type="Control" parent="." unique_id=673123269]
 anchors_preset = 0
-offset_left = 6.0
-offset_top = 5.0
-offset_right = 206.0
-offset_bottom = 205.0
-scale = Vector2(1.2, 1.2)
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 352.0
+offset_bottom = 128.0
 script = ExtResource("2_86ani")
 
 [node name="Slot0" type="Control" parent="WeaponSelector" unique_id=315579612]
 anchors_preset = 0
-offset_left = 56.0
-offset_top = 108.0
-offset_right = 136.0
-offset_bottom = 188.0
+offset_right = 96.0
+offset_bottom = 72.0
 
 [node name="Background" type="TextureRect" parent="WeaponSelector/Slot0" unique_id=417292939]
 layout_mode = 1
@@ -61,6 +57,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("3_gar8u")
+texture_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
@@ -71,10 +68,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -25.0
-offset_top = -25.0
-offset_right = 25.0
-offset_bottom = 25.0
+offset_left = -26.0
+offset_top = -28.0
+offset_right = 26.0
+offset_bottom = 28.0
 grow_horizontal = 2
 grow_vertical = 2
 expand_mode = 1
@@ -82,10 +79,9 @@ stretch_mode = 5
 
 [node name="Slot1" type="Control" parent="WeaponSelector" unique_id=568142288]
 anchors_preset = 0
-offset_left = 56.0
-offset_top = 20.0
-offset_right = 136.0
-offset_bottom = 100.0
+offset_left = 104.0
+offset_right = 176.0
+offset_bottom = 72.0
 
 [node name="Background" type="TextureRect" parent="WeaponSelector/Slot1" unique_id=591956055]
 layout_mode = 1
@@ -95,6 +91,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("4_btbbh")
+texture_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
@@ -105,10 +102,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -25.0
-offset_top = -25.0
-offset_right = 25.0
-offset_bottom = 25.0
+offset_left = -21.0
+offset_top = -21.0
+offset_right = 21.0
+offset_bottom = 21.0
 grow_horizontal = 2
 grow_vertical = 2
 expand_mode = 1
@@ -116,10 +113,9 @@ stretch_mode = 5
 
 [node name="Slot2" type="Control" parent="WeaponSelector" unique_id=1763285441]
 anchors_preset = 0
-offset_left = 12.0
-offset_top = 64.0
-offset_right = 92.0
-offset_bottom = 144.0
+offset_left = 184.0
+offset_right = 256.0
+offset_bottom = 72.0
 
 [node name="Background" type="TextureRect" parent="WeaponSelector/Slot2" unique_id=2053267405]
 layout_mode = 1
@@ -129,6 +125,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("4_btbbh")
+texture_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
@@ -139,10 +136,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -25.0
-offset_top = -25.0
-offset_right = 25.0
-offset_bottom = 25.0
+offset_left = -21.0
+offset_top = -21.0
+offset_right = 21.0
+offset_bottom = 21.0
 grow_horizontal = 2
 grow_vertical = 2
 expand_mode = 1
@@ -150,10 +147,9 @@ stretch_mode = 5
 
 [node name="Slot3" type="Control" parent="WeaponSelector" unique_id=2127302516]
 anchors_preset = 0
-offset_left = 100.0
-offset_top = 64.0
-offset_right = 180.0
-offset_bottom = 144.0
+offset_left = 264.0
+offset_right = 336.0
+offset_bottom = 72.0
 
 [node name="Background" type="TextureRect" parent="WeaponSelector/Slot3" unique_id=1800182055]
 layout_mode = 1
@@ -163,6 +159,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("4_btbbh")
+texture_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
@@ -173,10 +170,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -25.0
-offset_top = -25.0
-offset_right = 25.0
-offset_bottom = 25.0
+offset_left = -21.0
+offset_top = -21.0
+offset_right = 21.0
+offset_bottom = 21.0
 grow_horizontal = 2
 grow_vertical = 2
 expand_mode = 1
@@ -191,15 +188,12 @@ offset_right = 81.0
 offset_bottom = 132.0
 text = "Augments"
 
-[node name="HpLabel" type="TextureRect" parent="." unique_id=889654884]
+[node name="HpLabel" type="Control" parent="." unique_id=889654884]
 layout_mode = 0
-offset_left = 4.0
-offset_top = 577.0
-offset_right = 448.0
+offset_left = 430.0
+offset_top = 624.0
+offset_right = 850.0
 offset_bottom = 704.0
-scale = Vector2(0.8, 0.8)
-texture = ExtResource("5_xocvv")
-expand_mode = 1
 
 [node name="Hp" type="Label" parent="HpLabel" unique_id=1902588253]
 visible = false

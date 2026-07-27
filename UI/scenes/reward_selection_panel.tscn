@@ -83,7 +83,7 @@ theme_override_constants/separation = 5
 
 [node name="DetailTitle" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox"]
 text = "Reward Details"
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 16
 
 [node name="DetailBody" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox"]
 size_flags_vertical = 3

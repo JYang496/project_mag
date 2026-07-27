@@ -1,0 +1,23 @@
+{
+  "id": "enemy.body_collision_policy",
+  "status": "PASS",
+  "detail": "pass marker",
+  "exit_code": 0,
+  "timed_out": false,
+  "shutdown_diagnostics_present": false,
+  "shutdown_diagnostic_count": 0,
+  "shutdown_diagnostics": [],
+  "runtime_error_count": 0,
+  "runtime_errors": [],
+  "duration_seconds": 4.604,
+  "execution_mode": "parallel",
+  "parallel_safe": true,
+  "writes_user_data": false,
+  "timeout_seconds": 15,
+  "user_data_dir": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\004-enemy.body_collision_policy\\godot-user-home",
+  "app_data_dir": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\004-enemy.body_collision_policy\\appdata",
+  "local_app_data_dir": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\004-enemy.body_collision_policy\\localappdata",
+  "stdout_path": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\004-enemy.body_collision_policy\\stdout.log",
+  "stderr_path": "E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\004-enemy.body_collision_policy\\stderr.log",
+  "reproduction_command": "$env:GODOT_USER_HOME = 'E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\004-enemy.body_collision_policy\\godot-user-home'; $env:APPDATA = 'E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\004-enemy.body_collision_policy\\appdata'; $env:LOCALAPPDATA = 'E:\\Godot Projects\\project_mag\\tmp\\weapon_redraw\\test_results_complex\\004-enemy.body_collision_policy\\localappdata'; & 'E:\\Godot_v4.7.1-stable_win64\\Godot_v4.7.1-stable_win64_console.exe' '--headless' '--path' 'E:\\Godot Projects\\project_mag' 'res://tests/scenes/enemy/enemy_body_collision_policy_test.tscn'"
+}

@@ -407,11 +407,11 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 
 	var meta_text := str(card_data.get("meta_text", "")).strip_edges()
 	var level_text := str(card_data.get("level_text", "")).strip_edges()
-	var meta_label := _make_card_label(level_text if level_text != "" else meta_text, 12, Color(0.74, 0.84, 0.88, 1.0))
+	var meta_label := _make_card_label(level_text if level_text != "" else meta_text, 14, Color(0.78, 0.87, 0.91, 1.0))
 	meta_label.clip_text = true
 	text_box.add_child(meta_label)
 
-	var summary_label := _make_card_label(str(card_data.get("summary_text", "")).strip_edges(), 12, Color(0.80, 0.88, 0.92, 1.0))
+	var summary_label := _make_card_label(str(card_data.get("summary_text", "")).strip_edges(), 14, Color(0.84, 0.91, 0.94, 1.0))
 	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary_label.max_lines_visible = 2
 	summary_label.custom_minimum_size = Vector2(0.0, 34.0)
@@ -423,7 +423,7 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 		var chip_row := BUILD_TAG_DISPLAY.make_chip_row(chips, 4)
 		body.add_child(chip_row)
 	elif tag_text != "":
-		var tag_label := _make_card_label(tag_text, 12, Color(0.78, 0.86, 0.92, 1.0))
+		var tag_label := _make_card_label(tag_text, 14, Color(0.82, 0.90, 0.95, 1.0))
 		tag_label.clip_text = true
 		body.add_child(tag_label)
 
@@ -971,7 +971,7 @@ func _make_card_label(text: String, font_size: int, font_color: Color) -> Label:
 	return label
 
 func _make_badge_label(text: String, color: Color) -> Label:
-	var label := _make_card_label(text, 10, Color(0.94, 0.98, 1.0, 1.0))
+	var label := _make_card_label(text, 14, Color(0.94, 0.98, 1.0, 1.0))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.clip_text = true

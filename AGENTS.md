@@ -47,6 +47,19 @@ Read `tests/README.md` before choosing test commands.
 
 Prefer affected or focused tests instead of scanning or running every historical test.
 
+### Windowless Godot Validation
+
+Default to non-interactive, windowless CLI validation for all Codex tasks in
+this repository.
+
+- Do not call Godot MCP `run_project` or `launch_editor` by default.
+- Use the Godot console executable with `--headless` and the existing test
+  infrastructure for compilation, resource import, and automated tests.
+- Read-only Godot MCP operations that do not open a window are allowed.
+- If visual verification genuinely requires graphical rendering, tell the user
+  first and wait for explicit permission before briefly launching a Godot
+  window.
+
 Use the existing test infrastructure when possible:
 
 ```powershell

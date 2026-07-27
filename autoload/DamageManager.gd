@@ -18,8 +18,11 @@ func build_damage_data(
 ) -> DamageData:
 	var resolved_source_player: Node = resolve_source_player(source_node)
 	var final_damage: int = max(0, int(base_damage))
+	var is_critical := false
 	if resolved_source_player and is_instance_valid(resolved_source_player) and resolved_source_player is Player:
-		final_damage = (resolved_source_player as Player).compute_outgoing_damage(final_damage)
+		var outgoing_result = (resolved_source_player as Player).compute_outgoing_damage_result(final_damage)
+		final_damage = outgoing_result.damage
+		is_critical = outgoing_result.is_critical
 
 	var effective_knock_back := knock_back.duplicate(true)
 	var source_weapon := resolve_source_weapon(source_node)
@@ -37,6 +40,7 @@ func build_damage_data(
 		source_category,
 		delivery_type
 	)
+	data.is_critical = is_critical
 	return data
 
 
@@ -135,6 +139,7 @@ func _populate_damage_result(result: DamageResult, target: Node, data: DamageDat
 		return
 	result.damage_type = Attack.normalize_damage_type(data.damage_type)
 	result.damage_kind = data.damage_kind
+	result.is_critical = data.is_critical
 	if not result.applied:
 		return
 	var hp_after: Variant = _read_target_hp(target)
