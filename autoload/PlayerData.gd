@@ -6,6 +6,8 @@ signal player_health_changed(current_hp: int, max_hp: int)
 signal player_damage_received(feedback: Dictionary)
 signal player_gold_changed(value: int)
 
+const MAX_PLAYER_LEVEL := 10
+
 @onready var player = null
 var select_mecha_id :int = 1
 
@@ -13,8 +15,10 @@ var player_level := 1 :
 	get:
 		return player_level
 	set(value):
-		player_level = clampi(int(value), 1, 42)
+		player_level = clampi(int(value), 1, MAX_PLAYER_LEVEL)
 		next_level_exp = int(GlobalVariables.mech_data["next_level_exp"][player_level - 1]) if GlobalVariables.mech_data else 10
+		if player_level >= MAX_PLAYER_LEVEL:
+			player_exp = 0
 
 var next_level_exp := 10 :
 	get:
@@ -26,10 +30,12 @@ var player_exp := 0 :
 	get:
 		return player_exp
 	set(value):
-		player_exp = clampi(int(value), 0, 99999)
-		while player_exp >= next_level_exp:
+		var remaining_exp := clampi(int(value), 0, 99999)
+		while player_level < MAX_PLAYER_LEVEL and remaining_exp >= next_level_exp:
+			var required_exp := next_level_exp
+			remaining_exp -= required_exp
 			player_level += 1
-			player_exp -= next_level_exp
+		player_exp = 0 if player_level >= MAX_PLAYER_LEVEL else remaining_exp
 		
 var player_speed : float = 100.0 :
 	get:

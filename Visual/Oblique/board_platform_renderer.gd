@@ -12,9 +12,28 @@ const DEFAULT_BOUNDARY_SAMPLE_2D := 512.0
 const CONTACT_RIM_WIDTH_2D := 8.0
 const CONTACT_RIM_TOP_Y := 0.012
 const CONTACT_RIM_BOTTOM_Y := -0.030
+const UNDERLAYER_WIDTH_2D := 18.0
+const UNDERLAYER_TOP_Y := -0.036
+const UNDERLAYER_BOTTOM_Y := -0.420
 const LOW_PROFILE_RAIL_WIDTH_2D := 14.0
 const LOW_PROFILE_RAIL_TOP_Y := 0.004
 const LOW_PROFILE_RAIL_BOTTOM_Y := -0.280
+const OUTER_OUTLINE_OFFSET_2D := 14.0
+const OUTER_OUTLINE_WIDTH_2D := 3.0
+const OUTER_OUTLINE_TOP_Y := 0.008
+const OUTER_OUTLINE_BOTTOM_Y := -0.090
+const CORNER_NODE_SIZE_2D := 22.0
+const CORNER_NODE_OFFSET_2D := 7.0
+const CORNER_NODE_BOTTOM_Y := -0.220
+const CORNER_NODE_TOP_Y := 0.010
+const CORNER_CORE_SIZE_2D := 10.0
+const CORNER_CORE_TOP_Y := 0.018
+const SIGNAL_TRACE_WIDTH_2D := 2.0
+const SIGNAL_TRACE_LENGTH_2D := 28.0
+const SIGNAL_TRACE_INTERVAL_2D := 256.0
+const SIGNAL_TRACE_OFFSET_2D := 9.0
+const SIGNAL_TRACE_BOTTOM_Y := 0.009
+const SIGNAL_TRACE_TOP_Y := 0.015
 const TRANSITION_BAND_WIDTH_2D := 56.0
 const TRANSITION_TILE_MIN_SIZE_2D := 4.0
 const TRANSITION_TILE_MAX_SIZE_2D := 8.0
@@ -37,10 +56,14 @@ const ATLAS_UV_INSET_PIXELS := 0.5
 const MAX_SKIRT_MODULES_PER_SEGMENT := 128
 
 const CONTACT_RIM_COLOR := Color(0.13, 0.16, 0.19, 1.0)
+const UNDERLAYER_COLOR := Color(0.018, 0.026, 0.034, 1.0)
 const RAIL_COLOR := Color(0.045, 0.058, 0.070, 1.0)
-const TRANSITION_NEAR_COLOR := Color(0.075, 0.095, 0.115, 1.0)
-const TRANSITION_FAR_COLOR := Color(0.025, 0.035, 0.045, 1.0)
-const TRANSITION_ACCENT_COLOR := Color(0.055, 0.22, 0.29, 1.0)
+const OUTER_OUTLINE_COLOR := Color(0.10, 0.14, 0.17, 1.0)
+const CORNER_NODE_COLOR := Color(0.11, 0.15, 0.17, 1.0)
+const STRUCTURE_SIGNAL_COLOR := Color(0.025, 0.42, 0.54, 1.0)
+const TRANSITION_NEAR_COLOR := Color(0.16, 0.19, 0.21, 1.0)
+const TRANSITION_FAR_COLOR := Color(0.032, 0.044, 0.054, 1.0)
+const TRANSITION_ACCENT_COLOR := Color(0.035, 0.32, 0.42, 1.0)
 
 var _view: Node
 var _visual_nodes: Array[Node3D] = []
@@ -60,7 +83,9 @@ func rebuild(cells: Array) -> void:
 	var segments := _last_model.get("segments", []) as Array
 	if segments.is_empty():
 		return
+	_last_model["underlayer_segment_count"] = _create_underlayer(segments)
 	_create_contact_rim(segments)
+	_last_model["outer_outline_segment_count"] = _create_outer_outline(segments)
 	var front_skirt_result := _create_front_skirt(segments)
 	_last_model["front_skirt_module_count"] = int(front_skirt_result.get("count", 0))
 	_last_model["front_skirt_sequences"] = front_skirt_result.get("sequences", [])
@@ -78,6 +103,10 @@ func rebuild(cells: Array) -> void:
 	_last_model["transition_guard_triggered"] = bool(transition_result.get("guard_triggered", false))
 	_last_model["transition_rejected_segment_count"] = int(transition_result.get("rejected_segments", 0))
 	_last_model["transition_capped_row_count"] = int(transition_result.get("capped_rows", 0))
+	var corner_result := _create_corner_nodes(segments)
+	_last_model["corner_node_count"] = int(corner_result.get("count", 0))
+	_last_model["corner_node_points"] = corner_result.get("points", PackedVector2Array())
+	_last_model["signal_trace_count"] = _create_signal_traces(segments)
 
 
 static func build_skirt_module_sequence(segment_length: float) -> PackedStringArray:
@@ -167,6 +196,43 @@ func _create_contact_rim(segments: Array) -> void:
 			)
 		)
 	_add_box_mesh("BoardSupportContactRim", boxes, _solid_material(CONTACT_RIM_COLOR))
+
+
+func _create_underlayer(segments: Array) -> int:
+	var boxes: Array[AABB] = []
+	for segment_variant in segments:
+		var segment := segment_variant as Dictionary
+		if not _valid_segment(segment):
+			continue
+		boxes.append(
+			_edge_prism(
+				segment,
+				UNDERLAYER_WIDTH_2D,
+				UNDERLAYER_BOTTOM_Y,
+				UNDERLAYER_TOP_Y
+			)
+		)
+	_add_box_mesh("BoardSupportDarkUnderlayer", boxes, _solid_material(UNDERLAYER_COLOR))
+	return boxes.size()
+
+
+func _create_outer_outline(segments: Array) -> int:
+	var boxes: Array[AABB] = []
+	for segment_variant in segments:
+		var segment := segment_variant as Dictionary
+		if not _valid_segment(segment):
+			continue
+		var outline_segment := _offset_segment(segment, OUTER_OUTLINE_OFFSET_2D)
+		boxes.append(
+			_edge_prism(
+				outline_segment,
+				OUTER_OUTLINE_WIDTH_2D,
+				OUTER_OUTLINE_BOTTOM_Y,
+				OUTER_OUTLINE_TOP_Y
+			)
+		)
+	_add_box_mesh("BoardSupportContinuousOutline", boxes, _solid_material(OUTER_OUTLINE_COLOR))
+	return boxes.size()
 
 
 func _create_front_skirt(segments: Array) -> Dictionary:
@@ -341,6 +407,69 @@ func _create_low_profile_rail(segments: Array) -> int:
 	return boxes.size()
 
 
+func _create_corner_nodes(segments: Array) -> Dictionary:
+	var corner_data: Dictionary = {}
+	for segment_variant in segments:
+		var segment := segment_variant as Dictionary
+		if not _valid_segment(segment):
+			continue
+		var outward := segment.get("outward", Vector2.ZERO) as Vector2
+		for point_variant in [segment.get("start", Vector2.ZERO), segment.get("end", Vector2.ZERO)]:
+			var point := point_variant as Vector2
+			var key := "%.3f:%.3f" % [point.x, point.y]
+			if not corner_data.has(key):
+				corner_data[key] = {"point": point, "outward_sum": Vector2.ZERO}
+			var entry := corner_data[key] as Dictionary
+			entry["outward_sum"] = (entry.get("outward_sum", Vector2.ZERO) as Vector2) + outward
+			corner_data[key] = entry
+	var base_boxes: Array[AABB] = []
+	var core_boxes: Array[AABB] = []
+	var points := PackedVector2Array()
+	for key_variant in corner_data:
+		var entry := corner_data[key_variant] as Dictionary
+		var point := entry.get("point", Vector2.ZERO) as Vector2
+		var outward_sum := entry.get("outward_sum", Vector2.ZERO) as Vector2
+		var direction := outward_sum.normalized() if outward_sum.length_squared() > 0.001 else Vector2.ZERO
+		var center := point + direction * CORNER_NODE_OFFSET_2D
+		base_boxes.append(_point_prism(center, CORNER_NODE_SIZE_2D, CORNER_NODE_BOTTOM_Y, CORNER_NODE_TOP_Y))
+		core_boxes.append(_point_prism(center, CORNER_CORE_SIZE_2D, CORNER_NODE_TOP_Y, CORNER_CORE_TOP_Y))
+		points.append(center)
+	_add_box_mesh("BoardSupportCornerNodes", base_boxes, _solid_material(CORNER_NODE_COLOR))
+	_add_box_mesh("BoardSupportCornerSignals", core_boxes, _solid_material(STRUCTURE_SIGNAL_COLOR))
+	return {"count": points.size(), "points": points}
+
+
+func _create_signal_traces(segments: Array) -> int:
+	var boxes: Array[AABB] = []
+	for segment_variant in segments:
+		var segment := segment_variant as Dictionary
+		if not _valid_segment(segment):
+			continue
+		var start := segment.get("start", Vector2.ZERO) as Vector2
+		var end := segment.get("end", Vector2.ZERO) as Vector2
+		var length := start.distance_to(end)
+		var direction := (end - start) / length
+		var trace_count := maxi(1, floori(length / SIGNAL_TRACE_INTERVAL_2D))
+		for trace_index in range(trace_count):
+			var ratio := (float(trace_index) + 0.5) / float(trace_count)
+			var center_distance := length * ratio
+			var half_length := minf(SIGNAL_TRACE_LENGTH_2D * 0.5, length * 0.2)
+			var trace_segment := segment.duplicate()
+			trace_segment["start"] = start + direction * (center_distance - half_length)
+			trace_segment["end"] = start + direction * (center_distance + half_length)
+			trace_segment = _offset_segment(trace_segment, SIGNAL_TRACE_OFFSET_2D)
+			boxes.append(
+				_edge_prism(
+					trace_segment,
+					SIGNAL_TRACE_WIDTH_2D,
+					SIGNAL_TRACE_BOTTOM_Y,
+					SIGNAL_TRACE_TOP_Y
+				)
+			)
+	_add_box_mesh("BoardSupportSignalTraces", boxes, _solid_material(STRUCTURE_SIGNAL_COLOR))
+	return boxes.size()
+
+
 func _segment_edge_names(segments: Array) -> PackedStringArray:
 	var result := PackedStringArray()
 	for segment_variant in segments:
@@ -401,7 +530,7 @@ func _create_transition_band(segments: Array, board_rects: Array[Rect2] = []) ->
 				var acceptance_hash := _transition_hash(segment_index + 19, candidate_index + 11, slot_index + 23)
 				if not _transition_accepts(outward_ratio, acceptance_hash):
 					continue
-				var tile_size := _transition_tile_size(hash_value)
+				var tile_size := _transition_tile_size(hash_value, outward_ratio)
 				var tangent_jitter_hash := _transition_hash(segment_index + 31, candidate_index + 7, slot_index + 13)
 				var tangent_jitter := float(tangent_jitter_hash % 9 - 4)
 				var cursor := tile_size * 0.5 + slot_stride * float(slot_index) + tangent_jitter
@@ -478,19 +607,33 @@ func _transition_outward_ratio(hash_value: int) -> float:
 
 
 func _transition_accepts(outward_ratio: float, hash_value: int) -> bool:
-	var threshold := lerpf(0.96, 0.32, clampf(outward_ratio, 0.0, 1.0))
+	var distance_ratio := clampf(outward_ratio, 0.0, 1.0)
+	# About one third fewer fragments overall than the former 0.96 -> 0.32
+	# distribution, with a steeper falloff that reads as authored clusters.
+	var threshold := lerpf(0.72, 0.10, distance_ratio)
 	var roll := float(hash_value % 1000) / 999.0
 	return roll <= threshold
 
 
-func _transition_tile_size(hash_value: int) -> float:
+func _transition_tile_size(hash_value: int, outward_ratio: float = 0.0) -> float:
+	var base_size := TRANSITION_TILE_MIN_SIZE_2D
 	match hash_value % 3:
 		0:
-			return 4.0
+			base_size = 4.0
 		1:
-			return 6.0
+			base_size = 6.0
 		_:
-			return 8.0
+			base_size = 8.0
+	var distance_ratio := clampf(outward_ratio, 0.0, 1.0)
+	var distance_size_cap := lerpf(
+		TRANSITION_TILE_MAX_SIZE_2D,
+		TRANSITION_TILE_MIN_SIZE_2D,
+		distance_ratio
+	)
+	return maxf(
+		TRANSITION_TILE_MIN_SIZE_2D,
+		floorf(minf(base_size, distance_size_cap) * 0.5) * 2.0
+	)
 
 
 func _transition_tile_color(outward_ratio: float, hash_value: int) -> Color:
@@ -574,6 +717,32 @@ void fragment() {
 	material.set_shader_parameter("top_highlight_dim", SKIRT_TOP_HIGHLIGHT_DIM)
 	material.set_shader_parameter("atlas_rows", float(SKIRT_ATLAS_ROWS))
 	return material
+
+
+func _valid_segment(segment: Dictionary) -> bool:
+	var start := segment.get("start", Vector2.ZERO) as Vector2
+	var end := segment.get("end", Vector2.ZERO) as Vector2
+	var outward := segment.get("outward", Vector2.ZERO) as Vector2
+	return start.is_finite() and end.is_finite() and outward.is_finite() \
+		and start.distance_to(end) > 1.0
+
+
+func _offset_segment(segment: Dictionary, distance_2d: float) -> Dictionary:
+	var shifted := segment.duplicate()
+	var outward := segment.get("outward", Vector2.ZERO) as Vector2
+	var offset := outward * distance_2d
+	shifted["start"] = (segment.get("start", Vector2.ZERO) as Vector2) + offset
+	shifted["end"] = (segment.get("end", Vector2.ZERO) as Vector2) + offset
+	return shifted
+
+
+func _point_prism(point: Vector2, size_2d: float, bottom_y: float, top_y: float) -> AABB:
+	var world_scale := _world_scale()
+	var half_size := size_2d * world_scale * 0.5
+	return AABB(
+		Vector3(point.x * world_scale - half_size, bottom_y, point.y * world_scale - half_size),
+		Vector3(size_2d * world_scale, top_y - bottom_y, size_2d * world_scale)
+	)
 
 
 func _edge_prism(segment: Dictionary, width_2d: float, bottom_y: float, top_y: float) -> AABB:

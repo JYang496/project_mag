@@ -79,7 +79,7 @@ func _open_extraction() -> void:
 	if points.is_empty():
 		push_warning("Extraction contract has no legal extraction point.")
 		return
-	port.request_spawn_objective(1, points[0])
+	port.request_spawn_objective(1, points[0], &"extraction")
 	port.request_update_beacon(1, 1.0)
 	port.request_spawn_pursuit_wave(pursuit_wave_min, pursuit_wave_max)
 
@@ -94,6 +94,7 @@ func _complete() -> void:
 	if _completion_guard:
 		return
 	_completion_guard = true
+	port.request_complete_beacon(1)
 	port.request_stop_spawning()
 	port.request_evacuate_enemies({"grant_kill_rewards": false})
 	var result := _snapshot()

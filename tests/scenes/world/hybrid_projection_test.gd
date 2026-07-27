@@ -70,8 +70,8 @@ class OperationPortStub:
 	func request_configure_continuous_spawning(enabled: bool) -> void:
 		continuous_spawning = enabled
 
-	func request_spawn_objective(objective_id: int, position: Vector2) -> void:
-		spawned_objectives.append({"id": objective_id, "position": position})
+	func request_spawn_objective(objective_id: int, position: Vector2, visual_kind: StringName = &"containment") -> void:
+		spawned_objectives.append({"id": objective_id, "position": position, "visual_kind": visual_kind})
 
 	func request_release_reinforcement_budget(_multiplier: float = 1.0) -> void:
 		reinforcement_requests += 1

@@ -27,6 +27,7 @@ var heals: Array[int] = []
 var spawned_beacons: Array[Dictionary] = []
 var spawned_objectives: Array[Dictionary] = []
 var beacon_updates: Array[Dictionary] = []
+var completed_beacons: Array[int] = []
 var remove_beacons_calls := 0
 
 func get_level_index() -> int:
@@ -90,11 +91,14 @@ func request_player_heal(amount: int) -> void:
 func request_spawn_beacon(beacon_id: int, position: Vector2) -> void:
 	spawned_beacons.append({"id": beacon_id, "position": position})
 
-func request_spawn_objective(objective_id: int, position: Vector2) -> void:
-	spawned_objectives.append({"id": objective_id, "position": position})
+func request_spawn_objective(objective_id: int, position: Vector2, visual_kind: StringName = &"containment") -> void:
+	spawned_objectives.append({"id": objective_id, "position": position, "visual_kind": visual_kind})
 
 func request_update_beacon(beacon_id: int, progress: float) -> void:
 	beacon_updates.append({"id": beacon_id, "progress": progress})
+
+func request_complete_beacon(beacon_id: int) -> void:
+	completed_beacons.append(beacon_id)
 
 func request_remove_beacons() -> void:
 	remove_beacons_calls += 1

@@ -181,6 +181,7 @@ func request_spawn_beacon(beacon_id: int, position: Vector2) -> void:
 	var beacon = BEACON_SCENE.instantiate()
 	beacon.position = position
 	beacon.beacon_id = beacon_id
+	beacon.visual_kind = &"operation"
 	beacon.presence_changed.connect(_on_beacon_presence_changed)
 	_spawner.get_parent().add_child(beacon)
 	_beacons[beacon_id] = beacon
@@ -194,12 +195,13 @@ func request_spawn_beacon(beacon_id: int, position: Vector2) -> void:
 		tween.tween_property(_beacon_beam, "modulate:a", 0.0, 0.8)
 		tween.finished.connect(_beacon_beam.queue_free)
 
-func request_spawn_objective(objective_id: int, position: Vector2) -> void:
+func request_spawn_objective(objective_id: int, position: Vector2, visual_kind: StringName = &"containment") -> void:
 	if _spawner == null or _beacons.has(objective_id):
 		return
 	var beacon = BEACON_SCENE.instantiate()
 	beacon.position = position
 	beacon.beacon_id = objective_id
+	beacon.visual_kind = visual_kind
 	beacon.presence_changed.connect(_on_beacon_presence_changed)
 	_spawner.get_parent().add_child(beacon)
 	_beacons[objective_id] = beacon
@@ -209,10 +211,18 @@ func request_update_beacon(beacon_id: int, progress: float) -> void:
 	if beacon != null and is_instance_valid(beacon):
 		beacon.set_progress(progress)
 
+func request_complete_beacon(beacon_id: int) -> void:
+	var beacon = _beacons.get(beacon_id)
+	if beacon != null and is_instance_valid(beacon):
+		beacon.play_completion()
+
 func request_remove_beacons() -> void:
 	for beacon in _beacons.values():
 		if beacon != null and is_instance_valid(beacon):
-			beacon.queue_free()
+			if beacon.is_visually_completed():
+				beacon.play_completion_and_remove()
+			else:
+				beacon.queue_free()
 	_beacons.clear()
 	if _beacon_beam != null and is_instance_valid(_beacon_beam):
 		_beacon_beam.queue_free()

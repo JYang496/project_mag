@@ -252,10 +252,11 @@ func prewarm_mecha_default_weapon(id: String) -> bool:
 	if mecha == null or mecha.default_weapon_id.is_empty():
 		return false
 	var weapon := read_weapon_data(mecha.default_weapon_id) as WeaponDefinition
-	if weapon == null or weapon.request_scene() != OK:
+	if weapon == null:
 		return false
-	# Prewarm means the default weapon must be fully loaded and cached before
-	# callers begin another threaded scene graph load (not merely requested).
+	# This call intentionally loads synchronously. Prewarm must finish before callers
+	# begin another scene graph load, so requesting a thread and immediately blocking
+	# in load_threaded_get() only adds loader cleanup state without making this async.
 	return weapon.get_scene() != null
 
 func read_weapon_data(id: String):

@@ -90,7 +90,7 @@ func _try_spawn_objectives() -> void:
 		presence_by_id[rift_id] = {"player_inside": false, "enemy_count": 0}
 		sealed_by_id[rift_id] = false
 		reinforcement_elapsed_by_id[rift_id] = 0.0
-		port.request_spawn_objective(rift_id, current_points[index])
+		port.request_spawn_objective(rift_id, current_points[index], &"containment")
 	_objectives_spawned = true
 
 func _on_presence_changed(snapshot: Dictionary) -> void:

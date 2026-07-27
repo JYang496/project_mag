@@ -48,7 +48,11 @@ func _ready() -> void:
 	LoadingPerformance.end_segment("player_spawner_ready")
 	
 func set_start_up_status():
-	var lvl_index = int(GlobalVariables.autosave_data["current_level"]) - 1
+	var lvl_index := clampi(
+		int(GlobalVariables.autosave_data["current_level"]) - 1,
+		0,
+		PlayerData.MAX_PLAYER_LEVEL - 1
+	)
 	PlayerData.player_exp = int(GlobalVariables.autosave_data["current_exp"])
 	PlayerData.player_level = int(GlobalVariables.autosave_data["current_level"])
 	PlayerData.next_level_exp = int(GlobalVariables.mech_data.next_level_exp[lvl_index])

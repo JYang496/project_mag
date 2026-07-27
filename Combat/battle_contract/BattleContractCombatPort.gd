@@ -92,10 +92,13 @@ func request_player_heal(_amount: int) -> void:
 func request_spawn_beacon(_beacon_id: int, _position: Vector2) -> void:
 	pass
 
-func request_spawn_objective(_objective_id: int, _position: Vector2) -> void:
+func request_spawn_objective(_objective_id: int, _position: Vector2, _visual_kind: StringName = &"containment") -> void:
 	pass
 
 func request_update_beacon(_beacon_id: int, _progress: float) -> void:
+	pass
+
+func request_complete_beacon(_beacon_id: int) -> void:
 	pass
 
 func request_remove_beacons() -> void:

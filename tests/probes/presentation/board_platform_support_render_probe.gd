@@ -51,11 +51,12 @@ func _run() -> void:
 		output_dir = ProjectSettings.globalize_path("res://test-results/board_support_visual")
 	DirAccess.make_dir_recursive_absolute(output_dir)
 	var scenarios := {
-		"full_3x3": {"rects": _full_grid_rects(), "closeup": false},
-		"t_shape": {"rects": _t_shape_rects(), "closeup": false},
-		"cross_shape": {"rects": _cross_shape_rects(), "closeup": false},
-		"mixed_sizes": {"rects": _mixed_size_rects(), "closeup": false},
-		"front_edge_closeup": {"rects": _full_grid_rects(), "closeup": true},
+		"full_3x3": {"rects": _full_grid_rects(), "view": "overview"},
+		"t_shape": {"rects": _t_shape_rects(), "view": "overview"},
+		"cross_shape": {"rects": _cross_shape_rects(), "view": "overview"},
+		"mixed_sizes": {"rects": _mixed_size_rects(), "view": "overview"},
+		"front_edge_closeup": {"rects": _full_grid_rects(), "view": "front"},
+		"upper_corner_closeup": {"rects": _full_grid_rects(), "view": "corner"},
 	}
 	var failed := false
 	for scenario_name in scenarios:
@@ -64,7 +65,7 @@ func _run() -> void:
 		var saved := await _render_scenario(
 			scenario.get("rects", []) as Array,
 			path,
-			bool(scenario.get("closeup", false))
+			String(scenario.get("view", "overview"))
 		)
 		if not saved:
 			failed = true
@@ -75,7 +76,7 @@ func _run() -> void:
 	get_tree().quit(1 if failed else 0)
 
 
-func _render_scenario(rects: Array, output_path: String, closeup: bool = false) -> bool:
+func _render_scenario(rects: Array, output_path: String, view_mode: String = "overview") -> bool:
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(640, 360)
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -92,9 +93,12 @@ func _render_scenario(rects: Array, output_path: String, closeup: bool = false) 
 	var camera := Camera3D.new()
 	camera.fov = 43.0
 	scene_root.add_child(camera)
-	if closeup:
+	if view_mode == "front":
 		camera.position = Vector3(0.0, 5.8, 9.4)
 		camera.look_at(Vector3(0.0, -0.28, 3.2), Vector3.UP)
+	elif view_mode == "corner":
+		camera.position = Vector3(6.0, 2.1, -2.8)
+		camera.look_at(Vector3(4.5, -0.10, -4.5), Vector3.UP)
 	else:
 		camera.position = Vector3(0.0, 9.5, 12.5)
 		camera.look_at(Vector3(0.0, -0.35, 0.0), Vector3.UP)

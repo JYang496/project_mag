@@ -96,6 +96,14 @@ func _test_low_profile_geometry_contract() -> void:
 		PlatformRendererType.LOW_PROFILE_RAIL_BOTTOM_Y < PlatformRendererType.CONTACT_RIM_BOTTOM_Y,
 		"The rail must provide visible depth below the contact rim."
 	)
+	_assert_true(
+		PlatformRendererType.UNDERLAYER_BOTTOM_Y < PlatformRendererType.LOW_PROFILE_RAIL_BOTTOM_Y,
+		"The dark underlayer must remain visible below the low-profile rail."
+	)
+	_assert_true(
+		PlatformRendererType.OUTER_OUTLINE_WIDTH_2D <= 3.0,
+		"The continuous outline must remain a crisp pixel-scale structural line."
+	)
 	var rail_height := PlatformRendererType.LOW_PROFILE_RAIL_TOP_Y - PlatformRendererType.LOW_PROFILE_RAIL_BOTTOM_Y
 	_assert_true(rail_height <= 0.32, "Version 2 rail must remain low-profile instead of restoring the tall platform skirt.")
 	_assert_true(
@@ -138,6 +146,26 @@ func _test_transition_density_and_guards() -> void:
 		accepted_counts[0] > accepted_counts[1] and accepted_counts[1] > accepted_counts[2],
 		"Transition density must fall continuously with actual outward distance."
 	)
+	_assert_true(
+		accepted_counts[2] * 3 < accepted_counts[0],
+		"Far fragments must be markedly sparser than near-edge fragments."
+	)
+	var legacy_accepted := 0
+	var revised_accepted := 0
+	for slot_index in range(4096):
+		var position_hash := renderer._transition_hash(0, 0, slot_index)
+		var outward_ratio := renderer._transition_outward_ratio(position_hash)
+		var acceptance_hash := renderer._transition_hash(19, 11, slot_index + 23)
+		var roll := float(acceptance_hash % 1000) / 999.0
+		if roll <= lerpf(0.96, 0.32, outward_ratio):
+			legacy_accepted += 1
+		if renderer._transition_accepts(outward_ratio, acceptance_hash):
+			revised_accepted += 1
+	_assert_true(
+		revised_accepted <= roundi(float(legacy_accepted) * 0.75) \
+			and revised_accepted >= roundi(float(legacy_accepted) * 0.55),
+		"The revised transition must remove roughly one third of the former random gray fragments."
+	)
 	var generated_sizes := {}
 	for sample_index in range(128):
 		var size := renderer._transition_tile_size(renderer._transition_hash(0, 0, sample_index))
@@ -146,6 +174,9 @@ func _test_transition_density_and_guards() -> void:
 		generated_sizes.has(4.0) and generated_sizes.has(6.0) and generated_sizes.has(8.0),
 		"Irregular transition clusters must mix 4, 6, and 8 pixel tiles."
 	)
+	for sample_index in range(128):
+		var far_size := renderer._transition_tile_size(renderer._transition_hash(0, 0, sample_index), 0.95)
+		_assert_true(far_size <= 4.0, "Far fragments must collapse to the smallest tile class.")
 	var normal_layout := PlatformRendererType.calculate_transition_slot_layout(512.0, 8.0, 12.0)
 	_assert_equal(43, int(normal_layout.get("count", 0)), "A normal cell edge must keep a dense transition cadence.")
 	_assert_true(not bool(normal_layout.get("guard_triggered", true)), "Normal geometry must not trigger transition guards.")
@@ -188,6 +219,18 @@ func _test_renderer_runtime_model() -> void:
 	var model := renderer.get_last_model()
 	_assert_near(2560.0, float(model.get("perimeter", 0.0)), 0.01, "Runtime renderer must derive its outline from actual sprite sizes.")
 	_assert_true(int(model.get("low_profile_rail_segment_count", 0)) > 0, "Runtime renderer must create the continuous low-profile rail.")
+	_assert_equal(
+		(model.get("segments", []) as Array).size(),
+		int(model.get("outer_outline_segment_count", 0)),
+		"The crisp outer outline must cover every exposed boundary segment."
+	)
+	_assert_equal(
+		(model.get("segments", []) as Array).size(),
+		int(model.get("underlayer_segment_count", 0)),
+		"The dark underlayer must support the complete closed boundary."
+	)
+	_assert_true(int(model.get("corner_node_count", 0)) >= 4, "Every board corner must receive a reinforced anchor node.")
+	_assert_true(int(model.get("signal_trace_count", 0)) > 0, "Cyan signal traces must extend onto the frame structure.")
 	_assert_true(int(model.get("transition_tile_count", 0)) > 0, "Runtime renderer must create the compact transition band.")
 	_assert_true(int(model.get("front_skirt_module_count", 0)) > 0, "Runtime renderer must preserve the original lower skirt.")
 	_assert_true(not bool(model.get("transition_guard_triggered", true)), "Normal mixed-size geometry must remain below transition safety limits.")
@@ -201,10 +244,15 @@ func _test_renderer_runtime_model() -> void:
 	_assert_true(not rail_edges.has("bottom"), "The new low-profile rail must never cover the original lower boundary.")
 	_assert_true(not transition_edges.has("bottom"), "The new transition band must never render below the board.")
 	for required_name in [
+		"BoardSupportDarkUnderlayer",
 		"BoardSupportContactRim",
+		"BoardSupportContinuousOutline",
 		"BoardSupportFrontSkirt",
 		"BoardSupportLowProfileRail",
 		"BoardSupportTransitionBand",
+		"BoardSupportCornerNodes",
+		"BoardSupportCornerSignals",
+		"BoardSupportSignalTraces",
 	]:
 		var visual := view._ground_root.get_node_or_null(required_name) as GeometryInstance3D
 		_assert_true(visual != null, "Runtime support must create %s." % required_name)

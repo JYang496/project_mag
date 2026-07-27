@@ -32,7 +32,11 @@ func update_labels() -> void:
 	if mech_data == null or mech_autosave.is_empty():
 		push_warning("MechaContainer failed to load mecha data for id=%s" % str(mecha_id))
 		return
-	var lvl_index = int(mech_autosave["current_level"]) - 1
+	var lvl_index := clampi(
+		int(mech_autosave["current_level"]) - 1,
+		0,
+		PlayerData.MAX_PLAYER_LEVEL - 1
+	)
 	var crit_rate_value: float = mech_data.crit_rate[lvl_index]
 	mecha_name.text = LocalizationManager.get_mecha_display_name(mech_data)
 	current_exp.text = LocalizationManager.tr_format(

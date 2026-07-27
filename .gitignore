@@ -7,3 +7,7 @@ test-results/
 *.exe
 *.pck
 *.pdb
+
+# Temp files
+archive/
+tmp/
