@@ -1,5 +1,6 @@
 extends Module
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const UTILS := preload("res://Player/Weapons/Modules/wmod_runtime_utils.gd")
 const TRAIL_AREA_EFFECT_SCRIPT := preload("res://Combat/area_effect/trail_area_effect.gd")
 
@@ -17,8 +18,8 @@ var ITEM_NAME := "Frost Trail"
 @export var damage_ratio_lv3: float = 0.30
 @export var max_active_fields: int = 18
 @export var show_trail_range: bool = true
-@export var trail_fill_color: Color = Color(0.35, 0.85, 1.0, 0.18)
-@export var trail_line_color: Color = Color(0.45, 0.95, 1.0, 0.75)
+@export var trail_fill_color: Color = Color(PALETTE.FREEZE, 0.14)
+@export var trail_line_color: Color = Color(PALETTE.PLAYER_PRIMARY, 0.48)
 @export var trail_line_width: float = 1.5
 
 var _plugin_registered: bool = false

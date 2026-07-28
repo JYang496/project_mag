@@ -1,6 +1,8 @@
 extends BaseEnemy
 class_name EnemyOrbitSupport
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
 @export var orbit_radius: float = 170.0
 @export var orbit_correction: float = 2.5
 @export var orbit_clockwise: bool = true
@@ -9,9 +11,10 @@ class_name EnemyOrbitSupport
 @export var aura_speed_bonus: float = 0.1
 @export var debug_aura_detection: bool = false
 @export var aura_visual_enabled: bool = true
-@export var aura_fill_color: Color = Color(0.25, 0.9, 1.0, 0.14)
-@export var aura_line_color: Color = Color(0.35, 0.95, 1.0, 0.8)
-@export var aura_line_width: float = 2.0
+@export var aura_fill_color: Color = Color(PALETTE.SPEED, 0.08)
+@export var aura_line_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.90)
+@export var aura_detail_color: Color = Color(PALETTE.SPEED, 0.54)
+@export var aura_line_width: float = 3.5
 
 @onready var speed_buff_area: Area2D = $SpeedBuffArea
 @onready var speed_buff_shape: CollisionShape2D = $SpeedBuffArea/CollisionShape2D
@@ -100,6 +103,16 @@ func _draw() -> void:
 		maxf(aura_line_width, 1.0),
 		true
 	)
+	draw_arc(
+		Vector2.ZERO,
+		maxf(aura_radius - 4.0, 1.0),
+		0.0,
+		TAU,
+		56,
+		aura_detail_color,
+		1.0,
+		true
+	)
 
 func get_hybrid_aura_visual() -> Dictionary:
 	return {
@@ -108,4 +121,6 @@ func get_hybrid_aura_visual() -> Dictionary:
 		"fill_color": aura_fill_color,
 		"line_color": aura_line_color,
 		"line_width": aura_line_width,
+		"detail_color": aura_detail_color,
+		"detail_width": 1.0,
 	}

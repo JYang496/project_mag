@@ -1,6 +1,8 @@
 extends Node2D
 class_name FrostFieldEffect
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
 var source_node: Node
 var source_player: Node
 var damage_type: StringName = Attack.TYPE_FREEZE
@@ -11,8 +13,8 @@ var radius: float = 140.0
 var affect_players: bool = false
 var max_instances_per_owner: int = 3
 @export var show_range_indicator: bool = true
-@export var indicator_fill_color: Color = Color(0.35, 0.85, 1.0, 0.12)
-@export var indicator_outline_color: Color = Color(0.35, 0.85, 1.0, 0.8)
+@export var indicator_fill_color: Color = Color(PALETTE.FREEZE, 0.12)
+@export var indicator_outline_color: Color = Color(PALETTE.PLAYER_PRIMARY, 0.58)
 
 var _elapsed_sec: float = 0.0
 var _tick_accum_sec: float = 0.0

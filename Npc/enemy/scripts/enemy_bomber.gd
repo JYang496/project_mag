@@ -1,6 +1,7 @@
 extends BaseEnemy
 class_name EnemyBomber
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const AREA_EFFECT_SCENE := preload("res://Combat/area_effect/area_effect.tscn")
 const EXPLOSION_VISUAL_FRAMES := preload("res://asset/images/effects/explosion/explosion_frames.tres")
 
@@ -10,7 +11,7 @@ const EXPLOSION_VISUAL_FRAMES := preload("res://asset/images/effects/explosion/e
 @export var fuse_time: float = 1.0
 @export var blast_radius: float = 74.0
 @export var blast_damage_multiplier: float = 2.4
-@export var fuse_warning_color: Color = Color(1.0, 0.04, 0.02, 1.0)
+@export var fuse_warning_color: Color = PALETTE.ENEMY_PRIMARY
 @export_range(0.0, 1.0, 0.01) var fuse_warning_peak_alpha: float = 0.92
 @export var fuse_warning_pulse_sec: float = 0.11
 
@@ -80,8 +81,8 @@ func _explode() -> void:
 		# The animated explosion is the complete visual. The legacy 2D debug
 		# circle must not be drawn over the hybrid ground.
 		area.draw_enabled = false
-		area.debug_fill_color = Color(1.0, 0.35, 0.15, 0.24)
-		area.debug_line_color = Color(1.0, 0.7, 0.25, 1.0)
+		area.debug_fill_color = Color(PALETTE.ENEMY_PRIMARY, 0.20)
+		area.debug_line_color = Color(PALETTE.ENEMY_SECONDARY, 0.98)
 		area.apply_once_per_target = true
 		area.source_node = self
 		call_deferred("add_sibling", area)

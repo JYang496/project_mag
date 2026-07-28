@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://UI/scripts/battle_contract_card.gd" id="1"]
 
 [node name="BattleContractCard" type="Button"]
-custom_minimum_size = Vector2(360, 220)
+custom_minimum_size = Vector2(280, 240)
 size_flags_horizontal = 3
 toggle_mode = true
 script = ExtResource("1")
@@ -33,27 +33,6 @@ offset_bottom = -5.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-
-[node name="SelectedBadge" type="Label" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -104.0
-offset_top = 12.0
-offset_right = -14.0
-offset_bottom = 40.0
-grow_horizontal = 0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.92, 1, 0.94, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 24
-text = "已选择  ✓"
-horizontal_alignment = 1
-vertical_alignment = 1
 
 [node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -93,9 +72,22 @@ theme_override_font_sizes/font_size = 14
 text = "RARE // 稀有"
 vertical_alignment = 1
 
+[node name="SelectedBadge" type="Label" parent="Margin/Content/Header"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 1, 0.94, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 14
+text = "✓ SELECTED"
+vertical_alignment = 1
+
 [node name="Title" type="Label" parent="Margin/Content"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 27
+autowrap_mode = 2
+max_lines_visible = 2
 
 [node name="InfoGrid" type="HBoxContainer" parent="Margin/Content"]
 layout_mode = 2

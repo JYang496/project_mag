@@ -1,6 +1,7 @@
 extends BaseEnemy
 class_name EnemySpikeTurret
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const PROJECTILE_SCENE := preload("res://Npc/enemy/scenes/enemy_spike_projectile.tscn")
 
 @export var detect_range: float = 760.0
@@ -12,7 +13,7 @@ const PROJECTILE_SCENE := preload("res://Npc/enemy/scenes/enemy_spike_projectile
 @export var projectile_life_time: float = 3.2
 @export var muzzle_offset: float = 22.0
 @export var screen_fire_margin: float = 28.0
-@export var aim_warning_color: Color = Color(1.0, 0.12, 0.12, 0.9)
+@export var aim_warning_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.94)
 @export var aim_warning_width: float = 3.0
 
 var _cooldown_remaining: float = 0.0

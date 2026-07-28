@@ -1,0 +1,493 @@
+# Archived 2026-07-28: release-specific hybrid renderer implementation matrix.
+extends Node
+
+const ConeSprayScene := preload("res://Player/Weapons/Effects/cone_spray_vfx.tscn")
+const OperationContractRuntime := preload("res://Combat/battle_contract/runtime/operation_contract_runtime.gd")
+const ExtractionContractRuntime := preload("res://Combat/battle_contract/runtime/extraction_contract_runtime.gd")
+const ContainmentContractRuntime := preload("res://Combat/battle_contract/runtime/containment_contract_runtime.gd")
+const SpawnCombatProfileResource := preload("res://data/spawns/spawn_combat_profile.tres")
+
+const HybridView := preload("res://Visual/Oblique/hybrid_ground_view_3d.gd")
+const HybridCameraDefaultsType := preload("res://Visual/Oblique/hybrid_camera_defaults.gd")
+const BaseEnemyScene := preload("res://Npc/enemy/scenes/base_enemy.tscn")
+const EliteEnemyScene := preload("res://Npc/enemy/scenes/elite_enemy.tscn")
+const ProjectileScene := preload("res://Player/Weapons/Projectiles/projectile.tscn")
+const SpearTexture := preload("res://asset/images/weapons/projectiles/spear_projectile.png")
+const AreaEffectScene := preload("res://Combat/area_effect/area_effect.tscn")
+const HitLabelScene := preload("res://UI/labels/hit_label.tscn")
+
+class DummyCell:
+	extends Node2D
+	var board_enabled: bool = true
+
+class DummyBoard:
+	extends Node2D
+
+	signal active_cells_changed(active_cell_ids: PackedInt32Array)
+	signal board_visual_active_changed(active: bool, immediate: bool)
+	signal board_recentered(offset: Vector2)
+
+	var _board_active: bool = true
+	var cells: Array[Node2D] = []
+
+	func get_cells() -> Array[Node2D]:
+		return cells
+
+class DummyRestArea:
+	extends Node2D
+	var selected_zone_id: int = 4
+	var hover_zone_id: int = -1
+	var zone4_hold_duration: float = 1.0
+	var _zone4_hold_elapsed: float = 0.0
+
+	func _get_zone_rect_local(zone_id: int) -> Rect2:
+		var column := zone_id % 3
+		var row := zone_id / 3
+		return Rect2(Vector2(column, row) * 170.0, Vector2(170.0, 170.0))
+
+	func get_spawn_position() -> Vector2:
+		return global_position
+
+class OperationPortStub:
+	extends BattleContractCombatPort
+
+	var beacon_points := PackedVector2Array()
+	var containment_points := PackedVector2Array()
+	var spawned_beacons: Array[Dictionary] = []
+	var spawned_objectives: Array[Dictionary] = []
+	var configured_duration_sec := 0.0
+	var continuous_spawning := false
+	var reinforcement_requests := 0
+
+	func get_battlefield_capabilities() -> Dictionary:
+		return {"operation_beacon_points": beacon_points, "containment_points": containment_points}
+
+	func request_spawn_beacon(beacon_id: int, position: Vector2) -> void:
+		spawned_beacons.append({"id": beacon_id, "position": position})
+
+	func request_configure_duration(duration_sec: float) -> void:
+		configured_duration_sec = duration_sec
+
+	func request_configure_continuous_spawning(enabled: bool) -> void:
+		continuous_spawning = enabled
+
+	func request_spawn_objective(objective_id: int, position: Vector2, visual_kind: StringName = &"containment") -> void:
+		spawned_objectives.append({"id": objective_id, "position": position, "visual_kind": visual_kind})
+
+	func request_release_reinforcement_budget(_multiplier: float = 1.0) -> void:
+		reinforcement_requests += 1
+
+func _ready() -> void:
+	var containment_port := OperationPortStub.new()
+	containment_port.containment_points = PackedVector2Array([Vector2(100.0, 80.0), Vector2(400.0, 80.0), Vector2(700.0, 80.0)])
+	var containment_runtime := ContainmentContractRuntime.new()
+	containment_runtime.start(containment_port, {"rift_count": 3, "seal_duration_sec": 8.0, "reinforcement_interval_sec": 9.0})
+	var containment_failed := _check(containment_port.configured_duration_sec == 36.0, "containment spawn pressure must match objective time instead of a fixed 120-second window")
+	containment_port.containment_points = PackedVector2Array([Vector2(260.0, 180.0), Vector2(560.0, 180.0), Vector2(860.0, 180.0)])
+	containment_port.battle_tick.emit({"delta_sec": 0.1})
+	containment_failed = _check(containment_port.spawned_objectives.size() == 3 and containment_port.spawned_objectives[0].get("position") == Vector2(260.0, 180.0), "containment objectives must resolve positions after battlefield recentering") or containment_failed
+	containment_port.battle_tick.emit({"delta_sec": 9.0})
+	containment_failed = _check(containment_port.reinforcement_requests > 0, "containment reinforcement waves must release explicit spawn budget") or containment_failed
+	containment_runtime.stop()
+	var extraction_port := OperationPortStub.new()
+	var extraction_runtime := ExtractionContractRuntime.new()
+	extraction_runtime.start(extraction_port, {"survival_duration_early_sec": 32.0, "extraction_charge_sec": 6.0})
+	var extraction_failed := _check(extraction_port.configured_duration_sec == 32.0, "extraction spawn pressure must be released across the holding duration without a 45-second dilution")
+	extraction_runtime.stop()
+	extraction_failed = _check(SpawnCombatProfileResource.get_target_total_hp(2) == 1000, "level 3 must expose an explicit nonzero spawn HP budget") or extraction_failed
+	var operation_port := OperationPortStub.new()
+	operation_port.beacon_points = PackedVector2Array([Vector2(100.0, 100.0), Vector2(500.0, 100.0)])
+	var operation_runtime := OperationContractRuntime.new()
+	operation_runtime.start(operation_port, {"charge_time_min_sec": 10.0, "charge_time_max_sec": 14.0})
+	var operation_config_failed := _check(operation_runtime.charge_duration_sec == 12.0 and operation_port.configured_duration_sec == 36.0 and operation_port.continuous_spawning, "operation must honor its charge range and match spawn pressure to two captures plus travel time")
+	operation_port.beacon_points = PackedVector2Array([Vector2(350.0, 220.0), Vector2(750.0, 220.0)])
+	operation_port.battle_tick.emit({"delta_sec": 0.0})
+	var operation_failed := operation_config_failed or _check(operation_port.spawned_beacons.size() == 1 and operation_port.spawned_beacons[0].get("position") == Vector2(350.0, 220.0), "operation beacon must resolve its first position after battlefield recentering")
+	operation_port.beacon_points = PackedVector2Array([Vector2(420.0, 260.0)])
+	operation_port.beacon_presence_changed.emit({"beacon_id": 1, "player_inside": true, "enemy_count": 0})
+	operation_port.battle_tick.emit({"delta_sec": 12.0})
+	operation_failed = _check(operation_port.spawned_beacons.size() == 1, "operation runtime must wait when the next current beacon point is temporarily unavailable") or operation_failed
+	operation_port.beacon_points = PackedVector2Array([Vector2(420.0, 260.0), Vector2(820.0, 260.0)])
+	operation_port.battle_tick.emit({"delta_sec": 0.0})
+	operation_failed = _check(operation_port.spawned_beacons.size() == 2 and operation_port.spawned_beacons[1].get("position") == Vector2(820.0, 260.0), "operation beacon must resolve its second position when it is spawned") or operation_failed
+	operation_runtime.stop()
+	var player := Node2D.new()
+	player.add_to_group(&"player")
+	player.position = Vector2(320.0, 180.0)
+	add_child(player)
+	var board := DummyBoard.new()
+	board.name = "Board"
+	add_child(board)
+	var cell := DummyCell.new()
+	cell.name = "DummyCell"
+	var texture_root := Node2D.new()
+	texture_root.name = "Texture"
+	texture_root.position = Vector2(192.0, 128.0)
+	cell.add_child(texture_root)
+	var sprite := Sprite2D.new()
+	sprite.name = "Sprite2D"
+	var cell_texture := GradientTexture2D.new()
+	cell_texture.width = 384
+	cell_texture.height = 256
+	sprite.texture = cell_texture
+	texture_root.add_child(sprite)
+	board.add_child(cell)
+	board.cells.append(cell)
+	var rest_area := DummyRestArea.new()
+	rest_area.name = "RestArea"
+	rest_area.add_to_group(&"rest_area")
+	rest_area.position = Vector2(-180.0, 420.0)
+	var rest_texture_root := Node2D.new()
+	rest_texture_root.name = "Texture"
+	rest_texture_root.position = Vector2(255.0, 255.0)
+	rest_area.add_child(rest_texture_root)
+	var rest_sprite := Sprite2D.new()
+	rest_sprite.name = "Sprite2D"
+	var texture := GradientTexture2D.new()
+	texture.width = 512
+	texture.height = 512
+	rest_sprite.texture = texture
+	rest_texture_root.add_child(rest_sprite)
+	add_child(rest_area)
+	var pending_line := Line2D.new()
+	pending_line.points = PackedVector2Array([Vector2.ZERO, Vector2(60.0, 10.0)])
+	pending_line.set_meta("hybrid_ground_visible", true)
+	add_child(pending_line)
+	var failed := containment_failed or extraction_failed or operation_failed
+	HybridGroundRegistration.queue_registration(pending_line, &"register_ground_segment")
+	var view := HybridView.new()
+	view.board_path = NodePath("../Board")
+	add_child(view)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	failed = _check((view.get("_segment_meshes") as Dictionary).has(pending_line.get_instance_id()), "visual registered before the View must flush from the pending queue") or failed
+	failed = _check(view.get("_mesh_registry") is GroundMeshRegistry, "Hybrid view must delegate registration to GroundMeshRegistry") or failed
+	failed = _check(view.get("_board_renderer") is BoardGroundRenderer, "Board and RestArea ground must use BoardGroundRenderer") or failed
+	failed = _check(view.get("_platform_renderer") is BoardPlatformRenderer, "Board support must use the dynamic BoardPlatformRenderer") or failed
+	failed = _check(view.get("_connected_renderer") is ConnectedEffectRenderer, "Beam, link and cone visuals must use ConnectedEffectRenderer") or failed
+	failed = _check(view.get("_aura_renderer") is AuraRenderer, "Aura and enemy link visuals must use AuraRenderer") or failed
+	failed = _check(view.get("_area_renderer") is AreaEffectRenderer, "Area, shadow and telegraph visuals must use AreaEffectRenderer") or failed
+	var mesh_pool := (view.get("_mesh_registry") as GroundMeshRegistry).mesh_pool
+	var freed_pooled_mesh := mesh_pool.acquire(&"freed_candidate_regression")
+	mesh_pool.release(freed_pooled_mesh)
+	freed_pooled_mesh.free()
+	var replacement_mesh := mesh_pool.acquire(&"freed_candidate_regression")
+	failed = _check(replacement_mesh != null and is_instance_valid(replacement_mesh), "mesh pool must discard freed available candidates before reuse") or failed
+	mesh_pool.release(replacement_mesh)
+	var freed_before_rebuild := mesh_pool.acquire(&"rebuild_clear_regression")
+	mesh_pool.release(freed_before_rebuild)
+	freed_before_rebuild.free()
+	view.call("_rebuild_ground")
+	await get_tree().process_frame
+	failed = _check(mesh_pool.available_count(&"freed_candidate_regression") == 0, "ground rebuild must clear pooled mesh references before freeing ground children") or failed
+	failed = _check(mesh_pool.available_count(&"rebuild_clear_regression") == 0, "ground rebuild must purge already-freed pooled mesh references") or failed
+	failed = _check(view.process_priority < 0, "Camera3D projection must update before Billboard visuals") or failed
+	var late_sync := view.get_node_or_null("LateGroundVisualSync")
+	failed = _check(late_sync != null and late_sync.process_priority > 0, "ground attachments must use a separate late sync") or failed
+	var shadow_owner := Node2D.new()
+	shadow_owner.position = Vector2(90.0, 65.0)
+	add_child(shadow_owner)
+	var pending_shadow := Polygon2D.new()
+	pending_shadow.position = Vector2(0.0, 8.0)
+	pending_shadow.polygon = PackedVector2Array([Vector2(-10.0, 0.0), Vector2.ZERO, Vector2(10.0, 0.0), Vector2(0.0, 6.0)])
+	shadow_owner.add_child(pending_shadow)
+	view.register_shadow(pending_shadow)
+	var pending_entry := (view.get("_shadow_meshes") as Dictionary).get(pending_shadow.get_instance_id()) as Dictionary
+	var pending_mesh := pending_entry.get("mesh") as MeshInstance3D
+	failed = _check(pending_mesh != null and not pending_mesh.visible, "new 3D shadows must stay hidden before their first anchor sync") or failed
+	view.sync_late_visuals(0.0)
+	failed = _check(pending_mesh != null and pending_mesh.visible, "3D shadows must become visible after their first anchor sync") or failed
+	var animated_area := AreaEffectScene.instantiate() as AreaEffect
+	var explosion_frames := SpriteFrames.new()
+	explosion_frames.add_animation(&"explode")
+	explosion_frames.add_frame(&"explode", texture)
+	animated_area.visual_enabled = true
+	animated_area.use_animated_visual = true
+	animated_area.visual_frames = explosion_frames
+	animated_area.visual_animation = &"explode"
+	animated_area.visual_duration = 1.0
+	animated_area.duration = 1.0
+	animated_area.draw_enabled = true
+	animated_area.position = Vector2(125.0, 90.0)
+	add_child(animated_area)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	failed = _check(not animated_area.draw_enabled, "animated explosion must suppress its legacy 2D range circle") or failed
+	failed = _check(animated_area.visual_root.visible, "animated explosion visual must remain visible") or failed
+	failed = _check(animated_area.visual_root.has_method("set_logical_local_position"), "animated explosion must use an upright billboard") or failed
+	failed = _check(not (view.get("_area_meshes") as Dictionary).has(animated_area.get_instance_id()), "animated explosion must not create a duplicate ground range disc") or failed
+	var ground_frames := SpriteFrames.new()
+	ground_frames.add_animation(&"ground_loop")
+	ground_frames.add_frame(&"ground_loop", texture)
+	var animated_ground_area := AreaEffectScene.instantiate() as AreaEffect
+	animated_ground_area.visual_enabled = true
+	animated_ground_area.use_animated_visual = true
+	animated_ground_area.animated_visual_is_ground = true
+	animated_ground_area.visual_frames = ground_frames
+	animated_ground_area.visual_animation = &"ground_loop"
+	animated_ground_area.visual_shape = AreaEffect.VisualShape.RECTANGLE
+	animated_ground_area.rectangle_size = Vector2(110.0, 60.0)
+	animated_ground_area.duration = 1.0
+	animated_ground_area.position = Vector2(155.0, 110.0)
+	add_child(animated_ground_area)
+	await get_tree().process_frame
+	view.sync_late_visuals(0.0)
+	var ground_area_entry := (view.get("_area_meshes") as Dictionary).get(animated_ground_area.get_instance_id()) as Dictionary
+	var ground_area_material := ground_area_entry.get("material") as StandardMaterial3D
+	failed = _check(ground_area_material != null and ground_area_material.albedo_texture == texture, "ground animated AreaEffect must upload its current SpriteFrames texture") or failed
+	failed = _check(not animated_ground_area.visual_root.visible, "ground animated AreaEffect must hide its duplicate 2D visual") or failed
+	var layered_area := AreaEffectScene.instantiate() as AreaEffect
+	layered_area.visual_enabled = true
+	layered_area.visual_texture = texture
+	layered_area.ground_detail_texture = texture
+	layered_area.visual_shape = AreaEffect.VisualShape.RECTANGLE
+	layered_area.rectangle_size = Vector2(96.0, 64.0)
+	layered_area.duration = 1.0
+	add_child(layered_area)
+	await get_tree().process_frame
+	view.sync_late_visuals(0.0)
+	var layered_entry := (view.get("_area_meshes") as Dictionary).get(layered_area.get_instance_id()) as Dictionary
+	var layered_material := layered_entry.get("material") as ShaderMaterial
+	failed = _check(layered_material != null, "AreaEffect with a detail texture must use the layered ground shader") or failed
+	if layered_material != null:
+		failed = _check(layered_material.get_shader_parameter("detail_texture") == texture, "layered ground shader must receive its detail texture") or failed
+		failed = _check(layered_material.get_shader_parameter("flow_speed") == layered_area.ground_flow_speed, "layered ground shader must receive flow parameters") or failed
+	var layered_id := layered_area.get_instance_id()
+	view.unregister_ground_visual(layered_area)
+	failed = _check(not (view.get("_area_meshes") as Dictionary).has(layered_id), "AreaEffect unregister must immediately release its layered mesh") or failed
+	var hit_label := HitLabelScene.instantiate()
+	hit_label.position = Vector2(300.0, 220.0)
+	hit_label.set_target_instance_id(77)
+	hit_label.setNumber(12)
+	add_child(hit_label)
+	await get_tree().process_frame
+	var hit_label_start_y: float = hit_label.position.y
+	hit_label.merge_damage(8, Color.CYAN)
+	failed = _check(hit_label.get_target_instance_id() == 77 and hit_label.get_damage_value() == 20, "HitLabel must retain its target and merge damage") or failed
+	await get_tree().create_timer(0.20).timeout
+	failed = _check(is_instance_valid(hit_label) and hit_label.position.y < hit_label_start_y, "HitLabel must pop toward screen-up") or failed
+	var beam_line := Line2D.new()
+	beam_line.points = PackedVector2Array([Vector2.ZERO, Vector2(140.0, 25.0)])
+	beam_line.width = 12.0
+	beam_line.default_color = Color(0.3, 0.85, 1.0, 0.9)
+	beam_line.set_meta("hybrid_ground_visible", true)
+	beam_line.set_meta("hybrid_segment_style", &"beam")
+	beam_line.set_meta("hybrid_segment_endpoints", true)
+	add_child(beam_line)
+	view.register_ground_segment(beam_line)
+	view.sync_late_visuals(0.0)
+	var beam_entry := (view.get("_segment_meshes") as Dictionary).get(beam_line.get_instance_id()) as Dictionary
+	failed = _check(beam_entry.get("primitive") is QuadMesh and beam_entry.get("material") is ShaderMaterial, "Beam must use a UV-capable quad and flowing shader") or failed
+	failed = _check(beam_entry.get("start_glow") is MeshInstance3D and beam_entry.get("end_glow") is MeshInstance3D, "Beam must create start and end glow meshes") or failed
+	var second_beam_line := Line2D.new()
+	second_beam_line.points = PackedVector2Array([Vector2.ZERO, Vector2(80.0, -20.0)])
+	second_beam_line.width = 7.0
+	second_beam_line.set_meta("hybrid_ground_visible", true)
+	second_beam_line.set_meta("hybrid_segment_style", &"beam")
+	add_child(second_beam_line)
+	view.register_ground_segment(second_beam_line)
+	view.sync_late_visuals(0.0)
+	var second_beam_entry := (view.get("_segment_meshes") as Dictionary).get(second_beam_line.get_instance_id()) as Dictionary
+	failed = _check(beam_entry.get("primitive") == second_beam_entry.get("primitive"), "Beam instances must share one QuadMesh resource") or failed
+	failed = _check(beam_entry.get("material") == second_beam_entry.get("material"), "Beam instances must share one flowing Material") or failed
+	var pooled_beam_mesh := second_beam_entry.get("mesh") as MeshInstance3D
+	view.unregister_ground_visual(second_beam_line)
+	var third_beam_line := Line2D.new()
+	third_beam_line.points = PackedVector2Array([Vector2.ZERO, Vector2(95.0, 5.0)])
+	third_beam_line.set_meta("hybrid_ground_visible", true)
+	third_beam_line.set_meta("hybrid_segment_style", &"beam")
+	add_child(third_beam_line)
+	view.register_ground_segment(third_beam_line)
+	var third_beam_entry := (view.get("_segment_meshes") as Dictionary).get(third_beam_line.get_instance_id()) as Dictionary
+	failed = _check(third_beam_entry.get("mesh") == pooled_beam_mesh, "released Beam MeshInstance must be reused from the pool") or failed
+	var arc_line := Line2D.new()
+	arc_line.points = PackedVector2Array([Vector2.ZERO, Vector2(45.0, 30.0)])
+	arc_line.set_meta("hybrid_ground_visible", true)
+	add_child(arc_line)
+	view.register_ground_segment(arc_line)
+	view.sync_late_visuals(0.0)
+	var arc_entry := (view.get("_segment_meshes") as Dictionary).get(arc_line.get_instance_id()) as Dictionary
+	failed = _check(arc_entry.get("primitive") == (view.get("_connected_renderer") as ConnectedEffectRenderer).shared_box_mesh, "Arc and Link paths must use the shared unit BoxMesh") or failed
+	view.unregister_ground_visual(arc_line)
+	failed = _check(not (view.get("_segment_meshes") as Dictionary).has(arc_line.get_instance_id()), "active unregister must immediately remove a segment without waiting for a scan") or failed
+	var cone_spray := ConeSprayScene.instantiate() as ConeSprayVfx
+	add_child(cone_spray)
+	cone_spray.start_or_refresh(Vector2(40.0, 60.0), Vector2.RIGHT, 220.0, 34.0)
+	await get_tree().process_frame
+	view.sync_late_visuals(0.0)
+	var cone_entry := (view.get("_ground_cone_meshes") as Dictionary).get(cone_spray.get_instance_id()) as Dictionary
+	var cone_mesh := cone_entry.get("mesh") as MeshInstance3D
+	failed = _check(cone_mesh != null and cone_mesh.mesh is ArrayMesh and cone_entry.get("material") is ShaderMaterial, "Cone spray must use one UV fan ArrayMesh and flowing shader") or failed
+	failed = _check(cone_mesh.mesh == (view.get("_connected_renderer") as ConnectedEffectRenderer).get_cone_mesh(deg_to_rad(34.0)), "equal cone angles must reuse the cached ArrayMesh") or failed
+	for shape_value in [AreaEffect.VisualShape.RECTANGLE, AreaEffect.VisualShape.CONE]:
+		var shaped_area := AreaEffectScene.instantiate() as AreaEffect
+		shaped_area.visual_shape = shape_value
+		shaped_area.rectangle_size = Vector2(140.0, 55.0)
+		shaped_area.cone_direction = Vector2(0.8, -0.6)
+		shaped_area.cone_range = 190.0
+		shaped_area.cone_half_angle_deg = 32.0
+		shaped_area.duration = 1.0
+		shaped_area.position = Vector2(180.0 + float(shape_value) * 30.0, 140.0)
+		add_child(shaped_area)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var shaped_entry := (view.get("_area_meshes") as Dictionary).get(shaped_area.get_instance_id()) as Dictionary
+		var shaped_mesh := shaped_entry.get("mesh") as MeshInstance3D
+		failed = _check(shaped_mesh != null and shaped_mesh.mesh is ArrayMesh and shaped_mesh.mesh.get_surface_count() == 1, "non-circular AreaEffect must create a 3D polygon mesh") or failed
+		if shape_value == AreaEffect.VisualShape.RECTANGLE:
+			failed = _check(shaped_area.collision_shape.shape is RectangleShape2D, "rectangle AreaEffect visual and collision must share shape classification") or failed
+		else:
+			var cone_collision := shaped_area.get_node_or_null("VisualShapeCollisionPolygon") as CollisionPolygon2D
+			failed = _check(cone_collision != null and not cone_collision.disabled and cone_collision.polygon.size() >= 3, "cone AreaEffect must use a matching collision polygon") or failed
+	failed = _check(is_equal_approx(view.camera_distance, HybridCameraDefaultsType.CAMERA_DISTANCE), "Camera3D must use the shared distance default") or failed
+	view.set_view_multiplier(1.5)
+	await get_tree().process_frame
+	failed = _check(is_equal_approx(view.get_view_multiplier(), 1.5), "Camera3D view multiplier must apply without changing its calibrated base distance") or failed
+	failed = _check(is_equal_approx(view.camera_distance, HybridCameraDefaultsType.CAMERA_DISTANCE), "view changes must not overwrite the Camera3D debug/base distance") or failed
+	var ground_camera := view.get_node_or_null("GroundCamera3D") as Camera3D
+	view.set_screen_shake_offset(Vector2(8.0, -5.0))
+	await get_tree().process_frame
+	failed = _check(ground_camera != null and absf(ground_camera.h_offset) > 0.0 and absf(ground_camera.v_offset) > 0.0, "screen shake must reach Camera3D projection offsets") or failed
+	view.set_screen_shake_offset(Vector2.ZERO)
+	view.set_view_multiplier(1.0)
+	await get_tree().process_frame
+	var rest_ground := view.get_node_or_null("GroundMeshes/RestAreaGround") as MeshInstance3D
+	failed = _check(rest_ground != null, "hidden 2D RestArea texture must have a 3D ground replacement") or failed
+	if rest_ground != null:
+		failed = _check(rest_ground.position.distance_to(view.world_2d_to_3d(rest_sprite.global_position)) < 0.001, "3D RestArea ground must follow its 2D texture anchor") or failed
+	var rest_zone_entries := view.get("_rest_zone_meshes") as Dictionary
+	failed = _check(rest_zone_entries.size() == 5, "RestArea must create all five interactive 3D zone visuals") or failed
+	view.call("_setup_rest_area_ground")
+	failed = _check(rest_zone_entries.size() == 5, "RestArea visual setup must be idempotent") or failed
+	var center_zone_entry := rest_zone_entries.get(4) as Dictionary
+	var center_zone_mesh := center_zone_entry.get("mesh") as MeshInstance3D
+	var shared_zone_quad := view.get("_rest_zone_quad") as QuadMesh
+	failed = _check(center_zone_mesh != null and center_zone_mesh.mesh == shared_zone_quad and shared_zone_quad.material is ShaderMaterial, "RestArea zones must share one radial UV quad shader") or failed
+	rest_area.hover_zone_id = 4
+	rest_area._zone4_hold_elapsed = 0.5
+	view.sync_late_visuals(0.0)
+	failed = _check(is_equal_approx(float(center_zone_mesh.get_instance_shader_parameter("hovered")), 1.0), "RestArea shader must receive hover emphasis") or failed
+	failed = _check(is_equal_approx(float(center_zone_mesh.get_instance_shader_parameter("hold_progress")), 0.5), "RestArea center ring must receive hold progress") or failed
+	rest_area.modulate.a = 0.4
+	view.sync_late_visuals(0.0)
+	failed = _check(is_equal_approx(float(center_zone_mesh.get_instance_shader_parameter("visibility_alpha")), 0.4), "RestArea shader must follow area fade alpha") or failed
+	rest_area.visible = false
+	view.sync_late_visuals(0.0)
+	failed = _check(not (center_zone_entry.get("mesh") as MeshInstance3D).visible and not rest_ground.visible, "RestArea ground and zones must hide together") or failed
+	rest_area.visible = true
+	rest_area.modulate.a = 1.0
+	var ground_mesh := view.get_node_or_null("GroundMeshes/DummyCellGround") as MeshInstance3D
+	failed = _check(ground_mesh != null, "dummy 2D Cell must create a mapped 3D ground mesh") or failed
+	if ground_mesh != null:
+		failed = _check(ground_mesh.position.distance_to(view.world_2d_to_3d(sprite.global_position)) < 0.001, "non-square Cell ground must use the Sprite's actual center instead of a fixed 256 offset") or failed
+		failed = _check((ground_mesh.mesh as QuadMesh).size.distance_to(Vector2(384.0, 256.0) * view.world_scale) < 0.001, "non-square Cell ground must preserve its actual texture dimensions") or failed
+	var support_rim := view.get_node_or_null("GroundMeshes/BoardSupportContactRim") as MeshInstance3D
+	var support_skirt := view.get_node_or_null("GroundMeshes/BoardSupportFrontSkirt") as MeshInstance3D
+	var support_rail := view.get_node_or_null("GroundMeshes/BoardSupportLowProfileRail") as MeshInstance3D
+	var support_transition := view.get_node_or_null("GroundMeshes/BoardSupportTransitionBand") as MeshInstance3D
+	failed = _check(support_rim != null, "active board cells must create a mapped 3D contact rim") or failed
+	failed = _check(support_skirt != null, "active board cells must preserve the original lower skirt") or failed
+	failed = _check(support_rail != null, "active board cells must create a mapped low-profile rail") or failed
+	failed = _check(support_transition != null, "active board cells must create a mapped compact transition band") or failed
+	if ground_mesh != null:
+		var position_before := ground_mesh.position
+		var support_position_before := support_rim.position if support_rim != null else Vector3.ZERO
+		var skirt_position_before := support_skirt.position if support_skirt != null else Vector3.ZERO
+		var rail_position_before := support_rail.position if support_rail != null else Vector3.ZERO
+		var transition_position_before := support_transition.position if support_transition != null else Vector3.ZERO
+		var recenter_offset := Vector2(140.0, -75.0)
+		board.position += recenter_offset
+		board.board_recentered.emit(recenter_offset)
+		await get_tree().process_frame
+		var expected_delta := view.world_2d_to_3d(recenter_offset)
+		failed = _check(ground_mesh.position.distance_to(position_before + expected_delta) < 0.001, "3D Cell must follow 2D Board recenter") or failed
+		if support_rim != null:
+			failed = _check(support_rim.position.distance_to(support_position_before + expected_delta) < 0.001, "3D board support must follow Board recenter without separating from the ground") or failed
+		if support_skirt != null:
+			failed = _check(support_skirt.position.distance_to(skirt_position_before + expected_delta) < 0.001, "Original lower skirt must follow Board recenter without separating from the ground") or failed
+		if support_rail != null:
+			failed = _check(support_rail.position.distance_to(rail_position_before + expected_delta) < 0.001, "3D board rail must follow Board recenter without separating from the ground") or failed
+		if support_transition != null:
+			failed = _check(support_transition.position.distance_to(transition_position_before + expected_delta) < 0.001, "3D board transition must follow Board recenter without separating from the ground") or failed
+		board.board_visual_active_changed.emit(false, true)
+		failed = _check(not ground_mesh.visible, "3D Cell must hide with the 2D Board") or failed
+		if support_rim != null:
+			failed = _check(not support_rim.visible, "3D board support must hide with the Board") or failed
+		if support_skirt != null:
+			failed = _check(not support_skirt.visible, "Original lower skirt must hide with the Board") or failed
+		if support_rail != null:
+			failed = _check(not support_rail.visible, "3D board rail must hide with the Board") or failed
+		if support_transition != null:
+			failed = _check(not support_transition.visible, "3D board transition must hide with the Board") or failed
+		board.board_visual_active_changed.emit(true, true)
+		failed = _check(ground_mesh.visible, "3D Cell must become visible with the 2D Board") or failed
+		if support_rim != null:
+			failed = _check(support_rim.visible, "3D board support must become visible with the Board") or failed
+		if support_skirt != null:
+			failed = _check(support_skirt.visible, "Original lower skirt must become visible with the Board") or failed
+		if support_rail != null:
+			failed = _check(support_rail.visible, "3D board rail must become visible with the Board") or failed
+		if support_transition != null:
+			failed = _check(support_transition.visible, "3D board transition must become visible with the Board") or failed
+	var viewport_center := get_viewport().get_visible_rect().size * 0.5
+	var original_phase: String = PhaseManager.current_state()
+	PhaseManager.phase = PhaseManager.PREPARE
+	await get_tree().process_frame
+	var rest_screen := view.project_world_to_screen(rest_area.get_spawn_position())
+	failed = _check(rest_screen.distance_to(viewport_center) < 2.0, "rest-area center must remain the camera target during prepare") or failed
+	player.position += Vector2(180.0, -120.0)
+	await get_tree().process_frame
+	rest_screen = view.project_world_to_screen(rest_area.get_spawn_position())
+	failed = _check(rest_screen.distance_to(viewport_center) < 2.0, "prepare camera must not follow player movement") or failed
+	PhaseManager.phase = PhaseManager.BATTLE
+	await get_tree().process_frame
+	var player_screen := view.project_world_to_screen(player.position)
+	failed = _check(player_screen.distance_to(viewport_center) < 2.0, "battle camera must resume following the player") or failed
+	PhaseManager.phase = original_phase
+	await get_tree().process_frame
+	var points := [Vector2.ZERO, Vector2(120.0, -90.0), Vector2(-240.0, 310.0)]
+	for point: Vector2 in points:
+		var projected := view.project_world_to_screen(point)
+		var round_trip := view.screen_to_world_2d(projected)
+		failed = _check(round_trip.distance_to(point) < 0.25, "projection round trip failed for %s: %s" % [point, round_trip]) or failed
+	var screen_right := view.world_vector_to_screen(Vector2.RIGHT, player.position)
+	failed = _check(screen_right.length_squared() > 0.01, "world direction must produce a screen direction") or failed
+	var spear := ProjectileScene.instantiate() as Projectile
+	spear.projectile_texture = SpearTexture
+	spear.base_displacement = Vector2(180.0, -35.0)
+	spear.position = Vector2(40.0, 25.0)
+	add_child(spear)
+	await get_tree().physics_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var expected_spear_direction := view.world_vector_to_screen(spear.base_displacement, spear.global_position).normalized()
+	var visual_spear_direction := Vector2.UP.rotated(spear.projectile_root.global_rotation).normalized()
+	failed = _check(visual_spear_direction.dot(expected_spear_direction) > 0.995, "spear art forward axis must face its projected flight direction: visual=%s expected=%s rotation=%s" % [visual_spear_direction, expected_spear_direction, spear.projectile_root.global_rotation_degrees]) or failed
+	view.configure(56.0, -4.0, 20.0)
+	await get_tree().process_frame
+	failed = _check(view.can_project_world_point(player.position), "camera must remain projectable after reconfigure") or failed
+	var base_enemy := BaseEnemyScene.instantiate() as BaseEnemy
+	base_enemy.position = Vector2(80.0, 40.0)
+	add_child(base_enemy)
+	var elite_enemy := EliteEnemyScene.instantiate() as BaseEnemy
+	elite_enemy.position = Vector2(-120.0, 60.0)
+	add_child(elite_enemy)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	for enemy: BaseEnemy in [base_enemy, elite_enemy]:
+		var body := enemy.get_node("Body") as Sprite2D
+		failed = _check(body.has_method("set_screen_offset"), "%s body must use billboard projection" % enemy.name) or failed
+		var expected_canvas := view.project_world_to_canvas(enemy.global_position, get_viewport())
+		failed = _check(body.global_position.distance_to(expected_canvas) < 2.0, "%s billboard does not match logical footpoint" % enemy.name) or failed
+	if failed:
+		print("FAIL hybrid projection")
+		get_tree().quit(1)
+	else:
+		print("PASS hybrid projection")
+		get_tree().quit(0)
+
+func _check(condition: bool, message: String) -> bool:
+	if condition:
+		return false
+	push_error(message)
+	return true

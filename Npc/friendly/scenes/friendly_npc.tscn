@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://4sd4d8lkbkls" path="res://Npc/base_npc.tscn" id="1_jftvo"]
 [ext_resource type="Script" uid="uid://bluk0p8rfn31b" path="res://Npc/friendly/scripts/FriendlyNpc.gd" id="2_iyyjk"]
 [ext_resource type="Script" path="res://Visual/Oblique/projected_world_hint_label.gd" id="3_hint"]
+[ext_resource type="Script" path="res://Combat/visual/affiliation_marker.gd" id="4_marker"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pnknk"]
 size = Vector2(138, 113)
@@ -12,6 +13,15 @@ script = ExtResource("2_iyyjk")
 
 [node name="HurtBox" parent="." index="0"]
 collision_layer = 1
+
+[node name="AffiliationMarker" type="Node2D" parent="."]
+position = Vector2(0, 8)
+scale = Vector2(1, 0.58)
+script = ExtResource("4_marker")
+marker_shape = 2
+marker_color = Color(0.384314, 0.901961, 0.647059, 0.76)
+radius = 22.0
+line_width = 2.0
 
 [node name="ShoppingArea" type="Area2D" parent="." index="3"]
 collision_layer = 0

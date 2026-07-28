@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MagArena 当前武器技能检查表</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f5f7;
+      --paper: #ffffff;
+      --ink: #20252b;
+      --muted: #68717c;
+      --line: #d9dee5;
+      --accent: #255f85;
+      --accent-soft: #e8f2f8;
+      --trigger: #8a4b08;
+      --trigger-soft: #fff3df;
+      --recover: #24633e;
+      --recover-soft: #e8f6ed;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+      line-height: 1.65;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 32px auto;
+      padding: 40px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 8px 28px rgb(22 33 44 / 8%);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      color: var(--accent);
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+      line-height: 1.25;
+    }
+
+    h2 {
+      margin: 38px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--accent-soft);
+      color: var(--accent);
+      font-size: 1.25rem;
+    }
+
+    .subtitle, .meta, .note {
+      color: var(--muted);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 22px;
+      margin: 18px 0 24px;
+      padding: 12px 16px;
+      background: var(--accent-soft);
+      border-radius: 8px;
+      font-size: .92rem;
+    }
+
+    nav {
+      margin: 22px 0 30px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    nav strong { display: block; margin-bottom: 8px; }
+
+    nav ol {
+      columns: 3 210px;
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    nav a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    nav a:hover { text-decoration: underline; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 920px;
+      font-size: .94rem;
+    }
+
+    th, td {
+      padding: 14px 15px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #edf3f7;
+      color: #1c4c6b;
+      white-space: nowrap;
+    }
+
+    tbody tr:nth-child(even) { background: #fafbfc; }
+    tbody tr:last-child td { border-bottom: 0; }
+
+    .weapon {
+      color: var(--accent);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .skill {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 0 5px 4px 0;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tag.trigger { color: var(--trigger); background: var(--trigger-soft); }
+    .tag.recover { color: var(--recover); background: var(--recover-soft); }
+    .tag.event { color: #67510d; background: #fff9d9; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      break-inside: avoid;
+    }
+
+    .card h3 { margin: 0 0 6px; font-size: 1rem; }
+    .card p { margin: 0; color: var(--muted); }
+
+    code {
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: #eef1f4;
+      font-family: Consolas, monospace;
+      font-size: .9em;
+    }
+
+    footer {
+      margin-top: 34px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .88rem;
+    }
+
+    @media (max-width: 700px) {
+      main {
+        width: 100%;
+        margin: 0;
+        padding: 24px 16px;
+        border: 0;
+        border-radius: 0;
+      }
+    }
+
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      body { background: #fff; font-size: 9pt; }
+      main {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+      }
+      nav { display: none; }
+      h1 { font-size: 20pt; }
+      h2 { margin-top: 20px; }
+      .table-wrap { overflow: visible; }
+      table { min-width: 0; }
+      th { position: static; }
+      th, td { padding: 7px 8px; }
+      tr { break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>MagArena 当前武器技能检查表</h1>
+    <p class="subtitle">汇总当前 15 件武器的专属技能、触发效果与恢复方式。</p>
+    <div class="meta">
+      <span><strong>项目：</strong>MagArena</span>
+      <span><strong>整理日期：</strong>2026-07-28</span>
+      <span><strong>依据：</strong><code>data/weapons</code>、<code>data/weapon_passives</code> 与实际武器脚本</span>
+    </div>
+  </header>
+
+  <nav aria-label="武器目录">
+    <strong>快速定位</strong>
+    <ol>
+      <li><a href="#cannon">重炮</a></li>
+      <li><a href="#chainsaw">链锯发射器</a></li>
+      <li><a href="#blaster">蓄能爆破枪</a></li>
+      <li><a href="#dash-blade">冲刺刃</a></li>
+      <li><a href="#flamethrower">喷火器</a></li>
+      <li><a href="#glacier">冰川投射器</a></li>
+      <li><a href="#laser">激光</a></li>
+      <li><a href="#machine-gun">机枪</a></li>
+      <li><a href="#orbit">轨道卫星</a></li>
+      <li><a href="#pistol">自动手枪</a></li>
+      <li><a href="#plasma-lance">等离子长枪</a></li>
+      <li><a href="#rocket">火箭发射器</a></li>
+      <li><a href="#shotgun">霰弹枪</a></li>
+      <li><a href="#sniper">狙击枪</a></li>
+      <li><a href="#spear">长矛发射器</a></li>
+    </ol>
+  </nav>
+
+  <section>
+    <h2>完整检查表</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">武器</th>
+            <th scope="col">技能</th>
+            <th scope="col">触发方式与实际效果</th>
+            <th scope="col">恢复方式</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="cannon">
+            <td class="weapon">重炮</td>
+            <td class="skill">破口射击</td>
+            <td><span class="tag trigger">停火 6 秒</span>下一发炮弹获得 1.45 倍直接伤害；命中后造成 70 半径、直接伤害 15% 的范围伤害，并使目标承伤提高至 1.2 倍，持续 4 秒。</td>
+            <td><span class="tag recover">完成换弹</span>触发后必须完成换弹，才会重新开始 6 秒蓄势。</td>
+          </tr>
+          <tr id="chainsaw">
+            <td class="weapon">链锯发射器</td>
+            <td class="skill">墙面接触</td>
+            <td><span class="tag trigger">链锯弹碰墙</span>消耗充能并发出被动事件。链锯命中已减速敌人时，可施加 1.15 倍全来源易伤，持续 6 秒；易伤逻辑本身不依赖碰墙充能。</td>
+            <td><span class="tag recover">完成换弹</span>恢复 1 次充能。</td>
+          </tr>
+          <tr id="blaster">
+            <td class="weapon">蓄能爆破枪</td>
+            <td class="skill">光束多重命中</td>
+            <td><span class="tag trigger">同一束命中 3 个不同目标</span>消耗 1 次充能并发出被动事件。基础代码没有额外固定伤害，主要供其他系统或构筑联动。</td>
+            <td><span class="tag recover">完成换弹</span>共 3 次充能，全部恢复。</td>
+          </tr>
+          <tr id="dash-blade">
+            <td class="weapon">冲刺刃</td>
+            <td class="skill">长距离冲刺命中</td>
+            <td><span class="tag trigger">起始距离 ≥ 攻击距离 75%</span>锁定并命中同一目标时触发。冲刺刃命中还会使敌人移动速度降至 70%，持续 3 秒。</td>
+            <td><span class="tag recover">完成换弹</span>恢复 1 次充能。</td>
+          </tr>
+          <tr id="flamethrower">
+            <td class="weapon">喷火器</td>
+            <td class="skill">热量预备</td>
+            <td><span class="tag trigger">积满一条自产热量后换弹</span>换弹时消耗全部充能，获得 10 秒强化：伤害 ×1.05，并额外增加 1 点伤害。</td>
+            <td><span class="tag recover">填满热量条件</span>每填满一次恢复 1 次充能；强化期间新获得的充能延后到强化结束后补回。换弹用于结算，不会免费补满。</td>
+          </tr>
+          <tr id="glacier">
+            <td class="weapon">冰川投射器</td>
+            <td class="skill">冷冽回响</td>
+            <td><span class="tag trigger">1.2 秒内叠满 5 层寒意</span>使目标冻结，并造成武器伤害 35% 的冻结范围伤害；向 110 半径内其他敌人扩散 2 层寒意。普通敌冻结 0.7 秒、精英 0.35 秒；Boss 改为 65% 移速，持续 0.5 秒。</td>
+            <td><span class="tag recover">6 秒或完成换弹</span>触发 6 秒后自动恢复；完成换弹可立即恢复。</td>
+          </tr>
+          <tr id="laser">
+            <td class="weapon">激光</td>
+            <td class="skill">聚焦通道</td>
+            <td><span class="tag trigger">光束命中目标</span>消耗 1 次充能并发出被动事件。基础实现没有附带固定伤害加成，主要作为光束命中联动信号。</td>
+            <td><span class="tag recover">完成换弹</span>恢复 1 次充能。</td>
+          </tr>
+          <tr id="machine-gun">
+            <td class="weapon">机枪</td>
+            <td class="skill">热量扩展</td>
+            <td><span class="tag trigger">完成换弹结算</span>消耗全部充能，持续 8 秒扩大共享热量上限。倍率为“充能数 ×2”，1/2/3/4 层对应 2/4/6/8 倍热量上限。</td>
+            <td><span class="tag recover">每消耗 25% 弹匣</span>恢复 1 层，最多 4 层；换弹不会补充，而会结算已有层数。效果期间的新层数会暂存，结束后补回。</td>
+          </tr>
+          <tr id="orbit">
+            <td class="weapon">轨道卫星</td>
+            <td class="skill">受伤反应</td>
+            <td><span class="tag trigger">玩家受到伤害</span>消耗 1 次充能并发出全局被动事件。基础武器代码不直接生成额外伤害或卫星，主要作为防御、受击和模块联动入口；卫星本身命中会造成减速。</td>
+            <td><span class="tag recover">完成换弹</span>恢复 1 次充能。</td>
+          </tr>
+          <tr id="pistol">
+            <td class="weapon">自动手枪</td>
+            <td class="skill">穿透标记</td>
+            <td><span class="tag trigger">持续移动累计 8 秒</span>消耗 1 次充能并开启 3 秒窗口；窗口内自动手枪命中的敌人会被标记 5 秒。窗口存在时不累计下一轮。</td>
+            <td><span class="tag recover">完成换弹</span>共 3 次充能，全部恢复。</td>
+          </tr>
+          <tr id="plasma-lance">
+            <td class="weapon">等离子长枪</td>
+            <td class="skill">热耗连锁</td>
+            <td><span class="tag trigger">3 次耗热攻击后换弹</span>换弹消耗全部充能，获得 10 秒热量反馈：热量低于 70% 时获取 ×1.2，高于阈值时 ×0.8。单次攻击最多消耗 20 热量，并按消耗比例最多获得 25% 伤害加成。</td>
+            <td><span class="tag recover">每 3 次耗热攻击</span>恢复 1 次充能；反馈期间获得的新充能延后到效果结束后补回。</td>
+          </tr>
+          <tr id="rocket">
+            <td class="weapon">火箭发射器</td>
+            <td class="skill">集群击杀</td>
+            <td><span class="tag trigger">集群内击杀</span>火箭击杀敌人时，若死亡点 180 半径内至少还有一个其他敌人，则消耗 1 次充能并发出事件。基础代码没有额外固定爆炸伤害。</td>
+            <td><span class="tag recover">完成换弹</span>共 3 次充能，全部恢复。</td>
+          </tr>
+          <tr id="shotgun">
+            <td class="weapon">霰弹枪</td>
+            <td class="skill">近距命中</td>
+            <td><span class="tag trigger">180 距离内命中</span>消耗 1 次充能。同一轮霰弹中，从第二颗开始，每颗重复命中同一目标都会追加相当于该次最终伤害 25% 的额外伤害。</td>
+            <td><span class="tag recover">完成换弹</span>共 3 次充能，全部恢复。</td>
+          </tr>
+          <tr id="sniper">
+            <td class="weapon">狙击枪</td>
+            <td class="skill">远距命中</td>
+            <td><span class="tag trigger">距离 ≥400 或目标已标记</span>消耗 1 次充能。伤害倍率从距离 220 的 1.0 倍线性增长，到距离 900 达到 1.8 倍；已标记目标直接按满额 1.8 倍计算。</td>
+            <td><span class="tag recover">完成换弹</span>共 3 次充能，全部恢复。</td>
+          </tr>
+          <tr id="spear">
+            <td class="weapon">长矛发射器</td>
+            <td class="skill">穿刺轮舞</td>
+            <td><span class="tag trigger">同一长矛对同一敌人第 2 次伤害</span>获得 1 点轮舞能量，上限 20。换弹时，10–19 点消耗 10 点发射 8 向齐射；20 点消耗 20 点发射 16 向齐射。齐射对存活敌人施加 20 秒标记，使其受到长矛伤害 ×1.35，并造成击退。</td>
+            <td><span class="tag recover">重复穿透伤害</span>不按普通充能恢复；通过同一长矛重复伤害积累，触发齐射后扣除 10 或 20 点。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>检查时需要注意</h2>
+    <div class="cards">
+      <article class="card">
+        <h3>通用充能规则</h3>
+        <p>大多数被动触发时消耗 1 层，并在完成换弹后恢复；机枪、喷火器、等离子长枪和长矛使用各自的特殊积累逻辑。</p>
+      </article>
+      <article class="card">
+        <h3>事件型技能</h3>
+        <p><span class="tag event">事件型</span>蓄能爆破枪、激光、轨道卫星和火箭发射器的基础被动主要发出联动事件，不应误认为代码内一定附带额外固定伤害。</p>
+      </article>
+      <article class="card">
+        <h3>主武器主动键</h3>
+        <p>当前只有蓄能爆破枪实现主武器主动键 <code>R</code>：消耗 20 能量、基础冷却 8 秒，强制释放一次蓄能光束。其余武器的 <code>R</code> 主要用于换弹和被动刷新。</p>
+      </article>
+      <article class="card">
+        <h3>维护建议</h3>
+        <p>武器数值或技能逻辑修改后，应同时核对武器实例脚本、被动资源文案和本检查表，避免展示说明与实际行为不一致。</p>
+      </article>
+    </div>
+  </section>
+
+  <footer>
+    本文档为静态检查参考，不依赖网络资源。浏览器中可直接打开，也可使用“打印 → 另存为 PDF”生成归档版本。
+  </footer>
+</main>
+</body>
+</html>

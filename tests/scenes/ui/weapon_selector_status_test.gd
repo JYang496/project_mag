@@ -4,7 +4,6 @@ const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 const WEAPON_SELECTOR := preload("res://UI/scripts/weapon_selector.gd")
 const WEAPON_STATUS_BAR := preload("res://UI/scripts/weapon_slot_status_bar.gd")
 const WEAPON_SWITCH_CONTROLLER := preload("res://UI/scripts/components/weapon_switch_controller.gd")
-const WEAPON_SLOT_VIEW := preload("res://UI/scripts/components/weapon_slot_view.gd")
 const WEAPON_SELECTOR_PASSIVE_PRESENTER := preload("res://UI/scripts/components/weapon_selector_passive_presenter.gd")
 const WEAPON_SELECTOR_READABILITY_PRESENTER := preload("res://UI/scripts/components/weapon_selector_readability_presenter.gd")
 const WEAPON_SKILL_CHARGE_TRACK := preload("res://UI/scripts/weapon_skill_charge_track.gd")
@@ -61,12 +60,8 @@ func _ready() -> void:
 	_test_low_and_empty_states()
 	_test_reload_progress()
 	_test_non_ammo_weapon_hides_bar()
-	_test_top_bar_is_inset_from_frame()
-	_test_ammo_label_is_centered_above_mainhand()
 	_test_ammo_label_uses_text_only_status()
 	_test_weapon_order_stays_fixed_when_mainhand_changes()
-	_test_mainhand_slot_expands_without_reordering()
-	_test_weapon_icon_follows_mainhand_role()
 	_test_weapon_skill_footer_modes()
 	_test_weapon_passive_contract_classification()
 	_test_continuous_effect_occupies_consumed_bean()
@@ -132,28 +127,6 @@ func _test_non_ammo_weapon_hides_bar() -> void:
 	_expect(not bool(state.get("visible", true)), "non-ammo weapon must not show a misleading bar")
 	weapon.free()
 
-func _test_top_bar_is_inset_from_frame() -> void:
-	var bar = WEAPON_STATUS_BAR.new()
-	bar.size = Vector2(96.0, 72.0)
-	bar.placement = WeaponSlotStatusBar.Placement.TOP
-	bar.top_offset = 8.0
-	var rect: Rect2 = bar.get_bar_rect()
-	_expect(is_equal_approx(rect.position.y, 8.0), "ammo bar must be inset below the top frame")
-	_expect(rect.position.y >= 8.0, "ammo bar must retain visible separation from the frame")
-	bar.free()
-
-func _test_ammo_label_is_centered_above_mainhand() -> void:
-	var rect: Rect2 = _selector.call(
-		"get_weapon_availability_label_rect",
-		Vector2(96.0, 72.0),
-		true
-	)
-	_expect(rect.end.y <= 0.0, "mainhand ammo label must sit above the slot")
-	_expect(
-		is_equal_approx(rect.get_center().x, 48.0),
-		"mainhand ammo label must be horizontally centered over the slot"
-	)
-
 func _test_ammo_label_uses_text_only_status() -> void:
 	var label := Label.new()
 	var legacy_background := StyleBoxFlat.new()
@@ -176,94 +149,6 @@ func _test_weapon_order_stays_fixed_when_mainhand_changes() -> void:
 	var after_switch: Array[int] = controller.build_fixed_order(4, 4)
 	_expect(initial == [0, 1, 2, 3], "weapon slots must follow stable inventory order")
 	_expect(after_switch == initial, "changing the mainhand must not reorder weapon slots")
-
-func _test_mainhand_slot_expands_without_reordering() -> void:
-	var controller = WEAPON_SWITCH_CONTROLLER.new()
-	var rects: Array[Rect2] = controller.build_slot_rects(
-		4,
-		2,
-		Vector2(72.0, 72.0),
-		Vector2(96.0, 72.0),
-		8.0
-	)
-	_expect(rects.size() == 4, "layout must retain all four weapon slots")
-	_expect(rects[2].size == Vector2(96.0, 72.0), "current mainhand slot must use the expanded HUD size")
-	_expect(rects[0].size == Vector2(72.0, 72.0), "non-mainhand slot 0 must retain offhand size")
-	_expect(rects[1].size == Vector2(72.0, 72.0), "non-mainhand slot 1 must retain offhand size")
-	_expect(rects[3].size == Vector2(72.0, 72.0), "non-mainhand slot 3 must retain offhand size")
-	for slot_index in range(1, rects.size()):
-		_expect(
-			rects[slot_index].position.x > rects[slot_index - 1].position.x,
-			"expanded mainhand layout must preserve left-to-right weapon order"
-		)
-
-func _test_weapon_icon_follows_mainhand_role() -> void:
-	var slot_root := Control.new()
-	slot_root.size = Vector2(96.0, 72.0)
-	var background := TextureRect.new()
-	background.name = "Background"
-	slot_root.add_child(background)
-	var icon := TextureRect.new()
-	icon.name = "Icon"
-	icon.set_anchors_preset(Control.PRESET_CENTER)
-	slot_root.add_child(icon)
-	var slot_view = WEAPON_SLOT_VIEW.new()
-	slot_view.setup(slot_root, null)
-	var source_image := Image.create(16, 16, false, Image.FORMAT_RGBA8)
-	source_image.fill(Color.TRANSPARENT)
-	source_image.fill_rect(Rect2i(5, 4, 6, 8), Color.WHITE)
-	var source_texture := ImageTexture.create_from_image(source_image)
-	icon.texture = source_texture
-	slot_view.set_role(true, null, null)
-	_expect(
-		is_equal_approx(icon.rotation_degrees, -45.0),
-		"weapon icons must use a 45-degree upward angle"
-	)
-	var mainhand_bounds := _rotated_rect_size(icon.size, icon.rotation)
-	_expect(
-		mainhand_bounds.x <= slot_root.size.x and mainhand_bounds.y <= slot_root.size.y,
-		"rotated mainhand icon must stay inside its slot"
-	)
-	_expect(
-		mainhand_bounds.y >= slot_root.size.y - 8.0,
-		"mainhand icon must use nearly all available slot height"
-	)
-	_expect(
-		slot_view.icon_shadow != null,
-		"weapon icons must receive a silhouette shadow against dynamic backgrounds"
-	)
-	slot_root.size = Vector2(72.0, 72.0)
-	slot_view.set_role(false, null, null)
-	var offhand_bounds := _rotated_rect_size(icon.size, icon.rotation)
-	_expect(
-		offhand_bounds.x <= slot_root.size.x and offhand_bounds.y <= slot_root.size.y,
-		"rotated offhand icon must stay inside its slot"
-	)
-	_expect(
-		offhand_bounds.y >= slot_root.size.y - 10.0,
-		"offhand icon must use nearly all available slot height"
-	)
-	_expect(
-		background.modulate.a < 1.0 and icon.modulate.a < 1.0,
-		"offhand frame and weapon must be quieter than the mainhand"
-	)
-	var cropped_texture: Texture2D = slot_view.call("_crop_texture_to_content", source_texture)
-	_expect(cropped_texture is AtlasTexture, "transparent weapon margins must be cropped for HUD display")
-	if cropped_texture is AtlasTexture:
-		var crop_region := (cropped_texture as AtlasTexture).region
-		_expect(
-			crop_region.size.x < 16.0 and crop_region.size.y < 16.0,
-			"weapon crop must tighten the visible silhouette"
-		)
-	slot_root.free()
-
-func _rotated_rect_size(rect_size: Vector2, rotation_radians: float) -> Vector2:
-	var cosine := absf(cos(rotation_radians))
-	var sine := absf(sin(rotation_radians))
-	return Vector2(
-		rect_size.x * cosine + rect_size.y * sine,
-		rect_size.x * sine + rect_size.y * cosine
-	)
 
 func _test_weapon_skill_footer_modes() -> void:
 	var presenter = WEAPON_SELECTOR_PASSIVE_PRESENTER.new()

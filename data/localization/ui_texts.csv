@@ -5,6 +5,9 @@ battle_contract.ui.extra_contracts,Limited-Time Contract,限时协议
 battle_contract.ui.subtitle,Decide the victory condition for the next battle,决定下一场战斗的胜利条件
 battle_contract.ui.cancel,Back to Prepare,返回准备
 battle_contract.ui.confirm,Launch Selected Contract,启动所选协议
+battle_contract.ui.status.acquiring,TACTICAL LINK // ACQUIRING CONTRACTS,战术链路 // 正在获取协议
+battle_contract.ui.status.ready,TACTICAL LINK // CONTRACTS READY,战术链路 // 协议已就绪
+battle_contract.ui.status.closing,TACTICAL LINK // CLOSING,战术链路 // 正在关闭
 battle_contract.intro.parameters,Dynamic parameters: {parameters},动态参数：{parameters}
 battle_contract.intro.unit.waves,waves,波次
 battle_contract.intro.boss.name,Boss Battle,BOSS 战
@@ -22,6 +25,7 @@ battle_contract.card.type.containment,CONTAINMENT,封锁
 battle_contract.card.type.extraction,EXTRACTION,撤离
 battle_contract.card.type.reward,BONUS,奖励
 battle_contract.card.badge.rare,RARE CONTRACT,稀有协议
+battle_contract.card.badge.selected,✓ SELECTED,✓ 已选择
 battle_contract.ui.reward_slot.title,Reward Slot,奖励协议槽
 battle_contract.ui.reward_slot.unavailable,No reward protocol was discovered this round.,本轮未发现奖励协议。
 battle_contract.ui.reward_slot.chance,25% chance each round,每轮有 25% 概率出现

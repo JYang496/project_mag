@@ -6,6 +6,7 @@
 [ext_resource type="SpriteFrames" path="res://Player/Mechas/animations/mecha_move_frames.tres" id="4_movef"]
 [ext_resource type="Script" uid="uid://d0mi57vowckgd" path="res://Visual/Oblique/billboard_visual_2d.gd" id="5_billboard"]
 [ext_resource type="Script" uid="uid://dft4s2hjge0th" path="res://Visual/Oblique/hybrid_ground_shadow_2d.gd" id="6_shadow"]
+[ext_resource type="Script" path="res://Combat/visual/affiliation_marker.gd" id="7_marker"]
 
 [sub_resource type="Gradient" id="Gradient_shadow"]
 colors = PackedColorArray(0, 0, 0, 0.28, 0, 0, 0, 0)
@@ -49,6 +50,15 @@ position = Vector2(0, 8)
 scale = Vector2(0.65, 0.35)
 texture = SubResource("GradientTexture_shadow")
 script = ExtResource("6_shadow")
+
+[node name="AffiliationMarker" type="Node2D" parent="."]
+position = Vector2(0, 8)
+scale = Vector2(1, 0.58)
+script = ExtResource("7_marker")
+marker_shape = 0
+marker_color = Color(0.207843, 0.843137, 1, 0.82)
+radius = 23.0
+line_width = 2.5
 
 [node name="MechaSprite" type="Sprite2D" parent="." unique_id=1424985253]
 position = Vector2(0.5, -5)

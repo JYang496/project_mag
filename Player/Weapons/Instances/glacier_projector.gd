@@ -1,5 +1,6 @@
 extends Ranger
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const FROST_CONTACT_WINDOW_SEC: float = 0.35
 const GLACIER_SPRAY_VFX_SCENE: PackedScene = preload("res://Player/Weapons/Effects/glacier_spray_vfx.tscn")
 
@@ -470,8 +471,8 @@ func _draw_attack_range() -> void:
 	var offset_angle: float = -PI / 2.0
 	var start_angle: float = offset_angle - half_angle_rad
 	var end_angle: float = offset_angle + half_angle_rad
-	var fill_color := Color(0.35, 0.85, 1.0, 0.15)
-	var outline_color := Color(0.35, 0.85, 1.0, 0.7)
+	var fill_color := Color(PALETTE.FREEZE, 0.14)
+	var outline_color := Color(PALETTE.PLAYER_PRIMARY, 0.58)
 	draw_arc(Vector2.ZERO, effective_range, start_angle, end_angle, 32, fill_color, -1.0)
 	draw_arc(Vector2.ZERO, effective_range, start_angle, end_angle, 32, outline_color, 2.0)
 	draw_line(Vector2.ZERO, Vector2.UP * effective_range, outline_color, 2.0)

@@ -1,5 +1,7 @@
 extends Node2D
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
 @onready var raycast = $RayCast2D
 @onready var line = $RayCast2D/Line2D
 @onready var expire_timer = $ExpireTimer
@@ -41,9 +43,9 @@ func _ready() -> void:
 	raycast.target_position = target_position
 	line.width = maxf(line.width * beam_width_multiplier, 1.0)
 	if beam_tag.contains("focus"):
-		line.default_color = Color(0.45, 0.95, 1.0, 1.0)
+		line.default_color = Color(PALETTE.PLAYER_PRIMARY, 0.78)
 	elif beam_tag.contains("prism_side"):
-		line.default_color = Color(0.85, 0.55, 1.0, 0.9)
+		line.default_color = Color(PALETTE.ENERGY, 0.78)
 
 func _register_hybrid_segment() -> void:
 	_hybrid_registered = HybridGroundRegistration.register(line, &"register_ground_segment")

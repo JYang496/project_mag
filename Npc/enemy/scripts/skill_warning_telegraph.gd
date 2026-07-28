@@ -1,8 +1,10 @@
 extends Node2D
 class_name SkillWarningTelegraph
 
-@export var warning_color: Color = Color(1.0, 0.1, 0.1, 0.28)
-@export var progress_color: Color = Color(1.0, 0.15, 0.15, 0.95)
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
+@export var warning_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.20)
+@export var progress_color: Color = Color(PALETTE.ENEMY_SECONDARY, 0.98)
 @export var default_half_width: float = 32.0
 @export var telegraph_z_index: int = 0
 

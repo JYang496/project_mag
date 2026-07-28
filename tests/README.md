@@ -7,13 +7,18 @@ This folder keeps the project test infrastructure and archived historical test a
 ```text
 tests/
   infrastructure/  Test selection and Worker runner infrastructure.
-  archive/         Preserved retired tests, probes, benchmarks, fixtures, and showcases.
+  scenes/          Active scene-backed regression tests.
+  headless/        Active runner scripts used directly or by scene wrappers.
+  fixtures/        Shared fake runtime collaborators for active tests.
+  archive/         Preserved retired tests, one-time acceptance assets, and benchmarks.
 ```
 
 ## Conventions
 
 - Active regression scenes are registered in `tests/infrastructure/test_manifest.json`.
 - Historical assets retired on 2026-07-02 live under `tests/archive/retired_test_assets_20260702/`.
+- Release-specific visual probes, showcases, and implementation-string checks retired
+  on 2026-07-28 live under `tests/archive/one_time_acceptance_20260728/`.
 - Put new automated regression scenes under `tests/scenes/<domain>/` only when reintroducing active tests.
 - Put their runner scripts under `tests/headless/<domain>/` unless the scene script is intentionally self-contained.
 - Put shared dummy resources under `tests/fixtures/<domain>/`.

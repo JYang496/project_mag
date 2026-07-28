@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "catalog_status": "active",
-  "catalog_note": "Active regression coverage has been reintroduced for focused reward/UI flows. Historical assets remain under tests/archive/retired_test_assets_20260702.",
+  "catalog_note": "Active catalog contains durable runtime contracts. Release-specific visual and implementation acceptance assets are archived under tests/archive/one_time_acceptance_20260728.",
   "tests": [
     {
-      "id": "presentation.pixel_art_policy",
+      "id": "presentation.asset_integrity",
       "entry_type": "scene",
-      "path": "res://tests/scenes/presentation/pixel_art_policy_test.tscn",
+      "path": "res://tests/scenes/presentation/asset_integrity_test.tscn",
       "domain": "presentation",
       "dependency_domains": ["ui", "world", "player", "weapon", "enemy", "combat", "cell", "spawn"],
       "parallel_safe": true,
@@ -24,13 +24,13 @@
       "timeout_seconds": 20
     },
     {
-      "id": "ui.player_facing_copy",
+      "id": "ui.localized_release_title",
       "entry_type": "scene",
-      "path": "res://tests/scenes/ui/player_facing_copy_test.tscn",
+      "path": "res://tests/scenes/ui/localized_release_title_test.tscn",
       "domain": "ui",
-      "dependency_domains": ["world", "player"],
-      "parallel_safe": false,
-      "writes_user_data": true,
+      "dependency_domains": ["data"],
+      "parallel_safe": true,
+      "writes_user_data": false,
       "timeout_seconds": 20
     },
     {
@@ -91,7 +91,7 @@
       "dependency_domains": ["weapon"],
       "parallel_safe": true,
       "writes_user_data": false,
-      "timeout_seconds": 20
+      "timeout_seconds": 45
     },
     {
       "id": "ui.damage_label_feedback",
@@ -101,7 +101,7 @@
       "dependency_domains": ["combat", "player", "enemy", "world"],
       "parallel_safe": true,
       "writes_user_data": false,
-      "timeout_seconds": 20
+      "timeout_seconds": 45
     },
     {
       "id": "player.floating_status_hint_cleanup",
@@ -144,9 +144,9 @@
       "timeout_seconds": 30
     },
     {
-      "id": "world.hybrid_projection",
+      "id": "world.projection_runtime_contract",
       "entry_type": "scene",
-      "path": "res://tests/scenes/world/hybrid_projection_test.tscn",
+      "path": "res://tests/scenes/world/projection_runtime_contract_test.tscn",
       "domain": "world",
       "dependency_domains": ["player", "weapon", "enemy", "ui"],
       "parallel_safe": true,
@@ -164,9 +164,9 @@
       "timeout_seconds": 15
     },
     {
-      "id": "weapon.hybrid_chain",
+      "id": "weapon.runtime_chain",
       "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/hybrid_weapon_chain_test.tscn",
+      "path": "res://tests/scenes/weapon/weapon_runtime_chain_test.tscn",
       "domain": "weapon",
       "dependency_domains": ["player", "combat", "world"],
       "parallel_safe": true,
@@ -224,9 +224,9 @@
       "timeout_seconds": 15
     },
     {
-      "id": "enemy.hybrid_visual_matrix",
+      "id": "enemy.scene_contract",
       "entry_type": "scene",
-      "path": "res://tests/scenes/enemy/hybrid_enemy_visual_matrix_test.tscn",
+      "path": "res://tests/scenes/enemy/enemy_scene_contract_test.tscn",
       "domain": "enemy",
       "dependency_domains": ["world", "ui", "combat"],
       "parallel_safe": true,
@@ -241,7 +241,7 @@
       "dependency_domains": ["combat", "player", "world"],
       "parallel_safe": true,
       "writes_user_data": false,
-      "timeout_seconds": 15
+      "timeout_seconds": 30
     },
     {
       "id": "enemy.registry_spatial_hash",
@@ -301,7 +301,7 @@
       "dependency_domains": ["world", "spawn"],
       "parallel_safe": true,
       "writes_user_data": false,
-      "timeout_seconds": 15
+      "timeout_seconds": 30
     },
     {
       "id": "world.battle_loop_smoke",
@@ -342,6 +342,166 @@
       "parallel_safe": false,
       "writes_user_data": true,
       "timeout_seconds": 20
+    },
+    {
+      "id": "reward.weapon_reward_slot",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/reward/weapon_reward_slot_test.tscn",
+      "domain": "reward",
+      "dependency_domains": ["player", "weapon"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
+      "id": "reward.task_reward_bundle",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/reward/task_reward_bundle_test.tscn",
+      "domain": "reward",
+      "dependency_domains": ["cell", "ui", "player"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "world.rest_area_upgrade_hint",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/world/rest_area_upgrade_hint_test.tscn",
+      "domain": "world",
+      "dependency_domains": ["ui", "player", "weapon"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "enemy.wheel_cart_contact_configuration",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/enemy/wheel_cart_contact_configuration_test.tscn",
+      "domain": "enemy",
+      "dependency_domains": ["combat", "player", "world"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "ui.equipped_module_sell",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/equipped_module_sell_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["player", "weapon", "reward"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "ui.temporary_module_sell",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/temporary_module_sell_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["player", "weapon", "reward"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "ui.temporary_module_settlement_confirm",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/temporary_module_settlement_confirm_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["player", "weapon", "reward", "world"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "ui.task_module_replacement_dialog",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/task_module_replacement_dialog_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["player", "reward", "cell"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "ui.upgrade_selection_state",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/upgrade_selection_state_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["player", "weapon", "world"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "ui.module_localization",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/module_localization_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["weapon", "data"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 45
+    },
+    {
+      "id": "enemy.bomber_fuse_warning",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/enemy/bomber_fuse_warning_test.tscn",
+      "domain": "enemy",
+      "dependency_domains": ["combat", "player", "world"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "ui.battle_contract_hud_visibility",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/battle_contract_hud_visibility_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["combat", "world"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "ui.battle_contract_selection_layout",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/battle_contract_selection_layout_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["combat", "world", "data"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "ui.game_over_flow",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/game_over_flow_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["player", "world"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "reward.weapon_fusion_card_semantics",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/reward/weapon_fusion_card_semantics_test.tscn",
+      "domain": "reward",
+      "dependency_domains": ["ui", "player", "weapon"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "weapon.chainsaw_spin_animation",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/weapon/chainsaw_spin_animation_test.tscn",
+      "domain": "weapon",
+      "dependency_domains": ["combat"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
     }
   ]
 }

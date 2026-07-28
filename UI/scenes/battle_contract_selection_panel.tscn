@@ -131,29 +131,6 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_terminal")
 
-[node name="TopSignal" type="ColorRect" parent="Shade/Panel"]
-custom_minimum_size = Vector2(0, 2)
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 2.0
-grow_horizontal = 2
-mouse_filter = 2
-color = Color(0.2, 0.62, 0.72, 0.85)
-
-[node name="BottomSignal" type="ColorRect" parent="Shade/Panel"]
-custom_minimum_size = Vector2(0, 2)
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -2.0
-grow_horizontal = 2
-grow_vertical = 0
-mouse_filter = 2
-color = Color(0.14, 0.4, 0.48, 0.5)
-
 [node name="Margin" type="MarginContainer" parent="Shade/Panel"]
 layout_mode = 2
 theme_override_constants/margin_left = 34
@@ -243,7 +220,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_action_pressed")
 text = "Back to Prepare"
 
 [node name="Confirm" type="Button" parent="Shade/Panel/Margin/Content/Actions"]
-custom_minimum_size = Vector2(190, 46)
+custom_minimum_size = Vector2(230, 46)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.03, 0.14, 0.16, 1)
 theme_override_colors/font_hover_color = Color(0.95, 1, 1, 1)

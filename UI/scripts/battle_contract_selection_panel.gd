@@ -5,8 +5,10 @@ const CARD_REVEAL_DURATION := 0.18
 const CARD_REVEAL_INTERVAL := 0.07
 const CLOSE_DURATION := 0.16
 const SHADE_OPACITY := 0.58
-const COMPACT_PANEL_HEIGHT := 500.0
-const EXPANDED_PANEL_HEIGHT := 690.0
+const COMPACT_PANEL_HEIGHT := 520.0
+const EXPANDED_PANEL_HEIGHT := 704.0
+const PREFERRED_PANEL_WIDTH := 980.0
+const PANEL_HORIZONTAL_SAFE_MARGIN := 16.0
 const PANEL_VERTICAL_SAFE_MARGIN := 8.0
 const CARD_SCENE := preload("res://UI/scenes/battle_contract_card.tscn")
 
@@ -30,6 +32,7 @@ var _transition_tween: Tween
 
 func _ready() -> void:
 	visible = false
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	for card in cards:
 		card.pressed.connect(_on_card_pressed.bind(card))
 	confirm_button.pressed.connect(_on_confirm_pressed)
@@ -59,12 +62,25 @@ func open(options: Array, confirmed: Callable, cancelled: Callable) -> void:
 	_play_open_transition()
 
 func _apply_panel_size(has_extra_contract: bool) -> void:
-	var viewport_height := get_viewport_rect().size.y
-	var requested_height := EXPANDED_PANEL_HEIGHT if has_extra_contract else COMPACT_PANEL_HEIGHT
-	var available_height := maxf(0.0, viewport_height - PANEL_VERTICAL_SAFE_MARGIN * 2.0)
-	var resolved_height := minf(requested_height, available_height)
+	var resolved_size := calculate_panel_size(get_viewport_rect().size, has_extra_contract)
+	var resolved_width := resolved_size.x
+	var resolved_height := resolved_size.y
+	panel.offset_left = -resolved_width * 0.5
+	panel.offset_right = resolved_width * 0.5
 	panel.offset_top = -resolved_height * 0.5
 	panel.offset_bottom = resolved_height * 0.5
+
+static func calculate_panel_size(viewport_size: Vector2, has_extra_contract: bool) -> Vector2:
+	var available_width := maxf(0.0, viewport_size.x - PANEL_HORIZONTAL_SAFE_MARGIN * 2.0)
+	var available_height := maxf(0.0, viewport_size.y - PANEL_VERTICAL_SAFE_MARGIN * 2.0)
+	var requested_height := EXPANDED_PANEL_HEIGHT if has_extra_contract else COMPACT_PANEL_HEIGHT
+	return Vector2(
+		minf(PREFERRED_PANEL_WIDTH, available_width),
+		minf(requested_height, available_height)
+	)
+
+func _on_viewport_size_changed() -> void:
+	_apply_panel_size(extra_contracts.visible)
 
 func cancel() -> bool:
 	if not visible or _locked:
@@ -145,7 +161,10 @@ func _play_open_transition() -> void:
 	title_label.modulate.a = 0.0
 	subtitle_label.modulate.a = 0.0
 	actions.modulate.a = 0.0
-	terminal_status.text = "TACTICAL LINK // ACQUIRING CONTRACTS"
+	terminal_status.text = LocalizationManager.tr_key(
+		"battle_contract.ui.status.acquiring",
+		"TACTICAL LINK // ACQUIRING CONTRACTS"
+	)
 	for card in cards:
 		if not card.visible:
 			continue
@@ -169,13 +188,19 @@ func _play_open_transition() -> void:
 
 func _finish_open_transition() -> void:
 	_transition_tween = null
-	terminal_status.text = "TACTICAL LINK // CONTRACTS READY"
+	terminal_status.text = LocalizationManager.tr_key(
+		"battle_contract.ui.status.ready",
+		"TACTICAL LINK // CONTRACTS READY"
+	)
 	_locked = false
 	cards[0].grab_focus()
 
 func _play_close_transition() -> void:
 	_kill_transition()
-	terminal_status.text = "TACTICAL LINK // CLOSING"
+	terminal_status.text = LocalizationManager.tr_key(
+		"battle_contract.ui.status.closing",
+		"TACTICAL LINK // CLOSING"
+	)
 	_transition_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS).set_parallel(true)
 	_transition_tween.tween_property(shade, "color:a", 0.0, CLOSE_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	_transition_tween.tween_property(panel, "scale:x", 0.025, CLOSE_DURATION).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)

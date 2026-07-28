@@ -1,6 +1,8 @@
 extends Ranger
 class_name Cannon
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
 var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/plasma.png")
 var area_effect_scene: PackedScene = preload("res://Combat/area_effect/area_effect.tscn")
@@ -288,8 +290,8 @@ func _spawn_idle_fire_aoe_visual(position_value: Vector2, radius: float) -> void
 	area_effect.source_node = self
 	area_effect.source_category = DamageData.SOURCE_PLAYER_WEAPON
 	area_effect.draw_enabled = true
-	area_effect.debug_fill_color = Color(1.0, 0.35, 0.12, 0.16)
-	area_effect.debug_line_color = Color(1.0, 0.75, 0.25, 0.9)
+	area_effect.debug_fill_color = Color(PALETTE.FIRE, 0.12)
+	area_effect.debug_line_color = Color(PALETTE.PLAYER_PRIMARY, 0.48)
 	area_effect.debug_line_width = 3.0
 	area_effect.global_position = position_value
 	var spawn_parent := get_tree().current_scene

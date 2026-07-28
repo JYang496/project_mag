@@ -82,6 +82,17 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_incoming_damage_max_hp = max(1, int(hp))
+	_sync_affiliation_marker_size()
+
+
+func _sync_affiliation_marker_size() -> void:
+	var marker := get_node_or_null("AffiliationMarker") as Node2D
+	if marker == null or sprite_body == null or sprite_body.texture == null:
+		return
+	var texture_size: Vector2 = sprite_body.texture.get_size()
+	var source_extent := maxf(texture_size.x, texture_size.y)
+	var marker_radius := clampf(source_extent * 0.60, 20.0, 32.0)
+	marker.set("radius", maxf(float(marker.get("radius")), marker_radius))
 
 func _exit_tree() -> void:
 	_disconnect_board_constraint_signals()

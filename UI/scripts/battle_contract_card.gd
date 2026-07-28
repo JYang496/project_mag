@@ -38,6 +38,10 @@ func setup(value: BattleContractDefinition) -> void:
 	$Margin/Content/Header/TypeLabel.text = LocalizationManager.tr_key("battle_contract.card.type.%s" % id, _type_label(id))
 	$Margin/Content/Header/RareBadge.text = LocalizationManager.tr_key("battle_contract.card.badge.rare", "RARE // 稀有")
 	$Margin/Content/Header/RareBadge.visible = id == "reward"
+	$Margin/Content/Header/SelectedBadge.text = LocalizationManager.tr_key(
+		"battle_contract.card.badge.selected",
+		"✓ SELECTED"
+	)
 	$RareFrame.visible = id == "reward"
 	_apply_card_styles()
 	queue_redraw()
@@ -46,12 +50,12 @@ func setup(value: BattleContractDefinition) -> void:
 func set_selected(value: bool, dim_unselected: bool = true) -> void:
 	_selected = value
 	button_pressed = value
-	$SelectedBadge.visible = value
+	$Margin/Content/Header/SelectedBadge.visible = value
 	self_modulate = Color.WHITE if value or not dim_unselected else Color(0.84, 0.88, 0.9, 0.9)
 
 func show_battle_intro(objective: String, parameters_text: String) -> void:
 	_intro_mode = true
-	$SelectedBadge.visible = false
+	$Margin/Content/Header/SelectedBadge.visible = false
 	$Margin/Content/Header/RareBadge.visible = false
 	$RareFrame.visible = false
 	$Margin/Content/InfoGrid.visible = false

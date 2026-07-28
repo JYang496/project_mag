@@ -24,11 +24,11 @@ class TaskMarkerVisual:
 	const EDGE_SAFE_MARGIN := 52.0
 	const EDGE_ARROW_SIZE := 18.0
 	const TASK_COLORS := {
-		"kill": Color(1.0, 0.34, 0.26, 1.0),
-		"hold": Color(0.36, 0.92, 0.56, 1.0),
-		"clear": Color(0.42, 0.82, 1.0, 1.0),
-		"hunt": Color(1.0, 0.76, 0.28, 1.0),
-		"dodge": Color(1.0, 0.54, 0.22, 1.0),
+		"kill": Color(0.89, 0.35, 0.34, 1.0),
+		"hold": Color(0.40, 0.79, 0.54, 1.0),
+		"clear": Color(0.39, 0.66, 0.83, 1.0),
+		"hunt": Color(0.89, 0.73, 0.31, 1.0),
+		"dodge": Color(0.91, 0.54, 0.27, 1.0),
 		"fallback": Color(0.72, 0.84, 0.94, 1.0)
 	}
 

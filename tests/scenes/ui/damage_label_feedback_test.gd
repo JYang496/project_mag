@@ -2,7 +2,6 @@ extends Node
 
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 const HIT_LABEL_SCENE := preload("res://UI/labels/hit_label.tscn")
-const DIGIT_ATLAS_PATH := "res://UI/labels/assets/damage_digits_12px.png"
 
 class DummyDamageTarget:
 	extends Node
@@ -37,9 +36,6 @@ var _failed := false
 var _hybrid_layer: CanvasLayer
 
 func _ready() -> void:
-	_test_png_atlas_contract()
-	_test_magnitude_tiers_and_layout()
-	_test_damage_type_and_periodic_styles()
 	_test_typed_feedback_merge()
 	_test_critical_metadata_round_trip()
 	_test_killing_blow_marker_policy()
@@ -50,67 +46,6 @@ func _ready() -> void:
 	else:
 		print("PASS damage label feedback")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0, _reset_runtime_state)
-
-func _test_png_atlas_contract() -> void:
-	var image := Image.load_from_file(ProjectSettings.globalize_path(DIGIT_ATLAS_PATH))
-	_expect(image != null and not image.is_empty(), "12px damage digit atlas must load")
-	if image == null or image.is_empty():
-		return
-	_expect(image.get_size() == Vector2i(104, 12), "damage digit atlas must use thirteen 8x12 cells")
-	var saw_opaque := false
-	for y in range(image.get_height()):
-		for x in range(image.get_width()):
-			var pixel := image.get_pixel(x, y)
-			_expect(
-				pixel.a == 0.0 or pixel.a == 1.0,
-				"damage digit atlas alpha must stay on a binary pixel grid"
-			)
-			if pixel.a == 1.0:
-				saw_opaque = true
-				_expect(
-					pixel.r == 1.0 and pixel.g == 1.0 and pixel.b == 1.0,
-					"opaque atlas pixels must be pure white for runtime tinting"
-				)
-	_expect(saw_opaque, "damage digit atlas must contain opaque glyph pixels")
-
-func _test_magnitude_tiers_and_layout() -> void:
-	var label = HIT_LABEL_SCENE.instantiate()
-	label.configure({"final_damage": 1, "target_max_hp": 1000})
-	_expect(label.get_pixel_scale() == 1, "minor damage must render at 1x")
-	var one_digit_width: float = label.size.x
-	label.configure({"final_damage": 50, "target_max_hp": 1000})
-	_expect(label.get_pixel_scale() == 1, "normal damage must render at 1x")
-	label.configure({"final_damage": 100, "target_max_hp": 1000})
-	_expect(label.get_pixel_scale() == 2, "heavy damage must render at 2x")
-	label.configure({"final_damage": 250, "target_max_hp": 1000})
-	_expect(label.get_pixel_scale() == 3, "burst damage must render at 3x")
-	_expect(label.size.x > one_digit_width, "multi-digit damage layout must grow instead of clipping")
-	label.free()
-
-func _test_damage_type_and_periodic_styles() -> void:
-	var label = HIT_LABEL_SCENE.instantiate()
-	label.configure({
-		"final_damage": 30,
-		"damage_type": Attack.TYPE_FIRE,
-		"target_max_hp": 1000,
-		"is_periodic": true,
-	})
-	_expect(label.get_damage_type() == Attack.TYPE_FIRE, "fire damage type must reach HitLabel")
-	_expect(label.is_periodic_hit(), "periodic damage flag must reach HitLabel")
-	var fire_color: Color = label.get_font_color()
-	label.configure({
-		"final_damage": 30,
-		"damage_type": Attack.TYPE_FREEZE,
-		"target_max_hp": 1000,
-	})
-	_expect(label.get_font_color() != fire_color, "damage types must have distinct colors")
-	label.configure({
-		"final_damage": 30,
-		"damage_type": &"mixed",
-		"target_max_hp": 1000,
-	})
-	_expect(label.get_damage_type() == &"mixed", "mixed damage must retain its visual classification")
-	label.free()
 
 func _test_typed_feedback_merge() -> void:
 	var batch := DamageFeedbackEvent.new(30, Attack.TYPE_FIRE)

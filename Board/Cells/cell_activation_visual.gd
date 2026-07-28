@@ -1,14 +1,15 @@
 extends Node2D
 class_name CellActivationVisual
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const DEFAULT_CELL_RECT := Rect2(Vector2.ZERO, Vector2(512.0, 512.0))
 const INACTIVE_MASK := Color(0.035, 0.075, 0.105, 0.58)
-const INACTIVE_EDGE := Color(0.36, 0.58, 0.68, 0.26)
-const INACTIVE_LINE := Color(0.52, 0.72, 0.78, 0.16)
-const ACTIVE_EDGE := Color(0.58, 0.78, 0.82, 0.16)
-const ACTIVE_BOUNDARY := Color(0.34, 0.82, 0.92, 0.36)
-const PLAYER_EDGE := Color(0.38, 0.88, 1.0, 0.58)
-const TASK_NODE := Color(1.0, 0.76, 0.32, 0.44)
+const INACTIVE_EDGE := Color(0.32, 0.46, 0.52, 0.24)
+const INACTIVE_LINE := Color(0.40, 0.53, 0.58, 0.14)
+const ACTIVE_EDGE := Color(0.44, 0.55, 0.60, 0.14)
+const ACTIVE_BOUNDARY := Color(0.44, 0.56, 0.62, 0.30)
+const PLAYER_EDGE := Color(PALETTE.PLAYER_PRIMARY, 0.72)
+const TASK_NODE := Color(PALETTE.FIELD_TASK, 0.52)
 const HIGHLIGHT_FADE_SECONDS := 0.22
 
 var cell_rect: Rect2 = DEFAULT_CELL_RECT:

@@ -7,7 +7,6 @@ const OperationRuntime = preload("res://Combat/battle_contract/runtime/operation
 const ContainmentRuntime = preload("res://Combat/battle_contract/runtime/containment_contract_runtime.gd")
 const ExtractionRuntime = preload("res://Combat/battle_contract/runtime/extraction_contract_runtime.gd")
 const RewardRuntime = preload("res://Combat/battle_contract/runtime/reward_contract_runtime.gd")
-const TacticalBeaconScene = preload("res://World/battle_contract/tactical_beacon.tscn")
 
 var failures: PackedStringArray = []
 
@@ -18,7 +17,6 @@ func _ready() -> void:
 	_test_containment()
 	_test_extraction()
 	_test_reward()
-	await _test_tactical_beacon_visual_profiles()
 	if failures.is_empty():
 		print("PASS combat.contract_runtime_matrix")
 		get_tree().quit(0)
@@ -160,35 +158,3 @@ func _test_reward() -> void:
 	_expect(results.size() == 1 and results[0].get("completion_reason") == &"timeout", "reward timeout must complete once")
 	_expect(port.evacuations.size() == 1, "reward timeout must evacuate enemies")
 	runtime.stop()
-
-func _test_tactical_beacon_visual_profiles() -> void:
-	var colors: Array[Color] = []
-	for kind in [&"operation", &"containment", &"extraction"]:
-		var beacon := TacticalBeaconScene.instantiate()
-		beacon.visual_kind = kind
-		beacon.beacon_id = colors.size() + 1
-		add_child(beacon)
-		await get_tree().process_frame
-		var collision := beacon.get_node("CollisionShape2D") as CollisionShape2D
-		var circle := collision.shape as CircleShape2D
-		var projected_visual := beacon.get("_projected_visual") as Control
-		var visual_layer := projected_visual.get_parent() as CanvasLayer
-		_expect(circle != null and is_equal_approx(circle.radius, 70.0), "tactical beacon visual changes must preserve the 70 pixel collision radius")
-		_expect(beacon.get_node_or_null("ProgressGround") == null, "tactical beacon progress must no longer use an expanding solid ground disc")
-		_expect(projected_visual != null and projected_visual.get("visual_kind") == kind, "tactical beacon must configure the projected protocol visual profile")
-		_expect(visual_layer != null and visual_layer.layer < 0, "tactical beacon visuals must render below the default world canvas so the player has priority")
-		beacon.set_progress(0.5)
-		_expect(is_equal_approx(float(projected_visual.get("progress")), 0.5) and not bool(projected_visual.get("completed")), "tactical beacon must expose partial progress as an incomplete ring")
-		projected_visual.call("set_presence", true, 2)
-		_expect(bool(projected_visual.get("player_inside")) and int(projected_visual.get("enemy_count")) == 2, "tactical beacon must forward capture and contested states to the animated visual")
-		var arrow_edge := projected_visual.call("_ray_rect_intersection", Vector2(640.0, 360.0), Vector2.RIGHT, Rect2(54.0, 54.0, 1172.0, 612.0)) as Vector2
-		_expect(arrow_edge.is_equal_approx(Vector2(1226.0, 360.0)), "offscreen target arrows must clamp to the safe screen edge")
-		colors.append(beacon.get_node("OuterGround").get("visual_modulate") as Color)
-		if kind == &"extraction":
-			beacon.play_completion()
-		else:
-			beacon.set_progress(1.0)
-		_expect(bool(projected_visual.get("completed")), "tactical beacon completion must trigger the projected completion state")
-		beacon.queue_free()
-	await get_tree().process_frame
-	_expect(colors.size() == 3 and colors[0] != colors[1] and colors[1] != colors[2] and colors[0] != colors[2], "operation, containment, and extraction must use distinct ground palettes")

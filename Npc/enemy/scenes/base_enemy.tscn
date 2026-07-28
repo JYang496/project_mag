@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://4sd4d8lkbkls" path="res://Npc/base_npc.tscn" id="1_y1wsb"]
 [ext_resource type="Script" uid="uid://ytvpcus0icms" path="res://Npc/enemy/scripts/BaseEnemy.gd" id="2_31lbh"]
+[ext_resource type="Script" path="res://Combat/visual/affiliation_marker.gd" id="3_marker"]
 
 [node name="BaseEnemy" unique_id=1931075508 groups=["enemies"] instance=ExtResource("1_y1wsb")]
 collision_layer = 20
@@ -23,7 +24,15 @@ collision_layer = 4
 [node name="Body" parent="." index="1"]
 extra_scale = Vector2(1, 1)
 
-[node name="EnableCollisionTimer" type="Timer" parent="." index="3" unique_id=2059076023]
+[node name="AffiliationMarker" type="Node2D" parent="." index="3"]
+position = Vector2(0, 8)
+scale = Vector2(1, 0.58)
+script = ExtResource("3_marker")
+marker_color = Color(1, 0.301961, 0.368627, 0.78)
+radius = 20.0
+line_width = 2.0
+
+[node name="EnableCollisionTimer" type="Timer" parent="." index="4" unique_id=2059076023]
 wait_time = 0.2
 one_shot = true
 autostart = true

@@ -1,6 +1,8 @@
 extends Node2D
 class_name TargetWarning
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
 enum VisualPreset {
 	BASIC = 0,
 	DODGE_STYLE = 1,
@@ -9,10 +11,10 @@ enum VisualPreset {
 @export var visual_preset: VisualPreset = VisualPreset.BASIC
 @export var duration: float = 0.8
 @export var radius: float = 52.0
-@export var fill_color: Color = Color(1.0, 0.2, 0.2, 0.25)
-@export var line_color: Color = Color(1.0, 0.4, 0.25, 0.95)
+@export var fill_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.20)
+@export var line_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.96)
 @export var line_width: float = 2.0
-@export var wave_color: Color = Color(1.0, 0.92, 0.74, 0.95)
+@export var wave_color: Color = Color(PALETTE.ENEMY_SECONDARY, 0.98)
 
 var _elapsed: float = 0.0
 var _fill_polygon: Polygon2D = null

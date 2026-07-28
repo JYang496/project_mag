@@ -1,6 +1,8 @@
 extends WeaponBranchBehavior
 class_name OrbitEnergyBranch
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
 func get_added_weapon_traits() -> Array[StringName]:
 	return [WeaponTrait.ENERGY]
 
@@ -15,8 +17,8 @@ const ENERGY_FIELD_INDICATOR_NODE_NAME := "EnergyFieldIndicator"
 @export var min_bonus_energy_damage: int = 1
 @export var per_target_trigger_icd_sec: float = 0.05
 @export var show_field_indicator: bool = true
-@export var indicator_fill_color: Color = Color(0.45, 0.8, 1.0, 0.10)
-@export var indicator_outline_color: Color = Color(0.45, 0.9, 1.0, 0.75)
+@export var indicator_fill_color: Color = Color(PALETTE.ENERGY, 0.10)
+@export var indicator_outline_color: Color = Color(PALETTE.PLAYER_PRIMARY, 0.52)
 @export var indicator_outline_width: float = 1.5
 
 var _target_next_trigger_msec: Dictionary = {}

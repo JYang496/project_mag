@@ -9,5 +9,5 @@ test-results/
 *.pdb
 
 # Temp files
-archive/
+/archive/
 tmp/

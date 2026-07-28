@@ -680,15 +680,23 @@ func _register_enemy_support_visual(source: Node2D) -> void:
 		var line_color := config.get("line_color", Color(0.4, 0.9, 1.0, 0.8)) as Color
 		var outline := _create_ring_mesh(line_color)
 		var fill := _create_disc_mesh(fill_color)
+		var detail_outline: MeshInstance3D = null
+		if config.has("detail_color"):
+			detail_outline = _create_ring_mesh(config.get("detail_color") as Color)
 		_ground_root.add_child(outline)
 		_ground_root.add_child(fill)
+		if detail_outline != null:
+			_ground_root.add_child(detail_outline)
 		_enemy_aura_meshes[source_id] = {
 			"source": weakref(source),
 			"outline": outline,
 			"fill": fill,
+			"detail_outline": detail_outline,
 			"outline_mesh": outline.mesh,
 			"outline_material": outline.mesh.material,
 			"fill_material": fill.mesh.material,
+			"detail_outline_mesh": detail_outline.mesh if detail_outline != null else null,
+			"detail_outline_material": detail_outline.mesh.material if detail_outline != null else null,
 		}
 	if source.has_method("get_hybrid_link_visuals"):
 		_enemy_link_sources[source_id] = weakref(source)
@@ -1168,6 +1176,7 @@ func _sync_enemy_aura_meshes() -> void:
 		var source := source_ref.get_ref() as Node2D if source_ref != null else null
 		var outline := entry.get("outline") as MeshInstance3D
 		var fill := entry.get("fill") as MeshInstance3D
+		var detail_outline := entry.get("detail_outline") as MeshInstance3D
 		if source == null or outline == null or fill == null:
 			if outline != null:
 				outline.queue_free()
@@ -1183,20 +1192,39 @@ func _sync_enemy_aura_meshes() -> void:
 		var inner_radius_3d := maxf((radius_2d - line_width_2d) * world_scale, 0.001)
 		outline.visible = visible
 		fill.visible = visible
+		if detail_outline != null:
+			detail_outline.visible = visible
 		outline.position = world_2d_to_3d(source.global_position) + Vector3.UP * 0.020
 		fill.position = world_2d_to_3d(source.global_position) + Vector3.UP * 0.021
+		if detail_outline != null:
+			detail_outline.position = world_2d_to_3d(source.global_position) + Vector3.UP * 0.022
 		outline.scale = Vector3.ONE
 		fill.scale = Vector3(inner_radius_3d, 1.0, inner_radius_3d)
 		var outline_mesh := entry.get("outline_mesh") as TorusMesh
 		if outline_mesh != null:
 			outline_mesh.inner_radius = inner_radius_3d
 			outline_mesh.outer_radius = radius_3d
+		var detail_outline_mesh := entry.get("detail_outline_mesh") as TorusMesh
+		if detail_outline_mesh != null:
+			var detail_width_2d := maxf(float(config.get("detail_width", 1.0)), 0.5)
+			var detail_outer_radius_3d := maxf((radius_2d - line_width_2d - 1.0) * world_scale, 0.002)
+			detail_outline_mesh.inner_radius = maxf(
+				detail_outer_radius_3d - detail_width_2d * world_scale,
+				0.001
+			)
+			detail_outline_mesh.outer_radius = detail_outer_radius_3d
 		var outline_material := entry.get("outline_material") as StandardMaterial3D
 		var fill_material := entry.get("fill_material") as StandardMaterial3D
 		if outline_material != null:
 			outline_material.albedo_color = config.get("line_color", outline_material.albedo_color) as Color
 		if fill_material != null:
 			fill_material.albedo_color = config.get("fill_color", fill_material.albedo_color) as Color
+		var detail_outline_material := entry.get("detail_outline_material") as StandardMaterial3D
+		if detail_outline_material != null:
+			detail_outline_material.albedo_color = config.get(
+				"detail_color",
+				detail_outline_material.albedo_color
+			) as Color
 
 func _sync_enemy_link_meshes() -> void:
 	var active_keys: Dictionary = {}
@@ -1216,20 +1244,40 @@ func _sync_enemy_link_meshes() -> void:
 			active_keys[key] = true
 			var entry: Dictionary
 			if not _enemy_link_meshes.has(key):
-				var mesh := _mesh_registry.acquire_mesh(&"connected_link", _connected_renderer.shared_box_mesh)
-				entry = {"mesh": mesh, "pool_key": &"connected_link"}
+				var acquired_mesh := _mesh_registry.acquire_mesh(
+					&"connected_link",
+					_connected_renderer.shared_box_mesh
+				)
+				entry = {"mesh": acquired_mesh, "pool_key": &"connected_link"}
+				if config.has("outer_color"):
+					entry["outer_mesh"] = _mesh_registry.acquire_mesh(
+						&"connected_link",
+						_connected_renderer.shared_box_mesh
+					)
 				_enemy_link_meshes[key] = entry
 			else:
 				entry = _enemy_link_meshes[key] as Dictionary
 			var mesh := entry.get("mesh") as MeshInstance3D
+			var outer_mesh := entry.get("outer_mesh") as MeshInstance3D
 			var delta := target.global_position - source.global_position
 			var midpoint := (source.global_position + target.global_position) * 0.5
 			var width_2d := maxf(float(config.get("width", 2.0)), 0.5)
+			var length_3d := maxf(delta.length() * world_scale, 0.01)
 			mesh.scale = Vector3(maxf(delta.length() * world_scale, 0.01), 1.0, maxf(width_2d * world_scale, 0.01))
-			mesh.position = world_2d_to_3d(midpoint) + Vector3.UP * 0.025
+			mesh.position = world_2d_to_3d(midpoint) + Vector3.UP * 0.027
 			mesh.rotation.y = -delta.angle()
 			mesh.visible = bool(config.get("visible", true))
 			mesh.set_instance_shader_parameter("effect_color", config.get("color", Color.WHITE) as Color)
+			if outer_mesh != null:
+				var outer_width_2d := maxf(float(config.get("outer_width", width_2d + 2.0)), width_2d)
+				outer_mesh.scale = Vector3(length_3d, 1.0, maxf(outer_width_2d * world_scale, 0.01))
+				outer_mesh.position = world_2d_to_3d(midpoint) + Vector3.UP * 0.026
+				outer_mesh.rotation.y = -delta.angle()
+				outer_mesh.visible = bool(config.get("visible", true))
+				outer_mesh.set_instance_shader_parameter(
+					"effect_color",
+					config.get("outer_color", Color.TRANSPARENT) as Color
+				)
 	for key in _enemy_link_meshes.keys():
 		if active_keys.has(key):
 			continue
@@ -1237,6 +1285,9 @@ func _sync_enemy_link_meshes() -> void:
 		var stale_mesh := stale.get("mesh") as MeshInstance3D
 		if stale_mesh != null:
 			_mesh_registry.release_mesh(stale_mesh)
+		var stale_outer_mesh := stale.get("outer_mesh") as MeshInstance3D
+		if stale_outer_mesh != null:
+			_mesh_registry.release_mesh(stale_outer_mesh)
 		_enemy_link_meshes.erase(key)
 
 func _sync_dash_telegraph_meshes() -> void:

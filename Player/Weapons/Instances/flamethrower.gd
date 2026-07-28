@@ -1,5 +1,6 @@
 extends Ranger
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const CONE_SPRAY_VFX_SCENE: PackedScene = preload("res://Player/Weapons/Effects/cone_spray_vfx.tscn")
 
 @onready var detect_area: Area2D = $DetectArea
@@ -304,9 +305,9 @@ func _draw_attack_range() -> void:
 	var effective_range: float = _get_effective_attack_range()
 
 	# 扇形填充颜色
-	var fill_color := Color(1.0, 0.4, 0.0, 0.15)
+	var fill_color := Color(PALETTE.FIRE, 0.14)
 	# 扇形轮廓颜色
-	var outline_color := Color(1.0, 0.4, 0.0, 0.6)
+	var outline_color := Color(PALETTE.PLAYER_PRIMARY, 0.42)
 
 	# 绘制扇形填充
 	draw_arc(Vector2.ZERO, effective_range, start_angle, end_angle, 32, fill_color, -1.0)

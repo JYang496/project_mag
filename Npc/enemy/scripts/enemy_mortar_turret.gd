@@ -1,6 +1,7 @@
 extends BaseEnemy
 class_name EnemyMortarTurret
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const AREA_EFFECT_SCENE := preload("res://Combat/area_effect/area_effect.tscn")
 const WARNING_SCENE := preload("res://Npc/enemy/scenes/target_warning.tscn")
 
@@ -119,8 +120,8 @@ func _spawn_mortar_impact(world_pos: Vector2) -> void:
 	area.tick_damage = 0
 	area.visual_enabled = false
 	area.draw_enabled = true
-	area.debug_fill_color = Color(1.0, 0.18, 0.16, 0.24)
-	area.debug_line_color = Color(1.0, 0.45, 0.3, 1.0)
+	area.debug_fill_color = Color(PALETTE.ENEMY_PRIMARY, 0.20)
+	area.debug_line_color = Color(PALETTE.ENEMY_SECONDARY, 0.98)
 	area.apply_once_per_target = true
 	area.source_node = self
 	call_deferred("add_sibling", area)

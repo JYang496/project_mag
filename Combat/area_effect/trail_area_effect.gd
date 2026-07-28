@@ -1,6 +1,8 @@
 extends Node2D
 class_name TrailAreaEffect
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
 enum TargetGroup {
 	ENEMIES,
 	ALLIES,
@@ -21,8 +23,8 @@ enum TargetGroup {
 @export var stack_damage_per_segment: bool = false
 @export var auto_process: bool = true
 @export var draw_enabled: bool = true
-@export var fill_color: Color = Color(0.35, 0.85, 1.0, 0.18)
-@export var line_color: Color = Color(0.45, 0.95, 1.0, 0.75)
+@export var fill_color: Color = Color(PALETTE.FREEZE, 0.14)
+@export var line_color: Color = Color(PALETTE.PLAYER_PRIMARY, 0.48)
 @export var line_width: float = 1.5
 
 var source_node: Node

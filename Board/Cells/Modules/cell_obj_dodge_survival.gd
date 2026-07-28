@@ -1,6 +1,8 @@
 extends CellObjectiveModule
 class_name DodgeSurvivalObjectiveModule
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
 @export var required_survival_seconds: float = 10.0
 @export var aoe_damage: int = 1
 @export var aoe_damage_type: StringName = Attack.TYPE_FIRE
@@ -9,11 +11,11 @@ class_name DodgeSurvivalObjectiveModule
 @export var aoe_interval_min: float = 0.9
 @export var aoe_interval_max: float = 1.6
 @export var aoe_impact_duration: float = 0.2
-@export var warning_fill_color: Color = Color(1.0, 0.12, 0.12, 0.22)
-@export var warning_outline_color: Color = Color(1.0, 0.3, 0.25, 0.95)
-@export var warning_wave_color: Color = Color(1.0, 0.92, 0.74, 0.95)
-@export var impact_fill_color: Color = Color(1.0, 0.48, 0.2, 0.35)
-@export var impact_outline_color: Color = Color(1.0, 0.72, 0.45, 1.0)
+@export var warning_fill_color: Color = Color(PALETTE.SPEED, 0.16)
+@export var warning_outline_color: Color = Color(PALETTE.SPEED, 0.88)
+@export var warning_wave_color: Color = Color(PALETTE.PLAYER_CORE, 0.86)
+@export var impact_fill_color: Color = Color(PALETTE.FIRE, 0.28)
+@export var impact_outline_color: Color = Color(PALETTE.SPEED, 0.98)
 @export var warning_z_index: int = 8
 
 var _active := false

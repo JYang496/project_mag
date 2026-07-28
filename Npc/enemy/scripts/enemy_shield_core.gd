@@ -1,12 +1,16 @@
 extends BaseEnemy
 class_name EnemyShieldCore
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
 @export var aura_radius: float = 180.0
 @export_range(0.0, 1.0, 0.01) var ally_damage_taken_multiplier: float = 0.65
 @export var preferred_range: float = 260.0
-@export var aura_fill_color: Color = Color(0.15, 0.65, 1.0, 0.14)
-@export var aura_line_color: Color = Color(0.3, 0.85, 1.0, 0.9)
-@export var protected_line_color: Color = Color(0.4, 0.9, 1.0, 0.45)
+@export var aura_fill_color: Color = Color(PALETTE.SHIELD, 0.10)
+@export var aura_line_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.94)
+@export var aura_detail_color: Color = Color(PALETTE.SHIELD, 0.56)
+@export var protected_line_color: Color = Color(PALETTE.SHIELD, 0.82)
+@export var protected_line_outer_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.78)
 
 # Visual-only compatibility list. Runtime protection comes from the spatial snapshot;
 # gameplay code must not populate this by searching nearby enemies.
@@ -62,11 +66,14 @@ func _draw() -> void:
 	if uses_hybrid_ground_visuals():
 		return
 	draw_circle(Vector2.ZERO, aura_radius, aura_fill_color)
-	draw_arc(Vector2.ZERO, aura_radius, 0.0, TAU, 24, aura_line_color, 3.0, false)
+	draw_arc(Vector2.ZERO, aura_radius, 0.0, TAU, 48, aura_line_color, 4.0, false)
+	draw_arc(Vector2.ZERO, aura_radius - 4.0, 0.0, TAU, 48, aura_detail_color, 1.0, false)
 	for index in mini(_protected_targets.size(), 4):
 		var target := _protected_targets[index]
 		if is_instance_valid(target):
-			draw_line(Vector2.ZERO, to_local(target.global_position), protected_line_color, 2.0, false)
+			var target_position := to_local(target.global_position)
+			draw_line(Vector2.ZERO, target_position, protected_line_outer_color, 4.5, false)
+			draw_line(Vector2.ZERO, target_position, protected_line_color, 1.75, false)
 
 func get_hybrid_aura_visual() -> Dictionary:
 	return {
@@ -74,7 +81,9 @@ func get_hybrid_aura_visual() -> Dictionary:
 		"radius": aura_radius,
 		"fill_color": aura_fill_color,
 		"line_color": aura_line_color,
-		"line_width": 2.5,
+		"line_width": 4.0,
+		"detail_color": aura_detail_color,
+		"detail_width": 1.0,
 	}
 
 func get_hybrid_link_visuals() -> Array[Dictionary]:
@@ -82,5 +91,11 @@ func get_hybrid_link_visuals() -> Array[Dictionary]:
 	for index in mini(_protected_targets.size(), 4):
 		var target := _protected_targets[index]
 		if is_instance_valid(target):
-			links.append({"target": target, "color": protected_line_color, "width": 1.5})
+			links.append({
+				"target": target,
+				"outer_color": protected_line_outer_color,
+				"outer_width": 4.5,
+				"color": protected_line_color,
+				"width": 1.75,
+			})
 	return links
