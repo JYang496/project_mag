@@ -200,7 +200,7 @@ func _cleanup_projectile_hit_state() -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if event_name != &"on_reload_started":
+	if event_name != &"on_reload_finished":
 		return
 	if detail.get("source_weapon", null) != self:
 		return
@@ -221,10 +221,11 @@ func _try_start_piercing_blade_dance() -> bool:
 		return false
 
 	_piercing_blade_dance_charge = maxi(0, available_charge - charge_cost)
+	notify_offhand_skill_triggered(0.0)
 	var directions := _build_radial_directions(projectile_count)
 	emit_passive_trigger(TRIGGERED_EVENT, {
 		"passive_id": str(PASSIVE_ID),
-		"trigger": "reload_started",
+		"trigger": "reload_finished",
 		"charge_before": available_charge,
 		"charge_cost": charge_cost,
 		"charge": _piercing_blade_dance_charge,
@@ -338,18 +339,25 @@ func get_passive_status() -> Dictionary:
 	var state := "charging"
 	if is_reloading:
 		state = "waiting_refresh"
+	elif not is_passive_ready():
+		state = "waiting_refresh"
 	elif charge >= maxi(radial_charge_cost, 1):
 		state = "ready_pending_action"
-	var hud_charge_current := 1 if state == "ready_pending_action" else 0
+	var hud_charge_current := passive_controller.get_passive_charge_current()
 	return with_passive_charge_status({
 		"id": str(PASSIVE_ID),
 		"display_name": "Piercing Blade Dance",
 		"state": state,
 		"progress": clampf(float(charge) / float(max_charge), 0.0, 1.0),
+		"condition_visible": true,
+		"condition_progress": clampf(float(charge) / float(max_charge), 0.0, 1.0),
+		"condition_thresholds": [
+			clampf(float(radial_charge_cost) / float(max_charge), 0.0, 1.0),
+		],
 		"current": charge,
 		"required": max_charge,
 		"ready": state == "ready_pending_action",
-		"trigger_hint": "reload_started",
+		"trigger_hint": "reload_finished",
 		"refresh_hint": "gain_charge_from_repeat_projectile_damage",
 		"charge_current": hud_charge_current,
 		"charge_max": 1,

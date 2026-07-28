@@ -6,7 +6,9 @@
 script = ExtResource("1_script")
 passive_id = "flamethrower_heat_prepared"
 display_name = "Heat Prepared"
-description = "Heat/Reload trigger. Accumulate weapon heat, then start a reload to gain a temporary damage boost; the boost applies after reload flow resolves."
+description = "Fill the heat condition to restore a charge. Reload consumes all stored charges to gain a temporary damage boost."
 condition_type = "heat_accumulation"
-refresh_type = "reload_finished"
+refresh_type = "heat_full"
 ui_mode = "progress"
+hud_mode = "bean_with_condition"
+effect_mode = "timed"

@@ -847,6 +847,12 @@ func is_passive_ready() -> bool:
 func notify_passive_triggered(_cooldown_sec := 0.0) -> void:
 	passive_controller.notify_passive_triggered(_cooldown_sec)
 
+func add_passive_charges(amount: int = 1) -> int:
+	return passive_controller.add_passive_charges(amount)
+
+func consume_all_passive_charges() -> int:
+	return passive_controller.consume_all_passive_charges()
+
 func refresh_passive_on_reload() -> void:
 	passive_controller.refresh_passive_on_reload()
 

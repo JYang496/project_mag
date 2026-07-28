@@ -313,6 +313,8 @@ func get_passive_status() -> Dictionary:
 		"condition_type": "distance_threshold",
 		"required": threshold,
 		"comparison": ">=",
+		"condition_visible": true,
+		"condition_progress": 0.0,
 		"trigger_hint": "dash_start_distance",
 		"refresh_hint": "reload",
 		"slow_multiplier": clampf(close_chain_slow_multiplier, 0.05, 1.0),
@@ -322,6 +324,7 @@ func get_passive_status() -> Dictionary:
 		var current_distance := maxf(_dash_start_distance, 0.0)
 		status["current"] = current_distance
 		status["progress"] = clampf(current_distance / maxf(threshold, 0.001), 0.0, 1.0)
+		status["condition_progress"] = status["progress"]
 	return with_passive_charge_status(status)
 
 func _update_attack_range_shape() -> void:

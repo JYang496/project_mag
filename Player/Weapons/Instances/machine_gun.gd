@@ -25,8 +25,12 @@ const HEAT_SPEED_POINTS: Array[Vector2] = [
 @export var heat_cooldown_rate: float = 20.0
 @export_range(5.0, 80.0, 1.0) var front_fire_half_angle_deg: float = 35.0
 @export var heat_expansion_duration_sec: float = 8.0
-@export var heat_expansion_max_heat_multiplier: float = 2.0
+@export var heat_expansion_single_charge_multiplier: float = 2.0
+@export_range(0.01, 1.0, 0.01) var heat_expansion_rearm_spent_ratio: float = 0.25
 var attack_range: float = 800.0
+var _heat_expansion_rearmed_steps_this_magazine: int = 0
+var _heat_expansion_pending_rearms: int = 0
+var _heat_expansion_active_charge_count: int = 0
 
 var weapon_data = {
 	"1": {"damage": "6", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "40"},
@@ -83,6 +87,7 @@ func request_primary_fire() -> bool:
 		if uses_ammo_system() and current_ammo <= 0:
 			request_reload()
 		return false
+	_try_rearm_heat_expansion_from_magazine_spend()
 	emit_signal("shoot")
 	play_fire_feedback()
 	notify_main_weapon_fired()
@@ -159,24 +164,30 @@ func _add_held_trigger_heat(delta: float) -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if event_name != &"on_reload_started":
+	if event_name != &"on_reload_finished":
 		return
 	if detail.get("source_weapon", null) != self:
 		return
+	_flush_pending_heat_expansion_rearms()
+	_heat_expansion_rearmed_steps_this_magazine = 0
 	if not is_offhand_skill_ready():
 		return
 	var spent_ratio := clampf(float(detail.get("spent_ratio", 0.0)), 0.0, 1.0)
 	if spent_ratio <= 0.0:
 		return
 	var duration_sec := maxf(heat_expansion_duration_sec, 0.05)
-	var max_heat_mul := lerpf(1.0, maxf(heat_expansion_max_heat_multiplier, 1.0), spent_ratio)
-	notify_offhand_skill_triggered(0.0)
+	var consumed_charges := consume_all_passive_charges()
+	_heat_expansion_active_charge_count = consumed_charges
+	var single_charge_multiplier := maxf(heat_expansion_single_charge_multiplier, 0.05)
+	var max_heat_mul := float(consumed_charges) * single_charge_multiplier
 	var scaled_current_heat := false
 	if PlayerData.player and is_instance_valid(PlayerData.player):
 		scaled_current_heat = bool(PlayerData.player.call("apply_heat_expansion", duration_sec, max_heat_mul))
 	emit_passive_trigger(&"machine_gun_heat_expansion", {
-		"trigger": "reload_started",
+		"trigger": "reload_finished",
 		"spent_ratio": spent_ratio,
+		"consumed_charges": consumed_charges,
+		"single_charge_multiplier": single_charge_multiplier,
 		"duration": duration_sec,
 		"cooldown": 0.0,
 		"max_heat_multiplier": max_heat_mul,
@@ -185,25 +196,89 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
+	_flush_pending_heat_expansion_rearms()
 	var effective_capacity := get_effective_magazine_capacity()
 	var spent: int = max(0, effective_capacity - current_ammo)
-	var progress: float = clampf(float(spent) / float(effective_capacity), 0.0, 1.0)
+	var spent_ratio: float = clampf(float(spent) / float(effective_capacity), 0.0, 1.0)
+	var progress := _get_heat_expansion_rearm_cycle_progress(spent_ratio)
 	var state := "charging"
-	if not is_passive_ready():
+	var effect_active := _is_heat_expansion_active()
+	if effect_active:
+		state = "active"
+	elif not is_passive_ready():
 		state = "waiting_refresh"
 	elif spent > 0:
 		state = "ready_pending_action"
+	if not effect_active:
+		_heat_expansion_active_charge_count = 0
 	return with_passive_charge_status({
 		"id": "machine_gun_heat_expansion",
 		"display_name": "Heat Expansion",
 		"state": state,
+		"active_charge_count": _heat_expansion_active_charge_count,
 		"progress": progress,
-		"current": spent,
-		"required": get_effective_magazine_capacity(),
+		"condition_visible": true,
+		"condition_progress": progress,
+		"condition_thresholds": [],
+		"current": progress,
+		"required": 1.0,
 		"ready": state == "ready_pending_action",
-		"trigger_hint": "reload_started",
-		"refresh_hint": "reload_finished",
+		"trigger_hint": "reload_finished",
+		"refresh_hint": "spend_25_percent_magazine",
 	})
+
+func get_passive_max_charges() -> int:
+	return 4
+
+func _refresh_offhand_skill_on_reload() -> void:
+	pass
+
+func _try_rearm_heat_expansion_from_magazine_spend() -> void:
+	var capacity := maxi(get_effective_magazine_capacity(), 1)
+	var spent_ratio := clampf(float(maxi(capacity - current_ammo, 0)) / float(capacity), 0.0, 1.0)
+	var rearm_ratio := clampf(heat_expansion_rearm_spent_ratio, 0.01, 1.0)
+	var earned_steps := mini(
+		int(floor((spent_ratio + 0.0001) / rearm_ratio)),
+		get_passive_max_charges()
+	)
+	var newly_earned := maxi(earned_steps - _heat_expansion_rearmed_steps_this_magazine, 0)
+	if newly_earned <= 0:
+		return
+	_heat_expansion_rearmed_steps_this_magazine = earned_steps
+	if _is_heat_expansion_active():
+		var available_room := get_passive_max_charges() \
+			- passive_controller.get_passive_charge_current() \
+			- _heat_expansion_pending_rearms
+		_heat_expansion_pending_rearms += mini(newly_earned, maxi(available_room, 0))
+		return
+	add_passive_charges(newly_earned)
+
+func _get_heat_expansion_rearm_cycle_progress(spent_ratio: float) -> float:
+	var occupied_charge_count := passive_controller.get_passive_charge_current() \
+		+ _heat_expansion_pending_rearms
+	if occupied_charge_count >= get_passive_max_charges():
+		return 0.0
+	var rearm_ratio := clampf(heat_expansion_rearm_spent_ratio, 0.01, 1.0)
+	var completed_steps := floori((clampf(spent_ratio, 0.0, 1.0) + 0.0001) / rearm_ratio)
+	var cycle_spent_ratio := maxf(spent_ratio - float(completed_steps) * rearm_ratio, 0.0)
+	return clampf(cycle_spent_ratio / rearm_ratio, 0.0, 1.0)
+
+func _flush_pending_heat_expansion_rearms() -> void:
+	if _heat_expansion_pending_rearms <= 0 or _is_heat_expansion_active():
+		return
+	add_passive_charges(_heat_expansion_pending_rearms)
+	_heat_expansion_pending_rearms = 0
+
+func _is_heat_expansion_active() -> bool:
+	return PlayerData.player != null and is_instance_valid(PlayerData.player) \
+		and PlayerData.player.has_method("has_heat_expansion") \
+		and bool(PlayerData.player.call("has_heat_expansion"))
+
+func clear_timed_effects_for_prepare() -> void:
+	super.clear_timed_effects_for_prepare()
+	_heat_expansion_rearmed_steps_this_magazine = 0
+	_heat_expansion_pending_rearms = 0
+	_heat_expansion_active_charge_count = 0
 
 func _get_level_data(lv: String) -> Dictionary:
 	return get_weapon_level_data(lv, weapon_data)

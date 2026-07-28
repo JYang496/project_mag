@@ -20,7 +20,7 @@ const BULLET_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_STANDARD_SIZE
 
 var attack_range: float = 980.0
 var _heat_spend_attack_count: int = 0
-var _heat_spend_chain_pending: bool = false
+var _heat_spend_chain_rearm_pending: bool = false
 var _heat_spend_chain_last_spent: float = 0.0
 var _overcharge_lance_stack_count: int = 0
 var _overcharge_lance_remaining_sec: float = 0.0
@@ -189,24 +189,21 @@ func _get_level_data(lv: String) -> Dictionary:
 func _try_trigger_heat_spend_chain(spent: float) -> void:
 	if spent <= 0.0:
 		return
-	if not is_offhand_skill_ready():
-		return
 	_heat_spend_attack_count += 1
 	_heat_spend_chain_last_spent = spent
 	var required_count := maxi(1, heat_spend_attacks_trigger_count)
 	if _heat_spend_attack_count < required_count:
 		return
-	_heat_spend_chain_pending = true
+	_grant_or_queue_heat_spend_chain_charge()
+	_heat_spend_attack_count = 0
+	_heat_spend_chain_last_spent = 0.0
 
-func _trigger_pending_heat_spend_chain() -> void:
-	if not _heat_spend_chain_pending:
-		return
+func _trigger_pending_heat_spend_chain() -> bool:
+	_flush_pending_heat_spend_chain_rearm()
 	if not is_offhand_skill_ready():
-		return
+		return false
 	var required_count := maxi(1, heat_spend_attacks_trigger_count)
-	if _heat_spend_attack_count < required_count:
-		return
-	notify_offhand_skill_triggered(0.0)
+	consume_all_passive_charges()
 	var player: Node = PlayerData.player
 	if player != null and is_instance_valid(player) and player.has_method("apply_plasma_lance_heat_feedback"):
 		player.call(
@@ -228,26 +225,58 @@ func _trigger_pending_heat_spend_chain() -> void:
 		"low_heat_gain_multiplier": maxf(heat_feedback_low_gain_mul, 0.0),
 		"high_heat_gain_multiplier": maxf(heat_feedback_high_gain_mul, 0.0),
 	}, PASSIVE_SCOPE_GLOBAL)
+	return true
 
 func get_passive_status() -> Dictionary:
+	_flush_pending_heat_spend_chain_rearm()
 	var required_count := maxi(1, heat_spend_attacks_trigger_count)
 	var current_count := mini(_heat_spend_attack_count, required_count)
+	var condition_thresholds: Array[float] = []
+	for threshold_index in range(1, required_count):
+		condition_thresholds.append(float(threshold_index) / float(required_count))
 	var state := "charging"
-	if not is_passive_ready():
-		state = "waiting_refresh"
-	elif _heat_spend_chain_pending or current_count >= required_count:
+	if PlayerData.player != null and is_instance_valid(PlayerData.player) \
+			and PlayerData.player.has_method("has_plasma_lance_heat_feedback") \
+			and bool(PlayerData.player.call("has_plasma_lance_heat_feedback")):
+		state = "active"
+	elif is_passive_ready():
 		state = "ready_pending_action"
+	else:
+		state = "waiting_refresh"
 	return with_passive_charge_status({
 		"id": "plasma_lance_heat_spend_chain_triggered",
 		"display_name": "Heat Spend Chain",
 		"state": state,
 		"progress": clampf(float(current_count) / float(required_count), 0.0, 1.0),
+		"condition_visible": true,
+		"condition_progress": clampf(float(current_count) / float(required_count), 0.0, 1.0),
+		"condition_thresholds": condition_thresholds,
 		"current": current_count,
 		"required": required_count,
 		"ready": state == "ready_pending_action",
 		"trigger_hint": "reload_finished",
-		"refresh_hint": "reload",
+		"refresh_hint": "three_heat_spend_attacks",
 	})
+
+func _refresh_offhand_skill_on_reload() -> void:
+	pass
+
+func _grant_or_queue_heat_spend_chain_charge() -> void:
+	if _is_plasma_heat_feedback_active():
+		_heat_spend_chain_rearm_pending = passive_controller.get_passive_charge_current() < get_passive_max_charges()
+		return
+	add_passive_charges(1)
+
+func _flush_pending_heat_spend_chain_rearm() -> void:
+	if not _heat_spend_chain_rearm_pending or _is_plasma_heat_feedback_active():
+		return
+	add_passive_charges(1)
+	_heat_spend_chain_rearm_pending = false
+
+func _is_plasma_heat_feedback_active() -> bool:
+	return PlayerData.player != null and is_instance_valid(PlayerData.player) \
+		and PlayerData.player.has_method("has_plasma_lance_heat_feedback") \
+		and bool(PlayerData.player.call("has_plasma_lance_heat_feedback"))
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
@@ -256,13 +285,10 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	if detail.get("source_weapon", null) != self:
 		return
 	_trigger_pending_heat_spend_chain()
-	_heat_spend_attack_count = 0
-	_heat_spend_chain_pending = false
-	_heat_spend_chain_last_spent = 0.0
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
 	_heat_spend_attack_count = 0
-	_heat_spend_chain_pending = false
+	_heat_spend_chain_rearm_pending = false
 	_heat_spend_chain_last_spent = 0.0
 	_clear_overcharge_lance_stacks()

@@ -1,7 +1,7 @@
 keys,en,zh_CN
 battle_contract.ui.title,Choose Battle Contract,选择战斗协议
 battle_contract.ui.main_contracts,Main Contracts,主要协议
-battle_contract.ui.extra_contracts,Extra Contract,额外协议
+battle_contract.ui.extra_contracts,Limited-Time Contract,限时协议
 battle_contract.ui.subtitle,Decide the victory condition for the next battle,决定下一场战斗的胜利条件
 battle_contract.ui.cancel,Back to Prepare,返回准备
 battle_contract.ui.confirm,Launch Selected Contract,启动所选协议

@@ -25,6 +25,33 @@ class DummyWeapon:
 	func has_weapon_active_skill() -> bool:
 		return active_supported
 
+class DummyHeatPlayer:
+	extends Node2D
+	var heat_expansion_active := false
+	var heat_expansion_multiplier := 1.0
+	var heat_prepared_active := false
+	var plasma_feedback_active := false
+
+	func apply_heat_expansion(_duration: float, multiplier: float) -> bool:
+		heat_expansion_active = true
+		heat_expansion_multiplier = multiplier
+		return true
+
+	func has_heat_expansion() -> bool:
+		return heat_expansion_active
+
+	func apply_heat_prepared(_duration: float, _multiplier: float, _flat_bonus: int) -> void:
+		heat_prepared_active = true
+
+	func has_heat_prepared() -> bool:
+		return heat_prepared_active
+
+	func apply_plasma_lance_heat_feedback(_duration: float, _low: float, _high: float, _threshold: float) -> void:
+		plasma_feedback_active = true
+
+	func has_plasma_lance_heat_feedback() -> bool:
+		return plasma_feedback_active
+
 var _failed := false
 var _selector
 
@@ -41,6 +68,10 @@ func _ready() -> void:
 	_test_mainhand_slot_expands_without_reordering()
 	_test_weapon_icon_follows_mainhand_role()
 	_test_weapon_skill_footer_modes()
+	_test_weapon_passive_contract_classification()
+	_test_continuous_effect_occupies_consumed_bean()
+	_test_condition_based_skill_rearming()
+	_test_reload_settlement_consumes_after_finish()
 	_test_passive_feedback_ignores_routine_weapon_events()
 	_test_active_skill_feedback_rules()
 	_test_skill_hint_tracks_active_support()
@@ -243,26 +274,36 @@ func _test_weapon_skill_footer_modes() -> void:
 		"id": "single_passive",
 		"state": "charging",
 		"progress": 0.5,
-		"charge_current": 0,
+		"charge_current": 1,
 		"charge_max": 1,
 	}
-	var continuous: Dictionary = presenter.resolve_state(weapon)
+	var single_bean: Dictionary = presenter.resolve_state(weapon)
 	_expect(
-		continuous.get("display_mode") == &"continuous",
-		"passive-only single-state weapons must use one continuous footer track"
+		single_bean.get("display_mode") == &"segmented",
+		"single-condition weapon skills must use one discrete skill bean"
+	)
+	_expect(
+		not bool(single_bean.get("cycle_visible", true)),
+		"single-condition weapon skills must not infer an auxiliary progress track"
 	)
 	weapon.passive_status.charge_max = 3
 	weapon.passive_status.charge_current = 1
-	weapon.passive_status.progress_role = "trigger_condition"
 	var segmented: Dictionary = presenter.resolve_state(weapon)
 	_expect(
 		segmented.get("display_mode") == &"segmented",
 		"multi-charge weapon skills must use a segmented footer track"
 	)
 	_expect(
-		bool(segmented.get("cycle_visible", false)),
-		"multi-charge trigger progress must use a separate auxiliary track"
+		not bool(segmented.get("cycle_visible", true)),
+		"charge count alone must not imply a condition progress track"
 	)
+	weapon.passive_status.condition_visible = true
+	weapon.passive_status.condition_progress = 0.65
+	weapon.passive_status.condition_thresholds = [0.5]
+	weapon.passive_status.charge_states = ["ready", "active", "spent"]
+	segmented = presenter.resolve_state(weapon)
+	_expect(bool(segmented.get("cycle_visible", false)), "multi-condition skills must expose their progress track")
+	_expect(segmented.get("charge_states") == ["ready", "active", "spent"], "presenter must preserve per-bean states")
 	var slot := Control.new()
 	slot.position = Vector2(12.0, 0.0)
 	slot.size = Vector2(96.0, 72.0)
@@ -283,13 +324,19 @@ func _test_weapon_skill_footer_modes() -> void:
 	)
 	charge_track.max_charges = 3
 	charge_track.current_charges = 1
+	charge_track.charge_states = ["ready", "active", "spent"]
 	charge_track.show_cycle_progress = true
 	charge_track.cycle_progress = 0.65
+	charge_track.cycle_thresholds = [0.5]
 	charge_track.size = status_bar.size
 	_expect(charge_track.get_segment_rects().size() == 3, "multi-charge footer must expose one segment per charge")
 	_expect(
-		charge_track.get_segment_fill_ratios() == [1.0, 0.0, 0.0],
-		"charge pips must remain discrete while auxiliary progress grows"
+		charge_track.get_segment_fill_ratios() == [1.0, 1.0, 0.0],
+		"ready and active beans must be filled while spent beans retain outline only"
+	)
+	_expect(
+		charge_track.get_segment_states() == ["ready", "active", "spent"],
+		"skill beans must distinguish ready, active, and spent semantics"
 	)
 	_expect(
 		charge_track.get_cycle_rect().has_area(),
@@ -297,10 +344,179 @@ func _test_weapon_skill_footer_modes() -> void:
 	)
 	charge_track.trigger_flash = 1.0
 	_expect(is_equal_approx(charge_track.trigger_flash, 1.0), "triggered segmented track must expose a full flash state")
+	charge_track.max_charges = 1
+	charge_track.charge_states = ["ready"]
+	_expect(charge_track.get_segment_rects().size() == 1, "single-condition skills must still render one bean")
+	_expect(
+		charge_track.get_segment_rects()[0].size.x < charge_track.size.x * 0.5,
+		"a single skill bean must not resemble a full-width progress bar"
+	)
 	weapon.free()
 	slot.free()
 	status_bar.free()
 	charge_track.free()
+
+func _test_weapon_passive_contract_classification() -> void:
+	var multi_condition_paths := [
+		"res://Player/Weapons/Instances/cannon.tscn",
+		"res://Player/Weapons/Instances/dash_blade.tscn",
+		"res://Player/Weapons/Instances/machine_gun.tscn",
+		"res://Player/Weapons/Instances/flamethrower.tscn",
+		"res://Player/Weapons/Instances/plasma_lance.tscn",
+		"res://Player/Weapons/Instances/spear_launcher.tscn",
+	]
+	var single_condition_paths := [
+		"res://Player/Weapons/Instances/sniper.tscn",
+		"res://Player/Weapons/Instances/shotgun.tscn",
+		"res://Player/Weapons/Instances/laser.tscn",
+		"res://Player/Weapons/Instances/rocket_launcher.tscn",
+		"res://Player/Weapons/Instances/orbit.tscn",
+		"res://Player/Weapons/Instances/chainsaw_launcher.tscn",
+		"res://Player/Weapons/Instances/glacier_projector.tscn",
+		"res://Player/Weapons/Instances/charged_blaster.tscn",
+		"res://Player/Weapons/Instances/pistol.tscn",
+	]
+	for scene_path in multi_condition_paths:
+		var weapon := (load(scene_path) as PackedScene).instantiate() as Weapon
+		var status: Dictionary = weapon.get_passive_status()
+		_expect(bool(status.get("condition_visible", false)), "%s must expose its separate charge condition" % scene_path)
+		_expect((status.get("charge_states", []) as Array).size() >= 1, "%s must expose at least one skill bean" % scene_path)
+		weapon.free()
+	for scene_path in single_condition_paths:
+		var weapon := (load(scene_path) as PackedScene).instantiate() as Weapon
+		var status: Dictionary = weapon.get_passive_status()
+		_expect(not bool(status.get("condition_visible", true)), "%s must remain bean-only" % scene_path)
+		_expect((status.get("charge_states", []) as Array).size() >= 1, "%s must expose at least one skill bean" % scene_path)
+		weapon.free()
+
+func _test_reload_settlement_consumes_after_finish() -> void:
+	var previous_player = PlayerData.player
+	var dummy_player := DummyHeatPlayer.new()
+	PlayerData.player = dummy_player
+	var machine_gun := (load("res://Player/Weapons/Instances/machine_gun.tscn") as PackedScene).instantiate() as Weapon
+	machine_gun.force_skill_cooldowns_ready()
+	machine_gun.call("_on_passive_event", &"on_reload_started", {
+		"source_weapon": machine_gun,
+		"spent_ratio": 0.1,
+	})
+	_expect(machine_gun.passive_controller.get_passive_charge_current() == 4, "machine gun must start with four skill beans")
+	machine_gun.call("_on_passive_event", &"on_reload_finished", {
+		"source_weapon": machine_gun,
+		"spent_ratio": 0.1,
+	})
+	_expect(machine_gun.passive_controller.get_passive_charge_current() == 0, "reload finish must consume all machine-gun beans")
+	_expect(is_equal_approx(dummy_player.heat_expansion_multiplier, 8.0), "four machine-gun beans must produce four times the single-bean multiplier regardless of ammo-spend ratio")
+	var status: Dictionary = machine_gun.get_passive_status()
+	_expect(status.get("charge_states") == ["active", "active", "active", "active"], "machine-gun HUD must keep every consumed bean active for the shared effect duration")
+	machine_gun.free()
+
+	var flamethrower := (load("res://Player/Weapons/Instances/flamethrower.tscn") as PackedScene).instantiate() as Weapon
+	flamethrower.force_skill_cooldowns_ready()
+	flamethrower.call("_on_passive_event", &"on_reload_started", {"source_weapon": flamethrower})
+	_expect(flamethrower.passive_controller.get_passive_charge_current() == 1, "flamethrower reload start must only snapshot heat")
+	flamethrower.call("_on_passive_event", &"on_reload_finished", {"source_weapon": flamethrower})
+	_expect(flamethrower.passive_controller.get_passive_charge_current() == 0, "flamethrower reload finish must consume its bean")
+	_expect(flamethrower.get_passive_status().get("charge_states") == ["active"], "Heat Prepared must color its bean active")
+	flamethrower.free()
+
+	var plasma := (load("res://Player/Weapons/Instances/plasma_lance.tscn") as PackedScene).instantiate() as Weapon
+	plasma.force_skill_cooldowns_ready()
+	plasma.call("_on_passive_event", &"on_reload_started", {"source_weapon": plasma})
+	_expect(plasma.passive_controller.get_passive_charge_current() == 1, "plasma reload start must not settle its chain")
+	plasma.call("_on_passive_event", &"on_reload_finished", {"source_weapon": plasma})
+	_expect(plasma.passive_controller.get_passive_charge_current() == 0, "plasma reload finish must consume its bean")
+	_expect(plasma.get_passive_status().get("charge_states") == ["active"], "Heat Feedback must color its bean active")
+	plasma.free()
+
+	PlayerData.player = null
+	var spear := (load("res://Player/Weapons/Instances/spear_launcher.tscn") as PackedScene).instantiate() as Weapon
+	add_child(spear)
+	spear.force_skill_cooldowns_ready()
+	spear.set("_piercing_blade_dance_charge", 10)
+	spear.call("_on_passive_event", &"on_reload_started", {"source_weapon": spear})
+	_expect(spear.passive_controller.get_passive_charge_current() == 1, "spear reload start must not launch the volley")
+	spear.call("_on_passive_event", &"on_reload_finished", {"source_weapon": spear})
+	_expect(spear.passive_controller.get_passive_charge_current() == 0, "spear reload finish must consume its bean")
+	_expect(spear.get_passive_status().get("charge_states") == ["spent"], "instant spear settlement must leave an outlined bean")
+	remove_child(spear)
+	spear.free()
+
+	PlayerData.player = previous_player
+	dummy_player.free()
+
+func _test_condition_based_skill_rearming() -> void:
+	var previous_player = PlayerData.player
+	PlayerData.player = null
+	var machine_gun := (load("res://Player/Weapons/Instances/machine_gun.tscn") as PackedScene).instantiate() as Weapon
+	machine_gun.force_skill_cooldowns_ready()
+	for index in range(4):
+		machine_gun.notify_offhand_skill_triggered(0.0)
+	machine_gun.magazine_capacity = 40
+	machine_gun.current_ammo = 31
+	machine_gun.call("_try_rearm_heat_expansion_from_magazine_spend")
+	_expect(machine_gun.passive_controller.get_passive_charge_current() == 0, "machine gun must not rearm below 25% magazine spend")
+	_expect(is_equal_approx(float(machine_gun.get_passive_status().get("condition_progress", 0.0)), 0.9), "22.5% magazine spend must fill 90% of the next-bean progress bar")
+	machine_gun.current_ammo = 30
+	machine_gun.call("_try_rearm_heat_expansion_from_magazine_spend")
+	_expect(machine_gun.passive_controller.get_passive_charge_current() == 1, "machine gun must restore one bean at 25% magazine spend")
+	_expect(is_zero_approx(float(machine_gun.get_passive_status().get("condition_progress", 1.0))), "earning a bean at 25% spend must reset next-bean progress")
+	machine_gun.current_ammo = 25
+	machine_gun.call("_try_rearm_heat_expansion_from_magazine_spend")
+	_expect(is_equal_approx(float(machine_gun.get_passive_status().get("condition_progress", 0.0)), 0.5), "37.5% magazine spend must fill half of the next-bean progress bar")
+	machine_gun.current_ammo = 20
+	machine_gun.call("_try_rearm_heat_expansion_from_magazine_spend")
+	_expect(machine_gun.passive_controller.get_passive_charge_current() == 2, "machine gun must restore two beans at 50% magazine spend")
+	_expect(is_zero_approx(float(machine_gun.get_passive_status().get("condition_progress", 1.0))), "earning the second bean at 50% spend must restart progress again")
+	machine_gun.current_ammo = 10
+	machine_gun.call("_try_rearm_heat_expansion_from_magazine_spend")
+	_expect(machine_gun.passive_controller.get_passive_charge_current() == 3, "machine gun must restore three beans at 75% magazine spend")
+	machine_gun.current_ammo = 0
+	machine_gun.call("_try_rearm_heat_expansion_from_magazine_spend")
+	_expect(machine_gun.passive_controller.get_passive_charge_current() == 4, "machine gun must restore four beans at 100% magazine spend")
+	machine_gun.call("_refresh_offhand_skill_on_reload")
+	_expect(machine_gun.passive_controller.get_passive_charge_current() == 4, "machine-gun reload must not restore extra beans")
+	machine_gun.free()
+
+	var flamethrower := (load("res://Player/Weapons/Instances/flamethrower.tscn") as PackedScene).instantiate() as Weapon
+	flamethrower.force_skill_cooldowns_ready()
+	flamethrower.notify_offhand_skill_triggered(0.0)
+	flamethrower.set("_heat_prepared_accumulated_heat", flamethrower.get("heat_max_value"))
+	flamethrower.call("_try_rearm_heat_prepared_from_accumulation")
+	_expect(flamethrower.passive_controller.get_passive_charge_current() == 1, "full flamethrower heat must restore its bean")
+	_expect(is_zero_approx(float(flamethrower.get_passive_status().get("condition_progress", 1.0))), "flamethrower progress must reset after awarding its next bean")
+	flamethrower.call("_refresh_offhand_skill_on_reload")
+	_expect(flamethrower.passive_controller.get_passive_charge_current() == 1, "flamethrower reload must not restore an extra bean")
+	flamethrower.free()
+
+	var plasma := (load("res://Player/Weapons/Instances/plasma_lance.tscn") as PackedScene).instantiate() as Weapon
+	plasma.force_skill_cooldowns_ready()
+	plasma.notify_offhand_skill_triggered(0.0)
+	for index in range(3):
+		plasma.call("_try_trigger_heat_spend_chain", 1.0)
+	_expect(plasma.passive_controller.get_passive_charge_current() == 1, "three heat-spending plasma attacks must restore its bean")
+	_expect(is_zero_approx(float(plasma.get_passive_status().get("condition_progress", 1.0))), "plasma progress must reset after awarding its next bean")
+	plasma.call("_refresh_offhand_skill_on_reload")
+	_expect(plasma.passive_controller.get_passive_charge_current() == 1, "plasma-lance reload must not restore an extra bean")
+	plasma.free()
+	PlayerData.player = previous_player
+
+func _test_continuous_effect_occupies_consumed_bean() -> void:
+	var pistol := (load("res://Player/Weapons/Instances/pistol.tscn") as PackedScene).instantiate() as Weapon
+	pistol.force_skill_cooldowns_ready()
+	pistol.notify_offhand_skill_triggered(0.0)
+	pistol.set("_pierce_mark_window_remaining_sec", 2.0)
+	var active_status: Dictionary = pistol.get_passive_status()
+	_expect(
+		active_status.get("charge_states") == ["ready", "ready", "active"],
+		"a continuous effect must color its consumed bean active while preserving unused beans"
+	)
+	pistol.set("_pierce_mark_window_remaining_sec", 0.0)
+	var spent_status: Dictionary = pistol.get_passive_status()
+	_expect(
+		spent_status.get("charge_states") == ["ready", "ready", "spent"],
+		"an expired continuous effect must leave its consumed bean outlined"
+	)
+	pistol.free()
 
 func _test_passive_feedback_ignores_routine_weapon_events() -> void:
 	var weapon := DummyWeapon.new()

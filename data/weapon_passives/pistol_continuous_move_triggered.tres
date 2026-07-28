@@ -10,3 +10,4 @@ description = "Mark trigger. Has 3 charges; periodic movement windows spend 1 ch
 condition_type = "periodic_window"
 refresh_type = "reload"
 ui_mode = "progress"
+effect_mode = "timed"

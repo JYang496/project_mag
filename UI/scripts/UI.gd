@@ -7,6 +7,7 @@ class_name UI
 const HP_BAR_ANIM_TIME := 0.2
 const HP_BAR_TRANS := Tween.TRANS_SINE
 const HP_BAR_EASE := Tween.EASE_OUT
+const PAUSE_MODAL_CANVAS_LAYER := 10000
 const HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hud_presenter.gd")
 const HUD_REFRESH_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/hud_refresh_controller.gd")
 const TASK_OBJECTIVE_HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/task_objective_hud_presenter.gd")
@@ -53,12 +54,12 @@ var purchase_primary_root: Control
 var warehouse_primary_root: Control
 var board_edit_primary_root: Control
 var battle_start_primary_root: Control
-@onready var pause_menu_root : Control = $GUI/PauseMenuRoot
+@onready var pause_menu_root : Control = $PauseMenuLayer/PauseMenuRoot
 var warehouse_management_root: Control
 var purchase_panel: Panel
 var upgrade_panel: Panel
 var module_panel: Panel
-@onready var pause_menu_panel: Panel = $GUI/PauseMenuRoot/PauseMenuPanel
+@onready var pause_menu_panel: Panel = $PauseMenuLayer/PauseMenuRoot/PauseMenuPanel
 var purchase_primary_panel: Panel
 var upgrade_primary_panel: Panel
 var warehouse_primary_panel: Panel
@@ -140,7 +141,7 @@ var weapon_warehouse_button: Button
 var upgrade_module_button: Button
 
 # Pause menu
-@onready var resume_button = $GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton
+@onready var resume_button = $PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/ResumeButton
 
 # Misc
 var branch_select_panel: BranchSelectPanel
@@ -1352,9 +1353,10 @@ func _set_pause_menu_open(open: bool) -> void:
 	if pause_menu_root == null or not is_instance_valid(pause_menu_root):
 		return
 	if open:
-		# Runtime menus are appended to GUI. Keep the pause blocker last in the
-		# Control tree so its input order matches its topmost visual z-index.
-		gui_root.move_child(pause_menu_root, gui_root.get_child_count() - 1)
+		# Keep the blocker last inside the reserved modal CanvasLayer so its
+		# input order matches its globally topmost visual priority.
+		var pause_parent := pause_menu_root.get_parent()
+		pause_parent.move_child(pause_menu_root, pause_parent.get_child_count() - 1)
 		pause_menu_root.mouse_filter = Control.MOUSE_FILTER_STOP
 		pause_menu_root.visible = true
 		clear_rest_area_hover_hint()

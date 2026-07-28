@@ -10,3 +10,4 @@ description = "Defense/Execute setup. Stand still long enough, then fire one emp
 condition_type = "idle_time_threshold"
 refresh_type = "reload"
 ui_mode = "threshold"
+hud_mode = "bean_with_condition"

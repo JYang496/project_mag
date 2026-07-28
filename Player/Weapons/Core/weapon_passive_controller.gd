@@ -94,6 +94,26 @@ func with_passive_charge_status(status: Dictionary) -> Dictionary:
 		output["charges_current"] = charge_current
 	if not output.has("charges_max"):
 		output["charges_max"] = charge_max
+	if not output.has("charge_states"):
+		var states: Array[String] = []
+		var active_state := str(output.get("state", "")) == "active"
+		var active_charge_count := clampi(
+			int(output.get("active_charge_count", 1 if active_state else 0)),
+			0,
+			maxi(charge_max - charge_current, 0)
+		)
+		for index in range(charge_max):
+			if index < charge_current:
+				states.append("ready")
+			elif active_state and index < charge_current + active_charge_count:
+				states.append("active")
+			else:
+				states.append("spent")
+		output["charge_states"] = states
+	if not output.has("condition_visible"):
+		output["condition_visible"] = false
+	if not output.has("condition_progress"):
+		output["condition_progress"] = clampf(float(output.get("progress", 0.0)), 0.0, 1.0)
 	output["charge_based"] = true
 	return output
 
@@ -104,6 +124,19 @@ func notify_passive_triggered(_cooldown_sec := 0.0) -> void:
 	var charge_max := get_passive_charge_max()
 	passive_charge_count = clampi(max(0, get_passive_charge_current() - 1), 0, charge_max)
 	weapon.set_offhand_skill_ready(passive_charge_count > 0)
+
+func add_passive_charges(amount: int = 1) -> int:
+	var charge_max := get_passive_charge_max()
+	var charge_before := get_passive_charge_current()
+	passive_charge_count = clampi(charge_before + maxi(amount, 0), 0, charge_max)
+	weapon.set_offhand_skill_ready(passive_charge_count > 0)
+	return passive_charge_count - charge_before
+
+func consume_all_passive_charges() -> int:
+	var consumed := get_passive_charge_current()
+	passive_charge_count = 0
+	weapon.set_offhand_skill_ready(false)
+	return consumed
 
 func refresh_passive_on_reload() -> void:
 	passive_charge_count = get_passive_charge_max()

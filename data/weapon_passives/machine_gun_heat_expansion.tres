@@ -6,7 +6,9 @@
 script = ExtResource("1_script")
 passive_id = "machine_gun_heat_expansion"
 display_name = "Heat Expansion"
-description = "Heat/Reload trigger. Spend magazine ammo, then start a reload to temporarily increase shared heat capacity, up to double at full spend."
+description = "Each 25% of a magazine spent restores 1 of 4 charges. Reload consumes all stored charges; final heat-capacity multiplier equals consumed charges times the single-charge multiplier."
 condition_type = "ammo_spent"
-refresh_type = "reload_finished"
+refresh_type = "ammo_spent_25_percent"
 ui_mode = "progress"
+hud_mode = "bean_with_condition"
+effect_mode = "timed"

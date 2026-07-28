@@ -2,6 +2,7 @@ class_name ProjectedWorldUiService
 extends RefCounted
 
 const LAYER_NAME := "HybridWorldUi"
+const LAYER_ORDER := 30
 
 static func ensure_layer(tree: SceneTree) -> CanvasLayer:
 	var existing := tree.root.get_node_or_null(LAYER_NAME) as CanvasLayer
@@ -9,7 +10,7 @@ static func ensure_layer(tree: SceneTree) -> CanvasLayer:
 		return existing
 	var layer := CanvasLayer.new()
 	layer.name = LAYER_NAME
-	layer.layer = 30
+	layer.layer = LAYER_ORDER
 	tree.root.add_child(layer)
 	return layer
 

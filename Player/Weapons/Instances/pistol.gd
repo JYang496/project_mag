@@ -93,7 +93,7 @@ func get_passive_status() -> Dictionary:
 		"progress": 1.0 if state == "active" else clampf(current_sec / required_sec, 0.0, 1.0),
 		"current": _pierce_mark_window_remaining_sec if state == "active" else current_sec,
 		"required": required_sec,
-		"ready": state == "active",
+		"ready": false,
 		"trigger_hint": "periodic_auto_pistol_hits_mark_targets",
 		"refresh_hint": "reload",
 		"charge_current": charge_current,

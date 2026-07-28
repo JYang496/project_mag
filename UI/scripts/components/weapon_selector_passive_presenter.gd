@@ -19,8 +19,10 @@ func resolve_state(weapon: Variant) -> Dictionary:
 		"ready": false,
 		"charge_current": 0,
 		"charge_max": 0,
+		"charge_states": [],
 		"cycle_progress": 0.0,
 		"cycle_visible": false,
+		"cycle_thresholds": [],
 		"display_mode": &"hidden",
 	}
 	if weapon == null or not is_instance_valid(weapon) \
@@ -45,28 +47,38 @@ func resolve_state(weapon: Variant) -> Dictionary:
 	))
 	output["charge_max"] = maxi(charge_max, 0)
 	output["charge_current"] = clampi(charge_current, 0, maxi(charge_max, 0))
-	output["display_mode"] = &"segmented" if charge_max > 1 else &"continuous"
+	output["charge_states"] = _resolve_charge_states(status, charge_max, charge_current)
+	output["display_mode"] = &"segmented" if charge_max > 0 else &"hidden"
 	output["ready"] = is_ready or state in ["ready_pending_action", "ready"]
 	var progress := clampf(float(status.get("progress", 1.0)), 0.0, 1.0)
 	output["progress"] = progress
-	var progress_role := str(status.get("progress_role", ""))
-	var has_explicit_cycle := status.has("charge_recovery_progress")
-	output["cycle_visible"] = charge_max > 1 and (
-		has_explicit_cycle or progress_role in ["cooldown", "trigger_condition"]
-	)
+	var has_explicit_condition := bool(status.get("condition_visible", false))
+	output["cycle_visible"] = has_explicit_condition
 	output["cycle_progress"] = clampf(
-		float(status.get("charge_recovery_progress", progress)),
+		float(status.get("condition_progress", progress)),
 		0.0,
 		1.0
 	)
+	output["cycle_thresholds"] = status.get("condition_thresholds", []).duplicate()
 	if bool(output["ready"]):
 		output["kind"] = "ready"
-		output["progress"] = 1.0
 	elif state in ["cooldown", "waiting_refresh"]:
 		output["kind"] = "cooldown"
 		output["progress"] = maxf(progress, 0.08)
 	elif state in ["charging", "active"] or (progress > 0.0 and progress < 1.0):
 		output["kind"] = "progress"
+	return output
+
+func _resolve_charge_states(status: Dictionary, charge_max: int, charge_current: int) -> Array[String]:
+	var output: Array[String] = []
+	var explicit_states: Array = status.get("charge_states", [])
+	for index in range(maxi(charge_max, 0)):
+		var state := "ready" if index < charge_current else "spent"
+		if index < explicit_states.size():
+			var requested := str(explicit_states[index])
+			if requested in ["ready", "active", "spent"]:
+				state = requested
+		output.append(state)
 	return output
 
 func layout_status(
@@ -101,6 +113,7 @@ func apply_charge(charge_node: Control, visual_state: Dictionary) -> void:
 		return
 	charge_node.visible = true
 	charge_node.set("max_charges", charge_max)
+	charge_node.set("charge_states", visual_state.get("charge_states", []))
 	charge_node.set(
 		"current_charges",
 		clampi(int(visual_state.get("charge_current", 0)), 0, charge_max)
@@ -110,6 +123,7 @@ func apply_charge(charge_node: Control, visual_state: Dictionary) -> void:
 		"cycle_progress",
 		clampf(float(visual_state.get("cycle_progress", 0.0)), 0.0, 1.0)
 	)
+	charge_node.set("cycle_thresholds", visual_state.get("cycle_thresholds", []))
 
 func apply_status(
 	passive_node: Control,
@@ -119,9 +133,11 @@ func apply_status(
 ) -> void:
 	if passive_node == null:
 		return
-	var should_show := bool(visual_state.get("visible", true)) \
-		and StringName(visual_state.get("display_mode", &"hidden")) == &"continuous"
+	var should_show := false
 	passive_node.visible = should_show
+	if glow_node != null and is_instance_valid(glow_node):
+		glow_node.position = passive_node.position
+		glow_node.size = passive_node.size
 	if not should_show:
 		return
 	var kind := str(visual_state.get("kind", "unavailable"))
@@ -136,9 +152,6 @@ func apply_status(
 			_set_status(passive_node, progress, "progress", "progress_base", true, 0.94)
 		_:
 			_set_status(passive_node, 1.0, "unavailable", "unavailable_base", true, 0.56)
-	if glow_node != null and is_instance_valid(glow_node):
-		glow_node.position = passive_node.position
-		glow_node.size = passive_node.size
 
 func _set_status(
 	node: Control,

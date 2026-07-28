@@ -327,6 +327,8 @@ func get_passive_status() -> Dictionary:
 		"current": progress * maxf(idle_fire_trigger_sec, 0.1),
 		"required": maxf(idle_fire_trigger_sec, 0.1),
 		"ready": state == "ready_pending_action",
+		"condition_visible": true,
+		"condition_progress": progress,
 		"trigger_hint": "next_cannon_fire_after_idle",
 		"refresh_hint": "reload",
 		"empowered_shots": maxi(1, idle_fire_empowered_shots),

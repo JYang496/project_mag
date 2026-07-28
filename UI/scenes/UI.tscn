@@ -16,7 +16,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PauseMenuRoot" type="Control" parent="GUI" unique_id=1775346363]
+[node name="PauseMenuLayer" type="CanvasLayer" parent="."]
+layer = 10000
+
+[node name="PauseMenuRoot" type="Control" parent="PauseMenuLayer" unique_id=1775346363]
 process_mode = 2
 visible = false
 z_index = 1000
@@ -26,12 +29,12 @@ offset_top = 25.0
 offset_right = 750.0
 offset_bottom = 625.0
 
-[node name="PauseMenuPanel" type="Panel" parent="GUI/PauseMenuRoot" unique_id=978817655]
+[node name="PauseMenuPanel" type="Panel" parent="PauseMenuLayer/PauseMenuRoot" unique_id=978817655]
 layout_mode = 0
 offset_right = 400.0
 offset_bottom = 600.0
 
-[node name="Paused" type="Label" parent="GUI/PauseMenuRoot/PauseMenuPanel" unique_id=1656821197]
+[node name="Paused" type="Label" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel" unique_id=1656821197]
 layout_mode = 0
 offset_left = 66.0
 offset_top = 150.0
@@ -39,7 +42,7 @@ offset_right = 123.0
 offset_bottom = 173.0
 text = "Paused"
 
-[node name="ResumeButton" type="Button" parent="GUI/PauseMenuRoot/PauseMenuPanel" unique_id=378820124]
+[node name="ResumeButton" type="Button" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel" unique_id=378820124]
 layout_mode = 0
 offset_left = 154.0
 offset_top = 257.0
@@ -55,4 +58,4 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[connection signal="pressed" from="GUI/PauseMenuRoot/PauseMenuPanel/ResumeButton" to="." method="_on_resume_button_pressed"]
+[connection signal="pressed" from="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/ResumeButton" to="." method="_on_resume_button_pressed"]

@@ -10,3 +10,4 @@ description = "Close trigger. Dash Blade hits slow enemies; dash far enough befo
 condition_type = "distance_threshold"
 refresh_type = "reload"
 ui_mode = "threshold"
+hud_mode = "bean_with_condition"
