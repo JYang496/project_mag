@@ -244,5 +244,22 @@ func _record_energy_damage_on_hit(state: Dictionary, energy_damage: int) -> void
 		return
 	state["energy_damage_recorded"] = max(0, int(state.get("energy_damage_recorded", 0))) + energy_damage
 
+static func get_recorded_energy_damage(target: Node) -> int:
+	if target == null or not is_instance_valid(target) or not target.has_meta(DAMAGE_STATE_META):
+		return 0
+	var state_variant: Variant = target.get_meta(DAMAGE_STATE_META, {})
+	if not (state_variant is Dictionary):
+		return 0
+	return max(0, int((state_variant as Dictionary).get("energy_damage_recorded", 0)))
+
+static func consume_recorded_energy_damage(target: Node) -> int:
+	var recorded := get_recorded_energy_damage(target)
+	if recorded <= 0 or target == null or not is_instance_valid(target):
+		return 0
+	var state: Dictionary = target.get_meta(DAMAGE_STATE_META, {})
+	state["energy_damage_recorded"] = 0
+	target.set_meta(DAMAGE_STATE_META, state)
+	return recorded
+
 func _has_energy_damage_breakpoint(state: Dictionary, current_hp: int) -> bool:
 	return int(state.get("energy_damage_recorded", 0)) > max(0, current_hp)

@@ -230,6 +230,8 @@ func _try_trigger_player_damaged(detail: Dictionary) -> void:
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
+	if has_weapon_trait(WeaponTrait.ENERGY):
+		return get_energy_hit_pulse_status()
 	var state := "ready" if is_passive_ready() else "waiting_refresh"
 	return with_passive_charge_status({
 		"id": "orbit_player_damaged_triggered",

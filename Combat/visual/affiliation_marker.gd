@@ -1,4 +1,4 @@
-extends Node2D
+extends "res://Visual/Oblique/billboard_visual_2d.gd"
 class_name AffiliationMarker
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
@@ -22,7 +22,11 @@ enum MarkerShape {
 	set(value):
 		radius = value
 		queue_redraw()
-@export_range(1.0, 5.0, 0.5) var line_width := 2.0:
+@export var ground_footprint_size := Vector2.ZERO:
+	set(value):
+		ground_footprint_size = value.abs()
+		queue_redraw()
+@export_range(0.5, 3.0, 0.25) var line_width := 1.0:
 	set(value):
 		line_width = value
 		queue_redraw()
@@ -33,9 +37,76 @@ enum MarkerShape {
 
 
 func _ready() -> void:
-	z_as_relative = true
-	z_index = -1
+	# Affiliation markers describe a ground footprint. Their explicit ellipse
+	# already lives in ground space, so upright billboard compensation must not
+	# reshape it a second time in the 2D fallback.
+	enabled = false
+	# Keep the marker immediately behind its projected owner while sharing the
+	# same depth bucket as the rest of the billboard visuals.
+	depth_sort_offset = -1
+	super._ready()
+	if _get_hybrid_view() == null:
+		z_as_relative = true
+		z_index = -1
 	queue_redraw()
+	set_meta(&"hybrid_ground_visible", visible)
+	call_deferred("sync_to_ground_shadow")
+
+
+func _register_with_hybrid_ground() -> void:
+	if not is_inside_tree():
+		return
+	if not has_meta(&"hybrid_ground_visible"):
+		set_meta(&"hybrid_ground_visible", visible)
+	if HybridGroundRegistration.register(self, &"register_affiliation_marker"):
+		visible = false
+
+
+func sync_to_ground_shadow() -> void:
+	if not is_inside_tree():
+		return
+	var unit_owner := get_parent() as Node2D
+	var shadow := unit_owner.get_node_or_null("GroundShadow") as CanvasItem if unit_owner != null else null
+	if shadow != null:
+		var shadow_2d := shadow as Node2D
+		if shadow_2d != null:
+			set_logical_local_position(shadow_2d.position)
+		var shadow_size := _get_shadow_visual_size(shadow)
+		if shadow_size.x > 0.0 and shadow_size.y > 0.0:
+			ground_footprint_size = shadow_size
+	_register_with_hybrid_ground()
+
+
+func _get_shadow_visual_size(shadow: CanvasItem) -> Vector2:
+	if shadow is Sprite2D:
+		var sprite := shadow as Sprite2D
+		if sprite.texture != null:
+			return sprite.texture.get_size() * sprite.scale.abs()
+	if shadow is Polygon2D:
+		var polygon := shadow as Polygon2D
+		if not polygon.polygon.is_empty():
+			var bounds := Rect2(polygon.polygon[0], Vector2.ZERO)
+			for point in polygon.polygon:
+				bounds = bounds.expand(point)
+			return bounds.size * polygon.scale.abs()
+	return Vector2.ZERO
+
+
+func get_hybrid_ground_marker_config() -> Dictionary:
+	return {
+		"local_anchor": _base_transform.origin,
+		"footprint_size": _get_effective_footprint_size(),
+		"line_width": line_width,
+		"arc_length": arc_length,
+		"color": marker_color,
+		"marker_shape": marker_shape,
+		"visible": bool(get_meta(&"hybrid_ground_visible", true)),
+	}
+
+
+func _exit_tree() -> void:
+	HybridGroundRegistration.unregister(self)
+	super._exit_tree()
 
 
 func _draw() -> void:
@@ -52,56 +123,55 @@ func _draw() -> void:
 
 func _draw_player_ring() -> void:
 	var gap := 0.54
-	draw_arc(
-		Vector2.ZERO,
-		radius,
+	_draw_ellipse_arc(
 		-PI * 0.5 + gap,
 		PI * 1.5 - gap,
-		40,
-		marker_color,
-		line_width,
-		true
+		40
 	)
-	draw_circle(Vector2(0.0, -radius), line_width * 0.75, PALETTE.PLAYER_CORE)
+	var radii := _get_effective_footprint_size() * 0.5
+	draw_circle(Vector2(0.0, -radii.y), line_width * 0.75, PALETTE.PLAYER_CORE)
 
 
 func _draw_enemy_brackets() -> void:
 	for index in range(4):
 		var center_angle := PI * 0.25 + float(index) * PI * 0.5
-		draw_arc(
-			Vector2.ZERO,
-			radius,
+		_draw_ellipse_arc(
 			center_angle - arc_length * 0.5,
 			center_angle + arc_length * 0.5,
-			7,
-			marker_color,
-			line_width,
-			true
+			7
 		)
-		var tip := Vector2.RIGHT.rotated(center_angle) * (radius - 3.0)
-		var inward := -Vector2.RIGHT.rotated(center_angle) * 4.0
+		var radii := _get_effective_footprint_size() * 0.5
+		var tip := Vector2(cos(center_angle) * radii.x, sin(center_angle) * radii.y)
+		var inward := -tip.normalized() * 4.0
 		draw_line(tip, tip + inward, marker_color, line_width, true)
 
 
 func _draw_friendly_frame() -> void:
-	var size := Vector2.ONE * radius * 1.35
-	var rect := Rect2(-size * 0.5, size)
-	draw_style_box(_make_frame_style(), rect)
+	for index in range(4):
+		var center_angle := PI * 0.25 + float(index) * PI * 0.5
+		_draw_ellipse_arc(center_angle - 0.58, center_angle + 0.58, 10)
 
 
 func _draw_neutral_dashes() -> void:
 	for index in range(8):
 		var start_angle := float(index) * TAU / 8.0
-		draw_arc(
-			Vector2.ZERO,
-			radius,
-			start_angle,
-			start_angle + 0.34,
-			4,
-			marker_color,
-			line_width,
-			true
-		)
+		_draw_ellipse_arc(start_angle, start_angle + 0.34, 4)
+
+
+func _draw_ellipse_arc(start_angle: float, end_angle: float, point_count: int) -> void:
+	var radii := _get_effective_footprint_size() * 0.5
+	var points := PackedVector2Array()
+	for index in range(maxi(point_count, 2)):
+		var weight := float(index) / float(maxi(point_count - 1, 1))
+		var angle := lerpf(start_angle, end_angle, weight)
+		points.append(Vector2(cos(angle) * radii.x, sin(angle) * radii.y))
+	draw_polyline(points, marker_color, line_width, true)
+
+
+func _get_effective_footprint_size() -> Vector2:
+	if ground_footprint_size.x > 0.0 and ground_footprint_size.y > 0.0:
+		return ground_footprint_size
+	return Vector2.ONE * radius * 2.0
 
 
 func _make_frame_style() -> StyleBoxFlat:

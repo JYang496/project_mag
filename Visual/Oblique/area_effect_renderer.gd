@@ -3,18 +3,24 @@ extends RefCounted
 
 var _view: Node
 var shadow_meshes: Dictionary = {}
+var affiliation_marker_meshes: Dictionary = {}
 var area_meshes: Dictionary = {}
 var dash_telegraph_meshes: Dictionary = {}
 
 func setup(view: Node) -> void:
 	_view = view
 	_view._shadow_meshes = shadow_meshes
+	_view._affiliation_marker_meshes = affiliation_marker_meshes
 	_view._area_meshes = area_meshes
 	_view._dash_telegraph_meshes = dash_telegraph_meshes
 
 func register_shadow(shadow: CanvasItem) -> void:
 	if _is_ready():
 		_view._register_shadow(shadow)
+
+func register_affiliation_marker(marker: Node2D) -> void:
+	if _is_ready():
+		_view._register_affiliation_marker(marker)
 
 func register_area_effect(area: Node2D) -> void:
 	if _is_ready():
@@ -32,11 +38,13 @@ func sync_late(_delta: float) -> void:
 	if not _is_ready():
 		return
 	_view._sync_shadow_meshes()
+	_view._sync_affiliation_marker_meshes()
 	_view._sync_area_meshes()
 	_view._sync_dash_telegraph_meshes()
 
 func clear() -> void:
 	shadow_meshes.clear()
+	affiliation_marker_meshes.clear()
 	area_meshes.clear()
 	dash_telegraph_meshes.clear()
 

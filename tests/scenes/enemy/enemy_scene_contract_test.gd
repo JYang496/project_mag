@@ -58,8 +58,64 @@ func _validate_enemy_scene(scene_path: String) -> void:
 	await get_tree().process_frame
 
 	var body := enemy.get_node_or_null("Body") as Sprite2D
+	var ground_shadow := enemy.get_node_or_null("GroundShadow") as Node2D
+	var hurt_collision := enemy.get_node_or_null("HurtBox/CollisionShape2D") as CollisionShape2D
+	var affiliation_marker := enemy.get_node_or_null("AffiliationMarker") as Node2D
 	_expect(body != null, "%s must preserve Body" % scene_path)
-	_expect(enemy.get_node_or_null("GroundShadow") != null, "%s must preserve GroundShadow" % scene_path)
+	_expect(
+		body != null and body.has_method("get_unit_billboard_config"),
+		"%s Body must expose the 3D unit billboard compatibility contract" % scene_path
+	)
+	_expect(ground_shadow != null, "%s must preserve GroundShadow" % scene_path)
+	_expect(affiliation_marker != null, "%s must preserve AffiliationMarker" % scene_path)
+	if affiliation_marker != null:
+		var marker_line_width := float(affiliation_marker.get("line_width"))
+		_expect(
+			marker_line_width >= 1.0 and marker_line_width <= 1.25,
+			"%s ground marker must keep the narrow 1.0-1.25px stroke: actual=%s" % [
+				scene_path,
+				marker_line_width,
+			]
+		)
+		_expect(
+			affiliation_marker.has_method("set_screen_offset"),
+			"%s AffiliationMarker must use hybrid billboard projection" % scene_path
+		)
+		_expect(
+			affiliation_marker.has_method("get_hybrid_ground_marker_config"),
+			"%s AffiliationMarker must expose its ground visual configuration" % scene_path
+		)
+		if ground_shadow != null:
+			var marker_transform := affiliation_marker.get("_base_transform") as Transform2D
+			_expect(
+				marker_transform.origin.is_equal_approx(ground_shadow.position),
+				"%s AffiliationMarker must share GroundShadow logical anchor" % scene_path
+			)
+	var hurtbox_size := _collision_shape_size(hurt_collision)
+	if hurtbox_size != Vector2.ZERO and affiliation_marker != null and ground_shadow is Polygon2D:
+		var expected_shadow_size := Vector2(
+			roundf(clampf(hurtbox_size.x * 1.10, 20.0, 52.0)),
+			roundf(clampf(hurtbox_size.y * 0.45, 9.0, 24.0))
+		)
+		var shadow_size := _polygon_size(ground_shadow as Polygon2D)
+		_expect(
+			shadow_size.is_equal_approx(expected_shadow_size),
+			"%s shadow size must derive from HurtBox: actual=%s expected=%s" % [
+				scene_path,
+				shadow_size,
+				expected_shadow_size,
+			]
+		)
+		var marker_config := affiliation_marker.call("get_hybrid_ground_marker_config") as Dictionary
+		var marker_footprint := marker_config.get("footprint_size", Vector2.ZERO) as Vector2
+		_expect(
+			marker_footprint.is_equal_approx(shadow_size),
+			"%s marker contour must exactly reuse GroundShadow size: marker=%s shadow=%s" % [
+				scene_path,
+				marker_footprint,
+				shadow_size,
+			]
+		)
 
 	if body != null:
 		enemy.damage_feedback.play_hit_flash()
@@ -83,3 +139,27 @@ func _expect(condition: bool, message: String) -> void:
 		return
 	_failed = true
 	push_error(message)
+
+
+func _collision_shape_size(node: CollisionShape2D) -> Vector2:
+	if node == null or node.shape == null:
+		return Vector2.ZERO
+	var size := Vector2.ZERO
+	if node.shape is RectangleShape2D:
+		size = (node.shape as RectangleShape2D).size
+	elif node.shape is CircleShape2D:
+		var diameter := (node.shape as CircleShape2D).radius * 2.0
+		size = Vector2(diameter, diameter)
+	elif node.shape is CapsuleShape2D:
+		var capsule := node.shape as CapsuleShape2D
+		size = Vector2(capsule.radius * 2.0, capsule.height)
+	return size * node.scale.abs()
+
+
+func _polygon_size(polygon: Polygon2D) -> Vector2:
+	if polygon == null or polygon.polygon.is_empty():
+		return Vector2.ZERO
+	var bounds := Rect2(polygon.polygon[0], Vector2.ZERO)
+	for point in polygon.polygon:
+		bounds = bounds.expand(point)
+	return bounds.size * polygon.scale.abs()

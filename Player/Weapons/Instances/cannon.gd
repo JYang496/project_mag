@@ -310,6 +310,8 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	_restart_idle_fire_timer()
 
 func get_passive_status() -> Dictionary:
+	if has_weapon_trait(WeaponTrait.ENERGY):
+		return get_energy_hit_pulse_status()
 	var state := "charging"
 	var progress := 0.0
 	if not _idle_fire_reload_ready:

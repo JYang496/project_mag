@@ -25,7 +25,7 @@ func reset_energy_to_max() -> void:
 func process_input_event(event: InputEvent) -> void:
 	if event.is_action_pressed("SKILL_PLAYER"):
 		try_cast_player_active_skill()
-	if event.is_action_pressed("SKILL_WEAPON"):
+	if event.is_action_pressed("RELOAD"):
 		try_reload_main_weapon()
 
 func setup_default_active_skill() -> void:
@@ -35,10 +35,6 @@ func setup_default_active_skill() -> void:
 func try_cast_player_active_skill() -> void:
 	_ensure_controllers()
 	_player_skill_controller.try_cast_player_active_skill()
-
-func try_cast_main_weapon_active_skill() -> void:
-	_ensure_controllers()
-	_weapon_action_controller.try_cast_main_weapon_active_skill()
 
 func try_reload_main_weapon() -> void:
 	_ensure_controllers()
@@ -52,7 +48,7 @@ func try_show_reload_block_hint(main_weapon: Weapon) -> void:
 
 func ensure_input_actions() -> void:
 	_ensure_input_action("SKILL_PLAYER", [KEY_SPACE])
-	_ensure_input_action("SKILL_WEAPON", [KEY_R])
+	_ensure_input_action("RELOAD", [KEY_R])
 
 func get_current_energy() -> float:
 	_ensure_controllers()
@@ -77,18 +73,6 @@ func add_energy(amount: float) -> void:
 func regen_energy(delta: float) -> void:
 	_ensure_controllers()
 	_energy_state.regen_energy(delta)
-
-func get_last_weapon_skill_fail_reason() -> String:
-	_ensure_controllers()
-	return _weapon_action_controller.get_last_weapon_skill_fail_reason()
-
-func get_weapon_active_cd_remaining() -> float:
-	_ensure_controllers()
-	return _weapon_action_controller.get_weapon_active_cd_remaining()
-
-func get_weapon_active_cd_ratio() -> float:
-	_ensure_controllers()
-	return _weapon_action_controller.get_weapon_active_cd_ratio()
 
 func _ensure_controllers() -> void:
 	if _energy_state == null:

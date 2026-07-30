@@ -221,7 +221,7 @@
     <p class="subtitle">汇总当前 15 件武器的专属技能、触发效果与恢复方式。</p>
     <div class="meta">
       <span><strong>项目：</strong>MagArena</span>
-      <span><strong>整理日期：</strong>2026-07-28</span>
+      <span><strong>整理日期：</strong>2026-07-29</span>
       <span><strong>依据：</strong><code>data/weapons</code>、<code>data/weapon_passives</code> 与实际武器脚本</span>
     </div>
   </header>
@@ -269,14 +269,14 @@
           <tr id="chainsaw">
             <td class="weapon">链锯发射器</td>
             <td class="skill">墙面接触</td>
-            <td><span class="tag trigger">链锯弹碰墙</span>消耗充能并发出被动事件。链锯命中已减速敌人时，可施加 1.15 倍全来源易伤，持续 6 秒；易伤逻辑本身不依赖碰墙充能。</td>
-            <td><span class="tag recover">完成换弹</span>恢复 1 次充能。</td>
+            <td><span class="tag trigger">链锯弹接触出生 cell 边界</span>投射物在该 cell 内镜面弹射；首次接触消耗充能并激活命中效果，使敌人减速至 70%、持续 3 秒，同时施加 1.15 倍全来源易伤、持续 6 秒。每次弹射为该投射物延长 1 秒生命周期，累计最多延长 2 秒。</td>
+            <td><span class="tag recover">完成换弹</span>关闭减速易伤许可并恢复 1 次充能；已经获得的投射物延寿不受影响。</td>
           </tr>
           <tr id="blaster">
             <td class="weapon">蓄能爆破枪</td>
-            <td class="skill">光束多重命中</td>
-            <td><span class="tag trigger">同一束命中 3 个不同目标</span>消耗 1 次充能并发出被动事件。基础代码没有额外固定伤害，主要供其他系统或构筑联动。</td>
-            <td><span class="tag recover">完成换弹</span>共 3 次充能，全部恢复。</td>
+            <td class="skill">光束共振</td>
+            <td><span class="tag trigger">第 5 次有效能量命中</span>每个受到有效伤害的目标各填充一格，因此同一束光击中多个目标会更快完成循环；触发时发出共振事件。</td>
+            <td><span class="tag recover">自动循环</span>触发后立即从 0/5 开始下一轮，不依赖换弹。</td>
           </tr>
           <tr id="dash-blade">
             <td class="weapon">冲刺刃</td>
@@ -287,20 +287,20 @@
           <tr id="flamethrower">
             <td class="weapon">喷火器</td>
             <td class="skill">热量预备</td>
-            <td><span class="tag trigger">积满一条自产热量后换弹</span>换弹时消耗全部充能，获得 10 秒强化：伤害 ×1.05，并额外增加 1 点伤害。</td>
-            <td><span class="tag recover">填满热量条件</span>每填满一次恢复 1 次充能；强化期间新获得的充能延后到强化结束后补回。换弹用于结算，不会免费补满。</td>
+            <td><span class="tag trigger">累计主动开火 5 秒</span>进度条满时立刻触发，获得 10 秒强化：角色造成的火焰伤害提高 10%。重复触发会刷新持续时间，并叠加至 2 层（共提高 20%）。</td>
+            <td><span class="tag recover">继续主动开火</span>停火、换弹、弹药耗尽或过热时暂停累计，但保留已有进度；该技能不再由换弹结算。</td>
           </tr>
           <tr id="glacier">
             <td class="weapon">冰川投射器</td>
             <td class="skill">冷冽回响</td>
-            <td><span class="tag trigger">1.2 秒内叠满 5 层寒意</span>使目标冻结，并造成武器伤害 35% 的冻结范围伤害；向 110 半径内其他敌人扩散 2 层寒意。普通敌冻结 0.7 秒、精英 0.35 秒；Boss 改为 65% 移速，持续 0.5 秒。</td>
+            <td><span class="tag trigger">强化下一次攻击</span>下一次攻击命中的普通或精英敌人冻结 1 秒；Boss 不会被冻结，改为移动速度降低 50%，持续 1 秒。一次攻击命中的多个敌人都会受到效果。</td>
             <td><span class="tag recover">6 秒或完成换弹</span>触发 6 秒后自动恢复；完成换弹可立即恢复。</td>
           </tr>
           <tr id="laser">
             <td class="weapon">激光</td>
             <td class="skill">聚焦通道</td>
-            <td><span class="tag trigger">光束命中目标</span>消耗 1 次充能并发出被动事件。基础实现没有附带固定伤害加成，主要作为光束命中联动信号。</td>
-            <td><span class="tag recover">完成换弹</span>恢复 1 次充能。</td>
+            <td><span class="tag trigger">第 5 次有效能量命中</span>填满五格后触发聚焦通道事件；无效伤害、物理伤害和技能产生的二次伤害不计数。</td>
+            <td><span class="tag recover">自动循环</span>触发后立即从 0/5 开始下一轮，不依赖换弹。</td>
           </tr>
           <tr id="machine-gun">
             <td class="weapon">机枪</td>
@@ -317,14 +317,14 @@
           <tr id="pistol">
             <td class="weapon">自动手枪</td>
             <td class="skill">穿透标记</td>
-            <td><span class="tag trigger">持续移动累计 8 秒</span>消耗 1 次充能并开启 3 秒窗口；窗口内自动手枪命中的敌人会被标记 5 秒。窗口存在时不累计下一轮。</td>
+            <td><span class="tag trigger">每 8 秒</span>消耗 1 次充能并开启 3 秒窗口；窗口内自动手枪命中的敌人会被标记 5 秒。窗口存在时不累计下一轮。</td>
             <td><span class="tag recover">完成换弹</span>共 3 次充能，全部恢复。</td>
           </tr>
           <tr id="plasma-lance">
             <td class="weapon">等离子长枪</td>
-            <td class="skill">热耗连锁</td>
-            <td><span class="tag trigger">3 次耗热攻击后换弹</span>换弹消耗全部充能，获得 10 秒热量反馈：热量低于 70% 时获取 ×1.2，高于阈值时 ×0.8。单次攻击最多消耗 20 热量，并按消耗比例最多获得 25% 伤害加成。</td>
-            <td><span class="tag recover">每 3 次耗热攻击</span>恢复 1 次充能；反馈期间获得的新充能延后到效果结束后补回。</td>
+            <td class="skill">高热增幅 / 等离子放电</td>
+            <td><span class="tag trigger">持续高热 + 第 5 次有效能量命中</span>当前热量越高，长枪基础射击伤害越强；能量命中另走独立五格循环，第五击追加相当于本次最终伤害 50% 的放电。</td>
+            <td><span class="tag recover">维持 / 自动循环</span>高热增幅随当前热量连续变化；放电后立即开始下一轮，不再通过耗热次数或换弹触发。</td>
           </tr>
           <tr id="rocket">
             <td class="weapon">火箭发射器</td>
@@ -360,15 +360,16 @@
     <div class="cards">
       <article class="card">
         <h3>通用充能规则</h3>
-        <p>大多数被动触发时消耗 1 层，并在完成换弹后恢复；机枪、喷火器、等离子长枪和长矛使用各自的特殊积累逻辑。</p>
+        <p>大多数传统被动仍使用充能与换弹恢复；所有能量系列效果统一使用五次有效能量命中的自动循环，热量系列则奖励持续维持高热。</p>
       </article>
       <article class="card">
         <h3>事件型技能</h3>
-        <p><span class="tag event">事件型</span>蓄能爆破枪、激光、轨道卫星和火箭发射器的基础被动主要发出联动事件，不应误认为代码内一定附带额外固定伤害。</p>
+        <p><span class="tag event">事件型</span>蓄能爆破枪和激光的第五击主要发出联动事件；能量卫星、自动手枪电弧分支、零式重炮与等离子长枪会在第五击执行各自的脉冲、连锁、引爆或放电效果。</p>
       </article>
       <article class="card">
-        <h3>主武器主动键</h3>
-        <p>当前只有蓄能爆破枪实现主武器主动键 <code>R</code>：消耗 20 能量、基础冷却 8 秒，强制释放一次蓄能光束。其余武器的 <code>R</code> 主要用于换弹和被动刷新。</p>
+        <h3>武器主动接口</h3>
+        <p>当前没有武器实现主动技能。基础武器仅保留未来可能扩展的未实现接口。</p>
+        <p><code>R</code> 统一用于换弹；换弹引发的技能结算属于事件型效果。</p>
       </article>
       <article class="card">
         <h3>维护建议</h3>

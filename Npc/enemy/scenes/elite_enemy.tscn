@@ -9,7 +9,7 @@ script = ExtResource("2_u46xm")
 [node name="AffiliationMarker" parent="." index="3"]
 marker_color = Color(1, 0.301961, 0.368627, 0.94)
 radius = 24.0
-line_width = 3.0
+line_width = 1.25
 
 [node name="SkillTimer" type="Timer" parent="." index="5"]
 

@@ -16,12 +16,11 @@ collision_layer = 1
 
 [node name="AffiliationMarker" type="Node2D" parent="."]
 position = Vector2(0, 8)
-scale = Vector2(1, 0.58)
 script = ExtResource("4_marker")
 marker_shape = 2
 marker_color = Color(0.384314, 0.901961, 0.647059, 0.76)
 radius = 22.0
-line_width = 2.0
+line_width = 1.0
 
 [node name="ShoppingArea" type="Area2D" parent="." index="3"]
 collision_layer = 0

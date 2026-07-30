@@ -15,13 +15,7 @@ var normal_turn_speed := 12.0
 @export_range(0.1, 1.0, 0.05) var minimum_committed_fire_sec: float = 0.35
 var is_firing_beam := false
 var firing_turn_timer: Timer
-var _force_active_cast: bool = false
 var _feedback_refund_accum_sec: float = 0.0
-@export var simultaneous_hit_trigger_count: int = 3
-var _beam_multi_hit_target_ids: Dictionary = {}
-var _beam_multi_hit_targets: Array[Node] = []
-var _beam_multi_hit_triggered: bool = false
-
 var weapon_data = {
 	"1": {"damage": "6", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "6", "duration": "1.0"},
 	"2": {"damage": "8", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "6", "duration": "1.2"},
@@ -62,11 +56,10 @@ func set_level(lv):
 	branch_runtime.notify_branch_level_applied(level)
 
 func _on_shoot():
-	if is_on_cooldown and not _force_active_cast:
+	if is_on_cooldown:
 		return
 	is_on_cooldown = true
 	_feedback_refund_accum_sec = 0.0
-	_reset_beam_multi_hit_trigger()
 	_update_beam_forward_from_target()
 	var base_profile := {
 		"direction": beam_local_forward.normalized(),
@@ -155,82 +148,23 @@ func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bo
 		return
 	request_primary_fire()
 
-func _execute_weapon_active(damage_multiplier: float) -> bool:
-	if not can_run_active_behavior():
-		return false
-	_force_active_cast = true
-	emit_signal("shoot")
-	_force_active_cast = false
-	if is_on_cooldown and damage_multiplier > 1.0:
-		_apply_weapon_active_multiplier_buff(damage_multiplier)
-	return is_on_cooldown
-
-func has_weapon_active_skill() -> bool:
-	return true
-
 func on_beam_hit_target(target: Node, beam_profile: Dictionary = {}, hit_damage: int = 0, beam_node: Node = null) -> void:
-	_try_trigger_simultaneous_beam_hits(target, beam_node)
 	for behavior in branch_runtime.get_branch_behaviors():
 		behavior.on_charged_beam_hit(target, beam_profile, hit_damage)
 
-func _try_trigger_simultaneous_beam_hits(target: Node, beam_node: Node) -> void:
-	if target == null or not is_instance_valid(target):
-		return
-	if beam_node == null or not is_instance_valid(beam_node):
-		return
-	if _beam_multi_hit_triggered:
-		return
-	if not is_offhand_skill_ready():
-		return
-	var target_id := target.get_instance_id()
-	if _beam_multi_hit_target_ids.has(target_id):
-		return
-	_beam_multi_hit_target_ids[target_id] = true
-	_beam_multi_hit_targets.append(target)
-	var required_hits := maxi(1, simultaneous_hit_trigger_count)
-	if _beam_multi_hit_target_ids.size() < required_hits:
-		return
-	_beam_multi_hit_triggered = true
-	notify_offhand_skill_triggered(0.0)
-	emit_passive_trigger(&"charged_blaster_multi_hit_triggered", {
-		"beam": beam_node,
-		"target": target,
-		"hit_count": required_hits,
-		"targets": _beam_multi_hit_targets.duplicate(),
-		"refresh": "reload",
-	}, PASSIVE_SCOPE_GLOBAL)
+func get_energy_hit_passive_id() -> StringName:
+	return &"charged_blaster_multi_hit_triggered"
 
-func _reset_beam_multi_hit_trigger() -> void:
-	_beam_multi_hit_target_ids.clear()
-	_beam_multi_hit_targets.clear()
-	_beam_multi_hit_triggered = false
+func get_energy_hit_display_name() -> String:
+	return "Beam Resonance"
+
+func _execute_energy_hit_discharge(target: Node, data: DamageData, result: DamageResult) -> Dictionary:
+	var detail := super._execute_energy_hit_discharge(target, data, result)
+	detail["effect"] = "beam_resonance"
+	return detail
 
 func get_passive_status() -> Dictionary:
-	var required_hits := maxi(1, simultaneous_hit_trigger_count)
-	var current_hits := mini(_beam_multi_hit_target_ids.size(), required_hits)
-	var state := "charging"
-	if _beam_multi_hit_triggered or not is_passive_ready():
-		state = "waiting_refresh"
-	elif current_hits >= required_hits:
-		state = "ready_pending_action"
-	var charge_current := passive_controller.get_passive_charge_current()
-	var charge_max := passive_controller.get_passive_charge_max()
-	return with_passive_charge_status({
-		"id": "charged_blaster_multi_hit_triggered",
-		"display_name": "Beam Multi Hit",
-		"state": state,
-		"progress": clampf(float(current_hits) / float(required_hits), 0.0, 1.0),
-		"progress_role": "trigger_condition",
-		"current": current_hits,
-		"required": required_hits,
-		"ready": state == "ready_pending_action",
-		"trigger_hint": "same_beam_unique_targets",
-		"refresh_hint": "reload",
-		"charge_current": charge_current,
-		"charge_max": charge_max,
-		"charges_current": charge_current,
-		"charges_max": charge_max,
-	})
+	return get_energy_hit_pulse_status()
 
 func get_passive_max_charges() -> int:
 	return 3

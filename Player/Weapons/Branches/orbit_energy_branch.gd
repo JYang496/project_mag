@@ -15,13 +15,11 @@ const ENERGY_FIELD_INDICATOR_NODE_NAME := "EnergyFieldIndicator"
 @export var field_radius: float = 84.0
 @export var bonus_energy_ratio: float = 0.25
 @export var min_bonus_energy_damage: int = 1
-@export var per_target_trigger_icd_sec: float = 0.05
 @export var show_field_indicator: bool = true
 @export var indicator_fill_color: Color = Color(PALETTE.ENERGY, 0.10)
 @export var indicator_outline_color: Color = Color(PALETTE.PLAYER_PRIMARY, 0.52)
 @export var indicator_outline_width: float = 1.5
 
-var _target_next_trigger_msec: Dictionary = {}
 var _indicator_sync_accum_sec: float = 0.0
 
 func on_weapon_ready() -> void:
@@ -32,7 +30,6 @@ func on_level_applied(_level: int) -> void:
 	_sync_satellite_indicators()
 
 func on_removed() -> void:
-	_target_next_trigger_msec.clear()
 	_indicator_sync_accum_sec = 0.0
 	_clear_satellite_indicators()
 	set_process(false)
@@ -44,54 +41,35 @@ func _process(delta: float) -> void:
 	_indicator_sync_accum_sec = 0.0
 	_sync_satellite_indicators()
 
-func on_passive_event(event_name: StringName, detail: Dictionary) -> void:
-	if event_name != &"on_hit":
-		return
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	var target_value: Variant = detail.get("target", null)
-	var target_node: Node2D = target_value as Node2D
-	if target_node == null or not is_instance_valid(target_node):
-		return
-	if not _is_inside_orbit_field(target_node):
-		return
-	if not _can_trigger_for_target(target_node):
-		return
-	_apply_bonus_energy_damage(target_node)
+func get_energy_hit_passive_id() -> StringName:
+	return &"orbit_energy_cycle"
 
-func _is_inside_orbit_field(target_node: Node2D) -> bool:
-	if target_node == null or not is_instance_valid(target_node):
-		return false
+func get_energy_hit_display_name() -> String:
+	return "Orbital Pulse"
+
+func on_energy_hit_cycle_triggered(target: Node, _data: DamageData, _result: DamageResult) -> Dictionary:
 	if weapon == null or not is_instance_valid(weapon):
-		return false
-	if not weapon.has_method("get_satellites"):
-		return false
-	var satellites_value: Variant = weapon.call("get_satellites")
-	if not (satellites_value is Array):
-		return false
-	var satellites_array: Array = satellites_value
-	var check_radius: float = maxf(field_radius, 1.0)
-	for item in satellites_array:
-		var satellite: Node2D = item as Node2D
-		if satellite == null or not is_instance_valid(satellite):
+		return {}
+	var target_node := target as Node2D
+	if target_node == null or not is_instance_valid(target_node):
+		return {}
+	var affected := 0
+	for enemy in WeaponModuleRuntimeUtils.get_nearby_enemies(
+		weapon.get_tree(),
+		target_node.global_position,
+		maxf(field_radius, 1.0)
+	):
+		if enemy == null or not is_instance_valid(enemy):
 			continue
-		if satellite.global_position.distance_to(target_node.global_position) <= check_radius:
-			return true
-	return false
+		if _apply_bonus_energy_damage(enemy):
+			affected += 1
+	return {
+		"effect": "orbital_radial_pulse",
+		"affected_targets": affected,
+		"radius": maxf(field_radius, 1.0),
+	}
 
-func _can_trigger_for_target(target_node: Node2D) -> bool:
-	var target_id: int = target_node.get_instance_id()
-	var now_msec: int = Time.get_ticks_msec()
-	var next_msec: int = int(_target_next_trigger_msec.get(target_id, 0))
-	if now_msec < next_msec:
-		return false
-	var icd_sec: float = maxf(per_target_trigger_icd_sec, 0.0)
-	if icd_sec <= 0.0:
-		return true
-	_target_next_trigger_msec[target_id] = now_msec + int(icd_sec * 1000.0)
-	return true
-
-func _apply_bonus_energy_damage(target_node: Node2D) -> void:
+func _apply_bonus_energy_damage(target_node: Node2D) -> bool:
 	var runtime_damage: int = 1
 	if weapon.has_method("get_runtime_shot_damage"):
 		runtime_damage = max(1, int(weapon.call("get_runtime_shot_damage")))
@@ -104,7 +82,8 @@ func _apply_bonus_energy_damage(target_node: Node2D) -> void:
 		DamageData.SOURCE_PLAYER_WEAPON,
 		DamageDeliveryType.AREA
 	)
-	DamageManager.apply_to_target(target_node, damage_data)
+	damage_data.suppress_reactive_effects = true
+	return DamageManager.apply_to_target(target_node, damage_data)
 
 func _sync_satellite_indicators() -> void:
 	if weapon == null or not is_instance_valid(weapon):

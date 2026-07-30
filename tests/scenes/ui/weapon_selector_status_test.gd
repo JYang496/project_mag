@@ -8,12 +8,12 @@ const WEAPON_SELECTOR_PASSIVE_PRESENTER := preload("res://UI/scripts/components/
 const WEAPON_SELECTOR_READABILITY_PRESENTER := preload("res://UI/scripts/components/weapon_selector_readability_presenter.gd")
 const WEAPON_SKILL_CHARGE_TRACK := preload("res://UI/scripts/weapon_skill_charge_track.gd")
 const WEAPON_TRIGGER_FEEDBACK := preload("res://UI/scripts/weapon_trigger_feedback.gd")
+const PLAYER_STATUS_MODIFIER_SYSTEM := preload("res://Player/Mechas/scripts/player_status_modifier_system.gd")
 
 class DummyWeapon:
 	extends Weapon
 	var ammo_status: Dictionary = {}
 	var passive_status: Dictionary = {}
-	var active_supported := false
 
 	func get_ammo_status() -> Dictionary:
 		return ammo_status.duplicate()
@@ -21,14 +21,14 @@ class DummyWeapon:
 	func get_passive_status() -> Dictionary:
 		return passive_status.duplicate()
 
-	func has_weapon_active_skill() -> bool:
-		return active_supported
-
 class DummyHeatPlayer:
 	extends Node2D
 	var heat_expansion_active := false
 	var heat_expansion_multiplier := 1.0
 	var heat_prepared_active := false
+	var heat_prepared_stack_count := 0
+	var heat_prepared_bonus_per_stack := 0.10
+	var heat_prepared_apply_count := 0
 	var plasma_feedback_active := false
 
 	func apply_heat_expansion(_duration: float, multiplier: float) -> bool:
@@ -39,11 +39,21 @@ class DummyHeatPlayer:
 	func has_heat_expansion() -> bool:
 		return heat_expansion_active
 
-	func apply_heat_prepared(_duration: float, _multiplier: float, _flat_bonus: int) -> void:
+	func apply_heat_prepared(_duration: float, bonus_per_stack: float, max_stacks: int) -> int:
 		heat_prepared_active = true
+		heat_prepared_bonus_per_stack = bonus_per_stack
+		heat_prepared_stack_count = mini(heat_prepared_stack_count + 1, maxi(max_stacks, 1))
+		heat_prepared_apply_count += 1
+		return heat_prepared_stack_count
 
 	func has_heat_prepared() -> bool:
 		return heat_prepared_active
+
+	func get_heat_prepared_stack_count() -> int:
+		return heat_prepared_stack_count if heat_prepared_active else 0
+
+	func get_heat_prepared_fire_damage_multiplier() -> float:
+		return 1.0 + float(get_heat_prepared_stack_count()) * heat_prepared_bonus_per_stack
 
 	func apply_plasma_lance_heat_feedback(_duration: float, _low: float, _high: float, _threshold: float) -> void:
 		plasma_feedback_active = true
@@ -68,8 +78,7 @@ func _ready() -> void:
 	_test_condition_based_skill_rearming()
 	_test_reload_settlement_consumes_after_finish()
 	_test_passive_feedback_ignores_routine_weapon_events()
-	_test_active_skill_feedback_rules()
-	_test_skill_hint_tracks_active_support()
+	_test_reload_hint_is_unambiguous()
 	print("FAIL weapon selector status" if _failed else "PASS weapon selector status")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0, Callable(), [_selector])
 	_selector = null
@@ -247,25 +256,34 @@ func _test_weapon_passive_contract_classification() -> void:
 		"res://Player/Weapons/Instances/dash_blade.tscn",
 		"res://Player/Weapons/Instances/machine_gun.tscn",
 		"res://Player/Weapons/Instances/flamethrower.tscn",
-		"res://Player/Weapons/Instances/plasma_lance.tscn",
 		"res://Player/Weapons/Instances/spear_launcher.tscn",
 	]
 	var single_condition_paths := [
 		"res://Player/Weapons/Instances/sniper.tscn",
 		"res://Player/Weapons/Instances/shotgun.tscn",
-		"res://Player/Weapons/Instances/laser.tscn",
 		"res://Player/Weapons/Instances/rocket_launcher.tscn",
 		"res://Player/Weapons/Instances/orbit.tscn",
 		"res://Player/Weapons/Instances/chainsaw_launcher.tscn",
 		"res://Player/Weapons/Instances/glacier_projector.tscn",
-		"res://Player/Weapons/Instances/charged_blaster.tscn",
 		"res://Player/Weapons/Instances/pistol.tscn",
+	]
+	var energy_cycle_paths := [
+		"res://Player/Weapons/Instances/laser.tscn",
+		"res://Player/Weapons/Instances/charged_blaster.tscn",
+		"res://Player/Weapons/Instances/plasma_lance.tscn",
 	]
 	for scene_path in multi_condition_paths:
 		var weapon := (load(scene_path) as PackedScene).instantiate() as Weapon
 		var status: Dictionary = weapon.get_passive_status()
 		_expect(bool(status.get("condition_visible", false)), "%s must expose its separate charge condition" % scene_path)
 		_expect((status.get("charge_states", []) as Array).size() >= 1, "%s must expose at least one skill bean" % scene_path)
+		weapon.free()
+	for scene_path in energy_cycle_paths:
+		var weapon := (load(scene_path) as PackedScene).instantiate() as Weapon
+		var status: Dictionary = weapon.get_passive_status()
+		_expect(bool(status.get("condition_visible", false)), "%s must expose its five-cell energy-hit condition" % scene_path)
+		_expect(int(status.get("required", 0)) == 5, "%s must use the shared five-hit threshold" % scene_path)
+		_expect(not bool(status.get("charge_based", true)), "%s energy cycle must restart automatically without skill beans" % scene_path)
 		weapon.free()
 	for scene_path in single_condition_paths:
 		var weapon := (load(scene_path) as PackedScene).instantiate() as Weapon
@@ -298,20 +316,9 @@ func _test_reload_settlement_consumes_after_finish() -> void:
 	var flamethrower := (load("res://Player/Weapons/Instances/flamethrower.tscn") as PackedScene).instantiate() as Weapon
 	flamethrower.force_skill_cooldowns_ready()
 	flamethrower.call("_on_passive_event", &"on_reload_started", {"source_weapon": flamethrower})
-	_expect(flamethrower.passive_controller.get_passive_charge_current() == 1, "flamethrower reload start must only snapshot heat")
 	flamethrower.call("_on_passive_event", &"on_reload_finished", {"source_weapon": flamethrower})
-	_expect(flamethrower.passive_controller.get_passive_charge_current() == 0, "flamethrower reload finish must consume its bean")
-	_expect(flamethrower.get_passive_status().get("charge_states") == ["active"], "Heat Prepared must color its bean active")
+	_expect(dummy_player.heat_prepared_apply_count == 0, "flamethrower reload must not trigger its firing-duration skill")
 	flamethrower.free()
-
-	var plasma := (load("res://Player/Weapons/Instances/plasma_lance.tscn") as PackedScene).instantiate() as Weapon
-	plasma.force_skill_cooldowns_ready()
-	plasma.call("_on_passive_event", &"on_reload_started", {"source_weapon": plasma})
-	_expect(plasma.passive_controller.get_passive_charge_current() == 1, "plasma reload start must not settle its chain")
-	plasma.call("_on_passive_event", &"on_reload_finished", {"source_weapon": plasma})
-	_expect(plasma.passive_controller.get_passive_charge_current() == 0, "plasma reload finish must consume its bean")
-	_expect(plasma.get_passive_status().get("charge_states") == ["active"], "Heat Feedback must color its bean active")
-	plasma.free()
 
 	PlayerData.player = null
 	var spear := (load("res://Player/Weapons/Instances/spear_launcher.tscn") as PackedScene).instantiate() as Weapon
@@ -363,25 +370,37 @@ func _test_condition_based_skill_rearming() -> void:
 	machine_gun.free()
 
 	var flamethrower := (load("res://Player/Weapons/Instances/flamethrower.tscn") as PackedScene).instantiate() as Weapon
-	flamethrower.force_skill_cooldowns_ready()
-	flamethrower.notify_offhand_skill_triggered(0.0)
-	flamethrower.set("_heat_prepared_accumulated_heat", flamethrower.get("heat_max_value"))
-	flamethrower.call("_try_rearm_heat_prepared_from_accumulation")
-	_expect(flamethrower.passive_controller.get_passive_charge_current() == 1, "full flamethrower heat must restore its bean")
-	_expect(is_zero_approx(float(flamethrower.get_passive_status().get("condition_progress", 1.0))), "flamethrower progress must reset after awarding its next bean")
-	flamethrower.call("_refresh_offhand_skill_on_reload")
-	_expect(flamethrower.passive_controller.get_passive_charge_current() == 1, "flamethrower reload must not restore an extra bean")
+	var dummy_player := DummyHeatPlayer.new()
+	add_child(dummy_player)
+	PlayerData.player = dummy_player
+	flamethrower.set("fire_duration_required_sec", 5.0)
+	flamethrower.call("_accumulate_heat_prepared_firing_duration", 2.0)
+	_expect(is_equal_approx(float(flamethrower.get_passive_status().get("condition_progress", 0.0)), 0.4), "two firing seconds must fill 40% of the flamethrower progress bar")
+	flamethrower.call("_accumulate_heat_prepared_firing_duration", 3.0)
+	_expect(dummy_player.heat_prepared_stack_count == 1, "five cumulative firing seconds must immediately grant the first stack")
+	_expect(flamethrower.get_passive_status().get("charge_states") == ["active", "spent"], "the first fire-damage stack must occupy one of two HUD beans")
+	flamethrower.call("_accumulate_heat_prepared_firing_duration", 5.0)
+	_expect(dummy_player.heat_prepared_stack_count == 2, "the second completed firing cycle must grant the second stack")
+	flamethrower.call("_accumulate_heat_prepared_firing_duration", 5.0)
+	_expect(dummy_player.heat_prepared_stack_count == 2, "flamethrower fire-damage stacks must cap at two")
+	_expect(dummy_player.heat_prepared_apply_count == 3, "a trigger at two stacks must still refresh the effect duration")
+	_expect(flamethrower.get_passive_status().get("charge_states") == ["active", "active"], "both fire-damage stacks must be visible in the HUD")
+	var previous_crit_rate: float = float(PlayerData.total_crit_rate)
+	PlayerData.total_crit_rate = 0.0
+	var modifier_system = PLAYER_STATUS_MODIFIER_SYSTEM.new()
+	modifier_system.setup(dummy_player)
+	_expect(modifier_system.compute_outgoing_damage_result(100, Attack.TYPE_FIRE).damage == 120, "two stacks must increase fire damage by 20%")
+	_expect(modifier_system.compute_outgoing_damage_result(100, Attack.TYPE_PHYSICAL).damage == 100, "the flamethrower skill must not increase non-fire damage")
+	PlayerData.total_crit_rate = previous_crit_rate
 	flamethrower.free()
+	PlayerData.player = null
+	dummy_player.free()
 
 	var plasma := (load("res://Player/Weapons/Instances/plasma_lance.tscn") as PackedScene).instantiate() as Weapon
-	plasma.force_skill_cooldowns_ready()
-	plasma.notify_offhand_skill_triggered(0.0)
-	for index in range(3):
-		plasma.call("_try_trigger_heat_spend_chain", 1.0)
-	_expect(plasma.passive_controller.get_passive_charge_current() == 1, "three heat-spending plasma attacks must restore its bean")
-	_expect(is_zero_approx(float(plasma.get_passive_status().get("condition_progress", 1.0))), "plasma progress must reset after awarding its next bean")
-	plasma.call("_refresh_offhand_skill_on_reload")
-	_expect(plasma.passive_controller.get_passive_charge_current() == 1, "plasma-lance reload must not restore an extra bean")
+	var plasma_status := plasma.get_passive_status()
+	_expect(plasma_status.get("id") == "plasma_lance_energy_discharge_triggered", "plasma must expose its independent energy-discharge cycle")
+	_expect(int(plasma_status.get("required", 0)) == 5, "plasma discharge must require five valid energy hits")
+	_expect(plasma_status.get("refresh_hint") == "automatic_after_discharge", "plasma discharge must restart automatically instead of waiting for reload")
 	plasma.free()
 	PlayerData.player = previous_player
 
@@ -433,31 +452,13 @@ func _test_passive_feedback_ignores_routine_weapon_events() -> void:
 		),
 		"an explicit displayed passive id must identify genuine trigger feedback"
 	)
-	weapon.free()
-
-func _test_active_skill_feedback_rules() -> void:
-	_expect(
-		_selector.call("_should_play_active_failure_feedback", "cd", true),
-		"supported active skills must show cooldown failure feedback"
-	)
-	_expect(
-		_selector.call("_should_play_active_failure_feedback", "resource", true),
-		"supported active skills must show resource failure feedback"
-	)
-	_expect(
-		not _selector.call("_should_play_active_failure_feedback", "phase", true),
-		"non-combat phase rejection must not flash the weapon slot"
-	)
-	_expect(
-		not _selector.call("_should_play_active_failure_feedback", "condition", false),
-		"passive-only weapons must not show active-skill failure feedback"
-	)
 	var feedback = WEAPON_TRIGGER_FEEDBACK.new()
 	feedback.intensity = 1.5
 	_expect(is_equal_approx(feedback.intensity, 1.0), "whole-slot trigger feedback intensity must clamp safely")
 	feedback.free()
+	weapon.free()
 
-func _test_skill_hint_tracks_active_support() -> void:
+func _test_reload_hint_is_unambiguous() -> void:
 	var root := Control.new()
 	var slots: Array[Control] = []
 	for index in range(4):
@@ -470,9 +471,16 @@ func _test_skill_hint_tracks_active_support() -> void:
 	var weapon := DummyWeapon.new()
 	weapon.name = "FeedbackTestWeapon"
 	presenter.update_slot(0, weapon, true)
-	var hint := root.get_node("SkillHint") as Label
+	var hint := root.get_node("ReloadHint") as Label
 	var passive_icon := slots[0].get_node("PassiveIcon") as Control
-	_expect(not hint.visible, "passive-only main weapons must hide the active-skill key hint")
+	_expect(hint.visible, "the reload key hint must remain visible for the main weapon")
+	_expect(hint.text == LocalizationManager.tr_key("ui.weapon_hud.reload_hint", "[R]  RELOAD"),
+		"the R hint must describe reload only")
+	_expect(slots[0].tooltip_text == LocalizationManager.tr_format(
+		"ui.weapon_hud.main_tooltip",
+		{"weapon": LocalizationManager.get_weapon_instance_display_name(weapon)},
+		"{weapon}\nMAIN WEAPON · R: RELOAD · Q/E: SWITCH"
+	), "the main weapon tooltip must describe R as reload")
 	_expect(
 		not slots[0].has_node("MainhandBadge"),
 		"mainhand slot must not show a role badge over the ammo bar"
@@ -481,9 +489,6 @@ func _test_skill_hint_tracks_active_support() -> void:
 		passive_icon.position.y >= 72.0,
 		"passive icon must join the skill footer instead of covering the weapon"
 	)
-	weapon.active_supported = true
-	presenter.update_slot(0, weapon, true)
-	_expect(hint.visible, "weapons with an active skill must show the active-skill key hint")
 	weapon.free()
 	root.free()
 

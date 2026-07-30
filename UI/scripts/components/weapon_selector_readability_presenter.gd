@@ -8,7 +8,6 @@ var _slots: Array[Control] = []
 var _empty_labels: Array[Label] = []
 var _passive_icons: Array[Control] = []
 var _control_hints: Array[Label] = []
-var _mainhand_skill_available := false
 
 func setup(root: Control, slots: Array[Control]) -> void:
 	_root = root
@@ -25,7 +24,7 @@ func setup(root: Control, slots: Array[Control]) -> void:
 			Color(0.22, 0.62, 0.72, 0.96)
 		))
 		_control_hints.append(_create_control_hint(
-			"SkillHint",
+			"ReloadHint",
 			Vector2(170.0, 86.0),
 			Vector2(158.0, 22.0),
 			Color(0.92, 0.62, 0.18, 0.96)
@@ -39,9 +38,10 @@ func refresh_copy() -> void:
 			"[Q / E]  SWITCH"
 		)
 		_control_hints[1].text = LocalizationManager.tr_key(
-			"ui.weapon_hud.skill_hint",
-			"[R]  WEAPON SKILL"
+			"ui.weapon_hud.reload_hint",
+			"[R]  RELOAD"
 		)
+
 func update_slot(slot_index: int, weapon: Variant, is_mainhand: bool) -> void:
 	if slot_index < 0 or slot_index >= _slots.size():
 		return
@@ -55,22 +55,11 @@ func update_slot(slot_index: int, weapon: Variant, is_mainhand: bool) -> void:
 			"EMPTY WEAPON SLOT"
 		)
 	elif is_mainhand:
-		var has_active_skill: bool = weapon.has_method("has_weapon_active_skill") \
-			and bool(weapon.call("has_weapon_active_skill"))
-		set_mainhand_skill_available(has_active_skill)
 		var weapon_name := LocalizationManager.get_weapon_instance_display_name(weapon)
-		slot.tooltip_text = (
-			LocalizationManager.tr_format(
-				"ui.weapon_hud.main_tooltip",
-				{"weapon": weapon_name},
-				"{weapon}\nMAIN WEAPON · R: WEAPON SKILL · Q/E: SWITCH"
-			)
-			if has_active_skill
-			else LocalizationManager.tr_format(
-				"ui.weapon_hud.main_no_skill_tooltip",
-				{"weapon": weapon_name},
-				"{weapon}\nMAIN WEAPON · Q/E: SWITCH"
-			)
+		slot.tooltip_text = LocalizationManager.tr_format(
+			"ui.weapon_hud.main_tooltip",
+			{"weapon": weapon_name},
+			"{weapon}\nMAIN WEAPON · R: RELOAD · Q/E: SWITCH"
 		)
 	else:
 		slot.tooltip_text = LocalizationManager.tr_format(
@@ -85,11 +74,6 @@ func set_passive_visible(slot_index: int, visible_value: bool) -> void:
 	var passive_icon := _passive_icons[slot_index]
 	if passive_icon != null:
 		passive_icon.visible = visible_value
-
-func set_mainhand_skill_available(available: bool) -> void:
-	_mainhand_skill_available = available
-	if _control_hints.size() >= 2 and _control_hints[1] != null:
-		_control_hints[1].visible = _mainhand_skill_available
 
 func get_passive_icon(slot_index: int) -> Control:
 	if slot_index < 0 or slot_index >= _passive_icons.size():

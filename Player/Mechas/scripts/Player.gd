@@ -67,8 +67,6 @@ const AUTO_LOOT_DURATION_SEC: float = 2.0
 const AUTO_LOOT_TICK_SEC: float = 0.2
 const AUTO_LOOT_GRAB_RADIUS: float = 2500.0
 const COLLECT_AREA_TOP_PADDING: float = 0.0
-const HEAT_PREPARED_DAMAGE_SOURCE: StringName = &"heat_prepared_damage"
-const HEAT_PREPARED_FLAT_DAMAGE_SOURCE: StringName = &"heat_prepared_flat_damage"
 var weapon_orbit_states: Dictionary = {}
 var _base_detect_shape_size := Vector2.ZERO
 var _base_hurtbox_shape_size := Vector2.ZERO
@@ -142,6 +140,8 @@ var _suppress_attack_until_released: bool = false
 const ELITE_HIT_SLOW_SOURCE_ID: StringName = &"elite_hit_stagger"
 var _tracked_weapon_exit_ids: Dictionary = {}
 var _heat_prepared_until_msec: int = 0
+var _heat_prepared_stack_count: int = 0
+var _heat_prepared_fire_damage_bonus_per_stack: float = 0.10
 var _heat_expansion_until_msec: int = 0
 var _heat_expansion_max_mul: float = 1.0
 var _plasma_lance_heat_feedback_until_msec: int = 0
@@ -170,8 +170,6 @@ var _systems_strict_ready: bool = false
 signal active_skill()
 @warning_ignore("unused_signal")
 signal player_active_skill()
-@warning_ignore("unused_signal")
-signal weapon_active_skill()
 @warning_ignore("unused_signal")
 signal coin_collected()
 @warning_ignore("unused_signal")
@@ -696,11 +694,6 @@ func _try_cast_player_active_skill() -> void:
 	if _active_skill_runtime != null:
 		_active_skill_runtime.try_cast_player_active_skill()
 
-func _try_cast_main_weapon_active_skill() -> void:
-	_ensure_active_skill_runtime()
-	if _active_skill_runtime != null:
-		_active_skill_runtime.try_cast_main_weapon_active_skill()
-
 func _try_reload_main_weapon() -> void:
 	_ensure_active_skill_runtime()
 	if _active_skill_runtime != null:
@@ -744,24 +737,6 @@ func _regen_energy(delta: float) -> void:
 	_ensure_active_skill_runtime()
 	if _active_skill_runtime != null:
 		_active_skill_runtime.regen_energy(delta)
-
-func get_last_weapon_skill_fail_reason() -> String:
-	_ensure_active_skill_runtime()
-	if _active_skill_runtime == null:
-		return ""
-	return _active_skill_runtime.get_last_weapon_skill_fail_reason()
-
-func get_weapon_active_cd_remaining() -> float:
-	_ensure_active_skill_runtime()
-	if _active_skill_runtime == null:
-		return 0.0
-	return _active_skill_runtime.get_weapon_active_cd_remaining()
-
-func get_weapon_active_cd_ratio() -> float:
-	_ensure_active_skill_runtime()
-	if _active_skill_runtime == null:
-		return 0.0
-	return _active_skill_runtime.get_weapon_active_cd_ratio()
 
 func apply_move_speed_mul(source_id: StringName, mul: float) -> void:
 	_ensure_status_modifier_system()
@@ -812,17 +787,31 @@ func remove_damage_mul(source_id: StringName) -> void:
 		return
 	_status_modifier_system.remove_damage_mul(source_id)
 
-func apply_heat_prepared(duration_sec: float = 10.0, damage_mul: float = 1.05, flat_damage_bonus: int = 1) -> void:
+func apply_heat_prepared(
+	duration_sec: float = 10.0,
+	fire_damage_bonus_per_stack: float = 0.10,
+	max_stacks: int = 2
+) -> int:
+	_update_heat_statuses()
 	var duration_msec := int(maxf(duration_sec, 0.05) * 1000.0)
 	_heat_prepared_until_msec = Time.get_ticks_msec() + duration_msec
-	apply_damage_mul(HEAT_PREPARED_DAMAGE_SOURCE, maxf(damage_mul, 0.05))
-	apply_global_weapon_passive_effect(HEAT_PREPARED_FLAT_DAMAGE_SOURCE, &"damage_flat", float(maxi(flat_damage_bonus, 0)), duration_sec)
-	_spawn_player_floating_hint("Heat Prepared")
+	_heat_prepared_fire_damage_bonus_per_stack = maxf(fire_damage_bonus_per_stack, 0.0)
+	_heat_prepared_stack_count = mini(_heat_prepared_stack_count + 1, maxi(max_stacks, 1))
+	_spawn_player_floating_hint("Heat Prepared %d/%d" % [_heat_prepared_stack_count, maxi(max_stacks, 1)])
 	if debug_weapon_passive_trigger_prints:
-		print("[HeatStatus] Heat Prepared duration=", duration_sec, " damage_mul=", damage_mul, " flat_damage=", flat_damage_bonus)
+		print("[HeatStatus] Heat Prepared duration=", duration_sec, " fire_bonus_per_stack=", _heat_prepared_fire_damage_bonus_per_stack, " stacks=", _heat_prepared_stack_count)
+	return _heat_prepared_stack_count
 
 func has_heat_prepared() -> bool:
 	return _heat_prepared_until_msec > 0 and Time.get_ticks_msec() < _heat_prepared_until_msec
+
+func get_heat_prepared_stack_count() -> int:
+	_update_heat_statuses()
+	return _heat_prepared_stack_count if has_heat_prepared() else 0
+
+func get_heat_prepared_fire_damage_multiplier() -> float:
+	var stack_count := get_heat_prepared_stack_count()
+	return 1.0 + float(stack_count) * _heat_prepared_fire_damage_bonus_per_stack
 
 func consume_heat_prepared() -> bool:
 	_update_heat_statuses()
@@ -955,11 +944,11 @@ func _clamp_heat_expansion_to_soft_cap() -> void:
 		pool.overheated = false
 
 func _clear_heat_prepared() -> void:
-	if _heat_prepared_until_msec <= 0:
+	if _heat_prepared_until_msec <= 0 and _heat_prepared_stack_count <= 0:
 		return
 	_heat_prepared_until_msec = 0
-	remove_damage_mul(HEAT_PREPARED_DAMAGE_SOURCE)
-	remove_global_weapon_passive_effect(HEAT_PREPARED_FLAT_DAMAGE_SOURCE)
+	_heat_prepared_stack_count = 0
+	_heat_prepared_fire_damage_bonus_per_stack = 0.10
 
 func register_low_hp_damage_bonus(source_id: StringName, min_hp_ratio: float, max_damage_mul: float) -> void:
 	_ensure_status_modifier_system()
@@ -994,14 +983,14 @@ func remove_loot_bonus(source_id: StringName) -> void:
 	if _status_modifier_system != null:
 		_status_modifier_system.remove_loot_bonus(source_id)
 
-func compute_outgoing_damage(base_damage: int) -> int:
-	return compute_outgoing_damage_result(base_damage).damage
+func compute_outgoing_damage(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL) -> int:
+	return compute_outgoing_damage_result(base_damage, damage_type).damage
 
-func compute_outgoing_damage_result(base_damage: int):
+func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL):
 	_ensure_status_modifier_system()
 	if _status_modifier_system == null:
 		return OutgoingDamageResultType.new(base_damage, false)
-	return _status_modifier_system.compute_outgoing_damage_result(base_damage)
+	return _status_modifier_system.compute_outgoing_damage_result(base_damage, damage_type)
 
 func apply_bonus_hit_if_needed(target: Node) -> void:
 	_ensure_status_modifier_system()

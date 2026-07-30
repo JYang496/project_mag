@@ -272,7 +272,7 @@ func refresh_input_glyphs() -> void:
 	var reload_action := _tr("ui.controls.reload", "Reload")
 	if PlayerAssistSettings.auto_reload_switch:
 		reload_action = _tr("ui.controls.auto_reload", "Auto Reload On")
-	_set_action_item(&"reload", _input_label(&"SKILL_WEAPON"), reload_action)
+	_set_action_item(&"reload", _input_label(&"RELOAD"), reload_action)
 	_set_action_item(
 		&"switch",
 		"%s / %s" % [_input_label(&"SWITCH_LEFT"), _input_label(&"SWITCH_RIGHT")],

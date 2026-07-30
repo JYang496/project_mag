@@ -26,16 +26,22 @@ func get_projectile_trail_config() -> Dictionary:
 		"trail_fade_sec": maxf(trail_fade_sec, 0.05),
 	}
 
-func on_target_hit(target: Node) -> void:
+func get_energy_hit_passive_id() -> StringName:
+	return &"pistol_arc_energy_cycle"
+
+func get_energy_hit_display_name() -> String:
+	return "Arc Discharge"
+
+func on_energy_hit_cycle_triggered(target: Node, _data: DamageData, _result: DamageResult) -> Dictionary:
 	if weapon == null or not is_instance_valid(weapon):
-		return
+		return {}
 	if target == null or not is_instance_valid(target):
-		return
+		return {}
 	if not target.is_in_group("enemies"):
-		return
+		return {}
 	var center := target as Node2D
 	if center == null:
-		return
+		return {}
 
 	var ratios := [chain_damage_ratio_1, chain_damage_ratio_2]
 	var candidates: Array[Node2D] = []
@@ -66,11 +72,16 @@ func on_target_hit(target: Node) -> void:
 			DamageData.SOURCE_PLAYER_WEAPON,
 			DamageDeliveryType.BEAM
 		)
+		chain_data.suppress_reactive_effects = true
 		if DamageManager.apply_to_target(candidates[i], chain_data):
 			_spawn_arc_visual(center.global_position, candidates[i].global_position)
 			var owner_player := chain_data.source_player as Player
 			if owner_player and is_instance_valid(owner_player):
 				owner_player.apply_bonus_hit_if_needed(candidates[i])
+	return {
+		"effect": "arc_chain",
+		"chain_targets": hops,
+	}
 
 func _spawn_arc_visual(start: Vector2, end: Vector2) -> void:
 	if weapon == null or not is_instance_valid(weapon) or not weapon.is_inside_tree():

@@ -10,8 +10,10 @@
 script = ExtResource("2_script")
 cone_half_angle_deg = 15.0
 base_range = 200.0
-cold_snap_damage_ratio = 0.35
 cold_snap_recharge_sec = 6.0
+cold_snap_freeze_duration_sec = 1.0
+boss_slow_duration_sec = 1.0
+boss_slow_multiplier = 0.5
 debug_mode = false
 spread_enabled = false
 spread_full_distance = 900.0

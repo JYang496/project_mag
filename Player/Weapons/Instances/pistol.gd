@@ -77,6 +77,8 @@ func _update_pierce_mark_window(delta: float) -> void:
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
+	if has_weapon_trait(WeaponTrait.ENERGY):
+		return get_energy_hit_pulse_status()
 	var required_sec := maxf(pierce_mark_cycle_sec, 0.1)
 	var current_sec := clampf(_pierce_mark_cycle_elapsed_sec, 0.0, required_sec)
 	var state := "charging"

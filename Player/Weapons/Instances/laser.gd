@@ -98,27 +98,17 @@ func _on_oc_timer_timeout() -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
-	if target == null or not is_instance_valid(target):
-		return
-	if not is_passive_ready():
-		return
-	notify_offhand_skill_triggered(0.0)
-	emit_passive_trigger(PASSIVE_ID, {
-		"trigger": "beam_hit",
-		"target": target,
-		"cooldown": 0.0,
-	})
+
+func get_energy_hit_passive_id() -> StringName:
+	return PASSIVE_ID
+
+func get_energy_hit_display_name() -> String:
+	return "Focus Channel"
+
+func _execute_energy_hit_discharge(target: Node, data: DamageData, result: DamageResult) -> Dictionary:
+	var detail := super._execute_energy_hit_discharge(target, data, result)
+	detail["effect"] = "focus_channel"
+	return detail
 
 func get_passive_status() -> Dictionary:
-	var state := "ready" if is_passive_ready() else "waiting_refresh"
-	return with_passive_charge_status({
-		"id": str(PASSIVE_ID),
-		"display_name": "Focus Channel",
-		"state": state,
-		"progress": 1.0 if state == "ready" else 0.0,
-		"current": 1 if state == "ready" else 0,
-		"required": 1,
-		"ready": state == "ready",
-		"trigger_hint": "beam_hit",
-		"refresh_hint": "reload",
-	})
+	return get_energy_hit_pulse_status()

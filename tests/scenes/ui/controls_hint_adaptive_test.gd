@@ -12,7 +12,7 @@ func _ready() -> void:
 
 func _run() -> void:
 	_original_mode = PlayerAssistSettings.controls_hint_mode
-	_original_reload_events = InputMap.action_get_events(&"SKILL_WEAPON")
+	_original_reload_events = InputMap.action_get_events(&"RELOAD")
 
 	var hint := CONTROLS_HINT_SCENE.instantiate() as ControlsHintView
 	add_child(hint)
@@ -89,10 +89,10 @@ func _test_dynamic_input_label(hint: ControlsHintView) -> void:
 	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE
 	hint.refresh_for_phase(PhaseManager.PREPARE, false)
 	hint.refresh_for_phase(PhaseManager.BATTLE, false)
-	InputMap.action_erase_events(&"SKILL_WEAPON")
+	InputMap.action_erase_events(&"RELOAD")
 	var remapped := InputEventKey.new()
 	remapped.physical_keycode = KEY_T
-	InputMap.action_add_event(&"SKILL_WEAPON", remapped)
+	InputMap.action_add_event(&"RELOAD", remapped)
 	hint.refresh_input_glyphs()
 	var reload_item := hint._action_items.get(&"reload", null) as HBoxContainer
 	var reload_key := reload_item.get_node_or_null("Key") as Label if reload_item else null
@@ -225,9 +225,9 @@ func _action_event(action: StringName) -> InputEventAction:
 	return event
 
 func _restore_state() -> void:
-	InputMap.action_erase_events(&"SKILL_WEAPON")
+	InputMap.action_erase_events(&"RELOAD")
 	for event in _original_reload_events:
-		InputMap.action_add_event(&"SKILL_WEAPON", event)
+		InputMap.action_add_event(&"RELOAD", event)
 	PlayerAssistSettings.controls_hint_mode = _original_mode
 
 func _assert_true(condition: bool, message: String) -> void:

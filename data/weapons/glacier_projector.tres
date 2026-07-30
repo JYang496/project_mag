@@ -9,5 +9,5 @@ weapon_id = "21"
 display_name = "Glacier Projector"
 icon = ExtResource("1_icon")
 price = 45
-description = "Mid-range Freeze cone. Freeze hits trigger Cold Snap as it recharges, supporting Freeze and Area control builds."
+description = "Mid-range Freeze cone. Cold Snap empowers the next attack to freeze non-boss enemies or heavily slow bosses."
 scene_path = "res://Player/Weapons/Instances/glacier_projector.tscn"

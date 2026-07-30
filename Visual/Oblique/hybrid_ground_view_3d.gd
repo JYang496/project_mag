@@ -9,8 +9,10 @@ const BoardPlatformRendererType := preload("res://Visual/Oblique/board_platform_
 const ConnectedEffectRendererType := preload("res://Visual/Oblique/connected_effect_renderer.gd")
 const AuraRendererType := preload("res://Visual/Oblique/aura_renderer.gd")
 const AreaEffectRendererType := preload("res://Visual/Oblique/area_effect_renderer.gd")
+const UnitBillboardRendererType := preload("res://Visual/Oblique/unit_billboard_renderer_3d.gd")
 const RestAreaZoneGroundShader := preload("res://Shaders/rest_area_zone_ground.gdshader")
 const LayeredAreaGroundShader := preload("res://Shaders/layered_area_ground.gdshader")
+const AffiliationGroundMarkerShader := preload("res://Shaders/affiliation_ground_marker.gdshader")
 const ACTIVATION_OUTLINE_SHADER := """
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never;
@@ -39,6 +41,9 @@ const DANGER_WARNING_HEIGHT: float = 0.032
 const DANGER_WARNING_RENDER_PRIORITY: int = 20
 const DANGER_PROGRESS_HEIGHT: float = 0.034
 const DANGER_PROGRESS_RENDER_PRIORITY: int = 21
+const GROUND_IDENTITY_HEIGHT: float = 0.024
+const AFFILIATION_MARKER_HEIGHT: float = GROUND_IDENTITY_HEIGHT
+const AFFILIATION_MARKER_UV_RADIUS: float = 0.78
 
 var camera_fov: float = DEFAULT_CAMERA_FOV
 @export_range(25.0, 75.0, 0.5) var camera_pitch_degrees: float = 52.0
@@ -51,12 +56,14 @@ var world_scale: float = DEFAULT_WORLD_SCALE
 
 var _camera: Camera3D
 var _ground_root: Node3D
+var _unit_visual_root: Node3D
 var _board: Node2D
 var _player: Node2D
 var _player_resolve_attempted: bool = false
 var _activation_meshes: Dictionary = {}
 var _cell_meshes: Dictionary = {}
 var _shadow_meshes: Dictionary = {}
+var _affiliation_marker_meshes: Dictionary = {}
 var _area_meshes: Dictionary = {}
 var _segment_meshes: Dictionary = {}
 var _enemy_aura_meshes: Dictionary = {}
@@ -85,10 +92,13 @@ var _platform_renderer: BoardPlatformRenderer
 var _connected_renderer: ConnectedEffectRenderer
 var _aura_renderer: AuraRenderer
 var _area_renderer: AreaEffectRenderer
+var _unit_billboard_renderer: RefCounted
 var _ground_renderers_initialized: bool = false
 var _view_multiplier: float = 1.0
 var _view_multiplier_tween: Tween
 var _screen_shake_offset := Vector2.ZERO
+var _affiliation_marker_quad: QuadMesh
+var _affiliation_marker_material: ShaderMaterial
 
 func _ready() -> void:
 	LoadingPerformance.begin_segment("ground_ready")
@@ -104,6 +114,9 @@ func _ready() -> void:
 	_ground_root = Node3D.new()
 	_ground_root.name = "GroundMeshes"
 	add_child(_ground_root)
+	_unit_visual_root = Node3D.new()
+	_unit_visual_root.name = "UnitBillboards"
+	add_child(_unit_visual_root)
 	_board_renderer = BoardGroundRendererType.new()
 	_board_renderer.setup(self)
 	_platform_renderer = BoardPlatformRendererType.new()
@@ -114,6 +127,8 @@ func _ready() -> void:
 	_aura_renderer.setup(self)
 	_area_renderer = AreaEffectRendererType.new()
 	_area_renderer.setup(self)
+	_unit_billboard_renderer = UnitBillboardRendererType.new()
+	_unit_billboard_renderer.setup(self, _unit_visual_root, _camera)
 	_mesh_registry = GroundMeshRegistryType.new()
 	_mesh_registry.setup(self, _board_renderer, _connected_renderer, _aura_renderer, _area_renderer)
 	_late_sync = HybridGroundLateSyncType.new()
@@ -200,6 +215,8 @@ func sync_late_visuals(_delta: float) -> void:
 		return
 	if _mesh_registry != null:
 		_mesh_registry.sync_late(_delta)
+	if _unit_billboard_renderer != null:
+		_unit_billboard_renderer.sync_late(_delta)
 
 func configure(pitch: float, yaw: float, distance: float) -> void:
 	camera_pitch_degrees = clampf(pitch, 25.0, 75.0)
@@ -240,6 +257,9 @@ func _on_view_multiplier_tween_finished() -> void:
 
 func world_2d_to_3d(point: Vector2) -> Vector3:
 	return Vector3(point.x * world_scale, 0.0, point.y * world_scale)
+
+func world_2d_to_ground_anchor(point: Vector2) -> Vector3:
+	return world_2d_to_3d(point) + Vector3.UP * GROUND_IDENTITY_HEIGHT
 
 func project_world_to_screen(point: Vector2) -> Vector2:
 	if _camera == null or not _projection_ready:
@@ -313,6 +333,8 @@ func _exit_tree() -> void:
 	_projection_ready = false
 	_player = null
 	_rest_area = null
+	if _unit_billboard_renderer != null:
+		_unit_billboard_renderer.clear()
 	_clear_ground_visual_caches()
 
 func _rebuild_ground() -> void:
@@ -390,6 +412,7 @@ func _clear_ground_visual_caches() -> void:
 	_rest_ground_material = null
 	_rest_ground_sprite = null
 	_shadow_meshes.clear()
+	_affiliation_marker_meshes.clear()
 	_area_meshes.clear()
 	_segment_meshes.clear()
 	_enemy_aura_meshes.clear()
@@ -573,19 +596,26 @@ func _set_board_mesh_visibility(active: bool) -> void:
 			visual.visible = active
 
 func _register_shadow(shadow: CanvasItem) -> void:
-	if shadow == null or _shadow_meshes.has(shadow.get_instance_id()):
+	if shadow == null:
 		return
 	var owner_2d := shadow.get_parent() as Node2D
 	if owner_2d == null:
 		return
 	shadow.visible = false
-	var mesh := _create_disc_mesh(Color(0.0, 0.0, 0.0, 0.20))
-	mesh.visible = false
-	_ground_root.add_child(mesh)
 	var shadow_2d := shadow as Node2D
 	var local_anchor := shadow_2d.position if shadow_2d != null else Vector2.ZERO
 	var size_2d := _get_shadow_visual_size(shadow)
-	_shadow_meshes[shadow.get_instance_id()] = {
+	var source_id := shadow.get_instance_id()
+	if _shadow_meshes.has(source_id):
+		var existing := _shadow_meshes[source_id] as Dictionary
+		existing["local_anchor"] = local_anchor
+		existing["size_2d"] = size_2d
+		_shadow_meshes[source_id] = existing
+		return
+	var mesh := _create_disc_mesh(Color(0.0, 0.0, 0.0, 0.20))
+	mesh.visible = false
+	_ground_root.add_child(mesh)
+	_shadow_meshes[source_id] = {
 		"source": weakref(shadow),
 		"owner": weakref(owner_2d),
 		"mesh": mesh,
@@ -607,6 +637,37 @@ func _get_shadow_visual_size(shadow: CanvasItem) -> Vector2:
 				bounds = bounds.expand(point)
 			return bounds.size * polygon.scale.abs()
 	return Vector2(36.0, 18.0)
+
+func _register_affiliation_marker(marker: Node2D) -> void:
+	if marker == null or _affiliation_marker_meshes.has(marker.get_instance_id()):
+		return
+	var owner_2d := marker.get_parent() as Node2D
+	if owner_2d == null or not marker.has_method("get_hybrid_ground_marker_config"):
+		return
+	_ensure_affiliation_marker_resources()
+	var mesh := MeshInstance3D.new()
+	mesh.name = "%sGroundMarker" % owner_2d.name
+	mesh.mesh = _affiliation_marker_quad
+	mesh.visible = false
+	_ground_root.add_child(mesh)
+	_affiliation_marker_meshes[marker.get_instance_id()] = {
+		"source": weakref(marker),
+		"owner": weakref(owner_2d),
+		"mesh": mesh,
+	}
+	marker.visible = false
+	marker.set_meta(&"hybrid_ground_registered", true)
+
+func _ensure_affiliation_marker_resources() -> void:
+	if _affiliation_marker_quad != null:
+		return
+	_affiliation_marker_material = ShaderMaterial.new()
+	_affiliation_marker_material.shader = AffiliationGroundMarkerShader
+	_affiliation_marker_material.render_priority = 10
+	_affiliation_marker_quad = QuadMesh.new()
+	_affiliation_marker_quad.orientation = PlaneMesh.FACE_Y
+	_affiliation_marker_quad.size = Vector2(2.0, 2.0)
+	_affiliation_marker_quad.material = _affiliation_marker_material
 
 func _register_area_effect(area: Node2D) -> void:
 	if area == null or _area_meshes.has(area.get_instance_id()) or bool(area.get_meta(&"hybrid_animated_area_registered", false)):
@@ -669,6 +730,14 @@ func register_area_effect(area: Node2D) -> void:
 func register_shadow(shadow: CanvasItem) -> void:
 	if _area_renderer != null:
 		_area_renderer.register_shadow(shadow)
+
+func register_affiliation_marker(marker: Node2D) -> void:
+	if _area_renderer != null:
+		_area_renderer.register_affiliation_marker(marker)
+
+func register_unit_billboard(source: Node2D) -> void:
+	if _unit_billboard_renderer != null:
+		_unit_billboard_renderer.register(source)
 
 func _register_enemy_support_visual(source: Node2D) -> void:
 	if source == null:
@@ -823,8 +892,11 @@ func unregister_ground_visual(source: Node) -> void:
 	if source == null:
 		return
 	var source_id := source.get_instance_id()
+	if _unit_billboard_renderer != null:
+		_unit_billboard_renderer.unregister(source)
 	source.set_meta(&"hybrid_ground_registered", false)
 	_erase_visual_entry(_shadow_meshes, source_id)
+	_erase_visual_entry(_affiliation_marker_meshes, source_id)
 	_erase_visual_entry(_area_meshes, source_id)
 	_erase_visual_entry(_segment_meshes, source_id)
 	_erase_visual_entry(_dash_telegraph_meshes, source_id)
@@ -1068,9 +1140,42 @@ func _sync_shadow_meshes() -> void:
 		var local_anchor := entry.get("local_anchor", Vector2.ZERO) as Vector2
 		var size_2d := entry.get("size_2d", Vector2(36.0, 18.0)) as Vector2
 		var logical_anchor := owner_2d.global_transform * local_anchor
-		mesh.position = world_2d_to_3d(logical_anchor) + Vector3.UP * 0.018
+		mesh.position = world_2d_to_ground_anchor(logical_anchor)
 		mesh.scale = Vector3(size_2d.x * 0.5 * world_scale, 1.0, size_2d.y * 0.5 * world_scale)
 		mesh.visible = true
+
+func _sync_affiliation_marker_meshes() -> void:
+	for id in _affiliation_marker_meshes.keys():
+		var entry := _affiliation_marker_meshes[id] as Dictionary
+		var source := (entry.source as WeakRef).get_ref() as Node2D
+		var owner_2d := (entry.owner as WeakRef).get_ref() as Node2D
+		var mesh := entry.mesh as MeshInstance3D
+		if source == null or owner_2d == null or mesh == null:
+			if mesh != null:
+				mesh.queue_free()
+			_affiliation_marker_meshes.erase(id)
+			continue
+		var config := source.call("get_hybrid_ground_marker_config") as Dictionary
+		var local_anchor := config.get("local_anchor", Vector2.ZERO) as Vector2
+		var logical_anchor := owner_2d.global_transform * local_anchor
+		var footprint_size := config.get("footprint_size", Vector2(40.0, 40.0)) as Vector2
+		footprint_size.x = maxf(footprint_size.x, 2.0)
+		footprint_size.y = maxf(footprint_size.y, 2.0)
+		var line_width_2d := maxf(float(config.get("line_width", 2.0)), 0.5)
+		mesh.position = world_2d_to_ground_anchor(logical_anchor)
+		mesh.scale = Vector3(
+			footprint_size.x * 0.5 * world_scale / AFFILIATION_MARKER_UV_RADIUS,
+			1.0,
+			footprint_size.y * 0.5 * world_scale / AFFILIATION_MARKER_UV_RADIUS
+		)
+		mesh.visible = bool(config.get("visible", true)) and owner_2d.visible
+		mesh.set_instance_shader_parameter("marker_color", config.get("color", Color.WHITE) as Color)
+		mesh.set_instance_shader_parameter(
+			"line_width_ratio",
+			clampf(line_width_2d * AFFILIATION_MARKER_UV_RADIUS / minf(footprint_size.x, footprint_size.y), 0.005, 0.125)
+		)
+		mesh.set_instance_shader_parameter("half_arc_radians", maxf(float(config.get("arc_length", 0.46)) * 0.5, 0.05))
+		mesh.set_instance_shader_parameter("marker_shape", int(config.get("marker_shape", 1)))
 
 func _sync_area_meshes() -> void:
 	for id in _area_meshes.keys():

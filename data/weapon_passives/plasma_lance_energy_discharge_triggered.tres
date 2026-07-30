@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="WeaponPassiveBranchDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/WeaponPassiveBranchDefinition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+passive_id = "plasma_lance_energy_discharge_triggered"
+display_name = "Plasma Discharge"
+description = "Energy cycle. Heat still determines each lance shot's damage, while every valid energy hit independently fills one of 5 pulse cells; the fifth hit releases an extra plasma discharge."
+condition_type = "valid_energy_hit_count"
+refresh_type = "automatic_after_discharge"
+ui_mode = "progress"
+hud_mode = "bean_with_condition"

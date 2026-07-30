@@ -11,18 +11,19 @@ enum RangeMode {
 
 const DEFAULT_PROJECTILE_LIFETIME_SEC: float = 2.5
 const WeaponFireFeedbackPlayerScript := preload("res://Player/Weapons/Feedback/weapon_fire_feedback_player.gd")
+const EnergyHitPulseRuntimeScript := preload("res://Player/Weapons/Core/energy_hit_pulse_runtime.gd")
 
 #region Runtime State
 @onready var modules: WeaponModules = $Modules
 var branch_runtime: WeaponBranchRuntime = WeaponBranchRuntime.new()
 var heat_runtime: WeaponHeatController = WeaponHeatController.new()
 var stat_pipeline: WeaponStatPipeline = WeaponStatPipeline.new()
-var active_controller: WeaponActiveController = WeaponActiveController.new()
 var plugin_dispatcher: WeaponPluginDispatcher = WeaponPluginDispatcher.new()
 var ammo_controller: WeaponAmmoController = WeaponAmmoController.new()
 var passive_controller: WeaponPassiveController = WeaponPassiveController.new()
 var fuse_visual_controller: WeaponFuseVisualController = WeaponFuseVisualController.new()
 var fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
+var energy_hit_runtime = EnergyHitPulseRuntimeScript.new()
 var MAX_MODULE_NUMBER = 3
 @onready var sprite: Sprite2D = $Sprite
 @onready var fuse_sprite_holder: FuseSpriteHolder = get_node_or_null("FuseSprites")
@@ -47,12 +48,6 @@ var heat_per_shot: float = 1.0
 var heat_max_value: float = 100.0
 var heat_cool_rate: float = 20.0
 @export_enum("main", "offhand") var weapon_role: String = "offhand"
-@export var weapon_active_cooldown_sec: float = 8.0
-@export_enum("none", "energy", "heat") var weapon_active_resource_type: String = "energy"
-@export var weapon_active_resource_cost: float = 20.0
-@export var weapon_active_hit_window_required_hits: int = 0
-@export var weapon_active_hit_window_timeout_sec: float = 6.0
-@export var weapon_active_hit_window_bonus_multiplier: float = 1.35
 @export var fire_feedback_profile: Resource
 @export var range_mode: RangeMode = RangeMode.UNSPECIFIED
 @export var configured_attack_range: float = 0.0
@@ -78,10 +73,6 @@ var fuse : int:
 
 signal weapon_role_changed(next_role: String)
 @warning_ignore("unused_signal")
-signal weapon_active_status_changed(cooldown_remaining: float, ready: bool)
-@warning_ignore("unused_signal")
-signal weapon_active_triggered(success: bool, reason: String)
-@warning_ignore("unused_signal")
 signal passive_triggered(event_name: StringName, detail: Dictionary)
 @warning_ignore("unused_signal")
 signal weapon_reload_completed(weapon: Weapon)
@@ -93,10 +84,10 @@ signal offhand_refreshed_by_reload(weapon: Weapon)
 func _init() -> void:
 	branch_runtime.setup(self)
 	stat_pipeline.setup(self)
-	active_controller.setup(self)
 	plugin_dispatcher.setup(self)
 	ammo_controller.setup(self)
 	passive_controller.setup(self)
+	energy_hit_runtime.setup(self)
 	fuse_visual_controller.setup(self)
 	fire_feedback_player.setup(self)
 
@@ -117,6 +108,8 @@ func calculate_status() -> void:
 	ammo_controller.reconcile_capacity()
 	validate_module_compatibility()
 	_sync_heat_trait_state()
+	if not has_weapon_trait(WeaponTrait.ENERGY):
+		energy_hit_runtime.clear()
 
 func set_max_level(ml : int) -> void:
 	max_level = maxi(int(ml), 1)
@@ -178,7 +171,6 @@ func _handle_hit_target(target: Node, damage_type: StringName = StringName()) ->
 	if target != null and is_instance_valid(target):
 		target.set_meta(LAST_HIT_WEAPON_META, get_instance_id())
 		target.set_meta(LAST_HIT_WEAPON_TIME_META, Time.get_ticks_msec())
-	active_controller.register_hit_window()
 	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("_broadcast_weapon_passive_event"):
 		var detail := {
 			"source_weapon": self,
@@ -188,6 +180,35 @@ func _handle_hit_target(target: Node, damage_type: StringName = StringName()) ->
 		if damage_type != StringName():
 			detail["damage_type"] = damage_type
 		PlayerData.player.call("_broadcast_weapon_passive_event", &"on_hit", detail)
+
+func on_damage_applied(target: Node, data: DamageData, result: DamageResult) -> void:
+	energy_hit_runtime.record_applied_damage(target, data, result)
+
+func accepts_energy_hit_pulse(_target: Node, _data: DamageData, _result: DamageResult) -> bool:
+	return true
+
+func get_energy_hit_passive_id() -> StringName:
+	var branch_passive_id := branch_runtime.get_energy_hit_passive_id()
+	if branch_passive_id != StringName():
+		return branch_passive_id
+	return &"energy_hit_cycle_triggered"
+
+func get_energy_hit_display_name() -> String:
+	var branch_display_name := branch_runtime.get_energy_hit_display_name()
+	if not branch_display_name.is_empty():
+		return branch_display_name
+	return "Energy Discharge"
+
+func get_energy_hit_pulse_status() -> Dictionary:
+	return energy_hit_runtime.get_status(get_energy_hit_passive_id(), get_energy_hit_display_name())
+
+func get_energy_hit_pulse_count() -> int:
+	return int(energy_hit_runtime.current_hits)
+
+func _execute_energy_hit_discharge(target: Node, data: DamageData, result: DamageResult) -> Dictionary:
+	return {
+		"effects": branch_runtime.notify_branch_energy_hit_cycle_triggered(target, data, result),
+	}
 
 func notify_main_weapon_fired() -> void:
 	if not is_main_weapon():
@@ -432,8 +453,6 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_update_reload_state(delta)
 	_update_heat_system(delta)
-	active_controller.update_cooldown(delta)
-	active_controller.update_hit_window()
 	_process_weapon_role_effects(delta)
 
 func _process_weapon_role_effects(delta: float) -> void:
@@ -732,7 +751,7 @@ func _on_tree_exited() -> void:
 	branch_runtime.clear_for_weapon_exit()
 	heat_runtime.clear_for_weapon_exit()
 	stat_pipeline.clear_for_weapon_exit()
-	active_controller.clear_for_weapon_exit()
+	energy_hit_runtime.clear()
 #endregion
 
 #region Weapon Role And Input
@@ -764,7 +783,7 @@ func _on_enter_offhand_weapon_role() -> void:
 	pass
 
 func clear_timed_effects_for_prepare() -> void:
-	active_controller.clear_hit_window()
+	energy_hit_runtime.clear()
 	for module_node in get_equipped_modules():
 		if module_node == null or not is_instance_valid(module_node):
 			continue
@@ -817,23 +836,16 @@ func _get_effective_reload_duration() -> float:
 #endregion
 
 #region Weapon Active And Passive State
+# Reserved extension point for a possible future weapon-active system.
+# No current weapon overrides or consumes this interface.
 func request_weapon_active() -> Dictionary:
-	return active_controller.request_weapon_active()
+	return {"ok": false, "reason": "unsupported"}
 
 func _execute_weapon_active(_damage_multiplier: float) -> bool:
 	return false
 
 func has_weapon_active_skill() -> bool:
 	return false
-
-func get_weapon_active_cd_remaining() -> float:
-	return active_controller.get_cooldown_remaining()
-
-func get_weapon_active_cd_ratio() -> float:
-	return active_controller.get_cooldown_ratio()
-
-func get_weapon_active_hit_window_progress() -> Dictionary:
-	return active_controller.get_hit_window_progress()
 
 func get_passive_status() -> Dictionary:
 	return passive_controller.get_passive_status()
@@ -879,5 +891,4 @@ func _refresh_offhand_skill_on_reload() -> void:
 
 func force_skill_cooldowns_ready() -> void:
 	passive_controller.force_ready()
-	active_controller.force_ready()
 #endregion

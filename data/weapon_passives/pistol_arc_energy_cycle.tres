@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="WeaponPassiveBranchDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/WeaponPassiveBranchDefinition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+passive_id = "pistol_arc_energy_cycle"
+display_name = "Arc Discharge"
+description = "Energy cycle. Every valid hit fills one of 5 pulse cells; the fifth hit chains energy damage to nearby enemies, then the cycle restarts."
+condition_type = "valid_energy_hit_count"
+refresh_type = "automatic_after_discharge"
+ui_mode = "progress"
+hud_mode = "bean_with_condition"

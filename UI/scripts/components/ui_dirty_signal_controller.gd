@@ -60,7 +60,6 @@ func rebind_weapon_passive_status_signals() -> void:
 		_connect_weapon_passive_status_signal(weapon, "passive_triggered")
 		_connect_weapon_passive_status_signal(weapon, "weapon_reload_completed")
 		_connect_weapon_passive_status_signal(weapon, "weapon_role_changed")
-		_connect_weapon_passive_status_signal(weapon, "weapon_active_status_changed")
 		_connect_weapon_passive_status_signal(weapon, "shoot")
 		passive_status_signal_weapons.append(weapon)
 	_sync_public_fields_to_owner()
@@ -70,7 +69,7 @@ func disconnect_weapon_passive_status_signals() -> void:
 	for weapon in passive_status_signal_weapons:
 		if weapon == null or not is_instance_valid(weapon):
 			continue
-		for signal_name in ["passive_triggered", "weapon_reload_completed", "weapon_role_changed", "weapon_active_status_changed", "shoot"]:
+		for signal_name in ["passive_triggered", "weapon_reload_completed", "weapon_role_changed", "shoot"]:
 			if weapon.has_signal(signal_name) and weapon.is_connected(signal_name, callback):
 				weapon.disconnect(signal_name, callback)
 	passive_status_signal_weapons.clear()

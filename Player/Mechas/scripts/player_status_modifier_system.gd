@@ -114,14 +114,22 @@ func remove_loot_bonus(source_id: StringName) -> void:
 	if _loot_bonus_modifiers.has(source_id):
 		_loot_bonus_modifiers.erase(source_id)
 
-func compute_outgoing_damage(base_damage: int) -> int:
-	return compute_outgoing_damage_result(base_damage).damage
+func compute_outgoing_damage(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL) -> int:
+	return compute_outgoing_damage_result(base_damage, damage_type).damage
 
-func compute_outgoing_damage_result(base_damage: int):
+func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL):
 	var total_mul_delta := 0.0
 	for mul in _damage_mul_modifiers.values():
 		total_mul_delta += (float(mul) - 1.0)
 	total_mul_delta += (_get_low_hp_damage_mul() - 1.0)
+	if Attack.normalize_damage_type(damage_type) == Attack.TYPE_FIRE \
+			and _player != null \
+			and is_instance_valid(_player) \
+			and _player.has_method("get_heat_prepared_fire_damage_multiplier"):
+		total_mul_delta += maxf(
+			float(_player.call("get_heat_prepared_fire_damage_multiplier")),
+			0.0
+		) - 1.0
 	var final_mul := maxf(0.0, 1.0 + total_mul_delta)
 	var final_damage: int = maxi(1, int(round(float(base_damage) * final_mul)))
 	var is_critical := randf() < clampf(float(PlayerData.total_crit_rate), 0.0, 1.0)

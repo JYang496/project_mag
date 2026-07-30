@@ -26,11 +26,10 @@ extra_scale = Vector2(1, 1)
 
 [node name="AffiliationMarker" type="Node2D" parent="." index="3"]
 position = Vector2(0, 8)
-scale = Vector2(1, 0.58)
 script = ExtResource("3_marker")
 marker_color = Color(1, 0.301961, 0.368627, 0.78)
 radius = 20.0
-line_width = 2.0
+line_width = 1.0
 
 [node name="EnableCollisionTimer" type="Timer" parent="." index="4" unique_id=2059076023]
 wait_time = 0.2

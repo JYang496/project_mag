@@ -20,7 +20,10 @@ func build_damage_data(
 	var final_damage: int = max(0, int(base_damage))
 	var is_critical := false
 	if resolved_source_player and is_instance_valid(resolved_source_player) and resolved_source_player is Player:
-		var outgoing_result = (resolved_source_player as Player).compute_outgoing_damage_result(final_damage)
+		var outgoing_result = (resolved_source_player as Player).compute_outgoing_damage_result(
+			final_damage,
+			damage_type
+		)
 		final_damage = outgoing_result.damage
 		is_critical = outgoing_result.is_critical
 
@@ -118,6 +121,7 @@ func apply_to_target_result(target: Node, data: DamageData) -> DamageResult:
 			result.applied = bool(component_result)
 			result.accepted = result.applied
 		_populate_damage_result(result, target, data, hp_before)
+		_notify_player_weapon_damage_applied(target, data, result)
 		return result
 
 	if target.has_method("damaged"):
@@ -130,8 +134,20 @@ func apply_to_target_result(target: Node, data: DamageData) -> DamageResult:
 			result.applied = true
 			result.accepted = true
 		_populate_damage_result(result, target, data, hp_before)
+		_notify_player_weapon_damage_applied(target, data, result)
 		return result
 	return result
+
+
+func _notify_player_weapon_damage_applied(target: Node, data: DamageData, result: DamageResult) -> void:
+	if result == null or not result.applied or result.final_damage <= 0:
+		return
+	if data == null or data.source_category != DamageData.SOURCE_PLAYER_WEAPON:
+		return
+	var source_weapon := resolve_source_weapon(data.source_node)
+	if source_weapon == null or not source_weapon.has_method("on_damage_applied"):
+		return
+	source_weapon.call("on_damage_applied", target, data, result)
 
 
 func _populate_damage_result(result: DamageResult, target: Node, data: DamageData, hp_before: Variant) -> void:

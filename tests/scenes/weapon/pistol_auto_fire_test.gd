@@ -14,6 +14,19 @@ func _ready() -> void:
 	add_child(pistol)
 	pistol.global_position = Vector2.ZERO
 	pistol.shoot.connect(func() -> void: _shot_count += 1)
+	var failed := false
+	pistol.set("_pierce_mark_cycle_elapsed_sec", 0.0)
+	pistol.set("_pierce_mark_window_remaining_sec", 0.0)
+	pistol.call("_update_pierce_mark_window", 7.9)
+	failed = _check(
+		str(pistol.get_passive_status().get("state", "")) == "charging",
+		"Auto Pistol must not enter its mark window before 8 seconds"
+	) or failed
+	pistol.call("_update_pierce_mark_window", 0.11)
+	failed = _check(
+		str(pistol.get_passive_status().get("state", "")) == "active",
+		"Auto Pistol must enter its mark window every 8 seconds without a movement requirement"
+	) or failed
 
 	# A group-only enemy exercises the fallback used when the registry misses an entry.
 	var enemy := Node2D.new()
@@ -32,7 +45,6 @@ func _ready() -> void:
 		if child is Projectile:
 			spawned_projectile = child as Projectile
 			break
-	var failed := false
 	failed = _check(found_target == enemy, "Auto Pistol must find a nearby group-only enemy") or failed
 	failed = _check(_shot_count > 0, "Auto Pistol must automatically fire at a nearby enemy") or failed
 	failed = _check(spawned_projectile != null, "Auto Pistol must add a projectile after spending ammo") or failed

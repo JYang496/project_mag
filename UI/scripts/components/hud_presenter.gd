@@ -539,33 +539,24 @@ func _update_weapon_state_label_text() -> void:
 		active_skill_node = PlayerData.player.active_skill_holder.get_child(0)
 	if active_skill_node != null and active_skill_node.has_method("get_cooldown_remaining"):
 		ps_cd = float(active_skill_node.call("get_cooldown_remaining"))
-	var fail_reason := ""
-	if PlayerData.player.has_method("get_last_weapon_skill_fail_reason"):
-		fail_reason = str(PlayerData.player.get_last_weapon_skill_fail_reason())
 	var lock_text := LocalizationManager.tr_key("ui.hud.weapon.swap.on", "on") if weapon_count > 1 else LocalizationManager.tr_key("ui.hud.weapon.swap.off", "off")
 	var ps_text := "%.1fs" % ps_cd if ps_cd > 0.0 else LocalizationManager.tr_key("ui.hud.weapon.ready", "Ready")
-	var fail_text := ""
-	if fail_reason != "":
-		fail_text = LocalizationManager.tr_format("ui.hud.weapon.fail", {"reason": fail_reason}, " Fail:%s" % fail_reason)
 	var long_state_text := LocalizationManager.tr_format(
 		"ui.hud.weapon_state",
 		{
 			"main": main_text,
 			"offhand": maxi(0, weapon_count - 1),
 			"swap": lock_text,
-			"ps": ps_text,
-			"fail": fail_text
+			"ps": ps_text
 		},
-		"Main:%s Offhand:%d Swap:%s PS:%s%s" % [main_text, maxi(0, weapon_count - 1), lock_text, ps_text, fail_text]
+		"Main:%s Offhand:%d Swap:%s PS:%s" % [main_text, maxi(0, weapon_count - 1), lock_text, ps_text]
 	)
 	var next_state_text := "W:%s  PS:%s" % [main_text, ps_text]
-	if fail_reason != "":
-		next_state_text = "W:%s  !" % main_text
 	if _last_weapon_state_text != next_state_text:
 		_last_weapon_state_text = next_state_text
 		weapon_state_label.text = next_state_text
 		weapon_state_label.tooltip_text = long_state_text
-	_style_status_label(weapon_state_label, Color(0.46, 0.68, 0.92, 1.0) if fail_reason == "" else Color(1.0, 0.38, 0.28, 1.0), fail_reason != "")
+	_style_status_label(weapon_state_label, Color(0.46, 0.68, 0.92, 1.0), false)
 
 func _refresh_inventory_text_values() -> void:
 	if equipped_label and is_instance_valid(equipped_label):

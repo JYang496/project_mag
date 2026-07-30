@@ -140,6 +140,28 @@ func notify_branch_target_hit(target: Node) -> void:
 	for behavior in get_branch_behaviors():
 		behavior.on_target_hit(target)
 
+func notify_branch_energy_hit_cycle_triggered(target: Node, data: DamageData, result: DamageResult) -> Array[Dictionary]:
+	var effects: Array[Dictionary] = []
+	for behavior in get_branch_behaviors():
+		var effect := behavior.on_energy_hit_cycle_triggered(target, data, result)
+		if not effect.is_empty():
+			effects.append(effect)
+	return effects
+
+func get_energy_hit_passive_id() -> StringName:
+	for behavior in get_branch_behaviors():
+		var passive_id := behavior.get_energy_hit_passive_id()
+		if passive_id != StringName():
+			return passive_id
+	return StringName()
+
+func get_energy_hit_display_name() -> String:
+	for behavior in get_branch_behaviors():
+		var display_name := behavior.get_energy_hit_display_name()
+		if not display_name.is_empty():
+			return display_name
+	return ""
+
 func notify_branch_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	for behavior in get_branch_behaviors():
 		behavior.on_passive_event(event_name, detail)

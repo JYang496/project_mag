@@ -9,5 +9,5 @@ weapon_id = "13"
 display_name = "Flamethrower"
 icon = ExtResource("1_icon")
 price = 45
-description = "Short-range fire cone. Core Heat and Area weapon that builds heat during combat, then reloads to turn stored heat into a damage window."
+description = "Short-range fire cone. Core Heat and Area weapon whose damage grows as heat rises, rewarding sustained high-heat pressure."
 scene_path = "res://Player/Weapons/Instances/flamethrower.tscn"

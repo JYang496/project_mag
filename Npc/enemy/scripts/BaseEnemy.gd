@@ -6,6 +6,10 @@ const SPAWN_TAG_ELITE := &"elite"
 const SPAWN_TAG_SUPPORT := &"support"
 const SPAWN_TAG_INTERCEPTOR := &"interceptor"
 const QUEST_OUTLINE_SHADER: Shader = preload("res://Shaders/quest_outline.gdshader") as Shader
+const SHADOW_WIDTH_MULTIPLIER: float = 1.10
+const SHADOW_DEPTH_MULTIPLIER: float = 0.45
+const SHADOW_SIZE_MIN := Vector2(20.0, 9.0)
+const SHADOW_SIZE_MAX := Vector2(52.0, 24.0)
 
 @export var damage := 0
 @export var is_boss: bool = false
@@ -79,20 +83,75 @@ func _enter_tree() -> void:
 	var enemy_registry := get_node_or_null("/root/EnemyRegistry")
 	if enemy_registry != null and enemy_registry.has_method("register_enemy"):
 		enemy_registry.call("register_enemy", self)
+	# Some specialized enemies override _ready() without calling the base
+	# implementation. Defer visual anchoring so every inherited scene is covered.
+	call_deferred("_sync_ground_identity_visuals")
 
 func _ready() -> void:
 	_incoming_damage_max_hp = max(1, int(hp))
-	_sync_affiliation_marker_size()
+	_sync_ground_identity_visuals()
 
 
-func _sync_affiliation_marker_size() -> void:
+func _sync_ground_identity_visuals() -> void:
 	var marker := get_node_or_null("AffiliationMarker") as Node2D
-	if marker == null or sprite_body == null or sprite_body.texture == null:
+	var ground_shadow := get_node_or_null("GroundShadow") as Node2D
+	var visual_extent := _resolve_hurtbox_or_visible_sprite_extent()
+	if visual_extent == Vector2.ZERO:
 		return
-	var texture_size: Vector2 = sprite_body.texture.get_size()
-	var source_extent := maxf(texture_size.x, texture_size.y)
-	var marker_radius := clampf(source_extent * 0.60, 20.0, 32.0)
-	marker.set("radius", maxf(float(marker.get("radius")), marker_radius))
+	if ground_shadow != null:
+		var base_shadow_size := _get_polygon_visual_size(ground_shadow as Polygon2D)
+		if base_shadow_size != Vector2.ZERO:
+			var target_shadow_size := Vector2(
+				roundf(clampf(visual_extent.x * SHADOW_WIDTH_MULTIPLIER, SHADOW_SIZE_MIN.x, SHADOW_SIZE_MAX.x)),
+				roundf(clampf(visual_extent.y * SHADOW_DEPTH_MULTIPLIER, SHADOW_SIZE_MIN.y, SHADOW_SIZE_MAX.y))
+			)
+			ground_shadow.scale = target_shadow_size / base_shadow_size
+		HybridGroundRegistration.register(ground_shadow, &"register_shadow")
+	if marker != null and marker.has_method("sync_to_ground_shadow"):
+		marker.call("sync_to_ground_shadow")
+
+
+func _resolve_hurtbox_or_visible_sprite_extent() -> Vector2:
+	var collision := get_node_or_null("HurtBox/CollisionShape2D") as CollisionShape2D
+	if collision != null and collision.shape != null:
+		var shape_size := _get_collision_shape_size(collision.shape) * collision.scale.abs()
+		if shape_size.x > 0.0 and shape_size.y > 0.0:
+			return shape_size
+	if sprite_body == null or sprite_body.texture == null:
+		return Vector2.ZERO
+	var image: Image = sprite_body.texture.get_image()
+	if image == null or image.is_empty():
+		return Vector2.ZERO
+	var extra_scale := sprite_body.get("extra_scale") as Vector2
+	return Vector2(image.get_used_rect().size) * extra_scale.abs()
+
+
+func _get_collision_shape_size(shape: Shape2D) -> Vector2:
+	if shape is RectangleShape2D:
+		return (shape as RectangleShape2D).size
+	if shape is CircleShape2D:
+		var diameter := (shape as CircleShape2D).radius * 2.0
+		return Vector2(diameter, diameter)
+	if shape is CapsuleShape2D:
+		var capsule := shape as CapsuleShape2D
+		return Vector2(capsule.radius * 2.0, capsule.height)
+	if shape is ConvexPolygonShape2D:
+		var points := (shape as ConvexPolygonShape2D).points
+		if not points.is_empty():
+			var bounds := Rect2(points[0], Vector2.ZERO)
+			for point in points:
+				bounds = bounds.expand(point)
+			return bounds.size
+	return Vector2.ZERO
+
+
+func _get_polygon_visual_size(polygon: Polygon2D) -> Vector2:
+	if polygon == null or polygon.polygon.is_empty():
+		return Vector2.ZERO
+	var bounds := Rect2(polygon.polygon[0], Vector2.ZERO)
+	for point in polygon.polygon:
+		bounds = bounds.expand(point)
+	return bounds.size
 
 func _exit_tree() -> void:
 	_disconnect_board_constraint_signals()

@@ -192,22 +192,6 @@ func _get_spread_distance_ratio(shot_distance: float) -> float:
 func start_weapon_cooldown(base_cooldown: float, min_cooldown: float = 0.01) -> void:
 	fire_controller.start_weapon_cooldown(base_cooldown, min_cooldown)
 
-func _execute_weapon_active(_damage_multiplier: float) -> bool:
-	# Keep ranger weapon active empty by design.
-	return false
-
-func _apply_weapon_active_multiplier_buff(damage_multiplier: float) -> void:
-	if damage_multiplier <= 1.0:
-		return
-	var source_id := StringName("weapon_active_%s" % str(get_instance_id()))
-	if PlayerData.player and is_instance_valid(PlayerData.player):
-		PlayerData.player.apply_damage_mul(source_id, damage_multiplier)
-		var clear_timer := get_tree().create_timer(0.15)
-		clear_timer.timeout.connect(func() -> void:
-			if PlayerData.player and is_instance_valid(PlayerData.player):
-				PlayerData.player.remove_damage_mul(source_id)
-		)
-
 # This function calls before a projectile is added.
 func apply_effects_on_projectile(projectile : Node2D) -> void:
 	projectile_emitter.apply_effects_on_projectile(projectile)

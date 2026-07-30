@@ -6,7 +6,8 @@
 script = ExtResource("1_script")
 passive_id = "laser_focus_channel_triggered"
 display_name = "Focus Channel"
-description = "Beam trigger. Has 1 charge; Laser beam hits spend it to trigger Focus Channel. Reloading restores the charge."
-condition_type = "beam_hit"
-refresh_type = "reload"
-ui_mode = "state"
+description = "Energy cycle. Every valid energy hit fills one of 5 pulse cells; the fifth hit triggers Focus Channel and immediately starts the next cycle."
+condition_type = "valid_energy_hit_count"
+refresh_type = "automatic_after_discharge"
+ui_mode = "progress"
+hud_mode = "bean_with_condition"

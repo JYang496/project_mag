@@ -10,14 +10,8 @@ script = ExtResource("2_script")
 heat_accumulation = 10.0
 max_heat = 100.0
 heat_cooldown_rate = 0.0
-heat_spend_attacks_trigger_count = 3
-plasma_heat_spend_amount = 20.0
-plasma_heat_max_spend_amount = 20.0
-plasma_heat_spend_damage_bonus = 0.25
-heat_feedback_duration_sec = 10.0
-heat_feedback_threshold = 0.7
-heat_feedback_low_gain_mul = 1.2
-heat_feedback_high_gain_mul = 0.8
+plasma_heat_damage_bonus_at_full_heat = 0.75
+energy_discharge_damage_ratio = 0.5
 fire_feedback_profile = ExtResource("4_feedback")
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]

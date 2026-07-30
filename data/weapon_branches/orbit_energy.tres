@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "energy_orbit"
 display_name = "Energy Orbit"
-description = "On Hit branch. Enemies near satellites take bonus energy damage when hit, rewarding satellite placement and multi-weapon focus fire."
+description = "Energy cycle branch. Satellite hits fill a 5-cell pulse; the fifth hit releases a radial energy pulse around its target."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

@@ -5,8 +5,9 @@
 [resource]
 script = ExtResource("1_script")
 passive_id = "charged_blaster_multi_hit_triggered"
-display_name = "Beam Multi Hit"
-description = "Beam/Area trigger. Has 3 charges; one beam cast must hit multiple different targets to spend 1 charge. Reloading restores all charges."
-condition_type = "unique_hit_count"
-refresh_type = "reload"
+display_name = "Beam Resonance"
+description = "Energy cycle. Every valid beam hit fills one of 5 pulse cells; hitting several targets in one sweep advances the cycle once per target, and the fifth hit triggers Beam Resonance."
+condition_type = "valid_energy_hit_count"
+refresh_type = "automatic_after_discharge"
 ui_mode = "progress"
+hud_mode = "bean_with_condition"

@@ -38,10 +38,8 @@ const PASSIVE_UNAVAILABLE_BASE_COLOR := Color(0.48, 0.5, 0.52, 0.09)
 const PASSIVE_CHARGE_BEAN_FILLED_COLOR := Color(1.0, 0.86, 0.26, 0.98)
 const PASSIVE_CHARGE_BEAN_EMPTY_COLOR := Color(0.23, 0.24, 0.26, 0.58)
 const PASSIVE_CHARGE_BEAN_OUTLINE_COLOR := Color(0.05, 0.05, 0.05, 0.72)
-const ACTIVE_TRIGGER_COLOR := Color(1.0, 0.95, 0.68, 1.0)
 const PASSIVE_TRIGGER_COLOR := Color(1.0, 0.78, 0.22, 1.0)
 const SKILL_READY_COLOR := Color(0.58, 0.90, 1.0, 1.0)
-const ACTIVE_FAILURE_COLOR := Color(1.0, 0.28, 0.22, 1.0)
 const TRIGGER_FEEDBACK_DEBOUNCE_MSEC := 120
 @onready var _slot_nodes: Array[Control] = [$Slot0, $Slot1, $Slot2, $Slot3]
 
@@ -267,7 +265,6 @@ func _apply_slot_backgrounds_from_logical_order() -> void:
 		)
 
 func _apply_weapon_icons_from_logical_order(weapons: Array) -> void:
-	_readability_presenter.set_mainhand_skill_available(false)
 	for slot_idx in range(SLOT_COUNT):
 		var slot_node := _slot_nodes[slot_idx]
 		var slot_view = _slot_views[slot_idx]
@@ -926,11 +923,6 @@ func _ensure_weapon_passive_signal_connected(weapon: Variant) -> void:
 		if not weapon.is_connected("passive_triggered", passive_callable):
 			weapon.connect("passive_triggered", passive_callable)
 		connected_any = true
-	if weapon.has_signal("weapon_active_triggered"):
-		var active_callable := Callable(self, "_on_weapon_active_triggered").bind(weapon_id)
-		if not weapon.is_connected("weapon_active_triggered", active_callable):
-			weapon.connect("weapon_active_triggered", active_callable)
-		connected_any = true
 	if not connected_any:
 		return
 	_connected_passive_weapon_ids[weapon_id] = true
@@ -949,10 +941,6 @@ func _disconnect_stale_passive_signals(active_weapon_ids: Dictionary) -> void:
 			if stale_weapon.has_signal("passive_triggered") \
 					and stale_weapon.is_connected("passive_triggered", passive_callable):
 				stale_weapon.disconnect("passive_triggered", passive_callable)
-			var active_callable := Callable(self, "_on_weapon_active_triggered").bind(weapon_id)
-			if stale_weapon.has_signal("weapon_active_triggered") \
-					and stale_weapon.is_connected("weapon_active_triggered", active_callable):
-				stale_weapon.disconnect("weapon_active_triggered", active_callable)
 		_connected_passive_weapon_ids.erase(weapon_id)
 		_passive_visual_state_by_weapon.erase(weapon_id)
 
@@ -972,27 +960,6 @@ func _on_weapon_passive_triggered(event_name: StringName, detail: Dictionary, we
 	_play_passive_track_flash(slot_idx)
 	_pulse_passive_icon(slot_idx)
 
-func _on_weapon_active_triggered(success: bool, reason: String, weapon_id: int) -> void:
-	var weapon := instance_from_id(weapon_id)
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	var slot_idx := _find_slot_index_for_node(weapon as Node)
-	if slot_idx < 0:
-		return
-	if success:
-		if not _can_play_trigger_feedback(slot_idx):
-			return
-		_play_slot_trigger_feedback(slot_idx, ACTIVE_TRIGGER_COLOR, true)
-	elif _should_play_active_failure_feedback(reason, _weapon_has_active_skill(weapon)):
-		if not _can_play_trigger_feedback(slot_idx):
-			return
-		_play_slot_trigger_feedback(slot_idx, ACTIVE_FAILURE_COLOR, false)
-
-func _weapon_has_active_skill(weapon: Variant) -> bool:
-	return weapon != null and is_instance_valid(weapon) \
-		and weapon.has_method("has_weapon_active_skill") \
-		and bool(weapon.call("has_weapon_active_skill"))
-
 func _should_play_passive_trigger_feedback(
 	weapon: Variant,
 	event_name: StringName,
@@ -1007,9 +974,6 @@ func _should_play_passive_trigger_feedback(
 		return false
 	return str(event_name) == displayed_passive_id \
 		or str(detail.get("passive_id", "")) == displayed_passive_id
-
-func _should_play_active_failure_feedback(reason: String, has_active_skill: bool) -> bool:
-	return has_active_skill and reason in ["cd", "resource", "condition"]
 
 func _can_play_trigger_feedback(slot_idx: int) -> bool:
 	var now := Time.get_ticks_msec()

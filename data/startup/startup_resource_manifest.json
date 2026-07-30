@@ -157,6 +157,7 @@
       "id_property": "passive_id",
       "paths": [
         "res://data/weapon_passives/cannon_idle_fire_triggered.tres",
+        "res://data/weapon_passives/cannon_zero_energy_cycle.tres",
         "res://data/weapon_passives/chainsaw_wall_contact_triggered.tres",
         "res://data/weapon_passives/charged_blaster_multi_hit_triggered.tres",
         "res://data/weapon_passives/dash_blade_long_dash_hit_triggered.tres",
@@ -164,10 +165,12 @@
         "res://data/weapon_passives/glacier_cold_snap_triggered.tres",
         "res://data/weapon_passives/laser_focus_channel_triggered.tres",
         "res://data/weapon_passives/machine_gun_heat_expansion.tres",
+        "res://data/weapon_passives/orbit_energy_cycle.tres",
         "res://data/weapon_passives/orbit_player_damaged_triggered.tres",
         "res://data/weapon_passives/piercing_blade_dance.tres",
+        "res://data/weapon_passives/pistol_arc_energy_cycle.tres",
         "res://data/weapon_passives/pistol_continuous_move_triggered.tres",
-        "res://data/weapon_passives/plasma_lance_heat_spend_chain_triggered.tres",
+        "res://data/weapon_passives/plasma_lance_energy_discharge_triggered.tres",
         "res://data/weapon_passives/rocket_cluster_kill_triggered.tres",
         "res://data/weapon_passives/shotgun_close_hit_triggered.tres",
         "res://data/weapon_passives/sniper_far_hit_triggered.tres"

@@ -1,7 +1,6 @@
 extends Ranger
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
-const FROST_CONTACT_WINDOW_SEC: float = 0.35
 const GLACIER_SPRAY_VFX_SCENE: PackedScene = preload("res://Player/Weapons/Effects/glacier_spray_vfx.tscn")
 
 @onready var detect_area: Area2D = $DetectArea
@@ -10,26 +9,14 @@ var ITEM_NAME := "Glacier Projector"
 
 @export_range(5.0, 120.0, 1.0) var cone_half_angle_deg: float = 15.0
 @export_range(40.0, 1200.0, 1.0) var base_range: float = 200.0
-@export var cold_snap_damage_ratio: float = 0.35
 @export var cold_snap_recharge_sec: float = 6.0
-@export_group("Chill Control")
-@export_range(2, 10, 1) var chill_stacks_to_freeze: int = 5
-@export var chill_window_sec: float = 1.2
-@export_range(0.01, 0.2, 0.01) var chill_slow_per_stack: float = 0.06
-@export var freeze_target_icd_sec: float = 3.0
-@export var normal_freeze_duration_sec: float = 0.7
-@export var elite_freeze_duration_sec: float = 0.35
-@export var boss_slow_duration_sec: float = 0.5
-@export_range(0.05, 1.0, 0.05) var boss_slow_multiplier: float = 0.65
-@export var cold_snap_radius: float = 110.0
-@export_range(1, 4, 1) var cold_snap_chill_stacks: int = 2
-@export_group("")
+@export var cold_snap_freeze_duration_sec: float = 1.0
+@export var boss_slow_duration_sec: float = 1.0
+@export_range(0.05, 1.0, 0.05) var boss_slow_multiplier: float = 0.50
 @export var debug_mode: bool = false
 
 var _attacked_target_ids: Dictionary = {}
 var _cold_snap_recharge_remaining_sec: float = 0.0
-var _chill_states: Dictionary = {}
-var _freeze_icd_until_msec: Dictionary = {}
 var _glacier_vfx: Node
 var _primary_fire_held: bool = false
 
@@ -101,10 +88,13 @@ func _emit_glacier_burst() -> void:
 		return
 	_refresh_glacier_vfx(forward)
 	var targets: Array[Node] = _collect_targets_in_cone(forward)
+	var cold_snap_active := _consume_cold_snap_for_next_attack()
 	for target in targets:
-		_apply_freeze_damage(target)
+		_apply_freeze_damage(target, cold_snap_active)
+	if cold_snap_active:
+		_emit_cold_snap_attack_trigger(targets)
 
-func _apply_freeze_damage(target: Node) -> void:
+func _apply_freeze_damage(target: Node, cold_snap_active: bool = false) -> void:
 	if target == null or not is_instance_valid(target):
 		return
 	if not target.has_method("damaged"):
@@ -124,43 +114,23 @@ func _apply_freeze_damage(target: Node) -> void:
 	)
 	DamageManager.apply_to_target(target, damage_data)
 	on_hit_target_with_damage_type(target, Attack.TYPE_FREEZE)
-	_apply_chill_hit(target)
+	if cold_snap_active:
+		_apply_cold_snap_control(target)
 
 func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
 	super.on_hit_target_with_damage_type(target, damage_type)
 
-func _apply_chill_hit(target: Node, added_stacks: int = 1, can_complete_freeze: bool = true) -> void:
+func _consume_cold_snap_for_next_attack() -> bool:
+	if not is_offhand_skill_ready():
+		return false
+	notify_offhand_skill_triggered(0.0)
+	_cold_snap_recharge_remaining_sec = maxf(cold_snap_recharge_sec, 0.0)
+	return true
+
+func _apply_cold_snap_control(target: Node) -> void:
 	if target == null or not is_instance_valid(target):
 		return
-	var now_msec := Time.get_ticks_msec()
-	var target_id := target.get_instance_id()
-	var state: Dictionary = _chill_states.get(target_id, {})
-	var expires_msec := int(state.get("expires_msec", 0))
-	var stacks := int(state.get("stacks", 0)) if now_msec <= expires_msec else 0
-	stacks += maxi(added_stacks, 0)
-	var threshold := maxi(chill_stacks_to_freeze, 2)
-	if not can_complete_freeze:
-		stacks = mini(stacks, threshold - 1)
-	_chill_states[target_id] = {
-		"stacks": stacks,
-		"expires_msec": now_msec + int(maxf(chill_window_sec, 0.1) * 1000.0),
-		"target": weakref(target),
-	}
-	_apply_control_status(target, clampf(1.0 - float(mini(stacks, threshold - 1)) * chill_slow_per_stack, 0.05, 1.0), chill_window_sec)
-	if stacks < threshold or not can_complete_freeze:
-		return
-	var freeze_ready_msec := int(_freeze_icd_until_msec.get(target_id, 0))
-	if now_msec < freeze_ready_msec:
-		_chill_states[target_id]["stacks"] = threshold - 1
-		return
-	_chill_states.erase(target_id)
-	_freeze_icd_until_msec[target_id] = now_msec + int(maxf(freeze_target_icd_sec, 0.0) * 1000.0)
-	_apply_completed_freeze(target)
-	if is_offhand_skill_ready():
-		_trigger_cold_snap(target)
-
-func _apply_completed_freeze(target: Node) -> void:
-	var duration := maxf(normal_freeze_duration_sec, 0.05)
+	var duration := maxf(cold_snap_freeze_duration_sec, 0.05)
 	if _is_boss_target(target):
 		duration = maxf(boss_slow_duration_sec, 0.05)
 		var boss_multiplier := clampf(boss_slow_multiplier, 0.05, 1.0)
@@ -172,8 +142,6 @@ func _apply_completed_freeze(target: Node) -> void:
 			"boss_reduced": true,
 		}, PASSIVE_SCOPE_GLOBAL)
 		return
-	elif _is_elite_target(target):
-		duration = maxf(elite_freeze_duration_sec, 0.05)
 	_apply_freeze_status(target, duration)
 	emit_passive_trigger(&"glacier_target_frozen", {
 		"target": target,
@@ -208,64 +176,18 @@ func _is_boss_target(target: Node) -> bool:
 		return bool((target as BaseEnemy).is_boss)
 	return bool(target.get_meta(&"is_boss", false))
 
-func _is_elite_target(target: Node) -> bool:
-	if target is EliteEnemy:
-		return true
-	if target is BaseEnemy:
-		return (target as BaseEnemy).has_spawn_tag(BaseEnemy.SPAWN_TAG_ELITE)
-	return target.is_in_group(&"elite") or bool(target.get_meta(&"is_elite", false))
-
-func _trigger_cold_snap(target: Node) -> void:
-	if target == null or not is_instance_valid(target):
-		return
-	var snap_damage: int = max(1, int(round(float(get_runtime_shot_damage()) * maxf(cold_snap_damage_ratio, 0.0))))
-	var owner_player: Node = DamageManager.resolve_source_player(self)
-	var damage_data: DamageData = DamageData.new().setup(
-		snap_damage,
-		Attack.TYPE_FREEZE,
-		{"amount": 0, "angle": Vector2.ZERO},
-		self,
-		owner_player,
-		DamageData.SOURCE_PLAYER_WEAPON,
-		DamageDeliveryType.AREA
-	)
-	DamageManager.apply_to_target(target, damage_data)
-	_seed_cold_snap_chill(target)
-	_try_emit_cold_snap_trigger(target)
-
-func _seed_cold_snap_chill(frozen_target: Node) -> void:
-	if detect_area == null or not is_instance_valid(detect_area):
-		return
-	if not frozen_target is Node2D:
-		return
-	var frozen_position := (frozen_target as Node2D).global_position
-	var touched_ids: Dictionary = {}
-	for area in detect_area.get_overlapping_areas():
-		if not area is HurtBox:
-			continue
-		var nearby := (area as HurtBox).get_damage_target() as Node2D
-		if nearby == null or nearby == frozen_target or not is_instance_valid(nearby):
-			continue
-		var nearby_id := nearby.get_instance_id()
-		if touched_ids.has(nearby_id):
-			continue
-		if nearby.global_position.distance_to(frozen_position) > maxf(cold_snap_radius, 1.0):
-			continue
-		touched_ids[nearby_id] = true
-		_apply_chill_hit(nearby, maxi(cold_snap_chill_stacks, 1), false)
-
-func _try_emit_cold_snap_trigger(target: Node) -> void:
-	if not is_offhand_skill_ready():
-		return
-	notify_offhand_skill_triggered(0.0)
-	_cold_snap_recharge_remaining_sec = maxf(cold_snap_recharge_sec, 0.0)
+func _emit_cold_snap_attack_trigger(targets: Array[Node]) -> void:
 	var ammo_refunded := _refund_ammo_from_cold_snap_branches()
 	emit_passive_trigger(&"glacier_cold_snap_triggered", {
-		"target": target,
-		"cold_snap_damage_ratio": maxf(cold_snap_damage_ratio, 0.0),
+		"trigger": "next_attack_fired",
+		"targets": targets,
+		"target_count": targets.size(),
 		"trigger_damage_type": Attack.TYPE_FREEZE,
 		"refresh": "auto_or_reload",
 		"recharge_sec": maxf(cold_snap_recharge_sec, 0.0),
+		"freeze_duration": maxf(cold_snap_freeze_duration_sec, 0.05),
+		"boss_slow_multiplier": clampf(boss_slow_multiplier, 0.05, 1.0),
+		"boss_slow_duration": maxf(boss_slow_duration_sec, 0.05),
 		"ammo_refunded": ammo_refunded,
 	}, PASSIVE_SCOPE_GLOBAL)
 
@@ -294,9 +216,9 @@ func get_passive_status() -> Dictionary:
 	return with_passive_charge_status({
 		"id": "glacier_cold_snap_triggered",
 		"display_name": "Cold Snap",
-		"state": state,
+		"state": "armed" if state == "ready" else state,
 		"ready": state == "ready",
-		"trigger_hint": "freeze_hit",
+		"trigger_hint": "next_attack",
 		"refresh_hint": "time_or_reload",
 		"cooldown_remaining": cooldown_remaining,
 		"cooldown_duration": recharge_sec,
@@ -356,25 +278,18 @@ func _get_effective_cone_half_angle_deg() -> float:
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	_update_cold_snap_recharge(delta)
-	_prune_chill_states()
 	_update_glacier_vfx_follow()
 	if debug_mode:
 		queue_redraw()
 
-func _prune_chill_states() -> void:
-	var now_msec := Time.get_ticks_msec()
-	for target_id in _chill_states.keys():
-		var state: Dictionary = _chill_states[target_id]
-		var target_ref: WeakRef = state.get("target") as WeakRef
-		if now_msec > int(state.get("expires_msec", 0)) or target_ref == null or target_ref.get_ref() == null:
-			_chill_states.erase(target_id)
-	for target_id in _freeze_icd_until_msec.keys():
-		if now_msec >= int(_freeze_icd_until_msec[target_id]):
-			_freeze_icd_until_msec.erase(target_id)
-
 func refresh_passive_on_reload() -> void:
 	super.refresh_passive_on_reload()
 	_cold_snap_recharge_remaining_sec = 0.0
+
+func clear_timed_effects_for_prepare() -> void:
+	super.clear_timed_effects_for_prepare()
+	_cold_snap_recharge_remaining_sec = 0.0
+	passive_controller.force_ready()
 
 func _update_cold_snap_recharge(delta: float) -> void:
 	if is_passive_ready():

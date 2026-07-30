@@ -133,14 +133,13 @@ ui.hud.ammo_empty,Ammo: --,弹药：--
 ui.hud.ammo,Ammo: {current}/{max}{reload},弹药：{current}/{max}{reload}
 ui.hud.ammo_reloading, (Reloading {sec}s),（装填中 {sec}秒）
 ui.hud.weapon_state_none,Main: -- | PS: --,主武器：-- | 角色技能：--
-ui.hud.weapon_state,Main:{main} Offhand:{offhand} Swap:{swap} PS:{ps}{fail},主武器：{main} 副武器：{offhand} 切换：{swap} 角色技能：{ps}{fail}
+ui.hud.weapon_state,Main:{main} Offhand:{offhand} Swap:{swap} PS:{ps},主武器：{main} 副武器：{offhand} 切换：{swap} 角色技能：{ps}
 ui.hud.weapon.main.none,None,无
 ui.hud.weapon.main.locked,W1 (locked),W1（锁定）
 ui.hud.weapon.main.slot,W{index},W{index}
 ui.hud.weapon.swap.on,on,开
 ui.hud.weapon.swap.off,off,关
 ui.hud.weapon.ready,Ready,就绪
-ui.hud.weapon.fail, Fail:{reason}, 失败：{reason}
 ui.panel.shop,Shop,商店
 ui.panel.upgrade,Upgrade,升级
 ui.panel.module,Module,模组
@@ -735,18 +734,15 @@ ui.reward.detail.bullet.economy.2,Supports current run progression,帮助推进�
 ui.common.tag,Tag,标签
 ui.reward.battle_source,Battle Reward,战斗奖励
 ui.shop.closed_until_cycle,Full shop opens after every third battle.,完整商店每完成三场战斗开放一次。
-ui.weapon_hud.controls,Q / E  SWITCH     R  WEAPON SKILL,Q / E  切换武器     R  武器技能
+ui.weapon_hud.controls,Q / E  SWITCH     R  RELOAD,Q / E  切换武器     R  装填
 ui.weapon_hud.switch_hint,[Q / E]  SWITCH,[Q / E]  切换武器
-ui.weapon_hud.skill_hint,[R]  WEAPON SKILL,[R]  武器技能
+ui.weapon_hud.reload_hint,[R]  RELOAD,[R]  装填
 ui.weapon_hud.main,MAIN,主武器
 ui.weapon_hud.empty,EMPTY WEAPON SLOT,空武器槽
 ui.weapon_hud.passive,PASSIVE,被动
 ui.weapon_hud.main_tooltip,"{weapon}
-MAIN WEAPON · R: WEAPON SKILL · Q/E: SWITCH","{weapon}
-主武器 · R：武器技能 · Q/E：切换"
-ui.weapon_hud.main_no_skill_tooltip,"{weapon}
-MAIN WEAPON · Q/E: SWITCH","{weapon}
-主武器 · Q/E：切换"
+MAIN WEAPON · R: RELOAD · Q/E: SWITCH","{weapon}
+主武器 · R：装填 · Q/E：切换"
 ui.weapon_hud.reserve_tooltip,"{weapon}
 RESERVE WEAPON · Q/E: SWITCH","{weapon}
 备用武器 · Q/E：切换"

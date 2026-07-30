@@ -3,6 +3,7 @@ extends Ranger
 const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_rules.gd")
 const CHAINSAW_SPIN_FRAMES := preload("res://Player/Weapons/Projectiles/chainsaw_spin_frames.tres")
 const CHAINSAW_PROJECTILE_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_LARGE_SIZE
+const CELL_BOUNDS_PROVIDER_GROUP := &"board_cell_bounds_provider"
 
 var scale_up_by_time_effect = preload("res://Player/Weapons/Effects/scale_up_by_time.tscn")
 
@@ -13,7 +14,12 @@ var projectile_texture_resource = preload("res://asset/images/weapons/projectile
 # Weapon
 var ITEM_NAME = "Chainsaw Launcher"
 var _last_hit_projectile: Projectile
+var _cell_bounce_hit_effect_active: bool = false
 @export_flags_2d_physics var chainsaw_wall_collision_mask: int = 32
+@export var bounce_lifetime_bonus_sec: float = 1.0
+@export var bounce_lifetime_bonus_max_sec: float = 2.0
+@export var bounce_slow_multiplier: float = 0.7
+@export var bounce_slow_duration_sec: float = 3.0
 @export var close_vulnerability_multiplier: float = 1.15
 @export var close_vulnerability_duration_sec: float = 6.0
 
@@ -77,6 +83,7 @@ func _on_shoot():
 	spawn_projectile.dot_cd = dot_cd
 	spawn_projectile.wall_collision_mask = chainsaw_wall_collision_mask
 	spawn_projectile.expire_time = get_effective_projectile_lifetime()
+	_configure_projectile_cell_boundary(spawn_projectile)
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 	branch_runtime.notify_branch_weapon_shot(projectile_direction)
@@ -96,48 +103,78 @@ func _sync_speed_change_effect_config() -> void:
 		var speed_config := config as SpeedChangeOnHitEffectConfig
 		speed_config.speed_rate = 0.3
 
-func on_projectile_hit_target(projectile: Projectile, _target: Node) -> void:
+func on_projectile_hit_target(projectile: Projectile, target: Node) -> void:
 	_last_hit_projectile = projectile
+	_try_apply_cell_bounce_hit_effects(target)
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
-	_try_apply_close_vulnerability(target)
+	_notify_chainsaw_target_hit(target)
+
+func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
+	super.on_hit_target_with_damage_type(target, damage_type)
+	_notify_chainsaw_target_hit(target)
+
+func _notify_chainsaw_target_hit(target: Node) -> void:
 	for behavior in branch_runtime.get_branch_behaviors():
 		behavior.on_chainsaw_target_hit(target, _last_hit_projectile)
 		behavior.on_target_hit(target)
 
-func _try_apply_close_vulnerability(target: Node) -> void:
+func _try_apply_cell_bounce_hit_effects(target: Node) -> void:
+	if not _cell_bounce_hit_effect_active:
+		return
+	CLOSE_CHAIN_RULES.apply_slow_to_target(target, bounce_slow_multiplier, bounce_slow_duration_sec)
 	CLOSE_CHAIN_RULES.apply_chainsaw_vulnerability(target, close_vulnerability_multiplier, close_vulnerability_duration_sec)
 
 func on_projectile_hit_wall(projectile: Projectile, wall_hit: Dictionary) -> void:
 	if projectile == null or not is_instance_valid(projectile):
 		return
+	var applied_lifetime_bonus := projectile.extend_remaining_lifetime(
+		bounce_lifetime_bonus_sec,
+		bounce_lifetime_bonus_max_sec
+	)
 	if not is_offhand_skill_ready():
 		return
 	notify_offhand_skill_triggered(0.0)
+	_cell_bounce_hit_effect_active = true
 	emit_passive_trigger(&"chainsaw_wall_contact_triggered", {
 		"projectile": projectile,
 		"position": wall_hit.get("position", projectile.global_position),
 		"normal": wall_hit.get("normal", Vector2.ZERO),
 		"collider": wall_hit.get("collider", null),
+		"boundary_type": wall_hit.get("boundary_type", "physics_wall"),
+		"bounce_count": int(wall_hit.get("bounce_count", 1)),
+		"lifetime_bonus_applied": applied_lifetime_bonus,
+		"lifetime_bonus_total": projectile.lifetime_bonus_applied_sec,
 		"refresh": "reload",
+		"state_after_trigger": "active",
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
 	var state := "ready"
-	if not is_passive_ready():
+	if _cell_bounce_hit_effect_active:
+		state = "active"
+	elif not is_passive_ready():
 		state = "waiting_refresh"
 	return with_passive_charge_status({
 		"id": "chainsaw_wall_contact_triggered",
 		"display_name": "Wall Contact",
 		"state": state,
-		"progress": 1.0 if state == "ready" else 0.0,
+		"progress": 1.0 if state == "ready" or state == "active" else 0.0,
 		"ready": state == "ready",
-		"trigger_hint": "projectile_wall_contact",
+		"trigger_hint": "projectile_cell_boundary_bounce",
 		"refresh_hint": "reload",
+		"bounce_lifetime_bonus": maxf(bounce_lifetime_bonus_sec, 0.0),
+		"bounce_lifetime_bonus_max": maxf(bounce_lifetime_bonus_max_sec, 0.0),
+		"slow_multiplier": clampf(bounce_slow_multiplier, 0.05, 1.0),
+		"slow_duration": maxf(bounce_slow_duration_sec, 0.1),
 		"vulnerability_multiplier": maxf(close_vulnerability_multiplier, 1.0),
 		"vulnerability_duration": maxf(close_vulnerability_duration_sec, 0.1),
 	})
+
+func _refresh_offhand_skill_on_reload() -> void:
+	super._refresh_offhand_skill_on_reload()
+	_cell_bounce_hit_effect_active = false
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
@@ -181,6 +218,11 @@ func _spawn_split_projectile_from(source: Projectile) -> Projectile:
 	split_projectile.knock_back = source.knock_back.duplicate(true)
 	split_projectile.source_weapon = source.source_weapon
 	split_projectile.wall_collision_mask = source.wall_collision_mask
+	if source.boundary_bounce_enabled:
+		split_projectile.configure_boundary_bounce(
+			source.boundary_bounce_rect.grow(source.boundary_bounce_margin),
+			source.boundary_bounce_margin
+		)
 	split_projectile.collision_arming_delay_sec = source.collision_arming_delay_sec
 	var source_timer: Timer = source.get_node_or_null("ExpireTimer") as Timer
 	if source_timer != null:
@@ -192,6 +234,27 @@ func _spawn_split_projectile_from(source: Projectile) -> Projectile:
 	split_projectile.projectile_displacement = source.projectile_displacement
 	get_projectile_spawn_parent().call_deferred("add_child", split_projectile)
 	return split_projectile
+
+func _configure_projectile_cell_boundary(projectile: Projectile) -> void:
+	if projectile == null or not is_instance_valid(projectile):
+		return
+	var tree := get_tree()
+	if tree == null:
+		return
+	var provider := tree.get_first_node_in_group(CELL_BOUNDS_PROVIDER_GROUP)
+	if provider == null or not provider.has_method("get_cell_world_rect_for_point"):
+		return
+	var bounds_value: Variant = provider.call("get_cell_world_rect_for_point", projectile.global_position)
+	if not bounds_value is Rect2:
+		return
+	var bounds := bounds_value as Rect2
+	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
+		return
+	var projectile_margin := maxf(
+		maxf(projectile.desired_pixel_size.x, projectile.desired_pixel_size.y) * maxf(projectile.size, 0.01) * 0.5,
+		1.0
+	)
+	projectile.configure_boundary_bounce(bounds, projectile_margin)
 
 func _resolve_direction_to_closest_enemy(from_position: Vector2) -> Vector2:
 	var tree := get_tree()

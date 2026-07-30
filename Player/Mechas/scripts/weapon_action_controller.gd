@@ -2,36 +2,10 @@ extends RefCounted
 class_name WeaponActionController
 
 var _player
-var _last_weapon_skill_fail_reason: String = ""
 var _reload_block_hint_ready_at_msec: int = 0
 
 func setup(player) -> void:
 	_player = player
-
-func try_cast_main_weapon_active_skill() -> void:
-	if _player == null or not is_instance_valid(_player):
-		return
-	var main_weapon: Weapon = _player.get_main_weapon()
-	if main_weapon == null:
-		_last_weapon_skill_fail_reason = "no_main_weapon"
-		return
-	if not main_weapon.has_method("request_weapon_active"):
-		_last_weapon_skill_fail_reason = "unsupported"
-		return
-	var result_variant: Variant = main_weapon.call("request_weapon_active")
-	if result_variant is Dictionary:
-		var result := result_variant as Dictionary
-		if bool(result.get("ok", false)):
-			_player.weapon_active_skill.emit()
-			_last_weapon_skill_fail_reason = ""
-		else:
-			_last_weapon_skill_fail_reason = str(result.get("reason", "condition"))
-			if _player.has_method("_broadcast_weapon_passive_event"):
-				_player.call("_broadcast_weapon_passive_event", &"on_main_active_cast_failed", {
-					"reason": _last_weapon_skill_fail_reason
-				})
-	else:
-		_last_weapon_skill_fail_reason = "condition"
 
 func try_reload_main_weapon() -> void:
 	if _player == null or not is_instance_valid(_player):
@@ -73,33 +47,10 @@ func try_show_reload_block_hint(main_weapon: Weapon) -> void:
 		_player.call("_spawn_keyed_player_floating_hint", hint_text, &"reload_blocked", _player.reload_block_hint_interval_sec)
 	if GlobalVariables.ui != null and is_instance_valid(GlobalVariables.ui) \
 			and GlobalVariables.ui.has_method("show_controls_context_reminder"):
-		GlobalVariables.ui.call("show_controls_context_reminder", &"SKILL_WEAPON", hint_text)
+		GlobalVariables.ui.call("show_controls_context_reminder", &"RELOAD", hint_text)
 
 func set_reload_block_hint_ready_at_msec(value: int) -> void:
 	_reload_block_hint_ready_at_msec = value
 
 func get_reload_block_hint_ready_at_msec() -> int:
 	return _reload_block_hint_ready_at_msec
-
-func get_last_weapon_skill_fail_reason() -> String:
-	return _last_weapon_skill_fail_reason
-
-func get_weapon_active_cd_remaining() -> float:
-	if _player == null or not is_instance_valid(_player):
-		return 0.0
-	var weapon: Weapon = _player.get_main_weapon()
-	if weapon == null:
-		return 0.0
-	if not weapon.has_method("get_weapon_active_cd_remaining"):
-		return 0.0
-	return float(weapon.call("get_weapon_active_cd_remaining"))
-
-func get_weapon_active_cd_ratio() -> float:
-	if _player == null or not is_instance_valid(_player):
-		return 0.0
-	var weapon: Weapon = _player.get_main_weapon()
-	if weapon == null:
-		return 0.0
-	if not weapon.has_method("get_weapon_active_cd_ratio"):
-		return 0.0
-	return float(weapon.call("get_weapon_active_cd_ratio"))

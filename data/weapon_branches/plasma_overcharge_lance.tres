@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "plasma_overcharge_lance"
 display_name = "Overcharge Lance"
-description = "Heat burst branch. Heat-spending shots build timed Overcharge stacks; retriggering refreshes duration and stacks can spend extra heat for damage."
+description = "Sustained Heat branch. Firing while heat stays above 70% builds timed Overcharge stacks, rewarding continued high-heat operation with more damage."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

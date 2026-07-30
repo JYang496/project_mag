@@ -1,6 +1,8 @@
 extends Node2D
 class_name BoardCellGenerator
 
+const CELL_BOUNDS_PROVIDER_GROUP := &"board_cell_bounds_provider"
+
 signal active_cells_changed(active_cell_ids: PackedInt32Array)
 signal board_visual_active_changed(active: bool, immediate: bool)
 signal board_recentered(offset: Vector2)
@@ -43,6 +45,7 @@ var _has_rest_area_target_center := false
 var _rest_area_target_center := Vector2.ZERO
 
 func _enter_tree() -> void:
+	add_to_group(CELL_BOUNDS_PROVIDER_GROUP)
 	if not _cells.is_empty():
 		return
 	if grid_size.x <= 0 or grid_size.y <= 0:
@@ -143,6 +146,25 @@ func get_cell_center_global_for_point(point: Vector2) -> Vector2:
 	if cell:
 		return _get_cell_center_global(cell)
 	return get_center_cell_global_position()
+
+func get_cell_world_rect_for_point(point: Vector2) -> Rect2:
+	var cell := _find_any_cell_containing_point(point)
+	if cell == null:
+		return Rect2()
+	var capture_polygon := cell.get_node_or_null("Area2D/CapturePolygon") as CollisionPolygon2D
+	if capture_polygon != null and not capture_polygon.polygon.is_empty():
+		return _transform_rect_to_world_aabb(
+			_get_polygon_local_aabb(capture_polygon.polygon),
+			capture_polygon.global_transform
+		)
+	var collision_shape := cell.get_node_or_null("Area2D/CollisionShape2D") as CollisionShape2D
+	if collision_shape == null or not collision_shape.shape is RectangleShape2D:
+		return Rect2()
+	var rectangle := collision_shape.shape as RectangleShape2D
+	return _transform_rect_to_world_aabb(
+		Rect2(-rectangle.size * 0.5, rectangle.size),
+		collision_shape.global_transform
+	)
 
 func get_rest_area_target_center_global_position() -> Vector2:
 	if _has_rest_area_target_center:

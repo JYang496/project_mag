@@ -35,6 +35,11 @@ var debug_effect_names: Array[String] = []
 var debug_effect_params: Dictionary = {}
 @export var debug_overlay_enabled: bool = false
 var wall_collision_mask: int = 0
+var boundary_bounce_enabled: bool = false
+var boundary_bounce_rect: Rect2 = Rect2()
+var boundary_bounce_margin: float = 0.0
+var boundary_bounce_count: int = 0
+var lifetime_bonus_applied_sec: float = 0.0
 @export var visual_mode: ProjectileVisualMode = ProjectileVisualMode.DIRECTIONAL
 var _debug_label: Label
 var _wall_hit_reported: bool = false
@@ -131,8 +136,9 @@ func _on_collision_arming_timer_timeout() -> void:
 	hitbox_ins.monitoring = true
 
 func _physics_process(delta: float) -> void:
-	_check_wall_contact(delta)
-	position += base_displacement * delta
+	if not _move_with_boundary_bounce(delta):
+		_check_wall_contact(delta)
+		position += base_displacement * delta
 	if base_displacement != Vector2.ZERO:
 		rotation = base_displacement.angle() + deg_to_rad(90)
 		if projectile_root.has_method("set_world_direction"):
@@ -191,6 +197,32 @@ func show_projectile() -> void:
 func _on_expire_timer_timeout() -> void:
 	call_deferred("despawn")
 
+func configure_boundary_bounce(bounds: Rect2, margin: float = 0.0) -> bool:
+	var safe_margin := maxf(margin, 0.0)
+	var inner_bounds := bounds.grow(-safe_margin)
+	if inner_bounds.size.x <= 0.0 or inner_bounds.size.y <= 0.0:
+		boundary_bounce_enabled = false
+		boundary_bounce_rect = Rect2()
+		boundary_bounce_margin = 0.0
+		return false
+	boundary_bounce_enabled = true
+	boundary_bounce_rect = inner_bounds
+	boundary_bounce_margin = safe_margin
+	return true
+
+func extend_remaining_lifetime(bonus_sec: float, max_total_bonus_sec: float) -> float:
+	var total_limit := maxf(max_total_bonus_sec, 0.0)
+	var remaining_capacity := maxf(total_limit - lifetime_bonus_applied_sec, 0.0)
+	var applied_bonus := minf(maxf(bonus_sec, 0.0), remaining_capacity)
+	if applied_bonus <= 0.0:
+		return 0.0
+	lifetime_bonus_applied_sec += applied_bonus
+	expire_time += applied_bonus
+	if expire_timer != null:
+		var remaining_sec: float = expire_timer.time_left if not expire_timer.is_stopped() else 0.0
+		expire_timer.start(maxf(remaining_sec + applied_bonus, MIN_EXPIRE_TIME))
+	return applied_bonus
+
 func set_debug_snapshot(source_weapon_name: String, effect_names: Array[String], effect_params: Dictionary, overlay_enabled: bool) -> void:
 	debug_source_weapon = source_weapon_name
 	debug_effect_names = effect_names.duplicate()
@@ -248,6 +280,11 @@ func _on_before_pooled() -> void:
 	projectile_animation.sprite_frames = null
 	source_weapon = null
 	wall_collision_mask = 0
+	boundary_bounce_enabled = false
+	boundary_bounce_rect = Rect2()
+	boundary_bounce_margin = 0.0
+	boundary_bounce_count = 0
+	lifetime_bonus_applied_sec = 0.0
 	_wall_hit_reported = false
 	overlapping = false
 	position = Vector2.ZERO
@@ -297,6 +334,50 @@ func _check_wall_contact(delta: float) -> void:
 	_wall_hit_reported = true
 	if source_weapon and is_instance_valid(source_weapon) and source_weapon.has_method("on_projectile_hit_wall"):
 		source_weapon.call("on_projectile_hit_wall", self, result)
+
+func _move_with_boundary_bounce(delta: float) -> bool:
+	if not boundary_bounce_enabled:
+		return false
+	var safe_delta := maxf(delta, 0.0)
+	var next_position: Vector2 = global_position + base_displacement * safe_delta
+	var collision_normal := Vector2.ZERO
+	var minimum := boundary_bounce_rect.position
+	var maximum := boundary_bounce_rect.end
+	if next_position.x < minimum.x:
+		next_position.x = minimum.x + (minimum.x - next_position.x)
+		base_displacement.x = absf(base_displacement.x)
+		projectile_displacement.x = absf(projectile_displacement.x)
+		collision_normal.x = 1.0
+	elif next_position.x > maximum.x:
+		next_position.x = maximum.x - (next_position.x - maximum.x)
+		base_displacement.x = -absf(base_displacement.x)
+		projectile_displacement.x = -absf(projectile_displacement.x)
+		collision_normal.x = -1.0
+	if next_position.y < minimum.y:
+		next_position.y = minimum.y + (minimum.y - next_position.y)
+		base_displacement.y = absf(base_displacement.y)
+		projectile_displacement.y = absf(projectile_displacement.y)
+		collision_normal.y = 1.0
+	elif next_position.y > maximum.y:
+		next_position.y = maximum.y - (next_position.y - maximum.y)
+		base_displacement.y = -absf(base_displacement.y)
+		projectile_displacement.y = -absf(projectile_displacement.y)
+		collision_normal.y = -1.0
+	next_position.x = clampf(next_position.x, minimum.x, maximum.x)
+	next_position.y = clampf(next_position.y, minimum.y, maximum.y)
+	global_position = next_position
+	if collision_normal == Vector2.ZERO:
+		return true
+	boundary_bounce_count += 1
+	if source_weapon and is_instance_valid(source_weapon) and source_weapon.has_method("on_projectile_hit_wall"):
+		source_weapon.call("on_projectile_hit_wall", self, {
+			"position": global_position,
+			"normal": collision_normal.normalized(),
+			"collider": null,
+			"boundary_type": "cell",
+			"bounce_count": boundary_bounce_count,
+		})
+	return true
 
 func _clear_hitbox() -> void:
 	if hitbox_ins and is_instance_valid(hitbox_ins):
