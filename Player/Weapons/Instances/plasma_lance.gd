@@ -10,7 +10,6 @@ const BULLET_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_STANDARD_SIZE
 @export var max_heat: float = 100.0
 @export var heat_cooldown_rate: float = 0.0
 @export var plasma_heat_damage_bonus_at_full_heat: float = 0.75
-@export var energy_discharge_damage_ratio: float = 0.5
 
 var attack_range: float = 980.0
 var _overcharge_lance_stack_count: int = 0
@@ -145,31 +144,20 @@ func _clear_overcharge_lance_stacks() -> void:
 func _get_level_data(lv: String) -> Dictionary:
 	return get_weapon_level_data(lv, weapon_data)
 
-func get_energy_hit_passive_id() -> StringName:
+func get_energy_full_fire_passive_id() -> StringName:
 	return &"plasma_lance_energy_discharge_triggered"
 
-func get_energy_hit_display_name() -> String:
+func get_energy_full_fire_display_name() -> String:
 	return "Plasma Discharge"
 
-func _execute_energy_hit_discharge(target: Node, data: DamageData, result: DamageResult) -> Dictionary:
-	var detail: Dictionary = super._execute_energy_hit_discharge(target, data, result)
-	var discharge_damage: int = maxi(1, int(round(float(result.final_damage) * maxf(energy_discharge_damage_ratio, 0.0))))
-	var discharge_data: DamageData = DamageManager.build_damage_data(
-		self,
-		discharge_damage,
-		Attack.TYPE_ENERGY,
-		{"amount": 0, "angle": Vector2.ZERO},
-		DamageData.SOURCE_PLAYER_WEAPON,
-		DamageDeliveryType.AREA
-	)
-	discharge_data.suppress_reactive_effects = true
-	var applied: bool = DamageManager.apply_to_target(target, discharge_data)
-	detail["effect"] = "plasma_discharge"
-	detail["discharge_damage"] = discharge_damage if applied else 0
-	return detail
+func get_energy_gain_per_damage_event() -> float:
+	return 10.0
+
+func get_energy_release_bonus_at_full() -> float:
+	return 1.25
 
 func get_passive_status() -> Dictionary:
-	return get_energy_hit_pulse_status()
+	return get_energy_full_fire_status()
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()

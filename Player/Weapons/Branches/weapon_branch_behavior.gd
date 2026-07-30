@@ -19,14 +19,17 @@ func on_weapon_shot(_base_direction: Vector2) -> void:
 func on_target_hit(_target: Node) -> void:
 	pass
 
-func on_energy_hit_cycle_triggered(_target: Node, _data: DamageData, _result: DamageResult) -> Dictionary:
-	return {}
-
-func get_energy_hit_passive_id() -> StringName:
+func get_energy_full_fire_passive_id() -> StringName:
 	return StringName()
 
-func get_energy_hit_display_name() -> String:
+func get_energy_full_fire_display_name() -> String:
 	return ""
+
+func get_energy_gain_per_damage_event() -> float:
+	return -1.0
+
+func get_energy_release_bonus_at_full() -> float:
+	return -1.0
 
 func on_removed() -> void:
 	if weapon == null or not is_instance_valid(weapon):

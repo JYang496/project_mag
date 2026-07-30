@@ -9,5 +9,5 @@ weapon_id = "2"
 display_name = "Charged Blaster"
 icon = ExtResource("1_rnx7b")
 price = 45
-description = "Mid-range charge beam. Builds around Beam and Area choices: Focus Lance pushes single-target pressure, while Prism Fan widens lane control."
+description = "Mid-range Energy release beam. Each damage event grants 3 global energy; firing at full energy consumes the pool for +125% damage."
 scene_path = "res://Player/Weapons/Instances/charged_blaster.tscn"

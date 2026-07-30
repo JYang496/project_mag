@@ -1,7 +1,7 @@
 extends Module
 # Use on HEAT weapons to boost cooling, with stronger effect at higher heat.
 
-var ITEM_NAME := "Heat Vent"
+var ITEM_NAME := "Thermal Equalizer"
 
 @export var cool_rate_mult: float = 1.5
 
@@ -19,8 +19,8 @@ func apply_stat_modifiers(stat_block: Dictionary) -> Dictionary:
 
 	var base_cool_rate := float(stat_block.get("heat_cool_rate", output["heat_cool_rate"]))
 	var final_mult := get_effective_multiplier(maxf(cool_rate_mult, 1.0))
-	var heat_ratio: float = clampf(float(weapon.call("get_heat_ratio")), 0.0, 1.0)
-	var dynamic_mult := lerpf(1.0, final_mult, heat_ratio)
+	var signed_ratio := float(weapon.call("get_signed_heat_ratio"))
+	var dynamic_mult := lerpf(1.0, final_mult, absf(signed_ratio))
 	output["heat_cool_rate"] = base_cool_rate * dynamic_mult
 	return output
 

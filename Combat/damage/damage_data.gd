@@ -23,6 +23,7 @@ var source_player: Node
 var dedupe_token: StringName = StringName()
 var dedupe_window_sec: float = 0.0
 var damage_is_final: bool = false
+var outgoing_modifiers_applied: bool = false
 var suppress_reactive_effects: bool = false
 var damage_kind: StringName = KIND_DIRECT
 var is_critical: bool = false

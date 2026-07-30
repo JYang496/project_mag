@@ -20,7 +20,7 @@ func get_normalized_weapon_traits() -> Array[StringName]:
 		for runtime_trait in source_traits:
 			if not traits.has(runtime_trait):
 				traits.append(runtime_trait)
-	return traits
+	return WeaponTrait.normalize_array(traits)
 
 func get_explicit_weapon_traits() -> Array[StringName]:
 	var modules_container := _get_modules_container()
@@ -122,6 +122,7 @@ func build_stat_snapshot() -> Dictionary:
 		"heat_per_shot",
 		"heat_max_value",
 		"heat_cool_rate",
+		"heat_opposition_resistance",
 	]
 	for stat_key in tracked_stats:
 		if weapon.get(stat_key) != null:

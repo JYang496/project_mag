@@ -1,10 +1,10 @@
 extends WeaponBranchBehavior
 class_name CannonThermalBranch
 
-@export var heat_accumulation: float = 35.0
+@export var heat_accumulation: float = 22.0
 @export var max_heat: float = 100.0
 @export var heat_cooldown_rate: float = 15.0
-@export var heat_damage_bonus_at_full_heat: float = 0.8
+@export var heat_damage_bonus_at_full_heat: float = 0.25
 @export var cannon_spend_heat_ratio_threshold: float = 0.5
 @export var cannon_heat_spend_amount: float = 40.0
 @export var cannon_heat_spend_damage_bonus: float = 0.35
@@ -17,6 +17,9 @@ func on_level_applied(_level: int) -> void:
 
 func get_added_weapon_traits() -> Array[StringName]:
 	return [WeaponTrait.HEAT, WeaponTrait.FIRE]
+
+func get_damage_type_override() -> StringName:
+	return Attack.TYPE_FIRE
 
 func get_projectile_damage_multiplier() -> float:
 	if weapon == null or not is_instance_valid(weapon):

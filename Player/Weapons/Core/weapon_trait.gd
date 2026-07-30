@@ -31,6 +31,8 @@ static func normalize_array(values: Variant) -> Array[StringName]:
 		var normalized := normalize(value)
 		if normalized != StringName() and not output.has(normalized):
 			output.append(normalized)
+	if (output.has(FIRE) or output.has(FREEZE)) and not output.has(HEAT):
+		output.append(HEAT)
 	return output
 
 static func traits_to_flags(values: Array) -> int:
@@ -46,4 +48,4 @@ static func flags_to_traits(mask: int) -> Array[StringName]:
 	for i in range(ALL.size()):
 		if (mask & (1 << i)) != 0:
 			output.append(ALL[i])
-	return output
+	return normalize_array(output)

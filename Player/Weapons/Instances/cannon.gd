@@ -76,7 +76,9 @@ func request_primary_fire() -> bool:
 			request_reload()
 		return false
 	if windup_sec <= 0.0:
+		prepare_energy_release_attack()
 		emit_signal("shoot")
+		finish_energy_release_attack()
 		play_fire_feedback()
 		notify_main_weapon_fired()
 		register_shot_heat()
@@ -96,7 +98,9 @@ func _on_windup_timer_timeout() -> void:
 	if not _windup_in_progress:
 		return
 	_windup_in_progress = false
+	prepare_energy_release_attack()
 	emit_signal("shoot")
+	finish_energy_release_attack()
 	play_fire_feedback()
 	notify_main_weapon_fired()
 	register_shot_heat()
@@ -253,11 +257,17 @@ func _apply_idle_fire_aoe(projectile: Node, direct_target: Node, hit_damage_type
 			continue
 		if enemy == direct_target:
 			continue
-		_apply_idle_fire_aoe_damage(enemy, aoe_damage, hit_damage_type, aoe_id)
+		_apply_idle_fire_aoe_damage(projectile, enemy, aoe_damage, hit_damage_type, aoe_id)
 
-func _apply_idle_fire_aoe_damage(target: Node, amount: int, hit_damage_type: StringName, aoe_id: int) -> void:
+func _apply_idle_fire_aoe_damage(
+	source_projectile: Node,
+	target: Node,
+	amount: int,
+	hit_damage_type: StringName,
+	aoe_id: int
+) -> void:
 	var damage_data := DamageManager.build_damage_data(
-		self,
+		source_projectile,
 		max(1, amount),
 		Attack.normalize_damage_type(hit_damage_type),
 		{
@@ -311,7 +321,7 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 
 func get_passive_status() -> Dictionary:
 	if has_weapon_trait(WeaponTrait.ENERGY):
-		return get_energy_hit_pulse_status()
+		return get_energy_full_fire_status()
 	var state := "charging"
 	var progress := 0.0
 	if not _idle_fire_reload_ready:

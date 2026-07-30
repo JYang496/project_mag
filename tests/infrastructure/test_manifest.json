@@ -174,6 +174,16 @@
       "timeout_seconds": 20
     },
     {
+      "id": "weapon.bipolar_heat",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/weapon/bipolar_heat_test.tscn",
+      "domain": "weapon",
+      "dependency_domains": ["player", "combat", "ui"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
       "id": "weapon.default_weapon_prewarm",
       "entry_type": "scene",
       "path": "res://tests/scenes/weapon/default_weapon_prewarm_test.tscn",

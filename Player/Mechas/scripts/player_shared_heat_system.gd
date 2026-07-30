@@ -9,7 +9,7 @@ var _last_heat_decay_rate: float = 0.0
 var _last_heat_decay_source_name: String = "None"
 var _selected_heat_decay_rate: float = 0.0
 var _selected_heat_decay_source_name: String = "None"
-var _heat_max_multiplier: float = 1.0
+var _heat_alignment_amplifier: float = 1.0
 
 func setup(player) -> void:
 	_player = player
@@ -38,7 +38,7 @@ func tick(delta: float) -> void:
 func rebuild() -> void:
 	if _shared_heat_pool == null or _player == null or _player.PlayerData == null:
 		return
-	_shared_heat_pool.configure_from_weapons(_player.PlayerData.player_weapon_list, _heat_max_multiplier)
+	_shared_heat_pool.configure_from_weapons(_player.PlayerData.player_weapon_list)
 	_shared_heat_signature = _build_signature()
 
 func mark_dirty() -> void:
@@ -57,25 +57,50 @@ func get_total_heat_max() -> float:
 		return 0.0
 	return float(_shared_heat_pool.max_heat)
 
-func set_heat_max_multiplier(multiplier: float, scale_current_heat: bool, _preserve_overheat: bool = true) -> void:
-	if _shared_heat_pool == null:
-		return
-	var old_heat_value := float(_shared_heat_pool.heat_value)
-	_heat_max_multiplier = maxf(multiplier, 0.01)
-	rebuild()
-	if scale_current_heat:
-		_shared_heat_pool.heat_value = clampf(old_heat_value * _heat_max_multiplier, 0.0, _shared_heat_pool.max_heat)
-	else:
-		_shared_heat_pool.heat_value = clampf(old_heat_value, 0.0, _shared_heat_pool.max_heat)
-	_shared_heat_pool.overheated = false
+func set_heat_max_multiplier(multiplier: float, _scale_current_heat: bool, _preserve_overheat: bool = true) -> void:
+	# Legacy entry point retained for old callers. Fixed bipolar bounds never expand.
+	_heat_alignment_amplifier = maxf(multiplier, 1.0)
 
 func get_heat_max_multiplier() -> float:
-	return _heat_max_multiplier
+	return _heat_alignment_amplifier
+
+func set_heat_alignment_amplifier(multiplier: float) -> void:
+	_heat_alignment_amplifier = maxf(multiplier, 1.0)
+
+func get_heat_alignment_amplifier() -> float:
+	return _heat_alignment_amplifier
 
 func get_total_heat_ratio() -> float:
 	if _shared_heat_pool == null or not _shared_heat_pool.has_contributors():
 		return 0.0
 	return _shared_heat_pool.get_ratio()
+
+func get_signed_heat_ratio() -> float:
+	if _shared_heat_pool == null or not _shared_heat_pool.has_contributors():
+		return 0.0
+	return _shared_heat_pool.get_signed_ratio()
+
+func get_heat_gauge_ratio() -> float:
+	if _shared_heat_pool == null or not _shared_heat_pool.has_contributors():
+		return 0.5
+	return _shared_heat_pool.get_gauge_ratio()
+
+func get_fire_alignment() -> float:
+	return clampf(maxf(get_signed_heat_ratio(), 0.0) * _heat_alignment_amplifier, 0.0, 1.0)
+
+func get_freeze_alignment() -> float:
+	return clampf(maxf(-get_signed_heat_ratio(), 0.0) * _heat_alignment_amplifier, 0.0, 1.0)
+
+func add_heat(amount: float) -> void:
+	if _shared_heat_pool != null:
+		_shared_heat_pool.add_heat_amount(amount)
+
+func reset_to_neutral() -> void:
+	if _shared_heat_pool != null:
+		_shared_heat_pool.reset_to_neutral()
+
+func get_heat_zone() -> StringName:
+	return _shared_heat_pool.get_heat_zone() if _shared_heat_pool != null else &"neutral"
 
 func get_selected_heat_decay_rate() -> float:
 	return _selected_heat_decay_rate
@@ -177,12 +202,9 @@ func _build_signature() -> String:
 			contributes = bool(weapon.call("has_heat_system"))
 		if not contributes:
 			continue
-		var max_heat: float = 0.0
 		var cool_rate: float = 0.0
-		if weapon.get("heat_max_value") != null:
-			max_heat = float(weapon.get("heat_max_value"))
 		if weapon.get("heat_cool_rate") != null:
 			cool_rate = float(weapon.get("heat_cool_rate"))
-		keys.append("%s:%.4f:%.4f" % [str(weapon.get_instance_id()), max_heat, cool_rate])
+		keys.append("%s:%.4f" % [str(weapon.get_instance_id()), cool_rate])
 	keys.sort()
 	return "|".join(keys)

@@ -9,6 +9,9 @@ var projectile_texture_resource = preload("res://asset/images/weapons/projectile
 var ITEM_NAME = "Rocket Launcher"
 var explosion_scale : float = 2.0
 @export var cluster_kill_radius: float = 180.0
+@export var cluster_damage_ratio: float = 0.35
+@export var heat_per_rocket: float = 20.0
+@export var heat_neutralize_rate: float = 7.0
 const ROCKET_COLLISION_ARMING_DELAY_SEC: float = 0.08
 
 func _init() -> void:
@@ -41,6 +44,7 @@ func set_level(lv):
 	base_attack_cooldown = float(level_data["fire_interval_sec"])
 	apply_level_ammo(level_data)
 	explosion_scale = float(level_data["explosion_scale"])
+	configure_heat(heat_per_rocket, Heat.MAX_HEAT, heat_neutralize_rate)
 	sync_stats()
 	_sync_explosion_effect_config()
 	branch_runtime.notify_branch_level_applied(level)
@@ -111,11 +115,17 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	if not is_offhand_skill_ready():
 		return
 	notify_offhand_skill_triggered(0.0)
+	var cluster_hits := _apply_cluster_kill_damage(
+		death_position_variant as Vector2,
+		detail.get("enemy", null)
+	)
 	emit_passive_trigger(&"rocket_cluster_kill_triggered", {
 		"enemy": detail.get("enemy", null),
 		"position": death_position_variant,
 		"radius": maxf(cluster_kill_radius, 0.0),
 		"nearby_enemy_count": nearby_count,
+		"cluster_hits": cluster_hits,
+		"damage_type": Attack.TYPE_FIRE,
 		"refresh": "reload",
 	}, PASSIVE_SCOPE_GLOBAL)
 
@@ -142,6 +152,27 @@ func get_passive_status() -> Dictionary:
 
 func get_passive_max_charges() -> int:
 	return 3
+
+func _apply_cluster_kill_damage(position: Vector2, killed_enemy: Variant) -> int:
+	var hit_count := 0
+	var amount := maxi(1, int(round(float(get_runtime_shot_damage()) * maxf(cluster_damage_ratio, 0.0))))
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(get_tree(), position, maxf(cluster_kill_radius, 0.0)):
+		var enemy := enemy_ref as Node2D
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		if killed_enemy is Object and enemy == killed_enemy:
+			continue
+		var data := DamageManager.build_damage_data(
+			self,
+			amount,
+			Attack.TYPE_FIRE,
+			{"amount": 0, "angle": Vector2.ZERO},
+			DamageData.SOURCE_PLAYER_WEAPON,
+			DamageDeliveryType.AREA
+		)
+		if DamageManager.apply_to_target(enemy, data):
+			hit_count += 1
+	return hit_count
 
 func _count_other_enemies_near(position: Vector2, killed_enemy: Variant) -> int:
 	var tree := get_tree()

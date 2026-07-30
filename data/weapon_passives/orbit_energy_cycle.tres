@@ -6,8 +6,8 @@
 script = ExtResource("1_script")
 passive_id = "orbit_energy_cycle"
 display_name = "Orbital Pulse"
-description = "Energy cycle. Satellite hits fill one of 5 pulse cells; the fifth valid hit releases a radial energy pulse around the struck target."
-condition_type = "valid_energy_hit_count"
-refresh_type = "automatic_after_discharge"
+description = "Accumulator energy cycle. Each valid satellite damage event grants 8 global energy. If the pool is full before deployment, it is consumed for +35% damage."
+condition_type = "global_energy_full_before_fire"
+refresh_type = "automatic_after_full_energy_attack"
 ui_mode = "progress"
 hud_mode = "bean_with_condition"

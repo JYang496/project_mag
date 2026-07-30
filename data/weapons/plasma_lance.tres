@@ -9,5 +9,5 @@ weapon_id = "17"
 display_name = "Plasma Lance"
 icon = ExtResource("1_icon")
 price = 45
-description = "Long-range Heat/Energy lance. Higher stored heat strengthens each shot; valid energy hits also advance an independent 5-hit plasma-discharge cycle."
+description = "Long-range Heat/Energy release lance. Each damage event grants 10 global energy; firing at full energy consumes the pool for +125% damage."
 scene_path = "res://Player/Weapons/Instances/plasma_lance.tscn"

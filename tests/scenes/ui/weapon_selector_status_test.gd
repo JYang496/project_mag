@@ -281,9 +281,11 @@ func _test_weapon_passive_contract_classification() -> void:
 	for scene_path in energy_cycle_paths:
 		var weapon := (load(scene_path) as PackedScene).instantiate() as Weapon
 		var status: Dictionary = weapon.get_passive_status()
-		_expect(bool(status.get("condition_visible", false)), "%s must expose its five-cell energy-hit condition" % scene_path)
-		_expect(int(status.get("required", 0)) == 5, "%s must use the shared five-hit threshold" % scene_path)
-		_expect(not bool(status.get("charge_based", true)), "%s energy cycle must restart automatically without skill beans" % scene_path)
+		_expect(bool(status.get("condition_visible", false)), "%s must expose the global energy condition" % scene_path)
+		_expect(int(status.get("required", 0)) == 100, "%s must require a full global energy pool" % scene_path)
+		_expect((status.get("condition_thresholds", []) as Array).is_empty(), "%s must not expose obsolete hit-count divisions" % scene_path)
+		_expect(status.get("trigger_hint") == "fire_at_full_global_energy", "%s must trigger only when fired at full global energy" % scene_path)
+		_expect(bool(status.get("energy_full_fire_cycle", false)), "%s must advertise the simplified full-energy cycle" % scene_path)
 		weapon.free()
 	for scene_path in single_condition_paths:
 		var weapon := (load(scene_path) as PackedScene).instantiate() as Weapon
@@ -308,7 +310,10 @@ func _test_reload_settlement_consumes_after_finish() -> void:
 		"spent_ratio": 0.1,
 	})
 	_expect(machine_gun.passive_controller.get_passive_charge_current() == 0, "reload finish must consume all machine-gun beans")
-	_expect(is_equal_approx(dummy_player.heat_expansion_multiplier, 8.0), "four machine-gun beans must produce four times the single-bean multiplier regardless of ammo-spend ratio")
+	_expect(
+		is_equal_approx(dummy_player.heat_expansion_multiplier, 1.668),
+		"four machine-gun beans must amplify elemental alignment without expanding fixed Heat bounds"
+	)
 	var status: Dictionary = machine_gun.get_passive_status()
 	_expect(status.get("charge_states") == ["active", "active", "active", "active"], "machine-gun HUD must keep every consumed bean active for the shared effect duration")
 	machine_gun.free()
@@ -398,9 +403,9 @@ func _test_condition_based_skill_rearming() -> void:
 
 	var plasma := (load("res://Player/Weapons/Instances/plasma_lance.tscn") as PackedScene).instantiate() as Weapon
 	var plasma_status := plasma.get_passive_status()
-	_expect(plasma_status.get("id") == "plasma_lance_energy_discharge_triggered", "plasma must expose its independent energy-discharge cycle")
-	_expect(int(plasma_status.get("required", 0)) == 5, "plasma discharge must require five valid energy hits")
-	_expect(plasma_status.get("refresh_hint") == "automatic_after_discharge", "plasma discharge must restart automatically instead of waiting for reload")
+	_expect(plasma_status.get("id") == "plasma_lance_energy_discharge_triggered", "plasma must expose its full-energy release")
+	_expect(int(plasma_status.get("required", 0)) == 100, "plasma release must require a full global energy pool")
+	_expect(plasma_status.get("refresh_hint") == "automatic_after_full_energy_attack", "plasma release must restart after consuming a full pool")
 	plasma.free()
 	PlayerData.player = previous_player
 

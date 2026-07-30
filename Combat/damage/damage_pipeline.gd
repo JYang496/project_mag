@@ -10,7 +10,6 @@ const FROST_DURATION_SEC: float = 6.0
 const FROST_SLOW_PER_STACK: float = 0.04
 const FROST_STACK_INTERVAL_SEC: float = 0.6
 const FROST_MAX_STACKS: int = 5
-const ENERGY_EXECUTE_DAMAGE_MULT: float = 1.2
 
 func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile, is_periodic: bool = false) -> DamageResult:
 	var result := DamageResult.new()
@@ -51,18 +50,17 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 	if raw_damage > 0 and incoming_damage <= 0:
 		incoming_damage = 1
 	var hp := profile.read_hp()
-	if _has_energy_damage_breakpoint(state, hp):
-		incoming_damage = max(1, int(round(float(incoming_damage) * ENERGY_EXECUTE_DAMAGE_MULT)))
 	if incoming_damage <= 0:
 		result.rejection_reason = DamageResult.REASON_ZERO_DAMAGE
 		_save_state(target, state)
 		return result
 
+	var hp_before_damage: int = maxi(int(hp), 0)
 	hp -= incoming_damage
 	profile.write_hp(hp)
 
 	result.applied = true
-	result.final_damage = incoming_damage
+	result.final_damage = mini(incoming_damage, hp_before_damage)
 	result.damage_type = normalized_type
 
 	if hp <= 0:
@@ -79,8 +77,6 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 					_apply_scorch_on_fire_hit(state, profile, incoming_damage, attack.source_node, attack.source_player, now_msec)
 			Attack.TYPE_FREEZE:
 				_apply_frost_on_freeze_hit(state, profile, now_msec)
-			Attack.TYPE_ENERGY:
-				_record_energy_damage_on_hit(state, incoming_damage)
 
 	if profile.use_invuln and attack.triggers_invulnerability and not bypasses_invuln:
 		profile.call_trigger_invuln()
@@ -173,7 +169,6 @@ func _get_or_create_state(target: Node, profile: DamageProfile) -> Dictionary:
 		"frost_stacks": 0,
 		"frost_expires_at_msec": 0,
 		"frost_next_stack_at_msec": 0,
-		"energy_damage_recorded": 0,
 		"scorch_max_hp": max(1, profile.read_max_hp()),
 	}
 	target.set_meta(DAMAGE_STATE_META, state)
@@ -238,28 +233,3 @@ func _apply_frost_on_freeze_hit(state: Dictionary, profile: DamageProfile, now_m
 	var move_mul := clampf(1.0 - float(int(state.get("frost_stacks", 0))) * FROST_SLOW_PER_STACK, 0.05, 1.0)
 	profile.call_apply_frost_slow(move_mul, FROST_DURATION_SEC)
 	state["frost_expires_at_msec"] = now_msec + int(FROST_DURATION_SEC * 1000.0)
-
-func _record_energy_damage_on_hit(state: Dictionary, energy_damage: int) -> void:
-	if energy_damage <= 0:
-		return
-	state["energy_damage_recorded"] = max(0, int(state.get("energy_damage_recorded", 0))) + energy_damage
-
-static func get_recorded_energy_damage(target: Node) -> int:
-	if target == null or not is_instance_valid(target) or not target.has_meta(DAMAGE_STATE_META):
-		return 0
-	var state_variant: Variant = target.get_meta(DAMAGE_STATE_META, {})
-	if not (state_variant is Dictionary):
-		return 0
-	return max(0, int((state_variant as Dictionary).get("energy_damage_recorded", 0)))
-
-static func consume_recorded_energy_damage(target: Node) -> int:
-	var recorded := get_recorded_energy_damage(target)
-	if recorded <= 0 or target == null or not is_instance_valid(target):
-		return 0
-	var state: Dictionary = target.get_meta(DAMAGE_STATE_META, {})
-	state["energy_damage_recorded"] = 0
-	target.set_meta(DAMAGE_STATE_META, state)
-	return recorded
-
-func _has_energy_damage_breakpoint(state: Dictionary, current_hp: int) -> bool:
-	return int(state.get("energy_damage_recorded", 0)) > max(0, current_hp)

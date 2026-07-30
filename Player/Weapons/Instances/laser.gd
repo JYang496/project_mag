@@ -88,6 +88,7 @@ func _spawn_laser_beam(profile: Dictionary) -> void:
 	var damage_multiplier := maxf(float(profile.get("damage_multiplier", 1.0)), 0.05)
 	beam_ins.damage = max(1, int(round(float(get_runtime_shot_damage()) * damage_multiplier)))
 	beam_ins.source_weapon = self
+	apply_energy_release_marker(beam_ins)
 	if beam_ins.has_method("configure_laser_beam"):
 		beam_ins.call("configure_laser_beam", profile)
 	self.get_tree().root.call_deferred("add_child",beam_ins)
@@ -99,16 +100,11 @@ func _on_oc_timer_timeout() -> void:
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
 
-func get_energy_hit_passive_id() -> StringName:
+func get_energy_full_fire_passive_id() -> StringName:
 	return PASSIVE_ID
 
-func get_energy_hit_display_name() -> String:
+func get_energy_full_fire_display_name() -> String:
 	return "Focus Channel"
 
-func _execute_energy_hit_discharge(target: Node, data: DamageData, result: DamageResult) -> Dictionary:
-	var detail := super._execute_energy_hit_discharge(target, data, result)
-	detail["effect"] = "focus_channel"
-	return detail
-
 func get_passive_status() -> Dictionary:
-	return get_energy_hit_pulse_status()
+	return get_energy_full_fire_status()

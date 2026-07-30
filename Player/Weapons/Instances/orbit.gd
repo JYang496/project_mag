@@ -113,7 +113,9 @@ func request_primary_fire() -> bool:
 			request_reload()
 		return false
 	_pending_satellite_spawn_count = spent_ammo
+	prepare_energy_release_attack()
 	emit_signal("shoot")
+	finish_energy_release_attack()
 	play_fire_feedback()
 	notify_main_weapon_fired()
 	register_shot_heat()
@@ -231,7 +233,7 @@ func _try_trigger_player_damaged(detail: Dictionary) -> void:
 
 func get_passive_status() -> Dictionary:
 	if has_weapon_trait(WeaponTrait.ENERGY):
-		return get_energy_hit_pulse_status()
+		return get_energy_full_fire_status()
 	var state := "ready" if is_passive_ready() else "waiting_refresh"
 	return with_passive_charge_status({
 		"id": "orbit_player_damaged_triggered",

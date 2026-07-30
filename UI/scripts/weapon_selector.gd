@@ -745,6 +745,10 @@ func _resource_indicator_color(slot: Dictionary) -> Color:
 		return Color(1.0, 0.22, 0.16, 1.0)
 	if state == &"warning":
 		return Color(1.0, 0.62, 0.24, 1.0)
+	if state == &"extreme_cold" or state == &"deep_cold" or state == &"cold":
+		return Color(0.38, 0.78, 1.0, 1.0)
+	if state == &"extreme_heat" or state == &"high_heat" or state == &"hot":
+		return Color(1.0, 0.46, 0.22, 1.0)
 	if state == &"reloading" or state == &"cooling":
 		return Color(0.60, 0.72, 1.0, 1.0)
 	if resource_type == &"charge" or state == &"charging":

@@ -227,6 +227,7 @@ func _get_closest_target() -> BaseEnemy:
 func _start_dash() -> void:
 	if _state != AttackState.IDLE:
 		return
+	register_shot_heat()
 	_dash_hit_confirmed = false
 	_dash_start_distance = 0.0
 	_dash_start_target_id = 0

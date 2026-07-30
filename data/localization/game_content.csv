@@ -4,7 +4,7 @@ weapon.25.desc,"Long-range heavy cannon. Fits Defense and Execute setups: cease 
 weapon.10.name,Chainsaw Launcher,链锯发射器
 weapon.10.desc,"Close-range projectile saw that ricochets inside its spawn cell. Boundary contact arms slowing vulnerability hits and extends that projectile's lifetime.","近距离投射锯刃，会在出生 cell 内弹射；接触边界后，命中会施加减速和易伤，并延长该投射物的生命周期。"
 weapon.2.name,Charged Blaster,蓄能爆破枪
-weapon.2.desc,"Mid-range charge beam. Builds around Beam and Area choices: Focus Lance pushes single-target pressure, while Prism Fan widens lane control.","中距离蓄能光束武器。围绕光束和范围构筑展开：聚焦长枪强化单体压制，棱镜扇面扩大控场覆盖。"
+weapon.2.desc,"Mid-range Energy release beam. Each damage event grants 3 global energy; firing at full energy consumes the pool for +125% damage.","中距离能量释放光束。每次伤害结算获得 3 点全局能量；满能量开火会消耗能量池并获得 125% 额外伤害。"
 weapon.11.name,Dash Blade,冲刺刃
 weapon.11.desc,"Close melee dash weapon. Triggers on long dash hits, fits Close and Melee builds, and can branch into Freeze control.","近战冲刺武器。长距离冲刺命中时触发收益，适合近战和接触构筑，也可分支为冻结控制。"
 weapon.13.name,Flamethrower,喷火器
@@ -12,7 +12,7 @@ weapon.13.desc,"Short-range fire cone. Core Heat and Area weapon whose damage gr
 weapon.21.name,Glacier Projector,冰川投射器
 weapon.21.desc,"Mid-range Freeze cone. Freeze hits trigger Cold Snap as it recharges, supporting Freeze and Area control builds.","中距离冻结锥形武器。冻结命中会在冷冽回响充能时触发它，支撑冻结和范围控制构筑。"
 weapon.9.name,Laser,激光
-weapon.9.desc,"Mid-range beam weapon. Fits Beam and Area builds; beam hits spend Focus Channel charges, while branches add tracking or prism coverage.","中距离光束武器。适合光束和范围构筑；光束命中会消耗聚焦通道充能，分支可补充追踪或棱镜覆盖。"
+weapon.9.desc,"Balanced mid-range Energy beam. Each damage event grants 6 global energy; firing at full energy consumes the pool for +75% damage.","均衡型中距离能量光束。每次伤害结算获得 6 点全局能量；满能量开火会消耗能量池并获得 75% 额外伤害。"
 weapon.1.name,Machine Gun,机枪
 weapon.1.desc,"Sustained mid-range automatic fire. Core Heat and Projectile weapon: spending magazine ammo before reload expands shared heat capacity.","中距离持续自动火力。核心热量和投射物武器：换弹前消耗弹匣弹药可扩展共享热量容量。"
 weapon.7.name,Orbit,轨道卫星
@@ -20,7 +20,7 @@ weapon.7.desc,"Close support summon. Consumes magazine ammo to deploy slowing sa
 weapon.5.name,Auto Pistol,自动手枪
 weapon.5.desc,"Auto-targeting sidearm that fires at the nearest enemy in range. Every 8 seconds it enters a Pierce Mark window.","自动索敌副枪，会攻击范围内最近敌人；每 8 秒进入一次穿透标记窗口。"
 weapon.17.name,Plasma Lance,等离子长枪
-weapon.17.desc,"Long-range Heat/Energy lance. Higher stored heat strengthens each shot; valid energy hits also advance an independent 5-hit plasma-discharge cycle.","远程热量/能量长枪。储存热量越高，每次射击越强；有效能量命中还会独立推进五击等离子放电循环。"
+weapon.17.desc,"Long-range Heat/Energy release lance. Each damage event grants 10 global energy; firing at full energy consumes the pool for +125% damage.","远程热量/能量释放长枪。每次伤害结算获得 10 点全局能量；满能量开火会消耗能量池并获得 125% 额外伤害。"
 weapon.8.name,Rocket Launcher,火箭发射器
 weapon.8.desc,"Long-range Area launcher. Slow rockets and growing blasts clear groups, while Cluster Kill charges reward grouped enemy cleanup.","远程范围发射器。慢速火箭和逐步扩大的爆炸用于清理敌群，集群击杀充能奖励成群清场。"
 weapon.4.name,Shotgun,霰弹枪
@@ -34,7 +34,7 @@ passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds ch
 branch.thermal_cannon_branch.name,Thermal Cannon,Thermal Cannon
 branch.thermal_cannon_branch.desc,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.
 branch.zero_cannon_branch.name,Zero Cannon,Zero Cannon
-branch.zero_cannon_branch.desc,"Energy cycle branch: the fifth valid hit consumes the target's recorded energy damage and detonates 20% as bonus damage.","能量循环分支：第五次有效命中消耗目标记录的能量伤害，并将其中 20% 引爆为额外伤害。"
+branch.zero_cannon_branch.desc,"Energy release branch: each damage event grants 10 global energy; firing at full energy consumes the pool for +150% damage.","能量释放分支：每次伤害结算获得 10 点全局能量；满能量开火会消耗能量池并获得 150% 额外伤害。"
 branch.explosive_saw.name,Explosive Saw,Explosive Saw
 branch.explosive_saw.desc,"First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE.","First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE."
 branch.ricochet_saw.name,Ricochet Saw,Ricochet Saw
@@ -62,11 +62,11 @@ branch.shield_mg.desc,Deploys a frontal shield that blocks hostile shots and int
 branch.gatling_mg.name,Gatling Thermal,Gatling Thermal
 branch.gatling_mg.desc,"Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup.","Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup."
 branch.energy_orbit.name,Energy Orbit,Energy Orbit
-branch.energy_orbit.desc,"Satellite hits fill a 5-cell energy pulse; the fifth valid hit releases a radial pulse around its target.","卫星命中会填充五格能量脉冲；第五次有效命中在目标周围释放环形脉冲。"
+branch.energy_orbit.desc,"Satellite hits become Energy damage and grant 8 global energy per event; deploying at full energy consumes the pool for +35% damage.","卫星命中转化为能量伤害，每次结算获得 8 点全局能量；满能量部署会消耗能量池并获得 35% 额外伤害。"
 branch.frost_orbit.name,Frost Orbit,Frost Orbit
 branch.frost_orbit.desc,Orbit hits become freeze damage and apply a small player-to-target knockback.,Orbit hits become freeze damage and apply a small player-to-target knockback.
 branch.arc_coil.name,Arc Coil,Arc Coil
-branch.arc_coil.desc,"Energy cycle branch: the fifth valid hit chains arc damage to nearby enemies with falloff.","能量循环分支：第五次有效命中向附近敌人释放带衰减的电弧连锁伤害。"
+branch.arc_coil.desc,"Energy accumulator branch: shots become Energy damage and grant 12 global energy per event; firing at full energy consumes the pool for +35% damage.","能量积累分支：射击转化为能量伤害，每次结算获得 12 点全局能量；满能量开火会消耗能量池并获得 35% 额外伤害。"
 branch.cryo_carbine.name,Cryo Carbine,Cryo Carbine
 branch.cryo_carbine.desc,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.
 branch.napalm_rocket.name,Napalm Rocket,Napalm Rocket
@@ -97,9 +97,9 @@ module.wmod_reload_shield_boost.name,Reload Barrier,换弹屏障
 module.wmod_reload_speed_link.name,Reload Link,换弹联动
 module.wmod_trail_aoe_freeze.name,Frost Trail,霜冻轨迹
 module.wmod_dot_on_hit.name,Damage Over Time,持续伤害
-module.wmod_heat_capacity_heat.name,Heat Capacity,热容量
+module.wmod_heat_capacity_heat.name,Thermal Inertia,热惯性
 module.wmod_heat_concentration_heat.name,Heat Concentration,热量聚焦
-module.wmod_heat_vent_heat.name,Heat Vent,热量排放
+module.wmod_heat_vent_heat.name,Thermal Equalizer,热平衡器
 module.wmod_lifesteal_on_hit.name,Life Steal,生命汲取
 module.wmod_lightning_chain_on_hit.name,Lightning Chain,闪电链
 module.wmod_permafrost_field_freeze.name,Permafrost Field,永冻领域
@@ -196,18 +196,18 @@ module.wmod_fast_reload.effect.3,"Reload duration -29%","换弹时长 -29%"
 module.wmod_firepower_diffusion.effect.1,"Hit 2+ unique targets within 1s: +5% damage per extra target for 2.5s","1 秒内命中至少 2 个不同目标：每个额外目标使伤害 +5%，持续 2.5 秒"
 module.wmod_firepower_diffusion.effect.2,"Hit 2+ unique targets within 1s: +7% damage per extra target for 2.5s","1 秒内命中至少 2 个不同目标：每个额外目标使伤害 +7%，持续 2.5 秒"
 module.wmod_firepower_diffusion.effect.3,"Hit 2+ unique targets within 1s: +9% damage per extra target for 2.5s","1 秒内命中至少 2 个不同目标：每个额外目标使伤害 +9%，持续 2.5 秒"
-module.wmod_heat_capacity_heat.effect.1,"Maximum heat +50%","热量上限 +50%"
-module.wmod_heat_capacity_heat.effect.2,"Maximum heat +67.5%","热量上限 +67.5%"
-module.wmod_heat_capacity_heat.effect.3,"Maximum heat +85%","热量上限 +85%"
-module.wmod_heat_concentration_heat.effect.1,"Up to +140% damage at full heat","满热量时伤害最高 +140%"
-module.wmod_heat_concentration_heat.effect.2,"Up to +189% damage at full heat","满热量时伤害最高 +189%"
-module.wmod_heat_concentration_heat.effect.3,"Up to +238% damage at full heat","满热量时伤害最高 +238%"
-module.wmod_heat_throttle.effect.1,"Heat generated per attack -15%","每次攻击产生的热量 -15%"
-module.wmod_heat_throttle.effect.2,"Heat generated per attack -22%","每次攻击产生的热量 -22%"
-module.wmod_heat_throttle.effect.3,"Heat generated per attack -29%","每次攻击产生的热量 -29%"
-module.wmod_heat_vent_heat.effect.1,"Up to +50% cooling rate at full heat","满热量时冷却速度最高 +50%"
-module.wmod_heat_vent_heat.effect.2,"Up to +67.5% cooling rate at full heat","满热量时冷却速度最高 +67.5%"
-module.wmod_heat_vent_heat.effect.3,"Up to +85% cooling rate at full heat","满热量时冷却速度最高 +85%"
+module.wmod_heat_capacity_heat.effect.1,"Opposing Heat changes -25%","反向 Heat 变化 -25%"
+module.wmod_heat_capacity_heat.effect.2,"Opposing Heat changes -37.5%","反向 Heat 变化 -37.5%"
+module.wmod_heat_capacity_heat.effect.3,"Opposing Heat changes -50%","反向 Heat 变化 -50%"
+module.wmod_heat_concentration_heat.effect.1,"Up to +15% damage at matching Heat","属性与 Heat 同向时伤害最高 +15%"
+module.wmod_heat_concentration_heat.effect.2,"Up to +20.25% damage at matching Heat","属性与 Heat 同向时伤害最高 +20.25%"
+module.wmod_heat_concentration_heat.effect.3,"Up to +25.5% damage at matching Heat","属性与 Heat 同向时伤害最高 +25.5%"
+module.wmod_heat_throttle.effect.1,"Heat shift per attack -15%","每次攻击造成的 Heat 偏移 -15%"
+module.wmod_heat_throttle.effect.2,"Heat shift per attack -22%","每次攻击造成的 Heat 偏移 -22%"
+module.wmod_heat_throttle.effect.3,"Heat shift per attack -29%","每次攻击造成的 Heat 偏移 -29%"
+module.wmod_heat_vent_heat.effect.1,"Up to +50% neutralization at an extreme","接近冷热极值时回归中性的速度最高 +50%"
+module.wmod_heat_vent_heat.effect.2,"Up to +67.5% neutralization at an extreme","接近冷热极值时回归中性的速度最高 +67.5%"
+module.wmod_heat_vent_heat.effect.3,"Up to +85% neutralization at an extreme","接近冷热极值时回归中性的速度最高 +85%"
 module.wmod_ice_prison_freeze.effect.1,"At 3 frost stacks: 22% chance to root for 0.55s","达到 3 层霜冻时：22% 概率定身 0.55 秒"
 module.wmod_ice_prison_freeze.effect.2,"At 3 frost stacks: 30% chance to root for 0.75s","达到 3 层霜冻时：30% 概率定身 0.75 秒"
 module.wmod_ice_prison_freeze.effect.3,"At 2 frost stacks: 38% chance to root for 0.95s","达到 2 层霜冻时：38% 概率定身 0.95 秒"

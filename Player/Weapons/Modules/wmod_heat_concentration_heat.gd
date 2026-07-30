@@ -3,7 +3,7 @@ extends Module
 
 var ITEM_NAME := "Heat Concentration"
 
-@export var heat_damage_bonus_at_full_heat: float = 1.4
+@export var alignment_damage_bonus_at_full: float = 0.15
 
 func apply_stat_modifiers(stat_block: Dictionary) -> Dictionary:
 	var output := super.apply_stat_modifiers(stat_block)
@@ -16,8 +16,12 @@ func apply_stat_modifiers(stat_block: Dictionary) -> Dictionary:
 	if not _is_valid_heat_weapon(weapon):
 		return output
 
-	var heat_ratio: float = clampf(float(weapon.call("get_heat_ratio")), 0.0, 1.0)
-	var scaled_bonus: float = get_effective_additive(maxf(heat_damage_bonus_at_full_heat, 0.0), 0.35) * heat_ratio
+	var alignment := 0.0
+	if weapon.has_weapon_trait(WeaponTrait.FIRE):
+		alignment = float(weapon.call("get_fire_alignment"))
+	elif weapon.has_weapon_trait(WeaponTrait.FREEZE):
+		alignment = float(weapon.call("get_freeze_alignment"))
+	var scaled_bonus: float = get_effective_additive(maxf(alignment_damage_bonus_at_full, 0.0), 0.35) * clampf(alignment, 0.0, 1.0)
 	output["damage"] = float(output["damage"]) * (1.0 + scaled_bonus)
 	return output
 

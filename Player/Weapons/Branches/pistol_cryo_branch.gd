@@ -2,7 +2,7 @@ extends WeaponBranchBehavior
 class_name PistolCryoBranch
 
 func get_added_weapon_traits() -> Array[StringName]:
-	return [WeaponTrait.FREEZE]
+	return [WeaponTrait.FREEZE, WeaponTrait.HEAT]
 
 @export var shard_damage_ratio: float = 0.4
 @export var shard_radius: float = 120.0

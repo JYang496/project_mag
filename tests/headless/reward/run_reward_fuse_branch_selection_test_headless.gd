@@ -56,6 +56,15 @@ func _run() -> void:
 	_expect(_ui.branch_select_panel != null and not _ui.branch_select_panel._branch_ids.is_empty(), "expected branch options for machine gun fuse 2")
 	_expect(RewardDraftRuntime.has_pending_standard_draft(), "standard draft should still be pending during grant-time branch prompt")
 
+	var duplicate_def := DataHandler.read_weapon_data("1") as WeaponDefinition
+	var direct_duplicate := duplicate_def.scene.instantiate() as Weapon if duplicate_def and duplicate_def.scene else null
+	_expect(direct_duplicate != null, "expected a direct duplicate instance for the equipment invariant")
+	if direct_duplicate != null:
+		_player.create_weapon(direct_duplicate)
+		await get_tree().process_frame
+		_expect(PlayerData.player_weapon_list.size() == 1, "direct instance equipment must not create a duplicate weapon id")
+		_expect(int(weapon.fuse) == 3, "direct duplicate equipment must fuse the already equipped weapon")
+
 	_finish()
 
 func _reset_runtime_state() -> void:

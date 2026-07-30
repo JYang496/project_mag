@@ -11,7 +11,6 @@ enum RangeMode {
 
 const DEFAULT_PROJECTILE_LIFETIME_SEC: float = 2.5
 const WeaponFireFeedbackPlayerScript := preload("res://Player/Weapons/Feedback/weapon_fire_feedback_player.gd")
-const EnergyHitPulseRuntimeScript := preload("res://Player/Weapons/Core/energy_hit_pulse_runtime.gd")
 
 #region Runtime State
 @onready var modules: WeaponModules = $Modules
@@ -23,7 +22,6 @@ var ammo_controller: WeaponAmmoController = WeaponAmmoController.new()
 var passive_controller: WeaponPassiveController = WeaponPassiveController.new()
 var fuse_visual_controller: WeaponFuseVisualController = WeaponFuseVisualController.new()
 var fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
-var energy_hit_runtime = EnergyHitPulseRuntimeScript.new()
 var MAX_MODULE_NUMBER = 3
 @onready var sprite: Sprite2D = $Sprite
 @onready var fuse_sprite_holder: FuseSpriteHolder = get_node_or_null("FuseSprites")
@@ -31,6 +29,11 @@ const PASSIVE_SCOPE_BODY: StringName = &"body"
 const PASSIVE_SCOPE_GLOBAL: StringName = &"global"
 const LAST_HIT_WEAPON_META: StringName = &"_last_player_weapon_hit_id"
 const LAST_HIT_WEAPON_TIME_META: StringName = &"_last_player_weapon_hit_msec"
+const ENERGY_RELEASE_ATTACK_META: StringName = &"_global_energy_release_attack"
+const ENERGY_RELEASE_SPENT_META: StringName = &"_global_energy_release_spent"
+const ENERGY_RELEASE_MULTIPLIER_META: StringName = &"_global_energy_release_multiplier"
+const ENERGY_ATTACK_GROUP_META: StringName = &"_global_energy_attack_group"
+const HEAT_SNAPSHOT_META: StringName = &"_bipolar_heat_snapshot"
 const DELIVERY_PROJECTILE: StringName = DamageDeliveryType.PROJECTILE
 const DELIVERY_MELEE_CONTACT: StringName = DamageDeliveryType.MELEE_CONTACT
 const DELIVERY_BEAM: StringName = DamageDeliveryType.BEAM
@@ -47,6 +50,7 @@ var heat_core: Heat
 var heat_per_shot: float = 1.0
 var heat_max_value: float = 100.0
 var heat_cool_rate: float = 20.0
+var heat_opposition_resistance: float = 0.0
 @export_enum("main", "offhand") var weapon_role: String = "offhand"
 @export var fire_feedback_profile: Resource
 @export var range_mode: RangeMode = RangeMode.UNSPECIFIED
@@ -61,6 +65,12 @@ var runtime_capability_suppressions: Dictionary = {}
 @export var magazine_capacity: int = 50
 @export var reload_duration_sec: float = 6.0
 var _offhand_skill_ready: bool = true
+var _energy_release_attack_active: bool = false
+var _energy_release_damage_multiplier: float = 1.0
+var _energy_release_spent: float = 0.0
+var _energy_attack_sequence: int = 0
+var _active_energy_attack_group_id: StringName = StringName()
+var _energy_pool_owner: Node
 var current_ammo: int = 0
 var is_reloading: bool = false
 var reload_time_left: float = 0.0
@@ -87,7 +97,6 @@ func _init() -> void:
 	plugin_dispatcher.setup(self)
 	ammo_controller.setup(self)
 	passive_controller.setup(self)
-	energy_hit_runtime.setup(self)
 	fuse_visual_controller.setup(self)
 	fire_feedback_player.setup(self)
 
@@ -108,8 +117,6 @@ func calculate_status() -> void:
 	ammo_controller.reconcile_capacity()
 	validate_module_compatibility()
 	_sync_heat_trait_state()
-	if not has_weapon_trait(WeaponTrait.ENERGY):
-		energy_hit_runtime.clear()
 
 func set_max_level(ml : int) -> void:
 	max_level = maxi(int(ml), 1)
@@ -182,33 +189,156 @@ func _handle_hit_target(target: Node, damage_type: StringName = StringName()) ->
 		PlayerData.player.call("_broadcast_weapon_passive_event", &"on_hit", detail)
 
 func on_damage_applied(target: Node, data: DamageData, result: DamageResult) -> void:
-	energy_hit_runtime.record_applied_damage(target, data, result)
+	_accumulate_global_weapon_energy(data, result)
 
-func accepts_energy_hit_pulse(_target: Node, _data: DamageData, _result: DamageResult) -> bool:
-	return true
+func _accumulate_global_weapon_energy(data: DamageData, result: DamageResult) -> void:
+	if data == null or result == null or not result.applied or result.final_damage <= 0:
+		return
+	if data.source_category != DamageData.SOURCE_PLAYER_WEAPON:
+		return
+	if data.damage_kind != DamageData.KIND_DIRECT or data.suppress_reactive_effects:
+		return
+	if Attack.normalize_damage_type(result.damage_type) != Attack.TYPE_ENERGY:
+		return
+	if not has_weapon_trait(WeaponTrait.ENERGY):
+		return
+	if _is_energy_release_source(data.source_node):
+		return
+	var player := data.source_player
+	if player == null or not is_instance_valid(player):
+		player = DamageManager.resolve_source_player(self)
+	if player == null or not is_instance_valid(player) or not player.has_method("add_global_weapon_energy"):
+		return
+	_energy_pool_owner = player
+	var gain := get_energy_gain_per_damage_event()
+	player.call("add_global_weapon_energy", gain, data.source_node)
 
-func get_energy_hit_passive_id() -> StringName:
-	var branch_passive_id := branch_runtime.get_energy_hit_passive_id()
+func get_energy_full_fire_passive_id() -> StringName:
+	var branch_passive_id := branch_runtime.get_energy_full_fire_passive_id()
 	if branch_passive_id != StringName():
 		return branch_passive_id
-	return &"energy_hit_cycle_triggered"
+	return &"energy_full_fire_triggered"
 
-func get_energy_hit_display_name() -> String:
-	var branch_display_name := branch_runtime.get_energy_hit_display_name()
+func get_energy_full_fire_display_name() -> String:
+	var branch_display_name := branch_runtime.get_energy_full_fire_display_name()
 	if not branch_display_name.is_empty():
 		return branch_display_name
-	return "Energy Discharge"
+	return "Full-Energy Release"
 
-func get_energy_hit_pulse_status() -> Dictionary:
-	return energy_hit_runtime.get_status(get_energy_hit_passive_id(), get_energy_hit_display_name())
-
-func get_energy_hit_pulse_count() -> int:
-	return int(energy_hit_runtime.current_hits)
-
-func _execute_energy_hit_discharge(target: Node, data: DamageData, result: DamageResult) -> Dictionary:
+func get_energy_full_fire_status() -> Dictionary:
+	var player := _resolve_energy_pool_player()
+	var current := 0.0
+	var maximum := 100.0
+	if player != null and is_instance_valid(player):
+		if player.has_method("get_global_weapon_energy"):
+			current = maxf(float(player.call("get_global_weapon_energy")), 0.0)
+		if player.has_method("get_global_weapon_energy_max"):
+			maximum = maxf(float(player.call("get_global_weapon_energy_max")), 1.0)
+	var ratio := clampf(current / maximum, 0.0, 1.0)
+	var ready := current >= maximum - 0.001
 	return {
-		"effects": branch_runtime.notify_branch_energy_hit_cycle_triggered(target, data, result),
+		"id": str(get_energy_full_fire_passive_id()),
+		"display_name": get_energy_full_fire_display_name(),
+		"state": "ready_pending_action" if ready else "charging",
+		"progress": ratio,
+		"progress_role": "global_energy",
+		"current": current,
+		"required": maximum,
+		"ready": ready,
+		"condition_visible": true,
+		"condition_progress": ratio,
+		"condition_thresholds": [],
+		"trigger_hint": "fire_at_full_global_energy",
+		"refresh_hint": "automatic_after_full_energy_attack",
+		"charge_based": false,
+		"energy_full_fire_cycle": true,
 	}
+
+func prepare_energy_release_attack() -> Dictionary:
+	_energy_attack_sequence += 1
+	_active_energy_attack_group_id = StringName("%d:%d" % [get_instance_id(), _energy_attack_sequence])
+	_energy_release_attack_active = false
+	_energy_release_damage_multiplier = 1.0
+	_energy_release_spent = 0.0
+	if not has_weapon_trait(WeaponTrait.ENERGY):
+		return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
+	var player := _resolve_energy_pool_player()
+	if player == null or not is_instance_valid(player) or not player.has_method("consume_all_global_weapon_energy"):
+		return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
+	var max_energy := 1.0
+	if player.has_method("get_global_weapon_energy_max"):
+		max_energy = maxf(float(player.call("get_global_weapon_energy_max")), 1.0)
+	var current_energy := 0.0
+	if player.has_method("get_global_weapon_energy"):
+		current_energy = maxf(float(player.call("get_global_weapon_energy")), 0.0)
+	if current_energy < max_energy - 0.001:
+		return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
+	_energy_release_spent = maxf(float(player.call("consume_all_global_weapon_energy")), 0.0)
+	if _energy_release_spent > 0.0:
+		var release_ratio := clampf(_energy_release_spent / max_energy, 0.0, 1.0)
+		_energy_release_damage_multiplier = 1.0 + release_ratio * get_energy_release_bonus_at_full()
+		_energy_release_attack_active = true
+		emit_passive_trigger(&"global_energy_release_attack", {
+			"trigger": "full_energy_attack_fired",
+			"energy_spent": _energy_release_spent,
+			"damage_multiplier": _energy_release_damage_multiplier,
+		}, PASSIVE_SCOPE_GLOBAL)
+	return {
+		"triggered": _energy_release_attack_active,
+		"spent": _energy_release_spent,
+		"multiplier": _energy_release_damage_multiplier,
+	}
+
+func finish_energy_release_attack() -> void:
+	_energy_release_attack_active = false
+	_energy_release_damage_multiplier = 1.0
+	_energy_release_spent = 0.0
+	_active_energy_attack_group_id = StringName()
+
+func apply_energy_release_marker(attack_node: Node) -> void:
+	if attack_node == null or not is_instance_valid(attack_node):
+		return
+	if _active_energy_attack_group_id != StringName():
+		attack_node.set_meta(ENERGY_ATTACK_GROUP_META, _active_energy_attack_group_id)
+	else:
+		attack_node.remove_meta(ENERGY_ATTACK_GROUP_META)
+	if not _energy_release_attack_active:
+		attack_node.remove_meta(ENERGY_RELEASE_ATTACK_META)
+		attack_node.remove_meta(ENERGY_RELEASE_SPENT_META)
+		attack_node.remove_meta(ENERGY_RELEASE_MULTIPLIER_META)
+		return
+	attack_node.set_meta(ENERGY_RELEASE_ATTACK_META, true)
+	attack_node.set_meta(ENERGY_RELEASE_SPENT_META, _energy_release_spent)
+	attack_node.set_meta(ENERGY_RELEASE_MULTIPLIER_META, _energy_release_damage_multiplier)
+
+func get_energy_gain_per_damage_event() -> float:
+	var branch_value := branch_runtime.get_energy_gain_per_damage_event()
+	if branch_value >= 0.0:
+		return branch_value
+	return 6.0
+
+func get_energy_release_bonus_at_full() -> float:
+	var branch_value := branch_runtime.get_energy_release_bonus_at_full()
+	if branch_value >= 0.0:
+		return branch_value
+	return 0.75
+
+func _is_energy_release_source(source_node: Node) -> bool:
+	return source_node != null and is_instance_valid(source_node) \
+		and bool(source_node.get_meta(ENERGY_RELEASE_ATTACK_META, false))
+
+func _resolve_energy_pool_player() -> Node:
+	if _energy_pool_owner != null and is_instance_valid(_energy_pool_owner):
+		return _energy_pool_owner
+	var resolved := DamageManager.resolve_source_player(self)
+	if resolved != null and is_instance_valid(resolved):
+		_energy_pool_owner = resolved
+		return resolved
+	if PlayerData.player != null and is_instance_valid(PlayerData.player) \
+			and PlayerData.player.has_method("consume_all_global_weapon_energy"):
+		_energy_pool_owner = PlayerData.player
+		return PlayerData.player
+	return null
 
 func notify_main_weapon_fired() -> void:
 	if not is_main_weapon():
@@ -526,6 +656,21 @@ func register_shot_heat(multiplier: float = 1.0) -> void:
 func get_heat_ratio() -> float:
 	return heat_runtime.get_heat_ratio()
 
+func get_signed_heat_ratio() -> float:
+	return heat_runtime.get_signed_heat_ratio()
+
+func get_heat_gauge_ratio() -> float:
+	return heat_runtime.get_heat_gauge_ratio()
+
+func get_fire_alignment() -> float:
+	return heat_runtime.get_fire_alignment()
+
+func get_freeze_alignment() -> float:
+	return heat_runtime.get_freeze_alignment()
+
+func get_heat_zone() -> StringName:
+	return heat_runtime.get_heat_zone()
+
 func get_heat_value() -> float:
 	return heat_runtime.get_heat_value()
 
@@ -541,6 +686,18 @@ func is_weapon_overheated() -> bool:
 func lock_heat_value(value: float, duration_sec: float) -> void:
 	heat_runtime.lock_heat_value(value, duration_sec)
 
+func apply_heat_snapshot_marker(attack_node: Node) -> void:
+	if attack_node == null or not is_instance_valid(attack_node):
+		return
+	var amplifier := 1.0
+	if PlayerData.player != null and is_instance_valid(PlayerData.player) \
+			and PlayerData.player.has_method("get_heat_alignment_amplifier"):
+		amplifier = maxf(float(PlayerData.player.call("get_heat_alignment_amplifier")), 1.0)
+	attack_node.set_meta(HEAT_SNAPSHOT_META, {
+		"signed_ratio": get_signed_heat_ratio(),
+		"alignment_amplifier": amplifier,
+	})
+
 func get_combat_resource_slots() -> Array[Dictionary]:
 	var slots: Array[Dictionary] = []
 	if has_heat_system():
@@ -551,34 +708,33 @@ func get_combat_resource_slots() -> Array[Dictionary]:
 	return slots
 
 func _build_heat_resource_slot() -> Dictionary:
-	var heat_max := maxf(get_heat_max_value(), 0.0)
-	if heat_max <= 0.0:
-		return {}
-	var heat_value := maxf(get_heat_value(), 0.0)
-	var ratio := clampf(heat_value / heat_max, 0.0, 1.0)
-	var percent := int(round(ratio * 100.0))
-	var overheated := is_weapon_overheated()
-	var state := &"normal"
+	var heat_max := Heat.MAX_HEAT
+	var heat_value := clampf(get_heat_value(), Heat.MIN_HEAT, Heat.MAX_HEAT)
+	var ratio := get_heat_gauge_ratio()
+	var signed_percent := int(round(heat_value))
+	var zone := get_heat_zone()
+	var state := zone
 	var priority := 40
-	var short_text := ""
-	if overheated:
-		state = &"locked"
-		priority = 100
-		short_text = "LOCK"
-	elif ratio >= 0.8:
-		state = &"warning"
+	if absf(heat_value) >= 90.0:
 		priority = 80
-		short_text = "%d%%" % percent
+	var short_text := "%+d" % signed_percent
 	return {
 		"id": "%s_heat" % str(get_instance_id()),
 		"type": &"heat",
 		"display_name": "Heat",
 		"current": heat_value,
 		"max": heat_max,
+		"min": Heat.MIN_HEAT,
 		"ratio": ratio,
+		"signed_ratio": get_signed_heat_ratio(),
 		"state": state,
 		"short_text": short_text,
-		"tooltip": "Heat: %d/%d (%d%%)%s" % [int(round(heat_value)), int(round(heat_max)), percent, " (OVERHEAT)" if overheated else ""],
+		"tooltip": "Heat: %+d  |  %s  |  Fire %.0f%% / Freeze %.0f%%" % [
+			signed_percent,
+			str(zone).replace("_", " ").capitalize(),
+			get_fire_alignment() * 100.0,
+			get_freeze_alignment() * 100.0,
+		],
 		"priority": priority,
 		"visibility": "active_weapon",
 	}
@@ -664,7 +820,10 @@ func get_runtime_stat_value(stat_name: String, base_value: float) -> float:
 	return stat_pipeline.get_runtime_stat_value(stat_name, base_value)
 
 func get_runtime_damage_value(base_damage_value: float) -> int:
-	return stat_pipeline.get_runtime_damage_value(base_damage_value)
+	var runtime_damage := float(stat_pipeline.get_runtime_damage_value(base_damage_value))
+	if _energy_release_attack_active:
+		runtime_damage *= maxf(_energy_release_damage_multiplier, 1.0)
+	return maxi(1, int(round(runtime_damage)))
 
 func get_effective_magazine_capacity() -> int:
 	return maxi(1, int(round(get_runtime_stat_value("magazine_capacity", float(magazine_capacity)))))
@@ -751,7 +910,7 @@ func _on_tree_exited() -> void:
 	branch_runtime.clear_for_weapon_exit()
 	heat_runtime.clear_for_weapon_exit()
 	stat_pipeline.clear_for_weapon_exit()
-	energy_hit_runtime.clear()
+	_energy_pool_owner = null
 #endregion
 
 #region Weapon Role And Input
@@ -783,7 +942,7 @@ func _on_enter_offhand_weapon_role() -> void:
 	pass
 
 func clear_timed_effects_for_prepare() -> void:
-	energy_hit_runtime.clear()
+	finish_energy_release_attack()
 	for module_node in get_equipped_modules():
 		if module_node == null or not is_instance_valid(module_node):
 			continue

@@ -2,7 +2,7 @@ extends WeaponBranchBehavior
 class_name ShotgunShatterBranch
 
 func get_added_weapon_traits() -> Array[StringName]:
-	return [WeaponTrait.FREEZE]
+	return [WeaponTrait.FREEZE, WeaponTrait.HEAT]
 
 func get_suppressed_weapon_traits() -> Array[StringName]:
 	return [WeaponTrait.PHYSICAL]

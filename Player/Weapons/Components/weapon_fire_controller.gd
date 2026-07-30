@@ -35,7 +35,11 @@ func request_primary_fire() -> bool:
 	var cooldown_timer := get_cooldown_timer()
 	if cooldown_timer:
 		cooldown_timer.wait_time = maxf(get_effective_cooldown(float(weapon.get("attack_cooldown"))), 0.01)
+	if weapon.has_method("prepare_energy_release_attack"):
+		weapon.call("prepare_energy_release_attack")
 	weapon.emit_signal("shoot")
+	if weapon.has_method("finish_energy_release_attack"):
+		weapon.call("finish_energy_release_attack")
 	if weapon.has_method("play_fire_feedback"):
 		weapon.call("play_fire_feedback")
 	if weapon.has_method("notify_main_weapon_fired"):

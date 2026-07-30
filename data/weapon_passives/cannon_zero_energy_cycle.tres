@@ -6,8 +6,8 @@
 script = ExtResource("1_script")
 passive_id = "cannon_zero_energy_cycle"
 display_name = "Zero Burst"
-description = "Energy cycle. Every valid hit fills one of 5 pulse cells; the fifth hit consumes the struck target's recorded energy damage and detonates 20% of it as bonus energy damage."
-condition_type = "valid_energy_hit_count"
-refresh_type = "automatic_after_discharge"
+description = "Release energy cycle. Each valid damage event grants 10 global energy. If the pool is full before firing, the cannon consumes it for +150% damage."
+condition_type = "global_energy_full_before_fire"
+refresh_type = "automatic_after_full_energy_attack"
 ui_mode = "progress"
 hud_mode = "bean_with_condition"

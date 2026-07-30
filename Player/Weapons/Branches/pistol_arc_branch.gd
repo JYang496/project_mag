@@ -1,15 +1,17 @@
 extends WeaponBranchBehavior
 class_name PistolArcBranch
 
-const GroundConnectionEffectType := preload("res://Visual/Oblique/ground_connection_effect_2d.gd")
-
 func get_added_weapon_traits() -> Array[StringName]:
 	return [WeaponTrait.ENERGY]
 
-@export var chain_count: int = 2
-@export var chain_radius: float = 240.0
-@export var chain_damage_ratio_1: float = 0.65
-@export var chain_damage_ratio_2: float = 0.40
+func get_damage_type_override() -> StringName:
+	return Attack.TYPE_ENERGY
+
+func get_energy_gain_per_damage_event() -> float:
+	return 12.0
+
+func get_energy_release_bonus_at_full() -> float:
+	return 0.35
 
 @export var trail_color: Color = Color(0.55, 0.75, 1.0, 0.9)
 @export var trail_width: float = 2.5
@@ -26,66 +28,8 @@ func get_projectile_trail_config() -> Dictionary:
 		"trail_fade_sec": maxf(trail_fade_sec, 0.05),
 	}
 
-func get_energy_hit_passive_id() -> StringName:
+func get_energy_full_fire_passive_id() -> StringName:
 	return &"pistol_arc_energy_cycle"
 
-func get_energy_hit_display_name() -> String:
+func get_energy_full_fire_display_name() -> String:
 	return "Arc Discharge"
-
-func on_energy_hit_cycle_triggered(target: Node, _data: DamageData, _result: DamageResult) -> Dictionary:
-	if weapon == null or not is_instance_valid(weapon):
-		return {}
-	if target == null or not is_instance_valid(target):
-		return {}
-	if not target.is_in_group("enemies"):
-		return {}
-	var center := target as Node2D
-	if center == null:
-		return {}
-
-	var ratios := [chain_damage_ratio_1, chain_damage_ratio_2]
-	var candidates: Array[Node2D] = []
-	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(weapon.get_tree(), center.global_position, maxf(chain_radius, 1.0)):
-		var enemy := enemy_ref as Node2D
-		if enemy == null or enemy == center:
-			continue
-		if not is_instance_valid(enemy):
-			continue
-		candidates.append(enemy)
-
-	candidates.sort_custom(func(a: Node2D, b: Node2D) -> bool:
-		return a.global_position.distance_to(center.global_position) < b.global_position.distance_to(center.global_position)
-	)
-
-	var runtime_damage := 1
-	if weapon.has_method("get_runtime_shot_damage"):
-		runtime_damage = max(1, int(weapon.call("get_runtime_shot_damage")))
-	var hops := mini(max(0, chain_count), candidates.size())
-	for i in range(hops):
-		var ratio: float = ratios[min(i, ratios.size() - 1)] if not ratios.is_empty() else 0.5
-		var chain_damage: int = max(1, int(round(float(runtime_damage) * maxf(ratio, 0.05))))
-		var chain_data := DamageManager.build_damage_data(
-			weapon,
-			chain_damage,
-			Attack.TYPE_ENERGY,
-			{"amount": 0, "angle": Vector2.ZERO},
-			DamageData.SOURCE_PLAYER_WEAPON,
-			DamageDeliveryType.BEAM
-		)
-		chain_data.suppress_reactive_effects = true
-		if DamageManager.apply_to_target(candidates[i], chain_data):
-			_spawn_arc_visual(center.global_position, candidates[i].global_position)
-			var owner_player := chain_data.source_player as Player
-			if owner_player and is_instance_valid(owner_player):
-				owner_player.apply_bonus_hit_if_needed(candidates[i])
-	return {
-		"effect": "arc_chain",
-		"chain_targets": hops,
-	}
-
-func _spawn_arc_visual(start: Vector2, end: Vector2) -> void:
-	if weapon == null or not is_instance_valid(weapon) or not weapon.is_inside_tree():
-		return
-	var visual := GroundConnectionEffectType.new()
-	visual.configure(start, end, trail_color, trail_width, trail_fade_sec)
-	weapon.get_tree().root.add_child(visual)

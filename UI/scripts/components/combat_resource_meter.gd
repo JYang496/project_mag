@@ -30,6 +30,9 @@ const RELOAD_FILL := Color(0.60, 0.66, 1.0, 1.0)
 const HEAT_FILL := Color(0.94, 0.58, 0.20, 0.96)
 const HEAT_EDGE := Color(1.0, 0.76, 0.34, 1.0)
 const HEAT_HIGH_FILL := Color(1.0, 0.34, 0.18, 1.0)
+const COLD_FILL := Color(0.30, 0.72, 1.0, 0.96)
+const DEEP_COLD_FILL := Color(0.52, 0.90, 1.0, 1.0)
+const NEUTRAL_HEAT_FILL := Color(0.72, 0.76, 0.80, 0.96)
 const LOCKED_FILL := Color(1.0, 0.16, 0.12, 1.0)
 const CHARGE_FILL := Color(0.58, 0.86, 1.0, 0.98)
 const CHARGE_EDGE := Color(0.86, 0.96, 1.0, 1.0)
@@ -90,7 +93,7 @@ func _process(delta: float) -> void:
 	if not is_equal_approx(previous_display, _display_ratio):
 		_update_heat_gauge()
 		queue_redraw()
-	if _state == &"warning" or _state == &"locked" or _state == &"reloading" or _state == &"charging" or _state == &"cooling":
+	if _state == &"extreme_heat" or _state == &"extreme_cold" or _state == &"warning" or _state == &"locked" or _state == &"reloading" or _state == &"charging" or _state == &"cooling":
 		_pulse_time += safe_delta
 		queue_redraw()
 
@@ -254,19 +257,30 @@ func _update_heat_gauge() -> void:
 	_heat_needle.visible = is_heat
 	if is_heat:
 		_heat_needle.rotation = deg_to_rad(lerpf(HEAT_NEEDLE_MIN_DEGREES, HEAT_NEEDLE_MAX_DEGREES, _display_ratio))
+		var tint := _heat_polarity_color()
+		_heat_gauge.modulate = Color(tint.r, tint.g, tint.b, heat_gauge_opacity)
+		_heat_needle.modulate = Color(tint.r, tint.g, tint.b, heat_gauge_opacity)
 
 func _update_status_label() -> void:
 	if _status_label == null or not is_instance_valid(_status_label):
 		return
 	_status_label.text = _short_text
-	_status_label.visible = _mode != MODE_HEAT and _short_text != ""
+	if _mode == MODE_HEAT:
+		_status_label.position = Vector2(50.0, 124.0)
+		_status_label.size = Vector2(52.0, 20.0)
+		_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	else:
+		_status_label.position = LABEL_OFFSET
+		_status_label.size = LABEL_SIZE
+		_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_status_label.visible = _short_text != ""
 	_status_label.add_theme_color_override("font_color", _edge_color())
 
 func _fill_color() -> Color:
 	if _state == &"locked":
 		return LOCKED_FILL
 	if _mode == MODE_HEAT:
-		return HEAT_HIGH_FILL if _state == &"warning" else HEAT_FILL
+		return _heat_polarity_color()
 	if _mode == MODE_CHARGE:
 		return CHARGE_FILL
 	if _mode == MODE_ENERGY:
@@ -285,7 +299,7 @@ func _edge_color() -> Color:
 	if _state == &"locked":
 		return LOCKED_FILL
 	if _mode == MODE_HEAT:
-		return HEAT_HIGH_FILL if _state == &"warning" else HEAT_EDGE
+		return _heat_polarity_color()
 	if _mode == MODE_CHARGE:
 		return CHARGE_EDGE
 	if _mode == MODE_ENERGY:
@@ -300,7 +314,18 @@ func _edge_color() -> Color:
 		return AMMO_LOW_FILL
 	return AMMO_EDGE
 
+func _heat_polarity_color() -> Color:
+	if _display_ratio < 0.20:
+		return DEEP_COLD_FILL
+	if _display_ratio < 0.50:
+		return COLD_FILL
+	if _display_ratio > 0.80:
+		return HEAT_HIGH_FILL
+	if _display_ratio > 0.50:
+		return HEAT_FILL
+	return NEUTRAL_HEAT_FILL
+
 func _pulse_strength() -> float:
-	if not (_state == &"warning" or _state == &"locked" or _state == &"reloading" or _state == &"charging" or _state == &"cooling"):
+	if not (_state == &"extreme_heat" or _state == &"extreme_cold" or _state == &"warning" or _state == &"locked" or _state == &"reloading" or _state == &"charging" or _state == &"cooling"):
 		return 0.0
 	return (sin(_pulse_time * 6.0) + 1.0) * 0.35

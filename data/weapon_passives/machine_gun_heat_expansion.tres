@@ -5,8 +5,8 @@
 [resource]
 script = ExtResource("1_script")
 passive_id = "machine_gun_heat_expansion"
-display_name = "Heat Expansion"
-description = "Each 25% of a magazine spent restores 1 of 4 charges. Reload consumes all stored charges; final heat-capacity multiplier equals consumed charges times the single-charge multiplier."
+display_name = "Thermal Amplification"
+description = "Each 25% of a magazine spent restores 1 of 4 charges. Reload consumes all stored charges and temporarily amplifies elemental alignment without changing the fixed -100 to 100 Heat bounds."
 condition_type = "ammo_spent"
 refresh_type = "ammo_spent_25_percent"
 ui_mode = "progress"

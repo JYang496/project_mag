@@ -152,19 +152,20 @@ func on_beam_hit_target(target: Node, beam_profile: Dictionary = {}, hit_damage:
 	for behavior in branch_runtime.get_branch_behaviors():
 		behavior.on_charged_beam_hit(target, beam_profile, hit_damage)
 
-func get_energy_hit_passive_id() -> StringName:
+func get_energy_full_fire_passive_id() -> StringName:
 	return &"charged_blaster_multi_hit_triggered"
 
-func get_energy_hit_display_name() -> String:
+func get_energy_full_fire_display_name() -> String:
 	return "Beam Resonance"
 
-func _execute_energy_hit_discharge(target: Node, data: DamageData, result: DamageResult) -> Dictionary:
-	var detail := super._execute_energy_hit_discharge(target, data, result)
-	detail["effect"] = "beam_resonance"
-	return detail
+func get_energy_gain_per_damage_event() -> float:
+	return 3.0
+
+func get_energy_release_bonus_at_full() -> float:
+	return 1.25
 
 func get_passive_status() -> Dictionary:
-	return get_energy_hit_pulse_status()
+	return get_energy_full_fire_status()
 
 func get_passive_max_charges() -> int:
 	return 3
@@ -240,6 +241,7 @@ func _spawn_beam_from_profile(profile: Dictionary) -> float:
 	beam_blast_ins.duration = beam_duration
 	beam_blast_ins.hit_cd = beam_hit_cd
 	beam_blast_ins.source_weapon = self
+	apply_energy_release_marker(beam_blast_ins)
 	beam_blast_ins.beam_profile = profile.duplicate(true)
 	beam_blast_ins.target_lock_mode = StringName(str(profile.get("target_lock_mode", "none")))
 	beam_blast_ins.target_lock_release_multiplier = maxf(float(profile.get("target_lock_release_multiplier", 1.8)), 1.0)

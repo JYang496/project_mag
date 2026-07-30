@@ -114,10 +114,10 @@ func remove_loot_bonus(source_id: StringName) -> void:
 	if _loot_bonus_modifiers.has(source_id):
 		_loot_bonus_modifiers.erase(source_id)
 
-func compute_outgoing_damage(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL) -> int:
-	return compute_outgoing_damage_result(base_damage, damage_type).damage
+func compute_outgoing_damage(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null) -> int:
+	return compute_outgoing_damage_result(base_damage, damage_type, heat_snapshot).damage
 
-func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL):
+func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null):
 	var total_mul_delta := 0.0
 	for mul in _damage_mul_modifiers.values():
 		total_mul_delta += (float(mul) - 1.0)
@@ -128,6 +128,12 @@ func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = 
 			and _player.has_method("get_heat_prepared_fire_damage_multiplier"):
 		total_mul_delta += maxf(
 			float(_player.call("get_heat_prepared_fire_damage_multiplier")),
+			0.0
+		) - 1.0
+	if _player != null and is_instance_valid(_player) \
+			and _player.has_method("get_elemental_heat_damage_multiplier"):
+		total_mul_delta += maxf(
+			float(_player.call("get_elemental_heat_damage_multiplier", damage_type, heat_snapshot)),
 			0.0
 		) - 1.0
 	var final_mul := maxf(0.0, 1.0 + total_mul_delta)

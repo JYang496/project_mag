@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "arc_coil"
 display_name = "Arc Coil"
-description = "Energy cycle branch. Valid hits fill a 5-cell pulse; the fifth hit chains energy damage to nearby enemies with falloff."
+description = "Energy accumulator branch. Shots become Energy damage and grant 12 global energy per damage event; firing at full energy grants +35% damage."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

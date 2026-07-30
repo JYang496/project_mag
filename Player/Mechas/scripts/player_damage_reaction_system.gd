@@ -42,6 +42,8 @@ func damaged(attack: Attack) -> DamageResult:
 	if _player.PlayerData.testing_keep_hp_above_zero and _player.PlayerData.player_hp <= 0:
 		_player.PlayerData.player_hp = 1
 	if _player.PlayerData.player_hp <= 0:
+		if _player.has_method("clear_global_weapon_energy"):
+			_player.call("clear_global_weapon_energy")
 		PhaseManager.enter_gameover()
 		return result
 	return result

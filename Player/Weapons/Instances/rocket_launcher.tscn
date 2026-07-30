@@ -13,7 +13,7 @@ configured_attack_range = 800.0
 delivery_type_flags = 9
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 5
+weapon_traits = 21
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("3_6v0md")

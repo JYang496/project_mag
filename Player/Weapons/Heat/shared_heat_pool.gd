@@ -4,8 +4,7 @@ class_name SharedHeatPool
 var contributor_count: int = 0
 var heat_gain_multiplier_provider: Callable = Callable()
 
-func configure_from_weapons(weapons: Array, max_heat_multiplier: float = 1.0) -> void:
-	var total_max_heat: float = 0.0
+func configure_from_weapons(weapons: Array, _max_heat_multiplier: float = 1.0) -> void:
 	var total_cooldown_rate: float = 0.0
 	var contributors: int = 0
 	for weapon in weapons:
@@ -19,16 +18,14 @@ func configure_from_weapons(weapons: Array, max_heat_multiplier: float = 1.0) ->
 		if not contributes:
 			continue
 		contributors += 1
-		if weapon.get("heat_max_value") != null:
-			total_max_heat += maxf(float(weapon.get("heat_max_value")), 0.0)
 		if weapon.get("heat_cool_rate") != null:
 			total_cooldown_rate += maxf(float(weapon.get("heat_cool_rate")), 0.0)
 	contributor_count = contributors
 	if contributor_count <= 0:
 		_clear_state()
 		return
-	var effective_max_heat := maxf(total_max_heat, 1.0) * maxf(max_heat_multiplier, 0.01)
-	configure(1.0, effective_max_heat, maxf(total_cooldown_rate, 0.0))
+	# max_heat_multiplier is intentionally ignored: the global axis is always -100..100.
+	configure(1.0, MAX_HEAT, maxf(total_cooldown_rate / float(contributor_count), 0.0))
 
 func has_contributors() -> bool:
 	return contributor_count > 0
@@ -39,14 +36,10 @@ func add_heat_amount(amount: float) -> void:
 	var multiplier := 1.0
 	if heat_gain_multiplier_provider.is_valid():
 		multiplier = maxf(float(heat_gain_multiplier_provider.call()), 0.0)
-	var added: float = maxf(amount, 0.0) * multiplier
-	heat_value = clampf(heat_value + added, 0.0, max_heat)
-	overheated = false
+	super.add_heat_amount(amount * multiplier)
 
 func _clear_state() -> void:
-	heat_value = 0.0
-	max_heat = 0.0
+	reset_to_neutral()
+	max_heat = MAX_HEAT
 	cooldown_rate = 0.0
 	overheated = false
-	_lock_remaining_sec = 0.0
-	_locked_value = 0.0

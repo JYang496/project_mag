@@ -7,7 +7,7 @@
 script = ExtResource("4_script")
 branch_id = "zero_cannon_branch"
 display_name = "Zero Cannon"
-description = "Energy cycle branch. The fifth valid hit consumes the target's recorded energy damage and detonates part of it as bonus damage."
+description = "Energy release branch. Each damage event grants 10 global energy; firing at full energy consumes the pool for +150% damage."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

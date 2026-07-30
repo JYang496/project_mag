@@ -37,6 +37,10 @@ func apply_effects_on_projectile(projectile: Node2D) -> void:
 func bind_source_weapon(projectile: Node2D) -> void:
 	if projectile is Projectile:
 		(projectile as Projectile).source_weapon = weapon
+	if weapon != null and weapon.has_method("apply_energy_release_marker"):
+		weapon.call("apply_energy_release_marker", projectile)
+	if weapon != null and weapon.has_method("apply_heat_snapshot_marker"):
+		weapon.call("apply_heat_snapshot_marker", projectile)
 
 func apply_base_movement(projectile: Node2D) -> void:
 	var projectile_direction: Variant = weapon.get("projectile_direction")

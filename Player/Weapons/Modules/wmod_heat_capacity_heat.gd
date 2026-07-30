@@ -1,9 +1,9 @@
 extends Module
-# Use on HEAT weapons to raise the capped heat resource capacity.
+# Stabilizes the current polarity without changing the fixed -100..100 bounds.
 
-var ITEM_NAME := "Heat Capacity"
+var ITEM_NAME := "Thermal Inertia"
 
-@export var capacity_mult: float = 1.5
+@export var opposition_resistance: float = 0.25
 
 func configure_stat_modifiers() -> void:
-	stat_multipliers["heat_max_value"] = capacity_mult
+	stat_additives["heat_opposition_resistance"] = opposition_resistance

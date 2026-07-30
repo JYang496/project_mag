@@ -6,8 +6,8 @@
 script = ExtResource("1_script")
 passive_id = "charged_blaster_multi_hit_triggered"
 display_name = "Beam Resonance"
-description = "Energy cycle. Every valid beam hit fills one of 5 pulse cells; hitting several targets in one sweep advances the cycle once per target, and the fifth hit triggers Beam Resonance."
-condition_type = "valid_energy_hit_count"
-refresh_type = "automatic_after_discharge"
+description = "Release energy cycle. Each valid beam damage event grants 3 global energy. If the pool is full before firing, the beam consumes it for +125% damage."
+condition_type = "global_energy_full_before_fire"
+refresh_type = "automatic_after_full_energy_attack"
 ui_mode = "progress"
 hud_mode = "bean_with_condition"

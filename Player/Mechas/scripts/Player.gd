@@ -6,6 +6,7 @@ const PLAYER_ASSIST_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player
 const PLAYER_ACTIVE_SKILL_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_active_skill_runtime.gd")
 const PLAYER_WEAPON_INVENTORY_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_inventory_runtime.gd")
 const PLAYER_WEAPON_PASSIVE_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_passive_runtime.gd")
+const PLAYER_GLOBAL_WEAPON_ENERGY_POOL_SCRIPT := preload("res://Player/Mechas/scripts/player_global_weapon_energy_pool.gd")
 const MovementFrameInputType := preload("res://Player/Mechas/scripts/movement_frame_input.gd")
 const MovementFrameResultType := preload("res://Player/Mechas/scripts/movement_frame_result.gd")
 const PlayerCameraConfigType := preload("res://Player/Mechas/scripts/player_camera_config.gd")
@@ -58,7 +59,8 @@ const FROST_SLOW_PER_STACK: float = 0.04
 const FROST_STACK_INTERVAL_SEC: float = 0.6
 const FROST_MAX_STACKS: int = 5
 const FROST_MOVE_SPEED_SOURCE: StringName = &"incoming_frost"
-const HEAT_EXPANSION_END_CLAMP_RATIO: float = 0.8
+const ELEMENTAL_HEAT_DAMAGE_BONUS_AT_FULL: float = 0.30
+const ELEMENTAL_HEAT_CURVE_EXPONENT: float = 1.5
 const ENERGY_MARK_RATIO: float = 0.10
 const ENERGY_MARK_DURATION_SEC: float = 6.0
 const ENERGY_MARK_MAX_HP_RATIO: float = 0.40
@@ -126,6 +128,9 @@ const PixelArtPolicyType := preload("res://Visual/pixel_art_policy.gd")
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 @export var player_max_energy: float = 100.0
 @export var player_energy_regen_per_sec: float = 10.0
+@export var global_weapon_energy_max: float = 100.0
+@export_range(0.0, 1.0, 0.01) var global_weapon_energy_attack_gain_cap_ratio: float = 0.50
+@export_range(0.0, 10.0, 0.01) var global_weapon_energy_second_gain_cap_ratio: float = 0.75
 @export var debug_weapon_passive_trigger_prints: bool = false
 @export var debug_weapon_passive_trigger_event_prints: bool = false
 var _last_phase: String = ""
@@ -160,6 +165,7 @@ var _movement_frame_result: MovementFrameResultType
 var _camera_system: PlayerCameraSystem
 var _camera_config
 var _shared_heat_system: PlayerSharedHeatSystem
+var _global_weapon_energy_pool
 var _loot_system: PlayerLootSystem
 var _damage_reaction_system: PlayerDamageReactionSystem
 var _active_skill_runtime: RefCounted
@@ -216,6 +222,7 @@ func _ready():
 	_incoming_damage_pipeline = DamagePipeline.new() as DamagePipeline
 	_setup_incoming_damage_profile()
 	_ensure_active_skill_runtime()
+	_ensure_global_weapon_energy_pool()
 	_setup_default_active_skill()
 	_ensure_input_actions()
 	LoadingPerformance.end_segment("player_ready_runtime_core")
@@ -813,6 +820,22 @@ func get_heat_prepared_fire_damage_multiplier() -> float:
 	var stack_count := get_heat_prepared_stack_count()
 	return 1.0 + float(stack_count) * _heat_prepared_fire_damage_bonus_per_stack
 
+func get_elemental_heat_damage_multiplier(damage_type: StringName, heat_snapshot: Variant = null) -> float:
+	var normalized := Attack.normalize_damage_type(damage_type)
+	if normalized != Attack.TYPE_FIRE and normalized != Attack.TYPE_FREEZE:
+		return 1.0
+	var signed_ratio := get_signed_heat_ratio()
+	var alignment_amplifier := get_heat_alignment_amplifier()
+	if heat_snapshot != null:
+		if heat_snapshot is Dictionary:
+			signed_ratio = clampf(float(heat_snapshot.get("signed_ratio", signed_ratio)), -1.0, 1.0)
+			alignment_amplifier = maxf(float(heat_snapshot.get("alignment_amplifier", alignment_amplifier)), 1.0)
+		else:
+			signed_ratio = clampf(float(heat_snapshot), -1.0, 1.0)
+	var alignment := maxf(signed_ratio, 0.0) if normalized == Attack.TYPE_FIRE else maxf(-signed_ratio, 0.0)
+	alignment = clampf(alignment * alignment_amplifier, 0.0, 1.0)
+	return 1.0 + ELEMENTAL_HEAT_DAMAGE_BONUS_AT_FULL * pow(alignment, ELEMENTAL_HEAT_CURVE_EXPONENT)
+
 func consume_heat_prepared() -> bool:
 	_update_heat_statuses()
 	if not has_heat_prepared():
@@ -825,11 +848,10 @@ func apply_heat_expansion(duration_sec: float = 8.0, max_heat_mul: float = 2.0) 
 	var was_active := has_heat_expansion()
 	_heat_expansion_until_msec = Time.get_ticks_msec() + duration_msec
 	_heat_expansion_max_mul = maxf(max_heat_mul, 1.0)
-	_apply_heat_expansion_pool_multiplier(not was_active)
-	_clamp_heat_expansion_to_soft_cap()
-	_spawn_player_floating_hint("Heat Expansion")
+	_apply_heat_expansion_pool_multiplier()
+	_spawn_player_floating_hint("Thermal Amplification")
 	if debug_weapon_passive_trigger_prints:
-		print("[HeatStatus] Heat Expansion duration=", duration_sec, " max_heat_mul=", _heat_expansion_max_mul, " scaled_current_heat=", not was_active)
+		print("[HeatStatus] Thermal Amplification duration=", duration_sec, " alignment_amp=", _heat_expansion_max_mul)
 	return not was_active
 
 func has_heat_expansion() -> bool:
@@ -887,9 +909,7 @@ func consume_shared_heat(amount: float) -> float:
 		return 0.0
 	var available := maxf(float(pool.heat_value), 0.0)
 	var spent := minf(available, spend_amount)
-	pool.heat_value = maxf(0.0, available - spent)
-	if pool.heat_value < pool.max_heat:
-		pool.overheated = false
+	pool.set_heat(available - spent)
 	return spent
 
 func clear_heat_statuses() -> void:
@@ -909,11 +929,11 @@ func _update_heat_statuses() -> void:
 	if _plasma_lance_heat_feedback_until_msec > 0 and now_msec >= _plasma_lance_heat_feedback_until_msec:
 		_plasma_lance_heat_feedback_until_msec = 0
 
-func _apply_heat_expansion_pool_multiplier(scale_current_heat: bool) -> void:
+func _apply_heat_expansion_pool_multiplier() -> void:
 	_ensure_shared_heat_system()
 	if _shared_heat_system == null:
 		return
-	_shared_heat_system.set_heat_max_multiplier(_heat_expansion_max_mul, scale_current_heat, true)
+	_shared_heat_system.set_heat_alignment_amplifier(_heat_expansion_max_mul)
 
 func _end_heat_expansion(clear_heat_value: bool) -> void:
 	var had_expansion := _heat_expansion_until_msec > 0 or _heat_expansion_max_mul > 1.0
@@ -924,24 +944,9 @@ func _end_heat_expansion(clear_heat_value: bool) -> void:
 	_ensure_shared_heat_system()
 	if _shared_heat_system == null:
 		return
-	_shared_heat_system.set_heat_max_multiplier(1.0, false, true)
-	var pool := get_shared_heat_pool()
-	if pool == null:
-		return
+	_shared_heat_system.set_heat_alignment_amplifier(1.0)
 	if clear_heat_value:
-		pool.heat_value = 0.0
-		pool.overheated = false
-		return
-	_clamp_heat_expansion_to_soft_cap()
-
-func _clamp_heat_expansion_to_soft_cap() -> void:
-	var pool := get_shared_heat_pool()
-	if pool == null:
-		return
-	var cap := maxf(float(pool.max_heat) * HEAT_EXPANSION_END_CLAMP_RATIO, 0.0)
-	if float(pool.heat_value) > cap:
-		pool.heat_value = cap
-		pool.overheated = false
+		_shared_heat_system.reset_to_neutral()
 
 func _clear_heat_prepared() -> void:
 	if _heat_prepared_until_msec <= 0 and _heat_prepared_stack_count <= 0:
@@ -983,14 +988,14 @@ func remove_loot_bonus(source_id: StringName) -> void:
 	if _status_modifier_system != null:
 		_status_modifier_system.remove_loot_bonus(source_id)
 
-func compute_outgoing_damage(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL) -> int:
-	return compute_outgoing_damage_result(base_damage, damage_type).damage
+func compute_outgoing_damage(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null) -> int:
+	return compute_outgoing_damage_result(base_damage, damage_type, heat_snapshot).damage
 
-func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL):
+func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null):
 	_ensure_status_modifier_system()
 	if _status_modifier_system == null:
 		return OutgoingDamageResultType.new(base_damage, false)
-	return _status_modifier_system.compute_outgoing_damage_result(base_damage, damage_type)
+	return _status_modifier_system.compute_outgoing_damage_result(base_damage, damage_type, heat_snapshot)
 
 func apply_bonus_hit_if_needed(target: Node) -> void:
 	_ensure_status_modifier_system()
@@ -1659,6 +1664,7 @@ func _profile_on_death(_attack: Attack) -> void:
 		return
 	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
 		_status_hint_manager.clear_all()
+	clear_global_weapon_energy()
 	PhaseManager.enter_gameover()
 
 func _profile_on_trigger_invuln() -> void:
@@ -1728,6 +1734,7 @@ func _on_phase_changed(new_phase: String) -> void:
 	var previous_phase := _last_phase
 	_last_phase = new_phase
 	if new_phase == PhaseManager.BATTLE:
+		clear_global_weapon_energy()
 		_suppress_attack_until_released = Input.is_action_pressed("ATTACK")
 	else:
 		_suppress_attack_until_released = false
@@ -1736,7 +1743,9 @@ func _on_phase_changed(new_phase: String) -> void:
 		return
 	_camera_system.on_phase_changed()
 	if new_phase == PhaseManager.PREPARE:
+		clear_global_weapon_energy()
 		clear_timed_statuses_for_prepare()
+		reset_shared_heat_to_neutral()
 		_instant_reload_all_weapons()
 		_force_all_skills_ready()
 	_ensure_loot_system()
@@ -1997,6 +2006,40 @@ func get_total_heat_ratio() -> float:
 		return 0.0
 	return _shared_heat_system.get_total_heat_ratio()
 
+func get_signed_heat_ratio() -> float:
+	_ensure_shared_heat_system()
+	return _shared_heat_system.get_signed_heat_ratio() if _shared_heat_system != null else 0.0
+
+func get_heat_gauge_ratio() -> float:
+	_ensure_shared_heat_system()
+	return _shared_heat_system.get_heat_gauge_ratio() if _shared_heat_system != null else 0.5
+
+func get_fire_heat_alignment() -> float:
+	_ensure_shared_heat_system()
+	return _shared_heat_system.get_fire_alignment() if _shared_heat_system != null else 0.0
+
+func get_freeze_heat_alignment() -> float:
+	_ensure_shared_heat_system()
+	return _shared_heat_system.get_freeze_alignment() if _shared_heat_system != null else 0.0
+
+func get_heat_alignment_amplifier() -> float:
+	_ensure_shared_heat_system()
+	return _shared_heat_system.get_heat_alignment_amplifier() if _shared_heat_system != null else 1.0
+
+func add_shared_heat(amount: float) -> void:
+	_ensure_shared_heat_system()
+	if _shared_heat_system != null:
+		_shared_heat_system.add_heat(amount)
+
+func reset_shared_heat_to_neutral() -> void:
+	_ensure_shared_heat_system()
+	if _shared_heat_system != null:
+		_shared_heat_system.reset_to_neutral()
+
+func get_shared_heat_zone() -> StringName:
+	_ensure_shared_heat_system()
+	return _shared_heat_system.get_heat_zone() if _shared_heat_system != null else &"neutral"
+
 func get_selected_heat_decay_rate() -> float:
 	_ensure_shared_heat_system()
 	if _shared_heat_system == null:
@@ -2020,3 +2063,69 @@ func get_last_heat_decay_source_name() -> String:
 	if _shared_heat_system == null:
 		return "None"
 	return _shared_heat_system.get_last_heat_decay_source_name()
+
+
+func _ensure_global_weapon_energy_pool() -> void:
+	if _global_weapon_energy_pool == null:
+		_global_weapon_energy_pool = PLAYER_GLOBAL_WEAPON_ENERGY_POOL_SCRIPT.new()
+	if _global_weapon_energy_pool != null:
+		_global_weapon_energy_pool.configure(
+			maxf(global_weapon_energy_max, 1.0),
+			global_weapon_energy_attack_gain_cap_ratio,
+			global_weapon_energy_second_gain_cap_ratio
+		)
+
+
+func add_global_weapon_energy(raw_gain: float, source_attack: Node = null) -> float:
+	_ensure_global_weapon_energy_pool()
+	if _global_weapon_energy_pool == null:
+		return 0.0
+	return _global_weapon_energy_pool.add_from_damage(raw_gain, source_attack)
+
+
+func consume_all_global_weapon_energy() -> float:
+	_ensure_global_weapon_energy_pool()
+	if _global_weapon_energy_pool == null:
+		return 0.0
+	return _global_weapon_energy_pool.consume_all()
+
+
+func clear_global_weapon_energy() -> void:
+	_ensure_global_weapon_energy_pool()
+	if _global_weapon_energy_pool != null:
+		_global_weapon_energy_pool.clear()
+
+
+func get_global_weapon_energy() -> float:
+	_ensure_global_weapon_energy_pool()
+	if _global_weapon_energy_pool == null:
+		return 0.0
+	return _global_weapon_energy_pool.energy_value
+
+
+func get_global_weapon_energy_max() -> float:
+	_ensure_global_weapon_energy_pool()
+	if _global_weapon_energy_pool == null:
+		return maxf(global_weapon_energy_max, 1.0)
+	return _global_weapon_energy_pool.max_energy
+
+
+func get_global_weapon_energy_ratio() -> float:
+	_ensure_global_weapon_energy_pool()
+	if _global_weapon_energy_pool == null:
+		return 0.0
+	return _global_weapon_energy_pool.get_ratio()
+
+
+func has_equipped_energy_weapon() -> bool:
+	if PlayerData == null:
+		return false
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon := weapon_ref as Weapon
+		if weapon != null and is_instance_valid(weapon) and weapon.has_weapon_trait(WeaponTrait.ENERGY):
+			return true
+	return false
+
+
+func is_global_weapon_energy_ready() -> bool:
+	return get_global_weapon_energy() >= get_global_weapon_energy_max() - 0.001

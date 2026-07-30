@@ -6,8 +6,8 @@
 script = ExtResource("1_script")
 passive_id = "laser_focus_channel_triggered"
 display_name = "Focus Channel"
-description = "Energy cycle. Every valid energy hit fills one of 5 pulse cells; the fifth hit triggers Focus Channel and immediately starts the next cycle."
-condition_type = "valid_energy_hit_count"
-refresh_type = "automatic_after_discharge"
+description = "Balanced energy cycle. Each valid damage event grants 6 global energy. If the pool is full before firing, the attack consumes it for +75% damage."
+condition_type = "global_energy_full_before_fire"
+refresh_type = "automatic_after_full_energy_attack"
 ui_mode = "progress"
 hud_mode = "bean_with_condition"

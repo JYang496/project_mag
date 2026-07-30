@@ -2,7 +2,7 @@ extends WeaponBranchBehavior
 class_name DashFrostBranch
 
 func get_added_weapon_traits() -> Array[StringName]:
-	return [WeaponTrait.FREEZE]
+	return [WeaponTrait.FREEZE, WeaponTrait.HEAT]
 
 const FROST_FIELD_EFFECT_SCENE: PackedScene = preload("res://Player/Weapons/Effects/frost_field_effect.tscn")
 

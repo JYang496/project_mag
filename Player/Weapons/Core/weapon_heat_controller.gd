@@ -27,8 +27,8 @@ func can_fire() -> bool:
 func configure(per_shot: float, max_value: float, cool_rate: float) -> void:
 	if not _has_valid_weapon():
 		return
-	weapon.heat_per_shot = maxf(per_shot, 0.0)
-	weapon.heat_max_value = maxf(max_value, 1.0)
+	weapon.heat_per_shot = clampf(per_shot, Heat.MIN_HEAT, Heat.MAX_HEAT)
+	weapon.heat_max_value = Heat.MAX_HEAT
 	weapon.heat_cool_rate = maxf(cool_rate, 0.0)
 	sync_trait_state()
 	if heat_core != null:
@@ -41,8 +41,11 @@ func register_shot(multiplier: float = 1.0) -> void:
 	var core := get_active_heat_core()
 	if core == null:
 		return
+	var signed_heat := _resolve_signed_heat_per_shot() * maxf(multiplier, 0.0)
+	if float(core.heat_value) * signed_heat < 0.0:
+		signed_heat *= 1.0 - clampf(float(weapon.heat_opposition_resistance), 0.0, 0.9)
 	if core.has_method("add_heat_amount"):
-		core.call("add_heat_amount", maxf(0.0, weapon.heat_per_shot * maxf(multiplier, 0.0)))
+		core.call("add_heat_amount", signed_heat)
 		return
 	core.add_heat(multiplier)
 
@@ -51,6 +54,26 @@ func get_heat_ratio() -> float:
 	if core == null:
 		return 0.0
 	return core.get_ratio()
+
+func get_signed_heat_ratio() -> float:
+	var core := get_active_heat_core()
+	return core.get_signed_ratio() if core != null else 0.0
+
+func get_heat_gauge_ratio() -> float:
+	var core := get_active_heat_core()
+	return core.get_gauge_ratio() if core != null else 0.5
+
+func get_fire_alignment() -> float:
+	var core := get_active_heat_core()
+	return core.get_fire_alignment() if core != null else 0.0
+
+func get_freeze_alignment() -> float:
+	var core := get_active_heat_core()
+	return core.get_freeze_alignment() if core != null else 0.0
+
+func get_heat_zone() -> StringName:
+	var core := get_active_heat_core()
+	return core.get_heat_zone() if core != null else &"neutral"
 
 func get_heat_value() -> float:
 	var core := get_active_heat_core()
@@ -62,9 +85,7 @@ func get_heat_max_value() -> float:
 	var core := get_active_heat_core()
 	if core == null:
 		return 0.0
-	if core.has_method("has_contributors") and not bool(core.call("has_contributors")):
-		return 0.0
-	return float(core.max_heat)
+	return Heat.MAX_HEAT
 
 func get_heat_percent() -> int:
 	var core := get_active_heat_core()
@@ -141,6 +162,18 @@ func _has_heat_trait() -> bool:
 	if not _has_valid_weapon():
 		return false
 	return weapon.has_heat_trait()
+
+func _resolve_signed_heat_per_shot() -> float:
+	var amount := float(weapon.heat_per_shot)
+	var is_fire := weapon.has_weapon_trait(WeaponTrait.FIRE)
+	var is_freeze := weapon.has_weapon_trait(WeaponTrait.FREEZE)
+	if (is_fire or is_freeze) and absf(amount) <= 1.0:
+		amount = 8.0
+	if is_freeze and not is_fire:
+		return -absf(amount)
+	if is_fire and not is_freeze:
+		return absf(amount)
+	return clampf(amount, Heat.MIN_HEAT, Heat.MAX_HEAT)
 
 func _sync_weapon_heat_core() -> void:
 	if _has_valid_weapon():

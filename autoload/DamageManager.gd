@@ -20,9 +20,14 @@ func build_damage_data(
 	var final_damage: int = max(0, int(base_damage))
 	var is_critical := false
 	if resolved_source_player and is_instance_valid(resolved_source_player) and resolved_source_player is Player:
+		var heat_snapshot: Variant = null
+		if source_node != null and is_instance_valid(source_node) \
+				and source_node.has_meta(Weapon.HEAT_SNAPSHOT_META):
+			heat_snapshot = source_node.get_meta(Weapon.HEAT_SNAPSHOT_META)
 		var outgoing_result = (resolved_source_player as Player).compute_outgoing_damage_result(
 			final_damage,
-			damage_type
+			damage_type,
+			heat_snapshot
 		)
 		final_damage = outgoing_result.damage
 		is_critical = outgoing_result.is_critical
@@ -44,6 +49,7 @@ func build_damage_data(
 		delivery_type
 	)
 	data.is_critical = is_critical
+	data.outgoing_modifiers_applied = true
 	return data
 
 
@@ -106,6 +112,7 @@ func apply_to_target_result(target: Node, data: DamageData) -> DamageResult:
 	if _is_player_attack_blocked_by_phase(data):
 		result.rejection_reason = DamageResult.REASON_PHASE_BLOCKED
 		return result
+	_apply_outgoing_modifiers_if_needed(data)
 	if _is_duplicate_damage(target, data):
 		result.rejection_reason = DamageResult.REASON_DUPLICATE
 		return result
@@ -137,6 +144,29 @@ func apply_to_target_result(target: Node, data: DamageData) -> DamageResult:
 		_notify_player_weapon_damage_applied(target, data, result)
 		return result
 	return result
+
+func _apply_outgoing_modifiers_if_needed(data: DamageData) -> void:
+	if data == null or data.outgoing_modifiers_applied or data.damage_is_final:
+		return
+	if data.source_category != DamageData.SOURCE_PLAYER_WEAPON:
+		return
+	var player := data.source_player
+	if player == null or not is_instance_valid(player):
+		player = resolve_source_player(data.source_node)
+	if not (player is Player):
+		return
+	var heat_snapshot: Variant = null
+	if data.source_node != null and is_instance_valid(data.source_node) \
+			and data.source_node.has_meta(Weapon.HEAT_SNAPSHOT_META):
+		heat_snapshot = data.source_node.get_meta(Weapon.HEAT_SNAPSHOT_META)
+	var outgoing_result = (player as Player).compute_outgoing_damage_result(
+		data.amount,
+		data.damage_type,
+		heat_snapshot
+	)
+	data.amount = outgoing_result.damage
+	data.is_critical = outgoing_result.is_critical
+	data.outgoing_modifiers_applied = true
 
 
 func _notify_player_weapon_damage_applied(target: Node, data: DamageData, result: DamageResult) -> void:

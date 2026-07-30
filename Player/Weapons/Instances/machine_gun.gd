@@ -20,12 +20,12 @@ const HEAT_SPEED_POINTS: Array[Vector2] = [
 ]
 
 @export var heat_accumulation: float = 4
-@export var heat_accumulation_per_sec: float = 25.0
+@export var heat_accumulation_per_sec: float = 15.0
 @export var max_heat: float = 50.0
 @export var heat_cooldown_rate: float = 20.0
 @export_range(5.0, 80.0, 1.0) var front_fire_half_angle_deg: float = 35.0
 @export var heat_expansion_duration_sec: float = 8.0
-@export var heat_expansion_single_charge_multiplier: float = 2.0
+@export var heat_expansion_alignment_per_charge: float = 0.167
 @export_range(0.01, 1.0, 0.01) var heat_expansion_rearm_spent_ratio: float = 0.25
 var attack_range: float = 800.0
 var _heat_expansion_rearmed_steps_this_magazine: int = 0
@@ -178,19 +178,19 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	var duration_sec := maxf(heat_expansion_duration_sec, 0.05)
 	var consumed_charges := consume_all_passive_charges()
 	_heat_expansion_active_charge_count = consumed_charges
-	var single_charge_multiplier := maxf(heat_expansion_single_charge_multiplier, 0.05)
-	var max_heat_mul := float(consumed_charges) * single_charge_multiplier
+	var alignment_per_charge := maxf(heat_expansion_alignment_per_charge, 0.0)
+	var alignment_amplifier := 1.0 + float(consumed_charges) * alignment_per_charge
 	var scaled_current_heat := false
 	if PlayerData.player and is_instance_valid(PlayerData.player):
-		scaled_current_heat = bool(PlayerData.player.call("apply_heat_expansion", duration_sec, max_heat_mul))
+		scaled_current_heat = bool(PlayerData.player.call("apply_heat_expansion", duration_sec, alignment_amplifier))
 	emit_passive_trigger(&"machine_gun_heat_expansion", {
 		"trigger": "reload_finished",
 		"spent_ratio": spent_ratio,
 		"consumed_charges": consumed_charges,
-		"single_charge_multiplier": single_charge_multiplier,
+		"alignment_per_charge": alignment_per_charge,
 		"duration": duration_sec,
 		"cooldown": 0.0,
-		"max_heat_multiplier": max_heat_mul,
+		"alignment_amplifier": alignment_amplifier,
 		"scaled_current_heat": scaled_current_heat,
 		"target_weapon": null,
 	}, PASSIVE_SCOPE_GLOBAL)
@@ -213,7 +213,7 @@ func get_passive_status() -> Dictionary:
 		_heat_expansion_active_charge_count = 0
 	return with_passive_charge_status({
 		"id": "machine_gun_heat_expansion",
-		"display_name": "Heat Expansion",
+		"display_name": "Thermal Amplification",
 		"state": state,
 		"active_charge_count": _heat_expansion_active_charge_count,
 		"progress": progress,

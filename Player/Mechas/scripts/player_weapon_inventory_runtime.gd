@@ -41,6 +41,12 @@ func create_weapon(item_id, level := 1, auto_fuse := false) -> void:
 			push_warning("create_weapon failed: invalid weapon instance input.")
 			return
 		incoming_weapon_id = DataHandler.get_weapon_id_from_instance(weapon)
+		if incoming_weapon_id != "" and find_equipped_weapon_by_id(incoming_weapon_id) != null:
+			var duplicate_result := try_auto_fuse_weapon_obtain(incoming_weapon_id)
+			var duplicate_type := str(duplicate_result.get("result", "not_applicable"))
+			if duplicate_type == "fused" or duplicate_type == "converted_to_gold":
+				weapon.queue_free()
+				return
 
 	if player_data.player_weapon_list.size() >= player_data.max_weapon_num:
 		var ui = GlobalVariables.ui

@@ -6,6 +6,8 @@ const GLACIER_SPRAY_VFX_SCENE: PackedScene = preload("res://Player/Weapons/Effec
 @onready var detect_area: Area2D = $DetectArea
 
 var ITEM_NAME := "Glacier Projector"
+@export var cold_per_burst: float = -3.0
+@export var heat_neutralize_rate: float = 7.0
 
 @export_range(5.0, 120.0, 1.0) var cone_half_angle_deg: float = 15.0
 @export_range(40.0, 1200.0, 1.0) var base_range: float = 200.0
@@ -45,6 +47,7 @@ func set_level(lv) -> void:
 
 	base_attack_cooldown = float(level_data["fire_interval_sec"])
 	apply_level_ammo(level_data)
+	configure_heat(cold_per_burst, Heat.MAX_HEAT, heat_neutralize_rate)
 	sync_stats()
 	branch_runtime.notify_branch_level_applied(level)
 	_sync_detect_radius()
