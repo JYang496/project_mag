@@ -89,6 +89,7 @@ func _spawn_laser_beam(profile: Dictionary) -> void:
 	beam_ins.damage = max(1, int(round(float(get_runtime_shot_damage()) * damage_multiplier)))
 	beam_ins.source_weapon = self
 	apply_energy_release_marker(beam_ins)
+	apply_heat_snapshot_marker(beam_ins)
 	if beam_ins.has_method("configure_laser_beam"):
 		beam_ins.call("configure_laser_beam", profile)
 	self.get_tree().root.call_deferred("add_child",beam_ins)

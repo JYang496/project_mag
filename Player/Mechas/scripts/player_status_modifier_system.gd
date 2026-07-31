@@ -114,11 +114,12 @@ func remove_loot_bonus(source_id: StringName) -> void:
 	if _loot_bonus_modifiers.has(source_id):
 		_loot_bonus_modifiers.erase(source_id)
 
-func compute_outgoing_damage(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null) -> int:
-	return compute_outgoing_damage_result(base_damage, damage_type, heat_snapshot).damage
+func compute_outgoing_damage(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null, weapon_ordinary_multiplier: float = 1.0) -> int:
+	return compute_outgoing_damage_result(base_damage, damage_type, heat_snapshot, weapon_ordinary_multiplier).damage
 
-func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null):
-	var total_mul_delta := 0.0
+func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null, weapon_ordinary_multiplier: float = 1.0):
+	var ordinary_weapon_mul := maxf(weapon_ordinary_multiplier, 0.05)
+	var total_mul_delta := ordinary_weapon_mul - 1.0
 	for mul in _damage_mul_modifiers.values():
 		total_mul_delta += (float(mul) - 1.0)
 	total_mul_delta += (_get_low_hp_damage_mul() - 1.0)
@@ -136,8 +137,18 @@ func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = 
 			float(_player.call("get_elemental_heat_damage_multiplier", damage_type, heat_snapshot)),
 			0.0
 		) - 1.0
+	if _player != null and is_instance_valid(_player) \
+			and _player.has_method("get_heat_global_damage_additive"):
+		total_mul_delta += maxf(
+			float(_player.call("get_heat_global_damage_additive", heat_snapshot)),
+			0.0
+		)
 	var final_mul := maxf(0.0, 1.0 + total_mul_delta)
-	var final_damage: int = maxi(1, int(round(float(base_damage) * final_mul)))
+	# The weapon amount already contains its ordinary multiplier. Remove it once,
+	# then rebuild the shared additive layer while preserving attack coefficients
+	# and independent multipliers such as a full-energy release.
+	var coefficient_adjusted_base := float(base_damage) / ordinary_weapon_mul
+	var final_damage: int = maxi(1, int(round(coefficient_adjusted_base * final_mul)))
 	var is_critical := randf() < clampf(float(PlayerData.total_crit_rate), 0.0, 1.0)
 	if is_critical:
 		final_damage = maxi(1, int(round(float(final_damage) * maxf(float(PlayerData.total_crit_damage), 1.0))))

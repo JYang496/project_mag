@@ -98,8 +98,7 @@ func request_primary_fire() -> bool:
 func _on_shoot():
 	is_on_cooldown = true
 	attack_speed = _resolve_shared_heat_attack_speed()
-	var cooldown := attack_cooldown / maxf(attack_speed, 0.1)
-	cooldown = cooldown / maxf(get_external_attack_speed_multiplier(), 0.1)
+	var cooldown := get_effective_cooldown(attack_cooldown / maxf(attack_speed, 0.1))
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()

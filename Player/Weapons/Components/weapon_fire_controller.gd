@@ -85,8 +85,15 @@ func get_external_attack_speed_multiplier() -> float:
 	return clampf(total, 0.1, 10.0)
 
 func get_effective_cooldown(base_cooldown: float) -> float:
-	var speed_mul := maxf(get_external_attack_speed_multiplier(), 0.1)
+	var speed_mul := maxf(get_external_attack_speed_multiplier() * _get_cold_attack_speed_multiplier(), 0.1)
 	return maxf(base_cooldown / speed_mul, 0.01)
+
+func _get_cold_attack_speed_multiplier() -> float:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return 1.0
+	if not PlayerData.player.has_method("get_cold_attack_speed_multiplier"):
+		return 1.0
+	return maxf(float(PlayerData.player.call("get_cold_attack_speed_multiplier")), 0.1)
 
 func start_weapon_cooldown(base_cooldown: float, min_cooldown: float = 0.01) -> void:
 	var cooldown_timer := get_cooldown_timer()

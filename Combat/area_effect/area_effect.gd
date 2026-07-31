@@ -113,6 +113,7 @@ enum VisualShape { CIRCLE, RECTANGLE, CONE }
 var source_node: Node
 var source_category: StringName = StringName()
 var delivery_type: StringName = DamageDeliveryType.AREA
+var heat_snapshot: Variant = null
 var _affected_target_ids: Dictionary = {}
 var _tick_elapsed: float = 0.0
 var _damage_active: bool = true
@@ -133,6 +134,8 @@ func _ready() -> void:
 		add_to_group("enemy_runtime_cleanup")
 	if source_category == DamageData.SOURCE_PLAYER_WEAPON:
 		var source_weapon := DamageManager.resolve_source_weapon(source_node)
+		if heat_snapshot == null and source_weapon != null and source_weapon.has_method("capture_heat_snapshot"):
+			heat_snapshot = source_weapon.call("capture_heat_snapshot")
 		if source_weapon != null and source_weapon.has_method("get_effective_area_radius"):
 			radius = float(source_weapon.call("get_effective_area_radius", radius))
 	_sync_radius()
@@ -224,7 +227,8 @@ func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
 			Attack.normalize_damage_type(damage_type),
 			knock_back,
 			source_category,
-			delivery_type
+			delivery_type,
+			heat_snapshot
 		)
 		var applied := DamageManager.apply_to_target(target, damage_data)
 		if applied:
@@ -262,7 +266,8 @@ func _apply_tick_to_current_overlaps() -> void:
 				Attack.normalize_damage_type(damage_type),
 				knock_back,
 				source_category,
-				delivery_type
+				delivery_type,
+				heat_snapshot
 			)
 			if DamageManager.apply_to_target(target, damage_data):
 				target_affected.emit(target)
@@ -289,7 +294,8 @@ func _apply_tick_to_current_overlaps() -> void:
 			Attack.normalize_damage_type(damage_type),
 			knock_back,
 			source_category,
-			delivery_type
+			delivery_type,
+			heat_snapshot
 		)
 		if DamageManager.apply_to_target(target, damage_data):
 			target_affected.emit(target)

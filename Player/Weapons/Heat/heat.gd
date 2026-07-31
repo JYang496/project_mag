@@ -3,6 +3,7 @@ class_name Heat
 
 signal heat_changed(previous_value: float, current_value: float)
 signal heat_zone_changed(previous_zone: StringName, current_zone: StringName)
+signal heat_crossed_neutral(previous_value: float, current_value: float, direction: StringName)
 
 const MIN_HEAT: float = -100.0
 const MAX_HEAT: float = 100.0
@@ -91,7 +92,7 @@ func lock_to_value(value: float, duration_sec: float) -> void:
 func is_locked() -> bool:
 	return _lock_remaining_sec > 0.0
 
-func set_heat(value: float) -> void:
+func set_heat(value: float, emit_crossing: bool = true) -> void:
 	var previous := heat_value
 	var next := clampf(value, MIN_HEAT, MAX_HEAT)
 	if is_equal_approx(previous, next):
@@ -99,13 +100,16 @@ func set_heat(value: float) -> void:
 		return
 	heat_value = next
 	heat_changed.emit(previous, heat_value)
+	if emit_crossing and ((previous > 0.0 and next < 0.0) or (previous < 0.0 and next > 0.0)):
+		var direction := &"to_hot" if next > 0.0 else &"to_cold"
+		heat_crossed_neutral.emit(previous, next, direction)
 	_update_zone()
 
 func reset_to_neutral() -> void:
 	_lock_remaining_sec = 0.0
 	_neutralize_delay_remaining_sec = 0.0
 	_locked_value = 0.0
-	set_heat(0.0)
+	set_heat(0.0, false)
 
 func get_heat_zone() -> StringName:
 	return _current_zone

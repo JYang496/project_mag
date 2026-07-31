@@ -51,6 +51,11 @@ var _short_text: String = ""
 var _status_label: Label
 var _heat_gauge: TextureRect
 var _heat_needle: TextureRect
+var _heat_cold_icon: Label
+var _heat_hot_icon: Label
+var _heat_direction_label: Label
+var _heat_zone_label: Label
+var _heat_direction: StringName = &"stable"
 var _pulse_time: float = 0.0
 @export_range(0.1, 1.0, 0.05) var heat_gauge_opacity: float = 0.82:
 	set(value):
@@ -66,13 +71,24 @@ func _ready() -> void:
 	set_process(true)
 
 func set_resource(mode: StringName, ratio: float, state: StringName = &"normal", short_text: String = "", tooltip: String = "") -> void:
+	var next_ratio := clampf(ratio, 0.0, 1.0)
+	if mode == MODE_HEAT and _mode == MODE_HEAT:
+		if next_ratio > _ratio + 0.0005:
+			_heat_direction = &"rising"
+		elif next_ratio < _ratio - 0.0005:
+			_heat_direction = &"falling"
+		else:
+			_heat_direction = &"stable"
+	elif mode == MODE_HEAT:
+		_heat_direction = &"stable"
 	_mode = mode
-	_ratio = clampf(ratio, 0.0, 1.0)
+	_ratio = next_ratio
 	_state = state
 	_short_text = short_text
 	tooltip_text = tooltip
 	_update_heat_gauge()
 	_update_status_label()
+	_update_heat_accessibility()
 	queue_redraw()
 
 func is_status_visible() -> bool:
@@ -238,6 +254,7 @@ func _ensure_heat_gauge() -> void:
 	_heat_needle.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_heat_needle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_heat_needle)
+	_ensure_heat_accessibility_overlay()
 	_apply_heat_gauge_opacity()
 	_update_heat_gauge()
 
@@ -260,6 +277,7 @@ func _update_heat_gauge() -> void:
 		var tint := _heat_polarity_color()
 		_heat_gauge.modulate = Color(tint.r, tint.g, tint.b, heat_gauge_opacity)
 		_heat_needle.modulate = Color(tint.r, tint.g, tint.b, heat_gauge_opacity)
+	_update_heat_accessibility()
 
 func _update_status_label() -> void:
 	if _status_label == null or not is_instance_valid(_status_label):
@@ -269,12 +287,91 @@ func _update_status_label() -> void:
 		_status_label.position = Vector2(50.0, 124.0)
 		_status_label.size = Vector2(52.0, 20.0)
 		_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_status_label.add_theme_color_override("font_color", Color(0.96, 0.98, 1.0, 1.0))
 	else:
 		_status_label.position = LABEL_OFFSET
 		_status_label.size = LABEL_SIZE
 		_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		_status_label.add_theme_color_override("font_color", _edge_color())
 	_status_label.visible = _short_text != ""
-	_status_label.add_theme_color_override("font_color", _edge_color())
+
+func _ensure_heat_accessibility_overlay() -> void:
+	if _heat_zone_label != null and is_instance_valid(_heat_zone_label):
+		return
+	_heat_cold_icon = _make_heat_overlay_label("ColdIcon", Vector2(4.0, 62.0), Vector2(34.0, 22.0), 16)
+	_heat_cold_icon.text = "❄ C"
+	_heat_cold_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_heat_hot_icon = _make_heat_overlay_label("HotIcon", Vector2(114.0, 62.0), Vector2(34.0, 22.0), 16)
+	_heat_hot_icon.text = "H ♨"
+	_heat_hot_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_heat_direction_label = _make_heat_overlay_label("Direction", Vector2(56.0, 24.0), Vector2(40.0, 22.0), 17)
+	_heat_zone_label = _make_heat_overlay_label("Zone", Vector2(18.0, 103.0), Vector2(116.0, 18.0), 10)
+
+func _make_heat_overlay_label(node_name: String, label_position: Vector2, label_size: Vector2, font_size: int) -> Label:
+	var label := Label.new()
+	label.name = node_name
+	label.position = label_position
+	label.size = label_size
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", Color(0.96, 0.98, 1.0, 1.0))
+	label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.95))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	add_child(label)
+	return label
+
+func _update_heat_accessibility() -> void:
+	if _heat_zone_label == null or not is_instance_valid(_heat_zone_label):
+		return
+	var is_heat := _mode == MODE_HEAT
+	_heat_cold_icon.visible = is_heat
+	_heat_hot_icon.visible = is_heat
+	_heat_direction_label.visible = is_heat
+	_heat_zone_label.visible = is_heat
+	if not is_heat:
+		return
+	_heat_direction_label.text = _get_heat_direction_symbol()
+	_heat_zone_label.text = _get_accessible_heat_zone_text()
+
+func _get_heat_direction_symbol() -> String:
+	match _heat_direction:
+		&"rising":
+			return "▶"
+		&"falling":
+			return "◀"
+		_:
+			return "◆"
+
+func _get_accessible_heat_zone_text() -> String:
+	var key := "ui.hud.heat.zone.neutral"
+	var fallback := "NEUTRAL"
+	match _state:
+		&"extreme_cold", &"deep_cold":
+			key = "ui.hud.heat.zone.extreme_cold"
+			fallback = "EXTREME COLD"
+		&"cold":
+			key = "ui.hud.heat.zone.cold"
+			fallback = "COLD"
+		&"hot":
+			key = "ui.hud.heat.zone.hot"
+			fallback = "HOT"
+		&"high_heat", &"extreme_heat":
+			key = "ui.hud.heat.zone.extreme_hot"
+			fallback = "EXTREME HOT"
+	if LocalizationManager != null:
+		return LocalizationManager.tr_key(key, fallback)
+	return fallback
+
+func get_heat_accessibility_state() -> Dictionary:
+	return {
+		"cold_icon": _heat_cold_icon.text if _heat_cold_icon != null else "",
+		"hot_icon": _heat_hot_icon.text if _heat_hot_icon != null else "",
+		"direction": _get_heat_direction_symbol(),
+		"zone": _get_accessible_heat_zone_text(),
+	}
 
 func _fill_color() -> Color:
 	if _state == &"locked":

@@ -242,6 +242,7 @@ func _spawn_beam_from_profile(profile: Dictionary) -> float:
 	beam_blast_ins.hit_cd = beam_hit_cd
 	beam_blast_ins.source_weapon = self
 	apply_energy_release_marker(beam_blast_ins)
+	apply_heat_snapshot_marker(beam_blast_ins)
 	beam_blast_ins.beam_profile = profile.duplicate(true)
 	beam_blast_ins.target_lock_mode = StringName(str(profile.get("target_lock_mode", "none")))
 	beam_blast_ins.target_lock_release_multiplier = maxf(float(profile.get("target_lock_release_multiplier", 1.8)), 1.0)

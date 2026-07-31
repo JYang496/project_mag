@@ -129,6 +129,16 @@ ui.hud.hp,HP: {current}/{max},生命：{current}/{max}
 ui.hud.heat_empty,Heat: --,热量：--
 ui.hud.heat,Heat: {value}/{max} ({percent}%){overheat},热量：{value}/{max}（{percent}%）{overheat}
 ui.hud.heat_overheat, (OVERHEAT),（过热）
+ui.hud.heat.zone.extreme_cold,EXTREME COLD,极寒
+ui.hud.heat.zone.cold,COLD,寒冷
+ui.hud.heat.zone.neutral,NEUTRAL,中性
+ui.hud.heat.zone.hot,HOT,炎热
+ui.hud.heat.zone.extreme_hot,EXTREME HOT,极热
+ui.hud.heat.tooltip,"Heat: {heat} | {zone}
+Damage {damage}% | Move {move}% | Fire rate {fire_rate}% | Reload time {reload}%
+Elemental damage uses Heat when the attack is created; sustained attacks lock their initial Heat.","Heat：{heat} | {zone}
+伤害 {damage}% | 移速 {move}% | 开火速度 {fire_rate}% | 换弹时间 {reload}%
+元素伤害取决于攻击生成瞬间的 Heat；持续攻击在首次生成时锁定 Heat。"
 ui.hud.ammo_empty,Ammo: --,弹药：--
 ui.hud.ammo,Ammo: {current}/{max}{reload},弹药：{current}/{max}{reload}
 ui.hud.ammo_reloading, (Reloading {sec}s),（装填中 {sec}秒）

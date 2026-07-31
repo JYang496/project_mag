@@ -54,6 +54,9 @@ func attach_emitter(
 ) -> void:
 	if emitter == null or not is_instance_valid(emitter):
 		return
+	var snapshot: Variant = null
+	if emitter.has_meta(Weapon.HEAT_SNAPSHOT_META):
+		snapshot = emitter.get_meta(Weapon.HEAT_SNAPSHOT_META)
 	_emitters[emitter.get_instance_id()] = {
 		"emitter_ref": weakref(emitter),
 		"last_position": emitter.global_position,
@@ -61,6 +64,7 @@ func attach_emitter(
 		"is_primed": not prime_on_first_step,
 		"segment_radius": maxf(segment_radius, 0.1),
 		"min_spacing": maxf(min_spacing, 0.0),
+		"heat_snapshot": snapshot,
 	}
 
 func detach_emitter(emitter: Node2D) -> void:
@@ -108,17 +112,23 @@ func _update_emitters(delta: float) -> void:
 		var previous_position: Variant = payload.get("last_position", emitter.global_position)
 		var min_spacing := maxf(float(payload.get("min_spacing", 0.0)), 0.0)
 		if previous_position is Vector2 and (previous_position as Vector2).distance_to(emitter.global_position) >= maxf(min_spacing, 0.5):
-			_add_segment(previous_position as Vector2, emitter.global_position, float(payload.get("segment_radius", 1.0)))
+			_add_segment(
+				previous_position as Vector2,
+				emitter.global_position,
+				float(payload.get("segment_radius", 1.0)),
+				payload.get("heat_snapshot", null)
+			)
 			payload["last_position"] = emitter.global_position
 		payload["sample_accum"] = sample_accum
 		_emitters[emitter_id] = payload
 
-func _add_segment(from_pos: Vector2, to_pos: Vector2, segment_radius: float) -> void:
+func _add_segment(from_pos: Vector2, to_pos: Vector2, segment_radius: float, heat_snapshot: Variant = null) -> void:
 	_segments.append({
 		"from": from_pos,
 		"to": to_pos,
 		"radius": maxf(segment_radius, 0.1),
 		"expires_at_msec": Time.get_ticks_msec() + int(maxf(duration, 0.05) * 1000.0),
+		"heat_snapshot": heat_snapshot,
 	})
 	while _segments.size() > max(1, max_segments):
 		_segments.remove_at(0)
@@ -149,7 +159,8 @@ func _apply_tick_damage() -> void:
 		var target2d := target as Node2D
 		if target2d == null:
 			continue
-		var overlap_count := _count_segment_hits(target2d.global_position)
+		var hit_info := _get_segment_hit_info(target2d.global_position)
+		var overlap_count := int(hit_info.get("count", 0))
 		if overlap_count <= 0:
 			continue
 		var damage_amount := tick_damage * overlap_count if stack_damage_per_segment else tick_damage
@@ -159,7 +170,8 @@ func _apply_tick_damage() -> void:
 			Attack.normalize_damage_type(damage_type),
 			knock_back,
 			source_category,
-			DamageDeliveryType.AREA
+			DamageDeliveryType.AREA,
+			hit_info.get("heat_snapshot", null)
 		)
 		DamageManager.apply_to_target(target, damage_data)
 
@@ -214,16 +226,22 @@ func _get_segments_world_bounds() -> Rect2:
 	return bounds.grow(max_radius)
 
 func _count_segment_hits(point: Vector2) -> int:
+	return int(_get_segment_hit_info(point).get("count", 0))
+
+func _get_segment_hit_info(point: Vector2) -> Dictionary:
 	var hits := 0
+	var heat_snapshot: Variant = null
 	for segment in _segments:
 		var from_pos: Vector2 = segment.get("from", Vector2.ZERO)
 		var to_pos: Vector2 = segment.get("to", Vector2.ZERO)
 		var radius_value := float(segment.get("radius", 0.0))
 		if _distance_point_to_segment_sq(point, from_pos, to_pos) <= radius_value * radius_value:
 			hits += 1
+			if heat_snapshot == null:
+				heat_snapshot = segment.get("heat_snapshot", null)
 			if not stack_damage_per_segment:
-				return 1
-	return hits
+				return {"count": 1, "heat_snapshot": heat_snapshot}
+	return {"count": hits, "heat_snapshot": heat_snapshot}
 
 func _distance_point_to_segment_sq(point: Vector2, from_pos: Vector2, to_pos: Vector2) -> float:
 	var segment := to_pos - from_pos

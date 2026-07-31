@@ -14,20 +14,23 @@ func build_damage_data(
 	damage_type: StringName = Attack.TYPE_PHYSICAL,
 	knock_back: Dictionary = {},
 	source_category: StringName = StringName(),
-	delivery_type: StringName = StringName()
+	delivery_type: StringName = StringName(),
+	heat_snapshot_override: Variant = null
 ) -> DamageData:
 	var resolved_source_player: Node = resolve_source_player(source_node)
 	var final_damage: int = max(0, int(base_damage))
 	var is_critical := false
 	if resolved_source_player and is_instance_valid(resolved_source_player) and resolved_source_player is Player:
-		var heat_snapshot: Variant = null
-		if source_node != null and is_instance_valid(source_node) \
+		var heat_snapshot: Variant = heat_snapshot_override
+		if heat_snapshot == null and source_node != null and is_instance_valid(source_node) \
 				and source_node.has_meta(Weapon.HEAT_SNAPSHOT_META):
 			heat_snapshot = source_node.get_meta(Weapon.HEAT_SNAPSHOT_META)
+		var weapon_ordinary_multiplier := _resolve_weapon_ordinary_damage_multiplier(source_node, heat_snapshot)
 		var outgoing_result = (resolved_source_player as Player).compute_outgoing_damage_result(
 			final_damage,
 			damage_type,
-			heat_snapshot
+			heat_snapshot,
+			weapon_ordinary_multiplier
 		)
 		final_damage = outgoing_result.damage
 		is_critical = outgoing_result.is_critical
@@ -50,6 +53,7 @@ func build_damage_data(
 	)
 	data.is_critical = is_critical
 	data.outgoing_modifiers_applied = true
+	data.heat_snapshot = heat_snapshot_override
 	return data
 
 
@@ -155,18 +159,35 @@ func _apply_outgoing_modifiers_if_needed(data: DamageData) -> void:
 		player = resolve_source_player(data.source_node)
 	if not (player is Player):
 		return
-	var heat_snapshot: Variant = null
-	if data.source_node != null and is_instance_valid(data.source_node) \
+	var heat_snapshot: Variant = data.heat_snapshot
+	if heat_snapshot == null and data.source_node != null and is_instance_valid(data.source_node) \
 			and data.source_node.has_meta(Weapon.HEAT_SNAPSHOT_META):
 		heat_snapshot = data.source_node.get_meta(Weapon.HEAT_SNAPSHOT_META)
+	var weapon_ordinary_multiplier := _resolve_weapon_ordinary_damage_multiplier(data.source_node, heat_snapshot)
 	var outgoing_result = (player as Player).compute_outgoing_damage_result(
 		data.amount,
 		data.damage_type,
-		heat_snapshot
+		heat_snapshot,
+		weapon_ordinary_multiplier
 	)
 	data.amount = outgoing_result.damage
 	data.is_critical = outgoing_result.is_critical
 	data.outgoing_modifiers_applied = true
+
+func _resolve_weapon_ordinary_damage_multiplier(source_node: Node, heat_snapshot: Variant = null) -> float:
+	if heat_snapshot is Dictionary and (heat_snapshot as Dictionary).has("weapon_ordinary_multiplier"):
+		return maxf(float((heat_snapshot as Dictionary).get("weapon_ordinary_multiplier", 1.0)), 0.05)
+	if source_node != null and is_instance_valid(source_node) \
+			and source_node.has_meta(Weapon.HEAT_SNAPSHOT_META):
+		var snapshot: Variant = source_node.get_meta(Weapon.HEAT_SNAPSHOT_META)
+		if snapshot is Dictionary and (snapshot as Dictionary).has("weapon_ordinary_multiplier"):
+			return maxf(float((snapshot as Dictionary).get("weapon_ordinary_multiplier", 1.0)), 0.05)
+	var source_weapon := resolve_source_weapon(source_node)
+	if source_weapon == null or not is_instance_valid(source_weapon):
+		return 1.0
+	if not source_weapon.has_method("get_total_ordinary_damage_multiplier"):
+		return 1.0
+	return maxf(float(source_weapon.call("get_total_ordinary_damage_multiplier")), 0.05)
 
 
 func _notify_player_weapon_damage_applied(target: Node, data: DamageData, result: DamageResult) -> void:

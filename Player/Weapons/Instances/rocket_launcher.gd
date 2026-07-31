@@ -51,7 +51,7 @@ func set_level(lv):
 
 func _on_shoot():
 	is_on_cooldown = true
-	var cooldown := attack_cooldown / maxf(get_external_attack_speed_multiplier(), 0.1)
+	var cooldown := get_effective_cooldown(attack_cooldown)
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()

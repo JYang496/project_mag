@@ -18,9 +18,16 @@ func setup(player) -> void:
 		if _shared_heat_pool == null:
 			push_warning("Failed to initialize SharedHeatPool.")
 			return
+		_shared_heat_pool.heat_crossed_neutral.connect(_on_heat_crossed_neutral)
 	if _player != null and _player.has_method("get_heat_gain_multiplier"):
 		_shared_heat_pool.heat_gain_multiplier_provider = Callable(_player, "get_heat_gain_multiplier")
 	rebuild()
+
+func _on_heat_crossed_neutral(previous_value: float, current_value: float, direction: StringName) -> void:
+	if _player == null or not is_instance_valid(_player):
+		return
+	if _player.has_method("_on_shared_heat_crossed_neutral"):
+		_player.call("_on_shared_heat_crossed_neutral", previous_value, current_value, direction)
 
 func tick(delta: float) -> void:
 	if _shared_heat_pool == null or _player == null:

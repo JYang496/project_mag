@@ -689,14 +689,19 @@ func lock_heat_value(value: float, duration_sec: float) -> void:
 func apply_heat_snapshot_marker(attack_node: Node) -> void:
 	if attack_node == null or not is_instance_valid(attack_node):
 		return
+	attack_node.set_meta(HEAT_SNAPSHOT_META, capture_heat_snapshot())
+
+func capture_heat_snapshot() -> Dictionary:
 	var amplifier := 1.0
 	if PlayerData.player != null and is_instance_valid(PlayerData.player) \
 			and PlayerData.player.has_method("get_heat_alignment_amplifier"):
 		amplifier = maxf(float(PlayerData.player.call("get_heat_alignment_amplifier")), 1.0)
-	attack_node.set_meta(HEAT_SNAPSHOT_META, {
+	return {
 		"signed_ratio": get_signed_heat_ratio(),
 		"alignment_amplifier": amplifier,
-	})
+		"weapon_ordinary_multiplier": get_total_ordinary_damage_multiplier(),
+		"captured_at_msec": Time.get_ticks_msec(),
+	}
 
 func get_combat_resource_slots() -> Array[Dictionary]:
 	var slots: Array[Dictionary] = []
@@ -718,6 +723,26 @@ func _build_heat_resource_slot() -> Dictionary:
 	if absf(heat_value) >= 90.0:
 		priority = 80
 	var short_text := "%+d" % signed_percent
+	var hot := maxf(get_signed_heat_ratio(), 0.0)
+	var cold := maxf(-get_signed_heat_ratio(), 0.0)
+	var accessible_zone := _get_accessible_heat_zone_name(zone)
+	var tooltip := "Heat: %+d | %s\nDamage %+.0f%% | Move %+.0f%% | Fire rate %+.0f%% | Reload time %+.0f%%\nElemental damage uses Heat when the attack is created; sustained attacks lock their initial Heat." % [
+		signed_percent,
+		accessible_zone,
+		hot * Player.HEAT_GLOBAL_DAMAGE_BONUS_AT_FULL * 100.0,
+		-hot * Player.HEAT_MOVE_SPEED_PENALTY_AT_FULL * 100.0,
+		cold * Player.COLD_ATTACK_SPEED_BONUS_AT_FULL * 100.0,
+		cold * Player.COLD_RELOAD_DURATION_PENALTY_AT_FULL * 100.0,
+	]
+	if LocalizationManager != null:
+		tooltip = LocalizationManager.tr_format("ui.hud.heat.tooltip", {
+			"heat": "%+d" % signed_percent,
+			"zone": accessible_zone,
+			"damage": "%+.0f" % (hot * Player.HEAT_GLOBAL_DAMAGE_BONUS_AT_FULL * 100.0),
+			"move": "%+.0f" % (-hot * Player.HEAT_MOVE_SPEED_PENALTY_AT_FULL * 100.0),
+			"fire_rate": "%+.0f" % (cold * Player.COLD_ATTACK_SPEED_BONUS_AT_FULL * 100.0),
+			"reload": "%+.0f" % (cold * Player.COLD_RELOAD_DURATION_PENALTY_AT_FULL * 100.0),
+		}, tooltip)
 	return {
 		"id": "%s_heat" % str(get_instance_id()),
 		"type": &"heat",
@@ -729,15 +754,30 @@ func _build_heat_resource_slot() -> Dictionary:
 		"signed_ratio": get_signed_heat_ratio(),
 		"state": state,
 		"short_text": short_text,
-		"tooltip": "Heat: %+d  |  %s  |  Fire %.0f%% / Freeze %.0f%%" % [
-			signed_percent,
-			str(zone).replace("_", " ").capitalize(),
-			get_fire_alignment() * 100.0,
-			get_freeze_alignment() * 100.0,
-		],
+		"tooltip": tooltip,
 		"priority": priority,
 		"visibility": "active_weapon",
 	}
+
+func _get_accessible_heat_zone_name(zone: StringName) -> String:
+	var key := "ui.hud.heat.zone.neutral"
+	var fallback := "NEUTRAL"
+	match zone:
+		&"extreme_cold", &"deep_cold":
+			key = "ui.hud.heat.zone.extreme_cold"
+			fallback = "EXTREME COLD"
+		&"cold":
+			key = "ui.hud.heat.zone.cold"
+			fallback = "COLD"
+		&"hot":
+			key = "ui.hud.heat.zone.hot"
+			fallback = "HOT"
+		&"high_heat", &"extreme_heat":
+			key = "ui.hud.heat.zone.extreme_hot"
+			fallback = "EXTREME HOT"
+	if LocalizationManager != null:
+		return LocalizationManager.tr_key(key, fallback)
+	return fallback
 
 func _build_ammo_resource_slot() -> Dictionary:
 	var status := get_ammo_status()
@@ -820,10 +860,16 @@ func get_runtime_stat_value(stat_name: String, base_value: float) -> float:
 	return stat_pipeline.get_runtime_stat_value(stat_name, base_value)
 
 func get_runtime_damage_value(base_damage_value: float) -> int:
-	var runtime_damage := float(stat_pipeline.get_runtime_damage_value(base_damage_value))
+	var module_multiplier := stat_pipeline.get_runtime_stat_value("damage", 1.0)
+	var external_multiplier := stat_pipeline.get_total_external_damage_mul()
+	var ordinary_multiplier := maxf(1.0 + (module_multiplier - 1.0) + (external_multiplier - 1.0), 0.05)
+	var runtime_damage := maxf(base_damage_value, 0.0) * ordinary_multiplier
 	if _energy_release_attack_active:
 		runtime_damage *= maxf(_energy_release_damage_multiplier, 1.0)
 	return maxi(1, int(round(runtime_damage)))
+
+func get_total_ordinary_damage_multiplier() -> float:
+	return stat_pipeline.get_total_ordinary_damage_multiplier()
 
 func get_effective_magazine_capacity() -> int:
 	return maxi(1, int(round(get_runtime_stat_value("magazine_capacity", float(magazine_capacity)))))

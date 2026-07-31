@@ -61,6 +61,10 @@ const FROST_MAX_STACKS: int = 5
 const FROST_MOVE_SPEED_SOURCE: StringName = &"incoming_frost"
 const ELEMENTAL_HEAT_DAMAGE_BONUS_AT_FULL: float = 0.30
 const ELEMENTAL_HEAT_CURVE_EXPONENT: float = 1.5
+const HEAT_GLOBAL_DAMAGE_BONUS_AT_FULL: float = 0.10
+const HEAT_MOVE_SPEED_PENALTY_AT_FULL: float = 0.08
+const COLD_ATTACK_SPEED_BONUS_AT_FULL: float = 0.10
+const COLD_RELOAD_DURATION_PENALTY_AT_FULL: float = 0.08
 const ENERGY_MARK_RATIO: float = 0.10
 const ENERGY_MARK_DURATION_SEC: float = 6.0
 const ENERGY_MARK_MAX_HP_RATIO: float = 0.40
@@ -760,8 +764,8 @@ func remove_move_speed_mul(source_id: StringName) -> void:
 func get_total_move_speed_mul() -> float:
 	_ensure_status_modifier_system()
 	if _status_modifier_system == null:
-		return 1.0
-	return _status_modifier_system.get_total_move_speed_mul()
+		return get_heat_move_speed_multiplier()
+	return _status_modifier_system.get_total_move_speed_mul() * get_heat_move_speed_multiplier()
 
 func apply_vision_mul(source_id: StringName, mul: float) -> void:
 	_ensure_status_modifier_system()
@@ -835,6 +839,45 @@ func get_elemental_heat_damage_multiplier(damage_type: StringName, heat_snapshot
 	var alignment := maxf(signed_ratio, 0.0) if normalized == Attack.TYPE_FIRE else maxf(-signed_ratio, 0.0)
 	alignment = clampf(alignment * alignment_amplifier, 0.0, 1.0)
 	return 1.0 + ELEMENTAL_HEAT_DAMAGE_BONUS_AT_FULL * pow(alignment, ELEMENTAL_HEAT_CURVE_EXPONENT)
+
+func get_heat_global_damage_additive(heat_snapshot: Variant = null) -> float:
+	return heat_global_damage_additive_for_ratio(_get_signed_ratio_from_snapshot(heat_snapshot))
+
+func get_heat_move_speed_multiplier() -> float:
+	return heat_move_speed_multiplier_for_ratio(get_signed_heat_ratio())
+
+func get_cold_attack_speed_multiplier() -> float:
+	return cold_attack_speed_multiplier_for_ratio(get_signed_heat_ratio())
+
+func get_cold_reload_duration_multiplier() -> float:
+	return cold_reload_duration_multiplier_for_ratio(get_signed_heat_ratio())
+
+func _get_signed_ratio_from_snapshot(heat_snapshot: Variant = null) -> float:
+	var signed_ratio := get_signed_heat_ratio()
+	if heat_snapshot is Dictionary:
+		signed_ratio = clampf(float((heat_snapshot as Dictionary).get("signed_ratio", signed_ratio)), -1.0, 1.0)
+	elif heat_snapshot != null:
+		signed_ratio = clampf(float(heat_snapshot), -1.0, 1.0)
+	return signed_ratio
+
+static func heat_global_damage_additive_for_ratio(signed_ratio: float) -> float:
+	return HEAT_GLOBAL_DAMAGE_BONUS_AT_FULL * maxf(clampf(signed_ratio, -1.0, 1.0), 0.0)
+
+static func heat_move_speed_multiplier_for_ratio(signed_ratio: float) -> float:
+	return 1.0 - HEAT_MOVE_SPEED_PENALTY_AT_FULL * maxf(clampf(signed_ratio, -1.0, 1.0), 0.0)
+
+static func cold_attack_speed_multiplier_for_ratio(signed_ratio: float) -> float:
+	return 1.0 + COLD_ATTACK_SPEED_BONUS_AT_FULL * maxf(-clampf(signed_ratio, -1.0, 1.0), 0.0)
+
+static func cold_reload_duration_multiplier_for_ratio(signed_ratio: float) -> float:
+	return 1.0 + COLD_RELOAD_DURATION_PENALTY_AT_FULL * maxf(-clampf(signed_ratio, -1.0, 1.0), 0.0)
+
+func _on_shared_heat_crossed_neutral(previous_value: float, current_value: float, direction: StringName) -> void:
+	_broadcast_weapon_passive_event(&"on_heat_crossed_neutral", {
+		"previous_heat": previous_value,
+		"current_heat": current_value,
+		"direction": direction,
+	})
 
 func consume_heat_prepared() -> bool:
 	_update_heat_statuses()
@@ -988,14 +1031,14 @@ func remove_loot_bonus(source_id: StringName) -> void:
 	if _status_modifier_system != null:
 		_status_modifier_system.remove_loot_bonus(source_id)
 
-func compute_outgoing_damage(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null) -> int:
-	return compute_outgoing_damage_result(base_damage, damage_type, heat_snapshot).damage
+func compute_outgoing_damage(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null, weapon_ordinary_multiplier: float = 1.0) -> int:
+	return compute_outgoing_damage_result(base_damage, damage_type, heat_snapshot, weapon_ordinary_multiplier).damage
 
-func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null):
+func compute_outgoing_damage_result(base_damage: int, damage_type: StringName = Attack.TYPE_PHYSICAL, heat_snapshot: Variant = null, weapon_ordinary_multiplier: float = 1.0):
 	_ensure_status_modifier_system()
 	if _status_modifier_system == null:
 		return OutgoingDamageResultType.new(base_damage, false)
-	return _status_modifier_system.compute_outgoing_damage_result(base_damage, damage_type, heat_snapshot)
+	return _status_modifier_system.compute_outgoing_damage_result(base_damage, damage_type, heat_snapshot, weapon_ordinary_multiplier)
 
 func apply_bonus_hit_if_needed(target: Node) -> void:
 	_ensure_status_modifier_system()

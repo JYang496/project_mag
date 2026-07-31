@@ -127,7 +127,15 @@ func get_spent_magazine_ratio() -> float:
 
 func get_effective_reload_duration() -> float:
 	var module_duration := weapon.get_runtime_stat_value("reload_duration_sec", weapon.reload_duration_sec)
-	return weapon.plugin_dispatcher.get_effective_reload_duration(module_duration)
+	var plugin_duration := weapon.plugin_dispatcher.get_effective_reload_duration(module_duration)
+	return plugin_duration * _get_cold_reload_duration_multiplier()
+
+func _get_cold_reload_duration_multiplier() -> float:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return 1.0
+	if not PlayerData.player.has_method("get_cold_reload_duration_multiplier"):
+		return 1.0
+	return maxf(float(PlayerData.player.call("get_cold_reload_duration_multiplier")), 0.1)
 
 func _get_effective_capacity() -> int:
 	if weapon.has_method("get_effective_magazine_capacity"):

@@ -154,6 +154,12 @@ func get_runtime_damage_value(base_damage_value: float) -> int:
 	runtime_damage *= get_total_external_damage_mul()
 	return max(1, int(round(runtime_damage)))
 
+func get_total_ordinary_damage_multiplier() -> float:
+	# Damage modules and external buffs are one additive ordinary-damage layer.
+	var module_multiplier := get_runtime_stat_value("damage", 1.0)
+	var external_multiplier := get_total_external_damage_mul()
+	return maxf(1.0 + (module_multiplier - 1.0) + (external_multiplier - 1.0), 0.05)
+
 func apply_external_damage_mul(source_id: StringName, mul: float) -> void:
 	if source_id == StringName():
 		return
@@ -183,10 +189,10 @@ func remove_external_damage_mul(source_id: StringName) -> void:
 			)
 
 func get_total_external_damage_mul() -> float:
-	var total := 1.0
+	var total_delta := 0.0
 	for mul in external_damage_mul_modifiers.values():
-		total *= float(mul)
-	return maxf(total, 0.05)
+		total_delta += float(mul) - 1.0
+	return maxf(1.0 + total_delta, 0.05)
 
 func get_projected_stats_with_module(module_instance: Module) -> Dictionary:
 	var projected := build_stat_snapshot()
