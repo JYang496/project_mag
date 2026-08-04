@@ -42,9 +42,13 @@ func setup(
 	return self
 
 func _ready() -> void:
+	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	_enforce_instance_cap()
 	if show_range_indicator:
 		queue_redraw()
+
+func cleanup_for_battle_end() -> void:
+	queue_free()
 
 func _process(delta: float) -> void:
 	_elapsed_sec += maxf(delta, 0.0)

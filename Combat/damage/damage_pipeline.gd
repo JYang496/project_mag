@@ -60,7 +60,9 @@ func apply_incoming_damage(target: Node, attack: Attack, profile: DamageProfile,
 	profile.write_hp(hp)
 
 	result.applied = true
-	result.final_damage = mini(incoming_damage, hp_before_damage)
+	result.final_damage = incoming_damage
+	result.health_damage = mini(incoming_damage, hp_before_damage)
+	result.overkill_damage = maxi(incoming_damage - hp_before_damage, 0)
 	result.damage_type = normalized_type
 
 	if hp <= 0:

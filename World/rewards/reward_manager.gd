@@ -29,8 +29,8 @@ func _exit_tree() -> void:
 		PhaseManager.phase_changed.disconnect(_on_phase_changed)
 
 func _on_phase_changed(new_phase: String) -> void:
-	var completed_battle := _last_phase == PhaseManager.BATTLE and new_phase == PhaseManager.PREPARE
-	var leaving_rest_area := _last_phase == PhaseManager.PREPARE and new_phase == PhaseManager.BATTLE
+	var completed_battle := _last_phase == PhaseManager.BATTLE and new_phase == PhaseManager.SETTLEMENT
+	var leaving_rest_area := new_phase == PhaseManager.BATTLE_STARTING
 	_last_phase = new_phase
 	if leaving_rest_area:
 		_settle_unclaimed_battle_drops()
@@ -41,11 +41,11 @@ func _on_phase_changed(new_phase: String) -> void:
 func _request_completed_battle_standard_draft() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
-	await get_tree().create_timer(BATTLE_END_REWARD_DELAY_SEC).timeout
+	await get_tree().process_frame
 	_open_completed_battle_standard_draft_if_ready()
 
 func _open_completed_battle_standard_draft_if_ready() -> void:
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
+	if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
 		RewardDraftRuntime.clear_standard_draft_opening()
 		return
 	if PhaseManager.is_post_battle_collect_gate_active():
@@ -59,13 +59,13 @@ func _open_completed_battle_standard_draft_if_ready() -> void:
 
 func _retry_completed_battle_standard_draft_after_task_reward() -> void:
 	await TaskRewardManager.pending_reward_changed
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
+	if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
 		return
 	call_deferred("_open_completed_battle_standard_draft_if_ready")
 
 func _retry_completed_battle_standard_draft_after_collect_gate() -> void:
 	await PhaseManager.post_battle_collect_gate_changed
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
+	if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
 		return
 	call_deferred("_open_completed_battle_standard_draft_if_ready")
 
@@ -115,6 +115,7 @@ func _request_standard_battle_reward_selection(level_index: int) -> void:
 		reward_options = build_standard_battle_draft_options(level_index)
 		if reward_options.is_empty():
 			RewardDraftRuntime.clear_standard_draft_opening()
+			PhaseManager.request_settlement_completion_check()
 			return
 		var draft_index := RewardDraftRuntime.get_next_standard_draft_index()
 		RewardDraftRuntime.set_pending_standard_draft(reward_options, {
@@ -123,6 +124,7 @@ func _request_standard_battle_reward_selection(level_index: int) -> void:
 		})
 	if reward_options.is_empty():
 		RewardDraftRuntime.clear_standard_draft_opening()
+		PhaseManager.request_settlement_completion_check()
 		return
 	var ui = GlobalVariables.ui
 	if ui == null or not is_instance_valid(ui) or not ui.has_method("request_reward_selection"):
@@ -130,6 +132,7 @@ func _request_standard_battle_reward_selection(level_index: int) -> void:
 		if grant_reward_immediately(reward_options[0]):
 			RewardDraftRuntime.clear_pending_standard_draft()
 			_commit_victory_reward_save()
+			PhaseManager.request_settlement_completion_check()
 		return
 	var reward_source_name := LocalizationManager.tr_key("ui.reward.battle_source", "Battle Reward")
 	var opened: bool = bool(ui.request_reward_selection(
@@ -151,6 +154,7 @@ func _request_standard_battle_reward_selection(level_index: int) -> void:
 	if grant_reward_immediately(reward_options[0]):
 		RewardDraftRuntime.clear_pending_standard_draft()
 		_commit_victory_reward_save()
+		PhaseManager.request_settlement_completion_check()
 
 func _is_reward_selection_panel_open(ui: Node) -> bool:
 	if ui == null or not is_instance_valid(ui):
@@ -323,13 +327,14 @@ func _on_standard_battle_reward_selected(reward: RewardInfo) -> void:
 	if grant_reward_immediately(reward):
 		RewardDraftRuntime.clear_pending_standard_draft()
 		_commit_victory_reward_save()
+		PhaseManager.request_settlement_completion_check()
 
 func _on_battle_reward_selected(reward: RewardInfo) -> void:
 	if grant_reward_immediately(reward):
 		_commit_victory_reward_save()
 
 func _commit_victory_reward_save() -> void:
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
+	if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
 		return
 	var result := SaveManager.commit_battle_success()
 	if not bool(result.get("ok", false)):
@@ -422,16 +427,7 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 		var module_instance := reward.module_scene.instantiate() as Module
 		if module_instance:
 			module_instance.set_module_level(_sanitize_module_level(int(reward.module_level)))
-			var module_result := InventoryData.obtain_module(module_instance)
-			if str(module_result.get("result", "")) == "stored":
-				var ui = GlobalVariables.ui
-				if ui and is_instance_valid(ui) and ui.has_method("request_module_equip_selection"):
-					ui.call(
-						"request_module_equip_selection",
-						module_instance,
-						Callable(),
-						true
-					)
+			InventoryData.obtain_module(module_instance)
 			granted_any = true
 	if granted_any:
 		_show_reward_granted_message(reward)

@@ -6,6 +6,7 @@ const REST_AREA_MENU_BRIDGE := preload("res://World/rest_area_menu_bridge.gd")
 const REST_AREA_AUTO_NAVIGATION := preload("res://World/rest_area_auto_navigation.gd")
 const REST_AREA_HINT_PRESENTER := preload("res://World/rest_area_hint_presenter.gd")
 const REST_AREA_ROUTE_FLOW := preload("res://World/rest_area_route_flow.gd")
+const REST_AREA_GROUND_TEXTURE: Texture2D = preload("res://asset/images/cells/rest_area_safe_medical.png")
 
 signal rest_menu_requested(zone_id: int, zone_center_global: Vector2)
 signal rest_menu_cancelled
@@ -16,7 +17,6 @@ signal rest_menu_cancelled
 @export var zone_move_speed: float = 500.0
 @export var zone_reach_distance: float = 6.0
 @export var menu_open_cooldown_msec: int = 150
-@export var zone4_hold_move_boost_mul: float = 2.2
 @export var zone_grid_color: Color = Color(0.70, 0.84, 1.0, 0.18)
 @export var zone_hover_color: Color = Color(0.44, 0.88, 1.0, 1.0)
 @export var zone_selected_color: Color = Color(0.38, 1.0, 0.58, 0.95)
@@ -25,24 +25,21 @@ signal rest_menu_cancelled
 @export var zone_grid_inner_alpha_multiplier: float = 0.45
 @export var zone_hover_fill_alpha: float = 0.12
 @export var zone_selected_fill_alpha: float = 0.16
-@export var zone4_hold_duration: float = 1.0
-@export var zone4_hold_color: Color = Color(0.36, 0.92, 0.56, 1.0)
-@export var zone4_hold_track_alpha: float = 0.36
-@export var zone4_hold_track_width: float = 4.0
-@export var zone4_hold_progress_width: float = 8.0
 @export var debug_click_logs: bool = false
 @export var zone_merchant_hint_text: String = "Purchase"
 @export var zone_smith_hint_text: String = "Upgrade"
 @export var zone_module_hint_text: String = "Warehouses"
 @export var zone_board_hint_text: String = "Board"
-@export var zone_battle_hold_hint_text: String = "Open battle menu"
+@export var zone_battle_hint_text: String = "Choose next protocol"
 @export var zone_hint_forward_offset: Vector2 = Vector2(0.0, -44.0)
+@export var zone_battle_hint_extra_offset: Vector2 = Vector2(0.0, -14.0)
 @export var zone_hint_z_index: int = 80
-@export var zone_hint_intro_duration: float = 1.5
+@export var zone_hint_intro_duration: float = 8.0
 
 var _board: BoardCellGenerator
 var _fade_tween: Tween
 var _active := false
+var _arrival_transition_locked := false
 var hover_zone_id := -1
 var selected_zone_id := 4
 var menu_open := false
@@ -54,9 +51,6 @@ var _arrival_token: int = 0
 var _camera_owner_active := false
 var _camera_owner_bound := false
 var _last_menu_open_msec: int = -1000000
-var _zone4_hold_elapsed := 0.0
-var _zone4_hold_triggered := false
-var _zone4_hold_boost_active: bool = false
 var _zone_hint_intro_remaining := 0.0
 var _zone_helper: RefCounted
 var _menu_bridge: RefCounted
@@ -76,7 +70,6 @@ const ZONE_ID_SMITH := 1
 const ZONE_ID_MODULE := 2
 const ZONE_ID_BOARD_EDIT := 6
 const CENTER_ZONE_ID := 4
-const ZONE4_HOLD_BOOST_SOURCE_ID: StringName = &"rest_zone4_hold_boost"
 const LEGACY_BLOCKING_UI_ROOTS: Array[StringName] = [
 	&"PrimaryMenuRoot",
 	&"ShoppingRootv2",
@@ -152,6 +145,12 @@ func _ready() -> void:
 	queue_redraw()
 	call_deferred("_setup_hybrid_hint_canvas")
 
+func _apply_terrain_texture() -> void:
+	if _sprite == null:
+		return
+	_sprite.texture = REST_AREA_GROUND_TEXTURE
+	terrain_visual_changed.emit(self, REST_AREA_GROUND_TEXTURE)
+
 func _setup_helpers() -> void:
 	var interactive_zone_ids: Array[int] = [
 		ZONE_ID_MERCHANT,
@@ -185,8 +184,9 @@ func _setup_helpers() -> void:
 		zone_smith_hint_text,
 		zone_module_hint_text,
 		zone_board_hint_text,
-		zone_battle_hold_hint_text,
+		zone_battle_hint_text,
 		zone_hint_forward_offset,
+		zone_battle_hint_extra_offset,
 		zone_hint_z_index,
 		zone_hover_color,
 		zone_selected_color
@@ -288,6 +288,10 @@ func _ensure_visual_layering() -> void:
 		_texture_root.z_index = -10
 
 func _on_phase_changed(new_phase: String) -> void:
+	if new_phase == PhaseManager.PROTOCOL_SELECTION:
+		_enter_non_prepare_phase()
+		call_deferred("_request_protocol_selection")
+		return
 	if _should_be_active(new_phase):
 		_enter_prepare_phase()
 		return
@@ -299,13 +303,13 @@ func _enter_prepare_phase() -> void:
 	_set_camera_owner_active(true)
 	call_deferred("_ensure_camera_owner_binding")
 	_reset_prepare_state(true)
-	_start_zone_hint_intro()
+	if not _arrival_transition_locked:
+		_start_zone_hint_intro()
 	_refresh_interaction_state()
 	if _start_battle_button:
 		_start_battle_button.reset_state()
 
 func _enter_non_prepare_phase() -> void:
-	_clear_zone4_hold_move_boost()
 	_zone_hint_intro_remaining = 0.0
 	_set_active(false, false)
 	_set_camera_owner_active(false)
@@ -314,7 +318,12 @@ func _enter_non_prepare_phase() -> void:
 	_refresh_interaction_state()
 
 func _should_be_active(phase: String) -> bool:
-	return phase == PhaseManager.PREPARE
+	return phase == PhaseManager.REST
+
+func _request_protocol_selection() -> void:
+	if PhaseManager.current_state() != PhaseManager.PROTOCOL_SELECTION or _route_flow == null:
+		return
+	_route_flow.call("request_battle_contract")
 
 func _apply_bounds_size() -> void:
 	if _board == null:
@@ -349,6 +358,21 @@ func get_spawn_position() -> Vector2:
 
 func is_active() -> bool:
 	return _active
+
+func set_arrival_transition_locked(locked: bool) -> void:
+	if _arrival_transition_locked == locked:
+		return
+	_arrival_transition_locked = locked
+	if locked:
+		_zone_hint_intro_remaining = 0.0
+	else:
+		if _active and PhaseManager.current_state() == PhaseManager.REST:
+			_start_zone_hint_intro()
+	_refresh_interaction_state()
+	queue_redraw()
+
+func is_arrival_transition_locked() -> bool:
+	return _arrival_transition_locked
 
 func _set_active(active: bool, immediate: bool) -> void:
 	if _active == active and not immediate:
@@ -448,7 +472,6 @@ func _process(delta: float) -> void:
 	_ensure_camera_owner_binding()
 	_sync_hybrid_hint_positions()
 	if not _is_interaction_enabled():
-		_reset_zone4_hold()
 		_zone_hint_intro_remaining = 0.0
 		_update_zone_hint_visibility()
 		CursorManager.clear_world_state(self)
@@ -581,7 +604,6 @@ func _stop_auto_move() -> void:
 	_emit_menu_on_arrival = false
 	if _auto_navigation != null:
 		_auto_navigation.call("stop_player_navigation")
-	_zone4_hold_boost_active = false
 
 func _start_return_to_center_after_battle() -> void:
 	# Reuse the same rest-area navigation pipeline as normal zone clicks.
@@ -590,7 +612,6 @@ func _start_return_to_center_after_battle() -> void:
 func _reset_prepare_state(move_player_to_center: bool) -> void:
 	menu_open = false
 	_stop_auto_move()
-	_reset_zone4_hold()
 	selected_zone_id = CENTER_ZONE_ID
 	_update_zone_hint_visuals()
 	_set_hover_zone(-1)
@@ -605,7 +626,6 @@ func _refresh_interaction_state() -> void:
 	set_process_input(enabled)
 	if not enabled:
 		_set_hover_zone(-1)
-		_reset_zone4_hold()
 		_zone_hint_intro_remaining = 0.0
 		_update_zone_hint_visibility()
 		CursorManager.clear_world_state(self)
@@ -614,6 +634,7 @@ func _is_interaction_enabled() -> bool:
 	return _active \
 		and visible \
 		and PhaseManager.current_state() == PhaseManager.PREPARE \
+		and not _arrival_transition_locked \
 		and not TaskRewardManager.is_reward_blocking_interactions()
 
 func is_module_management_available() -> bool:
@@ -669,6 +690,8 @@ func _sync_hybrid_hint_positions() -> void:
 		if label == null:
 			continue
 		var anchor_world := _get_zone_center_global(int(zone_id)) + zone_hint_forward_offset
+		if int(zone_id) == CENTER_ZONE_ID:
+			anchor_world += zone_battle_hint_extra_offset
 		var screen_position := hybrid_view.call("project_world_to_screen", anchor_world) as Vector2
 		label.position = screen_position - label.size * Vector2(0.5, 1.0)
 
@@ -678,8 +701,6 @@ func _set_hover_zone(zone_id: int) -> void:
 	hover_zone_id = zone_id
 	if debug_click_logs:
 		print("[RestArea] hover_zone=", hover_zone_id)
-	if hover_zone_id != CENTER_ZONE_ID:
-		_reset_zone4_hold()
 	_update_zone_hint_visuals()
 	_update_zone_hint_visibility()
 	_refresh_zone_hover_hint()
@@ -700,7 +721,7 @@ func _update_zone_hint_intro(delta: float) -> void:
 func _is_zone_hint_intro_active() -> bool:
 	return _zone_hint_intro_remaining > 0.0
 
-func _should_show_zone_hint_label(zone_id: int, is_center_hold_hint: bool = false) -> bool:
+func _should_show_zone_hint_label(zone_id: int, is_center_action_hint: bool = false) -> bool:
 	if not _is_interaction_enabled():
 		return false
 	if not _is_zone_available(zone_id):
@@ -709,8 +730,8 @@ func _should_show_zone_hint_label(zone_id: int, is_center_hold_hint: bool = fals
 		return false
 	if _is_zone_hint_intro_active():
 		return true
-	if is_center_hold_hint:
-		return hover_zone_id == CENTER_ZONE_ID or _zone4_hold_elapsed > 0.0
+	if is_center_action_hint:
+		return hover_zone_id == CENTER_ZONE_ID
 	if hover_zone_id == zone_id:
 		return true
 	return selected_zone_id == zone_id and zone_id != CENTER_ZONE_ID
@@ -823,42 +844,6 @@ func _is_zone_available(zone_id: int) -> bool:
 		return _board != null and _board.is_cell_system_visible()
 	return true
 
-func _update_zone4_hold(delta: float) -> void:
-	if not _is_zone4_hold_available():
-		_clear_zone4_hold_move_boost()
-		_reset_zone4_hold()
-		return
-	if not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-		_clear_zone4_hold_move_boost()
-		_reset_zone4_hold()
-		return
-	_ensure_zone4_hold_move_boost_active()
-	if _zone4_hold_triggered:
-		return
-	_zone4_hold_elapsed = minf(_zone4_hold_elapsed + maxf(delta, 0.0), maxf(zone4_hold_duration, 0.01))
-	if debug_click_logs:
-		print("[RestArea] zone4_hold=", snappedf(_zone4_hold_elapsed, 0.01), "/", zone4_hold_duration)
-	if _zone4_hold_elapsed < zone4_hold_duration:
-		queue_redraw()
-		return
-	_zone4_hold_triggered = true
-	_zone4_hold_elapsed = zone4_hold_duration
-	queue_redraw()
-	_on_start_battle_button_activated()
-
-func _is_zone4_hold_available() -> bool:
-	if not _is_interaction_enabled():
-		return false
-	if selected_zone_id != CENTER_ZONE_ID:
-		return false
-	if hover_zone_id != CENTER_ZONE_ID:
-		return false
-	if _is_menu_open():
-		return false
-	if _is_world_interaction_blocked():
-		return false
-	return true
-
 func _set_camera_owner_active(active: bool) -> void:
 	_camera_owner_active = active
 	if not active:
@@ -912,23 +897,6 @@ func _open_menu_after_stable_frames(zone_id: int, zone_center: Vector2, source: 
 	_sync_menu_open_with_ui()
 	queue_redraw()
 
-func _reset_zone4_hold() -> void:
-	var needs_redraw := _zone4_hold_elapsed > 0.0
-	_zone4_hold_elapsed = 0.0
-	_zone4_hold_triggered = false
-	if needs_redraw:
-		queue_redraw()
-
-func _ensure_zone4_hold_move_boost_active() -> void:
-	if _auto_navigation != null:
-		_auto_navigation.call("ensure_zone4_hold_move_boost_active", zone4_hold_move_boost_mul)
-		_zone4_hold_boost_active = bool(_auto_navigation.call("is_zone4_hold_boost_active"))
-
-func _clear_zone4_hold_move_boost() -> void:
-	if _auto_navigation != null:
-		_auto_navigation.call("clear_zone4_hold_move_boost")
-	_zone4_hold_boost_active = false
-
 func _apply_zone_move_speed_override() -> void:
 	if _auto_navigation != null:
 		_auto_navigation.call("configure_zone_move_speed", zone_move_speed)
@@ -936,52 +904,6 @@ func _apply_zone_move_speed_override() -> void:
 func _clear_zone_move_speed_override() -> void:
 	if _auto_navigation != null:
 		_auto_navigation.call("clear_zone_move_speed_override")
-
-func _draw_zone4_hold_progress() -> void:
-	if hover_zone_id != CENTER_ZONE_ID and _zone4_hold_elapsed <= 0.0:
-		return
-	var zone_rect := _get_zone_rect_local(CENTER_ZONE_ID)
-	if zone_rect.size.x <= 0.0 or zone_rect.size.y <= 0.0:
-		return
-	var ratio := 0.0
-	if zone4_hold_duration > 0.0:
-		ratio = clampf(_zone4_hold_elapsed / zone4_hold_duration, 0.0, 1.0)
-	var track_rect := zone_rect.grow(6.0)
-	var base_color := Color(zone4_hold_color.r, zone4_hold_color.g, zone4_hold_color.b, clampf(zone4_hold_track_alpha, 0.0, 1.0))
-	draw_rect(track_rect, base_color, false, maxf(zone4_hold_track_width, 1.0))
-	if ratio > 0.0:
-		_draw_rect_perimeter_progress(track_rect, ratio, zone4_hold_color, maxf(zone4_hold_progress_width, 1.0))
-
-func _draw_rect_perimeter_progress(rect: Rect2, ratio: float, color: Color, width: float) -> void:
-	var p0 := rect.position
-	var p1 := Vector2(rect.end.x, rect.position.y)
-	var p2 := rect.end
-	var p3 := Vector2(rect.position.x, rect.end.y)
-	var len_top := p0.distance_to(p1)
-	var len_right := p1.distance_to(p2)
-	var len_bottom := p2.distance_to(p3)
-	var len_left := p3.distance_to(p0)
-	var total := len_top + len_right + len_bottom + len_left
-	if total <= 0.0:
-		return
-	var remaining := clampf(ratio, 0.0, 1.0) * total
-	remaining = _draw_progress_segment(p0, p1, remaining, color, width)
-	remaining = _draw_progress_segment(p1, p2, remaining, color, width)
-	remaining = _draw_progress_segment(p2, p3, remaining, color, width)
-	_draw_progress_segment(p3, p0, remaining, color, width)
-
-func _draw_progress_segment(from: Vector2, to: Vector2, remaining: float, color: Color, width: float) -> float:
-	if remaining <= 0.0:
-		return 0.0
-	var seg_len := from.distance_to(to)
-	if seg_len <= 0.0:
-		return remaining
-	if remaining >= seg_len:
-		draw_line(from, to, color, width)
-		return remaining - seg_len
-	var t := remaining / seg_len
-	draw_line(from, from.lerp(to, t), color, width)
-	return 0.0
 
 func _refresh_cursor_state() -> void:
 	if not _is_interaction_enabled():

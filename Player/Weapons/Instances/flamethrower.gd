@@ -8,7 +8,7 @@ const CONE_SPRAY_VFX_SCENE: PackedScene = preload("res://Player/Weapons/Effects/
 var ITEM_NAME := "Flamethrower"
 
 @export_range(5.0, 120.0, 1.0) var cone_half_angle_deg: float = 40.0
-@export_range(40.0, 1200.0, 1.0) var base_flame_range: float = 280.0
+@export_range(40.0, 1200.0, 1.0) var base_flame_range: float = 180.0
 @export var heat_accumulation: float = 5.0
 @export var max_heat: float = 80.0
 @export var heat_cooldown_rate: float = 5.0
@@ -20,7 +20,7 @@ var ITEM_NAME := "Flamethrower"
 ## Debug mode: 显示攻击范围扇形
 @export var debug_mode: bool = false
 
-var attack_range: float = 280.0
+var attack_range: float = 180.0
 ## 已攻击过的目标ID（每轮射击重置）
 var _attacked_target_ids: Dictionary = {}
 var _heat_prepared_firing_elapsed_sec: float = 0.0
@@ -28,15 +28,15 @@ var _flame_vfx: Node
 var _primary_fire_held: bool = false
 
 var weapon_data := {
-	"1": {"damage": "8", "fire_interval_sec": "0.30", "ammo": "20", "range": "260"},
-	"2": {"damage": "10", "fire_interval_sec": "0.30", "ammo": "20", "range": "270"},
-	"3": {"damage": "12", "fire_interval_sec": "0.30", "ammo": "20", "range": "285"},
-	"4": {"damage": "14", "fire_interval_sec": "0.30", "ammo": "20", "range": "300"},
-	"5": {"damage": "17", "fire_interval_sec": "0.25", "ammo": "20", "range": "320"},
-	"6": {"damage": "20", "fire_interval_sec": "0.25", "ammo": "20", "range": "340"},
-	"7": {"damage": "23", "fire_interval_sec": "0.25", "ammo": "20", "range": "365"},
-	"8": {"damage": "26", "fire_interval_sec": "0.25", "ammo": "20", "range": "390"},
-	"9": {"damage": "29", "fire_interval_sec": "0.25", "ammo": "20", "range": "415"}
+	"1": {"damage": "8", "fire_interval_sec": "0.30", "ammo": "20", "range": "180"},
+	"2": {"damage": "10", "fire_interval_sec": "0.30", "ammo": "20", "range": "190"},
+	"3": {"damage": "12", "fire_interval_sec": "0.30", "ammo": "20", "range": "200"},
+	"4": {"damage": "14", "fire_interval_sec": "0.30", "ammo": "20", "range": "210"},
+	"5": {"damage": "17", "fire_interval_sec": "0.25", "ammo": "20", "range": "220"},
+	"6": {"damage": "20", "fire_interval_sec": "0.25", "ammo": "20", "range": "230"},
+	"7": {"damage": "23", "fire_interval_sec": "0.25", "ammo": "20", "range": "240"},
+	"8": {"damage": "26", "fire_interval_sec": "0.25", "ammo": "20", "range": "250"},
+	"9": {"damage": "29", "fire_interval_sec": "0.25", "ammo": "20", "range": "260"}
 }
 
 func _ready() -> void:

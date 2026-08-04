@@ -4,6 +4,9 @@ class_name ModuleManagementDetailPresenter
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const MODULE_FIT_FORMATTER := preload("res://UI/scripts/module_fit_formatter.gd")
 const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
+const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
+const WEAPON_DISPLAY_POLICY := preload("res://UI/scripts/presentation/weapon_display_policy.gd")
+const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
 
 var owner_view: Node
 var detail_title: Label
@@ -29,19 +32,36 @@ func refresh_weapon_detail(selected_equipped_weapon: Weapon, selected_stored_wea
 			LocalizationManager.tr_key("ui.weapon.warehouse.select_hint", "Select a held weapon to store, or a stored weapon to equip or exchange.")
 		)
 		return
-	detail_title.text = LocalizationManager.get_weapon_instance_display_name(active_weapon)
+	var model = WEAPON_DISPLAY_BUILDER.build_from_instance(active_weapon, false, _get_weapon_location(active_weapon))
+	detail_title.text = model.display_name
 	detail_title.add_theme_color_override("font_color", get_weapon_rarity_color(active_weapon))
-	detail_subtitle.text = _get_weapon_location(active_weapon)
+	detail_subtitle.text = model.location
 	_add_detail_line(
 		LocalizationManager.tr_key("ui.common.level", "Level"),
-		"Lv.%d/%d" % [int(active_weapon.level), int(active_weapon.max_level)]
+		"Lv.%d/%d" % [model.level, model.max_level]
 	)
-	_add_detail_line(LocalizationManager.tr_key("ui.weapon.fuse", "Fuse"), str(int(active_weapon.fuse)))
+	_add_detail_line(LocalizationManager.tr_key("ui.weapon.fuse", "Fuse"), str(model.fuse))
+	if model.description != "":
+		_add_detail_text(model.description)
+	_add_detail_line(LocalizationManager.tr_key("ui.service.detail.weapon_type", "Weapon Type"), model.taxonomy_text())
+	if not model.selected_branches.is_empty():
+		var branch_names := PackedStringArray()
+		for branch_data in model.selected_branches:
+			branch_names.append(str(branch_data.get("name", "")))
+		_add_detail_line(LocalizationManager.tr_key("ui.service.detail.branches", "Branches"), " / ".join(branch_names))
 	_add_detail_line(
 		LocalizationManager.tr_key("ui.weapon.modules", "Modules"),
-		LocalizationManager.tr_key("ui.weapon.warehouse.modules_removed", "Stored weapons do not keep modules.")
+		"%d/%d · %s" % [
+			model.module_count,
+			model.module_capacity,
+			LocalizationManager.tr_key("ui.weapon.warehouse.modules_removed", "Stored weapons do not keep modules."),
+		]
 	)
-	_add_detail_text(build_weapon_param_summary(active_weapon))
+	_add_detail_text(WEAPON_STAT_FORMATTER.format_summary(
+		model.current_stats,
+		WEAPON_DISPLAY_POLICY.summary_limit(WEAPON_DISPLAY_POLICY.WAREHOUSE_DETAIL),
+		"\n"
+	))
 
 func refresh_module_detail(selected_module: Module, selected_equipped_module: Module, selected_equipped_module_weapon: Weapon) -> void:
 	var active_module := selected_module if selected_module != null else selected_equipped_module
@@ -103,16 +123,12 @@ func get_weapon_rarity_color(weapon: Weapon) -> Color:
 func build_weapon_param_summary(weapon: Weapon) -> String:
 	if weapon == null or not is_instance_valid(weapon):
 		return ""
-	var weapon_data_variant: Variant = weapon.get("weapon_data")
-	if not (weapon_data_variant is Dictionary):
-		return ""
-	var current_data := weapon.get_weapon_level_data(weapon.level, weapon_data_variant as Dictionary)
-	var keys := ["damage", "fire_interval_sec", "ammo", "speed", "projectile_hits", "bullet_count"]
-	var parts := PackedStringArray()
-	for key in keys:
-		if current_data.has(key):
-			parts.append("%s: %s" % [key, str(current_data[key])])
-	return "  ".join(parts)
+	var model = WEAPON_DISPLAY_BUILDER.build_from_instance(weapon)
+	return WEAPON_STAT_FORMATTER.format_summary(
+		model.current_stats,
+		WEAPON_DISPLAY_POLICY.summary_limit(WEAPON_DISPLAY_POLICY.WAREHOUSE_DETAIL),
+		"  "
+	)
 
 func format_module_install_targets(module_instance: Module) -> String:
 	if module_instance == null or not is_instance_valid(module_instance):

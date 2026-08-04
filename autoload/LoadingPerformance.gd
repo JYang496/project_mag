@@ -2,6 +2,8 @@ extends Node
 
 const LONG_FRAME_MS := 33.0
 const RUNTIME_DIAGNOSTICS_SCRIPT := preload("res://autoload/RuntimeDiagnostics.gd")
+const START_MENU_PREVIEW_SCRIPT := preload("res://UI/scripts/components/start_menu_backdrop.gd")
+const WORLD_PREVIEW_COVER_SEC := 0.62
 const ORDER := [
 	"start_menu_ready", "prewarm_started", "prewarm_finished",
 	"start_button_pressed", "threaded_load_started", "threaded_load_finished",
@@ -17,6 +19,12 @@ var _segments: Dictionary = {}
 var _long_frames: Array[Dictionary] = []
 var _monitor_frames := false
 var _world_build_overlay: CanvasLayer
+var _world_build_overlay_root: ColorRect
+var _world_build_label: Label
+var _world_preview: Control
+var _world_preview_handoff_active := false
+var _world_preview_cover_tween: Tween
+var _world_build_handoff_tween: Tween
 
 func _ready() -> void:
 	_world_build_overlay = CanvasLayer.new()
@@ -25,11 +33,20 @@ func _ready() -> void:
 	_world_build_overlay.visible = false
 	add_child(_world_build_overlay)
 	var background := ColorRect.new()
+	_world_build_overlay_root = background
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.color = Color(0.015, 0.02, 0.03, 1.0)
 	background.mouse_filter = Control.MOUSE_FILTER_STOP
 	_world_build_overlay.add_child(background)
+	_world_preview = Control.new()
+	_world_preview.name = "WorldEntryRestPreview"
+	_world_preview.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_world_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_world_preview.set_script(START_MENU_PREVIEW_SCRIPT)
+	_world_preview.visible = false
+	background.add_child(_world_preview)
 	var label := Label.new()
+	_world_build_label = label
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	label.text = "Loading..."
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -70,8 +87,6 @@ func begin_menu_session() -> void:
 	mark("start_menu_ready")
 
 func mark(label: String) -> void:
-	if label == "world_ready":
-		hide_world_build_overlay()
 	if not enabled or _marks.has(label):
 		return
 	_marks[label] = Time.get_ticks_usec()
@@ -81,11 +96,123 @@ func mark(label: String) -> void:
 
 func show_world_build_overlay() -> void:
 	if _world_build_overlay != null:
+		_stop_world_build_handoff()
+		if _world_preview_handoff_active:
+			_world_build_overlay.visible = true
+			_world_build_overlay_root.modulate.a = 1.0
+			return
+		_stop_world_preview_cover()
+		_world_preview_handoff_active = false
+		_world_build_overlay_root.color.a = 1.0
+		_world_build_overlay_root.modulate.a = 1.0
+		_world_preview.visible = false
+		_world_build_label.visible = true
 		_world_build_overlay.visible = true
 
 func hide_world_build_overlay() -> void:
 	if _world_build_overlay != null:
+		_stop_world_build_handoff()
+		_stop_world_preview_cover()
+		_world_preview_handoff_active = false
 		_world_build_overlay.visible = false
+		_world_preview.visible = false
+		_world_build_label.visible = false
+		_world_build_overlay_root.color.a = 1.0
+		_world_build_overlay_root.modulate.a = 1.0
+
+func begin_world_preview_handoff() -> void:
+	if _world_build_overlay == null or _world_build_overlay_root == null or _world_preview == null:
+		return
+	_stop_world_build_handoff()
+	_stop_world_preview_cover()
+	_world_preview_handoff_active = true
+	_world_build_overlay.visible = true
+	_world_build_overlay_root.modulate.a = 1.0
+	_world_build_overlay_root.color.a = 0.0
+	_world_build_label.visible = false
+	_world_preview.visible = true
+	_world_preview.call("reset_handoff")
+	_world_preview.call("begin_loading")
+	_world_preview.call("set_loading_progress", 0.06)
+	_world_preview_cover_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	_world_preview_cover_tween.set_parallel(true)
+	_world_preview_cover_tween.tween_property(
+		_world_build_overlay_root,
+		"color:a",
+		1.0,
+		0.34
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_world_preview_cover_tween.tween_method(
+		Callable(self, "_set_world_preview_progress"),
+		0.0,
+		1.0,
+		WORLD_PREVIEW_COVER_SEC
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+
+func wait_for_world_preview_cover() -> void:
+	var tween := _world_preview_cover_tween
+	if tween != null and tween.is_valid():
+		await tween.finished
+
+func cancel_world_preview_handoff() -> void:
+	_stop_world_preview_cover()
+	_world_preview_handoff_active = false
+	if _world_build_overlay != null:
+		_world_build_overlay.visible = false
+		_world_build_overlay_root.color.a = 1.0
+		_world_build_overlay_root.modulate.a = 1.0
+	if _world_preview != null:
+		_world_preview.visible = false
+	if _world_build_label != null:
+		_world_build_label.visible = false
+
+func is_world_preview_handoff_active() -> bool:
+	return _world_preview_handoff_active
+
+func update_world_preview_loading_progress(value: float) -> void:
+	if not _world_preview_handoff_active or _world_preview == null or not is_instance_valid(_world_preview):
+		return
+	_world_preview.call("set_loading_progress", value)
+
+func _set_world_preview_progress(value: float) -> void:
+	if _world_preview != null and is_instance_valid(_world_preview):
+		_world_preview.call("set_handoff_progress", value)
+
+func begin_world_build_handoff(duration: float = 0.12) -> void:
+	if _world_build_overlay == null or not _world_build_overlay.visible:
+		return
+	update_world_preview_loading_progress(1.0)
+	_stop_world_build_handoff()
+	_world_build_handoff_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	_world_build_handoff_tween.tween_property(
+		_world_build_overlay_root,
+		"modulate:a",
+		0.0,
+		maxf(duration, 0.0)
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_world_build_handoff_tween.tween_callback(_complete_world_build_handoff)
+
+func _complete_world_build_handoff() -> void:
+	if _world_build_overlay != null:
+		_world_build_overlay.visible = false
+		_world_build_overlay_root.modulate.a = 1.0
+		_world_build_overlay_root.color.a = 1.0
+	_world_preview_handoff_active = false
+	if _world_preview != null:
+		_world_preview.visible = false
+	if _world_build_label != null:
+		_world_build_label.visible = false
+	_world_build_handoff_tween = null
+
+func _stop_world_build_handoff() -> void:
+	if _world_build_handoff_tween != null and _world_build_handoff_tween.is_valid():
+		_world_build_handoff_tween.kill()
+	_world_build_handoff_tween = null
+
+func _stop_world_preview_cover() -> void:
+	if _world_preview_cover_tween != null and _world_preview_cover_tween.is_valid():
+		_world_preview_cover_tween.kill()
+	_world_preview_cover_tween = null
 
 func begin_segment(label: String) -> void:
 	if not enabled:

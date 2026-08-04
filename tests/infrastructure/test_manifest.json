@@ -34,6 +34,16 @@
       "timeout_seconds": 20
     },
     {
+      "id": "ui.start_menu_layout",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/start_menu_layout_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["world", "data"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 30
+    },
+    {
       "id": "ui.audio_settings",
       "entry_type": "scene",
       "path": "res://tests/scenes/ui/audio_settings_test.tscn",
@@ -89,6 +99,16 @@
       "path": "res://tests/scenes/ui/weapon_selector_status_test.tscn",
       "domain": "ui",
       "dependency_domains": ["weapon"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 45
+    },
+    {
+      "id": "ui.weapon_display_model",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/weapon_display_model_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["weapon", "reward"],
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 45
@@ -154,6 +174,46 @@
       "timeout_seconds": 20
     },
     {
+      "id": "world.board_soft_clear_lifecycle",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/world/board_soft_clear_lifecycle_test.tscn",
+      "domain": "world",
+      "dependency_domains": ["cell", "combat", "player", "ui"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "world.battlefield_deployment_runtime",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/world/battlefield_deployment_runtime_test.tscn",
+      "domain": "world",
+      "dependency_domains": ["cell", "combat", "player", "ui"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "world.rest_area_arrival_runtime",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/world/rest_area_arrival_runtime_test.tscn",
+      "domain": "world",
+      "dependency_domains": ["cell", "player", "ui"],
+      "parallel_safe": false,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "world.early_combat_pacing",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/world/early_combat_pacing_test.tscn",
+      "domain": "world",
+      "dependency_domains": ["spawn", "combat", "reward", "data"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
       "id": "world.rest_area_shop_visibility",
       "entry_type": "scene",
       "path": "res://tests/scenes/world/rest_area_shop_visibility_test.tscn",
@@ -167,6 +227,16 @@
       "id": "weapon.runtime_chain",
       "entry_type": "scene",
       "path": "res://tests/scenes/weapon/weapon_runtime_chain_test.tscn",
+      "domain": "weapon",
+      "dependency_domains": ["player", "combat", "world"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "weapon.flamethrower_range_contract",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/weapon/flamethrower_range_contract_test.tscn",
       "domain": "weapon",
       "dependency_domains": ["player", "combat", "world"],
       "parallel_safe": true,
@@ -242,6 +312,26 @@
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 45
+    },
+    {
+      "id": "enemy.tar_slow_zone_ground_visual",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/enemy/tar_slow_zone_ground_visual_test.tscn",
+      "domain": "enemy",
+      "dependency_domains": ["world", "combat", "player"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "enemy.mortar_impact_visual",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/enemy/mortar_impact_visual_test.tscn",
+      "domain": "enemy",
+      "dependency_domains": ["world", "combat", "player"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
     },
     {
       "id": "enemy.body_collision_policy",

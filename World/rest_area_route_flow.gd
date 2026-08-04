@@ -9,11 +9,10 @@ func setup(owner_node: Node) -> void:
 func on_start_battle_button_activated() -> void:
 	if _battle_start_pending:
 		return
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
+	if PhaseManager.current_state() != PhaseManager.REST:
 		return
 	if TaskRewardManager.is_reward_blocking_interactions():
 		return
-	_owner.call("_clear_zone4_hold_move_boost")
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("request_temporary_module_settlement"):
 		ui.call(
@@ -27,17 +26,16 @@ func on_start_battle_button_activated() -> void:
 func on_battle_start_cancelled() -> void:
 	_battle_start_pending = false
 	BattleContractManager.cancel_offer()
-	_owner.call("_clear_zone4_hold_move_boost")
-	_owner.call("_reset_zone4_hold")
+	PhaseManager.return_to_rest_from_protocol_selection()
 	_owner.call("_reset_start_battle_button")
 
 func continue_start_battle() -> void:
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
+	if PhaseManager.current_state() != PhaseManager.REST:
 		return
 	commit_board_edits_and_continue_start_battle()
 
 func commit_board_edits_and_continue_start_battle() -> void:
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
+	if PhaseManager.current_state() != PhaseManager.REST:
 		return
 	if CellTaskModuleRuntime.has_unassigned_modules():
 		var unassigned_count := CellTaskModuleRuntime.get_inventory_size()
@@ -63,8 +61,10 @@ func discard_unassigned_task_modules_and_continue_start_battle() -> void:
 	commit_board_edits_and_continue_start_battle()
 
 func request_battle_contract() -> void:
-	if _battle_start_pending or PhaseManager.current_state() != PhaseManager.PREPARE:
+	if _battle_start_pending or PhaseManager.current_state() not in [PhaseManager.REST, PhaseManager.PROTOCOL_SELECTION]:
 		return
+	if PhaseManager.current_state() == PhaseManager.REST:
+		PhaseManager.enter_protocol_selection()
 	if BattleContractManager.is_boss_battle():
 		start_battle(false, true)
 		return
@@ -92,10 +92,25 @@ func request_battle_contract() -> void:
 func _on_contract_confirmed() -> void:
 	if not _battle_start_pending or not BattleContractManager.confirm_selection():
 		return
+	if BattleContractManager.selected_contract != null \
+			and BattleContractManager.selected_contract.contract_id == &"rest":
+		var ui = GlobalVariables.ui
+		var can_play_rest_intro := ui != null and is_instance_valid(ui) \
+			and ui.has_method("prepare_rest_area_entry_transition") \
+			and ui.has_method("play_rest_area_entry_intro")
+		if ui != null and is_instance_valid(ui) and ui.has_method("close_battle_contract_selection"):
+			ui.call("close_battle_contract_selection")
+		if can_play_rest_intro:
+			ui.call("prepare_rest_area_entry_transition")
+		PhaseManager.enter_rest()
+		if can_play_rest_intro:
+			await ui.call("play_rest_area_entry_intro")
+		_battle_start_pending = false
+		return
 	start_battle(true)
 
 func start_battle(has_contract: bool = false, is_boss: bool = false) -> void:
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
+	if PhaseManager.current_state() != PhaseManager.PROTOCOL_SELECTION:
 		return
 	if has_contract and BattleContractManager.selected_contract == null:
 		return
@@ -117,17 +132,23 @@ func start_battle(has_contract: bool = false, is_boss: bool = false) -> void:
 	if PlayerData.player != null and is_instance_valid(PlayerData.player):
 		if PlayerData.player.has_method("set_restarea_camera_control_enabled"):
 			PlayerData.player.call("set_restarea_camera_control_enabled", false)
+	var battle_ui = GlobalVariables.ui
+	if battle_ui != null and is_instance_valid(battle_ui) \
+			and battle_ui.has_method("prepare_battle_entry_transition"):
+		battle_ui.call("prepare_battle_entry_transition")
+	PhaseManager.enter_battle_starting()
+	if battle_ui != null and is_instance_valid(battle_ui) and battle_ui.has_method("play_battle_entry_intro"):
+		await battle_ui.call("play_battle_entry_intro", is_boss)
+	if PhaseManager.current_state() != PhaseManager.BATTLE_STARTING:
+		_battle_start_pending = false
+		return
 	PhaseManager.enter_battle()
 	BattleContractManager.start_current_battle()
-	var battle_ui = GlobalVariables.ui
-	if battle_ui != null and is_instance_valid(battle_ui) and battle_ui.has_method("play_battle_entry_intro"):
-		battle_ui.call_deferred("play_battle_entry_intro", is_boss)
 	if PlayerData.player != null and is_instance_valid(PlayerData.player):
 		if PlayerData.player.has_method("_update_vision_effect"):
 			PlayerData.player.call_deferred("_update_vision_effect")
 		if PlayerData.player.has_method("force_recover_battle_camera_zoom"):
 			PlayerData.player.call_deferred("force_recover_battle_camera_zoom")
-	_owner.call("_clear_zone4_hold_move_boost")
 	_battle_start_pending = false
 
 func _get_board() -> BoardCellGenerator:

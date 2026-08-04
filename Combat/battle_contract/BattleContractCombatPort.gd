@@ -17,6 +17,9 @@ signal beacon_presence_changed(snapshot: Dictionary)
 func get_level_index() -> int:
 	return 0
 
+func get_level_duration_sec() -> float:
+	return 30.0
+
 func is_boss_battle() -> bool:
 	return false
 

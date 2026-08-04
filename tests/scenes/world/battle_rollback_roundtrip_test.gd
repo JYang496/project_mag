@@ -26,7 +26,7 @@ func _run() -> void:
 
 	_seed_pre_battle_state()
 	_expect(PlayerData.player_level == 4 and PlayerData.player_exp == 37, "seeded progression must match the intended pre-battle state")
-	_expect(TaskRewardManager.begin_battle_snapshot(), "snapshot must be created in prepare phase")
+	_expect(TaskRewardManager.begin_battle_snapshot(), "snapshot must be created during protocol selection")
 	_expect(FileAccess.file_exists(TaskRewardManager.ROLLBACK_PATH), "rollback file must exist")
 	_pollute_battle_state()
 
@@ -39,7 +39,7 @@ func _run() -> void:
 	await get_tree().process_frame
 
 	# A malformed snapshot is a safe failure: no crash, no partial restoration loop.
-	PhaseManager.phase = PhaseManager.PREPARE
+	PhaseManager.phase = PhaseManager.PROTOCOL_SELECTION
 	_expect(TaskRewardManager.begin_battle_snapshot(), "second snapshot setup must succeed")
 	var corrupt := FileAccess.open(TaskRewardManager.ROLLBACK_PATH, FileAccess.WRITE)
 	if corrupt:
@@ -54,7 +54,7 @@ func _run() -> void:
 	_finish()
 
 func _seed_pre_battle_state() -> void:
-	PhaseManager.phase = PhaseManager.PREPARE
+	PhaseManager.phase = PhaseManager.PROTOCOL_SELECTION
 	PhaseManager.current_level = 3
 	for weapon_ref in PlayerData.player_weapon_list.duplicate():
 		var default_weapon := weapon_ref as Weapon

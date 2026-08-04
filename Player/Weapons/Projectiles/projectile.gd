@@ -67,6 +67,7 @@ signal overlapping_signal()
 var hitbox_ins
 
 func _ready() -> void:
+	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	_prepare_for_spawn()
 	_is_pooled = true
 
@@ -241,6 +242,9 @@ func despawn() -> void:
 		object_pool.release(self)
 	else:
 		queue_free()
+
+func cleanup_for_battle_end() -> void:
+	despawn()
 
 func _on_before_pooled() -> void:
 	expire_timer.stop()

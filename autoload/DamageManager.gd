@@ -126,17 +126,19 @@ func apply_to_target_result(target: Node, data: DamageData) -> DamageResult:
 	var component := target.get_node_or_null("Damageable")
 	if component and component.has_method("apply_damage_data"):
 		var component_result: Variant = component.apply_damage_data(data)
+		var component_has_authoritative_result := component_result is DamageResult
 		if component_result is DamageResult:
 			result = component_result as DamageResult
 		else:
 			result.applied = bool(component_result)
 			result.accepted = result.applied
-		_populate_damage_result(result, target, data, hp_before)
+		_populate_damage_result(result, target, data, hp_before, not component_has_authoritative_result)
 		_notify_player_weapon_damage_applied(target, data, result)
 		return result
 
 	if target.has_method("damaged"):
 		var target_result: Variant = target.damaged(data.to_attack())
+		var target_has_authoritative_result := target_result is DamageResult
 		if target_result is DamageResult:
 			result = target_result as DamageResult
 		else:
@@ -144,7 +146,7 @@ func apply_to_target_result(target: Node, data: DamageData) -> DamageResult:
 			# authoritative where the target exposes an hp property.
 			result.applied = true
 			result.accepted = true
-		_populate_damage_result(result, target, data, hp_before)
+		_populate_damage_result(result, target, data, hp_before, not target_has_authoritative_result)
 		_notify_player_weapon_damage_applied(target, data, result)
 		return result
 	return result
@@ -201,7 +203,13 @@ func _notify_player_weapon_damage_applied(target: Node, data: DamageData, result
 	source_weapon.call("on_damage_applied", target, data, result)
 
 
-func _populate_damage_result(result: DamageResult, target: Node, data: DamageData, hp_before: Variant) -> void:
+func _populate_damage_result(
+	result: DamageResult,
+	target: Node,
+	data: DamageData,
+	hp_before: Variant,
+	derive_damage_amounts: bool = true
+) -> void:
 	if result == null or data == null:
 		return
 	result.damage_type = Attack.normalize_damage_type(data.damage_type)
@@ -209,11 +217,18 @@ func _populate_damage_result(result: DamageResult, target: Node, data: DamageDat
 	result.is_critical = data.is_critical
 	if not result.applied:
 		return
-	var hp_after: Variant = _read_target_hp(target)
-	if hp_before != null and hp_after != null:
-		result.final_damage = max(0, int(hp_before) - int(hp_after))
-	else:
-		result.final_damage = max(0, int(data.amount))
+	if derive_damage_amounts:
+		var hp_after: Variant = _read_target_hp(target)
+		if hp_before != null and hp_after != null:
+			var observed_damage: int = maxi(0, int(hp_before) - int(hp_after))
+			var remaining_hp: int = maxi(int(hp_before), 0)
+			result.final_damage = observed_damage
+			result.health_damage = mini(observed_damage, remaining_hp)
+			result.overkill_damage = maxi(observed_damage - remaining_hp, 0)
+		else:
+			result.final_damage = max(0, int(data.amount))
+			result.health_damage = result.final_damage
+			result.overkill_damage = 0
 	if target != null and is_instance_valid(target) and target.get("is_dead") != null:
 		result.killed = bool(target.get("is_dead"))
 	_play_player_weapon_hit_feedback(target, data, result)

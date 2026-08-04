@@ -30,6 +30,7 @@ func bootstrap_core() -> void:
 	owner_ui.ammo_label = owner_ui.hud_presenter.ensure_ammo_label(owner_ui.hp_label_label)
 	owner_ui.resource_label = owner_ui.hud_presenter.ensure_resource_label_under_hp(owner_ui.resource_label, owner_ui.hp_label_label)
 	owner_ui.weapon_state_label = owner_ui.hud_presenter.ensure_weapon_state_label(owner_ui.character_root)
+	owner_ui.hud_presenter.ensure_phase_controlled_roots()
 	LoadingPerformance.end_segment("ui_bootstrap_hud")
 	LoadingPerformance.begin_segment("ui_bootstrap_controllers")
 	owner_ui._init_weapon_passive_presenter()

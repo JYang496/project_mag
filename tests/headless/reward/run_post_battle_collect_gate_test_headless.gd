@@ -55,17 +55,16 @@ func _run() -> void:
 
 	var rest_center := _rest_area.get_spawn_position()
 	_player.global_position = rest_center + Vector2(180.0, 0.0)
-	PhaseManager.phase = PhaseManager.PREPARE
+	PhaseManager.phase = PhaseManager.SETTLEMENT
 	PhaseManager.begin_post_battle_collect_gate(5.0)
-	_rest_area.call("_on_phase_changed", PhaseManager.PREPARE)
+	_rest_area.call("_on_phase_changed", PhaseManager.SETTLEMENT)
 	await get_tree().process_frame
 	await get_tree().process_frame
 
 	_expect(PhaseManager.is_post_battle_collect_gate_active(), "expected collect gate to be active")
 	_expect(TaskRewardManager.is_reward_blocking_interactions(), "expected collect gate to block rest rewards")
-	_expect(_player.is_auto_nav_active(), "player should auto-navigate to rest center while collect gate is active")
-	_expect(not bool(_player.movement_enabled), "manual player movement should remain disabled during collect gate auto-navigation")
-	_expect(_player.moveto_dest.distance_to(rest_center) <= 1.0, "auto-navigation target should be rest center")
+	_expect(not _rest_area.is_active(), "rest area must remain inactive during reward settlement")
+	_expect(not _player.is_auto_nav_active(), "settlement must not route the player into an unselected rest protocol")
 
 	var reward := RewardInfo.new()
 	reward.gold_value = 1
@@ -81,6 +80,7 @@ func _run() -> void:
 	await get_tree().process_frame
 
 	_expect(_is_reward_panel_open(), "reward panel should open after collect gate clears")
+	_expect(PhaseManager.current_state() == PhaseManager.SETTLEMENT, "settlement remains active until the reward is confirmed")
 	_expect(not PhaseManager.is_post_battle_collect_gate_active(), "expected collect gate to be inactive after completion")
 
 	_finish()

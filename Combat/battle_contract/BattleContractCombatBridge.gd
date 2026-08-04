@@ -42,6 +42,10 @@ func unbind() -> void:
 func get_level_index() -> int:
 	return maxi(PhaseManager.current_level, 0)
 
+func get_level_duration_sec() -> float:
+	var plan := _get_level_plan()
+	return float(maxi(plan.time_out_sec, 1)) if plan != null else 30.0
+
 func is_boss_battle() -> bool:
 	var plan := _get_level_plan()
 	return plan != null and plan.is_boss
@@ -299,7 +303,7 @@ func _on_phase_changed(new_phase: String) -> void:
 		request_evacuate_enemies()
 		request_remove_beacons()
 		_spawner.reset_contract_configuration()
-	elif new_phase == PhaseManager.PREPARE:
+	elif new_phase == PhaseManager.SETTLEMENT:
 		request_stop_spawning()
 		_enemy_by_id.clear()
 		request_remove_beacons()

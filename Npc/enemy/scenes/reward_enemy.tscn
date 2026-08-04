@@ -26,12 +26,9 @@ shape = SubResource("RectangleShape2D_hurt")
 [node name="Body" parent="." index="1"]
 texture_filter = 1
 extra_scale = Vector2(2, 2)
+texture = ExtResource("3_tex")
 
 [node name="NPCCollision" parent="." index="2"]
 shape = SubResource("RectangleShape2D_body")
-
-[node name="RewardSprite" type="Sprite2D" parent="Body"]
-texture_filter = 1
-texture = ExtResource("3_tex")
 
 [editable path="HurtBox"]

@@ -6,6 +6,7 @@ const OPERATION := &"operation"
 const CONTAINMENT := &"containment"
 const EXTRACTION := &"extraction"
 const TAU_F := TAU
+const PLAYER_OCCLUSION_PADDING := Vector2(4.0, 3.0)
 
 var target: Node2D
 var visual_kind: StringName = OPERATION
@@ -18,6 +19,7 @@ var completed := false
 var removing := false
 var _elapsed := 0.0
 var _completion_elapsed := 0.0
+var _active_player_occlusion_rect := Rect2()
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -71,6 +73,7 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if target == null or not is_instance_valid(target) or size.x <= 1.0 or size.y <= 1.0:
 		return
+	_active_player_occlusion_rect = _player_occlusion_rect()
 	var center := _project(target.global_position)
 	var safe_rect := Rect2(Vector2(54.0, 54.0), size - Vector2(108.0, 108.0))
 	if safe_rect.has_point(center):
@@ -120,26 +123,29 @@ func _draw_protocol_outline(center: Vector2, x_axis: Vector2, y_axis: Vector2, c
 				var angle := TAU_F * float(index) / 24.0
 				var jag := 1.0 if index % 2 == 0 else 0.88
 				points.append(center + x_axis * cos(angle) * jag + y_axis * sin(angle) * jag)
-			draw_polyline(points, color, 3.0, true)
+			_draw_occlusion_safe_polyline(points, color, 3.0)
 		EXTRACTION:
 			var hex := PackedVector2Array()
 			for index in range(7):
 				var angle := -PI * 0.5 + TAU_F * float(index) / 6.0
 				hex.append(center + x_axis * cos(angle) + y_axis * sin(angle))
-			draw_polyline(hex, color, 3.0, true)
+			_draw_occlusion_safe_polyline(hex, color, 3.0)
 			for index in range(3):
 				var angle := -PI * 0.5 + TAU_F * float(index) / 3.0
 				var outer := center + x_axis * cos(angle) * 0.72 + y_axis * sin(angle) * 0.72
 				var inner := center + x_axis * cos(angle) * 0.48 + y_axis * sin(angle) * 0.48
-				draw_line(outer, inner, color, 3.0, true)
+				_draw_occlusion_safe_polyline(PackedVector2Array([outer, inner]), color, 3.0)
 		_:
 			for index in range(12):
 				var start := TAU_F * float(index) / 12.0 + _elapsed * 0.08
 				_draw_elliptic_arc(center, x_axis, y_axis, start, start + 0.30, color, 3.0, 5)
 
 func _draw_center_icon(center: Vector2, color: Color, pulse: float) -> void:
-	draw_circle(center, 14.0 + pulse * 1.5, Color(0.025, 0.07, 0.10, 0.88))
-	draw_arc(center, 14.0 + pulse * 1.5, 0.0, TAU_F, 28, Color(color.r, color.g, color.b, 0.92), 2.0, true)
+	var icon_radius := 14.0 + pulse * 1.5
+	if _active_player_occlusion_rect.intersects(Rect2(center - Vector2.ONE * icon_radius, Vector2.ONE * icon_radius * 2.0)):
+		return
+	draw_circle(center, icon_radius, Color(0.025, 0.07, 0.10, 0.88))
+	draw_arc(center, icon_radius, 0.0, TAU_F, 28, Color(color.r, color.g, color.b, 0.92), 2.0, true)
 	match visual_kind:
 		CONTAINMENT:
 			var rift := PackedVector2Array([
@@ -194,6 +200,8 @@ func _draw_small_protocol_glyph(center: Vector2, color: Color, _angle: float) ->
 			draw_circle(center + Vector2(0, -5), 2.0, color)
 
 func _draw_check(center: Vector2, color: Color) -> void:
+	if _active_player_occlusion_rect.intersects(Rect2(center - Vector2(10.0, 8.0), Vector2(20.0, 16.0))):
+		return
 	draw_line(center + Vector2(-7.0, 0.0), center + Vector2(-2.0, 6.0), color, 3.0, true)
 	draw_line(center + Vector2(-2.0, 6.0), center + Vector2(8.0, -6.0), color, 3.0, true)
 
@@ -203,7 +211,72 @@ func _draw_elliptic_arc(center: Vector2, x_axis: Vector2, y_axis: Vector2, start
 	for index in range(count + 1):
 		var angle := lerpf(start_angle, end_angle, float(index) / float(count))
 		points.append(center + x_axis * cos(angle) + y_axis * sin(angle))
-	draw_polyline(points, color, width, true)
+	_draw_occlusion_safe_polyline(points, color, width)
+
+func _draw_occlusion_safe_polyline(points: PackedVector2Array, color: Color, width: float) -> void:
+	for visible_run in _split_polyline_around_rect(points, _active_player_occlusion_rect):
+		draw_polyline(visible_run, color, width, true)
+
+func _split_polyline_around_rect(points: PackedVector2Array, occlusion_rect: Rect2) -> Array[PackedVector2Array]:
+	var visible_runs: Array[PackedVector2Array] = []
+	if points.size() < 2:
+		return visible_runs
+	if occlusion_rect.size == Vector2.ZERO:
+		visible_runs.append(points)
+		return visible_runs
+	var current_run := PackedVector2Array()
+	for index in range(points.size() - 1):
+		var segment_start := points[index]
+		var segment_end := points[index + 1]
+		if _segment_intersects_rect(segment_start, segment_end, occlusion_rect):
+			if current_run.size() >= 2:
+				visible_runs.append(current_run)
+			current_run = PackedVector2Array()
+			continue
+		if current_run.is_empty():
+			current_run.append(segment_start)
+		current_run.append(segment_end)
+	if current_run.size() >= 2:
+		visible_runs.append(current_run)
+	return visible_runs
+
+func _segment_intersects_rect(segment_start: Vector2, segment_end: Vector2, rect: Rect2) -> bool:
+	if rect.has_point(segment_start) or rect.has_point(segment_end):
+		return true
+	var corners := PackedVector2Array([
+		rect.position,
+		Vector2(rect.end.x, rect.position.y),
+		rect.end,
+		Vector2(rect.position.x, rect.end.y),
+	])
+	for index in range(4):
+		if Geometry2D.segment_intersects_segment(segment_start, segment_end, corners[index], corners[(index + 1) % 4]) != null:
+			return true
+	return false
+
+func _player_occlusion_rect() -> Rect2:
+	var player := PlayerData.player as Node2D
+	if player == null or not is_instance_valid(player) or not player.visible:
+		return Rect2()
+	var visual_source: Node2D
+	for node_name in [&"MechaMoveSprite", &"MechaSprite"]:
+		var candidate := player.get_node_or_null(NodePath(str(node_name))) as Node2D
+		if candidate != null and candidate.visible and candidate.has_method("get_unit_billboard_config"):
+			visual_source = candidate
+			break
+	if visual_source == null:
+		return Rect2()
+	var config := visual_source.call("get_unit_billboard_config") as Dictionary
+	if not bool(config.get("visible", true)):
+		return Rect2()
+	var visual_size := config.get("visual_size_px", Vector2.ZERO) as Vector2
+	if visual_size.x <= 0.0 or visual_size.y <= 0.0:
+		return Rect2()
+	var bottom_padding := clampf(float(config.get("bottom_padding_px", 0.0)), 0.0, visual_size.y * 0.49)
+	var local_ground_anchor := config.get("local_ground_anchor", Vector2.ZERO) as Vector2
+	var anchor_screen := _project(player.global_transform * local_ground_anchor)
+	var top_left := anchor_screen - Vector2(visual_size.x * 0.5, visual_size.y - bottom_padding) - PLAYER_OCCLUSION_PADDING
+	return Rect2(top_left, visual_size + PLAYER_OCCLUSION_PADDING * 2.0)
 
 func _ray_rect_intersection(origin: Vector2, direction: Vector2, rect: Rect2) -> Vector2:
 	var distances: Array[float] = []

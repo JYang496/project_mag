@@ -41,15 +41,16 @@ func setup(player) -> void:
 func play_damage(result: DamageResult, attack: Attack) -> Dictionary:
 	if _player == null or result == null or not result.applied:
 		return {}
+	var displayed_damage := result.health_damage
 	var max_hp: int = max(1, int(_player.PlayerData.player_max_hp))
-	var severity := clampf(float(result.final_damage) / float(max_hp), 0.0, 1.0)
+	var severity := clampf(float(displayed_damage) / float(max_hp), 0.0, 1.0)
 	var source_direction := _resolve_source_direction(attack)
 	var screen_direction := _world_to_screen_direction(source_direction)
 	var is_heavy := not result.is_periodic and (
 		severity >= 0.20 or _is_attack_from_elite_or_boss(attack)
 	)
 	var current_hp: int = max(0, int(_player.PlayerData.player_hp))
-	var previous_hp := mini(max_hp, current_hp + result.final_damage)
+	var previous_hp := mini(max_hp, current_hp + displayed_damage)
 	var crossed_warning := float(previous_hp) / float(max_hp) > 0.35 and float(current_hp) / float(max_hp) <= 0.35
 	var crossed_critical := float(previous_hp) / float(max_hp) > 0.18 and float(current_hp) / float(max_hp) <= 0.18
 	_hit_elapsed = 0.0
@@ -59,7 +60,7 @@ func play_damage(result: DamageResult, attack: Attack) -> Dictionary:
 	_recoil_pixels = (1.5 if result.is_periodic else lerpf(2.5, 6.0, severity))
 	_severity = severity
 	_spawn_impact_ring(result.damage_type, severity, result.is_periodic)
-	_spawn_world_damage_label(result.final_damage, result.damage_type, result.is_periodic, is_heavy)
+	_spawn_world_damage_label(displayed_damage, result.damage_type, result.is_periodic, is_heavy)
 	if _screen_overlay != null:
 		_screen_overlay.play_hit(screen_direction, 0.45 + severity * 0.55, result.damage_type, result.is_periodic)
 	_play_damage_audio(result.damage_type, severity, result.is_periodic, is_heavy)
@@ -73,7 +74,7 @@ func play_damage(result: DamageResult, attack: Attack) -> Dictionary:
 		if TimeImpactController != null and TimeImpactController.has_method("trigger_player_damage_impact"):
 			TimeImpactController.trigger_player_damage_impact(severity)
 	return {
-		"final_damage": result.final_damage,
+		"final_damage": displayed_damage,
 		"damage_type": result.damage_type,
 		"is_periodic": result.is_periodic,
 		"is_heavy": is_heavy,

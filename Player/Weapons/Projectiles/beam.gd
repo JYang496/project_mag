@@ -31,6 +31,7 @@ func configure_laser_beam(profile: Dictionary) -> void:
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	line.add_to_group(&"hybrid_ground_segment")
 	line.set_meta("hybrid_ground_visible", false)
 	line.set_meta("hybrid_segment_style", &"beam")
@@ -46,6 +47,9 @@ func _ready() -> void:
 		line.default_color = Color(PALETTE.PLAYER_PRIMARY, 0.78)
 	elif beam_tag.contains("prism_side"):
 		line.default_color = Color(PALETTE.ENERGY, 0.78)
+
+func cleanup_for_battle_end() -> void:
+	queue_free()
 
 func _register_hybrid_segment() -> void:
 	_hybrid_registered = HybridGroundRegistration.register(line, &"register_ground_segment")

@@ -596,7 +596,7 @@ func _can_pick_candidate(
 		if max_ranged_alive > 0 and _get_total_runtime_ranged_alive_count() >= max_ranged_alive:
 			return false
 	if _is_spawn_elite(state):
-		var elite_limit := 1 if level_index < 8 else 2
+		var elite_limit := profile.get_elite_batch_limit(level_index)
 		if elite_count >= elite_limit:
 			return false
 	return true
@@ -643,6 +643,7 @@ func _spawn_from_state(state: Dictionary, requested_count: int) -> int:
 		if enemy_spawn is BaseEnemy:
 			var base_enemy := enemy_spawn as BaseEnemy
 			base_enemy.loot_value_multiplier = maxf(loot_value_multiplier, 0.1)
+			base_enemy.prepare_spawn_sequence()
 			var scaled_hp := maxi(int(base_enemy.hp), 1)
 			base_enemy.set_meta("_spawn_budget_scaled_hp", scaled_hp)
 			spawned_hp += scaled_hp
@@ -1184,7 +1185,7 @@ func finish_battle_with_victory(level_index: int = -1, effective_time_out: int =
 	if ui != null and is_instance_valid(ui) and ui.has_method("play_victory_transition"):
 		await ui.call("play_victory_transition")
 	if PhaseManager.current_state() == PhaseManager.BATTLE:
-		PhaseManager.enter_prepare()
+		PhaseManager.enter_settlement()
 	_battle_victory_transition_active = false
 
 func _calculate_pressure_budget_total(release_duration_sec: int) -> float:

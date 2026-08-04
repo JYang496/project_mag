@@ -40,6 +40,7 @@ var _center_cell: Cell
 var _rest_area: Cell
 var _last_phase: String = ""
 var _board_active := true
+var _board_combat_enabled := true
 var _fade_tween: Tween
 var _has_rest_area_target_center := false
 var _rest_area_target_center := Vector2.ZERO
@@ -69,8 +70,9 @@ func _ready() -> void:
 	_last_phase = PhaseManager.current_state()
 	if auto_assign_enemy_on_battle and not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
+	_board_combat_enabled = PhaseManager.current_state() == PhaseManager.BATTLE
 	set_board_active(PhaseManager.current_state() == PhaseManager.BATTLE, true)
-	apply_cell_effect_runtime_state(PhaseManager.current_state() == PhaseManager.PREPARE)
+	apply_cell_effect_runtime_state(PhaseManager.current_state() != PhaseManager.BATTLE)
 	call_deferred("_refresh_cell_task_markers")
 
 func _spawn_cells() -> void:
@@ -271,8 +273,8 @@ func set_board_active(active: bool, immediate: bool = false) -> void:
 		return
 	_board_active = active
 	board_visual_active_changed.emit(active, immediate)
-	_set_cells_monitoring(active)
-	_set_blocker_collision(active)
+	_set_cells_monitoring(active and _board_combat_enabled)
+	_set_blocker_collision(active and _board_combat_enabled)
 	if _fade_tween:
 		_fade_tween.kill()
 		_fade_tween = null
@@ -306,6 +308,20 @@ func set_board_active(active: bool, immediate: bool = false) -> void:
 			visible = false
 			process_mode = Node.PROCESS_MODE_DISABLED
 		)
+
+func set_board_combat_enabled(enabled: bool) -> void:
+	if _board_combat_enabled == enabled:
+		return
+	_board_combat_enabled = enabled
+	var interactions_active := _board_active and _board_combat_enabled
+	_set_cells_monitoring(interactions_active)
+	_set_blocker_collision(interactions_active)
+
+func is_board_visual_active() -> bool:
+	return _board_active
+
+func is_board_combat_enabled() -> bool:
+	return _board_combat_enabled
 
 func _set_cells_monitoring(active: bool) -> void:
 	for cell in _cells:
@@ -471,26 +487,52 @@ func _get_grid_pos_from_index(index: int) -> Vector2i:
 	return Vector2i(x, y)
 
 func _on_phase_changed(new_phase: String) -> void:
-	var entered_prepare_from_battle := new_phase != PhaseManager.BATTLE and _last_phase == PhaseManager.BATTLE
-	if entered_prepare_from_battle:
+	var left_battle := new_phase != PhaseManager.BATTLE and _last_phase == PhaseManager.BATTLE
+	if left_battle:
 		_capture_rest_area_target_from_player_cell()
-	elif new_phase != PhaseManager.BATTLE:
-		_clear_rest_area_target_center()
-	_refresh_active_cells_for_current_level()
-	if new_phase == PhaseManager.BATTLE:
-		apply_cell_effect_runtime_state(false)
-		if _last_phase == PhaseManager.PREPARE:
-			recenter_board_around_player()
-		set_board_active(true)
-		_unlock_defense_cells_for_battle()
-	else:
-		apply_cell_effect_runtime_state(true)
-		if _last_phase == PhaseManager.BATTLE:
-			_reset_cells_after_battle()
-		set_board_active(false)
-	# On battle -> prepare, RestArea will place player at center explicitly.
-	# Skipping board projection here avoids an intermediate jump to rest-area edge.
-	if not entered_prepare_from_battle:
+	match new_phase:
+		PhaseManager.SETTLEMENT:
+			# Soft-clear combat state while preserving the completed board as the
+			# spatial backdrop for reward settlement and protocol selection.
+			set_board_combat_enabled(false)
+			if left_battle:
+				_reset_cells_after_battle()
+			set_board_active(true)
+		PhaseManager.PROTOCOL_SELECTION:
+			set_board_combat_enabled(false)
+			# A selection opened from settlement keeps the battlefield. A selection
+			# opened from the Rest Protocol keeps the already visible rest platform.
+			if _last_phase != PhaseManager.REST:
+				set_board_active(true)
+		PhaseManager.BATTLE_STARTING:
+			_refresh_active_cells_for_current_level()
+			apply_cell_effect_runtime_state(false)
+			set_board_combat_enabled(false)
+			if not _board_active:
+				recenter_board_around_player()
+			set_board_active(true)
+		PhaseManager.BATTLE:
+			_refresh_active_cells_for_current_level()
+			apply_cell_effect_runtime_state(false)
+			if not _board_active:
+				recenter_board_around_player()
+			set_board_active(true)
+			set_board_combat_enabled(true)
+			_unlock_defense_cells_for_battle()
+		PhaseManager.REST:
+			_refresh_active_cells_for_current_level()
+			apply_cell_effect_runtime_state(true)
+			set_board_combat_enabled(false)
+			set_board_active(false)
+		_:
+			apply_cell_effect_runtime_state(true)
+			set_board_combat_enabled(false)
+			if left_battle:
+				_reset_cells_after_battle()
+			set_board_active(false)
+	# Preserve the player's exact board-space position during settlement and
+	# protocol selection. Bounds projection resumes only for other transitions.
+	if new_phase not in [PhaseManager.SETTLEMENT, PhaseManager.PROTOCOL_SELECTION]:
 		_enforce_traversable_bounds_for_existing_units()
 	_last_phase = new_phase
 	call_deferred("_refresh_cell_task_markers")
@@ -638,8 +680,9 @@ func _apply_active_cell_flags() -> void:
 			cell.set_locked(true)
 	_refresh_active_cell_boundaries()
 	_refresh_active_boundary_blockers()
-	_set_cells_monitoring(_board_active)
-	_set_blocker_collision(_board_active)
+	var interactions_active := _board_active and _board_combat_enabled
+	_set_cells_monitoring(interactions_active)
+	_set_blocker_collision(interactions_active)
 	call_deferred("_refresh_cell_task_markers")
 
 func _refresh_active_boundary_blockers() -> void:

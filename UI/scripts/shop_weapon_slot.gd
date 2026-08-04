@@ -2,6 +2,7 @@ extends MarginContainer
 class_name ShopWeaponSlot
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
+const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
 # Properties
 @onready var background: ColorRect = $Background
 @onready var image: TextureRect = $Background/Image
@@ -112,11 +113,12 @@ func new_item() -> void:
 		push_warning("ShopWeaponSlot failed to load weapon id=%s" % item_id)
 		empty_item()
 		return
-	var rarity: String = weapon_def.get_rarity()
-	equip_name.text = LocalizationManager.get_weapon_name_from_definition(weapon_def)
+	var display_model = WEAPON_DISPLAY_BUILDER.build_from_definition(weapon_def)
+	var rarity: String = display_model.rarity
+	equip_name.text = display_model.display_name
 	equip_name.set("theme_override_colors/font_color", RARITY_UTIL.get_color(rarity))
-	image.texture = weapon_def.icon
-	socket_2.text = LocalizationManager.get_weapon_description_from_definition(weapon_def)
+	image.texture = display_model.icon
+	socket_2.text = display_model.first_description_sentence()
 	lbl_description.text = ""
 	var base_price := int(weapon_def.price)
 	var final_price := int(round(float(base_price) * _get_purchase_price_multiplier()))
@@ -184,6 +186,8 @@ func can_purchase() -> bool:
 	return item_id != null and purchasable
 
 func try_purchase() -> bool:
+	if not PhaseManager.can_configure_loadout():
+		return false
 	if item_id == null:
 		return false
 	if not purchasable:
@@ -249,14 +253,16 @@ func _build_shop_item_data() -> Dictionary:
 	var weapon_def := DataHandler.read_weapon_data(str(item_id)) as WeaponDefinition
 	if weapon_def == null:
 		return {}
-	var rarity := weapon_def.get_rarity()
+	var display_model = WEAPON_DISPLAY_BUILDER.build_from_definition(weapon_def)
+	var rarity: String = str(display_model.rarity)
 	return {
 		"type": "weapon",
 		"id": str(item_id),
-		"name": LocalizationManager.get_weapon_name_from_definition(weapon_def),
-		"description": LocalizationManager.get_weapon_description_from_definition(weapon_def),
+		"name": display_model.display_name,
+		"description": display_model.description,
 		"price": price,
 		"definition": weapon_def,
+		"display_model": display_model,
 		"slot": self,
 		"rarity": rarity,
 		"rarity_color": RARITY_UTIL.get_color(rarity),

@@ -6,6 +6,7 @@ const SPAWN_TAG_ELITE := &"elite"
 const SPAWN_TAG_SUPPORT := &"support"
 const SPAWN_TAG_INTERCEPTOR := &"interceptor"
 const QUEST_OUTLINE_SHADER: Shader = preload("res://Shaders/quest_outline.gdshader") as Shader
+const ENEMY_SPAWN_SEQUENCE_SCRIPT := preload("res://Npc/enemy/components/enemy_spawn_sequence.gd")
 const SHADOW_WIDTH_MULTIPLIER: float = 1.10
 const SHADOW_DEPTH_MULTIPLIER: float = 0.45
 const SHADOW_SIZE_MIN := Vector2(20.0, 9.0)
@@ -36,6 +37,8 @@ const SHADOW_SIZE_MAX := Vector2(52.0, 24.0)
 @export_range(5.0, 15.0, 1.0) var ai_far_hz: float = 12.0
 @export_group("")
 signal enemy_death(was_killed: bool)
+signal spawn_phase_started
+signal spawn_phase_completed
 
 @onready var enable_collision_timer: Timer = $EnableCollisionTimer
 var stun_remaining: float:
@@ -73,6 +76,10 @@ var _quest_outline_material: ShaderMaterial
 var _support_damage_reduction_sources: Dictionary = {}
 var _speed_bonus_sources: Dictionary = {}
 var _slow_field_sources: Dictionary = {}
+var _spawn_phase_active := false
+var _spawn_sequence_duration_override := -1.0
+var _spawn_previous_process_mode := Node.PROCESS_MODE_INHERIT
+var _spawn_collision_state: Array[Dictionary] = []
 
 func _init() -> void:
 	super._init()
@@ -83,6 +90,8 @@ func _enter_tree() -> void:
 	var enemy_registry := get_node_or_null("/root/EnemyRegistry")
 	if enemy_registry != null and enemy_registry.has_method("register_enemy"):
 		enemy_registry.call("register_enemy", self)
+	if _spawn_phase_active:
+		call_deferred("_start_prepared_spawn_sequence")
 	# Some specialized enemies override _ready() without calling the base
 	# implementation. Defer visual anchoring so every inherited scene is covered.
 	call_deferred("_sync_ground_identity_visuals")
@@ -161,6 +170,84 @@ func _exit_tree() -> void:
 	var enemy_registry := get_node_or_null("/root/EnemyRegistry")
 	if enemy_registry != null and enemy_registry.has_method("unregister_enemy"):
 		enemy_registry.call("unregister_enemy", self)
+
+
+func prepare_spawn_sequence(duration_override: float = -1.0) -> void:
+	if _spawn_phase_active:
+		return
+	_spawn_phase_active = true
+	_spawn_sequence_duration_override = duration_override
+	_spawn_previous_process_mode = process_mode
+	_capture_and_disable_spawn_collisions()
+	velocity = Vector2.ZERO
+	process_mode = Node.PROCESS_MODE_DISABLED
+	if is_inside_tree():
+		call_deferred("_start_prepared_spawn_sequence")
+
+
+func _start_prepared_spawn_sequence() -> void:
+	if not _spawn_phase_active or not is_inside_tree():
+		return
+	if get_node_or_null("EnemySpawnSequence") != null:
+		return
+	var sequence := ENEMY_SPAWN_SEQUENCE_SCRIPT.new()
+	sequence.name = "EnemySpawnSequence"
+	sequence.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(sequence)
+	sequence.begin(self, _spawn_sequence_duration_override)
+	spawn_phase_started.emit()
+
+
+func complete_spawn_sequence() -> void:
+	if not _spawn_phase_active:
+		return
+	_restore_spawn_collisions()
+	_spawn_phase_active = false
+	_spawn_sequence_duration_override = -1.0
+	process_mode = _spawn_previous_process_mode
+	spawn_phase_completed.emit()
+
+
+func is_spawn_phase_active() -> bool:
+	return _spawn_phase_active
+
+
+func _capture_and_disable_spawn_collisions() -> void:
+	_spawn_collision_state.clear()
+	var collision_objects: Array[CollisionObject2D] = [self]
+	for descendant in find_children("*", "CollisionObject2D", true, false):
+		var collision_object := descendant as CollisionObject2D
+		if collision_object != null:
+			collision_objects.append(collision_object)
+	for collision_object in collision_objects:
+		var state := {
+			"node": collision_object,
+			"collision_layer": collision_object.collision_layer,
+			"collision_mask": collision_object.collision_mask,
+		}
+		if collision_object is Area2D:
+			var area := collision_object as Area2D
+			state["monitoring"] = area.monitoring
+			state["monitorable"] = area.monitorable
+			area.monitoring = false
+			area.monitorable = false
+		collision_object.collision_layer = 0
+		collision_object.collision_mask = 0
+		_spawn_collision_state.append(state)
+
+
+func _restore_spawn_collisions() -> void:
+	for state in _spawn_collision_state:
+		var collision_object := state.get("node") as CollisionObject2D
+		if collision_object == null or not is_instance_valid(collision_object):
+			continue
+		collision_object.collision_layer = int(state.get("collision_layer", 0))
+		collision_object.collision_mask = int(state.get("collision_mask", 0))
+		if collision_object is Area2D:
+			var area := collision_object as Area2D
+			area.monitoring = bool(state.get("monitoring", false))
+			area.monitorable = bool(state.get("monitorable", false))
+	_spawn_collision_state.clear()
 
 func _process(delta: float) -> void:
 	if FixedObliqueProjectionType.is_enabled():

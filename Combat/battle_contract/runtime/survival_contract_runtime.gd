@@ -4,8 +4,9 @@ signal snapshot_changed(snapshot: Dictionary)
 signal completed(snapshot: Dictionary)
 
 var port
-var duration_sec := 45.0
-var remaining_sec := 45.0
+var duration_sec := 30.0
+var remaining_sec := 30.0
+var threat_step_sec := 15.0
 var threat_level := 1
 var effective_kills := 0
 var killed_hp := 0
@@ -15,13 +16,12 @@ const RESOLVE_THRESHOLD := 250
 const RESOLVE_TRIGGER_CAP := 3
 var _completion_guard := false
 
-func start(combat_port, _parameters: Dictionary) -> void:
+func start(combat_port, parameters: Dictionary) -> void:
 	port = combat_port
 	port.request_external_victory_control(true)
-	var level: int = int(port.get_level_index())
-	duration_sec = 45.0 if level < 4 else (55.0 if level < 8 else 65.0)
+	duration_sec = maxf(float(port.get_level_duration_sec()), 1.0)
 	remaining_sec = duration_sec
-	port.request_configure_duration(duration_sec)
+	threat_step_sec = maxf(float(parameters.get("threat_step_sec", 15.0)), 1.0)
 	port.request_configure_continuous_spawning(true)
 	port.battle_tick.connect(_on_tick)
 	port.enemy_died.connect(_on_enemy_died)
@@ -40,7 +40,7 @@ func _on_tick(snapshot: Dictionary) -> void:
 	if _completion_guard:
 		return
 	remaining_sec = maxf(remaining_sec - float(snapshot.get("delta_sec", 0.0)), 0.0)
-	var next_threat := mini(int(floor((duration_sec - remaining_sec) / 15.0)) + 1, 5)
+	var next_threat := mini(int(floor((duration_sec - remaining_sec) / threat_step_sec)) + 1, 5)
 	if next_threat != threat_level:
 		threat_level = next_threat
 		port.request_configure_threat_multiplier(1.0 + 0.15 * float(threat_level - 1))

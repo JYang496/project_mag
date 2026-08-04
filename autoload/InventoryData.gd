@@ -100,6 +100,8 @@ func obtain_weapon_reward(weapon: Weapon, on_pending_complete: Callable = Callab
 		return stored_result
 	if PlayerData.player and is_instance_valid(PlayerData.player) and has_open_weapon_slot():
 		return equip_incoming_weapon_to_slot(weapon)
+	if PhaseManager.current_state() not in [PhaseManager.SETTLEMENT, PhaseManager.REST]:
+		return store_weapon(weapon)
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
 		var opened := bool(ui.call("request_weapon_replacement", weapon, false, on_pending_complete))
@@ -161,6 +163,8 @@ func store_weapon(weapon: Weapon) -> Dictionary:
 	return {"ok": true, "result": "stored", "weapon": weapon}
 
 func equip_stored_weapon(weapon: Weapon) -> Dictionary:
+	if not PhaseManager.can_configure_loadout():
+		return {"ok": false, "reason": "Stored weapons can only be equipped during rest."}
 	if weapon == null or not weapon_storage.has(weapon):
 		return {"ok": false, "reason": "Invalid stored weapon."}
 	if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num:
@@ -174,6 +178,8 @@ func equip_stored_weapon(weapon: Weapon) -> Dictionary:
 	return {"ok": true, "result": "equipped", "weapon": weapon}
 
 func exchange_stored_weapon(stored_weapon: Weapon, equipped_weapon: Weapon) -> Dictionary:
+	if not PhaseManager.can_configure_loadout():
+		return {"ok": false, "reason": "Stored weapons can only be exchanged during rest."}
 	if stored_weapon == null or equipped_weapon == null:
 		return {"ok": false, "reason": "Invalid weapon."}
 	if not weapon_storage.has(stored_weapon) or not PlayerData.player_weapon_list.has(equipped_weapon):
@@ -200,6 +206,10 @@ func exchange_stored_weapon(stored_weapon: Weapon, equipped_weapon: Weapon) -> D
 	return {"ok": true, "result": "exchanged", "weapon": stored_weapon, "slot": slot_index}
 
 func equip_incoming_weapon_to_slot(new_weapon: Weapon, old_weapon: Weapon = null) -> Dictionary:
+	var battle_pickup_to_empty_slot := PhaseManager.current_state() == PhaseManager.BATTLE and old_weapon == null
+	if PhaseManager.current_state() not in [PhaseManager.SETTLEMENT, PhaseManager.REST] \
+			and not battle_pickup_to_empty_slot:
+		return {"ok": false, "reason": "New weapons can only be installed during settlement or rest."}
 	if new_weapon == null or not is_instance_valid(new_weapon):
 		return {"ok": false, "reason": "Invalid weapon."}
 	if old_weapon == null:
@@ -377,6 +387,8 @@ func obtain_module(module_instance: Module, _ignore_weapon: Weapon = null) -> Di
 	return result
 
 func purchase_module(module_scene: PackedScene) -> Dictionary:
+	if not PhaseManager.can_configure_loadout():
+		return {"ok": false, "reason": "Modules can only be purchased during rest."}
 	if module_scene == null:
 		return {"ok": false, "reason": "Invalid module."}
 	var module_instance := module_scene.instantiate() as Module
@@ -401,6 +413,8 @@ func purchase_module(module_scene: PackedScene) -> Dictionary:
 	return result
 
 func upgrade_module_with_gold(module_instance: Module) -> Dictionary:
+	if not PhaseManager.can_configure_loadout():
+		return {"ok": false, "reason": "Modules can only be upgraded during rest."}
 	if module_instance == null or not is_instance_valid(module_instance):
 		return {"ok": false, "reason": "Invalid module."}
 	if int(module_instance.module_level) >= Module.MAX_LEVEL:

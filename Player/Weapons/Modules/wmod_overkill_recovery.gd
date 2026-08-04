@@ -9,10 +9,10 @@ var ITEM_NAME := "Overkill Recovery"
 @export var max_bonus_lv3 := 0.60
 @export var buff_duration_sec := 4.0
 
-func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
-	if not is_enemy_target(target) or not is_target_dead(target) or target.get("hp") == null:
+func on_damage_dealt(source_weapon: Weapon, target: Node, _data: DamageData, result: DamageResult) -> void:
+	if not is_enemy_target(target) or result == null or not result.killed:
 		return
-	var overkill: int = maxi(0, -int(target.get("hp")))
+	var overkill: int = maxi(0, result.overkill_damage)
 	if overkill <= 0:
 		return
 	var base_damage: int = WeaponModuleRuntimeUtils.get_runtime_weapon_damage(source_weapon)

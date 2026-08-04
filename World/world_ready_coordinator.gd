@@ -6,8 +6,24 @@ func _enter_tree() -> void:
 func _ready() -> void:
 	for frame in range(120):
 		if _is_world_ready():
-			await RenderingServer.frame_post_draw
+			var ui := get_parent().get_node_or_null("UI")
+			var initial_rest_entry_prepared := false
+			if ui != null and ui.has_method("prepare_initial_rest_area_entry"):
+				initial_rest_entry_prepared = bool(ui.call("prepare_initial_rest_area_entry"))
+			if DisplayServer.get_name() == "headless":
+				await get_tree().process_frame
+			else:
+				await RenderingServer.frame_post_draw
+			LoadingPerformance.update_world_preview_loading_progress(0.94)
 			LoadingPerformance.mark("world_ready")
+			if initial_rest_entry_prepared and ui != null and is_instance_valid(ui) \
+					and ui.has_method("play_initial_rest_area_entry"):
+				# Match the preview fade to the initial arrival cover release so the
+				# lightweight menu projection resolves directly into the live world.
+				LoadingPerformance.begin_world_build_handoff(0.38)
+				await ui.call("play_initial_rest_area_entry")
+			else:
+				LoadingPerformance.hide_world_build_overlay()
 			await get_tree().process_frame
 			LoadingPerformance.mark("first_stable_frame")
 			LoadingPerformance.finish_flow()

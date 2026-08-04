@@ -65,7 +65,7 @@ func clear_standard_draft_opening() -> void:
 	pending_standard_draft_changed.emit(has_pending_standard_draft())
 
 func is_standard_draft_blocking_interactions() -> bool:
-	return PhaseManager.current_state() == PhaseManager.PREPARE \
+	return PhaseManager.current_state() == PhaseManager.SETTLEMENT \
 		and (_standard_draft_opening or has_pending_standard_draft())
 
 func get_pending_standard_draft_options() -> Array[RewardInfo]:
@@ -133,7 +133,7 @@ func restore_battle_rollback_snapshot(payload: Dictionary) -> void:
 func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.GAMEOVER:
 		reset_runtime_state(false)
-	elif new_phase != PhaseManager.PREPARE:
+	elif new_phase != PhaseManager.SETTLEMENT:
 		clear_standard_draft_opening()
 
 func _serialize_reward(reward: RewardInfo) -> Dictionary:

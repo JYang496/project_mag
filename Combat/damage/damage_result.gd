@@ -12,7 +12,12 @@ const REASON_ZERO_DAMAGE := &"zero_damage"
 var applied: bool = false
 var accepted: bool = false
 var rejection_reason: StringName = REASON_NONE
+# Damage after mitigation, intentionally not capped by the target's remaining HP.
 var final_damage: int = 0
+# The portion of final_damage that consumed remaining HP.
+var health_damage: int = 0
+# The portion of final_damage beyond the target's remaining HP.
+var overkill_damage: int = 0
 var damage_type: StringName = Attack.TYPE_PHYSICAL
 var killed: bool = false
 var is_periodic: bool = false

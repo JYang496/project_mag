@@ -21,6 +21,11 @@ func apply_on_hit_plugins(target: Node) -> void:
 		if is_instance_valid(plugin) and plugin.has_method("apply_on_hit"):
 			plugin.apply_on_hit(weapon, target)
 
+func apply_on_damage_plugins(target: Node, data: DamageData, result: DamageResult) -> void:
+	for plugin in on_hit_plugins:
+		if is_instance_valid(plugin) and plugin.has_method("on_damage_dealt"):
+			plugin.call("on_damage_dealt", weapon, target, data, result)
+
 func register_projectile_spawn_plugin(plugin: Node) -> void:
 	if plugin and not projectile_spawn_plugins.has(plugin):
 		projectile_spawn_plugins.append(plugin)

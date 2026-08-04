@@ -15,18 +15,26 @@ var planned_enemy_count := 0
 var budget_exhausted := false
 var elapsed_sec := 0.0
 var standard_duration_sec := 45.0
+var early_release_ratio := 0.8
+var batch_wait_timeout_sec := 12.0
 var _batch_spawned := 0
 var _batch_killed := 0
 var _batch_wait_sec := 0.0
 var _configured := false
 var _completion_guard := false
 
-func start(combat_port, _parameters: Dictionary) -> void:
+func start(combat_port, parameters: Dictionary) -> void:
 	port = combat_port
 	port.request_monitor_enemy_stalls(true)
 	port.request_external_victory_control(true)
 	port.request_prefer_elite_final_batch(true)
-	total_batches = clampi(3 + port.get_level_index() / 4, 3, 5)
+	var minimum_batches := maxi(int(parameters.get("batch_count_min", 3)), 1)
+	var maximum_batches := maxi(int(parameters.get("batch_count_max", 5)), minimum_batches)
+	var levels_per_batch_step := maxi(int(parameters.get("levels_per_batch_step", 4)), 1)
+	total_batches = mini(minimum_batches + port.get_level_index() / levels_per_batch_step, maximum_batches)
+	standard_duration_sec = maxf(float(parameters.get("standard_duration_sec", 45.0)), 1.0)
+	early_release_ratio = clampf(float(parameters.get("early_release_ratio", 0.8)), 0.0, 1.0)
+	batch_wait_timeout_sec = maxf(float(parameters.get("batch_wait_timeout_sec", 12.0)), 0.1)
 	port.enemy_spawned.connect(_on_enemy_spawned)
 	port.enemy_died.connect(_on_enemy_died)
 	port.spawn_budget_exhausted.connect(_on_budget_exhausted)
@@ -79,7 +87,7 @@ func _on_tick(snapshot: Dictionary) -> void:
 func _try_advance_batch() -> void:
 	if current_batch >= total_batches or _batch_spawned <= 0:
 		return
-	if float(_batch_killed) / float(_batch_spawned) >= 0.8 or _batch_wait_sec >= 12.0:
+	if float(_batch_killed) / float(_batch_spawned) >= early_release_ratio or _batch_wait_sec >= batch_wait_timeout_sec:
 		current_batch += 1
 		_batch_spawned = 0
 		_batch_killed = 0

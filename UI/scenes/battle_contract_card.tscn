@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://UI/scripts/battle_contract_card.gd" id="1"]
 
 [node name="BattleContractCard" type="Button"]
-custom_minimum_size = Vector2(280, 240)
+custom_minimum_size = Vector2(280, 222)
 size_flags_horizontal = 3
 toggle_mode = true
 script = ExtResource("1")
@@ -81,6 +81,15 @@ theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 14
 text = "✓ SELECTED"
+vertical_alignment = 1
+
+[node name="SelectionMark" type="Label" parent="Margin/Content/Header"]
+custom_minimum_size = Vector2(22, 25)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.46, 0.58, 0.61, 0.9)
+theme_override_font_sizes/font_size = 20
+text = "○"
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Title" type="Label" parent="Margin/Content"]

@@ -27,8 +27,12 @@ var _hybrid_registered: bool = false
 
 
 func _ready() -> void:
+	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	_configure_sprite()
 	_ensure_ground_rays()
+	_hide_now()
+
+func cleanup_for_battle_end() -> void:
 	_hide_now()
 
 
@@ -143,7 +147,19 @@ func get_hybrid_ground_cone_visual() -> Dictionary:
 		"range": _last_range,
 		"half_angle_degrees": _last_half_angle_deg,
 		"color": color,
+		"texture": _get_current_frame_texture(),
 	}
+
+
+func _get_current_frame_texture() -> Texture2D:
+	if sprite == null or sprite.sprite_frames == null:
+		return null
+	if not sprite.sprite_frames.has_animation(sprite.animation):
+		return null
+	var frame_count := sprite.sprite_frames.get_frame_count(sprite.animation)
+	if frame_count <= 0:
+		return null
+	return sprite.sprite_frames.get_frame_texture(sprite.animation, clampi(sprite.frame, 0, frame_count - 1))
 
 func _exit_tree() -> void:
 	HybridGroundRegistration.unregister(self)

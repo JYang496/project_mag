@@ -36,9 +36,13 @@ layout_mode = 2
 autowrap_mode = 2
 text = "Select where to install the incoming weapon."
 
-[node name="Slots" type="VBoxContainer" parent="Margin/Root"]
+[node name="SlotsScroll" type="ScrollContainer" parent="Margin/Root"]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="Slots" type="VBoxContainer" parent="Margin/Root/SlotsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="Cancel" type="Button" parent="Margin/Root"]
 layout_mode = 2

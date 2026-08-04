@@ -28,7 +28,7 @@ func apply_responsive_layout() -> void:
 	if owner_ui.rest_area_ui_controller != null:
 		for menu_id in owner_ui.rest_area_ui_controller.get_registered_service_menu_ids():
 			var panel: Control = owner_ui.rest_area_ui_controller.get_service_primary_panel(menu_id)
-			_apply_rect(panel, LAYOUT_POLICY.primary_menu_rect(viewport_size, _count_visible_buttons(panel)))
+			_apply_rect(panel, LAYOUT_POLICY.primary_menu_rect(viewport_size, _count_visible_buttons(panel), LAYOUT_POLICY.primary_menu_variant(panel)))
 	if owner_ui.management_ui_bootstrap_controller != null:
 		owner_ui.management_ui_bootstrap_controller.style_primary_menu_controls()
 	fit_pause_layout(viewport_size)
@@ -49,7 +49,7 @@ func show_primary_menu(menu_id: StringName, root: Control, panel: Control) -> vo
 		return
 	stop_primary_menu_tween(menu_id)
 	var viewport_size := owner_ui.get_viewport().get_visible_rect().size
-	_apply_rect(panel, LAYOUT_POLICY.primary_menu_rect(viewport_size, _count_visible_buttons(panel)))
+	_apply_rect(panel, LAYOUT_POLICY.primary_menu_rect(viewport_size, _count_visible_buttons(panel), LAYOUT_POLICY.primary_menu_variant(panel)))
 	var target_pos := panel.position
 	var hidden_pos := get_primary_menu_hidden_position(panel, target_pos)
 	root.visible = true
@@ -72,7 +72,7 @@ func hide_primary_menu(menu_id: StringName, root: Control, panel: Control) -> vo
 		return
 	stop_primary_menu_tween(menu_id)
 	var viewport_size := owner_ui.get_viewport().get_visible_rect().size
-	_apply_rect(panel, LAYOUT_POLICY.primary_menu_rect(viewport_size, _count_visible_buttons(panel)))
+	_apply_rect(panel, LAYOUT_POLICY.primary_menu_rect(viewport_size, _count_visible_buttons(panel), LAYOUT_POLICY.primary_menu_variant(panel)))
 	var target_pos := panel.position
 	var hidden_pos := get_primary_menu_hidden_position(panel, target_pos)
 	if not root.visible:

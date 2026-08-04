@@ -115,15 +115,18 @@ func _is_service_zone(zone_id: int) -> bool:
 
 func _draw_zone_visual(zone_id: int, rect: Rect2, hovered: bool, selected: bool) -> void:
 	var color := ZONE_COLORS.get(zone_id, Color.WHITE) as Color
-	var pulse := 0.5 + 0.5 * sin(_pulse_time * 2.2)
+	var menu_open := _is_management_menu_open()
+	var pulse := 0.5 if menu_open else 0.5 + 0.5 * sin(_pulse_time * 2.2)
 	var center := rect.get_center()
 	var min_side := minf(rect.size.x, rect.size.y)
-	var ground_radius := min_side * (0.30 if zone_id == ZONE_ID_START_BATTLE else 0.24)
+	var ground_radius := min_side * (0.26 if zone_id == ZONE_ID_START_BATTLE else 0.24)
 	var alpha := 0.18
 	if hovered:
 		alpha = 0.34 + pulse * 0.08
 	elif selected:
 		alpha = 0.28
+	if menu_open:
+		alpha *= 0.44
 	_draw_ground_mark(zone_id, center, ground_radius, Color(color.r, color.g, color.b, alpha))
 	if _has_service_prop_texture(zone_id):
 		_draw_service_prop_texture(zone_id, rect, color, hovered, selected)
@@ -131,7 +134,14 @@ func _draw_zone_visual(zone_id: int, rect: Rect2, hovered: bool, selected: bool)
 		_draw_prop(zone_id, rect, color, hovered, selected)
 		_draw_icon(zone_id, center + Vector2(0.0, -min_side * 0.18), min_side * 0.10, color, hovered or selected)
 	if hovered or selected:
-		_draw_selection_effect(center, ground_radius, color, hovered, selected)
+		_draw_selection_effect(center, ground_radius, color, hovered, selected, menu_open)
+
+func _is_management_menu_open() -> bool:
+	var ui := GlobalVariables.ui
+	if ui == null or not is_instance_valid(ui):
+		return false
+	return (ui.has_method("_is_primary_menu_open") and bool(ui.call("_is_primary_menu_open"))) \
+		or (ui.has_method("_is_secondary_menu_open") and bool(ui.call("_is_secondary_menu_open")))
 
 func _has_service_prop_texture(zone_id: int) -> bool:
 	return zone_id == ZONE_ID_PURCHASE or zone_id == ZONE_ID_UPGRADE or zone_id == ZONE_ID_WAREHOUSE or zone_id == ZONE_ID_BOARD_EDIT
@@ -260,10 +270,12 @@ func _draw_icon(zone_id: int, center: Vector2, size: float, color: Color, strong
 			])
 			draw_colored_polygon(points, icon_color)
 
-func _draw_selection_effect(center: Vector2, radius: float, color: Color, hovered: bool, selected: bool) -> void:
+func _draw_selection_effect(center: Vector2, radius: float, color: Color, hovered: bool, selected: bool, suppressed: bool = false) -> void:
 	var ring_alpha := 0.42
 	if hovered:
 		ring_alpha = 0.62
 	if selected:
 		ring_alpha = maxf(ring_alpha, 0.58)
+	if suppressed:
+		ring_alpha *= 0.34
 	draw_arc(center, radius * 1.34, 0.0, TAU, 24, Color(color.r, color.g, color.b, ring_alpha), 3.0, false)

@@ -9,11 +9,13 @@ func _on_pressed() -> void:
 		return
 	disabled = true
 	var original_text := text
-	text = "Loading 0%"
+	text = "Loading..."
 	LoadingPerformance.begin_flow("continue")
+	LoadingPerformance.begin_world_preview_handoff()
 	var continue_result := SaveManager.prepare_continue()
 	if not bool(continue_result.get("ok", false)):
 		push_error("Unable to continue save: %s" % str(continue_result.get("error_code", "unknown")))
+		LoadingPerformance.cancel_world_preview_handoff()
 		text = original_text
 		disabled = false
 		return
@@ -27,29 +29,39 @@ func _on_pressed() -> void:
 	TaskRewardManager.reset_runtime_state(false)
 	RewardDraftRuntime.reset_runtime_state(false)
 	PlayerData.set_hp_safety_for_testing(keep_hp_safety)
+	LoadingPerformance.update_world_preview_loading_progress(0.18)
 	var prepare_result: Dictionary = WORLD_ENTRY_PREPARE_GATE_SCRIPT.prepare_world_entry()
 	if not bool(prepare_result.get("ok", false)):
 		push_error("World entry prepare failed: %s" % WORLD_ENTRY_PREPARE_GATE_SCRIPT.format_errors(prepare_result))
+		LoadingPerformance.cancel_world_preview_handoff()
 		text = original_text
 		disabled = false
 		return
+	LoadingPerformance.update_world_preview_loading_progress(0.24)
 	var restore_result := SaveManager.restore_before_world()
 	if not bool(restore_result.get("ok", false)):
 		push_error("Unable to restore save: %s" % str(restore_result.get("error_code", "unknown")))
+		LoadingPerformance.cancel_world_preview_handoff()
 		text = original_text
 		disabled = false
 		return
 	DataHandler.save_data.last_mecha_selected = str(PlayerData.select_mecha_id)
 	var loader := WORLD_SCENE_LOADER_SCRIPT.new()
 	add_child(loader)
-	loader.progress_changed.connect(func(ratio: float): text = "Loading %d%%" % int(round(10.0 + ratio * 70.0)))
+	loader.progress_changed.connect(func(ratio: float):
+		LoadingPerformance.update_world_preview_loading_progress(0.24 + clampf(ratio, 0.0, 1.0) * 0.48)
+	)
 	var load_result: Dictionary = await loader.load_world(WORLD_SCENE_PATH)
 	loader.queue_free()
 	if not bool(load_result.get("ok", false)):
 		push_error(str(load_result.get("error", "World load failed")))
+		LoadingPerformance.cancel_world_preview_handoff()
 		text = original_text
 		disabled = false
 		return
+	LoadingPerformance.update_world_preview_loading_progress(0.78)
+	await LoadingPerformance.wait_for_world_preview_cover()
+	LoadingPerformance.update_world_preview_loading_progress(0.84)
 	LoadingPerformance.show_world_build_overlay()
 	LoadingPerformance.mark("world_scene_changed")
 	get_tree().change_scene_to_packed(load_result.get("scene") as PackedScene)

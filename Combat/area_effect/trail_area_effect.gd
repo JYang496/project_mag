@@ -34,6 +34,14 @@ var _segments: Array[Dictionary] = []
 var _emitters: Dictionary = {}
 var _tick_accum: float = 0.0
 
+func _ready() -> void:
+	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
+
+func cleanup_for_battle_end() -> void:
+	clear_emitters()
+	clear_segments()
+	_tick_accum = 0.0
+
 func _process(delta: float) -> void:
 	if not auto_process:
 		return

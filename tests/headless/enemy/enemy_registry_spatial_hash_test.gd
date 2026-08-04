@@ -89,6 +89,22 @@ func _test_separation_and_capacity() -> void:
 	var separation := EnemyRegistry.get_separation_vector(requester, 48.0, 12)
 	if separation.x >= 0.0 or separation.y >= 0.0 or separation.length() > 1.0001:
 		_fail("unexpected separation vector: %s" % separation)
+	var sample := EnemyRegistry.get_separation_sample(requester, 48.0, 12)
+	if int(sample.get("neighbor_count", -1)) != 2:
+		_fail("separation sample lost neighbors: %s" % sample)
+	if not is_equal_approx(float(sample.get("nearest_distance", -1.0)), 10.0):
+		_fail("separation sample nearest distance drifted: %s" % sample)
+	if absf(float(sample.get("coherence", 0.0)) - sqrt(0.5)) > 0.001:
+		_fail("orthogonal separation coherence drifted: %s" % sample)
+
+	_cleanup_created()
+	requester = _create_enemy(Vector2.ZERO)
+	_create_enemy(Vector2(8.0, 0.0))
+	_create_enemy(Vector2(16.0, 0.0))
+	_create_enemy(Vector2(24.0, 0.0))
+	var aligned_sample := EnemyRegistry.get_separation_sample(requester, 48.0, 12)
+	if int(aligned_sample.get("neighbor_count", -1)) != 3 or float(aligned_sample.get("coherence", 0.0)) < 0.999:
+		_fail("aligned separation forces must retain coherent stacking data: %s" % aligned_sample)
 	_cleanup_created()
 	var capacity := int(EnemyRegistry.get_spatial_debug_snapshot().get("bucket_capacity", -1))
 	for index in range(capacity + 9):

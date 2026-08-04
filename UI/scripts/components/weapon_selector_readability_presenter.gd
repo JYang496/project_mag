@@ -2,6 +2,7 @@ extends RefCounted
 class_name WeaponSelectorReadabilityPresenter
 
 const PASSIVE_ICON_SCRIPT := preload("res://UI/scripts/weapon_passive_icon.gd")
+const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
 
 var _root: Control
 var _slots: Array[Control] = []
@@ -55,17 +56,26 @@ func update_slot(slot_index: int, weapon: Variant, is_mainhand: bool) -> void:
 			"EMPTY WEAPON SLOT"
 		)
 	elif is_mainhand:
-		var weapon_name := LocalizationManager.get_weapon_instance_display_name(weapon)
+		var model = WEAPON_DISPLAY_BUILDER.build_from_instance(weapon)
 		slot.tooltip_text = LocalizationManager.tr_format(
-			"ui.weapon_hud.main_tooltip",
-			{"weapon": weapon_name},
-			"{weapon}\nMAIN WEAPON · R: RELOAD · Q/E: SWITCH"
+			"ui.weapon_hud.main_tooltip_detail",
+			{
+				"weapon": model.display_name,
+				"types": model.taxonomy_text(),
+				"mechanic": model.first_description_sentence(),
+			},
+			"%s\n%s\n%s\nMAIN WEAPON · R: RELOAD · Q/E: SWITCH" % [model.display_name, model.taxonomy_text(), model.first_description_sentence()]
 		)
 	else:
+		var model = WEAPON_DISPLAY_BUILDER.build_from_instance(weapon)
 		slot.tooltip_text = LocalizationManager.tr_format(
-			"ui.weapon_hud.reserve_tooltip",
-			{"weapon": LocalizationManager.get_weapon_instance_display_name(weapon)},
-			"{weapon}\nRESERVE WEAPON · Q/E: SWITCH"
+			"ui.weapon_hud.reserve_tooltip_detail",
+			{
+				"weapon": model.display_name,
+				"types": model.taxonomy_text(),
+				"mechanic": model.first_description_sentence(),
+			},
+			"%s\n%s\n%s\nRESERVE WEAPON · Q/E: SWITCH" % [model.display_name, model.taxonomy_text(), model.first_description_sentence()]
 		)
 
 func set_passive_visible(slot_index: int, visible_value: bool) -> void:

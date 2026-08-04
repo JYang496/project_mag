@@ -121,6 +121,8 @@ func can_purchase() -> bool:
 	return module_scene != null and purchasable
 
 func try_purchase() -> bool:
+	if not PhaseManager.can_configure_loadout():
+		return false
 	if module_scene == null:
 		return false
 	if not purchasable:

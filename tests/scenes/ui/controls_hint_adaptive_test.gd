@@ -22,6 +22,8 @@ func _run() -> void:
 	_test_temporary_f1_toggle(hint)
 	_test_persistent_modes(hint)
 	_test_dynamic_input_label(hint)
+	_test_rest_first_step_guidance(hint)
+	_test_primary_menu_context(hint)
 	await _test_adaptive_width(hint)
 	await _test_text_context_adaptive_width(hint)
 	await _test_stack_reflow_animation()
@@ -98,6 +100,53 @@ func _test_dynamic_input_label(hint: ControlsHintView) -> void:
 	var reload_key := reload_item.get_node_or_null("Key") as Label if reload_item else null
 	_assert_equal("T", reload_key.text if reload_key else "",
 		"Control labels should reflect the current InputMap binding.")
+
+func _test_rest_first_step_guidance(hint: ControlsHintView) -> void:
+	var original_locale := LocalizationManager.get_locale()
+	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_ADAPTIVE
+	hint._text_context_signature = ""
+	hint._collapsed_text_contexts.clear()
+	hint.set_display_state(ControlsHintView.DisplayState.COMPACT, false)
+	hint.refresh_for_phase(PhaseManager.PREPARE, false)
+	_assert_equal(ControlsHintView.DisplayState.EXPANDED, hint.display_state,
+		"Adaptive guidance should open on the first rest-area context.")
+	_assert_equal(
+		LocalizationManager.tr_key("ui.tutorial.guide.rest.title", "Rest Area · Choose Next Step"),
+		hint.title_label.text,
+		"Rest guidance should frame the player's immediate decision."
+	)
+	hint.tick(ControlsHintView.REST_AUTO_COLLAPSE_SECONDS + 0.1)
+	_assert_equal(ControlsHintView.DisplayState.COMPACT, hint.display_state,
+		"Rest guidance should collapse after the player has had time to read it.")
+	_assert_equal(
+		LocalizationManager.tr_key("ui.tutorial.compact.rest", "Click a facility · Click center to continue"),
+		hint.compact_text.text,
+		"Collapsed rest guidance should preserve the next actionable step."
+	)
+	LocalizationManager.set_locale("zh_CN", false)
+	hint._text_context_signature = ""
+	hint.refresh_for_phase(PhaseManager.PREPARE, false)
+	_assert_equal("休息区 · 选择下一步", hint.title_label.text,
+		"The generated Simplified Chinese catalog should contain the rest guidance title.")
+	_assert_equal("点击设施 · 点击中心继续", hint.compact_text.text,
+		"The generated Simplified Chinese catalog should contain the compact next step.")
+	for row_variant in hint.expanded_content.get_children():
+		var row := row_variant as HBoxContainer
+		var action := row.get_node_or_null("Action") as Label if row != null else null
+		_assert_true(
+			action != null and hint._label_text_width(action) <= 320.0 - ControlsHintView.PANEL_HORIZONTAL_PADDING,
+			"Rest guidance lines should fit the 320px right HUD lane without ellipsis."
+		)
+	LocalizationManager.set_locale(original_locale, false)
+
+func _test_primary_menu_context(hint: ControlsHintView) -> void:
+	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_ALWAYS
+	hint.refresh_for_phase(PhaseManager.PREPARE, true, &"", &"battle_start")
+	_assert_equal(
+		LocalizationManager.tr_key("ui.rest.zone.battle.title", "Start Battle"),
+		hint.title_label.text,
+		"Primary-menu guidance should identify the active action instead of using a generic menu label."
+	)
 
 func _test_adaptive_width(hint: ControlsHintView) -> void:
 	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_ALWAYS

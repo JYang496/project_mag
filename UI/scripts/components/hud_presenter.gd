@@ -82,6 +82,11 @@ func configure_hp_bar_anim(anim_time: float, trans: Tween.TransitionType, ease_t
 	_hp_bar_trans = trans
 	_hp_bar_ease = ease_type
 
+func ensure_phase_controlled_roots() -> void:
+	# Phase visibility is applied once during UI bootstrap. Create lazy HUD roots
+	# before that pass so later resource meters inherit the authoritative state.
+	_ensure_special_resource_slot_container()
+
 func layout_hud(viewport_size: Vector2, hp_label_root: Control, weapon_selector: WeaponSelector = null) -> void:
 	if equipped_label and is_instance_valid(equipped_label):
 		equipped_label.position = Vector2(HUD_MARGIN, HUD_MARGIN)

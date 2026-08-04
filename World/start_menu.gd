@@ -6,7 +6,7 @@ const RESOLUTION_PRESETS: Array[Vector2i] = [
 	Vector2i(1920, 1080),
 	Vector2i(2560, 1440),
 ]
-const START_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
+const START_UI_THEME := preload("res://UI/themes/start_menu_theme.tres")
 const WORLD_SCENE_PATH := "res://World/world.tscn"
 const WORLD_ENTRY_PREPARE_GATE_SCRIPT := preload("res://World/world_entry_prepare_gate.gd")
 const WORLD_SCENE_LOADER_SCRIPT := preload("res://World/world_scene_loader.gd")
@@ -16,47 +16,243 @@ const AUDIO_SETTINGS_CONTROLS_SCRIPT := preload("res://UI/scripts/components/aud
 enum PrewarmState { NOT_STARTED, RUNNING, SUCCEEDED, FAILED }
 
 @onready var gui_root: Control = $CanvasLayer/GUI
-@onready var background: ColorRect = $CanvasLayer/GUI/Background
-@onready var margin_root: MarginContainer = $CanvasLayer/GUI/Background/HBoxMargin
-@onready var title_label: Label = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/Title
-@onready var start_button: Button = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Start
-@onready var new_game_button: Button = get_node_or_null("CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game")
-@onready var hp_safety_button: Button = get_node_or_null("CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/HpSafetyToggle")
-@onready var resolution_label: Label = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/ResolutionLabel
-@onready var mechas_label: Label = get_node_or_null("CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/CharTitile")
-@onready var menu_vbox: VBoxContainer = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer
-@onready var resolution_option: OptionButton = $CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/ResolutionOption
-@onready var mecha_container: Control = get_node_or_null("CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer")
-var language_label: Label
-var language_option: OptionButton
-var auto_aim_continuous_fire_toggle: CheckButton
-var auto_reload_switch_toggle: CheckButton
+@onready var safe_area: MarginContainer = $CanvasLayer/GUI/SafeArea
+@onready var main_column: VBoxContainer = $CanvasLayer/GUI/SafeArea/MainColumn
+@onready var title_label: Label = $CanvasLayer/GUI/SafeArea/MainColumn/Title
+@onready var subtitle_label: Label = $CanvasLayer/GUI/SafeArea/MainColumn/Subtitle
+@onready var tagline_label: Label = $CanvasLayer/GUI/SafeArea/MainColumn/Tagline
+@onready var start_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Continue
+@onready var continue_status: Label = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/ContinueStatus
+@onready var new_game_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/NewGame
+@onready var settings_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Settings
+@onready var exit_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Exit
+@onready var input_hint: Label = $CanvasLayer/GUI/SafeArea/MainColumn/InputHint
+@onready var build_info: Label = $CanvasLayer/GUI/BuildInfo
+@onready var settings_scrim: ColorRect = $CanvasLayer/GUI/SettingsScrim
+@onready var settings_panel: PanelContainer = $CanvasLayer/GUI/SettingsPanel
+@onready var settings_title: Label = $CanvasLayer/GUI/SettingsPanel/Margin/Content/Header/Title
+@onready var settings_close_button: Button = $CanvasLayer/GUI/SettingsPanel/Margin/Content/Header/Close
+@onready var display_header: Label = $CanvasLayer/GUI/SettingsPanel/Margin/Content/DisplayHeader
+@onready var resolution_label: Label = $CanvasLayer/GUI/SettingsPanel/Margin/Content/ResolutionRow/Label
+@onready var resolution_option: OptionButton = $CanvasLayer/GUI/SettingsPanel/Margin/Content/ResolutionRow/Option
+@onready var language_label: Label = $CanvasLayer/GUI/SettingsPanel/Margin/Content/LanguageRow/Label
+@onready var language_option: OptionButton = $CanvasLayer/GUI/SettingsPanel/Margin/Content/LanguageRow/Option
+@onready var audio_header: Label = $CanvasLayer/GUI/SettingsPanel/Margin/Content/AudioHeader
+@onready var audio_slot: VBoxContainer = $CanvasLayer/GUI/SettingsPanel/Margin/Content/AudioSlot
+@onready var assist_header: Label = $CanvasLayer/GUI/SettingsPanel/Margin/Content/AssistHeader
+@onready var auto_aim_continuous_fire_toggle: CheckButton = $CanvasLayer/GUI/SettingsPanel/Margin/Content/AutoAim
+@onready var auto_reload_switch_toggle: CheckButton = $CanvasLayer/GUI/SettingsPanel/Margin/Content/AutoReload
+@onready var settings_footer: Label = $CanvasLayer/GUI/SettingsPanel/Margin/Content/SettingsFooter
+
 var audio_settings_controls: VBoxContainer
-var _start_hover_tween: Tween
 var prewarm_state := PrewarmState.NOT_STARTED
 var prewarm_error := ""
+var _settings_open := false
+var _panel_tween: Tween
+
 
 func _ready() -> void:
 	gui_root.theme = START_UI_THEME
-	_set_full_rect(gui_root)
-	_set_full_rect(background)
-	_set_full_rect(margin_root)
-	_ensure_language_option()
 	_ensure_audio_settings_controls()
-	_ensure_assist_options()
-	_configure_visible_controls()
-	start_button.disabled = not SaveManager.has_run()
-	_apply_localized_text()
+	_wire_controls()
+	_refresh_save_state()
 	_populate_resolution_options()
 	_populate_language_options()
-	_wire_start_button_hover_animation()
+	_apply_localized_text()
 	_play_intro_animation()
-	if not get_viewport().is_connected("size_changed", Callable(self, "_on_viewport_size_changed")):
-		get_viewport().connect("size_changed", Callable(self, "_on_viewport_size_changed"))
-	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
-		LocalizationManager.language_changed.connect(_on_language_changed)
 	LoadingPerformance.begin_menu_session()
 	call_deferred("_prewarm_world_entry")
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("ESC"):
+		if _settings_open:
+			_close_settings()
+			get_viewport().set_input_as_handled()
+
+
+func _wire_controls() -> void:
+	if not settings_button.pressed.is_connected(_open_settings):
+		settings_button.pressed.connect(_open_settings)
+	if not settings_close_button.pressed.is_connected(_close_settings):
+		settings_close_button.pressed.connect(_close_settings)
+	if not exit_button.pressed.is_connected(_on_exit_pressed):
+		exit_button.pressed.connect(_on_exit_pressed)
+	if not settings_scrim.gui_input.is_connected(_on_settings_scrim_input):
+		settings_scrim.gui_input.connect(_on_settings_scrim_input)
+	if not resolution_option.item_selected.is_connected(_on_resolution_option_item_selected):
+		resolution_option.item_selected.connect(_on_resolution_option_item_selected)
+	if not language_option.item_selected.is_connected(_on_language_option_item_selected):
+		language_option.item_selected.connect(_on_language_option_item_selected)
+	if not auto_aim_continuous_fire_toggle.toggled.is_connected(_on_auto_aim_continuous_fire_toggled):
+		auto_aim_continuous_fire_toggle.toggled.connect(_on_auto_aim_continuous_fire_toggled)
+	if not auto_reload_switch_toggle.toggled.is_connected(_on_auto_reload_switch_toggled):
+		auto_reload_switch_toggle.toggled.connect(_on_auto_reload_switch_toggled)
+	if not LocalizationManager.language_changed.is_connected(_on_language_changed):
+		LocalizationManager.language_changed.connect(_on_language_changed)
+	auto_aim_continuous_fire_toggle.button_pressed = bool(PlayerAssistSettings.auto_aim_continuous_fire)
+	auto_reload_switch_toggle.button_pressed = bool(PlayerAssistSettings.auto_reload_switch)
+	exit_button.visible = not OS.has_feature("web")
+
+
+func _refresh_save_state() -> void:
+	var has_run := SaveManager.has_run()
+	start_button.disabled = not has_run
+	continue_status.visible = not has_run
+	if has_run:
+		start_button.grab_focus()
+	else:
+		new_game_button.grab_focus()
+
+
+func _open_settings() -> void:
+	if _settings_open:
+		return
+	_settings_open = true
+	settings_scrim.visible = true
+	settings_panel.visible = true
+	settings_panel.modulate.a = 0.0
+	settings_panel.position.x += 28.0
+	if _panel_tween:
+		_panel_tween.kill()
+	_panel_tween = create_tween().set_parallel(true)
+	_panel_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	_panel_tween.tween_property(settings_panel, "modulate:a", 1.0, 0.20)
+	_panel_tween.tween_property(settings_panel, "position:x", settings_panel.position.x - 28.0, 0.20)
+	settings_close_button.grab_focus()
+
+
+func _close_settings() -> void:
+	if not _settings_open:
+		return
+	_settings_open = false
+	if _panel_tween:
+		_panel_tween.kill()
+	_panel_tween = create_tween().set_parallel(true)
+	_panel_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	_panel_tween.tween_property(settings_panel, "modulate:a", 0.0, 0.14)
+	_panel_tween.tween_property(settings_panel, "position:x", settings_panel.position.x + 20.0, 0.14)
+	await _panel_tween.finished
+	settings_panel.position.x -= 20.0
+	settings_panel.visible = false
+	settings_scrim.visible = false
+	settings_button.grab_focus()
+
+
+func _on_settings_scrim_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_close_settings()
+
+
+func _on_exit_pressed() -> void:
+	get_tree().quit()
+
+
+func _ensure_audio_settings_controls() -> void:
+	var existing := audio_slot.get_node_or_null("AudioSettingsControls")
+	if existing is VBoxContainer:
+		audio_settings_controls = existing as VBoxContainer
+	else:
+		audio_settings_controls = AUDIO_SETTINGS_CONTROLS_SCRIPT.new() as VBoxContainer
+		audio_settings_controls.name = "AudioSettingsControls"
+		audio_slot.add_child(audio_settings_controls)
+
+
+func _populate_resolution_options() -> void:
+	resolution_option.clear()
+	for resolution: Vector2i in RESOLUTION_PRESETS:
+		resolution_option.add_item("%s × %s" % [resolution.x, resolution.y])
+	var selected_index := _find_resolution_index(DisplaySettings.resolution)
+	if selected_index == -1:
+		selected_index = _find_resolution_index(Vector2i(DisplayServer.window_get_size()))
+	if selected_index >= 0:
+		resolution_option.select(selected_index)
+	if not DisplaySettings.can_apply_window_changes():
+		resolution_option.disabled = true
+		resolution_option.tooltip_text = LocalizationManager.tr_key(
+			"ui.start.resolution_tooltip",
+			"Run standalone or exported build to change window resolution."
+		)
+
+
+func _populate_language_options() -> void:
+	language_option.clear()
+	for locale in LocalizationManager.available_locales():
+		language_option.add_item(LocalizationManager.locale_display_name(locale))
+		language_option.set_item_metadata(language_option.item_count - 1, locale)
+	for i in range(language_option.item_count):
+		if str(language_option.get_item_metadata(i)) == LocalizationManager.get_locale():
+			language_option.select(i)
+			return
+	if language_option.item_count > 0:
+		language_option.select(0)
+
+
+func _on_language_option_item_selected(index: int) -> void:
+	if index < 0 or index >= language_option.item_count:
+		return
+	var locale := str(language_option.get_item_metadata(index))
+	if not locale.is_empty():
+		LocalizationManager.set_locale(locale)
+
+
+func _on_language_changed(_locale: String) -> void:
+	_apply_localized_text()
+	_populate_language_options()
+
+
+func _apply_localized_text() -> void:
+	title_label.text = LocalizationManager.tr_key("ui.start.brand_title", "MAG ARENA")
+	subtitle_label.text = LocalizationManager.tr_key("ui.start.brand_subtitle", "MAGNETIC CORE COMBAT PROTOCOL")
+	tagline_label.text = LocalizationManager.tr_key("ui.start.tagline", "LINK YOUR CORE. ENTER THE ARENA.")
+	start_button.text = LocalizationManager.tr_key("ui.start.continue", "Continue Game")
+	continue_status.text = LocalizationManager.tr_key("ui.start.no_save", "NO OPERATION RECORD FOUND")
+	new_game_button.text = LocalizationManager.tr_key("ui.start.new_game", "New Game")
+	settings_button.text = LocalizationManager.tr_key("ui.start.settings", "Settings")
+	exit_button.text = LocalizationManager.tr_key("ui.start.exit", "Exit Game")
+	input_hint.text = LocalizationManager.tr_key("ui.start.input_hint", "[ENTER]  CONFIRM     [ESC]  BACK")
+	settings_title.text = LocalizationManager.tr_key("ui.start.settings", "Settings")
+	settings_close_button.text = LocalizationManager.tr_key("ui.start.back", "Back")
+	display_header.text = LocalizationManager.tr_key("ui.start.display_language", "DISPLAY & LANGUAGE")
+	resolution_label.text = LocalizationManager.tr_key("ui.start.resolution", "Resolution")
+	language_label.text = LocalizationManager.tr_key("ui.start.language", "Language")
+	audio_header.text = LocalizationManager.tr_key("ui.start.audio", "AUDIO")
+	assist_header.text = LocalizationManager.tr_key("ui.start.combat_assist", "COMBAT ASSIST")
+	auto_aim_continuous_fire_toggle.text = LocalizationManager.tr_key("ui.settings.auto_aim_continuous_fire", "Auto aim continuous fire")
+	auto_reload_switch_toggle.text = LocalizationManager.tr_key("ui.settings.auto_reload_switch", "Auto reload and switch weapon")
+	settings_footer.text = LocalizationManager.tr_key("ui.start.settings_saved", "Changes are saved immediately")
+	if audio_settings_controls and audio_settings_controls.has_method("refresh_texts"):
+		audio_settings_controls.call("refresh_texts")
+
+
+func _find_resolution_index(resolution: Vector2i) -> int:
+	for i in range(RESOLUTION_PRESETS.size()):
+		if RESOLUTION_PRESETS[i] == resolution:
+			return i
+	return -1
+
+
+func _on_resolution_option_item_selected(index: int) -> void:
+	if index >= 0 and index < RESOLUTION_PRESETS.size():
+		DisplaySettings.set_resolution(RESOLUTION_PRESETS[index])
+
+
+func _on_auto_aim_continuous_fire_toggled(enabled: bool) -> void:
+	PlayerAssistSettings.set_auto_aim_continuous_fire(enabled)
+
+
+func _on_auto_reload_switch_toggled(enabled: bool) -> void:
+	PlayerAssistSettings.set_auto_reload_switch(enabled)
+
+
+func _play_intro_animation() -> void:
+	main_column.modulate.a = 0.0
+	build_info.modulate.a = 0.0
+	var intro := create_tween().set_parallel(true)
+	intro.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	intro.tween_property(main_column, "modulate:a", 1.0, 0.28)
+	intro.tween_property(build_info, "modulate:a", 1.0, 0.42).set_delay(0.10)
+
 
 func _prewarm_world_entry() -> void:
 	if prewarm_state == PrewarmState.RUNNING or prewarm_state == PrewarmState.SUCCEEDED:
@@ -69,9 +265,6 @@ func _prewarm_world_entry() -> void:
 	SpawnData.ensure_loaded()
 	DataHandler.prewarm_mecha_default_weapon(str(PlayerData.select_mecha_id))
 	MODAL_UI_CONTROLLER_SCRIPT.prewarm_controls_hint_scene()
-	# Finish synchronous preparation before the World dependency graph starts
-	# loading on worker threads. Loading both graphs together can race shared
-	# weapon and UI resources and surface nondeterministic parse failures.
 	var world_request_error := WORLD_SCENE_LOADER_SCRIPT.preload_world(WORLD_SCENE_PATH)
 	if bool(result.get("ok", false)) and SpawnData.spawn_combat_profile != null and world_request_error == OK:
 		prewarm_state = PrewarmState.SUCCEEDED
@@ -82,209 +275,7 @@ func _prewarm_world_entry() -> void:
 			prewarm_error = "World entry resources failed to prewarm."
 		push_error("World entry prewarm failed: %s" % prewarm_error)
 	LoadingPerformance.mark("prewarm_finished")
-	if OS.get_cmdline_user_args().has("--loading-benchmark") and new_game_button != null:
+	if OS.get_cmdline_user_args().has("--loading-benchmark"):
 		if OS.get_cmdline_user_args().has("--loading-benchmark-idle"):
 			await get_tree().create_timer(1.5).timeout
 		new_game_button.call_deferred("_on_pressed")
-
-func _set_full_rect(control: Control) -> void:
-	control.set_anchors_preset(Control.PRESET_FULL_RECT)
-	control.offset_left = 0.0
-	control.offset_top = 0.0
-	control.offset_right = 0.0
-	control.offset_bottom = 0.0
-
-func _populate_resolution_options() -> void:
-	resolution_option.clear()
-	for resolution: Vector2i in RESOLUTION_PRESETS:
-		resolution_option.add_item("%sx%s" % [resolution.x, resolution.y])
-	var selected_index: int = _find_resolution_index(DisplaySettings.resolution)
-	if selected_index == -1:
-		selected_index = _find_resolution_index(Vector2i(DisplayServer.window_get_size()))
-	if selected_index >= 0:
-		resolution_option.select(selected_index)
-	if not resolution_option.is_connected("item_selected", Callable(self, "_on_resolution_option_item_selected")):
-		resolution_option.connect("item_selected", Callable(self, "_on_resolution_option_item_selected"))
-	if not DisplaySettings.can_apply_window_changes():
-		resolution_option.disabled = true
-		resolution_option.tooltip_text = LocalizationManager.tr_key(
-			"ui.start.resolution_tooltip",
-			"Run standalone or exported build to change window resolution."
-		)
-
-func _ensure_language_option() -> void:
-	var existing_label := menu_vbox.get_node_or_null("LanguageLabel")
-	if existing_label is Label:
-		language_label = existing_label as Label
-	else:
-		language_label = Label.new()
-		language_label.name = "LanguageLabel"
-		menu_vbox.add_child(language_label)
-	var existing_option := menu_vbox.get_node_or_null("LanguageOption")
-	if existing_option is OptionButton:
-		language_option = existing_option as OptionButton
-	else:
-		language_option = OptionButton.new()
-		language_option.name = "LanguageOption"
-		menu_vbox.add_child(language_option)
-	if not language_option.is_connected("item_selected", Callable(self, "_on_language_option_item_selected")):
-		language_option.connect("item_selected", Callable(self, "_on_language_option_item_selected"))
-	var resolution_index := resolution_option.get_index()
-	if resolution_index >= 0:
-		menu_vbox.move_child(language_label, resolution_index + 1)
-		menu_vbox.move_child(language_option, resolution_index + 2)
-
-func _configure_visible_controls() -> void:
-	if new_game_button:
-		new_game_button.visible = true
-		new_game_button.disabled = false
-		new_game_button.focus_mode = Control.FOCUS_ALL
-	if hp_safety_button:
-		hp_safety_button.visible = false
-		hp_safety_button.disabled = true
-		hp_safety_button.focus_mode = Control.FOCUS_NONE
-	if mecha_container:
-		mecha_container.visible = false
-		mecha_container.process_mode = Node.PROCESS_MODE_DISABLED
-
-func _populate_language_options() -> void:
-	if language_option == null:
-		return
-	language_option.clear()
-	var locales := LocalizationManager.available_locales()
-	for locale in locales:
-		language_option.add_item(LocalizationManager.locale_display_name(locale))
-		language_option.set_item_metadata(language_option.item_count - 1, locale)
-	for i in range(language_option.item_count):
-		if str(language_option.get_item_metadata(i)) == LocalizationManager.get_locale():
-			language_option.select(i)
-			return
-	if language_option.item_count > 0:
-		language_option.select(0)
-
-func _on_language_option_item_selected(index: int) -> void:
-	if language_option == null:
-		return
-	if index < 0 or index >= language_option.item_count:
-		return
-	var locale := str(language_option.get_item_metadata(index))
-	if locale == "":
-		return
-	LocalizationManager.set_locale(locale)
-
-func _on_language_changed(_locale: String) -> void:
-	_apply_localized_text()
-	_populate_language_options()
-
-func _apply_localized_text() -> void:
-	title_label.text = LocalizationManager.tr_key("ui.start.title", title_label.text)
-	start_button.text = LocalizationManager.tr_key("ui.start.continue", "Continue Game")
-	if new_game_button:
-		new_game_button.text = LocalizationManager.tr_key("ui.start.new_game", "New Game")
-	resolution_label.text = LocalizationManager.tr_key("ui.start.resolution", resolution_label.text)
-	if mechas_label:
-		mechas_label.text = LocalizationManager.tr_key("ui.start.mechas", mechas_label.text)
-	if language_label:
-		language_label.text = LocalizationManager.tr_key("ui.start.language", "Language")
-	if hp_safety_button and hp_safety_button.has_method("_update_text"):
-		hp_safety_button.call("_update_text")
-	if auto_aim_continuous_fire_toggle:
-		auto_aim_continuous_fire_toggle.text = LocalizationManager.tr_key(
-			"ui.settings.auto_aim_continuous_fire",
-			"Auto aim continuous fire"
-		)
-	if auto_reload_switch_toggle:
-		auto_reload_switch_toggle.text = LocalizationManager.tr_key(
-			"ui.settings.auto_reload_switch",
-			"Auto reload and switch weapon"
-		)
-
-func _ensure_assist_options() -> void:
-	auto_aim_continuous_fire_toggle = _ensure_assist_toggle("AutoAimContinuousFireToggle")
-	auto_reload_switch_toggle = _ensure_assist_toggle("AutoReloadSwitchToggle")
-	if not auto_aim_continuous_fire_toggle.toggled.is_connected(_on_auto_aim_continuous_fire_toggled):
-		auto_aim_continuous_fire_toggle.toggled.connect(_on_auto_aim_continuous_fire_toggled)
-	if not auto_reload_switch_toggle.toggled.is_connected(_on_auto_reload_switch_toggled):
-		auto_reload_switch_toggle.toggled.connect(_on_auto_reload_switch_toggled)
-	auto_aim_continuous_fire_toggle.button_pressed = bool(PlayerAssistSettings.auto_aim_continuous_fire)
-	auto_reload_switch_toggle.button_pressed = bool(PlayerAssistSettings.auto_reload_switch)
-
-func _ensure_audio_settings_controls() -> void:
-	var existing := menu_vbox.get_node_or_null("AudioSettingsControls")
-	if existing is VBoxContainer:
-		audio_settings_controls = existing as VBoxContainer
-	else:
-		audio_settings_controls = AUDIO_SETTINGS_CONTROLS_SCRIPT.new() as VBoxContainer
-		audio_settings_controls.name = "AudioSettingsControls"
-		menu_vbox.add_child(audio_settings_controls)
-	var language_option_index := language_option.get_index() if language_option != null else -1
-	if language_option_index >= 0:
-		menu_vbox.move_child(audio_settings_controls, language_option_index + 1)
-
-func _ensure_assist_toggle(node_name: String) -> CheckButton:
-	var existing := menu_vbox.get_node_or_null(node_name)
-	if existing is CheckButton:
-		return existing as CheckButton
-	var toggle := CheckButton.new()
-	toggle.name = node_name
-	toggle.focus_mode = Control.FOCUS_ALL
-	menu_vbox.add_child(toggle)
-	return toggle
-
-func _on_auto_aim_continuous_fire_toggled(enabled: bool) -> void:
-	PlayerAssistSettings.set_auto_aim_continuous_fire(enabled)
-
-func _on_auto_reload_switch_toggled(enabled: bool) -> void:
-	PlayerAssistSettings.set_auto_reload_switch(enabled)
-
-func _find_resolution_index(resolution: Vector2i) -> int:
-	for i: int in range(RESOLUTION_PRESETS.size()):
-		if RESOLUTION_PRESETS[i] == resolution:
-			return i
-	return -1
-
-func _on_resolution_option_item_selected(index: int) -> void:
-	if index < 0 or index >= RESOLUTION_PRESETS.size():
-		return
-	DisplaySettings.set_resolution(RESOLUTION_PRESETS[index])
-
-func _on_viewport_size_changed() -> void:
-	# Keep explicit full-rect layout when viewport changes in editor/runtime.
-	_set_full_rect(gui_root)
-	_set_full_rect(background)
-	_set_full_rect(margin_root)
-
-func _wire_start_button_hover_animation() -> void:
-	if not start_button:
-		return
-	start_button.pivot_offset = start_button.size * 0.5
-	if not start_button.is_connected("resized", Callable(self, "_on_start_button_resized")):
-		start_button.connect("resized", Callable(self, "_on_start_button_resized"))
-	if not start_button.is_connected("mouse_entered", Callable(self, "_on_start_button_mouse_entered")):
-		start_button.connect("mouse_entered", Callable(self, "_on_start_button_mouse_entered"))
-	if not start_button.is_connected("mouse_exited", Callable(self, "_on_start_button_mouse_exited")):
-		start_button.connect("mouse_exited", Callable(self, "_on_start_button_mouse_exited"))
-
-func _play_intro_animation() -> void:
-	gui_root.modulate = Color(1.0, 1.0, 1.0, 0.0)
-	var intro := create_tween()
-	intro.set_ease(Tween.EASE_OUT)
-	intro.set_trans(Tween.TRANS_QUAD)
-	intro.tween_property(gui_root, "modulate:a", 1.0, 0.25)
-
-func _on_start_button_resized() -> void:
-	start_button.pivot_offset = start_button.size * 0.5
-
-func _on_start_button_mouse_entered() -> void:
-	_animate_start_button_scale(Vector2(1.04, 1.04))
-
-func _on_start_button_mouse_exited() -> void:
-	_animate_start_button_scale(Vector2.ONE)
-
-func _animate_start_button_scale(target_scale: Vector2) -> void:
-	if _start_hover_tween:
-		_start_hover_tween.kill()
-	_start_hover_tween = create_tween()
-	_start_hover_tween.set_ease(Tween.EASE_OUT)
-	_start_hover_tween.set_trans(Tween.TRANS_QUAD)
-	_start_hover_tween.tween_property(start_button, "scale", target_scale, 0.12)

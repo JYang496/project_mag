@@ -354,6 +354,8 @@ func get_special_shop_cost_count(module_id: String = "") -> int:
 	return 2 if definition.get_rarity() == "common" else 1
 
 func can_purchase_special_shop_offer() -> Dictionary:
+	if not PhaseManager.can_configure_loadout():
+		return {"ok": false, "reason": "Task modules can only be purchased during rest."}
 	var definition := get_special_shop_offer_definition()
 	if definition == null:
 		return {"ok": false, "reason": "No task module offer."}
@@ -542,8 +544,9 @@ func _on_phase_changed(new_phase: String) -> void:
 	if new_phase == PhaseManager.GAMEOVER:
 		reset_runtime_state()
 		return
-	if new_phase == PhaseManager.PREPARE:
+	if new_phase == PhaseManager.SETTLEMENT:
 		clear_active_tasks()
+	if new_phase == PhaseManager.REST:
 		prepare_special_shop_offer(false)
 
 func _extract_cell_id(cell_id_text: String) -> int:

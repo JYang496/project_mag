@@ -36,16 +36,10 @@ func _physics_process(_delta: float) -> void:
 	if _active_shield_chunks.is_empty():
 		set_physics_process(false)
 
-func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
-	if target == null or not is_instance_valid(target):
+func on_damage_dealt(source_weapon: Weapon, target: Node, _data: DamageData, result: DamageResult) -> void:
+	if target == null or not is_instance_valid(target) or result == null:
 		return
-	var hp_value: Variant = target.get("hp")
-	if hp_value == null:
-		return
-	var current_hp: int = int(hp_value)
-	if current_hp >= 0:
-		return
-	var overflow_damage: int = max(0, -current_hp)
+	var overflow_damage: int = maxi(0, result.overkill_damage)
 	if overflow_damage <= 0:
 		return
 	var base_damage: int = UTILS.get_runtime_weapon_damage(source_weapon)

@@ -11,8 +11,9 @@ func _on_pressed() -> void:
 		return
 	disabled = true
 	var original_text := text
-	text = "Loading 0%"
+	text = "Loading..."
 	LoadingPerformance.begin_flow("new_game")
+	LoadingPerformance.begin_world_preview_handoff()
 	var keep_hp_safety = PlayerData.testing_keep_hp_above_zero
 	var selected_mecha_id = PlayerData.select_mecha_id
 	DataHandler.new_save()
@@ -30,22 +31,31 @@ func _on_pressed() -> void:
 	# A run becomes continuable only after the first victory returns to prepare.
 	SaveManager.clear_run()
 	erase_button_pressed.emit()
+	LoadingPerformance.update_world_preview_loading_progress(0.18)
 	var prepare_result: Dictionary = WORLD_ENTRY_PREPARE_GATE_SCRIPT.prepare_world_entry()
 	if not bool(prepare_result.get("ok", false)):
 		push_error("World entry prepare failed: %s" % WORLD_ENTRY_PREPARE_GATE_SCRIPT.format_errors(prepare_result))
+		LoadingPerformance.cancel_world_preview_handoff()
 		text = original_text
 		disabled = false
 		return
+	LoadingPerformance.update_world_preview_loading_progress(0.24)
 	var loader := WORLD_SCENE_LOADER_SCRIPT.new()
 	add_child(loader)
-	loader.progress_changed.connect(func(ratio: float): text = "Loading %d%%" % int(round(10.0 + ratio * 70.0)))
+	loader.progress_changed.connect(func(ratio: float):
+		LoadingPerformance.update_world_preview_loading_progress(0.24 + clampf(ratio, 0.0, 1.0) * 0.48)
+	)
 	var load_result: Dictionary = await loader.load_world(WORLD_SCENE_PATH)
 	loader.queue_free()
 	if not bool(load_result.get("ok", false)):
 		push_error(str(load_result.get("error", "World load failed")))
+		LoadingPerformance.cancel_world_preview_handoff()
 		text = original_text
 		disabled = false
 		return
+	LoadingPerformance.update_world_preview_loading_progress(0.78)
+	await LoadingPerformance.wait_for_world_preview_cover()
+	LoadingPerformance.update_world_preview_loading_progress(0.84)
 	LoadingPerformance.show_world_build_overlay()
 	LoadingPerformance.mark("world_scene_changed")
 	get_tree().change_scene_to_packed(load_result.get("scene") as PackedScene)

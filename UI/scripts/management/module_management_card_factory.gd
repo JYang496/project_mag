@@ -1,6 +1,8 @@
 extends RefCounted
 class_name ModuleManagementCardFactory
 
+const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
+
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const WAREHOUSE_DRAG_CONTROLS := preload("res://UI/scripts/management/warehouse_drag_controls.gd")
 const MODULE_FIT_FORMATTER := preload("res://UI/scripts/module_fit_formatter.gd")
@@ -225,6 +227,7 @@ func _is_module_drag_kind(payload_kind: String) -> bool:
 	return payload_kind == "temporary_module" or payload_kind == "equipped_module"
 
 func _populate_weapon_button(button: Button, weapon: Weapon, selected: bool) -> void:
+	var display_model = WEAPON_DISPLAY_BUILDER.build_from_instance(weapon)
 	button.text = ""
 	var margin := _make_full_margin(10, 7, 10, 7)
 	button.add_child(margin)
@@ -238,7 +241,7 @@ func _populate_weapon_button(button: Button, weapon: Weapon, selected: bool) -> 
 	var text_box := _make_text_box()
 	row.add_child(text_box)
 	var name_label := Label.new()
-	name_label.text = LocalizationManager.get_weapon_instance_display_name(weapon)
+	name_label.text = display_model.display_name
 	name_label.clip_text = true
 	name_label.add_theme_color_override("font_color", _get_weapon_rarity_color(weapon))
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -314,12 +317,13 @@ func _format_module_meta(module_instance: Module) -> String:
 	)
 
 func _format_weapon_meta(weapon: Weapon) -> String:
+	var display_model = WEAPON_DISPLAY_BUILDER.build_from_instance(weapon)
 	return LocalizationManager.tr_format(
 		"ui.weapon.meta.level_fuse",
 		{
-			"level": int(weapon.level),
-			"max": int(weapon.max_level),
-			"fuse": int(weapon.fuse),
+			"level": display_model.level,
+			"max": display_model.max_level,
+			"fuse": display_model.fuse,
 		},
-		"Lv.%d/%d  Fuse %d" % [int(weapon.level), int(weapon.max_level), int(weapon.fuse)]
+		"Lv.%d/%d  Fuse %d" % [display_model.level, display_model.max_level, display_model.fuse]
 	)

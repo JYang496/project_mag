@@ -82,6 +82,7 @@ func _spawn_mirrors() -> void:
 		clone.hp = max(4, int(round(float(max(1, hp)) * 0.22)))
 		clone.damage = max(1, int(round(float(max(1, damage)) * 0.6)))
 		clone.movement_speed = movement_speed * 1.05
+		clone.prepare_spawn_sequence(0.38)
 		call_deferred("add_sibling", clone)
 
 func _reposition() -> void:

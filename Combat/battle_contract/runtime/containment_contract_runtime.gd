@@ -7,6 +7,8 @@ var port
 var rift_count := 3
 var seal_duration_sec := 8.0
 var reinforcement_interval_sec := 9.0
+var duration_buffer_sec := 12.0
+var performance_wave_allowance_per_rift := 4.0
 var progress_by_id: Dictionary = {}
 var presence_by_id: Dictionary = {}
 var sealed_by_id: Dictionary = {}
@@ -24,10 +26,12 @@ func start(combat_port, parameters: Dictionary) -> void:
 	port.request_external_victory_control(true)
 	port.request_configure_continuous_spawning(true)
 	var available_points: PackedVector2Array = port.get_battlefield_capabilities().get("containment_points", PackedVector2Array())
-	rift_count = mini(clampi(int(parameters.get("rift_count", 3)), 1, 3), available_points.size())
+	rift_count = mini(maxi(int(parameters.get("rift_count", 3)), 1), available_points.size())
 	seal_duration_sec = maxf(float(parameters.get("seal_duration_sec", 8.0)), 1.0)
 	reinforcement_interval_sec = maxf(float(parameters.get("reinforcement_interval_sec", 9.0)), 3.0)
-	port.request_configure_duration(float(rift_count) * seal_duration_sec + 12.0)
+	duration_buffer_sec = maxf(float(parameters.get("duration_buffer_sec", 12.0)), 0.0)
+	performance_wave_allowance_per_rift = maxf(float(parameters.get("performance_wave_allowance_per_rift", 4.0)), 0.1)
+	port.request_configure_duration(float(rift_count) * seal_duration_sec + duration_buffer_sec)
 	port.beacon_presence_changed.connect(_on_presence_changed)
 	port.battle_tick.connect(_on_tick)
 	_apply_threat()
@@ -113,7 +117,8 @@ func _seal_rift(rift_id: int) -> void:
 		port.request_stop_spawning()
 		port.request_evacuate_enemies({"grant_kill_rewards": false})
 		var result := _snapshot()
-		result["performance_ratio"] = clampf(1.0 - float(reinforcement_waves) / float(maxi(rift_count * 4, 1)), 0.0, 1.0)
+		var allowed_waves := maxf(float(rift_count) * performance_wave_allowance_per_rift, 1.0)
+		result["performance_ratio"] = clampf(1.0 - float(reinforcement_waves) / allowed_waves, 0.0, 1.0)
 		result["reward_type"] = &"gold"
 		completed.emit(result)
 

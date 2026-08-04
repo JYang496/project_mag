@@ -8,6 +8,7 @@ const OPERATION := preload("res://data/battle_contracts/operation.tres")
 const CONTAINMENT := preload("res://data/battle_contracts/containment.tres")
 const EXTRACTION := preload("res://data/battle_contracts/extraction.tres")
 const REWARD := preload("res://data/battle_contracts/reward.tres")
+const REST_PROTOCOL := preload("res://data/battle_contracts/rest.tres")
 const ELIMINATION_RUNTIME := preload("res://Combat/battle_contract/runtime/elimination_contract_runtime.gd")
 const SURVIVAL_RUNTIME := preload("res://Combat/battle_contract/runtime/survival_contract_runtime.gd")
 const OPERATION_RUNTIME := preload("res://Combat/battle_contract/runtime/operation_contract_runtime.gd")
@@ -52,7 +53,7 @@ const STATE_PATH := "user://battle_contract_state.json"
 func _ready() -> void:
 	_rng.randomize()
 	for definition in _get_catalog():
-		if definition.contract_id == &"reward":
+		if definition.contract_id in [&"reward", &"rest"]:
 			continue
 		missed_offer_counts[definition.contract_id] = 0
 	_load_persistent_state()
@@ -63,11 +64,14 @@ func request_offer() -> Array[BattleContractDefinition]:
 	_history_before_offer = get_history_snapshot()
 	var capabilities := _combat_port.get_battlefield_capabilities()
 	var allowed := _combat_port.get_allowed_contracts()
+	var level_index := maxi(PhaseManager.current_level, 0)
 	var candidates: Array[BattleContractDefinition] = []
 	for definition in _get_catalog():
-		if definition.contract_id == &"reward":
+		if definition.contract_id in [&"reward", &"rest"]:
 			continue
 		if not allowed.is_empty() and definition.contract_id not in allowed:
+			continue
+		if not is_contract_unlocked_for_level(definition, level_index):
 			continue
 		var required_capability := str(definition.parameters.get("required_capability", ""))
 		if not required_capability.is_empty() and not bool(capabilities.get(required_capability, false)):
@@ -79,25 +83,59 @@ func request_offer() -> Array[BattleContractDefinition]:
 		push_warning("Battle contract candidates below two; falling back to elimination and survival.")
 		candidates = [ELIMINATION, SURVIVAL]
 	var target_option_count := 2
+	var max_long_form_options := get_max_long_form_options_for_level(level_index)
 	var options: Array[BattleContractDefinition] = []
 	while options.size() < target_option_count and not candidates.is_empty():
 		var picked := _pick_weighted(candidates)
 		options.append(picked)
 		candidates.erase(picked)
-	if _is_reward_offer_available_for_current_level():
+		if picked.long_form:
+			var selected_long_count := options.filter(func(option): return option.long_form).size()
+			if selected_long_count >= max_long_form_options:
+				candidates = candidates.filter(func(option): return not option.long_form)
+	if PhaseManager.is_rest_protocol_available():
+		options.append(REST_PROTOCOL)
+	elif _is_reward_offer_available_for_current_level():
 		options.append(REWARD)
 	set_offer(options)
 	return current_options.duplicate()
 
+func is_contract_unlocked_for_level(definition: BattleContractDefinition, level_index: int) -> bool:
+	if definition == null:
+		return false
+	var safe_level := maxi(level_index, 0)
+	if safe_level < maxi(definition.minimum_offer_level_index, 0):
+		return false
+	return true
+
+func get_max_long_form_options_for_level(level_index: int) -> int:
+	var safe_level := maxi(level_index, 0)
+	var unlocked_long_contracts := _get_catalog().filter(func(definition):
+		return definition.long_form and safe_level >= maxi(definition.minimum_offer_level_index, 0)
+	)
+	if unlocked_long_contracts.is_empty():
+		return 0
+	var pairable_count := unlocked_long_contracts.filter(func(definition):
+		return definition.multiple_long_offer_level_index >= 0 \
+			and safe_level >= definition.multiple_long_offer_level_index
+	).size()
+	return 2 if pairable_count >= 2 else 1
+
 func confirm_selection() -> bool:
 	if state != SELECTED or selected_contract == null:
 		return false
+	if selected_contract.contract_id == &"rest":
+		restored_selection_pending = false
+		_save_persistent_state()
+		return true
 	if selected_contract.contract_id == last_selected_id:
 		consecutive_selection_count += 1
 	else:
 		last_selected_id = selected_contract.contract_id
 		consecutive_selection_count = 1
 	for definition in _get_catalog():
+		if definition.contract_id == &"rest":
+			continue
 		if current_options.has(definition):
 			missed_offer_counts[definition.contract_id] = 0
 		else:
@@ -132,7 +170,7 @@ func start_current_battle() -> bool:
 	return true
 
 func _get_catalog() -> Array[BattleContractDefinition]:
-	return [ELIMINATION, SURVIVAL, OPERATION, CONTAINMENT, EXTRACTION, REWARD]
+	return [ELIMINATION, SURVIVAL, OPERATION, CONTAINMENT, EXTRACTION, REWARD, REST_PROTOCOL]
 
 func _pick_weighted(candidates: Array[BattleContractDefinition]) -> BattleContractDefinition:
 	var total := 0.0
@@ -181,6 +219,8 @@ func select_contract(definition: BattleContractDefinition) -> bool:
 
 func activate_contract(snapshot: Dictionary = {}) -> bool:
 	if state != SELECTED or selected_contract == null:
+		return false
+	if selected_contract.contract_id == &"rest":
 		return false
 	if _combat_port != null:
 		var economy: EconomyConfig = GlobalVariables.economy_data

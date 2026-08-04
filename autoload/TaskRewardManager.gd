@@ -34,7 +34,7 @@ func is_enabled() -> bool:
 	return economy.task_reward_options_enabled
 
 func is_task_reward_blocking_interactions() -> bool:
-	return _reward_unlocked and PhaseManager.current_state() == PhaseManager.PREPARE
+	return _reward_unlocked and PhaseManager.current_state() == PhaseManager.SETTLEMENT
 
 func is_reward_blocking_interactions() -> bool:
 	return is_task_reward_blocking_interactions() \
@@ -76,11 +76,11 @@ func notify_objective_completed(_cell_id: String = "") -> void:
 	if ui and is_instance_valid(ui) and ui.has_method("show_item_message"):
 		ui.show_item_message(LocalizationManager.tr_key(
 			"ui.task_reward.unlocked",
-			"Objective complete. Rewards will be delivered in the Rest Area."
+			"Objective complete. Rewards will be delivered after battle."
 		), 2.6)
 
 func begin_battle_snapshot() -> bool:
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
+	if PhaseManager.current_state() != PhaseManager.PROTOCOL_SELECTION:
 		return false
 	if not _write_rollback_snapshot():
 		push_warning("Unable to create battle rollback snapshot.")
@@ -151,7 +151,7 @@ func _on_phase_changed(new_phase: String) -> void:
 		_delete_file(ROLLBACK_PATH)
 		_save_state()
 		return
-	if new_phase != PhaseManager.PREPARE:
+	if new_phase != PhaseManager.SETTLEMENT:
 		return
 	_battle_in_progress = false
 	if _reward_unlocked and _pending_level == int(PhaseManager.current_level) - 1:
@@ -164,14 +164,15 @@ func _on_phase_changed(new_phase: String) -> void:
 	call_deferred("_finalize_success_without_reward")
 
 func _finalize_success_without_reward() -> void:
-	if PhaseManager.current_state() != PhaseManager.PREPARE or _reward_unlocked:
+	if PhaseManager.current_state() != PhaseManager.SETTLEMENT or _reward_unlocked:
 		return
 	_delete_file(ROLLBACK_PATH)
+	PhaseManager.request_settlement_completion_check()
 
 func _try_open_pending_reward() -> void:
 	if not _reward_unlocked or _reward_panel_open:
 		return
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
+	if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
 		return
 	if PhaseManager.is_post_battle_collect_gate_active():
 		_retry_open_later()
@@ -203,7 +204,7 @@ func _try_open_pending_reward() -> void:
 		_retry_open_later()
 
 func _try_open_pending_reward_after_battle_outro() -> void:
-	await get_tree().create_timer(BATTLE_END_REWARD_DELAY_SEC).timeout
+	await get_tree().process_frame
 	_try_open_pending_reward()
 
 func _retry_open_later() -> void:
@@ -217,6 +218,7 @@ func _on_reward_summary_closed() -> void:
 	var ui = GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("resume_pending_weapon_branch_selection"):
 		ui.call_deferred("resume_pending_weapon_branch_selection")
+	PhaseManager.request_settlement_completion_check()
 
 func _settle_pending_reward_entries() -> String:
 	for index in range(_pending_reward_entries.size()):

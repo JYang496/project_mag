@@ -1,9 +1,15 @@
 keys,en,zh_CN
-battle_contract.ui.title,Choose Battle Contract,选择战斗协议
+battle_deployment.topology,BATTLEFIELD TOPOLOGY // SYNCING,战场拓扑 // 同步中
+battle_deployment.modules,TACTICAL MODULES // DEPLOYING,战术模块 // 部署中
+battle_deployment.complete,BATTLEFIELD DEPLOYMENT // COMPLETE,战场部署 // 完成
+rest_arrival.calibrating,SAFE ZONE // CALIBRATING,安全区域 // 校准中
+rest_arrival.services,REST FACILITIES // COMING ONLINE,休整设施 // 正在上线
+rest_arrival.complete,REST FACILITIES // ONLINE,休整设施 // 已上线
+battle_contract.ui.title,Choose Next Protocol,选择下一协议
 battle_contract.ui.main_contracts,Main Contracts,主要协议
-battle_contract.ui.extra_contracts,Limited-Time Contract,限时协议
-battle_contract.ui.subtitle,Decide the victory condition for the next battle,决定下一场战斗的胜利条件
-battle_contract.ui.cancel,Back to Prepare,返回准备
+battle_contract.ui.extra_contracts,Optional Protocol,可选协议
+battle_contract.ui.subtitle,Choose combat or use an available logistics protocol,选择战斗协议或可用的后勤协议
+battle_contract.ui.cancel,Back to Rest,返回整备
 battle_contract.ui.confirm,Launch Selected Contract,启动所选协议
 battle_contract.ui.status.acquiring,TACTICAL LINK // ACQUIRING CONTRACTS,战术链路 // 正在获取协议
 battle_contract.ui.status.ready,TACTICAL LINK // CONTRACTS READY,战术链路 // 协议已就绪
@@ -24,6 +30,7 @@ battle_contract.card.type.operation,OPERATION,行动
 battle_contract.card.type.containment,CONTAINMENT,封锁
 battle_contract.card.type.extraction,EXTRACTION,撤离
 battle_contract.card.type.reward,BONUS,奖励
+battle_contract.card.type.rest,LOGISTICS,整备
 battle_contract.card.badge.rare,RARE CONTRACT,稀有协议
 battle_contract.card.badge.selected,✓ SELECTED,✓ 已选择
 battle_contract.ui.reward_slot.title,Reward Slot,奖励协议槽
@@ -35,40 +42,68 @@ battle_contract.ui.reward_slot.summary,Not available this round (25% chance each
 battle_contract.elimination.name,Elimination Protocol,歼灭协议
 battle_contract.elimination.description,Eliminate every enemy in the encounter.,消灭本场全部敌人。
 battle_contract.elimination.pace,Finite enemy budget · 3–5 batches,有限敌人预算 · 3–5 批次
-battle_contract.elimination.reward,Gold: primarily earned by defeating all enemies; early clears add a small bonus.,金币：主要通过消灭全部敌人获得；提前清场提供少量额外奖励。
+battle_contract.elimination.reward,"Gold: Standard
+Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：正常
+战利品：随机三选一（可能含武器或模块）"
 battle_contract.card.elimination.summary,Eliminate all enemies · 3–5 batches,消灭全部敌人 · 3–5 批次
-battle_contract.card.elimination.reward_hint,Early clears grant bonus gold.,提前清场可获得额外金币。
+battle_contract.card.elimination.reward_hint,"Gold: Standard
+Extra: random gear choice","金币：正常
+额外：随机装备选项"
 battle_contract.survival.name,Survival Protocol,坚守协议
 battle_contract.survival.description,Survive until the combat timer expires.,在持续敌潮中坚持至倒计时结束。
-battle_contract.survival.pace,Continuous pressure · approximately 45–65 seconds,持续压力 · 约 45–65 秒
-battle_contract.survival.reward,Gold: primarily awarded for surviving the full duration; enemy drops are limited.,金币：主要在坚持完整时限后结算；敌人掉落存在上限。
-battle_contract.card.survival.summary,Survive continuous waves for approximately 45–65 seconds.,在持续敌潮中坚守约 45–65 秒。
-battle_contract.card.survival.reward_hint,Enemy drops are limited.,敌人掉落存在上限。
+battle_contract.survival.pace,Continuous pressure · duration follows the current level timer,持续压力 · 时长跟随当前关卡倒计时
+battle_contract.survival.reward,"Gold: Standard
+Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：正常
+战利品：随机三选一（可能含武器或模块）"
+battle_contract.card.survival.summary,Survive continuous waves until the current level timer expires.,在持续敌潮中坚守至当前关卡倒计时结束。
+battle_contract.card.survival.reward_hint,"Gold: Standard
+Extra: random gear choice","金币：正常
+额外：随机装备选项"
 battle_contract.operation.name,Operation Protocol,行动协议
 battle_contract.operation.description,Activate two tactical beacons in sequence.,依次激活两个战术信标。
-battle_contract.operation.pace,Mobile objective · two 10–14 second captures,移动目标 · 两次 10–14 秒充能
-battle_contract.operation.reward,Gold: primarily awarded for securing both beacons; efficient captures add a bonus.,金币：主要通过占领两个信标获得；高效占领提供额外奖励。
-battle_contract.card.operation.summary,Secure 2 beacons in sequence · 10–14 seconds each,依次占领 2 个信标 · 每次约 10–14 秒
-battle_contract.card.operation.reward_hint,Fast captures grant bonus gold.,快速占领可获得额外金币。
+battle_contract.operation.pace,Mobile objective · 8-second early captures · 10–14 seconds later,移动目标 · 前四关每次 8 秒 · 后续 10–14 秒
+battle_contract.operation.reward,"Gold: Standard
+Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：正常
+战利品：随机三选一（可能含武器或模块）"
+battle_contract.card.operation.summary,Secure 2 beacons · 8 seconds early · 10–14 seconds later,占领 2 个信标 · 前四关每次 8 秒 · 后续 10–14 秒
+battle_contract.card.operation.reward_hint,"Gold: Standard
+Extra: random gear choice","金币：正常
+额外：随机装备选项"
 battle_contract.containment.name,Containment Protocol,封锁协议
 battle_contract.containment.description,Seal three unstable rifts before their pressure overwhelms the arena.,封锁三个不稳定裂隙，阻止其压力淹没战场。
 battle_contract.containment.pace,Multi-point objective · escalating rift surges,多点目标 · 裂隙增援逐步升级
-battle_contract.containment.reward,Gold: primarily awarded for sealing every rift; limiting surges adds a bonus.,金币：主要通过封锁全部裂隙获得；减少裂隙增援提供额外奖励。
+battle_contract.containment.reward,"Gold: Above average
+Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：较多
+战利品：随机三选一（可能含武器或模块）"
 battle_contract.card.containment.summary,Seal 3 rifts as enemy surges escalate.,封锁 3 个裂隙 · 敌人增援逐步升级
-battle_contract.card.containment.reward_hint,Limiting surges grants bonus gold.,减少裂隙增援可获得额外金币。
+battle_contract.card.containment.reward_hint,"Gold: Above average
+Extra: random gear choice","金币：较多
+额外：随机装备选项"
 battle_contract.extraction.name,Extraction Protocol,撤离协议
 battle_contract.extraction.description,Survive until extraction opens then break through to the exit before time runs out.,坚持至撤离点开放，随后在时限内突围至出口。
 battle_contract.extraction.pace,Two-stage combat · survive then relocate,两阶段战斗 · 生存后转移
-battle_contract.extraction.reward,Gold: primarily awarded for completing extraction; reaching the zone quickly adds a bonus.,金币：主要通过完成撤离获得；快速抵达撤离区提供额外奖励。
+battle_contract.extraction.reward,"Gold: Standard
+Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：正常
+战利品：随机三选一（可能含武器或模块）"
 battle_contract.card.extraction.summary,"Survive first, then break through to extraction before time runs out.",先坚持生存，再在时限内突围至撤离点。
-battle_contract.card.extraction.reward_hint,Reaching the zone quickly grants bonus gold.,快速抵达撤离区可获得额外金币。
+battle_contract.card.extraction.reward_hint,"Gold: Standard
+Extra: random gear choice","金币：正常
+额外：随机装备选项"
 battle_contract.reward.name,Reward Protocol,奖励协议
-battle_contract.reward.description,Hunt every moving reward target within 45 seconds.,在 45 秒内猎杀全部移动奖励目标。
+battle_contract.reward.description,Hunt every moving reward target before the protocol timer expires.,在协议倒计时结束前猎杀全部移动奖励目标。
 battle_contract.reward.pace,Bonus stage · targets cannot attack,奖励关 · 目标不会攻击
-battle_contract.reward.reward,Expected combat rewards ×2,预期战斗奖励 ×2
-battle_contract.card.reward.summary,Hunt all reward targets within 45 seconds.,在 45 秒内猎杀全部奖励目标。
+battle_contract.reward.reward,"Gold: Large
+Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：大量
+战利品：随机三选一（可能含武器或模块）"
+battle_contract.card.reward.summary,Hunt all reward targets before the protocol timer expires.,在协议倒计时结束前猎杀全部奖励目标。
 battle_contract.card.reward.special_rule,Targets move but cannot attack.,目标会移动，但不会攻击。
-battle_contract.card.reward.reward_hint,Expected combat rewards ×2,预期战斗奖励 ×2
+battle_contract.card.reward.reward_hint,"Gold: Large
+Extra: random gear choice","金币：大量
+额外：随机装备选项"
+battle_contract.rest.name,Rest Protocol,休息协议
+battle_contract.rest.description,Enter logistics mode to purchase strengthen and reconfigure your build.,进入后勤整备，购买、强化并调整当前构筑。
+battle_contract.card.rest.summary,Enter the rest area and unlock full loadout management.,进入休息区并开放完整构筑管理。
+battle_contract.card.rest.reward_hint,Shop · upgrades · storage · board,商店 · 强化 · 仓库 · 棋盘
 battle_contract.hud.elimination,Remaining {remaining} · Wave {current}/{total},剩余敌人 {remaining} · 波次 {current}/{total}
 battle_contract.hud.survival,Time {seconds}s · Threat {threat},剩余 {seconds} 秒 · 威胁等级 {threat}
 battle_contract.hud.operation,Beacon {current}/{total} · {percent}%,信标 {current}/{total} · {percent}%
@@ -99,9 +134,21 @@ ui.passive.next_radial_volley,Next volley: {count},下次环射：{count}根
 ui.language.en,English,English
 ui.language.zh_cn,Simplified Chinese,简体中文
 ui.start.title,Protocol: Mag Arena,协议：磁核竞技场
+ui.start.brand_title,MAG ARENA,磁核竞技场
+ui.start.brand_subtitle,MAGNETIC CORE COMBAT PROTOCOL,MAG ARENA
+ui.start.tagline,LINK YOUR CORE. ENTER THE ARENA.,连接磁核，进入竞技场。
 ui.start.continue,Continue Game,继续游戏
+ui.start.no_save,NO OPERATION RECORD FOUND,暂无可用作战记录
 ui.start.start_game,Start Game,开始游戏
 ui.start.new_game,New Game,全新游戏
+ui.start.settings,Settings,设置
+ui.start.exit,Exit Game,退出游戏
+ui.start.back,Back,返回
+ui.start.input_hint,[ENTER]  CONFIRM     [ESC]  BACK,[ENTER]  确认     [ESC]  返回
+ui.start.display_language,DISPLAY & LANGUAGE,显示与语言
+ui.start.audio,AUDIO,音频
+ui.start.combat_assist,COMBAT ASSIST,战斗辅助
+ui.start.settings_saved,Changes are saved immediately,更改将立即保存
 ui.start.hp_safety,Keep HP > 1: {state},保留生命值 > 1：{state}
 ui.start.resolution,Resolution,分辨率
 ui.start.resolution_tooltip,Run standalone or exported build to change window resolution.,请在独立运行或导出版本中修改窗口分辨率。
@@ -228,7 +275,7 @@ ui.reward.detail.compatible_with,Compatible With: {types},兼容：{types}
 ui.task_reward.title,Objective Reward,任务奖励
 ui.task_reward.source,Completed Objective,已完成任务
 ui.task_reward.subtitle,Choose one reward for completing an objective this battle.,选择一项本轮完成任务获得的奖励。
-ui.task_reward.unlocked,Objective complete. Rewards will be delivered in the Rest Area.,任务完成，奖励将在休息区发放。
+ui.task_reward.unlocked,Objective complete. Rewards will be delivered after battle.,任务完成，奖励将在战后结算。
 ui.task_reward.summary_title,Objective Rewards,任务奖励
 ui.task_reward.summary_subtitle,Rewards added to inventory.,奖励已加入库存。
 ui.task_reward.summary_confirm,Continue,继续
@@ -391,6 +438,28 @@ ui.module.term.stat.bullet_count,Projectile Count,弹数
 ui.module.term.stat.duration,Duration,持续时间
 ui.module.term.stat.hit_cd,Hit Interval,命中间隔
 ui.module.term.stat.explosion_scale,Explosion Scale,爆炸范围
+ui.stat.damage,Damage,伤害
+ui.stat.fire_interval,Fire Interval,射击间隔
+ui.stat.ammo,Magazine,弹匣容量
+ui.stat.range,Range,射程
+ui.stat.projectile_speed,Projectile Speed,弹速
+ui.stat.projectile_hits,Hit Limit,命中上限
+ui.stat.bullet_count,Projectiles,弹丸数
+ui.stat.explosion_scale,Blast Scale,爆炸范围倍率
+ui.stat.duration,Duration,持续时间
+ui.stat.hit_interval,Hit Interval,命中间隔
+ui.stat.dot_interval,Damage Interval,伤害间隔
+ui.stat.dash_speed,Dash Speed,冲刺速度
+ui.stat.return_speed,Return Speed,回程速度
+ui.stat.spin_speed,Orbit Speed,环绕速度
+ui.value.seconds,{value}s,{value}秒
+ui.value.rounds,{value} rounds,{value}发
+ui.weapon.detail.upgrade_changes,This Upgrade,本次强化变化
+ui.weapon.detail.current_stats,Current Base Stats,当前基础属性
+ui.weapon.detail.core_stats,Core Stats,核心属性
+ui.weapon.detail.no_stat_changes,No numeric stat changes.,没有数值属性变化。
+ui.weapon.detail.compare_header,Compared with incoming weapon,与新武器对比
+ui.weapon.detail.modules_warning,Replacing removes {count} installed modules.,替换将移除已安装的 {count} 个模组。
 ui.module.term.cone_half_angle_deg,Cone Half Angle,锥形半角
 ui.module.term.heat_per_shot,Heat Per Shot,单次射击热量
 ui.module.term.attack_cooldown,Attack Cooldown,攻击冷却
@@ -414,10 +483,16 @@ ui.gameover.stat.gold_earned,Gold Earned,获得金币
 ui.gameover.return_to_menu,Return to Main Menu,返回主菜单
 ui.start_battle.hold_f,Open Battle Menu,打开战斗菜单
 ui.tutorial.state.rest,Current: Rest Area,当前状态：休息区
+ui.tutorial.guide.rest.title,Rest Area · Choose Next Step,休息区 · 选择下一步
+ui.tutorial.compact.rest,Click a facility · Click center to continue,点击设施 · 点击中心继续
 ui.tutorial.state.battle,Current: Battle,当前状态：战斗中
+ui.phase.settlement,Current: Reward Settlement,当前状态：奖励结算
+ui.phase.protocol_selection,Current: Protocol Selection,当前状态：协议选择
+ui.phase.battle_starting,Current: Deploying,当前状态：正在部署
+ui.upgrade.rest_only,Upgrades are only available during rest.,只有进入休息协议后才能强化。
 ui.tutorial.state.primary_menu,Current: Primary Menu,当前状态：一级菜单
-ui.tutorial.panel.rest.line1,[LMB] Click menu and zones,[鼠标左键] 点击菜单与区域
-ui.tutorial.panel.rest.line2,[LMB] Open battle menu,[鼠标左键] 打开战斗菜单
+ui.tutorial.panel.rest.line1,Click a facility to manage your build,点击设施管理构筑
+ui.tutorial.panel.rest.line2,Click center to choose the next protocol,点击中心选择下一协议
 ui.tutorial.panel.rest.line3,[Esc] Pause,[Esc] 暂停
 ui.tutorial.panel.primary_menu.line1,[LMB] Click buttons,[鼠标左键] 点击按钮
 ui.tutorial.panel.primary_menu.line2,[RMB] Exit current menu,[鼠标右键] 退出当前菜单
@@ -548,7 +623,7 @@ ui.shop.module.any_weapon,Any weapon,任意武器
 ui.module.fit.label,Fit,适配
 ui.tutorial.ctx.smith,Click to open upgrade,点击打开强化
 ui.tutorial.ctx.module,Click to manage modules,点击管理模组
-ui.tutorial.ctx.battle_hold,Click center to open battle menu,点击中央区域打开战斗菜单
+ui.tutorial.ctx.battle,Click center to choose the next protocol,点击中央区域选择下一协议
 ui.rest.zone.shop.title,Shop,商店
 ui.rest.zone.shop.status,Buy weapons and modules,购买武器与模组
 ui.rest.zone.upgrade.title,Weapon Upgrade,武器升级
@@ -618,6 +693,7 @@ ui.dialog.detail.discard_slot,Slot {slot},栏位 {slot}
 ui.dialog.action.move_temporary,Move to temporary area,移至临时区域
 ui.dialog.action.start_battle,Start battle,开始战斗
 ui.rest.zone.battle.title,Start Battle,开始战斗
+ui.rest.zone.battle.prompt,[{input}] Choose Next Protocol,[{input}] 选择下一协议
 ui.rest.zone.battle.subtitle,Leave the rest area and begin the next fight.,离开休息区并开始下一场战斗。
 ui.rarity.common,Common,普通
 ui.rarity.rare,Rare,稀有
@@ -750,6 +826,20 @@ ui.weapon_hud.reload_hint,[R]  RELOAD,[R]  装填
 ui.weapon_hud.main,MAIN,主武器
 ui.weapon_hud.empty,EMPTY WEAPON SLOT,空武器槽
 ui.weapon_hud.passive,PASSIVE,被动
+ui.weapon_hud.main_tooltip_detail,"{weapon}
+{types}
+{mechanic}
+MAIN WEAPON · R: RELOAD · Q/E: SWITCH","{weapon}
+{types}
+{mechanic}
+主武器 · R：装填 · Q/E：切换"
+ui.weapon_hud.reserve_tooltip_detail,"{weapon}
+{types}
+{mechanic}
+RESERVE WEAPON · Q/E: SWITCH","{weapon}
+{types}
+{mechanic}
+备用武器 · Q/E：切换"
 ui.weapon_hud.main_tooltip,"{weapon}
 MAIN WEAPON · R: RELOAD · Q/E: SWITCH","{weapon}
 主武器 · R：装填 · Q/E：切换"

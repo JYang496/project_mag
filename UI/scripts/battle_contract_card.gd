@@ -51,6 +51,11 @@ func set_selected(value: bool, dim_unselected: bool = true) -> void:
 	_selected = value
 	button_pressed = value
 	$Margin/Content/Header/SelectedBadge.visible = value
+	$Margin/Content/Header/SelectionMark.text = "●" if value else "○"
+	$Margin/Content/Header/SelectionMark.add_theme_color_override(
+		"font_color",
+		_accent_color if value else Color(0.52, 0.64, 0.67, 0.95)
+	)
 	self_modulate = Color.WHITE if value or not dim_unselected else Color(0.84, 0.88, 0.9, 0.9)
 
 func show_battle_intro(objective: String, parameters_text: String) -> void:
@@ -83,18 +88,18 @@ func begin_intro_collapse(duration_sec: float) -> void:
 	tween.tween_property($Margin/Content/IntroContent/Parameters, "modulate:a", 0.0, fade_duration)
 
 func _apply_card_styles() -> void:
-	var card_dark := Color(0.035, 0.055, 0.068, 0.98)
+	var card_dark := Color(0.045, 0.07, 0.083, 0.985)
 	$AccentLine.color = _accent_color
 	$Margin/Content/Header/TypeLabel.add_theme_color_override("font_color", _accent_color)
 	$Margin/Content/Header/RareBadge.add_theme_color_override("font_color", Color(1.0, 0.78, 0.26))
 	$Margin/Content/Title.add_theme_color_override("font_color", Color(0.91, 0.95, 0.96))
 	$Margin/Content/InfoGrid/Description.add_theme_color_override("font_color", Color(0.82, 0.89, 0.91))
-	$Margin/Content/InfoGrid/Reward.add_theme_color_override("font_color", Color(1.0, 0.82, 0.38) if _contract_id == "reward" else Color(0.65, 0.74, 0.77))
+	$Margin/Content/InfoGrid/Reward.add_theme_color_override("font_color", Color(1.0, 0.82, 0.38) if _contract_id == "reward" else Color(0.76, 0.83, 0.85))
 	$Margin/Content/IntroContent/Objective.add_theme_color_override("font_color", Color(0.82, 0.89, 0.91))
 	$Margin/Content/RewardDetails/Objective.add_theme_color_override("font_color", Color(0.82, 0.89, 0.91))
 	$Margin/Content/RewardDetails/Rule.add_theme_color_override("font_color", Color(0.92, 0.72, 0.25))
 	$Margin/Content/RewardDetails/Reward.add_theme_color_override("font_color", Color(1.0, 0.82, 0.38))
-	add_theme_stylebox_override("normal", _make_style(card_dark, Color(0.16, 0.23, 0.26), 1))
+	add_theme_stylebox_override("normal", _make_style(card_dark, Color(0.24, 0.36, 0.4, 0.9), 1))
 	add_theme_stylebox_override("hover", _make_style(card_dark.lightened(0.035), _accent_color.darkened(0.18), 2))
 	add_theme_stylebox_override("pressed", _make_style(card_dark.lightened(0.06), _accent_color, 3))
 	var rare_style := _make_style(Color.TRANSPARENT, Color(0.72, 0.48, 0.12, 0.72), 1)
@@ -111,6 +116,7 @@ func _type_label(id: String) -> String:
 		"survival": return "SURVIVAL // 坚守"
 		"elimination": return "ELIMINATION // 歼灭"
 		"reward": return "BOUNTY // 奖励"
+		"rest": return "LOGISTICS // 整备"
 		"operation": return "OPERATION // 行动"
 		"containment": return "CONTAINMENT // 封锁"
 		"extraction": return "EXTRACTION // 撤离"

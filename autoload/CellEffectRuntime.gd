@@ -182,6 +182,8 @@ func grant_random_unlocked_effect(level_index: int = 0, amount: int = 1) -> Stri
 	return effect_id if grant_effect(effect_id, amount) else ""
 
 func set_pending_effect(cell_id: int, effect_id: String) -> Dictionary:
+	if not PhaseManager.can_configure_loadout():
+		return {"ok": false, "reason": "Cell effects can only be configured during rest."}
 	if cell_id <= 0:
 		return {"ok": false, "reason": "Invalid cell."}
 	var definition := get_definition(effect_id)
@@ -198,6 +200,8 @@ func set_pending_effect(cell_id: int, effect_id: String) -> Dictionary:
 	return {"ok": true, "reason": ""}
 
 func can_swap_installed_effects(from_cell_id: int, to_cell_id: int) -> Dictionary:
+	if not PhaseManager.can_configure_loadout():
+		return {"ok": false, "reason": "Cell effects can only be configured during rest."}
 	if from_cell_id <= 0 or to_cell_id <= 0:
 		return {"ok": false, "reason": "Invalid cell."}
 	if from_cell_id == to_cell_id:

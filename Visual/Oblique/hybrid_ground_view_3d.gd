@@ -11,8 +11,10 @@ const AuraRendererType := preload("res://Visual/Oblique/aura_renderer.gd")
 const AreaEffectRendererType := preload("res://Visual/Oblique/area_effect_renderer.gd")
 const UnitBillboardRendererType := preload("res://Visual/Oblique/unit_billboard_renderer_3d.gd")
 const RestAreaZoneGroundShader := preload("res://Shaders/rest_area_zone_ground.gdshader")
+const RestAreaArrivalGroundShader := preload("res://Shaders/rest_area_arrival_ground.gdshader")
 const LayeredAreaGroundShader := preload("res://Shaders/layered_area_ground.gdshader")
 const AffiliationGroundMarkerShader := preload("res://Shaders/affiliation_ground_marker.gdshader")
+const BattlefieldDeploymentGroundShader := preload("res://Shaders/battlefield_deployment_ground.gdshader")
 const ACTIVATION_OUTLINE_SHADER := """
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never;
@@ -74,7 +76,7 @@ var _ground_cone_meshes: Dictionary = {}
 var _rest_zone_meshes: Dictionary = {}
 var _rest_area: Node2D
 var _rest_ground_mesh: MeshInstance3D
-var _rest_ground_material: StandardMaterial3D
+var _rest_ground_material: ShaderMaterial
 var _rest_ground_sprite: WeakRef
 var _rest_zone_quad: QuadMesh
 var _rest_zone_material: ShaderMaterial
@@ -97,6 +99,11 @@ var _ground_renderers_initialized: bool = false
 var _view_multiplier: float = 1.0
 var _view_multiplier_tween: Tween
 var _screen_shake_offset := Vector2.ZERO
+var _deployment_armed := false
+var _deployment_previous_ids := PackedInt32Array()
+var _deployment_board_was_visible := false
+var _rest_arrival_progress := 1.0
+var _rest_arrival_pulse := 0.0
 var _affiliation_marker_quad: QuadMesh
 var _affiliation_marker_material: ShaderMaterial
 
@@ -372,11 +379,9 @@ func _rebuild_ground() -> void:
 		if texture_parent != null:
 			texture_size *= texture_parent.scale
 		quad.size = texture_size * world_scale
-		var material := StandardMaterial3D.new()
-		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		material.albedo_texture = texture_sprite.texture
-		material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		var material := ShaderMaterial.new()
+		material.shader = BattlefieldDeploymentGroundShader
+		material.set_shader_parameter("terrain_texture", texture_sprite.texture)
 		quad.material = material
 		mesh_instance.mesh = quad
 		mesh_instance.set_meta(&"hybrid_board_visual", true)
@@ -392,6 +397,7 @@ func _rebuild_ground() -> void:
 		_connect_cell_signal(cell)
 		var cell_enabled := bool(cell.get("board_enabled"))
 		mesh_instance.visible = _board_visual_active and cell_enabled
+		_apply_armed_deployment_state(mesh_instance, cell)
 		if cell_enabled:
 			_create_cell_border_meshes(cell, center, texture_size)
 		_create_activation_mesh(cell, center, texture_size)
@@ -567,9 +573,14 @@ func _on_cell_terrain_visual_changed(cell: Cell, texture: Texture2D) -> void:
 	if not entry_variant is Dictionary:
 		return
 	var entry := entry_variant as Dictionary
-	var material := entry.get("material") as StandardMaterial3D
-	if material != null:
-		material.albedo_texture = texture
+	var material := entry.get("material") as Material
+	var shader_material := material as ShaderMaterial
+	if shader_material != null:
+		shader_material.set_shader_parameter("terrain_texture", texture)
+		return
+	var standard_material := material as StandardMaterial3D
+	if standard_material != null:
+		standard_material.albedo_texture = texture
 
 func _sync_cell_meshes() -> void:
 	for entry_variant in _cell_meshes.values():
@@ -579,13 +590,142 @@ func _sync_cell_meshes() -> void:
 		var cell := cell_ref.get_ref() as Node2D if cell_ref != null else null
 		var sprite := sprite_ref.get_ref() as Sprite2D if sprite_ref != null else null
 		var mesh := entry.get("mesh") as MeshInstance3D
-		var material := entry.get("material") as StandardMaterial3D
+		var material := entry.get("material") as Material
 		if cell == null or mesh == null or not is_instance_valid(mesh):
 			continue
 		mesh.position = world_2d_to_3d(sprite.global_position if sprite != null else cell.global_position)
 		mesh.visible = _board_visual_active and bool(cell.get("board_enabled"))
-		if sprite != null and material != null and material.albedo_texture != sprite.texture:
-			material.albedo_texture = sprite.texture
+		if sprite != null and material != null:
+			var shader_material := material as ShaderMaterial
+			if shader_material != null:
+				if shader_material.get_shader_parameter("terrain_texture") != sprite.texture:
+					shader_material.set_shader_parameter("terrain_texture", sprite.texture)
+			else:
+				var standard_material := material as StandardMaterial3D
+				if standard_material != null and standard_material.albedo_texture != sprite.texture:
+					standard_material.albedo_texture = sprite.texture
+
+func prepare_battlefield_deployment(plan: Array) -> void:
+	for item_variant in plan:
+		var item := item_variant as Dictionary
+		var cell_id := int(item.get("cell_id", -1))
+		var kind := StringName(item.get("kind", &"added"))
+		var mesh := _get_cell_ground_mesh(cell_id)
+		if mesh == null:
+			continue
+		mesh.visible = true
+		mesh.set_instance_shader_parameter("deployment_seed", float(cell_id) * 1.731)
+		mesh.set_instance_shader_parameter("deployment_color", Color(0.38, 0.88, 1.0, 1.0))
+		mesh.set_instance_shader_parameter("deployment_progress", 1.0 if kind == &"retained" else 0.0)
+		mesh.set_instance_shader_parameter("deployment_dim", 0.28 if kind == &"retained" else 0.0)
+		mesh.set_instance_shader_parameter("deployment_pulse", 0.0)
+
+func arm_battlefield_deployment(previous_ids: PackedInt32Array, board_was_visible: bool) -> void:
+	_deployment_armed = true
+	_deployment_previous_ids = previous_ids.duplicate()
+	_deployment_board_was_visible = board_was_visible
+	for entry_variant in _cell_meshes.values():
+		var entry := entry_variant as Dictionary
+		var cell_ref := entry.get("cell") as WeakRef
+		var cell := cell_ref.get_ref() as Cell if cell_ref != null else null
+		var mesh := entry.get("mesh") as MeshInstance3D
+		if cell != null and mesh != null:
+			_apply_armed_deployment_state(mesh, cell)
+
+func set_cell_deployment_state(
+	cell_id: int,
+	progress_value: float,
+	dim_value: float,
+	pulse_value: float = 0.0
+) -> void:
+	var mesh := _get_cell_ground_mesh(cell_id)
+	if mesh == null:
+		return
+	mesh.visible = true
+	mesh.set_instance_shader_parameter("deployment_progress", clampf(progress_value, 0.0, 1.0))
+	mesh.set_instance_shader_parameter("deployment_dim", clampf(dim_value, 0.0, 1.0))
+	mesh.set_instance_shader_parameter("deployment_pulse", clampf(pulse_value, 0.0, 1.0))
+
+func finish_battlefield_deployment() -> void:
+	_deployment_armed = false
+	_deployment_previous_ids = PackedInt32Array()
+	_deployment_board_was_visible = false
+	for entry_variant in _cell_meshes.values():
+		var entry := entry_variant as Dictionary
+		var cell_ref := entry.get("cell") as WeakRef
+		var cell := cell_ref.get_ref() as Cell if cell_ref != null else null
+		var mesh := entry.get("mesh") as MeshInstance3D
+		if cell == null or mesh == null:
+			continue
+		mesh.set_instance_shader_parameter("deployment_progress", 1.0)
+		mesh.set_instance_shader_parameter("deployment_dim", 1.0)
+		mesh.set_instance_shader_parameter("deployment_pulse", 0.0)
+		mesh.visible = _board_visual_active and bool(cell.get("board_enabled"))
+
+func prepare_rest_area_arrival() -> void:
+	_rest_arrival_progress = 0.0
+	_rest_arrival_pulse = 0.0
+	_apply_rest_area_arrival_state()
+
+func set_rest_area_arrival_state(progress_value: float, pulse_value: float = 0.0) -> void:
+	_rest_arrival_progress = clampf(progress_value, 0.0, 1.0)
+	_rest_arrival_pulse = clampf(pulse_value, 0.0, 1.0)
+	_apply_rest_area_arrival_state()
+
+func finish_rest_area_arrival() -> void:
+	_rest_arrival_progress = 1.0
+	_rest_arrival_pulse = 0.0
+	_apply_rest_area_arrival_state()
+
+func _apply_rest_area_arrival_state() -> void:
+	if _rest_ground_mesh != null and is_instance_valid(_rest_ground_mesh):
+		_rest_ground_mesh.set_instance_shader_parameter("arrival_progress", _rest_arrival_progress)
+		_rest_ground_mesh.set_instance_shader_parameter("arrival_pulse", _rest_arrival_pulse)
+	var reveal_delays := {
+		4: 0.00,
+		0: 0.18,
+		1: 0.28,
+		2: 0.38,
+		6: 0.48,
+	}
+	for zone_id in _rest_zone_meshes.keys():
+		var entry := _rest_zone_meshes.get(zone_id) as Dictionary
+		var mesh := entry.get("mesh") as MeshInstance3D if entry != null else null
+		if mesh == null or not is_instance_valid(mesh):
+			continue
+		var delay := float(reveal_delays.get(int(zone_id), 0.48))
+		var zone_progress := clampf(
+			(_rest_arrival_progress - delay) / maxf(1.0 - delay, 0.01),
+			0.0,
+			1.0
+		)
+		mesh.set_instance_shader_parameter("arrival_progress", zone_progress)
+		mesh.set_instance_shader_parameter("arrival_pulse", _rest_arrival_pulse)
+		var zone_visuals := _rest_area.get_node_or_null("ZoneVisuals") if _rest_area != null else null
+		var prop := zone_visuals.get_node_or_null("HybridProp%d" % int(zone_id)) as Sprite2D \
+			if zone_visuals != null else null
+		if prop != null:
+			var prop_color := prop.modulate
+			prop_color.a = zone_progress
+			prop.modulate = prop_color
+
+func _apply_armed_deployment_state(mesh: MeshInstance3D, cell: Cell) -> void:
+	if not _deployment_armed or mesh == null or cell == null:
+		return
+	var retained := _deployment_board_was_visible and _deployment_previous_ids.has(int(cell.logical_id))
+	mesh.set_instance_shader_parameter("deployment_seed", float(cell.logical_id) * 1.731)
+	mesh.set_instance_shader_parameter("deployment_progress", 1.0 if retained else 0.0)
+	mesh.set_instance_shader_parameter("deployment_dim", 0.28 if retained else 0.0)
+	mesh.set_instance_shader_parameter("deployment_pulse", 0.0)
+
+func _get_cell_ground_mesh(cell_id: int) -> MeshInstance3D:
+	for entry_variant in _cell_meshes.values():
+		var entry := entry_variant as Dictionary
+		var cell_ref := entry.get("cell") as WeakRef
+		var cell := cell_ref.get_ref() as Cell if cell_ref != null else null
+		if cell != null and int(cell.logical_id) == cell_id:
+			return entry.get("mesh") as MeshInstance3D
+	return null
 
 func _set_board_mesh_visibility(active: bool) -> void:
 	if _ground_root == null:
@@ -692,6 +832,11 @@ func _register_area_effect(area: Node2D) -> void:
 		visual_root.visible = false
 	area.set("draw_enabled", false)
 	var material := mesh.mesh.surface_get_material(0) if mesh.mesh != null and mesh.mesh.get_surface_count() > 0 else null
+	var base_texture := _get_area_ground_texture(area)
+	var standard_material := material as StandardMaterial3D
+	if standard_material != null and base_texture != null:
+		standard_material.albedo_texture = base_texture
+		standard_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	var detail_texture := area.get("ground_detail_texture") as Texture2D
 	if detail_texture != null and mesh.mesh != null and mesh.mesh.get_surface_count() > 0:
 		var layered_material := ShaderMaterial.new()
@@ -1051,6 +1196,7 @@ func _setup_rest_area_ground() -> void:
 			"mesh": mesh,
 			"color": zone_colors[zone_id],
 		}
+	_apply_rest_area_arrival_state()
 
 func _create_rest_ground_mesh() -> void:
 	if _rest_area == null or _ground_root == null:
@@ -1062,12 +1208,9 @@ func _create_rest_ground_mesh() -> void:
 	quad.orientation = PlaneMesh.FACE_Y
 	var texture_size := sprite.texture.get_size() * sprite.global_scale.abs()
 	quad.size = texture_size * world_scale
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_texture = sprite.texture
-	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var material := ShaderMaterial.new()
+	material.shader = RestAreaArrivalGroundShader
+	material.set_shader_parameter("terrain_texture", sprite.texture)
 	quad.material = material
 	_rest_ground_mesh = MeshInstance3D.new()
 	_rest_ground_mesh.name = "RestAreaGround"
@@ -1075,6 +1218,8 @@ func _create_rest_ground_mesh() -> void:
 	_ground_root.add_child(_rest_ground_mesh)
 	_rest_ground_material = material
 	_rest_ground_sprite = weakref(sprite)
+	_rest_ground_mesh.set_instance_shader_parameter("arrival_progress", _rest_arrival_progress)
+	_rest_ground_mesh.set_instance_shader_parameter("arrival_pulse", _rest_arrival_pulse)
 	_sync_rest_ground_mesh()
 
 func _sync_rest_ground_mesh() -> void:
@@ -1088,8 +1233,10 @@ func _sync_rest_ground_mesh() -> void:
 	_rest_ground_mesh.position = world_2d_to_3d(sprite.global_position)
 	var rest_visible := _rest_area.visible and float(_rest_area.modulate.a) > 0.001
 	_rest_ground_mesh.visible = rest_visible
-	if _rest_ground_material != null:
-		_rest_ground_material.albedo_color.a = clampf(float(_rest_area.modulate.a), 0.0, 1.0)
+	_rest_ground_mesh.set_instance_shader_parameter(
+		"visibility_alpha",
+		clampf(float(_rest_area.modulate.a), 0.0, 1.0)
+	)
 
 func _sync_rest_zone_meshes() -> void:
 	if _rest_area == null or not is_instance_valid(_rest_area) or not _rest_area.is_inside_tree():
@@ -1120,11 +1267,6 @@ func _sync_rest_zone_meshes() -> void:
 		mesh.set_instance_shader_parameter("hovered", 1.0 if int(zone_id) == hovered else 0.0)
 		mesh.set_instance_shader_parameter("selected", 1.0 if int(zone_id) == selected else 0.0)
 		mesh.set_instance_shader_parameter("visibility_alpha", clampf(float(_rest_area.modulate.a), 0.0, 1.0))
-		var hold_progress := 0.0
-		if int(zone_id) == 4:
-			var hold_duration := maxf(float(_rest_area.get("zone4_hold_duration")), 0.01)
-			hold_progress = clampf(float(_rest_area.get("_zone4_hold_elapsed")) / hold_duration, 0.0, 1.0)
-		mesh.set_instance_shader_parameter("hold_progress", hold_progress)
 
 func _sync_shadow_meshes() -> void:
 	for id in _shadow_meshes.keys():
@@ -1455,6 +1597,10 @@ func _sync_ground_cone_meshes() -> void:
 		direction = direction.normalized() if direction != Vector2.ZERO else Vector2.RIGHT
 		var range_value := maxf(float(config.get("range", 1.0)), 1.0)
 		var half_angle := deg_to_rad(float(config.get("half_angle_degrees", 30.0)))
+		var texture := config.get("texture") as Texture2D
+		material = _connected_renderer.get_cone_material(texture)
+		entry["material"] = material
+		mesh.material_override = material
 		mesh.mesh = _connected_renderer.get_cone_mesh(half_angle)
 		mesh.scale = Vector3(range_value, 1.0, range_value)
 		mesh.position = world_2d_to_3d(origin) + Vector3.UP * 0.029

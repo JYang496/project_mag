@@ -108,7 +108,7 @@ func _on_cell_area_body_exited(body: Node2D) -> void:
 		_refresh_cell_highlight()
 
 func _start_battle_stage() -> void:
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
+	if PhaseManager.current_state() != PhaseManager.BATTLE_STARTING:
 		return
 	if GlobalVariables.enemy_spawner:
 		GlobalVariables.enemy_spawner.start_timer()

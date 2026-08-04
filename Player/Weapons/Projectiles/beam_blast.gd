@@ -33,6 +33,7 @@ var frames_until_show = 1
 var _hybrid_registered: bool = false
 
 func _ready() -> void:
+	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	line2d.add_to_group(&"hybrid_ground_segment")
 	line2d.set_meta("hybrid_ground_visible", false)
 	line2d.set_meta("hybrid_segment_style", &"beam")
@@ -51,6 +52,9 @@ func _ready() -> void:
 		if hit_timer:
 			hit_timer.wait_time = safe_hit_cd
 	expire_timer.start()
+
+func cleanup_for_battle_end() -> void:
+	queue_free()
 
 func _register_hybrid_segment() -> void:
 	_hybrid_registered = HybridGroundRegistration.register(line2d, &"register_ground_segment")

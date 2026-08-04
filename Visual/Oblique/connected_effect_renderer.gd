@@ -14,6 +14,7 @@ var shared_beam_mesh: QuadMesh
 var shared_beam_material: ShaderMaterial
 var shared_cone_material: ShaderMaterial
 var cone_mesh_cache: Dictionary = {}
+var cone_material_cache: Dictionary = {}
 
 func setup(view: Node) -> void:
 	_view = view
@@ -51,12 +52,26 @@ func clear() -> void:
 	segment_meshes.clear()
 	cone_meshes.clear()
 	cone_mesh_cache.clear()
+	cone_material_cache.clear()
 
 func get_cone_mesh(half_angle: float) -> ArrayMesh:
 	var cache_key := int(round(rad_to_deg(half_angle) * 10.0))
 	if not cone_mesh_cache.has(cache_key):
 		cone_mesh_cache[cache_key] = _view._build_ground_cone_array_mesh(1.0, half_angle, shared_cone_material)
 	return cone_mesh_cache[cache_key] as ArrayMesh
+
+func get_cone_material(texture: Texture2D) -> ShaderMaterial:
+	if texture == null:
+		return shared_cone_material
+	var texture_id := texture.get_instance_id()
+	if cone_material_cache.has(texture_id):
+		return cone_material_cache[texture_id] as ShaderMaterial
+	var material := ShaderMaterial.new()
+	material.shader = ConeShader
+	material.set_shader_parameter("use_flame_texture", true)
+	material.set_shader_parameter("flame_texture", texture)
+	cone_material_cache[texture_id] = material
+	return material
 
 func _is_ready() -> bool:
 	return _view != null and is_instance_valid(_view)

@@ -39,7 +39,7 @@ func on_grab_area_entered(area) -> void:
 func on_phase_changed(new_phase: String, previous_phase: String) -> void:
 	if _player == null:
 		return
-	if new_phase == PhaseManager.PREPARE and previous_phase == PhaseManager.BATTLE:
+	if new_phase == PhaseManager.SETTLEMENT and previous_phase == PhaseManager.BATTLE:
 		run_battle_end_auto_collect()
 		return
 	if new_phase == PhaseManager.BATTLE and _auto_loot_running:

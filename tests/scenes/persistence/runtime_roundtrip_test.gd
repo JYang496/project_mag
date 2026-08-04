@@ -29,6 +29,7 @@ func _run() -> void:
 	post_battle_weapon.item_level = 1
 	var reward_manager := BonusManager.new()
 	add_child(reward_manager)
+	PhaseManager.phase = PhaseManager.SETTLEMENT
 	reward_manager.call("_on_standard_battle_reward_selected", post_battle_weapon)
 	_expect(PlayerData.player_weapon_list.size() == 2, "selected post-battle weapon must be granted before exit")
 	_expect(not RewardDraftRuntime.has_pending_standard_draft(), "selected post-battle draft must be settled")

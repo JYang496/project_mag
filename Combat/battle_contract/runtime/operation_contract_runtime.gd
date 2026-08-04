@@ -7,6 +7,8 @@ var port
 var beacon_index := 0
 var progress := 0.0
 var charge_duration_sec := 12.0
+var total_beacons := 2
+var duration_buffer_sec := 12.0
 var player_inside := false
 var enemy_count := 0
 var available_progress_sec := 0.0
@@ -22,7 +24,13 @@ func start(combat_port, parameters: Dictionary) -> void:
 	var minimum_charge := maxf(float(parameters.get("charge_time_min_sec", 10.0)), 1.0)
 	var maximum_charge := maxf(float(parameters.get("charge_time_max_sec", 14.0)), minimum_charge)
 	charge_duration_sec = clampf(float(parameters.get("charge_time_sec", (minimum_charge + maximum_charge) * 0.5)), minimum_charge, maximum_charge)
-	port.request_configure_duration(charge_duration_sec * 2.0 + 12.0)
+	var early_level_count := maxi(int(parameters.get("early_level_count", 0)), 0)
+	if port.get_level_index() < early_level_count and parameters.has("early_charge_time_sec"):
+		charge_duration_sec = maxf(float(parameters.get("early_charge_time_sec", charge_duration_sec)), 1.0)
+	var available_points: PackedVector2Array = port.get_battlefield_capabilities().get("operation_beacon_points", PackedVector2Array())
+	total_beacons = mini(maxi(int(parameters.get("beacon_count", 2)), 1), available_points.size())
+	duration_buffer_sec = maxf(float(parameters.get("duration_buffer_sec", 12.0)), 0.0)
+	port.request_configure_duration(charge_duration_sec * float(maxi(total_beacons, 1)) + duration_buffer_sec)
 	port.battle_tick.connect(_on_tick)
 	port.beacon_presence_changed.connect(_on_presence_changed)
 	_emit_snapshot()
@@ -69,7 +77,7 @@ func _advance_beacon() -> void:
 	player_inside = false
 	enemy_count = 0
 	_beacon_spawned = false
-	if beacon_index >= 2:
+	if beacon_index >= total_beacons:
 		_completion_guard = true
 		port.request_stop_spawning()
 		port.request_evacuate_enemies({"grant_kill_rewards": false})
@@ -94,8 +102,8 @@ func _resolve_beacon_position(index: int) -> Vector2:
 func _snapshot() -> Dictionary:
 	return {
 		"contract_id": &"operation",
-		"current_beacon": mini(beacon_index + 1, 2),
-		"total_beacons": 2,
+		"current_beacon": mini(beacon_index + 1, total_beacons),
+		"total_beacons": total_beacons,
 		"progress": progress,
 		"player_inside": player_inside,
 		"enemy_count": enemy_count,

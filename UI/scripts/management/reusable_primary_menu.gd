@@ -27,7 +27,8 @@ static func apply_shared_layout(
 		var candidate := value as Button
 		if candidate != null and candidate.visible:
 			visible_button_count += 1
-	var panel_rect := LAYOUT_POLICY.primary_menu_rect(viewport_size, visible_button_count)
+	var variant := LAYOUT_POLICY.primary_menu_variant(panel)
+	var panel_rect := LAYOUT_POLICY.primary_menu_rect(viewport_size, visible_button_count, variant)
 	panel.position = panel_rect.position
 	panel.size = panel_rect.size
 	panel.custom_minimum_size = Vector2.ZERO
@@ -49,6 +50,8 @@ static func apply_shared_layout(
 			second_button_position,
 			button_size
 		)
+		if variant == &"single_action" and not buttons.is_empty():
+			helper.style_management_button(buttons[0] as Button, true)
 		return
 	_apply_label_layout(
 		panel.get_node_or_null("Title") as Label,

@@ -22,6 +22,28 @@ func _run() -> void:
 	if not PlayerData.player_damage_received.is_connected(_on_player_damage_received):
 		PlayerData.player_damage_received.connect(_on_player_damage_received)
 	PhaseManager.phase = PhaseManager.BATTLE
+	var spawning_enemy := EnemyScene.instantiate() as BaseEnemy
+	spawning_enemy.damage = 5
+	spawning_enemy.global_position = player.global_position
+	spawning_enemy.prepare_spawn_sequence(0.12)
+	add_child(spawning_enemy)
+	var spawn_position := spawning_enemy.global_position
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var spawning_hurt_box := spawning_enemy.get_node("HurtBox") as HurtBox
+	_expect(spawning_enemy.is_spawn_phase_active(), "enemy spawn phase ended before its telegraph duration")
+	_expect(not spawning_enemy.can_process(), "spawning enemy combat processing was not disabled")
+	_expect(spawning_enemy.global_position.is_equal_approx(spawn_position), "spawning enemy moved before activation")
+	_expect(spawning_hurt_box.collision_layer == 0 and not spawning_hurt_box.monitorable, "spawning enemy HurtBox remained available for contact or weapon hits")
+	player.call("_process_centralized_enemy_contact_damage", 0.21)
+	_expect(PlayerData.player_hp == 5, "spawning enemy dealt contact damage before activation")
+	await spawning_enemy.spawn_phase_completed
+	_expect(not spawning_enemy.is_spawn_phase_active(), "enemy did not leave spawn phase after reconstruction")
+	_expect(spawning_enemy.can_process(), "enemy combat processing was not restored after spawn")
+	_expect(spawning_hurt_box.collision_layer == 4 and spawning_hurt_box.monitorable, "enemy HurtBox was not restored after spawn")
+	spawning_enemy.queue_free()
+	await get_tree().process_frame
+	PlayerData.player_hp = 5
 	var enemy := EnemyScene.instantiate() as BaseEnemy
 	enemy.damage = 2
 	enemy.global_position = player.global_position

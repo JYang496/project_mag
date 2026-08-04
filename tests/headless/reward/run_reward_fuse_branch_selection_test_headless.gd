@@ -15,7 +15,7 @@ func _run() -> void:
 	_reset_runtime_state()
 	DataHandler.load_weapon_data()
 	DataHandler.load_weapon_branch_data()
-	PhaseManager.phase = PhaseManager.PREPARE
+	PhaseManager.phase = PhaseManager.SETTLEMENT
 
 	_ui = UI_SCENE.instantiate() as UI
 	add_child(_ui)

@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://Npc/enemy/scripts/mortar_shell_descent_vfx.gd" id="1_script"]
+[ext_resource type="Script" path="res://Visual/Oblique/billboard_visual_2d.gd" id="2_billboard"]
+[ext_resource type="SpriteFrames" path="res://asset/images/effects/mortar_impact/mortar_descent_frames.tres" id="3_frames"]
+
+[node name="MortarShellDescentVfx" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="VisualRoot" type="Node2D" parent="."]
+script = ExtResource("2_billboard")
+depth_sort_offset = 12
+
+[node name="AnimatedSprite" type="AnimatedSprite2D" parent="VisualRoot"]
+texture_filter = 1
+sprite_frames = ExtResource("3_frames")
+animation = &"descent"
+centered = true

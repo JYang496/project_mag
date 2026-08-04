@@ -40,6 +40,7 @@ func _ready() -> void:
 	_test_critical_metadata_round_trip()
 	_test_killing_blow_marker_policy()
 	_test_pipeline_critical_result()
+	_test_pipeline_overkill_result()
 	await _test_feedback_controller_contract()
 	if _failed:
 		print("FAIL damage label feedback")
@@ -140,7 +141,38 @@ func _test_pipeline_critical_result() -> void:
 	attack.is_critical = true
 	var result := DamagePipeline.new().apply_incoming_damage(target, attack, profile)
 	_expect(result.applied and result.final_damage == 10, "critical metadata must not alter pipeline damage")
+	_expect(result.health_damage == 10 and result.overkill_damage == 0, "a nonlethal hit must consume all resolved damage without overkill")
 	_expect(result.is_critical, "DamagePipeline must carry Attack critical metadata into DamageResult")
+	target.free()
+
+func _test_pipeline_overkill_result() -> void:
+	var target := DummyDamageTarget.new()
+	target.hp = 10
+	var profile := DamageProfile.new()
+	profile.use_damage_reduction = false
+	profile.use_armor = false
+	profile.get_hp = Callable(target, "read_hp")
+	profile.set_hp = Callable(target, "write_hp")
+	profile.get_max_hp = Callable(target, "read_max_hp")
+	profile.get_is_dead = Callable(target, "read_dead")
+	profile.set_is_dead = Callable(target, "write_dead")
+	var attack := Attack.new()
+	attack.damage = 100
+	attack.damage_type = Attack.TYPE_ENERGY
+	var result := DamagePipeline.new().apply_incoming_damage(target, attack, profile)
+	_expect(result.applied and result.killed, "an overkill hit must apply and kill the target")
+	_expect(result.final_damage == 100, "resolved damage must not be capped by remaining enemy HP")
+	_expect(result.health_damage == 10, "health damage must remain capped by the target's remaining HP")
+	_expect(result.overkill_damage == 90, "overkill damage must expose the resolved excess")
+	_expect(target.hp == -90, "enemy HP must retain the overkill amount for lifecycle compatibility")
+	var label = HIT_LABEL_SCENE.instantiate()
+	label.configure({
+		"final_damage": result.final_damage,
+		"damage_type": result.damage_type,
+		"is_killing_blow": result.killed,
+	})
+	_expect(label.get_display_text() == "100", "enemy damage feedback must display full resolved overkill damage")
+	label.free()
 	target.free()
 
 func _test_feedback_controller_contract() -> void:

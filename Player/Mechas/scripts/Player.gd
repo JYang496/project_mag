@@ -1162,6 +1162,12 @@ func force_recover_battle_camera_zoom() -> void:
 	_sync_camera_config()
 	_camera_system.force_recover_battle_zoom(get_total_vision_mul())
 
+func get_battle_camera_view_multiplier() -> float:
+	if not _require_camera_system_or_halt():
+		return 1.0
+	_sync_camera_config()
+	return _camera_system.get_battle_view_multiplier(get_total_vision_mul())
+
 func apply_hybrid_camera_debug_settings(yaw_degrees: float, hybrid_pitch: float, hybrid_distance: float) -> void:
 	fixed_camera_yaw_degrees = yaw_degrees
 	hybrid_camera_pitch_degrees = hybrid_pitch
@@ -1785,7 +1791,7 @@ func _on_phase_changed(new_phase: String) -> void:
 	if not _require_camera_system_or_halt():
 		return
 	_camera_system.on_phase_changed()
-	if new_phase == PhaseManager.PREPARE:
+	if new_phase == PhaseManager.SETTLEMENT:
 		clear_global_weapon_energy()
 		clear_timed_statuses_for_prepare()
 		reset_shared_heat_to_neutral()
@@ -1809,12 +1815,13 @@ func _tick_movement(delta: float) -> void:
 	var rest_phase_active := false
 	if not moveto_enabled and movement_enabled:
 		if PhaseManager != null and PhaseManager.has_method("current_state"):
-			rest_phase_active = str(PhaseManager.current_state()) == str(PhaseManager.PREPARE)
-			manual_input_allowed = not rest_phase_active
+			var current_phase := str(PhaseManager.current_state())
+			rest_phase_active = current_phase == str(PhaseManager.REST)
+			manual_input_allowed = current_phase == str(PhaseManager.BATTLE)
 		if manual_input_allowed:
 			manual_direction = _resolve_buffered_move_input() + extra_direction
 	elif PhaseManager != null and PhaseManager.has_method("current_state"):
-		rest_phase_active = str(PhaseManager.current_state()) == str(PhaseManager.PREPARE)
+		rest_phase_active = str(PhaseManager.current_state()) == str(PhaseManager.REST)
 	var effective_move_speed: float = (PlayerData.player_speed + PlayerData.player_bonus_speed) * get_total_move_speed_mul()
 	var effective_move_accel: float = move_accel
 	if rest_phase_active:

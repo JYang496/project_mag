@@ -27,7 +27,7 @@ const PANEL_TRANSITION_SECONDS := 0.18
 const CONTENT_FADE_SECONDS := 0.08
 const STACK_REFLOW_SECONDS := 0.42
 const AUTO_COLLAPSE_SECONDS := 8.0
-const REST_AUTO_COLLAPSE_SECONDS := 4.0
+const REST_AUTO_COLLAPSE_SECONDS := 8.0
 const CONTEXT_DURATION_SECONDS := 3.0
 const CONTEXT_COOLDOWN_SECONDS := 15.0
 const MAX_CONTEXT_REPEATS := 2
@@ -48,6 +48,7 @@ const MAX_CONTEXT_REPEATS := 2
 var display_state: DisplayState = DisplayState.EXPANDED
 var _current_phase: String = ""
 var _primary_menu_open := false
+var _primary_menu_context: StringName = &""
 var _secondary_menu_context: StringName = &""
 var _auto_collapse_remaining := AUTO_COLLAPSE_SECONDS
 var _used_move := false
@@ -114,28 +115,39 @@ func animate_stack_reflow_from(previous_global_position: Vector2) -> bool:
 	_stack_reflow_tween.tween_property(self, "position", target_position, STACK_REFLOW_SECONDS)
 	return true
 
-func refresh_for_phase(phase: String, primary_menu_open: bool, secondary_menu_context: StringName = &"") -> void:
+func refresh_for_phase(
+	phase: String,
+	primary_menu_open: bool,
+	secondary_menu_context: StringName = &"",
+	primary_menu_context: StringName = &""
+) -> void:
 	var phase_changed := _current_phase != phase
 	_current_phase = phase
 	_primary_menu_open = primary_menu_open
+	_primary_menu_context = _normalize_primary_menu_context(primary_menu_context)
 	_secondary_menu_context = _normalize_secondary_menu_context(secondary_menu_context)
 	if phase_changed and phase == PhaseManager.BATTLE:
 		_begin_battle_guidance()
 	_render_current_context()
 
-func refresh_visibility(primary_menu_open: bool, secondary_menu_context: StringName = &"") -> void:
+func refresh_visibility(
+	primary_menu_open: bool,
+	secondary_menu_context: StringName = &"",
+	primary_menu_context: StringName = &""
+) -> void:
 	var next_phase := PhaseManager.current_state()
-	var signature := "%s|%s|%s|%s|%s" % [
+	var signature := "%s|%s|%s|%s|%s|%s" % [
 		next_phase,
 		str(primary_menu_open),
 		str(secondary_menu_context),
+		str(primary_menu_context),
 		str(get_tree().paused),
 		str(PlayerAssistSettings.controls_hint_mode),
 	]
 	if signature == _render_signature:
 		return
 	_render_signature = signature
-	refresh_for_phase(next_phase, primary_menu_open, secondary_menu_context)
+	refresh_for_phase(next_phase, primary_menu_open, secondary_menu_context, primary_menu_context)
 
 func tick(delta: float) -> void:
 	if not _can_auto_collapse_current_phase() or get_tree().paused:
@@ -362,7 +374,7 @@ func _render_current_context() -> void:
 		return
 	if _primary_menu_open:
 		_render_text_context(
-			_tr("ui.tutorial.state.primary_menu", "Primary Menu"),
+			_primary_context_title(_primary_menu_context),
 			[
 				_tr("ui.tutorial.panel.primary_menu.line1", "[LMB] Click buttons"),
 				_tr("ui.tutorial.panel.primary_menu.line2", "[RMB] Exit current menu"),
@@ -376,10 +388,10 @@ func _render_current_context() -> void:
 			set_display_state(display_state, false)
 		return
 	_render_text_context(
-		_tr("ui.tutorial.state.rest", "Rest Area"),
+		_tr("ui.tutorial.guide.rest.title", "Rest Area · Choose Next Step"),
 		[
-			_tr("ui.tutorial.panel.rest.line1", "[LMB] Click menu and zones"),
-			_tr("ui.tutorial.panel.rest.line2", "[LMB] Open battle menu"),
+			_tr("ui.tutorial.panel.rest.line1", "Click a facility to manage your build"),
+			_tr("ui.tutorial.panel.rest.line2", "Click center to choose the next protocol"),
 			_tr("ui.tutorial.panel.rest.line3", "[Esc] Pause"),
 		]
 	)
@@ -417,9 +429,13 @@ func _render_text_context(context_title: String, lines: Array[String]) -> void:
 	if PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_ALWAYS:
 		next_state = DisplayState.EXPANDED
 	elif _current_phase == PhaseManager.PREPARE:
-		if context_changed and display_state == DisplayState.EXPANDED:
+		if bool(_collapsed_text_contexts.get(context_identity, false)):
+			next_state = DisplayState.COMPACT
+		elif context_changed:
 			_begin_rest_guidance()
-		next_state = display_state
+			next_state = DisplayState.EXPANDED
+		else:
+			next_state = display_state
 	elif bool(_collapsed_text_contexts.get(context_identity, false)):
 		next_state = DisplayState.COMPACT
 	elif context_changed:
@@ -430,6 +446,13 @@ func _render_text_context(context_title: String, lines: Array[String]) -> void:
 	set_display_state(next_state, false)
 
 func _compact_text_context(context_title: String, _lines: Array[String]) -> String:
+	if _current_phase == PhaseManager.PREPARE \
+			and not _primary_menu_open \
+			and _secondary_menu_context == &"":
+		return _tr(
+			"ui.tutorial.compact.rest",
+			"Click a facility · Click center to continue"
+		)
 	return _tr("ui.controls.compact_context", "{context} controls").format({
 		"context": _compact_context_name(context_title),
 	})
@@ -447,7 +470,7 @@ func _compact_context_name(context_title: String) -> String:
 	return compact
 
 func _text_context_identity() -> String:
-	return "%s|%s|%s" % [_current_phase, str(_primary_menu_open), str(_secondary_menu_context)]
+	return "%s|%s|%s|%s" % [_current_phase, str(_primary_menu_open), str(_primary_menu_context), str(_secondary_menu_context)]
 
 func _is_text_context_active() -> bool:
 	return _current_phase != PhaseManager.BATTLE
@@ -856,6 +879,34 @@ func _normalize_secondary_menu_context(context_name: StringName) -> StringName:
 			return &"task_management"
 		_:
 			return &""
+
+func _normalize_primary_menu_context(context_name: StringName) -> StringName:
+	match context_name:
+		&"purchase", &"upgrade", &"warehouse", &"board_edit", &"battle_start":
+			return context_name
+		&"merchant":
+			return &"purchase"
+		&"smith":
+			return &"upgrade"
+		&"module":
+			return &"warehouse"
+		_:
+			return &""
+
+func _primary_context_title(context_name: StringName) -> String:
+	match context_name:
+		&"purchase":
+			return LocalizationManager.tr_key("ui.merchant.purchase.title", "Purchase")
+		&"upgrade":
+			return LocalizationManager.tr_key("ui.rest.zone.upgrade.title", "Weapon Upgrade")
+		&"warehouse":
+			return LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
+		&"board_edit":
+			return LocalizationManager.tr_key("ui.rest.zone.board.title", "Board")
+		&"battle_start":
+			return LocalizationManager.tr_key("ui.rest.zone.battle.title", "Start Battle")
+		_:
+			return _tr("ui.tutorial.state.primary_menu", "Primary Menu")
 
 func _build_panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

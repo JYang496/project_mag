@@ -10,5 +10,4 @@ description_key = "battle_contract.elimination.description"
 accent_color = Color(0.788, 0.31, 0.353, 1)
 weight = 1.0
 build_tags = Array[StringName]([&"damage", &"kill_trigger"])
-parameters = {"batch_count_min": 3, "batch_count_max": 5, "early_release_ratio": 0.8}
-
+parameters = {"batch_count_min": 3, "batch_count_max": 5, "levels_per_batch_step": 4, "early_release_ratio": 0.8, "batch_wait_timeout_sec": 12.0, "standard_duration_sec": 45.0}

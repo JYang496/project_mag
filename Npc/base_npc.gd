@@ -45,14 +45,14 @@ func _process(_delta: float) -> void:
 	if FixedObliqueProjectionType.is_enabled():
 		z_index = int(round(FixedObliqueProjectionType.get_projected_depth(global_position) / 16.0))
 
-func damaged(attack:Attack):
+func damaged(attack: Attack) -> DamageResult:
 	if _incoming_damage_pipeline == null:
 		_incoming_damage_pipeline = DamagePipeline.new()
 	if _incoming_damage_profile == null:
 		_setup_incoming_damage_profile()
 	var result := _incoming_damage_pipeline.apply_incoming_damage(self, attack, _incoming_damage_profile)
 	if not result.applied:
-		return
+		return result
 	if attack != null and attack.is_from_player():
 		PlayerData.run_total_damage_dealt += max(0, result.final_damage)
 	_queue_hit_label_damage(
@@ -70,6 +70,7 @@ func damaged(attack:Attack):
 	_show_enemy_hp_bar_on_damage()
 	if status_timer.is_stopped() and (_incoming_damage_pipeline.has_active_effects(self) or not status_effects.is_empty()):
 		status_runtime.start_timer_if_needed()
+	return result
 
 
 func _queue_hit_label_damage(

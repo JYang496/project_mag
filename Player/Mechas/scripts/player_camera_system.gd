@@ -199,6 +199,9 @@ func force_recover_battle_zoom(vision_mul: float) -> void:
 	var zoom_factor := 1.0 / (maxf(vision_mul, 0.05) * maxf(_get_config().battle_camera_view_mul, 0.05))
 	force_zoom_now(_base_zoom * zoom_factor)
 
+func get_battle_view_multiplier(vision_mul: float) -> float:
+	return maxf(vision_mul, 0.05) * maxf(_get_config().battle_camera_view_mul, 0.05)
+
 func _get_phase_camera_zoom_factor() -> float:
 	if PhaseManager != null and PhaseManager.has_method("current_state"):
 		if str(PhaseManager.current_state()) == str(PhaseManager.PREPARE):
@@ -211,8 +214,7 @@ func _get_effective_vision_mul(vision_mul: float) -> float:
 	var effective_mul := maxf(vision_mul, 0.05)
 	if _is_prepare_phase():
 		return effective_mul
-	effective_mul *= maxf(_get_config().battle_camera_view_mul, 0.05)
-	return effective_mul
+	return get_battle_view_multiplier(effective_mul)
 
 func _update_zoom(delta: float) -> void:
 	if _is_zoom_transition_enabled():

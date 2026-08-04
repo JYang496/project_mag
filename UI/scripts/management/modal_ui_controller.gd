@@ -342,13 +342,13 @@ func layout_controls_hint_panel(viewport_size: Vector2) -> void:
 	if controls_hint_view != null and is_instance_valid(controls_hint_view):
 		controls_hint_view.layout_for_viewport(viewport_size)
 
-func update_controls_guide_for_phase(phase: String, primary_open: bool, secondary_menu_context: StringName = &"") -> void:
+func update_controls_guide_for_phase(phase: String, primary_open: bool, secondary_menu_context: StringName = &"", primary_menu_context: StringName = &"") -> void:
 	if controls_hint_view != null and is_instance_valid(controls_hint_view):
-		controls_hint_view.refresh_for_phase(phase, primary_open, secondary_menu_context)
+		controls_hint_view.refresh_for_phase(phase, primary_open, secondary_menu_context, primary_menu_context)
 
-func refresh_controls_hint_visibility(primary_open: bool, secondary_menu_context: StringName = &"") -> void:
+func refresh_controls_hint_visibility(primary_open: bool, secondary_menu_context: StringName = &"", primary_menu_context: StringName = &"") -> void:
 	if controls_hint_view != null and is_instance_valid(controls_hint_view):
-		controls_hint_view.refresh_visibility(primary_open, secondary_menu_context)
+		controls_hint_view.refresh_visibility(primary_open, secondary_menu_context, primary_menu_context)
 
 func sync_state_from_owner() -> void:
 	if owner_ui == null:

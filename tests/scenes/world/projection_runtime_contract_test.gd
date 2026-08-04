@@ -8,10 +8,20 @@ const PLAYER_SCENE := preload("res://Player/Mechas/scenes/Player.tscn")
 const FRIENDLY_SCENE := preload("res://Npc/friendly/scenes/friendly_npc.tscn")
 const UNIT_BILLBOARD_SOURCE := preload("res://Visual/Oblique/unit_billboard_visual_2d.gd")
 const UNIT_BILLBOARD_SHADER := preload("res://Shaders/unit_billboard_3d.gdshader")
+const BEACON_PROJECTED_VISUAL := preload("res://World/battle_contract/beacon_projected_visual.gd")
+const REST_ZONE_SHADER := preload("res://Shaders/rest_area_zone_ground.gdshader")
 
 class DummyBoard:
 	extends Node2D
 	var cells: Array = []
+
+class DummyRestArea:
+	extends Node2D
+	var selected_zone_id := 4
+	var hover_zone_id := -1
+
+	func _get_zone_rect_local(_zone_id: int) -> Rect2:
+		return Rect2(Vector2.ZERO, Vector2(160.0, 160.0))
 
 var _failed := false
 
@@ -26,6 +36,7 @@ func _ready() -> void:
 	add_child(view)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	_expect_rest_zone_sync_without_retired_hold_state(view)
 
 	var points: Array[Vector2] = [
 		Vector2.ZERO,
@@ -109,6 +120,7 @@ func _ready() -> void:
 			_expect_unit_billboard_anchor(unit, source, view, "%s %s" % [unit_case.label, source.name])
 		if str(unit_case.label) == "player":
 			await _expect_player_compatibility_switch(body_sources[0], body_sources[1], view)
+			_expect_beacon_visual_respects_player(unit, view)
 		var source_ids: Array[int] = []
 		for source in body_sources:
 			source_ids.append(source.get_instance_id())
@@ -130,6 +142,61 @@ func _expect(condition: bool, message: String) -> void:
 		return
 	_failed = true
 	push_error(message)
+
+
+func _expect_rest_zone_sync_without_retired_hold_state(view: Node) -> void:
+	var rest_area := DummyRestArea.new()
+	add_child(rest_area)
+	var mesh := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	var material := ShaderMaterial.new()
+	material.shader = REST_ZONE_SHADER
+	quad.material = material
+	mesh.mesh = quad
+	var ground_root := view.get("_ground_root") as Node3D
+	ground_root.add_child(mesh)
+	view.set("_rest_area", rest_area)
+	var rest_zone_meshes := view.get("_rest_zone_meshes") as Dictionary
+	rest_zone_meshes.clear()
+	rest_zone_meshes[4] = {"mesh": mesh}
+	view.call("_sync_rest_zone_meshes")
+	_expect(mesh.visible, "rest-zone sync must work without retired hold-state properties")
+	rest_zone_meshes.clear()
+	view.set("_rest_area", null)
+	ground_root.remove_child(mesh)
+	mesh.free()
+	remove_child(rest_area)
+	rest_area.free()
+
+
+func _expect_beacon_visual_respects_player(player: Node2D, view: Node) -> void:
+	var visual := BEACON_PROJECTED_VISUAL.new() as Control
+	add_child(visual)
+	var occlusion_rect := visual.call("_player_occlusion_rect") as Rect2
+	var idle_source := player.get_node("MechaSprite") as Node2D
+	var config := idle_source.call("get_unit_billboard_config") as Dictionary
+	var local_ground_anchor := config.get("local_ground_anchor", Vector2.ZERO) as Vector2
+	var player_anchor := view.call("project_world_to_screen", player.global_transform * local_ground_anchor) as Vector2
+	_expect(occlusion_rect.size.x > 0.0 and occlusion_rect.size.y > 0.0, "beacon visual must reserve the active player billboard bounds")
+	_expect(occlusion_rect.has_point(player_anchor - Vector2(0.0, 4.0)), "beacon occlusion must cover the player from body to ground anchor")
+	var center := occlusion_rect.get_center()
+	var crossing_line := PackedVector2Array([
+		Vector2(occlusion_rect.position.x - 30.0, center.y),
+		Vector2(occlusion_rect.position.x - 10.0, center.y),
+		center,
+		Vector2(occlusion_rect.end.x + 10.0, center.y),
+		Vector2(occlusion_rect.end.x + 30.0, center.y),
+	])
+	var visible_runs := visual.call("_split_polyline_around_rect", crossing_line, occlusion_rect) as Array
+	_expect(visible_runs.size() == 2, "beacon progress line must split on both sides of the player")
+	for run_value in visible_runs:
+		var run := run_value as PackedVector2Array
+		for index in range(run.size() - 1):
+			_expect(
+				not bool(visual.call("_segment_intersects_rect", run[index], run[index + 1], occlusion_rect)),
+				"beacon progress line must not retain a segment across the player billboard",
+			)
+	visual.queue_free()
 
 
 func _expect_marker_matches_ground(marker: Node2D, owner: Node2D, view: Node) -> void:

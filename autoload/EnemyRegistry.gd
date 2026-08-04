@@ -87,11 +87,17 @@ func can_accept_position(world_position: Vector2, moving_enemy: Node = null) -> 
 	return _get_bucket_size(target_cell) < MAX_ENEMIES_PER_SPATIAL_CELL
 
 func get_separation_vector(requester: Node2D, radius: float, max_neighbors: int = 12) -> Vector2:
+	var sample := get_separation_sample(requester, radius, max_neighbors)
+	return sample.get("vector", Vector2.ZERO) as Vector2
+
+func get_separation_sample(requester: Node2D, radius: float, max_neighbors: int = 12) -> Dictionary:
 	if requester == null or radius <= 0.0 or max_neighbors <= 0:
-		return Vector2.ZERO
+		return _build_separation_sample(Vector2.ZERO, 0.0, 0, maxf(radius, 0.0))
 	var radius_sq := radius * radius
 	var accumulated := Vector2.ZERO
+	var total_strength := 0.0
 	var processed := 0
+	var nearest_distance := radius
 	_query_count += 1
 	var minimum := requester.global_position - Vector2.ONE * radius
 	var maximum := requester.global_position + Vector2.ONE * radius
@@ -119,12 +125,26 @@ func get_separation_vector(requester: Node2D, radius: float, max_neighbors: int 
 						away = -away
 					distance_sq = 1.0
 				var distance := sqrt(distance_sq)
-				var weight := 1.0 - clampf(distance / radius, 0.0, 1.0)
+				var weight := smoothstep(0.0, 1.0, 1.0 - clampf(distance / radius, 0.0, 1.0))
 				accumulated += away / distance * weight
+				total_strength += weight
+				nearest_distance = minf(nearest_distance, distance)
 				processed += 1
 				if processed >= max_neighbors:
-					return accumulated.normalized() * minf(accumulated.length(), 1.0)
-	return accumulated.normalized() * minf(accumulated.length(), 1.0) if accumulated != Vector2.ZERO else Vector2.ZERO
+					return _build_separation_sample(accumulated, total_strength, processed, nearest_distance)
+	return _build_separation_sample(accumulated, total_strength, processed, nearest_distance)
+
+func _build_separation_sample(accumulated: Vector2, total_strength: float, neighbor_count: int, nearest_distance: float) -> Dictionary:
+	var accumulated_length := accumulated.length()
+	var direction := accumulated / accumulated_length if accumulated_length > 0.0001 else Vector2.ZERO
+	return {
+		"vector": direction * minf(accumulated_length, 1.0),
+		"direction": direction,
+		"neighbor_count": neighbor_count,
+		"nearest_distance": nearest_distance,
+		"coherence": clampf(accumulated_length / maxf(total_strength, 0.0001), 0.0, 1.0),
+		"total_strength": total_strength,
+	}
 
 func refresh_enemy_roles(enemy: Node) -> void:
 	var base_enemy := enemy as BaseEnemy

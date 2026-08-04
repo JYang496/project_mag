@@ -13,6 +13,9 @@ class_name SpawnCombatProfile
 @export var max_same_type_per_batch: int = 15
 @export var max_ranged_per_batch: int = 4
 @export var max_selection_attempts: int = 96
+@export var elite_multi_spawn_level_index: int = 8
+@export var elite_limit_before_multi_spawn: int = 1
+@export var elite_limit_after_multi_spawn: int = 2
 
 @export_group("Alive Limits")
 @export var default_alive_cap_per_type: int = 80
@@ -47,6 +50,9 @@ func sanitize() -> void:
 	max_same_type_per_batch = maxi(max_same_type_per_batch, 1)
 	max_ranged_per_batch = maxi(max_ranged_per_batch, 0)
 	max_selection_attempts = maxi(max_selection_attempts, 1)
+	elite_multi_spawn_level_index = maxi(elite_multi_spawn_level_index, 0)
+	elite_limit_before_multi_spawn = maxi(elite_limit_before_multi_spawn, 0)
+	elite_limit_after_multi_spawn = maxi(elite_limit_after_multi_spawn, elite_limit_before_multi_spawn)
 	default_alive_cap_per_type = maxi(default_alive_cap_per_type, 1)
 	default_total_alive_cap = maxi(default_total_alive_cap, default_alive_cap_per_type)
 	max_ranged_alive_total = maxi(max_ranged_alive_total, 0)
@@ -82,6 +88,9 @@ func get_target_total_hp(level_index: int) -> int:
 	if overflow_level > 0:
 		target = max(1, int(round(float(target) * pow(1.0 + infinite_hp_growth_per_level, float(overflow_level)))))
 	return target
+
+func get_elite_batch_limit(level_index: int) -> int:
+	return elite_limit_before_multi_spawn if maxi(level_index, 0) < elite_multi_spawn_level_index else elite_limit_after_multi_spawn
 
 func get_pressure_multiplier(progress: float) -> float:
 	var safe_progress := clampf(progress, 0.0, 1.0)

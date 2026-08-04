@@ -199,7 +199,7 @@ func _on_phase_changed(new_phase: String) -> void:
 		_bonus_module.on_phase_changed(new_phase)
 	if not reset_on_prepare_phase:
 		return
-	if new_phase == PhaseManager.PREPARE:
+	if new_phase == PhaseManager.SETTLEMENT:
 		reset_objective_runtime()
 
 func _is_active_phase() -> bool:

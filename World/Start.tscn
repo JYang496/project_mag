@@ -1,28 +1,16 @@
-[gd_scene format=3 uid="uid://dwxulua8fpqd0"]
+[gd_scene load_steps=5 format=3 uid="uid://dwxulua8fpqd0"]
 
-[ext_resource type="Script" uid="uid://dyetc0qttcb7y" path="res://World/new_game_btn.gd" id="1_y1dix"]
-[ext_resource type="Script" uid="uid://q8o4fd420oji" path="res://World/continue.gd" id="2_jyp4w"]
-[ext_resource type="PackedScene" uid="uid://05u30gc3rp15" path="res://UI/scenes/mecha_select.tscn" id="2_s76s5"]
-[ext_resource type="Script" uid="uid://c10nnuwga4iqw" path="res://World/mecha_container.gd" id="2_w24c8"]
-[ext_resource type="Script" uid="uid://cnl0hy8g35i07" path="res://World/hp_safety_toggle_btn.gd" id="5_hp_toggle"]
-[ext_resource type="Script" uid="uid://crthixi6sav7n" path="res://World/start_menu.gd" id="6_start_menu"]
+[ext_resource type="Script" uid="uid://dyetc0qttcb7y" path="res://World/new_game_btn.gd" id="1_new_game"]
+[ext_resource type="Script" uid="uid://q8o4fd420oji" path="res://World/continue.gd" id="2_continue"]
+[ext_resource type="Script" path="res://UI/scripts/components/start_menu_backdrop.gd" id="3_backdrop"]
+[ext_resource type="Script" uid="uid://crthixi6sav7n" path="res://World/start_menu.gd" id="4_menu"]
 
-[sub_resource type="Gradient" id="Gradient_start_bg"]
-offsets = PackedFloat32Array(0, 0.55, 1)
-colors = PackedColorArray(0.0509804, 0.0745098, 0.129412, 1, 0.0705882, 0.109804, 0.180392, 1, 0.0196078, 0.027451, 0.0509804, 1)
+[node name="Start" type="Node2D"]
+script = ExtResource("4_menu")
 
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_start_bg"]
-gradient = SubResource("Gradient_start_bg")
-fill = 1
-fill_from = Vector2(0.5, 0)
-fill_to = Vector2(0.5, 1)
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="Start" type="Node2D" unique_id=1585976042]
-script = ExtResource("6_start_menu")
-
-[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=455115752]
-
-[node name="GUI" type="Control" parent="CanvasLayer" unique_id=481139598]
+[node name="GUI" type="Control" parent="CanvasLayer"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -30,16 +18,17 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" type="ColorRect" parent="CanvasLayer/GUI" unique_id=1122148742]
+[node name="Background" type="ColorRect" parent="CanvasLayer/GUI"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.0156863, 0.0196078, 0.0352941, 1)
+color = Color(0.008, 0.016, 0.026, 1)
+mouse_filter = 2
 
-[node name="GradientOverlay" type="TextureRect" parent="CanvasLayer/GUI/Background" unique_id=1621360137]
+[node name="Backdrop" type="Control" parent="CanvasLayer/GUI/Background"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -47,214 +36,236 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-texture = SubResource("GradientTexture2D_start_bg")
-expand_mode = 1
-stretch_mode = 6
+script = ExtResource("3_backdrop")
 
-[node name="HBoxMargin" type="MarginContainer" parent="CanvasLayer/GUI/Background" unique_id=1626790002]
+[node name="SafeArea" type="MarginContainer" parent="CanvasLayer/GUI"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 17.0
-offset_top = -1.0
-offset_right = 17.0
-offset_bottom = -1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 36
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 36
+theme_override_constants/margin_left = 72
+theme_override_constants/margin_top = 48
+theme_override_constants/margin_right = 72
+theme_override_constants/margin_bottom = 42
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin" unique_id=1989687654]
+[node name="MainColumn" type="VBoxContainer" parent="CanvasLayer/GUI/SafeArea"]
+custom_minimum_size = Vector2(392, 0)
 layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 4
-alignment = 1
+size_flags_horizontal = 0
+theme_override_constants/separation = 0
 
-[node name="MenuContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer" unique_id=1606636962]
-custom_minimum_size = Vector2(420, 0)
+[node name="ProtocolLabel" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
 layout_mode = 2
-size_flags_horizontal = 4
-theme_override_constants/separation = 22
+theme_type_variation = "EyebrowLabel"
+text = "PROTOCOL // 07"
 
-[node name="Title" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer" unique_id=525450202]
+[node name="Title" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 52
-text = "Protocol: Mag Arena"
-horizontal_alignment = 1
+theme_type_variation = "DisplayLabel"
+text = "磁核竞技场"
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer" unique_id=1290966749]
+[node name="Subtitle" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
 layout_mode = 2
-theme_override_constants/separation = 14
-alignment = 1
+theme_type_variation = "SubtitleLabel"
+text = "MAG ARENA"
 
-[node name="Start" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=379445436]
-custom_minimum_size = Vector2(0, 56)
+[node name="TitleRule" type="HSeparator" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
-text = "Start"
-script = ExtResource("2_jyp4w")
 
-[node name="New Game" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=2016277216]
-custom_minimum_size = Vector2(0, 50)
+[node name="Tagline" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
 layout_mode = 2
-text = "New Game"
-script = ExtResource("1_y1dix")
+theme_type_variation = "MutedLabel"
+text = "LINK YOUR CORE. ENTER THE ARENA."
 
-[node name="HpSafetyToggle" type="Button" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=1322643656]
+[node name="MenuSpacer" type="Control" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+
+[node name="Navigation" type="VBoxContainer" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Continue" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+custom_minimum_size = Vector2(392, 56)
+layout_mode = 2
+theme_type_variation = "PrimaryButton"
+text = "继续游戏"
+alignment = 0
+script = ExtResource("2_continue")
+
+[node name="ContinueStatus" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+theme_type_variation = "StatusLabel"
+text = "暂无可用作战记录"
+
+[node name="NewGame" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+custom_minimum_size = Vector2(392, 54)
+layout_mode = 2
+theme_type_variation = "PrimaryButton"
+text = "全新游戏"
+alignment = 0
+script = ExtResource("1_new_game")
+
+[node name="Settings" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+custom_minimum_size = Vector2(392, 48)
+layout_mode = 2
+text = "设置"
+alignment = 0
+
+[node name="Exit" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+custom_minimum_size = Vector2(392, 48)
+layout_mode = 2
+text = "退出游戏"
+alignment = 0
+
+[node name="ColumnSpacer" type="Control" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InputHint" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+layout_mode = 2
+theme_type_variation = "MutedLabel"
+text = "[ENTER]  确认     [ESC]  返回"
+
+[node name="BuildInfo" type="Label" parent="CanvasLayer/GUI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -392.0
+offset_top = -74.0
+offset_right = -72.0
+offset_bottom = -42.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_type_variation = "SystemLabel"
+text = "SPATIAL BUFFER // CALIBRATING"
+horizontal_alignment = 2
+
+[node name="SettingsScrim" type="ColorRect" parent="CanvasLayer/GUI"]
 visible = false
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-disabled = true
-text = "Keep HP > 1: OFF"
-script = ExtResource("5_hp_toggle")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.58)
+mouse_filter = 0
 
-[node name="ResolutionLabel" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=1441157498]
-layout_mode = 2
-text = "Resolution"
+[node name="SettingsPanel" type="PanelContainer" parent="CanvasLayer/GUI"]
+visible = false
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -604.0
+offset_top = -324.0
+offset_right = -48.0
+offset_bottom = 324.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_type_variation = "SettingsPanel"
 
-[node name="ResolutionOption" type="OptionButton" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer" unique_id=95475231]
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/GUI/SettingsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 28
+
+[node name="Content" type="VBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "SectionTitleLabel"
+text = "设置"
+
+[node name="Close" type="Button" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/Header"]
+custom_minimum_size = Vector2(96, 42)
+layout_mode = 2
+text = "返回"
+
+[node name="HeaderRule" type="HSeparator" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
+[node name="DisplayHeader" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+layout_mode = 2
+theme_type_variation = "EyebrowLabel"
+text = "显示与语言"
+
+[node name="ResolutionRow" type="HBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 
-[node name="MechaContainer" type="MarginContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer" unique_id=7227956]
-visible = false
+[node name="Label" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/ResolutionRow"]
+custom_minimum_size = Vector2(168, 0)
 layout_mode = 2
-theme_override_constants/margin_top = 50
-script = ExtResource("2_w24c8")
+text = "分辨率"
+vertical_alignment = 1
 
-[node name="Mechas" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" unique_id=1982485898]
-custom_minimum_size = Vector2(500, 0)
+[node name="Option" type="OptionButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/ResolutionRow"]
 layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="CharTitile" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas" unique_id=971456419]
-layout_mode = 2
-theme_override_font_sizes/font_size = 26
-text = "Mecha"
-horizontal_alignment = 1
-
-[node name="IconContainer" type="HBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas" unique_id=884047136]
-custom_minimum_size = Vector2(0, 120)
+[node name="LanguageRow" type="HBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 
-[node name="MechaSelect" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" unique_id=1149774982 instance=ExtResource("2_s76s5")]
+[node name="Label" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/LanguageRow"]
+custom_minimum_size = Vector2(168, 0)
+layout_mode = 2
+text = "语言"
+vertical_alignment = 1
+
+[node name="Option" type="OptionButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/LanguageRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AudioHeader" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+layout_mode = 2
+theme_type_variation = "EyebrowLabel"
+text = "音频"
+
+[node name="AudioSlot" type="VBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
 layout_mode = 2
 
-[node name="MechaSelect2" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" unique_id=1670701634 instance=ExtResource("2_s76s5")]
+[node name="AssistHeader" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
 layout_mode = 2
-mecha_id = 2
+theme_type_variation = "EyebrowLabel"
+text = "战斗辅助"
 
-[node name="MechaSelect3" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" unique_id=202766801 instance=ExtResource("2_s76s5")]
+[node name="AutoAim" type="CheckButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-mecha_id = 3
+text = "自动瞄准持续开火"
 
-[node name="MechaSelect4" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer" unique_id=334568254 instance=ExtResource("2_s76s5")]
+[node name="AutoReload" type="CheckButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-mecha_id = 4
+text = "空弹自动换弹切枪"
 
-[node name="ColorRect" type="ColorRect" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas" unique_id=1981034121]
-custom_minimum_size = Vector2(0, 250)
+[node name="SettingsFooter" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
 layout_mode = 2
-color = Color(0.366595, 0.366595, 0.366595, 1)
+size_flags_vertical = 10
+theme_type_variation = "MutedLabel"
+text = "更改将立即保存"
+vertical_alignment = 2
 
-[node name="mecha_name" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=437096786]
-layout_mode = 0
-offset_left = 114.0
-offset_top = 5.0
-offset_right = 369.0
-offset_bottom = 37.0
-theme_override_font_sizes/font_size = 23
-text = "Name: —"
-horizontal_alignment = 1
-
-[node name="current_exp" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=778456083]
-layout_mode = 0
-offset_left = 2.0
-offset_top = 40.0
-offset_right = 257.0
-offset_bottom = 72.0
-theme_override_font_sizes/font_size = 23
-text = "Experience: —"
-
-[node name="current_level" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=1852031395]
-layout_mode = 0
-offset_left = 244.0
-offset_top = 40.0
-offset_right = 499.0
-offset_bottom = 72.0
-theme_override_font_sizes/font_size = 23
-text = "Level: —"
-horizontal_alignment = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=1734837354]
-layout_mode = 0
-offset_left = 1.0
-offset_top = 95.0
-offset_right = 256.0
-offset_bottom = 250.0
-alignment = 2
-
-[node name="player_max_hp" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=408731963]
-layout_mode = 2
-theme_override_font_sizes/font_size = 23
-text = "Max HP: —"
-horizontal_alignment = 1
-
-[node name="player_speed" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=512407014]
-layout_mode = 2
-theme_override_font_sizes/font_size = 23
-text = "Move Speed: —"
-horizontal_alignment = 1
-
-[node name="armor" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=367872730]
-layout_mode = 2
-theme_override_font_sizes/font_size = 23
-text = "Armor: —"
-horizontal_alignment = 1
-
-[node name="shield" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer" unique_id=1881882935]
-layout_mode = 2
-theme_override_font_sizes/font_size = 23
-text = "Shield: —"
-horizontal_alignment = 1
-
-[node name="VBoxContainer2" type="VBoxContainer" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect" unique_id=785441317]
-layout_mode = 0
-offset_left = 245.0
-offset_top = 95.0
-offset_right = 500.0
-offset_bottom = 250.0
-alignment = 2
-
-[node name="crit_rate" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=480665017]
-layout_mode = 2
-theme_override_font_sizes/font_size = 23
-text = "Critical Rate: —"
-horizontal_alignment = 1
-
-[node name="crit_damage" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=224386494]
-layout_mode = 2
-theme_override_font_sizes/font_size = 23
-text = "Critical Damage: —"
-horizontal_alignment = 1
-
-[node name="grab_radius" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=29803766]
-layout_mode = 2
-theme_override_font_sizes/font_size = 23
-text = "Pickup Radius: —"
-horizontal_alignment = 1
-
-[node name="player_gold" type="Label" parent="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/ColorRect/VBoxContainer2" unique_id=1600224803]
-layout_mode = 2
-theme_override_font_sizes/font_size = 23
-text = "Starting Gold: —"
-horizontal_alignment = 1
-
-[connection signal="pressed" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Start" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/Start" method="_on_pressed"]
-[connection signal="erase_button_pressed" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_new_game_erase_button_pressed"]
-[connection signal="pressed" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MenuContainer/VBoxContainer/New Game" method="_on_pressed"]
-[connection signal="update_on_select" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
-[connection signal="update_on_select" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect2" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
-[connection signal="update_on_select" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect3" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
-[connection signal="update_on_select" from="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer/Mechas/IconContainer/MechaSelect4" to="CanvasLayer/GUI/Background/HBoxMargin/HBoxContainer/MechaContainer" method="_on_mecha_select_update_on_select"]
+[connection signal="pressed" from="CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Continue" to="CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Continue" method="_on_pressed"]
+[connection signal="pressed" from="CanvasLayer/GUI/SafeArea/MainColumn/Navigation/NewGame" to="CanvasLayer/GUI/SafeArea/MainColumn/Navigation/NewGame" method="_on_pressed"]

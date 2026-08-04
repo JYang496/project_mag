@@ -122,6 +122,7 @@ signal target_affected(target: Node)
 
 
 func _ready() -> void:
+	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	add_to_group(&"hybrid_ground_area_effect")
 	var hybrid_views := get_tree().get_nodes_in_group(&"hybrid_ground_view_3d")
 	if not hybrid_views.is_empty():
@@ -151,6 +152,9 @@ func _ready() -> void:
 	life_timer.wait_time = maxf(damage_duration, visual_duration)
 	life_timer.start()
 	call_deferred("_apply_to_current_overlaps")
+
+func cleanup_for_battle_end() -> void:
+	queue_free()
 
 func _register_with_hybrid_ground() -> void:
 	if not is_inside_tree():

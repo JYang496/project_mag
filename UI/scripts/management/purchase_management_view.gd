@@ -1,6 +1,9 @@
 extends Control
 class_name PurchaseManagementView
 
+const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
+const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
+
 @onready var shop_mode_buttons: HBoxContainer = $ShopModeButtons
 @onready var shop_weapon_mode_button: Button = $ShopModeButtons/BuyWeaponModeButton
 @onready var shop_module_mode_button: Button = $ShopModeButtons/BuyModuleModeButton
@@ -200,25 +203,37 @@ func _fill_weapon_detail(item_data: Dictionary) -> void:
 	var weapon_def := item_data.get("definition", null) as WeaponDefinition
 	if weapon_def == null:
 		return
-	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.weapon_type", "Weapon Type"), _format_weapon_definition_types(weapon_def))
+	var display_model = item_data.get("display_model", null)
+	if display_model == null:
+		display_model = WEAPON_DISPLAY_BUILDER.build_from_definition(weapon_def)
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.weapon_type", "Weapon Type"), display_model.taxonomy_text())
 	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.purchase_price", "Purchase Price"), str(int(item_data.get("price", 0))))
+	if not display_model.current_stats.is_empty():
+		_add_detail_section(
+			LocalizationManager.tr_key("ui.weapon.detail.core_stats", "Core Stats"),
+			WEAPON_STAT_FORMATTER.format_summary(display_model.current_stats, 4, "\n")
+		)
 	var level_rows := _build_weapon_level_rows(weapon_def)
 	if not level_rows.is_empty():
-		_add_detail_header(LocalizationManager.tr_key("ui.service.detail.levels_and_costs", "Level Stats / Upgrade Cost"))
-		for row in level_rows:
-			_add_detail_text(row)
-	var branches := DataHandler.read_weapon_branch_options(str(weapon_def.scene_path), 999)
-	if not branches.is_empty():
-		_add_detail_header(LocalizationManager.tr_key("ui.service.detail.branches", "Branches"))
-		for branch_def in branches:
-			var branch_name := LocalizationManager.get_branch_display_name(branch_def)
-			var branch_desc := LocalizationManager.get_branch_description(branch_def)
+		_add_collapsible_detail_section(
+			LocalizationManager.tr_key("ui.service.detail.levels_and_costs", "Level Stats / Upgrade Cost"),
+			level_rows
+		)
+	if not display_model.available_branches.is_empty():
+		var branch_lines := PackedStringArray()
+		for branch_data in display_model.available_branches:
+			var branch_name := str(branch_data.get("name", ""))
+			var branch_desc := str(branch_data.get("description", ""))
 			var unlock_text := LocalizationManager.tr_format(
 				"ui.weapon.fuse_value",
-				{"fuse": int(branch_def.unlock_fuse)},
-				"Fuse %d" % int(branch_def.unlock_fuse)
+				{"fuse": int(branch_data.get("unlock_fuse", 0))},
+				"Fuse %d" % int(branch_data.get("unlock_fuse", 0))
 			)
-			_add_detail_text("%s  [%s]\n%s" % [branch_name, unlock_text, branch_desc])
+			branch_lines.append("%s  [%s]\n%s" % [branch_name, unlock_text, branch_desc])
+		_add_collapsible_detail_section(
+			LocalizationManager.tr_key("ui.service.detail.branches", "Branches"),
+			branch_lines
+		)
 
 func _fill_module_detail(item_data: Dictionary) -> void:
 	var module_instance := item_data.get("module", null) as Module
@@ -267,33 +282,15 @@ func _build_weapon_level_rows(weapon_def: WeaponDefinition) -> PackedStringArray
 	return rows
 
 func _format_stat_dictionary(data: Dictionary) -> String:
-	var parts := PackedStringArray()
-	for key_variant in data.keys():
-		var key := str(key_variant)
-		parts.append("%s: %s" % [_format_stat_label(key), str(data[key_variant])])
-	return " / ".join(parts)
+	return WEAPON_STAT_FORMATTER.format_dictionary(data)
 
 func _format_stat_label(key: String) -> String:
-	return LocalizationManager.get_module_term(
-		StringName("stat.%s" % key),
-		key.replace("_", " ").capitalize()
-	)
+	return WEAPON_STAT_FORMATTER.format_label(key)
 
 func _format_weapon_definition_types(weapon_def: WeaponDefinition) -> String:
-	if weapon_def == null or weapon_def.scene == null:
+	if weapon_def == null:
 		return LocalizationManager.tr_key("ui.service.value.unknown", "Unknown")
-	var weapon := weapon_def.scene.instantiate() as Weapon
-	if weapon == null:
-		return LocalizationManager.tr_key("ui.service.value.unknown", "Unknown")
-	var parts := PackedStringArray()
-	for value in weapon.get_explicit_weapon_traits():
-		parts.append(_format_type_name(str(value)))
-	for value in weapon.get_explicit_delivery_types():
-		parts.append(_format_type_name(str(value)))
-	for value in weapon.get_explicit_weapon_capabilities():
-		parts.append(_format_type_name(str(value)))
-	weapon.queue_free()
-	return " / ".join(parts) if not parts.is_empty() else LocalizationManager.tr_key("ui.service.value.universal", "Universal")
+	return WEAPON_DISPLAY_BUILDER.build_from_definition(weapon_def).taxonomy_text()
 
 func _format_module_install_targets(module_instance: Module) -> String:
 	var parts := PackedStringArray()
@@ -347,6 +344,32 @@ func _add_detail_text(text: String) -> void:
 	label.add_theme_color_override("font_color", Color(0.86, 0.9, 0.92))
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	shop_detail_body.add_child(label)
+
+
+func _add_collapsible_detail_section(title: String, lines: PackedStringArray, expanded: bool = false) -> void:
+	if shop_detail_body == null or lines.is_empty():
+		return
+	var toggle := Button.new()
+	toggle.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	toggle.text = ("▼ " if expanded else "▶ ") + title
+	toggle.add_theme_font_size_override("font_size", 15)
+	toggle.add_theme_color_override("font_color", Color(0.63, 0.86, 0.95))
+	shop_detail_body.add_child(toggle)
+	var body := VBoxContainer.new()
+	body.visible = expanded
+	body.add_theme_constant_override("separation", 6)
+	shop_detail_body.add_child(body)
+	for line in lines:
+		var label := Label.new()
+		label.text = line
+		label.add_theme_font_size_override("font_size", 13)
+		label.add_theme_color_override("font_color", Color(0.86, 0.9, 0.92))
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		body.add_child(label)
+	toggle.pressed.connect(func() -> void:
+		body.visible = not body.visible
+		toggle.text = ("▼ " if body.visible else "▶ ") + title
+	)
 
 func _items_match(a: Dictionary, b: Dictionary) -> bool:
 	if a.is_empty() or b.is_empty():

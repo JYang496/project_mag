@@ -17,6 +17,7 @@ func _physics_process(delta: float) -> void:
 	delta = ai_delta
 	var player = PlayerData.player
 	if player == null or not is_instance_valid(player):
+		decay_knockback()
 		move_enemy(Vector2.ZERO, delta)
 		return
 	if not slowdown_triggered:
@@ -36,6 +37,7 @@ func _physics_process(delta: float) -> void:
 
 	## direction to applied normalized
 	var direction = global_position.direction_to(player.global_position)
+	decay_knockback()
 	move_enemy(direction * final_speed, delta)
 
 func enter_slowdown_state() -> void:

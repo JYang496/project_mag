@@ -12,12 +12,6 @@ func _ready() -> void:
 func _get_rest_area_board():
 	return null
 
-func _clear_zone4_hold_move_boost() -> void:
-	pass
-
-func _reset_zone4_hold() -> void:
-	pass
-
 func _reset_start_battle_button() -> void:
 	reset_button_calls += 1
 
@@ -29,4 +23,3 @@ func _discard_unassigned_task_modules_and_continue_start_battle() -> void:
 
 func _on_battle_start_cancelled() -> void:
 	route_flow.on_battle_start_cancelled()
-

@@ -6,6 +6,7 @@ const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 var _shot_count := 0
 
 func _ready() -> void:
+	PhaseManager.phase = PhaseManager.BATTLE_STARTING
 	PhaseManager.enter_battle()
 	var pistol := PistolScene.instantiate() as Weapon
 	# This test validates targeting and projectile emission, not audio playback.

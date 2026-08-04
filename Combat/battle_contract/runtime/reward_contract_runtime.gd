@@ -15,6 +15,9 @@ var _completion_guard := false
 func start(combat_port, parameters: Dictionary) -> void:
 	port = combat_port
 	duration_sec = maxf(float(parameters.get("duration_sec", 45.0)), 1.0)
+	var early_level_count := maxi(int(parameters.get("early_level_count", 0)), 0)
+	if port.get_level_index() < early_level_count and parameters.has("early_duration_sec"):
+		duration_sec = maxf(float(parameters.get("early_duration_sec", duration_sec)), 1.0)
 	remaining_sec = duration_sec
 	port.request_external_victory_control(true)
 	port.request_configure_duration(duration_sec)

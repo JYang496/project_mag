@@ -7,6 +7,7 @@ const REFERENCE_VIEWPORT := Vector2(1280.0, 720.0)
 const MANAGEMENT_TARGET_SIZE := Vector2(1000.0, 600.0)
 const PRIMARY_MENU_BASE_WIDTH := 360.0
 const PRIMARY_MENU_MIN_HEIGHT := 320.0
+const PRIMARY_MENU_SINGLE_ACTION_HEIGHT := 216.0
 const PRIMARY_MENU_HEADER_HEIGHT := 104.0
 const PRIMARY_MENU_ENTRY_PITCH := 58.0
 const PRIMARY_MENU_FOOTER_SPACE := 28.0
@@ -52,10 +53,10 @@ static func management_panel_rect(viewport_size: Vector2) -> Rect2:
 	return fit_centered_rect(viewport_size, MANAGEMENT_TARGET_SIZE)
 
 
-static func primary_menu_rect(viewport_size: Vector2, entry_count: int = 2) -> Rect2:
+static func primary_menu_rect(viewport_size: Vector2, entry_count: int = 2, variant: StringName = &"standard") -> Rect2:
 	var margin := safe_margin(viewport_size)
 	var scale := scale_for_viewport(viewport_size)
-	var desired_height := maxf(
+	var desired_height := PRIMARY_MENU_SINGLE_ACTION_HEIGHT if variant == &"single_action" else maxf(
 		PRIMARY_MENU_MIN_HEIGHT,
 		PRIMARY_MENU_HEADER_HEIGHT
 			+ PRIMARY_MENU_ENTRY_PITCH * float(maxi(entry_count, 1))
@@ -73,6 +74,12 @@ static func primary_menu_rect(viewport_size: Vector2, entry_count: int = 2) -> R
 		Vector2(margin.x, maxf(margin.y, (viewport_size.y - size.y) * 0.5)),
 		size
 	)
+
+
+static func primary_menu_variant(panel: Control) -> StringName:
+	if panel == null:
+		return &"standard"
+	return StringName(panel.get_meta(&"primary_menu_variant", &"standard"))
 
 
 static func hud_left_lane(viewport_size: Vector2) -> Rect2:
@@ -101,4 +108,3 @@ static func hud_center_safe_rect(viewport_size: Vector2) -> Rect2:
 			maxf(viewport_size.y - vertical_inset * 2.0, 0.0)
 		)
 	)
-

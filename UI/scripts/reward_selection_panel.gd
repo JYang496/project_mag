@@ -8,6 +8,9 @@ const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const PREVIEW_FORMATTER := preload("res://UI/scripts/weapon_obtain_preview_formatter.gd")
 const MODULE_FIT_FORMATTER := preload("res://UI/scripts/module_fit_formatter.gd")
 const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
+const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
+const WEAPON_DISPLAY_POLICY := preload("res://UI/scripts/presentation/weapon_display_policy.gd")
+const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
 
 @onready var title_label: Label = $Panel/VBox/Title
 @onready var panel: Panel = $Panel
@@ -596,10 +599,22 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		var upgrade_detail := PackedStringArray([str(data["short_tag"])])
 		var target_definition := DataHandler.read_weapon_data(reward.target_weapon_id) as WeaponDefinition
 		if target_definition != null:
-			data["icon_texture"] = target_definition.icon
-			var description := LocalizationManager.get_weapon_description_from_definition(target_definition).strip_edges()
-			if description != "":
-				upgrade_detail.append(description)
+			var model = WEAPON_DISPLAY_BUILDER.build_at_levels(
+				target_definition,
+				int(reward.target_weapon_from_level),
+				int(reward.target_weapon_to_level)
+			)
+			data["icon_texture"] = model.icon
+			if model.first_description_sentence() != "":
+				upgrade_detail.append(model.first_description_sentence())
+			var change_count := 0
+			for delta_data in model.upgrade_deltas:
+				if not bool(delta_data.get("changed", false)):
+					continue
+				upgrade_detail.append(WEAPON_STAT_FORMATTER.format_delta_line(delta_data))
+				change_count += 1
+				if change_count >= WEAPON_DISPLAY_POLICY.summary_limit(WEAPON_DISPLAY_POLICY.REWARD_DETAIL):
+					break
 		data["detail_text"] = "\n".join(upgrade_detail)
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.weapon_upgrade", "Upgrade equipped weapon level")
 		data["summary_text"] = _first_sentence(str(data["detail_text"]), LocalizationManager.tr_key("ui.reward.summary.weapon_upgrade", "Upgrade equipped weapon level."))
@@ -676,10 +691,19 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		summary_chunks.append(weapon_name)
 		detail_chunks.append(weapon_text)
 		if weapon_definition != null:
-			data["icon_texture"] = weapon_definition.icon
-			var weapon_description := LocalizationManager.get_weapon_description_from_definition(weapon_definition).strip_edges()
-			if weapon_description != "":
-				detail_chunks.append(weapon_description)
+			var model = WEAPON_DISPLAY_BUILDER.build_from_definition(weapon_definition, int(reward.item_level))
+			data["icon_texture"] = model.icon
+			if model.first_description_sentence() != "":
+				detail_chunks.append(model.first_description_sentence())
+			if not model.taxonomy_labels.is_empty():
+				detail_chunks.append(model.taxonomy_text())
+			var stat_summary := WEAPON_STAT_FORMATTER.format_summary(
+				model.current_stats,
+				WEAPON_DISPLAY_POLICY.summary_limit(WEAPON_DISPLAY_POLICY.REWARD_DETAIL),
+				" · "
+			)
+			if stat_summary != "":
+				detail_chunks.append(stat_summary)
 		data["type_label"] = _format_reward_type_label(reward, "New Weapon")
 		data["level_text"] = "Lv.%d" % int(reward.item_level)
 		data["meta_text"] = LocalizationManager.tr_format(
@@ -779,7 +803,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		if summary_chunks.size() > 1:
 			data["short_tag"] = " + ".join(summary_chunks.slice(1))
 		var detail_source: PackedStringArray = detail_chunks if not detail_chunks.is_empty() else summary_chunks
-		data["detail_text"] = " + ".join(detail_source)
+		data["detail_text"] = "\n".join(detail_source)
 	data["summary_text"] = _first_sentence(str(data["detail_text"]), _fallback_summary(reward))
 	if str(data["level_text"]).strip_edges() == "":
 		data["level_text"] = _derive_level_text(reward, data)
@@ -1075,7 +1099,7 @@ func _fallback_detail_bullets(reward: RewardInfo) -> PackedStringArray:
 	if reward == null:
 		return PackedStringArray()
 	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
-		return _localized_reward_bullets("weapon_upgrade", ["Increases weapon level", "Improves the equipped weapon's performance", "Strengthens the current build direction"])
+		return PackedStringArray()
 	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
 		return _localized_reward_bullets("task_module", ["Adds a task module", "Creates route objective options", "Can improve future rewards"])
 	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
@@ -1083,7 +1107,7 @@ func _fallback_detail_bullets(reward: RewardInfo) -> PackedStringArray:
 	if reward.module_scene:
 		return _localized_reward_bullets("module", ["Adds a weapon modifier", "Changes or improves weapon behavior", "Can create build synergy"])
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
-		return _localized_reward_bullets("weapon", ["Adds a new weapon to your loadout", "Expands build options", "May trigger evolution effects"])
+		return PackedStringArray()
 	if reward.total_chip_value > 0 or reward.gold_value > 0:
 		return _localized_reward_bullets("economy", ["Adds resources immediately", "Supports current run progression"])
 	return PackedStringArray()

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cat80ev8yltf7"]
 
 [ext_resource type="Script" uid="uid://yxbtuupv8h0y" path="res://World/rest_area.gd" id="1_5q1gc"]
-[ext_resource type="Texture2D" uid="uid://d2ssct86rwnpo" path="res://asset/images/cells/default.png" id="2_tgu0a"]
+[ext_resource type="Texture2D" uid="uid://ce5m0tr3rxtka" path="res://asset/images/cells/rest_area_safe_medical.png" id="2_tgu0a"]
 [ext_resource type="Script" path="res://World/rest_area_zone_visuals.gd" id="3_zone_visuals"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hnton"]
@@ -40,46 +40,47 @@ script = ExtResource("3_zone_visuals")
 [node name="SelectionEffects" type="Node2D" parent="ZoneVisuals"]
 
 [node name="MerchantHintLabel" type="Label" parent="." unique_id=204400001]
-custom_minimum_size = Vector2(156, 58)
+custom_minimum_size = Vector2(132, 36)
 offset_left = 7.0
 offset_top = 45.0
-offset_right = 163.0
-offset_bottom = 103.0
+offset_right = 139.0
+offset_bottom = 81.0
 text = "Purchase\nBuy weapons and modules"
 horizontal_alignment = 1
 
 [node name="SmithHintLabel" type="Label" parent="." unique_id=204400002]
-custom_minimum_size = Vector2(156, 58)
+custom_minimum_size = Vector2(132, 36)
 offset_left = 178.0
 offset_top = 45.0
-offset_right = 334.0
-offset_bottom = 103.0
+offset_right = 310.0
+offset_bottom = 81.0
 text = "Upgrade\nNo upgrades available"
 horizontal_alignment = 1
 
 [node name="ModuleHintLabel" type="Label" parent="." unique_id=204400004]
-custom_minimum_size = Vector2(156, 58)
+custom_minimum_size = Vector2(132, 36)
 offset_left = 349.0
 offset_top = 45.0
-offset_right = 505.0
-offset_bottom = 103.0
+offset_right = 481.0
+offset_bottom = 81.0
 text = "Module Management\nNo pending modules"
 horizontal_alignment = 1
 
 [node name="BoardHintLabel" type="Label" parent="."]
-custom_minimum_size = Vector2(156, 58)
+custom_minimum_size = Vector2(132, 36)
 offset_left = 7.0
 offset_top = 387.0
-offset_right = 163.0
-offset_bottom = 445.0
+offset_right = 139.0
+offset_bottom = 423.0
 text = "Board\nInstall cell effects or deploy task modules"
 horizontal_alignment = 1
 
 [node name="BattleHintLabel" type="Label" parent="." unique_id=204400003]
+custom_minimum_size = Vector2(188, 30)
 offset_left = 162.0
 offset_top = 230.0
 offset_right = 350.0
-offset_bottom = 254.0
-theme_override_font_sizes/font_size = 14
-text = "Open battle menu"
+offset_bottom = 260.0
+theme_override_font_sizes/font_size = 15
+text = "[LMB] Choose Next Protocol"
 horizontal_alignment = 1

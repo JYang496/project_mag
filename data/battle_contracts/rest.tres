@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BattleContractDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Combat/battle_contract/BattleContractDefinition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+contract_id = &"rest"
+name_key = "battle_contract.rest.name"
+description_key = "battle_contract.rest.description"
+accent_color = Color(0.30, 0.82, 0.62, 1)
+weight = 0.0
+build_tags = Array[StringName]([&"logistics", &"recovery", &"upgrade"])

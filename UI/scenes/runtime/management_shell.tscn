@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://UI/scripts/management/management_shell_view.gd" id="1_f27x0"]
 
 [node name="ManagementShell" type="Control" unique_id=1346801814]
+z_index = 100
 layout_mode = 3
 anchors_preset = 0
 anchor_right = 1.0

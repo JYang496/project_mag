@@ -1,6 +1,8 @@
 extends Area2D
 class_name EnemyTarSlowZone
 
+const TAR_SLOW_ZONE_TEXTURE: Texture2D = preload("res://asset/images/effects/slow_zone/tar_slow_zone_amber.png")
+
 @export var duration: float = 4.0
 @export var radius: float = 90.0
 @export var player_slow_multiplier: float = 0.65
@@ -10,6 +12,20 @@ class_name EnemyTarSlowZone
 @export var zone_fill_color: Color = Color(0.2, 0.16, 0.1, 0.28)
 @export var zone_line_color: Color = Color(0.55, 0.42, 0.2, 0.95)
 @export var zone_line_width: float = 2.0
+@export_group("Hybrid Ground Visual")
+@export var visual_enabled: bool = true
+@export var use_animated_visual: bool = false
+@export var animated_visual_is_ground: bool = false
+@export var visual_texture: Texture2D = TAR_SLOW_ZONE_TEXTURE
+@export var visual_modulate: Color = Color(1.0, 1.0, 1.0, 0.68)
+@export var visual_shape: int = 0
+@export var draw_enabled: bool = true:
+	set(value):
+		draw_enabled = value
+		queue_redraw()
+@export var ground_detail_texture: Texture2D
+@export var ground_height_offset: float = 0.002
+@export_group("")
 
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var life_timer: Timer = $LifeTimer
@@ -20,6 +36,12 @@ var _slowed_enemies: Array[BaseEnemy] = []
 
 func _ready() -> void:
 	add_to_group("enemy_runtime_cleanup")
+	add_to_group(&"hybrid_ground_area_effect")
+	if not get_tree().get_nodes_in_group(&"hybrid_ground_view_3d").is_empty():
+		# The Hybrid Ground renderer owns the decal in 2.5D. Suppress the
+		# screen-space fallback before registration to avoid a one-frame circle.
+		draw_enabled = false
+	call_deferred("_register_with_hybrid_ground")
 	set_collision_mask_value(1, true)
 	set_collision_mask_value(3, true)
 	_field_source_id = StringName("tar_zone_%d" % get_instance_id())
@@ -63,6 +85,7 @@ func _on_life_timer_timeout() -> void:
 	queue_free()
 
 func _exit_tree() -> void:
+	HybridGroundRegistration.unregister(self)
 	_cleanup_all_player_slow()
 	for enemy in _slowed_enemies:
 		if enemy != null and is_instance_valid(enemy):
@@ -88,7 +111,7 @@ func _cleanup_all_player_slow() -> void:
 	_slowed_players.clear()
 
 func _draw() -> void:
-	if not draw_zone:
+	if not draw_zone or not draw_enabled:
 		return
 	draw_circle(Vector2.ZERO, maxf(radius, 1.0), zone_fill_color)
 	draw_arc(
@@ -101,3 +124,8 @@ func _draw() -> void:
 		maxf(zone_line_width, 1.0),
 		true
 	)
+
+func _register_with_hybrid_ground() -> void:
+	if not is_inside_tree():
+		return
+	HybridGroundRegistration.register(self, &"register_area_effect")

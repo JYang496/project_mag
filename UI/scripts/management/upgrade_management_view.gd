@@ -3,6 +3,9 @@ class_name UpgradeManagementView
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const UPGRADE_DETAIL_PRESENTER := preload("res://UI/scripts/management/upgrade_detail_presenter.gd")
+const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
+const WEAPON_DISPLAY_POLICY := preload("res://UI/scripts/presentation/weapon_display_policy.gd")
+const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
 
 @onready var upgrade_mode_buttons: HBoxContainer = $UpgradeModeButtons
 @onready var upgrade_weapon_mode_button: Button = $UpgradeModeButtons/UpgradeWeaponModeButton
@@ -12,6 +15,7 @@ const UPGRADE_DETAIL_PRESENTER := preload("res://UI/scripts/management/upgrade_d
 @onready var upgrade_detail_panel: PanelContainer = $UpgradeDetailPanel
 @onready var upgrade_detail_title: Label = $UpgradeDetailPanel/Margin/Root/Title
 @onready var upgrade_detail_subtitle: Label = $UpgradeDetailPanel/Margin/Root/Subtitle
+@onready var upgrade_detail_scroll: ScrollContainer = $UpgradeDetailPanel/Margin/Root/DetailScroll
 @onready var upgrade_detail_body: VBoxContainer = $UpgradeDetailPanel/Margin/Root/DetailScroll/DetailBody
 @onready var upgrade_action_button: Button = $UpgradeActionButton
 
@@ -362,11 +366,15 @@ func refresh_detail() -> void:
 		_fill_weapon_detail(active)
 	else:
 		_fill_module_detail(active)
+	upgrade_detail_scroll.scroll_vertical = 0
 
 func trigger_action() -> bool:
 	return try_upgrade_selected_item()
 
 func try_upgrade_selected_item() -> bool:
+	if not PhaseManager.can_configure_loadout():
+		_show_message(LocalizationManager.tr_key("ui.upgrade.rest_only", "Upgrades are only available during rest."), 1.6)
+		return false
 	if selected_item.is_empty():
 		_show_message(LocalizationManager.tr_key("ui.upgrade.select_first", "Select an item first."), 1.3)
 		return false
@@ -426,22 +434,24 @@ func refresh_action() -> void:
 	) if ready else LocalizationManager.tr_key("ui.upgrade.action_empty", "Upgrade")
 
 func _build_weapon_item_data(weapon: Weapon, location_text: String = "") -> Dictionary:
-	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
-	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
-	var rarity := weapon_def.get_rarity() if weapon_def else RARITY_UTIL.COMMON
+	var display_model = WEAPON_DISPLAY_BUILDER.build_from_instance(weapon, true, location_text)
 	return {
 		"type": "weapon",
 		"id": str(weapon.get_instance_id()),
 		"weapon": weapon,
-		"name": LocalizationManager.get_weapon_instance_display_name(weapon),
-		"description": LocalizationManager.get_weapon_description_from_definition(weapon_def) if weapon_def else "",
-		"level": int(weapon.level),
-		"max_level": int(weapon.max_level),
+		"display_model": display_model,
+		"name": display_model.display_name,
+		"description": display_model.description,
+		"level": display_model.level,
+		"max_level": display_model.max_level,
 		"price": _get_weapon_upgrade_price(weapon),
-		"icon": weapon.sprite.texture if weapon.sprite else null,
-		"params": _build_weapon_param_summary(weapon),
+		"icon": display_model.icon,
+		"params": WEAPON_STAT_FORMATTER.format_summary(
+			display_model.current_stats,
+			WEAPON_DISPLAY_POLICY.summary_limit(WEAPON_DISPLAY_POLICY.UPGRADE_LIST)
+		),
 		"location": location_text,
-		"rarity_color": RARITY_UTIL.get_color(rarity),
+		"rarity_color": RARITY_UTIL.get_color(display_model.rarity),
 	}
 
 func _build_module_item_data(module_instance: Module, location_text: String = "") -> Dictionary:

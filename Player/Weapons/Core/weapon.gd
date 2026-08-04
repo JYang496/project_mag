@@ -190,9 +190,10 @@ func _handle_hit_target(target: Node, damage_type: StringName = StringName()) ->
 
 func on_damage_applied(target: Node, data: DamageData, result: DamageResult) -> void:
 	_accumulate_global_weapon_energy(data, result)
+	plugin_dispatcher.apply_on_damage_plugins(target, data, result)
 
 func _accumulate_global_weapon_energy(data: DamageData, result: DamageResult) -> void:
-	if data == null or result == null or not result.applied or result.final_damage <= 0:
+	if data == null or result == null or not result.applied or result.health_damage <= 0:
 		return
 	if data.source_category != DamageData.SOURCE_PLAYER_WEAPON:
 		return

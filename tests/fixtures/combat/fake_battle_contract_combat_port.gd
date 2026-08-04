@@ -1,9 +1,13 @@
 extends BattleContractCombatPort
 
 var level_index := 0
+var level_duration_sec := 30.0
 var active_enemy_count := 0
 var spawn_budget_snapshot := {"planned_total_hp": 900, "planned_enemy_count": 9}
 var capabilities := {
+	"supports_operation": true,
+	"supports_containment": true,
+	"supports_extraction": true,
 	"operation_beacon_points": PackedVector2Array([Vector2(10, 10), Vector2(20, 10)]),
 	"containment_points": PackedVector2Array([Vector2(10, 20), Vector2(20, 20), Vector2(30, 20)]),
 	"extraction_points": PackedVector2Array([Vector2(40, 20)]),
@@ -32,6 +36,9 @@ var remove_beacons_calls := 0
 
 func get_level_index() -> int:
 	return level_index
+
+func get_level_duration_sec() -> float:
+	return level_duration_sec
 
 func get_battlefield_capabilities() -> Dictionary:
 	return capabilities

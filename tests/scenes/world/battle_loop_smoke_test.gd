@@ -43,7 +43,12 @@ func _run() -> void:
 
 	var elimination = _ui.received_options.filter(func(option): return option.contract_id == &"elimination").front()
 	_expect(BattleContractManager.select_contract(elimination), "elimination option should be selectable")
+	_ui.hold_battle_intro = true
 	_ui.confirm_callback.call()
+	await get_tree().process_frame
+	_expect(PhaseManager.current_state() == PhaseManager.BATTLE_STARTING, "confirmed contract should enter the deployment phase while the intro is active")
+	_expect(_port.start_spawning_calls == 0, "spawning must not start before the battle intro completes")
+	_ui.battle_intro_released.emit()
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -51,7 +56,7 @@ func _run() -> void:
 	_expect(BattleContractManager.state == BattleContractManager.ACTIVE, "confirmed contract should activate its runtime")
 	_expect(_port.start_spawning_calls == 1, "battle start should request spawning exactly once")
 	_expect(_port.external_victory_enabled, "elimination runtime should own victory completion")
-	_expect(_ui.intro_prepared and _ui.selection_closed and _ui.battle_intro_played, "battle UI transition hooks should all run")
+	_expect(_ui.intro_prepared and _ui.entry_transition_prepared and _ui.selection_closed and _ui.battle_intro_played, "battle UI transition hooks should all run")
 	_expect(FileAccess.file_exists("user://battle_rollback_snapshot.json"), "battle start should persist a rollback snapshot")
 	_expect(not SaveManager.has_run(), "entering battle must not write the main run save")
 	_expect(not FileAccess.file_exists(SaveManager.CHECKPOINT_PATH), "entering battle must not write a main-save checkpoint")
@@ -68,19 +73,38 @@ func _run() -> void:
 	_expect(BattleContractManager.state == BattleContractManager.COMPLETED, "last enemy death should complete elimination")
 	_expect(_port.finish_battle_calls == 1, "completed contract should request battle finish once")
 	_expect(str(_port.last_finish_result.get("contract_id", "")) == "elimination", "finish result should identify the completed contract")
-	_expect(PhaseManager.current_state() == PhaseManager.PREPARE, "victory transition should return to prepare phase")
+	_expect(PhaseManager.current_state() == PhaseManager.SETTLEMENT, "victory transition should enter reward settlement")
 	_expect(PhaseManager.current_level == previous_level + 1, "victory should advance one level")
 	_expect(PlayerData.run_completed_levels == previous_completed + 1, "victory should increment completed run levels")
 	_expect(PhaseManager.is_post_battle_collect_gate_active(), "prepare transition should open the post-battle collection gate")
-	_expect(_ui.purchase_refresh_reset, "third-battle shop cycle should reset purchase refresh cost")
+	_expect(not _ui.purchase_refresh_reset, "shop refresh must wait until the rest protocol is selected")
 	_expect(PhaseManager.is_full_shop_open(), "full shop should open after every third completed battle")
 	_expect(SaveManager.has_run(), "victory return to prepare must write the main run save")
 
 	PhaseManager.complete_post_battle_collect_gate()
-	await get_tree().create_timer(1.65).timeout
+	await get_tree().process_frame
 	await get_tree().process_frame
 	_expect(not PhaseManager.is_post_battle_collect_gate_active(), "collection gate should be explicitly completable")
 	_expect(_ui.standard_reward_requests == 1, "standard battle reward should be requested once after the collection gate")
+	_expect(not _ui.standard_reward_options.is_empty(), "settlement should provide reward options")
+	_expect(_ui.standard_reward_confirm.is_valid(), "settlement should retain the reward confirmation callback")
+	if _ui.standard_reward_confirm.is_valid() and not _ui.standard_reward_options.is_empty():
+		_ui.standard_reward_confirm.call(_ui.standard_reward_options[0])
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_expect(PhaseManager.current_state() == PhaseManager.PROTOCOL_SELECTION, "reward confirmation should advance to protocol selection")
+
+	_owner.route_flow.request_battle_contract()
+	await get_tree().process_frame
+	var rest_options: Array = _ui.received_options.filter(func(option): return option.contract_id == &"rest")
+	_expect(rest_options.size() == 1, "every third completed battle should offer one rest protocol")
+	if not rest_options.is_empty():
+		_expect(BattleContractManager.select_contract(rest_options[0]), "rest protocol should be selectable")
+		_ui.confirm_callback.call()
+		await get_tree().process_frame
+		_expect(PhaseManager.current_state() == PhaseManager.REST, "rest protocol should enter the rest phase")
+		_expect(_ui.rest_entry_prepared and _ui.rest_intro_played, "rest protocol should prepare and play the rest-area arrival transition")
+		_expect(_ui.purchase_refresh_reset, "entering the rest protocol should reset the full-shop refresh cost")
 	_finish()
 
 func _reset_runtime_state() -> void:

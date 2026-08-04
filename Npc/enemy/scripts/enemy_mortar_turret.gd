@@ -4,6 +4,8 @@ class_name EnemyMortarTurret
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const AREA_EFFECT_SCENE := preload("res://Combat/area_effect/area_effect.tscn")
 const WARNING_SCENE := preload("res://Npc/enemy/scenes/target_warning.tscn")
+const DESCENT_VFX_SCENE := preload("res://Npc/enemy/scenes/mortar_shell_descent_vfx.tscn")
+const IMPACT_VISUAL_FRAMES := preload("res://asset/images/effects/mortar_impact/mortar_impact_frames.tres")
 
 @export var detect_range: float = 560.0
 @export var attack_range: float = 360.0
@@ -19,6 +21,7 @@ var _casting: bool = false
 var _cast_remaining: float = 0.0
 var _is_stationary_mode: bool = false
 var _target_position: Vector2 = Vector2.ZERO
+var _active_descent_vfx: MortarShellDescentVfx = null
 
 func _ready() -> void:
 	super._ready()
@@ -74,8 +77,10 @@ func _process_attack(delta: float) -> void:
 		return
 	if _casting:
 		_cast_remaining -= delta
+		_sync_descent_visual_progress()
 		if _cast_remaining <= 0.0:
 			_casting = false
+			_clear_descent_visual()
 			_spawn_mortar_impact(_target_position)
 			_cooldown_remaining = cooldown_duration
 		return
@@ -93,10 +98,14 @@ func _process_attack(delta: float) -> void:
 	_casting = true
 	_cast_remaining = cast_delay
 	_spawn_warning(_target_position)
+	_spawn_descent_visual(_target_position)
 
 func _cancel_cast() -> void:
+	var was_casting := _casting
 	_casting = false
 	_cast_remaining = 0.0
+	if was_casting:
+		_clear_descent_visual()
 
 func _spawn_warning(world_pos: Vector2) -> void:
 	var warning := WARNING_SCENE.instantiate() as TargetWarning
@@ -108,6 +117,27 @@ func _spawn_warning(world_pos: Vector2) -> void:
 	warning.visual_preset = TargetWarning.VisualPreset.DODGE_STYLE
 	call_deferred("add_sibling", warning)
 
+func _spawn_descent_visual(world_pos: Vector2) -> void:
+	_clear_descent_visual()
+	var visual := DESCENT_VFX_SCENE.instantiate() as MortarShellDescentVfx
+	if visual == null:
+		return
+	visual.global_position = world_pos
+	_active_descent_vfx = visual
+	call_deferred("add_sibling", visual)
+
+func _sync_descent_visual_progress() -> void:
+	if _active_descent_vfx == null or not is_instance_valid(_active_descent_vfx):
+		return
+	var safe_cast_delay := maxf(cast_delay, 0.01)
+	var progress := 1.0 - clampf(_cast_remaining / safe_cast_delay, 0.0, 1.0)
+	_active_descent_vfx.set_descent_progress(progress)
+
+func _clear_descent_visual() -> void:
+	if _active_descent_vfx != null and is_instance_valid(_active_descent_vfx):
+		_active_descent_vfx.queue_free()
+	_active_descent_vfx = null
+
 func _spawn_mortar_impact(world_pos: Vector2) -> void:
 	var area := AREA_EFFECT_SCENE.instantiate() as AreaEffect
 	if area == null:
@@ -118,10 +148,21 @@ func _spawn_mortar_impact(world_pos: Vector2) -> void:
 	area.target_group = AreaEffect.TargetGroup.ALLIES
 	area.one_shot_damage = max(1, int(round(float(max(1, damage)) * maxf(aoe_damage_multiplier, 1.0))))
 	area.tick_damage = 0
-	area.visual_enabled = false
-	area.draw_enabled = true
+	area.visual_enabled = true
+	area.use_animated_visual = true
+	area.animated_visual_is_ground = false
+	area.visual_frames = IMPACT_VISUAL_FRAMES
+	area.visual_animation = &"impact"
+	area.visual_duration = 0.25
+	area.visual_playback_speed = 1.0
+	area.visual_modulate = Color.WHITE
+	area.draw_enabled = false
 	area.debug_fill_color = Color(PALETTE.ENEMY_PRIMARY, 0.20)
 	area.debug_line_color = Color(PALETTE.ENEMY_SECONDARY, 0.98)
 	area.apply_once_per_target = true
 	area.source_node = self
 	call_deferred("add_sibling", area)
+
+func _exit_tree() -> void:
+	_clear_descent_visual()
+	super._exit_tree()

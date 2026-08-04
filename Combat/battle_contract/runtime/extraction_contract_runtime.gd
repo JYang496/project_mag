@@ -26,9 +26,11 @@ func start(combat_port, parameters: Dictionary) -> void:
 	port.request_external_victory_control(true)
 	port.request_configure_continuous_spawning(true)
 	var level := int(port.get_level_index())
-	duration_sec = float(parameters.get("survival_duration_early_sec", 32.0)) if level < 4 else (float(parameters.get("survival_duration_mid_sec", 40.0)) if level < 8 else float(parameters.get("survival_duration_late_sec", 48.0)))
+	var early_level_count := maxi(int(parameters.get("early_level_count", 4)), 0)
+	var mid_level_count := maxi(int(parameters.get("mid_level_count", 8)), early_level_count)
+	duration_sec = float(parameters.get("survival_duration_early_sec", 32.0)) if level < early_level_count else (float(parameters.get("survival_duration_mid_sec", 40.0)) if level < mid_level_count else float(parameters.get("survival_duration_late_sec", 48.0)))
 	remaining_sec = duration_sec
-	escape_duration_sec = float(parameters.get("escape_duration_early_sec", 18.0)) if level < 4 else (float(parameters.get("escape_duration_mid_sec", 16.0)) if level < 8 else float(parameters.get("escape_duration_late_sec", 14.0)))
+	escape_duration_sec = float(parameters.get("escape_duration_early_sec", 18.0)) if level < early_level_count else (float(parameters.get("escape_duration_mid_sec", 16.0)) if level < mid_level_count else float(parameters.get("escape_duration_late_sec", 14.0)))
 	escape_duration_sec = maxf(escape_duration_sec, 1.0)
 	escape_remaining_sec = escape_duration_sec
 	pursuit_wave_min = maxi(int(parameters.get("pursuit_wave_min", 6)), 0)

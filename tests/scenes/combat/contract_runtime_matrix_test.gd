@@ -7,6 +7,7 @@ const OperationRuntime = preload("res://Combat/battle_contract/runtime/operation
 const ContainmentRuntime = preload("res://Combat/battle_contract/runtime/containment_contract_runtime.gd")
 const ExtractionRuntime = preload("res://Combat/battle_contract/runtime/extraction_contract_runtime.gd")
 const RewardRuntime = preload("res://Combat/battle_contract/runtime/reward_contract_runtime.gd")
+const RewardEnemyScene = preload("res://Npc/enemy/scenes/reward_enemy.tscn")
 
 var failures: PackedStringArray = []
 
@@ -34,6 +35,20 @@ func _completed_collector(snapshot: Dictionary, results: Array) -> void:
 	results.append(snapshot.duplicate(true))
 
 func _test_elimination() -> void:
+	var configured_port = FakePort.new()
+	configured_port.level_index = 4
+	var configured_runtime = EliminationRuntime.new()
+	configured_runtime.start(configured_port, {"batch_count_min": 2, "batch_count_max": 6, "levels_per_batch_step": 2, "early_release_ratio": 0.5, "batch_wait_timeout_sec": 5.0, "standard_duration_sec": 33.0})
+	configured_port.battle_tick.emit({"delta_sec": 0.1})
+	_expect(configured_runtime.total_batches == 4 and int(configured_port.configured_budget.get("batch_count", 0)) == 4, "elimination must derive batch count from protocol parameters")
+	_expect(is_equal_approx(configured_runtime.early_release_ratio, 0.5) and is_equal_approx(configured_runtime.batch_wait_timeout_sec, 5.0), "elimination release pacing must come from protocol parameters")
+	_expect(is_equal_approx(configured_runtime.standard_duration_sec, 33.0), "elimination reward baseline must come from protocol parameters")
+	configured_port.enemy_spawned.emit({})
+	configured_port.enemy_spawned.emit({})
+	configured_port.enemy_died.emit({"was_killed": true, "scaled_hp": 100})
+	_expect(configured_port.released_batches == 1, "configured elimination release ratio must advance the next batch")
+	configured_runtime.stop()
+
 	var port = FakePort.new()
 	var runtime = EliminationRuntime.new()
 	var results: Array = []
@@ -54,16 +69,18 @@ func _test_elimination() -> void:
 
 func _test_survival() -> void:
 	var port = FakePort.new()
+	port.level_duration_sec = 30.0
 	var runtime = SurvivalRuntime.new()
 	var results: Array = []
 	runtime.completed.connect(_completed_collector.bind(results))
-	runtime.start(port, {})
-	_expect(is_equal_approx(port.configured_duration, 45.0), "survival early duration must be 45 seconds")
+	runtime.start(port, {"threat_step_sec": 15.0})
+	_expect(is_equal_approx(runtime.duration_sec, 30.0), "survival must use the current level duration")
+	_expect(is_zero_approx(port.configured_duration), "survival must not override the current level duration")
 	port.enemy_died.emit({"was_killed": true, "scaled_hp": 500})
 	_expect(port.heals == [5], "survival resolve should heal once per kill event crossing the threshold")
-	port.battle_tick.emit({"delta_sec": 30.0})
+	port.battle_tick.emit({"delta_sec": 29.0})
 	_expect(port.configured_threat > 1.0 and results.is_empty(), "survival must raise threat without completing early")
-	port.battle_tick.emit({"delta_sec": 15.0})
+	port.battle_tick.emit({"delta_sec": 1.0})
 	port.battle_tick.emit({"delta_sec": 1.0})
 	_expect(results.size() == 1, "survival completion must be guarded against repeat ticks")
 	_expect(port.stop_spawning_calls == 1 and port.evacuations.size() == 1, "survival completion must stop spawning and evacuate once")
@@ -71,6 +88,30 @@ func _test_survival() -> void:
 	_expect(is_equal_approx(port.configured_threat, 1.0), "survival stop must reset threat")
 
 func _test_operation() -> void:
+	var configured_port = FakePort.new()
+	var configured_runtime = OperationRuntime.new()
+	var configured_results: Array = []
+	configured_runtime.completed.connect(_completed_collector.bind(configured_results))
+	configured_runtime.start(configured_port, {"beacon_count": 1, "charge_time_min_sec": 6.0, "charge_time_max_sec": 6.0, "duration_buffer_sec": 5.0})
+	_expect(configured_runtime.total_beacons == 1 and is_equal_approx(configured_port.configured_duration, 11.0), "operation target count and duration buffer must come from protocol parameters")
+	configured_port.battle_tick.emit({"delta_sec": 0.1})
+	configured_port.beacon_presence_changed.emit({"beacon_id": 1, "player_inside": true, "enemy_count": 0})
+	configured_port.battle_tick.emit({"delta_sec": 6.0})
+	_expect(configured_results.size() == 1, "one-beacon operation configuration must complete after one beacon")
+	configured_runtime.stop()
+
+	var early_port = FakePort.new()
+	var early_runtime = OperationRuntime.new()
+	early_runtime.start(early_port, {"charge_time_min_sec": 10.0, "charge_time_max_sec": 14.0, "early_charge_time_sec": 8.0, "early_level_count": 4})
+	_expect(is_equal_approx(early_runtime.charge_duration_sec, 8.0) and is_equal_approx(early_port.configured_duration, 28.0), "operation must use its short variant during the first four levels")
+	early_runtime.stop()
+	var normal_port = FakePort.new()
+	normal_port.level_index = 4
+	var normal_runtime = OperationRuntime.new()
+	normal_runtime.start(normal_port, {"charge_time_min_sec": 10.0, "charge_time_max_sec": 14.0, "early_charge_time_sec": 8.0, "early_level_count": 4})
+	_expect(is_equal_approx(normal_runtime.charge_duration_sec, 12.0) and is_equal_approx(normal_port.configured_duration, 36.0), "operation must restore its standard duration from level 5")
+	normal_runtime.stop()
+
 	var port = FakePort.new()
 	var runtime = OperationRuntime.new()
 	var results: Array = []
@@ -91,6 +132,13 @@ func _test_operation() -> void:
 	runtime.stop()
 
 func _test_containment() -> void:
+	var configured_port = FakePort.new()
+	var configured_runtime = ContainmentRuntime.new()
+	configured_runtime.start(configured_port, {"rift_count": 2, "seal_duration_sec": 8.0, "reinforcement_interval_sec": 9.0, "duration_buffer_sec": 5.0, "performance_wave_allowance_per_rift": 2.0})
+	_expect(configured_runtime.rift_count == 2 and is_equal_approx(configured_port.configured_duration, 21.0), "containment target count and duration buffer must come from protocol parameters")
+	_expect(is_equal_approx(configured_runtime.performance_wave_allowance_per_rift, 2.0), "containment performance allowance must come from protocol parameters")
+	configured_runtime.stop()
+
 	var port = FakePort.new()
 	var runtime = ContainmentRuntime.new()
 	var results: Array = []
@@ -116,6 +164,13 @@ func _test_containment() -> void:
 	_expect(is_equal_approx(port.configured_threat, 1.0), "containment stop must reset threat")
 
 func _test_extraction() -> void:
+	var configured_port = FakePort.new()
+	configured_port.level_index = 2
+	var configured_runtime = ExtractionRuntime.new()
+	configured_runtime.start(configured_port, {"early_level_count": 2, "mid_level_count": 5, "survival_duration_early_sec": 11.0, "survival_duration_mid_sec": 22.0, "survival_duration_late_sec": 33.0, "escape_duration_early_sec": 7.0, "escape_duration_mid_sec": 6.0, "escape_duration_late_sec": 5.0})
+	_expect(is_equal_approx(configured_runtime.duration_sec, 22.0) and is_equal_approx(configured_runtime.escape_duration_sec, 6.0), "extraction tier boundaries must come from protocol parameters")
+	configured_runtime.stop()
+
 	var port = FakePort.new()
 	var runtime = ExtractionRuntime.new()
 	var results: Array = []
@@ -134,6 +189,23 @@ func _test_extraction() -> void:
 	runtime.stop()
 
 func _test_reward() -> void:
+	var reward_enemy := RewardEnemyScene.instantiate() as BaseEnemy
+	var reward_body := reward_enemy.get_node("Body") as Sprite2D
+	_expect(reward_body.texture != null, "reward enemy must bind its texture to the registered Body billboard")
+	_expect(reward_body.get_node_or_null("RewardSprite") == null, "reward enemy must not hide its visual in an unregistered child sprite")
+	reward_enemy.free()
+	var early_port = FakePort.new()
+	var early_runtime = RewardRuntime.new()
+	early_runtime.start(early_port, {"duration_sec": 45.0, "early_duration_sec": 30.0, "early_level_count": 4})
+	_expect(is_equal_approx(early_runtime.duration_sec, 30.0), "reward protocol must use a 30-second timer during the first four levels")
+	early_runtime.stop()
+	var normal_port = FakePort.new()
+	normal_port.level_index = 4
+	var normal_runtime = RewardRuntime.new()
+	normal_runtime.start(normal_port, {"duration_sec": 45.0, "early_duration_sec": 30.0, "early_level_count": 4})
+	_expect(is_equal_approx(normal_runtime.duration_sec, 45.0), "reward protocol must restore its 45-second timer from level 5")
+	normal_runtime.stop()
+
 	var port = FakePort.new()
 	var runtime = RewardRuntime.new()
 	var results: Array = []

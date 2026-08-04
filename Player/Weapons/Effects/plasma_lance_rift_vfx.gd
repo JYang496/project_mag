@@ -20,6 +20,7 @@ func setup(from_pos: Vector2, to_pos: Vector2, width: float, duration: float) ->
 
 
 func _ready() -> void:
+	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	top_level = true
 	global_position = Vector2.ZERO
 	z_index = 220
@@ -32,6 +33,9 @@ func _ready() -> void:
 		if is_instance_valid(self):
 			queue_free()
 	)
+
+func cleanup_for_battle_end() -> void:
+	queue_free()
 
 
 func _build_lines() -> void:

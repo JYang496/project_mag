@@ -8,10 +8,10 @@ const EXPANDED_SIZE := Vector2(340.0, 112.0)
 const INTRO_EXPANDED_SEC := 2.8
 const COMPLETED_VISIBLE_SEC := 1.8
 const PROGRESS_SMOOTHING_SPEED := 7.0
-const INTRO_MOVE_SEC := 0.42
-const INTRO_HOLD_SEC := 1.8
-const INTRO_COLLAPSE_SEC := 0.52
-const INTRO_SHELL_MOVE_DELAY_SEC := 0.14
+const INTRO_MOVE_SEC := 0.30
+const INTRO_HOLD_SEC := 0.58
+const INTRO_COLLAPSE_SEC := 0.38
+const INTRO_SHELL_MOVE_DELAY_SEC := 0.10
 const HUD_CROSSFADE_DELAY_SEC := 0.22
 const HUD_CROSSFADE_SEC := 0.22
 const HUD_PROGRESS_STAGGER_SEC := 0.08
@@ -104,8 +104,11 @@ func layout(viewport_size: Vector2) -> void:
 		return
 	panel.position = _hud_target_position(viewport_size)
 
-func refresh() -> void:
-	if panel == null or _intro_playing or PhaseManager.current_state() != PhaseManager.BATTLE or BattleContractManager.state != BattleContractManager.ACTIVE: return
+func refresh(allow_deployment_handoff: bool = false) -> void:
+	var phase := PhaseManager.current_state()
+	var phase_allows_hud := phase == PhaseManager.BATTLE \
+		or (allow_deployment_handoff and phase == PhaseManager.BATTLE_STARTING)
+	if panel == null or _intro_playing or not phase_allows_hud or BattleContractManager.state != BattleContractManager.ACTIVE: return
 	var snapshot := BattleContractManager.runtime_snapshot
 	if snapshot == _last_snapshot: return
 	_last_snapshot = snapshot.duplicate(true)
@@ -202,7 +205,7 @@ func _on_state_changed(state: StringName) -> void:
 		panel.visible = false
 
 func _on_phase_changed(phase: String) -> void:
-	if phase != PhaseManager.BATTLE:
+	if phase not in [PhaseManager.BATTLE_STARTING, PhaseManager.BATTLE]:
 		_clear_intro_control()
 		_boss_intro = false
 		panel.visible = false
@@ -310,7 +313,7 @@ func play_prepared_intro() -> void:
 	if handoff_to_contract_hud:
 		_last_snapshot = {}
 		_intro_playing = false
-		refresh()
+		refresh(true)
 		_intro_playing = true
 		panel.modulate.a = 0.0
 		progress.modulate.a = 0.0
@@ -355,7 +358,7 @@ func _build_contract_parameters(id: String, parameters: Dictionary) -> String:
 	var snapshot := BattleContractManager.runtime_snapshot
 	match id:
 		"elimination": text = "%d" % snapshot.get("total_batches", parameters.get("batch_count_min", 3)) + " " + LocalizationManager.tr_key("battle_contract.intro.unit.waves", "waves")
-		"survival": text = "%d s" % snapshot.get("duration_sec", parameters.get("duration_early_sec", 45))
+		"survival": text = "%d s" % snapshot.get("duration_sec", BattleContractManager.get_battle_intro_snapshot().get("time_out_sec", 30))
 		"operation": text = "%d × %.0f s" % [snapshot.get("total_beacons", parameters.get("beacon_count", 2)), snapshot.get("charge_duration_sec", parameters.get("charge_time_min_sec", 10))]
 		"containment": text = "%d × %.0f s" % [snapshot.get("total_rifts", parameters.get("rift_count", 3)), parameters.get("seal_duration_sec", 8.0)]
 		"extraction": text = "%.0f s + %.0f s" % [snapshot.get("duration_sec", parameters.get("survival_duration_early_sec", 32)), snapshot.get("escape_duration_sec", parameters.get("escape_duration_early_sec", 18))]

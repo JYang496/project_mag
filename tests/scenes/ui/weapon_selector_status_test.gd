@@ -481,11 +481,10 @@ func _test_reload_hint_is_unambiguous() -> void:
 	_expect(hint.visible, "the reload key hint must remain visible for the main weapon")
 	_expect(hint.text == LocalizationManager.tr_key("ui.weapon_hud.reload_hint", "[R]  RELOAD"),
 		"the R hint must describe reload only")
-	_expect(slots[0].tooltip_text == LocalizationManager.tr_format(
-		"ui.weapon_hud.main_tooltip",
-		{"weapon": LocalizationManager.get_weapon_instance_display_name(weapon)},
-		"{weapon}\nMAIN WEAPON · R: RELOAD · Q/E: SWITCH"
-	), "the main weapon tooltip must describe R as reload")
+	_expect(slots[0].tooltip_text.contains(LocalizationManager.get_weapon_instance_display_name(weapon)),
+		"the main weapon tooltip must retain the weapon identity")
+	_expect(slots[0].tooltip_text.contains("R: RELOAD") or slots[0].tooltip_text.contains("R：装填"),
+		"the main weapon tooltip must describe R as reload")
 	_expect(
 		not slots[0].has_node("MainhandBadge"),
 		"mainhand slot must not show a role badge over the ammo bar"

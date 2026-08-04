@@ -12,6 +12,8 @@ const HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hud_presenter
 const HUD_REFRESH_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/hud_refresh_controller.gd")
 const TASK_OBJECTIVE_HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/task_objective_hud_presenter.gd")
 const BATTLE_CONTRACT_HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/battle_contract_hud_presenter.gd")
+const BATTLEFIELD_DEPLOYMENT_PRESENTER_SCRIPT := preload("res://UI/scripts/components/battlefield_deployment_presenter.gd")
+const REST_AREA_ARRIVAL_PRESENTER_SCRIPT := preload("res://UI/scripts/components/rest_area_arrival_presenter.gd")
 const UI_DIRTY_SIGNAL_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/ui_dirty_signal_controller.gd")
 const WEAPON_PASSIVE_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_passive_presenter.gd")
 const WEAPON_PASSIVE_PANEL_VIEW_SCRIPT := preload("res://UI/scripts/components/weapon_passive_panel_view.gd")
@@ -34,6 +36,8 @@ const PAUSE_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/pause_u
 const LOCALIZATION_REFRESH_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/localization_refresh_controller.gd")
 const UI_BOOTSTRAP_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/ui_bootstrap_controller.gd")
 const HINT_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hint_presenter.gd")
+const HUD_PHASE_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/hud_phase_controller.gd")
+const TOAST_PRESENTER_SCRIPT := preload("res://UI/scripts/components/toast_presenter.gd")
 const BATTLE_CURSOR_PRESENTER_SCRIPT := preload("res://UI/scripts/components/battle_cursor_presenter.gd")
 const VICTORY_TRANSITION_SCRIPT := preload("res://UI/scripts/components/victory_transition.gd")
 const BATTLE_CONTRACT_SELECTION_PANEL_SCENE := preload("res://UI/scenes/battle_contract_selection_panel.tscn")
@@ -189,6 +193,10 @@ var hud_presenter: HudPresenter
 var hud_refresh_controller
 var task_objective_hud_presenter
 var battle_contract_hud_presenter
+var battlefield_deployment_presenter
+var rest_area_arrival_presenter
+var hud_phase_controller
+var toast_presenter
 var ui_dirty_signal_controller
 var weapon_passive_presenter
 var weapon_passive_panel_view
@@ -222,6 +230,7 @@ const WEAPON_PASSIVE_PANEL_REFRESH_INTERVAL := 1.0
 var _shop_purchase_action_dirty := true
 var _purchase_prepare_refresh_pending := false
 var _rest_area_purchase_prewarm_generation := 0
+var _initial_rest_area_entry_prepared := false
 var _management_action_refresh_scheduled := false
 @warning_ignore("unused_private_class_variable")
 var _passive_status_signal_weapons: Array[Node] = []
@@ -247,6 +256,10 @@ func _ready():
 	LoadingPerformance.end_segment("ui_bootstrap_pause")
 	_init_task_objective_hud_presenter()
 	_init_battle_contract_hud_presenter()
+	_init_battlefield_deployment_presenter()
+	_init_rest_area_arrival_presenter()
+	_init_hud_phase_controller()
+	_init_toast_presenter()
 	if not BattleContractManager.performance_reward_granted.is_connected(_on_battle_contract_reward):
 		BattleContractManager.performance_reward_granted.connect(_on_battle_contract_reward)
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
@@ -295,15 +308,48 @@ func prepare_battle_contract_intro() -> void:
 	if card != null and battle_contract_hud_presenter != null:
 		battle_contract_hud_presenter.prepare_contract_intro(card, BattleContractManager.selected_contract)
 
-func play_battle_entry_intro(is_boss: bool = false) -> void:
-	if battle_contract_hud_presenter == null:
+func prepare_battle_entry_transition() -> void:
+	if battlefield_deployment_presenter != null:
+		battlefield_deployment_presenter.capture_previous_topology()
+
+func prepare_rest_area_entry_transition() -> void:
+	if rest_area_arrival_presenter != null:
+		rest_area_arrival_presenter.prepare()
+
+func play_rest_area_entry_intro() -> void:
+	if rest_area_arrival_presenter != null:
+		await rest_area_arrival_presenter.play()
+
+func prepare_initial_rest_area_entry() -> bool:
+	if _initial_rest_area_entry_prepared \
+			or PhaseManager.current_state() != PhaseManager.REST \
+			or rest_area_arrival_presenter == null:
+		return false
+	_initial_rest_area_entry_prepared = true
+	rest_area_arrival_presenter.prepare(true)
+	return true
+
+func play_initial_rest_area_entry() -> void:
+	if not _initial_rest_area_entry_prepared or rest_area_arrival_presenter == null:
 		return
-	if is_boss:
+	await rest_area_arrival_presenter.play(true)
+
+func play_battle_entry_intro(is_boss: bool = false) -> void:
+	if is_boss and battle_contract_hud_presenter != null:
 		battle_contract_hud_presenter.prepare_boss_intro(BattleContractManager.get_battle_intro_snapshot())
-	battle_contract_hud_presenter.play_prepared_intro()
+	if battle_contract_hud_presenter != null:
+		battle_contract_hud_presenter.call_deferred("play_prepared_intro")
+	if battlefield_deployment_presenter != null:
+		await battlefield_deployment_presenter.play()
+	elif battle_contract_hud_presenter != null:
+		await battle_contract_hud_presenter.play_prepared_intro()
 
 func _exit_tree() -> void:
 	_rest_area_purchase_prewarm_generation += 1
+	if battlefield_deployment_presenter != null:
+		battlefield_deployment_presenter.cancel()
+	if rest_area_arrival_presenter != null:
+		rest_area_arrival_presenter.cancel()
 	_disconnect_ui_dirty_signals()
 	_disconnect_weapon_passive_status_signals()
 	if modal_ui_controller != null:
@@ -927,6 +973,8 @@ func _physics_process(delta: float) -> void:
 	if battle_contract_hud_presenter != null: battle_contract_hud_presenter.refresh()
 	_refresh_weapon_passive_panel_if_needed(delta)
 	_refresh_controls_hint_visibility()
+	if hud_phase_controller != null:
+		hud_phase_controller.refresh()
 	if controls_hint_view != null and is_instance_valid(controls_hint_view):
 		controls_hint_view.tick(delta)
 	_update_rest_area_hover_hint_position()
@@ -995,7 +1043,7 @@ func _init_task_objective_hud_presenter() -> void:
 	if task_objective_hud_presenter != null:
 		return
 	task_objective_hud_presenter = TASK_OBJECTIVE_HUD_PRESENTER_SCRIPT.new()
-	task_objective_hud_presenter.bind(self, _ensure_right_hud_stack())
+	task_objective_hud_presenter.bind(self, _ensure_left_contract_hud_stack())
 	task_objective_hud_presenter.layout(get_viewport().get_visible_rect().size)
 
 func _init_battle_contract_hud_presenter() -> void:
@@ -1003,6 +1051,30 @@ func _init_battle_contract_hud_presenter() -> void:
 	battle_contract_hud_presenter = BATTLE_CONTRACT_HUD_PRESENTER_SCRIPT.new()
 	battle_contract_hud_presenter.bind(_ensure_left_contract_hud_stack(), gui_root)
 	battle_contract_hud_presenter.layout(get_viewport().get_visible_rect().size)
+
+func _init_battlefield_deployment_presenter() -> void:
+	if battlefield_deployment_presenter != null:
+		return
+	battlefield_deployment_presenter = BATTLEFIELD_DEPLOYMENT_PRESENTER_SCRIPT.new()
+	battlefield_deployment_presenter.bind(self, gui_root)
+
+func _init_rest_area_arrival_presenter() -> void:
+	if rest_area_arrival_presenter != null:
+		return
+	rest_area_arrival_presenter = REST_AREA_ARRIVAL_PRESENTER_SCRIPT.new()
+	rest_area_arrival_presenter.bind(self, gui_root)
+
+func _init_hud_phase_controller() -> void:
+	if hud_phase_controller != null:
+		return
+	hud_phase_controller = HUD_PHASE_CONTROLLER_SCRIPT.new()
+	hud_phase_controller.bind(self)
+
+func _init_toast_presenter() -> void:
+	if toast_presenter != null:
+		return
+	toast_presenter = TOAST_PRESENTER_SCRIPT.new()
+	toast_presenter.bind(self)
 
 func _init_ui_dirty_signal_controller() -> void:
 	if ui_dirty_signal_controller != null:
@@ -1200,6 +1272,7 @@ func _ensure_rest_area_view_instance() -> void:
 	warehouse_primary_panel = warehouse_primary_root.get_node("Panel") as Panel
 	board_edit_primary_panel = board_edit_primary_root.get_node("Panel") as Panel
 	battle_start_primary_panel = battle_start_primary_root.get_node("Panel") as Panel
+	battle_start_primary_panel.set_meta(&"primary_menu_variant", &"single_action")
 	if ui_layout_controller != null:
 		ui_layout_controller.apply_responsive_layout()
 	_refresh_localized_static_text()
@@ -1385,6 +1458,11 @@ func _on_phase_changed(new_phase: String) -> void:
 	_update_controls_guide_for_phase(new_phase)
 	_update_cursor_presentation()
 	_refresh_task_objective_hud(true)
+	if hud_phase_controller != null:
+		hud_phase_controller.invalidate()
+		hud_phase_controller.refresh(new_phase != PhaseManager.GAMEOVER)
+	if new_phase == PhaseManager.GAMEOVER and toast_presenter != null:
+		toast_presenter.clear()
 
 func _should_use_battle_ring_cursor() -> bool:
 	if PhaseManager.current_state() != PhaseManager.BATTLE:
@@ -1457,14 +1535,15 @@ func _ensure_left_contract_hud_stack() -> VBoxContainer:
 	if left_contract_hud_stack != null and is_instance_valid(left_contract_hud_stack):
 		return left_contract_hud_stack
 	left_contract_hud_stack = VBoxContainer.new()
-	left_contract_hud_stack.name = "LeftContractHudStack"
+	left_contract_hud_stack.name = "ObjectiveHudStack"
 	left_contract_hud_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	left_contract_hud_stack.z_index = 50
 	left_contract_hud_stack.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	left_contract_hud_stack.offset_left = 24.0
-	left_contract_hud_stack.offset_top = 24.0
+	left_contract_hud_stack.offset_top = 78.0
 	left_contract_hud_stack.offset_right = 364.0
-	left_contract_hud_stack.offset_bottom = 144.0
+	left_contract_hud_stack.offset_bottom = 360.0
+	left_contract_hud_stack.add_theme_constant_override("separation", 10)
 	gui_root.add_child(left_contract_hud_stack)
 	return left_contract_hud_stack
 
@@ -1481,7 +1560,7 @@ func _layout_controls_hint_panel(viewport_size: Vector2) -> void:
 
 func _update_controls_guide_for_phase(phase: String) -> void:
 	_init_modal_ui_controller()
-	modal_ui_controller.update_controls_guide_for_phase(phase, _is_primary_menu_open(), _get_secondary_menu_context())
+	modal_ui_controller.update_controls_guide_for_phase(phase, _is_primary_menu_open(), _get_secondary_menu_context(), _get_primary_menu_context())
 
 func _refresh_controls_hint_visibility() -> void:
 	if battle_contract_selection_panel != null \
@@ -1491,7 +1570,7 @@ func _refresh_controls_hint_visibility() -> void:
 			controls_hint_view.visible = false
 		return
 	_init_modal_ui_controller()
-	modal_ui_controller.refresh_controls_hint_visibility(_is_primary_menu_open(), _get_secondary_menu_context())
+	modal_ui_controller.refresh_controls_hint_visibility(_is_primary_menu_open(), _get_secondary_menu_context(), _get_primary_menu_context())
 
 func show_controls_context_reminder(action: StringName, message: String, force: bool = false) -> bool:
 	if controls_hint_view == null or not is_instance_valid(controls_hint_view):
@@ -1512,6 +1591,11 @@ func _get_secondary_menu_context() -> StringName:
 	if rest_area_ui_controller:
 		return rest_area_ui_controller.get_secondary_menu_context()
 	return &""
+
+func _get_primary_menu_context() -> StringName:
+	if rest_area_ui_controller != null:
+		return rest_area_ui_controller.primary_menu_id
+	return _rest_area_primary_menu_id
 
 func _is_rest_area_world_interaction_blocked() -> bool:
 	if rest_area_ui_controller:
@@ -1623,10 +1707,21 @@ func _on_viewport_size_changed() -> void:
 func _apply_responsive_layout() -> void:
 	_init_ui_layout_controller()
 	ui_layout_controller.apply_responsive_layout()
+	if left_contract_hud_stack != null and is_instance_valid(left_contract_hud_stack):
+		var viewport_size := get_viewport().get_visible_rect().size
+		var safe_margin := UI_LAYOUT_POLICY_SCRIPT.safe_margin(viewport_size)
+		left_contract_hud_stack.offset_left = safe_margin.x
+		left_contract_hud_stack.offset_top = safe_margin.y + 54.0
+		left_contract_hud_stack.offset_right = safe_margin.x + UI_LAYOUT_POLICY_SCRIPT.HUD_LEFT_WIDTH
+		left_contract_hud_stack.offset_bottom = minf(viewport_size.y - safe_margin.y, safe_margin.y + 336.0)
 	if task_objective_hud_presenter != null:
 		task_objective_hud_presenter.layout(get_viewport().get_visible_rect().size)
 	if battle_contract_hud_presenter != null:
 		battle_contract_hud_presenter.layout(get_viewport().get_visible_rect().size)
+	if hud_phase_controller != null:
+		hud_phase_controller.layout(get_viewport().get_visible_rect().size)
+	if toast_presenter != null:
+		toast_presenter.layout(get_viewport().get_visible_rect().size)
 
 # Quest, rest-area hints, and cursor overlays
 
@@ -1694,14 +1789,12 @@ func set_quest_hint(text: String) -> void:
 	hint_presenter.set_quest_hint(text)
 
 func show_item_message(text: String, duration: float = 1.8) -> void:
-	set_quest_hint(text)
-	if item_message_timer == null or not is_instance_valid(item_message_timer):
-		_init_item_message_timer()
-	item_message_timer.wait_time = maxf(0.1, duration)
-	item_message_timer.start()
+	_init_toast_presenter()
+	toast_presenter.show_message(text, duration)
 
 func _on_item_message_timeout() -> void:
-	set_quest_hint("")
+	if toast_presenter != null:
+		toast_presenter.clear()
 
 
 # HUD fallback widgets and weapon passive panel
@@ -1759,6 +1852,9 @@ func _on_language_changed(_new_locale: String) -> void:
 	_refresh_heat_fallback_text()
 	_mark_all_hud_dirty()
 	_mark_weapon_passive_panel_dirty()
+	if hud_phase_controller != null:
+		hud_phase_controller.invalidate()
+		hud_phase_controller.refresh(false)
 	if reward_selection_panel and is_instance_valid(reward_selection_panel) and reward_selection_panel.visible:
 		reward_selection_panel._on_language_changed(LocalizationManager.get_locale())
 	if branch_select_panel and is_instance_valid(branch_select_panel) and branch_select_panel.visible:

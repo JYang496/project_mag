@@ -43,14 +43,44 @@ func _run() -> void:
 	if weapon == null or not is_instance_valid(weapon):
 		_fail("UpgradeSelectionStateProbe: first upgrade row had no valid weapon.")
 		return
+	var display_model = items[0].get("display_model", null)
+	if display_model == null or display_model.current_stats.is_empty():
+		_fail("UpgradeSelectionStateProbe: weapon row had no unified display model.")
+		return
+	if int(weapon.level) < int(weapon.max_level) and display_model.upgrade_deltas.is_empty():
+		_fail("UpgradeSelectionStateProbe: upgradeable weapon had no before/after presentation data.")
+		return
 	var previous_level := int(weapon.level)
 	ui.upgrade_management_view.call("_on_item_selected", items[0])
 	if ui._upgrade_selected_item.is_empty():
 		_fail("UpgradeSelectionStateProbe: selection did not sync back to UI owner state.")
 		return
+	await get_tree().process_frame
+	var detail_body := ui.upgrade_management_view.upgrade_detail_body as VBoxContainer
+	var upgrade_summary := detail_body.get_node_or_null("UpgradeChangePanel") as PanelContainer
+	var overview_grid := detail_body.get_node_or_null("WeaponOverviewGrid") as GridContainer
+	if upgrade_summary == null or detail_body.get_child(0) != upgrade_summary:
+		_fail("UpgradeSelectionStateProbe: this-upgrade summary was not the first detail section.")
+		return
+	if overview_grid == null or overview_grid.columns != 2 or overview_grid.get_child_count() != 4:
+		_fail("UpgradeSelectionStateProbe: weapon metadata was not arranged in a compact two-column overview.")
+		return
+	if upgrade_summary.size.x < detail_body.size.x - 1.0:
+		_fail("UpgradeSelectionStateProbe: this-upgrade summary did not fill the available detail width.")
+		return
+	if ui.upgrade_management_view.upgrade_detail_scroll.scroll_vertical != 0:
+		_fail("UpgradeSelectionStateProbe: refreshed weapon details did not return to the upgrade summary.")
+		return
 	ui.upgrade_management_controller.on_action_pressed()
 	if int(weapon.level) != previous_level + 1:
 		_fail("UpgradeSelectionStateProbe: selected weapon was not upgraded.")
+		return
+	var upgraded_level := int(weapon.level)
+	var gold_after_rest_upgrade := PlayerData.player_gold
+	PhaseManager.phase = PhaseManager.PROTOCOL_SELECTION
+	ui.upgrade_management_controller.on_action_pressed()
+	if int(weapon.level) != upgraded_level or PlayerData.player_gold != gold_after_rest_upgrade:
+		_fail("UpgradeSelectionStateProbe: upgrades must be rejected outside the rest phase.")
 		return
 
 	print("PASS: upgrade selection survives controller action sync")

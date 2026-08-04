@@ -2,6 +2,9 @@ extends PanelContainer
 class_name WeaponReplacementPanel
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
+const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
+const WEAPON_DISPLAY_POLICY := preload("res://UI/scripts/presentation/weapon_display_policy.gd")
+const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
 
 const PANEL_BG := Color(0.055, 0.065, 0.072, 0.96)
 const PANEL_LINE := Color(0.42, 0.5, 0.54, 0.55)
@@ -10,7 +13,7 @@ const EMPTY_SLOT_COLOR := Color(0.32, 0.39, 0.43, 0.85)
 
 @onready var title_label: Label = $Margin/Root/Title
 @onready var description_label: Label = $Margin/Root/Description
-@onready var slots: VBoxContainer = $Margin/Root/Slots
+@onready var slots: VBoxContainer = $Margin/Root/SlotsScroll/Slots
 @onready var cancel_button: Button = $Margin/Root/Cancel
 
 var _new_weapon: Weapon
@@ -55,13 +58,14 @@ func open_for_weapon(
 		"weapon": DataHandler.build_weapon_save_payload(new_weapon),
 		"allow_cancel": allow_cancel,
 	})
-	var weapon_name := LocalizationManager.get_weapon_instance_display_name(new_weapon)
+	var display_model = WEAPON_DISPLAY_BUILDER.build_from_instance(new_weapon)
 	title_label.text = LocalizationManager.tr_key("ui.weapon.replace.install_title", "Install Weapon")
-	description_label.text = LocalizationManager.tr_format(
-		"ui.weapon.replace.incoming",
-		{"weapon": weapon_name},
-		weapon_name
-	)
+	var description_parts := PackedStringArray([display_model.display_name])
+	if not display_model.taxonomy_labels.is_empty():
+		description_parts.append(display_model.taxonomy_text())
+	if display_model.first_description_sentence() != "":
+		description_parts.append(display_model.first_description_sentence())
+	description_label.text = " · ".join(description_parts)
 	description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
 	cancel_button.visible = _allow_cancel
@@ -97,8 +101,9 @@ func _rebuild_slots() -> void:
 			slots.add_child(button)
 
 func _make_incoming_weapon_card(weapon: Weapon) -> PanelContainer:
+	var display_model = WEAPON_DISPLAY_BUILDER.build_from_instance(weapon)
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(520, 78)
+	card.custom_minimum_size = Vector2(520, 96)
 	card.add_theme_stylebox_override("panel", _make_panel_style(Color(0.07, 0.085, 0.095, 0.98), _get_weapon_color(weapon), 2))
 
 	var margin := MarginContainer.new()
@@ -118,16 +123,25 @@ func _make_incoming_weapon_card(weapon: Weapon) -> PanelContainer:
 	text_column.add_theme_constant_override("separation", 2)
 	row.add_child(text_column)
 
-	var name_label := _make_slot_label(LocalizationManager.get_weapon_instance_display_name(weapon), 18, Color(0.96, 0.99, 1.0, 1.0))
+	var name_label := _make_slot_label(display_model.display_name, 18, Color(0.96, 0.99, 1.0, 1.0))
 	text_column.add_child(name_label)
 
 	var meta_label := _make_slot_label(_format_weapon_meta(weapon), 14, Color(0.76, 0.84, 0.88, 1.0))
 	text_column.add_child(meta_label)
+	var stats_label := _make_slot_label(
+		WEAPON_STAT_FORMATTER.format_summary(
+			display_model.current_stats,
+			WEAPON_DISPLAY_POLICY.summary_limit(WEAPON_DISPLAY_POLICY.REPLACEMENT_COMPARE)
+		),
+		12,
+		Color(0.72, 0.88, 0.92, 1.0)
+	)
+	text_column.add_child(stats_label)
 	return card
 
 func _make_slot_button(slot_index: int, weapon: Weapon, action_text: String, is_empty: bool) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(520, 66)
+	button.custom_minimum_size = Vector2(520, 88 if not is_empty else 66)
 	button.text = ""
 	button.focus_mode = Control.FOCUS_ALL
 	_apply_button_style(button, EMPTY_SLOT_COLOR if is_empty else _get_weapon_color(weapon))
@@ -165,6 +179,21 @@ func _make_slot_button(slot_index: int, weapon: Weapon, action_text: String, is_
 
 	var meta_label := _make_slot_label(LocalizationManager.tr_key("ui.weapon.replace.empty_slot_hint", "Open slot") if is_empty else _format_weapon_meta(weapon), 14, Color(0.72, 0.80, 0.84, 1.0))
 	text_column.add_child(meta_label)
+	if not is_empty:
+		var compare_label := _make_slot_label(_format_replacement_comparison(_new_weapon, weapon), 11, Color(0.74, 0.88, 0.92, 1.0))
+		text_column.add_child(compare_label)
+		var module_count := weapon.modules.get_child_count() if weapon.modules != null else 0
+		if module_count > 0:
+			var warning_label := _make_slot_label(
+				LocalizationManager.tr_format(
+					"ui.weapon.detail.modules_warning",
+					{"count": module_count},
+					"Replacing removes %d installed modules." % module_count
+				),
+				11,
+				Color(1.0, 0.68, 0.42, 1.0)
+			)
+			text_column.add_child(warning_label)
 
 	var action_label := _make_slot_label(action_text, 15, ACTION_COLOR)
 	action_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -242,26 +271,40 @@ func _get_weapon_color(weapon: Weapon) -> Color:
 func _format_weapon_meta(weapon: Weapon) -> String:
 	if weapon == null or not is_instance_valid(weapon):
 		return ""
-	var module_count := 0
-	if weapon.modules != null:
-		module_count = weapon.modules.get_child_count()
+	var display_model = WEAPON_DISPLAY_BUILDER.build_from_instance(weapon)
 	return LocalizationManager.tr_format(
 		"ui.weapon.meta.level_fuse_mods",
 		{
-			"level": int(weapon.level),
-			"max": int(weapon.max_level),
-			"fuse": int(weapon.fuse),
-			"modules": module_count,
-			"module_max": int(weapon.MAX_MODULE_NUMBER),
+			"level": display_model.level,
+			"max": display_model.max_level,
+			"fuse": display_model.fuse,
+			"modules": display_model.module_count,
+			"module_max": display_model.module_capacity,
 		},
 		"Lv.%d/%d  Fuse %d  Mods %d/%d" % [
-			int(weapon.level),
-			int(weapon.max_level),
-			int(weapon.fuse),
-			module_count,
-			int(weapon.MAX_MODULE_NUMBER),
+			display_model.level,
+			display_model.max_level,
+			display_model.fuse,
+			display_model.module_count,
+			display_model.module_capacity,
 		]
 	)
+
+
+func _format_replacement_comparison(incoming_weapon: Weapon, current_weapon: Weapon) -> String:
+	if incoming_weapon == null or current_weapon == null:
+		return ""
+	var incoming_model = WEAPON_DISPLAY_BUILDER.build_from_instance(incoming_weapon)
+	var current_model = WEAPON_DISPLAY_BUILDER.build_from_instance(current_weapon)
+	var comparison := WEAPON_STAT_FORMATTER.build_deltas(current_model.current_stats, incoming_model.current_stats)
+	var parts := PackedStringArray()
+	for delta_data in comparison:
+		if not bool(delta_data.get("changed", false)):
+			continue
+		parts.append(WEAPON_STAT_FORMATTER.format_delta_line(delta_data))
+		if parts.size() >= WEAPON_DISPLAY_POLICY.summary_limit(WEAPON_DISPLAY_POLICY.REPLACEMENT_COMPARE):
+			break
+	return "  |  ".join(parts)
 
 func _on_empty_slot_selected() -> void:
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
@@ -312,3 +355,4 @@ func _complete(accepted: bool, result: Dictionary) -> void:
 	if _on_complete.is_valid():
 		_on_complete.call_deferred(accepted, result)
 	_on_complete = Callable()
+	PhaseManager.request_settlement_completion_check()

@@ -12,14 +12,14 @@ weight = 10
 
 [sub_resource type="Resource" id="Level_1"]
 script = ExtResource("2_level")
-time_out_sec = 50
-target_total_hp = 500
+time_out_sec = 26
+target_total_hp = 260
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_roll_intro")])
 
 [sub_resource type="Resource" id="Entry_wheel_main"]
 script = ExtResource("3_entry")
 enemy_scene_path = "res://Npc/enemy/scenes/enemy_wheel_cart.tscn"
-start_sec = 10
+start_sec = 5
 weight = 5
 
 [sub_resource type="Resource" id="Entry_roll_support"]
@@ -29,8 +29,8 @@ weight = 10
 
 [sub_resource type="Resource" id="Level_2"]
 script = ExtResource("2_level")
-time_out_sec = 54
-target_total_hp = 720
+time_out_sec = 28
+target_total_hp = 373
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_main"), SubResource("Entry_roll_support")])
 
 [sub_resource type="Resource" id="Entry_roll_chaser"]
@@ -41,19 +41,19 @@ weight = 8
 [sub_resource type="Resource" id="Entry_shield_tutorial"]
 script = ExtResource("3_entry")
 enemy_scene_path = "res://Npc/enemy/scenes/enemy_shield_core.tscn"
-start_sec = 10
+start_sec = 6
 weight = 2
 
 [sub_resource type="Resource" id="Entry_spike_main"]
 script = ExtResource("3_entry")
 enemy_scene_path = "res://Npc/enemy/scenes/enemy_spike_turret.tscn"
-start_sec = 24
+start_sec = 14
 weight = 3
 
 [sub_resource type="Resource" id="Level_3"]
 script = ExtResource("2_level")
-time_out_sec = 50
-target_total_hp = 1000
+time_out_sec = 30
+target_total_hp = 600
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_roll_chaser"), SubResource("Entry_shield_tutorial"), SubResource("Entry_spike_main")])
 
 [sub_resource type="Resource" id="Entry_bomber_main"]
@@ -64,19 +64,19 @@ weight = 4
 [sub_resource type="Resource" id="Entry_repair_tutorial"]
 script = ExtResource("3_entry")
 enemy_scene_path = "res://Npc/enemy/scenes/enemy_repair_unit.tscn"
-start_sec = 12
+start_sec = 7
 weight = 2
 
 [sub_resource type="Resource" id="Entry_mine_zone"]
 script = ExtResource("3_entry")
 enemy_scene_path = "res://Npc/enemy/scenes/enemy_mine_crawler.tscn"
-start_sec = 28
+start_sec = 17
 weight = 3
 
 [sub_resource type="Resource" id="Level_4"]
 script = ExtResource("2_level")
-time_out_sec = 52
-target_total_hp = 1200
+time_out_sec = 32
+target_total_hp = 738
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_bomber_main"), SubResource("Entry_repair_tutorial"), SubResource("Entry_mine_zone")])
 
 [sub_resource type="Resource" id="Entry_mortar_lane"]
@@ -306,3 +306,6 @@ multiplier = 1.2
 script = ExtResource("1_profile")
 levels = Array[ExtResource("2_level")]([SubResource("Level_1"), SubResource("Level_2"), SubResource("Level_3"), SubResource("Level_4"), SubResource("Level_5"), SubResource("Level_6"), SubResource("Level_7"), SubResource("Level_8"), SubResource("Level_9"), SubResource("Level_10")])
 pressure_points = Array[ExtResource("4_pressure")]([SubResource("Pressure_early"), SubResource("Pressure_mid"), SubResource("Pressure_late")])
+elite_multi_spawn_level_index = 8
+elite_limit_before_multi_spawn = 1
+elite_limit_after_multi_spawn = 2

@@ -85,7 +85,11 @@ func _normalize_menu_id(menu_id: StringName) -> StringName:
 func _fit_left_panel(panel: Control, viewport_size: Vector2) -> void:
 	if panel == null:
 		return
-	var panel_rect := LAYOUT_POLICY.primary_menu_rect(viewport_size, _count_visible_buttons(panel))
+	var panel_rect := LAYOUT_POLICY.primary_menu_rect(
+		viewport_size,
+		_count_visible_buttons(panel),
+		LAYOUT_POLICY.primary_menu_variant(panel)
+	)
 	panel.position = panel_rect.position
 	panel.size = panel_rect.size
 

@@ -26,6 +26,38 @@ class DummyDamageTarget:
 		hp = maxi(hp - maxi(attack.damage, 0), 0)
 		return true
 
+class DummyAuthoritativeDamageTarget:
+	extends Node
+	var hp: int = 10
+	var max_hp: int = 10
+	var is_dead: bool = false
+
+	func read_hp() -> int:
+		return hp
+
+	func write_hp(value: int) -> void:
+		hp = value
+
+	func read_max_hp() -> int:
+		return max_hp
+
+	func read_dead() -> bool:
+		return is_dead
+
+	func write_dead(value: bool) -> void:
+		is_dead = value
+
+	func damaged(attack: Attack) -> DamageResult:
+		var profile := DamageProfile.new()
+		profile.use_damage_reduction = false
+		profile.use_armor = false
+		profile.get_hp = Callable(self, "read_hp")
+		profile.set_hp = Callable(self, "write_hp")
+		profile.get_max_hp = Callable(self, "read_max_hp")
+		profile.get_is_dead = Callable(self, "read_dead")
+		profile.set_is_dead = Callable(self, "write_dead")
+		return DamagePipeline.new().apply_incoming_damage(self, attack, profile)
+
 class DummyHeatRatioPlayer:
 	extends Node
 	var heat_ratio: float = 0.0
@@ -71,6 +103,7 @@ func _ready() -> void:
 	_validate_global_energy_pool()
 	_validate_global_energy_hud()
 	_validate_full_energy_fire_cycle()
+	_validate_overkill_modules()
 
 	print("FAIL weapon runtime chain" if _failed else "PASS weapon runtime chain")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0)
@@ -179,6 +212,16 @@ func _validate_full_energy_fire_cycle() -> void:
 	_expect(is_equal_approx(laser.get_energy_release_bonus_at_full(), 0.75), "balanced Laser must gain +75% damage at full energy")
 	_expect(is_equal_approx(charged.get_energy_release_bonus_at_full(), 1.25), "release-focused Charged Blaster must gain +125% damage at full energy")
 	_expect(is_equal_approx(plasma.get_energy_release_bonus_at_full(), 1.25), "release-focused Plasma Lance must gain +125% damage at full energy")
+
+	var lethal_target := DummyAuthoritativeDamageTarget.new()
+	var lethal_data := _make_energy_hit_data(laser, energy_player, 100)
+	var lethal_result := DamageManager.apply_to_target_result(lethal_target, lethal_data)
+	_expect(lethal_result.final_damage == 100, "a lethal energy hit must retain its full resolved damage")
+	_expect(lethal_result.health_damage == 10, "a lethal energy hit must expose only the consumed enemy HP")
+	_expect(lethal_result.overkill_damage == 90, "a lethal energy hit must expose overkill separately")
+	_expect(is_equal_approx(energy_player.energy, 6.0), "overkill must still grant exactly one fixed Laser energy event")
+	lethal_target.free()
+	energy_player.energy = 0.0
 
 	var data := _make_energy_hit_data(laser, energy_player, 50)
 	DamageManager.apply_to_target_result(target_a, data)
@@ -349,6 +392,41 @@ func _validate_global_energy_pool() -> void:
 	attack_b.free()
 	grouped_attack_a.free()
 	grouped_attack_b.free()
+
+
+func _validate_overkill_modules() -> void:
+	var source_weapon := (load("res://Player/Weapons/Instances/laser.tscn") as PackedScene).instantiate() as Weapon
+	add_child(source_weapon)
+	var target := Node.new()
+	target.add_to_group(&"enemies")
+	add_child(target)
+	var result := DamageResult.new()
+	result.applied = true
+	result.killed = true
+	result.final_damage = 100
+	result.health_damage = 10
+	result.overkill_damage = 90
+	var recovery = (load("res://Player/Weapons/Modules/wmod_overkill_recovery.tscn") as PackedScene).instantiate()
+	source_weapon.get_node("Modules").add_child(recovery)
+	source_weapon.on_damage_applied(target, DamageData.new(), result)
+	_expect(
+		is_equal_approx(source_weapon.get_total_external_damage_mul(), 1.30),
+		"Overkill Recovery must consume explicit overkill damage and apply its level-one cap"
+	)
+	recovery.call("clear_damage_buff")
+	recovery.free()
+	var previous_bonus_shield := int(PlayerData.bonus_shield)
+	var vampiric = (load("res://Player/Weapons/Modules/wmod_vampiric_surge.tscn") as PackedScene).instantiate()
+	source_weapon.get_node("Modules").add_child(vampiric)
+	source_weapon.on_damage_applied(target, DamageData.new(), result)
+	_expect(
+		int(PlayerData.bonus_shield) > previous_bonus_shield,
+		"Vampiric Surge must consume explicit overkill damage without reading negative target HP"
+	)
+	vampiric.call("_clear_all_shield")
+	vampiric.free()
+	target.queue_free()
+	source_weapon.queue_free()
 
 
 func _validate_global_energy_hud() -> void:
