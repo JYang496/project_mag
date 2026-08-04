@@ -56,6 +56,32 @@ func _run() -> void:
 	_expect(_ui.branch_select_panel != null and not _ui.branch_select_panel._branch_ids.is_empty(), "expected branch options for machine gun fuse 2")
 	_expect(RewardDraftRuntime.has_pending_standard_draft(), "standard draft should still be pending during grant-time branch prompt")
 
+	RewardDraftRuntime.clear_pending_standard_draft()
+	PhaseManager.request_settlement_completion_check()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_expect(PhaseManager.current_state() == PhaseManager.SETTLEMENT, "protocol selection must wait for the evolution branch")
+
+	_ui._init_rest_area_ui_controller()
+	_ui.rest_area_ui_controller.warehouse_menu_in()
+	_expect(
+		_ui.warehouse_primary_root == null or not _ui.warehouse_primary_root.visible,
+		"warehouse must stay closed while settlement choices are active"
+	)
+
+	var branch_id := str(_ui.branch_select_panel._branch_ids[0]) if not _ui.branch_select_panel._branch_ids.is_empty() else ""
+	if branch_id != "":
+		_ui.branch_select_panel._on_branch_button_pressed(branch_id)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		await get_tree().process_frame
+	_expect(PhaseManager.current_state() == PhaseManager.PROTOCOL_SELECTION, "protocol selection should open after all evolution choices finish")
+	_ui.rest_area_ui_controller.warehouse_menu_in()
+	_expect(
+		_ui.warehouse_primary_root == null or not _ui.warehouse_primary_root.visible,
+		"warehouse must stay closed during protocol selection"
+	)
+
 	var duplicate_def := DataHandler.read_weapon_data("1") as WeaponDefinition
 	var direct_duplicate := duplicate_def.scene.instantiate() as Weapon if duplicate_def and duplicate_def.scene else null
 	_expect(direct_duplicate != null, "expected a direct duplicate instance for the equipment invariant")

@@ -35,6 +35,7 @@ const SHADOW_SIZE_MAX := Vector2(52.0, 24.0)
 @export var ai_mid_distance: float = 1800.0
 @export_range(10.0, 30.0, 1.0) var ai_mid_hz: float = 30.0
 @export_range(5.0, 15.0, 1.0) var ai_far_hz: float = 12.0
+@export var simplify_far_physics: bool = true
 @export_group("")
 signal enemy_death(was_killed: bool)
 signal spawn_phase_started
@@ -65,6 +66,9 @@ var _ai_tick_interval := 0.0
 var _ai_is_far_tier := false
 var _ai_logic_ticks := 0
 var _ai_cached_movement_ticks := 0
+var _far_physics_simplified := false
+var _far_area_monitoring_state: Array[Dictionary] = []
+var _far_body_collision_mask := 0
 var movement_runtime: EnemyMovementRuntime = EnemyMovementRuntime.new()
 var death_runtime: EnemyDeathRuntime = EnemyDeathRuntime.new()
 var _quest_lock_active := false
@@ -98,6 +102,7 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_incoming_damage_max_hp = max(1, int(hp))
+	_initialize_ai_lod_stagger()
 	_sync_ground_identity_visuals()
 
 
@@ -163,6 +168,7 @@ func _get_polygon_visual_size(polygon: Polygon2D) -> Vector2:
 	return bounds.size
 
 func _exit_tree() -> void:
+	_set_far_physics_simplified(false)
 	_disconnect_board_constraint_signals()
 	if damage_feedback != null:
 		damage_feedback.shutdown()
@@ -338,19 +344,59 @@ func continue_lod_movement(delta: float) -> void:
 func _resolve_ai_tick_interval() -> float:
 	if self is EliteEnemy or is_boss or is_in_group("boss"):
 		_ai_is_far_tier = false
+		_set_far_physics_simplified(false)
 		return 0.0
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
 		_ai_is_far_tier = true
+		_set_far_physics_simplified(true)
 		return 1.0 / maxf(ai_far_hz, 1.0)
 	var distance_sq := global_position.distance_squared_to(PlayerData.player.global_position)
 	if distance_sq <= maxf(ai_near_distance, 1.0) ** 2 or is_world_position_in_player_screen(global_position, 64.0):
 		_ai_is_far_tier = false
+		_set_far_physics_simplified(false)
 		return 0.0
 	if distance_sq <= maxf(ai_mid_distance, ai_near_distance) ** 2:
 		_ai_is_far_tier = false
+		_set_far_physics_simplified(false)
 		return 1.0 / maxf(ai_mid_hz, 1.0)
 	_ai_is_far_tier = true
+	_set_far_physics_simplified(true)
 	return 1.0 / maxf(ai_far_hz, 1.0)
+
+func _initialize_ai_lod_stagger() -> void:
+	# Instance ids are stable for the node lifetime and spread expensive tier
+	# refreshes without introducing random/replay-dependent timing.
+	var phase := float(get_instance_id() % 16) / 16.0
+	_ai_tier_refresh_remaining = phase * 0.25
+	_ai_tick_interval = _resolve_ai_tick_interval()
+	if _ai_tick_interval > 0.0:
+		_ai_tick_accumulator = phase * _ai_tick_interval
+
+func _set_far_physics_simplified(enabled: bool) -> void:
+	var should_enable := enabled and simplify_far_physics and not _spawn_phase_active
+	if should_enable == _far_physics_simplified:
+		return
+	_far_physics_simplified = should_enable
+	if should_enable:
+		_far_body_collision_mask = collision_mask
+		collision_mask = 0
+		_far_area_monitoring_state.clear()
+		for descendant in find_children("*", "Area2D", true, false):
+			var area := descendant as Area2D
+			# HurtBoxes must remain monitorable so off-screen projectiles and area
+			# damage can still hit them. Gameplay support fields are also preserved;
+			# only explicitly optional perception/sensor Areas may be suspended.
+			if area == null or not area.monitoring or not bool(area.get_meta(&"far_physics_optional", false)):
+				continue
+			_far_area_monitoring_state.append({"area": area, "monitoring": true})
+			area.set_deferred("monitoring", false)
+		return
+	collision_mask = _far_body_collision_mask
+	for state in _far_area_monitoring_state:
+		var area := state.get("area") as Area2D
+		if area != null and is_instance_valid(area):
+			area.set_deferred("monitoring", bool(state.get("monitoring", false)))
+	_far_area_monitoring_state.clear()
 
 func uses_simplified_far_movement() -> bool:
 	return _ai_is_far_tier and not is_boss and not (self is EliteEnemy)
@@ -366,6 +412,7 @@ func get_ai_lod_debug_metrics() -> Dictionary:
 		"logic_ticks": _ai_logic_ticks,
 		"cached_movement_ticks": _ai_cached_movement_ticks,
 		"tick_interval": _ai_tick_interval,
+		"far_physics_simplified": _far_physics_simplified,
 	}
 
 func interrupt_movement() -> void:

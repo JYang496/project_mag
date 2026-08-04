@@ -23,6 +23,18 @@ class DummyRestArea:
 	func _get_zone_rect_local(_zone_id: int) -> Rect2:
 		return Rect2(Vector2.ZERO, Vector2(160.0, 160.0))
 
+class DummyAuraSource:
+	extends Node2D
+
+	func get_hybrid_aura_visual() -> Dictionary:
+		return {
+			"visible": true,
+			"radius": 120.0,
+			"line_width": 4.0,
+			"line_color": Color.RED,
+			"fill_color": Color(1.0, 0.0, 0.0, 0.1),
+		}
+
 var _failed := false
 
 
@@ -37,6 +49,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_expect_rest_zone_sync_without_retired_hold_state(view)
+	_expect_aura_registration_initializes_transform(view)
 
 	var points: Array[Vector2] = [
 		Vector2.ZERO,
@@ -167,6 +180,28 @@ func _expect_rest_zone_sync_without_retired_hold_state(view: Node) -> void:
 	mesh.free()
 	remove_child(rest_area)
 	rest_area.free()
+
+
+func _expect_aura_registration_initializes_transform(view: Node) -> void:
+	var source := DummyAuraSource.new()
+	source.position = Vector2(275.0, -135.0)
+	add_child(source)
+	view.call("_register_enemy_support_visual", source)
+	var entries := view.get("_enemy_aura_meshes") as Dictionary
+	var entry := entries.get(source.get_instance_id(), {}) as Dictionary
+	var outline := entry.get("outline") as MeshInstance3D
+	var fill := entry.get("fill") as MeshInstance3D
+	var expected_ground := view.call("world_2d_to_3d", source.global_position) as Vector3
+	_expect(
+		outline != null and outline.position.distance_to(expected_ground + Vector3.UP * 0.020) < 0.001,
+		"new enemy aura outline must be positioned before its first rendered frame",
+	)
+	_expect(
+		fill != null and fill.position.distance_to(expected_ground + Vector3.UP * 0.021) < 0.001,
+		"new enemy aura fill must be positioned before its first rendered frame",
+	)
+	_expect(outline != null and outline.visible, "new visible enemy aura must be initialized immediately")
+	source.queue_free()
 
 
 func _expect_beacon_visual_respects_player(player: Node2D, view: Node) -> void:
@@ -321,6 +356,9 @@ func _expect_unit_billboard_anchor(unit: Node2D, source: Node2D, view: Node, lab
 		"%s ground-ring center must share GroundAnchor" % label
 	)
 	var config := source.call("get_unit_billboard_config") as Dictionary
+	var same_config := source.call("get_unit_billboard_config") as Dictionary
+	_expect(is_same(config, same_config), "%s billboard config must be persistent instead of allocated every frame" % label)
+	_expect(int(config.get("appearance_version", 0)) == int(same_config.get("appearance_version", -1)), "%s unchanged billboard config must keep a stable version" % label)
 	if config.get("texture") != null and bool(config.get("visible", true)):
 		_expect(mesh.visible, "%s visible source must render through the 3D billboard" % label)
 		var material := mesh.material_override as ShaderMaterial
@@ -441,6 +479,12 @@ func _expect_dense_billboard_pooling(view: Node) -> void:
 	var sync_usec := Time.get_ticks_usec() - started_usec
 	print("UNIT_BILLBOARD_DENSITY count=240 sync_usec=%d" % sync_usec)
 	_expect(sync_usec < 250000, "240-unit billboard sync must remain below the 250ms safety ceiling")
+	renderer.set("max_visible_billboards", 32)
+	renderer.call("sync_late", 0.0)
+	var limited_metrics := renderer.call("get_performance_metrics") as Dictionary
+	_expect(int(limited_metrics.get("visible", 0)) <= 32, "billboard renderer must enforce its visible-object budget")
+	_expect(int(limited_metrics.get("culled", 0)) > 0, "billboard budget must report culled objects")
+	renderer.set("max_visible_billboards", 320)
 	stress_root.queue_free()
 	await get_tree().process_frame
 	await get_tree().process_frame

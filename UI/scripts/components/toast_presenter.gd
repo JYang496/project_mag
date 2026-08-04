@@ -2,6 +2,11 @@ extends RefCounted
 class_name ToastPresenter
 
 const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
+const MAX_WIDTH := 440.0
+const MIN_WIDTH := 240.0
+const HORIZONTAL_RESERVED_SPACE := 720.0
+const HEIGHT := 44.0
+const TOP_OFFSET := 86.0
 
 var owner_ui: UI
 var panel: PanelContainer
@@ -23,8 +28,8 @@ func show_message(text: String, duration: float = 1.8) -> void:
 	var generation := _generation
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
-	layout(owner_ui.get_viewport().get_visible_rect().size)
 	label.text = text
+	layout(owner_ui.get_viewport().get_visible_rect().size)
 	panel.visible = not text.is_empty()
 	panel.modulate.a = 0.0
 	panel.position.y += 6.0
@@ -43,9 +48,9 @@ func show_message(text: String, duration: float = 1.8) -> void:
 func layout(viewport_size: Vector2) -> void:
 	if panel == null:
 		return
-	var width := minf(440.0, maxf(240.0, viewport_size.x - 720.0))
-	panel.position = Vector2(roundf((viewport_size.x - width) * 0.5), 86.0)
-	panel.size = Vector2(width, 44.0)
+	var width := minf(MAX_WIDTH, maxf(MIN_WIDTH, viewport_size.x - HORIZONTAL_RESERVED_SPACE))
+	panel.position = Vector2(roundf((viewport_size.x - width) * 0.5), TOP_OFFSET)
+	panel.size = Vector2(width, HEIGHT)
 
 
 func clear() -> void:
@@ -74,7 +79,12 @@ func _ensure_view() -> void:
 	label = Label.new()
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# Toasts are deliberately one line. Clipping keeps Label's content from
+	# inflating the PanelContainer minimum size before its first layout pass.
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	label.clip_text = true
+	label.max_lines_visible = 1
 	TOKENS.style_label(label, TOKENS.FONT_BODY, TOKENS.COLOR_TEXT_PRIMARY)
 	margin.add_child(label)
 	owner_ui.gui_root.add_child(panel)

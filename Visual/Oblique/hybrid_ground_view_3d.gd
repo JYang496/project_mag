@@ -55,6 +55,8 @@ var world_scale: float = DEFAULT_WORLD_SCALE
 @export var board_path: NodePath = NodePath("../Board")
 @export var cell_border_color: Color = Color(0.08, 0.12, 0.15, 0.82)
 @export_range(1.0, 8.0, 0.5) var cell_border_width_2d: float = 3.0
+@export_range(32, 1024, 1) var max_visible_unit_billboards := 320
+@export_range(0.0, 512.0, 1.0) var visual_cull_margin_pixels := 96.0
 
 var _camera: Camera3D
 var _ground_root: Node3D
@@ -136,6 +138,8 @@ func _ready() -> void:
 	_area_renderer.setup(self)
 	_unit_billboard_renderer = UnitBillboardRendererType.new()
 	_unit_billboard_renderer.setup(self, _unit_visual_root, _camera)
+	_unit_billboard_renderer.max_visible_billboards = max_visible_unit_billboards
+	_unit_billboard_renderer.cull_margin_pixels = visual_cull_margin_pixels
 	_mesh_registry = GroundMeshRegistryType.new()
 	_mesh_registry.setup(self, _board_renderer, _connected_renderer, _aura_renderer, _area_renderer)
 	_late_sync = HybridGroundLateSyncType.new()
@@ -224,6 +228,19 @@ func sync_late_visuals(_delta: float) -> void:
 		_mesh_registry.sync_late(_delta)
 	if _unit_billboard_renderer != null:
 		_unit_billboard_renderer.sync_late(_delta)
+
+func is_world_point_within_visual_bounds(world_point: Vector2, margin_pixels: float = 0.0) -> bool:
+	if not _projection_ready or _camera == null or not can_project_world_point(world_point):
+		return false
+	var screen_point := project_world_to_screen(world_point)
+	var viewport_size := get_viewport().get_visible_rect().size
+	var margin := maxf(margin_pixels, 0.0)
+	return screen_point.x >= -margin and screen_point.y >= -margin and screen_point.x <= viewport_size.x + margin and screen_point.y <= viewport_size.y + margin
+
+func get_visual_performance_metrics() -> Dictionary:
+	if _unit_billboard_renderer == null:
+		return {}
+	return _unit_billboard_renderer.get_performance_metrics()
 
 func configure(pitch: float, yaw: float, distance: float) -> void:
 	camera_pitch_degrees = clampf(pitch, 25.0, 75.0)
@@ -858,6 +875,7 @@ func _register_area_effect(area: Node2D) -> void:
 		"material": material,
 		"animated_ground": animated_ground,
 		"height": GROUND_AREA_HEIGHT,
+		"visual_version": -1,
 	}
 	area.set_meta(&"hybrid_ground_registered", true)
 
@@ -912,6 +930,9 @@ func _register_enemy_support_visual(source: Node2D) -> void:
 			"detail_outline_mesh": detail_outline.mesh if detail_outline != null else null,
 			"detail_outline_material": detail_outline.mesh.material if detail_outline != null else null,
 		}
+		# Deferred registration can happen after the frame's late-sync pass. Initialize
+		# the mesh immediately so it is never rendered for one frame at world origin.
+		_sync_enemy_aura_mesh(source_id, _enemy_aura_meshes[source_id])
 	if source.has_method("get_hybrid_link_visuals"):
 		_enemy_link_sources[source_id] = weakref(source)
 	source.set_meta(&"hybrid_ground_registered", true)
@@ -1304,20 +1325,26 @@ func _sync_affiliation_marker_meshes() -> void:
 		footprint_size.x = maxf(footprint_size.x, 2.0)
 		footprint_size.y = maxf(footprint_size.y, 2.0)
 		var line_width_2d := maxf(float(config.get("line_width", 2.0)), 0.5)
-		mesh.position = world_2d_to_ground_anchor(logical_anchor)
-		mesh.scale = Vector3(
+		var next_position := world_2d_to_ground_anchor(logical_anchor)
+		if entry.get("last_position", Vector3.INF) != next_position:
+			mesh.position = next_position
+			entry["last_position"] = next_position
+		var next_scale := Vector3(
 			footprint_size.x * 0.5 * world_scale / AFFILIATION_MARKER_UV_RADIUS,
 			1.0,
 			footprint_size.y * 0.5 * world_scale / AFFILIATION_MARKER_UV_RADIUS
 		)
-		mesh.visible = bool(config.get("visible", true)) and owner_2d.visible
-		mesh.set_instance_shader_parameter("marker_color", config.get("color", Color.WHITE) as Color)
-		mesh.set_instance_shader_parameter(
-			"line_width_ratio",
-			clampf(line_width_2d * AFFILIATION_MARKER_UV_RADIUS / minf(footprint_size.x, footprint_size.y), 0.005, 0.125)
-		)
-		mesh.set_instance_shader_parameter("half_arc_radians", maxf(float(config.get("arc_length", 0.46)) * 0.5, 0.05))
-		mesh.set_instance_shader_parameter("marker_shape", int(config.get("marker_shape", 1)))
+		if entry.get("last_scale", Vector3.INF) != next_scale:
+			mesh.scale = next_scale
+			entry["last_scale"] = next_scale
+		mesh.visible = bool(config.get("visible", true)) and owner_2d.visible and is_world_point_within_visual_bounds(logical_anchor, visual_cull_margin_pixels)
+		var visual_version := int(config.get("visual_version", -1))
+		if visual_version != int(entry.get("visual_version", -2)):
+			mesh.set_instance_shader_parameter("marker_color", config.get("color", Color.WHITE) as Color)
+			mesh.set_instance_shader_parameter("line_width_ratio", clampf(line_width_2d * AFFILIATION_MARKER_UV_RADIUS / minf(footprint_size.x, footprint_size.y), 0.005, 0.125))
+			mesh.set_instance_shader_parameter("half_arc_radians", maxf(float(config.get("arc_length", 0.46)) * 0.5, 0.05))
+			mesh.set_instance_shader_parameter("marker_shape", int(config.get("marker_shape", 1)))
+			entry["visual_version"] = visual_version
 
 func _sync_area_meshes() -> void:
 	for id in _area_meshes.keys():
@@ -1334,12 +1361,19 @@ func _sync_area_meshes() -> void:
 		var height_offset_value: Variant = area.get("ground_height_offset")
 		var height_offset := float(height_offset_value) if height_offset_value != null else 0.0
 		var base_height := float(entry.get("height", GROUND_AREA_HEIGHT))
-		mesh.position = world_2d_to_3d(area.global_position) + Vector3.UP * (base_height + height_offset)
-		if visual_shape == 0:
-			mesh.scale = Vector3(radius, 1.0, radius)
-		else:
-			var current_material := entry.get("material") as Material
-			mesh.mesh = _build_ground_polygon_array_mesh(_build_area_polygon_points(area), current_material)
+		var next_position := world_2d_to_3d(area.global_position) + Vector3.UP * (base_height + height_offset)
+		if entry.get("last_position", Vector3.INF) != next_position:
+			mesh.position = next_position
+			entry["last_position"] = next_position
+		mesh.visible = is_world_point_within_visual_bounds(area.global_position, visual_cull_margin_pixels + radius / maxf(world_scale, 0.0001))
+		var visual_version := int(area.call("get_hybrid_visual_version")) if area.has_method("get_hybrid_visual_version") else 0
+		if visual_version != int(entry.get("visual_version", -1)):
+			if visual_shape == 0:
+				mesh.scale = Vector3(radius, 1.0, radius)
+			else:
+				var current_material := entry.get("material") as Material
+				mesh.mesh = _build_ground_polygon_array_mesh(_build_area_polygon_points(area), current_material)
+			entry["visual_version"] = visual_version
 		if bool(entry.get("animated_ground", false)):
 			_sync_animated_ground_area_texture(area, entry)
 
@@ -1419,6 +1453,10 @@ func _sync_segment_meshes() -> void:
 func _sync_enemy_aura_meshes() -> void:
 	for source_id in _enemy_aura_meshes.keys():
 		var entry := _enemy_aura_meshes[source_id] as Dictionary
+		_sync_enemy_aura_mesh(source_id, entry)
+
+func _sync_enemy_aura_mesh(source_id: int, entry: Dictionary) -> void:
+	if not entry.is_empty():
 		var source_ref := entry.get("source") as WeakRef
 		var source := source_ref.get_ref() as Node2D if source_ref != null else null
 		var outline := entry.get("outline") as MeshInstance3D
@@ -1430,7 +1468,7 @@ func _sync_enemy_aura_meshes() -> void:
 			if fill != null:
 				fill.queue_free()
 			_enemy_aura_meshes.erase(source_id)
-			continue
+			return
 		var config := source.call("get_hybrid_aura_visual") as Dictionary
 		var visible := bool(config.get("visible", true))
 		var radius_2d := maxf(float(config.get("radius", 1.0)), 1.0)
@@ -1589,10 +1627,13 @@ func _sync_ground_cone_meshes() -> void:
 			_ground_cone_meshes.erase(source_id)
 			continue
 		var config := source.call("get_hybrid_ground_cone_visual") as Dictionary
-		mesh.visible = bool(config.get("visible", false))
+		var origin := config.get("origin", source.global_position) as Vector2
+		mesh.visible = bool(config.get("visible", false)) and is_world_point_within_visual_bounds(origin, visual_cull_margin_pixels)
 		if not mesh.visible:
 			continue
-		var origin := config.get("origin", source.global_position) as Vector2
+		var visual_version := int(config.get("visual_version", -1))
+		if visual_version == int(entry.get("visual_version", -2)):
+			continue
 		var direction := config.get("direction", Vector2.RIGHT) as Vector2
 		direction = direction.normalized() if direction != Vector2.ZERO else Vector2.RIGHT
 		var range_value := maxf(float(config.get("range", 1.0)), 1.0)
@@ -1608,6 +1649,7 @@ func _sync_ground_cone_meshes() -> void:
 		var color := config.get("color", Color(1.0, 0.3, 0.05, 0.75)) as Color
 		mesh.set_instance_shader_parameter("flow_color", color)
 		mesh.set_instance_shader_parameter("edge_color", Color(minf(color.r * 1.5 + 0.2, 1.0), minf(color.g * 1.35 + 0.15, 1.0), minf(color.b * 1.2 + 0.1, 1.0), minf(color.a * 1.2, 1.0)))
+		entry["visual_version"] = visual_version
 
 func _build_ground_cone_array_mesh(range_value: float, half_angle: float, material: Material) -> ArrayMesh:
 	var vertices := PackedVector3Array([Vector3.ZERO])

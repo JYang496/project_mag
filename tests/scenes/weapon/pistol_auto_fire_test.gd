@@ -29,10 +29,11 @@ func _ready() -> void:
 		"Auto Pistol must enter its mark window every 8 seconds without a movement requirement"
 	) or failed
 
-	# A group-only enemy exercises the fallback used when the registry misses an entry.
+	# Runtime targeting uses EnemyRegistry as its authoritative spatial source.
 	var enemy := Node2D.new()
 	enemy.add_to_group(&"enemies")
 	add_child(enemy)
+	EnemyRegistry.register_enemy(enemy)
 	# Reproduce the live failure mode where aim and muzzle positions briefly
 	# coincide. A valid shot must still be emitted instead of only spending ammo.
 	enemy.global_position = Vector2.ZERO
@@ -46,7 +47,7 @@ func _ready() -> void:
 		if child is Projectile:
 			spawned_projectile = child as Projectile
 			break
-	failed = _check(found_target == enemy, "Auto Pistol must find a nearby group-only enemy") or failed
+	failed = _check(found_target == enemy, "Auto Pistol must find a nearby registered enemy") or failed
 	failed = _check(_shot_count > 0, "Auto Pistol must automatically fire at a nearby enemy") or failed
 	failed = _check(spawned_projectile != null, "Auto Pistol must add a projectile after spending ammo") or failed
 	if spawned_projectile != null:

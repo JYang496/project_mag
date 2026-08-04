@@ -97,6 +97,7 @@ class DummyGlobalEnergyPlayer:
 
 
 func _ready() -> void:
+	_validate_enemy_query_contract()
 	_validate_weapon_scenes()
 	_validate_projectile_scenes()
 	_validate_glacier_cold_snap()
@@ -107,6 +108,39 @@ func _ready() -> void:
 
 	print("FAIL weapon runtime chain" if _failed else "PASS weapon runtime chain")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0)
+
+
+func _validate_enemy_query_contract() -> void:
+	var registered := Node2D.new()
+	registered.global_position = Vector2(24.0, 12.0)
+	add_child(registered)
+	EnemyRegistry.register_enemy(registered)
+	var unregistered_group_member := Node2D.new()
+	unregistered_group_member.global_position = Vector2(28.0, 12.0)
+	unregistered_group_member.add_to_group(&"enemies")
+	add_child(unregistered_group_member)
+	var nearby := WeaponModuleRuntimeUtils.get_nearby_enemies(get_tree(), Vector2(24.0, 12.0), 16.0)
+	_expect(nearby == [registered], "weapon radius queries must use EnemyRegistry as the authoritative source")
+	var in_rect := WeaponModuleRuntimeUtils.get_enemies_in_rect(get_tree(), Rect2(Vector2(20.0, 8.0), Vector2(12.0, 8.0)))
+	_expect(in_rect == [registered], "weapon rectangle queries must use EnemyRegistry as the authoritative source")
+	EnemyRegistry.unregister_enemy(registered)
+	registered.queue_free()
+	unregistered_group_member.queue_free()
+
+	var weapon_root := "res://Player/Weapons"
+	var pending: Array[String] = [weapon_root]
+	while not pending.is_empty():
+		var directory: String = pending.pop_back()
+		for child_directory in DirAccess.get_directories_at(directory):
+			pending.append("%s/%s" % [directory, child_directory])
+		for file_name in DirAccess.get_files_at(directory):
+			if not file_name.ends_with(".gd"):
+				continue
+			var source := FileAccess.get_file_as_string("%s/%s" % [directory, file_name])
+			_expect(
+				not (source.contains("get_nodes_in_group") and source.contains("enemies")),
+				"%s must not scan the enemies group in a weapon hot path" % file_name
+			)
 
 
 func _validate_weapon_scenes() -> void:

@@ -310,6 +310,9 @@ func open_warehouse_weapon_panel() -> void:
 	owner_ui.ensure_warehouse_management()
 	if _menu_transition_locked:
 		return
+	if not is_module_management_available():
+		owner_ui._show_module_rest_area_only_message()
+		return
 	_menu_transition_locked = true
 	_hide_primary_menu(&"warehouse", owner_ui.warehouse_primary_root, owner_ui.warehouse_primary_panel)
 	warehouse_panel_in(&"weapon")
@@ -628,6 +631,10 @@ func _show_primary_menu(menu_id: StringName, root: Control, panel: Control) -> v
 		layout_controller.show_primary_menu(menu_id, root, panel)
 
 func _open_primary_menu_by_id(menu_id: StringName) -> bool:
+	if PhaseManager.current_state() != PhaseManager.REST:
+		return false
+	if owner_ui != null and owner_ui.is_world_interaction_blocked():
+		return false
 	menu_id = _normalize_menu_id(menu_id)
 	var root := _get_primary_root(menu_id)
 	var panel := _get_primary_panel(menu_id)

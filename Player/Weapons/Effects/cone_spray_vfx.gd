@@ -24,6 +24,8 @@ var _last_range: float = 1.0
 var _last_half_angle_deg: float = 1.0
 var _ground_rays: Array[Line2D] = []
 var _hybrid_registered: bool = false
+var _hybrid_config: Dictionary = {}
+var _hybrid_visual_version := 0
 
 
 func _ready() -> void:
@@ -140,15 +142,24 @@ func _update_ground_rays() -> void:
 
 func get_hybrid_ground_cone_visual() -> Dictionary:
 	var color := modulate
-	return {
-		"visible": visible,
-		"origin": global_position,
-		"direction": _last_direction,
-		"range": _last_range,
-		"half_angle_degrees": _last_half_angle_deg,
-		"color": color,
-		"texture": _get_current_frame_texture(),
-	}
+	var changed := _set_hybrid_value(&"visible", visible)
+	changed = _set_hybrid_value(&"origin", global_position) or changed
+	changed = _set_hybrid_value(&"direction", _last_direction) or changed
+	changed = _set_hybrid_value(&"range", _last_range) or changed
+	changed = _set_hybrid_value(&"half_angle_degrees", _last_half_angle_deg) or changed
+	changed = _set_hybrid_value(&"color", color) or changed
+	changed = _set_hybrid_value(&"texture", _get_current_frame_texture()) or changed
+	if changed:
+		_hybrid_visual_version += 1
+	_hybrid_config["visual_version"] = _hybrid_visual_version
+	return _hybrid_config
+
+
+func _set_hybrid_value(key: StringName, value: Variant) -> bool:
+	if _hybrid_config.has(key) and _hybrid_config[key] == value:
+		return false
+	_hybrid_config[key] = value
+	return true
 
 
 func _get_current_frame_texture() -> Texture2D:

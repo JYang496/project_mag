@@ -185,6 +185,11 @@ func _try_complete_settlement() -> void:
 		return
 	if InventoryData != null and not InventoryData.pending_transactions.is_empty():
 		return
+	var ui = GlobalVariables.ui
+	if ui != null and is_instance_valid(ui) \
+			and ui.has_method("has_pending_blocking_transaction") \
+			and bool(ui.call("has_pending_blocking_transaction")):
+		return
 	enter_protocol_selection()
 
 func start_battle_timer(duration_sec: int) -> void:

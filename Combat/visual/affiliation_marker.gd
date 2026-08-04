@@ -2,6 +2,8 @@ extends "res://Visual/Oblique/billboard_visual_2d.gd"
 class_name AffiliationMarker
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+var _hybrid_config: Dictionary = {}
+var _hybrid_visual_version := 0
 
 enum MarkerShape {
 	PLAYER_RING,
@@ -93,15 +95,24 @@ func _get_shadow_visual_size(shadow: CanvasItem) -> Vector2:
 
 
 func get_hybrid_ground_marker_config() -> Dictionary:
-	return {
-		"local_anchor": _base_transform.origin,
-		"footprint_size": _get_effective_footprint_size(),
-		"line_width": line_width,
-		"arc_length": arc_length,
-		"color": marker_color,
-		"marker_shape": marker_shape,
-		"visible": bool(get_meta(&"hybrid_ground_visible", true)),
-	}
+	var changed := _set_hybrid_value(&"local_anchor", _base_transform.origin)
+	changed = _set_hybrid_value(&"footprint_size", _get_effective_footprint_size()) or changed
+	changed = _set_hybrid_value(&"line_width", line_width) or changed
+	changed = _set_hybrid_value(&"arc_length", arc_length) or changed
+	changed = _set_hybrid_value(&"color", marker_color) or changed
+	changed = _set_hybrid_value(&"marker_shape", marker_shape) or changed
+	changed = _set_hybrid_value(&"visible", bool(get_meta(&"hybrid_ground_visible", true))) or changed
+	if changed:
+		_hybrid_visual_version += 1
+	_hybrid_config["visual_version"] = _hybrid_visual_version
+	return _hybrid_config
+
+
+func _set_hybrid_value(key: StringName, value: Variant) -> bool:
+	if _hybrid_config.has(key) and _hybrid_config[key] == value:
+		return false
+	_hybrid_config[key] = value
+	return true
 
 
 func _exit_tree() -> void:

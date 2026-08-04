@@ -111,7 +111,15 @@ func _check_manual_beam_hits(start: Vector2, end: Vector2, beam_width: float) ->
 	var direction := segment / length
 	var half_width := maxf(beam_width * 0.5, 2.0)
 	var applied_hit := false
-	for enemy_variant in get_tree().get_nodes_in_group("enemies"):
+	var world_start := to_global(start)
+	var world_end := to_global(end)
+	var query_min := Vector2(minf(world_start.x, world_end.x), minf(world_start.y, world_end.y))
+	var query_max := Vector2(maxf(world_start.x, world_end.x), maxf(world_start.y, world_end.y))
+	# The extra margin preserves the legacy center-point tolerance while the
+	# spatial query prevents each beam tick from scanning every living enemy.
+	var query_margin := half_width + 16.0
+	var query_rect := Rect2(query_min, query_max - query_min).grow(query_margin)
+	for enemy_variant in WeaponModuleRuntimeUtils.get_enemies_in_rect(get_tree(), query_rect):
 		var enemy := enemy_variant as Node2D
 		if enemy == null or not is_instance_valid(enemy):
 			continue

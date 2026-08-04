@@ -55,16 +55,7 @@ static func get_nearby_enemies(tree: SceneTree, origin: Vector2, radius: float) 
 				var enemy := enemy_ref as Node2D
 				if enemy != null and is_instance_valid(enemy):
 					output.append(enemy)
-			if not output.is_empty():
-				return output
-	var max_radius := maxf(radius, 0.0)
-	for enemy_ref in tree.get_nodes_in_group("enemies"):
-		var enemy := enemy_ref as Node2D
-		if enemy == null or not is_instance_valid(enemy):
-			continue
-		if enemy.global_position.distance_to(origin) > max_radius:
-			continue
-		output.append(enemy)
+			return output
 	return output
 
 static func get_enemy_candidates(tree: SceneTree) -> Array[Node2D]:
@@ -79,12 +70,7 @@ static func get_enemy_candidates(tree: SceneTree) -> Array[Node2D]:
 				var enemy := enemy_ref as Node2D
 				if enemy != null and is_instance_valid(enemy):
 					output.append(enemy)
-			if not output.is_empty():
-				return output
-	for enemy_ref in tree.get_nodes_in_group("enemies"):
-		var enemy := enemy_ref as Node2D
-		if enemy != null and is_instance_valid(enemy):
-			output.append(enemy)
+			return output
 	return output
 
 static func get_enemies_in_rect(tree: SceneTree, world_rect: Rect2) -> Array[Node2D]:
@@ -99,9 +85,5 @@ static func get_enemies_in_rect(tree: SceneTree, world_rect: Rect2) -> Array[Nod
 				var enemy := enemy_ref as Node2D
 				if enemy != null and is_instance_valid(enemy):
 					output.append(enemy)
-			if not output.is_empty():
-				return output
-	for enemy in get_enemy_candidates(tree):
-		if world_rect.has_point(enemy.global_position):
-			output.append(enemy)
+			return output
 	return output

@@ -2,6 +2,7 @@ extends Area2D
 class_name AreaEffect
 
 static var debug_mode_enabled: bool = false
+var _hybrid_visual_version := 1
 
 enum TargetGroup {
 	ENEMIES,
@@ -16,6 +17,7 @@ enum VisualShape { CIRCLE, RECTANGLE, CONE }
 @export var radius: float = 24.0:
 	set(value):
 		radius = maxf(value, 1.0)
+		_mark_hybrid_visual_dirty()
 		_sync_radius()
 		_sync_visual_scale()
 		if _is_debug_draw_enabled():
@@ -43,14 +45,17 @@ enum VisualShape { CIRCLE, RECTANGLE, CONE }
 @export var visual_texture: Texture2D:
 	set(value):
 		visual_texture = value
+		_mark_hybrid_visual_dirty()
 		_sync_visual_nodes()
 @export var visual_frames: SpriteFrames:
 	set(value):
 		visual_frames = value
+		_mark_hybrid_visual_dirty()
 		_sync_visual_nodes()
 @export var visual_animation: StringName = &"default":
 	set(value):
 		visual_animation = value
+		_mark_hybrid_visual_dirty()
 		_sync_visual_nodes()
 @export var visual_playback_speed: float = 1.0:
 	set(value):
@@ -59,27 +64,33 @@ enum VisualShape { CIRCLE, RECTANGLE, CONE }
 @export var visual_modulate: Color = Color(1.0, 1.0, 1.0, 0.55):
 	set(value):
 		visual_modulate = value
+		_mark_hybrid_visual_dirty()
 		_sync_visual_nodes()
 @export var visual_rotation_speed_deg: float = 0.0
 @export var visual_shape: VisualShape = VisualShape.CIRCLE:
 	set(value):
 		visual_shape = value
+		_mark_hybrid_visual_dirty()
 		_sync_visual_shape_collision()
 @export var rectangle_size: Vector2 = Vector2(96.0, 48.0):
 	set(value):
 		rectangle_size = value.abs()
+		_mark_hybrid_visual_dirty()
 		_sync_visual_shape_collision()
 @export var cone_direction: Vector2 = Vector2.RIGHT:
 	set(value):
 		cone_direction = value
+		_mark_hybrid_visual_dirty()
 		_sync_visual_shape_collision()
 @export_range(1.0, 89.0, 1.0) var cone_half_angle_deg: float = 35.0:
 	set(value):
 		cone_half_angle_deg = clampf(value, 1.0, 89.0)
+		_mark_hybrid_visual_dirty()
 		_sync_visual_shape_collision()
 @export var cone_range: float = 180.0:
 	set(value):
 		cone_range = maxf(value, 1.0)
+		_mark_hybrid_visual_dirty()
 		_sync_visual_shape_collision()
 @export var visual_size_multiplier: float = 1.0:
 	set(value):
@@ -115,10 +126,19 @@ var source_category: StringName = StringName()
 var delivery_type: StringName = DamageDeliveryType.AREA
 var heat_snapshot: Variant = null
 var _affected_target_ids: Dictionary = {}
+var _tracked_targets: Dictionary = {}
 var _tick_elapsed: float = 0.0
 var _damage_active: bool = true
 
 signal target_affected(target: Node)
+
+
+func _mark_hybrid_visual_dirty() -> void:
+	_hybrid_visual_version += 1
+
+
+func get_hybrid_visual_version() -> int:
+	return _hybrid_visual_version
 
 
 func _ready() -> void:
@@ -142,9 +162,6 @@ func _ready() -> void:
 	_sync_radius()
 	_sync_visual_shape_collision()
 	_sync_collision_mask()
-	if target_group == TargetGroup.ENEMIES:
-		monitoring = false
-		monitorable = false
 	_sync_visual_nodes()
 	var damage_duration := maxf(duration, 0.01)
 	damage_timer.wait_time = damage_duration
@@ -172,7 +189,12 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _on_area_entered(area: Area2D) -> void:
+	_track_hurt_box(area)
 	_try_apply_on_hurt_box(area)
+
+
+func _on_area_exited(area: Area2D) -> void:
+	_untrack_hurt_box(area)
 
 
 func _on_life_timer_timeout() -> void:
@@ -181,6 +203,7 @@ func _on_life_timer_timeout() -> void:
 
 func _on_damage_timer_timeout() -> void:
 	_damage_active = false
+	_tracked_targets.clear()
 	set_deferred("monitoring", false)
 	if collision_shape != null:
 		collision_shape.set_deferred("disabled", true)
@@ -189,11 +212,8 @@ func _on_damage_timer_timeout() -> void:
 func _apply_to_current_overlaps() -> void:
 	if not _damage_active:
 		return
-	if target_group == TargetGroup.ENEMIES:
-		for target in _get_registry_enemy_targets():
-			_try_apply_enemy_target(target)
-		return
 	for area in get_overlapping_areas():
+		_track_hurt_box(area)
 		_try_apply_on_hurt_box(area)
 
 
@@ -261,35 +281,16 @@ func _apply_periodic_damage(delta: float) -> void:
 
 
 func _apply_tick_to_current_overlaps() -> void:
-	if target_group == TargetGroup.ENEMIES:
-		for target in _get_registry_enemy_targets():
-			var valid_source_node: Node = _resolve_valid_source_node()
-			var damage_data := DamageManager.build_damage_data(
-				valid_source_node,
-				tick_damage,
-				Attack.normalize_damage_type(damage_type),
-				knock_back,
-				source_category,
-				delivery_type,
-				heat_snapshot
-			)
-			if DamageManager.apply_to_target(target, damage_data):
-				target_affected.emit(target)
-		return
-	for area in get_overlapping_areas():
-		if not area is HurtBox:
+	for target_id in _tracked_targets.keys():
+		var tracked_variant: Variant = _tracked_targets.get(target_id)
+		if not tracked_variant is Dictionary:
+			_tracked_targets.erase(target_id)
 			continue
-		var hurt_box := area as HurtBox
-		var target: Node = null
-		if hurt_box.has_method("get_damage_target"):
-			target = hurt_box.call("get_damage_target")
+		var tracked: Dictionary = tracked_variant
+		var target_ref := tracked.get("target_ref") as WeakRef
+		var target := target_ref.get_ref() as Node if target_ref != null else null
 		if target == null or not is_instance_valid(target):
-			target = hurt_box.get_owner()
-		if target == null or not is_instance_valid(target):
-			target = hurt_box.get_parent()
-		if target == null or not is_instance_valid(target):
-			continue
-		if not _can_affect_hurt_box(hurt_box):
+			_tracked_targets.erase(target_id)
 			continue
 		var valid_source_node: Node = _resolve_valid_source_node()
 		var damage_data := DamageManager.build_damage_data(
@@ -303,6 +304,61 @@ func _apply_tick_to_current_overlaps() -> void:
 		)
 		if DamageManager.apply_to_target(target, damage_data):
 			target_affected.emit(target)
+
+
+func _track_hurt_box(area: Area2D) -> void:
+	if not area is HurtBox:
+		return
+	var hurt_box := area as HurtBox
+	if not _can_affect_hurt_box(hurt_box):
+		return
+	var target := _resolve_hurt_box_target(hurt_box)
+	if target == null:
+		return
+	var target_id := target.get_instance_id()
+	var tracked: Dictionary = _tracked_targets.get(target_id, {})
+	if tracked.is_empty():
+		tracked = {
+			"target_ref": weakref(target),
+			"hurt_box_ids": {},
+		}
+	var hurt_box_ids: Dictionary = tracked.get("hurt_box_ids", {})
+	hurt_box_ids[hurt_box.get_instance_id()] = true
+	tracked["hurt_box_ids"] = hurt_box_ids
+	_tracked_targets[target_id] = tracked
+
+
+func _untrack_hurt_box(area: Area2D) -> void:
+	if not area is HurtBox:
+		return
+	var target := _resolve_hurt_box_target(area as HurtBox)
+	if target == null:
+		return
+	var target_id := target.get_instance_id()
+	var tracked_variant: Variant = _tracked_targets.get(target_id)
+	if not tracked_variant is Dictionary:
+		return
+	var tracked: Dictionary = tracked_variant
+	var hurt_box_ids: Dictionary = tracked.get("hurt_box_ids", {})
+	hurt_box_ids.erase(area.get_instance_id())
+	if hurt_box_ids.is_empty():
+		_tracked_targets.erase(target_id)
+	else:
+		tracked["hurt_box_ids"] = hurt_box_ids
+		_tracked_targets[target_id] = tracked
+
+
+func _resolve_hurt_box_target(hurt_box: HurtBox) -> Node:
+	var target: Node = null
+	if hurt_box.has_method("get_damage_target"):
+		target = hurt_box.call("get_damage_target")
+	if target == null or not is_instance_valid(target):
+		target = hurt_box.get_owner()
+	if target == null or not is_instance_valid(target):
+		target = hurt_box.get_parent()
+	if target == null or not is_instance_valid(target):
+		return null
+	return target
 
 func _try_apply_enemy_target(target: BaseEnemy) -> void:
 	if target == null or not is_instance_valid(target) or target.is_dead:

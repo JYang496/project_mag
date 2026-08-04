@@ -14,13 +14,25 @@ func _run() -> void:
 	add_child(player)
 	PlayerData.player = player
 	var enemy := EnemyScene.instantiate() as BaseEnemy
+	var active_sensor := Area2D.new()
+	active_sensor.name = "TestActiveSensor"
+	active_sensor.monitoring = true
+	active_sensor.set_meta(&"far_physics_optional", true)
+	enemy.add_child(active_sensor)
 	add_child(enemy)
+	var hurt_box := enemy.get_node("HurtBox") as Area2D
 	var near_ticks := _simulate_one_second(enemy, player.global_position)
 	var mid_ticks := _simulate_one_second(enemy, player.global_position + Vector2(1200.0, 0.0))
 	var far_ticks := _simulate_one_second(enemy, player.global_position + Vector2(2600.0, 0.0))
 	_expect(near_ticks == 60, "near enemy AI must update at physics rate: %d" % near_ticks)
 	_expect(mid_ticks >= 29 and mid_ticks <= 30, "mid enemy AI must update near 30 Hz: %d" % mid_ticks)
 	_expect(far_ticks >= 11 and far_ticks <= 12, "far enemy AI must update near 12 Hz: %d" % far_ticks)
+	await get_tree().physics_frame
+	_expect(not active_sensor.monitoring, "far enemy active Area2D sensor must stop monitoring")
+	_expect(hurt_box.monitorable, "far enemy HurtBox must remain monitorable for incoming hits")
+	_simulate_one_second(enemy, player.global_position)
+	await get_tree().physics_frame
+	_expect(active_sensor.monitoring, "near enemy active Area2D sensor monitoring was not restored")
 	enemy.apply_slow(0.5, 0.01)
 	await get_tree().create_timer(0.02).timeout
 	_expect(is_equal_approx(enemy.slow_multiplier, 1.0), "timestamp slow did not expire without per-frame status decrement")

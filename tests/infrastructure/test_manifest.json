@@ -394,6 +394,16 @@
       "timeout_seconds": 20
     },
     {
+      "id": "combat.area_effect_tracking",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/combat/area_effect_tracking_test.tscn",
+      "domain": "combat",
+      "dependency_domains": [],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
       "id": "combat.contract_runtime_matrix",
       "entry_type": "scene",
       "path": "res://tests/scenes/combat/contract_runtime_matrix_test.tscn",
@@ -569,6 +579,16 @@
       "path": "res://tests/scenes/ui/battle_contract_selection_layout_test.tscn",
       "domain": "ui",
       "dependency_domains": ["combat", "world", "data"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "ui.toast_layout",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/toast_layout_test.tscn",
+      "domain": "ui",
+      "dependency_domains": [],
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 20

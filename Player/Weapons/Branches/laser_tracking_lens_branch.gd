@@ -33,7 +33,7 @@ func _find_tracking_target(origin: Vector2, base_direction: Vector2) -> Node2D:
 	var max_distance_sq := max_distance * max_distance
 	var best: Node2D = null
 	var best_distance_sq := INF
-	for enemy_ref in WeaponModuleRuntimeUtils.get_enemy_candidates(tree):
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(tree, origin, max_distance):
 		var enemy := enemy_ref as Node2D
 		if enemy == null or not is_instance_valid(enemy):
 			continue

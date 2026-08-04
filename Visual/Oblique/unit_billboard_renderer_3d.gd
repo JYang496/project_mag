@@ -10,6 +10,11 @@ var _quad: QuadMesh
 var _entries: Dictionary = {}
 var _material_cache: Dictionary = {}
 var _available_meshes: Array[MeshInstance3D] = []
+var max_visible_billboards := 320
+var cull_margin_pixels := 96.0
+var _visible_count := 0
+var _culled_count := 0
+var _shader_parameter_updates := 0
 
 
 func setup(view: Node, root: Node3D, camera: Camera3D) -> void:
@@ -56,6 +61,8 @@ func unregister(source: Node) -> void:
 func sync_late(_delta: float) -> void:
 	if not _is_ready():
 		return
+	_visible_count = 0
+	_culled_count = 0
 	for source_id in _entries.keys():
 		var entry := _entries[source_id] as Dictionary
 		var source_ref := entry.get("source") as WeakRef
@@ -68,37 +75,54 @@ func sync_late(_delta: float) -> void:
 			_entries.erase(source_id)
 			continue
 		var config := source.call("get_unit_billboard_config") as Dictionary
-		_sync_entry(source, unit_owner, mesh, config)
+		_sync_entry(source, unit_owner, mesh, config, entry)
 
 
-func _sync_entry(source: Node2D, unit_owner: Node2D, mesh: MeshInstance3D, config: Dictionary) -> void:
+func _sync_entry(source: Node2D, unit_owner: Node2D, mesh: MeshInstance3D, config: Dictionary, entry: Dictionary) -> void:
 	var texture := config.get("texture") as Texture2D
 	var visual_size_px := config.get("visual_size_px", Vector2.ZERO) as Vector2
 	var local_anchor := config.get("local_ground_anchor", Vector2.ZERO) as Vector2
 	var logical_anchor := unit_owner.global_transform * local_anchor
 	var anchor_3d := _view.call("world_2d_to_ground_anchor", logical_anchor) as Vector3
-	mesh.position = anchor_3d
-	var visible := bool(config.get("visible", true)) and texture != null and visual_size_px.x > 0.0 and visual_size_px.y > 0.0
+	if entry.get("last_anchor", Vector3.INF) != anchor_3d:
+		mesh.position = anchor_3d
+		entry["last_anchor"] = anchor_3d
+	var inside_view := bool(_view.call("is_world_point_within_visual_bounds", logical_anchor, cull_margin_pixels))
+	var visible := bool(config.get("visible", true)) and texture != null and visual_size_px.x > 0.0 and visual_size_px.y > 0.0 and inside_view and _visible_count < max_visible_billboards
 	mesh.visible = visible
 	if not visible:
+		_culled_count += 1
 		return
-	mesh.material_override = _get_material(texture)
+	_visible_count += 1
+	var appearance_version := int(config.get("appearance_version", -1))
+	var visibility_version := int(config.get("visibility_version", -1))
+	var appearance_changed := appearance_version != int(entry.get("appearance_version", -2))
+	var visibility_changed := visibility_version != int(entry.get("visibility_version", -2))
+	if appearance_changed:
+		mesh.material_override = _get_material(texture)
 	var units_per_pixel := _world_units_per_pixel(anchor_3d)
-	mesh.set_instance_shader_parameter("billboard_size_world", visual_size_px * units_per_pixel)
-	mesh.set_instance_shader_parameter(
-		"bottom_padding_ratio",
-		clampf(float(config.get("bottom_padding_px", 0.0)) / maxf(visual_size_px.y, 1.0), 0.0, 0.49)
-	)
-	mesh.set_instance_shader_parameter("flip_h", bool(config.get("flip_h", false)))
-	mesh.set_instance_shader_parameter("flip_v", bool(config.get("flip_v", false)))
-	mesh.set_instance_shader_parameter("visual_color", config.get("color", Color.WHITE) as Color)
-	mesh.set_instance_shader_parameter("flash_color", config.get("flash_color", Color.WHITE) as Color)
-	mesh.set_instance_shader_parameter("flash_amount", float(config.get("flash_amount", 0.0)))
-	mesh.set_instance_shader_parameter("warning_color", config.get("warning_color", Color.WHITE) as Color)
-	mesh.set_instance_shader_parameter("warning_amount", float(config.get("warning_amount", 0.0)))
-	mesh.set_instance_shader_parameter("outline_color", config.get("outline_color", Color.TRANSPARENT) as Color)
-	mesh.set_instance_shader_parameter("outline_width_px", float(config.get("outline_width_px", 0.0)))
-	mesh.set_instance_shader_parameter("source_id", float(source.get_instance_id() % 4096))
+	var size_world := visual_size_px * units_per_pixel
+	if appearance_changed or entry.get("last_size_world", Vector2.INF) != size_world:
+		mesh.set_instance_shader_parameter("billboard_size_world", size_world)
+		entry["last_size_world"] = size_world
+		mesh.set_instance_shader_parameter("bottom_padding_ratio", clampf(float(config.get("bottom_padding_px", 0.0)) / maxf(visual_size_px.y, 1.0), 0.0, 0.49))
+		mesh.set_instance_shader_parameter("flip_h", bool(config.get("flip_h", false)))
+		mesh.set_instance_shader_parameter("flip_v", bool(config.get("flip_v", false)))
+		mesh.set_instance_shader_parameter("visual_color", config.get("color", Color.WHITE) as Color)
+		mesh.set_instance_shader_parameter("flash_color", config.get("flash_color", Color.WHITE) as Color)
+		mesh.set_instance_shader_parameter("flash_amount", float(config.get("flash_amount", 0.0)))
+		mesh.set_instance_shader_parameter("warning_color", config.get("warning_color", Color.WHITE) as Color)
+		mesh.set_instance_shader_parameter("warning_amount", float(config.get("warning_amount", 0.0)))
+		mesh.set_instance_shader_parameter("outline_color", config.get("outline_color", Color.TRANSPARENT) as Color)
+		mesh.set_instance_shader_parameter("outline_width_px", float(config.get("outline_width_px", 0.0)))
+		_shader_parameter_updates += 10
+	if appearance_changed:
+		mesh.set_instance_shader_parameter("source_id", float(source.get_instance_id() % 4096))
+		_shader_parameter_updates += 1
+	entry["appearance_version"] = appearance_version
+	entry["visibility_version"] = visibility_version
+	if visibility_changed:
+		entry["last_visible"] = visible
 
 
 func _world_units_per_pixel(anchor_3d: Vector3) -> float:
@@ -152,6 +176,16 @@ func clear() -> void:
 
 func get_debug_entries() -> Dictionary:
 	return _entries
+
+
+func get_performance_metrics() -> Dictionary:
+	return {
+		"registered": _entries.size(),
+		"visible": _visible_count,
+		"culled": _culled_count,
+		"shader_parameter_updates": _shader_parameter_updates,
+		"visible_limit": max_visible_billboards,
+	}
 
 
 func _is_ready() -> bool:

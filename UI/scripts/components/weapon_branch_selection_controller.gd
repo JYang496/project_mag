@@ -81,6 +81,8 @@ func finalize_branch_selected_weapon(weapon: Weapon) -> void:
 		owner_ui.upgrade_management_controller.update_upg()
 	owner_ui.refresh_border()
 	request_next()
+	if PhaseManager.current_state() == PhaseManager.SETTLEMENT:
+		PhaseManager.request_settlement_completion_check()
 
 func sync_state_from_owner() -> void:
 	if owner_ui == null:

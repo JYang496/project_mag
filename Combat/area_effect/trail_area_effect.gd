@@ -199,21 +199,17 @@ func _collect_targets(tree: SceneTree) -> Array[Node]:
 func _collect_enemy_candidates(tree: SceneTree) -> Array[Node2D]:
 	var output: Array[Node2D] = []
 	var registry := tree.root.get_node_or_null("EnemyRegistry")
-	if registry != null and registry.has_method("get_enemies_in_rect"):
-		var bounds := _get_segments_world_bounds()
-		if bounds.size == Vector2.ZERO:
-			return output
-		var registered_enemies: Variant = registry.call("get_enemies_in_rect", bounds)
-		if registered_enemies is Array:
-			for enemy_ref in registered_enemies:
-				var enemy := enemy_ref as Node2D
-				if enemy != null and is_instance_valid(enemy):
-					output.append(enemy)
-			return output
-	for enemy_ref in tree.get_nodes_in_group("enemies"):
-		var enemy := enemy_ref as Node2D
-		if enemy != null and is_instance_valid(enemy):
-			output.append(enemy)
+	if registry == null or not registry.has_method("get_enemies_in_rect"):
+		return output
+	var bounds := _get_segments_world_bounds()
+	if bounds.size == Vector2.ZERO:
+		return output
+	var registered_enemies: Variant = registry.call("get_enemies_in_rect", bounds)
+	if registered_enemies is Array:
+		for enemy_ref in registered_enemies:
+			var enemy := enemy_ref as Node2D
+			if enemy != null and is_instance_valid(enemy):
+				output.append(enemy)
 	return output
 
 func _get_segments_world_bounds() -> Rect2:
