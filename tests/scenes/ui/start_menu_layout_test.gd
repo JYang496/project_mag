@@ -146,6 +146,12 @@ func _test_preview_handoff_lifecycle() -> void:
 	_expect(bool(preview.get("loading_active")), "clicking a game action must switch the preview from calibration to real loading")
 	var initial_loading_progress := float(preview.get("loading_progress"))
 	_expect(initial_loading_progress > 0.0, "real loading handoff must publish its initial run-state phase")
+	await LoadingPerformance.wait_for_world_preview_safe_scene_change()
+	_expect(
+		float(preview.get("handoff_progress")) > 0.35
+			and float(preview.get("handoff_progress")) < 0.95,
+		"safe scene switching must begin staged world construction while the preview expansion is still animating"
+	)
 	LoadingPerformance.update_world_preview_loading_progress(0.42)
 	LoadingPerformance.update_world_preview_loading_progress(0.20)
 	_expect(

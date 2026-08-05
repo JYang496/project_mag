@@ -4,6 +4,7 @@ const LONG_FRAME_MS := 33.0
 const RUNTIME_DIAGNOSTICS_SCRIPT := preload("res://autoload/RuntimeDiagnostics.gd")
 const START_MENU_PREVIEW_SCRIPT := preload("res://UI/scripts/components/start_menu_backdrop.gd")
 const WORLD_PREVIEW_COVER_SEC := 0.62
+const WORLD_PREVIEW_SAFE_SCENE_CHANGE_SEC := 0.34
 const ORDER := [
 	"start_menu_ready", "prewarm_started", "prewarm_finished",
 	"start_button_pressed", "threaded_load_started", "threaded_load_finished",
@@ -25,6 +26,7 @@ var _world_preview: Control
 var _world_preview_handoff_active := false
 var _world_preview_cover_tween: Tween
 var _world_build_handoff_tween: Tween
+var _world_preview_handoff_started_usec := 0
 
 func _ready() -> void:
 	_world_build_overlay = CanvasLayer.new()
@@ -126,6 +128,7 @@ func begin_world_preview_handoff() -> void:
 	_stop_world_build_handoff()
 	_stop_world_preview_cover()
 	_world_preview_handoff_active = true
+	_world_preview_handoff_started_usec = Time.get_ticks_usec()
 	_world_build_overlay.visible = true
 	_world_build_overlay_root.modulate.a = 1.0
 	_world_build_overlay_root.color.a = 0.0
@@ -153,6 +156,14 @@ func wait_for_world_preview_cover() -> void:
 	var tween := _world_preview_cover_tween
 	if tween != null and tween.is_valid():
 		await tween.finished
+
+func wait_for_world_preview_safe_scene_change() -> void:
+	if not _world_preview_handoff_active:
+		return
+	var elapsed_sec := (Time.get_ticks_usec() - _world_preview_handoff_started_usec) / 1000000.0
+	var remaining_sec := WORLD_PREVIEW_SAFE_SCENE_CHANGE_SEC - elapsed_sec
+	if remaining_sec > 0.0:
+		await get_tree().create_timer(remaining_sec).timeout
 
 func cancel_world_preview_handoff() -> void:
 	_stop_world_preview_cover()

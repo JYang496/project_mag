@@ -9,6 +9,7 @@ const FRIENDLY_SCENE := preload("res://Npc/friendly/scenes/friendly_npc.tscn")
 const UNIT_BILLBOARD_SOURCE := preload("res://Visual/Oblique/unit_billboard_visual_2d.gd")
 const UNIT_BILLBOARD_SHADER := preload("res://Shaders/unit_billboard_3d.gdshader")
 const BEACON_PROJECTED_VISUAL := preload("res://World/battle_contract/beacon_projected_visual.gd")
+const TACTICAL_BEACON_SCENE := preload("res://World/battle_contract/tactical_beacon.tscn")
 const REST_ZONE_SHADER := preload("res://Shaders/rest_area_zone_ground.gdshader")
 
 class DummyBoard:
@@ -205,8 +206,36 @@ func _expect_aura_registration_initializes_transform(view: Node) -> void:
 
 
 func _expect_beacon_visual_respects_player(player: Node2D, view: Node) -> void:
+	var beacon := TACTICAL_BEACON_SCENE.instantiate() as Area2D
+	var beacon_shape := (beacon.get_node("CollisionShape2D") as CollisionShape2D).shape as RectangleShape2D
+	var ground_visual := beacon.get_node("OuterGround")
+	_expect(beacon_shape != null and beacon_shape.size == Vector2(140.0, 140.0), "beacon presence detection must use the 140x140 square protocol footprint")
+	_expect(int(ground_visual.get("visual_shape")) == 1 and ground_visual.get("rectangle_size") == beacon_shape.size, "beacon ground rendering must match its square collision footprint")
+	beacon.free()
 	var visual := BEACON_PROJECTED_VISUAL.new() as Control
 	add_child(visual)
+	var protocol_texture := load("res://asset/images/effects/protocol/protocol_square_topdown.png") as Texture2D
+	_expect(protocol_texture != null, "beacon projected visual must load the top-down square protocol texture")
+	_expect(protocol_texture != null and protocol_texture.get_size() == Vector2(128.0, 128.0), "top-down protocol texture must retain the effect_large 128x128 grid")
+	var projection_target := Node2D.new()
+	projection_target.position = Vector2(180.0, -90.0)
+	projection_target.rotation = 0.17
+	add_child(projection_target)
+	visual.configure(projection_target, &"operation", 1, Vector2(140.0, 140.0))
+	var projected_footprint := visual.call("_projected_footprint_points") as PackedVector2Array
+	var half := Vector2(70.0, 70.0)
+	var local_corners := PackedVector2Array([
+		Vector2(-half.x, -half.y), Vector2(half.x, -half.y),
+		Vector2(half.x, half.y), Vector2(-half.x, half.y),
+	])
+	_expect(projected_footprint.size() == 4, "protocol texture and progress must use four projected world corners")
+	for index in range(local_corners.size()):
+		var expected_corner := view.call("project_world_to_screen", projection_target.global_transform * local_corners[index]) as Vector2
+		_expect(projected_footprint[index].distance_to(expected_corner) < 0.001, "protocol footprint corner %d must use the camera's direct world projection" % index)
+	var progress_perimeter := visual.call("_closed_footprint", projected_footprint) as PackedVector2Array
+	_expect(progress_perimeter.size() == 5 and progress_perimeter[4] == projected_footprint[0], "protocol progress must close the same four projected corners without a hand-authored trapezoid")
+	for index in range(projected_footprint.size()):
+		_expect(progress_perimeter[index] == projected_footprint[index], "protocol progress corner %d must match the texture footprint exactly" % index)
 	var occlusion_rect := visual.call("_player_occlusion_rect") as Rect2
 	var idle_source := player.get_node("MechaSprite") as Node2D
 	var config := idle_source.call("get_unit_billboard_config") as Dictionary
@@ -232,6 +261,7 @@ func _expect_beacon_visual_respects_player(player: Node2D, view: Node) -> void:
 				"beacon progress line must not retain a segment across the player billboard",
 			)
 	visual.queue_free()
+	projection_target.queue_free()
 
 
 func _expect_marker_matches_ground(marker: Node2D, owner: Node2D, view: Node) -> void:

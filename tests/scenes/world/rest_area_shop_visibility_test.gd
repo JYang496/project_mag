@@ -41,6 +41,22 @@ func _ready() -> void:
 			and ground_sprite.texture.resource_path == EXPECTED_REST_GROUND_PATH,
 		"rest area runtime initialization must preserve its dedicated ground texture"
 	) or failed
+	var warehouse_prop := Sprite2D.new()
+	warehouse_prop.name = "HybridProp2"
+	scene_rest_area.get_node("ZoneVisuals").add_child(warehouse_prop)
+	warehouse_prop.global_position = Vector2(418.0, 96.0)
+	var projected_hint := Vector2(177.0, 122.0)
+	var aligned_hint := scene_rest_area.call(
+		"_align_service_hint_with_hybrid_prop", 2, projected_hint
+	) as Vector2
+	var expected_prop_screen_x := (
+		scene_rest_area.get_viewport().get_canvas_transform() * warehouse_prop.global_position
+	).x
+	failed = _check(
+		is_equal_approx(aligned_hint.x, expected_prop_screen_x)
+			and is_equal_approx(aligned_hint.y, projected_hint.y),
+		"hybrid service hints must share the rendered facility's horizontal center"
+	) or failed
 	scene_rest_area.queue_free()
 	var rest_area := RestAreaType.new()
 	PlayerData.run_completed_levels = 2
@@ -92,6 +108,23 @@ func _ready() -> void:
 	) or failed
 	var smith_hint := hint_owner.get_node("SmithHintLabel") as Label
 	var module_hint := hint_owner.get_node("ModuleHintLabel") as Label
+	failed = _check(
+		merchant_hint.size == Vector2(132.0, 36.0)
+			and smith_hint.size == Vector2(132.0, 36.0)
+			and module_hint.size == Vector2(132.0, 36.0),
+		"service hints must keep compact fixed geometry"
+	) or failed
+	failed = _check(
+		merchant_hint.position.x + merchant_hint.size.x < smith_hint.position.x
+			and smith_hint.position.x + smith_hint.size.x < module_hint.position.x,
+		"adjacent service hints must retain visible separation"
+	) or failed
+	failed = _check(
+		merchant_hint.get_rect().get_center() == Vector2(80.0, 80.0)
+			and smith_hint.get_rect().get_center() == Vector2(240.0, 80.0)
+			and module_hint.get_rect().get_center() == Vector2(400.0, 80.0),
+		"service hints must be centered on their service zones"
+	) or failed
 	failed = _check(not smith_hint.text.begins_with("^"), "upgrade hint must not expose an ASCII caret") or failed
 	failed = _check(not module_hint.text.begins_with("[]"), "warehouse hint must not expose ASCII brackets") or failed
 	var battle_hint := hint_owner.get_node("BattleHintLabel") as Label
@@ -115,6 +148,16 @@ func _ready() -> void:
 	hint_presenter.call("update_visibility")
 	failed = _check(not hint_owner.get_node("MerchantHintLabel").visible, "non-hovered labels must clear after intro") or failed
 	failed = _check(hint_owner.get_node("SmithHintLabel").visible, "hovered label must remain visible after intro") or failed
+	var hybrid_canvas := CanvasLayer.new()
+	hint_owner.add_child(hybrid_canvas)
+	smith_hint.reparent(hybrid_canvas, false)
+	var projected_position := Vector2(713.0, 219.0)
+	smith_hint.position = projected_position
+	hint_presenter.call("refresh")
+	failed = _check(
+		smith_hint.position == projected_position,
+		"status refresh must not overwrite a hybrid-projected service hint position"
+	) or failed
 	hint_owner.queue_free()
 
 	PlayerData.run_completed_levels = previous_completed_levels

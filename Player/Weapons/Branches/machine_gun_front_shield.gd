@@ -1,7 +1,9 @@
 extends Area2D
 class_name MachineGunFrontShield
 
-@export var forward_distance: float = 28.0
+const BLOCKABLE_ENEMY_PROJECTILE_GROUP: StringName = &"blockable_enemy_projectile"
+
+@export var forward_distance: float = 34.0
 @export var block_stun_seconds: float = 0.5
 @export var block_knockback_amount: float = 140.0
 @export_range(10.0, 89.0, 1.0) var block_half_angle_degrees: float = 60.0
@@ -87,6 +89,8 @@ func _on_body_entered(body: Node2D) -> void:
 		_interrupt_enemy(body)
 
 func _is_enemy_attack_area(area: Area2D) -> bool:
+	if area.is_in_group(BLOCKABLE_ENEMY_PROJECTILE_GROUP):
+		return true
 	if area is HitBox:
 		var owner_node: Variant = area.get("hitbox_owner")
 		if owner_node != null and owner_node is Node and owner_node is BaseEnemy:
@@ -100,6 +104,12 @@ func _is_enemy_attack_area(area: Area2D) -> bool:
 	return false
 
 func _consume_enemy_attack(area: Area2D) -> void:
+	if area.is_in_group(BLOCKABLE_ENEMY_PROJECTILE_GROUP):
+		if area.has_method("on_shield_blocked"):
+			area.call("on_shield_blocked", self)
+		else:
+			area.queue_free()
+		return
 	if area is HitBox and area.has_method("set_deferred"):
 		area.set_deferred("monitoring", false)
 		area.set_deferred("monitorable", false)

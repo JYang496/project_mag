@@ -14,6 +14,7 @@ var resolve := 0
 var resolve_triggers := 0
 const RESOLVE_THRESHOLD := 250
 const RESOLVE_TRIGGER_CAP := 3
+const THREAT_MULTIPLIER_PER_LEVEL := 0.06
 var _completion_guard := false
 
 func start(combat_port, parameters: Dictionary) -> void:
@@ -43,7 +44,7 @@ func _on_tick(snapshot: Dictionary) -> void:
 	var next_threat := mini(int(floor((duration_sec - remaining_sec) / threat_step_sec)) + 1, 5)
 	if next_threat != threat_level:
 		threat_level = next_threat
-		port.request_configure_threat_multiplier(1.0 + 0.15 * float(threat_level - 1))
+		port.request_configure_threat_multiplier(1.0 + THREAT_MULTIPLIER_PER_LEVEL * float(threat_level - 1))
 	_emit_snapshot()
 	if remaining_sec <= 0.0:
 		_completion_guard = true

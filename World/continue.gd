@@ -60,7 +60,7 @@ func _on_pressed() -> void:
 		disabled = false
 		return
 	LoadingPerformance.update_world_preview_loading_progress(0.78)
-	await LoadingPerformance.wait_for_world_preview_cover()
+	await LoadingPerformance.wait_for_world_preview_safe_scene_change()
 	LoadingPerformance.update_world_preview_loading_progress(0.84)
 	LoadingPerformance.show_world_build_overlay()
 	LoadingPerformance.mark("world_scene_changed")

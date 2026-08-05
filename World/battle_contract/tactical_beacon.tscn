@@ -3,8 +3,8 @@
 [ext_resource type="Script" path="res://World/battle_contract/tactical_beacon.gd" id="1"]
 [ext_resource type="Script" path="res://World/battle_contract/beacon_ground_visual.gd" id="2"]
 
-[sub_resource type="CircleShape2D" id="1"]
-radius = 70.0
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(140, 140)
 
 [node name="TacticalBeacon" type="Area2D" groups=["battle_contract_runtime"]]
 collision_layer = 0
@@ -19,4 +19,5 @@ shape = SubResource("1")
 [node name="OuterGround" type="Node2D" parent="."]
 script = ExtResource("2")
 radius = 70.0
+rectangle_size = Vector2(140, 140)
 visual_modulate = Color(0.22, 0.68, 0.82, 0.18)

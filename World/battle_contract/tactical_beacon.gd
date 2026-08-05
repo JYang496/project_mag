@@ -31,7 +31,7 @@ func _setup_projected_visual() -> void:
 	_projected_visual = ProjectedVisual.new()
 	_projected_visual.name = "BeaconProjectedVisual_%s" % get_instance_id()
 	_ensure_visual_layer().add_child(_projected_visual)
-	_projected_visual.configure(self, visual_kind, beacon_id, _get_radius())
+	_projected_visual.configure(self, visual_kind, beacon_id, _get_footprint_size())
 	_projected_visual.set_progress(_progress)
 	_projected_visual.set_presence(_player_inside, _enemies.size())
 
@@ -110,7 +110,7 @@ func _apply_ground_style() -> void:
 		_:
 			ground.visual_modulate = Color(0.22, 0.68, 0.82, 0.18)
 
-func _get_radius() -> float:
+func _get_footprint_size() -> Vector2:
 	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
-	var circle := shape_node.shape as CircleShape2D if shape_node != null else null
-	return circle.radius if circle != null else 70.0
+	var rectangle := shape_node.shape as RectangleShape2D if shape_node != null else null
+	return rectangle.size if rectangle != null else Vector2(140.0, 140.0)

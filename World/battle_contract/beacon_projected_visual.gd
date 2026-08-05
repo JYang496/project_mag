@@ -1,6 +1,7 @@
 extends Control
 
 const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd")
+const PROTOCOL_SQUARE_TEXTURE: Texture2D = preload("res://asset/images/effects/protocol/protocol_square_topdown.png")
 
 const OPERATION := &"operation"
 const CONTAINMENT := &"containment"
@@ -11,7 +12,7 @@ const PLAYER_OCCLUSION_PADDING := Vector2(4.0, 3.0)
 var target: Node2D
 var visual_kind: StringName = OPERATION
 var beacon_id := 0
-var radius := 70.0
+var footprint_size := Vector2(140.0, 140.0)
 var progress := 0.0
 var player_inside := false
 var enemy_count := 0
@@ -25,11 +26,11 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(true)
 
-func configure(owner_target: Node2D, kind: StringName, id: int, world_radius: float) -> void:
+func configure(owner_target: Node2D, kind: StringName, id: int, world_footprint_size: Vector2) -> void:
 	target = owner_target
 	visual_kind = kind
 	beacon_id = id
-	radius = world_radius
+	footprint_size = world_footprint_size.abs()
 	queue_redraw()
 
 func set_presence(inside: bool, enemies: int) -> void:
@@ -85,60 +86,115 @@ func _draw_world_marker(center: Vector2) -> void:
 	var color := _primary_color()
 	var danger := Color(1.0, 0.25, 0.20, 0.95)
 	var pulse := 0.5 + 0.5 * sin(_elapsed * (5.6 if player_inside else 2.4))
-	var x_axis := _project(target.global_position + Vector2(radius, 0.0)) - center
-	var y_axis := _project(target.global_position + Vector2(0.0, radius)) - center
-	if x_axis.length() < 8.0 or y_axis.length() < 5.0:
-		x_axis = Vector2(radius, 0.0)
-		y_axis = Vector2(0.0, radius * 0.58)
+	var footprint := _projected_footprint_points()
+	if footprint.size() != 4:
+		return
 
 	var state_alpha := 0.78 + pulse * 0.18 if player_inside else 0.58 + pulse * 0.10
-	_draw_protocol_outline(center, x_axis, y_axis, Color(color.r, color.g, color.b, state_alpha))
-	_draw_elliptic_arc(center, x_axis * 0.83, y_axis * 0.83, 0.0, TAU_F, Color(0.03, 0.08, 0.12, 0.72), 5.0, 64)
+	_draw_protocol_texture(footprint, Color(color.r, color.g, color.b, state_alpha))
+	_draw_protocol_perimeter(footprint, Color(0.03, 0.08, 0.12, 0.72), 5.0)
 	if progress > 0.001:
-		_draw_elliptic_arc(center, x_axis * 0.83, y_axis * 0.83, -PI * 0.5, -PI * 0.5 + TAU_F * progress, color, 4.0, maxi(8, ceili(64.0 * progress)))
+		_draw_protocol_perimeter(footprint, color, 4.0, progress)
 
 	if player_inside and not completed:
 		var wave_scale := 0.55 + fmod(_elapsed * 0.9, 1.0) * 0.34
 		var wave_alpha := (1.0 - fmod(_elapsed * 0.9, 1.0)) * 0.28
-		_draw_elliptic_arc(center, x_axis * wave_scale, y_axis * wave_scale, 0.0, TAU_F, Color(color.r, color.g, color.b, wave_alpha), 2.0, 48)
+		_draw_protocol_perimeter(_scale_footprint(footprint, wave_scale), Color(color.r, color.g, color.b, wave_alpha), 2.0)
 
 	if enemy_count > 0 and not completed:
-		var jitter := sin(_elapsed * 17.0) * 0.035
-		for index in range(4):
-			var start := -PI * 0.5 + float(index) * PI * 0.5 + jitter
-			_draw_elliptic_arc(center, x_axis * 1.07, y_axis * 1.07, start, start + 0.32, danger, 4.0, 8)
+		_draw_protocol_danger_corners(footprint, danger)
 
 	_draw_center_icon(center, color, pulse)
 	if completed:
 		var completion_ratio := clampf(_completion_elapsed / 0.72, 0.0, 1.0)
 		var flash_alpha := (1.0 - completion_ratio) * 0.7
-		_draw_elliptic_arc(center, x_axis * (0.72 + completion_ratio * 0.58), y_axis * (0.72 + completion_ratio * 0.58), 0.0, TAU_F, Color(color.r, color.g, color.b, flash_alpha), 4.0, 64)
+		_draw_protocol_perimeter(_scale_footprint(footprint, 0.72 + completion_ratio * 0.58), Color(color.r, color.g, color.b, flash_alpha), 4.0)
 		_draw_check(center, Color(0.86, 1.0, 0.80, 0.98))
 
-func _draw_protocol_outline(center: Vector2, x_axis: Vector2, y_axis: Vector2, color: Color) -> void:
-	match visual_kind:
-		CONTAINMENT:
-			var points := PackedVector2Array()
-			for index in range(25):
-				var angle := TAU_F * float(index) / 24.0
-				var jag := 1.0 if index % 2 == 0 else 0.88
-				points.append(center + x_axis * cos(angle) * jag + y_axis * sin(angle) * jag)
-			_draw_occlusion_safe_polyline(points, color, 3.0)
-		EXTRACTION:
-			var hex := PackedVector2Array()
-			for index in range(7):
-				var angle := -PI * 0.5 + TAU_F * float(index) / 6.0
-				hex.append(center + x_axis * cos(angle) + y_axis * sin(angle))
-			_draw_occlusion_safe_polyline(hex, color, 3.0)
-			for index in range(3):
-				var angle := -PI * 0.5 + TAU_F * float(index) / 3.0
-				var outer := center + x_axis * cos(angle) * 0.72 + y_axis * sin(angle) * 0.72
-				var inner := center + x_axis * cos(angle) * 0.48 + y_axis * sin(angle) * 0.48
-				_draw_occlusion_safe_polyline(PackedVector2Array([outer, inner]), color, 3.0)
-		_:
-			for index in range(12):
-				var start := TAU_F * float(index) / 12.0 + _elapsed * 0.08
-				_draw_elliptic_arc(center, x_axis, y_axis, start, start + 0.30, color, 3.0, 5)
+func _projected_footprint_points() -> PackedVector2Array:
+	if target == null or not is_instance_valid(target):
+		return PackedVector2Array()
+	var half := footprint_size * 0.5
+	var local_corners := PackedVector2Array([
+		Vector2(-half.x, -half.y),
+		Vector2(half.x, -half.y),
+		Vector2(half.x, half.y),
+		Vector2(-half.x, half.y),
+	])
+	var projected := PackedVector2Array()
+	for corner in local_corners:
+		projected.append(_project(target.global_transform * corner))
+	return projected
+
+
+func _draw_protocol_texture(footprint: PackedVector2Array, color: Color) -> void:
+	var colors := PackedColorArray([color, color, color, color])
+	var uvs := PackedVector2Array([Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, Vector2.DOWN])
+	draw_polygon(footprint, colors, uvs, PROTOCOL_SQUARE_TEXTURE)
+
+
+func _draw_protocol_perimeter(
+	footprint: PackedVector2Array,
+	color: Color,
+	width: float,
+	ratio: float = 1.0,
+) -> void:
+	var points := _closed_footprint(footprint)
+	var visible_points := _polyline_prefix(points, clampf(ratio, 0.0, 1.0))
+	_draw_occlusion_safe_polyline(visible_points, color, width)
+
+
+func _closed_footprint(footprint: PackedVector2Array) -> PackedVector2Array:
+	var points := footprint.duplicate()
+	if not points.is_empty():
+		points.append(points[0])
+	return points
+
+
+func _scale_footprint(footprint: PackedVector2Array, scale_value: float) -> PackedVector2Array:
+	if footprint.size() != 4:
+		return footprint
+	var center := Vector2.ZERO
+	for point in footprint:
+		center += point
+	center /= float(footprint.size())
+	var scaled := PackedVector2Array()
+	for point in footprint:
+		scaled.append(center + (point - center) * scale_value)
+	return scaled
+
+
+func _polyline_prefix(points: PackedVector2Array, ratio: float) -> PackedVector2Array:
+	if points.size() < 2 or ratio <= 0.0:
+		return PackedVector2Array()
+	if ratio >= 1.0:
+		return points
+	var total_length := 0.0
+	for index in range(points.size() - 1):
+		total_length += points[index].distance_to(points[index + 1])
+	var remaining := total_length * ratio
+	var result := PackedVector2Array([points[0]])
+	for index in range(points.size() - 1):
+		var segment_length := points[index].distance_to(points[index + 1])
+		if remaining >= segment_length:
+			result.append(points[index + 1])
+			remaining -= segment_length
+			continue
+		if segment_length > 0.0:
+			result.append(points[index].lerp(points[index + 1], remaining / segment_length))
+		break
+	return result
+
+
+func _draw_protocol_danger_corners(footprint: PackedVector2Array, color: Color) -> void:
+	if footprint.size() != 4:
+		return
+	for corner_index in range(4):
+		var previous_index := (corner_index + 3) % 4
+		var next_index := (corner_index + 1) % 4
+		var previous := footprint[corner_index].lerp(footprint[previous_index], 0.20)
+		var next := footprint[corner_index].lerp(footprint[next_index], 0.20)
+		_draw_occlusion_safe_polyline(PackedVector2Array([previous, footprint[corner_index], next]), color, 4.0)
 
 func _draw_center_icon(center: Vector2, color: Color, pulse: float) -> void:
 	var icon_radius := 14.0 + pulse * 1.5
@@ -204,14 +260,6 @@ func _draw_check(center: Vector2, color: Color) -> void:
 		return
 	draw_line(center + Vector2(-7.0, 0.0), center + Vector2(-2.0, 6.0), color, 3.0, true)
 	draw_line(center + Vector2(-2.0, 6.0), center + Vector2(8.0, -6.0), color, 3.0, true)
-
-func _draw_elliptic_arc(center: Vector2, x_axis: Vector2, y_axis: Vector2, start_angle: float, end_angle: float, color: Color, width: float, segments: int) -> void:
-	var points := PackedVector2Array()
-	var count := maxi(segments, 2)
-	for index in range(count + 1):
-		var angle := lerpf(start_angle, end_angle, float(index) / float(count))
-		points.append(center + x_axis * cos(angle) + y_axis * sin(angle))
-	_draw_occlusion_safe_polyline(points, color, width)
 
 func _draw_occlusion_safe_polyline(points: PackedVector2Array, color: Color, width: float) -> void:
 	for visible_run in _split_polyline_around_rect(points, _active_player_occlusion_rect):

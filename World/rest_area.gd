@@ -244,6 +244,11 @@ func _on_post_battle_collect_gate_changed(blocking: bool) -> void:
 func _refresh_scene_hint_labels() -> void:
 	if _hint_presenter != null:
 		_hint_presenter.call("refresh")
+	# Refresh recalculates the labels in the rest area's local 2D grid. Once the
+	# labels live in the hybrid CanvasLayer, immediately restore their projected
+	# screen positions instead of leaving them at those local coordinates until
+	# a later process frame.
+	_sync_hybrid_hint_positions()
 
 func _setup_scene_hint_labels() -> void:
 	if _hint_presenter != null:
@@ -693,7 +698,23 @@ func _sync_hybrid_hint_positions() -> void:
 		if int(zone_id) == CENTER_ZONE_ID:
 			anchor_world += zone_battle_hint_extra_offset
 		var screen_position := hybrid_view.call("project_world_to_screen", anchor_world) as Vector2
-		label.position = screen_position - label.size * Vector2(0.5, 1.0)
+		screen_position = _align_service_hint_with_hybrid_prop(int(zone_id), screen_position)
+		# The projected zone center is the semantic anchor. Center the whole hint on
+		# it so adjacent service labels retain their intended inter-zone gap.
+		label.position = (screen_position - label.size * 0.5).round()
+
+func _align_service_hint_with_hybrid_prop(zone_id: int, projected_position: Vector2) -> Vector2:
+	if zone_id == CENTER_ZONE_ID:
+		return projected_position
+	var prop := get_node_or_null("ZoneVisuals/HybridProp%d" % zone_id) as Sprite2D
+	if prop == null or not is_instance_valid(prop):
+		return projected_position
+	# BillboardVisual2D has already placed the prop in canvas coordinates. Use
+	# its rendered horizontal center as the label anchor so both visuals remain
+	# aligned under camera/stretch canvas transforms. Preserve the label's own
+	# vertical offset to keep the text below the facility art.
+	var prop_screen_position := get_viewport().get_canvas_transform() * prop.global_position
+	return Vector2(prop_screen_position.x, projected_position.y)
 
 func _set_hover_zone(zone_id: int) -> void:
 	if hover_zone_id == zone_id:

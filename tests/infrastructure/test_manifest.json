@@ -284,6 +284,16 @@
       "timeout_seconds": 15
     },
     {
+      "id": "weapon.machine_gun_shield_projectile_block",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/weapon/machine_gun_shield_projectile_block_test.tscn",
+      "domain": "weapon",
+      "dependency_domains": ["enemy", "combat", "player"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
       "id": "weapon.chainsaw_projectile_lifecycle",
       "entry_type": "scene",
       "path": "res://tests/scenes/weapon/chainsaw_projectile_lifecycle_test.tscn",
@@ -399,6 +409,16 @@
       "path": "res://tests/scenes/combat/area_effect_tracking_test.tscn",
       "domain": "combat",
       "dependency_domains": [],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
+      "id": "combat.battle_contract_beacon_teardown",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/combat/battle_contract_beacon_teardown_test.tscn",
+      "domain": "combat",
+      "dependency_domains": ["world", "spawn"],
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 15

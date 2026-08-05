@@ -1,8 +1,5 @@
 extends Node
 
-func _enter_tree() -> void:
-	LoadingPerformance.mark("world_tree_entered")
-
 func _ready() -> void:
 	for frame in range(120):
 		if _is_world_ready():

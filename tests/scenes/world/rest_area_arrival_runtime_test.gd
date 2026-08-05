@@ -129,6 +129,21 @@ func _test_real_world_initial_entry() -> void:
 	var world := WORLD_SCENE.instantiate()
 	get_tree().root.add_child(world)
 	get_tree().current_scene = world
+	var observed_stages: Array[StringName] = []
+	world.build_stage_changed.connect(func(stage: StringName, _progress: float):
+		observed_stages.append(stage)
+	)
+	var build_deadline := Time.get_ticks_msec() + 8000
+	while not bool(world.get("world_build_complete")) and Time.get_ticks_msec() < build_deadline:
+		await get_tree().process_frame
+	_expect(bool(world.get("world_build_complete")), "real world shell must finish its staged build")
+	_expect(
+		observed_stages == [
+			&"reward_manager", &"board", &"rest_area", &"ui", &"player",
+			&"ground", &"world_services", &"complete",
+		],
+		"real world shell must preserve the dependency-safe staged build order"
+	)
 	var real_ui := world.get_node("UI") as UI
 	var real_rest_area := world.get_node("RestArea") as RestArea
 	var deadline := Time.get_ticks_msec() + 8000

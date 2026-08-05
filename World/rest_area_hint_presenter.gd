@@ -3,6 +3,8 @@ extends RefCounted
 const BATTLE_HINT_MIN_WIDTH := 152.0
 const BATTLE_HINT_MAX_WIDTH := 220.0
 const BATTLE_HINT_HEIGHT := 30.0
+const SERVICE_HINT_WIDTH := 132.0
+const SERVICE_HINT_HEIGHT := 36.0
 
 var _owner: Node2D
 var _zone_merchant_hint_text := "Purchase"
@@ -125,6 +127,7 @@ func setup_labels() -> void:
 		zone_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 		zone_label.add_theme_constant_override("shadow_offset_x", 1)
 		zone_label.add_theme_constant_override("shadow_offset_y", 2)
+		_fit_service_hint_label(zone_label)
 	if _battle_hint_label:
 		_battle_hint_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		_battle_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -352,6 +355,13 @@ func _fit_battle_hint_label() -> void:
 	_battle_hint_label.custom_minimum_size = target_size
 	_battle_hint_label.size = target_size
 
+func _fit_service_hint_label(label: Label) -> void:
+	if label == null:
+		return
+	var target_size := Vector2(SERVICE_HINT_WIDTH, SERVICE_HINT_HEIGHT)
+	label.custom_minimum_size = target_size
+	label.size = target_size
+
 func _get_board_badge_count() -> int:
 	return CellEffectRuntime.get_pending_snapshot().size() + (1 if TaskRewardManager.has_pending_reward() else 0)
 
@@ -365,6 +375,10 @@ func _get_ui() -> Node:
 
 func _place_zone_hint_label(label: Label, zone_id: int, extra_offset: Vector2 = Vector2.ZERO) -> void:
 	if label == null or not _is_owner_valid():
+		return
+	# Hybrid-mode labels are screen-space children. Their position is owned by
+	# RestArea's projection pass, not by the local 2D service grid layout.
+	if label.get_parent() is CanvasLayer:
 		return
 	var zone_rect := _owner.call("_get_zone_rect_local", zone_id) as Rect2
 	if zone_rect.size.x <= 0.0 or zone_rect.size.y <= 0.0:

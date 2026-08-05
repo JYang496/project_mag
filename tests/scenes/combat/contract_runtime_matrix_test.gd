@@ -68,6 +68,19 @@ func _test_elimination() -> void:
 	_expect(not port.external_victory_control and not port.monitor_enemy_stalls, "elimination stop must restore port controls")
 
 func _test_survival() -> void:
+	var threat_port = FakePort.new()
+	threat_port.level_duration_sec = 75.0
+	var threat_runtime = SurvivalRuntime.new()
+	threat_runtime.start(threat_port, {"threat_step_sec": 15.0})
+	var expected_threat_multipliers := [1.06, 1.12, 1.18, 1.24]
+	for expected_multiplier in expected_threat_multipliers:
+		threat_port.battle_tick.emit({"delta_sec": 15.0})
+		_expect(
+			is_equal_approx(threat_port.configured_threat, expected_multiplier),
+			"survival threat must increase by six percent per level"
+		)
+	threat_runtime.stop()
+
 	var port = FakePort.new()
 	port.level_duration_sec = 30.0
 	var runtime = SurvivalRuntime.new()

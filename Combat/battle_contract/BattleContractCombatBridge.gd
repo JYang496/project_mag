@@ -223,7 +223,7 @@ func request_complete_beacon(beacon_id: int) -> void:
 func request_remove_beacons() -> void:
 	for beacon in _beacons.values():
 		if beacon != null and is_instance_valid(beacon):
-			if beacon.is_visually_completed():
+			if beacon.is_inside_tree() and beacon.is_visually_completed():
 				beacon.play_completion_and_remove()
 			else:
 				beacon.queue_free()

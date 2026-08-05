@@ -16,11 +16,15 @@ var _life_remaining: float = 0.0
 
 func _ready() -> void:
 	add_to_group("enemy_runtime_cleanup")
+	add_to_group(&"blockable_enemy_projectile")
 	_life_remaining = maxf(life_time, 0.05)
 	if collision_shape and collision_shape.shape is CircleShape2D:
 		var circle := collision_shape.shape as CircleShape2D
 		circle.radius = maxf(radius, 2.0)
 	rotation = direction.angle() + deg_to_rad(90.0)
+
+func on_shield_blocked(_shield: Area2D) -> void:
+	queue_free()
 
 func _physics_process(delta: float) -> void:
 	if sprite != null and sprite.has_method("set_world_direction"):
