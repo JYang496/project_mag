@@ -6,6 +6,8 @@ const PLAYER_TEXTURE: Texture2D = preload("res://asset/images/characters/pixel/i
 
 const MENU_PREVIEW_RECT := Rect2(552.0, 38.0, 688.0, 630.0)
 const FULL_PREVIEW_MARGIN := Vector2(28.0, 22.0)
+const MENU_CONTENT_SCALE := 1.18
+const MENU_CONTENT_OFFSET := Vector2(0.0, 10.0)
 const LOOP_DURATION := 6.0
 const GRID_SIZE := 3
 const COLOR_SYSTEM := Color(0.34, 0.78, 0.88, 1.0)
@@ -99,6 +101,11 @@ static func preview_layout(viewport_size: Vector2, progress: float) -> Dictionar
 		bottom_left.y
 	)
 	var platform_quad := PackedVector2Array([top_left, top_right, bottom_right, bottom_left])
+	var content_scale := lerpf(MENU_CONTENT_SCALE, 1.0, resolved_progress)
+	var content_offset := MENU_CONTENT_OFFSET * scale * (1.0 - resolved_progress)
+	var platform_center := _bounds_for_points(platform_quad).get_center()
+	for index in range(platform_quad.size()):
+		platform_quad[index] = platform_center + (platform_quad[index] - platform_center) * content_scale + content_offset
 	var platform_rect := _bounds_for_points(platform_quad)
 	var grid_points: Array[PackedVector2Array] = []
 	var cells: Array[Dictionary] = []
@@ -128,10 +135,11 @@ static func preview_layout(viewport_size: Vector2, progress: float) -> Dictionar
 		"grid_points": grid_points,
 		"cells": cells,
 		"player_center": player_center,
-		"player_size": Vector2.ONE * lerpf(58.0, 86.0, resolved_progress) * minf(scale.x, scale.y),
-		"top_width": top_left.distance_to(top_right),
-		"bottom_width": bottom_left.distance_to(bottom_right),
-		"depth": lerpf(13.0, 24.0, resolved_progress) * scale.y,
+		"player_size": Vector2.ONE * lerpf(58.0, 86.0, resolved_progress) * minf(scale.x, scale.y) * content_scale,
+		"content_scale": content_scale,
+		"top_width": platform_quad[0].distance_to(platform_quad[1]),
+		"bottom_width": platform_quad[3].distance_to(platform_quad[2]),
+		"depth": lerpf(13.0, 24.0, resolved_progress) * scale.y * content_scale,
 	}
 
 
@@ -241,8 +249,9 @@ func _cell_readiness(index: int, row: int, column: int, sweep: float) -> float:
 func _draw_center_state(layout: Dictionary) -> void:
 	var center: Vector2 = layout.player_center
 	var progress: float = layout.progress
+	var content_scale: float = layout.content_scale
 	var pulse := float(animation_state_at(_elapsed).pulse)
-	var radius_x := lerpf(48.0, 82.0, progress) + pulse * 4.0
+	var radius_x := (lerpf(48.0, 82.0, progress) + pulse * 4.0) * content_scale
 	var radius_y := radius_x * 0.34
 	_draw_ellipse(Rect2(center - Vector2(radius_x, radius_y), Vector2(radius_x * 2.0, radius_y * 2.0)), Color(0.20, 0.78, 0.52, 0.10 + pulse * 0.05))
 	_draw_ellipse_outline(center, Vector2(radius_x, radius_y), Color(COLOR_SAFE.r, COLOR_SAFE.g, COLOR_SAFE.b, 0.48 + pulse * 0.18), 2.0)

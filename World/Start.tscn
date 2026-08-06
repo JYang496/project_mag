@@ -1,16 +1,16 @@
-[gd_scene load_steps=5 format=3 uid="uid://dwxulua8fpqd0"]
+[gd_scene format=3 uid="uid://dwxulua8fpqd0"]
 
 [ext_resource type="Script" uid="uid://dyetc0qttcb7y" path="res://World/new_game_btn.gd" id="1_new_game"]
 [ext_resource type="Script" uid="uid://q8o4fd420oji" path="res://World/continue.gd" id="2_continue"]
-[ext_resource type="Script" path="res://UI/scripts/components/start_menu_backdrop.gd" id="3_backdrop"]
+[ext_resource type="Script" uid="uid://cbi0jbeohvr24" path="res://UI/scripts/components/start_menu_backdrop.gd" id="3_backdrop"]
 [ext_resource type="Script" uid="uid://crthixi6sav7n" path="res://World/start_menu.gd" id="4_menu"]
 
-[node name="Start" type="Node2D"]
+[node name="Start" type="Node2D" unique_id=556195875]
 script = ExtResource("4_menu")
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1307785677]
 
-[node name="GUI" type="Control" parent="CanvasLayer"]
+[node name="GUI" type="Control" parent="CanvasLayer" unique_id=1462372628]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -18,17 +18,17 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" type="ColorRect" parent="CanvasLayer/GUI"]
+[node name="Background" type="ColorRect" parent="CanvasLayer/GUI" unique_id=1701710582]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.008, 0.016, 0.026, 1)
 mouse_filter = 2
+color = Color(0.008, 0.016, 0.026, 1)
 
-[node name="Backdrop" type="Control" parent="CanvasLayer/GUI/Background"]
+[node name="Backdrop" type="Control" parent="CanvasLayer/GUI/Background" unique_id=7441319]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -38,7 +38,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("3_backdrop")
 
-[node name="SafeArea" type="MarginContainer" parent="CanvasLayer/GUI"]
+[node name="SafeArea" type="MarginContainer" parent="CanvasLayer/GUI" unique_id=164632956]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -50,88 +50,88 @@ theme_override_constants/margin_top = 48
 theme_override_constants/margin_right = 72
 theme_override_constants/margin_bottom = 42
 
-[node name="MainColumn" type="VBoxContainer" parent="CanvasLayer/GUI/SafeArea"]
+[node name="MainColumn" type="VBoxContainer" parent="CanvasLayer/GUI/SafeArea" unique_id=1195466557]
 custom_minimum_size = Vector2(392, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 0
 
-[node name="ProtocolLabel" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+[node name="ProtocolLabel" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn" unique_id=1192461890]
 layout_mode = 2
-theme_type_variation = "EyebrowLabel"
+theme_type_variation = &"EyebrowLabel"
 text = "PROTOCOL // 07"
 
-[node name="Title" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+[node name="Title" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn" unique_id=538341141]
 layout_mode = 2
-theme_type_variation = "DisplayLabel"
+theme_type_variation = &"DisplayLabel"
 text = "磁核竞技场"
 
-[node name="Subtitle" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+[node name="Subtitle" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn" unique_id=1475537184]
 layout_mode = 2
-theme_type_variation = "SubtitleLabel"
+theme_type_variation = &"SubtitleLabel"
 text = "MAG ARENA"
 
-[node name="TitleRule" type="HSeparator" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+[node name="TitleRule" type="HSeparator" parent="CanvasLayer/GUI/SafeArea/MainColumn" unique_id=1020746065]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 
-[node name="Tagline" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+[node name="Tagline" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn" unique_id=753909047]
 layout_mode = 2
-theme_type_variation = "MutedLabel"
+theme_type_variation = &"MutedLabel"
 text = "LINK YOUR CORE. ENTER THE ARENA."
 
-[node name="MenuSpacer" type="Control" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+[node name="MenuSpacer" type="Control" parent="CanvasLayer/GUI/SafeArea/MainColumn" unique_id=767319631]
 custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 
-[node name="Navigation" type="VBoxContainer" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+[node name="Navigation" type="VBoxContainer" parent="CanvasLayer/GUI/SafeArea/MainColumn" unique_id=1444400539]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Continue" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+[node name="Continue" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation" unique_id=1913167989]
 custom_minimum_size = Vector2(392, 56)
 layout_mode = 2
-theme_type_variation = "PrimaryButton"
+theme_type_variation = &"PrimaryButton"
 text = "继续游戏"
 alignment = 0
 script = ExtResource("2_continue")
 
-[node name="ContinueStatus" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+[node name="ContinueStatus" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation" unique_id=208359160]
 custom_minimum_size = Vector2(0, 22)
 layout_mode = 2
-theme_type_variation = "StatusLabel"
+theme_type_variation = &"StatusLabel"
 text = "暂无可用作战记录"
 
-[node name="NewGame" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+[node name="NewGame" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation" unique_id=1438034287]
 custom_minimum_size = Vector2(392, 54)
 layout_mode = 2
-theme_type_variation = "PrimaryButton"
+theme_type_variation = &"PrimaryButton"
 text = "全新游戏"
 alignment = 0
 script = ExtResource("1_new_game")
 
-[node name="Settings" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+[node name="Settings" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation" unique_id=2020538336]
 custom_minimum_size = Vector2(392, 48)
 layout_mode = 2
 text = "设置"
 alignment = 0
 
-[node name="Exit" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+[node name="Exit" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation" unique_id=1791146495]
 custom_minimum_size = Vector2(392, 48)
 layout_mode = 2
 text = "退出游戏"
 alignment = 0
 
-[node name="ColumnSpacer" type="Control" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+[node name="ColumnSpacer" type="Control" parent="CanvasLayer/GUI/SafeArea/MainColumn" unique_id=2080898173]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="InputHint" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn"]
+[node name="InputHint" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn" unique_id=1500515543]
 layout_mode = 2
-theme_type_variation = "MutedLabel"
+theme_type_variation = &"MutedLabel"
 text = "[ENTER]  确认     [ESC]  返回"
 
-[node name="BuildInfo" type="Label" parent="CanvasLayer/GUI"]
+[node name="BuildInfo" type="Label" parent="CanvasLayer/GUI" unique_id=2084385709]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -144,11 +144,11 @@ offset_right = -72.0
 offset_bottom = -42.0
 grow_horizontal = 0
 grow_vertical = 0
-theme_type_variation = "SystemLabel"
+theme_type_variation = &"SystemLabel"
 text = "SPATIAL BUFFER // CALIBRATING"
 horizontal_alignment = 2
 
-[node name="SettingsScrim" type="ColorRect" parent="CanvasLayer/GUI"]
+[node name="SettingsScrim" type="ColorRect" parent="CanvasLayer/GUI" unique_id=175763387]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -157,9 +157,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.58)
-mouse_filter = 0
 
-[node name="SettingsPanel" type="PanelContainer" parent="CanvasLayer/GUI"]
+[node name="SettingsPanel" type="PanelContainer" parent="CanvasLayer/GUI" unique_id=273775925]
 visible = false
 layout_mode = 1
 anchors_preset = 6
@@ -173,97 +172,97 @@ offset_right = -48.0
 offset_bottom = 324.0
 grow_horizontal = 0
 grow_vertical = 2
-theme_type_variation = "SettingsPanel"
+theme_type_variation = &"SettingsPanel"
 
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/GUI/SettingsPanel"]
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/GUI/SettingsPanel" unique_id=1753221409]
 layout_mode = 2
 theme_override_constants/margin_left = 32
 theme_override_constants/margin_top = 28
 theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 28
 
-[node name="Content" type="VBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin"]
+[node name="Content" type="VBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin" unique_id=1358870670]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Header" type="HBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+[node name="Header" type="HBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content" unique_id=1859853973]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/Header"]
+[node name="Title" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/Header" unique_id=1854395068]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_type_variation = "SectionTitleLabel"
+theme_type_variation = &"SectionTitleLabel"
 text = "设置"
 
-[node name="Close" type="Button" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/Header"]
+[node name="Close" type="Button" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/Header" unique_id=1023476477]
 custom_minimum_size = Vector2(96, 42)
 layout_mode = 2
 text = "返回"
 
-[node name="HeaderRule" type="HSeparator" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+[node name="HeaderRule" type="HSeparator" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content" unique_id=1132273374]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
-[node name="DisplayHeader" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+[node name="DisplayHeader" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content" unique_id=48343283]
 layout_mode = 2
-theme_type_variation = "EyebrowLabel"
+theme_type_variation = &"EyebrowLabel"
 text = "显示与语言"
 
-[node name="ResolutionRow" type="HBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+[node name="ResolutionRow" type="HBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content" unique_id=191613648]
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 
-[node name="Label" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/ResolutionRow"]
+[node name="Label" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/ResolutionRow" unique_id=1133072758]
 custom_minimum_size = Vector2(168, 0)
 layout_mode = 2
 text = "分辨率"
 vertical_alignment = 1
 
-[node name="Option" type="OptionButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/ResolutionRow"]
+[node name="Option" type="OptionButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/ResolutionRow" unique_id=2046797229]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="LanguageRow" type="HBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+[node name="LanguageRow" type="HBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content" unique_id=308362585]
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 
-[node name="Label" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/LanguageRow"]
+[node name="Label" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/LanguageRow" unique_id=1498756657]
 custom_minimum_size = Vector2(168, 0)
 layout_mode = 2
 text = "语言"
 vertical_alignment = 1
 
-[node name="Option" type="OptionButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/LanguageRow"]
+[node name="Option" type="OptionButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content/LanguageRow" unique_id=915670236]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="AudioHeader" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+[node name="AudioHeader" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content" unique_id=752260381]
 layout_mode = 2
-theme_type_variation = "EyebrowLabel"
+theme_type_variation = &"EyebrowLabel"
 text = "音频"
 
-[node name="AudioSlot" type="VBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+[node name="AudioSlot" type="VBoxContainer" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content" unique_id=452767565]
 layout_mode = 2
 
-[node name="AssistHeader" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+[node name="AssistHeader" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content" unique_id=1616064184]
 layout_mode = 2
-theme_type_variation = "EyebrowLabel"
+theme_type_variation = &"EyebrowLabel"
 text = "战斗辅助"
 
-[node name="AutoAim" type="CheckButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+[node name="AutoAim" type="CheckButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content" unique_id=1263722183]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "自动瞄准持续开火"
 
-[node name="AutoReload" type="CheckButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+[node name="AutoReload" type="CheckButton" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content" unique_id=1836065019]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "空弹自动换弹切枪"
 
-[node name="SettingsFooter" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content"]
+[node name="SettingsFooter" type="Label" parent="CanvasLayer/GUI/SettingsPanel/Margin/Content" unique_id=268716483]
 layout_mode = 2
 size_flags_vertical = 10
-theme_type_variation = "MutedLabel"
+theme_type_variation = &"MutedLabel"
 text = "更改将立即保存"
 vertical_alignment = 2
 

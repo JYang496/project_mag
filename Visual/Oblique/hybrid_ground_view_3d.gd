@@ -39,6 +39,8 @@ const DEFAULT_CAMERA_FOV: float = 34.0
 const DEFAULT_WORLD_SCALE: float = 0.01
 const GROUND_AREA_HEIGHT: float = 0.022
 const GROUND_AREA_RENDER_PRIORITY: int = 2
+const ACTIVATION_OUTLINE_HEIGHT: float = 0.024
+const ACTIVATION_OUTLINE_RENDER_PRIORITY: int = 1
 const DANGER_WARNING_HEIGHT: float = 0.032
 const DANGER_WARNING_RENDER_PRIORITY: int = 20
 const DANGER_PROGRESS_HEIGHT: float = 0.034
@@ -495,13 +497,17 @@ func _create_activation_mesh(cell: Node2D, center: Vector2, cell_size: Vector2) 
 		shader.code = ACTIVATION_OUTLINE_SHADER
 		_activation_material = ShaderMaterial.new()
 		_activation_material.shader = shader
+		# Cell activation outlines are ground decoration. Draw them before every
+		# unit billboard so the sloped ground quad can never sort over a player
+		# when its near edge is closer to the camera than the player's footpoint.
+		_activation_material.render_priority = ACTIVATION_OUTLINE_RENDER_PRIORITY
 		_activation_quad.material = _activation_material
 	mesh.mesh = _activation_quad
 	mesh.set_instance_shader_parameter("outline_color", Color(0.38, 0.88, 1.0, 1.0))
 	mesh.set_instance_shader_parameter("outline_alpha", 0.0)
 	mesh.set_instance_shader_parameter("fill_alpha", 0.0)
 	mesh.set_meta(&"hybrid_board_visual", true)
-	mesh.position = world_2d_to_3d(center) + Vector3.UP * 0.012
+	mesh.position = world_2d_to_3d(center) + Vector3.UP * ACTIVATION_OUTLINE_HEIGHT
 	mesh.scale = Vector3(cell_size.x * world_scale * 0.96, 1.0, cell_size.y * world_scale * 0.96)
 	_ground_root.add_child(mesh)
 	_activation_meshes[cell.get_instance_id()] = {
@@ -524,7 +530,7 @@ func _sync_activation_visuals() -> void:
 			continue
 		var center_offset := entry.get("center_offset", Vector2(256.0, 256.0)) as Vector2
 		var cell_size := entry.get("cell_size", Vector2(512.0, 512.0)) as Vector2
-		mesh.position = world_2d_to_3d(cell.global_position + center_offset) + Vector3.UP * 0.012
+		mesh.position = world_2d_to_3d(cell.global_position + center_offset) + Vector3.UP * ACTIVATION_OUTLINE_HEIGHT
 		mesh.scale = Vector3(cell_size.x * world_scale * 0.96, 1.0, cell_size.y * world_scale * 0.96)
 		var highlighted := float(activation.get("highlight_amount"))
 		var active := bool(activation.get("_active"))

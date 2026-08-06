@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/showcases/presentation/beacon_player_layering_showcase.gd" id="1_showcase"]
+
+[node name="BeaconPlayerLayeringShowcase" type="Node"]
+script = ExtResource("1_showcase")

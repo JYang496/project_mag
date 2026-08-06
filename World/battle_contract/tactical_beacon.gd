@@ -3,7 +3,9 @@ extends Area2D
 signal presence_changed(beacon_id: int, player_inside: bool, enemy_count: int)
 
 const ProjectedVisual := preload("res://World/battle_contract/beacon_projected_visual.gd")
+const PlayerForeground := preload("res://World/battle_contract/beacon_player_foreground.gd")
 const VISUAL_LAYER_NAME := "BattleContractWorldVisuals"
+const PLAYER_FOREGROUND_NAME := "BattleContractPlayerForeground"
 const VISUAL_LAYER_ORDER := -1
 
 @export var beacon_id := 0
@@ -30,7 +32,9 @@ func _setup_projected_visual() -> void:
 		return
 	_projected_visual = ProjectedVisual.new()
 	_projected_visual.name = "BeaconProjectedVisual_%s" % get_instance_id()
-	_ensure_visual_layer().add_child(_projected_visual)
+	var visual_layer := _ensure_visual_layer()
+	visual_layer.add_child(_projected_visual)
+	_ensure_player_foreground(visual_layer)
 	_projected_visual.configure(self, visual_kind, beacon_id, _get_footprint_size())
 	_projected_visual.set_progress(_progress)
 	_projected_visual.set_presence(_player_inside, _enemies.size())
@@ -44,6 +48,18 @@ func _ensure_visual_layer() -> CanvasLayer:
 	layer.layer = VISUAL_LAYER_ORDER
 	get_tree().root.add_child(layer)
 	return layer
+
+
+func _ensure_player_foreground(layer: CanvasLayer) -> Control:
+	var foreground := layer.get_node_or_null(PLAYER_FOREGROUND_NAME) as Control
+	if foreground == null:
+		foreground = PlayerForeground.new()
+		foreground.name = PLAYER_FOREGROUND_NAME
+		layer.add_child(foreground)
+	# New beacons may be appended after the foreground. Keep the player copy as
+	# the final item so every complete protocol visual remains underneath it.
+	layer.move_child(foreground, layer.get_child_count() - 1)
+	return foreground
 
 func set_progress(value: float) -> void:
 	_progress = clampf(value, 0.0, 1.0)

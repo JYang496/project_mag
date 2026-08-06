@@ -7,6 +7,7 @@ const DIAMOND_COOLDOWN_PROGRESS_SCRIPT := preload("res://UI/scripts/diamond_cool
 const WEAPON_SLOT_STATUS_BAR_SCRIPT := preload("res://UI/scripts/weapon_slot_status_bar.gd")
 const WEAPON_SKILL_CHARGE_TRACK_SCRIPT := preload("res://UI/scripts/weapon_skill_charge_track.gd")
 const WEAPON_TRIGGER_FEEDBACK_SCRIPT := preload("res://UI/scripts/weapon_trigger_feedback.gd")
+const WEAPON_AMMO_COLUMN_SCRIPT := preload("res://UI/scripts/components/weapon_ammo_column.gd")
 const READABILITY_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_selector_readability_presenter.gd")
 const PASSIVE_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_selector_passive_presenter.gd")
 const SLOT_VIEW_SCRIPT := preload("res://UI/scripts/components/weapon_slot_view.gd")
@@ -26,7 +27,8 @@ const WEAPON_STATUS_RELOAD := Color(0.34, 0.78, 0.88, 1.0)
 const WEAPON_STATUS_LOW := Color(0.98, 0.58, 0.18, 1.0)
 const WEAPON_STATUS_EMPTY := Color(0.94, 0.30, 0.28, 1.0)
 const WEAPON_STATUS_EMPTY_TRACK := Color(0.38, 0.08, 0.08, 0.88)
-const MAINHAND_AMMO_LABEL_Y := -22.0
+const MAINHAND_AMMO_COLUMN_RECT := Rect2(20.0, -58.0, 16.0, 54.0)
+const MAINHAND_AMMO_LABEL_RECT := Rect2(40.0, -24.0, 56.0, 20.0)
 const OFFHAND_AVAILABILITY_LABEL_Y := 4.0
 const PASSIVE_PROGRESS_COLOR := Color(0.98, 0.78, 0.28, 0.95)
 const PASSIVE_PROGRESS_BASE_COLOR := Color(0.98, 0.78, 0.28, 0.18)
@@ -60,6 +62,7 @@ var _slot_trigger_feedback_nodes: Array[Control] = []
 var _slot_resource_indicator_nodes: Array[Label] = []
 var _slot_availability_label_nodes: Array[Label] = []
 var _cooldown_overlay: Control
+var _mainhand_ammo_column: Control
 var _readability_presenter
 var _passive_presenter
 var _slot_glow_tweens: Dictionary = {}
@@ -86,6 +89,7 @@ func _ready() -> void:
 		slot_view.setup(slot_node, _missing_weapon_icon)
 		_slot_views.append(slot_view)
 	_ensure_cooldown_overlay()
+	_ensure_mainhand_ammo_column()
 	_ensure_slot_cooldown_nodes()
 	_readability_presenter = READABILITY_PRESENTER_SCRIPT.new()
 	_readability_presenter.setup(self, _slot_nodes)
@@ -530,6 +534,8 @@ func _get_slot_passive_charge_node(slot_node: Control) -> Control:
 
 func _update_slot_cooldown_progress() -> void:
 	_sync_cooldown_overlay_layout()
+	if _mainhand_ammo_column != null:
+		_mainhand_ammo_column.visible = false
 	var weapons: Array = PlayerData.player_weapon_list
 	var active_weapon_ids: Dictionary = {}
 	for slot_idx in range(SLOT_COUNT):
@@ -579,11 +585,13 @@ func _update_slot_cooldown_progress() -> void:
 			var label_rect := get_weapon_availability_label_rect(slot_node.size, is_mainhand_weapon)
 			availability_label.position = slot_node.position + label_rect.position
 			availability_label.size = label_rect.size
-		progress_node.visible = bool(visual_state.get("visible", false))
+		progress_node.visible = bool(visual_state.get("visible", false)) and not is_mainhand_weapon
 		progress_node.set("fill_color", visual_state.get("fill_color", WEAPON_STATUS_FILL))
 		progress_node.set("base_color", visual_state.get("track_color", WEAPON_STATUS_TRACK))
 		progress_node.set("progress", clampf(float(visual_state.get("progress", 0.0)), 0.0, 1.0))
-		_apply_weapon_availability_label(availability_label, visual_state)
+		_apply_weapon_availability_label(availability_label, visual_state, is_mainhand_weapon)
+		if is_mainhand_weapon:
+			_layout_mainhand_ammo_column(slot_node, visual_state)
 		_track_weapon_availability_transition(slot_idx, weapon, visual_state)
 	_disconnect_stale_reload_signals(active_weapon_ids)
 	_disconnect_stale_passive_signals(active_weapon_ids)
@@ -685,17 +693,11 @@ func _get_slot_availability_label_node(slot_idx: int) -> Label:
 	return null
 
 func get_weapon_availability_label_rect(slot_size: Vector2, is_mainhand: bool) -> Rect2:
-	var label_width := 68.0 if is_mainhand else 44.0
-	var label_x := (
-		floorf((slot_size.x - label_width) * 0.5)
-		if is_mainhand
-		else slot_size.x - label_width - 5.0
-	)
-	var label_y := (
-		MAINHAND_AMMO_LABEL_Y
-		if is_mainhand
-		else OFFHAND_AVAILABILITY_LABEL_Y
-	)
+	if is_mainhand:
+		return MAINHAND_AMMO_LABEL_RECT
+	var label_width := 44.0
+	var label_x := slot_size.x - label_width - 5.0
+	var label_y := OFFHAND_AVAILABILITY_LABEL_Y
 	return Rect2(
 		Vector2(label_x, label_y),
 		Vector2(label_width, 22.0)
@@ -768,10 +770,19 @@ func _style_resource_indicator(label: Label, color: Color) -> void:
 	style.content_margin_bottom = 1.0
 	label.add_theme_stylebox_override("normal", style)
 
-func _apply_weapon_availability_label(label: Label, visual_state: Dictionary) -> void:
+func _apply_weapon_availability_label(label: Label, visual_state: Dictionary, use_capsule: bool = false) -> void:
 	if label == null:
 		return
 	label.remove_theme_stylebox_override("normal")
+	if use_capsule:
+		var capsule := StyleBoxFlat.new()
+		capsule.bg_color = Color(0.015, 0.035, 0.05, 0.88)
+		capsule.border_color = Color(0.20, 0.54, 0.64, 0.64)
+		capsule.set_border_width_all(1)
+		capsule.set_corner_radius_all(2)
+		capsule.content_margin_left = 4.0
+		capsule.content_margin_right = 4.0
+		label.add_theme_stylebox_override("normal", capsule)
 	var text := str(visual_state.get("label", ""))
 	label.text = text
 	label.tooltip_text = str(visual_state.get("tooltip", ""))
@@ -799,6 +810,37 @@ func _ensure_cooldown_overlay() -> void:
 	# Keep the ring branch on the selector's own draw layer so it cannot cover sibling UI.
 	_cooldown_overlay.z_index = 0
 	add_child(_cooldown_overlay)
+
+func _ensure_mainhand_ammo_column() -> void:
+	if _mainhand_ammo_column != null and is_instance_valid(_mainhand_ammo_column):
+		return
+	_ensure_cooldown_overlay()
+	_mainhand_ammo_column = WEAPON_AMMO_COLUMN_SCRIPT.new() as Control
+	_mainhand_ammo_column.name = "MainhandAmmoColumn"
+	_mainhand_ammo_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mainhand_ammo_column.visible = false
+	_mainhand_ammo_column.z_index = 2
+	_cooldown_overlay.add_child(_mainhand_ammo_column)
+
+func get_mainhand_ammo_column_rect(_slot_size: Vector2) -> Rect2:
+	return MAINHAND_AMMO_COLUMN_RECT
+
+func _layout_mainhand_ammo_column(slot_node: Control, visual_state: Dictionary) -> void:
+	_ensure_mainhand_ammo_column()
+	if _mainhand_ammo_column == null or slot_node == null:
+		return
+	var column_rect := get_mainhand_ammo_column_rect(slot_node.size)
+	_mainhand_ammo_column.position = slot_node.position + column_rect.position
+	_mainhand_ammo_column.size = column_rect.size
+	_mainhand_ammo_column.visible = bool(visual_state.get("visible", false))
+	if not _mainhand_ammo_column.visible:
+		return
+	_mainhand_ammo_column.call(
+		"set_ammo_state",
+		clampf(float(visual_state.get("progress", 0.0)), 0.0, 1.0),
+		visual_state.get("fill_color", WEAPON_STATUS_FILL),
+		visual_state.get("track_color", WEAPON_STATUS_TRACK)
+	)
 
 func _sync_cooldown_overlay_layout() -> void:
 	if _cooldown_overlay == null or not is_instance_valid(_cooldown_overlay):
@@ -863,16 +905,17 @@ func _resolve_weapon_availability_state(weapon: Variant, is_mainhand: bool) -> D
 			"progress": 0.0,
 			"fill_color": WEAPON_STATUS_EMPTY,
 			"track_color": WEAPON_STATUS_EMPTY_TRACK,
-			"label": "0",
+			"label": "0/%d" % int(max_ammo) if is_mainhand else "0",
 			"tooltip": tooltip,
 		}
 	var low_threshold := maxf(1.0, ceil(max_ammo * 0.25))
 	if current <= low_threshold:
+		var critical_threshold := maxf(1.0, ceil(max_ammo * 0.125))
 		return {
 			"visible": true,
 			"kind": &"low",
 			"progress": ammo_progress,
-			"fill_color": WEAPON_STATUS_LOW,
+			"fill_color": WEAPON_STATUS_EMPTY if current <= critical_threshold else WEAPON_STATUS_LOW,
 			"label": "%d/%d" % [int(current), int(max_ammo)] if is_mainhand else "LOW",
 			"tooltip": tooltip,
 		}

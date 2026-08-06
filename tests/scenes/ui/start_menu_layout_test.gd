@@ -74,6 +74,11 @@ func _test_backdrop_semantics() -> void:
 		"standby platform must remain contained by the menu preview stage"
 	)
 	_expect(
+		menu_platform.size.x >= stage_rect.size.x * 0.95
+			and menu_platform.size.y >= stage_rect.size.y * 0.95,
+		"standby platform must use the enlarged right-side preview footprint"
+	)
+	_expect(
 		Geometry2D.is_point_in_polygon(Vector2(menu_layout.player_center), PackedVector2Array(menu_cells[4].quad)),
 		"standby player must stay anchored inside the projected center cell"
 	)

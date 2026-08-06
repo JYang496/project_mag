@@ -265,42 +265,15 @@ func _draw_occlusion_safe_polyline(points: PackedVector2Array, color: Color, wid
 	for visible_run in _split_polyline_around_rect(points, _active_player_occlusion_rect):
 		draw_polyline(visible_run, color, width, true)
 
-func _split_polyline_around_rect(points: PackedVector2Array, occlusion_rect: Rect2) -> Array[PackedVector2Array]:
+func _split_polyline_around_rect(points: PackedVector2Array, _occlusion_rect: Rect2) -> Array[PackedVector2Array]:
 	var visible_runs: Array[PackedVector2Array] = []
 	if points.size() < 2:
 		return visible_runs
-	if occlusion_rect.size == Vector2.ZERO:
-		visible_runs.append(points)
-		return visible_runs
-	var current_run := PackedVector2Array()
-	for index in range(points.size() - 1):
-		var segment_start := points[index]
-		var segment_end := points[index + 1]
-		if _segment_intersects_rect(segment_start, segment_end, occlusion_rect):
-			if current_run.size() >= 2:
-				visible_runs.append(current_run)
-			current_run = PackedVector2Array()
-			continue
-		if current_run.is_empty():
-			current_run.append(segment_start)
-		current_run.append(segment_end)
-	if current_run.size() >= 2:
-		visible_runs.append(current_run)
+	# Protocol perimeter and progress lines are gameplay state, so they remain
+	# complete even when the player overlaps them. The occlusion rectangle is
+	# still used by center glyphs, but must not remove any perimeter segment.
+	visible_runs.append(points)
 	return visible_runs
-
-func _segment_intersects_rect(segment_start: Vector2, segment_end: Vector2, rect: Rect2) -> bool:
-	if rect.has_point(segment_start) or rect.has_point(segment_end):
-		return true
-	var corners := PackedVector2Array([
-		rect.position,
-		Vector2(rect.end.x, rect.position.y),
-		rect.end,
-		Vector2(rect.position.x, rect.end.y),
-	])
-	for index in range(4):
-		if Geometry2D.segment_intersects_segment(segment_start, segment_end, corners[index], corners[(index + 1) % 4]) != null:
-			return true
-	return false
 
 func _player_occlusion_rect() -> Rect2:
 	var player := PlayerData.player as Node2D

@@ -13,7 +13,7 @@ weight = 10
 [sub_resource type="Resource" id="Level_1"]
 script = ExtResource("2_level")
 time_out_sec = 26
-target_total_hp = 260
+target_total_hp = 330
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_roll_intro")])
 
 [sub_resource type="Resource" id="Entry_wheel_main"]
@@ -30,7 +30,7 @@ weight = 10
 [sub_resource type="Resource" id="Level_2"]
 script = ExtResource("2_level")
 time_out_sec = 28
-target_total_hp = 373
+target_total_hp = 400
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_wheel_main"), SubResource("Entry_roll_support")])
 
 [sub_resource type="Resource" id="Entry_roll_chaser"]
@@ -52,7 +52,6 @@ weight = 3
 
 [sub_resource type="Resource" id="Level_3"]
 script = ExtResource("2_level")
-time_out_sec = 30
 target_total_hp = 600
 spawns = Array[ExtResource("3_entry")]([SubResource("Entry_roll_chaser"), SubResource("Entry_shield_tutorial"), SubResource("Entry_spike_main")])
 
@@ -306,6 +305,3 @@ multiplier = 1.2
 script = ExtResource("1_profile")
 levels = Array[ExtResource("2_level")]([SubResource("Level_1"), SubResource("Level_2"), SubResource("Level_3"), SubResource("Level_4"), SubResource("Level_5"), SubResource("Level_6"), SubResource("Level_7"), SubResource("Level_8"), SubResource("Level_9"), SubResource("Level_10")])
 pressure_points = Array[ExtResource("4_pressure")]([SubResource("Pressure_early"), SubResource("Pressure_mid"), SubResource("Pressure_late")])
-elite_multi_spawn_level_index = 8
-elite_limit_before_multi_spawn = 1
-elite_limit_after_multi_spawn = 2

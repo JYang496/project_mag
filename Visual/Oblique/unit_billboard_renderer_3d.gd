@@ -2,6 +2,7 @@ class_name UnitBillboardRenderer3D
 extends RefCounted
 
 const UNIT_SHADER := preload("res://Shaders/unit_billboard_3d.gdshader")
+const UNIT_RENDER_PRIORITY := 15
 
 var _view: Node
 var _root: Node3D
@@ -138,6 +139,10 @@ func _get_material(texture: Texture2D) -> ShaderMaterial:
 		return _material_cache[texture_id] as ShaderMaterial
 	var shader_material := ShaderMaterial.new()
 	shader_material.shader = UNIT_SHADER
+	# Units must remain above terrain, cell activation outlines, ordinary ground
+	# effects, and affiliation markers while danger telegraphs (priority 20+)
+	# retain the final warning layer.
+	shader_material.render_priority = UNIT_RENDER_PRIORITY
 	shader_material.set_shader_parameter("sprite_texture", texture)
 	_material_cache[texture_id] = shader_material
 	return shader_material

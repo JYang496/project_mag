@@ -1,6 +1,89 @@
-[gd_resource type="Theme" load_steps=11 format=3]
+[gd_resource type="Theme" format=3 uid="uid://c0a8j2ixy3hkx"]
 
-[ext_resource type="FontFile" path="res://asset/fonts/NotoSansSC-Regular.ttf" id="1_font"]
+[ext_resource type="FontFile" uid="uid://b7peena5sx245" path="res://asset/fonts/NotoSansSC-Regular.ttf" id="1_font"]
+
+[sub_resource type="StyleBoxFlat" id="ButtonDisabled"]
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+bg_color = Color(0.04, 0.065, 0.08, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.16, 0.23, 0.26, 1)
+corner_detail = 1
+
+[sub_resource type="StyleBoxFlat" id="ButtonHover"]
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+bg_color = Color(0.08, 0.24, 0.3, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.48, 0.9, 0.92, 1)
+corner_detail = 1
+
+[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+bg_color = Color(0.055, 0.13, 0.18, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.24, 0.55, 0.64, 1)
+corner_detail = 1
+
+[sub_resource type="StyleBoxFlat" id="ButtonPressed"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 6.0
+bg_color = Color(0.025, 0.08, 0.12, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.96, 0.68, 0.2, 1)
+corner_detail = 1
+
+[sub_resource type="StyleBoxFlat" id="Separator"]
+content_margin_top = 1.0
+content_margin_bottom = 1.0
+bg_color = Color(0.18, 0.48, 0.55, 1)
+
+[sub_resource type="StyleBoxFlat" id="InputFocus"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0.025, 0.07, 0.1, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.48, 0.9, 0.92, 1)
+corner_detail = 1
+
+[sub_resource type="StyleBoxFlat" id="InputNormal"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0.018, 0.04, 0.06, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.19, 0.44, 0.53, 1)
+corner_detail = 1
 
 [sub_resource type="StyleBoxFlat" id="Panel"]
 content_margin_left = 12.0
@@ -17,84 +100,6 @@ corner_detail = 1
 shadow_color = Color(0, 0, 0, 0.7)
 shadow_size = 4
 shadow_offset = Vector2(4, 4)
-
-[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
-content_margin_left = 14.0
-content_margin_top = 8.0
-content_margin_right = 14.0
-content_margin_bottom = 8.0
-bg_color = Color(0.055, 0.13, 0.18, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.24, 0.55, 0.64, 1)
-corner_detail = 1
-
-[sub_resource type="StyleBoxFlat" id="ButtonHover"]
-content_margin_left = 14.0
-content_margin_top = 8.0
-content_margin_right = 14.0
-content_margin_bottom = 8.0
-bg_color = Color(0.08, 0.24, 0.3, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.48, 0.9, 0.92, 1)
-corner_detail = 1
-
-[sub_resource type="StyleBoxFlat" id="ButtonPressed"]
-content_margin_left = 14.0
-content_margin_top = 10.0
-content_margin_right = 14.0
-content_margin_bottom = 6.0
-bg_color = Color(0.025, 0.08, 0.12, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.96, 0.68, 0.2, 1)
-corner_detail = 1
-
-[sub_resource type="StyleBoxFlat" id="ButtonDisabled"]
-content_margin_left = 14.0
-content_margin_top = 8.0
-content_margin_right = 14.0
-content_margin_bottom = 8.0
-bg_color = Color(0.04, 0.065, 0.08, 0.9)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.16, 0.23, 0.26, 1)
-corner_detail = 1
-
-[sub_resource type="StyleBoxFlat" id="InputNormal"]
-content_margin_left = 10.0
-content_margin_top = 6.0
-content_margin_right = 10.0
-content_margin_bottom = 6.0
-bg_color = Color(0.018, 0.04, 0.06, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.19, 0.44, 0.53, 1)
-corner_detail = 1
-
-[sub_resource type="StyleBoxFlat" id="InputFocus"]
-content_margin_left = 10.0
-content_margin_top = 6.0
-content_margin_right = 10.0
-content_margin_bottom = 6.0
-bg_color = Color(0.025, 0.07, 0.1, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.48, 0.9, 0.92, 1)
-corner_detail = 1
 
 [sub_resource type="StyleBoxFlat" id="ProgressBackground"]
 bg_color = Color(0.015, 0.03, 0.04, 1)
@@ -114,33 +119,29 @@ border_width_bottom = 2
 border_color = Color(0.58, 1, 0.86, 1)
 corner_detail = 1
 
-[sub_resource type="StyleBoxFlat" id="Separator"]
-bg_color = Color(0.18, 0.48, 0.55, 1)
-content_margin_top = 1.0
-content_margin_bottom = 1.0
-
 [resource]
 default_font = ExtResource("1_font")
 default_font_size = 18
 Button/colors/font_color = Color(0.82, 0.95, 0.96, 1)
-Button/colors/font_hover_color = Color(1, 0.93, 0.64, 1)
-Button/colors/font_pressed_color = Color(1, 0.82, 0.35, 1)
 Button/colors/font_disabled_color = Color(0.34, 0.44, 0.46, 1)
+Button/colors/font_hover_color = Color(1, 0.93, 0.64, 1)
 Button/colors/font_outline_color = Color(0, 0.06, 0.08, 0.9)
+Button/colors/font_pressed_color = Color(1, 0.82, 0.35, 1)
 Button/constants/outline_size = 1
 Button/font_sizes/font_size = 18
-Button/styles/normal = SubResource("ButtonNormal")
-Button/styles/hover = SubResource("ButtonHover")
-Button/styles/pressed = SubResource("ButtonPressed")
-Button/styles/focus = SubResource("ButtonHover")
 Button/styles/disabled = SubResource("ButtonDisabled")
+Button/styles/focus = SubResource("ButtonHover")
+Button/styles/hover = SubResource("ButtonHover")
+Button/styles/normal = SubResource("ButtonNormal")
+Button/styles/pressed = SubResource("ButtonPressed")
 CheckButton/colors/font_color = Color(0.78, 0.91, 0.92, 1)
 CheckButton/colors/font_outline_color = Color(0, 0.06, 0.08, 0.9)
 CheckButton/constants/outline_size = 1
 CheckButton/font_sizes/font_size = 16
-CheckButton/styles/normal = SubResource("ButtonNormal")
 CheckButton/styles/hover = SubResource("ButtonHover")
+CheckButton/styles/normal = SubResource("ButtonNormal")
 CheckButton/styles/pressed = SubResource("ButtonPressed")
+HSeparator/styles/separator = SubResource("Separator")
 Label/colors/font_color = Color(0.86, 0.95, 0.96, 1)
 Label/colors/font_outline_color = Color(0, 0.04, 0.06, 0.9)
 Label/colors/font_shadow_color = Color(0, 0, 0, 1)
@@ -148,22 +149,21 @@ Label/constants/outline_size = 1
 Label/constants/shadow_offset_x = 1
 Label/constants/shadow_offset_y = 1
 Label/font_sizes/font_size = 18
-LineEdit/styles/normal = SubResource("InputNormal")
 LineEdit/styles/focus = SubResource("InputFocus")
+LineEdit/styles/normal = SubResource("InputNormal")
 OptionButton/colors/font_color = Color(0.82, 0.95, 0.96, 1)
 OptionButton/colors/font_hover_color = Color(1, 0.93, 0.64, 1)
 OptionButton/colors/font_outline_color = Color(0, 0.06, 0.08, 0.9)
 OptionButton/constants/outline_size = 1
 OptionButton/font_sizes/font_size = 18
-OptionButton/styles/normal = SubResource("InputNormal")
-OptionButton/styles/hover = SubResource("InputFocus")
-OptionButton/styles/pressed = SubResource("InputFocus")
 OptionButton/styles/focus = SubResource("InputFocus")
+OptionButton/styles/hover = SubResource("InputFocus")
+OptionButton/styles/normal = SubResource("InputNormal")
+OptionButton/styles/pressed = SubResource("InputFocus")
 Panel/styles/panel = SubResource("Panel")
 PanelContainer/styles/panel = SubResource("Panel")
 PopupMenu/styles/panel = SubResource("Panel")
 ProgressBar/styles/background = SubResource("ProgressBackground")
 ProgressBar/styles/fill = SubResource("ProgressFill")
-HSeparator/styles/separator = SubResource("Separator")
-VSeparator/styles/separator = SubResource("Separator")
 TooltipPanel/styles/panel = SubResource("Panel")
+VSeparator/styles/separator = SubResource("Separator")

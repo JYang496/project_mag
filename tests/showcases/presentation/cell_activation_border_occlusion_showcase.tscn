@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/showcases/presentation/cell_activation_border_occlusion_showcase.gd" id="1_showcase"]
+
+[node name="CellActivationBorderOcclusionShowcase" type="Node"]
+script = ExtResource("1_showcase")

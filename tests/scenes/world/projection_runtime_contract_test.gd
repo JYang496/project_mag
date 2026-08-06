@@ -9,8 +9,10 @@ const FRIENDLY_SCENE := preload("res://Npc/friendly/scenes/friendly_npc.tscn")
 const UNIT_BILLBOARD_SOURCE := preload("res://Visual/Oblique/unit_billboard_visual_2d.gd")
 const UNIT_BILLBOARD_SHADER := preload("res://Shaders/unit_billboard_3d.gdshader")
 const BEACON_PROJECTED_VISUAL := preload("res://World/battle_contract/beacon_projected_visual.gd")
+const BEACON_PLAYER_FOREGROUND := preload("res://World/battle_contract/beacon_player_foreground.gd")
 const TACTICAL_BEACON_SCENE := preload("res://World/battle_contract/tactical_beacon.tscn")
 const REST_ZONE_SHADER := preload("res://Shaders/rest_area_zone_ground.gdshader")
+const CELL_ACTIVATION_VISUAL := preload("res://Board/Cells/cell_activation_visual.gd")
 
 class DummyBoard:
 	extends Node2D
@@ -49,6 +51,7 @@ func _ready() -> void:
 	add_child(view)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	_expect_activation_outline_stays_below_units(view)
 	_expect_rest_zone_sync_without_retired_hold_state(view)
 	_expect_aura_registration_initializes_transform(view)
 
@@ -158,6 +161,34 @@ func _expect(condition: bool, message: String) -> void:
 	push_error(message)
 
 
+func _expect_activation_outline_stays_below_units(view: Node) -> void:
+	var cell := Node2D.new()
+	cell.name = "ActivationLayerCell"
+	add_child(cell)
+	var activation := CELL_ACTIVATION_VISUAL.new()
+	activation.name = "ActivationVisual"
+	cell.add_child(activation)
+	view.call("_create_activation_mesh", cell, Vector2(256.0, 256.0), Vector2(512.0, 512.0))
+	var material := view.get("_activation_material") as ShaderMaterial
+	_expect(material != null, "cell activation outline must create its ground material")
+	_expect(
+		material != null and material.render_priority == 1,
+		"cell activation outline must render above terrain and before unit billboards"
+	)
+	var entries := view.get("_activation_meshes") as Dictionary
+	var entry := entries.get(cell.get_instance_id(), {}) as Dictionary
+	var mesh := entry.get("mesh") as MeshInstance3D
+	_expect(mesh != null and mesh.mesh is QuadMesh, "cell activation outline must use one complete quad for all four edges")
+	_expect(
+		mesh != null and is_equal_approx(mesh.position.y, 0.024),
+		"cell activation outline must sit above the 0.012 structural-border top surface"
+	)
+	if mesh != null:
+		mesh.queue_free()
+	entries.erase(cell.get_instance_id())
+	cell.queue_free()
+
+
 func _expect_rest_zone_sync_without_retired_hold_state(view: Node) -> void:
 	var rest_area := DummyRestArea.new()
 	add_child(rest_area)
@@ -252,14 +283,24 @@ func _expect_beacon_visual_respects_player(player: Node2D, view: Node) -> void:
 		Vector2(occlusion_rect.end.x + 30.0, center.y),
 	])
 	var visible_runs := visual.call("_split_polyline_around_rect", crossing_line, occlusion_rect) as Array
-	_expect(visible_runs.size() == 2, "beacon progress line must split on both sides of the player")
-	for run_value in visible_runs:
-		var run := run_value as PackedVector2Array
-		for index in range(run.size() - 1):
-			_expect(
-				not bool(visual.call("_segment_intersects_rect", run[index], run[index + 1], occlusion_rect)),
-				"beacon progress line must not retain a segment across the player billboard",
-			)
+	_expect(visible_runs.size() == 1, "beacon progress line must remain one continuous run across the player")
+	_expect(
+		visible_runs.size() == 1 and (visible_runs[0] as PackedVector2Array) == crossing_line,
+		"beacon progress line must not hide or trim points inside the player bounds",
+	)
+	var foreground := BEACON_PLAYER_FOREGROUND.new() as Control
+	add_child(foreground)
+	var foreground_state := foreground.call("get_player_draw_state") as Dictionary
+	var foreground_rect := foreground_state.get("rect", Rect2()) as Rect2
+	_expect(not foreground_state.is_empty(), "beacon layer must provide a player foreground draw state")
+	_expect(foreground_state.get("texture") == config.get("texture"), "beacon player foreground must reuse the active billboard frame")
+	_expect(
+		foreground_rect.has_point(player_anchor - Vector2(0.0, 4.0)),
+		"beacon player foreground must cover the same projected player anchor as the protocol visual",
+	)
+	var foreground_points := foreground_state.get("points", PackedVector2Array()) as PackedVector2Array
+	_expect(foreground_points.size() == 4, "beacon player foreground must draw one complete textured quad")
+	foreground.queue_free()
 	visual.queue_free()
 	projection_target.queue_free()
 

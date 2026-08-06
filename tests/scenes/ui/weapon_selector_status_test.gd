@@ -8,6 +8,7 @@ const WEAPON_SELECTOR_PASSIVE_PRESENTER := preload("res://UI/scripts/components/
 const WEAPON_SELECTOR_READABILITY_PRESENTER := preload("res://UI/scripts/components/weapon_selector_readability_presenter.gd")
 const WEAPON_SKILL_CHARGE_TRACK := preload("res://UI/scripts/weapon_skill_charge_track.gd")
 const WEAPON_TRIGGER_FEEDBACK := preload("res://UI/scripts/weapon_trigger_feedback.gd")
+const WEAPON_AMMO_COLUMN := preload("res://UI/scripts/components/weapon_ammo_column.gd")
 const PLAYER_STATUS_MODIFIER_SYSTEM := preload("res://Player/Mechas/scripts/player_status_modifier_system.gd")
 
 class DummyWeapon:
@@ -71,6 +72,8 @@ func _ready() -> void:
 	_test_reload_progress()
 	_test_non_ammo_weapon_hides_bar()
 	_test_ammo_label_uses_text_only_status()
+	_test_mainhand_ammo_column_geometry()
+	_test_mainhand_ammo_column_segments()
 	_test_weapon_order_stays_fixed_when_mainhand_changes()
 	_test_weapon_skill_footer_modes()
 	_test_weapon_passive_contract_classification()
@@ -113,6 +116,8 @@ func _test_low_and_empty_states() -> void:
 	_expect(empty.get("kind") == &"empty", "zero ammo must use a distinct empty state")
 	_expect(is_zero_approx(float(empty.get("progress", 1.0))), "empty ammo bar must be empty")
 	_expect(empty.has("track_color"), "empty ammo must retain a visible danger track")
+	var mainhand_empty: Dictionary = _selector.call("_resolve_weapon_availability_state", weapon, true)
+	_expect(str(mainhand_empty.get("label", "")) == "0/30", "empty mainhand must retain its precise magazine capacity")
 	weapon.free()
 
 func _test_reload_progress() -> void:
@@ -151,6 +156,31 @@ func _test_ammo_label_uses_text_only_status() -> void:
 	)
 	_expect(label.text == "RLD 1.2", "ammo status label must retain its text")
 	label.free()
+
+func _test_mainhand_ammo_column_geometry() -> void:
+	var slot_size := Vector2(96.0, 72.0)
+	var column_rect: Rect2 = _selector.call("get_mainhand_ammo_column_rect", slot_size)
+	var label_rect: Rect2 = _selector.call("get_weapon_availability_label_rect", slot_size, true)
+	var slot_rect := Rect2(Vector2.ZERO, slot_size)
+	_expect(column_rect.size == Vector2(16.0, 54.0), "mainhand ammo column must retain the approved 16x54 footprint")
+	_expect(column_rect.end.y == -4.0, "ammo column must stay 4px above the weapon frame")
+	_expect(not column_rect.intersects(slot_rect), "ammo column must not overlap the weapon frame")
+	_expect(label_rect.end.y == -4.0, "ammo number must sit 4px above the weapon frame")
+	_expect(is_equal_approx(label_rect.position.x - column_rect.end.x, 4.0), "ammo number must sit 4px beside the column")
+	_expect(not label_rect.intersects(slot_rect), "ammo number must not overlap the weapon frame")
+
+func _test_mainhand_ammo_column_segments() -> void:
+	var column = WEAPON_AMMO_COLUMN.new()
+	column.size = Vector2(16.0, 54.0)
+	column.progress = 39.0 / 40.0
+	var rects: Array = column.get_segment_rects()
+	var ratios: Array = column.get_segment_fill_ratios()
+	_expect(rects.size() == 8, "ammo column must expose eight stable capacity segments")
+	_expect(ratios.size() == 8 and is_equal_approx(float(ratios[7]), 0.8), "39/40 ammo must partially fill the top segment instead of under-reporting capacity")
+	column.progress = 0.0
+	for ratio in column.get_segment_fill_ratios():
+		_expect(is_zero_approx(float(ratio)), "empty ammo must leave every segment unfilled")
+	column.free()
 
 func _test_weapon_order_stays_fixed_when_mainhand_changes() -> void:
 	var controller = WEAPON_SWITCH_CONTROLLER.new()
