@@ -67,6 +67,7 @@ var _expanded_panel_width := PANEL_WIDTH
 var _panel_tween: Tween
 var _content_tween: Tween
 var _stack_reflow_tween: Tween
+var _using_gamepad := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -170,6 +171,7 @@ func tick(delta: float) -> void:
 func handle_input_event(event: InputEvent) -> bool:
 	if event == null:
 		return false
+	_update_input_device(event)
 	if event.is_action_pressed("TOGGLE_CONTROLS"):
 		return _request_toggle_display()
 	if _current_phase == PhaseManager.BATTLE:
@@ -373,12 +375,20 @@ func _render_current_context() -> void:
 		_render_secondary_menu_hint(_secondary_menu_context)
 		return
 	if _primary_menu_open:
+		var primary_lines: Array[String]
+		if _using_gamepad:
+			primary_lines = [
+				_tr("ui.tutorial.panel.primary_menu.gamepad.line1", "[D-pad / Left Stick] Select · [A] Confirm"),
+				_tr("ui.tutorial.panel.primary_menu.gamepad.line2", "[B] Back"),
+			]
+		else:
+			primary_lines = [
+				_tr("ui.tutorial.panel.primary_menu.line1", "[WASD / Arrows] Select · [F / Enter] Confirm"),
+				_tr("ui.tutorial.panel.primary_menu.line2", "[Esc / RMB] Back"),
+			]
 		_render_text_context(
 			_primary_context_title(_primary_menu_context),
-			[
-				_tr("ui.tutorial.panel.primary_menu.line1", "[LMB] Click buttons"),
-				_tr("ui.tutorial.panel.primary_menu.line2", "[RMB] Exit current menu"),
-			]
+			primary_lines
 		)
 		return
 	if _current_phase == PhaseManager.BATTLE:
@@ -643,6 +653,17 @@ func _event_label(event: InputEvent) -> String:
 	if joy_event != null:
 		return "Pad %d" % joy_event.button_index
 	return _compact_key_name(event.as_text())
+
+func _update_input_device(event: InputEvent) -> void:
+	var next_gamepad := event is InputEventJoypadButton or event is InputEventJoypadMotion
+	var is_pointer_or_key := event is InputEventKey or event is InputEventMouseButton or event is InputEventMouseMotion
+	if not next_gamepad and not is_pointer_or_key:
+		return
+	if _using_gamepad == next_gamepad:
+		return
+	_using_gamepad = next_gamepad
+	_text_context_signature = ""
+	_render_current_context()
 
 func _keycap_text(text: String) -> String:
 	return "[%s]" % text if text != "" else ""

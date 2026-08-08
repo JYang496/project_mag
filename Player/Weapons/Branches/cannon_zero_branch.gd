@@ -1,6 +1,24 @@
 extends WeaponBranchBehavior
 class_name CannonZeroBranch
 
+const ZERO_CANNON_TEXTURE: Texture2D = preload("res://asset/images/weapons/cannon3.png")
+
+func on_weapon_ready() -> void:
+	_apply_zero_cannon_visual()
+
+func on_level_applied(_level: int) -> void:
+	_apply_zero_cannon_visual()
+
+func on_removed() -> void:
+	super.on_removed()
+	if weapon != null and is_instance_valid(weapon):
+		weapon.call("_apply_fuse_sprite")
+
+func _apply_zero_cannon_visual() -> void:
+	if weapon == null or not is_instance_valid(weapon) or weapon.sprite == null:
+		return
+	weapon.sprite.texture = ZERO_CANNON_TEXTURE
+
 func get_added_weapon_traits() -> Array[StringName]:
 	return [WeaponTrait.ENERGY]
 

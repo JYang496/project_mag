@@ -25,6 +25,11 @@ func start(combat_port, parameters: Dictionary) -> void:
 	port = combat_port
 	port.request_external_victory_control(true)
 	port.request_configure_continuous_spawning(true)
+	port.request_configure_spawn_policy(
+		&"soft_capped",
+		float(parameters.get("spawn_soft_cap_multiplier", 1.35)),
+		float(parameters.get("spawn_hard_cap_multiplier", 1.60))
+	)
 	var available_points: PackedVector2Array = port.get_battlefield_capabilities().get("containment_points", PackedVector2Array())
 	rift_count = mini(maxi(int(parameters.get("rift_count", 3)), 1), available_points.size())
 	seal_duration_sec = maxf(float(parameters.get("seal_duration_sec", 8.0)), 1.0)
@@ -60,6 +65,7 @@ func _on_tick(snapshot: Dictionary) -> void:
 	elapsed_sec += delta
 	_surge_remaining_sec = maxf(_surge_remaining_sec - delta, 0.0)
 	active_rift_id = 0
+	var reinforcement_due := false
 	for rift_id in progress_by_id:
 		if bool(sealed_by_id.get(rift_id, false)):
 			continue
@@ -78,9 +84,11 @@ func _on_tick(snapshot: Dictionary) -> void:
 		reinforcement_elapsed_by_id[rift_id] = float(reinforcement_elapsed_by_id[rift_id]) + delta
 		if float(reinforcement_elapsed_by_id[rift_id]) >= reinforcement_interval_sec:
 			reinforcement_elapsed_by_id[rift_id] = 0.0
-			reinforcement_waves += 1
-			_surge_remaining_sec = 2.0
-			port.request_release_reinforcement_budget(2.0)
+			reinforcement_due = true
+	if reinforcement_due:
+		reinforcement_waves += 1
+		_surge_remaining_sec = 2.0
+		port.request_release_reinforcement_budget(2.0)
 	_apply_threat()
 	_emit_snapshot()
 

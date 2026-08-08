@@ -621,18 +621,10 @@ func _compute_logical_cell_id(grid_pos: Vector2i) -> int:
 	return (grid_size.y - grid_pos.y - 1) * grid_size.x + grid_pos.x + 1
 
 func _get_active_cell_ids_for_level(level_one_based: int) -> PackedInt32Array:
-	if level_one_based <= 2:
-		return PackedInt32Array([5, 6])
-	if level_one_based <= 4:
-		return PackedInt32Array([4, 5, 6])
-	if level_one_based <= 6:
-		return PackedInt32Array([4, 5, 6, 8])
-	if level_one_based <= 8:
-		return PackedInt32Array([2, 4, 5, 6, 8])
-	var all_ids := PackedInt32Array()
-	for i in range(1, grid_size.x * grid_size.y + 1):
-		all_ids.append(i)
-	return all_ids
+	var profile: Resource = PhaseManager.get_progression_profile()
+	if profile != null:
+		return profile.get_active_cell_ids_for_level(maxi(level_one_based - 1, 0))
+	return PackedInt32Array([5, 6])
 
 func apply_cell_effect_runtime_state(include_pending_preview: bool = true) -> void:
 	for cell in _cells:

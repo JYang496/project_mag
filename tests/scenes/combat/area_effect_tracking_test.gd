@@ -9,6 +9,7 @@ var _failures: PackedStringArray = []
 func _ready() -> void:
 	_test_event_driven_target_tracking()
 	_test_trail_requires_enemy_registry()
+	await _test_persistent_terrain_fade_lifecycle()
 	if _failures.is_empty():
 		print("PASS combat.area_effect_tracking")
 		await TEST_TEARDOWN.finish(self, 0)
@@ -54,6 +55,19 @@ func _test_trail_requires_enemy_registry() -> void:
 	add_child(grouped_enemy)
 	var candidates: Array = trail.call("_collect_enemy_candidates", get_tree())
 	_expect(candidates.is_empty(), "trail damage must not fall back to scanning the enemies group")
+
+
+func _test_persistent_terrain_fade_lifecycle() -> void:
+	var effect := AREA_EFFECT_SCENE.instantiate() as AreaEffect
+	effect.duration = 0.24
+	effect.fade_out_duration = 0.12
+	add_child(effect)
+	await get_tree().create_timer(0.15).timeout
+	_expect(is_instance_valid(effect), "persistent area gameplay must remain active while its fade is playing")
+	_expect(effect.get_visual_alpha_multiplier() < 0.9, "persistent areas must fade from their authoritative lifetime timer")
+	await get_tree().create_timer(0.12).timeout
+	await get_tree().process_frame
+	_expect(not is_instance_valid(effect), "persistent area fade and node expiration must end together")
 
 
 func _make_enemy_hurt_box(target: Node2D, node_name: String) -> HurtBox:

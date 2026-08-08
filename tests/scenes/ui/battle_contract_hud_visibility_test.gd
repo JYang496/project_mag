@@ -5,6 +5,33 @@ const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _failed := false
 
+class IntroSequenceProbe extends RefCounted:
+	signal released
+	var events: Array[String]
+
+	func _init(event_log: Array[String]) -> void:
+		events = event_log
+
+	func has_prepared_intro() -> bool:
+		return true
+
+	func play_prepared_intro() -> void:
+		events.append("intro_started")
+		await released
+		events.append("intro_finished")
+
+	func refresh(_allow_deployment_handoff: bool = false) -> void:
+		pass
+
+class DeploymentSequenceProbe extends RefCounted:
+	var events: Array[String]
+
+	func _init(event_log: Array[String]) -> void:
+		events = event_log
+
+	func play() -> void:
+		events.append("deployment_started")
+
 func _ready() -> void:
 	call_deferred("_run")
 
@@ -48,6 +75,24 @@ func _run() -> void:
 	await get_tree().process_frame
 	_assert_true(not is_instance_valid(intro_probe),
 		"Leaving deployment and battle phases must clean the prepared contract intro.")
+
+	var transition_events: Array[String] = []
+	var intro_sequence := IntroSequenceProbe.new(transition_events)
+	var deployment_sequence := DeploymentSequenceProbe.new(transition_events)
+	var real_intro_presenter = ui.battle_contract_hud_presenter
+	var real_deployment_presenter = ui.battlefield_deployment_presenter
+	ui.battle_contract_hud_presenter = intro_sequence
+	ui.battlefield_deployment_presenter = deployment_sequence
+	ui.play_battle_entry_intro()
+	await get_tree().process_frame
+	_assert_true(transition_events == ["intro_started"],
+		"Battlefield deployment must remain hidden while the contract intro is active.")
+	intro_sequence.released.emit()
+	await get_tree().create_timer(0.12).timeout
+	_assert_true(transition_events == ["intro_started", "intro_finished", "deployment_started"],
+		"Battlefield deployment must start only after the contract intro and handoff gap finish.")
+	ui.battle_contract_hud_presenter = real_intro_presenter
+	ui.battlefield_deployment_presenter = real_deployment_presenter
 
 	print("FAIL: battle contract HUD layout" if _failed else "PASS: battle contract HUD layout")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0)

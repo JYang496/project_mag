@@ -4,7 +4,7 @@ class_name PauseUiController
 const AUDIO_SETTINGS_CONTROLS_SCRIPT := preload("res://UI/scripts/components/audio_settings_controls.gd")
 
 var owner_ui: UI
-var pause_menu_panel: Panel
+var pause_menu_panel: PanelContainer
 var resume_button: Button
 var pause_language_label: Label
 var pause_language_option: OptionButton
@@ -15,7 +15,7 @@ var controls_hint_label: Label
 var controls_hint_option: OptionButton
 var audio_settings_controls: VBoxContainer
 
-func bind(ui: UI, panel: Panel, resume: Button) -> void:
+func bind(ui: UI, panel: PanelContainer, resume: Button) -> void:
 	owner_ui = ui
 	pause_menu_panel = panel
 	resume_button = resume
@@ -23,35 +23,33 @@ func bind(ui: UI, panel: Panel, resume: Button) -> void:
 func ensure_language_controls() -> void:
 	if pause_menu_panel == null:
 		return
-	var pause_label := pause_menu_panel.get_node_or_null("Paused") as Label
+	var pause_label := pause_menu_panel.find_child("Paused", true, false) as Label
 	if pause_label:
 		pause_label.text = LocalizationManager.tr_key("ui.panel.pause", "Paused")
 	if resume_button:
 		resume_button.text = LocalizationManager.tr_key("ui.panel.resume", "Resume")
-		resume_button.position = Vector2(140.0, 548.0)
-		resume_button.size = Vector2(120.0, 36.0)
 	_ensure_audio_settings_controls()
-	var existing_label := pause_menu_panel.get_node_or_null("LanguageLabel")
+	var existing_label := pause_menu_panel.find_child("LanguageLabel", true, false)
 	if existing_label is Label:
 		pause_language_label = existing_label as Label
 	else:
 		pause_language_label = Label.new()
 		pause_language_label.name = "LanguageLabel"
-		pause_menu_panel.add_child(pause_language_label)
-	var existing_option := pause_menu_panel.get_node_or_null("LanguageOption")
+		_get_content_root().add_child(pause_language_label)
+	var existing_option := pause_menu_panel.find_child("LanguageOption", true, false)
 	if existing_option is OptionButton:
 		pause_language_option = existing_option as OptionButton
 	else:
 		pause_language_option = OptionButton.new()
 		pause_language_option.name = "LanguageOption"
-		pause_menu_panel.add_child(pause_language_option)
+		_get_content_root().add_child(pause_language_option)
 	if not pause_language_option.is_connected("item_selected", Callable(self, "on_language_option_item_selected")):
 		pause_language_option.connect("item_selected", Callable(self, "on_language_option_item_selected"))
-	temporary_module_confirm_toggle = pause_menu_panel.get_node_or_null("TemporaryModuleConfirmToggle") as CheckButton
+	temporary_module_confirm_toggle = pause_menu_panel.find_child("TemporaryModuleConfirmToggle", true, false) as CheckButton
 	if temporary_module_confirm_toggle == null:
 		temporary_module_confirm_toggle = CheckButton.new()
 		temporary_module_confirm_toggle.name = "TemporaryModuleConfirmToggle"
-		pause_menu_panel.add_child(temporary_module_confirm_toggle)
+		_get_content_root().add_child(temporary_module_confirm_toggle)
 	if not temporary_module_confirm_toggle.toggled.is_connected(on_temporary_module_confirm_toggled):
 		temporary_module_confirm_toggle.toggled.connect(on_temporary_module_confirm_toggled)
 	auto_aim_continuous_fire_toggle = _ensure_assist_toggle(
@@ -62,27 +60,31 @@ func ensure_language_controls() -> void:
 		"AutoReloadSwitchToggle",
 		on_auto_reload_switch_toggled
 	)
-	controls_hint_label = pause_menu_panel.get_node_or_null("ControlsHintLabel") as Label
+	controls_hint_label = pause_menu_panel.find_child("ControlsHintLabel", true, false) as Label
 	if controls_hint_label == null:
 		controls_hint_label = Label.new()
 		controls_hint_label.name = "ControlsHintLabel"
-		pause_menu_panel.add_child(controls_hint_label)
-	controls_hint_option = pause_menu_panel.get_node_or_null("ControlsHintOption") as OptionButton
+		_get_content_root().add_child(controls_hint_label)
+	controls_hint_option = pause_menu_panel.find_child("ControlsHintOption", true, false) as OptionButton
 	if controls_hint_option == null:
 		controls_hint_option = OptionButton.new()
 		controls_hint_option.name = "ControlsHintOption"
-		pause_menu_panel.add_child(controls_hint_option)
+		_get_content_root().add_child(controls_hint_option)
 	if not controls_hint_option.item_selected.is_connected(on_controls_hint_option_selected):
 		controls_hint_option.item_selected.connect(on_controls_hint_option_selected)
-	refresh_language_options()
+	refresh_texts()
 	_sync_public_fields_to_owner()
 
 func refresh_texts() -> void:
-	var pause_label := pause_menu_panel.get_node_or_null("Paused") as Label if pause_menu_panel else null
+	var pause_label := pause_menu_panel.find_child("Paused", true, false) as Label if pause_menu_panel else null
 	if pause_label:
 		pause_label.text = LocalizationManager.tr_key("ui.panel.pause", "Paused")
 	if resume_button:
 		resume_button.text = LocalizationManager.tr_key("ui.panel.resume", "Resume")
+	_set_section_text("AudioHeader", LocalizationManager.tr_key("ui.start.audio", "Audio"))
+	_set_section_text("InterfaceHeader", LocalizationManager.tr_key("ui.start.display_language", "Display & Language"))
+	_set_section_text("AssistHeader", LocalizationManager.tr_key("ui.start.combat_assist", "Combat Assist"))
+	_set_section_text("SettingsFooter", LocalizationManager.tr_key("ui.start.settings_saved", "Changes are saved immediately"))
 	refresh_language_options()
 
 func refresh_language_options() -> void:
@@ -91,13 +93,9 @@ func refresh_language_options() -> void:
 		audio_settings_controls.call("refresh_values")
 	if pause_language_label:
 		pause_language_label.text = LocalizationManager.tr_key("ui.settings.language", "Language")
-		pause_language_label.position = Vector2(72.0, 324.0)
-		pause_language_label.size = Vector2(110.0, 28.0)
 	if pause_language_option == null:
 		_sync_public_fields_to_owner()
 		return
-	pause_language_option.position = Vector2(184.0, 320.0)
-	pause_language_option.size = Vector2(148.0, 30.0)
 	pause_language_option.clear()
 	var locales := LocalizationManager.available_locales()
 	var selected_idx := -1
@@ -111,40 +109,30 @@ func refresh_language_options() -> void:
 	if selected_idx >= 0:
 		pause_language_option.select(selected_idx)
 	if temporary_module_confirm_toggle:
-		temporary_module_confirm_toggle.position = Vector2(72.0, 366.0)
-		temporary_module_confirm_toggle.size = Vector2(310.0, 30.0)
 		temporary_module_confirm_toggle.text = LocalizationManager.tr_key(
 			"ui.settings.confirm_temporary_module_sale",
 			"Confirm temporary module sale before battle"
 		)
 		temporary_module_confirm_toggle.button_pressed = _is_temporary_module_confirmation_enabled()
 	if auto_aim_continuous_fire_toggle:
-		auto_aim_continuous_fire_toggle.position = Vector2(72.0, 404.0)
-		auto_aim_continuous_fire_toggle.size = Vector2(310.0, 30.0)
 		auto_aim_continuous_fire_toggle.text = LocalizationManager.tr_key(
 			"ui.settings.auto_aim_continuous_fire",
 			"Auto aim continuous fire"
 		)
 		auto_aim_continuous_fire_toggle.button_pressed = bool(PlayerAssistSettings.auto_aim_continuous_fire)
 	if auto_reload_switch_toggle:
-		auto_reload_switch_toggle.position = Vector2(72.0, 442.0)
-		auto_reload_switch_toggle.size = Vector2(310.0, 30.0)
 		auto_reload_switch_toggle.text = LocalizationManager.tr_key(
 			"ui.settings.auto_reload_switch",
 			"Auto reload and switch weapon"
 		)
 		auto_reload_switch_toggle.button_pressed = bool(PlayerAssistSettings.auto_reload_switch)
 	if controls_hint_label:
-		controls_hint_label.position = Vector2(72.0, 482.0)
-		controls_hint_label.size = Vector2(110.0, 30.0)
 		controls_hint_label.text = LocalizationManager.tr_key("ui.settings.controls_hint", "Controls")
 		controls_hint_label.tooltip_text = LocalizationManager.tr_key(
 			"ui.settings.controls_hint.tooltip",
 			"Adaptive opens new hints and lets F1 collapse them. Always Expanded keeps hints open. Hidden hides the panel."
 		)
 	if controls_hint_option:
-		controls_hint_option.position = Vector2(184.0, 480.0)
-		controls_hint_option.size = Vector2(148.0, 30.0)
 		controls_hint_option.tooltip_text = LocalizationManager.tr_key(
 			"ui.settings.controls_hint.tooltip",
 			"Adaptive opens new hints and lets F1 collapse them. Always Expanded keeps hints open. Hidden hides the panel."
@@ -200,25 +188,34 @@ func _controls_hint_mode_label(mode: StringName) -> String:
 			return LocalizationManager.tr_key("ui.settings.controls_hint.adaptive", "Adaptive")
 
 func _ensure_assist_toggle(node_name: String, callback: Callable) -> CheckButton:
-	var toggle := pause_menu_panel.get_node_or_null(node_name) as CheckButton
+	var toggle := pause_menu_panel.find_child(node_name, true, false) as CheckButton
 	if toggle == null:
 		toggle = CheckButton.new()
 		toggle.name = node_name
-		pause_menu_panel.add_child(toggle)
+		_get_content_root().add_child(toggle)
 	if not toggle.toggled.is_connected(callback):
 		toggle.toggled.connect(callback)
 	return toggle
 
 func _ensure_audio_settings_controls() -> void:
-	var existing := pause_menu_panel.get_node_or_null("AudioSettingsControls")
+	var existing := pause_menu_panel.find_child("AudioSettingsControls", true, false)
 	if existing is VBoxContainer:
 		audio_settings_controls = existing as VBoxContainer
 	else:
 		audio_settings_controls = AUDIO_SETTINGS_CONTROLS_SCRIPT.new() as VBoxContainer
 		audio_settings_controls.name = "AudioSettingsControls"
-		pause_menu_panel.add_child(audio_settings_controls)
-	audio_settings_controls.position = Vector2(40.0, 176.0)
-	audio_settings_controls.size = Vector2(320.0, 132.0)
+		var audio_slot := pause_menu_panel.find_child("AudioSlot", true, false) as Control
+		var target_parent := audio_slot if audio_slot != null else _get_content_root()
+		target_parent.add_child(audio_settings_controls)
+
+func _get_content_root() -> Control:
+	var content := pause_menu_panel.find_child("Content", true, false) as Control if pause_menu_panel else null
+	return content if content != null else pause_menu_panel
+
+func _set_section_text(node_name: String, text: String) -> void:
+	var label := pause_menu_panel.find_child(node_name, true, false) as Label if pause_menu_panel else null
+	if label != null:
+		label.text = text
 
 func _is_temporary_module_confirmation_enabled() -> bool:
 	if owner_ui != null:

@@ -358,6 +358,10 @@ func _test_reload_settlement_consumes_after_finish() -> void:
 	PlayerData.player = null
 	var spear := (load("res://Player/Weapons/Instances/spear_launcher.tscn") as PackedScene).instantiate() as Weapon
 	add_child(spear)
+	spear.set_level(1)
+	_expect(spear.magazine_capacity == 15, "Spear Launcher level 1 magazine must retain the halved capacity")
+	spear.set_level(9)
+	_expect(spear.magazine_capacity == 23, "Spear Launcher level 9 magazine must retain the halved capacity")
 	spear.force_skill_cooldowns_ready()
 	spear.set("_piercing_blade_dance_charge", 10)
 	spear.call("_on_passive_event", &"on_reload_started", {"source_weapon": spear})

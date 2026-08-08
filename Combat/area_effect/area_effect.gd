@@ -14,6 +14,7 @@ enum VisualShape { CIRCLE, RECTANGLE, CONE }
 
 @export var duration: float = 0.1
 @export var visual_duration: float = 0.0
+@export_range(0.0, 5.0, 0.05) var fade_out_duration: float = 0.5
 @export var radius: float = 24.0:
 	set(value):
 		radius = maxf(value, 1.0)
@@ -141,6 +142,12 @@ func get_hybrid_visual_version() -> int:
 	return _hybrid_visual_version
 
 
+func get_visual_alpha_multiplier() -> float:
+	if life_timer == null or life_timer.is_stopped() or fade_out_duration <= 0.0:
+		return 1.0
+	return clampf(life_timer.time_left / minf(fade_out_duration, life_timer.wait_time), 0.0, 1.0)
+
+
 func _ready() -> void:
 	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	add_to_group(&"hybrid_ground_area_effect")
@@ -182,6 +189,8 @@ func _exit_tree() -> void:
 	HybridGroundRegistration.unregister(self)
 
 func _process(delta: float) -> void:
+	if visual_root != null and is_instance_valid(visual_root):
+		visual_root.modulate.a = get_visual_alpha_multiplier()
 	if visual_root and is_instance_valid(visual_root) and not is_zero_approx(visual_rotation_speed_deg):
 		visual_root.rotation += deg_to_rad(visual_rotation_speed_deg) * delta
 	_apply_periodic_damage(delta)
@@ -566,14 +575,19 @@ func _resolve_visual_source_size() -> Vector2:
 func _draw() -> void:
 	if not _is_debug_draw_enabled():
 		return
-	draw_circle(Vector2.ZERO, radius, debug_fill_color)
+	var alpha_multiplier := get_visual_alpha_multiplier()
+	var fill_color := debug_fill_color
+	var line_color := debug_line_color
+	fill_color.a *= alpha_multiplier
+	line_color.a *= alpha_multiplier
+	draw_circle(Vector2.ZERO, radius, fill_color)
 	draw_arc(
 		Vector2.ZERO,
 		radius,
 		0.0,
 		TAU,
 		64,
-		debug_line_color,
+		line_color,
 		maxf(debug_line_width, 1.0),
 		true
 	)

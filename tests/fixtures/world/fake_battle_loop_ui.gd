@@ -69,7 +69,8 @@ func request_reward_selection(
 	_on_confirm: Callable = Callable(),
 	_on_cancel: Callable = Callable(),
 	_allow_cancel: bool = true,
-	_show_draft_hint: bool = false
+	_show_draft_hint: bool = false,
+	_presentation_mode: StringName = &"standard"
 ) -> bool:
 	standard_reward_requests += 1
 	standard_reward_options = _reward_options.duplicate()

@@ -10,4 +10,4 @@ description_key = "battle_contract.survival.description"
 accent_color = Color(0.302, 0.722, 0.784, 1)
 weight = 1.0
 build_tags = Array[StringName]([&"survival", &"control", &"sustain"])
-parameters = {"threat_step_sec": 15}
+parameters = {"threat_step_sec": 15, "spawn_policy": "uncapped"}

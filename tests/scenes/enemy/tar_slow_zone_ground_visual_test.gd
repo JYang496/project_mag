@@ -24,6 +24,8 @@ func _ready() -> void:
 
 	var zone := TAR_SLOW_ZONE.instantiate() as EnemyTarSlowZone
 	zone.radius = 95.0
+	zone.duration = 0.24
+	zone.fade_out_duration = 0.12
 	zone.position = Vector2(120.0, -80.0)
 	add_child(zone)
 	await get_tree().process_frame
@@ -50,15 +52,21 @@ func _ready() -> void:
 				material.texture_filter == BaseMaterial3D.TEXTURE_FILTER_NEAREST,
 				"pixel-art ground decal must use nearest texture filtering",
 			)
+			_expect(is_equal_approx(material.albedo_color.a, zone.visual_modulate.a), "persistent terrain must start at its configured opacity")
+			await get_tree().create_timer(0.15).timeout
+			await get_tree().process_frame
+			_expect(zone.get_visual_alpha_multiplier() < 0.9, "persistent terrain must begin fading before its lifetime ends")
+			_expect(material.albedo_color.a < zone.visual_modulate.a, "hybrid ground material must follow the lifetime fade")
+			_expect(is_instance_valid(zone), "terrain gameplay lifetime must remain active while the fade is playing")
 
 	var collision := zone.get_node("CollisionShape2D") as CollisionShape2D
 	var circle := collision.shape as CircleShape2D
 	_expect(circle != null and is_equal_approx(circle.radius, 95.0), "visual replacement must not change the slow-zone collision radius")
 
 	var zone_id := zone.get_instance_id()
-	zone.queue_free()
+	await get_tree().create_timer(0.12).timeout
 	await get_tree().process_frame
-	await get_tree().process_frame
+	_expect(not is_instance_valid(zone), "fade completion and terrain expiration must share the same lifetime endpoint")
 	_expect(not entries.has(zone_id), "freed tar slow zone must leave the hybrid ground registry")
 
 	print("FAIL tar slow zone ground visual" if _failed else "PASS tar slow zone ground visual")

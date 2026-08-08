@@ -21,6 +21,11 @@ func start(combat_port, parameters: Dictionary) -> void:
 	port = combat_port
 	port.request_external_victory_control(true)
 	port.request_configure_continuous_spawning(true)
+	port.request_configure_spawn_policy(
+		&"soft_capped",
+		float(parameters.get("spawn_soft_cap_multiplier", 1.15)),
+		float(parameters.get("spawn_hard_cap_multiplier", 1.35))
+	)
 	var minimum_charge := maxf(float(parameters.get("charge_time_min_sec", 10.0)), 1.0)
 	var maximum_charge := maxf(float(parameters.get("charge_time_max_sec", 14.0)), minimum_charge)
 	charge_duration_sec = clampf(float(parameters.get("charge_time_sec", (minimum_charge + maximum_charge) * 0.5)), minimum_charge, maximum_charge)

@@ -169,11 +169,19 @@ func _physics_process(delta: float) -> void:
 
 func _process_idle() -> void:
 	blade_anchor.position = Vector2.ZERO
+	_point_blade_to_auto_aim_target()
 	if not _can_run_dash_attack():
 		return
 	if _target and is_instance_valid(_target):
 		_point_blade_to(_target.global_position)
 		_start_dash()
+
+func _point_blade_to_auto_aim_target() -> void:
+	if not has_meta(&"_player_assist_auto_aim_target"):
+		return
+	var target_variant: Variant = get_meta(&"_player_assist_auto_aim_target")
+	if target_variant is Vector2:
+		_point_blade_to(target_variant as Vector2)
 
 func _can_run_dash_attack() -> bool:
 	if not is_attack_phase_allowed():

@@ -63,7 +63,7 @@ var warehouse_management_root: Control
 var purchase_panel: Panel
 var upgrade_panel: Panel
 var module_panel: Panel
-@onready var pause_menu_panel: Panel = $PauseMenuLayer/PauseMenuRoot/PauseMenuPanel
+@onready var pause_menu_panel: PanelContainer = $PauseMenuLayer/PauseMenuRoot/PauseMenuPanel
 var purchase_primary_panel: Panel
 var upgrade_primary_panel: Panel
 var warehouse_primary_panel: Panel
@@ -145,7 +145,7 @@ var weapon_warehouse_button: Button
 var upgrade_module_button: Button
 
 # Pause menu
-@onready var resume_button = $PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/ResumeButton
+@onready var resume_button = $PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/Header/ResumeButton
 
 # Misc
 var branch_select_panel: BranchSelectPanel
@@ -269,6 +269,8 @@ func _ready():
 	call_deferred("_restore_pending_equipment_transactions")
 	if PhaseManager.current_state() == PhaseManager.PREPARE:
 		_schedule_rest_area_purchase_prewarm()
+	elif PhaseManager.current_state() == PhaseManager.RUN_COMPLETE:
+		call_deferred("_show_run_complete")
 	LoadingPerformance.end_segment("ui_ready")
 
 func _init_victory_transition() -> void:
@@ -278,11 +280,11 @@ func _init_victory_transition() -> void:
 	victory_transition.name = "VictoryTransition"
 	add_child(victory_transition)
 
-func play_victory_transition() -> void:
+func play_victory_transition(presentation_mode: StringName = &"quick", chapter: Resource = null) -> void:
 	_init_victory_transition()
 	if victory_transition == null:
 		return
-	await victory_transition.play()
+	await victory_transition.play(presentation_mode, chapter)
 
 func _init_battle_contract_selection_panel() -> void:
 	if battle_contract_selection_panel != null and is_instance_valid(battle_contract_selection_panel):
@@ -337,12 +339,14 @@ func play_initial_rest_area_entry() -> void:
 func play_battle_entry_intro(is_boss: bool = false) -> void:
 	if is_boss and battle_contract_hud_presenter != null:
 		battle_contract_hud_presenter.prepare_boss_intro(BattleContractManager.get_battle_intro_snapshot())
+	var intro_was_prepared: bool = battle_contract_hud_presenter != null \
+			and battle_contract_hud_presenter.has_prepared_intro()
 	if battle_contract_hud_presenter != null:
-		battle_contract_hud_presenter.call_deferred("play_prepared_intro")
+		await battle_contract_hud_presenter.play_prepared_intro()
+	if intro_was_prepared:
+		await get_tree().create_timer(0.10).timeout
 	if battlefield_deployment_presenter != null:
 		await battlefield_deployment_presenter.play()
-	elif battle_contract_hud_presenter != null:
-		await battle_contract_hud_presenter.play_prepared_intro()
 
 func _exit_tree() -> void:
 	_rest_area_purchase_prewarm_generation += 1
@@ -896,7 +900,8 @@ func request_reward_selection(
 	on_confirm: Callable = Callable(),
 	on_cancel: Callable = Callable(),
 	allow_cancel: bool = true,
-	show_draft_hint: bool = false
+	show_draft_hint: bool = false,
+	presentation_mode: StringName = &"standard"
 ) -> bool:
 	if is_branch_selection_blocking_interactions():
 		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
@@ -914,7 +919,8 @@ func request_reward_selection(
 		"",
 		0,
 		0,
-		show_draft_hint
+		show_draft_hint,
+		presentation_mode
 	)
 
 func request_task_reward_selection(
@@ -1157,10 +1163,14 @@ func _input(_event) -> void:
 			and controls_hint_view.handle_input_event(_event):
 		get_viewport().set_input_as_handled()
 		return
+	if _handle_primary_menu_input(_event):
+		get_viewport().set_input_as_handled()
+		return
 
 	if PhaseManager.current_state() == PhaseManager.GAMEOVER:
 		return
-	if _event.is_action_pressed("CANCEL") \
+	if (_event.is_action_pressed("ui_cancel") or _event.is_action_pressed("CANCEL") \
+			or _event.is_action_pressed("ESC")) \
 			and PhaseManager.current_state() != PhaseManager.BATTLE \
 			and handle_non_battle_right_cancel():
 		get_viewport().set_input_as_handled()
@@ -1197,6 +1207,14 @@ func refresh_border() -> void:
 
 func handle_non_battle_right_cancel() -> bool:
 	return _cancel_top_level_non_battle_ui()
+
+func _handle_primary_menu_input(event: InputEvent) -> bool:
+	if rest_area_ui_controller == null or rest_area_management_shell == null \
+			or not rest_area_ui_controller.is_primary_menu_open():
+		return false
+	var menu_id: StringName = rest_area_ui_controller.primary_menu_id
+	var panel := rest_area_ui_controller.get_service_primary_panel(menu_id) as Control
+	return rest_area_management_shell.handle_primary_menu_input(event, menu_id, panel)
 
 func _cancel_top_level_non_battle_ui() -> bool:
 	if battle_contract_selection_panel != null and battle_contract_selection_panel.visible:
@@ -1454,15 +1472,32 @@ func _on_phase_changed(new_phase: String) -> void:
 			board_edit_panel.close_panel()
 	if new_phase == PhaseManager.GAMEOVER:
 		_show_game_over()
+	elif new_phase == PhaseManager.RUN_COMPLETE:
+		_show_run_complete()
+	elif new_phase == PhaseManager.REST and PhaseManager.get_settlement_type() == &"chapter":
+		call_deferred("_play_chapter_rest_entry")
 	_request_next_queued_weapon_branch_selection()
 	_update_controls_guide_for_phase(new_phase)
 	_update_cursor_presentation()
 	_refresh_task_objective_hud(true)
 	if hud_phase_controller != null:
 		hud_phase_controller.invalidate()
-		hud_phase_controller.refresh(new_phase != PhaseManager.GAMEOVER)
-	if new_phase == PhaseManager.GAMEOVER and toast_presenter != null:
+		hud_phase_controller.refresh(new_phase not in [PhaseManager.GAMEOVER, PhaseManager.RUN_COMPLETE])
+	if new_phase in [PhaseManager.GAMEOVER, PhaseManager.RUN_COMPLETE] and toast_presenter != null:
 		toast_presenter.clear()
+
+func _play_chapter_rest_entry() -> void:
+	if PhaseManager.current_state() != PhaseManager.REST:
+		return
+	prepare_rest_area_entry_transition()
+	await play_rest_area_entry_intro()
+	var next_chapter: Resource = PhaseManager.get_current_chapter()
+	if next_chapter != null:
+		show_item_message(LocalizationManager.tr_format(
+			"ui.chapter.next",
+			{"chapter": LocalizationManager.tr_key(next_chapter.title_key, next_chapter.title_fallback)},
+			"Next: {chapter}"
+		), 4.0)
 
 func _should_use_battle_ring_cursor() -> bool:
 	if PhaseManager.current_state() != PhaseManager.BATTLE:
@@ -1500,6 +1535,10 @@ func _show_game_over() -> void:
 	_init_modal_ui_controller()
 	modal_ui_controller.show_game_over()
 
+func _show_run_complete() -> void:
+	_init_modal_ui_controller()
+	modal_ui_controller.show_run_complete()
+
 
 func _create_game_over_layout() -> void:
 	_init_modal_ui_controller()
@@ -1509,6 +1548,13 @@ func _create_game_over_layout() -> void:
 func _on_game_over_new_game_pressed() -> void:
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://World/Start.tscn")
+
+func _on_run_complete_endless_pressed() -> void:
+	get_tree().paused = false
+	if game_over_view != null and is_instance_valid(game_over_view):
+		game_over_view.visible = false
+	PhaseManager.continue_into_endless()
+	SaveManager.save_run(&"endless_started", SaveManager.STATE_REST_AREA)
 
 func _create_controls_hint_panel() -> void:
 	_init_modal_ui_controller()
@@ -1563,13 +1609,19 @@ func _update_controls_guide_for_phase(phase: String) -> void:
 	modal_ui_controller.update_controls_guide_for_phase(phase, _is_primary_menu_open(), _get_secondary_menu_context(), _get_primary_menu_context())
 
 func _refresh_controls_hint_visibility() -> void:
-	if battle_contract_selection_panel != null \
+	_init_modal_ui_controller()
+	var reward_modal_open := reward_selection_panel != null \
+			and is_instance_valid(reward_selection_panel) \
+			and reward_selection_panel.is_modal_open()
+	if hud_phase_controller != null:
+		hud_phase_controller.set_reward_modal_focus(reward_modal_open)
+	if modal_ui_controller.is_modal_open() \
+			or battle_contract_selection_panel != null \
 			and is_instance_valid(battle_contract_selection_panel) \
 			and battle_contract_selection_panel.visible:
 		if controls_hint_view != null and is_instance_valid(controls_hint_view):
 			controls_hint_view.visible = false
 		return
-	_init_modal_ui_controller()
 	modal_ui_controller.refresh_controls_hint_visibility(_is_primary_menu_open(), _get_secondary_menu_context(), _get_primary_menu_context())
 
 func show_controls_context_reminder(action: StringName, message: String, force: bool = false) -> bool:

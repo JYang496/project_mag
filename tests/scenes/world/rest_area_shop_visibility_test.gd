@@ -59,6 +59,12 @@ func _ready() -> void:
 	) or failed
 	scene_rest_area.queue_free()
 	var rest_area := RestAreaType.new()
+	failed = _check(rest_area.call("_get_adjacent_zone_id", 4, Vector2i.UP) == 1, "up input must select the cell above") or failed
+	failed = _check(rest_area.call("_get_adjacent_zone_id", 4, Vector2i.DOWN) == 7, "down input must select the cell below") or failed
+	failed = _check(rest_area.call("_get_adjacent_zone_id", 4, Vector2i.LEFT) == 3, "left input must select the cell to the left") or failed
+	failed = _check(rest_area.call("_get_adjacent_zone_id", 4, Vector2i.RIGHT) == 5, "right input must select the cell to the right") or failed
+	failed = _check(rest_area.call("_get_adjacent_zone_id", 0, Vector2i.UP) == -1, "direction input must not leave the top grid edge") or failed
+	failed = _check(rest_area.call("_get_adjacent_zone_id", 2, Vector2i.RIGHT) == -1, "direction input must not wrap to the next row") or failed
 	PlayerData.run_completed_levels = 2
 	failed = _check(not rest_area._is_zone_available(0), "purchase zone must be unavailable outside full-shop rounds") or failed
 	failed = _check(not rest_area._zone_opens_interaction(0), "unavailable purchase zone must not open interaction") or failed

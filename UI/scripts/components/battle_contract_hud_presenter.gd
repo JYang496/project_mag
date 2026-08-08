@@ -9,7 +9,7 @@ const INTRO_EXPANDED_SEC := 2.8
 const COMPLETED_VISIBLE_SEC := 1.8
 const PROGRESS_SMOOTHING_SPEED := 7.0
 const INTRO_MOVE_SEC := 0.30
-const INTRO_HOLD_SEC := 0.58
+const INTRO_HOLD_SEC := 1.8
 const INTRO_COLLAPSE_SEC := 0.38
 const INTRO_SHELL_MOVE_DELAY_SEC := 0.10
 const HUD_CROSSFADE_DELAY_SEC := 0.22
@@ -243,6 +243,9 @@ func prepare_contract_intro(card: Button, definition) -> void:
 	var objective := LocalizationManager.tr_key("battle_contract.card.%s.summary" % id, LocalizationManager.tr_key(definition.description_key, "Complete the objective."))
 	card.call("show_battle_intro", objective, _build_contract_parameters(id, definition.parameters))
 	card.z_index = 80
+
+func has_prepared_intro() -> bool:
+	return _intro_control != null and is_instance_valid(_intro_control)
 
 func prepare_boss_intro(snapshot: Dictionary) -> void:
 	_clear_intro_control()

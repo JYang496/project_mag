@@ -80,8 +80,44 @@ func _ready() -> void:
 	assert(panel.detail_title_label.text != pinned_title)
 	panel.call("_on_reward_hover_exited", 1)
 	assert(panel.detail_title_label.text == pinned_title)
+	panel.close_panel()
+	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward], Callable(), Callable(), false, "", "", 0, 0, false, &"quick"))
+	assert(panel.panel.size.x >= 999.0 and panel.panel.size.y >= 619.0)
+	assert(panel.options_box.columns == 3)
+	for index in range(3):
+		var reward_button := panel.options_box.get_child(index) as Button
+		assert(reward_button != null)
+		var key_badge := reward_button.find_child("KeyBadge", true, false) as Label
+		assert(key_badge != null and key_badge.text == str(index + 1))
+	panel.call("_begin_quick_select_hold", 0)
+	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS * 0.4)
+	var previous_progress := (panel.options_box.get_child(0) as Button).find_child("HoldProgress", true, false) as ProgressBar
+	assert(previous_progress != null and previous_progress.visible and previous_progress.value > 0.0)
+	panel.call("_begin_quick_select_hold", 1)
+	assert(panel.get("_selected_index") == 1)
+	var held_progress := (panel.options_box.get_child(1) as Button).find_child("HoldProgress", true, false) as ProgressBar
+	assert(not previous_progress.visible and is_zero_approx(previous_progress.value))
+	assert(held_progress != null and held_progress.visible and is_zero_approx(held_progress.value))
+	assert(panel.get("_held_quick_select_index") == 1)
+	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS - 0.05)
+	assert(panel.visible)
+	assert(held_progress.value > 0.8 and held_progress.value < 1.0)
+	panel.call("_cancel_quick_select_hold")
+	assert(panel.visible)
+	assert(not held_progress.visible and is_zero_approx(held_progress.value))
+	panel.call("_begin_quick_select_hold", 1)
+	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS)
+	assert(not panel.visible)
+	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward], Callable(), Callable(), false))
+	for index in range(3):
+		var reward_button := panel.options_box.get_child(index) as Button
+		var key_badge := reward_button.find_child("KeyBadge", true, false) as Label
+		assert(key_badge != null and key_badge.text == str(index + 1))
+	panel.call("_begin_quick_select_hold", 2)
+	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS)
+	assert(not panel.visible)
 
-	print("PASS: task reward bundles generate, grant once, merge, and open in summary mode")
+	print("PASS: task reward bundles generate, grant once, merge, and preserve repeated hold selection")
 	TaskRewardManager.reset_runtime_state(false)
 	CellEffectRuntime.reset_runtime_state()
 	CellTaskModuleRuntime.reset_runtime_state()

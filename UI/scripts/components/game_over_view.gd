@@ -15,8 +15,10 @@ class_name GameOverView
 @onready var gold_earned_label: Label = %GoldEarnedLabel
 @onready var gold_earned_value: Label = %GoldEarnedValue
 @onready var new_game_button: Button = %NewGameButton
+@onready var endless_button: Button = %EndlessButton
 
 var owner_ui: Node
+var _run_complete := false
 
 
 func bind(owner: Node) -> void:
@@ -24,25 +26,49 @@ func bind(owner: Node) -> void:
 	var pressed_callable := Callable(owner, "_on_game_over_new_game_pressed")
 	if not new_game_button.pressed.is_connected(pressed_callable):
 		new_game_button.pressed.connect(pressed_callable)
+	var endless_callable := Callable(owner, "_on_run_complete_endless_pressed")
+	if not endless_button.pressed.is_connected(endless_callable):
+		endless_button.pressed.connect(endless_callable)
 	refresh_static_texts()
 
 
 func show_game_over() -> void:
+	_show_summary(false)
+
+func show_run_complete() -> void:
+	_show_summary(true)
+
+func _show_summary(run_complete: bool) -> void:
+	_run_complete = run_complete
 	total_damage_value.text = _format_integer(PlayerData.run_total_damage_dealt)
 	completed_levels_value.text = _format_integer(PlayerData.run_completed_levels)
 	enemy_kills_value.text = _format_integer(PlayerData.run_enemy_kills)
 	elite_kills_value.text = _format_integer(PlayerData.run_elite_kills)
 	gold_earned_value.text = _format_integer(PlayerData.run_gold_earned)
+	endless_button.visible = run_complete
+	new_game_button.focus_neighbor_bottom = endless_button.get_path() if run_complete else new_game_button.get_path()
+	endless_button.focus_neighbor_top = new_game_button.get_path()
+	if run_complete:
+		title_label.text = LocalizationManager.tr_key("ui.run_complete.title", "MISSION COMPLETE")
+		subtitle_label.text = LocalizationManager.tr_key("ui.run_complete.subtitle", "FINAL RUN SUMMARY")
+		endless_button.text = LocalizationManager.tr_key("ui.run_complete.endless", "CONTINUE INTO OVERLOAD")
+	else:
+		refresh_static_texts()
 	visible = true
 	_play_reveal()
 	new_game_button.grab_focus.call_deferred()
 
 
 func refresh_static_texts() -> void:
-	if title_label and is_instance_valid(title_label):
-		title_label.text = LocalizationManager.tr_key("ui.gameover.title", "Mission Failed")
-	if subtitle_label and is_instance_valid(subtitle_label):
-		subtitle_label.text = LocalizationManager.tr_key("ui.gameover.subtitle", "Run Summary")
+	if _run_complete:
+		title_label.text = LocalizationManager.tr_key("ui.run_complete.title", "MISSION COMPLETE")
+		subtitle_label.text = LocalizationManager.tr_key("ui.run_complete.subtitle", "FINAL RUN SUMMARY")
+		endless_button.text = LocalizationManager.tr_key("ui.run_complete.endless", "CONTINUE INTO OVERLOAD")
+	else:
+		if title_label and is_instance_valid(title_label):
+			title_label.text = LocalizationManager.tr_key("ui.gameover.title", "Mission Failed")
+		if subtitle_label and is_instance_valid(subtitle_label):
+			subtitle_label.text = LocalizationManager.tr_key("ui.gameover.subtitle", "Run Summary")
 	_set_label_text(total_damage_label, "ui.gameover.stat.total_damage", "Total Damage")
 	_set_label_text(completed_levels_label, "ui.gameover.stat.completed_levels", "Completed Levels")
 	_set_label_text(enemy_kills_label, "ui.gameover.stat.enemy_kills", "Enemy Kills")

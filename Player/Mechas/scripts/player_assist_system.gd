@@ -31,7 +31,10 @@ func process_combat_assist(main_weapon: Weapon, manual_fire_pressed: bool, delta
 	_set_auto_aim_target(main_weapon, target.global_position)
 	if bool(main_weapon.get_meta(AUTO_FIRE_PENDING_META, false)):
 		return
-	_request_auto_fire_at_target(main_weapon, target, delta)
+	var fire_target := _find_auto_fire_target(main_weapon)
+	if fire_target == null:
+		return
+	_request_auto_fire_at_target(main_weapon, fire_target, delta)
 
 func handle_post_fire(main_weapon: Weapon, fired: bool) -> void:
 	if not fired:
@@ -176,6 +179,17 @@ func _clear_auto_fire_pending(main_weapon: Weapon) -> void:
 		main_weapon.remove_meta(AUTO_FIRE_PENDING_META)
 
 func _find_auto_aim_target(main_weapon: Weapon) -> Node2D:
+	if main_weapon.has_method("find_closest_enemy"):
+		var origin := main_weapon.global_position
+		if main_weapon.has_method("get_auto_fire_target_origin"):
+			origin = main_weapon.call("get_auto_fire_target_origin") as Vector2
+		var target_variant: Variant = main_weapon.call("find_closest_enemy", origin, INF)
+		var target := target_variant as Node2D
+		if target != null and is_instance_valid(target):
+			return target
+	return null
+
+func _find_auto_fire_target(main_weapon: Weapon) -> Node2D:
 	if main_weapon.has_method("find_auto_fire_target"):
 		var auto_fire_target_variant: Variant = main_weapon.call("find_auto_fire_target")
 		var auto_fire_target := auto_fire_target_variant as Node2D

@@ -63,6 +63,22 @@ var _contract_duration_override_sec: int = 0
 var _spawn_budget_stop_emitted := false
 var _contract_continuous_spawning := false
 var _contract_threat_multiplier := 1.0
+const SPAWN_POLICY_FINITE := &"finite"
+const SPAWN_POLICY_SOFT_CAPPED := &"soft_capped"
+const SPAWN_POLICY_UNCAPPED := &"uncapped"
+const SOFT_CAP_FIRST_TIER_MULTIPLIER := 0.25
+const SOFT_CAP_SECOND_TIER_MULTIPLIER := 0.10
+const SOFT_CAP_FIRST_TIER_INTERVAL_SEC := 4
+const SOFT_CAP_SECOND_TIER_INTERVAL_SEC := 8
+const SOFT_CAP_SECOND_TIER_RATIO := 1.10
+var _contract_spawn_policy: StringName = SPAWN_POLICY_FINITE
+var _contract_soft_cap_multiplier := 1.0
+var _contract_hard_cap_multiplier := 1.0
+var _contract_base_target_hp := 0
+var _contract_soft_cap_hp := 0
+var _contract_hard_cap_hp := 0
+var _last_post_cap_release_second := -1000000
+var _contract_special_budget_pending := false
 var _contract_external_victory := false
 var _contract_prefer_final_elite := false
 var _contract_batch_count := 0
@@ -265,7 +281,8 @@ func _should_end_after_spawn_budget_stopped() -> bool:
 func _spawn_with_random_wave_template(level_index: int, effective_time_out: int) -> void:
 	if not _is_combat_budget_ready():
 		return
-	_release_hp_budget_for_current_tick(level_index, effective_time_out)
+	if not _release_hp_budget_for_current_tick(level_index, effective_time_out):
+		return
 	if _available_hp_budget <= 0.0:
 		return
 	if _spawn_budget_stopped:
@@ -333,14 +350,65 @@ func _resolve_batch_hp_budget(level_index: int, _effective_time_out: int) -> flo
 	_sync_spawn_budget_owner_state_to_runtime()
 	return float(_spawn_budget_runtime.resolve_batch_hp_budget(level_index, _effective_time_out))
 
-func _release_hp_budget_for_current_tick(level_index: int, effective_time_out: int) -> void:
+func _release_hp_budget_for_current_tick(level_index: int, effective_time_out: int) -> bool:
 	_init_spawn_budget_runtime()
 	_sync_spawn_budget_owner_state_to_runtime()
+	if _spawn_budget_runtime.spawned_total_hp >= _spawn_budget_runtime.planned_target_total_hp:
+		var may_spawn := _release_post_base_budget(level_index, effective_time_out)
+		_sync_spawn_budget_runtime_state()
+		return may_spawn
+	_contract_special_budget_pending = false
 	var budget_before := float(_spawn_budget_runtime.available_hp_budget)
 	_spawn_budget_runtime.release_hp_budget_for_current_tick(level_index, effective_time_out)
 	var released := maxf(float(_spawn_budget_runtime.available_hp_budget) - budget_before, 0.0)
 	_spawn_budget_runtime.available_hp_budget += released * (_contract_threat_multiplier - 1.0)
 	_sync_spawn_budget_runtime_state()
+	return true
+
+func _release_post_base_budget(level_index: int, effective_time_out: int) -> bool:
+	if _contract_spawn_policy == SPAWN_POLICY_FINITE:
+		return false
+	if _contract_spawn_policy == SPAWN_POLICY_SOFT_CAPPED \
+			and _spawn_budget_runtime.spawned_total_hp >= _contract_hard_cap_hp:
+		_spawn_budget_runtime.spawn_budget_stopped = true
+		_spawn_budget_runtime.available_hp_budget = 0.0
+		_contract_special_budget_pending = false
+		return false
+	if _contract_special_budget_pending:
+		_contract_special_budget_pending = false
+		return _spawn_budget_runtime.available_hp_budget > 0.0
+	var throttle := _get_contract_spawn_throttle()
+	var interval_sec := maxi(int(throttle.get("interval_sec", 1)), 1)
+	if PhaseManager.battle_time - _last_post_cap_release_second < interval_sec:
+		_spawn_budget_runtime.available_hp_budget = 0.0
+		return false
+	_last_post_cap_release_second = PhaseManager.battle_time
+	var release_multiplier := maxf(float(throttle.get("budget_multiplier", 1.0)), 0.0)
+	if release_multiplier <= 0.0:
+		return false
+	var current_budget := float(_spawn_budget_runtime.resolve_batch_hp_budget(level_index, effective_time_out))
+	var released := current_budget * release_multiplier * _contract_threat_multiplier
+	if _contract_spawn_policy == SPAWN_POLICY_SOFT_CAPPED:
+		var remaining_room := maxf(float(_contract_hard_cap_hp - _spawn_budget_runtime.spawned_total_hp), 0.0)
+		released = minf(released, remaining_room)
+	_spawn_budget_runtime.available_hp_budget = maxf(released, 0.0)
+	_spawn_budget_runtime.spawn_budget_stopped = released <= 0.0
+	_spawn_budget_runtime.budget_release_finished = false
+	return released > 0.0
+
+func _get_contract_spawn_throttle() -> Dictionary:
+	if _contract_spawn_policy == SPAWN_POLICY_UNCAPPED:
+		return {"tier": &"uncapped", "budget_multiplier": 1.0, "interval_sec": 1}
+	if _contract_spawn_policy != SPAWN_POLICY_SOFT_CAPPED or _contract_soft_cap_hp <= 0:
+		return {"tier": &"finite", "budget_multiplier": 1.0, "interval_sec": 1}
+	if _spawned_total_hp >= _contract_hard_cap_hp:
+		return {"tier": &"hard_cap", "budget_multiplier": 0.0, "interval_sec": 0}
+	var ratio := float(_spawned_total_hp) / float(_contract_soft_cap_hp)
+	if ratio >= SOFT_CAP_SECOND_TIER_RATIO:
+		return {"tier": &"throttled_10", "budget_multiplier": SOFT_CAP_SECOND_TIER_MULTIPLIER, "interval_sec": SOFT_CAP_SECOND_TIER_INTERVAL_SEC}
+	if ratio >= 1.0:
+		return {"tier": &"throttled_25", "budget_multiplier": SOFT_CAP_FIRST_TIER_MULTIPLIER, "interval_sec": SOFT_CAP_FIRST_TIER_INTERVAL_SEC}
+	return {"tier": &"normal", "budget_multiplier": 1.0, "interval_sec": 1}
 
 func roll_enemy_kill_gold(enemy_instance: Node = null) -> int:
 	_init_kill_gold_budget_runtime()
@@ -475,9 +543,11 @@ func _add_enemy_with_state_signal(state: Dictionary, enemy_instance: Node) -> vo
 	if enemy_instance.has_signal("enemy_death"):
 		enemy_instance.connect("enemy_death", func(was_killed: bool) -> void:
 			state["alive"] = maxi(int(state.get("alive", 0)) - 1, 0)
-			_record_enemy_death_for_budget_summary(enemy_instance, was_killed)
 			enemy_died.emit(enemy_instance, was_killed)
 			call_deferred("_try_finish_battle_after_spawn_budget_stop")
+			# Notify the contract before optional accounting work. A diagnostic or
+			# economy failure must never strand the authoritative battle lifecycle.
+			_record_enemy_death_for_budget_summary(enemy_instance, was_killed)
 		)
 
 func _get_enemy_metadata(scene_path: String, scene: PackedScene) -> Dictionary:
@@ -816,7 +886,10 @@ func stop_spawning() -> void:
 		timer.stop()
 
 func get_active_enemy_count() -> int:
-	return _get_total_runtime_alive_count()
+	# Contract completion needs the actual scene-tree population. Runtime spawn
+	# counters are scheduling metadata and can remain stale if an enemy exits by
+	# a path that did not emit enemy_death.
+	return _get_registered_enemies().size()
 
 func get_spawn_budget_snapshot() -> Dictionary:
 	return {
@@ -906,6 +979,36 @@ func configure_contract_duration(duration_sec: float) -> void:
 func configure_contract_continuous_spawning(enabled: bool) -> void:
 	_contract_continuous_spawning = enabled
 
+func configure_contract_spawn_policy(
+	mode: StringName,
+	soft_cap_multiplier: float,
+	hard_cap_multiplier: float
+) -> void:
+	_contract_spawn_policy = mode if mode in [SPAWN_POLICY_FINITE, SPAWN_POLICY_SOFT_CAPPED, SPAWN_POLICY_UNCAPPED] else SPAWN_POLICY_FINITE
+	_contract_soft_cap_multiplier = maxf(soft_cap_multiplier, 0.0)
+	_contract_hard_cap_multiplier = maxf(hard_cap_multiplier, _contract_soft_cap_multiplier)
+	_last_post_cap_release_second = -1000000
+	_contract_special_budget_pending = false
+	_refresh_contract_spawn_caps()
+
+func get_contract_spawn_pressure_snapshot() -> Dictionary:
+	return {
+		"mode": _contract_spawn_policy,
+		"base_target_hp": _contract_base_target_hp,
+		"spawned_hp": _spawned_total_hp,
+		"soft_cap_hp": _contract_soft_cap_hp,
+		"hard_cap_hp": _contract_hard_cap_hp,
+		"throttle": _get_contract_spawn_throttle(),
+	}
+
+func _refresh_contract_spawn_caps() -> void:
+	if _contract_base_target_hp <= 0:
+		_contract_soft_cap_hp = 0
+		_contract_hard_cap_hp = 0
+		return
+	_contract_soft_cap_hp = maxi(int(round(float(_contract_base_target_hp) * _contract_soft_cap_multiplier)), 1)
+	_contract_hard_cap_hp = maxi(int(round(float(_contract_base_target_hp) * _contract_hard_cap_multiplier)), _contract_soft_cap_hp)
+
 func configure_contract_threat_multiplier(multiplier: float) -> void:
 	_contract_threat_multiplier = maxf(multiplier, 0.1)
 
@@ -920,18 +1023,36 @@ func release_contract_reinforcement_budget(multiplier: float = 1.0) -> void:
 		float(_spawn_budget_runtime.resolve_batch_hp_budget(level_index, effective_time_out))
 		* clampf(multiplier, 0.0, 10.0)
 	)
-	_spawn_budget_runtime.available_hp_budget += reinforcement_budget
+	var throttle := _get_contract_spawn_throttle()
+	reinforcement_budget *= maxf(float(throttle.get("budget_multiplier", 1.0)), 0.0)
+	var budget_cap := INF
+	if _contract_spawn_policy == SPAWN_POLICY_SOFT_CAPPED:
+		var remaining_room := maxf(float(_contract_hard_cap_hp - _spawn_budget_runtime.spawned_total_hp), 0.0)
+		reinforcement_budget = minf(reinforcement_budget, remaining_room)
+		budget_cap = remaining_room
+	var existing_budget := maxf(_spawn_budget_runtime.available_hp_budget, 0.0)
+	# Multiple objectives can request reinforcement during the same frame. Merge
+	# them into one bounded allowance instead of stacking a burst per objective.
+	_spawn_budget_runtime.available_hp_budget = minf(maxf(existing_budget, reinforcement_budget), budget_cap)
+	_spawn_budget_runtime.spawn_budget_stopped = reinforcement_budget <= 0.0
+	_contract_special_budget_pending = reinforcement_budget > 0.0
 	_sync_spawn_budget_runtime_state()
 
 func spawn_contract_pursuit_wave(min_count: int, max_count: int) -> int:
 	var safe_min := maxi(min_count, 0)
 	var safe_max := maxi(max_count, safe_min)
 	var target_count := _rng.randi_range(safe_min, safe_max)
+	var throttle := _get_contract_spawn_throttle()
+	if _contract_spawn_policy == SPAWN_POLICY_SOFT_CAPPED:
+		target_count = int(floor(float(target_count) * maxf(float(throttle.get("budget_multiplier", 1.0)), 0.0)))
 	var spawned_count := 0
 	var ranged_count := 0
 	var count_by_scene: Dictionary = {}
 	var profile := _get_spawn_combat_profile()
 	while spawned_count < target_count:
+		if _contract_spawn_policy == SPAWN_POLICY_SOFT_CAPPED \
+				and _spawned_total_hp >= _contract_hard_cap_hp:
+			break
 		if _get_total_runtime_alive_count() >= profile.default_total_alive_cap:
 			break
 		var candidates: Array[Dictionary] = []
@@ -963,8 +1084,12 @@ func spawn_contract_pursuit_wave(min_count: int, max_count: int) -> int:
 			if roll <= 0.0:
 				selected = candidate["state"]
 				break
-		if _spawn_from_state(selected, 1) <= 0:
+		var spawned_hp := _spawn_from_state(selected, 1)
+		if spawned_hp <= 0:
 			break
+		_spawn_budget_runtime.consume_spawned_hp(spawned_hp)
+		_sync_spawn_budget_runtime_state()
+		_update_spawn_budget_stop_state()
 		var selected_path := _get_spawn_scene_path(selected)
 		count_by_scene[selected_path] = int(count_by_scene.get(selected_path, 0)) + 1
 		if _is_spawn_ranged(selected):
@@ -982,6 +1107,14 @@ func reset_contract_configuration() -> void:
 	_contract_duration_override_sec = 0
 	_contract_continuous_spawning = false
 	_contract_threat_multiplier = 1.0
+	_contract_spawn_policy = SPAWN_POLICY_FINITE
+	_contract_soft_cap_multiplier = 1.0
+	_contract_hard_cap_multiplier = 1.0
+	_contract_base_target_hp = 0
+	_contract_soft_cap_hp = 0
+	_contract_hard_cap_hp = 0
+	_last_post_cap_release_second = -1000000
+	_contract_special_budget_pending = false
 	_contract_external_victory = false
 	_contract_prefer_final_elite = false
 	_contract_batch_count = 0
@@ -1097,8 +1230,10 @@ func calculate_scaled_enemy_stats(
 func _prepare_level_combat_budget(level_index: int, effective_time_out: int) -> void:
 	_init_spawn_budget_runtime()
 	_spawn_budget_runtime.prepare_level_combat_budget(level_index, effective_time_out)
+	_contract_base_target_hp = maxi(_spawn_budget_runtime.planned_target_total_hp, 0)
 	if _contract_reward_stage:
 		_spawn_budget_runtime.planned_target_total_hp = maxi(int(round(float(_spawn_budget_runtime.planned_target_total_hp) * _contract_reward_hp_multiplier)), 1)
+	_refresh_contract_spawn_caps()
 	_sync_spawn_budget_runtime_state()
 
 func _record_enemy_death_for_budget_summary(enemy_instance: Node, was_killed: bool) -> void:
@@ -1150,9 +1285,12 @@ func _update_spawn_budget_stop_state() -> void:
 	_sync_spawn_budget_owner_state_to_runtime()
 	_spawn_budget_runtime.update_spawn_budget_stop_state()
 	if _spawn_budget_runtime.spawn_budget_stopped and _contract_continuous_spawning:
-		_spawn_budget_runtime.planned_target_total_hp += maxi(_spawn_budget_runtime.planned_target_total_hp, 1)
-		_spawn_budget_runtime.spawn_budget_stopped = false
-		_spawn_budget_runtime.budget_release_finished = false
+		var may_continue: bool = _contract_spawn_policy == SPAWN_POLICY_UNCAPPED \
+			or (_contract_spawn_policy == SPAWN_POLICY_SOFT_CAPPED \
+				and _spawn_budget_runtime.spawned_total_hp < _contract_hard_cap_hp)
+		if may_continue:
+			_spawn_budget_runtime.spawn_budget_stopped = false
+			_spawn_budget_runtime.budget_release_finished = false
 	_sync_spawn_budget_runtime_state()
 	if _spawn_budget_stopped and not _spawn_budget_stop_emitted:
 		_spawn_budget_stop_emitted = true
@@ -1183,7 +1321,10 @@ func finish_battle_with_victory(level_index: int = -1, effective_time_out: int =
 	erase_all_enemies()
 	var ui := GlobalVariables.ui
 	if ui != null and is_instance_valid(ui) and ui.has_method("play_victory_transition"):
-		await ui.call("play_victory_transition")
+		var progression: Resource = PhaseManager.get_progression_profile()
+		var presentation: StringName = progression.get_settlement_type_for_completed_level(level_index)
+		var chapter: Resource = progression.get_chapter_for_level(level_index)
+		await ui.call("play_victory_transition", presentation, chapter)
 	if PhaseManager.current_state() == PhaseManager.BATTLE:
 		PhaseManager.enter_settlement()
 	_battle_victory_transition_active = false

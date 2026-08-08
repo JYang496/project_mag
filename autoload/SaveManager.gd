@@ -95,6 +95,10 @@ func restore_before_world() -> Dictionary:
 	var run: Dictionary = _pending_restore.get("run", {})
 	PlayerData.select_mecha_id = int(run.get("selected_mecha_id", PlayerData.select_mecha_id))
 	PhaseManager.current_level = maxi(int(run.get("level", 0)), 0)
+	PhaseManager.import_progression_save_state(
+		run.get("progression_state", {}) as Dictionary,
+		bool(run.get("endless_mode", false))
+	)
 	CellEffectRuntime.import_save_state(run.get("cell_effects", {}) as Dictionary)
 	CellTaskModuleRuntime.import_save_state(run.get("cell_tasks", {}) as Dictionary)
 	TaskRewardManager.import_save_state(run.get("task_rewards", {}) as Dictionary)
@@ -126,6 +130,9 @@ func _build_document(state: String) -> Dictionary:
 		"run": {
 			"selected_mecha_id": str(PlayerData.select_mecha_id),
 			"level": int(PhaseManager.current_level),
+			"progression_state": PhaseManager.export_progression_save_state(),
+			# Retained during the schema transition for older readers.
+			"endless_mode": bool(PhaseManager.endless_mode),
 			"core": TaskRewardManager.build_run_snapshot(),
 			"cell_effects": CellEffectRuntime.export_save_state(),
 			"cell_tasks": CellTaskModuleRuntime.export_save_state(),

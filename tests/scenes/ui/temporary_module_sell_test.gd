@@ -30,6 +30,19 @@ func _run() -> void:
 	if not bool(obtain_result.get("ok", false)):
 		_fail("obtain_module failed: %s" % str(obtain_result))
 		return
+	await get_tree().process_frame
+	if ui.toast_presenter.panel.visible:
+		_fail("obtaining a weapon module must not use the top system toast")
+		return
+	var duplicate_module := MODULE_SCENE.instantiate() as Module
+	var merge_result := InventoryData.obtain_module(duplicate_module)
+	if not bool(merge_result.get("ok", false)):
+		_fail("duplicate module merge failed: %s" % str(merge_result))
+		return
+	await get_tree().process_frame
+	if ui.toast_presenter.panel.visible:
+		_fail("merging or converting a duplicate module must not use the top system toast")
+		return
 
 	ui.module_warehouse_controller.open_tab(&"module")
 	var view: ModuleManagementView = ui.module_warehouse_controller.module_management_view

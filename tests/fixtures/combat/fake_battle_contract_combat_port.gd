@@ -17,6 +17,8 @@ var start_spawning_calls := 0
 var stop_spawning_calls := 0
 var external_victory_control := false
 var continuous_spawning := false
+var spawn_policy := {"mode": &"finite", "soft_cap_multiplier": 1.0, "hard_cap_multiplier": 1.0}
+var spawn_policy_calls: Array[Dictionary] = []
 var monitor_enemy_stalls := false
 var prefer_elite_final_batch := false
 var configured_duration := 0.0
@@ -63,6 +65,14 @@ func request_release_next_batch() -> void:
 
 func request_configure_continuous_spawning(enabled: bool) -> void:
 	continuous_spawning = enabled
+
+func request_configure_spawn_policy(mode: StringName, soft_cap_multiplier: float, hard_cap_multiplier: float) -> void:
+	spawn_policy = {
+		"mode": mode,
+		"soft_cap_multiplier": soft_cap_multiplier,
+		"hard_cap_multiplier": hard_cap_multiplier,
+	}
+	spawn_policy_calls.append(spawn_policy.duplicate(true))
 
 func request_configure_duration(duration_sec: float) -> void:
 	configured_duration = duration_sec

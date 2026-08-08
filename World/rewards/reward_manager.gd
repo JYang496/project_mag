@@ -2,7 +2,6 @@ extends Node2D
 class_name BonusManager
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
-const PREVIEW_FORMATTER := preload("res://UI/scripts/weapon_obtain_preview_formatter.gd")
 const MODULE_DIRECTORY_PATH := "res://Player/Weapons/Modules/"
 const REWARD_TYPE_WEAPON := "weapon"
 const REWARD_TYPE_WEAPON_UPGRADE := "weapon_upgrade"
@@ -141,9 +140,11 @@ func _request_standard_battle_reward_selection(level_index: int) -> void:
 		Callable(self, "_on_standard_battle_reward_selected"),
 		Callable(),
 		false,
-		true
+		true,
+		PhaseManager.get_settlement_type()
 	))
 	if opened:
+		RunPacingTelemetry.record_event(&"reward_panel_opened", {"presentation": PhaseManager.get_settlement_type(), "option_count": reward_options.size()})
 		RewardDraftRuntime.clear_standard_draft_opening()
 		RewardDraftRuntime.record_standard_draft_consumed()
 		return
@@ -324,6 +325,7 @@ func _request_battle_reward_selection() -> void:
 		grant_reward_immediately(reward_options[0])
 
 func _on_standard_battle_reward_selected(reward: RewardInfo) -> void:
+	RunPacingTelemetry.record_event(&"reward_selected", {"reward_kind": int(reward.reward_kind) if reward != null else -1})
 	if grant_reward_immediately(reward):
 		RewardDraftRuntime.clear_pending_standard_draft()
 		_commit_victory_reward_save()
@@ -791,43 +793,6 @@ func _show_reward_granted_message(reward: RewardInfo) -> void:
 				int(reward.target_weapon_to_level),
 			]
 		))
-	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
-		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
-		var weapon_text := LocalizationManager.tr_format(
-			"ui.reward.weapon",
-			{"id": weapon_name, "level": reward.item_level},
-			"Weapon %s Lv.%d" % [weapon_name, reward.item_level]
-		)
-		if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("predict_auto_fuse_weapon_obtain"):
-			var outcome: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(reward.item_id)
-			weapon_text = _format_weapon_obtain_prediction(weapon_text, weapon_name, outcome)
-		chunks.append(weapon_text)
-	if reward.module_scene:
-		var module_name := _get_module_name_from_reward_scene(reward.module_scene)
-		var level := _sanitize_module_level(reward.module_level)
-		chunks.append(
-			LocalizationManager.tr_format(
-				"ui.reward.module",
-				{"name": module_name, "level": level},
-				"Module %s Lv.%d" % [module_name, level]
-			)
-		)
-	if reward.total_chip_value > 0:
-		chunks.append(
-			LocalizationManager.tr_format(
-				"ui.reward.exp",
-				{"value": reward.total_chip_value},
-				"EXP +%d" % reward.total_chip_value
-			)
-		)
-	if reward.gold_value > 0:
-		chunks.append(
-			LocalizationManager.tr_format(
-				"ui.reward.gold",
-				{"value": reward.gold_value},
-				"Gold +%d" % reward.gold_value
-			)
-		)
 	if chunks.is_empty():
 		return
 	var content := " + ".join(chunks)
@@ -845,6 +810,3 @@ func _get_module_name_from_reward_scene(module_scene: PackedScene) -> String:
 	if module_id == "":
 		return fallback
 	return LocalizationManager.tr_key("module.%s.name" % module_id, fallback)
-
-func _format_weapon_obtain_prediction(base_text: String, weapon_name: String, outcome: Dictionary) -> String:
-	return PREVIEW_FORMATTER.format_obtain_preview(base_text, weapon_name, outcome)

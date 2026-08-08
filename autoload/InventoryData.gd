@@ -379,11 +379,6 @@ func obtain_module(module_instance: Module, _ignore_weapon: Weapon = null) -> Di
 	if result.get("ok", false):
 		result["result"] = "stored"
 		result["module"] = module_instance
-		_notify(LocalizationManager.tr_format(
-			"ui.inventory.obtain",
-			{"name": LocalizationManager.get_module_name(module_instance), "level": module_instance.module_level},
-			"Obtained %s Lv.%d" % [LocalizationManager.get_module_name(module_instance), module_instance.module_level]
-		))
 	return result
 
 func purchase_module(module_scene: PackedScene) -> Dictionary:
@@ -465,22 +460,12 @@ func _merge_duplicate_module(existing: Module, incoming: Module) -> Dictionary:
 		var owner_weapon := _resolve_module_owner_weapon(existing)
 		if owner_weapon and owner_weapon.has_method("calculate_status"):
 			owner_weapon.calculate_status()
-		_notify(LocalizationManager.tr_format(
-			"ui.inventory.upgrade",
-			{"name": LocalizationManager.get_module_name(existing), "level": existing.module_level},
-			"Upgraded %s to Lv.%d" % [LocalizationManager.get_module_name(existing), existing.module_level]
-		))
 		temporary_modules_changed.emit()
 		_refresh_ui()
 		return {"ok": true, "result": "upgraded", "module": existing}
 	var gold := _calculate_module_conversion_coins(incoming)
 	PlayerData.recycle_gold(gold)
 	_discard_module_instance(incoming, existing)
-	_notify(LocalizationManager.tr_format(
-		"ui.inventory.convert",
-		{"name": LocalizationManager.get_module_name(existing), "gold": gold},
-		"Converted duplicate %s into +%d Gold" % [LocalizationManager.get_module_name(existing), gold]
-	))
 	_refresh_ui()
 	return {"ok": true, "result": "converted_to_gold", "gold": gold}
 

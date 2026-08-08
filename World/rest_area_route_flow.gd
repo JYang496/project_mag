@@ -72,6 +72,19 @@ func request_battle_contract() -> void:
 		_battle_start_pending = true
 		_on_contract_confirmed()
 		return
+	var progression: Resource = PhaseManager.get_progression_profile()
+	var fixed_contract_id: StringName = &""
+	if not PhaseManager.endless_mode and PhaseManager.current_level < progression.fixed_contract_level_count:
+		fixed_contract_id = progression.fixed_early_contract_id
+	elif not PhaseManager.endless_mode and progression.is_final_level(PhaseManager.current_level):
+		fixed_contract_id = progression.final_contract_id
+	if fixed_contract_id != &"":
+		if BattleContractManager.request_fixed_offer(fixed_contract_id):
+			_battle_start_pending = true
+			_on_contract_confirmed()
+			return
+		_owner.call("_reset_start_battle_button")
+		return
 	var options := BattleContractManager.request_offer()
 	if options.size() < 2 or options.size() > 3:
 		_owner.call("_reset_start_battle_button")

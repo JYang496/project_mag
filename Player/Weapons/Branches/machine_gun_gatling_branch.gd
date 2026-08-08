@@ -2,11 +2,30 @@ extends WeaponBranchBehavior
 class_name MachineGunGatlingBranch
 
 # Gatling branch: higher fire cadence, split lanes, and heat-based fire conversion.
+const GATLING_TEXTURE: Texture2D = preload("res://asset/images/weapons/mg2.png")
+
 @export var projectile_count: int = 2
 @export var spread_deg: float = 7.0
 @export_range(0.0, 1.0, 0.05) var extra_heat_shot_multiplier: float = 0.25
 @export_range(0.05, 2.0, 0.01) var base_damage_multiplier: float = 0.80
 @export_range(0.0, 1.0, 0.01) var fire_mode_heat_ratio: float = 0.50
+
+func on_weapon_ready() -> void:
+	_apply_gatling_visual()
+
+func on_level_applied(_level: int) -> void:
+	_apply_gatling_visual()
+
+func on_removed() -> void:
+	super.on_removed()
+	if weapon != null and is_instance_valid(weapon):
+		weapon.call("_apply_fuse_sprite")
+
+func _apply_gatling_visual() -> void:
+	if weapon == null or not is_instance_valid(weapon) or weapon.sprite == null:
+		return
+	weapon.sprite.texture = GATLING_TEXTURE
+
 func get_added_weapon_traits() -> Array[StringName]:
 	return [WeaponTrait.FIRE]
 

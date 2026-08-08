@@ -40,6 +40,25 @@ func _run() -> void:
 
 	ui.module_warehouse_controller.open_tab(&"module")
 	var view: ModuleManagementView = ui.module_warehouse_controller.module_management_view
+	await get_tree().process_frame
+	var left_list := view.get("_left_list") as VBoxContainer
+	var weapon_card: PanelContainer
+	for child in left_list.get_children():
+		var candidate := child as PanelContainer
+		if candidate != null and candidate.get_meta("weapon", null) == weapon:
+			weapon_card = candidate
+			break
+	if weapon_card == null or weapon_card.find_child("WeaponIcon", true, false) == null:
+		_fail("module weapon card missing visual weapon anchor")
+		return
+	var slot_row := weapon_card.find_child("ModuleSlots", true, false) as HBoxContainer
+	if slot_row == null or slot_row.get_child_count() != int(weapon.MAX_MODULE_NUMBER):
+		_fail("module weapon card did not render every socket")
+		return
+	for slot in slot_row.get_children():
+		if slot.find_child("SlotBadge", true, false) == null or slot.find_child("ModuleIcon", true, false) == null:
+			_fail("module socket missing icon-led state cues")
+			return
 	view.selected_module = null
 	view.selected_equipped_module = module_instance
 	view.selected_equipped_module_weapon = weapon

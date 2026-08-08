@@ -91,15 +91,21 @@ text = "Select a reward to view details."
 autowrap_mode = 3
 max_lines_visible = 6
 
-[node name="DetailOutcome" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox"]
+[node name="ActionVBox" type="VBoxContainer" parent="Panel/VBox/DetailPanel/Margin/DetailHBox"]
+custom_minimum_size = Vector2(220, 0)
+theme_override_constants/separation = 10
+
+[node name="DetailOutcome" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/ActionVBox"]
 text = "Added to inventory"
 theme_override_colors/font_color = Color(0.72, 0.88, 0.78, 1)
 autowrap_mode = 3
 max_lines_visible = 2
 
-[node name="ConfirmButton" type="Button" parent="Panel/VBox/DetailPanel/Margin/DetailHBox"]
-custom_minimum_size = Vector2(160, 42)
-size_flags_vertical = 8
+[node name="Spacer" type="Control" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/ActionVBox"]
+size_flags_vertical = 3
+
+[node name="ConfirmButton" type="Button" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/ActionVBox"]
+custom_minimum_size = Vector2(180, 42)
 text = "Confirm Reward"
 
 [node name="Footer" type="HBoxContainer" parent="Panel/VBox"]

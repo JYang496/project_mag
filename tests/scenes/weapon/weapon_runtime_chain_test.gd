@@ -104,10 +104,46 @@ func _ready() -> void:
 	_validate_global_energy_pool()
 	_validate_global_energy_hud()
 	_validate_full_energy_fire_cycle()
+	_validate_machine_gun_fuse_branch_visual()
+	_validate_zero_cannon_fuse_branch_visual()
 	_validate_overkill_modules()
 
 	print("FAIL weapon runtime chain" if _failed else "PASS weapon runtime chain")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0)
+
+
+func _validate_machine_gun_fuse_branch_visual() -> void:
+	DataHandler.load_weapon_branch_data()
+	var weapon := (load("res://Player/Weapons/Instances/machine_gun.tscn") as PackedScene).instantiate() as Weapon
+	add_child(weapon)
+	var base_texture := weapon.sprite.texture
+	weapon.fuse = 2
+	_expect(weapon.sprite.texture == base_texture, "machine-gun fuse alone must retain its base visual until a branch is selected")
+	_expect(weapon.branch_runtime.add_branch("gatling_mg"), "machine-gun fuse 2 must accept the Gatling branch")
+	_expect(
+		weapon.sprite.texture != null and weapon.sprite.texture.resource_path == "res://asset/images/weapons/mg2.png",
+		"Gatling machine-gun branch must apply its evolved weapon visual"
+	)
+	weapon.branch_runtime.clear_branch_behaviors()
+	_expect(weapon.sprite.texture == base_texture, "removing the Gatling branch must restore the fuse base visual")
+	weapon.queue_free()
+
+
+func _validate_zero_cannon_fuse_branch_visual() -> void:
+	DataHandler.load_weapon_branch_data()
+	var weapon := (load("res://Player/Weapons/Instances/cannon.tscn") as PackedScene).instantiate() as Weapon
+	add_child(weapon)
+	var base_texture := weapon.sprite.texture
+	weapon.fuse = 2
+	_expect(weapon.sprite.texture == base_texture, "cannon fuse alone must retain its base visual until a branch is selected")
+	_expect(weapon.branch_runtime.add_branch("zero_cannon_branch"), "cannon fuse 2 must accept the Zero Cannon branch")
+	_expect(
+		weapon.sprite.texture != null and weapon.sprite.texture.resource_path == "res://asset/images/weapons/cannon3.png",
+		"Zero Cannon branch must apply its evolved weapon visual"
+	)
+	weapon.branch_runtime.clear_branch_behaviors()
+	_expect(weapon.sprite.texture == base_texture, "removing the Zero Cannon branch must restore the fuse base visual")
+	weapon.queue_free()
 
 
 func _validate_enemy_query_contract() -> void:

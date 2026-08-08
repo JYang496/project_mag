@@ -15,7 +15,7 @@ radius = 251.008
 [node name="EnemyRollingBallElite" unique_id=53735121 instance=ExtResource("1_cpric")]
 collision_mask = 0
 script = ExtResource("2_0fobv")
-damage = 3
+damage = 2
 spawn_cost = 6
 spawn_tags = Array[StringName]([&"elite"])
 hp = 60

@@ -93,7 +93,7 @@ func make_module_button(module_instance: Module, selected: bool, pressed_callbac
 func make_module_weapon_card(weapon: Weapon, active_drag_module: Module, socket_callback_builder: Callable) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.name = "ModuleWeaponCard"
-	panel.custom_minimum_size = Vector2(0, 162)
+	panel.custom_minimum_size = Vector2(0, 142)
 	panel.set_meta("weapon", weapon)
 	apply_module_weapon_card_style(panel, weapon, active_drag_module)
 	var margin := MarginContainer.new()
@@ -102,17 +102,38 @@ func make_module_weapon_card(weapon: Weapon, active_drag_module: Module, socket_
 	margin.add_theme_constant_override("margin_right", 10)
 	margin.add_theme_constant_override("margin_bottom", 8)
 	panel.add_child(margin)
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 6)
+	var root := HBoxContainer.new()
+	root.add_theme_constant_override("separation", 10)
 	margin.add_child(root)
+	var weapon_icon_frame := PanelContainer.new()
+	weapon_icon_frame.name = "WeaponIconFrame"
+	weapon_icon_frame.custom_minimum_size = Vector2(64, 64)
+	weapon_icon_frame.add_theme_stylebox_override("panel", _make_icon_frame_style(_get_weapon_rarity_color(weapon)))
+	root.add_child(weapon_icon_frame)
+	var weapon_icon := _make_icon(Vector2(54, 54))
+	weapon_icon.name = "WeaponIcon"
+	weapon_icon.texture = weapon.sprite.texture if weapon.sprite else null
+	weapon_icon_frame.add_child(weapon_icon)
+	var content := VBoxContainer.new()
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 4)
+	root.add_child(content)
 	var name_label := Label.new()
-	name_label.text = "%s  Lv.%d" % [LocalizationManager.get_weapon_instance_display_name(weapon), int(weapon.level)]
+	name_label.name = "WeaponName"
+	name_label.text = LocalizationManager.get_weapon_instance_display_name(weapon)
 	name_label.clip_text = true
 	name_label.add_theme_color_override("font_color", _get_weapon_rarity_color(weapon))
-	root.add_child(name_label)
+	content.add_child(name_label)
+	var level_label := Label.new()
+	level_label.name = "WeaponLevel"
+	level_label.text = "Lv.%d" % int(weapon.level)
+	level_label.add_theme_font_size_override("font_size", 11)
+	level_label.add_theme_color_override("font_color", Color(0.66, 0.78, 0.86))
+	content.add_child(level_label)
 	var slot_row := HBoxContainer.new()
-	slot_row.add_theme_constant_override("separation", 6)
-	root.add_child(slot_row)
+	slot_row.name = "ModuleSlots"
+	slot_row.add_theme_constant_override("separation", 5)
+	content.add_child(slot_row)
 	var installed: Array[Module] = []
 	if weapon.modules:
 		for child in weapon.modules.get_children():
@@ -131,32 +152,64 @@ func make_module_socket_button(weapon: Weapon, existing: Module, index: int, pre
 	button.drop_payload = {"kind": "module_slot", "weapon": weapon, "existing": existing, "slot_index": index}
 	if existing != null and is_instance_valid(existing):
 		button.drag_payload = {"kind": "equipped_module", "module": existing, "weapon": weapon}
-	button.custom_minimum_size = Vector2(84, 76)
+	button.custom_minimum_size = Vector2(60, 64)
 	button.text = ""
 	var feedback := _get_slot_feedback(weapon, existing)
 	button.disabled = false
 	button.set_meta("slot_feedback_ok", bool(feedback.get("ok", true)))
 	button.tooltip_text = str(feedback.get("reason", ""))
 	button.pressed.connect(pressed_callback)
-	var margin := _make_full_margin(4, 4, 4, 4)
+	var margin := _make_full_margin(3, 3, 3, 3)
 	button.add_child(margin)
-	var root := VBoxContainer.new()
+	var root := CenterContainer.new()
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_theme_constant_override("separation", 2)
 	margin.add_child(root)
-	var icon := _make_icon(Vector2(34, 34))
+	var visual := Control.new()
+	visual.custom_minimum_size = Vector2(50, 54)
+	visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(visual)
+	var icon := _make_icon(Vector2(42, 42))
+	icon.name = "ModuleIcon"
+	icon.position = Vector2(4, 2)
 	icon.texture = _get_module_texture(existing) if existing else null
-	root.add_child(icon)
-	var label := Label.new()
-	label.text = LocalizationManager.get_module_name(existing) if existing else LocalizationManager.tr_format("ui.module.slot_empty", {"index": index + 1}, "Slot %d" % (index + 1))
-	label.clip_text = true
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 10)
-	label.add_theme_color_override("font_color", RARITY_UTIL.get_color(existing.get_rarity()) if existing else Color(0.74, 0.84, 0.9))
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(label)
+	visual.add_child(icon)
+	if existing == null:
+		var empty_mark := Label.new()
+		empty_mark.name = "EmptyMark"
+		empty_mark.text = "+"
+		empty_mark.position = Vector2(13, -2)
+		empty_mark.size = Vector2(28, 38)
+		empty_mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty_mark.add_theme_font_size_override("font_size", 26)
+		empty_mark.add_theme_color_override("font_color", Color(0.32, 0.70, 0.86, 0.78))
+		empty_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		visual.add_child(empty_mark)
+	var badge := Label.new()
+	badge.name = "SlotBadge"
+	badge.text = "Lv.%d" % int(existing.module_level) if existing else str(index + 1)
+	badge.position = Vector2(2, 39)
+	badge.size = Vector2(46, 14)
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.add_theme_font_size_override("font_size", 9)
+	badge.add_theme_color_override("font_color", RARITY_UTIL.get_color(existing.get_rarity()) if existing else Color(0.58, 0.72, 0.8))
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	visual.add_child(badge)
+	if button.tooltip_text.strip_edges() == "":
+		button.tooltip_text = LocalizationManager.get_module_name(existing) if existing else LocalizationManager.tr_format("ui.module.slot_empty", {"index": index + 1}, "Slot %d" % (index + 1))
 	_style_button(button, bool(feedback.get("ok", true)) and _get_selected_module() != null)
 	return button
+
+func _make_icon_frame_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.035, 0.055, 0.075, 0.9)
+	style.border_color = Color(color.r, color.g, color.b, 0.72)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 5
+	style.content_margin_top = 5
+	style.content_margin_right = 5
+	style.content_margin_bottom = 5
+	return style
 
 func apply_module_weapon_card_style(panel: PanelContainer, weapon: Weapon, active_drag_module: Module) -> void:
 	var style := StyleBoxFlat.new()

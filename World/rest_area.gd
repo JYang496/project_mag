@@ -457,6 +457,10 @@ func _on_start_battle_button_activated() -> void:
 	if _route_flow != null:
 		_route_flow.call("on_start_battle_button_activated")
 
+func start_initial_battle() -> void:
+	if _route_flow != null and PhaseManager.current_state() == PhaseManager.REST:
+		_route_flow.call("request_battle_contract")
+
 func _on_battle_start_cancelled() -> void:
 	if _route_flow != null:
 		_route_flow.call("on_battle_start_cancelled")
@@ -492,6 +496,12 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if not _is_interaction_enabled():
 		return
+	if event.is_echo():
+		return
+	var direction := _get_direction_from_input(event)
+	if direction != Vector2i.ZERO:
+		_handle_direction_navigation(direction)
+		return
 	if event is InputEventMouseButton:
 		var mouse_event := event as InputEventMouseButton
 		if not mouse_event.pressed:
@@ -524,6 +534,9 @@ func _handle_left_click(global_pos: Vector2) -> void:
 		if debug_click_logs:
 			print("[RestArea] left click ignored: zone unavailable zone_id=", zone_id)
 		return
+	_select_zone_for_navigation(zone_id)
+
+func _select_zone_for_navigation(zone_id: int) -> void:
 	var current_menu_open := _is_menu_open()
 	if current_menu_open and zone_id == selected_zone_id and _zone_opens_interaction(zone_id):
 		# Already inside this zone with its interaction open; ignore repeated click.
@@ -537,6 +550,41 @@ func _handle_left_click(global_pos: Vector2) -> void:
 	if debug_click_logs:
 		print("[RestArea] left click accepted: zone_id=", zone_id, " target=", _get_zone_center_global(zone_id))
 	get_viewport().set_input_as_handled()
+
+func _get_direction_from_input(event: InputEvent) -> Vector2i:
+	if event.is_action_pressed("UP"):
+		return Vector2i.UP
+	if event.is_action_pressed("DOWN"):
+		return Vector2i.DOWN
+	if event.is_action_pressed("LEFT"):
+		return Vector2i.LEFT
+	if event.is_action_pressed("RIGHT"):
+		return Vector2i.RIGHT
+	return Vector2i.ZERO
+
+func _handle_direction_navigation(direction: Vector2i) -> void:
+	_sync_menu_open_with_ui()
+	# Visible primary menus own directional input through Godot's focus chain.
+	if _menu_bridge != null and bool(_menu_bridge.call("is_primary_menu_open")):
+		return
+	if _is_world_interaction_blocked():
+		return
+	if _menu_bridge != null and not bool(_menu_bridge.call("is_navigation_allowed")):
+		return
+	var target_zone_id := _get_adjacent_zone_id(selected_zone_id, direction)
+	if target_zone_id < 0 or not _is_zone_available(target_zone_id):
+		return
+	_select_zone_for_navigation(target_zone_id)
+
+func _get_adjacent_zone_id(from_zone_id: int, direction: Vector2i) -> int:
+	if from_zone_id < 0 or from_zone_id >= ZONE_COUNT:
+		return -1
+	var from_cell := Vector2i(from_zone_id % GRID_DIM, from_zone_id / GRID_DIM)
+	var target_cell := from_cell + direction
+	if target_cell.x < 0 or target_cell.x >= GRID_DIM \
+			or target_cell.y < 0 or target_cell.y >= GRID_DIM:
+		return -1
+	return target_cell.y * GRID_DIM + target_cell.x
 
 func _handle_right_click() -> void:
 	if not _is_menu_open():

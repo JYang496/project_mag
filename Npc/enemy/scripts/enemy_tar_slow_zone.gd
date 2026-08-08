@@ -4,6 +4,7 @@ class_name EnemyTarSlowZone
 const TAR_SLOW_ZONE_TEXTURE: Texture2D = preload("res://asset/images/effects/slow_zone/tar_slow_zone_amber.png")
 
 @export var duration: float = 4.0
+@export_range(0.0, 5.0, 0.05) var fade_out_duration: float = 0.5
 @export var radius: float = 90.0
 @export var player_slow_multiplier: float = 0.65
 @export var enemy_slow_multiplier: float = 0.65
@@ -33,6 +34,12 @@ const TAR_SLOW_ZONE_TEXTURE: Texture2D = preload("res://asset/images/effects/slo
 var _field_source_id: StringName
 var _slowed_players: Dictionary = {}
 var _slowed_enemies: Array[BaseEnemy] = []
+
+
+func get_visual_alpha_multiplier() -> float:
+	if life_timer == null or life_timer.is_stopped() or fade_out_duration <= 0.0:
+		return 1.0
+	return clampf(life_timer.time_left / minf(fade_out_duration, life_timer.wait_time), 0.0, 1.0)
 
 func _ready() -> void:
 	add_to_group("enemy_runtime_cleanup")
@@ -66,6 +73,10 @@ func _on_area_entered(area: Area2D) -> void:
 		enemy.add_slow_field_source(self, enemy_slow_multiplier)
 		if not _slowed_enemies.has(enemy):
 			_slowed_enemies.append(enemy)
+
+func _process(_delta: float) -> void:
+	if draw_enabled:
+		queue_redraw()
 
 func _on_area_exited(area: Area2D) -> void:
 	if not (area is HurtBox):
@@ -113,14 +124,19 @@ func _cleanup_all_player_slow() -> void:
 func _draw() -> void:
 	if not draw_zone or not draw_enabled:
 		return
-	draw_circle(Vector2.ZERO, maxf(radius, 1.0), zone_fill_color)
+	var alpha_multiplier := get_visual_alpha_multiplier()
+	var fill_color := zone_fill_color
+	var line_color := zone_line_color
+	fill_color.a *= alpha_multiplier
+	line_color.a *= alpha_multiplier
+	draw_circle(Vector2.ZERO, maxf(radius, 1.0), fill_color)
 	draw_arc(
 		Vector2.ZERO,
 		maxf(radius, 1.0),
 		0.0,
 		TAU,
 		56,
-		zone_line_color,
+		line_color,
 		maxf(zone_line_width, 1.0),
 		true
 	)

@@ -4,6 +4,16 @@
   "catalog_note": "Active catalog contains durable runtime contracts. Release-specific visual and implementation acceptance assets are archived under tests/archive/one_time_acceptance_20260728.",
   "tests": [
     {
+      "id": "world.new_game_direct_battle",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/world/new_game_direct_battle_test.tscn",
+      "domain": "world",
+      "dependency_domains": ["combat", "spawn", "ui", "player"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 20
+    },
+    {
       "id": "presentation.asset_integrity",
       "entry_type": "scene",
       "path": "res://tests/scenes/presentation/asset_integrity_test.tscn",

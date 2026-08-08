@@ -12,7 +12,7 @@ size = Vector2(38, 38)
 
 [node name="EnemyInterceptor" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
-damage = 5
+damage = 3
 spawn_tags = Array[StringName]([&"interceptor"])
 spawn_alive_cap = 2
 spawn_batch_cap = 1

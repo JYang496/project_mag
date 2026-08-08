@@ -24,6 +24,7 @@ func start(combat_port, parameters: Dictionary) -> void:
 	remaining_sec = duration_sec
 	threat_step_sec = maxf(float(parameters.get("threat_step_sec", 15.0)), 1.0)
 	port.request_configure_continuous_spawning(true)
+	port.request_configure_spawn_policy(&"uncapped", 0.0, 0.0)
 	port.battle_tick.connect(_on_tick)
 	port.enemy_died.connect(_on_enemy_died)
 	_emit_snapshot()

@@ -25,6 +25,11 @@ var _completion_guard := false
 
 func start(combat_port, parameters: Dictionary) -> void:
 	port = combat_port
+	port.request_configure_spawn_policy(
+		&"finite",
+		float(parameters.get("spawn_soft_cap_multiplier", 1.0)),
+		float(parameters.get("spawn_hard_cap_multiplier", 1.10))
+	)
 	port.request_monitor_enemy_stalls(true)
 	port.request_external_victory_control(true)
 	port.request_prefer_elite_final_batch(true)
@@ -81,8 +86,22 @@ func _on_tick(snapshot: Dictionary) -> void:
 			_configured = true
 	elapsed_sec += delta
 	_batch_wait_sec += delta
+	_reconcile_alive_count_after_budget_exhaustion()
 	_try_advance_batch()
+	_try_complete()
 	_emit_snapshot()
+
+func _reconcile_alive_count_after_budget_exhaustion() -> void:
+	if not budget_exhausted or port == null:
+		return
+	var actual_alive := maxi(int(port.get_active_enemy_count()), 0)
+	if actual_alive == alive_count:
+		return
+	push_warning(
+		"Elimination enemy count recovered from lifecycle drift: protocol=%d actual=%d"
+		% [alive_count, actual_alive]
+	)
+	alive_count = actual_alive
 
 func _try_advance_batch() -> void:
 	if current_batch >= total_batches or _batch_spawned <= 0:

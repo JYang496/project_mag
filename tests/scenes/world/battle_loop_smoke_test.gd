@@ -74,10 +74,11 @@ func _run() -> void:
 	_expect(_port.finish_battle_calls == 1, "completed contract should request battle finish once")
 	_expect(str(_port.last_finish_result.get("contract_id", "")) == "elimination", "finish result should identify the completed contract")
 	_expect(PhaseManager.current_state() == PhaseManager.SETTLEMENT, "victory transition should enter reward settlement")
+	_expect(PhaseManager.get_settlement_type() == &"chapter", "third victory should use chapter settlement")
 	_expect(PhaseManager.current_level == previous_level + 1, "victory should advance one level")
 	_expect(PlayerData.run_completed_levels == previous_completed + 1, "victory should increment completed run levels")
 	_expect(PhaseManager.is_post_battle_collect_gate_active(), "prepare transition should open the post-battle collection gate")
-	_expect(not _ui.purchase_refresh_reset, "shop refresh must wait until the rest protocol is selected")
+	_expect(not _ui.purchase_refresh_reset, "shop refresh must wait until the chapter reward is confirmed")
 	_expect(PhaseManager.is_full_shop_open(), "full shop should open after every third completed battle")
 	_expect(SaveManager.has_run(), "victory return to prepare must write the main run save")
 
@@ -92,19 +93,9 @@ func _run() -> void:
 		_ui.standard_reward_confirm.call(_ui.standard_reward_options[0])
 	await get_tree().process_frame
 	await get_tree().process_frame
-	_expect(PhaseManager.current_state() == PhaseManager.PROTOCOL_SELECTION, "reward confirmation should advance to protocol selection")
-
-	_owner.route_flow.request_battle_contract()
-	await get_tree().process_frame
-	var rest_options: Array = _ui.received_options.filter(func(option): return option.contract_id == &"rest")
-	_expect(rest_options.size() == 1, "every third completed battle should offer one rest protocol")
-	if not rest_options.is_empty():
-		_expect(BattleContractManager.select_contract(rest_options[0]), "rest protocol should be selectable")
-		_ui.confirm_callback.call()
-		await get_tree().process_frame
-		_expect(PhaseManager.current_state() == PhaseManager.REST, "rest protocol should enter the rest phase")
-		_expect(_ui.rest_entry_prepared and _ui.rest_intro_played, "rest protocol should prepare and play the rest-area arrival transition")
-		_expect(_ui.purchase_refresh_reset, "entering the rest protocol should reset the full-shop refresh cost")
+	_expect(PhaseManager.current_state() == PhaseManager.REST, "chapter reward confirmation should advance directly to rest")
+	_expect(_ui.purchase_refresh_reset, "entering chapter rest should reset the full-shop refresh cost")
+	_expect(not PhaseManager.is_rest_protocol_available(), "chapter rest must not offer a duplicate rest protocol")
 	_finish()
 
 func _reset_runtime_state() -> void:

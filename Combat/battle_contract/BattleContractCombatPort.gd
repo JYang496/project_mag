@@ -53,6 +53,13 @@ func request_release_next_batch() -> void:
 func request_configure_continuous_spawning(_enabled: bool) -> void:
 	pass
 
+func request_configure_spawn_policy(
+	_mode: StringName,
+	_soft_cap_multiplier: float,
+	_hard_cap_multiplier: float
+) -> void:
+	pass
+
 func request_configure_duration(_duration_sec: float) -> void:
 	pass
 

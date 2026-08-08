@@ -20,6 +20,11 @@ func start(combat_port, parameters: Dictionary) -> void:
 		duration_sec = maxf(float(parameters.get("early_duration_sec", duration_sec)), 1.0)
 	remaining_sec = duration_sec
 	port.request_external_victory_control(true)
+	port.request_configure_spawn_policy(
+		&"finite",
+		float(parameters.get("spawn_soft_cap_multiplier", 2.0)),
+		float(parameters.get("spawn_hard_cap_multiplier", 2.15))
+	)
 	port.request_configure_duration(duration_sec)
 	port.request_configure_reward_stage(
 		true,

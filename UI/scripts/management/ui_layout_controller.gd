@@ -3,7 +3,7 @@ class_name UiLayoutController
 
 const LAYOUT_POLICY := preload("res://UI/scripts/management/ui_layout_policy.gd")
 const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
-const PAUSE_PANEL_TARGET_SIZE := Vector2(400, 600)
+const PAUSE_PANEL_TARGET_SIZE := Vector2(556, 648)
 const PRIMARY_MENU_ANIM_TIME := TOKENS.MOTION_NORMAL
 const PRIMARY_MENU_ANIM_TRANS := Tween.TRANS_CUBIC
 const PRIMARY_MENU_ANIM_EASE := Tween.EASE_OUT
@@ -241,7 +241,9 @@ func _configure_focus_for_root(root: Node) -> void:
 		var previous := buttons[posmod(index - 1, buttons.size())]
 		var next := buttons[posmod(index + 1, buttons.size())]
 		button.focus_neighbor_top = button.get_path_to(previous)
+		button.focus_neighbor_left = button.get_path_to(previous)
 		button.focus_neighbor_bottom = button.get_path_to(next)
+		button.focus_neighbor_right = button.get_path_to(next)
 		button.focus_previous = button.get_path_to(previous)
 		button.focus_next = button.get_path_to(next)
 

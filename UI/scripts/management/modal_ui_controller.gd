@@ -312,6 +312,21 @@ func show_game_over() -> void:
 		owner_ui.get_tree().paused = true
 	_sync_public_fields_to_owner()
 
+func show_run_complete() -> void:
+	if owner_ui == null:
+		return
+	if not ensure_game_over_view():
+		return
+	owner_ui.pause_menu_root.visible = false
+	_hide_runtime_hud_for_game_over()
+	owner_ui._init_rest_area_ui_controller()
+	owner_ui.rest_area_ui_controller.set_management_root_visible(&"purchase", false)
+	owner_ui.rest_area_ui_controller.set_management_root_visible(&"upgrade", false)
+	owner_ui.rest_area_ui_controller.set_management_root_visible(&"warehouse", false)
+	game_over_view.show_run_complete()
+	owner_ui.get_tree().paused = true
+	_sync_public_fields_to_owner()
+
 func _hide_runtime_hud_for_game_over() -> void:
 	if owner_ui.battle_hud != null and is_instance_valid(owner_ui.battle_hud):
 		owner_ui.battle_hud.visible = false

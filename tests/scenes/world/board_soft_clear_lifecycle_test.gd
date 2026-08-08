@@ -23,7 +23,7 @@ func _ready() -> void:
 func _run() -> void:
 	PhaseManager.reset_runtime_state()
 	PhaseManager.phase = PhaseManager.BATTLE
-	PhaseManager.current_level = 3
+	PhaseManager.current_level = 2
 
 	_board = BoardCellGenerator.new()
 	_board.name = "Board"
@@ -49,7 +49,7 @@ func _run() -> void:
 
 	# PhaseManager advances the level before it emits SETTLEMENT. The completed
 	# battle topology must remain unchanged until deployment starts.
-	PhaseManager.current_level = 4
+	PhaseManager.current_level = 3
 	await _transition_to(PhaseManager.SETTLEMENT)
 	_expect(_board.visible and _board.is_board_visual_active(), "settlement should preserve the completed board")
 	_expect(not _board.is_board_combat_enabled(), "settlement should disable board interactions")

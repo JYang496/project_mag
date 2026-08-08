@@ -12,7 +12,11 @@ func _ready() -> void:
 	await get_tree().process_frame
 
 	var hurt_box := enemy.get_node_or_null("HurtBox") as HurtBox
-	_expect(enemy.damage > 0, "wheel cart must define positive contact damage")
+	_expect(enemy.damage == 2, "wheel cart contact damage must remain half-rounded-up at 2")
+	_expect(enemy.hp == 15, "wheel cart base HP must remain 15")
+	_expect(is_equal_approx(float(enemy.get("max_speed_multiplier")), 2.0), "wheel cart maximum speed must remain 64 from its 32 base speed")
+	_expect(enemy.spawn_alive_cap == 3, "wheel cart must cap simultaneous pressure at three")
+	_expect(enemy.spawn_batch_cap == 2, "wheel cart must cap one spawn batch at two")
 	_expect(hurt_box != null, "wheel cart must retain its contact HurtBox")
 	if hurt_box != null:
 		_expect(hurt_box.get_collision_layer_value(3), "wheel cart HurtBox must remain on the enemy layer")

@@ -1,7 +1,6 @@
 extends RefCounted
 class_name PlayerWeaponInventoryRuntime
 
-const PREVIEW_FORMATTER := preload("res://UI/scripts/weapon_obtain_preview_formatter.gd")
 
 var _player
 var _weapon_list_dirty := true
@@ -98,7 +97,6 @@ func try_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
 	elif result_type == "converted_to_gold":
 		var converted_gold := int(prediction.get("gold", 0))
 		player_data.recycle_gold(converted_gold)
-	notify_weapon_duplicate_result(subject, weapon_id, prediction)
 	refresh_weapon_related_ui()
 	return prediction
 
@@ -152,21 +150,6 @@ func calculate_duplicate_weapon_gold(weapon_id: String) -> int:
 	if weapon_def != null:
 		base_price = max(0, int(weapon_def.price))
 	return _player._get_economy_config().get_duplicate_weapon_gold(base_price)
-
-func notify_weapon_duplicate_result(existing_weapon: Weapon, weapon_id: String, result: Dictionary) -> void:
-	var ui := GlobalVariables.ui
-	if ui == null or not is_instance_valid(ui) or not ui.has_method("show_item_message"):
-		return
-	var resolved_id := str(weapon_id).strip_edges()
-	var fallback_name := LocalizationManager.get_weapon_instance_display_name(existing_weapon)
-	var weapon_name := LocalizationManager.get_weapon_name_by_id(resolved_id, fallback_name)
-	var result_type := str(result.get("result", ""))
-	if result_type != "fused" and result_type != "converted_to_gold":
-		return
-	var message := PREVIEW_FORMATTER.format_obtain_preview("", weapon_name, result)
-	if message.strip_edges() == "":
-		return
-	ui.show_item_message(message, 1.8)
 
 func refresh_weapon_related_ui() -> void:
 	var ui := GlobalVariables.ui

@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="RunProgressionProfile" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/progression/RunProgressionProfile.gd" id="1_profile"]
+[ext_resource type="Script" path="res://data/progression/RunChapterDefinition.gd" id="2_chapter"]
+
+[sub_resource type="Resource" id="Chapter_1"]
+script = ExtResource("2_chapter")
+chapter_id = &"pursuit"
+title_key = "ui.chapter.pursuit.title"
+title_fallback = "Pursuit and Movement"
+subtitle_key = "ui.chapter.pursuit.subtitle"
+subtitle_fallback = "Learn the chase, break the charge"
+start_level_index = 0
+end_level_index = 2
+theme_id = &"pursuit"
+board_active_cell_ids = PackedInt32Array(5, 6)
+
+[sub_resource type="Resource" id="Chapter_2"]
+script = ExtResource("2_chapter")
+chapter_id = &"control"
+title_key = "ui.chapter.control.title"
+title_fallback = "Area Control"
+subtitle_key = "ui.chapter.control.subtitle"
+subtitle_fallback = "Read hazards and break formations"
+start_level_index = 3
+end_level_index = 5
+theme_id = &"control"
+board_active_cell_ids = PackedInt32Array(4, 5, 6, 8)
+
+[sub_resource type="Resource" id="Chapter_3"]
+script = ExtResource("2_chapter")
+chapter_id = &"coordination"
+title_key = "ui.chapter.coordination.title"
+title_fallback = "Ranged Coordination"
+subtitle_key = "ui.chapter.coordination.subtitle"
+subtitle_fallback = "Prioritize threats and dismantle support"
+start_level_index = 6
+end_level_index = 8
+theme_id = &"coordination"
+board_active_cell_ids = PackedInt32Array(2, 4, 5, 6, 8)
+
+[sub_resource type="Resource" id="Chapter_Final"]
+script = ExtResource("2_chapter")
+chapter_id = &"finale"
+title_key = "ui.chapter.finale.title"
+title_fallback = "Final Protocol"
+subtitle_key = "ui.chapter.finale.subtitle"
+subtitle_fallback = "Validate the completed build"
+start_level_index = 9
+end_level_index = 9
+theme_id = &"finale"
+board_active_cell_ids = PackedInt32Array(1, 2, 3, 4, 5, 6, 7, 8, 9)
+rest_after_completion = false
+
+[resource]
+script = ExtResource("1_profile")
+chapters = Array[ExtResource("2_chapter")]([SubResource("Chapter_1"), SubResource("Chapter_2"), SubResource("Chapter_3"), SubResource("Chapter_Final")])
+final_level_index = 9
+fixed_contract_level_count = 2
+fixed_early_contract_id = &"elimination"
+final_contract_id = &"finale"

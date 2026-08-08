@@ -8,6 +8,7 @@ const ContainmentRuntime = preload("res://Combat/battle_contract/runtime/contain
 const ExtractionRuntime = preload("res://Combat/battle_contract/runtime/extraction_contract_runtime.gd")
 const RewardRuntime = preload("res://Combat/battle_contract/runtime/reward_contract_runtime.gd")
 const RewardEnemyScene = preload("res://Npc/enemy/scenes/reward_enemy.tscn")
+const FinaleDefinition = preload("res://data/battle_contracts/finale.tres")
 
 var failures: PackedStringArray = []
 
@@ -39,6 +40,7 @@ func _test_elimination() -> void:
 	configured_port.level_index = 4
 	var configured_runtime = EliminationRuntime.new()
 	configured_runtime.start(configured_port, {"batch_count_min": 2, "batch_count_max": 6, "levels_per_batch_step": 2, "early_release_ratio": 0.5, "batch_wait_timeout_sec": 5.0, "standard_duration_sec": 33.0})
+	_expect(configured_port.spawn_policy.get("mode") == &"finite", "elimination must use the finite spawn policy")
 	configured_port.battle_tick.emit({"delta_sec": 0.1})
 	_expect(configured_runtime.total_batches == 4 and int(configured_port.configured_budget.get("batch_count", 0)) == 4, "elimination must derive batch count from protocol parameters")
 	_expect(is_equal_approx(configured_runtime.early_release_ratio, 0.5) and is_equal_approx(configured_runtime.batch_wait_timeout_sec, 5.0), "elimination release pacing must come from protocol parameters")
@@ -48,6 +50,13 @@ func _test_elimination() -> void:
 	configured_port.enemy_died.emit({"was_killed": true, "scaled_hp": 100})
 	_expect(configured_port.released_batches == 1, "configured elimination release ratio must advance the next batch")
 	configured_runtime.stop()
+	var finale_port = FakePort.new()
+	finale_port.level_index = 9
+	var finale_runtime = EliminationRuntime.new()
+	finale_runtime.start(finale_port, FinaleDefinition.parameters)
+	_expect(finale_runtime.total_batches == 3, "finale must retain exactly three finite batches")
+	_expect(is_equal_approx(float(finale_port.spawn_policy.get("soft_cap_multiplier")), 1.10) and is_equal_approx(float(finale_port.spawn_policy.get("hard_cap_multiplier")), 1.25), "finale must pass its finite HP safety caps into the elimination runtime")
+	finale_runtime.stop()
 
 	var port = FakePort.new()
 	var runtime = EliminationRuntime.new()
@@ -67,11 +76,29 @@ func _test_elimination() -> void:
 	runtime.stop()
 	_expect(not port.external_victory_control and not port.monitor_enemy_stalls, "elimination stop must restore port controls")
 
+	var drift_port = FakePort.new()
+	var drift_runtime = EliminationRuntime.new()
+	var drift_results: Array = []
+	drift_runtime.completed.connect(_completed_collector.bind(drift_results))
+	drift_runtime.start(drift_port, {})
+	drift_port.battle_tick.emit({"delta_sec": 0.1})
+	drift_port.active_enemy_count = 1
+	drift_port.enemy_spawned.emit({})
+	drift_port.spawn_budget_exhausted.emit({})
+	drift_port.battle_tick.emit({"delta_sec": 0.1})
+	_expect(drift_results.is_empty(), "registry reconciliation must preserve a genuinely living final enemy")
+	drift_port.active_enemy_count = 0
+	drift_port.battle_tick.emit({"delta_sec": 0.1})
+	_expect(drift_results.size() == 1, "elimination must recover when the final enemy exits without a death signal")
+	_expect(drift_results.size() == 1 and int(drift_results[0].get("remaining_enemies", -1)) == 0, "recovered elimination must report zero remaining enemies")
+	drift_runtime.stop()
+
 func _test_survival() -> void:
 	var threat_port = FakePort.new()
 	threat_port.level_duration_sec = 75.0
 	var threat_runtime = SurvivalRuntime.new()
 	threat_runtime.start(threat_port, {"threat_step_sec": 15.0})
+	_expect(threat_port.spawn_policy.get("mode") == &"uncapped", "survival must be the only uncapped spawn protocol")
 	var expected_threat_multipliers := [1.06, 1.12, 1.18, 1.24]
 	for expected_multiplier in expected_threat_multipliers:
 		threat_port.battle_tick.emit({"delta_sec": 15.0})
@@ -106,6 +133,7 @@ func _test_operation() -> void:
 	var configured_results: Array = []
 	configured_runtime.completed.connect(_completed_collector.bind(configured_results))
 	configured_runtime.start(configured_port, {"beacon_count": 1, "charge_time_min_sec": 6.0, "charge_time_max_sec": 6.0, "duration_buffer_sec": 5.0})
+	_expect(configured_port.spawn_policy.get("mode") == &"soft_capped" and is_equal_approx(float(configured_port.spawn_policy.get("soft_cap_multiplier")), 1.15), "operation must configure its soft HP cap")
 	_expect(configured_runtime.total_beacons == 1 and is_equal_approx(configured_port.configured_duration, 11.0), "operation target count and duration buffer must come from protocol parameters")
 	configured_port.battle_tick.emit({"delta_sec": 0.1})
 	configured_port.beacon_presence_changed.emit({"beacon_id": 1, "player_inside": true, "enemy_count": 0})
@@ -141,6 +169,7 @@ func _test_operation() -> void:
 	port.battle_tick.emit({"delta_sec": 10.0})
 	port.battle_tick.emit({"delta_sec": 1.0})
 	_expect(results.size() == 1, "operation completion must be guarded after both beacons")
+	_expect(port.spawn_policy_calls.size() == 1, "operation second beacon must retain one shared battle-wide HP cap")
 	_expect(port.spawned_beacons.size() == 2 and port.evacuations.size() == 1, "operation must spawn two beacons and evacuate once")
 	runtime.stop()
 
@@ -148,6 +177,7 @@ func _test_containment() -> void:
 	var configured_port = FakePort.new()
 	var configured_runtime = ContainmentRuntime.new()
 	configured_runtime.start(configured_port, {"rift_count": 2, "seal_duration_sec": 8.0, "reinforcement_interval_sec": 9.0, "duration_buffer_sec": 5.0, "performance_wave_allowance_per_rift": 2.0})
+	_expect(configured_port.spawn_policy.get("mode") == &"soft_capped" and is_equal_approx(float(configured_port.spawn_policy.get("hard_cap_multiplier")), 1.60), "containment must configure its reinforced hard cap")
 	_expect(configured_runtime.rift_count == 2 and is_equal_approx(configured_port.configured_duration, 21.0), "containment target count and duration buffer must come from protocol parameters")
 	_expect(is_equal_approx(configured_runtime.performance_wave_allowance_per_rift, 2.0), "containment performance allowance must come from protocol parameters")
 	configured_runtime.stop()
@@ -164,7 +194,7 @@ func _test_containment() -> void:
 	port.battle_tick.emit({"delta_sec": 8.0})
 	_expect(is_equal_approx(float(runtime.progress_by_id[1]), 0.35), "containment enemy slowdown must have a 35 percent floor")
 	port.battle_tick.emit({"delta_sec": 1.0})
-	_expect(port.reinforcement_multipliers.size() == 3 and port.configured_threat > 1.0, "containment must release reinforcements and apply surge threat")
+	_expect(port.reinforcement_multipliers.size() == 1 and port.configured_threat > 1.0, "simultaneous containment rifts must merge into one capped reinforcement wave")
 	port.beacon_presence_changed.emit({"beacon_id": 1, "player_inside": true, "enemy_count": 0})
 	port.battle_tick.emit({"delta_sec": 5.2})
 	for rift_id in [2, 3]:
@@ -181,6 +211,7 @@ func _test_extraction() -> void:
 	configured_port.level_index = 2
 	var configured_runtime = ExtractionRuntime.new()
 	configured_runtime.start(configured_port, {"early_level_count": 2, "mid_level_count": 5, "survival_duration_early_sec": 11.0, "survival_duration_mid_sec": 22.0, "survival_duration_late_sec": 33.0, "escape_duration_early_sec": 7.0, "escape_duration_mid_sec": 6.0, "escape_duration_late_sec": 5.0})
+	_expect(configured_port.spawn_policy.get("mode") == &"soft_capped" and is_equal_approx(float(configured_port.spawn_policy.get("soft_cap_multiplier")), 1.25), "extraction must reserve a capped pursuit allowance")
 	_expect(is_equal_approx(configured_runtime.duration_sec, 22.0) and is_equal_approx(configured_runtime.escape_duration_sec, 6.0), "extraction tier boundaries must come from protocol parameters")
 	configured_runtime.stop()
 
@@ -224,6 +255,7 @@ func _test_reward() -> void:
 	var results: Array = []
 	runtime.completed.connect(_completed_collector.bind(results))
 	runtime.start(port, {"duration_sec": 5.0, "hp_budget_multiplier": 1.5, "reward_multiplier": 2.5})
+	_expect(port.spawn_policy.get("mode") == &"finite" and is_equal_approx(float(port.spawn_policy.get("soft_cap_multiplier")), 2.0), "reward must retain a finite double-HP cap")
 	_expect(port.reward_stage_calls.size() == 1 and port.reward_stage_calls[0] == {"enabled": true, "hp_budget_multiplier": 1.5, "reward_multiplier": 2.5}, "reward stage multipliers must reach the combat port")
 	port.enemy_spawned.emit({})
 	port.spawn_budget_exhausted.emit({})

@@ -28,7 +28,7 @@ func _ready() -> void:
 func _run() -> void:
 	_reset_runtime()
 	PhaseManager.phase = PhaseManager.PROTOCOL_SELECTION
-	PhaseManager.current_level = 3
+	PhaseManager.current_level = 2
 	var camera_config := PLAYER_CAMERA_CONFIG.new()
 	camera_config.battle_camera_view_mul = 0.8
 	var camera_system := PLAYER_CAMERA_SYSTEM.new()
@@ -61,7 +61,7 @@ func _run() -> void:
 	_board.set_board_active(true, true)
 	_ui.prepare_battle_entry_transition()
 	var previous_ids := _board.get_active_cell_ids().duplicate()
-	PhaseManager.current_level = 4
+	PhaseManager.current_level = 3
 	PhaseManager.enter_battle_starting()
 	await get_tree().process_frame
 	await get_tree().process_frame

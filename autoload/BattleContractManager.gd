@@ -9,6 +9,7 @@ const CONTAINMENT := preload("res://data/battle_contracts/containment.tres")
 const EXTRACTION := preload("res://data/battle_contracts/extraction.tres")
 const REWARD := preload("res://data/battle_contracts/reward.tres")
 const REST_PROTOCOL := preload("res://data/battle_contracts/rest.tres")
+const FINALE := preload("res://data/battle_contracts/finale.tres")
 const ELIMINATION_RUNTIME := preload("res://Combat/battle_contract/runtime/elimination_contract_runtime.gd")
 const SURVIVAL_RUNTIME := preload("res://Combat/battle_contract/runtime/survival_contract_runtime.gd")
 const OPERATION_RUNTIME := preload("res://Combat/battle_contract/runtime/operation_contract_runtime.gd")
@@ -53,7 +54,7 @@ const STATE_PATH := "user://battle_contract_state.json"
 func _ready() -> void:
 	_rng.randomize()
 	for definition in _get_catalog():
-		if definition.contract_id in [&"reward", &"rest"]:
+		if definition.contract_id in [&"reward", &"rest", &"finale"]:
 			continue
 		missed_offer_counts[definition.contract_id] = 0
 	_load_persistent_state()
@@ -67,7 +68,7 @@ func request_offer() -> Array[BattleContractDefinition]:
 	var level_index := maxi(PhaseManager.current_level, 0)
 	var candidates: Array[BattleContractDefinition] = []
 	for definition in _get_catalog():
-		if definition.contract_id in [&"reward", &"rest"]:
+		if definition.contract_id in [&"reward", &"rest", &"finale"]:
 			continue
 		if not allowed.is_empty() and definition.contract_id not in allowed:
 			continue
@@ -98,7 +99,24 @@ func request_offer() -> Array[BattleContractDefinition]:
 	elif _is_reward_offer_available_for_current_level():
 		options.append(REWARD)
 	set_offer(options)
+	RunPacingTelemetry.record_event(&"protocol_panel_opened", {"option_ids": options.map(func(option): return str(option.contract_id))})
 	return current_options.duplicate()
+
+func request_fixed_offer(contract_id: StringName) -> bool:
+	if _combat_port == null or _combat_port.is_boss_battle():
+		return false
+	var definition := get_definition(contract_id)
+	if definition == null or not is_contract_unlocked_for_level(definition, PhaseManager.current_level):
+		return false
+	if not set_offer([definition]):
+		return false
+	return select_contract(definition)
+
+func get_definition(contract_id: StringName) -> BattleContractDefinition:
+	for definition in _get_catalog():
+		if definition != null and definition.contract_id == contract_id:
+			return definition
+	return null
 
 func is_contract_unlocked_for_level(definition: BattleContractDefinition, level_index: int) -> bool:
 	if definition == null:
@@ -142,6 +160,7 @@ func confirm_selection() -> bool:
 			missed_offer_counts[definition.contract_id] = int(missed_offer_counts.get(definition.contract_id, 0)) + 1
 	restored_selection_pending = false
 	_save_persistent_state()
+	RunPacingTelemetry.record_event(&"contract_selected", {"contract_id": str(selected_contract.contract_id)})
 	return true
 
 func cancel_offer() -> void:
@@ -170,7 +189,7 @@ func start_current_battle() -> bool:
 	return true
 
 func _get_catalog() -> Array[BattleContractDefinition]:
-	return [ELIMINATION, SURVIVAL, OPERATION, CONTAINMENT, EXTRACTION, REWARD, REST_PROTOCOL]
+	return [ELIMINATION, SURVIVAL, OPERATION, CONTAINMENT, EXTRACTION, REWARD, REST_PROTOCOL, FINALE]
 
 func _pick_weighted(candidates: Array[BattleContractDefinition]) -> BattleContractDefinition:
 	var total := 0.0
@@ -259,6 +278,7 @@ func _start_selected_runtime() -> void:
 	_stop_runtime()
 	match selected_contract.contract_id:
 		&"elimination": _runtime = ELIMINATION_RUNTIME.new()
+		&"finale": _runtime = ELIMINATION_RUNTIME.new()
 		&"survival": _runtime = SURVIVAL_RUNTIME.new()
 		&"operation": _runtime = OPERATION_RUNTIME.new()
 		&"containment": _runtime = CONTAINMENT_RUNTIME.new()

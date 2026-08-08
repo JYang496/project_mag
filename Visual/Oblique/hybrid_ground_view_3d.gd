@@ -879,6 +879,7 @@ func _register_area_effect(area: Node2D) -> void:
 		"mesh": mesh,
 		"visual_shape": visual_shape,
 		"material": material,
+		"base_color": color,
 		"animated_ground": animated_ground,
 		"height": GROUND_AREA_HEIGHT,
 		"visual_version": -1,
@@ -1382,6 +1383,21 @@ func _sync_area_meshes() -> void:
 			entry["visual_version"] = visual_version
 		if bool(entry.get("animated_ground", false)):
 			_sync_animated_ground_area_texture(area, entry)
+		_sync_area_mesh_alpha(area, entry)
+
+func _sync_area_mesh_alpha(area: Node2D, entry: Dictionary) -> void:
+	if not area.has_method("get_visual_alpha_multiplier"):
+		return
+	var alpha_multiplier := clampf(float(area.call("get_visual_alpha_multiplier")), 0.0, 1.0)
+	var base_color := entry.get("base_color", Color.WHITE) as Color
+	base_color.a *= alpha_multiplier
+	var shader_material := entry.get("material") as ShaderMaterial
+	if shader_material != null:
+		shader_material.set_shader_parameter("base_color", base_color)
+		return
+	var material := entry.get("material") as StandardMaterial3D
+	if material != null:
+		material.albedo_color = base_color
 
 func _sync_animated_ground_area_texture(area: Node2D, entry: Dictionary) -> void:
 	var shader_material := entry.get("material") as ShaderMaterial

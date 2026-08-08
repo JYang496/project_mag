@@ -11,6 +11,7 @@ const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
 const WEAPON_DISPLAY_POLICY := preload("res://UI/scripts/presentation/weapon_display_policy.gd")
 const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
+const QUICK_SELECT_HOLD_SECONDS := 0.55
 
 @onready var title_label: Label = $Panel/VBox/Title
 @onready var panel: Panel = $Panel
@@ -20,8 +21,8 @@ const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_sta
 @onready var detail_title_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox/DetailTitle") as Label
 @onready var detail_vbox: VBoxContainer = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox") as VBoxContainer
 @onready var detail_body_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox/DetailBody") as Label
-@onready var detail_outcome_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox/DetailOutcome") as Label
-@onready var confirm_button: Button = $Panel/VBox/DetailPanel/Margin/DetailHBox/ConfirmButton
+@onready var detail_outcome_label: Label = get_node_or_null("Panel/VBox/DetailPanel/Margin/DetailHBox/ActionVBox/DetailOutcome") as Label
+@onready var confirm_button: Button = $Panel/VBox/DetailPanel/Margin/DetailHBox/ActionVBox/ConfirmButton
 @onready var cancel_button: Button = $Panel/VBox/Footer/CancelButton
 
 var _reward_options: Array[RewardInfo] = []
@@ -41,6 +42,10 @@ var _pinned_index := 0
 var _hover_index := -1
 var _focus_index := -1
 var _entry_tween: Tween
+var _presentation_mode: StringName = &"standard"
+var _presentation_mode_cache: StringName = &"standard"
+var _held_quick_select_index := -1
+var _held_quick_select_elapsed := 0.0
 
 func _ready() -> void:
 	visible = false
@@ -58,10 +63,78 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	if not is_modal_open():
 		return
+	if not _summary_mode and event is InputEventKey and not event.echo:
+		var index := _quick_select_index_for_key(event.keycode)
+		if index >= 0:
+			if event.pressed:
+				_begin_quick_select_hold(index)
+			elif index == _held_quick_select_index:
+				_cancel_quick_select_hold()
+			get_viewport().set_input_as_handled()
+			return
 	if not ModalUiController.is_cancel_input(event):
 		return
 	cancel_visible_modal()
 	get_viewport().set_input_as_handled()
+
+func _process(delta: float) -> void:
+	if _held_quick_select_index < 0 or not is_modal_open():
+		return
+	_held_quick_select_elapsed += maxf(delta, 0.0)
+	_update_quick_select_hold_visual()
+	if _held_quick_select_elapsed < QUICK_SELECT_HOLD_SECONDS:
+		return
+	var index := _held_quick_select_index
+	_cancel_quick_select_hold()
+	if index == _selected_index:
+		_on_confirm_pressed()
+
+func _quick_select_index_for_key(keycode: Key) -> int:
+	match keycode:
+		KEY_1, KEY_KP_1: return 0
+		KEY_2, KEY_KP_2: return 1
+		KEY_3, KEY_KP_3: return 2
+	return -1
+
+func _begin_quick_select_hold(index: int) -> void:
+	if index < 0 or index >= _reward_options.size() or index >= options_box.get_child_count():
+		_cancel_quick_select_hold()
+		return
+	if _held_quick_select_index == index:
+		return
+	if _held_quick_select_index >= 0:
+		_cancel_quick_select_hold()
+	_held_quick_select_index = index
+	_held_quick_select_elapsed = 0.0
+	_on_reward_button_pressed(index, options_box.get_child(index) as Button)
+	_update_quick_select_hold_visual()
+
+func _cancel_quick_select_hold() -> void:
+	var previous_index := _held_quick_select_index
+	_held_quick_select_index = -1
+	_held_quick_select_elapsed = 0.0
+	if previous_index >= 0 and previous_index < options_box.get_child_count():
+		var button := options_box.get_child(previous_index) as Button
+		var progress := button.find_child("HoldProgress", true, false) as ProgressBar if button != null else null
+		if progress != null:
+			progress.value = 0.0
+			progress.visible = false
+		if previous_index < _reward_options.size():
+			_apply_reward_card_style(button, _reward_options[previous_index], previous_index == _selected_index)
+	_confirm_button_state()
+
+func _update_quick_select_hold_visual() -> void:
+	if _held_quick_select_index < 0 or _held_quick_select_index >= options_box.get_child_count():
+		return
+	var button := options_box.get_child(_held_quick_select_index) as Button
+	if button == null:
+		return
+	var progress := button.find_child("HoldProgress", true, false) as ProgressBar
+	if progress != null:
+		progress.visible = true
+		progress.value = clampf(_held_quick_select_elapsed / QUICK_SELECT_HOLD_SECONDS, 0.0, 1.0)
+	_apply_reward_card_style(button, _reward_options[_held_quick_select_index], true, true)
+	_confirm_button_state()
 
 func open_for_rewards(
 	route_display_name: String,
@@ -73,7 +146,8 @@ func open_for_rewards(
 	subtitle_override: String = "",
 	progress_index: int = 0,
 	progress_total: int = 0,
-	show_draft_hint: bool = false
+	show_draft_hint: bool = false,
+	presentation_mode: StringName = &"standard"
 ) -> bool:
 	if visible:
 		return false
@@ -88,7 +162,8 @@ func open_for_rewards(
 		subtitle_override,
 		progress_index,
 		progress_total,
-		show_draft_hint
+		show_draft_hint,
+		presentation_mode
 	)
 
 func open_for_summary(
@@ -112,7 +187,8 @@ func _open_rewards(
 	subtitle_override: String,
 	progress_index: int = 0,
 	progress_total: int = 0,
-	show_draft_hint: bool = false
+	show_draft_hint: bool = false,
+	presentation_mode: StringName = &"standard"
 ) -> bool:
 	if reward_options.is_empty():
 		return false
@@ -127,6 +203,8 @@ func _open_rewards(
 	_progress_index_cache = progress_index
 	_progress_total_cache = progress_total
 	_show_draft_hint_cache = show_draft_hint
+	_presentation_mode = presentation_mode
+	_presentation_mode_cache = presentation_mode
 	_selected_index = -1
 	_pinned_index = 0
 	_hover_index = -1
@@ -137,6 +215,7 @@ func _open_rewards(
 		"Objective Rewards" if _summary_mode else "Choose Reward"
 	)
 	subtitle_label.text = _build_subtitle_text(route_display_name, subtitle_override, progress_index, progress_total, show_draft_hint)
+	_apply_presentation_mode()
 	confirm_button.text = _get_confirm_button_text()
 	cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
 	cancel_button.visible = _allow_cancel and not _summary_mode
@@ -153,7 +232,7 @@ func _open_rewards(
 	if _reward_options.is_empty():
 		return false
 	for idx in range(_reward_options.size()):
-		var button := _build_reward_card_button(_reward_options[idx])
+		var button := _build_reward_card_button(_reward_options[idx], idx)
 		button.pressed.connect(Callable(self, "_on_reward_button_pressed").bind(idx, button))
 		if _summary_mode:
 			button.mouse_entered.connect(_on_reward_hover_entered.bind(idx))
@@ -170,6 +249,20 @@ func _open_rewards(
 	visible = true
 	_play_entry_animation()
 	return true
+
+func _apply_presentation_mode() -> void:
+	var quick := _presentation_mode == &"quick"
+	panel.offset_left = -500.0 if quick else -450.0
+	panel.offset_top = -310.0 if quick else -300.0
+	panel.offset_right = 500.0 if quick else 450.0
+	panel.offset_bottom = 310.0 if quick else 300.0
+	options_scroll.custom_minimum_size.y = 220.0 if quick else 178.0
+	var detail_panel := get_node_or_null("Panel/VBox/DetailPanel") as Control
+	if detail_panel != null:
+		detail_panel.custom_minimum_size.y = 180.0 if quick else 178.0
+	if quick:
+		title_label.text = LocalizationManager.tr_key("ui.reward.quick.title", "Choose Upgrade")
+		subtitle_label.text = LocalizationManager.tr_key("ui.reward.quick.subtitle", "Pick 1 · Hold keys 1–3")
 
 func _build_subtitle_text(
 	route_display_name: String,
@@ -203,6 +296,7 @@ func _build_subtitle_text(
 
 func close_panel() -> void:
 	_kill_entry_tween()
+	_cancel_quick_select_hold()
 	visible = false
 	modulate.a = 1.0
 	panel.scale = Vector2.ONE
@@ -304,7 +398,8 @@ func _update_summary_detail() -> void:
 func _update_grid_columns() -> void:
 	if options_box == null or options_scroll == null:
 		return
-	options_box.columns = clampi(int(options_scroll.size.x / 222.0), 1, 4)
+	var option_count := maxi(1, options_box.get_child_count())
+	options_box.columns = mini(3, option_count)
 
 func _confirm_button_state() -> void:
 	confirm_button.disabled = false if _summary_mode else _selected_index < 0 or _selected_index >= _reward_options.size()
@@ -315,6 +410,12 @@ func _get_confirm_button_text() -> String:
 		return LocalizationManager.tr_key("ui.task_reward.summary_confirm", "Continue")
 	if _selected_index < 0 or _selected_index >= _reward_options.size():
 		return LocalizationManager.tr_key("ui.reward.select_prompt", "Select a reward")
+	if _held_quick_select_index >= 0:
+		return LocalizationManager.tr_format(
+			"ui.reward.quick.holding",
+			{"progress": int(round(100.0 * clampf(_held_quick_select_elapsed / QUICK_SELECT_HOLD_SECONDS, 0.0, 1.0)))},
+			"Holding %d%%" % int(round(100.0 * clampf(_held_quick_select_elapsed / QUICK_SELECT_HOLD_SECONDS, 0.0, 1.0)))
+		)
 	return LocalizationManager.tr_key("ui.reward.confirm", "Confirm Reward")
 
 func _on_confirm_pressed() -> void:
@@ -339,11 +440,11 @@ func _on_cancel_pressed() -> void:
 		_on_cancel.call_deferred()
 	close_panel()
 
-func _build_reward_card_button(reward: RewardInfo) -> Button:
+func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Button:
 	var card_data: Dictionary = _build_reward_display_data(reward)
 	var button := Button.new()
 	button.toggle_mode = true
-	button.custom_minimum_size = Vector2(230, 176)
+	button.custom_minimum_size = Vector2(0, 210 if _presentation_mode == &"quick" else 176)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_ALL
@@ -372,6 +473,11 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 	top_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_row.add_theme_constant_override("separation", 8)
 	body.add_child(top_row)
+	if not _summary_mode and reward_index >= 0 and reward_index < 3:
+		var key_badge := _make_badge_label(str(reward_index + 1), Color(0.40, 0.78, 0.94, 1.0))
+		key_badge.name = "KeyBadge"
+		key_badge.custom_minimum_size.x = 28.0
+		top_row.add_child(key_badge)
 
 	var type_badge := _make_badge_label(str(card_data.get("type_label", "Reward")).to_upper(), Color(0.58, 0.76, 0.92, 1.0))
 	type_badge.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -429,6 +535,25 @@ func _build_reward_card_button(reward: RewardInfo) -> Button:
 		var tag_label := _make_card_label(tag_text, 14, Color(0.82, 0.90, 0.95, 1.0))
 		tag_label.clip_text = true
 		body.add_child(tag_label)
+
+	var hold_progress := ProgressBar.new()
+	hold_progress.name = "HoldProgress"
+	hold_progress.max_value = 1.0
+	hold_progress.value = 0.0
+	hold_progress.show_percentage = false
+	hold_progress.custom_minimum_size = Vector2(0.0, 5.0)
+	hold_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hold_progress.visible = false
+	var progress_background := StyleBoxFlat.new()
+	progress_background.bg_color = Color(0.06, 0.10, 0.12, 0.92)
+	progress_background.set_corner_radius_all(2)
+	var progress_fill := StyleBoxFlat.new()
+	var action_color := _get_reward_action_color(reward)
+	progress_fill.bg_color = Color(action_color.r, action_color.g, action_color.b, 1.0)
+	progress_fill.set_corner_radius_all(2)
+	hold_progress.add_theme_stylebox_override("background", progress_background)
+	hold_progress.add_theme_stylebox_override("fill", progress_fill)
+	body.add_child(hold_progress)
 
 	_set_mouse_filter_recursive(button, Control.MOUSE_FILTER_IGNORE)
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -1121,7 +1246,7 @@ func _localized_reward_bullets(category: String, fallbacks: Array) -> PackedStri
 		))
 	return output
 
-func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool) -> void:
+func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool, holding: bool = false) -> void:
 	if button == null or reward == null:
 		return
 	var action_color := _get_reward_action_color(reward)
@@ -1134,8 +1259,10 @@ func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool
 		style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.10)
 		if recommended_fuse:
 			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.20)
-		if selected:
-			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.30)
+		if holding:
+			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.28)
+		elif selected:
+			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.18)
 		elif state == "hover" or state == "focus":
 			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.14)
 		elif state == "pressed":
@@ -1146,8 +1273,8 @@ func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool
 			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.26)
 		if recommended_fuse and selected:
 			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.28)
-		style.border_color = Color(action_color.r, action_color.g, action_color.b, 1.0 if selected else 0.78)
-		style.set_border_width_all(3 if selected or recommended_fuse else 1)
+		style.border_color = Color(action_color.r, action_color.g, action_color.b, 1.0 if selected or holding else 0.78)
+		style.set_border_width_all(3 if holding else (2 if selected or recommended_fuse else 1))
 		style.set_corner_radius_all(6)
 		button.add_theme_stylebox_override(state, style)
 
@@ -1244,6 +1371,7 @@ func _on_language_changed(_locale: String) -> void:
 	var progress_index := _progress_index_cache
 	var progress_total := _progress_total_cache
 	var show_draft_hint := _show_draft_hint_cache
+	var presentation_mode := _presentation_mode_cache
 	visible = false
 	if summary_mode:
 		open_for_summary(rewards, on_confirm, title_override, subtitle_override)
@@ -1258,5 +1386,6 @@ func _on_language_changed(_locale: String) -> void:
 			subtitle_override,
 			progress_index,
 			progress_total,
-			show_draft_hint
+			show_draft_hint,
+			presentation_mode
 		)

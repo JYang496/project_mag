@@ -27,7 +27,7 @@ static func visibility_for(
 	var settlement := phase == PhaseManager.SETTLEMENT
 	var protocol_selection := phase == PhaseManager.PROTOCOL_SELECTION
 	var battle_starting := phase == PhaseManager.BATTLE_STARTING
-	var game_over := phase == PhaseManager.GAMEOVER
+	var game_over := phase in [PhaseManager.GAMEOVER, PhaseManager.RUN_COMPLETE]
 	return {
 		"battle_hud": prepare or battle,
 		"phase_dock": prepare or settlement or protocol_selection or battle_starting or battle,
@@ -70,6 +70,10 @@ func refresh(animated: bool = true) -> void:
 
 func invalidate() -> void:
 	_last_signature = ""
+
+func set_reward_modal_focus(active: bool) -> void:
+	if phase_label != null and is_instance_valid(phase_label):
+		phase_label.modulate.a = 0.35 if active else 1.0
 
 
 func layout(viewport_size: Vector2) -> void:

@@ -57,5 +57,6 @@ func _on_pressed() -> void:
 	await LoadingPerformance.wait_for_world_preview_safe_scene_change()
 	LoadingPerformance.update_world_preview_loading_progress(0.84)
 	LoadingPerformance.show_world_build_overlay()
+	GlobalVariables.request_new_game_battle()
 	LoadingPerformance.mark("world_scene_changed")
 	get_tree().change_scene_to_packed(load_result.get("scene") as PackedScene)

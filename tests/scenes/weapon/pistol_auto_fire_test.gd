@@ -1,6 +1,7 @@
 extends Node
 
 const PistolScene := preload("res://Player/Weapons/Instances/pistol.tscn")
+const DashBladeScene := preload("res://Player/Weapons/Instances/dash_blade.tscn")
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _shot_count := 0
@@ -53,6 +54,42 @@ func _ready() -> void:
 	if spawned_projectile != null:
 		failed = _check(spawned_projectile.base_displacement.length_squared() > 0.0, "Auto Pistol projectile must receive non-zero movement") or failed
 		failed = _check(spawned_projectile.global_position != pistol.global_position, "Auto Pistol projectile must move away from the muzzle") or failed
+
+	var previous_auto_aim := PlayerAssistSettings.auto_aim_continuous_fire
+	PlayerAssistSettings.auto_aim_continuous_fire = true
+	var blade := DashBladeScene.instantiate() as DashBlade
+	add_child(blade)
+	blade.global_position = Vector2.ZERO
+	blade.call("_process_idle")
+	failed = _check(
+		not blade.has_meta(&"_player_assist_auto_aim_target"),
+		"Dash Blade idle aiming must tolerate a missing auto-aim target"
+	) or failed
+	enemy.global_position = Vector2(600.0, 0.0)
+	var assist := PlayerAssistSystem.new()
+	assist.setup(self)
+	assist.process_combat_assist(blade, false, 0.016)
+	blade.call("_process_idle")
+	failed = _check(
+		blade.has_meta(&"_player_assist_auto_aim_target"),
+		"Auto aim must retain a melee target outside attack range"
+	) or failed
+	failed = _check(
+		is_equal_approx(blade.blade_anchor.rotation, deg_to_rad(90.0)),
+		"Dash Blade must point toward an auto-aim target outside attack range"
+	) or failed
+	failed = _check(
+		int(blade.get("_state")) == DashBlade.AttackState.IDLE,
+		"Dash Blade must not attack an auto-aim target outside attack range"
+	) or failed
+	PlayerAssistSettings.auto_aim_continuous_fire = false
+	assist.process_combat_assist(blade, false, 0.016)
+	blade.call("_process_idle")
+	failed = _check(
+		not blade.has_meta(&"_player_assist_auto_aim_target"),
+		"Dash Blade idle aiming must tolerate a cleared auto-aim target"
+	) or failed
+	PlayerAssistSettings.auto_aim_continuous_fire = previous_auto_aim
 	if failed:
 		print("FAIL pistol auto fire")
 	else:

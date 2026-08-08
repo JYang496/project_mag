@@ -1,5 +1,7 @@
 extends Node
 
+const RUN_PROGRESSION_PROFILE := preload("res://data/progression/run_progression_profile.tres")
+
 var battle_time := 0
 var battle_time_remaining := 30
 var current_level : int = 0 :
@@ -13,10 +15,14 @@ const PROTOCOL_SELECTION := "protocol_selection"
 const BATTLE_STARTING := "battle_starting"
 const BATTLE := "battle"
 const GAMEOVER := "gameover"
+const RUN_COMPLETE := "run_complete"
+const RUN_STATE_ACTIVE := &"active"
+const RUN_STATE_COMPLETE := &"run_complete"
+const RUN_STATE_ENDLESS := &"endless"
 const BATTLE_RUNTIME_TRANSIENT_GROUP := &"battle_runtime_transient"
 var time_out = 30
 
-var phase_list := [REST, SETTLEMENT, PROTOCOL_SELECTION, BATTLE_STARTING, BATTLE, GAMEOVER]
+var phase_list := [REST, SETTLEMENT, PROTOCOL_SELECTION, BATTLE_STARTING, BATTLE, GAMEOVER, RUN_COMPLETE]
 var phase := REST:
 	get:
 		return phase
@@ -34,6 +40,14 @@ var _post_battle_collect_gate_token: int = 0
 var _settlement_check_scheduled := false
 var _rest_protocol_consumed_level := -1
 var _protocol_selection_origin := ""
+var _last_completed_level_index := -1
+var _settlement_type: StringName = &"quick"
+var endless_mode := false
+var _endless_entry_rest_available := false
+var _run_state: StringName = RUN_STATE_ACTIVE
+
+func _ready() -> void:
+	RUN_PROGRESSION_PROFILE.sanitize()
 
 func current_state() -> String:
 	return phase
@@ -53,7 +67,11 @@ func enter_settlement() -> void:
 		else:
 			PlayerData.record_battle_without_weapon_progress()
 		PlayerData.weapon_progress_this_battle = false
+	_last_completed_level_index = current_level
+	_settlement_type = RUN_PROGRESSION_PROFILE.get_settlement_type_for_completed_level(_last_completed_level_index)
 	current_level += 1
+	if not endless_mode and current_level > RUN_PROGRESSION_PROFILE.final_level_index:
+		_run_state = RUN_STATE_COMPLETE
 	phase = SETTLEMENT
 	phase_changed.emit(phase)
 	SaveManager.commit_battle_success()
@@ -100,15 +118,27 @@ func enter_rest() -> void:
 	if is_full_shop_open() and GlobalVariables.ui != null and is_instance_valid(GlobalVariables.ui):
 		GlobalVariables.ui.reset_purchase_refresh_cost()
 
+func enter_chapter_rest() -> void:
+	if phase != SETTLEMENT or _settlement_type != &"chapter":
+		return
+	_rest_protocol_consumed_level = current_level
+	BattleContractManager.cancel_offer()
+	phase = REST
+	phase_changed.emit(phase)
+	if GlobalVariables.ui != null and is_instance_valid(GlobalVariables.ui):
+		GlobalVariables.ui.reset_purchase_refresh_cost()
+
 func enter_battle_starting() -> void:
 	if phase != PROTOCOL_SELECTION:
 		return
 	complete_post_battle_collect_gate()
+	_endless_entry_rest_available = false
 	phase = BATTLE_STARTING
 	phase_changed.emit(phase)
 
 func is_full_shop_open() -> bool:
-	return PlayerData.run_completed_levels > 0 and PlayerData.run_completed_levels % 3 == 0
+	return _endless_entry_rest_available \
+		or (PlayerData.run_completed_levels > 0 and PlayerData.run_completed_levels % 3 == 0)
 
 func is_rest_protocol_available() -> bool:
 	return is_full_shop_open() and _rest_protocol_consumed_level != current_level
@@ -118,6 +148,55 @@ func is_rest_phase() -> bool:
 
 func is_settlement_phase() -> bool:
 	return phase == SETTLEMENT
+
+func get_settlement_type() -> StringName:
+	return _settlement_type
+
+func get_last_completed_level_index() -> int:
+	return _last_completed_level_index
+
+func get_progression_profile() -> Resource:
+	return RUN_PROGRESSION_PROFILE
+
+func get_current_chapter() -> Resource:
+	return RUN_PROGRESSION_PROFILE.get_chapter_for_level(current_level)
+
+func is_main_run_complete() -> bool:
+	return _run_state == RUN_STATE_COMPLETE
+
+func get_run_state() -> StringName:
+	return _run_state
+
+func is_endless_entry_rest_pending() -> bool:
+	return _run_state == RUN_STATE_ENDLESS and _endless_entry_rest_available
+
+func export_progression_save_state() -> Dictionary:
+	return {
+		"schema_version": 1,
+		"run_state": str(_run_state),
+		"endless_entry_rest_pending": is_endless_entry_rest_pending(),
+	}
+
+func import_progression_save_state(saved_state: Dictionary, legacy_endless_mode: bool = false) -> void:
+	var has_explicit_state := saved_state.has("run_state")
+	var restored_state := StringName(str(saved_state.get("run_state", "")))
+	if restored_state not in [RUN_STATE_ACTIVE, RUN_STATE_COMPLETE, RUN_STATE_ENDLESS]:
+		if legacy_endless_mode:
+			restored_state = RUN_STATE_ENDLESS
+		elif current_level > RUN_PROGRESSION_PROFILE.final_level_index:
+			restored_state = RUN_STATE_COMPLETE
+		else:
+			restored_state = RUN_STATE_ACTIVE
+	_run_state = restored_state
+	endless_mode = _run_state == RUN_STATE_ENDLESS
+	if has_explicit_state:
+		_endless_entry_rest_available = endless_mode and bool(saved_state.get("endless_entry_rest_pending", false))
+	else:
+		# Legacy saves only persisted endless_mode. At the first post-finale level,
+		# preserve the one-time full rest that choosing endless mode grants.
+		_endless_entry_rest_available = endless_mode \
+			and current_level == RUN_PROGRESSION_PROFILE.final_level_index + 1
+	phase = RUN_COMPLETE if _run_state == RUN_STATE_COMPLETE else REST
 
 func is_protocol_selection_phase() -> bool:
 	return phase == PROTOCOL_SELECTION
@@ -140,6 +219,30 @@ func enter_gameover() -> void:
 	cleanup_battle_runtime_transients()
 	complete_post_battle_collect_gate()
 	phase = GAMEOVER
+	phase_changed.emit(phase)
+
+func enter_run_complete() -> void:
+	if phase != SETTLEMENT:
+		return
+	if _run_state != RUN_STATE_COMPLETE:
+		# Keep the transition API robust for callers/tests that restore the legacy
+		# level boundary directly before explicit run-state persistence existed.
+		if endless_mode or current_level <= RUN_PROGRESSION_PROFILE.final_level_index:
+			return
+		_run_state = RUN_STATE_COMPLETE
+	cleanup_battle_runtime_transients()
+	complete_post_battle_collect_gate()
+	phase = RUN_COMPLETE
+	phase_changed.emit(phase)
+
+func continue_into_endless() -> void:
+	if phase != RUN_COMPLETE:
+		return
+	endless_mode = true
+	_run_state = RUN_STATE_ENDLESS
+	_endless_entry_rest_available = true
+	BattleContractManager.reset_runtime_state()
+	phase = REST
 	phase_changed.emit(phase)
 
 func begin_post_battle_collect_gate(timeout_sec: float) -> void:
@@ -190,6 +293,12 @@ func _try_complete_settlement() -> void:
 			and ui.has_method("has_pending_blocking_transaction") \
 			and bool(ui.call("has_pending_blocking_transaction")):
 		return
+	if is_main_run_complete():
+		enter_run_complete()
+		return
+	if _settlement_type == &"chapter":
+		enter_chapter_rest()
+		return
 	enter_protocol_selection()
 
 func start_battle_timer(duration_sec: int) -> void:
@@ -215,4 +324,12 @@ func reset_runtime_state() -> void:
 	_settlement_check_scheduled = false
 	_rest_protocol_consumed_level = -1
 	_protocol_selection_origin = ""
+	_last_completed_level_index = -1
+	_settlement_type = &"quick"
+	endless_mode = false
+	_endless_entry_rest_available = false
+	_run_state = RUN_STATE_ACTIVE
 	complete_post_battle_collect_gate()
+	var pacing_telemetry := get_node_or_null("/root/RunPacingTelemetry")
+	if pacing_telemetry != null:
+		pacing_telemetry.reset_runtime_state()

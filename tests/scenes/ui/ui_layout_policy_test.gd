@@ -6,6 +6,8 @@ const UI_SCENE := preload("res://UI/scenes/UI.tscn")
 const MANAGEMENT_SHELL_SCENE := preload("res://UI/scenes/runtime/management_shell.tscn")
 const PROJECTED_WORLD_UI := preload("res://Visual/Oblique/projected_world_ui_service.gd")
 const HUD_PHASE_CONTROLLER := preload("res://UI/scripts/components/hud_phase_controller.gd")
+const VICTORY_TRANSITION := preload("res://UI/scripts/components/victory_transition.gd")
+const REST_AREA_MANAGEMENT_SHELL := preload("res://UI/scripts/management/rest_area_management_shell.gd")
 
 class FakeHeatWeapon:
 	extends Node
@@ -52,6 +54,8 @@ func _ready() -> void:
 	_test_hud_phase_visibility_contract()
 	_test_management_shell_priority()
 	_test_pause_modal_layer_priority()
+	_test_victory_transition_timing()
+	await _test_primary_menu_keyboard_navigation()
 	await _test_prepare_delayed_special_resource_visibility()
 	print("FAIL UI layout policy" if _failed else "PASS UI layout policy")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0, _reset_runtime_state)
@@ -117,12 +121,72 @@ func _test_pause_modal_layer_priority() -> void:
 	var ui := UI_SCENE.instantiate() as CanvasLayer
 	var pause_layer := ui.get_node_or_null("PauseMenuLayer") as CanvasLayer
 	var pause_root := ui.get_node_or_null("PauseMenuLayer/PauseMenuRoot") as Control
+	var pause_panel := ui.get_node_or_null("PauseMenuLayer/PauseMenuRoot/PauseMenuPanel") as PanelContainer
 	_expect(pause_layer != null, "pause menu must own a dedicated CanvasLayer")
 	_expect(pause_root != null and pause_root.get_parent() == pause_layer, "pause blocker must live inside the dedicated modal layer")
+	_expect(pause_root.get_node_or_null("Scrim") is ColorRect, "pause menu must dim combat behind its settings surface")
+	_expect(pause_panel != null and pause_panel.theme_type_variation == &"SettingsPanel", "pause menu must reuse the main-menu settings panel theme")
+	_expect(pause_panel.get_node_or_null("Margin/Content/Header/Paused") is Label, "pause settings surface must expose a structured title row")
+	_expect(pause_panel.get_node_or_null("Margin/Content/AudioSlot") is VBoxContainer, "pause settings surface must group audio controls")
+	_expect(pause_panel.get_node_or_null("Margin/Content/LanguageRow/LanguageOption") is OptionButton, "pause settings surface must use a full language row")
+	_expect(pause_panel.get_node_or_null("Margin/Content/AssistHeader") is Label, "pause settings surface must separate combat-assist controls")
 	if pause_layer != null:
 		_expect(pause_layer.layer == UI.PAUSE_MODAL_CANVAS_LAYER, "pause layer must use the reserved modal priority")
 		_expect(pause_layer.layer > PROJECTED_WORLD_UI.LAYER_ORDER, "pause layer must render above projected damage labels")
 	ui.free()
+
+func _test_victory_transition_timing() -> void:
+	var normal_timing := VICTORY_TRANSITION.animation_timing_for(&"standard")
+	for presentation_mode in [&"quick", &"chapter", &"final"]:
+		var timing := VICTORY_TRANSITION.animation_timing_for(presentation_mode)
+		_expect(timing == normal_timing, "%s settlement must use the normal victory animation speed" % presentation_mode)
+		_expect(is_equal_approx(float(timing.hold), VICTORY_TRANSITION.HOLD_DURATION), "%s settlement must retain the normal victory hold duration" % presentation_mode)
+
+func _test_primary_menu_keyboard_navigation() -> void:
+	var root := Control.new()
+	var panel := Panel.new()
+	var first := Button.new()
+	var second := Button.new()
+	root.add_child(panel)
+	panel.add_child(first)
+	panel.add_child(second)
+	add_child(root)
+	root.visible = true
+	first.text = "First"
+	second.text = "Second"
+	var accepted := [0]
+	second.pressed.connect(func() -> void: accepted[0] += 1)
+	var shell := REST_AREA_MANAGEMENT_SHELL.new()
+	shell.bind(self)
+	shell.show_primary_menu(&"purchase", root, panel)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_expect(get_viewport().gui_get_focus_owner() == first, "primary menu should focus its first enabled action when opened")
+	_expect(first.focus_neighbor_left == first.get_path_to(second), "left navigation should wrap to the previous primary action")
+	_expect(first.focus_neighbor_right == first.get_path_to(second), "right navigation should advance to the next primary action")
+	_expect(shell.handle_primary_menu_input(_action_event(&"DOWN"), &"purchase", panel), "custom movement actions should be consumed by an open primary menu")
+	_expect(get_viewport().gui_get_focus_owner() == second, "down should move primary-menu focus")
+	_expect(shell.handle_primary_menu_input(_action_event(&"INTERACT"), &"purchase", panel), "interact should confirm the focused primary action")
+	_expect(accepted[0] == 1, "interact should emit the focused button exactly once")
+	shell.hide_primary_menu(&"purchase", root, panel)
+	await get_tree().process_frame
+	shell.show_primary_menu(&"purchase", root, panel)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_expect(get_viewport().gui_get_focus_owner() == second, "reopened primary menu should restore its last focused action")
+	second.disabled = true
+	shell._configure_focus_for_root(panel)
+	first.grab_focus()
+	_expect(shell.handle_primary_menu_input(_action_event(&"RIGHT"), &"purchase", panel), "navigation should remain active when an action is disabled")
+	_expect(get_viewport().gui_get_focus_owner() == first, "navigation should skip disabled primary actions")
+	root.queue_free()
+	await get_tree().process_frame
+
+func _action_event(action: StringName) -> InputEventAction:
+	var event := InputEventAction.new()
+	event.action = action
+	event.pressed = true
+	return event
 
 func _test_prepare_delayed_special_resource_visibility() -> void:
 	PhaseManager.reset_runtime_state()

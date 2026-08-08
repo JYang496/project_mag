@@ -8,6 +8,9 @@ var _requested_config: Dictionary = {}
 var _enemy_motion: Dictionary = {}
 var _monitor_enemy_stalls := false
 var _stall_sample_elapsed_sec := 0.0
+const ENEMY_RECOVERY_TIMEOUT_SEC := 8.0
+const ENEMY_RECOVERY_MIN_DISTANCE := 900.0
+const ENEMY_RECOVERY_APPROACH_EPSILON := 1.0
 var _beacons: Dictionary = {}
 var _beacon_beam: Line2D
 const BEACON_SCENE := preload("res://World/battle_contract/tactical_beacon.tscn")
@@ -113,6 +116,19 @@ func request_configure_continuous_spawning(enabled: bool) -> void:
 	_requested_config["continuous_spawning"] = enabled
 	if _spawner != null:
 		_spawner.configure_contract_continuous_spawning(enabled)
+
+func request_configure_spawn_policy(
+	mode: StringName,
+	soft_cap_multiplier: float,
+	hard_cap_multiplier: float
+) -> void:
+	_requested_config["spawn_policy"] = {
+		"mode": mode,
+		"soft_cap_multiplier": soft_cap_multiplier,
+		"hard_cap_multiplier": hard_cap_multiplier,
+	}
+	if _spawner != null:
+		_spawner.configure_contract_spawn_policy(mode, soft_cap_multiplier, hard_cap_multiplier)
 
 func request_configure_duration(duration_sec: float) -> void:
 	_requested_config["duration_sec"] = maxf(duration_sec, 1.0)
@@ -253,7 +269,7 @@ func _on_enemy_spawned(enemy: Node) -> void:
 	_next_enemy_id += 1
 	_enemy_by_id[enemy_id] = enemy
 	if _monitor_enemy_stalls:
-		_enemy_motion[enemy_id] = {"position": enemy.global_position, "stalled_sec": 0.0}
+		_enemy_motion[enemy_id] = _new_enemy_motion_snapshot(enemy)
 	enemy.set_meta("_battle_contract_enemy_id", enemy_id)
 	enemy_spawned.emit(_enemy_snapshot(enemy, enemy_id))
 
@@ -277,21 +293,38 @@ func _on_combat_frame(delta_sec: float) -> void:
 		return
 	var sample_delta := _stall_sample_elapsed_sec
 	_stall_sample_elapsed_sec = 0.0
+	var player := PlayerData.player as Node2D
 	for enemy_id in _enemy_by_id:
 		var enemy := _enemy_by_id[enemy_id] as Node2D
 		if enemy == null or not is_instance_valid(enemy):
 			continue
-		var motion: Dictionary = _enemy_motion.get(enemy_id, {"position": enemy.global_position, "stalled_sec": 0.0})
+		var motion: Dictionary = _enemy_motion.get(enemy_id, _new_enemy_motion_snapshot(enemy))
 		var previous: Vector2 = motion.get("position", enemy.global_position)
 		var stalled := float(motion.get("stalled_sec", 0.0))
 		stalled = stalled + sample_delta if previous.distance_squared_to(enemy.global_position) < 4.0 else 0.0
-		if stalled >= 8.0:
+		var stranded := float(motion.get("stranded_sec", 0.0))
+		var distance_to_player := enemy.global_position.distance_to(player.global_position) if player != null and is_instance_valid(player) else 0.0
+		var previous_distance := float(motion.get("distance_to_player", distance_to_player))
+		if distance_to_player >= ENEMY_RECOVERY_MIN_DISTANCE and previous_distance - distance_to_player < ENEMY_RECOVERY_APPROACH_EPSILON:
+			stranded += sample_delta
+		else:
+			stranded = 0.0
+		if stalled >= ENEMY_RECOVERY_TIMEOUT_SEC or stranded >= ENEMY_RECOVERY_TIMEOUT_SEC:
 			enemy.global_position = _spawner.get_random_position()
 			EnemyRegistry.update_enemy_position(enemy)
 			stalled = 0.0
+			stranded = 0.0
+			distance_to_player = enemy.global_position.distance_to(player.global_position) if player != null and is_instance_valid(player) else 0.0
 		motion["position"] = enemy.global_position
 		motion["stalled_sec"] = stalled
+		motion["stranded_sec"] = stranded
+		motion["distance_to_player"] = distance_to_player
 		_enemy_motion[enemy_id] = motion
+
+func _new_enemy_motion_snapshot(enemy: Node2D) -> Dictionary:
+	var player := PlayerData.player as Node2D
+	var distance_to_player := enemy.global_position.distance_to(player.global_position) if player != null and is_instance_valid(player) else 0.0
+	return {"position": enemy.global_position, "stalled_sec": 0.0, "stranded_sec": 0.0, "distance_to_player": distance_to_player}
 
 func _on_beacon_presence_changed(beacon_id: int, player_inside: bool, enemy_count: int) -> void:
 	beacon_presence_changed.emit({"beacon_id": beacon_id, "player_inside": player_inside, "enemy_count": enemy_count})

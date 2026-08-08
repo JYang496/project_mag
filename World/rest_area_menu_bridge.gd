@@ -17,6 +17,12 @@ func get_menu_visible() -> Variant:
 		return null
 	return bool(controller.call("is_menu_visible"))
 
+func is_primary_menu_open() -> bool:
+	var controller: Variant = _get_rest_ui_controller()
+	if controller == null or not controller.has_method("is_primary_menu_open"):
+		return false
+	return bool(controller.call("is_primary_menu_open"))
+
 func handle_right_cancel() -> bool:
 	var controller: Variant = _get_rest_ui_controller()
 	if controller == null or not controller.has_method("handle_right_cancel"):

@@ -147,6 +147,32 @@ func _test_primary_menu_context(hint: ControlsHintView) -> void:
 		hint.title_label.text,
 		"Primary-menu guidance should identify the active action instead of using a generic menu label."
 	)
+	var hint_lines := _expanded_action_text(hint)
+	_assert_true("WASD" in hint_lines and "F / Enter" in hint_lines,
+		"Primary-menu guidance should expose directional selection and keyboard confirmation.")
+	_assert_true("Esc" in hint_lines and ("RMB" in hint_lines or "鼠标右键" in hint_lines),
+		"Primary-menu guidance should expose keyboard and mouse back actions.")
+	var gamepad_event := InputEventJoypadButton.new()
+	gamepad_event.button_index = JOY_BUTTON_A
+	gamepad_event.pressed = true
+	hint.handle_input_event(gamepad_event)
+	hint_lines = _expanded_action_text(hint)
+	_assert_true(("D-pad" in hint_lines or "十字键" in hint_lines) and "[A]" in hint_lines,
+		"Primary-menu guidance should switch to directional and confirm gamepad glyphs.")
+	_assert_true("[B]" in hint_lines, "Primary-menu guidance should expose the gamepad back action.")
+	var keyboard_event := InputEventKey.new()
+	keyboard_event.physical_keycode = KEY_W
+	keyboard_event.pressed = true
+	hint.handle_input_event(keyboard_event)
+
+func _expanded_action_text(hint: ControlsHintView) -> String:
+	var lines := PackedStringArray()
+	for row_variant in hint.expanded_content.get_children():
+		var row := row_variant as HBoxContainer
+		var action := row.get_node_or_null("Action") as Label if row != null else null
+		if action != null:
+			lines.append(action.text)
+	return "\n".join(lines)
 
 func _test_adaptive_width(hint: ControlsHintView) -> void:
 	PlayerAssistSettings.controls_hint_mode = PlayerAssistSettings.CONTROLS_HINT_ALWAYS

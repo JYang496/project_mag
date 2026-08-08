@@ -25,6 +25,11 @@ func start(combat_port, parameters: Dictionary) -> void:
 	port = combat_port
 	port.request_external_victory_control(true)
 	port.request_configure_continuous_spawning(true)
+	port.request_configure_spawn_policy(
+		&"soft_capped",
+		float(parameters.get("spawn_soft_cap_multiplier", 1.25)),
+		float(parameters.get("spawn_hard_cap_multiplier", 1.45))
+	)
 	var level := int(port.get_level_index())
 	var early_level_count := maxi(int(parameters.get("early_level_count", 4)), 0)
 	var mid_level_count := maxi(int(parameters.get("mid_level_count", 8)), early_level_count)

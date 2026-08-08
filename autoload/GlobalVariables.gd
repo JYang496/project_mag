@@ -11,6 +11,17 @@ extends Node
 @onready var enemy_spawner : EnemySpawner
 @onready var AUTOSAVE_PATH : String = "res://data/savedata/autosave.tres"
 @onready var SPAWN_PATN : String = "res://data/spawns/"
+var _new_game_battle_pending := false
+
+
+func request_new_game_battle() -> void:
+	_new_game_battle_pending = true
+
+
+func consume_new_game_battle_request() -> bool:
+	var was_pending := _new_game_battle_pending
+	_new_game_battle_pending = false
+	return was_pending
 
 
 func reset_run_state() -> void:
@@ -18,6 +29,7 @@ func reset_run_state() -> void:
 	mech_data = null
 	autosave_data = {}
 	enemy_spawner = null
+	_new_game_battle_pending = false
 
 func clear_resource_cache() -> void:
 	weapon_list = {}

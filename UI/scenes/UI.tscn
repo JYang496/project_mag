@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://UI/scripts/UI.gd" id="1_l38d8"]
 [ext_resource type="PackedScene" path="res://UI/scenes/runtime/battle_hud.tscn" id="2_bdf3o"]
+[ext_resource type="Theme" path="res://UI/themes/start_menu_theme.tres" id="3_pause_theme"]
 
 [node name="UI" type="CanvasLayer" unique_id=73837684 groups=["ui"]]
 process_mode = 3
@@ -29,26 +30,116 @@ offset_top = 25.0
 offset_right = 750.0
 offset_bottom = 625.0
 
-[node name="PauseMenuPanel" type="Panel" parent="PauseMenuLayer/PauseMenuRoot" unique_id=978817655]
+[node name="Scrim" type="ColorRect" parent="PauseMenuLayer/PauseMenuRoot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0.015, 0.025, 0.72)
+
+[node name="PauseMenuPanel" type="PanelContainer" parent="PauseMenuLayer/PauseMenuRoot" unique_id=978817655]
 layout_mode = 0
 offset_right = 400.0
 offset_bottom = 600.0
+theme = ExtResource("3_pause_theme")
+theme_type_variation = &"SettingsPanel"
 
-[node name="Paused" type="Label" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel" unique_id=1656821197]
-layout_mode = 0
-offset_left = 66.0
-offset_top = 150.0
-offset_right = 123.0
-offset_bottom = 173.0
+[node name="Margin" type="MarginContainer" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Paused" type="Label" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/Header" unique_id=1656821197]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"SectionTitleLabel"
 text = "Paused"
 
-[node name="ResumeButton" type="Button" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel" unique_id=378820124]
-layout_mode = 0
-offset_left = 154.0
-offset_top = 257.0
-offset_right = 162.0
-offset_bottom = 265.0
+[node name="ResumeButton" type="Button" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/Header" unique_id=378820124]
+custom_minimum_size = Vector2(112, 42)
+layout_mode = 2
 text = "Resume"
+
+[node name="HeaderRule" type="HSeparator" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
+[node name="AudioHeader" type="Label" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"EyebrowLabel"
+text = "Audio"
+
+[node name="AudioSlot" type="VBoxContainer" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="InterfaceHeader" type="Label" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"EyebrowLabel"
+text = "Interface"
+
+[node name="LanguageRow" type="HBoxContainer" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+
+[node name="LanguageLabel" type="Label" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/LanguageRow"]
+custom_minimum_size = Vector2(168, 0)
+layout_mode = 2
+text = "Language"
+vertical_alignment = 1
+
+[node name="LanguageOption" type="OptionButton" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/LanguageRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AssistHeader" type="Label" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+layout_mode = 2
+theme_type_variation = &"EyebrowLabel"
+text = "Combat Assist"
+
+[node name="TemporaryModuleConfirmToggle" type="CheckButton" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+
+[node name="AutoAimContinuousFireToggle" type="CheckButton" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+
+[node name="AutoReloadSwitchToggle" type="CheckButton" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+
+[node name="ControlsHintRow" type="HBoxContainer" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+
+[node name="ControlsHintLabel" type="Label" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/ControlsHintRow"]
+custom_minimum_size = Vector2(168, 0)
+layout_mode = 2
+text = "Controls"
+vertical_alignment = 1
+
+[node name="ControlsHintOption" type="OptionButton" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/ControlsHintRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SettingsFooter" type="Label" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 10
+theme_type_variation = &"MutedLabel"
+text = "Changes are saved immediately"
+vertical_alignment = 2
 
 [node name="BattleHud" type="Control" parent="GUI" unique_id=694383960 instance=ExtResource("2_bdf3o")]
 layout_mode = 1
@@ -58,4 +149,4 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[connection signal="pressed" from="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/ResumeButton" to="." method="_on_resume_button_pressed"]
+[connection signal="pressed" from="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/Header/ResumeButton" to="." method="_on_resume_button_pressed"]

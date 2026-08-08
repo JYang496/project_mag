@@ -51,6 +51,7 @@ func _run() -> void:
 
 	_expect(granted, "expected duplicate weapon reward to grant")
 	_expect(int(weapon.fuse) == 2, "expected duplicate weapon reward to fuse weapon to 2")
+	_expect(not _ui.toast_presenter.panel.visible, "duplicate weapon fusion must not use the top system toast")
 	_expect(_ui.branch_select_panel != null, "expected branch panel to be created")
 	_expect(_ui.branch_select_panel != null and _ui.branch_select_panel.visible, "expected branch panel to open while standard draft is still pending")
 	_expect(_ui.branch_select_panel != null and not _ui.branch_select_panel._branch_ids.is_empty(), "expected branch options for machine gun fuse 2")
@@ -90,6 +91,23 @@ func _run() -> void:
 		await get_tree().process_frame
 		_expect(PlayerData.player_weapon_list.size() == 1, "direct instance equipment must not create a duplicate weapon id")
 		_expect(int(weapon.fuse) == 3, "direct duplicate equipment must fuse the already equipped weapon")
+		_expect(not _ui.toast_presenter.panel.visible, "direct duplicate weapon fusion must not use the top system toast")
+
+	var new_weapon_id := ""
+	for candidate_id in DataHandler.get_weapon_ids():
+		if str(candidate_id) != "1":
+			new_weapon_id = str(candidate_id)
+			break
+	_expect(new_weapon_id != "", "expected a second weapon definition for new-weapon toast coverage")
+	if new_weapon_id != "":
+		var new_weapon_reward := RewardInfo.new()
+		new_weapon_reward.item_id = new_weapon_id
+		new_weapon_reward.item_level = 1
+		var new_weapon_granted := manager.grant_reward_immediately(new_weapon_reward)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_expect(new_weapon_granted, "expected new weapon reward to grant")
+		_expect(not _ui.toast_presenter.panel.visible, "new weapon reward must not use the top system toast")
 
 	_finish()
 

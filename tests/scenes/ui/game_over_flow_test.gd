@@ -44,6 +44,14 @@ func _run() -> void:
 	_expect(_view.total_damage_value.text == "1,234,567", "大数值应使用千位分隔符。")
 	_expect(_view.enemy_kills_value.text == "85", "敌人击杀数未正确呈现。")
 	_expect(_view.new_game_button.has_focus(), "结算显示后应默认聚焦主操作按钮。")
+	_expect(not _view.endless_button.visible, "失败结算不应显示超载模式入口。")
+
+	get_tree().paused = false
+	_view.visible = false
+	_ui._show_run_complete()
+	await get_tree().process_frame
+	_expect(_view.visible and _view.endless_button.visible, "通关结算必须显示可选超载模式入口。")
+	_expect(_view.title_label.text == LocalizationManager.tr_key("ui.run_complete.title", "MISSION COMPLETE"), "通关结算必须使用任务完成语义。")
 
 	print("FAIL game-over flow" if _failed else "PASS game-over flow")
 	await TEST_TEARDOWN.finish(

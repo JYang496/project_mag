@@ -399,10 +399,6 @@ func _get_economy_config() -> EconomyConfig:
 		return GlobalVariables.economy_data
 	return EconomyConfig.new()
 
-func _notify_weapon_duplicate_result(existing_weapon: Weapon, weapon_id: String, result: Dictionary) -> void:
-	_ensure_weapon_inventory_runtime()
-	_weapon_inventory_runtime.notify_weapon_duplicate_result(existing_weapon, weapon_id, result)
-
 func _refresh_weapon_related_ui() -> void:
 	_ensure_weapon_inventory_runtime()
 	_weapon_inventory_runtime.refresh_weapon_related_ui()

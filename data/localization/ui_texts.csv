@@ -494,8 +494,10 @@ ui.tutorial.state.primary_menu,Current: Primary Menu,当前状态：一级菜单
 ui.tutorial.panel.rest.line1,Click a facility to manage your build,点击设施管理构筑
 ui.tutorial.panel.rest.line2,Click center to choose the next protocol,点击中心选择下一协议
 ui.tutorial.panel.rest.line3,[Esc] Pause,[Esc] 暂停
-ui.tutorial.panel.primary_menu.line1,[LMB] Click buttons,[鼠标左键] 点击按钮
-ui.tutorial.panel.primary_menu.line2,[RMB] Exit current menu,[鼠标右键] 退出当前菜单
+ui.tutorial.panel.primary_menu.line1,[WASD / Arrows] Select · [F / Enter] Confirm,[WASD / 方向键] 选择 · [F / Enter] 确认
+ui.tutorial.panel.primary_menu.line2,[Esc / RMB] Back,[Esc / 鼠标右键] 返回
+ui.tutorial.panel.primary_menu.gamepad.line1,[D-pad / Left Stick] Select · [A] Confirm,[十字键 / 左摇杆] 选择 · [A] 确认
+ui.tutorial.panel.primary_menu.gamepad.line2,[B] Back,[B] 返回
 ui.tutorial.state.secondary.purchase,Current: Shop,当前状态：商店
 ui.tutorial.panel.secondary.purchase.line1,[LMB] Click an item to inspect it,[鼠标左键] 点击物品查看
 ui.tutorial.panel.secondary.purchase.line2,Confirm to buy the selected item,确认后购买所选物品
@@ -792,6 +794,28 @@ ui.status_hint.weapon_damage_down,Weapon Damage Down,武器伤害降低
 ui.hud.reloading_now,Reloading,正在换弹中
 ui.battle_victory.title,VICTORY,战斗胜利
 ui.battle_victory.subtitle,BATTLE COMPLETE,战斗完成
+ui.battle_victory.quick.title,CLEAR,突破
+ui.battle_victory.quick.subtitle,SELECT AN UPGRADE,选择强化
+ui.reward.quick.title,Choose Upgrade,选择强化
+ui.reward.quick.subtitle,Click to inspect · Hold 1–3 to claim,点击查看详情 · 长按 1–3 领取
+ui.reward.quick.holding,Holding {progress}%,长按中 {progress}%
+ui.chapter.complete,CHAPTER COMPLETE,章节完成
+ui.chapter.next,Next: {chapter},下一章：{chapter}
+ui.chapter.pursuit.title,Pursuit and Movement,追击与走位
+ui.chapter.pursuit.subtitle,"Learn the chase, break the charge",理解追击，破解冲锋
+ui.chapter.control.title,Area Control,区域控制
+ui.chapter.control.subtitle,Read hazards and break formations,识别危险，瓦解阵型
+ui.chapter.coordination.title,Ranged Coordination,远程协同
+ui.chapter.coordination.subtitle,Prioritize threats and dismantle support,判断威胁，击破支援
+ui.chapter.finale.title,Final Protocol,最终协议
+ui.chapter.finale.subtitle,Validate the completed build,验证成型构筑
+ui.run_complete.banner.title,FINAL PROTOCOL COMPLETE,最终协议完成
+ui.run_complete.banner.subtitle,BUILD VALIDATED,构筑验证完成
+ui.run_complete.title,MISSION COMPLETE,任务完成
+ui.run_complete.subtitle,FINAL RUN SUMMARY,最终行动总结
+ui.run_complete.endless,CONTINUE INTO OVERLOAD,进入超载模式
+battle_contract.finale.name,Final Protocol,最终协议
+battle_contract.finale.description,Survive three escalating formations and eliminate the final elite.,突破三阶段递进阵型并消灭最终精英。
 ui.weapon.name_with_branches,{weapon} · {branches},{weapon} · {branches}
 ui.reward.category.new_weapon,New Weapon,新武器
 ui.reward.summary.weapon_upgrade,Upgrade equipped weapon level.,提升已装备武器的等级。

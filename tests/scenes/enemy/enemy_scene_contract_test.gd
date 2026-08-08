@@ -22,6 +22,24 @@ const ENEMY_SCENES: PackedStringArray = [
 	"res://Npc/enemy/scenes/enemy_wheel_cart.tscn",
 ]
 
+const EXPECTED_DAMAGE_BY_SCENE := {
+	"res://Npc/enemy/scenes/base_enemy.tscn": 0,
+	"res://Npc/enemy/scenes/enemy_bomber.tscn": 2,
+	"res://Npc/enemy/scenes/enemy_interceptor.tscn": 3,
+	"res://Npc/enemy/scenes/enemy_mine_crawler.tscn": 1,
+	"res://Npc/enemy/scenes/enemy_mirror_caster.tscn": 1,
+	"res://Npc/enemy/scenes/enemy_mirror_clone.tscn": 1,
+	"res://Npc/enemy/scenes/enemy_mortar_turret.tscn": 2,
+	"res://Npc/enemy/scenes/enemy_orbit_support.tscn": 1,
+	"res://Npc/enemy/scenes/enemy_repair_unit.tscn": 0,
+	"res://Npc/enemy/scenes/enemy_rolling_ball.tscn": 1,
+	"res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn": 2,
+	"res://Npc/enemy/scenes/enemy_shield_core.tscn": 0,
+	"res://Npc/enemy/scenes/enemy_spike_turret.tscn": 2,
+	"res://Npc/enemy/scenes/enemy_tar_mine_crawler.tscn": 1,
+	"res://Npc/enemy/scenes/enemy_wheel_cart.tscn": 2,
+}
+
 var _failed := false
 
 
@@ -56,6 +74,11 @@ func _validate_enemy_scene(scene_path: String) -> void:
 		return
 	add_child(enemy)
 	await get_tree().process_frame
+	if EXPECTED_DAMAGE_BY_SCENE.has(scene_path):
+		_expect(
+			enemy.damage == int(EXPECTED_DAMAGE_BY_SCENE[scene_path]),
+			"%s damage must match the half-rounded-up balance value" % scene_path
+		)
 
 	var body := enemy.get_node_or_null("Body") as Sprite2D
 	var ground_shadow := enemy.get_node_or_null("GroundShadow") as Node2D
