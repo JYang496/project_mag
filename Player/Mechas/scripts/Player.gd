@@ -2149,6 +2149,13 @@ func consume_all_global_weapon_energy() -> float:
 	return _global_weapon_energy_pool.consume_all()
 
 
+func consume_global_weapon_energy(amount: float) -> float:
+	_ensure_global_weapon_energy_pool()
+	if _global_weapon_energy_pool == null:
+		return 0.0
+	return _global_weapon_energy_pool.consume(amount)
+
+
 func clear_global_weapon_energy() -> void:
 	_ensure_global_weapon_energy_pool()
 	if _global_weapon_energy_pool != null:

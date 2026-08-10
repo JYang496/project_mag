@@ -18,8 +18,8 @@ var stop_time : float = 0.5
 var is_return : bool = false
 var is_stopped : bool = false
 
-var linear_module : LinearMovement
-var saved_direction : Vector2
+var saved_displacement := Vector2.ZERO
+var return_speed := 0.0
 
 
 func projectile_effect_ready() -> void:
@@ -27,29 +27,44 @@ func projectile_effect_ready() -> void:
 	stop_timer.start()	
 
 func _physics_process(delta: float) -> void:
-	if is_return:
-		linear_module.direction = projectile.global_position.direction_to(PlayerData.player.global_position)
-		linear_module.set_base_displacement()
+	if not is_return or projectile == null or not is_instance_valid(projectile):
+		return
+	var player := PlayerData.player as Node2D
+	if player == null or not is_instance_valid(player):
+		return
+	var return_direction := projectile.global_position.direction_to(player.global_position)
+	projectile.base_displacement = return_direction * return_speed
 
 func _on_return_timer_timeout() -> void:
+	if projectile == null or not is_instance_valid(projectile):
+		return
 	is_return = true
 	create_return_hitbox()
 
 func create_return_hitbox() -> void:
+	if projectile == null or not is_instance_valid(projectile):
+		return
+	if projectile.projectile_sprite == null or projectile.projectile_sprite.texture == null:
+		return
 	var shape = RectangleShape2D.new()
 	shape.size = projectile.projectile_sprite.texture.get_size()
 	return_shape.shape = shape
 
 func _on_stop_timer_timeout() -> void:
+	if not _capture_and_stop_projectile():
+		return
 	is_stopped = true
-	for module in projectile.effect_list:
-		if module is LinearMovement:
-			linear_module = module
-	saved_direction = linear_module.direction
-	linear_module.direction = Vector2.ZERO
-	linear_module.set_base_displacement()
 	return_timer.wait_time = maxf(return_time, MIN_TIMER_DURATION_SEC)
 	return_timer.start()
+
+
+func _capture_and_stop_projectile() -> bool:
+	if projectile == null or not is_instance_valid(projectile):
+		return false
+	saved_displacement = projectile.base_displacement
+	return_speed = saved_displacement.length()
+	projectile.base_displacement = Vector2.ZERO
+	return true
 
 
 func _on_return_hitbox_body_entered(body: Node2D) -> void:

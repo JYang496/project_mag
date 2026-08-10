@@ -168,6 +168,20 @@ func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> vo
 	_apply_pierce_mark(target)
 	branch_runtime.notify_branch_target_hit(target)
 
+func on_projectile_hit_damage_dealt(
+	projectile: Node,
+	target: Node,
+	_hit_damage_type: StringName,
+	final_damage: int
+) -> void:
+	if projectile == null or not is_instance_valid(projectile):
+		return
+	if not bool(projectile.get_meta(ENERGY_RELEASE_ATTACK_META, false)):
+		return
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior.has_method("apply_arc_discharge_chain"):
+			behavior.call("apply_arc_discharge_chain", target, projectile, final_damage)
+
 func _apply_pierce_mark(target: Node) -> void:
 	if _pierce_mark_window_remaining_sec <= 0.0:
 		return

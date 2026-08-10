@@ -218,11 +218,11 @@
 <main>
   <header>
     <h1>MagArena 当前武器技能检查表</h1>
-    <p class="subtitle">汇总当前 15 件武器的基础技能与 28 个进化分支，按实际运行逻辑说明触发、效果、恢复和代价。</p>
+    <p class="subtitle">汇总当前 15 件武器的基础技能与 30 个进化分支，按实际运行逻辑说明触发、效果、恢复和代价。</p>
     <div class="meta">
       <span><strong>项目：</strong>MagArena</span>
-      <span><strong>整理日期：</strong>2026-07-30</span>
-      <span><strong>内容规模：</strong>15 个基础技能 / 28 个分支 / 18 个被动定义</span>
+      <span><strong>整理日期：</strong>2026-08-09</span>
+      <span><strong>内容规模：</strong>15 个基础技能 / 30 个分支 / 18 个被动定义</span>
       <span><strong>依据：</strong><code>data/weapons</code>、<code>data/weapon_passives</code>、<code>data/weapon_branches</code> 与实际运行脚本</span>
     </div>
   </header>
@@ -276,7 +276,7 @@
           <tr id="blaster">
             <td class="weapon">蓄能爆破枪</td>
             <td class="skill">光束共振</td>
-            <td><span class="tag trigger">满全局能量时开火</span>每次有效伤害为角色共享能量池增加 3 点；能量达到 100 后，下一次开火消耗全部能量，使该次攻击伤害提高 125%（即 2.25 倍）。一次光束命中多个目标时，每个有效伤害事件都会供能。</td>
+            <td><span class="tag trigger">满全局能量时开火</span>每次有效伤害为角色共享能量池增加 3 点；满能量光束锁定首个目标，初始额外伤害为 55%，重复命中同一目标逐步提升，最高达到额外 125%（2.25 倍）。</td>
             <td><span class="tag recover">伤害供能</span>释放后归零；继续造成有效伤害重新积累，不依赖换弹。</td>
           </tr>
           <tr id="dash-blade">
@@ -300,8 +300,8 @@
           <tr id="laser">
             <td class="weapon">激光</td>
             <td class="skill">聚焦通道</td>
-            <td><span class="tag trigger">满全局能量时开火</span>每次有效伤害增加 6 点共享能量；达到 100 后，下一次开火消耗全部能量，使该次攻击伤害提高 75%（即 1.75 倍）。持续光束的整次攻击共用开火瞬间的释放状态。</td>
-            <td><span class="tag recover">伤害供能</span>释放后归零，继续造成有效伤害重新积累。</td>
+            <td><span class="tag trigger">满全局能量时开火</span>每次有效伤害增加 6 点共享能量；满能量开火进入 2.5 秒聚焦通道，能量逐步下降，期间光束宽度 ×1.35、伤害 ×1.30。</td>
+            <td><span class="tag recover">伤害供能</span>聚焦结束后归零；继续造成有效伤害重新积累。</td>
           </tr>
           <tr id="machine-gun">
             <td class="weapon">机枪</td>
@@ -324,7 +324,7 @@
           <tr id="plasma-lance">
             <td class="weapon">等离子长枪</td>
             <td class="skill">高热增幅 / 等离子放电</td>
-            <td><span class="tag trigger">当前 Heat + 满全局能量开火</span>正 Heat 使基础射击伤害线性提高，满热额外 +75%；每次有效伤害增加 10 点共享能量，满 100 时下一次开火消耗全部能量并使该次攻击伤害提高 125%（2.25 倍）。</td>
+            <td><span class="tag trigger">当前 Heat + 满全局能量开火</span>正 Heat 使基础射击伤害线性提高，满热额外 +75%；每次有效伤害增加 10 点共享能量。满能量放电快照当前 Heat，消耗最多 35 Heat，并使释放额外伤害从 55% 随 Heat 提升至 125%。</td>
             <td><span class="tag recover">维持 / 伤害供能</span>高热增幅随 Heat 连续变化；能量释放后通过后续有效伤害重新积累。</td>
           </tr>
           <tr id="rocket">
@@ -357,7 +357,7 @@
   </section>
 
   <section>
-    <h2>武器进化分支（28）</h2>
+    <h2>武器进化分支（30）</h2>
     <p class="note">分支在二次融合后进入武器运行链。下表列出当前资源清单中全部分支；数值为脚本默认值，后续等级、模块和全局状态仍会继续参与结算。</p>
     <div class="table-wrap">
       <table>
@@ -371,7 +371,7 @@
         </thead>
         <tbody>
           <tr><td class="weapon">重炮</td><td class="skill">热能重炮</td><td>转为 Heat/火焰武器；每发产生 22 Heat，满热时投射物伤害额外 +25%。共享 Heat ≥50% 时，射击可消耗 40 Heat，再获得最高 +35% 伤害。</td><td>Heat 构筑与爆发耗热；失去纯物理定位。</td></tr>
-          <tr><td class="weapon">重炮</td><td class="skill">零式重炮</td><td>转为能量伤害；每次有效伤害获得 10 共享能量。满 100 能量开火时全部消耗，该次攻击伤害 +150%（2.5 倍）。</td><td>能量释放；失去物理标签。</td></tr>
+          <tr><td class="weapon">重炮</td><td class="skill">零式重炮</td><td>转为能量伤害；每次有效伤害获得 10 共享能量。满能量开火时直接伤害 ×2，并在命中点释放 90 半径、基础为直接伤害 50% 的二段脉冲；低生命目标会强化脉冲。</td><td>储能处决与范围二段冲击；失去物理标签。</td></tr>
 
           <tr><td class="weapon">链锯发射器</td><td class="skill">弹射链锯</td><td>链锯第一次命中敌人时复制一枚链锯，自动追向附近目标；每枚链锯只分裂一次，分裂弹保留完整基础倍率。</td><td>多目标与 On Hit 扩散。</td></tr>
           <tr><td class="weapon">链锯发射器</td><td class="skill">爆炸链锯</td><td>首次命中后移动速度降至 15%；每次命中体积增加 5%，成长至 2 倍时爆炸，对 56 半径造成相当于投射物伤害 100% 的物理范围伤害。</td><td>群体清场；需要约 20 次成长命中才能自然引爆。</td></tr>
@@ -380,6 +380,7 @@
           <tr><td class="weapon">蓄能爆破枪</td><td class="skill">棱镜扇面</td><td>主光束伤害 ×0.8，并在 ±30° 各生成一束 0.45 倍伤害的侧光束。</td><td>覆盖三条射线；牺牲主目标伤害。</td></tr>
 
           <tr><td class="weapon">冲刺刃</td><td class="skill">霜冻冲刺刃</td><td>获得 Freeze：伤害 ×1.22、距离 ×2.1、冲刺速度 ×1.38、返回速度 ×1.28、冷却 ×0.86。命中添加 35% 冻结完成度，并留下 1.2 秒、90 半径、每 0.4 秒造成 20% 伤害的霜场。</td><td>长距离控制与冻结收尾。</td></tr>
+          <tr><td class="weapon">冲刺刃</td><td class="skill">回刃处决</td><td>基础伤害 ×0.9；向外命中记录目标，返程再次命中同一目标时追加基础 70% 的物理伤害，并按目标已损生命最高进一步放大 80%。</td><td>精确往返路线与单体处决；不提供范围和冻结容错。</td></tr>
 
           <tr><td class="weapon">喷火器</td><td class="skill">长锥火焰</td><td>射程 ×1.45、半角 ×0.5、伤害 ×1.28、冷却 ×0.82。</td><td>更长、更窄、更高输出的中距离火焰束。</td></tr>
           <tr><td class="weapon">喷火器</td><td class="skill">火焰脉冲光环</td><td>战斗阶段每 0.8 秒以机甲为中心释放一次 140 半径火焰脉冲，伤害为当前单次武器伤害的 45%。</td><td>近身范围压制；无需保持喷火。</td></tr>
@@ -393,10 +394,10 @@
           <tr><td class="weapon">机枪</td><td class="skill">加特林热能</td><td>每次发射 2 枚、夹角 7° 的弹体，每枚伤害 ×0.8，并额外产生基础单发 25% 的 Heat；Heat 比例达到 50% 后转为火焰伤害。</td><td>分路与 Heat 转化；单弹伤害降低。</td></tr>
           <tr><td class="weapon">机枪</td><td class="skill">护盾机枪</td><td>增加前方 120° 护盾，可拦截敌方攻击，并击退 140、眩晕接触敌人 0.5 秒。融合 2：2 层、每 10 秒恢复；融合 3+：4 层、每 8 秒恢复。</td><td>持续射击防御；护盾有独立充能。</td></tr>
 
-          <tr><td class="weapon">轨道卫星</td><td class="skill">能量轨道</td><td>卫星伤害转为能量/范围伤害；每次有效伤害获得 8 共享能量。满能量部署时消耗全部能量，部署攻击伤害 +35%。</td><td>能量积累与释放。</td></tr>
+          <tr><td class="weapon">轨道卫星</td><td class="skill">能量轨道</td><td>卫星伤害转为能量/范围伤害；每次有效伤害获得 8 共享能量。满能量部署额外生成 2 枚卫星，并使本次卫星持续时间 ×1.5，不再提供直接伤害倍率。</td><td>能量积累与强化部署。</td></tr>
           <tr><td class="weapon">轨道卫星</td><td class="skill">霜冻轨道</td><td>卫星伤害转为冻结伤害，并在每次命中附加 24 击退。</td><td>贴身控制；替代物理伤害身份。</td></tr>
 
-          <tr><td class="weapon">自动手枪</td><td class="skill">电弧线圈</td><td>射击转为能量伤害；每次有效伤害获得 12 共享能量。满能量开火时消耗全部能量，该次攻击伤害 +35%。</td><td>快速供能与能量释放。</td></tr>
+          <tr><td class="weapon">自动手枪</td><td class="skill">电弧线圈</td><td>射击转为能量伤害；每次有效伤害获得 12 共享能量。满能量开火时直接伤害 +15%，并向 180 范围内最多 3 个其他敌人连锁相当于直接伤害 45% 的能量伤害。</td><td>快速供能与多目标传播。</td></tr>
           <tr><td class="weapon">自动手枪</td><td class="skill">冷冻卡宾枪</td><td>获得 Freeze；每个目标累计第 3 次命中时释放一枚冰片，搜索 120 半径内 1 个目标，造成该发伤害 40% 的追加伤害。</td><td>控制与小范围跳弹。</td></tr>
 
           <tr><td class="weapon">等离子长枪</td><td class="skill">穿透长枪</td><td>投射物命中次数按武器等级设为 5/6/7/8/10/11/12；每次穿透后，后续伤害增加 4 点。</td><td>长队列多目标；偏固定值成长。</td></tr>
@@ -406,6 +407,7 @@
           <tr><td class="weapon">火箭发射器</td><td class="skill">凝固汽油火箭</td><td>直接投射物伤害 ×0.8、爆炸尺寸 ×1.1；爆区持续 2.2 秒，每 0.35 秒造成基础武器伤害 20% 的火焰伤害。</td><td>区域封锁；牺牲即时伤害。</td></tr>
 
           <tr><td class="weapon">霰弹枪</td><td class="skill">碎冰弹</td><td>伤害转为冻结；同一目标在 0.12 秒内受到 3 次命中时触发碎裂，追加相当于当前单次伤害 25% 的冻结伤害。</td><td>奖励近距弹丸重叠；失去物理身份。</td></tr>
+          <tr><td class="weapon">霰弹枪</td><td class="skill">双管破门</td><td>每次攻击消耗 2 发弹药，间隔 0.12 秒发射两轮单弹伤害 ×0.65 的霰弹；第二轮散布更紧，重复命中目标后施加 1.15 倍承伤、持续 2.5 秒。</td><td>贴脸物理爆发与易伤；冷却 ×1.25、弹药压力更高。</td></tr>
 
           <tr><td class="weapon">狙击枪</td><td class="skill">深度穿透</td><td>每次穿透后，后续伤害增加 14 点，最多累计 10 层；冷却 ×1.05。</td><td>敌群排线增伤；轻微降低射速。</td></tr>
           <tr><td class="weapon">狙击枪</td><td class="skill">冲击爆破</td><td>每次命中在目标处产生 58 半径物理爆破，伤害为该发投射物伤害的 55%；冷却 ×1.12。</td><td>群体清场；轻微降低射速。</td></tr>
@@ -422,7 +424,7 @@
     <div class="cards">
       <article class="card">
         <h3>通用充能规则</h3>
-        <p>传统触发技能通常使用充能并由换弹恢复；能量武器共享角色的 0～100 能量池，各武器按有效伤害事件提供不同能量，只有在满能量时开始一次新攻击才会消费并强化整次攻击。</p>
+        <p>传统触发技能通常使用充能并由换弹恢复；能量武器共享角色的 0～100 能量池，但消费结果已差异化为锁定递增、持续聚焦、Heat 交换、二段脉冲、强化部署和连锁传播。</p>
       </article>
       <article class="card">
         <h3>Heat 与攻击快照</h3>
@@ -432,6 +434,10 @@
         <h3>武器主动接口</h3>
         <p>当前 15 件武器都没有实现玩家手动触发的武器主动技；这里列出的内容均为基础被动、自动循环、换弹结算或融合分支。</p>
         <p><code>R</code> 统一用于换弹；换弹引发的技能结算属于事件型效果。</p>
+      </article>
+      <article class="card">
+        <h3>有限转向与攻击快照</h3>
+        <p>武器以各自角速度转向，攻击方向取生成瞬间的实际枪口方向。慢转向、高承诺武器需要提前预瞄；持续光束、Heat 和能量释放均沿用攻击生成时的状态快照。</p>
       </article>
       <article class="card">
         <h3>维护建议</h3>

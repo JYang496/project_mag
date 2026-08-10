@@ -11,7 +11,13 @@ func get_energy_gain_per_damage_event() -> float:
 	return 8.0
 
 func get_energy_release_bonus_at_full() -> float:
-	return 0.35
+	return 0.0
+
+func get_energy_deployment_config() -> Dictionary:
+	return {
+		"extra_satellites": 2,
+		"lifetime_multiplier": 1.5,
+	}
 
 func get_added_delivery_types() -> Array[StringName]:
 	return [DamageDeliveryType.AREA]

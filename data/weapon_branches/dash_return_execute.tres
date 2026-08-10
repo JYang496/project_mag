@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://asset/images/weapons/dash_blade.png" id="1_icon"]
+[ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="2_script"]
+
+[resource]
+script = ExtResource("2_script")
+produces_tags = Array[StringName]([&"physical", &"melee", &"on_move", &"execute"])
+requires_any_tags = Array[StringName]([&"melee", &"close_range"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"execute", &"on_move"])
+conflicts_with_tags = Array[StringName]([&"area"])
+branch_id = "dash_return_execute"
+display_name = "Returning Execution"
+description = "Physical execute branch. Outbound hits open a wound; hitting the same target again on the return path deals bonus damage that scales with missing health."
+icon = ExtResource("1_icon")
+unlock_fuse = 2
+sort_order = 20
+weapon_scene_path = "res://Player/Weapons/Instances/dash_blade.tscn"
+behavior_scene_path = "res://Player/Weapons/Branches/dash_return_execute_branch.tscn"

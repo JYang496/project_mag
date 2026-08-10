@@ -9,5 +9,5 @@ weapon_id = "9"
 display_name = "Laser"
 icon = ExtResource("1_awlad")
 price = 45
-description = "Balanced mid-range Energy beam. Each damage event grants 6 global energy; firing at full energy consumes the pool for +75% damage."
+description = "Mid-range Energy focus beam. Each damage event grants 6 global energy; firing at full energy begins a 2.5-second channel that drains the pool for wider, +30% damage beams."
 scene_path = "res://Player/Weapons/Instances/laser.tscn"

@@ -29,7 +29,14 @@ func request_primary_fire() -> bool:
 	if weapon.has_method("can_fire_with_ammo") and not bool(weapon.call("can_fire_with_ammo")):
 		_request_reload_when_empty()
 		return false
-	if weapon.has_method("consume_ammo") and not bool(weapon.call("consume_ammo", 1)):
+	var ammo_cost := 1
+	if weapon.has_method("get_primary_fire_ammo_cost"):
+		ammo_cost = maxi(int(weapon.call("get_primary_fire_ammo_cost")), 1)
+	if int(weapon.get("current_ammo")) < ammo_cost:
+		if weapon.has_method("request_reload"):
+			weapon.call("request_reload")
+		return false
+	if weapon.has_method("consume_ammo") and not bool(weapon.call("consume_ammo", ammo_cost)):
 		_request_reload_when_empty()
 		return false
 	var cooldown_timer := get_cooldown_timer()

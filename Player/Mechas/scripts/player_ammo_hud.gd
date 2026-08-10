@@ -1,8 +1,11 @@
 extends Control
 class_name PlayerAmmoHud
 
-const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
-const AMMO_CONTAINER_TEXTURE: Texture2D = preload("res://UI/themes/player_ammo_hud/generated/ammo_container.png")
+const EMPTY_SLOT_COLOR := Color(0.05, 0.08, 0.09, 0.88)
+const AMMO_FILL_COLOR := Color(0.36, 0.76, 1.0, 0.96)
+const FRAME_COLOR := Color(0.62, 0.90, 1.0, 1.0)
+const CONTAINER_SCREEN_OFFSET := Vector2(72.0, -34.0)
+const VERTICAL_SLOT_SIZE := Vector2(10.0, 9.0)
 
 @export var hud_size := Vector2(128.0, 64.0)
 @export_range(1.0, 1.5, 0.01) var ring_radius_scale := 1.30
@@ -39,10 +42,6 @@ func set_ammo_status(current_ammo: int, capacity: int, enabled: bool) -> void:
 
 func get_ammo_ratio() -> float:
 	return _ammo_ratio
-
-
-func has_container_texture() -> bool:
-	return AMMO_CONTAINER_TEXTURE != null
 
 
 func _sync_ammo_status() -> void:
@@ -105,19 +104,69 @@ func _draw() -> void:
 	var track := _arc_points
 	if track.size() < 2:
 		return
-	draw_texture_rect(AMMO_CONTAINER_TEXTURE, _get_container_rect(track), false)
+	var geometry := _get_vertical_geometry(track)
+	var slot_polygons := _get_vertical_slot_polygons(geometry)
+	for polygon in slot_polygons:
+		draw_colored_polygon(polygon, EMPTY_SLOT_COLOR)
 	if _ammo_ratio > 0.001:
-		var fill := _build_fill_points(track, _ammo_ratio)
-		_draw_square_path(fill, PALETTE.PLAYER_PRIMARY, 2.6)
+		var fill_levels := _get_slot_fill_levels(_ammo_ratio, slot_polygons.size())
+		for index in range(slot_polygons.size()):
+			var level := fill_levels[index]
+			if level <= 0.001:
+				continue
+			var fill_color := AMMO_FILL_COLOR
+			fill_color.a = lerpf(0.48, AMMO_FILL_COLOR.a, level)
+			draw_colored_polygon(slot_polygons[index], fill_color)
+	_draw_vertical_frame(geometry)
 
 
-func _get_container_rect(track: PackedVector2Array) -> Rect2:
-	if track.is_empty():
-		return Rect2()
-	var bounds := Rect2(track[0], Vector2.ZERO)
-	for point in track:
-		bounds = bounds.expand(point)
-	return bounds.grow(6.0)
+func _get_vertical_geometry(track: PackedVector2Array) -> Dictionary:
+	if track.size() < 2:
+		return {}
+	var anchor := Vector2(track[-1].x, track[0].y) + CONTAINER_SCREEN_OFFSET
+	var frame_size := Vector2(VERTICAL_SLOT_SIZE.x, VERTICAL_SLOT_SIZE.y * float(segment_count))
+	return {
+		"rect": Rect2(anchor - frame_size * 0.5, frame_size),
+		"slot_size": VERTICAL_SLOT_SIZE,
+	}
+
+
+func _get_vertical_slot_polygons(geometry: Dictionary) -> Array[PackedVector2Array]:
+	var slots: Array[PackedVector2Array] = []
+	if geometry.is_empty():
+		return slots
+	var frame_rect := geometry.get("rect", Rect2()) as Rect2
+	var slot_height := frame_rect.size.y / float(maxi(segment_count, 1))
+	for slot_index in range(segment_count):
+		var top_left := frame_rect.position + Vector2(0.0, slot_height * float(slot_index))
+		var bottom_right := top_left + Vector2(frame_rect.size.x, slot_height)
+		slots.append(PackedVector2Array([
+			top_left,
+			Vector2(bottom_right.x, top_left.y),
+			bottom_right,
+			Vector2(top_left.x, bottom_right.y),
+		]))
+	return slots
+
+
+func _draw_vertical_frame(geometry: Dictionary) -> void:
+	if geometry.is_empty():
+		return
+	var frame_rect := geometry.get("rect", Rect2()) as Rect2
+	draw_rect(frame_rect, FRAME_COLOR, false, 1.5, false)
+	var slot_height := frame_rect.size.y / float(maxi(segment_count, 1))
+	for divider_index in range(1, segment_count):
+		var y := frame_rect.position.y + slot_height * float(divider_index)
+		draw_line(Vector2(frame_rect.position.x, y), Vector2(frame_rect.end.x, y), FRAME_COLOR, 1.5, false)
+
+
+func _get_slot_fill_levels(ratio: float, slots: int) -> PackedFloat32Array:
+	var levels := PackedFloat32Array()
+	var remaining := clampf(ratio, 0.0, 1.0) * float(maxi(slots, 0))
+	for index in range(maxi(slots, 0)):
+		var distance_from_vertical_start := float(maxi(slots, 0) - 1 - index)
+		levels.append(clampf(remaining - distance_from_vertical_start, 0.0, 1.0))
+	return levels
 
 
 func _build_fill_points(track: PackedVector2Array, ratio: float) -> PackedVector2Array:

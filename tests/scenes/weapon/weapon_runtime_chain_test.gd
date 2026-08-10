@@ -3,6 +3,7 @@ extends Node
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 const GLOBAL_ENERGY_POOL_SCRIPT := preload("res://Player/Mechas/scripts/player_global_weapon_energy_pool.gd")
 const HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hud_presenter.gd")
+const RETURN_ON_TIMEOUT_SCRIPT := preload("res://Player/Weapons/Effects/return_on_timeout.gd")
 var _failed := false
 
 class DummyControlTarget:
@@ -58,6 +59,24 @@ class DummyAuthoritativeDamageTarget:
 		profile.set_is_dead = Callable(self, "write_dead")
 		return DamagePipeline.new().apply_incoming_damage(self, attack, profile)
 
+	func get_health_ratio() -> float:
+		return float(hp) / float(maxi(max_hp, 1))
+
+class DummyBeam:
+	extends Node
+	var damage: int = 155
+
+class DummyVulnerabilityTarget:
+	extends Node
+	var applications: int = 0
+	var last_multiplier: float = 1.0
+	var last_duration: float = 0.0
+
+	func apply_damage_taken_multiplier_status(_id: StringName, multiplier: float, duration: float) -> void:
+		applications += 1
+		last_multiplier = multiplier
+		last_duration = duration
+
 class DummyHeatRatioPlayer:
 	extends Node
 	var heat_ratio: float = 0.0
@@ -72,6 +91,7 @@ class DummyGlobalEnergyPlayer:
 	extends Node
 	var energy: float = 0.0
 	var maximum: float = 100.0
+	var heat_value: float = 0.0
 
 	func add_global_weapon_energy(raw_gain: float, _source_attack: Node = null) -> float:
 		var accepted := minf(maxf(raw_gain, 0.0), maximum - energy)
@@ -81,6 +101,19 @@ class DummyGlobalEnergyPlayer:
 	func consume_all_global_weapon_energy() -> float:
 		var consumed := energy
 		energy = 0.0
+		return consumed
+
+	func consume_global_weapon_energy(amount: float) -> float:
+		var consumed := minf(maxf(amount, 0.0), energy)
+		energy -= consumed
+		return consumed
+
+	func get_total_heat_ratio() -> float:
+		return clampf(heat_value / 100.0, 0.0, 1.0)
+
+	func consume_shared_heat(amount: float) -> float:
+		var consumed := minf(maxf(amount, 0.0), heat_value)
+		heat_value -= consumed
 		return consumed
 
 	func get_global_weapon_energy_max() -> float:
@@ -104,12 +137,29 @@ func _ready() -> void:
 	_validate_global_energy_pool()
 	_validate_global_energy_hud()
 	_validate_full_energy_fire_cycle()
+	_validate_secondary_weapon_branches()
 	_validate_machine_gun_fuse_branch_visual()
 	_validate_zero_cannon_fuse_branch_visual()
 	_validate_overkill_modules()
+	_validate_return_on_timeout_without_linear_module()
 
 	print("FAIL weapon runtime chain" if _failed else "PASS weapon runtime chain")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0)
+
+
+func _validate_return_on_timeout_without_linear_module() -> void:
+	var projectile := Projectile.new()
+	projectile.base_displacement = Vector2(240.0, -180.0)
+	var effect := RETURN_ON_TIMEOUT_SCRIPT.new()
+	effect.projectile = projectile
+	_expect(bool(effect.call("_capture_and_stop_projectile")), "return timeout must stop authoritative projectile motion without a LinearMovement node")
+	_expect(projectile.base_displacement == Vector2.ZERO, "return timeout must stop the outbound projectile at its timeout")
+	_expect(effect.get("saved_displacement") == Vector2(240.0, -180.0), "return timeout must preserve the outbound displacement")
+	_expect(is_equal_approx(float(effect.get("return_speed")), 300.0), "return timeout must preserve outbound speed for the return leg")
+	effect.projectile = null
+	_expect(not bool(effect.call("_capture_and_stop_projectile")), "return timeout must safely ignore an unavailable projectile")
+	effect.free()
+	projectile.free()
 
 
 func _validate_machine_gun_fuse_branch_visual() -> void:
@@ -279,9 +329,9 @@ func _validate_full_energy_fire_cycle() -> void:
 	_expect(is_equal_approx(laser.get_energy_gain_per_damage_event(), 6.0), "balanced Laser must gain 6 global energy per damage event")
 	_expect(is_equal_approx(charged.get_energy_gain_per_damage_event(), 3.0), "release-focused Charged Blaster must gain 3 global energy per damage event")
 	_expect(is_equal_approx(plasma.get_energy_gain_per_damage_event(), 10.0), "slow release-focused Plasma Lance must gain 10 global energy per damage event")
-	_expect(is_equal_approx(laser.get_energy_release_bonus_at_full(), 0.75), "balanced Laser must gain +75% damage at full energy")
-	_expect(is_equal_approx(charged.get_energy_release_bonus_at_full(), 1.25), "release-focused Charged Blaster must gain +125% damage at full energy")
-	_expect(is_equal_approx(plasma.get_energy_release_bonus_at_full(), 1.25), "release-focused Plasma Lance must gain +125% damage at full energy")
+	_expect(is_equal_approx(laser.get_energy_release_bonus_at_full(), 0.30), "Laser focus channel must use a +30% sustained multiplier")
+	_expect(is_equal_approx(charged.get_energy_release_bonus_at_full(), 0.55), "Charged Blaster resonance must start at +55% before same-target ramp")
+	_expect(is_equal_approx(plasma.get_energy_release_bonus_at_full(), 0.55), "Plasma discharge must start at +55% before Heat scaling")
 
 	var lethal_target := DummyAuthoritativeDamageTarget.new()
 	var lethal_data := _make_energy_hit_data(laser, energy_player, 100)
@@ -325,26 +375,41 @@ func _validate_full_energy_fire_cycle() -> void:
 	_expect(bool(laser.get_passive_status().get("ready", false)), "100 energy must advertise the next attack as ready")
 	var release_state := laser.prepare_energy_release_attack()
 	_expect(bool(release_state.get("triggered", false)), "firing with a full pool must trigger the energy skill without a hit counter")
-	_expect(is_equal_approx(float(release_state.get("spent", 0.0)), 100.0), "a full-energy attack must consume the complete pool before firing")
-	_expect(energy_player.energy == 0.0, "full-energy preparation must empty the shared pool")
-	_expect(is_equal_approx(float(release_state.get("multiplier", 1.0)), 1.75), "balanced Laser must gain +75% damage at full energy")
-	_expect(laser.get_runtime_damage_value(100.0) == 175, "the full-energy multiplier must affect the actual runtime attack damage")
+	_expect(is_equal_approx(float(release_state.get("spent", -1.0)), 0.0), "Laser focus must defer energy spending instead of emptying the pool at attack start")
+	_expect(energy_player.energy == 100.0, "Laser focus must begin with the full shared pool available for channel drain")
+	_expect(release_state.get("release_mode") == &"focus_channel", "Laser must identify its release as a focus channel")
+	_expect(is_equal_approx(float(release_state.get("multiplier", 1.0)), 1.30), "Laser focus must apply its sustained +30% multiplier")
+	_expect(laser.get_runtime_damage_value(100.0) == 130, "Laser focus multiplier must affect actual runtime attack damage")
+	laser.call("_update_focus_channel", 1.25)
+	_expect(is_equal_approx(energy_player.energy, 50.0), "half of the Laser focus duration must drain half of the shared pool")
 	var release_source := Node.new()
 	laser.add_child(release_source)
 	laser.apply_energy_release_marker(release_source)
 	var release_data := _make_energy_hit_data(laser, energy_player)
 	release_data.source_node = release_source
 	DamageManager.apply_to_target_result(target_a, release_data)
-	_expect(energy_player.energy == 0.0, "a release attack hit must not refill the global pool")
+	_expect(is_equal_approx(energy_player.energy, 50.0), "a focus-channel attack hit must not refill its draining global pool")
+	laser.call("_update_focus_channel", 1.25)
+	_expect(is_equal_approx(energy_player.energy, 0.0), "the completed Laser focus duration must drain the remaining pool")
 	laser.finish_energy_release_attack()
 	release_source.free()
 
 	energy_player.energy = 100.0
 	var cross_weapon_release := charged.prepare_energy_release_attack()
 	_expect(bool(cross_weapon_release.get("triggered", false)), "any energy weapon must be able to release a full pool accumulated by another weapon")
-	_expect(is_equal_approx(float(cross_weapon_release.get("multiplier", 1.0)), 2.25), "release-focused Charged Blaster must gain +125% damage at full energy")
+	_expect(is_equal_approx(float(cross_weapon_release.get("multiplier", 1.0)), 1.55), "Charged Blaster must begin resonance at +55% before repeated-hit ramp")
 	charged.finish_energy_release_attack()
 
+	energy_player.energy = 100.0
+	energy_player.heat_value = 80.0
+	var plasma_release := plasma.prepare_energy_release_attack()
+	_expect(plasma_release.get("release_mode") == &"heat_exchange", "Plasma Lance must identify its release as a Heat exchange")
+	_expect(is_equal_approx(float(plasma_release.get("multiplier", 0.0)), 2.11), "Plasma discharge must scale its energy multiplier from the pre-spend Heat snapshot")
+	_expect(is_equal_approx(float(plasma_release.get("heat_spent", 0.0)), 35.0), "Plasma discharge must spend 35 shared Heat")
+	_expect(is_equal_approx(energy_player.heat_value, 45.0), "Plasma Heat exchange must reduce the authoritative shared Heat pool")
+	plasma.finish_energy_release_attack()
+
+	energy_player.energy = 100.0
 	laser.prepare_energy_release_attack()
 	var grouped_source_a := Node.new()
 	var grouped_source_b := Node.new()
@@ -377,13 +442,15 @@ func _validate_full_energy_fire_cycle() -> void:
 			_expect(behavior.get_damage_type_override() == Attack.TYPE_ENERGY, "%s must convert its direct hits to energy damage" % scene_path)
 		if scene_path.ends_with("pistol_arc_branch.tscn"):
 			_expect(is_equal_approx(behavior.get_energy_gain_per_damage_event(), 12.0), "Arc Pistol must gain 12 energy per damage event")
-			_expect(is_equal_approx(behavior.get_energy_release_bonus_at_full(), 0.35), "Arc Pistol must use the accumulator +35% release bonus")
+			_expect(is_equal_approx(behavior.get_energy_release_bonus_at_full(), 0.15), "Arc Pistol must retain only a small direct bonus before chain discharge")
 		elif scene_path.ends_with("orbit_energy_branch.tscn"):
 			_expect(is_equal_approx(behavior.get_energy_gain_per_damage_event(), 8.0), "Energy Orbit must gain 8 energy per damage event")
-			_expect(is_equal_approx(behavior.get_energy_release_bonus_at_full(), 0.35), "Energy Orbit must use the accumulator +35% release bonus")
+			_expect(is_equal_approx(behavior.get_energy_release_bonus_at_full(), 0.0), "Energy Orbit must spend its release on deployment rather than direct damage")
+			var deployment: Dictionary = behavior.call("get_energy_deployment_config")
+			_expect(int(deployment.get("extra_satellites", 0)) == 2, "Energy Orbit release must deploy two extra satellites")
 		else:
 			_expect(is_equal_approx(behavior.get_energy_gain_per_damage_event(), 10.0), "Zero Cannon must gain 10 energy per damage event")
-			_expect(is_equal_approx(behavior.get_energy_release_bonus_at_full(), 1.50), "Zero Cannon must use the specialist +150% release bonus")
+			_expect(is_equal_approx(behavior.get_energy_release_bonus_at_full(), 1.0), "Zero Cannon must trade part of its old direct multiplier for a secondary impact")
 		behavior.free()
 	var branch_weapon_cases := [
 		{
@@ -423,8 +490,20 @@ func _validate_full_energy_fire_cycle() -> void:
 	var zero_behavior := (load("res://Player/Weapons/Branches/cannon_zero_branch.tscn") as PackedScene).instantiate() as WeaponBranchBehavior
 	zero_behavior.setup(laser)
 	_expect(is_equal_approx(zero_behavior.get_energy_gain_per_damage_event(), 10.0), "Zero Cannon must gain fixed energy per damage event")
-	_expect(is_equal_approx(zero_behavior.get_energy_release_bonus_at_full(), 1.5), "Zero Cannon must be a specialist release weapon")
+	_expect(is_equal_approx(zero_behavior.get_energy_release_bonus_at_full(), 1.0), "Zero Cannon must use a 2x direct release before its secondary impact")
 	zero_behavior.free()
+
+	var resonance_target := Node.new()
+	var resonance_beam := DummyBeam.new()
+	resonance_beam.set_meta(&"_energy_resonance_base_damage", 155)
+	resonance_beam.set_meta(&"_energy_resonance_step_damage", 14.0)
+	resonance_beam.set_meta(&"_energy_resonance_hit_count", 0)
+	resonance_beam.set_meta(&"_energy_resonance_target_id", 0)
+	for _hit in range(5):
+		charged.call("_update_energy_resonance_ramp", resonance_target, {"energy_resonance": true}, resonance_beam)
+	_expect(resonance_beam.damage == 225, "Charged Blaster repeated-hit resonance must ramp from 1.55x to 2.25x")
+	resonance_target.free()
+	resonance_beam.free()
 
 	target_a.free()
 	energy_player.free()
@@ -432,6 +511,51 @@ func _validate_full_energy_fire_cycle() -> void:
 	laser.free()
 	charged.free()
 	plasma.free()
+
+
+func _validate_secondary_weapon_branches() -> void:
+	DataHandler.load_weapon_branch_data()
+	var dash_options := DataHandler.read_weapon_branch_options("res://Player/Weapons/Instances/dash_blade.tscn", 2)
+	var shotgun_options := DataHandler.read_weapon_branch_options("res://Player/Weapons/Instances/shotgun.tscn", 2)
+	_expect(dash_options.size() == 2, "Dash Blade must expose Frost and Returning Execution branches")
+	_expect(shotgun_options.size() == 2, "Shotgun must expose Shatter and Double Breach branches")
+
+	var dash := (load("res://Player/Weapons/Instances/dash_blade.tscn") as PackedScene).instantiate() as Weapon
+	add_child(dash)
+	dash.fuse = 2
+	_expect(dash.branch_runtime.add_branch("dash_return_execute"), "Dash Blade must attach Returning Execution")
+	_expect(is_equal_approx(dash.branch_runtime.get_branch_damage_multiplier(), 0.90), "Returning Execution must pay its 10% outbound damage cost")
+	var dash_behavior := dash.branch_runtime.get_branch_behaviors()[0]
+	_expect(bool(dash_behavior.call("wants_dash_return_hitbox")), "Returning Execution must enable the return hitbox")
+	var execute_target := DummyAuthoritativeDamageTarget.new()
+	execute_target.hp = 100
+	execute_target.max_hp = 100
+	add_child(execute_target)
+	dash_behavior.call("on_dash_cycle_started")
+	dash_behavior.call("on_dash_target_hit", execute_target, false)
+	dash_behavior.call("on_dash_return_started")
+	dash_behavior.call("on_dash_target_hit", execute_target, true)
+	_expect(execute_target.hp < 100, "Returning Execution must apply bonus damage when the return hits the outbound target")
+	execute_target.free()
+	dash.free()
+
+	var shotgun := (load("res://Player/Weapons/Instances/shotgun.tscn") as PackedScene).instantiate() as Weapon
+	add_child(shotgun)
+	shotgun.fuse = 2
+	_expect(shotgun.branch_runtime.add_branch("shotgun_double_breach"), "Shotgun must attach Double Breach")
+	_expect(shotgun.get_primary_fire_ammo_cost() == 2, "Double Breach must declare a two-ammo attack cost")
+	_expect(is_equal_approx(shotgun.branch_runtime.get_branch_projectile_damage_multiplier(), 0.65), "each Double Breach pellet wave must use reduced damage")
+	var double_config: Dictionary = shotgun.call("_get_double_volley_config")
+	_expect(is_equal_approx(float(double_config.get("second_wave_delay_sec", 0.0)), 0.12), "Double Breach must schedule its delayed second wave")
+	_expect(float(double_config.get("second_spread_multiplier", 1.0)) < 1.0, "Double Breach second wave must be tighter than the first")
+	var shotgun_behavior := shotgun.branch_runtime.get_branch_behaviors()[0]
+	var vulnerability_target := DummyVulnerabilityTarget.new()
+	shotgun_behavior.call("apply_double_breach_vulnerability", vulnerability_target, 7)
+	shotgun_behavior.call("apply_double_breach_vulnerability", vulnerability_target, 7)
+	_expect(vulnerability_target.applications == 1, "Double Breach must apply vulnerability at most once per target per volley")
+	_expect(is_equal_approx(vulnerability_target.last_multiplier, 1.15), "Double Breach vulnerability must use the configured 1.15 multiplier")
+	vulnerability_target.free()
+	shotgun.free()
 
 
 func _validate_global_energy_pool() -> void:
@@ -443,7 +567,9 @@ func _validate_global_energy_pool() -> void:
 	_expect(is_equal_approx(pool.add_from_damage(20.0, attack_a), 0.0), "additional hits from the same attack must not bypass its gain cap")
 	_expect(is_equal_approx(pool.add_from_damage(40.0, attack_b), 25.0), "all attacks together must respect the one-second gain cap")
 	_expect(is_equal_approx(pool.energy_value, 75.0), "global energy must retain accepted gain without natural decay")
-	_expect(is_equal_approx(pool.consume_all(), 75.0), "release must atomically consume the complete global pool")
+	_expect(is_equal_approx(pool.consume(25.0), 25.0), "focus-channel drain must support partial authoritative consumption")
+	_expect(is_equal_approx(pool.energy_value, 50.0), "partial energy consumption must retain the unspent pool")
+	_expect(is_equal_approx(pool.consume_all(), 50.0), "instant releases must atomically consume the remaining global pool")
 	_expect(is_equal_approx(pool.energy_value, 0.0), "consuming the pool must clear it")
 	pool.add_from_damage(10.0)
 	pool.clear()

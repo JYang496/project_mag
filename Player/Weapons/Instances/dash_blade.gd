@@ -170,13 +170,14 @@ func _physics_process(delta: float) -> void:
 
 func _process_idle(delta: float = 0.0) -> void:
 	blade_anchor.position = Vector2.ZERO
+	var attack_aligned := false
 	if _target and is_instance_valid(_target):
-		_point_blade_to(_target.global_position, delta)
+		attack_aligned = _point_blade_to(_target.global_position, delta)
 	else:
 		_point_blade_to_auto_aim_target(delta)
 	if not _can_run_dash_attack():
 		return
-	if _target and is_instance_valid(_target):
+	if _target and is_instance_valid(_target) and attack_aligned:
 		_start_dash()
 
 func _point_blade_to_auto_aim_target(delta: float = 0.0) -> void:
@@ -247,32 +248,43 @@ func _start_dash() -> void:
 		_dash_start_distance = blade_anchor.global_position.distance_to(_target.global_position)
 		_dash_start_target_id = _target.get_instance_id()
 	_dash_target_position = blade_anchor.global_position + get_blade_aim_forward() * maxf(_dash_start_distance, attack_range)
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior.has_method("on_dash_cycle_started"):
+			behavior.call("on_dash_cycle_started")
 	_state = AttackState.DASHING
 	_set_hitbox_enabled(true)
 
 func _start_return() -> void:
 	if _state != AttackState.DASHING:
 		return
-	_set_hitbox_enabled(false)
 	_state = AttackState.RETURNING
+	_set_hitbox_enabled(_branch_wants_dash_return_hitbox())
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior.has_method("on_dash_return_started"):
+			behavior.call("on_dash_return_started")
 
 func _start_cooldown() -> void:
 	if _state == AttackState.COOLDOWN:
 		return
 	_set_hitbox_enabled(false)
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior.has_method("on_dash_cycle_finished"):
+			behavior.call("on_dash_cycle_finished")
 	_state = AttackState.COOLDOWN
 	cooldown_timer.start()
+
+func _branch_wants_dash_return_hitbox() -> bool:
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior.has_method("wants_dash_return_hitbox") \
+				and bool(behavior.call("wants_dash_return_hitbox")):
+			return true
+	return false
 
 func _set_hitbox_enabled(enabled: bool) -> void:
 	hit_box.collision.set_deferred("disabled", not enabled)
 
-func _point_blade_to(world_target: Vector2, delta: float = 0.0) -> void:
-	var direction := world_target - blade_anchor.global_position
-	if direction == Vector2.ZERO:
-		return
-	var target_rotation := direction.angle() + AIM_ROTATION_OFFSET
-	var max_step := deg_to_rad(maxf(turn_speed_degrees_per_second, 0.0)) * maxf(delta, 0.0)
-	blade_anchor.global_rotation = rotate_toward(blade_anchor.global_rotation, target_rotation, max_step)
+func _point_blade_to(world_target: Vector2, delta: float = 0.0) -> bool:
+	return turn_melee_anchor_toward_attack(blade_anchor, world_target, delta, AIM_ROTATION_OFFSET)
 
 func get_blade_aim_forward() -> Vector2:
 	return Vector2.RIGHT.rotated(blade_anchor.global_rotation - AIM_ROTATION_OFFSET).normalized()
@@ -295,6 +307,9 @@ func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
 	_apply_close_chain_slow(target)
 	_try_trigger_long_dash_hit(target)
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior.has_method("on_dash_target_hit"):
+			behavior.call("on_dash_target_hit", target, _state == AttackState.RETURNING)
 	branch_runtime.notify_branch_target_hit(target)
 
 func _apply_close_chain_slow(target: Node) -> void:

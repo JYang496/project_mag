@@ -128,6 +128,9 @@ func _on_shoot() -> void:
 	_pending_satellite_spawn_count = 0
 	if spawn_count <= 0:
 		return
+	var deployment_config := _get_energy_deployment_config() if is_energy_release_attack_active() else {}
+	spawn_count += maxi(int(deployment_config.get("extra_satellites", 0)), 0)
+	var lifetime_multiplier := maxf(float(deployment_config.get("lifetime_multiplier", 1.0)), 0.1)
 	is_on_cooldown = true
 	start_weapon_cooldown(attack_cooldown)
 	var new_satellites: Array[Projectile] = []
@@ -142,15 +145,31 @@ func _on_shoot() -> void:
 		spawn_projectile.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
 		spawn_projectile.damage_type = damage_type
 		spawn_projectile.hp = 99999
-		spawn_projectile.expire_time = ORBIT_PROJECTILE_LIFETIME_SEC
+		spawn_projectile.expire_time = ORBIT_PROJECTILE_LIFETIME_SEC * lifetime_multiplier
 		spawn_projectile.size = size
 		spawn_projectile.projectile_texture = projectile_texture_resource
 		apply_rotate_around_player(spawn_projectile, 0.0, n, effective_spin_speed)
+		apply_energy_release_marker(spawn_projectile)
 		apply_effects_on_projectile(spawn_projectile)
 		get_tree().root.call_deferred("add_child", spawn_projectile)
 		satellites.append(spawn_projectile)
 		new_satellites.append(spawn_projectile)
 	_rebalance_new_satellite_offsets(new_satellites)
+	if not deployment_config.is_empty():
+		emit_passive_trigger(&"orbit_energy_deployment", {
+			"release_mode": &"deployment",
+			"satellite_count": spawn_count,
+			"extra_satellites": maxi(int(deployment_config.get("extra_satellites", 0)), 0),
+			"lifetime_multiplier": lifetime_multiplier,
+		}, PASSIVE_SCOPE_GLOBAL)
+
+func _get_energy_deployment_config() -> Dictionary:
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior.has_method("get_energy_deployment_config"):
+			var config: Variant = behavior.call("get_energy_deployment_config")
+			if config is Dictionary:
+				return config as Dictionary
+	return {}
 
 func _update_satellite_runtime_state() -> void:
 	var runtime_damage: int = get_runtime_shot_damage()

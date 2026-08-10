@@ -162,11 +162,13 @@ func on_hit_target(target: Node) -> void:
 func on_projectile_hit_damage_dealt(projectile: Node, target: Node, hit_damage_type: StringName, final_damage: int) -> void:
 	if projectile == null or not is_instance_valid(projectile):
 		return
+	if target == null or not is_instance_valid(target) or final_damage <= 0:
+		return
+	if bool(projectile.get_meta(ENERGY_RELEASE_ATTACK_META, false)):
+		for behavior in branch_runtime.get_branch_behaviors():
+			if behavior.has_method("apply_zero_release_impact"):
+				behavior.call("apply_zero_release_impact", target, projectile, final_damage)
 	if not bool(projectile.get_meta("cannon_idle_empowered", false)):
-		return
-	if target == null or not is_instance_valid(target):
-		return
-	if final_damage <= 0:
 		return
 	_apply_idle_fire_breach(target)
 	_apply_idle_fire_aoe(projectile, target, hit_damage_type, final_damage)

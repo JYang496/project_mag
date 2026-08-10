@@ -16,6 +16,7 @@ var base_arc: float = 0.0
 var base_bullet_count: int = 3
 const VOLLEY_ID_META := "shotgun_base_volley_id"
 const VOLLEY_PROJECTILE_META := "shotgun_base_volley_projectile"
+const VOLLEY_WAVE_META := "shotgun_volley_wave"
 var _shotgun_volley_sequence: int = 0
 var _shotgun_volley_hit_counts: Dictionary = {}
 
@@ -59,6 +60,7 @@ func _on_shoot():
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = maxf(cooldown, 0.05)
 	cooldown_timer.start()
+	var double_config := _get_double_volley_config()
 	var base_direction: Vector2 = get_aim_forward()
 	if base_direction == Vector2.ZERO:
 		base_direction = Vector2.UP
@@ -85,6 +87,28 @@ func _on_shoot():
 	_shotgun_volley_sequence += 1
 	var volley_id := _shotgun_volley_sequence
 	_shotgun_volley_hit_counts[volley_id] = {}
+	_spawn_shotgun_wave(shot_directions, runtime_damage, damage_multiplier, damage_type, volley_id, 1)
+	if not double_config.is_empty():
+		var second_spread := spread_arc * clampf(float(double_config.get("second_spread_multiplier", 0.65)), 0.05, 1.0)
+		var second_directions := _build_spread_directions(base_direction, shot_directions.size(), second_spread)
+		_spawn_delayed_second_wave(
+			second_directions,
+			runtime_damage,
+			damage_multiplier,
+			damage_type,
+			volley_id,
+			maxf(float(double_config.get("second_wave_delay_sec", 0.12)), 0.01)
+		)
+	_cleanup_old_shotgun_volleys(volley_id)
+
+func _spawn_shotgun_wave(
+	shot_directions: Array[Vector2],
+	runtime_damage: int,
+	damage_multiplier: float,
+	damage_type: StringName,
+	volley_id: int,
+	wave_index: int
+) -> void:
 	for dir in shot_directions:
 		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 		if spawn_projectile == null:
@@ -99,9 +123,39 @@ func _on_shoot():
 		spawn_projectile.expire_time = get_effective_projectile_lifetime()
 		spawn_projectile.set_meta(VOLLEY_ID_META, volley_id)
 		spawn_projectile.set_meta(VOLLEY_PROJECTILE_META, true)
+		spawn_projectile.set_meta(VOLLEY_WAVE_META, wave_index)
 		apply_effects_on_projectile(spawn_projectile)
 		get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
-	_cleanup_old_shotgun_volleys(volley_id)
+
+func _spawn_delayed_second_wave(
+	shot_directions: Array[Vector2],
+	runtime_damage: int,
+	damage_multiplier: float,
+	damage_type: StringName,
+	volley_id: int,
+	delay_sec: float
+) -> void:
+	await get_tree().create_timer(maxf(delay_sec, 0.01), false).timeout
+	if not is_inside_tree() or not is_attack_phase_allowed():
+		return
+	_spawn_shotgun_wave(shot_directions, runtime_damage, damage_multiplier, damage_type, volley_id, 2)
+	emit_passive_trigger(&"shotgun_double_breach_second_wave", {
+		"volley_id": volley_id,
+		"projectile_count": shot_directions.size(),
+		"delay_sec": delay_sec,
+	}, PASSIVE_SCOPE_GLOBAL)
+
+func get_primary_fire_ammo_cost() -> int:
+	var config := _get_double_volley_config()
+	return maxi(int(config.get("ammo_cost", 1)), 1)
+
+func _get_double_volley_config() -> Dictionary:
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior.has_method("get_shotgun_double_volley_config"):
+			var config: Variant = behavior.call("get_shotgun_double_volley_config")
+			if config is Dictionary:
+				return config as Dictionary
+	return {}
 
 func supports_multi_launcher_module() -> bool:
 	return true
@@ -143,6 +197,10 @@ func on_projectile_hit_damage_dealt(projectile: Node, target: Node, hit_damage_t
 	_shotgun_volley_hit_counts[volley_id] = hit_counts
 	if next_count <= 1:
 		return
+	if int(projectile.get_meta(VOLLEY_WAVE_META, 1)) == 2:
+		for behavior in branch_runtime.get_branch_behaviors():
+			if behavior.has_method("apply_double_breach_vulnerability"):
+				behavior.call("apply_double_breach_vulnerability", target, volley_id)
 	_apply_same_volley_repeat_hit_bonus(target, hit_damage_type, final_damage, volley_id, target_id, next_count)
 
 func _apply_same_volley_repeat_hit_bonus(

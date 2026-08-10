@@ -14,6 +14,9 @@ const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_sta
 const REWARD_CARD_MODEL_BUILDER := preload("res://UI/scripts/presentation/reward_card_model_builder.gd")
 const REWARD_CARD_DATA_ASSEMBLER := preload("res://UI/scripts/presentation/reward_card_data_assembler.gd")
 const QUICK_SELECT_HOLD_SECONDS := 0.55
+const CARD_FONT_SIZE_BONUS := 1
+const CARD_LINE_SPACING := -2
+const CARD_BODY_SEPARATION := 4
 
 @onready var title_label: Label = $Panel/VBox/Title
 @onready var panel: Panel = $Panel
@@ -424,7 +427,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	button.add_child(margin)
 
 	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 7)
+	body.add_theme_constant_override("separation", CARD_BODY_SEPARATION)
 	margin.add_child(body)
 
 	var rarity_bar := ColorRect.new()
@@ -515,7 +518,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		var feature_box := VBoxContainer.new()
 		feature_box.name = "FeatureList"
 		feature_box.custom_minimum_size.y = 46.0
-		feature_box.add_theme_constant_override("separation", 4)
+		feature_box.add_theme_constant_override("separation", 2)
 		summary_parent.add_child(feature_box)
 		for feature in feature_lines.slice(0, 2):
 			var feature_label := _make_card_label("• %s" % str(feature).strip_edges(), 13, Color(0.70, 0.80, 0.84, 1.0))
@@ -533,7 +536,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		comparison_box.custom_minimum_size.y = 82.0
 		comparison_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		comparison_box.alignment = BoxContainer.ALIGNMENT_CENTER
-		comparison_box.add_theme_constant_override("separation", 6)
+		comparison_box.add_theme_constant_override("separation", 3)
 		body.add_child(comparison_box)
 		for comparison_line in comparison_lines:
 			var comparison_label := _make_card_label(str(comparison_line), 14, Color(0.76, 0.93, 0.82, 1.0))
@@ -867,7 +870,8 @@ func _get_module_texture(module_instance: Module) -> Texture2D:
 func _make_card_label(text: String, font_size: int, font_color: Color) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_font_size_override("font_size", font_size + CARD_FONT_SIZE_BONUS)
+	label.add_theme_constant_override("line_spacing", CARD_LINE_SPACING)
 	label.add_theme_color_override("font_color", font_color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label

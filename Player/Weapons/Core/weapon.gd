@@ -285,23 +285,54 @@ func prepare_energy_release_attack() -> Dictionary:
 	var current_energy := 0.0
 	if player.has_method("get_global_weapon_energy"):
 		current_energy = maxf(float(player.call("get_global_weapon_energy")), 0.0)
+	var special_state := _prepare_special_energy_release_attack(player, current_energy, max_energy)
+	if not special_state.is_empty():
+		return special_state
 	if current_energy < max_energy - 0.001:
 		return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
 	_energy_release_spent = maxf(float(player.call("consume_all_global_weapon_energy")), 0.0)
 	if _energy_release_spent > 0.0:
 		var release_ratio := clampf(_energy_release_spent / max_energy, 0.0, 1.0)
-		_energy_release_damage_multiplier = 1.0 + release_ratio * get_energy_release_bonus_at_full()
-		_energy_release_attack_active = true
-		emit_passive_trigger(&"global_energy_release_attack", {
-			"trigger": "full_energy_attack_fired",
-			"energy_spent": _energy_release_spent,
-			"damage_multiplier": _energy_release_damage_multiplier,
-		}, PASSIVE_SCOPE_GLOBAL)
+		return activate_energy_release_attack(
+			_energy_release_spent,
+			1.0 + release_ratio * get_energy_release_bonus_at_full()
+		)
+	return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
+
+func _prepare_special_energy_release_attack(
+	_player: Node,
+	_current_energy: float,
+	_max_energy: float
+) -> Dictionary:
+	return {}
+
+func activate_energy_release_attack(
+	spent: float,
+	damage_multiplier: float,
+	detail: Dictionary = {}
+) -> Dictionary:
+	_energy_release_spent = maxf(spent, 0.0)
+	_energy_release_damage_multiplier = maxf(damage_multiplier, 1.0)
+	_energy_release_attack_active = true
+	var event_detail := {
+		"trigger": "full_energy_attack_fired",
+		"energy_spent": _energy_release_spent,
+		"damage_multiplier": _energy_release_damage_multiplier,
+	}
+	event_detail.merge(detail, true)
+	emit_passive_trigger(&"global_energy_release_attack", event_detail, PASSIVE_SCOPE_GLOBAL)
 	return {
-		"triggered": _energy_release_attack_active,
+		"triggered": true,
 		"spent": _energy_release_spent,
 		"multiplier": _energy_release_damage_multiplier,
+		"release_mode": event_detail.get("release_mode", &"instant"),
 	}
+
+func is_energy_release_attack_active() -> bool:
+	return _energy_release_attack_active
+
+func get_energy_release_spent() -> float:
+	return _energy_release_spent
 
 func finish_energy_release_attack() -> void:
 	_energy_release_attack_active = false
@@ -631,6 +662,9 @@ func can_fire_with_heat() -> bool:
 #region Ammo And Reload
 func uses_ammo_system() -> bool:
 	return false
+
+func get_primary_fire_ammo_cost() -> int:
+	return 1
 
 func can_fire_with_ammo() -> bool:
 	return ammo_controller.can_fire()

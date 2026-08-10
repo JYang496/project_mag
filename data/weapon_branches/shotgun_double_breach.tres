@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://asset/images/weapons/shotgun.png" id="1_icon"]
+[ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="2_script"]
+
+[resource]
+script = ExtResource("2_script")
+produces_tags = Array[StringName]([&"physical", &"close_range", &"execute", &"on_hit"])
+requires_any_tags = Array[StringName]([&"projectile", &"close_range"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"close_range", &"on_hit"])
+conflicts_with_tags = Array[StringName]([&"long_range"])
+branch_id = "shotgun_double_breach"
+display_name = "Double Breach"
+description = "Physical close-range branch. Each trigger spends 2 ammo and fires two reduced-damage pellet waves; the tighter delayed wave rewards committed point-blank attacks."
+icon = ExtResource("1_icon")
+unlock_fuse = 2
+sort_order = 20
+weapon_scene_path = "res://Player/Weapons/Instances/shotgun.tscn"
+behavior_scene_path = "res://Player/Weapons/Branches/shotgun_double_breach_branch.tscn"

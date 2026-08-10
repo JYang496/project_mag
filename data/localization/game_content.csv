@@ -4,7 +4,7 @@ weapon.25.desc,"Long-range heavy cannon. Fits Defense and Execute setups: cease 
 weapon.10.name,Chainsaw Launcher,链锯发射器
 weapon.10.desc,"Close-range projectile saw that ricochets inside its spawn cell. Boundary contact arms slowing vulnerability hits and extends that projectile's lifetime.","近距离投射锯刃，会在出生 cell 内弹射；接触边界后，命中会施加减速和易伤，并延长该投射物的生命周期。"
 weapon.2.name,Charged Blaster,蓄能爆破枪
-weapon.2.desc,"Mid-range Energy release beam. Each damage event grants 3 global energy; firing at full energy consumes the pool for +125% damage.","中距离能量释放光束。每次伤害结算获得 3 点全局能量；满能量开火会消耗能量池并获得 125% 额外伤害。"
+weapon.2.desc,"Mid-range Energy resonance beam. Each damage event grants 3 global energy; a full-energy beam locks its first target and ramps from +55% to +125% damage through repeated hits.","中距离能量共振光束。每次伤害获得 3 点全局能量；满能量光束锁定首个目标，重复命中会使额外伤害从 55% 提升至 125%。"
 weapon.11.name,Dash Blade,冲刺刃
 weapon.11.desc,"Close melee dash weapon. Triggers on long dash hits, fits Close and Melee builds, and can branch into Freeze control.","近战冲刺武器。长距离冲刺命中时触发收益，适合近战和接触构筑，也可分支为冻结控制。"
 weapon.13.name,Flamethrower,喷火器
@@ -12,7 +12,7 @@ weapon.13.desc,"Short-range fire cone. Core Heat and Area weapon whose damage gr
 weapon.21.name,Glacier Projector,冰川投射器
 weapon.21.desc,"Mid-range Freeze cone. Freeze hits trigger Cold Snap as it recharges, supporting Freeze and Area control builds.","中距离冻结锥形武器。冻结命中会在冷冽回响充能时触发它，支撑冻结和范围控制构筑。"
 weapon.9.name,Laser,激光
-weapon.9.desc,"Balanced mid-range Energy beam. Each damage event grants 6 global energy; firing at full energy consumes the pool for +75% damage.","均衡型中距离能量光束。每次伤害结算获得 6 点全局能量；满能量开火会消耗能量池并获得 75% 额外伤害。"
+weapon.9.desc,"Mid-range Energy focus beam. Each damage event grants 6 global energy; firing at full energy begins a 2.5-second channel that drains the pool for wider, +30% damage beams.","中距离能量聚焦光束。每次伤害获得 6 点全局能量；满能量开火进入 2.5 秒聚焦，逐步消耗能量并获得更宽、额外 30% 伤害的光束。"
 weapon.1.name,Machine Gun,机枪
 weapon.1.desc,"Sustained mid-range automatic fire. Core Heat and Projectile weapon: spending magazine ammo before reload expands shared heat capacity.","中距离持续自动火力。核心热量和投射物武器：换弹前消耗弹匣弹药可扩展共享热量容量。"
 weapon.7.name,Orbit,轨道卫星
@@ -20,7 +20,7 @@ weapon.7.desc,"Close support summon. Consumes magazine ammo to deploy slowing sa
 weapon.5.name,Auto Pistol,自动手枪
 weapon.5.desc,"Auto-targeting sidearm that fires at the nearest enemy in range. Every 8 seconds it enters a Pierce Mark window.","自动索敌副枪，会攻击范围内最近敌人；每 8 秒进入一次穿透标记窗口。"
 weapon.17.name,Plasma Lance,等离子长枪
-weapon.17.desc,"Long-range Heat/Energy release lance. Each damage event grants 10 global energy; firing at full energy consumes the pool for +125% damage.","远程热量/能量释放长枪。每次伤害结算获得 10 点全局能量；满能量开火会消耗能量池并获得 125% 额外伤害。"
+weapon.17.desc,"Long-range Heat/Energy exchange lance. Full-energy discharge snapshots current Heat, spends up to 35 Heat, and scales its release multiplier from +55% to +125%.","远程热量/能量交换长枪。满能量放电会快照当前热量、消耗最多 35 点热量，并使额外释放伤害从 55% 随热量提升至 125%。"
 weapon.8.name,Rocket Launcher,火箭发射器
 weapon.8.desc,"Long-range Area launcher. Slow rockets and growing blasts clear groups, while Cluster Kill charges reward grouped enemy cleanup.","远程范围发射器。慢速火箭和逐步扩大的爆炸用于清理敌群，集群击杀充能奖励成群清场。"
 weapon.4.name,Shotgun,霰弹枪
@@ -34,7 +34,7 @@ passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds ch
 branch.thermal_cannon_branch.name,Thermal Cannon,Thermal Cannon
 branch.thermal_cannon_branch.desc,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.
 branch.zero_cannon_branch.name,Zero Cannon,Zero Cannon
-branch.zero_cannon_branch.desc,"Energy release branch: each damage event grants 10 global energy; firing at full energy consumes the pool for +150% damage.","能量释放分支：每次伤害结算获得 10 点全局能量；满能量开火会消耗能量池并获得 150% 额外伤害。"
+branch.zero_cannon_branch.desc,"Stored Energy branch: full-energy fire deals 2x direct damage and releases a secondary pulse with stronger execute payoff.","储能分支：满能量射击造成 2 倍直接伤害，并释放一次对低生命目标更强的二段脉冲。"
 branch.explosive_saw.name,Explosive Saw,Explosive Saw
 branch.explosive_saw.desc,"First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE.","First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE."
 branch.ricochet_saw.name,Ricochet Saw,Ricochet Saw
@@ -45,6 +45,8 @@ branch.prism_fan.name,Prism Fan,Prism Fan
 branch.prism_fan.desc,"Main beam plus two side beams for wide-area coverage, with reduced single-target focus.","Main beam plus two side beams for wide-area coverage, with reduced single-target focus."
 branch.frost_dash.name,Frost Dash Blade,Frost Dash Blade
 branch.frost_dash.desc,Dash attacks inflict bonus freeze finish and leave a short-lived frost field.,Dash attacks inflict bonus freeze finish and leave a short-lived frost field.
+branch.dash_return_execute.name,Returning Execution,回刃处决
+branch.dash_return_execute.desc,"Outbound hits open a wound; hitting the same target on the return path deals missing-health-scaled physical damage.","向外冲刺命中会留下裂口；返程再次命中同一目标时，造成随目标已损生命提高的物理伤害。"
 branch.glacier_whiteout_expansion.name,Whiteout Expansion,Whiteout Expansion
 branch.glacier_whiteout_expansion.desc,Glacier Projector cone angle expands by 20% without reducing range or damage.,Glacier Projector cone angle expands by 20% without reducing range or damage.
 branch.glacier_subzero_battery.name,Subzero Battery,Subzero Battery
@@ -62,11 +64,11 @@ branch.shield_mg.desc,Deploys a frontal shield that blocks hostile shots and int
 branch.gatling_mg.name,Gatling Thermal,Gatling Thermal
 branch.gatling_mg.desc,"Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup.","Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup."
 branch.energy_orbit.name,Energy Orbit,Energy Orbit
-branch.energy_orbit.desc,"Satellite hits become Energy damage and grant 8 global energy per event; deploying at full energy consumes the pool for +35% damage.","卫星命中转化为能量伤害，每次结算获得 8 点全局能量；满能量部署会消耗能量池并获得 35% 额外伤害。"
+branch.energy_orbit.desc,"Satellite hits become Energy damage and grant 8 global energy per event; full-energy deployment adds 2 satellites and extends lifetime by 50%.","卫星命中转化为能量伤害，每次获得 8 点全局能量；满能量部署额外增加 2 枚卫星并延长 50% 持续时间。"
 branch.frost_orbit.name,Frost Orbit,Frost Orbit
 branch.frost_orbit.desc,Orbit hits become freeze damage and apply a small player-to-target knockback.,Orbit hits become freeze damage and apply a small player-to-target knockback.
 branch.arc_coil.name,Arc Coil,Arc Coil
-branch.arc_coil.desc,"Energy accumulator branch: shots become Energy damage and grant 12 global energy per event; firing at full energy consumes the pool for +35% damage.","能量积累分支：射击转化为能量伤害，每次结算获得 12 点全局能量；满能量开火会消耗能量池并获得 35% 额外伤害。"
+branch.arc_coil.desc,"Energy propagation branch: shots grant 12 global energy per event; full-energy fire gains +15% direct damage and chains 45% damage to 3 nearby enemies.","能量传播分支：每次命中获得 12 点全局能量；满能量射击获得 15% 直接增伤，并向附近最多 3 个敌人连锁 45% 伤害。"
 branch.cryo_carbine.name,Cryo Carbine,Cryo Carbine
 branch.cryo_carbine.desc,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.
 branch.napalm_rocket.name,Napalm Rocket,Napalm Rocket
@@ -75,6 +77,8 @@ branch.salvo_rocket.name,Salvo Rocket,Salvo Rocket
 branch.salvo_rocket.desc,Fires a spread of reduced-damage rockets to saturate a wider enemy group.,Fires a spread of reduced-damage rockets to saturate a wider enemy group.
 branch.shatter_buckshot.name,Shatter Buckshot,Shatter Buckshot
 branch.shatter_buckshot.desc,Freeze pellets can shatter targets after rapid multi-hit bursts.,Freeze pellets can shatter targets after rapid multi-hit bursts.
+branch.shotgun_double_breach.name,Double Breach,双管破门
+branch.shotgun_double_breach.desc,"Spends 2 ammo to fire two reduced-damage pellet waves; the tighter delayed wave applies short vulnerability after repeated hits.","消耗 2 发弹药发射两轮低倍率霰弹；更集中的延迟第二轮在重复命中后施加短时易伤。"
 branch.sniper_deep_pierce.name,Deep Pierce,Deep Pierce
 branch.sniper_deep_pierce.desc,Each pierce increases projectile damage for the remaining hits.,Each pierce increases projectile damage for the remaining hits.
 branch.sniper_impact_burst.name,Impact Burst,Impact Burst

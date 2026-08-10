@@ -336,10 +336,19 @@ func _expect_player_ammo_arc_contract() -> void:
 	_expect(hud.get("hud_size") == Vector2(128.0, 64.0), "player ammo HUD must retain a fixed screen-space drawing surface")
 	_expect(int(hud.get("segment_count")) == 4, "quarter-ring ammo HUD must keep four readable segments")
 	_expect(is_equal_approx(float(hud.get("ring_radius_scale")), 1.30), "quarter-ring ammo HUD must preserve a visible gap outside the affiliation ring")
-	_expect(bool(hud.call("has_container_texture")), "player ammo HUD must use its generated raster container asset")
 	var sample_track := PackedVector2Array([Vector2(10.0, 0.0), Vector2(10.0, 10.0), Vector2(0.0, 10.0)])
 	var half_fill := hud.call("_build_fill_points", sample_track, 0.5) as PackedVector2Array
 	_expect(half_fill.size() == 2 and half_fill[0] == sample_track[1] and half_fill[-1] == sample_track[-1], "ammo fill must remain anchored at the left 90-degree end while draining from the right")
+	var vertical_geometry := hud.call("_get_vertical_geometry", sample_track) as Dictionary
+	var frame_rect := vertical_geometry.get("rect") as Rect2
+	_expect(frame_rect.get_center().is_equal_approx(Vector2(72.0, -34.0)), "vertical ammo frame must remain offset toward the player's upper-right HUD quadrant")
+	_expect(frame_rect.size == Vector2(10.0, 36.0), "vertical ammo frame must stack four equal-height cells")
+	var slot_polygons := hud.call("_get_vertical_slot_polygons", vertical_geometry) as Array
+	_expect(slot_polygons.size() == 4, "procedural vertical ammo frame must provide four visible cells")
+	var half_levels := hud.call("_get_slot_fill_levels", 0.5, 4) as PackedFloat32Array
+	_expect(half_levels == PackedFloat32Array([0.0, 0.0, 1.0, 1.0]), "half ammo must illuminate two cells beginning at the vertical start")
+	var partial_levels := hud.call("_get_slot_fill_levels", 0.625, 4) as PackedFloat32Array
+	_expect(partial_levels == PackedFloat32Array([0.0, 0.5, 1.0, 1.0]), "fractional ammo must advance from the vertical start toward the horizontal end")
 	var ribbon := hud.call("_build_ribbon_polygon", sample_track, 4.0) as PackedVector2Array
 	_expect(ribbon.size() == 6 and is_equal_approx(ribbon[0].y, ribbon[-1].y), "right 0-degree endpoint must use an upward-facing horizontal square cut")
 	var collapsed_ribbon := hud.call(

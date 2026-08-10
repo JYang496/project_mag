@@ -12,6 +12,9 @@ var beam_local_forward := Vector2.UP
 @export_range(0.05, 1.0, 0.01) var firing_rotation_slow_multiplier: float = 0.1
 @export_range(0.05, 1.0, 0.01) var firing_move_speed_multiplier: float = 0.75
 @export_range(0.1, 1.0, 0.05) var minimum_committed_fire_sec: float = 0.35
+@export var resonance_initial_damage_multiplier: float = 1.55
+@export var resonance_ramp_per_repeat_hit: float = 0.14
+@export var resonance_max_ramp_hits: int = 5
 var is_firing_beam := false
 var firing_turn_timer: Timer
 var _feedback_refund_accum_sec: float = 0.0
@@ -68,6 +71,9 @@ func _on_shoot():
 		"target_lock_release_multiplier": 1.8,
 		"beam_tag": "main",
 	}
+	if is_energy_release_attack_active():
+		base_profile["target_lock_mode"] = "first_hit"
+		base_profile["energy_resonance"] = true
 	var beam_profiles := _get_charged_beam_profiles(base_profile)
 	var max_beam_duration: float = 0.0
 	for profile in beam_profiles:
@@ -127,6 +133,7 @@ func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bo
 	request_primary_fire()
 
 func on_beam_hit_target(target: Node, beam_profile: Dictionary = {}, hit_damage: int = 0, beam_node: Node = null) -> void:
+	_update_energy_resonance_ramp(target, beam_profile, beam_node)
 	for behavior in branch_runtime.get_branch_behaviors():
 		behavior.on_charged_beam_hit(target, beam_profile, hit_damage)
 
@@ -140,7 +147,7 @@ func get_energy_gain_per_damage_event() -> float:
 	return 3.0
 
 func get_energy_release_bonus_at_full() -> float:
-	return 1.25
+	return maxf(resonance_initial_damage_multiplier - 1.0, 0.0)
 
 func get_passive_status() -> Dictionary:
 	return get_energy_full_fire_status()
@@ -215,7 +222,8 @@ func _spawn_beam_from_profile(profile: Dictionary) -> float:
 	var base_beam_width: float = 6.0 if fixed_width_no_charge else _get_full_power_beam_width()
 	beam_blast_ins.target_position = dir * beam_range * range_multiplier
 	beam_blast_ins.width = maxf(base_beam_width * width_multiplier, 1.0)
-	beam_blast_ins.damage = max(1, int(round(float(get_runtime_shot_damage()) * damage_multiplier)))
+	var runtime_damage := get_runtime_shot_damage()
+	beam_blast_ins.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
 	beam_blast_ins.duration = beam_duration
 	beam_blast_ins.hit_cd = beam_hit_cd
 	beam_blast_ins.source_weapon = self
@@ -224,9 +232,36 @@ func _spawn_beam_from_profile(profile: Dictionary) -> float:
 	beam_blast_ins.beam_profile = profile.duplicate(true)
 	beam_blast_ins.target_lock_mode = StringName(str(profile.get("target_lock_mode", "none")))
 	beam_blast_ins.target_lock_release_multiplier = maxf(float(profile.get("target_lock_release_multiplier", 1.8)), 1.0)
+	if bool(profile.get("energy_resonance", false)):
+		var initial_multiplier := maxf(resonance_initial_damage_multiplier, 1.0)
+		var unboosted_damage := float(runtime_damage) / initial_multiplier
+		beam_blast_ins.set_meta(&"_energy_resonance_base_damage", beam_blast_ins.damage)
+		beam_blast_ins.set_meta(
+			&"_energy_resonance_step_damage",
+			maxf(unboosted_damage * maxf(resonance_ramp_per_repeat_hit, 0.0) * damage_multiplier, 0.0)
+		)
+		beam_blast_ins.set_meta(&"_energy_resonance_hit_count", 0)
+		beam_blast_ins.set_meta(&"_energy_resonance_target_id", 0)
 	beam_blast_ins.global_position = global_position
 	get_projectile_spawn_parent().call_deferred("add_child", beam_blast_ins)
 	return beam_duration
+
+func _update_energy_resonance_ramp(target: Node, profile: Dictionary, beam_node: Node) -> void:
+	if not bool(profile.get("energy_resonance", false)):
+		return
+	if target == null or not is_instance_valid(target) or beam_node == null or not is_instance_valid(beam_node):
+		return
+	var target_id := target.get_instance_id()
+	var previous_target_id := int(beam_node.get_meta(&"_energy_resonance_target_id", 0))
+	var hit_count := int(beam_node.get_meta(&"_energy_resonance_hit_count", 0))
+	if previous_target_id != target_id:
+		hit_count = 0
+	hit_count = mini(hit_count + 1, maxi(resonance_max_ramp_hits, 0))
+	beam_node.set_meta(&"_energy_resonance_target_id", target_id)
+	beam_node.set_meta(&"_energy_resonance_hit_count", hit_count)
+	var base_value := float(beam_node.get_meta(&"_energy_resonance_base_damage", beam_node.get("damage")))
+	var step_value := float(beam_node.get_meta(&"_energy_resonance_step_damage", 0.0))
+	beam_node.set("damage", max(1, int(round(base_value + step_value * float(hit_count)))))
 
 func _get_full_power_beam_width() -> float:
 	if level >= 6:

@@ -10,10 +10,15 @@ const BULLET_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_STANDARD_SIZE
 @export var max_heat: float = 100.0
 @export var heat_cooldown_rate: float = 0.0
 @export var plasma_heat_damage_bonus_at_full_heat: float = 0.75
+@export var discharge_base_damage_multiplier: float = 1.55
+@export var discharge_heat_scaled_bonus: float = 0.70
+@export var discharge_heat_cost: float = 35.0
 
 var attack_range: float = 980.0
 var _overcharge_lance_stack_count: int = 0
 var _overcharge_lance_remaining_sec: float = 0.0
+var _plasma_discharge_heat_ratio: float = -1.0
+var _plasma_discharge_heat_spent: float = 0.0
 
 var weapon_data := {
 	"1": {"damage": "26", "speed": "1100", "projectile_hits": "3", "fire_interval_sec": "1.5", "ammo": "6"},
@@ -80,6 +85,8 @@ func _get_heat_damage_multiplier() -> float:
 	if not player.has_method("get_total_heat_ratio"):
 		return 1.0
 	var heat_ratio := clampf(float(player.call("get_total_heat_ratio")), 0.0, 1.0)
+	if is_energy_release_attack_active() and _plasma_discharge_heat_ratio >= 0.0:
+		heat_ratio = _plasma_discharge_heat_ratio
 	var overcharge_config := _get_overcharge_lance_config()
 	var overcharge_active_stacks := _get_overcharge_lance_stack_count()
 	var overcharge_bonus := 0.0
@@ -154,7 +161,42 @@ func get_energy_gain_per_damage_event() -> float:
 	return 10.0
 
 func get_energy_release_bonus_at_full() -> float:
-	return 1.25
+	return maxf(discharge_base_damage_multiplier - 1.0, 0.0)
+
+func prepare_energy_release_attack() -> Dictionary:
+	_plasma_discharge_heat_ratio = -1.0
+	_plasma_discharge_heat_spent = 0.0
+	var player := _resolve_energy_pool_player()
+	var heat_ratio_before := 0.0
+	if player != null and is_instance_valid(player) and player.has_method("get_total_heat_ratio"):
+		heat_ratio_before = clampf(float(player.call("get_total_heat_ratio")), 0.0, 1.0)
+	var state := super.prepare_energy_release_attack()
+	if not bool(state.get("triggered", false)):
+		return state
+	_plasma_discharge_heat_ratio = heat_ratio_before
+	if player != null and is_instance_valid(player) and player.has_method("consume_shared_heat"):
+		_plasma_discharge_heat_spent = maxf(float(player.call("consume_shared_heat", maxf(discharge_heat_cost, 0.0))), 0.0)
+	_energy_release_damage_multiplier = maxf(
+		discharge_base_damage_multiplier + discharge_heat_scaled_bonus * heat_ratio_before,
+		1.0
+	)
+	state["multiplier"] = _energy_release_damage_multiplier
+	state["release_mode"] = &"heat_exchange"
+	state["heat_ratio_snapshot"] = heat_ratio_before
+	state["heat_spent"] = _plasma_discharge_heat_spent
+	emit_passive_trigger(&"plasma_discharge_heat_exchange", {
+		"trigger": "full_energy_attack_fired",
+		"release_mode": &"heat_exchange",
+		"heat_ratio_snapshot": heat_ratio_before,
+		"heat_spent": _plasma_discharge_heat_spent,
+		"damage_multiplier": _energy_release_damage_multiplier,
+	}, PASSIVE_SCOPE_GLOBAL)
+	return state
+
+func finish_energy_release_attack() -> void:
+	super.finish_energy_release_attack()
+	_plasma_discharge_heat_ratio = -1.0
+	_plasma_discharge_heat_spent = 0.0
 
 func get_passive_status() -> Dictionary:
 	return get_energy_full_fire_status()
@@ -162,3 +204,5 @@ func get_passive_status() -> Dictionary:
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
 	_clear_overcharge_lance_stacks()
+	_plasma_discharge_heat_ratio = -1.0
+	_plasma_discharge_heat_spent = 0.0

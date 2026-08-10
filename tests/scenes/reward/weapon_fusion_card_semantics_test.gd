@@ -65,6 +65,10 @@ func _run() -> void:
 	var feature_list := rendered_new_card.find_child("FeatureList", true, false) as VBoxContainer
 	if behavior_summary == null or feature_list == null:
 		_fail("new weapon card should render separate behavior and feature layers")
+	elif behavior_summary.get_theme_font_size("font_size") != 15 or behavior_summary.get_theme_constant("line_spacing") != -2:
+		_fail("reward card copy should use the enlarged compact text treatment")
+	elif feature_list.get_theme_constant("separation") != 2:
+		_fail("reward card feature rows should use compact vertical spacing")
 	elif behavior_summary.max_lines_visible != 2 or behavior_summary.text_overrun_behavior != TextServer.OVERRUN_TRIM_ELLIPSIS:
 		_fail("behavior summary should be limited to two lines with an ellipsis")
 	elif feature_list.get_child_count() < 1 or feature_list.get_child_count() > 2:

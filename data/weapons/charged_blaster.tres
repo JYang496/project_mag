@@ -9,5 +9,5 @@ weapon_id = "2"
 display_name = "Charged Blaster"
 icon = ExtResource("1_rnx7b")
 price = 45
-description = "Mid-range Energy release beam. Each damage event grants 3 global energy; firing at full energy consumes the pool for +125% damage."
+description = "Mid-range Energy resonance beam. Each damage event grants 3 global energy; a full-energy beam locks its first target and ramps from +55% to +125% damage through repeated hits."
 scene_path = "res://Player/Weapons/Instances/charged_blaster.tscn"

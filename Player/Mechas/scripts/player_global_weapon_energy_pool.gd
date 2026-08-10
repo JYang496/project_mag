@@ -58,8 +58,13 @@ func add_from_damage(raw_gain: float, source_attack: Node = null) -> float:
 
 
 func consume_all() -> float:
-	var consumed := maxf(energy_value, 0.0)
-	energy_value = 0.0
+	return consume(energy_value)
+
+
+func consume(amount: float) -> float:
+	var requested := maxf(amount, 0.0)
+	var consumed := minf(requested, maxf(energy_value, 0.0))
+	energy_value = maxf(energy_value - consumed, 0.0)
 	return consumed
 
 

@@ -4,7 +4,7 @@ const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 var _failed := false
 
 func _ready() -> void:
-	_validate_catalog("res://data/weapon_branches", 28)
+	_validate_catalog("res://data/weapon_branches", 30)
 	_validate_catalog("res://data/weapon_passives", 18)
 	_validate_catalog("res://data/battle_contracts", 8)
 	_validate_aliases_and_display()
@@ -67,4 +67,3 @@ func _expect(condition: bool, message: String) -> void:
 		return
 	_failed = true
 	push_error(message)
-
