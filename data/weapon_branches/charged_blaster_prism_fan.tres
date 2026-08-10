@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"beam", &"area"])
+requires_any_tags = Array[StringName]([&"energy"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"area"])
+conflicts_with_tags = Array[StringName]([])
 branch_id = "prism_fan"
 display_name = "Prism Fan"
 description = "Area branch. Adds two side beams for lane coverage and multi-target hits, sacrificing single-target focus."

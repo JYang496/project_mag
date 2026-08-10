@@ -8,6 +8,7 @@
 
 [node name="ChainsawLauncher" unique_id=347628502 instance=ExtResource("1_sq336")]
 script = ExtResource("2_hcjeu")
+turn_speed_degrees_per_second = 240.0
 fire_feedback_profile = ExtResource("4_feedback")
 range_mode = 2
 projectile_lifetime_sec = 2.5

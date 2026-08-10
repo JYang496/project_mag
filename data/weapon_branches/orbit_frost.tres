@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"freeze", &"control"])
+requires_any_tags = Array[StringName]([&"summon", &"close_range"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"freeze"])
+conflicts_with_tags = Array[StringName]([&"fire"])
 branch_id = "frost_orbit"
 display_name = "Frost Orbit"
 description = "Freeze branch. Orbit hits become Freeze damage and add knockback, turning satellites into Close control tools."

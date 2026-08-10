@@ -3,8 +3,10 @@ class_name EnemySpawnSequence
 
 const DEFAULT_DURATION_SEC := 0.62
 const ELITE_DURATION_SEC := 0.95
+const BOSS_DURATION_SEC := 1.25
 const TELEGRAPH_RATIO := 0.32
 const MIN_DURATION_SEC := 0.08
+const SPAWN_GROUND_TELEGRAPH := preload("res://Npc/enemy/components/enemy_spawn_ground_telegraph.gd")
 
 var _enemy: Node2D
 var _elapsed := 0.0
@@ -18,6 +20,7 @@ var _body_scale := Vector2.ONE
 var _shadow_modulate := Color.WHITE
 var _marker_was_visible := true
 var _finished := false
+var _ground_telegraph: Node2D
 
 
 func begin(enemy: Node2D, duration_override: float = -1.0) -> void:
@@ -30,6 +33,7 @@ func begin(enemy: Node2D, duration_override: float = -1.0) -> void:
 	_marker = enemy.get_node_or_null("AffiliationMarker") as CanvasItem
 	_capture_visual_state()
 	_apply_initial_visual_state()
+	_create_elite_ground_telegraph()
 	add_to_group("enemy_runtime_cleanup")
 	set_process(true)
 
@@ -37,7 +41,9 @@ func begin(enemy: Node2D, duration_override: float = -1.0) -> void:
 func _resolve_duration(duration_override: float) -> float:
 	if duration_override > 0.0:
 		return maxf(duration_override, MIN_DURATION_SEC)
-	if _enemy != null and (bool(_enemy.get("is_boss")) or bool(_enemy.call("has_spawn_tag", &"elite"))):
+	if _enemy != null and bool(_enemy.get("is_boss")):
+		return BOSS_DURATION_SEC
+	if _enemy != null and bool(_enemy.call("has_spawn_tag", &"elite")):
 		return ELITE_DURATION_SEC
 	return DEFAULT_DURATION_SEC
 
@@ -75,6 +81,8 @@ func _process(delta: float) -> void:
 	if _finished:
 		return
 	_elapsed += maxf(delta, 0.0)
+	if _ground_telegraph != null:
+		_ground_telegraph.call("set_sequence_progress", clampf(_elapsed / maxf(_duration, 0.01), 0.0, 1.0), TELEGRAPH_RATIO)
 	var materialize_progress := clampf(
 		(_elapsed - _telegraph_duration) / maxf(_duration - _telegraph_duration, 0.01),
 		0.0,
@@ -106,6 +114,9 @@ func _finish() -> void:
 		return
 	_finished = true
 	_restore_visual_state()
+	if _ground_telegraph != null:
+		_ground_telegraph.queue_free()
+		_ground_telegraph = null
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.complete_spawn_sequence()
 	queue_free()
@@ -122,3 +133,15 @@ func _restore_visual_state() -> void:
 	if _marker != null:
 		_marker.visible = false if bool(_marker.get_meta(&"hybrid_ground_registered", false)) else _marker_was_visible
 		_marker.set_meta(&"hybrid_ground_visible", _marker_was_visible)
+
+
+func _create_elite_ground_telegraph() -> void:
+	if _enemy == null or not (bool(_enemy.get("is_boss")) or bool(_enemy.call("has_spawn_tag", &"elite"))):
+		return
+	_ground_telegraph = SPAWN_GROUND_TELEGRAPH.new()
+	_ground_telegraph.name = "EliteSpawnGroundWarning"
+	_enemy.add_child(_ground_telegraph)
+	var extent := Vector2(48.0, 48.0)
+	if _enemy.has_method("_resolve_hurtbox_or_visible_sprite_extent"):
+		extent = _enemy.call("_resolve_hurtbox_or_visible_sprite_extent") as Vector2
+	_ground_telegraph.call("configure", maxf(extent.x, extent.y) * 0.72)

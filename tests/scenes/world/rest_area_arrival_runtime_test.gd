@@ -12,6 +12,7 @@ var _board: BoardCellGenerator
 var _rest_area: RestArea
 var _view: HybridGroundView3D
 var _ui: UI
+var _anchor_test_player: Node2D
 
 
 func _ready() -> void:
@@ -115,12 +116,58 @@ func _run() -> void:
 	_expect(not _ui.rest_area_arrival_presenter.overlay.visible, "phase interruption must clean the arrival overlay")
 	_expect(not _rest_area.is_arrival_transition_locked(), "phase interruption must release the semantic interaction lock")
 
+	await _test_post_battle_rest_centers_on_player()
+
 	print("FAIL rest area arrival runtime" if _failed else "PASS rest area arrival runtime")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0, _reset_runtime)
 	_board = null
 	_rest_area = null
 	_view = null
 	_ui = null
+	_anchor_test_player = null
+
+
+func _test_post_battle_rest_centers_on_player() -> void:
+	_anchor_test_player = Node2D.new()
+	_anchor_test_player.name = "PostBattleAnchorPlayer"
+	add_child(_anchor_test_player)
+	PlayerData.player = _anchor_test_player
+	var battle_end_position := _board.get_center_cell_global_position() + Vector2(73.0, -41.0)
+	_anchor_test_player.global_position = battle_end_position
+
+	PhaseManager.phase = PhaseManager.BATTLE
+	_board.call("_on_phase_changed", PhaseManager.BATTLE)
+	PhaseManager.enter_settlement()
+	await get_tree().process_frame
+	_expect(
+		_board.get_rest_area_target_center_global_position().distance_to(battle_end_position) <= 0.01,
+		"post-battle rest anchor must preserve the player's exact battle-end position"
+	)
+	_expect(
+		_anchor_test_player.global_position.distance_to(battle_end_position) <= 0.01,
+		"settlement must not move the player toward the previous cell center"
+	)
+
+	PhaseManager.enter_protocol_selection()
+	PhaseManager.enter_rest()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_expect(_rest_area.is_active(), "rest area must activate after the post-battle phase chain")
+	_expect(
+		_rest_area.get_spawn_position().distance_to(battle_end_position) <= 0.01,
+		"rest platform center must materialize at the player's battle-end position"
+	)
+	_expect(
+		_anchor_test_player.global_position.distance_to(battle_end_position) <= 0.01,
+		"entering rest must not add a visible automatic move"
+	)
+	_expect(not bool(_rest_area.get("is_auto_moving")), "post-battle rest entry must not start auto-navigation")
+	_rest_area.call("_begin_zone_move", 1, false)
+	_expect(bool(_rest_area.get("is_auto_moving")), "explicit rest-zone navigation must remain available")
+	_rest_area.call("_stop_auto_move")
+	PlayerData.player = null
+	_anchor_test_player.queue_free()
+	await get_tree().process_frame
 
 
 func _test_real_world_initial_entry() -> void:

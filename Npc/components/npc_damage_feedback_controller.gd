@@ -5,6 +5,8 @@ const HIT_LABEL_SCENE := preload("res://UI/labels/hit_label.tscn")
 const ENEMY_HP_BAR_SCENE := preload("res://UI/scenes/components/enemy_hp_bar.tscn")
 const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd")
 const DamageFeedbackEventType := preload("res://Combat/damage/damage_feedback_event.gd")
+const CombatHitVfxProfileType := preload("res://Combat/Vfx/combat_hit_vfx_profile.gd")
+const CombatHitVfxServiceType := preload("res://Combat/Vfx/combat_hit_vfx_service.gd")
 
 var npc
 var _pending_hit_label_batches: Dictionary = {}
@@ -108,6 +110,20 @@ func _color_for_damage_type(damage_type: StringName) -> Color:
 			return Color.WHITE
 
 func play_hit_flash() -> void:
+	_play_hit_flash_with_style(Color.WHITE, -1.0)
+
+func play_hit_feedback(result: DamageResult) -> void:
+	if npc == null or result == null:
+		return
+	var profile := CombatHitVfxProfileType.from_damage_result(result, npc.get_incoming_damage_max_hp())
+	var flash_duration := 0.07 if profile.hit_type == CombatHitVfxProfileType.HitType.KINETIC_LIGHT else 0.10
+	_play_hit_flash_with_style(profile.impact_color, flash_duration)
+	var tree := npc.get_tree() as SceneTree
+	var service := CombatHitVfxServiceType.ensure(tree)
+	if service != null:
+		service.call("play", npc.global_position, profile)
+
+func _play_hit_flash_with_style(flash_color: Color, duration_override: float) -> void:
 	if npc == null or not npc.hit_flash_enabled:
 		return
 	var sprite_body := npc.sprite_body as Sprite2D
@@ -120,11 +136,11 @@ func play_hit_flash() -> void:
 	if _hit_flash_tween != null and is_instance_valid(_hit_flash_tween):
 		_hit_flash_tween.kill()
 	var flash_in := maxf(npc.hit_flash_in_duration_sec, 0.0)
-	var flash_out := maxf(npc.hit_flash_out_duration_sec, 0.0)
+	var flash_out := maxf(duration_override if duration_override >= 0.0 else npc.hit_flash_out_duration_sec, 0.0)
 	var peak_alpha := clampf(npc.hit_flash_peak_alpha, 0.0, 1.0)
 	_sync_flash_overlay(overlay, sprite_body)
 	overlay.visible = true
-	overlay.modulate = Color(npc.hit_flash_peak_color.r, npc.hit_flash_peak_color.g, npc.hit_flash_peak_color.b, 0.0)
+	overlay.modulate = Color(flash_color.r, flash_color.g, flash_color.b, 0.0)
 	_hit_flash_tween = npc.create_tween()
 	if flash_in > 0.0:
 		_hit_flash_tween.tween_property(overlay, "modulate:a", peak_alpha, flash_in)

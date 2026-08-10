@@ -4,9 +4,13 @@ class_name EliteEnemy
 var original_material: Material
 var highlight_material: ShaderMaterial
 var is_highlighted: bool = false
-var skill_ready : bool = true
+var skill_ready: bool = true:
+	set(value):
+		skill_ready = value
+		_refresh_elite_visual_state()
 var quest_highlight_active := false
 var quest_highlight_color := Color.WHITE
+var _skill_activation_active := false
 @onready var skill_timer: Timer = $SkillTimer
 
 # Highlight shader code
@@ -17,6 +21,8 @@ uniform float outline_width : hint_range(0.0, 10.0) = 2.0;
 uniform vec4 outline_color : source_color = vec4(1.0, 1.0, 0.0, 1.0);
 uniform bool animated = true;
 uniform float animation_speed : hint_range(0.1, 5.0) = 2.0;
+uniform float outline_strength : hint_range(0.0, 1.0) = 0.42;
+uniform float body_brightness : hint_range(1.0, 1.2) = 1.0;
 
 void fragment() {
 	vec2 size = TEXTURE_PIXEL_SIZE * outline_width;
@@ -40,12 +46,13 @@ void fragment() {
 		vec4 glow_color = outline_color;
 		if(animated) {
 			float pulse = (sin(TIME * animation_speed) + 1.0) * 0.5;
-			glow_color.a *= (0.5 + pulse * 0.5);
+			glow_color.a *= outline_strength * (0.72 + pulse * 0.28);
+		} else {
+			glow_color.a *= outline_strength;
 		}
 		final_color = glow_color;
 	} else if(sprite_color.a > 0.0) {
-		// Brighten the sprite itself slightly
-		final_color.rgb *= 1.2;
+		final_color.rgb *= body_brightness;
 	}
 	
 	COLOR = final_color;
@@ -68,10 +75,13 @@ func _ready():
 	
 	# Set default shader parameters
 	highlight_material.set_shader_parameter("outline_width", 1.0)
-	highlight_material.set_shader_parameter("outline_color", Color.YELLOW)
-	highlight_material.set_shader_parameter("animated", true)
+	highlight_material.set_shader_parameter("outline_color", Color(1.0, 0.72, 0.28, 1.0))
+	highlight_material.set_shader_parameter("animated", false)
 	highlight_material.set_shader_parameter("animation_speed", 2.0)
+	highlight_material.set_shader_parameter("outline_strength", 0.42)
+	highlight_material.set_shader_parameter("body_brightness", 1.0)
 	highlight(true)
+	_refresh_elite_visual_state()
 
 func highlight(enable: bool = true):
 	"""Toggle character highlight on/off"""
@@ -90,8 +100,33 @@ func set_quest_highlight(active: bool, color: Color = Color.WHITE) -> void:
 	quest_highlight_active = active
 	quest_highlight_color = color
 	highlight(active)
-	if active:
-		set_highlight_color(color)
+	_refresh_elite_visual_state()
+
+
+func set_skill_activation_visual(active: bool) -> void:
+	_skill_activation_active = active
+	_refresh_elite_visual_state()
+
+
+func _refresh_elite_visual_state() -> void:
+	if highlight_material == null:
+		return
+	if quest_highlight_active:
+		highlight_material.set_shader_parameter("outline_color", quest_highlight_color)
+		highlight_material.set_shader_parameter("outline_strength", 0.86)
+		highlight_material.set_shader_parameter("animated", true)
+		highlight_material.set_shader_parameter("body_brightness", 1.04)
+		return
+	if _skill_activation_active:
+		highlight_material.set_shader_parameter("outline_color", Color(1.0, 0.20, 0.12, 1.0))
+		highlight_material.set_shader_parameter("outline_strength", 1.0)
+		highlight_material.set_shader_parameter("animated", false)
+		highlight_material.set_shader_parameter("body_brightness", 1.08)
+		return
+	highlight_material.set_shader_parameter("outline_color", Color(1.0, 0.72, 0.28, 1.0))
+	highlight_material.set_shader_parameter("outline_strength", 0.58 if skill_ready else 0.36)
+	highlight_material.set_shader_parameter("animated", skill_ready)
+	highlight_material.set_shader_parameter("body_brightness", 1.0)
 
 func set_highlight_color(color: Color):
 	"""Change the highlight color"""
@@ -133,8 +168,3 @@ func simple_highlight(enable: bool = true):
 
 func _on_skill_timer_timeout() -> void:
 	skill_ready = true
-	if highlight_material:
-		if quest_highlight_active:
-			highlight_material.set_shader_parameter("outline_color", quest_highlight_color)
-		else:
-			highlight_material.set_shader_parameter("outline_color", Color.YELLOW)

@@ -65,7 +65,10 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("ESC"):
+	var is_right_click: bool = event is InputEventMouseButton \
+			and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("ESC") \
+			or event.is_action_pressed("CANCEL") or is_right_click:
 		if _settings_open:
 			_close_settings()
 			get_viewport().set_input_as_handled()

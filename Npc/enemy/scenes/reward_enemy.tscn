@@ -13,7 +13,7 @@ size = Vector2(24, 24)
 [node name="RewardEnemy" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
 hp = 45
-movement_speed = 135.0
+movement_speed = 94.5
 damage = 0
 combat_role = "ranged"
 spawn_cost = 1

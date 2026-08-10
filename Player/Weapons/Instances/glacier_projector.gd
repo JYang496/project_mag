@@ -86,7 +86,7 @@ func _emit_glacier_burst() -> void:
 	_attacked_target_ids.clear()
 	if detect_area == null or not is_instance_valid(detect_area):
 		return
-	var forward: Vector2 = global_position.direction_to(get_mouse_target()).normalized()
+	var forward: Vector2 = get_aim_forward()
 	if forward == Vector2.ZERO:
 		return
 	_refresh_glacier_vfx(forward)
@@ -339,7 +339,7 @@ func _refresh_held_glacier_vfx() -> void:
 		return
 	if not bool(_glacier_vfx.call("is_visible_or_fading")):
 		return
-	var forward := global_position.direction_to(get_mouse_target()).normalized()
+	var forward := get_aim_forward()
 	if forward == Vector2.ZERO:
 		return
 	_refresh_glacier_vfx(forward)
@@ -351,7 +351,7 @@ func _update_glacier_vfx_follow() -> void:
 		return
 	if not bool(_glacier_vfx.call("is_visible_or_fading")):
 		return
-	var forward := global_position.direction_to(get_mouse_target()).normalized()
+	var forward := get_aim_forward()
 	if forward == Vector2.ZERO:
 		return
 	if _glacier_vfx.has_method("update_aim"):

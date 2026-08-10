@@ -67,11 +67,13 @@ func set_progress(value: float) -> void:
 		_visually_completed = true
 	if _projected_visual != null:
 		_projected_visual.set_progress(_progress)
+	_sync_ground_state()
 
 func play_completion() -> void:
 	_visually_completed = true
 	if _projected_visual != null:
 		_projected_visual.play_completion()
+	_sync_ground_state()
 
 func play_completion_and_remove() -> void:
 	if _removal_scheduled:
@@ -112,12 +114,15 @@ func _emit_presence() -> void:
 			_enemies.erase(id)
 	if _projected_visual != null:
 		_projected_visual.set_presence(_player_inside, _enemies.size())
+	_sync_ground_state()
 	presence_changed.emit(beacon_id, _player_inside, _enemies.size())
 
 func _apply_ground_style() -> void:
 	var ground := get_node_or_null("OuterGround")
 	if ground == null:
 		return
+	if ground.has_method("configure_style"):
+		ground.call("configure_style", visual_kind)
 	match visual_kind:
 		&"containment":
 			ground.visual_modulate = Color(0.70, 0.18, 0.78, 0.24)
@@ -125,6 +130,18 @@ func _apply_ground_style() -> void:
 			ground.visual_modulate = Color(0.50, 0.86, 0.20, 0.22)
 		_:
 			ground.visual_modulate = Color(0.22, 0.68, 0.82, 0.18)
+	_sync_ground_state()
+
+func _sync_ground_state() -> void:
+	var ground := get_node_or_null("OuterGround")
+	if ground != null and ground.has_method("set_state"):
+		ground.call("set_state", _progress, _player_inside, _enemies.size(), _visually_completed)
+
+func get_ground_visual_state() -> Dictionary:
+	var ground := get_node_or_null("OuterGround")
+	if ground != null and ground.has_method("get_visual_state_snapshot"):
+		return ground.call("get_visual_state_snapshot") as Dictionary
+	return {}
 
 func _get_footprint_size() -> Vector2:
 	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D

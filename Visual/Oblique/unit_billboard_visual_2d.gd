@@ -10,6 +10,9 @@ var _original_visibility_layer: int = 1
 var _billboard_config: Dictionary = {}
 var _billboard_appearance_version := 0
 var _billboard_visibility_version := 0
+@export var centered_anchor: bool = false
+@export var orbit_y_occlusion_enabled: bool = false
+const ORBIT_DEPTH_SEPARATION_PX := 0.5
 
 
 func _ready() -> void:
@@ -52,6 +55,43 @@ func get_unit_billboard_config() -> Dictionary:
 		var shadow := unit_owner.get_node_or_null("GroundShadow") as Node2D
 		if shadow != null:
 			ground_anchor = shadow.position
+	if centered_anchor:
+		ground_anchor = _base_transform.origin
+	var logical_anchor := unit_owner.global_transform * ground_anchor if unit_owner != null else Vector2.ZERO
+	var depth_anchor_world := logical_anchor
+	var projected_position_offset := Vector2.ZERO
+	var hybrid_view := _get_hybrid_view()
+	if orbit_y_occlusion_enabled and unit_owner != null and hybrid_view != null:
+		var orbit_holder := unit_owner.get_parent() as Node2D
+		var orbit_owner := orbit_holder.get_parent() as Node2D if orbit_holder != null else null
+		if orbit_owner != null:
+			var owner_ground_y := 0.0
+			var owner_shadow := orbit_owner.get_node_or_null("GroundShadow") as Node2D
+			if owner_shadow != null:
+				owner_ground_y = owner_shadow.position.y
+			# Orbit layering is semantic: weapons above the player are behind, while
+			# weapons below the player are in front. Horizontal orbit movement must
+			# never change that relationship under an oblique camera projection.
+			var is_behind_owner := unit_owner.position.y < 0.0
+			var depth_local_y := owner_ground_y + (-ORBIT_DEPTH_SEPARATION_PX if is_behind_owner else ORBIT_DEPTH_SEPARATION_PX)
+			depth_anchor_world = orbit_owner.global_transform * Vector2(0.0, depth_local_y)
+			projected_position_offset = \
+				(hybrid_view.call("project_world_to_screen", logical_anchor) as Vector2) \
+				- (hybrid_view.call("project_world_to_screen", depth_anchor_world) as Vector2)
+	var visual_rotation_radians := 0.0
+	if mode == BillboardMode.DIRECTIONAL and unit_owner != null:
+		var forward_angle := deg_to_rad(directional_forward_degrees)
+		var logical_axis := _world_direction_override
+		if logical_axis == Vector2.ZERO:
+			logical_axis = Vector2.RIGHT.rotated(unit_owner.global_rotation + _base_transform.get_rotation() + forward_angle)
+		if hybrid_view != null:
+			var screen_axis := hybrid_view.call("world_vector_to_screen", logical_axis, logical_anchor) as Vector2
+			if screen_axis.length_squared() > 0.0001:
+				# Canvas angles use a downward-positive Y axis, while the camera-facing
+				# 3D quad rotates in an upward-positive XY plane. Convert conventions at
+				# this boundary so the rendered muzzle follows the projectile direction.
+				visual_rotation_radians = forward_angle - screen_axis.angle()
+	visual_rotation_radians -= screen_feedback_rotation
 	var flash_color := Color.WHITE
 	var flash_amount := 0.0
 	var flash_overlay := get_node_or_null(^"HitFlashOverlay") as Sprite2D
@@ -77,6 +117,7 @@ func get_unit_billboard_config() -> Dictionary:
 	appearance_changed = _set_billboard_config_value(&"visual_size_px", visual_size_px) or appearance_changed
 	appearance_changed = _set_billboard_config_value(&"bottom_padding_px", bottom_padding_px) or appearance_changed
 	appearance_changed = _set_billboard_config_value(&"local_ground_anchor", ground_anchor) or appearance_changed
+	appearance_changed = _set_billboard_config_value(&"depth_anchor_world", depth_anchor_world) or appearance_changed
 	var visibility_changed := _set_billboard_config_value(&"visible", visible and unit_owner != null and unit_owner.visible)
 	appearance_changed = _set_billboard_config_value(&"flip_h", bool(get("flip_h"))) or appearance_changed
 	appearance_changed = _set_billboard_config_value(&"flip_v", bool(get("flip_v"))) or appearance_changed
@@ -87,6 +128,9 @@ func get_unit_billboard_config() -> Dictionary:
 	appearance_changed = _set_billboard_config_value(&"warning_amount", warning_amount) or appearance_changed
 	appearance_changed = _set_billboard_config_value(&"outline_color", outline_color) or appearance_changed
 	appearance_changed = _set_billboard_config_value(&"outline_width_px", outline_width) or appearance_changed
+	appearance_changed = _set_billboard_config_value(&"visual_rotation_radians", visual_rotation_radians) or appearance_changed
+	appearance_changed = _set_billboard_config_value(&"screen_feedback_offset", projected_position_offset + screen_feedback_offset) or appearance_changed
+	appearance_changed = _set_billboard_config_value(&"vertical_anchor_offset", 0.0 if centered_anchor else 0.5 - clampf(bottom_padding_px / maxf(visual_size_px.y, 1.0), 0.0, 0.49)) or appearance_changed
 	if appearance_changed:
 		_billboard_appearance_version += 1
 	if visibility_changed:

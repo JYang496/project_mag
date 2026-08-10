@@ -75,8 +75,7 @@ func _on_shoot():
 	cooldown_timer.wait_time = maxf(cooldown, 0.05)
 	cooldown_timer.start()
 
-	var target_position: Vector2 = get_mouse_target()
-	var base_direction: Vector2 = global_position.direction_to(target_position).normalized()
+	var base_direction: Vector2 = get_aim_forward()
 	var shot_directions: Array[Vector2] = branch_runtime.get_branch_shot_directions(base_direction)
 	if shot_directions.is_empty():
 		shot_directions = [base_direction]
@@ -240,7 +239,7 @@ func _build_radial_directions(count: int) -> Array[Vector2]:
 	var output: Array[Vector2] = []
 	var player := PlayerData.player as Node2D
 	var origin := player.global_position if player != null and is_instance_valid(player) else global_position
-	var base_direction := origin.direction_to(get_mouse_target()).normalized()
+	var base_direction := get_aim_forward()
 	if base_direction == Vector2.ZERO:
 		base_direction = Vector2.RIGHT
 	for index in range(maxi(count, 1)):

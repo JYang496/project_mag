@@ -116,6 +116,7 @@ func _draw() -> void:
 
 func get_hybrid_aura_visual() -> Dictionary:
 	return {
+		"relationship_kind": &"speed_aura",
 		"visible": aura_visual_enabled,
 		"radius": aura_radius,
 		"fill_color": aura_fill_color,

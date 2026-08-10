@@ -3,6 +3,8 @@ class_name EnemyDeathRuntime
 
 const COIN_SCENE := preload("res://Objects/loots/coin.tscn")
 const DROP_SCENE := preload("res://Objects/loots/drop.tscn")
+const EnemyDeathVfxProfileType := preload("res://Combat/Vfx/enemy_death_vfx_profile.gd")
+const EnemyDeathVfxServiceType := preload("res://Combat/Vfx/enemy_death_vfx_service.gd")
 
 var enemy
 
@@ -21,8 +23,20 @@ func finalize_death(killing_attack: Attack, grant_standard_rewards: bool = true)
 				PlayerData.run_elite_kills += 1
 			_notify_player_enemy_killed(killing_attack, death_position)
 		_try_trigger_elite_kill_impact(killing_attack)
+	_spawn_death_vfx(death_position, killing_attack)
 	enemy.enemy_death.emit(true)
-	enemy.queue_free()
+	if bool(enemy.get("is_boss")) and enemy.has_method("begin_boss_death_release"):
+		enemy.call("begin_boss_death_release", 1.5)
+	else:
+		enemy.queue_free()
+
+func _spawn_death_vfx(death_position: Vector2, killing_attack: Attack) -> void:
+	if enemy == null or enemy.get_tree() == null:
+		return
+	var profile := EnemyDeathVfxProfileType.from_enemy(enemy, killing_attack)
+	var service := EnemyDeathVfxServiceType.ensure(enemy.get_tree())
+	if service != null:
+		service.call("play", death_position, profile)
 
 func _spawn_kill_gold_drop() -> void:
 	var drop_value := _roll_kill_gold_drop_value()

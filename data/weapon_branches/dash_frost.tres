@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"freeze", &"area", &"control"])
+requires_any_tags = Array[StringName]([&"melee", &"on_move"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"freeze"])
+conflicts_with_tags = Array[StringName]([&"fire"])
 branch_id = "frost_dash"
 display_name = "Frost Dash Blade"
 description = "Freeze branch. Dash Blade becomes a Close/Freeze control tool: dash hits add freeze finish pressure and leave a short frost field."

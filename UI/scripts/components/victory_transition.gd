@@ -15,11 +15,9 @@ const FADE_OUT_DURATION := 0.22
 var _banner: ColorRect
 var _title_group: VBoxContainer
 var _title: Label
-var _subtitle: Label
 var _playing := false
 var _tween: Tween
 var _presentation_mode: StringName = &"quick"
-var _chapter: Resource
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -60,20 +58,14 @@ func _build_view() -> void:
 	_title.add_theme_constant_override("shadow_offset_y", 3)
 	_title_group.add_child(_title)
 
-	_subtitle = Label.new()
-	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_subtitle.add_theme_font_size_override("font_size", 18)
-	_subtitle.add_theme_color_override("font_color", Color(0.55, 0.82, 0.95))
-	_title_group.add_child(_subtitle)
 	_refresh_text()
 
-func play(presentation_mode: StringName = &"quick", chapter: Resource = null) -> void:
+func play(presentation_mode: StringName = &"quick", _chapter: Resource = null) -> void:
 	if _playing:
 		await finished
 		return
 	_playing = true
 	_presentation_mode = presentation_mode
-	_chapter = chapter
 	visible = true
 	_refresh_text()
 	await get_tree().process_frame
@@ -137,15 +129,7 @@ static func animation_timing_for(_presentation_mode: StringName) -> Dictionary:
 
 func _refresh_text() -> void:
 	var is_chinese := LocalizationManager.get_locale() == "zh_CN"
-	if _presentation_mode == &"final":
-		_title.text = LocalizationManager.tr_key("ui.run_complete.banner.title", "最终协议完成" if is_chinese else "FINAL PROTOCOL COMPLETE")
-		_subtitle.text = LocalizationManager.tr_key("ui.run_complete.banner.subtitle", "构筑验证完成" if is_chinese else "BUILD VALIDATED")
-	elif _presentation_mode == &"chapter" and _chapter != null:
-		_title.text = LocalizationManager.tr_key(_chapter.title_key, _chapter.title_fallback)
-		_subtitle.text = LocalizationManager.tr_key("ui.chapter.complete", "章节完成" if is_chinese else "CHAPTER COMPLETE")
-	else:
-		_title.text = LocalizationManager.tr_key("ui.battle_victory.quick.title", "突破" if is_chinese else "CLEAR")
-		_subtitle.text = LocalizationManager.tr_key("ui.battle_victory.quick.subtitle", "选择强化" if is_chinese else "SELECT AN UPGRADE")
+	_title.text = LocalizationManager.tr_key("ui.battle_victory.complete", "协议已完成" if is_chinese else "PROTOCOL COMPLETE")
 
 func _on_language_changed(_locale: String) -> void:
 	_refresh_text()

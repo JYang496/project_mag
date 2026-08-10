@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/scenes/weapon/weapon_turn_speed_test.gd" id="1"]
+
+[node name="WeaponTurnSpeedTest" type="Node"]
+script = ExtResource("1")

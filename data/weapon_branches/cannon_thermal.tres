@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"fire", &"heat", &"area"])
+requires_any_tags = Array[StringName]([&"physical"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"heat", &"on_overheat"])
+conflicts_with_tags = Array[StringName]([&"freeze"])
 branch_id = "thermal_cannon_branch"
 display_name = "Thermal Cannon"
 description = "Heat branch. Turns Cannon into a Heat/Fire weapon: shots gain heat-scaled output, sacrificing pure physical identity for Heat build synergy."

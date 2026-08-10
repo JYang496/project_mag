@@ -56,6 +56,7 @@ var heat_opposition_resistance: float = 0.0
 @export var range_mode: RangeMode = RangeMode.UNSPECIFIED
 @export var configured_attack_range: float = 0.0
 @export var projectile_lifetime_sec: float = 0.0
+@export_range(1.0, 1440.0, 1.0) var turn_speed_degrees_per_second: float = 360.0
 @export_flags("projectile", "melee_contact", "beam", "area") var delivery_type_flags: int = 0
 @export_flags("summon", "trap", "support", "movement") var weapon_capability_flags: int = 0
 var runtime_delivery_additions: Dictionary = {}
@@ -89,6 +90,18 @@ signal weapon_reload_completed(weapon: Weapon)
 @warning_ignore("unused_signal")
 signal offhand_refreshed_by_reload(weapon: Weapon)
 #endregion
+
+func get_aim_forward() -> Vector2:
+	return Vector2.RIGHT.rotated(rotation - deg_to_rad(90.0)).normalized()
+
+func turn_toward_world_position(target_position: Vector2, delta: float, speed_multiplier: float = 1.0) -> bool:
+	var desired_direction := global_position.direction_to(target_position).normalized()
+	if desired_direction == Vector2.ZERO:
+		return false
+	var target_rotation := desired_direction.angle() + deg_to_rad(90.0)
+	var max_step := deg_to_rad(maxf(turn_speed_degrees_per_second, 0.0)) * maxf(speed_multiplier, 0.0) * maxf(delta, 0.0)
+	rotation = rotate_toward(rotation, target_rotation, max_step)
+	return true
 
 #region Level And Data
 func _init() -> void:

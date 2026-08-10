@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Player/Weapons/Feedback/muzzle_flash_vfx.gd" id="1_plasma"]
+
+[node name="MuzzleFlashPlasma" type="Node2D"]
+script = ExtResource("1_plasma")
+color = Color(0.74, 0.94, 1, 0.96)
+secondary_color = Color(0.88, 0.24, 1, 0.58)
+length_px = 40.0
+width_px = 24.0
+duration_sec = 0.085
+shape_style = 2
+source_size_px = 64

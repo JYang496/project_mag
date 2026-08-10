@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"projectile", &"long_range"])
+requires_any_tags = Array[StringName]([&"projectile"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"on_hit"])
+conflicts_with_tags = Array[StringName]([])
 branch_id = "sniper_deep_pierce"
 display_name = "Deep Pierce"
 description = "Projectile branch. Each pierce increases remaining-hit damage, rewarding long lanes and stacked enemies over pure single-target sniping."

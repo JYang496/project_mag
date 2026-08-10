@@ -77,6 +77,7 @@ func _draw() -> void:
 
 func get_hybrid_aura_visual() -> Dictionary:
 	return {
+		"relationship_kind": &"shield_aura",
 		"visible": true,
 		"radius": aura_radius,
 		"fill_color": aura_fill_color,
@@ -93,6 +94,10 @@ func get_hybrid_link_visuals() -> Array[Dictionary]:
 		if is_instance_valid(target):
 			links.append({
 				"target": target,
+				"relationship_kind": &"shield",
+				"link_style": 2,
+				"flow_speed": 1.15,
+				"segment_count": 8.0,
 				"outer_color": protected_line_outer_color,
 				"outer_width": 4.5,
 				"color": protected_line_color,

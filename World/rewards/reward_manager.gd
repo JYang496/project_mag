@@ -140,8 +140,7 @@ func _request_standard_battle_reward_selection(level_index: int) -> void:
 		Callable(self, "_on_standard_battle_reward_selected"),
 		Callable(),
 		false,
-		true,
-		PhaseManager.get_settlement_type()
+		true
 	))
 	if opened:
 		RunPacingTelemetry.record_event(&"reward_panel_opened", {"presentation": PhaseManager.get_settlement_type(), "option_count": reward_options.size()})

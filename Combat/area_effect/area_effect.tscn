@@ -30,10 +30,14 @@ shape = SubResource("CircleShape2D_area_effect")
 [node name="DamageTimer" type="Timer" parent="."]
 one_shot = true
 
+[node name="ActivationTimer" type="Timer" parent="."]
+one_shot = true
+
 [node name="LifeTimer" type="Timer" parent="."]
 one_shot = true
 
 [connection signal="area_entered" from="." to="." method="_on_area_entered"]
 [connection signal="area_exited" from="." to="." method="_on_area_exited"]
 [connection signal="timeout" from="DamageTimer" to="." method="_on_damage_timer_timeout"]
+[connection signal="timeout" from="ActivationTimer" to="." method="_on_activation_timer_timeout"]
 [connection signal="timeout" from="LifeTimer" to="." method="_on_life_timer_timeout"]

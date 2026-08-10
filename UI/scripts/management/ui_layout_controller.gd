@@ -4,6 +4,7 @@ class_name UiLayoutController
 const LAYOUT_POLICY := preload("res://UI/scripts/management/ui_layout_policy.gd")
 const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
 const PAUSE_PANEL_TARGET_SIZE := Vector2(556, 648)
+const PAUSE_PANEL_RIGHT_MARGIN := 48.0
 const PRIMARY_MENU_ANIM_TIME := TOKENS.MOTION_NORMAL
 const PRIMARY_MENU_ANIM_TRANS := Tween.TRANS_CUBIC
 const PRIMARY_MENU_ANIM_EASE := Tween.EASE_OUT
@@ -203,7 +204,20 @@ func fit_pause_layout(viewport_size: Vector2) -> void:
 	owner_ui.pause_menu_root.offset_top = 0
 	owner_ui.pause_menu_root.offset_right = 0
 	owner_ui.pause_menu_root.offset_bottom = 0
-	fit_center_panel(owner_ui.pause_menu_panel, viewport_size, PAUSE_PANEL_TARGET_SIZE)
+	fit_right_panel(owner_ui.pause_menu_panel, viewport_size, PAUSE_PANEL_TARGET_SIZE, PAUSE_PANEL_RIGHT_MARGIN)
+
+func fit_right_panel(panel: Control, viewport_size: Vector2, target_size: Vector2, right_margin: float) -> void:
+	if panel == null:
+		return
+	var margin := LAYOUT_POLICY.safe_margin(viewport_size)
+	var available_size: Vector2 = viewport_size - margin * 2.0
+	var width := minf(target_size.x, available_size.x)
+	var height := minf(target_size.y, available_size.y)
+	panel.size = Vector2(maxf(width, 0.0), maxf(height, 0.0))
+	panel.position = Vector2(
+		maxf(margin.x, viewport_size.x - right_margin - panel.size.x),
+		(viewport_size.y - panel.size.y) * 0.5
+	)
 
 func _sync_public_fields_to_owner() -> void:
 	if owner_ui == null:

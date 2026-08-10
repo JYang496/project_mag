@@ -56,7 +56,7 @@ func _on_shoot() -> void:
 	if spawn_projectile == null:
 		return
 
-	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
+	projectile_direction = get_aim_forward()
 	var runtime_damage := get_runtime_shot_damage()
 	var heat_damage_multiplier := _get_heat_damage_multiplier()
 	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * heat_damage_multiplier)))

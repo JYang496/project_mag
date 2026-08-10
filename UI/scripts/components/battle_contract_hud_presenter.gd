@@ -130,7 +130,7 @@ func refresh(allow_deployment_handoff: bool = false) -> void:
 			var total_batches := maxi(int(snapshot.get("total_batches", 1)), 1)
 			var killed_hp := maxi(int(snapshot.get("killed_hp", 0)), 0)
 			var planned_hp := maxi(int(snapshot.get("planned_hp", 0)), 1)
-			value.text = LocalizationManager.tr_format("battle_contract.hud.elimination", {"remaining": snapshot.get("remaining_enemies", 0), "current": current_batch, "total": total_batches}, "Remaining {remaining} · Wave {current}/{total}")
+			value.text = _format_elimination_status(snapshot, current_batch, total_batches)
 			detail.text = LocalizationManager.tr_key("battle_contract.hud.elimination.detail", "Eliminate all deployed targets")
 			progress.visible = true
 			progress.call("set_target_value", clampf(float(killed_hp) / float(planned_hp), 0.0, 1.0))
@@ -196,6 +196,21 @@ func refresh(allow_deployment_handoff: bool = false) -> void:
 			progress.visible = true
 			progress.call("set_target_value", clampf(remaining / duration, 0.0, 1.0))
 			_set_progress_color(Color("f0b833"))
+
+func _format_elimination_status(snapshot: Dictionary, current_batch: int, total_batches: int) -> String:
+	var active := maxi(int(snapshot.get("active_enemies", snapshot.get("remaining_enemies", 0))), 0)
+	var queued := maxi(int(snapshot.get("queued_enemies", 0)), 0)
+	if queued > 0:
+		return LocalizationManager.tr_format(
+			"battle_contract.hud.elimination.deployed_queued",
+			{"active": active, "queued": queued, "current": current_batch, "total": total_batches},
+			"Active {active} · Reinforcements {queued} · Wave {current}/{total}"
+		)
+	return LocalizationManager.tr_format(
+		"battle_contract.hud.elimination.deployed",
+		{"active": active, "current": current_batch, "total": total_batches},
+		"Active {active} · Wave {current}/{total}"
+	)
 
 func _on_state_changed(state: StringName) -> void:
 	if state == BattleContractManager.ACTIVE:

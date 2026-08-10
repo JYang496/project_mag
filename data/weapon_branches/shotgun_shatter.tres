@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"freeze", &"execute"])
+requires_any_tags = Array[StringName]([&"projectile", &"close_range"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"freeze"])
+conflicts_with_tags = Array[StringName]([&"fire"])
 branch_id = "shatter_buckshot"
 display_name = "Shatter Buckshot"
 description = "Freeze branch. Shotgun pellets can shatter targets after rapid multi-hit bursts, turning Close pellet overlap into Freeze payoff."

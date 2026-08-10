@@ -77,9 +77,9 @@ func setup_timer() -> void:
 	_setup_components()
 	fire_controller.setup_timer()
 
-func _physics_process(_delta):
-	super._physics_process(_delta)
-	_update_weapon_rotation()
+func _physics_process(delta):
+	super._physics_process(delta)
+	_update_weapon_rotation(delta)
 
 func _on_cooldown_timer_timeout():
 	_setup_components()
@@ -88,7 +88,7 @@ func _on_cooldown_timer_timeout():
 func _on_shoot():
 	is_on_cooldown = true
 	var target_position: Vector2 = get_mouse_target()
-	var base_direction := global_position.direction_to(target_position).normalized()
+	var base_direction := get_aim_forward()
 	for direction in branch_runtime.get_branch_shot_directions(base_direction):
 		var projectile := spawn_projectile_from_scene(projectile_scene)
 		if projectile == null:
@@ -122,11 +122,7 @@ func get_mouse_target():
 	return get_global_mouse_position()
 
 func get_fire_feedback_direction() -> Vector2:
-	var target_position: Vector2 = get_mouse_target()
-	var direction := global_position.direction_to(target_position)
-	if direction == Vector2.ZERO:
-		return super.get_fire_feedback_direction()
-	return direction.normalized()
+	return get_aim_forward()
 
 func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	if not can_run_active_behavior():
@@ -255,11 +251,9 @@ func _adjust_sprite_height() -> void:
 func _on_fuse_texture_changed() -> void:
 	_adjust_sprite_height()
 
-func _update_weapon_rotation() -> void:
-	var mouse_direction: Vector2 = get_mouse_target() - global_position
-	if mouse_direction == Vector2.ZERO:
-		return
-	rotation = mouse_direction.angle() + AIM_ROTATION_OFFSET
+func _update_weapon_rotation(delta: float = -1.0) -> void:
+	var step_delta := get_physics_process_delta_time() if delta < 0.0 else delta
+	turn_toward_world_position(get_mouse_target(), step_delta)
 
 func supports_projectiles() -> bool:
 	return true

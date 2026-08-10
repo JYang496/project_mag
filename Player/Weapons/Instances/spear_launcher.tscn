@@ -7,6 +7,7 @@
 
 [node name="SpearLauncher" instance=ExtResource("1_yntmd")]
 script = ExtResource("1_wrx6n")
+turn_speed_degrees_per_second = 300.0
 fire_feedback_profile = ExtResource("2_feedback")
 range_mode = 1
 configured_attack_range = 800.0

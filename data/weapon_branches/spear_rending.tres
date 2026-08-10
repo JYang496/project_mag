@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"mark", &"on_hit"])
+requires_any_tags = Array[StringName]([&"projectile"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"mark"])
+conflicts_with_tags = Array[StringName]([])
 branch_id = "spear_rending"
 display_name = "Rending Thrust"
 description = "Mark pressure branch. Repeated hits on the same target increase damage for a short window, favoring elite focus and spear return control."

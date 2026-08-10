@@ -16,6 +16,17 @@ max_width_scale = 0.85
 visual_width_multiplier = 0.596
 playback_speed = 0.92
 visible_modulate = Color(0.78, 0.95, 1, 0.74)
+trail_max_afterimages = 6
+trail_min_sample_interval_sec = 0.08
+trail_slow_turn_threshold_deg = 8.0
+trail_fast_turn_threshold_deg = 4.5
+trail_lifetime_sec = 0.58
+trail_drift_px = 5.0
+trail_end_scale = 0.9
+trail_spread_scale = 1.16
+trail_sparkle_strength = 0.9
+trail_cold_style = true
+trail_modulate = Color(0.48, 0.86, 1, 0.34)
 
 [node name="SprayRoot" type="Node2D" parent="."]
 

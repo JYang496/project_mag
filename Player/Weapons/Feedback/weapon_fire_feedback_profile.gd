@@ -2,6 +2,13 @@ extends Resource
 class_name WeaponFireFeedbackProfile
 
 @export var muzzle_flash_scene: PackedScene
+@export_group("Muzzle Signature")
+@export_range(0.65, 1.6, 0.05) var muzzle_scale := 1.0
+@export_range(0.65, 1.6, 0.05) var muzzle_length_scale := 1.0
+@export_range(0.65, 1.6, 0.05) var muzzle_width_scale := 1.0
+@export_range(0.0, 0.65, 0.05) var muzzle_tint_strength := 0.0
+@export var muzzle_tint := Color.WHITE
+@export_group("")
 @export var recoil_distance: float = 0.0
 @export var recoil_duration: float = 0.04
 @export var recoil_recover_duration: float = 0.08

@@ -181,9 +181,12 @@ func _test_settings_geometry() -> void:
 	_expect(panel.get_node_or_null("Margin/Content/AutoAim") is CheckButton, "settings panel must own assist controls")
 	var footer := panel.get_node("Margin/Content/SettingsFooter") as Control
 	_expect(footer.global_position.y + footer.size.y <= panel.global_position.y + panel.size.y - 24.0, "settings content must preserve its bottom inset")
-	_menu.call("_close_settings")
+	var cancel_event := InputEventMouseButton.new()
+	cancel_event.button_index = MOUSE_BUTTON_RIGHT
+	cancel_event.pressed = true
+	_menu.call("_unhandled_input", cancel_event)
 	await get_tree().create_timer(0.18).timeout
-	_expect(not panel.visible, "closing settings must restore the landing page")
+	_expect(not panel.visible, "right-click cancel must close settings and restore the landing page")
 	_expect(get_viewport().gui_get_focus_owner() == _menu.get_node("CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Settings"), "closing settings must restore keyboard focus to Settings")
 
 

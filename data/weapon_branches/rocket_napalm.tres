@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"fire", &"area", &"terrain"])
+requires_any_tags = Array[StringName]([&"projectile"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"area"])
+conflicts_with_tags = Array[StringName]([&"freeze"])
 branch_id = "napalm_rocket"
 display_name = "Napalm Rocket"
 description = "Area branch. Rocket explosions persist as burning zones for area denial and grouped enemy cleanup."

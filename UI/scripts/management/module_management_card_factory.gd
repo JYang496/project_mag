@@ -97,20 +97,20 @@ func make_module_weapon_card(weapon: Weapon, active_drag_module: Module, socket_
 	panel.set_meta("weapon", weapon)
 	apply_module_weapon_card_style(panel, weapon, active_drag_module)
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_left", 8)
 	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_right", 8)
 	margin.add_theme_constant_override("margin_bottom", 8)
 	panel.add_child(margin)
 	var root := HBoxContainer.new()
-	root.add_theme_constant_override("separation", 10)
+	root.add_theme_constant_override("separation", 8)
 	margin.add_child(root)
 	var weapon_icon_frame := PanelContainer.new()
 	weapon_icon_frame.name = "WeaponIconFrame"
-	weapon_icon_frame.custom_minimum_size = Vector2(64, 64)
+	weapon_icon_frame.custom_minimum_size = Vector2(52, 64)
 	weapon_icon_frame.add_theme_stylebox_override("panel", _make_icon_frame_style(_get_weapon_rarity_color(weapon)))
 	root.add_child(weapon_icon_frame)
-	var weapon_icon := _make_icon(Vector2(54, 54))
+	var weapon_icon := _make_icon(Vector2(46, 54))
 	weapon_icon.name = "WeaponIcon"
 	weapon_icon.texture = weapon.sprite.texture if weapon.sprite else null
 	weapon_icon_frame.add_child(weapon_icon)
@@ -132,7 +132,7 @@ func make_module_weapon_card(weapon: Weapon, active_drag_module: Module, socket_
 	content.add_child(level_label)
 	var slot_row := HBoxContainer.new()
 	slot_row.name = "ModuleSlots"
-	slot_row.add_theme_constant_override("separation", 5)
+	slot_row.add_theme_constant_override("separation", 4)
 	content.add_child(slot_row)
 	var installed: Array[Module] = []
 	if weapon.modules:
@@ -152,7 +152,8 @@ func make_module_socket_button(weapon: Weapon, existing: Module, index: int, pre
 	button.drop_payload = {"kind": "module_slot", "weapon": weapon, "existing": existing, "slot_index": index}
 	if existing != null and is_instance_valid(existing):
 		button.drag_payload = {"kind": "equipped_module", "module": existing, "weapon": weapon}
-	button.custom_minimum_size = Vector2(60, 64)
+	button.custom_minimum_size = Vector2(48, 64)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.text = ""
 	var feedback := _get_slot_feedback(weapon, existing)
 	button.disabled = false
@@ -165,19 +166,19 @@ func make_module_socket_button(weapon: Weapon, existing: Module, index: int, pre
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(root)
 	var visual := Control.new()
-	visual.custom_minimum_size = Vector2(50, 54)
+	visual.custom_minimum_size = Vector2(40, 54)
 	visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(visual)
-	var icon := _make_icon(Vector2(42, 42))
+	var icon := _make_icon(Vector2(36, 42))
 	icon.name = "ModuleIcon"
-	icon.position = Vector2(4, 2)
+	icon.position = Vector2(2, 2)
 	icon.texture = _get_module_texture(existing) if existing else null
 	visual.add_child(icon)
 	if existing == null:
 		var empty_mark := Label.new()
 		empty_mark.name = "EmptyMark"
 		empty_mark.text = "+"
-		empty_mark.position = Vector2(13, -2)
+		empty_mark.position = Vector2(6, -2)
 		empty_mark.size = Vector2(28, 38)
 		empty_mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty_mark.add_theme_font_size_override("font_size", 26)
@@ -187,8 +188,8 @@ func make_module_socket_button(weapon: Weapon, existing: Module, index: int, pre
 	var badge := Label.new()
 	badge.name = "SlotBadge"
 	badge.text = "Lv.%d" % int(existing.module_level) if existing else str(index + 1)
-	badge.position = Vector2(2, 39)
-	badge.size = Vector2(46, 14)
+	badge.position = Vector2(0, 39)
+	badge.size = Vector2(40, 14)
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge.add_theme_font_size_override("font_size", 9)
 	badge.add_theme_color_override("font_color", RARITY_UTIL.get_color(existing.get_rarity()) if existing else Color(0.58, 0.72, 0.8))

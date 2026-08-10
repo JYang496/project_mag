@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("2_script")
+produces_tags = Array[StringName]([&"mark", &"on_reload", &"area"])
+requires_any_tags = Array[StringName]([&"projectile"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"mark"])
+conflicts_with_tags = Array[StringName]([])
 passive_id = "piercing_blade_dance"
 display_name = "Piercing Blade Dance"
 description = "Mark/Reload trigger. Repeated damage from the same spear builds charge; finish reload at 10 or 20 charge to launch an 8- or 16-direction marking volley."

@@ -4,6 +4,11 @@
 
 [resource]
 script = ExtResource("1_script")
+produces_tags = Array[StringName]([&"energy", &"on_energy_cycle"])
+requires_any_tags = Array[StringName]([&"projectile"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"on_energy_cycle"])
+conflicts_with_tags = Array[StringName]([])
 passive_id = "pistol_arc_energy_cycle"
 display_name = "Arc Discharge"
 description = "Accumulator energy cycle. Each valid Arc damage event grants 12 global energy. If the pool is full before firing, the attack consumes it for +35% damage."

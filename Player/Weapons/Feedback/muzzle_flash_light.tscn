@@ -10,3 +10,4 @@ length_px = 18.0
 width_px = 8.0
 duration_sec = 0.045
 smoke_radius = 0.0
+source_size_px = 32

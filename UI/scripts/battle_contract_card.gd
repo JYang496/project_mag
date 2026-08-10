@@ -58,8 +58,17 @@ func set_selected(value: bool, dim_unselected: bool = true) -> void:
 	)
 	self_modulate = Color.WHITE if value or not dim_unselected else Color(0.84, 0.88, 0.9, 0.9)
 
+func set_hold_progress(value: float, is_visible: bool) -> void:
+	$HoldProgress.value = clampf(value, 0.0, 1.0)
+	$HoldProgress.visible = is_visible
+
+func set_quick_select_index(index: int) -> void:
+	$Margin/Content/Header/KeyBadge.text = str(index)
+	$Margin/Content/Header/KeyBadge.visible = index >= 1 and index <= 3
+
 func show_battle_intro(objective: String, parameters_text: String) -> void:
 	_intro_mode = true
+	$Margin/Content/Header/KeyBadge.visible = false
 	$Margin/Content/Header/SelectedBadge.visible = false
 	$Margin/Content/Header/RareBadge.visible = false
 	$RareFrame.visible = false
@@ -89,6 +98,20 @@ func begin_intro_collapse(duration_sec: float) -> void:
 
 func _apply_card_styles() -> void:
 	var card_dark := Color(0.045, 0.07, 0.083, 0.985)
+	var key_badge_style := StyleBoxFlat.new()
+	key_badge_style.bg_color = Color(0.025, 0.055, 0.065, 0.96)
+	key_badge_style.border_color = _accent_color.darkened(0.12)
+	key_badge_style.set_border_width_all(1)
+	key_badge_style.set_corner_radius_all(3)
+	$Margin/Content/Header/KeyBadge.add_theme_stylebox_override("normal", key_badge_style)
+	var hold_track := StyleBoxFlat.new()
+	hold_track.bg_color = Color(0.015, 0.03, 0.035, 0.95)
+	hold_track.set_corner_radius_all(2)
+	var hold_fill := StyleBoxFlat.new()
+	hold_fill.bg_color = _accent_color
+	hold_fill.set_corner_radius_all(2)
+	$HoldProgress.add_theme_stylebox_override("background", hold_track)
+	$HoldProgress.add_theme_stylebox_override("fill", hold_fill)
 	$AccentLine.color = _accent_color
 	$Margin/Content/Header/TypeLabel.add_theme_color_override("font_color", _accent_color)
 	$Margin/Content/Header/RareBadge.add_theme_color_override("font_color", Color(1.0, 0.78, 0.26))
@@ -123,7 +146,7 @@ func _type_label(id: String) -> String:
 		_: return "CONTRACT // 协议"
 
 func _draw() -> void:
-	var center := Vector2(size.x * 0.5 - 74.0, 32.5) if _intro_mode else Vector2(36.5, 32.5)
+	var center := get_contract_icon_center_local()
 	var color := _accent_color
 	match _contract_id:
 		"survival":
@@ -149,6 +172,10 @@ func _draw() -> void:
 			draw_line(center + Vector2(1, -6), center + Vector2(1, 2), color, 1.5, true)
 		_:
 			draw_rect(Rect2(center - Vector2(7, 7), Vector2(14, 14)), color, false, 2.0)
+
+func get_contract_icon_center_local() -> Vector2:
+	var icon := $Margin/Content/Header/ContractIcon as Control
+	return icon.get_global_rect().get_center() - get_global_rect().position
 
 func _make_style(background: Color, border: Color, width: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

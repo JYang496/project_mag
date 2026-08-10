@@ -339,14 +339,14 @@ func play_initial_rest_area_entry() -> void:
 func play_battle_entry_intro(is_boss: bool = false) -> void:
 	if is_boss and battle_contract_hud_presenter != null:
 		battle_contract_hud_presenter.prepare_boss_intro(BattleContractManager.get_battle_intro_snapshot())
+	if battlefield_deployment_presenter != null:
+		await battlefield_deployment_presenter.play()
 	var intro_was_prepared: bool = battle_contract_hud_presenter != null \
 			and battle_contract_hud_presenter.has_prepared_intro()
 	if battle_contract_hud_presenter != null:
 		await battle_contract_hud_presenter.play_prepared_intro()
 	if intro_was_prepared:
 		await get_tree().create_timer(0.10).timeout
-	if battlefield_deployment_presenter != null:
-		await battlefield_deployment_presenter.play()
 
 func _exit_tree() -> void:
 	_rest_area_purchase_prewarm_generation += 1
@@ -900,8 +900,7 @@ func request_reward_selection(
 	on_confirm: Callable = Callable(),
 	on_cancel: Callable = Callable(),
 	allow_cancel: bool = true,
-	show_draft_hint: bool = false,
-	presentation_mode: StringName = &"standard"
+	show_draft_hint: bool = false
 ) -> bool:
 	if is_branch_selection_blocking_interactions():
 		show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
@@ -919,8 +918,7 @@ func request_reward_selection(
 		"",
 		0,
 		0,
-		show_draft_hint,
-		presentation_mode
+		show_draft_hint
 	)
 
 func request_task_reward_selection(
@@ -1164,6 +1162,13 @@ func _input(_event) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if _handle_primary_menu_input(_event):
+		get_viewport().set_input_as_handled()
+		return
+	var is_right_click: bool = _event is InputEventMouseButton \
+			and _event.pressed and _event.button_index == MOUSE_BUTTON_RIGHT
+	if pause_menu_root != null and pause_menu_root.visible \
+			and (_event.is_action_pressed("CANCEL") or is_right_click) and not _event.is_echo():
+		_set_pause_menu_open(false)
 		get_viewport().set_input_as_handled()
 		return
 

@@ -50,6 +50,23 @@ func _test_elimination() -> void:
 	configured_port.enemy_died.emit({"was_killed": true, "scaled_hp": 100})
 	_expect(configured_port.released_batches == 1, "configured elimination release ratio must advance the next batch")
 	configured_runtime.stop()
+	var tail_port = FakePort.new()
+	tail_port.spawn_budget_snapshot = {"planned_total_hp": 300, "planned_enemy_count": 3}
+	var tail_runtime = EliminationRuntime.new()
+	tail_runtime.start(tail_port, {"batch_count_min": 3, "batch_count_max": 3})
+	tail_port.battle_tick.emit({"delta_sec": 0.1})
+	_expect(tail_runtime.current_batch == 3 and tail_port.released_batches == 2, "one-target-per-batch elimination tail must merge dynamically")
+	tail_port.enemy_spawned.emit({})
+	var tail_snapshot := tail_runtime._snapshot()
+	_expect(int(tail_snapshot.get("active_enemies", -1)) == 1 and int(tail_snapshot.get("queued_enemies", -1)) == 2, "elimination snapshot must distinguish active enemies from queued reinforcements")
+	tail_runtime.stop()
+	var formation_port = FakePort.new()
+	formation_port.spawn_budget_snapshot = {"planned_total_hp": 400, "planned_enemy_count": 4}
+	var formation_runtime = EliminationRuntime.new()
+	formation_runtime.start(formation_port, {"batch_count_min": 3, "batch_count_max": 3})
+	formation_port.battle_tick.emit({"delta_sec": 0.1})
+	_expect(formation_runtime.current_batch == 1 and formation_port.released_batches == 0, "multi-target opening formation must retain normal batch pacing")
+	formation_runtime.stop()
 	var finale_port = FakePort.new()
 	finale_port.level_index = 9
 	var finale_runtime = EliminationRuntime.new()
@@ -66,15 +83,29 @@ func _test_elimination() -> void:
 	port.battle_tick.emit({"delta_sec": 0.1})
 	_expect(port.external_victory_control and port.monitor_enemy_stalls, "elimination must own victory and monitor stalls")
 	_expect(int(port.configured_budget.get("batch_count", 0)) == 3, "elimination must configure three early-game batches")
+	port.active_enemy_count = 1
 	port.enemy_spawned.emit({})
 	port.spawn_budget_exhausted.emit({})
 	_expect(results.is_empty(), "elimination must not finish while an enemy remains")
+	port.active_enemy_count = 0
 	port.enemy_died.emit({"was_killed": true, "scaled_hp": 100})
 	port.spawn_budget_exhausted.emit({})
 	_expect(results.size() == 1, "elimination completion must be emitted exactly once")
 	_expect(results.size() == 1 and int(results[0].get("remaining_enemies", -1)) == 0, "elimination result must report no remaining enemies")
 	runtime.stop()
 	_expect(not port.external_victory_control and not port.monitor_enemy_stalls, "elimination stop must restore port controls")
+
+	var guidance_port = FakePort.new()
+	guidance_port.spawn_budget_snapshot = {"planned_total_hp": 500, "planned_enemy_count": 5}
+	var guidance_runtime = EliminationRuntime.new()
+	guidance_runtime.start(guidance_port, {"batch_count_min": 1, "batch_count_max": 1})
+	guidance_port.battle_tick.emit({"delta_sec": 0.1})
+	_expect(guidance_port.elimination_guidance_calls.is_empty(), "five remaining enemies must not enable offscreen guidance")
+	guidance_port.enemy_spawned.emit({"enemy_id": 41})
+	guidance_port.enemy_died.emit({"enemy_id": 41, "was_killed": true})
+	_expect(guidance_port.elimination_guidance_calls == [true], "dropping below five total remaining enemies must enable offscreen guidance once")
+	guidance_runtime.stop()
+	_expect(guidance_port.elimination_guidance_calls == [true, false], "elimination cleanup must disable offscreen guidance")
 
 	var drift_port = FakePort.new()
 	var drift_runtime = EliminationRuntime.new()
@@ -92,6 +123,24 @@ func _test_elimination() -> void:
 	_expect(drift_results.size() == 1, "elimination must recover when the final enemy exits without a death signal")
 	_expect(drift_results.size() == 1 and int(drift_results[0].get("remaining_enemies", -1)) == 0, "recovered elimination must report zero remaining enemies")
 	drift_runtime.stop()
+
+	var deployed_port = FakePort.new()
+	deployed_port.spawn_budget_snapshot = {"planned_total_hp": 200, "planned_enemy_count": 2}
+	var deployed_runtime = EliminationRuntime.new()
+	var deployed_results: Array = []
+	deployed_runtime.completed.connect(_completed_collector.bind(deployed_results))
+	deployed_runtime.start(deployed_port, {"batch_count_min": 1, "batch_count_max": 1})
+	deployed_port.battle_tick.emit({"delta_sec": 0.1})
+	deployed_port.active_enemy_count = 2
+	deployed_port.enemy_spawned.emit({})
+	deployed_port.enemy_spawned.emit({})
+	deployed_port.active_enemy_count = 1
+	deployed_port.enemy_died.emit({"was_killed": true, "scaled_hp": 100})
+	_expect(deployed_results.is_empty(), "elimination must not finish while a deployed enemy is still alive")
+	deployed_port.active_enemy_count = 0
+	deployed_port.enemy_died.emit({"was_killed": true, "scaled_hp": 100})
+	_expect(deployed_results.size() == 1, "elimination must finish when no enemies are queued or actually alive without waiting for the budget signal")
+	deployed_runtime.stop()
 
 func _test_survival() -> void:
 	var threat_port = FakePort.new()
@@ -235,6 +284,7 @@ func _test_extraction() -> void:
 func _test_reward() -> void:
 	var reward_enemy := RewardEnemyScene.instantiate() as BaseEnemy
 	var reward_body := reward_enemy.get_node("Body") as Sprite2D
+	_expect(is_equal_approx(reward_enemy.movement_speed, 94.5), "reward enemy movement speed must remain 30% below its original 135.0 value")
 	_expect(reward_body.texture != null, "reward enemy must bind its texture to the registered Body billboard")
 	_expect(reward_body.get_node_or_null("RewardSprite") == null, "reward enemy must not hide its visual in an unregistered child sprite")
 	reward_enemy.free()

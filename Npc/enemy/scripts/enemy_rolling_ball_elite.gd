@@ -62,7 +62,7 @@ func _on_skill_area_body_exited(body: Node2D) -> void:
 func _finish_dash() -> void:
 	if not charging and not preparing_dash:
 		return
-	highlight_material.set_shader_parameter("outline_color", Color.YELLOW)
+	set_skill_activation_visual(false)
 	charging = false
 	preparing_dash = false
 	bonus_speed = 0.0
@@ -79,7 +79,7 @@ func _start_dash_prepare() -> void:
 	if PlayerData.player and direction == Vector2.ZERO:
 		direction = global_position.direction_to(PlayerData.player.global_position)
 	bonus_speed = -0.7 * movement_speed
-	highlight_material.set_shader_parameter("outline_color", Color.RED)
+	set_skill_activation_visual(true)
 	if skill_warning_telegraph:
 		skill_warning_telegraph.show_dash_warning(
 			global_position,

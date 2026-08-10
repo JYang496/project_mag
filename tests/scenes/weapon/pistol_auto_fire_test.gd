@@ -53,6 +53,7 @@ func _ready() -> void:
 	failed = _check(spawned_projectile != null, "Auto Pistol must add a projectile after spending ammo") or failed
 	if spawned_projectile != null:
 		failed = _check(spawned_projectile.base_displacement.length_squared() > 0.0, "Auto Pistol projectile must receive non-zero movement") or failed
+		failed = _check(spawned_projectile.base_displacement.normalized().is_equal_approx(pistol.get_aim_forward()), "Auto Pistol projectile must follow the limited barrel direction") or failed
 		failed = _check(spawned_projectile.global_position != pistol.global_position, "Auto Pistol projectile must move away from the muzzle") or failed
 
 	var previous_auto_aim := PlayerAssistSettings.auto_aim_continuous_fire
@@ -60,16 +61,28 @@ func _ready() -> void:
 	var blade := DashBladeScene.instantiate() as DashBlade
 	add_child(blade)
 	blade.global_position = Vector2.ZERO
-	blade.call("_process_idle")
+	blade.call("_process_idle", 0.25)
 	failed = _check(
 		not blade.has_meta(&"_player_assist_auto_aim_target"),
 		"Dash Blade idle aiming must tolerate a missing auto-aim target"
 	) or failed
 	enemy.global_position = Vector2(600.0, 0.0)
+	blade.call("_process_idle", 0.25)
+	failed = _check(
+		is_equal_approx(blade.blade_anchor.rotation, deg_to_rad(90.0)),
+		"Auto-fire Dash Blade must aim at an enemy to its right outside attack range"
+	) or failed
+	enemy.global_position = Vector2(-600.0, 0.0)
+	blade.call("_process_idle", 0.25)
+	failed = _check(
+		is_equal_approx(blade.blade_anchor.rotation, deg_to_rad(-45.0)),
+		"Auto-fire Dash Blade must limit a 180-degree target switch to 135 degrees in a quarter second"
+	) or failed
+	enemy.global_position = Vector2(600.0, 0.0)
 	var assist := PlayerAssistSystem.new()
 	assist.setup(self)
 	assist.process_combat_assist(blade, false, 0.016)
-	blade.call("_process_idle")
+	blade.call("_process_idle", 0.25)
 	failed = _check(
 		blade.has_meta(&"_player_assist_auto_aim_target"),
 		"Auto aim must retain a melee target outside attack range"

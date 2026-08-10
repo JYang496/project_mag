@@ -2,6 +2,8 @@ extends RefCounted
 class_name WeaponFireFeedbackPlayer
 
 const MuzzleFlashVfxScript := preload("res://Player/Weapons/Feedback/muzzle_flash_vfx.gd")
+const MuzzleFlashVfxServiceType := preload("res://Player/Weapons/Feedback/muzzle_flash_vfx_service.gd")
+const RareWeaponVfxSignatureType := preload("res://Player/Weapons/Feedback/rare_weapon_vfx_signature.gd")
 
 var weapon: Node2D
 var _last_feedback_msec: int = -1000000
@@ -86,10 +88,6 @@ func _spawn_muzzle_flash(profile: Resource, direction: Vector2) -> void:
 	var tree := weapon.get_tree()
 	if tree == null:
 		return
-	var vfx := muzzle_flash_scene.instantiate() as Node2D
-	if vfx == null:
-		return
-	tree.root.add_child(vfx)
 	var muzzle_position := _get_muzzle_global_position(direction)
 	var visual_position := muzzle_position
 	var visual_direction := direction
@@ -99,11 +97,17 @@ func _spawn_muzzle_flash(profile: Resource, direction: Vector2) -> void:
 		visual_direction = hybrid_view.call("world_vector_to_screen", direction, muzzle_position) as Vector2
 		if visual_direction != Vector2.ZERO:
 			visual_direction = visual_direction.normalized()
-	vfx.global_position = visual_position
-	if vfx.has_method("setup"):
-		vfx.call("setup", visual_direction)
-	else:
-		vfx.global_rotation = visual_direction.angle()
+	var service := MuzzleFlashVfxServiceType.ensure(tree)
+	if service != null:
+		var signature := {
+			"scale": float(profile.get("muzzle_scale")),
+			"length_scale": float(profile.get("muzzle_length_scale")),
+			"width_scale": float(profile.get("muzzle_width_scale")),
+			"tint_strength": float(profile.get("muzzle_tint_strength")),
+			"tint": profile.get("muzzle_tint") as Color,
+		}
+		signature.merge(RareWeaponVfxSignatureType.for_weapon(weapon), true)
+		service.call("play", muzzle_flash_scene, visual_position, visual_direction, signature)
 
 
 func _get_muzzle_global_position(direction: Vector2) -> Vector2:

@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"projectile", &"on_hit"])
+requires_any_tags = Array[StringName]([&"projectile"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"on_hit"])
+conflicts_with_tags = Array[StringName]([])
 branch_id = "ricochet_saw"
 display_name = "Ricochet Saw"
 description = "Projectile branch. First hit splits the saw once and sends the split saw after a nearby target, favoring On Hit chains over one-target pressure."

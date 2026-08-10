@@ -2,6 +2,8 @@ extends Node
 
 var _collectables: Array[Node2D] = []
 var _collectable_ids: Dictionary = {}
+var _last_batch_usec := 0
+var _peak_batch_usec := 0
 
 func _ready() -> void:
 	_rebuild_from_group()
@@ -15,6 +17,8 @@ func register_collectable(collectable: Node) -> void:
 		return
 	_collectable_ids[instance_id] = true
 	_collectables.append(collectable_2d)
+	if collectable_2d.has_method("batch_attraction_step"):
+		collectable_2d.set_physics_process(false)
 	if not collectable_2d.tree_exiting.is_connected(_on_collectable_tree_exiting.bind(instance_id)):
 		collectable_2d.tree_exiting.connect(_on_collectable_tree_exiting.bind(instance_id), CONNECT_ONE_SHOT)
 
@@ -26,6 +30,25 @@ func unregister_collectable(collectable: Node) -> void:
 func get_collectables() -> Array[Node2D]:
 	_prune_invalid()
 	return _collectables.duplicate()
+
+func get_collectable_count() -> int:
+	_prune_invalid()
+	return _collectables.size()
+
+func _physics_process(delta: float) -> void:
+	var started := Time.get_ticks_usec()
+	for collectable in _collectables:
+		if collectable != null and is_instance_valid(collectable) and collectable.has_method("batch_attraction_step"):
+			collectable.call("batch_attraction_step", delta)
+	_last_batch_usec = Time.get_ticks_usec() - started
+	_peak_batch_usec = maxi(_peak_batch_usec, _last_batch_usec)
+
+func get_batch_metrics_snapshot() -> Dictionary:
+	return {
+		"registered": get_collectable_count(),
+		"last_step_ms": float(_last_batch_usec) / 1000.0,
+		"peak_step_ms": float(_peak_batch_usec) / 1000.0,
+	}
 
 func get_coins() -> Array[Coin]:
 	var output: Array[Coin] = []

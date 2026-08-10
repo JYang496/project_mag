@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Player/Weapons/Feedback/muzzle_flash_vfx.gd" id="1_energy"]
+
+[node name="MuzzleFlashEnergy" type="Node2D"]
+script = ExtResource("1_energy")
+color = Color(0.62, 0.96, 1, 0.94)
+secondary_color = Color(0.18, 0.64, 1, 0.52)
+length_px = 28.0
+width_px = 16.0
+duration_sec = 0.065
+shape_style = 1
+source_size_px = 32

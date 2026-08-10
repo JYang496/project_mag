@@ -47,6 +47,9 @@ func request_configure_finite_budget(_total_budget: float, _batch_count: int) ->
 func request_prefer_elite_final_batch(_enabled: bool) -> void:
 	pass
 
+func request_set_elimination_guidance(_enabled: bool) -> void:
+	pass
+
 func request_release_next_batch() -> void:
 	pass
 

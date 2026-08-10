@@ -1,6 +1,6 @@
 extends Control
 
-const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd")
+const OffscreenGeometry := preload("res://Visual/Oblique/offscreen_indicator_geometry.gd")
 const PROTOCOL_SQUARE_TEXTURE: Texture2D = preload("res://asset/images/effects/protocol/protocol_square_topdown.png")
 
 const OPERATION := &"operation"
@@ -8,6 +8,7 @@ const CONTAINMENT := &"containment"
 const EXTRACTION := &"extraction"
 const TAU_F := TAU
 const PLAYER_OCCLUSION_PADDING := Vector2(4.0, 3.0)
+const WORLD_MARKER_ACTIVATION_MARGIN := 48.0
 
 var target: Node2D
 var visual_kind: StringName = OPERATION
@@ -76,14 +77,19 @@ func _draw() -> void:
 		return
 	_active_player_occlusion_rect = _player_occlusion_rect()
 	var center := _project(target.global_position)
-	var safe_rect := Rect2(Vector2(54.0, 54.0), size - Vector2(108.0, 108.0))
-	if safe_rect.has_point(center):
+	var safe_rect := OffscreenGeometry.make_safe_rect(size)
+	if _world_marker_activation_rect(safe_rect).has_point(center):
 		_draw_world_marker(center)
 	else:
 		_draw_offscreen_arrow(center, safe_rect)
 
+func _world_marker_activation_rect(safe_rect: Rect2) -> Rect2:
+	return safe_rect.grow(WORLD_MARKER_ACTIVATION_MARGIN)
+
 func _draw_world_marker(center: Vector2) -> void:
 	var color := _primary_color()
+	var base_color := _containment_base_color() if visual_kind == CONTAINMENT else color
+	var progress_color := _containment_progress_color() if visual_kind == CONTAINMENT else color
 	var danger := Color(1.0, 0.25, 0.20, 0.95)
 	var pulse := 0.5 + 0.5 * sin(_elapsed * (5.6 if player_inside else 2.4))
 	var footprint := _projected_footprint_points()
@@ -91,15 +97,15 @@ func _draw_world_marker(center: Vector2) -> void:
 		return
 
 	var state_alpha := 0.78 + pulse * 0.18 if player_inside else 0.58 + pulse * 0.10
-	_draw_protocol_texture(footprint, Color(color.r, color.g, color.b, state_alpha))
+	_draw_protocol_texture(footprint, Color(base_color.r, base_color.g, base_color.b, state_alpha))
 	_draw_protocol_perimeter(footprint, Color(0.03, 0.08, 0.12, 0.72), 5.0)
 	if progress > 0.001:
-		_draw_protocol_perimeter(footprint, color, 4.0, progress)
+		_draw_protocol_perimeter(footprint, progress_color, 4.0, progress)
 
 	if player_inside and not completed:
 		var wave_scale := 0.55 + fmod(_elapsed * 0.9, 1.0) * 0.34
 		var wave_alpha := (1.0 - fmod(_elapsed * 0.9, 1.0)) * 0.28
-		_draw_protocol_perimeter(_scale_footprint(footprint, wave_scale), Color(color.r, color.g, color.b, wave_alpha), 2.0)
+		_draw_protocol_perimeter(_scale_footprint(footprint, wave_scale), Color(progress_color.r, progress_color.g, progress_color.b, wave_alpha), 2.0)
 
 	if enemy_count > 0 and not completed:
 		_draw_protocol_danger_corners(footprint, danger)
@@ -230,7 +236,7 @@ func _draw_offscreen_arrow(target_screen: Vector2, safe_rect: Rect2) -> void:
 	var direction := (target_screen - screen_center).normalized()
 	if direction == Vector2.ZERO:
 		direction = Vector2.UP
-	var edge := _ray_rect_intersection(screen_center, direction, safe_rect)
+	var edge := OffscreenGeometry.ray_rect_intersection(screen_center, direction, safe_rect)
 	var color := _primary_color()
 	var angle := direction.angle()
 	var tip := edge + direction * 7.0
@@ -299,34 +305,31 @@ func _player_occlusion_rect() -> Rect2:
 	var top_left := anchor_screen - Vector2(visual_size.x * 0.5, visual_size.y - bottom_padding) - PLAYER_OCCLUSION_PADDING
 	return Rect2(top_left, visual_size + PLAYER_OCCLUSION_PADDING * 2.0)
 
-func _ray_rect_intersection(origin: Vector2, direction: Vector2, rect: Rect2) -> Vector2:
-	var distances: Array[float] = []
-	if absf(direction.x) > 0.0001:
-		distances.append((rect.position.x - origin.x) / direction.x)
-		distances.append((rect.end.x - origin.x) / direction.x)
-	if absf(direction.y) > 0.0001:
-		distances.append((rect.position.y - origin.y) / direction.y)
-		distances.append((rect.end.y - origin.y) / direction.y)
-	var best := INF
-	for distance in distances:
-		if distance <= 0.0:
-			continue
-		var point := origin + direction * distance
-		if rect.grow(0.5).has_point(point):
-			best = minf(best, distance)
-	return origin + direction * best if best < INF else rect.get_center()
-
 func _project(world_position: Vector2) -> Vector2:
-	var view := ProjectedUi.get_hybrid_view(get_tree())
-	if view != null:
-		return view.call("project_world_to_screen", world_position) as Vector2
-	return get_viewport().get_canvas_transform() * world_position
+	return OffscreenGeometry.project_world_to_screen(get_tree(), get_viewport(), world_position)
 
 func _primary_color() -> Color:
 	match visual_kind:
 		CONTAINMENT:
-			return Color(0.92, 0.32, 0.96, 0.98)
+			if completed:
+				return Color.WHITE.lerp(Color(0.20, 0.88, 1.0, 0.98), clampf(_completion_elapsed / 0.52, 0.0, 1.0))
+			if enemy_count > 0:
+				return Color(1.0, 0.38, 0.12, 0.98)
+			if player_inside or progress > 0.001:
+				return Color(0.20, 0.88, 1.0, 0.98)
+			return Color(0.82, 0.24, 0.92, 0.98)
 		EXTRACTION:
 			return Color(0.72, 1.0, 0.36, 0.98)
 		_:
 			return Color(0.30, 0.86, 1.0, 0.98)
+
+func _containment_base_color() -> Color:
+	var purple := Color(0.74, 0.20, 0.88, 0.94)
+	var stabilized := Color(0.14, 0.60, 0.72, 0.94)
+	return purple.lerp(stabilized, clampf(progress, 0.0, 1.0) * 0.68)
+
+func _containment_progress_color() -> Color:
+	return Color(0.20, 0.88, 1.0, 0.98)
+
+func get_state_palette_snapshot() -> Dictionary:
+	return {"primary": _primary_color(), "base": _containment_base_color() if visual_kind == CONTAINMENT else _primary_color(), "progress": _containment_progress_color() if visual_kind == CONTAINMENT else _primary_color(), "completed": completed, "contested": enemy_count > 0}

@@ -2,6 +2,7 @@ extends Area2D
 class_name AreaEffect
 
 static var debug_mode_enabled: bool = false
+static var _visual_geometry_cache: Dictionary = {}
 var _hybrid_visual_version := 1
 
 enum TargetGroup {
@@ -13,6 +14,7 @@ enum TargetGroup {
 enum VisualShape { CIRCLE, RECTANGLE, CONE }
 
 @export var duration: float = 0.1
+@export_range(0.0, 5.0, 0.01) var activation_delay: float = 0.0
 @export var visual_duration: float = 0.0
 @export_range(0.0, 5.0, 0.05) var fade_out_duration: float = 0.5
 @export var radius: float = 24.0:
@@ -117,6 +119,7 @@ enum VisualShape { CIRCLE, RECTANGLE, CONE }
 
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var damage_timer: Timer = $DamageTimer
+@onready var activation_timer: Timer = $ActivationTimer
 @onready var life_timer: Timer = $LifeTimer
 @onready var visual_root: Node2D = $VisualRoot
 @onready var visual_sprite: Sprite2D = $VisualRoot/Sprite
@@ -149,6 +152,7 @@ func get_visual_alpha_multiplier() -> float:
 
 
 func _ready() -> void:
+	add_to_group(&"runtime_area_effects")
 	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	add_to_group(&"hybrid_ground_area_effect")
 	var hybrid_views := get_tree().get_nodes_in_group(&"hybrid_ground_view_3d")
@@ -157,7 +161,7 @@ func _ready() -> void:
 		# classified this effect as animated billboard or ground patch.
 		draw_enabled = false
 		call_deferred("_register_with_hybrid_ground")
-	_damage_active = true
+	_damage_active = activation_delay <= 0.0
 	if source_node is BaseEnemy:
 		add_to_group("enemy_runtime_cleanup")
 	if source_category == DamageData.SOURCE_PLAYER_WEAPON:
@@ -172,10 +176,15 @@ func _ready() -> void:
 	_sync_visual_nodes()
 	var damage_duration := maxf(duration, 0.01)
 	damage_timer.wait_time = damage_duration
-	damage_timer.start()
-	life_timer.wait_time = maxf(damage_duration, visual_duration)
+	if _damage_active:
+		damage_timer.start()
+	else:
+		activation_timer.wait_time = maxf(activation_delay, 0.01)
+		activation_timer.start()
+	life_timer.wait_time = maxf(activation_delay + damage_duration, visual_duration)
 	life_timer.start()
-	call_deferred("_apply_to_current_overlaps")
+	if _damage_active:
+		call_deferred("_apply_to_current_overlaps")
 
 func cleanup_for_battle_end() -> void:
 	queue_free()
@@ -216,6 +225,14 @@ func _on_damage_timer_timeout() -> void:
 	set_deferred("monitoring", false)
 	if collision_shape != null:
 		collision_shape.set_deferred("disabled", true)
+
+
+func _on_activation_timer_timeout() -> void:
+	if not is_inside_tree():
+		return
+	_damage_active = true
+	damage_timer.start()
+	_apply_to_current_overlaps()
 
 
 func _apply_to_current_overlaps() -> void:
@@ -515,14 +532,24 @@ func _sync_visual_scale() -> void:
 	if visual_root == null:
 		return
 	var target_diameter := maxf(radius * 2.0 * visual_size_multiplier, 1.0)
-	var base_size := _resolve_visual_source_size()
-	if base_size.x <= 0.0 or base_size.y <= 0.0:
+	var geometry := _resolve_visual_source_geometry()
+	var visible_rect: Rect2 = geometry.get("visible_rect", Rect2())
+	var canvas_size: Vector2 = geometry.get("canvas_size", Vector2.ZERO)
+	if visible_rect.size.x <= 0.0 or visible_rect.size.y <= 0.0:
 		visual_root.scale = Vector2.ONE
+		visual_sprite.position = Vector2.ZERO
+		visual_animated_sprite.position = Vector2.ZERO
 		return
 	visual_root.scale = Vector2(
-		target_diameter / base_size.x,
-		target_diameter / base_size.y
+		target_diameter / visible_rect.size.x,
+		target_diameter / visible_rect.size.y
 	)
+	# Sprite2D positions texture coordinates around the canvas center. Offset both
+	# visual paths so the center of the non-transparent artwork matches the
+	# authoritative damage-circle center.
+	var visible_center_offset := canvas_size * 0.5 - visible_rect.get_center()
+	visual_sprite.position = visible_center_offset
+	visual_animated_sprite.position = visible_center_offset
 
 func _sync_visual_shape_collision() -> void:
 	if not is_node_ready() or collision_shape == null:
@@ -560,16 +587,54 @@ func _sync_visual_shape_collision() -> void:
 	polygon.polygon = points
 
 
-func _resolve_visual_source_size() -> Vector2:
+func _resolve_visual_source_geometry() -> Dictionary:
 	if use_animated_visual and visual_frames != null:
 		var anim_name := _resolve_animation_name()
 		if anim_name != StringName():
-			var frame_tex := visual_frames.get_frame_texture(anim_name, 0)
-			if frame_tex != null:
-				return frame_tex.get_size()
+			var animation_key := "frames:%d:%s" % [visual_frames.get_instance_id(), String(anim_name)]
+			if _visual_geometry_cache.has(animation_key):
+				return (_visual_geometry_cache[animation_key] as Dictionary).duplicate()
+			var combined_rect := Rect2()
+			var canvas_size := Vector2.ZERO
+			var frame_count := visual_frames.get_frame_count(anim_name)
+			for frame_index in range(frame_count):
+				var frame_texture := visual_frames.get_frame_texture(anim_name, frame_index)
+				var frame_geometry := _get_texture_visual_geometry(frame_texture)
+				var frame_rect: Rect2 = frame_geometry.get("visible_rect", Rect2())
+				if frame_rect.size.x <= 0.0 or frame_rect.size.y <= 0.0:
+					continue
+				canvas_size = canvas_size.max(frame_geometry.get("canvas_size", Vector2.ZERO))
+				combined_rect = frame_rect if combined_rect.size == Vector2.ZERO else combined_rect.merge(frame_rect)
+			var animation_geometry := {
+				"visible_rect": combined_rect,
+				"canvas_size": canvas_size,
+			}
+			_visual_geometry_cache[animation_key] = animation_geometry
+			return animation_geometry.duplicate()
 	if visual_texture != null:
-		return visual_texture.get_size()
-	return Vector2.ZERO
+		return _get_texture_visual_geometry(visual_texture)
+	return {"visible_rect": Rect2(), "canvas_size": Vector2.ZERO}
+
+
+func _get_texture_visual_geometry(texture: Texture2D) -> Dictionary:
+	if texture == null:
+		return {"visible_rect": Rect2(), "canvas_size": Vector2.ZERO}
+	var texture_key := "texture:%d" % texture.get_instance_id()
+	if _visual_geometry_cache.has(texture_key):
+		return (_visual_geometry_cache[texture_key] as Dictionary).duplicate()
+	var canvas_size := texture.get_size()
+	var visible_rect := Rect2(Vector2.ZERO, canvas_size)
+	var image := texture.get_image()
+	if image != null and not image.is_empty():
+		var used_rect := image.get_used_rect()
+		if used_rect.size.x > 0 and used_rect.size.y > 0:
+			visible_rect = Rect2(used_rect)
+	var geometry := {
+		"visible_rect": visible_rect,
+		"canvas_size": canvas_size,
+	}
+	_visual_geometry_cache[texture_key] = geometry
+	return geometry.duplicate()
 
 
 func _draw() -> void:

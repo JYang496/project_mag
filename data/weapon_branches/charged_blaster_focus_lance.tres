@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"beam", &"long_range"])
+requires_any_tags = Array[StringName]([&"energy"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"beam"])
+conflicts_with_tags = Array[StringName]([&"area"])
 branch_id = "focus_lance"
 display_name = "Focus Lance"
 description = "Beam branch. Narrows Charged Blaster into a longer, harder sustained lance for single-target pressure, sacrificing wide Area coverage."

@@ -124,7 +124,7 @@ func _on_shoot() -> void:
 	if spawn_projectile == null:
 		return
 
-	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
+	projectile_direction = get_aim_forward()
 	var runtime_damage := get_runtime_shot_damage()
 	var damage_multiplier := branch_runtime.get_branch_projectile_damage_multiplier()
 	damage_multiplier *= _consume_branch_heat_spend_multiplier()

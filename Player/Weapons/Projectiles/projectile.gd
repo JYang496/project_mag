@@ -68,8 +68,34 @@ var hitbox_ins
 
 func _ready() -> void:
 	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
+	add_to_group(&"runtime_projectiles")
 	_prepare_for_spawn()
 	_is_pooled = true
+	call_deferred("_register_batch_simulation")
+
+func _exit_tree() -> void:
+	_unregister_batch_simulation(false)
+
+func _register_batch_simulation() -> void:
+	if not is_inside_tree():
+		return
+	if _active_movement_controller != null and is_instance_valid(_active_movement_controller):
+		return
+	var simulation := get_node_or_null("/root/ProjectileSimulationSystem")
+	if simulation != null and simulation.has_method("register_projectile"):
+		simulation.call("register_projectile", self)
+
+func _unregister_batch_simulation(restore_processing := false) -> void:
+	if not is_inside_tree():
+		if restore_processing:
+			set_physics_process(true)
+		return
+	var simulation := get_node_or_null("/root/ProjectileSimulationSystem")
+	if simulation != null and simulation.has_method("unregister_projectile"):
+		simulation.call("unregister_projectile", self, restore_processing)
+
+func batch_simulation_step(delta: float) -> void:
+	_simulate_movement(delta)
 
 func _prepare_for_spawn() -> void:
 	_reset_projectile_visual_state()
@@ -137,6 +163,9 @@ func _on_collision_arming_timer_timeout() -> void:
 	hitbox_ins.monitoring = true
 
 func _physics_process(delta: float) -> void:
+	_simulate_movement(delta)
+
+func _simulate_movement(delta: float) -> void:
 	if not _move_with_boundary_bounce(delta):
 		_check_wall_contact(delta)
 		position += base_displacement * delta
@@ -234,6 +263,7 @@ func set_debug_snapshot(source_weapon_name: String, effect_names: Array[String],
 	_apply_debug_overlay()
 
 func despawn() -> void:
+	_unregister_batch_simulation(false)
 	if not _is_pooled:
 		queue_free()
 		return
@@ -305,6 +335,7 @@ func _on_acquired_from_pool() -> void:
 	visible = true
 	if projectile_root != null and projectile_root.has_method("reset_projection_state"):
 		projectile_root.call("reset_projection_state")
+	call_deferred("_register_batch_simulation")
 
 func _reset_projectile_visual_state() -> void:
 	if projectile_root == null:
@@ -468,6 +499,7 @@ func claim_movement_control(controller: Node) -> void:
 	if controller == null:
 		return
 	_active_movement_controller = controller
+	_unregister_batch_simulation(true)
 
 func has_movement_control(controller: Node) -> bool:
 	if controller == null:

@@ -22,6 +22,7 @@ var _batch_killed := 0
 var _batch_wait_sec := 0.0
 var _configured := false
 var _completion_guard := false
+var _guidance_enabled := false
 
 func start(combat_port, parameters: Dictionary) -> void:
 	port = combat_port
@@ -49,9 +50,11 @@ func start(combat_port, parameters: Dictionary) -> void:
 func stop() -> void:
 	_disconnect_all()
 	if port != null:
+		port.request_set_elimination_guidance(false)
 		port.request_monitor_enemy_stalls(false)
 		port.request_external_victory_control(false)
 		port.request_prefer_elite_final_batch(false)
+	_guidance_enabled = false
 	port = null
 
 func _on_enemy_spawned(snapshot: Dictionary) -> void:
@@ -60,6 +63,7 @@ func _on_enemy_spawned(snapshot: Dictionary) -> void:
 	_batch_spawned += 1
 	planned_hp = maxi(planned_hp, int(port.get_spawn_budget_snapshot().get("planned_total_hp", 0)))
 	_emit_snapshot()
+	_refresh_enemy_guidance()
 
 func _on_enemy_died(snapshot: Dictionary) -> void:
 	alive_count = maxi(alive_count - 1, 0)
@@ -67,13 +71,16 @@ func _on_enemy_died(snapshot: Dictionary) -> void:
 		killed_count += 1
 		_batch_killed += 1
 		killed_hp += int(snapshot.get("scaled_hp", 0))
+	_try_merge_serial_tail()
 	_try_advance_batch()
 	_try_complete()
+	_refresh_enemy_guidance()
 
 func _on_budget_exhausted(_snapshot: Dictionary) -> void:
 	budget_exhausted = true
 	current_batch = total_batches
 	_try_complete()
+	_refresh_enemy_guidance()
 
 func _on_tick(snapshot: Dictionary) -> void:
 	var delta := float(snapshot.get("delta_sec", 0.0))
@@ -84,12 +91,14 @@ func _on_tick(snapshot: Dictionary) -> void:
 			port.request_configure_finite_budget(planned_hp, total_batches)
 			planned_enemy_count = int(port.get_spawn_budget_snapshot().get("planned_enemy_count", 0))
 			_configured = true
+			_try_merge_serial_tail()
 	elapsed_sec += delta
 	_batch_wait_sec += delta
 	_reconcile_alive_count_after_budget_exhaustion()
 	_try_advance_batch()
 	_try_complete()
 	_emit_snapshot()
+	_refresh_enemy_guidance()
 
 func _reconcile_alive_count_after_budget_exhaustion() -> void:
 	if not budget_exhausted or port == null:
@@ -112,19 +121,54 @@ func _try_advance_batch() -> void:
 		_batch_killed = 0
 		_batch_wait_sec = 0.0
 		port.request_release_next_batch()
+		_refresh_enemy_guidance()
+
+func _try_merge_serial_tail() -> void:
+	if port == null or current_batch >= total_batches:
+		return
+	var remaining_planned := maxi(planned_enemy_count - killed_count, 0)
+	var remaining_batches := total_batches - current_batch + 1
+	# Merge only when the rest of the contract has degraded to at most one
+	# target per batch. Larger, meaningful formations retain normal pacing.
+	if remaining_planned <= 1 or remaining_planned > remaining_batches:
+		return
+	while current_batch < total_batches:
+		current_batch += 1
+		port.request_release_next_batch()
+	_batch_spawned = 0
+	_batch_killed = 0
+	_batch_wait_sec = 0.0
+	_refresh_enemy_guidance()
+
+func _refresh_enemy_guidance() -> void:
+	if port == null:
+		return
+	var remaining := int(_snapshot().get("remaining_enemies", 0)) if _configured else 0
+	var desired := remaining > 0 and remaining < 5
+	if desired == _guidance_enabled:
+		return
+	_guidance_enabled = desired
+	port.request_set_elimination_guidance(desired)
 
 func _try_complete() -> void:
-	if not _completion_guard and budget_exhausted and alive_count <= 0:
-		_completion_guard = true
-		var result := _snapshot()
-		result["remaining_enemies"] = alive_count
-		result["actual_completion_sec"] = elapsed_sec
-		result["standard_duration_sec"] = standard_duration_sec
-		completed.emit(result)
+	if _completion_guard or not _configured or port == null:
+		return
+	var queued_enemies := 0 if budget_exhausted else maxi(planned_enemy_count - spawned_count, 0)
+	var actual_alive := maxi(int(port.get_active_enemy_count()), 0)
+	if queued_enemies > 0 or actual_alive > 0:
+		return
+	alive_count = actual_alive
+	_completion_guard = true
+	var result := _snapshot()
+	result["remaining_enemies"] = 0
+	result["actual_completion_sec"] = elapsed_sec
+	result["standard_duration_sec"] = standard_duration_sec
+	completed.emit(result)
 
 func _snapshot() -> Dictionary:
 	var remaining_enemies := alive_count if budget_exhausted else (maxi(planned_enemy_count - killed_count, 0) if planned_enemy_count > 0 else alive_count)
-	return {"contract_id": &"elimination", "remaining_enemies": remaining_enemies, "planned_enemies": planned_enemy_count, "current_batch": current_batch, "total_batches": total_batches, "planned_hp": planned_hp, "spawned": spawned_count, "kills": killed_count, "killed_hp": killed_hp, "budget_exhausted": budget_exhausted}
+	var queued_enemies := 0 if budget_exhausted else maxi(planned_enemy_count - spawned_count, 0)
+	return {"contract_id": &"elimination", "remaining_enemies": remaining_enemies, "active_enemies": alive_count, "queued_enemies": queued_enemies, "planned_enemies": planned_enemy_count, "current_batch": current_batch, "total_batches": total_batches, "planned_hp": planned_hp, "spawned": spawned_count, "kills": killed_count, "killed_hp": killed_hp, "budget_exhausted": budget_exhausted}
 
 func _emit_snapshot() -> void:
 	snapshot_changed.emit(_snapshot())

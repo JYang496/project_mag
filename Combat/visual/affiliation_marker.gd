@@ -12,6 +12,11 @@ enum MarkerShape {
 	NEUTRAL_DASHES,
 }
 
+enum MarkerRank {
+	STANDARD,
+	ELITE,
+}
+
 @export var marker_shape: MarkerShape = MarkerShape.ENEMY_BRACKETS:
 	set(value):
 		marker_shape = value
@@ -36,6 +41,10 @@ enum MarkerShape {
 	set(value):
 		arc_length = value
 		queue_redraw()
+@export var marker_rank: MarkerRank = MarkerRank.STANDARD:
+	set(value):
+		marker_rank = value
+		queue_redraw()
 
 
 func _ready() -> void:
@@ -53,6 +62,10 @@ func _ready() -> void:
 	queue_redraw()
 	set_meta(&"hybrid_ground_visible", visible)
 	call_deferred("sync_to_ground_shadow")
+
+
+func _process(delta: float) -> void:
+	super._process(delta)
 
 
 func _register_with_hybrid_ground() -> void:
@@ -101,6 +114,7 @@ func get_hybrid_ground_marker_config() -> Dictionary:
 	changed = _set_hybrid_value(&"arc_length", arc_length) or changed
 	changed = _set_hybrid_value(&"color", marker_color) or changed
 	changed = _set_hybrid_value(&"marker_shape", marker_shape) or changed
+	changed = _set_hybrid_value(&"marker_rank", marker_rank) or changed
 	changed = _set_hybrid_value(&"visible", bool(get_meta(&"hybrid_ground_visible", true))) or changed
 	if changed:
 		_hybrid_visual_version += 1
@@ -155,6 +169,23 @@ func _draw_enemy_brackets() -> void:
 		var tip := Vector2(cos(center_angle) * radii.x, sin(center_angle) * radii.y)
 		var inward := -tip.normalized() * 4.0
 		draw_line(tip, tip + inward, marker_color, line_width, true)
+	if marker_rank == MarkerRank.ELITE:
+		_draw_elite_accents()
+
+
+func _draw_elite_accents() -> void:
+	var radii := _get_effective_footprint_size() * 0.62
+	for index in range(4):
+		var angle := float(index) * PI * 0.5
+		var radial := Vector2(cos(angle), sin(angle))
+		var tangent := Vector2(-radial.y, radial.x)
+		var center := radial * radii
+		draw_polyline(
+			PackedVector2Array([center - tangent * 3.0, center, center + tangent * 3.0]),
+			marker_color,
+			line_width,
+			true
+		)
 
 
 func _draw_friendly_frame() -> void:

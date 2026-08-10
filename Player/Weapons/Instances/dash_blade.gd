@@ -47,6 +47,7 @@ var _dash_hit_confirmed: bool = false
 @export var close_chain_slow_duration_sec: float = 3.0
 var _dash_start_distance: float = 0.0
 var _dash_start_target_id: int = 0
+var _dash_target_position: Vector2 = Vector2.ZERO
 
 enum AttackState {
 	IDLE,
@@ -159,7 +160,7 @@ func _physics_process(delta: float) -> void:
 	_update_target()
 	match _state:
 		AttackState.IDLE:
-			_process_idle()
+			_process_idle(delta)
 		AttackState.DASHING:
 			_process_dashing(delta)
 		AttackState.RETURNING:
@@ -167,21 +168,28 @@ func _physics_process(delta: float) -> void:
 		AttackState.COOLDOWN:
 			pass
 
-func _process_idle() -> void:
+func _process_idle(delta: float = 0.0) -> void:
 	blade_anchor.position = Vector2.ZERO
-	_point_blade_to_auto_aim_target()
+	if _target and is_instance_valid(_target):
+		_point_blade_to(_target.global_position, delta)
+	else:
+		_point_blade_to_auto_aim_target(delta)
 	if not _can_run_dash_attack():
 		return
 	if _target and is_instance_valid(_target):
-		_point_blade_to(_target.global_position)
 		_start_dash()
 
-func _point_blade_to_auto_aim_target() -> void:
-	if not has_meta(&"_player_assist_auto_aim_target"):
+func _point_blade_to_auto_aim_target(delta: float = 0.0) -> void:
+	if has_meta(&"_player_assist_auto_aim_target"):
+		var target_variant: Variant = get_meta(&"_player_assist_auto_aim_target")
+		if target_variant is Vector2:
+			_point_blade_to(target_variant as Vector2, delta)
+			return
+	if not has_weapon_trait(WeaponTrait.AUTO_FIRE):
 		return
-	var target_variant: Variant = get_meta(&"_player_assist_auto_aim_target")
-	if target_variant is Vector2:
-		_point_blade_to(target_variant as Vector2)
+	var aim_target := find_closest_enemy(get_auto_fire_target_origin(), INF)
+	if aim_target != null and is_instance_valid(aim_target):
+		_point_blade_to(aim_target.global_position, delta)
 
 func _can_run_dash_attack() -> bool:
 	if not is_attack_phase_allowed():
@@ -191,14 +199,10 @@ func _can_run_dash_attack() -> bool:
 	return has_weapon_trait(WeaponTrait.AUTO_FIRE)
 
 func _process_dashing(delta: float) -> void:
-	if not _target or not is_instance_valid(_target):
-		_start_return()
-		return
-	var target_pos := _target.global_position
-	blade_anchor.global_position = blade_anchor.global_position.move_toward(target_pos, dash_speed * delta)
-	_point_blade_to(target_pos)
-	if blade_anchor.global_position.distance_to(target_pos) <= 8.0:
-		_try_confirm_dash_hit(_target)
+	blade_anchor.global_position = blade_anchor.global_position.move_toward(_dash_target_position, dash_speed * delta)
+	if blade_anchor.global_position.distance_to(_dash_target_position) <= 8.0:
+		if _target and is_instance_valid(_target) and blade_anchor.global_position.distance_to(_target.global_position) <= 8.0:
+			_try_confirm_dash_hit(_target)
 		_start_return()
 
 func _process_returning(delta: float) -> void:
@@ -242,6 +246,7 @@ func _start_dash() -> void:
 	if _target and is_instance_valid(_target):
 		_dash_start_distance = blade_anchor.global_position.distance_to(_target.global_position)
 		_dash_start_target_id = _target.get_instance_id()
+	_dash_target_position = blade_anchor.global_position + get_blade_aim_forward() * maxf(_dash_start_distance, attack_range)
 	_state = AttackState.DASHING
 	_set_hitbox_enabled(true)
 
@@ -261,11 +266,16 @@ func _start_cooldown() -> void:
 func _set_hitbox_enabled(enabled: bool) -> void:
 	hit_box.collision.set_deferred("disabled", not enabled)
 
-func _point_blade_to(world_target: Vector2) -> void:
+func _point_blade_to(world_target: Vector2, delta: float = 0.0) -> void:
 	var direction := world_target - blade_anchor.global_position
 	if direction == Vector2.ZERO:
 		return
-	blade_anchor.rotation = direction.angle() + AIM_ROTATION_OFFSET
+	var target_rotation := direction.angle() + AIM_ROTATION_OFFSET
+	var max_step := deg_to_rad(maxf(turn_speed_degrees_per_second, 0.0)) * maxf(delta, 0.0)
+	blade_anchor.global_rotation = rotate_toward(blade_anchor.global_rotation, target_rotation, max_step)
+
+func get_blade_aim_forward() -> Vector2:
+	return Vector2.RIGHT.rotated(blade_anchor.global_rotation - AIM_ROTATION_OFFSET).normalized()
 
 func enemy_hit(_charge := 1) -> void:
 	_dash_hit_confirmed = true

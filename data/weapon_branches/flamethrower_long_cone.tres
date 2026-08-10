@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"fire", &"area"])
+requires_any_tags = Array[StringName]([&"heat"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"area"])
+conflicts_with_tags = Array[StringName]([&"freeze"])
 branch_id = "long_cone_flame"
 display_name = "Long Cone Flame"
 description = "Area reach branch. Extends cone reach so Flamethrower can keep Heat/Area pressure from safer mid-range spacing."

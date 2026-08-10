@@ -7,6 +7,7 @@
 
 [node name="RocketLauncher" unique_id=318102634 instance=ExtResource("1_tn5im")]
 script = ExtResource("2_6v0md")
+turn_speed_degrees_per_second = 180.0
 fire_feedback_profile = ExtResource("4_feedback")
 range_mode = 1
 configured_attack_range = 800.0

@@ -7,6 +7,7 @@ const SPAWN_TAG_SUPPORT := &"support"
 const SPAWN_TAG_INTERCEPTOR := &"interceptor"
 const QUEST_OUTLINE_SHADER: Shader = preload("res://Shaders/quest_outline.gdshader") as Shader
 const ENEMY_SPAWN_SEQUENCE_SCRIPT := preload("res://Npc/enemy/components/enemy_spawn_sequence.gd")
+const BOSS_VISUAL_RUNTIME_SCRIPT := preload("res://Npc/enemy/components/boss_visual_runtime.gd")
 const SHADOW_WIDTH_MULTIPLIER: float = 1.10
 const SHADOW_DEPTH_MULTIPLIER: float = 0.45
 const SHADOW_SIZE_MIN := Vector2(20.0, 9.0)
@@ -84,6 +85,7 @@ var _spawn_phase_active := false
 var _spawn_sequence_duration_override := -1.0
 var _spawn_previous_process_mode := Node.PROCESS_MODE_INHERIT
 var _spawn_collision_state: Array[Dictionary] = []
+var boss_visual_runtime: Node
 
 func _init() -> void:
 	super._init()
@@ -99,6 +101,24 @@ func _enter_tree() -> void:
 	# Some specialized enemies override _ready() without calling the base
 	# implementation. Defer visual anchoring so every inherited scene is covered.
 	call_deferred("_sync_ground_identity_visuals")
+	call_deferred("_register_central_simulation")
+
+func _register_central_simulation() -> void:
+	var simulation := get_node_or_null("/root/EnemySimulationSystem")
+	if simulation != null and simulation.has_method("register_enemy"):
+		simulation.call("register_enemy", self)
+
+func uses_central_simulation() -> bool:
+	return not (self is EliteEnemy) and not is_boss and not is_in_group(&"boss")
+
+func simulation_physics_step(delta: float) -> void:
+	# Specialized enemy scripts retain their authoritative behavior; only the
+	# scheduling owner moves from N callbacks to this single system callback.
+	call("_physics_process", delta)
+	if _constraint_pending_physics_tick:
+		_constraint_pending_physics_tick = false
+	else:
+		_constrain_to_board_traversable_area()
 
 func _ready() -> void:
 	_incoming_damage_max_hp = max(1, int(hp))
@@ -107,6 +127,7 @@ func _ready() -> void:
 
 
 func _sync_ground_identity_visuals() -> void:
+	_ensure_boss_visual_runtime()
 	var marker := get_node_or_null("AffiliationMarker") as Node2D
 	var ground_shadow := get_node_or_null("GroundShadow") as Node2D
 	var visual_extent := _resolve_hurtbox_or_visible_sprite_extent()
@@ -122,7 +143,69 @@ func _sync_ground_identity_visuals() -> void:
 			ground_shadow.scale = target_shadow_size / base_shadow_size
 		HybridGroundRegistration.register(ground_shadow, &"register_shadow")
 	if marker != null and marker.has_method("sync_to_ground_shadow"):
+		if "marker_rank" in marker:
+			marker.set("marker_rank", 1 if has_spawn_tag(SPAWN_TAG_ELITE) or self is EliteEnemy else 0)
 		marker.call("sync_to_ground_shadow")
+
+
+func _ensure_boss_visual_runtime() -> void:
+	if not is_boss or boss_visual_runtime != null or not is_inside_tree():
+		return
+	boss_visual_runtime = BOSS_VISUAL_RUNTIME_SCRIPT.new()
+	boss_visual_runtime.name = "BossVisualRuntime"
+	boss_visual_runtime.call("setup", self)
+	add_child(boss_visual_runtime)
+
+
+func begin_boss_attack_telegraph(duration_sec: float = 0.9) -> void:
+	_ensure_boss_visual_runtime()
+	if boss_visual_runtime != null:
+		boss_visual_runtime.call("begin_attack_telegraph", duration_sec)
+
+
+func is_boss_attack_damage_confirmed() -> bool:
+	return boss_visual_runtime != null and bool(boss_visual_runtime.call("is_damage_confirmed"))
+
+
+func set_boss_visual_phase(phase_index: int, phase_count: int) -> void:
+	_ensure_boss_visual_runtime()
+	if boss_visual_runtime != null:
+		boss_visual_runtime.call("set_phase", phase_index, phase_count)
+
+
+func begin_boss_death_release(duration_sec: float = 1.5) -> void:
+	var duration := clampf(duration_sec, 1.2, 1.8)
+	set_meta(&"boss_death_release_active", true)
+	velocity = Vector2.ZERO
+	set_process(false)
+	set_physics_process(false)
+	collision_layer = 0
+	collision_mask = 0
+	for descendant in find_children("*", "CollisionObject2D", true, false):
+		var collision_object := descendant as CollisionObject2D
+		if collision_object != null:
+			collision_object.collision_layer = 0
+			collision_object.collision_mask = 0
+			if collision_object is Area2D:
+				(collision_object as Area2D).monitoring = false
+	var marker := get_node_or_null("AffiliationMarker") as CanvasItem
+	if marker != null:
+		marker.set_meta(&"hybrid_ground_visible", false)
+	var body := sprite_body as Node2D
+	if body != null:
+		var tween := create_tween()
+		tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		tween.set_parallel(true)
+		tween.tween_property(body, "modulate:a", 0.0, duration * 0.72).set_delay(duration * 0.18)
+		tween.tween_property(body, "scale", body.scale * 0.78, duration * 0.82).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	var release_timer := Timer.new()
+	release_timer.name = "BossDeathReleaseTimer"
+	release_timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	release_timer.one_shot = true
+	release_timer.wait_time = duration
+	release_timer.timeout.connect(Callable(self, "queue_free"), CONNECT_ONE_SHOT)
+	add_child(release_timer)
+	release_timer.start()
 
 
 func _resolve_hurtbox_or_visible_sprite_extent() -> Vector2:
@@ -170,6 +253,9 @@ func _get_polygon_visual_size(polygon: Polygon2D) -> Vector2:
 func _exit_tree() -> void:
 	_set_far_physics_simplified(false)
 	_disconnect_board_constraint_signals()
+	var simulation := get_node_or_null("/root/EnemySimulationSystem")
+	if simulation != null and simulation.has_method("unregister_enemy"):
+		simulation.call("unregister_enemy", self)
 	if damage_feedback != null:
 		damage_feedback.shutdown()
 	HybridGroundRegistration.unregister(self)
@@ -438,6 +524,7 @@ func apply_status_payload(status_name: StringName, status_data: Variant) -> void
 
 func set_quest_highlight(enabled: bool, color: Color = Color.WHITE) -> void:
 	set_outline_highlight(enabled, color, 1.0)
+
 
 func set_quest_lock(active: bool, damage_mul: float = 0.5, freeze_movement: bool = true) -> void:
 	if active:

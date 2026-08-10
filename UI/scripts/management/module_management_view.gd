@@ -257,6 +257,7 @@ func _build_unified_layout() -> void:
 	detail_panel.add_child(_detail_subtitle)
 	var detail_scroll := ScrollContainer.new()
 	detail_scroll.name = "DetailScroll"
+	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	detail_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	detail_panel.add_child(detail_scroll)
@@ -347,6 +348,7 @@ func _make_column_title(parent: VBoxContainer) -> Label:
 func _make_scroll_list(parent: VBoxContainer, scroll_name: String, list_name: String) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
 	scroll.name = scroll_name
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	parent.add_child(scroll)

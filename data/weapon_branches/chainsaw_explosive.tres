@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"area", &"on_hit"])
+requires_any_tags = Array[StringName]([&"projectile", &"close_range"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"area"])
+conflicts_with_tags = Array[StringName]([])
 branch_id = "explosive_saw"
 display_name = "Explosive Saw"
 description = "Area branch. First hit arms the saw so it slows, grows, then explodes, trading chase pressure for grouped Close/Area cleanup."

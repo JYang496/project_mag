@@ -45,6 +45,7 @@ func _run() -> void:
 	_test_regular_grid_outline()
 	_test_mixed_cell_sizes_and_partial_shared_edge()
 	_test_low_profile_geometry_contract()
+	_test_industrial_skirt_atlas_contract()
 	_test_transition_density_and_guards()
 	await _test_renderer_runtime_model()
 	if _failed:
@@ -124,7 +125,61 @@ func _test_low_profile_geometry_contract() -> void:
 			and PlatformRendererType.CORNER_TRANSITION_LENGTH_2D <= 64.0,
 		"The lower corner adapter must use the reviewed 48-64 pixel transition length."
 	)
+	_assert_true(
+		PlatformRendererType.SKIRT_TOP_Y - PlatformRendererType.SKIRT_BOTTOM_Y <= 0.90,
+		"The industrial skirt must remain roughly one third shallower than the former 1.264-unit facade."
+	)
+	_assert_true(
+		PlatformRendererType.SKIRT_OUTWARD_OFFSET_WORLD \
+			> PlatformRendererType.UNDERLAYER_WIDTH_2D * 0.01 + PlatformRendererType.EDGE_OVERLAP_WORLD,
+		"The authored skirt must sit in front of the dark support prism at the runtime world scale."
+	)
+	_assert_true(
+		PlatformRendererType.SIGNAL_TRACE_LENGTH_2D <= 12.0 \
+			and PlatformRendererType.SIGNAL_TRACE_INTERVAL_2D <= 192.0,
+		"Cyan structure signals must read as short discrete nodes instead of long HUD bars."
+	)
 	_assert_near(0.85, PlatformRendererType.SKIRT_TOP_HIGHLIGHT_DIM, 0.001, "The skirt top highlight must be reduced by 15%.")
+
+
+func _test_industrial_skirt_atlas_contract() -> void:
+	var atlas := PlatformRendererType.SkirtAtlas as Texture2D
+	_assert_true(atlas != null, "The platform skirt must provide an authored pixel atlas.")
+	if atlas == null:
+		return
+	var image := atlas.get_image()
+	_assert_true(image != null and not image.is_empty(), "The platform skirt atlas must be readable at runtime.")
+	if image == null or image.is_empty():
+		return
+	_assert_equal(Vector2i(256, 256), image.get_size(), "The skirt atlas must retain the live scene-prop pixel grid.")
+	var opaque_cells := PackedVector2Array()
+	var orange_pixels := 0
+	var cyan_pixels := 0
+	for cell_y in range(PlatformRendererType.SKIRT_ATLAS_ROWS):
+		for cell_x in range(PlatformRendererType.SKIRT_ATLAS_COLUMNS):
+			var occupied := false
+			for y in range(cell_y * 64, (cell_y + 1) * 64):
+				for x in range(cell_x * 64, (cell_x + 1) * 64):
+					var color := image.get_pixel(x, y)
+					if color.a <= 0.0:
+						continue
+					occupied = true
+					if color.r > color.g * 1.35 and color.g > color.b * 1.20:
+						orange_pixels += 1
+					if color.b > color.r * 2.0 and color.g > color.r * 2.0:
+						cyan_pixels += 1
+			if occupied:
+				opaque_cells.append(Vector2(cell_x, cell_y))
+	_assert_equal(
+		PackedVector2Array([
+			Vector2(0, 0), Vector2(1, 0), Vector2(2, 0), Vector2(3, 0),
+			Vector2(0, 1), Vector2(1, 1),
+		]),
+		opaque_cells,
+		"The industrial atlas must preserve the six runtime UV module slots and transparent spare cells."
+	)
+	_assert_true(orange_pixels >= 120, "The industrial skirt must carry a visible but segmented safety-orange top lip.")
+	_assert_true(cyan_pixels > 0 and cyan_pixels <= orange_pixels / 3, "Cyan equipment signals must remain sparse relative to the structural orange accent.")
 
 
 func _test_transition_density_and_guards() -> void:
@@ -301,7 +356,7 @@ func _test_renderer_runtime_model() -> void:
 			_assert_true(skirt_material.shader.code.contains("filter_nearest"), "The skirt shader must retain nearest-neighbor atlas filtering.")
 		var skirt_bounds := skirt.mesh.get_aabb()
 		_assert_near(PlatformRendererType.SKIRT_TOP_Y, skirt_bounds.end.y, 0.001, "The original lower skirt must still meet the board top.")
-		_assert_near(PlatformRendererType.SKIRT_BOTTOM_Y, skirt_bounds.position.y, 0.001, "The original lower skirt depth must remain unchanged.")
+		_assert_near(PlatformRendererType.SKIRT_BOTTOM_Y, skirt_bounds.position.y, 0.001, "The shortened lower skirt must retain its specified depth.")
 		var skirt_arrays := skirt.mesh.surface_get_arrays(0)
 		var skirt_vertices := skirt_arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array
 		_assert_true(

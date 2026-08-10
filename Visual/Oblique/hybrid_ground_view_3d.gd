@@ -6,6 +6,7 @@ const HybridGroundLateSyncType := preload("res://Visual/Oblique/hybrid_ground_la
 const GroundMeshRegistryType := preload("res://Visual/Oblique/ground_mesh_registry.gd")
 const BoardGroundRendererType := preload("res://Visual/Oblique/board_ground_renderer.gd")
 const BoardPlatformRendererType := preload("res://Visual/Oblique/board_platform_renderer.gd")
+const ArenaGroundStyleType := preload("res://Visual/Oblique/arena_ground_style.gd")
 const ConnectedEffectRendererType := preload("res://Visual/Oblique/connected_effect_renderer.gd")
 const AuraRendererType := preload("res://Visual/Oblique/aura_renderer.gd")
 const AreaEffectRendererType := preload("res://Visual/Oblique/area_effect_renderer.gd")
@@ -407,6 +408,14 @@ func _rebuild_ground() -> void:
 		var center := texture_sprite.global_position
 		mesh_instance.position = world_2d_to_3d(center)
 		_ground_root.add_child(mesh_instance)
+		var ground_style := ArenaGroundStyleType.build_style(int(cell.get("logical_id")))
+		mesh_instance.set_instance_shader_parameter("arena_variant", float(ground_style.get("variant", 0)))
+		mesh_instance.set_instance_shader_parameter("arena_detail_seed", float(ground_style.get("seed", 0.0)))
+		mesh_instance.set_instance_shader_parameter("arena_detail_strength", float(ground_style.get("detail_strength", 0.07)))
+		mesh_instance.set_instance_shader_parameter("arena_decal_id", float(ground_style.get("decal_id", 0)))
+		mesh_instance.set_instance_shader_parameter("arena_decal_rotation", float(ground_style.get("decal_rotation", 0)))
+		mesh_instance.set_instance_shader_parameter("arena_decal_strength", float(ground_style.get("decal_strength", 0.03)))
+		mesh_instance.set_instance_shader_parameter("arena_ambient_phase", float(ground_style.get("ambient_phase", 0.0)))
 		_cell_meshes[cell.get_instance_id()] = {
 			"cell": weakref(cell),
 			"sprite": weakref(texture_sprite),
@@ -1002,13 +1011,25 @@ func _register_warning_circle(warning: Node2D) -> void:
 	if warning == null or _area_meshes.has(warning.get_instance_id()):
 		return
 	var color: Color = warning.get("fill_color") as Color
-	color.a = maxf(color.a, 0.18)
+	color.a = clampf(color.a, 0.08, 0.12)
 	var mesh := _create_disc_mesh(color, DANGER_WARNING_RENDER_PRIORITY)
+	var outline_color: Color = warning.get("line_color") as Color
+	var wave_color: Color = warning.get("wave_color") as Color
+	var outline := _create_ring_mesh(outline_color)
+	var wave := _create_ring_mesh(wave_color)
+	var center_marker := _create_disc_mesh(outline_color, DANGER_WARNING_RENDER_PRIORITY + 1)
 	_ground_root.add_child(mesh)
+	_ground_root.add_child(outline)
+	_ground_root.add_child(wave)
+	_ground_root.add_child(center_marker)
 	warning.modulate.a = 0.0
 	_area_meshes[warning.get_instance_id()] = {
 		"source": weakref(warning),
 		"mesh": mesh,
+		"outline": outline,
+		"wave": wave,
+		"center_marker": center_marker,
+		"warning": true,
 		"height": DANGER_WARNING_HEIGHT,
 	}
 	warning.set_meta(&"hybrid_ground_registered", true)
@@ -1351,6 +1372,7 @@ func _sync_affiliation_marker_meshes() -> void:
 			mesh.set_instance_shader_parameter("line_width_ratio", clampf(line_width_2d * AFFILIATION_MARKER_UV_RADIUS / minf(footprint_size.x, footprint_size.y), 0.005, 0.125))
 			mesh.set_instance_shader_parameter("half_arc_radians", maxf(float(config.get("arc_length", 0.46)) * 0.5, 0.05))
 			mesh.set_instance_shader_parameter("marker_shape", int(config.get("marker_shape", 1)))
+			mesh.set_instance_shader_parameter("marker_rank", int(config.get("marker_rank", 0)))
 			entry["visual_version"] = visual_version
 
 func _sync_area_meshes() -> void:
@@ -1358,9 +1380,18 @@ func _sync_area_meshes() -> void:
 		var entry := _area_meshes[id] as Dictionary
 		var area := (entry.source as WeakRef).get_ref() as Node2D
 		var mesh := entry.mesh as MeshInstance3D
+		var outline := entry.get("outline") as MeshInstance3D
+		var wave := entry.get("wave") as MeshInstance3D
+		var center_marker := entry.get("center_marker") as MeshInstance3D
 		if area == null or mesh == null:
 			if mesh != null:
 				mesh.queue_free()
+			if outline != null:
+				outline.queue_free()
+			if wave != null:
+				wave.queue_free()
+			if center_marker != null:
+				center_marker.queue_free()
 			_area_meshes.erase(id)
 			continue
 		var visual_shape := int(entry.get("visual_shape", 0))
@@ -1371,8 +1402,29 @@ func _sync_area_meshes() -> void:
 		var next_position := world_2d_to_3d(area.global_position) + Vector3.UP * (base_height + height_offset)
 		if entry.get("last_position", Vector3.INF) != next_position:
 			mesh.position = next_position
+			if outline != null:
+				outline.position = next_position + Vector3.UP * 0.002
+			if wave != null:
+				wave.position = next_position + Vector3.UP * 0.004
+			if center_marker != null:
+				center_marker.position = next_position + Vector3.UP * 0.006
 			entry["last_position"] = next_position
-		mesh.visible = is_world_point_within_visual_bounds(area.global_position, visual_cull_margin_pixels + radius / maxf(world_scale, 0.0001))
+		var area_visible := is_world_point_within_visual_bounds(area.global_position, visual_cull_margin_pixels + radius / maxf(world_scale, 0.0001))
+		mesh.visible = area_visible
+		if bool(entry.get("warning", false)):
+			var progress := clampf(float(area.call("get_warning_progress")), 0.0, 1.0)
+			if outline != null:
+				outline.visible = area_visible
+				outline.scale = Vector3(radius, 1.0, radius)
+			if wave != null:
+				wave.visible = area_visible
+				var wave_radius := radius * (1.0 - progress)
+				wave.scale = Vector3(wave_radius, 1.0, wave_radius)
+			if center_marker != null:
+				center_marker.visible = area_visible
+				var marker_radius := maxf(float(area.get("center_marker_diameter")) * 0.5 * world_scale, 1.0)
+				center_marker.scale = Vector3(marker_radius, 1.0, marker_radius)
+			continue
 		var visual_version := int(area.call("get_hybrid_visual_version")) if area.has_method("get_hybrid_visual_version") else 0
 		if visual_version != int(entry.get("visual_version", -1)):
 			if visual_shape == 0:
@@ -1404,6 +1456,10 @@ func _sync_animated_ground_area_texture(area: Node2D, entry: Dictionary) -> void
 	if shader_material != null:
 		shader_material.set_shader_parameter("base_texture", _get_area_ground_texture(area))
 		shader_material.set_shader_parameter("base_color", area.get("visual_modulate") as Color)
+		shader_material.set_shader_parameter("detail_color", area.get("ground_detail_color") as Color)
+		shader_material.set_shader_parameter("detail_scale", area.get("ground_detail_scale") as Vector2)
+		shader_material.set_shader_parameter("flow_speed", area.get("ground_flow_speed") as Vector2)
+		shader_material.set_shader_parameter("distortion", float(area.get("ground_uv_distortion")))
 		return
 	var material := entry.get("material") as StandardMaterial3D
 	if material == null:
@@ -1575,6 +1631,10 @@ func _sync_enemy_link_meshes() -> void:
 			mesh.rotation.y = -delta.angle()
 			mesh.visible = bool(config.get("visible", true))
 			mesh.set_instance_shader_parameter("effect_color", config.get("color", Color.WHITE) as Color)
+			mesh.set_instance_shader_parameter("link_style", int(config.get("link_style", 0)))
+			mesh.set_instance_shader_parameter("flow_speed", maxf(float(config.get("flow_speed", 0.0)), 0.0))
+			mesh.set_instance_shader_parameter("segment_count", clampf(float(config.get("segment_count", 12.0)), 1.0, 32.0))
+			mesh.set_instance_shader_parameter("animation_offset", float(posmod(source_id + target.get_instance_id(), 97)) / 97.0)
 			if outer_mesh != null:
 				var outer_width_2d := maxf(float(config.get("outer_width", width_2d + 2.0)), width_2d)
 				outer_mesh.scale = Vector3(length_3d, 1.0, maxf(outer_width_2d * world_scale, 0.01))
@@ -1585,6 +1645,7 @@ func _sync_enemy_link_meshes() -> void:
 					"effect_color",
 					config.get("outer_color", Color.TRANSPARENT) as Color
 				)
+				outer_mesh.set_instance_shader_parameter("link_style", 0)
 	for key in _enemy_link_meshes.keys():
 		if active_keys.has(key):
 			continue

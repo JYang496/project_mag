@@ -55,7 +55,7 @@ func _on_shoot():
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
-	var base_direction := global_position.direction_to(get_mouse_target()).normalized()
+	var base_direction := get_aim_forward()
 	var shot_directions: Array[Vector2] = [base_direction]
 	shot_directions = branch_runtime.get_branch_shot_directions(base_direction)
 	if shot_directions.is_empty():

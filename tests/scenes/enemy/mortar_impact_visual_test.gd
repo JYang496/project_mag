@@ -24,7 +24,9 @@ func _ready() -> void:
 	var mortar := MORTAR_SCENE.instantiate() as EnemyMortarTurret
 	mortar.process_mode = Node.PROCESS_MODE_DISABLED
 	add_child(mortar)
-	mortar.call("_spawn_mortar_impact", Vector2(40.0, 60.0))
+	var impact_lead_time := float(mortar.call("_get_impact_lead_time"))
+	_expect(is_equal_approx(impact_lead_time, 0.1), "mortar impact must begin two 20 FPS frames before damage")
+	mortar.call("_spawn_mortar_impact", Vector2(40.0, 60.0), impact_lead_time)
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -35,6 +37,7 @@ func _ready() -> void:
 			break
 	_expect(area != null, "mortar impact must spawn an AreaEffect")
 	if area != null:
+		_expect(is_equal_approx(area.activation_delay, impact_lead_time), "mortar damage must wait for the two-frame explosion lead")
 		_expect(area.visual_enabled and area.use_animated_visual, "mortar impact must enable its animated visual")
 		_expect(not area.animated_visual_is_ground, "mortar fireball must remain an upright projected effect")
 		_expect(not area.draw_enabled, "mortar impact must suppress the legacy range circle")

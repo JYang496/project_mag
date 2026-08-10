@@ -3,7 +3,9 @@ class_name EnemyBomber
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const AREA_EFFECT_SCENE := preload("res://Combat/area_effect/area_effect.tscn")
+const WARNING_SCENE := preload("res://Npc/enemy/scenes/target_warning.tscn")
 const EXPLOSION_VISUAL_FRAMES := preload("res://asset/images/effects/explosion/explosion_frames.tres")
+const EXPLOSION_LEAD_FRAMES := 2.0
 
 @export var chase_acceleration: float = 34.0
 @export var max_speed_multiplier: float = 2.0
@@ -18,6 +20,8 @@ const EXPLOSION_VISUAL_FRAMES := preload("res://asset/images/effects/explosion/e
 var _current_speed: float = 0.0
 var _is_fusing: bool = false
 var _fuse_remaining: float = 0.0
+var _explosion_spawned: bool = false
+var _active_aoe_warning: TargetWarning = null
 
 func _physics_process(delta: float) -> void:
 	var ai_delta := consume_ai_update_delta(delta)
@@ -31,6 +35,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if _is_fusing:
 		_fuse_remaining -= maxf(delta, 0.0)
+		if not _explosion_spawned and _fuse_remaining <= _get_explosion_lead_time():
+			_explosion_spawned = true
+			_spawn_explosion_effect(maxf(_fuse_remaining, 0.0))
 		decay_knockback()
 		move_enemy(Vector2.ZERO, delta)
 		if _fuse_remaining <= 0.0:
@@ -52,12 +59,31 @@ func _start_fuse() -> void:
 		return
 	_is_fusing = true
 	_fuse_remaining = maxf(fuse_time, 0.1)
+	_explosion_spawned = false
 	_current_speed = 0.0
 	damage_feedback.start_warning_flash(
 		fuse_warning_color,
 		fuse_warning_peak_alpha,
 		fuse_warning_pulse_sec
 	)
+	_spawn_aoe_warning()
+
+func _spawn_aoe_warning() -> void:
+	_clear_aoe_warning()
+	var warning := WARNING_SCENE.instantiate() as TargetWarning
+	if warning == null:
+		return
+	warning.global_position = global_position
+	warning.duration = _fuse_remaining
+	warning.radius = blast_radius
+	warning.visual_preset = TargetWarning.VisualPreset.DODGE_STYLE
+	_active_aoe_warning = warning
+	call_deferred("add_sibling", warning)
+
+func _clear_aoe_warning() -> void:
+	if _active_aoe_warning != null and is_instance_valid(_active_aoe_warning):
+		_active_aoe_warning.queue_free()
+	_active_aoe_warning = null
 
 func _explode() -> void:
 	if not is_inside_tree():
@@ -65,10 +91,23 @@ func _explode() -> void:
 	damage_feedback.stop_warning_flash()
 	if sprite_body != null:
 		sprite_body.modulate = Color.WHITE
+	if not _explosion_spawned:
+		_explosion_spawned = true
+		_spawn_explosion_effect(0.0)
+	# Let the warning finish its own fuse-length animation on a natural detonation.
+	# Early deaths still clear it through _before_death().
+	_active_aoe_warning = null
+	death(null)
+
+func _get_explosion_lead_time() -> float:
+	return EXPLOSION_LEAD_FRAMES / maxf(EXPLOSION_VISUAL_FRAMES.get_animation_speed(&"explode"), 1.0)
+
+func _spawn_explosion_effect(damage_delay: float) -> void:
 	var area := AREA_EFFECT_SCENE.instantiate() as AreaEffect
 	if area:
 		area.global_position = global_position
 		area.duration = 0.22
+		area.activation_delay = maxf(damage_delay, 0.0)
 		area.radius = maxf(blast_radius, 8.0)
 		area.target_group = AreaEffect.TargetGroup.ALLIES
 		area.one_shot_damage = max(1, int(round(float(max(1, damage)) * maxf(blast_damage_multiplier, 1.0))))
@@ -86,9 +125,9 @@ func _explode() -> void:
 		area.apply_once_per_target = true
 		area.source_node = self
 		call_deferred("add_sibling", area)
-	death(null)
 
 func _before_death(_killing_attack: Attack) -> void:
+	_clear_aoe_warning()
 	damage_feedback.stop_warning_flash()
 	if sprite_body != null:
 		sprite_body.modulate = Color.WHITE

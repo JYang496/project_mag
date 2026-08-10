@@ -62,50 +62,22 @@ size_flags_vertical = 3
 columns = 3
 theme_override_constants/separation = 12
 
-[node name="DetailPanel" type="PanelContainer" parent="Panel/VBox"]
-custom_minimum_size = Vector2(0, 178)
+[node name="ActionPanel" type="PanelContainer" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 62)
 size_flags_horizontal = 3
-size_flags_vertical = 3
 
-[node name="Margin" type="MarginContainer" parent="Panel/VBox/DetailPanel"]
+[node name="Margin" type="MarginContainer" parent="Panel/VBox/ActionPanel"]
 theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 10
+theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_bottom = 8
 
-[node name="DetailHBox" type="HBoxContainer" parent="Panel/VBox/DetailPanel/Margin"]
-theme_override_constants/separation = 14
-
-[node name="DetailVBox" type="VBoxContainer" parent="Panel/VBox/DetailPanel/Margin/DetailHBox"]
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 5
-
-[node name="DetailTitle" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox"]
-text = "Reward Details"
-theme_override_font_sizes/font_size = 16
-
-[node name="DetailBody" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/DetailVBox"]
-size_flags_vertical = 3
-text = "Select a reward to view details."
-autowrap_mode = 3
-max_lines_visible = 6
-
-[node name="ActionVBox" type="VBoxContainer" parent="Panel/VBox/DetailPanel/Margin/DetailHBox"]
-custom_minimum_size = Vector2(220, 0)
+[node name="Actions" type="HBoxContainer" parent="Panel/VBox/ActionPanel/Margin"]
 theme_override_constants/separation = 10
+alignment = 1
 
-[node name="DetailOutcome" type="Label" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/ActionVBox"]
-text = "Added to inventory"
-theme_override_colors/font_color = Color(0.72, 0.88, 0.78, 1)
-autowrap_mode = 3
-max_lines_visible = 2
-
-[node name="Spacer" type="Control" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/ActionVBox"]
-size_flags_vertical = 3
-
-[node name="ConfirmButton" type="Button" parent="Panel/VBox/DetailPanel/Margin/DetailHBox/ActionVBox"]
-custom_minimum_size = Vector2(180, 42)
+[node name="ConfirmButton" type="Button" parent="Panel/VBox/ActionPanel/Margin/Actions"]
+custom_minimum_size = Vector2(220, 42)
 text = "Confirm Reward"
 
 [node name="Footer" type="HBoxContainer" parent="Panel/VBox"]

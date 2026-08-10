@@ -307,7 +307,9 @@ func _enter_prepare_phase() -> void:
 	_set_active(true, false)
 	_set_camera_owner_active(true)
 	call_deferred("_ensure_camera_owner_binding")
-	_reset_prepare_state(true)
+	# The platform is centered on the player's battle-end position, so entering
+	# rest must not add a second, visible move back to the center zone.
+	_reset_prepare_state(false)
 	if not _arrival_transition_locked:
 		_start_zone_hint_intro()
 	_refresh_interaction_state()

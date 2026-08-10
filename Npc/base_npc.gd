@@ -17,7 +17,7 @@ const FixedObliqueProjectionType := preload("res://Visual/Oblique/fixed_oblique_
 @export var hit_flash_peak_color: Color = Color(1.0, 1.0, 1.0, 1.0)
 @export_range(0.0, 1.0, 0.01) var hit_flash_peak_alpha: float = 0.8
 @export var hit_flash_in_duration_sec: float = 0.0
-@export var hit_flash_out_duration_sec: float = 0.3
+@export var hit_flash_out_duration_sec: float = 0.06
 var damage_taken_multiplier: float = 1.0
 
 var knockback = {
@@ -65,7 +65,7 @@ func damaged(attack: Attack) -> DamageResult:
 	)
 	knockback.amount = attack.knock_back.amount
 	knockback.angle = attack.knock_back.angle
-	_play_hit_flash()
+	damage_feedback.play_hit_feedback(result)
 	_sync_enemy_hp_bar()
 	_show_enemy_hp_bar_on_damage()
 	if status_timer.is_stopped() and (_incoming_damage_pipeline.has_active_effects(self) or not status_effects.is_empty()):

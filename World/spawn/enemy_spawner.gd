@@ -22,6 +22,8 @@ const SpawnCombatProfileScript := preload("res://data/spawns/SpawnCombatProfile.
 const SPAWN_POINT_PICKER_SCRIPT := preload("res://World/spawn/spawn_point_picker.gd")
 const SPAWN_BUDGET_RUNTIME_SCRIPT := preload("res://World/spawn/spawn_budget_runtime.gd")
 const KILL_GOLD_BUDGET_RUNTIME_SCRIPT := preload("res://World/spawn/kill_gold_budget_runtime.gd")
+const SPAWN_PERFORMANCE_METRICS_SCRIPT := preload("res://World/spawn/spawn_performance_metrics.gd")
+const CONTRACT_OBJECTIVE_POINT_PLANNER_SCRIPT := preload("res://World/spawn/contract_objective_point_planner.gd")
 const BATTLE_CONTRACT_COMBAT_BRIDGE_SCRIPT := preload("res://Combat/battle_contract/BattleContractCombatBridge.gd")
 const RUNTIME_DIAGNOSTICS_SCRIPT := preload("res://autoload/RuntimeDiagnostics.gd")
 const REWARD_ENEMY_SCENE := preload("res://Npc/enemy/scenes/reward_enemy.tscn")
@@ -89,6 +91,8 @@ var _contract_reward_stage := false
 var _contract_reward_hp_multiplier := 1.0
 var _contract_reward_multiplier := 1.0
 var _contract_kill_gold_multiplier := 1.0
+var _spawn_performance_metrics: RefCounted = SPAWN_PERFORMANCE_METRICS_SCRIPT.new()
+var _contract_objective_point_planner: RefCounted = CONTRACT_OBJECTIVE_POINT_PLANNER_SCRIPT.new()
 
 func _ready():
 	GlobalVariables.enemy_spawner = self
@@ -320,9 +324,7 @@ func _build_random_spawn_batch(level_index: int, _effective_time_out: int) -> Di
 	for _attempt in range(int(profile.get("max_selection_attempts"))):
 		if _available_hp_budget <= 0.0 or _spawn_budget_stopped:
 			break
-		var candidate := _get_next_contract_planned_candidate(available)
-		if candidate.is_empty() and _contract_spawn_plan.is_empty():
-			candidate = _pick_weighted_candidate(available, count_by_scene, ranged_count, elite_count, level_index)
+		var candidate := _select_contract_spawn_candidate(available, count_by_scene, ranged_count, elite_count, level_index)
 		if candidate.is_empty():
 			break
 		var scene_path := _get_spawn_scene_path(candidate)
@@ -344,6 +346,27 @@ func _build_random_spawn_batch(level_index: int, _effective_time_out: int) -> Di
 		_sync_spawn_budget_runtime_state()
 		_update_spawn_budget_stop_state()
 	return batch
+
+func _select_contract_spawn_candidate(
+	available: Array[Dictionary],
+	count_by_scene: Dictionary,
+	ranged_count: int,
+	elite_count: int,
+	level_index: int
+) -> Dictionary:
+	if _contract_spawn_plan_cursor < _contract_spawn_plan.size() and _contract_batch_count > 0:
+		var released_count := ceili(float(_contract_spawn_plan.size()) * float(_contract_released_batches) / float(_contract_batch_count))
+		if _contract_spawn_plan_cursor >= released_count:
+			return {}
+	var candidate := _get_next_contract_planned_candidate(available)
+	if not candidate.is_empty():
+		return candidate
+	candidate = _pick_weighted_candidate(available, count_by_scene, ranged_count, elite_count, level_index)
+	if not candidate.is_empty() and _contract_spawn_plan_cursor < _contract_spawn_plan.size():
+		# The planned type can be blocked by a per-type alive cap. Substitute an
+		# eligible type so a finite contract never waits for a kill just to spawn.
+		_contract_spawn_plan[_contract_spawn_plan_cursor] = int(candidate.get("id", -1))
+	return candidate
 
 func _resolve_batch_hp_budget(level_index: int, _effective_time_out: int) -> float:
 	_init_spawn_budget_runtime()
@@ -703,12 +726,14 @@ func _spawn_from_state(state: Dictionary, requested_count: int) -> int:
 	var new_enemy := entry.enemy
 	var base_count := clampi(max(1, requested_count), 1, spawn_room)
 	var spawn_count: int = base_count
+	_spawn_performance_metrics.begin_batch(spawn_count)
 	var loot_value_multiplier: float = 1.0
 	var random_position_center := get_random_position()
 	var counter := 0
 	var spawned_hp := 0
 	while counter < spawn_count:
 		var enemy_spawn = new_enemy.instantiate()
+		_spawn_performance_metrics.record_instantiated()
 		_apply_level_scaling(state, enemy_spawn)
 		if enemy_spawn is BaseEnemy:
 			var base_enemy := enemy_spawn as BaseEnemy
@@ -720,10 +745,17 @@ func _spawn_from_state(state: Dictionary, requested_count: int) -> int:
 		_debug_log_spawned_enemy(enemy_spawn)
 		enemy_spawn.global_position = get_nearby_position(random_position_center)
 		self.call_deferred("add_child", enemy_spawn)
+		_spawn_performance_metrics.record_scheduled_for_activation()
 		_add_enemy_with_state_signal(state, enemy_spawn)
 		enemy_spawned.emit(enemy_spawn)
 		counter += 1
 	return spawned_hp
+
+func reset_spawn_performance_metrics() -> void:
+	_spawn_performance_metrics.reset()
+
+func get_spawn_performance_metrics() -> Dictionary:
+	return _spawn_performance_metrics.snapshot()
 
 func get_random_position() -> Vector2:
 	_init_spawn_point_picker()
@@ -906,58 +938,12 @@ func get_contract_legal_region_count() -> int:
 	return _get_effective_board_cells().size()
 
 func get_contract_beacon_points() -> PackedVector2Array:
-	var points := PackedVector2Array()
 	var player_position: Vector2 = PlayerData.player.global_position if PlayerData.player != null else Vector2.ZERO
-	for cell in _get_effective_board_cells():
-		if cell != null:
-			var cell_center := cell.global_transform * Vector2(256.0, 256.0)
-			if cell_center.distance_to(player_position) >= 180.0:
-				points.append(cell_center)
-	if points.size() < 2:
-		return PackedVector2Array()
-	var best := PackedVector2Array([points[0], points[1]])
-	var best_distance := best[0].distance_to(best[1])
-	for first in points:
-		for second in points:
-			var distance := first.distance_to(second)
-			if distance > best_distance:
-				best = PackedVector2Array([first, second])
-				best_distance = distance
-	return best if best_distance >= 300.0 else PackedVector2Array()
+	return _contract_objective_point_planner.select_beacon_points(_get_effective_board_cells(), player_position)
 
 func get_contract_objective_points() -> PackedVector2Array:
-	var candidates := PackedVector2Array()
 	var player_position: Vector2 = PlayerData.player.global_position if PlayerData.player != null else Vector2.ZERO
-	for cell in _get_effective_board_cells():
-		if cell == null:
-			continue
-		var cell_center := cell.global_transform * Vector2(256.0, 256.0)
-		if cell_center.distance_to(player_position) >= 180.0:
-			candidates.append(cell_center)
-	if candidates.is_empty():
-		return PackedVector2Array()
-	var selected := PackedVector2Array()
-	var first := candidates[0]
-	for point in candidates:
-		if point.distance_to(player_position) > first.distance_to(player_position):
-			first = point
-	selected.append(first)
-	while selected.size() < 3 and selected.size() < candidates.size():
-		var best_point := Vector2.INF
-		var best_min_distance := -1.0
-		for candidate in candidates:
-			if selected.has(candidate):
-				continue
-			var min_distance := INF
-			for existing in selected:
-				min_distance = minf(min_distance, candidate.distance_to(existing))
-			if min_distance > best_min_distance:
-				best_min_distance = min_distance
-				best_point = candidate
-		if best_point == Vector2.INF or best_min_distance < 220.0:
-			break
-		selected.append(best_point)
-	return selected
+	return _contract_objective_point_planner.select_objective_points(_get_effective_board_cells(), player_position)
 
 func configure_contract_finite_budget(total_budget: float) -> void:
 	_init_spawn_budget_runtime()

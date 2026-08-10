@@ -3,12 +3,15 @@ extends Node
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 const HYBRID_VIEW := preload("res://Visual/Oblique/hybrid_ground_view_3d.gd")
 const AFFILIATION_MARKER := preload("res://Combat/visual/affiliation_marker.gd")
+const PLAYER_AMMO_HUD := preload("res://Player/Mechas/scripts/player_ammo_hud.gd")
 const ELITE_ROLLING_BALL := preload("res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn")
 const PLAYER_SCENE := preload("res://Player/Mechas/scenes/Player.tscn")
+const WEAPON_SCENE := preload("res://Player/Weapons/weapon_ranger.tscn")
 const FRIENDLY_SCENE := preload("res://Npc/friendly/scenes/friendly_npc.tscn")
 const UNIT_BILLBOARD_SOURCE := preload("res://Visual/Oblique/unit_billboard_visual_2d.gd")
 const UNIT_BILLBOARD_SHADER := preload("res://Shaders/unit_billboard_3d.gdshader")
 const BEACON_PROJECTED_VISUAL := preload("res://World/battle_contract/beacon_projected_visual.gd")
+const OFFSCREEN_GEOMETRY := preload("res://Visual/Oblique/offscreen_indicator_geometry.gd")
 const BEACON_PLAYER_FOREGROUND := preload("res://World/battle_contract/beacon_player_foreground.gd")
 const TACTICAL_BEACON_SCENE := preload("res://World/battle_contract/tactical_beacon.tscn")
 const REST_ZONE_SHADER := preload("res://Shaders/rest_area_zone_ground.gdshader")
@@ -54,6 +57,7 @@ func _ready() -> void:
 	_expect_activation_outline_stays_below_units(view)
 	_expect_rest_zone_sync_without_retired_hold_state(view)
 	_expect_aura_registration_initializes_transform(view)
+	_expect_player_ammo_arc_contract()
 
 	var points: Array[Vector2] = [
 		Vector2.ZERO,
@@ -127,6 +131,12 @@ func _ready() -> void:
 		_expect_unit_marker_matches_shadow(unit, view, str(unit_case.label))
 		var body_sources: Array[Node2D] = []
 		if str(unit_case.label) == "player":
+			var ammo_layer := unit.get_node_or_null("PlayerHudLayer") as CanvasLayer
+			var ammo_hud := unit.get_node_or_null("PlayerHudLayer/AmmoHud") as Control
+			_expect(ammo_layer != null and ammo_layer.layer == 0, "player ammo HUD must share the world canvas layer and remain below UI")
+			_expect(ammo_hud != null and ammo_hud.get_script() == PLAYER_AMMO_HUD, "player must expose a dedicated screen-space ammo HUD")
+			var marker_config := unit.get_node("AffiliationMarker").call("get_hybrid_ground_marker_config") as Dictionary
+			_expect(not marker_config.has("ammo_ratio"), "ground affiliation marker must not own ammo HUD state")
 			body_sources.assign([
 				unit.get_node("MechaSprite") as Node2D,
 				unit.get_node("MechaMoveSprite") as Node2D,
@@ -146,6 +156,8 @@ func _ready() -> void:
 		await get_tree().process_frame
 		for source_id in source_ids:
 			_expect_unit_billboard_removed(source_id, view, str(unit_case.label))
+
+	await _expect_weapon_uses_depth_tested_billboard(view)
 
 	await _expect_dense_billboard_pooling(view)
 	await get_tree().process_frame
@@ -253,6 +265,17 @@ func _expect_beacon_visual_respects_player(player: Node2D, view: Node) -> void:
 	projection_target.rotation = 0.17
 	add_child(projection_target)
 	visual.configure(projection_target, &"operation", 1, Vector2(140.0, 140.0))
+	var marker_safe_rect := Rect2(Vector2(54.0, 54.0), Vector2(1172.0, 612.0))
+	_expect(OFFSCREEN_GEOMETRY.make_safe_rect(Vector2(1280.0, 720.0)) == marker_safe_rect, "offscreen target types must share the protocol marker safe area")
+	var right_state := OFFSCREEN_GEOMETRY.resolve(Vector2(1400.0, 360.0), Vector2(1280.0, 720.0), marker_safe_rect)
+	_expect(not bool(right_state.get("is_inside_viewport", true)), "an enemy beyond the viewport must resolve as offscreen")
+	_expect((right_state.get("edge_position") as Vector2).is_equal_approx(Vector2(1226.0, 360.0)), "offscreen guidance must clamp to the right protocol-safe edge")
+	var inside_state := OFFSCREEN_GEOMETRY.resolve(Vector2(1200.0, 360.0), Vector2(1280.0, 720.0), marker_safe_rect)
+	_expect(bool(inside_state.get("is_inside_viewport", false)), "a visible enemy must not be treated as offscreen even outside the inset arrow area")
+	var marker_activation_rect := visual.call("_world_marker_activation_rect", marker_safe_rect) as Rect2
+	_expect(marker_activation_rect == marker_safe_rect.grow(48.0), "protocol detail activation must extend 48px beyond the offscreen-arrow safe area")
+	_expect(marker_activation_rect.has_point(Vector2(20.0, marker_safe_rect.get_center().y)), "protocol detail must render while its center is near the screen edge")
+	_expect(not marker_activation_rect.has_point(Vector2(-1.0, marker_safe_rect.get_center().y)), "protocol detail must still yield to the offscreen arrow once its center leaves the viewport")
 	var projected_footprint := visual.call("_projected_footprint_points") as PackedVector2Array
 	var half := Vector2(70.0, 70.0)
 	var local_corners := PackedVector2Array([
@@ -303,6 +326,37 @@ func _expect_beacon_visual_respects_player(player: Node2D, view: Node) -> void:
 	foreground.queue_free()
 	visual.queue_free()
 	projection_target.queue_free()
+
+
+func _expect_player_ammo_arc_contract() -> void:
+	var hud := PLAYER_AMMO_HUD.new() as Control
+	hud.call("set_ammo_status", 7, 10, true)
+	_expect(hud.visible, "player ammo HUD must be visible for ammo-based weapons")
+	_expect(is_equal_approx(float(hud.call("get_ammo_ratio")), 0.7), "player ammo HUD must expose the current magazine ratio")
+	_expect(hud.get("hud_size") == Vector2(128.0, 64.0), "player ammo HUD must retain a fixed screen-space drawing surface")
+	_expect(int(hud.get("segment_count")) == 4, "quarter-ring ammo HUD must keep four readable segments")
+	_expect(is_equal_approx(float(hud.get("ring_radius_scale")), 1.30), "quarter-ring ammo HUD must preserve a visible gap outside the affiliation ring")
+	_expect(bool(hud.call("has_container_texture")), "player ammo HUD must use its generated raster container asset")
+	var sample_track := PackedVector2Array([Vector2(10.0, 0.0), Vector2(10.0, 10.0), Vector2(0.0, 10.0)])
+	var half_fill := hud.call("_build_fill_points", sample_track, 0.5) as PackedVector2Array
+	_expect(half_fill.size() == 2 and half_fill[0] == sample_track[1] and half_fill[-1] == sample_track[-1], "ammo fill must remain anchored at the left 90-degree end while draining from the right")
+	var ribbon := hud.call("_build_ribbon_polygon", sample_track, 4.0) as PackedVector2Array
+	_expect(ribbon.size() == 6 and is_equal_approx(ribbon[0].y, ribbon[-1].y), "right 0-degree endpoint must use an upward-facing horizontal square cut")
+	var collapsed_ribbon := hud.call(
+		"_build_ribbon_polygon",
+		PackedVector2Array([Vector2(10.0, 10.0), Vector2(10.0, 10.0)]),
+		4.0,
+	) as PackedVector2Array
+	_expect(
+		not bool(hud.call("_is_drawable_polygon", collapsed_ribbon)),
+		"collapsed projected ammo paths must be rejected before renderer triangulation",
+	)
+	hud.call("set_ammo_status", 0, 10, true)
+	_expect(hud.visible, "empty magazines must preserve the visible ammo track")
+	_expect(is_zero_approx(float(hud.call("get_ammo_ratio"))), "empty magazines must expose zero fill")
+	hud.call("set_ammo_status", 5, 10, false)
+	_expect(not hud.visible, "non-ammo weapons must hide the ammo HUD")
+	hud.free()
 
 
 func _expect_marker_matches_ground(marker: Node2D, owner: Node2D, view: Node) -> void:
@@ -406,16 +460,18 @@ func _expect_unit_billboard_anchor(unit: Node2D, source: Node2D, view: Node, lab
 		return
 	var shadow := unit.get_node("GroundShadow") as Node2D
 	var logical_anchor := unit.global_transform * shadow.position
-	var expected := view.call("world_2d_to_ground_anchor", logical_anchor) as Vector3
+	var ground_expected := view.call("world_2d_to_ground_anchor", logical_anchor) as Vector3
+	var renderer := view.get("_unit_billboard_renderer") as RefCounted
+	var expected := renderer.call("terrain_safe_anchor", ground_expected) as Vector3
 	_expect(
 		mesh.position.distance_to(expected) < 0.001,
-		"%s billboard bottom must share GroundAnchor: actual=%s expected=%s" % [label, mesh.position, expected]
+		"%s billboard must use the terrain-safe unit anchor: actual=%s expected=%s" % [label, mesh.position, expected]
 	)
 	var shadow_entries := view.get("_shadow_meshes") as Dictionary
 	var shadow_entry := shadow_entries.get(shadow.get_instance_id(), {}) as Dictionary
 	var shadow_mesh := shadow_entry.get("mesh") as MeshInstance3D
 	_expect(
-		shadow_mesh != null and shadow_mesh.position.distance_to(expected) < 0.001,
+		shadow_mesh != null and shadow_mesh.position.distance_to(ground_expected) < 0.001,
 		"%s shadow center must share GroundAnchor" % label
 	)
 	var marker := unit.get_node("AffiliationMarker") as Node2D
@@ -423,7 +479,7 @@ func _expect_unit_billboard_anchor(unit: Node2D, source: Node2D, view: Node, lab
 	var marker_entry := marker_entries.get(marker.get_instance_id(), {}) as Dictionary
 	var marker_mesh := marker_entry.get("mesh") as MeshInstance3D
 	_expect(
-		marker_mesh != null and marker_mesh.position.distance_to(expected) < 0.001,
+		marker_mesh != null and marker_mesh.position.distance_to(ground_expected) < 0.001,
 		"%s ground-ring center must share GroundAnchor" % label
 	)
 	var config := source.call("get_unit_billboard_config") as Dictionary
@@ -509,6 +565,76 @@ func _expect_unit_billboard_removed(source_id: int, view: Node, label: String) -
 	var renderer := view.get("_unit_billboard_renderer") as RefCounted
 	var entries := renderer.call("get_debug_entries") as Dictionary
 	_expect(not entries.has(source_id), "%s freed source must leave the billboard registry" % label)
+
+
+func _expect_weapon_uses_depth_tested_billboard(view: Node) -> void:
+	var orbit_owner := Node2D.new()
+	orbit_owner.position = Vector2(25.0, 15.0)
+	add_child(orbit_owner)
+	var shadow := Node2D.new()
+	shadow.name = "GroundShadow"
+	shadow.position = Vector2(0.0, 8.0)
+	orbit_owner.add_child(shadow)
+	var orbit_holder := Node2D.new()
+	orbit_owner.add_child(orbit_holder)
+	var weapon := WEAPON_SCENE.instantiate() as Node2D
+	weapon.process_mode = Node.PROCESS_MODE_DISABLED
+	weapon.position = Vector2(40.0, -30.0)
+	weapon.rotation = 0.4
+	orbit_holder.add_child(weapon)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var sprite := weapon.get_node("Sprite") as Node2D
+	var entry := _unit_billboard_entry(sprite, view)
+	var mesh := entry.get("mesh") as MeshInstance3D
+	_expect(mesh != null, "equipped weapon sprite must register in the depth-tested 3D billboard renderer")
+	_expect(sprite.visibility_layer == 0, "equipped weapon 2D sprite must hide after 3D registration")
+	_expect(is_equal_approx(float(sprite.get("directional_forward_degrees")), -90.0), "weapon billboard must declare the texture muzzle axis as local -Y")
+	if mesh != null:
+		var fire_direction := Vector2.RIGHT.rotated(weapon.global_rotation - PI * 0.5)
+		var projected_fire_direction := view.call("world_vector_to_screen", fire_direction, weapon.global_position) as Vector2
+		var rendered_rotation := float(mesh.get_instance_shader_parameter("visual_rotation_radians"))
+		var texture_forward_angle := deg_to_rad(float(sprite.get("directional_forward_degrees")))
+		var texture_muzzle_axis_3d := Vector2.RIGHT.rotated(-texture_forward_angle)
+		var rendered_muzzle_axis_3d := texture_muzzle_axis_3d.rotated(rendered_rotation).normalized()
+		var projected_fire_axis_3d := Vector2(projected_fire_direction.x, -projected_fire_direction.y).normalized()
+		_expect(
+			rendered_muzzle_axis_3d.dot(projected_fire_axis_3d) > 0.999,
+			"weapon muzzle axis must match the projected projectile direction: actual=%s expected=%s" % [rendered_muzzle_axis_3d, projected_fire_axis_3d],
+		)
+		var camera := view.get_node("GroundCamera3D") as Camera3D
+		var owner_ground_anchor := view.call("world_2d_to_ground_anchor", orbit_owner.global_transform * shadow.position) as Vector3
+		var renderer := view.get("_unit_billboard_renderer") as RefCounted
+		var owner_depth_anchor := renderer.call("terrain_safe_anchor", owner_ground_anchor) as Vector3
+		var owner_depth := (camera.global_transform.affine_inverse() * owner_depth_anchor).z
+		var behind_ground_anchor := view.call("world_2d_to_ground_anchor", orbit_owner.global_transform * Vector2(0.0, 7.5)) as Vector3
+		var behind_depth_anchor := renderer.call("terrain_safe_anchor", behind_ground_anchor) as Vector3
+		var behind_depth := (camera.global_transform.affine_inverse() * mesh.position).z
+		var expected_behind_depth := (camera.global_transform.affine_inverse() * behind_depth_anchor).z
+		_expect(absf(behind_depth - expected_behind_depth) < 0.001, "a weapon rendered above the player must use the rear unit depth layer")
+		_expect(behind_depth < owner_depth, "a weapon above the player must be farther from the camera and covered by the player")
+		_expect(mesh.position.distance_to(behind_ground_anchor) >= 0.49, "rear-orbit weapons must keep terrain-safe view depth clearance")
+		weapon.position.x = -40.0
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var opposite_x_depth := (camera.global_transform.affine_inverse() * mesh.position).z
+		_expect(absf(opposite_x_depth - behind_depth) < 0.001, "horizontal orbit movement must not change the rear occlusion layer")
+		weapon.position = Vector2(40.0, 30.0)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var front_ground_anchor := view.call("world_2d_to_ground_anchor", orbit_owner.global_transform * Vector2(0.0, 8.5)) as Vector3
+		var front_depth_anchor := renderer.call("terrain_safe_anchor", front_ground_anchor) as Vector3
+		var front_depth := (camera.global_transform.affine_inverse() * mesh.position).z
+		var expected_front_depth := (camera.global_transform.affine_inverse() * front_depth_anchor).z
+		_expect(absf(front_depth - expected_front_depth) < 0.001, "a weapon rendered below the player must use the front unit depth layer")
+		_expect(front_depth > owner_depth, "a weapon below the player must be closer to the camera and cover the player")
+		_expect(is_zero_approx(float(mesh.get_instance_shader_parameter("vertical_anchor_offset"))), "weapon billboard must rotate around its visual center")
+		_expect(not is_zero_approx(float(mesh.get_instance_shader_parameter("visual_rotation_radians"))), "directional weapon billboard must preserve projected aiming rotation")
+	var source_id := sprite.get_instance_id()
+	orbit_owner.queue_free()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_expect_unit_billboard_removed(source_id, view, "equipped weapon")
 
 
 func _expect_dense_billboard_pooling(view: Node) -> void:

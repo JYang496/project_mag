@@ -45,7 +45,7 @@ func _on_shoot() -> void:
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
 
-	projectile_direction = global_position.direction_to(get_mouse_target()).normalized()
+	projectile_direction = get_aim_forward()
 	if projectile_direction == Vector2.ZERO:
 		return
 	var spawn_projectile := spawn_projectile_from_scene(projectile_template)

@@ -13,6 +13,7 @@ const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _failed := false
 var _panel: Control
+var _confirm_count := 0
 
 func _ready() -> void:
 	call_deferred("_run")
@@ -30,9 +31,12 @@ func _run() -> void:
 	)
 	_panel = PANEL_SCENE.instantiate() as Control
 	add_child(_panel)
-	_panel.call("open", [ELIMINATION, SURVIVAL, REWARD], Callable(), Callable())
-	await get_tree().create_timer(0.7, true, false, true).timeout
+	_panel.call("open", [ELIMINATION, SURVIVAL, REWARD], Callable(self, "_on_contract_confirmed"), Callable())
+	await get_tree().create_timer(1.0, true, false, true).timeout
 	await get_tree().process_frame
+	if bool(_panel.get("_locked")):
+		_panel.call("_kill_transition")
+		_panel.call("_finish_open_transition")
 
 	var panel_container := _panel.get_node("Shade/Panel") as PanelContainer
 	var shade := _panel.get_node("Shade") as ColorRect
@@ -100,6 +104,30 @@ func _run() -> void:
 	)
 	var main_card := _panel.get_node("Shade/Panel/Margin/Content/MainCards/CardLeft") as Button
 	var confirm_button := _panel.get_node("Shade/Panel/Margin/Content/Actions/Confirm") as Button
+	var protocol_cards: Array = _panel.get("cards") as Array
+	var interaction_hint := _panel.get_node("Shade/Panel/Margin/Content/Subtitle") as Label
+	_assert_true(
+		interaction_hint.text.contains("Hold") and interaction_hint.text.contains("1–3"),
+		"Protocol selection should explicitly teach both card hold and numeric hold shortcuts."
+	)
+	for index in range(3):
+		var protocol_card := protocol_cards[index] as Button
+		var key_badge := protocol_card.get_node("Margin/Content/Header/KeyBadge") as Label
+		var contract_icon := protocol_card.get_node("Margin/Content/Header/ContractIcon") as Control
+		_assert_true(key_badge.visible and key_badge.text == str(index + 1), "Protocol card %d should expose its numeric quick-select key." % (index + 1))
+		_assert_true(
+			not key_badge.get_global_rect().intersects(contract_icon.get_global_rect()),
+			"Protocol card %d numeric shortcut should not overlap its protocol icon slot." % (index + 1)
+		)
+		_assert_true(
+			contract_icon.get_global_rect().has_point(
+				protocol_card.get_global_rect().position + protocol_card.call("get_contract_icon_center_local")
+			),
+			"Protocol card %d should draw its icon inside the dedicated icon slot." % (index + 1)
+		)
+	_assert_true(int(_panel.call("_quick_select_index_for_key", KEY_1)) == 0, "Number key 1 should map to the first protocol card.")
+	_assert_true(int(_panel.call("_quick_select_index_for_key", KEY_KP_2)) == 1, "Numpad 2 should map to the second protocol card.")
+	_assert_true(int(_panel.call("_quick_select_index_for_key", KEY_3)) == 2, "Number key 3 should map to the third protocol card.")
 	for card: Button in _panel.cards:
 		if not card.visible:
 			continue
@@ -123,6 +151,47 @@ func _run() -> void:
 	_assert_true(
 		confirm_button.custom_minimum_size.x >= 230.0,
 		"Confirm button should reserve enough width for its English label."
+	)
+
+	_panel.call("_begin_card_hold", main_card)
+	_panel.call("_process", PANEL_SCRIPT.CARD_HOLD_SECONDS * 0.5)
+	var hold_progress := main_card.get_node("HoldProgress") as ProgressBar
+	_assert_true(
+		hold_progress.visible and hold_progress.value > 0.45 and hold_progress.value < 0.55,
+		"Holding a contract card should expose determinate confirmation progress (visible=%s value=%.2f index=%d locked=%s)." % [
+			hold_progress.visible,
+			hold_progress.value,
+			int(_panel.get("_held_card_index")),
+			bool(_panel.get("_locked")),
+		]
+	)
+	_panel.call("_cancel_card_hold")
+	_assert_true(
+		not hold_progress.visible and is_zero_approx(hold_progress.value) and _confirm_count == 0,
+		"Releasing a contract card early should cancel confirmation and clear its progress."
+	)
+	_panel.call("_begin_card_hold_by_index", 1)
+	_panel.call("_process", PANEL_SCRIPT.CARD_HOLD_SECONDS * 0.5)
+	var keyboard_hold_progress := (protocol_cards[1] as Button).get_node("HoldProgress") as ProgressBar
+	_assert_true(
+		keyboard_hold_progress.visible and keyboard_hold_progress.value > 0.45 and keyboard_hold_progress.value < 0.55,
+		"Holding numeric key 2 should drive the matching protocol card progress."
+	)
+	_panel.call("_cancel_card_hold")
+	_assert_true(
+		not keyboard_hold_progress.visible and _confirm_count == 0,
+		"Releasing a numeric quick-select key early should cancel confirmation."
+	)
+	_panel.call("_begin_card_hold", main_card)
+	confirm_button.disabled = false # The layout test runs outside the protocol-selection phase.
+	_panel.call("_process", PANEL_SCRIPT.CARD_HOLD_SECONDS)
+	_assert_true(
+		_confirm_count == 1 and bool(_panel.get("_locked")),
+		"Holding a contract card through the threshold should select and confirm it exactly once (count=%d index=%d locked=%s)." % [
+			_confirm_count,
+			int(_panel.get("_held_card_index")),
+			bool(_panel.get("_locked")),
+		]
 	)
 
 	var narrow_size: Vector2 = PANEL_SCRIPT.calculate_panel_size(Vector2(720.0, 720.0), true)
@@ -153,6 +222,11 @@ func _run() -> void:
 	reward_card.call("set_selected", true, false)
 	selected_badge = reward_card.get_node("Margin/Content/Header/SelectedBadge") as Label
 	await get_tree().process_frame
+	interaction_hint = _panel.get_node("Shade/Panel/Margin/Content/Subtitle") as Label
+	_assert_true(
+		interaction_hint.text.contains("长按") and interaction_hint.text.contains("1–3"),
+		"Chinese protocol selection should explain the hold interaction and numeric shortcuts."
+	)
 	_assert_true(
 		selected_badge.text == "✓ 已选择",
 		"Selected badge should localize to Chinese."
@@ -175,6 +249,9 @@ func _reset_runtime_state() -> void:
 	LocalizationManager.set_locale("en", false)
 	BattleContractManager.reset_runtime_state()
 	_panel = null
+
+func _on_contract_confirmed() -> void:
+	_confirm_count += 1
 
 func _assert_reward_copy(definition: Resource, expected_gold_tier: String) -> void:
 	var card := preload("res://UI/scenes/battle_contract_card.tscn").instantiate() as Button

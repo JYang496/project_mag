@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="RunProgressionProfile" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="RunProgressionProfile" format=3 uid="uid://q25l5ba4niss"]
 
-[ext_resource type="Script" path="res://data/progression/RunProgressionProfile.gd" id="1_profile"]
-[ext_resource type="Script" path="res://data/progression/RunChapterDefinition.gd" id="2_chapter"]
+[ext_resource type="Script" uid="uid://cs57nj2lkoww4" path="res://data/progression/RunProgressionProfile.gd" id="1_profile"]
+[ext_resource type="Script" uid="uid://doodua6ajp72n" path="res://data/progression/RunChapterDefinition.gd" id="2_chapter"]
 
 [sub_resource type="Resource" id="Chapter_1"]
 script = ExtResource("2_chapter")
@@ -10,7 +10,6 @@ title_key = "ui.chapter.pursuit.title"
 title_fallback = "Pursuit and Movement"
 subtitle_key = "ui.chapter.pursuit.subtitle"
 subtitle_fallback = "Learn the chase, break the charge"
-start_level_index = 0
 end_level_index = 2
 theme_id = &"pursuit"
 board_active_cell_ids = PackedInt32Array(5, 6)
@@ -54,8 +53,4 @@ rest_after_completion = false
 
 [resource]
 script = ExtResource("1_profile")
-chapters = Array[ExtResource("2_chapter")]([SubResource("Chapter_1"), SubResource("Chapter_2"), SubResource("Chapter_3"), SubResource("Chapter_Final")])
-final_level_index = 9
-fixed_contract_level_count = 2
-fixed_early_contract_id = &"elimination"
-final_contract_id = &"finale"
+chapters = Array[Resource]([SubResource("Chapter_1"), SubResource("Chapter_2"), SubResource("Chapter_3"), SubResource("Chapter_Final")])

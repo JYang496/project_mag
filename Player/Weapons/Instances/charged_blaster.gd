@@ -9,7 +9,6 @@ var hit_cd : float
 var duration : float
 var beam_range : float = 450.0
 var beam_local_forward := Vector2.UP
-var normal_turn_speed := 12.0
 @export_range(0.05, 1.0, 0.01) var firing_rotation_slow_multiplier: float = 0.1
 @export_range(0.05, 1.0, 0.01) var firing_move_speed_multiplier: float = 0.75
 @export_range(0.1, 1.0, 0.05) var minimum_committed_fire_sec: float = 0.35
@@ -31,16 +30,13 @@ var weapon_data = {
 
 func _physics_process(delta):
 	super._physics_process(delta)
-	_update_smoothed_rotation(delta)
 
-# Charged Blaster drives normal aiming through smoothed rotation, but assist fire
-# needs an immediate snap so the shot is committed toward the selected target.
-func _update_weapon_rotation() -> void:
-	var target_direction: Vector2 = get_mouse_target() - global_position
-	if target_direction == Vector2.ZERO:
-		return
-	beam_local_forward = target_direction.normalized()
-	rotation = target_direction.angle() + AIM_ROTATION_OFFSET
+func _update_weapon_rotation(delta: float = -1.0) -> void:
+	var step_delta := get_physics_process_delta_time() if delta < 0.0 else delta
+	var speed_multiplier := firing_rotation_slow_multiplier if is_firing_beam else 1.0
+	speed_multiplier *= _get_charged_turn_speed_multiplier()
+	turn_toward_world_position(get_mouse_target(), step_delta, speed_multiplier)
+	beam_local_forward = get_aim_forward()
 
 func set_level(lv):
 	lv = str(lv)
@@ -60,7 +56,7 @@ func _on_shoot():
 		return
 	is_on_cooldown = true
 	_feedback_refund_accum_sec = 0.0
-	_update_beam_forward_from_target()
+	beam_local_forward = get_aim_forward()
 	var base_profile := {
 		"direction": beam_local_forward.normalized(),
 		"range_multiplier": 1.0,
@@ -85,24 +81,6 @@ func _on_remove_timer_timeout() -> void:
 
 func _on_charged_blast_timer_timeout() -> void:
 	is_on_cooldown = false
-
-
-func _update_smoothed_rotation(delta: float) -> void:
-	var mouse_direction: Vector2 = get_mouse_target() - global_position
-	if mouse_direction == Vector2.ZERO:
-		return
-	beam_local_forward = mouse_direction.normalized()
-	var target_rotation := mouse_direction.angle() + AIM_ROTATION_OFFSET
-	var firing_turn_speed := normal_turn_speed * clampf(firing_rotation_slow_multiplier, 0.05, 1.0)
-	var turn_speed := firing_turn_speed if is_firing_beam else normal_turn_speed
-	turn_speed *= _get_charged_turn_speed_multiplier()
-	rotation = lerp_angle(rotation, target_rotation, clamp(turn_speed * delta, 0.0, 1.0))
-
-func _update_beam_forward_from_target() -> void:
-	var target_direction: Vector2 = get_mouse_target() - global_position
-	if target_direction == Vector2.ZERO:
-		return
-	beam_local_forward = target_direction.normalized()
 
 
 func _start_firing_turn_slowdown(active_duration: float) -> void:

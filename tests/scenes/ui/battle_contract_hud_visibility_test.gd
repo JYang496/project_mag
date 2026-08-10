@@ -24,6 +24,7 @@ class IntroSequenceProbe extends RefCounted:
 		pass
 
 class DeploymentSequenceProbe extends RefCounted:
+	signal released
 	var events: Array[String]
 
 	func _init(event_log: Array[String]) -> void:
@@ -31,6 +32,8 @@ class DeploymentSequenceProbe extends RefCounted:
 
 	func play() -> void:
 		events.append("deployment_started")
+		await released
+		events.append("deployment_finished")
 
 func _ready() -> void:
 	call_deferred("_run")
@@ -50,6 +53,12 @@ func _run() -> void:
 	_assert_true(right_stack != null, "Right HUD stack should remain available for non-contract UI.")
 	_assert_true(panel != null, "Contract HUD presenter should expose its panel.")
 	_assert_true(not panel.visible, "Inactive contract HUD should be fully hidden.")
+	var queued_status := presenter.call("_format_elimination_status", {"active_enemies": 1, "queued_enemies": 2}, 3, 3) as String
+	var deployed_status := presenter.call("_format_elimination_status", {"active_enemies": 3, "queued_enemies": 0}, 3, 3) as String
+	_assert_true(queued_status.contains("1") and queued_status.contains("2"),
+		"Elimination HUD must show active enemies and queued reinforcements as separate values.")
+	_assert_true(deployed_status.contains("3") and not deployed_status.contains("2"),
+		"Elimination HUD must remove the reinforcement count after every target is deployed.")
 	_assert_true(deployment_presenter != null, "Battlefield deployment presenter should be initialized with the HUD.")
 	_assert_true(deployment_presenter.overlay != null and not deployment_presenter.overlay.visible,
 		"Battlefield deployment overlay should remain hidden outside BATTLE_STARTING.")
@@ -85,12 +94,16 @@ func _run() -> void:
 	ui.battlefield_deployment_presenter = deployment_sequence
 	ui.play_battle_entry_intro()
 	await get_tree().process_frame
-	_assert_true(transition_events == ["intro_started"],
-		"Battlefield deployment must remain hidden while the contract intro is active.")
+	_assert_true(transition_events == ["deployment_started"],
+		"The contract intro must remain hidden while battlefield deployment is active.")
+	deployment_sequence.released.emit()
+	await get_tree().process_frame
+	_assert_true(transition_events == ["deployment_started", "deployment_finished", "intro_started"],
+		"The contract intro must start only after battlefield deployment finishes.")
 	intro_sequence.released.emit()
 	await get_tree().create_timer(0.12).timeout
-	_assert_true(transition_events == ["intro_started", "intro_finished", "deployment_started"],
-		"Battlefield deployment must start only after the contract intro and handoff gap finish.")
+	_assert_true(transition_events == ["deployment_started", "deployment_finished", "intro_started", "intro_finished"],
+		"Battle entry must finish with the protocol description after loading completes.")
 	ui.battle_contract_hud_presenter = real_intro_presenter
 	ui.battlefield_deployment_presenter = real_deployment_presenter
 

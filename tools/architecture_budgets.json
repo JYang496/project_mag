@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "large_file_threshold": 800,
+  "function_review_threshold": 80,
+  "owners": {
+    "Player/Mechas/scripts/Player.gd": 1877,
+    "UI/scripts/UI.gd": 1673,
+    "World/spawn/enemy_spawner.gd": 1278,
+    "UI/scripts/weapon_selector.gd": 1285,
+    "World/board_cell_generator.gd": 1136,
+    "Player/Weapons/Core/weapon.gd": 917,
+    "UI/scripts/cell_management_panel.gd": 913,
+    "UI/scripts/reward_selection_panel.gd": 910,
+    "World/rest_area.gd": 894,
+    "UI/scripts/components/controls_hint_view.gd": 885
+  },
+  "exceptions": []
+}

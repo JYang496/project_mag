@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"beam", &"area"])
+requires_any_tags = Array[StringName]([&"energy"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"area"])
+conflicts_with_tags = Array[StringName]([])
 branch_id = "laser_prism_splitter"
 display_name = "Prism Splitter"
 description = "Beam Area branch. Laser shots split into a central beam and two angled prism beams, letting one shot sweep multiple lanes."

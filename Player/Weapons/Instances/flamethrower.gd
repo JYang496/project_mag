@@ -26,6 +26,7 @@ var _attacked_target_ids: Dictionary = {}
 var _heat_prepared_firing_elapsed_sec: float = 0.0
 var _flame_vfx: Node
 var _primary_fire_held: bool = false
+var _last_aim_update_physics_frame: int = -1
 
 var weapon_data := {
 	"1": {"damage": "8", "fire_interval_sec": "0.30", "ammo": "20", "range": "180"},
@@ -100,7 +101,7 @@ func _emit_flame_burst() -> void:
 
 	if detect_area == null or not is_instance_valid(detect_area):
 		return
-	var forward := global_position.direction_to(get_mouse_target()).normalized()
+	var forward := get_flame_aim_direction()
 	if forward == Vector2.ZERO:
 		return
 	_refresh_flame_vfx(forward)
@@ -198,6 +199,20 @@ func _physics_process(delta: float) -> void:
 	_update_flame_vfx_follow()
 	if debug_mode:
 		queue_redraw()
+
+func _update_weapon_rotation(delta: float = -1.0) -> void:
+	var physics_frame := Engine.get_physics_frames()
+	if physics_frame == _last_aim_update_physics_frame:
+		return
+	_last_aim_update_physics_frame = physics_frame
+	var step_delta := get_physics_process_delta_time() if delta < 0.0 else delta
+	_step_aim_toward(get_mouse_target(), step_delta)
+
+func _step_aim_toward(target_position: Vector2, delta: float) -> void:
+	turn_toward_world_position(target_position, delta)
+
+func get_flame_aim_direction() -> Vector2:
+	return get_aim_forward()
 
 func _process_main_weapon_effect(_delta: float) -> void:
 	pass
@@ -375,7 +390,7 @@ func _refresh_held_flame_vfx() -> void:
 		return
 	if not bool(_flame_vfx.call("is_visible_or_fading")):
 		return
-	var forward := global_position.direction_to(get_mouse_target()).normalized()
+	var forward := get_flame_aim_direction()
 	if forward == Vector2.ZERO:
 		return
 	_refresh_flame_vfx(forward)
@@ -387,7 +402,7 @@ func _update_flame_vfx_follow() -> void:
 		return
 	if not bool(_flame_vfx.call("is_visible_or_fading")):
 		return
-	var forward := global_position.direction_to(get_mouse_target()).normalized()
+	var forward := get_flame_aim_direction()
 	if forward == Vector2.ZERO:
 		return
 	if _flame_vfx.has_method("update_aim"):

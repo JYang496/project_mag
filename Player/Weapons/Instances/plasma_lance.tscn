@@ -7,6 +7,7 @@
 
 [node name="PlasmaLance" unique_id=1138617759 instance=ExtResource("1_ranger")]
 script = ExtResource("2_script")
+turn_speed_degrees_per_second = 300.0
 heat_accumulation = 10.0
 max_heat = 100.0
 heat_cooldown_rate = 0.0

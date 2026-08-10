@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"projectile", &"area"])
+requires_any_tags = Array[StringName]([&"projectile"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"area"])
+conflicts_with_tags = Array[StringName]([])
 branch_id = "salvo_rocket"
 display_name = "Salvo Rocket"
 description = "Area branch. Fires a spread of reduced-damage rockets to saturate wider enemy groups instead of focusing one target."

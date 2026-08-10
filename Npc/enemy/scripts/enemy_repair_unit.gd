@@ -103,6 +103,7 @@ func _draw() -> void:
 
 func get_hybrid_aura_visual() -> Dictionary:
 	return {
+		"relationship_kind": &"repair_range",
 		"visible": true,
 		"radius": heal_radius,
 		"fill_color": Color(PALETTE.HEAL, 0.0),
@@ -117,6 +118,10 @@ func get_hybrid_link_visuals() -> Array[Dictionary]:
 	if _heal_target != null and is_instance_valid(_heal_target):
 		links.append({
 			"target": _heal_target,
+			"relationship_kind": &"repair",
+			"link_style": 1,
+			"flow_speed": 2.4,
+			"segment_count": 14.0,
 			"outer_color": heal_line_outer_color,
 			"outer_width": 5.0,
 			"color": heal_line_color,

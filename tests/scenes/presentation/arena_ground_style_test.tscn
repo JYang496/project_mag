@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/scenes/presentation/arena_ground_style_test.gd" id="1"]
+
+[node name="ArenaGroundStyleTest" type="Node"]
+script = ExtResource("1")

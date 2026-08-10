@@ -4,6 +4,11 @@
 
 [resource]
 script = ExtResource("1_script")
+produces_tags = Array[StringName]([&"long_range", &"mark", &"on_hit"])
+requires_any_tags = Array[StringName]([&"projectile"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"mark"])
+conflicts_with_tags = Array[StringName]([])
 passive_id = "sniper_far_hit_triggered"
 display_name = "Far Hit"
 description = "Mark/Projectile trigger. Has 3 charges; far or marked-target hits spend 1 charge for distance-based bonus damage. Reloading restores all charges."

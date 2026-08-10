@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"freeze", &"area", &"control"])
+requires_any_tags = Array[StringName]([&"freeze"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"area"])
+conflicts_with_tags = Array[StringName]([&"fire"])
 branch_id = "glacier_whiteout_expansion"
 display_name = "Whiteout Expansion"
 description = "Area branch. Expands the freeze cone without reducing range or damage, improving Freeze control against wider enemy groups."

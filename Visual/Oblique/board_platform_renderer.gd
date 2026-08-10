@@ -3,11 +3,12 @@ extends RefCounted
 
 const BoundaryBuilderType := preload("res://Visual/Oblique/board_support_boundary_builder.gd")
 const SkirtAtlas := preload(
-	"res://Visual/Oblique/assets/board_support/floating_board_skirt_atlas.png"
+	"res://Visual/Oblique/assets/board_support/industrial_board_skirt_atlas.png"
 )
 
-## Version 2: a hue-neutral, low-profile graphite frame plus one compact
-## pixel-dither transition band. The boundary never samples cell colors.
+## Version 3: a low-profile graphite frame plus an authored, worn industrial
+## skirt. The skirt repeats the floor's blue-gray steel, plate seams, rivet
+## scale, and muted safety-orange lip; cyan remains a sparse equipment signal.
 const DEFAULT_BOUNDARY_SAMPLE_2D := 512.0
 const CONTACT_RIM_WIDTH_2D := 8.0
 const CONTACT_RIM_TOP_Y := 0.012
@@ -29,8 +30,8 @@ const CORNER_NODE_TOP_Y := 0.010
 const CORNER_CORE_SIZE_2D := 10.0
 const CORNER_CORE_TOP_Y := 0.018
 const SIGNAL_TRACE_WIDTH_2D := 2.0
-const SIGNAL_TRACE_LENGTH_2D := 28.0
-const SIGNAL_TRACE_INTERVAL_2D := 256.0
+const SIGNAL_TRACE_LENGTH_2D := 8.0
+const SIGNAL_TRACE_INTERVAL_2D := 192.0
 const SIGNAL_TRACE_OFFSET_2D := 9.0
 const SIGNAL_TRACE_BOTTOM_Y := 0.009
 const SIGNAL_TRACE_TOP_Y := 0.015
@@ -45,8 +46,11 @@ const MAX_TRANSITION_SLOTS_PER_ROW := 256
 const MAX_TRANSITION_TOTAL_TILES := 4096
 const SKIRT_LOGICAL_MODULE_WIDTH := 128.0
 const SKIRT_TOP_Y := 0.012
-const SKIRT_BOTTOM_Y := -1.252
-const SKIRT_OUTWARD_OFFSET_WORLD := 0.012
+const SKIRT_BOTTOM_Y := -0.860
+# Keep the authored facade in front of the 18px structural underlayer. The
+# former 0.012 offset left the dark collision-support prism closer to the
+# oblique camera, visually replacing the atlas with one flat black slab.
+const SKIRT_OUTWARD_OFFSET_WORLD := 0.200
 const SKIRT_ATLAS_COLUMNS := 4
 const SKIRT_ATLAS_ROWS := 4
 const CORNER_TRANSITION_LENGTH_2D := 56.0

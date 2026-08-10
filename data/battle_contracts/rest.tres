@@ -4,6 +4,11 @@
 
 [resource]
 script = ExtResource("1")
+produces_tags = Array[StringName]([&"economy", &"sustain", &"module"])
+requires_any_tags = Array[StringName]([])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([])
+conflicts_with_tags = Array[StringName]([])
 contract_id = &"rest"
 name_key = "battle_contract.rest.name"
 description_key = "battle_contract.rest.description"

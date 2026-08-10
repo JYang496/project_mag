@@ -53,18 +53,11 @@ func apply_base_movement(projectile: Node2D) -> void:
 	if is_zero_approx(speed_value):
 		return
 	projectile.rotation = direction.angle() + deg_to_rad(90.0)
-	var movement_scene := get_effect_scene("linear_movement")
-	var movement_node := spawn_effect_instance("linear_movement", movement_scene)
-	if movement_node == null:
-		return
-	if movement_node.has_method("configure"):
-		movement_node.call("configure", {"direction": direction, "speed": speed_value})
-	else:
-		movement_node.set("direction", direction)
-		movement_node.set("speed", speed_value)
-	projectile.call_deferred("add_child", movement_node)
 	if projectile is Projectile:
-		(projectile as Projectile).effect_list.append(movement_node)
+		# Straight-line motion is authoritative projectile data and is advanced by
+		# ProjectileSimulationSystem. Curved/homing/orbit effects still claim
+		# movement control and automatically fall back to their node callback.
+		(projectile as Projectile).base_displacement = direction * speed_value
 
 func apply_modifiers(projectile: Node2D, active_modifiers: Dictionary) -> void:
 	for effect_name in active_modifiers.keys():

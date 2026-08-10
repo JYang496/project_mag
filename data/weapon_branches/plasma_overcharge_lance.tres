@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"heat", &"on_overheat"])
+requires_any_tags = Array[StringName]([&"energy"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"heat"])
+conflicts_with_tags = Array[StringName]([&"freeze"])
 branch_id = "plasma_overcharge_lance"
 display_name = "Overcharge Lance"
 description = "Sustained Heat branch. Firing while heat stays above 70% builds timed Overcharge stacks, rewarding continued high-heat operation with more damage."

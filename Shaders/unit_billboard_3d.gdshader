@@ -4,6 +4,8 @@ render_mode unshaded, cull_disabled, depth_draw_opaque;
 uniform sampler2D sprite_texture : source_color, filter_nearest, repeat_disable;
 instance uniform vec2 billboard_size_world = vec2(0.32, 0.32);
 instance uniform float bottom_padding_ratio : hint_range(0.0, 0.49) = 0.0;
+instance uniform float visual_rotation_radians = 0.0;
+instance uniform float vertical_anchor_offset : hint_range(-0.5, 0.5) = 0.5;
 instance uniform bool flip_h = false;
 instance uniform bool flip_v = false;
 instance uniform vec4 visual_color : source_color = vec4(1.0);
@@ -16,9 +18,14 @@ instance uniform float outline_width_px : hint_range(0.0, 3.0) = 0.0;
 instance uniform float source_id = 0.0;
 
 void vertex() {
-	VERTEX.y += 0.5;
-	VERTEX.y -= bottom_padding_ratio;
+	VERTEX.y += vertical_anchor_offset;
 	VERTEX.xy *= billboard_size_world;
+	float rotation_cos = cos(visual_rotation_radians);
+	float rotation_sin = sin(visual_rotation_radians);
+	VERTEX.xy = mat2(
+		vec2(rotation_cos, rotation_sin),
+		vec2(-rotation_sin, rotation_cos)
+	) * VERTEX.xy;
 	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(
 		vec4(INV_VIEW_MATRIX[0].xyz, 0.0),
 		vec4(INV_VIEW_MATRIX[1].xyz, 0.0),

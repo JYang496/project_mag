@@ -35,6 +35,7 @@ var spawned_objectives: Array[Dictionary] = []
 var beacon_updates: Array[Dictionary] = []
 var completed_beacons: Array[int] = []
 var remove_beacons_calls := 0
+var elimination_guidance_calls: Array[bool] = []
 
 func get_level_index() -> int:
 	return level_index
@@ -59,6 +60,9 @@ func request_configure_finite_budget(total_budget: float, batch_count: int) -> v
 
 func request_prefer_elite_final_batch(enabled: bool) -> void:
 	prefer_elite_final_batch = enabled
+
+func request_set_elimination_guidance(enabled: bool) -> void:
+	elimination_guidance_calls.append(enabled)
 
 func request_release_next_batch() -> void:
 	released_batches += 1

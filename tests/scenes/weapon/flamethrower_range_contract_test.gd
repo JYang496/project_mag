@@ -15,6 +15,16 @@ func _ready() -> void:
 	_expect(is_equal_approx(float(weapon.get("attack_range")), 180.0), "level 1 Flamethrower range must be 180")
 	_expect(is_equal_approx(float(weapon.call("_get_effective_attack_range")), 180.0), "level 1 effective range must match its configured range")
 	_expect(is_equal_approx(_detect_radius(weapon), 180.0), "the detection radius must follow the level 1 hit range")
+	_expect(is_equal_approx(weapon.turn_speed_degrees_per_second, 180.0), "Flamethrower must turn at 180 degrees per second")
+	weapon.rotation = deg_to_rad(90.0)
+	weapon.call("_step_aim_toward", Vector2.RIGHT * 100.0, 0.016)
+	_expect((weapon.call("get_flame_aim_direction") as Vector2).is_equal_approx(Vector2.RIGHT), "Flamethrower must preserve an already aligned aim direction")
+	weapon.call("_step_aim_toward", Vector2.LEFT * 100.0, 0.25)
+	var quarter_turn_direction := weapon.call("get_flame_aim_direction") as Vector2
+	_expect(is_equal_approx(absf(Vector2.RIGHT.angle_to(quarter_turn_direction)), PI * 0.25), "Flamethrower must rotate only 45 degrees during the first quarter-second of a 180-degree turn")
+	_expect(absf(quarter_turn_direction.angle_to(Vector2.LEFT)) > PI * 0.5, "Flamethrower must not snap to a target directly behind it")
+	weapon.call("_step_aim_toward", Vector2.LEFT * 100.0, 0.75)
+	_expect(is_zero_approx(absf((weapon.call("get_flame_aim_direction") as Vector2).angle_to(Vector2.LEFT))), "Flamethrower must finish a 180-degree turn after about one second")
 
 	weapon.set_level(9)
 	_expect(is_equal_approx(float(weapon.get("attack_range")), 260.0), "level 9 Flamethrower range must be 260")

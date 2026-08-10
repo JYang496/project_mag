@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"freeze", &"ammo", &"on_reload"])
+requires_any_tags = Array[StringName]([&"freeze"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"ammo"])
+conflicts_with_tags = Array[StringName]([&"fire"])
 branch_id = "glacier_subzero_battery"
 display_name = "Subzero Battery"
 description = "Reload branch. Cold Snap restores ammo up to the magazine cap, pushing Glacier toward sustained Freeze uptime between reloads."

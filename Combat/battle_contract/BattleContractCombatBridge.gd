@@ -14,6 +14,10 @@ const ENEMY_RECOVERY_APPROACH_EPSILON := 1.0
 var _beacons: Dictionary = {}
 var _beacon_beam: Line2D
 const BEACON_SCENE := preload("res://World/battle_contract/tactical_beacon.tscn")
+const EliminationIndicatorLayer := preload("res://UI/scripts/components/elimination_enemy_indicator_layer.gd")
+const ELIMINATION_INDICATOR_CANVAS_NAME := "EliminationEnemyIndicators"
+var _elimination_indicator_canvas: CanvasLayer
+var _elimination_indicator: Control
 
 func bind(spawner: EnemySpawner) -> void:
 	unbind()
@@ -40,6 +44,7 @@ func unbind() -> void:
 	_enemy_motion.clear()
 	_monitor_enemy_stalls = false
 	_stall_sample_elapsed_sec = 0.0
+	_remove_elimination_indicator()
 	request_remove_beacons()
 
 func get_level_index() -> int:
@@ -107,6 +112,13 @@ func request_configure_finite_budget(total_budget: float, batch_count: int) -> v
 func request_prefer_elite_final_batch(enabled: bool) -> void:
 	if _spawner != null:
 		_spawner.configure_contract_prefer_final_elite(enabled)
+
+func request_set_elimination_guidance(enabled: bool) -> void:
+	if not enabled:
+		_remove_elimination_indicator()
+		return
+	_ensure_elimination_indicator()
+	_sync_elimination_indicator_targets()
 
 func request_release_next_batch() -> void:
 	if _spawner != null:
@@ -248,6 +260,29 @@ func request_remove_beacons() -> void:
 		_beacon_beam.queue_free()
 	_beacon_beam = null
 
+func _ensure_elimination_indicator() -> void:
+	if _elimination_indicator != null and is_instance_valid(_elimination_indicator):
+		return
+	if _spawner == null or not is_instance_valid(_spawner):
+		return
+	_elimination_indicator_canvas = CanvasLayer.new()
+	_elimination_indicator_canvas.name = ELIMINATION_INDICATOR_CANVAS_NAME
+	_elimination_indicator_canvas.layer = 5
+	_spawner.get_tree().root.add_child(_elimination_indicator_canvas)
+	_elimination_indicator = EliminationIndicatorLayer.new()
+	_elimination_indicator.name = "IndicatorLayer"
+	_elimination_indicator_canvas.add_child(_elimination_indicator)
+
+func _sync_elimination_indicator_targets() -> void:
+	if _elimination_indicator != null and is_instance_valid(_elimination_indicator):
+		_elimination_indicator.call("set_targets", _enemy_by_id)
+
+func _remove_elimination_indicator() -> void:
+	if _elimination_indicator_canvas != null and is_instance_valid(_elimination_indicator_canvas):
+		_elimination_indicator_canvas.queue_free()
+	_elimination_indicator_canvas = null
+	_elimination_indicator = null
+
 func _get_level_plan() -> LevelCombatPlan:
 	SpawnData.ensure_loaded()
 	var level_index := get_level_index()
@@ -268,6 +303,7 @@ func _on_enemy_spawned(enemy: Node) -> void:
 	var enemy_id := _next_enemy_id
 	_next_enemy_id += 1
 	_enemy_by_id[enemy_id] = enemy
+	_sync_elimination_indicator_targets()
 	if _monitor_enemy_stalls:
 		_enemy_motion[enemy_id] = _new_enemy_motion_snapshot(enemy)
 	enemy.set_meta("_battle_contract_enemy_id", enemy_id)
@@ -280,6 +316,7 @@ func _on_enemy_died(enemy: Node, was_killed: bool) -> void:
 	enemy_died.emit(snapshot)
 	_enemy_by_id.erase(enemy_id)
 	_enemy_motion.erase(enemy_id)
+	_sync_elimination_indicator_targets()
 
 func _on_spawn_budget_stopped() -> void:
 	spawn_budget_exhausted.emit(get_spawn_budget_snapshot())
@@ -335,11 +372,13 @@ func _on_phase_changed(new_phase: String) -> void:
 		request_stop_spawning()
 		request_evacuate_enemies()
 		request_remove_beacons()
+		_remove_elimination_indicator()
 		_spawner.reset_contract_configuration()
 	elif new_phase == PhaseManager.SETTLEMENT:
 		request_stop_spawning()
 		_enemy_by_id.clear()
 		request_remove_beacons()
+		_remove_elimination_indicator()
 		_spawner.reset_contract_configuration()
 
 func _enemy_snapshot(enemy: Node, enemy_id: int) -> Dictionary:

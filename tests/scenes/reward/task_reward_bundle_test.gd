@@ -71,24 +71,46 @@ func _ready() -> void:
 	var panel := preload("res://UI/scenes/reward_selection_panel.tscn").instantiate() as RewardSelectionPanel
 	add_child(panel)
 	await get_tree().process_frame
+	for typed_reward in [task_bundle[0], effect_reward]:
+		var typed_model: Variant = panel.call("_build_reward_card_model", typed_reward)
+		assert(str(typed_model.behavior_summary).strip_edges() != "")
+		assert(typed_model.primary_chips().size() <= 3)
+		assert(str(typed_model.synergy_label).strip_edges() == "")
+		assert(str(typed_model.full_detail).strip_edges() != "")
 	assert(panel.open_for_summary(summary))
 	assert(panel.options_box is GridContainer)
 	assert(panel.options_box.get_child_count() == 2)
 	assert(not panel.confirm_button.disabled)
-	var pinned_title := panel.detail_title_label.text
-	panel.call("_on_reward_hover_entered", 1)
-	assert(panel.detail_title_label.text != pinned_title)
-	panel.call("_on_reward_hover_exited", 1)
-	assert(panel.detail_title_label.text == pinned_title)
+	assert(panel.get_node_or_null("Panel/VBox/DetailPanel") == null)
+	assert(panel.get_node_or_null("Panel/VBox/ActionPanel/Margin/Actions/ConfirmButton") == panel.confirm_button)
 	panel.close_panel()
-	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward], Callable(), Callable(), false, "", "", 0, 0, false, &"quick"))
+	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward], Callable(), Callable(), false))
+	await get_tree().process_frame
+	assert(panel.title_label.text == LocalizationManager.tr_key("ui.reward.title", "Choose Reward"))
 	assert(panel.panel.size.x >= 999.0 and panel.panel.size.y >= 619.0)
 	assert(panel.options_box.columns == 3)
+	assert(panel.options_scroll.custom_minimum_size.y >= 400.0)
+	assert(panel.get_node_or_null("Panel/VBox/DetailPanel") == null)
+	var action_panel := panel.get_node("Panel/VBox/ActionPanel") as Control
+	assert(action_panel.custom_minimum_size.y <= 64.0)
+	assert(panel.options_scroll.size.y >= action_panel.size.y * 5.0)
+	var actions := panel.get_node("Panel/VBox/ActionPanel/Margin/Actions") as HBoxContainer
+	var confirm_center_x := panel.confirm_button.position.x + panel.confirm_button.size.x * 0.5
+	assert(is_equal_approx(confirm_center_x, actions.size.x * 0.5))
 	for index in range(3):
 		var reward_button := panel.options_box.get_child(index) as Button
 		assert(reward_button != null)
 		var key_badge := reward_button.find_child("KeyBadge", true, false) as Label
 		assert(key_badge != null and key_badge.text == str(index + 1))
+		assert(reward_button.custom_minimum_size.y >= 290.0)
+		var summary_label := reward_button.find_child("BehaviorSummary", true, false) as Label
+		var comparison_box := reward_button.find_child("ComparisonBox", true, false) as VBoxContainer
+		assert(summary_label != null and comparison_box != null)
+		assert(comparison_box.get_child_count() <= 3)
+		var synergy_status := reward_button.find_child("SynergyStatusLabel", true, false) as Label
+		assert(synergy_status == null)
+	panel.call("_on_reward_button_pressed", 1, panel.options_box.get_child(1) as Button)
+	assert(panel.confirm_button.text == LocalizationManager.tr_key("ui.reward.confirm", "Confirm Reward"))
 	panel.call("_begin_quick_select_hold", 0)
 	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS * 0.4)
 	var previous_progress := (panel.options_box.get_child(0) as Button).find_child("HoldProgress", true, false) as ProgressBar

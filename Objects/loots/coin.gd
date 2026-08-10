@@ -37,6 +37,9 @@ func _ready():
 
 
 func _physics_process(delta):
+	batch_attraction_step(delta)
+
+func batch_attraction_step(delta: float) -> void:
 	if target != null:
 		global_position = global_position.move_toward(target.global_position, speed)
 		speed += 5 * delta

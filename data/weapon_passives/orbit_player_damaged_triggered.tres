@@ -4,6 +4,11 @@
 
 [resource]
 script = ExtResource("1_script")
+produces_tags = Array[StringName]([&"defense", &"on_damage_taken"])
+requires_any_tags = Array[StringName]([&"summon"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"defense"])
+conflicts_with_tags = Array[StringName]([])
 passive_id = "orbit_player_damaged_triggered"
 display_name = "Damage Reaction"
 description = "Defense trigger. Triggers when the player takes damage, making Orbit a pressure-response support weapon; reload refreshes the state."

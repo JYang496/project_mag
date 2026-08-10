@@ -4,6 +4,11 @@
 
 [resource]
 script = ExtResource("1_script")
+produces_tags = Array[StringName]([&"heat", &"buff", &"on_reload"])
+requires_any_tags = Array[StringName]([&"ammo"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"heat"])
+conflicts_with_tags = Array[StringName]([&"freeze"])
 passive_id = "machine_gun_heat_expansion"
 display_name = "Thermal Amplification"
 description = "Each 25% of a magazine spent restores 1 of 4 charges. Reload consumes all stored charges and temporarily amplifies elemental alignment without changing the fixed -100 to 100 Heat bounds."

@@ -132,13 +132,7 @@ func should_skip_benchmark_forced_fire() -> bool:
 	return true
 
 func _on_shoot() -> void:
-	var target_pos: Vector2 = get_mouse_target()
-	var target := _find_closest_enemy()
-	if target != null:
-		target_pos = target.global_position
-	projectile_direction = global_position.direction_to(target_pos).normalized()
-	if projectile_direction == Vector2.ZERO:
-		projectile_direction = _resolve_auto_aim_direction()
+	projectile_direction = get_aim_forward()
 
 	is_on_cooldown = true
 	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
@@ -198,16 +192,13 @@ func _resolve_auto_aim_direction() -> Vector2:
 func _find_closest_enemy() -> Node2D:
 	return find_closest_enemy(global_position, maxf(auto_fire_range, 1.0))
 
-func _update_weapon_rotation() -> void:
-	var direction := Vector2.ZERO
+func _update_weapon_rotation(delta: float = -1.0) -> void:
+	var target_position: Vector2 = get_mouse_target()
 	var target := _find_closest_enemy()
 	if target != null:
-		direction = target.global_position - global_position
-	else:
-		direction = get_mouse_target() - global_position
-	if direction == Vector2.ZERO:
-		return
-	rotation = direction.angle() + deg_to_rad(90)
+		target_position = target.global_position
+	var step_delta := get_physics_process_delta_time() if delta < 0.0 else delta
+	turn_toward_world_position(target_position, step_delta)
 
 func _get_level_data(lv: String) -> Dictionary:
 	return get_weapon_level_data(lv, weapon_data)

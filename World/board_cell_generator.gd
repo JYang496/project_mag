@@ -168,6 +168,10 @@ func get_cell_world_rect_for_point(point: Vector2) -> Rect2:
 		collision_shape.global_transform
 	)
 
+func get_cell_logical_id_for_point(point: Vector2) -> int:
+	var cell := _find_any_cell_containing_point(point)
+	return int(cell.logical_id) if cell != null and is_cell_active_by_id(int(cell.logical_id)) else -1
+
 func get_rest_area_target_center_global_position() -> Vector2:
 	if _has_rest_area_target_center:
 		return _rest_area_target_center
@@ -489,7 +493,7 @@ func _get_grid_pos_from_index(index: int) -> Vector2i:
 func _on_phase_changed(new_phase: String) -> void:
 	var left_battle := new_phase != PhaseManager.BATTLE and _last_phase == PhaseManager.BATTLE
 	if left_battle:
-		_capture_rest_area_target_from_player_cell()
+		_capture_rest_area_target_from_player()
 	match new_phase:
 		PhaseManager.SETTLEMENT:
 			# Soft-clear combat state while preserving the completed board as the
@@ -537,14 +541,13 @@ func _on_phase_changed(new_phase: String) -> void:
 	_last_phase = new_phase
 	call_deferred("_refresh_cell_task_markers")
 
-func _capture_rest_area_target_from_player_cell() -> void:
+func _capture_rest_area_target_from_player() -> void:
 	_clear_rest_area_target_center()
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
 		return
-	var player_cell := _find_any_cell_containing_point(PlayerData.player.global_position)
-	if player_cell == null:
-		return
-	_rest_area_target_center = _get_cell_center_global(player_cell)
+	# Preserve the exact battle-end position so the rest platform materializes
+	# around the player instead of asking them to walk to their cell's center.
+	_rest_area_target_center = PlayerData.player.global_position
 	_has_rest_area_target_center = true
 
 func _clear_rest_area_target_center() -> void:

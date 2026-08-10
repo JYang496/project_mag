@@ -6,6 +6,7 @@ const AREA_EFFECT_SCENE := preload("res://Combat/area_effect/area_effect.tscn")
 const WARNING_SCENE := preload("res://Npc/enemy/scenes/target_warning.tscn")
 const DESCENT_VFX_SCENE := preload("res://Npc/enemy/scenes/mortar_shell_descent_vfx.tscn")
 const IMPACT_VISUAL_FRAMES := preload("res://asset/images/effects/mortar_impact/mortar_impact_frames.tres")
+const IMPACT_LEAD_FRAMES := 2.0
 
 @export var detect_range: float = 560.0
 @export var attack_range: float = 360.0
@@ -22,6 +23,7 @@ var _cast_remaining: float = 0.0
 var _is_stationary_mode: bool = false
 var _target_position: Vector2 = Vector2.ZERO
 var _active_descent_vfx: MortarShellDescentVfx = null
+var _impact_spawned: bool = false
 
 func _ready() -> void:
 	super._ready()
@@ -78,10 +80,12 @@ func _process_attack(delta: float) -> void:
 	if _casting:
 		_cast_remaining -= delta
 		_sync_descent_visual_progress()
+		if not _impact_spawned and _cast_remaining <= _get_impact_lead_time():
+			_impact_spawned = true
+			_spawn_mortar_impact(_target_position, maxf(_cast_remaining, 0.0))
 		if _cast_remaining <= 0.0:
 			_casting = false
 			_clear_descent_visual()
-			_spawn_mortar_impact(_target_position)
 			_cooldown_remaining = cooldown_duration
 		return
 	if _cooldown_remaining > 0.0:
@@ -96,6 +100,7 @@ func _process_attack(delta: float) -> void:
 		return
 	_target_position = player_pos
 	_casting = true
+	_impact_spawned = false
 	_cast_remaining = cast_delay
 	_spawn_warning(_target_position)
 	_spawn_descent_visual(_target_position)
@@ -104,6 +109,7 @@ func _cancel_cast() -> void:
 	var was_casting := _casting
 	_casting = false
 	_cast_remaining = 0.0
+	_impact_spawned = false
 	if was_casting:
 		_clear_descent_visual()
 
@@ -138,12 +144,16 @@ func _clear_descent_visual() -> void:
 		_active_descent_vfx.queue_free()
 	_active_descent_vfx = null
 
-func _spawn_mortar_impact(world_pos: Vector2) -> void:
+func _get_impact_lead_time() -> float:
+	return IMPACT_LEAD_FRAMES / maxf(IMPACT_VISUAL_FRAMES.get_animation_speed(&"impact"), 1.0)
+
+func _spawn_mortar_impact(world_pos: Vector2, damage_delay: float = 0.0) -> void:
 	var area := AREA_EFFECT_SCENE.instantiate() as AreaEffect
 	if area == null:
 		return
 	area.global_position = world_pos
 	area.duration = 0.22
+	area.activation_delay = maxf(damage_delay, 0.0)
 	area.radius = maxf(aoe_radius, 8.0)
 	area.target_group = AreaEffect.TargetGroup.ALLIES
 	area.one_shot_damage = max(1, int(round(float(max(1, damage)) * maxf(aoe_damage_multiplier, 1.0))))

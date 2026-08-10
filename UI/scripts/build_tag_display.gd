@@ -17,31 +17,10 @@ const CHIP_MAX_WIDTH: float = 118.0
 const CHIP_ASCII_CHAR_WIDTH: float = 6.5
 const CHIP_WIDE_CHAR_WIDTH: float = 12.0
 
-const TAG_SPECS := {
-	"heat": {"label": "Heat", "color": Color(1.0, 0.42, 0.18, 1.0), "icon_key": "heat", "sort_weight": 10},
-	"mark": {"label": "Mark", "color": Color(0.95, 0.72, 0.22, 1.0), "icon_key": "mark", "sort_weight": 20},
-	"freeze": {"label": "Freeze", "color": Color(0.36, 0.78, 1.0, 1.0), "icon_key": "freeze", "sort_weight": 30},
-	"reload": {"label": "Reload", "color": Color(0.70, 0.74, 1.0, 1.0), "icon_key": "reload", "sort_weight": 40},
-	"area": {"label": "Area", "color": Color(0.76, 0.56, 1.0, 1.0), "icon_key": "area", "sort_weight": 50},
-	"on_hit": {"label": "On Hit", "color": Color(0.56, 0.86, 0.76, 1.0), "icon_key": "on_hit", "sort_weight": 60},
-	"execute": {"label": "Execute", "color": Color(1.0, 0.56, 0.50, 1.0), "icon_key": "execute", "sort_weight": 70},
-	"economy": {"label": "Economy", "color": Color(0.96, 0.82, 0.28, 1.0), "icon_key": "economy", "sort_weight": 80},
-	"projectile": {"label": "Projectile", "color": Color(0.48, 0.82, 1.0, 1.0), "icon_key": "projectile", "sort_weight": 90},
-	"beam": {"label": "Beam", "color": Color(0.96, 0.48, 1.0, 1.0), "icon_key": "beam", "sort_weight": 100},
-	"defense": {"label": "Defense", "color": Color(0.38, 0.84, 0.68, 1.0), "icon_key": "defense", "sort_weight": 110},
-	"ammo": {"label": "Ammo", "color": Color(0.58, 0.78, 1.0, 1.0), "icon_key": "ammo", "sort_weight": 120},
-	"crit": {"label": "Crit", "color": Color(1.0, 0.66, 0.26, 1.0), "icon_key": "crit", "sort_weight": 130},
-	"close": {"label": "Close", "color": Color(0.92, 0.58, 0.42, 1.0), "icon_key": "close", "sort_weight": 140},
-	"buff": {"label": "Buff", "color": Color(0.50, 0.88, 0.54, 1.0), "icon_key": "buff", "sort_weight": 150},
-	"weapon": {"label": "Weapon", "color": Color(0.72, 0.82, 0.96, 1.0), "icon_key": "weapon", "sort_weight": 180},
-	"module": {"label": "Module", "color": Color(0.72, 0.74, 1.0, 1.0), "icon_key": "module", "sort_weight": 190},
-	"terrain": {"label": "Terrain", "color": Color(0.54, 0.82, 0.58, 1.0), "icon_key": "terrain", "sort_weight": 200},
-	"task": {"label": "Task", "color": Color(0.74, 0.62, 1.0, 1.0), "icon_key": "task", "sort_weight": 210},
-}
-
 static func build_tag_chip(source_value: Variant, label_override: String = "") -> Dictionary:
-	var source_key := _normalize_source_key(source_value)
-	var spec: Dictionary = TAG_SPECS.get(source_key, {})
+	var normalized := BuildTag.normalize(source_value)
+	var source_key := str(normalized) if normalized != StringName() else _normalize_source_key(source_value)
+	var spec: Dictionary = BuildTag.get_spec(normalized)
 	var label := label_override.strip_edges()
 	if label == "":
 		var fallback_label := str(spec.get("label", _label_from_key(source_key))).strip_edges()

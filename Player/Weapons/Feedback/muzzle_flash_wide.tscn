@@ -11,3 +11,4 @@ width_px = 24.0
 duration_sec = 0.075
 smoke_color = Color(0.42, 0.42, 0.42, 0.22)
 smoke_radius = 8.0
+source_size_px = 64

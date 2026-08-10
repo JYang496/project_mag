@@ -8,7 +8,7 @@ rest_arrival.complete,REST FACILITIES // ONLINE,休整设施 // 已上线
 battle_contract.ui.title,Choose Next Protocol,选择下一协议
 battle_contract.ui.main_contracts,Main Contracts,主要协议
 battle_contract.ui.extra_contracts,Optional Protocol,可选协议
-battle_contract.ui.subtitle,Choose combat or use an available logistics protocol,选择战斗协议或可用的后勤协议
+battle_contract.ui.subtitle,Click to inspect · Hold a card or 1–3 to select and launch,点击查看 · 长按协议卡片或数字键 1–3 选择并启动
 battle_contract.ui.cancel,Back to Rest,返回整备
 battle_contract.ui.confirm,Launch Selected Contract,启动所选协议
 battle_contract.ui.status.acquiring,TACTICAL LINK // ACQUIRING CONTRACTS,战术链路 // 正在获取协议
@@ -105,6 +105,8 @@ battle_contract.rest.description,Enter logistics mode to purchase strengthen and
 battle_contract.card.rest.summary,Enter the rest area and unlock full loadout management.,进入休息区并开放完整构筑管理。
 battle_contract.card.rest.reward_hint,Shop · upgrades · storage · board,商店 · 强化 · 仓库 · 棋盘
 battle_contract.hud.elimination,Remaining {remaining} · Wave {current}/{total},剩余敌人 {remaining} · 波次 {current}/{total}
+battle_contract.hud.elimination.deployed,Active {active} · Wave {current}/{total},在场 {active} · 波次 {current}/{total}
+battle_contract.hud.elimination.deployed_queued,Active {active} · Reinforcements {queued} · Wave {current}/{total},在场 {active} · 待增援 {queued} · 波次 {current}/{total}
 battle_contract.hud.survival,Time {seconds}s · Threat {threat},剩余 {seconds} 秒 · 威胁等级 {threat}
 battle_contract.hud.operation,Beacon {current}/{total} · {percent}%,信标 {current}/{total} · {percent}%
 battle_contract.hud.completed,Contract Complete,协议完成
@@ -272,6 +274,15 @@ ui.reward.detail.title,Reward Details,奖励详情
 ui.reward.detail.empty,Select a reward to view details.,选择一个奖励查看详情。
 ui.reward.detail.tags,Tags: {tags},标签：{tags}
 ui.reward.detail.compatible_with,Compatible With: {types},兼容：{types}
+ui.reward.detail.section.result_preview,Result Preview,结果预览
+ui.reward.detail.section.combat_profile,Combat Profile,战斗定位
+ui.reward.detail.section.build_link,Build Link,构筑联动
+ui.reward.detail.section.changes,Changes,强化变化
+ui.reward.detail.section.followup,Follow-up,后续解锁
+ui.reward.detail.section.main_effect,Main Effect,主要效果
+ui.reward.detail.section.features,Features,特点
+ui.reward.detail.preview.new_weapon,Obtain {name} · Lv.{level},获得 {name} · Lv.{level}
+ui.reward.detail.preview.weapon_fusion,{name} · Fuse {from} → {to},{name} · 融合 {from} → {to}
 ui.task_reward.title,Objective Reward,任务奖励
 ui.task_reward.source,Completed Objective,已完成任务
 ui.task_reward.subtitle,Choose one reward for completing an objective this battle.,选择一项本轮完成任务获得的奖励。
@@ -416,6 +427,23 @@ ui.module.term.stacking,Stacking,叠加
 ui.module.term.trigger,Trigger,触发
 ui.module.term.ammo,Ammo,弹药
 ui.module.term.crit,Crit,暴击
+ui.module.term.melee,Melee,近战
+ui.module.term.on_kill,On Kill,击杀触发
+ui.module.term.on_reload,On Reload,换弹触发
+ui.module.term.on_move,On Move,移动触发
+ui.module.term.on_damage_taken,On Damage Taken,受伤触发
+ui.module.term.on_overheat,On Overheat,过热触发
+ui.module.term.on_energy_cycle,On Energy Cycle,能量循环触发
+ui.module.term.close_range,Close Range,近距离
+ui.module.term.long_range,Long Range,远距离
+ui.module.term.control,Control,控制
+ui.module.term.sustain,Sustain,续航
+ui.module.term.mobility,Mobility,机动
+ui.module.term.terrain,Terrain,地形
+ui.module.term.objective,Objective,目标
+ui.module.term.weapon,Weapon,武器
+ui.module.term.module,Module,模块
+ui.module.term.task,Task,任务
 ui.module.term.hook.projectile_spawn,Projectile spawn,生成投射物
 ui.module.term.hook.hit,Weapon hit,武器命中
 ui.module.term.hook.damage_dealt,Damage dealt,造成伤害
@@ -796,6 +824,7 @@ ui.battle_victory.title,VICTORY,战斗胜利
 ui.battle_victory.subtitle,BATTLE COMPLETE,战斗完成
 ui.battle_victory.quick.title,CLEAR,突破
 ui.battle_victory.quick.subtitle,SELECT AN UPGRADE,选择强化
+ui.battle_victory.complete,PROTOCOL COMPLETE,协议已完成
 ui.reward.quick.title,Choose Upgrade,选择强化
 ui.reward.quick.subtitle,Click to inspect · Hold 1–3 to claim,点击查看详情 · 长按 1–3 领取
 ui.reward.quick.holding,Holding {progress}%,长按中 {progress}%
@@ -822,6 +851,11 @@ ui.reward.summary.weapon_upgrade,Upgrade equipped weapon level.,提升已装备�
 ui.reward.summary.task_module,Gain a new task module.,获得一个新的任务模组。
 ui.reward.summary.cell_effect,Gain a terrain effect.,获得一个地形效果。
 ui.reward.summary.module,Gain a new weapon module.,获得一个新的武器模组。
+ui.reward.module_effect,Module Effect,模组效果
+ui.reward.compatible_weapons,Compatible Weapons,可装备武器
+ui.reward.no_compatible_weapons,No owned weapon can equip this module,当前持有武器均无法装备该模组
+ui.reward.weapon_has_slot,Slot available,有空槽
+ui.reward.weapon_requires_replace,Requires replacement,需替换
 ui.reward.summary.weapon,New weapon added to your loadout.,新武器将加入你的装备。
 ui.reward.summary.economy,Gain run resources.,获得本局资源。
 ui.reward.detail.bullet.weapon_upgrade.1,Increases weapon level,提升武器等级

@@ -7,6 +7,12 @@
 script = ExtResource("1_script")
 sprite_frames = ExtResource("2_frames")
 visible_modulate = Color(1, 0.38, 0.06, 0.78)
+trail_lifetime_sec = 0.36
+trail_drift_px = 10.0
+trail_end_scale = 0.76
+trail_spread_scale = 1.1
+trail_sparkle_strength = 0.75
+trail_modulate = Color(1, 0.34, 0.035, 0.4)
 
 [node name="SprayRoot" type="Node2D" parent="."]
 

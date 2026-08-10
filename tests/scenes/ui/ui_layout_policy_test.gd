@@ -8,6 +8,7 @@ const PROJECTED_WORLD_UI := preload("res://Visual/Oblique/projected_world_ui_ser
 const HUD_PHASE_CONTROLLER := preload("res://UI/scripts/components/hud_phase_controller.gd")
 const VICTORY_TRANSITION := preload("res://UI/scripts/components/victory_transition.gd")
 const REST_AREA_MANAGEMENT_SHELL := preload("res://UI/scripts/management/rest_area_management_shell.gd")
+const UI_LAYOUT_CONTROLLER := preload("res://UI/scripts/management/ui_layout_controller.gd")
 
 class FakeHeatWeapon:
 	extends Node
@@ -130,6 +131,19 @@ func _test_pause_modal_layer_priority() -> void:
 	_expect(pause_panel.get_node_or_null("Margin/Content/AudioSlot") is VBoxContainer, "pause settings surface must group audio controls")
 	_expect(pause_panel.get_node_or_null("Margin/Content/LanguageRow/LanguageOption") is OptionButton, "pause settings surface must use a full language row")
 	_expect(pause_panel.get_node_or_null("Margin/Content/AssistHeader") is Label, "pause settings surface must separate combat-assist controls")
+	var layout_controller = UI_LAYOUT_CONTROLLER.new()
+	for viewport_size in VIEWPORTS:
+		layout_controller.fit_right_panel(
+			pause_panel,
+			viewport_size,
+			UI_LAYOUT_CONTROLLER.PAUSE_PANEL_TARGET_SIZE,
+			UI_LAYOUT_CONTROLLER.PAUSE_PANEL_RIGHT_MARGIN
+		)
+		var expected_position := Vector2(
+			viewport_size.x - UI_LAYOUT_CONTROLLER.PAUSE_PANEL_RIGHT_MARGIN - pause_panel.size.x,
+			(viewport_size.y - pause_panel.size.y) * 0.5
+		)
+		_expect(pause_panel.position.is_equal_approx(expected_position), "%s pause panel must align with the main-menu settings position" % viewport_size)
 	if pause_layer != null:
 		_expect(pause_layer.layer == UI.PAUSE_MODAL_CANVAS_LAYER, "pause layer must use the reserved modal priority")
 		_expect(pause_layer.layer > PROJECTED_WORLD_UI.LAYER_ORDER, "pause layer must render above projected damage labels")

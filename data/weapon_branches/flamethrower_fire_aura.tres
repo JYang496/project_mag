@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"fire", &"area"])
+requires_any_tags = Array[StringName]([&"heat", &"close_range"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"area"])
+conflicts_with_tags = Array[StringName]([&"freeze"])
 branch_id = "fire_pulse_aura"
 display_name = "Fire Pulse Aura"
 description = "Close Area branch. Adds periodic fire pulses around the mech, pushing Flamethrower toward point-blank Area control."

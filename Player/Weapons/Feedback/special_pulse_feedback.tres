@@ -1,11 +1,18 @@
-[gd_resource type="Resource" script_class="WeaponFireFeedbackProfile" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="WeaponFireFeedbackProfile" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://Player/Weapons/Feedback/weapon_fire_feedback_profile.gd" id="1_profile"]
 [ext_resource type="AudioStream" path="res://asset/sounds/02_light_firepower_single.wav" id="2_fire"]
 [ext_resource type="AudioStream" path="res://asset/sounds/02_enemy_hit_light.wav" id="3_hit"]
+[ext_resource type="PackedScene" path="res://Player/Weapons/Feedback/muzzle_flash_plasma.tscn" id="4_flash"]
 
 [resource]
 script = ExtResource("1_profile")
+muzzle_flash_scene = ExtResource("4_flash")
+muzzle_scale = 1.1
+muzzle_length_scale = 1.12
+muzzle_width_scale = 1.3
+muzzle_tint_strength = 0.3
+muzzle_tint = Color(0.86, 0.55, 1, 1)
 recoil_distance = 4.0
 recoil_duration = 0.03
 recoil_recover_duration = 0.08

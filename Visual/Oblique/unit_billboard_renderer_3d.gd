@@ -3,6 +3,10 @@ extends RefCounted
 
 const UNIT_SHADER := preload("res://Shaders/unit_billboard_3d.gdshader")
 const UNIT_RENDER_PRIORITY := 15
+# Camera-facing quads can rotate below their ground anchor even though the unit
+# itself is above the floor. Move every unit by the same view-depth clearance so
+# terrain cannot clip weapons while preserving unit-to-unit depth ordering.
+const TERRAIN_DEPTH_CLEARANCE_WORLD := 0.50
 
 var _view: Node
 var _root: Node3D
@@ -84,10 +88,17 @@ func _sync_entry(source: Node2D, unit_owner: Node2D, mesh: MeshInstance3D, confi
 	var visual_size_px := config.get("visual_size_px", Vector2.ZERO) as Vector2
 	var local_anchor := config.get("local_ground_anchor", Vector2.ZERO) as Vector2
 	var logical_anchor := unit_owner.global_transform * local_anchor
-	var anchor_3d := _view.call("world_2d_to_ground_anchor", logical_anchor) as Vector3
-	if entry.get("last_anchor", Vector3.INF) != anchor_3d:
-		mesh.position = anchor_3d
-		entry["last_anchor"] = anchor_3d
+	var depth_anchor_world := config.get("depth_anchor_world", logical_anchor) as Vector2
+	var ground_anchor_3d := _view.call("world_2d_to_ground_anchor", depth_anchor_world) as Vector3
+	var anchor_3d := terrain_safe_anchor(ground_anchor_3d)
+	var units_per_pixel := _world_units_per_pixel(anchor_3d)
+	var screen_feedback_offset := config.get("screen_feedback_offset", Vector2.ZERO) as Vector2
+	var next_mesh_position := anchor_3d \
+		+ _camera.global_transform.basis.x.normalized() * screen_feedback_offset.x * units_per_pixel \
+		- _camera.global_transform.basis.y.normalized() * screen_feedback_offset.y * units_per_pixel
+	if entry.get("last_anchor", Vector3.INF) != next_mesh_position:
+		mesh.position = next_mesh_position
+		entry["last_anchor"] = next_mesh_position
 	var inside_view := bool(_view.call("is_world_point_within_visual_bounds", logical_anchor, cull_margin_pixels))
 	var visible := bool(config.get("visible", true)) and texture != null and visual_size_px.x > 0.0 and visual_size_px.y > 0.0 and inside_view and _visible_count < max_visible_billboards
 	mesh.visible = visible
@@ -101,12 +112,13 @@ func _sync_entry(source: Node2D, unit_owner: Node2D, mesh: MeshInstance3D, confi
 	var visibility_changed := visibility_version != int(entry.get("visibility_version", -2))
 	if appearance_changed:
 		mesh.material_override = _get_material(texture)
-	var units_per_pixel := _world_units_per_pixel(anchor_3d)
 	var size_world := visual_size_px * units_per_pixel
 	if appearance_changed or entry.get("last_size_world", Vector2.INF) != size_world:
 		mesh.set_instance_shader_parameter("billboard_size_world", size_world)
 		entry["last_size_world"] = size_world
 		mesh.set_instance_shader_parameter("bottom_padding_ratio", clampf(float(config.get("bottom_padding_px", 0.0)) / maxf(visual_size_px.y, 1.0), 0.0, 0.49))
+		mesh.set_instance_shader_parameter("visual_rotation_radians", float(config.get("visual_rotation_radians", 0.0)))
+		mesh.set_instance_shader_parameter("vertical_anchor_offset", float(config.get("vertical_anchor_offset", 0.5)))
 		mesh.set_instance_shader_parameter("flip_h", bool(config.get("flip_h", false)))
 		mesh.set_instance_shader_parameter("flip_v", bool(config.get("flip_v", false)))
 		mesh.set_instance_shader_parameter("visual_color", config.get("color", Color.WHITE) as Color)
@@ -116,7 +128,7 @@ func _sync_entry(source: Node2D, unit_owner: Node2D, mesh: MeshInstance3D, confi
 		mesh.set_instance_shader_parameter("warning_amount", float(config.get("warning_amount", 0.0)))
 		mesh.set_instance_shader_parameter("outline_color", config.get("outline_color", Color.TRANSPARENT) as Color)
 		mesh.set_instance_shader_parameter("outline_width_px", float(config.get("outline_width_px", 0.0)))
-		_shader_parameter_updates += 10
+		_shader_parameter_updates += 12
 	if appearance_changed:
 		mesh.set_instance_shader_parameter("source_id", float(source.get_instance_id() % 4096))
 		_shader_parameter_updates += 1
@@ -124,6 +136,15 @@ func _sync_entry(source: Node2D, unit_owner: Node2D, mesh: MeshInstance3D, confi
 	entry["visibility_version"] = visibility_version
 	if visibility_changed:
 		entry["last_visible"] = visible
+
+
+func terrain_safe_anchor(ground_anchor_3d: Vector3) -> Vector3:
+	if _camera == null or not is_instance_valid(_camera):
+		return ground_anchor_3d
+	var toward_camera := ground_anchor_3d.direction_to(_camera.global_position)
+	if toward_camera.length_squared() <= 0.0001:
+		return ground_anchor_3d
+	return ground_anchor_3d + toward_camera * TERRAIN_DEPTH_CLEARANCE_WORLD
 
 
 func _world_units_per_pixel(anchor_3d: Vector3) -> float:

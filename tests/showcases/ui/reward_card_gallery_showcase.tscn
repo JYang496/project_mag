@@ -1,0 +1,65 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/showcases/ui/reward_card_gallery_showcase.gd" id="1_gallery"]
+
+[node name="RewardCardGalleryShowcase" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gallery")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.025, 0.045, 0.06, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 18.0
+offset_right = -24.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Root" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Margin/Root"]
+layout_mode = 2
+text = "REWARD CARD GALLERY"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.72, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="Hint" type="Label" parent="Margin/Root"]
+layout_mode = 2
+text = "Weapon · Upgrade · Module · Cell Effect · Task Module · Economy"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.55, 0.68, 0.74, 1)
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Root"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CardGrid" type="GridContainer" parent="Margin/Root/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 3
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 18
+
+[node name="RuntimeFixtures" type="Node" parent="."]
+unique_name_in_owner = true

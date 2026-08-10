@@ -51,6 +51,8 @@ const ORBIT_ACCEL := 16.0
 const ORBIT_MAX_SPEED := 8.0
 const ORBIT_FRICTION := 6.0
 const ORBIT_OFFSET := Vector2(0, -25)
+const WEAPON_BEHIND_PLAYER_Z_INDEX := -1
+const WEAPON_IN_FRONT_OF_PLAYER_Z_INDEX := 1
 const SCORCH_DURATION_SEC: float = 6.0
 const SCORCH_DOT_RATIO_PER_STACK: float = 0.10
 const SCORCH_DOT_TICK_SEC: float = 1.0
@@ -1497,6 +1499,17 @@ func _update_weapon_orbits(delta: float) -> void:
 		state["angle"] = current_angle
 		state["velocity"] = angular_velocity
 		weapon.position = _get_orbit_position(current_angle)
+		_update_weapon_orbit_z_index(weapon)
+
+func _update_weapon_orbit_z_index(weapon: CanvasItem) -> void:
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	var weapon_node := weapon as Node2D
+	if weapon_node == null:
+		return
+	weapon.z_as_relative = true
+	weapon.z_index = WEAPON_BEHIND_PLAYER_Z_INDEX \
+		if weapon_node.position.y < 0.0 else WEAPON_IN_FRONT_OF_PLAYER_Z_INDEX
 
 func _remove_missing_weapon_states(valid_weapons: Array) -> void:
 	var to_remove: Array = []

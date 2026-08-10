@@ -9,6 +9,8 @@ var _failures: PackedStringArray = []
 func _ready() -> void:
 	_test_event_driven_target_tracking()
 	_test_trail_requires_enemy_registry()
+	_test_delayed_activation_lifecycle()
+	_test_visual_opaque_bounds_match_damage_diameter()
 	await _test_persistent_terrain_fade_lifecycle()
 	if _failures.is_empty():
 		print("PASS combat.area_effect_tracking")
@@ -68,6 +70,45 @@ func _test_persistent_terrain_fade_lifecycle() -> void:
 	await get_tree().create_timer(0.12).timeout
 	await get_tree().process_frame
 	_expect(not is_instance_valid(effect), "persistent area fade and node expiration must end together")
+
+
+func _test_delayed_activation_lifecycle() -> void:
+	var effect := AREA_EFFECT_SCENE.instantiate() as AreaEffect
+	effect.activation_delay = 0.08
+	effect.duration = 0.10
+	effect.process_mode = Node.PROCESS_MODE_DISABLED
+	add_child(effect)
+	_expect(not bool(effect.get("_damage_active")), "delayed area damage must remain inactive while its visual lead plays")
+	_expect(is_equal_approx(effect.activation_timer.wait_time, 0.08), "delayed area activation timer must match the visual lead")
+	_expect(is_equal_approx(effect.life_timer.wait_time, 0.18), "delayed area lifetime must include visual lead and damage duration")
+	effect.call("_on_activation_timer_timeout")
+	_expect(bool(effect.get("_damage_active")), "delayed area damage must activate when the visual lead completes")
+	effect.queue_free()
+
+
+func _test_visual_opaque_bounds_match_damage_diameter() -> void:
+	var effect := AREA_EFFECT_SCENE.instantiate() as AreaEffect
+	effect.radius = 60.0
+	effect.visual_enabled = true
+	effect.use_animated_visual = true
+	effect.visual_frames = load("res://asset/images/effects/explosion/explosion_frames.tres") as SpriteFrames
+	effect.visual_animation = &"explode"
+	effect.process_mode = Node.PROCESS_MODE_DISABLED
+	add_child(effect)
+	var geometry: Dictionary = effect.call("_resolve_visual_source_geometry")
+	var visible_rect: Rect2 = geometry.get("visible_rect", Rect2())
+	var canvas_size: Vector2 = geometry.get("canvas_size", Vector2.ZERO)
+	var expected_diameter := effect.radius * 2.0
+	_expect(visible_rect.size.x < canvas_size.x or visible_rect.size.y < canvas_size.y,
+		"explosion regression fixture must retain transparent padding")
+	_expect(is_equal_approx(visible_rect.size.x * effect.visual_root.scale.x, expected_diameter),
+		"explosion visible width must match the damage diameter")
+	_expect(is_equal_approx(visible_rect.size.y * effect.visual_root.scale.y, expected_diameter),
+		"explosion visible height must match the damage diameter")
+	var transformed_center := (visible_rect.get_center() - canvas_size * 0.5 + effect.visual_animated_sprite.position) * effect.visual_root.scale
+	_expect(transformed_center.is_equal_approx(Vector2.ZERO),
+		"explosion visible artwork must stay centered on the damage circle")
+	effect.queue_free()
 
 
 func _make_enemy_hurt_box(target: Node2D, node_name: String) -> HurtBox:

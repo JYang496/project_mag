@@ -13,8 +13,8 @@ const SURVIVAL_PATH := "res://data/battle_contracts/survival.tres"
 const FakeContractPort := preload("res://tests/fixtures/combat/fake_battle_contract_combat_port.gd")
 const EXPECTED_DURATIONS := [26, 34, 30, 32]
 const EXPECTED_NORMAL_DURATIONS := [53, 55, 60, 67, 75, 84]
-const EXPECTED_HP := [330, 400, 600, 738]
-const ORIGINAL_DPS := [330.0 / 26.0, 400.0 / 34.0, 20.0, 738.0 / 32.0]
+const EXPECTED_HP := [730, 800, 1000, 1138]
+const EXPECTED_DPS := [730.0 / 26.0, 800.0 / 34.0, 1000.0 / 30.0, 1138.0 / 32.0]
 const EXPECTED_GOLD := [30, 35, 39, 43]
 const EXPECTED_START_TIMES := [
 	[1],
@@ -43,6 +43,7 @@ func _run() -> void:
 			_expect(plan != null and plan.time_out_sec == EXPECTED_NORMAL_DURATIONS[offset], "level %d must retain its standard duration" % (offset + 5))
 		_assert_protocol_pacing(economy)
 		_assert_spawn_pressure_policy()
+		_assert_limited_spawn_substitution()
 		_assert_progression_profile()
 		_assert_final_state_transition()
 		_assert_runtime_offer_policy()
@@ -56,9 +57,9 @@ func _assert_level(profile: SpawnCombatProfile, economy: EconomyConfig, level_in
 	if plan == null:
 		return
 	_expect(plan.time_out_sec == EXPECTED_DURATIONS[level_index], "level %d duration must match the early pacing curve" % (level_index + 1))
-	_expect(plan.target_total_hp == EXPECTED_HP[level_index], "level %d HP budget must preserve target DPS" % (level_index + 1))
+	_expect(plan.target_total_hp == EXPECTED_HP[level_index], "level %d HP budget must match the early pacing curve" % (level_index + 1))
 	var actual_dps := float(plan.target_total_hp) / float(plan.time_out_sec)
-	_expect(absf(actual_dps - ORIGINAL_DPS[level_index]) <= 0.02, "level %d target DPS drifted" % (level_index + 1))
+	_expect(absf(actual_dps - EXPECTED_DPS[level_index]) <= 0.02, "level %d target DPS drifted" % (level_index + 1))
 
 	var gold_plan := economy.get_contract_gold_plan(&"elimination", level_index)
 	_expect(int(gold_plan.get("total_gold", -1)) == EXPECTED_GOLD[level_index], "level %d expected total gold changed" % (level_index + 1))
@@ -161,6 +162,22 @@ func _assert_spawn_pressure_policy() -> void:
 	_expect(reset_snapshot.get("mode") == &"finite" and int(reset_snapshot.get("soft_cap_hp", -1)) == 0, "spawn pressure policy must reset between battles")
 	spawner.free()
 	PhaseManager.battle_time = 0
+
+func _assert_limited_spawn_substitution() -> void:
+	var spawner := EnemySpawner.new()
+	var substitute_entry := EnemySpawnEntry.new()
+	substitute_entry.enemy_scene_path = "res://Npc/enemy/scenes/enemy_rolling_ball.tscn"
+	var substitute_state: Dictionary = {"id": 2, "entry": substitute_entry, "alive": 0, "cooldown": 0}
+	spawner._runtime_spawn_states = [substitute_state]
+	spawner._contract_spawn_plan = [1]
+	spawner._contract_spawn_plan_cursor = 0
+	spawner._planned_target_total_hp = 100
+	spawner._spawned_total_hp = 0
+	spawner._combat_budget_active = true
+	var selected := spawner._select_contract_spawn_candidate([substitute_state], {}, 0, 0, 0)
+	_expect(int(selected.get("id", -1)) == 2, "a planned enemy blocked by its alive cap must be replaced by an eligible type")
+	_expect(spawner._contract_spawn_plan[0] == 2, "spawn substitution must update the finite plan before advancing its cursor")
+	spawner.free()
 
 func _assert_progression_profile() -> void:
 	var progression: Resource = PhaseManager.get_progression_profile()

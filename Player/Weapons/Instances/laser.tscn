@@ -7,6 +7,7 @@
 
 [node name="Laser" unique_id=979500994 instance=ExtResource("1_8p4js")]
 script = ExtResource("1_gbvh7")
+turn_speed_degrees_per_second = 360.0
 fire_feedback_profile = ExtResource("2_feedback")
 delivery_type_flags = 4
 

@@ -59,8 +59,7 @@ func _on_shoot():
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = maxf(cooldown, 0.05)
 	cooldown_timer.start()
-	var main_target: Vector2 = get_mouse_target()
-	var base_direction: Vector2 = global_position.direction_to(main_target).normalized()
+	var base_direction: Vector2 = get_aim_forward()
 	if base_direction == Vector2.ZERO:
 		base_direction = Vector2.UP
 	var shot_count: int = max(1, bullet_count)

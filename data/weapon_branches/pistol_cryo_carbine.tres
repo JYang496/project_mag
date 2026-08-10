@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"freeze", &"projectile", &"area"])
+requires_any_tags = Array[StringName]([&"projectile"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"freeze"])
+conflicts_with_tags = Array[StringName]([&"fire"])
 branch_id = "cryo_carbine"
 display_name = "Cryo Carbine"
 description = "Freeze branch. Pistol shots apply Freeze and every third hit releases a shard, shifting the weapon toward control and splash."

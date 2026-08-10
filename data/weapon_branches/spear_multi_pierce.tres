@@ -5,6 +5,11 @@
 
 [resource]
 script = ExtResource("4_script")
+produces_tags = Array[StringName]([&"projectile", &"area", &"mark"])
+requires_any_tags = Array[StringName]([&"projectile"])
+requires_all_tags = Array[StringName]([])
+amplifies_tags = Array[StringName]([&"mark"])
+conflicts_with_tags = Array[StringName]([])
 branch_id = "spear_multi_pierce"
 display_name = "Multi-Pierce"
 description = "Projectile Area branch. Fires 3-5 reduced-damage spears in a spread, favoring coverage and mark setup over focused repeat hits."

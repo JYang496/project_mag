@@ -130,6 +130,15 @@ func _validate_enemy_scene(scene_path: String) -> void:
 			]
 		)
 		var marker_config := affiliation_marker.call("get_hybrid_ground_marker_config") as Dictionary
+		var expected_marker_rank := 1 if enemy is EliteEnemy or enemy.has_spawn_tag(BaseEnemy.SPAWN_TAG_ELITE) else 0
+		_expect(
+			int(marker_config.get("marker_rank", -1)) == expected_marker_rank,
+			"%s marker rank must expose elite hierarchy: actual=%s expected=%s" % [
+				scene_path,
+				marker_config.get("marker_rank", -1),
+				expected_marker_rank,
+			]
+		)
 		var marker_footprint := marker_config.get("footprint_size", Vector2.ZERO) as Vector2
 		_expect(
 			marker_footprint.is_equal_approx(shadow_size),
