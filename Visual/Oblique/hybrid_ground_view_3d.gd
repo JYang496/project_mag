@@ -409,6 +409,8 @@ func _rebuild_ground() -> void:
 		mesh_instance.position = world_2d_to_3d(center)
 		_ground_root.add_child(mesh_instance)
 		var ground_style := ArenaGroundStyleType.build_style(int(cell.get("logical_id")))
+		mesh_instance.set_instance_shader_parameter("arena_theme_tint", ground_style.get("theme_tint", Color.WHITE))
+		mesh_instance.set_instance_shader_parameter("arena_accent_color", ground_style.get("accent_color", Color(0.38, 0.88, 1.0, 1.0)))
 		mesh_instance.set_instance_shader_parameter("arena_variant", float(ground_style.get("variant", 0)))
 		mesh_instance.set_instance_shader_parameter("arena_detail_seed", float(ground_style.get("seed", 0.0)))
 		mesh_instance.set_instance_shader_parameter("arena_detail_strength", float(ground_style.get("detail_strength", 0.07)))

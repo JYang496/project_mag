@@ -9,6 +9,7 @@ var _failed := false
 
 func _ready() -> void:
 	_test_stable_six_variant_policy()
+	_test_four_decorative_themes()
 	_test_twelve_decal_catalog()
 	_test_restrained_detail_budget()
 	print("FAIL: arena ground style" if _failed else "PASS: arena ground style")
@@ -25,6 +26,18 @@ func _test_stable_six_variant_policy() -> void:
 		_expect(variant >= 0 and variant < ARENA_GROUND_STYLE.VARIANT_COUNT, "variant must remain within the six-style catalog")
 		variants[variant] = true
 	_expect(variants.size() == ARENA_GROUND_STYLE.VARIANT_COUNT, "a normal board id range must expose all six reusable floor variants")
+
+
+func _test_four_decorative_themes() -> void:
+	_expect(ARENA_GROUND_STYLE.THEME_COUNT == 4, "the arena must expose four named decorative themes")
+	for theme in range(ARENA_GROUND_STYLE.THEME_COUNT):
+		var style := ARENA_GROUND_STYLE.build_style(42, theme)
+		_expect(int(style.get("theme", -1)) == theme, "theme overrides must remain stable for showcase and authored layouts")
+		_expect(str(style.get("theme_name", "")) != "", "every decorative theme needs a reviewable name")
+		var tint: Color = style.get("theme_tint", Color.TRANSPARENT)
+		var accent: Color = style.get("accent_color", Color.TRANSPARENT)
+		_expect(tint.a == 1.0 and accent.a == 1.0, "theme colors must remain opaque material parameters")
+		_expect(tint.r >= 0.82 and tint.g >= 0.82 and tint.b >= 0.82, "theme tint must stay restrained so units remain readable")
 
 
 func _test_restrained_detail_budget() -> void:

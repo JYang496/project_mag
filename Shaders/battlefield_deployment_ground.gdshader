@@ -14,6 +14,8 @@ instance uniform float arena_decal_id : hint_range(0.0, 11.0, 1.0) = 0.0;
 instance uniform float arena_decal_rotation : hint_range(0.0, 3.0, 1.0) = 0.0;
 instance uniform float arena_decal_strength : hint_range(0.0, 0.05) = 0.03;
 instance uniform float arena_ambient_phase : hint_range(0.0, 1.0) = 0.0;
+instance uniform vec4 arena_theme_tint : source_color = vec4(1.0);
+instance uniform vec4 arena_accent_color : source_color = vec4(0.38, 0.88, 1.0, 1.0);
 
 float hash21(vec2 point) {
 	return fract(sin(dot(point, vec2(127.1, 311.7)) + deployment_seed) * 43758.5453);
@@ -109,10 +111,11 @@ void fragment() {
 	}
 	float mechanical_detail = arena_detail(UV);
 	float decal_detail = clamp(arena_decal(UV), 0.0, 1.0);
+	terrain.rgb *= arena_theme_tint.rgb;
 	terrain.rgb *= 1.0 - mechanical_detail * arena_detail_strength - decal_detail * arena_decal_strength;
 	float ambient_scan = step(0.985, fract(UV.x * 0.72 + UV.y * 0.28 - TIME * 0.018 + arena_ambient_phase));
 	float circuit_gate = step(0.78, hash21(floor(UV * 12.0) + arena_detail_seed * 53.0));
-	terrain.rgb += deployment_color.rgb * ambient_scan * circuit_gate * 0.018;
+	terrain.rgb += arena_accent_color.rgb * ambient_scan * circuit_gate * 0.020;
 	float front = 1.0 - smoothstep(0.0, 0.055, abs(reveal_distance - threshold));
 	float dim = mix(0.34, 1.0, deployment_dim);
 	vec3 scan_color = mix(terrain.rgb * dim, deployment_color.rgb, front * 0.72);
