@@ -1732,6 +1732,11 @@ func _sync_ground_cone_meshes() -> void:
 		var color := config.get("color", Color(1.0, 0.3, 0.05, 0.75)) as Color
 		mesh.set_instance_shader_parameter("flow_color", color)
 		mesh.set_instance_shader_parameter("edge_color", Color(minf(color.r * 1.5 + 0.2, 1.0), minf(color.g * 1.35 + 0.15, 1.0), minf(color.b * 1.2 + 0.1, 1.0), minf(color.a * 1.2, 1.0)))
+		mesh.set_instance_shader_parameter("body_opacity", clampf(float(config.get("body_opacity", 0.68)), 0.0, 1.0))
+		mesh.set_instance_shader_parameter("range_cue_opacity", clampf(float(config.get("range_cue_opacity", 0.24)), 0.0, 1.0))
+		mesh.set_instance_shader_parameter("core_highlight_strength", clampf(float(config.get("core_highlight_strength", 0.34)), 0.0, 1.0))
+		mesh.set_instance_shader_parameter("range_cue_color", config.get("range_cue_color", color) as Color)
+		mesh.set_instance_shader_parameter("core_highlight_color", config.get("core_highlight_color", Color.WHITE) as Color)
 		entry["visual_version"] = visual_version
 
 func _build_ground_cone_array_mesh(range_value: float, half_angle: float, material: Material) -> ArrayMesh:

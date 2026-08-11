@@ -125,6 +125,9 @@ func get_hybrid_ground_cone_visual() -> Dictionary:
 	_hybrid_config["range"] = _range * length_scale
 	_hybrid_config["half_angle_degrees"] = _half_angle_deg * width_scale
 	_hybrid_config["color"] = modulate
+	_hybrid_config["body_opacity"] = 0.5
+	_hybrid_config["range_cue_opacity"] = 0.0
+	_hybrid_config["core_highlight_strength"] = 0.12
 	_hybrid_config["texture"] = _get_current_frame_texture()
 	_hybrid_config["visual_version"] = _visual_version
 	return _hybrid_config

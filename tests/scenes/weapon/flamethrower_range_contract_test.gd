@@ -33,6 +33,11 @@ func _ready() -> void:
 	var flame_vfx := weapon.get_node("FlameSprayVfx") as ConeSprayVfx
 	flame_vfx.start_or_refresh(Vector2.ZERO, Vector2.RIGHT, 260.0, 40.0)
 	var hybrid_visual := flame_vfx.get_hybrid_ground_cone_visual()
+	var visible_tip := (hybrid_visual.get("origin", Vector2.ZERO) as Vector2) + (hybrid_visual.get("direction", Vector2.RIGHT) as Vector2) * float(hybrid_visual.get("range", 0.0))
+	_expect(is_equal_approx(visible_tip.x, 260.0), "the readability layers must end exactly at the unchanged effective hit range")
+	_expect(float(hybrid_visual.get("body_opacity", 1.0)) < 0.7, "the flame body layer must remain translucent enough to preserve target silhouettes")
+	_expect(float(hybrid_visual.get("range_cue_opacity", 0.0)) > 0.0, "the flame cone must expose a separate low-opacity range cue")
+	_expect(float(hybrid_visual.get("core_highlight_strength", 0.0)) > 0.0, "the flame cone must expose a distinct bright core layer")
 	_expect(hybrid_visual.get("texture") is Texture2D, "the hybrid flame cone must expose its current animation frame texture")
 	var flame_texture := hybrid_visual.get("texture") as Texture2D
 	_expect(flame_texture != null and flame_texture.get_size() == Vector2(256.0, 80.0), "the hybrid flame cone must use a 256x80 authored frame")

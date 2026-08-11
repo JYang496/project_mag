@@ -29,6 +29,8 @@ func _test_directional_snapshot_and_world_space_lifecycle() -> void:
 	var snapshot_direction := trail.call("get_snapshot_direction") as Vector2
 	_expect(snapshot_direction.dot(Vector2.RIGHT) > 0.999, "the trail must preserve the previous attack direction")
 	var snapshot_origin := trail.call("get_snapshot_origin") as Vector2
+	var trail_visual := trail.call("get_hybrid_ground_cone_visual") as Dictionary
+	_expect(is_zero_approx(float(trail_visual.get("range_cue_opacity", 1.0))), "afterimages must not duplicate the authoritative range cue")
 	vfx.call("_physics_process", 0.09)
 	vfx.update_aim(Vector2(180.0, 150.0), Vector2.RIGHT.rotated(deg_to_rad(18.0)), 220.0, 40.0)
 	_expect((trail.call("get_snapshot_origin") as Vector2) == snapshot_origin, "moving the weapon must not rewrite an existing world-space trail origin")

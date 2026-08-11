@@ -10,7 +10,7 @@ const CombatHitVfxServiceType := preload("res://Combat/Vfx/combat_hit_vfx_servic
 
 var npc
 var _pending_hit_label_batches: Dictionary = {}
-var _anonymous_batch_id := 0
+var _scheduled_hit_label_batches: Dictionary = {}
 var _enemy_hp_bar: EnemyHpBar
 var _hit_flash_tween: Tween
 var _hit_flash_overlay: Sprite2D
@@ -40,11 +40,10 @@ func queue_hit_label_event(event) -> void:
 		return
 	sync_enemy_hp_bar()
 	show_enemy_hp_bar_on_damage()
-	var batch_id: int = int(event.feedback_batch_id)
-	if batch_id <= 0:
-		_anonymous_batch_id += 1
-		batch_id = -_anonymous_batch_id
-	event.feedback_batch_id = batch_id
+	# Presentation batches are target-local: fast direct hits share one short
+	# window while periodic ticks use a slower lane. Gameplay attack batch ids
+	# remain on the event for diagnostics and do not control visual spam.
+	var batch_id: StringName = &"periodic" if event.is_periodic else &"direct"
 	var batch = _pending_hit_label_batches.get(batch_id)
 	if batch == null:
 		batch = event.duplicate_event()
@@ -54,13 +53,20 @@ func queue_hit_label_event(event) -> void:
 	if npc.is_dead:
 		flush_pending_hit_label()
 		return
-	_flush_hit_label_after_delay(batch_id)
+	if not _scheduled_hit_label_batches.has(batch_id):
+		_scheduled_hit_label_batches[batch_id] = true
+		_flush_hit_label_after_delay(batch_id, _merge_window_for(event.is_periodic))
 
-func _flush_hit_label_after_delay(batch_id: int) -> void:
+func _merge_window_for(is_periodic: bool) -> float:
+	if is_periodic and npc.get("hit_label_periodic_merge_window_sec") != null:
+		return maxf(float(npc.hit_label_periodic_merge_window_sec), 0.0)
+	return maxf(float(npc.hit_label_merge_window_sec), 0.0)
+
+func _flush_hit_label_after_delay(batch_id: StringName, delay_sec: float) -> void:
 	var tree: SceneTree = npc.get_tree()
 	if tree == null:
 		return
-	await tree.create_timer(maxf(npc.hit_label_merge_window_sec, 0.0)).timeout
+	await tree.create_timer(delay_sec).timeout
 	if npc == null or not npc.is_inside_tree():
 		return
 	_flush_hit_label_batch(batch_id)
@@ -69,9 +75,10 @@ func flush_pending_hit_label() -> void:
 	if npc == null:
 		return
 	for batch_id in _pending_hit_label_batches.keys().duplicate():
-		_flush_hit_label_batch(int(batch_id))
+		_flush_hit_label_batch(StringName(batch_id))
 
-func _flush_hit_label_batch(batch_id: int) -> void:
+func _flush_hit_label_batch(batch_id: StringName) -> void:
+	_scheduled_hit_label_batches.erase(batch_id)
 	if not _pending_hit_label_batches.has(batch_id) or npc == null:
 		return
 	var batch = _pending_hit_label_batches[batch_id]
@@ -196,6 +203,7 @@ func shutdown() -> void:
 	_warning_flash_overlay = null
 	_enemy_hp_bar = null
 	_pending_hit_label_batches.clear()
+	_scheduled_hit_label_batches.clear()
 	npc = null
 
 func _disconnect_tween_finished(tween: Tween) -> void:

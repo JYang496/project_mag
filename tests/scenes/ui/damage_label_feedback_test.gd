@@ -27,7 +27,8 @@ class DummyDamageTarget:
 class DummyFeedbackNpc:
 	extends Node2D
 	var is_dead := false
-	var hit_label_merge_window_sec := 0.0
+	var hit_label_merge_window_sec := 0.04
+	var hit_label_periodic_merge_window_sec := 0.12
 
 	func get_incoming_damage_max_hp() -> int:
 		return 200
@@ -42,6 +43,7 @@ func _ready() -> void:
 	_test_pipeline_critical_result()
 	_test_pipeline_overkill_result()
 	await _test_feedback_controller_contract()
+	await _test_target_window_aggregation()
 	if _failed:
 		print("FAIL damage label feedback")
 	else:
@@ -62,6 +64,7 @@ func _test_typed_feedback_merge() -> void:
 	_expect(batch.is_periodic, "an all-periodic batch must remain periodic")
 	var direct_hit := DamageFeedbackEvent.new(20, Attack.TYPE_FREEZE)
 	direct_hit.is_critical = true
+	direct_hit.is_killing_blow = true
 	batch.merge(direct_hit)
 	_expect(
 		batch.damage_type == &"mixed",
@@ -71,6 +74,7 @@ func _test_typed_feedback_merge() -> void:
 		batch.is_critical and not batch.is_periodic,
 		"typed feedback must merge critical and periodic flags deterministically"
 	)
+	_expect(batch.is_killing_blow, "typed feedback aggregation must preserve killing-blow semantics")
 
 func _test_critical_metadata_round_trip() -> void:
 	var previous_crit_rate := PlayerData.crit_rate
@@ -204,6 +208,54 @@ func _test_feedback_controller_contract() -> void:
 		)
 		_expect(int(found_label.call("get_feedback_batch_id")) == 77, "controller must preserve feedback batch id")
 	controller.shutdown()
+
+func _test_target_window_aggregation() -> void:
+	var npc := DummyFeedbackNpc.new()
+	npc.position = Vector2(360.0, 180.0)
+	add_child(npc)
+	var controller := NpcDamageFeedbackController.new()
+	controller.setup(npc)
+	var direct := DamageFeedbackEvent.new(12, Attack.TYPE_FIRE)
+	direct.feedback_batch_id = 101
+	controller.queue_hit_label_event(direct)
+	var direct_critical := DamageFeedbackEvent.new(18, Attack.TYPE_FIRE)
+	direct_critical.feedback_batch_id = 102
+	direct_critical.is_critical = true
+	controller.queue_hit_label_event(direct_critical)
+	await get_tree().create_timer(0.06).timeout
+	await get_tree().process_frame
+	var direct_labels := _labels_for_target(npc.get_instance_id())
+	_expect(direct_labels.size() == 1, "separate direct attack batches on one target must collapse into one short-window label")
+	if direct_labels.size() == 1:
+		_expect(int(direct_labels[0].call("get_damage_value")) == 30, "direct target-window feedback must sum resolved damage without changing it")
+		_expect(bool(direct_labels[0].call("is_critical_hit")), "a merged direct window must preserve critical semantics")
+
+	var dot_a := DamageFeedbackEvent.new(3, Attack.TYPE_FIRE)
+	dot_a.is_periodic = true
+	controller.queue_hit_label_event(dot_a)
+	var dot_b := DamageFeedbackEvent.new(4, Attack.TYPE_FIRE)
+	dot_b.is_periodic = true
+	controller.queue_hit_label_event(dot_b)
+	await get_tree().create_timer(0.14).timeout
+	await get_tree().process_frame
+	var all_labels := _labels_for_target(npc.get_instance_id())
+	_expect(all_labels.size() == 2, "multiple DOT ticks must produce one additional low-frequency label")
+	var periodic_labels: Array[Node] = []
+	for label in all_labels:
+		if bool(label.call("is_periodic_hit")):
+			periodic_labels.append(label)
+	_expect(periodic_labels.size() == 1, "DOT aggregation must retain its periodic visual channel")
+	if periodic_labels.size() == 1:
+		_expect(int(periodic_labels[0].call("get_damage_value")) == 7, "DOT aggregation must preserve the exact resolved total")
+	controller.shutdown()
+	npc.queue_free()
+
+func _labels_for_target(target_id: int) -> Array[Node]:
+	var labels: Array[Node] = []
+	for candidate in get_tree().get_nodes_in_group(&"active_hit_labels"):
+		if candidate.has_method("get_target_instance_id") and int(candidate.call("get_target_instance_id")) == target_id:
+			labels.append(candidate)
+	return labels
 
 func _reset_runtime_state() -> void:
 	if _hybrid_layer != null and is_instance_valid(_hybrid_layer):

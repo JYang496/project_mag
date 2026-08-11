@@ -15,6 +15,12 @@ const AFTERIMAGE_SCRIPT := preload("res://Player/Weapons/Effects/cone_spray_afte
 @export var visual_width_multiplier: float = 1.08
 @export var playback_speed: float = 1.0
 @export var visible_modulate: Color = Color(1.0, 1.0, 1.0, 0.88)
+@export_group("Readability Layers")
+@export_range(0.0, 1.0, 0.01) var body_opacity := 0.68
+@export_range(0.0, 1.0, 0.01) var range_cue_opacity := 0.24
+@export_range(0.0, 1.0, 0.01) var core_highlight_strength := 0.34
+@export var range_cue_color := Color(1.0, 0.48, 0.12, 1.0)
+@export var core_highlight_color := Color(1.0, 0.88, 0.42, 1.0)
 @export_group("Directional Trail")
 @export var trail_enabled := true
 @export_range(1, 12, 1) var trail_max_afterimages := 5
@@ -155,7 +161,7 @@ func _resolve_animation_name() -> StringName:
 func _update_transform(source_global_position: Vector2) -> void:
 	global_position = source_global_position + _last_direction * muzzle_offset_px
 	global_rotation = _last_direction.angle()
-	var length_scale: float = _last_range / maxf(base_range_px, 1.0)
+	var length_scale: float = _get_visual_range() / maxf(base_range_px, 1.0)
 	var angle_scale: float = _last_half_angle_deg / maxf(base_half_angle_deg, 1.0)
 	var width_scale: float = clampf(angle_scale * maxf(visual_width_multiplier, 0.01), min_width_scale, max_width_scale)
 	spray_root.scale = Vector2(maxf(length_scale, 0.01), maxf(width_scale, 0.01))
@@ -164,18 +170,50 @@ func _update_transform(source_global_position: Vector2) -> void:
 func _ensure_ground_rays() -> void:
 	add_to_group(&"hybrid_ground_cone_effect")
 	_hybrid_registered = HybridGroundRegistration.register(self, &"register_ground_cone_effect")
+	if _ground_rays.is_empty():
+		for ray_index in range(3):
+			var line := Line2D.new()
+			line.name = "RangeCue%d" % ray_index
+			line.width = 2.0
+			line.antialiased = false
+			line.z_index = -1
+			add_child(line)
+			_ground_rays.append(line)
+	_update_ground_rays()
 
 func _update_ground_rays() -> void:
-	pass
+	if _ground_rays.size() < 3:
+		return
+	var fallback_visible := visible and not bool(get_meta(&"hybrid_ground_registered", false))
+	var cue := range_cue_color
+	cue.a *= range_cue_opacity
+	var visual_range := _get_visual_range()
+	var left_edge := Vector2.RIGHT.rotated(deg_to_rad(-_last_half_angle_deg)) * visual_range
+	var right_edge := Vector2.RIGHT.rotated(deg_to_rad(_last_half_angle_deg)) * visual_range
+	_ground_rays[0].points = PackedVector2Array([Vector2.ZERO, left_edge])
+	_ground_rays[1].points = PackedVector2Array([Vector2.ZERO, right_edge])
+	var arc_points := PackedVector2Array()
+	for index in range(9):
+		var ratio := float(index) / 8.0
+		arc_points.append(Vector2.RIGHT.rotated(deg_to_rad(lerpf(-_last_half_angle_deg, _last_half_angle_deg, ratio))) * visual_range)
+	_ground_rays[2].points = arc_points
+	for line in _ground_rays:
+		line.default_color = cue
+		line.visible = fallback_visible
 
 func get_hybrid_ground_cone_visual() -> Dictionary:
 	var color := modulate
 	var changed := _set_hybrid_value(&"visible", visible)
 	changed = _set_hybrid_value(&"origin", global_position) or changed
 	changed = _set_hybrid_value(&"direction", _last_direction) or changed
-	changed = _set_hybrid_value(&"range", _last_range) or changed
+	changed = _set_hybrid_value(&"range", _get_visual_range()) or changed
 	changed = _set_hybrid_value(&"half_angle_degrees", _last_half_angle_deg) or changed
 	changed = _set_hybrid_value(&"color", color) or changed
+	changed = _set_hybrid_value(&"body_opacity", body_opacity) or changed
+	changed = _set_hybrid_value(&"range_cue_opacity", range_cue_opacity) or changed
+	changed = _set_hybrid_value(&"core_highlight_strength", core_highlight_strength) or changed
+	changed = _set_hybrid_value(&"range_cue_color", range_cue_color) or changed
+	changed = _set_hybrid_value(&"core_highlight_color", core_highlight_color) or changed
 	changed = _set_hybrid_value(&"texture", _get_current_frame_texture()) or changed
 	if changed:
 		_hybrid_visual_version += 1
@@ -199,6 +237,11 @@ func _get_current_frame_texture() -> Texture2D:
 	if frame_count <= 0:
 		return null
 	return sprite.sprite_frames.get_frame_texture(sprite.animation, clampi(sprite.frame, 0, frame_count - 1))
+
+func _get_visual_range() -> float:
+	# The cone starts at the muzzle offset, so subtract that offset from its
+	# rendered length. The visible tip then lands on the unchanged hit radius.
+	return maxf(_last_range - maxf(muzzle_offset_px, 0.0), 1.0)
 
 func _exit_tree() -> void:
 	_clear_trail()
@@ -261,7 +304,7 @@ func _spawn_trail_afterimage(origin: Vector2, direction: Vector2, spray_range: f
 		"start_frame": sprite.frame if sprite != null else 0,
 		"origin": origin + direction * muzzle_offset_px,
 		"direction": direction,
-		"range": maxf(spray_range, 1.0),
+		"range": maxf(spray_range - maxf(muzzle_offset_px, 0.0), 1.0),
 		"half_angle_degrees": maxf(half_angle_deg, 1.0),
 		"color": trail_modulate,
 		"lifetime_sec": trail_lifetime_sec,
