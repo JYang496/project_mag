@@ -885,6 +885,45 @@ func request_module_equip_selection(
 		allow_reward_transaction
 	)
 
+func request_module_equip_selections(
+	module_instances: Array[Module],
+	on_item_complete: Callable = Callable(),
+	on_complete: Callable = Callable()
+) -> bool:
+	if module_instances.is_empty():
+		return false
+	_init_module_equip_selection_panel()
+	if module_equip_selection_panel == null or not is_instance_valid(module_equip_selection_panel):
+		return false
+	var transaction_ids: PackedStringArray = []
+	for module_instance in module_instances:
+		if module_instance == null or not is_instance_valid(module_instance):
+			transaction_ids.append("")
+			continue
+		var transaction_id := "module:%s:%d" % [str(module_instance.scene_file_path), module_instance.get_instance_id()]
+		transaction_ids.append(transaction_id)
+		InventoryData.begin_pending_transaction({
+			"id": transaction_id,
+			"type": "module_assignment",
+			"scene_path": str(module_instance.scene_file_path),
+		})
+	var wrapped_item_complete := func(index: int, module_instance: Module, assigned: bool) -> void:
+		if index >= 0 and index < transaction_ids.size() and transaction_ids[index] != "":
+			InventoryData.finish_pending_transaction(transaction_ids[index])
+		if on_item_complete.is_valid():
+			on_item_complete.call(index, module_instance, assigned)
+	var opened := module_equip_selection_panel.open_for_modules(
+		module_instances,
+		wrapped_item_complete,
+		on_complete,
+		true
+	)
+	if not opened:
+		for transaction_id in transaction_ids:
+			if transaction_id != "":
+				InventoryData.finish_pending_transaction(transaction_id)
+	return opened
+
 func _on_module_assignment_completed(
 	assigned: bool,
 	transaction_id: String,

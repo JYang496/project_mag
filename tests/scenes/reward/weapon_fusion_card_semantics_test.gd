@@ -55,29 +55,42 @@ func _run() -> void:
 	var weapon_hero := rendered_new_card.find_child("WeaponRewardHero", true, false) as CenterContainer
 	var hero_image := rendered_new_card.find_child("WeaponHeroImage", true, false) as Control
 	var hero_texture := rendered_new_card.find_child("RewardIconTexture", true, false) as TextureRect
-	if weapon_hero == null or weapon_hero.custom_minimum_size.y < 100.0:
+	if weapon_hero == null or weapon_hero.custom_minimum_size.y < 80.0:
 		_fail("new weapon card should reserve a centered hero image stage")
-	if hero_image == null or hero_image.custom_minimum_size.x < 140.0 or hero_image.custom_minimum_size.y < 90.0:
+	if hero_image == null or hero_image.custom_minimum_size.x < 130.0 or hero_image.custom_minimum_size.y < 74.0:
 		_fail("new weapon card hero image should be materially larger than the legacy 56px icon")
 	if hero_texture == null or hero_texture.texture_filter != CanvasItem.TEXTURE_FILTER_NEAREST:
 		_fail("weapon hero should preserve nearest-neighbor pixel presentation")
 	var behavior_summary := rendered_new_card.find_child("BehaviorSummary", true, false) as Label
+	var hold_progress_nodes := rendered_new_card.find_children("HoldProgress", "ProgressBar", true, false)
 	var feature_list := rendered_new_card.find_child("FeatureList", true, false) as VBoxContainer
-	if behavior_summary == null or feature_list == null:
+	var description_slot := rendered_new_card.find_child("WeaponDescriptionSlot", true, false) as VBoxContainer
+	var core_stats := rendered_new_card.find_child("CoreWeaponStats", true, false) as HBoxContainer
+	if hold_progress_nodes.size() != 1 or hold_progress_nodes[0].get_index() != 0:
+		_fail("the single hold-progress track should occupy the card's top status-line slot")
+	elif behavior_summary == null or feature_list == null:
 		_fail("new weapon card should render separate behavior and feature layers")
+	elif description_slot == null or description_slot.custom_minimum_size.y != 96.0:
+		_fail("weapon description should occupy its fixed non-scrolling slot")
+	elif core_stats == null or core_stats.get_child_count() != 3:
+		_fail("weapon cards should render exactly three fixed core-stat slots")
+	elif core_stats.get_child(0).name != "CoreStatDamage" or core_stats.get_child(1).name != "CoreStatFireInterval" or core_stats.get_child(2).name != "CoreStatAmmo":
+		_fail("core-stat slots should keep damage, fire interval, and ammo order")
 	elif behavior_summary.get_theme_font_size("font_size") != 15 or behavior_summary.get_theme_constant("line_spacing") != -2:
 		_fail("reward card copy should use the enlarged compact text treatment")
 	elif feature_list.get_theme_constant("separation") != 2:
 		_fail("reward card feature rows should use compact vertical spacing")
-	elif behavior_summary.max_lines_visible != 2 or behavior_summary.text_overrun_behavior != TextServer.OVERRUN_TRIM_ELLIPSIS:
-		_fail("behavior summary should be limited to two lines with an ellipsis")
+	elif behavior_summary.text_overrun_behavior != TextServer.OVERRUN_NO_TRIMMING:
+		_fail("behavior summary should wrap without trimming localized copy")
+	elif rendered_new_card.custom_minimum_size.y > 410.0 or rendered_new_card.clip_contents:
+		_fail("detailed reward cards should fit the draft viewport without clipping or scrolling")
 	elif feature_list.get_child_count() < 1 or feature_list.get_child_count() > 2:
 		_fail("new weapon card should render one or two feature rows")
 	else:
 		for feature_line in feature_list.get_children():
 			var feature_label := feature_line as Label
-			if feature_label.max_lines_visible != 2 or feature_label.text_overrun_behavior != TextServer.OVERRUN_TRIM_ELLIPSIS:
-				_fail("feature summaries should be limited to two lines with an ellipsis")
+			if feature_label.text_overrun_behavior != TextServer.OVERRUN_NO_TRIMMING:
+				_fail("feature summaries should wrap without an ellipsis")
 	rendered_new_card.free()
 	_assert_model_layers(panel, new_reward, "new weapon")
 	if _failed:
@@ -96,12 +109,13 @@ func _run() -> void:
 	if upgrade_summary == "" or upgrade_summary == "Lv." or upgrade_summary.begins_with("Lv."):
 		_fail("weapon upgrade summary should use weapon behavior copy instead of the level range")
 	var rendered_upgrade_card := panel.call("_build_reward_card_button", upgrade_reward, 1) as Button
-	var rendered_upgrade_lines := rendered_upgrade_card.find_children("ComparisonLine", "Label", true, false)
-	var expected_upgrade_lines := upgrade_data.get("comparison_lines", PackedStringArray()) as PackedStringArray
-	if rendered_upgrade_lines.size() != expected_upgrade_lines.size():
-		_fail("weapon upgrade card should render each stat delta exactly once")
+	var rendered_upgrade_lines := rendered_upgrade_card.find_children("CoreStat*", "VBoxContainer", true, false)
+	var expected_upgrade_lines := upgrade_data.get("core_stat_lines", PackedStringArray()) as PackedStringArray
+	if rendered_upgrade_lines.size() != 3 or expected_upgrade_lines.size() != 3:
+		_fail("weapon upgrade card should retain three fixed core-stat slots")
 	for line in rendered_upgrade_lines:
-		var line_text := (line as Label).text
+		var value_label := (line as VBoxContainer).get_node("Value") as Label
+		var line_text := value_label.text
 		if line_text.contains("Main Effect") or line_text.contains("Result Preview"):
 			_fail("weapon upgrade card should not render generic main-effect or result-preview rows")
 	if rendered_upgrade_card.find_child("ShortTagLabel", true, false) != null:
@@ -164,13 +178,28 @@ func _run() -> void:
 	var localized_new_data: Dictionary = panel.call("_build_reward_display_data", new_reward)
 	var localized_summary := str(localized_new_data.get("summary_text", ""))
 	var localized_features := localized_new_data.get("feature_lines", PackedStringArray()) as PackedStringArray
+	var localized_comparison := panel.call("_card_comparison_lines", localized_new_data) as PackedStringArray
+	var localized_core_stats := localized_new_data.get("core_stat_lines", PackedStringArray()) as PackedStringArray
 	if localized_summary.contains("；") or localized_summary.contains(";"):
 		_fail("localized behavior summary should not keep semicolon-packed feature copy")
 	if localized_features.is_empty() or localized_features.size() > 2:
 		_fail("localized weapon copy should expose one or two separate feature lines")
+	for comparison_line in localized_comparison:
+		if str(comparison_line).contains("…"):
+			_fail("localized comparison copy should not be shortened with an ellipsis")
+	if localized_core_stats.size() != 3:
+		_fail("localized weapon cards should retain all three fixed core-stat slots")
+	else:
+		_assert_contains(localized_core_stats[0], "伤害", "localized fixed damage slot")
+		_assert_contains(localized_core_stats[1], "射击间隔", "localized fixed fire interval slot")
+		_assert_contains(localized_core_stats[2], "弹匣容量", "localized fixed ammo slot")
 
 	var full_panel := preload("res://UI/scenes/reward_selection_panel.tscn").instantiate() as RewardSelectionPanel
 	get_tree().root.add_child(full_panel)
+	full_panel.call("_apply_unified_layout")
+	var options_scroll := full_panel.get_node("Panel/VBox/OptionsScroll") as ScrollContainer
+	if options_scroll.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED:
+		_fail("reward cards should not show a right-side vertical scrollbar")
 	if full_panel.get_node_or_null("Panel/VBox/SelectedDetail") != null:
 		_fail("reward panel should not reserve a full-details row below the cards")
 	var action_panel := full_panel.get_node_or_null("Panel/VBox/ActionPanel") as PanelContainer

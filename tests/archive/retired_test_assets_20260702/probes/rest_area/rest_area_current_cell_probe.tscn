@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://tests/probes/rest_area/rest_area_current_cell_probe.gd" id="1_probe"]
-
-[node name="RestAreaCurrentCellProbe" type="Node"]
-script = ExtResource("1_probe")

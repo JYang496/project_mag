@@ -154,6 +154,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		"detail_role": "",
 		"detail_effect": "",
 		"comparison_lines": PackedStringArray(),
+		"core_stat_lines": PackedStringArray(),
 		"detail_bullets": PackedStringArray(),
 		"icon_texture": null,
 		"fallback_icon_key": "reward",
@@ -198,6 +199,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 				upgrade_detail.append(upgrade_summary)
 			var change_count := 0
 			var comparison_lines := PackedStringArray()
+			data["core_stat_lines"] = _core_upgrade_stat_lines(model.upgrade_deltas)
 			for delta_data in model.upgrade_deltas:
 				if not bool(delta_data.get("changed", false)):
 					continue
@@ -308,6 +310,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			if stat_summary != "":
 				detail_chunks.append(stat_summary)
 				data["comparison_lines"] = PackedStringArray(stat_summary.split(" · ", false))
+			data["core_stat_lines"] = _core_current_stat_lines(model.current_stats)
 		data["type_label"] = _format_reward_type_label(reward, "New Weapon")
 		data["level_text"] = "Lv.%d" % int(reward.item_level)
 		data["meta_text"] = LocalizationManager.tr_format(
@@ -429,6 +432,24 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["level_text"] = _derive_level_text(reward, data)
 	data["detail_bullets"] = _fallback_detail_bullets(reward)
 	return data
+
+func _core_current_stat_lines(stats: Dictionary) -> PackedStringArray:
+	var lines := PackedStringArray()
+	for key in [&"damage", &"fire_interval_sec", &"ammo"]:
+		lines.append(WEAPON_STAT_FORMATTER.format_line(key, stats.get(str(key), stats.get(key, null)), " "))
+	return lines
+
+func _core_upgrade_stat_lines(deltas: Array[Dictionary]) -> PackedStringArray:
+	var by_key := {}
+	for delta_data in deltas:
+		by_key[StringName(str(delta_data.get("key", &"")))] = delta_data
+	var lines := PackedStringArray()
+	for key in [&"damage", &"fire_interval_sec", &"ammo"]:
+		if by_key.has(key):
+			lines.append(WEAPON_STAT_FORMATTER.format_delta_line(by_key[key] as Dictionary))
+		else:
+			lines.append(WEAPON_STAT_FORMATTER.format_line(key, null, " "))
+	return lines
 
 func _apply_structured_description(data: Dictionary, description: String, fallback: String) -> void:
 	var lines := _structured_description(description)

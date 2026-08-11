@@ -81,6 +81,7 @@ func finalize_branch_selected_weapon(weapon: Weapon) -> void:
 		owner_ui.upgrade_management_controller.update_upg()
 	owner_ui.refresh_border()
 	request_next()
+	owner_ui.call_deferred("_request_next_queued_equipment_pickup")
 	if PhaseManager.current_state() == PhaseManager.SETTLEMENT:
 		PhaseManager.request_settlement_completion_check()
 

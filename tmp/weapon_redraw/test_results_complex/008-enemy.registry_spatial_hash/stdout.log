@@ -1,7 +1,0 @@
-Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
-
-EnemyRegistry spatial hash test: start
-EnemyRegistry spatial hash test: equivalence complete
-EnemyRegistry spatial hash test: locality complete
-EnemyRegistry spatial hash test: separation and capacity complete
-PASS: EnemyRegistry spatial hash matches query semantics, provides bounded separation, caps bucket occupancy, and tracks movement and cleanup

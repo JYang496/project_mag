@@ -17,6 +17,8 @@ const QUICK_SELECT_HOLD_SECONDS := 0.55
 const CARD_FONT_SIZE_BONUS := 1
 const CARD_LINE_SPACING := -2
 const CARD_BODY_SEPARATION := 4
+const STANDARD_CARD_MIN_HEIGHT := 400.0
+const DETAILED_CARD_MIN_HEIGHT := 408.0
 
 @onready var title_label: Label = $Panel/VBox/Title
 @onready var panel: Panel = $Panel
@@ -127,7 +129,7 @@ func _cancel_quick_select_hold() -> void:
 		var progress := button.find_child("HoldProgress", true, false) as ProgressBar if button != null else null
 		if progress != null:
 			progress.value = 0.0
-			progress.visible = false
+			progress.visible = true
 		if previous_index < _reward_options.size():
 			_apply_reward_card_style(button, _reward_options[previous_index], previous_index == _selected_index)
 	_confirm_button_state()
@@ -254,6 +256,7 @@ func _apply_unified_layout() -> void:
 	panel.offset_right = 500.0
 	panel.offset_bottom = 310.0
 	options_scroll.custom_minimum_size.y = 410.0
+	options_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var footer := get_node_or_null("Panel/VBox/Footer") as Control
 	if footer != null:
 		footer.visible = _allow_cancel and not _summary_mode
@@ -308,6 +311,9 @@ func close_panel() -> void:
 	_progress_index_cache = 0
 	_progress_total_cache = 0
 	_show_draft_hint_cache = false
+	var ui = GlobalVariables.ui
+	if ui != null and is_instance_valid(ui) and ui.has_method("_request_next_queued_equipment_pickup"):
+		ui.call_deferred("_request_next_queued_equipment_pickup")
 
 func _play_entry_animation() -> void:
 	_kill_entry_tween()
@@ -410,7 +416,13 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	var is_weapon_visual_reward := detail_variant in [&"new_weapon", &"weapon_fusion", &"weapon_upgrade"]
 	var button := Button.new()
 	button.toggle_mode = true
-	button.custom_minimum_size = Vector2(0, 372 if is_module_reward else 296)
+	# Keep every card inside the 410px draft viewport so the choice screen never
+	# needs a vertical scrollbar.
+	button.custom_minimum_size = Vector2(
+		0.0,
+		DETAILED_CARD_MIN_HEIGHT if is_module_reward or is_weapon_visual_reward else STANDARD_CARD_MIN_HEIGHT
+	)
+	button.clip_contents = false
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_ALL
@@ -430,11 +442,21 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	body.add_theme_constant_override("separation", CARD_BODY_SEPARATION)
 	margin.add_child(body)
 
-	var rarity_bar := ColorRect.new()
-	rarity_bar.color = RARITY_UTIL.get_color(reward.get_rarity())
-	rarity_bar.custom_minimum_size = Vector2(0, 4)
-	rarity_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.add_child(rarity_bar)
+	var hold_progress := ProgressBar.new()
+	hold_progress.name = "HoldProgress"
+	hold_progress.max_value = 1.0
+	hold_progress.value = 0.0
+	hold_progress.show_percentage = false
+	hold_progress.custom_minimum_size = Vector2(0.0, 4.0)
+	hold_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var progress_background := StyleBoxFlat.new()
+	progress_background.bg_color = Color(0.88, 0.92, 0.93, 1.0)
+	var progress_fill := StyleBoxFlat.new()
+	var action_color := _get_reward_action_color(reward)
+	progress_fill.bg_color = Color(action_color.r, action_color.g, action_color.b, 1.0)
+	hold_progress.add_theme_stylebox_override("background", progress_background)
+	hold_progress.add_theme_stylebox_override("fill", progress_fill)
+	body.add_child(hold_progress)
 
 	var top_row := HBoxContainer.new()
 	top_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -495,7 +517,15 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	text_box.add_child(meta_label)
 
 	var summary_parent: VBoxContainer = body
-	if is_module_reward:
+	if is_weapon_visual_reward:
+		var description_box := VBoxContainer.new()
+		description_box.name = "WeaponDescriptionSlot"
+		description_box.custom_minimum_size = Vector2(0.0, 96.0)
+		description_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		description_box.add_theme_constant_override("separation", 3)
+		body.add_child(description_box)
+		summary_parent = description_box
+	elif is_module_reward:
 		var effect_box := VBoxContainer.new()
 		effect_box.name = "ModuleEffectBox"
 		effect_box.add_theme_constant_override("separation", 3)
@@ -507,9 +537,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	var summary_label := _make_card_label(str(card_data.get("summary_text", "")).strip_edges(), 14, Color(0.84, 0.91, 0.94, 1.0))
 	summary_label.name = "BehaviorSummary"
 	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	summary_label.max_lines_visible = 2
-	summary_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	summary_label.custom_minimum_size = Vector2(0.0, 34.0)
+	summary_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	summary_label.tooltip_text = full_detail
 	summary_parent.add_child(summary_label)
 
@@ -523,12 +551,14 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		for feature in feature_lines.slice(0, 2):
 			var feature_label := _make_card_label("• %s" % str(feature).strip_edges(), 13, Color(0.70, 0.80, 0.84, 1.0))
 			feature_label.name = "FeatureLine"
-			_configure_two_line_summary(feature_label)
+			_configure_wrapped_card_text(feature_label)
 			feature_label.tooltip_text = str(feature)
 			feature_box.add_child(feature_label)
 
 	if is_module_reward:
 		body.add_child(_build_module_weapon_grid(card_data))
+	elif is_weapon_visual_reward:
+		body.add_child(_build_core_weapon_stats(card_data))
 	else:
 		var comparison_lines := _card_comparison_lines(card_data)
 		var comparison_box := VBoxContainer.new()
@@ -541,7 +571,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		for comparison_line in comparison_lines:
 			var comparison_label := _make_card_label(str(comparison_line), 14, Color(0.76, 0.93, 0.82, 1.0))
 			comparison_label.name = "ComparisonLine"
-			_configure_two_line_summary(comparison_label)
+			_configure_wrapped_card_text(comparison_label)
 			comparison_label.tooltip_text = str(comparison_line)
 			comparison_box.add_child(comparison_label)
 
@@ -565,37 +595,48 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		synergy_label.tooltip_text = str(card_data.get("synergy_reason", ""))
 		body.add_child(synergy_label)
 
-	var hold_progress := ProgressBar.new()
-	hold_progress.name = "HoldProgress"
-	hold_progress.max_value = 1.0
-	hold_progress.value = 0.0
-	hold_progress.show_percentage = false
-	hold_progress.custom_minimum_size = Vector2(0.0, 5.0)
-	hold_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hold_progress.visible = false
-	var progress_background := StyleBoxFlat.new()
-	progress_background.bg_color = Color(0.06, 0.10, 0.12, 0.92)
-	progress_background.set_corner_radius_all(2)
-	var progress_fill := StyleBoxFlat.new()
-	var action_color := _get_reward_action_color(reward)
-	progress_fill.bg_color = Color(action_color.r, action_color.g, action_color.b, 1.0)
-	progress_fill.set_corner_radius_all(2)
-	hold_progress.add_theme_stylebox_override("background", progress_background)
-	hold_progress.add_theme_stylebox_override("fill", progress_fill)
-	body.add_child(hold_progress)
-
 	_set_mouse_filter_recursive(button, Control.MOUSE_FILTER_IGNORE)
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	_apply_reward_card_style(button, reward, false)
 	return button
 
+func _build_core_weapon_stats(card_data: Dictionary) -> HBoxContainer:
+	var stats_box := HBoxContainer.new()
+	stats_box.name = "CoreWeaponStats"
+	stats_box.custom_minimum_size = Vector2(0.0, 54.0)
+	stats_box.add_theme_constant_override("separation", 6)
+	var lines: PackedStringArray = card_data.get("core_stat_lines", PackedStringArray())
+	var slot_names: Array[StringName] = [&"Damage", &"FireInterval", &"Ammo"]
+	var core_keys: Array[StringName] = [&"damage", &"fire_interval_sec", &"ammo"]
+	for index in range(3):
+		var fallback_key: StringName = core_keys[index]
+		var text := str(lines[index]) if index < lines.size() else WEAPON_STAT_FORMATTER.format_line(fallback_key, null, " ")
+		var separator_index := text.find(" ")
+		var heading_text := text.left(separator_index) if separator_index >= 0 else WEAPON_STAT_FORMATTER.format_label(fallback_key)
+		var value_text := text.substr(separator_index + 1) if separator_index >= 0 else "--"
+		var slot := VBoxContainer.new()
+		slot.name = "CoreStat%s" % str(slot_names[index])
+		slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		slot.add_theme_constant_override("separation", 0)
+		var heading := _make_card_label(heading_text, 11, Color(0.60, 0.74, 0.80, 1.0))
+		heading.name = "Heading"
+		heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var value := _make_card_label(value_text, 14, Color(0.76, 0.93, 0.82, 1.0))
+		value.name = "Value"
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		value.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+		slot.add_child(heading)
+		slot.add_child(value)
+		stats_box.add_child(slot)
+	return stats_box
+
 func _build_weapon_reward_hero(card_data: Dictionary) -> CenterContainer:
 	var hero := CenterContainer.new()
 	hero.name = "WeaponRewardHero"
-	hero.custom_minimum_size = Vector2(0.0, 104.0)
+	hero.custom_minimum_size = Vector2(0.0, 82.0)
 	hero.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var icon := _make_reward_icon(card_data, Vector2(144.0, 94.0), 8)
+	var icon := _make_reward_icon(card_data, Vector2(132.0, 76.0), 7)
 	icon.name = "WeaponHeroImage"
 	hero.add_child(icon)
 	return hero
@@ -876,11 +917,9 @@ func _make_card_label(text: String, font_size: int, font_color: Color) -> Label:
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
-func _configure_two_line_summary(label: Label) -> void:
+func _configure_wrapped_card_text(label: Label) -> void:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.max_lines_visible = 2
-	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	label.custom_minimum_size.y = 34.0
+	label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 
 func _make_badge_label(text: String, color: Color) -> Label:
 	var label := _make_card_label(text, 14, Color(0.94, 0.98, 1.0, 1.0))
@@ -898,11 +937,9 @@ func _make_badge_label(text: String, color: Color) -> Label:
 	label.add_theme_stylebox_override("normal", style)
 	return label
 
-func _compact_detail_text(text: String, max_characters: int) -> String:
+func _compact_detail_text(text: String, _max_characters: int) -> String:
 	var compact := text.replace("\r", " ").replace("\n", " ").replace("  ", " ").strip_edges()
-	if compact.length() <= max_characters:
-		return compact
-	return compact.left(maxi(1, max_characters - 1)).strip_edges() + "…"
+	return compact
 
 func _append_display_chip(existing: Variant, chip: Dictionary) -> Array:
 	var chips: Array = existing if existing is Array else []

@@ -37,7 +37,7 @@ func request_next_queued_pickup() -> void:
 		_sync_public_fields_to_owner()
 		return
 	if _is_modal_open():
-		_schedule()
+		_sync_public_fields_to_owner()
 		return
 	while not queue.is_empty():
 		var next_index := _find_next_index()
@@ -64,6 +64,13 @@ func complete_module_pickup(assigned: bool, on_complete: Callable = Callable()) 
 	if owner_ui != null:
 		owner_ui.call_deferred("_request_next_queued_equipment_pickup")
 
+func complete_module_batch(_processed: bool = false) -> void:
+	processing = false
+	_sync_public_fields_to_owner()
+	if owner_ui != null:
+		owner_ui.call_deferred("_request_next_queued_equipment_pickup")
+		owner_ui.call_deferred("resume_pending_weapon_branch_selection")
+
 func sync_state_from_owner() -> void:
 	if owner_ui == null:
 		return
@@ -82,11 +89,8 @@ func _schedule() -> void:
 func _is_modal_open() -> bool:
 	if owner_ui == null:
 		return false
-	if owner_ui.weapon_replacement_panel and is_instance_valid(owner_ui.weapon_replacement_panel) and owner_ui.weapon_replacement_panel.visible:
-		return true
-	if owner_ui.module_equip_selection_panel and is_instance_valid(owner_ui.module_equip_selection_panel) and owner_ui.module_equip_selection_panel.visible:
-		return true
-	return false
+	owner_ui._init_modal_ui_controller()
+	return owner_ui.modal_ui_controller != null and owner_ui.modal_ui_controller.is_modal_open()
 
 func _find_next_index() -> int:
 	for index in range(queue.size()):
@@ -113,22 +117,49 @@ func _open_entry(entry: Dictionary) -> bool:
 			owner_ui.call_deferred("_request_next_queued_equipment_pickup")
 			return true
 		"module":
-			var module_instance := entry.get("module", null) as Module
-			var on_complete := entry.get("on_complete", Callable()) as Callable
-			if module_instance == null or not is_instance_valid(module_instance):
-				complete_module_pickup(false, on_complete)
-				return false
-			processing = true
-			var opened := owner_ui.request_module_equip_selection(
-				module_instance,
-				Callable(self, "complete_module_pickup").bind(on_complete)
-			)
-			if opened:
-				return true
-			complete_module_pickup(false, on_complete)
-			return true
+			var entries: Array[Dictionary] = [entry]
+			for index in range(queue.size() - 1, -1, -1):
+				if str(queue[index].get("type", "")) == "module":
+					entries.insert(1, queue.pop_at(index))
+			return _open_module_batch(entries)
 		_:
 			return false
+
+func _open_module_batch(entries: Array[Dictionary]) -> bool:
+	var modules: Array[Module] = []
+	var valid_entries: Array[Dictionary] = []
+	for entry in entries:
+		var module_instance := entry.get("module", null) as Module
+		var on_complete := entry.get("on_complete", Callable()) as Callable
+		if module_instance == null or not is_instance_valid(module_instance):
+			if on_complete.is_valid():
+				on_complete.call_deferred(false)
+			continue
+		modules.append(module_instance)
+		valid_entries.append(entry)
+	if modules.is_empty():
+		return false
+	processing = true
+	var item_completed := func(index: int, _module: Module, assigned: bool) -> void:
+		if index < 0 or index >= valid_entries.size():
+			return
+		var callback := valid_entries[index].get("on_complete", Callable()) as Callable
+		if callback.is_valid():
+			callback.call_deferred(assigned)
+	var opened := owner_ui.request_module_equip_selections(
+		modules,
+		item_completed,
+		Callable(self, "complete_module_batch")
+	)
+	if opened:
+		return true
+	for entry in valid_entries:
+		var callback := entry.get("on_complete", Callable()) as Callable
+		if callback.is_valid():
+			callback.call_deferred(false)
+	processing = false
+	owner_ui.call_deferred("_request_next_queued_equipment_pickup")
+	return true
 
 func _sync_public_fields_to_owner() -> void:
 	if owner_ui == null:

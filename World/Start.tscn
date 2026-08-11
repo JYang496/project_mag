@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://q8o4fd420oji" path="res://World/continue.gd" id="2_continue"]
 [ext_resource type="Script" uid="uid://cbi0jbeohvr24" path="res://UI/scripts/components/start_menu_backdrop.gd" id="3_backdrop"]
 [ext_resource type="Script" uid="uid://crthixi6sav7n" path="res://World/start_menu.gd" id="4_menu"]
+[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu_background.png" id="5_background"]
 
 [node name="Start" type="Node2D" unique_id=556195875]
 script = ExtResource("4_menu")
@@ -18,7 +19,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" type="ColorRect" parent="CanvasLayer/GUI" unique_id=1701710582]
+[node name="Background" type="TextureRect" parent="CanvasLayer/GUI" unique_id=1701710582]
+texture_filter = 2
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -26,7 +28,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.008, 0.016, 0.026, 1)
+texture = ExtResource("5_background")
+expand_mode = 1
 
 [node name="Backdrop" type="Control" parent="CanvasLayer/GUI/Background" unique_id=7441319]
 layout_mode = 1

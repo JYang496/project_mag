@@ -31,62 +31,66 @@ weapon.3.name,Spear Launcher,长矛发射器
 weapon.3.desc,"Mid-range Projectile spear. Repeat hits build Mark charge; reload with enough charge to launch a marking radial volley.","中距离投射长矛。重复命中会积累标记充能；充能足够时换弹会发射施加标记的环形齐射。"
 passive.piercing_blade_dance.name,Piercing Blade Dance,穿刺轮舞
 passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds charge. Reload at 10 or 20 charge to launch an 8- or 16-direction volley. Its hits mark surviving enemies for 20 seconds and knock them away.","同一根长矛重复伤害同一敌人可积累充能。充能达到10或20点时换弹，发射8或16方向齐射；命中存活敌人后施加持续20秒的标记并将其击退。"
-branch.thermal_cannon_branch.name,Thermal Cannon,Thermal Cannon
-branch.thermal_cannon_branch.desc,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.
-branch.zero_cannon_branch.name,Zero Cannon,Zero Cannon
+branch.thermal_cannon_branch.name,Thermal Cannon,热能重炮
+branch.thermal_cannon_branch.desc,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.,热能分支：注入热量机制，将炮弹转化为火焰伤害，并随热量提高输出。
+branch.zero_cannon_branch.name,Zero Cannon,零式重炮
 branch.zero_cannon_branch.desc,"Stored Energy branch: full-energy fire deals 2x direct damage and releases a secondary pulse with stronger execute payoff.","储能分支：满能量射击造成 2 倍直接伤害，并释放一次对低生命目标更强的二段脉冲。"
-branch.explosive_saw.name,Explosive Saw,Explosive Saw
-branch.explosive_saw.desc,"First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE.","First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE."
-branch.ricochet_saw.name,Ricochet Saw,Ricochet Saw
-branch.ricochet_saw.desc,"On first hit, saw splits once. The split saw chases the nearest enemy.","On first hit, saw splits once. The split saw chases the nearest enemy."
-branch.focus_lance.name,Focus Lance,Focus Lance
-branch.focus_lance.desc,"Single-target boss beam: thinner, longer, harder-hitting sustained lance with first-hit lock.","Single-target boss beam: thinner, longer, harder-hitting sustained lance with first-hit lock."
-branch.prism_fan.name,Prism Fan,Prism Fan
-branch.prism_fan.desc,"Main beam plus two side beams for wide-area coverage, with reduced single-target focus.","Main beam plus two side beams for wide-area coverage, with reduced single-target focus."
-branch.frost_dash.name,Frost Dash Blade,Frost Dash Blade
-branch.frost_dash.desc,Dash attacks inflict bonus freeze finish and leave a short-lived frost field.,Dash attacks inflict bonus freeze finish and leave a short-lived frost field.
+branch.explosive_saw.name,Explosive Saw,爆裂链锯
+branch.explosive_saw.desc,"First hit arms the saw: it slows down, grows, then explodes at 2x size with physical AoE.","首次命中会启动锯刃：锯刃减速、膨胀，随后以 2 倍尺寸爆炸并造成范围物理伤害。"
+branch.ricochet_saw.name,Ricochet Saw,弹射链锯
+branch.ricochet_saw.desc,"On first hit, saw splits once. The split saw chases the nearest enemy.","首次命中时锯刃分裂一次；分裂出的锯刃会追踪最近的敌人。"
+branch.focus_lance.name,Focus Lance,聚焦长枪
+branch.focus_lance.desc,"Single-target boss beam: thinner, longer, harder-hitting sustained lance with first-hit lock.","对单首领光束：变得更细、更长且持续伤害更高，并锁定首次命中的目标。"
+branch.prism_fan.name,Prism Fan,棱镜扇射
+branch.prism_fan.desc,"Main beam plus two side beams for wide-area coverage, with reduced single-target focus.","主光束两侧增加两道侧向光束，以降低对单能力换取大范围覆盖。"
+branch.frost_dash.name,Frost Dash Blade,霜冻冲刺刃
+branch.frost_dash.desc,Dash attacks inflict bonus freeze finish and leave a short-lived frost field.,冲刺攻击会追加冻结终结效果，并留下一片短暂存在的霜冻区域。
 branch.dash_return_execute.name,Returning Execution,回刃处决
 branch.dash_return_execute.desc,"Outbound hits open a wound; hitting the same target on the return path deals missing-health-scaled physical damage.","向外冲刺命中会留下裂口；返程再次命中同一目标时，造成随目标已损生命提高的物理伤害。"
-branch.glacier_whiteout_expansion.name,Whiteout Expansion,Whiteout Expansion
-branch.glacier_whiteout_expansion.desc,Glacier Projector cone angle expands by 20% without reducing range or damage.,Glacier Projector cone angle expands by 20% without reducing range or damage.
-branch.glacier_subzero_battery.name,Subzero Battery,Subzero Battery
-branch.glacier_subzero_battery.desc,Cold Snap restores 6 ammo, capped by the current magazine.,Cold Snap restores 6 ammo, capped by the current magazine.
-branch.fire_pulse_aura.name,Fire Pulse Aura,Fire Pulse Aura
-branch.fire_pulse_aura.desc,"Periodically emits a fire pulse centered on the mech, scorching nearby enemies.","Periodically emits a fire pulse centered on the mech, scorching nearby enemies."
-branch.long_cone_flame.name,Long Cone Flame,Long Cone Flame
-branch.long_cone_flame.desc,Extends flamethrower cone reach for safer mid-range burn control.,Extends flamethrower cone reach for safer mid-range burn control.
-branch.laser_tracking_lens.name,Tracking Lens,Tracking Lens
-branch.laser_tracking_lens.desc,"Laser beams independently correct up to 15 degrees toward nearby enemies. With Prism Splitter, each beam tracks its own target without damage loss.","Laser beams independently correct up to 15 degrees toward nearby enemies. With Prism Splitter, each beam tracks its own target without damage loss."
-branch.laser_prism_splitter.name,Prism Splitter,Prism Splitter
-branch.laser_prism_splitter.desc,"Laser shots split into a central beam and two angled prism beams, allowing one shot to sweep multiple lanes.","Laser shots split into a central beam and two angled prism beams, allowing one shot to sweep multiple lanes."
-branch.shield_mg.name,Shield Machine Gun,Shield Machine Gun
-branch.shield_mg.desc,Deploys a frontal shield that blocks hostile shots and interrupts enemy movement.,Deploys a frontal shield that blocks hostile shots and interrupts enemy movement.
-branch.gatling_mg.name,Gatling Thermal,Gatling Thermal
-branch.gatling_mg.desc,"Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup.","Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup."
-branch.energy_orbit.name,Energy Orbit,Energy Orbit
+branch.glacier_whiteout_expansion.name,Whiteout Expansion,白障扩张
+branch.glacier_whiteout_expansion.desc,Glacier Projector cone angle expands by 20% without reducing range or damage.,冰川投射器的锥形角度扩大 20%，且不会降低射程或伤害。
+branch.glacier_subzero_battery.name,Subzero Battery,零下电池
+branch.glacier_subzero_battery.desc,Cold Snap restores 6 ammo, capped by the current magazine.,冷冽回响恢复 6 发弹药，但不会超过当前弹匣上限。
+branch.fire_pulse_aura.name,Fire Pulse Aura,火焰脉冲光环
+branch.fire_pulse_aura.desc,"Periodically emits a fire pulse centered on the mech, scorching nearby enemies.","以机甲为中心周期性释放火焰脉冲，灼烧附近敌人。"
+branch.long_cone_flame.name,Long Cone Flame,长锥烈焰
+branch.long_cone_flame.desc,Extends flamethrower cone reach for safer mid-range burn control.,延长喷火器的锥形射程，以便在更安全的中距离进行燃烧控制。
+branch.laser_tracking_lens.name,Tracking Lens,追踪透镜
+branch.laser_tracking_lens.desc,"Laser beams independently correct up to 15 degrees toward nearby enemies. With Prism Splitter, each beam tracks its own target without damage loss.","每道激光会独立向附近敌人修正最多 15 度；与棱镜分光器组合时，每道光束各自追踪目标且不损失伤害。"
+branch.laser_prism_splitter.name,Prism Splitter,棱镜分光器
+branch.laser_prism_splitter.desc,"Laser shots split into a central beam and two angled prism beams, allowing one shot to sweep multiple lanes.","激光射击分裂为一道中央光束和两道斜向棱镜光束，使单次射击能够横扫多条路线。"
+branch.shield_mg.name,Shield Machine Gun,护盾机枪
+branch.shield_mg.desc,Deploys a frontal shield that blocks hostile shots and interrupts enemy movement.,部署一面正面护盾，阻挡敌方弹幕并打断敌人的移动。
+branch.gatling_mg.name,Gatling Thermal,热能加特林
+branch.gatling_mg.desc,"Thermal twin-barrel retrofit for Machine Gun: faster cadence, split lanes, and extra heat buildup.","机枪的热能双管改装：射速更快、弹道分流，并积累更多热量。"
+branch.energy_orbit.name,Energy Orbit,能量轨道
 branch.energy_orbit.desc,"Satellite hits become Energy damage and grant 8 global energy per event; full-energy deployment adds 2 satellites and extends lifetime by 50%.","卫星命中转化为能量伤害，每次获得 8 点全局能量；满能量部署额外增加 2 枚卫星并延长 50% 持续时间。"
-branch.frost_orbit.name,Frost Orbit,Frost Orbit
-branch.frost_orbit.desc,Orbit hits become freeze damage and apply a small player-to-target knockback.,Orbit hits become freeze damage and apply a small player-to-target knockback.
-branch.arc_coil.name,Arc Coil,Arc Coil
+branch.frost_orbit.name,Frost Orbit,霜冻轨道
+branch.frost_orbit.desc,Orbit hits become freeze damage and apply a small player-to-target knockback.,轨道卫星的命中转化为冻结伤害，并沿玩家到目标的方向施加小幅击退。
+branch.arc_coil.name,Arc Coil,电弧线圈
 branch.arc_coil.desc,"Energy propagation branch: shots grant 12 global energy per event; full-energy fire gains +15% direct damage and chains 45% damage to 3 nearby enemies.","能量传播分支：每次命中获得 12 点全局能量；满能量射击获得 15% 直接增伤，并向附近最多 3 个敌人连锁 45% 伤害。"
-branch.cryo_carbine.name,Cryo Carbine,Cryo Carbine
-branch.cryo_carbine.desc,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.
-branch.napalm_rocket.name,Napalm Rocket,Napalm Rocket
-branch.napalm_rocket.desc,Explosions persist as burning zones for area denial and grouped enemy cleanup.,Explosions persist as burning zones for area denial and grouped enemy cleanup.
-branch.salvo_rocket.name,Salvo Rocket,Salvo Rocket
-branch.salvo_rocket.desc,Fires a spread of reduced-damage rockets to saturate a wider enemy group.,Fires a spread of reduced-damage rockets to saturate a wider enemy group.
-branch.shatter_buckshot.name,Shatter Buckshot,Shatter Buckshot
-branch.shatter_buckshot.desc,Freeze pellets can shatter targets after rapid multi-hit bursts.,Freeze pellets can shatter targets after rapid multi-hit bursts.
+branch.cryo_carbine.name,Cryo Carbine,低温卡宾枪
+branch.cryo_carbine.desc,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.,冻结分支：射击施加冻结，每第三次命中会向附近敌人释放一枚冰片。
+branch.plasma_overcharge_lance.name,Overcharge Lance,过载长枪
+branch.plasma_overcharge_lance.desc,"Sustained Heat branch: firing above 70% heat builds timed Overcharge stacks, rewarding continued high-heat operation with more damage.","持续热量分支：热量高于 70% 时射击会积累有时限的过载层数，以更高伤害奖励持续高热运转。"
+branch.plasma_piercing_lance.name,Piercing Lance,穿透长枪
+branch.plasma_piercing_lance.desc,"Projectile branch: restores high pierce and increases damage after each pierce, favoring lined-up multi-target fights over burst Heat spending.","投射物分支：恢复高穿透能力，并在每次穿透后提高伤害；相比爆发式消耗热量，更适合对付排成一线的多个目标。"
+branch.napalm_rocket.name,Napalm Rocket,凝固汽油火箭
+branch.napalm_rocket.desc,Explosions persist as burning zones for area denial and grouped enemy cleanup.,爆炸会留下持续燃烧区域，用于封锁地面并清理成群敌人。
+branch.salvo_rocket.name,Salvo Rocket,齐射火箭
+branch.salvo_rocket.desc,Fires a spread of reduced-damage rockets to saturate a wider enemy group.,散射多枚低伤害火箭，以火力覆盖更大范围的敌群。
+branch.shatter_buckshot.name,Shatter Buckshot,碎冰霰弹
+branch.shatter_buckshot.desc,Freeze pellets can shatter targets after rapid multi-hit bursts.,冻结弹丸在短时间内多次命中后可粉碎目标。
 branch.shotgun_double_breach.name,Double Breach,双管破门
 branch.shotgun_double_breach.desc,"Spends 2 ammo to fire two reduced-damage pellet waves; the tighter delayed wave applies short vulnerability after repeated hits.","消耗 2 发弹药发射两轮低倍率霰弹；更集中的延迟第二轮在重复命中后施加短时易伤。"
-branch.sniper_deep_pierce.name,Deep Pierce,Deep Pierce
-branch.sniper_deep_pierce.desc,Each pierce increases projectile damage for the remaining hits.,Each pierce increases projectile damage for the remaining hits.
-branch.sniper_impact_burst.name,Impact Burst,Impact Burst
-branch.sniper_impact_burst.desc,Sniper hits trigger physical burst damage around the target.,Sniper hits trigger physical burst damage around the target.
-branch.spear_multi_pierce.name,Multi-Pierce,Multi-Pierce
-branch.spear_multi_pierce.desc,Fires 3-5 spears in a spread pattern. Each spear deals reduced damage.,Fires 3-5 spears in a spread pattern. Each spear deals reduced damage.
-branch.spear_rending.name,Rending Thrust,Rending Thrust
-branch.spear_rending.desc,Repeated hits on the same target increase damage. Resets after a time window.,Repeated hits on the same target increase damage. Resets after a time window.
+branch.sniper_deep_pierce.name,Deep Pierce,深层穿透
+branch.sniper_deep_pierce.desc,Each pierce increases projectile damage for the remaining hits.,每穿透一个目标，投射物后续命中的伤害都会提高。
+branch.sniper_impact_burst.name,Impact Burst,冲击爆裂
+branch.sniper_impact_burst.desc,Sniper hits trigger physical burst damage around the target.,狙击命中会在目标周围触发范围物理爆裂伤害。
+branch.spear_multi_pierce.name,Multi-Pierce,多重穿刺
+branch.spear_multi_pierce.desc,Fires 3-5 spears in a spread pattern. Each spear deals reduced damage.,以扇形发射 3 至 5 根长矛，每根长矛造成较低伤害。
+branch.spear_rending.name,Rending Thrust,撕裂突刺
+branch.spear_rending.desc,Repeated hits on the same target increase damage. Resets after a time window.,重复命中同一目标会提高伤害；超过时间窗口后重置。
 module.wmod_base.name,Base Module,基础模组
 module.wmod_brittle_trigger_freeze.name,Brittle Trigger,脆化触发器
 module.wmod_bullet_size_stat.name,Size Up,弹体增幅

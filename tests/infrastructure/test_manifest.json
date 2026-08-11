@@ -594,6 +594,16 @@
       "timeout_seconds": 15
     },
     {
+      "id": "reward.module_install_queue",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/reward/module_reward_install_queue_test.tscn",
+      "domain": "reward",
+      "dependency_domains": ["ui", "player", "weapon"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 30
+    },
+    {
       "id": "reward.task_reward_bundle",
       "entry_type": "scene",
       "path": "res://tests/scenes/reward/task_reward_bundle_test.tscn",

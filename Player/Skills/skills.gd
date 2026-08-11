@@ -49,6 +49,7 @@ func _on_player_active_skill_requested() -> void:
 	if not _pay_energy_cost():
 		return
 	activate_skill()
+	_player.player_skill_activated.emit(self)
 	if cooldown > 0.0:
 		_start_cooldown()
 

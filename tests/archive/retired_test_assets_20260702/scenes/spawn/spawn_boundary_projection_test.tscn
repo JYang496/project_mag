@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://tests/headless/spawn/run_spawn_boundary_projection_test_headless.gd" id="1"]
-
-[node name="SpawnBoundaryProjectionTest" type="Node"]
-script = ExtResource("1")

@@ -1,17 +1,47 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://dbu2hy0byq10p"]
 
-[ext_resource type="Script" path="res://tests/showcases/ui/heat_accessibility_showcase.gd" id="1"]
+[sub_resource type="GDScript" id="GDScript_hghon"]
+script/source = "extends Control
 
-[node name="HeatAccessibilityShowcase" type="Control"]
+const STATES := [
+	{\"title\": \"COLD / FIRE RATE UP\", \"ratio\": 0.12, \"state\": &\"extreme_cold\", \"value\": \"-76\"},
+	{\"title\": \"NEUTRAL / BALANCED\", \"ratio\": 0.50, \"state\": &\"neutral\", \"value\": \"0\"},
+	{\"title\": \"HOT / DAMAGE UP\", \"ratio\": 0.88, \"state\": &\"extreme_heat\", \"value\": \"+76\"},
+]
+
+func _ready() -> void:
+	for index in STATES.size():
+		var entry: Dictionary = STATES[index]
+		var panel := VBoxContainer.new()
+		panel.position = Vector2(205.0 + index * 330.0, 190.0)
+		panel.add_theme_constant_override(\"separation\", 18)
+		add_child(panel)
+
+		var title := Label.new()
+		title.text = entry.title
+		title.custom_minimum_size = Vector2(250.0, 32.0)
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title.add_theme_font_size_override(\"font_size\", 18)
+		panel.add_child(title)
+
+		var meter := CombatResourceMeter.new()
+		meter.set_resource(CombatResourceMeter.MODE_HEAT, 0.5, &\"neutral\", \"0\")
+		panel.add_child(meter)
+		meter.set_resource(CombatResourceMeter.MODE_HEAT, entry.ratio, entry.state, entry.value)
+
+"
+
+[node name="HeatAccessibilityShowcase" type="Control" unique_id=897014447]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1")
+script = SubResource("GDScript_hghon")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1127454673]
+show_behind_parent = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,9 +50,9 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(0.018, 0.027, 0.04, 1)
-show_behind_parent = true
 
-[node name="Heading" type="Label" parent="."]
+[node name="Heading" type="Label" parent="." unique_id=1371354858]
+layout_mode = 0
 offset_left = 240.0
 offset_top = 82.0
 offset_right = 1040.0
@@ -32,7 +62,8 @@ theme_override_font_sizes/font_size = 30
 text = "HEAT HUD — COLOR-INDEPENDENT STATUS"
 horizontal_alignment = 1
 
-[node name="Legend" type="Label" parent="."]
+[node name="Legend" type="Label" parent="." unique_id=1676262538]
+layout_mode = 0
 offset_left = 260.0
 offset_top = 500.0
 offset_right = 1020.0

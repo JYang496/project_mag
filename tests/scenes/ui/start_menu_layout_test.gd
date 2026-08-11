@@ -3,6 +3,7 @@ extends Node
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 const START_SCENE := preload("res://World/Start.tscn")
 const BACKDROP_SCRIPT := preload("res://UI/scripts/components/start_menu_backdrop.gd")
+const START_BACKGROUND_TEXTURE := preload("res://UI/themes/modern/start_menu_background.png")
 
 var _failed := false
 var _menu: Node
@@ -15,6 +16,7 @@ func _ready() -> void:
 	await get_tree().create_timer(0.48).timeout
 	_test_landing_geometry()
 	_test_landing_hierarchy()
+	_test_background_asset()
 	_test_backdrop_semantics()
 	await _test_preview_handoff_lifecycle()
 	await _test_settings_geometry()
@@ -50,6 +52,28 @@ func _test_landing_hierarchy() -> void:
 	_expect(_menu.find_children("*", "CharacterBody2D", true, false).is_empty(), "lightweight menu preview must not instantiate the live player")
 	_expect(_menu.find_children("*", "Area2D", true, false).is_empty(), "lightweight menu preview must not create rest-area physics")
 	_expect(get_tree().get_nodes_in_group(&"rest_area").is_empty(), "menu prewarm must cache resources without instantiating the World rest area")
+
+
+func _test_background_asset() -> void:
+	var background := _menu.get_node("CanvasLayer/GUI/Background") as TextureRect
+	_expect(background != null, "start menu background must be image-backed")
+	_expect(background != null and background.texture == START_BACKGROUND_TEXTURE, "start menu must bind the noise-free background texture")
+	var image := START_BACKGROUND_TEXTURE.get_image()
+	_expect(image != null and image.get_size() == Vector2i(1280, 720), "start menu background texture must match the logical canvas")
+	if image == null:
+		return
+	var expected := Color8(8, 16, 24, 255)
+	var pixel_count := image.get_width() * image.get_height()
+	var pixels := image.get_data()
+	var uniform := (
+		image.get_pixel(0, 0) == expected
+			and pixels.size() == pixel_count * 4
+			and pixels.count(8) == pixel_count
+			and pixels.count(16) == pixel_count
+			and pixels.count(24) == pixel_count
+			and pixels.count(255) == pixel_count
+	)
+	_expect(uniform, "start menu background texture must remain fully opaque and free of pixel noise")
 
 
 func _test_backdrop_semantics() -> void:

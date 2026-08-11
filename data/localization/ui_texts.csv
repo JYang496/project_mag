@@ -335,6 +335,11 @@ ui.reward.outcome.weapon_obtain,Obtain new weapon,获得新武器
 ui.reward.outcome.module_obtain,Added to temporary modules,已加入临时模组
 ui.reward.outcome.resource,Added to resources,已加入资源
 ui.module.title,Equip Module,装备模组
+ui.module.terminal,Module Assembly Terminal,模组装配终端
+ui.module.panel_hint,Choose a compatible weapon to install the module.,选择兼容武器安装当前模组。
+ui.module.fit.title,Fit Check,适配检查
+ui.module.choose_weapon,Choose Weapon,选择装备武器
+ui.module.choose_weapon_hint,Choose a weapon to install this module.,选择一把武器安装该模组。
 ui.module.no_effect,No direct stat changes.,无直接属性变化。
 ui.module.effects,Effects: {effects},效果：{effects}
 ui.module.section.equipped,Equipped Weapons,已装备武器
@@ -367,12 +372,26 @@ ui.weapon.replace.action_equip,Equip,装备
 ui.weapon.replace.slot,Slot {slot}: {old} -> {new},槽位 {slot}：{old} → {new}
 ui.weapon.replace.empty_slot,Slot {slot}: Empty,槽位 {slot}：空
 ui.module.compatible,Compatible,兼容
+ui.module.selected_weapon,Selected weapon: {weapon},所选武器：{weapon}
+ui.module.no_compatible_weapons,No compatible weapon,没有兼容的武器
+ui.module.reward_cancel.title,Store Module,保留模组
+ui.module.reward_cancel.confirm,Cancel installation and keep this module in the module warehouse?,取消安装并将该模组保留在模组仓库中？
+ui.module.reward_cancel.store,Store Module,存入仓库
+ui.module.reward_cancel.back,Return,返回
+ui.module.fit.trigger,Trigger: Weapon hit,触发条件：武器命中
+ui.module.fit.count,Compatible weapons: {compatible} / {total},兼容武器：{compatible} / {total}
+ui.module.fit.incompatible_short,Incompatible,不兼容
+ui.module.fit.ready,Ready to install,可立即安装
+ui.module.tooltip.tags,Tags: {tags},标签：{tags}
+ui.module.fit.general,All weapon types,适用武器：全部
 ui.module.replace_available,Compatible after replacing an installed module.,替换一个已安装模组后兼容。
 ui.module.cannot_equip,Cannot equip: {reason},无法装备：{reason}
 ui.module.equipped_modules_none,Equipped modules: none,已装备模组：无
 ui.module.equipped_modules,Equipped modules: {modules},已装备模组：{modules}
+ui.module.equipped_modules_prefix,Equipped modules:,已装备模组：
 ui.module.stat_changes_none,Stat changes: none,属性变化：无
 ui.module.stat_changes,Stat changes: {changes},属性变化：{changes}
+ui.module.stat_changes_prefix,Stat changes:,属性变化：
 ui.module.equipped_message,Equipped {module} Lv.{level} to {weapon},已将 {module} Lv.{level} 装备到 {weapon}
 ui.module.removed_message,Removed {module} from {weapon},已从 {weapon} 卸下 {module}
 ui.module.empty,Empty,空

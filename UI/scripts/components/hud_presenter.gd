@@ -422,16 +422,26 @@ func _sync_primary_resource_slot(slot: Dictionary) -> void:
 	var state := StringName(str(slot.get("state", "normal")))
 	var text := str(slot.get("short_text", slot.get("text", "")))
 	primary_resource_meter.call("set_resource", resource_type, ratio, state, text, tooltip)
-	primary_resource_meter.modulate.a = 1.0 if resource_type == &"heat" else SPECIAL_RESOURCE_OPACITY
-	primary_resource_meter.visible = true
+	var target_opacity := 1.0 if resource_type == &"heat" else SPECIAL_RESOURCE_OPACITY
+	var is_hiding: bool = primary_resource_meter.has_method("is_hiding_animated") \
+		and bool(primary_resource_meter.call("is_hiding_animated"))
+	if (not primary_resource_meter.visible or is_hiding) and primary_resource_meter.has_method("show_animated"):
+		primary_resource_meter.call("show_animated", target_opacity)
+	elif primary_resource_meter.has_method("set_display_opacity"):
+		primary_resource_meter.call("set_display_opacity", target_opacity)
+	else:
+		primary_resource_meter.modulate.a = target_opacity
+		primary_resource_meter.visible = true
 	if heat_label and is_instance_valid(heat_label):
 		heat_label.visible = false
 		heat_label.text = ""
 
 func _hide_primary_resource_slot() -> void:
 	if primary_resource_meter and is_instance_valid(primary_resource_meter):
-		primary_resource_meter.call("set_resource", &"ammo", 0.0, &"normal", "", "")
-		primary_resource_meter.visible = false
+		if primary_resource_meter.has_method("hide_animated"):
+			primary_resource_meter.call("hide_animated")
+		else:
+			primary_resource_meter.visible = false
 	if heat_label and is_instance_valid(heat_label):
 		heat_label.visible = false
 	_last_heat_label_text = ""
@@ -451,6 +461,7 @@ func _ensure_primary_resource_meter() -> void:
 	primary_resource_meter.name = "SpecialResourceMeter"
 	primary_resource_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	primary_resource_meter.modulate.a = SPECIAL_RESOURCE_OPACITY
+	primary_resource_meter.visible = false
 	special_resource_slot_container.add_child(primary_resource_meter)
 
 func _sync_global_weapon_energy_meter() -> void:

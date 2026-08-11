@@ -4,6 +4,7 @@ const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 const HYBRID_VIEW := preload("res://Visual/Oblique/hybrid_ground_view_3d.gd")
 const AFFILIATION_MARKER := preload("res://Combat/visual/affiliation_marker.gd")
 const PLAYER_AMMO_HUD := preload("res://Player/Mechas/scripts/player_ammo_hud.gd")
+const PLAYER_SKILL_HUD := preload("res://Player/Mechas/scripts/player_skill_hud.gd")
 const ELITE_ROLLING_BALL := preload("res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn")
 const PLAYER_SCENE := preload("res://Player/Mechas/scenes/Player.tscn")
 const WEAPON_SCENE := preload("res://Player/Weapons/weapon_ranger.tscn")
@@ -330,42 +331,46 @@ func _expect_beacon_visual_respects_player(player: Node2D, view: Node) -> void:
 
 func _expect_player_ammo_arc_contract() -> void:
 	var hud := PLAYER_AMMO_HUD.new() as Control
-	hud.call("set_ammo_status", 7, 10, true)
-	_expect(hud.visible, "player ammo HUD must be visible for ammo-based weapons")
-	_expect(is_equal_approx(float(hud.call("get_ammo_ratio")), 0.7), "player ammo HUD must expose the current magazine ratio")
+	hud.call("set_reload_status", false, 0.0, 2.0, true)
+	_expect(not hud.visible, "player reload HUD must stay hidden while the current weapon is ready to fire")
+	hud.call("set_reload_status", true, 1.5, 2.0, true)
+	_expect(hud.visible, "player reload HUD must be visible while the current weapon is reloading")
+	_expect(is_equal_approx(float(hud.call("get_reload_ratio")), 0.25), "player reload HUD must expose elapsed reload progress")
 	_expect(hud.get("hud_size") == Vector2(128.0, 64.0), "player ammo HUD must retain a fixed screen-space drawing surface")
-	_expect(int(hud.get("segment_count")) == 4, "quarter-ring ammo HUD must keep four readable segments")
 	_expect(is_equal_approx(float(hud.get("ring_radius_scale")), 1.30), "quarter-ring ammo HUD must preserve a visible gap outside the affiliation ring")
+	_expect(is_equal_approx(float(hud.get("fade_duration_sec")), 0.15), "reload HUD transitions must use a brief non-blocking fade")
 	var sample_track := PackedVector2Array([Vector2(10.0, 0.0), Vector2(10.0, 10.0), Vector2(0.0, 10.0)])
-	var half_fill := hud.call("_build_fill_points", sample_track, 0.5) as PackedVector2Array
-	_expect(half_fill.size() == 2 and half_fill[0] == sample_track[1] and half_fill[-1] == sample_track[-1], "ammo fill must remain anchored at the left 90-degree end while draining from the right")
-	var vertical_geometry := hud.call("_get_vertical_geometry", sample_track) as Dictionary
-	var frame_rect := vertical_geometry.get("rect") as Rect2
-	_expect(frame_rect.get_center().is_equal_approx(Vector2(72.0, -34.0)), "vertical ammo frame must remain offset toward the player's upper-right HUD quadrant")
-	_expect(frame_rect.size == Vector2(10.0, 36.0), "vertical ammo frame must stack four equal-height cells")
-	var slot_polygons := hud.call("_get_vertical_slot_polygons", vertical_geometry) as Array
-	_expect(slot_polygons.size() == 4, "procedural vertical ammo frame must provide four visible cells")
-	var half_levels := hud.call("_get_slot_fill_levels", 0.5, 4) as PackedFloat32Array
-	_expect(half_levels == PackedFloat32Array([0.0, 0.0, 1.0, 1.0]), "half ammo must illuminate two cells beginning at the vertical start")
-	var partial_levels := hud.call("_get_slot_fill_levels", 0.625, 4) as PackedFloat32Array
-	_expect(partial_levels == PackedFloat32Array([0.0, 0.5, 1.0, 1.0]), "fractional ammo must advance from the vertical start toward the horizontal end")
-	var ribbon := hud.call("_build_ribbon_polygon", sample_track, 4.0) as PackedVector2Array
-	_expect(ribbon.size() == 6 and is_equal_approx(ribbon[0].y, ribbon[-1].y), "right 0-degree endpoint must use an upward-facing horizontal square cut")
-	var collapsed_ribbon := hud.call(
-		"_build_ribbon_polygon",
-		PackedVector2Array([Vector2(10.0, 10.0), Vector2(10.0, 10.0)]),
-		4.0,
-	) as PackedVector2Array
-	_expect(
-		not bool(hud.call("_is_drawable_polygon", collapsed_ribbon)),
-		"collapsed projected ammo paths must be rejected before renderer triangulation",
-	)
-	hud.call("set_ammo_status", 0, 10, true)
-	_expect(hud.visible, "empty magazines must preserve the visible ammo track")
-	_expect(is_zero_approx(float(hud.call("get_ammo_ratio"))), "empty magazines must expose zero fill")
-	hud.call("set_ammo_status", 5, 10, false)
-	_expect(not hud.visible, "non-ammo weapons must hide the ammo HUD")
+	var frame_rect := hud.call("_get_reload_bar_rect", sample_track) as Rect2
+	_expect(frame_rect.get_center().is_equal_approx(Vector2(64.0, 74.0)), "reload bar must be centered below the player's ground anchor")
+	_expect(frame_rect.size == Vector2(52.0, 6.0), "reload progress bar must use a compact horizontal footprint")
+	var reload_icon_rect := hud.call("get_reload_icon_rect", frame_rect) as Rect2
+	_expect(reload_icon_rect.size == Vector2(10.0, 10.0), "reload HUD must provide a readable compact semantic icon")
+	_expect(is_equal_approx(reload_icon_rect.end.x, frame_rect.position.x - 4.0), "reload icon must remain separated to the left of its bar")
+	_expect(hud.call("get_reload_icon_texture") is Texture2D, "reload HUD must use an imported image texture")
+	hud.call("set_reload_status", true, 0.0, 2.0, true)
+	_expect(is_equal_approx(float(hud.call("get_reload_ratio")), 1.0), "completed reload timing must fill the progress bar")
+	hud.call("set_reload_status", true, 1.0, 2.0, false)
+	_expect(not hud.visible, "weapons without an ammo system must hide the reload HUD")
 	hud.free()
+	var skill_hud := PLAYER_SKILL_HUD.new() as Control
+	_expect(not skill_hud.visible, "player skill HUD must remain hidden before a successful skill activation")
+	skill_hud.call("show_skill_feedback")
+	_expect(skill_hud.visible, "player skill HUD must become visible after a successful skill activation")
+	_expect(is_equal_approx(float(skill_hud.get("hold_duration_sec")), 2.0), "player skill feedback must remain readable for two seconds")
+	skill_hud.call("set_energy", 25.0, 100.0)
+	_expect(is_equal_approx(float(skill_hud.call("get_energy_ratio")), 0.25), "player skill HUD must expose the current runtime energy ratio")
+	skill_hud.call("set_energy", 75.0, 100.0)
+	_expect(is_equal_approx(float(skill_hud.call("get_energy_ratio")), 0.75), "player skill HUD must refresh when runtime energy changes")
+	var skill_rect := skill_hud.call("get_skill_slot_rect") as Rect2
+	_expect(skill_rect.get_center().is_equal_approx(Vector2(64.0, 86.0)), "player skill slot must be centered below the reload bar")
+	_expect(skill_rect.size == Vector2(52.0, 6.0), "player skill slot must use a simplified horizontal energy bar")
+	var skill_icon_rect := skill_hud.call("get_skill_icon_rect", skill_rect) as Rect2
+	_expect(skill_icon_rect.size == Vector2(10.0, 10.0), "skill HUD must provide a readable compact semantic icon")
+	_expect(is_equal_approx(skill_icon_rect.end.x, skill_rect.position.x - 4.0), "skill icon must remain separated to the left of its bar")
+	_expect(skill_hud.call("get_skill_icon_texture") is Texture2D, "skill HUD must use an imported image texture")
+	skill_hud.call("_finish_feedback")
+	_expect(not skill_hud.visible, "player skill HUD must hide after its feedback sequence completes")
+	skill_hud.free()
 
 
 func _expect_marker_matches_ground(marker: Node2D, owner: Node2D, view: Node) -> void:

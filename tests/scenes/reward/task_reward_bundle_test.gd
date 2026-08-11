@@ -118,7 +118,7 @@ func _ready() -> void:
 	panel.call("_begin_quick_select_hold", 1)
 	assert(panel.get("_selected_index") == 1)
 	var held_progress := (panel.options_box.get_child(1) as Button).find_child("HoldProgress", true, false) as ProgressBar
-	assert(not previous_progress.visible and is_zero_approx(previous_progress.value))
+	assert(previous_progress.visible and is_zero_approx(previous_progress.value))
 	assert(held_progress != null and held_progress.visible and is_zero_approx(held_progress.value))
 	assert(panel.get("_held_quick_select_index") == 1)
 	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS - 0.05)
@@ -126,7 +126,7 @@ func _ready() -> void:
 	assert(held_progress.value > 0.8 and held_progress.value < 1.0)
 	panel.call("_cancel_quick_select_hold")
 	assert(panel.visible)
-	assert(not held_progress.visible and is_zero_approx(held_progress.value))
+	assert(held_progress.visible and is_zero_approx(held_progress.value))
 	panel.call("_begin_quick_select_hold", 1)
 	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS)
 	assert(not panel.visible)

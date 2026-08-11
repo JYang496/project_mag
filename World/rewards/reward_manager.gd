@@ -428,8 +428,16 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 		var module_instance := reward.module_scene.instantiate() as Module
 		if module_instance:
 			module_instance.set_module_level(_sanitize_module_level(int(reward.module_level)))
-			InventoryData.obtain_module(module_instance)
-			granted_any = true
+			var obtain_result := InventoryData.obtain_module(module_instance)
+			granted_any = bool(obtain_result.get("ok", false))
+			var obtained_module := obtain_result.get("module", null) as Module
+			var ui = GlobalVariables.ui
+			if granted_any and str(obtain_result.get("result", "")) == "stored" \
+					and obtained_module != null \
+					and InventoryData.can_assign_module_to_any_equipped_weapon(obtained_module, true) \
+					and ui != null and is_instance_valid(ui) \
+					and ui.has_method("request_module_pickup_selection"):
+				ui.request_module_pickup_selection(obtained_module)
 	if granted_any:
 		_show_reward_granted_message(reward)
 	return granted_any

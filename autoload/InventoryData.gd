@@ -308,6 +308,27 @@ func get_weapon_module_assignment_feedback(
 		return {"ok": false, "reason": reason}
 	return {"ok": true, "reason": ""}
 
+func can_assign_module_to_any_equipped_weapon(
+	module_instance: Module,
+	allow_reward_transaction: bool = false
+) -> bool:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return false
+	for weapon_ref in PlayerData.player_weapon_list:
+		var weapon := weapon_ref as Weapon
+		if weapon == null or not is_instance_valid(weapon):
+			continue
+		if bool(get_weapon_module_assignment_feedback(
+			module_instance, weapon, null, allow_reward_transaction
+		).get("ok", false)):
+			return true
+		for equipped_module in weapon.get_equipped_modules():
+			if bool(get_weapon_module_assignment_feedback(
+				module_instance, weapon, equipped_module, allow_reward_transaction
+			).get("ok", false)):
+				return true
+	return false
+
 func equip_module_to_weapon(
 	module_instance: Module,
 	weapon: Weapon,
