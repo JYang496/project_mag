@@ -509,7 +509,10 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		header.add_child(_make_reward_icon(card_data, Vector2(72.0, 72.0), 7))
 		header.add_child(text_box)
 
-	var name_label := _make_card_label(str(card_data.get("title", "Reward")), TOKENS.FONT_BUTTON, TOKENS.COLOR_TEXT_PRIMARY)
+	var display_title := str(card_data.get("title", "Reward")).strip_edges()
+	if is_weapon_visual_reward:
+		display_title = _weapon_reward_display_name(reward, display_title)
+	var name_label := _make_card_label(display_title, TOKENS.FONT_BUTTON, TOKENS.COLOR_TEXT_PRIMARY)
 	var summary_count := int(reward.get_meta("summary_count", 1))
 	if _summary_mode and summary_count > 1:
 		name_label.text += " " + LocalizationManager.tr_format(
@@ -522,6 +525,9 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.custom_minimum_size = Vector2(0.0, 24.0 if is_weapon_visual_reward else 38.0)
 	if is_weapon_visual_reward:
+		name_label.name = "WeaponRewardName"
+		name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	text_box.add_child(name_label)
 
@@ -530,6 +536,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	var meta_label := _make_card_label(level_text if level_text != "" else meta_text, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_SECONDARY)
 	meta_label.clip_text = true
 	if is_weapon_visual_reward:
+		meta_label.name = "WeaponLevelLabel"
 		meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	text_box.add_child(meta_label)
 
@@ -1011,6 +1018,27 @@ func _derive_level_text(reward: RewardInfo, data: Dictionary) -> String:
 	if reward.module_scene:
 		return "Lv.%d" % max(1, reward.module_level)
 	return ""
+
+func _weapon_reward_display_name(reward: RewardInfo, fallback_title: String) -> String:
+	if reward != null:
+		if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+			var target_name := reward.target_weapon_name.strip_edges()
+			if target_name != "":
+				return target_name
+			var target_id := reward.target_weapon_id.strip_edges()
+			if target_id != "":
+				var localized_target := LocalizationManager.get_weapon_name_by_id(target_id, "").strip_edges()
+				if localized_target != "":
+					return localized_target
+		var item_id := reward.item_id.strip_edges()
+		if item_id != "":
+			var localized_item := LocalizationManager.get_weapon_name_by_id(item_id, "").strip_edges()
+			if localized_item != "":
+				return localized_item
+	var normalized_fallback := fallback_title.strip_edges()
+	if normalized_fallback != "":
+		return normalized_fallback
+	return LocalizationManager.tr_key("ui.branch.weapon", "Weapon")
 
 func _fallback_detail_bullets(reward: RewardInfo) -> PackedStringArray:
 	if reward == null:

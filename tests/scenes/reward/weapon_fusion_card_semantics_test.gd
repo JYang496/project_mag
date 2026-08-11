@@ -55,10 +55,18 @@ func _run() -> void:
 	var weapon_hero := rendered_new_card.find_child("WeaponRewardHero", true, false) as CenterContainer
 	var hero_image := rendered_new_card.find_child("WeaponHeroImage", true, false) as Control
 	var hero_texture := rendered_new_card.find_child("RewardIconTexture", true, false) as TextureRect
+	var new_weapon_name := rendered_new_card.find_child("WeaponRewardName", true, false) as Label
+	var new_weapon_level := rendered_new_card.find_child("WeaponLevelLabel", true, false) as Label
 	if weapon_hero == null or weapon_hero.custom_minimum_size.y < 80.0:
 		_fail("new weapon card should reserve a centered hero image stage")
 	if hero_image == null or hero_image.custom_minimum_size.x < 130.0 or hero_image.custom_minimum_size.y < 74.0:
 		_fail("new weapon card hero image should be materially larger than the legacy 56px icon")
+	if new_weapon_name == null or new_weapon_name.text.strip_edges() == "":
+		_fail("new weapon card should show its weapon name below the hero image")
+	elif new_weapon_name.horizontal_alignment != HORIZONTAL_ALIGNMENT_CENTER or new_weapon_name.autowrap_mode != TextServer.AUTOWRAP_OFF:
+		_fail("weapon names should use the centered single-line slot below the hero image")
+	elif new_weapon_level == null or new_weapon_name.get_parent() != new_weapon_level.get_parent() or new_weapon_name.get_index() >= new_weapon_level.get_index():
+		_fail("weapon names should remain between the hero image and level text")
 	if hero_texture == null or hero_texture.texture_filter != CanvasItem.TEXTURE_FILTER_NEAREST:
 		_fail("weapon hero should preserve nearest-neighbor pixel presentation")
 	var behavior_summary := rendered_new_card.find_child("BehaviorSummary", true, false) as Label
@@ -109,10 +117,13 @@ func _run() -> void:
 	if upgrade_summary == "" or upgrade_summary == "Lv." or upgrade_summary.begins_with("Lv."):
 		_fail("weapon upgrade summary should use weapon behavior copy instead of the level range")
 	var rendered_upgrade_card := panel.call("_build_reward_card_button", upgrade_reward, 1) as Button
+	var upgrade_weapon_name := rendered_upgrade_card.find_child("WeaponRewardName", true, false) as Label
 	var rendered_upgrade_lines := rendered_upgrade_card.find_children("CoreStat*", "VBoxContainer", true, false)
 	var expected_upgrade_lines := upgrade_data.get("core_stat_lines", PackedStringArray()) as PackedStringArray
 	if rendered_upgrade_lines.size() != 3 or expected_upgrade_lines.size() != 3:
 		_fail("weapon upgrade card should retain three fixed core-stat slots")
+	if upgrade_weapon_name == null or upgrade_weapon_name.text != "Machine Gun":
+		_fail("weapon upgrade card should show the target weapon name below the hero image")
 	for line in rendered_upgrade_lines:
 		var value_label := (line as VBoxContainer).get_node("Value") as Label
 		var line_text := value_label.text

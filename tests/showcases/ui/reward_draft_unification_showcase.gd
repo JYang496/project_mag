@@ -73,6 +73,9 @@ func _validate_showcase() -> void:
 		var card := _panel.options_box.get_child(index) as Button
 		assert(card.tooltip_text == "")
 		assert(card.find_child("RewardIcon", true, false) != null or card.find_child("WeaponHeroImage", true, false) != null)
+		if card.find_child("WeaponHeroImage", true, false) != null:
+			var weapon_name := card.find_child("WeaponRewardName", true, false) as Label
+			assert(weapon_name != null and weapon_name.text.strip_edges() != "")
 		assert(card.focus_neighbor_left != NodePath("") and card.focus_neighbor_right != NodePath(""))
 	(_panel.options_box.get_child(1) as Button).grab_focus()
 	await get_tree().process_frame
