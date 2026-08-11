@@ -39,12 +39,9 @@ var distance_mouse_player = 0
 const TARGET_MECHA_SIZE = Vector2(96,96)
 const MOVE_ANIMATION_TOP: StringName = &"move_top"
 const MOVE_ANIMATION_BOTTOM: StringName = &"move_bottom"
-const MECHA_DIRECTION_TEXTURES := {
-	"top_left": preload("res://asset/images/characters/pixel/idle_top.png"),
-	"bottom_left": preload("res://asset/images/characters/pixel/idle_bottom.png"),
-	"top_right": preload("res://asset/images/characters/pixel/idle_top.png"),
-	"bottom_right": preload("res://asset/images/characters/pixel/idle_bottom.png"),
-}
+const DEFAULT_MECHA_IDLE_TOP_TEXTURE := preload("res://asset/images/characters/pixel/idle_top.png")
+const DEFAULT_MECHA_IDLE_BOTTOM_TEXTURE := preload("res://asset/images/characters/pixel/idle_bottom.png")
+const DEFAULT_MECHA_MOVE_SPRITE_FRAMES := preload("res://Player/Mechas/animations/mecha_move_frames.tres")
 var current_mecha_direction := ""
 const ORBIT_RADIUS := Vector2(45, 30)
 const ORBIT_ACCEL := 16.0
@@ -119,6 +116,9 @@ const PixelArtPolicyType := preload("res://Visual/pixel_art_policy.gd")
 @export var mecha_scale_reference_pixel_height: float = PixelArtPolicyType.PLAYER_REFERENCE_HEIGHT_PX
 @export var idle_mecha_scale_multiplier: float = 1.0
 @export var move_animation_scale_multiplier: float = 1.0
+@export var mecha_idle_top_texture: Texture2D = DEFAULT_MECHA_IDLE_TOP_TEXTURE
+@export var mecha_idle_bottom_texture: Texture2D = DEFAULT_MECHA_IDLE_BOTTOM_TEXTURE
+@export var mecha_move_sprite_frames: SpriteFrames = DEFAULT_MECHA_MOVE_SPRITE_FRAMES
 @export var face_axis_hysteresis: float = 0.08
 @export var face_min_distance_px: float = 6.0
 @export var move_anim_y_hysteresis: float = 0.08
@@ -237,6 +237,7 @@ func _ready():
 	if _active_skill_runtime != null:
 		_active_skill_runtime.reset_energy_to_max()
 	LoadingPerformance.begin_segment("player_ready_visual_setup")
+	_apply_mecha_visual_resources()
 	mecha_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_resize_mecha_sprite()
 	_setup_mecha_move_sprite()
@@ -1323,6 +1324,12 @@ func _resize_mecha_sprite() -> void:
 	mecha_sprite.scale = Vector2.ONE * uniform_scale * clampf(idle_mecha_scale_multiplier, 0.1, 3.0)
 	_sync_hurtbox_to_idle_sprite_scale()
 
+func _apply_mecha_visual_resources() -> void:
+	if mecha_sprite != null and mecha_idle_bottom_texture != null:
+		mecha_sprite.texture = mecha_idle_bottom_texture
+	if mecha_move_sprite != null and mecha_move_sprite_frames != null:
+		mecha_move_sprite.sprite_frames = mecha_move_sprite_frames
+
 func _setup_mecha_move_sprite() -> void:
 	if mecha_move_sprite == null:
 		push_warning("MechaMoveSprite is missing, movement animation disabled.")
@@ -1567,8 +1574,9 @@ func _update_mecha_direction(direction: Vector2) -> void:
 		return
 	current_mecha_direction = new_dir
 	mecha_sprite.flip_h = _last_face_horizontal_sign > 0
-	if MECHA_DIRECTION_TEXTURES.has(new_dir):
-		mecha_sprite.texture = MECHA_DIRECTION_TEXTURES[new_dir]
+	var direction_texture: Texture2D = mecha_idle_top_texture if new_dir.begins_with("top") else mecha_idle_bottom_texture
+	if direction_texture != null:
+		mecha_sprite.texture = direction_texture
 		_resize_mecha_sprite()
 
 func _compute_stable_mecha_direction(direction: Vector2) -> String:

@@ -194,6 +194,16 @@
       "timeout_seconds": 15
     },
     {
+      "id": "player.ranger_visual_resources",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/player/ranger_visual_resource_test.tscn",
+      "domain": "player",
+      "dependency_domains": ["presentation"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 15
+    },
+    {
       "id": "reward.fuse_branch_selection",
       "entry_type": "scene",
       "path": "res://tests/scenes/reward/reward_fuse_branch_selection_test.tscn",

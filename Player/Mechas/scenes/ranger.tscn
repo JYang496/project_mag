@@ -1,11 +1,17 @@
-[gd_scene load_steps=4 format=3 uid="uid://70xe28f6s2e8"]
+[gd_scene load_steps=7 format=3 uid="uid://70xe28f6s2e8"]
 
 [ext_resource type="PackedScene" uid="uid://dve1wwmkd0ynm" path="res://Player/Mechas/scenes/Player.tscn" id="1_javnt"]
 [ext_resource type="Script" uid="uid://c2nq256vhlnub" path="res://Player/Mechas/scripts/ranger.gd" id="2_6kucl"]
 [ext_resource type="PackedScene" path="res://Player/Skills/ranger_drone_strike.tscn" id="3_drone"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/ranger/idle_top.png" id="4_idle_top"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/ranger/idle_bottom.png" id="5_idle_bottom"]
+[ext_resource type="SpriteFrames" path="res://Player/Mechas/animations/ranger_move_frames.tres" id="6_move_frames"]
 
 [node name="Ranger" instance=ExtResource("1_javnt")]
 script = ExtResource("2_6kucl")
+mecha_idle_top_texture = ExtResource("4_idle_top")
+mecha_idle_bottom_texture = ExtResource("5_idle_bottom")
+mecha_move_sprite_frames = ExtResource("6_move_frames")
 
 [node name="RangerDroneStrike" parent="ActiveSkill" parent_id_path=PackedInt32Array(269678612) index="0" instance=ExtResource("3_drone")]
 
