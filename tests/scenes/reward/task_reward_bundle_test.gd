@@ -1,6 +1,7 @@
 extends Node
 
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
+const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
 
 func _ready() -> void:
 	assert(bool(CellEffectRuntime.prepare_definitions(true).get("ok", false)))
@@ -84,22 +85,31 @@ func _ready() -> void:
 	assert(panel.get_node_or_null("Panel/VBox/DetailPanel") == null)
 	assert(panel.get_node_or_null("Panel/VBox/ActionPanel/Margin/Actions/ConfirmButton") == panel.confirm_button)
 	panel.close_panel()
-	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward], Callable(), Callable(), false))
+	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward, effect_reward], Callable(), Callable(), false))
 	await get_tree().process_frame
 	assert(panel.title_label.text == LocalizationManager.tr_key("ui.reward.title", "Choose Reward"))
 	assert(panel.panel.size.x >= 999.0 and panel.panel.size.y >= 619.0)
 	assert(panel.options_box.columns == 3)
-	assert(panel.options_scroll.custom_minimum_size.y >= 400.0)
+	assert(panel.options_box.get_child_count() == 3)
+	assert(panel.options_scroll.custom_minimum_size.y >= 380.0)
 	assert(panel.get_node_or_null("Panel/VBox/DetailPanel") == null)
+	var fixed_detail := panel.get_node("Panel/VBox/SelectedDetail") as PanelContainer
+	assert(fixed_detail.visible and fixed_detail.custom_minimum_size.y >= 54.0)
+	var fixed_detail_title := panel.get_node("Panel/VBox/SelectedDetail/Margin/Content/DetailTitle") as Label
+	var fixed_detail_text := panel.get_node("Panel/VBox/SelectedDetail/Margin/Content/DetailText") as Label
+	assert(fixed_detail_title.text.strip_edges() != "" and fixed_detail_text.text.strip_edges() != "")
 	var action_panel := panel.get_node("Panel/VBox/ActionPanel") as Control
 	assert(action_panel.custom_minimum_size.y <= 64.0)
 	assert(panel.options_scroll.size.y >= action_panel.size.y * 5.0)
+	assert(panel.options_scroll.get_global_rect().end.y <= fixed_detail.get_global_rect().position.y)
+	assert(fixed_detail.get_global_rect().end.y <= action_panel.get_global_rect().position.y)
 	var actions := panel.get_node("Panel/VBox/ActionPanel/Margin/Actions") as HBoxContainer
 	var confirm_center_x := panel.confirm_button.position.x + panel.confirm_button.size.x * 0.5
 	assert(is_equal_approx(confirm_center_x, actions.size.x * 0.5))
 	for index in range(3):
 		var reward_button := panel.options_box.get_child(index) as Button
 		assert(reward_button != null)
+		assert(reward_button.tooltip_text == "")
 		var key_badge := reward_button.find_child("KeyBadge", true, false) as Label
 		assert(key_badge != null and key_badge.text == str(index + 1))
 		assert(reward_button.custom_minimum_size.y >= 290.0)
@@ -109,7 +119,17 @@ func _ready() -> void:
 		assert(comparison_box.get_child_count() <= 3)
 		var synergy_status := reward_button.find_child("SynergyStatusLabel", true, false) as Label
 		assert(synergy_status == null)
+		if index > 0:
+			assert((panel.options_box.get_child(index - 1) as Button).focus_neighbor_right != NodePath(""))
+	var first_card := panel.options_box.get_child(0) as Button
+	assert(get_viewport().gui_get_focus_owner() == first_card)
+	var selected_style := first_card.get_theme_stylebox("normal") as StyleBoxFlat
+	assert(selected_style.border_color.is_equal_approx(TOKENS.COLOR_ACCENT_SYSTEM))
+	var hold_track := first_card.find_child("HoldProgress", true, false) as ProgressBar
+	var hold_fill := hold_track.get_theme_stylebox("fill") as StyleBoxFlat
+	assert(hold_fill.bg_color.is_equal_approx(TOKENS.COLOR_ACCENT_ACTION))
 	panel.call("_on_reward_button_pressed", 1, panel.options_box.get_child(1) as Button)
+	assert(fixed_detail_title.text.strip_edges() != "" and fixed_detail_text.text.strip_edges() != "")
 	assert(panel.confirm_button.text == LocalizationManager.tr_key("ui.reward.confirm", "Confirm Reward"))
 	panel.call("_begin_quick_select_hold", 0)
 	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS * 0.4)

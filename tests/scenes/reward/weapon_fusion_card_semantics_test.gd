@@ -76,8 +76,8 @@ func _run() -> void:
 		_fail("weapon cards should render exactly three fixed core-stat slots")
 	elif core_stats.get_child(0).name != "CoreStatDamage" or core_stats.get_child(1).name != "CoreStatFireInterval" or core_stats.get_child(2).name != "CoreStatAmmo":
 		_fail("core-stat slots should keep damage, fire interval, and ammo order")
-	elif behavior_summary.get_theme_font_size("font_size") != 15 or behavior_summary.get_theme_constant("line_spacing") != -2:
-		_fail("reward card copy should use the enlarged compact text treatment")
+	elif behavior_summary.get_theme_font_size("font_size") != 14 or behavior_summary.get_theme_constant("line_spacing") != -2:
+		_fail("reward card copy should use the shared compact label token")
 	elif feature_list.get_theme_constant("separation") != 2:
 		_fail("reward card feature rows should use compact vertical spacing")
 	elif behavior_summary.text_overrun_behavior != TextServer.OVERRUN_NO_TRIMMING:
@@ -200,10 +200,11 @@ func _run() -> void:
 	var options_scroll := full_panel.get_node("Panel/VBox/OptionsScroll") as ScrollContainer
 	if options_scroll.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED:
 		_fail("reward cards should not show a right-side vertical scrollbar")
-	if full_panel.get_node_or_null("Panel/VBox/SelectedDetail") != null:
-		_fail("reward panel should not reserve a full-details row below the cards")
+	var selected_detail := full_panel.get_node_or_null("Panel/VBox/SelectedDetail") as PanelContainer
+	if selected_detail == null or selected_detail.custom_minimum_size.y < 54.0:
+		_fail("reward panel should reserve a fixed, readable detail row below the cards")
 	var action_panel := full_panel.get_node_or_null("Panel/VBox/ActionPanel") as PanelContainer
-	if action_panel == null or action_panel.get_index() != 3:
+	if action_panel == null or action_panel.get_index() != 4:
 		_fail("confirmation actions should remain directly below the reward cards")
 	full_panel.queue_free()
 	LocalizationManager.set_locale("en", false)

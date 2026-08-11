@@ -13,20 +13,24 @@ const WEAPON_DISPLAY_POLICY := preload("res://UI/scripts/presentation/weapon_dis
 const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
 const REWARD_CARD_MODEL_BUILDER := preload("res://UI/scripts/presentation/reward_card_model_builder.gd")
 const REWARD_CARD_DATA_ASSEMBLER := preload("res://UI/scripts/presentation/reward_card_data_assembler.gd")
+const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
 const QUICK_SELECT_HOLD_SECONDS := 0.55
-const CARD_FONT_SIZE_BONUS := 1
+const CARD_FONT_SIZE_BONUS := 0
 const CARD_LINE_SPACING := -2
 const CARD_BODY_SEPARATION := 4
-const STANDARD_CARD_MIN_HEIGHT := 400.0
-const DETAILED_CARD_MIN_HEIGHT := 408.0
+const STANDARD_CARD_MIN_HEIGHT := 372.0
+const DETAILED_CARD_MIN_HEIGHT := 380.0
 
 @onready var title_label: Label = $Panel/VBox/Title
 @onready var panel: Panel = $Panel
 @onready var subtitle_label: Label = $Panel/VBox/SubTitle
 @onready var options_scroll: ScrollContainer = $Panel/VBox/OptionsScroll
 @onready var options_box: GridContainer = $Panel/VBox/OptionsScroll/Options
+@onready var selected_detail_panel: PanelContainer = $Panel/VBox/SelectedDetail
+@onready var selected_detail_title: Label = $Panel/VBox/SelectedDetail/Margin/Content/DetailTitle
+@onready var selected_detail_text: Label = $Panel/VBox/SelectedDetail/Margin/Content/DetailText
 @onready var confirm_button: Button = $Panel/VBox/ActionPanel/Margin/Actions/ConfirmButton
-@onready var cancel_button: Button = $Panel/VBox/Footer/CancelButton
+@onready var cancel_button: Button = $Panel/VBox/ActionPanel/Margin/Actions/CancelButton
 
 var _reward_options: Array[RewardInfo] = []
 var _selected_index: int = -1
@@ -66,6 +70,7 @@ func _ready() -> void:
 		cancel_button.pressed.connect(_on_cancel_pressed)
 	_apply_action_button_style(confirm_button, true)
 	_apply_action_button_style(cancel_button, false)
+	_apply_panel_style()
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.language_changed.connect(_on_language_changed)
 	if not options_scroll.resized.is_connected(_update_grid_columns):
@@ -230,7 +235,7 @@ func _open_rewards(
 		options_box.remove_child(child)
 		child.queue_free()
 	var incoming_options := reward_options.duplicate()
-	for reward in incoming_options:
+	for reward in incoming_options.slice(0, 3):
 		if reward == null:
 			continue
 		_reward_options.append(reward)
@@ -239,27 +244,29 @@ func _open_rewards(
 	for idx in range(_reward_options.size()):
 		var button := _build_reward_card_button(_reward_options[idx], idx)
 		button.pressed.connect(Callable(self, "_on_reward_button_pressed").bind(idx, button))
+		button.focus_entered.connect(Callable(self, "_on_reward_button_pressed").bind(idx, button))
 		options_box.add_child(button)
 	if options_box.get_child_count() > 0:
 		var first := options_box.get_child(0) as Button
 		if first:
 			_on_reward_button_pressed(0, first)
 	_update_grid_columns()
+	_configure_card_focus_chain()
 	_confirm_button_state()
 	visible = true
+	if options_box.get_child_count() > 0:
+		(options_box.get_child(0) as Button).grab_focus()
 	_play_entry_animation()
 	return true
 
 func _apply_unified_layout() -> void:
 	panel.offset_left = -500.0
-	panel.offset_top = -310.0
+	panel.offset_top = -330.0
 	panel.offset_right = 500.0
-	panel.offset_bottom = 310.0
-	options_scroll.custom_minimum_size.y = 410.0
+	panel.offset_bottom = 330.0
+	options_scroll.custom_minimum_size.y = 382.0
 	options_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var footer := get_node_or_null("Panel/VBox/Footer") as Control
-	if footer != null:
-		footer.visible = _allow_cancel and not _summary_mode
+	selected_detail_panel.visible = true
 
 func _build_subtitle_text(
 	route_display_name: String,
@@ -361,13 +368,42 @@ func _on_reward_button_pressed(index: int, source_button: Button) -> void:
 		if child_index < _reward_options.size():
 			_apply_reward_card_style(button, _reward_options[child_index], selected)
 		child_index += 1
+	_update_selected_detail()
 	_confirm_button_state()
+
+func _update_selected_detail() -> void:
+	if selected_detail_title == null or selected_detail_text == null:
+		return
+	var index := _pinned_index if _summary_mode else _selected_index
+	if index < 0 or index >= _reward_options.size():
+		selected_detail_title.text = LocalizationManager.tr_key("ui.reward.selected_detail", "Selected reward")
+		selected_detail_text.text = LocalizationManager.tr_key("ui.reward.select_prompt", "Select a reward")
+		return
+	var model: Variant = _build_reward_card_model(_reward_options[index])
+	selected_detail_title.text = str(model.title)
+	var detail := str(model.full_detail).strip_edges()
+	if detail == "":
+		detail = str(model.behavior_summary).strip_edges()
+	selected_detail_text.text = detail
 
 func _update_grid_columns() -> void:
 	if options_box == null or options_scroll == null:
 		return
 	var option_count := maxi(1, options_box.get_child_count())
 	options_box.columns = mini(3, option_count)
+
+func _configure_card_focus_chain() -> void:
+	var count := options_box.get_child_count()
+	for index in range(count):
+		var button := options_box.get_child(index) as Button
+		if button == null:
+			continue
+		var previous := options_box.get_child(maxi(0, index - 1)) as Button
+		var next := options_box.get_child(mini(count - 1, index + 1)) as Button
+		button.focus_neighbor_left = button.get_path_to(previous)
+		button.focus_neighbor_right = button.get_path_to(next)
+		button.focus_next = button.get_path_to(next)
+		button.focus_previous = button.get_path_to(previous)
 
 func _confirm_button_state() -> void:
 	confirm_button.disabled = false if _summary_mode else _selected_index < 0 or _selected_index >= _reward_options.size()
@@ -416,7 +452,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	var is_weapon_visual_reward := detail_variant in [&"new_weapon", &"weapon_fusion", &"weapon_upgrade"]
 	var button := Button.new()
 	button.toggle_mode = true
-	# Keep every card inside the 410px draft viewport so the choice screen never
+	# Keep every card inside the fixed draft viewport so the choice screen never
 	# needs a vertical scrollbar.
 	button.custom_minimum_size = Vector2(
 		0.0,
@@ -428,7 +464,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	button.focus_mode = Control.FOCUS_ALL
 	button.text = ""
 	var full_detail := str(card_data.get("detail_text", "")).strip_edges()
-	button.tooltip_text = "%s\n%s" % [str(card_data.get("title", "Reward")), full_detail] if full_detail != "" else str(card_data.get("title", "Reward"))
+	button.tooltip_text = ""
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -450,10 +486,10 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	hold_progress.custom_minimum_size = Vector2(0.0, 4.0)
 	hold_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var progress_background := StyleBoxFlat.new()
-	progress_background.bg_color = Color(0.88, 0.92, 0.93, 1.0)
+	progress_background.bg_color = TOKENS.COLOR_CANVAS.lightened(0.08)
 	var progress_fill := StyleBoxFlat.new()
 	var action_color := _get_reward_action_color(reward)
-	progress_fill.bg_color = Color(action_color.r, action_color.g, action_color.b, 1.0)
+	progress_fill.bg_color = TOKENS.COLOR_ACCENT_ACTION
 	hold_progress.add_theme_stylebox_override("background", progress_background)
 	hold_progress.add_theme_stylebox_override("fill", progress_fill)
 	body.add_child(hold_progress)
@@ -463,17 +499,18 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	top_row.add_theme_constant_override("separation", 8)
 	body.add_child(top_row)
 	if not _summary_mode and reward_index >= 0 and reward_index < 3:
-		var key_badge := _make_badge_label(str(reward_index + 1), Color(0.40, 0.78, 0.94, 1.0))
+		var key_badge := _make_badge_label(str(reward_index + 1), TOKENS.COLOR_ACCENT_SYSTEM)
 		key_badge.name = "KeyBadge"
 		key_badge.custom_minimum_size.x = 28.0
 		top_row.add_child(key_badge)
 
-	var type_badge := _make_badge_label(str(card_data.get("type_label", "Reward")).to_upper(), Color(0.58, 0.76, 0.92, 1.0))
+	var type_badge := _make_badge_label(str(card_data.get("type_label", "Reward")).to_upper(), TOKENS.COLOR_ACCENT_SYSTEM)
 	type_badge.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top_row.add_child(type_badge)
 
-	var selected_badge := _make_badge_label(LocalizationManager.tr_key("ui.reward.selected", "SELECTED"), _get_reward_action_color(reward))
+	var selected_badge := _make_badge_label(LocalizationManager.tr_key("ui.reward.selected", "SELECTED"), TOKENS.COLOR_ACCENT_SYSTEM)
 	selected_badge.name = "SelectedBadge"
+	selected_badge.custom_minimum_size.x = 76.0
 	selected_badge.visible = false
 	top_row.add_child(selected_badge)
 
@@ -489,10 +526,10 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		header.add_theme_constant_override("separation", 10)
 		body.add_child(header)
-		header.add_child(_make_reward_icon(card_data))
+		header.add_child(_make_reward_icon(card_data, Vector2(72.0, 72.0), 7))
 		header.add_child(text_box)
 
-	var name_label := _make_card_label(str(card_data.get("title", "Reward")), 16, Color(0.94, 0.97, 1.0, 1.0))
+	var name_label := _make_card_label(str(card_data.get("title", "Reward")), TOKENS.FONT_BUTTON, TOKENS.COLOR_TEXT_PRIMARY)
 	var summary_count := int(reward.get_meta("summary_count", 1))
 	if _summary_mode and summary_count > 1:
 		name_label.text += " " + LocalizationManager.tr_format(
@@ -510,7 +547,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 
 	var meta_text := str(card_data.get("meta_text", "")).strip_edges()
 	var level_text := str(card_data.get("level_text", "")).strip_edges()
-	var meta_label := _make_card_label(level_text if level_text != "" else meta_text, 14, Color(0.78, 0.87, 0.91, 1.0))
+	var meta_label := _make_card_label(level_text if level_text != "" else meta_text, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_SECONDARY)
 	meta_label.clip_text = true
 	if is_weapon_visual_reward:
 		meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -534,11 +571,11 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		effect_heading.name = "ModuleEffectHeading"
 		effect_box.add_child(effect_heading)
 		summary_parent = effect_box
-	var summary_label := _make_card_label(str(card_data.get("summary_text", "")).strip_edges(), 14, Color(0.84, 0.91, 0.94, 1.0))
+	var summary_label := _make_card_label(str(card_data.get("summary_text", "")).strip_edges(), TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_PRIMARY)
 	summary_label.name = "BehaviorSummary"
 	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	summary_label.tooltip_text = full_detail
+	summary_label.tooltip_text = ""
 	summary_parent.add_child(summary_label)
 
 	var feature_lines: PackedStringArray = card_data.get("feature_lines", PackedStringArray())
@@ -552,7 +589,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 			var feature_label := _make_card_label("• %s" % str(feature).strip_edges(), 13, Color(0.70, 0.80, 0.84, 1.0))
 			feature_label.name = "FeatureLine"
 			_configure_wrapped_card_text(feature_label)
-			feature_label.tooltip_text = str(feature)
+			feature_label.tooltip_text = ""
 			feature_box.add_child(feature_label)
 
 	if is_module_reward:
@@ -569,10 +606,10 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		comparison_box.add_theme_constant_override("separation", 3)
 		body.add_child(comparison_box)
 		for comparison_line in comparison_lines:
-			var comparison_label := _make_card_label(str(comparison_line), 14, Color(0.76, 0.93, 0.82, 1.0))
+			var comparison_label := _make_card_label(str(comparison_line), TOKENS.FONT_LABEL, TOKENS.COLOR_POSITIVE)
 			comparison_label.name = "ComparisonLine"
 			_configure_wrapped_card_text(comparison_label)
-			comparison_label.tooltip_text = str(comparison_line)
+			comparison_label.tooltip_text = ""
 			comparison_box.add_child(comparison_label)
 
 	var tag_text := str(card_data.get("short_tag", "")).strip_edges()
@@ -592,10 +629,11 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		synergy_label.name = "SynergyStatusLabel"
 		synergy_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		synergy_label.max_lines_visible = 2
-		synergy_label.tooltip_text = str(card_data.get("synergy_reason", ""))
+		synergy_label.tooltip_text = ""
 		body.add_child(synergy_label)
 
 	_set_mouse_filter_recursive(button, Control.MOUSE_FILTER_IGNORE)
+	_clear_tooltips_recursive(button)
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	_apply_reward_card_style(button, reward, false)
 	return button
@@ -633,10 +671,10 @@ func _build_core_weapon_stats(card_data: Dictionary) -> HBoxContainer:
 func _build_weapon_reward_hero(card_data: Dictionary) -> CenterContainer:
 	var hero := CenterContainer.new()
 	hero.name = "WeaponRewardHero"
-	hero.custom_minimum_size = Vector2(0.0, 82.0)
+	hero.custom_minimum_size = Vector2(0.0, 94.0)
 	hero.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var icon := _make_reward_icon(card_data, Vector2(132.0, 76.0), 7)
+	var icon := _make_reward_icon(card_data, Vector2(148.0, 88.0), 7)
 	icon.name = "WeaponHeroImage"
 	hero.add_child(icon)
 	return hero
@@ -767,10 +805,10 @@ func _build_reward_card_model(reward: RewardInfo):
 
 func _synergy_status_color(status: StringName) -> Color:
 	match status:
-		&"direct_fit", &"unlocks_chain": return Color(0.48, 0.90, 0.64, 1.0)
-		&"partial_fit": return Color(0.94, 0.78, 0.36, 1.0)
-		&"blocked", &"conflict": return Color(1.0, 0.56, 0.48, 1.0)
-		_: return Color(0.72, 0.80, 0.86, 1.0)
+		&"direct_fit", &"unlocks_chain": return TOKENS.COLOR_POSITIVE
+		&"partial_fit": return TOKENS.COLOR_WARNING
+		&"blocked", &"conflict": return TOKENS.COLOR_DANGER
+		_: return TOKENS.COLOR_TEXT_SECONDARY
 
 func _build_reward_card_data(reward: RewardInfo) -> Dictionary:
 	return _get_reward_data_assembler()._build_reward_card_data(reward)
@@ -872,7 +910,7 @@ func _make_icon_frame_style(accent: Color) -> StyleBoxFlat:
 	style.bg_color = Color(accent.r, accent.g, accent.b, 0.14)
 	style.border_color = Color(accent.r, accent.g, accent.b, 0.64)
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(6)
+	style.set_corner_radius_all(TOKENS.RADIUS_PANEL)
 	return style
 
 func _make_icon_badge_style(color: Color) -> StyleBoxFlat:
@@ -880,7 +918,7 @@ func _make_icon_badge_style(color: Color) -> StyleBoxFlat:
 	style.bg_color = Color(color.r, color.g, color.b, 0.92)
 	style.border_color = Color(0.04, 0.05, 0.06, 0.9)
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(5)
+	style.set_corner_radius_all(TOKENS.RADIUS_PANEL)
 	return style
 
 func _fallback_icon_text(icon_key: String) -> String:
@@ -922,7 +960,7 @@ func _configure_wrapped_card_text(label: Label) -> void:
 	label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 
 func _make_badge_label(text: String, color: Color) -> Label:
-	var label := _make_card_label(text, 14, Color(0.94, 0.98, 1.0, 1.0))
+	var label := _make_card_label(text, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_PRIMARY)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.clip_text = true
@@ -931,7 +969,7 @@ func _make_badge_label(text: String, color: Color) -> Label:
 	style.bg_color = Color(color.r, color.g, color.b, 0.22)
 	style.border_color = Color(color.r, color.g, color.b, 0.72)
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(5)
+	style.set_corner_radius_all(TOKENS.RADIUS_SMALL)
 	style.content_margin_left = 6
 	style.content_margin_right = 6
 	label.add_theme_stylebox_override("normal", style)
@@ -1023,40 +1061,34 @@ func _localized_reward_bullets(category: String, fallbacks: Array) -> PackedStri
 func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool, holding: bool = false) -> void:
 	if button == null or reward == null:
 		return
-	var action_color := _get_reward_action_color(reward)
+	var rarity_color := _get_reward_action_color(reward)
 	var recommended_fuse := _is_recommended_fuse_reward(reward)
 	var selected_badge := button.find_child("SelectedBadge", true, false) as Control
 	if selected_badge != null:
 		selected_badge.visible = selected
 	for state in ["normal", "hover", "pressed", "focus"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.10)
+		var style := TOKENS.make_panel_style(true, Color(rarity_color.r, rarity_color.g, rarity_color.b, 0.58))
+		style.shadow_size = 0
 		if recommended_fuse:
-			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.20)
+			style.bg_color = TOKENS.COLOR_POSITIVE.darkened(0.76)
 		if holding:
-			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.28)
+			style.bg_color = TOKENS.COLOR_ACCENT_ACTION.darkened(0.76)
 		elif selected:
-			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.18)
+			style.bg_color = TOKENS.COLOR_ACCENT_SYSTEM.darkened(0.80)
 		elif state == "hover" or state == "focus":
-			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.14)
+			style.bg_color = TOKENS.COLOR_SURFACE_INTERACTIVE
 		elif state == "pressed":
-			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.16)
-		if recommended_fuse and (state == "hover" or state == "focus"):
-			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.24)
-		elif recommended_fuse and state == "pressed":
-			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.26)
-		if recommended_fuse and selected:
-			style.bg_color = Color(action_color.r, action_color.g, action_color.b, 0.28)
-		style.border_color = Color(action_color.r, action_color.g, action_color.b, 1.0 if selected or holding else 0.78)
-		style.set_border_width_all(3 if holding else (2 if selected or recommended_fuse else 1))
+			style.bg_color = TOKENS.COLOR_SURFACE_INTERACTIVE.darkened(0.08)
+		style.border_color = TOKENS.COLOR_ACCENT_ACTION if holding else (TOKENS.COLOR_ACCENT_SYSTEM if selected or state == "focus" else (TOKENS.COLOR_POSITIVE if recommended_fuse else Color(rarity_color.r, rarity_color.g, rarity_color.b, 0.62)))
+		style.set_border_width_all(TOKENS.BORDER_STRONG if holding or selected or recommended_fuse or state == "focus" else TOKENS.BORDER_THIN)
 		if selected and not holding:
-			style.shadow_color = Color(action_color.r, action_color.g, action_color.b, 0.34)
-			style.shadow_size = 5
-		style.set_corner_radius_all(6)
+			style.shadow_color = Color(TOKENS.COLOR_ACCENT_SYSTEM.r, TOKENS.COLOR_ACCENT_SYSTEM.g, TOKENS.COLOR_ACCENT_SYSTEM.b, 0.28)
+			style.shadow_size = 4
+		style.set_corner_radius_all(TOKENS.RADIUS_PANEL)
 		button.add_theme_stylebox_override(state, style)
 
 func _apply_action_button_style(button: Button, primary: bool) -> void:
-	var color := Color(0.42, 0.78, 0.92, 1.0) if primary else Color(0.56, 0.64, 0.70, 1.0)
+	var color := TOKENS.COLOR_ACCENT_ACTION if primary else TOKENS.COLOR_BORDER_STRONG
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 		var style := StyleBoxFlat.new()
 		var state_color := color
@@ -1070,10 +1102,27 @@ func _apply_action_button_style(button: Button, primary: bool) -> void:
 			style.bg_color = Color(0.10, 0.12, 0.14, 0.64)
 		style.border_color = Color(state_color.r, state_color.g, state_color.b, 0.78)
 		style.set_border_width_all(1)
-		style.set_corner_radius_all(5)
+		style.set_corner_radius_all(TOKENS.RADIUS_SMALL)
 		button.add_theme_stylebox_override(state, style)
 	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		button.add_theme_color_override(color_name, Color(0.94, 0.98, 1.0, 1.0))
+		button.add_theme_color_override(color_name, TOKENS.COLOR_TEXT_PRIMARY)
+
+func _apply_panel_style() -> void:
+	$ModalScrim.color = TOKENS.COLOR_SCRIM
+	panel.add_theme_stylebox_override("panel", TOKENS.make_panel_style(true, TOKENS.COLOR_BORDER_STRONG))
+	selected_detail_panel.add_theme_stylebox_override("panel", TOKENS.make_panel_style(false, TOKENS.COLOR_BORDER))
+	var action_panel := $Panel/VBox/ActionPanel as PanelContainer
+	action_panel.add_theme_stylebox_override("panel", TOKENS.make_panel_style(false, TOKENS.COLOR_BORDER))
+	TOKENS.style_label(title_label, TOKENS.FONT_TITLE, TOKENS.COLOR_TEXT_PRIMARY)
+	TOKENS.style_label(subtitle_label, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_SECONDARY)
+	TOKENS.style_label(selected_detail_title, TOKENS.FONT_LABEL, TOKENS.COLOR_ACCENT_SYSTEM)
+	TOKENS.style_label(selected_detail_text, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_SECONDARY)
+
+func _clear_tooltips_recursive(root: Control) -> void:
+	root.tooltip_text = ""
+	for child in root.get_children():
+		if child is Control:
+			_clear_tooltips_recursive(child as Control)
 
 func _get_reward_action_color(reward: RewardInfo) -> Color:
 	if reward == null:
