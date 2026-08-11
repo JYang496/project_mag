@@ -1,0 +1,82 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/showcases/character/ranger_pixel_unification_showcase.gd" id="1_showcase"]
+
+[node name="RangerPixelUnificationShowcase" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_showcase")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0235, 0.0431, 0.0588, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 36.0
+offset_top = 22.0
+offset_right = -36.0
+offset_bottom = -22.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Root" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Margin/Root"]
+layout_mode = 2
+text = "RANGER V3 · 像素美术统一展示"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.678, 0.925, 0.973, 1)
+theme_override_font_sizes/font_size = 24
+
+[node name="RuntimeNote" type="Label" parent="Margin/Root"]
+layout_mode = 2
+text = "128 x 128 权威源帧  →  96 x 96 实际战斗占位  ·  最近邻过滤  ·  1280 x 720 逻辑画布"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.62, 0.72, 0.77, 1)
+theme_override_font_sizes/font_size = 14
+
+[node name="RangerGallery" type="HBoxContainer" parent="Margin/Root"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Divider" type="HSeparator" parent="Margin/Root"]
+layout_mode = 2
+
+[node name="ComparisonTitle" type="Label" parent="Margin/Root"]
+layout_mode = 2
+text = "其他四台机甲对照 · 继续使用原共享资源（未改动）"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.82, 0.72, 0.45, 1)
+theme_override_font_sizes/font_size = 16
+
+[node name="OtherMechaGallery" type="HBoxContainer" parent="Margin/Root"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Footer" type="Label" parent="Margin/Root"]
+layout_mode = 2
+text = "展示只读取角色视觉资源；不加载、不修改武器、角色血条或热量槽 HUD。"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.48, 0.64, 0.7, 1)
