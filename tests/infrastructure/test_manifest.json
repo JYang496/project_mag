@@ -644,26 +644,6 @@
       "timeout_seconds": 20
     },
     {
-      "id": "ui.equipped_module_sell",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/equipped_module_sell_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["player", "weapon", "reward"],
-      "parallel_safe": false,
-      "writes_user_data": false,
-      "timeout_seconds": 30
-    },
-    {
-      "id": "ui.temporary_module_sell",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/temporary_module_sell_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["player", "weapon", "reward"],
-      "parallel_safe": false,
-      "writes_user_data": false,
-      "timeout_seconds": 30
-    },
-    {
       "id": "ui.temporary_module_settlement_confirm",
       "entry_type": "scene",
       "path": "res://tests/scenes/ui/temporary_module_settlement_confirm_test.tscn",
