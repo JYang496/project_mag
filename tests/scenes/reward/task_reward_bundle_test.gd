@@ -93,16 +93,11 @@ func _ready() -> void:
 	assert(panel.options_box.get_child_count() == 3)
 	assert(panel.options_scroll.custom_minimum_size.y >= 380.0)
 	assert(panel.get_node_or_null("Panel/VBox/DetailPanel") == null)
-	var fixed_detail := panel.get_node("Panel/VBox/SelectedDetail") as PanelContainer
-	assert(fixed_detail.visible and fixed_detail.custom_minimum_size.y >= 54.0)
-	var fixed_detail_title := panel.get_node("Panel/VBox/SelectedDetail/Margin/Content/DetailTitle") as Label
-	var fixed_detail_text := panel.get_node("Panel/VBox/SelectedDetail/Margin/Content/DetailText") as Label
-	assert(fixed_detail_title.text.strip_edges() != "" and fixed_detail_text.text.strip_edges() != "")
+	assert(panel.get_node_or_null("Panel/VBox/SelectedDetail") == null)
 	var action_panel := panel.get_node("Panel/VBox/ActionPanel") as Control
 	assert(action_panel.custom_minimum_size.y <= 64.0)
 	assert(panel.options_scroll.size.y >= action_panel.size.y * 5.0)
-	assert(panel.options_scroll.get_global_rect().end.y <= fixed_detail.get_global_rect().position.y)
-	assert(fixed_detail.get_global_rect().end.y <= action_panel.get_global_rect().position.y)
+	assert(panel.options_scroll.get_global_rect().end.y <= action_panel.get_global_rect().position.y)
 	var actions := panel.get_node("Panel/VBox/ActionPanel/Margin/Actions") as HBoxContainer
 	var confirm_center_x := panel.confirm_button.position.x + panel.confirm_button.size.x * 0.5
 	assert(is_equal_approx(confirm_center_x, actions.size.x * 0.5))
@@ -129,7 +124,7 @@ func _ready() -> void:
 	var hold_fill := hold_track.get_theme_stylebox("fill") as StyleBoxFlat
 	assert(hold_fill.bg_color.is_equal_approx(TOKENS.COLOR_ACCENT_ACTION))
 	panel.call("_on_reward_button_pressed", 1, panel.options_box.get_child(1) as Button)
-	assert(fixed_detail_title.text.strip_edges() != "" and fixed_detail_text.text.strip_edges() != "")
+	assert(panel.get_node_or_null("Panel/VBox/SelectedDetail") == null)
 	assert(panel.confirm_button.text == LocalizationManager.tr_key("ui.reward.confirm", "Confirm Reward"))
 	panel.call("_begin_quick_select_hold", 0)
 	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS * 0.4)

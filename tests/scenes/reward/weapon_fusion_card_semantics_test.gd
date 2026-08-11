@@ -200,11 +200,10 @@ func _run() -> void:
 	var options_scroll := full_panel.get_node("Panel/VBox/OptionsScroll") as ScrollContainer
 	if options_scroll.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED:
 		_fail("reward cards should not show a right-side vertical scrollbar")
-	var selected_detail := full_panel.get_node_or_null("Panel/VBox/SelectedDetail") as PanelContainer
-	if selected_detail == null or selected_detail.custom_minimum_size.y < 54.0:
-		_fail("reward panel should reserve a fixed, readable detail row below the cards")
+	if full_panel.get_node_or_null("Panel/VBox/SelectedDetail") != null:
+		_fail("reward panel should not repeat card descriptions below the cards")
 	var action_panel := full_panel.get_node_or_null("Panel/VBox/ActionPanel") as PanelContainer
-	if action_panel == null or action_panel.get_index() != 4:
+	if action_panel == null or action_panel.get_index() != 3:
 		_fail("confirmation actions should remain directly below the reward cards")
 	full_panel.queue_free()
 	LocalizationManager.set_locale("en", false)

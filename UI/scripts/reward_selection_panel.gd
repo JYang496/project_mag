@@ -26,9 +26,6 @@ const DETAILED_CARD_MIN_HEIGHT := 380.0
 @onready var subtitle_label: Label = $Panel/VBox/SubTitle
 @onready var options_scroll: ScrollContainer = $Panel/VBox/OptionsScroll
 @onready var options_box: GridContainer = $Panel/VBox/OptionsScroll/Options
-@onready var selected_detail_panel: PanelContainer = $Panel/VBox/SelectedDetail
-@onready var selected_detail_title: Label = $Panel/VBox/SelectedDetail/Margin/Content/DetailTitle
-@onready var selected_detail_text: Label = $Panel/VBox/SelectedDetail/Margin/Content/DetailText
 @onready var confirm_button: Button = $Panel/VBox/ActionPanel/Margin/Actions/ConfirmButton
 @onready var cancel_button: Button = $Panel/VBox/ActionPanel/Margin/Actions/CancelButton
 
@@ -266,7 +263,6 @@ func _apply_unified_layout() -> void:
 	panel.offset_bottom = 330.0
 	options_scroll.custom_minimum_size.y = 382.0
 	options_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	selected_detail_panel.visible = true
 
 func _build_subtitle_text(
 	route_display_name: String,
@@ -368,23 +364,7 @@ func _on_reward_button_pressed(index: int, source_button: Button) -> void:
 		if child_index < _reward_options.size():
 			_apply_reward_card_style(button, _reward_options[child_index], selected)
 		child_index += 1
-	_update_selected_detail()
 	_confirm_button_state()
-
-func _update_selected_detail() -> void:
-	if selected_detail_title == null or selected_detail_text == null:
-		return
-	var index := _pinned_index if _summary_mode else _selected_index
-	if index < 0 or index >= _reward_options.size():
-		selected_detail_title.text = LocalizationManager.tr_key("ui.reward.selected_detail", "Selected reward")
-		selected_detail_text.text = LocalizationManager.tr_key("ui.reward.select_prompt", "Select a reward")
-		return
-	var model: Variant = _build_reward_card_model(_reward_options[index])
-	selected_detail_title.text = str(model.title)
-	var detail := str(model.full_detail).strip_edges()
-	if detail == "":
-		detail = str(model.behavior_summary).strip_edges()
-	selected_detail_text.text = detail
 
 func _update_grid_columns() -> void:
 	if options_box == null or options_scroll == null:
@@ -1110,13 +1090,10 @@ func _apply_action_button_style(button: Button, primary: bool) -> void:
 func _apply_panel_style() -> void:
 	$ModalScrim.color = TOKENS.COLOR_SCRIM
 	panel.add_theme_stylebox_override("panel", TOKENS.make_panel_style(true, TOKENS.COLOR_BORDER_STRONG))
-	selected_detail_panel.add_theme_stylebox_override("panel", TOKENS.make_panel_style(false, TOKENS.COLOR_BORDER))
 	var action_panel := $Panel/VBox/ActionPanel as PanelContainer
 	action_panel.add_theme_stylebox_override("panel", TOKENS.make_panel_style(false, TOKENS.COLOR_BORDER))
 	TOKENS.style_label(title_label, TOKENS.FONT_TITLE, TOKENS.COLOR_TEXT_PRIMARY)
 	TOKENS.style_label(subtitle_label, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_SECONDARY)
-	TOKENS.style_label(selected_detail_title, TOKENS.FONT_LABEL, TOKENS.COLOR_ACCENT_SYSTEM)
-	TOKENS.style_label(selected_detail_text, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_SECONDARY)
 
 func _clear_tooltips_recursive(root: Control) -> void:
 	root.tooltip_text = ""

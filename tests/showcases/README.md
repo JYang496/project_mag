@@ -29,7 +29,7 @@ Use the local Godot console executable from the repository root:
 
 - Scene: `res://tests/showcases/ui/reward_draft_unification_showcase.tscn`
 - Controls: `L` language, `F` focus, `H` hold progress, `R` reset.
-- Shows three cards, fixed details, long bilingual copy, focus, selection, and
+- Shows three self-contained cards without a duplicate detail row, long bilingual copy, focus, selection, and
   quick-confirm states.
 
 ## Arena environment

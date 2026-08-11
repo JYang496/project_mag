@@ -62,32 +62,6 @@ size_flags_vertical = 3
 columns = 3
 theme_override_constants/separation = 12
 
-[node name="SelectedDetail" type="PanelContainer" parent="Panel/VBox"]
-custom_minimum_size = Vector2(0, 58)
-size_flags_horizontal = 3
-
-[node name="Margin" type="MarginContainer" parent="Panel/VBox/SelectedDetail"]
-theme_override_constants/margin_left = 14
-theme_override_constants/margin_top = 7
-theme_override_constants/margin_right = 14
-theme_override_constants/margin_bottom = 7
-
-[node name="Content" type="HBoxContainer" parent="Panel/VBox/SelectedDetail/Margin"]
-theme_override_constants/separation = 12
-
-[node name="DetailTitle" type="Label" parent="Panel/VBox/SelectedDetail/Margin/Content"]
-custom_minimum_size = Vector2(190, 0)
-text = "Selected reward"
-vertical_alignment = 1
-
-[node name="DetailText" type="Label" parent="Panel/VBox/SelectedDetail/Margin/Content"]
-size_flags_horizontal = 3
-text = "Select a card to review its complete effect."
-vertical_alignment = 1
-autowrap_mode = 2
-text_overrun_behavior = 3
-max_lines_visible = 2
-
 [node name="ActionPanel" type="PanelContainer" parent="Panel/VBox"]
 custom_minimum_size = Vector2(0, 56)
 size_flags_horizontal = 3

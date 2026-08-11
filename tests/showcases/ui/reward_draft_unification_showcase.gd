@@ -68,10 +68,7 @@ func _validate_showcase() -> void:
 	assert(_panel.options_box.get_child_count() == 3)
 	assert(_panel.options_box.columns == 3)
 	assert(int(_panel.get("_selected_index")) == 0)
-	var detail := _panel.get_node("Panel/VBox/SelectedDetail") as PanelContainer
-	var detail_text := detail.get_node("Margin/Content/DetailText") as Label
-	assert(detail.visible and detail_text.text.strip_edges() != "")
-	assert(detail_text.max_lines_visible == 2)
+	assert(_panel.get_node_or_null("Panel/VBox/SelectedDetail") == null)
 	for index in range(3):
 		var card := _panel.options_box.get_child(index) as Button
 		assert(card.tooltip_text == "")
@@ -90,7 +87,7 @@ func _validate_showcase() -> void:
 	await get_tree().process_frame
 	assert(_panel.options_box.get_child_count() == 3)
 	assert(_panel.subtitle_label.text.contains("确认前"))
-	print("PASS: reward draft showcase covers three cards, fixed details, long bilingual copy, focus, and hold states")
+	print("PASS: reward draft showcase covers three self-contained cards, long bilingual copy, focus, and hold states")
 	await TEST_TEARDOWN.finish(self, 0, _reset_runtime_state, [_panel])
 
 
