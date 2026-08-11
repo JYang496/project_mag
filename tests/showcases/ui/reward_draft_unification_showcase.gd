@@ -80,6 +80,13 @@ func _validate_showcase() -> void:
 	(_panel.options_box.get_child(1) as Button).grab_focus()
 	await get_tree().process_frame
 	assert(int(_panel.get("_selected_index")) == 1)
+	assert(get_viewport().gui_get_focus_owner() == _panel.options_box.get_child(1))
+	var space_event := InputEventKey.new()
+	space_event.keycode = KEY_SPACE
+	space_event.pressed = true
+	_panel.call("_input", space_event)
+	assert(int(_panel.get("_selected_index")) == 1)
+	assert(get_viewport().gui_get_focus_owner() == _panel.options_box.get_child(1))
 	_panel.call("_begin_quick_select_hold", 2)
 	_panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS * 0.65)
 	var hold_progress := (_panel.options_box.get_child(2) as Button).find_child("HoldProgress", true, false) as ProgressBar

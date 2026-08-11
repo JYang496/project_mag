@@ -123,7 +123,20 @@ func _ready() -> void:
 	var hold_track := first_card.find_child("HoldProgress", true, false) as ProgressBar
 	var hold_fill := hold_track.get_theme_stylebox("fill") as StyleBoxFlat
 	assert(hold_fill.bg_color.is_equal_approx(TOKENS.COLOR_ACCENT_ACTION))
-	panel.call("_on_reward_button_pressed", 1, panel.options_box.get_child(1) as Button)
+	var second_card := panel.options_box.get_child(1) as Button
+	panel.call("_on_reward_button_pressed", 1, second_card)
+	assert(get_viewport().gui_get_focus_owner() == second_card)
+	var space_press := InputEventKey.new()
+	space_press.keycode = KEY_SPACE
+	space_press.pressed = true
+	assert(bool(panel.call("_is_space_key_event", space_press)))
+	panel.call("_input", space_press)
+	assert(panel.get("_selected_index") == 1)
+	assert(get_viewport().gui_get_focus_owner() == second_card)
+	var physical_space_release := InputEventKey.new()
+	physical_space_release.physical_keycode = KEY_SPACE
+	physical_space_release.pressed = false
+	assert(bool(panel.call("_is_space_key_event", physical_space_release)))
 	assert(panel.get_node_or_null("Panel/VBox/SelectedDetail") == null)
 	assert(panel.confirm_button.text == LocalizationManager.tr_key("ui.reward.confirm", "Confirm Reward"))
 	panel.call("_begin_quick_select_hold", 0)

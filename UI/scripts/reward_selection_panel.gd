@@ -76,6 +76,9 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	if not is_modal_open():
 		return
+	if _is_space_key_event(event):
+		get_viewport().set_input_as_handled()
+		return
 	if not _summary_mode and event is InputEventKey and not event.echo:
 		var index := _quick_select_index_for_key(event.keycode)
 		if index >= 0:
@@ -89,6 +92,12 @@ func _input(event: InputEvent) -> void:
 		return
 	cancel_visible_modal()
 	get_viewport().set_input_as_handled()
+
+func _is_space_key_event(event: InputEvent) -> bool:
+	if not event is InputEventKey:
+		return false
+	var key_event := event as InputEventKey
+	return key_event.keycode == KEY_SPACE or key_event.physical_keycode == KEY_SPACE or key_event.unicode == KEY_SPACE
 
 func _process(delta: float) -> void:
 	if _held_quick_select_index < 0 or not is_modal_open():
@@ -364,6 +373,8 @@ func _on_reward_button_pressed(index: int, source_button: Button) -> void:
 		if child_index < _reward_options.size():
 			_apply_reward_card_style(button, _reward_options[child_index], selected)
 		child_index += 1
+	if source_button != null and is_instance_valid(source_button) and not source_button.has_focus():
+		source_button.grab_focus()
 	_confirm_button_state()
 
 func _update_grid_columns() -> void:
