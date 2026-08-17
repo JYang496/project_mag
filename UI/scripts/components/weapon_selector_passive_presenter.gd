@@ -1,9 +1,9 @@
 extends RefCounted
 class_name WeaponSelectorPassivePresenter
 
-const FOOTER_TOP := 74.0
-const FOOTER_HEIGHT := 11.0
-const SKILL_ICON_GUTTER := 16.0
+const FOOTER_TOP := 60.0
+const FOOTER_HEIGHT := 16.0
+const SKILL_ICON_GUTTER := 2.0
 const FOOTER_RIGHT_INSET := 2.0
 
 var _palette: Dictionary = {}

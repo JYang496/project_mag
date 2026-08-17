@@ -1,36 +1,85 @@
 keys,en,zh_CN
 weapon.25.name,Cannon,重炮
+weapon.25.role_summary,Low-frequency heavy strike,低频重击
 weapon.25.desc,"Long-range heavy cannon. Fits Defense and Execute setups: cease fire for 6 seconds to prime Breach Shot, then reload to refresh the setup cycle.","远程重型火炮。适合防御和处决构筑：停火 6 秒蓄势后触发破口射击，再通过换弹刷新循环。"
 weapon.10.name,Chainsaw Launcher,链锯发射器
+weapon.10.role_summary,Mid-close sustained cutting,中近距离持续切割
 weapon.10.desc,"Close-range projectile saw that ricochets inside its spawn cell. Boundary contact arms slowing vulnerability hits and extends that projectile's lifetime.","近距离投射锯刃，会在出生 cell 内弹射；接触边界后，命中会施加减速和易伤，并延长该投射物的生命周期。"
 weapon.2.name,Charged Blaster,蓄能爆破枪
+weapon.2.role_summary,Charged burst,蓄力爆发
 weapon.2.desc,"Mid-range Energy resonance beam. Each damage event grants 3 global energy; a full-energy beam locks its first target and ramps from +55% to +125% damage through repeated hits.","中距离能量共振光束。每次伤害获得 3 点全局能量；满能量光束锁定首个目标，重复命中会使额外伤害从 55% 提升至 125%。"
 weapon.11.name,Dash Blade,冲刺刃
+weapon.11.role_summary,High-mobility piercing,高机动穿刺
 weapon.11.desc,"Close melee dash weapon. Triggers on long dash hits, fits Close and Melee builds, and can branch into Freeze control.","近战冲刺武器。长距离冲刺命中时触发收益，适合近战和接触构筑，也可分支为冻结控制。"
 weapon.13.name,Flamethrower,喷火器
+weapon.13.role_summary,Close sustained area damage,近距离持续范围伤害
 weapon.13.desc,"Short-range fire cone. Core Heat and Area weapon whose damage grows as heat rises, rewarding sustained high-heat pressure.","短距离火焰锥形喷射。核心热量和范围武器；热量越高，伤害越强，鼓励维持高热压制。"
 weapon.21.name,Glacier Projector,冰川投射器
+weapon.21.role_summary,Area slow control,范围减速控制
 weapon.21.desc,"Mid-range Freeze cone. Freeze hits trigger Cold Snap as it recharges, supporting Freeze and Area control builds.","中距离冻结锥形武器。冻结命中会在冷冽回响充能时触发它，支撑冻结和范围控制构筑。"
 weapon.9.name,Laser,激光
+weapon.9.role_summary,Mid-range precision beam,中距离精准光束
 weapon.9.desc,"Mid-range Energy focus beam. Each damage event grants 6 global energy; firing at full energy begins a 2.5-second channel that drains the pool for wider, +30% damage beams.","中距离能量聚焦光束。每次伤害获得 6 点全局能量；满能量开火进入 2.5 秒聚焦，逐步消耗能量并获得更宽、额外 30% 伤害的光束。"
 weapon.1.name,Machine Gun,机枪
+weapon.1.role_summary,Mid-range sustained fire,中距离持续火力
 weapon.1.desc,"Sustained mid-range automatic fire. Core Heat and Projectile weapon: spending magazine ammo before reload expands shared heat capacity.","中距离持续自动火力。核心热量和投射物武器：换弹前消耗弹匣弹药可扩展共享热量容量。"
 weapon.7.name,Orbit,轨道卫星
+weapon.7.role_summary,Close automatic defense,近身自动防御
 weapon.7.desc,"Close support summon. Consumes magazine ammo to deploy slowing satellites, then rewards Defense and On Hit builds when the player is pressured.","近身支援召唤物。消耗弹匣弹药部署减速卫星，在玩家承压时为防御和命中流构筑提供收益。"
 weapon.5.name,Auto Pistol,自动手枪
+weapon.5.role_summary,Flexible steady output,灵活稳定输出
 weapon.5.desc,"Auto-targeting sidearm that fires at the nearest enemy in range. Every 8 seconds it enters a Pierce Mark window.","自动索敌副枪，会攻击范围内最近敌人；每 8 秒进入一次穿透标记窗口。"
 weapon.17.name,Plasma Lance,等离子长枪
+weapon.17.role_summary,Linear piercing damage,直线贯穿伤害
 weapon.17.desc,"Long-range Heat/Energy exchange lance. Full-energy discharge snapshots current Heat, spends up to 35 Heat, and scales its release multiplier from +55% to +125%.","远程热量/能量交换长枪。满能量放电会快照当前热量、消耗最多 35 点热量，并使额外释放伤害从 55% 随热量提升至 125%。"
 weapon.8.name,Rocket Launcher,火箭发射器
+weapon.8.role_summary,Long-range area blast,远距离范围爆破
 weapon.8.desc,"Long-range Area launcher. Slow rockets and growing blasts clear groups, while Cluster Kill charges reward grouped enemy cleanup.","远程范围发射器。慢速火箭和逐步扩大的爆炸用于清理敌群，集群击杀充能奖励成群清场。"
 weapon.4.name,Shotgun,霰弹枪
+weapon.4.role_summary,Close-range burst,近距离爆发
 weapon.4.desc,"Close-range pellet burst. Fits Close and Projectile builds; multiple pellets on one target spend Close Hit charges for bonus final damage.","近距离弹丸爆发。适合近战和投射物构筑；多个弹丸命中同一目标时消耗近距命中充能，获得额外最终伤害。"
 weapon.26.name,Sniper,狙击枪
+weapon.26.role_summary,Extreme-range heavy strike,超远距离重击
 weapon.26.desc,"Long-range Projectile rifle. Fits Mark and Execute-adjacent builds by rewarding far or marked-target hits with charge-based bonus damage.","远程投射物步枪。适合标记和处决相关构筑，远距离或标记目标命中可获得基于充能的额外伤害。"
 weapon.3.name,Spear Launcher,长矛发射器
+weapon.3.role_summary,Mid-range piercing control,中距离穿刺控制
 weapon.3.desc,"Mid-range Projectile spear. Repeat hits build Mark charge; reload with enough charge to launch a marking radial volley.","中距离投射长矛。重复命中会积累标记充能；充能足够时换弹会发射施加标记的环形齐射。"
 passive.piercing_blade_dance.name,Piercing Blade Dance,穿刺轮舞
 passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds charge. Reload at 10 or 20 charge to launch an 8- or 16-direction volley. Its hits mark surviving enemies for 20 seconds and knock them away.","同一根长矛重复伤害同一敌人可积累充能。充能达到10或20点时换弹，发射8或16方向齐射；命中存活敌人后施加持续20秒的标记并将其击退。"
+passive.cannon_idle_fire_triggered.name,Breach Shot,破阵炮击
+passive.cannon_idle_fire_triggered.desc,"Defense/Execute setup. Cease fire for 6 seconds, then fire one empowered cannon shot with stronger direct damage; reload refreshes the setup cycle.","防御与斩杀准备。停火 6 秒后，下一发重炮获得强化并造成更高直接伤害；完成装填会刷新准备周期。"
+passive.cannon_zero_energy_cycle.name,Zero Burst,零点爆发
+passive.cannon_zero_energy_cycle.desc,"Stored burst cycle. Each valid damage event grants 10 global energy. Full-energy fire deals 2x direct damage, then releases a 90-radius secondary pulse with stronger execute payoff.","蓄能爆发循环。每次有效伤害获得 10 点全局能量。满能量射击造成 2 倍直接伤害，随后释放半径 90 的二次脉冲，并获得更强的斩杀收益。"
+passive.chainsaw_wall_contact_triggered.name,Wall Contact,触壁回旋
+passive.chainsaw_wall_contact_triggered.desc,"Close debuff trigger. Chainsaw projectiles bounce within their spawn cell; the first boundary contact arms hits to slow and apply vulnerability. Each bounce adds 1 second of lifetime, up to 2 seconds total. Reloading resets and refreshes the state.","近距离减益触发。链锯弹会在生成格内反弹；首次触碰边界后，命中可施加减速与易伤。每次反弹延长 1 秒持续时间，最多延长 2 秒。装填会重置并刷新该状态。"
+passive.charged_blaster_multi_hit_triggered.name,Beam Resonance,光束共振
+passive.charged_blaster_multi_hit_triggered.desc,"Locking resonance cycle. Each valid beam damage event grants 3 global energy. At full energy, the beam starts at +55% damage and ramps to +125% through repeated hits on its first target.","锁定共振循环。每次有效光束伤害获得 3 点全局能量。满能量时，光束初始伤害提高 55%，并通过持续命中首个目标逐步提升至 125%。"
+passive.dash_blade_long_dash_hit_triggered.name,Long Dash Hit,长距突斩
+passive.dash_blade_long_dash_hit_triggered.desc,"Close trigger. Dash Blade hits slow enemies; dash far enough before the melee hit to trigger. Reloading refreshes the threshold cycle.","近距离触发。冲刺刃命中会减速敌人；近战命中前冲刺足够远即可触发。装填会刷新距离阈值周期。"
+passive.flamethrower_heat_prepared.name,Heat Prepared,热能预备
+passive.flamethrower_heat_prepared.desc,"Accumulate 5 seconds of active firing to immediately gain +10% fire damage for 10 seconds. Repeated triggers refresh the duration and stack up to +20%.","累计持续开火 5 秒后，立即获得持续 10 秒的 10% 火焰伤害加成。重复触发会刷新持续时间，最高叠加至 20%。"
+passive.glacier_cold_snap_triggered.name,Cold Snap,寒潮骤袭
+passive.glacier_cold_snap_triggered.desc,"The next attack freezes every non-boss enemy it hits for 1 second. Bosses are slowed to 50% movement speed for 1 second instead. It recharges after 6 seconds or when reloading finishes.","下一次攻击会冻结命中的所有非首领敌人 1 秒；首领则改为在 1 秒内降低至 50% 移动速度。6 秒后或完成装填时重新充能。"
+passive.laser_focus_channel_triggered.name,Focus Channel,聚焦引导
+passive.laser_focus_channel_triggered.desc,"Sustained focus cycle. Each valid damage event grants 6 global energy. Firing at full energy starts a 2.5-second channel that gradually drains the pool and grants +30% damage and wider beams.","持续聚焦循环。每次有效伤害获得 6 点全局能量。满能量时开火会开始 2.5 秒引导，逐步消耗能量，并使伤害提高 30%、光束变宽。"
+passive.machine_gun_heat_expansion.name,Thermal Amplification,热能增幅
+passive.machine_gun_heat_expansion.desc,"Each 25% of a magazine spent restores 1 of 4 charges. Reload consumes all stored charges and temporarily amplifies elemental alignment without changing the fixed -100 to 100 Heat bounds.","每消耗弹匣容量的 25%，恢复 4 层充能中的 1 层。装填会消耗全部已储存充能并暂时增强元素倾向，但不会改变固定的 -100 至 100 热量范围。"
+passive.orbit_energy_cycle.name,Orbital Pulse,轨道脉冲
+passive.orbit_energy_cycle.desc,"Deployment energy cycle. Each valid satellite damage event grants 8 global energy. Full-energy deployment adds 2 satellites and extends their lifetime by 50% instead of multiplying direct damage.","部署能量循环。每次有效卫星伤害获得 8 点全局能量。满能量部署会额外增加 2 颗卫星并延长 50% 持续时间，而非提高直接伤害倍率。"
+passive.orbit_player_damaged_triggered.name,Damage Reaction,受击反应
+passive.orbit_player_damaged_triggered.desc,"Defense trigger. Triggers when the player takes damage, making Orbit a pressure-response support weapon; reload refreshes the state.","防御触发。玩家受到伤害时触发，使轨道武器成为应对压力的支援武器；装填会刷新该状态。"
+passive.pistol_arc_energy_cycle.name,Arc Discharge,电弧释放
+passive.pistol_arc_energy_cycle.desc,"Propagation energy cycle. Each valid Arc damage event grants 12 global energy. Full-energy fire gains +15% direct damage and chains 45% damage to up to 3 nearby enemies.","传导能量循环。每次有效电弧伤害获得 12 点全局能量。满能量射击获得 15% 直接伤害加成，并向最多 3 个附近敌人传导 45% 伤害。"
+passive.pistol_continuous_move_triggered.name,Pierce Mark,穿透标记
+passive.pistol_continuous_move_triggered.desc,"Mark trigger. Has 3 charges; every 8 seconds a 3-second mark window spends 1 charge, and Auto Pistol hits during the window mark enemies. Reloading restores all charges.","标记触发。拥有 3 层充能；每隔 8 秒开启持续 3 秒的标记窗口并消耗 1 层充能，窗口期间自动手枪命中会标记敌人。装填会恢复全部充能。"
+passive.plasma_lance_energy_discharge_triggered.name,Plasma Discharge,等离子释放
+passive.plasma_lance_energy_discharge_triggered.desc,"Heat-exchange release. Each valid damage event grants 10 global energy. Full-energy fire snapshots Heat, spends up to 35 Heat, and scales the release bonus from +55% to +125%.","热量交换释放。每次有效伤害获得 10 点全局能量。满能量射击会记录当前热量、消耗最多 35 点热量，并使释放加成在 55% 至 125% 之间变化。"
+passive.rocket_cluster_kill_triggered.name,Cluster Kill,集群歼灭
+passive.rocket_cluster_kill_triggered.desc,"Area trigger. Has 3 charges; rocket kills near other enemies spend 1 charge to reward clustered group clears. Reloading restores all charges.","范围触发。拥有 3 层充能；火箭在其他敌人附近完成击杀时消耗 1 层充能，奖励集群清除。装填会恢复全部充能。"
+passive.shotgun_close_hit_triggered.name,Close Hit,近距轰击
+passive.shotgun_close_hit_triggered.desc,"Close trigger. Has 3 charges; multiple pellets from the same shot gain bonus final damage, and close-range hits spend 1 charge. Reloading restores all charges.","近距离触发。拥有 3 层充能；同一发射击的多颗弹丸会获得额外最终伤害，近距离命中消耗 1 层充能。装填会恢复全部充能。"
+passive.sniper_far_hit_triggered.name,Far Hit,远距狙击
+passive.sniper_far_hit_triggered.desc,"Mark/Projectile trigger. Has 3 charges; far or marked-target hits spend 1 charge for distance-based bonus damage. Reloading restores all charges.","标记与投射物触发。拥有 3 层充能；远距离命中或命中被标记目标时消耗 1 层充能，并根据距离获得额外伤害。装填会恢复全部充能。"
 branch.thermal_cannon_branch.name,Thermal Cannon,热能重炮
 branch.thermal_cannon_branch.desc,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.,热能分支：注入热量机制，将炮弹转化为火焰伤害，并随热量提高输出。
 branch.zero_cannon_branch.name,Zero Cannon,零式重炮
@@ -147,6 +196,24 @@ module.wmod_magazine_pressure.name,Magazine Pressure,弹仓余压
 module.wmod_inertial_aim.name,Inertial Aim,惯性瞄准
 module.wmod_crossfire.name,Crossfire,交叉火力
 module.wmod_kill_endurance.name,Kill Endurance,击杀续航
+module.wmod_dash_impact.name,Dash Impact,冲刺震击
+module.wmod_frost_resonance.name,Frost Resonance,霜冻共振
+module.wmod_skill_overdrive.name,Skill Overdrive,技能过载
+module.wmod_dash_impact.effect.1,"Deals 70% weapon damage after a long movement skill","长距离位移技能结束后造成 70% 武器伤害"
+module.wmod_dash_impact.effect.2,"Deals 95% weapon damage after a long movement skill","长距离位移技能结束后造成 95% 武器伤害"
+module.wmod_dash_impact.effect.3,"Deals 120% weapon damage after a long movement skill","长距离位移技能结束后造成 120% 武器伤害"
+module.wmod_dash_impact.detail.1,Travel at least 180 px with a movement skill to trigger a 150 px shockwave,位移技能实际移动至少 180 像素时触发半径 150 像素的武器震波
+module.wmod_dash_impact.detail.2,Triggers once per skill use,每次技能释放最多触发一次
+module.wmod_frost_resonance.effect.1,"Frost burst deals 45% weapon damage","霜冻爆发造成 45% 武器伤害"
+module.wmod_frost_resonance.effect.2,"Frost burst deals 65% weapon damage","霜冻爆发造成 65% 武器伤害"
+module.wmod_frost_resonance.effect.3,"Frost burst deals 85% weapon damage","霜冻爆发造成 85% 武器伤害"
+module.wmod_frost_resonance.detail.1,Skill damage against a frosted target triggers a freeze burst,技能伤害命中带有霜冻层数的目标时触发冻结爆发
+module.wmod_frost_resonance.detail.2,Each target can trigger once per skill use,每个目标在一次技能释放中最多触发一次
+module.wmod_skill_overdrive.effect.1,"High-energy skills grant 20% weapon damage","高能耗技能使武器伤害提高 20%"
+module.wmod_skill_overdrive.effect.2,"High-energy skills grant 30% weapon damage","高能耗技能使武器伤害提高 30%"
+module.wmod_skill_overdrive.effect.3,"High-energy skills grant 40% weapon damage","高能耗技能使武器伤害提高 40%"
+module.wmod_skill_overdrive.detail.1,Spend at least 50 energy on a skill to gain weapon damage for 4 seconds,技能消耗至少 50 点能量时使武器伤害提高 4 秒
+module.wmod_skill_overdrive.detail.2,Refreshing the effect replaces its duration,再次触发会刷新效果持续时间
 module.wmod_area_expander.effect.1,"Area effect radius +15%","范围效果半径 +15%"
 module.wmod_area_expander.effect.2,"Area effect radius +22%","范围效果半径 +22%"
 module.wmod_area_expander.effect.3,"Area effect radius +29%","范围效果半径 +29%"
@@ -328,7 +395,7 @@ module.wmod_reload_speed_link.detail.1,"Reloads faster while another weapon is r
 module.wmod_trail_aoe_freeze.detail.1,"Projectiles leave freeze AoE trails","投射物会留下冻结范围轨迹"
 module.wmod_trail_aoe_freeze.detail.2,"Trail duration {duration}s","轨迹持续 {duration} 秒"
 mecha.4.name,Tank,Tank
-mecha.1.name,Heavy Assault,Heavy Assault
+mecha.1.name,Comet,流星
 mecha.3.name,Melee,Melee
 mecha.2.name,Long-Range Firepower,远距火力型
 mecha.5.name,Turret,Turret

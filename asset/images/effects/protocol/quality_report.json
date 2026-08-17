@@ -8,7 +8,6 @@
     {
       "project_root": "E:\\Godot Projects\\project_mag",
       "policy_path": "E:\\Godot Projects\\project_mag\\Visual\\pixel_art_policy.gd",
-      "policy_sha256": "f4919b4106a901ce599eb70c832fef732b531f10252272877c75563539a1214e",
       "role": "effect_large",
       "constant": "EFFECT_LARGE_FRAME_SIZE",
       "width": 128,
@@ -28,8 +27,6 @@
     {
       "source": "E:\\Godot Projects\\project_mag\\tmp\\imagegen\\protocol_ring_option3\\protocol_ring_alpha.png",
       "destination": "E:\\Godot Projects\\project_mag\\asset\\images\\effects\\protocol\\protocol_ring_tintable.png",
-      "source_sha256": "465081a660ae88311cc44dd131536f1221bc476887c00614f4bc687cc4094535",
-      "output_sha256": "6379b9006318c63bf7e019deb6c085fa3d73aab78ea55664dd49e240f90926f1",
       "preset": "effect_large",
       "protected": false,
       "grid": {

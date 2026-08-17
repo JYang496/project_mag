@@ -11,8 +11,7 @@ func setup(source_weapon: Weapon) -> void:
 	weapon = source_weapon
 
 func get_normalized_weapon_traits() -> Array[StringName]:
-	var modules_container := _get_modules_container()
-	var traits: Array[StringName] = modules_container.get_normalized_weapon_traits() if modules_container != null else []
+	var traits: Array[StringName] = WeaponTrait.flags_to_traits(weapon.base_trait_flags)
 	for source_traits in runtime_trait_suppressions.values():
 		for runtime_trait in source_traits:
 			traits.erase(runtime_trait)
@@ -23,8 +22,7 @@ func get_normalized_weapon_traits() -> Array[StringName]:
 	return WeaponTrait.normalize_array(traits)
 
 func get_explicit_weapon_traits() -> Array[StringName]:
-	var modules_container := _get_modules_container()
-	return modules_container.get_normalized_weapon_traits() if modules_container != null else []
+	return WeaponTrait.flags_to_traits(weapon.base_trait_flags)
 
 func add_runtime_weapon_trait(source_id: StringName, trait_name: Variant) -> void:
 	var normalized := WeaponTrait.normalize(trait_name)
@@ -94,7 +92,7 @@ func get_module_count() -> int:
 	return count
 
 func get_available_module_slots() -> int:
-	return max(0, int(weapon.MAX_MODULE_NUMBER) - get_module_count())
+	return max(0, weapon.module_slot_capacity - get_module_count())
 
 func get_equipped_modules() -> Array[Module]:
 	var output: Array[Module] = []
@@ -235,9 +233,9 @@ func apply_stat_snapshot(snapshot: Dictionary) -> void:
 	if snapshot.has("heat_per_shot") or snapshot.has("heat_max_value") or snapshot.has("heat_cool_rate"):
 		weapon.configure_heat(weapon.heat_per_shot, weapon.heat_max_value, weapon.heat_cool_rate)
 
-func _get_modules_container() -> WeaponModules:
+func _get_modules_container() -> WeaponModuleContainer:
 	if weapon == null:
 		return null
 	if weapon.modules != null:
 		return weapon.modules
-	return weapon.get_node_or_null("Modules") as WeaponModules
+	return weapon.get_node_or_null("Modules") as WeaponModuleContainer

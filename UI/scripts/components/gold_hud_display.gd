@@ -10,6 +10,7 @@ const VALUE_POSITION := Vector2(38.0, 2.0)
 const VALUE_SIZE := Vector2(72.0, 34.0)
 const GAIN_COLOR := Color(1.0, 0.84, 0.25, 1.0)
 const SPEND_COLOR := Color(1.0, 0.42, 0.22, 1.0)
+const STEADY_ALPHA := 0.72
 
 var displayed_gold: float = 0.0:
 	set(value):
@@ -29,6 +30,7 @@ func _ready() -> void:
 	custom_minimum_size = DISPLAY_SIZE
 	size = DISPLAY_SIZE
 	pivot_offset = DISPLAY_SIZE * 0.5
+	modulate.a = STEADY_ALPHA
 	_ensure_children()
 	_update_value_label()
 
@@ -84,7 +86,7 @@ func _ensure_children() -> void:
 		_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		_value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_value_label.add_theme_font_size_override("font_size", 21)
+		_value_label.add_theme_font_size_override("font_size", 24)
 		_value_label.add_theme_color_override("font_color", Color(0.965, 0.91, 0.69, 1.0))
 		_value_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.82))
 		_value_label.add_theme_constant_override("outline_size", 2)
@@ -108,7 +110,7 @@ func _show_delta(delta: int) -> void:
 	delta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	delta_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	delta_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	delta_label.add_theme_font_size_override("font_size", 16)
+	delta_label.add_theme_font_size_override("font_size", 12)
 	delta_label.add_theme_color_override("font_color", GAIN_COLOR if delta > 0 else SPEND_COLOR)
 	delta_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.76))
 	delta_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -125,9 +127,12 @@ func _play_gain_pulse() -> void:
 	if _pulse_tween != null and _pulse_tween.is_valid():
 		_pulse_tween.kill()
 	scale = Vector2.ONE
+	modulate.a = 1.0
 	_pulse_tween = create_tween()
+	_pulse_tween.set_parallel(true)
 	_pulse_tween.tween_property(self, "scale", Vector2(1.08, 1.08), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_pulse_tween.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_pulse_tween.tween_property(self, "modulate:a", STEADY_ALPHA, 0.24).set_delay(0.12).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	_pulse_tween.chain().tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _format_tooltip(value: int) -> String:
 	return LocalizationManager.tr_format("ui.hud.gold", {"value": value}, "Gold: %s" % str(value))

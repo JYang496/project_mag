@@ -1,6 +1,6 @@
 [gd_resource type="Theme" format=3 uid="uid://c0a8j2ixy3hkx"]
 
-[ext_resource type="FontFile" uid="uid://b7peena5sx245" path="res://asset/fonts/NotoSansSC-Regular.ttf" id="1_font"]
+[ext_resource type="FontFile" path="res://asset/fonts/fusion_pixel/fusion-pixel-12px-proportional-zh_hans.ttf" id="1_font"]
 
 [sub_resource type="StyleBoxFlat" id="ButtonDisabled"]
 content_margin_left = 14.0

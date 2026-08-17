@@ -133,9 +133,9 @@ func on_projectile_hit_wall(projectile: Projectile, wall_hit: Dictionary) -> voi
 		bounce_lifetime_bonus_sec,
 		bounce_lifetime_bonus_max_sec
 	)
-	if not is_offhand_skill_ready():
+	if not is_passive_ready():
 		return
-	notify_offhand_skill_triggered(0.0)
+	consume_passive_charge()
 	_cell_bounce_hit_effect_active = true
 	emit_passive_trigger(&"chainsaw_wall_contact_triggered", {
 		"projectile": projectile,
@@ -172,8 +172,8 @@ func get_passive_status() -> Dictionary:
 		"vulnerability_duration": maxf(close_vulnerability_duration_sec, 0.1),
 	})
 
-func _refresh_offhand_skill_on_reload() -> void:
-	super._refresh_offhand_skill_on_reload()
+func _refresh_passive_on_reload() -> void:
+	super._refresh_passive_on_reload()
 	_cell_bounce_hit_effect_active = false
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:

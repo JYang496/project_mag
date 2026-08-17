@@ -32,6 +32,15 @@ func _run() -> void:
 	_panel = PANEL_SCENE.instantiate() as Control
 	add_child(_panel)
 	_panel.call("open", [ELIMINATION, SURVIVAL, REWARD], Callable(self, "_on_contract_confirmed"), Callable())
+	await get_tree().process_frame
+	for opening_card: Button in _panel.get("cards") as Array:
+		var opening_icon := opening_card.get_node("Margin/Content/Header/ContractIcon") as Control
+		var drawn_center_global := opening_card.get_global_transform_with_canvas() \
+			* (opening_card.call("get_contract_icon_center_local") as Vector2)
+		_assert_true(
+			opening_icon.get_global_rect().has_point(drawn_center_global),
+			"Protocol icon should remain in its slot during the first opening frame."
+		)
 	await get_tree().create_timer(1.0, true, false, true).timeout
 	await get_tree().process_frame
 	if bool(_panel.get("_locked")):
@@ -106,6 +115,20 @@ func _run() -> void:
 	var confirm_button := _panel.get_node("Shade/Panel/Margin/Content/Actions/Confirm") as Button
 	var protocol_cards: Array = _panel.get("cards") as Array
 	var interaction_hint := _panel.get_node("Shade/Panel/Margin/Content/Subtitle") as Label
+	var settled_icon_centers: Array[Vector2] = []
+	for protocol_card: Button in protocol_cards:
+		settled_icon_centers.append(protocol_card.call("get_contract_icon_center_local") as Vector2)
+	panel_container.scale.x = 0.025
+	await get_tree().process_frame
+	for index in range(3):
+		_assert_true(
+			(protocol_cards[index].call("get_contract_icon_center_local") as Vector2).is_equal_approx(
+				settled_icon_centers[index]
+			),
+			"Protocol card %d icon placement should ignore the panel's opening scale." % (index + 1)
+		)
+	panel_container.scale.x = 1.0
+	await get_tree().process_frame
 	_assert_true(
 		interaction_hint.text.contains("Hold") and interaction_hint.text.contains("1–3"),
 		"Protocol selection should explicitly teach both card hold and numeric hold shortcuts."

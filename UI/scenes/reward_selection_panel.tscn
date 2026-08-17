@@ -76,6 +76,12 @@ theme_override_constants/margin_bottom = 8
 theme_override_constants/separation = 10
 alignment = 1
 
+[node name="DetailHint" type="HBoxContainer" parent="Panel/VBox/ActionPanel/Margin/Actions"]
+custom_minimum_size = Vector2(360, 44)
+mouse_filter = 2
+theme_override_constants/separation = 5
+alignment = 1
+
 [node name="CancelButton" type="Button" parent="Panel/VBox/ActionPanel/Margin/Actions"]
 custom_minimum_size = Vector2(140, 44)
 text = "Cancel"

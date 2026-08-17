@@ -60,6 +60,8 @@ func on_module_mode_pressed() -> void:
 func apply_mode(new_mode: StringName) -> void:
 	if not ensure_view():
 		return
+	if owner_ui != null and owner_ui.has_method("set_management_item_mode"):
+		owner_ui.call("set_management_item_mode", new_mode)
 	sync_state_to_view()
 	upgrade_management_view.apply_mode(new_mode)
 	sync_view_state()

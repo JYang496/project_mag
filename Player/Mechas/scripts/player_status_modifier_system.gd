@@ -6,6 +6,7 @@ const OutgoingDamageResultType := preload("res://Combat/damage/outgoing_damage_r
 var _player
 var _player_data: Node = null
 var _move_speed_mul_modifiers: Dictionary = {}
+var _reload_speed_mul_modifiers: Dictionary = {}
 var _vision_mul_modifiers: Dictionary = {}
 var _damage_mul_modifiers: Dictionary = {}
 var _low_hp_damage_modifiers: Dictionary = {}
@@ -36,6 +37,24 @@ func remove_move_speed_mul(source_id: StringName) -> void:
 func get_total_move_speed_mul() -> float:
 	var total := 1.0
 	for mul in _move_speed_mul_modifiers.values():
+		total *= float(mul)
+	return maxf(total, 0.05)
+
+func apply_reload_speed_mul(source_id: StringName, mul: float) -> void:
+	if source_id == StringName():
+		return
+	var clamped_mul := clampf(mul, 0.05, 10.0)
+	if is_equal_approx(clamped_mul, 1.0):
+		remove_reload_speed_mul(source_id)
+		return
+	_reload_speed_mul_modifiers[source_id] = clamped_mul
+
+func remove_reload_speed_mul(source_id: StringName) -> void:
+	_reload_speed_mul_modifiers.erase(source_id)
+
+func get_total_reload_speed_mul() -> float:
+	var total := 1.0
+	for mul in _reload_speed_mul_modifiers.values():
 		total *= float(mul)
 	return maxf(total, 0.05)
 

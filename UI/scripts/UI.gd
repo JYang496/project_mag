@@ -133,6 +133,19 @@ var _upgrade_hover_item: Dictionary = {}
 var _upgrade_selected_item: Dictionary = {}
 var selected_upgrade_module: Module
 
+# Shared weapon/module context for purchase, upgrade, and warehouse management.
+# A fresh UI instance starts in weapon mode; every management tab writes back
+# here so opening or switching services preserves the player's current context.
+var _management_item_mode: StringName = &"weapon"
+
+func get_management_item_mode() -> StringName:
+	return _management_item_mode
+
+func set_management_item_mode(mode: StringName) -> void:
+	_management_item_mode = &"module" if mode == &"module" else &"weapon"
+	_shop_purchase_mode = _management_item_mode
+	_upgrade_mode = _management_item_mode
+
 
 var equipped_m: GridContainer
 var modules: GridContainer
@@ -215,6 +228,8 @@ var management_ui_bootstrap_controller
 var modal_ui_controller
 var ui_layout_controller
 var pause_ui_controller
+var _pause_menu_tween: Tween
+var _pause_menu_rest_x := 0.0
 var localization_refresh_controller
 var ui_bootstrap_controller
 var hint_presenter
@@ -912,10 +927,14 @@ func request_module_equip_selections(
 			InventoryData.finish_pending_transaction(transaction_ids[index])
 		if on_item_complete.is_valid():
 			on_item_complete.call(index, module_instance, assigned)
+	var wrapped_complete := func(processed: bool) -> void:
+		if on_complete.is_valid():
+			on_complete.call(processed)
+		PhaseManager.request_settlement_completion_check()
 	var opened := module_equip_selection_panel.open_for_modules(
 		module_instances,
 		wrapped_item_complete,
-		on_complete,
+		wrapped_complete,
 		true
 	)
 	if not opened:
@@ -932,6 +951,7 @@ func _on_module_assignment_completed(
 	InventoryData.finish_pending_transaction(transaction_id)
 	if on_complete.is_valid():
 		on_complete.call_deferred(assigned)
+	PhaseManager.request_settlement_completion_check()
 
 func request_reward_selection(
 	route_display_name: String,
@@ -1200,9 +1220,14 @@ func _input(_event) -> void:
 			and controls_hint_view.handle_input_event(_event):
 		get_viewport().set_input_as_handled()
 		return
-	if _handle_primary_menu_input(_event):
-		get_viewport().set_input_as_handled()
-		return
+	var modal_open: bool = modal_ui_controller != null and bool(modal_ui_controller.is_modal_open())
+	if not modal_open:
+		if _handle_primary_menu_input(_event):
+			get_viewport().set_input_as_handled()
+			return
+		if _handle_rest_service_switch(_event):
+			get_viewport().set_input_as_handled()
+			return
 	var is_right_click: bool = _event is InputEventMouseButton \
 			and _event.pressed and _event.button_index == MOUSE_BUTTON_RIGHT
 	if pause_menu_root != null and pause_menu_root.visible \
@@ -1225,10 +1250,11 @@ func _input(_event) -> void:
 		_set_pause_menu_open(not get_tree().paused)
 	
 	# Switch weapon
-	if Input.is_action_just_pressed("SWITCH_LEFT"):
+	var rest_menu_blocks_weapon_switch: bool = rest_area_ui_controller != null and bool(rest_area_ui_controller.active)
+	if not rest_menu_blocks_weapon_switch and Input.is_action_just_pressed("SWITCH_LEFT"):
 		if PlayerData.player and is_instance_valid(PlayerData.player):
 			PlayerData.player.try_shift_main_weapon(-1)
-	if Input.is_action_just_pressed("SWITCH_RIGHT"):
+	if not rest_menu_blocks_weapon_switch and Input.is_action_just_pressed("SWITCH_RIGHT"):
 		if PlayerData.player and is_instance_valid(PlayerData.player):
 			PlayerData.player.try_shift_main_weapon(1)
 		
@@ -1259,6 +1285,17 @@ func _handle_primary_menu_input(event: InputEvent) -> bool:
 	var menu_id: StringName = rest_area_ui_controller.primary_menu_id
 	var panel := rest_area_ui_controller.get_service_primary_panel(menu_id) as Control
 	return rest_area_management_shell.handle_primary_menu_input(event, menu_id, panel)
+
+func _handle_rest_service_switch(event: InputEvent) -> bool:
+	if event.is_echo() or not event.is_pressed() or rest_area_ui_controller == null:
+		return false
+	if not rest_area_ui_controller.is_secondary_service_navigation_active():
+		return false
+	if event.is_action_pressed("SWITCH_LEFT"):
+		return rest_area_ui_controller.switch_service(-1)
+	if event.is_action_pressed("SWITCH_RIGHT"):
+		return rest_area_ui_controller.switch_service(1)
+	return false
 
 func _cancel_top_level_non_battle_ui() -> bool:
 	if battle_contract_selection_panel != null and battle_contract_selection_panel.visible:
@@ -1487,6 +1524,8 @@ func _on_resume_button_pressed() -> void:
 func _set_pause_menu_open(open: bool) -> void:
 	if pause_menu_root == null or not is_instance_valid(pause_menu_root):
 		return
+	if _pause_menu_tween != null and _pause_menu_tween.is_valid():
+		_pause_menu_tween.kill()
 	if open:
 		# Keep the blocker last inside the reserved modal CanvasLayer so its
 		# input order matches its globally topmost visual priority.
@@ -1494,11 +1533,34 @@ func _set_pause_menu_open(open: bool) -> void:
 		pause_parent.move_child(pause_menu_root, pause_parent.get_child_count() - 1)
 		pause_menu_root.mouse_filter = Control.MOUSE_FILTER_STOP
 		pause_menu_root.visible = true
+		_pause_menu_rest_x = pause_menu_panel.position.x
+		pause_menu_panel.modulate.a = 0.0
+		pause_menu_panel.position.x = _pause_menu_rest_x + 28.0
 		clear_rest_area_hover_hint()
 		get_tree().paused = true
+		_pause_menu_tween = create_tween().set_parallel(true)
+		_pause_menu_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		_pause_menu_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		_pause_menu_tween.tween_property(pause_menu_panel, "modulate:a", 1.0, 0.20)
+		_pause_menu_tween.tween_property(pause_menu_panel, "position:x", _pause_menu_rest_x, 0.20)
+		resume_button.grab_focus()
 	else:
-		get_tree().paused = false
-		pause_menu_root.visible = false
+		_pause_menu_tween = create_tween().set_parallel(true)
+		_pause_menu_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		_pause_menu_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		_pause_menu_tween.tween_property(pause_menu_panel, "modulate:a", 0.0, 0.14)
+		_pause_menu_tween.tween_property(pause_menu_panel, "position:x", _pause_menu_rest_x + 20.0, 0.14)
+		_pause_menu_tween.finished.connect(_finish_pause_menu_close.bind(_pause_menu_tween))
+	_update_cursor_presentation()
+
+func _finish_pause_menu_close(completed_tween: Tween) -> void:
+	if completed_tween != _pause_menu_tween:
+		return
+	pause_menu_panel.position.x = _pause_menu_rest_x
+	pause_menu_panel.modulate.a = 1.0
+	pause_menu_root.visible = false
+	get_tree().paused = false
+	_pause_menu_tween = null
 	_update_cursor_presentation()
 
 
@@ -1613,7 +1675,7 @@ func _ensure_right_hud_stack() -> VBoxContainer:
 	right_hud_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	right_hud_stack.z_index = 35
 	right_hud_stack.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	right_hud_stack.offset_left = -344.0
+	right_hud_stack.offset_left = -272.0
 	right_hud_stack.offset_top = 24.0
 	right_hud_stack.offset_right = -24.0
 	right_hud_stack.offset_bottom = 456.0
@@ -1631,7 +1693,7 @@ func _ensure_left_contract_hud_stack() -> VBoxContainer:
 	left_contract_hud_stack.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	left_contract_hud_stack.offset_left = 24.0
 	left_contract_hud_stack.offset_top = 78.0
-	left_contract_hud_stack.offset_right = 364.0
+	left_contract_hud_stack.offset_right = 304.0
 	left_contract_hud_stack.offset_bottom = 360.0
 	left_contract_hud_stack.add_theme_constant_override("separation", 10)
 	gui_root.add_child(left_contract_hud_stack)

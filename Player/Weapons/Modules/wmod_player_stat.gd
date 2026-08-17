@@ -26,6 +26,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	_disconnect_player_data_signals()
 	_remove_player_stat()
+	super._exit_tree()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PARENTED:

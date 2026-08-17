@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://Player/Weapons/Modules/wmod_skill_overdrive.gd" id="2_script"]
+[ext_resource type="Script" path="res://Player/Weapons/Core/module_trigger_spec.gd" id="3_trigger"]
+[ext_resource type="Texture2D" path="res://asset/images/modules/pixel/wmod_battle_focus_buff.png" id="4_icon"]
+
+[sub_resource type="Resource" id="TriggerSpec"]
+script = ExtResource("3_trigger")
+event_type = "skill_cast_committed"
+requires_action_context = true
+minimum_energy_spent = 50.0
+once_per_action = true
+
+[node name="SkillOverdrive" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+module_id = &"wmod_skill_overdrive"
+display_name = "Skill Overdrive"
+cost = 12
+level_effects = PackedStringArray("High-energy skills grant 20% weapon damage", "High-energy skills grant 30% weapon damage", "High-energy skills grant 40% weapon damage")
+module_tags = PackedStringArray("trigger", "energy", "buff", "duration")
+required_hooks = 256
+trigger_spec = SubResource("TriggerSpec")
+
+[node name="Sprite" parent="." index="0"]
+texture = ExtResource("4_icon")

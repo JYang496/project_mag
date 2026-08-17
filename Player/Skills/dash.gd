@@ -19,14 +19,22 @@ func can_activate() -> bool:
 		return bool(_player.call("can_request_dash", direction, dash_distance))
 	return true
 
-func activate_skill() -> void:
-	if _player == null or not is_instance_valid(_player):
-		return
+func activate_skill(context: SkillActionContext) -> bool:
 	var dash_direction := _get_dash_direction()
 	if dash_direction == Vector2.ZERO:
-		return
-	if _player.has_method("request_dash"):
-		_player.call("request_dash", dash_direction, dash_distance, dash_duration, &"active_dash")
+		return false
+	var callback := _on_dash_finished.bind(context)
+	_player.dash_finished.connect(callback, CONNECT_ONE_SHOT)
+	var started := _player.request_dash(dash_direction, dash_distance, dash_duration, &"active_skill_dash")
+	if not started:
+		_player.dash_finished.disconnect(callback)
+	return started
+
+func get_skill_tags() -> Array[StringName]:
+	return [&"movement"]
+
+func _on_dash_finished(_data: Dictionary, context: SkillActionContext) -> void:
+	finish_skill_action(context, _player.global_position)
 
 func _get_dash_direction() -> Vector2:
 	if _player == null or not is_instance_valid(_player):

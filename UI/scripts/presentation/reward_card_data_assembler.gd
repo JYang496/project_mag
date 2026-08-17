@@ -7,6 +7,7 @@ const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
 const WEAPON_DISPLAY_POLICY := preload("res://UI/scripts/presentation/weapon_display_policy.gd")
 const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
+const MODULE_OFFER_CATALOG := preload("res://Player/Weapons/Core/module_offer_catalog.gd")
 
 var _owner: Object
 func _init(owner: Object) -> void:
@@ -96,19 +97,7 @@ func _build_reward_card_data(reward: RewardInfo) -> Dictionary:
 	return data
 
 func _format_reward_type_label(_reward: RewardInfo, category: String) -> String:
-	var localized_category := _localize_reward_category(category)
-	if _reward == null:
-		return localized_category
-	if _reward.reward_kind == RewardInfo.KIND_CELL_EFFECT or _reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
-		return localized_category
-	var rarity_label := RARITY_UTIL.get_display_name(_reward.get_rarity())
-	if rarity_label == "" or rarity_label == RARITY_UTIL.get_display_name(RARITY_UTIL.COMMON):
-		return localized_category
-	return LocalizationManager.tr_format(
-		"ui.reward.type.with_rarity",
-		{"rarity": rarity_label, "category": localized_category},
-		"%s %s" % [rarity_label, localized_category]
-	)
+	return _localize_reward_category(category)
 
 func _localize_reward_category(category: String) -> String:
 	var normalized := category.strip_edges()
@@ -148,6 +137,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		"meta_text": "",
 		"level_text": "",
 		"summary_text": "",
+		"role_summary": "",
 		"feature_lines": PackedStringArray(),
 		"detail_variant": &"generic",
 		"detail_preview": "",
@@ -187,6 +177,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			"Upgrade equipped weapon level."
 		)
 		var target_definition := DataHandler.read_weapon_data(reward.target_weapon_id) as WeaponDefinition
+		data["role_summary"] = _weapon_role_summary(reward.target_weapon_id)
 		if target_definition != null:
 			var model = WEAPON_DISPLAY_BUILDER.build_at_levels(
 				target_definition,
@@ -276,6 +267,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["detail_variant"] = &"new_weapon"
 		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
 		var weapon_definition := DataHandler.read_weapon_data(reward.item_id) as WeaponDefinition
+		data["role_summary"] = _weapon_role_summary(reward.item_id)
 		var base_weapon_text := LocalizationManager.tr_format(
 			"ui.reward.weapon",
 			{"id": weapon_name, "level": reward.item_level},
@@ -319,8 +311,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			"Lv.%d - %s" % [int(reward.item_level), LocalizationManager.tr_key("ui.branch.weapon", "Weapon")]
 		)
 		data["fallback_icon_key"] = "weapon"
-		data["icon_badge_text"] = "+"
-		data["icon_badge_color"] = Color(0.42, 0.78, 0.48, 1.0)
+		data["icon_badge_text"] = ""
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.weapon_obtain", "Obtain new weapon")
 		data["detail_preview"] = LocalizationManager.tr_format(
 			"ui.reward.detail.preview.new_weapon",
@@ -351,6 +342,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			)
 		elif result_type == "converted_to_gold":
 			var gold_value := int(outcome.get("gold", 0))
+			data["role_summary"] = ""
 			data["title"] = LocalizationManager.tr_format(
 				"ui.reward.gold",
 				{"value": gold_value},
@@ -395,7 +387,10 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			{"level": max(1, reward.module_level), "category": _format_reward_type_label(reward, "Module")},
 			"Lv.%d - %s" % [max(1, reward.module_level), _format_reward_type_label(reward, "Module")]
 		)
-		data["type_label"] = _format_reward_type_label(reward, "Module")
+		var module_type_label := _format_reward_type_label(reward, "Module")
+		if MODULE_OFFER_CATALOG.is_new_tier_scene(reward.module_scene.resource_path):
+			module_type_label = "NEW · %s" % module_type_label
+		data["type_label"] = module_type_label
 		data["level_text"] = "Lv.%d" % max(1, reward.module_level)
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.module_obtain", "Added to temporary modules")
 	if reward.total_chip_value > 0:
@@ -432,6 +427,12 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["level_text"] = _derive_level_text(reward, data)
 	data["detail_bullets"] = _fallback_detail_bullets(reward)
 	return data
+
+func _weapon_role_summary(weapon_id: String) -> String:
+	var normalized_id := weapon_id.strip_edges()
+	if normalized_id == "":
+		return ""
+	return LocalizationManager.tr_key("weapon.%s.role_summary" % normalized_id, "")
 
 func _core_current_stat_lines(stats: Dictionary) -> PackedStringArray:
 	var lines := PackedStringArray()
@@ -541,7 +542,7 @@ func _build_compatible_weapon_previews(module_instance: Module) -> Array:
 		if str(module_instance.get_incompatibility_reason(weapon)).strip_edges() != "":
 			continue
 		var used_slots := weapon.get_module_count()
-		var max_slots := int(weapon.MAX_MODULE_NUMBER)
+		var max_slots := weapon.module_slot_capacity
 		previews.append({
 			"name": LocalizationManager.get_weapon_instance_display_name(weapon),
 			"icon_texture": weapon.sprite.texture if weapon.sprite != null else null,

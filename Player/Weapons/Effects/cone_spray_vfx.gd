@@ -2,6 +2,7 @@ extends Node2D
 class_name ConeSprayVfx
 
 const AFTERIMAGE_SCRIPT := preload("res://Player/Weapons/Effects/cone_spray_afterimage_vfx.gd")
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 
 @export var sprite_frames: SpriteFrames = preload("res://asset/images/effects/flame_spray/flame_spray_frames.tres")
 @export var animation_name: StringName = &"spray"
@@ -19,8 +20,8 @@ const AFTERIMAGE_SCRIPT := preload("res://Player/Weapons/Effects/cone_spray_afte
 @export_range(0.0, 1.0, 0.01) var body_opacity := 0.68
 @export_range(0.0, 1.0, 0.01) var range_cue_opacity := 0.24
 @export_range(0.0, 1.0, 0.01) var core_highlight_strength := 0.34
-@export var range_cue_color := Color(1.0, 0.48, 0.12, 1.0)
-@export var core_highlight_color := Color(1.0, 0.88, 0.42, 1.0)
+@export var range_cue_color := PALETTE.FIRE
+@export var core_highlight_color := PALETTE.FIRE_CORE
 @export_group("Directional Trail")
 @export var trail_enabled := true
 @export_range(1, 12, 1) var trail_max_afterimages := 5
@@ -35,7 +36,7 @@ const AFTERIMAGE_SCRIPT := preload("res://Player/Weapons/Effects/cone_spray_afte
 @export_range(0.5, 2.0, 0.01) var trail_spread_scale := 1.08
 @export_range(0.0, 1.0, 0.05) var trail_sparkle_strength := 0.65
 @export var trail_cold_style := false
-@export var trail_modulate: Color = Color(1.0, 0.48, 0.12, 0.42)
+@export var trail_modulate: Color = Color(PALETTE.FIRE, 0.42)
 
 @onready var spray_root: Node2D = $SprayRoot
 @onready var sprite: AnimatedSprite2D = $SprayRoot/Sprite

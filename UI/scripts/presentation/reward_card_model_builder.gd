@@ -14,6 +14,7 @@ static func build(legacy_data: Dictionary, synergy_result: Dictionary = {}):
 	model.title = str(legacy_data.get("title", "Reward"))
 	model.type_label = str(legacy_data.get("type_label", "Reward"))
 	model.behavior_summary = _first_non_empty([legacy_data.get("summary_text", ""), legacy_data.get("detail_text", ""), model.title])
+	model.role_summary = str(legacy_data.get("role_summary", "")).strip_edges()
 	model.feature_lines = _packed_lines(legacy_data.get("feature_lines", PackedStringArray())).slice(0, 2)
 	model.chips = _normalized_chips(legacy_data.get("chips", []))
 	model.full_detail = str(legacy_data.get("detail_text", "")).strip_edges()

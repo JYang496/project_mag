@@ -9,7 +9,8 @@
     "cell_effects",
     "task_modules",
     "weapon_branches",
-    "weapon_passives"
+    "weapon_passives",
+    "module_progression"
   ],
   "ordering": "manifest_paths_sorted",
   "catalogs": [
@@ -148,6 +149,17 @@
         "res://data/weapon_branches/sniper_impact_burst.tres",
         "res://data/weapon_branches/spear_multi_pierce.tres",
         "res://data/weapon_branches/spear_rending.tres"
+      ]
+    },
+    {
+      "domain": "module_progression",
+      "prepare_phase": "world_deferred",
+      "directory": "res://data/module_progression/",
+      "extension": ".tres",
+      "expected_type": "ModuleProgressionProfile",
+      "id_property": "profile_id",
+      "paths": [
+        "res://data/module_progression/default_weapon_module_progression.tres"
       ]
     },
     {

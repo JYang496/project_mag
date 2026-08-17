@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://cx30l5sv1vx1d"]
-
-[ext_resource type="Script" path="res://tests/headless/enemy/wheel_cart_contact_configuration_test.gd" id="1_probe"]
-
-[node name="WheelCartContactConfigurationTest" type="Node"]
-script = ExtResource("1_probe")

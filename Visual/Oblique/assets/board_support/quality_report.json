@@ -8,7 +8,6 @@
     {
       "project_root": "E:\\Godot Projects\\project_mag",
       "policy_path": "E:\\Godot Projects\\project_mag\\Visual\\pixel_art_policy.gd",
-      "policy_sha256": "f4919b4106a901ce599eb70c832fef732b531f10252272877c75563539a1214e",
       "role": "scene_prop_large",
       "constant": "SCENE_PROP_LARGE_FRAME_SIZE",
       "width": 256,
@@ -28,8 +27,6 @@
     {
       "source": "C:\\Users\\koalg\\AppData\\Local\\Temp\\project_mag_board_support_sources_20260726\\world_streaming_data_curtain.png",
       "destination": "E:\\Godot Projects\\project_mag\\Visual\\Oblique\\assets\\board_support\\world_streaming_data_curtain_normalized.png",
-      "source_sha256": "1ea0b96289f176bbe5a4b1b873d7d387b538beb5605903d915288913a1a7c2e7",
-      "output_sha256": "5b5dcd91a64cd9becfa807022fad337522ec297ebf7e70c11fe771cba04914ee",
       "preset": "scene_prop_large",
       "protected": false,
       "grid": {
@@ -629,8 +626,6 @@
     {
       "source": "C:\\Users\\koalg\\AppData\\Local\\Temp\\project_mag_board_support_sources_20260726\\world_streaming_pillar_face.png",
       "destination": "E:\\Godot Projects\\project_mag\\Visual\\Oblique\\assets\\board_support\\world_streaming_pillar_face_normalized.png",
-      "source_sha256": "bddc8c684bbda26a250f4256e93921c619a371dfca7ffa23c0eee7137d583246",
-      "output_sha256": "2bd30c28d612fc09b543d5e43e4befc16b4d74c6ab56553d06eb69c091886207",
       "preset": "scene_prop_large",
       "protected": false,
       "grid": {

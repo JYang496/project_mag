@@ -96,9 +96,9 @@ func _try_trigger_far_hit(target: Node) -> void:
 	var has_mark := _has_any_mark(target)
 	if distance < maxf(far_hit_trigger_distance, 0.0) and not has_mark:
 		return
-	if not is_offhand_skill_ready():
+	if not is_passive_ready():
 		return
-	notify_offhand_skill_triggered(0.0)
+	consume_passive_charge()
 	emit_passive_trigger(&"sniper_far_hit_triggered", {
 		"target": target,
 		"distance": distance,

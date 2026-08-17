@@ -18,6 +18,7 @@ var _revision := 0
 var _save_in_progress := false
 var _save_dirty := false
 var _pending_restore: Dictionary = {}
+var rest_area_service_intro_seen := false
 
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SLOT_DIRECTORY))
@@ -29,6 +30,7 @@ func clear_run() -> void:
 	_pending_restore.clear()
 	_revision = 0
 	_save_dirty = false
+	rest_area_service_intro_seen = false
 	_delete_file(CHECKPOINT_PATH)
 	_delete_file(RUN_PATH)
 	_delete_file(BACKUP_PATH)
@@ -104,6 +106,7 @@ func restore_before_world() -> Dictionary:
 	TaskRewardManager.import_save_state(run.get("task_rewards", {}) as Dictionary)
 	RewardDraftRuntime.restore_battle_rollback_snapshot(run.get("reward_draft", {}) as Dictionary)
 	BattleContractManager.import_save_state(run.get("battle_contract", {}) as Dictionary)
+	rest_area_service_intro_seen = bool(run.get("rest_area_service_intro_seen", false))
 	return _result(true)
 
 func restore_after_player_spawn() -> Dictionary:
@@ -139,8 +142,15 @@ func _build_document(state: String) -> Dictionary:
 			"task_rewards": TaskRewardManager.export_save_state(),
 			"reward_draft": RewardDraftRuntime.build_battle_rollback_snapshot(),
 			"battle_contract": BattleContractManager.export_save_state(),
+			"rest_area_service_intro_seen": rest_area_service_intro_seen,
 		},
 	}
+
+func mark_rest_area_service_intro_seen() -> void:
+	if rest_area_service_intro_seen:
+		return
+	rest_area_service_intro_seen = true
+	call_deferred("save_run", &"rest_area_service_intro", STATE_REST_AREA)
 
 func _write_document_atomic(path: String, backup_path: String, payload: Dictionary) -> Dictionary:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SLOT_DIRECTORY))

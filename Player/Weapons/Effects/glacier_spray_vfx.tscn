@@ -15,12 +15,12 @@ min_width_scale = 0.08
 max_width_scale = 0.85
 visual_width_multiplier = 0.596
 playback_speed = 0.92
-visible_modulate = Color(0.78, 0.95, 1, 0.74)
+visible_modulate = Color(0.513725, 0.662745, 1, 0.74)
 body_opacity = 0.68
 range_cue_opacity = 0.22
 core_highlight_strength = 0.28
-range_cue_color = Color(0.28, 0.82, 1, 1)
-core_highlight_color = Color(0.82, 0.98, 1, 1)
+range_cue_color = Color(0.513725, 0.662745, 1, 1)
+core_highlight_color = Color(0.901961, 0.929412, 1, 1)
 trail_max_afterimages = 6
 trail_min_sample_interval_sec = 0.08
 trail_slow_turn_threshold_deg = 8.0
@@ -31,7 +31,7 @@ trail_end_scale = 0.9
 trail_spread_scale = 1.16
 trail_sparkle_strength = 0.9
 trail_cold_style = true
-trail_modulate = Color(0.48, 0.86, 1, 0.34)
+trail_modulate = Color(0.513725, 0.662745, 1, 0.34)
 
 [node name="SprayRoot" type="Node2D" parent="."]
 

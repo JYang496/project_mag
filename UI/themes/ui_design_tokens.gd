@@ -13,9 +13,14 @@ const COLOR_SURFACE_INTERACTIVE := Color(0.075, 0.105, 0.132, 1.0)
 const COLOR_BORDER := Color(0.20, 0.36, 0.46, 0.92)
 const COLOR_BORDER_STRONG := Color(0.34, 0.66, 0.76, 1.0)
 const COLOR_ACCENT_SYSTEM := Color(0.34, 0.78, 0.88, 1.0)
-const COLOR_ACCENT_ACTION := Color(0.96, 0.70, 0.22, 1.0)
+const COLOR_GOLD_BASE := Color("#F4C542")
+const COLOR_REWARD := COLOR_GOLD_BASE
+const COLOR_CURRENCY := COLOR_GOLD_BASE
+const COLOR_PRIMARY_ACTION := COLOR_GOLD_BASE
+# Compatibility alias. New call sites should use the semantic token above.
+const COLOR_ACCENT_ACTION := COLOR_PRIMARY_ACTION
 const COLOR_POSITIVE := Color(0.36, 0.84, 0.60, 1.0)
-const COLOR_WARNING := Color(0.98, 0.58, 0.18, 1.0)
+const COLOR_WARNING := Color("#FF762E")
 const COLOR_DANGER := Color(0.94, 0.30, 0.28, 1.0)
 const COLOR_TEXT_PRIMARY := Color(0.93, 0.97, 0.98, 1.0)
 const COLOR_TEXT_SECONDARY := Color(0.69, 0.78, 0.83, 1.0)
@@ -83,7 +88,7 @@ static func make_button_style(
 	pressed.bg_color = background.darkened(0.12)
 	pressed.border_color = border
 	var focus := hover.duplicate() as StyleBoxFlat
-	focus.border_color = COLOR_ACCENT_ACTION
+	focus.border_color = COLOR_ACCENT_SYSTEM
 	return {
 		"normal": normal,
 		"hover": hover,
@@ -103,4 +108,3 @@ static func style_label(
 	label.add_theme_color_override("font_color", color)
 	label.add_theme_color_override("font_outline_color", Color(0.0, 0.02, 0.03, 0.86))
 	label.add_theme_constant_override("outline_size", 1)
-

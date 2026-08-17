@@ -61,7 +61,7 @@ func _update_pierce_mark_window(delta: float) -> void:
 	if _pierce_mark_window_remaining_sec > 0.0:
 		_pierce_mark_window_remaining_sec = maxf(_pierce_mark_window_remaining_sec - maxf(delta, 0.0), 0.0)
 		return
-	if not is_offhand_skill_ready():
+	if not is_passive_ready():
 		return
 	_pierce_mark_cycle_elapsed_sec += maxf(delta, 0.0)
 	var required_sec := maxf(pierce_mark_cycle_sec, 0.1)
@@ -69,7 +69,7 @@ func _update_pierce_mark_window(delta: float) -> void:
 		return
 	_pierce_mark_cycle_elapsed_sec = 0.0
 	_pierce_mark_window_remaining_sec = maxf(pierce_mark_window_sec, 0.1)
-	notify_offhand_skill_triggered(0.0)
+	consume_passive_charge()
 	emit_passive_trigger(&"pistol_continuous_move_triggered", {
 		"window_duration": _pierce_mark_window_remaining_sec,
 		"mark_duration": maxf(pierce_mark_duration_sec, 0.1),

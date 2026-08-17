@@ -102,7 +102,7 @@ func _ensure_digit_label() -> void:
 	_digit_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_digit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_digit_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_digit_label.add_theme_font_size_override("font_size", 30)
+	_digit_label.add_theme_font_size_override("font_size", 36)
 	_digit_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.82))
 	_digit_label.add_theme_constant_override("outline_size", 2)
 	_digit_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.72))

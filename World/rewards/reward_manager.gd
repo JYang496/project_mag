@@ -2,7 +2,7 @@ extends Node2D
 class_name BonusManager
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
-const MODULE_DIRECTORY_PATH := "res://Player/Weapons/Modules/"
+const MODULE_OFFER_CATALOG := preload("res://Player/Weapons/Core/module_offer_catalog.gd")
 const REWARD_TYPE_WEAPON := "weapon"
 const REWARD_TYPE_WEAPON_UPGRADE := "weapon_upgrade"
 const REWARD_TYPE_MODULE := "module"
@@ -187,19 +187,10 @@ func _build_all_module_drop_candidates() -> Array[Dictionary]:
 
 func _build_module_candidates_uncached(filter_unavailable_rewards: bool) -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
-	var dir := DirAccess.open(MODULE_DIRECTORY_PATH)
-	if dir == null:
-		return candidates
-	dir.list_dir_begin()
-	var file_name := dir.get_next()
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".tscn") and file_name != "wmod_base.tscn":
-			var scene_path := MODULE_DIRECTORY_PATH + file_name
-			var candidate := _build_module_candidate_from_scene(scene_path, filter_unavailable_rewards)
-			if not candidate.is_empty():
-				candidates.append(candidate)
-		file_name = dir.get_next()
-	dir.list_dir_end()
+	for scene_path in MODULE_OFFER_CATALOG.get_unlocked_scene_paths():
+		var candidate := _build_module_candidate_from_scene(scene_path, filter_unavailable_rewards)
+		if not candidate.is_empty():
+			candidates.append(candidate)
 	return candidates
 
 func _warm_module_candidate_cache() -> void:
@@ -209,7 +200,7 @@ func _warm_module_candidate_cache() -> void:
 	var candidates: Array[Dictionary] = []
 	var scene_paths := _collect_module_candidate_scene_paths()
 	for scene_path in scene_paths:
-		var candidate := _build_module_candidate_from_scene(scene_path, false)
+		var candidate := _build_module_candidate_from_scene(scene_path, false, false)
 		if not candidate.is_empty():
 			candidates.append(candidate)
 		if is_inside_tree():
@@ -219,29 +210,29 @@ func _warm_module_candidate_cache() -> void:
 	_module_candidate_cache_building = false
 
 func _collect_module_candidate_scene_paths() -> PackedStringArray:
-	var paths := PackedStringArray()
-	var dir := DirAccess.open(MODULE_DIRECTORY_PATH)
-	if dir == null:
-		return paths
-	dir.list_dir_begin()
-	var file_name := dir.get_next()
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".tscn") and file_name != "wmod_base.tscn":
-			paths.append(MODULE_DIRECTORY_PATH + file_name)
-		file_name = dir.get_next()
-	dir.list_dir_end()
-	return paths
+	return MODULE_OFFER_CATALOG.get_all_scene_paths()
 
 func _copy_module_candidate_cache(filter_unavailable_rewards: bool) -> Array[Dictionary]:
 	var output: Array[Dictionary] = []
 	for candidate in _module_candidate_cache:
 		var scene_path := str(candidate.get("scene_path", ""))
+		if not MODULE_OFFER_CATALOG.is_scene_unlocked(scene_path):
+			continue
 		if filter_unavailable_rewards and not _can_offer_module_reward(scene_path):
 			continue
-		output.append(candidate.duplicate(false))
+		var weighted_candidate := candidate.duplicate(false)
+		weighted_candidate["weight"] = float(weighted_candidate.get("weight", 0.0)) \
+			* MODULE_OFFER_CATALOG.get_offer_weight_multiplier(scene_path)
+		output.append(weighted_candidate)
 	return output
 
-func _build_module_candidate_from_scene(scene_path: String, filter_unavailable_rewards: bool) -> Dictionary:
+func _build_module_candidate_from_scene(
+	scene_path: String,
+	filter_unavailable_rewards: bool,
+	filter_locked: bool = true
+) -> Dictionary:
+	if filter_locked and not MODULE_OFFER_CATALOG.is_scene_unlocked(scene_path):
+		return {}
 	if filter_unavailable_rewards and not _can_offer_module_reward(scene_path):
 		return {}
 	var module_scene := load(scene_path) as PackedScene
@@ -251,6 +242,8 @@ func _build_module_candidate_from_scene(scene_path: String, filter_unavailable_r
 	if module_instance == null:
 		return {}
 	var weight := module_instance.get_drop_weight()
+	if filter_locked:
+		weight *= MODULE_OFFER_CATALOG.get_offer_weight_multiplier(scene_path)
 	var rarity: String = module_instance.get_rarity()
 	module_instance.free()
 	if weight <= 0.0:
@@ -259,6 +252,7 @@ func _build_module_candidate_from_scene(scene_path: String, filter_unavailable_r
 		"type": REWARD_TYPE_MODULE,
 		"scene": module_scene,
 		"scene_path": scene_path,
+		"module_id": MODULE_OFFER_CATALOG.get_module_id_from_path(scene_path),
 		"rarity": rarity,
 		"weight": weight,
 	}
@@ -381,6 +375,11 @@ func _build_reward_selection_options_internal(
 		var guaranteed_reward := _build_guaranteed_weapon_progress_reward(selected_keys)
 		if guaranteed_reward != null:
 			options.append(guaranteed_reward)
+	if options.size() < target_count:
+		var newly_unlocked_module := _build_new_tier_compatible_module_reward(module_candidates, selected_keys)
+		if newly_unlocked_module != null:
+			_mark_reward_selected(newly_unlocked_module, selected_keys)
+			options.append(newly_unlocked_module)
 	while options.size() < target_count:
 		var reward := _roll_staged_reward_option(
 			weapon_candidates,
@@ -400,6 +399,31 @@ func _build_reward_selection_options_internal(
 		selected_keys[_get_reward_key(reward)] = true
 		options.append(reward)
 	return options
+
+func _build_new_tier_compatible_module_reward(
+	module_candidates: Array[Dictionary],
+	selected_keys: Dictionary
+) -> RewardInfo:
+	if PhaseManager.endless_mode \
+			or not MODULE_OFFER_CATALOG.has_new_tier_for_level(PhaseManager.current_level):
+		return null
+	var compatible_candidates: Array[Dictionary] = []
+	for candidate in module_candidates:
+		var scene_path := str(candidate.get("scene_path", ""))
+		if selected_keys.has(_get_candidate_key(candidate)) \
+				or not MODULE_OFFER_CATALOG.is_new_tier_scene(scene_path):
+			continue
+		var module_scene := candidate.get("scene", null) as PackedScene
+		var module_instance := module_scene.instantiate() as Module if module_scene else null
+		if module_instance == null:
+			continue
+		var fits_equipped_weapon := InventoryData.can_assign_module_to_any_equipped_weapon(module_instance, true)
+		module_instance.free()
+		if fits_equipped_weapon:
+			compatible_candidates.append(candidate)
+	if compatible_candidates.is_empty():
+		return null
+	return _roll_reward_from_candidates(compatible_candidates, selected_keys)
 
 func grant_reward_immediately(reward: RewardInfo) -> bool:
 	if reward == null:
@@ -661,7 +685,7 @@ func _can_fuse_weapon(weapon: Weapon) -> bool:
 		return false
 	if DataHandler.get_weapon_id_from_instance(weapon).strip_edges() == "":
 		return false
-	return int(weapon.fuse) < max(1, int(weapon.FINAL_MAX_FUSE))
+	return int(weapon.fuse) < Weapon.MAX_FUSE_LEVEL
 
 func _grant_weapon_upgrade_reward(reward: RewardInfo) -> bool:
 	var weapon := reward.get_target_weapon()
@@ -746,7 +770,7 @@ func _is_full_fuse_weapon_match(weapon: Weapon, weapon_id: String) -> bool:
 		return false
 	if DataHandler.get_weapon_id_from_instance(weapon) != weapon_id:
 		return false
-	return int(weapon.fuse) >= max(1, int(weapon.FINAL_MAX_FUSE))
+	return int(weapon.fuse) >= Weapon.MAX_FUSE_LEVEL
 
 func _can_offer_module_reward(scene_path: String) -> bool:
 	for module_ref in InventoryData.temporary_modules:

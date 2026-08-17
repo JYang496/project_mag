@@ -124,9 +124,9 @@ func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> vo
 	super.on_hit_target_with_damage_type(target, damage_type)
 
 func _consume_cold_snap_for_next_attack() -> bool:
-	if not is_offhand_skill_ready():
+	if not is_passive_ready():
 		return false
-	notify_offhand_skill_triggered(0.0)
+	consume_passive_charge()
 	_cold_snap_recharge_remaining_sec = maxf(cold_snap_recharge_sec, 0.0)
 	return true
 

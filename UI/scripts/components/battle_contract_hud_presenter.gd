@@ -2,9 +2,10 @@ extends RefCounted
 class_name BattleContractHudPresenter
 
 const SmoothProgressBarScript := preload("res://UI/scripts/components/smooth_progress_bar.gd")
+const BATTLE_HUD_THEME := preload("res://UI/themes/battle_hud_theme.tres")
 
-const COMPACT_SIZE := Vector2(340.0, 64.0)
-const EXPANDED_SIZE := Vector2(340.0, 112.0)
+const COMPACT_SIZE := Vector2(280.0, 64.0)
+const EXPANDED_SIZE := Vector2(280.0, 104.0)
 const INTRO_EXPANDED_SEC := 2.8
 const COMPLETED_VISIBLE_SEC := 1.8
 const PROGRESS_SMOOTHING_SPEED := 7.0
@@ -38,9 +39,12 @@ func bind(root: Control, overlay_root: Control = null) -> void:
 	panel = PanelContainer.new()
 	panel.name = "BattleContractHud"
 	panel.custom_minimum_size = COMPACT_SIZE
-	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	panel.size_flags_horizontal = Control.SIZE_FILL
+	panel.clip_contents = true
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.z_index = 50
+	panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	panel.theme = BATTLE_HUD_THEME
 	panel.add_theme_stylebox_override("panel", _build_panel_style())
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 18)
@@ -56,19 +60,26 @@ func bind(root: Control, overlay_root: Control = null) -> void:
 	body.add_child(header)
 	title = Label.new()
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", 16)
+	title.clip_text = true
+	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	title.add_theme_font_size_override("font_size", 12)
 	title.add_theme_color_override("font_color", Color("8edcf2"))
 	title.add_theme_color_override("font_shadow_color", Color(0.0, 0.08, 0.12, 0.9))
 	title.add_theme_constant_override("shadow_offset_x", 1)
 	title.add_theme_constant_override("shadow_offset_y", 1)
 	header.add_child(title)
 	value = Label.new()
+	value.size_flags_horizontal = Control.SIZE_SHRINK_END
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	value.add_theme_font_size_override("font_size", 14)
+	value.clip_text = true
+	value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	value.add_theme_font_size_override("font_size", 12)
 	value.add_theme_color_override("font_color", Color("d9f3f8"))
 	header.add_child(value)
 	detail = Label.new()
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail.clip_text = true
+	detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	detail.add_theme_font_size_override("font_size", 12)
 	detail.add_theme_color_override("font_color", Color("92adb5"))
 	body.add_child(detail)
@@ -100,7 +111,7 @@ func layout(viewport_size: Vector2) -> void:
 	if panel == null:
 		return
 	if panel.get_parent() is Container:
-		panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		panel.size_flags_horizontal = Control.SIZE_FILL
 		return
 	panel.position = _hud_target_position(viewport_size)
 
@@ -204,12 +215,12 @@ func _format_elimination_status(snapshot: Dictionary, current_batch: int, total_
 		return LocalizationManager.tr_format(
 			"battle_contract.hud.elimination.deployed_queued",
 			{"active": active, "queued": queued, "current": current_batch, "total": total_batches},
-			"Active {active} · Reinforcements {queued} · Wave {current}/{total}"
+			"Active {active} · Reinforcements {queued} · Intensity {current}/{total}"
 		)
 	return LocalizationManager.tr_format(
 		"battle_contract.hud.elimination.deployed",
 		{"active": active, "current": current_batch, "total": total_batches},
-		"Active {active} · Wave {current}/{total}"
+		"Active {active} · Intensity {current}/{total}"
 	)
 
 func _on_state_changed(state: StringName) -> void:
@@ -287,9 +298,11 @@ func prepare_boss_intro(snapshot: Dictionary) -> void:
 		label.text = line
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.add_theme_font_size_override("font_size", 24 if content.get_child_count() == 0 else 18)
+		label.add_theme_font_size_override("font_size", 24 if content.get_child_count() == 0 else 12)
 		content.add_child(label)
 	_overlay_root.add_child(box)
+	box.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	box.theme = BATTLE_HUD_THEME
 	box.position = Vector2((_overlay_root.size.x - 330.0) * 0.5, _overlay_root.size.y * 0.5)
 	box.size = Vector2(330.0, 150.0)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -368,14 +381,15 @@ func play_prepared_intro() -> void:
 	elif _boss_intro and PhaseManager.current_state() == PhaseManager.BATTLE:
 		_show_boss_hud()
 
-func _hud_target_position(_viewport_size: Vector2) -> Vector2:
-	return Vector2(16.0, 16.0)
+func _hud_target_position(viewport_size: Vector2) -> Vector2:
+	var margin := UiLayoutPolicy.safe_margin(viewport_size)
+	return Vector2(margin.x, margin.y + 54.0)
 
 func _build_contract_parameters(id: String, parameters: Dictionary) -> String:
 	var text := ""
 	var snapshot := BattleContractManager.runtime_snapshot
 	match id:
-		"elimination": text = "%d" % snapshot.get("total_batches", parameters.get("batch_count_min", 3)) + " " + LocalizationManager.tr_key("battle_contract.intro.unit.waves", "waves")
+		"elimination": text = "%d" % snapshot.get("total_batches", parameters.get("batch_count_min", 3)) + " " + LocalizationManager.tr_key("battle_contract.intro.unit.intensity", "intensity")
 		"survival": text = "%d s" % snapshot.get("duration_sec", BattleContractManager.get_battle_intro_snapshot().get("time_out_sec", 30))
 		"operation": text = "%d × %.0f s" % [snapshot.get("total_beacons", parameters.get("beacon_count", 2)), snapshot.get("charge_duration_sec", parameters.get("charge_time_min_sec", 10))]
 		"containment": text = "%d × %.0f s" % [snapshot.get("total_rifts", parameters.get("rift_count", 3)), parameters.get("seal_duration_sec", 8.0)]

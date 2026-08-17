@@ -42,6 +42,17 @@ class DummyAuraSource:
 			"fill_color": Color(1.0, 0.0, 0.0, 0.1),
 		}
 
+class SkillAttemptPlayerSpy:
+	extends Node2D
+	signal player_active_skill()
+	signal player_skill_activated(skill: Node)
+
+	func get_current_energy() -> float:
+		return 40.0
+
+	func get_max_energy() -> float:
+		return 100.0
+
 var _failed := false
 
 
@@ -344,7 +355,7 @@ func _expect_player_ammo_arc_contract() -> void:
 	_expect(frame_rect.get_center().is_equal_approx(Vector2(64.0, 74.0)), "reload bar must be centered below the player's ground anchor")
 	_expect(frame_rect.size == Vector2(52.0, 6.0), "reload progress bar must use a compact horizontal footprint")
 	var reload_icon_rect := hud.call("get_reload_icon_rect", frame_rect) as Rect2
-	_expect(reload_icon_rect.size == Vector2(10.0, 10.0), "reload HUD must provide a readable compact semantic icon")
+	_expect(reload_icon_rect.size == Vector2(12.0, 12.0), "reload HUD icon must be enlarged by 20 percent")
 	_expect(is_equal_approx(reload_icon_rect.end.x, frame_rect.position.x - 4.0), "reload icon must remain separated to the left of its bar")
 	_expect(hud.call("get_reload_icon_texture") is Texture2D, "reload HUD must use an imported image texture")
 	hud.call("set_reload_status", true, 0.0, 2.0, true)
@@ -352,11 +363,31 @@ func _expect_player_ammo_arc_contract() -> void:
 	hud.call("set_reload_status", true, 1.0, 2.0, false)
 	_expect(not hud.visible, "weapons without an ammo system must hide the reload HUD")
 	hud.free()
+	var attempt_player := SkillAttemptPlayerSpy.new()
+	add_child(attempt_player)
+	var attempt_hud_layer := Node.new()
+	attempt_player.add_child(attempt_hud_layer)
+	var attempt_hud := PLAYER_SKILL_HUD.new() as Control
+	attempt_hud_layer.add_child(attempt_hud)
+	_expect(not attempt_hud.visible, "player skill HUD must remain hidden before a skill attempt")
+	attempt_player.player_active_skill.emit()
+	_expect(attempt_hud.visible, "player skill HUD must become visible as soon as the player attempts a skill")
+	_expect(is_equal_approx(float(attempt_hud.call("get_energy_ratio")), 0.4), "skill attempt feedback must sample the current energy even when activation can fail")
+	attempt_hud.call("_finish_feedback")
+	attempt_player.player_skill_activated.emit(null)
+	_expect(not attempt_hud.visible, "successful-activation notification must not be the HUD visibility trigger")
+	attempt_player.free()
 	var skill_hud := PLAYER_SKILL_HUD.new() as Control
-	_expect(not skill_hud.visible, "player skill HUD must remain hidden before a successful skill activation")
+	_expect(not skill_hud.visible, "player skill HUD must remain hidden before a skill attempt")
 	skill_hud.call("show_skill_feedback")
-	_expect(skill_hud.visible, "player skill HUD must become visible after a successful skill activation")
+	_expect(skill_hud.visible, "player skill HUD feedback entry point must make the energy bar visible")
 	_expect(is_equal_approx(float(skill_hud.get("hold_duration_sec")), 2.0), "player skill feedback must remain readable for two seconds")
+	skill_hud.modulate.a = 0.4
+	skill_hud.call("show_skill_feedback")
+	_expect(
+		is_equal_approx(skill_hud.modulate.a, 0.4),
+		"repeated skill attempts must not reawaken the energy bar before it disappears"
+	)
 	skill_hud.call("set_energy", 25.0, 100.0)
 	_expect(is_equal_approx(float(skill_hud.call("get_energy_ratio")), 0.25), "player skill HUD must expose the current runtime energy ratio")
 	skill_hud.call("set_energy", 75.0, 100.0)
@@ -365,11 +396,17 @@ func _expect_player_ammo_arc_contract() -> void:
 	_expect(skill_rect.get_center().is_equal_approx(Vector2(64.0, 86.0)), "player skill slot must be centered below the reload bar")
 	_expect(skill_rect.size == Vector2(52.0, 6.0), "player skill slot must use a simplified horizontal energy bar")
 	var skill_icon_rect := skill_hud.call("get_skill_icon_rect", skill_rect) as Rect2
-	_expect(skill_icon_rect.size == Vector2(10.0, 10.0), "skill HUD must provide a readable compact semantic icon")
+	_expect(skill_icon_rect.size == Vector2(12.0, 12.0), "skill HUD icon must be enlarged by 20 percent")
 	_expect(is_equal_approx(skill_icon_rect.end.x, skill_rect.position.x - 4.0), "skill icon must remain separated to the left of its bar")
 	_expect(skill_hud.call("get_skill_icon_texture") is Texture2D, "skill HUD must use an imported image texture")
 	skill_hud.call("_finish_feedback")
 	_expect(not skill_hud.visible, "player skill HUD must hide after its feedback sequence completes")
+	skill_hud.call("show_skill_feedback")
+	_expect(
+		skill_hud.visible and is_equal_approx(skill_hud.modulate.a, 1.0),
+		"player skill HUD must allow a new wake-up after the previous energy bar disappears"
+	)
+	skill_hud.call("_finish_feedback")
 	skill_hud.free()
 
 

@@ -137,6 +137,8 @@ func get_weapon_passive_description(passive_def: WeaponPassiveBranchDefinition) 
 func get_module_id_from_instance(module_instance: Module) -> String:
 	if module_instance == null:
 		return ""
+	if module_instance.module_id != StringName():
+		return str(module_instance.module_id)
 	var scene_path := str(module_instance.scene_file_path)
 	if scene_path != "":
 		return scene_path.get_file().get_basename()

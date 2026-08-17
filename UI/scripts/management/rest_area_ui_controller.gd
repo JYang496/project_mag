@@ -3,8 +3,15 @@ class_name RestAreaUiController
 
 const PRIMARY_MENU_ANIM_TIME := 0.2
 const SERVICE_MENU_IDS: Array[StringName] = [&"purchase", &"upgrade", &"warehouse", &"board_edit", &"battle_start"]
+const SECONDARY_SERVICE_MENU_IDS: Array[StringName] = [&"purchase", &"upgrade", &"warehouse"]
 const SECONDARY_MENU_DIM_OVERLAY_NAME := "SecondaryMenuDimOverlay"
 const SECONDARY_MENU_DIM_COLOR := Color(0.0, 0.0, 0.0, 0.42)
+const INPUT_PROMPT_ATLAS := preload("res://asset/images/ui/input_prompts/kenney_pixel/input_prompts_tilemap.png")
+const INPUT_PROMPT_TILE_SIZE := 16
+const INPUT_PROMPT_TILE_STRIDE := 17
+const SERVICE_NAV_ICON_SIZE := 24.0
+const KEY_Q_PROMPT_COORD := Vector2i(17, 2)
+const KEY_E_PROMPT_COORD := Vector2i(19, 2)
 
 var owner_ui: UI
 var shell: RestAreaManagementShell
@@ -13,6 +20,8 @@ var active := false
 var primary_menu_id: StringName = &""
 var _secondary_menu_dim_overlay: ColorRect
 var _menu_transition_locked := false
+var _service_navigation_banner: PanelContainer
+var _service_navigation_content: HBoxContainer
 
 func bind(ui: UI, management_shell: RestAreaManagementShell, ui_layout_controller: UiLayoutController = null) -> void:
 	owner_ui = ui
@@ -20,6 +29,7 @@ func bind(ui: UI, management_shell: RestAreaManagementShell, ui_layout_controlle
 	layout_controller = ui_layout_controller
 	_sync_public_fields_to_owner()
 	sync_secondary_menu_dim_overlay()
+	_ensure_service_navigation_headers()
 
 func set_layout_controller(ui_layout_controller: UiLayoutController) -> void:
 	layout_controller = ui_layout_controller
@@ -74,6 +84,202 @@ func open_menu(menu_id: StringName) -> void:
 	PlayerData.is_interacting = true
 	if not _open_primary_menu_by_id(menu_id):
 		purchase_menu_in()
+	_refresh_service_navigation_headers()
+
+func switch_service(direction: int) -> bool:
+	if PhaseManager.current_state() != PhaseManager.REST or not is_secondary_service_navigation_active() \
+			or _menu_transition_locked:
+		return false
+	var reason := _get_service_switch_block_reason()
+	if reason != "":
+		owner_ui.show_item_message(reason, 1.8)
+		return true
+	var current_index := SECONDARY_SERVICE_MENU_IDS.find(_normalize_menu_id(primary_menu_id))
+	if current_index < 0:
+		return false
+	var target_id := SECONDARY_SERVICE_MENU_IDS[posmod(
+		current_index + signi(direction), SECONDARY_SERVICE_MENU_IDS.size()
+	)]
+	if target_id == &"purchase" and not PhaseManager.is_full_shop_open():
+		owner_ui.show_item_message(LocalizationManager.tr_key("ui.shop.closed_until_cycle", "Full shop opens after every third battle."), 1.8)
+		return true
+	_menu_transition_locked = true
+	_perform_secondary_service_switch.call_deferred(target_id)
+	return true
+
+func _perform_secondary_service_switch(target_id: StringName) -> void:
+	var item_mode := _get_management_item_mode()
+	for root in [owner_ui.purchase_management_root, owner_ui.upgrade_management_root, owner_ui.warehouse_management_root]:
+		if root != null and is_instance_valid(root):
+			root.visible = false
+	if owner_ui.weapon_warehouse_panel and owner_ui.weapon_warehouse_panel.visible:
+		owner_ui.weapon_warehouse_panel.close_panel()
+	if owner_ui.module_equip_selection_panel and owner_ui.module_equip_selection_panel.visible:
+		owner_ui.module_equip_selection_panel.close_without_assignment()
+	active = true
+	primary_menu_id = target_id
+	PlayerData.is_interacting = true
+	_sync_public_fields_to_owner()
+	match target_id:
+		&"purchase":
+			owner_ui.ensure_purchase_management()
+			owner_ui.purchase_management_controller.update_shop()
+			if item_mode == &"module":
+				owner_ui.purchase_management_controller.ensure_module_shop()
+			owner_ui.purchase_management_controller.apply_purchase_mode(item_mode)
+			owner_ui._mark_shop_purchase_action_dirty()
+			owner_ui.purchase_management_root.visible = true
+		&"upgrade":
+			owner_ui.ensure_upgrade_management()
+			owner_ui.upgrade_management_controller.apply_mode(item_mode)
+			owner_ui.upgrade_management_controller.update_upg()
+			owner_ui.upgrade_management_root.visible = true
+		&"warehouse":
+			owner_ui.ensure_warehouse_management()
+			owner_ui.module_warehouse_controller.open_tab(item_mode)
+			owner_ui.module_warehouse_controller.update_modules()
+			owner_ui.warehouse_management_root.visible = true
+	_sync_world_service_selection(target_id)
+	sync_secondary_menu_dim_overlay()
+	_menu_transition_locked = false
+	_refresh_service_navigation_headers()
+
+func _get_service_switch_block_reason() -> String:
+	if owner_ui.is_branch_selection_blocking_interactions():
+		return LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first.")
+	if owner_ui.has_method("has_pending_blocking_transaction") and bool(owner_ui.call("has_pending_blocking_transaction")):
+		return LocalizationManager.tr_key("ui.management.reason.pending_transaction", "Finish or cancel the current transaction first.")
+	if not InventoryData.pending_transactions.is_empty():
+		return LocalizationManager.tr_key("ui.management.reason.pending_transaction", "Finish or cancel the current transaction first.")
+	if CellEffectRuntime.has_pending_edits():
+		return LocalizationManager.tr_key("ui.management.reason.pending_edits", "Finish or cancel pending board edits first.")
+	if owner_ui.is_world_interaction_blocked() and not is_primary_menu_open() and not is_secondary_menu_open():
+		return LocalizationManager.tr_key("ui.management.reason.modal_open", "Close the current dialog first.")
+	return ""
+
+func _sync_world_service_selection(menu_id: StringName) -> void:
+	var zone_by_menu := {&"purchase": 0, &"upgrade": 1, &"warehouse": 2, &"board_edit": 6, &"battle_start": 4}
+	var rest_area := _find_active_rest_area()
+	if rest_area != null and rest_area.has_method("sync_selected_service_zone"):
+		rest_area.call("sync_selected_service_zone", int(zone_by_menu.get(menu_id, 4)))
+
+func _ensure_service_navigation_headers() -> void:
+	if _service_navigation_banner == null and owner_ui != null and owner_ui.gui_root != null:
+		_service_navigation_banner = PanelContainer.new()
+		_service_navigation_banner.name = "RestServiceNavigationBanner"
+		_service_navigation_banner.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		_service_navigation_banner.offset_left = -370.0
+		_service_navigation_banner.offset_top = 14.0
+		_service_navigation_banner.offset_right = -18.0
+		_service_navigation_banner.offset_bottom = 48.0
+		_service_navigation_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_service_navigation_banner.z_index = 20
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.035, 0.065, 0.085, 0.92)
+		style.border_color = Color(0.20, 0.62, 0.78, 0.74)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(4)
+		style.content_margin_left = 8.0
+		style.content_margin_right = 8.0
+		style.content_margin_top = 4.0
+		style.content_margin_bottom = 4.0
+		_service_navigation_banner.add_theme_stylebox_override("panel", style)
+		_service_navigation_content = HBoxContainer.new()
+		_service_navigation_content.name = "Content"
+		_service_navigation_content.alignment = BoxContainer.ALIGNMENT_CENTER
+		_service_navigation_content.add_theme_constant_override("separation", 5)
+		_service_navigation_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_service_navigation_banner.add_child(_service_navigation_content)
+		owner_ui.gui_root.add_child(_service_navigation_banner)
+	_refresh_service_navigation_headers()
+
+func _refresh_service_navigation_headers() -> void:
+	if _service_navigation_banner == null:
+		return
+	var host := _get_secondary_navigation_host()
+	var should_show := is_secondary_service_navigation_active() and host != null
+	_service_navigation_banner.visible = should_show
+	if not should_show:
+		return
+	if _service_navigation_banner.get_parent() != host:
+		_service_navigation_banner.reparent(host)
+	_service_navigation_banner.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_service_navigation_banner.offset_left = -370.0
+	_service_navigation_banner.offset_top = 14.0
+	_service_navigation_banner.offset_right = -18.0
+	_service_navigation_banner.offset_bottom = 48.0
+	for child in _service_navigation_content.get_children():
+		child.queue_free()
+	_service_navigation_content.add_child(_make_navigation_key_icon(KEY_Q_PROMPT_COORD, "Q"))
+	for index in range(SECONDARY_SERVICE_MENU_IDS.size()):
+		var menu_id := SECONDARY_SERVICE_MENU_IDS[index]
+		_service_navigation_content.add_child(_make_navigation_label(
+			_service_display_name(menu_id),
+			menu_id == _normalize_menu_id(primary_menu_id)
+		))
+		if index < SECONDARY_SERVICE_MENU_IDS.size() - 1:
+			_service_navigation_content.add_child(_make_navigation_label("/", false))
+	_service_navigation_content.add_child(_make_navigation_key_icon(KEY_E_PROMPT_COORD, "E"))
+
+func is_secondary_service_navigation_active() -> bool:
+	return active and is_secondary_menu_open() \
+			and SECONDARY_SERVICE_MENU_IDS.has(_normalize_menu_id(primary_menu_id)) \
+			and get_secondary_menu_context() == _normalize_menu_id(primary_menu_id)
+
+func _get_secondary_navigation_host() -> Control:
+	if not SECONDARY_SERVICE_MENU_IDS.has(_normalize_menu_id(primary_menu_id)):
+		return null
+	var root := _get_management_root(primary_menu_id)
+	if root == null or not is_instance_valid(root) or not root.visible:
+		return null
+	return root.get_node_or_null("Panel") as Control
+
+func _make_navigation_key_icon(coord: Vector2i, accessible_name: String) -> TextureRect:
+	var texture := AtlasTexture.new()
+	texture.atlas = INPUT_PROMPT_ATLAS
+	texture.region = Rect2(
+		coord.x * INPUT_PROMPT_TILE_STRIDE,
+		coord.y * INPUT_PROMPT_TILE_STRIDE,
+		INPUT_PROMPT_TILE_SIZE,
+		INPUT_PROMPT_TILE_SIZE
+	)
+	var icon := TextureRect.new()
+	icon.texture = texture
+	icon.custom_minimum_size = Vector2(SERVICE_NAV_ICON_SIZE, SERVICE_NAV_ICON_SIZE)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.tooltip_text = accessible_name
+	return icon
+
+func _make_navigation_label(value: String, current: bool) -> Label:
+	var label := Label.new()
+	label.text = value
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color(0.95, 0.78, 0.30, 1.0) if current else Color(0.68, 0.88, 1.0, 1.0))
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
+
+func _get_management_item_mode() -> StringName:
+	if owner_ui != null and owner_ui.has_method("get_management_item_mode"):
+		return owner_ui.call("get_management_item_mode") as StringName
+	return &"weapon"
+
+func _set_management_item_mode(mode: StringName) -> StringName:
+	var normalized := &"module" if mode == &"module" else &"weapon"
+	if owner_ui != null and owner_ui.has_method("set_management_item_mode"):
+		owner_ui.call("set_management_item_mode", normalized)
+	return normalized
+
+func _service_display_name(menu_id: StringName) -> String:
+	match menu_id:
+		&"purchase": return LocalizationManager.tr_key("ui.rest.zone.purchase.title", "Purchase")
+		&"upgrade": return LocalizationManager.tr_key("ui.rest.zone.combined_upgrade.title", "Upgrade")
+		&"warehouse": return LocalizationManager.tr_key("ui.rest.zone.warehouses.title", "Warehouse")
+		&"board_edit": return LocalizationManager.tr_key("ui.rest.zone.board.title", "Board")
+		_: return LocalizationManager.tr_key("ui.rest.zone.battle.title", "Protocol")
 
 func open_board_edit_panel() -> bool:
 	if _menu_transition_locked and active:
@@ -164,7 +370,7 @@ func upgrade_panel_in() -> void:
 	if owner_ui.is_branch_selection_blocking_interactions():
 		owner_ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
 		return
-	owner_ui.upgrade_management_controller.apply_mode(owner_ui._upgrade_mode)
+	owner_ui.upgrade_management_controller.apply_mode(_get_management_item_mode())
 	owner_ui.upgrade_management_controller.update_upg()
 	if not _menu_transition_locked:
 		set_primary_root_visible(&"upgrade", false)
@@ -198,8 +404,7 @@ func warehouse_panel_in(tab: StringName = &"") -> void:
 	if not is_module_management_available():
 		owner_ui._show_module_rest_area_only_message()
 		return
-	if tab != &"":
-		owner_ui.module_warehouse_controller.open_tab(tab)
+	owner_ui.module_warehouse_controller.open_tab(tab if tab != &"" else _get_management_item_mode())
 	owner_ui.module_warehouse_controller.update_modules()
 	set_management_root_visible(&"warehouse", true)
 
@@ -223,6 +428,7 @@ func open_purchase_weapon_panel() -> void:
 	if not PhaseManager.is_full_shop_open():
 		owner_ui.show_item_message(LocalizationManager.tr_key("ui.shop.closed_until_cycle", "Full shop opens after every third battle."), 1.8)
 		return
+	var item_mode := _set_management_item_mode(&"weapon")
 	owner_ui.ensure_purchase_management()
 	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
 		if owner_ui.is_branch_selection_blocking_interactions():
@@ -231,7 +437,7 @@ func open_purchase_weapon_panel() -> void:
 	_menu_transition_locked = true
 	_hide_primary_menu(&"purchase", owner_ui.purchase_primary_root, owner_ui.purchase_primary_panel)
 	purchase_panel_in()
-	owner_ui.purchase_management_controller.apply_purchase_mode(&"weapon")
+	owner_ui.purchase_management_controller.apply_purchase_mode(item_mode)
 	await _animate_secondary_root_in(owner_ui.purchase_management_root)
 	_menu_transition_locked = false
 
@@ -239,6 +445,7 @@ func open_purchase_module_panel() -> void:
 	if not PhaseManager.is_full_shop_open():
 		owner_ui.show_item_message(LocalizationManager.tr_key("ui.shop.closed_until_cycle", "Full shop opens after every third battle."), 1.8)
 		return
+	var item_mode := _set_management_item_mode(&"module")
 	owner_ui.ensure_purchase_management()
 	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
 		if owner_ui.is_branch_selection_blocking_interactions():
@@ -248,7 +455,7 @@ func open_purchase_module_panel() -> void:
 	_hide_primary_menu(&"purchase", owner_ui.purchase_primary_root, owner_ui.purchase_primary_panel)
 	owner_ui.purchase_management_controller.ensure_module_shop()
 	purchase_panel_in()
-	owner_ui.purchase_management_controller.apply_purchase_mode(&"module")
+	owner_ui.purchase_management_controller.apply_purchase_mode(item_mode)
 	await _animate_secondary_root_in(owner_ui.purchase_management_root)
 	_menu_transition_locked = false
 
@@ -267,6 +474,7 @@ func back_to_purchase_primary_menu() -> void:
 	_menu_transition_locked = false
 
 func open_upgrade_panel(mode: StringName = &"weapon") -> void:
+	mode = _set_management_item_mode(mode)
 	owner_ui.ensure_upgrade_management()
 	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
 		if owner_ui.is_branch_selection_blocking_interactions():
@@ -294,6 +502,7 @@ func back_to_upgrade_primary_menu() -> void:
 	_menu_transition_locked = false
 
 func open_warehouse_management_panel() -> void:
+	_set_management_item_mode(&"module")
 	owner_ui.ensure_warehouse_management()
 	if _menu_transition_locked:
 		return
@@ -307,6 +516,7 @@ func open_warehouse_management_panel() -> void:
 	_menu_transition_locked = false
 
 func open_warehouse_weapon_panel() -> void:
+	_set_management_item_mode(&"weapon")
 	owner_ui.ensure_warehouse_management()
 	if _menu_transition_locked:
 		return
@@ -456,6 +666,7 @@ func set_management_root_visible(root_id: StringName, visible: bool) -> void:
 	if root:
 		root.visible = visible
 	sync_secondary_menu_dim_overlay()
+	_refresh_service_navigation_headers()
 
 func sync_secondary_menu_dim_overlay() -> void:
 	if owner_ui == null:
@@ -471,6 +682,7 @@ func set_primary_root_visible(root_id: StringName, visible: bool) -> void:
 	var root := _get_primary_root(root_id)
 	if root:
 		root.visible = visible
+	_refresh_service_navigation_headers()
 
 func is_menu_visible() -> bool:
 	var visible := false
@@ -718,6 +930,7 @@ func _clear_active() -> void:
 	active = false
 	primary_menu_id = &""
 	_sync_public_fields_to_owner()
+	_refresh_service_navigation_headers()
 
 func _has_open_rest_area_menu() -> bool:
 	if not active:

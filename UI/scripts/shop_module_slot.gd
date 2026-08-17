@@ -1,8 +1,8 @@
 extends MarginContainer
 class_name ShopModuleSlot
 
-const MODULE_DIRECTORY_PATH := "res://Player/Weapons/Modules/"
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
+const MODULE_OFFER_CATALOG := preload("res://Player/Weapons/Core/module_offer_catalog.gd")
 const MODULE_FIT_FORMATTER := preload("res://UI/scripts/module_fit_formatter.gd")
 const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 
@@ -157,7 +157,8 @@ func _refresh_labels() -> void:
 		return
 	var sprite := preview_module.get_node_or_null("%Sprite") as Sprite2D
 	image.texture = sprite.texture if sprite else null
-	item_name.text = "%s Lv.1" % LocalizationManager.get_module_name(preview_module)
+	var new_prefix := "NEW · " if MODULE_OFFER_CATALOG.is_new_tier_scene(module_scene.resource_path) else ""
+	item_name.text = "%s%s Lv.1" % [new_prefix, LocalizationManager.get_module_name(preview_module)]
 	item_name.set("theme_override_colors/font_color", RARITY_UTIL.get_color(preview_module.get_rarity()))
 	price_label.text = LocalizationManager.tr_format("ui.shop.module.price", {"value": price}, "Price: %s" % price)
 	var effects := preview_module.get_effect_descriptions()
@@ -187,7 +188,8 @@ func _build_module_candidates() -> Array[PackedScene]:
 	for scene in _module_scene_cache:
 		if scene == null:
 			continue
-		if not _is_owned_full_level(scene.resource_path):
+		if MODULE_OFFER_CATALOG.is_scene_unlocked(scene.resource_path) \
+				and not _is_owned_full_level(scene.resource_path):
 			candidates.append(scene)
 	return candidates
 
@@ -200,19 +202,10 @@ static func _ensure_module_scene_cache() -> void:
 		return
 	_module_scene_cache_built = true
 	_module_scene_cache.clear()
-	var dir := DirAccess.open(MODULE_DIRECTORY_PATH)
-	if dir == null:
-		return
-	dir.list_dir_begin()
-	var file_name := dir.get_next()
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.to_lower().ends_with(".tscn") and file_name != "wmod_base.tscn":
-			var scene_path := MODULE_DIRECTORY_PATH + file_name
-			var scene := load(scene_path) as PackedScene
-			if scene:
-				_module_scene_cache.append(scene)
-		file_name = dir.get_next()
-	dir.list_dir_end()
+	for scene_path in MODULE_OFFER_CATALOG.get_all_scene_paths():
+		var scene := load(scene_path) as PackedScene
+		if scene:
+			_module_scene_cache.append(scene)
 
 func _is_owned_full_level(scene_path: String) -> bool:
 	for module_instance in InventoryData.get_all_owned_modules():

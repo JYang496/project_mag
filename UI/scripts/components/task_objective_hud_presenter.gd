@@ -2,10 +2,12 @@ extends RefCounted
 class_name TaskObjectiveHudPresenter
 
 const SmoothProgressBarScript := preload("res://UI/scripts/components/smooth_progress_bar.gd")
+const BATTLE_HUD_THEME := preload("res://UI/themes/battle_hud_theme.tres")
 
 const MAX_CARDS := 2
-const PANEL_SIZE := Vector2(248.0, 144.0)
-const CARD_SIZE := Vector2(232.0, 64.0)
+const PANEL_SIZE := Vector2(232.0, 136.0)
+const BOSS_PANEL_SIZE := Vector2(232.0, 58.0)
+const CARD_SIZE := Vector2(216.0, 60.0)
 const REFRESH_INTERVAL := 0.12
 
 var owner_ui: Node
@@ -36,6 +38,8 @@ func ensure_panel() -> PanelContainer:
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_END
 	panel.visible = false
 	panel.z_index = 40
+	panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	panel.theme = BATTLE_HUD_THEME
 	panel.add_theme_stylebox_override("panel", _build_panel_style())
 	parent_root.add_child(panel)
 
@@ -60,12 +64,15 @@ func layout(viewport_size: Vector2) -> void:
 	ensure_panel()
 	if panel == null:
 		return
-	panel.size = PANEL_SIZE
+	var boss_hud_active := owner_ui != null \
+		and not owner_ui.get_tree().get_nodes_in_group(&"boss_hud_active").is_empty()
+	var target_size := BOSS_PANEL_SIZE if boss_hud_active else PANEL_SIZE
+	panel.size = target_size
 	if panel.get_parent() is Container:
-		panel.custom_minimum_size = PANEL_SIZE
+		panel.custom_minimum_size = target_size
 		panel.size_flags_horizontal = Control.SIZE_SHRINK_END
 		return
-	var x: float = maxf(12.0, viewport_size.x - PANEL_SIZE.x - 16.0)
+	var x: float = maxf(12.0, viewport_size.x - target_size.x - 16.0)
 	panel.position = Vector2(x, 116.0)
 
 func mark_dirty() -> void:
@@ -98,11 +105,16 @@ func refresh(force: bool = false) -> void:
 	if not (result is Array):
 		_hide_cards()
 		return
-	var statuses: Array = (result as Array).slice(0, MAX_CARDS)
+	var boss_hud_active := not owner_ui.get_tree().get_nodes_in_group(&"boss_hud_active").is_empty()
+	var visible_limit := 1 if boss_hud_active else MAX_CARDS
+	var statuses: Array = (result as Array).slice(0, visible_limit)
 	if statuses.is_empty():
 		_hide_cards()
 		return
 	panel.visible = true
+	var target_size := BOSS_PANEL_SIZE if boss_hud_active else PANEL_SIZE
+	panel.custom_minimum_size = target_size
+	panel.size = target_size
 	for index in range(rows.size()):
 		var row := rows[index]
 		var root := row.get("root", null) as Control
@@ -112,7 +124,7 @@ func refresh(force: bool = false) -> void:
 			root.visible = false
 			continue
 		root.visible = true
-		_apply_status(row, statuses[index] as Dictionary)
+		_apply_status(row, statuses[index] as Dictionary, boss_hud_active)
 	if force and owner_ui != null:
 		layout(owner_ui.get_viewport().get_visible_rect().size)
 
@@ -176,7 +188,7 @@ func _create_card() -> Dictionary:
 	value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	value.custom_minimum_size = Vector2(66.0, 0.0)
-	value.add_theme_font_size_override("font_size", 11)
+	value.add_theme_font_size_override("font_size", 12)
 	header.add_child(value)
 
 	var instruction: Label = Label.new()
@@ -185,7 +197,7 @@ func _create_card() -> Dictionary:
 	instruction.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	instruction.custom_minimum_size = Vector2(0.0, 14.0)
 	instruction.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	instruction.add_theme_font_size_override("font_size", 11)
+	instruction.add_theme_font_size_override("font_size", 12)
 	instruction.add_theme_color_override("font_color", Color(0.78, 0.86, 0.88, 0.95))
 	body.add_child(instruction)
 
@@ -210,7 +222,7 @@ func _create_card() -> Dictionary:
 		"progress": progress,
 	}
 
-func _apply_status(row: Dictionary, status: Dictionary) -> void:
+func _apply_status(row: Dictionary, status: Dictionary, compact: bool = false) -> void:
 	var root := row.get("root", null) as PanelContainer
 	var marker := row.get("marker", null) as Label
 	var label := row.get("label", null) as Label
@@ -228,7 +240,8 @@ func _apply_status(row: Dictionary, status: Dictionary) -> void:
 
 	label.text = display_label
 	instruction.text = instruction_text
-	instruction.visible = instruction_text != ""
+	instruction.visible = not compact and instruction_text != ""
+	progress.visible = not compact
 	value.text = value_text
 	progress.call("set_target_value", progress_value)
 	_apply_marker_icon(marker, str(status.get("icon_key", status.get("type", ""))), state)

@@ -3,7 +3,7 @@ ui.panel.purchase,Purchase,购买
 ui.merchant.purchase.title,Purchase,购买
 ui.merchant.purchase.subtitle,Choose purchase category,选择购买类别
 ui.panel.upgrade_combined,Upgrade Weapons and Modules,升级武器与模组
-ui.purchase.instruction,,
+ui.purchase.instruction,Choose an item to purchase.,请选择要购买的项目。
 ui.purchase.open,Buy Weapons and Modules,购买武器与模组
 ui.purchase.weapons,Buy Weapons,购买武器
 ui.purchase.modules,Buy Modules,购买模组

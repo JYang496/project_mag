@@ -59,6 +59,10 @@ var _hint_presenter: RefCounted
 var _route_flow: RefCounted
 var _hybrid_hint_canvas: CanvasLayer
 var _hybrid_hint_zones: Dictionary = {}
+var _arrival_focus_zone := -1
+var _readiness_canvas: CanvasLayer
+var _readiness_label: Label
+var _readiness_signature := ""
 @onready var _start_battle_button: StartBattleButton = get_node_or_null("StartBattleButton")
 @onready var _texture_root: Node2D = get_node_or_null("Texture")
 @onready var _reward_manager: BonusManager = get_tree().current_scene.get_node_or_null("RewardManager") as BonusManager
@@ -144,6 +148,7 @@ func _ready() -> void:
 	_refresh_interaction_state()
 	queue_redraw()
 	call_deferred("_setup_hybrid_hint_canvas")
+	call_deferred("_setup_readiness_checklist")
 
 func _apply_terrain_texture() -> void:
 	if _sprite == null:
@@ -305,6 +310,7 @@ func _on_phase_changed(new_phase: String) -> void:
 func _enter_prepare_phase() -> void:
 	_sync_to_target_center()
 	_set_active(true, false)
+	_refresh_readiness_checklist(true)
 	_set_camera_owner_active(true)
 	call_deferred("_ensure_camera_owner_binding")
 	# The platform is centered on the player's battle-end position, so entering
@@ -318,6 +324,7 @@ func _enter_prepare_phase() -> void:
 
 func _enter_non_prepare_phase() -> void:
 	_zone_hint_intro_remaining = 0.0
+	_set_readiness_checklist_visible(false)
 	_set_active(false, false)
 	_set_camera_owner_active(false)
 	call_deferred("_ensure_camera_owner_binding")
@@ -482,6 +489,7 @@ func _discard_unassigned_task_modules_and_continue_start_battle() -> void:
 func _process(delta: float) -> void:
 	_ensure_camera_owner_binding()
 	_sync_hybrid_hint_positions()
+	_refresh_readiness_checklist()
 	if not _is_interaction_enabled():
 		_zone_hint_intro_remaining = 0.0
 		_update_zone_hint_visibility()
@@ -793,6 +801,8 @@ func _is_zone_hint_intro_active() -> bool:
 	return _zone_hint_intro_remaining > 0.0
 
 func _should_show_zone_hint_label(zone_id: int, is_center_action_hint: bool = false) -> bool:
+	if _arrival_focus_zone == zone_id:
+		return true
 	if not _is_interaction_enabled():
 		return false
 	if not _is_zone_available(zone_id):
@@ -806,6 +816,77 @@ func _should_show_zone_hint_label(zone_id: int, is_center_action_hint: bool = fa
 	if hover_zone_id == zone_id:
 		return true
 	return selected_zone_id == zone_id and zone_id != CENTER_ZONE_ID
+
+func set_arrival_service_focus(zone_id: int) -> void:
+	_arrival_focus_zone = zone_id
+	_update_zone_hint_visuals(true)
+	_update_zone_hint_visibility()
+	queue_redraw()
+
+func clear_arrival_service_focus() -> void:
+	set_arrival_service_focus(-1)
+
+func sync_selected_service_zone(zone_id: int) -> void:
+	selected_zone_id = zone_id
+	hover_zone_id = -1
+	_update_zone_hint_visuals(true)
+	_update_zone_hint_visibility()
+	queue_redraw()
+
+func _setup_readiness_checklist() -> void:
+	if _readiness_canvas != null:
+		return
+	_readiness_canvas = CanvasLayer.new()
+	_readiness_canvas.name = "RestReadinessChecklistCanvas"
+	_readiness_canvas.layer = 19
+	add_child(_readiness_canvas)
+	_readiness_label = Label.new()
+	_readiness_label.name = "ReadinessChecklist"
+	_readiness_label.position = Vector2(24.0, 112.0)
+	_readiness_label.custom_minimum_size = Vector2(310.0, 0.0)
+	_readiness_label.add_theme_font_size_override("font_size", 14)
+	_readiness_label.add_theme_color_override("font_color", Color(0.82, 0.94, 1.0, 0.94))
+	_readiness_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	_readiness_label.add_theme_constant_override("shadow_offset_x", 1)
+	_readiness_label.add_theme_constant_override("shadow_offset_y", 2)
+	_readiness_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_readiness_canvas.add_child(_readiness_label)
+	_refresh_readiness_checklist(true)
+
+func _refresh_readiness_checklist(force: bool = false) -> void:
+	if _readiness_label == null:
+		return
+	var should_show := _active and PhaseManager.current_state() == PhaseManager.REST and not _are_zone_hints_suppressed_by_ui()
+	_set_readiness_checklist_visible(should_show)
+	if not should_show:
+		return
+	var lines: PackedStringArray = []
+	if TaskRewardManager.is_reward_blocking_interactions() or RewardDraftRuntime.has_pending_standard_draft():
+		lines.append(LocalizationManager.tr_key("ui.rest.checklist.reward", "• Reward choice pending"))
+	var ui := GlobalVariables.ui
+	if ui != null and is_instance_valid(ui) and ui.has_method("is_branch_selection_blocking_interactions") \
+			and bool(ui.call("is_branch_selection_blocking_interactions")):
+		lines.append(LocalizationManager.tr_key("ui.rest.checklist.branch", "• Evolution branch pending"))
+	if InventoryData.temporary_modules.size() > 0:
+		lines.append(LocalizationManager.tr_format("ui.rest.checklist.modules", {"count": InventoryData.temporary_modules.size()}, "• %d stored modules" % InventoryData.temporary_modules.size()))
+	var affordable := _get_affordable_upgrade_count()
+	if affordable > 0:
+		lines.append(LocalizationManager.tr_format("ui.rest.checklist.upgrades", {"count": affordable}, "• %d affordable upgrades" % affordable))
+	if CellEffectRuntime.has_pending_edits():
+		lines.append(LocalizationManager.tr_key("ui.rest.checklist.board", "• Board changes awaiting commit"))
+	if lines.is_empty():
+		lines.append(LocalizationManager.tr_key("ui.rest.checklist.ready", "• Ready for the next protocol"))
+	lines.resize(mini(lines.size(), 4))
+	var signature := "|".join(lines)
+	if force or signature != _readiness_signature:
+		_readiness_signature = signature
+		_readiness_label.text = LocalizationManager.tr_key("ui.rest.checklist.title", "PREPARATION") + "\n" + "\n".join(lines)
+
+func _set_readiness_checklist_visible(should_show: bool) -> void:
+	if _readiness_canvas != null:
+		_readiness_canvas.visible = should_show
+	if _readiness_label != null:
+		_readiness_label.visible = should_show
 
 func _are_zone_hints_suppressed_by_ui() -> bool:
 	return _is_world_interaction_blocked()

@@ -27,8 +27,6 @@
     {
       "source": "E:\\Godot Projects\\project_mag\\Visual\\Oblique\\assets\\board_support\\floating_board_skirt_atlas.png",
       "destination": "C:\\Users\\koalg\\AppData\\Local\\Temp\\project_mag_board_skirt_normalized_20260726\\floating_board_skirt_atlas_normalized.png",
-      "source_sha256": "4900f9828dadb7bffdbf1a85e0563893812d37a0dc48916bb3b69eeb9a5e4a3a",
-      "output_sha256": "4900f9828dadb7bffdbf1a85e0563893812d37a0dc48916bb3b69eeb9a5e4a3a",
       "preset": "scene_prop_large",
       "protected": true,
       "grid": {

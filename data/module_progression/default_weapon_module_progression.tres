@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ModuleProgressionProfile" format=3]
+
+[ext_resource type="Script" path="res://data/module_progression/ModuleProgressionProfile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+profile_id = &"default_weapon_module_progression"
+foundation_ids = PackedStringArray("wmod_area_expander", "wmod_bullet_size_stat", "wmod_crit_calibrator", "wmod_cryo_infuser_freeze", "wmod_dash_cooler", "wmod_diffusion_nozzle", "wmod_expanded_magazine", "wmod_fast_reload", "wmod_heat_throttle", "wmod_impact_coil", "wmod_projectile_speed_stat", "wmod_quick_cycle", "wmod_recovery_magnet", "wmod_reload_move_boost")
+trigger_ids = PackedStringArray("wmod_damage_up_stat", "wmod_crit_amplifier", "wmod_dot_on_hit", "wmod_stun_on_hit", "wmod_pierce_stat", "wmod_reload_blast_knockback", "wmod_reload_blast_damage", "wmod_reload_damage_boost", "wmod_reload_shield_boost", "wmod_frost_resonance", "wmod_molten_splash_fire", "wmod_chill_chain_freeze", "wmod_ice_prison_freeze", "wmod_permafrost_field_freeze", "wmod_heat_capacity_heat", "wmod_heat_vent_heat")
+build_ids = PackedStringArray("wmod_battle_focus_buff", "wmod_bleed_edge_physical", "wmod_corrosive_touch_energy", "wmod_crossfire", "wmod_ember_mark_fire", "wmod_firepower_diffusion", "wmod_inertial_aim", "wmod_kill_endurance", "wmod_magazine_pressure", "wmod_momentum_haste", "wmod_overkill_recovery", "wmod_penetration_momentum", "wmod_plague_seed_dot", "wmod_reload_offhand_boost", "wmod_reload_speed_link", "wmod_weakness_relay")
+conversion_ids = PackedStringArray("wmod_brittle_trigger_freeze", "wmod_dash_impact", "wmod_heat_concentration_heat", "wmod_lifesteal_on_hit", "wmod_lightning_chain_on_hit", "wmod_multi_launcher", "wmod_rhythm_converter", "wmod_shatter_strike_freeze", "wmod_skill_overdrive", "wmod_subzero_extension_freeze", "wmod_trail_aoe_freeze", "wmod_vampiric_surge")
+newly_unlocked_weight_multiplier = 3.0
+newly_unlocked_level_window = 2

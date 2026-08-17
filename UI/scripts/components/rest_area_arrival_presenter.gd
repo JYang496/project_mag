@@ -8,6 +8,7 @@ const GROUND_REVEAL_DURATION_SEC := 0.82
 const SCRIM_ALPHA := 0.18
 const INITIAL_COVER_ALPHA := 1.0
 const INITIAL_COVER_RELEASE_SEC := 0.38
+const FIRST_SERVICE_INTRO_DURATION_SEC := 4.20
 
 var owner_ui: UI
 var overlay: Control
@@ -64,14 +65,17 @@ func play(skip_readiness_wait: bool = false) -> void:
 	if _ground_view != null:
 		_ground_view.prepare_rest_area_arrival()
 	var initial_handoff := _initial_cover_primed
+	var show_service_intro := initial_handoff and not SaveManager.rest_area_service_intro_seen
 	_prepare_visual_state(initial_handoff)
-	await _play_timeline(initial_handoff)
+	await _play_timeline(initial_handoff, show_service_intro)
 	if generation != _generation:
 		return
 	_finish_visual_state()
 	_prepared = false
 	_playing = false
 	_initial_cover_primed = false
+	if show_service_intro:
+		SaveManager.mark_rest_area_service_intro_seen()
 
 
 func cancel() -> void:
@@ -103,7 +107,7 @@ func _prepare_visual_state(initial_cover: bool = false) -> void:
 	progress_fill.scale = Vector2(0.0, 1.0)
 
 
-func _play_timeline(initial_handoff: bool = false) -> void:
+func _play_timeline(initial_handoff: bool = false, show_service_intro: bool = false) -> void:
 	if owner_ui == null or not owner_ui.is_inside_tree():
 		return
 	_transition_tween = owner_ui.create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
@@ -138,6 +142,14 @@ func _play_timeline(initial_handoff: bool = false) -> void:
 	_transition_tween.tween_property(scrim, "color:a", 0.0, 0.28).set_delay(1.10)
 	_transition_tween.tween_property(status_panel, "modulate:a", 0.0, 0.20).set_delay(1.20)
 	_transition_tween.tween_callback(_play_arrival_tone).set_delay(0.34)
+	if show_service_intro:
+		var service_zones: Array[int] = [0, 1, 2, 6, 4]
+		var service_names := ["PURCHASE", "UPGRADE", "WAREHOUSE", "BOARD", "PROTOCOL"]
+		for index in range(service_zones.size()):
+			var delay := 0.62 + float(index) * 0.62
+			_transition_tween.tween_callback(_focus_service.bind(service_zones[index], service_names[index])).set_delay(delay)
+		_transition_tween.tween_callback(_clear_service_focus).set_delay(FIRST_SERVICE_INTRO_DURATION_SEC - 0.12)
+		_transition_tween.tween_interval(FIRST_SERVICE_INTRO_DURATION_SEC)
 	await _transition_tween.finished
 	_transition_tween = null
 
@@ -150,6 +162,7 @@ func _set_arrival_progress(value: float) -> void:
 
 
 func _finish_visual_state() -> void:
+	_clear_service_focus()
 	if _ground_view != null and is_instance_valid(_ground_view):
 		_ground_view.finish_rest_area_arrival()
 	if audio != null and is_instance_valid(audio):
@@ -161,6 +174,15 @@ func _finish_visual_state() -> void:
 		scrim.color.a = 0.0
 		scan_line.modulate.a = 0.0
 		status_panel.modulate.a = 0.0
+
+func _focus_service(zone_id: int, fallback_name: String) -> void:
+	if _rest_area != null and is_instance_valid(_rest_area) and _rest_area.has_method("set_arrival_service_focus"):
+		_rest_area.call("set_arrival_service_focus", zone_id)
+	_set_status(_tr("rest_arrival.service.%s" % fallback_name.to_lower(), "SERVICE ONLINE // %s" % fallback_name))
+
+func _clear_service_focus() -> void:
+	if _rest_area != null and is_instance_valid(_rest_area) and _rest_area.has_method("clear_arrival_service_focus"):
+		_rest_area.call("clear_arrival_service_focus")
 
 
 func _resolve_world_nodes() -> void:

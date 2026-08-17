@@ -24,7 +24,6 @@ var character_hud_root: Control
 const HUD_MARGIN := 16.0
 const CONTINUOUS_REFRESH_INTERVAL := 0.1
 const COMBAT_RESOURCE_ORIGIN := Vector2(104.0, 18.0)
-const SPECIAL_RESOURCE_MAX_SIZE := Vector2(250.0, 152.0)
 const STATUS_DOCK_WIDTH := 420.0
 const STATUS_RESOURCE_GAP := 16.0
 const SPECIAL_RESOURCE_OPACITY := 0.62
@@ -90,13 +89,14 @@ func ensure_phase_controlled_roots() -> void:
 func layout_hud(viewport_size: Vector2, hp_label_root: Control, weapon_selector: WeaponSelector = null) -> void:
 	if equipped_label and is_instance_valid(equipped_label):
 		equipped_label.position = Vector2(HUD_MARGIN, HUD_MARGIN)
+	var selector_footprint := Vector2(336.0, 108.0)
 	if weapon_selector and is_instance_valid(weapon_selector):
-		var selector_height := weapon_selector.size.y * weapon_selector.scale.y
-		if selector_height <= 0.0:
-			selector_height = 72.0
+		selector_footprint = weapon_selector.get_visual_footprint_size()
+	var safe_margin := UiLayoutPolicy.safe_margin(viewport_size)
+	if weapon_selector and is_instance_valid(weapon_selector):
 		weapon_selector.set_layout_origin(Vector2(
-			HUD_MARGIN + 12.0,
-			viewport_size.y - selector_height - HUD_MARGIN
+			safe_margin.x,
+			viewport_size.y - selector_footprint.y - HUD_MARGIN
 		))
 	if hp_label_root and is_instance_valid(hp_label_root):
 		var dock_size := hp_label_root.size * hp_label_root.scale
@@ -105,7 +105,7 @@ func layout_hud(viewport_size: Vector2, hp_label_root: Control, weapon_selector:
 		if dock_size.y <= 0.0:
 			dock_size.y = 80.0
 		hp_label_root.position = Vector2(
-			(viewport_size.x - dock_size.x) * 0.5,
+			roundf((viewport_size.x - dock_size.x) * 0.5),
 			viewport_size.y - dock_size.y - HUD_MARGIN
 		)
 	if weapon_state_label and is_instance_valid(weapon_state_label):
@@ -422,6 +422,10 @@ func _sync_primary_resource_slot(slot: Dictionary) -> void:
 	var state := StringName(str(slot.get("state", "normal")))
 	var text := str(slot.get("short_text", slot.get("text", "")))
 	primary_resource_meter.call("set_resource", resource_type, ratio, state, text, tooltip)
+	if special_resource_slot_container != null and is_instance_valid(special_resource_slot_container):
+		special_resource_slot_container.position = _special_resource_position(
+			special_resource_slot_container.get_viewport_rect().size
+		)
 	var target_opacity := 1.0 if resource_type == &"heat" else SPECIAL_RESOURCE_OPACITY
 	var is_hiding: bool = primary_resource_meter.has_method("is_hiding_animated") \
 		and bool(primary_resource_meter.call("is_hiding_animated"))
@@ -481,7 +485,10 @@ func _sync_global_weapon_energy_meter() -> void:
 	var ratio := clampf(current / maximum, 0.0, 1.0)
 	var release_ready: bool = player.has_method("is_global_weapon_energy_ready") \
 		and bool(player.call("is_global_weapon_energy_ready"))
-	var state := &"warning" if release_ready else &"charging"
+	# Readiness is already communicated by the READY label. Keep the global
+	# energy meter in a static state so it does not inherit the shared resource
+	# meter's warning/charging pulse.
+	var state := &"normal"
 	var short_text := "READY" if release_ready else "%d%%" % int(round(ratio * 100.0))
 	var tooltip := "Global weapon energy: %d/%d" % [int(round(current)), int(round(maximum))]
 	if release_ready:
@@ -522,21 +529,25 @@ func _ensure_special_resource_slot_container() -> void:
 	parent.add_child(special_resource_slot_container)
 
 func _special_resource_position(viewport_size: Vector2) -> Vector2:
-	# This meter used to float inside the aiming/play space. It now joins the
-	# bottom status dock, immediately to the right when space permits.
+	# Align the resource meter's actual visual bottom with the health dock and
+	# weapon-control hint baseline instead of positioning a 152 px reserve box.
+	var resource_size := Vector2(250.0, 20.0)
+	if primary_resource_meter != null and is_instance_valid(primary_resource_meter) \
+			and primary_resource_meter.has_method("get_visual_footprint_size"):
+		resource_size = primary_resource_meter.call("get_visual_footprint_size") as Vector2
 	var status_right := (viewport_size.x + STATUS_DOCK_WIDTH) * 0.5
 	var center_safe_right := viewport_size.x * 0.72
 	var preferred_x := maxf(
 		status_right + STATUS_RESOURCE_GAP,
 		center_safe_right + STATUS_RESOURCE_GAP
 	)
-	var maximum_x := viewport_size.x - HUD_MARGIN - SPECIAL_RESOURCE_MAX_SIZE.x
+	var maximum_x := viewport_size.x - HUD_MARGIN - resource_size.x
 	var x := minf(preferred_x, maximum_x)
 	if x < HUD_MARGIN:
 		x = HUD_MARGIN
 	return Vector2(
-		x,
-		maxf(HUD_MARGIN, viewport_size.y - HUD_MARGIN - SPECIAL_RESOURCE_MAX_SIZE.y)
+		roundf(x),
+		roundf(maxf(HUD_MARGIN, viewport_size.y - HUD_MARGIN - resource_size.y))
 	)
 
 func _sync_ammo_resource_slot(slot: Dictionary) -> void:
@@ -598,8 +609,10 @@ func _update_weapon_state_label_text() -> void:
 		main_text = LocalizationManager.tr_format("ui.hud.weapon.main.slot", {"index": PlayerData.main_weapon_index + 1}, "W%s" % str(PlayerData.main_weapon_index + 1))
 	var ps_cd := 0.0
 	var active_skill_node: Node = null
-	if PlayerData.player.active_skill_holder and PlayerData.player.active_skill_holder.get_child_count() > 0:
-		active_skill_node = PlayerData.player.active_skill_holder.get_child(0)
+	var runtime_player := PlayerData.player as Player
+	if runtime_player != null and runtime_player.active_skill_holder != null \
+			and runtime_player.active_skill_holder.get_child_count() > 0:
+		active_skill_node = runtime_player.active_skill_holder.get_child(0)
 	if active_skill_node != null and active_skill_node.has_method("get_cooldown_remaining"):
 		ps_cd = float(active_skill_node.call("get_cooldown_remaining"))
 	var lock_text := LocalizationManager.tr_key("ui.hud.weapon.swap.on", "on") if weapon_count > 1 else LocalizationManager.tr_key("ui.hud.weapon.swap.off", "off")

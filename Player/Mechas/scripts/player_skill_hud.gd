@@ -4,7 +4,7 @@ class_name PlayerSkillHud
 const SKILL_ICON_TEXTURE := preload("res://UI/assets/hud_icons/skill_energy_icon.png")
 const ENERGY_BAR_SIZE := Vector2(52.0, 6.0)
 const ENERGY_BAR_SCREEN_OFFSET := Vector2(0.0, 54.0)
-const HUD_ICON_SIZE := Vector2(10.0, 10.0)
+const HUD_ICON_SIZE := Vector2(12.0, 12.0)
 const HUD_ICON_GAP := 4.0
 const ENERGY_TRACK := Color(0.105, 0.065, 0.018, 0.94)
 const ENERGY_FILL := Color(1.0, 0.55, 0.04, 0.98)
@@ -17,6 +17,7 @@ const ENERGY_EDGE := Color(1.0, 0.76, 0.22, 1.0)
 
 var _player: Node2D
 var _feedback_tween: Tween
+var _feedback_active := false
 var _current_energy := 100.0
 var _max_energy := 100.0
 
@@ -33,8 +34,8 @@ func _ready() -> void:
 	_player = get_parent().get_parent() as Node2D
 	visible = false
 	modulate.a = 0.0
-	if _player != null and _player.has_signal("player_skill_activated"):
-		_player.connect("player_skill_activated", _on_player_skill_activated)
+	if _player != null and _player.has_signal("player_active_skill"):
+		_player.connect("player_active_skill", _on_player_skill_attempted)
 	queue_redraw()
 
 
@@ -44,12 +45,15 @@ func _process(_delta: float) -> void:
 	_sync_screen_position()
 
 
-func _on_player_skill_activated(_skill: Node) -> void:
+func _on_player_skill_attempted() -> void:
 	_sync_energy()
 	show_skill_feedback()
 
 
 func show_skill_feedback() -> void:
+	if _feedback_active:
+		return
+	_feedback_active = true
 	if _feedback_tween != null and _feedback_tween.is_valid():
 		_feedback_tween.kill()
 	visible = true
@@ -65,6 +69,7 @@ func show_skill_feedback() -> void:
 
 
 func _finish_feedback() -> void:
+	_feedback_active = false
 	visible = false
 
 

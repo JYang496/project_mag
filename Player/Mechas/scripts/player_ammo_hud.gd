@@ -7,7 +7,7 @@ const RELOAD_FILL_COLOR := Color(0.16, 0.72, 1.0, 0.98)
 const FRAME_COLOR := Color(0.58, 0.90, 1.0, 1.0)
 const CONTAINER_SCREEN_OFFSET := Vector2(0.0, 42.0)
 const RELOAD_BAR_SIZE := Vector2(52.0, 6.0)
-const HUD_ICON_SIZE := Vector2(10.0, 10.0)
+const HUD_ICON_SIZE := Vector2(12.0, 12.0)
 const HUD_ICON_GAP := 4.0
 
 @export var hud_size := Vector2(128.0, 64.0)
@@ -34,6 +34,14 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	_sync_reload_status()
 	_sync_screen_position()
+
+
+func _exit_tree() -> void:
+	if _fade_tween != null and _fade_tween.is_valid():
+		_fade_tween.kill()
+	_fade_tween = null
+	_reload_visible = false
+	_reload_ratio = 0.0
 
 
 func set_reload_status(is_reloading: bool, reload_left: float, reload_total: float, enabled: bool = true) -> void:

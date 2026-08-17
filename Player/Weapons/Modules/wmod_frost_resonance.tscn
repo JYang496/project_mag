@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://Player/Weapons/Modules/wmod_frost_resonance.gd" id="2_script"]
+[ext_resource type="Script" path="res://Player/Weapons/Core/module_trigger_spec.gd" id="3_trigger"]
+[ext_resource type="Texture2D" path="res://asset/images/modules/pixel/wmod_shatter_strike_freeze.png" id="4_icon"]
+
+[sub_resource type="Resource" id="TriggerSpec"]
+script = ExtResource("3_trigger")
+event_type = "damage_dealt"
+requires_action_context = true
+internal_cooldown_sec = 0.1
+once_per_target = true
+
+[node name="FrostResonance" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+module_id = &"wmod_frost_resonance"
+display_name = "Frost Resonance"
+cost = 12
+level_effects = PackedStringArray("Frost burst deals 45% weapon damage", "Frost burst deals 65% weapon damage", "Frost burst deals 85% weapon damage")
+module_tags = PackedStringArray("trigger", "freeze", "area", "on_hit")
+required_hooks = 4
+trigger_spec = SubResource("TriggerSpec")
+
+[node name="Sprite" parent="." index="0"]
+texture = ExtResource("4_icon")

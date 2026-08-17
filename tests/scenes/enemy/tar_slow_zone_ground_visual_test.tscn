@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://tests/scenes/enemy/tar_slow_zone_ground_visual_test.gd" id="1"]
-
-[node name="TarSlowZoneGroundVisualTest" type="Node"]
-script = ExtResource("1")

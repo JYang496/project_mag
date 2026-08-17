@@ -8,7 +8,6 @@ archive before replacement; unused legacy character sources are moved there.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -101,14 +100,6 @@ RESTORED_SOURCES = [
     },
 ]
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def _image_size(path: Path) -> tuple[int, int]:
     with Image.open(path) as image:
         return image.size
@@ -150,8 +141,6 @@ def _resize_nearest(relative: str, target: tuple[int, int]) -> dict[str, object]
         "operation": "nearest_resize",
         "original_size": list(original_size),
         "target_size": list(target),
-        "original_sha256": _sha256(archived),
-        "result_sha256": _sha256(source),
     }
 
 
@@ -183,7 +172,6 @@ def _move_deprecated(relative: str) -> list[dict[str, object]]:
                 record: dict[str, object] = {
                     "path": original_relative.as_posix(),
                     "operation": "archive_deprecated",
-                    "sha256": _sha256(path),
                 }
                 if path.suffix.lower() == ".png":
                     record["size"] = list(_image_size(path))
@@ -201,7 +189,6 @@ def _move_deprecated(relative: str) -> list[dict[str, object]]:
             record: dict[str, object] = {
                 "path": rel_file,
                 "operation": "archive_deprecated",
-                "sha256": _sha256(path),
             }
             if path.suffix.lower() == ".png":
                 record["size"] = list(_image_size(path))
@@ -212,7 +199,6 @@ def _move_deprecated(relative: str) -> list[dict[str, object]]:
     record = {
         "path": relative,
         "operation": "archive_deprecated",
-        "sha256": _sha256(source),
     }
     if source.suffix.lower() == ".png":
         record["size"] = list(_image_size(source))
@@ -245,7 +231,6 @@ def main() -> None:
             {
                 **record,
                 "size": list(_image_size(ROOT / str(record["path"]))),
-                "sha256": _sha256(ROOT / str(record["path"])),
             }
             for record in RESTORED_SOURCES
         ],

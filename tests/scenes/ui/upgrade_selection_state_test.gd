@@ -32,8 +32,27 @@ func _run() -> void:
 	await get_tree().process_frame
 	ui.ensure_upgrade_management()
 	await get_tree().process_frame
+	if ui.get_management_item_mode() != &"weapon":
+		_fail("Management item mode did not default to weapon for a fresh run.")
+		return
+	ui.upgrade_management_controller.apply_mode(&"module")
+	if ui.get_management_item_mode() != &"module":
+		_fail("Upgrade module tab did not update the shared management item mode.")
+		return
+	ui.ensure_purchase_management()
+	ui.purchase_management_controller.ensure_module_shop()
+	ui.purchase_management_controller.apply_purchase_mode(ui.get_management_item_mode())
+	ui.ensure_warehouse_management()
+	ui.module_warehouse_controller.open_tab(ui.get_management_item_mode())
+	if ui.purchase_management_controller.purchase_mode != &"module" \
+			or ui.module_warehouse_controller.active_tab != &"module":
+		_fail("Purchase and warehouse did not open with the shared module state.")
+		return
 
 	ui.upgrade_management_controller.apply_mode(&"weapon")
+	if ui.get_management_item_mode() != &"weapon":
+		_fail("Weapon tab did not restore the shared management item mode.")
+		return
 	ui.upgrade_management_controller.update_upg()
 	var items: Array[Dictionary] = ui.upgrade_management_view.build_items(&"weapon")
 	if items.is_empty():

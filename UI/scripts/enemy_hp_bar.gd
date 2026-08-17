@@ -2,6 +2,9 @@ extends Node2D
 class_name EnemyHpBar
 
 const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd")
+const MAX_SIMULTANEOUS_BARS := 8
+
+static var _visible_bars: Array[WeakRef] = []
 
 @export var offset_y: float = -30.0
 
@@ -47,6 +50,14 @@ func set_hp(value: int) -> void:
 	bar.call("set_target_value", clampf(float(value), 0.0, bar.max_value))
 
 func show_for(duration_sec: float) -> void:
+	_prune_visible_bars()
+	_unregister_visible_bar()
+	while _visible_bars.size() >= MAX_SIMULTANEOUS_BARS:
+		var oldest_ref: WeakRef = _visible_bars.pop_front()
+		var oldest: EnemyHpBar = oldest_ref.get_ref() as EnemyHpBar
+		if oldest != null and is_instance_valid(oldest):
+			oldest.hide_immediately()
+	_visible_bars.append(weakref(self))
 	visible = true
 	hide_timer.stop()
 	hide_timer.wait_time = maxf(0.05, duration_sec)
@@ -55,6 +66,22 @@ func show_for(duration_sec: float) -> void:
 func hide_immediately() -> void:
 	hide_timer.stop()
 	visible = false
+	_unregister_visible_bar()
 
 func _on_hide_timer_timeout() -> void:
-	visible = false
+	hide_immediately()
+
+func _exit_tree() -> void:
+	_unregister_visible_bar()
+
+func _prune_visible_bars() -> void:
+	for index in range(_visible_bars.size() - 1, -1, -1):
+		var candidate: EnemyHpBar = _visible_bars[index].get_ref() as EnemyHpBar
+		if candidate == null or not is_instance_valid(candidate) or not candidate.visible:
+			_visible_bars.remove_at(index)
+
+func _unregister_visible_bar() -> void:
+	for index in range(_visible_bars.size() - 1, -1, -1):
+		var candidate: EnemyHpBar = _visible_bars[index].get_ref() as EnemyHpBar
+		if candidate == null or not is_instance_valid(candidate) or candidate == self:
+			_visible_bars.remove_at(index)

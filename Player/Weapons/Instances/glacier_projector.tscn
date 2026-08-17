@@ -8,6 +8,7 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/continuous_pulse_feedback.tres" id="7_feedback"]
 
 [node name="GlacierProjector" unique_id=252111721 instance=ExtResource("1_base")]
+base_trait_flags = 24
 script = ExtResource("2_script")
 turn_speed_degrees_per_second = 180.0
 fire_feedback_profile = ExtResource("7_feedback")
@@ -30,7 +31,6 @@ effect_configs = Array[ExtResource("3_3hv4x")]([])
 debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 24
 
 [node name="BrittleTrigger" parent="Modules" index="0" unique_id=2045249766 instance=ExtResource("5_74i8c")]
 

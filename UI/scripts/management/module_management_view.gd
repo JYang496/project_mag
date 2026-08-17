@@ -214,17 +214,17 @@ func _build_unified_layout() -> void:
 
 	_tabs = HBoxContainer.new()
 	_tabs.name = "WarehouseTabs"
-	_tabs.visible = false
-	_tabs.position = Vector2(25, 40)
-	_tabs.size = Vector2(360, 46)
-	_tabs.add_theme_constant_override("separation", 10)
+	_tabs.visible = true
+	_tabs.position = Vector2(25, 54)
+	_tabs.size = Vector2(500, 38)
+	_tabs.add_theme_constant_override("separation", 8)
 	add_child(_tabs)
 
 	_tab_weapon_button = Button.new()
 	_tab_weapon_button.name = "WeaponWarehouseTab"
 	_tab_weapon_button.toggle_mode = true
 	_tab_weapon_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
-	_tab_weapon_button.custom_minimum_size = Vector2(170, 44)
+	_tab_weapon_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_tab_weapon_button.pressed.connect(_on_weapon_tab_pressed)
 	_tabs.add_child(_tab_weapon_button)
 
@@ -232,22 +232,22 @@ func _build_unified_layout() -> void:
 	_tab_module_button.name = "ModuleWarehouseTab"
 	_tab_module_button.toggle_mode = true
 	_tab_module_button.text = LocalizationManager.tr_key("ui.module.warehouse.title", "Module Warehouse")
-	_tab_module_button.custom_minimum_size = Vector2(170, 44)
+	_tab_module_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_tab_module_button.pressed.connect(_on_module_tab_pressed)
 	_tabs.add_child(_tab_module_button)
 
 	var columns := HBoxContainer.new()
 	columns.name = "Columns"
-	columns.position = Vector2(25, 78)
-	columns.size = Vector2(950, 428)
+	columns.position = Vector2(25, 104)
+	columns.size = Vector2(950, 402)
 	columns.add_theme_constant_override("separation", 14)
 	add_child(columns)
 
-	var left_panel := _make_panel_column(columns, "LeftColumn", Vector2(300, 410))
+	var left_panel := _make_panel_column(columns, "LeftColumn", Vector2(300, 384))
 	_left_title = _make_column_title(left_panel)
 	_left_list = _make_scroll_list(left_panel, "LeftListScroll", "LeftList")
 
-	var detail_panel := _make_panel_column(columns, "DetailColumn", Vector2(300, 410))
+	var detail_panel := _make_panel_column(columns, "DetailColumn", Vector2(300, 384))
 	_detail_title = _make_column_title(detail_panel)
 	_detail_subtitle = Label.new()
 	_detail_subtitle.name = "DetailSubtitle"
@@ -267,7 +267,7 @@ func _build_unified_layout() -> void:
 	_detail_body.add_theme_constant_override("separation", 6)
 	detail_scroll.add_child(_detail_body)
 
-	var right_panel := _make_panel_column(columns, "RightColumn", Vector2(300, 410))
+	var right_panel := _make_panel_column(columns, "RightColumn", Vector2(300, 384))
 	_right_title = _make_column_title(right_panel)
 	_right_list = _make_scroll_list(right_panel, "RightListScroll", "RightList")
 
@@ -538,12 +538,16 @@ func _build_module_socket_callback(weapon: Weapon, existing: Module) -> Callable
 	return _on_module_socket_pressed.bind(weapon, existing)
 
 func _on_weapon_tab_pressed() -> void:
-	active_tab = &"weapon"
-	refresh_all()
+	if controller != null:
+		controller.open_tab(&"weapon")
+		return
+	apply_tab(&"weapon")
 
 func _on_module_tab_pressed() -> void:
-	active_tab = &"module"
-	refresh_all()
+	if controller != null:
+		controller.open_tab(&"module")
+		return
+	apply_tab(&"module")
 
 func build_drag_data(payload: Dictionary, source_control: Control = null) -> Dictionary:
 	_ensure_drag_coordinator()

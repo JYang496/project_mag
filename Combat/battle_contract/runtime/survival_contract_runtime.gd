@@ -10,10 +10,6 @@ var threat_step_sec := 15.0
 var threat_level := 1
 var effective_kills := 0
 var killed_hp := 0
-var resolve := 0
-var resolve_triggers := 0
-const RESOLVE_THRESHOLD := 250
-const RESOLVE_TRIGGER_CAP := 3
 const THREAT_MULTIPLIER_PER_LEVEL := 0.06
 var _completion_guard := false
 
@@ -58,14 +54,9 @@ func _on_enemy_died(snapshot: Dictionary) -> void:
 		return
 	effective_kills += 1
 	killed_hp += int(snapshot.get("scaled_hp", 0))
-	resolve += maxi(int(snapshot.get("scaled_hp", 0)), 1)
-	if resolve >= RESOLVE_THRESHOLD and resolve_triggers < RESOLVE_TRIGGER_CAP:
-		resolve -= RESOLVE_THRESHOLD
-		resolve_triggers += 1
-		port.request_player_heal(5)
 
 func _snapshot() -> Dictionary:
-	return {"contract_id": &"survival", "remaining_sec": remaining_sec, "duration_sec": duration_sec, "threat_level": threat_level, "effective_kills": effective_kills, "killed_hp": killed_hp, "resolve_triggers": resolve_triggers}
+	return {"contract_id": &"survival", "remaining_sec": remaining_sec, "duration_sec": duration_sec, "threat_level": threat_level, "effective_kills": effective_kills, "killed_hp": killed_hp}
 
 func _emit_snapshot() -> void:
 	snapshot_changed.emit(_snapshot())

@@ -6,6 +6,7 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/rocket_launcher_fire_feedback.tres" id="4_feedback"]
 
 [node name="RocketLauncher" unique_id=318102634 instance=ExtResource("1_tn5im")]
+base_trait_flags = 21
 script = ExtResource("2_6v0md")
 turn_speed_degrees_per_second = 180.0
 fire_feedback_profile = ExtResource("4_feedback")
@@ -14,7 +15,6 @@ configured_attack_range = 800.0
 delivery_type_flags = 9
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 21
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("3_6v0md")

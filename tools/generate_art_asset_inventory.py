@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import collections
 import datetime as dt
-import hashlib
 import html
 import json
 import os
@@ -23,14 +22,6 @@ VISUAL_EXTENSIONS = IMAGE_EXTENSIONS | {".gdshader", ".shader", ".ttf", ".otf", 
 TEXT_EXTENSIONS = {".gd", ".tscn", ".tres", ".godot", ".cfg", ".json", ".gdshader", ".shader"}
 SKIP_PARTS = {".git", ".godot", "test-results", "docs"}
 RUNTIME_TEXT_ROOTS = ("autoload", "World", "Player", "Combat", "Board", "Objects", "UI", "data", "Visual", "Npc", "Shaders")
-
-
-def sha256_short(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()[:16]
 
 
 def svg_dimensions(path: Path) -> tuple[str, str]:
@@ -176,7 +167,6 @@ def collect_assets(root: Path) -> tuple[list[dict], dict]:
             "dimensions": dimensions,
             "mode": color_mode,
             "bytes": path.stat().st_size,
-            "hash": sha256_short(path),
             "tracked": "是" if tracked_flag else "否",
             "references": refs,
             "consumer": refs[0] if refs else "—",
@@ -220,10 +210,10 @@ def render_report(root: Path, assets: list[dict], excluded_tmp: dict, output: Pa
             refs += f"<br>另有 {len(asset['references'])-4} 处"
         values = [
             asset["id"], preview, asset["path"], asset["type"], asset["role"], asset["dimensions"],
-            asset["mode"], human_size(asset["bytes"]), asset["hash"], asset["tracked"], asset["status"],
+            asset["mode"], human_size(asset["bytes"]), asset["tracked"], asset["status"],
             refs, asset["runtime_size"], asset["filter"], asset["finding"],
         ]
-        cells = "".join(f"<td>{v if i == 1 or i == 11 else html.escape(str(v))}</td>" for i, v in enumerate(values))
+        cells = "".join(f"<td>{v if i == 1 or i == 10 else html.escape(str(v))}</td>" for i, v in enumerate(values))
         search = " ".join(str(v) for v in values if not isinstance(v, bool)).lower()
         rows.append(f'<tr data-role="{html.escape(asset["role"], quote=True)}" data-status="{html.escape(asset["status"], quote=True)}" data-search="{html.escape(search, quote=True)}">{cells}</tr>')
 
@@ -248,7 +238,7 @@ def render_report(root: Path, assets: list[dict], excluded_tmp: dict, output: Pa
 <section><h2>口径与结论边界</h2><div class="panel note">扫描项目内 PNG/JPG/JPEG/WebP/BMP/TGA/SVG、Shader 与字体，排除 <code>.godot/</code>、<code>docs/</code>、<code>test-results/</code>；<code>tmp/</code> 仅计数。引用采用 <code>res://完整路径</code> 静态反查，因此通过 UID、动态拼接、生成脚本或运行时目录枚举加载的素材会标为“待确认”，不能据此删除。运行显示尺寸与节点级过滤需要阶段 4 场景审计。</div></section>
 <section><h2>状态分布</h2><div class="pills">{pills(status_counts)}</div><h2>角色分布</h2><div class="pills">{pills(role_counts)}</div><h2>格式分布</h2><div class="pills">{pills(type_counts)}</div></section>
 <section><h2>素材明细</h2><div class="toolbar"><input id="search" placeholder="搜索路径、角色、状态、消费者或发现项"><select id="role"><option value="">全部角色</option>{''.join(f'<option>{html.escape(k)}</option>' for k in sorted(role_counts))}</select><select id="status"><option value="">全部状态</option>{''.join(f'<option>{html.escape(k)}</option>' for k in sorted(status_counts))}</select><span id="shown"></span></div>
-<div class="table-wrap"><table><thead><tr><th>ID</th><th>预览</th><th>路径</th><th>格式</th><th>角色</th><th>源尺寸</th><th>色彩模式</th><th>大小</th><th>SHA-256</th><th>Git</th><th>状态</th><th>静态消费者</th><th>运行尺寸</th><th>期望过滤</th><th>发现项</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div></section>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>预览</th><th>路径</th><th>格式</th><th>角色</th><th>源尺寸</th><th>色彩模式</th><th>大小</th><th>Git</th><th>状态</th><th>静态消费者</th><th>运行尺寸</th><th>期望过滤</th><th>发现项</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div></section>
 <section><h2>临时目录汇总</h2><div class="panel"><code>{html.escape(json.dumps(excluded_tmp, ensure_ascii=False, indent=2))}</code><p>这些文件未进入正式台账，需在后续项目卫生审计中区分外部工具、工作缓存和候选素材。</p></div></section>
 <details><summary>机器可读统计快照</summary><pre>{snapshot}</pre></details>
 <footer>生成器：tools/generate_art_asset_inventory.py · 报告只读，不修改或删除素材。</footer></main>

@@ -31,6 +31,10 @@ const REST_AUTO_COLLAPSE_SECONDS := 8.0
 const CONTEXT_DURATION_SECONDS := 3.0
 const CONTEXT_COOLDOWN_SECONDS := 15.0
 const MAX_CONTEXT_REPEATS := 2
+const INPUT_PROMPT_ATLAS := preload("res://asset/images/ui/input_prompts/kenney_pixel/input_prompts_tilemap.png")
+const INPUT_PROMPT_TILE_SIZE := 16
+const INPUT_PROMPT_TILE_STRIDE := 17
+const INPUT_PROMPT_DISPLAY_SIZE := 16.0
 
 @onready var content: VBoxContainer = $Margin/Content
 @onready var header: HBoxContainer = $Margin/Content/Header
@@ -42,7 +46,7 @@ const MAX_CONTEXT_REPEATS := 2
 @onready var compact_text: Label = $Margin/Content/CompactContent/CompactText
 @onready var compact_expand: Button = $Margin/Content/CompactContent/CompactExpand
 @onready var context_content: HBoxContainer = $Margin/Content/ContextContent
-@onready var context_key: Label = $Margin/Content/ContextContent/ContextKey
+@onready var context_key: HBoxContainer = $Margin/Content/ContextContent/ContextKey
 @onready var context_message: Label = $Margin/Content/ContextContent/ContextMessage
 
 var display_state: DisplayState = DisplayState.EXPANDED
@@ -266,7 +270,7 @@ func show_context_reminder(action: StringName, message: String, force: bool = fa
 	_context_last_shown_msec[action] = now_msec
 	_context_show_counts[action] = shown_count + 1
 	_context_previous_state = display_state if display_state != DisplayState.CONTEXT_REMINDER else DisplayState.COMPACT
-	context_key.text = _keycap_text(_input_label(action))
+	_set_key_prompt(context_key, _input_label(action), action)
 	context_message.text = message
 	_context_remaining = CONTEXT_DURATION_SECONDS
 	set_display_state(DisplayState.CONTEXT_REMINDER, false)
@@ -302,16 +306,10 @@ func refresh_input_glyphs() -> void:
 	]
 	if _current_phase == PhaseManager.BATTLE:
 		compact_text.visible = false
-		compact_expand.text = "%s %s" % [
-			_input_label(&"TOGGLE_CONTROLS"),
-			_tr("ui.controls.title", "Controls"),
-		]
+		_set_prompt_button(compact_expand, _tr("ui.controls.title", "Controls"))
 	else:
 		compact_text.visible = true
-		compact_expand.text = "%s %s" % [
-			_input_label(&"TOGGLE_CONTROLS"),
-			_tr("ui.controls.expand", "Expand"),
-		]
+		_set_prompt_button(compact_expand, _tr("ui.controls.expand", "Expand"))
 	title_label.text = _tr("ui.controls.title", "Controls")
 	_sync_toggle_affordance()
 	_recalculate_expanded_width()
@@ -427,14 +425,11 @@ func _render_text_context(context_title: String, lines: Array[String]) -> void:
 	title_label.text = context_title
 	_clear_action_items()
 	for line in lines:
-		var item := _create_hint_item("", line)
+		var item := _create_context_hint_item(line)
 		item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		expanded_content.add_child(item)
 	compact_text.text = _compact_text_context(context_title, lines)
-	compact_expand.text = "%s %s" % [
-		_input_label(&"TOGGLE_CONTROLS"),
-		_tr("ui.controls.expand", "Expand"),
-	]
+	_set_prompt_button(compact_expand, _tr("ui.controls.expand", "Expand"))
 	var next_state := display_state
 	if PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_ALWAYS:
 		next_state = DisplayState.EXPANDED
@@ -525,6 +520,7 @@ func _sync_toggle_affordance() -> void:
 		return
 	if PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_HIDDEN:
 		collapse_button.disabled = true
+		collapse_button.icon = null
 		collapse_button.text = _tr("ui.controls.hidden", "Hidden")
 		collapse_button.tooltip_text = _tr(
 			"ui.controls.hidden_tooltip",
@@ -533,6 +529,7 @@ func _sync_toggle_affordance() -> void:
 		return
 	if PlayerAssistSettings.controls_hint_mode == PlayerAssistSettings.CONTROLS_HINT_ALWAYS:
 		collapse_button.disabled = true
+		collapse_button.icon = null
 		collapse_button.text = _tr("ui.controls.always_expanded", "Always Expanded")
 		collapse_button.tooltip_text = _tr(
 			"ui.controls.always_expanded_tooltip",
@@ -540,7 +537,7 @@ func _sync_toggle_affordance() -> void:
 		)
 		return
 	collapse_button.disabled = false
-	collapse_button.text = "%s %s" % [_input_label(&"TOGGLE_CONTROLS"), _tr("ui.controls.collapse", "Collapse")]
+	_set_prompt_button(collapse_button, _tr("ui.controls.collapse", "Collapse"))
 	collapse_button.tooltip_text = _tr("ui.controls.collapse_tooltip", "Temporarily collapse controls hint (F1)")
 
 func _build_action_items() -> void:
@@ -562,21 +559,15 @@ func _create_hint_item(key_text: String, action_text: String) -> HBoxContainer:
 	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	item.custom_minimum_size.x = 0.0
 	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var key_label := Label.new()
-	key_label.name = "Key"
-	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	key_label.custom_minimum_size = Vector2(KEYCAP_WIDTH, 26.0)
-	key_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	key_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	key_label.clip_text = true
-	key_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	key_label.add_theme_font_size_override("font_size", 13)
-	key_label.add_theme_color_override("font_color", Color(0.78, 0.84, 0.87, 1.0))
-	key_label.add_theme_stylebox_override("normal", _build_keycap_style())
-	key_label.text = key_text
-	key_label.visible = key_text != ""
-	item.add_child(key_label)
+	var key_prompt := HBoxContainer.new()
+	key_prompt.name = "Key"
+	key_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	key_prompt.custom_minimum_size = Vector2(KEYCAP_WIDTH, 26.0)
+	key_prompt.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	key_prompt.alignment = BoxContainer.ALIGNMENT_CENTER
+	key_prompt.add_theme_constant_override("separation", 2)
+	item.add_child(key_prompt)
+	_set_key_prompt(key_prompt, key_text)
 	var action_label := Label.new()
 	action_label.name = "Action"
 	action_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -588,11 +579,102 @@ func _create_hint_item(key_text: String, action_text: String) -> HBoxContainer:
 	action_label.max_lines_visible = 2
 	action_label.clip_text = true
 	action_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	action_label.add_theme_font_size_override("font_size", 15)
+	action_label.add_theme_font_size_override("font_size", 12)
 	action_label.add_theme_color_override("font_color", Color(0.94, 0.97, 0.98, 1.0))
 	action_label.text = action_text
 	item.add_child(action_label)
 	return item
+
+func _create_context_hint_item(line: String) -> HBoxContainer:
+	var item := HBoxContainer.new()
+	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	item.add_theme_constant_override("separation", 4)
+	var cursor := 0
+	var bracket_regex := RegEx.new()
+	bracket_regex.compile("\\[([^\\]]+)\\]")
+	for match_result in bracket_regex.search_all(line):
+		_append_context_text(item, line.substr(cursor, match_result.get_start() - cursor))
+		_append_prompt_group(item, match_result.get_string(1))
+		cursor = match_result.get_end()
+	_append_context_text(item, line.substr(cursor))
+	if item.get_child_count() == 0:
+		_append_context_text(item, line)
+	return item
+
+func _append_context_text(container: HBoxContainer, value: String) -> void:
+	var normalized := value.strip_edges()
+	if normalized == "":
+		return
+	var label := Label.new()
+	label.text = normalized
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.max_lines_visible = 2
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color(0.94, 0.97, 0.98, 1.0))
+	container.add_child(label)
+
+func _append_prompt_group(container: HBoxContainer, prompt_text: String) -> void:
+	var group := HBoxContainer.new()
+	group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	group.alignment = BoxContainer.ALIGNMENT_CENTER
+	group.add_theme_constant_override("separation", 2)
+	var prompt_parts := prompt_text.split("/", false)
+	for index in range(prompt_parts.size()):
+		if index > 0:
+			group.add_child(_make_prompt_fallback_label("/", false))
+		_append_prompt_token(group, str(prompt_parts[index]).strip_edges())
+	container.add_child(group)
+
+func _append_prompt_token(container: HBoxContainer, token_text: String) -> void:
+	var normalized := token_text.strip_edges()
+	var token := normalized.to_upper()
+	match token:
+		"LMB", "鼠标左键", "左键":
+			container.add_child(_make_input_prompt_icon(Vector2i(9, 2), "LMB"))
+			return
+		"RMB", "鼠标右键", "右键":
+			container.add_child(_make_input_prompt_icon(Vector2i(10, 2), "RMB"))
+			return
+		"SPACE", "空格":
+			_append_space_prompt(container)
+			return
+		"WASD":
+			for key_name in ["W", "A", "S", "D"]:
+				container.add_child(_make_input_prompt_icon(_keyboard_prompt_coord(key_name), key_name))
+			return
+		"A":
+			if _using_gamepad:
+				container.add_child(_make_input_prompt_icon(Vector2i(4, 0), "Gamepad A"))
+				return
+		"B":
+			if _using_gamepad:
+				container.add_child(_make_input_prompt_icon(Vector2i(5, 0), "Gamepad B"))
+				return
+	var coord := _keyboard_prompt_coord(token)
+	if coord.x >= 0:
+		container.add_child(_make_input_prompt_icon(coord, normalized))
+		return
+	container.add_child(_make_prompt_fallback_label(normalized))
+
+func _append_space_prompt(container: HBoxContainer) -> void:
+	for coord in [Vector2i(31, 6), Vector2i(32, 6), Vector2i(33, 6)]:
+		container.add_child(_make_input_prompt_icon(coord, "Space"))
+
+func _make_prompt_fallback_label(value: String, styled: bool = true) -> Label:
+	var label := Label.new()
+	label.text = value
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color(0.78, 0.84, 0.87, 1.0))
+	if styled:
+		label.add_theme_stylebox_override("normal", _build_keycap_style())
+	return label
 
 func _set_action_item(action_id: StringName, key_text: String, action_text: String) -> void:
 	var item := _action_items.get(action_id, null) as HBoxContainer
@@ -601,13 +683,101 @@ func _set_action_item(action_id: StringName, key_text: String, action_text: Stri
 		item = _action_items.get(action_id, null) as HBoxContainer
 	if item == null:
 		return
-	var key_label := item.get_node_or_null("Key") as Label
+	var key_prompt := item.get_node_or_null("Key") as HBoxContainer
 	var action_label := item.get_node_or_null("Action") as Label
-	if key_label:
-		key_label.text = key_text
-		key_label.visible = key_text != ""
+	if key_prompt:
+		_set_key_prompt(key_prompt, key_text, action_id)
 	if action_label:
 		action_label.text = action_text
+
+func _set_key_prompt(container: HBoxContainer, key_text: String, action_id: StringName = &"") -> void:
+	for child in container.get_children():
+		container.remove_child(child)
+		child.queue_free()
+	var normalized := key_text.strip_edges()
+	container.visible = normalized != ""
+	if normalized == "":
+		return
+	if not _using_gamepad and action_id == &"attack":
+		container.add_child(_make_input_prompt_icon(Vector2i(9, 2), "LMB"))
+		return
+	if not _using_gamepad and action_id == &"skill":
+		_append_space_prompt(container)
+		return
+	if normalized.to_upper() in ["LMB", "RMB"] \
+			or normalized in ["鼠标左键", "左键", "鼠标右键", "右键", "空格"]:
+		_append_prompt_token(container, normalized)
+		return
+	var tokens := normalized.replace("WASD", "W/A/S/D").split("/", false)
+	var added_icon := false
+	for token_variant in tokens:
+		var token := str(token_variant).strip_edges().to_upper()
+		var coord := _keyboard_prompt_coord(token)
+		if coord.x < 0:
+			continue
+		container.add_child(_make_input_prompt_icon(coord, token))
+		added_icon = true
+	if added_icon:
+		return
+	container.add_child(_make_prompt_fallback_label(normalized))
+
+func _make_input_prompt_icon(coord: Vector2i, accessible_name: String) -> TextureRect:
+	var texture := AtlasTexture.new()
+	texture.atlas = INPUT_PROMPT_ATLAS
+	texture.region = Rect2(
+		coord.x * INPUT_PROMPT_TILE_STRIDE,
+		coord.y * INPUT_PROMPT_TILE_STRIDE,
+		INPUT_PROMPT_TILE_SIZE,
+		INPUT_PROMPT_TILE_SIZE
+	)
+	var icon := TextureRect.new()
+	icon.texture = texture
+	icon.custom_minimum_size = Vector2(INPUT_PROMPT_DISPLAY_SIZE, INPUT_PROMPT_DISPLAY_SIZE)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.tooltip_text = accessible_name
+	return icon
+
+func _keyboard_prompt_coord(key_name: String) -> Vector2i:
+	var number_index := "1234567890".find(key_name)
+	if number_index >= 0:
+		return Vector2i(17 + number_index, 1)
+	var qwerty_index := "QWERTYUIOP".find(key_name)
+	if qwerty_index >= 0:
+		return Vector2i(17 + qwerty_index, 2)
+	var home_index := "ASDFGHJKL".find(key_name)
+	if home_index >= 0:
+		return Vector2i(18 + home_index, 3)
+	var bottom_index := "ZXCVBNM".find(key_name)
+	if bottom_index >= 0:
+		return Vector2i(19 + bottom_index, 4)
+	if key_name == "ESC":
+		return Vector2i(17, 0)
+	if key_name.begins_with("F") and key_name.substr(1).is_valid_int():
+		var function_number := int(key_name.substr(1))
+		if function_number >= 1 and function_number <= 12:
+			return Vector2i(17 + function_number, 0)
+	return Vector2i(-1, -1)
+
+func _set_prompt_button(button: Button, action_text: String) -> void:
+	button.text = action_text
+	button.icon = _atlas_prompt_texture(Vector2i(18, 0))
+	button.expand_icon = false
+	button.add_theme_constant_override("icon_max_width", INPUT_PROMPT_TILE_SIZE)
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+
+func _atlas_prompt_texture(coord: Vector2i) -> AtlasTexture:
+	var texture := AtlasTexture.new()
+	texture.atlas = INPUT_PROMPT_ATLAS
+	texture.region = Rect2(
+		coord.x * INPUT_PROMPT_TILE_STRIDE,
+		coord.y * INPUT_PROMPT_TILE_STRIDE,
+		INPUT_PROMPT_TILE_SIZE,
+		INPUT_PROMPT_TILE_SIZE
+	)
+	return texture
 
 func _movement_input_label() -> String:
 	var labels := PackedStringArray([
@@ -665,9 +835,6 @@ func _update_input_device(event: InputEvent) -> void:
 	_text_context_signature = ""
 	_render_current_context()
 
-func _keycap_text(text: String) -> String:
-	return "[%s]" % text if text != "" else ""
-
 func _compact_key_name(text: String) -> String:
 	var compact := text.replace(" + ", "+").replace("Mouse Button", "M")
 	if compact.length() > 12:
@@ -688,8 +855,7 @@ func _configure_text_constraints() -> void:
 	compact_expand.size_flags_horizontal = Control.SIZE_SHRINK_END
 	context_key.custom_minimum_size.x = KEYCAP_WIDTH
 	context_key.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	context_key.clip_text = true
-	context_key.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	context_key.alignment = BoxContainer.ALIGNMENT_CENTER
 	context_message.custom_minimum_size = Vector2(0.0, 26.0)
 	context_message.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	context_message.size_flags_vertical = Control.SIZE_FILL
@@ -710,29 +876,22 @@ func _target_panel_width(state: DisplayState) -> float:
 func _recalculate_expanded_width() -> void:
 	if not is_node_ready():
 		return
-	var keycap_width := MIN_KEYCAP_WIDTH
+	var keycap_width := KEYCAP_WIDTH
 	var widest_action_row := 0.0
-	for child in expanded_content.get_children():
-		var item := child as HBoxContainer
-		if item == null or not item.visible:
-			continue
-		var key_label := item.get_node_or_null("Key") as Label
-		if key_label != null and key_label.visible:
-			keycap_width = maxf(keycap_width, _label_text_width(key_label) + 12.0)
 	keycap_width = clampf(keycap_width, MIN_KEYCAP_WIDTH, MAX_KEYCAP_WIDTH)
 	for child in expanded_content.get_children():
 		var item := child as HBoxContainer
 		if item == null:
 			continue
-		var key_label := item.get_node_or_null("Key") as Label
-		if key_label != null:
-			key_label.custom_minimum_size.x = keycap_width
+		var key_prompt := item.get_node_or_null("Key") as HBoxContainer
+		if key_prompt != null:
+			key_prompt.custom_minimum_size.x = keycap_width
 		if not item.visible:
 			continue
 		var action_label := item.get_node_or_null("Action") as Label
 		if action_label != null:
 			var row_width := _label_text_width(action_label)
-			if key_label != null and key_label.visible:
+			if key_prompt != null and key_prompt.visible:
 				row_width += keycap_width + ACTION_ITEM_SEPARATION
 			widest_action_row = maxf(widest_action_row, row_width)
 		else:
@@ -760,15 +919,15 @@ func _recalculate_expanded_width() -> void:
 
 func _visible_row_label_width(row: HBoxContainer) -> float:
 	var width := 0.0
-	var visible_label_count := 0
+	var visible_child_count := 0
 	for child in row.get_children():
-		var label := child as Label
-		if label == null or not label.visible:
+		var control := child as Control
+		if control == null or not control.visible:
 			continue
-		width += _label_text_width(label)
-		visible_label_count += 1
-	if visible_label_count > 1:
-		width += float(visible_label_count - 1) * float(row.get_theme_constant("separation"))
+		width += control.get_combined_minimum_size().x
+		visible_child_count += 1
+	if visible_child_count > 1:
+		width += float(visible_child_count - 1) * float(row.get_theme_constant("separation"))
 	return width
 
 func _update_action_row_heights(panel_width: float, keycap_width: float) -> void:
@@ -781,8 +940,8 @@ func _update_action_row_heights(panel_width: float, keycap_width: float) -> void
 		if action_label == null:
 			continue
 		var available_text_width := content_width
-		var key_label := row.get_node_or_null("Key") as Label
-		if key_label != null and key_label.visible:
+		var key_prompt := row.get_node_or_null("Key") as HBoxContainer
+		if key_prompt != null and key_prompt.visible:
 			available_text_width -= keycap_width + ACTION_ITEM_SEPARATION
 		var wraps := _label_text_width(action_label) > available_text_width + 0.5
 		var font := action_label.get_theme_font("font")
@@ -858,18 +1017,11 @@ func _configure_visual_hierarchy() -> void:
 func _apply_hint_button_style(button: Button) -> void:
 	button.add_theme_font_size_override("font_size", 12)
 	button.add_theme_color_override("font_color", Color(0.82, 0.91, 0.94, 1.0))
-	button.add_theme_stylebox_override(
-		"normal",
-		_build_button_style(Color(0.08, 0.16, 0.20, 0.92), Color(0.28, 0.48, 0.56, 0.92))
-	)
-	button.add_theme_stylebox_override(
-		"hover",
-		_build_button_style(Color(0.12, 0.25, 0.30, 0.98), Color(0.38, 0.72, 0.82, 1.0))
-	)
-	button.add_theme_stylebox_override(
-		"pressed",
-		_build_button_style(Color(0.08, 0.20, 0.25, 1.0), Color(0.45, 0.82, 0.90, 1.0))
-	)
+	button.add_theme_color_override("font_hover_color", Color(0.92, 0.98, 1.0, 1.0))
+	button.add_theme_color_override("font_pressed_color", Color(0.70, 0.88, 0.94, 1.0))
+	var borderless_style := StyleBoxEmpty.new()
+	for state in [&"normal", &"hover", &"pressed", &"focus", &"disabled"]:
+		button.add_theme_stylebox_override(state, borderless_style)
 
 func _should_be_visible() -> bool:
 	return _current_phase != PhaseManager.GAMEOVER and not get_tree().paused

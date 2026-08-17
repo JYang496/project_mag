@@ -6,6 +6,10 @@ const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const MAX_LEVEL: int = 3
 
 var weapon: Weapon
+var _trigger_state := ModuleTriggerState.new()
+var _is_bound: bool = false
+@export var module_id: StringName = StringName()
+@export var display_name: String = ""
 @export var cost : int
 @onready var sprite: Sprite2D = get_node_or_null("%Sprite") as Sprite2D
 @export_range(1, MAX_LEVEL, 1) var module_level: int = 1
@@ -33,16 +37,55 @@ var weapon: Weapon
 	"beam_hit",
 	"reload_start",
 	"reload_duration",
-	"kill"
+	"kill",
+	"skill_cast",
+	"skill_finish"
 ) var required_hooks: int = 0
+@export var trigger_spec: ModuleTriggerSpec
+
+signal module_triggered(module: Module, event: WeaponEvent)
 
 func _enter_tree() -> void:
-	weapon = _resolve_weapon()
-	call_deferred("_validate_weapon_compatibility")
+	var owner_weapon := _resolve_weapon()
+	if owner_weapon != null:
+		bind_to_weapon(owner_weapon)
 
 func _ready() -> void:
-	if weapon == null:
-		weapon = _resolve_weapon()
+	var owner_weapon := _resolve_weapon()
+	if owner_weapon != null and owner_weapon != weapon:
+		bind_to_weapon(owner_weapon)
+
+func _exit_tree() -> void:
+	unbind_from_weapon()
+
+func bind_to_weapon(target_weapon: Weapon) -> void:
+	if _is_bound and weapon == target_weapon:
+		return
+	unbind_from_weapon()
+	weapon = target_weapon
+	var reason := get_incompatibility_reason(target_weapon)
+	if reason != "":
+		push_warning("Module '%s' is incompatible with weapon '%s': %s" % [name, target_weapon.name, reason])
+		weapon = null
+		return
+	weapon.plugin_dispatcher.subscribe_module(self)
+	_is_bound = true
+
+func unbind_from_weapon() -> void:
+	var previous_weapon := weapon
+	if _is_bound:
+		weapon.plugin_dispatcher.unsubscribe_module(self)
+	if previous_weapon != null:
+		on_weapon_unbound(previous_weapon)
+	_is_bound = false
+	weapon = null
+	_trigger_state.clear()
+
+func is_bound_to_weapon() -> bool:
+	return _is_bound
+
+func on_weapon_unbound(_previous_weapon: Weapon) -> void:
+	pass
 
 func can_apply_to_weapon(target_weapon: Weapon) -> bool:
 	return get_incompatibility_reason(target_weapon) == ""
@@ -81,15 +124,59 @@ func get_incompatibility_reason(target_weapon: Weapon) -> String:
 		return hook_reason
 	return ""
 
-func register_as_on_hit_plugin() -> void:
-	weapon = _resolve_weapon()
-	if weapon and can_apply_to_weapon(weapon) and weapon.has_method("register_on_hit_plugin"):
-		weapon.register_on_hit_plugin(self)
+func get_subscribed_weapon_events() -> Array[StringName]:
+	var events := ModuleHook.hooks_to_events(get_normalized_required_hooks())
+	if trigger_spec != null:
+		var event_type := StringName(trigger_spec.event_type)
+		if not events.has(event_type):
+			events.append(event_type)
+	return events
 
-func unregister_as_on_hit_plugin() -> void:
-	weapon = _resolve_weapon()
-	if weapon and weapon.has_method("unregister_on_hit_plugin"):
-		weapon.unregister_on_hit_plugin(self)
+func provides_modifier_channel(channel: StringName) -> bool:
+	return channel == WeaponPluginDispatcher.RELOAD_DURATION_CHANNEL \
+		and get_normalized_required_hooks().has(ModuleHook.RELOAD_DURATION) \
+		and has_method("get_reload_duration_multiplier")
+
+func handle_weapon_event(event: WeaponEvent) -> bool:
+	if trigger_spec == null:
+		return _handle_legacy_weapon_event(event)
+	if not trigger_spec.matches(event) or not _trigger_state.can_trigger(trigger_spec, event):
+		return false
+	if not can_trigger_event(event) or not execute_trigger(event):
+		return false
+	_trigger_state.record_trigger(trigger_spec, event)
+	module_triggered.emit(self, event)
+	return true
+
+func can_trigger_event(_event: WeaponEvent) -> bool:
+	return true
+
+func execute_trigger(_event: WeaponEvent) -> bool:
+	return false
+
+func _handle_legacy_weapon_event(event: WeaponEvent) -> bool:
+	match event.type:
+		WeaponEvent.HIT_CONFIRMED:
+			if has_method("apply_on_hit"):
+				call("apply_on_hit", weapon, event.target)
+				return true
+		WeaponEvent.DAMAGE_DEALT:
+			if has_method("on_damage_dealt"):
+				call("on_damage_dealt", weapon, event.target, event.damage_data, event.damage_result)
+				return true
+		WeaponEvent.PROJECTILE_SPAWNED:
+			if has_method("on_projectile_spawned"):
+				call("on_projectile_spawned", weapon, event.projectile)
+				return true
+		WeaponEvent.RELOAD_STARTED:
+			if has_method("_on_weapon_passive_triggered"):
+				call("_on_weapon_passive_triggered", &"on_reload_started", event.to_legacy_detail())
+				return true
+		WeaponEvent.TARGET_KILLED:
+			if has_method("on_kill"):
+				call("on_kill", weapon, event.target, event.damage_data, event.damage_result)
+				return true
+	return false
 
 func get_normalized_module_tags() -> Array[StringName]:
 	return ModuleTag.normalize_array(module_tags)
@@ -115,8 +202,12 @@ func get_normalized_required_hooks() -> Array[StringName]:
 
 func get_hook_validation_error() -> String:
 	for hook in get_normalized_required_hooks():
+		if hook == ModuleHook.RELOAD_DURATION:
+			if not has_method("get_reload_duration_multiplier"):
+				return "Declared modifier '%s' requires get_reload_duration_multiplier()." % hook
+			continue
 		var method_name: StringName = ModuleHook.METHOD_BY_HOOK.get(hook, StringName())
-		if method_name == StringName() or not has_method(method_name):
+		if trigger_spec == null and (method_name == StringName() or not has_method(method_name)):
 			return "Declared hook '%s' requires method %s()." % [hook, method_name]
 	return ""
 
@@ -136,18 +227,6 @@ func _resolve_weapon() -> Weapon:
 		current = current.get_parent()
 	return null
 
-func _validate_weapon_compatibility() -> void:
-	weapon = _resolve_weapon()
-	if weapon == null:
-		return
-	if can_apply_to_weapon(weapon):
-		return
-	push_warning(
-		"Module '%s' is incompatible with weapon '%s'; removing module." %
-		[name, weapon.name]
-	)
-	queue_free()
-
 func set_module_level(new_level: int) -> void:
 	module_level = clampi(new_level, 1, MAX_LEVEL)
 
@@ -157,10 +236,19 @@ func increase_module_level(steps: int = 1) -> bool:
 	return module_level > previous_level
 
 func get_module_display_name() -> String:
+	if display_name != "":
+		return display_name
 	var item_name: Variant = get("ITEM_NAME")
 	if item_name != null and str(item_name) != "":
 		return str(item_name)
 	return name
+
+func get_stable_module_id() -> StringName:
+	if module_id != StringName():
+		return module_id
+	if scene_file_path != "":
+		return StringName(scene_file_path.get_file().get_basename())
+	return StringName(name.to_snake_case())
 
 func get_rarity() -> String:
 	return RARITY_UTIL.normalize(rarity)
@@ -342,6 +430,10 @@ func _format_hook_label(hook: StringName) -> String:
 			return LocalizationManager.get_module_term(&"hook.reload_duration", "Reload duration")
 		ModuleHook.KILL:
 			return LocalizationManager.get_module_term(&"hook.kill", "Kill")
+		ModuleHook.SKILL_CAST:
+			return LocalizationManager.get_module_term(&"hook.skill_cast", "Skill cast")
+		ModuleHook.SKILL_FINISH:
+			return LocalizationManager.get_module_term(&"hook.skill_finish", "Skill finish")
 		_:
 			return _format_taxonomy_label(hook)
 

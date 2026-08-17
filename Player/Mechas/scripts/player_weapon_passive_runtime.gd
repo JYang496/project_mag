@@ -18,6 +18,15 @@ func broadcast_weapon_passive_event(event_name: StringName, detail: Dictionary =
 		if weapon.has_method("dispatch_passive_event"):
 			weapon.call("dispatch_passive_event", event_name, detail)
 
+func broadcast_weapon_event(event: WeaponEvent) -> void:
+	assert(event != null)
+	assert(event.action_context != null)
+	var linked_weapon := event.action_context.linked_weapon
+	if linked_weapon == null or not is_instance_valid(linked_weapon):
+		return
+	event.source_weapon = linked_weapon
+	linked_weapon.receive_external_weapon_event(event)
+
 func apply_global_weapon_passive_effect(source_id: StringName, stat_type: StringName, multiplier: float, duration_sec: float = 0.0, source_weapon: Weapon = null, include_source_weapon: bool = true) -> void:
 	if source_id == StringName() or stat_type == StringName():
 		return

@@ -241,9 +241,9 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	branch_runtime.notify_branch_passive_event(event_name, detail)
 
 func _try_trigger_player_damaged(detail: Dictionary) -> void:
-	if not is_offhand_skill_ready():
+	if not is_passive_ready():
 		return
-	notify_offhand_skill_triggered(0.0)
+	consume_passive_charge()
 	emit_passive_trigger(&"orbit_player_damaged_triggered", {
 		"attack": detail.get("attack", null),
 		"player": detail.get("player", PlayerData.player),

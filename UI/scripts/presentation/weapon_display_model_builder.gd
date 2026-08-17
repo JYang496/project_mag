@@ -82,7 +82,7 @@ static func _populate_instance_fields(model, weapon: Weapon, level: int, include
 	model.level = level
 	model.max_level = int(weapon.max_level)
 	model.fuse = int(weapon.fuse)
-	model.module_capacity = int(weapon.MAX_MODULE_NUMBER)
+	model.module_capacity = weapon.module_slot_capacity
 	model.module_count = weapon.modules.get_child_count() if weapon.modules != null else 0
 	model.icon = weapon.sprite.texture if model.icon == null and weapon.sprite != null else model.icon
 	model.traits = _string_name_array_to_strings(weapon.get_explicit_weapon_traits())

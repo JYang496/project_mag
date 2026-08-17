@@ -3,8 +3,8 @@ extends RefCounted
 const BATTLE_HINT_MIN_WIDTH := 152.0
 const BATTLE_HINT_MAX_WIDTH := 220.0
 const BATTLE_HINT_HEIGHT := 30.0
-const SERVICE_HINT_WIDTH := 132.0
-const SERVICE_HINT_HEIGHT := 36.0
+const SERVICE_HINT_WIDTH := 190.0
+const SERVICE_HINT_HEIGHT := 54.0
 
 var _owner: Node2D
 var _zone_merchant_hint_text := "Purchase"
@@ -120,7 +120,7 @@ func setup_labels() -> void:
 		zone_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		zone_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		zone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		zone_label.max_lines_visible = 1
+		zone_label.max_lines_visible = 2
 		zone_label.clip_text = true
 		zone_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		zone_label.add_theme_font_size_override("font_size", 16)
@@ -181,6 +181,7 @@ func update_visuals(force: bool = false) -> void:
 	if not force and state == _zone_hint_visual_state:
 		return
 	_zone_hint_visual_state = state
+	refresh()
 	_style_zone_hint(_merchant_hint_label, int(_zone_ids.get("merchant", 0)))
 	_style_zone_hint(_smith_hint_label, int(_zone_ids.get("smith", 1)))
 	_style_zone_hint(_module_hint_label, int(_zone_ids.get("module", 2)))
@@ -319,23 +320,43 @@ func _get_board_status_text() -> String:
 	)
 
 func _format_zone_label(icon_text: String, title: String, _badge_label: String, _count: int) -> String:
-	if icon_text == "":
-		return title
-	return "%s  %s" % [icon_text, title]
+	var zone_id := _zone_id_for_title(title)
+	if not _is_zone_expanded(zone_id):
+		return title if icon_text == "" else "%s  %s" % [icon_text, title]
+	var heading := title
+	if icon_text != "":
+		heading = "%s  %s" % [icon_text, heading]
+	return "%s\n%s" % [heading, _service_status_for_zone(zone_id)]
+
+func _is_zone_expanded(zone_id: int) -> bool:
+	if not _is_owner_valid():
+		return false
+	return int(_owner.get("hover_zone_id")) == zone_id \
+			or int(_owner.get("selected_zone_id")) == zone_id \
+			or int(_owner.get("_arrival_focus_zone")) == zone_id
+
+func _zone_id_for_title(title: String) -> int:
+	if title == LocalizationManager.tr_key("ui.rest.zone.purchase.title", _zone_merchant_hint_text):
+		return int(_zone_ids.get("merchant", 0))
+	if title == LocalizationManager.tr_key("ui.rest.zone.combined_upgrade.title", _zone_smith_hint_text):
+		return int(_zone_ids.get("smith", 1))
+	if title == LocalizationManager.tr_key("ui.rest.zone.warehouses.title", _zone_module_hint_text):
+		return int(_zone_ids.get("module", 2))
+	return int(_zone_ids.get("board", 6))
+
+func _service_status_for_zone(zone_id: int) -> String:
+	if zone_id == int(_zone_ids.get("merchant", 0)):
+		if not PhaseManager.is_full_shop_open():
+			return LocalizationManager.tr_key("ui.rest.zone.purchase.locked", "Opens after battle 3")
+		return LocalizationManager.tr_key("ui.rest.zone.purchase.status", "Buy weapons and modules")
+	if zone_id == int(_zone_ids.get("smith", 1)):
+		return _get_upgrade_status_text()
+	if zone_id == int(_zone_ids.get("module", 2)):
+		return _get_module_status_text()
+	return _get_board_status_text()
 
 func _battle_prompt_text() -> String:
-	return LocalizationManager.tr_format(
-		"ui.rest.zone.battle.prompt",
-		{"input": _primary_click_label()},
-		"[{input}] Choose Next Protocol"
-	)
-
-func _primary_click_label() -> String:
-	for event in InputMap.action_get_events(&"CLICK"):
-		var mouse_event := event as InputEventMouseButton
-		if mouse_event != null and mouse_event.button_index == MOUSE_BUTTON_LEFT:
-			return LocalizationManager.tr_key("ui.controls.key.lmb", "LMB")
-	return LocalizationManager.tr_key("ui.controls.key.lmb", "LMB")
+	return LocalizationManager.tr_key("battle_contract.ui.title", "Choose Next Protocol")
 
 func _fit_battle_hint_label() -> void:
 	if _battle_hint_label == null:
@@ -449,10 +470,12 @@ func _style_zone_hint(label: Label, zone_id: int) -> void:
 		return
 	var is_hovered := int(_owner.get("hover_zone_id")) == zone_id
 	var is_selected := int(_owner.get("selected_zone_id")) == zone_id
+	var is_arrival_focus := int(_owner.get("_arrival_focus_zone")) == zone_id
+	label.add_theme_font_size_override("font_size", 14 if _is_zone_expanded(zone_id) else 16)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.035, 0.055, 0.075, 0.82)
 	style.border_color = Color(0.28, 0.42, 0.55, 0.78)
-	if is_hovered:
+	if is_hovered or is_arrival_focus:
 		style.bg_color = Color(0.055, 0.18, 0.26, 0.96)
 		style.border_color = _zone_hover_color
 	if is_selected:

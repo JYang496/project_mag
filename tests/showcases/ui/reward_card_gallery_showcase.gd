@@ -26,24 +26,42 @@ func _build_gallery() -> void:
 	_card_builder = REWARD_PANEL_SCRIPT.new()
 	var grid := %CardGrid as GridContainer
 	var entries: Array[Dictionary] = [
-		{"label": "NEW WEAPON", "reward": _make_weapon_reward("2", 1, "rare")},
+		{"label": "NEW WEAPON · BUILD PREVIEW", "reward": _make_weapon_reward("2", 1, "rare")},
+		{"label": "NEW WEAPON · DETAILS OPEN", "reward": _make_weapon_reward("5", 1, "rare"), "details_open": true},
 		{"label": "WEAPON UPGRADE", "reward": _make_upgrade_reward("1", 1, 2)},
 		{"label": "WEAPON MODULE", "reward": _make_module_reward()},
 		{"label": "CELL EFFECT", "reward": _make_cell_effect_reward()},
 		{"label": "TASK MODULE", "reward": _make_task_module_reward()},
 		{"label": "ECONOMY", "reward": _make_economy_reward()},
 	]
+	var preview_count := 0
+	var open_detail_count := 0
 	for index in range(entries.size()):
 		var entry := entries[index]
-		grid.add_child(_make_gallery_entry(str(entry.label), entry.reward as RewardInfo, index))
+		var gallery_entry := _make_gallery_entry(
+			str(entry.label),
+			entry.reward as RewardInfo,
+			index,
+			bool(entry.get("details_open", false))
+		)
+		grid.add_child(gallery_entry)
+		if gallery_entry.find_child("WeaponBuildPreview", true, false) != null:
+			preview_count += 1
+		var detail_overlay := gallery_entry.find_child("WeaponBranchDetailOverlay", true, false) as Control
+		if detail_overlay != null and detail_overlay.visible:
+			open_detail_count += 1
 	print("REWARD_CARD_GALLERY_READY cards=%d weapons=%d" % [grid.get_child_count(), _showcase_weapons.size()])
 	if DisplayServer.get_name() == "headless":
 		await get_tree().process_frame
+		if preview_count < 2 or open_detail_count != 1:
+			push_error("RewardCardGallery: missing weapon build preview states")
+			await TEST_TEARDOWN.finish(self, 1, _reset_runtime_state, [_card_builder])
+			return
 		print("PASS: reward card gallery builds all primary card types")
 		await TEST_TEARDOWN.finish(self, 0, _reset_runtime_state, [_card_builder])
 
 
-func _make_gallery_entry(label_text: String, reward: RewardInfo, index: int) -> VBoxContainer:
+func _make_gallery_entry(label_text: String, reward: RewardInfo, index: int, details_open: bool = false) -> VBoxContainer:
 	var entry := VBoxContainer.new()
 	entry.custom_minimum_size = Vector2(370.0, 470.0)
 	entry.add_theme_constant_override("separation", 7)
@@ -54,8 +72,15 @@ func _make_gallery_entry(label_text: String, reward: RewardInfo, index: int) -> 
 	label.add_theme_color_override("font_color", Color(0.58, 0.82, 0.94, 1.0))
 	entry.add_child(label)
 	var card := _card_builder.call("_build_reward_card_button", reward, index % 3) as Button
-	card.custom_minimum_size = Vector2(370.0, 430.0)
+	card.custom_minimum_size = Vector2(370.0, 520.0)
 	entry.add_child(card)
+	if details_open:
+		var overlay := card.find_child("WeaponBranchDetailOverlay", true, false) as Control
+		var content := card.find_child("CardContentMargin", true, false) as Control
+		if overlay != null:
+			overlay.visible = true
+		if content != null:
+			content.modulate.a = 0.25
 	return entry
 
 

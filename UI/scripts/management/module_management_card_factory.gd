@@ -140,7 +140,7 @@ func make_module_weapon_card(weapon: Weapon, active_drag_module: Module, socket_
 			var module_instance := child as Module
 			if module_instance:
 				installed.append(module_instance)
-	var max_slots := int(weapon.MAX_MODULE_NUMBER)
+	var max_slots := weapon.module_slot_capacity
 	for index in range(max_slots):
 		var existing: Module = installed[index] if index < installed.size() else null
 		slot_row.add_child(make_module_socket_button(weapon, existing, index, socket_callback_builder.call(weapon, existing)))

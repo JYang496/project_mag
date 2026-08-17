@@ -1,16 +1,53 @@
 extends Node
 
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const GROUND := preload("res://World/battle_contract/beacon_ground_visual.gd")
 const PROJECTED := preload("res://World/battle_contract/beacon_projected_visual.gd")
+const FIRE_SPRAY := preload("res://Player/Weapons/Effects/cone_spray_vfx.tscn")
+const FREEZE_SPRAY := preload("res://Player/Weapons/Effects/glacier_spray_vfx.tscn")
 
 var _failed := false
 
 func _ready() -> void:
+	_test_shared_combat_palette_semantics()
+	_test_spray_scene_palette_semantics()
 	_test_ground_state_semantics()
 	_test_projected_palette_semantics()
 	print("FAIL: contract ground visual" if _failed else "PASS: contract ground visual")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0)
+
+func _test_shared_combat_palette_semantics() -> void:
+	_expect(PALETTE.FREEZE.is_equal_approx(Color("#83A9FF")), "freeze must use the blue-violet semantic color")
+	_expect(PALETTE.FREEZE_CORE.is_equal_approx(Color("#E6EDFF")), "freeze must expose a readable core color")
+	_expect(PALETTE.FREEZE_DARK.is_equal_approx(Color("#3D4F8F")), "freeze must expose a dark structure color")
+	_expect(PALETTE.FIRE.is_equal_approx(Color("#FF3B4A")), "fire must use the red semantic color")
+	_expect(PALETTE.FIRE_CORE.is_equal_approx(Color("#FFD0A3")), "fire must expose a readable core color")
+	_expect(PALETTE.FIRE_DARK.is_equal_approx(Color("#6B1622")), "fire must expose a dark structure color")
+	_expect(PALETTE.WARNING.is_equal_approx(Color("#FF762E")), "warning must use the shared orange-red semantic color")
+	_expect(PALETTE.REWARD.is_equal_approx(Color("#F4C542")), "reward must retain the reserved gold color")
+	_expect(PALETTE.SPEED.is_equal_approx(Color("#A8E85C")), "speed must move out of the reward-gold range")
+	_expect(PALETTE.FIELD_TASK.is_equal_approx(Color("#B888FF")), "field tasks must move out of the reward-gold range")
+	var fire_warning_gap := _hue_distance_degrees(PALETTE.FIRE, PALETTE.WARNING)
+	var warning_reward_gap := _hue_distance_degrees(PALETTE.WARNING, PALETTE.REWARD)
+	_expect(fire_warning_gap >= 20.0 and fire_warning_gap <= 30.0, "fire and warning hues must remain 20-30 degrees apart")
+	_expect(warning_reward_gap >= 20.0 and warning_reward_gap <= 30.0, "warning and reward hues must remain 20-30 degrees apart")
+
+func _hue_distance_degrees(first: Color, second: Color) -> float:
+	var distance := absf(first.h - second.h) * 360.0
+	return minf(distance, 360.0 - distance)
+
+func _test_spray_scene_palette_semantics() -> void:
+	var fire_spray := FIRE_SPRAY.instantiate()
+	_expect(Color(fire_spray.range_cue_color, 1.0).is_equal_approx(PALETTE.FIRE), "flame spray range cue must use the shared red fire hue")
+	_expect(Color(fire_spray.core_highlight_color, 1.0).is_equal_approx(PALETTE.FIRE_CORE), "flame spray core must use the shared fire core")
+	_expect(Color(fire_spray.trail_modulate, 1.0).is_equal_approx(PALETTE.FIRE), "flame spray trail must remain fire-red")
+	fire_spray.free()
+	var freeze_spray := FREEZE_SPRAY.instantiate()
+	_expect(Color(freeze_spray.range_cue_color, 1.0).is_equal_approx(PALETTE.FREEZE), "glacier spray range cue must use the shared blue-violet freeze hue")
+	_expect(Color(freeze_spray.core_highlight_color, 1.0).is_equal_approx(PALETTE.FREEZE_CORE), "glacier spray core must use the shared freeze core")
+	_expect(Color(freeze_spray.trail_modulate, 1.0).is_equal_approx(PALETTE.FREEZE), "glacier spray trail must remain blue-violet")
+	freeze_spray.free()
 
 func _test_ground_state_semantics() -> void:
 	var ground := GROUND.new()
@@ -29,6 +66,7 @@ func _test_ground_state_semantics() -> void:
 	var contested := ground.get_visual_state_snapshot()
 	var contest_detail := contested.detail_color as Color
 	_expect(contest_detail.r > contest_detail.g and contest_detail.g > contest_detail.b, "enemy contest must use orange ground pulse")
+	_expect(Color(contest_detail, 1.0).is_equal_approx(Color(PALETTE.WARNING, 1.0)), "enemy contest ground must use the shared warning hue")
 	ground.set_state(1.0, true, 0, true)
 	var complete_start := ground.get_visual_state_snapshot()
 	var complete_color := complete_start.base_color as Color
@@ -52,6 +90,7 @@ func _test_projected_palette_semantics() -> void:
 	visual.set_presence(true, 3)
 	var contested := visual.get_state_palette_snapshot().primary as Color
 	_expect(contested.r > contested.g and contested.g > contested.b, "contested projected marker must use orange warning")
+	_expect(Color(contested, 1.0).is_equal_approx(Color(PALETTE.WARNING, 1.0)), "contested projected marker must use the shared warning hue")
 	visual.set_progress(1.0)
 	var complete := visual.get_state_palette_snapshot().primary as Color
 	_expect(absf(complete.r - complete.g) < 0.05, "projected completion must begin white before resolving cyan")

@@ -253,7 +253,7 @@ func _find_stored_weapon_by_id(weapon_id: String) -> Weapon:
 	return null
 
 func _merge_stored_weapon_duplicate(weapon: Weapon) -> Dictionary:
-	if int(weapon.fuse) < int(weapon.FINAL_MAX_FUSE):
+	if int(weapon.fuse) < Weapon.MAX_FUSE_LEVEL:
 		weapon.fuse += 1
 		PlayerData.record_weapon_progress()
 		if weapon.has_method("refresh_max_level_from_data"):
@@ -301,7 +301,7 @@ func get_weapon_module_assignment_feedback(
 	var projected_count := weapon.get_module_count()
 	if replaced_module != null and replaced_module.get_parent() == weapon.modules:
 		projected_count -= 1
-	if projected_count >= int(weapon.MAX_MODULE_NUMBER):
+	if projected_count >= weapon.module_slot_capacity:
 		return {"ok": false, "reason": "No module slots available."}
 	var reason := str(module_instance.get_incompatibility_reason(weapon))
 	if reason != "":
@@ -352,6 +352,7 @@ func equip_module_to_weapon(
 		module_instance.reparent(weapon.modules)
 	else:
 		weapon.modules.add_child(module_instance)
+	module_instance.bind_to_weapon(weapon)
 	if weapon.has_method("calculate_status"):
 		weapon.calculate_status()
 	temporary_modules_changed.emit()
@@ -375,6 +376,7 @@ func move_module_to_temporary(
 	var existing := find_owned_module_by_scene_path(str(module_instance.scene_file_path), module_instance)
 	if existing != null:
 		return _merge_duplicate_module(existing, module_instance)
+	module_instance.unbind_from_weapon()
 	if module_instance.get_parent() != self:
 		if module_instance.get_parent() != null:
 			module_instance.reparent(self)

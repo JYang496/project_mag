@@ -7,6 +7,7 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/special_pulse_feedback.tres" id="4_feedback"]
 
 [node name="ChainsawLauncher" unique_id=347628502 instance=ExtResource("1_sq336")]
+base_trait_flags = 1
 script = ExtResource("2_hcjeu")
 turn_speed_degrees_per_second = 240.0
 fire_feedback_profile = ExtResource("4_feedback")
@@ -15,7 +16,6 @@ projectile_lifetime_sec = 2.5
 delivery_type_flags = 1
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 1
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("3_pmcfu")

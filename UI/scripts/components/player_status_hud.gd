@@ -1,9 +1,9 @@
 extends Control
 class_name PlayerStatusHud
 
-const HUD_SIZE := Vector2(420.0, 80.0)
-const BAR_RECT := Rect2(Vector2(43.0, 43.0), Vector2(354.0, 18.0))
-const SHIELD_RECT := Rect2(Vector2(43.0, 65.0), Vector2(354.0, 5.0))
+const HUD_SIZE := Vector2(344.0, 76.0)
+const BAR_RECT := Rect2(Vector2(29.0, 39.0), Vector2(286.0, 18.0))
+const SHIELD_RECT := Rect2(Vector2(29.0, 61.0), Vector2(286.0, 5.0))
 const ENERGY_Y := 8.0
 const ENERGY_PER_BEAN := 50.0
 const ENERGY_BEAN_SIZE := Vector2(34.0, 9.0)
@@ -17,11 +17,14 @@ const HP_VALUE_FADE_SECONDS := 0.25
 const HP_GHOST_HOLD_SECONDS := 0.22
 const HP_GHOST_CATCHUP_SECONDS := 0.65
 const DAMAGE_FLASH_DURATION := 0.32
+const HP_WARNING_RATIO := 0.35
+const HP_CRITICAL_RATIO := 0.18
+const HP_WARNING_PULSE_HZ := 1.8
+const HP_CRITICAL_PULSE_HZ := 3.0
+const HP_CRITICAL_CROSS_FLASH_SECONDS := 0.18
 
 const HP_TRACK := Color(0.018, 0.075, 0.070, 0.96)
 const HP_FILL := Color(0.21, 0.81, 0.91, 0.98)
-const HP_WARNING := Color(1.0, 0.66, 0.18, 0.98)
-const HP_CRITICAL := Color(1.0, 0.22, 0.18, 0.98)
 const HP_DAMAGE_GHOST := Color(1.0, 0.28, 0.20, 0.86)
 const HP_HEAL_GHOST := Color(0.30, 1.0, 0.66, 0.82)
 const SHIELD_TRACK := Color(0.025, 0.10, 0.15, 0.96)
@@ -61,6 +64,8 @@ var _damage_flash_strength := 0.0
 var _damage_flash_elapsed := DAMAGE_FLASH_DURATION
 var _damage_punch_tween: Tween
 var _damage_label_tween: Tween
+var _health_pulse_elapsed := 0.0
+var _critical_cross_flash_elapsed := HP_CRITICAL_CROSS_FLASH_SECONDS
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -82,6 +87,7 @@ func set_health(current_hp: int, max_hp: int, current_shield: int = 0, max_shiel
 	var health_changed := _has_health_sample and (
 		next_current_hp != _current_hp or next_max_hp != _max_hp
 	)
+	var previous_ratio := _target_hp_ratio
 	if not _has_health_sample:
 		_has_health_sample = true
 		_target_hp_ratio = next_ratio
@@ -90,17 +96,23 @@ func set_health(current_hp: int, max_hp: int, current_shield: int = 0, max_shiel
 	elif health_changed:
 		_begin_hp_animation(next_ratio)
 		_show_hp_value()
+		if previous_ratio > HP_CRITICAL_RATIO and next_ratio <= HP_CRITICAL_RATIO and next_current_hp > 0:
+			_critical_cross_flash_elapsed = 0.0
 	_max_hp = next_max_hp
 	_current_hp = next_current_hp
 	_current_shield = maxi(current_shield, 0)
 	_max_shield = maxi(max_shield, _current_shield)
 	_hp_label.text = "%d / %d" % [_current_hp, _max_hp]
+	if next_current_hp <= 0 or next_ratio > HP_WARNING_RATIO:
+		_health_pulse_elapsed = 0.0
+		_critical_cross_flash_elapsed = HP_CRITICAL_CROSS_FLASH_SECONDS
 	queue_redraw()
 
 func _process(delta: float) -> void:
 	var safe_delta := maxf(delta, 0.0)
 	_update_damage_feedback(safe_delta)
 	_update_hp_value_visibility(safe_delta)
+	_update_health_danger_feedback(safe_delta)
 	if _hp_animation_mode == &"none":
 		return
 	_hp_animation_elapsed += safe_delta
@@ -117,6 +129,17 @@ func _process(delta: float) -> void:
 		_display_hp_ratio = _target_hp_ratio
 		_ghost_hp_ratio = _target_hp_ratio
 		_hp_animation_mode = &"none"
+	queue_redraw()
+
+func _update_health_danger_feedback(delta: float) -> void:
+	if _current_hp <= 0 or _target_hp_ratio > HP_WARNING_RATIO:
+		return
+	_health_pulse_elapsed += delta
+	if _critical_cross_flash_elapsed < HP_CRITICAL_CROSS_FLASH_SECONDS:
+		_critical_cross_flash_elapsed = minf(
+			HP_CRITICAL_CROSS_FLASH_SECONDS,
+			_critical_cross_flash_elapsed + delta
+		)
 	queue_redraw()
 
 func is_hp_value_visible() -> bool:
@@ -201,7 +224,7 @@ func _show_damage_delta(
 	if _damage_label_tween != null and is_instance_valid(_damage_label_tween):
 		_damage_label_tween.kill()
 	_damage_delta_label.text = "-%d%s" % [damage, "!" if emphasized else ""]
-	_damage_delta_label.add_theme_font_size_override("font_size", 15 if emphasized else 13)
+	_damage_delta_label.add_theme_font_size_override("font_size", 24 if emphasized else 12)
 	_damage_delta_label.add_theme_color_override("font_color", _damage_color(damage_type, is_periodic))
 	_damage_delta_label.position = Vector2(BAR_RECT.end.x - 86.0, BAR_RECT.position.y - 23.0)
 	_damage_delta_label.modulate = Color.WHITE
@@ -399,12 +422,12 @@ func _draw_skill_rail() -> void:
 		var bean_capacity := minf(ENERGY_PER_BEAN, _max_energy - float(index) * ENERGY_PER_BEAN)
 		var bean_energy := clampf(_current_energy - float(index) * ENERGY_PER_BEAN, 0.0, bean_capacity)
 		var fill_ratio := bean_energy / maxf(bean_capacity, 1.0)
-		_draw_cut_panel(rect, ENERGY_EMPTY, Color(0.40, 0.26, 0.08, 0.95), 3.0, 1.0)
+		_draw_cut_panel(rect, ENERGY_EMPTY, Color(ENERGY_EDGE, 0.45), 3.0, 1.0)
 		if fill_ratio > 0.0:
 			var fill_rect := Rect2(rect.position + Vector2(2.0, 2.0), Vector2((rect.size.x - 4.0) * fill_ratio, rect.size.y - 4.0))
 			if fill_rect.size.x >= 1.0:
-				_draw_cut_panel(fill_rect, ENERGY_FILL, Color(1.0, 0.82, 0.38, 0.82), minf(2.0, fill_rect.size.x * 0.4), 1.0)
-				draw_line(fill_rect.position + Vector2(3.0, 1.0), Vector2(fill_rect.end.x - 2.0, fill_rect.position.y + 1.0), Color(1.0, 0.95, 0.75, 0.38), 1.0, true)
+				_draw_cut_panel(fill_rect, ENERGY_FILL, Color(ENERGY_EDGE, 0.82), minf(2.0, fill_rect.size.x * 0.4), 1.0)
+				draw_line(fill_rect.position + Vector2(3.0, 1.0), Vector2(fill_rect.end.x - 2.0, fill_rect.position.y + 1.0), Color(ENERGY_READY_EDGE, 0.38), 1.0, true)
 		if fill_ratio >= 0.999:
 			_draw_cut_outline(rect, ENERGY_FULL_EDGE, 2.0, 3.0)
 			var marker_center := rect.position + Vector2(rect.size.x * 0.5, 2.5)
@@ -443,8 +466,11 @@ func _draw_skill_cooldown() -> void:
 		)
 
 func _draw_health_bar() -> void:
+	var danger_pulse := _get_health_danger_pulse()
+	var danger_edge := Color(0.42, 0.94, 1.0, 0.86 + danger_pulse * 0.14)
+	var danger_width := 1.0 + danger_pulse * 0.75
 	var plate := BAR_RECT.grow(PANEL_PADDING)
-	_draw_cut_panel(plate, Color(0.006, 0.026, 0.032, 0.94), Color(0.11, 0.42, 0.48, 0.86), CUT_SIZE, 1.0)
+	_draw_cut_panel(plate, Color(0.006, 0.026, 0.032, 0.94), danger_edge if danger_pulse > 0.0 else Color(0.11, 0.42, 0.48, 0.86), CUT_SIZE, danger_width)
 	_draw_cut_panel(BAR_RECT, HP_TRACK, Color(0.10, 0.38, 0.30, 0.95), 4.0, 1.0)
 	var inner_origin := BAR_RECT.position + Vector2(2.0, 2.0)
 	var inner_size := BAR_RECT.size - Vector2(4.0, 4.0)
@@ -463,7 +489,7 @@ func _draw_health_bar() -> void:
 		)
 	if _display_hp_ratio > 0.0:
 		var fill_rect := Rect2(inner_origin, Vector2(inner_size.x * _display_hp_ratio, inner_size.y))
-		_draw_cut_panel(fill_rect, _health_color(_target_hp_ratio), Color(0.52, 1.0, 0.72, 0.78), minf(3.0, fill_rect.size.x * 0.35), 1.0)
+		_draw_cut_panel(fill_rect, _health_color(_target_hp_ratio), Color(0.52, 1.0, 0.72, 0.78 + danger_pulse * 0.16), minf(3.0, fill_rect.size.x * 0.35), 1.0)
 		draw_line(fill_rect.position + Vector2(4.0, 1.0), Vector2(fill_rect.end.x - 2.0, fill_rect.position.y + 1.0), Color(0.90, 1.0, 0.94, 0.34), 1.0, true)
 	_draw_cut_panel(SHIELD_RECT, SHIELD_TRACK, Color(0.12, 0.42, 0.55, 0.90), 2.0, 1.0)
 	var shield_denominator := float(_max_shield if _max_shield > 0 else _max_hp)
@@ -479,6 +505,9 @@ func _draw_health_bar() -> void:
 			1.5 + _damage_flash_strength * 2.0,
 			CUT_SIZE
 		)
+	if _critical_cross_flash_elapsed < HP_CRITICAL_CROSS_FLASH_SECONDS:
+		var flash_progress := 1.0 - _critical_cross_flash_elapsed / HP_CRITICAL_CROSS_FLASH_SECONDS
+		_draw_cut_outline(BAR_RECT.grow(4.0), Color(0.58, 0.98, 1.0, flash_progress * 0.82), 2.5, CUT_SIZE)
 
 func _draw_cut_panel(rect: Rect2, fill_color: Color, edge_color: Color, cut: float, line_width: float) -> void:
 	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
@@ -516,7 +545,7 @@ func _build_hp_label() -> void:
 	_hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_hp_label.add_theme_font_size_override("font_size", 13)
+	_hp_label.add_theme_font_size_override("font_size", 12)
 	_hp_label.add_theme_color_override("font_color", Color(0.94, 1.0, 0.96))
 	_hp_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 1.0))
 	_hp_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -531,7 +560,7 @@ func _build_skill_state_label() -> void:
 	_skill_state_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_skill_state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_skill_state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_skill_state_label.add_theme_font_size_override("font_size", 11)
+	_skill_state_label.add_theme_font_size_override("font_size", 12)
 	_skill_state_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.94))
 	_skill_state_label.add_theme_constant_override("shadow_offset_x", 1)
 	_skill_state_label.add_theme_constant_override("shadow_offset_y", 1)
@@ -545,7 +574,7 @@ func _build_damage_delta_label() -> void:
 	_damage_delta_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_damage_delta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_damage_delta_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_damage_delta_label.add_theme_font_size_override("font_size", 13)
+	_damage_delta_label.add_theme_font_size_override("font_size", 12)
 	_damage_delta_label.add_theme_color_override("font_color", Color(1.0, 0.30, 0.22, 1.0))
 	_damage_delta_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 1.0))
 	_damage_delta_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -569,6 +598,15 @@ func _damage_color(damage_type: StringName, is_periodic: bool) -> Color:
 func _exit_tree() -> void:
 	if PlayerData != null and PlayerData.player_damage_received.is_connected(_on_player_damage_received):
 		PlayerData.player_damage_received.disconnect(_on_player_damage_received)
+	if _damage_punch_tween != null and is_instance_valid(_damage_punch_tween):
+		_damage_punch_tween.kill()
+	if _damage_label_tween != null and is_instance_valid(_damage_label_tween):
+		_damage_label_tween.kill()
+	_damage_punch_tween = null
+	_damage_label_tween = null
+	_health_pulse_elapsed = 0.0
+	_critical_cross_flash_elapsed = HP_CRITICAL_CROSS_FLASH_SECONDS
+	scale = Vector2.ONE
 
 func _refresh_skill_state_label() -> void:
 	if _skill_state_label == null:
@@ -600,9 +638,12 @@ func _get_energy_row_width() -> float:
 	var bean_count := maxi(1, int(ceil(_max_energy / ENERGY_PER_BEAN)))
 	return float(bean_count) * ENERGY_BEAN_SIZE.x + float(bean_count - 1) * ENERGY_BEAN_GAP
 
-func _health_color(ratio: float) -> Color:
-	if ratio <= 0.18:
-		return HP_CRITICAL
-	if ratio <= 0.35:
-		return HP_WARNING
+func _health_color(_ratio: float) -> Color:
 	return HP_FILL
+
+func _get_health_danger_pulse() -> float:
+	if _current_hp <= 0 or _target_hp_ratio > HP_WARNING_RATIO:
+		return 0.0
+	var frequency := HP_CRITICAL_PULSE_HZ if _target_hp_ratio <= HP_CRITICAL_RATIO else HP_WARNING_PULSE_HZ
+	var amplitude := 1.0 if _target_hp_ratio <= HP_CRITICAL_RATIO else 0.58
+	return (sin(_health_pulse_elapsed * TAU * frequency) * 0.5 + 0.5) * amplitude

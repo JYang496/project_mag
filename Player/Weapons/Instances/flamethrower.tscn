@@ -7,6 +7,7 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/continuous_pulse_feedback.tres" id="5_feedback"]
 
 [node name="Flamethrower" unique_id=491042674 instance=ExtResource("1_ranger")]
+base_trait_flags = 20
 script = ExtResource("2_script")
 turn_speed_degrees_per_second = 180.0
 fire_feedback_profile = ExtResource("5_feedback")
@@ -32,7 +33,6 @@ effect_configs = Array[ExtResource("3_jofir")]([])
 debug_projectile_effects = false
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 20
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("4_icon")

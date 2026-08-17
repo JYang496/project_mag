@@ -1,6 +1,5 @@
 extends FriendlyNPC
 
-#@onready var test_augment = preload("res://Player/Augments/ricochet.tscn")
 
 func _ready():
 	pass

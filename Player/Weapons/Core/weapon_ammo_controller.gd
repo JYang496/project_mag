@@ -51,14 +51,18 @@ func request_reload() -> bool:
 	var spent_ratio := get_spent_magazine_ratio()
 	weapon.is_reloading = true
 	weapon.reload_time_left = reload_duration
-	weapon.dispatch_passive_event(&"on_reload_started", {
+	var detail := {
 		"source_weapon": weapon,
 		"ammo_before": ammo_before,
 		"ammo_after": weapon.current_ammo,
 		"magazine_capacity": _get_effective_capacity(),
 		"spent_ratio": spent_ratio,
 		"reload_duration": reload_duration,
-	})
+	}
+	var event := WeaponEvent.create(WeaponEvent.RELOAD_STARTED, weapon)
+	event.detail = detail
+	weapon.emit_weapon_event(event)
+	weapon.dispatch_passive_event(&"on_reload_started", detail)
 	if weapon.reload_time_left <= 0.0:
 		finish_reload()
 	return true
@@ -68,7 +72,8 @@ func update_reload_state(delta: float) -> void:
 		return
 	if not weapon.is_reloading:
 		return
-	weapon.reload_time_left = maxf(0.0, weapon.reload_time_left - maxf(delta, 0.0))
+	var reload_progress := maxf(delta, 0.0) * _get_global_reload_speed_multiplier()
+	weapon.reload_time_left = maxf(0.0, weapon.reload_time_left - reload_progress)
 	if weapon.reload_time_left <= 0.0:
 		finish_reload()
 
@@ -80,14 +85,18 @@ func finish_reload() -> void:
 	weapon.current_ammo = _get_effective_capacity()
 	weapon.is_reloading = false
 	weapon.reload_time_left = 0.0
-	weapon._refresh_offhand_skill_on_reload()
-	weapon.dispatch_passive_event(&"on_reload_finished", {
+	weapon._refresh_passive_on_reload()
+	var detail := {
 		"source_weapon": weapon,
 		"ammo_before": ammo_before,
 		"ammo_after": weapon.current_ammo,
 		"magazine_capacity": _get_effective_capacity(),
 		"spent_ratio": spent_ratio,
-	})
+	}
+	var event := WeaponEvent.create(WeaponEvent.RELOAD_FINISHED, weapon)
+	event.detail = detail
+	weapon.emit_weapon_event(event)
+	weapon.dispatch_passive_event(&"on_reload_finished", detail)
 	weapon.weapon_reload_completed.emit(weapon)
 
 func refill_instantly() -> void:
@@ -136,6 +145,13 @@ func _get_cold_reload_duration_multiplier() -> float:
 	if not PlayerData.player.has_method("get_cold_reload_duration_multiplier"):
 		return 1.0
 	return maxf(float(PlayerData.player.call("get_cold_reload_duration_multiplier")), 0.1)
+
+func _get_global_reload_speed_multiplier() -> float:
+	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return 1.0
+	if not PlayerData.player.has_method("get_total_reload_speed_mul"):
+		return 1.0
+	return maxf(float(PlayerData.player.call("get_total_reload_speed_mul")), 0.05)
 
 func _get_effective_capacity() -> int:
 	if weapon.has_method("get_effective_magazine_capacity"):

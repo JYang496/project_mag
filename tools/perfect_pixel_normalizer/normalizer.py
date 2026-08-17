@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import contextlib
 import io
 import json
@@ -112,10 +111,6 @@ class SequenceResult:
     items: tuple[SequenceItem, ...]
     grid_lock: GridLock
     report: dict[str, object]
-
-
-def _hash_bytes(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
 
 
 def _image_metrics(image: Image.Image) -> dict[str, object]:
@@ -473,8 +468,6 @@ def _file_record(
     return {
         "source": str(source.resolve()),
         "destination": str(destination.resolve()),
-        "source_sha256": _hash_bytes(source.read_bytes()),
-        "output_sha256": _hash_bytes(destination.read_bytes()),
         "preset": result.preset,
         "protected": result.protected,
         "grid": {

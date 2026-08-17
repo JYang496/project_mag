@@ -12,20 +12,15 @@ var ITEM_NAME := "Reload Relay"
 @export var duration_lv2: float = 4.0
 @export var duration_lv3: float = 5.0
 
-var _registered: bool = false
 var _active_until_msec: int = 0
 
 func _enter_tree() -> void:
 	super._enter_tree()
 	set_physics_process(false)
-	_register_hook()
-
-func _ready() -> void:
-	_register_hook()
 
 func _exit_tree() -> void:
-	_unregister_hook()
 	_clear_bonus()
+	super._exit_tree()
 
 func _physics_process(_delta: float) -> void:
 	if _active_until_msec <= 0:
@@ -43,26 +38,6 @@ func get_effect_descriptions() -> PackedStringArray:
 			self, "detail.2", {}, "Bonus scales with spent ammo"
 		),
 	]))
-
-func _register_hook() -> void:
-	if _registered:
-		return
-	if weapon == null:
-		weapon = _resolve_weapon()
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	if weapon.passive_triggered.is_connected(_on_weapon_passive_triggered):
-		_registered = true
-		return
-	weapon.passive_triggered.connect(_on_weapon_passive_triggered)
-	_registered = true
-
-func _unregister_hook() -> void:
-	if not _registered:
-		return
-	if weapon != null and is_instance_valid(weapon) and weapon.passive_triggered.is_connected(_on_weapon_passive_triggered):
-		weapon.passive_triggered.disconnect(_on_weapon_passive_triggered)
-	_registered = false
 
 func _on_weapon_passive_triggered(event_name: StringName, detail: Dictionary) -> void:
 	if event_name != &"on_reload_started":

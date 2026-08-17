@@ -37,6 +37,8 @@ func _add_theme_panel(theme: int, tile_texture: Texture2D) -> void:
 	mesh_instance.set_instance_shader_parameter("deployment_progress", 1.0)
 	mesh_instance.set_instance_shader_parameter("deployment_dim", 1.0)
 	mesh_instance.set_instance_shader_parameter("arena_theme_tint", style.theme_tint)
+	mesh_instance.set_instance_shader_parameter("arena_midtone_color", style.midtone_color)
+	mesh_instance.set_instance_shader_parameter("arena_midtone_strength", float(style.midtone_strength))
 	mesh_instance.set_instance_shader_parameter("arena_accent_color", style.accent_color)
 	mesh_instance.set_instance_shader_parameter("arena_variant", float(style.variant))
 	mesh_instance.set_instance_shader_parameter("arena_detail_seed", float(style.seed))

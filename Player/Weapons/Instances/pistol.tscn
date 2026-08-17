@@ -6,6 +6,7 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/light_recoil_feedback.tres" id="4_feedback"]
 
 [node name="Pistol" instance=ExtResource("1_bqbbe")]
+base_trait_flags = 65
 script = ExtResource("1_224q5")
 turn_speed_degrees_per_second = 720.0
 fire_feedback_profile = ExtResource("4_feedback")
@@ -14,7 +15,6 @@ configured_attack_range = 800.0
 delivery_type_flags = 1
 
 [node name="Modules" parent="."]
-weapon_traits = 65
 
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("2_jnw81")

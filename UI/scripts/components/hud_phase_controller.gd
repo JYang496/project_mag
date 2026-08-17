@@ -2,6 +2,7 @@ extends RefCounted
 class_name HudPhaseController
 
 const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
+const BATTLE_HUD_THEME := preload("res://UI/themes/battle_hud_theme.tres")
 const FADE_SECONDS := 0.16
 
 var owner_ui: UI
@@ -81,7 +82,7 @@ func layout(viewport_size: Vector2) -> void:
 		return
 	var margin := UiLayoutPolicy.safe_margin(viewport_size)
 	phase_dock.position = margin
-	phase_dock.size = Vector2(320.0, 42.0)
+	phase_dock.size = Vector2(UiLayoutPolicy.HUD_LEFT_WIDTH, 42.0)
 
 
 func _ensure_phase_dock() -> void:
@@ -91,6 +92,8 @@ func _ensure_phase_dock() -> void:
 	phase_dock.name = "PhaseDock"
 	phase_dock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	phase_dock.z_index = 45
+	phase_dock.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	phase_dock.theme = BATTLE_HUD_THEME
 	phase_dock.add_theme_stylebox_override("panel", _build_panel_style())
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 14)
@@ -106,6 +109,7 @@ func _ensure_phase_dock() -> void:
 	phase_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	phase_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	TOKENS.style_label(phase_label, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_PRIMARY)
+	phase_label.add_theme_font_size_override("font_size", 12)
 	row.add_child(phase_label)
 	owner_ui.gui_root.add_child(phase_dock)
 	if owner_ui.gold_label != null and owner_ui.gold_label.get_parent() != row:

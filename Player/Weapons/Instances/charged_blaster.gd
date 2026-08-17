@@ -19,15 +19,15 @@ var is_firing_beam := false
 var firing_turn_timer: Timer
 var _feedback_refund_accum_sec: float = 0.0
 var weapon_data = {
-	"1": {"damage": "6", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "6", "duration": "1.0"},
-	"2": {"damage": "8", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "6", "duration": "1.2"},
-	"3": {"damage": "10", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "6", "duration": "1.2"},
-	"4": {"damage": "12", "hit_cd": "0.2", "fire_interval_sec": "3.6", "ammo": "6", "duration": "1.4"},
-	"5": {"damage": "14", "hit_cd": "0.2", "fire_interval_sec": "3.6", "ammo": "6", "duration": "1.4"},
-	"6": {"damage": "16", "hit_cd": "0.2", "fire_interval_sec": "3.6", "ammo": "6", "duration": "1.6"},
-	"7": {"damage": "18", "hit_cd": "0.2", "fire_interval_sec": "3.3", "ammo": "6", "duration": "1.6"},
-	"8": {"damage": "20", "hit_cd": "0.2", "fire_interval_sec": "3.3", "ammo": "6", "duration": "1.8"},
-	"9": {"damage": "22", "hit_cd": "0.2", "fire_interval_sec": "3.3", "ammo": "6", "duration": "1.8"}
+	"1": {"damage": "6", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "3", "duration": "1.0"},
+	"2": {"damage": "8", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "3", "duration": "1.2"},
+	"3": {"damage": "10", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "3", "duration": "1.2"},
+	"4": {"damage": "12", "hit_cd": "0.2", "fire_interval_sec": "3.6", "ammo": "3", "duration": "1.4"},
+	"5": {"damage": "14", "hit_cd": "0.2", "fire_interval_sec": "3.6", "ammo": "3", "duration": "1.4"},
+	"6": {"damage": "16", "hit_cd": "0.2", "fire_interval_sec": "3.6", "ammo": "3", "duration": "1.6"},
+	"7": {"damage": "18", "hit_cd": "0.2", "fire_interval_sec": "3.3", "ammo": "3", "duration": "1.6"},
+	"8": {"damage": "20", "hit_cd": "0.2", "fire_interval_sec": "3.3", "ammo": "3", "duration": "1.8"},
+	"9": {"damage": "22", "hit_cd": "0.2", "fire_interval_sec": "3.3", "ammo": "3", "duration": "1.8"}
 }
 
 

@@ -18,6 +18,13 @@ Last reviewed: 2026-07-15.
 - `module prompt.txt`: reusable operational template; generated HTML is not a source-of-truth document.
 - `design/cell_task_combat_hud_solution.md` and `design/cell_task_module_design.md`: legacy files containing invalid UTF-8 bytes. Do not use them as current contracts; consult `TaskObjectiveHudPresenter`, `CellTaskModuleRuntime`, `TaskRewardManager`, and `Board/Cells/Modules/` instead.
 
+## Deferred future plans
+
+- [`plans/future/`](plans/future/): features deliberately excluded from the current release scope and preserved for later development.
+- [`plans/future/task_module_progression_plan.md`](plans/future/task_module_progression_plan.md): task-module economy, deployment, and reward-loop revision.
+- [`plans/future/mecha_selection_plan.md`](plans/future/mecha_selection_plan.md): player-facing mecha selection and per-mecha persistence.
+- [`plans/future/player_level_experience_plan.md`](plans/future/player_level_experience_plan.md): player level, experience income, runtime stat application, and feedback.
+
 ## Placement rules
 
 - Put durable behavior and architecture contracts in `design/` or `plans/`.

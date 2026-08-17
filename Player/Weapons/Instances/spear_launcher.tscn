@@ -6,6 +6,7 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/light_recoil_feedback.tres" id="2_feedback"]
 
 [node name="SpearLauncher" instance=ExtResource("1_yntmd")]
+base_trait_flags = 1
 script = ExtResource("1_wrx6n")
 turn_speed_degrees_per_second = 300.0
 fire_feedback_profile = ExtResource("2_feedback")
@@ -14,7 +15,6 @@ configured_attack_range = 800.0
 delivery_type_flags = 1
 
 [node name="Modules" parent="."]
-weapon_traits = 1
 
 [node name="Sprite" parent="." index="3"]
 texture = ExtResource("1_1rx0e")

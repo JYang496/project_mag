@@ -220,7 +220,7 @@ func _try_start_piercing_blade_dance() -> bool:
 		return false
 
 	_piercing_blade_dance_charge = maxi(0, available_charge - charge_cost)
-	notify_offhand_skill_triggered(0.0)
+	consume_passive_charge()
 	var directions := _build_radial_directions(projectile_count)
 	emit_passive_trigger(TRIGGERED_EVENT, {
 		"passive_id": str(PASSIVE_ID),

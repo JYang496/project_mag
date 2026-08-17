@@ -13,13 +13,30 @@ const WEAPON_DISPLAY_POLICY := preload("res://UI/scripts/presentation/weapon_dis
 const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
 const REWARD_CARD_MODEL_BUILDER := preload("res://UI/scripts/presentation/reward_card_model_builder.gd")
 const REWARD_CARD_DATA_ASSEMBLER := preload("res://UI/scripts/presentation/reward_card_data_assembler.gd")
+const WEAPON_PREVIEW_DATA := preload("res://UI/scripts/presentation/reward_weapon_preview_data.gd")
+const DAMAGE_TYPE_ICONS := {
+	&"physical": preload("res://UI/themes/pixel/generated/damage_types/damage_physical_compact.png"),
+	&"energy": preload("res://UI/themes/pixel/generated/damage_types/damage_energy.png"),
+	&"fire": preload("res://UI/themes/pixel/generated/damage_types/damage_fire.png"),
+	&"freeze": preload("res://UI/themes/pixel/generated/damage_types/damage_freeze.png"),
+}
 const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
+const INPUT_PROMPT_ATLAS := preload("res://asset/images/ui/input_prompts/kenney_pixel/input_prompts_tilemap.png")
+const INPUT_PROMPT_TILE_SIZE := 16
+const INPUT_PROMPT_TILE_STRIDE := 17
+const INPUT_PROMPT_DISPLAY_SIZE := 32.0
+const SPACE_PROMPT_START_COORD := Vector2i(31, 6)
+const SPACE_PROMPT_TILE_COUNT := 3
+const SPACE_PROMPT_DISPLAY_WIDTH := 72
 const QUICK_SELECT_HOLD_SECONDS := 0.55
+const DETAIL_HOVER_OPEN_SECONDS := 0.25
+const DETAIL_HOVER_CLOSE_SECONDS := 0.15
 const CARD_FONT_SIZE_BONUS := 0
 const CARD_LINE_SPACING := -2
 const CARD_BODY_SEPARATION := 4
 const STANDARD_CARD_MIN_HEIGHT := 372.0
 const DETAILED_CARD_MIN_HEIGHT := 380.0
+const CARD_SELECTION_PULSE_SCALE := Vector2(1.012, 1.012)
 
 @onready var title_label: Label = $Panel/VBox/Title
 @onready var panel: Panel = $Panel
@@ -28,6 +45,7 @@ const DETAILED_CARD_MIN_HEIGHT := 380.0
 @onready var options_box: GridContainer = $Panel/VBox/OptionsScroll/Options
 @onready var confirm_button: Button = $Panel/VBox/ActionPanel/Margin/Actions/ConfirmButton
 @onready var cancel_button: Button = $Panel/VBox/ActionPanel/Margin/Actions/CancelButton
+@onready var detail_hint: HBoxContainer = $Panel/VBox/ActionPanel/Margin/Actions/DetailHint
 
 var _reward_options: Array[RewardInfo] = []
 var _selected_index: int = -1
@@ -50,6 +68,13 @@ var _held_quick_select_elapsed := 0.0
 var _synergy_evaluator: Callable = Callable()
 var _reward_data_assembler: RefCounted
 var _cropped_reward_textures: Dictionary = {}
+var _detail_open_index := -1
+var _pending_detail_index := -1
+var _mouse_detail_index := -1
+var _detail_open_timer: Timer
+var _detail_close_timer: Timer
+var _using_gamepad := false
+var _gamepad_device_id := 0
 
 func set_synergy_evaluator(evaluator: Callable) -> void:
 	_synergy_evaluator = evaluator
@@ -72,11 +97,35 @@ func _ready() -> void:
 		LocalizationManager.language_changed.connect(_on_language_changed)
 	if not options_scroll.resized.is_connected(_update_grid_columns):
 		options_scroll.resized.connect(_update_grid_columns)
+	_detail_open_timer = Timer.new()
+	_detail_open_timer.one_shot = true
+	_detail_open_timer.timeout.connect(_on_detail_open_timeout)
+	add_child(_detail_open_timer)
+	_detail_close_timer = Timer.new()
+	_detail_close_timer.one_shot = true
+	_detail_close_timer.timeout.connect(_on_detail_close_timeout)
+	add_child(_detail_close_timer)
 
 func _input(event: InputEvent) -> void:
 	if not is_modal_open():
 		return
+	_update_input_device(event)
+	if _is_detail_input(event):
+		if event.is_pressed() and not event.is_echo():
+			_toggle_focused_weapon_detail()
+		get_viewport().set_input_as_handled()
+		return
+	if _detail_open_index >= 0 and ModalUiController.is_cancel_input(event):
+		_close_weapon_detail()
+		get_viewport().set_input_as_handled()
+		return
 	if _is_space_key_event(event):
+		if event.is_pressed() and not event.is_echo():
+			_activate_or_focus_confirm_button()
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("ui_accept") and not event.is_echo():
+		_on_confirm_pressed()
 		get_viewport().set_input_as_handled()
 		return
 	if not _summary_mode and event is InputEventKey and not event.echo:
@@ -88,10 +137,67 @@ func _input(event: InputEvent) -> void:
 				_cancel_quick_select_hold()
 			get_viewport().set_input_as_handled()
 			return
+	if _is_navigation_input(event):
+		_navigate_focus(event)
+		get_viewport().set_input_as_handled()
+		return
 	if not ModalUiController.is_cancel_input(event):
 		return
 	cancel_visible_modal()
 	get_viewport().set_input_as_handled()
+
+func _is_detail_input(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		return key_event.keycode == KEY_TAB or key_event.physical_keycode == KEY_TAB
+	if event is InputEventJoypadButton:
+		return (event as InputEventJoypadButton).button_index == JOY_BUTTON_Y
+	return false
+
+func _is_navigation_input(event: InputEvent) -> bool:
+	if not event.is_pressed() or event.is_echo():
+		return false
+	return event.is_action_pressed("UP") or event.is_action_pressed("DOWN") \
+			or event.is_action_pressed("LEFT") or event.is_action_pressed("RIGHT")
+
+func _navigate_focus(event: InputEvent) -> void:
+	var card_count := options_box.get_child_count()
+	if card_count <= 0:
+		return
+	var focused := get_viewport().gui_get_focus_owner() as Control
+	var card_index := focused.get_index() if focused != null and focused.get_parent() == options_box else -1
+	if event.is_action_pressed("LEFT") or event.is_action_pressed("RIGHT"):
+		if card_index >= 0:
+			var direction := -1 if event.is_action_pressed("LEFT") else 1
+			(options_box.get_child(clampi(card_index + direction, 0, card_count - 1)) as Button).grab_focus()
+		elif focused == confirm_button and cancel_button.visible and event.is_action_pressed("LEFT"):
+			cancel_button.grab_focus()
+		elif focused == cancel_button and event.is_action_pressed("RIGHT"):
+			confirm_button.grab_focus()
+		return
+	if event.is_action_pressed("DOWN") and card_index >= 0:
+		confirm_button.grab_focus()
+		return
+	if event.is_action_pressed("UP") and (focused == confirm_button or focused == cancel_button):
+		var target_index := clampi(_pinned_index if _summary_mode else _selected_index, 0, card_count - 1)
+		(options_box.get_child(target_index) as Button).grab_focus()
+
+func _update_input_device(event: InputEvent) -> void:
+	var next_gamepad := event is InputEventJoypadButton or event is InputEventJoypadMotion
+	var is_keyboard_or_pointer := event is InputEventKey or event is InputEventMouseButton or event is InputEventMouseMotion
+	if not next_gamepad and not is_keyboard_or_pointer:
+		return
+	if next_gamepad:
+		var next_device_id := event.device
+		if _using_gamepad and _gamepad_device_id != next_device_id:
+			_gamepad_device_id = next_device_id
+			_update_detail_hint()
+			return
+		_gamepad_device_id = next_device_id
+	if _using_gamepad == next_gamepad:
+		return
+	_using_gamepad = next_gamepad
+	_update_detail_hint()
 
 func _is_space_key_event(event: InputEvent) -> bool:
 	if not event is InputEventKey:
@@ -100,16 +206,24 @@ func _is_space_key_event(event: InputEvent) -> bool:
 	return key_event.keycode == KEY_SPACE or key_event.physical_keycode == KEY_SPACE or key_event.unicode == KEY_SPACE
 
 func _process(delta: float) -> void:
-	if _held_quick_select_index < 0 or not is_modal_open():
+	if not is_modal_open():
 		return
-	_held_quick_select_elapsed += maxf(delta, 0.0)
-	_update_quick_select_hold_visual()
-	if _held_quick_select_elapsed < QUICK_SELECT_HOLD_SECONDS:
+	if _held_quick_select_index >= 0:
+		_held_quick_select_elapsed += maxf(delta, 0.0)
+		_update_quick_select_hold_visual()
+		if _held_quick_select_elapsed >= QUICK_SELECT_HOLD_SECONDS:
+			var index := _held_quick_select_index
+			_cancel_quick_select_hold()
+			if index == _selected_index:
+				_on_confirm_pressed()
+func _activate_or_focus_confirm_button() -> void:
+	if confirm_button.disabled:
 		return
-	var index := _held_quick_select_index
-	_cancel_quick_select_hold()
-	if index == _selected_index:
+	if get_viewport().gui_get_focus_owner() == confirm_button:
 		_on_confirm_pressed()
+		return
+	_cancel_quick_select_hold()
+	confirm_button.grab_focus()
 
 func _quick_select_index_for_key(keycode: Key) -> int:
 	match keycode:
@@ -226,6 +340,9 @@ func _open_rewards(
 	_pinned_index = 0
 	_hover_index = -1
 	_focus_index = -1
+	_detail_open_index = -1
+	_pending_detail_index = -1
+	_mouse_detail_index = -1
 	_reward_options.clear()
 	title_label.text = title_override if title_override != "" else LocalizationManager.tr_key(
 		"ui.task_reward.summary_title" if _summary_mode else "ui.reward.title",
@@ -250,7 +367,9 @@ func _open_rewards(
 	for idx in range(_reward_options.size()):
 		var button := _build_reward_card_button(_reward_options[idx], idx)
 		button.pressed.connect(Callable(self, "_on_reward_button_pressed").bind(idx, button))
-		button.focus_entered.connect(Callable(self, "_on_reward_button_pressed").bind(idx, button))
+		button.focus_entered.connect(Callable(self, "_on_reward_card_focus_entered").bind(idx, button))
+		button.mouse_entered.connect(Callable(self, "_on_reward_card_mouse_entered").bind(idx, button))
+		button.mouse_exited.connect(Callable(self, "_on_reward_card_mouse_exited").bind(idx, button))
 		options_box.add_child(button)
 	if options_box.get_child_count() > 0:
 		var first := options_box.get_child(0) as Button
@@ -267,10 +386,10 @@ func _open_rewards(
 
 func _apply_unified_layout() -> void:
 	panel.offset_left = -500.0
-	panel.offset_top = -330.0
+	panel.offset_top = -350.0
 	panel.offset_right = 500.0
-	panel.offset_bottom = 330.0
-	options_scroll.custom_minimum_size.y = 382.0
+	panel.offset_bottom = 350.0
+	options_scroll.custom_minimum_size.y = 500.0
 	options_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 
 func _build_subtitle_text(
@@ -318,6 +437,13 @@ func close_panel() -> void:
 	_pinned_index = 0
 	_hover_index = -1
 	_focus_index = -1
+	_detail_open_index = -1
+	_pending_detail_index = -1
+	_mouse_detail_index = -1
+	if _detail_open_timer != null:
+		_detail_open_timer.stop()
+	if _detail_close_timer != null:
+		_detail_close_timer.stop()
 	_title_override_cache = ""
 	_subtitle_override_cache = ""
 	_progress_index_cache = 0
@@ -359,6 +485,8 @@ func cancel_visible_modal() -> bool:
 	return true
 
 func _on_reward_button_pressed(index: int, source_button: Button) -> void:
+	if _detail_open_index >= 0 and index != _detail_open_index:
+		_close_weapon_detail()
 	if _summary_mode:
 		_pinned_index = index
 	else:
@@ -376,6 +504,250 @@ func _on_reward_button_pressed(index: int, source_button: Button) -> void:
 	if source_button != null and is_instance_valid(source_button) and not source_button.has_focus():
 		source_button.grab_focus()
 	_confirm_button_state()
+
+func _on_reward_card_focus_entered(index: int, source_button: Button) -> void:
+	_focus_index = index
+	_on_reward_button_pressed(index, source_button)
+
+func _on_reward_card_mouse_entered(index: int, button: Button) -> void:
+	_hover_index = index
+	var selected_index := _pinned_index if _summary_mode else _selected_index
+	_animate_reward_card(button, index == selected_index, false, true)
+
+func _on_reward_card_mouse_exited(index: int, button: Button) -> void:
+	if _hover_index == index:
+		_hover_index = -1
+	var selected_index := _pinned_index if _summary_mode else _selected_index
+	_animate_reward_card(button, index == selected_index, false, false)
+
+func _configure_weapon_detail_hotspot(control: Control, reward_index: int) -> void:
+	if control == null:
+		return
+	control.set_meta(&"weapon_detail_hotspot", true)
+	control.set_meta(&"reward_index", reward_index)
+	control.mouse_entered.connect(Callable(self, "_on_weapon_hotspot_mouse_entered").bind(reward_index))
+	control.mouse_exited.connect(Callable(self, "_on_weapon_hotspot_mouse_exited").bind(reward_index))
+
+func _restore_weapon_preview_interactions(button: Button) -> void:
+	for node in button.find_children("*", "Control", true, false):
+		var control := node as Control
+		if control == null:
+			continue
+		if bool(control.get_meta(&"weapon_detail_hotspot", false)):
+			control.mouse_filter = Control.MOUSE_FILTER_PASS
+
+func _on_weapon_hotspot_mouse_entered(index: int) -> void:
+	# Gallery/showcase cards can be built from a detached presenter without the
+	# complete reward panel scene. They keep their static preview, but must not
+	# enter the modal interaction state machine.
+	if options_box == null or not is_instance_valid(options_box):
+		return
+	_mouse_detail_index = index
+	_pending_detail_index = index
+	if _detail_close_timer != null:
+		_detail_close_timer.stop()
+	if _detail_open_index == index:
+		return
+	if _detail_open_timer == null:
+		_open_weapon_detail(index)
+		return
+	_detail_open_timer.start(DETAIL_HOVER_OPEN_SECONDS)
+
+func _on_weapon_hotspot_mouse_exited(index: int) -> void:
+	if _mouse_detail_index == index:
+		_mouse_detail_index = -1
+	if _detail_open_timer != null:
+		_detail_open_timer.stop()
+	_start_detail_close_timer(index)
+
+func _on_detail_overlay_mouse_entered(index: int) -> void:
+	_mouse_detail_index = index
+	if _detail_close_timer != null:
+		_detail_close_timer.stop()
+
+func _on_detail_overlay_mouse_exited(index: int) -> void:
+	if _mouse_detail_index == index:
+		_mouse_detail_index = -1
+	_start_detail_close_timer(index)
+
+func _start_detail_close_timer(index: int) -> void:
+	if _detail_open_index != index:
+		return
+	if _detail_close_timer == null:
+		_close_weapon_detail()
+		return
+	_detail_close_timer.start(DETAIL_HOVER_CLOSE_SECONDS)
+
+func _on_detail_open_timeout() -> void:
+	if _pending_detail_index >= 0 and _mouse_detail_index == _pending_detail_index:
+		_open_weapon_detail(_pending_detail_index)
+
+func _on_detail_close_timeout() -> void:
+	if _mouse_detail_index < 0:
+		_close_weapon_detail()
+
+func _toggle_focused_weapon_detail() -> void:
+	if _detail_open_index >= 0:
+		_close_weapon_detail()
+		return
+	var index := _focus_index
+	if index < 0:
+		index = _pinned_index if _summary_mode else _selected_index
+	_open_weapon_detail(index)
+
+func _open_weapon_detail(index: int) -> void:
+	if options_box == null or not is_instance_valid(options_box):
+		return
+	if index < 0 or index >= options_box.get_child_count():
+		return
+	var button := options_box.get_child(index) as Button
+	if button == null or not bool(button.get_meta(&"is_weapon_reward", false)):
+		return
+	if _detail_open_index >= 0 and _detail_open_index != index:
+		_close_weapon_detail()
+	var overlay := button.find_child("WeaponBranchDetailOverlay", true, false) as Control
+	var content := button.find_child("CardContentMargin", true, false) as Control
+	if overlay == null or content == null:
+		return
+	_cancel_quick_select_hold()
+	_detail_open_index = index
+	_pending_detail_index = -1
+	overlay.visible = true
+	content.modulate.a = 0.25
+	button.z_index = 25
+	_confirm_button_state()
+
+func _close_weapon_detail() -> void:
+	if _detail_open_timer != null:
+		_detail_open_timer.stop()
+	if _detail_close_timer != null:
+		_detail_close_timer.stop()
+	if options_box != null and is_instance_valid(options_box) \
+			and _detail_open_index >= 0 and _detail_open_index < options_box.get_child_count():
+		var button := options_box.get_child(_detail_open_index) as Button
+		if button != null:
+			var overlay := button.find_child("WeaponBranchDetailOverlay", true, false) as Control
+			var content := button.find_child("CardContentMargin", true, false) as Control
+			if overlay != null:
+				overlay.visible = false
+			if content != null:
+				content.modulate.a = 1.0
+			button.z_index = 1 if button.button_pressed else 0
+	_detail_open_index = -1
+	_pending_detail_index = -1
+	_confirm_button_state()
+
+func _update_detail_hint() -> void:
+	if detail_hint == null:
+		return
+	if options_box == null or not is_instance_valid(options_box):
+		detail_hint.visible = false
+		return
+	var index := _focus_index
+	if index < 0:
+		index = _pinned_index if _summary_mode else _selected_index
+	var is_weapon := false
+	if index >= 0 and index < options_box.get_child_count():
+		var button := options_box.get_child(index) as Button
+		is_weapon = button != null and bool(button.get_meta(&"is_weapon_reward", false))
+	detail_hint.visible = is_weapon
+	for child in detail_hint.get_children():
+		detail_hint.remove_child(child)
+		child.queue_free()
+	_update_confirm_prompt_icon()
+	if not is_weapon:
+		return
+	var detail_action := _inline_text("CLOSE DETAILS", "关闭详情") if _detail_open_index >= 0 else _inline_text("DETAILS", "详情")
+	if _using_gamepad:
+		var button_coord := _gamepad_detail_button_coord()
+		detail_hint.add_child(_make_prompt_icon(button_coord.x, button_coord.y, "Detail button"))
+		detail_hint.add_child(_make_prompt_text(detail_action))
+	else:
+		var tab_group := HBoxContainer.new()
+		tab_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tab_group.add_theme_constant_override("separation", 0)
+		tab_group.add_child(_make_prompt_icon(19, 5, "Tab"))
+		tab_group.add_child(_make_prompt_icon(20, 5, "Tab"))
+		detail_hint.add_child(tab_group)
+		detail_hint.add_child(_make_prompt_text(detail_action))
+
+func _make_prompt_icon(column: int, row: int, accessible_name: String) -> TextureRect:
+	var texture := AtlasTexture.new()
+	texture.atlas = INPUT_PROMPT_ATLAS
+	texture.region = Rect2(
+		column * INPUT_PROMPT_TILE_STRIDE,
+		row * INPUT_PROMPT_TILE_STRIDE,
+		INPUT_PROMPT_TILE_SIZE,
+		INPUT_PROMPT_TILE_SIZE
+	)
+	var icon := TextureRect.new()
+	icon.texture = texture
+	icon.custom_minimum_size = Vector2(INPUT_PROMPT_DISPLAY_SIZE, INPUT_PROMPT_DISPLAY_SIZE)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.tooltip_text = accessible_name
+	return icon
+
+func _make_prompt_text(value: String) -> Label:
+	var label := Label.new()
+	label.text = value
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", TOKENS.FONT_LABEL)
+	label.add_theme_color_override("font_color", Color(0.58, 0.82, 0.94, 1.0))
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
+
+func _gamepad_detail_button_coord() -> Vector2i:
+	var controller_name := Input.get_joy_name(_gamepad_device_id).to_lower()
+	if controller_name.contains("playstation") or controller_name.contains("dualshock") or controller_name.contains("dualsense"):
+		return Vector2i(13, 0)
+	if controller_name.contains("nintendo") or controller_name.contains("switch") or controller_name.contains("joy-con"):
+		return Vector2i(10, 0)
+	return Vector2i(7, 0)
+
+func _update_confirm_prompt_icon() -> void:
+	if confirm_button == null:
+		return
+	if not _using_gamepad:
+		if _summary_mode:
+			confirm_button.icon = null
+			return
+		var space_texture := AtlasTexture.new()
+		space_texture.atlas = INPUT_PROMPT_ATLAS
+		space_texture.region = Rect2(
+			SPACE_PROMPT_START_COORD.x * INPUT_PROMPT_TILE_STRIDE,
+			SPACE_PROMPT_START_COORD.y * INPUT_PROMPT_TILE_STRIDE,
+			INPUT_PROMPT_TILE_SIZE + INPUT_PROMPT_TILE_STRIDE * (SPACE_PROMPT_TILE_COUNT - 1),
+			INPUT_PROMPT_TILE_SIZE
+		)
+		confirm_button.icon = space_texture
+		confirm_button.expand_icon = true
+		confirm_button.add_theme_constant_override("icon_max_width", SPACE_PROMPT_DISPLAY_WIDTH)
+		confirm_button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		return
+	var coord := _gamepad_confirm_button_coord()
+	var texture := AtlasTexture.new()
+	texture.atlas = INPUT_PROMPT_ATLAS
+	texture.region = Rect2(
+		coord.x * INPUT_PROMPT_TILE_STRIDE,
+		coord.y * INPUT_PROMPT_TILE_STRIDE,
+		INPUT_PROMPT_TILE_SIZE,
+		INPUT_PROMPT_TILE_SIZE
+	)
+	confirm_button.icon = texture
+	confirm_button.expand_icon = true
+	confirm_button.add_theme_constant_override("icon_max_width", int(INPUT_PROMPT_DISPLAY_SIZE))
+	confirm_button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+
+func _gamepad_confirm_button_coord() -> Vector2i:
+	var controller_name := Input.get_joy_name(_gamepad_device_id).to_lower()
+	if controller_name.contains("playstation") or controller_name.contains("dualshock") or controller_name.contains("dualsense"):
+		return Vector2i(15, 0)
+	if controller_name.contains("nintendo") or controller_name.contains("switch") or controller_name.contains("joy-con"):
+		return Vector2i(9, 0)
+	return Vector2i(4, 0)
 
 func _update_grid_columns() -> void:
 	if options_box == null or options_scroll == null:
@@ -397,8 +769,9 @@ func _configure_card_focus_chain() -> void:
 		button.focus_previous = button.get_path_to(previous)
 
 func _confirm_button_state() -> void:
-	confirm_button.disabled = false if _summary_mode else _selected_index < 0 or _selected_index >= _reward_options.size()
+	confirm_button.disabled = _detail_open_index >= 0 or (false if _summary_mode else _selected_index < 0 or _selected_index >= _reward_options.size())
 	confirm_button.text = _get_confirm_button_text()
+	_update_detail_hint()
 
 func _get_confirm_button_text() -> String:
 	if _summary_mode:
@@ -415,6 +788,8 @@ func _get_confirm_button_text() -> String:
 	return confirm_text
 
 func _on_confirm_pressed() -> void:
+	if _detail_open_index >= 0:
+		return
 	if _summary_mode:
 		if _on_confirm.is_valid():
 			_on_confirm.call_deferred()
@@ -441,13 +816,16 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	var is_module_reward := card_data.has("compatible_weapons")
 	var detail_variant := StringName(card_data.get("detail_variant", &"generic"))
 	var is_weapon_visual_reward := detail_variant in [&"new_weapon", &"weapon_fusion", &"weapon_upgrade"]
+	var weapon_preview: Dictionary = WEAPON_PREVIEW_DATA.build(reward) if is_weapon_visual_reward else {}
 	var button := Button.new()
+	button.set_meta(&"reward_index", reward_index)
+	button.set_meta(&"is_weapon_reward", is_weapon_visual_reward)
 	button.toggle_mode = true
 	# Keep every card inside the fixed draft viewport so the choice screen never
 	# needs a vertical scrollbar.
 	button.custom_minimum_size = Vector2(
 		0.0,
-		DETAILED_CARD_MIN_HEIGHT if is_module_reward or is_weapon_visual_reward else STANDARD_CARD_MIN_HEIGHT
+		400.0 if is_weapon_visual_reward else (DETAILED_CARD_MIN_HEIGHT if is_module_reward else STANDARD_CARD_MIN_HEIGHT)
 	)
 	button.clip_contents = false
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -458,12 +836,25 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	button.tooltip_text = ""
 
 	var margin := MarginContainer.new()
+	margin.name = "CardContentMargin"
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_top", 9)
 	margin.add_theme_constant_override("margin_right", 12)
 	margin.add_theme_constant_override("margin_bottom", 9)
 	button.add_child(margin)
+
+	var selection_bar := ColorRect.new()
+	selection_bar.name = "SelectionIndicatorBar"
+	selection_bar.color = TOKENS.COLOR_REWARD
+	selection_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	selection_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	selection_bar.offset_left = 12.0
+	selection_bar.offset_top = 3.0
+	selection_bar.offset_right = -12.0
+	selection_bar.offset_bottom = 7.0
+	selection_bar.visible = false
+	button.add_child(selection_bar)
 
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", CARD_BODY_SEPARATION)
@@ -480,7 +871,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	progress_background.bg_color = TOKENS.COLOR_CANVAS.lightened(0.08)
 	var progress_fill := StyleBoxFlat.new()
 	var action_color := _get_reward_action_color(reward)
-	progress_fill.bg_color = TOKENS.COLOR_ACCENT_ACTION
+	progress_fill.bg_color = TOKENS.COLOR_REWARD
 	hold_progress.add_theme_stylebox_override("background", progress_background)
 	hold_progress.add_theme_stylebox_override("fill", progress_fill)
 	body.add_child(hold_progress)
@@ -495,7 +886,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		key_badge.custom_minimum_size.x = 28.0
 		top_row.add_child(key_badge)
 
-	var type_badge := _make_badge_label(str(card_data.get("type_label", "Reward")).to_upper(), TOKENS.COLOR_ACCENT_SYSTEM)
+	var type_badge := _make_badge_label(str(card_data.get("type_label", "Reward")).to_upper(), _get_reward_type_color(reward))
 	type_badge.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top_row.add_child(type_badge)
 
@@ -510,7 +901,9 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_box.add_theme_constant_override("separation", 2)
 	if is_weapon_visual_reward:
-		body.add_child(_build_weapon_reward_hero(card_data))
+		var weapon_hero := _build_weapon_reward_hero(card_data)
+		body.add_child(weapon_hero)
+		_configure_weapon_detail_hotspot(weapon_hero, reward_index)
 		body.add_child(text_box)
 	else:
 		var header := HBoxContainer.new()
@@ -523,7 +916,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	var display_title := str(card_data.get("title", "Reward")).strip_edges()
 	if is_weapon_visual_reward:
 		display_title = _weapon_reward_display_name(reward, display_title)
-	var name_label := _make_card_label(display_title, TOKENS.FONT_BUTTON, TOKENS.COLOR_TEXT_PRIMARY)
+	var name_label := _make_card_label(display_title, 19 if is_weapon_visual_reward else TOKENS.FONT_BUTTON, TOKENS.COLOR_TEXT_PRIMARY)
 	var summary_count := int(reward.get_meta("summary_count", 1))
 	if _summary_mode and summary_count > 1:
 		name_label.text += " " + LocalizationManager.tr_format(
@@ -540,6 +933,9 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_configure_weapon_detail_hotspot(name_label, reward_index)
+	if is_weapon_visual_reward:
+		_attach_damage_icons_to_weapon_name(name_label, weapon_preview.get("damage_types", []))
 	text_box.add_child(name_label)
 
 	var meta_text := str(card_data.get("meta_text", "")).strip_edges()
@@ -550,6 +946,11 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		meta_label.name = "WeaponLevelLabel"
 		meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	text_box.add_child(meta_label)
+	var rarity_label := _make_rarity_label(str(card_data.get("rarity", reward.get_rarity())))
+	if is_weapon_visual_reward:
+		_attach_rarity_to_weapon_level(meta_label, rarity_label)
+	else:
+		text_box.add_child(rarity_label)
 
 	var summary_parent: VBoxContainer = body
 	if is_weapon_visual_reward:
@@ -565,13 +966,25 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		effect_box.name = "ModuleEffectBox"
 		effect_box.add_theme_constant_override("separation", 3)
 		body.add_child(effect_box)
-		var effect_heading := _make_card_label(LocalizationManager.tr_key("ui.reward.module_effect", "Module Effect"), 13, Color(0.58, 0.82, 0.94, 1.0))
+		var effect_heading := _make_card_label(LocalizationManager.tr_key("ui.reward.module_effect", "Module Effect"), 13, TOKENS.COLOR_TEXT_SECONDARY)
 		effect_heading.name = "ModuleEffectHeading"
 		effect_box.add_child(effect_heading)
 		summary_parent = effect_box
-	var summary_label := _make_card_label(str(card_data.get("summary_text", "")).strip_edges(), TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_PRIMARY)
+	var role_summary := str(card_data.get("role_summary", "")).strip_edges()
+	var behavior_summary := str(card_data.get("summary_text", "")).strip_edges()
+	if is_weapon_visual_reward and role_summary != "" and role_summary != behavior_summary:
+		var role_label := _make_card_label(role_summary, 15, TOKENS.COLOR_TEXT_PRIMARY)
+		role_label.name = "WeaponRoleSummary"
+		role_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		role_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		role_label.clip_text = true
+		role_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		role_label.tooltip_text = ""
+		summary_parent.add_child(role_label)
+	var summary_label := _make_card_label(behavior_summary, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_PRIMARY)
 	summary_label.name = "BehaviorSummary"
 	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary_label.max_lines_visible = 2
 	summary_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	summary_label.tooltip_text = ""
 	summary_parent.add_child(summary_label)
@@ -594,6 +1007,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		body.add_child(_build_module_weapon_grid(card_data))
 	elif is_weapon_visual_reward:
 		body.add_child(_build_core_weapon_stats(card_data))
+		body.add_child(_build_weapon_preview_section(weapon_preview))
 	else:
 		var comparison_lines := _card_comparison_lines(card_data)
 		var comparison_box := VBoxContainer.new()
@@ -632,14 +1046,17 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 
 	_set_mouse_filter_recursive(button, Control.MOUSE_FILTER_IGNORE)
 	_clear_tooltips_recursive(button)
+	_restore_weapon_preview_interactions(button)
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	if is_weapon_visual_reward:
+		button.add_child(_build_weapon_branch_detail_overlay(weapon_preview, reward_index))
 	_apply_reward_card_style(button, reward, false)
 	return button
 
 func _build_core_weapon_stats(card_data: Dictionary) -> HBoxContainer:
 	var stats_box := HBoxContainer.new()
 	stats_box.name = "CoreWeaponStats"
-	stats_box.custom_minimum_size = Vector2(0.0, 54.0)
+	stats_box.custom_minimum_size = Vector2(0.0, 42.0)
 	stats_box.add_theme_constant_override("separation", 6)
 	var lines: PackedStringArray = card_data.get("core_stat_lines", PackedStringArray())
 	var slot_names: Array[StringName] = [&"Damage", &"FireInterval", &"Ammo"]
@@ -657,7 +1074,7 @@ func _build_core_weapon_stats(card_data: Dictionary) -> HBoxContainer:
 		var heading := _make_card_label(heading_text, 11, Color(0.60, 0.74, 0.80, 1.0))
 		heading.name = "Heading"
 		heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		var value := _make_card_label(value_text, 14, Color(0.76, 0.93, 0.82, 1.0))
+		var value := _make_card_label(value_text, 14, TOKENS.COLOR_TEXT_PRIMARY)
 		value.name = "Value"
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		value.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -669,13 +1086,315 @@ func _build_core_weapon_stats(card_data: Dictionary) -> HBoxContainer:
 func _build_weapon_reward_hero(card_data: Dictionary) -> CenterContainer:
 	var hero := CenterContainer.new()
 	hero.name = "WeaponRewardHero"
-	hero.custom_minimum_size = Vector2(0.0, 94.0)
+	hero.custom_minimum_size = Vector2(0.0, 80.0)
 	hero.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var icon := _make_reward_icon(card_data, Vector2(148.0, 88.0), 7)
+	var icon := _make_reward_icon(card_data, Vector2(132.0, 76.0), 6)
 	icon.name = "WeaponHeroImage"
 	hero.add_child(icon)
 	return hero
+
+func _build_weapon_preview_section(preview: Dictionary) -> VBoxContainer:
+	var section := VBoxContainer.new()
+	section.name = "WeaponBuildPreview"
+	section.custom_minimum_size = Vector2(0.0, 126.0)
+	section.add_theme_constant_override("separation", 3)
+	var module_heading := _make_card_label(_inline_text("COMPATIBLE MODULE REQUIREMENTS", "兼容模组条件"), 12, TOKENS.COLOR_TEXT_SECONDARY)
+	module_heading.name = "ModuleInstallationRequirementsHeading"
+	section.add_child(module_heading)
+	var requirements_label := _make_card_label(
+		_format_installation_requirements(preview.get("installation_requirements", [])),
+		13,
+		TOKENS.COLOR_TEXT_PRIMARY
+	)
+	requirements_label.name = "ModuleInstallationRequirements"
+	requirements_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	requirements_label.max_lines_visible = 2
+	section.add_child(requirements_label)
+	var branch_preview_spacer := Control.new()
+	branch_preview_spacer.name = "BranchPreviewTopSpacer"
+	branch_preview_spacer.custom_minimum_size.y = 8.0
+	section.add_child(branch_preview_spacer)
+	var branch_heading_row := HBoxContainer.new()
+	branch_heading_row.add_theme_constant_override("separation", 6)
+	section.add_child(branch_heading_row)
+	var branch_heading := _make_card_label(_inline_text("BRANCH PREVIEW", "分支预览"), 12, TOKENS.COLOR_TEXT_SECONDARY)
+	branch_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	branch_heading_row.add_child(branch_heading)
+	var branch_row := HBoxContainer.new()
+	branch_row.name = "BranchPreviewRow"
+	branch_row.add_theme_constant_override("separation", 6)
+	branch_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	section.add_child(branch_row)
+	for branch_variant in preview.get("branches", []):
+		branch_row.add_child(_build_branch_preview_node(branch_variant as Dictionary))
+	return section
+
+func _format_installation_requirements(requirements: Array) -> String:
+	var labels := PackedStringArray()
+	for requirement_variant in requirements:
+		var requirement := StringName(requirement_variant)
+		var label := ""
+		match requirement:
+			&"ranged_weapon": label = _inline_text("Ranged", "远程")
+			&"melee_weapon": label = _inline_text("Melee", "近战")
+			&"uses_ammo": label = _inline_text("Uses Ammo", "使用弹药")
+			_: label = LocalizationManager.get_module_term(
+				requirement,
+				str(requirement).replace("_", " ").capitalize()
+			)
+		if label != "" and not labels.has(label):
+			labels.append(label)
+	return " · ".join(labels)
+
+func _build_branch_preview_node(branch: Dictionary) -> PanelContainer:
+	var damage_types: Array = branch.get("damage_types", [])
+	var state := StringName(branch.get("state", &"locked"))
+	var panel_node := PanelContainer.new()
+	panel_node.name = "BranchPreviewNode"
+	panel_node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel_node.custom_minimum_size = Vector2(0.0, 52.0)
+	panel_node.add_theme_stylebox_override("panel", _branch_style(damage_types, state, 0.11))
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 0)
+	panel_node.add_child(content)
+	var title_row := HBoxContainer.new()
+	title_row.name = "BranchPreviewTitleRow"
+	title_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_child(title_row)
+	var name_label := _make_card_label(str(branch.get("name", "Branch")), 12, _branch_primary_color(damage_types))
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.clip_text = true
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	var branch_icon_slot_size := 18.0 if damage_types.size() > 1 else 20.0
+	_attach_damage_icons_to_label(
+		name_label,
+		damage_types,
+		branch_icon_slot_size,
+		"BranchDamageTypeIcons",
+		4.0
+	)
+	title_row.add_child(name_label)
+	var status_label := _make_card_label(_branch_state_short(state), 10, TOKENS.COLOR_TEXT_SECONDARY)
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(status_label)
+	return panel_node
+
+func _build_damage_type_icon_row(damage_types: Array, icon_size: float, row_name: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.name = row_name
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 2)
+	for type_variant in damage_types.slice(0, 2):
+		var damage_type := Attack.normalize_damage_type(type_variant)
+		var texture := DAMAGE_TYPE_ICONS.get(damage_type) as Texture2D
+		if texture == null:
+			continue
+		var slot := PanelContainer.new()
+		slot.name = "DamageTypeSlot%s" % str(damage_type).capitalize()
+		slot.custom_minimum_size = Vector2.ONE * icon_size
+		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var slot_style := StyleBoxFlat.new()
+		slot_style.bg_color = Color(0.018, 0.031, 0.043, 0.98)
+		var damage_color := WEAPON_PREVIEW_DATA.damage_color(damage_type)
+		slot_style.border_color = Color(damage_color.r, damage_color.g, damage_color.b, 0.82)
+		slot_style.set_border_width_all(1)
+		slot_style.set_corner_radius_all(3)
+		slot_style.set_content_margin_all(1.0)
+		slot.add_theme_stylebox_override("panel", slot_style)
+		var icon := TextureRect.new()
+		icon.name = "DamageType%s" % str(damage_type).capitalize()
+		icon.texture = texture
+		icon.custom_minimum_size = Vector2.ONE * (icon_size - 2.0)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.add_child(icon)
+		row.add_child(slot)
+	return row
+
+func _attach_damage_icons_to_weapon_name(name_label: Label, damage_types: Array) -> void:
+	_attach_damage_icons_to_label(name_label, damage_types, 24.0, "WeaponDamageTypeIcons", 5.0)
+
+func _attach_damage_icons_to_label(
+	label: Label,
+	damage_types: Array,
+	icon_size: float,
+	row_name: String,
+	gap: float
+) -> void:
+	var icon_row := _build_damage_type_icon_row(damage_types, icon_size, row_name)
+	if icon_row.get_child_count() == 0:
+		return
+	var icon_count := icon_row.get_child_count()
+	var row_width := float(icon_count) * icon_size + float(maxi(icon_count - 1, 0)) * 2.0
+	var font := label.get_theme_font("font")
+	var font_size := label.get_theme_font_size("font_size")
+	var text_width := font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size).x
+	icon_row.set_anchors_preset(Control.PRESET_CENTER)
+	icon_row.offset_right = -text_width * 0.5 - gap
+	icon_row.offset_left = icon_row.offset_right - row_width
+	icon_row.offset_top = -icon_size * 0.5
+	icon_row.offset_bottom = icon_size * 0.5
+	label.add_child(icon_row)
+
+func _attach_rarity_to_weapon_level(level_label: Label, rarity_label: Label) -> void:
+	var level_font := level_label.get_theme_font("font")
+	var level_font_size := level_label.get_theme_font_size("font_size")
+	var level_width := level_font.get_string_size(
+		level_label.text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1.0,
+		level_font_size
+	).x
+	var rarity_font := rarity_label.get_theme_font("font")
+	var rarity_font_size := rarity_label.get_theme_font_size("font_size")
+	var rarity_width := rarity_font.get_string_size(
+		rarity_label.text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1.0,
+		rarity_font_size
+	).x
+	rarity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	rarity_label.set_anchors_preset(Control.PRESET_CENTER)
+	rarity_label.offset_left = level_width * 0.5 + 8.0
+	rarity_label.offset_right = rarity_label.offset_left + rarity_width
+	rarity_label.offset_top = -12.0
+	rarity_label.offset_bottom = 12.0
+	level_label.add_child(rarity_label)
+
+func _build_weapon_branch_detail_overlay(preview: Dictionary, reward_index: int) -> PanelContainer:
+	var overlay := PanelContainer.new()
+	overlay.name = "WeaponBranchDetailOverlay"
+	overlay.visible = false
+	overlay.z_index = 20
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	overlay.offset_left = 8.0
+	overlay.offset_top = 44.0
+	overlay.offset_right = -8.0
+	overlay.offset_bottom = 314.0
+	var style := TOKENS.make_panel_style(true, Color(0.36, 0.82, 0.94, 0.86))
+	style.bg_color = Color(0.025, 0.040, 0.052, 0.985)
+	style.content_margin_left = 10
+	style.content_margin_top = 9
+	style.content_margin_right = 10
+	style.content_margin_bottom = 9
+	overlay.add_theme_stylebox_override("panel", style)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 7)
+	overlay.add_child(content)
+	var heading := _make_card_label(_inline_text("WEAPON BRANCH DETAILS", "武器分支详情"), 14, TOKENS.COLOR_TEXT_SECONDARY)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(heading)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(row)
+	for branch_variant in preview.get("branches", []):
+		row.add_child(_build_branch_detail_card(branch_variant as Dictionary))
+	overlay.mouse_entered.connect(Callable(self, "_on_detail_overlay_mouse_entered").bind(reward_index))
+	overlay.mouse_exited.connect(Callable(self, "_on_detail_overlay_mouse_exited").bind(reward_index))
+	return overlay
+
+func _build_branch_detail_card(branch: Dictionary) -> PanelContainer:
+	var damage_types: Array = branch.get("damage_types", [])
+	var state := StringName(branch.get("state", &"locked"))
+	var card := PanelContainer.new()
+	card.name = "BranchDetailCard"
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", _branch_style(damage_types, state, 0.08))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	card.add_child(box)
+	var name_label := _make_card_label(str(branch.get("name", "Branch")), 15, _branch_primary_color(damage_types))
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(name_label)
+	var type_label := _make_card_label(_damage_type_text(damage_types), 11, _branch_primary_color(damage_types))
+	type_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(type_label)
+	var description := _make_card_label(str(branch.get("description", "")), 12, TOKENS.COLOR_TEXT_PRIMARY)
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description.max_lines_visible = 5
+	description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(description)
+	var footer := _make_card_label(_branch_footer(branch), 11, TOKENS.COLOR_TEXT_SECONDARY)
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(footer)
+	_add_mixed_damage_strip(card, damage_types)
+	return card
+
+func _branch_style(damage_types: Array, state: StringName, background_alpha: float) -> StyleBoxFlat:
+	var color := _branch_primary_color(damage_types)
+	var enabled := state != &"locked"
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r, color.g, color.b, background_alpha if enabled else 0.035)
+	style.border_color = Color(color.r, color.g, color.b, 0.82 if enabled else 0.30)
+	style.set_border_width_all(2 if state == &"acquired" else 1)
+	style.set_corner_radius_all(5)
+	style.content_margin_left = 6
+	style.content_margin_top = 4
+	style.content_margin_right = 6
+	style.content_margin_bottom = 4
+	return style
+
+func _add_mixed_damage_strip(parent: Control, damage_types: Array) -> void:
+	if damage_types.size() < 2:
+		return
+	# PanelContainer lays every direct child across its content rect. Keep the
+	# decorative strip inside a neutral overlay so it remains a two-pixel accent
+	# instead of covering the branch name and lock state.
+	var overlay := Control.new()
+	overlay.name = "MixedDamageStripOverlay"
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(overlay)
+	var strip := HBoxContainer.new()
+	strip.name = "MixedDamageStrip"
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	strip.offset_left = 5
+	strip.offset_top = 2
+	strip.offset_right = -5
+	strip.offset_bottom = 4
+	strip.add_theme_constant_override("separation", 0)
+	for type_variant in damage_types.slice(0, 2):
+		var segment := ColorRect.new()
+		segment.color = WEAPON_PREVIEW_DATA.damage_color(StringName(type_variant))
+		segment.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		segment.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		strip.add_child(segment)
+	overlay.add_child(strip)
+
+func _branch_primary_color(damage_types: Array) -> Color:
+	if damage_types.is_empty():
+		return WEAPON_PREVIEW_DATA.damage_color(&"physical")
+	return WEAPON_PREVIEW_DATA.damage_color(StringName(damage_types[0]))
+
+func _damage_type_text(damage_types: Array) -> String:
+	var labels := PackedStringArray()
+	for type_variant in damage_types:
+		var key := StringName(type_variant)
+		labels.append(LocalizationManager.get_module_term(key, str(key).capitalize()))
+	return " + ".join(labels)
+
+func _branch_state_short(state: StringName) -> String:
+	match state:
+		&"acquired": return "✓ %s" % _inline_text("OWNED", "已获得")
+		&"available": return _inline_text("AVAILABLE", "可解锁")
+		_: return _inline_text("LOCKED", "未解锁")
+
+func _branch_footer(branch: Dictionary) -> String:
+	var state := StringName(branch.get("state", &"locked"))
+	var fuse := int(branch.get("unlock_fuse", 2))
+	if state == &"acquired":
+		return "✓ %s" % _inline_text("Acquired", "已获得")
+	return "%s %d · %s" % [_inline_text("Fuse", "融合"), fuse, _branch_state_short(state)]
+
+func _inline_text(english: String, chinese: String) -> String:
+	return chinese if LocalizationManager.get_locale() == "zh_CN" else english
 
 func _build_module_weapon_grid(card_data: Dictionary) -> VBoxContainer:
 	var section := VBoxContainer.new()
@@ -686,7 +1405,7 @@ func _build_module_weapon_grid(card_data: Dictionary) -> VBoxContainer:
 	var owned_count := int(card_data.get("owned_weapon_count", 0))
 	var heading_row := HBoxContainer.new()
 	section.add_child(heading_row)
-	var heading := _make_card_label(LocalizationManager.tr_key("ui.reward.compatible_weapons", "Compatible Weapons"), 13, Color(0.58, 0.82, 0.94, 1.0))
+	var heading := _make_card_label(LocalizationManager.tr_key("ui.reward.compatible_weapons", "Compatible Weapons"), 13, TOKENS.COLOR_TEXT_SECONDARY)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading_row.add_child(heading)
 	var count_label := _make_card_label("%d/%d" % [previews.size(), owned_count], 13, Color(0.72, 0.84, 0.88, 1.0))
@@ -903,10 +1622,10 @@ func _crop_reward_texture_to_content(source: Texture2D) -> Texture2D:
 	_cropped_reward_textures[cache_key] = atlas
 	return atlas
 
-func _make_icon_frame_style(accent: Color) -> StyleBoxFlat:
+func _make_icon_frame_style(_accent: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(accent.r, accent.g, accent.b, 0.14)
-	style.border_color = Color(accent.r, accent.g, accent.b, 0.64)
+	style.bg_color = TOKENS.COLOR_SURFACE_ELEVATED
+	style.border_color = TOKENS.COLOR_BORDER
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(TOKENS.RADIUS_PANEL)
 	return style
@@ -972,6 +1691,21 @@ func _make_badge_label(text: String, color: Color) -> Label:
 	style.content_margin_right = 6
 	label.add_theme_stylebox_override("normal", style)
 	return label
+
+func _make_rarity_label(rarity: String) -> Label:
+	var normalized := RARITY_UTIL.normalize(rarity)
+	var rarity_text := "%s %s" % [_rarity_symbol(normalized), RARITY_UTIL.get_display_name(normalized)]
+	var label := _make_card_label(rarity_text, TOKENS.FONT_LABEL, RARITY_UTIL.get_color(normalized))
+	label.name = "RarityLabel"
+	label.set_meta(&"rarity", normalized)
+	label.tooltip_text = RARITY_UTIL.get_display_name(normalized)
+	return label
+
+func _rarity_symbol(rarity: String) -> String:
+	match RARITY_UTIL.normalize(rarity):
+		RARITY_UTIL.RARE: return "◆"
+		RARITY_UTIL.EPIC: return "✦"
+		_: return "◇"
 
 func _compact_detail_text(text: String, _max_characters: int) -> String:
 	var compact := text.replace("\r", " ").replace("\n", " ").replace("  ", " ").strip_edges()
@@ -1080,34 +1814,48 @@ func _localized_reward_bullets(category: String, fallbacks: Array) -> PackedStri
 func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool, holding: bool = false) -> void:
 	if button == null or reward == null:
 		return
-	var rarity_color := _get_reward_action_color(reward)
-	var recommended_fuse := _is_recommended_fuse_reward(reward)
+	var card_background := TOKENS.COLOR_SURFACE_ELEVATED
 	var selected_badge := button.find_child("SelectedBadge", true, false) as Control
 	if selected_badge != null:
 		selected_badge.visible = selected
+	var selection_bar := button.find_child("SelectionIndicatorBar", true, false) as ColorRect
+	if selection_bar != null:
+		selection_bar.visible = selected
 	for state in ["normal", "hover", "pressed", "focus"]:
-		var style := TOKENS.make_panel_style(true, Color(rarity_color.r, rarity_color.g, rarity_color.b, 0.58))
+		var border_color := TOKENS.COLOR_REWARD if selected else (
+			TOKENS.COLOR_BORDER_STRONG if state in ["hover", "pressed", "focus"] else TOKENS.COLOR_BORDER
+		)
+		var style := TOKENS.make_panel_style(true, border_color)
 		style.shadow_size = 0
-		if recommended_fuse:
-			style.bg_color = TOKENS.COLOR_POSITIVE.darkened(0.76)
-		if holding:
-			style.bg_color = TOKENS.COLOR_ACCENT_ACTION.darkened(0.76)
-		elif selected:
-			style.bg_color = TOKENS.COLOR_ACCENT_SYSTEM.darkened(0.80)
-		elif state == "hover" or state == "focus":
-			style.bg_color = TOKENS.COLOR_SURFACE_INTERACTIVE
-		elif state == "pressed":
-			style.bg_color = TOKENS.COLOR_SURFACE_INTERACTIVE.darkened(0.08)
-		style.border_color = TOKENS.COLOR_ACCENT_ACTION if holding else (TOKENS.COLOR_ACCENT_SYSTEM if selected or state == "focus" else (TOKENS.COLOR_POSITIVE if recommended_fuse else Color(rarity_color.r, rarity_color.g, rarity_color.b, 0.62)))
-		style.set_border_width_all(TOKENS.BORDER_STRONG if holding or selected or recommended_fuse or state == "focus" else TOKENS.BORDER_THIN)
-		if selected and not holding:
-			style.shadow_color = Color(TOKENS.COLOR_ACCENT_SYSTEM.r, TOKENS.COLOR_ACCENT_SYSTEM.g, TOKENS.COLOR_ACCENT_SYSTEM.b, 0.28)
-			style.shadow_size = 4
+		style.bg_color = card_background
+		style.border_color = border_color
+		style.set_border_width_all(3 if selected else TOKENS.BORDER_THIN)
 		style.set_corner_radius_all(TOKENS.RADIUS_PANEL)
 		button.add_theme_stylebox_override(state, style)
+	_animate_reward_card(button, selected, holding, _hover_index >= 0 and options_box.get_child(_hover_index) == button)
+
+func _animate_reward_card(button: Button, selected: bool, _holding: bool, _hovered: bool) -> void:
+	if button == null or not is_instance_valid(button):
+		return
+	var was_selected := bool(button.get_meta(&"reward_was_selected", false))
+	button.set_meta(&"reward_was_selected", selected)
+	button.z_index = 1 if selected else 0
+	if selected == was_selected:
+		return
+	var previous_tween := button.get_meta(&"reward_motion_tween") as Tween if button.has_meta(&"reward_motion_tween") else null
+	if previous_tween != null and previous_tween.is_valid():
+		previous_tween.kill()
+	button.pivot_offset = button.size * 0.5
+	var tween := button.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if selected:
+		tween.tween_property(button, "scale", CARD_SELECTION_PULSE_SCALE, 0.07)
+		tween.tween_property(button, "scale", Vector2.ONE, 0.11).set_trans(Tween.TRANS_BACK)
+	else:
+		tween.tween_property(button, "scale", Vector2.ONE, 0.08)
+	button.set_meta(&"reward_motion_tween", tween)
 
 func _apply_action_button_style(button: Button, primary: bool) -> void:
-	var color := TOKENS.COLOR_ACCENT_ACTION if primary else TOKENS.COLOR_BORDER_STRONG
+	var color := TOKENS.COLOR_PRIMARY_ACTION if primary else TOKENS.COLOR_BORDER_STRONG
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 		var style := StyleBoxFlat.new()
 		var state_color := color
@@ -1141,10 +1889,21 @@ func _clear_tooltips_recursive(root: Control) -> void:
 			_clear_tooltips_recursive(child as Control)
 
 func _get_reward_action_color(reward: RewardInfo) -> Color:
+	return _get_reward_type_color(reward)
+
+func _get_reward_type_color(reward: RewardInfo) -> Color:
 	if reward == null:
 		return Color(0.54, 0.64, 0.72, 1.0)
 	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
 		return Color(0.36, 0.62, 0.95, 1.0)
+	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		return Color(1.0, 0.60, 0.30, 1.0)
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		return Color(0.31, 0.84, 0.91, 1.0)
+	if reward.reward_kind == RewardInfo.KIND_ECONOMY or reward.total_chip_value > 0 or reward.gold_value > 0:
+		return TOKENS.COLOR_REWARD
+	if reward.module_scene != null:
+		return Color(0.69, 0.42, 1.0, 1.0)
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var outcome := _get_weapon_obtain_prediction(reward.item_id)
 		var result_type := str(outcome.get("result", "not_applicable"))
@@ -1152,8 +1911,8 @@ func _get_reward_action_color(reward: RewardInfo) -> Color:
 			return Color(0.94, 0.68, 0.24, 1.0)
 		if result_type == "converted_to_gold":
 			return Color(0.93, 0.72, 0.22, 1.0)
-		return Color(0.42, 0.78, 0.48, 1.0)
-	return RARITY_UTIL.get_color(reward.get_rarity())
+		return TOKENS.COLOR_BORDER_STRONG
+	return Color(0.42, 0.78, 0.48, 1.0)
 
 func _is_recommended_fuse_reward(reward: RewardInfo) -> bool:
 	if reward == null:

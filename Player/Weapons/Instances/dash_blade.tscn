@@ -13,12 +13,12 @@ radius = 150.0
 size = Vector2(6, 24)
 
 [node name="DashBlade" instance=ExtResource("2_bkv2s")]
+base_trait_flags = 65
 script = ExtResource("1_s2x1k")
 turn_speed_degrees_per_second = 540.0
 delivery_type_flags = 2
 
 [node name="Modules" parent="."]
-weapon_traits = 65
 
 [node name="Sprite" parent="." index="1"]
 texture = ExtResource("3_wjcg8")

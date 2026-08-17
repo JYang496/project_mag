@@ -232,7 +232,7 @@ func _build_weapon_row(parent: Container, weapon: Weapon) -> void:
 	sockets.add_theme_constant_override("separation", 8)
 	right_actions.add_child(sockets)
 	var equipped_modules := weapon.get_equipped_modules()
-	for index in range(int(weapon.MAX_MODULE_NUMBER)):
+	for index in range(weapon.module_slot_capacity):
 		sockets.add_child(_make_socket(index, equipped_modules[index] if index < equipped_modules.size() else null))
 	var action := Button.new()
 	action.name = "EquipButton"
@@ -290,7 +290,7 @@ func _build_module_tooltip(module_instance: Module) -> String:
 	return "\n".join(lines)
 
 func _find_replacement(weapon: Weapon) -> Module:
-	if weapon.get_module_count() < int(weapon.MAX_MODULE_NUMBER):
+	if weapon.get_module_count() < weapon.module_slot_capacity:
 		return null
 	for equipped_module in weapon.get_equipped_modules():
 		var feedback := InventoryData.get_weapon_module_assignment_feedback(_module_instance, weapon, equipped_module, _allow_reward_transaction)
@@ -487,7 +487,7 @@ func _style_secondary_button(button: Button) -> void:
 	button.add_theme_color_override("font_color", TOKENS.COLOR_TEXT_PRIMARY)
 
 func _style_primary_button(button: Button) -> void:
-	var styles := TOKENS.make_button_style(Color(0.34, 0.20, 0.035, 1.0), TOKENS.COLOR_ACCENT_ACTION)
+	var styles := TOKENS.make_button_style(Color(0.34, 0.20, 0.035, 1.0), TOKENS.COLOR_PRIMARY_ACTION)
 	for state in styles:
 		button.add_theme_stylebox_override(state, styles[state])
 	button.add_theme_color_override("font_color", Color(1.0, 0.92, 0.72, 1.0))

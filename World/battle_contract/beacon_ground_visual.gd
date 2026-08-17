@@ -1,9 +1,10 @@
 extends Node2D
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const CONTAINMENT := &"containment"
 const PURPLE_RIFT := Color(0.55, 0.12, 0.72, 0.28)
 const CYAN_STABILIZE := Color(0.20, 0.88, 1.0, 0.82)
-const ORANGE_CONTEST := Color(1.0, 0.38, 0.12, 0.88)
+const WARNING_CONTEST := Color(PALETTE.WARNING, 0.88)
 
 @export var radius := 70.0
 @export var rectangle_size := Vector2(140.0, 140.0)
@@ -82,7 +83,7 @@ func _apply_visual_state() -> void:
 	ground_flow_speed = Vector2(0.07, -0.045) if player_inside else Vector2(0.025, -0.018)
 	if enemy_count > 0:
 		var contest_pulse := 0.62 + 0.20 * (0.5 + 0.5 * sin(_elapsed * 7.0))
-		ground_detail_color = Color(ORANGE_CONTEST.r, ORANGE_CONTEST.g, ORANGE_CONTEST.b, contest_pulse)
+		ground_detail_color = Color(WARNING_CONTEST.r, WARNING_CONTEST.g, WARNING_CONTEST.b, contest_pulse)
 		ground_flow_speed = Vector2(0.13, -0.10)
 
 func _build_data_projection_texture() -> Texture2D:

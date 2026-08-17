@@ -387,30 +387,14 @@ func predict_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
 	_ensure_weapon_inventory_runtime()
 	return _weapon_inventory_runtime.predict_auto_fuse_weapon_obtain(weapon_id)
 
-func _has_branch_options_for_fuse(weapon: Weapon, target_fuse: int) -> bool:
-	_ensure_weapon_inventory_runtime()
-	return _weapon_inventory_runtime.has_branch_options_for_fuse(weapon, target_fuse)
-
 func _find_equipped_weapon_by_id(weapon_id: String) -> Weapon:
 	_ensure_weapon_inventory_runtime()
 	return _weapon_inventory_runtime.find_equipped_weapon_by_id(weapon_id)
-
-func _calculate_duplicate_weapon_gold(weapon_id: String) -> int:
-	_ensure_weapon_inventory_runtime()
-	return _weapon_inventory_runtime.calculate_duplicate_weapon_gold(weapon_id)
 
 func _get_economy_config() -> EconomyConfig:
 	if GlobalVariables.economy_data:
 		return GlobalVariables.economy_data
 	return EconomyConfig.new()
-
-func _refresh_weapon_related_ui() -> void:
-	_ensure_weapon_inventory_runtime()
-	_weapon_inventory_runtime.refresh_weapon_related_ui()
-
-func _try_prompt_branch_selection(weapon: Weapon, target_fuse: int = 0) -> void:
-	_ensure_weapon_inventory_runtime()
-	_weapon_inventory_runtime.try_prompt_branch_selection(weapon, target_fuse)
 
 func swap_weapon_position(weapon1, weapon2) -> void:
 	_ensure_weapon_inventory_runtime()
@@ -595,10 +579,6 @@ func _on_player_weapon_list_changed() -> void:
 func _on_main_weapon_index_changed(_old_index: int, _new_index: int, _step: int) -> void:
 	_mark_weapon_roles_dirty()
 
-func _sync_tracked_weapon_exit_signals() -> void:
-	_ensure_weapon_inventory_runtime()
-	_weapon_inventory_runtime.sync_tracked_weapon_exit_signals()
-
 func _on_tracked_weapon_tree_exiting(instance_id: int) -> void:
 	if _weapon_inventory_runtime != null:
 		_weapon_inventory_runtime.on_tracked_weapon_tree_exiting(instance_id)
@@ -636,6 +616,10 @@ func _broadcast_weapon_passive_event(event_name: StringName, detail: Dictionary 
 	_ensure_weapon_passive_runtime()
 	_weapon_passive_runtime.broadcast_weapon_passive_event(event_name, detail)
 
+func broadcast_weapon_event(event: WeaponEvent) -> void:
+	_ensure_weapon_passive_runtime()
+	_weapon_passive_runtime.broadcast_weapon_event(event)
+
 func apply_global_weapon_passive_effect(source_id: StringName, stat_type: StringName, multiplier: float, duration_sec: float = 0.0, source_weapon: Weapon = null, include_source_weapon: bool = true) -> void:
 	_ensure_weapon_passive_runtime()
 	_weapon_passive_runtime.apply_global_weapon_passive_effect(source_id, stat_type, multiplier, duration_sec, source_weapon, include_source_weapon)
@@ -652,45 +636,9 @@ func _update_global_weapon_passives() -> void:
 	_ensure_weapon_passive_runtime()
 	_weapon_passive_runtime.update_global_weapon_passives()
 
-func _sync_global_weapon_passive_source(source_id: StringName) -> void:
-	_ensure_weapon_passive_runtime()
-	_weapon_passive_runtime.sync_global_weapon_passive_source(source_id)
-
-func _apply_global_weapon_passive_to_weapon(source_id: StringName, effect: Dictionary, weapon: Weapon) -> void:
-	_ensure_weapon_passive_runtime()
-	_weapon_passive_runtime.apply_global_weapon_passive_to_weapon(source_id, effect, weapon)
-
-func _remove_global_weapon_passive_source(source_id: StringName) -> void:
-	_ensure_weapon_passive_runtime()
-	_weapon_passive_runtime.remove_global_weapon_passive_source(source_id)
-
-func _remove_global_weapon_passive_from_weapon(source_id: StringName, stat_type: StringName, weapon: Weapon) -> void:
-	_ensure_weapon_passive_runtime()
-	_weapon_passive_runtime.remove_global_weapon_passive_from_weapon(source_id, stat_type, weapon)
-
-func _effect_source_weapon_equals(effect: Dictionary, weapon: Weapon) -> bool:
-	_ensure_weapon_passive_runtime()
-	return _weapon_passive_runtime.effect_source_weapon_equals(effect, weapon)
-
-func _effect_source_weapon_is_stale(effect: Dictionary) -> bool:
-	_ensure_weapon_passive_runtime()
-	return _weapon_passive_runtime.effect_source_weapon_is_stale(effect)
-
-func _resolve_weapon_runtime_damage_for_global_effect(weapon: Weapon) -> int:
-	_ensure_weapon_passive_runtime()
-	return _weapon_passive_runtime.resolve_weapon_runtime_damage_for_global_effect(weapon)
-
 func _debug_connect_weapon_passive_triggers() -> void:
 	_ensure_weapon_passive_runtime()
 	_weapon_passive_runtime.debug_connect_weapon_passive_triggers()
-
-func _debug_on_weapon_passive_triggered(event_name: StringName, detail: Dictionary, weapon: Weapon) -> void:
-	_ensure_weapon_passive_runtime()
-	_weapon_passive_runtime.debug_on_weapon_passive_triggered(event_name, detail, weapon)
-
-func _debug_is_weapon_passive_trigger_event(event_name: StringName) -> bool:
-	_ensure_weapon_passive_runtime()
-	return _weapon_passive_runtime.debug_is_weapon_passive_trigger_event(event_name)
 
 func _update_passive_time_tick(delta: float) -> void:
 	_ensure_weapon_passive_runtime()
@@ -767,6 +715,22 @@ func get_total_move_speed_mul() -> float:
 	if _status_modifier_system == null:
 		return get_heat_move_speed_multiplier()
 	return _status_modifier_system.get_total_move_speed_mul() * get_heat_move_speed_multiplier()
+
+func apply_reload_speed_mul(source_id: StringName, mul: float) -> void:
+	_ensure_status_modifier_system()
+	if _status_modifier_system != null:
+		_status_modifier_system.apply_reload_speed_mul(source_id, mul)
+
+func remove_reload_speed_mul(source_id: StringName) -> void:
+	_ensure_status_modifier_system()
+	if _status_modifier_system != null:
+		_status_modifier_system.remove_reload_speed_mul(source_id)
+
+func get_total_reload_speed_mul() -> float:
+	_ensure_status_modifier_system()
+	if _status_modifier_system == null:
+		return 1.0
+	return _status_modifier_system.get_total_reload_speed_mul()
 
 func apply_vision_mul(source_id: StringName, mul: float) -> void:
 	_ensure_status_modifier_system()
@@ -1978,34 +1942,6 @@ func _force_all_skills_ready() -> void:
 			continue
 		if child.has_method("force_cooldown_ready"):
 			child.call("force_cooldown_ready")
-
-
-func _attract_all_coins() -> void:
-	_ensure_loot_system()
-	if _loot_system != null:
-		_loot_system.attract_all_coins()
-
-
-func _run_battle_end_auto_collect() -> void:
-	_ensure_loot_system()
-	if _loot_system != null:
-		_loot_system.run_battle_end_auto_collect()
-
-
-func _expand_collect_ranges_for_auto_loot() -> void:
-	_ensure_loot_system()
-	if _loot_system != null:
-		_loot_system.expand_collect_ranges_for_auto_loot()
-
-
-func _restore_collect_ranges_after_auto_loot() -> void:
-	update_grab_radius()
-
-
-func _process_auto_loot_grab_overlaps() -> void:
-	_ensure_loot_system()
-	if _loot_system != null:
-		_loot_system.process_auto_loot_grab_overlaps()
 
 
 func _on_detect_area_area_entered(area: Area2D) -> void:

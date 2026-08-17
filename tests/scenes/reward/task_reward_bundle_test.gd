@@ -119,26 +119,46 @@ func _ready() -> void:
 	var first_card := panel.options_box.get_child(0) as Button
 	assert(get_viewport().gui_get_focus_owner() == first_card)
 	var selected_style := first_card.get_theme_stylebox("normal") as StyleBoxFlat
-	assert(selected_style.border_color.is_equal_approx(TOKENS.COLOR_ACCENT_SYSTEM))
+	assert(selected_style.border_color.is_equal_approx(TOKENS.COLOR_REWARD))
+	assert(selected_style.border_width_left == 3)
+	var first_selection_bar := first_card.find_child("SelectionIndicatorBar", true, false) as ColorRect
+	assert(first_selection_bar != null and first_selection_bar.visible)
+	assert(first_selection_bar.color.is_equal_approx(TOKENS.COLOR_REWARD))
+	assert(is_equal_approx(first_selection_bar.offset_bottom - first_selection_bar.offset_top, 4.0))
 	var hold_track := first_card.find_child("HoldProgress", true, false) as ProgressBar
 	var hold_fill := hold_track.get_theme_stylebox("fill") as StyleBoxFlat
 	assert(hold_fill.bg_color.is_equal_approx(TOKENS.COLOR_ACCENT_ACTION))
 	var second_card := panel.options_box.get_child(1) as Button
+	var unselected_style := second_card.get_theme_stylebox("normal") as StyleBoxFlat
+	assert(unselected_style.border_width_left == TOKENS.BORDER_THIN)
+	var second_selection_bar := second_card.find_child("SelectionIndicatorBar", true, false) as ColorRect
+	assert(second_selection_bar != null and not second_selection_bar.visible)
 	panel.call("_on_reward_button_pressed", 1, second_card)
 	assert(get_viewport().gui_get_focus_owner() == second_card)
+	assert(not first_selection_bar.visible and second_selection_bar.visible)
+	selected_style = second_card.get_theme_stylebox("normal") as StyleBoxFlat
+	assert(selected_style.border_color.is_equal_approx(TOKENS.COLOR_REWARD))
+	assert(selected_style.border_width_left == 3)
 	var space_press := InputEventKey.new()
 	space_press.keycode = KEY_SPACE
 	space_press.pressed = true
 	assert(bool(panel.call("_is_space_key_event", space_press)))
 	panel.call("_input", space_press)
 	assert(panel.get("_selected_index") == 1)
-	assert(get_viewport().gui_get_focus_owner() == second_card)
+	assert(panel.confirm_button.icon is AtlasTexture)
+	assert(panel.visible)
+	assert(get_viewport().gui_get_focus_owner() == panel.confirm_button)
 	var physical_space_release := InputEventKey.new()
 	physical_space_release.physical_keycode = KEY_SPACE
 	physical_space_release.pressed = false
 	assert(bool(panel.call("_is_space_key_event", physical_space_release)))
+	panel.call("_input", physical_space_release)
+	assert(panel.visible)
+	assert(get_viewport().gui_get_focus_owner() == panel.confirm_button)
 	assert(panel.get_node_or_null("Panel/VBox/SelectedDetail") == null)
-	assert(panel.confirm_button.text == LocalizationManager.tr_key("ui.reward.confirm", "Confirm Reward"))
+	panel.call("_input", space_press)
+	assert(not panel.visible)
+	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward], Callable(), Callable(), false))
 	panel.call("_begin_quick_select_hold", 0)
 	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS * 0.4)
 	var previous_progress := (panel.options_box.get_child(0) as Button).find_child("HoldProgress", true, false) as ProgressBar
@@ -157,6 +177,9 @@ func _ready() -> void:
 	assert(held_progress.visible and is_zero_approx(held_progress.value))
 	panel.call("_begin_quick_select_hold", 1)
 	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS)
+	assert(not panel.visible)
+	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward], Callable(), Callable(), false))
+	panel.confirm_button.emit_signal("pressed")
 	assert(not panel.visible)
 	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward], Callable(), Callable(), false))
 	for index in range(3):

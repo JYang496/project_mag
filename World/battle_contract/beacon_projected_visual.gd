@@ -1,5 +1,6 @@
 extends Control
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const OffscreenGeometry := preload("res://Visual/Oblique/offscreen_indicator_geometry.gd")
 const PROTOCOL_SQUARE_TEXTURE: Texture2D = preload("res://asset/images/effects/protocol/protocol_square_topdown.png")
 
@@ -90,7 +91,7 @@ func _draw_world_marker(center: Vector2) -> void:
 	var color := _primary_color()
 	var base_color := _containment_base_color() if visual_kind == CONTAINMENT else color
 	var progress_color := _containment_progress_color() if visual_kind == CONTAINMENT else color
-	var danger := Color(1.0, 0.25, 0.20, 0.95)
+	var danger := Color(PALETTE.WARNING, 0.95)
 	var pulse := 0.5 + 0.5 * sin(_elapsed * (5.6 if player_inside else 2.4))
 	var footprint := _projected_footprint_points()
 	if footprint.size() != 4:
@@ -314,7 +315,7 @@ func _primary_color() -> Color:
 			if completed:
 				return Color.WHITE.lerp(Color(0.20, 0.88, 1.0, 0.98), clampf(_completion_elapsed / 0.52, 0.0, 1.0))
 			if enemy_count > 0:
-				return Color(1.0, 0.38, 0.12, 0.98)
+				return Color(PALETTE.WARNING, 0.98)
 			if player_inside or progress > 0.001:
 				return Color(0.20, 0.88, 1.0, 0.98)
 			return Color(0.82, 0.24, 0.92, 0.98)

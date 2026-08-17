@@ -1,14 +1,19 @@
 extends RefCounted
 class_name WeaponSelectorReadabilityPresenter
 
-const PASSIVE_ICON_SCRIPT := preload("res://UI/scripts/weapon_passive_icon.gd")
 const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
+const INPUT_PROMPT_ATLAS := preload("res://asset/images/ui/input_prompts/kenney_pixel/input_prompts_tilemap.png")
+const CONTROL_HINT_Y := 86.0
+const CONTROL_HINT_HEIGHT := 22.0
+const CONTROL_HINT_HALF_WIDTH := 168.0
+const INPUT_PROMPT_TILE_SIZE := 16
+const INPUT_PROMPT_TILE_STRIDE := 17
 
 var _root: Control
 var _slots: Array[Control] = []
 var _empty_labels: Array[Label] = []
 var _passive_icons: Array[Control] = []
-var _control_hints: Array[Label] = []
+var _control_hints: Array[PanelContainer] = []
 
 func setup(root: Control, slots: Array[Control]) -> void:
 	_root = root
@@ -20,27 +25,33 @@ func setup(root: Control, slots: Array[Control]) -> void:
 	if _control_hints.is_empty():
 		_control_hints.append(_create_control_hint(
 			"SwitchHint",
-			Vector2(4.0, 86.0),
-			Vector2(158.0, 22.0),
-			Color(0.22, 0.62, 0.72, 0.96)
+			Vector2(0.0, CONTROL_HINT_Y),
+			Vector2(CONTROL_HINT_HALF_WIDTH, CONTROL_HINT_HEIGHT),
+			Color(0.22, 0.62, 0.72, 0.96),
+			false
 		))
 		_control_hints.append(_create_control_hint(
 			"ReloadHint",
-			Vector2(170.0, 86.0),
-			Vector2(158.0, 22.0),
-			Color(0.92, 0.62, 0.18, 0.96)
+			Vector2(CONTROL_HINT_HALF_WIDTH, CONTROL_HINT_Y),
+			Vector2(CONTROL_HINT_HALF_WIDTH, CONTROL_HINT_HEIGHT),
+			Color(0.92, 0.62, 0.18, 0.96),
+			true
 		))
 	refresh_copy()
 
 func refresh_copy() -> void:
 	if _control_hints.size() >= 2:
-		_control_hints[0].text = LocalizationManager.tr_key(
-			"ui.weapon_hud.switch_hint",
-			"[Q / E]  SWITCH"
+		_set_control_hint(
+			_control_hints[0],
+			[Vector2i(17, 2), Vector2i(19, 2)],
+			LocalizationManager.tr_key("ui.controls.switch_weapon", "Switch Weapon"),
+			true
 		)
-		_control_hints[1].text = LocalizationManager.tr_key(
-			"ui.weapon_hud.reload_hint",
-			"[R]  RELOAD"
+		_set_control_hint(
+			_control_hints[1],
+			[Vector2i(20, 2)],
+			LocalizationManager.tr_key("ui.controls.reload", "Reload"),
+			false
 		)
 
 func update_slot(slot_index: int, weapon: Variant, is_mainhand: bool) -> void:
@@ -64,7 +75,7 @@ func update_slot(slot_index: int, weapon: Variant, is_mainhand: bool) -> void:
 				"types": model.taxonomy_text(),
 				"mechanic": model.first_description_sentence(),
 			},
-			"%s\n%s\n%s\nMAIN WEAPON · R: RELOAD · Q/E: SWITCH" % [model.display_name, model.taxonomy_text(), model.first_description_sentence()]
+			"%s\n%s\n%s\nMAIN WEAPON" % [model.display_name, model.taxonomy_text(), model.first_description_sentence()]
 		)
 	else:
 		var model = WEAPON_DISPLAY_BUILDER.build_from_instance(weapon)
@@ -75,15 +86,13 @@ func update_slot(slot_index: int, weapon: Variant, is_mainhand: bool) -> void:
 				"types": model.taxonomy_text(),
 				"mechanic": model.first_description_sentence(),
 			},
-			"%s\n%s\n%s\nRESERVE WEAPON · Q/E: SWITCH" % [model.display_name, model.taxonomy_text(), model.first_description_sentence()]
+			"%s\n%s\n%s\nRESERVE WEAPON" % [model.display_name, model.taxonomy_text(), model.first_description_sentence()]
 		)
 
-func set_passive_visible(slot_index: int, visible_value: bool) -> void:
-	if slot_index < 0 or slot_index >= _passive_icons.size():
-		return
-	var passive_icon := _passive_icons[slot_index]
-	if passive_icon != null:
-		passive_icon.visible = visible_value
+func set_passive_visible(_slot_index: int, _visible_value: bool) -> void:
+	# Passive state is communicated by charge beans and cycle progress. A generic
+	# diamond icon duplicated that information without identifying the passive.
+	pass
 
 func get_passive_icon(slot_index: int) -> Control:
 	if slot_index < 0 or slot_index >= _passive_icons.size():
@@ -106,53 +115,97 @@ func _ensure_slot_decorations(slot_index: int) -> void:
 		empty_label.text = "—"
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		empty_label.add_theme_font_size_override("font_size", 15)
+		empty_label.add_theme_font_size_override("font_size", 12)
 		empty_label.add_theme_color_override(
 			"font_color",
 			Color(0.46, 0.58, 0.64, 0.72)
 		)
-		empty_label.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		empty_label.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		slot.add_child(empty_label)
 	_empty_labels[slot_index] = empty_label
 
 	var passive_icon := slot.get_node_or_null("PassiveIcon") as Control
-	if passive_icon == null:
-		passive_icon = PASSIVE_ICON_SCRIPT.new() as Control
-		passive_icon.name = "PassiveIcon"
-		passive_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		passive_icon.position = Vector2(1.0, 73.0)
-		passive_icon.size = Vector2(13.0, 13.0)
-		passive_icon.z_index = 2
-		slot.add_child(passive_icon)
-	_passive_icons[slot_index] = passive_icon
+	if passive_icon != null:
+		passive_icon.queue_free()
+	_passive_icons[slot_index] = null
 
 func _create_control_hint(
 	node_name: String,
 	hint_position: Vector2,
 	hint_size: Vector2,
-	accent: Color
-) -> Label:
-	var existing := _root.get_node_or_null(node_name) as Label
+	accent: Color,
+	leading_divider: bool
+) -> PanelContainer:
+	var existing := _root.get_node_or_null(node_name) as PanelContainer
 	if existing != null:
 		return existing
-	var hint := Label.new()
+	var hint := PanelContainer.new()
 	hint.name = node_name
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hint.position = hint_position
 	hint.size = hint_size
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 12)
-	hint.add_theme_constant_override("outline_size", 1)
-	hint.add_theme_color_override("font_color", Color(0.88, 0.95, 0.96, 1.0))
-	hint.add_theme_color_override("font_outline_color", Color(0.01, 0.02, 0.03, 1.0))
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.025, 0.055, 0.075, 0.9)
 	style.border_color = accent
+	style.border_width_left = 1 if leading_divider else 0
 	style.border_width_bottom = 2
 	style.content_margin_left = 4.0
 	style.content_margin_right = 4.0
 	hint.add_theme_stylebox_override("normal", style)
-	hint.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	hint.add_theme_stylebox_override("panel", style)
+	hint.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var content := HBoxContainer.new()
+	content.name = "Content"
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 4)
+	hint.add_child(content)
 	_root.add_child(hint)
 	return hint
+
+func _set_control_hint(
+	hint: PanelContainer,
+	icon_coords: Array[Vector2i],
+	action_text: String,
+	show_separator: bool
+) -> void:
+	var content := hint.get_node_or_null("Content") as HBoxContainer
+	if content == null:
+		return
+	for child in content.get_children():
+		content.remove_child(child)
+		child.queue_free()
+	for index in range(icon_coords.size()):
+		if index > 0 and show_separator:
+			content.add_child(_make_hint_label("/", Color(0.68, 0.79, 0.82, 1.0)))
+		content.add_child(_make_prompt_icon(icon_coords[index]))
+	content.add_child(_make_hint_label(action_text, Color(0.88, 0.95, 0.96, 1.0)))
+
+func _make_prompt_icon(coord: Vector2i) -> TextureRect:
+	var texture := AtlasTexture.new()
+	texture.atlas = INPUT_PROMPT_ATLAS
+	texture.region = Rect2(
+		coord.x * INPUT_PROMPT_TILE_STRIDE,
+		coord.y * INPUT_PROMPT_TILE_STRIDE,
+		INPUT_PROMPT_TILE_SIZE,
+		INPUT_PROMPT_TILE_SIZE
+	)
+	var icon := TextureRect.new()
+	icon.texture = texture
+	icon.custom_minimum_size = Vector2(INPUT_PROMPT_TILE_SIZE, INPUT_PROMPT_TILE_SIZE)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return icon
+
+func _make_hint_label(text: String, color: Color) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_constant_override("outline_size", 1)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_outline_color", Color(0.01, 0.02, 0.03, 1.0))
+	return label

@@ -17,7 +17,7 @@ func _run() -> void:
 	InventoryData.reset_runtime_state()
 	DataHandler.prepare_world_data()
 	PhaseManager.reset_runtime_state()
-	PhaseManager.phase = PhaseManager.PREPARE
+	PhaseManager.phase = PhaseManager.SETTLEMENT
 	PlayerData.player = _PlayerStub.new()
 	add_child(PlayerData.player)
 
@@ -100,6 +100,9 @@ func _run() -> void:
 		await get_tree().process_frame
 	if not InventoryData.pending_transactions.is_empty():
 		await _fail("module assignment transactions leaked after batch completion")
+		return
+	if PhaseManager.current_state() != PhaseManager.PROTOCOL_SELECTION:
+		await _fail("completed module reward installation did not advance settlement")
 		return
 
 	print("ModuleRewardInstallQueueTest: PASS")

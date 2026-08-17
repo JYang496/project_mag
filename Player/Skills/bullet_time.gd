@@ -9,6 +9,7 @@ extends Skills
 var saved_scale: float = 1.0
 var saved_speed: float = 0.0
 var _active := false
+var _action_context: SkillActionContext
 
 func on_skill_ready() -> void:
 	if cooldown <= 0.0:
@@ -17,15 +18,18 @@ func on_skill_ready() -> void:
 func can_activate() -> bool:
 	return not _active
 
-func activate_skill() -> void:
-	if _player == null or not is_instance_valid(_player):
-		return
+func activate_skill(context: SkillActionContext) -> bool:
 	_active = true
+	_action_context = context
 	saved_scale = Engine.time_scale
 	Engine.time_scale = time_scale
 	saved_speed = PlayerData.player_speed * speed_bonus_multiplier
 	PlayerData.player_bonus_speed += saved_speed
 	timer.start()
+	return true
+
+func get_skill_tags() -> Array[StringName]:
+	return [&"support", &"duration"]
 
 func _on_timer_timeout() -> void:
 	if not _active:
@@ -34,6 +38,8 @@ func _on_timer_timeout() -> void:
 	PlayerData.player_bonus_speed -= saved_speed
 	saved_speed = 0.0
 	_active = false
+	finish_skill_action(_action_context, _player.global_position)
+	_action_context = null
 
 func _exit_tree() -> void:
 	if not _active:

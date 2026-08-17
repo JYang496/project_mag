@@ -45,7 +45,7 @@ theme_override_font_sizes/font_size = 22
 
 [node name="Hint" type="Label" parent="Margin/Root"]
 layout_mode = 2
-text = "Weapon · Upgrade · Module · Cell Effect · Task Module · Economy"
+text = "Weapon module tags · element-colored branches · details overlay · all reward categories"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.55, 0.68, 0.74, 1)
 

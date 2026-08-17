@@ -255,7 +255,7 @@ func get_passive_status() -> Dictionary:
 		"active_stack_count": stack_count,
 	})
 
-func _refresh_offhand_skill_on_reload() -> void:
+func _refresh_passive_on_reload() -> void:
 	pass
 
 func _update_heat_prepared_firing_progress(delta: float) -> void:

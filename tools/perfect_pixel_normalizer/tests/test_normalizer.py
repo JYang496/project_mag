@@ -1,5 +1,4 @@
 import contextlib
-import hashlib
 import io
 import json
 import tempfile
@@ -90,10 +89,7 @@ class PresetAndProtectionTests(unittest.TestCase):
                 destination,
                 NormalizeOptions(preset="enemy_standard", protection="copy"),
             )
-            self.assertEqual(
-                hashlib.sha256(source.read_bytes()).hexdigest(),
-                hashlib.sha256(destination.read_bytes()).hexdigest(),
-            )
+            self.assertEqual(source.read_bytes(), destination.read_bytes())
 
     def test_modern_ui_is_rejected(self) -> None:
         with self.assertRaises(ProhibitedPresetError):
@@ -269,8 +265,7 @@ class ReportAndCliTests(unittest.TestCase):
             self.assertFalse(payload["sequence_locked"])
             self.assertEqual(payload["summary"]["file_count"], 1)
             record = payload["files"][0]
-            self.assertEqual(len(record["source_sha256"]), 64)
-            self.assertEqual(len(record["output_sha256"]), 64)
+            self.assertFalse(any("digest" in key.lower() for key in record))
             self.assertIn("quality", record)
             self.assertTrue(record["grid"]["channels_share_grid"])
             self.assertGreater(len(record["grid"]["x_coords"]), 1)

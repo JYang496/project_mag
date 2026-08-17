@@ -6,6 +6,7 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/special_pulse_feedback.tres" id="4_feedback"]
 
 [node name="PlasmaLance" unique_id=1138617759 instance=ExtResource("1_ranger")]
+base_trait_flags = 18
 script = ExtResource("2_script")
 turn_speed_degrees_per_second = 300.0
 heat_accumulation = 10.0
@@ -15,7 +16,6 @@ plasma_heat_damage_bonus_at_full_heat = 0.75
 fire_feedback_profile = ExtResource("4_feedback")
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 18
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("3_icon")

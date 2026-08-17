@@ -22,23 +22,20 @@ var ITEM_NAME := "Frost Trail"
 @export var trail_line_color: Color = Color(PALETTE.PLAYER_PRIMARY, 0.48)
 @export var trail_line_width: float = 1.5
 
-var _plugin_registered: bool = false
 var _trail_effect: Node
 
 func _enter_tree() -> void:
 	super._enter_tree()
 	_ensure_trail_effect()
-	_register_plugin()
 
 func _ready() -> void:
 	_ensure_trail_effect()
-	_register_plugin()
 
 func _exit_tree() -> void:
-	_unregister_plugin()
 	if _trail_effect != null and is_instance_valid(_trail_effect):
 		_trail_effect.queue_free()
 	_trail_effect = null
+	super._exit_tree()
 
 func _physics_process(delta: float) -> void:
 	_ensure_trail_effect()
@@ -74,25 +71,6 @@ func get_effect_descriptions() -> PackedStringArray:
 			"Trail duration %.1fs" % _get_duration()
 		),
 	]))
-
-func _register_plugin() -> void:
-	if _plugin_registered:
-		return
-	if weapon == null:
-		weapon = _resolve_weapon()
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	if not weapon.has_method("register_projectile_spawn_plugin"):
-		return
-	weapon.call("register_projectile_spawn_plugin", self)
-	_plugin_registered = true
-
-func _unregister_plugin() -> void:
-	if not _plugin_registered:
-		return
-	if weapon != null and is_instance_valid(weapon) and weapon.has_method("unregister_projectile_spawn_plugin"):
-		weapon.call("unregister_projectile_spawn_plugin", self)
-	_plugin_registered = false
 
 func _ensure_trail_effect() -> void:
 	if _trail_effect != null and is_instance_valid(_trail_effect):

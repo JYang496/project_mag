@@ -36,6 +36,8 @@ func ensure_view() -> bool:
 
 func open_tab(tab: StringName) -> void:
 	active_tab = &"module" if tab == &"module" else &"weapon"
+	if owner_ui != null and owner_ui.has_method("set_management_item_mode"):
+		owner_ui.call("set_management_item_mode", active_tab)
 	if not ensure_view():
 		return
 	module_management_view.apply_tab(active_tab)
@@ -60,6 +62,8 @@ func on_temporary_module_selected(module_instance: Module) -> void:
 	if not ensure_view():
 		return
 	active_tab = &"module"
+	if owner_ui != null and owner_ui.has_method("set_management_item_mode"):
+		owner_ui.call("set_management_item_mode", active_tab)
 	module_management_view.select_module(module_instance, null)
 	selected_temporary_module = module_management_view.get_selected_module()
 	_sync_public_fields_to_owner()

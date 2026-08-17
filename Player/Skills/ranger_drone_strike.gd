@@ -25,6 +25,7 @@ var _laser_node: Line2D
 var _laser_show_left_sec: float = 0.0
 var _strike_accum: float = 0.0
 var _current_target: Node
+var _action_context: SkillActionContext
 
 func on_skill_ready() -> void:
 	cooldown = maxf(base_cooldown, 0.1)
@@ -32,14 +33,17 @@ func on_skill_ready() -> void:
 func can_activate() -> bool:
 	return not _is_active
 
-func activate_skill() -> void:
-	if _player == null or not is_instance_valid(_player):
-		return
+func activate_skill(context: SkillActionContext) -> bool:
 	_is_active = true
+	_action_context = context
 	_active_left_sec = maxf(active_duration_sec, 0.1)
 	_strike_accum = 0.0
 	_current_target = _pick_nearest_enemy()
 	_spawn_drones()
+	return true
+
+func get_skill_tags() -> Array[StringName]:
+	return [&"summon", &"beam", &"duration"]
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
@@ -156,11 +160,14 @@ func _apply_laser_damage(beam_start: Vector2, beam_end: Vector2) -> void:
 		return
 	var beam_half_width := maxf(laser_width, 1.0) * 0.5
 	var damage_data := DamageManager.build_damage_data(
-		_player,
+		_action_context.linked_weapon,
 		_get_hit_damage(),
 		damage_type,
-		{"amount": 0, "angle": Vector2.ZERO}
+		{"amount": 0, "angle": Vector2.ZERO},
+		DamageData.SOURCE_PLAYER_WEAPON,
+		DamageDeliveryType.BEAM
 	)
+	damage_data.action_context = _action_context
 	var tree := get_tree()
 	if tree == null:
 		return
@@ -226,8 +233,11 @@ func _get_hit_damage() -> int:
 	return max(1, base_hit_damage + bonus_steps * max(0, level_bonus_per_three_levels))
 
 func _end_skill() -> void:
+	if _is_active and _action_context != null and _player != null and is_instance_valid(_player):
+		finish_skill_action(_action_context, _player.global_position)
 	_is_active = false
 	_active_left_sec = 0.0
+	_action_context = null
 	_clear_drones()
 
 func _clear_drones() -> void:

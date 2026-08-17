@@ -327,7 +327,7 @@ func instantiate_weapon_from_save_payload(payload: Dictionary) -> Weapon:
 	if weapon == null:
 		push_warning("Cannot instantiate saved weapon id=%s." % weapon_id)
 		return null
-	weapon.fuse = clampi(int(payload.get("fuse", 1)), 1, int(weapon.FINAL_MAX_FUSE))
+	weapon.fuse = clampi(int(payload.get("fuse", 1)), 1, Weapon.MAX_FUSE_LEVEL)
 	weapon.level = int(payload.get("level", 1))
 	return weapon
 
@@ -368,6 +368,7 @@ func _restore_weapon_modules_from_payload(weapon: Weapon, module_payloads: Array
 			continue
 		module_instance.set_module_level(int(module_payload.get("level", 1)))
 		weapon.modules.add_child(module_instance)
+		module_instance.bind_to_weapon(weapon)
 
 func _register_weapon_resource(
 	resource: Resource,

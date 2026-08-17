@@ -11,11 +11,11 @@ const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 @export var aoe_interval_min: float = 0.9
 @export var aoe_interval_max: float = 1.6
 @export var aoe_impact_duration: float = 0.2
-@export var warning_fill_color: Color = Color(PALETTE.SPEED, 0.16)
-@export var warning_outline_color: Color = Color(PALETTE.SPEED, 0.88)
-@export var warning_wave_color: Color = Color(PALETTE.PLAYER_CORE, 0.86)
+@export var warning_fill_color: Color = Color(PALETTE.WARNING, 0.16)
+@export var warning_outline_color: Color = Color(PALETTE.WARNING, 0.88)
+@export var warning_wave_color: Color = Color(PALETTE.WARNING, 0.86)
 @export var impact_fill_color: Color = Color(PALETTE.FIRE, 0.28)
-@export var impact_outline_color: Color = Color(PALETTE.SPEED, 0.98)
+@export var impact_outline_color: Color = Color(PALETTE.FIRE_CORE, 0.98)
 @export var warning_z_index: int = 8
 
 var _active := false

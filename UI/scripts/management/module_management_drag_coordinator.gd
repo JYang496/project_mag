@@ -172,7 +172,7 @@ func can_drag_module_install_on_weapon(module_instance: Module, weapon: Weapon) 
 		var replace_feedback := InventoryData.get_weapon_module_assignment_feedback(module_instance, weapon, existing, false)
 		if bool(replace_feedback.get("ok", false)):
 			return true
-	if installed.size() < int(weapon.MAX_MODULE_NUMBER):
+	if installed.size() < weapon.module_slot_capacity:
 		var empty_feedback := InventoryData.get_weapon_module_assignment_feedback(module_instance, weapon, null, false)
 		return bool(empty_feedback.get("ok", false))
 	return false

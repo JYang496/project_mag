@@ -241,13 +241,7 @@ func _validate_weapon_scenes() -> void:
 		var instance := packed.instantiate()
 		_expect(instance is Weapon, "%s root must inherit Weapon" % file_name)
 		if instance is Weapon:
-			var weapon := instance as Weapon
-			_expect(not weapon.has_weapon_active_skill(), "%s must not implement a weapon active skill" % file_name)
-			var active_result := weapon.request_weapon_active()
-			_expect(
-				not bool(active_result.get("ok", true)) and str(active_result.get("reason", "")) == "unsupported",
-				"%s must inherit the reserved unsupported weapon-active interface" % file_name
-			)
+			_expect((instance as Weapon).is_passive_ready(), "%s passive charge should initialize ready" % file_name)
 		instance.free()
 
 
@@ -639,9 +633,11 @@ func _validate_global_energy_hud() -> void:
 	_expect(meter != null and meter.visible, "the Heat-HUD-style global energy meter must appear while an energy weapon is equipped")
 	if meter != null:
 		_expect(is_equal_approx(float(meter.call("get_ratio")), 0.42), "the global energy HUD must display the player-wide pool ratio")
+		_expect(StringName(str(meter.get("_state"))) == &"normal", "the global energy HUD must remain static while charging")
 		energy_player.energy = 100.0
 		presenter.call("_sync_global_weapon_energy_meter")
 		_expect(str(meter.get("_short_text")) == "READY", "the global energy HUD must clearly flag that the next energy attack will release")
+		_expect(StringName(str(meter.get("_state"))) == &"normal", "the ready global energy HUD must not pulse")
 	PlayerData.player = original_player
 	hud_root.queue_free()
 	energy_player.free()

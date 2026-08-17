@@ -32,6 +32,9 @@ func setup_default_active_skill() -> void:
 func try_cast_player_active_skill() -> void:
 	if _player == null or not is_instance_valid(_player):
 		return
+	if PhaseManager != null and PhaseManager.has_method("current_state"):
+		if str(PhaseManager.current_state()) != str(PhaseManager.BATTLE):
+			return
 	_player.player_active_skill.emit()
 	_player.active_skill.emit()
 	_last_player_skill_fail_reason = ""

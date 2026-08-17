@@ -4,16 +4,6 @@
   "catalog_note": "Active catalog contains durable runtime contracts. Release-specific visual and implementation acceptance assets are archived under tests/archive/one_time_acceptance_20260728.",
   "tests": [
     {
-      "id": "weapon.build_synergy_semantics",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/build_synergy_semantics_test.tscn",
-      "domain": "weapon",
-      "dependency_domains": ["data", "combat", "ui"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
       "id": "world.new_game_direct_battle",
       "entry_type": "scene",
       "path": "res://tests/scenes/world/new_game_direct_battle_test.tscn",
@@ -34,26 +24,6 @@
       "timeout_seconds": 20
     },
     {
-      "id": "presentation.board_platform_support",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/presentation/board_platform_support_test.tscn",
-      "domain": "presentation",
-      "dependency_domains": ["world", "cell"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "presentation.arena_ground",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/presentation/arena_ground_style_test.tscn",
-      "domain": "presentation",
-      "dependency_domains": ["world", "cell"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
       "id": "presentation.contract_ground",
       "entry_type": "scene",
       "path": "res://tests/scenes/presentation/contract_ground_visual_test.tscn",
@@ -62,26 +32,6 @@
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 20
-    },
-    {
-      "id": "ui.localized_release_title",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/localized_release_title_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["data"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "ui.start_menu_layout",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/start_menu_layout_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["world", "data"],
-      "parallel_safe": false,
-      "writes_user_data": true,
-      "timeout_seconds": 30
     },
     {
       "id": "ui.audio_settings",
@@ -94,76 +44,6 @@
       "timeout_seconds": 20
     },
     {
-      "id": "ui.controls_hint_adaptive",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/controls_hint_adaptive_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["world", "player"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 45
-    },
-    {
-      "id": "ui.layout_policy",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/ui_layout_policy_test.tscn",
-      "domain": "ui",
-      "dependency_domains": [],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "ui.skill_energy_status",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/skill_energy_status_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["player"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "ui.player_health_feedback",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/player_health_feedback_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["player"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "ui.weapon_selector_status",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/weapon_selector_status_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["weapon"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 45
-    },
-    {
-      "id": "ui.weapon_display_model",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/weapon_display_model_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["weapon", "reward"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 45
-    },
-    {
-      "id": "ui.reward_card_model",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/reward_card_model_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["reward"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
       "id": "ui.damage_label_feedback",
       "entry_type": "scene",
       "path": "res://tests/scenes/ui/damage_label_feedback_test.tscn",
@@ -172,36 +52,6 @@
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 45
-    },
-    {
-      "id": "player.floating_status_hint_cleanup",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/player/floating_status_hint_cleanup_test.tscn",
-      "domain": "player",
-      "dependency_domains": ["ui", "world"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
-      "id": "player.level_cap",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/player/player_level_cap_test.tscn",
-      "domain": "player",
-      "dependency_domains": ["world"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
-      "id": "player.ranger_visual_resources",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/player/ranger_visual_resource_test.tscn",
-      "domain": "player",
-      "dependency_domains": ["presentation"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
     },
     {
       "id": "reward.fuse_branch_selection",
@@ -274,26 +124,6 @@
       "timeout_seconds": 15
     },
     {
-      "id": "world.rest_area_shop_visibility",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/world/rest_area_shop_visibility_test.tscn",
-      "domain": "world",
-      "dependency_domains": ["ui"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
-      "id": "weapon.turn_speed",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/weapon_turn_speed_test.tscn",
-      "domain": "weapon",
-      "dependency_domains": ["player", "combat"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
       "id": "weapon.runtime_chain",
       "entry_type": "scene",
       "path": "res://tests/scenes/weapon/weapon_runtime_chain_test.tscn",
@@ -304,24 +134,14 @@
       "timeout_seconds": 20
     },
     {
-      "id": "weapon.muzzle_vfx",
+      "id": "weapon.module_progression_catalog",
       "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/muzzle_vfx_test.tscn",
+      "path": "res://tests/scenes/weapon/module_progression_catalog_test.tscn",
       "domain": "weapon",
-      "dependency_domains": ["combat", "world", "player"],
+      "dependency_domains": ["reward", "data", "world", "ui"],
       "parallel_safe": true,
       "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
-      "id": "weapon.flamethrower_range_contract",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/flamethrower_range_contract_test.tscn",
-      "domain": "weapon",
-      "dependency_domains": ["player", "combat", "world"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
+      "timeout_seconds": 30
     },
     {
       "id": "weapon.cone_spray_trail",
@@ -334,71 +154,11 @@
       "timeout_seconds": 20
     },
     {
-      "id": "weapon.bipolar_heat",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/bipolar_heat_test.tscn",
-      "domain": "weapon",
-      "dependency_domains": ["player", "combat", "ui"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "weapon.default_weapon_prewarm",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/default_weapon_prewarm_test.tscn",
-      "domain": "weapon",
-      "dependency_domains": ["player"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "weapon.projectile_range_configuration",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/projectile_range_configuration_test.tscn",
-      "domain": "weapon",
-      "dependency_domains": ["combat"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
-      "id": "weapon.projectile_collision_arming",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/projectile_collision_arming_test.tscn",
-      "domain": "weapon",
-      "dependency_domains": ["combat", "world"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
       "id": "weapon.machine_gun_shield_projectile_block",
       "entry_type": "scene",
       "path": "res://tests/scenes/weapon/machine_gun_shield_projectile_block_test.tscn",
       "domain": "weapon",
       "dependency_domains": ["enemy", "combat", "player"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
-      "id": "weapon.chainsaw_projectile_lifecycle",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/chainsaw_projectile_lifecycle_test.tscn",
-      "domain": "weapon",
-      "dependency_domains": ["combat", "world"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
-      "id": "weapon.pistol_auto_fire",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/pistol_auto_fire_test.tscn",
-      "domain": "weapon",
-      "dependency_domains": ["enemy", "combat", "world"],
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 15
@@ -424,36 +184,6 @@
       "timeout_seconds": 20
     },
     {
-      "id": "enemy.support_relationship_visual",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/enemy/support_relationship_visual_test.tscn",
-      "domain": "enemy",
-      "dependency_domains": ["world", "combat"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "enemy.tar_slow_zone_ground_visual",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/enemy/tar_slow_zone_ground_visual_test.tscn",
-      "domain": "enemy",
-      "dependency_domains": ["world", "combat", "player"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "enemy.mortar_impact_visual",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/enemy/mortar_impact_visual_test.tscn",
-      "domain": "enemy",
-      "dependency_domains": ["world", "combat", "player"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
       "id": "enemy.body_collision_policy",
       "entry_type": "scene",
       "path": "res://tests/scenes/enemy/enemy_body_collision_policy_test.tscn",
@@ -469,26 +199,6 @@
       "path": "res://tests/scenes/enemy/enemy_registry_spatial_hash_test.tscn",
       "domain": "enemy",
       "dependency_domains": ["world", "spawn", "combat"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "enemy.event_driven_registry",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/enemy/enemy_snapshot_runtime_test.tscn",
-      "domain": "enemy",
-      "dependency_domains": ["world", "spawn"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "enemy.board_constraint_cache",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/enemy/enemy_board_constraint_cache_test.tscn",
-      "domain": "enemy",
-      "dependency_domains": ["world", "spawn"],
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 20
@@ -512,46 +222,6 @@
       "parallel_safe": true,
       "writes_user_data": false,
       "timeout_seconds": 20
-    },
-    {
-      "id": "combat.area_effect_tracking",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/combat/area_effect_tracking_test.tscn",
-      "domain": "combat",
-      "dependency_domains": [],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
-      "id": "combat.hit_vfx",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/combat/combat_hit_vfx_test.tscn",
-      "domain": "combat",
-      "dependency_domains": ["enemy", "world"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
-      "id": "combat.battle_contract_beacon_teardown",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/combat/battle_contract_beacon_teardown_test.tscn",
-      "domain": "combat",
-      "dependency_domains": ["world", "spawn"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
-      "id": "combat.contract_runtime_matrix",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/combat/contract_runtime_matrix_test.tscn",
-      "domain": "combat",
-      "dependency_domains": ["world", "spawn"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 30
     },
     {
       "id": "world.battle_loop_smoke",
@@ -594,16 +264,6 @@
       "timeout_seconds": 20
     },
     {
-      "id": "reward.weapon_reward_slot",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/reward/weapon_reward_slot_test.tscn",
-      "domain": "reward",
-      "dependency_domains": ["player", "weapon"],
-      "parallel_safe": false,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
       "id": "reward.module_install_queue",
       "entry_type": "scene",
       "path": "res://tests/scenes/reward/module_reward_install_queue_test.tscn",
@@ -629,16 +289,6 @@
       "path": "res://tests/scenes/world/rest_area_upgrade_hint_test.tscn",
       "domain": "world",
       "dependency_domains": ["ui", "player", "weapon"],
-      "parallel_safe": false,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "enemy.wheel_cart_contact_configuration",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/enemy/wheel_cart_contact_configuration_test.tscn",
-      "domain": "enemy",
-      "dependency_domains": ["combat", "player", "world"],
       "parallel_safe": false,
       "writes_user_data": false,
       "timeout_seconds": 20
@@ -674,36 +324,6 @@
       "timeout_seconds": 30
     },
     {
-      "id": "ui.module_localization",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/module_localization_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["weapon", "data"],
-      "parallel_safe": false,
-      "writes_user_data": false,
-      "timeout_seconds": 45
-    },
-    {
-      "id": "enemy.bomber_fuse_warning",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/enemy/bomber_fuse_warning_test.tscn",
-      "domain": "enemy",
-      "dependency_domains": ["combat", "player", "world"],
-      "parallel_safe": false,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "ui.battle_contract_hud_visibility",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/battle_contract_hud_visibility_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["combat", "world"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
       "id": "ui.battle_contract_selection_layout",
       "entry_type": "scene",
       "path": "res://tests/scenes/ui/battle_contract_selection_layout_test.tscn",
@@ -714,26 +334,6 @@
       "timeout_seconds": 20
     },
     {
-      "id": "ui.toast_layout",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/toast_layout_test.tscn",
-      "domain": "ui",
-      "dependency_domains": [],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "ui.game_over_flow",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/ui/game_over_flow_test.tscn",
-      "domain": "ui",
-      "dependency_domains": ["player", "world"],
-      "parallel_safe": false,
-      "writes_user_data": true,
-      "timeout_seconds": 30
-    },
-    {
       "id": "reward.weapon_fusion_card_semantics",
       "entry_type": "scene",
       "path": "res://tests/scenes/reward/weapon_fusion_card_semantics_test.tscn",
@@ -742,46 +342,6 @@
       "parallel_safe": false,
       "writes_user_data": false,
       "timeout_seconds": 20
-    },
-    {
-      "id": "weapon.chainsaw_spin_animation",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/weapon/chainsaw_spin_animation_test.tscn",
-      "domain": "weapon",
-      "dependency_domains": ["combat"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
-      "id": "presentation.elite_visual",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/presentation/elite_visual_test.tscn",
-      "domain": "presentation",
-      "dependency_domains": ["enemy", "combat", "world"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "presentation.boss_visual",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/presentation/boss_visual_test.tscn",
-      "domain": "presentation",
-      "dependency_domains": ["enemy", "combat", "ui", "world"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "presentation.combat_vfx",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/presentation/combat_vfx_presentation_test.tscn",
-      "domain": "presentation",
-      "dependency_domains": ["combat", "weapon"],
-	  "parallel_safe": true,
-	  "writes_user_data": false,
-      "timeout_seconds": 25
     },
     {
       "id": "presentation.enemy_hierarchy",

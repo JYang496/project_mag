@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://Player/Weapons/Modules/wmod_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://Player/Weapons/Modules/wmod_dash_impact.gd" id="2_script"]
+[ext_resource type="Script" path="res://Player/Weapons/Core/module_trigger_spec.gd" id="3_trigger"]
+[ext_resource type="Texture2D" path="res://asset/images/modules/pixel/wmod_dash_cooler.png" id="4_icon"]
+
+[sub_resource type="Resource" id="TriggerSpec"]
+script = ExtResource("3_trigger")
+event_type = "skill_cast_finished"
+required_skill_tags = Array[StringName]([&"movement"])
+requires_action_context = true
+minimum_distance = 180.0
+once_per_action = true
+
+[node name="DashImpact" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+module_id = &"wmod_dash_impact"
+display_name = "Dash Impact"
+cost = 12
+level_effects = PackedStringArray("Deals 70% weapon damage after a long movement skill", "Deals 95% weapon damage after a long movement skill", "Deals 120% weapon damage after a long movement skill")
+module_tags = PackedStringArray("trigger", "movement", "area", "physical")
+required_hooks = 512
+trigger_spec = SubResource("TriggerSpec")
+
+[node name="Sprite" parent="." index="0"]
+texture = ExtResource("4_icon")

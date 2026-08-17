@@ -25,6 +25,7 @@ func setup(source: BaseEnemy) -> void:
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	add_to_group(&"boss_hud_active")
 	add_to_group(&"hybrid_enemy_aura_source")
 	_create_boss_hud()
 	_play_boss_entrance()

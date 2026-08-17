@@ -11,8 +11,8 @@ const PRIMARY_MENU_SINGLE_ACTION_HEIGHT := 216.0
 const PRIMARY_MENU_HEADER_HEIGHT := 104.0
 const PRIMARY_MENU_ENTRY_PITCH := 58.0
 const PRIMARY_MENU_FOOTER_SPACE := 28.0
-const HUD_LEFT_WIDTH := 340.0
-const HUD_RIGHT_WIDTH := 320.0
+const HUD_LEFT_WIDTH := 280.0
+const HUD_RIGHT_WIDTH := 248.0
 
 
 static func scale_for_viewport(viewport_size: Vector2) -> float:

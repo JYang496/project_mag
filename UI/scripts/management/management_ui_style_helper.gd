@@ -177,7 +177,7 @@ func _get_management_button_styles(primary: bool) -> Dictionary:
 		return cached
 	cached = TOKENS.make_button_style(
 		Color(0.34, 0.22, 0.06) if primary else TOKENS.COLOR_SURFACE_INTERACTIVE,
-		TOKENS.COLOR_ACCENT_ACTION if primary else TOKENS.COLOR_BORDER
+		TOKENS.COLOR_PRIMARY_ACTION if primary else TOKENS.COLOR_BORDER
 	)
 	if primary:
 		_primary_button_styles = cached

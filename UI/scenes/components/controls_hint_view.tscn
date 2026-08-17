@@ -1,11 +1,14 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/scripts/components/controls_hint_view.gd" id="1_script"]
+[ext_resource type="Theme" path="res://UI/themes/battle_hud_theme.tres" id="2_hud_theme"]
 
 [node name="ControlsHintPanel" type="PanelContainer"]
 custom_minimum_size = Vector2(252, 40)
 mouse_filter = 2
 z_index = 35
+texture_filter = 1
+theme = ExtResource("2_hud_theme")
 script = ExtResource("1_script")
 
 [node name="Margin" type="MarginContainer" parent="."]
@@ -29,7 +32,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "操作"
 vertical_alignment = 1
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 12
 
 [node name="CollapseButton" type="Button" parent="Margin/Content/Header"]
 custom_minimum_size = Vector2(76, 28)
@@ -59,7 +62,7 @@ theme_override_constants/separation = 6
 layout_mode = 2
 size_flags_horizontal = 3
 vertical_alignment = 1
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 12
 
 [node name="CompactExpand" type="Button" parent="Margin/Content/CompactContent"]
 layout_mode = 2
@@ -71,14 +74,14 @@ visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ContextKey" type="Label" parent="Margin/Content/ContextContent"]
+[node name="ContextKey" type="HBoxContainer" parent="Margin/Content/ContextContent"]
 layout_mode = 2
-vertical_alignment = 1
-theme_override_font_sizes/font_size = 15
+alignment = 1
+theme_override_constants/separation = 2
 
 [node name="ContextMessage" type="Label" parent="Margin/Content/ContextContent"]
 layout_mode = 2
 size_flags_horizontal = 3
 vertical_alignment = 1
 theme_override_colors/font_color = Color(0.76, 0.9, 0.93, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 12

@@ -131,6 +131,8 @@ func apply_purchase_mode(mode: StringName) -> void:
 	if not ensure_view():
 		return
 	purchase_mode = &"module" if mode == &"module" else &"weapon"
+	if owner_ui != null and owner_ui.has_method("set_management_item_mode"):
+		owner_ui.call("set_management_item_mode", purchase_mode)
 	apply_shop_list_layout()
 	purchase_management_view.set_shop_context(shop, shop_purchase_button)
 	if module_shop:

@@ -8,7 +8,6 @@
     {
       "project_root": "E:\\Godot Projects\\project_mag",
       "policy_path": "E:\\Godot Projects\\project_mag\\Visual\\pixel_art_policy.gd",
-      "policy_sha256": "f4919b4106a901ce599eb70c832fef732b531f10252272877c75563539a1214e",
       "role": "scene_prop_large",
       "constant": "SCENE_PROP_LARGE_FRAME_SIZE",
       "width": 256,
@@ -28,8 +27,6 @@
     {
       "source": "C:\\Users\\koalg\\.codex\\generated_images\\019f9a75-1936-7943-b872-c468f410d140\\exec-7725136a-75cc-46f8-99e0-9ee02291e386.png",
       "destination": "E:\\Godot Projects\\project_mag\\tmp\\pixel_normalizer\\unloaded_world_background-v1\\exec-7725136a-75cc-46f8-99e0-9ee02291e386_normalized.png",
-      "source_sha256": "f16e67130c41944b857c824f3356168679c74651b67e59f1628c4b35d2460f7d",
-      "output_sha256": "0e411836ee1818642e5aa2ac72e896d1ab8ea1f2d33cd393c54db56a2b9081f1",
       "preset": "scene_prop_large",
       "protected": false,
       "grid": {

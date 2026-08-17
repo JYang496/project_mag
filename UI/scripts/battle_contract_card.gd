@@ -9,6 +9,11 @@ var _selected := false
 var _contract_id := ""
 var _intro_mode := false
 
+func _ready() -> void:
+	# Container layout is deferred and can move the slot after setup() requested the
+	# first draw. Redraw whenever that slot's resolved rectangle changes.
+	$Margin/Content/Header/ContractIcon.item_rect_changed.connect(queue_redraw)
+
 func setup(value: BattleContractDefinition) -> void:
 	definition = value
 	_intro_mode = false
@@ -175,7 +180,16 @@ func _draw() -> void:
 
 func get_contract_icon_center_local() -> Vector2:
 	var icon := $Margin/Content/Header/ContractIcon as Control
-	return icon.get_global_rect().get_center() - get_global_rect().position
+	var center := icon.size * 0.5
+	var current := icon as CanvasItem
+	# Resolve only the transforms below this card. Global/canvas transforms are
+	# unstable during the panel's first layout and opening scale animation.
+	while current != self:
+		center = current.get_transform() * center
+		current = current.get_parent() as CanvasItem
+		if current == null:
+			return Vector2.ZERO
+	return center
 
 func _make_style(background: Color, border: Color, width: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

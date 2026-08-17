@@ -15,7 +15,7 @@ battle_contract.ui.status.acquiring,TACTICAL LINK // ACQUIRING CONTRACTS,战术�
 battle_contract.ui.status.ready,TACTICAL LINK // CONTRACTS READY,战术链路 // 协议已就绪
 battle_contract.ui.status.closing,TACTICAL LINK // CLOSING,战术链路 // 正在关闭
 battle_contract.intro.parameters,Dynamic parameters: {parameters},动态参数：{parameters}
-battle_contract.intro.unit.waves,waves,波次
+battle_contract.intro.unit.intensity,intensity,强度
 battle_contract.intro.boss.name,Boss Battle,BOSS 战
 battle_contract.intro.boss.objective,Defeat the boss and clear the current level.,击败 BOSS，完成当前关卡。
 battle_contract.intro.boss.hud,Defeat the boss,击败 BOSS
@@ -104,9 +104,9 @@ battle_contract.rest.name,Rest Protocol,休息协议
 battle_contract.rest.description,Enter logistics mode to purchase strengthen and reconfigure your build.,进入后勤整备，购买、强化并调整当前构筑。
 battle_contract.card.rest.summary,Enter the rest area and unlock full loadout management.,进入休息区并开放完整构筑管理。
 battle_contract.card.rest.reward_hint,Shop · upgrades · storage · board,商店 · 强化 · 仓库 · 棋盘
-battle_contract.hud.elimination,Remaining {remaining} · Wave {current}/{total},剩余敌人 {remaining} · 波次 {current}/{total}
-battle_contract.hud.elimination.deployed,Active {active} · Wave {current}/{total},在场 {active} · 波次 {current}/{total}
-battle_contract.hud.elimination.deployed_queued,Active {active} · Reinforcements {queued} · Wave {current}/{total},在场 {active} · 待增援 {queued} · 波次 {current}/{total}
+battle_contract.hud.elimination,Remaining {remaining} · Intensity {current}/{total},剩余敌人 {remaining} · 强度 {current}/{total}
+battle_contract.hud.elimination.deployed,Active {active} · Intensity {current}/{total},在场 {active} · 强度 {current}/{total}
+battle_contract.hud.elimination.deployed_queued,Active {active} · Reinforcements {queued} · Intensity {current}/{total},在场 {active} · 待增援 {queued} · 强度 {current}/{total}
 battle_contract.hud.survival,Time {seconds}s · Threat {threat},剩余 {seconds} 秒 · 威胁等级 {threat}
 battle_contract.hud.operation,Beacon {current}/{total} · {percent}%,信标 {current}/{total} · {percent}%
 battle_contract.hud.completed,Contract Complete,协议完成
@@ -158,6 +158,9 @@ ui.start.language,Language,语言
 ui.start.mechas,Mechas,机甲
 ui.common.state.on,ON,开
 ui.common.state.off,OFF,关
+ui.common.unknown,Unknown,未知
+ui.common.none,--,--
+ui.loading,Loading...,加载中……
 ui.mecha.exp,Exp: {current} / {next},经验：{current} / {next}
 ui.mecha.level,Level: {current} / {max},等级：{current} / {max}
 ui.mecha.max_hp,Max HP: {value},最大生命：{value}
@@ -371,6 +374,7 @@ ui.weapon.replace.action_replace,Replace,替换
 ui.weapon.replace.action_equip,Equip,装备
 ui.weapon.replace.slot,Slot {slot}: {old} -> {new},槽位 {slot}：{old} → {new}
 ui.weapon.replace.empty_slot,Slot {slot}: Empty,槽位 {slot}：空
+ui.weapon.replace.empty_slot_hint,Open slot,空槽位
 ui.module.compatible,Compatible,兼容
 ui.module.selected_weapon,Selected weapon: {weapon},所选武器：{weapon}
 ui.module.no_compatible_weapons,No compatible weapon,没有兼容的武器
@@ -471,6 +475,9 @@ ui.module.term.hook.beam_hit,Beam hit,光束命中
 ui.module.term.hook.reload_start,Reload start,开始换弹
 ui.module.term.hook.reload_duration,Reload duration,换弹时长
 ui.module.term.hook.kill,Kill,击杀
+ui.module.term.hook.skill_cast,Skill cast,释放技能
+ui.module.term.hook.skill_finish,Skill finish,技能结束
+ui.rest.zone.purchase.locked,Opens after battle 3,完成第 3 场战斗后开放
 ui.module.term.stat.damage,Damage,伤害
 ui.module.term.stat.size,Size,尺寸
 ui.module.term.stat.heat_max_value,Heat Max Value,热量上限
@@ -616,6 +623,7 @@ ui.common.selected,Selected,已选择
 ui.common.level,Level,等级
 ui.common.rarity,Rarity,稀有度
 ui.common.warning,Warning,警告
+ui.hud.skill.ready,READY,就绪
 ui.management.menu.title,Warehouse Management,仓库管理
 ui.management.menu.subtitle,Open weapon and module warehouses,打开武器仓库与模组仓库
 ui.warehouse.instruction,Manage the selected warehouse.,管理所选仓库。
@@ -681,6 +689,13 @@ ui.rest.zone.upgrade.none,No upgrades available,暂无可升级
 ui.rest.zone.module.title,Module Management,模组管理
 ui.rest.zone.module.pending,{count} pending,待处理 {count}
 ui.rest.zone.module.none,No pending modules,无待处理模组
+ui.rest.checklist.title,PREPARATION,战前准备
+ui.rest.checklist.reward,• Reward choice pending,• 奖励待选择
+ui.rest.checklist.branch,• Evolution branch pending,• 进化分支待选择
+ui.rest.checklist.modules,• {count} stored modules,• 仓库中有 {count} 个模组
+ui.rest.checklist.upgrades,• {count} affordable upgrades,• 可负担 {count} 项升级
+ui.rest.checklist.board,• Board changes awaiting commit,• 格子修改待提交
+ui.rest.checklist.ready,• Ready for the next protocol,• 已准备好选择下一协议
 ui.module.reason.invalid_module,Invalid module.,无效模组。
 ui.module.reason.invalid_weapon,Invalid weapon.,无效武器。
 ui.module.reason.no_container,Weapon has no module container.,武器没有模组容器。
@@ -808,6 +823,8 @@ ui.management.reason.invalid_cell,Invalid cell.,格子无效。
 ui.management.reason.no_available_copies,No available copies.,没有可用数量。
 ui.management.reason.same_cell,Same cell.,不能选择同一个格子。
 ui.management.reason.pending_edits,Finish or cancel pending edits on these cells first.,请先完成或取消这些格子的待定修改。
+ui.management.reason.pending_transaction,Finish or cancel the current transaction first.,请先完成或取消当前事务。
+ui.management.reason.modal_open,Close the current dialog first.,请先关闭当前对话框。
 ui.management.reason.source_empty,Source cell has no installed effect.,来源格子没有已安装效果。
 ui.management.reason.source_effect_missing,Source effect is missing.,来源格子的效果不存在。
 ui.management.reason.effect_not_swappable,This effect cannot be swapped.,该效果无法交换。
@@ -906,20 +923,20 @@ ui.weapon_hud.passive,PASSIVE,被动
 ui.weapon_hud.main_tooltip_detail,"{weapon}
 {types}
 {mechanic}
-MAIN WEAPON · R: RELOAD · Q/E: SWITCH","{weapon}
+MAIN WEAPON","{weapon}
 {types}
 {mechanic}
-主武器 · R：装填 · Q/E：切换"
+主武器"
 ui.weapon_hud.reserve_tooltip_detail,"{weapon}
 {types}
 {mechanic}
-RESERVE WEAPON · Q/E: SWITCH","{weapon}
+RESERVE WEAPON","{weapon}
 {types}
 {mechanic}
-备用武器 · Q/E：切换"
+备用武器"
 ui.weapon_hud.main_tooltip,"{weapon}
-MAIN WEAPON · R: RELOAD · Q/E: SWITCH","{weapon}
-主武器 · R：装填 · Q/E：切换"
+MAIN WEAPON","{weapon}
+主武器"
 ui.weapon_hud.reserve_tooltip,"{weapon}
-RESERVE WEAPON · Q/E: SWITCH","{weapon}
-备用武器 · Q/E：切换"
+RESERVE WEAPON","{weapon}
+备用武器"

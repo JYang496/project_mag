@@ -8,17 +8,40 @@ const MODE_ENERGY := &"energy"
 const MODE_BATTERY := &"battery"
 const MODE_PRESSURE := &"pressure"
 const METER_SIZE := Vector2(250.0, 20.0)
-const HEAT_RAIL_SIZE := Vector2(218.0, 78.0)
-const HEAT_TRACK_RECT := Rect2(Vector2(43.0, 37.0), Vector2(132.0, 14.0))
-const HEAT_COLD_CAP_RECT := Rect2(Vector2(4.0, 21.0), Vector2(29.0, 36.0))
-const HEAT_HOT_CAP_RECT := Rect2(Vector2(185.0, 21.0), Vector2(29.0, 36.0))
+const HEAT_RAIL_SIZE := Vector2(218.0, 58.0)
+const HEAT_TRACK_RECT := Rect2(Vector2(17.0, 31.0), Vector2(184.0, 18.0))
+const HEAT_COLD_CAP_RECT := Rect2(Vector2(19.0, 31.0), Vector2(78.0, 18.0))
+const HEAT_HOT_CAP_RECT := Rect2(Vector2(121.0, 31.0), Vector2(78.0, 18.0))
 const HEAT_NEUTRAL_X := HEAT_TRACK_RECT.position.x + HEAT_TRACK_RECT.size.x * 0.5
 const HEAT_CELLS_PER_SIDE := 4
-const HEAT_CELL_SIZE := Vector2(11.0, 11.0)
-const HEAT_CELL_Y := 38.0
-const HEAT_COLD_CELL_X := [89.0, 74.0, 59.0, 44.0]
-const HEAT_HOT_CELL_X := [116.0, 131.0, 146.0, 161.0]
-const HEAT_RAIL_TEXTURE := preload("res://UI/themes/modern/heat_rail_frame_generated_v4.png")
+const HEAT_CELL_SIZE := Vector2(18.0, 18.0)
+const HEAT_CELL_Y := 31.0
+const HEAT_COLD_CELL_X := [79.0, 59.0, 39.0, 19.0]
+const HEAT_HOT_CELL_X := [121.0, 141.0, 161.0, 181.0]
+const HEAT_FRAME_FILL := Color(0.025, 0.055, 0.070, 0.94)
+const HEAT_FRAME_SHADOW := Color(0.005, 0.016, 0.022, 0.98)
+const HEAT_FRAME_EDGE := Color(0.12, 0.58, 0.67, 0.92)
+const HEAT_FRAME_HIGHLIGHT := Color(0.38, 0.82, 0.88, 0.76)
+const HEAT_SLOT_FILL := Color(0.055, 0.085, 0.11, 0.96)
+const HEAT_SLOT_EDGE := Color(0.20, 0.30, 0.36, 0.95)
+const HEAT_CELL_GAP := 2.0
+const HEAT_FRAME_LAYER_COUNT := 3
+const HEAT_VALUE_PIXEL_SIZE := 2.0
+const HEAT_VALUE_TOP := 7.0
+const HEAT_VALUE_GLYPHS := {
+	"+": ["000", "010", "111", "010", "000"],
+	"-": ["000", "000", "111", "000", "000"],
+	"0": ["111", "101", "101", "101", "111"],
+	"1": ["010", "110", "010", "010", "111"],
+	"2": ["111", "001", "111", "100", "111"],
+	"3": ["111", "001", "111", "001", "111"],
+	"4": ["101", "101", "111", "001", "001"],
+	"5": ["111", "100", "111", "001", "111"],
+	"6": ["111", "100", "111", "101", "111"],
+	"7": ["111", "001", "010", "010", "010"],
+	"8": ["111", "101", "111", "101", "111"],
+	"9": ["111", "101", "111", "001", "111"],
+}
 const HUD_EXPAND_DURATION := 0.18
 const HUD_COLLAPSE_DURATION := 0.12
 const HUD_COLLAPSED_SCALE := Vector2(0.12, 0.88)
@@ -77,6 +100,9 @@ func _ready() -> void:
 	_ensure_status_label()
 	_update_heat_gauge()
 	set_process(true)
+
+func get_visual_footprint_size() -> Vector2:
+	return HEAT_RAIL_SIZE if _mode == MODE_HEAT else METER_SIZE
 
 func set_resource(mode: StringName, ratio: float, state: StringName = &"normal", short_text: String = "", tooltip: String = "") -> void:
 	var next_ratio := clampf(ratio, 0.0, 1.0)
@@ -246,71 +272,233 @@ func _draw_heat_icon(fill_color: Color, edge_color: Color, pulse: float) -> void
 
 func _draw_heat_rail() -> void:
 	var pulse := _pulse_strength()
-	draw_texture_rect(
-		HEAT_RAIL_TEXTURE,
-		Rect2(Vector2.ZERO, HEAT_RAIL_SIZE),
-		false,
-		Color(1.0, 1.0, 1.0, heat_gauge_opacity)
-	)
-	_draw_heat_track(pulse)
-	_draw_heat_end_cap_pulse(pulse)
+	_draw_heat_frame()
+	_draw_heat_value()
+	_draw_heat_slots()
+	_draw_heat_track()
+	_draw_heat_boundary_feedback(pulse)
 
-func _draw_heat_end_cap_pulse(pulse: float) -> void:
-	var cold_edge := Color(DEEP_COLD_FILL.r, DEEP_COLD_FILL.g, DEEP_COLD_FILL.b, heat_gauge_opacity)
-	var hot_edge := Color(HEAT_HIGH_FILL.r, HEAT_HIGH_FILL.g, HEAT_HIGH_FILL.b, heat_gauge_opacity)
-	if _display_ratio <= 0.015:
-		var cold_center := Vector2(20.0, 39.0)
-		for spoke_index in range(6):
-			var angle := float(spoke_index) * PI / 3.0
-			var direction := Vector2(cos(angle), sin(angle))
-			draw_line(cold_center + direction * 3.0, cold_center + direction * 10.0, Color(cold_edge.r, cold_edge.g, cold_edge.b, 0.34 + pulse * 0.34), 1.0 + pulse, true)
-	if _display_ratio >= 0.985:
-		for vent_index in range(5):
-			var vent_y := 26.0 + float(vent_index) * 6.0
-			var vent_alpha := 0.38 + pulse * 0.48
-			draw_line(Vector2(185.0, vent_y), Vector2(205.0, vent_y), Color(1.0, 0.78, 0.42, vent_alpha * heat_gauge_opacity), 1.2 + pulse, true)
+func _draw_heat_frame() -> void:
+	var frame := PackedVector2Array([
+		Vector2(12.0, 24.0), Vector2(76.0, 24.0), Vector2(82.0, 18.0),
+		Vector2(82.0, 7.0), Vector2(88.0, 3.0), Vector2(130.0, 3.0),
+		Vector2(136.0, 7.0), Vector2(136.0, 18.0), Vector2(142.0, 24.0),
+		Vector2(206.0, 24.0), Vector2(214.0, 32.0), Vector2(214.0, 48.0),
+		Vector2(208.0, 55.0), Vector2(10.0, 55.0), Vector2(4.0, 48.0),
+		Vector2(4.0, 32.0), Vector2(12.0, 24.0),
+	])
+	draw_colored_polygon(frame, Color(HEAT_FRAME_FILL.r, HEAT_FRAME_FILL.g, HEAT_FRAME_FILL.b, HEAT_FRAME_FILL.a * heat_gauge_opacity))
+	draw_polyline(frame, Color(HEAT_FRAME_SHADOW.r, HEAT_FRAME_SHADOW.g, HEAT_FRAME_SHADOW.b, HEAT_FRAME_SHADOW.a * heat_gauge_opacity), 5.0, false)
+	draw_polyline(frame, Color(HEAT_FRAME_EDGE.r, HEAT_FRAME_EDGE.g, HEAT_FRAME_EDGE.b, HEAT_FRAME_EDGE.a * heat_gauge_opacity), 2.0, false)
+	draw_line(Vector2(14.0, 27.0), Vector2(76.0, 27.0), Color(HEAT_FRAME_HIGHLIGHT.r, HEAT_FRAME_HIGHLIGHT.g, HEAT_FRAME_HIGHLIGHT.b, HEAT_FRAME_HIGHLIGHT.a * heat_gauge_opacity), 1.0)
+	draw_line(Vector2(142.0, 27.0), Vector2(204.0, 27.0), Color(HEAT_FRAME_HIGHLIGHT.r, HEAT_FRAME_HIGHLIGHT.g, HEAT_FRAME_HIGHLIGHT.b, HEAT_FRAME_HIGHLIGHT.a * heat_gauge_opacity), 1.0)
+	draw_line(Vector2(84.0, 23.0), Vector2(134.0, 23.0), Color(HEAT_FRAME_HIGHLIGHT.r, HEAT_FRAME_HIGHLIGHT.g, HEAT_FRAME_HIGHLIGHT.b, 0.62 * heat_gauge_opacity), 1.0)
+	draw_line(Vector2(12.0, 52.0), Vector2(101.0, 52.0), Color(DEEP_COLD_FILL.r, DEEP_COLD_FILL.g, DEEP_COLD_FILL.b, 0.48 * heat_gauge_opacity), 2.0)
+	draw_line(Vector2(117.0, 52.0), Vector2(206.0, 52.0), Color(HEAT_FILL.r, HEAT_FILL.g, HEAT_FILL.b, 0.48 * heat_gauge_opacity), 2.0)
 
-func _draw_heat_track(pulse: float) -> void:
-	var track := HEAT_TRACK_RECT
-	var value_x := lerpf(track.position.x, track.end.x, _display_ratio)
+func _draw_heat_slots() -> void:
+	for cell_index in range(HEAT_CELLS_PER_SIDE):
+		_draw_heat_chevron(float(HEAT_COLD_CELL_X[cell_index]), true, HEAT_SLOT_FILL, HEAT_SLOT_EDGE)
+		_draw_heat_chevron(float(HEAT_HOT_CELL_X[cell_index]), false, HEAT_SLOT_FILL, HEAT_SLOT_EDGE)
+	var center := Vector2(HEAT_NEUTRAL_X, HEAT_TRACK_RECT.get_center().y)
+	var neutral := PackedVector2Array([
+		center + Vector2(0.0, -10.0),
+		center + Vector2(7.0, 0.0),
+		center + Vector2(0.0, 10.0),
+		center + Vector2(-7.0, 0.0),
+		center + Vector2(0.0, -10.0),
+	])
+	draw_colored_polygon(neutral, Color(0.82, 0.88, 0.91, 0.96 * heat_gauge_opacity))
+	draw_polyline(neutral, Color(HEAT_FRAME_SHADOW.r, HEAT_FRAME_SHADOW.g, HEAT_FRAME_SHADOW.b, heat_gauge_opacity), 4.0, false)
+	draw_polyline(neutral, Color(1.0, 1.0, 1.0, heat_gauge_opacity), 2.0, false)
+
+func _heat_chevron_points(x: float, points_left: bool) -> PackedVector2Array:
+	var y := HEAT_CELL_Y
+	var width := HEAT_CELL_SIZE.x
+	var height := HEAT_CELL_SIZE.y
+	if points_left:
+		return PackedVector2Array([
+			Vector2(x + width, y), Vector2(x + 6.0, y), Vector2(x, y + height * 0.5),
+			Vector2(x + 7.0, y + height), Vector2(x + width, y + height),
+			Vector2(x + 13.0, y + height * 0.5),
+		])
+	return PackedVector2Array([
+		Vector2(x, y), Vector2(x + width - 6.0, y), Vector2(x + width, y + height * 0.5),
+		Vector2(x + width - 7.0, y + height), Vector2(x, y + height),
+		Vector2(x + 5.0, y + height * 0.5),
+	])
+
+func _closed_outline(points: PackedVector2Array) -> PackedVector2Array:
+	var outline := PackedVector2Array(points)
+	if not points.is_empty():
+		outline.append(points[0])
+	return outline
+
+func _draw_heat_chevron(x: float, points_left: bool, fill_color: Color, edge_color: Color, line_width: float = 2.0) -> void:
+	var points := _heat_chevron_points(x, points_left)
+	draw_colored_polygon(points, Color(fill_color.r, fill_color.g, fill_color.b, fill_color.a * heat_gauge_opacity))
+	draw_polyline(_closed_outline(points), Color(edge_color.r, edge_color.g, edge_color.b, edge_color.a * heat_gauge_opacity), line_width, false)
+
+func _draw_heat_boundary_feedback(pulse: float) -> void:
+	var is_cold_full := _display_ratio <= 0.015
+	var is_hot_full := _display_ratio >= 0.985
+	if not is_cold_full and not is_hot_full:
+		return
+	var x := float(HEAT_COLD_CELL_X[HEAT_CELLS_PER_SIDE - 1]) if is_cold_full else float(HEAT_HOT_CELL_X[HEAT_CELLS_PER_SIDE - 1])
+	var color := COLD_HIGH_FILL if is_cold_full else HEAT_HIGH_FILL
+	var points := _heat_chevron_points(x, is_cold_full)
+	draw_polyline(_closed_outline(points), Color(color.r, color.g, color.b, (0.88 + pulse * 0.12) * heat_gauge_opacity), 2.0 + pulse, false)
+	var boundary_x := 16.0 if is_cold_full else 202.0
+	draw_line(Vector2(boundary_x, 33.0), Vector2(boundary_x, 47.0), Color(color.r, color.g, color.b, heat_gauge_opacity), 2.0 + pulse, false)
+	var rail_start := Vector2(12.0, 52.0) if is_cold_full else Vector2(117.0, 52.0)
+	var rail_end := Vector2(101.0, 52.0) if is_cold_full else Vector2(206.0, 52.0)
+	draw_line(rail_start, rail_end, Color(color.r, color.g, color.b, (0.82 + pulse * 0.18) * heat_gauge_opacity), 2.0 + pulse, false)
+
+func _draw_heat_track() -> void:
 	var fill_color := _heat_polarity_color()
 	var side_strength := absf(_display_ratio - 0.5) * 2.0
 	if _display_ratio < 0.5:
 		_draw_heat_cells(HEAT_COLD_CELL_X, side_strength, fill_color, true)
 	elif _display_ratio > 0.5:
 		_draw_heat_cells(HEAT_HOT_CELL_X, side_strength, fill_color, false)
-	_draw_heat_direction_marker(value_x, track, fill_color, pulse)
+
+func _draw_heat_value() -> void:
+	var text := _short_text.strip_edges()
+	if text.is_empty():
+		return
+	var glyph_width := 3.0 * HEAT_VALUE_PIXEL_SIZE
+	var glyph_gap := HEAT_VALUE_PIXEL_SIZE
+	var text_width := float(text.length()) * glyph_width + float(maxi(text.length() - 1, 0)) * glyph_gap
+	var origin := Vector2(roundf(HEAT_NEUTRAL_X - text_width * 0.5), HEAT_VALUE_TOP)
+	var color := Color(0.90, 0.96, 0.98, heat_gauge_opacity)
+	for character_index in range(text.length()):
+		var character := text.substr(character_index, 1)
+		var rows: Array = HEAT_VALUE_GLYPHS.get(character, [])
+		for row_index in range(rows.size()):
+			var row: String = rows[row_index]
+			for column_index in range(row.length()):
+				if row.substr(column_index, 1) == "1":
+					var pixel_position := origin + Vector2(
+						float(character_index) * (glyph_width + glyph_gap) + float(column_index) * HEAT_VALUE_PIXEL_SIZE,
+						float(row_index) * HEAT_VALUE_PIXEL_SIZE
+					)
+					draw_rect(Rect2(pixel_position, Vector2.ONE * HEAT_VALUE_PIXEL_SIZE), color, true)
 
 func _draw_heat_cells(cell_positions: Array, side_strength: float, color: Color, fill_from_right: bool) -> void:
-	var cell_progress := clampf(side_strength, 0.0, 1.0) * float(HEAT_CELLS_PER_SIDE)
+	var progress_values := _get_heat_cell_progress_values(side_strength)
 	for cell_index in range(HEAT_CELLS_PER_SIDE):
-		var progress := clampf(cell_progress - float(cell_index), 0.0, 1.0)
+		var progress := float(progress_values[cell_index])
 		if progress <= 0.0:
 			continue
-		var cell_rect := Rect2(Vector2(float(cell_positions[cell_index]), HEAT_CELL_Y), HEAT_CELL_SIZE)
-		var fill_width := cell_rect.size.x * progress
-		var fill_x := cell_rect.end.x - fill_width if fill_from_right else cell_rect.position.x
-		var fill_rect := Rect2(Vector2(fill_x, cell_rect.position.y), Vector2(fill_width, cell_rect.size.y))
-		draw_rect(fill_rect, Color(color.r, color.g, color.b, 0.90 * heat_gauge_opacity), true)
-		draw_line(
-			fill_rect.position + Vector2(0.0, 1.0),
-			Vector2(fill_rect.end.x, fill_rect.position.y + 1.0),
-			Color(1.0, 0.96, 0.86, 0.22 * heat_gauge_opacity),
-			1.0
-		)
+		_draw_heat_chevron_progress(float(cell_positions[cell_index]), fill_from_right, color, progress)
 
-func _draw_heat_direction_marker(value_x: float, track: Rect2, color: Color, pulse: float) -> void:
-	if _heat_direction == &"stable":
+func _get_heat_cell_progress_values(side_strength: float) -> Array:
+	var values: Array = []
+	var cell_progress := clampf(side_strength, 0.0, 1.0) * float(HEAT_CELLS_PER_SIDE)
+	for cell_index in range(HEAT_CELLS_PER_SIDE):
+		values.append(clampf(cell_progress - float(cell_index), 0.0, 1.0))
+	return values
+
+func _draw_heat_chevron_progress(x: float, points_left: bool, color: Color, progress: float) -> void:
+	var points := _heat_chevron_points(x, points_left)
+	var safe_progress := _quantize_heat_cell_progress(progress)
+	var fill_min_x := x + HEAT_CELL_SIZE.x * (1.0 - safe_progress) if points_left else x
+	var fill_max_x := x + HEAT_CELL_SIZE.x if points_left else x + HEAT_CELL_SIZE.x * safe_progress
+	var fill_polygons := _get_heat_chevron_progress_polygons(x, points_left, safe_progress)
+	if fill_polygons.is_empty():
 		return
-	var direction := 1.0 if _heat_direction == &"rising" else -1.0
-	var marker_x := clampf(value_x, track.position.x + 6.0, track.end.x - 6.0)
-	var center := Vector2(marker_x, track.get_center().y)
-	var points := PackedVector2Array([
-		center + Vector2(direction * 5.0, 0.0),
-		center + Vector2(-direction * 3.0, -5.0),
-		center + Vector2(-direction * 3.0, 5.0),
+	var fill := Color(color.r, color.g, color.b, 0.96 * heat_gauge_opacity)
+	var edge := Color(minf(color.r + 0.20, 1.0), minf(color.g + 0.20, 1.0), minf(color.b + 0.20, 1.0), heat_gauge_opacity)
+	for fill_polygon in fill_polygons:
+		draw_colored_polygon(fill_polygon, fill)
+	var fill_outline := _clip_polygon_x(points, fill_min_x, fill_max_x)
+	if fill_outline.size() >= 2:
+		draw_polyline(_closed_outline(fill_outline), edge, 1.0, false)
+	if safe_progress >= 0.999:
+		draw_polyline(_closed_outline(points), edge, 2.0, false)
+		_draw_heat_cell_complete_marker(x, color)
+
+func _get_heat_chevron_progress_polygons(x: float, points_left: bool, progress: float) -> Array:
+	var safe_progress := _quantize_heat_cell_progress(progress)
+	if safe_progress <= 0.0:
+		return []
+	var points := _heat_chevron_points(x, points_left)
+	var fill_min_x := x + HEAT_CELL_SIZE.x * (1.0 - safe_progress) if points_left else x
+	var fill_max_x := x + HEAT_CELL_SIZE.x if points_left else x + HEAT_CELL_SIZE.x * safe_progress
+	var regions := [
+		PackedVector2Array([points[0], points[1], points[2], points[5]]),
+		PackedVector2Array([points[5], points[2], points[3], points[4]]),
+	]
+	var result: Array = []
+	for region in regions:
+		var clipped := _sanitize_polygon(_clip_polygon_x(region, fill_min_x, fill_max_x))
+		_append_polygon_triangle_fan(result, clipped)
+	return result
+
+func _quantize_heat_cell_progress(progress: float) -> float:
+	var safe_progress := clampf(progress, 0.0, 1.0)
+	if safe_progress <= 0.0:
+		return 0.0
+	return minf(ceilf(safe_progress * HEAT_CELL_SIZE.x) / HEAT_CELL_SIZE.x, 1.0)
+
+func _append_polygon_triangle_fan(result: Array, polygon: PackedVector2Array) -> void:
+	if polygon.size() < 3:
+		return
+	for point_index in range(1, polygon.size() - 1):
+		var triangle := PackedVector2Array([polygon[0], polygon[point_index], polygon[point_index + 1]])
+		if absf(_polygon_signed_area(triangle)) >= 0.5 and not Geometry2D.triangulate_polygon(triangle).is_empty():
+			result.append(triangle)
+
+func _sanitize_polygon(points: PackedVector2Array) -> PackedVector2Array:
+	var result := PackedVector2Array()
+	for point in points:
+		if result.is_empty() or not result[result.size() - 1].is_equal_approx(point):
+			result.append(point)
+	if result.size() > 1 and result[0].is_equal_approx(result[result.size() - 1]):
+		result.remove_at(result.size() - 1)
+	return result
+
+func _polygon_signed_area(points: PackedVector2Array) -> float:
+	var doubled_area := 0.0
+	for point_index in range(points.size()):
+		var next_index := (point_index + 1) % points.size()
+		doubled_area += points[point_index].x * points[next_index].y
+		doubled_area -= points[next_index].x * points[point_index].y
+	return doubled_area * 0.5
+
+func _draw_heat_cell_complete_marker(x: float, color: Color) -> void:
+	var center := Vector2(x + HEAT_CELL_SIZE.x * 0.5, HEAT_CELL_Y + 2.0)
+	var marker := PackedVector2Array([
+		center + Vector2(0.0, -2.0), center + Vector2(2.0, 0.0),
+		center + Vector2(0.0, 2.0), center + Vector2(-2.0, 0.0),
 	])
-	draw_colored_polygon(points, Color(color.r, color.g, color.b, minf(1.0, 0.9 + pulse * 0.1) * heat_gauge_opacity))
+	draw_colored_polygon(marker, Color(minf(color.r + 0.22, 1.0), minf(color.g + 0.22, 1.0), minf(color.b + 0.22, 1.0), heat_gauge_opacity))
+
+func _clip_polygon_x(points: PackedVector2Array, min_x: float, max_x: float) -> PackedVector2Array:
+	return _clip_polygon_at_x(_clip_polygon_at_x(points, min_x, true), max_x, false)
+
+func _clip_polygon_at_x(points: PackedVector2Array, boundary_x: float, keep_greater: bool) -> PackedVector2Array:
+	var result := PackedVector2Array()
+	if points.is_empty():
+		return result
+	var previous := points[points.size() - 1]
+	var previous_inside := previous.x >= boundary_x if keep_greater else previous.x <= boundary_x
+	for current in points:
+		var current_inside := current.x >= boundary_x if keep_greater else current.x <= boundary_x
+		if current_inside != previous_inside:
+			result.append(_segment_x_intersection(previous, current, boundary_x))
+		if current_inside:
+			result.append(current)
+		previous = current
+		previous_inside = current_inside
+	return result
+
+func _segment_x_intersection(from_point: Vector2, to_point: Vector2, boundary_x: float) -> Vector2:
+	var delta_x := to_point.x - from_point.x
+	if absf(delta_x) <= 0.0001:
+		return Vector2(boundary_x, to_point.y)
+	var weight := clampf((boundary_x - from_point.x) / delta_x, 0.0, 1.0)
+	return Vector2(boundary_x, lerpf(from_point.y, to_point.y, weight))
 
 func _draw_diamond_icon(fill_color: Color, edge_color: Color, pulse: float) -> void:
 	var center := ICON_RECT.position + Vector2(11.0, 8.0)
@@ -359,7 +547,7 @@ func _ensure_status_label() -> void:
 	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_status_label.add_theme_font_size_override("font_size", 11)
+	_status_label.add_theme_font_size_override("font_size", 12)
 	_status_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
 	_status_label.add_theme_constant_override("shadow_offset_x", 1)
 	_status_label.add_theme_constant_override("shadow_offset_y", 1)
@@ -383,18 +571,18 @@ func _update_status_label() -> void:
 		return
 	_status_label.text = _short_text
 	if _mode == MODE_HEAT:
-		_status_label.position = Vector2(82.0, 6.0)
-		_status_label.size = Vector2(54.0, 21.0)
+		_status_label.position = Vector2(82.0, 3.0)
+		_status_label.size = Vector2(54.0, 18.0)
 		_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_status_label.add_theme_font_size_override("font_size", 17)
+		_status_label.add_theme_font_size_override("font_size", 12)
 		_status_label.add_theme_color_override("font_color", Color(0.96, 0.98, 1.0, 1.0))
 	else:
 		_status_label.position = LABEL_OFFSET
 		_status_label.size = LABEL_SIZE
 		_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		_status_label.add_theme_font_size_override("font_size", 11)
+		_status_label.add_theme_font_size_override("font_size", 12)
 		_status_label.add_theme_color_override("font_color", _edge_color())
-	_status_label.visible = _short_text != ""
+	_status_label.visible = _short_text != "" and _mode != MODE_HEAT
 
 func _get_heat_direction_symbol() -> String:
 	match _heat_direction:
@@ -427,24 +615,33 @@ func _get_accessible_heat_zone_text() -> String:
 
 func get_heat_accessibility_state() -> Dictionary:
 	return {
-		"cold_icon": "COLD CRYSTAL END CAP",
-		"hot_icon": "HOT VENT END CAP",
+		"cold_icon": "COLD LEFT CHEVRONS",
+		"hot_icon": "HOT RIGHT CHEVRONS",
 		"direction": _get_heat_direction_symbol(),
 		"zone": _get_accessible_heat_zone_text(),
 	}
 
 func get_heat_layout_state() -> Dictionary:
 	return {
-		"layout": &"bipolar_rail",
-		"uses_generated_texture": true,
-		"texture_path": HEAT_RAIL_TEXTURE.resource_path,
+		"layout": &"chevron_rail",
+		"uses_generated_texture": false,
+		"texture_path": "",
 		"slot_count": HEAT_CELLS_PER_SIDE * 2,
 		"cell_size": HEAT_CELL_SIZE,
 		"cell_y": HEAT_CELL_Y,
 		"cold_cell_x": HEAT_COLD_CELL_X.duplicate(),
 		"hot_cell_x": HEAT_HOT_CELL_X.duplicate(),
 		"status_text_visible": false,
-		"full_feedback": &"internal_vent_pulse",
+		"value_style": &"pixel_grid",
+		"value_top": HEAT_VALUE_TOP,
+		"change_arrows_visible": false,
+		"full_feedback": &"boundary_lock",
+		"frame_layers": HEAT_FRAME_LAYER_COUNT,
+		"frame_outer_width": 5.0,
+		"frame_primary_width": 2.0,
+		"slot_gap": HEAT_CELL_GAP,
+		"partial_fill_mode": &"geometry_clip",
+		"full_cell_feedback": &"outline_and_marker",
 		"size": HEAT_RAIL_SIZE,
 		"track": HEAT_TRACK_RECT,
 		"cold_end_cap": HEAT_COLD_CAP_RECT,
@@ -508,10 +705,14 @@ func _heat_polarity_color() -> Color:
 	return NEUTRAL_HEAT_FILL
 
 func get_heat_visual_state() -> Dictionary:
+	var side_strength := absf(_display_ratio - 0.5) * 2.0
 	return {
 		"color": _heat_polarity_color(),
 		"display_ratio": _display_ratio,
 		"status_text_visible": false,
+		"boundary_locked": _display_ratio <= 0.015 or _display_ratio >= 0.985,
+		"cell_progress": _get_heat_cell_progress_values(side_strength),
+		"polarity": &"cold" if _display_ratio < 0.5 else (&"hot" if _display_ratio > 0.5 else &"neutral"),
 	}
 
 func _pulse_strength() -> float:

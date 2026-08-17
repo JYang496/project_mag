@@ -313,7 +313,9 @@ func _build_random_spawn_batch(level_index: int, _effective_time_out: int) -> Di
 			continue
 		available.append(state)
 	if available.is_empty():
-		return {}
+		available = _recover_final_finite_spawn_candidates()
+		if available.is_empty():
+			return {}
 
 	var batch: Dictionary = {}
 	var count_by_scene: Dictionary = {}
@@ -326,7 +328,13 @@ func _build_random_spawn_batch(level_index: int, _effective_time_out: int) -> Di
 			break
 		var candidate := _select_contract_spawn_candidate(available, count_by_scene, ranged_count, elite_count, level_index)
 		if candidate.is_empty():
-			break
+			var recovered := _recover_final_finite_spawn_candidates()
+			if recovered.is_empty():
+				break
+			available = recovered
+			candidate = _select_contract_spawn_candidate(available, count_by_scene, ranged_count, elite_count, level_index)
+			if candidate.is_empty():
+				break
 		var scene_path := _get_spawn_scene_path(candidate)
 		var candidate_id := int(candidate.get("id", -1))
 		var spawned_hp := _spawn_from_state(candidate, 1)
@@ -346,6 +354,35 @@ func _build_random_spawn_batch(level_index: int, _effective_time_out: int) -> Di
 		_sync_spawn_budget_runtime_state()
 		_update_spawn_budget_stop_state()
 	return batch
+
+func _recover_final_finite_spawn_candidates(active_enemy_count: int = -1) -> Array[Dictionary]:
+	if _contract_spawn_policy != SPAWN_POLICY_FINITE:
+		return []
+	if _contract_batch_count <= 0 or _contract_released_batches < _contract_batch_count:
+		return []
+	if _contract_spawn_plan_cursor >= _contract_spawn_plan.size():
+		return []
+	var actual_alive := active_enemy_count
+	if actual_alive < 0:
+		actual_alive = get_active_enemy_count()
+	if actual_alive > 0:
+		return []
+	var recovered: Array[Dictionary] = []
+	for state in _runtime_spawn_states:
+		var entry := _get_state_entry(state)
+		if entry == null or entry.enemy == null:
+			continue
+		# An empty battlefield is authoritative. Per-type counters are scheduling
+		# metadata and may be stale when an enemy leaves through an unusual path.
+		state["alive"] = 0
+		state["cooldown"] = 0
+		recovered.append(state)
+	if not recovered.is_empty():
+		push_warning(
+			"EnemySpawner recovered a stalled final finite wave: queued=%d"
+			% (_contract_spawn_plan.size() - _contract_spawn_plan_cursor)
+		)
+	return recovered
 
 func _select_contract_spawn_candidate(
 	available: Array[Dictionary],
@@ -774,100 +811,6 @@ func _refresh_fallback_bounds() -> void:
 	_spawn_point_picker.refresh_fallback_bounds()
 	_sync_spawn_point_picker_state()
 
-func _pick_spawn_cell_near_player(player: Player) -> Cell:
-	_init_spawn_point_picker()
-	var cell: Cell = _spawn_point_picker.pick_spawn_cell_near_player(player)
-	_sync_spawn_point_picker_state()
-	return cell
-
-func _get_cell_at_position(world_position: Vector2, cells: Array[Cell]) -> Cell:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.get_cell_at_position(world_position, cells)
-
-func _cell_contains_point(cell: Cell, world_position: Vector2) -> bool:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.cell_contains_point(cell, world_position)
-
-func _get_random_point_in_cell(cell: Cell) -> Vector2:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.get_random_point_in_cell(cell)
-
-func _get_random_point_in_cell_away_from_player(cell: Cell, player_position: Vector2) -> Vector2:
-	_init_spawn_point_picker()
-	_sync_spawn_point_picker_config()
-	return _spawn_point_picker.get_random_point_in_cell_away_from_player(cell, player_position)
-
-func _cell_can_spawn_away_from_player(cell: Cell, player_position: Vector2) -> bool:
-	_init_spawn_point_picker()
-	_sync_spawn_point_picker_config()
-	return _spawn_point_picker.cell_can_spawn_away_from_player(cell, player_position)
-
-func _get_neighbor_cells(player_cell: Cell, cells: Array[Cell]) -> Array[Cell]:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.get_neighbor_cells(player_cell, cells)
-
-func _estimate_neighbor_distance(player_cell: Cell, cells: Array[Cell]) -> float:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.estimate_neighbor_distance(player_cell, cells)
-
-func _project_point_into_cell(cell: Cell, world_position: Vector2) -> Vector2:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.project_point_into_cell(cell, world_position)
-
-func _get_player_view_rect(player: Player) -> Rect2:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.get_player_view_rect(player)
-
-func _cell_intersects_rect(cell: Cell, rect: Rect2) -> bool:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.cell_intersects_rect(cell, rect)
-
-func _get_cell_aabb(cell: Cell) -> Rect2:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.get_cell_aabb(cell)
-
-func _get_cell_capture_polygon(cell: Cell) -> CollisionPolygon2D:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.get_cell_capture_polygon(cell)
-
-func _is_point_inside_capture_polygon(capture_polygon: CollisionPolygon2D, world_position: Vector2) -> bool:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.is_point_inside_capture_polygon(capture_polygon, world_position)
-
-func _get_random_point_in_capture_polygon(capture_polygon: CollisionPolygon2D) -> Vector2:
-	_init_spawn_point_picker()
-	_sync_spawn_point_picker_config()
-	return _spawn_point_picker.get_random_point_in_capture_polygon(capture_polygon)
-
-func _project_point_into_capture_polygon(capture_polygon: CollisionPolygon2D, world_position: Vector2) -> Vector2:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.project_point_into_capture_polygon(capture_polygon, world_position)
-
-func _get_capture_polygon_aabb(capture_polygon: CollisionPolygon2D) -> Rect2:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.get_capture_polygon_aabb(capture_polygon)
-
-func _get_polygon_local_aabb(polygon_points: PackedVector2Array) -> Rect2:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.get_polygon_local_aabb(polygon_points)
-
-func _get_polygon_centroid(polygon_points: PackedVector2Array) -> Vector2:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.get_polygon_centroid(polygon_points)
-
-func _get_fallback_spawn_position(player: Player) -> Vector2:
-	_init_spawn_point_picker()
-	_sync_spawn_point_picker_config()
-	var spawn_position: Vector2 = _spawn_point_picker.get_fallback_spawn_position(player)
-	_sync_spawn_point_picker_state()
-	return spawn_position
-
-func _pick_farthest_cell_from_player(player_position: Vector2) -> Cell:
-	_init_spawn_point_picker()
-	var cell: Cell = _spawn_point_picker.pick_farthest_cell_from_player(player_position)
-	_sync_spawn_point_picker_state()
-	return cell
-
 func _get_effective_board_cells() -> Array[Cell]:
 	_init_spawn_point_picker()
 	var cells: Array[Cell] = _spawn_point_picker.get_effective_board_cells()
@@ -881,24 +824,9 @@ func get_nearby_position(A: Vector2, min_distance: float = 0.0, max_distance: fl
 	_sync_spawn_point_picker_state()
 	return spawn_position
 
-func _apply_spawn_safety_margin(world_position: Vector2) -> Vector2:
-	_init_spawn_point_picker()
-	_sync_spawn_point_picker_config()
-	var projected: Vector2 = _spawn_point_picker.apply_spawn_safety_margin(world_position)
-	_sync_spawn_point_picker_state()
-	return projected
-
 func clamp_position(x_value :float, y_value :float) -> Vector2:
 	_init_spawn_point_picker()
 	return _spawn_point_picker.clamp_position(x_value, y_value)
-
-func _get_random_boundary_position_away_from_player(player_position: Vector2) -> Vector2:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.get_random_boundary_position_away_from_player(player_position)
-
-func _get_farthest_boundary_point(player_position: Vector2) -> Vector2:
-	_init_spawn_point_picker()
-	return _spawn_point_picker.get_farthest_boundary_point(player_position)
 
 func erase_all_enemies():
 	for enemy in _get_registered_enemies():

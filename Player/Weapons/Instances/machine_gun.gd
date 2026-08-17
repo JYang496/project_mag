@@ -169,7 +169,7 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 		return
 	_flush_pending_heat_expansion_rearms()
 	_heat_expansion_rearmed_steps_this_magazine = 0
-	if not is_offhand_skill_ready():
+	if not is_passive_ready():
 		return
 	var spent_ratio := clampf(float(detail.get("spent_ratio", 0.0)), 0.0, 1.0)
 	if spent_ratio <= 0.0:
@@ -229,7 +229,7 @@ func get_passive_status() -> Dictionary:
 func get_passive_max_charges() -> int:
 	return 4
 
-func _refresh_offhand_skill_on_reload() -> void:
+func _refresh_passive_on_reload() -> void:
 	pass
 
 func _try_rearm_heat_expansion_from_magazine_spend() -> void:

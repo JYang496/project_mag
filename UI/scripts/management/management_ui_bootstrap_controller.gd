@@ -76,6 +76,9 @@ func init_warehouse_ui_polish() -> void:
 	owner_ui.module_instruction_label = owner_ui.management_ui_style_helper.create_management_instruction(
 		owner_ui.module_panel, "ModuleInstruction", Vector2(25, 42), Vector2(500, 30)
 	)
+	# The weapon/module tabs now occupy the same header row used by purchase and
+	# upgrade. Their labels communicate the warehouse context more directly.
+	owner_ui.module_instruction_label.visible = false
 	if not owner_ui.module_warehouse_controller.ensure_view():
 		owner_ui.module_instruction_label.queue_free()
 		owner_ui.module_instruction_label = null

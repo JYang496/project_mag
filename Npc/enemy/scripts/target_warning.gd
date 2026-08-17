@@ -11,7 +11,7 @@ enum VisualPreset {
 @export var visual_preset: VisualPreset = VisualPreset.BASIC
 @export var duration: float = 0.8
 @export var radius: float = 52.0
-@export var fill_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.10)
+@export var fill_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.04)
 @export var line_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.96)
 @export var line_width: float = 2.5
 @export var wave_color: Color = Color(PALETTE.ENEMY_SECONDARY, 0.98)
@@ -21,6 +21,7 @@ var _elapsed: float = 0.0
 var _fill_polygon: Polygon2D = null
 var _outline_line: Line2D = null
 var _wave_line: Line2D = null
+var _countdown_label: Label = null
 
 func _ready() -> void:
 	add_to_group("enemy_runtime_cleanup")
@@ -30,6 +31,7 @@ func _ready() -> void:
 	set_process(true)
 	if visual_preset == VisualPreset.BASIC:
 		queue_redraw()
+	_update_countdown_label()
 	call_deferred("_register_with_hybrid_ground")
 
 func _register_with_hybrid_ground() -> void:
@@ -49,6 +51,13 @@ func _process(delta: float) -> void:
 
 func get_warning_progress() -> float:
 	return clampf(_elapsed / maxf(duration, 0.01), 0.0, 1.0)
+
+func get_warning_remaining() -> float:
+	return maxf(duration - _elapsed, 0.0)
+
+func get_warning_countdown_text() -> String:
+	var tenths_remaining := ceili(get_warning_remaining() * 10.0)
+	return "%.1f" % (float(tenths_remaining) / 10.0)
 
 func _draw() -> void:
 	if visual_preset != VisualPreset.BASIC:
@@ -93,9 +102,27 @@ func _build_dodge_style_visuals() -> void:
 	center_marker.polygon = _build_circle_polygon(center_marker_diameter * 0.5, 12)
 	add_child(center_marker)
 
+	_countdown_label = Label.new()
+	_countdown_label.name = "CountdownLabel"
+	_countdown_label.position = Vector2(-28.0, -16.0)
+	_countdown_label.size = Vector2(56.0, 32.0)
+	_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_countdown_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_countdown_label.add_theme_font_size_override("font_size", 18)
+	_countdown_label.add_theme_color_override("font_color", Color.WHITE)
+	_countdown_label.add_theme_color_override("font_outline_color", Color(0.10, 0.02, 0.03, 0.94))
+	_countdown_label.add_theme_constant_override("outline_size", 5)
+	_countdown_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_countdown_label)
+	_update_countdown_label()
+
 	var safe_duration := maxf(duration, 0.05)
 	var wave_tween := create_tween()
 	wave_tween.tween_property(_wave_line, "scale", Vector2.ZERO, safe_duration).set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN)
+
+func _update_countdown_label() -> void:
+	if _countdown_label != null:
+		_countdown_label.text = get_warning_countdown_text()
 
 func _build_circle_polygon(target_radius: float, segments: int) -> PackedVector2Array:
 	var points := PackedVector2Array()

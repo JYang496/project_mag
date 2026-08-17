@@ -316,7 +316,7 @@ func _apply_close_chain_slow(target: Node) -> void:
 	CLOSE_CHAIN_RULES.apply_dash_slow(target, close_chain_slow_multiplier, close_chain_slow_duration_sec)
 
 func _try_trigger_long_dash_hit(target: Node) -> void:
-	if not is_offhand_skill_ready():
+	if not is_passive_ready():
 		return
 	if target == null or not is_instance_valid(target):
 		return
@@ -325,7 +325,7 @@ func _try_trigger_long_dash_hit(target: Node) -> void:
 	var threshold := attack_range * maxf(long_dash_trigger_range_ratio, 0.0)
 	if _dash_start_distance < threshold:
 		return
-	notify_offhand_skill_triggered(0.0)
+	consume_passive_charge()
 	emit_passive_trigger(&"dash_blade_long_dash_hit_triggered", {
 		"target": target,
 		"dash_distance": _dash_start_distance,

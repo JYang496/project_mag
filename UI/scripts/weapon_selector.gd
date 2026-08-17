@@ -16,9 +16,11 @@ const SLOT_COUNT := 4
 const SWITCH_ANIM_TIME := 0.35
 const SWITCH_ANIM_TRANS := Tween.TRANS_SINE
 const SWITCH_ANIM_EASE := Tween.EASE_OUT
-const OFFHAND_SLOT_SIZE := Vector2(72.0, 72.0)
-const MAINHAND_SLOT_SIZE := Vector2(96.0, 72.0)
-const SLOT_GAP := 8.0
+const OFFHAND_SLOT_SIZE := Vector2(48.0, 64.0)
+const MAINHAND_SLOT_SIZE := Vector2(64.0, 64.0)
+const SLOT_GAP := 6.0
+const COMPACT_DOCK_SIZE := Vector2(226.0, 64.0)
+const VISUAL_FOOTPRINT_SIZE := Vector2(336.0, 100.0)
 const MAINHAND_READY_GLOW_COLOR := Color(0.58, 0.86, 1.0, 1.0)
 const OFFHAND_READY_GLOW_COLOR := Color(0.92, 0.92, 0.92, 1.0)
 const WEAPON_STATUS_FILL := Color(0.33, 0.66, 1.0, 0.95)
@@ -28,7 +30,7 @@ const WEAPON_STATUS_LOW := Color(0.98, 0.58, 0.18, 1.0)
 const WEAPON_STATUS_EMPTY := Color(0.94, 0.30, 0.28, 1.0)
 const WEAPON_STATUS_EMPTY_TRACK := Color(0.38, 0.08, 0.08, 0.88)
 const MAINHAND_AMMO_COLUMN_RECT := Rect2(20.0, -58.0, 16.0, 54.0)
-const MAINHAND_AMMO_LABEL_RECT := Rect2(40.0, -24.0, 56.0, 20.0)
+const MAINHAND_AMMO_LABEL_RECT := Rect2(40.0, -27.0, 64.0, 24.0)
 const OFFHAND_AVAILABILITY_LABEL_Y := 4.0
 const PASSIVE_PROGRESS_COLOR := Color(0.98, 0.78, 0.28, 0.95)
 const PASSIVE_PROGRESS_BASE_COLOR := Color(0.98, 0.78, 0.28, 0.18)
@@ -82,6 +84,8 @@ var _mainhand_slot_bg: Texture2D = preload("res://UI/themes/modern/weapon_slot_m
 var _offhand_slot_bg: Texture2D = preload("res://UI/themes/modern/weapon_slot_offhand.png")
 
 func _ready() -> void:
+	custom_minimum_size = COMPACT_DOCK_SIZE
+	size = COMPACT_DOCK_SIZE
 	slot_nodes = _slot_nodes.duplicate()
 	_slot_views.clear()
 	for slot_node in _slot_nodes:
@@ -115,6 +119,12 @@ func _process(_delta: float) -> void:
 
 func set_layout_origin(origin: Vector2) -> void:
 	position = origin
+
+func get_compact_dock_size() -> Vector2:
+	return COMPACT_DOCK_SIZE
+
+func get_visual_footprint_size() -> Vector2:
+	return VISUAL_FOOTPRINT_SIZE
 
 func bind_player_data() -> void:
 	if not PlayerData.is_connected("weapon_list_changed", Callable(self, "_on_weapon_list_changed")):
@@ -454,7 +464,7 @@ func _ensure_slot_resource_indicator_node(slot_idx: int) -> void:
 	label.z_index = 1
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 9)
+	label.add_theme_font_size_override("font_size", 12)
 	_cooldown_overlay.add_child(label)
 	_slot_resource_indicator_nodes[slot_idx] = label
 
@@ -471,7 +481,7 @@ func _ensure_slot_availability_label_node(slot_idx: int) -> void:
 	label.z_index = 2
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_font_size_override("font_size", 12)
 	label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.92))
 	label.add_theme_constant_override("outline_size", 2)
 	_cooldown_overlay.add_child(label)
@@ -585,6 +595,7 @@ func _update_slot_cooldown_progress() -> void:
 			var label_rect := get_weapon_availability_label_rect(slot_node.size, is_mainhand_weapon)
 			availability_label.position = slot_node.position + label_rect.position
 			availability_label.size = label_rect.size
+			availability_label.add_theme_font_size_override("font_size", 14 if is_mainhand_weapon else 12)
 		progress_node.visible = bool(visual_state.get("visible", false)) and not is_mainhand_weapon
 		progress_node.set("fill_color", visual_state.get("fill_color", WEAPON_STATUS_FILL))
 		progress_node.set("base_color", visual_state.get("track_color", WEAPON_STATUS_TRACK))

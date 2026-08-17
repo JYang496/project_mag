@@ -25,6 +25,18 @@ Use these folders as the primary runtime/code areas:
 - `UI/`
 - `data/`
 
+## Cryptographic Hash Policy
+
+- Do not add cryptographic hashing, digest fields, checksums based on cryptographic
+  hashes, HMACs, or hash-based encryption to runtime code, tools, reports, tests,
+  manifests, or generated artifacts.
+- Do not use external asset-processing wrappers that inject cryptographic digest
+  metadata into project reports; invoke the project-owned tool directly instead.
+- Use direct byte comparison when a test only needs to prove that two files are
+  byte-identical.
+- Deterministic non-cryptographic hashes used for spatial indexing or procedural
+  visual distribution are allowed and must not be presented as security features.
+
 ## Default Do-Not-Read Areas
 
 Unless the user explicitly asks for them, avoid reading:
@@ -46,6 +58,22 @@ These files are usually historical, generated, or asset-heavy and can waste cont
 Read `tests/README.md` before choosing test commands.
 
 Prefer affected or focused tests instead of scanning or running every historical test.
+
+### Active Test Addition Policy
+
+- Do not add a new test to the active test catalog unless the task develops a
+  genuinely new product feature.
+- Bug fixes, refactors, balancing, visual changes, maintenance, and investigation
+  work must not introduce new persistent active tests.
+- This restriction does not prohibit validation. Temporary tests or probes may be
+  created when needed to verify the current task, but they must be deleted after
+  validation completes.
+- Do not register temporary validation in `tests/infrastructure/test_manifest.json`,
+  archive it for later reuse, or leave any test scene, runner, fixture, probe, or
+  generated test artifact that would be run again in future work.
+- Reuse existing active tests when they already cover the affected behavior. A
+  request to add durable regression coverage does not override this policy unless
+  the work is for a genuinely new feature or the user explicitly changes this rule.
 
 ### Windowless Godot Validation
 

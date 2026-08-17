@@ -78,6 +78,10 @@ enemies=""
 npc=""
 player=""
 
+[gui]
+
+theme/custom_font="res://asset/fonts/fusion_pixel/fusion-pixel-12px-proportional-zh_hans.ttf"
+
 [input]
 
 UP={

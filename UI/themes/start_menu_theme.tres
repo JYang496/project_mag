@@ -1,6 +1,6 @@
 [gd_resource type="Theme" format=3 uid="uid://dmesct0ftrx2j"]
 
-[ext_resource type="FontFile" uid="uid://b7peena5sx245" path="res://asset/fonts/NotoSansSC-Regular.ttf" id="1_font"]
+[ext_resource type="FontFile" path="res://asset/fonts/fusion_pixel/fusion-pixel-12px-proportional-zh_hans.ttf" id="1_font"]
 
 [sub_resource type="StyleBoxFlat" id="ButtonDisabled"]
 content_margin_left = 18.0
@@ -217,6 +217,7 @@ CheckButton/styles/pressed = SubResource("CheckNormal")
 DisplayLabel/base_type = &"Label"
 DisplayLabel/colors/font_color = Color(0.94, 0.98, 0.99, 1)
 DisplayLabel/font_sizes/font_size = 48
+DisplayLabel/fonts/font = ExtResource("1_font")
 EyebrowLabel/base_type = &"Label"
 EyebrowLabel/colors/font_color = Color(0.34, 0.78, 0.88, 1)
 EyebrowLabel/font_sizes/font_size = 14
@@ -243,7 +244,8 @@ PrimaryButton/colors/font_color = Color(1, 0.92, 0.72, 1)
 PrimaryButton/colors/font_focus_color = Color(1, 0.97, 0.88, 1)
 PrimaryButton/colors/font_hover_color = Color(1, 0.97, 0.88, 1)
 PrimaryButton/colors/font_pressed_color = Color(1, 0.88, 0.58, 1)
-PrimaryButton/font_sizes/font_size = 19
+PrimaryButton/font_sizes/font_size = 24
+PrimaryButton/fonts/font = ExtResource("1_font")
 PrimaryButton/styles/disabled = SubResource("ButtonDisabled")
 PrimaryButton/styles/focus = SubResource("PrimaryHover")
 PrimaryButton/styles/hover = SubResource("PrimaryHover")
@@ -251,7 +253,8 @@ PrimaryButton/styles/normal = SubResource("PrimaryNormal")
 PrimaryButton/styles/pressed = SubResource("PrimaryNormal")
 SectionTitleLabel/base_type = &"Label"
 SectionTitleLabel/colors/font_color = Color(0.94, 0.98, 0.99, 1)
-SectionTitleLabel/font_sizes/font_size = 28
+SectionTitleLabel/font_sizes/font_size = 24
+SectionTitleLabel/fonts/font = ExtResource("1_font")
 SettingsPanel/base_type = &"PanelContainer"
 SettingsPanel/styles/panel = SubResource("SettingsPanel")
 StatusLabel/base_type = &"Label"

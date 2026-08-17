@@ -236,9 +236,9 @@ func _try_trigger_close_hit(target: Node) -> void:
 	var distance := player.global_position.distance_to(target_node.global_position)
 	if distance >= maxf(close_hit_trigger_distance, 0.0):
 		return
-	if not is_offhand_skill_ready():
+	if not is_passive_ready():
 		return
-	notify_offhand_skill_triggered(0.0)
+	consume_passive_charge()
 	emit_passive_trigger(&"shotgun_close_hit_triggered", {
 		"target": target,
 		"distance": distance,

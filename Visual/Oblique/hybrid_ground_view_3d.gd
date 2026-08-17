@@ -408,8 +408,12 @@ func _rebuild_ground() -> void:
 		var center := texture_sprite.global_position
 		mesh_instance.position = world_2d_to_3d(center)
 		_ground_root.add_child(mesh_instance)
-		var ground_style := ArenaGroundStyleType.build_style(int(cell.get("logical_id")))
+		var theme_region_extent := _resolve_ground_theme_region_extent()
+		var ground_theme := ArenaGroundStyleType.theme_for_world_region(center, theme_region_extent)
+		var ground_style := ArenaGroundStyleType.build_style(int(cell.get("logical_id")), ground_theme)
 		mesh_instance.set_instance_shader_parameter("arena_theme_tint", ground_style.get("theme_tint", Color.WHITE))
+		mesh_instance.set_instance_shader_parameter("arena_midtone_color", ground_style.get("midtone_color", Color("263747")))
+		mesh_instance.set_instance_shader_parameter("arena_midtone_strength", float(ground_style.get("midtone_strength", 0.15)))
 		mesh_instance.set_instance_shader_parameter("arena_accent_color", ground_style.get("accent_color", Color(0.38, 0.88, 1.0, 1.0)))
 		mesh_instance.set_instance_shader_parameter("arena_variant", float(ground_style.get("variant", 0)))
 		mesh_instance.set_instance_shader_parameter("arena_detail_seed", float(ground_style.get("seed", 0.0)))
@@ -437,6 +441,14 @@ func _rebuild_ground() -> void:
 	if _board_renderer != null:
 		_board_renderer.setup_rest_area()
 		_board_renderer.hide_legacy_boundaries()
+
+
+func _resolve_ground_theme_region_extent() -> Vector2:
+	var spacing_value: Variant = _board.get("cell_spacing") if _board != null else null
+	if spacing_value is Vector2:
+		var spacing := spacing_value as Vector2
+		return Vector2(maxf(absf(spacing.x) * 2.0, 1.0), maxf(absf(spacing.y) * 2.0, 1.0))
+	return ArenaGroundStyleType.DEFAULT_REGION_EXTENT
 
 func _clear_ground_visual_caches() -> void:
 	if _platform_renderer != null:
@@ -1013,17 +1025,20 @@ func _register_warning_circle(warning: Node2D) -> void:
 	if warning == null or _area_meshes.has(warning.get_instance_id()):
 		return
 	var color: Color = warning.get("fill_color") as Color
-	color.a = clampf(color.a, 0.08, 0.12)
+	# Large danger zones must preserve visibility of units and terrain beneath them.
+	color.a = clampf(color.a, 0.025, 0.05)
 	var mesh := _create_disc_mesh(color, DANGER_WARNING_RENDER_PRIORITY)
 	var outline_color: Color = warning.get("line_color") as Color
 	var wave_color: Color = warning.get("wave_color") as Color
 	var outline := _create_ring_mesh(outline_color)
 	var wave := _create_ring_mesh(wave_color)
 	var center_marker := _create_disc_mesh(outline_color, DANGER_WARNING_RENDER_PRIORITY + 1)
+	var countdown_label := _create_warning_countdown_label()
 	_ground_root.add_child(mesh)
 	_ground_root.add_child(outline)
 	_ground_root.add_child(wave)
 	_ground_root.add_child(center_marker)
+	_ground_root.add_child(countdown_label)
 	warning.modulate.a = 0.0
 	_area_meshes[warning.get_instance_id()] = {
 		"source": weakref(warning),
@@ -1031,10 +1046,23 @@ func _register_warning_circle(warning: Node2D) -> void:
 		"outline": outline,
 		"wave": wave,
 		"center_marker": center_marker,
+		"countdown_label": countdown_label,
 		"warning": true,
 		"height": DANGER_WARNING_HEIGHT,
 	}
 	warning.set_meta(&"hybrid_ground_registered", true)
+
+func _create_warning_countdown_label() -> Label3D:
+	var label := Label3D.new()
+	label.name = "WarningCountdown"
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.font_size = 32
+	label.outline_size = 8
+	label.modulate = Color.WHITE
+	label.outline_modulate = Color(0.10, 0.02, 0.03, 0.96)
+	label.render_priority = DANGER_WARNING_RENDER_PRIORITY + 2
+	return label
 
 func _register_ground_segment(line: Line2D) -> void:
 	if line == null or _segment_meshes.has(line.get_instance_id()):
@@ -1385,6 +1413,7 @@ func _sync_area_meshes() -> void:
 		var outline := entry.get("outline") as MeshInstance3D
 		var wave := entry.get("wave") as MeshInstance3D
 		var center_marker := entry.get("center_marker") as MeshInstance3D
+		var countdown_label := entry.get("countdown_label") as Label3D
 		if area == null or mesh == null:
 			if mesh != null:
 				mesh.queue_free()
@@ -1394,6 +1423,8 @@ func _sync_area_meshes() -> void:
 				wave.queue_free()
 			if center_marker != null:
 				center_marker.queue_free()
+			if countdown_label != null:
+				countdown_label.queue_free()
 			_area_meshes.erase(id)
 			continue
 		var visual_shape := int(entry.get("visual_shape", 0))
@@ -1410,6 +1441,8 @@ func _sync_area_meshes() -> void:
 				wave.position = next_position + Vector3.UP * 0.004
 			if center_marker != null:
 				center_marker.position = next_position + Vector3.UP * 0.006
+			if countdown_label != null:
+				countdown_label.position = next_position + Vector3.UP * 0.08
 			entry["last_position"] = next_position
 		var area_visible := is_world_point_within_visual_bounds(area.global_position, visual_cull_margin_pixels + radius / maxf(world_scale, 0.0001))
 		mesh.visible = area_visible
@@ -1426,6 +1459,9 @@ func _sync_area_meshes() -> void:
 				center_marker.visible = area_visible
 				var marker_radius := maxf(float(area.get("center_marker_diameter")) * 0.5 * world_scale, 1.0)
 				center_marker.scale = Vector3(marker_radius, 1.0, marker_radius)
+			if countdown_label != null:
+				countdown_label.visible = area_visible
+				countdown_label.text = str(area.call("get_warning_countdown_text"))
 			continue
 		var visual_version := int(area.call("get_hybrid_visual_version")) if area.has_method("get_hybrid_visual_version") else 0
 		if visual_version != int(entry.get("visual_version", -1)):

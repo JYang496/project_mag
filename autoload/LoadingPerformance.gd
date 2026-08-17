@@ -50,7 +50,7 @@ func _ready() -> void:
 	var label := Label.new()
 	_world_build_label = label
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.text = "Loading..."
+	label.text = _localized_loading_text()
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 28)
@@ -96,8 +96,14 @@ func mark(label: String) -> void:
 	if RUNTIME_DIAGNOSTICS_SCRIPT.verbose_logs_enabled():
 		print("[LoadingPerformance] run=%d flow=%s mark=%s" % [_run_id, _flow, label])
 
+func _localized_loading_text() -> String:
+	var translated := str(TranslationServer.translate("ui.loading"))
+	return translated if translated != "" and translated != "ui.loading" else "Loading..."
+
 func show_world_build_overlay() -> void:
 	if _world_build_overlay != null:
+		if _world_build_label != null:
+			_world_build_label.text = _localized_loading_text()
 		_stop_world_build_handoff()
 		if _world_preview_handoff_active:
 			_world_build_overlay.visible = true

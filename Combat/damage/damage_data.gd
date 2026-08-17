@@ -18,6 +18,7 @@ var knock_back := {
 }
 var source_node: Node
 var source_player: Node
+var action_context: SkillActionContext
 var heat_snapshot: Variant = null
 
 # Optional duplicate-event guard metadata.

@@ -9,18 +9,6 @@ var ITEM_NAME := "Reload Link"
 @export var bonus_lv2: float = 0.24
 @export var bonus_lv3: float = 0.30
 
-var _registered: bool = false
-
-func _enter_tree() -> void:
-	super._enter_tree()
-	_register_plugin()
-
-func _ready() -> void:
-	_register_plugin()
-
-func _exit_tree() -> void:
-	_unregister_plugin()
-
 func get_reload_duration_multiplier(source_weapon: Weapon, _base_duration: float) -> float:
 	if source_weapon == null or source_weapon != weapon:
 		return 1.0
@@ -34,25 +22,6 @@ func get_effect_descriptions() -> PackedStringArray:
 			self, "detail.1", {}, "Reloads faster while another weapon is reloading"
 		),
 	]))
-
-func _register_plugin() -> void:
-	if _registered:
-		return
-	if weapon == null:
-		weapon = _resolve_weapon()
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	if not weapon.has_method("register_reload_duration_plugin"):
-		return
-	weapon.call("register_reload_duration_plugin", self)
-	_registered = true
-
-func _unregister_plugin() -> void:
-	if not _registered:
-		return
-	if weapon != null and is_instance_valid(weapon) and weapon.has_method("unregister_reload_duration_plugin"):
-		weapon.call("unregister_reload_duration_plugin", self)
-	_registered = false
 
 func _has_other_reloading_weapon() -> bool:
 	for other_weapon in UTILS.get_player_weapons():

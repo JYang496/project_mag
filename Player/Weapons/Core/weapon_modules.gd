@@ -1,15 +1,9 @@
 extends Node2D
-class_name WeaponModules
+class_name WeaponModuleContainer
 
-@export_flags(
-	"physical",
-	"energy",
-	"fire",
-	"freeze",
-	"heat",
-	"charge",
-	"auto_fire"
-) var weapon_traits: int = 0
-
-func get_normalized_weapon_traits() -> Array[StringName]:
-	return WeaponTrait.flags_to_traits(weapon_traits)
+func get_modules() -> Array[Module]:
+	var result: Array[Module] = []
+	for child in get_children():
+		if child is Module:
+			result.append(child as Module)
+	return result

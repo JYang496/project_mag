@@ -15,6 +15,8 @@ instance uniform float arena_decal_rotation : hint_range(0.0, 3.0, 1.0) = 0.0;
 instance uniform float arena_decal_strength : hint_range(0.0, 0.05) = 0.03;
 instance uniform float arena_ambient_phase : hint_range(0.0, 1.0) = 0.0;
 instance uniform vec4 arena_theme_tint : source_color = vec4(1.0);
+instance uniform vec4 arena_midtone_color : source_color = vec4(0.149, 0.216, 0.278, 1.0);
+instance uniform float arena_midtone_strength : hint_range(0.0, 0.20) = 0.15;
 instance uniform vec4 arena_accent_color : source_color = vec4(0.38, 0.88, 1.0, 1.0);
 
 float hash21(vec2 point) {
@@ -95,6 +97,28 @@ float arena_decal(vec2 uv) {
 	return max(scorch * 0.70, ring * step(0.08, abs(point.x)));
 }
 
+float arena_midtone_surface(vec2 uv, float mechanical_detail, float decal_detail) {
+	// Roughly 12-18% of the tile receives a local material lift. Inset 8x8
+	// structural plates prevent this from behaving like a global exposure change.
+	vec2 panel_grid = floor(uv * 8.0);
+	vec2 panel_uv = fract(uv * 8.0);
+	float panel_gate = step(0.82, hash21(panel_grid + arena_detail_seed * 71.0));
+	float panel_inset = step(0.08, panel_uv.x) * step(panel_uv.x, 0.92)
+		* step(0.08, panel_uv.y) * step(panel_uv.y, 0.92);
+	float structural_plate = panel_gate * panel_inset;
+	return clamp(structural_plate + mechanical_detail * 0.34 + decal_detail * 0.16, 0.0, 1.0);
+}
+
+float arena_accent_surface(vec2 uv) {
+	// Five percent of coarse material panels carry a restrained regional cue.
+	vec2 accent_grid = floor(uv * 10.0);
+	vec2 accent_uv = fract(uv * 10.0);
+	float accent_gate = step(0.95, hash21(accent_grid + arena_detail_seed * 113.0));
+	float inset = step(0.06, accent_uv.x) * step(accent_uv.x, 0.94)
+		* step(0.06, accent_uv.y) * step(accent_uv.y, 0.94);
+	return accent_gate * inset;
+}
+
 void fragment() {
 	vec2 block = floor(UV * 64.0) / 64.0;
 	float radial = length(block - vec2(0.5));
@@ -113,6 +137,10 @@ void fragment() {
 	float decal_detail = clamp(arena_decal(UV), 0.0, 1.0);
 	terrain.rgb *= arena_theme_tint.rgb;
 	terrain.rgb *= 1.0 - mechanical_detail * arena_detail_strength - decal_detail * arena_decal_strength;
+	float midtone_surface = arena_midtone_surface(UV, mechanical_detail, decal_detail);
+	terrain.rgb = mix(terrain.rgb, arena_midtone_color.rgb, midtone_surface * arena_midtone_strength);
+	float accent_surface = arena_accent_surface(UV);
+	terrain.rgb = mix(terrain.rgb, arena_accent_color.rgb, accent_surface * 0.055);
 	float ambient_scan = step(0.985, fract(UV.x * 0.72 + UV.y * 0.28 - TIME * 0.018 + arena_ambient_phase));
 	float circuit_gate = step(0.78, hash21(floor(UV * 12.0) + arena_detail_seed * 53.0));
 	terrain.rgb += arena_accent_color.rgb * ambient_scan * circuit_gate * 0.020;

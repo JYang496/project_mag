@@ -6,6 +6,7 @@ const MAX_PRIMARY_CHIPS := 3
 var title := ""
 var type_label := ""
 var behavior_summary := ""
+var role_summary := ""
 var feature_lines := PackedStringArray()
 var chips: Array = []
 var synergy_status: StringName = &"neutral"
@@ -35,6 +36,7 @@ func is_actionable() -> bool:
 func to_display_data() -> Dictionary:
 	var data := visual_data.duplicate(true)
 	data.merge({"title": title, "type_label": type_label, "summary_text": behavior_summary,
+		"role_summary": role_summary,
 		"feature_lines": feature_lines,
 		"chips": primary_chips(), "synergy_status": synergy_status, "synergy_label": synergy_label,
 		"synergy_reason": synergy_reason, "comparison_lines": comparison_lines,

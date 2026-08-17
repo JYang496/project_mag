@@ -13,7 +13,7 @@ const DEFAULT_PROJECTILE_LIFETIME_SEC: float = 2.5
 const WeaponFireFeedbackPlayerScript := preload("res://Player/Weapons/Feedback/weapon_fire_feedback_player.gd")
 
 #region Runtime State
-@onready var modules: WeaponModules = $Modules
+@onready var modules: WeaponModuleContainer = $Modules
 var branch_runtime: WeaponBranchRuntime = WeaponBranchRuntime.new()
 var heat_runtime: WeaponHeatController = WeaponHeatController.new()
 var stat_pipeline: WeaponStatPipeline = WeaponStatPipeline.new()
@@ -22,7 +22,16 @@ var ammo_controller: WeaponAmmoController = WeaponAmmoController.new()
 var passive_controller: WeaponPassiveController = WeaponPassiveController.new()
 var fuse_visual_controller: WeaponFuseVisualController = WeaponFuseVisualController.new()
 var fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
-var MAX_MODULE_NUMBER = 3
+@export_range(1, 8, 1) var module_slot_capacity: int = 3
+@export_flags(
+	"physical",
+	"energy",
+	"fire",
+	"freeze",
+	"heat",
+	"charge",
+	"auto_fire"
+) var base_trait_flags: int = 0
 @onready var sprite: Sprite2D = $Sprite
 @onready var fuse_sprite_holder: FuseSpriteHolder = get_node_or_null("FuseSprites")
 const PASSIVE_SCOPE_BODY: StringName = &"body"
@@ -42,9 +51,9 @@ const DELIVERY_FLAG_ORDER: Array[StringName] = DamageDeliveryType.ALL
 
 # Common variables for weapons
 var level : int
-var FINAL_MAX_FUSE : int = 3
-var FINAL_MAX_LEVEL : int = 7
-var max_level : int = FINAL_MAX_LEVEL
+const MAX_FUSE_LEVEL: int = 3
+const FALLBACK_MAX_WEAPON_LEVEL: int = 9
+var max_level: int = FALLBACK_MAX_WEAPON_LEVEL
 var _fuse_internal : int = 1
 var heat_core: Heat
 var heat_per_shot: float = 1.0
@@ -65,7 +74,6 @@ var runtime_capability_additions: Dictionary = {}
 var runtime_capability_suppressions: Dictionary = {}
 @export var magazine_capacity: int = 50
 @export var reload_duration_sec: float = 6.0
-var _offhand_skill_ready: bool = true
 var _energy_release_attack_active: bool = false
 var _energy_release_damage_multiplier: float = 1.0
 var _energy_release_spent: float = 0.0
@@ -79,12 +87,13 @@ var fuse : int:
 	get:
 		return _fuse_internal
 	set(value):
-		_fuse_internal = clampi(value, 1, FINAL_MAX_FUSE)
+		_fuse_internal = clampi(value, 1, MAX_FUSE_LEVEL)
 		_apply_fuse_sprite()
 
 signal weapon_role_changed(next_role: String)
 @warning_ignore("unused_signal")
 signal passive_triggered(event_name: StringName, detail: Dictionary)
+signal weapon_event_emitted(event: WeaponEvent)
 @warning_ignore("unused_signal")
 signal weapon_reload_completed(weapon: Weapon)
 @warning_ignore("unused_signal")
@@ -147,7 +156,7 @@ func refresh_max_level_from_data() -> void:
 	max_level = get_weapon_max_level()
 
 func _get_weapon_data_max_level() -> int:
-	return WeaponLevelDataResolver.get_data_max_level(self, FINAL_MAX_LEVEL)
+	return WeaponLevelDataResolver.get_data_max_level(self, FALLBACK_MAX_WEAPON_LEVEL)
 #endregion
 
 #region Fuse Visuals
@@ -159,26 +168,10 @@ func _load_fuse_sprites() -> bool:
 #endregion
 
 #region Plugin Dispatch And Hit Events
-func register_on_hit_plugin(plugin: Node) -> void:
-	plugin_dispatcher.register_on_hit_plugin(plugin)
-
-func unregister_on_hit_plugin(plugin: Node) -> void:
-	plugin_dispatcher.unregister_on_hit_plugin(plugin)
-
-func register_projectile_spawn_plugin(plugin: Node) -> void:
-	plugin_dispatcher.register_projectile_spawn_plugin(plugin)
-
-func unregister_projectile_spawn_plugin(plugin: Node) -> void:
-	plugin_dispatcher.unregister_projectile_spawn_plugin(plugin)
-
 func notify_projectile_spawned(projectile: Node2D) -> void:
-	plugin_dispatcher.notify_projectile_spawned(projectile)
-
-func register_reload_duration_plugin(plugin: Node) -> void:
-	plugin_dispatcher.register_reload_duration_plugin(plugin)
-
-func unregister_reload_duration_plugin(plugin: Node) -> void:
-	plugin_dispatcher.unregister_reload_duration_plugin(plugin)
+	var event := WeaponEvent.create(WeaponEvent.PROJECTILE_SPAWNED, self)
+	event.projectile = projectile
+	emit_weapon_event(event)
 
 func on_hit_target(target: Node) -> void:
 	_handle_hit_target(target)
@@ -187,7 +180,11 @@ func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> vo
 	_handle_hit_target(target, Attack.normalize_damage_type(damage_type))
 
 func _handle_hit_target(target: Node, damage_type: StringName = StringName()) -> void:
-	plugin_dispatcher.apply_on_hit_plugins(target)
+	var event := WeaponEvent.create(WeaponEvent.HIT_CONFIRMED, self)
+	event.target = target
+	if damage_type != StringName():
+		event.detail["damage_type"] = damage_type
+	emit_weapon_event(event)
 	if target != null and is_instance_valid(target):
 		target.set_meta(LAST_HIT_WEAPON_META, get_instance_id())
 		target.set_meta(LAST_HIT_WEAPON_TIME_META, Time.get_ticks_msec())
@@ -203,7 +200,23 @@ func _handle_hit_target(target: Node, damage_type: StringName = StringName()) ->
 
 func on_damage_applied(target: Node, data: DamageData, result: DamageResult) -> void:
 	_accumulate_global_weapon_energy(data, result)
-	plugin_dispatcher.apply_on_damage_plugins(target, data, result)
+	var damage_event := WeaponEvent.create(WeaponEvent.DAMAGE_DEALT, self).with_context(data.action_context)
+	damage_event.target = target
+	damage_event.damage_data = data
+	damage_event.damage_result = result
+	emit_weapon_event(damage_event)
+	if result.is_critical:
+		var critical_event := WeaponEvent.create(WeaponEvent.CRITICAL_HIT, self).with_context(data.action_context)
+		critical_event.target = target
+		critical_event.damage_data = data
+		critical_event.damage_result = result
+		emit_weapon_event(critical_event)
+	if result.killed:
+		var kill_event := WeaponEvent.create(WeaponEvent.TARGET_KILLED, self).with_context(data.action_context)
+		kill_event.target = target
+		kill_event.damage_data = data
+		kill_event.damage_result = result
+		emit_weapon_event(kill_event)
 
 func _accumulate_global_weapon_energy(data: DamageData, result: DamageResult) -> void:
 	if data == null or result == null or not result.applied or result.health_damage <= 0:
@@ -877,7 +890,7 @@ func suppress_runtime_weapon_trait(source_id: StringName, trait_name: Variant) -
 func clear_runtime_weapon_traits(source_id: StringName) -> void:
 	stat_pipeline.clear_runtime_weapon_traits(source_id)
 
-func _get_modules_container() -> WeaponModules:
+func _get_modules_container() -> WeaponModuleContainer:
 	return modules
 
 func has_weapon_trait(trait_name: Variant) -> bool:
@@ -959,6 +972,17 @@ func get_total_external_damage_mul() -> float:
 #endregion
 
 #region Passive Event Output
+func emit_weapon_event(event: WeaponEvent) -> void:
+	assert(event != null)
+	event.source_weapon = self
+	plugin_dispatcher.dispatch_event(event)
+	weapon_event_emitted.emit(event)
+
+func receive_external_weapon_event(event: WeaponEvent) -> void:
+	assert(event != null)
+	assert(event.source_weapon == self)
+	emit_weapon_event(event)
+
 func emit_passive_trigger(event_name: StringName, detail: Dictionary = {}, passive_scope: StringName = PASSIVE_SCOPE_BODY) -> void:
 	passive_controller.emit_passive_trigger(event_name, detail, passive_scope)
 #endregion
@@ -1088,17 +1112,7 @@ func _get_effective_reload_duration() -> float:
 	return ammo_controller.get_effective_reload_duration()
 #endregion
 
-#region Weapon Active And Passive State
-# Reserved extension point for a possible future weapon-active system.
-# No current weapon overrides or consumes this interface.
-func request_weapon_active() -> Dictionary:
-	return {"ok": false, "reason": "unsupported"}
-
-func _execute_weapon_active(_damage_multiplier: float) -> bool:
-	return false
-
-func has_weapon_active_skill() -> bool:
-	return false
+#region Weapon Passive State
 
 func get_passive_status() -> Dictionary:
 	return passive_controller.get_passive_status()
@@ -1109,8 +1123,8 @@ func with_passive_charge_status(status: Dictionary) -> Dictionary:
 func is_passive_ready() -> bool:
 	return passive_controller.is_passive_ready()
 
-func notify_passive_triggered(_cooldown_sec := 0.0) -> void:
-	passive_controller.notify_passive_triggered(_cooldown_sec)
+func consume_passive_charge() -> void:
+	passive_controller.consume_charge()
 
 func add_passive_charges(amount: int = 1) -> int:
 	return passive_controller.add_passive_charges(amount)
@@ -1121,25 +1135,10 @@ func consume_all_passive_charges() -> int:
 func refresh_passive_on_reload() -> void:
 	passive_controller.refresh_passive_on_reload()
 
-func notify_offhand_skill_triggered(cooldown_sec: float) -> void:
-	notify_passive_triggered(cooldown_sec)
-
-func get_offhand_skill_cd_progress() -> float:
-	return passive_controller.get_offhand_skill_cd_progress()
-
-func is_offhand_skill_ready() -> bool:
-	return _offhand_skill_ready and is_passive_ready()
-
-func set_offhand_skill_ready(is_ready: bool) -> void:
-	_offhand_skill_ready = is_ready
-
-func get_offhand_skill_ready_flag() -> bool:
-	return _offhand_skill_ready
-
 func get_passive_max_charges() -> int:
 	return 1
 
-func _refresh_offhand_skill_on_reload() -> void:
+func _refresh_passive_on_reload() -> void:
 	refresh_passive_on_reload()
 
 func force_skill_cooldowns_ready() -> void:

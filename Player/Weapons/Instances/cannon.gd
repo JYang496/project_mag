@@ -207,7 +207,7 @@ func _try_emit_idle_fire_trigger() -> bool:
 		return false
 	_idle_fire_ready = false
 	_idle_fire_reload_ready = false
-	notify_offhand_skill_triggered(0.0)
+	consume_passive_charge()
 	_idle_fire_empowered_shots_remaining = maxi(1, idle_fire_empowered_shots)
 	if idle_fire_timer != null:
 		idle_fire_timer.stop()

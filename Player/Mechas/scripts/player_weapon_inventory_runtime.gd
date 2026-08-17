@@ -107,7 +107,7 @@ func predict_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
 	var equipped_weapon := find_equipped_weapon_by_id(normalized_id)
 	if equipped_weapon == null:
 		return {"result": "not_applicable", "weapon_id": normalized_id}
-	var max_fuse: int = max(1, int(equipped_weapon.FINAL_MAX_FUSE))
+	var max_fuse: int = Weapon.MAX_FUSE_LEVEL
 	if int(equipped_weapon.fuse) < max_fuse:
 		var target_fuse := int(equipped_weapon.fuse) + 1
 		return {

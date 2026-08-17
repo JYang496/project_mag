@@ -11,9 +11,12 @@ func on_collect_area_entered(area) -> void:
 	if _player == null:
 		return
 	if area.is_in_group("collectables") and area is Coin:
+		var denomination := int(area.value)
 		var value: int = area.collect()
 		value = _player.apply_loot_bonus(value, &"coin")
 		_player.PlayerData.earn_gold(value, true)
+		if denomination >= 5 and _player.has_method("_spawn_player_floating_hint"):
+			_player.call("_spawn_player_floating_hint", "+%d" % denomination)
 		if GlobalVariables.enemy_spawner and is_instance_valid(GlobalVariables.enemy_spawner) and GlobalVariables.enemy_spawner.has_method("record_kill_gold_coin_collected"):
 			GlobalVariables.enemy_spawner.record_kill_gold_coin_collected(value)
 		_player.coin_collected.emit()

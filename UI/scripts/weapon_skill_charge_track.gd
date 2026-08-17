@@ -55,9 +55,9 @@ var cycle_thresholds: Array = []:
 		queue_redraw()
 
 const HORIZONTAL_PADDING := 2.0
-const SEGMENT_GAP := 5.0
-const MAX_BEAN_WIDTH := 14.0
-const CHARGE_HEIGHT := 6.0
+const SEGMENT_GAP := 6.0
+const MAX_BEAN_WIDTH := 18.0
+const CHARGE_HEIGHT := 8.0
 const CYCLE_HEIGHT := 3.0
 const CYCLE_GAP := 2.0
 

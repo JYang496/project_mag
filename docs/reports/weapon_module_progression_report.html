@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MagArena 武器与模组分层解锁报告</title>
+  <style>
+    :root { color-scheme: dark; --bg:#091019; --panel:#111c28; --panel2:#172534; --line:#2c4358; --text:#e7f1f8; --muted:#90a8ba; --cyan:#67d9ff; --amber:#ffcb66; --green:#7ce8a1; --violet:#ba9cff; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:"Microsoft YaHei","Noto Sans SC",system-ui,sans-serif; background:radial-gradient(circle at 85% 0,#17354b 0,transparent 34%),var(--bg); color:var(--text); line-height:1.55; }
+    main { width:min(1240px,calc(100% - 32px)); margin:0 auto; padding:44px 0 72px; }
+    header { border:1px solid var(--line); background:linear-gradient(135deg,rgba(20,43,60,.96),rgba(11,20,31,.96)); padding:32px; box-shadow:0 18px 55px rgba(0,0,0,.28); }
+    .eyebrow { color:var(--cyan); font-size:12px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
+    h1 { margin:8px 0 10px; font-size:clamp(30px,5vw,54px); line-height:1.08; }
+    h2 { margin:0; font-size:28px; }
+    h3 { margin:26px 0 10px; color:var(--cyan); font-size:19px; }
+    p { margin:8px 0; }
+    code { color:#bcecff; font-family:Consolas,monospace; font-size:.92em; overflow-wrap:anywhere; }
+    .status { display:inline-flex; align-items:center; gap:8px; margin-top:12px; padding:7px 11px; border:1px solid #38604d; color:var(--green); background:#10251d; font-weight:700; font-size:13px; }
+    .notice { margin:22px 0; padding:17px 20px; border-left:4px solid var(--amber); background:#291f10; color:#ffe4ad; }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:22px 0 30px; }
+    .metric { border:1px solid var(--line); background:var(--panel); padding:18px; }
+    .metric strong { display:block; color:var(--cyan); font-size:28px; }
+    .metric span { color:var(--muted); font-size:13px; }
+    nav { position:sticky; top:0; z-index:10; display:flex; gap:8px; flex-wrap:wrap; padding:12px 0; background:rgba(9,16,25,.92); backdrop-filter:blur(10px); }
+    nav a { color:var(--text); text-decoration:none; border:1px solid var(--line); background:#10202e; padding:7px 12px; font-size:13px; }
+    nav a:hover { border-color:var(--cyan); color:var(--cyan); }
+    section.tier { scroll-margin-top:68px; margin:26px 0; border:1px solid var(--line); background:rgba(15,27,39,.95); }
+    .tier-head { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; padding:24px; border-bottom:1px solid var(--line); background:linear-gradient(90deg,#172a3a,#111a25); }
+    .tier-index { color:var(--amber); font-family:Consolas,monospace; font-weight:800; }
+    .tier-count { color:var(--muted); text-align:right; white-space:nowrap; }
+    .content { padding:0 24px 26px; }
+    .empty { color:var(--muted); border:1px dashed var(--line); padding:14px; background:#0c151e; }
+    table { width:100%; border-collapse:collapse; background:#0c151e; font-size:14px; }
+    th,td { padding:10px 12px; border:1px solid #24394b; text-align:left; vertical-align:top; }
+    th { color:#bfefff; background:#142434; font-size:12px; letter-spacing:.05em; }
+    tbody tr:hover { background:#122333; }
+    .name { font-weight:750; color:#fff; }
+    .tag { display:inline-block; padding:2px 7px; border:1px solid #3b5b74; color:#bce9ff; background:#112536; font-size:11px; }
+    .tag.new { border-color:#7a6631; color:#ffe39a; background:#2b2412; }
+    .source { margin-top:28px; color:var(--muted); font-size:13px; }
+    .legend { display:flex; gap:12px; flex-wrap:wrap; color:var(--muted); font-size:13px; }
+    @media (max-width:760px) { .metrics{grid-template-columns:repeat(2,1fr)} .tier-head{display:block}.tier-count{text-align:left;margin-top:8px} table{display:block;overflow-x:auto} }
+    @media print { body{background:#fff;color:#111} main{width:100%;padding:0} nav{display:none} header,.metric,section.tier{box-shadow:none;background:#fff;border-color:#aaa} .tier-head,th{background:#eee;color:#111} table{background:#fff} th,td{border-color:#aaa} code,.name,h3,h2{color:#111}.notice{color:#111;background:#fff3d6}.source,.tier-count,.metric span,.empty{color:#444} }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Protocol: Mag Arena · Runtime Content Report</div>
+    <h1>武器与模组分层解锁报告</h1>
+    <p>依据当前项目资源、运行时候选目录和 2026-08-12 实现状态生成。模组层级是已生效规则；武器部分忠实记录当前运行时状态。</p>
+    <div class="status">● 模组渐进解锁已接入奖励、特殊掉落与商店</div>
+  </header>
+
+  <div class="notice"><strong>武器状态说明：</strong>当前 15 种非隐藏武器没有独立的 <code>unlock_level</code> 或武器进度目录，奖励系统从第一层起即可抽取全部武器。因此本报告把 15 种武器全部列在第一层，后续层级标记为“无新增武器”。这不是建议分配，而是当前已实现行为。</div>
+
+  <div class="metrics">
+    <div class="metric"><strong>4</strong><span>解锁层级</span></div>
+    <div class="metric"><strong>58</strong><span>已登记武器模组</span></div>
+    <div class="metric"><strong>15</strong><span>非隐藏武器</span></div>
+    <div class="metric"><strong>3× / 2 场</strong><span>新层模组权重窗口</span></div>
+  </div>
+
+  <nav aria-label="报告导航">
+    <a href="#tier-1">第一层 · 基础</a><a href="#tier-2">第二层 · 触发</a><a href="#tier-3">第三层 · 构筑</a><a href="#tier-4">第四层 · 转化</a><a href="#rules">规则摘要</a>
+  </nav>
+
+  <section class="tier" id="tier-1">
+    <div class="tier-head"><div><div class="tier-index">TIER 01 · LEVEL 0–2</div><h2>基础层</h2><p>新局立即开放；教学重点是属性、槽位和兼容性。</p></div><div class="tier-count">新增模组 14<br>累计模组 14<br>新增武器 15</div></div>
+    <div class="content">
+      <h3>本层新增武器</h3>
+      <table><thead><tr><th>武器</th><th>ID</th><th>资源定义</th><th>运行时场景</th></tr></thead><tbody>
+        <tr><td class="name">Machine Gun / 机枪</td><td><code>1</code></td><td><code>data/weapons/machine_gun.tres</code></td><td><code>Player/Weapons/Instances/machine_gun.tscn</code></td></tr>
+        <tr><td class="name">Charged Blaster / 蓄力爆能枪</td><td><code>2</code></td><td><code>data/weapons/charged_blaster.tres</code></td><td><code>Player/Weapons/Instances/charged_blaster.tscn</code></td></tr>
+        <tr><td class="name">Spear Launcher / 长矛发射器</td><td><code>3</code></td><td><code>data/weapons/Spear.tres</code></td><td><code>Player/Weapons/Instances/spear_launcher.tscn</code></td></tr>
+        <tr><td class="name">Shotgun / 霰弹枪</td><td><code>4</code></td><td><code>data/weapons/shotgun.tres</code></td><td><code>Player/Weapons/Instances/shotgun.tscn</code></td></tr>
+        <tr><td class="name">Auto Pistol / 自动手枪</td><td><code>5</code></td><td><code>data/weapons/pistol.tres</code></td><td><code>Player/Weapons/Instances/pistol.tscn</code></td></tr>
+        <tr><td class="name">Orbit / 轨道卫星</td><td><code>7</code></td><td><code>data/weapons/orbit.tres</code></td><td><code>Player/Weapons/Instances/orbit.tscn</code></td></tr>
+        <tr><td class="name">Rocket Launcher / 火箭发射器</td><td><code>8</code></td><td><code>data/weapons/rocket_luncher.tres</code></td><td><code>Player/Weapons/Instances/rocket_launcher.tscn</code></td></tr>
+        <tr><td class="name">Laser / 激光器</td><td><code>9</code></td><td><code>data/weapons/laser.tres</code></td><td><code>Player/Weapons/Instances/laser.tscn</code></td></tr>
+        <tr><td class="name">Chainsaw Launcher / 电锯发射器</td><td><code>10</code></td><td><code>data/weapons/chainsaw_luncher.tres</code></td><td><code>Player/Weapons/Instances/chainsaw_launcher.tscn</code></td></tr>
+        <tr><td class="name">Dash Blade / 冲刺刃</td><td><code>11</code></td><td><code>data/weapons/dash_blade.tres</code></td><td><code>Player/Weapons/Instances/dash_blade.tscn</code></td></tr>
+        <tr><td class="name">Flamethrower / 火焰喷射器</td><td><code>13</code></td><td><code>data/weapons/flamethrower.tres</code></td><td><code>Player/Weapons/Instances/flamethrower.tscn</code></td></tr>
+        <tr><td class="name">Plasma Lance / 等离子长枪</td><td><code>17</code></td><td><code>data/weapons/plasma_lance.tres</code></td><td><code>Player/Weapons/Instances/plasma_lance.tscn</code></td></tr>
+        <tr><td class="name">Glacier Projector / 冰川投射器</td><td><code>21</code></td><td><code>data/weapons/glacier_projector.tres</code></td><td><code>Player/Weapons/Instances/glacier_projector.tscn</code></td></tr>
+        <tr><td class="name">Cannon / 加农炮</td><td><code>25</code></td><td><code>data/weapons/cannon.tres</code></td><td><code>Player/Weapons/Instances/cannon.tscn</code></td></tr>
+        <tr><td class="name">Sniper / 狙击枪</td><td><code>26</code></td><td><code>data/weapons/sniper.tres</code></td><td><code>Player/Weapons/Instances/sniper.tscn</code></td></tr>
+      </tbody></table>
+      <h3>本层新增模组</h3>
+      <table><thead><tr><th>模组</th><th>稳定 ID</th><th>定位</th></tr></thead><tbody>
+        <tr><td class="name">范围扩展器</td><td><code>wmod_area_expander</code></td><td>范围半径</td></tr>
+        <tr><td class="name">弹体增幅</td><td><code>wmod_bullet_size_stat</code></td><td>投射物尺寸</td></tr>
+        <tr><td class="name">暴击校准器</td><td><code>wmod_crit_calibrator</code></td><td>主武器暴击率</td></tr>
+        <tr><td class="name">冷冻灌注器</td><td><code>wmod_cryo_infuser_freeze</code></td><td>附加冻结伤害</td></tr>
+        <tr><td class="name">冲刺冷却器</td><td><code>wmod_dash_cooler</code></td><td>冲刺冷却</td></tr>
+        <tr><td class="name">扩散喷嘴</td><td><code>wmod_diffusion_nozzle</code></td><td>锥形攻击角度</td></tr>
+        <tr><td class="name">扩容弹匣</td><td><code>wmod_expanded_magazine</code></td><td>弹匣容量</td></tr>
+        <tr><td class="name">快速装填</td><td><code>wmod_fast_reload</code></td><td>换弹速度</td></tr>
+        <tr><td class="name">热量节流器</td><td><code>wmod_heat_throttle</code></td><td>Heat 偏移控制</td></tr>
+        <tr><td class="name">冲击线圈</td><td><code>wmod_impact_coil</code></td><td>击退</td></tr>
+        <tr><td class="name">弹速提升</td><td><code>wmod_projectile_speed_stat</code></td><td>投射物速度</td></tr>
+        <tr><td class="name">快速循环</td><td><code>wmod_quick_cycle</code></td><td>攻击间隔</td></tr>
+        <tr><td class="name">回收磁体</td><td><code>wmod_recovery_magnet</code></td><td>拾取范围</td></tr>
+        <tr><td class="name">换弹疾行</td><td><code>wmod_reload_move_boost</code></td><td>换弹后移动增益</td></tr>
+      </tbody></table>
+    </div>
+  </section>
+
+  <section class="tier" id="tier-2">
+    <div class="tier-head"><div><div class="tier-index">TIER 02 · LEVEL 3–5</div><h2>触发层</h2><p>进入第二章时开放；开始引入命中、换弹、范围和元素触发。</p></div><div class="tier-count">新增模组 16<br>累计模组 30<br>新增武器 0</div></div>
+    <div class="content"><h3>本层新增武器</h3><div class="empty">无新增武器。当前全部 15 种武器已在第一层进入候选池。</div>
+      <h3>本层新增模组</h3><table><thead><tr><th>模组</th><th>稳定 ID</th><th>定位</th></tr></thead><tbody>
+        <tr><td class="name">伤害增幅</td><td><code>wmod_damage_up_stat</code></td><td>武器伤害</td></tr>
+        <tr><td class="name">暴击增幅器</td><td><code>wmod_crit_amplifier</code></td><td>主武器暴击伤害</td></tr>
+        <tr><td class="name">持续伤害</td><td><code>wmod_dot_on_hit</code></td><td>命中 DoT</td></tr>
+        <tr><td class="name">命中眩晕</td><td><code>wmod_stun_on_hit</code></td><td>命中控制</td></tr>
+        <tr><td class="name">贯穿</td><td><code>wmod_pierce_stat</code></td><td>投射物贯穿</td></tr>
+        <tr><td class="name">换弹震波</td><td><code>wmod_reload_blast_knockback</code></td><td>换弹范围击退</td></tr>
+        <tr><td class="name">换弹爆破</td><td><code>wmod_reload_blast_damage</code></td><td>换弹范围伤害</td></tr>
+        <tr><td class="name">换弹强袭</td><td><code>wmod_reload_damage_boost</code></td><td>换弹后伤害增益</td></tr>
+        <tr><td class="name">换弹屏障</td><td><code>wmod_reload_shield_boost</code></td><td>换弹护盾</td></tr>
+        <tr><td class="name">霜冻共振</td><td><code>wmod_frost_resonance</code></td><td>技能霜冻爆发</td></tr>
+        <tr><td class="name">熔火飞溅</td><td><code>wmod_molten_splash_fire</code></td><td>火焰范围飞溅</td></tr>
+        <tr><td class="name">寒意链</td><td><code>wmod_chill_chain_freeze</code></td><td>连锁减速</td></tr>
+        <tr><td class="name">冰封牢笼</td><td><code>wmod_ice_prison_freeze</code></td><td>霜冻定身</td></tr>
+        <tr><td class="name">永冻领域</td><td><code>wmod_permafrost_field_freeze</code></td><td>击杀生成冰域</td></tr>
+        <tr><td class="name">热惯性</td><td><code>wmod_heat_capacity_heat</code></td><td>反向 Heat 抑制</td></tr>
+        <tr><td class="name">热平衡器</td><td><code>wmod_heat_vent_heat</code></td><td>Heat 中和</td></tr>
+      </tbody></table>
+    </div>
+  </section>
+
+  <section class="tier" id="tier-3">
+    <div class="tier-head"><div><div class="tier-index">TIER 03 · LEVEL 6–8</div><h2>构筑层</h2><p>进入第三章时开放；引入叠层、持续时间和跨武器协同。</p></div><div class="tier-count">新增模组 16<br>累计模组 46<br>新增武器 0</div></div>
+    <div class="content"><h3>本层新增武器</h3><div class="empty">无新增武器。当前全部 15 种武器已在第一层进入候选池。</div>
+      <h3>本层新增模组</h3><table><thead><tr><th>模组</th><th>稳定 ID</th><th>定位</th></tr></thead><tbody>
+        <tr><td class="name">战斗专注</td><td><code>wmod_battle_focus_buff</code></td><td>暴击叠层</td></tr>
+        <tr><td class="name">流血锋刃</td><td><code>wmod_bleed_edge_physical</code></td><td>移动触发流血</td></tr>
+        <tr><td class="name">腐蚀触碰</td><td><code>wmod_corrosive_touch_energy</code></td><td>腐蚀叠层</td></tr>
+        <tr><td class="name">交叉火力</td><td><code>wmod_crossfire</code></td><td>跨武器命中联动</td></tr>
+        <tr><td class="name">余烬标记</td><td><code>wmod_ember_mark_fire</code></td><td>火焰标记爆发</td></tr>
+        <tr><td class="name">火力扩散</td><td><code>wmod_firepower_diffusion</code></td><td>多目标叠层</td></tr>
+        <tr><td class="name">惯性瞄准</td><td><code>wmod_inertial_aim</code></td><td>动静姿态切换</td></tr>
+        <tr><td class="name">击杀续航</td><td><code>wmod_kill_endurance</code></td><td>击杀返还弹药</td></tr>
+        <tr><td class="name">弹仓余压</td><td><code>wmod_magazine_pressure</code></td><td>空仓增伤</td></tr>
+        <tr><td class="name">动量加速</td><td><code>wmod_momentum_haste</code></td><td>移动与攻速叠层</td></tr>
+        <tr><td class="name">过量回收</td><td><code>wmod_overkill_recovery</code></td><td>过量伤害转增益</td></tr>
+        <tr><td class="name">贯穿动能</td><td><code>wmod_penetration_momentum</code></td><td>换目标连锁增伤</td></tr>
+        <tr><td class="name">瘟疫种子</td><td><code>wmod_plague_seed_dot</code></td><td>叠层 DoT</td></tr>
+        <tr><td class="name">换弹接力</td><td><code>wmod_reload_offhand_boost</code></td><td>跨武器换弹增益</td></tr>
+        <tr><td class="name">换弹联动</td><td><code>wmod_reload_speed_link</code></td><td>跨武器换弹加速</td></tr>
+        <tr><td class="name">弱点接力</td><td><code>wmod_weakness_relay</code></td><td>异常目标增伤</td></tr>
+      </tbody></table>
+    </div>
+  </section>
+
+  <section class="tier" id="tier-4">
+    <div class="tier-head"><div><div class="tier-index">TIER 04 · LEVEL 9+</div><h2>转化层</h2><p>进入最终章时开放；提供攻击循环和构筑玩法的显著转换。无尽模式始终开放完整池。</p></div><div class="tier-count">新增模组 12<br>累计模组 58<br>新增武器 0</div></div>
+    <div class="content"><h3>本层新增武器</h3><div class="empty">无新增武器。当前全部 15 种武器已在第一层进入候选池。</div>
+      <h3>本层新增模组</h3><table><thead><tr><th>模组</th><th>稳定 ID</th><th>定位</th></tr></thead><tbody>
+        <tr><td class="name">脆化触发器</td><td><code>wmod_brittle_trigger_freeze</code></td><td>霜冻脆化爆发</td></tr>
+        <tr><td class="name">冲刺震击</td><td><code>wmod_dash_impact</code></td><td>长位移技能震波</td></tr>
+        <tr><td class="name">热量聚焦</td><td><code>wmod_heat_concentration_heat</code></td><td>Heat 同向增伤</td></tr>
+        <tr><td class="name">生命汲取</td><td><code>wmod_lifesteal_on_hit</code></td><td>命中吸血</td></tr>
+        <tr><td class="name">闪电链</td><td><code>wmod_lightning_chain_on_hit</code></td><td>命中连锁伤害</td></tr>
+        <tr><td class="name">多重发射器</td><td><code>wmod_multi_launcher</code></td><td>额外投射物</td></tr>
+        <tr><td class="name">节奏转换器</td><td><code>wmod_rhythm_converter</code></td><td>停火蓄积与释放</td></tr>
+        <tr><td class="name">碎裂打击</td><td><code>wmod_shatter_strike_freeze</code></td><td>霜冻层数转伤害</td></tr>
+        <tr><td class="name">技能过载</td><td><code>wmod_skill_overdrive</code></td><td>高能技能驱动武器增伤</td></tr>
+        <tr><td class="name">极寒延伸</td><td><code>wmod_subzero_extension_freeze</code></td><td>延长并强化霜冻</td></tr>
+        <tr><td class="name">霜冻轨迹</td><td><code>wmod_trail_aoe_freeze</code></td><td>投射物冰霜轨迹</td></tr>
+        <tr><td class="name">吸血涌动</td><td><code>wmod_vampiric_surge</code></td><td>过量伤害转临时护盾</td></tr>
+      </tbody></table>
+    </div>
+  </section>
+
+  <section class="tier" id="rules">
+    <div class="tier-head"><div><div class="tier-index">RUNTIME RULES</div><h2>运行规则摘要</h2></div></div>
+    <div class="content">
+      <h3>候选池与权重</h3>
+      <ul><li>奖励、特殊掉落和休息区商店共同使用 <code>ModuleOfferCatalog</code>。</li><li>新层模组在开放后的两个关卡机会内获得 <strong>3 倍</strong>候选权重。</li><li>关卡 3、6、9 开始时，奖励优先保证一个满足现有武器、槽位、替换和重复限制的新层模组。</li><li>已拥有满级模组仍会从新的奖励候选池排除。</li><li>旧存档已经持有的高层模组不会被移除；分层只限制未来产出。</li><li>奖励卡和商店会为刚开放层级的模组显示 <span class="tag new">NEW</span>。</li></ul>
+      <h3>资源绑定状态</h3>
+      <div class="legend"><span class="tag">模块配置：已注册</span><span class="tag">58 个场景：全部覆盖</span><span class="tag">启动清单：PASS</span><span class="tag">无尽模式：全池</span></div>
+      <p class="source">数据来源：<code>data/module_progression/default_weapon_module_progression.tres</code>、<code>Player/Weapons/Core/module_offer_catalog.gd</code>、<code>data/startup/startup_resource_manifest.json</code>、<code>data/weapons/*.tres</code>。报告生成日期：2026-08-12。</p>
+    </div>
+  </section>
+</main>
+</body>
+</html>

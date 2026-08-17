@@ -7,6 +7,7 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/special_pulse_feedback.tres" id="4_feedback"]
 
 [node name="Orbit" unique_id=80514895 instance=ExtResource("1_4h80h")]
+base_trait_flags = 1
 script = ExtResource("1_lxm1t")
 turn_speed_degrees_per_second = 360.0
 fire_feedback_profile = ExtResource("4_feedback")
@@ -15,7 +16,6 @@ weapon_capability_flags = 1
 reload_duration_sec = 8.0
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
-weapon_traits = 1
 
 [node name="Sprite" parent="." index="3" unique_id=1522898652]
 texture = ExtResource("2_d4sd2")

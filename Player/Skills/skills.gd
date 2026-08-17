@@ -3,11 +3,13 @@ class_name Skills
 
 @export var cooldown: float = 0.0
 @export var energy_cost: float = 50.0
+@export var skill_tags: Array[StringName] = []
 
 var _player: Player
 var _on_cooldown := false
 var _cooldown_remaining: float = 0.0
 var _cooldown_serial: int = 0
+var _finished_action_ids: Dictionary = {}
 
 func _ready() -> void:
 	call_deferred("_bind_player_and_initialize")
@@ -46,10 +48,23 @@ func _on_player_active_skill_requested() -> void:
 		return
 	if not can_activate():
 		return
+	var spent_energy := get_energy_cost()
 	if not _pay_energy_cost():
 		return
-	activate_skill()
+	var context := SkillActionContext.create(
+		self,
+		_player,
+		_player.get_main_weapon(),
+		get_skill_tags(),
+		spent_energy
+	)
+	if not activate_skill(context):
+		_player.add_energy(spent_energy)
+		return
+	emit_skill_event(WeaponEvent.SKILL_CAST_COMMITTED, context)
 	_player.player_skill_activated.emit(self)
+	if finishes_on_commit():
+		finish_skill_action(context, _player.global_position)
 	if cooldown > 0.0:
 		_start_cooldown()
 
@@ -80,8 +95,27 @@ func on_skill_ready() -> void:
 func can_activate() -> bool:
 	return true
 
-func activate_skill() -> void:
-	pass
+func activate_skill(_context: SkillActionContext) -> bool:
+	return false
+
+func finishes_on_commit() -> bool:
+	return false
+
+func get_skill_tags() -> Array[StringName]:
+	return skill_tags.duplicate()
+
+func finish_skill_action(context: SkillActionContext, end_position: Vector2) -> void:
+	if _finished_action_ids.has(context.action_id):
+		return
+	context.finish_at(end_position)
+	_finished_action_ids[context.action_id] = true
+	emit_skill_event(WeaponEvent.SKILL_CAST_FINISHED, context)
+	while _finished_action_ids.size() > 64:
+		_finished_action_ids.erase(_finished_action_ids.keys()[0])
+
+func emit_skill_event(event_type: StringName, context: SkillActionContext) -> void:
+	var event := WeaponEvent.create(event_type, context.linked_weapon).with_context(context)
+	_player.broadcast_weapon_event(event)
 
 func get_energy_cost() -> float:
 	return maxf(energy_cost, 0.0)
