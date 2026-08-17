@@ -217,9 +217,9 @@ func _layer_alpha(delta: Vector2i, unit: int, layer: int, death_type: int) -> fl
 			if death_type == DEATH_PROFILE.DeathType.FREEZE_SHATTER:
 				var shard := absi(absi(delta.x) - absi(delta.y) * 2) <= unit and distance <= float(11 * unit)
 				return 1.0 if shard else 0.0
-			var spoke := (absi(delta.x) <= unit and absi(delta.y) <= 10 * unit) or (absi(delta.y) <= unit and absi(delta.x) <= 10 * unit)
-			var diagonal := absi(absi(delta.x) - absi(delta.y)) <= unit and distance <= float(9 * unit)
-			return 1.0 if spoke or diagonal else 0.0
+			# Physical and energy deaths rely on the core flash and pixel debris.
+			# Their former orthogonal/diagonal fragment layer produced a starburst.
+			return 0.0
 		_:
 			var grid_x := posmod(delta.x / unit, 7)
 			var grid_y := posmod(delta.y / unit, 5)

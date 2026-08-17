@@ -1,10 +1,25 @@
 extends RefCounted
 
+const INITIAL_BATTLE_CONTRACT := preload("res://data/battle_contracts/elimination.tres")
+
 var _owner: Node
 var _battle_start_pending := false
 
 func setup(owner_node: Node) -> void:
 	_owner = owner_node
+
+func start_initial_battle() -> bool:
+	if _battle_start_pending or PhaseManager.current_state() != PhaseManager.REST:
+		return false
+	PhaseManager.enter_protocol_selection()
+	if not BattleContractManager.set_offer([INITIAL_BATTLE_CONTRACT]) \
+			or not BattleContractManager.select_contract(INITIAL_BATTLE_CONTRACT):
+		BattleContractManager.cancel_offer()
+		PhaseManager.return_to_rest_from_protocol_selection()
+		return false
+	_battle_start_pending = true
+	await _on_contract_confirmed()
+	return PhaseManager.current_state() == PhaseManager.BATTLE
 
 func on_start_battle_button_activated() -> void:
 	if _battle_start_pending:
@@ -120,7 +135,7 @@ func _on_contract_confirmed() -> void:
 			await ui.call("play_rest_area_entry_intro")
 		_battle_start_pending = false
 		return
-	start_battle(true)
+	await start_battle(true)
 
 func start_battle(has_contract: bool = false, is_boss: bool = false) -> void:
 	if PhaseManager.current_state() != PhaseManager.PROTOCOL_SELECTION:

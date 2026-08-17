@@ -43,15 +43,15 @@ func _init() -> void:
 	configured_attack_range = 800.0
 
 var weapon_data = {
-	"1": {"damage": "6", "speed": "900", "projectile_hits": "4", "fire_interval_sec": "0.6", "ammo": "15"},
-	"2": {"damage": "7", "speed": "600", "projectile_hits": "4", "fire_interval_sec": "0.55", "ammo": "16"},
-	"3": {"damage": "9", "speed": "600", "projectile_hits": "6", "fire_interval_sec": "0.5", "ammo": "17"},
-	"4": {"damage": "10", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.45", "ammo": "18"},
-	"5": {"damage": "12", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.4", "ammo": "19"},
-	"6": {"damage": "14", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.35", "ammo": "20"},
-	"7": {"damage": "18", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.3", "ammo": "21"},
-	"8": {"damage": "22", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.25", "ammo": "22"},
-	"9": {"damage": "26", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.20", "ammo": "23"}
+	"1": {"damage": "6", "speed": "900", "projectile_hits": "4", "fire_interval_sec": "0.6", "ammo": "10"},
+	"2": {"damage": "7", "speed": "600", "projectile_hits": "4", "fire_interval_sec": "0.55", "ammo": "11"},
+	"3": {"damage": "9", "speed": "600", "projectile_hits": "6", "fire_interval_sec": "0.5", "ammo": "12"},
+	"4": {"damage": "10", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.45", "ammo": "13"},
+	"5": {"damage": "12", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.4", "ammo": "14"},
+	"6": {"damage": "14", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.35", "ammo": "15"},
+	"7": {"damage": "18", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.3", "ammo": "16"},
+	"8": {"damage": "22", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.25", "ammo": "17"},
+	"9": {"damage": "26", "speed": "800", "projectile_hits": "6", "fire_interval_sec": "0.20", "ammo": "18"}
 }
 
 

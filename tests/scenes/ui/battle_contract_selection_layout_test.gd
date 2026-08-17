@@ -82,7 +82,7 @@ func _run() -> void:
 		)
 
 	var reward_card := _panel.get_node(
-		"Shade/Panel/Margin/Content/ExtraContracts/CardRight"
+		"Shade/Panel/Margin/Content/MainCards/CardRight"
 	) as Button
 	reward_card.call("set_selected", true, false)
 	await get_tree().process_frame
@@ -130,8 +130,8 @@ func _run() -> void:
 	panel_container.scale.x = 1.0
 	await get_tree().process_frame
 	_assert_true(
-		interaction_hint.text.contains("Hold") and interaction_hint.text.contains("1–3"),
-		"Protocol selection should explicitly teach both card hold and numeric hold shortcuts."
+		interaction_hint.text.contains("Enter") and interaction_hint.text.contains("1–3"),
+		"Protocol selection should teach numeric selection and explicit confirmation."
 	)
 	for index in range(3):
 		var protocol_card := protocol_cards[index] as Button
@@ -168,58 +168,33 @@ func _run() -> void:
 		"Main contract cards should reserve enough height for wrapped copy without dominating the viewport."
 	)
 	_assert_true(
-		reward_card.custom_minimum_size.y < main_card.custom_minimum_size.y,
-		"The rare reward card should remain visually secondary to the main decision cards."
-	)
-	_assert_true(
-		confirm_button.custom_minimum_size.x >= 230.0,
+		confirm_button.custom_minimum_size.x >= 190.0,
 		"Confirm button should reserve enough width for its English label."
 	)
-
-	_panel.call("_begin_card_hold", main_card)
-	_panel.call("_process", PANEL_SCRIPT.CARD_HOLD_SECONDS * 0.5)
-	var hold_progress := main_card.get_node("HoldProgress") as ProgressBar
 	_assert_true(
-		hold_progress.visible and hold_progress.value > 0.45 and hold_progress.value < 0.55,
-		"Holding a contract card should expose determinate confirmation progress (visible=%s value=%.2f index=%d locked=%s)." % [
-			hold_progress.visible,
-			hold_progress.value,
-			int(_panel.get("_held_card_index")),
-			bool(_panel.get("_locked")),
-		]
+		not _panel.has_node("Shade/Panel/Margin/Content/MainContractsLabel"),
+		"The redundant Main Contracts section label should be removed."
 	)
-	_panel.call("_cancel_card_hold")
+	_panel.call("_select_card_by_index", 1)
+	var detail_name := _panel.get_node("Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Header/Name") as Label
 	_assert_true(
-		not hold_progress.visible and is_zero_approx(hold_progress.value) and _confirm_count == 0,
-		"Releasing a contract card early should cancel confirmation and clear its progress."
+		detail_name.text == "Survival Protocol",
+		"Numeric selection should update the persistent detail preview without launching."
 	)
-	_panel.call("_begin_card_hold_by_index", 1)
-	_panel.call("_process", PANEL_SCRIPT.CARD_HOLD_SECONDS * 0.5)
-	var keyboard_hold_progress := (protocol_cards[1] as Button).get_node("HoldProgress") as ProgressBar
-	_assert_true(
-		keyboard_hold_progress.visible and keyboard_hold_progress.value > 0.45 and keyboard_hold_progress.value < 0.55,
-		"Holding numeric key 2 should drive the matching protocol card progress."
-	)
-	_panel.call("_cancel_card_hold")
-	_assert_true(
-		not keyboard_hold_progress.visible and _confirm_count == 0,
-		"Releasing a numeric quick-select key early should cancel confirmation."
-	)
-	_panel.call("_begin_card_hold", main_card)
+	_assert_true(_confirm_count == 0, "Selecting a protocol should not confirm it immediately.")
 	confirm_button.disabled = false # The layout test runs outside the protocol-selection phase.
-	_panel.call("_process", PANEL_SCRIPT.CARD_HOLD_SECONDS)
+	_panel.call("_on_confirm_pressed")
 	_assert_true(
 		_confirm_count == 1 and bool(_panel.get("_locked")),
-		"Holding a contract card through the threshold should select and confirm it exactly once (count=%d index=%d locked=%s)." % [
+		"Explicit confirmation should launch the selected protocol exactly once (count=%d locked=%s)." % [
 			_confirm_count,
-			int(_panel.get("_held_card_index")),
 			bool(_panel.get("_locked")),
 		]
 	)
 
 	var narrow_size: Vector2 = PANEL_SCRIPT.calculate_panel_size(Vector2(720.0, 720.0), true)
 	_assert_true(
-		narrow_size.is_equal_approx(Vector2(688.0, 672.0)),
+		narrow_size.is_equal_approx(Vector2(688.0, 640.0)),
 		"Panel sizing should preserve horizontal and vertical safe margins on narrow viewports."
 	)
 
@@ -240,15 +215,15 @@ func _run() -> void:
 	_panel.call("open", [ELIMINATION, SURVIVAL, REWARD], Callable(), Callable())
 	await get_tree().create_timer(0.7, true, false, true).timeout
 	reward_card = _panel.get_node(
-		"Shade/Panel/Margin/Content/ExtraContracts/CardRight"
+		"Shade/Panel/Margin/Content/MainCards/CardRight"
 	) as Button
 	reward_card.call("set_selected", true, false)
 	selected_badge = reward_card.get_node("Margin/Content/Header/SelectedBadge") as Label
 	await get_tree().process_frame
 	interaction_hint = _panel.get_node("Shade/Panel/Margin/Content/Subtitle") as Label
 	_assert_true(
-		interaction_hint.text.contains("长按") and interaction_hint.text.contains("1–3"),
-		"Chinese protocol selection should explain the hold interaction and numeric shortcuts."
+		interaction_hint.text.contains("Enter") and interaction_hint.text.contains("1–3"),
+		"Chinese protocol selection should explain numeric selection and explicit confirmation."
 	)
 	_assert_true(
 		selected_badge.text == "✓ 已选择",

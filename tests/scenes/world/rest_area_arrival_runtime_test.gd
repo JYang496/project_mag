@@ -171,6 +171,8 @@ func _test_post_battle_rest_centers_on_player() -> void:
 
 
 func _test_real_world_initial_entry() -> void:
+	DataHandler.load_economy_data()
+	GlobalVariables.request_new_game_battle()
 	LoadingPerformance.show_world_build_overlay()
 	var loading_overlay := LoadingPerformance.get("_world_build_overlay") as CanvasLayer
 	var world := WORLD_SCENE.instantiate()
@@ -195,24 +197,22 @@ func _test_real_world_initial_entry() -> void:
 	var real_rest_area := world.get_node("RestArea") as RestArea
 	var deadline := Time.get_ticks_msec() + 8000
 	while Time.get_ticks_msec() < deadline:
-		if bool(real_ui.get("_initial_rest_area_entry_prepared")) \
-				and real_ui.rest_area_arrival_presenter.is_playing():
+		if PhaseManager.current_state() == PhaseManager.BATTLE:
 			break
 		await get_tree().process_frame
-	_expect(bool(real_ui.get("_initial_rest_area_entry_prepared")), "real world readiness must prepare initial rest-area arrival")
-	_expect(real_ui.rest_area_arrival_presenter.is_playing(), "real world readiness must automatically start initial rest-area arrival")
-	_expect(real_ui.rest_area_arrival_presenter.overlay.visible, "real world entry must retain visual coverage through the loading handoff")
-	_expect(loading_overlay != null and loading_overlay.visible, "loading overlay must still be fading when the initial arrival begins")
-	_expect(real_ui.rest_area_arrival_presenter.scrim.color.a > 0.18, "arrival cover must conceal the world while loading fades")
-	_expect(real_rest_area.is_arrival_transition_locked(), "real world entry must keep rest interaction locked during arrival")
+	_expect(PhaseManager.current_state() == PhaseManager.BATTLE, "a new run must automatically enter battle instead of the rest phase")
+	_expect(BattleContractManager.state == BattleContractManager.ACTIVE, "the automatic first battle must activate its contract runtime")
+	_expect(BattleContractManager.selected_contract != null \
+			and BattleContractManager.selected_contract.contract_id == &"elimination", "the automatic first battle must use the fixed elimination contract")
+	_expect(not GlobalVariables.consume_new_game_battle_request(), "the new-run battle request must be consumed after battle starts")
+	_expect(not bool(real_ui.get("_initial_rest_area_entry_prepared")), "automatic first battle must skip the initial rest-area arrival")
+	_expect(not real_ui.rest_area_arrival_presenter.is_playing(), "automatic first battle must not play the rest-area arrival timeline")
+	_expect(not real_rest_area.is_active(), "rest-area interaction must remain inactive during the automatic first battle")
+	var enemy_spawner := world.get_node("EnemySpawner") as EnemySpawner
+	_expect(enemy_spawner != null and not enemy_spawner.timer.is_stopped(), "automatic first battle must start enemy spawning")
 	await get_tree().create_timer(0.44).timeout
 	var loading_root := LoadingPerformance.get("_world_build_overlay_root") as ColorRect
-	_expect(not loading_overlay.visible or loading_root.modulate.a <= 0.01, "loading overlay must finish its preview-matched crossfade while arrival remains active")
-	_expect(real_ui.rest_area_arrival_presenter.overlay.visible, "arrival overlay must keep visual ownership after loading exits")
-	while real_ui.rest_area_arrival_presenter.is_playing() and Time.get_ticks_msec() < deadline:
-		await get_tree().process_frame
-	_expect(not real_ui.rest_area_arrival_presenter.is_playing(), "real world initial arrival must complete within the readiness deadline")
-	_expect(not real_rest_area.is_arrival_transition_locked(), "real world initial arrival must release rest interaction")
+	_expect(loading_overlay == null or not loading_overlay.visible or loading_root.modulate.a <= 0.01, "loading overlay must release after automatic battle deployment")
 	get_tree().current_scene = self
 	world.queue_free()
 	await get_tree().process_frame

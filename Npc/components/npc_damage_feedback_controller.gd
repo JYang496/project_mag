@@ -119,7 +119,7 @@ func _color_for_damage_type(damage_type: StringName) -> Color:
 func play_hit_flash() -> void:
 	_play_hit_flash_with_style(Color.WHITE, -1.0)
 
-func play_hit_feedback(result: DamageResult) -> void:
+func play_hit_feedback(result: DamageResult, attack: Attack = null) -> void:
 	if npc == null or result == null:
 		return
 	var profile := CombatHitVfxProfileType.from_damage_result(result, npc.get_incoming_damage_max_hp())
@@ -128,7 +128,19 @@ func play_hit_feedback(result: DamageResult) -> void:
 	var tree := npc.get_tree() as SceneTree
 	var service := CombatHitVfxServiceType.ensure(tree)
 	if service != null:
-		service.call("play", npc.global_position, profile)
+		service.call("play", npc.global_position, profile, _resolve_hit_direction(attack))
+
+func _resolve_hit_direction(attack: Attack) -> Vector2:
+	if attack != null and attack.source_node is Node2D and is_instance_valid(attack.source_node):
+		var source_position := (attack.source_node as Node2D).global_position
+		var source_to_target: Vector2 = npc.global_position - source_position
+		if source_to_target.length_squared() > 0.0001:
+			return source_to_target.normalized()
+	if attack != null:
+		var knockback_direction: Variant = attack.knock_back.get("angle", Vector2.ZERO)
+		if knockback_direction is Vector2 and knockback_direction.length_squared() > 0.0001:
+			return (knockback_direction as Vector2).normalized()
+	return Vector2.RIGHT
 
 func _play_hit_flash_with_style(flash_color: Color, duration_override: float) -> void:
 	if npc == null or not npc.hit_flash_enabled:

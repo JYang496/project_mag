@@ -466,9 +466,10 @@ func _on_start_battle_button_activated() -> void:
 	if _route_flow != null:
 		_route_flow.call("on_start_battle_button_activated")
 
-func start_initial_battle() -> void:
-	if _route_flow != null and PhaseManager.current_state() == PhaseManager.REST:
-		_route_flow.call("request_battle_contract")
+func start_initial_battle() -> bool:
+	if _route_flow == null:
+		return false
+	return await _route_flow.start_initial_battle()
 
 func _on_battle_start_cancelled() -> void:
 	if _route_flow != null:

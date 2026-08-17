@@ -1721,7 +1721,9 @@ func _refresh_controls_hint_visibility() -> void:
 			and reward_selection_panel.is_modal_open()
 	if hud_phase_controller != null:
 		hud_phase_controller.set_reward_modal_focus(reward_modal_open)
-	if modal_ui_controller.is_modal_open() \
+	if _is_secondary_menu_open() \
+			or _is_rest_area_service_transition_active() \
+			or modal_ui_controller.is_modal_open() \
 			or battle_contract_selection_panel != null \
 			and is_instance_valid(battle_contract_selection_panel) \
 			and battle_contract_selection_panel.visible:
@@ -1729,6 +1731,15 @@ func _refresh_controls_hint_visibility() -> void:
 			controls_hint_view.visible = false
 		return
 	modal_ui_controller.refresh_controls_hint_visibility(_is_primary_menu_open(), _get_secondary_menu_context(), _get_primary_menu_context())
+
+func _is_rest_area_service_transition_active() -> bool:
+	if PhaseManager.current_state() != PhaseManager.PREPARE:
+		return false
+	for rest_area in get_tree().get_nodes_in_group(&"rest_area"):
+		if rest_area != null and is_instance_valid(rest_area) \
+				and bool(rest_area.get("is_auto_moving")):
+			return true
+	return false
 
 func show_controls_context_reminder(action: StringName, message: String, force: bool = false) -> bool:
 	if controls_hint_view == null or not is_instance_valid(controls_hint_view):

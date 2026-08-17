@@ -24,7 +24,7 @@ static func ensure(tree: SceneTree) -> Node:
 	return service
 
 
-func play(world_position: Vector2, profile: Resource) -> void:
+func play(world_position: Vector2, profile: Resource, hit_direction: Vector2 = Vector2.RIGHT) -> void:
 	if profile == null:
 		return
 	var entry := _acquire_entry()
@@ -41,6 +41,8 @@ func play(world_position: Vector2, profile: Resource) -> void:
 	anchor.global_position = world_position
 	anchor.visible = true
 	visual.texture = _texture_for_pattern(profile.texture_pattern)
+	visual.mode = 1 # BillboardVisual2D.BillboardMode.DIRECTIONAL
+	visual.set_world_direction(hit_direction if hit_direction.length_squared() > 0.0001 else Vector2.RIGHT)
 	visual.visible = true
 	visual.modulate = profile.impact_color
 	visual.modulate.a = 1.0
@@ -114,18 +116,14 @@ func _texture_for_pattern(pattern: int) -> Texture2D:
 	var image := Image.create(EFFECT_TEXTURE_SIZE, EFFECT_TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
 	image.fill(Color.TRANSPARENT)
 	var center := Vector2i(EFFECT_TEXTURE_SIZE / 2, EFFECT_TEXTURE_SIZE / 2)
+	var half_length: int = int([7, 11, 9][safe_pattern])
 	for y in range(EFFECT_TEXTURE_SIZE):
 		for x in range(EFFECT_TEXTURE_SIZE):
 			var delta := Vector2i(x, y) - center
-			var distance := Vector2(delta).length()
 			var alpha := 0.0
-			match safe_pattern:
-				0:
-					alpha = 1.0 if (absi(delta.x) <= 1 and absi(delta.y) <= 7) or (absi(delta.y) <= 1 and absi(delta.x) <= 7) else 0.0
-				1:
-					alpha = 1.0 if (absi(delta.x) <= 1 and absi(delta.y) <= 11) or (absi(delta.y) <= 1 and absi(delta.x) <= 11) or absi(absi(delta.x) - absi(delta.y)) <= 1 and distance <= 10.0 else 0.0
-				2:
-					alpha = 1.0 if absf(distance - 8.0) <= 1.1 else 0.0
+			var distance_from_tip := half_length - absi(delta.x)
+			if distance_from_tip >= 0 and absi(delta.y) <= 1:
+				alpha = 1.0 if delta.y == 0 or distance_from_tip >= 2 else 0.72
 			if alpha > 0.0:
 				image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
 	var texture := ImageTexture.create_from_image(image)

@@ -4,10 +4,9 @@ const OPEN_DURATION := 0.34
 const CARD_REVEAL_DURATION := 0.18
 const CARD_REVEAL_INTERVAL := 0.07
 const CLOSE_DURATION := 0.16
-const CARD_HOLD_SECONDS := 0.55
 const SHADE_OPACITY := 0.76
-const COMPACT_PANEL_HEIGHT := 520.0
-const EXPANDED_PANEL_HEIGHT := 672.0
+const COMPACT_PANEL_HEIGHT := 640.0
+const EXPANDED_PANEL_HEIGHT := 640.0
 const PREFERRED_PANEL_WIDTH := 980.0
 const PANEL_HORIZONTAL_SAFE_MARGIN := 16.0
 const PANEL_VERTICAL_SAFE_MARGIN := 8.0
@@ -17,10 +16,8 @@ var _confirmed := Callable()
 var _cancelled := Callable()
 var _locked := false
 var _transition_tween: Tween
-var _held_card_index := -1
-var _held_card_elapsed := 0.0
 
-@onready var cards: Array[Button] = [$Shade/Panel/Margin/Content/MainCards/CardLeft, $Shade/Panel/Margin/Content/MainCards/CardMiddle, $Shade/Panel/Margin/Content/ExtraContracts/CardRight]
+@onready var cards: Array[Button] = [$Shade/Panel/Margin/Content/MainCards/CardLeft, $Shade/Panel/Margin/Content/MainCards/CardMiddle, $Shade/Panel/Margin/Content/MainCards/CardRight]
 @onready var shade: ColorRect = $Shade
 @onready var panel: PanelContainer = $Shade/Panel
 @onready var confirm_button: Button = $Shade/Panel/Margin/Content/Actions/Confirm
@@ -29,53 +26,36 @@ var _held_card_elapsed := 0.0
 @onready var cancel_button: Button = $Shade/Panel/Margin/Content/Actions/Cancel
 @onready var terminal_status: Label = $Shade/Panel/Margin/Content/TerminalStatus
 @onready var actions: HBoxContainer = $Shade/Panel/Margin/Content/Actions
-@onready var extra_contracts: VBoxContainer = $Shade/Panel/Margin/Content/ExtraContracts
-@onready var main_contracts_label: Label = $Shade/Panel/Margin/Content/MainContractsLabel
-@onready var extra_contracts_label: Label = $Shade/Panel/Margin/Content/ExtraContracts/Label
+@onready var detail_name: Label = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Header/Name
+@onready var detail_objective: Label = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details/Objective
+@onready var detail_pace: Label = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details/Pace
+@onready var detail_reward: Label = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details/Reward
 
 func _ready() -> void:
 	visible = false
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	for card in cards:
 		card.pressed.connect(_on_card_pressed.bind(card))
-		card.button_down.connect(_begin_card_hold.bind(card))
-		card.button_up.connect(_cancel_card_hold)
 	confirm_button.pressed.connect(_on_confirm_pressed)
 	cancel_button.pressed.connect(cancel)
-
-func _process(delta: float) -> void:
-	if _held_card_index < 0 or not visible or _locked:
-		return
-	_held_card_elapsed += maxf(delta, 0.0)
-	_update_card_hold_visual()
-	if _held_card_elapsed < CARD_HOLD_SECONDS:
-		return
-	var held_card := cards[_held_card_index]
-	_cancel_card_hold()
-	_on_card_pressed(held_card)
-	_on_confirm_pressed()
 
 func open(options: Array, confirmed: Callable, cancelled: Callable) -> void:
 	if visible or options.size() < 2 or options.size() > 3:
 		return
 	_confirmed = confirmed
 	_cancelled = cancelled
-	_cancel_card_hold()
 	_locked = true
 	confirm_button.disabled = true
 	title_label.text = LocalizationManager.tr_key("battle_contract.ui.title", "Choose Next Protocol")
 	subtitle_label.text = LocalizationManager.tr_key(
 		"battle_contract.ui.subtitle",
-		"Click to inspect · Hold a card or 1–3 to select and launch"
+		"1–3 Select · Enter Begin · Esc Back"
 	)
 	cancel_button.text = LocalizationManager.tr_key("battle_contract.ui.cancel", "Back to Prepare")
 	cancel_button.visible = PhaseManager.can_cancel_protocol_selection_to_rest()
 	cancel_button.disabled = not cancel_button.visible
-	confirm_button.text = LocalizationManager.tr_key("battle_contract.ui.confirm", "Launch Selected Contract")
-	main_contracts_label.text = LocalizationManager.tr_key("battle_contract.ui.main_contracts", "Main Contracts")
-	extra_contracts_label.text = LocalizationManager.tr_key("battle_contract.ui.extra_contracts", "Extra Contract")
-	extra_contracts.visible = options.size() == 3
-	_apply_panel_size(extra_contracts.visible)
+	confirm_button.text = LocalizationManager.tr_key("battle_contract.ui.confirm", "Begin Contract")
+	_apply_panel_size(options.size() == 3)
 	for index in cards.size():
 		if index < options.size():
 			cards[index].visible = true
@@ -83,6 +63,7 @@ func open(options: Array, confirmed: Callable, cancelled: Callable) -> void:
 			cards[index].call("set_quick_select_index", index + 1)
 		else:
 			cards[index].visible = false
+	_update_detail_preview(options[0])
 	_play_open_transition()
 
 func _apply_panel_size(has_extra_contract: bool) -> void:
@@ -104,19 +85,17 @@ static func calculate_panel_size(viewport_size: Vector2, has_extra_contract: boo
 	)
 
 func _on_viewport_size_changed() -> void:
-	_apply_panel_size(extra_contracts.visible)
+	_apply_panel_size(cards[2].visible)
 
 func cancel() -> bool:
 	if not visible or _locked:
 		return false
 	_locked = true
-	_cancel_card_hold()
 	_play_close_transition()
 	return true
 
 func dismiss() -> void:
 	_kill_transition()
-	_cancel_card_hold()
 	visible = false
 	_locked = false
 	_clear_callbacks()
@@ -144,8 +123,6 @@ func detach_selected_card(target_parent: Control) -> Button:
 		old_parent.add_child(replacement)
 		old_parent.move_child(replacement, old_index)
 		replacement.pressed.connect(_on_card_pressed.bind(replacement))
-		replacement.button_down.connect(_begin_card_hold.bind(replacement))
-		replacement.button_up.connect(_cancel_card_hold)
 		cards[card_index] = replacement
 		return card
 	return null
@@ -155,11 +132,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and not event.echo:
 		var quick_index := _quick_select_index_for_key(event.keycode)
-		if quick_index >= 0:
-			if event.pressed:
-				_begin_card_hold_by_index(quick_index)
-			elif quick_index == _held_card_index:
-				_cancel_card_hold()
+		if quick_index >= 0 and event.pressed:
+			_select_card_by_index(quick_index)
+			get_viewport().set_input_as_handled()
+			return
+		if event.pressed and (event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER):
+			_on_confirm_pressed()
 			get_viewport().set_input_as_handled()
 			return
 	if event.is_action_pressed("ESC") or event.is_action_pressed("CANCEL"):
@@ -173,15 +151,19 @@ func _quick_select_index_for_key(keycode: Key) -> int:
 		KEY_3, KEY_KP_3: return 2
 	return -1
 
-func _begin_card_hold_by_index(index: int) -> void:
+func _select_card_by_index(index: int) -> void:
 	if index < 0 or index >= cards.size():
-		_cancel_card_hold()
 		return
-	_begin_card_hold(cards[index])
+	var card := cards[index]
+	if not card.visible or card.disabled:
+		return
+	card.grab_focus()
+	_on_card_pressed(card)
 
 func _on_card_pressed(card: Button) -> void:
 	if _locked:
 		return
+	_update_detail_preview(card.definition)
 	if not BattleContractManager.select_contract(card.definition):
 		for candidate in cards:
 			candidate.call("set_selected", candidate.definition == BattleContractManager.selected_contract)
@@ -190,43 +172,28 @@ func _on_card_pressed(card: Button) -> void:
 		candidate.call("set_selected", candidate == card)
 	confirm_button.disabled = false
 
-func _begin_card_hold(card: Button) -> void:
-	if _locked or card == null or not card.visible or card.disabled:
-		_cancel_card_hold()
+func _update_detail_preview(definition: Resource) -> void:
+	if definition == null:
 		return
-	var index := cards.find(card)
-	if index < 0:
-		_cancel_card_hold()
-		return
-	if _held_card_index == index:
-		return
-	_cancel_card_hold()
-	_held_card_index = index
-	_held_card_elapsed = 0.0
-	_on_card_pressed(card)
-	_update_card_hold_visual()
-
-func _cancel_card_hold() -> void:
-	var previous_index := _held_card_index
-	_held_card_index = -1
-	_held_card_elapsed = 0.0
-	if previous_index >= 0 and previous_index < cards.size():
-		cards[previous_index].call("set_hold_progress", 0.0, false)
-
-func _update_card_hold_visual() -> void:
-	if _held_card_index < 0 or _held_card_index >= cards.size():
-		return
-	cards[_held_card_index].call(
-		"set_hold_progress",
-		clampf(_held_card_elapsed / CARD_HOLD_SECONDS, 0.0, 1.0),
-		true
-	)
+	var id := str(definition.contract_id)
+	detail_name.text = LocalizationManager.tr_key(definition.name_key, id.capitalize())
+	detail_objective.text = "%s\n%s" % [
+		LocalizationManager.tr_key("battle_contract.card.label.objective", "OBJECTIVE"),
+		LocalizationManager.tr_key(definition.description_key, "Complete the contract objective."),
+	]
+	detail_pace.text = "%s\n%s" % [
+		LocalizationManager.tr_key("battle_contract.ui.detail.pace", "PACE"),
+		LocalizationManager.tr_key("battle_contract.%s.pace" % id, "Dynamic encounter pacing"),
+	]
+	detail_reward.text = "%s\n%s" % [
+		LocalizationManager.tr_key("battle_contract.card.label.reward", "REWARD"),
+		LocalizationManager.tr_key("battle_contract.%s.reward" % id, "Standard rewards"),
+	]
 
 func _on_confirm_pressed() -> void:
 	if _locked or confirm_button.disabled:
 		return
 	_locked = true
-	_cancel_card_hold()
 	if _confirmed.is_valid():
 		_confirmed.call()
 

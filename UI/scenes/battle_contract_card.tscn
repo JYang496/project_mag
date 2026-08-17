@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://UI/scripts/battle_contract_card.gd" id="1"]
 
 [node name="BattleContractCard" type="Button"]
-custom_minimum_size = Vector2(280, 222)
+custom_minimum_size = Vector2(280, 250)
 size_flags_horizontal = 3
 toggle_mode = true
 script = ExtResource("1")
@@ -123,7 +123,7 @@ vertical_alignment = 1
 
 [node name="Title" type="Label" parent="Margin/Content"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 27
+theme_override_font_sizes/font_size = 25
 autowrap_mode = 2
 max_lines_visible = 2
 
@@ -136,7 +136,7 @@ theme_override_constants/separation = 18
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.15
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
 autowrap_mode = 2
 vertical_alignment = 1
 
@@ -150,7 +150,7 @@ color = Color(0.22, 0.38, 0.42, 0.72)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.85
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
 vertical_alignment = 1
 
@@ -171,7 +171,7 @@ autowrap_mode = 2
 
 [node name="Parameters" type="Label" parent="Margin/Content/IntroContent"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
@@ -184,13 +184,13 @@ theme_override_constants/separation = 28
 [node name="Objective" type="Label" parent="Margin/Content/RewardDetails"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
 
 [node name="Rule" type="Label" parent="Margin/Content/RewardDetails"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
 
 [node name="Reward" type="Label" parent="Margin/Content/RewardDetails"]

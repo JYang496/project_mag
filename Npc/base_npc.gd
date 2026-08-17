@@ -66,7 +66,7 @@ func damaged(attack: Attack) -> DamageResult:
 	)
 	knockback.amount = attack.knock_back.amount
 	knockback.angle = attack.knock_back.angle
-	damage_feedback.play_hit_feedback(result)
+	damage_feedback.play_hit_feedback(result, attack)
 	_sync_enemy_hp_bar()
 	_show_enemy_hp_bar_on_damage()
 	if status_timer.is_stopped() and (_incoming_damage_pipeline.has_active_effects(self) or not status_effects.is_empty()):

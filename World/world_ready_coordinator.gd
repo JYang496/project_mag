@@ -5,6 +5,20 @@ func _ready() -> void:
 		if _is_world_ready():
 			var ui := get_parent().get_node_or_null("UI")
 			var start_new_game_battle := GlobalVariables.consume_new_game_battle_request()
+			if start_new_game_battle:
+				var rest_area := get_parent().get_node_or_null("RestArea") as RestArea
+				LoadingPerformance.update_world_preview_loading_progress(0.94)
+				LoadingPerformance.mark("world_ready")
+				LoadingPerformance.begin_world_build_handoff(0.38)
+				var battle_started := rest_area != null and await rest_area.start_initial_battle()
+				if not battle_started:
+					GlobalVariables.request_new_game_battle()
+					push_warning("New-run automatic battle start failed; keeping the request pending.")
+					LoadingPerformance.hide_world_build_overlay()
+				await get_tree().process_frame
+				LoadingPerformance.mark("first_stable_frame")
+				LoadingPerformance.finish_flow()
+				return
 			var initial_rest_entry_prepared := false
 			if not start_new_game_battle and ui != null and ui.has_method("prepare_initial_rest_area_entry"):
 				initial_rest_entry_prepared = bool(ui.call("prepare_initial_rest_area_entry"))
@@ -22,12 +36,6 @@ func _ready() -> void:
 				await ui.call("play_initial_rest_area_entry")
 			else:
 				LoadingPerformance.hide_world_build_overlay()
-			if start_new_game_battle:
-				var rest_area := get_parent().get_node_or_null("RestArea")
-				if rest_area != null and rest_area.has_method("start_initial_battle"):
-					rest_area.call("start_initial_battle")
-				else:
-					push_error("New game could not start its initial battle: RestArea route is unavailable.")
 			await get_tree().process_frame
 			LoadingPerformance.mark("first_stable_frame")
 			LoadingPerformance.finish_flow()

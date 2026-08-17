@@ -657,7 +657,7 @@ func _update_detail_hint() -> void:
 	_update_confirm_prompt_icon()
 	if not is_weapon:
 		return
-	var detail_action := _inline_text("CLOSE DETAILS", "关闭详情") if _detail_open_index >= 0 else _inline_text("DETAILS", "详情")
+	var detail_action := _inline_text("CLOSE DETAILS", "关闭详情") if _detail_open_index >= 0 else _inline_text("BRANCH DETAILS", "分支详情")
 	if _using_gamepad:
 		var button_coord := _gamepad_detail_button_coord()
 		detail_hint.add_child(_make_prompt_icon(button_coord.x, button_coord.y, "Detail button"))
@@ -827,6 +827,8 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		0.0,
 		400.0 if is_weapon_visual_reward else (DETAILED_CARD_MIN_HEIGHT if is_module_reward else STANDARD_CARD_MIN_HEIGHT)
 	)
+	# The selection pulse and focus treatment intentionally extend beyond the
+	# button rect; individual card content must therefore remain shrinkable.
 	button.clip_contents = false
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -903,7 +905,6 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	if is_weapon_visual_reward:
 		var weapon_hero := _build_weapon_reward_hero(card_data)
 		body.add_child(weapon_hero)
-		_configure_weapon_detail_hotspot(weapon_hero, reward_index)
 		body.add_child(text_box)
 	else:
 		var header := HBoxContainer.new()
@@ -933,7 +934,6 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_configure_weapon_detail_hotspot(name_label, reward_index)
 	if is_weapon_visual_reward:
 		_attach_damage_icons_to_weapon_name(name_label, weapon_preview.get("damage_types", []))
 	text_box.add_child(name_label)
@@ -1007,7 +1007,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		body.add_child(_build_module_weapon_grid(card_data))
 	elif is_weapon_visual_reward:
 		body.add_child(_build_core_weapon_stats(card_data))
-		body.add_child(_build_weapon_preview_section(weapon_preview))
+		body.add_child(_build_weapon_preview_section(weapon_preview, reward_index))
 	else:
 		var comparison_lines := _card_comparison_lines(card_data)
 		var comparison_box := VBoxContainer.new()
@@ -1077,7 +1077,10 @@ func _build_core_weapon_stats(card_data: Dictionary) -> HBoxContainer:
 		var value := _make_card_label(value_text, 14, TOKENS.COLOR_TEXT_PRIMARY)
 		value.name = "Value"
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		value.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+		value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		value.max_lines_visible = 2
+		value.custom_minimum_size.x = 0.0
+		value.tooltip_text = value_text
 		slot.add_child(heading)
 		slot.add_child(value)
 		stats_box.add_child(slot)
@@ -1094,7 +1097,7 @@ func _build_weapon_reward_hero(card_data: Dictionary) -> CenterContainer:
 	hero.add_child(icon)
 	return hero
 
-func _build_weapon_preview_section(preview: Dictionary) -> VBoxContainer:
+func _build_weapon_preview_section(preview: Dictionary, reward_index: int) -> VBoxContainer:
 	var section := VBoxContainer.new()
 	section.name = "WeaponBuildPreview"
 	section.custom_minimum_size = Vector2(0.0, 126.0)
@@ -1125,6 +1128,7 @@ func _build_weapon_preview_section(preview: Dictionary) -> VBoxContainer:
 	branch_row.name = "BranchPreviewRow"
 	branch_row.add_theme_constant_override("separation", 6)
 	branch_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_configure_weapon_detail_hotspot(branch_row, reward_index)
 	section.add_child(branch_row)
 	for branch_variant in preview.get("branches", []):
 		branch_row.add_child(_build_branch_preview_node(branch_variant as Dictionary))
@@ -1161,23 +1165,29 @@ func _build_branch_preview_node(branch: Dictionary) -> PanelContainer:
 	var title_row := HBoxContainer.new()
 	title_row.name = "BranchPreviewTitleRow"
 	title_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_row.add_theme_constant_override("separation", 4)
 	content.add_child(title_row)
-	var name_label := _make_card_label(str(branch.get("name", "Branch")), 12, _branch_primary_color(damage_types))
+	var branch_icon_slot_size := 18.0 if damage_types.size() > 1 else 20.0
+	var icon_row := _build_damage_type_icon_row(
+		damage_types,
+		branch_icon_slot_size,
+		"BranchDamageTypeIcons"
+	)
+	if icon_row.get_child_count() > 0:
+		title_row.add_child(icon_row)
+	var branch_name := str(branch.get("name", "Branch"))
+	var name_label := _make_card_label(branch_name, 12, _branch_primary_color(damage_types))
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.clip_text = true
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	var branch_icon_slot_size := 18.0 if damage_types.size() > 1 else 20.0
-	_attach_damage_icons_to_label(
-		name_label,
-		damage_types,
-		branch_icon_slot_size,
-		"BranchDamageTypeIcons",
-		4.0
-	)
+	name_label.tooltip_text = branch_name
 	title_row.add_child(name_label)
 	var status_label := _make_card_label(_branch_state_short(state), 10, TOKENS.COLOR_TEXT_SECONDARY)
+	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.clip_text = true
+	status_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	content.add_child(status_label)
 	return panel_node
 
@@ -1315,6 +1325,7 @@ func _build_branch_detail_card(branch: Dictionary) -> PanelContainer:
 	box.add_child(name_label)
 	var type_label := _make_card_label(_damage_type_text(damage_types), 11, _branch_primary_color(damage_types))
 	type_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_attach_damage_icons_to_label(type_label, damage_types, 14.0, "BranchDetailDamageTypeIcons", 4.0)
 	box.add_child(type_label)
 	var description := _make_card_label(str(branch.get("description", "")), 12, TOKENS.COLOR_TEXT_PRIMARY)
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1323,6 +1334,9 @@ func _build_branch_detail_card(branch: Dictionary) -> PanelContainer:
 	box.add_child(description)
 	var footer := _make_card_label(_branch_footer(branch), 11, TOKENS.COLOR_TEXT_SECONDARY)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	footer.max_lines_visible = 2
+	footer.custom_minimum_size.x = 0.0
 	box.add_child(footer)
 	_add_mixed_damage_strip(card, damage_types)
 	return card
@@ -1391,7 +1405,8 @@ func _branch_footer(branch: Dictionary) -> String:
 	var fuse := int(branch.get("unlock_fuse", 2))
 	if state == &"acquired":
 		return "✓ %s" % _inline_text("Acquired", "已获得")
-	return "%s %d · %s" % [_inline_text("Fuse", "融合"), fuse, _branch_state_short(state)]
+	var unlock_condition := _inline_text("Unlock on Fuse %d" % fuse, "融合 %d 时解锁" % fuse)
+	return "%s · %s" % [unlock_condition, _branch_state_short(state)]
 
 func _inline_text(english: String, chinese: String) -> String:
 	return chinese if LocalizationManager.get_locale() == "zh_CN" else english
