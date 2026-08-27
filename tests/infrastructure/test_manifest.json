@@ -134,6 +134,16 @@
       "timeout_seconds": 20
     },
     {
+      "id": "weapon.core_inventory",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/weapon/weapon_core_inventory_test.tscn",
+      "domain": "weapon",
+      "dependency_domains": ["player", "reward", "persistence", "data"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 20
+    },
+    {
       "id": "weapon.module_progression_catalog",
       "entry_type": "scene",
       "path": "res://tests/scenes/weapon/module_progression_catalog_test.tscn",
@@ -324,6 +334,16 @@
       "timeout_seconds": 30
     },
     {
+      "id": "ui.fusion_management_tabs",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/ui/fusion_management_tabs_test.tscn",
+      "domain": "ui",
+      "dependency_domains": ["player", "weapon", "persistence", "data"],
+      "parallel_safe": false,
+      "writes_user_data": true,
+      "timeout_seconds": 30
+    },
+    {
       "id": "ui.battle_contract_selection_layout",
       "entry_type": "scene",
       "path": "res://tests/scenes/ui/battle_contract_selection_layout_test.tscn",
@@ -341,6 +361,16 @@
       "dependency_domains": ["ui", "player", "weapon"],
       "parallel_safe": false,
       "writes_user_data": false,
+      "timeout_seconds": 20
+    },
+    {
+      "id": "reward.weapon_core_shop_semantics",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/reward/weapon_core_shop_semantics_test.tscn",
+      "domain": "reward",
+      "dependency_domains": ["ui", "player", "weapon", "data"],
+      "parallel_safe": false,
+      "writes_user_data": true,
       "timeout_seconds": 20
     },
     {
@@ -362,6 +392,16 @@
       "parallel_safe": false,
       "writes_user_data": true,
       "timeout_seconds": 30
+    },
+    {
+      "id": "combat.enhanced_contract_runtime",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/combat/enhanced_contract_runtime_test.tscn",
+      "domain": "combat",
+      "dependency_domains": ["world", "spawn", "ui", "reward", "data"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
     },
     {
       "id": "performance.phase4_baseline",

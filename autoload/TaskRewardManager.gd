@@ -215,9 +215,6 @@ func _on_reward_summary_closed() -> void:
 	_reward_panel_open = false
 	_clear_pending_reward(true)
 	_delete_file(ROLLBACK_PATH)
-	var ui = GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("resume_pending_weapon_branch_selection"):
-		ui.call_deferred("resume_pending_weapon_branch_selection")
 	PhaseManager.request_settlement_completion_check()
 
 func _settle_pending_reward_entries() -> String:
@@ -458,6 +455,7 @@ func _build_rollback_snapshot() -> Dictionary:
 		"inventory": {
 			"temporary_modules": temporary_payloads,
 			"weapon_storage": stored_weapon_payloads,
+			"weapon_cores": InventoryData.get_weapon_core_stacks(),
 			"pending_transactions": InventoryData.pending_transactions.duplicate(true),
 		},
 		"reward_draft_runtime": RewardDraftRuntime.build_battle_rollback_snapshot(),
@@ -572,6 +570,7 @@ func _restore_inventory_state(payload: Dictionary) -> void:
 		if weapon and is_instance_valid(weapon):
 			weapon.queue_free()
 	InventoryData.weapon_storage.clear()
+	InventoryData.restore_weapon_core_inventory(payload.get("weapon_cores", []))
 	for entry_variant in payload.get("temporary_modules", []):
 		if not (entry_variant is Dictionary):
 			continue

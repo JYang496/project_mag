@@ -375,17 +375,17 @@ func _setup_default_active_skill() -> void:
 	if _active_skill_runtime != null:
 		_active_skill_runtime.setup_default_active_skill()
 
-func create_weapon(item_id, level := 1, auto_fuse := false):
+func create_weapon(item_id, level := 1, convert_duplicate := false):
 	_ensure_weapon_inventory_runtime()
-	_weapon_inventory_runtime.create_weapon(item_id, level, auto_fuse)
+	_weapon_inventory_runtime.create_weapon(item_id, level, convert_duplicate)
 
-func try_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
+func try_weapon_obtain_conversion(weapon_id: String) -> Dictionary:
 	_ensure_weapon_inventory_runtime()
-	return _weapon_inventory_runtime.try_auto_fuse_weapon_obtain(weapon_id)
+	return _weapon_inventory_runtime.try_weapon_obtain_conversion(weapon_id)
 
-func predict_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
+func predict_weapon_obtain(weapon_id: String) -> Dictionary:
 	_ensure_weapon_inventory_runtime()
-	return _weapon_inventory_runtime.predict_auto_fuse_weapon_obtain(weapon_id)
+	return _weapon_inventory_runtime.predict_weapon_obtain(weapon_id)
 
 func _find_equipped_weapon_by_id(weapon_id: String) -> Weapon:
 	_ensure_weapon_inventory_runtime()

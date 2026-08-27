@@ -11,7 +11,7 @@ const EXPLOSION_LEAD_FRAMES := 2.0
 @export var max_speed_multiplier: float = 2.0
 @export var trigger_radius: float = 72.0
 @export var fuse_time: float = 1.0
-@export var blast_radius: float = 74.0
+@export var blast_radius: float = 59.2
 @export var blast_damage_multiplier: float = 2.4
 @export var fuse_warning_color: Color = PALETTE.ENEMY_PRIMARY
 @export_range(0.0, 1.0, 0.01) var fuse_warning_peak_alpha: float = 0.92
@@ -77,6 +77,7 @@ func _spawn_aoe_warning() -> void:
 	warning.duration = _fuse_remaining
 	warning.radius = blast_radius
 	warning.visual_preset = TargetWarning.VisualPreset.DODGE_STYLE
+	warning.show_countdown = false
 	_active_aoe_warning = warning
 	call_deferred("add_sibling", warning)
 
@@ -94,9 +95,7 @@ func _explode() -> void:
 	if not _explosion_spawned:
 		_explosion_spawned = true
 		_spawn_explosion_effect(0.0)
-	# Let the warning finish its own fuse-length animation on a natural detonation.
-	# Early deaths still clear it through _before_death().
-	_active_aoe_warning = null
+	_clear_aoe_warning()
 	death(null)
 
 func _get_explosion_lead_time() -> float:

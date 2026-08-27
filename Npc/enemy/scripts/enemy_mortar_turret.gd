@@ -23,6 +23,7 @@ var _cast_remaining: float = 0.0
 var _is_stationary_mode: bool = false
 var _target_position: Vector2 = Vector2.ZERO
 var _active_descent_vfx: MortarShellDescentVfx = null
+var _active_aoe_warning: TargetWarning = null
 var _impact_spawned: bool = false
 
 func _ready() -> void:
@@ -85,6 +86,7 @@ func _process_attack(delta: float) -> void:
 			_spawn_mortar_impact(_target_position, maxf(_cast_remaining, 0.0))
 		if _cast_remaining <= 0.0:
 			_casting = false
+			_clear_aoe_warning()
 			_clear_descent_visual()
 			_cooldown_remaining = cooldown_duration
 		return
@@ -111,9 +113,11 @@ func _cancel_cast() -> void:
 	_cast_remaining = 0.0
 	_impact_spawned = false
 	if was_casting:
+		_clear_aoe_warning()
 		_clear_descent_visual()
 
 func _spawn_warning(world_pos: Vector2) -> void:
+	_clear_aoe_warning()
 	var warning := WARNING_SCENE.instantiate() as TargetWarning
 	if warning == null:
 		return
@@ -121,7 +125,14 @@ func _spawn_warning(world_pos: Vector2) -> void:
 	warning.duration = cast_delay
 	warning.radius = aoe_radius
 	warning.visual_preset = TargetWarning.VisualPreset.DODGE_STYLE
+	warning.show_countdown = false
+	_active_aoe_warning = warning
 	call_deferred("add_sibling", warning)
+
+func _clear_aoe_warning() -> void:
+	if _active_aoe_warning != null and is_instance_valid(_active_aoe_warning):
+		_active_aoe_warning.queue_free()
+	_active_aoe_warning = null
 
 func _spawn_descent_visual(world_pos: Vector2) -> void:
 	_clear_descent_visual()
@@ -174,5 +185,6 @@ func _spawn_mortar_impact(world_pos: Vector2, damage_delay: float = 0.0) -> void
 	call_deferred("add_sibling", area)
 
 func _exit_tree() -> void:
+	_clear_aoe_warning()
 	_clear_descent_visual()
 	super._exit_tree()

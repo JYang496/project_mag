@@ -4,25 +4,11 @@ class_name WeaponObtainPreviewFormatter
 static func format_obtain_preview(base_text: String, weapon_name: String, outcome: Dictionary) -> String:
 	var result_type := str(outcome.get("result", "not_applicable"))
 	match result_type:
-		"fused":
-			var from_fuse := int(outcome.get("from_fuse", 1))
-			var target_fuse := int(outcome.get("target_fuse", 1))
-			if bool(outcome.get("has_branch_options", false)):
-				return LocalizationManager.tr_format(
-					"ui.weapon.obtain_preview.fuse_branch",
-					{"name": weapon_name, "from": from_fuse, "to": target_fuse},
-					"%s: Fuse %d -> %d; choose a branch next if one is available" % [weapon_name, from_fuse, target_fuse]
-				)
+		"dismantled_to_core":
 			return LocalizationManager.tr_format(
-				"ui.weapon.obtain_preview.fuse_no_branch",
-				{"name": weapon_name, "from": from_fuse, "to": target_fuse},
-				"%s: Fuse %d -> %d; choose a branch next if one is available" % [weapon_name, from_fuse, target_fuse]
-			)
-		"converted_to_gold":
-			return LocalizationManager.tr_format(
-				"ui.weapon.obtain_preview.gold_action",
-				{"name": weapon_name, "gold": int(outcome.get("gold", 0))},
-				"%s: Fuse maxed; convert to +%d Gold" % [weapon_name, int(outcome.get("gold", 0))]
+				"ui.weapon.obtain_preview.core_action",
+				{"name": weapon_name, "tags": _format_tags(outcome.get("core_tags", [])), "count": int(outcome.get("current_core_count", 0))},
+				"%s: dismantle into 1 core [%s] · owned %d" % [weapon_name, _format_tags(outcome.get("core_tags", [])), int(outcome.get("current_core_count", 0))]
 			)
 		_:
 			if weapon_name.strip_edges() != "":
@@ -44,3 +30,9 @@ static func format_obtain_preview(base_text: String, weapon_name: String, outcom
 					"Obtain new %s" % weapon_name
 				)
 			return base_text
+
+static func _format_tags(values: Variant) -> String:
+	var parts := PackedStringArray()
+	if values is Array:
+		for value in values: parts.append(str(value))
+	return ", ".join(parts)

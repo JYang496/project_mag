@@ -134,8 +134,8 @@ class _PlayerStub:
 	func create_weapon(_weapon_or_id: Variant) -> void:
 		pass
 
-	func predict_auto_fuse_weapon_obtain(_weapon_id: String) -> Dictionary:
+	func predict_weapon_obtain(_weapon_id: String) -> Dictionary:
 		return {"result": "not_applicable"}
 
-	func try_auto_fuse_weapon_obtain(_weapon_id: String) -> Dictionary:
+	func try_weapon_obtain_conversion(_weapon_id: String) -> Dictionary:
 		return {"result": "not_applicable"}

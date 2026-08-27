@@ -44,8 +44,11 @@ static func traits_to_flags(values: Array) -> int:
 	return mask
 
 static func flags_to_traits(mask: int) -> Array[StringName]:
+	return normalize_array(flags_to_explicit_traits(mask))
+
+static func flags_to_explicit_traits(mask: int) -> Array[StringName]:
 	var output: Array[StringName] = []
 	for i in range(ALL.size()):
 		if (mask & (1 << i)) != 0:
 			output.append(ALL[i])
-	return normalize_array(output)
+	return output

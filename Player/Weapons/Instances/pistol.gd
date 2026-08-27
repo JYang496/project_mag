@@ -4,14 +4,12 @@ extends Ranger
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
 var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/pistol_projectile.png")
 @export var auto_fire_range: float = 900.0
-@export var pierce_mark_cycle_sec: float = 8.0
 @export var pierce_mark_window_sec: float = 3.0
 @export var pierce_mark_duration_sec: float = 5.0
 const PISTOL_PIERCE_MARK_ID := &"pistol_pierce"
 
 # Weapon
 var ITEM_NAME = "Auto Pistol"
-var _pierce_mark_cycle_elapsed_sec: float = 0.0
 var _pierce_mark_window_remaining_sec: float = 0.0
 
 func _init() -> void:
@@ -50,62 +48,42 @@ func set_level(lv) -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	_update_pierce_mark_window(delta)
+	_pierce_mark_window_remaining_sec = maxf(_pierce_mark_window_remaining_sec - maxf(delta, 0.0), 0.0)
 	_process_auto_fire()
 
-func _update_pierce_mark_window(delta: float) -> void:
-	if not _is_battle_phase():
-		_pierce_mark_cycle_elapsed_sec = 0.0
-		_pierce_mark_window_remaining_sec = 0.0
+func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	super._on_passive_event(event_name, detail)
+	if event_name != &"on_continuous_hit_threshold":
 		return
-	if _pierce_mark_window_remaining_sec > 0.0:
-		_pierce_mark_window_remaining_sec = maxf(_pierce_mark_window_remaining_sec - maxf(delta, 0.0), 0.0)
+	if int(detail.get("threshold", 0)) < 6:
 		return
-	if not is_passive_ready():
-		return
-	_pierce_mark_cycle_elapsed_sec += maxf(delta, 0.0)
-	var required_sec := maxf(pierce_mark_cycle_sec, 0.1)
-	if _pierce_mark_cycle_elapsed_sec < required_sec:
-		return
-	_pierce_mark_cycle_elapsed_sec = 0.0
 	_pierce_mark_window_remaining_sec = maxf(pierce_mark_window_sec, 0.1)
-	consume_passive_charge()
 	emit_passive_trigger(&"pistol_continuous_move_triggered", {
+		"trigger": "continuous_hits",
+		"hit_count": int(detail.get("hit_count", 0)),
+		"threshold": int(detail.get("threshold", 6)),
 		"window_duration": _pierce_mark_window_remaining_sec,
 		"mark_duration": maxf(pierce_mark_duration_sec, 0.1),
-		"refresh": "reload",
+		"refresh": "continuous_hits",
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
 	if has_weapon_trait(WeaponTrait.ENERGY):
 		return get_energy_full_fire_status()
-	var required_sec := maxf(pierce_mark_cycle_sec, 0.1)
-	var current_sec := clampf(_pierce_mark_cycle_elapsed_sec, 0.0, required_sec)
-	var state := "charging"
+	var state := "building"
 	if _pierce_mark_window_remaining_sec > 0.0:
 		state = "active"
-	elif not is_passive_ready():
-		state = "waiting_refresh"
-	var charge_current := passive_controller.get_passive_charge_current()
-	var charge_max := passive_controller.get_passive_charge_max()
-	return with_passive_charge_status({
+	return {
 		"id": "pistol_continuous_move_triggered",
 		"display_name": "Pierce Mark",
 		"state": state,
-		"progress": 1.0 if state == "active" else clampf(current_sec / required_sec, 0.0, 1.0),
-		"current": _pierce_mark_window_remaining_sec if state == "active" else current_sec,
-		"required": required_sec,
-		"ready": false,
-		"trigger_hint": "periodic_auto_pistol_hits_mark_targets",
-		"refresh_hint": "reload",
-		"charge_current": charge_current,
-		"charge_max": charge_max,
-		"charges_current": charge_current,
-		"charges_max": charge_max,
-	})
-
-func get_passive_max_charges() -> int:
-	return 3
+		"progress": 1.0 if state == "active" else 0.0,
+		"current": _pierce_mark_window_remaining_sec,
+		"required": 6,
+		"ready": state == "active",
+		"trigger_hint": "continuous_hits",
+		"refresh_hint": "continuous_hits",
+	}
 
 func _is_battle_phase() -> bool:
 	if PhaseManager == null or not PhaseManager.has_method("current_state"):

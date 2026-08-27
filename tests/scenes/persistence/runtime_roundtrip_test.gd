@@ -74,6 +74,7 @@ func _seed_integrated_state() -> void:
 	InventoryData.add_child(temporary)
 	InventoryData.temporary_modules.append(temporary)
 	InventoryData.pending_transactions.append({"kind": "integrated_test", "gold": 17})
+	InventoryData.add_weapon_cores([&"fire", &"area"], 2, false)
 
 	var effect_id := _first_definition_id(CellEffectRuntime.get("_definitions_by_id"))
 	_expect(effect_id != "" and CellEffectRuntime.grant_effect(effect_id, 2), "cell effect seed must succeed")
@@ -124,6 +125,7 @@ func _assert_integrated_state() -> void:
 	_expect(PISTOL_ID in restored_ids and "1" in restored_ids, "post-battle weapon selection must survive continue")
 	_expect(InventoryData.temporary_modules.size() == 1, "temporary module must restore")
 	_expect(InventoryData.pending_transactions.size() == 1, "pending transaction must restore")
+	_expect(InventoryData.get_weapon_core_count([&"area", &"fire"]) == 2, "weapon core inventory must restore through the integrated run save")
 	_expect(not CellEffectRuntime.get_inventory_snapshot().is_empty(), "cell effect inventory must restore")
 	_expect(str(CellEffectRuntime.get_pending_snapshot().get("2", "")) != "", "pending cell edit must restore")
 	_expect(CellTaskModuleRuntime.get_inventory_snapshot().has(TASK_MODULE_ID), "task module inventory must restore")

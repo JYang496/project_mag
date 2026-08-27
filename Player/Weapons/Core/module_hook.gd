@@ -50,6 +50,19 @@ const EVENT_BY_HOOK := {
 	SKILL_FINISH: &"skill_cast_finished",
 }
 
+# Presentation tags are derived from the same event names used by the runtime
+# dispatcher. Keep this mapping here so UI callers never recreate Hook semantics.
+const DISPLAY_TAG_BY_EVENT := {
+	&"projectile_spawned": &"projectile",
+	&"hit_confirmed": &"on_hit",
+	&"damage_dealt": &"on_hit",
+	&"critical_hit": &"on_hit",
+	&"cross_weapon_hit": &"on_hit",
+	&"continuous_hit_threshold": &"on_hit",
+	&"target_killed": &"execute",
+	&"reload_started": &"reload",
+}
+
 static func flags_to_hooks(mask: int) -> Array[StringName]:
 	var output: Array[StringName] = []
 	for i in range(ALL.size()):
@@ -63,4 +76,21 @@ static func hooks_to_events(hooks: Array[StringName]) -> Array[StringName]:
 		var event_type: StringName = EVENT_BY_HOOK.get(hook, StringName())
 		if event_type != StringName() and not output.has(event_type):
 			output.append(event_type)
+	return output
+
+static func display_tag_for_event(event_type: StringName) -> StringName:
+	return DISPLAY_TAG_BY_EVENT.get(event_type, StringName())
+
+static func display_tags_for_events(events: Array[StringName]) -> Array[StringName]:
+	var output: Array[StringName] = []
+	var has_unmapped_event := false
+	for event_type in events:
+		var tag := display_tag_for_event(event_type)
+		if tag == StringName():
+			has_unmapped_event = true
+		elif not output.has(tag):
+			output.append(tag)
+	# A concrete trigger label is more useful than the generic Trigger tag.
+	if output.is_empty() and has_unmapped_event:
+		output.append(&"trigger")
 	return output

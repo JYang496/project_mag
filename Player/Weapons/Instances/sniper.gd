@@ -10,7 +10,7 @@ const FAR_DAMAGE_MULTIPLIER: float = 1.8
 @export var far_hit_trigger_distance: float = 400.0
 
 var attack_range: float = 900.0
-var _last_projectile_hit_damage: int = 0
+var _next_shot_max_distance_bonus: bool = false
 
 var weapon_data := {
 	"1": {"damage": "23", "speed": "1700", "projectile_hits": "5", "fire_interval_sec": "3.0", "ammo": "5"},
@@ -19,9 +19,9 @@ var weapon_data := {
 	"4": {"damage": "46", "speed": "1800", "projectile_hits": "8", "fire_interval_sec": "2.4", "ammo": "8"},
 	"5": {"damage": "57", "speed": "1900", "projectile_hits": "9", "fire_interval_sec": "2.2", "ammo": "9"},
 	"6": {"damage": "70", "speed": "1900", "projectile_hits": "10", "fire_interval_sec": "2.1", "ammo": "10"},
-	"7": {"damage": "86", "speed": "2000", "projectile_hits": "11", "fire_interval_sec": "2.0", "ammo": "12"},
-	"8": {"damage": "101", "speed": "2100", "projectile_hits": "12", "fire_interval_sec": "1.9", "ammo": "14"},
-	"9": {"damage": "116", "speed": "2200", "projectile_hits": "13", "fire_interval_sec": "1.8", "ammo": "16"}
+	"7": {"damage": "86", "speed": "2000", "projectile_hits": "11", "fire_interval_sec": "2.0", "ammo": "10"},
+	"8": {"damage": "101", "speed": "2100", "projectile_hits": "12", "fire_interval_sec": "1.9", "ammo": "10"},
+	"9": {"damage": "116", "speed": "2200", "projectile_hits": "13", "fire_interval_sec": "1.8", "ammo": "10"}
 }
 
 func set_level(lv) -> void:
@@ -54,6 +54,9 @@ func _on_shoot() -> void:
 
 	var runtime_damage := get_runtime_shot_damage()
 	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * projectile_damage_multiplier)))
+	var maximum_distance_bonus := consume_stow_trigger() or _next_shot_max_distance_bonus
+	_next_shot_max_distance_bonus = false
+	spawn_projectile.set_meta(&"sniper_stow_empowered", maximum_distance_bonus)
 	spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
 	spawn_projectile.hp = max(1, projectile_hits)
 	spawn_projectile.global_position = global_position
@@ -69,23 +72,25 @@ func _on_shoot() -> void:
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 
-func set_last_projectile_hit_damage(value: int) -> void:
-	_last_projectile_hit_damage = max(0, int(value))
-
-func on_projectile_hit_damage_dealt(_projectile: Node, _target: Node, _hit_damage_type: StringName, final_damage: int) -> void:
-	set_last_projectile_hit_damage(final_damage)
-
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
-	_try_trigger_far_hit(target)
 	branch_runtime.notify_branch_target_hit(target)
 
 func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
 	super.on_hit_target_with_damage_type(target, damage_type)
-	_try_trigger_far_hit(target)
 	branch_runtime.notify_branch_target_hit(target)
 
-func _try_trigger_far_hit(target: Node) -> void:
+func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	super._on_passive_event(event_name, detail)
+	if event_name != &"on_cross_weapon_hit":
+		return
+	var target := detail.get("target", null) as Node
+	if target == null or not is_instance_valid(target):
+		return
+	_next_shot_max_distance_bonus = true
+	_emit_sniper_crossfire(target)
+
+func _emit_sniper_crossfire(target: Node) -> void:
 	var target_node := target as Node2D
 	if target_node == null or not is_instance_valid(target_node):
 		return
@@ -94,47 +99,33 @@ func _try_trigger_far_hit(target: Node) -> void:
 		return
 	var distance := player.global_position.distance_to(target_node.global_position)
 	var has_mark := _has_any_mark(target)
-	if distance < maxf(far_hit_trigger_distance, 0.0) and not has_mark:
-		return
-	if not is_passive_ready():
-		return
-	consume_passive_charge()
 	emit_passive_trigger(&"sniper_far_hit_triggered", {
 		"target": target,
 		"distance": distance,
 		"threshold": far_hit_trigger_distance,
 		"forced_full_bonus_by_mark": has_mark,
-		"refresh": "reload",
+		"trigger": "cross_weapon_hit",
+		"refresh": "crossfire",
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
-	var state := "ready"
-	if not is_passive_ready():
-		state = "waiting_refresh"
-	var charge_current := passive_controller.get_passive_charge_current()
-	var charge_max := passive_controller.get_passive_charge_max()
-	return with_passive_charge_status({
+	var progress := get_stow_trigger_progress()
+	var state := "ready" if is_stow_trigger_ready() else "charging"
+	return {
 		"id": "sniper_far_hit_triggered",
 		"display_name": "Far Hit",
 		"state": state,
-		"progress": float(charge_current) / float(maxi(charge_max, 1)),
+		"progress": progress,
 		"ready": state == "ready",
-		"condition_type": "distance_threshold",
-		"required": maxf(far_hit_trigger_distance, 0.0),
-		"comparison": ">=",
-		"trigger_hint": "hit_distance",
-		"refresh_hint": "reload",
-		"charge_current": charge_current,
-		"charge_max": charge_max,
-		"charges_current": charge_current,
-		"charges_max": charge_max,
-	})
+		"condition_type": "stow_charge",
+		"required": WeaponTriggerRuntimeType.STOW_CHARGE_DURATION_SEC,
+		"trigger_hint": "stow_charge",
+		"refresh_hint": "stow",
+	}
 
-func get_passive_max_charges() -> int:
-	return 3
-
-func get_sniper_distance_scaled_damage(target: Node, base_damage: int) -> int:
-	return max(1, int(round(float(maxi(base_damage, 1)) * _get_distance_damage_multiplier(target))))
+func get_sniper_distance_scaled_damage(target: Node, base_damage: int, force_maximum: bool = false) -> int:
+	var multiplier := FAR_DAMAGE_MULTIPLIER if force_maximum else _get_distance_damage_multiplier(target)
+	return max(1, int(round(float(maxi(base_damage, 1)) * multiplier)))
 
 func _get_distance_damage_multiplier(target: Node) -> float:
 	var target_node := target as Node2D
@@ -146,27 +137,6 @@ func _get_distance_damage_multiplier(target: Node) -> float:
 	if _has_any_mark(target):
 		t = 1.0
 	return lerpf(1.0, FAR_DAMAGE_MULTIPLIER, t)
-
-func _apply_distance_bonus_damage(target: Node) -> void:
-	if target == null or not is_instance_valid(target):
-		return
-	var target_node := target as Node2D
-	if target_node == null:
-		return
-	var base_hit_damage: int = maxi(1, _last_projectile_hit_damage)
-	var multiplier: float = _get_distance_damage_multiplier(target)
-	var bonus_damage: int = int(round(float(base_hit_damage) * maxf(multiplier - 1.0, 0.0)))
-	if bonus_damage <= 0:
-		return
-	var damage_data := DamageManager.build_damage_data(
-		self,
-		bonus_damage,
-		Attack.TYPE_PHYSICAL,
-		{"amount": 0, "angle": Vector2.ZERO},
-		DamageData.SOURCE_PLAYER_WEAPON,
-		DamageDeliveryType.PROJECTILE
-	)
-	DamageManager.apply_to_target(target, damage_data)
 
 func _has_any_mark(target: Node) -> bool:
 	if target == null or not is_instance_valid(target):

@@ -5,6 +5,7 @@
 
 [resource]
 script = ExtResource("2_script")
+fusion_required_tags = Array[StringName]([&"physical", &"melee"])
 produces_tags = Array[StringName]([&"physical", &"melee", &"on_move", &"execute"])
 requires_any_tags = Array[StringName]([&"melee", &"close_range"])
 requires_all_tags = Array[StringName]([])

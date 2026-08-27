@@ -11,3 +11,4 @@ icon = ExtResource("1_m0vjd")
 price = 45
 description = "Close-range projectile saw that ricochets inside its spawn cell. Boundary contact arms slowing vulnerability hits and extends that projectile's lifetime."
 scene_path = "res://Player/Weapons/Instances/chainsaw_launcher.tscn"
+core_tags = Array[StringName]([&"physical", &"projectile", &"close_range", &"control"])

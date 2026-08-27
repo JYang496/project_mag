@@ -14,6 +14,8 @@ const ENEMY_RECOVERY_APPROACH_EPSILON := 1.0
 var _beacons: Dictionary = {}
 var _beacon_beam: Line2D
 const BEACON_SCENE := preload("res://World/battle_contract/tactical_beacon.tscn")
+const CONTRACT_MORTAR_STRIKE := preload("res://Combat/battle_contract/hazards/contract_mortar_strike.gd")
+var _contract_hazards: Array[Node] = []
 const EliminationIndicatorLayer := preload("res://UI/scripts/components/elimination_enemy_indicator_layer.gd")
 const ELIMINATION_INDICATOR_CANVAS_NAME := "EliminationEnemyIndicators"
 var _elimination_indicator_canvas: CanvasLayer
@@ -46,6 +48,7 @@ func unbind() -> void:
 	_stall_sample_elapsed_sec = 0.0
 	_remove_elimination_indicator()
 	request_remove_beacons()
+	request_clear_contract_hazards()
 
 func get_level_index() -> int:
 	return maxi(PhaseManager.current_level, 0)
@@ -71,7 +74,10 @@ func get_battle_intro_snapshot() -> Dictionary:
 
 func get_allowed_contracts() -> Array[StringName]:
 	var plan := _get_level_plan()
-	return plan.allowed_contracts.duplicate() if plan != null else []
+	var allowed_contracts: Array[StringName] = []
+	if plan != null:
+		allowed_contracts.assign(plan.allowed_contracts)
+	return allowed_contracts
 
 func get_battlefield_capabilities() -> Dictionary:
 	var points := PackedVector2Array()
@@ -152,6 +158,11 @@ func request_configure_threat_multiplier(multiplier: float) -> void:
 	if _spawner != null:
 		_spawner.configure_contract_threat_multiplier(multiplier)
 
+func request_configure_spawn_frequency_multiplier(multiplier: float) -> void:
+	_requested_config["spawn_frequency_multiplier"] = maxf(multiplier, 0.1)
+	if _spawner != null:
+		_spawner.configure_contract_spawn_frequency_multiplier(multiplier)
+
 func request_release_reinforcement_budget(multiplier: float = 1.0) -> void:
 	if _spawner != null:
 		_spawner.release_contract_reinforcement_budget(multiplier)
@@ -160,6 +171,35 @@ func request_spawn_pursuit_wave(min_count: int, max_count: int) -> int:
 	if _spawner == null:
 		return 0
 	return _spawner.spawn_contract_pursuit_wave(min_count, max_count)
+
+func request_spawn_contract_elite(target_hp: int) -> bool:
+	return _spawner.spawn_contract_elite(target_hp) if _spawner != null else false
+
+func request_spawn_mortar_barrage(options: Dictionary) -> int:
+	if _spawner == null or PlayerData.player == null:
+		return 0
+	_contract_hazards = _contract_hazards.filter(func(item): return item != null and is_instance_valid(item))
+	var minimum := maxi(int(options.get("strike_count_min", 2)), 1)
+	var maximum := maxi(int(options.get("strike_count_max", 3)), minimum)
+	var count := randi_range(minimum, maximum)
+	var spread := maxf(float(options.get("spread_radius", 110.0)), 0.0)
+	var player_position := (PlayerData.player as Node2D).global_position
+	for index in count:
+		var angle := TAU * float(index) / float(maxi(count, 1)) + randf_range(-0.35, 0.35)
+		var radius := randf_range(spread * 0.45, spread)
+		var strike := CONTRACT_MORTAR_STRIKE.new()
+		strike.global_position = player_position + Vector2.from_angle(angle) * radius
+		strike.warning_duration_sec = maxf(float(options.get("warning_duration_sec", 1.5)), 0.1)
+		strike.blast_radius = maxf(float(options.get("blast_radius", 62.0)), 8.0)
+		strike.damage = maxi(int(round(float(PlayerData.player_max_hp) * float(options.get("player_max_hp_ratio", 0.12)))), 1)
+		_spawner.get_parent().add_child(strike)
+		_contract_hazards.append(strike)
+	return count
+
+func request_clear_contract_hazards() -> void:
+	for hazard in _contract_hazards:
+		if hazard != null and is_instance_valid(hazard): hazard.queue_free()
+	_contract_hazards.clear()
 
 func request_configure_contract_economy(kill_gold_multiplier: float) -> void:
 	if _spawner != null:
@@ -372,12 +412,14 @@ func _on_phase_changed(new_phase: String) -> void:
 		request_stop_spawning()
 		request_evacuate_enemies()
 		request_remove_beacons()
+		request_clear_contract_hazards()
 		_remove_elimination_indicator()
 		_spawner.reset_contract_configuration()
 	elif new_phase == PhaseManager.SETTLEMENT:
 		request_stop_spawning()
 		_enemy_by_id.clear()
 		request_remove_beacons()
+		request_clear_contract_hazards()
 		_remove_elimination_indicator()
 		_spawner.reset_contract_configuration()
 

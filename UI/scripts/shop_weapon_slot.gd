@@ -6,6 +6,7 @@ const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_di
 # Properties
 @onready var background: ColorRect = $Background
 @onready var image: TextureRect = $Background/Image
+@onready var core_badge: Label = $Background/CoreBadge
 @onready var equip_name: Label = $Background/EquipName
 @onready var price_label = $Background/Socket1
 @onready var socket_2: Label = $Background/Socket2
@@ -68,6 +69,7 @@ func _ready():
 	if not item_id and PlayerData.player != null:
 		new_item()
 	else:
+		refresh_obtain_presentation()
 		refresh_affordability()
 
 func _exit_tree() -> void:
@@ -82,6 +84,7 @@ func empty_item() -> void:
 	item_id = null
 	equip_name.text = LocalizationManager.tr_key("ui.module.sold", "Sold")
 	image.texture = null
+	core_badge.visible = false
 	lbl_description.text = ""
 	price_label.text = ""
 	price = 0
@@ -94,11 +97,6 @@ func new_item() -> void:
 	if not self.is_connected("select_weapon",Callable(PlayerData.player,"create_weapon")):
 		connect("select_weapon",Callable(PlayerData.player,"create_weapon"))
 	var candidate_ids: Array[String] = DataHandler.get_weapon_ids()
-	if PlayerData.player and is_instance_valid(PlayerData.player):
-		candidate_ids = candidate_ids.filter(func(candidate_id: String) -> bool:
-			var prediction: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(candidate_id)
-			return str(prediction.get("result", "")) != "converted_to_gold"
-		)
 	if candidate_ids.is_empty():
 		push_warning("ShopWeaponSlot has no valid weapon candidates.")
 		empty_item()
@@ -115,16 +113,59 @@ func new_item() -> void:
 		return
 	var display_model = WEAPON_DISPLAY_BUILDER.build_from_definition(weapon_def)
 	var rarity: String = display_model.rarity
-	equip_name.text = display_model.display_name
 	equip_name.set("theme_override_colors/font_color", RARITY_UTIL.get_color(rarity))
 	image.texture = display_model.icon
-	socket_2.text = display_model.first_description_sentence()
-	lbl_description.text = ""
+	refresh_obtain_presentation()
 	var base_price := int(weapon_def.price)
 	var final_price := int(round(float(base_price) * _get_purchase_price_multiplier()))
 	price = max(1, final_price)
 	price_label.text = LocalizationManager.tr_format("ui.shop.weapon.price", {"value": price}, "Price: %s" % price)
 	refresh_affordability()
+
+func refresh_obtain_presentation() -> void:
+	if item_id == null:
+		return
+	var weapon_def := DataHandler.read_weapon_data(str(item_id)) as WeaponDefinition
+	if weapon_def == null:
+		return
+	var display_model = WEAPON_DISPLAY_BUILDER.build_from_definition(weapon_def)
+	var prediction := _get_weapon_obtain_prediction()
+	var becomes_core := str(prediction.get("result", "")) == "dismantled_to_core"
+	core_badge.visible = becomes_core
+	if becomes_core:
+		equip_name.text = LocalizationManager.tr_format(
+			"ui.shop.core.named_title",
+			{"name": display_model.display_name},
+			"%s Core" % display_model.display_name
+		)
+		socket_2.text = LocalizationManager.tr_key(
+			"ui.shop.core.conversion_hint",
+			"Duplicate weapon becomes 1 core"
+		)
+		lbl_description.text = _format_duplicate_slot_summary(prediction)
+		core_badge.text = LocalizationManager.tr_key("ui.shop.core.badge", "◆ CORE")
+	else:
+		equip_name.text = display_model.display_name
+		socket_2.text = display_model.first_description_sentence()
+		lbl_description.text = ""
+
+func _format_duplicate_slot_summary(prediction: Dictionary) -> String:
+	var core_tags := prediction.get("core_tags", []) as Array
+	return LocalizationManager.tr_format(
+		"ui.shop.duplicate_slot_summary",
+		{
+			"amount": int(prediction.get("core_amount", 1)),
+			"tag_count": core_tags.size(),
+			"current": int(prediction.get("current_core_count", 0)),
+			"resulting": int(prediction.get("resulting_core_count", 1)),
+		},
+		"Core +%d · %d Tags · %d -> %d" % [
+			int(prediction.get("core_amount", 1)),
+			core_tags.size(),
+			int(prediction.get("current_core_count", 0)),
+			int(prediction.get("resulting_core_count", 1)),
+		]
+	)
 
 func _pick_weighted_candidate(candidate_ids: Array[String]) -> String:
 	if PlayerData.rounds_without_weapon_progress < 3:
@@ -196,16 +237,13 @@ func try_purchase() -> bool:
 			active_ui.show_item_message(LocalizationManager.tr_key("ui.shop.not_enough_gold", "Not enough gold."), 1.4)
 		return false
 	var ui := GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("is_branch_selection_blocking_interactions") and ui.is_branch_selection_blocking_interactions():
-		ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
-		return false
 	var outcome := {}
-	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("try_auto_fuse_weapon_obtain"):
-		var prediction: Dictionary = PlayerData.player.predict_auto_fuse_weapon_obtain(str(item_id))
+	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("try_weapon_obtain_conversion"):
+		var prediction: Dictionary = PlayerData.player.predict_weapon_obtain(str(item_id))
 		if str(prediction.get("result", "not_applicable")) != "not_applicable":
 			if not PlayerData.spend_gold(price):
 				return false
-			outcome = PlayerData.player.try_auto_fuse_weapon_obtain(str(item_id))
+			outcome = PlayerData.player.try_weapon_obtain_conversion(str(item_id))
 		else:
 			var weapon_def := DataHandler.read_weapon_data(str(item_id)) as WeaponDefinition
 			var new_weapon: Weapon
@@ -266,7 +304,15 @@ func _build_shop_item_data() -> Dictionary:
 		"slot": self,
 		"rarity": rarity,
 		"rarity_color": RARITY_UTIL.get_color(rarity),
+		"obtain_prediction": _get_weapon_obtain_prediction(),
 	}
+
+func _get_weapon_obtain_prediction() -> Dictionary:
+	if item_id == null or PlayerData.player == null or not is_instance_valid(PlayerData.player):
+		return {}
+	if not PlayerData.player.has_method("predict_weapon_obtain"):
+		return {}
+	return PlayerData.player.predict_weapon_obtain(str(item_id))
 
 func _notify_shop_hover() -> void:
 	var ui := GlobalVariables.ui

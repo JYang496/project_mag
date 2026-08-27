@@ -157,8 +157,7 @@ func _refresh_labels() -> void:
 		return
 	var sprite := preview_module.get_node_or_null("%Sprite") as Sprite2D
 	image.texture = sprite.texture if sprite else null
-	var new_prefix := "NEW · " if MODULE_OFFER_CATALOG.is_new_tier_scene(module_scene.resource_path) else ""
-	item_name.text = "%s%s Lv.1" % [new_prefix, LocalizationManager.get_module_name(preview_module)]
+	item_name.text = "%s Lv.1" % LocalizationManager.get_module_name(preview_module)
 	item_name.set("theme_override_colors/font_color", RARITY_UTIL.get_color(preview_module.get_rarity()))
 	price_label.text = LocalizationManager.tr_format("ui.shop.module.price", {"value": price}, "Price: %s" % price)
 	var effects := preview_module.get_effect_descriptions()

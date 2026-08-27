@@ -11,6 +11,7 @@ enum RangeMode {
 
 const DEFAULT_PROJECTILE_LIFETIME_SEC: float = 2.5
 const WeaponFireFeedbackPlayerScript := preload("res://Player/Weapons/Feedback/weapon_fire_feedback_player.gd")
+const WeaponTriggerRuntimeType := preload("res://Player/Weapons/Core/weapon_trigger_runtime.gd")
 
 #region Runtime State
 @onready var modules: WeaponModuleContainer = $Modules
@@ -20,6 +21,7 @@ var stat_pipeline: WeaponStatPipeline = WeaponStatPipeline.new()
 var plugin_dispatcher: WeaponPluginDispatcher = WeaponPluginDispatcher.new()
 var ammo_controller: WeaponAmmoController = WeaponAmmoController.new()
 var passive_controller: WeaponPassiveController = WeaponPassiveController.new()
+var trigger_runtime = WeaponTriggerRuntimeType.new()
 var fuse_visual_controller: WeaponFuseVisualController = WeaponFuseVisualController.new()
 var fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
 @export_range(1, 8, 1) var module_slot_capacity: int = 3
@@ -119,6 +121,7 @@ func _init() -> void:
 	plugin_dispatcher.setup(self)
 	ammo_controller.setup(self)
 	passive_controller.setup(self)
+	trigger_runtime.setup(self)
 	fuse_visual_controller.setup(self)
 	fire_feedback_player.setup(self)
 
@@ -185,6 +188,7 @@ func _handle_hit_target(target: Node, damage_type: StringName = StringName()) ->
 	if damage_type != StringName():
 		event.detail["damage_type"] = damage_type
 	emit_weapon_event(event)
+	trigger_runtime.on_hit(target)
 	if target != null and is_instance_valid(target):
 		target.set_meta(LAST_HIT_WEAPON_META, get_instance_id())
 		target.set_meta(LAST_HIT_WEAPON_TIME_META, Time.get_ticks_msec())
@@ -217,6 +221,17 @@ func on_damage_applied(target: Node, data: DamageData, result: DamageResult) -> 
 		kill_event.damage_data = data
 		kill_event.damage_result = result
 		emit_weapon_event(kill_event)
+		var death_position := Vector2.ZERO
+		if target is Node2D:
+			death_position = (target as Node2D).global_position
+		dispatch_passive_event(&"on_enemy_killed", {
+			"source_weapon": self,
+			"enemy": target,
+			"target": target,
+			"position": death_position,
+			"event": kill_event,
+			"_suppress_default_emit": true,
+		})
 
 func _accumulate_global_weapon_energy(data: DamageData, result: DamageResult) -> void:
 	if data == null or result == null or not result.applied or result.health_damage <= 0:
@@ -334,6 +349,9 @@ func activate_energy_release_attack(
 	}
 	event_detail.merge(detail, true)
 	emit_passive_trigger(&"global_energy_release_attack", event_detail, PASSIVE_SCOPE_GLOBAL)
+	var release_event := WeaponEvent.create(WeaponEvent.SHARED_RESOURCE_RELEASE, self)
+	release_event.detail = event_detail
+	emit_weapon_event(release_event)
 	return {
 		"triggered": true,
 		"spent": _energy_release_spent,
@@ -401,6 +419,8 @@ func _resolve_energy_pool_player() -> Node:
 func notify_main_weapon_fired() -> void:
 	if not is_main_weapon():
 		return
+	var fired_event := WeaponEvent.create(WeaponEvent.PRIMARY_ATTACK_FIRED, self)
+	emit_weapon_event(fired_event)
 	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("_broadcast_weapon_passive_event"):
 		PlayerData.player.call("_broadcast_weapon_passive_event", &"on_main_weapon_fired", {
 			"source_weapon": self,
@@ -641,6 +661,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_update_reload_state(delta)
 	_update_heat_system(delta)
+	trigger_runtime.update(delta)
 	_process_weapon_role_effects(delta)
 
 func _process_weapon_role_effects(delta: float) -> void:
@@ -1024,6 +1045,7 @@ func _on_tree_exited() -> void:
 	plugin_dispatcher.clear_for_weapon_exit()
 	ammo_controller.clear_for_weapon_exit()
 	passive_controller.clear_for_weapon_exit()
+	trigger_runtime.clear_for_weapon_exit()
 	fuse_visual_controller.clear_for_weapon_exit()
 	branch_runtime.clear_for_weapon_exit()
 	heat_runtime.clear_for_weapon_exit()
@@ -1036,11 +1058,14 @@ func set_weapon_role(next_role: String) -> void:
 	var normalized := "main" if str(next_role).to_lower() == "main" else "offhand"
 	if weapon_role == normalized:
 		return
+	var old_role := weapon_role
 	weapon_role = normalized
 	_on_weapon_role_changed(weapon_role)
 	if weapon_role == "main":
+		trigger_runtime.on_entered_main(old_role)
 		_on_enter_main_weapon_role()
 	else:
+		trigger_runtime.on_entered_offhand(old_role)
 		_on_enter_offhand_weapon_role()
 	weapon_role_changed.emit(weapon_role)
 
@@ -1058,6 +1083,21 @@ func _on_enter_main_weapon_role() -> void:
 
 func _on_enter_offhand_weapon_role() -> void:
 	pass
+
+func has_entry_trigger_ready() -> bool:
+	return trigger_runtime.has_entry_charge()
+
+func consume_entry_trigger() -> bool:
+	return trigger_runtime.consume_entry_charge()
+
+func is_stow_trigger_ready() -> bool:
+	return trigger_runtime.is_stow_charge_ready()
+
+func get_stow_trigger_progress() -> float:
+	return trigger_runtime.get_stow_charge_progress()
+
+func consume_stow_trigger() -> bool:
+	return trigger_runtime.consume_stow_charge()
 
 func clear_timed_effects_for_prepare() -> void:
 	finish_energy_release_attack()

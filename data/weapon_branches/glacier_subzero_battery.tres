@@ -5,6 +5,7 @@
 
 [resource]
 script = ExtResource("4_script")
+fusion_required_tags = Array[StringName]([&"freeze", &"ammo"])
 produces_tags = Array[StringName]([&"freeze", &"ammo", &"on_reload"])
 requires_any_tags = Array[StringName]([&"freeze"])
 requires_all_tags = Array[StringName]([])
@@ -12,7 +13,7 @@ amplifies_tags = Array[StringName]([&"ammo"])
 conflicts_with_tags = Array[StringName]([&"fire"])
 branch_id = "glacier_subzero_battery"
 display_name = "Subzero Battery"
-description = "Reload branch. Cold Snap restores ammo up to the magazine cap, pushing Glacier toward sustained Freeze uptime between reloads."
+description = "Stow-charge branch. Cold Snap restores ammo up to the magazine cap, rewarding switching away before returning for sustained Freeze uptime."
 icon = ExtResource("1_icon")
 sort_order = 20
 weapon_scene_path = "res://Player/Weapons/Instances/glacier_projector.tscn"

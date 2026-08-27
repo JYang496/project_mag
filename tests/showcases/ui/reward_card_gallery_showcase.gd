@@ -26,8 +26,8 @@ func _build_gallery() -> void:
 	_card_builder = REWARD_PANEL_SCRIPT.new()
 	var grid := %CardGrid as GridContainer
 	var entries: Array[Dictionary] = [
-		{"label": "NEW WEAPON · BUILD PREVIEW", "reward": _make_weapon_reward("2", 1, "rare")},
-		{"label": "NEW WEAPON · DETAILS OPEN", "reward": _make_weapon_reward("5", 1, "rare"), "details_open": true},
+		{"label": "WEAPON · BUILD PREVIEW", "reward": _make_weapon_reward("2", 1, "rare")},
+		{"label": "WEAPON · DETAILS OPEN", "reward": _make_weapon_reward("5", 1, "rare"), "details_open": true},
 		{"label": "WEAPON UPGRADE", "reward": _make_upgrade_reward("1", 1, 2)},
 		{"label": "WEAPON MODULE", "reward": _make_module_reward()},
 		{"label": "CELL EFFECT", "reward": _make_cell_effect_reward()},

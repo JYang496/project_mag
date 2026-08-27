@@ -1,10 +1,13 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://UI/scripts/battle_contract_card.gd" id="1"]
+[ext_resource type="Script" path="res://UI/scripts/components/battle_contract_icon.gd" id="2"]
+[ext_resource type="Script" path="res://UI/scripts/components/enhanced_contract_frame.gd" id="3"]
 
 [node name="BattleContractCard" type="Button"]
 custom_minimum_size = Vector2(280, 250)
 size_flags_horizontal = 3
+size_flags_vertical = 3
 toggle_mode = true
 script = ExtResource("1")
 
@@ -20,6 +23,20 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 mouse_filter = 2
 
+[node name="SelectionRail" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -4.0
+offset_right = -8.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
 [node name="RareFrame" type="Panel" parent="."]
 visible = false
 layout_mode = 1
@@ -33,6 +50,40 @@ offset_bottom = -5.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="EnhancedFrame" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3")
+
+[node name="EnhancementToggle" type="CheckButton" parent="."]
+visible = false
+custom_minimum_size = Vector2(168, 38)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -190.0
+offset_top = -54.0
+offset_right = -22.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+focus_mode = 1
+theme_override_colors/font_color = Color(0.69, 0.78, 0.83, 1)
+theme_override_colors/font_hover_color = Color(0.93, 0.97, 0.98, 1)
+theme_override_colors/font_pressed_color = Color(0.93, 0.97, 0.98, 1)
+theme_override_font_sizes/font_size = 14
+text = "Enhanced Mode"
 
 [node name="HoldProgress" type="ProgressBar" parent="."]
 visible = false
@@ -86,6 +137,7 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(25, 25)
 layout_mode = 2
 mouse_filter = 2
+script = ExtResource("2")
 
 [node name="TypeLabel" type="Label" parent="Margin/Content/Header"]
 layout_mode = 2
@@ -127,32 +179,21 @@ theme_override_font_sizes/font_size = 25
 autowrap_mode = 2
 max_lines_visible = 2
 
+[node name="ObjectiveGap" type="Control" parent="Margin/Content"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+
 [node name="InfoGrid" type="HBoxContainer" parent="Margin/Content"]
 layout_mode = 2
-size_flags_vertical = 3
 theme_override_constants/separation = 18
 
 [node name="Description" type="Label" parent="Margin/Content/InfoGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.15
 theme_override_font_sizes/font_size = 16
 autowrap_mode = 2
-vertical_alignment = 1
-
-[node name="Divider" type="ColorRect" parent="Margin/Content/InfoGrid"]
-custom_minimum_size = Vector2(1, 0)
-layout_mode = 2
-mouse_filter = 2
-color = Color(0.22, 0.38, 0.42, 0.72)
-
-[node name="Reward" type="Label" parent="Margin/Content/InfoGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.85
-theme_override_font_sizes/font_size = 14
-autowrap_mode = 2
-vertical_alignment = 1
+vertical_alignment = 0
 
 [node name="IntroContent" type="VBoxContainer" parent="Margin/Content"]
 visible = false
@@ -176,10 +217,10 @@ horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
 
-[node name="RewardDetails" type="HBoxContainer" parent="Margin/Content"]
+[node name="RewardDetails" type="VBoxContainer" parent="Margin/Content"]
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 28
+theme_override_constants/separation = 10
 
 [node name="Objective" type="Label" parent="Margin/Content/RewardDetails"]
 layout_mode = 2
@@ -193,8 +234,22 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
 
-[node name="Reward" type="Label" parent="Margin/Content/RewardDetails"]
+[node name="EnhancedDetails" type="VBoxContainer" parent="Margin/Content"]
+visible = false
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 16
+theme_override_constants/separation = 7
+
+[node name="Risk" type="Label" parent="Margin/Content/EnhancedDetails"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
 autowrap_mode = 2
+
+[node name="Bonus" type="Label" parent="Margin/Content/EnhancedDetails"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 2
+
+[node name="ContentSpacer" type="Control" parent="Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2

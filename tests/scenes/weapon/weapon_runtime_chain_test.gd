@@ -267,10 +267,11 @@ func _validate_projectile_scenes() -> void:
 func _validate_glacier_cold_snap() -> void:
 	var packed := load("res://Player/Weapons/Instances/glacier_projector.tscn") as PackedScene
 	var weapon := packed.instantiate() as Weapon
-	weapon.force_skill_cooldowns_ready()
+	weapon.trigger_runtime.on_entered_offhand("main")
+	weapon.trigger_runtime.update(5.0)
 	_expect(str(weapon.get_passive_status().get("state", "")) == "armed", "Cold Snap must advertise that the next attack is armed")
 	_expect(bool(weapon.call("_consume_cold_snap_for_next_attack")), "the first attack must consume the armed Cold Snap")
-	_expect(not bool(weapon.call("_consume_cold_snap_for_next_attack")), "a second attack during recharge must not receive Cold Snap")
+	_expect(not bool(weapon.call("_consume_cold_snap_for_next_attack")), "a second attack before another stow charge must not receive Cold Snap")
 
 	var normal_target := DummyControlTarget.new()
 	weapon.call("_apply_cold_snap_control", normal_target)
@@ -296,10 +297,11 @@ func _validate_glacier_cold_snap() -> void:
 		_expect(is_equal_approx(float(boss_payload.get("multiplier", 0.0)), 0.5), "boss movement multiplier must be 50%")
 		_expect(is_equal_approx(float(boss_payload.get("duration", 0.0)), 1.0), "boss slow must last one second")
 
-	weapon.call("_update_cold_snap_recharge", 6.0)
-	_expect(bool(weapon.call("_consume_cold_snap_for_next_attack")), "Cold Snap must rearm after six seconds")
+	weapon.trigger_runtime.on_entered_offhand("main")
+	weapon.trigger_runtime.update(5.0)
+	_expect(bool(weapon.call("_consume_cold_snap_for_next_attack")), "Cold Snap must rearm after five seconds stowed")
 	weapon.call("clear_timed_effects_for_prepare")
-	_expect(bool(weapon.call("_consume_cold_snap_for_next_attack")), "a new battle prepare must restore Cold Snap")
+	_expect(not bool(weapon.call("_consume_cold_snap_for_next_attack")), "battle prepare must not bypass the stow-charge requirement")
 
 	normal_target.free()
 	elite_target.free()
@@ -325,7 +327,7 @@ func _validate_full_energy_fire_cycle() -> void:
 	_expect(is_equal_approx(plasma.get_energy_gain_per_damage_event(), 10.0), "slow release-focused Plasma Lance must gain 10 global energy per damage event")
 	_expect(is_equal_approx(laser.get_energy_release_bonus_at_full(), 0.30), "Laser focus channel must use a +30% sustained multiplier")
 	_expect(is_equal_approx(charged.get_energy_release_bonus_at_full(), 0.55), "Charged Blaster resonance must start at +55% before same-target ramp")
-	_expect(is_equal_approx(plasma.get_energy_release_bonus_at_full(), 0.55), "Plasma discharge must start at +55% before Heat scaling")
+	_expect(is_equal_approx(plasma.get_energy_release_bonus_at_full(), 0.85), "Plasma discharge must expose its fixed +85% release bonus")
 
 	var lethal_target := DummyAuthoritativeDamageTarget.new()
 	var lethal_data := _make_energy_hit_data(laser, energy_player, 100)
@@ -398,7 +400,7 @@ func _validate_full_energy_fire_cycle() -> void:
 	energy_player.heat_value = 80.0
 	var plasma_release := plasma.prepare_energy_release_attack()
 	_expect(plasma_release.get("release_mode") == &"heat_exchange", "Plasma Lance must identify its release as a Heat exchange")
-	_expect(is_equal_approx(float(plasma_release.get("multiplier", 0.0)), 2.11), "Plasma discharge must scale its energy multiplier from the pre-spend Heat snapshot")
+	_expect(is_equal_approx(float(plasma_release.get("multiplier", 0.0)), 1.85), "Plasma discharge must use its fixed release multiplier")
 	_expect(is_equal_approx(float(plasma_release.get("heat_spent", 0.0)), 35.0), "Plasma discharge must spend 35 shared Heat")
 	_expect(is_equal_approx(energy_player.heat_value, 45.0), "Plasma Heat exchange must reduce the authoritative shared Heat pool")
 	plasma.finish_energy_release_attack()

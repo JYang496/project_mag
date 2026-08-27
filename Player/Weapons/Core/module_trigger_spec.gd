@@ -10,7 +10,13 @@ class_name ModuleTriggerSpec
 	"critical_hit",
 	"target_killed",
 	"reload_started",
-	"reload_finished"
+	"weapon_entered_main",
+	"weapon_entered_offhand",
+	"magazine_quarter_spent",
+	"stow_charge_ready",
+	"cross_weapon_hit",
+	"continuous_hit_threshold",
+	"shared_resource_release"
 ) var event_type: String = "skill_cast_committed"
 @export var required_skill_tags: Array[StringName] = []
 @export var requires_action_context: bool = false

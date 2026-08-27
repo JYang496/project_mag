@@ -9,7 +9,7 @@ Phase 1 locks the player-facing wording for build readability. These tags are di
 | Heat | Heat generation, heat spending, overheat, shared heat capacity | Machine Gun, Flamethrower, Plasma Lance, Heat modules |
 | Mark | Mark application, marked-target payoff, mark-assisted execution | Auto Pistol, Spear Launcher, Zero Cannon |
 | Freeze | Freeze damage, frost stacks, slows, frost fields | Glacier Projector, Cryo branches, Freeze modules |
-| Reload | Reload-start, reload-finished, ammo-spend, reload-duration hooks | Reload modules, Heat passives, Cold Snap |
+| Reload | Reload-start, ammo-spend, reload-duration hooks | Reload modules, Machine Gun, Spear Launcher |
 | Close | Short-range, melee, contact, player-centered pressure | Dash Blade, Shotgun, Chainsaw Launcher, Flamethrower |
 | Area | Cone, burst, splash, field, grouped enemy coverage | Rocket Launcher, Prism branches, Fire Pulse Aura |
 | Beam | Beam hit or channel behavior | Laser, Charged Blaster, beam modules |
@@ -27,6 +27,7 @@ Phase 1 locks the player-facing wording for build readability. These tags are di
 - Branch descriptions should answer: what playstyle the branch pushes toward and what it sacrifices or emphasizes.
 - Passive descriptions should answer: trigger condition and refresh or recharge method.
 - Module descriptions should answer: suitable weapon/tag targets and trigger timing. The shared module display appends these from existing `module_tags`, required traits, delivery types, capabilities, and hooks.
+- Weapon-skill trigger wording must use the eight canonical families in [`weapon_trigger_contract.md`](weapon_trigger_contract.md). `reload-finished` is not a player-facing skill trigger.
 
 ## Current Limits
 

@@ -40,10 +40,20 @@ const DEFAULT_CAMERA_FOV: float = 34.0
 const DEFAULT_WORLD_SCALE: float = 0.01
 const GROUND_AREA_HEIGHT: float = 0.022
 const GROUND_AREA_RENDER_PRIORITY: int = 2
+const PLAYER_GROUND_EFFECT_RENDER_PRIORITY: int = 30
 const ACTIVATION_OUTLINE_HEIGHT: float = 0.024
 const ACTIVATION_OUTLINE_RENDER_PRIORITY: int = 1
 const DANGER_WARNING_HEIGHT: float = 0.032
 const DANGER_WARNING_RENDER_PRIORITY: int = 20
+const DANGER_WARNING_FILL_SHADER_SOURCE := """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never, blend_mix;
+uniform vec4 fill_color : source_color;
+void fragment() {
+	ALBEDO = fill_color.rgb;
+	ALPHA = fill_color.a;
+}
+"""
 const DANGER_PROGRESS_HEIGHT: float = 0.034
 const DANGER_PROGRESS_RENDER_PRIORITY: int = 21
 const GROUND_IDENTITY_HEIGHT: float = 0.024
@@ -870,8 +880,19 @@ func _register_area_effect(area: Node2D) -> void:
 		color = area.get("debug_fill_color") as Color
 	color.a = maxf(color.a, 0.18)
 	var visual_shape := int(area.get("visual_shape"))
-	var render_priority := GROUND_AREA_RENDER_PRIORITY
+	var is_player_area: bool = area.get("source_category") == DamageData.SOURCE_PLAYER_WEAPON
+	var render_priority := PLAYER_GROUND_EFFECT_RENDER_PRIORITY if is_player_area else GROUND_AREA_RENDER_PRIORITY
 	var mesh := _create_disc_mesh(color, render_priority) if visual_shape == 0 else _create_polygon_ground_mesh(_build_area_polygon_points(area), color, render_priority)
+	var radius := maxf(float(area.get("radius")), 1.0) * world_scale
+	var height_offset_value: Variant = area.get("ground_height_offset")
+	var height_offset := float(height_offset_value) if height_offset_value != null else 0.0
+	mesh.position = world_2d_to_3d(area.global_position) + Vector3.UP * (GROUND_AREA_HEIGHT + height_offset)
+	if visual_shape == 0:
+		mesh.scale = Vector3(radius, 1.0, radius)
+	mesh.visible = is_world_point_within_visual_bounds(
+		area.global_position,
+		visual_cull_margin_pixels + radius / maxf(world_scale, 0.0001)
+	)
 	_ground_root.add_child(mesh)
 	var visual_root := area.get_node_or_null("VisualRoot") as CanvasItem
 	if visual_root != null:
@@ -1026,26 +1047,21 @@ func _register_warning_circle(warning: Node2D) -> void:
 		return
 	var color: Color = warning.get("fill_color") as Color
 	# Large danger zones must preserve visibility of units and terrain beneath them.
-	color.a = clampf(color.a, 0.025, 0.05)
-	var mesh := _create_disc_mesh(color, DANGER_WARNING_RENDER_PRIORITY)
+	color.a = clampf(color.a, 0.12, 0.20)
+	var mesh := _create_translucent_warning_disc(color)
 	var outline_color: Color = warning.get("line_color") as Color
-	var wave_color: Color = warning.get("wave_color") as Color
-	var outline := _create_ring_mesh(outline_color)
-	var wave := _create_ring_mesh(wave_color)
-	var center_marker := _create_disc_mesh(outline_color, DANGER_WARNING_RENDER_PRIORITY + 1)
-	var countdown_label := _create_warning_countdown_label()
+	var outline := _create_ring_mesh(outline_color, 0.05)
+	var show_countdown := bool(warning.get("show_countdown"))
+	var countdown_label := _create_warning_countdown_label() if show_countdown else null
 	_ground_root.add_child(mesh)
 	_ground_root.add_child(outline)
-	_ground_root.add_child(wave)
-	_ground_root.add_child(center_marker)
-	_ground_root.add_child(countdown_label)
+	if countdown_label != null:
+		_ground_root.add_child(countdown_label)
 	warning.modulate.a = 0.0
 	_area_meshes[warning.get_instance_id()] = {
 		"source": weakref(warning),
 		"mesh": mesh,
 		"outline": outline,
-		"wave": wave,
-		"center_marker": center_marker,
 		"countdown_label": countdown_label,
 		"warning": true,
 		"height": DANGER_WARNING_HEIGHT,
@@ -1164,9 +1180,29 @@ func _create_disc_mesh(color: Color, render_priority: int = 0) -> MeshInstance3D
 	mesh.mesh = cylinder
 	return mesh
 
-func _create_ring_mesh(color: Color) -> MeshInstance3D:
+func _create_translucent_warning_disc(color: Color) -> MeshInstance3D:
+	var mesh := MeshInstance3D.new()
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = 1.0
+	cylinder.bottom_radius = 1.0
+	cylinder.height = 0.008
+	cylinder.radial_segments = 48
+	var shader := Shader.new()
+	shader.code = DANGER_WARNING_FILL_SHADER_SOURCE
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.render_priority = DANGER_WARNING_RENDER_PRIORITY
+	material.set_shader_parameter(&"fill_color", color)
+	cylinder.material = material
+	mesh.mesh = cylinder
+	return mesh
+
+func _create_ring_mesh(color: Color, thickness_ratio: float = -1.0) -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
 	var torus := TorusMesh.new()
+	if thickness_ratio > 0.0:
+		torus.inner_radius = 1.0 - clampf(thickness_ratio, 0.01, 0.25)
+		torus.outer_radius = 1.0
 	torus.rings = 64
 	torus.ring_segments = 6
 	var material := StandardMaterial3D.new()
@@ -1411,18 +1447,12 @@ func _sync_area_meshes() -> void:
 		var area := (entry.source as WeakRef).get_ref() as Node2D
 		var mesh := entry.mesh as MeshInstance3D
 		var outline := entry.get("outline") as MeshInstance3D
-		var wave := entry.get("wave") as MeshInstance3D
-		var center_marker := entry.get("center_marker") as MeshInstance3D
 		var countdown_label := entry.get("countdown_label") as Label3D
 		if area == null or mesh == null:
 			if mesh != null:
 				mesh.queue_free()
 			if outline != null:
 				outline.queue_free()
-			if wave != null:
-				wave.queue_free()
-			if center_marker != null:
-				center_marker.queue_free()
 			if countdown_label != null:
 				countdown_label.queue_free()
 			_area_meshes.erase(id)
@@ -1437,32 +1467,23 @@ func _sync_area_meshes() -> void:
 			mesh.position = next_position
 			if outline != null:
 				outline.position = next_position + Vector3.UP * 0.002
-			if wave != null:
-				wave.position = next_position + Vector3.UP * 0.004
-			if center_marker != null:
-				center_marker.position = next_position + Vector3.UP * 0.006
 			if countdown_label != null:
 				countdown_label.position = next_position + Vector3.UP * 0.08
 			entry["last_position"] = next_position
 		var area_visible := is_world_point_within_visual_bounds(area.global_position, visual_cull_margin_pixels + radius / maxf(world_scale, 0.0001))
-		mesh.visible = area_visible
 		if bool(entry.get("warning", false)):
 			var progress := clampf(float(area.call("get_warning_progress")), 0.0, 1.0)
+			mesh.visible = area_visible and progress > 0.0
+			var progress_radius := radius * progress
+			mesh.scale = Vector3(progress_radius, 1.0, progress_radius)
 			if outline != null:
 				outline.visible = area_visible
 				outline.scale = Vector3(radius, 1.0, radius)
-			if wave != null:
-				wave.visible = area_visible
-				var wave_radius := radius * (1.0 - progress)
-				wave.scale = Vector3(wave_radius, 1.0, wave_radius)
-			if center_marker != null:
-				center_marker.visible = area_visible
-				var marker_radius := maxf(float(area.get("center_marker_diameter")) * 0.5 * world_scale, 1.0)
-				center_marker.scale = Vector3(marker_radius, 1.0, marker_radius)
 			if countdown_label != null:
 				countdown_label.visible = area_visible
 				countdown_label.text = str(area.call("get_warning_countdown_text"))
 			continue
+		mesh.visible = area_visible
 		var visual_version := int(area.call("get_hybrid_visual_version")) if area.has_method("get_hybrid_visual_version") else 0
 		if visual_version != int(entry.get("visual_version", -1)):
 			if visual_shape == 0:

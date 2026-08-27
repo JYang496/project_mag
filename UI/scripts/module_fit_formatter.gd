@@ -71,13 +71,8 @@ static func build_effect_chips(module_instance: Module, limit: int = 0) -> Array
 	var chips: Array = []
 	if module_instance == null or not is_instance_valid(module_instance):
 		return chips
-	for tag in module_instance.get_normalized_module_tags():
+	for tag in module_instance.get_build_tags():
 		_append_unique_chip(chips, BUILD_TAG_DISPLAY.build_tag_chip(tag, _format_taxonomy_label(tag)))
-	for hook in module_instance.get_normalized_required_hooks():
-		var hook_key := _format_hook_tag_key(hook)
-		_append_unique_chip(chips, BUILD_TAG_DISPLAY.build_tag_chip(hook_key, _format_hook_tag(hook)))
-	for delivery in module_instance.get_normalized_required_delivery_types():
-		_append_unique_chip(chips, BUILD_TAG_DISPLAY.build_tag_chip(delivery, _format_taxonomy_label(delivery)))
 	_append_stat_chips(chips, module_instance)
 	if chips.is_empty():
 		_append_unique_chip(
@@ -164,34 +159,6 @@ static func _format_stat_key_label(stat_key: String) -> String:
 		return LocalizationManager.get_module_term(&"area", "Area")
 	var fallback := stat_key.replace("_", " ").capitalize()
 	return LocalizationManager.get_module_term(StringName("stat.%s" % normalized), fallback)
-
-static func _format_hook_tag(hook: StringName) -> String:
-	if hook == ModuleHook.HIT \
-			or hook == ModuleHook.DAMAGE_DEALT \
-			or hook == ModuleHook.AREA_DAMAGE \
-			or hook == ModuleHook.BEAM_HIT:
-		return LocalizationManager.get_module_term(&"on_hit", "On Hit")
-	if hook == ModuleHook.RELOAD_START or hook == ModuleHook.RELOAD_DURATION:
-		return LocalizationManager.get_module_term(&"reload", "Reload")
-	if hook == ModuleHook.KILL:
-		return LocalizationManager.get_module_term(&"execute", "Execute")
-	if hook == ModuleHook.PROJECTILE_SPAWN:
-		return LocalizationManager.get_module_term(&"projectile", "Projectile")
-	return ""
-
-static func _format_hook_tag_key(hook: StringName) -> StringName:
-	if hook == ModuleHook.HIT \
-			or hook == ModuleHook.DAMAGE_DEALT \
-			or hook == ModuleHook.AREA_DAMAGE \
-			or hook == ModuleHook.BEAM_HIT:
-		return &"on_hit"
-	if hook == ModuleHook.RELOAD_START or hook == ModuleHook.RELOAD_DURATION:
-		return &"reload"
-	if hook == ModuleHook.KILL:
-		return &"execute"
-	if hook == ModuleHook.PROJECTILE_SPAWN:
-		return &"projectile"
-	return hook
 
 static func _format_taxonomy_label(value: StringName) -> String:
 	var fallback := ""

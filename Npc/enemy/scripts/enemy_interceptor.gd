@@ -58,9 +58,10 @@ func _update_guard_target(delta: float) -> void:
 	_guard_target = _find_nearest_support()
 	_guard_target_refresh_remaining = next_refresh_interval
 
-func _is_valid_guard_target(target: BaseEnemy) -> bool:
+func _is_valid_guard_target(target: Variant) -> bool:
 	return (
 		is_instance_valid(target)
+		and target is BaseEnemy
 		and target.is_inside_tree()
 		and target != self
 		and target.is_support_unit()

@@ -2,6 +2,8 @@ extends Node
 class_name WeaponBranchBehavior
 
 var weapon: Weapon
+var fusion_enhanced := false
+const FUSION_ENHANCEMENT_FACTOR := 1.25
 
 func setup(target_weapon: Weapon) -> void:
 	weapon = target_weapon
@@ -12,6 +14,16 @@ func on_weapon_ready() -> void:
 
 func on_level_applied(_level: int) -> void:
 	pass
+
+func set_fusion_enhanced(enabled: bool) -> void:
+	fusion_enhanced = enabled
+	on_fusion_enhancement_changed(enabled)
+
+func on_fusion_enhancement_changed(_enabled: bool) -> void:
+	pass
+
+func get_fusion_enhancement_factor() -> float:
+	return FUSION_ENHANCEMENT_FACTOR if fusion_enhanced else 1.0
 
 func on_weapon_shot(_base_direction: Vector2) -> void:
 	pass

@@ -50,18 +50,18 @@ func _run() -> void:
 	await get_tree().process_frame
 
 	_expect(granted, "expected duplicate weapon reward to grant")
-	_expect(int(weapon.fuse) == 2, "expected duplicate weapon reward to fuse weapon to 2")
-	_expect(not _ui.toast_presenter.panel.visible, "duplicate weapon fusion must not use the top system toast")
-	_expect(_ui.branch_select_panel != null, "expected branch panel to be created")
-	_expect(_ui.branch_select_panel != null and _ui.branch_select_panel.visible, "expected branch panel to open while standard draft is still pending")
-	_expect(_ui.branch_select_panel != null and not _ui.branch_select_panel._branch_ids.is_empty(), "expected branch options for machine gun fuse 2")
-	_expect(RewardDraftRuntime.has_pending_standard_draft(), "standard draft should still be pending during grant-time branch prompt")
+	_expect(int(weapon.fuse) == 1, "duplicate weapon reward must not increase Fuse")
+	var machine_gun_def := DataHandler.read_weapon_data("1") as WeaponDefinition
+	var machine_gun_core_tags := machine_gun_def.get_normalized_core_tags() if machine_gun_def else []
+	_expect(InventoryData.get_weapon_core_count(machine_gun_core_tags) == 1, "duplicate weapon reward must create one full-tag core")
+	_expect(_ui.branch_select_panel == null or not _ui.branch_select_panel.visible, "duplicate weapon reward must not open branch selection")
+	_expect(RewardDraftRuntime.has_pending_standard_draft(), "standard draft should remain pending until explicitly cleared")
 
 	RewardDraftRuntime.clear_pending_standard_draft()
 	PhaseManager.request_settlement_completion_check()
 	await get_tree().process_frame
 	await get_tree().process_frame
-	_expect(PhaseManager.current_state() == PhaseManager.SETTLEMENT, "protocol selection must wait for the evolution branch")
+	_expect(PhaseManager.current_state() == PhaseManager.PROTOCOL_SELECTION, "protocol selection should open without an evolution prompt")
 
 	_ui._init_rest_area_ui_controller()
 	_ui.rest_area_ui_controller.warehouse_menu_in()
@@ -70,13 +70,6 @@ func _run() -> void:
 		"warehouse must stay closed while settlement choices are active"
 	)
 
-	var branch_id := str(_ui.branch_select_panel._branch_ids[0]) if not _ui.branch_select_panel._branch_ids.is_empty() else ""
-	if branch_id != "":
-		_ui.branch_select_panel._on_branch_button_pressed(branch_id)
-		await get_tree().process_frame
-		await get_tree().process_frame
-		await get_tree().process_frame
-	_expect(PhaseManager.current_state() == PhaseManager.PROTOCOL_SELECTION, "protocol selection should open after all evolution choices finish")
 	_ui.rest_area_ui_controller.warehouse_menu_in()
 	_expect(
 		_ui.warehouse_primary_root == null or not _ui.warehouse_primary_root.visible,
@@ -90,8 +83,8 @@ func _run() -> void:
 		_player.create_weapon(direct_duplicate)
 		await get_tree().process_frame
 		_expect(PlayerData.player_weapon_list.size() == 1, "direct instance equipment must not create a duplicate weapon id")
-		_expect(int(weapon.fuse) == 3, "direct duplicate equipment must fuse the already equipped weapon")
-		_expect(not _ui.toast_presenter.panel.visible, "direct duplicate weapon fusion must not use the top system toast")
+		_expect(int(weapon.fuse) == 1, "direct duplicate equipment must not change Fuse")
+		_expect(InventoryData.get_weapon_core_count(machine_gun_core_tags) == 2, "direct duplicate equipment must use the same core conversion rule")
 
 	var new_weapon_id := ""
 	for candidate_id in DataHandler.get_weapon_ids():

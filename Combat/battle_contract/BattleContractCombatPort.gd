@@ -69,11 +69,23 @@ func request_configure_duration(_duration_sec: float) -> void:
 func request_configure_threat_multiplier(_multiplier: float) -> void:
 	pass
 
+func request_configure_spawn_frequency_multiplier(_multiplier: float) -> void:
+	pass
+
 func request_release_reinforcement_budget(_multiplier: float = 1.0) -> void:
 	pass
 
 func request_spawn_pursuit_wave(_min_count: int, _max_count: int) -> int:
 	return 0
+
+func request_spawn_contract_elite(_target_hp: int) -> bool:
+	return false
+
+func request_spawn_mortar_barrage(_options: Dictionary) -> int:
+	return 0
+
+func request_clear_contract_hazards() -> void:
+	pass
 
 func request_configure_contract_economy(_kill_gold_multiplier: float) -> void:
 	pass

@@ -10,6 +10,7 @@ var phase_dock: PanelContainer
 var phase_label: Label
 var _last_signature := ""
 var _visibility_tweens: Dictionary = {}
+var _selection_modal_active := false
 
 
 func bind(ui: UI) -> void:
@@ -48,13 +49,13 @@ func refresh(animated: bool = true) -> void:
 	var phase := PhaseManager.current_state()
 	var primary_open := owner_ui._is_primary_menu_open()
 	var secondary_open := owner_ui._is_secondary_menu_open()
-	var signature := "%s|%s|%s" % [phase, str(primary_open), str(secondary_open)]
+	var signature := "%s|%s|%s|%s" % [phase, str(primary_open), str(secondary_open), str(_selection_modal_active)]
 	if signature == _last_signature:
 		return
 	_last_signature = signature
 	var state := visibility_for(phase, primary_open, secondary_open)
 	_set_visible(owner_ui.battle_hud, bool(state.battle_hud), animated)
-	_set_visible(phase_dock, bool(state.phase_dock), animated)
+	_set_visible(phase_dock, bool(state.phase_dock) and not _selection_modal_active, animated)
 	_set_visible(owner_ui.gold_label, bool(state.gold), animated)
 	_set_visible(owner_ui.hp_label_label, bool(state.character_status), animated)
 	_set_visible(owner_ui.weapon_selector, bool(state.weapon_selector), animated)
@@ -72,9 +73,12 @@ func refresh(animated: bool = true) -> void:
 func invalidate() -> void:
 	_last_signature = ""
 
-func set_reward_modal_focus(active: bool) -> void:
-	if phase_label != null and is_instance_valid(phase_label):
-		phase_label.modulate.a = 0.35 if active else 1.0
+func set_selection_modal_focus(active: bool) -> void:
+	if _selection_modal_active == active:
+		return
+	_selection_modal_active = active
+	invalidate()
+	refresh(false)
 
 
 func layout(viewport_size: Vector2) -> void:

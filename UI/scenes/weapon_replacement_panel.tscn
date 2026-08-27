@@ -36,14 +36,29 @@ layout_mode = 2
 autowrap_mode = 2
 text = "Select where to install the incoming weapon."
 
+[node name="IncomingHost" type="VBoxContainer" parent="Margin/Root"]
+layout_mode = 2
+
 [node name="SlotsScroll" type="ScrollContainer" parent="Margin/Root"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="Slots" type="VBoxContainer" parent="Margin/Root/SlotsScroll"]
+[node name="SlotsPadding" type="MarginContainer" parent="Margin/Root/SlotsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 12
+
+[node name="Slots" type="VBoxContainer" parent="Margin/Root/SlotsScroll/SlotsPadding"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Cancel" type="Button" parent="Margin/Root"]
+[node name="Footer" type="HBoxContainer" parent="Margin/Root"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 2
+
+[node name="Cancel" type="Button" parent="Margin/Root/Footer"]
+custom_minimum_size = Vector2(160, 44)
 layout_mode = 2
 text = "Cancel"

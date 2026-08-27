@@ -15,7 +15,6 @@ fire_feedback_profile = ExtResource("7_feedback")
 delivery_type_flags = 8
 cone_half_angle_deg = 15.0
 base_range = 200.0
-cold_snap_recharge_sec = 6.0
 cold_snap_freeze_duration_sec = 1.0
 boss_slow_duration_sec = 1.0
 boss_slow_multiplier = 0.5

@@ -32,6 +32,7 @@ const CONTEXT_DURATION_SECONDS := 3.0
 const CONTEXT_COOLDOWN_SECONDS := 15.0
 const MAX_CONTEXT_REPEATS := 2
 const INPUT_PROMPT_ATLAS := preload("res://asset/images/ui/input_prompts/kenney_pixel/input_prompts_tilemap.png")
+const INPUT_PROMPT_TEXTURE_FACTORY := preload("res://UI/scripts/components/input_prompt_texture_factory.gd")
 const INPUT_PROMPT_TILE_SIZE := 16
 const INPUT_PROMPT_TILE_STRIDE := 17
 const INPUT_PROMPT_DISPLAY_SIZE := 16.0
@@ -334,8 +335,8 @@ func _sync_battle_guidance_items() -> void:
 			continue
 		item.modulate.a = 1.0
 		if adaptive_battle:
-			item.visible = (action_id == &"move" and not _used_move) \
-					or (action_id == &"attack" and not _used_attack)
+			item.visible = not ((action_id == &"move" and _used_move) \
+					or (action_id == &"attack" and _used_attack))
 		else:
 			item.visible = true
 	_recalculate_expanded_width()
@@ -381,7 +382,7 @@ func _render_current_context() -> void:
 			]
 		else:
 			primary_lines = [
-				_tr("ui.tutorial.panel.primary_menu.line1", "[WASD / Arrows] Select · [F / Enter] Confirm"),
+				_tr("ui.tutorial.panel.primary_menu.line1", "[WASD / Arrows] Select · [F / Space] Confirm"),
 				_tr("ui.tutorial.panel.primary_menu.line2", "[Esc / RMB] Back"),
 			]
 		_render_text_context(
@@ -661,8 +662,15 @@ func _append_prompt_token(container: HBoxContainer, token_text: String) -> void:
 	container.add_child(_make_prompt_fallback_label(normalized))
 
 func _append_space_prompt(container: HBoxContainer) -> void:
-	for coord in [Vector2i(31, 6), Vector2i(32, 6), Vector2i(33, 6)]:
-		container.add_child(_make_input_prompt_icon(coord, "Space"))
+	var icon := TextureRect.new()
+	icon.texture = INPUT_PROMPT_TEXTURE_FACTORY.space_prompt_texture()
+	icon.custom_minimum_size = Vector2(INPUT_PROMPT_DISPLAY_SIZE * 3.0, INPUT_PROMPT_DISPLAY_SIZE)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.tooltip_text = "Space"
+	container.add_child(icon)
 
 func _make_prompt_fallback_label(value: String, styled: bool = true) -> Label:
 	var label := Label.new()
@@ -1024,7 +1032,8 @@ func _apply_hint_button_style(button: Button) -> void:
 		button.add_theme_stylebox_override(state, borderless_style)
 
 func _should_be_visible() -> bool:
-	return _current_phase != PhaseManager.GAMEOVER and not get_tree().paused
+	return _current_phase in [PhaseManager.BATTLE, PhaseManager.PREPARE] \
+			and not get_tree().paused
 
 func _connect_settings_signal() -> void:
 	var callback := Callable(self, "_on_assist_settings_changed")

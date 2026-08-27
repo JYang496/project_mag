@@ -10,6 +10,7 @@ var _created_nodes: Array[Node] = []
 
 func _ready() -> void:
 	_test_directional_snapshot_and_world_space_lifecycle()
+	_test_new_emission_clears_previous_session_trail()
 	_test_pool_capacity_and_cleanup()
 	_test_element_specific_motion_profiles()
 	print("FAIL cone spray trail" if _failed else "PASS cone spray trail")
@@ -49,6 +50,18 @@ func _test_pool_capacity_and_cleanup() -> void:
 	_expect(vfx.get_active_trail_afterimages().size() <= 3, "trail instances must stay within their configured pool capacity")
 	vfx.cleanup_for_battle_end()
 	_expect(vfx.get_active_trail_afterimages().is_empty(), "battle cleanup must deactivate every pooled trail")
+
+
+func _test_new_emission_clears_previous_session_trail() -> void:
+	var vfx := _spawn_vfx(FLAME_VFX_SCENE)
+	vfx.start_or_refresh(Vector2.ZERO, Vector2.RIGHT, 200.0, 35.0)
+	vfx.call("_physics_process", 0.09)
+	vfx.update_aim(Vector2.ZERO, Vector2.DOWN, 200.0, 35.0)
+	_expect(vfx.get_active_trail_afterimages().size() == 1, "the first emission must create a trail before it stops")
+	vfx.stop()
+	_expect(vfx.get_active_trail_afterimages().size() == 1, "stopping must preserve the current trail for its natural fade")
+	vfx.start_or_refresh(Vector2(240.0, 120.0), Vector2.LEFT, 200.0, 35.0)
+	_expect(vfx.get_active_trail_afterimages().is_empty(), "a new emission must clear trails left by the previous firing session")
 
 
 func _test_element_specific_motion_profiles() -> void:

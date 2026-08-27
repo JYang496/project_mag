@@ -11,3 +11,4 @@ icon = ExtResource("1_icon")
 price = 60
 description = "Long-range heavy cannon. Fits Defense and Execute setups: cease fire for 6 seconds to prime Breach Shot, then reload to refresh the setup cycle."
 scene_path = "res://Player/Weapons/Instances/cannon.tscn"
+core_tags = Array[StringName]([&"physical", &"projectile", &"long_range"])

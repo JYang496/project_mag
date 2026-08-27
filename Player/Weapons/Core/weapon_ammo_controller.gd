@@ -38,7 +38,9 @@ func consume(amount: int = 1) -> bool:
 		return true
 	if weapon.current_ammo < consume_amount:
 		return false
+	var ammo_before := weapon.current_ammo
 	weapon.current_ammo -= consume_amount
+	weapon.trigger_runtime.on_ammo_consumed(ammo_before, weapon.current_ammo, _get_effective_capacity())
 	return true
 
 func request_reload() -> bool:
@@ -59,6 +61,7 @@ func request_reload() -> bool:
 		"spent_ratio": spent_ratio,
 		"reload_duration": reload_duration,
 	}
+	weapon.trigger_runtime.on_reload_started(detail)
 	var event := WeaponEvent.create(WeaponEvent.RELOAD_STARTED, weapon)
 	event.detail = detail
 	weapon.emit_weapon_event(event)
@@ -85,7 +88,6 @@ func finish_reload() -> void:
 	weapon.current_ammo = _get_effective_capacity()
 	weapon.is_reloading = false
 	weapon.reload_time_left = 0.0
-	weapon._refresh_passive_on_reload()
 	var detail := {
 		"source_weapon": weapon,
 		"ammo_before": ammo_before,
@@ -96,7 +98,6 @@ func finish_reload() -> void:
 	var event := WeaponEvent.create(WeaponEvent.RELOAD_FINISHED, weapon)
 	event.detail = detail
 	weapon.emit_weapon_event(event)
-	weapon.dispatch_passive_event(&"on_reload_finished", detail)
 	weapon.weapon_reload_completed.emit(weapon)
 
 func refill_instantly() -> void:

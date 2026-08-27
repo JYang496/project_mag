@@ -56,6 +56,7 @@ var _trail_sample_elapsed_sec := 0.0
 var _trail_has_sample := false
 var _trail_sample_origin := Vector2.ZERO
 var _trail_sample_direction := Vector2.RIGHT
+var _restart_pending := false
 
 
 func _ready() -> void:
@@ -67,9 +68,13 @@ func _ready() -> void:
 func cleanup_for_battle_end() -> void:
 	_hide_now()
 	_clear_trail()
+	_restart_pending = false
 
 
 func start_or_refresh(source_global_position: Vector2, direction: Vector2, spray_range: float, half_angle_deg: float) -> void:
+	if _restart_pending:
+		_clear_trail()
+		_restart_pending = false
 	# Board rebuilds clear the 3D ground-effect cache while this weapon-owned
 	# node survives between battles. Re-registering is idempotent and restores
 	# the cone after the cache has been rebuilt.
@@ -109,6 +114,7 @@ func is_visible_or_fading() -> bool:
 
 
 func stop() -> void:
+	_restart_pending = true
 	if not visible:
 		return
 	if _linger_remaining_sec <= 0.0 and _fade_remaining_sec > 0.0:

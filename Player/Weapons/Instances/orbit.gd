@@ -131,6 +131,8 @@ func _on_shoot() -> void:
 	var deployment_config := _get_energy_deployment_config() if is_energy_release_attack_active() else {}
 	spawn_count += maxi(int(deployment_config.get("extra_satellites", 0)), 0)
 	var lifetime_multiplier := maxf(float(deployment_config.get("lifetime_multiplier", 1.0)), 0.1)
+	if consume_entry_trigger():
+		lifetime_multiplier *= 1.2
 	is_on_cooldown = true
 	start_weapon_cooldown(attack_cooldown)
 	var new_satellites: Array[Projectile] = []
@@ -236,32 +238,20 @@ func on_hit_target(target: Node) -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if event_name == &"on_player_damaged":
-		_try_trigger_player_damaged(detail)
 	branch_runtime.notify_branch_passive_event(event_name, detail)
-
-func _try_trigger_player_damaged(detail: Dictionary) -> void:
-	if not is_passive_ready():
-		return
-	consume_passive_charge()
-	emit_passive_trigger(&"orbit_player_damaged_triggered", {
-		"attack": detail.get("attack", null),
-		"player": detail.get("player", PlayerData.player),
-		"refresh": "reload",
-	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
 	if has_weapon_trait(WeaponTrait.ENERGY):
 		return get_energy_full_fire_status()
-	var state := "ready" if is_passive_ready() else "waiting_refresh"
+	var state := "ready" if has_entry_trigger_ready() else "waiting_entry"
 	return with_passive_charge_status({
 		"id": "orbit_player_damaged_triggered",
 		"display_name": "Player Damaged",
 		"state": state,
 		"progress": 1.0 if state == "ready" else 0.0,
 		"ready": state == "ready",
-		"trigger_hint": "player_damaged",
-		"refresh_hint": "reload",
+		"trigger_hint": "weapon_entered_main",
+		"refresh_hint": "weapon_entry",
 	})
 
 func get_satellites() -> Array[Node2D]:

@@ -411,7 +411,7 @@ func _format_stat_label(stat_key: String) -> String:
 
 func _format_module_tags(module_instance: Module) -> String:
 	var tags: PackedStringArray = []
-	for tag in module_instance.module_tags:
+	for tag in module_instance.get_build_tags():
 		var normalized := str(tag).strip_edges().to_lower()
 		tags.append(LocalizationManager.get_module_term(StringName(normalized), normalized.capitalize()))
 	return " / ".join(tags)

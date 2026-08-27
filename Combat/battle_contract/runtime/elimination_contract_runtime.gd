@@ -7,6 +7,9 @@ var port
 var total_batches := 3
 var current_batch := 1
 var planned_hp := 0
+var base_planned_hp := 0
+var hp_budget_multiplier := 1.0
+var spawn_frequency_multiplier := 1.0
 var spawned_count := 0
 var alive_count := 0
 var killed_count := 0
@@ -34,6 +37,9 @@ func start(combat_port, parameters: Dictionary) -> void:
 	port.request_monitor_enemy_stalls(true)
 	port.request_external_victory_control(true)
 	port.request_prefer_elite_final_batch(true)
+	hp_budget_multiplier = maxf(float(parameters.get("hp_budget_multiplier", 1.0)), 1.0)
+	spawn_frequency_multiplier = maxf(float(parameters.get("spawn_frequency_multiplier", 1.0)), 1.0)
+	port.request_configure_spawn_frequency_multiplier(spawn_frequency_multiplier)
 	var minimum_batches := maxi(int(parameters.get("batch_count_min", 3)), 1)
 	var maximum_batches := maxi(int(parameters.get("batch_count_max", 5)), minimum_batches)
 	var levels_per_batch_step := maxi(int(parameters.get("levels_per_batch_step", 4)), 1)
@@ -54,6 +60,7 @@ func stop() -> void:
 		port.request_monitor_enemy_stalls(false)
 		port.request_external_victory_control(false)
 		port.request_prefer_elite_final_batch(false)
+		port.request_configure_spawn_frequency_multiplier(1.0)
 	_guidance_enabled = false
 	port = null
 
@@ -86,7 +93,8 @@ func _on_tick(snapshot: Dictionary) -> void:
 	var delta := float(snapshot.get("delta_sec", 0.0))
 	if not _configured:
 		var budget: Dictionary = port.get_spawn_budget_snapshot()
-		planned_hp = int(budget.get("planned_total_hp", 0))
+		base_planned_hp = int(budget.get("planned_total_hp", 0))
+		planned_hp = int(round(float(base_planned_hp) * hp_budget_multiplier))
 		if planned_hp > 0:
 			port.request_configure_finite_budget(planned_hp, total_batches)
 			planned_enemy_count = int(port.get_spawn_budget_snapshot().get("planned_enemy_count", 0))
@@ -168,7 +176,7 @@ func _try_complete() -> void:
 func _snapshot() -> Dictionary:
 	var remaining_enemies := alive_count if budget_exhausted else (maxi(planned_enemy_count - killed_count, 0) if planned_enemy_count > 0 else alive_count)
 	var queued_enemies := 0 if budget_exhausted else maxi(planned_enemy_count - spawned_count, 0)
-	return {"contract_id": &"elimination", "remaining_enemies": remaining_enemies, "active_enemies": alive_count, "queued_enemies": queued_enemies, "planned_enemies": planned_enemy_count, "current_batch": current_batch, "total_batches": total_batches, "planned_hp": planned_hp, "spawned": spawned_count, "kills": killed_count, "killed_hp": killed_hp, "budget_exhausted": budget_exhausted}
+	return {"contract_id": &"elimination", "remaining_enemies": remaining_enemies, "active_enemies": alive_count, "queued_enemies": queued_enemies, "planned_enemies": planned_enemy_count, "current_batch": current_batch, "total_batches": total_batches, "base_planned_hp": base_planned_hp, "planned_hp": planned_hp, "spawn_frequency_multiplier": spawn_frequency_multiplier, "spawned": spawned_count, "kills": killed_count, "killed_hp": killed_hp, "budget_exhausted": budget_exhausted}
 
 func _emit_snapshot() -> void:
 	snapshot_changed.emit(_snapshot())

@@ -70,20 +70,12 @@ func shift_to_next_ready_weapon(current_weapon: Weapon, step: int = 1) -> bool:
 		var candidate := weapons[index] as Weapon
 		if not _can_auto_switch_to_weapon(candidate):
 			continue
-		var old_main := _get_player_main_weapon()
 		PlayerData.set_main_weapon_index(index)
 		if _player.has_method("mark_weapon_roles_dirty_for_assist"):
 			_player.call("mark_weapon_roles_dirty_for_assist")
 		if _player.has_method("refresh_weapon_structure_for_assist"):
 			_player.call("refresh_weapon_structure_for_assist")
-		var new_main := _get_player_main_weapon()
 		_clear_weapon_auto_aim_target(current_weapon)
-		if _player.has_method("broadcast_weapon_passive_event_for_assist"):
-			_player.call("broadcast_weapon_passive_event_for_assist", &"on_main_swapped", {
-			"old_main": old_main,
-			"new_main": new_main,
-			"source": "auto_reload_switch",
-			})
 		return true
 	return false
 

@@ -20,7 +20,7 @@ const OFFHAND_SLOT_SIZE := Vector2(48.0, 64.0)
 const MAINHAND_SLOT_SIZE := Vector2(64.0, 64.0)
 const SLOT_GAP := 6.0
 const COMPACT_DOCK_SIZE := Vector2(226.0, 64.0)
-const VISUAL_FOOTPRINT_SIZE := Vector2(336.0, 100.0)
+const VISUAL_FOOTPRINT_SIZE := COMPACT_DOCK_SIZE
 const MAINHAND_READY_GLOW_COLOR := Color(0.58, 0.86, 1.0, 1.0)
 const OFFHAND_READY_GLOW_COLOR := Color(0.92, 0.92, 0.92, 1.0)
 const WEAPON_STATUS_FILL := Color(0.33, 0.66, 1.0, 0.95)
@@ -135,7 +135,6 @@ func bind_player_data() -> void:
 		LocalizationManager.language_changed.connect(Callable(self, "_on_language_changed"))
 
 func _on_language_changed(_new_locale: String) -> void:
-	_readability_presenter.refresh_copy()
 	refresh_slots()
 
 func refresh_slots() -> void:

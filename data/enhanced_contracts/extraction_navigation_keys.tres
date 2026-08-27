@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="EnhancedContractDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Combat/battle_contract/EnhancedContractDefinition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+enhanced_id = &"extraction_navigation_keys"
+contract_id = &"extraction"
+risk_text_keys = Array[String](["battle_contract.enhanced.extraction.risk.1"])
+risk_fallback_lines = Array[String](["Collect two navigation keys before the extraction zone opens"])
+parameters = {"navigation_key_count": 2, "enhanced_escape_time_bonus_sec": 10.0}

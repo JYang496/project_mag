@@ -1,6 +1,7 @@
 extends Node
 
 const BattleContractDefinition = preload("res://Combat/battle_contract/BattleContractDefinition.gd")
+const EnhancedContractDefinition = preload("res://Combat/battle_contract/EnhancedContractDefinition.gd")
 const BattleContractCombatPort = preload("res://Combat/battle_contract/BattleContractCombatPort.gd")
 const ELIMINATION := preload("res://data/battle_contracts/elimination.tres")
 const SURVIVAL := preload("res://data/battle_contracts/survival.tres")
@@ -16,6 +17,10 @@ const OPERATION_RUNTIME := preload("res://Combat/battle_contract/runtime/operati
 const CONTAINMENT_RUNTIME := preload("res://Combat/battle_contract/runtime/containment_contract_runtime.gd")
 const EXTRACTION_RUNTIME := preload("res://Combat/battle_contract/runtime/extraction_contract_runtime.gd")
 const REWARD_RUNTIME := preload("res://Combat/battle_contract/runtime/reward_contract_runtime.gd")
+const ENHANCED_ELIMINATION := preload("res://data/enhanced_contracts/elimination_overclock.tres")
+const ENHANCED_SURVIVAL := preload("res://data/enhanced_contracts/survival_elite_anchor.tres")
+const ENHANCED_CONTAINMENT := preload("res://data/enhanced_contracts/containment_mortar_barrage.tres")
+const ENHANCED_EXTRACTION := preload("res://data/enhanced_contracts/extraction_navigation_keys.tres")
 
 signal state_changed(state: StringName)
 signal offer_changed(options: Array[BattleContractDefinition])
@@ -23,6 +28,8 @@ signal contract_selected(definition: BattleContractDefinition)
 signal contract_completed(snapshot: Dictionary)
 signal combat_event(event_name: StringName, snapshot: Dictionary)
 signal performance_reward_granted(summary: Dictionary)
+signal enhanced_selection_changed(definition: Resource, reward: Dictionary)
+signal enhanced_reward_granted(summary: Dictionary)
 
 const IDLE := &"idle"
 const OFFERED := &"offered"
@@ -35,6 +42,9 @@ const REWARD_CONTRACT_THIRD_SLOT_CHANCE := 0.25
 var state: StringName = IDLE
 var current_options: Array[BattleContractDefinition] = []
 var selected_contract: BattleContractDefinition
+var selected_enhanced_contract: EnhancedContractDefinition
+var selected_enhanced_reward: Dictionary = {}
+var _enhanced_reward_by_contract: Dictionary = {}
 var runtime_snapshot: Dictionary = {}
 var last_selected_id: StringName = &""
 var consecutive_selection_count := 0
@@ -49,6 +59,7 @@ var _rng := RandomNumberGenerator.new()
 var _runtime: RefCounted
 var _history_before_offer: Dictionary = {}
 var _reward_settled := false
+var _enhanced_reward_settled := false
 const STATE_PATH := "user://battle_contract_state.json"
 
 func _ready() -> void:
@@ -117,6 +128,44 @@ func get_definition(contract_id: StringName) -> BattleContractDefinition:
 		if definition != null and definition.contract_id == contract_id:
 			return definition
 	return null
+
+func get_enhanced_definition(contract_id: StringName) -> EnhancedContractDefinition:
+	for definition in _get_enhanced_catalog():
+		if definition != null and definition.contract_id == contract_id \
+				and PhaseManager.current_level >= definition.minimum_level_index:
+			return definition
+	return null
+
+func set_selected_contract_enhanced(enabled: bool) -> bool:
+	if selected_contract == null:
+		return false
+	if not enabled:
+		selected_enhanced_contract = null
+		selected_enhanced_reward = {}
+		enhanced_selection_changed.emit(null, {})
+		return true
+	var definition := get_enhanced_definition(selected_contract.contract_id)
+	if definition == null:
+		return false
+	selected_enhanced_contract = definition
+	var contract_key := str(definition.contract_id)
+	if not _enhanced_reward_by_contract.has(contract_key):
+		_enhanced_reward_by_contract[contract_key] = _roll_enhanced_reward(definition)
+	selected_enhanced_reward = (_enhanced_reward_by_contract.get(contract_key, {}) as Dictionary).duplicate(true)
+	enhanced_selection_changed.emit(selected_enhanced_contract, selected_enhanced_reward.duplicate(true))
+	return not selected_enhanced_reward.is_empty()
+
+func is_selected_contract_enhanced() -> bool:
+	return selected_enhanced_contract != null
+
+func get_selected_enhanced_reward_line() -> String:
+	match str(selected_enhanced_reward.get("type", "")):
+		"compatible_module": return LocalizationManager.tr_key("battle_contract.enhanced.reward.module", "Random compatible module")
+		"equipped_weapon_core":
+			return LocalizationManager.tr_key("battle_contract.enhanced.reward.core", "Weapon core: {name}").replace("{name}", str(selected_enhanced_reward.get("weapon_name", "Weapon")))
+		"gold_pack":
+			return LocalizationManager.tr_key("battle_contract.enhanced.reward.gold", "Gold +{amount}").replace("{amount}", str(int(selected_enhanced_reward.get("amount", 0))))
+	return LocalizationManager.tr_key("battle_contract.enhanced.reward.random", "Random bonus reward")
 
 func is_contract_unlocked_for_level(definition: BattleContractDefinition, level_index: int) -> bool:
 	if definition == null:
@@ -191,6 +240,9 @@ func start_current_battle() -> bool:
 func _get_catalog() -> Array[BattleContractDefinition]:
 	return [ELIMINATION, SURVIVAL, OPERATION, CONTAINMENT, EXTRACTION, REWARD, REST_PROTOCOL, FINALE]
 
+func _get_enhanced_catalog() -> Array[EnhancedContractDefinition]:
+	return [ENHANCED_ELIMINATION, ENHANCED_SURVIVAL, ENHANCED_CONTAINMENT, ENHANCED_EXTRACTION]
+
 func _pick_weighted(candidates: Array[BattleContractDefinition]) -> BattleContractDefinition:
 	var total := 0.0
 	for definition in candidates:
@@ -222,6 +274,9 @@ func set_offer(options: Array[BattleContractDefinition]) -> bool:
 		return false
 	current_options.assign(options.filter(func(option): return option != null))
 	selected_contract = null
+	selected_enhanced_contract = null
+	selected_enhanced_reward = {}
+	_enhanced_reward_by_contract.clear()
 	runtime_snapshot = {}
 	_completion_guard = false
 	_set_state(OFFERED if not current_options.is_empty() else IDLE)
@@ -231,6 +286,9 @@ func set_offer(options: Array[BattleContractDefinition]) -> bool:
 func select_contract(definition: BattleContractDefinition) -> bool:
 	if state not in [OFFERED, SELECTED] or definition == null or not current_options.has(definition):
 		return false
+	if selected_contract != definition:
+		selected_enhanced_contract = null
+		selected_enhanced_reward = {}
 	selected_contract = definition
 	_set_state(SELECTED)
 	contract_selected.emit(selected_contract)
@@ -248,6 +306,7 @@ func activate_contract(snapshot: Dictionary = {}) -> bool:
 	runtime_snapshot = snapshot.duplicate(true)
 	_completion_guard = false
 	_reward_settled = false
+	_enhanced_reward_settled = false
 	_set_state(ACTIVE)
 	_start_selected_runtime()
 	return true
@@ -270,6 +329,9 @@ func reset_runtime_state() -> void:
 	_stop_runtime()
 	current_options.clear()
 	selected_contract = null
+	selected_enhanced_contract = null
+	selected_enhanced_reward = {}
+	_enhanced_reward_by_contract.clear()
 	runtime_snapshot = {}
 	_completion_guard = false
 	_set_state(IDLE)
@@ -288,7 +350,12 @@ func _start_selected_runtime() -> void:
 		return
 	_runtime.snapshot_changed.connect(update_runtime_snapshot)
 	_runtime.completed.connect(_on_runtime_completed)
-	_runtime.call("start", _combat_port, selected_contract.parameters)
+	var runtime_parameters := selected_contract.parameters.duplicate(true)
+	if selected_enhanced_contract != null:
+		for key in selected_enhanced_contract.parameters:
+			runtime_parameters[key] = selected_enhanced_contract.parameters[key]
+		runtime_parameters["enhanced_id"] = selected_enhanced_contract.enhanced_id
+	_runtime.call("start", _combat_port, runtime_parameters)
 
 func _stop_runtime() -> void:
 	if _runtime == null:
@@ -301,6 +368,7 @@ func _on_runtime_completed(snapshot: Dictionary) -> void:
 	if not complete_contract(snapshot):
 		return
 	_settle_performance_reward(snapshot)
+	_settle_enhanced_reward()
 	await get_tree().create_timer(1.0).timeout
 	if _combat_port != null and PhaseManager.current_state() == PhaseManager.BATTLE:
 		_combat_port.request_finish_battle(snapshot)
@@ -331,6 +399,66 @@ func _settle_performance_reward(result: Dictionary) -> void:
 	PlayerData.earn_gold(amount)
 	performance_reward_granted.emit({"type": &"gold", "amount": amount, "contract_id": contract_id, "completion_gold": completion_gold, "performance_gold": performance_gold})
 
+func _settle_enhanced_reward() -> void:
+	if _enhanced_reward_settled or selected_enhanced_contract == null or selected_enhanced_reward.is_empty():
+		return
+	_enhanced_reward_settled = true
+	var reward := selected_enhanced_reward.duplicate(true)
+	var granted := false
+	match str(reward.get("type", "")):
+		"gold_pack":
+			var amount := maxi(int(reward.get("amount", 0)), 0)
+			if amount > 0:
+				PlayerData.earn_gold(amount)
+				granted = true
+		"equipped_weapon_core":
+			granted = bool(InventoryData.add_weapon_cores(reward.get("core_tags", []), 1).get("ok", false))
+		"compatible_module":
+			var manager := _resolve_reward_manager()
+			if manager != null and manager.has_method("grant_enhanced_module"):
+				granted = bool(manager.call("grant_enhanced_module", str(reward.get("module_scene_path", ""))))
+	if granted:
+		reward["enhanced_id"] = selected_enhanced_contract.enhanced_id
+		enhanced_reward_granted.emit(reward)
+
+func _roll_enhanced_reward(definition: EnhancedContractDefinition) -> Dictionary:
+	var candidates: Array[Dictionary] = []
+	for reward_type in definition.reward_pool:
+		match reward_type:
+			&"compatible_module":
+				var manager := _resolve_reward_manager()
+				if manager != null and manager.has_method("roll_enhanced_module_scene_path"):
+					var path := str(manager.call("roll_enhanced_module_scene_path"))
+					if path != "": candidates.append({"type": &"compatible_module", "module_scene_path": path})
+			&"equipped_weapon_core":
+				var core_reward := _build_equipped_weapon_core_reward()
+				if not core_reward.is_empty(): candidates.append(core_reward)
+			&"gold_pack": candidates.append({"type": &"gold_pack", "amount": _enhanced_gold_amount()})
+	if candidates.is_empty():
+		return {"type": &"gold_pack", "amount": _enhanced_gold_amount()}
+	return candidates[_rng.randi_range(0, candidates.size() - 1)].duplicate(true)
+
+func _build_equipped_weapon_core_reward() -> Dictionary:
+	var candidates: Array[Dictionary] = []
+	for weapon_variant in PlayerData.player_weapon_list:
+		var weapon := weapon_variant as Weapon
+		if weapon == null or not is_instance_valid(weapon): continue
+		var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
+		var definition := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+		if definition == null: continue
+		var tags := definition.get_normalized_core_tags()
+		if tags.is_empty() or not definition.get_unknown_core_tags().is_empty(): continue
+		candidates.append({"type": &"equipped_weapon_core", "weapon_id": weapon_id, "weapon_name": LocalizationManager.get_weapon_name_from_definition(definition), "core_tags": tags})
+	return {} if candidates.is_empty() else candidates[_rng.randi_range(0, candidates.size() - 1)]
+
+func _enhanced_gold_amount() -> int:
+	var level := maxi(PhaseManager.current_level, 0)
+	return 80 if level < 4 else (120 if level < 8 else 160)
+
+func _resolve_reward_manager() -> Node:
+	var scene := get_tree().current_scene
+	return scene.get_node_or_null("RewardManager") if scene != null else null
+
 func get_history_snapshot() -> Dictionary:
 	return {"last_selected_id": last_selected_id, "consecutive_selection_count": consecutive_selection_count, "missed_offer_counts": missed_offer_counts.duplicate(true)}
 
@@ -342,7 +470,7 @@ func import_save_state(payload: Dictionary) -> void:
 	reset_runtime_state()
 
 func build_rollback_snapshot() -> Dictionary:
-	return {"history_before_confirmation": _history_before_offer.duplicate(true), "option_ids": current_options.map(func(item): return str(item.contract_id)), "selected_id": str(selected_contract.contract_id) if selected_contract != null else ""}
+	return {"history_before_confirmation": _history_before_offer.duplicate(true), "option_ids": current_options.map(func(item): return str(item.contract_id)), "selected_id": str(selected_contract.contract_id) if selected_contract != null else "", "enhanced_id": str(selected_enhanced_contract.enhanced_id) if selected_enhanced_contract != null else "", "enhanced_reward": selected_enhanced_reward.duplicate(true)}
 
 func restore_rollback_snapshot(payload: Dictionary) -> void:
 	_apply_history(payload.get("history_before_confirmation", {}) as Dictionary)
@@ -353,6 +481,12 @@ func restore_rollback_snapshot(payload: Dictionary) -> void:
 	set_offer(options)
 	selected_contract = _find_definition(str(payload.get("selected_id", "")))
 	if selected_contract != null:
+		var enhanced_id := str(payload.get("enhanced_id", ""))
+		for definition in _get_enhanced_catalog():
+			if str(definition.enhanced_id) == enhanced_id:
+				selected_enhanced_contract = definition
+				break
+		selected_enhanced_reward = (payload.get("enhanced_reward", {}) as Dictionary).duplicate(true)
 		_set_state(SELECTED)
 		restored_selection_pending = true
 	_save_persistent_state()

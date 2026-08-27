@@ -181,6 +181,36 @@ func _handle_legacy_weapon_event(event: WeaponEvent) -> bool:
 func get_normalized_module_tags() -> Array[StringName]:
 	return ModuleTag.normalize_array(module_tags)
 
+func get_effect_tags() -> Array[StringName]:
+	var output: Array[StringName] = []
+	var derived_tags := get_derived_trigger_tags()
+	var has_trigger_source := not get_subscribed_weapon_events().is_empty() \
+		or get_normalized_required_hooks().has(ModuleHook.RELOAD_DURATION)
+	for tag in get_normalized_module_tags():
+		# Legacy resources often repeat facts already declared by their Hook data.
+		if derived_tags.has(tag) or (tag == &"trigger" and has_trigger_source):
+			continue
+		if not output.has(tag):
+			output.append(tag)
+	return output
+
+func get_derived_trigger_tags() -> Array[StringName]:
+	var output := ModuleHook.display_tags_for_events(get_subscribed_weapon_events())
+	if get_normalized_required_hooks().has(ModuleHook.RELOAD_DURATION) and not output.has(&"reload"):
+		output.append(&"reload")
+	return output
+
+func get_build_tags() -> Array[StringName]:
+	var output := get_effect_tags()
+	_append_unique_tags(output, get_derived_trigger_tags())
+	_append_unique_tags(output, get_normalized_required_delivery_types())
+	return output
+
+func _append_unique_tags(target: Array[StringName], additions: Array[StringName]) -> void:
+	for tag in additions:
+		if tag != StringName() and not target.has(tag):
+			target.append(tag)
+
 func get_unknown_module_tags() -> Array[StringName]:
 	var output: Array[StringName] = []
 	for tag in get_normalized_module_tags():
@@ -189,7 +219,7 @@ func get_unknown_module_tags() -> Array[StringName]:
 	return output
 
 func get_normalized_required_weapon_traits() -> Array[StringName]:
-	return WeaponTrait.flags_to_traits(required_weapon_traits)
+	return WeaponTrait.flags_to_explicit_traits(required_weapon_traits)
 
 func get_normalized_required_delivery_types() -> Array[StringName]:
 	return DamageDeliveryType.flags_to_types(required_delivery_types)
@@ -296,19 +326,22 @@ func get_effect_descriptions() -> PackedStringArray:
 	var level_effect := get_level_effect_description()
 	if level_effect != "":
 		descriptions.append(level_effect)
-	for key_variant in stat_multipliers.keys():
-		var key := str(key_variant)
-		var raw_multiplier: float = float(stat_multipliers[key_variant])
-		var final_multiplier: float = get_effective_multiplier(raw_multiplier)
-		var delta_percent := (final_multiplier - 1.0) * 100.0
-		var value_sign := "+" if delta_percent >= 0.0 else ""
-		descriptions.append("%s %s%.0f%%" % [_format_stat_label(key), value_sign, delta_percent])
-	for key_variant in stat_additives.keys():
-		var key := str(key_variant)
-		var raw_add: float = float(stat_additives[key_variant])
-		var final_add: float = get_effective_additive(raw_add)
-		var value_sign := "+" if final_add >= 0.0 else ""
-		descriptions.append("%s %s%.1f" % [_format_stat_label(key), value_sign, final_add])
+	else:
+		# Curated level copy is the semantic description of these stat modifiers.
+		# Only synthesize implementation-level stat lines when no curated copy exists.
+		for key_variant in stat_multipliers.keys():
+			var key := str(key_variant)
+			var raw_multiplier: float = float(stat_multipliers[key_variant])
+			var final_multiplier: float = get_effective_multiplier(raw_multiplier)
+			var delta_percent := (final_multiplier - 1.0) * 100.0
+			var value_sign := "+" if delta_percent >= 0.0 else ""
+			descriptions.append("%s %s%.0f%%" % [_format_stat_label(key), value_sign, delta_percent])
+		for key_variant in stat_additives.keys():
+			var key := str(key_variant)
+			var raw_add: float = float(stat_additives[key_variant])
+			var final_add: float = get_effective_additive(raw_add)
+			var value_sign := "+" if final_add >= 0.0 else ""
+			descriptions.append("%s %s%.1f" % [_format_stat_label(key), value_sign, final_add])
 	_append_build_readability_descriptions(descriptions)
 	return descriptions
 
@@ -357,18 +390,10 @@ func _append_build_readability_descriptions(descriptions: PackedStringArray) -> 
 
 func _format_build_tags() -> PackedStringArray:
 	var labels := PackedStringArray()
-	for tag in get_normalized_module_tags():
+	for tag in get_build_tags():
 		var label := _format_taxonomy_label(tag)
 		if label != "" and not labels.has(label):
 			labels.append(label)
-	for hook in get_normalized_required_hooks():
-		var hook_label := _format_hook_tag(hook)
-		if hook_label != "" and not labels.has(hook_label):
-			labels.append(hook_label)
-	for delivery in get_normalized_required_delivery_types():
-		var delivery_label := _format_taxonomy_label(delivery)
-		if delivery_label != "" and not labels.has(delivery_label):
-			labels.append(delivery_label)
 	var has_generic_buff_text := not level_effects.is_empty()
 	has_generic_buff_text = has_generic_buff_text or not stat_multipliers.is_empty()
 	has_generic_buff_text = has_generic_buff_text or not stat_additives.is_empty()
@@ -399,18 +424,6 @@ func _format_required_hooks() -> PackedStringArray:
 		if label != "" and not labels.has(label):
 			labels.append(label)
 	return labels
-
-func _format_hook_tag(hook: StringName) -> String:
-	if hook == ModuleHook.HIT \
-			or hook == ModuleHook.DAMAGE_DEALT \
-			or hook == ModuleHook.AREA_DAMAGE \
-			or hook == ModuleHook.BEAM_HIT:
-		return LocalizationManager.get_module_term(&"on_hit", "On Hit")
-	if hook == ModuleHook.RELOAD_START or hook == ModuleHook.RELOAD_DURATION:
-		return LocalizationManager.get_module_term(&"reload", "Reload")
-	if hook == ModuleHook.KILL:
-		return LocalizationManager.get_module_term(&"execute", "Execute")
-	return ""
 
 func _format_hook_label(hook: StringName) -> String:
 	match hook:

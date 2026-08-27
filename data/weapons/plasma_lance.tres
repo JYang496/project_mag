@@ -9,5 +9,6 @@ weapon_id = "17"
 display_name = "Plasma Lance"
 icon = ExtResource("1_icon")
 price = 45
-description = "Long-range Heat/Energy exchange lance. Full-energy discharge snapshots current Heat, spends up to 35 Heat, and scales its release multiplier from +55% to +125%."
+description = "Long-range Heat/Energy exchange lance. Full-energy discharge deals 1.85x damage and spends up to 35 Heat."
 scene_path = "res://Player/Weapons/Instances/plasma_lance.tscn"
+core_tags = Array[StringName]([&"energy", &"projectile", &"heat", &"long_range"])

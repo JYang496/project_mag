@@ -11,4 +11,5 @@ icon = ExtResource("1_ji2p0")
 price = 45
 description = "Mid-range Projectile spear. Repeat hits build Mark charge; reload with enough charge to launch a marking radial volley."
 scene_path = "res://Player/Weapons/Instances/spear_launcher.tscn"
+core_tags = Array[StringName]([&"physical", &"projectile", &"mark", &"on_reload"])
 is_hidden = false

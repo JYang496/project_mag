@@ -12,6 +12,7 @@ const WORLD_ENTRY_PREPARE_GATE_SCRIPT := preload("res://World/world_entry_prepar
 const WORLD_SCENE_LOADER_SCRIPT := preload("res://World/world_scene_loader.gd")
 const MODAL_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/modal_ui_controller.gd")
 const AUDIO_SETTINGS_CONTROLS_SCRIPT := preload("res://UI/scripts/components/audio_settings_controls.gd")
+const INPUT_PROMPT_TEXTURE_FACTORY := preload("res://UI/scripts/components/input_prompt_texture_factory.gd")
 
 enum PrewarmState { NOT_STARTED, RUNNING, SUCCEEDED, FAILED }
 
@@ -26,7 +27,10 @@ enum PrewarmState { NOT_STARTED, RUNNING, SUCCEEDED, FAILED }
 @onready var new_game_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/NewGame
 @onready var settings_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Settings
 @onready var exit_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Exit
-@onready var input_hint: Label = $CanvasLayer/GUI/SafeArea/MainColumn/InputHint
+@onready var navigation_hint: Label = $CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation/Label
+@onready var confirm_prompt: TextureRect = $CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Confirm/Prompt
+@onready var confirm_hint: Label = $CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Confirm/Label
+@onready var back_hint: Label = $CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Back/Label
 @onready var build_info: Label = $CanvasLayer/GUI/BuildInfo
 @onready var settings_scrim: ColorRect = $CanvasLayer/GUI/SettingsScrim
 @onready var settings_panel: PanelContainer = $CanvasLayer/GUI/SettingsPanel
@@ -53,6 +57,7 @@ var _panel_tween: Tween
 
 func _ready() -> void:
 	gui_root.theme = START_UI_THEME
+	confirm_prompt.texture = INPUT_PROMPT_TEXTURE_FACTORY.space_prompt_texture()
 	_ensure_audio_settings_controls()
 	_wire_controls()
 	_refresh_save_state()
@@ -72,6 +77,31 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _settings_open:
 			_close_settings()
 			get_viewport().set_input_as_handled()
+		return
+	if not _settings_open and not event.is_echo():
+		if event.is_action_pressed("UP") or event.is_action_pressed("LEFT"):
+			_move_main_menu_focus(-1)
+			get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("DOWN") or event.is_action_pressed("RIGHT"):
+			_move_main_menu_focus(1)
+			get_viewport().set_input_as_handled()
+
+
+func _move_main_menu_focus(direction: int) -> void:
+	var buttons: Array[Button] = [start_button, new_game_button, settings_button, exit_button]
+	var available: Array[Button] = []
+	for button in buttons:
+		if button.visible and not button.disabled:
+			available.append(button)
+	if available.is_empty():
+		return
+	var focused := get_viewport().gui_get_focus_owner()
+	var current_index := available.find(focused)
+	if current_index == -1:
+		current_index = 0 if direction > 0 else available.size() - 1
+	else:
+		current_index = wrapi(current_index + direction, 0, available.size())
+	available[current_index].grab_focus()
 
 
 func _wire_controls() -> void:
@@ -213,7 +243,12 @@ func _apply_localized_text() -> void:
 	new_game_button.text = LocalizationManager.tr_key("ui.start.new_game", "New Game")
 	settings_button.text = LocalizationManager.tr_key("ui.start.settings", "Settings")
 	exit_button.text = LocalizationManager.tr_key("ui.start.exit", "Exit Game")
-	input_hint.text = LocalizationManager.tr_key("ui.start.input_hint", "[ENTER]  CONFIRM     [ESC]  BACK")
+	var navigation_copy := LocalizationManager.tr_key("ui.start.navigation_hint", "WASD / ARROWS  SELECT")
+	var action_separator := navigation_copy.rfind("  ")
+	navigation_hint.text = navigation_copy.substr(action_separator + 2) \
+			if action_separator >= 0 else navigation_copy
+	confirm_hint.text = LocalizationManager.tr_key("ui.start.confirm_hint", "CONFIRM")
+	back_hint.text = LocalizationManager.tr_key("ui.start.back_hint", "BACK")
 	settings_title.text = LocalizationManager.tr_key("ui.start.settings", "Settings")
 	settings_close_button.text = LocalizationManager.tr_key("ui.start.back", "Back")
 	display_header.text = LocalizationManager.tr_key("ui.start.display_language", "DISPLAY & LANGUAGE")

@@ -11,3 +11,4 @@ icon = ExtResource("1_rnx7b")
 price = 45
 description = "Mid-range Energy resonance beam. Each damage event grants 3 global energy; a full-energy beam locks its first target and ramps from +55% to +125% damage through repeated hits."
 scene_path = "res://Player/Weapons/Instances/charged_blaster.tscn"
+core_tags = Array[StringName]([&"energy", &"beam", &"charge"])

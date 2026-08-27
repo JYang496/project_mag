@@ -208,6 +208,30 @@ var task_objective_hud_presenter
 var battle_contract_hud_presenter
 var battlefield_deployment_presenter
 var rest_area_arrival_presenter
+var _reward_modal_hud_hidden := false
+var _reward_modal_hud_visibility: Dictionary = {}
+
+func set_reward_modal_hud_hidden(hidden: bool) -> void:
+	if hidden:
+		if _reward_modal_hud_hidden:
+			return
+		_reward_modal_hud_visibility.clear()
+		for hud_variant in [battle_hud, right_hud_stack, left_contract_hud_stack, controls_hint_view]:
+			var hud := hud_variant as Control
+			if hud == null or not is_instance_valid(hud):
+				continue
+			_reward_modal_hud_visibility[hud] = hud.visible
+			hud.visible = false
+		_reward_modal_hud_hidden = true
+		return
+	if not _reward_modal_hud_hidden:
+		return
+	for hud_variant in _reward_modal_hud_visibility:
+		var hud := hud_variant as Control
+		if hud != null and is_instance_valid(hud):
+			hud.visible = bool(_reward_modal_hud_visibility.get(hud, false))
+	_reward_modal_hud_visibility.clear()
+	_reward_modal_hud_hidden = false
 var hud_phase_controller
 var toast_presenter
 var ui_dirty_signal_controller
@@ -277,6 +301,8 @@ func _ready():
 	_init_toast_presenter()
 	if not BattleContractManager.performance_reward_granted.is_connected(_on_battle_contract_reward):
 		BattleContractManager.performance_reward_granted.connect(_on_battle_contract_reward)
+	if not BattleContractManager.enhanced_reward_granted.is_connected(_on_enhanced_contract_reward):
+		BattleContractManager.enhanced_reward_granted.connect(_on_enhanced_contract_reward)
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
@@ -306,6 +332,7 @@ func _init_battle_contract_selection_panel() -> void:
 		return
 	battle_contract_selection_panel = BATTLE_CONTRACT_SELECTION_PANEL_SCENE.instantiate()
 	gui_root.add_child(battle_contract_selection_panel)
+	battle_contract_selection_panel.visibility_changed.connect(_refresh_controls_hint_visibility)
 
 func request_battle_contract_selection(options: Array, confirmed: Callable, cancelled: Callable) -> void:
 	_init_battle_contract_selection_panel()
@@ -313,6 +340,14 @@ func request_battle_contract_selection(options: Array, confirmed: Callable, canc
 
 func _on_battle_contract_reward(summary: Dictionary) -> void:
 	show_item_message(LocalizationManager.tr_format("battle_contract.reward.summary", {"amount": summary.get("amount", 0), "type": LocalizationManager.tr_key("battle_contract.reward.%s" % str(summary.get("type", "gold")), str(summary.get("type", "gold")))}, "Performance reward: {amount} {type}"), 2.6)
+
+func _on_enhanced_contract_reward(summary: Dictionary) -> void:
+	var reward_text := ""
+	match str(summary.get("type", "")):
+		"gold_pack": reward_text = LocalizationManager.tr_key("battle_contract.enhanced.reward.gold", "Gold +{amount}").replace("{amount}", str(int(summary.get("amount", 0))))
+		"equipped_weapon_core": reward_text = LocalizationManager.tr_key("battle_contract.enhanced.reward.core", "Weapon core: {name}").replace("{name}", str(summary.get("weapon_name", "Weapon")))
+		"compatible_module": reward_text = LocalizationManager.tr_key("battle_contract.enhanced.reward.module", "Random compatible module")
+	show_item_message(LocalizationManager.tr_key("battle_contract.enhanced.reward.granted", "Enhanced reward: {reward}").replace("{reward}", reward_text), 3.0)
 
 func close_battle_contract_selection() -> void:
 	if battle_contract_selection_panel != null and is_instance_valid(battle_contract_selection_panel):
@@ -1716,11 +1751,9 @@ func _update_controls_guide_for_phase(phase: String) -> void:
 
 func _refresh_controls_hint_visibility() -> void:
 	_init_modal_ui_controller()
-	var reward_modal_open := reward_selection_panel != null \
-			and is_instance_valid(reward_selection_panel) \
-			and reward_selection_panel.is_modal_open()
+	var selection_modal_open := _is_selection_interface_open()
 	if hud_phase_controller != null:
-		hud_phase_controller.set_reward_modal_focus(reward_modal_open)
+		hud_phase_controller.set_selection_modal_focus(selection_modal_open)
 	if _is_secondary_menu_open() \
 			or _is_rest_area_service_transition_active() \
 			or modal_ui_controller.is_modal_open() \
@@ -1732,12 +1765,25 @@ func _refresh_controls_hint_visibility() -> void:
 		return
 	modal_ui_controller.refresh_controls_hint_visibility(_is_primary_menu_open(), _get_secondary_menu_context(), _get_primary_menu_context())
 
+func _is_selection_interface_open() -> bool:
+	for panel_variant in [
+		reward_selection_panel,
+		battle_contract_selection_panel,
+		branch_select_panel,
+		module_equip_selection_panel,
+		weapon_replacement_panel,
+	]:
+		var selection_panel := panel_variant as CanvasItem
+		if selection_panel != null and is_instance_valid(selection_panel) and selection_panel.visible:
+			return true
+	return false
+
 func _is_rest_area_service_transition_active() -> bool:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
 		return false
 	for rest_area in get_tree().get_nodes_in_group(&"rest_area"):
 		if rest_area != null and is_instance_valid(rest_area) \
-				and bool(rest_area.get("is_auto_moving")):
+				and rest_area.get("is_auto_moving") == true:
 			return true
 	return false
 

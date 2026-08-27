@@ -3,6 +3,7 @@ extends Resource
 class_name WeaponDefinition
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
+const BUILD_TAG := preload("res://Player/Weapons/Core/build_tag.gd")
 
 @export var weapon_id := ""
 @export var display_name := ""
@@ -10,6 +11,7 @@ const RARITY_UTIL := preload("res://data/LootRarity.gd")
 @export var price := 0
 @export_multiline var description := ""
 @export_file("*.tscn") var scene_path := ""
+@export var core_tags: Array[StringName] = []
 @export var is_hidden: bool = false
 @export_enum("common", "rare", "epic") var rarity: String = "common"
 @export_range(0.0, 1000000.0, 0.01) var drop_weight: float = 100.0
@@ -50,3 +52,11 @@ func get_rarity() -> String:
 
 func get_drop_weight() -> float:
 	return RARITY_UTIL.sanitize_weight(drop_weight, get_rarity())
+
+func get_normalized_core_tags() -> Array[StringName]:
+	var normalized := BUILD_TAG.normalize_array(core_tags)
+	normalized.sort_custom(func(a: StringName, b: StringName) -> bool: return str(a) < str(b))
+	return normalized
+
+func get_unknown_core_tags() -> PackedStringArray:
+	return BUILD_TAG.unknown_values(core_tags)

@@ -11,3 +11,4 @@ icon = ExtResource("1_gkkp3")
 price = 45
 description = "Close support summon. Consumes magazine ammo to deploy slowing satellites, then rewards Defense and On Hit builds when the player is pressured."
 scene_path = "res://Player/Weapons/Instances/orbit.tscn"
+core_tags = Array[StringName]([&"physical", &"summon", &"control", &"defense"])

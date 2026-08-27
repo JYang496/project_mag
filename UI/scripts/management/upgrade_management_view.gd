@@ -8,6 +8,9 @@ const WEAPON_DISPLAY_POLICY := preload("res://UI/scripts/presentation/weapon_dis
 const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
 
 @onready var upgrade_mode_buttons: HBoxContainer = $UpgradeModeButtons
+@onready var service_tabs: HBoxContainer = $ServiceTabs
+@onready var upgrade_tab_button: Button = $ServiceTabs/UpgradeTabButton
+@onready var fusion_tab_button: Button = $ServiceTabs/FusionTabButton
 @onready var upgrade_weapon_mode_button: Button = $UpgradeModeButtons/UpgradeWeaponModeButton
 @onready var upgrade_module_mode_button: Button = $UpgradeModeButtons/UpgradeModuleModeButton
 @onready var upgrade_item_scroll: ScrollContainer = $UpgradeItemScroll
@@ -25,6 +28,13 @@ var mode: StringName = &"weapon"
 var hover_item: Dictionary = {}
 var selected_item: Dictionary = {}
 var selected_module: Module
+var service_mode: StringName = &"upgrade"
+var selected_fusion_branch_id := ""
+var selected_core_keys: Array[String] = []
+var fusion_submit_pending := false
+var _upgrade_saved_hover: Dictionary = {}
+var _upgrade_saved_selected: Dictionary = {}
+var _upgrade_saved_module: Module
 var _detail_presenter
 
 func bind(owner_ui: Node, upgrade_controller: UpgradeManagementController = null) -> void:
@@ -33,6 +43,10 @@ func bind(owner_ui: Node, upgrade_controller: UpgradeManagementController = null
 	self.owner_ui = owner_ui
 	controller = upgrade_controller
 	_ensure_detail_presenter()
+	upgrade_tab_button.pressed.connect(set_service_mode.bind(&"upgrade"))
+	fusion_tab_button.pressed.connect(set_service_mode.bind(&"fusion"))
+	InventoryData.weapon_cores_changed.connect(_on_fusion_state_changed)
+	InventoryData.weapon_fusion_changed.connect(_on_weapon_fusion_changed)
 	if controller != null:
 		var weapon_pressed := Callable(controller, "on_weapon_mode_pressed")
 		var module_pressed := Callable(controller, "on_module_mode_pressed")
@@ -46,6 +60,39 @@ func bind(owner_ui: Node, upgrade_controller: UpgradeManagementController = null
 	owner_ui.call("_style_management_button", upgrade_weapon_mode_button, true)
 	owner_ui.call("_style_management_button", upgrade_module_mode_button)
 	owner_ui.call("_style_management_button", upgrade_action_button, true)
+	owner_ui.call("_style_management_button", upgrade_tab_button, true)
+	owner_ui.call("_style_management_button", fusion_tab_button)
+	set_service_mode(&"upgrade")
+
+func set_service_mode(new_mode: StringName) -> void:
+	var next_mode: StringName = &"fusion" if new_mode == &"fusion" else &"upgrade"
+	if next_mode == service_mode:
+		refresh_template()
+		return
+	if next_mode == &"fusion":
+		_upgrade_saved_hover = hover_item.duplicate(true)
+		_upgrade_saved_selected = selected_item.duplicate(true)
+		_upgrade_saved_module = selected_module
+	else:
+		hover_item = _upgrade_saved_hover.duplicate(true)
+		selected_item = _upgrade_saved_selected.duplicate(true)
+		selected_module = _upgrade_saved_module
+	service_mode = next_mode
+	upgrade_tab_button.button_pressed = service_mode == &"upgrade"
+	fusion_tab_button.button_pressed = service_mode == &"fusion"
+	upgrade_mode_buttons.visible = service_mode == &"upgrade"
+	if owner_ui:
+		owner_ui.call("_refresh_mode_button_styles", upgrade_tab_button, fusion_tab_button, service_mode == &"upgrade")
+	hover_item = {}
+	if service_mode == &"fusion":
+		selected_module = null
+		if str(selected_item.get("type", "")) != "weapon":
+			selected_item = {}
+		_reset_fusion_selection()
+	refresh_template()
+
+func get_service_mode() -> StringName:
+	return service_mode
 
 func set_state(new_mode: StringName, new_hover: Dictionary, new_selected: Dictionary, new_selected_module: Module) -> void:
 	mode = &"module" if new_mode == &"module" else &"weapon"
@@ -97,13 +144,14 @@ func refresh_template() -> void:
 		return
 	ensure_item_list_layout()
 	_clear_container(upgrade_item_list)
-	var items := build_items(mode)
+	var items := build_items(&"weapon" if service_mode == &"fusion" else mode)
+	_rebind_active_items(items)
 	if items.is_empty():
 		var empty := Label.new()
 		empty.text = LocalizationManager.tr_key("ui.upgrade.empty", "No upgradeable items.")
 		empty.add_theme_color_override("font_color", Color(0.72, 0.81, 0.86))
 		upgrade_item_list.add_child(empty)
-	if mode == &"module":
+	if service_mode == &"upgrade" and mode == &"module":
 		var row: HBoxContainer
 		for index in range(items.size()):
 			if index % 2 == 0:
@@ -114,6 +162,17 @@ func refresh_template() -> void:
 			add_item_row(item_data)
 	refresh_detail()
 	refresh_action()
+
+func _rebind_active_items(items: Array[Dictionary]) -> void:
+	var refreshed_selected: Dictionary = {}
+	var refreshed_hover: Dictionary = {}
+	for item_data in items:
+		if refreshed_selected.is_empty() and items_match(selected_item, item_data):
+			refreshed_selected = item_data.duplicate(true)
+		if refreshed_hover.is_empty() and items_match(hover_item, item_data):
+			refreshed_hover = item_data.duplicate(true)
+	selected_item = refreshed_selected
+	hover_item = refreshed_hover
 
 func ensure_item_list_layout() -> void:
 	if upgrade_item_list is VBoxContainer:
@@ -338,6 +397,7 @@ func _on_item_unhovered(item_data: Dictionary) -> void:
 	_sync_controller_state()
 
 func _on_item_selected(item_data: Dictionary) -> void:
+	var changed_fusion_weapon := service_mode == &"fusion" and not items_match(selected_item, item_data)
 	selected_item = item_data.duplicate(true)
 	if str(item_data.get("type", "")) == "weapon":
 		InventoryData.on_select_upg = item_data.get("weapon", null) as Weapon
@@ -345,6 +405,8 @@ func _on_item_selected(item_data: Dictionary) -> void:
 	else:
 		selected_module = item_data.get("module", null) as Module
 		InventoryData.on_select_upg = null
+	if changed_fusion_weapon:
+		_reset_fusion_selection()
 	refresh_template()
 	_sync_controller_state()
 
@@ -352,11 +414,16 @@ func refresh_detail() -> void:
 	if upgrade_detail_title == null or upgrade_detail_body == null:
 		return
 	_ensure_detail_presenter()
-	var active := hover_item if not hover_item.is_empty() else selected_item
+	upgrade_detail_subtitle.visible = true
+	var active := selected_item if service_mode == &"fusion" else (hover_item if not hover_item.is_empty() else selected_item)
 	if active.is_empty():
 		upgrade_detail_title.text = ""
 		upgrade_detail_subtitle.text = ""
 		_clear_container(upgrade_detail_body)
+		return
+	if service_mode == &"fusion":
+		_fill_fusion_detail(active)
+		upgrade_detail_scroll.scroll_vertical = 0
 		return
 	upgrade_detail_title.text = str(active.get("name", ""))
 	upgrade_detail_title.add_theme_color_override("font_color", active.get("rarity_color", Color(0.86, 0.94, 1.0)))
@@ -369,6 +436,8 @@ func refresh_detail() -> void:
 	upgrade_detail_scroll.scroll_vertical = 0
 
 func trigger_action() -> bool:
+	if service_mode == &"fusion":
+		return _commit_selected_fusion()
 	return try_upgrade_selected_item()
 
 func try_upgrade_selected_item() -> bool:
@@ -414,6 +483,11 @@ func _try_upgrade_module(item_data: Dictionary) -> bool:
 
 func refresh_action() -> void:
 	if upgrade_action_button == null:
+		return
+	if service_mode == &"fusion":
+		var preview := _get_fusion_preview()
+		upgrade_action_button.disabled = fusion_submit_pending or not bool(preview.get("ok", false)) or not PhaseManager.can_configure_loadout()
+		upgrade_action_button.text = LocalizationManager.tr_key("ui.fusion.confirm", "Confirm Fusion")
 		return
 	var ready := false
 	var price := 0
@@ -602,6 +676,327 @@ func _add_detail_text(text: String) -> void:
 func _show_message(text: String, duration: float) -> void:
 	if owner_ui and owner_ui.has_method("show_item_message"):
 		owner_ui.call("show_item_message", text, duration)
+
+func _reset_fusion_selection() -> void:
+	selected_fusion_branch_id = ""
+	selected_core_keys.clear()
+
+func _get_selected_fusion_weapon() -> Weapon:
+	if selected_item.is_empty() or str(selected_item.get("type", "")) != "weapon":
+		return null
+	var weapon := selected_item.get("weapon", null) as Weapon
+	return weapon if weapon != null and is_instance_valid(weapon) else null
+
+func _get_fusion_branch_options(weapon: Weapon) -> Array[WeaponBranchDefinition]:
+	var output: Array[WeaponBranchDefinition] = []
+	if weapon == null or int(weapon.fuse) >= Weapon.MAX_FUSE_LEVEL:
+		return output
+	if int(weapon.fuse) == 1:
+		return weapon.branch_runtime.get_available_branch_options_for_fuse(2)
+	if weapon.branch_runtime.branch_ids.size() == 1:
+		var branch := DataHandler.read_weapon_branch_definition(weapon.scene_file_path, str(weapon.branch_runtime.branch_ids[0]))
+		if branch != null:
+			output.append(branch)
+	return output
+
+func _resolve_fusion_branch(weapon: Weapon) -> WeaponBranchDefinition:
+	for branch in _get_fusion_branch_options(weapon):
+		if str(branch.branch_id) == selected_fusion_branch_id:
+			return branch
+	return null
+
+func _get_fusion_preview() -> Dictionary:
+	var weapon := _get_selected_fusion_weapon()
+	if weapon == null:
+		return {"ok": false, "reason_code": "invalid_weapon", "required_core_count": 0, "required_level": 0}
+	return InventoryData.preview_weapon_fusion(weapon, selected_fusion_branch_id, selected_core_keys)
+
+func _fill_fusion_detail(item_data: Dictionary) -> void:
+	var weapon := item_data.get("weapon", null) as Weapon
+	upgrade_detail_title.text = str(item_data.get("name", ""))
+	upgrade_detail_subtitle.text = ""
+	upgrade_detail_subtitle.visible = false
+	_clear_container(upgrade_detail_body)
+	if weapon == null or not is_instance_valid(weapon):
+		_add_fusion_label(LocalizationManager.tr_key("ui.fusion.select_weapon", "Select a weapon to fuse."), Color(0.95, 0.65, 0.45))
+		return
+	var target_fuse := int(weapon.fuse) + 1
+	var required_level := 3 if target_fuse == 2 else 6
+	var required_count := 2 if target_fuse == 2 else 3
+	_add_fusion_status_row(int(weapon.level), required_level)
+	_add_fusion_stage_indicator(int(weapon.fuse), mini(target_fuse, Weapon.MAX_FUSE_LEVEL))
+	var existing_branch := LocalizationManager.tr_key("ui.fusion.none", "None")
+	if not weapon.branch_runtime.branch_ids.is_empty():
+		var existing_def := DataHandler.read_weapon_branch_definition(weapon.scene_file_path, str(weapon.branch_runtime.branch_ids[0]))
+		if existing_def:
+			existing_branch = LocalizationManager.get_branch_display_name(existing_def)
+	_add_fusion_label(LocalizationManager.tr_format("ui.fusion.current_branch", {"branch": existing_branch}, "Current branch: %s" % existing_branch))
+	if int(weapon.fuse) >= Weapon.MAX_FUSE_LEVEL:
+		_add_fusion_label(LocalizationManager.tr_key("ui.fusion.maxed", "Fusion complete."), Color(0.55, 0.9, 0.65))
+		return
+	_add_fusion_step_header(1, LocalizationManager.tr_key("ui.fusion.step.select_branch", "Select Branch"))
+	var options := _get_fusion_branch_options(weapon)
+	if selected_fusion_branch_id == "" and options.size() == 1 and target_fuse == 3:
+		selected_fusion_branch_id = str(options[0].branch_id)
+	var branch_row := HBoxContainer.new()
+	branch_row.name = "FusionBranchOptions"
+	branch_row.add_theme_constant_override("separation", 8)
+	upgrade_detail_body.add_child(branch_row)
+	for branch in options:
+		_add_fusion_branch_button(branch, target_fuse == 3, branch_row)
+	var branch := _resolve_fusion_branch(weapon)
+	if branch == null:
+		_add_fusion_label(LocalizationManager.tr_key("ui.fusion.select_branch", "Select a branch to inspect its recipe."), Color(0.95, 0.78, 0.42))
+		return
+	var recipe := branch.get_normalized_fusion_required_tags()
+	_add_fusion_label(LocalizationManager.get_branch_description(branch), Color(0.72, 0.81, 0.86), 12)
+	if target_fuse == 3:
+		_add_fusion_label(LocalizationManager.tr_key("ui.fusion.enhancement_preview", "Enhancement: strengthens this branch's own effects."), Color(0.58, 0.86, 1.0))
+	var preview := _get_fusion_preview()
+	_add_fusion_step_header(2, LocalizationManager.tr_key("ui.fusion.step.meet_conditions", "Meet Conditions"))
+	var covered_tags := preview.get("covered_tags", []) as Array
+	for tag in recipe:
+		_add_fusion_condition_tile(str(tag), covered_tags.has(tag))
+	_add_fusion_condition_tile(
+		LocalizationManager.tr_format("ui.fusion.core_count", {"selected": selected_core_keys.size(), "required": required_count}, "Cores %d / %d" % [selected_core_keys.size(), required_count]),
+		bool(preview.get("core_count_ok", false))
+	)
+	_add_fusion_label(LocalizationManager.tr_key("ui.fusion.core_inventory", "Core Inventory"), Color(0.58, 0.86, 1.0), 13)
+	for stack in InventoryData.get_weapon_core_stacks():
+		_add_fusion_core_row(stack, recipe, required_count)
+	if not selected_core_keys.is_empty():
+		_add_fusion_label(LocalizationManager.tr_format("ui.fusion.consume_detail", {"cores": " | ".join(selected_core_keys)}, "Consume: %s" % " | ".join(selected_core_keys)), Color(0.82, 0.88, 0.9))
+	_add_fusion_step_header(3, LocalizationManager.tr_key("ui.fusion.step.confirm", "Confirm Fusion"))
+	_add_fusion_label(LocalizationManager.tr_format(
+		"ui.fusion.unlock_preview",
+		{"branch": LocalizationManager.get_branch_display_name(branch)},
+		"Unlock: %s" % LocalizationManager.get_branch_display_name(branch)
+	), Color(0.55, 0.9, 0.65) if bool(preview.get("ok", false)) else Color(0.72, 0.81, 0.86), 14)
+	var reason_code := str(preview.get("reason_code", "invalid_weapon"))
+	if reason_code != "level_too_low":
+		_add_fusion_label(_fusion_reason_text(reason_code), Color(0.55, 0.9, 0.65) if bool(preview.get("ok", false)) else Color(1.0, 0.58, 0.42), 12)
+
+func _add_fusion_status_row(level: int, required_level: int) -> void:
+	var row := HBoxContainer.new()
+	row.name = "FusionLevelStatus"
+	row.add_theme_constant_override("separation", 8)
+	upgrade_detail_body.add_child(row)
+	var level_label := Label.new()
+	level_label.text = LocalizationManager.tr_format("ui.fusion.level", {"level": level, "required": required_level}, "Level %d / %d" % [level, required_level])
+	level_label.add_theme_font_size_override("font_size", 16)
+	level_label.add_theme_color_override("font_color", Color(0.86, 0.94, 1.0))
+	row.add_child(level_label)
+	var level_ok := level >= required_level
+	var state := Label.new()
+	state.text = ("✓ %s" % LocalizationManager.tr_key("ui.fusion.level_ready", "Level Ready")) if level_ok else ("× %s" % LocalizationManager.tr_key("ui.fusion.reason.level_too_low", "Weapon level is too low."))
+	state.add_theme_font_size_override("font_size", 13)
+	state.add_theme_color_override("font_color", Color(0.55, 0.9, 0.65) if level_ok else Color(1.0, 0.36, 0.3))
+	state.add_theme_stylebox_override("normal", _fusion_state_style(level_ok))
+	row.add_child(state)
+
+func _add_fusion_stage_indicator(current_fuse: int, target_fuse: int) -> void:
+	var root := VBoxContainer.new()
+	root.name = "FusionStageIndicator"
+	root.add_theme_constant_override("separation", 4)
+	upgrade_detail_body.add_child(root)
+	var title := Label.new()
+	title.text = LocalizationManager.tr_key("ui.fusion.stage", "Fusion Stage")
+	title.add_theme_color_override("font_color", Color(0.58, 0.86, 1.0))
+	title.add_theme_font_size_override("font_size", 14)
+	root.add_child(title)
+	var stages := HBoxContainer.new()
+	stages.add_theme_constant_override("separation", 8)
+	root.add_child(stages)
+	for stage in range(1, Weapon.MAX_FUSE_LEVEL + 1):
+		var pip := Label.new()
+		pip.custom_minimum_size = Vector2(64, 34)
+		pip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		pip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		pip.text = str(stage)
+		pip.add_theme_font_size_override("font_size", 16)
+		var color := Color(0.44, 0.52, 0.57)
+		if stage == current_fuse:
+			color = Color(1.0, 0.72, 0.16)
+		elif stage == target_fuse:
+			color = Color(0.34, 0.84, 1.0)
+		pip.add_theme_color_override("font_color", color)
+		pip.add_theme_stylebox_override("normal", _fusion_stage_style(color, stage == current_fuse))
+		stages.add_child(pip)
+	var caption := Label.new()
+	caption.text = LocalizationManager.tr_format("ui.fusion.stage_progress", {"current": current_fuse, "target": target_fuse}, "Current %d · Target %d" % [current_fuse, target_fuse])
+	caption.add_theme_color_override("font_color", Color(0.58, 0.86, 1.0))
+	caption.add_theme_font_size_override("font_size", 12)
+	root.add_child(caption)
+
+func _add_fusion_step_header(step: int, text: String) -> void:
+	var label := Label.new()
+	label.name = "FusionStep%d" % step
+	label.text = "%d  %s" % [step, text]
+	label.add_theme_color_override("font_color", Color(0.58, 0.86, 1.0))
+	label.add_theme_font_size_override("font_size", 15)
+	upgrade_detail_body.add_child(label)
+
+func _add_fusion_condition_tile(text: String, satisfied: bool) -> void:
+	var label := Label.new()
+	label.custom_minimum_size = Vector2(0, 34)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.text = "  %s   %s %s" % [text, "✓" if satisfied else "×", LocalizationManager.tr_key("ui.fusion.satisfied", "Satisfied") if satisfied else LocalizationManager.tr_key("ui.fusion.unmet", "Unmet")]
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color(0.42, 0.94, 0.52) if satisfied else Color(1.0, 0.36, 0.3))
+	label.add_theme_stylebox_override("normal", _fusion_state_style(satisfied))
+	upgrade_detail_body.add_child(label)
+
+func _fusion_state_style(satisfied: bool) -> StyleBoxFlat:
+	var color := Color(0.16, 0.72, 0.28) if satisfied else Color(0.9, 0.18, 0.14)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r, color.g, color.b, 0.1)
+	style.border_color = Color(color.r, color.g, color.b, 0.9)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 8.0
+	style.content_margin_right = 8.0
+	return style
+
+func _fusion_stage_style(color: Color, filled: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r, color.g, color.b, 0.22 if filled else 0.07)
+	style.border_color = color
+	style.set_border_width_all(2 if filled else 1)
+	style.set_corner_radius_all(3)
+	return style
+
+func _add_fusion_branch_button(branch: WeaponBranchDefinition, enhanced: bool, parent: Container) -> void:
+	var button := Button.new()
+	button.custom_minimum_size = Vector2(0, 56)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var suffix := "  ·  %s" % LocalizationManager.tr_key("ui.fusion.enhance", "Enhance") if enhanced else ""
+	button.text = "%s%s\n%s" % [LocalizationManager.get_branch_display_name(branch), suffix, _format_tags(branch.get_normalized_fusion_required_tags())]
+	button.toggle_mode = true
+	button.button_pressed = selected_fusion_branch_id == str(branch.branch_id)
+	button.pressed.connect(_select_fusion_branch.bind(str(branch.branch_id)))
+	parent.add_child(button)
+	if owner_ui:
+		owner_ui.call("_style_management_button", button, button.button_pressed)
+
+func _select_fusion_branch(branch_id: String) -> void:
+	if selected_fusion_branch_id != branch_id:
+		selected_fusion_branch_id = branch_id
+		_prune_selected_cores()
+	refresh_detail()
+	refresh_action()
+
+func _add_fusion_core_row(stack: Dictionary, recipe: Array[StringName], required_count: int) -> void:
+	var key := str(stack.get("key", ""))
+	var tags: Array = stack.get("tags", [])
+	var contribution: Array[StringName] = []
+	for tag in tags:
+		if recipe.has(tag): contribution.append(tag)
+	var chosen := selected_core_keys.count(key)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	upgrade_detail_body.add_child(row)
+	var info := Label.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.text = "%s  x%d\n%s: %s  ·  %s: %s  ·  %s: %d" % [
+		_format_tags(tags), int(stack.get("count", 0)),
+		LocalizationManager.tr_key("ui.fusion.contributes", "Contributes"), _format_tags(contribution),
+		LocalizationManager.tr_key("ui.fusion.selected", "Selected"), str(chosen),
+		LocalizationManager.tr_key("ui.fusion.available", "Available"), int(stack.get("count", 0))]
+	info.add_theme_font_size_override("font_size", 12)
+	row.add_child(info)
+	var minus := Button.new()
+	minus.text = "−"
+	minus.disabled = chosen <= 0
+	minus.pressed.connect(_change_core_selection.bind(key, -1))
+	row.add_child(minus)
+	var plus := Button.new()
+	plus.text = "+"
+	plus.disabled = contribution.is_empty() or chosen >= int(stack.get("count", 0)) or selected_core_keys.size() >= required_count
+	plus.tooltip_text = LocalizationManager.tr_key("ui.fusion.unrelated", "This core does not contribute a required Tag.") if contribution.is_empty() else ""
+	plus.pressed.connect(_change_core_selection.bind(key, 1))
+	row.add_child(plus)
+
+func _change_core_selection(key: String, delta: int) -> void:
+	if delta < 0:
+		selected_core_keys.erase(key)
+	elif delta > 0:
+		selected_core_keys.append(key)
+	refresh_detail()
+	refresh_action()
+
+func _prune_selected_cores() -> void:
+	var branch := _resolve_fusion_branch(_get_selected_fusion_weapon())
+	if branch == null:
+		selected_core_keys.clear()
+		return
+	var required := branch.get_normalized_fusion_required_tags()
+	var valid: Array[String] = []
+	var available: Dictionary = {}
+	for stack in InventoryData.get_weapon_core_stacks(): available[str(stack.get("key", ""))] = stack
+	for key in selected_core_keys:
+		var stack := available.get(key, {}) as Dictionary
+		var contributes := false
+		for tag in stack.get("tags", []):
+			if required.has(tag): contributes = true
+		if contributes and valid.count(key) < int(stack.get("count", 0)): valid.append(key)
+	selected_core_keys = valid
+
+func _commit_selected_fusion() -> bool:
+	if fusion_submit_pending or not PhaseManager.can_configure_loadout():
+		_show_message(LocalizationManager.tr_key("ui.fusion.rest_only", "Fusion is only available during rest."), 1.6)
+		return false
+	var weapon := _get_selected_fusion_weapon()
+	fusion_submit_pending = true
+	refresh_action()
+	var result := InventoryData.commit_weapon_fusion(weapon, selected_fusion_branch_id, selected_core_keys)
+	fusion_submit_pending = false
+	if not bool(result.get("ok", false)):
+		_prune_selected_cores()
+		_show_message(_fusion_reason_text(str(result.get("reason_code", "commit_failed"))), 1.8)
+		refresh_template()
+		return false
+	_reset_fusion_selection()
+	_show_message(LocalizationManager.tr_key("ui.fusion.success", "Fusion complete."), 1.6)
+	refresh_template()
+	return true
+
+func _on_fusion_state_changed() -> void:
+	if service_mode == &"fusion":
+		_prune_selected_cores()
+		refresh_template()
+
+func _on_weapon_fusion_changed(_weapon: Weapon, _result: Dictionary) -> void:
+	if service_mode == &"fusion": refresh_template()
+
+func _add_fusion_header(text: String) -> void:
+	_add_fusion_label(text, Color(0.58, 0.86, 1.0), 15)
+
+func _add_fusion_label(text: String, color: Color = Color(0.82, 0.88, 0.9), size: int = 13) -> void:
+	var label := Label.new()
+	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_font_size_override("font_size", size)
+	upgrade_detail_body.add_child(label)
+
+func _format_tags(tags: Variant) -> String:
+	var parts := PackedStringArray()
+	if tags is Array:
+		for tag in tags: parts.append(str(tag))
+	return "—" if parts.is_empty() else ", ".join(parts)
+
+func _fusion_reason_text(code: String) -> String:
+	var fallbacks := {
+		"ready": "Ready to fuse.", "fused": "Fusion complete.", "level_too_low": "Weapon level is too low.",
+		"core_count_mismatch": "Select the required number of cores.", "tags_missing": "Selected cores do not cover every required Tag.",
+		"core_unrelated": "Every selected core must contribute a required Tag.", "core_missing": "A selected core is no longer available.",
+		"branch_not_found": "Select a fusion branch.", "branch_not_available": "This branch is not available.",
+		"branch_mismatch": "Fuse 3 must enhance the existing branch.", "fusion_maxed": "Fusion complete.",
+		"fusion_in_progress": "Fusion is already being submitted.", "commit_failed": "Fusion failed without consuming cores.",
+		"invalid_weapon": "Select a weapon to fuse.", "weapon_not_owned": "This weapon is no longer owned."
+	}
+	return LocalizationManager.tr_key("ui.fusion.reason.%s" % code, str(fallbacks.get(code, code)))
 
 func _sync_controller_state() -> void:
 	if controller != null:

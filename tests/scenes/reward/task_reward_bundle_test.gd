@@ -119,11 +119,11 @@ func _ready() -> void:
 	var first_card := panel.options_box.get_child(0) as Button
 	assert(get_viewport().gui_get_focus_owner() == first_card)
 	var selected_style := first_card.get_theme_stylebox("normal") as StyleBoxFlat
-	assert(selected_style.border_color.is_equal_approx(TOKENS.COLOR_REWARD))
-	assert(selected_style.border_width_left == 3)
+	assert(selected_style.border_color.is_equal_approx(TOKENS.COLOR_ACCENT_SYSTEM))
+	assert(selected_style.border_width_left == TOKENS.BORDER_STRONG)
 	var first_selection_bar := first_card.find_child("SelectionIndicatorBar", true, false) as ColorRect
 	assert(first_selection_bar != null and first_selection_bar.visible)
-	assert(first_selection_bar.color.is_equal_approx(TOKENS.COLOR_REWARD))
+	assert(first_selection_bar.color.is_equal_approx(TOKENS.COLOR_ACCENT_SYSTEM))
 	assert(is_equal_approx(first_selection_bar.offset_bottom - first_selection_bar.offset_top, 4.0))
 	var hold_track := first_card.find_child("HoldProgress", true, false) as ProgressBar
 	var hold_fill := hold_track.get_theme_stylebox("fill") as StyleBoxFlat
@@ -131,21 +131,23 @@ func _ready() -> void:
 	var second_card := panel.options_box.get_child(1) as Button
 	var unselected_style := second_card.get_theme_stylebox("normal") as StyleBoxFlat
 	assert(unselected_style.border_width_left == TOKENS.BORDER_THIN)
+	assert(unselected_style.border_color.a <= 0.65)
 	var second_selection_bar := second_card.find_child("SelectionIndicatorBar", true, false) as ColorRect
 	assert(second_selection_bar != null and not second_selection_bar.visible)
 	panel.call("_on_reward_button_pressed", 1, second_card)
 	assert(get_viewport().gui_get_focus_owner() == second_card)
 	assert(not first_selection_bar.visible and second_selection_bar.visible)
 	selected_style = second_card.get_theme_stylebox("normal") as StyleBoxFlat
-	assert(selected_style.border_color.is_equal_approx(TOKENS.COLOR_REWARD))
-	assert(selected_style.border_width_left == 3)
+	assert(selected_style.border_color.is_equal_approx(TOKENS.COLOR_ACCENT_SYSTEM))
+	assert(selected_style.border_width_left == TOKENS.BORDER_STRONG)
 	var space_press := InputEventKey.new()
 	space_press.keycode = KEY_SPACE
 	space_press.pressed = true
 	assert(bool(panel.call("_is_space_key_event", space_press)))
 	panel.call("_input", space_press)
 	assert(panel.get("_selected_index") == 1)
-	assert(panel.confirm_button.icon is AtlasTexture)
+	assert(panel.confirm_button.icon is ImageTexture)
+	assert(panel.confirm_button.icon.get_size() == Vector2(48, 16))
 	assert(panel.visible)
 	assert(get_viewport().gui_get_focus_owner() == panel.confirm_button)
 	var physical_space_release := InputEventKey.new()

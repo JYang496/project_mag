@@ -1,11 +1,12 @@
 # Documentation Index
 
-Last reviewed: 2026-07-15.
+Last reviewed: 2026-08-17.
 
 ## Current sources of truth
 
 - [`../Overview.md`](../Overview.md): current gameplay and runtime overview.
 - [`design/`](design/): durable design contracts.
+- [`design/weapon_trigger_contract.md`](design/weapon_trigger_contract.md): canonical eight-trigger weapon-skill contract and current weapon assignments.
 - [`plans/battle_contract_combat_port.md`](plans/battle_contract_combat_port.md): stable battle-contract integration boundary.
 - [`plans/hybrid_2d_3d_2_5d_architecture.md`](plans/hybrid_2d_3d_2_5d_architecture.md): current 2D-authoritative/3D-ground architecture reference.
 - [`../tests/README.md`](../tests/README.md): current test layout and validation commands.

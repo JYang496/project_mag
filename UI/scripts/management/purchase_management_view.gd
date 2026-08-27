@@ -47,6 +47,41 @@ func bind(owner_ui: Node, purchase_controller: PurchaseManagementController = nu
 	owner_ui.call("_style_management_button", shop_refresh_button)
 	owner_ui.call("_style_management_button", shop_purchase_button, true)
 	owner_ui.call("_style_management_button", shop_back_button)
+	_connect_outcome_refresh_signals()
+
+func _exit_tree() -> void:
+	_disconnect_outcome_refresh_signals()
+
+func _connect_outcome_refresh_signals() -> void:
+	var callback := Callable(self, "_on_shop_outcome_state_changed")
+	for source_signal in [PlayerData.weapon_list_changed, InventoryData.weapon_storage_changed, InventoryData.weapon_cores_changed]:
+		if not source_signal.is_connected(callback):
+			source_signal.connect(callback)
+
+func _disconnect_outcome_refresh_signals() -> void:
+	var callback := Callable(self, "_on_shop_outcome_state_changed")
+	for source_signal in [PlayerData.weapon_list_changed, InventoryData.weapon_storage_changed, InventoryData.weapon_cores_changed]:
+		if source_signal.is_connected(callback):
+			source_signal.disconnect(callback)
+
+func _on_shop_outcome_state_changed() -> void:
+	if weapon_shop == null or not is_instance_valid(weapon_shop):
+		return
+	for child in weapon_shop.get_children():
+		if child.has_method("refresh_obtain_presentation"):
+			child.call("refresh_obtain_presentation")
+	selected_item = _rebuild_live_item_data(selected_item)
+	hover_item = _rebuild_live_item_data(hover_item)
+	refresh_detail()
+	refresh_purchase_action()
+
+func _rebuild_live_item_data(item_data: Dictionary) -> Dictionary:
+	if item_data.is_empty():
+		return {}
+	var slot := item_data.get("slot", null) as Node
+	if slot == null or not is_instance_valid(slot) or not slot.has_method("_build_shop_item_data"):
+		return {}
+	return slot.call("_build_shop_item_data") as Dictionary
 
 func set_shop_context(weapon_shop_list: VBoxContainer, action_button: Button) -> void:
 	weapon_shop = weapon_shop_list
@@ -166,11 +201,11 @@ func refresh_purchase_action() -> void:
 	if selected_name == "":
 		purchase_action_button.text = LocalizationManager.tr_key("ui.shop.buy.select", "Buy")
 	else:
-		purchase_action_button.text = LocalizationManager.tr_format(
-			"ui.shop.buy.item",
-			{"name": selected_name},
-			"Buy %s" % selected_name
-		)
+		var prediction := selected_item.get("obtain_prediction", {}) as Dictionary
+		if str(prediction.get("result", "")) == "dismantled_to_core":
+			purchase_action_button.text = LocalizationManager.tr_format("ui.shop.buy_core", {"name": selected_name}, "Buy %s Core" % selected_name)
+		else:
+			purchase_action_button.text = LocalizationManager.tr_format("ui.shop.buy.item", {"name": selected_name}, "Buy %s" % selected_name)
 
 func refresh_detail() -> void:
 	if shop_detail_title == null or shop_detail_body == null:
@@ -179,9 +214,12 @@ func refresh_detail() -> void:
 	if active.is_empty():
 		clear_detail()
 		return
-	shop_detail_title.text = str(active.get("name", ""))
-	shop_detail_title.add_theme_color_override("font_color", active.get("rarity_color", Color(0.86, 0.94, 1.0)))
-	shop_detail_subtitle.text = str(active.get("description", ""))
+	var prediction := active.get("obtain_prediction", {}) as Dictionary
+	var becomes_core := str(prediction.get("result", "")) == "dismantled_to_core"
+	var active_name := str(active.get("name", ""))
+	shop_detail_title.text = LocalizationManager.tr_format("ui.shop.core.named_title", {"name": active_name}, "%s Core" % active_name) if becomes_core else active_name
+	shop_detail_title.add_theme_color_override("font_color", Color(0.94, 0.58, 0.18, 1.0) if becomes_core else active.get("rarity_color", Color(0.86, 0.94, 1.0)))
+	shop_detail_subtitle.text = LocalizationManager.tr_key("ui.shop.core.detail_subtitle", "Purchase yields a weapon core for manual fusion.") if becomes_core else str(active.get("description", ""))
 	_clear_container(shop_detail_body)
 	match str(active.get("type", "")):
 		"weapon":
@@ -206,11 +244,29 @@ func _fill_weapon_detail(item_data: Dictionary) -> void:
 	var display_model = item_data.get("display_model", null)
 	if display_model == null:
 		display_model = WEAPON_DISPLAY_BUILDER.build_from_definition(weapon_def)
-	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.weapon_type", "Weapon Type"), display_model.taxonomy_text())
+	var prediction := item_data.get("obtain_prediction", {}) as Dictionary
+	var becomes_core := str(prediction.get("result", "")) == "dismantled_to_core"
+	if becomes_core:
+		var preview := WeaponObtainPreviewFormatter.format_obtain_preview("", str(item_data.get("name", "")), prediction)
+		_add_detail_section(LocalizationManager.tr_key("ui.shop.core.purchase_result", "Purchase Result"), preview)
+		var usages := prediction.get("usable_branches", []) as Array
+		var branch_names := PackedStringArray()
+		for usage_variant in usages:
+			var usage := usage_variant as Dictionary
+			var usage_weapon := DataHandler.read_weapon_data(str(usage.get("weapon_id", ""))) as WeaponDefinition
+			if usage_weapon == null: continue
+			var usage_branch := DataHandler.read_weapon_branch_definition(usage_weapon.scene_path, str(usage.get("branch_id", "")))
+			if usage_branch: branch_names.append("%s · %s" % [LocalizationManager.get_weapon_name_by_id(usage_weapon.weapon_id, usage_weapon.weapon_id), LocalizationManager.get_branch_display_name(usage_branch)])
+		if not branch_names.is_empty():
+			_add_detail_section(LocalizationManager.tr_key("ui.reward.core.usable_by_label", "Usable By"), "\n".join(branch_names))
 	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.purchase_price", "Purchase Price"), str(int(item_data.get("price", 0))))
+	_add_detail_section(
+		LocalizationManager.tr_key("ui.shop.core.source_weapon_type", "Source Weapon Type") if becomes_core else LocalizationManager.tr_key("ui.service.detail.weapon_type", "Weapon Type"),
+		display_model.taxonomy_text()
+	)
 	if not display_model.current_stats.is_empty():
 		_add_detail_section(
-			LocalizationManager.tr_key("ui.weapon.detail.core_stats", "Core Stats"),
+			LocalizationManager.tr_key("ui.shop.core.source_weapon_stats", "Source Weapon Stats") if becomes_core else LocalizationManager.tr_key("ui.weapon.detail.core_stats", "Core Stats"),
 			WEAPON_STAT_FORMATTER.format_summary(display_model.current_stats, 4, "\n")
 		)
 	var level_rows := _build_weapon_level_rows(weapon_def)

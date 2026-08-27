@@ -10,6 +10,14 @@ const CRITICAL_HIT := &"critical_hit"
 const TARGET_KILLED := &"target_killed"
 const RELOAD_STARTED := &"reload_started"
 const RELOAD_FINISHED := &"reload_finished"
+const PRIMARY_ATTACK_FIRED := &"primary_attack_fired"
+const WEAPON_ENTERED_MAIN := &"weapon_entered_main"
+const WEAPON_ENTERED_OFFHAND := &"weapon_entered_offhand"
+const MAGAZINE_QUARTER_SPENT := &"magazine_quarter_spent"
+const STOW_CHARGE_READY := &"stow_charge_ready"
+const CROSS_WEAPON_HIT := &"cross_weapon_hit"
+const CONTINUOUS_HIT_THRESHOLD := &"continuous_hit_threshold"
+const SHARED_RESOURCE_RELEASE := &"shared_resource_release"
 
 const ALL: Array[StringName] = [
 	SKILL_CAST_COMMITTED,
@@ -21,6 +29,14 @@ const ALL: Array[StringName] = [
 	TARGET_KILLED,
 	RELOAD_STARTED,
 	RELOAD_FINISHED,
+	PRIMARY_ATTACK_FIRED,
+	WEAPON_ENTERED_MAIN,
+	WEAPON_ENTERED_OFFHAND,
+	MAGAZINE_QUARTER_SPENT,
+	STOW_CHARGE_READY,
+	CROSS_WEAPON_HIT,
+	CONTINUOUS_HIT_THRESHOLD,
+	SHARED_RESOURCE_RELEASE,
 ]
 
 var type: StringName

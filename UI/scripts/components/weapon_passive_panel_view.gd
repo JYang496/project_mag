@@ -175,10 +175,10 @@ func format_detail(status: Dictionary) -> String:
 		))
 	var trigger_hint := str(status.get("trigger_hint", ""))
 	if trigger_hint != "":
-		parts.append(trigger_hint)
+		parts.append(format_trigger_hint(trigger_hint))
 	var refresh_hint := str(status.get("refresh_hint", ""))
 	if refresh_hint != "":
-		parts.append("refresh: %s" % refresh_hint)
+		parts.append("refresh: %s" % format_trigger_hint(refresh_hint))
 	var condition_type := str(status.get("condition_type", ""))
 	if condition_type != "" and trigger_hint == "":
 		parts.append(condition_type)
@@ -189,6 +189,26 @@ func format_detail(status: Dictionary) -> String:
 	if inactive_reason != "":
 		parts.append(inactive_reason)
 	return " | ".join(parts)
+
+func format_trigger_hint(hint: String) -> String:
+	var normalized := hint.strip_edges().to_lower()
+	var labels := {
+		"weapon_entered_main": "Weapon Entry",
+		"weapon_entry": "Weapon Entry",
+		"magazine_quarter_spent": "Magazine Quarters",
+		"magazine_cycle": "Magazine Quarters",
+		"reload_started": "Reload Start",
+		"stow_charge": "Stow Charge",
+		"stow": "Stow Charge",
+		"cross_weapon_hit": "Crossfire",
+		"crossfire": "Crossfire",
+		"continuous_hits": "Continuous Hits",
+		"weapon_kill": "Kill Reward",
+		"kill": "Kill Reward",
+		"fire_at_full_global_energy": "Shared Resource Release",
+		"automatic_after_full_energy_attack": "Shared Resource Release",
+	}
+	return str(labels.get(normalized, normalized.replace("_", " ").capitalize()))
 
 func format_number(value: Variant) -> String:
 	var number := float(value)

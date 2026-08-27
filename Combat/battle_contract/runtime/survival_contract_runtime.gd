@@ -10,6 +10,8 @@ var threat_step_sec := 15.0
 var threat_level := 1
 var effective_kills := 0
 var killed_hp := 0
+var enhanced_elite_hp_multiplier := 0.0
+var enhanced_elite_spawned := false
 const THREAT_MULTIPLIER_PER_LEVEL := 0.06
 var _completion_guard := false
 
@@ -19,6 +21,7 @@ func start(combat_port, parameters: Dictionary) -> void:
 	duration_sec = maxf(float(port.get_level_duration_sec()), 1.0)
 	remaining_sec = duration_sec
 	threat_step_sec = maxf(float(parameters.get("threat_step_sec", 15.0)), 1.0)
+	enhanced_elite_hp_multiplier = maxf(float(parameters.get("elite_hp_budget_multiplier", 0.0)), 0.0)
 	port.request_configure_continuous_spawning(true)
 	port.request_configure_spawn_policy(&"uncapped", 0.0, 0.0)
 	port.battle_tick.connect(_on_tick)
@@ -37,6 +40,10 @@ func stop() -> void:
 func _on_tick(snapshot: Dictionary) -> void:
 	if _completion_guard:
 		return
+	if enhanced_elite_hp_multiplier > 0.0 and not enhanced_elite_spawned:
+		var level_budget := int(port.get_battle_intro_snapshot().get("target_total_hp", 0))
+		if level_budget > 0:
+			enhanced_elite_spawned = port.request_spawn_contract_elite(int(round(float(level_budget) * enhanced_elite_hp_multiplier)))
 	remaining_sec = maxf(remaining_sec - float(snapshot.get("delta_sec", 0.0)), 0.0)
 	var next_threat := mini(int(floor((duration_sec - remaining_sec) / threat_step_sec)) + 1, 5)
 	if next_threat != threat_level:
@@ -56,7 +63,7 @@ func _on_enemy_died(snapshot: Dictionary) -> void:
 	killed_hp += int(snapshot.get("scaled_hp", 0))
 
 func _snapshot() -> Dictionary:
-	return {"contract_id": &"survival", "remaining_sec": remaining_sec, "duration_sec": duration_sec, "threat_level": threat_level, "effective_kills": effective_kills, "killed_hp": killed_hp}
+	return {"contract_id": &"survival", "remaining_sec": remaining_sec, "duration_sec": duration_sec, "threat_level": threat_level, "effective_kills": effective_kills, "killed_hp": killed_hp, "enhanced_elite_spawned": enhanced_elite_spawned}
 
 func _emit_snapshot() -> void:
 	snapshot_changed.emit(_snapshot())

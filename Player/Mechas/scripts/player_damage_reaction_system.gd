@@ -32,12 +32,6 @@ func damaged(attack: Attack) -> DamageResult:
 		feedback = _feedback_controller.play_damage(result, attack)
 	if not feedback.is_empty() and _player.PlayerData != null:
 		_player.PlayerData.player_damage_received.emit(feedback)
-	if _player.has_method("_broadcast_weapon_passive_event"):
-		_player.call("_broadcast_weapon_passive_event", &"on_player_damaged", {
-			"attack": attack,
-			"player": _player,
-			"_suppress_default_emit": true,
-		})
 	_apply_elite_hit_slow_if_needed(attack)
 	if _player.PlayerData.testing_keep_hp_above_zero and _player.PlayerData.player_hp <= 0:
 		_player.PlayerData.player_hp = 1

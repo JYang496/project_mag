@@ -25,12 +25,22 @@ const HEAT_SPEED_POINTS: Array[Vector2] = [
 @export var heat_cooldown_rate: float = 20.0
 @export_range(5.0, 80.0, 1.0) var front_fire_half_angle_deg: float = 35.0
 @export var heat_expansion_duration_sec: float = 8.0
-@export var heat_expansion_alignment_per_charge: float = 0.167
+@export var heat_expansion_damage_bonus_per_charge: float = 0.08
 @export_range(0.01, 1.0, 0.01) var heat_expansion_rearm_spent_ratio: float = 0.25
 var attack_range: float = 800.0
 var _heat_expansion_rearmed_steps_this_magazine: int = 0
 var _heat_expansion_pending_rearms: int = 0
 var _heat_expansion_active_charge_count: int = 0
+var _heat_expansion_remaining_sec: float = 0.0
+const HEAT_EXPANSION_DAMAGE_SOURCE := &"machine_gun_thermal_amplification"
+
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	if _heat_expansion_remaining_sec <= 0.0:
+		return
+	_heat_expansion_remaining_sec = maxf(_heat_expansion_remaining_sec - maxf(delta, 0.0), 0.0)
+	if _heat_expansion_remaining_sec <= 0.0:
+		_clear_heat_expansion_damage_bonus()
 
 var weapon_data = {
 	"1": {"damage": "6", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "40"},
@@ -163,7 +173,7 @@ func _add_held_trigger_heat(delta: float) -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if event_name != &"on_reload_finished":
+	if event_name != &"on_reload_started":
 		return
 	if detail.get("source_weapon", null) != self:
 		return
@@ -177,21 +187,20 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	var duration_sec := maxf(heat_expansion_duration_sec, 0.05)
 	var consumed_charges := consume_all_passive_charges()
 	_heat_expansion_active_charge_count = consumed_charges
-	var alignment_per_charge := maxf(heat_expansion_alignment_per_charge, 0.0)
-	var alignment_amplifier := 1.0 + float(consumed_charges) * alignment_per_charge
-	var scaled_current_heat := false
-	if PlayerData.player and is_instance_valid(PlayerData.player):
-		scaled_current_heat = bool(PlayerData.player.call("apply_heat_expansion", duration_sec, alignment_amplifier))
+	var damage_bonus_per_charge := maxf(heat_expansion_damage_bonus_per_charge, 0.0)
+	var damage_multiplier := 1.0 + float(consumed_charges) * damage_bonus_per_charge
+	remove_external_damage_mul(HEAT_EXPANSION_DAMAGE_SOURCE)
+	apply_external_damage_mul(HEAT_EXPANSION_DAMAGE_SOURCE, damage_multiplier)
+	_heat_expansion_remaining_sec = duration_sec
 	emit_passive_trigger(&"machine_gun_heat_expansion", {
-		"trigger": "reload_finished",
+		"trigger": "reload_started",
 		"spent_ratio": spent_ratio,
 		"consumed_charges": consumed_charges,
-		"alignment_per_charge": alignment_per_charge,
+		"damage_bonus_per_charge": damage_bonus_per_charge,
 		"duration": duration_sec,
 		"cooldown": 0.0,
-		"alignment_amplifier": alignment_amplifier,
-		"scaled_current_heat": scaled_current_heat,
-		"target_weapon": null,
+		"damage_multiplier": damage_multiplier,
+		"target_weapon": self,
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
@@ -222,7 +231,7 @@ func get_passive_status() -> Dictionary:
 		"current": progress,
 		"required": 1.0,
 		"ready": state == "ready_pending_action",
-		"trigger_hint": "reload_finished",
+		"trigger_hint": "reload_started",
 		"refresh_hint": "spend_25_percent_magazine",
 	})
 
@@ -269,15 +278,18 @@ func _flush_pending_heat_expansion_rearms() -> void:
 	_heat_expansion_pending_rearms = 0
 
 func _is_heat_expansion_active() -> bool:
-	return PlayerData.player != null and is_instance_valid(PlayerData.player) \
-		and PlayerData.player.has_method("has_heat_expansion") \
-		and bool(PlayerData.player.call("has_heat_expansion"))
+	return _heat_expansion_remaining_sec > 0.0
+
+func _clear_heat_expansion_damage_bonus() -> void:
+	remove_external_damage_mul(HEAT_EXPANSION_DAMAGE_SOURCE)
+	_heat_expansion_remaining_sec = 0.0
+	_heat_expansion_active_charge_count = 0
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
 	_heat_expansion_rearmed_steps_this_magazine = 0
 	_heat_expansion_pending_rearms = 0
-	_heat_expansion_active_charge_count = 0
+	_clear_heat_expansion_damage_bonus()
 
 func _get_level_data(lv: String) -> Dictionary:
 	return get_weapon_level_data(lv, weapon_data)

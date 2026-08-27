@@ -11,15 +11,10 @@ script = ExtResource("2_script")
 turn_speed_degrees_per_second = 180.0
 fire_feedback_profile = ExtResource("5_feedback")
 windup_sec = 0.15
-idle_fire_trigger_sec = 6.0
 idle_fire_empowered_shots = 1
-idle_fire_attack_speed_multiplier = 1.0
 idle_fire_direct_damage_multiplier = 1.45
 idle_fire_breach_multiplier = 1.2
 idle_fire_breach_duration_sec = 4.0
-idle_fire_aoe_radius = 70.0
-idle_fire_aoe_damage_ratio = 0.15
-idle_fire_aoe_duration = 0.14
 delivery_type_flags = 9
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
@@ -32,10 +27,6 @@ fuse_texture_1 = ExtResource("4_icon")
 fuse_texture_3 = ExtResource("4_icon")
 
 [node name="WindupTimer" type="Timer" parent="." index="5" unique_id=441090591]
-one_shot = true
-
-[node name="IdleFireTimer" type="Timer" parent="." index="6" unique_id=1436606744]
-wait_time = 6.0
 one_shot = true
 
 [connection signal="shoot" from="." to="." method="_on_shoot"]

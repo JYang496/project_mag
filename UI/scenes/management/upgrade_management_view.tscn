@@ -22,9 +22,29 @@ offset_bottom = 600.0
 mouse_filter = 2
 script = ExtResource("1_script")
 
-[node name="UpgradeModeButtons" type="HBoxContainer" parent="."]
+[node name="ServiceTabs" type="HBoxContainer" parent="."]
 layout_mode = 0
 offset_left = 25.0
+offset_top = 54.0
+offset_right = 265.0
+offset_bottom = 92.0
+theme_override_constants/separation = 8
+
+[node name="UpgradeTabButton" type="Button" parent="ServiceTabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Upgrade"
+
+[node name="FusionTabButton" type="Button" parent="ServiceTabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Fusion"
+
+[node name="UpgradeModeButtons" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 275.0
 offset_top = 54.0
 offset_right = 525.0
 offset_bottom = 92.0

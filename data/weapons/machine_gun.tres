@@ -11,3 +11,4 @@ icon = ExtResource("1_42wdo")
 price = 30
 description = "Sustained mid-range automatic fire. Core Heat and Projectile weapon: spending magazine ammo before reload expands shared heat capacity."
 scene_path = "res://Player/Weapons/Instances/machine_gun.tscn"
+core_tags = Array[StringName]([&"physical", &"projectile", &"heat", &"ammo"])

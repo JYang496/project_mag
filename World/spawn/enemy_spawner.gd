@@ -27,6 +27,9 @@ const CONTRACT_OBJECTIVE_POINT_PLANNER_SCRIPT := preload("res://World/spawn/cont
 const BATTLE_CONTRACT_COMBAT_BRIDGE_SCRIPT := preload("res://Combat/battle_contract/BattleContractCombatBridge.gd")
 const RUNTIME_DIAGNOSTICS_SCRIPT := preload("res://autoload/RuntimeDiagnostics.gd")
 const REWARD_ENEMY_SCENE := preload("res://Npc/enemy/scenes/reward_enemy.tscn")
+const CONTRACT_ELITE_ENEMY_SCENE := preload("res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn")
+const VANGUARD_START_LEVEL_INDEX := 1
+const VANGUARD_TOTAL_HP_RATIO := 0.10
 
 var instance_list : Array
 var _runtime_spawn_states: Array[Dictionary] = []
@@ -53,6 +56,7 @@ var _planned_target_total_hp: int = 0
 var _spawned_total_hp: int = 0
 var _killed_total_hp: int = 0
 var _available_hp_budget: float = 0.0
+var _contract_spawn_frequency_multiplier := 1.0
 var _pressure_budget_total: float = 1.0
 var _budget_release_duration_sec: int = 1
 var _budget_release_finished: bool = false
@@ -252,7 +256,49 @@ func start_timer() -> void:
 	_prepare_level_combat_budget(level_index, effective_time_out)
 	_spawn_budget_stop_emitted = false
 	_start_kill_gold_budget(level_index, effective_time_out)
+	_deploy_battle_vanguard(level_index)
 	timer.start()
+
+func _deploy_battle_vanguard(level_index: int) -> int:
+	if level_index < VANGUARD_START_LEVEL_INDEX or _planned_target_total_hp <= 0:
+		return 0
+	var candidates := _get_vanguard_candidates()
+	if candidates.is_empty():
+		return 0
+	var target_hp := maxi(int(ceil(float(_planned_target_total_hp) * VANGUARD_TOTAL_HP_RATIO)), 1)
+	var deployed_hp := 0
+	var candidate_cursor := 0
+	var max_attempts := maxi(int(_get_spawn_combat_profile().get("max_selection_attempts")), 1)
+	for _attempt in range(max_attempts):
+		if deployed_hp >= target_hp:
+			break
+		if _get_total_runtime_alive_count() >= _get_spawn_combat_profile().default_total_alive_cap:
+			break
+		var state: Dictionary = candidates[candidate_cursor % candidates.size()]
+		candidate_cursor += 1
+		var spawned_hp := _spawn_from_state(state, 1)
+		if spawned_hp <= 0:
+			candidates.erase(state)
+			candidate_cursor = 0
+			if candidates.is_empty():
+				break
+			continue
+		deployed_hp += spawned_hp
+	return deployed_hp
+
+func _get_vanguard_candidates() -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	var earliest_start_sec := 2147483647
+	for state in _runtime_spawn_states:
+		var entry := _get_state_entry(state)
+		if entry == null or entry.enemy == null:
+			continue
+		if entry.start_sec < earliest_start_sec:
+			earliest_start_sec = entry.start_sec
+			candidates.clear()
+		if entry.start_sec == earliest_start_sec:
+			candidates.append(state)
+	return candidates
 
 func _on_timer_timeout():
 	if _runtime_spawn_states.is_empty():
@@ -267,8 +313,10 @@ func _on_timer_timeout():
 	if not _contract_external_victory and (PhaseManager.battle_time >= effective_time_out or _should_end_after_spawn_budget_stopped()):
 		finish_battle_with_victory(level_index, effective_time_out)
 		return
-	_tick_spawn_intervals()
-	_spawn_with_random_wave_template(level_index, effective_time_out)
+	var spawn_cycles := maxi(int(round(_contract_spawn_frequency_multiplier)), 1)
+	for _cycle in spawn_cycles:
+		_tick_spawn_intervals()
+		_spawn_with_random_wave_template(level_index, effective_time_out)
 	if not _contract_external_victory and _should_end_after_spawn_budget_stopped():
 		finish_battle_with_victory(level_index, effective_time_out)
 
@@ -753,7 +801,7 @@ func _is_spawn_ranged(state: Dictionary) -> bool:
 	var tags: Array = metadata.get("spawn_tags", [])
 	return tags.has(BaseEnemy.SPAWN_TAG_RANGED)
 
-func _spawn_from_state(state: Dictionary, requested_count: int) -> int:
+func _spawn_from_state(state: Dictionary, requested_count: int, hp_override: int = -1) -> int:
 	var entry := _get_state_entry(state)
 	if entry == null or entry.enemy == null:
 		return 0
@@ -774,6 +822,8 @@ func _spawn_from_state(state: Dictionary, requested_count: int) -> int:
 		_apply_level_scaling(state, enemy_spawn)
 		if enemy_spawn is BaseEnemy:
 			var base_enemy := enemy_spawn as BaseEnemy
+			if hp_override > 0:
+				base_enemy.hp = hp_override
 			base_enemy.loot_value_multiplier = maxf(loot_value_multiplier, 0.1)
 			base_enemy.prepare_spawn_sequence()
 			var scaled_hp := maxi(int(base_enemy.hp), 1)
@@ -926,6 +976,9 @@ func _refresh_contract_spawn_caps() -> void:
 func configure_contract_threat_multiplier(multiplier: float) -> void:
 	_contract_threat_multiplier = maxf(multiplier, 0.1)
 
+func configure_contract_spawn_frequency_multiplier(multiplier: float) -> void:
+	_contract_spawn_frequency_multiplier = maxf(multiplier, 0.1)
+
 func release_contract_reinforcement_budget(multiplier: float = 1.0) -> void:
 	_init_spawn_budget_runtime()
 	_sync_spawn_budget_owner_state_to_runtime()
@@ -1011,6 +1064,23 @@ func spawn_contract_pursuit_wave(min_count: int, max_count: int) -> int:
 		spawned_count += 1
 	return spawned_count
 
+func spawn_contract_elite(target_hp: int) -> bool:
+	var candidates: Array[Dictionary] = []
+	for state in _runtime_spawn_states:
+		if _is_spawn_elite(state):
+			candidates.append(state)
+	if candidates.is_empty():
+		var contract_entry := EnemySpawnEntry.new()
+		contract_entry.enemy = CONTRACT_ELITE_ENEMY_SCENE
+		candidates.append({
+			"id": -1,
+			"entry": contract_entry,
+			"alive": 0,
+			"cooldown": 0,
+		})
+	var state := candidates[_rng.randi_range(0, candidates.size() - 1)]
+	return _spawn_from_state(state, 1, maxi(target_hp, 1)) > 0
+
 func configure_contract_external_victory(enabled: bool) -> void:
 	_contract_external_victory = enabled
 
@@ -1021,6 +1091,7 @@ func reset_contract_configuration() -> void:
 	_contract_duration_override_sec = 0
 	_contract_continuous_spawning = false
 	_contract_threat_multiplier = 1.0
+	_contract_spawn_frequency_multiplier = 1.0
 	_contract_spawn_policy = SPAWN_POLICY_FINITE
 	_contract_soft_cap_multiplier = 1.0
 	_contract_hard_cap_multiplier = 1.0

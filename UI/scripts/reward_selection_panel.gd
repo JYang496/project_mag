@@ -22,11 +22,10 @@ const DAMAGE_TYPE_ICONS := {
 }
 const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
 const INPUT_PROMPT_ATLAS := preload("res://asset/images/ui/input_prompts/kenney_pixel/input_prompts_tilemap.png")
+const INPUT_PROMPT_TEXTURE_FACTORY := preload("res://UI/scripts/components/input_prompt_texture_factory.gd")
 const INPUT_PROMPT_TILE_SIZE := 16
 const INPUT_PROMPT_TILE_STRIDE := 17
 const INPUT_PROMPT_DISPLAY_SIZE := 32.0
-const SPACE_PROMPT_START_COORD := Vector2i(31, 6)
-const SPACE_PROMPT_TILE_COUNT := 3
 const SPACE_PROMPT_DISPLAY_WIDTH := 72
 const QUICK_SELECT_HOLD_SECONDS := 0.55
 const DETAIL_HOVER_OPEN_SECONDS := 0.25
@@ -37,6 +36,8 @@ const CARD_BODY_SEPARATION := 4
 const STANDARD_CARD_MIN_HEIGHT := 372.0
 const DETAILED_CARD_MIN_HEIGHT := 380.0
 const CARD_SELECTION_PULSE_SCALE := Vector2(1.012, 1.012)
+const CORE_MATERIAL_COLOR := Color(0.94, 0.58, 0.18, 1.0)
+const CORE_MATERIAL_SURFACE := Color(0.16, 0.105, 0.045, 1.0)
 
 @onready var title_label: Label = $Panel/VBox/Title
 @onready var panel: Panel = $Panel
@@ -105,6 +106,9 @@ func _ready() -> void:
 	_detail_close_timer.one_shot = true
 	_detail_close_timer.timeout.connect(_on_detail_close_timeout)
 	add_child(_detail_close_timer)
+
+func _exit_tree() -> void:
+	_set_battle_hud_suppressed(false)
 
 func _input(event: InputEvent) -> void:
 	if not is_modal_open():
@@ -379,6 +383,7 @@ func _open_rewards(
 	_configure_card_focus_chain()
 	_confirm_button_state()
 	visible = true
+	_set_battle_hud_suppressed(true)
 	if options_box.get_child_count() > 0:
 		(options_box.get_child(0) as Button).grab_focus()
 	_play_entry_animation()
@@ -426,6 +431,7 @@ func close_panel() -> void:
 	_kill_entry_tween()
 	_cancel_quick_select_hold()
 	visible = false
+	_set_battle_hud_suppressed(false)
 	modulate.a = 1.0
 	panel.scale = Vector2.ONE
 	_reward_options.clear()
@@ -452,6 +458,11 @@ func close_panel() -> void:
 	var ui = GlobalVariables.ui
 	if ui != null and is_instance_valid(ui) and ui.has_method("_request_next_queued_equipment_pickup"):
 		ui.call_deferred("_request_next_queued_equipment_pickup")
+
+func _set_battle_hud_suppressed(suppressed: bool) -> void:
+	var ui := GlobalVariables.ui
+	if ui != null and is_instance_valid(ui) and ui.has_method("set_reward_modal_hud_hidden"):
+		ui.call("set_reward_modal_hud_hidden", suppressed)
 
 func _play_entry_animation() -> void:
 	_kill_entry_tween()
@@ -657,7 +668,8 @@ func _update_detail_hint() -> void:
 	_update_confirm_prompt_icon()
 	if not is_weapon:
 		return
-	var detail_action := _inline_text("CLOSE DETAILS", "关闭详情") if _detail_open_index >= 0 else _inline_text("BRANCH DETAILS", "分支详情")
+	var detail_is_open := _detail_open_index >= 0
+	var detail_action := _inline_text("CLOSE DETAILS", "关闭详情") if detail_is_open else _inline_text("VIEW DETAILS", "查看详情")
 	if _using_gamepad:
 		var button_coord := _gamepad_detail_button_coord()
 		detail_hint.add_child(_make_prompt_icon(button_coord.x, button_coord.y, "Detail button"))
@@ -714,15 +726,7 @@ func _update_confirm_prompt_icon() -> void:
 		if _summary_mode:
 			confirm_button.icon = null
 			return
-		var space_texture := AtlasTexture.new()
-		space_texture.atlas = INPUT_PROMPT_ATLAS
-		space_texture.region = Rect2(
-			SPACE_PROMPT_START_COORD.x * INPUT_PROMPT_TILE_STRIDE,
-			SPACE_PROMPT_START_COORD.y * INPUT_PROMPT_TILE_STRIDE,
-			INPUT_PROMPT_TILE_SIZE + INPUT_PROMPT_TILE_STRIDE * (SPACE_PROMPT_TILE_COUNT - 1),
-			INPUT_PROMPT_TILE_SIZE
-		)
-		confirm_button.icon = space_texture
+		confirm_button.icon = INPUT_PROMPT_TEXTURE_FACTORY.space_prompt_texture()
 		confirm_button.expand_icon = true
 		confirm_button.add_theme_constant_override("icon_max_width", SPACE_PROMPT_DISPLAY_WIDTH)
 		confirm_button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -769,8 +773,11 @@ func _configure_card_focus_chain() -> void:
 		button.focus_previous = button.get_path_to(previous)
 
 func _confirm_button_state() -> void:
-	confirm_button.disabled = _detail_open_index >= 0 or (false if _summary_mode else _selected_index < 0 or _selected_index >= _reward_options.size())
+	confirm_button.disabled = false if _summary_mode else _selected_index < 0 or _selected_index >= _reward_options.size()
 	confirm_button.text = _get_confirm_button_text()
+	_apply_action_button_style(confirm_button, true)
+	confirm_button.add_theme_color_override("font_color", TOKENS.COLOR_TEXT_PRIMARY)
+	confirm_button.add_theme_color_override("font_disabled_color", TOKENS.COLOR_TEXT_SECONDARY)
 	_update_detail_hint()
 
 func _get_confirm_button_text() -> String:
@@ -788,8 +795,6 @@ func _get_confirm_button_text() -> String:
 	return confirm_text
 
 func _on_confirm_pressed() -> void:
-	if _detail_open_index >= 0:
-		return
 	if _summary_mode:
 		if _on_confirm.is_valid():
 			_on_confirm.call_deferred()
@@ -814,18 +819,22 @@ func _on_cancel_pressed() -> void:
 func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Button:
 	var card_data: Dictionary = _build_reward_card_model(reward).to_display_data()
 	var is_module_reward := card_data.has("compatible_weapons")
-	var detail_variant := StringName(card_data.get("detail_variant", &"generic"))
-	var is_weapon_visual_reward := detail_variant in [&"new_weapon", &"weapon_fusion", &"weapon_upgrade"]
+	var reward_type := StringName(card_data.get("reward_type", &"generic"))
+	var detail_variant := StringName(card_data.get("detail_variant", reward_type))
+	var is_weapon_core_reward := reward_type == &"weapon_core"
+	var is_weapon_visual_reward := reward_type in [&"new_weapon", &"weapon_upgrade"]
 	var weapon_preview: Dictionary = WEAPON_PREVIEW_DATA.build(reward) if is_weapon_visual_reward else {}
 	var button := Button.new()
 	button.set_meta(&"reward_index", reward_index)
+	button.set_meta(&"reward_type", reward_type)
 	button.set_meta(&"is_weapon_reward", is_weapon_visual_reward)
+	button.set_meta(&"is_weapon_core_reward", is_weapon_core_reward)
 	button.toggle_mode = true
 	# Keep every card inside the fixed draft viewport so the choice screen never
 	# needs a vertical scrollbar.
 	button.custom_minimum_size = Vector2(
 		0.0,
-		400.0 if is_weapon_visual_reward else (DETAILED_CARD_MIN_HEIGHT if is_module_reward else STANDARD_CARD_MIN_HEIGHT)
+		400.0 if is_weapon_visual_reward else (DETAILED_CARD_MIN_HEIGHT if is_module_reward or is_weapon_core_reward else STANDARD_CARD_MIN_HEIGHT)
 	)
 	# The selection pulse and focus treatment intentionally extend beyond the
 	# button rect; individual card content must therefore remain shrinkable.
@@ -848,7 +857,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 
 	var selection_bar := ColorRect.new()
 	selection_bar.name = "SelectionIndicatorBar"
-	selection_bar.color = TOKENS.COLOR_REWARD
+	selection_bar.color = TOKENS.COLOR_ACCENT_SYSTEM
 	selection_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	selection_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	selection_bar.offset_left = 12.0
@@ -889,6 +898,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		top_row.add_child(key_badge)
 
 	var type_badge := _make_badge_label(str(card_data.get("type_label", "Reward")).to_upper(), _get_reward_type_color(reward))
+	type_badge.name = "RewardTypeBadge"
 	type_badge.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top_row.add_child(type_badge)
 
@@ -897,6 +907,13 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	selected_badge.custom_minimum_size.x = 76.0
 	selected_badge.visible = false
 	top_row.add_child(selected_badge)
+	if is_weapon_core_reward:
+		body.add_child(_build_weapon_core_content(card_data))
+		_set_mouse_filter_recursive(button, Control.MOUSE_FILTER_IGNORE)
+		_clear_tooltips_recursive(button)
+		button.mouse_filter = Control.MOUSE_FILTER_STOP
+		_apply_reward_card_style(button, reward, false)
+		return button
 
 	var text_box := VBoxContainer.new()
 	text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -937,6 +954,16 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	if is_weapon_visual_reward:
 		_attach_damage_icons_to_weapon_name(name_label, weapon_preview.get("damage_types", []))
 	text_box.add_child(name_label)
+	var chips: Array = card_data.get("chips", [])
+	if is_module_reward and not chips.is_empty():
+		var module_chip_row := HFlowContainer.new()
+		module_chip_row.add_theme_constant_override("h_separation", 5)
+		module_chip_row.add_theme_constant_override("v_separation", 4)
+		module_chip_row.name = "BuildChipRow"
+		module_chip_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		module_chip_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		BUILD_TAG_DISPLAY.populate_chip_row(module_chip_row, chips)
+		text_box.add_child(module_chip_row)
 
 	var meta_text := str(card_data.get("meta_text", "")).strip_edges()
 	var level_text := str(card_data.get("level_text", "")).strip_edges()
@@ -987,7 +1014,14 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	summary_label.max_lines_visible = 2
 	summary_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	summary_label.tooltip_text = ""
-	summary_parent.add_child(summary_label)
+	if is_module_reward:
+		# Keep the plain semantic node for callers that inspect card data, while the
+		# visible rich-text version gives the module's thresholds and payoff priority.
+		summary_label.visible = false
+		summary_parent.add_child(summary_label)
+		summary_parent.add_child(_make_highlighted_module_summary(behavior_summary))
+	else:
+		summary_parent.add_child(summary_label)
 
 	var feature_lines: PackedStringArray = card_data.get("feature_lines", PackedStringArray())
 	if not feature_lines.is_empty():
@@ -1025,11 +1059,16 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 			comparison_box.add_child(comparison_label)
 
 	var tag_text := str(card_data.get("short_tag", "")).strip_edges()
-	var chips: Array = card_data.get("chips", [])
-	if not chips.is_empty():
-		var chip_row := BUILD_TAG_DISPLAY.make_chip_row(chips, 3)
+	if not is_module_reward and not chips.is_empty():
+		var chip_row := HFlowContainer.new()
+		chip_row.add_theme_constant_override("h_separation", 5)
+		chip_row.add_theme_constant_override("v_separation", 4)
+		chip_row.name = "BuildChipRow"
+		chip_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		BUILD_TAG_DISPLAY.populate_chip_row(chip_row, chips)
 		body.add_child(chip_row)
-	elif tag_text != "" and detail_variant != &"weapon_upgrade":
+	elif not is_module_reward and tag_text != "" and detail_variant != &"weapon_upgrade":
 		var tag_label := _make_card_label(tag_text, 14, Color(0.82, 0.90, 0.95, 1.0))
 		tag_label.name = "ShortTagLabel"
 		tag_label.clip_text = true
@@ -1052,6 +1091,260 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 		button.add_child(_build_weapon_branch_detail_overlay(weapon_preview, reward_index))
 	_apply_reward_card_style(button, reward, false)
 	return button
+
+func _build_weapon_core_content(card_data: Dictionary) -> VBoxContainer:
+	var content := VBoxContainer.new()
+	content.name = "WeaponCoreContent"
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", TOKENS.SPACE_2)
+
+	var acquisition_section := VBoxContainer.new()
+	acquisition_section.name = "WeaponCoreAcquisitionSection"
+	acquisition_section.add_theme_constant_override("separation", TOKENS.SPACE_1)
+	content.add_child(acquisition_section)
+
+	var source_name := str(card_data.get("source_weapon_name", "")).strip_edges()
+	var title := _make_card_label(
+		LocalizationManager.tr_format(
+			"ui.reward.core.named_title",
+			{"name": source_name},
+			"%s Core" % source_name
+		),
+		19,
+		TOKENS.COLOR_TEXT_PRIMARY
+	)
+	title.name = "WeaponCoreTitle"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	acquisition_section.add_child(title)
+
+	var icon_stage := CenterContainer.new()
+	icon_stage.name = "WeaponCoreIconStage"
+	icon_stage.custom_minimum_size = Vector2(0.0, 76.0)
+	icon_stage.add_child(_build_weapon_core_icon(card_data))
+	acquisition_section.add_child(icon_stage)
+
+	var source_label := _make_card_label(
+		LocalizationManager.tr_format("ui.reward.core.source", {"name": source_name}, "Source: %s" % source_name),
+		13,
+		TOKENS.COLOR_TEXT_SECONDARY
+	)
+	source_label.name = "WeaponCoreSource"
+	source_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	source_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	source_label.max_lines_visible = 2
+	source_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	source_label.visible = false
+	acquisition_section.add_child(source_label)
+
+	var amount := int(card_data.get("core_amount", 1))
+	var dismantled_label := _make_card_label(
+		LocalizationManager.tr_format(
+			"ui.reward.core.gain",
+			{"amount": amount},
+			"+%d Core" % amount
+		),
+		18,
+		CORE_MATERIAL_COLOR
+	)
+	dismantled_label.name = "WeaponCoreGain"
+	dismantled_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_configure_wrapped_card_text(dismantled_label)
+	acquisition_section.add_child(dismantled_label)
+
+	var inventory_status := PanelContainer.new()
+	inventory_status.name = "WeaponCoreInventoryStatus"
+	inventory_status.custom_minimum_size = Vector2(0.0, 30.0)
+	inventory_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var inventory_status_style := StyleBoxFlat.new()
+	inventory_status_style.bg_color = Color(CORE_MATERIAL_SURFACE.r, CORE_MATERIAL_SURFACE.g, CORE_MATERIAL_SURFACE.b, 0.72)
+	inventory_status_style.border_color = Color(CORE_MATERIAL_COLOR.r, CORE_MATERIAL_COLOR.g, CORE_MATERIAL_COLOR.b, 0.48)
+	inventory_status_style.set_border_width_all(TOKENS.BORDER_THIN)
+	inventory_status_style.set_corner_radius_all(TOKENS.RADIUS_SMALL)
+	inventory_status_style.content_margin_left = TOKENS.SPACE_2
+	inventory_status_style.content_margin_right = TOKENS.SPACE_2
+	inventory_status_style.content_margin_top = TOKENS.SPACE_1
+	inventory_status_style.content_margin_bottom = TOKENS.SPACE_1
+	inventory_status.add_theme_stylebox_override("panel", inventory_status_style)
+	var inventory_label := _make_card_label(
+		LocalizationManager.tr_format(
+			"ui.reward.core.inventory",
+			{
+				"current": int(card_data.get("current_core_count", 0)),
+				"resulting": int(card_data.get("resulting_core_count", amount)),
+			},
+			"Inventory: %d → %d" % [
+				int(card_data.get("current_core_count", 0)),
+				int(card_data.get("resulting_core_count", amount)),
+			]
+		),
+		13,
+		TOKENS.COLOR_TEXT_SECONDARY
+	)
+	inventory_label.name = "WeaponCoreInventory"
+	inventory_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	inventory_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	inventory_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	inventory_label.max_lines_visible = 2
+	inventory_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	inventory_status.set_meta(&"current_count", int(card_data.get("current_core_count", 0)))
+	inventory_status.set_meta(&"resulting_count", int(card_data.get("resulting_core_count", amount)))
+	inventory_status.add_child(inventory_label)
+	acquisition_section.add_child(inventory_status)
+
+	var inheritance_section := VBoxContainer.new()
+	inheritance_section.name = "WeaponCoreInheritanceSection"
+	inheritance_section.add_theme_constant_override("separation", TOKENS.SPACE_1)
+	content.add_child(inheritance_section)
+
+	var tag_heading := _make_card_label(
+		LocalizationManager.tr_key("ui.reward.core.inherited_tags", "INHERITED CORE TAGS"),
+		11,
+		TOKENS.COLOR_TEXT_SECONDARY
+	)
+	tag_heading.name = "CoreTagHeading"
+	inheritance_section.add_child(tag_heading)
+
+	var chip_grid := GridContainer.new()
+	chip_grid.name = "BuildChipRow"
+	chip_grid.columns = 2
+	chip_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chip_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chip_grid.add_theme_constant_override("h_separation", 5)
+	chip_grid.add_theme_constant_override("v_separation", 4)
+	BUILD_TAG_DISPLAY.populate_chip_row(chip_grid, card_data.get("chips", []))
+	inheritance_section.add_child(chip_grid)
+
+	var usage_panel := PanelContainer.new()
+	usage_panel.name = "WeaponCoreUsagePanel"
+	usage_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	usage_panel.size_flags_vertical = Control.SIZE_EXPAND | Control.SIZE_SHRINK_END
+	var usage_panel_style := StyleBoxFlat.new()
+	usage_panel_style.bg_color = Color(CORE_MATERIAL_SURFACE.r, CORE_MATERIAL_SURFACE.g, CORE_MATERIAL_SURFACE.b, 0.58)
+	usage_panel_style.border_color = Color(CORE_MATERIAL_COLOR.r, CORE_MATERIAL_COLOR.g, CORE_MATERIAL_COLOR.b, 0.52)
+	usage_panel_style.set_border_width_all(TOKENS.BORDER_THIN)
+	usage_panel_style.set_corner_radius_all(TOKENS.RADIUS_PANEL)
+	usage_panel_style.content_margin_left = TOKENS.SPACE_2
+	usage_panel_style.content_margin_right = TOKENS.SPACE_2
+	usage_panel_style.content_margin_top = 6
+	usage_panel_style.content_margin_bottom = 6
+	usage_panel.add_theme_stylebox_override("panel", usage_panel_style)
+	usage_panel.add_child(_build_weapon_core_usage_section(card_data))
+	content.add_child(usage_panel)
+	return content
+
+func _build_weapon_core_icon(card_data: Dictionary) -> Control:
+	var root := Control.new()
+	root.name = "WeaponCoreMaterialIcon"
+	root.custom_minimum_size = Vector2(104.0, 72.0)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var frame := PanelContainer.new()
+	frame.name = "WeaponCoreMaterialFrame"
+	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = CORE_MATERIAL_SURFACE
+	frame_style.border_color = CORE_MATERIAL_COLOR
+	frame_style.set_border_width_all(2)
+	frame_style.set_corner_radius_all(TOKENS.RADIUS_PANEL)
+	frame.add_theme_stylebox_override("panel", frame_style)
+	root.add_child(frame)
+	var source_texture := card_data.get("source_weapon_icon", null) as Texture2D
+	if source_texture != null:
+		var source_icon := TextureRect.new()
+		source_icon.name = "WeaponCoreSourceImage"
+		source_icon.texture = _crop_reward_texture_to_content(source_texture)
+		source_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		source_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		source_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		source_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 8)
+		root.add_child(source_icon)
+	var core_mark := Label.new()
+	core_mark.name = "WeaponCoreMark"
+	core_mark.text = "◆"
+	core_mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	core_mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	core_mark.add_theme_font_size_override("font_size", 15)
+	core_mark.add_theme_color_override("font_color", Color(1.0, 0.79, 0.32, 1.0))
+	core_mark.add_theme_stylebox_override("normal", _make_icon_badge_style(CORE_MATERIAL_COLOR))
+	core_mark.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	core_mark.offset_left = -25.0
+	core_mark.offset_top = -25.0
+	core_mark.offset_right = -3.0
+	core_mark.offset_bottom = -3.0
+	root.add_child(core_mark)
+	return root
+
+func _build_weapon_core_usage_section(card_data: Dictionary) -> VBoxContainer:
+	var usage_section := VBoxContainer.new()
+	usage_section.name = "WeaponCoreUsageSection"
+	usage_section.add_theme_constant_override("separation", 2)
+	var usage_heading_row := HBoxContainer.new()
+	usage_heading_row.name = "WeaponCoreUsageHeadingRow"
+	usage_heading_row.add_theme_constant_override("separation", 6)
+	usage_section.add_child(usage_heading_row)
+	var usage_icon := _make_card_label("↗", 12, CORE_MATERIAL_COLOR)
+	usage_icon.name = "WeaponCoreUsageIcon"
+	usage_icon.custom_minimum_size = Vector2(22.0, 22.0)
+	usage_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	usage_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	usage_icon.add_theme_stylebox_override("normal", _make_icon_badge_style(CORE_MATERIAL_COLOR))
+	usage_heading_row.add_child(usage_icon)
+	var usage_heading := _make_card_label(
+		LocalizationManager.tr_key("ui.reward.core.usable_by_label", "Usable By"),
+		11,
+		TOKENS.COLOR_TEXT_SECONDARY
+	)
+	usage_heading.name = "WeaponCoreUsageHeading"
+	usage_heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	usage_heading_row.add_child(usage_heading)
+	var usage_lines: PackedStringArray = card_data.get("usable_branch_lines", PackedStringArray())
+	if not usage_lines.is_empty():
+		var usage_summary := _make_card_label(
+			LocalizationManager.tr_format(
+				"ui.reward.core.usage_summary",
+				{"count": int(card_data.get("usable_branch_count", usage_lines.size()))},
+				"Supports %d fusion branches" % int(card_data.get("usable_branch_count", usage_lines.size()))
+			),
+			13,
+			CORE_MATERIAL_COLOR
+		)
+		usage_summary.name = "WeaponCoreUsageSummary"
+		usage_section.add_child(usage_summary)
+	for usage_index in range(mini(2, usage_lines.size())):
+		var usage_line := usage_lines[usage_index]
+		var usage_label := _make_card_label(str(usage_line), 13, TOKENS.COLOR_TEXT_PRIMARY)
+		usage_label.name = "WeaponCoreUsageLine%d" % (usage_index + 1)
+		usage_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		usage_label.max_lines_visible = 2
+		usage_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+		usage_section.add_child(usage_label)
+	if usage_lines.size() > 2:
+		var more_label := _make_card_label(
+			LocalizationManager.tr_format(
+				"ui.reward.core.more_usages",
+				{"count": usage_lines.size() - 2},
+				"%d more" % (usage_lines.size() - 2)
+			),
+			11,
+			TOKENS.COLOR_TEXT_SECONDARY
+		)
+		more_label.name = "WeaponCoreUsageMore"
+		usage_section.add_child(more_label)
+	elif usage_lines.is_empty():
+		var empty_label := _make_card_label(
+			LocalizationManager.tr_key(
+				"ui.reward.core.no_usable_branches",
+				"No available fusion recipes found yet"
+			),
+			12,
+			TOKENS.COLOR_TEXT_SECONDARY
+		)
+		empty_label.name = "WeaponCoreUsageEmpty"
+		empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty_label.max_lines_visible = 2
+		usage_section.add_child(empty_label)
+	return usage_section
 
 func _build_core_weapon_stats(card_data: Dictionary) -> HBoxContainer:
 	var stats_box := HBoxContainer.new()
@@ -1100,24 +1393,9 @@ func _build_weapon_reward_hero(card_data: Dictionary) -> CenterContainer:
 func _build_weapon_preview_section(preview: Dictionary, reward_index: int) -> VBoxContainer:
 	var section := VBoxContainer.new()
 	section.name = "WeaponBuildPreview"
-	section.custom_minimum_size = Vector2(0.0, 126.0)
+	section.custom_minimum_size = Vector2(0.0, 100.0)
+	section.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	section.add_theme_constant_override("separation", 3)
-	var module_heading := _make_card_label(_inline_text("COMPATIBLE MODULE REQUIREMENTS", "兼容模组条件"), 12, TOKENS.COLOR_TEXT_SECONDARY)
-	module_heading.name = "ModuleInstallationRequirementsHeading"
-	section.add_child(module_heading)
-	var requirements_label := _make_card_label(
-		_format_installation_requirements(preview.get("installation_requirements", [])),
-		13,
-		TOKENS.COLOR_TEXT_PRIMARY
-	)
-	requirements_label.name = "ModuleInstallationRequirements"
-	requirements_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	requirements_label.max_lines_visible = 2
-	section.add_child(requirements_label)
-	var branch_preview_spacer := Control.new()
-	branch_preview_spacer.name = "BranchPreviewTopSpacer"
-	branch_preview_spacer.custom_minimum_size.y = 8.0
-	section.add_child(branch_preview_spacer)
 	var branch_heading_row := HBoxContainer.new()
 	branch_heading_row.add_theme_constant_override("separation", 6)
 	section.add_child(branch_heading_row)
@@ -1128,28 +1406,12 @@ func _build_weapon_preview_section(preview: Dictionary, reward_index: int) -> VB
 	branch_row.name = "BranchPreviewRow"
 	branch_row.add_theme_constant_override("separation", 6)
 	branch_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	branch_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_configure_weapon_detail_hotspot(branch_row, reward_index)
 	section.add_child(branch_row)
 	for branch_variant in preview.get("branches", []):
 		branch_row.add_child(_build_branch_preview_node(branch_variant as Dictionary))
 	return section
-
-func _format_installation_requirements(requirements: Array) -> String:
-	var labels := PackedStringArray()
-	for requirement_variant in requirements:
-		var requirement := StringName(requirement_variant)
-		var label := ""
-		match requirement:
-			&"ranged_weapon": label = _inline_text("Ranged", "远程")
-			&"melee_weapon": label = _inline_text("Melee", "近战")
-			&"uses_ammo": label = _inline_text("Uses Ammo", "使用弹药")
-			_: label = LocalizationManager.get_module_term(
-				requirement,
-				str(requirement).replace("_", " ").capitalize()
-			)
-		if label != "" and not labels.has(label):
-			labels.append(label)
-	return " · ".join(labels)
 
 func _build_branch_preview_node(branch: Dictionary) -> PanelContainer:
 	var damage_types: Array = branch.get("damage_types", [])
@@ -1157,11 +1419,16 @@ func _build_branch_preview_node(branch: Dictionary) -> PanelContainer:
 	var panel_node := PanelContainer.new()
 	panel_node.name = "BranchPreviewNode"
 	panel_node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel_node.custom_minimum_size = Vector2(0.0, 52.0)
+	panel_node.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel_node.custom_minimum_size = Vector2(0.0, 60.0)
 	panel_node.add_theme_stylebox_override("panel", _branch_style(damage_types, state, 0.11))
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 0)
+	content.add_theme_constant_override("separation", 2)
 	panel_node.add_child(content)
+	var title_offset := Control.new()
+	title_offset.name = "BranchPreviewTitleOffset"
+	title_offset.custom_minimum_size.y = 3.0
+	content.add_child(title_offset)
 	var title_row := HBoxContainer.new()
 	title_row.name = "BranchPreviewTitleRow"
 	title_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1176,19 +1443,33 @@ func _build_branch_preview_node(branch: Dictionary) -> PanelContainer:
 	if icon_row.get_child_count() > 0:
 		title_row.add_child(icon_row)
 	var branch_name := str(branch.get("name", "Branch"))
-	var name_label := _make_card_label(branch_name, 12, _branch_primary_color(damage_types))
+	var name_label := _make_card_label(branch_name, 13, _branch_primary_color(damage_types))
+	name_label.name = "BranchPreviewName"
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.clip_text = true
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	name_label.tooltip_text = branch_name
 	title_row.add_child(name_label)
+	var top_spacer := Control.new()
+	top_spacer.name = "BranchPreviewTopSpacer"
+	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(top_spacer)
+	var recipe := _build_branch_fusion_recipe(branch, damage_types)
+	recipe.name = "BranchPreviewFusionRecipe"
+	content.add_child(recipe)
+	var bottom_spacer := Control.new()
+	bottom_spacer.name = "BranchPreviewBottomSpacer"
+	bottom_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(bottom_spacer)
 	var status_label := _make_card_label(_branch_state_short(state), 10, TOKENS.COLOR_TEXT_SECONDARY)
+	status_label.name = "BranchPreviewUnlockState"
 	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.clip_text = true
 	status_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	content.add_child(status_label)
+	_add_branch_accent_strip(panel_node, damage_types)
 	return panel_node
 
 func _build_damage_type_icon_row(damage_types: Array, icon_size: float, row_name: String) -> HBoxContainer:
@@ -1332,22 +1613,15 @@ func _build_branch_detail_card(branch: Dictionary) -> PanelContainer:
 	description.max_lines_visible = 5
 	description.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(description)
-	var footer := _make_card_label(_branch_footer(branch), 11, TOKENS.COLOR_TEXT_SECONDARY)
-	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	footer.max_lines_visible = 2
-	footer.custom_minimum_size.x = 0.0
-	box.add_child(footer)
-	_add_mixed_damage_strip(card, damage_types)
+	box.add_child(_build_branch_fusion_recipe(branch, damage_types))
+	_add_branch_accent_strip(card, damage_types)
 	return card
 
-func _branch_style(damage_types: Array, state: StringName, background_alpha: float) -> StyleBoxFlat:
-	var color := _branch_primary_color(damage_types)
-	var enabled := state != &"locked"
+func _branch_style(_damage_types: Array, state: StringName, _background_alpha: float) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, background_alpha if enabled else 0.035)
-	style.border_color = Color(color.r, color.g, color.b, 0.82 if enabled else 0.30)
-	style.set_border_width_all(2 if state == &"acquired" else 1)
+	style.bg_color = TOKENS.COLOR_SURFACE_INTERACTIVE if state == &"acquired" else TOKENS.COLOR_SURFACE
+	style.border_color = Color(TOKENS.COLOR_BORDER.r, TOKENS.COLOR_BORDER.g, TOKENS.COLOR_BORDER.b, 0.44)
+	style.set_border_width_all(1)
 	style.set_corner_radius_all(5)
 	style.content_margin_left = 6
 	style.content_margin_top = 4
@@ -1355,18 +1629,15 @@ func _branch_style(damage_types: Array, state: StringName, background_alpha: flo
 	style.content_margin_bottom = 4
 	return style
 
-func _add_mixed_damage_strip(parent: Control, damage_types: Array) -> void:
-	if damage_types.size() < 2:
+func _add_branch_accent_strip(parent: Control, damage_types: Array) -> void:
+	if damage_types.is_empty():
 		return
-	# PanelContainer lays every direct child across its content rect. Keep the
-	# decorative strip inside a neutral overlay so it remains a two-pixel accent
-	# instead of covering the branch name and lock state.
 	var overlay := Control.new()
-	overlay.name = "MixedDamageStripOverlay"
+	overlay.name = "BranchAccentStripOverlay"
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(overlay)
 	var strip := HBoxContainer.new()
-	strip.name = "MixedDamageStrip"
+	strip.name = "BranchAccentStrip"
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	strip.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	strip.offset_left = 5
@@ -1400,13 +1671,33 @@ func _branch_state_short(state: StringName) -> String:
 		&"available": return _inline_text("AVAILABLE", "可解锁")
 		_: return _inline_text("LOCKED", "未解锁")
 
-func _branch_footer(branch: Dictionary) -> String:
-	var state := StringName(branch.get("state", &"locked"))
+func _build_branch_fusion_recipe(branch: Dictionary, damage_types: Array) -> HBoxContainer:
+	var recipe_row := HBoxContainer.new()
+	recipe_row.name = "BranchFusionRecipe"
+	recipe_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	recipe_row.add_theme_constant_override("separation", 6)
 	var fuse := int(branch.get("unlock_fuse", 2))
-	if state == &"acquired":
-		return "✓ %s" % _inline_text("Acquired", "已获得")
-	var unlock_condition := _inline_text("Unlock on Fuse %d" % fuse, "融合 %d 时解锁" % fuse)
-	return "%s · %s" % [unlock_condition, _branch_state_short(state)]
+	var prefix := _make_card_label(_inline_text("Fuse %d:" % fuse, "融合 %d：" % fuse), 11, TOKENS.COLOR_TEXT_SECONDARY)
+	prefix.name = "FusionRecipePrefix"
+	prefix.custom_minimum_size.x = 54.0
+	prefix.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	recipe_row.add_child(prefix)
+	var conditions := VBoxContainer.new()
+	conditions.name = "FusionRecipeConditions"
+	conditions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	conditions.add_theme_constant_override("separation", 0)
+	recipe_row.add_child(conditions)
+	var satisfied_tags: Array = branch.get("satisfied_fusion_tags", [])
+	var satisfied_color := _branch_primary_color(damage_types)
+	for tag_variant in branch.get("fusion_required_tags", []):
+		var tag := StringName(tag_variant)
+		var tag_text := LocalizationManager.get_module_term(tag, str(tag).replace("_", " ").capitalize())
+		var tag_label := _make_card_label("【%s】" % tag_text, 11, satisfied_color if satisfied_tags.has(tag) else TOKENS.COLOR_TEXT_SECONDARY)
+		tag_label.name = "FusionRecipeTag%s" % str(tag).to_pascal_case()
+		tag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		tag_label.set_meta(&"satisfied", satisfied_tags.has(tag))
+		conditions.add_child(tag_label)
+	return recipe_row
 
 func _inline_text(english: String, chinese: String) -> String:
 	return chinese if LocalizationManager.get_locale() == "zh_CN" else english
@@ -1418,12 +1709,24 @@ func _build_module_weapon_grid(card_data: Dictionary) -> VBoxContainer:
 	section.add_theme_constant_override("separation", 5)
 	var previews: Array = card_data.get("compatible_weapons", [])
 	var owned_count := int(card_data.get("owned_weapon_count", 0))
+	var top_spacer := Control.new()
+	top_spacer.name = "ModuleFitTopSpacer"
+	top_spacer.custom_minimum_size.y = 3.0
+	section.add_child(top_spacer)
 	var heading_row := HBoxContainer.new()
 	section.add_child(heading_row)
-	var heading := _make_card_label(LocalizationManager.tr_key("ui.reward.compatible_weapons", "Compatible Weapons"), 13, TOKENS.COLOR_TEXT_SECONDARY)
+	var heading := _make_card_label(LocalizationManager.tr_key("ui.module.fit.title", "Fit Check"), 13, TOKENS.COLOR_TEXT_SECONDARY)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading_row.add_child(heading)
-	var count_label := _make_card_label("%d/%d" % [previews.size(), owned_count], 13, Color(0.72, 0.84, 0.88, 1.0))
+	var compatible_count := 0
+	for preview_variant in previews:
+		if bool((preview_variant as Dictionary).get("compatible", true)):
+			compatible_count += 1
+	var count_text := _inline_text(
+		"Equippable %d/%d" % [compatible_count, owned_count],
+		"可装备 %d/%d" % [compatible_count, owned_count]
+	)
+	var count_label := _make_card_label(count_text, 13, Color(0.72, 0.84, 0.88, 1.0))
 	count_label.name = "CompatibleWeaponCount"
 	heading_row.add_child(count_label)
 	if previews.is_empty():
@@ -1444,8 +1747,13 @@ func _build_module_weapon_grid(card_data: Dictionary) -> VBoxContainer:
 	return section
 
 func _build_module_weapon_tile(preview: Dictionary) -> PanelContainer:
-	var requires_replace := bool(preview.get("requires_replace", false))
-	var state_color := Color(0.95, 0.74, 0.30, 1.0) if requires_replace else Color(0.40, 0.86, 0.57, 1.0)
+	var compatible := bool(preview.get("compatible", true))
+	var has_slot := bool(preview.get("has_slot", not bool(preview.get("requires_replace", false))))
+	var state_color := Color(0.40, 0.86, 0.57, 1.0)
+	if not compatible:
+		state_color = Color(1.0, 0.34, 0.28, 1.0)
+	elif not has_slot:
+		state_color = Color(0.95, 0.74, 0.30, 1.0)
 	var tile := PanelContainer.new()
 	tile.name = "CompatibleWeaponTile"
 	tile.custom_minimum_size = Vector2(0.0, 50.0)
@@ -1481,10 +1789,22 @@ func _build_module_weapon_tile(preview: Dictionary) -> PanelContainer:
 	name_label.clip_text = true
 	name_label.tooltip_text = weapon_name
 	text_box.add_child(name_label)
-	var status_text := LocalizationManager.tr_key("ui.reward.weapon_requires_replace", "Requires replacement") if requires_replace else LocalizationManager.tr_key("ui.reward.weapon_has_slot", "Slot available")
-	var status_label := _make_card_label(("↻ " if requires_replace else "✓ ") + status_text, 11, state_color)
+	var status_text := _inline_text("Can equip now", "可直接装备")
+	var status_icon := "✓ "
+	if not compatible:
+		status_text = str(preview.get("reason", LocalizationManager.tr_key("ui.module.fit.not_compatible", "Not compatible")))
+		status_icon = "✕ "
+	elif not has_slot:
+		status_text = _inline_text("Module slots full", "模组槽已满")
+		status_icon = "! "
+	else:
+		var fit_reason := str(preview.get("fit_reason", "")).strip_edges()
+		if fit_reason != "":
+			status_text = _inline_text("Can equip now", "可直接装备")
+	var status_label := _make_card_label(status_icon + status_text, 11, state_color)
 	status_label.name = "WeaponFitStatus"
-	status_label.clip_text = true
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status_label.tooltip_text = status_text
 	text_box.add_child(status_label)
 	return tile
 
@@ -1655,6 +1975,8 @@ func _make_icon_badge_style(color: Color) -> StyleBoxFlat:
 
 func _fallback_icon_text(icon_key: String) -> String:
 	match icon_key:
+		"weapon_core":
+			return "C"
 		"weapon":
 			return "W"
 		"module":
@@ -1686,6 +2008,25 @@ func _make_card_label(text: String, font_size: int, font_color: Color) -> Label:
 	label.add_theme_color_override("font_color", font_color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
+
+func _make_highlighted_module_summary(summary_text: String) -> RichTextLabel:
+	var summary := RichTextLabel.new()
+	summary.name = "ModuleEffectSummary"
+	summary.bbcode_enabled = true
+	summary.fit_content = true
+	summary.scroll_active = false
+	summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.add_theme_font_size_override("normal_font_size", TOKENS.FONT_LABEL + CARD_FONT_SIZE_BONUS)
+	summary.add_theme_font_size_override("bold_font_size", TOKENS.FONT_LABEL + CARD_FONT_SIZE_BONUS)
+	summary.add_theme_color_override("default_color", TOKENS.COLOR_TEXT_PRIMARY)
+	summary.add_theme_constant_override("line_separation", CARD_LINE_SPACING)
+	var escaped := summary_text.replace("[", "[lb]").replace("]", "[rb]")
+	var number_pattern := RegEx.new()
+	number_pattern.compile("([+-]?\\d+(?:\\.\\d+)?(?:%|\\+)?)")
+	var accent_hex := TOKENS.COLOR_ACCENT_SYSTEM.to_html(false)
+	summary.text = number_pattern.sub(escaped, "[color=#%s][b]$1[/b][/color]" % accent_hex, true)
+	return summary
 
 func _configure_wrapped_card_text(label: Label) -> void:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1837,14 +2178,14 @@ func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool
 	if selection_bar != null:
 		selection_bar.visible = selected
 	for state in ["normal", "hover", "pressed", "focus"]:
-		var border_color := TOKENS.COLOR_REWARD if selected else (
-			TOKENS.COLOR_BORDER_STRONG if state in ["hover", "pressed", "focus"] else TOKENS.COLOR_BORDER
-		)
+		var border_color := TOKENS.COLOR_ACCENT_SYSTEM if selected else Color(0.12, 0.24, 0.31, 0.58)
+		if not selected and state in ["hover", "pressed", "focus"]:
+			border_color = Color(TOKENS.COLOR_ACCENT_SYSTEM.r, TOKENS.COLOR_ACCENT_SYSTEM.g, TOKENS.COLOR_ACCENT_SYSTEM.b, 0.68)
 		var style := TOKENS.make_panel_style(true, border_color)
 		style.shadow_size = 0
 		style.bg_color = card_background
 		style.border_color = border_color
-		style.set_border_width_all(3 if selected else TOKENS.BORDER_THIN)
+		style.set_border_width_all(TOKENS.BORDER_STRONG if selected else TOKENS.BORDER_THIN)
 		style.set_corner_radius_all(TOKENS.RADIUS_PANEL)
 		button.add_theme_stylebox_override(state, style)
 	_animate_reward_card(button, selected, holding, _hover_index >= 0 and options_box.get_child(_hover_index) == button)
@@ -1870,7 +2211,7 @@ func _animate_reward_card(button: Button, selected: bool, _holding: bool, _hover
 	button.set_meta(&"reward_motion_tween", tween)
 
 func _apply_action_button_style(button: Button, primary: bool) -> void:
-	var color := TOKENS.COLOR_PRIMARY_ACTION if primary else TOKENS.COLOR_BORDER_STRONG
+	var color := TOKENS.COLOR_ACCENT_SYSTEM if primary else TOKENS.COLOR_BORDER_STRONG
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 		var style := StyleBoxFlat.new()
 		var state_color := color
@@ -1894,7 +2235,7 @@ func _apply_panel_style() -> void:
 	panel.add_theme_stylebox_override("panel", TOKENS.make_panel_style(true, TOKENS.COLOR_BORDER_STRONG))
 	var action_panel := $Panel/VBox/ActionPanel as PanelContainer
 	action_panel.add_theme_stylebox_override("panel", TOKENS.make_panel_style(false, TOKENS.COLOR_BORDER))
-	TOKENS.style_label(title_label, TOKENS.FONT_TITLE, TOKENS.COLOR_TEXT_PRIMARY)
+	TOKENS.style_label(title_label, TOKENS.FONT_TITLE + 3, TOKENS.COLOR_TEXT_PRIMARY)
 	TOKENS.style_label(subtitle_label, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_SECONDARY)
 
 func _clear_tooltips_recursive(root: Control) -> void:
@@ -1922,20 +2263,10 @@ func _get_reward_type_color(reward: RewardInfo) -> Color:
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
 		var outcome := _get_weapon_obtain_prediction(reward.item_id)
 		var result_type := str(outcome.get("result", "not_applicable"))
-		if result_type == "fused":
-			return Color(0.94, 0.68, 0.24, 1.0)
-		if result_type == "converted_to_gold":
-			return Color(0.93, 0.72, 0.22, 1.0)
+		if result_type == "dismantled_to_core":
+			return CORE_MATERIAL_COLOR
 		return TOKENS.COLOR_BORDER_STRONG
 	return Color(0.42, 0.78, 0.48, 1.0)
-
-func _is_recommended_fuse_reward(reward: RewardInfo) -> bool:
-	if reward == null:
-		return false
-	if reward.item_id.strip_edges() == "" or reward.item_level <= 0:
-		return false
-	var outcome := _get_weapon_obtain_prediction(reward.item_id)
-	return str(outcome.get("result", "not_applicable")) == "fused"
 
 func _set_mouse_filter_recursive(root: Control, mouse_filter_value: Control.MouseFilter) -> void:
 	for child in root.get_children():
@@ -1956,9 +2287,9 @@ func _extract_scene_name(scene_path: String) -> String:
 func _get_weapon_obtain_prediction(weapon_id: String) -> Dictionary:
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
 		return {}
-	if not PlayerData.player.has_method("predict_auto_fuse_weapon_obtain"):
+	if not PlayerData.player.has_method("predict_weapon_obtain"):
 		return {}
-	return PlayerData.player.predict_auto_fuse_weapon_obtain(weapon_id)
+	return PlayerData.player.predict_weapon_obtain(weapon_id)
 
 func _with_new_weapon_destination_prediction(outcome: Dictionary) -> Dictionary:
 	var next_outcome := outcome.duplicate(true)

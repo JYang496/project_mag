@@ -17,7 +17,7 @@ visible = false
 width = 2.0
 
 [node name="ExpireTimer" type="Timer" parent="."]
-wait_time = 0.12
+wait_time = 0.24
 one_shot = true
 
 [node name="Sprite2D" type="Sprite2D" parent="."]

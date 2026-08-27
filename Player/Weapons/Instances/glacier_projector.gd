@@ -11,14 +11,12 @@ var ITEM_NAME := "Glacier Projector"
 
 @export_range(5.0, 120.0, 1.0) var cone_half_angle_deg: float = 15.0
 @export_range(40.0, 1200.0, 1.0) var base_range: float = 200.0
-@export var cold_snap_recharge_sec: float = 6.0
 @export var cold_snap_freeze_duration_sec: float = 1.0
 @export var boss_slow_duration_sec: float = 1.0
 @export_range(0.05, 1.0, 0.05) var boss_slow_multiplier: float = 0.50
 @export var debug_mode: bool = false
 
 var _attacked_target_ids: Dictionary = {}
-var _cold_snap_recharge_remaining_sec: float = 0.0
 var _glacier_vfx: Node
 var _primary_fire_held: bool = false
 
@@ -124,11 +122,7 @@ func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> vo
 	super.on_hit_target_with_damage_type(target, damage_type)
 
 func _consume_cold_snap_for_next_attack() -> bool:
-	if not is_passive_ready():
-		return false
-	consume_passive_charge()
-	_cold_snap_recharge_remaining_sec = maxf(cold_snap_recharge_sec, 0.0)
-	return true
+	return consume_stow_trigger()
 
 func _apply_cold_snap_control(target: Node) -> void:
 	if target == null or not is_instance_valid(target):
@@ -186,8 +180,8 @@ func _emit_cold_snap_attack_trigger(targets: Array[Node]) -> void:
 		"targets": targets,
 		"target_count": targets.size(),
 		"trigger_damage_type": Attack.TYPE_FREEZE,
-		"refresh": "auto_or_reload",
-		"recharge_sec": maxf(cold_snap_recharge_sec, 0.0),
+		"refresh": "stow",
+		"recharge_sec": WeaponTriggerRuntimeType.STOW_CHARGE_DURATION_SEC,
 		"freeze_duration": maxf(cold_snap_freeze_duration_sec, 0.05),
 		"boss_slow_multiplier": clampf(boss_slow_multiplier, 0.05, 1.0),
 		"boss_slow_duration": maxf(boss_slow_duration_sec, 0.05),
@@ -211,21 +205,19 @@ func _refund_ammo_from_cold_snap_branches() -> int:
 	return maxi(current_ammo - ammo_before, 0)
 
 func get_passive_status() -> Dictionary:
-	var recharge_sec := maxf(cold_snap_recharge_sec, 0.0)
-	var cooldown_remaining := maxf(_cold_snap_recharge_remaining_sec, 0.0)
-	var state := "ready"
-	if not is_passive_ready():
-		state = "cooldown"
+	var recharge_sec := WeaponTriggerRuntimeType.STOW_CHARGE_DURATION_SEC
+	var progress := get_stow_trigger_progress()
+	var state := "ready" if is_stow_trigger_ready() else "charging"
 	return with_passive_charge_status({
 		"id": "glacier_cold_snap_triggered",
 		"display_name": "Cold Snap",
 		"state": "armed" if state == "ready" else state,
 		"ready": state == "ready",
 		"trigger_hint": "next_attack",
-		"refresh_hint": "time_or_reload",
-		"cooldown_remaining": cooldown_remaining,
+		"refresh_hint": "stow",
+		"cooldown_remaining": recharge_sec * (1.0 - progress),
 		"cooldown_duration": recharge_sec,
-		"progress": 1.0 if recharge_sec <= 0.0 else 1.0 - clampf(cooldown_remaining / recharge_sec, 0.0, 1.0),
+		"progress": progress,
 	})
 
 func _collect_targets_in_cone(forward: Vector2) -> Array[Node]:
@@ -280,27 +272,12 @@ func _get_effective_cone_half_angle_deg() -> float:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	_update_cold_snap_recharge(delta)
 	_update_glacier_vfx_follow()
 	if debug_mode:
 		queue_redraw()
 
-func refresh_passive_on_reload() -> void:
-	super.refresh_passive_on_reload()
-	_cold_snap_recharge_remaining_sec = 0.0
-
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
-	_cold_snap_recharge_remaining_sec = 0.0
-	passive_controller.force_ready()
-
-func _update_cold_snap_recharge(delta: float) -> void:
-	if is_passive_ready():
-		_cold_snap_recharge_remaining_sec = 0.0
-		return
-	_cold_snap_recharge_remaining_sec = maxf(_cold_snap_recharge_remaining_sec - maxf(delta, 0.0), 0.0)
-	if _cold_snap_recharge_remaining_sec <= 0.0:
-		passive_controller.force_ready()
 
 func _ensure_glacier_vfx() -> void:
 	if _glacier_vfx != null and is_instance_valid(_glacier_vfx):

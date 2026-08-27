@@ -52,9 +52,9 @@ static func _weapon_id(reward: RewardInfo) -> String:
 static func _prediction(weapon_id: String) -> Dictionary:
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
 		return {}
-	if not PlayerData.player.has_method("predict_auto_fuse_weapon_obtain"):
+	if not PlayerData.player.has_method("predict_weapon_obtain"):
 		return {}
-	return PlayerData.player.predict_auto_fuse_weapon_obtain(weapon_id)
+	return PlayerData.player.predict_weapon_obtain(weapon_id)
 
 
 static func _installation_requirements(weapon: Weapon) -> Array[StringName]:
@@ -96,6 +96,7 @@ static func _branch_previews(
 		if branch_def == null:
 			continue
 		var damage_types := _branch_damage_types(branch_def, fallback_types)
+		var fusion_required_tags := branch_def.get_normalized_fusion_required_tags()
 		var acquired := acquired_ids.has(branch_def.branch_id)
 		var unlocked := acquired or preview_fuse >= int(branch_def.unlock_fuse)
 		var description := LocalizationManager.get_branch_description(branch_def)
@@ -105,6 +106,8 @@ static func _branch_previews(
 			"description": description if unlocked else _hide_numbers(description),
 			"damage_types": damage_types,
 			"unlock_fuse": int(branch_def.unlock_fuse),
+			"fusion_required_tags": fusion_required_tags,
+			"satisfied_fusion_tags": _matched_fusion_tags(fusion_required_tags),
 			"state": &"acquired" if acquired else (&"available" if unlocked else &"locked"),
 			"numbers_hidden": not unlocked,
 		})
@@ -114,6 +117,40 @@ static func _branch_previews(
 		return int(left.sort_order if left != null else 0) < int(right.sort_order if right != null else 0)
 	)
 	return output.slice(0, mini(2, output.size()))
+
+
+static func _matched_fusion_tags(required_tags: Array[StringName]) -> Array[StringName]:
+	var core_instances: Array[Array] = []
+	for stack in InventoryData.get_weapon_core_stacks():
+		var tags := stack.get("tags", []) as Array
+		for _copy_index in range(mini(int(stack.get("count", 0)), required_tags.size())):
+			core_instances.append(tags)
+	return _best_tag_matching(required_tags, core_instances, 0, [])
+
+
+static func _best_tag_matching(
+	required_tags: Array[StringName],
+	core_instances: Array[Array],
+	tag_index: int,
+	used_core_indices: Array[int]
+) -> Array[StringName]:
+	if tag_index >= required_tags.size():
+		return []
+	var tag := required_tags[tag_index]
+	var best: Array[StringName] = []
+	for core_index in range(core_instances.size()):
+		if used_core_indices.has(core_index) or not core_instances[core_index].has(tag):
+			continue
+		var next_used := used_core_indices.duplicate()
+		next_used.append(core_index)
+		var candidate: Array[StringName] = [tag]
+		candidate.append_array(_best_tag_matching(required_tags, core_instances, tag_index + 1, next_used))
+		if candidate.size() > best.size():
+			best = candidate
+	var skipped := _best_tag_matching(required_tags, core_instances, tag_index + 1, used_core_indices)
+	if skipped.size() > best.size():
+		best = skipped
+	return best
 
 
 static func _branch_damage_types(branch_def: WeaponBranchDefinition, fallback_types: Array[StringName]) -> Array[StringName]:

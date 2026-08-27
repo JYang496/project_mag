@@ -94,6 +94,19 @@ func _run() -> void:
 	if int(weapon.level) != previous_level + 1:
 		_fail("UpgradeSelectionStateProbe: selected weapon was not upgraded.")
 		return
+	var refreshed_selection: Dictionary = ui._upgrade_selected_item
+	var refreshed_model = refreshed_selection.get("display_model", null)
+	if int(refreshed_selection.get("level", -1)) != int(weapon.level) \
+			or refreshed_model == null \
+			or int(refreshed_model.level) != int(weapon.level):
+		_fail("UpgradeSelectionStateProbe: selected weapon details retained the pre-upgrade snapshot.")
+		return
+	var refreshed_overview := detail_body.get_node_or_null("WeaponOverviewGrid") as GridContainer
+	var level_card := refreshed_overview.get_child(0) as VBoxContainer if refreshed_overview else null
+	var level_value := level_card.get_child(1) as Label if level_card and level_card.get_child_count() > 1 else null
+	if level_value == null or level_value.text != "Lv.%d/%d" % [int(weapon.level), int(weapon.max_level)]:
+		_fail("UpgradeSelectionStateProbe: right-side current level did not refresh after upgrading.")
+		return
 	var upgraded_level := int(weapon.level)
 	var gold_after_rest_upgrade := PlayerData.player_gold
 	PhaseManager.phase = PhaseManager.PROTOCOL_SELECTION

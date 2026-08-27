@@ -4,8 +4,8 @@ class_name BattleContractHudPresenter
 const SmoothProgressBarScript := preload("res://UI/scripts/components/smooth_progress_bar.gd")
 const BATTLE_HUD_THEME := preload("res://UI/themes/battle_hud_theme.tres")
 
-const COMPACT_SIZE := Vector2(280.0, 64.0)
-const EXPANDED_SIZE := Vector2(280.0, 104.0)
+const COMPACT_SIZE := Vector2(280.0, 80.0)
+const EXPANDED_SIZE := Vector2(280.0, 120.0)
 const INTRO_EXPANDED_SEC := 2.8
 const COMPLETED_VISIBLE_SEC := 1.8
 const PROGRESS_SMOOTHING_SPEED := 7.0
@@ -69,13 +69,13 @@ func bind(root: Control, overlay_root: Control = null) -> void:
 	title.add_theme_constant_override("shadow_offset_y", 1)
 	header.add_child(title)
 	value = Label.new()
-	value.size_flags_horizontal = Control.SIZE_SHRINK_END
-	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	value.clip_text = true
 	value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	value.add_theme_font_size_override("font_size", 12)
+	value.add_theme_font_size_override("font_size", 11)
 	value.add_theme_color_override("font_color", Color("d9f3f8"))
-	header.add_child(value)
+	body.add_child(value)
 	detail = Label.new()
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail.clip_text = true
@@ -149,7 +149,12 @@ func refresh(allow_deployment_handoff: bool = false) -> void:
 		"survival":
 			var remaining := float(snapshot.get("remaining_sec", 0.0))
 			var duration := maxf(float(snapshot.get("duration_sec", 1.0)), 1.0)
-			value.text = LocalizationManager.tr_format("battle_contract.hud.survival", {"seconds": ceili(remaining), "threat": snapshot.get("threat_level", 1)}, "Time {seconds}s · Threat {threat}")
+			var elapsed := clampf(duration - remaining, 0.0, duration)
+			value.text = LocalizationManager.tr_format(
+				"battle_contract.hud.survival.progress",
+				{"elapsed": floori(elapsed), "total": ceili(duration), "remaining": ceili(remaining), "threat": snapshot.get("threat_level", 1)},
+				"Time {elapsed}/{total}s · Left {remaining}s · Threat {threat}"
+			)
 			detail.text = LocalizationManager.tr_key("battle_contract.hud.survival.detail", "Hold until the timer expires")
 			progress.visible = true
 			progress.call("set_target_value", clampf(remaining / duration, 0.0, 1.0))
@@ -182,19 +187,40 @@ func refresh(allow_deployment_handoff: bool = false) -> void:
 			if StringName(snapshot.get("phase", &"holding")) == &"holding":
 				var remaining := float(snapshot.get("remaining_sec", 0.0))
 				var duration := maxf(float(snapshot.get("duration_sec", 1.0)), 1.0)
-				value.text = LocalizationManager.tr_format("battle_contract.hud.extraction.holding", {"seconds": ceili(remaining)}, "Extraction opens in {seconds}s")
+				var elapsed := clampf(duration - remaining, 0.0, duration)
+				value.text = LocalizationManager.tr_format(
+					"battle_contract.hud.extraction.holding.progress",
+					{"elapsed": floori(elapsed), "total": ceili(duration), "remaining": ceili(remaining)},
+					"Hold {elapsed}/{total}s · Opens in {remaining}s"
+				)
 				detail.text = LocalizationManager.tr_key("battle_contract.hud.extraction.hold", "Survive until the extraction signal is established")
 				progress.visible = true
 				progress.call("set_target_value", clampf(1.0 - remaining / duration, 0.0, 1.0))
+			elif StringName(snapshot.get("phase", &"holding")) == &"collecting_keys":
+				var collected := int(snapshot.get("navigation_keys_collected", 0))
+				var required := maxi(int(snapshot.get("navigation_keys_required", 2)), 1)
+				value.text = LocalizationManager.tr_format("battle_contract.hud.extraction.keys", {"collected": collected, "required": required}, "Navigation keys {collected}/{required}")
+				detail.text = LocalizationManager.tr_key("battle_contract.hud.extraction.keys.detail", "Collect every navigation key to unlock extraction")
+				progress.visible = true
+				progress.call("set_target_value", clampf(float(collected) / float(required), 0.0, 1.0))
 			else:
 				var escape_remaining := float(snapshot.get("escape_remaining_sec", 0.0))
 				var escape_duration := maxf(float(snapshot.get("escape_duration_sec", 1.0)), 1.0)
 				var ratio := clampf(escape_remaining / escape_duration, 0.0, 1.0)
 				var overtime := float(snapshot.get("overtime_sec", 0.0))
 				if overtime > 0.0:
-					value.text = LocalizationManager.tr_format("battle_contract.hud.extraction.overtime", {"seconds": floori(overtime)}, "Extraction overdue by {seconds}s")
+					value.text = LocalizationManager.tr_format(
+						"battle_contract.hud.extraction.overtime.progress",
+						{"elapsed": floori(overtime), "total": ceili(escape_duration)},
+						"Breakthrough overtime {elapsed}s · Limit {total}s"
+					)
 				else:
-					value.text = LocalizationManager.tr_format("battle_contract.hud.extraction.escape", {"seconds": ceili(escape_remaining)}, "Reach extraction within {seconds}s")
+					var escape_elapsed := clampf(escape_duration - escape_remaining, 0.0, escape_duration)
+					value.text = LocalizationManager.tr_format(
+						"battle_contract.hud.extraction.escape.progress",
+						{"elapsed": floori(escape_elapsed), "total": ceili(escape_duration), "remaining": ceili(escape_remaining)},
+						"Breakthrough {elapsed}/{total}s · {remaining}s left"
+					)
 				detail.text = LocalizationManager.tr_key("battle_contract.hud.extraction.enter", "Move to the extraction zone")
 				progress.visible = true
 				progress.call("set_target_value", ratio)
@@ -202,7 +228,11 @@ func refresh(allow_deployment_handoff: bool = false) -> void:
 		"reward":
 			var remaining := float(snapshot.get("remaining_sec", 0.0))
 			var duration := maxf(float(snapshot.get("duration_sec", 1.0)), 1.0)
-			value.text = LocalizationManager.tr_format("battle_contract.hud.reward", {"enemies": snapshot.get("remaining_enemies", 0), "seconds": ceili(remaining)}, "Targets {enemies} · {seconds}s")
+			value.text = LocalizationManager.tr_format(
+				"battle_contract.hud.reward.progress",
+				{"kills": snapshot.get("kills", 0), "spawned": snapshot.get("spawned", 0), "active": snapshot.get("remaining_enemies", 0), "remaining": ceili(remaining), "total": ceili(duration)},
+				"Kills {kills}/{spawned} · Active {active} · Time {remaining}/{total}s"
+			)
 			detail.text = LocalizationManager.tr_key("battle_contract.hud.reward.detail", "Defeat every reward target before time expires")
 			progress.visible = true
 			progress.call("set_target_value", clampf(remaining / duration, 0.0, 1.0))
@@ -211,6 +241,14 @@ func refresh(allow_deployment_handoff: bool = false) -> void:
 func _format_elimination_status(snapshot: Dictionary, current_batch: int, total_batches: int) -> String:
 	var active := maxi(int(snapshot.get("active_enemies", snapshot.get("remaining_enemies", 0))), 0)
 	var queued := maxi(int(snapshot.get("queued_enemies", 0)), 0)
+	var kills := maxi(int(snapshot.get("kills", 0)), 0)
+	var planned := maxi(int(snapshot.get("planned_enemies", 0)), 0)
+	if planned > 0:
+		return LocalizationManager.tr_format(
+			"battle_contract.hud.elimination.progress",
+			{"kills": mini(kills, planned), "total": planned, "active": active, "current": current_batch, "batches": total_batches},
+			"Kills {kills}/{total} · Active {active} · Intensity {current}/{batches}"
+		)
 	if queued > 0:
 		return LocalizationManager.tr_format(
 			"battle_contract.hud.elimination.deployed_queued",
@@ -391,7 +429,12 @@ func _build_contract_parameters(id: String, parameters: Dictionary) -> String:
 	match id:
 		"elimination": text = "%d" % snapshot.get("total_batches", parameters.get("batch_count_min", 3)) + " " + LocalizationManager.tr_key("battle_contract.intro.unit.intensity", "intensity")
 		"survival": text = "%d s" % snapshot.get("duration_sec", BattleContractManager.get_battle_intro_snapshot().get("time_out_sec", 30))
-		"operation": text = "%d × %.0f s" % [snapshot.get("total_beacons", parameters.get("beacon_count", 2)), snapshot.get("charge_duration_sec", parameters.get("charge_time_min_sec", 10))]
+		"operation":
+			return LocalizationManager.tr_format(
+				"battle_contract.intro.operation.parameters",
+				{"count": snapshot.get("total_beacons", parameters.get("beacon_count", 2))},
+				"{count} tactical beacons"
+			)
 		"containment": text = "%d × %.0f s" % [snapshot.get("total_rifts", parameters.get("rift_count", 3)), parameters.get("seal_duration_sec", 8.0)]
 		"extraction": text = "%.0f s + %.0f s" % [snapshot.get("duration_sec", parameters.get("survival_duration_early_sec", 32)), snapshot.get("escape_duration_sec", parameters.get("escape_duration_early_sec", 18))]
 		"reward": text = "%d s · ×%.0f" % [snapshot.get("duration_sec", parameters.get("duration_sec", 45)), parameters.get("reward_multiplier", 2.0)]

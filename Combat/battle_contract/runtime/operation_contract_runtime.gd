@@ -107,7 +107,7 @@ func _resolve_beacon_position(index: int) -> Vector2:
 func _snapshot() -> Dictionary:
 	return {
 		"contract_id": &"operation",
-		"current_beacon": mini(beacon_index + 1, total_beacons),
+		"current_beacon": mini(beacon_index, total_beacons),
 		"total_beacons": total_beacons,
 		"progress": progress,
 		"player_inside": player_inside,

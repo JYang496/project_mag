@@ -2,57 +2,17 @@ extends RefCounted
 class_name WeaponSelectorReadabilityPresenter
 
 const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
-const INPUT_PROMPT_ATLAS := preload("res://asset/images/ui/input_prompts/kenney_pixel/input_prompts_tilemap.png")
-const CONTROL_HINT_Y := 86.0
-const CONTROL_HINT_HEIGHT := 22.0
-const CONTROL_HINT_HALF_WIDTH := 168.0
-const INPUT_PROMPT_TILE_SIZE := 16
-const INPUT_PROMPT_TILE_STRIDE := 17
 
-var _root: Control
 var _slots: Array[Control] = []
 var _empty_labels: Array[Label] = []
 var _passive_icons: Array[Control] = []
-var _control_hints: Array[PanelContainer] = []
 
-func setup(root: Control, slots: Array[Control]) -> void:
-	_root = root
+func setup(_root: Control, slots: Array[Control]) -> void:
 	_slots = slots
 	_empty_labels.resize(_slots.size())
 	_passive_icons.resize(_slots.size())
 	for slot_index in range(_slots.size()):
 		_ensure_slot_decorations(slot_index)
-	if _control_hints.is_empty():
-		_control_hints.append(_create_control_hint(
-			"SwitchHint",
-			Vector2(0.0, CONTROL_HINT_Y),
-			Vector2(CONTROL_HINT_HALF_WIDTH, CONTROL_HINT_HEIGHT),
-			Color(0.22, 0.62, 0.72, 0.96),
-			false
-		))
-		_control_hints.append(_create_control_hint(
-			"ReloadHint",
-			Vector2(CONTROL_HINT_HALF_WIDTH, CONTROL_HINT_Y),
-			Vector2(CONTROL_HINT_HALF_WIDTH, CONTROL_HINT_HEIGHT),
-			Color(0.92, 0.62, 0.18, 0.96),
-			true
-		))
-	refresh_copy()
-
-func refresh_copy() -> void:
-	if _control_hints.size() >= 2:
-		_set_control_hint(
-			_control_hints[0],
-			[Vector2i(17, 2), Vector2i(19, 2)],
-			LocalizationManager.tr_key("ui.controls.switch_weapon", "Switch Weapon"),
-			true
-		)
-		_set_control_hint(
-			_control_hints[1],
-			[Vector2i(20, 2)],
-			LocalizationManager.tr_key("ui.controls.reload", "Reload"),
-			false
-		)
 
 func update_slot(slot_index: int, weapon: Variant, is_mainhand: bool) -> void:
 	if slot_index < 0 or slot_index >= _slots.size():
@@ -128,84 +88,3 @@ func _ensure_slot_decorations(slot_index: int) -> void:
 	if passive_icon != null:
 		passive_icon.queue_free()
 	_passive_icons[slot_index] = null
-
-func _create_control_hint(
-	node_name: String,
-	hint_position: Vector2,
-	hint_size: Vector2,
-	accent: Color,
-	leading_divider: bool
-) -> PanelContainer:
-	var existing := _root.get_node_or_null(node_name) as PanelContainer
-	if existing != null:
-		return existing
-	var hint := PanelContainer.new()
-	hint.name = node_name
-	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hint.position = hint_position
-	hint.size = hint_size
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.025, 0.055, 0.075, 0.9)
-	style.border_color = accent
-	style.border_width_left = 1 if leading_divider else 0
-	style.border_width_bottom = 2
-	style.content_margin_left = 4.0
-	style.content_margin_right = 4.0
-	hint.add_theme_stylebox_override("normal", style)
-	hint.add_theme_stylebox_override("panel", style)
-	hint.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var content := HBoxContainer.new()
-	content.name = "Content"
-	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.add_theme_constant_override("separation", 4)
-	hint.add_child(content)
-	_root.add_child(hint)
-	return hint
-
-func _set_control_hint(
-	hint: PanelContainer,
-	icon_coords: Array[Vector2i],
-	action_text: String,
-	show_separator: bool
-) -> void:
-	var content := hint.get_node_or_null("Content") as HBoxContainer
-	if content == null:
-		return
-	for child in content.get_children():
-		content.remove_child(child)
-		child.queue_free()
-	for index in range(icon_coords.size()):
-		if index > 0 and show_separator:
-			content.add_child(_make_hint_label("/", Color(0.68, 0.79, 0.82, 1.0)))
-		content.add_child(_make_prompt_icon(icon_coords[index]))
-	content.add_child(_make_hint_label(action_text, Color(0.88, 0.95, 0.96, 1.0)))
-
-func _make_prompt_icon(coord: Vector2i) -> TextureRect:
-	var texture := AtlasTexture.new()
-	texture.atlas = INPUT_PROMPT_ATLAS
-	texture.region = Rect2(
-		coord.x * INPUT_PROMPT_TILE_STRIDE,
-		coord.y * INPUT_PROMPT_TILE_STRIDE,
-		INPUT_PROMPT_TILE_SIZE,
-		INPUT_PROMPT_TILE_SIZE
-	)
-	var icon := TextureRect.new()
-	icon.texture = texture
-	icon.custom_minimum_size = Vector2(INPUT_PROMPT_TILE_SIZE, INPUT_PROMPT_TILE_SIZE)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return icon
-
-func _make_hint_label(text: String, color: Color) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_constant_override("outline_size", 1)
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_color_override("font_outline_color", Color(0.01, 0.02, 0.03, 1.0))
-	return label

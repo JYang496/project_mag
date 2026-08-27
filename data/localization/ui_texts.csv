@@ -8,15 +8,24 @@ rest_arrival.complete,REST FACILITIES // ONLINE,休整设施 // 已上线
 battle_contract.ui.title,Choose Next Protocol,选择下一协议
 battle_contract.ui.main_contracts,Main Contracts,主要协议
 battle_contract.ui.extra_contracts,Optional Protocol,可选协议
-battle_contract.ui.subtitle,1–3 Select · Enter Begin · Esc Back,1–3 选择 · Enter 开始 · Esc 返回
+battle_contract.ui.subtitle.select,1–{count} Select ·,1–{count} 选择 ·
+battle_contract.ui.subtitle.back,Back,返回
+battle_contract.ui.enemy_preview.confirmed,ENEMIES THIS BATTLE,本关敌人
+battle_contract.ui.enemy_preview.possible,MAY APPEAR,可能出现
+battle_contract.ui.enemy_preview.elite,ELITE,精英
+battle_contract.ui.enemy_preview.none,NO ENEMIES,无敌人
 battle_contract.ui.cancel,Back to Rest,返回整备
 battle_contract.ui.confirm,Begin Contract,开始协议
-battle_contract.ui.detail.pace,PACE,节奏与时长
+battle_contract.ui.current_selection,Current Selection: {name},当前选择：{name}
+battle_contract.ui.briefing,Protocol Briefing,协议简报
+battle_contract.detail.structure,BATTLE STRUCTURE,战斗结构
+battle_contract.detail.completion,COMPLETION,完成条件
 battle_contract.ui.status.acquiring,TACTICAL LINK // ACQUIRING CONTRACTS,战术链路 // 正在获取协议
 battle_contract.ui.status.ready,TACTICAL LINK // CONTRACTS READY,战术链路 // 协议已就绪
 battle_contract.ui.status.closing,TACTICAL LINK // CLOSING,战术链路 // 正在关闭
 battle_contract.intro.parameters,Dynamic parameters: {parameters},动态参数：{parameters}
 battle_contract.intro.unit.intensity,intensity,强度
+battle_contract.intro.operation.parameters,{count} tactical beacons,{count} 个战术信标
 battle_contract.intro.boss.name,Boss Battle,BOSS 战
 battle_contract.intro.boss.objective,Defeat the boss and clear the current level.,击败 BOSS，完成当前关卡。
 battle_contract.intro.boss.hud,Defeat the boss,击败 BOSS
@@ -25,6 +34,7 @@ battle_contract.ui.build_tags,Build tags: {tags},构筑标签：{tags}
 battle_contract.card.label.objective,OBJECTIVE,核心目标
 battle_contract.card.label.rule,SPECIAL RULE,特殊规则
 battle_contract.card.label.reward,REWARD,协议奖励
+battle_contract.card.label.tactical_trait,TACTICAL TRAIT,战术特性
 battle_contract.card.type.elimination,ELIMINATION,歼灭
 battle_contract.card.type.survival,SURVIVAL,坚守
 battle_contract.card.type.operation,OPERATION,行动
@@ -34,6 +44,41 @@ battle_contract.card.type.reward,BONUS,奖励
 battle_contract.card.type.rest,LOGISTICS,整备
 battle_contract.card.badge.rare,RARE CONTRACT,稀有协议
 battle_contract.card.badge.selected,✓ SELECTED,✓ 已选择
+battle_contract.card.enhanced_toggle,Enhanced Mode,强化模式
+battle_contract.card.enhanced_toggle.compact,Enhanced,强化
+battle_contract.card.enhanced_risk,ENHANCED RISK,强化内容
+battle_contract.card.enhanced_reward,EXTRA REWARD,额外奖励
+battle_contract.ui.enhanced_suffix, · Enhanced, · 强化模式
+battle_contract.ui.confirm_enhanced,Begin Enhanced Protocol,开始强化协议
+battle_contract.enhanced.elimination.risk.1,Enemy spawn frequency ×2,敌人刷新频率 ×2
+battle_contract.enhanced.elimination.risk.2,Total enemy HP budget +30%,敌人总生命预算 +30%
+battle_contract.enhanced.survival.risk.1,An elite with HP equal to the level budget deploys at battle start,开局出现一个生命等于本关预算的精英敌人
+battle_contract.enhanced.containment.risk.1,Periodic mortar barrages strike around the player,迫击炮将周期性轰炸玩家周围区域
+battle_contract.enhanced.extraction.risk.1,Collect two navigation keys before the extraction zone opens,取得两枚导航密钥后才会开启撤离点
+battle_contract.enhanced.reward.random,One random bonus: compatible module · gold pack · equipped weapon core,随机额外获得：兼容模组、金币包或装备武器核心
+battle_contract.enhanced.reward.module,Random compatible module,随机兼容模组
+battle_contract.enhanced.reward.core,Weapon core: {name},武器核心：{name}
+battle_contract.enhanced.reward.gold,Gold +{amount},金币 +{amount}
+battle_contract.enhanced.reward.granted,Enhanced reward: {reward},强化协议奖励：{reward}
+battle_contract.hud.extraction.keys,Navigation keys {collected}/{required},导航密钥 {collected}/{required}
+battle_contract.hud.extraction.keys.detail,Collect every navigation key to unlock extraction,取得全部导航密钥以解锁撤离点
+battle_contract.enhanced.demo.elimination.risk.1,Enemies gain +20% movement speed,敌人移动速度 +20%
+battle_contract.enhanced.demo.elimination.risk.2,Final batch adds 1 elite,最终批次追加 1 名精英
+battle_contract.enhanced.demo.elimination.reward.1,Gold +40%,金币 +40%
+battle_contract.enhanced.demo.elimination.reward.2,Higher reward-choice quality,战后奖励品质提高
+enemy.preview.enemy_rolling_ball,Rolling Ball,滚动球
+enemy.preview.enemy_wheel_cart,Wheel Cart,战轮车
+enemy.preview.enemy_shield_core,Shield Core,护盾核心
+enemy.preview.enemy_mine_crawler,Mine Crawler,布雷爬行者
+enemy.preview.enemy_bomber,Bomber,轰炸者
+enemy.preview.enemy_spike_turret,Spike Turret,尖刺炮塔
+enemy.preview.enemy_repair_unit,Repair Unit,维修单元
+enemy.preview.enemy_interceptor,Interceptor,拦截者
+enemy.preview.enemy_mortar_turret,Mortar Turret,迫击炮塔
+enemy.preview.enemy_orbit_support,Orbit Support,环轨支援单元
+enemy.preview.enemy_mirror_caster,Mirror Caster,镜像施术者
+enemy.preview.enemy_rolling_ball_elite,Rolling Ball Elite,精英滚动球
+enemy.preview.reward_enemy,Reward Target,奖励目标
 battle_contract.ui.reward_slot.title,Reward Slot,奖励协议槽
 battle_contract.ui.reward_slot.unavailable,No reward protocol was discovered this round.,本轮未发现奖励协议。
 battle_contract.ui.reward_slot.chance,25% chance each round,每轮有 25% 概率出现
@@ -42,57 +87,66 @@ battle_contract.ui.reward_slot.next,A new chance is rolled next round,下一轮�
 battle_contract.ui.reward_slot.summary,Not available this round (25% chance each round),本轮未出现（每轮 25% 概率）
 battle_contract.elimination.name,Elimination Protocol,歼灭协议
 battle_contract.elimination.description,Eliminate every enemy in the encounter.,消灭本场全部敌人。
-battle_contract.elimination.pace,Finite enemy budget · 3–5 batches,有限敌人预算 · 3–5 批次
 battle_contract.elimination.reward,"Gold: Standard
 Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：正常
 战利品：随机三选一（可能含武器或模块）"
 battle_contract.card.elimination.summary,Eliminate all enemies · 3–5 batches,消灭全部敌人 · 3–5 批次
+battle_contract.card.elimination.trait,"Finite waves
+Clear the field to finish","有限波次
+清场即可结束"
 battle_contract.card.elimination.reward_hint,"Gold: Standard
 Extra: random gear choice","金币：正常
 额外：随机装备选项"
 battle_contract.survival.name,Survival Protocol,坚守协议
 battle_contract.survival.description,Survive until the combat timer expires.,在持续敌潮中坚持至倒计时结束。
-battle_contract.survival.pace,Continuous pressure · duration follows the current level timer,持续压力 · 时长跟随当前关卡倒计时
 battle_contract.survival.reward,"Gold: Standard
 Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：正常
 战利品：随机三选一（可能含武器或模块）"
 battle_contract.card.survival.summary,Survive continuous waves until the current level timer expires.,在持续敌潮中坚守至当前关卡倒计时结束。
+battle_contract.card.survival.trait,"Fixed duration
+Reinforcements do not stop","固定时长
+敌人持续增援"
 battle_contract.card.survival.reward_hint,"Gold: Standard
 Extra: random gear choice","金币：正常
 额外：随机装备选项"
 battle_contract.operation.name,Operation Protocol,行动协议
-battle_contract.operation.description,Activate two tactical beacons in sequence.,依次激活两个战术信标。
-battle_contract.operation.pace,Mobile objective · 8-second early captures · 10–14 seconds later,移动目标 · 前四关每次 8 秒 · 后续 10–14 秒
+battle_contract.operation.description,Enter two tactical beacon zones in sequence and remain inside until each is secured; enemies in the zone slow capture.,依次进入 2 个战术信标区域，驻守至占领完成；区域内的敌人会降低占领速度。
 battle_contract.operation.reward,"Gold: Standard
 Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：正常
 战利品：随机三选一（可能含武器或模块）"
-battle_contract.card.operation.summary,Secure 2 beacons · 8 seconds early · 10–14 seconds later,占领 2 个信标 · 前四关每次 8 秒 · 后续 10–14 秒
+battle_contract.card.operation.summary,Enter 2 tactical beacon zones in sequence and hold each until secured.,依次进入 2 个战术信标区域，驻守至占领完成。
+battle_contract.card.operation.trait,"Hold 2 zones
+Enemies slow capture","驻守 2 个区域
+敌人会拖慢占领"
 battle_contract.card.operation.reward_hint,"Gold: Standard
 Extra: random gear choice","金币：正常
 额外：随机装备选项"
 battle_contract.containment.name,Containment Protocol,封锁协议
 battle_contract.containment.description,Seal three unstable rifts before their pressure overwhelms the arena.,封锁三个不稳定裂隙，阻止其压力淹没战场。
-battle_contract.containment.pace,Multi-point objective · escalating rift surges,多点目标 · 裂隙增援逐步升级
 battle_contract.containment.reward,"Gold: Above average
 Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：较多
 战利品：随机三选一（可能含武器或模块）"
 battle_contract.card.containment.summary,Seal 3 rifts as enemy surges escalate.,封锁 3 个裂隙 · 敌人增援逐步升级
+battle_contract.card.containment.trait,"Seal 3 rifts
+Surges escalate","封锁 3 个裂隙
+增援逐步升级"
 battle_contract.card.containment.reward_hint,"Gold: Above average
 Extra: random gear choice","金币：较多
 额外：随机装备选项"
 battle_contract.extraction.name,Extraction Protocol,撤离协议
 battle_contract.extraction.description,Survive until extraction opens then break through to the exit before time runs out.,坚持至撤离点开放，随后在时限内突围至出口。
-battle_contract.extraction.pace,Two-stage combat · survive then relocate,两阶段战斗 · 生存后转移
 battle_contract.extraction.reward,"Gold: Standard
 Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：正常
 战利品：随机三选一（可能含武器或模块）"
 battle_contract.card.extraction.summary,"Survive first, then break through to extraction before time runs out.",先坚持生存，再在时限内突围至撤离点。
+battle_contract.card.extraction.trait,"Two-stage battle
+Timed final breakthrough","两阶段战斗
+最终突围有时限"
 battle_contract.card.extraction.reward_hint,"Gold: Standard
 Extra: random gear choice","金币：正常
 额外：随机装备选项"
 battle_contract.reward.name,Reward Protocol,奖励协议
 battle_contract.reward.description,Hunt every moving reward target before the protocol timer expires.,在协议倒计时结束前猎杀全部移动奖励目标。
-battle_contract.reward.pace,Bonus stage · targets cannot attack,奖励关 · 目标不会攻击
 battle_contract.reward.reward,"Gold: Large
 Loot: choose 1 of 3 random rewards (may include a weapon or module)","金币：大量
 战利品：随机三选一（可能含武器或模块）"
@@ -104,14 +158,20 @@ Extra: random gear choice","金币：大量
 battle_contract.rest.name,Rest Protocol,休息协议
 battle_contract.rest.description,Enter logistics mode to purchase strengthen and reconfigure your build.,进入后勤整备，购买、强化并调整当前构筑。
 battle_contract.card.rest.summary,Enter the rest area and unlock full loadout management.,进入休息区并开放完整构筑管理。
+battle_contract.card.rest.trait,"No combat
+Full loadout management","无战斗
+开放完整构筑管理"
 battle_contract.card.rest.reward_hint,Shop · upgrades · storage · board,商店 · 强化 · 仓库 · 棋盘
 battle_contract.hud.elimination,Remaining {remaining} · Intensity {current}/{total},剩余敌人 {remaining} · 强度 {current}/{total}
 battle_contract.hud.elimination.deployed,Active {active} · Intensity {current}/{total},在场 {active} · 强度 {current}/{total}
 battle_contract.hud.elimination.deployed_queued,Active {active} · Reinforcements {queued} · Intensity {current}/{total},在场 {active} · 待增援 {queued} · 强度 {current}/{total}
+battle_contract.hud.elimination.progress,Kills {kills}/{total} · Active {active} · Intensity {current}/{batches},击破 {kills}/{total} · 在场 {active} · 强度 {current}/{batches}
 battle_contract.hud.survival,Time {seconds}s · Threat {threat},剩余 {seconds} 秒 · 威胁等级 {threat}
+battle_contract.hud.survival.progress,Time {elapsed}/{total}s · Left {remaining}s · Threat {threat},时间 {elapsed}/{total} 秒 · 剩余 {remaining} 秒 · 威胁 {threat}
 battle_contract.hud.operation,Beacon {current}/{total} · {percent}%,信标 {current}/{total} · {percent}%
 battle_contract.hud.completed,Contract Complete,协议完成
 battle_contract.hud.reward,Targets {enemies} · {seconds}s,目标 {enemies} · {seconds} 秒
+battle_contract.hud.reward.progress,Kills {kills}/{spawned} · Active {active} · Time {remaining}/{total}s,击破 {kills}/{spawned} · 在场 {active} · 时间 {remaining}/{total} 秒
 battle_contract.hud.reward.detail,Defeat every reward target before time expires,在倒计时结束前击败全部奖励目标
 battle_contract.hud.elimination.detail,Eliminate all deployed targets,消灭所有已部署目标
 battle_contract.hud.survival.detail,Hold until the timer expires,坚持至倒计时结束
@@ -123,9 +183,12 @@ battle_contract.hud.containment.enter,Enter a rift area to begin sealing,进入�
 battle_contract.hud.containment.contested,Contested by {count} enemies · sealing slowed,{count} 名敌人正在干扰 · 封锁减慢
 battle_contract.hud.containment.sealing,Sealing rift,正在封锁裂隙
 battle_contract.hud.extraction.holding,Extraction opens in {seconds}s,撤离点将在 {seconds} 秒后开放
+battle_contract.hud.extraction.holding.progress,Hold {elapsed}/{total}s · Opens in {remaining}s,坚守 {elapsed}/{total} 秒 · {remaining} 秒后开放
 battle_contract.hud.extraction.hold,Survive until the extraction signal is established,坚持至撤离信号建立
 battle_contract.hud.extraction.escape,Reach extraction within {seconds}s,在 {seconds} 秒内抵达撤离点
+battle_contract.hud.extraction.escape.progress,Breakthrough {elapsed}/{total}s · {remaining}s left,突围 {elapsed}/{total} 秒 · 剩余 {remaining} 秒
 battle_contract.hud.extraction.overtime,Extraction overdue by {seconds}s,撤离已超时 {seconds} 秒
+battle_contract.hud.extraction.overtime.progress,Breakthrough overtime {elapsed}s · Limit {total}s,突围超时 {elapsed} 秒 · 时限 {total} 秒
 battle_contract.hud.extraction.active,Extraction {percent}% · Enemies {count},撤离进度 {percent}% · 区域内敌人 {count}
 battle_contract.hud.extraction.enter,Move to the extraction zone,前往撤离区域
 battle_contract.hud.extraction.contested,Enemies are slowing extraction,敌人正在减缓撤离进度
@@ -147,7 +210,9 @@ ui.start.new_game,New Game,全新游戏
 ui.start.settings,Settings,设置
 ui.start.exit,Exit Game,退出游戏
 ui.start.back,Back,返回
-ui.start.input_hint,[ENTER]  CONFIRM     [ESC]  BACK,[ENTER]  确认     [ESC]  返回
+ui.start.navigation_hint,WASD / ARROWS  SELECT,WASD / 方向键  选择
+ui.start.confirm_hint,CONFIRM,确认
+ui.start.back_hint,BACK,返回
 ui.start.display_language,DISPLAY & LANGUAGE,显示与语言
 ui.start.audio,AUDIO,音频
 ui.start.combat_assist,COMBAT ASSIST,战斗辅助
@@ -245,20 +310,25 @@ ui.branch.weapon,Weapon,武器
 ui.reward.title,Choose Reward,选择奖励
 ui.reward.subtitle,Pick 1 option,选择 1 个选项
 ui.reward.pick_one,Pick 1 option,选择 1 个选项
-ui.reward.draft.weapon_evolution_hint,New weapons may trigger evolution effects.,新武器可能触发进化效果。
+ui.reward.draft.weapon_evolution_hint,Duplicate weapons become full-Tag cores for manual fusion.,重复武器会转为包含完整 Tag 的核心，用于手动融合。
 ui.reward.confirm,Confirm Reward,确认奖励
 ui.reward.select_prompt,Select a reward,选择一个奖励
-ui.reward.selected,SELECTED,已选择
+ui.reward.selected,✓ SELECTED,✓ 已选择
 ui.reward.default,Reward,奖励
 ui.reward.weapon,Weapon {id} Lv.{level},武器 {id} Lv.{level}
 ui.reward.weapon_upgrade,Upgrade {name} Lv.{from} -> Lv.{to},升级 {name} Lv.{from} -> Lv.{to}
 ui.reward.module,Module {name} Lv.{level},模组 {name} Lv.{level}
 ui.reward.type.weapon_upgrade,Weapon Upgrade,武器升级
-ui.reward.type.weapon_fusion,Weapon Fusion,武器融合
-ui.reward.type.duplicate_weapon,Duplicate Weapon,重复武器
-ui.reward.meta.weapon_fuse,Fuse {from} -> {to},融合 {from} -> {to}
+ui.reward.type.weapon_core,Weapon Core,武器核心
+ui.reward.meta.weapon_core,Core inventory: {current} -> {resulting},核心库存：{current} -> {resulting}
+ui.reward.core.source,Source: {name},来源：{name}
+ui.reward.core.named_title,{name} Core,{name}核心
+ui.reward.core.gain,+{amount} Core,+{amount} 核心
+ui.reward.core.dismantled_amount,Duplicate weapon dismantled into {amount} core(s).,重复武器已分解为 {amount} 个核心。
+ui.reward.core.inventory,Inventory: {current} → {resulting},库存：{current} → {resulting}
+ui.reward.core.more_usages,{count} more,另有 {count} 项
+ui.reward.core.no_usable_branches,No available fusion recipes found yet,暂未发现可用融合配方
 ui.reward.meta.equipped_weapon_upgrade,Equipped weapon upgrade: Lv.{from} -> Lv.{to},已装备武器升级：Lv.{from} -> Lv.{to}
-ui.reward.meta.duplicate_gold,+{gold} Gold / Duplicate,+{gold} 金币 / 重复
 ui.reward.type.with_rarity,{rarity} {category},{rarity}{category}
 ui.reward.category.weapon,Weapon,武器
 ui.reward.category.module,Module,模组
@@ -286,7 +356,12 @@ ui.reward.detail.section.followup,Follow-up,后续解锁
 ui.reward.detail.section.main_effect,Main Effect,主要效果
 ui.reward.detail.section.features,Features,特点
 ui.reward.detail.preview.new_weapon,Obtain {name} · Lv.{level},获得 {name} · Lv.{level}
-ui.reward.detail.preview.weapon_fusion,{name} · Fuse {from} → {to},{name} · 融合 {from} → {to}
+ui.reward.detail.preview.weapon_core,{name} · 1 core [{tags}],{name} · 1 个核心 [{tags}]
+ui.reward.core.usable_by,Usable by: {branches},可用于：{branches}
+ui.reward.core.usable_by_label,Usable By,可用于
+ui.reward.core.usage_summary,Supports {count} fusion branches,可支持 {count} 条融合分支
+ui.reward.core.inherited_tags,INHERITED TAGS,继承标签
+ui.reward.core.tag_source_hint,From this weapon; retained after dismantling for fusion recipes.,来自该武器；分解后由核心保留，用于满足融合配方。
 ui.task_reward.title,Objective Reward,任务奖励
 ui.task_reward.source,Completed Objective,已完成任务
 ui.task_reward.subtitle,Choose one reward for completing an objective this battle.,选择一项本轮完成任务获得的奖励。
@@ -331,8 +406,7 @@ ui.reward.exp,EXP +{value},经验 +{value}
 ui.reward.gold,Gold +{value},金币 +{value}
 ui.reward.message,Reward: {content},奖励：{content}
 ui.reward.outcome.weapon_upgrade,Upgrade equipped weapon level,升级已装备武器等级
-ui.reward.outcome.weapon_fuse,Fuse equipped {name} to Fuse {fuse}; choose a branch next if one is available,融合已装备 {name} 到融合 {fuse}；如有新分支，将继续选择分支
-ui.reward.outcome.duplicate_gold,Duplicate {name} converts to +{gold} Gold,重复 {name} 转为 +{gold} 金币
+ui.reward.outcome.weapon_core,Dismantle duplicate {name} into 1 core,将重复的 {name} 分解为 1 个核心
 ui.reward.outcome.cell_effect,Added to cell effects,已加入格子效果
 ui.reward.outcome.task_module,Added to Ready To Install,已加入待部署
 ui.reward.outcome.weapon_obtain,Obtain new weapon,获得新武器
@@ -376,6 +450,13 @@ ui.weapon.replace.action_equip,Equip,装备
 ui.weapon.replace.slot,Slot {slot}: {old} -> {new},槽位 {slot}：{old} → {new}
 ui.weapon.replace.empty_slot,Slot {slot}: Empty,槽位 {slot}：空
 ui.weapon.replace.empty_slot_hint,Open slot,空槽位
+ui.weapon.replace.mechanic_changed,Mechanic changed,机制不同
+ui.weapon.replace.consequence_hint,Choose a slot. The old weapon goes to storage and its modules are safely removed.,选择一个槽位。原武器将进入仓库，其模组会安全卸下。
+ui.weapon.replace.action_select,Select,选择
+ui.weapon.replace.confirm_prompt,Select a slot first,请先选择槽位
+ui.weapon.replace.confirm_equip_slot,Equip to Slot {slot},装备到槽位 {slot}
+ui.weapon.replace.confirm_replace_slot,Replace Slot {slot},确认替换槽位 {slot}
+ui.weapon.replace.modules_safely_removed,{count} installed modules will be safely removed.,将安全卸下 {count} 个已安装模组。
 ui.module.compatible,Compatible,兼容
 ui.module.selected_weapon,Selected weapon: {weapon},所选武器：{weapon}
 ui.module.no_compatible_weapons,No compatible weapon,没有兼容的武器
@@ -423,6 +504,7 @@ ui.module.fit.detail.compatible,Fit: Current weapon satisfies module requirement
 ui.module.fit.detail.incompatible,Fit: Current weapon does not satisfy module requirements,适配：当前武器不满足模组要求
 ui.module.fit.warning,Warning: {reason},警告：{reason}
 ui.module.term.heat,Heat,热量
+ui.module.term.auto_fire,Auto Fire,自动开火
 ui.module.term.mark,Mark,标记
 ui.module.term.freeze,Freeze,冻结
 ui.module.term.reload,Reload,换弹
@@ -549,7 +631,7 @@ ui.tutorial.state.primary_menu,Current: Primary Menu,当前状态：一级菜单
 ui.tutorial.panel.rest.line1,Click a facility to manage your build,点击设施管理构筑
 ui.tutorial.panel.rest.line2,Click center to choose the next protocol,点击中心选择下一协议
 ui.tutorial.panel.rest.line3,[Esc] Pause,[Esc] 暂停
-ui.tutorial.panel.primary_menu.line1,[WASD / Arrows] Select · [F / Enter] Confirm,[WASD / 方向键] 选择 · [F / Enter] 确认
+ui.tutorial.panel.primary_menu.line1,[WASD / Arrows] Select · [F / Space] Confirm,[WASD / 方向键] 选择 · [F / 空格] 确认
 ui.tutorial.panel.primary_menu.line2,[Esc / RMB] Back,[Esc / 鼠标右键] 返回
 ui.tutorial.panel.primary_menu.gamepad.line1,[D-pad / Left Stick] Select · [A] Confirm,[十字键 / 左摇杆] 选择 · [A] 确认
 ui.tutorial.panel.primary_menu.gamepad.line2,[B] Back,[B] 返回
@@ -633,7 +715,7 @@ ui.warehouse.drag.invalid_target,Drop this item on a compatible warehouse target
 ui.weapon.warehouse.row,{name}  Lv.{level}  Fuse {fuse},{name}  Lv.{level}  融合 {fuse}
 ui.weapon.warehouse.empty_slot,Empty weapon slot {index},空武器槽 {index}
 ui.weapon.warehouse.drop_to_equip,Drop a stored weapon here to equip it.,将仓库武器拖到这里以装备。
-ui.weapon.warehouse.select_hint,Select a held weapon to store, or a stored weapon to equip or exchange.,选择持有武器可存入仓库；选择仓库武器可装备或交换。
+ui.weapon.warehouse.select_hint,"Select a held weapon to store, or a stored weapon to equip or exchange.",选择持有武器可存入仓库；选择仓库武器可装备或交换。
 ui.weapon.warehouse.modules_removed,Stored weapons do not keep modules.,仓库武器不会保留模组。
 ui.weapon.warehouse.equip_empty,Equip to Empty Slot,装备到空槽
 ui.weapon.warehouse.exchange_selected,Exchange with Selected,与所选武器交换
@@ -720,16 +802,75 @@ ui.inventory.unclaimed_module_sold,Unclaimed {name} sold for +{gold} Gold,未拾
 ui.weapon.duplicate.fuse_up,Duplicate {name} fused to Fuse {fuse},重复 {name} 已融合至 {fuse}
 ui.weapon.duplicate.convert,Duplicate {name} converted to +{gold} Gold,重复 {name} 已转换为 +{gold} 金币
 ui.weapon.obtain_preview.new,New weapon,新武器
-ui.weapon.obtain_preview.fuse,{name} -> Fuse {fuse},{name} -> 融合 {fuse}
-ui.weapon.obtain_preview.gold,{name} -> +{gold} Gold,{name} -> +{gold} 金币
 ui.weapon.obtain_preview.new_named,Obtain new {name},获得新武器 {name}
 ui.weapon.obtain_preview.new_equip,Obtain new {name}; equips to an empty slot,获得新武器 {name}；将装备到空槽
 ui.weapon.obtain_preview.new_replace,Obtain new {name}; choose replace or store next,获得新武器 {name}；确认后选择替换或入库
-ui.weapon.obtain_preview.fuse_branch,{name}: Fuse {from} -> {to}; choose a branch next if one is available,{name}：融合 {from} -> {to}；如有新分支，将继续选择分支
-ui.weapon.obtain_preview.fuse_no_branch,{name}: Fuse {from} -> {to}; choose a branch next if one is available,{name}：融合 {from} -> {to}；如有新分支，将继续选择分支
-ui.weapon.obtain_preview.gold_action,{name}: Fuse maxed; convert to +{gold} Gold,{name}：融合已满，转为 +{gold} 金币
-ui.upgrade.need_duplicate,Duplicate weapons add Fuse traits and branch choices.,重复武器会增加融合特性和分支选择。
+ui.weapon.obtain_preview.core_action,{name}: dismantle into 1 core [{tags}] · owned {count},{name}：分解为 1 个核心 [{tags}] · 当前库存 {count}
+ui.upgrade.need_duplicate,Duplicate weapons become full-Tag cores used for manual fusion.,重复武器会转为包含完整 Tag 的核心，用于手动融合。
+ui.shop.duplicate_result,Duplicate Purchase Result,重复购买结果
+ui.shop.buy_and_dismantle,Buy & Dismantle {name},购买并分解 {name}
+ui.shop.duplicate_slot_summary,Core +{amount} · {tag_count} Tags · {current} -> {resulting},核心 +{amount} · {tag_count} 个 Tag · {current} -> {resulting}
+ui.shop.core.named_title,{name} Core,{name}核心
+ui.shop.core.badge,◆ CORE,◆ 核心
+ui.shop.core.conversion_hint,Duplicate weapon becomes 1 core,重复武器将分解为 1 个核心
+ui.shop.core.detail_subtitle,Purchase yields a weapon core for manual fusion.,购买后获得用于手动融合的武器核心。
+ui.shop.core.purchase_result,Purchase Result,购买结果
+ui.shop.core.source_weapon_type,Source Weapon Type,来源武器类型
+ui.shop.core.source_weapon_stats,Source Weapon Stats,来源武器属性
+ui.shop.buy_core,Buy {name} Core,购买{name}核心
 ui.upgrade.fully_upgraded,Fully upgraded.,已完全升级。
+ui.management.tab.upgrade,Upgrade,升级
+ui.management.tab.fusion,Fusion,融合
+ui.fusion.subtitle,Choose a branch and the exact cores to consume.,选择分支以及要消耗的具体核心。
+ui.fusion.select_weapon,Select a weapon to fuse.,请选择要融合的武器。
+ui.fusion.current_branch,Current branch: {branch},当前分支：{branch}
+ui.fusion.none,None,无
+ui.fusion.maxed,Fusion complete.,融合已完成。
+ui.fusion.branch,Fusion Branch,融合分支
+ui.fusion.select_branch,Select a branch to inspect its recipe.,请选择分支以查看配方。
+ui.fusion.required_tags,Required Tags: {tags},所需 Tag：{tags}
+ui.fusion.enhancement_preview,Enhancement: strengthens this branch's own effects.,强化效果：增强当前分支自身的效果。
+ui.fusion.core_inventory,Core Inventory,核心库存
+ui.fusion.contributes,Contributes,贡献
+ui.fusion.selected,Selected,已选
+ui.fusion.available,Available,库存
+ui.fusion.unrelated,This core does not contribute a required Tag.,此核心不能贡献任何所需 Tag。
+ui.fusion.summary,Fusion Summary,融合摘要
+ui.fusion.selected_count,Selected: {selected}/{required},已选择：{selected}/{required}
+ui.fusion.covered,Covered: {tags},已覆盖：{tags}
+ui.fusion.missing,Missing: {tags},缺少：{tags}
+ui.fusion.consume_detail,Consume: {cores},将消耗：{cores}
+ui.fusion.confirm,Confirm Fusion,确认融合
+ui.fusion.choose,Choose,选择
+ui.fusion.enhance,Enhance,强化
+ui.fusion.level,Level {level} / {required},等级 {level} / {required}
+ui.fusion.level_ready,Level Ready,等级满足
+ui.fusion.stage,Fusion Stage,融合阶段
+ui.fusion.stage_progress,Current {current} · Target {target},当前 {current} · 目标 {target}
+ui.fusion.step.select_branch,Select Branch,选择分支
+ui.fusion.step.meet_conditions,Meet Conditions,满足条件
+ui.fusion.step.confirm,Confirm Fusion,确认融合
+ui.fusion.core_count,Cores {selected} / {required},核心数量 {selected} / {required}
+ui.fusion.satisfied,Satisfied,已满足
+ui.fusion.unmet,Unmet,未满足
+ui.fusion.unlock_preview,Unlock: {branch},将解锁：{branch}
+ui.fusion.rest_only,Fusion is only available during rest.,只有在休息阶段才能融合。
+ui.fusion.success,Fusion complete.,融合完成。
+ui.fusion.reason.ready,Ready to fuse.,可以融合。
+ui.fusion.reason.fused,Fusion complete.,融合完成。
+ui.fusion.reason.level_too_low,Weapon level is too low.,武器等级不足。
+ui.fusion.reason.core_count_mismatch,Select the required number of cores.,请选择规定数量的核心。
+ui.fusion.reason.tags_missing,Selected cores do not cover every required Tag.,所选核心未覆盖全部所需 Tag。
+ui.fusion.reason.core_unrelated,Every selected core must contribute a required Tag.,每个所选核心都必须贡献所需 Tag。
+ui.fusion.reason.core_missing,A selected core is no longer available.,某个所选核心已不在库存中。
+ui.fusion.reason.branch_not_found,Select a fusion branch.,请选择融合分支。
+ui.fusion.reason.branch_not_available,This branch is not available.,该分支当前不可用。
+ui.fusion.reason.branch_mismatch,Fuse 3 must enhance the existing branch.,Fuse 3 只能强化已有分支。
+ui.fusion.reason.fusion_maxed,Fusion complete.,融合已完成。
+ui.fusion.reason.fusion_in_progress,Fusion is already being submitted.,融合正在提交中。
+ui.fusion.reason.commit_failed,Fusion failed without consuming cores.,融合失败，未消耗核心。
+ui.fusion.reason.invalid_weapon,Select a weapon to fuse.,请选择要融合的武器。
+ui.fusion.reason.weapon_not_owned,This weapon is no longer owned.,该武器已不再持有。
 ui.branch.no_options,No evolution branch is configured for this weapon.,该武器尚未配置进化分支。
 ui.branch.missing_weapon,Evolution choice skipped because the weapon is no longer available.,武器已不存在，已跳过进化选择。
 ui.branch.pending_blocks,Choose an evolution branch first.,请先选择进化分支。
@@ -883,7 +1024,6 @@ ui.run_complete.endless,CONTINUE INTO OVERLOAD,进入超载模式
 battle_contract.finale.name,Final Protocol,最终协议
 battle_contract.finale.description,Survive three escalating formations and eliminate the final elite.,突破三阶段递进阵型并消灭最终精英。
 ui.weapon.name_with_branches,{weapon} · {branches},{weapon} · {branches}
-ui.reward.category.new_weapon,New Weapon,新武器
 ui.reward.summary.weapon_upgrade,Upgrade equipped weapon level.,提升已装备武器的等级。
 ui.reward.summary.task_module,Gain a new task module.,获得一个新的任务模组。
 ui.reward.summary.cell_effect,Gain a terrain effect.,获得一个地形效果。
@@ -892,6 +1032,9 @@ ui.reward.module_effect,Module Effect,模组效果
 ui.reward.compatible_weapons,Compatible Weapons,可装备武器
 ui.reward.no_compatible_weapons,No owned weapon can equip this module,当前持有武器均无法装备该模组
 ui.reward.weapon_has_slot,Slot available,有空槽
+ui.reward.weapon_fit_reason,Satisfies trait: {requirements},满足特性：{requirements}
+ui.reward.weapon_fit_with_slot,"{requirements}, Slot available","{requirements}，有空槽"
+ui.reward.weapon_requires_trait,Requires trait: {requirements},需要特性：{requirements}
 ui.reward.weapon_requires_replace,Requires replacement,需替换
 ui.reward.summary.weapon,New weapon added to your loadout.,新武器将加入你的装备。
 ui.reward.summary.economy,Gain run resources.,获得本局资源。
@@ -909,7 +1052,7 @@ ui.reward.detail.bullet.module.2,Changes or improves weapon behavior,改变或�
 ui.reward.detail.bullet.module.3,Can create build synergy,可以形成构筑联动
 ui.reward.detail.bullet.weapon.1,Adds a new weapon to your loadout,将新武器加入装备
 ui.reward.detail.bullet.weapon.2,Expands build options,扩展构筑选项
-ui.reward.detail.bullet.weapon.3,May trigger evolution effects,可能触发进化效果
+ui.reward.detail.bullet.weapon.3,Duplicates become full-Tag cores,重复武器会转为包含完整 Tag 的核心
 ui.reward.detail.bullet.economy.1,Adds resources immediately,立即获得资源
 ui.reward.detail.bullet.economy.2,Supports current run progression,帮助推进本局成长
 ui.common.tag,Tag,标签

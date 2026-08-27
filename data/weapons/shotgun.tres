@@ -11,3 +11,4 @@ icon = ExtResource("1_r2q5u")
 price = 45
 description = "Close-range pellet burst. Fits Close and Projectile builds; multiple pellets on one target spend Close Hit charges for bonus final damage."
 scene_path = "res://Player/Weapons/Instances/shotgun.tscn"
+core_tags = Array[StringName]([&"physical", &"projectile", &"close_range", &"on_hit"])

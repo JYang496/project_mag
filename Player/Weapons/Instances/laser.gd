@@ -16,15 +16,15 @@ var _focus_channel_remaining_sec: float = 0.0
 var _focus_channel_energy_per_sec: float = 0.0
 
 var weapon_data = {
-	"1": {"damage": "3", "fire_interval_sec": "2", "ammo": "5"},
-	"2": {"damage": "3", "fire_interval_sec": "1.7", "ammo": "6"},
-	"3": {"damage": "3", "fire_interval_sec": "1.5", "ammo": "7"},
-	"4": {"damage": "4", "fire_interval_sec": "1.4", "ammo": "7"},
-	"5": {"damage": "4", "fire_interval_sec": "1.3", "ammo": "8"},
-	"6": {"damage": "4", "fire_interval_sec": "1.2", "ammo": "9"},
-	"7": {"damage": "6", "fire_interval_sec": "1.0", "ammo": "10"},
-	"8": {"damage": "6", "fire_interval_sec": "0.9", "ammo": "11"},
-	"9": {"damage": "6", "fire_interval_sec": "0.85", "ammo": "12"}
+	"1": {"damage": "3", "fire_interval_sec": "1.6", "ammo": "6"},
+	"2": {"damage": "3", "fire_interval_sec": "1.36", "ammo": "8"},
+	"3": {"damage": "3", "fire_interval_sec": "1.2", "ammo": "9"},
+	"4": {"damage": "4", "fire_interval_sec": "1.12", "ammo": "9"},
+	"5": {"damage": "4", "fire_interval_sec": "1.04", "ammo": "10"},
+	"6": {"damage": "4", "fire_interval_sec": "0.96", "ammo": "11"},
+	"7": {"damage": "6", "fire_interval_sec": "0.8", "ammo": "13"},
+	"8": {"damage": "6", "fire_interval_sec": "0.72", "ammo": "14"},
+	"9": {"damage": "6", "fire_interval_sec": "0.68", "ammo": "15"}
 }
 
 

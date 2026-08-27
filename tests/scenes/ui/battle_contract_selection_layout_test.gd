@@ -34,11 +34,11 @@ func _run() -> void:
 	_panel.call("open", [ELIMINATION, SURVIVAL, REWARD], Callable(self, "_on_contract_confirmed"), Callable())
 	await get_tree().process_frame
 	for opening_card: Button in _panel.get("cards") as Array:
+		if not opening_card.visible:
+			continue
 		var opening_icon := opening_card.get_node("Margin/Content/Header/ContractIcon") as Control
-		var drawn_center_global := opening_card.get_global_transform_with_canvas() \
-			* (opening_card.call("get_contract_icon_center_local") as Vector2)
 		_assert_true(
-			opening_icon.get_global_rect().has_point(drawn_center_global),
+			(opening_icon.call("get_draw_center_local") as Vector2).is_equal_approx(opening_icon.size * 0.5),
 			"Protocol icon should remain in its slot during the first opening frame."
 		)
 	await get_tree().create_timer(1.0, true, false, true).timeout
@@ -64,11 +64,20 @@ func _run() -> void:
 		"Decorative terminal status should not consume scarce vertical space."
 	)
 	_assert_true(
-		panel_rect.position.x >= 15.5
-			and panel_rect.end.x <= viewport_rect.size.x - 15.5
-			and panel_rect.position.y >= 7.5
-			and panel_rect.end.y <= viewport_rect.size.y - 7.5,
+		panel_rect.position.x >= 23.5
+			and panel_rect.end.x <= viewport_rect.size.x - 23.5
+			and panel_rect.position.y >= 15.5
+			and panel_rect.end.y <= viewport_rect.size.y - 15.5,
 		"Expanded panel should remain inside viewport safe margins."
+	)
+	var outer_style := panel_container.get_theme_stylebox("panel") as StyleBoxFlat
+	_assert_true(
+		outer_style != null and outer_style.bg_color.a == 0.0
+			and outer_style.border_width_left == 0
+			and outer_style.border_width_top == 0
+			and outer_style.border_width_right == 0
+			and outer_style.border_width_bottom == 0,
+		"Outer protocol layout container should remain visually transparent."
 	)
 	var content := _panel.get_node("Shade/Panel/Margin/Content") as VBoxContainer
 	_assert_true(
@@ -84,6 +93,8 @@ func _run() -> void:
 	var reward_card := _panel.get_node(
 		"Shade/Panel/Margin/Content/MainCards/CardRight"
 	) as Button
+	var reward_content := reward_card.get_node("Margin") as MarginContainer
+	var unselected_content_rect := reward_content.get_global_rect()
 	reward_card.call("set_selected", true, false)
 	await get_tree().process_frame
 	var rare_badge := reward_card.get_node("Margin/Content/Header/RareBadge") as Label
@@ -97,6 +108,16 @@ func _run() -> void:
 		selection_mark.text == "●",
 		"Selected cards should expose a persistent filled selection mark."
 	)
+	var selection_rail := reward_card.get_node("SelectionRail") as ColorRect
+	var selected_style := reward_card.get_theme_stylebox("pressed") as StyleBoxFlat
+	_assert_true(
+		selection_rail.visible and reward_card.get_node("AccentLine").offset_right == 8.0,
+		"Selected cards should use a bottom light rail and a stronger left accent."
+	)
+	_assert_true(
+		selected_style != null and selected_style.border_width_left == 1,
+		"Selection should keep a restrained border so it cannot be confused with the enhanced armor frame."
+	)
 	_assert_true(
 		not selected_badge.get_global_rect().intersects(selection_mark.get_global_rect()),
 		"Selected text and its selection mark should have real geometric separation."
@@ -105,6 +126,10 @@ func _run() -> void:
 		selected_badge.get_parent() == rare_badge.get_parent(),
 		"Selected badge should participate in the header container layout."
 	)
+	_assert_true(
+		reward_content.get_global_rect().is_equal_approx(unselected_content_rect),
+		"Selecting a protocol should not resize its content area or reflow wrapped copy."
+	)
 
 	var title := reward_card.get_node("Margin/Content/Title") as Label
 	_assert_true(
@@ -112,26 +137,55 @@ func _run() -> void:
 		"Contract titles should wrap to at most two lines."
 	)
 	var main_card := _panel.get_node("Shade/Panel/Margin/Content/MainCards/CardLeft") as Button
+	var main_info_grid := main_card.get_node("Margin/Content/InfoGrid") as HBoxContainer
+	var objective_gap := main_card.get_node("Margin/Content/ObjectiveGap") as Control
+	var main_description := main_info_grid.get_node("Description") as Label
+	_assert_true(
+		main_info_grid.get_child_count() == 1 \
+			and main_info_grid.get_child(0).name == "Description" \
+			and (main_info_grid.get_child(0) as Control).size_flags_horizontal == Control.SIZE_EXPAND_FILL,
+		"Standard protocol cards should devote the full information width to the core objective."
+	)
+	_assert_true(
+		objective_gap.custom_minimum_size.y >= 12.0 \
+			and main_description.vertical_alignment == VERTICAL_ALIGNMENT_TOP \
+			and main_info_grid.size_flags_vertical != Control.SIZE_EXPAND_FILL \
+			and (main_card.get_node("Margin/Content/ContentSpacer") as Control).size_flags_vertical == Control.SIZE_EXPAND_FILL,
+		"Core objectives should start directly below the title instead of floating at card center."
+	)
+	_assert_true(
+		reward_card.get_node("Margin/Content/RewardDetails") is VBoxContainer,
+		"Reward Protocol should use the same vertical reading order as standard cards."
+	)
+	_assert_true(
+		not reward_card.has_node("Margin/Content/RewardDetails/Reward"),
+		"Reward Protocol cards should not repeat protocol reward copy."
+	)
 	var confirm_button := _panel.get_node("Shade/Panel/Margin/Content/Actions/Confirm") as Button
 	var protocol_cards: Array = _panel.get("cards") as Array
-	var interaction_hint := _panel.get_node("Shade/Panel/Margin/Content/Subtitle") as Label
-	var settled_icon_centers: Array[Vector2] = []
-	for protocol_card: Button in protocol_cards:
-		settled_icon_centers.append(protocol_card.call("get_contract_icon_center_local") as Vector2)
+	var select_range := _panel.get_node("Shade/Panel/Margin/Content/Subtitle/SelectRange") as Label
+	var escape_icon := _panel.get_node("Shade/Panel/Margin/Content/Subtitle/EscapeIcon") as TextureRect
 	panel_container.scale.x = 0.025
 	await get_tree().process_frame
 	for index in range(3):
+		var scaled_icon := (protocol_cards[index] as Button).get_node("Margin/Content/Header/ContractIcon") as Control
 		_assert_true(
-			(protocol_cards[index].call("get_contract_icon_center_local") as Vector2).is_equal_approx(
-				settled_icon_centers[index]
-			),
-			"Protocol card %d icon placement should ignore the panel's opening scale." % (index + 1)
+			(scaled_icon.call("get_draw_center_local") as Vector2).is_equal_approx(scaled_icon.size * 0.5),
+			"Protocol card %d icon should retain its local drawing center during panel scaling." % (index + 1)
 		)
 	panel_container.scale.x = 1.0
 	await get_tree().process_frame
 	_assert_true(
-		interaction_hint.text.contains("Enter") and interaction_hint.text.contains("1–3"),
-		"Protocol selection should teach numeric selection and explicit confirmation."
+		select_range.text.contains("1–3"),
+		"Protocol selection should match its numeric shortcut range to three visible options."
+	)
+	_assert_true(
+		escape_icon.texture != null,
+		"Protocol selection should show the Escape keyboard icon instead of a text key name."
+	)
+	_assert_true(
+		confirm_button.icon != null,
+		"Protocol confirmation should use the input-prompt icon instead of a text key name."
 	)
 	for index in range(3):
 		var protocol_card := protocol_cards[index] as Button
@@ -143,10 +197,9 @@ func _run() -> void:
 			"Protocol card %d numeric shortcut should not overlap its protocol icon slot." % (index + 1)
 		)
 		_assert_true(
-			contract_icon.get_global_rect().has_point(
-				protocol_card.get_global_rect().position + protocol_card.call("get_contract_icon_center_local")
-			),
-			"Protocol card %d should draw its icon inside the dedicated icon slot." % (index + 1)
+			contract_icon.get_script() != null \
+				and (contract_icon.call("get_draw_center_local") as Vector2).is_equal_approx(contract_icon.size * 0.5),
+			"Protocol card %d should delegate drawing to its dedicated local icon slot." % (index + 1)
 		)
 	_assert_true(int(_panel.call("_quick_select_index_for_key", KEY_1)) == 0, "Number key 1 should map to the first protocol card.")
 	_assert_true(int(_panel.call("_quick_select_index_for_key", KEY_KP_2)) == 1, "Numpad 2 should map to the second protocol card.")
@@ -177,9 +230,97 @@ func _run() -> void:
 	)
 	_panel.call("_select_card_by_index", 1)
 	var detail_name := _panel.get_node("Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Header/Name") as Label
+	var detail_copy := _panel.get_node("Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details/Objective") as Label
+	var current_selection := _panel.get_node("Shade/Panel/Margin/Content/Actions/CurrentSelection") as Label
 	_assert_true(
-		detail_name.text == "Survival Protocol",
-		"Numeric selection should update the persistent detail preview without launching."
+		detail_name.text == "Protocol Briefing" \
+			and detail_copy.text.contains("BATTLE STRUCTURE") \
+			and detail_copy.text.contains("COMPLETION"),
+		"Numeric selection should expose a structured briefing without repeating the protocol title."
+	)
+	_panel.call("_set_current_selection", SURVIVAL)
+	_assert_true(
+		current_selection.text.contains("Survival Protocol"),
+		"The bottom action bar should state which protocol will be confirmed."
+	)
+	var survival_card := protocol_cards[1] as Button
+	survival_card.call("set_enhanced_offer", ["Enemies gain +20% movement speed"], ["Gold +40%"])
+	survival_card.call("set_selected", true, false)
+	var stable_panel_rect := panel_container.get_global_rect()
+	var stable_cards_rect := (_panel.get_node("Shade/Panel/Margin/Content/MainCards") as HBoxContainer).get_global_rect()
+	var stable_detail_rect := (_panel.get_node("Shade/Panel/Margin/Content/DetailPanel") as PanelContainer).get_global_rect()
+	survival_card.call("set_enhanced_mode", true)
+	_panel.call("_on_card_enhanced_mode_changed", true, survival_card)
+	await get_tree().process_frame
+	_assert_true(
+		panel_container.get_global_rect().is_equal_approx(stable_panel_rect) \
+			and (_panel.get_node("Shade/Panel/Margin/Content/MainCards") as HBoxContainer).get_global_rect().is_equal_approx(stable_cards_rect) \
+			and (_panel.get_node("Shade/Panel/Margin/Content/DetailPanel") as PanelContainer).get_global_rect().is_equal_approx(stable_detail_rect),
+		"Enhanced mode should not move the centered panel, card row, or protocol briefing (panel %s -> %s, cards %s -> %s, detail %s -> %s)." % [
+			stable_panel_rect, panel_container.get_global_rect(), stable_cards_rect,
+			(_panel.get_node("Shade/Panel/Margin/Content/MainCards") as HBoxContainer).get_global_rect(),
+			stable_detail_rect, (_panel.get_node("Shade/Panel/Margin/Content/DetailPanel") as PanelContainer).get_global_rect(),
+		]
+	)
+	var enhancement_toggle := survival_card.get_node("EnhancementToggle") as CheckButton
+	_assert_true(
+		enhancement_toggle.get_global_rect().size.is_equal_approx(Vector2(168.0, 38.0)) \
+			and survival_card.get_global_rect().encloses(enhancement_toggle.get_global_rect()) \
+			and (survival_card.get_node("EnhancedFrame") as Control).mouse_filter == Control.MOUSE_FILTER_IGNORE,
+		"Enhanced interaction should use the visible 168x38 toggle while its decorative frame ignores pointer input."
+	)
+	_assert_true(
+		detail_copy.text.contains("ENHANCED RISK") \
+			and detail_copy.text.contains("EXTRA REWARD") \
+			and current_selection.text.contains("Enhanced") \
+			and confirm_button.text == "Begin Enhanced Protocol",
+		"Enhanced selection should synchronize its briefing, current selection, and confirm action."
+	)
+	var enemy_preview := _panel.get_node("Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details/EnemyPreview") as VBoxContainer
+	var enemy_preview_header := enemy_preview.get_node("Header") as Label
+	var enemy_preview_entries := enemy_preview.get_node("Entries") as HBoxContainer
+	_assert_true(
+		enemy_preview.visible and enemy_preview_entries.get_child_count() > 0,
+		"Protocol details should replace reward copy with the next battle's enemy preview."
+	)
+	var uncertain_snapshot := PANEL_SCRIPT.build_enemy_preview_snapshot("survival", 1) as Dictionary
+	_assert_true(
+		bool(uncertain_snapshot.get("uncertain", false)) \
+			and (uncertain_snapshot.get("entries", []) as Array).size() == 2 \
+			and LocalizationManager.tr_key("battle_contract.ui.enemy_preview.possible", "") == "MAY APPEAR",
+		"A randomized multi-enemy pool should be labeled as possible rather than confirmed."
+	)
+	var reward_snapshot := PANEL_SCRIPT.build_enemy_preview_snapshot("reward", 1) as Dictionary
+	var reward_entries := reward_snapshot.get("entries", []) as Array
+	_assert_true(
+		not bool(reward_snapshot.get("uncertain", true)) \
+			and reward_entries.size() == 1 \
+			and str((reward_entries[0] as Dictionary).get("id", "")) == "reward_enemy",
+		"Reward Protocol should preview its actual fixed reward target."
+	)
+	var late_snapshot := PANEL_SCRIPT.build_enemy_preview_snapshot("survival", 9) as Dictionary
+	var elite_entry: Dictionary = {}
+	for candidate in late_snapshot.get("entries", []) as Array:
+		if bool((candidate as Dictionary).get("elite", false)):
+			elite_entry = candidate as Dictionary
+			break
+	_assert_true(
+		not elite_entry.is_empty() and elite_entry.get("texture") != null,
+		"Enemy preview metadata should preserve the actual elite tag and portrait texture."
+	)
+	var elite_view := _panel.call("_make_enemy_preview_entry", elite_entry) as VBoxContainer
+	var elite_name_row := elite_view.get_child(1) as HBoxContainer
+	_assert_true(
+		elite_name_row.get_child_count() == 2 \
+			and (elite_name_row.get_child(1) as Label).text == "ELITE",
+		"Elite candidates should render a visible elite badge beside their name."
+	)
+	elite_view.free()
+	var rest_snapshot := PANEL_SCRIPT.build_enemy_preview_snapshot("rest", 1) as Dictionary
+	_assert_true(
+		bool(rest_snapshot.get("available", false)) \
+			and (rest_snapshot.get("entries", []) as Array).is_empty(),
+		"Rest Protocol should explicitly resolve to an available empty enemy preview."
 	)
 	_assert_true(_confirm_count == 0, "Selecting a protocol should not confirm it immediately.")
 	confirm_button.disabled = false # The layout test runs outside the protocol-selection phase.
@@ -191,10 +332,21 @@ func _run() -> void:
 			bool(_panel.get("_locked")),
 		]
 	)
+	_panel.call("dismiss")
+	_panel.call("open", [ELIMINATION, SURVIVAL], Callable(), Callable())
+	await get_tree().process_frame
+	_assert_true(
+		select_range.text.contains("1–2") and not select_range.text.contains("1–3"),
+		"Protocol selection should reduce its numeric shortcut range when only two options are owned."
+	)
+	_assert_true(
+		not (_panel.get("cards") as Array)[2].visible,
+		"The hidden third card should agree with the displayed 1–2 shortcut range."
+	)
 
 	var narrow_size: Vector2 = PANEL_SCRIPT.calculate_panel_size(Vector2(720.0, 720.0), true)
 	_assert_true(
-		narrow_size.is_equal_approx(Vector2(688.0, 640.0)),
+		narrow_size.is_equal_approx(Vector2(672.0, 688.0)),
 		"Panel sizing should preserve horizontal and vertical safe margins on narrow viewports."
 	)
 
@@ -220,10 +372,11 @@ func _run() -> void:
 	reward_card.call("set_selected", true, false)
 	selected_badge = reward_card.get_node("Margin/Content/Header/SelectedBadge") as Label
 	await get_tree().process_frame
-	interaction_hint = _panel.get_node("Shade/Panel/Margin/Content/Subtitle") as Label
+	select_range = _panel.get_node("Shade/Panel/Margin/Content/Subtitle/SelectRange") as Label
+	escape_icon = _panel.get_node("Shade/Panel/Margin/Content/Subtitle/EscapeIcon") as TextureRect
 	_assert_true(
-		interaction_hint.text.contains("Enter") and interaction_hint.text.contains("1–3"),
-		"Chinese protocol selection should explain numeric selection and explicit confirmation."
+		select_range.text.contains("1–3") and escape_icon.texture != null,
+		"Chinese protocol selection should localize the dynamic range and retain the Escape key icon."
 	)
 	_assert_true(
 		selected_badge.text == "✓ 已选择",
@@ -233,12 +386,11 @@ func _run() -> void:
 		_panel.get_node("Shade/Panel/Margin/Content/TerminalStatus").text.contains("战术链路"),
 		"Terminal status should localize instead of remaining English."
 	)
-	_assert_reward_copy(ELIMINATION, "正常")
-	_assert_reward_copy(SURVIVAL, "正常")
-	_assert_reward_copy(OPERATION, "正常")
-	_assert_reward_copy(CONTAINMENT, "较多")
-	_assert_reward_copy(EXTRACTION, "正常")
-	_assert_reward_copy(REWARD, "大量")
+	_assert_full_width_objective_copy(ELIMINATION)
+	_assert_full_width_objective_copy(SURVIVAL)
+	_assert_full_width_objective_copy(OPERATION)
+	_assert_full_width_objective_copy(CONTAINMENT)
+	_assert_full_width_objective_copy(EXTRACTION)
 
 	print("FAIL: battle contract selection layout" if _failed else "PASS: battle contract selection layout")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0, _reset_runtime_state)
@@ -251,22 +403,49 @@ func _reset_runtime_state() -> void:
 func _on_contract_confirmed() -> void:
 	_confirm_count += 1
 
-func _assert_reward_copy(definition: Resource, expected_gold_tier: String) -> void:
+func _assert_full_width_objective_copy(definition: Resource) -> void:
 	var card := preload("res://UI/scenes/battle_contract_card.tscn").instantiate() as Button
 	add_child(card)
 	card.call("setup", definition)
-	var reward_label: Label
-	if str(definition.contract_id) == "reward":
-		reward_label = card.get_node("Margin/Content/RewardDetails/Reward") as Label
-	else:
-		reward_label = card.get_node("Margin/Content/InfoGrid/Reward") as Label
 	_assert_true(
-		reward_label.text.contains("金币：%s" % expected_gold_tier),
-		"Contract %s should expose its relative gold tier." % str(definition.contract_id)
+		card.has_method("set_enhanced_mode") and not bool(card.call("is_enhanced_mode")),
+		"Contract %s should expose an enhanced presentation interface that defaults off." % str(definition.contract_id)
 	)
+	card.call("set_enhanced_mode", true)
 	_assert_true(
-		reward_label.text.contains("额外：随机装备选项"),
-		"Contract %s should disclose the random post-battle item draft." % str(definition.contract_id)
+		not bool(card.call("is_enhanced_mode")) and not card.get_node("EnhancedFrame").visible,
+		"Contract %s should reject enhanced mode until risk and reward content are available." % str(definition.contract_id)
+	)
+	var enhanced_toggle := card.get_node("EnhancementToggle") as CheckButton
+	_assert_true(
+		not enhanced_toggle.visible and not bool(card.call("is_enhanced_available")),
+		"Contract %s should hide unfinished enhanced content by default." % str(definition.contract_id)
+	)
+	card.call("set_enhanced_offer", ["Enemies gain +20% movement speed"], ["Gold +40%"])
+	_assert_true(
+		enhanced_toggle.visible and bool(card.call("is_enhanced_available")),
+		"Contract %s should reveal its enhanced toggle only when content becomes available." % str(definition.contract_id)
+	)
+	card.call("set_enhanced_mode", true)
+	var enhanced_details := card.get_node("Margin/Content/EnhancedDetails") as VBoxContainer
+	_assert_true(
+		bool(card.call("is_enhanced_mode")) \
+			and card.get_node("EnhancedFrame").visible \
+			and enhanced_details.visible \
+			and (enhanced_details.get_node("Risk") as Label).text.contains("Enemies gain") \
+			and (enhanced_details.get_node("Bonus") as Label).text.contains("Gold +40%"),
+		"Contract %s should show its armor frame and disclose both risk and reward when enhanced." % str(definition.contract_id)
+	)
+	card.call("set_enhanced_available", false)
+	_assert_true(
+		not enhanced_details.visible and not bool(card.call("is_enhanced_mode")),
+		"Contract %s should clear enhanced disclosure when the offer becomes unavailable." % str(definition.contract_id)
+	)
+	var info_grid := card.get_node("Margin/Content/InfoGrid") as HBoxContainer
+	_assert_true(
+		info_grid.get_child_count() == 1 \
+			and not card.has_node("Margin/Content/InfoGrid/Reward"),
+		"Contract %s should show only its full-width core objective." % str(definition.contract_id)
 	)
 	card.queue_free()
 

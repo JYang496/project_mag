@@ -247,6 +247,9 @@ func refresh_texts() -> void:
 		upgrade_weapon_mode_button.text = LocalizationManager.tr_key("ui.upgrade.weapons", "Upgrade Weapons")
 	if upgrade_module_mode_button:
 		upgrade_module_mode_button.text = LocalizationManager.tr_key("ui.upgrade.modules", "Upgrade Modules")
+	if upgrade_management_view and is_instance_valid(upgrade_management_view):
+		upgrade_management_view.upgrade_tab_button.text = LocalizationManager.tr_key("ui.management.tab.upgrade", "Upgrade")
+		upgrade_management_view.fusion_tab_button.text = LocalizationManager.tr_key("ui.management.tab.fusion", "Fusion")
 	var upgrade_back := upgrade_panel.get_node_or_null("BackToUpgradeMenu") as Button
 	if upgrade_back:
 		upgrade_back.text = LocalizationManager.tr_key("ui.panel.back", "Back")

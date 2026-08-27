@@ -1,6 +1,7 @@
 class_name ConnectedEffectRenderer
 extends RefCounted
 
+const PLAYER_GROUND_EFFECT_RENDER_PRIORITY := 30
 const BeamShader := preload("res://Shaders/ground_beam_flow.gdshader")
 const ConeShader := preload("res://Shaders/ground_cone_flow.gdshader")
 const ConnectedShader := preload("res://Shaders/ground_connected_effect.gdshader")
@@ -33,6 +34,7 @@ func setup(view: Node) -> void:
 	shared_beam_mesh.material = shared_beam_material
 	shared_cone_material = ShaderMaterial.new()
 	shared_cone_material.shader = ConeShader
+	shared_cone_material.render_priority = PLAYER_GROUND_EFFECT_RENDER_PRIORITY
 
 func register_segment(line: Line2D) -> void:
 	if _is_ready():
@@ -68,6 +70,7 @@ func get_cone_material(texture: Texture2D) -> ShaderMaterial:
 		return cone_material_cache[texture_id] as ShaderMaterial
 	var material := ShaderMaterial.new()
 	material.shader = ConeShader
+	material.render_priority = PLAYER_GROUND_EFFECT_RENDER_PRIORITY
 	material.set_shader_parameter("use_flame_texture", true)
 	material.set_shader_parameter("flame_texture", texture)
 	cone_material_cache[texture_id] = material

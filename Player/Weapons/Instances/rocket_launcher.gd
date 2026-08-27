@@ -22,15 +22,15 @@ func _init() -> void:
 
 
 var weapon_data = {
-	"1": {"damage": "42", "speed": "460", "projectile_hits": "1", "fire_interval_sec": "2.4", "ammo": "6", "explosion_scale": "2.20"},
-	"2": {"damage": "53", "speed": "500", "projectile_hits": "1", "fire_interval_sec": "2.3", "ammo": "6", "explosion_scale": "2.35"},
-	"3": {"damage": "68", "speed": "540", "projectile_hits": "1", "fire_interval_sec": "2.2", "ammo": "6", "explosion_scale": "2.50"},
-	"4": {"damage": "84", "speed": "580", "projectile_hits": "1", "fire_interval_sec": "2.1", "ammo": "8", "explosion_scale": "2.70"},
-	"5": {"damage": "105", "speed": "620", "projectile_hits": "1", "fire_interval_sec": "2.0", "ammo": "8", "explosion_scale": "2.90"},
-	"6": {"damage": "131", "speed": "650", "projectile_hits": "1", "fire_interval_sec": "1.9", "ammo": "8", "explosion_scale": "3.10"},
-	"7": {"damage": "158", "speed": "680", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "10", "explosion_scale": "3.35"},
-	"8": {"damage": "189", "speed": "700", "projectile_hits": "1", "fire_interval_sec": "1.7", "ammo": "10", "explosion_scale": "3.60"},
-	"9": {"damage": "226", "speed": "720", "projectile_hits": "1", "fire_interval_sec": "1.6", "ammo": "10", "explosion_scale": "3.90"}
+	"1": {"damage": "42", "speed": "460", "projectile_hits": "1", "fire_interval_sec": "2.4", "ammo": "4", "explosion_scale": "2.20"},
+	"2": {"damage": "53", "speed": "500", "projectile_hits": "1", "fire_interval_sec": "2.3", "ammo": "4", "explosion_scale": "2.35"},
+	"3": {"damage": "68", "speed": "540", "projectile_hits": "1", "fire_interval_sec": "2.2", "ammo": "4", "explosion_scale": "2.50"},
+	"4": {"damage": "84", "speed": "580", "projectile_hits": "1", "fire_interval_sec": "2.1", "ammo": "6", "explosion_scale": "2.70"},
+	"5": {"damage": "105", "speed": "620", "projectile_hits": "1", "fire_interval_sec": "2.0", "ammo": "6", "explosion_scale": "2.90"},
+	"6": {"damage": "131", "speed": "650", "projectile_hits": "1", "fire_interval_sec": "1.9", "ammo": "6", "explosion_scale": "3.10"},
+	"7": {"damage": "158", "speed": "680", "projectile_hits": "1", "fire_interval_sec": "1.8", "ammo": "8", "explosion_scale": "3.35"},
+	"8": {"damage": "189", "speed": "700", "projectile_hits": "1", "fire_interval_sec": "1.7", "ammo": "8", "explosion_scale": "3.60"},
+	"9": {"damage": "226", "speed": "720", "projectile_hits": "1", "fire_interval_sec": "1.6", "ammo": "8", "explosion_scale": "3.90"}
 }
 
 
@@ -117,11 +117,8 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 		detail.get("enemy", null),
 		cluster_radius
 	)
-	if nearby_count <= 0:
+	if not can_passive_trigger(&"rocket_kill_reward", 0.15):
 		return
-	if not is_passive_ready():
-		return
-	consume_passive_charge()
 	var cluster_hits := _apply_cluster_kill_damage(
 		death_position_variant as Vector2,
 		detail.get("enemy", null),
@@ -134,32 +131,22 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 		"nearby_enemy_count": nearby_count,
 		"cluster_hits": cluster_hits,
 		"damage_type": Attack.TYPE_FIRE,
-		"refresh": "reload",
+		"trigger": "weapon_kill",
+		"refresh": "kill",
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
 	var state := "ready"
-	if not is_passive_ready():
-		state = "waiting_refresh"
-	var charge_current := passive_controller.get_passive_charge_current()
-	var charge_max := passive_controller.get_passive_charge_max()
-	return with_passive_charge_status({
+	return {
 		"id": "rocket_cluster_kill_triggered",
 		"display_name": "Cluster Kill",
 		"state": state,
-		"progress": float(charge_current) / float(maxi(charge_max, 1)),
+		"progress": 1.0,
 		"ready": state == "ready",
-		"trigger_hint": "enemy_killed_nearby_enemy",
-		"refresh_hint": "reload",
-		"charge_current": charge_current,
-		"charge_max": charge_max,
-		"charges_current": charge_current,
-		"charges_max": charge_max,
+		"trigger_hint": "weapon_kill",
+		"refresh_hint": "kill",
 		"radius": _get_cluster_kill_radius(),
-	})
-
-func get_passive_max_charges() -> int:
-	return 3
+	}
 
 func _apply_cluster_kill_damage(position: Vector2, killed_enemy: Variant, cluster_radius: float) -> int:
 	var hit_count := 0

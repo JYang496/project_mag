@@ -25,12 +25,44 @@ Use the local Godot console executable from the repository root:
 - Pass `--capture-showcase-vfx` to save its deterministic review capture under
   `output/showcases/vfx/` and exit.
 
+## Attack warnings
+
+- Scene: `res://tests/showcases/vfx/attack_warning_gallery_showcase.tscn`
+- Shows the complete active enemy attack-warning vocabulary: bomber and mortar
+  circular AOE timing without numeric countdowns, spike-turret line lock, and
+  rolling-elite dash corridor.
+- Pass `--capture-attack-warning-showcase` to capture the gallery at 72% warning
+  progress under `output/showcases/vfx/` and exit.
+
+## Enemy auras
+
+- Scene: `res://tests/showcases/vfx/enemy_aura_gallery_showcase.tscn`
+- Shows every production enemy support aura together: speed, repair, and shield.
+- Each panel preserves the production ownership ring and functional-color detail;
+  repair and shield also show their active source-to-target links.
+
 ## Reward draft
 
 - Scene: `res://tests/showcases/ui/reward_draft_unification_showcase.tscn`
 - Controls: `L` language, `F` focus, `H` hold progress, `R` reset.
 - Shows three self-contained cards without a duplicate detail row, long bilingual copy, focus, selection, and
   quick-confirm states.
+
+## Contract difficulty
+
+- Scene: `res://tests/showcases/ui/contract_difficulty_comparison_showcase.tscn`
+- Shows the same Operation contract as a standard card and as an enhanced-risk
+  card, with separate objective, risk, and bonus-reward hierarchy. Shared base
+  rewards are intentionally omitted until contracts have distinct base rewards.
+
+## Expanded contract selection
+
+- Scene: `res://tests/showcases/ui/battle_contract_selection_expanded_showcase.tscn`
+- Shows the production protocol selector with its transparent outer layout,
+  near-full-screen safe area, and responsive two-card or three-card density.
+- Pass `-- --capture-contract-selection-showcase` to save both production layouts
+  plus the reserved enhanced-card interface state
+  under `output/showcases/ui/` and exit.
 
 ## Arena environment
 

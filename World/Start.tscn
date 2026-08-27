@@ -5,6 +5,43 @@
 [ext_resource type="Script" uid="uid://cbi0jbeohvr24" path="res://UI/scripts/components/start_menu_backdrop.gd" id="3_backdrop"]
 [ext_resource type="Script" uid="uid://crthixi6sav7n" path="res://World/start_menu.gd" id="4_menu"]
 [ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu_background.png" id="5_background"]
+[ext_resource type="Texture2D" path="res://asset/images/ui/input_prompts/kenney_pixel/input_prompts_tilemap.png" id="6_input_prompts"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_arrow_up_prompt"]
+atlas = ExtResource("6_input_prompts")
+region = Rect2(510, 68, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_arrow_left_prompt"]
+atlas = ExtResource("6_input_prompts")
+region = Rect2(561, 68, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_arrow_down_prompt"]
+atlas = ExtResource("6_input_prompts")
+region = Rect2(527, 68, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_arrow_right_prompt"]
+atlas = ExtResource("6_input_prompts")
+region = Rect2(544, 68, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_w_prompt"]
+atlas = ExtResource("6_input_prompts")
+region = Rect2(306, 34, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_a_prompt"]
+atlas = ExtResource("6_input_prompts")
+region = Rect2(306, 51, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_s_prompt"]
+atlas = ExtResource("6_input_prompts")
+region = Rect2(323, 51, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_d_prompt"]
+atlas = ExtResource("6_input_prompts")
+region = Rect2(340, 51, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_escape_prompt"]
+atlas = ExtResource("6_input_prompts")
+region = Rect2(289, 0, 16, 16)
 
 [node name="Start" type="Node2D" unique_id=556195875]
 script = ExtResource("4_menu")
@@ -129,10 +166,144 @@ alignment = 0
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="InputHint" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn" unique_id=1500515543]
+[node name="InputHint" type="HBoxContainer" parent="CanvasLayer/GUI/SafeArea/MainColumn" unique_id=1500515543]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Navigation" type="HBoxContainer" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint"]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="KeyW" type="TextureRect" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation"]
+custom_minimum_size = Vector2(16, 24)
+layout_mode = 2
+mouse_filter = 2
+tooltip_text = "W"
+texture = SubResource("AtlasTexture_w_prompt")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="KeyA" type="TextureRect" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation"]
+custom_minimum_size = Vector2(16, 24)
+layout_mode = 2
+mouse_filter = 2
+tooltip_text = "A"
+texture = SubResource("AtlasTexture_a_prompt")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="KeyS" type="TextureRect" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation"]
+custom_minimum_size = Vector2(16, 24)
+layout_mode = 2
+mouse_filter = 2
+tooltip_text = "S"
+texture = SubResource("AtlasTexture_s_prompt")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="KeyD" type="TextureRect" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation"]
+custom_minimum_size = Vector2(16, 24)
+layout_mode = 2
+mouse_filter = 2
+tooltip_text = "D"
+texture = SubResource("AtlasTexture_d_prompt")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="KeyboardSeparator" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation"]
 layout_mode = 2
 theme_type_variation = &"MutedLabel"
-text = "[ENTER]  确认     [ESC]  返回"
+text = "/"
+vertical_alignment = 1
+
+[node name="ArrowUp" type="TextureRect" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation"]
+custom_minimum_size = Vector2(16, 24)
+layout_mode = 2
+mouse_filter = 2
+tooltip_text = "Up"
+texture = SubResource("AtlasTexture_arrow_up_prompt")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="ArrowLeft" type="TextureRect" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation"]
+custom_minimum_size = Vector2(16, 24)
+layout_mode = 2
+mouse_filter = 2
+tooltip_text = "Left"
+texture = SubResource("AtlasTexture_arrow_left_prompt")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="ArrowDown" type="TextureRect" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation"]
+custom_minimum_size = Vector2(16, 24)
+layout_mode = 2
+mouse_filter = 2
+tooltip_text = "Down"
+texture = SubResource("AtlasTexture_arrow_down_prompt")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="ArrowRight" type="TextureRect" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation"]
+custom_minimum_size = Vector2(16, 24)
+layout_mode = 2
+mouse_filter = 2
+tooltip_text = "Right"
+texture = SubResource("AtlasTexture_arrow_right_prompt")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Label" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "选择"
+vertical_alignment = 1
+
+[node name="Confirm" type="HBoxContainer" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Prompt" type="TextureRect" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Confirm"]
+custom_minimum_size = Vector2(67, 24)
+layout_mode = 2
+mouse_filter = 2
+tooltip_text = "Confirm"
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Label" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Confirm"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "确认"
+vertical_alignment = 1
+
+[node name="Back" type="HBoxContainer" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Prompt" type="TextureRect" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Back"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+mouse_filter = 2
+tooltip_text = "Back"
+texture = SubResource("AtlasTexture_escape_prompt")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Label" type="Label" parent="CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Back"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "返回"
+vertical_alignment = 1
 
 [node name="BuildInfo" type="Label" parent="CanvasLayer/GUI" unique_id=2084385709]
 layout_mode = 1

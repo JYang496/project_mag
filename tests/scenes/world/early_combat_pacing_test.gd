@@ -43,6 +43,7 @@ func _run() -> void:
 			_expect(plan != null and plan.time_out_sec == EXPECTED_NORMAL_DURATIONS[offset], "level %d must retain its standard duration" % (offset + 5))
 		_assert_protocol_pacing(economy)
 		_assert_spawn_pressure_policy()
+		_assert_vanguard_policy(profile)
 		_assert_limited_spawn_substitution()
 		_assert_progression_profile()
 		_assert_final_state_transition()
@@ -162,6 +163,22 @@ func _assert_spawn_pressure_policy() -> void:
 	_expect(reset_snapshot.get("mode") == &"finite" and int(reset_snapshot.get("soft_cap_hp", -1)) == 0, "spawn pressure policy must reset between battles")
 	spawner.free()
 	PhaseManager.battle_time = 0
+
+func _assert_vanguard_policy(profile: SpawnCombatProfile) -> void:
+	var spawner := EnemySpawner.new()
+	spawner._runtime_spawn_states = spawner._build_runtime_states(profile.get_level_spawns(1))
+	spawner._planned_target_total_hp = profile.get_target_total_hp(1)
+	var candidates := spawner._get_vanguard_candidates()
+	_expect(candidates.size() == 1, "level 2 vanguard must use only the earliest available enemy pool")
+	if not candidates.is_empty():
+		var entry := spawner._get_state_entry(candidates[0])
+		_expect(entry != null and entry.start_sec == 1, "vanguard must not reveal delayed enemy types early")
+	_expect(spawner._deploy_battle_vanguard(0) == 0, "level 1 must not deploy a vanguard")
+	var budget_before := spawner._spawned_total_hp
+	var deployed_hp := spawner._deploy_battle_vanguard(1)
+	_expect(deployed_hp >= ceili(float(spawner._planned_target_total_hp) * 0.10), "level 2 vanguard must reach ten percent of total HP")
+	_expect(spawner._spawned_total_hp == budget_before, "vanguard HP must remain outside the normal spawn budget")
+	spawner.free()
 
 func _assert_limited_spawn_substitution() -> void:
 	var spawner := EnemySpawner.new()

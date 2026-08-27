@@ -97,6 +97,7 @@ func ensure_branch_select_panel() -> bool:
 		return false
 	gui_root.add_child(branch_select_panel)
 	branch_select_panel.visible = false
+	branch_select_panel.visibility_changed.connect(Callable(owner_ui, "_refresh_controls_hint_visibility"))
 	var callback := Callable(owner_ui, "_on_branch_selected")
 	if not branch_select_panel.is_connected("branch_selected", callback):
 		branch_select_panel.connect("branch_selected", callback)
@@ -113,6 +114,7 @@ func ensure_module_equip_selection_panel() -> bool:
 		return false
 	gui_root.add_child(module_equip_selection_panel)
 	module_equip_selection_panel.visible = false
+	module_equip_selection_panel.visibility_changed.connect(Callable(owner_ui, "_refresh_controls_hint_visibility"))
 	_sync_public_fields_to_owner()
 	return true
 
@@ -126,6 +128,7 @@ func ensure_reward_selection_panel() -> bool:
 		return false
 	gui_root.add_child(reward_selection_panel)
 	reward_selection_panel.visible = false
+	reward_selection_panel.visibility_changed.connect(Callable(owner_ui, "_refresh_controls_hint_visibility"))
 	_sync_public_fields_to_owner()
 	return true
 
@@ -139,6 +142,7 @@ func ensure_weapon_replacement_panel() -> bool:
 		return false
 	gui_root.add_child(weapon_replacement_panel)
 	weapon_replacement_panel.visible = false
+	weapon_replacement_panel.visibility_changed.connect(Callable(owner_ui, "_refresh_controls_hint_visibility"))
 	_sync_public_fields_to_owner()
 	return true
 

@@ -57,10 +57,8 @@ func _build_reward_card_data(reward: RewardInfo) -> Dictionary:
 		var result_type := str(outcome.get("result", "not_applicable"))
 		if not outcome.is_empty():
 			weapon_text = _format_weapon_obtain_prediction(base_weapon_text, weapon_name, outcome)
-		if result_type == "fused":
-			data["type"] = _format_reward_type_label(reward, LocalizationManager.tr_key("ui.reward.type.weapon_fusion", "Weapon Fusion"))
-		elif result_type == "converted_to_gold":
-			data["type"] = _format_reward_type_label(reward, LocalizationManager.tr_key("ui.reward.type.duplicate_weapon", "Duplicate Weapon"))
+		if result_type == "dismantled_to_core":
+			data["type"] = _format_reward_type_label(reward, LocalizationManager.tr_key("ui.reward.type.weapon_core", "Weapon Core"))
 		else:
 			data["type"] = _format_reward_type_label(reward, "Weapon")
 		data["name"] = weapon_name
@@ -118,8 +116,6 @@ func _localize_reward_category(category: String) -> String:
 			return LocalizationManager.tr_key("ui.reward.category.supply", normalized)
 		"Cell Effect":
 			return LocalizationManager.tr_key("ui.reward.category.cell_effect", normalized)
-		"New Weapon":
-			return LocalizationManager.tr_key("ui.reward.category.new_weapon", normalized)
 		"Reward":
 			return LocalizationManager.tr_key("ui.reward.default", normalized)
 		_:
@@ -127,6 +123,7 @@ func _localize_reward_category(category: String) -> String:
 
 func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 	var data := {
+		"reward_type": &"generic",
 		"title": LocalizationManager.tr_key("ui.reward.default", "Reward"),
 		"type_label": _localize_reward_category("Supply"),
 		"short_tag": "",
@@ -155,6 +152,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		return data
 	data["rarity"] = reward.get_rarity()
 	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		data["reward_type"] = &"weapon_upgrade"
 		data["detail_variant"] = &"weapon_upgrade"
 		var weapon_name := reward.target_weapon_name.strip_edges()
 		if weapon_name == "":
@@ -228,6 +226,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["detail_bullets"] = _fallback_detail_bullets(reward)
 		return data
 	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		data["reward_type"] = &"module"
 		var task_definition := CellTaskModuleRuntime.get_definition(reward.task_module_id)
 		if task_definition != null:
 			data["title"] = task_definition.get_display_name()
@@ -264,6 +263,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 	var detail_chunks: PackedStringArray = []
 	data["type_label"] = _format_reward_type_label(reward, "Reward")
 	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
+		data["reward_type"] = &"new_weapon"
 		data["detail_variant"] = &"new_weapon"
 		var weapon_name := LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
 		var weapon_definition := DataHandler.read_weapon_data(reward.item_id) as WeaponDefinition
@@ -303,7 +303,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 				detail_chunks.append(stat_summary)
 				data["comparison_lines"] = PackedStringArray(stat_summary.split(" · ", false))
 			data["core_stat_lines"] = _core_current_stat_lines(model.current_stats)
-		data["type_label"] = _format_reward_type_label(reward, "New Weapon")
+		data["type_label"] = _format_reward_type_label(reward, "Weapon")
 		data["level_text"] = "Lv.%d" % int(reward.item_level)
 		data["meta_text"] = LocalizationManager.tr_format(
 			"ui.reward.level_category_meta",
@@ -318,48 +318,60 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			{"name": weapon_name, "level": int(reward.item_level)},
 			"Obtain %s · Lv.%d" % [weapon_name, int(reward.item_level)]
 		)
-		if result_type == "fused":
-			data["detail_variant"] = &"weapon_fusion"
-			var from_fuse := int(outcome.get("from_fuse", 1))
-			var target_fuse := int(outcome.get("target_fuse", 1))
-			data["type_label"] = _format_reward_type_label(reward, LocalizationManager.tr_key("ui.reward.type.weapon_fusion", "Weapon Fusion"))
+		if result_type == "dismantled_to_core":
+			data["reward_type"] = &"weapon_core"
+			data["detail_variant"] = &"weapon_core"
+			var core_tags: Array = outcome.get("core_tags", [])
+			var core_amount := int(outcome.get("core_amount", 1))
+			var current_count := int(outcome.get("current_core_count", 0))
+			var resulting_count := int(outcome.get("resulting_core_count", outcome.get("core_count", current_count + core_amount)))
+			data["source_weapon_name"] = weapon_name
+			data["source_weapon_icon"] = data.get("icon_texture", null)
+			data["core_amount"] = core_amount
+			data["current_core_count"] = current_count
+			data["resulting_core_count"] = resulting_count
+			data["core_tags"] = core_tags.duplicate(true)
+			var usable_branches: Variant = outcome.get("usable_branches", [])
+			data["usable_branches"] = usable_branches.duplicate(true) if usable_branches is Array else []
+			data["summary_text"] = ""
+			data["role_summary"] = ""
+			data["feature_lines"] = PackedStringArray()
+			data["core_stat_lines"] = PackedStringArray()
+			data["comparison_lines"] = PackedStringArray()
+			data["type_label"] = _format_reward_type_label(reward, LocalizationManager.tr_key("ui.reward.type.weapon_core", "Weapon Core"))
 			data["meta_text"] = LocalizationManager.tr_format(
-				"ui.reward.meta.weapon_fuse",
-				{"from": from_fuse, "to": target_fuse},
-				"Fuse %d -> %d" % [from_fuse, target_fuse]
+				"ui.reward.meta.weapon_core",
+				{"current": current_count, "resulting": resulting_count},
+				"Core inventory: %d -> %d" % [current_count, resulting_count]
 			)
-			data["icon_badge_text"] = "^"
+			data["chips"] = []
+			for tag in core_tags:
+				data["chips"] = _append_display_chip(data["chips"], BUILD_TAG_DISPLAY.build_tag_chip(tag))
+			data["fallback_icon_key"] = "weapon_core"
+			data["icon_badge_text"] = "C"
 			data["icon_badge_color"] = _get_reward_action_color(reward)
 			data["outcome_text"] = LocalizationManager.tr_format(
-				"ui.reward.outcome.weapon_fuse",
-				{"name": weapon_name, "fuse": target_fuse},
-				"Fuse equipped %s to Fuse %d; choose a branch next if one is available" % [weapon_name, target_fuse]
+				"ui.reward.core.dismantled_amount",
+				{"amount": core_amount},
+				"Duplicate weapon dismantled into %d core(s)." % core_amount
 			)
 			data["detail_preview"] = LocalizationManager.tr_format(
-				"ui.reward.detail.preview.weapon_fusion",
-				{"name": weapon_name, "from": from_fuse, "to": target_fuse},
-				"%s · Fuse %d -> %d" % [weapon_name, from_fuse, target_fuse]
+				"ui.reward.detail.preview.weapon_core",
+				{"name": weapon_name, "tags": _format_tag_values(core_tags)},
+				"%s · 1 core [%s]" % [weapon_name, _format_tag_values(core_tags)]
 			)
-		elif result_type == "converted_to_gold":
-			var gold_value := int(outcome.get("gold", 0))
-			data["role_summary"] = ""
-			data["title"] = LocalizationManager.tr_format(
-				"ui.reward.gold",
-				{"value": gold_value},
-				"Gold +%d" % gold_value
-			)
-			data["type_label"] = _format_reward_type_label(reward, "Economy")
-			data["meta_text"] = LocalizationManager.tr_key("ui.reward.economy_meta", "Run Resource")
-			data["short_tag"] = ""
-			summary_chunks.clear()
-			summary_chunks.append(str(data["title"]))
-			detail_chunks.clear()
-			detail_chunks.append(str(data["title"]))
-			data["icon_badge_text"] = "$"
-			data["icon_badge_color"] = _get_reward_action_color(reward)
-			data["fallback_icon_key"] = "economy"
-			data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.resource", "Added to resources")
+			detail_chunks.append(LocalizationManager.tr_key(
+				"ui.reward.core.tag_source_hint",
+				"Retained from this weapon for fusion recipes."
+			))
+			var usage_lines := _format_core_usage_lines(outcome.get("usable_branches", []))
+			data["usable_branch_lines"] = usage_lines
+			data["usable_branch_count"] = usage_lines.size()
+			if not usage_lines.is_empty():
+				data["detail_effect"] = LocalizationManager.tr_format("ui.reward.core.usable_by", {"branches": " / ".join(usage_lines)}, "Usable by: %s" % " / ".join(usage_lines))
+				detail_chunks.append(str(data["detail_effect"]))
 	if reward.module_scene:
+		data["reward_type"] = &"module"
 		var module_data := _build_module_reward_display_data(reward.module_scene, reward.module_level)
 		var module_name := str(module_data.get("name", _extract_scene_name(reward.module_scene.resource_path)))
 		var module_summary := LocalizationManager.tr_format(
@@ -387,10 +399,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			{"level": max(1, reward.module_level), "category": _format_reward_type_label(reward, "Module")},
 			"Lv.%d - %s" % [max(1, reward.module_level), _format_reward_type_label(reward, "Module")]
 		)
-		var module_type_label := _format_reward_type_label(reward, "Module")
-		if MODULE_OFFER_CATALOG.is_new_tier_scene(reward.module_scene.resource_path):
-			module_type_label = "NEW · %s" % module_type_label
-		data["type_label"] = module_type_label
+		data["type_label"] = _format_reward_type_label(reward, "Module")
 		data["level_text"] = "Lv.%d" % max(1, reward.module_level)
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.module_obtain", "Added to temporary modules")
 	if reward.total_chip_value > 0:
@@ -421,7 +430,7 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			data["short_tag"] = " + ".join(summary_chunks.slice(1))
 		var detail_source: PackedStringArray = detail_chunks if not detail_chunks.is_empty() else summary_chunks
 		data["detail_text"] = "\n".join(detail_source)
-	if str(data["summary_text"]).strip_edges() == "":
+	if StringName(data.get("reward_type", &"generic")) != &"weapon_core" and str(data["summary_text"]).strip_edges() == "":
 		data["summary_text"] = _first_sentence(str(data["detail_text"]), _fallback_summary(reward))
 	if str(data["level_text"]).strip_edges() == "":
 		data["level_text"] = _derive_level_text(reward, data)
@@ -492,18 +501,10 @@ func _build_module_reward_display_data(module_scene: PackedScene, module_level: 
 	module_instance.set_module_level(max(1, module_level))
 	data["name"] = LocalizationManager.get_module_name(module_instance)
 	data["icon_texture"] = _get_module_texture(module_instance)
-	var fit_data: Dictionary = MODULE_FIT_FORMATTER.build_display_data(module_instance, MODULE_FIT_FORMATTER.get_current_weapon())
-	var effect_chips: Array = fit_data.get("effect_chips", [])
-	var chips: Array = []
-	chips.append(fit_data.get("fit_badge", {}))
-	for chip in effect_chips:
-		chips.append(chip)
-	data["chips"] = chips
+	var effect_chips := MODULE_FIT_FORMATTER.build_effect_chips(module_instance)
+	data["chips"] = effect_chips
 	var tag_parts := PackedStringArray()
-	var fit_label := str(fit_data.get("fit_label", "")).strip_edges()
-	if fit_label != "":
-		tag_parts.append(fit_label)
-	for label in BUILD_TAG_DISPLAY.chip_labels(effect_chips, 3):
+	for label in BUILD_TAG_DISPLAY.chip_labels(effect_chips):
 		tag_parts.append(str(label))
 	if not tag_parts.is_empty():
 		data["short_tag"] = " / ".join(tag_parts)
@@ -518,10 +519,6 @@ func _build_module_reward_display_data(module_scene: PackedScene, module_level: 
 		data["effect_lines"] = effect_descriptions.slice(1, mini(3, effect_descriptions.size()))
 	data["compatible_weapons"] = _build_compatible_weapon_previews(module_instance)
 	data["owned_weapon_count"] = _valid_owned_weapon_count()
-	for detail_line in fit_data.get("detail_lines", PackedStringArray()):
-		var fit_line := str(detail_line).strip_edges()
-		if fit_line != "":
-			descriptions.append(fit_line)
 	var chip_labels := BUILD_TAG_DISPLAY.chip_labels(effect_chips, 4)
 	if not chip_labels.is_empty():
 		descriptions.append(_format_module_chip_summary(effect_chips))
@@ -539,20 +536,57 @@ func _build_compatible_weapon_previews(module_instance: Module) -> Array:
 		var weapon := weapon_variant as Weapon
 		if weapon == null or not is_instance_valid(weapon):
 			continue
-		if str(module_instance.get_incompatibility_reason(weapon)).strip_edges() != "":
-			continue
+		var incompatibility_reason := str(module_instance.get_incompatibility_reason(weapon)).strip_edges()
 		var used_slots := weapon.get_module_count()
 		var max_slots := weapon.module_slot_capacity
+		var has_slot := used_slots < max_slots
 		previews.append({
 			"name": LocalizationManager.get_weapon_instance_display_name(weapon),
 			"icon_texture": weapon.sprite.texture if weapon.sprite != null else null,
 			"used_slots": used_slots,
 			"max_slots": max_slots,
-			"requires_replace": used_slots >= max_slots,
+			"compatible": incompatibility_reason == "",
+			"has_slot": has_slot,
+			"fit_reason": _build_compatible_weapon_reason(module_instance, weapon) if incompatibility_reason == "" else "",
+			"reason": _build_module_requirement_text(module_instance) if incompatibility_reason != "" else "",
+			"requires_replace": not has_slot,
 		})
-		if previews.size() >= 4:
-			break
 	return previews
+
+func _build_compatible_weapon_reason(module_instance: Module, weapon: Weapon) -> String:
+	var matched_labels := PackedStringArray()
+	for trait_name in module_instance.get_normalized_required_weapon_traits():
+		if weapon.has_any_weapon_traits([trait_name]):
+			matched_labels.append(LocalizationManager.get_module_term(trait_name, str(trait_name).capitalize()))
+	for delivery in module_instance.get_normalized_required_delivery_types():
+		if weapon.has_delivery_type(delivery):
+			matched_labels.append(LocalizationManager.get_module_term(delivery, str(delivery).capitalize()))
+	for capability in module_instance.get_normalized_required_weapon_capabilities():
+		if weapon.has_any_weapon_capabilities([capability]):
+			matched_labels.append(LocalizationManager.get_module_term(capability, str(capability).replace("_", " ").capitalize()))
+	if matched_labels.is_empty():
+		return ""
+	return LocalizationManager.tr_format(
+		"ui.reward.weapon_fit_reason",
+		{"requirements": " / ".join(matched_labels.slice(0, 2))},
+		"Satisfies trait: %s" % " / ".join(matched_labels.slice(0, 2))
+	)
+
+func _build_module_requirement_text(module_instance: Module) -> String:
+	var labels := PackedStringArray()
+	for trait_name in module_instance.get_normalized_required_weapon_traits():
+		labels.append(LocalizationManager.get_module_term(trait_name, str(trait_name).capitalize()))
+	for delivery in module_instance.get_normalized_required_delivery_types():
+		labels.append(LocalizationManager.get_module_term(delivery, str(delivery).capitalize()))
+	for capability in module_instance.get_normalized_required_weapon_capabilities():
+		labels.append(LocalizationManager.get_module_term(capability, str(capability).replace("_", " ").capitalize()))
+	if labels.is_empty():
+		return LocalizationManager.tr_key("ui.module.fit.not_compatible", "Not compatible")
+	return LocalizationManager.tr_format(
+		"ui.reward.weapon_requires_trait",
+		{"requirements": " / ".join(labels.slice(0, 2))},
+		"Requires trait: %s" % " / ".join(labels.slice(0, 2))
+	)
 
 func _valid_owned_weapon_count() -> int:
 	var count := 0
@@ -589,6 +623,32 @@ func _format_module_chip_summary(effect_chips: Array) -> String:
 			"Compatible With: %s" % " / ".join(compatibility)
 		))
 	return "\n".join(lines)
+
+func _format_tag_values(values: Variant) -> String:
+	var parts := PackedStringArray()
+	if values is Array:
+		for value in values:
+			var chip := BUILD_TAG_DISPLAY.build_tag_chip(value)
+			parts.append(str(chip.get("label", value)))
+	return ", ".join(parts)
+
+func _format_core_usage_lines(usages: Variant) -> PackedStringArray:
+	var lines := PackedStringArray()
+	if not (usages is Array):
+		return lines
+	for usage_variant in usages:
+		if not (usage_variant is Dictionary):
+			continue
+		var usage := usage_variant as Dictionary
+		var weapon_id := str(usage.get("weapon_id", ""))
+		var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+		if weapon_def == null:
+			continue
+		var branch := DataHandler.read_weapon_branch_definition(weapon_def.scene_path, str(usage.get("branch_id", "")))
+		if branch == null:
+			continue
+		lines.append("%s · %s" % [LocalizationManager.get_weapon_name_by_id(weapon_id, weapon_id), LocalizationManager.get_branch_display_name(branch)])
+	return lines
 
 func _get_reward_action_color(reward: RewardInfo) -> Color: return _owner.call("_get_reward_action_color", reward)
 func _get_weapon_obtain_prediction(weapon_id: String) -> Dictionary: return _owner.call("_get_weapon_obtain_prediction", weapon_id)

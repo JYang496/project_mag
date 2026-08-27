@@ -17,6 +17,12 @@ var sealed_count := 0
 var active_rift_id := 0
 var elapsed_sec := 0.0
 var reinforcement_waves := 0
+var mortar_enabled := false
+var mortar_remaining_sec := 0.0
+var mortar_interval_min_sec := 8.0
+var mortar_interval_max_sec := 11.0
+var mortar_options: Dictionary = {}
+var mortar_barrages := 0
 var _surge_remaining_sec := 0.0
 var _completion_guard := false
 var _objectives_spawned := false
@@ -36,6 +42,18 @@ func start(combat_port, parameters: Dictionary) -> void:
 	reinforcement_interval_sec = maxf(float(parameters.get("reinforcement_interval_sec", 9.0)), 3.0)
 	duration_buffer_sec = maxf(float(parameters.get("duration_buffer_sec", 12.0)), 0.0)
 	performance_wave_allowance_per_rift = maxf(float(parameters.get("performance_wave_allowance_per_rift", 4.0)), 0.1)
+	mortar_enabled = parameters.has("mortar_initial_delay_sec")
+	mortar_remaining_sec = maxf(float(parameters.get("mortar_initial_delay_sec", 6.0)), 0.1)
+	mortar_interval_min_sec = maxf(float(parameters.get("mortar_interval_min_sec", 8.0)), 0.5)
+	mortar_interval_max_sec = maxf(float(parameters.get("mortar_interval_max_sec", 11.0)), mortar_interval_min_sec)
+	mortar_options = {
+		"warning_duration_sec": parameters.get("mortar_warning_sec", 1.5),
+		"strike_count_min": parameters.get("mortar_strike_count_min", 2),
+		"strike_count_max": parameters.get("mortar_strike_count_max", 3),
+		"spread_radius": parameters.get("mortar_spread_radius", 110.0),
+		"blast_radius": parameters.get("mortar_blast_radius", 62.0),
+		"player_max_hp_ratio": parameters.get("mortar_player_max_hp_ratio", 0.12),
+	}
 	port.request_configure_duration(float(rift_count) * seal_duration_sec + duration_buffer_sec)
 	port.beacon_presence_changed.connect(_on_presence_changed)
 	port.battle_tick.connect(_on_tick)
@@ -47,6 +65,7 @@ func stop() -> void:
 		if port.beacon_presence_changed.is_connected(_on_presence_changed): port.beacon_presence_changed.disconnect(_on_presence_changed)
 		if port.battle_tick.is_connected(_on_tick): port.battle_tick.disconnect(_on_tick)
 		port.request_remove_beacons()
+		port.request_clear_contract_hazards()
 		port.request_configure_continuous_spawning(false)
 		port.request_configure_threat_multiplier(1.0)
 		port.request_external_victory_control(false)
@@ -60,6 +79,11 @@ func _on_tick(snapshot: Dictionary) -> void:
 	if not _objectives_spawned:
 		return
 	var delta := float(snapshot.get("delta_sec", 0.0))
+	if mortar_enabled:
+		mortar_remaining_sec -= delta
+		if mortar_remaining_sec <= 0.0:
+			mortar_barrages += 1 if port.request_spawn_mortar_barrage(mortar_options) > 0 else 0
+			mortar_remaining_sec = randf_range(mortar_interval_min_sec, mortar_interval_max_sec)
 	if delta <= 0.0:
 		return
 	elapsed_sec += delta
@@ -151,6 +175,7 @@ func _snapshot() -> Dictionary:
 		"player_inside": bool(presence.get("player_inside", false)),
 		"enemy_count": int(presence.get("enemy_count", 0)),
 		"reinforcement_waves": reinforcement_waves,
+		"mortar_barrages": mortar_barrages,
 		"surge_active": _surge_remaining_sec > 0.0,
 		"elapsed_sec": elapsed_sec,
 	}

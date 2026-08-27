@@ -5,6 +5,7 @@ var weapon: Weapon
 var branch_ids: Array[String] = []
 var branch_definitions: Array[WeaponBranchDefinition] = []
 var branch_behaviors: Array[WeaponBranchBehavior] = []
+var enhanced_branch_id := ""
 
 func setup(source_weapon: Weapon) -> void:
 	weapon = source_weapon
@@ -60,6 +61,29 @@ func restore_branch_ids(saved_branch_ids: Array) -> void:
 		branch_definitions.append(def)
 		_apply_branch_behavior_for_definition(def, saved_branch_id)
 	_refresh_weapon_after_branch_change()
+
+func set_enhanced_branch(branch_id: String) -> bool:
+	var normalized_id := str(branch_id).strip_edges()
+	if weapon == null or not is_instance_valid(weapon) or int(weapon.fuse) < 3:
+		return false
+	if normalized_id == "" or not has_branch(normalized_id):
+		return false
+	enhanced_branch_id = normalized_id
+	_sync_behavior_enhancement_state()
+	_refresh_weapon_after_branch_change()
+	return true
+
+func restore_enhanced_branch(saved_branch_id: String) -> void:
+	enhanced_branch_id = ""
+	var normalized_id := str(saved_branch_id).strip_edges()
+	if normalized_id == "" and weapon != null and int(weapon.fuse) >= 3 and not branch_ids.is_empty():
+		normalized_id = str(branch_ids[0])
+	if normalized_id != "" and has_branch(normalized_id) and weapon != null and int(weapon.fuse) >= 3:
+		enhanced_branch_id = normalized_id
+	_sync_behavior_enhancement_state()
+
+func is_branch_enhanced(branch_id: String) -> bool:
+	return enhanced_branch_id != "" and enhanced_branch_id == str(branch_id).strip_edges()
 
 func has_branch(check_branch_id: String) -> bool:
 	var normalized_id := str(check_branch_id)
@@ -199,13 +223,15 @@ func get_branch_shot_directions(base_direction: Vector2, shot_count: int = -1) -
 func get_branch_cooldown_multiplier() -> float:
 	var multiplier := 1.0
 	for behavior in get_branch_behaviors():
-		multiplier *= maxf(behavior.get_cooldown_multiplier(), 0.05)
+		var value := maxf(behavior.get_cooldown_multiplier(), 0.05)
+		multiplier *= _enhance_reduction_multiplier(value, behavior)
 	return maxf(multiplier, 0.05)
 
 func get_branch_projectile_damage_multiplier() -> float:
 	var multiplier := 1.0
 	for behavior in get_branch_behaviors():
-		multiplier *= maxf(behavior.get_projectile_damage_multiplier(), 0.05)
+		var value := maxf(behavior.get_projectile_damage_multiplier(), 0.05)
+		multiplier *= _enhance_multiplier_from_one(value, behavior)
 	return maxf(multiplier, 0.05)
 
 func get_branch_projectile_hit_override(current_hits: int) -> int:
@@ -217,25 +243,29 @@ func get_branch_projectile_hit_override(current_hits: int) -> int:
 func get_branch_damage_multiplier() -> float:
 	var multiplier := 1.0
 	for behavior in get_branch_behaviors():
-		multiplier *= maxf(behavior.get_damage_multiplier(), 0.05)
+		var value := maxf(behavior.get_damage_multiplier(), 0.05)
+		multiplier *= _enhance_multiplier_from_one(value, behavior)
 	return maxf(multiplier, 0.05)
 
 func get_branch_attack_range_multiplier() -> float:
 	var multiplier := 1.0
 	for behavior in get_branch_behaviors():
-		multiplier *= maxf(behavior.get_attack_range_multiplier(), 0.05)
+		var value := maxf(behavior.get_attack_range_multiplier(), 0.05)
+		multiplier *= _enhance_multiplier_from_one(value, behavior)
 	return maxf(multiplier, 0.05)
 
 func get_branch_dash_speed_multiplier() -> float:
 	var multiplier := 1.0
 	for behavior in get_branch_behaviors():
-		multiplier *= maxf(behavior.get_dash_speed_multiplier(), 0.05)
+		var value := maxf(behavior.get_dash_speed_multiplier(), 0.05)
+		multiplier *= _enhance_multiplier_from_one(value, behavior)
 	return maxf(multiplier, 0.05)
 
 func get_branch_return_speed_multiplier() -> float:
 	var multiplier := 1.0
 	for behavior in get_branch_behaviors():
-		multiplier *= maxf(behavior.get_return_speed_multiplier(), 0.05)
+		var value := maxf(behavior.get_return_speed_multiplier(), 0.05)
+		multiplier *= _enhance_multiplier_from_one(value, behavior)
 	return maxf(multiplier, 0.05)
 
 func get_branch_extra_heat_shot_multiplier() -> float:
@@ -247,7 +277,8 @@ func get_branch_extra_heat_shot_multiplier() -> float:
 func get_branch_orbit_spin_speed_multiplier() -> float:
 	var multiplier := 1.0
 	for behavior in get_branch_behaviors():
-		multiplier *= maxf(behavior.get_orbit_spin_speed_multiplier(), 0.05)
+		var value := maxf(behavior.get_orbit_spin_speed_multiplier(), 0.05)
+		multiplier *= _enhance_multiplier_from_one(value, behavior)
 	return maxf(multiplier, 0.05)
 
 func get_branch_pierce_damage_gain_per_hit() -> int:
@@ -305,6 +336,7 @@ func clear_branch_behaviors() -> void:
 func clear_for_weapon_exit() -> void:
 	branch_behaviors.clear()
 	branch_definitions.clear()
+	enhanced_branch_id = ""
 
 func _can_choose_more_branches() -> bool:
 	return branch_ids.size() < 2
@@ -351,6 +383,7 @@ func _apply_branch_behavior_for_definition(def: WeaponBranchDefinition, id: Stri
 	branch_behaviors.append(behavior_instance)
 	weapon.add_child(behavior_instance)
 	behavior_instance.setup(weapon)
+	behavior_instance.set_fusion_enhanced(is_branch_enhanced(id))
 	behavior_instance.on_weapon_ready()
 
 func _has_branch_behavior(id: String) -> bool:
@@ -390,3 +423,17 @@ func _refresh_weapon_after_branch_change() -> void:
 		weapon.set_level(clampi(weapon.level, 1, weapon.max_level))
 	else:
 		weapon.calculate_status()
+
+func _sync_behavior_enhancement_state() -> void:
+	for behavior in get_branch_behaviors():
+		behavior.set_fusion_enhanced(is_branch_enhanced(str(behavior.get_meta("branch_id", ""))))
+
+func _enhance_multiplier_from_one(value: float, behavior: WeaponBranchBehavior) -> float:
+	if behavior == null or not behavior.fusion_enhanced:
+		return value
+	return 1.0 + (value - 1.0) * behavior.get_fusion_enhancement_factor()
+
+func _enhance_reduction_multiplier(value: float, behavior: WeaponBranchBehavior) -> float:
+	if behavior == null or not behavior.fusion_enhanced or value >= 1.0:
+		return value
+	return maxf(0.05, 1.0 - (1.0 - value) * behavior.get_fusion_enhancement_factor())

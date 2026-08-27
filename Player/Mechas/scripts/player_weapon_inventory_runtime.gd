@@ -12,7 +12,7 @@ var _tracked_weapon_exit_ids: Dictionary = {}
 func setup(player) -> void:
 	_player = player
 
-func create_weapon(item_id, level := 1, auto_fuse := false) -> void:
+func create_weapon(item_id, level := 1, convert_duplicate := false) -> void:
 	if _player == null:
 		return
 	var player_data = _player.PlayerData
@@ -20,10 +20,10 @@ func create_weapon(item_id, level := 1, auto_fuse := false) -> void:
 	var incoming_weapon_id := ""
 	if item_id is String:
 		incoming_weapon_id = str(item_id).strip_edges()
-		if auto_fuse or find_equipped_weapon_by_id(incoming_weapon_id) != null:
-			var auto_fuse_result := try_auto_fuse_weapon_obtain(incoming_weapon_id)
-			var result_type := str(auto_fuse_result.get("result", "not_applicable"))
-			if result_type == "fused" or result_type == "converted_to_gold":
+		if convert_duplicate or find_equipped_weapon_by_id(incoming_weapon_id) != null:
+			var conversion_result := try_weapon_obtain_conversion(incoming_weapon_id)
+			var result_type := str(conversion_result.get("result", "not_applicable"))
+			if result_type == "dismantled_to_core":
 				return
 		var weapon_def := DataHandler.read_weapon_data(incoming_weapon_id) as WeaponDefinition
 		if weapon_def == null:
@@ -41,9 +41,9 @@ func create_weapon(item_id, level := 1, auto_fuse := false) -> void:
 			return
 		incoming_weapon_id = DataHandler.get_weapon_id_from_instance(weapon)
 		if incoming_weapon_id != "" and find_equipped_weapon_by_id(incoming_weapon_id) != null:
-			var duplicate_result := try_auto_fuse_weapon_obtain(incoming_weapon_id)
+			var duplicate_result := try_weapon_obtain_conversion(incoming_weapon_id)
 			var duplicate_type := str(duplicate_result.get("result", "not_applicable"))
-			if duplicate_type == "fused" or duplicate_type == "converted_to_gold":
+			if duplicate_type == "dismantled_to_core":
 				weapon.queue_free()
 				return
 
@@ -69,61 +69,34 @@ func create_weapon(item_id, level := 1, auto_fuse := false) -> void:
 	_player._rebuild_shared_heat_pool()
 	refresh_weapon_related_ui()
 
-func try_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
+func try_weapon_obtain_conversion(weapon_id: String) -> Dictionary:
 	if _player == null:
 		return {"result": "invalid", "weapon_id": weapon_id}
 	var player_data = _player.PlayerData
-	var prediction := predict_auto_fuse_weapon_obtain(weapon_id)
+	var prediction := predict_weapon_obtain(weapon_id)
 	var result_type := str(prediction.get("result", "not_applicable"))
 	if result_type == "not_applicable" or result_type == "invalid":
 		return prediction
 	var subject := prediction.get("weapon", null) as Weapon
 	if subject == null or not is_instance_valid(subject):
 		return {"result": "invalid", "weapon_id": weapon_id}
-	if result_type == "fused":
-		player_data.record_weapon_progress()
-		var target_fuse := int(prediction.get("target_fuse", int(subject.fuse)))
-		subject.fuse = target_fuse
-		if subject.has_method("refresh_max_level_from_data"):
-			subject.call("refresh_max_level_from_data")
-		var clamped_level := clampi(int(subject.level), 1, int(subject.max_level))
-		if subject.has_method("set_level"):
-			subject.call("set_level", clamped_level)
-		else:
-			subject.level = clamped_level
-			if subject.has_method("calculate_status"):
-				subject.call("calculate_status")
-		try_prompt_branch_selection(subject, target_fuse)
-	elif result_type == "converted_to_gold":
-		var converted_gold := int(prediction.get("gold", 0))
-		player_data.recycle_gold(converted_gold)
+	if result_type == "dismantled_to_core":
+		var dismantled := InventoryData.dismantle_duplicate_weapon(weapon_id, subject)
+		refresh_weapon_related_ui()
+		return dismantled
 	refresh_weapon_related_ui()
 	return prediction
 
-func predict_auto_fuse_weapon_obtain(weapon_id: String) -> Dictionary:
+func predict_weapon_obtain(weapon_id: String) -> Dictionary:
 	var normalized_id := str(weapon_id).strip_edges()
 	if normalized_id == "":
 		return {"result": "invalid", "weapon_id": normalized_id}
 	var equipped_weapon := find_equipped_weapon_by_id(normalized_id)
 	if equipped_weapon == null:
 		return {"result": "not_applicable", "weapon_id": normalized_id}
-	var max_fuse: int = Weapon.MAX_FUSE_LEVEL
-	if int(equipped_weapon.fuse) < max_fuse:
-		var target_fuse := int(equipped_weapon.fuse) + 1
-		return {
-			"result": "fused",
-			"weapon_id": normalized_id,
-			"weapon": equipped_weapon,
-			"from_fuse": int(equipped_weapon.fuse),
-			"target_fuse": target_fuse,
-			"has_branch_options": has_branch_options_for_fuse(equipped_weapon, target_fuse),
-		}
-	return {
-		"result": "converted_to_gold",
-		"weapon_id": normalized_id,
-		"weapon": equipped_weapon,
-		"gold": calculate_duplicate_weapon_gold(normalized_id),
-	}
+	var preview := InventoryData.build_duplicate_weapon_core_preview(normalized_id)
+	preview["weapon"] = equipped_weapon
+	return preview
 
 func has_branch_options_for_fuse(weapon: Weapon, target_fuse: int) -> bool:
 	if weapon == null or not is_instance_valid(weapon):
@@ -161,18 +134,6 @@ func refresh_weapon_related_ui() -> void:
 		ui.upgrade_management_controller.update_upg()
 	if ui.has_method("refresh_border"):
 		ui.refresh_border()
-
-func try_prompt_branch_selection(weapon: Weapon, target_fuse: int = 0) -> void:
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	var ui := GlobalVariables.ui
-	if ui == null or not is_instance_valid(ui):
-		return
-	if not ui.has_method("request_weapon_branch_selection"):
-		return
-	if target_fuse <= 0:
-		target_fuse = int(weapon.fuse)
-	ui.request_weapon_branch_selection(weapon, target_fuse)
 
 func swap_weapon_position(weapon1, weapon2) -> void:
 	if _player == null:
@@ -316,14 +277,8 @@ func can_switch_main_weapon() -> bool:
 func try_shift_main_weapon(step: int) -> bool:
 	if not can_switch_main_weapon():
 		return false
-	var old_main := get_main_weapon()
 	if not _player.PlayerData.shift_main_weapon(step):
 		return false
 	mark_weapon_roles_dirty()
 	refresh_weapon_structure_if_needed()
-	var new_main := get_main_weapon()
-	_player._broadcast_weapon_passive_event(&"on_main_swapped", {
-		"old_main": old_main,
-		"new_main": new_main
-	})
 	return true

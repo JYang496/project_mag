@@ -11,3 +11,4 @@ icon = ExtResource("1_icon")
 price = 45
 description = "Short-range fire cone. Core Heat and Area weapon whose damage grows as heat rises, rewarding sustained high-heat pressure."
 scene_path = "res://Player/Weapons/Instances/flamethrower.tscn"
+core_tags = Array[StringName]([&"fire", &"area", &"heat", &"close_range"])

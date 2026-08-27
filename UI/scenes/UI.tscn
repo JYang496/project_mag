@@ -18,7 +18,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="PauseMenuLayer" type="CanvasLayer" parent="."]
-layer = 10000
+layer = 100
 
 [node name="PauseMenuRoot" type="Control" parent="PauseMenuLayer" unique_id=1775346363]
 process_mode = 2

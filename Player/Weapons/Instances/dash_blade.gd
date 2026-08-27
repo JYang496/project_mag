@@ -306,7 +306,6 @@ func _try_confirm_dash_hit(target: BaseEnemy) -> void:
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
 	_apply_close_chain_slow(target)
-	_try_trigger_long_dash_hit(target)
 	for behavior in branch_runtime.get_branch_behaviors():
 		if behavior.has_method("on_dash_target_hit"):
 			behavior.call("on_dash_target_hit", target, _state == AttackState.RETURNING)
@@ -315,51 +314,35 @@ func on_hit_target(target: Node) -> void:
 func _apply_close_chain_slow(target: Node) -> void:
 	CLOSE_CHAIN_RULES.apply_dash_slow(target, close_chain_slow_multiplier, close_chain_slow_duration_sec)
 
-func _try_trigger_long_dash_hit(target: Node) -> void:
-	if not is_passive_ready():
+func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	super._on_passive_event(event_name, detail)
+	if event_name != &"on_continuous_hit_threshold" or int(detail.get("threshold", 0)) < 3:
 		return
-	if target == null or not is_instance_valid(target):
-		return
-	if _dash_start_target_id != target.get_instance_id():
-		return
-	var threshold := attack_range * maxf(long_dash_trigger_range_ratio, 0.0)
-	if _dash_start_distance < threshold:
-		return
-	consume_passive_charge()
 	emit_passive_trigger(&"dash_blade_long_dash_hit_triggered", {
-		"target": target,
-		"dash_distance": _dash_start_distance,
-		"threshold": threshold,
-		"refresh": "reload",
+		"target": detail.get("target"),
+		"hit_count": int(detail.get("hit_count", 0)),
+		"threshold": int(detail.get("threshold", 3)),
+		"refresh": "continuous_hits",
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
-	var threshold := attack_range * maxf(long_dash_trigger_range_ratio, 0.0)
-	var state := "ready"
-	if not is_passive_ready():
-		state = "waiting_refresh"
+	var state := "building"
 	var status := {
 		"id": "dash_blade_long_dash_hit_triggered",
 		"display_name": "Long Dash Hit",
 		"state": state,
-		"progress": 1.0 if state == "ready" else 0.0,
-		"ready": state == "ready",
-		"condition_type": "distance_threshold",
-		"required": threshold,
-		"comparison": ">=",
+		"progress": 0.0,
+		"ready": false,
+		"condition_type": "continuous_hits",
+		"required": 3,
 		"condition_visible": true,
 		"condition_progress": 0.0,
-		"trigger_hint": "dash_start_distance",
-		"refresh_hint": "reload",
+		"trigger_hint": "continuous_hits",
+		"refresh_hint": "continuous_hits",
 		"slow_multiplier": clampf(close_chain_slow_multiplier, 0.05, 1.0),
 		"slow_duration": maxf(close_chain_slow_duration_sec, 0.1),
 	}
-	if _state == AttackState.DASHING or _state == AttackState.RETURNING:
-		var current_distance := maxf(_dash_start_distance, 0.0)
-		status["current"] = current_distance
-		status["progress"] = clampf(current_distance / maxf(threshold, 0.001), 0.0, 1.0)
-		status["condition_progress"] = status["progress"]
-	return with_passive_charge_status(status)
+	return status
 
 func _update_attack_range_shape() -> void:
 	var circle_shape := attack_range_shape.shape as CircleShape2D

@@ -133,51 +133,39 @@ func on_projectile_hit_wall(projectile: Projectile, wall_hit: Dictionary) -> voi
 		bounce_lifetime_bonus_sec,
 		bounce_lifetime_bonus_max_sec
 	)
-	if not is_passive_ready():
-		return
-	consume_passive_charge()
-	_cell_bounce_hit_effect_active = true
-	emit_passive_trigger(&"chainsaw_wall_contact_triggered", {
-		"projectile": projectile,
-		"position": wall_hit.get("position", projectile.global_position),
-		"normal": wall_hit.get("normal", Vector2.ZERO),
-		"collider": wall_hit.get("collider", null),
-		"boundary_type": wall_hit.get("boundary_type", "physics_wall"),
-		"bounce_count": int(wall_hit.get("bounce_count", 1)),
-		"lifetime_bonus_applied": applied_lifetime_bonus,
-		"lifetime_bonus_total": projectile.lifetime_bonus_applied_sec,
-		"refresh": "reload",
-		"state_after_trigger": "active",
-	}, PASSIVE_SCOPE_GLOBAL)
+	projectile.set_meta("chainsaw_lifetime_bonus_applied", applied_lifetime_bonus)
 
 func get_passive_status() -> Dictionary:
 	var state := "ready"
 	if _cell_bounce_hit_effect_active:
 		state = "active"
-	elif not is_passive_ready():
-		state = "waiting_refresh"
-	return with_passive_charge_status({
+	return {
 		"id": "chainsaw_wall_contact_triggered",
 		"display_name": "Wall Contact",
 		"state": state,
 		"progress": 1.0 if state == "ready" or state == "active" else 0.0,
-		"ready": state == "ready",
-		"trigger_hint": "projectile_cell_boundary_bounce",
-		"refresh_hint": "reload",
+		"ready": state == "active",
+		"trigger_hint": "continuous_hits",
+		"refresh_hint": "continuous_hits",
 		"bounce_lifetime_bonus": maxf(bounce_lifetime_bonus_sec, 0.0),
 		"bounce_lifetime_bonus_max": maxf(bounce_lifetime_bonus_max_sec, 0.0),
 		"slow_multiplier": clampf(bounce_slow_multiplier, 0.05, 1.0),
 		"slow_duration": maxf(bounce_slow_duration_sec, 0.1),
 		"vulnerability_multiplier": maxf(close_vulnerability_multiplier, 1.0),
 		"vulnerability_duration": maxf(close_vulnerability_duration_sec, 0.1),
-	})
-
-func _refresh_passive_on_reload() -> void:
-	super._refresh_passive_on_reload()
-	_cell_bounce_hit_effect_active = false
+	}
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
+	if event_name == &"on_continuous_hit_threshold" and int(detail.get("threshold", 0)) >= 3:
+		_cell_bounce_hit_effect_active = true
+		emit_passive_trigger(&"chainsaw_wall_contact_triggered", {
+			"trigger": "continuous_hits",
+			"target": detail.get("target"),
+			"hit_count": int(detail.get("hit_count", 0)),
+			"threshold": int(detail.get("threshold", 3)),
+			"state_after_trigger": "active",
+		}, PASSIVE_SCOPE_GLOBAL)
 	branch_runtime.notify_branch_passive_event(event_name, detail)
 
 func split_projectile_with_ricochet(source: Projectile) -> void:

@@ -83,6 +83,8 @@ func _on_shoot():
 		shot_directions = _build_spread_directions(base_direction, shot_count, spread_arc)
 	var runtime_damage := get_runtime_shot_damage()
 	var damage_multiplier := branch_runtime.get_branch_projectile_damage_multiplier()
+	if consume_entry_trigger():
+		damage_multiplier *= 1.35
 	var damage_type: StringName = branch_runtime.get_branch_damage_type_override(Attack.TYPE_PHYSICAL)
 	_shotgun_volley_sequence += 1
 	var volley_id := _shotgun_volley_sequence
@@ -175,7 +177,6 @@ func get_random_position_in_circle(radius: float = 50.0) -> Vector2:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
-	_try_trigger_close_hit(target)
 	branch_runtime.notify_branch_target_hit(target)
 
 func on_projectile_hit_damage_dealt(projectile: Node, target: Node, hit_damage_type: StringName, final_damage: int) -> void:
@@ -226,52 +227,33 @@ func _cleanup_old_shotgun_volleys(current_volley_id: int) -> void:
 		if int(key) < min_kept:
 			_shotgun_volley_hit_counts.erase(key)
 
-func _try_trigger_close_hit(target: Node) -> void:
-	var target_node := target as Node2D
-	if target_node == null or not is_instance_valid(target_node):
+func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
+	super._on_passive_event(event_name, detail)
+	if event_name != &"on_cross_weapon_hit":
 		return
-	var player := PlayerData.player as Node2D
-	if player == null or not is_instance_valid(player):
+	var target := detail.get("target", null) as Node
+	if target == null or not is_instance_valid(target):
 		return
-	var distance := player.global_position.distance_to(target_node.global_position)
-	if distance >= maxf(close_hit_trigger_distance, 0.0):
-		return
-	if not is_passive_ready():
-		return
-	consume_passive_charge()
 	emit_passive_trigger(&"shotgun_close_hit_triggered", {
 		"target": target,
-		"distance": distance,
-		"threshold": close_hit_trigger_distance,
-		"refresh": "reload",
+		"trigger": "cross_weapon_hit",
+		"refresh": "crossfire",
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
-	var state := "ready"
-	if not is_passive_ready():
-		state = "waiting_refresh"
-	var charge_current := passive_controller.get_passive_charge_current()
-	var charge_max := passive_controller.get_passive_charge_max()
-	return with_passive_charge_status({
+	var state := "ready" if has_entry_trigger_ready() else "waiting_entry"
+	return {
 		"id": "shotgun_close_hit_triggered",
 		"display_name": "Close Hit",
 		"state": state,
-		"progress": float(charge_current) / float(maxi(charge_max, 1)),
+		"progress": 1.0 if has_entry_trigger_ready() else 0.0,
 		"ready": state == "ready",
-		"condition_type": "distance_threshold",
-		"required": maxf(close_hit_trigger_distance, 0.0),
-		"comparison": "<",
-		"trigger_hint": "hit_distance",
-		"refresh_hint": "reload",
-		"charge_current": charge_current,
-		"charge_max": charge_max,
-		"charges_current": charge_current,
-		"charges_max": charge_max,
+		"condition_type": "weapon_entry",
+		"required": 1,
+		"trigger_hint": "weapon_entered_main",
+		"refresh_hint": "weapon_entry",
 		"same_volley_repeat_hit_bonus_ratio": maxf(same_volley_repeat_hit_bonus_ratio, 0.0),
-	})
-
-func get_passive_max_charges() -> int:
-	return 3
+	}
 
 func get_auto_fire_target_range() -> float:
 	return maxf(float(speed) * 0.3, maxf(close_hit_trigger_distance, 1.0))

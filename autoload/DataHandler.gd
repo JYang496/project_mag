@@ -314,6 +314,7 @@ func build_weapon_save_payload(weapon: Weapon) -> Dictionary:
 		"level": int(weapon.level),
 		"fuse": int(weapon.fuse),
 		"branch_ids": weapon.branch_runtime.branch_ids.duplicate(),
+		"enhanced_branch_id": weapon.branch_runtime.enhanced_branch_id,
 		"modules": module_payloads,
 	}
 
@@ -343,6 +344,7 @@ func restore_weapon_runtime_from_save_payload(weapon: Weapon, payload: Dictionar
 		weapon.level = saved_level
 	var saved_branch_ids: Array = payload.get("branch_ids", [])
 	weapon.branch_runtime.restore_branch_ids(saved_branch_ids)
+	weapon.branch_runtime.restore_enhanced_branch(str(payload.get("enhanced_branch_id", "")))
 	if payload.has("modules"):
 		_restore_weapon_modules_from_payload(weapon, payload.get("modules", []))
 	if weapon.has_method("calculate_status"):
@@ -380,6 +382,10 @@ func _register_weapon_resource(
 	if resource == null:
 		errors.append("failed to load weapon resource: %s" % source_path)
 		return
+	var weapon_def := resource as WeaponDefinition
+	if weapon_def == null:
+		errors.append("weapon resource has unexpected type: %s" % source_path)
+		return
 	var weapon_id_value = resource.get("weapon_id")
 	if weapon_id_value == null:
 		errors.append("weapon resource missing weapon_id: %s" % source_path)
@@ -390,6 +396,13 @@ func _register_weapon_resource(
 		return
 	if output.has(weapon_id):
 		errors.append("duplicate weapon_id '%s': %s" % [weapon_id, source_path])
+		return
+	var unknown_core_tags := weapon_def.get_unknown_core_tags()
+	if not unknown_core_tags.is_empty():
+		errors.append("weapon resource has unknown core_tags %s: %s" % [str(unknown_core_tags), source_path])
+		return
+	if weapon_def.get_normalized_core_tags().is_empty():
+		errors.append("weapon resource has empty core_tags: %s" % source_path)
 		return
 	output[weapon_id] = resource
 	var scene_path := str(resource.get("scene_path")).strip_edges()
@@ -439,6 +452,13 @@ func _register_weapon_branch_resource(
 	var scene_path := branch_def.weapon_scene_path
 	if scene_path == "":
 		errors.append("weapon branch resource missing weapon_scene_path: %s" % source_path)
+		return
+	var unknown_fusion_tags := branch_def.get_unknown_fusion_required_tags()
+	if not unknown_fusion_tags.is_empty():
+		errors.append("weapon branch has unknown fusion_required_tags %s: %s" % [str(unknown_fusion_tags), source_path])
+		return
+	if branch_def.get_normalized_fusion_required_tags().is_empty():
+		errors.append("weapon branch has empty fusion_required_tags: %s" % source_path)
 		return
 	if seen_branch_ids.has(branch_id):
 		errors.append("duplicate weapon branch_id '%s': %s" % [branch_id, source_path])

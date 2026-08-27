@@ -466,6 +466,31 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 		_show_reward_granted_message(reward)
 	return granted_any
 
+func roll_enhanced_module_scene_path() -> String:
+	var candidates := _build_module_reward_candidates()
+	var compatible_paths: Array[String] = []
+	for candidate in candidates:
+		var scene := candidate.get("scene", null) as PackedScene
+		var instance := scene.instantiate() as Module if scene != null else null
+		if instance == null:
+			continue
+		var compatible := InventoryData.can_assign_module_to_any_equipped_weapon(instance, true)
+		instance.free()
+		if compatible:
+			compatible_paths.append(str(candidate.get("scene_path", "")))
+	if compatible_paths.is_empty():
+		return ""
+	return compatible_paths[randi_range(0, compatible_paths.size() - 1)]
+
+func grant_enhanced_module(scene_path: String) -> bool:
+	var scene := load(scene_path) as PackedScene
+	var module_instance := scene.instantiate() as Module if scene != null else null
+	if module_instance == null or not InventoryData.can_assign_module_to_any_equipped_weapon(module_instance, true):
+		if module_instance != null: module_instance.free()
+		return false
+	var result := InventoryData.obtain_module(module_instance)
+	return bool(result.get("ok", false))
+
 func _build_weapon_reward_candidates() -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
 	for weapon_id in DataHandler.get_weapon_ids():
@@ -640,12 +665,12 @@ func _build_economy_reward(option_index: int, is_fallback: bool) -> RewardInfo:
 func _build_guaranteed_weapon_progress_reward(selected_keys: Dictionary) -> RewardInfo:
 	var equipped_weapons := _get_valid_equipped_weapons()
 	var upgrade_candidates: Array[Weapon] = []
-	var fuse_candidates: Array[Weapon] = []
+	var core_candidates: Array[Weapon] = []
 	for weapon in equipped_weapons:
 		if _can_upgrade_weapon(weapon):
 			upgrade_candidates.append(weapon)
-		elif _can_fuse_weapon(weapon):
-			fuse_candidates.append(weapon)
+		elif _can_generate_core_from_weapon(weapon):
+			core_candidates.append(weapon)
 	if not upgrade_candidates.is_empty():
 		var upgrade_weapon: Weapon = upgrade_candidates.pick_random()
 		var reward := RewardInfo.new()
@@ -654,13 +679,13 @@ func _build_guaranteed_weapon_progress_reward(selected_keys: Dictionary) -> Rewa
 		_mark_reward_selected(reward, selected_keys)
 		_mark_weapon_id_selected(DataHandler.get_weapon_id_from_instance(upgrade_weapon), selected_keys)
 		return reward
-	if not fuse_candidates.is_empty():
-		var fuse_weapon: Weapon = fuse_candidates.pick_random()
-		var weapon_id: String = DataHandler.get_weapon_id_from_instance(fuse_weapon)
+	if not core_candidates.is_empty():
+		var core_source_weapon: Weapon = core_candidates.pick_random()
+		var weapon_id: String = DataHandler.get_weapon_id_from_instance(core_source_weapon)
 		var reward := RewardInfo.new()
 		reward.item_id = weapon_id
 		reward.item_level = 1
-		reward.rarity = _get_weapon_rarity_by_instance(fuse_weapon)
+		reward.rarity = _get_weapon_rarity_by_instance(core_source_weapon)
 		_mark_reward_selected(reward, selected_keys)
 		return reward
 	var fallback := _build_fallback_economy_reward(0)
@@ -680,12 +705,12 @@ func _can_upgrade_weapon(weapon: Weapon) -> bool:
 		return false
 	return int(weapon.level) < int(weapon.max_level)
 
-func _can_fuse_weapon(weapon: Weapon) -> bool:
+func _can_generate_core_from_weapon(weapon: Weapon) -> bool:
 	if weapon == null or not is_instance_valid(weapon):
 		return false
 	if DataHandler.get_weapon_id_from_instance(weapon).strip_edges() == "":
 		return false
-	return int(weapon.fuse) < Weapon.MAX_FUSE_LEVEL
+	return true
 
 func _grant_weapon_upgrade_reward(reward: RewardInfo) -> bool:
 	var weapon := reward.get_target_weapon()

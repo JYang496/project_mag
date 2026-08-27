@@ -21,11 +21,9 @@ var return_on_timeout = preload("res://Player/Weapons/Effects/return_on_timeout.
 # Weapon
 var ITEM_NAME = "Spear Launcher"
 @export var same_target_trigger_count: int = 2
-@export var charge_max: int = 20
+@export var charge_max: int = 10
 @export var radial_charge_cost: int = 10
-@export var empowered_radial_charge_cost: int = 20
 @export var radial_projectile_count: int = 8
-@export var empowered_radial_projectile_count: int = 16
 @export var radial_fire_interval_sec: float = 0.05
 @export var pierce_mark_duration_sec: float = 20.0
 @export var pierce_mark_damage_multiplier: float = 1.35
@@ -199,7 +197,7 @@ func _cleanup_projectile_hit_state() -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if event_name != &"on_reload_finished":
+	if event_name != &"on_reload_started":
 		return
 	if detail.get("source_weapon", null) != self:
 		return
@@ -210,10 +208,7 @@ func _try_start_piercing_blade_dance() -> bool:
 	var available_charge := _piercing_blade_dance_charge
 	var charge_cost := 0
 	var projectile_count := 0
-	if available_charge >= maxi(empowered_radial_charge_cost, 1):
-		charge_cost = maxi(empowered_radial_charge_cost, 1)
-		projectile_count = maxi(empowered_radial_projectile_count, 1)
-	elif available_charge >= maxi(radial_charge_cost, 1):
+	if available_charge >= maxi(radial_charge_cost, 1):
 		charge_cost = maxi(radial_charge_cost, 1)
 		projectile_count = maxi(radial_projectile_count, 1)
 	else:
@@ -224,7 +219,7 @@ func _try_start_piercing_blade_dance() -> bool:
 	var directions := _build_radial_directions(projectile_count)
 	emit_passive_trigger(TRIGGERED_EVENT, {
 		"passive_id": str(PASSIVE_ID),
-		"trigger": "reload_finished",
+		"trigger": "reload_started",
 		"charge_before": available_charge,
 		"charge_cost": charge_cost,
 		"charge": _piercing_blade_dance_charge,
@@ -356,7 +351,7 @@ func get_passive_status() -> Dictionary:
 		"current": charge,
 		"required": max_charge,
 		"ready": state == "ready_pending_action",
-		"trigger_hint": "reload_finished",
+		"trigger_hint": "reload_started",
 		"refresh_hint": "gain_charge_from_repeat_projectile_damage",
 		"charge_current": hud_charge_current,
 		"charge_max": 1,
@@ -367,8 +362,6 @@ func get_passive_status() -> Dictionary:
 
 
 func _get_next_radial_projectile_count() -> int:
-	if _piercing_blade_dance_charge >= maxi(empowered_radial_charge_cost, 1):
-		return maxi(empowered_radial_projectile_count, 1)
 	if _piercing_blade_dance_charge >= maxi(radial_charge_cost, 1):
 		return maxi(radial_projectile_count, 1)
 	return 0

@@ -4,16 +4,7 @@
 [ext_resource type="PackedScene" path="res://UI/scenes/battle_contract_card.tscn" id="2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_terminal"]
-bg_color = Color(0.055, 0.071, 0.086, 0.94)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.24, 0.38, 0.46, 0.9)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
+bg_color = Color(0, 0, 0, 0)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_normal"]
 bg_color = Color(0.055, 0.1, 0.125, 1)
@@ -136,20 +127,20 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -490.0
-offset_top = -300.0
-offset_right = 490.0
-offset_bottom = 300.0
+offset_left = -616.0
+offset_top = -344.0
+offset_right = 616.0
+offset_bottom = 344.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_terminal")
 
 [node name="Margin" type="MarginContainer" parent="Shade/Panel"]
 layout_mode = 2
-theme_override_constants/margin_left = 34
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 34
-theme_override_constants/margin_bottom = 18
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 12
 
 [node name="Content" type="VBoxContainer" parent="Shade/Panel/Margin"]
 layout_mode = 2
@@ -173,12 +164,30 @@ theme_override_font_sizes/font_size = 32
 text = "Choose Battle Contract"
 horizontal_alignment = 1
 
-[node name="Subtitle" type="Label" parent="Shade/Panel/Margin/Content"]
+[node name="Subtitle" type="HBoxContainer" parent="Shade/Panel/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 7
+alignment = 1
+
+[node name="SelectRange" type="Label" parent="Shade/Panel/Margin/Content/Subtitle"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.81, 0.84, 1)
 theme_override_font_sizes/font_size = 16
-text = "Decide the victory condition for the next battle"
-horizontal_alignment = 1
+text = "1–3 Select ·"
+
+[node name="EscapeIcon" type="TextureRect" parent="Shade/Panel/Margin/Content/Subtitle"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+tooltip_text = "Escape"
+
+[node name="Back" type="Label" parent="Shade/Panel/Margin/Content/Subtitle"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.81, 0.84, 1)
+theme_override_font_sizes/font_size = 16
+text = "Back"
 
 [node name="Divider" type="ColorRect" parent="Shade/Panel/Margin/Content"]
 custom_minimum_size = Vector2(0, 1)
@@ -188,7 +197,8 @@ color = Color(0.18, 0.48, 0.55, 0.35)
 
 [node name="MainCards" type="HBoxContainer" parent="Shade/Panel/Margin/Content"]
 layout_mode = 2
-theme_override_constants/separation = 24
+size_flags_vertical = 3
+theme_override_constants/separation = 16
 alignment = 1
 
 [node name="CardLeft" parent="Shade/Panel/Margin/Content/MainCards" instance=ExtResource("2")]
@@ -201,7 +211,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="DetailPanel" type="PanelContainer" parent="Shade/Panel/Margin/Content"]
-custom_minimum_size = Vector2(0, 138)
+custom_minimum_size = Vector2(0, 192)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_detail")
 
@@ -223,7 +233,7 @@ layout_mode = 2
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.95, 0.96, 1)
 theme_override_font_sizes/font_size = 20
-text = "Protocol Details"
+text = "Protocol Briefing"
 
 [node name="Details" type="HBoxContainer" parent="Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent"]
 layout_mode = 2
@@ -237,19 +247,21 @@ theme_override_colors/font_color = Color(0.77, 0.86, 0.88, 1)
 theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
 
-[node name="Pace" type="Label" parent="Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details"]
+[node name="EnemyPreview" type="VBoxContainer" parent="Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.55, 0.78, 0.83, 1)
-theme_override_font_sizes/font_size = 14
-autowrap_mode = 2
+theme_override_constants/separation = 4
 
-[node name="Reward" type="Label" parent="Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details"]
+[node name="Header" type="Label" parent="Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details/EnemyPreview"]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.82, 0.88, 0.89, 1)
+theme_override_colors/font_color = Color(0.66, 0.82, 0.85, 1)
 theme_override_font_sizes/font_size = 14
-autowrap_mode = 2
+text = "MAY APPEAR"
+
+[node name="Entries" type="HBoxContainer" parent="Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details/EnemyPreview"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
 
 [node name="Actions" type="HBoxContainer" parent="Shade/Panel/Margin/Content"]
 layout_mode = 2
@@ -266,6 +278,15 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_action_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_action_pressed")
 text = "Back to Prepare"
 
+[node name="CurrentSelection" type="Label" parent="Shade/Panel/Margin/Content/Actions"]
+custom_minimum_size = Vector2(250, 44)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.68, 0.8, 0.83, 1)
+theme_override_font_sizes/font_size = 14
+text = "Current Selection: —"
+vertical_alignment = 1
+text_overrun_behavior = 3
+
 [node name="Spacer" type="Control" parent="Shade/Panel/Margin/Content/Actions"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -281,5 +302,8 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_confirm_normal")
 theme_override_styles/hover = SubResource("StyleBoxFlat_confirm_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_confirm_pressed")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_action_disabled")
+theme_override_constants/icon_max_width = 72
 text = "Begin Contract"
+expand_icon = true
+icon_alignment = 0
 disabled = true

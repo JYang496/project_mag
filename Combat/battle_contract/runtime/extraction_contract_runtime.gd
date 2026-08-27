@@ -4,7 +4,9 @@ signal snapshot_changed(snapshot: Dictionary)
 signal completed(snapshot: Dictionary)
 
 const HOLDING := &"holding"
+const COLLECTING_KEYS := &"collecting_keys"
 const EXTRACTING := &"extracting"
+const NAVIGATION_KEY_ID_BASE := 100
 
 var port
 var phase: StringName = HOLDING
@@ -20,6 +22,9 @@ var elapsed_sec := 0.0
 var extraction_started_sec := 0.0
 var time_to_reach_zone_sec := 0.0
 var _completion_guard := false
+var navigation_key_count := 0
+var collected_navigation_keys: Dictionary = {}
+var navigation_key_points: PackedVector2Array = PackedVector2Array()
 
 func start(combat_port, parameters: Dictionary) -> void:
 	port = combat_port
@@ -37,6 +42,9 @@ func start(combat_port, parameters: Dictionary) -> void:
 	remaining_sec = duration_sec
 	escape_duration_sec = float(parameters.get("escape_duration_early_sec", 18.0)) if level < early_level_count else (float(parameters.get("escape_duration_mid_sec", 16.0)) if level < mid_level_count else float(parameters.get("escape_duration_late_sec", 14.0)))
 	escape_duration_sec = maxf(escape_duration_sec, 1.0)
+	navigation_key_count = maxi(int(parameters.get("navigation_key_count", 0)), 0)
+	if navigation_key_count > 0:
+		escape_duration_sec += maxf(float(parameters.get("enhanced_escape_time_bonus_sec", 10.0)), 0.0)
 	escape_remaining_sec = escape_duration_sec
 	pursuit_wave_min = maxi(int(parameters.get("pursuit_wave_min", 6)), 0)
 	pursuit_wave_max = maxi(int(parameters.get("pursuit_wave_max", 10)), pursuit_wave_min)
@@ -69,16 +77,16 @@ func _on_tick(snapshot: Dictionary) -> void:
 		var ratio := 1.0 - remaining_sec / maxf(duration_sec, 1.0)
 		port.request_configure_threat_multiplier(1.0 + ratio * 0.25)
 		if remaining_sec <= 0.0:
-			_open_extraction()
+			_begin_navigation_or_open_extraction()
+	elif phase == COLLECTING_KEYS:
+		escape_remaining_sec = maxf(escape_remaining_sec - delta, 0.0)
 	else:
 		time_to_reach_zone_sec = elapsed_sec - extraction_started_sec
 		escape_remaining_sec = maxf(escape_remaining_sec - delta, 0.0)
 		overtime_sec = maxf(time_to_reach_zone_sec - escape_duration_sec, 0.0)
 	_emit_snapshot()
 
-func _open_extraction() -> void:
-	phase = EXTRACTING
-	extraction_started_sec = elapsed_sec
+func _begin_navigation_or_open_extraction() -> void:
 	port.request_configure_continuous_spawning(false)
 	port.request_stop_spawning()
 	port.request_configure_threat_multiplier(1.0)
@@ -86,12 +94,40 @@ func _open_extraction() -> void:
 	if points.is_empty():
 		push_warning("Extraction contract has no legal extraction point.")
 		return
+	if navigation_key_count > 0 and points.size() >= navigation_key_count:
+		phase = COLLECTING_KEYS
+		extraction_started_sec = elapsed_sec
+		navigation_key_points = points
+		for index in navigation_key_count:
+			var key_id := NAVIGATION_KEY_ID_BASE + index + 1
+			port.request_spawn_objective(key_id, points[index], &"navigation_key")
+		return
+	_open_extraction(points)
+
+func _open_extraction(points: PackedVector2Array = PackedVector2Array()) -> void:
+	phase = EXTRACTING
+	extraction_started_sec = elapsed_sec
+	if points.is_empty():
+		points = port.get_battlefield_capabilities().get("extraction_points", PackedVector2Array())
+	if points.is_empty():
+		return
+	port.request_remove_beacons()
 	port.request_spawn_objective(1, points[0], &"extraction")
 	port.request_update_beacon(1, 1.0)
 	port.request_spawn_pursuit_wave(pursuit_wave_min, pursuit_wave_max)
 
 func _on_presence_changed(snapshot: Dictionary) -> void:
-	if phase != EXTRACTING or int(snapshot.get("beacon_id", 0)) != 1:
+	var beacon_id := int(snapshot.get("beacon_id", 0))
+	if phase == COLLECTING_KEYS:
+		if beacon_id <= NAVIGATION_KEY_ID_BASE or not bool(snapshot.get("player_inside", false)) or collected_navigation_keys.has(beacon_id):
+			return
+		collected_navigation_keys[beacon_id] = true
+		port.request_complete_beacon(beacon_id)
+		if collected_navigation_keys.size() >= navigation_key_count:
+			_open_extraction(navigation_key_points)
+		_emit_snapshot()
+		return
+	if phase != EXTRACTING or beacon_id != 1:
 		return
 	player_inside = bool(snapshot.get("player_inside", false))
 	if player_inside:
@@ -122,6 +158,8 @@ func _snapshot() -> Dictionary:
 		"player_inside": player_inside,
 		"elapsed_sec": elapsed_sec,
 		"time_to_reach_zone_sec": time_to_reach_zone_sec,
+		"navigation_keys_required": navigation_key_count,
+		"navigation_keys_collected": collected_navigation_keys.size(),
 	}
 
 func _emit_snapshot() -> void:
