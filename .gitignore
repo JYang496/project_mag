@@ -10,4 +10,5 @@ test-results/
 
 # Temp files
 /archive/
+/.codex_tmp/
 tmp/

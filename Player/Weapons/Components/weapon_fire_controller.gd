@@ -1,58 +1,50 @@
 extends RefCounted
 class_name WeaponFireController
 
-var weapon: Node
+var weapon: Weapon
 var _external_attack_speed_mul_modifiers: Dictionary = {}
 
-func setup(source_weapon: Node) -> void:
+func setup(source_weapon: Weapon) -> void:
 	weapon = source_weapon
 
 func setup_timer() -> void:
 	if weapon == null:
 		return
-	weapon.set("cooldown_timer", weapon.get_node_or_null("CooldownTimer"))
+	weapon.cooldown_timer = weapon.get_node_or_null("CooldownTimer") as Timer
 
 func on_cooldown_timer_timeout() -> void:
 	if weapon == null:
 		return
-	weapon.set("is_on_cooldown", false)
+	weapon.is_on_cooldown = false
 
 func request_primary_fire() -> bool:
 	if weapon == null:
 		return false
-	if weapon.has_method("is_attack_phase_allowed") and not bool(weapon.call("is_attack_phase_allowed")):
+	if not weapon.is_attack_phase_allowed():
 		return false
-	if bool(weapon.get("is_on_cooldown")):
+	if weapon.is_on_cooldown:
 		return false
-	if weapon.has_method("can_fire_with_heat") and not bool(weapon.call("can_fire_with_heat")):
+	if not weapon.can_fire_with_heat():
 		return false
-	if weapon.has_method("can_fire_with_ammo") and not bool(weapon.call("can_fire_with_ammo")):
+	if not weapon.can_fire_with_ammo():
 		_request_reload_when_empty()
 		return false
-	var ammo_cost := 1
-	if weapon.has_method("get_primary_fire_ammo_cost"):
-		ammo_cost = maxi(int(weapon.call("get_primary_fire_ammo_cost")), 1)
-	if int(weapon.get("current_ammo")) < ammo_cost:
-		if weapon.has_method("request_reload"):
-			weapon.call("request_reload")
+	var ammo_cost := maxi(weapon.get_primary_fire_ammo_cost(), 1)
+	if weapon.current_ammo < ammo_cost:
+		weapon.request_reload()
 		return false
-	if weapon.has_method("consume_ammo") and not bool(weapon.call("consume_ammo", ammo_cost)):
+	if not weapon.consume_ammo(ammo_cost):
 		_request_reload_when_empty()
 		return false
 	var cooldown_timer := get_cooldown_timer()
 	if cooldown_timer:
 		cooldown_timer.wait_time = maxf(weapon.get_runtime_attack_cooldown(), 0.01)
-	if weapon.has_method("prepare_energy_release_attack"):
-		weapon.call("prepare_energy_release_attack")
-	weapon.emit_signal("shoot")
-	if weapon.has_method("finish_energy_release_attack"):
-		weapon.call("finish_energy_release_attack")
-	if weapon.has_method("play_fire_feedback"):
-		weapon.call("play_fire_feedback")
-	if weapon.has_method("notify_main_weapon_fired"):
-		weapon.call("notify_main_weapon_fired")
-	if weapon.has_method("register_shot_heat"):
-		weapon.call("register_shot_heat")
+	weapon.prepare_energy_release_attack()
+	weapon.shoot.emit()
+	weapon.finish_energy_release_attack()
+	weapon.play_fire_feedback()
+	weapon.notify_main_weapon_fired()
+	weapon.register_shot_heat()
 	_request_reload_when_empty()
 	return true
 
@@ -96,11 +88,10 @@ func get_effective_cooldown(base_cooldown: float) -> float:
 	return maxf(base_cooldown / speed_mul, 0.01)
 
 func _get_cold_attack_speed_multiplier() -> float:
-	if PlayerData.player == null or not is_instance_valid(PlayerData.player):
+	var player := PlayerData.player as Player
+	if player == null or not is_instance_valid(player):
 		return 1.0
-	if not PlayerData.player.has_method("get_cold_attack_speed_multiplier"):
-		return 1.0
-	return maxf(float(PlayerData.player.call("get_cold_attack_speed_multiplier")), 0.1)
+	return maxf(player.get_cold_attack_speed_multiplier(), 0.1)
 
 func start_weapon_cooldown(min_cooldown: float = 0.01) -> void:
 	var cooldown_timer := get_cooldown_timer()
@@ -123,20 +114,19 @@ func sync_cooldown_timer() -> void:
 func get_cooldown_timer() -> Timer:
 	if weapon == null:
 		return null
-	var timer_variant: Variant = weapon.get("cooldown_timer")
-	if timer_variant is Timer:
-		return timer_variant as Timer
-	return null
+	return weapon.cooldown_timer
 
 func _request_reload_when_empty() -> void:
 	if weapon == null:
 		return
-	var uses_ammo := false
-	if weapon.has_method("uses_ammo_system"):
-		uses_ammo = bool(weapon.call("uses_ammo_system"))
-	if uses_ammo and int(weapon.get("current_ammo")) <= 0 and weapon.has_method("request_reload"):
-		weapon.call("request_reload")
+	if weapon.uses_ammo_system() and weapon.current_ammo <= 0:
+		weapon.request_reload()
 
 func _notify_attack_speed_status(source_id: StringName, multiplier: float, active: bool) -> void:
-	if PlayerData.player and is_instance_valid(PlayerData.player) and PlayerData.player.has_method("notify_weapon_status_change"):
-		PlayerData.player.call("notify_weapon_status_change", &"attack_speed_up" if multiplier > 1.0 else &"attack_speed_down", source_id, active)
+	var player := PlayerData.player as Player
+	if player != null and is_instance_valid(player):
+		player.notify_weapon_status_change(
+			&"attack_speed_up" if multiplier > 1.0 else &"attack_speed_down",
+			source_id,
+			active
+		)

@@ -90,6 +90,8 @@ var _energy_pool_owner: Node
 var current_ammo: int = 0
 var is_reloading: bool = false
 var reload_time_left: float = 0.0
+var cooldown_timer: Timer
+var is_on_cooldown: bool = false
 var fuse : int:
 	get:
 		return _fuse_internal
@@ -98,6 +100,7 @@ var fuse : int:
 		_apply_fuse_sprite()
 
 signal weapon_role_changed(next_role: String)
+signal shoot()
 @warning_ignore("unused_signal")
 signal passive_triggered(event_name: StringName, detail: Dictionary)
 signal weapon_event_emitted(event: WeaponEvent)
@@ -981,6 +984,10 @@ func get_runtime_damage_value(base_damage_value: float) -> int:
 func get_runtime_damage() -> int:
 	assert(false, "%s must implement get_runtime_damage()" % get_script().resource_path)
 	return 0
+
+func get_runtime_attack_cooldown() -> float:
+	assert(false, "%s must implement get_runtime_attack_cooldown()" % get_script().resource_path)
+	return 1.0
 
 func get_role_stat_multiplier(stat_name: StringName) -> float:
 	if is_main_weapon():

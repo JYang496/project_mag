@@ -3,7 +3,7 @@ class_name Player
 
 const OutgoingDamageResultType := preload("res://Combat/damage/outgoing_damage_result.gd")
 const PLAYER_ASSIST_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_assist_system.gd")
-const PLAYER_SUPPORT_FIRE_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_support_fire_runtime.gd")
+const PLAYER_WEAPON_AUTO_FIRE_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_auto_fire_runtime.gd")
 const PLAYER_ACTIVE_SKILL_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_active_skill_runtime.gd")
 const PLAYER_WEAPON_COMMAND_CONTROLLER_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_command_controller.gd")
 const PLAYER_WEAPON_INVENTORY_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_inventory_runtime.gd")
@@ -82,7 +82,7 @@ var _hurtbox_shape_base_cached: bool = false
 var _incoming_damage_pipeline: DamagePipeline
 var _incoming_damage_profile: DamageProfile
 var _assist_system: RefCounted
-var _support_fire_runtime: PlayerSupportFireRuntime
+var _weapon_auto_fire_runtime: PlayerWeaponAutoFireRuntime
 enum MechaVisualState {
 	IDLE,
 	MOVING
@@ -283,7 +283,7 @@ func _ready():
 	_ensure_oblique_debug_panel()
 	_ensure_loot_system()
 	_ensure_assist_system()
-	_ensure_support_fire_runtime()
+	_ensure_weapon_auto_fire_runtime()
 	LoadingPerformance.end_segment("player_ready_systems")
 	_systems_strict_ready = true
 	if not _require_movement_system_or_halt():
@@ -303,7 +303,7 @@ func _physics_process(delta):
 	_process_centralized_enemy_contact_damage(delta)
 	_refresh_weapon_structure_if_needed()
 	_weapon_command_controller.process(delta)
-	_support_fire_runtime.process(delta)
+	_weapon_auto_fire_runtime.process(delta)
 	_update_global_weapon_passives()
 	_update_heat_statuses()
 	_update_shared_heat_pool(delta)
@@ -554,10 +554,10 @@ func _ensure_assist_system() -> void:
 	if _assist_system != null:
 		_assist_system.setup(self)
 
-func _ensure_support_fire_runtime() -> void:
-	if _support_fire_runtime == null:
-		_support_fire_runtime = PLAYER_SUPPORT_FIRE_RUNTIME_SCRIPT.new()
-	_support_fire_runtime.setup(self)
+func _ensure_weapon_auto_fire_runtime() -> void:
+	if _weapon_auto_fire_runtime == null:
+		_weapon_auto_fire_runtime = PLAYER_WEAPON_AUTO_FIRE_RUNTIME_SCRIPT.new()
+	_weapon_auto_fire_runtime.setup(self)
 
 func _did_manual_fire_start_reload(main_weapon: Weapon, was_reloading_before_input: bool) -> bool:
 	if main_weapon == null or not is_instance_valid(main_weapon):
@@ -597,8 +597,8 @@ func _on_player_weapon_list_changed() -> void:
 
 func _on_main_weapon_index_changed(_old_index: int, _new_index: int, _step: int) -> void:
 	_mark_weapon_roles_dirty()
-	if _support_fire_runtime != null:
-		_support_fire_runtime.clear()
+	if _weapon_auto_fire_runtime != null:
+		_weapon_auto_fire_runtime.clear()
 
 func _on_tracked_weapon_tree_exiting(instance_id: int) -> void:
 	if _weapon_inventory_runtime != null:
@@ -1819,8 +1819,8 @@ func _on_phase_changed(new_phase: String) -> void:
 		_suppress_attack_until_released = false
 		if _weapon_command_controller != null:
 			_weapon_command_controller.clear()
-		if _support_fire_runtime != null:
-			_support_fire_runtime.clear()
+		if _weapon_auto_fire_runtime != null:
+			_weapon_auto_fire_runtime.clear()
 	_update_vision_effect()
 	if not _require_camera_system_or_halt():
 		return
@@ -2018,8 +2018,8 @@ func _on_collision_cd_timeout() -> void:
 func _exit_tree() -> void:
 	if _weapon_command_controller != null:
 		_weapon_command_controller.clear()
-	if _support_fire_runtime != null:
-		_support_fire_runtime.clear()
+	if _weapon_auto_fire_runtime != null:
+		_weapon_auto_fire_runtime.clear()
 	_disconnect_weapon_structure_signals()
 	if _weapon_inventory_runtime != null:
 		_weapon_inventory_runtime.clear_tracked_weapon_exit_ids()

@@ -57,7 +57,6 @@ enum AttackState {
 }
 var _state := AttackState.IDLE
 
-@onready var cooldown_timer: Timer = $CooldownTimer
 @onready var attack_range_area: Area2D = $AttackRange
 @onready var attack_range_shape: CollisionShape2D = $AttackRange/CollisionShape2D
 @onready var blade_anchor: Node2D = $BladeAnchor
@@ -67,6 +66,7 @@ var _state := AttackState.IDLE
 @onready var _base_hitbox_size: Vector2 = _get_current_hitbox_size()
 
 func _ready() -> void:
+	cooldown_timer = $CooldownTimer
 	super._ready()
 	if sprite:
 		sprite.visible = false

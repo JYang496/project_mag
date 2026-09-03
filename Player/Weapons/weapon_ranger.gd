@@ -11,10 +11,8 @@ var projectile_hits : int
 var dot_cd : float
 var base_attack_cooldown : float
 var attack_cooldown : float
-var cooldown_timer : Timer
 var size : float = 1.0
 var projectile_direction
-var is_on_cooldown = false
 @export var spread_enabled: bool = false
 @export var spread_full_distance: float = 900.0
 @export var spread_no_falloff_distance: float = 0.0
@@ -32,8 +30,6 @@ var projectile_scene
 const PixelArtPolicyType := preload("res://Visual/pixel_art_policy.gd")
 const SPRITE_TARGET_HEIGHT := PixelArtPolicyType.WEAPON_TARGET_HEIGHT_PX
 const AIM_ROTATION_OFFSET := deg_to_rad(90)
-
-signal shoot()
 
 var projectile_emitter: ProjectileEmitter = ProjectileEmitter.new()
 var spread_model: WeaponSpreadModel = WeaponSpreadModel.new()
