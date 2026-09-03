@@ -1,7 +1,6 @@
 extends RefCounted
 class_name ContractObjectivePointPlanner
 
-const CELL_CENTER_LOCAL := Vector2(256.0, 256.0)
 const MIN_PLAYER_DISTANCE := 180.0
 const MIN_BEACON_DISTANCE := 300.0
 const MIN_OBJECTIVE_DISTANCE := 220.0
@@ -12,7 +11,12 @@ func collect_candidates(cells: Array, player_position: Vector2) -> PackedVector2
 		var cell := cell_value as Node2D
 		if cell == null:
 			continue
-		var cell_center: Vector2 = cell.global_transform * CELL_CENTER_LOCAL
+		var local_center := Vector2.ZERO
+		if cell.has_method("get_local_cell_center"):
+			local_center = cell.call("get_local_cell_center") as Vector2
+		else:
+			local_center = _resolve_cell_center_from_collision(cell)
+		var cell_center: Vector2 = cell.global_transform * local_center
 		if cell_center.distance_to(player_position) >= MIN_PLAYER_DISTANCE:
 			candidates.append(cell_center)
 	return candidates
@@ -57,3 +61,9 @@ func select_objective_points(cells: Array, player_position: Vector2, max_points:
 			break
 		selected.append(best_point)
 	return selected
+
+func _resolve_cell_center_from_collision(cell: Node2D) -> Vector2:
+	var collision_shape := cell.get_node_or_null("Area2D/CollisionShape2D") as CollisionShape2D
+	if collision_shape != null:
+		return collision_shape.position
+	return Vector2.ZERO

@@ -46,9 +46,7 @@ func on_dash_target_hit(target: Node, is_returning: bool) -> void:
 func _apply_return_execute(target: Node) -> void:
 	if weapon == null or not is_instance_valid(weapon):
 		return
-	var runtime_damage := 1
-	if weapon.has_method("get_runtime_shot_damage"):
-		runtime_damage = maxi(int(weapon.call("get_runtime_shot_damage")), 1)
+	var runtime_damage := weapon.get_runtime_damage()
 	var missing_ratio := 0.0
 	if target.has_method("get_health_ratio"):
 		missing_ratio = 1.0 - clampf(float(target.call("get_health_ratio")), 0.0, 1.0)

@@ -41,7 +41,7 @@ func request_primary_fire() -> bool:
 		return false
 	var cooldown_timer := get_cooldown_timer()
 	if cooldown_timer:
-		cooldown_timer.wait_time = maxf(get_effective_cooldown(float(weapon.get("attack_cooldown"))), 0.01)
+		cooldown_timer.wait_time = maxf(weapon.get_runtime_attack_cooldown(), 0.01)
 	if weapon.has_method("prepare_energy_release_attack"):
 		weapon.call("prepare_energy_release_attack")
 	weapon.emit_signal("shoot")
@@ -102,14 +102,14 @@ func _get_cold_attack_speed_multiplier() -> float:
 		return 1.0
 	return maxf(float(PlayerData.player.call("get_cold_attack_speed_multiplier")), 0.1)
 
-func start_weapon_cooldown(base_cooldown: float, min_cooldown: float = 0.01) -> void:
+func start_weapon_cooldown(min_cooldown: float = 0.01) -> void:
 	var cooldown_timer := get_cooldown_timer()
 	if cooldown_timer == null:
 		setup_timer()
 		cooldown_timer = get_cooldown_timer()
 	if cooldown_timer == null:
 		return
-	cooldown_timer.wait_time = maxf(get_effective_cooldown(base_cooldown), min_cooldown)
+	cooldown_timer.wait_time = maxf(weapon.get_runtime_attack_cooldown(), min_cooldown)
 	cooldown_timer.start()
 
 func sync_cooldown_timer() -> void:
@@ -117,8 +117,8 @@ func sync_cooldown_timer() -> void:
 	if cooldown_timer == null:
 		setup_timer()
 		cooldown_timer = get_cooldown_timer()
-	if cooldown_timer != null and float(weapon.get("attack_cooldown")) > 0.0:
-		cooldown_timer.wait_time = float(weapon.get("attack_cooldown"))
+	if cooldown_timer != null:
+		cooldown_timer.wait_time = weapon.get_runtime_attack_cooldown()
 
 func get_cooldown_timer() -> Timer:
 	if weapon == null:

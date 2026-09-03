@@ -3,9 +3,9 @@ class_name WeaponSlotView
 
 const ICON_ROTATION := -PI / 4.0
 const MAINHAND_ICON_INSET := 3.0
-const OFFHAND_ICON_INSET := 4.0
-const OFFHAND_FRAME_MODULATE := Color(0.66, 0.76, 0.80, 0.78)
-const OFFHAND_ICON_MODULATE := Color(0.80, 0.86, 0.88, 0.90)
+const SUPPORT_ICON_INSET := 4.0
+const SUPPORT_FRAME_MODULATE := Color(0.66, 0.76, 0.80, 0.78)
+const SUPPORT_ICON_MODULATE := Color(0.80, 0.86, 0.88, 0.90)
 
 var root: Control
 var icon: TextureRect
@@ -30,15 +30,15 @@ func set_background(texture: Texture2D) -> void:
 	if background != null:
 		background.texture = texture
 
-func set_role(is_mainhand: bool, mainhand_texture: Texture2D, offhand_texture: Texture2D) -> void:
+func set_role(is_mainhand: bool, mainhand_texture: Texture2D, support_texture: Texture2D) -> void:
 	_is_mainhand = is_mainhand
-	set_background(mainhand_texture if is_mainhand else offhand_texture)
+	set_background(mainhand_texture if is_mainhand else support_texture)
 	if background != null:
-		background.modulate = Color.WHITE if is_mainhand else OFFHAND_FRAME_MODULATE
+		background.modulate = Color.WHITE if is_mainhand else SUPPORT_FRAME_MODULATE
 	if icon == null:
 		return
 	_apply_weapon_icon_layout(icon.texture)
-	icon.modulate = Color.WHITE if is_mainhand else OFFHAND_ICON_MODULATE
+	icon.modulate = Color.WHITE if is_mainhand else SUPPORT_ICON_MODULATE
 
 func show_empty() -> void:
 	if icon != null:
@@ -56,12 +56,12 @@ func show_weapon(weapon: Weapon) -> void:
 		icon.visible = true
 		icon.texture = _resolve_weapon_texture(weapon)
 		_apply_weapon_icon_layout(icon.texture)
-		icon.modulate = Color.WHITE if _is_mainhand else OFFHAND_ICON_MODULATE
+		icon.modulate = Color.WHITE if _is_mainhand else SUPPORT_ICON_MODULATE
 	if icon_shadow != null:
 		icon_shadow.visible = true
 		icon_shadow.texture = icon.texture if icon != null else null
 	if background != null:
-		background.modulate = Color.WHITE if _is_mainhand else OFFHAND_FRAME_MODULATE
+		background.modulate = Color.WHITE if _is_mainhand else SUPPORT_FRAME_MODULATE
 
 func _ensure_icon_shadow() -> void:
 	if icon == null or root == null:
@@ -93,7 +93,7 @@ func get_rotated_weapon_icon_size(
 	slot_size: Vector2,
 	is_mainhand: bool
 ) -> Vector2:
-	var inset := MAINHAND_ICON_INSET if is_mainhand else OFFHAND_ICON_INSET
+	var inset := MAINHAND_ICON_INSET if is_mainhand else SUPPORT_ICON_INSET
 	var available_size := Vector2(
 		maxf(slot_size.x - inset * 2.0, 1.0),
 		maxf(slot_size.y - inset * 2.0, 1.0)

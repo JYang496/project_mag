@@ -33,15 +33,9 @@ static func get_player_weapons() -> Array:
 	return PlayerData.player_weapon_list
 
 static func get_runtime_weapon_damage(source_weapon: Weapon) -> int:
-	if source_weapon == null or not is_instance_valid(source_weapon):
-		return 1
-	if source_weapon.has_method("get_runtime_shot_damage"):
-		return max(1, int(source_weapon.call("get_runtime_shot_damage")))
-	if source_weapon.has_method("get_runtime_damage_value") and source_weapon.get("damage") != null:
-		return max(1, int(source_weapon.call("get_runtime_damage_value", float(source_weapon.get("damage")))))
-	if source_weapon.get("damage") != null:
-		return max(1, int(source_weapon.get("damage")))
-	return 1
+	assert(source_weapon != null)
+	assert(is_instance_valid(source_weapon))
+	return source_weapon.get_runtime_damage()
 
 static func get_nearby_enemies(tree: SceneTree, origin: Vector2, radius: float) -> Array[Node2D]:
 	var output: Array[Node2D] = []

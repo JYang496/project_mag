@@ -57,9 +57,7 @@ func _apply_rending_damage(target: Node, damage_multiplier: float) -> void:
 	if not target.is_in_group("enemies"):
 		return
 
-	var runtime_damage: int = 1
-	if weapon.has_method("get_runtime_shot_damage"):
-		runtime_damage = max(1, int(weapon.call("get_runtime_shot_damage")))
+	var runtime_damage := weapon.get_runtime_damage()
 
 	# 计算额外伤害：基础伤害 * (当前倍率 - 1)
 	# 例如：第2次命中时倍率为1.25，额外伤害 = base * 0.25

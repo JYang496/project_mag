@@ -3,7 +3,9 @@ class_name Player
 
 const OutgoingDamageResultType := preload("res://Combat/damage/outgoing_damage_result.gd")
 const PLAYER_ASSIST_SYSTEM_SCRIPT := preload("res://Player/Mechas/scripts/player_assist_system.gd")
+const PLAYER_SUPPORT_FIRE_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_support_fire_runtime.gd")
 const PLAYER_ACTIVE_SKILL_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_active_skill_runtime.gd")
+const PLAYER_WEAPON_COMMAND_CONTROLLER_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_command_controller.gd")
 const PLAYER_WEAPON_INVENTORY_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_inventory_runtime.gd")
 const PLAYER_WEAPON_PASSIVE_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_passive_runtime.gd")
 const PLAYER_GLOBAL_WEAPON_ENERGY_POOL_SCRIPT := preload("res://Player/Mechas/scripts/player_global_weapon_energy_pool.gd")
@@ -80,6 +82,7 @@ var _hurtbox_shape_base_cached: bool = false
 var _incoming_damage_pipeline: DamagePipeline
 var _incoming_damage_profile: DamageProfile
 var _assist_system: RefCounted
+var _support_fire_runtime: PlayerSupportFireRuntime
 enum MechaVisualState {
 	IDLE,
 	MOVING
@@ -175,6 +178,7 @@ var _global_weapon_energy_pool
 var _loot_system: PlayerLootSystem
 var _damage_reaction_system: PlayerDamageReactionSystem
 var _active_skill_runtime: RefCounted
+var _weapon_command_controller: RefCounted
 var _suppress_status_hints: bool = false
 var _systems_strict_ready: bool = false
 # Signals
@@ -215,6 +219,11 @@ func _ensure_active_skill_runtime() -> void:
 	if _active_skill_runtime != null:
 		_active_skill_runtime.setup(self)
 
+func _ensure_weapon_command_controller() -> void:
+	if _weapon_command_controller == null:
+		_weapon_command_controller = PLAYER_WEAPON_COMMAND_CONTROLLER_SCRIPT.new()
+	_weapon_command_controller.setup(self)
+
 func _ready():
 	LoadingPerformance.begin_segment("player_ready")
 	PlayerData = get_node_or_null("/root/PlayerData")
@@ -230,6 +239,7 @@ func _ready():
 	_incoming_damage_pipeline = DamagePipeline.new() as DamagePipeline
 	_setup_incoming_damage_profile()
 	_ensure_active_skill_runtime()
+	_ensure_weapon_command_controller()
 	_ensure_global_weapon_energy_pool()
 	_setup_default_active_skill()
 	_ensure_input_actions()
@@ -273,6 +283,7 @@ func _ready():
 	_ensure_oblique_debug_panel()
 	_ensure_loot_system()
 	_ensure_assist_system()
+	_ensure_support_fire_runtime()
 	LoadingPerformance.end_segment("player_ready_systems")
 	_systems_strict_ready = true
 	if not _require_movement_system_or_halt():
@@ -291,9 +302,10 @@ func custom_ready():
 func _physics_process(delta):
 	_process_centralized_enemy_contact_damage(delta)
 	_refresh_weapon_structure_if_needed()
+	_weapon_command_controller.process(delta)
+	_support_fire_runtime.process(delta)
 	_update_global_weapon_passives()
 	_update_heat_statuses()
-	_process_combat_input(delta)
 	_update_shared_heat_pool(delta)
 	_update_incoming_elemental_effects(delta)
 	_regen_energy(delta)
@@ -369,6 +381,8 @@ func _input(event: InputEvent) -> void:
 	_ensure_active_skill_runtime()
 	if _active_skill_runtime != null:
 		_active_skill_runtime.process_input_event(event)
+	_ensure_weapon_command_controller()
+	_weapon_command_controller.process_input_event(event)
 
 func _setup_default_active_skill() -> void:
 	_ensure_active_skill_runtime()
@@ -540,6 +554,11 @@ func _ensure_assist_system() -> void:
 	if _assist_system != null:
 		_assist_system.setup(self)
 
+func _ensure_support_fire_runtime() -> void:
+	if _support_fire_runtime == null:
+		_support_fire_runtime = PLAYER_SUPPORT_FIRE_RUNTIME_SCRIPT.new()
+	_support_fire_runtime.setup(self)
+
 func _did_manual_fire_start_reload(main_weapon: Weapon, was_reloading_before_input: bool) -> bool:
 	if main_weapon == null or not is_instance_valid(main_weapon):
 		return false
@@ -578,6 +597,8 @@ func _on_player_weapon_list_changed() -> void:
 
 func _on_main_weapon_index_changed(_old_index: int, _new_index: int, _step: int) -> void:
 	_mark_weapon_roles_dirty()
+	if _support_fire_runtime != null:
+		_support_fire_runtime.clear()
 
 func _on_tracked_weapon_tree_exiting(instance_id: int) -> void:
 	if _weapon_inventory_runtime != null:
@@ -591,9 +612,29 @@ func get_main_weapon() -> Weapon:
 	_ensure_weapon_inventory_runtime()
 	return _weapon_inventory_runtime.get_main_weapon()
 
-func get_offhand_weapons() -> Array:
+func get_support_weapons() -> Array:
 	_ensure_weapon_inventory_runtime()
-	return _weapon_inventory_runtime.get_offhand_weapons()
+	return _weapon_inventory_runtime.get_support_weapons()
+
+func get_all_weapons() -> Array:
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.get_all_weapons()
+
+func get_weapon_at_slot(slot_index: int) -> Weapon:
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.get_weapon_at_slot(slot_index)
+
+func try_select_main_weapon(slot_index: int) -> bool:
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.try_select_main_weapon(slot_index)
+
+func request_weapon_skill_at_slot(slot_index: int) -> bool:
+	_ensure_weapon_inventory_runtime()
+	return _weapon_inventory_runtime.request_weapon_skill_at_slot(slot_index)
+
+func get_weapon_slot_hold_progress(slot_index: int) -> float:
+	_ensure_weapon_command_controller()
+	return _weapon_command_controller.get_hold_progress(slot_index)
 
 func can_switch_main_weapon() -> bool:
 	_ensure_weapon_inventory_runtime()
@@ -663,6 +704,8 @@ func _ensure_input_actions() -> void:
 	_ensure_active_skill_runtime()
 	if _active_skill_runtime != null:
 		_active_skill_runtime.ensure_input_actions()
+	_ensure_weapon_command_controller()
+	_weapon_command_controller.ensure_input_actions()
 
 func get_current_energy() -> float:
 	_ensure_active_skill_runtime()
@@ -1767,9 +1810,17 @@ func _on_phase_changed(new_phase: String) -> void:
 	_last_phase = new_phase
 	if new_phase == PhaseManager.BATTLE:
 		clear_global_weapon_energy()
-		_suppress_attack_until_released = Input.is_action_pressed("ATTACK")
+		var main_weapon := get_main_weapon()
+		var allows_held_attack := main_weapon != null \
+			and main_weapon.has_method("allows_held_attack_on_battle_entry") \
+			and bool(main_weapon.call("allows_held_attack_on_battle_entry"))
+		_suppress_attack_until_released = Input.is_action_pressed("ATTACK") and not allows_held_attack
 	else:
 		_suppress_attack_until_released = false
+		if _weapon_command_controller != null:
+			_weapon_command_controller.clear()
+		if _support_fire_runtime != null:
+			_support_fire_runtime.clear()
 	_update_vision_effect()
 	if not _require_camera_system_or_halt():
 		return
@@ -1965,6 +2016,10 @@ func _on_collision_cd_timeout() -> void:
 	pass
 
 func _exit_tree() -> void:
+	if _weapon_command_controller != null:
+		_weapon_command_controller.clear()
+	if _support_fire_runtime != null:
+		_support_fire_runtime.clear()
 	_disconnect_weapon_structure_signals()
 	if _weapon_inventory_runtime != null:
 		_weapon_inventory_runtime.clear_tracked_weapon_exit_ids()

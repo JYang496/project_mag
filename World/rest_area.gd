@@ -12,6 +12,7 @@ signal rest_menu_requested(zone_id: int, zone_center_global: Vector2)
 signal rest_menu_cancelled
 
 @export var board_path: NodePath
+@export var rest_area_size := Vector2(510.0, 510.0)
 @export var bounds_shape_path: NodePath = NodePath("Area2D/CollisionShape2D")
 @export var fade_duration: float = 0.35
 @export var zone_move_speed: float = 500.0
@@ -349,7 +350,7 @@ func _apply_bounds_size() -> void:
 	if rect == null:
 		rect = RectangleShape2D.new()
 		shape_node.shape = rect
-	rect.size = _board.cell_spacing
+	rect.size = rest_area_size
 	shape_node.scale = Vector2.ONE
 	_layout_scene_hint_labels()
 

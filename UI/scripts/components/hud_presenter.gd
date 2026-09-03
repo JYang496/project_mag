@@ -621,11 +621,11 @@ func _update_weapon_state_label_text() -> void:
 		"ui.hud.weapon_state",
 		{
 			"main": main_text,
-			"offhand": maxi(0, weapon_count - 1),
+			"support": maxi(0, weapon_count - 1),
 			"swap": lock_text,
 			"ps": ps_text
 		},
-		"Main:%s Offhand:%d Swap:%s PS:%s" % [main_text, maxi(0, weapon_count - 1), lock_text, ps_text]
+		"Main:%s Support:%d Swap:%s PS:%s" % [main_text, maxi(0, weapon_count - 1), lock_text, ps_text]
 	)
 	var next_state_text := "W:%s  PS:%s" % [main_text, ps_text]
 	if _last_weapon_state_text != next_state_text:

@@ -39,7 +39,7 @@ func set_level(lv) -> void:
 
 func _on_shoot() -> void:
 	is_on_cooldown = true
-	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
+	var cooldown := maxf(get_runtime_attack_cooldown(), 0.05)
 	var projectile_damage_multiplier := branch_runtime.get_branch_projectile_damage_multiplier()
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
@@ -52,11 +52,11 @@ func _on_shoot() -> void:
 	if spawn_projectile == null:
 		return
 
-	var runtime_damage := get_runtime_shot_damage()
+	var runtime_damage := get_runtime_damage()
 	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * projectile_damage_multiplier)))
-	var maximum_distance_bonus := consume_stow_trigger() or _next_shot_max_distance_bonus
+	var maximum_distance_bonus := consume_support_trigger() or _next_shot_max_distance_bonus
 	_next_shot_max_distance_bonus = false
-	spawn_projectile.set_meta(&"sniper_stow_empowered", maximum_distance_bonus)
+	spawn_projectile.set_meta(&"sniper_support_empowered", maximum_distance_bonus)
 	spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
 	spawn_projectile.hp = max(1, projectile_hits)
 	spawn_projectile.global_position = global_position
@@ -109,18 +109,18 @@ func _emit_sniper_crossfire(target: Node) -> void:
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
-	var progress := get_stow_trigger_progress()
-	var state := "ready" if is_stow_trigger_ready() else "charging"
+	var progress := get_support_trigger_progress()
+	var state := "ready" if is_support_trigger_ready() else "charging"
 	return {
 		"id": "sniper_far_hit_triggered",
 		"display_name": "Far Hit",
 		"state": state,
 		"progress": progress,
 		"ready": state == "ready",
-		"condition_type": "stow_charge",
-		"required": WeaponTriggerRuntimeType.STOW_CHARGE_DURATION_SEC,
-		"trigger_hint": "stow_charge",
-		"refresh_hint": "stow",
+		"condition_type": "support_charge",
+		"required": WeaponTriggerRuntimeType.SUPPORT_CHARGE_DURATION_SEC,
+		"trigger_hint": "support_charge",
+		"refresh_hint": "support",
 	}
 
 func get_sniper_distance_scaled_damage(target: Node, base_damage: int, force_maximum: bool = false) -> int:

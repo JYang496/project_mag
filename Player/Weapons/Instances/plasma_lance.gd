@@ -52,7 +52,7 @@ func set_level(lv) -> void:
 
 func _on_shoot() -> void:
 	is_on_cooldown = true
-	cooldown_timer.wait_time = maxf(get_effective_cooldown(attack_cooldown), 0.05)
+	cooldown_timer.wait_time = maxf(get_runtime_attack_cooldown(), 0.05)
 	cooldown_timer.start()
 
 	var spawn_projectile := spawn_projectile_from_scene(projectile_template)
@@ -60,7 +60,7 @@ func _on_shoot() -> void:
 		return
 
 	projectile_direction = get_aim_forward()
-	var runtime_damage := get_runtime_shot_damage()
+	var runtime_damage := get_runtime_damage()
 	var heat_damage_multiplier := _get_heat_damage_multiplier()
 	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * heat_damage_multiplier)))
 	spawn_projectile.damage_type = Attack.TYPE_ENERGY

@@ -56,7 +56,7 @@ func set_level(lv):
 
 func _on_shoot():
 	is_on_cooldown = true
-	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
+	var cooldown := maxf(get_runtime_attack_cooldown(), 0.05)
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = maxf(cooldown, 0.05)
 	cooldown_timer.start()
@@ -81,7 +81,7 @@ func _on_shoot():
 	# Guard against default branch fallback returning a single forward direction.
 	if shot_count > 1 and shot_directions.size() <= 1:
 		shot_directions = _build_spread_directions(base_direction, shot_count, spread_arc)
-	var runtime_damage := get_runtime_shot_damage()
+	var runtime_damage := get_runtime_damage()
 	var damage_multiplier := branch_runtime.get_branch_projectile_damage_multiplier()
 	if consume_entry_trigger():
 		damage_multiplier *= 1.35

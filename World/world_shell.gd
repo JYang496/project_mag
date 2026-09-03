@@ -15,6 +15,7 @@ const REWARD_MANAGER_SCENE := preload("res://World/rewards/reward_manager.tscn")
 const HYBRID_GROUND_SCRIPT := preload("res://Visual/Oblique/hybrid_ground_view_3d.gd")
 const UNLOADED_ENVIRONMENT_SCRIPT := preload("res://Visual/Oblique/unloaded_world_environment.gd")
 const READY_COORDINATOR_SCRIPT := preload("res://World/world_ready_coordinator.gd")
+const BATTLEFIELD_CENTER := Vector2(-212.0, 244.0)
 
 var build_stage: StringName = &"shell_ready"
 var build_progress := 0.0
@@ -72,9 +73,9 @@ func _build_reward_manager() -> void:
 func _build_board() -> void:
 	var board := BOARD_SCRIPT.new() as BoardCellGenerator
 	board.name = "Board"
-	board.position = Vector2(-977.0, -521.0)
 	board.cell_scene = CELL_SCENE
 	board.player_spawner_path = NodePath()
+	board.position = BATTLEFIELD_CENTER - board.get_board_size() * 0.5
 	var profiles: Array[CellProfile] = []
 	for unused in range(9):
 		profiles.append(CELL_PROFILE_SCRIPT.new() as CellProfile)
@@ -111,7 +112,7 @@ func _build_player() -> void:
 		return
 	var player_spawner := PLAYER_SPAWNER_SCRIPT.new()
 	player_spawner.name = "PlayerSpawner"
-	player_spawner.position = board.center_spawn_offset
+	player_spawner.position = board.get_center_spawn_offset()
 	center_cell.add_child(player_spawner)
 
 
@@ -129,10 +130,4 @@ func _build_world_services() -> void:
 
 	var enemy_spawner := ENEMY_SPAWNER_SCENE.instantiate() as EnemySpawner
 	enemy_spawner.name = "EnemySpawner"
-	var top_left := enemy_spawner.get_node_or_null("TopLeft") as Node2D
-	var bottom_right := enemy_spawner.get_node_or_null("BottomRight") as Node2D
-	if top_left != null:
-		top_left.position = Vector2(-982.0, -519.0)
-	if bottom_right != null:
-		bottom_right.position = Vector2(548.0, 1002.0)
 	add_child(enemy_spawner)

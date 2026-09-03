@@ -1,7 +1,7 @@
 keys,en,zh_CN
 weapon.25.name,Cannon,重炮
 weapon.25.role_summary,Low-frequency heavy strike,低频重击
-weapon.25.desc,"Long-range heavy cannon. Stow it for 5 seconds, then switch back to prime an empowered Breach Shot.","远程重型火炮。收纳 5 秒后切回，可预备一发强化破阵炮击。"
+weapon.25.desc,"Long-range heavy cannon. Support mode charges an empowered Breach Shot after 5 seconds.","远程重型火炮。处于支援模式 5 秒后，可预备一发强化破阵炮击。"
 weapon.10.name,Chainsaw Launcher,链锯发射器
 weapon.10.role_summary,Mid-close sustained cutting,中近距离持续切割
 weapon.10.desc,"Close-range projectile saw that ricochets inside its spawn cell. Boundary contact arms slowing vulnerability hits and extends that projectile's lifetime.","近距离投射锯刃，会在出生 cell 内弹射；接触边界后，命中会施加减速和易伤，并延长该投射物的生命周期。"
@@ -40,14 +40,14 @@ weapon.4.role_summary,Close-range burst,近距离爆发
 weapon.4.desc,"Close-range pellet burst. Fits Close and Projectile builds; multiple pellets on one target spend Close Hit charges for bonus final damage.","近距离弹丸爆发。适合近战和投射物构筑；多个弹丸命中同一目标时消耗近距命中充能，获得额外最终伤害。"
 weapon.26.name,Sniper,狙击枪
 weapon.26.role_summary,Extreme-range heavy strike,超远距离重击
-weapon.26.desc,"Long-range Projectile rifle. Stowing it or triggering Crossfire primes the next shot for the maximum 1.8x distance multiplier.","远程投射物步枪。收纳蓄力或触发交叉火力，都会使下一发获得最高 1.8 倍距离倍率。"
+weapon.26.desc,"Long-range Projectile rifle. Support charge or Crossfire primes the next shot for the maximum 1.8x distance multiplier.","远程投射物步枪。支援蓄力或触发交叉火力，都会使下一发获得最高 1.8 倍距离倍率。"
 weapon.3.name,Spear Launcher,长矛发射器
 weapon.3.role_summary,Mid-range piercing control,中距离穿刺控制
 weapon.3.desc,"Mid-range Projectile spear. Repeat hits build Mark charge; reload with enough charge to launch a marking radial volley.","中距离投射长矛。重复命中会积累标记充能；充能足够时换弹会发射施加标记的环形齐射。"
 passive.piercing_blade_dance.name,Piercing Blade Dance,穿刺轮舞
 passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds charge. Start reloading at 10 charge to launch an 8-direction volley. Its hits mark surviving enemies for 20 seconds and knock them away.","同一根长矛重复伤害同一敌人可积累充能。达到 10 点充能时开始装填，发射 8 方向齐射；命中存活敌人后施加持续 20 秒的标记并将其击退。"
 passive.cannon_idle_fire_triggered.name,Breach Shot,破阵炮击
-passive.cannon_idle_fire_triggered.desc,"Stow the Cannon for 5 seconds, then return to fire one 1.45x-damage shot that makes its target take 20% more damage for 4 seconds.","将重炮收纳 5 秒后再切回：下一发造成 1.45 倍伤害，并使目标在 4 秒内受到的伤害提高 20%。"
+passive.cannon_idle_fire_triggered.desc,"Keep the Cannon in support mode for 5 seconds to prime one 1.45x-damage shot that makes its target take 20% more damage for 4 seconds.","重炮处于支援模式 5 秒后，下一发造成 1.45 倍伤害，并使目标在 4 秒内受到的伤害提高 20%。"
 passive.cannon_zero_energy_cycle.name,Zero Burst,零点爆发
 passive.cannon_zero_energy_cycle.desc,"Stored burst cycle. Each valid damage event grants 10 global energy. Full-energy fire deals 2x direct damage, then releases a 90-radius secondary pulse with stronger execute payoff.","蓄能爆发循环。每次有效伤害获得 10 点全局能量。满能量射击造成 2 倍直接伤害，随后释放半径 90 的二次脉冲，并获得更强的斩杀收益。"
 passive.chainsaw_wall_contact_triggered.name,Wall Contact,触壁回旋
@@ -59,7 +59,7 @@ passive.dash_blade_long_dash_hit_triggered.desc,"Reach 3 uninterrupted Dash Blad
 passive.flamethrower_heat_prepared.name,Heat Prepared,热能预备
 passive.flamethrower_heat_prepared.desc,"Spend all four quarters of a Flamethrower magazine to gain +10% fire damage for 10 seconds. The bonus applies to fire damage from every weapon and stacks up to +20%.","消耗喷火器弹匣的全部四个区段后，获得持续 10 秒的 10% 火焰伤害加成；该加成作用于所有武器的火焰伤害，最高叠加至 20%。"
 passive.glacier_cold_snap_triggered.name,Cold Snap,寒潮骤袭
-passive.glacier_cold_snap_triggered.desc,"Stow Glacier Projector for 5 seconds, then return to it: the next attack freezes non-bosses for 1 second and slows bosses to 50% for 1 second.","将冰川投射器收纳 5 秒后再切回：下一次攻击冻结非首领 1 秒，并使首领在 1 秒内减速至 50%。"
+passive.glacier_cold_snap_triggered.desc,"Keep Glacier Projector in support mode for 5 seconds: its next attack freezes non-bosses for 1 second and slows bosses to 50% for 1 second.","冰川投射器处于支援模式 5 秒后，下一次攻击冻结非首领 1 秒，并使首领在 1 秒内减速至 50%。"
 passive.laser_focus_channel_triggered.name,Focus Channel,聚焦引导
 passive.laser_focus_channel_triggered.desc,"Sustained focus cycle. Each valid damage event grants 6 global energy. Firing at full energy starts a 2.5-second channel that gradually drains the pool and grants +30% damage and wider beams.","持续聚焦循环。每次有效伤害获得 6 点全局能量。满能量时开火会开始 2.5 秒引导，逐步消耗能量，并使伤害提高 30%、光束变宽。"
 passive.machine_gun_heat_expansion.name,Thermal Amplification,热能增幅
@@ -79,7 +79,7 @@ passive.rocket_cluster_kill_triggered.desc,"Every Rocket Launcher kill releases 
 passive.shotgun_close_hit_triggered.name,Close Hit,近距轰击
 passive.shotgun_close_hit_triggered.desc,"Switch Shotgun into the main slot to empower its first volley; hitting a target recently struck by another weapon triggers its breach payoff.","将霰弹枪切入主武器栏位会强化第一轮齐射；命中刚被其他武器攻击的目标时触发破阵收益。"
 passive.sniper_far_hit_triggered.name,Far Hit,远距狙击
-passive.sniper_far_hit_triggered.desc,"Stow for 5 seconds or trigger Crossfire to prime the next Sniper shot for the maximum 1.8x distance multiplier.","收纳 5 秒或触发交叉火力，都会使狙击枪下一发获得最高 1.8 倍距离倍率。"
+passive.sniper_far_hit_triggered.desc,"Charge in support mode for 5 seconds or trigger Crossfire to prime the next Sniper shot for the maximum 1.8x distance multiplier.","处于支援模式 5 秒完成蓄力或触发交叉火力，都会使狙击枪下一发获得最高 1.8 倍距离倍率。"
 branch.thermal_cannon_branch.name,Thermal Cannon,热能重炮
 branch.thermal_cannon_branch.desc,Thermal branch: injects heat mechanics and converts shots to fire damage with heat-scaled output.,热能分支：注入热量机制，将炮弹转化为火焰伤害，并随热量提高输出。
 branch.zero_cannon_branch.name,Zero Cannon,零式重炮
@@ -149,7 +149,7 @@ module.wmod_reload_blast_damage.name,Reload Burst,换弹爆破
 module.wmod_reload_blast_knockback.name,Reload Shockwave,换弹震波
 module.wmod_reload_damage_boost.name,Reloaded Force,换弹强袭
 module.wmod_reload_move_boost.name,Reload Sprint,换弹疾行
-module.wmod_reload_offhand_boost.name,Reload Relay,换弹接力
+module.wmod_reload_support_boost.name,Reload Relay,换弹接力
 module.wmod_reload_shield_boost.name,Reload Barrier,换弹屏障
 module.wmod_reload_speed_link.name,Reload Link,换弹联动
 module.wmod_trail_aoe_freeze.name,Frost Trail,霜冻轨迹
@@ -346,9 +346,9 @@ module.wmod_reload_damage_boost.effect.3,"Starting a reload primes the next 5 at
 module.wmod_reload_blast_knockback.effect.1,"Reload shockwave applies up to 150 knockback","换弹震波最高施加 150 点击退"
 module.wmod_reload_blast_knockback.effect.2,"Reload shockwave applies up to 210 knockback","换弹震波最高施加 210 点击退"
 module.wmod_reload_blast_knockback.effect.3,"Reload shockwave applies up to 280 knockback","换弹震波最高施加 280 点击退"
-module.wmod_reload_offhand_boost.effect.1,"Reload grants other weapons up to +12% damage for 3s","换弹使其他武器伤害最高 +12%，持续 3 秒"
-module.wmod_reload_offhand_boost.effect.2,"Reload grants other weapons up to +18% damage for 4s","换弹使其他武器伤害最高 +18%，持续 4 秒"
-module.wmod_reload_offhand_boost.effect.3,"Reload grants other weapons up to +24% damage for 5s","换弹使其他武器伤害最高 +24%，持续 5 秒"
+module.wmod_reload_support_boost.effect.1,"Reload grants other weapons up to +12% damage for 3s","换弹使其他武器伤害最高 +12%，持续 3 秒"
+module.wmod_reload_support_boost.effect.2,"Reload grants other weapons up to +18% damage for 4s","换弹使其他武器伤害最高 +18%，持续 4 秒"
+module.wmod_reload_support_boost.effect.3,"Reload grants other weapons up to +24% damage for 5s","换弹使其他武器伤害最高 +24%，持续 5 秒"
 module.wmod_reload_move_boost.effect.1,"Reload grants up to +12% move speed for 3s","换弹使移动速度最高 +12%，持续 3 秒"
 module.wmod_reload_move_boost.effect.2,"Reload grants up to +18% move speed for 4s","换弹使移动速度最高 +18%，持续 4 秒"
 module.wmod_reload_move_boost.effect.3,"Reload grants up to +24% move speed for 5s","换弹使移动速度最高 +24%，持续 5 秒"
@@ -387,8 +387,8 @@ module.wmod_reload_damage_boost.detail.1,"Starting a reload primes a limited num
 module.wmod_reload_damage_boost.detail.2,"Bonus scales with spent ammo","加成随已消耗弹药量提高"
 module.wmod_reload_move_boost.detail.1,"Reload grants temporary move speed","换弹获得临时移动速度加成"
 module.wmod_reload_move_boost.detail.2,"Bonus scales with spent ammo","加成随已消耗弹药量提高"
-module.wmod_reload_offhand_boost.detail.1,"Reload grants temporary damage to other weapons","换弹使其他武器获得临时伤害加成"
-module.wmod_reload_offhand_boost.detail.2,"Bonus scales with spent ammo","加成随已消耗弹药量提高"
+module.wmod_reload_support_boost.detail.1,"Reload grants temporary damage to other weapons","换弹使其他武器获得临时伤害加成"
+module.wmod_reload_support_boost.detail.2,"Bonus scales with spent ammo","加成随已消耗弹药量提高"
 module.wmod_reload_shield_boost.detail.1,"Reload grants temporary shield","换弹获得临时护盾"
 module.wmod_reload_shield_boost.detail.2,"Shield scales with spent ammo","护盾随已消耗弹药量提高"
 module.wmod_reload_speed_link.detail.1,"Reloads faster while another weapon is reloading","其他武器换弹时，自身换弹更快"

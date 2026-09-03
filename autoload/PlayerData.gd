@@ -339,8 +339,6 @@ func shift_main_weapon(step: int) -> bool:
 		var candidate := player_weapon_list[next] as Weapon
 		if candidate == null or not is_instance_valid(candidate):
 			continue
-		if _is_auto_fire_weapon(candidate):
-			continue
 		set_main_weapon_index(next)
 		return main_weapon_index != original_index
 	on_select_weapon = main_weapon_index

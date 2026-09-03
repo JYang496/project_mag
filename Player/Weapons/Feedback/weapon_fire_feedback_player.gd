@@ -22,7 +22,12 @@ func setup(source_weapon: Node2D) -> void:
 	weapon = source_weapon
 
 
-func play(profile: Resource, direction: Vector2 = Vector2.ZERO, play_audio: bool = true) -> bool:
+func play(
+	profile: Resource,
+	direction: Vector2 = Vector2.ZERO,
+	play_audio: bool = true,
+	full_feedback: bool = true
+) -> bool:
 	if weapon == null or not is_instance_valid(weapon):
 		return false
 	if profile == null:
@@ -34,8 +39,9 @@ func play(profile: Resource, direction: Vector2 = Vector2.ZERO, play_audio: bool
 	_last_feedback_msec = now
 	var resolved_direction := _resolve_direction(direction)
 	_spawn_muzzle_flash(profile, resolved_direction)
-	_play_recoil(profile, resolved_direction)
-	_request_camera_shake(profile)
+	if full_feedback:
+		_play_recoil(profile, resolved_direction)
+		_request_camera_shake(profile)
 	if play_audio:
 		_play_fire_audio(profile)
 	weapon.set_meta(&"_last_fire_feedback_msec", now)

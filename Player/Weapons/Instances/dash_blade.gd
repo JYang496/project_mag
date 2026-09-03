@@ -119,11 +119,17 @@ func sync_stats() -> void:
 	calculate_speed(dash_speed)
 	calculate_weapon_size.emit(size)
 	if attack_cooldown > 0:
-		cooldown_timer.wait_time = attack_cooldown
+		cooldown_timer.wait_time = get_runtime_attack_cooldown()
 	_update_attack_range_shape()
 
 func calculate_damage(pre_damage: int) -> void:
 	calculate_weapon_damage.emit(pre_damage)
+
+func get_runtime_damage() -> int:
+	return get_runtime_damage_value(float(base_damage))
+
+func get_runtime_attack_cooldown() -> float:
+	return attack_cooldown * get_role_stat_multiplier(&"attack_cooldown")
 
 func calculate_speed(pre_speed: float) -> void:
 	calculate_weapon_speed.emit(pre_speed)
@@ -195,9 +201,10 @@ func _point_blade_to_auto_aim_target(delta: float = 0.0) -> void:
 func _can_run_dash_attack() -> bool:
 	if not is_attack_phase_allowed():
 		return false
-	if is_main_weapon():
-		return true
-	return has_weapon_trait(WeaponTrait.AUTO_FIRE)
+	return is_main_weapon() or is_support_weapon()
+
+func request_automatic_fire() -> bool:
+	return _state == AttackState.IDLE
 
 func _process_dashing(delta: float) -> void:
 	blade_anchor.global_position = blade_anchor.global_position.move_toward(_dash_target_position, dash_speed * delta)

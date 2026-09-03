@@ -47,10 +47,7 @@ func _apply_long_range_bonus(detail: Dictionary) -> void:
 	_target_bonus_ready_at_msec[target_id] = now_msec + int(maxf(same_target_icd_sec, 0.0) * 1000.0)
 
 	var base_damage := 1
-	if source_weapon_as_weapon.has_method("get_runtime_shot_damage"):
-		base_damage = max(1, int(source_weapon_as_weapon.call("get_runtime_shot_damage")))
-	elif source_weapon_as_weapon.get("damage") != null:
-		base_damage = max(1, int(source_weapon_as_weapon.get("damage")))
+	base_damage = source_weapon_as_weapon.get_runtime_damage()
 
 	var bonus_damage: int = max(1, int(round(float(base_damage) * _get_long_range_ratio())))
 	var damage_data := DamageManager.build_damage_data(

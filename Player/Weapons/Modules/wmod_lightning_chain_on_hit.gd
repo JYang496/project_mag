@@ -30,9 +30,7 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if bounce_count <= 0:
 		return
 
-	var base_damage: int = 1
-	if source_weapon and source_weapon.get("damage") != null:
-		base_damage = max(1, int(source_weapon.damage))
+	var base_damage := source_weapon.get_runtime_damage()
 	var chain_damage_ratio_scaled := chain_damage_ratio * get_effective_additive(1.0, 0.3)
 	var chain_damage: int = max(1, int(round(float(base_damage) * chain_damage_ratio_scaled)))
 	var owner_player := DamageManager.resolve_source_player(source_weapon) as Player

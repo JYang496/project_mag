@@ -298,10 +298,22 @@ func _expect_beacon_visual_respects_player(player: Node2D, view: Node) -> void:
 	for index in range(local_corners.size()):
 		var expected_corner := view.call("project_world_to_screen", projection_target.global_transform * local_corners[index]) as Vector2
 		_expect(projected_footprint[index].distance_to(expected_corner) < 0.001, "protocol footprint corner %d must use the camera's direct world projection" % index)
-	var progress_perimeter := visual.call("_closed_footprint", projected_footprint) as PackedVector2Array
-	_expect(progress_perimeter.size() == 5 and progress_perimeter[4] == projected_footprint[0], "protocol progress must close the same four projected corners without a hand-authored trapezoid")
-	for index in range(projected_footprint.size()):
-		_expect(progress_perimeter[index] == projected_footprint[index], "protocol progress corner %d must match the texture footprint exactly" % index)
+	var visual_footprint := visual.call("_visual_footprint_points") as PackedVector2Array
+	var projected_center := Vector2.ZERO
+	for point in projected_footprint:
+		projected_center += point
+	projected_center /= float(projected_footprint.size())
+	_expect(visual_footprint.size() == 4, "protocol visual footprint must preserve four projected corners")
+	for index in range(visual_footprint.size()):
+		_expect(
+			is_equal_approx(visual_footprint[index].distance_to(projected_footprint[index]), 4.0)
+			and visual_footprint[index].distance_to(projected_center) < projected_footprint[index].distance_to(projected_center),
+			"protocol visual corner %d must inset 4px inside the interaction footprint" % index,
+		)
+	var progress_perimeter := visual.call("_closed_footprint", visual_footprint) as PackedVector2Array
+	_expect(progress_perimeter.size() == 5 and progress_perimeter[4] == visual_footprint[0], "protocol progress must close the same four inset corners without a hand-authored trapezoid")
+	for index in range(visual_footprint.size()):
+		_expect(progress_perimeter[index] == visual_footprint[index], "protocol progress corner %d must match the inset texture footprint exactly" % index)
 	var occlusion_rect := visual.call("_player_occlusion_rect") as Rect2
 	var idle_source := player.get_node("MechaSprite") as Node2D
 	var config := idle_source.call("get_unit_billboard_config") as Dictionary

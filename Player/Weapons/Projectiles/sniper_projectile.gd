@@ -12,7 +12,7 @@ func get_hitbox_damage_value(target: Node, base_damage: int, _damage_type: Strin
 			"get_sniper_distance_scaled_damage",
 			target,
 			base_damage,
-			bool(get_meta(&"sniper_stow_empowered", false))
+			bool(get_meta(&"sniper_support_empowered", false))
 		))
 	return max(1, int(base_damage))
 

@@ -113,8 +113,7 @@ func request_battle_contract() -> void:
 	ui.call(
 		"request_battle_contract_selection",
 		options,
-		Callable(self, "_on_contract_confirmed"),
-		Callable(self, "on_battle_start_cancelled")
+		Callable(self, "_on_contract_confirmed")
 	)
 
 func _on_contract_confirmed() -> void:

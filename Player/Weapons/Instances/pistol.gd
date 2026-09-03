@@ -98,6 +98,8 @@ func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bo
 	request_primary_fire()
 
 func _process_auto_fire() -> void:
+	if not is_main_weapon():
+		return
 	if is_on_cooldown:
 		return
 	if not can_fire_with_heat():
@@ -113,7 +115,7 @@ func _on_shoot() -> void:
 	projectile_direction = get_aim_forward()
 
 	is_on_cooldown = true
-	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
+	var cooldown := maxf(get_runtime_attack_cooldown(), 0.05)
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
@@ -122,7 +124,7 @@ func _on_shoot() -> void:
 	if spawn_projectile == null:
 		return
 
-	spawn_projectile.damage = get_runtime_shot_damage()
+	spawn_projectile.damage = get_runtime_damage()
 	spawn_projectile.damage = max(
 		1,
 		int(round(float(spawn_projectile.damage) * branch_runtime.get_branch_projectile_damage_multiplier()))

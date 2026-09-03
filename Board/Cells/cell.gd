@@ -816,6 +816,12 @@ func _get_local_cell_rect() -> Rect2:
 		return Rect2(collision_shape.position - half_size, half_size * 2.0)
 	return Rect2(Vector2.ZERO, Vector2(512.0, 512.0))
 
+func get_local_cell_rect() -> Rect2:
+	return _get_local_cell_rect()
+
+func get_local_cell_center() -> Vector2:
+	return _get_local_cell_rect().get_center()
+
 func _get_polygon_local_min(points: PackedVector2Array) -> Vector2:
 	if points.is_empty():
 		return Vector2.ZERO

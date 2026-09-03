@@ -20,9 +20,7 @@ func modify_explosion_config(config: ExplosionEffectConfig) -> void:
 		return
 	if config == null:
 		return
-	var weapon_damage := 1
-	if weapon.get("damage") != null:
-		weapon_damage = max(1, int(weapon.damage))
+	var weapon_damage := weapon.get_runtime_damage()
 	config.explosion_size = maxf(config.explosion_size * explosion_size_multiplier, 0.1)
 	config.duration = maxf(napalm_duration, 0.1)
 	config.area_tick_interval = maxf(napalm_tick_interval, 0.05)

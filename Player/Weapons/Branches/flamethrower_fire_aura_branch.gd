@@ -56,9 +56,7 @@ func _emit_fire_pulse() -> void:
 func _compute_pulse_damage() -> int:
 	if weapon == null or not is_instance_valid(weapon):
 		return 1
-	if not weapon.has_method("get_runtime_shot_damage"):
-		return 1
-	var base_damage: int = max(1, int(weapon.call("get_runtime_shot_damage")))
+	var base_damage := weapon.get_runtime_damage()
 	return max(1, int(round(float(base_damage) * maxf(pulse_damage_ratio, 0.0))))
 
 func _resolve_pulse_center() -> Vector2:

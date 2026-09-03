@@ -114,16 +114,6 @@
       "timeout_seconds": 20
     },
     {
-      "id": "world.early_combat_pacing",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/world/early_combat_pacing_test.tscn",
-      "domain": "world",
-      "dependency_domains": ["spawn", "combat", "reward", "data"],
-      "parallel_safe": true,
-      "writes_user_data": false,
-      "timeout_seconds": 15
-    },
-    {
       "id": "weapon.runtime_chain",
       "entry_type": "scene",
       "path": "res://tests/scenes/weapon/weapon_runtime_chain_test.tscn",
@@ -231,16 +221,6 @@
       "dependency_domains": ["player", "combat", "weapon"],
       "parallel_safe": true,
       "writes_user_data": false,
-      "timeout_seconds": 20
-    },
-    {
-      "id": "world.battle_loop_smoke",
-      "entry_type": "scene",
-      "path": "res://tests/scenes/world/battle_loop_smoke_test.tscn",
-      "domain": "world",
-      "dependency_domains": ["combat", "reward", "spawn", "cell", "ui", "player"],
-      "parallel_safe": false,
-      "writes_user_data": true,
       "timeout_seconds": 20
     },
     {

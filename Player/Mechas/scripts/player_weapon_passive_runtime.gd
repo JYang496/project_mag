@@ -172,20 +172,9 @@ func effect_source_weapon_is_stale(effect: Dictionary) -> bool:
 	return source_weapon == null or not is_instance_valid(source_weapon)
 
 func resolve_weapon_runtime_damage_for_global_effect(weapon: Weapon) -> int:
-	if weapon == null or not is_instance_valid(weapon):
-		return 1
-	if weapon.has_method("get_runtime_shot_damage"):
-		return max(1, int(weapon.call("get_runtime_shot_damage")))
-	if weapon.has_method("get_runtime_damage_value"):
-		var base_damage_value := 1.0
-		if weapon.get("base_damage") != null:
-			base_damage_value = maxf(1.0, float(weapon.get("base_damage")))
-		elif weapon.get("damage") != null:
-			base_damage_value = maxf(1.0, float(weapon.get("damage")))
-		return max(1, int(weapon.call("get_runtime_damage_value", base_damage_value)))
-	if weapon.get("damage") != null:
-		return max(1, int(weapon.get("damage")))
-	return 1
+	assert(weapon != null)
+	assert(is_instance_valid(weapon))
+	return weapon.get_runtime_damage()
 
 func debug_connect_weapon_passive_triggers() -> void:
 	if _player == null or not _player.debug_weapon_passive_trigger_event_prints:

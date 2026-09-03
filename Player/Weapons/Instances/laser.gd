@@ -92,7 +92,7 @@ func _spawn_laser_beam(profile: Dictionary) -> void:
 	direction = direction.rotated(angle_offset).normalized()
 	beam_ins.target_position = direction * 1000.0
 	var damage_multiplier := maxf(float(profile.get("damage_multiplier", 1.0)), 0.05)
-	beam_ins.damage = max(1, int(round(float(get_runtime_shot_damage()) * damage_multiplier)))
+	beam_ins.damage = max(1, int(round(float(get_runtime_damage()) * damage_multiplier)))
 	beam_ins.source_weapon = self
 	apply_energy_release_marker(beam_ins)
 	apply_heat_snapshot_marker(beam_ins)

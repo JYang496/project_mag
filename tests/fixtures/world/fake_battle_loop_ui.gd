@@ -17,7 +17,7 @@ var standard_reward_requests := 0
 var standard_reward_options: Array[RewardInfo] = []
 var standard_reward_confirm: Callable
 
-func request_battle_contract_selection(options: Array, confirm: Callable, _cancel: Callable) -> void:
+func request_battle_contract_selection(options: Array, confirm: Callable) -> void:
 	received_options = options.duplicate()
 	confirm_callback = confirm
 

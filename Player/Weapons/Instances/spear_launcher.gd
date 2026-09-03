@@ -68,7 +68,7 @@ func set_level(lv):
 
 func _on_shoot():
 	is_on_cooldown = true
-	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
+	var cooldown := maxf(get_runtime_attack_cooldown(), 0.05)
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = maxf(cooldown, 0.05)
 	cooldown_timer.start()
@@ -97,7 +97,7 @@ func _spawn_spear_projectile(
 	var spawn_projectile := spawn_projectile_from_scene(projectile_template)
 	if spawn_projectile == null:
 		return null
-	spawn_projectile.damage = max(1, int(round(float(get_runtime_shot_damage()) * maxf(damage_multiplier, 0.05))))
+	spawn_projectile.damage = max(1, int(round(float(get_runtime_damage()) * maxf(damage_multiplier, 0.05))))
 	spawn_projectile.hp = projectile_hits
 	spawn_projectile.size = size
 	spawn_projectile.global_position = spawn_position

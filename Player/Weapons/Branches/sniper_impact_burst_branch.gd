@@ -31,9 +31,7 @@ func on_target_hit(target: Node) -> void:
 	var area_effect := area_effect_scene.instantiate() as AreaEffect
 	if area_effect == null:
 		return
-	var runtime_damage := 1
-	if weapon.has_method("get_runtime_shot_damage"):
-		runtime_damage = max(1, int(weapon.call("get_runtime_shot_damage")))
+	var runtime_damage := weapon.get_runtime_damage()
 	area_effect.radius = maxf(burst_radius, 1.0)
 	area_effect.one_shot_damage = max(1, int(round(float(runtime_damage) * maxf(burst_damage_ratio, 0.0))))
 	area_effect.damage_type = Attack.TYPE_PHYSICAL

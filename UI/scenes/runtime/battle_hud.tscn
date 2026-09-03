@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://UI/scripts/components/battle_hud_view.gd" id="1_fh7no"]
 [ext_resource type="Script" path="res://UI/scripts/weapon_selector.gd" id="2_86ani"]
 [ext_resource type="Texture2D" path="res://UI/themes/modern/weapon_slot_main.png" id="3_gar8u"]
-[ext_resource type="Texture2D" path="res://UI/themes/modern/weapon_slot_offhand.png" id="4_btbbh"]
+[ext_resource type="Texture2D" path="res://UI/themes/modern/weapon_slot_support.png" id="4_btbbh"]
 [ext_resource type="Script" path="res://UI/scripts/components/gold_hud_display.gd" id="6_jiqn8"]
 [ext_resource type="Theme" path="res://UI/themes/battle_hud_theme.tres" id="7_hud_theme"]
 

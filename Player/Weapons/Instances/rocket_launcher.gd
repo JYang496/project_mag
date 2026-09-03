@@ -47,12 +47,12 @@ func set_level(lv):
 	explosion_scale = float(level_data["explosion_scale"])
 	configure_heat(heat_per_rocket, Heat.MAX_HEAT, heat_neutralize_rate)
 	sync_stats()
-	_sync_explosion_effect_config()
+	_sync_explosion_effect_config(get_runtime_damage())
 	branch_runtime.notify_branch_level_applied(level)
 
 func _on_shoot():
 	is_on_cooldown = true
-	var cooldown := get_effective_cooldown(attack_cooldown)
+	var cooldown := get_runtime_attack_cooldown()
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
@@ -74,7 +74,7 @@ func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> 
 	if spawn_projectile == null:
 		return null
 	projectile_direction = direction
-	var runtime_damage := get_runtime_shot_damage()
+	var runtime_damage := get_runtime_damage()
 	var projectile_damage: int = maxi(1, int(round(float(runtime_damage) * maxf(damage_multiplier, 0.05))))
 	spawn_projectile.damage = projectile_damage
 	spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
@@ -90,7 +90,7 @@ func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> 
 	return spawn_projectile
 
 # Keeps the typed explosion config synced with current weapon runtime stats.
-func _sync_explosion_effect_config(projectile_damage: int = damage) -> void:
+func _sync_explosion_effect_config(projectile_damage: int) -> void:
 	var config := ensure_effect_config(&"explosion_effect")
 	if config is ExplosionEffectConfig:
 		var explosion_config := config as ExplosionEffectConfig
@@ -150,7 +150,7 @@ func get_passive_status() -> Dictionary:
 
 func _apply_cluster_kill_damage(position: Vector2, killed_enemy: Variant, cluster_radius: float) -> int:
 	var hit_count := 0
-	var amount := maxi(1, int(round(float(get_runtime_shot_damage()) * maxf(cluster_damage_ratio, 0.0))))
+	var amount := maxi(1, int(round(float(get_runtime_damage()) * maxf(cluster_damage_ratio, 0.0))))
 	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(get_tree(), position, maxf(cluster_radius, 0.0)):
 		var enemy := enemy_ref as Node2D
 		if enemy == null or not is_instance_valid(enemy):

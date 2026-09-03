@@ -12,6 +12,8 @@ enum RangeMode {
 const DEFAULT_PROJECTILE_LIFETIME_SEC: float = 2.5
 const WeaponFireFeedbackPlayerScript := preload("res://Player/Weapons/Feedback/weapon_fire_feedback_player.gd")
 const WeaponTriggerRuntimeType := preload("res://Player/Weapons/Core/weapon_trigger_runtime.gd")
+const WeaponSkillRuntimeType := preload("res://Player/Weapons/Core/weapon_skill_runtime.gd")
+const SUPPORT_STAT_PROFILE := preload("res://Player/Weapons/Core/support_weapon_stat_profile.tres")
 
 #region Runtime State
 @onready var modules: WeaponModuleContainer = $Modules
@@ -22,9 +24,11 @@ var plugin_dispatcher: WeaponPluginDispatcher = WeaponPluginDispatcher.new()
 var ammo_controller: WeaponAmmoController = WeaponAmmoController.new()
 var passive_controller: WeaponPassiveController = WeaponPassiveController.new()
 var trigger_runtime = WeaponTriggerRuntimeType.new()
+var skill_runtime = WeaponSkillRuntimeType.new()
 var fuse_visual_controller: WeaponFuseVisualController = WeaponFuseVisualController.new()
 var fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
 @export_range(1, 8, 1) var module_slot_capacity: int = 3
+@export var weapon_skills: Array[WeaponSkillDefinition] = []
 @export_flags(
 	"physical",
 	"energy",
@@ -45,6 +49,7 @@ const ENERGY_RELEASE_SPENT_META: StringName = &"_global_energy_release_spent"
 const ENERGY_RELEASE_MULTIPLIER_META: StringName = &"_global_energy_release_multiplier"
 const ENERGY_ATTACK_GROUP_META: StringName = &"_global_energy_attack_group"
 const HEAT_SNAPSHOT_META: StringName = &"_bipolar_heat_snapshot"
+const AUTOMATIC_AIM_TARGET_META: StringName = &"_player_assist_auto_aim_target"
 const DELIVERY_PROJECTILE: StringName = DamageDeliveryType.PROJECTILE
 const DELIVERY_MELEE_CONTACT: StringName = DamageDeliveryType.MELEE_CONTACT
 const DELIVERY_BEAM: StringName = DamageDeliveryType.BEAM
@@ -62,7 +67,7 @@ var heat_per_shot: float = 1.0
 var heat_max_value: float = 100.0
 var heat_cool_rate: float = 20.0
 var heat_opposition_resistance: float = 0.0
-@export_enum("main", "offhand") var weapon_role: String = "offhand"
+@export_enum("main", "support") var weapon_role: String = "support"
 @export var fire_feedback_profile: Resource
 @export var range_mode: RangeMode = RangeMode.UNSPECIFIED
 @export var configured_attack_range: float = 0.0
@@ -75,7 +80,7 @@ var runtime_delivery_suppressions: Dictionary = {}
 var runtime_capability_additions: Dictionary = {}
 var runtime_capability_suppressions: Dictionary = {}
 @export var magazine_capacity: int = 50
-@export var reload_duration_sec: float = 6.0
+@export var reload_duration_sec: float = 3.0
 var _energy_release_attack_active: bool = false
 var _energy_release_damage_multiplier: float = 1.0
 var _energy_release_spent: float = 0.0
@@ -99,7 +104,7 @@ signal weapon_event_emitted(event: WeaponEvent)
 @warning_ignore("unused_signal")
 signal weapon_reload_completed(weapon: Weapon)
 @warning_ignore("unused_signal")
-signal offhand_refreshed_by_reload(weapon: Weapon)
+signal support_refreshed_by_reload(weapon: Weapon)
 #endregion
 
 func get_aim_forward() -> Vector2:
@@ -122,6 +127,7 @@ func _init() -> void:
 	ammo_controller.setup(self)
 	passive_controller.setup(self)
 	trigger_runtime.setup(self)
+	skill_runtime.setup(self)
 	fuse_visual_controller.setup(self)
 	fire_feedback_player.setup(self)
 
@@ -196,7 +202,7 @@ func _handle_hit_target(target: Node, damage_type: StringName = StringName()) ->
 		var detail := {
 			"source_weapon": self,
 			"target": target,
-			"source_is_main": is_main_weapon()
+			"source_role": weapon_role
 		}
 		if damage_type != StringName():
 			detail["damage_type"] = damage_type
@@ -302,6 +308,8 @@ func prepare_energy_release_attack() -> Dictionary:
 	_energy_release_attack_active = false
 	_energy_release_damage_multiplier = 1.0
 	_energy_release_spent = 0.0
+	if is_support_weapon():
+		return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
 	if not has_weapon_trait(WeaponTrait.ENERGY):
 		return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
 	var player := _resolve_energy_pool_player()
@@ -433,7 +441,12 @@ func play_fire_feedback(direction: Vector2 = Vector2.ZERO) -> bool:
 	if fire_feedback_player == null:
 		fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
 		fire_feedback_player.setup(self)
-	return fire_feedback_player.play(fire_feedback_profile, direction, _should_play_weapon_audio_feedback())
+	return fire_feedback_player.play(
+		fire_feedback_profile,
+		direction,
+		_should_play_weapon_audio_feedback(),
+		is_main_weapon()
+	)
 
 func play_hit_feedback(target: Node = null) -> bool:
 	if fire_feedback_profile == null:
@@ -448,7 +461,7 @@ func play_hit_feedback(target: Node = null) -> bool:
 	return fire_feedback_player.play_hit(fire_feedback_profile, target)
 
 func _should_play_weapon_audio_feedback() -> bool:
-	return has_delivery_type(DELIVERY_PROJECTILE)
+	return is_main_weapon() and has_delivery_type(DELIVERY_PROJECTILE)
 
 func get_fire_feedback_direction() -> Vector2:
 	return Vector2.RIGHT.rotated(global_rotation)
@@ -592,6 +605,13 @@ func find_closest_enemy(origin: Vector2, radius: float = INF) -> Node2D:
 func get_auto_fire_target_origin() -> Vector2:
 	return global_position
 
+func set_automatic_aim_target(target_position: Vector2) -> void:
+	set_meta(AUTOMATIC_AIM_TARGET_META, target_position)
+
+func clear_automatic_aim_target() -> void:
+	if has_meta(AUTOMATIC_AIM_TARGET_META):
+		remove_meta(AUTOMATIC_AIM_TARGET_META)
+
 func get_effective_attack_range() -> float:
 	match range_mode:
 		RangeMode.FIXED_DISTANCE, RangeMode.BEAM_LENGTH, RangeMode.ATTACHED_RADIUS:
@@ -662,18 +682,19 @@ func _physics_process(delta: float) -> void:
 	_update_reload_state(delta)
 	_update_heat_system(delta)
 	trigger_runtime.update(delta)
+	skill_runtime.update(delta)
 	_process_weapon_role_effects(delta)
 
 func _process_weapon_role_effects(delta: float) -> void:
 	if is_main_weapon():
 		_process_main_weapon_effect(delta)
 		return
-	_process_offhand_weapon_effect(delta)
+	_process_support_weapon_effect(delta)
 
 func _process_main_weapon_effect(_delta: float) -> void:
 	pass
 
-func _process_offhand_weapon_effect(_delta: float) -> void:
+func _process_support_weapon_effect(_delta: float) -> void:
 	pass
 #endregion
 
@@ -734,6 +755,12 @@ func configure_heat(per_shot: float, max_value: float, cool_rate: float) -> void
 
 func register_shot_heat(multiplier: float = 1.0) -> void:
 	heat_runtime.register_shot(multiplier)
+
+func get_runtime_heat_per_shot() -> float:
+	return heat_per_shot * get_role_stat_multiplier(&"heat_generation")
+
+func get_runtime_heat_generation(base_amount: float) -> float:
+	return base_amount * get_role_stat_multiplier(&"heat_generation")
 
 func get_heat_ratio() -> float:
 	return heat_runtime.get_heat_ratio()
@@ -948,7 +975,24 @@ func get_runtime_damage_value(base_damage_value: float) -> int:
 	var runtime_damage := maxf(base_damage_value, 0.0) * ordinary_multiplier
 	if _energy_release_attack_active:
 		runtime_damage *= maxf(_energy_release_damage_multiplier, 1.0)
+	runtime_damage *= get_role_stat_multiplier(&"damage")
 	return maxi(1, int(round(runtime_damage)))
+
+func get_runtime_damage() -> int:
+	assert(false, "%s must implement get_runtime_damage()" % get_script().resource_path)
+	return 0
+
+func get_role_stat_multiplier(stat_name: StringName) -> float:
+	if is_main_weapon():
+		return 1.0
+	match stat_name:
+		&"damage":
+			return SUPPORT_STAT_PROFILE.damage_multiplier
+		&"attack_cooldown":
+			return SUPPORT_STAT_PROFILE.cooldown_multiplier
+		&"heat_generation":
+			return SUPPORT_STAT_PROFILE.heat_generation_multiplier
+	return 1.0
 
 func get_total_ordinary_damage_multiplier() -> float:
 	return stat_pipeline.get_total_ordinary_damage_multiplier()
@@ -1046,6 +1090,7 @@ func _on_tree_exited() -> void:
 	ammo_controller.clear_for_weapon_exit()
 	passive_controller.clear_for_weapon_exit()
 	trigger_runtime.clear_for_weapon_exit()
+	skill_runtime.clear_for_weapon_exit()
 	fuse_visual_controller.clear_for_weapon_exit()
 	branch_runtime.clear_for_weapon_exit()
 	heat_runtime.clear_for_weapon_exit()
@@ -1055,7 +1100,7 @@ func _on_tree_exited() -> void:
 
 #region Weapon Role And Input
 func set_weapon_role(next_role: String) -> void:
-	var normalized := "main" if str(next_role).to_lower() == "main" else "offhand"
+	var normalized := "main" if str(next_role).to_lower() == "main" else "support"
 	if weapon_role == normalized:
 		return
 	var old_role := weapon_role
@@ -1065,15 +1110,15 @@ func set_weapon_role(next_role: String) -> void:
 		trigger_runtime.on_entered_main(old_role)
 		_on_enter_main_weapon_role()
 	else:
-		trigger_runtime.on_entered_offhand(old_role)
-		_on_enter_offhand_weapon_role()
+		trigger_runtime.on_entered_support(old_role)
+		_on_enter_support_weapon_role()
 	weapon_role_changed.emit(weapon_role)
 
 func is_main_weapon() -> bool:
 	return weapon_role == "main"
 
-func is_offhand_weapon() -> bool:
-	return weapon_role != "main"
+func is_support_weapon() -> bool:
+	return weapon_role == "support"
 
 func _on_weapon_role_changed(_next_role: String) -> void:
 	pass
@@ -1081,7 +1126,7 @@ func _on_weapon_role_changed(_next_role: String) -> void:
 func _on_enter_main_weapon_role() -> void:
 	pass
 
-func _on_enter_offhand_weapon_role() -> void:
+func _on_enter_support_weapon_role() -> void:
 	pass
 
 func has_entry_trigger_ready() -> bool:
@@ -1090,17 +1135,18 @@ func has_entry_trigger_ready() -> bool:
 func consume_entry_trigger() -> bool:
 	return trigger_runtime.consume_entry_charge()
 
-func is_stow_trigger_ready() -> bool:
-	return trigger_runtime.is_stow_charge_ready()
+func is_support_trigger_ready() -> bool:
+	return trigger_runtime.is_support_charge_ready()
 
-func get_stow_trigger_progress() -> float:
-	return trigger_runtime.get_stow_charge_progress()
+func get_support_trigger_progress() -> float:
+	return trigger_runtime.get_support_charge_progress()
 
-func consume_stow_trigger() -> bool:
-	return trigger_runtime.consume_stow_charge()
+func consume_support_trigger() -> bool:
+	return trigger_runtime.consume_support_charge()
 
 func clear_timed_effects_for_prepare() -> void:
 	finish_energy_release_attack()
+	skill_runtime.clear_active()
 	for module_node in get_equipped_modules():
 		if module_node == null or not is_instance_valid(module_node):
 			continue
@@ -1112,6 +1158,24 @@ func clear_timed_effects_for_prepare() -> void:
 
 func can_run_active_behavior() -> bool:
 	return is_main_weapon() and is_attack_phase_allowed()
+
+func request_automatic_fire() -> bool:
+	return false
+
+func prepare_automatic_aim(_delta: float) -> void:
+	pass
+
+func stop_automatic_fire() -> void:
+	pass
+
+func request_weapon_skill() -> bool:
+	return skill_runtime.request()
+
+func get_weapon_skill_status() -> Dictionary:
+	return skill_runtime.get_status()
+
+func allows_held_attack_on_battle_entry() -> bool:
+	return false
 
 func is_attack_phase_allowed() -> bool:
 	if PhaseManager == null:
@@ -1129,12 +1193,12 @@ func can_passive_trigger(passive_id: StringName, icd_sec: float) -> bool:
 	return passive_controller.can_passive_trigger(passive_id, icd_sec)
 
 func dispatch_passive_event(event_name: StringName, detail: Dictionary = {}) -> void:
-	if is_offhand_weapon():
-		_on_offhand_passive_event(event_name, detail)
+	if is_support_weapon():
+		_on_support_passive_event(event_name, detail)
 	else:
 		_on_main_passive_event(event_name, detail)
 
-func _on_offhand_passive_event(event_name: StringName, detail: Dictionary) -> void:
+func _on_support_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	_on_passive_event(event_name, detail)
 
 func _on_main_passive_event(event_name: StringName, detail: Dictionary) -> void:
@@ -1183,4 +1247,5 @@ func _refresh_passive_on_reload() -> void:
 
 func force_skill_cooldowns_ready() -> void:
 	passive_controller.force_ready()
+	skill_runtime.force_ready()
 #endregion

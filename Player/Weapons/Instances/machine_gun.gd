@@ -108,7 +108,7 @@ func request_primary_fire() -> bool:
 func _on_shoot():
 	is_on_cooldown = true
 	attack_speed = _resolve_shared_heat_attack_speed()
-	var cooldown := get_effective_cooldown(attack_cooldown / maxf(attack_speed, 0.1))
+	var cooldown := get_runtime_attack_cooldown()
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
@@ -129,6 +129,10 @@ func _on_shoot():
 	var extra_heat_shots := float(max(0, fired_count - 1)) * clampf(extra_heat_multiplier, 0.0, 1.0)
 	if extra_heat_shots > 0.0:
 		register_shot_heat(extra_heat_shots)
+
+func get_runtime_attack_cooldown() -> float:
+	return fire_controller.get_effective_cooldown(attack_cooldown / maxf(attack_speed, 0.1)) \
+		* get_role_stat_multiplier(&"attack_cooldown")
 
 func supports_multi_launcher_module() -> bool:
 	return true
@@ -163,13 +167,10 @@ func _add_held_trigger_heat(delta: float) -> void:
 	var core := _get_active_heat_core()
 	if core == null:
 		return
-	var amount := maxf(heat_accumulation_per_sec, 0.0) * maxf(delta, 0.0)
+	var amount := get_runtime_heat_generation(maxf(heat_accumulation_per_sec, 0.0) * maxf(delta, 0.0))
 	if amount <= 0.0:
 		return
-	if core.has_method("add_heat_amount"):
-		core.call("add_heat_amount", amount)
-	else:
-		core.call("add_heat", amount / maxf(heat_per_shot, 0.001))
+	core.add_heat_amount(amount)
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
@@ -312,7 +313,7 @@ func _fire_single_bullet(direction: Vector2) -> void:
 	var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 	if spawn_projectile == null:
 		return
-	var runtime_damage: int = int(get_runtime_shot_damage())
+	var runtime_damage: int = get_runtime_damage()
 	var damage_multiplier: float = branch_runtime.get_branch_projectile_damage_multiplier()
 	var final_damage: int = max(1, int(round(float(runtime_damage) * maxf(damage_multiplier, 0.05))))
 	spawn_projectile.damage = final_damage

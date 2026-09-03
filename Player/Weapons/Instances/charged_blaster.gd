@@ -80,7 +80,7 @@ func _on_shoot():
 		max_beam_duration = maxf(max_beam_duration, _spawn_beam_from_profile(profile))
 	if max_beam_duration > 0.0:
 		_start_firing_turn_slowdown(max_beam_duration)
-	start_weapon_cooldown(attack_cooldown, 0.05)
+	start_weapon_cooldown(0.05)
 
 func _on_remove_timer_timeout() -> void:
 	remove_weapon()
@@ -222,7 +222,7 @@ func _spawn_beam_from_profile(profile: Dictionary) -> float:
 	var base_beam_width: float = 6.0 if fixed_width_no_charge else _get_full_power_beam_width()
 	beam_blast_ins.target_position = dir * beam_range * range_multiplier
 	beam_blast_ins.width = maxf(base_beam_width * width_multiplier, 1.0)
-	var runtime_damage := get_runtime_shot_damage()
+	var runtime_damage := get_runtime_damage()
 	beam_blast_ins.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
 	beam_blast_ins.duration = beam_duration
 	beam_blast_ins.hit_cd = beam_hit_cd

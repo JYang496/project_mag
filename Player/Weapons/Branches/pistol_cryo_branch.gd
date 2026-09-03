@@ -46,9 +46,7 @@ func on_target_hit(target: Node) -> void:
 func _trigger_shard(hit_target: Node2D, original_target: Node) -> void:
 	if weapon == null or not is_instance_valid(weapon):
 		return
-	var runtime_damage := 1
-	if weapon.has_method("get_runtime_shot_damage"):
-		runtime_damage = max(1, int(weapon.call("get_runtime_shot_damage")))
+	var runtime_damage := weapon.get_runtime_damage()
 	var shard_damage: int = max(1, int(round(float(runtime_damage) * maxf(shard_damage_ratio, 0.0))))
 	var candidates: Array[Node2D] = []
 	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(weapon.get_tree(), hit_target.global_position, maxf(shard_radius, 1.0)):

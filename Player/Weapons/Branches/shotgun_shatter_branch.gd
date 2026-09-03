@@ -52,9 +52,7 @@ func on_target_hit(target: Node) -> void:
 func _trigger_shatter(target: Node) -> void:
 	if target == null or not is_instance_valid(target):
 		return
-	var runtime_damage := 1
-	if weapon.has_method("get_runtime_shot_damage"):
-		runtime_damage = max(1, int(weapon.call("get_runtime_shot_damage")))
+	var runtime_damage := weapon.get_runtime_damage()
 	var shatter_damage: int = max(1, int(round(float(runtime_damage) * maxf(shatter_damage_ratio, 0.0))))
 	var damage_data: DamageData = DamageData.new().setup(
 		shatter_damage,

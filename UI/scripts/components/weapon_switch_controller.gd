@@ -16,14 +16,14 @@ func build_fixed_order(list_size: int, slot_count: int) -> Array[int]:
 func build_slot_rects(
 	slot_count: int,
 	main_index: int,
-	offhand_size: Vector2,
+	support_size: Vector2,
 	mainhand_size: Vector2,
 	gap: float
 ) -> Array[Rect2]:
 	var rects: Array[Rect2] = []
 	var next_x := 0.0
 	for slot_index in range(slot_count):
-		var slot_size := mainhand_size if slot_index == main_index else offhand_size
+		var slot_size := mainhand_size if slot_index == main_index else support_size
 		rects.append(Rect2(Vector2(next_x, 0.0), slot_size))
 		next_x += slot_size.x + gap
 	return rects

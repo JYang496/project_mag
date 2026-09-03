@@ -11,9 +11,9 @@ class_name ModuleTriggerSpec
 	"target_killed",
 	"reload_started",
 	"weapon_entered_main",
-	"weapon_entered_offhand",
+	"weapon_entered_support",
 	"magazine_quarter_spent",
-	"stow_charge_ready",
+	"support_charge_ready",
 	"cross_weapon_hit",
 	"continuous_hit_threshold",
 	"shared_resource_release"

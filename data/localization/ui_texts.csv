@@ -261,7 +261,7 @@ ui.hud.ammo_empty,Ammo: --,弹药：--
 ui.hud.ammo,Ammo: {current}/{max}{reload},弹药：{current}/{max}{reload}
 ui.hud.ammo_reloading, (Reloading {sec}s),（装填中 {sec}秒）
 ui.hud.weapon_state_none,Main: -- | PS: --,主武器：-- | 角色技能：--
-ui.hud.weapon_state,Main:{main} Offhand:{offhand} Swap:{swap} PS:{ps},主武器：{main} 副武器：{offhand} 切换：{swap} 角色技能：{ps}
+ui.hud.weapon_state,Main:{main} Support:{support} Swap:{swap} PS:{ps},主武器：{main} 支援武器：{support} 切换：{swap} 角色技能：{ps}
 ui.hud.weapon.main.none,None,无
 ui.hud.weapon.main.locked,W1 (locked),W1（锁定）
 ui.hud.weapon.main.slot,W{index},W{index}
@@ -658,14 +658,19 @@ ui.tutorial.panel.secondary.task_management.line2,Click or drag it onto an activ
 ui.tutorial.panel.secondary.task_management.line3,Battle start consumes deployed tasks,已部署任务开战时消耗
 ui.tutorial.panel.secondary.task_management.line4,[RMB] Return  [Esc] Pause / Cancel,[鼠标右键] 返回  [Esc] 暂停 / 取消
 ui.tutorial.panel.battle.line1,[W][A][S][D] Move,[W][A][S][D] 移动
-ui.tutorial.panel.battle.line2,[LMB] Attack,[鼠标左键] 攻击
+ui.tutorial.panel.battle.line2,[AUTO] Weapons fire automatically,[自动] 武器自动开火
 ui.tutorial.panel.battle.line3,[Space] Skill,[空格] 角色技能
 ui.tutorial.panel.battle.line4,[R] Reload,[R] 装填
-ui.tutorial.panel.battle.line5,[Q/E] Switch Weapon  [Esc] Pause,[Q/E] 切换武器  [Esc] 暂停
+ui.tutorial.panel.battle.line5,[Q/E] Cycle  [1-4] Tap Select / Hold Skill,[Q/E] 轮换  [1-4] 短按选择 / 长按技能
 ui.controls.title,Controls,操作
 ui.controls.move,Move,移动
 ui.controls.attack,Attack,攻击
 ui.controls.skill,Player Skill,角色技能
+ui.controls.weapon_skill,Weapon Skill,武器技能
+ui.controls.auto_fire,Automatic Fire,自动开火
+ui.controls.weapon_skill_hold,Hold: Weapon Skill,长按：武器技能
+ui.controls.switch_weapon_hold,Cycle / Tap: Select,轮换 / 短按：选择
+ui.weapon.skill.overdrive,Weapon Overdrive,武器过载
 ui.controls.reload,Reload,装填
 ui.controls.auto_reload,Auto Reload On,自动装填已开启
 ui.controls.switch_weapon,Switch Weapon,切换武器

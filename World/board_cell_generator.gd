@@ -8,9 +8,8 @@ signal board_visual_active_changed(active: bool, immediate: bool)
 signal board_recentered(offset: Vector2)
 
 @export var cell_scene: PackedScene
-@export var cell_spacing: Vector2 = Vector2(510, 510)
+@export var cell_spacing: Vector2 = Vector2(340, 340)
 @export var player_spawner_path: NodePath
-@export var center_spawn_offset: Vector2 = Vector2(255, 258)
 @export var auto_assign_enemy_on_battle := true
 @export var initial_cell_profiles: Array[CellProfile] = []
 @export_group("Temporary Cell System")
@@ -92,6 +91,7 @@ func _spawn_cells() -> void:
 				cell.name = "Cell%s" % str(cell_index + 1)
 			cell.position = Vector2(x * cell_spacing.x, y * cell_spacing.y)
 			cell.logical_id = _compute_logical_cell_id(Vector2i(x, y))
+			_configure_cell_geometry(cell)
 			cell.set_default_terrain_only(force_default_terrain)
 			cell.set_cell_visuals_visible(cell_system_visible)
 			add_child(cell)
@@ -110,7 +110,39 @@ func _attach_spawner(target_cell: Cell) -> void:
 	if not _player_spawner:
 		return
 	_player_spawner.reparent(target_cell)
-	_player_spawner.position = center_spawn_offset
+	_player_spawner.position = get_center_spawn_offset()
+
+func get_board_size() -> Vector2:
+	return Vector2(grid_size.x * cell_spacing.x, grid_size.y * cell_spacing.y)
+
+func get_board_world_rect() -> Rect2:
+	return Rect2(global_position, get_board_size())
+
+func get_center_spawn_offset() -> Vector2:
+	return cell_spacing * 0.5
+
+func _configure_cell_geometry(cell: Cell) -> void:
+	if cell == null:
+		return
+	var texture_root := cell.get_node_or_null("Texture") as Node2D
+	var texture_sprite := cell.get_node_or_null("Texture/Sprite2D") as Sprite2D
+	if texture_root != null:
+		texture_root.position = cell_spacing * 0.5
+		if texture_sprite != null and texture_sprite.texture != null:
+			var texture_size := texture_sprite.texture.get_size() * texture_sprite.scale.abs()
+			if texture_size.x > 0.0 and texture_size.y > 0.0:
+				texture_root.scale = cell_spacing / texture_size
+	var collision_shape := cell.get_node_or_null("Area2D/CollisionShape2D") as CollisionShape2D
+	if collision_shape == null:
+		return
+	var rectangle := collision_shape.shape as RectangleShape2D
+	if rectangle == null:
+		return
+	rectangle = rectangle.duplicate() as RectangleShape2D
+	collision_shape.shape = rectangle
+	collision_shape.position = cell_spacing * 0.5
+	collision_shape.scale = Vector2.ONE
+	rectangle.size = cell_spacing
 
 func get_cells() -> Array[Cell]:
 	return _cells.duplicate()

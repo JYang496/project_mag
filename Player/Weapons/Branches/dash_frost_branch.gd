@@ -37,9 +37,7 @@ func on_target_hit(target: Node) -> void:
 		return
 	if target == null or not is_instance_valid(target):
 		return
-	var runtime_damage := 1
-	if weapon.has_method("get_runtime_shot_damage"):
-		runtime_damage = max(1, int(weapon.call("get_runtime_shot_damage")))
+	var runtime_damage := weapon.get_runtime_damage()
 	var freeze_damage: int = max(1, int(round(float(runtime_damage) * maxf(freeze_finish_ratio, 0.0))))
 	var finish_damage: DamageData = DamageData.new().setup(
 		freeze_damage,

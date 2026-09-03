@@ -32,7 +32,6 @@ var projectile_scene
 const PixelArtPolicyType := preload("res://Visual/pixel_art_policy.gd")
 const SPRITE_TARGET_HEIGHT := PixelArtPolicyType.WEAPON_TARGET_HEIGHT_PX
 const AIM_ROTATION_OFFSET := deg_to_rad(90)
-const PLAYER_ASSIST_AUTO_AIM_TARGET_META: StringName = &"_player_assist_auto_aim_target"
 
 signal shoot()
 
@@ -100,8 +99,8 @@ func _on_shoot():
 		get_projectile_spawn_parent().call_deferred("add_child", projectile)
 
 func get_mouse_target():
-	if has_meta(PLAYER_ASSIST_AUTO_AIM_TARGET_META):
-		var assist_target: Variant = get_meta(PLAYER_ASSIST_AUTO_AIM_TARGET_META)
+	if has_meta(AUTOMATIC_AIM_TARGET_META):
+		var assist_target: Variant = get_meta(AUTOMATIC_AIM_TARGET_META)
 		if assist_target is Vector2:
 			return assist_target
 	if has_meta("_benchmark_mouse_target"):
@@ -109,8 +108,8 @@ func get_mouse_target():
 		if override_target is Vector2:
 			return override_target
 	if PlayerData.player and is_instance_valid(PlayerData.player):
-		if PlayerData.player.has_meta(PLAYER_ASSIST_AUTO_AIM_TARGET_META):
-			var assist_player_target: Variant = PlayerData.player.get_meta(PLAYER_ASSIST_AUTO_AIM_TARGET_META)
+		if PlayerData.player.has_meta(AUTOMATIC_AIM_TARGET_META):
+			var assist_player_target: Variant = PlayerData.player.get_meta(AUTOMATIC_AIM_TARGET_META)
 			if assist_player_target is Vector2:
 				return assist_player_target
 		if PlayerData.player.has_meta("_benchmark_mouse_target"):
@@ -137,6 +136,12 @@ func uses_ammo_system() -> bool:
 func request_primary_fire() -> bool:
 	return fire_controller.request_primary_fire()
 
+func request_automatic_fire() -> bool:
+	return request_primary_fire()
+
+func prepare_automatic_aim(delta: float) -> void:
+	_update_weapon_rotation(delta)
+
 func set_external_attack_speed_multiplier(multiplier: float) -> void:
 	fire_controller.set_external_attack_speed_multiplier(multiplier)
 
@@ -149,8 +154,9 @@ func remove_external_attack_speed_mul(source_id: StringName) -> void:
 func get_external_attack_speed_multiplier() -> float:
 	return fire_controller.get_external_attack_speed_multiplier()
 
-func get_effective_cooldown(base_cooldown: float) -> float:
-	return fire_controller.get_effective_cooldown(base_cooldown)
+func get_runtime_attack_cooldown() -> float:
+	return fire_controller.get_effective_cooldown(attack_cooldown) \
+		* get_role_stat_multiplier(&"attack_cooldown")
 
 func set_external_spread_multiplier(multiplier: float) -> void:
 	spread_model.set_external_spread_multiplier(multiplier)
@@ -185,8 +191,8 @@ func get_spread_preview_info_for_target(target_position: Vector2) -> Dictionary:
 func _get_spread_distance_ratio(shot_distance: float) -> float:
 	return spread_model.get_spread_distance_ratio(shot_distance)
 
-func start_weapon_cooldown(base_cooldown: float, min_cooldown: float = 0.01) -> void:
-	fire_controller.start_weapon_cooldown(base_cooldown, min_cooldown)
+func start_weapon_cooldown(min_cooldown: float = 0.01) -> void:
+	fire_controller.start_weapon_cooldown(min_cooldown)
 
 # This function calls before a projectile is added.
 func apply_effects_on_projectile(projectile : Node2D) -> void:
@@ -227,8 +233,7 @@ func sync_stats() -> void:
 	_setup_components()
 	fire_controller.sync_cooldown_timer()
 
-# Computes per-shot damage from base damage and current modules without mutating runtime stats.
-func get_runtime_shot_damage() -> int:
+func get_runtime_damage() -> int:
 	return get_runtime_damage_value(float(base_damage))
 
 func remove_weapon() -> void:

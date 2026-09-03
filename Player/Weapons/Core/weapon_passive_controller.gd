@@ -47,12 +47,12 @@ func can_passive_trigger(passive_id: StringName, icd_sec: float) -> bool:
 	return true
 
 func dispatch_passive_event(event_name: StringName, detail: Dictionary = {}) -> void:
-	if weapon.is_offhand_weapon():
-		on_offhand_passive_event(event_name, detail)
+	if weapon.is_support_weapon():
+		on_support_passive_event(event_name, detail)
 	else:
 		on_main_passive_event(event_name, detail)
 
-func on_offhand_passive_event(event_name: StringName, detail: Dictionary) -> void:
+func on_support_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	on_passive_event(event_name, detail)
 
 func on_main_passive_event(event_name: StringName, detail: Dictionary) -> void:
@@ -137,7 +137,7 @@ func consume_all_passive_charges() -> int:
 
 func refresh_passive_on_reload() -> void:
 	passive_charge_count = get_passive_charge_max()
-	weapon.offhand_refreshed_by_reload.emit(weapon)
+	weapon.support_refreshed_by_reload.emit(weapon)
 
 func force_ready() -> void:
 	passive_charge_count = get_passive_charge_max()

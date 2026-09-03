@@ -334,9 +334,9 @@ func _init_battle_contract_selection_panel() -> void:
 	gui_root.add_child(battle_contract_selection_panel)
 	battle_contract_selection_panel.visibility_changed.connect(_refresh_controls_hint_visibility)
 
-func request_battle_contract_selection(options: Array, confirmed: Callable, cancelled: Callable) -> void:
+func request_battle_contract_selection(options: Array, confirmed: Callable) -> void:
 	_init_battle_contract_selection_panel()
-	battle_contract_selection_panel.call("open", options, confirmed, cancelled)
+	battle_contract_selection_panel.call("open", options, confirmed)
 
 func _on_battle_contract_reward(summary: Dictionary) -> void:
 	show_item_message(LocalizationManager.tr_format("battle_contract.reward.summary", {"amount": summary.get("amount", 0), "type": LocalizationManager.tr_key("battle_contract.reward.%s" % str(summary.get("type", "gold")), str(summary.get("type", "gold")))}, "Performance reward: {amount} {type}"), 2.6)
@@ -1284,15 +1284,6 @@ func _input(_event) -> void:
 	if _event.is_action_pressed("ESC") and not _event.is_echo():
 		_set_pause_menu_open(not get_tree().paused)
 	
-	# Switch weapon
-	var rest_menu_blocks_weapon_switch: bool = rest_area_ui_controller != null and bool(rest_area_ui_controller.active)
-	if not rest_menu_blocks_weapon_switch and Input.is_action_just_pressed("SWITCH_LEFT"):
-		if PlayerData.player and is_instance_valid(PlayerData.player):
-			PlayerData.player.try_shift_main_weapon(-1)
-	if not rest_menu_blocks_weapon_switch and Input.is_action_just_pressed("SWITCH_RIGHT"):
-		if PlayerData.player and is_instance_valid(PlayerData.player):
-			PlayerData.player.try_shift_main_weapon(1)
-		
 func refresh_border() -> void:
 	var list_changed := false
 	var valid_weapons: Array = []

@@ -4,6 +4,9 @@ signal enhanced_mode_changed(enabled: bool)
 
 const BattleContractDefinition = preload("res://Combat/battle_contract/BattleContractDefinition.gd")
 const INTRO_DETAIL_FADE_MAX_SEC := 0.14
+const STANDARD_BOTTOM_MARGIN := 14
+const COMPACT_BOTTOM_MARGIN := 12
+const ENHANCEMENT_TOGGLE_BOTTOM_CLEARANCE := 48
 
 var definition: BattleContractDefinition
 var _accent_color := Color(0.45, 0.65, 0.85)
@@ -100,6 +103,7 @@ func set_enhanced_available(value: bool) -> void:
 		"battle_contract.card.enhanced_toggle.compact" if _compact_layout else "battle_contract.card.enhanced_toggle",
 		"强化" if _compact_layout else "强化模式"
 	)
+	_refresh_content_spacing()
 	if not _enhanced_available:
 		set_enhanced_mode(false)
 
@@ -129,11 +133,25 @@ func set_compact_layout(value: bool) -> void:
 	$Margin.add_theme_constant_override("margin_left", 18 if value else 24)
 	$Margin.add_theme_constant_override("margin_right", 18 if value else 24)
 	$Margin.add_theme_constant_override("margin_top", 12 if value else 14)
-	$Margin.add_theme_constant_override("margin_bottom", 12 if value else 14)
 	$Margin/Content/Header.add_theme_constant_override("separation", 6 if value else 9)
+	$Margin/Content.add_theme_constant_override("separation", 6 if value else 8)
+	$Margin/Content/ObjectiveGap.custom_minimum_size.y = 12.0
+	$Margin/Content/EnhancedDetails.add_theme_constant_override("separation", 5 if value else 7)
 	$Margin/Content/Title.add_theme_font_size_override("font_size", 22 if value else 25)
 	$Margin/Content/InfoGrid/Description.add_theme_font_size_override("font_size", 15 if value else 16)
+	$Margin/Content/EnhancedDetails/Risk.add_theme_font_size_override("font_size", 12 if value else 13)
+	$Margin/Content/EnhancedDetails/Bonus.add_theme_font_size_override("font_size", 12 if value else 13)
+	_refresh_content_spacing()
 	set_enhanced_available(_enhanced_available)
+
+func _refresh_content_spacing() -> void:
+	# EnhancementToggle is deliberately anchored above the card's lower edge so it
+	# stays easy to target. Reserve that same strip in the content layout whenever
+	# the control is visible; otherwise localized bonus copy can flow underneath it.
+	var bottom_margin := ENHANCEMENT_TOGGLE_BOTTOM_CLEARANCE \
+		if _enhanced_available and not _intro_mode \
+		else (COMPACT_BOTTOM_MARGIN if _compact_layout else STANDARD_BOTTOM_MARGIN)
+	$Margin.add_theme_constant_override("margin_bottom", bottom_margin)
 
 func _on_enhancement_toggled(enabled: bool) -> void:
 	set_enhanced_mode(enabled)
@@ -256,9 +274,9 @@ func _make_detail_style(background: Color, border: Color) -> StyleBoxFlat:
 	style.border_color = border
 	style.border_width_left = 3
 	style.content_margin_left = 9.0
-	style.content_margin_top = 5.0
+	style.content_margin_top = 3.0
 	style.content_margin_right = 7.0
-	style.content_margin_bottom = 5.0
+	style.content_margin_bottom = 3.0
 	style.set_corner_radius_all(2)
 	return style
 

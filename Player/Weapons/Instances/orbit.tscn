@@ -13,7 +13,7 @@ turn_speed_degrees_per_second = 360.0
 fire_feedback_profile = ExtResource("4_feedback")
 delivery_type_flags = 1
 weapon_capability_flags = 1
-reload_duration_sec = 8.0
+reload_duration_sec = 4.0
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 

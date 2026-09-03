@@ -1,15 +1,15 @@
 extends RefCounted
 class_name WeaponTriggerRuntime
 
-const STOW_CHARGE_DURATION_SEC: float = 5.0
+const SUPPORT_CHARGE_DURATION_SEC: float = 5.0
 const CROSS_WEAPON_WINDOW_MSEC: int = 2000
 const CONTINUOUS_HIT_BREAK_MSEC: int = 800
 const CONTINUOUS_HIT_THRESHOLDS: Array[int] = [3, 6, 10]
 
 var weapon
 var _magazine_quarters_earned: int = 0
-var _stow_elapsed_sec: float = 0.0
-var _stow_ready: bool = false
+var _support_elapsed_sec: float = 0.0
+var _support_ready: bool = false
 var _entry_ready: bool = false
 var _continuous_hit_count: int = 0
 var _continuous_last_hit_msec: int = 0
@@ -23,15 +23,15 @@ func update(delta: float) -> void:
 		return
 	if weapon.is_main_weapon():
 		return
-	if _stow_ready:
+	if _support_ready:
 		return
-	_stow_elapsed_sec += maxf(delta, 0.0)
-	if _stow_elapsed_sec + 0.0001 < STOW_CHARGE_DURATION_SEC:
+	_support_elapsed_sec += maxf(delta, 0.0)
+	if _support_elapsed_sec + 0.0001 < SUPPORT_CHARGE_DURATION_SEC:
 		return
-	_stow_elapsed_sec = STOW_CHARGE_DURATION_SEC
-	_stow_ready = true
-	_emit_standard_event(WeaponEvent.STOW_CHARGE_READY, {
-		"duration": STOW_CHARGE_DURATION_SEC,
+	_support_elapsed_sec = SUPPORT_CHARGE_DURATION_SEC
+	_support_ready = true
+	_emit_standard_event(WeaponEvent.SUPPORT_CHARGE_READY, {
+		"duration": SUPPORT_CHARGE_DURATION_SEC,
 	})
 
 func on_entered_main(old_role: String) -> void:
@@ -41,12 +41,12 @@ func on_entered_main(old_role: String) -> void:
 		"new_role": "main",
 	})
 
-func on_entered_offhand(old_role: String) -> void:
-	_stow_elapsed_sec = 0.0
-	_stow_ready = false
-	_emit_standard_event(WeaponEvent.WEAPON_ENTERED_OFFHAND, {
+func on_entered_support(old_role: String) -> void:
+	_support_elapsed_sec = 0.0
+	_support_ready = false
+	_emit_standard_event(WeaponEvent.WEAPON_ENTERED_SUPPORT, {
 		"old_role": old_role,
-		"new_role": "offhand",
+		"new_role": "support",
 	})
 
 func has_entry_charge() -> bool:
@@ -58,17 +58,17 @@ func consume_entry_charge() -> bool:
 	_entry_ready = false
 	return true
 
-func is_stow_charge_ready() -> bool:
-	return _stow_ready
+func is_support_charge_ready() -> bool:
+	return _support_ready
 
-func get_stow_charge_progress() -> float:
-	return 1.0 if _stow_ready else clampf(_stow_elapsed_sec / STOW_CHARGE_DURATION_SEC, 0.0, 1.0)
+func get_support_charge_progress() -> float:
+	return 1.0 if _support_ready else clampf(_support_elapsed_sec / SUPPORT_CHARGE_DURATION_SEC, 0.0, 1.0)
 
-func consume_stow_charge() -> bool:
-	if not _stow_ready:
+func consume_support_charge() -> bool:
+	if not _support_ready:
 		return false
-	_stow_ready = false
-	_stow_elapsed_sec = 0.0
+	_support_ready = false
+	_support_elapsed_sec = 0.0
 	return true
 
 func on_ammo_consumed(ammo_before: int, ammo_after: int, magazine_capacity: int) -> void:
@@ -134,8 +134,8 @@ func reset_continuous_hits() -> void:
 
 func clear_for_weapon_exit() -> void:
 	_magazine_quarters_earned = 0
-	_stow_elapsed_sec = 0.0
-	_stow_ready = false
+	_support_elapsed_sec = 0.0
+	_support_ready = false
 	_entry_ready = false
 	reset_continuous_hits()
 

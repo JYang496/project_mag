@@ -175,20 +175,6 @@ theme_override_colors/font_color = Color(0.7, 0.81, 0.84, 1)
 theme_override_font_sizes/font_size = 16
 text = "1–3 Select ·"
 
-[node name="EscapeIcon" type="TextureRect" parent="Shade/Panel/Margin/Content/Subtitle"]
-custom_minimum_size = Vector2(20, 20)
-layout_mode = 2
-texture_filter = 1
-expand_mode = 1
-stretch_mode = 5
-tooltip_text = "Escape"
-
-[node name="Back" type="Label" parent="Shade/Panel/Margin/Content/Subtitle"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.81, 0.84, 1)
-theme_override_font_sizes/font_size = 16
-text = "Back"
-
 [node name="Divider" type="ColorRect" parent="Shade/Panel/Margin/Content"]
 custom_minimum_size = Vector2(0, 1)
 layout_mode = 2
@@ -267,16 +253,6 @@ theme_override_constants/separation = 8
 layout_mode = 2
 alignment = 0
 theme_override_constants/separation = 16
-
-[node name="Cancel" type="Button" parent="Shade/Panel/Margin/Content/Actions"]
-custom_minimum_size = Vector2(136, 44)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.68, 0.76, 0.78, 1)
-theme_override_colors/font_hover_color = Color(0.9, 0.96, 0.97, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_action_normal")
-theme_override_styles/hover = SubResource("StyleBoxFlat_action_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_action_pressed")
-text = "Back to Prepare"
 
 [node name="CurrentSelection" type="Label" parent="Shade/Panel/Margin/Content/Actions"]
 custom_minimum_size = Vector2(250, 44)

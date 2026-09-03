@@ -31,7 +31,7 @@ func _run() -> void:
 	)
 	_panel = PANEL_SCENE.instantiate() as Control
 	add_child(_panel)
-	_panel.call("open", [ELIMINATION, SURVIVAL, REWARD], Callable(self, "_on_contract_confirmed"), Callable())
+	_panel.call("open", [ELIMINATION, SURVIVAL, REWARD], Callable(self, "_on_contract_confirmed"))
 	await get_tree().process_frame
 	for opening_card: Button in _panel.get("cards") as Array:
 		if not opening_card.visible:
@@ -164,7 +164,6 @@ func _run() -> void:
 	var confirm_button := _panel.get_node("Shade/Panel/Margin/Content/Actions/Confirm") as Button
 	var protocol_cards: Array = _panel.get("cards") as Array
 	var select_range := _panel.get_node("Shade/Panel/Margin/Content/Subtitle/SelectRange") as Label
-	var escape_icon := _panel.get_node("Shade/Panel/Margin/Content/Subtitle/EscapeIcon") as TextureRect
 	panel_container.scale.x = 0.025
 	await get_tree().process_frame
 	for index in range(3):
@@ -180,8 +179,11 @@ func _run() -> void:
 		"Protocol selection should match its numeric shortcut range to three visible options."
 	)
 	_assert_true(
-		escape_icon.texture != null,
-		"Protocol selection should show the Escape keyboard icon instead of a text key name."
+		not _panel.has_node("Shade/Panel/Margin/Content/Subtitle/EscapeIcon") \
+			and not _panel.has_node("Shade/Panel/Margin/Content/Subtitle/Back") \
+			and not _panel.has_node("Shade/Panel/Margin/Content/Actions/Cancel") \
+			and not _panel.has_method("cancel"),
+		"Mandatory protocol selection should expose no Escape hint, back action, or cancellation API."
 	)
 	_assert_true(
 		confirm_button.icon != null,
@@ -263,11 +265,16 @@ func _run() -> void:
 		]
 	)
 	var enhancement_toggle := survival_card.get_node("EnhancementToggle") as CheckButton
+	var enhanced_bonus := survival_card.get_node("Margin/Content/EnhancedDetails/Bonus") as Label
 	_assert_true(
-		enhancement_toggle.get_global_rect().size.is_equal_approx(Vector2(168.0, 38.0)) \
+		enhancement_toggle.get_global_rect().size.is_equal_approx(Vector2(144.0, 32.0)) \
 			and survival_card.get_global_rect().encloses(enhancement_toggle.get_global_rect()) \
 			and (survival_card.get_node("EnhancedFrame") as Control).mouse_filter == Control.MOUSE_FILTER_IGNORE,
-		"Enhanced interaction should use the visible 168x38 toggle while its decorative frame ignores pointer input."
+		"Enhanced interaction should use the visible compact toggle while its decorative frame ignores pointer input."
+	)
+	_assert_true(
+		enhanced_bonus.get_global_rect().end.y <= enhancement_toggle.get_global_rect().position.y - 4.0,
+		"Enhanced reward copy should retain visible separation above the anchored enhancement toggle."
 	)
 	_assert_true(
 		detail_copy.text.contains("ENHANCED RISK") \
@@ -333,7 +340,7 @@ func _run() -> void:
 		]
 	)
 	_panel.call("dismiss")
-	_panel.call("open", [ELIMINATION, SURVIVAL], Callable(), Callable())
+	_panel.call("open", [ELIMINATION, SURVIVAL], Callable())
 	await get_tree().process_frame
 	_assert_true(
 		select_range.text.contains("1–2") and not select_range.text.contains("1–3"),
@@ -364,7 +371,7 @@ func _run() -> void:
 	)
 	_panel = PANEL_SCENE.instantiate() as Control
 	add_child(_panel)
-	_panel.call("open", [ELIMINATION, SURVIVAL, REWARD], Callable(), Callable())
+	_panel.call("open", [ELIMINATION, SURVIVAL, REWARD], Callable())
 	await get_tree().create_timer(0.7, true, false, true).timeout
 	reward_card = _panel.get_node(
 		"Shade/Panel/Margin/Content/MainCards/CardRight"
@@ -373,10 +380,10 @@ func _run() -> void:
 	selected_badge = reward_card.get_node("Margin/Content/Header/SelectedBadge") as Label
 	await get_tree().process_frame
 	select_range = _panel.get_node("Shade/Panel/Margin/Content/Subtitle/SelectRange") as Label
-	escape_icon = _panel.get_node("Shade/Panel/Margin/Content/Subtitle/EscapeIcon") as TextureRect
 	_assert_true(
-		select_range.text.contains("1–3") and escape_icon.texture != null,
-		"Chinese protocol selection should localize the dynamic range and retain the Escape key icon."
+		select_range.text.contains("1–3") \
+			and not _panel.has_node("Shade/Panel/Margin/Content/Subtitle/EscapeIcon"),
+		"Chinese mandatory protocol selection should localize the dynamic range without advertising Escape."
 	)
 	_assert_true(
 		selected_badge.text == "✓ 已选择",

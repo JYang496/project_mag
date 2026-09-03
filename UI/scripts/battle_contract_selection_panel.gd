@@ -3,7 +3,6 @@ extends Control
 const OPEN_DURATION := 0.34
 const CARD_REVEAL_DURATION := 0.18
 const CARD_REVEAL_INTERVAL := 0.07
-const CLOSE_DURATION := 0.16
 const SHADE_OPACITY := 0.76
 const STABLE_PANEL_HEIGHT := 688.0
 const PREFERRED_PANEL_WIDTH := 1232.0
@@ -16,7 +15,6 @@ const MAX_ENEMY_PREVIEW_ENTRIES := 5
 const ENEMY_PREVIEW_ICON_SIZE := Vector2(38, 38)
 
 var _confirmed := Callable()
-var _cancelled := Callable()
 var _locked := false
 var _transition_tween: Tween
 var _detail_definition: Resource
@@ -28,9 +26,6 @@ var _detail_definition: Resource
 @onready var title_label: Label = $Shade/Panel/Margin/Content/Title
 @onready var subtitle: HBoxContainer = $Shade/Panel/Margin/Content/Subtitle
 @onready var select_range_label: Label = $Shade/Panel/Margin/Content/Subtitle/SelectRange
-@onready var escape_icon: TextureRect = $Shade/Panel/Margin/Content/Subtitle/EscapeIcon
-@onready var back_label: Label = $Shade/Panel/Margin/Content/Subtitle/Back
-@onready var cancel_button: Button = $Shade/Panel/Margin/Content/Actions/Cancel
 @onready var current_selection_label: Label = $Shade/Panel/Margin/Content/Actions/CurrentSelection
 @onready var terminal_status: Label = $Shade/Panel/Margin/Content/TerminalStatus
 @onready var actions: HBoxContainer = $Shade/Panel/Margin/Content/Actions
@@ -43,19 +38,16 @@ var _detail_definition: Resource
 func _ready() -> void:
 	visible = false
 	confirm_button.icon = INPUT_PROMPT_TEXTURE_FACTORY.space_prompt_texture()
-	escape_icon.texture = INPUT_PROMPT_TEXTURE_FACTORY.escape_prompt_texture()
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	for card in cards:
 		card.pressed.connect(_on_card_pressed.bind(card))
 		card.enhanced_mode_changed.connect(_on_card_enhanced_mode_changed.bind(card))
 	confirm_button.pressed.connect(_on_confirm_pressed)
-	cancel_button.pressed.connect(cancel)
 
-func open(options: Array, confirmed: Callable, cancelled: Callable) -> void:
+func open(options: Array, confirmed: Callable) -> void:
 	if visible or options.size() < 2 or options.size() > 3:
 		return
 	_confirmed = confirmed
-	_cancelled = cancelled
 	_locked = true
 	confirm_button.disabled = true
 	title_label.text = LocalizationManager.tr_key("battle_contract.ui.title", "Choose Next Protocol")
@@ -63,10 +55,6 @@ func open(options: Array, confirmed: Callable, cancelled: Callable) -> void:
 		"battle_contract.ui.subtitle.select",
 		"1–{count} Select ·"
 	).replace("{count}", str(options.size()))
-	back_label.text = LocalizationManager.tr_key("battle_contract.ui.subtitle.back", "Back")
-	cancel_button.text = LocalizationManager.tr_key("battle_contract.ui.cancel", "Back to Prepare")
-	cancel_button.visible = PhaseManager.can_cancel_protocol_selection_to_rest()
-	cancel_button.disabled = not cancel_button.visible
 	confirm_button.text = LocalizationManager.tr_key("battle_contract.ui.confirm", "Begin Contract")
 	_set_current_selection(null)
 	_apply_panel_size(options.size() == 3)
@@ -104,13 +92,6 @@ static func calculate_panel_size(viewport_size: Vector2, has_extra_contract: boo
 
 func _on_viewport_size_changed() -> void:
 	_apply_panel_size(cards[2].visible, _has_active_enhanced_mode())
-
-func cancel() -> bool:
-	if not visible or _locked:
-		return false
-	_locked = true
-	_play_close_transition()
-	return true
 
 func dismiss() -> void:
 	_kill_transition()
@@ -161,9 +142,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			_select_card_by_index(quick_index)
 			get_viewport().set_input_as_handled()
 			return
-	if event.is_action_pressed("ESC") or event.is_action_pressed("CANCEL"):
-		if cancel():
-			get_viewport().set_input_as_handled()
 
 func _is_space_key_pressed(event: InputEvent) -> bool:
 	if not event is InputEventKey:
@@ -426,7 +404,6 @@ func _on_confirm_pressed() -> void:
 
 func _clear_callbacks() -> void:
 	_confirmed = Callable()
-	_cancelled = Callable()
 
 func _play_open_transition() -> void:
 	_kill_transition()
@@ -471,27 +448,6 @@ func _finish_open_transition() -> void:
 	)
 	_locked = false
 	cards[0].grab_focus()
-
-func _play_close_transition() -> void:
-	_kill_transition()
-	terminal_status.text = LocalizationManager.tr_key(
-		"battle_contract.ui.status.closing",
-		"TACTICAL LINK // CLOSING"
-	)
-	_transition_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS).set_parallel(true)
-	_transition_tween.tween_property(shade, "color:a", 0.0, CLOSE_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	_transition_tween.tween_property(panel, "scale:x", 0.025, CLOSE_DURATION).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
-	_transition_tween.tween_property(panel, "modulate:a", 0.2, CLOSE_DURATION)
-	_transition_tween.chain().tween_callback(_finish_close_transition)
-
-func _finish_close_transition() -> void:
-	_transition_tween = null
-	visible = false
-	_locked = false
-	var callback := _cancelled
-	_clear_callbacks()
-	if callback.is_valid():
-		callback.call()
 
 func _kill_transition() -> void:
 	if _transition_tween != null and _transition_tween.is_valid():

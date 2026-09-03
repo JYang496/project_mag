@@ -19,12 +19,7 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	var fuse_bonus_steps: int = max(0, fuse_level - 1)
 	var final_ratio: float = maxf(0.0, steal_ratio + ratio_per_fuse * float(fuse_bonus_steps))
 	final_ratio *= get_effective_additive(1.0, 0.35)
-	var base_damage: int = 1
-	if source_weapon:
-		if source_weapon.has_method("get_runtime_shot_damage"):
-			base_damage = max(1, int(source_weapon.call("get_runtime_shot_damage")))
-		elif source_weapon.get("damage") != null:
-			base_damage = max(1, int(source_weapon.damage))
+	var base_damage := source_weapon.get_runtime_damage()
 	var min_heal_scaled: int = max(1, int(round(get_effective_additive(float(minimum_heal), 0.4))))
 	var heal_amount: int = max(min_heal_scaled, int(round(float(base_damage) * final_ratio)))
 	PlayerData.player_hp = min(PlayerData.player_max_hp, PlayerData.player_hp + heal_amount)

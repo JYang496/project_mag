@@ -78,6 +78,9 @@ func request_primary_fire() -> bool:
 		_on_windup_timer_timeout()
 	return true
 
+func allows_held_attack_on_battle_entry() -> bool:
+	return true
+
 func _on_windup_timer_timeout() -> void:
 	if not _windup_in_progress:
 		return
@@ -95,7 +98,7 @@ func _on_shoot() -> void:
 	is_on_cooldown = true
 	_try_emit_idle_fire_trigger()
 	var idle_empowered_shot := _consume_idle_empowered_shot()
-	var cooldown := maxf(get_effective_cooldown(attack_cooldown), 0.05)
+	var cooldown := maxf(get_runtime_attack_cooldown(), 0.05)
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
@@ -105,7 +108,7 @@ func _on_shoot() -> void:
 		return
 
 	projectile_direction = get_aim_forward()
-	var runtime_damage := get_runtime_shot_damage()
+	var runtime_damage := get_runtime_damage()
 	var damage_multiplier := branch_runtime.get_branch_projectile_damage_multiplier()
 	damage_multiplier *= _consume_branch_heat_spend_multiplier()
 	if idle_empowered_shot:
@@ -155,15 +158,15 @@ func _on_cooldown_timer_timeout() -> void:
 	_windup_in_progress = false
 
 func _try_emit_idle_fire_trigger() -> bool:
-	if not is_stow_trigger_ready():
+	if not is_support_trigger_ready():
 		return false
-	if not consume_stow_trigger():
+	if not consume_support_trigger():
 		return false
 	_idle_fire_empowered_shots_remaining = maxi(1, idle_fire_empowered_shots)
 	emit_passive_trigger(&"cannon_idle_fire_triggered", {
-		"duration": WeaponTriggerRuntimeType.STOW_CHARGE_DURATION_SEC,
-		"trigger": "stow_charge",
-		"refresh": "stow",
+		"duration": WeaponTriggerRuntimeType.SUPPORT_CHARGE_DURATION_SEC,
+		"trigger": "support_charge",
+		"refresh": "support",
 		"empowered_shots": maxi(1, idle_fire_empowered_shots),
 		"direct_damage_multiplier": maxf(idle_fire_direct_damage_multiplier, 0.05),
 		"breach_multiplier": maxf(idle_fire_breach_multiplier, 1.0),
@@ -195,20 +198,20 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 func get_passive_status() -> Dictionary:
 	if has_weapon_trait(WeaponTrait.ENERGY):
 		return get_energy_full_fire_status()
-	var progress := get_stow_trigger_progress()
-	var state := "ready_pending_action" if is_stow_trigger_ready() else "charging"
+	var progress := get_support_trigger_progress()
+	var state := "ready_pending_action" if is_support_trigger_ready() else "charging"
 	return with_passive_charge_status({
 		"id": "cannon_idle_fire_triggered",
 		"display_name": "Breach Shot",
 		"state": state,
 		"progress": progress,
-		"current": progress * WeaponTriggerRuntimeType.STOW_CHARGE_DURATION_SEC,
-		"required": WeaponTriggerRuntimeType.STOW_CHARGE_DURATION_SEC,
+		"current": progress * WeaponTriggerRuntimeType.SUPPORT_CHARGE_DURATION_SEC,
+		"required": WeaponTriggerRuntimeType.SUPPORT_CHARGE_DURATION_SEC,
 		"ready": state == "ready_pending_action",
 		"condition_visible": true,
 		"condition_progress": progress,
-		"trigger_hint": "stow_charge",
-		"refresh_hint": "stow",
+		"trigger_hint": "support_charge",
+		"refresh_hint": "support",
 		"empowered_shots": maxi(1, idle_fire_empowered_shots),
 		"direct_damage_multiplier": maxf(idle_fire_direct_damage_multiplier, 0.05),
 		"breach_multiplier": maxf(idle_fire_breach_multiplier, 1.0),

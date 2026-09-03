@@ -240,11 +240,10 @@ func clear_tracked_weapon_exit_ids() -> void:
 
 func apply_weapon_roles() -> void:
 	for i in range(_player.PlayerData.player_weapon_list.size()):
-		var weapon: Variant = _player.PlayerData.player_weapon_list[i]
-		if weapon == null or not is_instance_valid(weapon):
+		var weapon := _player.PlayerData.player_weapon_list[i] as Weapon
+		if weapon == null:
 			continue
-		if weapon.has_method("set_weapon_role"):
-			weapon.call("set_weapon_role", "main" if i == _player.PlayerData.main_weapon_index else "offhand")
+		weapon.set_weapon_role("main" if i == _player.PlayerData.main_weapon_index else "support")
 	_player._debug_connect_weapon_passive_triggers()
 
 func get_main_weapon() -> Weapon:
@@ -261,7 +260,7 @@ func get_main_weapon() -> Weapon:
 		return weapon as Weapon
 	return null
 
-func get_offhand_weapons() -> Array:
+func get_support_weapons() -> Array:
 	var result: Array = []
 	for i in range(_player.PlayerData.player_weapon_list.size()):
 		if i == _player.PlayerData.main_weapon_index:
@@ -270,6 +269,38 @@ func get_offhand_weapons() -> Array:
 		if weapon and is_instance_valid(weapon):
 			result.append(weapon)
 	return result
+
+func get_all_weapons() -> Array:
+	var result: Array = []
+	for weapon_variant in _player.PlayerData.player_weapon_list:
+		var weapon := weapon_variant as Weapon
+		if weapon != null and is_instance_valid(weapon):
+			result.append(weapon)
+	return result
+
+func get_weapon_at_slot(slot_index: int) -> Weapon:
+	if _player == null or _player.PlayerData == null:
+		return null
+	if slot_index < 0 or slot_index >= _player.PlayerData.player_weapon_list.size():
+		return null
+	var weapon := _player.PlayerData.player_weapon_list[slot_index] as Weapon
+	return weapon if weapon != null and is_instance_valid(weapon) else null
+
+func try_select_main_weapon(slot_index: int) -> bool:
+	sanitize_weapon_list()
+	var weapon := get_weapon_at_slot(slot_index)
+	if weapon == null or slot_index == int(_player.PlayerData.main_weapon_index):
+		return false
+	_player.PlayerData.set_main_weapon_index(slot_index)
+	mark_weapon_roles_dirty()
+	refresh_weapon_structure_if_needed()
+	return int(_player.PlayerData.main_weapon_index) == slot_index
+
+func request_weapon_skill_at_slot(slot_index: int) -> bool:
+	var weapon := get_weapon_at_slot(slot_index)
+	if weapon == null:
+		return false
+	return bool(weapon.request_weapon_skill())
 
 func can_switch_main_weapon() -> bool:
 	return _player.PlayerData.can_switch_main_weapon()

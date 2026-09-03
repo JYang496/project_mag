@@ -44,10 +44,7 @@ func register_shot(multiplier: float = 1.0) -> void:
 	var signed_heat := _resolve_signed_heat_per_shot() * maxf(multiplier, 0.0)
 	if float(core.heat_value) * signed_heat < 0.0:
 		signed_heat *= 1.0 - clampf(float(weapon.heat_opposition_resistance), 0.0, 0.9)
-	if core.has_method("add_heat_amount"):
-		core.call("add_heat_amount", signed_heat)
-		return
-	core.add_heat(multiplier)
+	core.add_heat_amount(signed_heat)
 
 func get_heat_ratio() -> float:
 	var core := get_active_heat_core()
@@ -164,7 +161,7 @@ func _has_heat_trait() -> bool:
 	return weapon.has_heat_trait()
 
 func _resolve_signed_heat_per_shot() -> float:
-	var amount := float(weapon.heat_per_shot)
+	var amount := weapon.get_runtime_heat_per_shot()
 	var is_fire := weapon.has_weapon_trait(WeaponTrait.FIRE)
 	var is_freeze := weapon.has_weapon_trait(WeaponTrait.FREEZE)
 	if (is_fire or is_freeze) and absf(amount) <= 1.0:

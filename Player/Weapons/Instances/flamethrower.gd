@@ -63,7 +63,7 @@ func set_level(lv) -> void:
 
 func _on_shoot() -> void:
 	is_on_cooldown = true
-	var cooldown: float = get_effective_cooldown(attack_cooldown)
+	var cooldown := get_runtime_attack_cooldown()
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = maxf(cooldown, 0.02)
 	cooldown_timer.start()
@@ -93,6 +93,10 @@ func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bo
 		return
 	_refresh_held_flame_vfx()
 
+func stop_automatic_fire() -> void:
+	_primary_fire_held = false
+	_stop_flame_vfx()
+
 func _emit_flame_burst() -> void:
 	# 每轮射击开始时清空已攻击目标列表
 	_attacked_target_ids.clear()
@@ -116,7 +120,7 @@ func _apply_fire_damage(target: Node) -> void:
 		return
 	_attacked_target_ids[target.get_instance_id()] = true
 
-	var runtime_damage: int = get_runtime_shot_damage()
+	var runtime_damage: int = get_runtime_damage()
 	runtime_damage = max(1, int(round(float(runtime_damage) * branch_runtime.get_branch_damage_multiplier())))
 	var knock_back := {
 		"amount": 0,
@@ -214,7 +218,7 @@ func get_flame_aim_direction() -> Vector2:
 func _process_main_weapon_effect(_delta: float) -> void:
 	pass
 
-func _process_offhand_weapon_effect(_delta: float) -> void:
+func _process_support_weapon_effect(_delta: float) -> void:
 	pass
 
 func _on_enter_main_weapon_role() -> void:

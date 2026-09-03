@@ -561,8 +561,12 @@ func _sync_activation_visuals() -> void:
 		var mesh := entry.mesh as MeshInstance3D
 		if activation == null or cell == null or mesh == null:
 			continue
-		var center_offset := entry.get("center_offset", Vector2(256.0, 256.0)) as Vector2
-		var cell_size := entry.get("cell_size", Vector2(512.0, 512.0)) as Vector2
+		var fallback_cell_size := Vector2.ONE
+		var spacing_value: Variant = _board.get("cell_spacing") if _board != null else null
+		if spacing_value is Vector2:
+			fallback_cell_size = spacing_value as Vector2
+		var center_offset := entry.get("center_offset", fallback_cell_size * 0.5) as Vector2
+		var cell_size := entry.get("cell_size", fallback_cell_size) as Vector2
 		mesh.position = world_2d_to_3d(cell.global_position + center_offset) + Vector3.UP * ACTIVATION_OUTLINE_HEIGHT
 		mesh.scale = Vector3(cell_size.x * world_scale * 0.96, 1.0, cell_size.y * world_scale * 0.96)
 		var highlighted := float(activation.get("highlight_amount"))

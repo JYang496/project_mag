@@ -10,6 +10,7 @@ const EXTRACTION := &"extraction"
 const TAU_F := TAU
 const PLAYER_OCCLUSION_PADDING := Vector2(4.0, 3.0)
 const WORLD_MARKER_ACTIVATION_MARGIN := 48.0
+const PROTOCOL_FOOTPRINT_INSET_PX := 4.0
 
 var target: Node2D
 var visual_kind: StringName = OPERATION
@@ -93,7 +94,7 @@ func _draw_world_marker(center: Vector2) -> void:
 	var progress_color := _containment_progress_color() if visual_kind == CONTAINMENT else color
 	var danger := Color(PALETTE.WARNING, 0.95)
 	var pulse := 0.5 + 0.5 * sin(_elapsed * (5.6 if player_inside else 2.4))
-	var footprint := _projected_footprint_points()
+	var footprint := _visual_footprint_points()
 	if footprint.size() != 4:
 		return
 
@@ -132,6 +133,19 @@ func _projected_footprint_points() -> PackedVector2Array:
 	for corner in local_corners:
 		projected.append(_project(target.global_transform * corner))
 	return projected
+
+func _visual_footprint_points() -> PackedVector2Array:
+	var footprint := _projected_footprint_points()
+	if footprint.size() != 4:
+		return footprint
+	var center := Vector2.ZERO
+	for point in footprint:
+		center += point
+	center /= float(footprint.size())
+	var inset := PackedVector2Array()
+	for point in footprint:
+		inset.append(point.move_toward(center, PROTOCOL_FOOTPRINT_INSET_PX))
+	return inset
 
 
 func _draw_protocol_texture(footprint: PackedVector2Array, color: Color) -> void:

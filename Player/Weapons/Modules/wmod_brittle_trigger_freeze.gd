@@ -31,11 +31,7 @@ func apply_on_hit(source_weapon: Weapon, target: Node) -> void:
 	if now_msec - last_proc_msec < int(maxf(target_icd_sec, 0.0) * 1000.0):
 		return
 	_target_last_proc_msec[target_id] = now_msec
-	var base_damage: int = 1
-	if source_weapon and source_weapon.has_method("get_runtime_shot_damage"):
-		base_damage = max(1, int(source_weapon.call("get_runtime_shot_damage")))
-	elif source_weapon and source_weapon.get("damage") != null:
-		base_damage = max(1, int(source_weapon.damage))
+	var base_damage := source_weapon.get_runtime_damage()
 	var bonus_ratio: float = _get_bonus_ratio_by_level()
 	var bonus_damage: int = max(1, int(round(float(base_damage) * maxf(bonus_ratio, 0.0))))
 	var owner_player: Node = DamageManager.resolve_source_player(source_weapon)

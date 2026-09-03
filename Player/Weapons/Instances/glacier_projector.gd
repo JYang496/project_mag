@@ -52,7 +52,7 @@ func set_level(lv) -> void:
 
 func _on_shoot() -> void:
 	is_on_cooldown = true
-	cooldown_timer.wait_time = maxf(get_effective_cooldown(attack_cooldown), 0.02)
+	cooldown_timer.wait_time = maxf(get_runtime_attack_cooldown(), 0.02)
 	cooldown_timer.start()
 	_emit_glacier_burst()
 
@@ -80,6 +80,10 @@ func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bo
 		return
 	_refresh_held_glacier_vfx()
 
+func stop_automatic_fire() -> void:
+	_primary_fire_held = false
+	_stop_glacier_vfx()
+
 func _emit_glacier_burst() -> void:
 	_attacked_target_ids.clear()
 	if detect_area == null or not is_instance_valid(detect_area):
@@ -104,7 +108,7 @@ func _apply_freeze_damage(target: Node, cold_snap_active: bool = false) -> void:
 		return
 	_attacked_target_ids[target.get_instance_id()] = true
 
-	var runtime_damage: int = get_runtime_shot_damage()
+	var runtime_damage: int = get_runtime_damage()
 	var damage_data: DamageData = DamageManager.build_damage_data(
 		self,
 		runtime_damage,
@@ -122,7 +126,7 @@ func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> vo
 	super.on_hit_target_with_damage_type(target, damage_type)
 
 func _consume_cold_snap_for_next_attack() -> bool:
-	return consume_stow_trigger()
+	return consume_support_trigger()
 
 func _apply_cold_snap_control(target: Node) -> void:
 	if target == null or not is_instance_valid(target):
@@ -180,8 +184,8 @@ func _emit_cold_snap_attack_trigger(targets: Array[Node]) -> void:
 		"targets": targets,
 		"target_count": targets.size(),
 		"trigger_damage_type": Attack.TYPE_FREEZE,
-		"refresh": "stow",
-		"recharge_sec": WeaponTriggerRuntimeType.STOW_CHARGE_DURATION_SEC,
+		"refresh": "support",
+		"recharge_sec": WeaponTriggerRuntimeType.SUPPORT_CHARGE_DURATION_SEC,
 		"freeze_duration": maxf(cold_snap_freeze_duration_sec, 0.05),
 		"boss_slow_multiplier": clampf(boss_slow_multiplier, 0.05, 1.0),
 		"boss_slow_duration": maxf(boss_slow_duration_sec, 0.05),
@@ -205,16 +209,16 @@ func _refund_ammo_from_cold_snap_branches() -> int:
 	return maxi(current_ammo - ammo_before, 0)
 
 func get_passive_status() -> Dictionary:
-	var recharge_sec := WeaponTriggerRuntimeType.STOW_CHARGE_DURATION_SEC
-	var progress := get_stow_trigger_progress()
-	var state := "ready" if is_stow_trigger_ready() else "charging"
+	var recharge_sec := WeaponTriggerRuntimeType.SUPPORT_CHARGE_DURATION_SEC
+	var progress := get_support_trigger_progress()
+	var state := "ready" if is_support_trigger_ready() else "charging"
 	return with_passive_charge_status({
 		"id": "glacier_cold_snap_triggered",
 		"display_name": "Cold Snap",
 		"state": "armed" if state == "ready" else state,
 		"ready": state == "ready",
 		"trigger_hint": "next_attack",
-		"refresh_hint": "stow",
+		"refresh_hint": "support",
 		"cooldown_remaining": recharge_sec * (1.0 - progress),
 		"cooldown_duration": recharge_sec,
 		"progress": progress,

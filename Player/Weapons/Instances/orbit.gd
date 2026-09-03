@@ -25,7 +25,7 @@ const LV1_TARGET_ACTIVE_COUNT: float = 2.0
 # Weapon
 var ITEM_NAME = "Orbit"
 var spin_speed : float = 5.0
-@export var offhand_spin_speed_multiplier: float = 0.65
+@export var support_spin_speed_multiplier: float = 0.65
 var _pending_satellite_spawn_count: int = 0
 
 var weapon_data = {
@@ -107,7 +107,7 @@ func request_primary_fire() -> bool:
 		if uses_ammo_system() and current_ammo <= 0:
 			request_reload()
 		return false
-	var spent_ammo := current_ammo
+	var spent_ammo := 1 if is_support_weapon() else current_ammo
 	if not consume_ammo(spent_ammo):
 		if uses_ammo_system() and current_ammo <= 0:
 			request_reload()
@@ -134,9 +134,9 @@ func _on_shoot() -> void:
 	if consume_entry_trigger():
 		lifetime_multiplier *= 1.2
 	is_on_cooldown = true
-	start_weapon_cooldown(attack_cooldown)
+	start_weapon_cooldown()
 	var new_satellites: Array[Projectile] = []
-	var runtime_damage: int = get_runtime_shot_damage()
+	var runtime_damage: int = get_runtime_damage()
 	var damage_multiplier: float = branch_runtime.get_branch_projectile_damage_multiplier()
 	var damage_type: StringName = branch_runtime.get_branch_damage_type_override(Attack.TYPE_PHYSICAL)
 	var effective_spin_speed: float = _get_effective_orbit_spin_speed()
@@ -174,7 +174,7 @@ func _get_energy_deployment_config() -> Dictionary:
 	return {}
 
 func _update_satellite_runtime_state() -> void:
-	var runtime_damage: int = get_runtime_shot_damage()
+	var runtime_damage: int = get_runtime_damage()
 	var damage_multiplier: float = branch_runtime.get_branch_projectile_damage_multiplier()
 	var damage_type: StringName = branch_runtime.get_branch_damage_type_override(Attack.TYPE_PHYSICAL)
 	var effective_spin_speed: float = _get_effective_orbit_spin_speed()
@@ -275,5 +275,5 @@ func _get_branch_spin_speed_multiplier() -> float:
 	return branch_runtime.get_branch_orbit_spin_speed_multiplier()
 
 func _get_effective_orbit_spin_speed() -> float:
-	var role_multiplier: float = 1.0 if is_main_weapon() else maxf(offhand_spin_speed_multiplier, 0.05)
+	var role_multiplier: float = 1.0 if is_main_weapon() else maxf(support_spin_speed_multiplier, 0.05)
 	return spin_speed * _get_branch_spin_speed_multiplier() * role_multiplier

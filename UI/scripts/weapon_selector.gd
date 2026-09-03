@@ -16,13 +16,13 @@ const SLOT_COUNT := 4
 const SWITCH_ANIM_TIME := 0.35
 const SWITCH_ANIM_TRANS := Tween.TRANS_SINE
 const SWITCH_ANIM_EASE := Tween.EASE_OUT
-const OFFHAND_SLOT_SIZE := Vector2(48.0, 64.0)
+const SUPPORT_SLOT_SIZE := Vector2(48.0, 64.0)
 const MAINHAND_SLOT_SIZE := Vector2(64.0, 64.0)
 const SLOT_GAP := 6.0
 const COMPACT_DOCK_SIZE := Vector2(226.0, 64.0)
 const VISUAL_FOOTPRINT_SIZE := COMPACT_DOCK_SIZE
 const MAINHAND_READY_GLOW_COLOR := Color(0.58, 0.86, 1.0, 1.0)
-const OFFHAND_READY_GLOW_COLOR := Color(0.92, 0.92, 0.92, 1.0)
+const SUPPORT_READY_GLOW_COLOR := Color(0.92, 0.92, 0.92, 1.0)
 const WEAPON_STATUS_FILL := Color(0.33, 0.66, 1.0, 0.95)
 const WEAPON_STATUS_TRACK := Color(0.11, 0.20, 0.25, 0.92)
 const WEAPON_STATUS_RELOAD := Color(0.34, 0.78, 0.88, 1.0)
@@ -31,7 +31,7 @@ const WEAPON_STATUS_EMPTY := Color(0.94, 0.30, 0.28, 1.0)
 const WEAPON_STATUS_EMPTY_TRACK := Color(0.38, 0.08, 0.08, 0.88)
 const MAINHAND_AMMO_COLUMN_RECT := Rect2(20.0, -58.0, 16.0, 54.0)
 const MAINHAND_AMMO_LABEL_RECT := Rect2(40.0, -27.0, 64.0, 24.0)
-const OFFHAND_AVAILABILITY_LABEL_Y := 4.0
+const SUPPORT_AVAILABILITY_LABEL_Y := 4.0
 const PASSIVE_PROGRESS_COLOR := Color(0.98, 0.78, 0.28, 0.95)
 const PASSIVE_PROGRESS_BASE_COLOR := Color(0.98, 0.78, 0.28, 0.18)
 const PASSIVE_READY_COLOR := Color(1.0, 0.9, 0.38, 1.0)
@@ -44,6 +44,9 @@ const PASSIVE_CHARGE_BEAN_EMPTY_COLOR := Color(0.23, 0.24, 0.26, 0.58)
 const PASSIVE_CHARGE_BEAN_OUTLINE_COLOR := Color(0.05, 0.05, 0.05, 0.72)
 const PASSIVE_TRIGGER_COLOR := Color(1.0, 0.78, 0.22, 1.0)
 const SKILL_READY_COLOR := Color(0.58, 0.90, 1.0, 1.0)
+const SKILL_COOLDOWN_COLOR := Color(0.20, 0.62, 0.90, 0.92)
+const SKILL_BLOCKED_COLOR := Color(0.86, 0.30, 0.28, 0.92)
+const HOLD_SKILL_COLOR := Color(1.0, 0.76, 0.18, 1.0)
 const TRIGGER_FEEDBACK_DEBOUNCE_MSEC := 120
 @onready var _slot_nodes: Array[Control] = [$Slot0, $Slot1, $Slot2, $Slot3]
 
@@ -63,6 +66,9 @@ var _slot_passive_charge_nodes: Array[Control] = []
 var _slot_trigger_feedback_nodes: Array[Control] = []
 var _slot_resource_indicator_nodes: Array[Label] = []
 var _slot_availability_label_nodes: Array[Label] = []
+var _slot_skill_nodes: Array[Control] = []
+var _slot_hold_nodes: Array[Control] = []
+var _slot_key_labels: Array[Label] = []
 var _cooldown_overlay: Control
 var _mainhand_ammo_column: Control
 var _readability_presenter
@@ -75,13 +81,14 @@ var _slot_passive_icon_tweens: Dictionary = {}
 var _last_trigger_feedback_msec: Dictionary = {}
 var _passive_visual_state_by_weapon: Dictionary = {}
 var _availability_visual_state_by_weapon: Dictionary = {}
+var _skill_active_state_by_weapon: Dictionary = {}
 var _selector_reload_total_by_weapon: Dictionary = {}
 var _connected_reload_weapon_ids: Dictionary = {}
 var _connected_passive_weapon_ids: Dictionary = {}
 
 var _missing_weapon_icon: Texture2D = preload("res://asset/images/ui/missing_weapon_icon.png")
 var _mainhand_slot_bg: Texture2D = preload("res://UI/themes/modern/weapon_slot_main.png")
-var _offhand_slot_bg: Texture2D = preload("res://UI/themes/modern/weapon_slot_offhand.png")
+var _support_slot_bg: Texture2D = preload("res://UI/themes/modern/weapon_slot_support.png")
 
 func _ready() -> void:
 	custom_minimum_size = COMPACT_DOCK_SIZE
@@ -116,6 +123,7 @@ func _process(_delta: float) -> void:
 	_update_slot_cooldown_progress()
 	_update_slot_passive_progress()
 	_update_slot_resource_indicators()
+	_update_slot_weapon_skill_progress()
 
 func set_layout_origin(origin: Vector2) -> void:
 	position = origin
@@ -236,7 +244,7 @@ func _build_slot_layout(main_index: int) -> Array[Rect2]:
 	return _switch_controller.build_slot_rects(
 		SLOT_COUNT,
 		main_index,
-		OFFHAND_SLOT_SIZE,
+		SUPPORT_SLOT_SIZE,
 		MAINHAND_SLOT_SIZE,
 		SLOT_GAP
 	)
@@ -274,7 +282,7 @@ func _apply_slot_backgrounds_from_logical_order() -> void:
 		slot_view.set_role(
 			weapon_idx >= 0 and weapon_idx == current_main_index,
 			_mainhand_slot_bg,
-			_offhand_slot_bg
+			_support_slot_bg
 		)
 
 func _apply_weapon_icons_from_logical_order(weapons: Array) -> void:
@@ -329,6 +337,12 @@ func _ensure_slot_cooldown_nodes() -> void:
 		_slot_resource_indicator_nodes.resize(SLOT_COUNT)
 	if _slot_availability_label_nodes.size() != SLOT_COUNT:
 		_slot_availability_label_nodes.resize(SLOT_COUNT)
+	if _slot_skill_nodes.size() != SLOT_COUNT:
+		_slot_skill_nodes.resize(SLOT_COUNT)
+	if _slot_hold_nodes.size() != SLOT_COUNT:
+		_slot_hold_nodes.resize(SLOT_COUNT)
+	if _slot_key_labels.size() != SLOT_COUNT:
+		_slot_key_labels.resize(SLOT_COUNT)
 	for slot_idx in range(SLOT_COUNT):
 		var existing := _slot_cd_nodes[slot_idx]
 		if existing != null and is_instance_valid(existing):
@@ -353,6 +367,7 @@ func _ensure_slot_cooldown_nodes() -> void:
 		_ensure_slot_trigger_feedback_node(slot_idx)
 		_ensure_slot_resource_indicator_node(slot_idx)
 		_ensure_slot_availability_label_node(slot_idx)
+		_ensure_slot_skill_nodes(slot_idx)
 		var existing_glow := _slot_glow_nodes[slot_idx]
 		if existing_glow != null and is_instance_valid(existing_glow):
 			continue
@@ -485,6 +500,106 @@ func _ensure_slot_availability_label_node(slot_idx: int) -> void:
 	label.add_theme_constant_override("outline_size", 2)
 	_cooldown_overlay.add_child(label)
 	_slot_availability_label_nodes[slot_idx] = label
+
+func _ensure_slot_skill_nodes(slot_idx: int) -> void:
+	if _slot_skill_nodes[slot_idx] == null or not is_instance_valid(_slot_skill_nodes[slot_idx]):
+		var skill_bar := WEAPON_SLOT_STATUS_BAR_SCRIPT.new() as Control
+		skill_bar.name = "WeaponSkillBar%d" % slot_idx
+		skill_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		skill_bar.z_index = 3
+		skill_bar.set("placement", WeaponSlotStatusBar.Placement.BOTTOM)
+		skill_bar.set("bar_height", 4.0)
+		skill_bar.set("padding", 8.0)
+		skill_bar.set("base_color", Color(0.05, 0.12, 0.17, 0.92))
+		_cooldown_overlay.add_child(skill_bar)
+		_slot_skill_nodes[slot_idx] = skill_bar
+	if _slot_hold_nodes[slot_idx] == null or not is_instance_valid(_slot_hold_nodes[slot_idx]):
+		var hold_bar := WEAPON_SLOT_STATUS_BAR_SCRIPT.new() as Control
+		hold_bar.name = "WeaponHoldBar%d" % slot_idx
+		hold_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hold_bar.visible = false
+		hold_bar.z_index = 4
+		hold_bar.set("placement", WeaponSlotStatusBar.Placement.BOTTOM)
+		hold_bar.set("bar_height", 3.0)
+		hold_bar.set("padding", 2.0)
+		hold_bar.set("fill_color", HOLD_SKILL_COLOR)
+		hold_bar.set("base_color", Color(0.22, 0.14, 0.03, 0.94))
+		_cooldown_overlay.add_child(hold_bar)
+		_slot_hold_nodes[slot_idx] = hold_bar
+	if _slot_key_labels[slot_idx] == null or not is_instance_valid(_slot_key_labels[slot_idx]):
+		var key_label := Label.new()
+		key_label.name = "WeaponKeyLabel%d" % slot_idx
+		key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		key_label.z_index = 5
+		key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		key_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		key_label.add_theme_font_size_override("font_size", 13)
+		key_label.add_theme_color_override("font_color", Color(0.88, 0.95, 1.0, 1.0))
+		key_label.add_theme_color_override("font_outline_color", Color(0.0, 0.02, 0.03, 0.96))
+		key_label.add_theme_constant_override("outline_size", 3)
+		_cooldown_overlay.add_child(key_label)
+		_slot_key_labels[slot_idx] = key_label
+
+func _update_slot_weapon_skill_progress() -> void:
+	var weapons: Array = PlayerData.player_weapon_list
+	var player: Variant = PlayerData.player
+	for slot_idx in range(SLOT_COUNT):
+		var slot_node := _slot_nodes[slot_idx]
+		var skill_bar := _slot_skill_nodes[slot_idx]
+		var hold_bar := _slot_hold_nodes[slot_idx]
+		var key_label := _slot_key_labels[slot_idx]
+		var weapon_idx := logical_order[slot_idx] if slot_idx < logical_order.size() else -1
+		var has_weapon := weapon_idx >= 0 and weapon_idx < weapons.size() and is_instance_valid(weapons[weapon_idx])
+		for overlay_node in [skill_bar, hold_bar]:
+			overlay_node.position = slot_node.position
+			overlay_node.size = slot_node.size
+		key_label.position = slot_node.position + Vector2(2.0, slot_node.size.y - 26.0)
+		key_label.size = Vector2(18.0, 18.0)
+		key_label.text = str(weapon_idx + 1) if has_weapon else ""
+		key_label.visible = has_weapon
+		if not has_weapon:
+			skill_bar.visible = false
+			hold_bar.visible = false
+			continue
+		var weapon := weapons[weapon_idx] as Weapon
+		var status: Dictionary = weapon.get_weapon_skill_status()
+		_track_weapon_skill_activation(slot_idx, weapon, status)
+		skill_bar.visible = bool(status.get("available", true))
+		skill_bar.set("progress", float(status.get("cooldown_progress", 1.0)))
+		var has_energy := bool(status.get("has_energy", true))
+		skill_bar.set("fill_color", SKILL_READY_COLOR if bool(status.get("ready", false)) else (SKILL_COOLDOWN_COLOR if has_energy else SKILL_BLOCKED_COLOR))
+		skill_bar.set("ready_edge_color", SKILL_READY_COLOR if bool(status.get("ready", false)) else Color.TRANSPARENT)
+		var hold_progress := 0.0
+		if player != null and is_instance_valid(player) and player.has_method("get_weapon_slot_hold_progress"):
+			hold_progress = float(player.call("get_weapon_slot_hold_progress", weapon_idx))
+		hold_bar.visible = hold_progress > 0.0
+		hold_bar.set("progress", hold_progress)
+		var hold_color := HOLD_SKILL_COLOR
+		if hold_progress >= 1.0:
+			hold_color = SKILL_READY_COLOR if bool(status.get("ready", false)) else (SKILL_COOLDOWN_COLOR if has_energy else SKILL_BLOCKED_COLOR)
+		hold_bar.set("fill_color", hold_color)
+		key_label.add_theme_color_override(
+			"font_color",
+			hold_color if hold_progress > 0.0 else Color(0.88, 0.95, 1.0, 1.0)
+		)
+
+func _track_weapon_skill_activation(
+	slot_idx: int,
+	weapon: Weapon,
+	status: Dictionary
+) -> void:
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	var weapon_id := int(weapon.get_instance_id())
+	var is_active := bool(status.get("active", false))
+	if not _skill_active_state_by_weapon.has(weapon_id):
+		_skill_active_state_by_weapon[weapon_id] = is_active
+		return
+	var was_active := bool(_skill_active_state_by_weapon.get(weapon_id, false))
+	_skill_active_state_by_weapon[weapon_id] = is_active
+	if is_active and not was_active:
+		# Skill confirmation is HUD-only: it must never request camera trauma.
+		_play_slot_trigger_feedback(slot_idx, SKILL_READY_COLOR, true, 0.9)
 
 func _get_slot_cooldown_node(slot_node: Control) -> Control:
 	if slot_node == null:
@@ -707,7 +822,7 @@ func get_weapon_availability_label_rect(slot_size: Vector2, is_mainhand: bool) -
 		return MAINHAND_AMMO_LABEL_RECT
 	var label_width := 44.0
 	var label_x := slot_size.x - label_width - 5.0
-	var label_y := OFFHAND_AVAILABILITY_LABEL_Y
+	var label_y := SUPPORT_AVAILABILITY_LABEL_Y
 	return Rect2(
 		Vector2(label_x, label_y),
 		Vector2(label_width, 22.0)
@@ -967,6 +1082,7 @@ func _disconnect_stale_reload_signals(active_weapon_ids: Dictionary) -> void:
 		_connected_reload_weapon_ids.erase(weapon_id)
 		_selector_reload_total_by_weapon.erase(weapon_id)
 		_availability_visual_state_by_weapon.erase(weapon_id)
+		_skill_active_state_by_weapon.erase(weapon_id)
 
 func _ensure_weapon_passive_signal_connected(weapon: Variant) -> void:
 	if weapon == null or not is_instance_valid(weapon):
@@ -1195,7 +1311,7 @@ func _play_ready_glow(slot_idx: int, is_mainhand_weapon: bool) -> void:
 	glow_node.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	glow_node.scale = Vector2.ONE
 	glow_node.pivot_offset = glow_node.size * 0.5
-	glow_node.set("fill_color", MAINHAND_READY_GLOW_COLOR if is_mainhand_weapon else OFFHAND_READY_GLOW_COLOR)
+	glow_node.set("fill_color", MAINHAND_READY_GLOW_COLOR if is_mainhand_weapon else SUPPORT_READY_GLOW_COLOR)
 	var tween := create_tween()
 	_slot_glow_tweens[slot_idx] = tween
 	tween.set_trans(Tween.TRANS_SINE)

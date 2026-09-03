@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SupportWeaponStatProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Player/Weapons/Core/support_weapon_stat_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+damage_multiplier = 0.4
+cooldown_multiplier = 1.75
+heat_generation_multiplier = 0.35
