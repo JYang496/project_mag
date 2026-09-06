@@ -1,0 +1,251 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://UI/components/WeaponCoreRewardContent/WeaponCoreRewardContent.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="InventoryStyle"]
+bg_color = Color(0.16, 0.105, 0.045, 0.72)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.94, 0.58, 0.18, 0.48)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="UsageStyle"]
+bg_color = Color(0.16, 0.105, 0.045, 0.58)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.94, 0.58, 0.18, 0.52)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 8.0
+content_margin_top = 6.0
+content_margin_right = 8.0
+content_margin_bottom = 6.0
+
+[sub_resource type="StyleBoxFlat" id="IconStyle"]
+bg_color = Color(0.16, 0.105, 0.045, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.94, 0.58, 0.18, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="WeaponCoreContent" type="VBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/separation = 8
+script = ExtResource("1_script")
+
+[node name="WeaponCoreAcquisitionSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="WeaponCoreTitle" type="Label" parent="WeaponCoreAcquisitionSection"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 19
+horizontal_alignment = 1
+
+[node name="WeaponCoreIconStage" type="CenterContainer" parent="WeaponCoreAcquisitionSection"]
+custom_minimum_size = Vector2(0, 76)
+layout_mode = 2
+
+[node name="WeaponCoreMaterialIcon" type="Control" parent="WeaponCoreAcquisitionSection/WeaponCoreIconStage"]
+custom_minimum_size = Vector2(104, 72)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="WeaponCoreMaterialFrame" type="PanelContainer" parent="WeaponCoreAcquisitionSection/WeaponCoreIconStage/WeaponCoreMaterialIcon"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("IconStyle")
+
+[node name="WeaponCoreSourceImage" type="TextureRect" parent="WeaponCoreAcquisitionSection/WeaponCoreIconStage/WeaponCoreMaterialIcon"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="WeaponCoreMark" type="Label" parent="WeaponCoreAcquisitionSection/WeaponCoreIconStage/WeaponCoreMaterialIcon"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -25.0
+offset_top = -25.0
+offset_right = -3.0
+offset_bottom = -3.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.79, 0.32, 1)
+theme_override_font_sizes/font_size = 15
+text = "◆"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WeaponCoreSource" type="Label" parent="WeaponCoreAcquisitionSection"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+autowrap_mode = 2
+text_overrun_behavior = 0
+max_lines_visible = 2
+
+[node name="WeaponCoreGain" type="Label" parent="WeaponCoreAcquisitionSection"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.94, 0.58, 0.18, 1)
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="WeaponCoreInventoryStatus" type="PanelContainer" parent="WeaponCoreAcquisitionSection"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("InventoryStyle")
+
+[node name="WeaponCoreInventory" type="Label" parent="WeaponCoreAcquisitionSection/WeaponCoreInventoryStatus"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+text_overrun_behavior = 0
+max_lines_visible = 2
+
+[node name="WeaponCoreInheritanceSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="CoreTagHeading" type="Label" parent="WeaponCoreInheritanceSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="BuildChipRow" type="GridContainer" parent="WeaponCoreInheritanceSection"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/h_separation = 5
+theme_override_constants/v_separation = 4
+columns = 2
+
+[node name="WeaponCoreUsagePanel" type="PanelContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 10
+theme_override_styles/panel = SubResource("UsageStyle")
+
+[node name="WeaponCoreUsageSection" type="VBoxContainer" parent="WeaponCoreUsagePanel"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="WeaponCoreUsageHeadingRow" type="HBoxContainer" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="WeaponCoreUsageIcon" type="Label" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection/WeaponCoreUsageHeadingRow"]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.58, 0.18, 1)
+theme_override_font_sizes/font_size = 12
+text = "↗"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WeaponCoreUsageHeading" type="Label" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection/WeaponCoreUsageHeadingRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1
+
+[node name="WeaponCoreUsageSummary" type="Label" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.58, 0.18, 1)
+theme_override_font_sizes/font_size = 13
+
+[node name="WeaponCoreUsageLine1" type="Label" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 2
+text_overrun_behavior = 0
+max_lines_visible = 2
+
+[node name="WeaponCoreUsageLine2" type="Label" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 2
+text_overrun_behavior = 0
+max_lines_visible = 2
+
+[node name="WeaponCoreUsageMore" type="Label" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="WeaponCoreUsageEmpty" type="Label" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+max_lines_visible = 2

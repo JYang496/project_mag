@@ -1,0 +1,91 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/RewardSelectionPanel/RewardSelectionPanel.gd" id="1_script"]
+
+[node name="RewardSelectionPanel" type="Control"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_script")
+
+[node name="ModalScrim" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 0.58)
+
+[node name="Panel" type="Panel" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -500.0
+offset_top = -330.0
+offset_right = 500.0
+offset_bottom = 330.0
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = -24.0
+offset_bottom = -20.0
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Panel/VBox"]
+text = "Choose Reward"
+horizontal_alignment = 1
+
+[node name="SubTitle" type="Label" parent="Panel/VBox"]
+text = "Pick one reward."
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.78, 0.86, 0.9, 1)
+
+[node name="OptionsScroll" type="ScrollContainer" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 382)
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Options" type="GridContainer" parent="Panel/VBox/OptionsScroll"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 3
+theme_override_constants/separation = 12
+
+[node name="ActionPanel" type="PanelContainer" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 56)
+size_flags_horizontal = 3
+
+[node name="Margin" type="MarginContainer" parent="Panel/VBox/ActionPanel"]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="Actions" type="HBoxContainer" parent="Panel/VBox/ActionPanel/Margin"]
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="DetailHint" type="HBoxContainer" parent="Panel/VBox/ActionPanel/Margin/Actions"]
+custom_minimum_size = Vector2(360, 44)
+mouse_filter = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="CancelButton" type="Button" parent="Panel/VBox/ActionPanel/Margin/Actions"]
+custom_minimum_size = Vector2(140, 44)
+text = "Cancel"
+
+[node name="ConfirmButton" type="Button" parent="Panel/VBox/ActionPanel/Margin/Actions"]
+custom_minimum_size = Vector2(240, 44)
+text = "Confirm Reward"

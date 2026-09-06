@@ -13,6 +13,8 @@ const DEFAULT_PROJECTILE_LIFETIME_SEC: float = 2.5
 const WeaponFireFeedbackPlayerScript := preload("res://Player/Weapons/Feedback/weapon_fire_feedback_player.gd")
 const WeaponTriggerRuntimeType := preload("res://Player/Weapons/Core/weapon_trigger_runtime.gd")
 const WeaponSkillRuntimeType := preload("res://Player/Weapons/Core/weapon_skill_runtime.gd")
+const WeaponSkillUnlockRuntimeType := preload("res://Player/Weapons/Core/weapon_skill_unlock_runtime.gd")
+const WeaponActiveSkillCatalogType := preload("res://Player/Weapons/Core/weapon_active_skill_catalog.gd")
 const SUPPORT_STAT_PROFILE := preload("res://Player/Weapons/Core/support_weapon_stat_profile.tres")
 
 #region Runtime State
@@ -24,11 +26,16 @@ var plugin_dispatcher: WeaponPluginDispatcher = WeaponPluginDispatcher.new()
 var ammo_controller: WeaponAmmoController = WeaponAmmoController.new()
 var passive_controller: WeaponPassiveController = WeaponPassiveController.new()
 var trigger_runtime = WeaponTriggerRuntimeType.new()
+var skill_unlock_runtime = WeaponSkillUnlockRuntimeType.new()
 var skill_runtime = WeaponSkillRuntimeType.new()
 var fuse_visual_controller: WeaponFuseVisualController = WeaponFuseVisualController.new()
 var fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
 @export_range(1, 8, 1) var module_slot_capacity: int = 3
 @export var weapon_skills: Array[WeaponSkillDefinition] = []
+@export var active_skill_effect_id: StringName = StringName()
+@export var skill_unlock_condition: StringName = StringName()
+@export var skill_unlock_hint: String = ""
+@export_range(0.0, 1000.0, 0.1) var skill_unlock_required: float = 0.0
 @export_flags(
 	"physical",
 	"energy",
@@ -86,6 +93,8 @@ var _energy_release_damage_multiplier: float = 1.0
 var _energy_release_spent: float = 0.0
 var _energy_attack_sequence: int = 0
 var _active_energy_attack_group_id: StringName = StringName()
+var _active_skill_visual_original_modulate := Color.WHITE
+var _active_skill_visual_armed := false
 var _energy_pool_owner: Node
 var current_ammo: int = 0
 var is_reloading: bool = false
@@ -130,6 +139,7 @@ func _init() -> void:
 	ammo_controller.setup(self)
 	passive_controller.setup(self)
 	trigger_runtime.setup(self)
+	skill_unlock_runtime.setup(self)
 	skill_runtime.setup(self)
 	fuse_visual_controller.setup(self)
 	fire_feedback_player.setup(self)
@@ -229,18 +239,9 @@ func on_damage_applied(target: Node, data: DamageData, result: DamageResult) -> 
 		kill_event.target = target
 		kill_event.damage_data = data
 		kill_event.damage_result = result
+		kill_event.detail["enemy"] = target
+		kill_event.detail["position"] = (target as Node2D).global_position if target is Node2D else Vector2.ZERO
 		emit_weapon_event(kill_event)
-		var death_position := Vector2.ZERO
-		if target is Node2D:
-			death_position = (target as Node2D).global_position
-		dispatch_passive_event(&"on_enemy_killed", {
-			"source_weapon": self,
-			"enemy": target,
-			"target": target,
-			"position": death_position,
-			"event": kill_event,
-			"_suppress_default_emit": true,
-		})
 
 func _accumulate_global_weapon_energy(data: DamageData, result: DamageResult) -> void:
 	if data == null or result == null or not result.applied or result.health_damage <= 0:
@@ -671,6 +672,7 @@ func _initialize_heat_runtime() -> void:
 	add_child(heat_runtime)
 
 func _ready() -> void:
+	skill_unlock_runtime.configure(skill_unlock_condition, skill_unlock_hint, skill_unlock_required)
 	_load_fuse_sprites()
 	_initialize_branch_runtime()
 	_initialize_heat_runtime()
@@ -685,6 +687,7 @@ func _physics_process(delta: float) -> void:
 	_update_reload_state(delta)
 	_update_heat_system(delta)
 	trigger_runtime.update(delta)
+	skill_unlock_runtime.update(delta)
 	skill_runtime.update(delta)
 	_process_weapon_role_effects(delta)
 
@@ -1047,8 +1050,24 @@ func get_total_external_damage_mul() -> float:
 func emit_weapon_event(event: WeaponEvent) -> void:
 	assert(event != null)
 	event.source_weapon = self
+	skill_unlock_runtime.on_weapon_event(event)
 	plugin_dispatcher.dispatch_event(event)
+	_on_weapon_event(event)
 	weapon_event_emitted.emit(event)
+
+
+func _on_weapon_event(event: WeaponEvent) -> void:
+	if event.type in [
+		WeaponEvent.RELOAD_STARTED,
+		WeaponEvent.TARGET_KILLED,
+		WeaponEvent.WEAPON_ENTERED_MAIN,
+		WeaponEvent.WEAPON_ENTERED_SUPPORT,
+		WeaponEvent.MAGAZINE_QUARTER_SPENT,
+		WeaponEvent.SUPPORT_CHARGE_READY,
+		WeaponEvent.CROSS_WEAPON_HIT,
+		WeaponEvent.SHARED_RESOURCE_RELEASE,
+	]:
+		_on_passive_event(event.passive_event_name(), event.to_detail())
 
 func receive_external_weapon_event(event: WeaponEvent) -> void:
 	assert(event != null)
@@ -1097,6 +1116,7 @@ func _on_tree_exited() -> void:
 	ammo_controller.clear_for_weapon_exit()
 	passive_controller.clear_for_weapon_exit()
 	trigger_runtime.clear_for_weapon_exit()
+	skill_unlock_runtime.clear_for_weapon_exit()
 	skill_runtime.clear_for_weapon_exit()
 	fuse_visual_controller.clear_for_weapon_exit()
 	branch_runtime.clear_for_weapon_exit()
@@ -1154,6 +1174,7 @@ func consume_support_trigger() -> bool:
 func clear_timed_effects_for_prepare() -> void:
 	finish_energy_release_attack()
 	skill_runtime.clear_active()
+	set_active_skill_visual_armed(false)
 	for module_node in get_equipped_modules():
 		if module_node == null or not is_instance_valid(module_node):
 			continue
@@ -1175,21 +1196,64 @@ func prepare_automatic_aim(_delta: float) -> void:
 func stop_automatic_fire() -> void:
 	pass
 
+func uses_continuous_automatic_fire() -> bool:
+	return false
+
+func get_automatic_fire_target_grace_sec() -> float:
+	return 0.0
+
 func request_weapon_skill() -> bool:
 	return skill_runtime.request()
 
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	return false
+
+func can_activate_weapon_skill_effect() -> bool:
+	return active_skill_effect_id != StringName()
+
+func finish_weapon_skill_effect() -> void:
+	pass
+
+func get_weapon_skill_effect_description() -> String:
+	return WeaponActiveSkillCatalogType.get_skill_description(active_skill_effect_id)
+
+func set_active_skill_visual_armed(armed: bool, color: Color = Color(0.55, 0.9, 1.0, 1.0)) -> void:
+	_active_skill_visual_armed = armed
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	if armed:
+		_active_skill_visual_original_modulate = sprite.modulate
+		sprite.modulate = color
+	else:
+		sprite.modulate = _active_skill_visual_original_modulate
+
+func is_active_skill_visual_armed() -> bool:
+	return _active_skill_visual_armed
+
 func get_weapon_skill_status() -> Dictionary:
 	return skill_runtime.get_status()
+
+func set_weapon_skill_unlock_progress(value: float) -> void:
+	skill_unlock_runtime.set_progress(value)
+
+func add_weapon_skill_unlock_progress(amount: float) -> void:
+	skill_unlock_runtime.add_progress(amount)
+
+func mark_weapon_skill_ready() -> void:
+	skill_unlock_runtime.mark_ready()
+
+func reset_weapon_skill_unlock() -> void:
+	skill_unlock_runtime.reset()
+
+func on_weapon_skill_unlock_consumed(condition_id: StringName) -> void:
+	if condition_id == &"support_time":
+		consume_support_trigger()
 
 func allows_held_attack_on_battle_entry() -> bool:
 	return false
 
 func is_attack_phase_allowed() -> bool:
-	if PhaseManager == null:
-		return true
-	if not PhaseManager.has_method("current_state"):
-		return true
-	return str(PhaseManager.current_state()) == str(PhaseManager.BATTLE)
+	return PhaseManager.current_state() == PhaseManager.BATTLE
 
 func handle_primary_input(_pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	pass

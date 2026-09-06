@@ -1,5 +1,7 @@
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_prepass_alpha;
+#include "burning_spray.gdshaderinc"
+instance uniform bool burning_style = false;
 
 instance uniform vec4 flow_color : source_color = vec4(1.0, 0.28, 0.04, 0.72);
 instance uniform vec4 edge_color : source_color = vec4(1.0, 0.75, 0.15, 0.92);
@@ -16,7 +18,12 @@ uniform vec2 pixel_grid = vec2(32.0, 12.0);
 
 void fragment() {
 	vec2 pixel_uv = (floor(UV * pixel_grid) + vec2(0.5)) / pixel_grid;
-	if (use_flame_texture) {
+	if (burning_style && use_flame_texture) {
+		vec4 flame = burning_spray(UV, texture(flame_texture, UV), TIME);
+		ALBEDO = flame.rgb;
+		EMISSION = flame.rgb * 0.18;
+		ALPHA = flame.a * flow_color.a * body_opacity;
+	} else if (use_flame_texture) {
 		vec4 flame = texture(flame_texture, UV);
 		float side = abs(pixel_uv.y * 2.0 - 1.0);
 		float side_cue = step(0.82, side) * (1.0 - step(0.97, side));

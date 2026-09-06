@@ -82,7 +82,7 @@ var _hurtbox_shape_base_cached: bool = false
 var _incoming_damage_pipeline: DamagePipeline
 var _incoming_damage_profile: DamageProfile
 var _assist_system: RefCounted
-var _weapon_auto_fire_runtime: PlayerWeaponAutoFireRuntime
+var _weapon_auto_fire_runtime: RefCounted
 enum MechaVisualState {
 	IDLE,
 	MOVING
@@ -304,6 +304,7 @@ func _physics_process(delta):
 	_refresh_weapon_structure_if_needed()
 	_weapon_command_controller.process(delta)
 	_weapon_auto_fire_runtime.process(delta)
+	_process_combat_input(delta)
 	_update_global_weapon_passives()
 	_update_heat_statuses()
 	_update_shared_heat_pool(delta)
@@ -631,10 +632,6 @@ func try_select_main_weapon(slot_index: int) -> bool:
 func request_weapon_skill_at_slot(slot_index: int) -> bool:
 	_ensure_weapon_inventory_runtime()
 	return _weapon_inventory_runtime.request_weapon_skill_at_slot(slot_index)
-
-func get_weapon_slot_hold_progress(slot_index: int) -> float:
-	_ensure_weapon_command_controller()
-	return _weapon_command_controller.get_hold_progress(slot_index)
 
 func can_switch_main_weapon() -> bool:
 	_ensure_weapon_inventory_runtime()
@@ -1617,7 +1614,10 @@ func _compute_stable_mecha_direction(direction: Vector2) -> String:
 func damaged(attack: Attack) -> DamageResult:
 	_ensure_damage_reaction_system()
 	if _damage_reaction_system != null:
-		return _damage_reaction_system.damaged(attack)
+		var result := _damage_reaction_system.damaged(attack)
+		if result != null and result.applied and result.final_damage > 0:
+			_broadcast_weapon_passive_event(&"on_player_damaged", {"attack": attack, "damage_result": result, "damage": result.final_damage})
+		return result
 	return DamageResult.new()
 
 func _get_total_armor() -> int:

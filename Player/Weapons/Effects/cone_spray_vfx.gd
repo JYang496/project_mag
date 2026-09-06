@@ -15,6 +15,7 @@ const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 @export var max_width_scale: float = 1.35
 @export var visual_width_multiplier: float = 1.08
 @export var playback_speed: float = 1.0
+@export var burning_style := false
 @export var visible_modulate: Color = Color(1.0, 1.0, 1.0, 0.88)
 @export_group("Readability Layers")
 @export_range(0.0, 1.0, 0.01) var body_opacity := 0.68
@@ -144,6 +145,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _configure_sprite() -> void:
+	if sprite != null and burning_style:
+		sprite.material = preload("res://Combat/visual/burning_spray_material.tres")
 	if sprite == null:
 		return
 	sprite.sprite_frames = sprite_frames
@@ -217,6 +220,7 @@ func get_hybrid_ground_cone_visual() -> Dictionary:
 	changed = _set_hybrid_value(&"half_angle_degrees", _last_half_angle_deg) or changed
 	changed = _set_hybrid_value(&"color", color) or changed
 	changed = _set_hybrid_value(&"body_opacity", body_opacity) or changed
+	changed = _set_hybrid_value(&"burning_style", burning_style) or changed
 	changed = _set_hybrid_value(&"range_cue_opacity", range_cue_opacity) or changed
 	changed = _set_hybrid_value(&"core_highlight_strength", core_highlight_strength) or changed
 	changed = _set_hybrid_value(&"range_cue_color", range_cue_color) or changed
@@ -320,6 +324,7 @@ func _spawn_trail_afterimage(origin: Vector2, direction: Vector2, spray_range: f
 		"spread_scale": trail_spread_scale,
 		"sparkle_strength": trail_sparkle_strength,
 		"cold_style": trail_cold_style,
+		"burning_style": burning_style,
 		"base_range_px": base_range_px,
 		"base_half_angle_deg": base_half_angle_deg,
 		"min_width_scale": min_width_scale,

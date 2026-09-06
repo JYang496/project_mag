@@ -19,6 +19,10 @@ const VOLLEY_PROJECTILE_META := "shotgun_base_volley_projectile"
 const VOLLEY_WAVE_META := "shotgun_volley_wave"
 var _shotgun_volley_sequence: int = 0
 var _shotgun_volley_hit_counts: Dictionary = {}
+var _skill_support_entry_armed: bool = false
+const DOUBLE_DISCIPLINE_ATTACK_SPEED_SOURCE := &"shotgun_double_discipline_attack_speed"
+const DOUBLE_DISCIPLINE_FREE_SHOTS := 2
+var _double_discipline_shots_remaining := 0
 
 func _init() -> void:
 	super._init()
@@ -90,6 +94,15 @@ func _on_shoot():
 	var volley_id := _shotgun_volley_sequence
 	_shotgun_volley_hit_counts[volley_id] = {}
 	_spawn_shotgun_wave(shot_directions, runtime_damage, damage_multiplier, damage_type, volley_id, 1)
+	if _double_discipline_shots_remaining > 0:
+		_spawn_delayed_second_wave(
+			shot_directions,
+			runtime_damage,
+			damage_multiplier * 0.60,
+			damage_type,
+			volley_id,
+			0.10
+		)
 	if not double_config.is_empty():
 		var second_spread := spread_arc * clampf(float(double_config.get("second_spread_multiplier", 0.65)), 0.05, 1.0)
 		var second_directions := _build_spread_directions(base_direction, shot_directions.size(), second_spread)
@@ -102,6 +115,39 @@ func _on_shoot():
 			maxf(float(double_config.get("second_wave_delay_sec", 0.12)), 0.01)
 		)
 	_cleanup_old_shotgun_volleys(volley_id)
+	_consume_double_discipline_shot()
+
+func request_primary_fire() -> bool:
+	if _double_discipline_shots_remaining <= 0:
+		return super.request_primary_fire()
+	if not is_attack_phase_allowed() or is_on_cooldown or not can_fire_with_heat():
+		return false
+	var cooldown_timer_ref := fire_controller.get_cooldown_timer()
+	if cooldown_timer_ref != null:
+		cooldown_timer_ref.wait_time = maxf(get_runtime_attack_cooldown(), 0.01)
+	prepare_energy_release_attack()
+	shoot.emit()
+	finish_energy_release_attack()
+	play_fire_feedback()
+	notify_main_weapon_fired()
+	register_shot_heat()
+	return true
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	_double_discipline_shots_remaining = DOUBLE_DISCIPLINE_FREE_SHOTS
+	apply_external_attack_speed_mul(DOUBLE_DISCIPLINE_ATTACK_SPEED_SOURCE, 2.0)
+	return true
+
+func finish_weapon_skill_effect() -> void:
+	_double_discipline_shots_remaining = 0
+	remove_external_attack_speed_mul(DOUBLE_DISCIPLINE_ATTACK_SPEED_SOURCE)
+
+func _consume_double_discipline_shot() -> void:
+	if _double_discipline_shots_remaining <= 0:
+		return
+	_double_discipline_shots_remaining -= 1
+	if _double_discipline_shots_remaining <= 0:
+		finish_weapon_skill_effect()
 
 func _spawn_shotgun_wave(
 	shot_directions: Array[Vector2],
@@ -177,7 +223,18 @@ func get_random_position_in_circle(radius: float = 50.0) -> Vector2:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	_try_unlock_from_close_entry_hit(target)
 	branch_runtime.notify_branch_target_hit(target)
+
+func _try_unlock_from_close_entry_hit(target: Node) -> void:
+	var target_node := target as Node2D
+	if not is_main_weapon() or not _skill_support_entry_armed \
+			or target_node == null or not is_instance_valid(target_node):
+		return
+	if global_position.distance_to(target_node.global_position) > close_hit_trigger_distance:
+		return
+	_skill_support_entry_armed = false
+	mark_weapon_skill_ready()
 
 func on_projectile_hit_damage_dealt(projectile: Node, target: Node, hit_damage_type: StringName, final_damage: int) -> void:
 	if final_damage <= 0:
@@ -229,16 +286,25 @@ func _cleanup_old_shotgun_volleys(current_volley_id: int) -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if event_name != &"on_cross_weapon_hit":
-		return
-	var target := detail.get("target", null) as Node
-	if target == null or not is_instance_valid(target):
-		return
-	emit_passive_trigger(&"shotgun_close_hit_triggered", {
-		"target": target,
-		"trigger": "cross_weapon_hit",
-		"refresh": "crossfire",
-	}, PASSIVE_SCOPE_GLOBAL)
+	if event_name == &"on_weapon_entered_support":
+		_skill_support_entry_armed = true
+		set_weapon_skill_unlock_progress(0.5)
+	elif event_name == &"on_weapon_entered_main":
+		if str(detail.get("old_role", "")) == "support":
+			_skill_support_entry_armed = true
+			set_weapon_skill_unlock_progress(0.5)
+		else:
+			_skill_support_entry_armed = false
+			set_weapon_skill_unlock_progress(0.0)
+
+func on_weapon_skill_unlock_consumed(condition_id: StringName) -> void:
+	super.on_weapon_skill_unlock_consumed(condition_id)
+	if condition_id == &"support_to_main_close_hit":
+		_skill_support_entry_armed = false
+
+func clear_timed_effects_for_prepare() -> void:
+	super.clear_timed_effects_for_prepare()
+	finish_weapon_skill_effect()
 
 func get_passive_status() -> Dictionary:
 	var state := "ready" if has_entry_trigger_ready() else "waiting_entry"

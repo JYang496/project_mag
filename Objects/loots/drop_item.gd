@@ -1,16 +1,8 @@
-extends Node2D
+extends "res://Objects/loots/drop_collectable.gd"
 
 const FALLBACK_MODULE_ICON: Texture2D = preload("res://asset/images/modules/missing_module.png")
 const FixedObliqueProjectionType := preload("res://Visual/Oblique/fixed_oblique_projection_2d.gd")
 
-@export var item_id : String = "1"
-@export var level := 3
-@export var module_scene: PackedScene
-@export var module_level: int = 1
-@export var spawn_ready: bool = false
-@export var auto_collect_on_landing: bool = false
-@export var trajectory_animation_managed: bool = false
-@export var settle_unclaimed_on_battle_start: bool = false
 var item : Node2D
 var module_instance: Module
 var player_near : bool = false

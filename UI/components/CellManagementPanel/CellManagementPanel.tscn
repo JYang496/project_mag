@@ -1,0 +1,80 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://UI/components/CellManagementPanel/CellManagementPanel.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://UI/components/ReusablePrimaryMenu/ReusablePrimaryMenu.tscn" id="2_menu"]
+
+[sub_resource type="StyleBoxFlat" id="PanelStyle"]
+bg_color = Color(0.045, 0.065, 0.09, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.18, 0.38, 0.52, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 8.0
+content_margin_top = 6.0
+content_margin_right = 8.0
+content_margin_bottom = 6.0
+
+[node name="CellManagementPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_script")
+
+[node name="PrimaryMenu" parent="." instance=ExtResource("2_menu")]
+unique_name_in_owner = true
+visible = false
+
+[node name="TaskManagementPanel" type="Panel" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(1000, 600)
+clip_contents = true
+theme_override_styles/panel = SubResource("PanelStyle")
+
+[node name="Margin" type="MarginContainer" parent="TaskManagementPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
+
+[node name="Main" type="VBoxContainer" parent="TaskManagementPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="TaskManagementPanel/Margin/Main"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 26
+
+[node name="Subtitle" type="Label" parent="TaskManagementPanel/Margin/Main"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.72, 0.78, 1)
+theme_override_font_sizes/font_size = 14
+autowrap_mode = 2
+
+[node name="Content" type="VBoxContainer" parent="TaskManagementPanel/Margin/Main"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="Footer" type="HBoxContainer" parent="TaskManagementPanel/Margin/Main"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8

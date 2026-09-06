@@ -1,8 +1,7 @@
-extends Node2D
+extends "res://Objects/loots/drop_collectable.gd"
 class_name Chip
 
-@export var value = 1
-@export var spawn_ready: bool = false
+@export var default_value: int = 1
 @onready var sprite = $Sprite2D
 @onready var collision = $CollisionShape2D
 @onready var sound = $Snd_collected
@@ -12,16 +11,14 @@ var target = null
 var speed = 0
 
 func _enter_tree() -> void:
-	var registry: Node = get_node_or_null("/root/CollectableRegistry")
-	if registry != null and registry.has_method("register_collectable"):
-		registry.call("register_collectable", self)
+	CollectableRegistry.register_collectable(self)
 
 func _exit_tree() -> void:
-	var registry: Node = get_node_or_null("/root/CollectableRegistry")
-	if registry != null and registry.has_method("unregister_collectable"):
-		registry.call("unregister_collectable", self)
+	CollectableRegistry.unregister_collectable(self)
 
 func _ready():
+	if value <= 0:
+		value = default_value
 	if spawn_ready:
 		collision.call_deferred("set","disabled",false)
 		set_value()
@@ -57,6 +54,11 @@ func play_animation() -> void:
 	var dest_tween = create_tween()
 	dest_tween.tween_property(self,"rotation_degrees", 1800, 1).set_ease(Tween.EASE_IN_OUT)
 	dest_tween.connect("finished", _on_dest_tween_finished)
+
+
+func activate_pickup_detection() -> void:
+	super.activate_pickup_detection()
+	collision.call_deferred("set", "disabled", false)
 
 
 

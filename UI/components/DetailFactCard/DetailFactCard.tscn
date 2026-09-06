@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/DetailFactCard/DetailFactCard.gd" id="1_script"]
+
+[node name="DetailFactCard" type="VBoxContainer"]
+custom_minimum_size = Vector2(190, 48)
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+script = ExtResource("1_script")
+
+[node name="Title" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.72, 0.78, 1)
+theme_override_font_sizes/font_size = 12
+
+[node name="Value" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.9, 0.92, 1)
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 2

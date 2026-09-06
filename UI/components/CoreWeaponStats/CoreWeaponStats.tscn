@@ -1,0 +1,64 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/CoreWeaponStats/CoreWeaponStats.gd" id="1_script"]
+
+[node name="CoreWeaponStats" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 42)
+theme_override_constants/separation = 6
+script = ExtResource("1_script")
+
+[node name="CoreStatDamage" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Heading" type="Label" parent="CoreStatDamage"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.74, 0.8, 1)
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="CoreStatDamage"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+autowrap_mode = 2
+max_lines_visible = 2
+
+[node name="CoreStatFireInterval" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Heading" type="Label" parent="CoreStatFireInterval"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.74, 0.8, 1)
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="CoreStatFireInterval"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+autowrap_mode = 2
+max_lines_visible = 2
+
+[node name="CoreStatAmmo" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Heading" type="Label" parent="CoreStatAmmo"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.74, 0.8, 1)
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 1
+
+[node name="Value" type="Label" parent="CoreStatAmmo"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+autowrap_mode = 2
+max_lines_visible = 2

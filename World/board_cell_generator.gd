@@ -64,7 +64,7 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_connect_cell_task_runtime_signals()
-	_resolve_rest_area()
+	resolve_rest_area()
 	_refresh_active_cells_for_current_level(true)
 	_last_phase = PhaseManager.current_state()
 	if auto_assign_enemy_on_battle and not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
@@ -73,6 +73,10 @@ func _ready() -> void:
 	set_board_active(PhaseManager.current_state() == PhaseManager.BATTLE, true)
 	apply_cell_effect_runtime_state(PhaseManager.current_state() != PhaseManager.BATTLE)
 	call_deferred("_refresh_cell_task_markers")
+
+
+func is_ready_for_world_entry() -> bool:
+	return get_child_count() > 0
 
 func _spawn_cells() -> void:
 	LoadingPerformance.begin_segment("board_spawn_cells")
@@ -953,7 +957,7 @@ func _default_marker_value_text(marker_key: String) -> String:
 		_:
 			return "0/1"
 
-func _resolve_rest_area() -> void:
+func resolve_rest_area() -> void:
 	if is_inside_tree():
 		var rest_nodes := get_tree().get_nodes_in_group("rest_area")
 		for node in rest_nodes:

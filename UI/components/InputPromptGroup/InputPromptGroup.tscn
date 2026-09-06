@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/InputPromptGroup/InputPromptGroup.gd" id="1_script"]
+
+[node name="InputPromptGroup" type="HBoxContainer"]
+mouse_filter = 2
+alignment = 1
+theme_override_constants/separation = 2
+script = ExtResource("1_script")

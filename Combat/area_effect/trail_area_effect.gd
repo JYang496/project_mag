@@ -2,6 +2,10 @@ extends Node2D
 class_name TrailAreaEffect
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+const HYBRID_GROUND_REGISTRATION := preload("res://Visual/Oblique/hybrid_ground_registration.gd")
+const SURFACE_VISUAL := preload("res://Combat/visual/trail_surface_visual.gd")
+
+enum SurfaceStyle { FIRE, RIFT, FROST }
 
 enum TargetGroup {
 	ENEMIES,
@@ -26,6 +30,8 @@ enum TargetGroup {
 @export var fill_color: Color = Color(PALETTE.FREEZE, 0.14)
 @export var line_color: Color = Color(PALETTE.PLAYER_PRIMARY, 0.48)
 @export var line_width: float = 1.5
+@export var chainsaw_visual: bool = false
+@export var surface_style: SurfaceStyle = SurfaceStyle.FROST
 
 var source_node: Node
 var source_category: StringName = StringName()
@@ -33,6 +39,10 @@ var source_category: StringName = StringName()
 var _segments: Array[Dictionary] = []
 var _emitters: Dictionary = {}
 var _tick_accum: float = 0.0
+var _next_segment_id: int = 1
+var _retired_segments: Array[Dictionary] = []
+var _surface: MeshInstance2D
+var _finishing := false
 
 func _ready() -> void:
 	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
@@ -41,6 +51,10 @@ func cleanup_for_battle_end() -> void:
 	clear_emitters()
 	clear_segments()
 	_tick_accum = 0.0
+	queue_free()
+
+func _exit_tree() -> void:
+	clear_segments()
 
 func _process(delta: float) -> void:
 	if not auto_process:
@@ -51,8 +65,37 @@ func step(delta: float) -> void:
 	_update_emitters(delta)
 	_cleanup_segments()
 	_process_tick_damage(delta)
-	if draw_enabled:
-		queue_redraw()
+	if not chainsaw_visual:
+		var now := Time.get_ticks_msec()
+		for index in range(_retired_segments.size() - 1, -1, -1):
+			if now >= int(_retired_segments[index]["expires_at_msec"]) + 350:
+				_retired_segments.remove_at(index)
+		if _surface == null:
+			_surface = SURFACE_VISUAL.new()
+			_surface.name = "TrailSurface"
+			add_child(_surface)
+		_surface.update_surface(_segments, _retired_segments, surface_style, draw_enabled)
+	if _finishing and _segments.is_empty() and _retired_segments.is_empty():
+		queue_free()
+
+## End damage immediately, then let purely decorative residue dissolve.
+func finish_with_residue() -> void:
+	clear_emitters()
+	for segment in _segments:
+		_retire_segment(segment)
+	_segments.clear()
+	_finishing = true
+	auto_process = true
+
+func _retire_segment(segment: Dictionary) -> void:
+	_release_segment_visual(segment)
+	if chainsaw_visual:
+		return
+	var residue := segment.duplicate()
+	residue["expires_at_msec"] = mini(int(residue["expires_at_msec"]), Time.get_ticks_msec())
+	_retired_segments.append(residue)
+	while _retired_segments.size() > 32:
+		_retired_segments.remove_at(0)
 
 func attach_emitter(
 	emitter: Node2D,
@@ -84,9 +127,20 @@ func clear_emitters() -> void:
 	_emitters.clear()
 
 func clear_segments() -> void:
+	for segment in _segments:
+		_release_segment_visual(segment)
 	_segments.clear()
+	_retired_segments.clear()
+	if _surface != null and is_instance_valid(_surface):
+		_surface.update_surface(_segments, _retired_segments, surface_style, false)
 	if draw_enabled:
 		queue_redraw()
+
+func add_point(world_position: Vector2, segment_radius: float) -> void:
+	_add_segment(world_position, world_position, segment_radius)
+
+func add_segment(from_world: Vector2, to_world: Vector2, segment_radius: float) -> void:
+	_add_segment(from_world, to_world, segment_radius)
 
 func _update_emitters(delta: float) -> void:
 	if _emitters.is_empty():
@@ -131,14 +185,20 @@ func _update_emitters(delta: float) -> void:
 		_emitters[emitter_id] = payload
 
 func _add_segment(from_pos: Vector2, to_pos: Vector2, segment_radius: float, heat_snapshot: Variant = null) -> void:
-	_segments.append({
+	var segment := {
+		"id": _next_segment_id,
 		"from": from_pos,
 		"to": to_pos,
 		"radius": maxf(segment_radius, 0.1),
+		"born_at_msec": Time.get_ticks_msec(),
 		"expires_at_msec": Time.get_ticks_msec() + int(maxf(duration, 0.05) * 1000.0),
 		"heat_snapshot": heat_snapshot,
-	})
+	}
+	_next_segment_id += 1
+	segment["visual"] = _create_segment_visual(segment)
+	_segments.append(segment)
 	while _segments.size() > max(1, max_segments):
+		_retire_segment(_segments[0])
 		_segments.remove_at(0)
 
 func _cleanup_segments() -> void:
@@ -148,7 +208,45 @@ func _cleanup_segments() -> void:
 	for i in range(_segments.size() - 1, -1, -1):
 		var segment: Dictionary = _segments[i]
 		if now_msec >= int(segment.get("expires_at_msec", 0)):
+			_retire_segment(segment)
 			_segments.remove_at(i)
+
+func _create_segment_visual(segment: Dictionary) -> Line2D:
+	if not chainsaw_visual:
+		return null
+	var line := Line2D.new()
+	line.name = "TrailGroundSegment%d" % int(segment.get("id", 0))
+	line.width = maxf(float(segment.get("radius", 1.0)) * 2.0, 1.0)
+	line.default_color = fill_color
+	if chainsaw_visual:
+		line.default_color = Color.WHITE
+		line.set_meta(&"hybrid_segment_style", &"chainsaw")
+		var shader_material := ShaderMaterial.new()
+		shader_material.shader = preload("res://Shaders/chainsaw_boundary_2d.gdshader")
+		shader_material.set_shader_parameter("boundary_length", (segment["from"] as Vector2).distance_to(segment["to"] as Vector2))
+		shader_material.set_shader_parameter("boundary_width", line.width)
+		line.material = shader_material
+		var white_texture := GradientTexture2D.new()
+		white_texture.gradient = Gradient.new()
+		white_texture.gradient.colors = PackedColorArray([Color.WHITE, Color.WHITE])
+		line.texture = white_texture
+		line.texture_mode = Line2D.LINE_TEXTURE_STRETCH
+		line.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	line.points = PackedVector2Array([
+		to_local(segment.get("from", Vector2.ZERO) as Vector2),
+		to_local(segment.get("to", Vector2.ZERO) as Vector2),
+	])
+	line.set_meta(&"hybrid_ground_visible", true)
+	add_child(line)
+	HYBRID_GROUND_REGISTRATION.register(line, &"register_ground_segment")
+	return line
+
+func _release_segment_visual(segment: Dictionary) -> void:
+	var line := segment.get("visual", null) as Line2D
+	if line == null or not is_instance_valid(line):
+		return
+	HYBRID_GROUND_REGISTRATION.unregister(line)
+	line.queue_free()
 
 func _process_tick_damage(delta: float) -> void:
 	if _segments.is_empty():
@@ -255,17 +353,3 @@ func _distance_point_to_segment_sq(point: Vector2, from_pos: Vector2, to_pos: Ve
 	var t := clampf((point - from_pos).dot(segment) / len_sq, 0.0, 1.0)
 	var projection := from_pos + segment * t
 	return point.distance_squared_to(projection)
-
-func _draw() -> void:
-	if not draw_enabled:
-		return
-	for segment in _segments:
-		var from_pos: Vector2 = segment.get("from", Vector2.ZERO)
-		var to_pos: Vector2 = segment.get("to", Vector2.ZERO)
-		var radius_value := maxf(float(segment.get("radius", 0.0)), 0.1)
-		var local_from := to_local(from_pos)
-		var local_to := to_local(to_pos)
-		draw_line(local_from, local_to, fill_color, roundf(radius_value * 2.0), false)
-		draw_circle(local_from, radius_value, fill_color)
-		draw_circle(local_to, radius_value, fill_color)
-		draw_line(local_from, local_to, line_color, maxf(roundf(line_width), 1.0), false)

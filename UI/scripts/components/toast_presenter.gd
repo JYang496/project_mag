@@ -1,18 +1,11 @@
 extends RefCounted
 class_name ToastPresenter
 
-const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
-const MAX_WIDTH := 440.0
-const MIN_WIDTH := 240.0
-const HORIZONTAL_RESERVED_SPACE := 720.0
-const HEIGHT := 44.0
-const TOP_OFFSET := 86.0
+const TOAST_DOCK_SCENE := preload("res://UI/components/ToastDock/ToastDock.tscn")
 
 var owner_ui: UI
 var panel: PanelContainer
 var label: Label
-var _generation := 0
-var _tween: Tween
 
 
 func bind(ui: UI) -> void:
@@ -24,75 +17,25 @@ func show_message(text: String, duration: float = 1.8) -> void:
 	_ensure_view()
 	if panel == null:
 		return
-	_generation += 1
-	var generation := _generation
-	if _tween != null and _tween.is_valid():
-		_tween.kill()
-	label.text = text
-	layout(owner_ui.get_viewport().get_visible_rect().size)
-	panel.visible = not text.is_empty()
-	panel.modulate.a = 0.0
-	panel.position.y += 6.0
-	_tween = owner_ui.create_tween().set_parallel(true)
-	_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_tween.tween_property(panel, "modulate:a", 1.0, 0.14)
-	_tween.tween_property(panel, "position:y", panel.position.y - 6.0, 0.18)
-	await owner_ui.get_tree().create_timer(maxf(duration, 0.1)).timeout
-	if generation != _generation or panel == null:
-		return
-	_tween = owner_ui.create_tween()
-	_tween.tween_property(panel, "modulate:a", 0.0, 0.14)
-	_tween.tween_callback(_hide.bind(generation))
+	panel.call("show_message", text, duration)
 
 
 func layout(viewport_size: Vector2) -> void:
 	if panel == null:
 		return
-	var width := minf(MAX_WIDTH, maxf(MIN_WIDTH, viewport_size.x - HORIZONTAL_RESERVED_SPACE))
-	panel.position = Vector2(roundf((viewport_size.x - width) * 0.5), TOP_OFFSET)
-	panel.size = Vector2(width, HEIGHT)
+	panel.call("layout_in", viewport_size)
 
 
 func clear() -> void:
-	_generation += 1
 	if panel != null:
-		panel.visible = false
-		panel.modulate.a = 1.0
+		panel.call("clear")
 
 
 func _ensure_view() -> void:
 	if owner_ui == null or panel != null:
 		return
-	panel = PanelContainer.new()
-	panel.name = "ToastDock"
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel = TOAST_DOCK_SCENE.instantiate() as PanelContainer
 	panel.z_index = 90
-	var style := TOKENS.make_panel_style(true, TOKENS.COLOR_ACCENT_SYSTEM)
-	style.bg_color = Color(0.02, 0.08, 0.11, 0.94)
-	panel.add_theme_stylebox_override("panel", style)
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_bottom", 8)
-	panel.add_child(margin)
-	label = Label.new()
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# Toasts are deliberately one line. Clipping keeps Label's content from
-	# inflating the PanelContainer minimum size before its first layout pass.
-	label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	label.clip_text = true
-	label.max_lines_visible = 1
-	TOKENS.style_label(label, TOKENS.FONT_BODY, TOKENS.COLOR_TEXT_PRIMARY)
-	margin.add_child(label)
 	owner_ui.gui_root.add_child(panel)
-	panel.visible = false
+	label = panel.get_node("Margin/Message") as Label
 	layout(owner_ui.get_viewport().get_visible_rect().size)
-
-
-func _hide(generation: int) -> void:
-	if generation == _generation and panel != null:
-		panel.visible = false
-		panel.modulate.a = 1.0

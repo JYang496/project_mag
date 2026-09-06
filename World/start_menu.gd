@@ -8,11 +8,13 @@ const RESOLUTION_PRESETS: Array[Vector2i] = [
 ]
 const START_UI_THEME := preload("res://UI/themes/start_menu_theme.tres")
 const WORLD_SCENE_PATH := "res://World/world.tscn"
+const WEAPON_SKILL_LAB_SCENE_PATH := "res://tests/showcases/weapon/weapon_active_skill_gameplay_lab.tscn"
 const WORLD_ENTRY_PREPARE_GATE_SCRIPT := preload("res://World/world_entry_prepare_gate.gd")
 const WORLD_SCENE_LOADER_SCRIPT := preload("res://World/world_scene_loader.gd")
 const MODAL_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/modal_ui_controller.gd")
-const AUDIO_SETTINGS_CONTROLS_SCRIPT := preload("res://UI/scripts/components/audio_settings_controls.gd")
+const AUDIO_SETTINGS_CONTROLS_SCENE := preload("res://UI/components/AudioSettingsControls/AudioSettingsControls.tscn")
 const INPUT_PROMPT_TEXTURE_FACTORY := preload("res://UI/scripts/components/input_prompt_texture_factory.gd")
+const DISPLAY_SETTINGS_SCRIPT := preload("res://autoload/DisplaySettings.gd")
 
 enum PrewarmState { NOT_STARTED, RUNNING, SUCCEEDED, FAILED }
 
@@ -25,6 +27,7 @@ enum PrewarmState { NOT_STARTED, RUNNING, SUCCEEDED, FAILED }
 @onready var start_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Continue
 @onready var continue_status: Label = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/ContinueStatus
 @onready var new_game_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/NewGame
+@onready var weapon_skill_lab_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/WeaponSkillLab
 @onready var settings_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Settings
 @onready var exit_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Exit
 @onready var navigation_hint: Label = $CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation/Label
@@ -49,6 +52,7 @@ enum PrewarmState { NOT_STARTED, RUNNING, SUCCEEDED, FAILED }
 @onready var settings_footer: Label = $CanvasLayer/GUI/SettingsPanel/Margin/Content/SettingsFooter
 
 var audio_settings_controls: VBoxContainer
+var display_settings: Node
 var prewarm_state := PrewarmState.NOT_STARTED
 var prewarm_error := ""
 var _settings_open := false
@@ -56,6 +60,8 @@ var _panel_tween: Tween
 
 
 func _ready() -> void:
+	display_settings = DISPLAY_SETTINGS_SCRIPT.new()
+	add_child(display_settings)
 	gui_root.theme = START_UI_THEME
 	confirm_prompt.texture = INPUT_PROMPT_TEXTURE_FACTORY.space_prompt_texture()
 	_ensure_audio_settings_controls()
@@ -88,7 +94,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _move_main_menu_focus(direction: int) -> void:
-	var buttons: Array[Button] = [start_button, new_game_button, settings_button, exit_button]
+	var buttons: Array[Button] = [start_button, new_game_button, weapon_skill_lab_button, settings_button, exit_button]
 	var available: Array[Button] = []
 	for button in buttons:
 		if button.visible and not button.disabled:
@@ -105,6 +111,8 @@ func _move_main_menu_focus(direction: int) -> void:
 
 
 func _wire_controls() -> void:
+	if not weapon_skill_lab_button.pressed.is_connected(_on_weapon_skill_lab_pressed):
+		weapon_skill_lab_button.pressed.connect(_on_weapon_skill_lab_pressed)
 	if not settings_button.pressed.is_connected(_open_settings):
 		settings_button.pressed.connect(_open_settings)
 	if not settings_close_button.pressed.is_connected(_close_settings):
@@ -181,12 +189,35 @@ func _on_exit_pressed() -> void:
 	get_tree().quit()
 
 
+func _on_weapon_skill_lab_pressed() -> void:
+	if weapon_skill_lab_button.disabled:
+		return
+	weapon_skill_lab_button.disabled = true
+	var original_text := weapon_skill_lab_button.text
+	weapon_skill_lab_button.text = LocalizationManager.tr_key("ui.start.loading_test_lab", "Loading Test Lab...")
+	var prepare_result: Dictionary = WORLD_ENTRY_PREPARE_GATE_SCRIPT.prepare_world_entry()
+	SpawnData.ensure_loaded()
+	DataHandler.prewarm_mecha_default_weapon(str(PlayerData.select_mecha_id))
+	if not bool(prepare_result.get("ok", false)):
+		push_error("Weapon skill lab prepare failed: %s" % WORLD_ENTRY_PREPARE_GATE_SCRIPT.format_errors(prepare_result))
+		weapon_skill_lab_button.text = original_text
+		weapon_skill_lab_button.disabled = false
+		return
+	var packed_scene := load(WEAPON_SKILL_LAB_SCENE_PATH) as PackedScene
+	if packed_scene == null:
+		push_error("Weapon skill gameplay lab scene could not be loaded.")
+		weapon_skill_lab_button.text = original_text
+		weapon_skill_lab_button.disabled = false
+		return
+	get_tree().change_scene_to_packed(packed_scene)
+
+
 func _ensure_audio_settings_controls() -> void:
 	var existing := audio_slot.get_node_or_null("AudioSettingsControls")
 	if existing is VBoxContainer:
 		audio_settings_controls = existing as VBoxContainer
 	else:
-		audio_settings_controls = AUDIO_SETTINGS_CONTROLS_SCRIPT.new() as VBoxContainer
+		audio_settings_controls = AUDIO_SETTINGS_CONTROLS_SCENE.instantiate() as VBoxContainer
 		audio_settings_controls.name = "AudioSettingsControls"
 		audio_slot.add_child(audio_settings_controls)
 
@@ -195,12 +226,12 @@ func _populate_resolution_options() -> void:
 	resolution_option.clear()
 	for resolution: Vector2i in RESOLUTION_PRESETS:
 		resolution_option.add_item("%s × %s" % [resolution.x, resolution.y])
-	var selected_index := _find_resolution_index(DisplaySettings.resolution)
+	var selected_index := _find_resolution_index(display_settings.resolution)
 	if selected_index == -1:
 		selected_index = _find_resolution_index(Vector2i(DisplayServer.window_get_size()))
 	if selected_index >= 0:
 		resolution_option.select(selected_index)
-	if not DisplaySettings.can_apply_window_changes():
+	if not display_settings.can_apply_window_changes():
 		resolution_option.disabled = true
 		resolution_option.tooltip_text = LocalizationManager.tr_key(
 			"ui.start.resolution_tooltip",
@@ -241,6 +272,7 @@ func _apply_localized_text() -> void:
 	start_button.text = LocalizationManager.tr_key("ui.start.continue", "Continue Game")
 	continue_status.text = LocalizationManager.tr_key("ui.start.no_save", "NO OPERATION RECORD FOUND")
 	new_game_button.text = LocalizationManager.tr_key("ui.start.new_game", "New Game")
+	weapon_skill_lab_button.text = LocalizationManager.tr_key("ui.start.weapon_skill_lab", "Weapon Skill Test Lab")
 	settings_button.text = LocalizationManager.tr_key("ui.start.settings", "Settings")
 	exit_button.text = LocalizationManager.tr_key("ui.start.exit", "Exit Game")
 	var navigation_copy := LocalizationManager.tr_key("ui.start.navigation_hint", "WASD / ARROWS  SELECT")
@@ -272,7 +304,7 @@ func _find_resolution_index(resolution: Vector2i) -> int:
 
 func _on_resolution_option_item_selected(index: int) -> void:
 	if index >= 0 and index < RESOLUTION_PRESETS.size():
-		DisplaySettings.set_resolution(RESOLUTION_PRESETS[index])
+		display_settings.set_resolution(RESOLUTION_PRESETS[index])
 
 
 func _on_auto_aim_continuous_fire_toggled(enabled: bool) -> void:

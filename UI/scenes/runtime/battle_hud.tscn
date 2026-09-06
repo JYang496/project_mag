@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://UI/scripts/weapon_selector.gd" id="2_86ani"]
 [ext_resource type="Texture2D" path="res://UI/themes/modern/weapon_slot_main.png" id="3_gar8u"]
 [ext_resource type="Texture2D" path="res://UI/themes/modern/weapon_slot_support.png" id="4_btbbh"]
-[ext_resource type="Script" path="res://UI/scripts/components/gold_hud_display.gd" id="6_jiqn8"]
+[ext_resource type="PackedScene" path="res://UI/components/GoldHudDisplay/GoldHudDisplay.tscn" id="6_jiqn8"]
 [ext_resource type="Theme" path="res://UI/themes/battle_hud_theme.tres" id="7_hud_theme"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bar_bg"]
@@ -218,13 +218,12 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_hp_bar_fill")
 value = 100.0
 show_percentage = false
 
-[node name="Gold" type="Label" parent="." unique_id=1807235609]
+[node name="Gold" parent="." unique_id=1807235609 instance=ExtResource("6_jiqn8")]
 layout_mode = 0
 offset_left = 461.0
 offset_top = 2.0
-offset_right = 615.0
+offset_right = 573.0
 offset_bottom = 40.0
-script = ExtResource("6_jiqn8")
 
 [node name="Resource" type="Label" parent="." unique_id=1404810870]
 layout_mode = 0
@@ -241,3 +240,37 @@ offset_top = 58.0
 offset_right = 562.0
 offset_bottom = 91.0
 text = "Time"
+
+[node name="Heat" type="Label" parent="."]
+visible = false
+custom_minimum_size = Vector2(156, 26)
+offset_right = 156.0
+offset_bottom = 26.0
+mouse_filter = 2
+
+[node name="WeaponState" type="Label" parent="."]
+visible = false
+custom_minimum_size = Vector2(168, 24)
+offset_right = 168.0
+offset_bottom = 24.0
+mouse_filter = 2
+text = "Main: -- | PS: --"
+
+[node name="SpecialResourceSlot" type="Control" parent="."]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="CombatResourceSlots" type="Control" parent="HpLabel"]
+layout_mode = 0
+offset_left = 104.0
+offset_top = 18.0
+offset_right = 104.0
+offset_bottom = 18.0
+mouse_filter = 2
+
+[node name="Ammo" type="Label" parent="HpLabel/CombatResourceSlots"]
+visible = false
+custom_minimum_size = Vector2(128, 24)
+offset_right = 128.0
+offset_bottom = 24.0
+mouse_filter = 2

@@ -1,0 +1,104 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="Script" path="res://UI/components/RestAreaArrivalOverlay/RestAreaArrivalOverlay.gd" id="1_script"]
+[sub_resource type="StyleBoxFlat" id="StyleBox_status"]
+bg_color = Color(0.015, 0.075, 0.05, 0.93)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.82, 0.5, 0.82)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0.03, 0.02, 0.62)
+shadow_size = 6
+[sub_resource type="AudioStreamGenerator" id="AudioStream_tone"]
+mix_rate = 22050.0
+buffer_length = 0.18
+[node name="RestAreaArrivalOverlay" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+z_index = 410
+script = ExtResource("1_script")
+[node name="Scrim" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.008, 0.04, 0.03, 0)
+[node name="ScanLine" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -420.0
+offset_top = -1.0
+offset_right = 420.0
+offset_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(420, 1)
+mouse_filter = 2
+color = Color(0.42, 1, 0.58, 0.82)
+[node name="StatusPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -220.0
+offset_top = 38.0
+offset_right = 220.0
+offset_bottom = 104.0
+grow_horizontal = 2
+pivot_offset = Vector2(220, 33)
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_status")
+[node name="Margin" type="MarginContainer" parent="StatusPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 10
+[node name="Column" type="VBoxContainer" parent="StatusPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+[node name="StatusLabel" type="Label" parent="StatusPanel/Margin/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 1, 0.8, 1)
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+[node name="ProgressTrack" type="ColorRect" parent="StatusPanel/Margin/Column"]
+custom_minimum_size = Vector2(0, 3)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.06, 0.2, 0.14, 0.92)
+[node name="ProgressFill" type="ColorRect" parent="StatusPanel/Margin/Column/ProgressTrack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.38, 0.92, 0.58, 1)
+[node name="AudioPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+stream = SubResource("AudioStream_tone")
+bus = &"SFX"

@@ -2,6 +2,7 @@ extends Node
 
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 const HIT_LABEL_SCENE := preload("res://UI/labels/hit_label.tscn")
+const PROJECTED_UI := preload("res://Visual/Oblique/projected_world_ui_service.gd")
 
 class DummyDamageTarget:
 	extends Node
@@ -42,6 +43,7 @@ func _ready() -> void:
 	_test_killing_blow_marker_policy()
 	_test_pipeline_critical_result()
 	_test_pipeline_overkill_result()
+	await _test_camera_projection_fallback()
 	await _test_feedback_controller_contract()
 	await _test_target_window_aggregation()
 	if _failed:
@@ -179,6 +181,21 @@ func _test_pipeline_overkill_result() -> void:
 	label.free()
 	target.free()
 
+func _test_camera_projection_fallback() -> void:
+	var camera := Camera2D.new()
+	camera.position = Vector2(400.0, 300.0)
+	add_child(camera)
+	camera.make_current()
+	await get_tree().process_frame
+	var projected := PROJECTED_UI.project_to_screen(get_tree(), camera.global_position, Vector2.ZERO)
+	var expected := get_viewport().get_visible_rect().size * 0.5
+	_expect(
+		projected.distance_to(expected) <= 1.0,
+		"2D projection fallback must apply the active Camera2D canvas transform"
+	)
+	camera.queue_free()
+	await get_tree().process_frame
+
 func _test_feedback_controller_contract() -> void:
 	var npc := DummyFeedbackNpc.new()
 	npc.position = Vector2(200.0, 160.0)
@@ -189,7 +206,7 @@ func _test_feedback_controller_contract() -> void:
 	feedback.feedback_batch_id = 77
 	feedback.is_critical = true
 	controller.queue_hit_label_event(feedback)
-	await get_tree().process_frame
+	await get_tree().create_timer(0.06).timeout
 	await get_tree().process_frame
 	_hybrid_layer = get_tree().root.get_node_or_null("HybridWorldUi") as CanvasLayer
 	_expect(_hybrid_layer != null, "damage feedback controller must create the projected UI layer")

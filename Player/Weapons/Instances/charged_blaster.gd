@@ -2,6 +2,10 @@ extends Ranger
 
 # Projectile
 @onready var beam_blast = preload("res://Player/Weapons/Projectiles/beam_blast.tscn")
+const SKILL_BOLT_SCENE := preload("res://Player/Weapons/Projectiles/projectile.tscn")
+const SKILL_BOLT_TEXTURE := preload("res://asset/images/weapons/projectiles/plasma.png")
+const HOMING_EFFECT := preload("res://Player/Weapons/Effects/homing_projectile_effect.gd")
+const SKILL_BOLT_SPEED := 460.0
 
 # Weapon
 var ITEM_NAME = "Charged Blaster"
@@ -18,6 +22,7 @@ var beam_local_forward := Vector2.UP
 var is_firing_beam := false
 var firing_turn_timer: Timer
 var _feedback_refund_accum_sec: float = 0.0
+var _prism_overload_armed := false
 var weapon_data = {
 	"1": {"damage": "6", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "3", "duration": "1.0"},
 	"2": {"damage": "8", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "3", "duration": "1.2"},
@@ -243,8 +248,54 @@ func _spawn_beam_from_profile(profile: Dictionary) -> float:
 		beam_blast_ins.set_meta(&"_energy_resonance_hit_count", 0)
 		beam_blast_ins.set_meta(&"_energy_resonance_target_id", 0)
 	beam_blast_ins.global_position = global_position
+	if _prism_overload_armed:
+		_prism_overload_armed = false
+		set_active_skill_visual_armed(false)
+		beam_blast_ins.set_meta(&"prism_overload", true)
+		beam_blast_ins.tree_exiting.connect(
+			Callable(self, "_on_prism_beam_finished").bind(beam_blast_ins), CONNECT_ONE_SHOT
+		)
 	get_projectile_spawn_parent().call_deferred("add_child", beam_blast_ins)
 	return beam_duration
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	_prism_overload_armed = true
+	set_active_skill_visual_armed(true, Color(0.76, 0.48, 1.0, 1.0))
+	return true
+
+func _on_prism_beam_finished(beam_node: Node2D) -> void:
+	if not is_inside_tree() or not is_attack_phase_allowed():
+		return
+	# Prism bolts launch from the same weapon muzzle position as the charged beam,
+	# rather than appearing at the beam endpoint.
+	var launch_position := beam_node.global_position
+	for index in range(6):
+		var bolt := spawn_projectile_from_scene(SKILL_BOLT_SCENE) as Projectile
+		if bolt == null:
+			continue
+		projectile_direction = Vector2.RIGHT.rotated(TAU * float(index) / 6.0)
+		bolt.damage = max(1, int(round(float(get_runtime_damage()) * 0.35)))
+		bolt.damage_type = Attack.TYPE_ENERGY
+		bolt.hp = 1
+		bolt.global_position = launch_position
+		bolt.projectile_texture = SKILL_BOLT_TEXTURE
+		bolt.desired_pixel_size = PixelArtPolicyType.PROJECTILE_STANDARD_SIZE
+		bolt.size = size
+		bolt.expire_time = 1.6
+		apply_effects_on_projectile(bolt)
+		# Charged Blaster is a beam weapon and intentionally has no ordinary
+		# projectile speed stat. Give Prism Overload bolts their own launch speed
+		# so the homing effect has velocity to steer.
+		bolt.base_displacement = projectile_direction * SKILL_BOLT_SPEED
+		var homing := HOMING_EFFECT.new().setup(bolt, 7.0, 500.0)
+		bolt.add_child(homing)
+		bolt.module_list.append(homing)
+		get_projectile_spawn_parent().call_deferred("add_child", bolt)
+
+func clear_timed_effects_for_prepare() -> void:
+	super.clear_timed_effects_for_prepare()
+	_prism_overload_armed = false
+	set_active_skill_visual_armed(false)
 
 func _update_energy_resonance_ramp(target: Node, profile: Dictionary, beam_node: Node) -> void:
 	if not bool(profile.get("energy_resonance", false)):

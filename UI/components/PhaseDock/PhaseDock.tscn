@@ -1,0 +1,51 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://UI/components/PhaseDock/PhaseDock.gd" id="1_script"]
+[ext_resource type="Theme" path="res://UI/themes/battle_hud_theme.tres" id="2_theme"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_phase"]
+bg_color = Color(0.025, 0.07, 0.1, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.25, 0.68, 0.82, 0.72)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0, 0, 0.42)
+shadow_size = 6
+shadow_offset = Vector2(4, 4)
+
+[node name="PhaseDock" type="PanelContainer"]
+custom_minimum_size = Vector2(280, 42)
+offset_right = 280.0
+offset_bottom = 42.0
+mouse_filter = 2
+texture_filter = 1
+theme = ExtResource("2_theme")
+theme_override_styles/panel = SubResource("StyleBox_phase")
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 4
+
+[node name="ContentRow" type="HBoxContainer" parent="Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="PhaseLabel" type="Label" parent="Margin/ContentRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.93, 0.97, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0, 0.02, 0.03, 0.86)
+theme_override_constants/outline_size = 1
+theme_override_font_sizes/font_size = 12
+vertical_alignment = 1

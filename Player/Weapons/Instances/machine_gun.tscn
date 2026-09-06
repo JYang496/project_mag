@@ -7,6 +7,10 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/machine_gun_fire_feedback.tres" id="5_feedback"]
 
 [node name="MachineGun" unique_id=2042815985 instance=ExtResource("1_hyv6l")]
+active_skill_effect_id = &"machine_gun_infinite_chain"
+skill_unlock_condition = &"magazine_reload"
+skill_unlock_hint = "Spend 75% of the magazine, then reload"
+skill_unlock_required = 0.75
 base_trait_flags = 17
 script = ExtResource("2_0tkjt")
 turn_speed_degrees_per_second = 540.0

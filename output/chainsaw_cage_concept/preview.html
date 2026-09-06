@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><title>电锯牢笼 · 动态贴图方案</title>
+<style>body{margin:0;background:#09121b;color:#d9e8ed;font:16px system-ui;display:grid;justify-items:center;padding:24px}h1{font-size:22px}p{max-width:650px;line-height:1.7;color:#9db5c1}.frame{width:384px;height:512px;background-image:url(chainsaw_cage_sheet.png);image-rendering:pixelated}button{background:#163141;color:#b7edff;border:1px solid #337a95;padding:10px 24px;cursor:pointer}</style>
+<h1>电锯牢笼 · 环形锯链</h1><div class="frame" role="img" aria-label="八帧循环的矩形机械锯链，青色导轨与移动橙色火花"></div>
+<p>8 帧 / 16 FPS / 0.5 秒循环。冷灰机械锯齿沿边界布置，青色导轨通电，橙色切割火花沿周边移动。</p>
+<button id="toggle">暂停</button>
+<p>美术方向预览，尚未接入游戏。生成图含深色背景，正式贴图仍需透明化、像素网格规范化和帧对齐；接入时应拆为边段与转角，并匹配原有 52 单位伤害带。</p>
+<script>let frame=0,playing=true;const el=document.querySelector('.frame'),button=document.querySelector('button');setInterval(()=>{if(!playing)return;el.style.backgroundPosition=`${-(frame%4)*384}px ${-Math.floor(frame/4)*512}px`;frame=(frame+1)%8},1000/16);button.onclick=()=>{playing=!playing;button.textContent=playing?'暂停':'播放'};</script></html>

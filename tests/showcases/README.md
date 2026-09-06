@@ -72,3 +72,23 @@ Use the local Godot console executable from the repository root:
 
 The weapon HUD, player health bar, and heat meter are deliberately absent from
 these review scenes because those approved components are outside this change.
+
+## Weapon active-skill lab
+
+- Scene: `res://tests/showcases/weapon/weapon_active_skill_lab.tscn`
+- Use the 15 buttons or `Q`/`E` to select every production weapon in sequence.
+- Press `C` to force-ready and cast the selected weapon skill, left-click to fire,
+  and `R` to restore the twelve fixed one-million-HP target dummies.
+- Pass `-- --validate-weapon-skill-lab` for the headless scene contract check.
+- Pass `-- --capture-weapon-skill-lab` to save a deterministic visual review image
+  under `output/showcases/weapon/` and exit.
+
+## Production-world weapon active-skill lab
+
+- Scene: `res://tests/showcases/weapon/weapon_active_skill_gameplay_lab.tscn`
+- Inherits the production `World/world.tscn`, including the real board, hybrid
+  ground, player/mecha spawn path, camera projection, battle HUD, and registries.
+- It suppresses only the normal world-entry coordinator and enemy waves, then
+  overlays the 15-weapon selector and twelve fixed one-million-HP targets.
+- The main menu exposes this scene as `Weapon Skill Test Lab`; entering it does
+  not clear, create, or commit a save.

@@ -15,6 +15,7 @@ var _end_scale := 0.82
 var _spread_scale := 1.08
 var _sparkle_strength := 0.0
 var _cold_style := false
+var _burning_style := false
 var _base_range_px := 256.0
 var _base_half_angle_deg := 40.0
 var _min_width_scale := 0.1
@@ -51,6 +52,7 @@ func activate(config: Dictionary) -> void:
 	_spread_scale = clampf(float(config.get("spread_scale", 1.08)), 0.5, 2.0)
 	_sparkle_strength = clampf(float(config.get("sparkle_strength", 0.0)), 0.0, 1.0)
 	_cold_style = bool(config.get("cold_style", false))
+	_burning_style = bool(config.get("burning_style", false))
 	_base_range_px = maxf(float(config.get("base_range_px", 256.0)), 1.0)
 	_base_half_angle_deg = maxf(float(config.get("base_half_angle_deg", 40.0)), 1.0)
 	_min_width_scale = maxf(float(config.get("min_width_scale", 0.1)), 0.01)
@@ -61,6 +63,7 @@ func activate(config: Dictionary) -> void:
 	visible = true
 	modulate = _base_color
 	_configure_sprite(int(config.get("start_frame", 0)))
+	_sprite.material = preload("res://Combat/visual/burning_spray_material.tres") if _burning_style else null
 	_hybrid_registered = HybridGroundRegistration.register(self, &"register_ground_cone_effect")
 	if not _hybrid_registered:
 		set_meta(&"hybrid_ground_registered", false)
@@ -126,6 +129,7 @@ func get_hybrid_ground_cone_visual() -> Dictionary:
 	_hybrid_config["half_angle_degrees"] = _half_angle_deg * width_scale
 	_hybrid_config["color"] = modulate
 	_hybrid_config["body_opacity"] = 0.5
+	_hybrid_config["burning_style"] = _burning_style
 	_hybrid_config["range_cue_opacity"] = 0.0
 	_hybrid_config["core_highlight_strength"] = 0.12
 	_hybrid_config["texture"] = _get_current_frame_texture()

@@ -143,7 +143,7 @@ func _request_standard_battle_reward_selection(level_index: int) -> void:
 		true
 	))
 	if opened:
-		RunPacingTelemetry.record_event(&"reward_panel_opened", {"presentation": PhaseManager.get_settlement_type(), "option_count": reward_options.size()})
+		PhaseManager.record_pacing_event(&"reward_panel_opened", {"presentation": PhaseManager.get_settlement_type(), "option_count": reward_options.size()})
 		RewardDraftRuntime.clear_standard_draft_opening()
 		RewardDraftRuntime.record_standard_draft_consumed()
 		return
@@ -318,7 +318,7 @@ func _request_battle_reward_selection() -> void:
 		grant_reward_immediately(reward_options[0])
 
 func _on_standard_battle_reward_selected(reward: RewardInfo) -> void:
-	RunPacingTelemetry.record_event(&"reward_selected", {"reward_kind": int(reward.reward_kind) if reward != null else -1})
+	PhaseManager.record_pacing_event(&"reward_selected", {"reward_kind": int(reward.reward_kind) if reward != null else -1})
 	if grant_reward_immediately(reward):
 		RewardDraftRuntime.clear_pending_standard_draft()
 		_commit_victory_reward_save()

@@ -1,0 +1,99 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="Script" path="res://UI/components/BattlefieldDeploymentOverlay/BattlefieldDeploymentOverlay.gd" id="1_script"]
+[sub_resource type="StyleBoxFlat" id="StyleBox_status"]
+bg_color = Color(0.015, 0.055, 0.085, 0.92)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.25, 0.7, 0.84, 0.82)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0.02, 0.04, 0.62)
+shadow_size = 6
+[sub_resource type="AudioStreamGenerator" id="AudioStream_tone"]
+mix_rate = 22050.0
+buffer_length = 0.16
+[node name="BattlefieldDeploymentOverlay" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+z_index = 420
+script = ExtResource("1_script")
+[node name="Scrim" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.005, 0.025, 0.045, 0)
+[node name="ScanLine" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 92.0
+offset_right = -28.0
+offset_bottom = 94.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.35, 0.86, 1, 0.82)
+[node name="StatusPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -220.0
+offset_top = 38.0
+offset_right = 220.0
+offset_bottom = 104.0
+grow_horizontal = 2
+pivot_offset = Vector2(220, 33)
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_status")
+[node name="Margin" type="MarginContainer" parent="StatusPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 10
+[node name="Column" type="VBoxContainer" parent="StatusPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+[node name="StatusLabel" type="Label" parent="StatusPanel/Margin/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.91, 1, 1)
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+[node name="ProgressTrack" type="ColorRect" parent="StatusPanel/Margin/Column"]
+custom_minimum_size = Vector2(0, 3)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.07, 0.19, 0.25, 0.9)
+[node name="ProgressFill" type="ColorRect" parent="StatusPanel/Margin/Column/ProgressTrack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.3, 0.77, 0.92, 1)
+[node name="AudioPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+stream = SubResource("AudioStream_tone")
+bus = &"SFX"

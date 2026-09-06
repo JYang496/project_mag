@@ -1,7 +1,8 @@
 extends RefCounted
 class_name WeaponPassivePanelView
 
-const SmoothProgressBarScript := preload("res://UI/scripts/components/smooth_progress_bar.gd")
+const PANEL_SCENE := preload("res://UI/components/WeaponPassivePanel/WeaponPassivePanel.tscn")
+const ROW_SCENE := preload("res://UI/components/WeaponPassiveRow/WeaponPassiveRow.tscn")
 
 var parent_root: Control
 var weapon_passive_panel: PanelContainer
@@ -17,17 +18,9 @@ func ensure_panel() -> PanelContainer:
 		return weapon_passive_panel
 	if parent_root == null or not is_instance_valid(parent_root):
 		return null
-	weapon_passive_panel = PanelContainer.new()
-	weapon_passive_panel.name = "WeaponPassivePanel"
-	weapon_passive_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	weapon_passive_panel.position = Vector2(224.0, 8.0)
-	weapon_passive_panel.custom_minimum_size = Vector2(300.0, 0.0)
-	weapon_passive_panel.visible = false
+	weapon_passive_panel = PANEL_SCENE.instantiate() as PanelContainer
 	parent_root.add_child(weapon_passive_panel)
-	weapon_passive_list = VBoxContainer.new()
-	weapon_passive_list.name = "WeaponPassiveList"
-	weapon_passive_list.add_theme_constant_override("separation", 4)
-	weapon_passive_panel.add_child(weapon_passive_list)
+	weapon_passive_list = weapon_passive_panel.get_node("RowList") as VBoxContainer
 	return weapon_passive_panel
 
 func refresh(statuses: Array) -> void:
@@ -45,7 +38,7 @@ func refresh(statuses: Array) -> void:
 			root.visible = false
 			continue
 		root.visible = true
-		apply_row(row, statuses[idx])
+		root.call("set_data", statuses[idx])
 
 func ensure_row_count(count: int) -> void:
 	if weapon_passive_list == null:
@@ -54,59 +47,9 @@ func ensure_row_count(count: int) -> void:
 		weapon_passive_rows.append(create_row())
 
 func create_row() -> Dictionary:
-	var row_root := VBoxContainer.new()
-	row_root.name = "WeaponPassiveRow"
-	row_root.custom_minimum_size = Vector2(288.0, 0.0)
-	row_root.add_theme_constant_override("separation", 1)
+	var row_root := ROW_SCENE.instantiate() as VBoxContainer
 	weapon_passive_list.add_child(row_root)
-
-	var header := HBoxContainer.new()
-	header.name = "Header"
-	header.add_theme_constant_override("separation", 6)
-	row_root.add_child(header)
-
-	var icon_rect := TextureRect.new()
-	icon_rect.name = "Icon"
-	icon_rect.custom_minimum_size = Vector2(18.0, 18.0)
-	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	header.add_child(icon_rect)
-
-	var name_label := Label.new()
-	name_label.name = "Name"
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.clip_text = true
-	header.add_child(name_label)
-
-	var state_label := Label.new()
-	state_label.name = "State"
-	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	state_label.custom_minimum_size = Vector2(98.0, 0.0)
-	header.add_child(state_label)
-
-	var progress_bar: ProgressBar = SmoothProgressBarScript.new()
-	progress_bar.name = "Progress"
-	progress_bar.min_value = 0.0
-	progress_bar.max_value = 1.0
-	progress_bar.step = 0.001
-	progress_bar.custom_minimum_size = Vector2(0.0, 8.0)
-	progress_bar.show_percentage = false
-	row_root.add_child(progress_bar)
-
-	var detail_label := Label.new()
-	detail_label.name = "Detail"
-	detail_label.clip_text = true
-	detail_label.add_theme_font_size_override("font_size", 11)
-	row_root.add_child(detail_label)
-
-	return {
-		"root": row_root,
-		"icon": icon_rect,
-		"name": name_label,
-		"state": state_label,
-		"progress": progress_bar,
-		"detail": detail_label,
-	}
+	return {"root": row_root}
 
 func apply_row(row: Dictionary, status: Dictionary) -> void:
 	var root := row.get("root", null) as Control
@@ -202,7 +145,6 @@ func format_trigger_hint(hint: String) -> String:
 		"support": "Support Charge",
 		"cross_weapon_hit": "Crossfire",
 		"crossfire": "Crossfire",
-		"continuous_hits": "Continuous Hits",
 		"weapon_kill": "Kill Reward",
 		"kill": "Kill Reward",
 		"fire_at_full_global_energy": "Shared Resource Release",

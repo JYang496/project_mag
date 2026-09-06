@@ -1,0 +1,181 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://UI/components/BoardEditPanel/BoardEditPanel.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleMain"]
+bg_color = Color(0.045, 0.065, 0.09, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.18, 0.38, 0.52, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 12
+content_margin_left = 8.0
+content_margin_top = 6.0
+content_margin_right = 8.0
+content_margin_bottom = 6.0
+
+[sub_resource type="StyleBoxFlat" id="StyleGrid"]
+bg_color = Color(0.055, 0.064, 0.07, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.18, 0.27, 0.31, 0.95)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 8.0
+content_margin_top = 6.0
+content_margin_right = 8.0
+content_margin_bottom = 6.0
+
+[node name="BoardEditPanel" type="Control"]
+process_mode = 3
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_script")
+
+[node name="Panel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(1000, 600)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -500.0
+offset_top = -300.0
+offset_right = 500.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleMain")
+
+[node name="ContentMargin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
+
+[node name="MainLayout" type="VBoxContainer" parent="Panel/ContentMargin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="VBoxContainer" parent="Panel/ContentMargin/MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Title" type="Label" parent="Panel/ContentMargin/MainLayout/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 26
+
+[node name="Subtitle" type="Label" parent="Panel/ContentMargin/MainLayout/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.72, 0.78, 1)
+theme_override_font_sizes/font_size = 14
+autowrap_mode = 2
+
+[node name="Body" type="HBoxContainer" parent="Panel/ContentMargin/MainLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="GridPanel" type="PanelContainer" parent="Panel/ContentMargin/MainLayout/Body"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleGrid")
+
+[node name="GridMargin" type="MarginContainer" parent="Panel/ContentMargin/MainLayout/Body/GridPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Grid" type="GridContainer" parent="Panel/ContentMargin/MainLayout/Body/GridPanel/GridMargin"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(430, 430)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 3
+
+[node name="SideContent" type="VBoxContainer" parent="Panel/ContentMargin/MainLayout/Body"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="InventoryTitle" type="Label" parent="Panel/ContentMargin/MainLayout/Body/SideContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.96, 1, 1)
+theme_override_font_sizes/font_size = 18
+
+[node name="InventoryScroll" type="ScrollContainer" parent="Panel/ContentMargin/MainLayout/Body/SideContent"]
+custom_minimum_size = Vector2(380, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="InventoryList" type="VBoxContainer" parent="Panel/ContentMargin/MainLayout/Body/SideContent/InventoryScroll"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="DetailLabel" type="Label" parent="Panel/ContentMargin/MainLayout/Body/SideContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 96)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.78, 0.88, 0.9, 1)
+autowrap_mode = 2
+
+[node name="DetailIcon" type="TextureRect" parent="Panel/ContentMargin/MainLayout/Body/SideContent"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+expand_mode = 2
+stretch_mode = 5
+
+[node name="Footer" type="HBoxContainer" parent="Panel/ContentMargin/MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="UndoButton" type="Button" parent="Panel/ContentMargin/MainLayout/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ClearButton" type="Button" parent="Panel/ContentMargin/MainLayout/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="Panel/ContentMargin/MainLayout/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CloseButton" type="Button" parent="Panel/ContentMargin/MainLayout/Footer"]
+unique_name_in_owner = true
+layout_mode = 2

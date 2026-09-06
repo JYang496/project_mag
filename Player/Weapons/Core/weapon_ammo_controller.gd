@@ -65,7 +65,6 @@ func request_reload() -> bool:
 	var event := WeaponEvent.create(WeaponEvent.RELOAD_STARTED, weapon)
 	event.detail = detail
 	weapon.emit_weapon_event(event)
-	weapon.dispatch_passive_event(&"on_reload_started", detail)
 	if weapon.reload_time_left <= 0.0:
 		finish_reload()
 	return true

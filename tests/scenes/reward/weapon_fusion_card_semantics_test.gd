@@ -1,6 +1,7 @@
 extends Node
 
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
+const REWARD_PANEL_SCRIPT := preload("res://UI/components/RewardSelectionPanel/RewardSelectionPanel.gd")
 
 var _failed := false
 
@@ -29,7 +30,7 @@ func _run() -> void:
 	get_tree().root.add_child(stub)
 	PlayerData.player = stub
 
-	var panel := RewardSelectionPanel.new()
+	var panel := REWARD_PANEL_SCRIPT.new()
 	var saved_core_stacks := InventoryData.get_weapon_core_stacks().duplicate(true)
 	InventoryData.restore_weapon_core_inventory([
 		{"tags": [&"energy", &"summon"], "count": 1},
@@ -461,7 +462,7 @@ func _run() -> void:
 		_assert_contains(localized_core_stats[1], "射击间隔", "localized fixed fire interval slot")
 		_assert_contains(localized_core_stats[2], "弹匣容量", "localized fixed ammo slot")
 
-	var full_panel := preload("res://UI/scenes/reward_selection_panel.tscn").instantiate() as RewardSelectionPanel
+	var full_panel := preload("res://UI/components/RewardSelectionPanel/RewardSelectionPanel.tscn").instantiate() as Control
 	get_tree().root.add_child(full_panel)
 	full_panel.call("_apply_unified_layout")
 	if full_panel.title_label.get_theme_font_size("font_size") < 27:
@@ -597,7 +598,7 @@ func _assert_module_build_tag_derivation(module_scene: PackedScene) -> void:
 	)
 	module_instance.free()
 
-func _assert_core_usage_count(panel: RewardSelectionPanel, usage_count: int) -> void:
+func _assert_core_usage_count(panel: Node, usage_count: int) -> void:
 	var lines := PackedStringArray()
 	for index in range(usage_count):
 		lines.append("Weapon %d · Branch %d" % [index + 1, index + 1])
@@ -617,7 +618,7 @@ func _assert_core_usage_count(panel: RewardSelectionPanel, usage_count: int) -> 
 		_fail("core usage count %d should not render an additional-count row" % usage_count)
 	section.free()
 
-func _assert_model_layers(panel: RewardSelectionPanel, reward: RewardInfo, label: String) -> void:
+func _assert_model_layers(panel: Node, reward: RewardInfo, label: String) -> void:
 	var model: Variant = panel.call("_build_reward_card_model", reward)
 	if str(model.behavior_summary).strip_edges() == "": _fail("%s missing primary behavior summary" % label)
 	if model.primary_chips().size() > 3: _fail("%s exposes more than three primary tags" % label)

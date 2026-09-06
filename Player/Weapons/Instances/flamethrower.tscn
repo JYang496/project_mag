@@ -7,6 +7,10 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/continuous_pulse_feedback.tres" id="5_feedback"]
 
 [node name="Flamethrower" unique_id=491042674 instance=ExtResource("1_ranger")]
+active_skill_effect_id = &"flame_moving_inferno"
+skill_unlock_condition = &"shared_heat_hot"
+skill_unlock_hint = "Raise shared Heat to 75%"
+skill_unlock_required = 0.75
 base_trait_flags = 20
 script = ExtResource("2_script")
 turn_speed_degrees_per_second = 180.0

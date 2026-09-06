@@ -4,7 +4,7 @@ const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 const GLOBAL_ENERGY_POOL_SCRIPT := preload("res://Player/Mechas/scripts/player_global_weapon_energy_pool.gd")
 const HUD_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hud_presenter.gd")
 const RETURN_ON_TIMEOUT_SCRIPT := preload("res://Player/Weapons/Effects/return_on_timeout.gd")
-const WEAPON_COMMAND_CONTROLLER_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_command_controller.gd")
+const DIRECTED_FEATURE_CHECKS := preload("res://tests/fixtures/weapon/directed_weapon_feature_checks.gd")
 var _failed := false
 
 class DummyControlTarget:
@@ -129,53 +129,11 @@ class DummyGlobalEnergyPlayer:
 	func is_global_weapon_energy_ready() -> bool:
 		return energy >= maximum - 0.001
 
-class DummyWeaponSkillPlayer:
-	extends Node2D
-	var energy: float = 100.0
-
-	func consume_energy(amount: float) -> bool:
-		if energy < amount:
-			return false
-		energy -= amount
-		return true
-
-	func get_current_energy() -> float:
-		return energy
-
-class DummyCommandData:
-	extends RefCounted
-	var main_weapon_index: int = 0
-
-class DummyCommandPlayer:
-	extends Node
-	var PlayerData := DummyCommandData.new()
-	var selected_slot: int = -1
-	var requested_skill_slot: int = -1
-	var skill_request_count: int = 0
-	var accept_skill_request: bool = true
-
-	func try_shift_main_weapon(_step: int) -> bool:
-		return true
-
-	func try_select_main_weapon(slot_index: int) -> bool:
-		selected_slot = slot_index
-		PlayerData.main_weapon_index = slot_index
-		return true
-
-	func request_weapon_skill_at_slot(slot_index: int) -> bool:
-		requested_skill_slot = slot_index
-		skill_request_count += 1
-		return accept_skill_request
-
-
 func _ready() -> void:
 	_validate_enemy_query_contract()
 	_validate_weapon_scenes()
 	_validate_projectile_scenes()
-	await _validate_machine_gun_role_fire_spawns_projectiles()
-	_validate_weapon_skill_template()
-	_validate_auto_fire_weapon_switching()
-	_validate_weapon_slot_command_input()
+	await DIRECTED_FEATURE_CHECKS.new().run(self, _expect)
 	_validate_glacier_cold_snap()
 	_validate_global_energy_pool()
 	_validate_global_energy_hud()
@@ -188,142 +146,6 @@ func _ready() -> void:
 
 	print("FAIL weapon runtime chain" if _failed else "PASS weapon runtime chain")
 	await TEST_TEARDOWN.finish(self, 1 if _failed else 0)
-
-
-func _validate_weapon_skill_template() -> void:
-	var previous_phase: String = PhaseManager.phase
-	var previous_player: Node = PlayerData.player
-	PhaseManager.phase = PhaseManager.BATTLE
-	var skill_player := DummyWeaponSkillPlayer.new()
-	add_child(skill_player)
-	PlayerData.player = skill_player
-	var weapon := (load("res://Player/Weapons/Instances/machine_gun.tscn") as PackedScene).instantiate() as Weapon
-	add_child(weapon)
-	var committed_count := [0]
-	weapon.weapon_event_emitted.connect(func(event: WeaponEvent) -> void:
-		if event.type == WeaponEvent.SKILL_CAST_COMMITTED:
-			committed_count[0] += 1
-	)
-	_expect(weapon.request_weapon_skill(), "an equipped weapon must accept its default directed skill")
-	_expect(is_equal_approx(skill_player.energy, 50.0), "the default weapon skill must spend its configured energy")
-	_expect(is_equal_approx(weapon.get_total_external_damage_mul(), 2.0), "weapon Overdrive must apply the shared 2x damage template")
-	_expect(committed_count[0] == 1, "weapon skill activation must emit one committed action event")
-	var active_status: Dictionary = weapon.get_weapon_skill_status()
-	_expect(bool(active_status.get("active", false)), "weapon skill status must expose the active Overdrive window")
-	_expect(not bool(active_status.get("ready", true)), "an active weapon skill must enter cooldown")
-	weapon.skill_runtime.update(4.1)
-	_expect(is_equal_approx(weapon.get_total_external_damage_mul(), 1.0), "weapon Overdrive must remove its damage bonus after the active window")
-	weapon.force_skill_cooldowns_ready()
-	skill_player.energy = 0.0
-	_expect(not weapon.request_weapon_skill(), "weapon skill must reject activation without enough energy")
-	weapon.queue_free()
-	skill_player.queue_free()
-	PlayerData.player = previous_player
-	PhaseManager.phase = previous_phase
-
-
-func _validate_auto_fire_weapon_switching() -> void:
-	var previous_list: Array = PlayerData.player_weapon_list
-	var previous_index: int = PlayerData.main_weapon_index
-	var first := Weapon.new()
-	var second := Weapon.new()
-	first.base_trait_flags = WeaponTrait.traits_to_flags([WeaponTrait.AUTO_FIRE])
-	second.base_trait_flags = WeaponTrait.traits_to_flags([WeaponTrait.AUTO_FIRE])
-	PlayerData.player_weapon_list = [first, second]
-	PlayerData.main_weapon_index = 0
-	_expect(PlayerData.shift_main_weapon(1), "Q/E switching must include automatic-fire weapons")
-	_expect(PlayerData.main_weapon_index == 1, "automatic-fire weapon switching must select the next slot")
-	PlayerData.player_weapon_list = previous_list
-	PlayerData.main_weapon_index = previous_index
-	first.skill_runtime.clear_for_weapon_exit()
-	second.skill_runtime.clear_for_weapon_exit()
-	first.free()
-	second.free()
-
-
-func _validate_weapon_slot_command_input() -> void:
-	var previous_phase: String = PhaseManager.phase
-	PhaseManager.phase = PhaseManager.BATTLE
-	var command_player := DummyCommandPlayer.new()
-	add_child(command_player)
-	var controller = WEAPON_COMMAND_CONTROLLER_SCRIPT.new()
-	controller.setup(command_player)
-	var press_two := InputEventAction.new()
-	press_two.action = &"WEAPON_SLOT_2"
-	press_two.pressed = true
-	var release_two := InputEventAction.new()
-	release_two.action = &"WEAPON_SLOT_2"
-	release_two.pressed = false
-	controller.process_input_event(press_two)
-	controller.process_input_event(release_two)
-	_expect(command_player.selected_slot == 1, "a short number-key press must directly select that weapon slot")
-	_expect(command_player.requested_skill_slot == -1, "a short number-key press must not cast a weapon skill")
-	var press_three := InputEventAction.new()
-	press_three.action = &"WEAPON_SLOT_3"
-	press_three.pressed = true
-	var release_three := InputEventAction.new()
-	release_three.action = &"WEAPON_SLOT_3"
-	release_three.pressed = false
-	controller.process_input_event(press_three)
-	controller.set("_pressed_at_msec", {2: Time.get_ticks_msec() - 300})
-	controller.set("_hold_threshold_reached", {2: false})
-	controller.set("_skill_cast_consumed", {2: false})
-	controller.process(0.3)
-	_expect(command_player.requested_skill_slot == 2, "a held number key must cast that slot's skill at the threshold without waiting for release")
-	var request_count_after_cast := command_player.skill_request_count
-	controller.process(0.1)
-	_expect(command_player.skill_request_count == request_count_after_cast, "continuing to hold after a successful cast must not repeat the skill")
-	controller.process_input_event(release_three)
-	_expect(command_player.skill_request_count == request_count_after_cast, "releasing a consumed skill hold must not cast again")
-	var press_four := InputEventAction.new()
-	press_four.action = &"WEAPON_SLOT_4"
-	press_four.pressed = true
-	var release_four := InputEventAction.new()
-	release_four.action = &"WEAPON_SLOT_4"
-	release_four.pressed = false
-	command_player.accept_skill_request = false
-	controller.process_input_event(press_four)
-	controller.set("_pressed_at_msec", {3: Time.get_ticks_msec() - 300})
-	controller.set("_hold_threshold_reached", {3: false})
-	controller.set("_skill_cast_consumed", {3: false})
-	controller.process(0.3)
-	_expect(is_equal_approx(controller.get_hold_progress(3), 1.0), "an early skill hold must remain latched at full progress while the skill is unavailable")
-	var waiting_request_count := command_player.skill_request_count
-	command_player.accept_skill_request = true
-	controller.process(0.1)
-	_expect(command_player.skill_request_count == waiting_request_count + 1, "a latched hold must cast as soon as the skill becomes available")
-	controller.process_input_event(release_four)
-	controller.clear()
-	controller.setup(null)
-	command_player.free()
-	PhaseManager.phase = previous_phase
-
-
-func _validate_machine_gun_role_fire_spawns_projectiles() -> void:
-	var previous_phase: String = PhaseManager.phase
-	PhaseManager.phase = PhaseManager.BATTLE
-	var weapon := (load("res://Player/Weapons/Instances/machine_gun.tscn") as PackedScene).instantiate() as Ranger
-	add_child(weapon)
-	await get_tree().process_frame
-	weapon.set_automatic_aim_target(weapon.global_position + Vector2.RIGHT * 400.0)
-	weapon.set_weapon_role("main")
-	var before_main := get_tree().get_nodes_in_group(&"runtime_projectiles").size()
-	_expect(weapon.request_primary_fire(), "main weapon fire request must be accepted")
-	await get_tree().process_frame
-	var after_main := get_tree().get_nodes_in_group(&"runtime_projectiles").size()
-	_expect(after_main == before_main + 1, "main weapon fire must add one projectile to the runtime tree")
-
-	weapon.is_on_cooldown = false
-	weapon.current_ammo = weapon.magazine_capacity
-	weapon.set_weapon_role("support")
-	var before_support := get_tree().get_nodes_in_group(&"runtime_projectiles").size()
-	_expect(weapon.request_automatic_fire(), "support weapon fire request must be accepted")
-	await get_tree().process_frame
-	var after_support := get_tree().get_nodes_in_group(&"runtime_projectiles").size()
-	_expect(after_support == before_support + 1, "support weapon fire must add one projectile to the runtime tree")
-	weapon.queue_free()
-	await get_tree().process_frame
-	PhaseManager.phase = previous_phase
 
 
 func _validate_return_on_timeout_without_linear_module() -> void:
@@ -609,19 +431,15 @@ func _validate_full_energy_fire_cycle() -> void:
 	grouped_source_c.free()
 
 	var branch_expectations := {
-		"res://Player/Weapons/Branches/pistol_arc_branch.tscn": &"pistol_arc_energy_cycle",
 		"res://Player/Weapons/Branches/orbit_energy_branch.tscn": &"orbit_energy_cycle",
 		"res://Player/Weapons/Branches/cannon_zero_branch.tscn": &"cannon_zero_energy_cycle",
 	}
 	for scene_path in branch_expectations:
 		var behavior := (load(scene_path) as PackedScene).instantiate() as WeaponBranchBehavior
 		_expect(behavior.get_energy_full_fire_passive_id() == branch_expectations[scene_path], "%s must bind to its full-energy fire passive" % scene_path)
-		if scene_path.ends_with("pistol_arc_branch.tscn") or scene_path.ends_with("orbit_energy_branch.tscn"):
+		if scene_path.ends_with("orbit_energy_branch.tscn"):
 			_expect(behavior.get_damage_type_override() == Attack.TYPE_ENERGY, "%s must convert its direct hits to energy damage" % scene_path)
-		if scene_path.ends_with("pistol_arc_branch.tscn"):
-			_expect(is_equal_approx(behavior.get_energy_gain_per_damage_event(), 12.0), "Arc Pistol must gain 12 energy per damage event")
-			_expect(is_equal_approx(behavior.get_energy_release_bonus_at_full(), 0.15), "Arc Pistol must retain only a small direct bonus before chain discharge")
-		elif scene_path.ends_with("orbit_energy_branch.tscn"):
+		if scene_path.ends_with("orbit_energy_branch.tscn"):
 			_expect(is_equal_approx(behavior.get_energy_gain_per_damage_event(), 8.0), "Energy Orbit must gain 8 energy per damage event")
 			_expect(is_equal_approx(behavior.get_energy_release_bonus_at_full(), 0.0), "Energy Orbit must spend its release on deployment rather than direct damage")
 			var deployment: Dictionary = behavior.call("get_energy_deployment_config")
@@ -631,11 +449,6 @@ func _validate_full_energy_fire_cycle() -> void:
 			_expect(is_equal_approx(behavior.get_energy_release_bonus_at_full(), 1.0), "Zero Cannon must trade part of its old direct multiplier for a secondary impact")
 		behavior.free()
 	var branch_weapon_cases := [
-		{
-			"scene": "res://Player/Weapons/Instances/pistol.tscn",
-			"branch": "arc_coil",
-			"gain": 12.0,
-		},
 		{
 			"scene": "res://Player/Weapons/Instances/orbit.tscn",
 			"branch": "energy_orbit",

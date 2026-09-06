@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/ControlsContextHint/ControlsContextHint.gd" id="1_script"]
+
+[node name="ControlsContextHint" type="HBoxContainer"]
+mouse_filter = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+script = ExtResource("1_script")

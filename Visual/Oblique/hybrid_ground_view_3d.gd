@@ -122,6 +122,10 @@ var _rest_arrival_pulse := 0.0
 var _affiliation_marker_quad: QuadMesh
 var _affiliation_marker_material: ShaderMaterial
 
+
+func is_ready_for_world_entry() -> bool:
+	return _ground_renderers_initialized
+
 func _ready() -> void:
 	LoadingPerformance.begin_segment("ground_ready")
 	# Camera projection must be ready before BillboardVisual2D processes, while
@@ -1093,10 +1097,15 @@ func _register_ground_segment(line: Line2D) -> void:
 	if style == &"beam":
 		primitive = _connected_renderer.shared_beam_mesh
 		material = _connected_renderer.shared_beam_material
+	elif style == &"chainsaw":
+		primitive = _connected_renderer.shared_chainsaw_mesh
+		material = _connected_renderer.shared_chainsaw_material
 	else:
 		primitive = _connected_renderer.shared_box_mesh
 		material = _connected_renderer.shared_box_material
 	var pool_key: StringName = &"beam" if style == &"beam" else &"connected_segment"
+	if style == &"chainsaw":
+		pool_key = &"chainsaw_boundary"
 	var mesh := _mesh_registry.acquire_mesh(pool_key, primitive)
 	line.visible = false
 	var start_glow: MeshInstance3D
@@ -1120,6 +1129,10 @@ func _register_ground_segment(line: Line2D) -> void:
 	}
 	line.set_meta(&"hybrid_ground_registered", true)
 
+func register_ground_trail(source: MeshInstance2D) -> void:
+	if _connected_renderer != null:
+		_connected_renderer.register_trail(source)
+
 func register_ground_segment(line: Line2D) -> void:
 	if _connected_renderer != null:
 		_connected_renderer.register_segment(line)
@@ -1139,6 +1152,8 @@ func unregister_ground_visual(source: Node) -> void:
 	if _unit_billboard_renderer != null:
 		_unit_billboard_renderer.unregister(source)
 	source.set_meta(&"hybrid_ground_registered", false)
+	if _connected_renderer != null:
+		_connected_renderer.unregister_trail(source_id)
 	_erase_visual_entry(_shadow_meshes, source_id)
 	_erase_visual_entry(_affiliation_marker_meshes, source_id)
 	_erase_visual_entry(_area_meshes, source_id)
@@ -1577,6 +1592,9 @@ func _sync_segment_meshes() -> void:
 		var segment_color := line.default_color
 		segment_color.a *= line.modulate.a
 		mesh.set_instance_shader_parameter("beam_color" if style == &"beam" else "effect_color", segment_color)
+		if style == &"chainsaw":
+			mesh.set_instance_shader_parameter("boundary_length", delta.length())
+			mesh.set_instance_shader_parameter("boundary_width", line.width)
 		if start_glow != null and end_glow != null:
 			start_glow.position = world_2d_to_3d(start) + Vector3.UP * 0.026
 			end_glow.position = world_2d_to_3d(end) + Vector3.UP * 0.026
@@ -1794,6 +1812,7 @@ func _sync_ground_cone_meshes() -> void:
 		mesh.rotation.y = -direction.angle()
 		var color := config.get("color", Color(1.0, 0.3, 0.05, 0.75)) as Color
 		mesh.set_instance_shader_parameter("flow_color", color)
+		mesh.set_instance_shader_parameter("burning_style", bool(config.get("burning_style", false)))
 		mesh.set_instance_shader_parameter("edge_color", Color(minf(color.r * 1.5 + 0.2, 1.0), minf(color.g * 1.35 + 0.15, 1.0), minf(color.b * 1.2 + 0.1, 1.0), minf(color.a * 1.2, 1.0)))
 		mesh.set_instance_shader_parameter("body_opacity", clampf(float(config.get("body_opacity", 0.68)), 0.0, 1.0))
 		mesh.set_instance_shader_parameter("range_cue_opacity", clampf(float(config.get("range_cue_opacity", 0.24)), 0.0, 1.0))

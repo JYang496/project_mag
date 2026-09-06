@@ -8,10 +8,9 @@ const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_di
 const WEAPON_DISPLAY_POLICY := preload("res://UI/scripts/presentation/weapon_display_policy.gd")
 const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
 const MODULE_OFFER_CATALOG := preload("res://Player/Weapons/Core/module_offer_catalog.gd")
-
-var _owner: Object
-func _init(owner: Object) -> void:
-	_owner = owner
+const PREVIEW_FORMATTER := preload("res://UI/scripts/weapon_obtain_preview_formatter.gd")
+const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
+const CORE_MATERIAL_COLOR := Color(0.94, 0.58, 0.18, 1.0)
 
 func _build_reward_card_data(reward: RewardInfo) -> Dictionary:
 	var data := {
@@ -650,14 +649,127 @@ func _format_core_usage_lines(usages: Variant) -> PackedStringArray:
 		lines.append("%s · %s" % [LocalizationManager.get_weapon_name_by_id(weapon_id, weapon_id), LocalizationManager.get_branch_display_name(branch)])
 	return lines
 
-func _get_reward_action_color(reward: RewardInfo) -> Color: return _owner.call("_get_reward_action_color", reward)
-func _get_weapon_obtain_prediction(weapon_id: String) -> Dictionary: return _owner.call("_get_weapon_obtain_prediction", weapon_id)
-func _with_new_weapon_destination_prediction(outcome: Dictionary) -> Dictionary: return _owner.call("_with_new_weapon_destination_prediction", outcome)
-func _format_weapon_obtain_prediction(base_text: String, weapon_name: String, outcome: Dictionary) -> String: return _owner.call("_format_weapon_obtain_prediction", base_text, weapon_name, outcome)
-func _extract_scene_name(path: String) -> String: return _owner.call("_extract_scene_name", path)
-func _get_module_texture(module_instance: Module) -> Texture2D: return _owner.call("_get_module_texture", module_instance)
-func _first_sentence(value: String, fallback: String) -> String: return _owner.call("_first_sentence", value, fallback)
-func _fallback_summary(reward: RewardInfo) -> String: return _owner.call("_fallback_summary", reward)
-func _derive_level_text(reward: RewardInfo, data: Dictionary) -> String: return _owner.call("_derive_level_text", reward, data)
-func _fallback_detail_bullets(reward: RewardInfo) -> PackedStringArray: return _owner.call("_fallback_detail_bullets", reward)
-func _append_display_chip(existing: Variant, chip: Dictionary) -> Array: return _owner.call("_append_display_chip", existing, chip)
+func _get_reward_action_color(reward: RewardInfo) -> Color:
+	if reward == null:
+		return Color(0.54, 0.64, 0.72, 1.0)
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		return Color(0.36, 0.62, 0.95, 1.0)
+	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		return Color(1.0, 0.60, 0.30, 1.0)
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		return Color(0.31, 0.84, 0.91, 1.0)
+	if reward.reward_kind == RewardInfo.KIND_ECONOMY or reward.total_chip_value > 0 or reward.gold_value > 0:
+		return TOKENS.COLOR_REWARD
+	if reward.module_scene != null:
+		return Color(0.69, 0.42, 1.0, 1.0)
+	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
+		if str(_get_weapon_obtain_prediction(reward.item_id).get("result", "")) == "dismantled_to_core":
+			return CORE_MATERIAL_COLOR
+		return TOKENS.COLOR_BORDER_STRONG
+	return Color(0.42, 0.78, 0.48, 1.0)
+
+
+func _get_weapon_obtain_prediction(weapon_id: String) -> Dictionary:
+	var player: Variant = PlayerData.player
+	return player.predict_weapon_obtain(weapon_id) if player != null and is_instance_valid(player) else {}
+
+
+func _with_new_weapon_destination_prediction(outcome: Dictionary) -> Dictionary:
+	var next_outcome := outcome.duplicate(true)
+	var equipped_count := PlayerData.player_weapon_list.size()
+	var max_count := maxi(1, PlayerData.max_weapon_num)
+	next_outcome["will_equip_to_empty_slot"] = equipped_count < max_count
+	next_outcome["will_choose_replacement"] = equipped_count >= max_count
+	return next_outcome
+
+
+func _format_weapon_obtain_prediction(base_text: String, weapon_name: String, outcome: Dictionary) -> String:
+	return PREVIEW_FORMATTER.format_obtain_preview(base_text, weapon_name, outcome)
+
+
+func _extract_scene_name(path: String) -> String:
+	if path.is_empty():
+		return LocalizationManager.tr_key("ui.common.unknown", "Unknown")
+	var file_name := path.get_file().get_basename()
+	return LocalizationManager.tr_key("ui.common.unknown", "Unknown") if file_name.is_empty() else file_name.replace("_", " ").capitalize()
+
+
+func _get_module_texture(module_instance: Module) -> Texture2D:
+	if module_instance == null or not is_instance_valid(module_instance):
+		return null
+	var sprite_node := module_instance.get_node_or_null("%Sprite") as Sprite2D
+	return sprite_node.texture if sprite_node != null else null
+
+
+func _first_sentence(value: String, fallback: String) -> String:
+	var clean := value.replace("\n", " ").strip_edges()
+	if clean.is_empty():
+		return fallback
+	var sentence_end := -1
+	for delimiter in ["。", ".", "！", "!", "？", "?"]:
+		var found := clean.find(delimiter)
+		if found >= 0 and (sentence_end < 0 or found < sentence_end):
+			sentence_end = found
+	return clean.substr(0, sentence_end + 1) if sentence_end >= 0 else clean
+
+
+func _fallback_summary(reward: RewardInfo) -> String:
+	if reward == null:
+		return ""
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		return LocalizationManager.tr_key("ui.reward.summary.weapon_upgrade", "Upgrade equipped weapon level.")
+	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		return LocalizationManager.tr_key("ui.reward.summary.task_module", "Gain a new task module.")
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		return LocalizationManager.tr_key("ui.reward.summary.cell_effect", "Gain a terrain effect.")
+	if reward.module_scene:
+		return LocalizationManager.tr_key("ui.reward.summary.module", "Gain a new weapon module.")
+	if reward.item_id.strip_edges() != "" and reward.item_level > 0:
+		return LocalizationManager.tr_key("ui.reward.summary.weapon", "New weapon added to your loadout.")
+	if reward.total_chip_value > 0 or reward.gold_value > 0:
+		return LocalizationManager.tr_key("ui.reward.summary.economy", "Gain run resources.")
+	return ""
+
+
+func _derive_level_text(reward: RewardInfo, data: Dictionary) -> String:
+	if reward == null:
+		return ""
+	var short_tag := str(data.get("short_tag", "")).strip_edges()
+	if short_tag.begins_with("Lv."):
+		return short_tag
+	if reward.item_level > 0:
+		return "Lv.%d" % reward.item_level
+	return "Lv.%d" % maxi(1, reward.module_level) if reward.module_scene else ""
+
+
+func _fallback_detail_bullets(reward: RewardInfo) -> PackedStringArray:
+	if reward == null or reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
+		return PackedStringArray()
+	if reward.reward_kind == RewardInfo.KIND_TASK_MODULE:
+		return _localized_reward_bullets("task_module", ["Adds a task module", "Creates route objective options", "Can improve future rewards"])
+	if reward.reward_kind == RewardInfo.KIND_CELL_EFFECT:
+		return _localized_reward_bullets("cell_effect", ["Adds a cell effect", "Changes board options", "Supports route planning"])
+	if reward.module_scene:
+		return _localized_reward_bullets("module", ["Adds a weapon modifier", "Changes or improves weapon behavior", "Can create build synergy"])
+	if reward.total_chip_value > 0 or reward.gold_value > 0:
+		return _localized_reward_bullets("economy", ["Adds resources immediately", "Supports current run progression"])
+	return PackedStringArray()
+
+
+func _localized_reward_bullets(category: String, fallbacks: Array) -> PackedStringArray:
+	var output := PackedStringArray()
+	for index in range(fallbacks.size()):
+		output.append(LocalizationManager.tr_key("ui.reward.detail.bullet.%s.%d" % [category, index + 1], str(fallbacks[index])))
+	return output
+
+
+func _append_display_chip(existing: Variant, chip: Dictionary) -> Array:
+	var chips: Array = existing if existing is Array else []
+	if chip.is_empty():
+		return chips
+	var source_key := str(chip.get("source_key", ""))
+	for existing_chip in chips:
+		if str((existing_chip as Dictionary).get("source_key", "")) == source_key:
+			return chips
+	chips.append(chip)
+	return chips

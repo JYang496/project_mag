@@ -1,0 +1,107 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/ModalDialogView/ModalDialogView.gd" id="1_script"]
+
+[node name="ModalDialogView" type="ConfirmationDialog"]
+dialog_text = ""
+borderless = true
+wrap_controls = false
+script = ExtResource("1_script")
+
+[node name="Content" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+mouse_filter = 1
+theme_override_constants/separation = 10
+
+[node name="TitleBar" type="HBoxContainer" parent="Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+mouse_filter = 0
+theme_override_constants/separation = 8
+
+[node name="TitleSpacer" type="Control" parent="Content/TitleBar"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Content/TitleBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.92, 0.97, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.55)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+text_overrun_behavior = 3
+horizontal_alignment = 1
+
+[node name="CloseButton" type="Button" parent="Content/TitleBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 24)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "×"
+
+[node name="AccentBar" type="ColorRect" parent="Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+
+[node name="BodyScroll" type="ScrollContainer" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="BodyContent" type="VBoxContainer" parent="Content/BodyScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="MessagePanel" type="PanelContainer" parent="Content/BodyScroll/BodyContent"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MessageMargin" type="MarginContainer" parent="Content/BodyScroll/BodyContent/MessagePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="Message" type="Label" parent="Content/BodyScroll/BodyContent/MessagePanel/MessageMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.94, 0.97, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.45)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+autowrap_mode = 2
+
+[node name="Details" type="VBoxContainer" parent="Content/BodyScroll/BodyContent"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="CheckboxPanel" type="PanelContainer" parent="Content/BodyScroll/BodyContent"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="CheckboxMargin" type="MarginContainer" parent="Content/BodyScroll/BodyContent/CheckboxPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="OptionalCheckbox" type="CheckBox" parent="Content/BodyScroll/BodyContent/CheckboxPanel/CheckboxMargin"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.78, 0.82, 1)
+theme_override_colors/font_hover_color = Color(0.86, 0.92, 0.96, 1)

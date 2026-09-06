@@ -134,6 +134,48 @@ func on_projectile_hit_wall(projectile: Projectile, wall_hit: Dictionary) -> voi
 		bounce_lifetime_bonus_max_sec
 	)
 	projectile.set_meta("chainsaw_lifetime_bonus_applied", applied_lifetime_bonus)
+	mark_weapon_skill_ready()
+	if not _cell_bounce_hit_effect_active:
+		_cell_bounce_hit_effect_active = true
+		emit_passive_trigger(&"chainsaw_wall_contact_triggered", {
+			"trigger": "wall_bounce",
+			"wall_hit": wall_hit,
+			"state_after_trigger": "active",
+		}, PASSIVE_SCOPE_GLOBAL)
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	var player := PlayerData.player as Node2D
+	if player == null or not is_instance_valid(player):
+		return false
+	var bounds := _get_current_cell_bounds(player.global_position)
+	if bounds.size == Vector2.ZERO:
+		return false
+	var boundary := TrailAreaEffect.new()
+	boundary.chainsaw_visual = true
+	boundary.duration = 4.0
+	boundary.tick_interval = 0.35
+	boundary.max_segments = 4
+	boundary.tick_damage = max(1, int(round(float(get_runtime_damage()) * 0.30)))
+	boundary.damage_type = Attack.TYPE_PHYSICAL
+	boundary.source_node = self
+	boundary.source_category = DamageData.SOURCE_PLAYER_WEAPON
+	boundary.fill_color = Color(1.0, 0.28, 0.12, 0.28)
+	boundary.line_color = Color(1.0, 0.62, 0.2, 0.95)
+	get_projectile_spawn_parent().add_child(boundary)
+	var corners := [bounds.position, Vector2(bounds.end.x, bounds.position.y), bounds.end, Vector2(bounds.position.x, bounds.end.y)]
+	for index in range(4):
+		# Closed cell walls stop an enemy's body before its center reaches the
+		# geometric edge. A wider band includes that blocked contact position.
+		boundary.add_segment(corners[index], corners[(index + 1) % 4], 52.0)
+	return true
+
+func _get_current_cell_bounds(world_position: Vector2) -> Rect2:
+	for provider in get_tree().get_nodes_in_group(CELL_BOUNDS_PROVIDER_GROUP):
+		if provider != null and provider.has_method("get_cell_world_rect_for_point"):
+			var bounds: Rect2 = provider.call("get_cell_world_rect_for_point", world_position)
+			if bounds.size != Vector2.ZERO:
+				return bounds
+	return Rect2()
 
 func get_passive_status() -> Dictionary:
 	var state := "ready"
@@ -145,8 +187,8 @@ func get_passive_status() -> Dictionary:
 		"state": state,
 		"progress": 1.0 if state == "ready" or state == "active" else 0.0,
 		"ready": state == "active",
-		"trigger_hint": "continuous_hits",
-		"refresh_hint": "continuous_hits",
+		"trigger_hint": "wall_bounce",
+		"refresh_hint": "wall_bounce",
 		"bounce_lifetime_bonus": maxf(bounce_lifetime_bonus_sec, 0.0),
 		"bounce_lifetime_bonus_max": maxf(bounce_lifetime_bonus_max_sec, 0.0),
 		"slow_multiplier": clampf(bounce_slow_multiplier, 0.05, 1.0),
@@ -157,15 +199,6 @@ func get_passive_status() -> Dictionary:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if event_name == &"on_continuous_hit_threshold" and int(detail.get("threshold", 0)) >= 3:
-		_cell_bounce_hit_effect_active = true
-		emit_passive_trigger(&"chainsaw_wall_contact_triggered", {
-			"trigger": "continuous_hits",
-			"target": detail.get("target"),
-			"hit_count": int(detail.get("hit_count", 0)),
-			"threshold": int(detail.get("threshold", 3)),
-			"state_after_trigger": "active",
-		}, PASSIVE_SCOPE_GLOBAL)
 	branch_runtime.notify_branch_passive_event(event_name, detail)
 
 func split_projectile_with_ricochet(source: Projectile) -> void:

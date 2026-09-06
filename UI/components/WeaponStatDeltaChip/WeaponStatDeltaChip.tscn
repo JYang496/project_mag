@@ -1,0 +1,34 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://UI/components/WeaponStatDeltaChip/WeaponStatDeltaChip.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="ChipStyle"]
+bg_color = Color(0.66, 0.74, 0.78, 0.08)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.66, 0.74, 0.78, 0.42)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 6.0
+content_margin_top = 2.0
+content_margin_right = 6.0
+content_margin_bottom = 2.0
+
+[node name="WeaponStatDeltaChip" type="PanelContainer"]
+custom_minimum_size = Vector2(112, 0)
+mouse_filter = 2
+theme_override_styles/panel = SubResource("ChipStyle")
+script = ExtResource("1_script")
+
+[node name="Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_outline_color = Color(0.02, 0.025, 0.03, 0.9)
+theme_override_constants/outline_size = 1
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1

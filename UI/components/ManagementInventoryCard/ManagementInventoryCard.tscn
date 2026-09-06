@@ -1,0 +1,72 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/ManagementInventoryCard/ManagementInventoryCard.gd" id="1_script"]
+
+[node name="ManagementInventoryCard" type="Button"]
+custom_minimum_size = Vector2(0, 86)
+alignment = 0
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 7
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 7
+
+[node name="Row" type="HBoxContainer" parent="Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="Icon" type="TextureRect" parent="Margin/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="Margin/Row/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+clip_text = true
+
+[node name="Meta" type="Label" parent="Margin/Row/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.74, 0.84, 0.9, 1)
+theme_override_font_sizes/font_size = 12
+
+[node name="Detail" type="Label" parent="Margin/Row/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.68, 0.78, 0.84, 1)
+theme_override_font_sizes/font_size = 11
+clip_text = true
+
+[node name="Chips" type="HBoxContainer" parent="Margin/Row/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Selected" type="Label" parent="Margin/Row/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.3, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 11

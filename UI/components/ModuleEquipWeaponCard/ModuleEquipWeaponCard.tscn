@@ -1,0 +1,104 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/ModuleEquipWeaponCard/ModuleEquipWeaponCard.gd" id="1_script"]
+
+[node name="ModuleEquipWeaponCard" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 158)
+size_flags_horizontal = 3
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="Root" type="HBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Left" type="VBoxContainer" parent="Margin/Root"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Identity" type="HBoxContainer" parent="Margin/Root/Left"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="IconWell" type="PanelContainer" parent="Margin/Root/Left/Identity"]
+custom_minimum_size = Vector2(72, 68)
+layout_mode = 2
+
+[node name="WeaponIcon" type="TextureRect" parent="Margin/Root/Left/Identity/IconWell"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="IdentityText" type="VBoxContainer" parent="Margin/Root/Left/Identity"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Name" type="Label" parent="Margin/Root/Left/Identity/IdentityText"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="Fit" type="Label" parent="Margin/Root/Left/Identity/IdentityText"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="Reason" type="Label" parent="Margin/Root/Left/Identity/IdentityText"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="Status" type="PanelContainer" parent="Margin/Root/Left"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StatusRow" type="HBoxContainer" parent="Margin/Root/Left/Status"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PulseBar" type="ColorRect" parent="Margin/Root/Left/Status/StatusRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(4, 0)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.26, 0.72, 0.84, 1)
+
+[node name="Stats" type="RichTextLabel" parent="Margin/Root/Left/Status/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 2
+
+[node name="Actions" type="VBoxContainer" parent="Margin/Root"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_constants/separation = 5
+
+[node name="ModulesLabel" type="Label" parent="Margin/Root/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Sockets" type="HBoxContainer" parent="Margin/Root/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 64)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EquipButton" type="Button" parent="Margin/Root/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 36)
+layout_mode = 2

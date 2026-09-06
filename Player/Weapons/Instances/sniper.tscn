@@ -7,8 +7,12 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/precision_recoil_feedback.tres" id="4_feedback"]
 
 [node name="Sniper" unique_id=326992049 instance=ExtResource("1_ranger")]
+active_skill_effect_id = &"sniper_lethal_aim"
 base_trait_flags = 1
 script = ExtResource("2_script")
+skill_unlock_condition = &"far_hit"
+skill_unlock_hint = "Hit an enemy from at least 400 distance"
+skill_unlock_required = 400.0
 turn_speed_degrees_per_second = 240.0
 fire_feedback_profile = ExtResource("4_feedback")
 delivery_type_flags = 1

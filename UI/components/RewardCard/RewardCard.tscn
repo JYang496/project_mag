@@ -1,0 +1,115 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://UI/components/RewardCard/RewardCard.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="ProgressBackground"]
+bg_color = Color(0.091, 0.1, 0.11, 1)
+
+[sub_resource type="StyleBoxFlat" id="BadgeStyle"]
+bg_color = Color(0.34, 0.78, 0.88, 0.22)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.34, 0.78, 0.88, 0.72)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 6.0
+content_margin_right = 6.0
+
+[node name="RewardCard" type="Button"]
+custom_minimum_size = Vector2(0, 372)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+focus_mode = 2
+mouse_filter = 0
+toggle_mode = true
+clip_contents = false
+text = ""
+script = ExtResource("1_script")
+
+[node name="CardContentMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 9
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 9
+
+[node name="Body" type="VBoxContainer" parent="CardContentMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="HoldProgress" type="ProgressBar" parent="CardContentMargin/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+mouse_filter = 2
+show_percentage = false
+theme_override_styles/background = SubResource("ProgressBackground")
+
+[node name="TopRow" type="HBoxContainer" parent="CardContentMargin/Body"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="KeyBadge" type="Label" parent="CardContentMargin/Body/TopRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 22)
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("BadgeStyle")
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="RewardTypeBadge" type="Label" parent="CardContentMargin/Body/TopRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(54, 22)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("BadgeStyle")
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="SelectedBadge" type="Label" parent="CardContentMargin/Body/TopRow"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(76, 22)
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("BadgeStyle")
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="SelectionIndicatorBar" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 3.0
+offset_right = -12.0
+offset_bottom = 7.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.34, 0.78, 0.88, 1)

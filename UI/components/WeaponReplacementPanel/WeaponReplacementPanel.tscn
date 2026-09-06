@@ -1,0 +1,76 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/WeaponReplacementPanel/WeaponReplacementPanel.gd" id="1_script"]
+
+[node name="WeaponReplacementPanel" type="PanelContainer"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 180.0
+offset_top = 70.0
+offset_right = -180.0
+offset_bottom = -70.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="Root" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Margin/Root"]
+layout_mode = 2
+text = "Choose Weapon Slot"
+horizontal_alignment = 1
+
+[node name="Description" type="Label" parent="Margin/Root"]
+layout_mode = 2
+text = "Select where to install the incoming weapon."
+autowrap_mode = 2
+
+[node name="IncomingHost" type="VBoxContainer" parent="Margin/Root"]
+layout_mode = 2
+
+[node name="SlotsScroll" type="ScrollContainer" parent="Margin/Root"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SlotsPadding" type="MarginContainer" parent="Margin/Root/SlotsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 12
+
+[node name="Slots" type="VBoxContainer" parent="Margin/Root/SlotsScroll/SlotsPadding"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Footer" type="HBoxContainer" parent="Margin/Root"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 2
+
+[node name="Store" type="Button" parent="Margin/Root/Footer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 44)
+layout_mode = 2
+
+[node name="Cancel" type="Button" parent="Margin/Root/Footer"]
+custom_minimum_size = Vector2(160, 44)
+layout_mode = 2
+text = "Cancel"
+
+[node name="ConfirmReplacement" type="Button" parent="Margin/Root/Footer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 44)
+layout_mode = 2
+disabled = true

@@ -1,0 +1,151 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://UI/components/WeaponReplacementSlot/WeaponReplacementSlot.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="NormalStyle"]
+bg_color = Color(0.055, 0.065, 0.072, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.66, 0.82, 0.88, 0.5)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="HoverStyle"]
+bg_color = Color(0.08, 0.095, 0.105, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.66, 0.82, 0.88, 0.5)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="PressedStyle"]
+bg_color = Color(0.095, 0.115, 0.13, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.66, 0.82, 0.88, 0.5)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="DisabledStyle"]
+bg_color = Color(0.045, 0.05, 0.055, 0.75)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.66, 0.82, 0.88, 0.5)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="WeaponReplacementSlot" type="Button"]
+custom_minimum_size = Vector2(520, 96)
+focus_mode = 2
+theme_override_styles/normal = SubResource("NormalStyle")
+theme_override_styles/hover = SubResource("HoverStyle")
+theme_override_styles/pressed = SubResource("PressedStyle")
+theme_override_styles/focus = SubResource("HoverStyle")
+theme_override_styles/disabled = SubResource("DisabledStyle")
+text = ""
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_right = 14
+
+[node name="Content" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+
+[node name="Row" type="HBoxContainer" parent="Margin/Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="SlotLabel" type="Label" parent="Margin/Content/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(94, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.68, 0.77, 0.82, 1)
+theme_override_font_sizes/font_size = 13
+clip_text = true
+vertical_alignment = 1
+
+[node name="IconHost" type="Control" parent="Margin/Content/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(42, 42)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Text" type="VBoxContainer" parent="Margin/Content/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 1
+
+[node name="WeaponName" type="Label" parent="Margin/Content/Row/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.93, 0.96, 0.96, 1)
+theme_override_font_sizes/font_size = 16
+clip_text = true
+vertical_alignment = 1
+
+[node name="WeaponMeta" type="Label" parent="Margin/Content/Row/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.72, 0.8, 0.84, 1)
+theme_override_font_sizes/font_size = 14
+clip_text = true
+vertical_alignment = 1
+
+[node name="Action" type="Label" parent="Margin/Content/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(92, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.66, 0.82, 0.88, 1)
+theme_override_font_sizes/font_size = 15
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Comparison" type="HFlowContainer" parent="Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 5
+
+[node name="Warning" type="Label" parent="Margin/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.72, 0.42, 1)
+theme_override_font_sizes/font_size = 12
+clip_text = true
+vertical_alignment = 1

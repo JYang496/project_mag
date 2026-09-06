@@ -1,9 +1,12 @@
 extends RefCounted
 
-const DEFAULT_SIZE := Vector2i(520, 240)
+const DIALOG_SCENE := preload("res://UI/components/ModalDialogView/ModalDialogView.tscn")
+const DETAIL_ROW_SCENE := preload("res://UI/components/ModalDetailRow/ModalDetailRow.tscn")
+
+const DEFAULT_SIZE := Vector2i(520, 300)
 const SIZE_PRESETS := {
-	&"small": Vector2i(420, 180),
-	&"medium": Vector2i(560, 260),
+	&"small": Vector2i(420, 240),
+	&"medium": Vector2i(560, 340),
 	&"large": Vector2i(720, 420),
 }
 const PANEL_BG := Color(0.055, 0.066, 0.078, 0.98)
@@ -21,6 +24,8 @@ var title_label: Label
 var close_button: Button
 var accent_bar: ColorRect
 var content: VBoxContainer
+var body_scroll: ScrollContainer
+var body_content: VBoxContainer
 var message_panel: PanelContainer
 var message_label: Label
 var details_container: VBoxContainer
@@ -107,7 +112,10 @@ func _show(spec: Dictionary) -> bool:
 	var destructive := bool(spec.get("destructive", false))
 	_apply_dialog_visuals(destructive)
 	_apply_destructive_state(destructive)
-	dialog.popup_centered_clamped(_resolve_size(spec.get("size", null)), 0.9)
+	var popup_size := _resolve_popup_size(spec.get("size", null))
+	dialog.min_size = popup_size
+	dialog.popup_centered_clamped(popup_size, 0.9)
+	_layout_content.call_deferred()
 	return true
 
 func ensure_dialog() -> void:
@@ -118,93 +126,26 @@ func ensure_dialog() -> void:
 			return
 		dialog.queue_free()
 		dialog = null
-	dialog = ConfirmationDialog.new()
+	dialog = DIALOG_SCENE.instantiate() as ConfirmationDialog
 	dialog.name = "ConfirmDialogControllerDialog"
-	dialog.dialog_text = ""
-	dialog.borderless = true
-	dialog.wrap_controls = false
 	gui_root.add_child(dialog)
-	content = VBoxContainer.new()
-	content.name = "ConfirmDialogContent"
-	content.custom_minimum_size = Vector2(460.0, 0.0)
-	content.add_theme_constant_override("separation", 10)
-	title_bar = HBoxContainer.new()
-	title_bar.name = "TitleBar"
-	title_bar.mouse_filter = Control.MOUSE_FILTER_STOP
-	title_bar.custom_minimum_size = Vector2(0.0, 28.0)
-	title_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_bar.add_theme_constant_override("separation", 8)
-	var title_spacer := Control.new()
-	title_spacer.custom_minimum_size = Vector2(32.0, 0.0)
-	title_bar.add_child(title_spacer)
-	title_label = Label.new()
-	title_label.name = "Title"
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_label.add_theme_color_override("font_color", Color(0.92, 0.97, 1.0, 1.0))
-	title_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.55))
-	title_label.add_theme_constant_override("shadow_offset_x", 1)
-	title_label.add_theme_constant_override("shadow_offset_y", 1)
-	title_bar.add_child(title_label)
-	close_button = Button.new()
-	close_button.name = "CloseButton"
-	close_button.text = "X"
-	close_button.custom_minimum_size = Vector2(32.0, 24.0)
-	close_button.focus_mode = Control.FOCUS_NONE
-	close_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	title_bar.add_child(close_button)
-	content.add_child(title_bar)
-	accent_bar = ColorRect.new()
-	accent_bar.name = "AccentBar"
-	accent_bar.custom_minimum_size = Vector2(0.0, 4.0)
-	accent_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_child(accent_bar)
-	message_panel = PanelContainer.new()
-	message_panel.name = "MessagePanel"
-	message_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var message_margin := MarginContainer.new()
-	message_margin.name = "MessageMargin"
-	message_margin.add_theme_constant_override("margin_left", 16)
-	message_margin.add_theme_constant_override("margin_top", 14)
-	message_margin.add_theme_constant_override("margin_right", 16)
-	message_margin.add_theme_constant_override("margin_bottom", 14)
-	message_label = Label.new()
-	message_label.name = "Message"
-	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	message_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	message_label.add_theme_color_override("font_color", Color(0.90, 0.94, 0.97, 1.0))
-	message_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.45))
-	message_label.add_theme_constant_override("shadow_offset_x", 1)
-	message_label.add_theme_constant_override("shadow_offset_y", 1)
-	message_margin.add_child(message_label)
-	message_panel.add_child(message_margin)
-	content.add_child(message_panel)
-	details_container = VBoxContainer.new()
-	details_container.name = "Details"
-	details_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	details_container.add_theme_constant_override("separation", 6)
-	details_container.visible = false
-	content.add_child(details_container)
-	checkbox_panel = PanelContainer.new()
-	checkbox_panel.name = "CheckboxPanel"
-	checkbox_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var checkbox_margin := MarginContainer.new()
-	checkbox_margin.name = "CheckboxMargin"
-	checkbox_margin.add_theme_constant_override("margin_left", 12)
-	checkbox_margin.add_theme_constant_override("margin_top", 8)
-	checkbox_margin.add_theme_constant_override("margin_right", 12)
-	checkbox_margin.add_theme_constant_override("margin_bottom", 8)
-	checkbox = CheckBox.new()
-	checkbox.name = "OptionalCheckbox"
-	checkbox.visible = false
-	checkbox.add_theme_color_override("font_color", Color(0.72, 0.78, 0.82, 1.0))
-	checkbox.add_theme_color_override("font_hover_color", Color(0.86, 0.92, 0.96, 1.0))
-	checkbox_margin.add_child(checkbox)
-	checkbox_panel.add_child(checkbox_margin)
-	checkbox_panel.visible = false
-	content.add_child(checkbox_panel)
-	dialog.add_child(content)
+	var native_message := dialog.get_label()
+	native_message.text = ""
+	native_message.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	native_message.add_theme_color_override("font_color", Color.TRANSPARENT)
+	content = dialog.get_node("Content") as VBoxContainer
+	title_bar = dialog.get_node("Content/TitleBar") as HBoxContainer
+	title_label = dialog.get_node("Content/TitleBar/Title") as Label
+	close_button = dialog.get_node("Content/TitleBar/CloseButton") as Button
+	accent_bar = dialog.get_node("Content/AccentBar") as ColorRect
+	body_scroll = dialog.get_node("Content/BodyScroll") as ScrollContainer
+	body_content = dialog.get_node("Content/BodyScroll/BodyContent") as VBoxContainer
+	message_panel = dialog.get_node("Content/BodyScroll/BodyContent/MessagePanel") as PanelContainer
+	message_label = dialog.get_node("Content/BodyScroll/BodyContent/MessagePanel/MessageMargin/Message") as Label
+	details_container = dialog.get_node("Content/BodyScroll/BodyContent/Details") as VBoxContainer
+	checkbox_panel = dialog.get_node("Content/BodyScroll/BodyContent/CheckboxPanel") as PanelContainer
+	checkbox = dialog.get_node("Content/BodyScroll/BodyContent/CheckboxPanel/CheckboxMargin/OptionalCheckbox") as CheckBox
+	dialog.size_changed.connect(_layout_content)
 	dialog.confirmed.connect(_on_confirmed)
 	dialog.custom_action.connect(_on_custom_action)
 	dialog.canceled.connect(_on_cancelled)
@@ -214,6 +155,15 @@ func ensure_dialog() -> void:
 	title_bar.gui_input.connect(_on_title_bar_gui_input)
 	close_button.pressed.connect(_on_close_button_pressed)
 	checkbox.toggled.connect(_on_checkbox_toggled)
+
+func _layout_content() -> void:
+	if dialog == null or not is_instance_valid(dialog) or content == null:
+		return
+	var native_message := dialog.get_label()
+	if native_message == null:
+		return
+	content.position = native_message.position
+	content.size = native_message.size
 
 func _get_body_text(spec: Dictionary) -> String:
 	if spec.has("message"):
@@ -233,40 +183,11 @@ func _rebuild_details(details, destructive: bool) -> void:
 	for detail in details:
 		if not (detail is Dictionary):
 			continue
-		var row := PanelContainer.new()
-		row.name = "DetailRow"
-		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var row := DETAIL_ROW_SCENE.instantiate() as PanelContainer
 		var tone := StringName(str(detail.get("tone", "")))
 		var accent := _resolve_detail_accent(tone, destructive)
-		row.add_theme_stylebox_override("panel", _make_style(
-			Color(accent.r, accent.g, accent.b, 0.10),
-			Color(accent.r, accent.g, accent.b, 0.38),
-			5,
-			1
-		))
-		var margin := MarginContainer.new()
-		margin.add_theme_constant_override("margin_left", 10)
-		margin.add_theme_constant_override("margin_top", 6)
-		margin.add_theme_constant_override("margin_right", 10)
-		margin.add_theme_constant_override("margin_bottom", 6)
-		var line := HBoxContainer.new()
-		line.add_theme_constant_override("separation", 10)
-		var label := Label.new()
-		label.text = str(detail.get("label", ""))
-		label.custom_minimum_size = Vector2(120.0, 0.0)
-		label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		label.add_theme_color_override("font_color", Color(0.60, 0.68, 0.73, 1.0))
-		var value := Label.new()
-		value.text = str(detail.get("value", ""))
-		value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		value.add_theme_color_override("font_color", Color(0.92, 0.96, 0.98, 1.0))
-		line.add_child(label)
-		line.add_child(value)
-		margin.add_child(line)
-		row.add_child(margin)
 		details_container.add_child(row)
+		row.call("set_data", str(detail.get("label", "")), str(detail.get("value", "")), accent)
 
 func _resolve_detail_accent(tone: StringName, destructive: bool) -> Color:
 	if tone == &"destructive":
@@ -289,6 +210,17 @@ func _resolve_size(value) -> Vector2i:
 	if value is Dictionary:
 		return Vector2i(int(value.get("x", DEFAULT_SIZE.x)), int(value.get("y", DEFAULT_SIZE.y)))
 	return DEFAULT_SIZE
+
+func _resolve_popup_size(value) -> Vector2i:
+	var requested := _resolve_size(value)
+	if gui_root == null or gui_root.get_viewport() == null:
+		return requested
+	var viewport_size := gui_root.get_viewport_rect().size
+	var maximum := Vector2i(
+		int(floor(viewport_size.x * 0.9)),
+		int(floor(viewport_size.y * 0.9))
+	)
+	return Vector2i(min(requested.x, maximum.x), min(requested.y, maximum.y))
 
 func _apply_dialog_visuals(destructive: bool) -> void:
 	var accent := DESTRUCTIVE_ACCENT if destructive else PRIMARY_ACCENT
@@ -362,6 +294,7 @@ func _apply_dialog_button_style(button: Button, primary: bool, destructive: bool
 		style.content_margin_top = 7
 		style.content_margin_bottom = 7
 		button.add_theme_stylebox_override(state, style)
+	button.custom_minimum_size.y = 40.0
 	if destructive:
 		button.add_theme_color_override("font_color", Color(1.0, 0.68, 0.64))
 		button.add_theme_color_override("font_hover_color", Color(1.0, 0.78, 0.74))

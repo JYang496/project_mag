@@ -1,0 +1,83 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://UI/components/TaskObjectiveCard/TaskObjectiveCard.gd" id="1_script"]
+[ext_resource type="Script" path="res://UI/scripts/components/smooth_progress_bar.gd" id="2_progress"]
+[sub_resource type="StyleBoxFlat" id="StyleBox_card"]
+bg_color = Color(0.12, 0.17, 0.2, 0.92)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.36, 0.54, 0.62, 0.95)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+[sub_resource type="StyleBoxFlat" id="StyleBox_track"]
+bg_color = Color(0.05, 0.07, 0.08, 0.9)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[node name="TaskObjectiveCard" type="PanelContainer"]
+custom_minimum_size = Vector2(216, 60)
+offset_right = 216.0
+offset_bottom = 60.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_card")
+script = ExtResource("1_script")
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 5
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Header" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+theme_override_constants/separation = 8
+[node name="Marker" type="Label" parent="Margin/Body/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.97, 1, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+vertical_alignment = 1
+[node name="Title" type="Label" parent="Margin/Body/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+text_overrun_behavior = 3
+clip_text = true
+[node name="Value" type="Label" parent="Margin/Body/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(66, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text_overrun_behavior = 3
+clip_text = true
+horizontal_alignment = 2
+[node name="Instruction" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.78, 0.86, 0.88, 0.95)
+theme_override_font_sizes/font_size = 12
+text_overrun_behavior = 3
+clip_text = true
+[node name="Progress" type="ProgressBar" parent="Margin/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBox_track")
+max_value = 1.0
+step = 0.001
+show_percentage = false
+script = ExtResource("2_progress")

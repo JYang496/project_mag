@@ -20,7 +20,6 @@ var return_on_timeout = preload("res://Player/Weapons/Effects/return_on_timeout.
 
 # Weapon
 var ITEM_NAME = "Spear Launcher"
-@export var same_target_trigger_count: int = 2
 @export var charge_max: int = 10
 @export var radial_charge_cost: int = 10
 @export var radial_projectile_count: int = 8
@@ -142,10 +141,10 @@ func on_projectile_hit_damage_dealt(
 			_apply_pierce_mark(target)
 			_apply_radial_knockback(target)
 		return
-	_try_gain_charge_from_same_target_hits(projectile, target)
+	_try_gain_charge_from_distinct_pierce_hits(projectile, target)
 
 
-func _try_gain_charge_from_same_target_hits(projectile: Node, target: Node) -> void:
+func _try_gain_charge_from_distinct_pierce_hits(projectile: Node, target: Node) -> void:
 	if is_reloading:
 		return
 	if _piercing_blade_dance_charge >= maxi(charge_max, 1):
@@ -155,20 +154,16 @@ func _try_gain_charge_from_same_target_hits(projectile: Node, target: Node) -> v
 	var target_id := target.get_instance_id()
 	var state: Dictionary = _projectile_hit_state.get(projectile_id, {
 		"projectile": projectile,
-		"counts": {},
-		"charged_targets": {},
+		"target_ids": {},
+		"skill_awarded": false,
 	})
-	var charged_targets: Dictionary = state.get("charged_targets", {})
-	if bool(charged_targets.get(target_id, false)):
-		return
-	var counts: Dictionary = state.get("counts", {})
-	var hit_count := int(counts.get(target_id, 0)) + 1
-	counts[target_id] = hit_count
-	state["counts"] = counts
+	var target_ids: Dictionary = state.get("target_ids", {})
+	target_ids[target_id] = true
+	state["target_ids"] = target_ids
 	state["projectile"] = projectile
-	if hit_count >= maxi(1, same_target_trigger_count):
-		charged_targets[target_id] = true
-		state["charged_targets"] = charged_targets
+	if target_ids.size() >= 2 and not bool(state.get("skill_awarded", false)):
+		state["skill_awarded"] = true
+		mark_weapon_skill_ready()
 		_gain_piercing_blade_dance_charge(projectile, target)
 	_projectile_hit_state[projectile_id] = state
 
@@ -183,7 +178,7 @@ func _gain_piercing_blade_dance_charge(projectile: Node, target: Node) -> void:
 		"charge_before": previous_charge,
 		"charge": _piercing_blade_dance_charge,
 		"charge_max": maxi(charge_max, 1),
-		"trigger": "same_projectile_same_target_damage_twice",
+		"trigger": "same_projectile_distinct_targets",
 	}, PASSIVE_SCOPE_GLOBAL)
 
 
@@ -231,19 +226,27 @@ func _try_start_piercing_blade_dance() -> bool:
 
 
 func _build_radial_directions(count: int) -> Array[Vector2]:
-	var output: Array[Vector2] = []
-	var player := PlayerData.player as Node2D
-	var origin := player.global_position if player != null and is_instance_valid(player) else global_position
 	var base_direction := get_aim_forward()
 	if base_direction == Vector2.ZERO:
 		base_direction = Vector2.RIGHT
-	for index in range(maxi(count, 1)):
-		output.append(base_direction.rotated(TAU * float(index) / float(maxi(count, 1))).normalized())
+	var direction_count := maxi(count, 1)
+	if direction_count == 1:
+		return [base_direction.normalized()]
+	var output: Array[Vector2] = []
+	var total_arc_rad := deg_to_rad(40.0)
+	var step_rad := total_arc_rad / float(direction_count - 1)
+	for index in range(direction_count):
+		var offset_rad := -total_arc_rad * 0.5 + step_rad * float(index)
+		output.append(base_direction.rotated(offset_rad).normalized())
 	return output
 
 
 func _fire_radial_volley(directions: Array[Vector2]) -> void:
 	_fire_radial_volley_step(directions, 0)
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	_fire_radial_volley(_build_radial_directions(8))
+	return true
 
 
 func _fire_radial_volley_step(directions: Array[Vector2], index: int) -> void:

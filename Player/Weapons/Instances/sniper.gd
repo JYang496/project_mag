@@ -11,6 +11,7 @@ const FAR_DAMAGE_MULTIPLIER: float = 1.8
 
 var attack_range: float = 900.0
 var _next_shot_max_distance_bonus: bool = false
+var _lethal_aim_armed := false
 
 var weapon_data := {
 	"1": {"damage": "23", "speed": "1700", "projectile_hits": "5", "fire_interval_sec": "3.0", "ammo": "5"},
@@ -53,12 +54,19 @@ func _on_shoot() -> void:
 		return
 
 	var runtime_damage := get_runtime_damage()
+	var lethal_aim := _lethal_aim_armed
+	_lethal_aim_armed = false
+	if lethal_aim:
+		set_active_skill_visual_armed(false)
+	if lethal_aim:
+		projectile_damage_multiplier *= 3.5
 	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * projectile_damage_multiplier)))
 	var maximum_distance_bonus := consume_support_trigger() or _next_shot_max_distance_bonus
 	_next_shot_max_distance_bonus = false
 	spawn_projectile.set_meta(&"sniper_support_empowered", maximum_distance_bonus)
 	spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
-	spawn_projectile.hp = max(1, projectile_hits)
+	spawn_projectile.hp = 99999 if lethal_aim else max(1, projectile_hits)
+	spawn_projectile.set_meta(&"sniper_lethal_aim", lethal_aim)
 	spawn_projectile.global_position = global_position
 	spawn_projectile.projectile_texture = projectile_texture_resource
 	spawn_projectile.size = size
@@ -74,11 +82,22 @@ func _on_shoot() -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	_try_unlock_from_far_hit(target)
 	branch_runtime.notify_branch_target_hit(target)
 
 func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
 	super.on_hit_target_with_damage_type(target, damage_type)
+	_try_unlock_from_far_hit(target)
 	branch_runtime.notify_branch_target_hit(target)
+
+func _try_unlock_from_far_hit(target: Node) -> void:
+	var target_node := target as Node2D
+	if target_node == null or not is_instance_valid(target_node):
+		return
+	var distance := global_position.distance_to(target_node.global_position)
+	set_weapon_skill_unlock_progress(distance)
+	if distance + 0.0001 >= far_hit_trigger_distance:
+		mark_weapon_skill_ready()
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
@@ -126,6 +145,24 @@ func get_passive_status() -> Dictionary:
 func get_sniper_distance_scaled_damage(target: Node, base_damage: int, force_maximum: bool = false) -> int:
 	var multiplier := FAR_DAMAGE_MULTIPLIER if force_maximum else _get_distance_damage_multiplier(target)
 	return max(1, int(round(float(maxi(base_damage, 1)) * multiplier)))
+
+func get_sniper_projectile_distance_scaled_damage(projectile: Node, target: Node, base_damage: int) -> int:
+	if projectile != null and bool(projectile.get_meta(&"sniper_lethal_aim", false)):
+		var target_node := target as Node2D
+		var distance := global_position.distance_to(target_node.global_position) if target_node != null else 0.0
+		var ratio := clampf((distance - NEAR_DISTANCE_THRESHOLD) / maxf(attack_range - NEAR_DISTANCE_THRESHOLD, 1.0), 0.0, 1.0)
+		return max(1, int(round(float(maxi(base_damage, 1)) * lerpf(1.0, 2.0, ratio))))
+	return get_sniper_distance_scaled_damage(target, base_damage, bool(projectile.get_meta(&"sniper_support_empowered", false)) if projectile != null else false)
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	_lethal_aim_armed = true
+	set_active_skill_visual_armed(true, Color(1.0, 0.28, 0.28, 1.0))
+	return true
+
+func clear_timed_effects_for_prepare() -> void:
+	super.clear_timed_effects_for_prepare()
+	_lethal_aim_armed = false
+	set_active_skill_visual_armed(false)
 
 func _get_distance_damage_multiplier(target: Node) -> float:
 	var target_node := target as Node2D

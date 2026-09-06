@@ -7,6 +7,8 @@ class_name SniperProjectile
 var _pierce_damage_stacks: int = 0
 
 func get_hitbox_damage_value(target: Node, base_damage: int, _damage_type: StringName) -> int:
+	if source_weapon and is_instance_valid(source_weapon) and source_weapon.has_method("get_sniper_projectile_distance_scaled_damage"):
+		return int(source_weapon.call("get_sniper_projectile_distance_scaled_damage", self, target, base_damage))
 	if source_weapon and is_instance_valid(source_weapon) and source_weapon.has_method("get_sniper_distance_scaled_damage"):
 		return int(source_weapon.call(
 			"get_sniper_distance_scaled_damage",

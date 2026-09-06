@@ -1,7 +1,7 @@
 extends RefCounted
 class_name UpgradeManagementController
 
-const UPGRADE_MANAGEMENT_VIEW_PATH := "res://UI/scenes/management/upgrade_management_view.tscn"
+const UPGRADE_MANAGEMENT_VIEW_PATH := "res://UI/components/UpgradeManagementView/UpgradeManagementView.tscn"
 
 var owner_ui: Node
 var upgrade_panel: Panel

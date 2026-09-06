@@ -31,8 +31,8 @@ func _run() -> void:
 	await get_tree().process_frame
 	ui.ensure_upgrade_management()
 	await get_tree().process_frame
-	var view := ui.upgrade_management_view as UpgradeManagementView
-	var items := view.build_items(&"weapon")
+	var view := ui.upgrade_management_view as Control
+	var items: Array = view.call("build_items", &"weapon") as Array
 	_expect(not items.is_empty(), "fusion management needs a weapon row")
 	if items.is_empty():
 		await _finish()

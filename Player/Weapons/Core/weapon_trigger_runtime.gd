@@ -3,17 +3,12 @@ class_name WeaponTriggerRuntime
 
 const SUPPORT_CHARGE_DURATION_SEC: float = 5.0
 const CROSS_WEAPON_WINDOW_MSEC: int = 2000
-const CONTINUOUS_HIT_BREAK_MSEC: int = 800
-const CONTINUOUS_HIT_THRESHOLDS: Array[int] = [3, 6, 10]
 
 var weapon
 var _magazine_quarters_earned: int = 0
 var _support_elapsed_sec: float = 0.0
 var _support_ready: bool = false
 var _entry_ready: bool = false
-var _continuous_hit_count: int = 0
-var _continuous_last_hit_msec: int = 0
-var _continuous_threshold_index: int = 0
 
 func setup(source_weapon) -> void:
 	weapon = source_weapon
@@ -110,34 +105,11 @@ func on_hit(target: Node) -> void:
 			"previous_weapon_id": previous_weapon_id,
 			"window_sec": float(CROSS_WEAPON_WINDOW_MSEC) / 1000.0,
 		})
-	if _continuous_last_hit_msec <= 0 \
-			or now_msec > _continuous_last_hit_msec + CONTINUOUS_HIT_BREAK_MSEC:
-		_continuous_hit_count = 0
-		_continuous_threshold_index = 0
-	_continuous_last_hit_msec = now_msec
-	_continuous_hit_count += 1
-	while _continuous_threshold_index < CONTINUOUS_HIT_THRESHOLDS.size() \
-			and _continuous_hit_count >= CONTINUOUS_HIT_THRESHOLDS[_continuous_threshold_index]:
-		var threshold := CONTINUOUS_HIT_THRESHOLDS[_continuous_threshold_index]
-		_continuous_threshold_index += 1
-		_emit_standard_event(WeaponEvent.CONTINUOUS_HIT_THRESHOLD, {
-			"target": target,
-			"hit_count": _continuous_hit_count,
-			"threshold": threshold,
-			"break_window_sec": float(CONTINUOUS_HIT_BREAK_MSEC) / 1000.0,
-		})
-
-func reset_continuous_hits() -> void:
-	_continuous_hit_count = 0
-	_continuous_last_hit_msec = 0
-	_continuous_threshold_index = 0
-
 func clear_for_weapon_exit() -> void:
 	_magazine_quarters_earned = 0
 	_support_elapsed_sec = 0.0
 	_support_ready = false
 	_entry_ready = false
-	reset_continuous_hits()
 
 func _emit_standard_event(event_type: StringName, detail: Dictionary) -> void:
 	if weapon == null or not is_instance_valid(weapon):
@@ -147,4 +119,3 @@ func _emit_standard_event(event_type: StringName, detail: Dictionary) -> void:
 	if detail.get("target") is Node:
 		event.target = detail.get("target") as Node
 	weapon.emit_weapon_event(event)
-	weapon.dispatch_passive_event(StringName("on_%s" % str(event_type)), event.to_legacy_detail())

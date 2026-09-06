@@ -7,8 +7,12 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/special_pulse_feedback.tres" id="4_feedback"]
 
 [node name="Orbit" unique_id=80514895 instance=ExtResource("1_4h80h")]
+active_skill_effect_id = &"orbit_proliferation"
 base_trait_flags = 1
 script = ExtResource("1_lxm1t")
+skill_unlock_condition = &"player_damaged"
+skill_unlock_hint = "Lose health from an enemy attack"
+skill_unlock_required = 1.0
 turn_speed_degrees_per_second = 360.0
 fire_feedback_profile = ExtResource("4_feedback")
 delivery_type_flags = 1

@@ -22,7 +22,13 @@ static func get_hybrid_view(tree: SceneTree) -> Node:
 
 static func project_to_screen(tree: SceneTree, world_position: Vector2, fallback: Vector2 = Vector2.ZERO) -> Vector2:
 	var view := get_hybrid_view(tree)
-	return view.call("project_world_to_screen", world_position) as Vector2 if view != null else fallback
+	if view != null:
+		return view.call("project_world_to_screen", world_position) as Vector2
+	if tree != null and tree.root != null:
+		var viewport := tree.root.get_viewport()
+		if viewport != null:
+			return viewport.get_canvas_transform() * world_position
+	return fallback
 
 static func project_to_canvas(node: CanvasItem, world_position: Vector2) -> Vector2:
 	if node == null or not node.is_inside_tree():

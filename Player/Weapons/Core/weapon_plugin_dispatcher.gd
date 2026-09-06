@@ -40,7 +40,7 @@ func get_effective_reload_duration(base_duration: float) -> float:
 		if provider == null or not is_instance_valid(provider):
 			providers.remove_at(index)
 			continue
-		multiplier *= maxf(float(provider.call("get_reload_duration_multiplier", weapon, duration)), 0.05)
+		multiplier *= maxf((provider as Module).get_reload_duration_multiplier(weapon, duration), 0.05)
 	return duration * multiplier
 
 func clear_for_weapon_exit() -> void:

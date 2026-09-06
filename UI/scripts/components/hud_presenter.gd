@@ -6,7 +6,7 @@ var hp_label_text: Label
 var heat_label: Label
 var ammo_label: Label
 var weapon_state_label: Label
-var gold_label: Label
+var gold_label: Control
 var resource_label: Label
 var time_label: Control
 var battle_time_meter: Control
@@ -28,11 +28,11 @@ const STATUS_DOCK_WIDTH := 420.0
 const STATUS_RESOURCE_GAP := 16.0
 const SPECIAL_RESOURCE_OPACITY := 0.62
 const HEALTH_METER_ORIGIN := Vector2.ZERO
-const COMBAT_RESOURCE_METER_SCRIPT := preload("res://UI/scripts/components/combat_resource_meter.gd")
-const PLAYER_HEALTH_METER_SCRIPT := preload("res://UI/scripts/components/player_health_meter.gd")
-const PLAYER_STATUS_HUD_SCRIPT := preload("res://UI/scripts/components/player_status_hud.gd")
+const COMBAT_RESOURCE_METER_SCENE := preload("res://UI/components/CombatResourceMeter/CombatResourceMeter.tscn")
+const PLAYER_HEALTH_METER_SCENE := preload("res://UI/components/PlayerHealthMeter/PlayerHealthMeter.tscn")
+const PLAYER_STATUS_HUD_SCENE := preload("res://UI/components/PlayerStatusHud/PlayerStatusHud.tscn")
 const SKILL_ENERGY_METER_SCRIPT := preload("res://UI/scripts/components/skill_energy_meter.gd")
-const BATTLE_TIME_METER_SCRIPT := preload("res://UI/scripts/components/battle_time_meter.gd")
+const BATTLE_TIME_METER_SCENE := preload("res://UI/components/BattleTimeMeter/BattleTimeMeter.tscn")
 
 var _continuous_refresh_timer := 0.0
 
@@ -58,7 +58,7 @@ func bind_nodes(
 	p_heat_label: Label,
 	p_ammo_label: Label,
 	p_weapon_state_label: Label,
-	p_gold_label: Label,
+	p_gold_label: Control,
 	p_resource_label: Label,
 	p_time_label: Control,
 	p_equipped_label: Label,
@@ -128,12 +128,10 @@ func ensure_heat_label(character_root: Control) -> Label:
 	if heat_label != null and is_instance_valid(heat_label):
 		heat_label.visible = false
 		return heat_label
-	heat_label = Label.new()
-	heat_label.name = "Heat"
-	heat_label.text = ""
+	heat_label = character_root.get_node_or_null("Heat") as Label
+	if heat_label == null:
+		return null
 	heat_label.visible = false
-	heat_label.custom_minimum_size = Vector2(156.0, 26.0)
-	character_root.add_child(heat_label)
 	return heat_label
 
 func ensure_ammo_label(hp_label_root: Control) -> Label:
@@ -141,11 +139,10 @@ func ensure_ammo_label(hp_label_root: Control) -> Label:
 	if ammo_label != null and is_instance_valid(ammo_label):
 		ammo_label.visible = false
 		return ammo_label
-	ammo_label = Label.new()
-	ammo_label.name = "Ammo"
-	ammo_label.text = ""
+	ammo_label = hp_label_root.get_node_or_null("CombatResourceSlots/Ammo") as Label
+	if ammo_label == null:
+		return null
 	ammo_label.visible = false
-	ammo_label.custom_minimum_size = Vector2(128.0, 24.0)
 	return ammo_label
 
 func ensure_resource_label_under_hp(current_resource_label: Label, hp_label_root: Control) -> Label:
@@ -180,22 +177,14 @@ func _ensure_combat_resource_slot_container(hp_label_root: Control) -> void:
 				previous_parent.remove_child(combat_resource_slot_container)
 			hp_label_root.add_child(combat_resource_slot_container)
 		return
-	combat_resource_slot_container = Control.new()
-	combat_resource_slot_container.name = "CombatResourceSlots"
-	combat_resource_slot_container.position = COMBAT_RESOURCE_ORIGIN
-	combat_resource_slot_container.custom_minimum_size = Vector2.ZERO
-	combat_resource_slot_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hp_label_root.add_child(combat_resource_slot_container)
+	combat_resource_slot_container = hp_label_root.get_node_or_null("CombatResourceSlots") as Control
 
 func ensure_weapon_state_label(character_root: Control) -> Label:
 	if weapon_state_label != null and is_instance_valid(weapon_state_label):
 		return weapon_state_label
-	weapon_state_label = Label.new()
-	weapon_state_label.name = "WeaponState"
-	weapon_state_label.text = LocalizationManager.tr_key("ui.hud.weapon_state_none", "Main: -- | PS: --")
-	weapon_state_label.visible = false
-	weapon_state_label.custom_minimum_size = Vector2(168.0, 24.0)
-	character_root.add_child(weapon_state_label)
+	weapon_state_label = character_root.get_node_or_null("WeaponState") as Label
+	if weapon_state_label != null:
+		weapon_state_label.text = LocalizationManager.tr_key("ui.hud.weapon_state_none", "Main: -- | PS: --")
 	return weapon_state_label
 
 func init_hp_bar() -> void:
@@ -275,7 +264,7 @@ func _ensure_battle_time_meter() -> Control:
 	var parent := time_label.get_parent() as Control
 	if parent == null:
 		return null
-	battle_time_meter = BATTLE_TIME_METER_SCRIPT.new() as Control
+	battle_time_meter = BATTLE_TIME_METER_SCENE.instantiate() as Control
 	battle_time_meter.name = "BattleTimeMeter"
 	battle_time_meter.position = time_label.position
 	battle_time_meter.visible = false
@@ -351,7 +340,7 @@ func _ensure_health_meter() -> void:
 		hp_label_root = hp_label_text.get_parent() as Control
 	if hp_label_root == null:
 		return
-	health_meter = PLAYER_STATUS_HUD_SCRIPT.new()
+	health_meter = PLAYER_STATUS_HUD_SCENE.instantiate()
 	health_meter.name = "PlayerStatusHud"
 	health_meter.position = HEALTH_METER_ORIGIN
 	health_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -461,7 +450,7 @@ func _ensure_primary_resource_meter() -> void:
 				previous_parent.remove_child(primary_resource_meter)
 			special_resource_slot_container.add_child(primary_resource_meter)
 		return
-	primary_resource_meter = COMBAT_RESOURCE_METER_SCRIPT.new()
+	primary_resource_meter = COMBAT_RESOURCE_METER_SCENE.instantiate()
 	primary_resource_meter.name = "SpecialResourceMeter"
 	primary_resource_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	primary_resource_meter.modulate.a = SPECIAL_RESOURCE_OPACITY
@@ -509,7 +498,7 @@ func _ensure_global_weapon_energy_meter() -> void:
 		return
 	if global_weapon_energy_meter != null and is_instance_valid(global_weapon_energy_meter):
 		return
-	global_weapon_energy_meter = COMBAT_RESOURCE_METER_SCRIPT.new()
+	global_weapon_energy_meter = COMBAT_RESOURCE_METER_SCENE.instantiate()
 	global_weapon_energy_meter.name = "GlobalWeaponEnergyMeter"
 	global_weapon_energy_meter.position = Vector2(0.0, -28.0)
 	global_weapon_energy_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -519,14 +508,12 @@ func _ensure_global_weapon_energy_meter() -> void:
 func _ensure_special_resource_slot_container() -> void:
 	if special_resource_slot_container != null and is_instance_valid(special_resource_slot_container):
 		return
-	var parent := character_hud_root
-	if parent == null:
+	if character_hud_root == null:
 		return
-	special_resource_slot_container = Control.new()
-	special_resource_slot_container.name = "SpecialResourceSlot"
-	special_resource_slot_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	special_resource_slot_container.position = _special_resource_position(parent.get_viewport_rect().size)
-	parent.add_child(special_resource_slot_container)
+	special_resource_slot_container = character_hud_root.get_node_or_null("SpecialResourceSlot") as Control
+	if special_resource_slot_container == null:
+		return
+	special_resource_slot_container.position = _special_resource_position(character_hud_root.get_viewport_rect().size)
 
 func _special_resource_position(viewport_size: Vector2) -> Vector2:
 	# Align the resource meter's actual visual bottom with the health dock and
@@ -646,10 +633,7 @@ func _refresh_inventory_text_values() -> void:
 		var next_gold_text := str(PlayerData.player_gold)
 		if _last_gold_text != next_gold_text:
 			_last_gold_text = next_gold_text
-			if gold_label.has_method("set_gold_value"):
-				gold_label.call("set_gold_value", PlayerData.player_gold, true)
-			else:
-				gold_label.text = LocalizationManager.tr_format("ui.hud.gold", {"value": PlayerData.player_gold}, "Gold: %s" % str(PlayerData.player_gold))
+			gold_label.call("set_gold_value", PlayerData.player_gold, true)
 
 func _refresh_resource_text_value() -> void:
 	if resource_label and is_instance_valid(resource_label):

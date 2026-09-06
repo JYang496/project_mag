@@ -1,5 +1,7 @@
 extends Ranger
 
+const HYBRID_GROUND_REGISTRATION := preload("res://Visual/Oblique/hybrid_ground_registration.gd")
+
 # Projectile
 @onready var beam = preload("res://Player/Weapons/Projectiles/beam.tscn")
 
@@ -14,6 +16,8 @@ const PASSIVE_ID: StringName = &"laser_focus_channel_triggered"
 @export var focus_channel_width_multiplier: float = 1.35
 var _focus_channel_remaining_sec: float = 0.0
 var _focus_channel_energy_per_sec: float = 0.0
+var _refraction_matrix_active := false
+var _refraction_last_hit_msec: Dictionary = {}
 
 var weapon_data = {
 	"1": {"damage": "3", "fire_interval_sec": "1.6", "ammo": "6"},
@@ -106,6 +110,77 @@ func _on_oc_timer_timeout() -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	_try_apply_refraction(target)
+
+func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
+	super.on_hit_target_with_damage_type(target, damage_type)
+	_try_apply_refraction(target)
+
+func _try_apply_refraction(target: Node) -> void:
+	if not _refraction_matrix_active or target == null or not is_instance_valid(target) or not target is Node2D:
+		return
+	var now := Time.get_ticks_msec()
+	var target_id := target.get_instance_id()
+	if now < int(_refraction_last_hit_msec.get(target_id, 0)) + 150:
+		return
+	_refraction_last_hit_msec[target_id] = now
+	var ratios: Array[float] = [0.60, 0.45, 0.30]
+	var candidates: Array[Node2D] = []
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(get_tree(), (target as Node2D).global_position, 260.0):
+		var enemy := enemy_ref as Node2D
+		if enemy != null and is_instance_valid(enemy) and enemy != target:
+			candidates.append(enemy)
+	candidates.sort_custom(func(a: Node2D, b: Node2D) -> bool:
+		return a.global_position.distance_squared_to((target as Node2D).global_position) \
+			< b.global_position.distance_squared_to((target as Node2D).global_position)
+	)
+	var from_position := (target as Node2D).global_position
+	for index in range(mini(candidates.size(), ratios.size())):
+		var chained := candidates[index]
+		var amount: int = maxi(1, int(round(float(get_runtime_damage()) * ratios[index])))
+		var data := DamageManager.build_damage_data(
+			self, amount, Attack.TYPE_ENERGY,
+			{"amount": 0, "angle": Vector2.ZERO},
+			DamageData.SOURCE_PLAYER_WEAPON, DamageDeliveryType.BEAM
+		)
+		DamageManager.apply_to_target(chained, data)
+		_draw_refraction_line(from_position, chained.global_position)
+		from_position = chained.global_position
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	_refraction_matrix_active = true
+	_refraction_last_hit_msec.clear()
+	return true
+
+func finish_weapon_skill_effect() -> void:
+	_refraction_matrix_active = false
+	_refraction_last_hit_msec.clear()
+
+func _draw_refraction_line(from_position: Vector2, to_position: Vector2) -> void:
+	var world_root := get_tree().current_scene as Node2D
+	if world_root == null:
+		return
+	var line := Line2D.new()
+	line.width = 3.0
+	line.default_color = Color(0.66, 0.46, 1.0, 0.92)
+	line.set_meta(&"hybrid_ground_visible", true)
+	line.set_meta(&"hybrid_segment_style", &"beam")
+	line.set_meta(&"hybrid_segment_endpoints", true)
+	world_root.add_child(line)
+	# The hybrid segment renderer transforms Line2D points through its parent,
+	# so store both endpoints in the world root's local coordinate space.
+	line.points = PackedVector2Array([
+		world_root.to_local(from_position),
+		world_root.to_local(to_position),
+	])
+	line.add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
+	HYBRID_GROUND_REGISTRATION.register(line, &"register_ground_segment")
+	line.tree_exiting.connect(func() -> void:
+		HYBRID_GROUND_REGISTRATION.unregister(line)
+	, CONNECT_ONE_SHOT)
+	var tween := line.create_tween()
+	tween.tween_property(line, "modulate:a", 0.0, 0.16)
+	tween.tween_callback(line.queue_free)
 
 func get_energy_full_fire_passive_id() -> StringName:
 	return PASSIVE_ID
@@ -174,3 +249,4 @@ func _end_focus_channel() -> void:
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
 	_end_focus_channel()
+	finish_weapon_skill_effect()

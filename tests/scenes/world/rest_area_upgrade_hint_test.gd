@@ -1,7 +1,7 @@
 extends Node
 
 const HINT_PRESENTER := preload("res://World/rest_area_hint_presenter.gd")
-const UPGRADE_VIEW := preload("res://UI/scripts/management/upgrade_management_view.gd")
+const UPGRADE_VIEW := preload("res://UI/components/UpgradeManagementView/UpgradeManagementView.gd")
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _old_gold := 0

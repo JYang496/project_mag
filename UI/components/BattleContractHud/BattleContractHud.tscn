@@ -1,0 +1,101 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://UI/components/BattleContractHud/BattleContractHud.gd" id="1_script"]
+[ext_resource type="Theme" path="res://UI/themes/battle_hud_theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://UI/scripts/components/smooth_progress_bar.gd" id="3_progress"]
+[sub_resource type="StyleBoxFlat" id="StyleBox_panel"]
+bg_color = Color(0.025, 0.075, 0.11, 0.92)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.25, 0.68, 0.82, 0.78)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0.04, 0.07, 0.55)
+shadow_size = 5
+[sub_resource type="StyleBoxFlat" id="StyleBox_track"]
+bg_color = Color(0.03, 0.1, 0.15, 0.9)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxFlat" id="StyleBox_fill"]
+bg_color = Color(0.301961, 0.721569, 0.819608, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+[sub_resource type="AudioStreamGenerator" id="AudioStream_tone"]
+mix_rate = 22050.0
+buffer_length = 0.2
+
+[node name="BattleContractHud" type="PanelContainer"]
+visible = false
+custom_minimum_size = Vector2(280, 80)
+offset_right = 280.0
+offset_bottom = 80.0
+size_flags_horizontal = 3
+mouse_filter = 2
+clip_contents = true
+texture_filter = 1
+theme = ExtResource("2_theme")
+theme_override_styles/panel = SubResource("StyleBox_panel")
+script = ExtResource("1_script")
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 10
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Header" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+theme_override_constants/separation = 12
+[node name="Title" type="Label" parent="Margin/Body/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.556863, 0.862745, 0.94902, 1)
+theme_override_colors/font_shadow_color = Color(0, 0.08, 0.12, 0.9)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 12
+text_overrun_behavior = 3
+clip_text = true
+[node name="Value" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.85098, 0.952941, 0.972549, 1)
+theme_override_font_sizes/font_size = 11
+text_overrun_behavior = 3
+clip_text = true
+horizontal_alignment = 1
+[node name="Detail" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.572549, 0.678431, 0.709804, 1)
+theme_override_font_sizes/font_size = 12
+text_overrun_behavior = 3
+clip_text = true
+horizontal_alignment = 1
+[node name="Progress" type="ProgressBar" parent="Margin/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 5)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBox_track")
+theme_override_styles/fill = SubResource("StyleBox_fill")
+max_value = 1.0
+step = 0.001
+show_percentage = false
+script = ExtResource("3_progress")
+smoothing_speed = 7.0
+[node name="AudioPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+stream = SubResource("AudioStream_tone")
+bus = &"SFX"

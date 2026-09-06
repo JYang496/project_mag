@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://UI/components/GoldDeltaPopup/GoldDeltaPopup.gd" id="1_script"]
+[node name="GoldDeltaPopup" type="Control"]
+offset_left = 104.0
+offset_top = 4.0
+offset_right = 168.0
+offset_bottom = 28.0
+mouse_filter = 2
+script = ExtResource("1_script")
+[node name="Value" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.76)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 12
+vertical_alignment = 1

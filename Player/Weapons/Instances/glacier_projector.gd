@@ -2,6 +2,7 @@ extends Ranger
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const GLACIER_SPRAY_VFX_SCENE: PackedScene = preload("res://Player/Weapons/Effects/glacier_spray_vfx.tscn")
+const WEAPON_SKILL_AREA := preload("res://Player/Weapons/Effects/weapon_skill_area.gd")
 
 @onready var detect_area: Area2D = $DetectArea
 
@@ -37,6 +38,17 @@ func _ready() -> void:
 	_sync_detect_radius()
 	_ensure_glacier_vfx()
 
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	var player := PlayerData.player as Node2D
+	if player == null or not is_instance_valid(player):
+		return false
+	var domain := WEAPON_SKILL_AREA.new().setup(
+		WEAPON_SKILL_AREA.Mode.WHITE_FROST_DOMAIN, self, player.global_position, 6.0, 210.0, 0.25
+	)
+	domain.follow_player = false
+	get_projectile_spawn_parent().add_child(domain)
+	return true
+
 func set_level(lv) -> void:
 	lv = str(lv)
 	var level_data: Dictionary = get_weapon_level_data(lv, weapon_data)
@@ -58,6 +70,21 @@ func _on_shoot() -> void:
 
 func supports_projectiles() -> bool:
 	return false
+
+func uses_continuous_automatic_fire() -> bool:
+	return true
+
+func get_automatic_fire_target_grace_sec() -> float:
+	return 0.3
+
+func request_automatic_fire() -> bool:
+	_primary_fire_held = true
+	var fired := request_primary_fire()
+	if not _can_maintain_held_glacier_vfx():
+		_stop_glacier_vfx()
+		return fired
+	_refresh_held_glacier_vfx()
+	return fired
 
 func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	for behavior in branch_runtime.get_branch_behaviors():
@@ -94,18 +121,20 @@ func _emit_glacier_burst() -> void:
 	_refresh_glacier_vfx(forward)
 	var targets: Array[Node] = _collect_targets_in_cone(forward)
 	var cold_snap_active := _consume_cold_snap_for_next_attack()
+	var burst_damage_applied := false
 	for target in targets:
-		_apply_freeze_damage(target, cold_snap_active)
+		burst_damage_applied = _apply_freeze_damage(target, cold_snap_active) or burst_damage_applied
+	_record_skill_burst_damage(burst_damage_applied)
 	if cold_snap_active:
 		_emit_cold_snap_attack_trigger(targets)
 
-func _apply_freeze_damage(target: Node, cold_snap_active: bool = false) -> void:
+func _apply_freeze_damage(target: Node, cold_snap_active: bool = false) -> bool:
 	if target == null or not is_instance_valid(target):
-		return
+		return false
 	if not target.has_method("damaged"):
-		return
+		return false
 	if _attacked_target_ids.has(target.get_instance_id()):
-		return
+		return false
 	_attacked_target_ids[target.get_instance_id()] = true
 
 	var runtime_damage: int = get_runtime_damage()
@@ -117,10 +146,15 @@ func _apply_freeze_damage(target: Node, cold_snap_active: bool = false) -> void:
 		DamageData.SOURCE_PLAYER_WEAPON,
 		DamageDeliveryType.AREA
 	)
-	DamageManager.apply_to_target(target, damage_data)
+	var damage_applied := DamageManager.apply_to_target(target, damage_data)
 	on_hit_target_with_damage_type(target, Attack.TYPE_FREEZE)
 	if cold_snap_active:
 		_apply_cold_snap_control(target)
+	return damage_applied
+
+func _record_skill_burst_damage(damage_applied: bool) -> void:
+	if damage_applied:
+		add_weapon_skill_unlock_progress(1.0)
 
 func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
 	super.on_hit_target_with_damage_type(target, damage_type)

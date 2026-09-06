@@ -1,10 +1,11 @@
 extends Control
 
-const REWARD_PANEL_SCENE := preload("res://UI/scenes/reward_selection_panel.tscn")
+const REWARD_PANEL_SCENE := preload("res://UI/components/RewardSelectionPanel/RewardSelectionPanel.tscn")
+const REWARD_PANEL_SCRIPT := preload("res://UI/components/RewardSelectionPanel/RewardSelectionPanel.gd")
 const MODULE_SCENE := preload("res://Player/Weapons/Modules/wmod_crit_calibrator.tscn")
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
-var _panel: RewardSelectionPanel
+var _panel: Control
 var _showcase_weapons: Array[Weapon] = []
 var _previous_weapon_list: Array = []
 var _previous_locale := "en"
@@ -27,7 +28,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			(_panel.options_box.get_child(_focus_index) as Button).grab_focus()
 		KEY_H:
 			_panel.call("_begin_quick_select_hold", _focus_index)
-			_panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS * 0.65)
+			_panel.call("_process", REWARD_PANEL_SCRIPT.QUICK_SELECT_HOLD_SECONDS * 0.65)
 		KEY_R:
 			_panel.call("_cancel_quick_select_hold")
 			(_panel.options_box.get_child(0) as Button).grab_focus()
@@ -44,7 +45,7 @@ func _build_showcase() -> void:
 		return
 	CellEffectRuntime.prepare_definitions(true)
 	_create_showcase_weapons(["1", "3"])
-	_panel = REWARD_PANEL_SCENE.instantiate() as RewardSelectionPanel
+	_panel = REWARD_PANEL_SCENE.instantiate() as Control
 	%Stage.add_child(_panel)
 	await get_tree().process_frame
 	_open_current_locale()
@@ -88,7 +89,7 @@ func _validate_showcase() -> void:
 	assert(int(_panel.get("_selected_index")) == 1)
 	assert(get_viewport().gui_get_focus_owner() == _panel.options_box.get_child(1))
 	_panel.call("_begin_quick_select_hold", 2)
-	_panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS * 0.65)
+	_panel.call("_process", REWARD_PANEL_SCRIPT.QUICK_SELECT_HOLD_SECONDS * 0.65)
 	var hold_progress := (_panel.options_box.get_child(2) as Button).find_child("HoldProgress", true, false) as ProgressBar
 	assert(hold_progress.visible and hold_progress.value > 0.6 and hold_progress.value < 0.7)
 	_panel.call("_cancel_quick_select_hold")

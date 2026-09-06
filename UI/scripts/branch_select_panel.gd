@@ -1,6 +1,8 @@
 extends Control
 class_name BranchSelectPanel
 
+const BRANCH_CARD_SCENE := preload("res://UI/components/BranchCard/BranchCard.tscn")
+
 signal branch_selected(weapon: Weapon, branch_id: String)
 
 @onready var title_label: Label = $Panel/VBox/Title
@@ -47,16 +49,10 @@ func open_for_weapon(target_weapon: Weapon, branch_defs: Array[WeaponBranchDefin
 			continue
 		sorted_defs.append(def)
 	sorted_defs.sort_custom(Callable(self, "_sort_branch_defs"))
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 14)
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	options_box.add_child(row)
 	for def in sorted_defs:
 		_branch_ids.append(def.branch_id)
 		var branch_card := _build_branch_card(def)
-		row.add_child(branch_card)
+		options_box.add_child(branch_card)
 
 func close_panel(_choose_default_if_pending: bool = false) -> void:
 	visible = false
@@ -93,100 +89,14 @@ func _sort_branch_defs(a: WeaponBranchDefinition, b: WeaponBranchDefinition) -> 
 	return name_a < name_b
 
 func _build_branch_card(def: WeaponBranchDefinition) -> Button:
-	var button := Button.new()
-	button.text = ""
-	button.custom_minimum_size = Vector2(260, 300)
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button.focus_mode = Control.FOCUS_ALL
-	button.tooltip_text = LocalizationManager.get_branch_description(def)
-	button.pressed.connect(Callable(self, "_on_branch_button_pressed").bind(def.branch_id))
-	_apply_card_style(button, _get_branch_accent(def))
-
-	var content := MarginContainer.new()
-	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.set_anchors_preset(Control.PRESET_FULL_RECT)
-	content.add_theme_constant_override("margin_left", 14)
-	content.add_theme_constant_override("margin_top", 12)
-	content.add_theme_constant_override("margin_right", 14)
-	content.add_theme_constant_override("margin_bottom", 12)
-	button.add_child(content)
-
-	var vbox := VBoxContainer.new()
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.add_theme_constant_override("separation", 9)
-	content.add_child(vbox)
-
-	var header := HBoxContainer.new()
-	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	header.add_theme_constant_override("separation", 10)
-	vbox.add_child(header)
-
-	var accent := ColorRect.new()
-	accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	accent.color = _get_branch_accent(def)
-	accent.custom_minimum_size = Vector2(5, 34)
-	header.add_child(accent)
-
-	var name_label := Label.new()
-	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	name_label.add_theme_font_size_override("font_size", 17)
-	name_label.add_theme_color_override("font_color", Color(0.92, 0.97, 1.0))
-	name_label.text = LocalizationManager.get_branch_display_name(def)
-	header.add_child(name_label)
-
-	var icon_frame := PanelContainer.new()
-	icon_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_frame.custom_minimum_size = Vector2(0, 116)
-	icon_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	icon_frame.add_theme_stylebox_override("panel", _make_icon_frame_style(_get_branch_accent(def)))
-	vbox.add_child(icon_frame)
-
-	var icon_margin := MarginContainer.new()
-	icon_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_margin.add_theme_constant_override("margin_left", 12)
-	icon_margin.add_theme_constant_override("margin_top", 10)
-	icon_margin.add_theme_constant_override("margin_right", 12)
-	icon_margin.add_theme_constant_override("margin_bottom", 10)
-	icon_frame.add_child(icon_margin)
-
-	var icon_rect := TextureRect.new()
-	icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_rect.custom_minimum_size = Vector2(118, 88)
-	icon_rect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	icon_rect.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon_rect.texture = def.icon
-	icon_margin.add_child(icon_rect)
-
-	var desc_label := Label.new()
-	desc_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	desc_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	desc_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc_label.add_theme_font_size_override("font_size", 13)
-	desc_label.add_theme_color_override("font_color", Color(0.72, 0.82, 0.88))
-	desc_label.text = LocalizationManager.get_branch_description(def)
-	vbox.add_child(desc_label)
-
-	var fuse_label := Label.new()
-	fuse_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	fuse_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	fuse_label.add_theme_font_size_override("font_size", 12)
-	fuse_label.add_theme_color_override("font_color", _get_branch_accent(def))
-	fuse_label.text = LocalizationManager.tr_format(
+	var button := BRANCH_CARD_SCENE.instantiate() as Button
+	var fuse_text := LocalizationManager.tr_format(
 		"ui.weapon.fuse_value",
 		{"fuse": int(def.unlock_fuse)},
 		"Fuse %d" % int(def.unlock_fuse)
 	).to_upper()
-	vbox.add_child(fuse_label)
-
+	button.call("set_data", {"id": def.branch_id, "name": LocalizationManager.get_branch_display_name(def), "description": LocalizationManager.get_branch_description(def), "icon": def.icon, "accent": _get_branch_accent(def), "fuse": fuse_text})
+	button.connect("selected", _on_branch_button_pressed)
 	return button
 
 func _build_selected_branch_summary(weapon: Weapon) -> String:

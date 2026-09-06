@@ -1,0 +1,94 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://UI/components/TaskManagementView/TaskManagementView.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="GridStyle"]
+bg_color = Color(0.055, 0.064, 0.07, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.18, 0.27, 0.31, 0.95)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 8.0
+content_margin_top = 6.0
+content_margin_right = 8.0
+content_margin_bottom = 6.0
+
+[node name="TaskManagementView" type="HBoxContainer"]
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+script = ExtResource("1_script")
+
+[node name="GridPanel" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_override_styles/panel = SubResource("GridStyle")
+
+[node name="Margin" type="MarginContainer" parent="GridPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Grid" type="GridContainer" parent="GridPanel/Margin"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(352, 352)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 3
+
+[node name="Side" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="InventoryTitle" type="Label" parent="Side"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.96, 1, 1)
+theme_override_font_sizes/font_size = 18
+
+[node name="Status" type="Label" parent="Side"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.92, 0.96, 1)
+autowrap_mode = 2
+
+[node name="Instruction" type="Label" parent="Side"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.96, 0.72, 1)
+autowrap_mode = 2
+
+[node name="DetailHint" type="Label" parent="Side"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.72, 0.76, 1)
+autowrap_mode = 2
+
+[node name="BattleWarning" type="Label" parent="Side"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.78, 0.56, 1)
+autowrap_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="Side"]
+custom_minimum_size = Vector2(380, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="InventoryList" type="VBoxContainer" parent="Side/Scroll"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8

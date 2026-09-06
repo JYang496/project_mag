@@ -1,5 +1,7 @@
 extends Ranger
 
+const TRAIL_AREA_EFFECT := preload("res://Combat/area_effect/trail_area_effect.gd")
+
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const CONE_SPRAY_VFX_SCENE: PackedScene = preload("res://Player/Weapons/Effects/cone_spray_vfx.tscn")
 
@@ -24,6 +26,7 @@ var attack_range: float = 180.0
 var _attacked_target_ids: Dictionary = {}
 var _flame_vfx: Node
 var _primary_fire_held: bool = false
+var _moving_inferno: TrailAreaEffect
 var _last_aim_update_physics_frame: int = -1
 
 var weapon_data := {
@@ -71,6 +74,21 @@ func _on_shoot() -> void:
 
 func supports_projectiles() -> bool:
 	return false
+
+func uses_continuous_automatic_fire() -> bool:
+	return true
+
+func get_automatic_fire_target_grace_sec() -> float:
+	return 0.3
+
+func request_automatic_fire() -> bool:
+	_primary_fire_held = true
+	var fired := request_primary_fire()
+	if not _can_maintain_held_flame_vfx():
+		_stop_flame_vfx()
+		return fired
+	_refresh_held_flame_vfx()
+	return fired
 
 func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	for behavior in branch_runtime.get_branch_behaviors():
@@ -135,9 +153,38 @@ func _apply_fire_damage(target: Node) -> void:
 		DamageDeliveryType.AREA
 	)
 	DamageManager.apply_to_target(target, damage_data)
+	if _moving_inferno != null and is_instance_valid(_moving_inferno) and target is Node2D:
+		_moving_inferno.add_point((target as Node2D).global_position, 38.0)
 
 	# 调用 on_hit_target 触发武器的命中效果
 	on_hit_target_with_damage_type(target, Attack.TYPE_FIRE)
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	finish_weapon_skill_effect()
+	var player := PlayerData.player as Node2D
+	if player == null or not is_instance_valid(player):
+		return false
+	var trail := TRAIL_AREA_EFFECT.new()
+	trail.surface_style = TrailAreaEffect.SurfaceStyle.FIRE
+	trail.duration = 2.0
+	trail.tick_interval = 0.4
+	trail.sample_interval = 0.08
+	trail.max_segments = 28
+	trail.tick_damage = max(1, int(round(float(get_runtime_damage()) * 0.30)))
+	trail.damage_type = Attack.TYPE_FIRE
+	trail.source_node = self
+	trail.source_category = DamageData.SOURCE_PLAYER_WEAPON
+	trail.fill_color = Color(1.0, 0.18, 0.08, 0.20)
+	trail.line_color = Color(1.0, 0.65, 0.18, 0.82)
+	get_tree().root.add_child(trail)
+	trail.attach_emitter(player, 42.0, 18.0, false)
+	_moving_inferno = trail
+	return true
+
+func finish_weapon_skill_effect() -> void:
+	if _moving_inferno != null and is_instance_valid(_moving_inferno):
+		_moving_inferno.finish_with_residue()
+	_moving_inferno = null
 
 func _collect_targets_in_cone(forward: Vector2) -> Array[Node]:
 	var output: Array[Node] = []
@@ -226,6 +273,7 @@ func _on_enter_main_weapon_role() -> void:
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
+	finish_weapon_skill_effect()
 
 func get_passive_status() -> Dictionary:
 	var required_duration := 4.0

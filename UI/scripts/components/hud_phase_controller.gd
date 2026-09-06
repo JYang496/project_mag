@@ -1,8 +1,7 @@
 extends RefCounted
 class_name HudPhaseController
 
-const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
-const BATTLE_HUD_THEME := preload("res://UI/themes/battle_hud_theme.tres")
+const PHASE_DOCK_SCENE := preload("res://UI/components/PhaseDock/PhaseDock.tscn")
 const FADE_SECONDS := 0.16
 
 var owner_ui: UI
@@ -92,30 +91,11 @@ func layout(viewport_size: Vector2) -> void:
 func _ensure_phase_dock() -> void:
 	if owner_ui == null or phase_dock != null:
 		return
-	phase_dock = PanelContainer.new()
-	phase_dock.name = "PhaseDock"
-	phase_dock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	phase_dock = PHASE_DOCK_SCENE.instantiate() as PanelContainer
 	phase_dock.z_index = 45
-	phase_dock.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	phase_dock.theme = BATTLE_HUD_THEME
-	phase_dock.add_theme_stylebox_override("panel", _build_panel_style())
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_top", 4)
-	margin.add_theme_constant_override("margin_right", 10)
-	margin.add_theme_constant_override("margin_bottom", 4)
-	phase_dock.add_child(margin)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	margin.add_child(row)
-	phase_label = Label.new()
-	phase_label.name = "PhaseLabel"
-	phase_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	phase_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	TOKENS.style_label(phase_label, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_PRIMARY)
-	phase_label.add_theme_font_size_override("font_size", 12)
-	row.add_child(phase_label)
 	owner_ui.gui_root.add_child(phase_dock)
+	phase_label = phase_dock.get_node("Margin/ContentRow/PhaseLabel") as Label
+	var row := phase_dock.call("get_content_row") as HBoxContainer
 	if owner_ui.gold_label != null and owner_ui.gold_label.get_parent() != row:
 		owner_ui.gold_label.reparent(row)
 		owner_ui.gold_label.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -124,21 +104,21 @@ func _ensure_phase_dock() -> void:
 
 
 func _update_phase_text(phase: String) -> void:
-	if phase_label == null:
+	if phase_dock == null:
 		return
+	var text := ""
 	match phase:
 		PhaseManager.BATTLE:
-			phase_label.text = LocalizationManager.tr_key("ui.tutorial.state.battle", "Current: Battle")
+			text = LocalizationManager.tr_key("ui.tutorial.state.battle", "Current: Battle")
 		PhaseManager.PREPARE:
-			phase_label.text = LocalizationManager.tr_key("ui.tutorial.state.rest", "Current: Rest Area")
+			text = LocalizationManager.tr_key("ui.tutorial.state.rest", "Current: Rest Area")
 		PhaseManager.SETTLEMENT:
-			phase_label.text = LocalizationManager.tr_key("ui.phase.settlement", "Current: Reward Settlement")
+			text = LocalizationManager.tr_key("ui.phase.settlement", "Current: Reward Settlement")
 		PhaseManager.PROTOCOL_SELECTION:
-			phase_label.text = LocalizationManager.tr_key("ui.phase.protocol_selection", "Current: Protocol Selection")
+			text = LocalizationManager.tr_key("ui.phase.protocol_selection", "Current: Protocol Selection")
 		PhaseManager.BATTLE_STARTING:
-			phase_label.text = LocalizationManager.tr_key("ui.phase.battle_starting", "Current: Deploying")
-		_:
-			phase_label.text = ""
+			text = LocalizationManager.tr_key("ui.phase.battle_starting", "Current: Deploying")
+	phase_dock.call("set_phase_text", text)
 
 
 func _set_visible(node: CanvasItem, should_show: bool, animated: bool) -> void:
@@ -182,10 +162,3 @@ func _finish_hide(node: CanvasItem, key: int) -> void:
 		node.modulate.a = 1.0
 	_visibility_tweens.erase(key)
 
-
-func _build_panel_style() -> StyleBoxFlat:
-	var style := TOKENS.make_panel_style(true, TOKENS.COLOR_BORDER)
-	style.bg_color = Color(0.025, 0.07, 0.10, 0.90)
-	style.border_color = Color(0.25, 0.68, 0.82, 0.72)
-	style.set_corner_radius_all(5)
-	return style

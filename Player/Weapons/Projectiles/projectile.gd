@@ -5,7 +5,6 @@ enum ProjectileVisualMode { UPRIGHT, DIRECTIONAL, GROUND, SEGMENT, CUSTOM }
 
 const DEFAULT_EXPIRE_TIME: float = 2.5
 const MIN_EXPIRE_TIME: float = 0.001
-const PISTOL_PIERCE_MARK_ID := &"pistol_pierce"
 const INITIAL_PROJECTILE_HITS_META := "initial_projectile_hits"
 
 var hp : int = 1
@@ -81,18 +80,14 @@ func _register_batch_simulation() -> void:
 		return
 	if _active_movement_controller != null and is_instance_valid(_active_movement_controller):
 		return
-	var simulation := get_node_or_null("/root/ProjectileSimulationSystem")
-	if simulation != null and simulation.has_method("register_projectile"):
-		simulation.call("register_projectile", self)
+	ProjectileSimulationSystem.register_projectile(self)
 
 func _unregister_batch_simulation(restore_processing := false) -> void:
 	if not is_inside_tree():
 		if restore_processing:
 			set_physics_process(true)
 		return
-	var simulation := get_node_or_null("/root/ProjectileSimulationSystem")
-	if simulation != null and simulation.has_method("unregister_projectile"):
-		simulation.call("unregister_projectile", self, restore_processing)
+	ProjectileSimulationSystem.unregister_projectile(self, restore_processing)
 
 func batch_simulation_step(delta: float) -> void:
 	_simulate_movement(delta)
@@ -185,16 +180,12 @@ func enemy_hit(charge : int = 1):
 		call_deferred("despawn")
 
 func enemy_hit_target(charge: int = 1, target: Node = null) -> void:
-	if should_preserve_projectile_durability(target):
-		return
 	enemy_hit(charge)
 
 func get_projectile_pierce_capacity() -> int:
 	return maxi(1, int(get_meta(INITIAL_PROJECTILE_HITS_META, hp)))
 
 func consume_projectile_durability(charge: int = 1, target: Node = null) -> void:
-	if should_preserve_projectile_durability(target):
-		return
 	enemy_hit(charge)
 
 func on_hit_target(target: Node) -> void:
@@ -264,6 +255,7 @@ func set_debug_snapshot(source_weapon_name: String, effect_names: Array[String],
 
 func despawn() -> void:
 	_unregister_batch_simulation(false)
+	_notify_source_weapon_before_despawn()
 	if not _is_pooled:
 		queue_free()
 		return
@@ -330,6 +322,13 @@ func _on_before_pooled() -> void:
 	_reset_runtime_meta_flags()
 	_remove_debug_overlay()
 	_reset_projectile_visual_state()
+
+func _notify_source_weapon_before_despawn() -> void:
+	if bool(get_meta(&"_source_weapon_despawn_notified", false)):
+		return
+	set_meta(&"_source_weapon_despawn_notified", true)
+	if source_weapon and is_instance_valid(source_weapon) and source_weapon.has_method("on_projectile_will_despawn"):
+		source_weapon.call("on_projectile_will_despawn", self)
 
 func _on_acquired_from_pool() -> void:
 	visible = true
@@ -465,15 +464,7 @@ func _remove_debug_overlay() -> void:
 	_debug_label = null
 
 func _get_object_pool() -> Node:
-	if not is_inside_tree():
-		return null
-	var tree := get_tree()
-	if tree == null:
-		return null
-	var root := tree.root
-	if root == null:
-		return null
-	return root.get_node_or_null("ObjectPool")
+	return ObjectPool
 
 func _reset_runtime_meta_flags() -> void:
 	var keep_meta: Dictionary = {
@@ -484,13 +475,6 @@ func _reset_runtime_meta_flags() -> void:
 		if keep_meta.has(meta_key):
 			continue
 		remove_meta(meta_key)
-
-func should_preserve_projectile_durability(target: Node) -> bool:
-	if target == null or not is_instance_valid(target):
-		return false
-	if not target.has_method("has_mark"):
-		return false
-	return bool(target.call("has_mark", PISTOL_PIERCE_MARK_ID))
 
 func _capture_initial_projectile_hits() -> void:
 	set_meta(INITIAL_PROJECTILE_HITS_META, maxi(1, hp))

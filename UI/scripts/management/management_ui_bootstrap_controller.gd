@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ManagementUiBootstrapController
 
-const REUSABLE_PRIMARY_MENU_SCRIPT := preload("res://UI/scripts/management/reusable_primary_menu.gd")
+const REUSABLE_PRIMARY_MENU_SCRIPT := preload("res://UI/components/ReusablePrimaryMenu/ReusablePrimaryMenu.gd")
 
 var owner_ui: UI
 var _shell_polish_ready := false

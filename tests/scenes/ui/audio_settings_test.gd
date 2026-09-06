@@ -1,6 +1,6 @@
 extends Node
 
-const AUDIO_CONTROLS_SCENE_SCRIPT := preload("res://UI/scripts/components/audio_settings_controls.gd")
+const AUDIO_CONTROLS_SCENE := preload("res://UI/components/AudioSettingsControls/AudioSettingsControls.tscn")
 
 var _failed := false
 var _original_master := 100.0
@@ -59,7 +59,7 @@ func _test_persistence() -> void:
 	_assert_near(0.0, float(cfg.get_value("audio", "sfx_volume_percent", -1.0)), "Saved SFX volume should match.")
 
 func _test_controls_sync() -> void:
-	var controls := AUDIO_CONTROLS_SCENE_SCRIPT.new() as VBoxContainer
+	var controls := AUDIO_CONTROLS_SCENE.instantiate() as VBoxContainer
 	add_child(controls)
 	await get_tree().process_frame
 	var master_slider := controls.call("get_slider", &"Master") as HSlider

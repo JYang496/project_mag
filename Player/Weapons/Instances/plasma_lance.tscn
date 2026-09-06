@@ -6,6 +6,10 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/special_pulse_feedback.tres" id="4_feedback"]
 
 [node name="PlasmaLance" unique_id=1138617759 instance=ExtResource("1_ranger")]
+active_skill_effect_id = &"plasma_storm"
+skill_unlock_condition = &"global_energy_and_heat"
+skill_unlock_hint = "Fill global weapon energy with shared Heat at 50%"
+skill_unlock_required = 0.5
 base_trait_flags = 18
 script = ExtResource("2_script")
 turn_speed_degrees_per_second = 300.0

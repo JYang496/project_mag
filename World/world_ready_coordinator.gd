@@ -1,58 +1,52 @@
 extends Node
 
 func _ready() -> void:
-	for frame in range(120):
-		if _is_world_ready():
-			var ui := get_parent().get_node_or_null("UI")
-			var start_new_game_battle := GlobalVariables.consume_new_game_battle_request()
-			if start_new_game_battle:
-				var rest_area := get_parent().get_node_or_null("RestArea") as RestArea
-				LoadingPerformance.update_world_preview_loading_progress(0.94)
-				LoadingPerformance.mark("world_ready")
-				LoadingPerformance.begin_world_build_handoff(0.38)
-				var battle_started := rest_area != null and await rest_area.start_initial_battle()
-				if not battle_started:
-					GlobalVariables.request_new_game_battle()
-					push_warning("New-run automatic battle start failed; keeping the request pending.")
-					LoadingPerformance.hide_world_build_overlay()
-				await get_tree().process_frame
-				LoadingPerformance.mark("first_stable_frame")
-				LoadingPerformance.finish_flow()
-				return
-			var initial_rest_entry_prepared := false
-			if not start_new_game_battle and ui != null and ui.has_method("prepare_initial_rest_area_entry"):
-				initial_rest_entry_prepared = bool(ui.call("prepare_initial_rest_area_entry"))
-			if DisplayServer.get_name() == "headless":
-				await get_tree().process_frame
-			else:
-				await RenderingServer.frame_post_draw
-			LoadingPerformance.update_world_preview_loading_progress(0.94)
-			LoadingPerformance.mark("world_ready")
-			if initial_rest_entry_prepared and ui != null and is_instance_valid(ui) \
-					and ui.has_method("play_initial_rest_area_entry"):
-				# Match the preview fade to the initial arrival cover release so the
-				# lightweight menu projection resolves directly into the live world.
-				LoadingPerformance.begin_world_build_handoff(0.38)
-				await ui.call("play_initial_rest_area_entry")
-			else:
-				LoadingPerformance.hide_world_build_overlay()
-			await get_tree().process_frame
-			LoadingPerformance.mark("first_stable_frame")
-			LoadingPerformance.finish_flow()
+	await get_tree().process_frame
+	var world := get_parent()
+	var board := world.get_node("Board") as BoardCellGenerator
+	var ui := world.get_node("UI") as UI
+	var ground := world.get_node("HybridGroundView3D") as HybridGroundView3D
+	var rest_area := world.get_node("RestArea") as RestArea
+	if not _is_world_ready(board, ui, ground):
+		push_error("WorldShell completed without satisfying its world-entry contract.")
+		LoadingPerformance.hide_world_build_overlay()
+		return
+	var start_new_game_battle := GlobalVariables.consume_new_game_battle_request()
+	if start_new_game_battle:
+		LoadingPerformance.update_world_preview_loading_progress(0.94)
+		LoadingPerformance.mark("world_ready")
+		LoadingPerformance.begin_world_build_handoff(0.38)
+		if not await rest_area.start_initial_battle():
+			GlobalVariables.request_new_game_battle()
+			push_error("New-run automatic battle start failed; keeping the request pending.")
+			LoadingPerformance.hide_world_build_overlay()
 			return
+		await _finish_loading_flow()
+		return
+	var initial_rest_entry_prepared := ui.prepare_initial_rest_area_entry()
+	if DisplayServer.get_name() == "headless":
 		await get_tree().process_frame
-	push_warning("World ready conditions were not satisfied within 120 frames.")
-	LoadingPerformance.finish_flow()
+	else:
+		await RenderingServer.frame_post_draw
+	LoadingPerformance.update_world_preview_loading_progress(0.94)
+	LoadingPerformance.mark("world_ready")
+	if initial_rest_entry_prepared:
+		LoadingPerformance.begin_world_build_handoff(0.38)
+		await ui.play_initial_rest_area_entry()
+	else:
+		LoadingPerformance.hide_world_build_overlay()
+	await _finish_loading_flow()
 
-func _is_world_ready() -> bool:
-	var world: Node = get_parent()
-	var board: Node = world.get_node_or_null("Board")
-	var ui: Node = world.get_node_or_null("UI")
-	var ground: Node = world.get_node_or_null("HybridGroundView3D")
-	var player: Node = PlayerData.player as Node
-	var player_ready: bool = player != null and is_instance_valid(player) and player.is_inside_tree()
-	var camera_ready: bool = get_viewport().get_camera_2d() != null or get_viewport().get_camera_3d() != null
-	var hud_ready: bool = ui != null and ui.get("battle_hud") != null
-	var board_ready: bool = board != null and board.get_child_count() > 0
-	var ground_ready: bool = ground != null and bool(ground.get("_ground_renderers_initialized"))
-	return player_ready and camera_ready and hud_ready and board_ready and ground_ready
+func _is_world_ready(board: BoardCellGenerator, ui: UI, ground: HybridGroundView3D) -> bool:
+	var player := PlayerData.player as Node
+	return player != null and is_instance_valid(player) and player.is_inside_tree() \
+		and (get_viewport().get_camera_2d() != null or get_viewport().get_camera_3d() != null) \
+		and board.is_ready_for_world_entry() \
+		and ui.is_ready_for_world_entry() \
+		and ground.is_ready_for_world_entry()
+
+
+func _finish_loading_flow() -> void:
+	await get_tree().process_frame
+	LoadingPerformance.mark("first_stable_frame")
+	LoadingPerformance.finish_flow()

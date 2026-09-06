@@ -27,6 +27,7 @@ var ITEM_NAME = "Orbit"
 var spin_speed : float = 5.0
 @export var support_spin_speed_multiplier: float = 0.65
 var _pending_satellite_spawn_count: int = 0
+var _skill_satellites: Array[Projectile] = []
 
 var weapon_data = {
 	"1": {"damage": "8", "spin_speed": "3", "fire_interval_sec": "2.5", "ammo": "2"},
@@ -84,10 +85,40 @@ func _on_tree_exiting() -> void:
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
+	for projectile in _skill_satellites:
+		if projectile != null and is_instance_valid(projectile):
+			projectile.despawn()
+	_skill_satellites.clear()
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	_prune_satellites()
+	for index in range(_skill_satellites.size() - 1, -1, -1):
+		if not is_instance_valid(_skill_satellites[index]):
+			_skill_satellites.remove_at(index)
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	var spawned: Array[Projectile] = []
+	var runtime_damage: int = maxi(1, int(round(float(get_runtime_damage()) * 0.70)))
+	for index in range(3):
+		var projectile := spawn_projectile_from_scene(projectile_template) as Projectile
+		if projectile == null:
+			continue
+		projectile.damage = runtime_damage
+		projectile.damage_type = branch_runtime.get_branch_damage_type_override(Attack.TYPE_PHYSICAL)
+		projectile.hp = 99999
+		projectile.expire_time = 8.0
+		projectile.size = size
+		projectile.projectile_texture = projectile_texture_resource
+		projectile.set_meta(&"orbit_skill_temporary", true)
+		apply_rotate_around_player(projectile, TAU / 3.0, index, _get_effective_orbit_spin_speed() * 1.15)
+		apply_effects_on_projectile(projectile)
+		get_projectile_spawn_parent().call_deferred("add_child", projectile)
+		satellites.append(projectile)
+		_skill_satellites.append(projectile)
+		spawned.append(projectile)
+	_rebalance_new_satellite_offsets(spawned)
+	return not spawned.is_empty()
 
 func _on_weapon_role_changed(next_role: String) -> void:
 	_update_satellite_runtime_state()
@@ -183,7 +214,8 @@ func _update_satellite_runtime_state() -> void:
 		var satellite: Projectile = satellite_node as Projectile
 		if satellite == null:
 			continue
-		satellite.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
+		var skill_multiplier := 0.70 if bool(satellite.get_meta(&"orbit_skill_temporary", false)) else 1.0
+		satellite.damage = max(1, int(round(float(runtime_damage) * damage_multiplier * skill_multiplier)))
 		satellite.damage_type = damage_type
 		var rotate_effect: RotateAroundPlayer = _find_rotate_module(satellite)
 		if rotate_effect != null and is_instance_valid(rotate_effect):
@@ -238,20 +270,22 @@ func on_hit_target(target: Node) -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
+	if event_name == &"on_player_damaged":
+		mark_weapon_skill_ready()
 	branch_runtime.notify_branch_passive_event(event_name, detail)
 
 func get_passive_status() -> Dictionary:
 	if has_weapon_trait(WeaponTrait.ENERGY):
 		return get_energy_full_fire_status()
-	var state := "ready" if has_entry_trigger_ready() else "waiting_entry"
+	var state := "ready" if skill_unlock_runtime.ready else "waiting_damage"
 	return with_passive_charge_status({
 		"id": "orbit_player_damaged_triggered",
 		"display_name": "Player Damaged",
 		"state": state,
 		"progress": 1.0 if state == "ready" else 0.0,
 		"ready": state == "ready",
-		"trigger_hint": "weapon_entered_main",
-		"refresh_hint": "weapon_entry",
+		"trigger_hint": "player_damaged",
+		"refresh_hint": "player_damaged",
 	})
 
 func get_satellites() -> Array[Node2D]:

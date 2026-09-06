@@ -251,6 +251,9 @@ func _run() -> void:
 	var stable_panel_rect := panel_container.get_global_rect()
 	var stable_cards_rect := (_panel.get_node("Shade/Panel/Margin/Content/MainCards") as HBoxContainer).get_global_rect()
 	var stable_detail_rect := (_panel.get_node("Shade/Panel/Margin/Content/DetailPanel") as PanelContainer).get_global_rect()
+	var stable_header_rect := (survival_card.get_node("Margin/Content/Header") as HBoxContainer).get_global_rect()
+	var stable_title_rect := (survival_card.get_node("Margin/Content/Title") as Label).get_global_rect()
+	var stable_objective_rect := (survival_card.get_node("Margin/Content/InfoGrid") as HBoxContainer).get_global_rect()
 	survival_card.call("set_enhanced_mode", true)
 	_panel.call("_on_card_enhanced_mode_changed", true, survival_card)
 	await get_tree().process_frame
@@ -264,8 +267,14 @@ func _run() -> void:
 			stable_detail_rect, (_panel.get_node("Shade/Panel/Margin/Content/DetailPanel") as PanelContainer).get_global_rect(),
 		]
 	)
+	_assert_true(
+		(survival_card.get_node("Margin/Content/Header") as HBoxContainer).get_global_rect().is_equal_approx(stable_header_rect) \
+			and (survival_card.get_node("Margin/Content/Title") as Label).get_global_rect().is_equal_approx(stable_title_rect) \
+			and (survival_card.get_node("Margin/Content/InfoGrid") as HBoxContainer).get_global_rect().is_equal_approx(stable_objective_rect),
+		"Enhanced mode should disclose incremental details without moving the protocol header, title, or core objective (header %s -> %s, title %s -> %s, objective %s -> %s)." % [stable_header_rect, (survival_card.get_node("Margin/Content/Header") as HBoxContainer).get_global_rect(), stable_title_rect, (survival_card.get_node("Margin/Content/Title") as Label).get_global_rect(), stable_objective_rect, (survival_card.get_node("Margin/Content/InfoGrid") as HBoxContainer).get_global_rect()]
+	)
 	var enhancement_toggle := survival_card.get_node("EnhancementToggle") as CheckButton
-	var enhanced_bonus := survival_card.get_node("Margin/Content/EnhancedDetails/Bonus") as Label
+	var enhanced_bonus := survival_card.get_node("Margin/Content/ContentSpacer/EnhancedDetails/Bonus") as Label
 	_assert_true(
 		enhancement_toggle.get_global_rect().size.is_equal_approx(Vector2(144.0, 32.0)) \
 			and survival_card.get_global_rect().encloses(enhancement_toggle.get_global_rect()) \
@@ -274,7 +283,7 @@ func _run() -> void:
 	)
 	_assert_true(
 		enhanced_bonus.get_global_rect().end.y <= enhancement_toggle.get_global_rect().position.y - 4.0,
-		"Enhanced reward copy should retain visible separation above the anchored enhancement toggle."
+		"Enhanced reward copy should retain visible separation above the anchored enhancement toggle (%s vs %s)." % [enhanced_bonus.get_global_rect(), enhancement_toggle.get_global_rect()]
 	)
 	_assert_true(
 		detail_copy.text.contains("ENHANCED RISK") \
@@ -434,7 +443,7 @@ func _assert_full_width_objective_copy(definition: Resource) -> void:
 		"Contract %s should reveal its enhanced toggle only when content becomes available." % str(definition.contract_id)
 	)
 	card.call("set_enhanced_mode", true)
-	var enhanced_details := card.get_node("Margin/Content/EnhancedDetails") as VBoxContainer
+	var enhanced_details := card.get_node("Margin/Content/ContentSpacer/EnhancedDetails") as VBoxContainer
 	_assert_true(
 		bool(card.call("is_enhanced_mode")) \
 			and card.get_node("EnhancedFrame").visible \

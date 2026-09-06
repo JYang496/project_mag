@@ -3,6 +3,10 @@ class_name UpgradeDetailPresenter
 
 const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
 const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
+const DETAIL_TEXT_SCENE := preload("res://UI/components/DetailText/DetailText.tscn")
+const DETAIL_FACT_SCENE := preload("res://UI/components/DetailFactCard/DetailFactCard.tscn")
+const DETAIL_FACT_GRID_SCENE := preload("res://UI/components/DetailFactGrid/DetailFactGrid.tscn")
+const UPGRADE_SUMMARY_SCENE := preload("res://UI/components/UpgradeSummaryPanel/UpgradeSummaryPanel.tscn")
 
 var owner_view: Node
 var detail_body: VBoxContainer
@@ -29,29 +33,11 @@ func fill_weapon_detail(item_data: Dictionary) -> void:
 func _add_weapon_upgrade_summary(model: Variant) -> void:
 	if detail_body == null:
 		return
-	var panel := PanelContainer.new()
+	var panel := UPGRADE_SUMMARY_SCENE.instantiate() as Control
 	panel.name = "UpgradeChangePanel"
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _make_upgrade_summary_style())
 	detail_body.add_child(panel)
-
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_bottom", 10)
-	panel.add_child(margin)
-
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 5)
-	margin.add_child(content)
-
-	var header := Label.new()
-	header.name = "UpgradeChangeHeader"
-	header.text = LocalizationManager.tr_key("ui.weapon.detail.upgrade_changes", "This Upgrade")
-	header.add_theme_font_size_override("font_size", 17)
-	header.add_theme_color_override("font_color", Color(0.98, 0.75, 0.24))
-	content.add_child(header)
+	panel.call("set_title", LocalizationManager.tr_key("ui.weapon.detail.upgrade_changes", "This Upgrade"))
+	var content := panel.get_node("Margin/Content") as VBoxContainer
 
 	var changed_count := 0
 	for delta_data in model.upgrade_deltas:
@@ -68,12 +54,8 @@ func _add_weapon_upgrade_summary(model: Variant) -> void:
 func _add_weapon_overview(item_data: Dictionary, weapon: Weapon, model: Variant) -> void:
 	if detail_body == null:
 		return
-	var grid := GridContainer.new()
+	var grid := DETAIL_FACT_GRID_SCENE.instantiate() as GridContainer
 	grid.name = "WeaponOverviewGrid"
-	grid.columns = 2
-	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 7)
 	detail_body.add_child(grid)
 	_add_fact_card(
 		grid,
@@ -154,12 +136,9 @@ func _add_detail_section(title: String, value: String) -> void:
 func _add_detail_header(text: String) -> void:
 	if detail_body == null:
 		return
-	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", 16)
-	label.add_theme_color_override("font_color", Color(0.63, 0.86, 0.95))
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var label := DETAIL_TEXT_SCENE.instantiate() as Label
 	detail_body.add_child(label)
+	label.call("set_data", text, Color(0.63, 0.86, 0.95), 16)
 
 func _add_detail_text(text: String) -> void:
 	_add_detail_text_to(detail_body, text)
@@ -167,33 +146,15 @@ func _add_detail_text(text: String) -> void:
 func _add_detail_text_to(parent: Container, text: String) -> void:
 	if parent == null:
 		return
-	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override("font_color", Color(0.86, 0.9, 0.92))
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var label := DETAIL_TEXT_SCENE.instantiate() as Label
 	parent.add_child(label)
+	label.call("set_data", text, Color(0.86, 0.9, 0.92), 13)
 
 func _add_fact_card(parent: GridContainer, title: String, value: String) -> void:
-	var card := VBoxContainer.new()
+	var card := DETAIL_FACT_SCENE.instantiate() as Control
 	card.name = "DetailFact"
-	card.custom_minimum_size = Vector2(190, 48)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_constant_override("separation", 2)
 	parent.add_child(card)
-
-	var title_label := Label.new()
-	title_label.text = title
-	title_label.add_theme_font_size_override("font_size", 12)
-	title_label.add_theme_color_override("font_color", Color(0.55, 0.72, 0.78))
-	card.add_child(title_label)
-
-	var value_label := Label.new()
-	value_label.text = value
-	value_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	value_label.add_theme_font_size_override("font_size", 13)
-	value_label.add_theme_color_override("font_color", Color(0.86, 0.9, 0.92))
-	card.add_child(value_label)
+	card.call("set_data", title, value)
 
 func _make_upgrade_summary_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -213,19 +174,16 @@ func _add_delta_text(delta_data: Dictionary, parent: Container = null) -> void:
 	var target := parent if parent != null else detail_body
 	if target == null:
 		return
-	var label := Label.new()
+	var label := DETAIL_TEXT_SCENE.instantiate() as Label
 	label.name = "UpgradeDelta"
-	label.text = WEAPON_STAT_FORMATTER.format_delta_line(delta_data)
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", 14)
+	var color := Color(0.82, 0.88, 0.9)
 	match StringName(str(delta_data.get("benefit", "neutral"))):
 		&"positive":
-			label.add_theme_color_override("font_color", Color(0.52, 0.92, 0.68))
+			color = Color(0.52, 0.92, 0.68)
 		&"negative":
-			label.add_theme_color_override("font_color", Color(1.0, 0.58, 0.5))
-		_:
-			label.add_theme_color_override("font_color", Color(0.82, 0.88, 0.9))
+			color = Color(1.0, 0.58, 0.5)
 	target.add_child(label)
+	label.call("set_data", WEAPON_STAT_FORMATTER.format_delta_line(delta_data), color, 14)
 
 func _get_weapon_upgrade_price(weapon: Weapon) -> int:
 	return int(owner_view.call("_get_weapon_upgrade_price", weapon)) if owner_view != null else 0

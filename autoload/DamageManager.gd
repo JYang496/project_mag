@@ -291,15 +291,18 @@ func resolve_source_player(source_node: Node) -> Node:
 	}
 	return resolved_player
 
-func resolve_source_weapon(source_node: Node) -> Weapon:
-	if source_node == null or not is_instance_valid(source_node):
+func resolve_source_weapon(source_node: Variant) -> Weapon:
+	# A long-lived effect can outlive its weapon. Accept the reference before
+	# narrowing its type so a previously freed Object can be rejected safely.
+	if source_node == null or not is_instance_valid(source_node) or not source_node is Node:
 		return null
-	var current: Node = source_node
+	var source_node_instance := source_node as Node
+	var current: Node = source_node_instance
 	while current != null:
 		if current is Weapon:
 			return current as Weapon
 		current = current.get_parent()
-	var source_weapon_value: Variant = source_node.get("source_weapon")
+	var source_weapon_value: Variant = source_node_instance.get("source_weapon")
 	if typeof(source_weapon_value) == TYPE_OBJECT and is_instance_valid(source_weapon_value) and source_weapon_value is Weapon:
 		return source_weapon_value as Weapon
 	return null

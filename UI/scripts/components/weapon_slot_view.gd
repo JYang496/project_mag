@@ -1,9 +1,11 @@
 extends RefCounted
 class_name WeaponSlotView
 
-const ICON_ROTATION := -PI / 4.0
+const ICON_ROTATION := PI / 4.0
 const MAINHAND_ICON_INSET := 3.0
 const SUPPORT_ICON_INSET := 4.0
+const WEAPON_DISK_CENTER := Vector2(38.0, 111.0)
+const WEAPON_DISK_OFFSET := WEAPON_DISK_CENTER - Vector2(38.0, 36.0)
 const SUPPORT_FRAME_MODULATE := Color(0.66, 0.76, 0.80, 0.78)
 const SUPPORT_ICON_MODULATE := Color(0.80, 0.86, 0.88, 0.90)
 
@@ -11,17 +13,27 @@ var root: Control
 var icon: TextureRect
 var icon_shadow: TextureRect
 var background: TextureRect
+var frame: Control
 var _missing_weapon_icon: Texture2D
 var _is_mainhand := false
+var _empty := true
 var _content_cropped_textures: Dictionary = {}
 
 func setup(slot_root: Control, missing_weapon_icon: Texture2D) -> void:
 	root = slot_root
+	root.draw.connect(_draw_empty_corners)
 	_missing_weapon_icon = missing_weapon_icon
 	icon = root.get_node_or_null("Icon") as TextureRect
 	background = root.get_node_or_null("Background") as TextureRect
 	if background != null:
-		background.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		background.visible = false
+	frame = preload("res://UI/scripts/components/weapon_role_frame.gd").new()
+	frame.name = "RoleFrame"
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(frame)
+	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	frame.position = WEAPON_DISK_OFFSET
+	root.move_child(frame, 0)
 	if icon != null:
 		icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		_ensure_icon_shadow()
@@ -33,6 +45,7 @@ func set_background(texture: Texture2D) -> void:
 func set_role(is_mainhand: bool, mainhand_texture: Texture2D, support_texture: Texture2D) -> void:
 	_is_mainhand = is_mainhand
 	set_background(mainhand_texture if is_mainhand else support_texture)
+	frame.set("selected", is_mainhand)
 	if background != null:
 		background.modulate = Color.WHITE if is_mainhand else SUPPORT_FRAME_MODULATE
 	if icon == null:
@@ -40,7 +53,15 @@ func set_role(is_mainhand: bool, mainhand_texture: Texture2D, support_texture: T
 	_apply_weapon_icon_layout(icon.texture)
 	icon.modulate = Color.WHITE if is_mainhand else SUPPORT_ICON_MODULATE
 
+
+func set_ammo_state(visible_value: bool, progress: float, fill: Color, track: Color) -> void:
+	if frame != null and frame.has_method("set_ammo_state"):
+		frame.call("set_ammo_state", visible_value, progress, fill, track)
+
 func show_empty() -> void:
+	_empty = true
+	root.queue_redraw()
+	frame.visible = false
 	if icon != null:
 		icon.texture = null
 		icon.visible = false
@@ -52,6 +73,9 @@ func show_empty() -> void:
 	root.tooltip_text = ""
 
 func show_weapon(weapon: Weapon) -> void:
+	_empty = false
+	root.queue_redraw()
+	frame.visible = true
 	if icon != null:
 		icon.visible = true
 		icon.texture = _resolve_weapon_texture(weapon)
@@ -62,6 +86,14 @@ func show_weapon(weapon: Weapon) -> void:
 		icon_shadow.texture = icon.texture if icon != null else null
 	if background != null:
 		background.modulate = Color.WHITE if _is_mainhand else SUPPORT_FRAME_MODULATE
+
+func _draw_empty_corners() -> void:
+	if not _empty:
+		return
+	var center := root.size * 0.5
+	var color := Color(0.4, 0.5, 0.55, 0.4)
+	root.draw_polyline(PackedVector2Array([center + Vector2(-7, -2), center + Vector2(-7, -7), center + Vector2(-2, -7)]), color, 1.0)
+	root.draw_polyline(PackedVector2Array([center + Vector2(2, 7), center + Vector2(7, 7), center + Vector2(7, 2)]), color, 1.0)
 
 func _ensure_icon_shadow() -> void:
 	if icon == null or root == null:
@@ -83,10 +115,11 @@ func _ensure_icon_shadow() -> void:
 func _apply_weapon_icon_layout(texture: Texture2D) -> void:
 	if icon == null or root == null:
 		return
-	var icon_size := get_rotated_weapon_icon_size(texture, root.size, _is_mainhand)
-	_apply_icon_rect(icon, icon_size, Vector2.ZERO)
+	var icon_size := get_rotated_weapon_icon_size(texture, Vector2(58.0, 58.0), _is_mainhand)
+	var offset := WEAPON_DISK_CENTER - root.size * 0.5
+	_apply_icon_rect(icon, icon_size, offset)
 	if icon_shadow != null:
-		_apply_icon_rect(icon_shadow, icon_size, Vector2(1.0, 1.0))
+		_apply_icon_rect(icon_shadow, icon_size, offset + Vector2(1.0, 1.0))
 
 func get_rotated_weapon_icon_size(
 	texture: Texture2D,

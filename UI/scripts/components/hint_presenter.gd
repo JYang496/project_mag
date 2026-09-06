@@ -9,6 +9,9 @@ const REST_HINT_WORLD_FONT_SIZE := 18
 const REST_HINT_WORLD_MIN_FONT_SIZE := 14
 const REST_HINT_TOP_MARGIN := 88.0
 const REST_ZONE_HINT_SIZE := Vector2(240, 30)
+const QUEST_HINT_SCENE := preload("res://UI/components/QuestHint/QuestHint.tscn")
+const REST_HOVER_HINT_SCENE := preload("res://UI/components/RestAreaHoverHint/RestAreaHoverHint.tscn")
+const REST_ZONE_HINT_SCENE := preload("res://UI/components/RestAreaZoneHint/RestAreaZoneHint.tscn")
 
 var owner_ui: Node
 var gui_root: Control
@@ -26,48 +29,19 @@ func bind(owner: Node, root: Control) -> void:
 func ensure_quest_hint() -> Label:
 	if quest_hint_label != null and is_instance_valid(quest_hint_label):
 		return quest_hint_label
-	quest_hint_label = Label.new()
-	quest_hint_label.name = "QuestHint"
-	quest_hint_label.visible = false
-	quest_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	quest_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	quest_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	quest_hint_label.text = ""
+	quest_hint_label = QUEST_HINT_SCENE.instantiate() as Label
 	gui_root.add_child(quest_hint_label)
 	return quest_hint_label
 
 func ensure_rest_area_hover_hint() -> Label:
 	if rest_area_hover_hint_label != null and is_instance_valid(rest_area_hover_hint_label):
 		return rest_area_hover_hint_label
-	rest_area_hover_hint_label = Label.new()
-	rest_area_hover_hint_label.name = "RestAreaHoverHint"
-	rest_area_hover_hint_label.visible = false
-	rest_area_hover_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rest_area_hover_hint_label.z_index = 50
-	rest_area_hover_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rest_area_hover_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	rest_area_hover_hint_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	rest_area_hover_hint_label.max_lines_visible = 1
-	rest_area_hover_hint_label.clip_text = true
-	rest_area_hover_hint_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	rest_area_hover_hint_label.add_theme_font_size_override("font_size", 18)
-	rest_area_hover_hint_label.add_theme_constant_override("line_spacing", 0)
-	rest_area_hover_hint_label.add_theme_color_override("font_color", Color(0.88, 0.96, 1.0, 1.0))
-	rest_area_hover_hint_label.add_theme_stylebox_override("normal", _build_rest_area_hint_style())
-	rest_area_hover_hint_label.size = REST_HINT_SIZE
+	rest_area_hover_hint_label = REST_HOVER_HINT_SCENE.instantiate() as Label
 	gui_root.add_child(rest_area_hover_hint_label)
 	return rest_area_hover_hint_label
 
 func create_rest_area_zone_hint_label() -> Label:
-	var label := Label.new()
-	label.visible = false
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.z_index = 50
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	label.add_theme_font_size_override("font_size", 15)
-	label.size = REST_ZONE_HINT_SIZE
+	var label := REST_ZONE_HINT_SCENE.instantiate() as Label
 	gui_root.add_child(label)
 	return label
 
@@ -173,20 +147,6 @@ func layout_rest_area_hover_hint(viewport_size: Vector2) -> void:
 		clampf(target.x, 8.0, max_x),
 		clampf(target.y, 8.0, max_y)
 	)
-
-func _build_rest_area_hint_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.035, 0.055, 0.075, 0.90)
-	style.border_color = Color(0.32, 0.48, 0.62, 0.92)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(6)
-	style.content_margin_left = 10.0
-	style.content_margin_right = 10.0
-	style.content_margin_top = 5.0
-	style.content_margin_bottom = 5.0
-	style.shadow_color = Color(0, 0, 0, 0.42)
-	style.shadow_size = 5
-	return style
 
 func update_rest_area_hover_hint_position() -> void:
 	if owner_ui == null:

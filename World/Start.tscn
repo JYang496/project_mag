@@ -150,6 +150,12 @@ text = "全新游戏"
 alignment = 0
 script = ExtResource("1_new_game")
 
+[node name="WeaponSkillLab" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+custom_minimum_size = Vector2(392, 48)
+layout_mode = 2
+text = "武器技能测试场"
+alignment = 0
+
 [node name="Settings" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation" unique_id=2020538336]
 custom_minimum_size = Vector2(392, 48)
 layout_mode = 2

@@ -7,6 +7,10 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/heavy_recoil_feedback.tres" id="4_feedback"]
 
 [node name="ChargedBlaster" unique_id=1610258449 instance=ExtResource("1_thakn")]
+active_skill_effect_id = &"charged_blaster_prism_overload"
+skill_unlock_condition = &"global_energy_full"
+skill_unlock_hint = "Fill global weapon energy"
+skill_unlock_required = 1.0
 base_trait_flags = 34
 script = ExtResource("1_48de6")
 turn_speed_degrees_per_second = 180.0

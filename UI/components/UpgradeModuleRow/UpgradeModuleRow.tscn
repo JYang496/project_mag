@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/UpgradeModuleRow/UpgradeModuleRow.gd" id="1_script"]
+
+[node name="UpgradeModuleRow" type="HBoxContainer"]
+custom_minimum_size = Vector2(500, 92)
+theme_override_constants/separation = 8
+script = ExtResource("1_script")

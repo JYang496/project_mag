@@ -234,22 +234,26 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
 
-[node name="EnhancedDetails" type="VBoxContainer" parent="Margin/Content"]
-visible = false
-layout_mode = 2
-theme_override_constants/separation = 7
-
-[node name="Risk" type="Label" parent="Margin/Content/EnhancedDetails"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 13
-autowrap_mode = 2
-
-[node name="Bonus" type="Label" parent="Margin/Content/EnhancedDetails"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 13
-autowrap_mode = 2
-
 [node name="ContentSpacer" type="Control" parent="Margin/Content"]
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
+
+[node name="EnhancedDetails" type="VBoxContainer" parent="Margin/Content/ContentSpacer"]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 74.0
+grow_horizontal = 2
+theme_override_constants/separation = 7
+
+[node name="Risk" type="Label" parent="Margin/Content/ContentSpacer/EnhancedDetails"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 2
+
+[node name="Bonus" type="Label" parent="Margin/Content/ContentSpacer/EnhancedDetails"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 2

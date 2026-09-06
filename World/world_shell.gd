@@ -20,6 +20,7 @@ const BATTLEFIELD_CENTER := Vector2(-212.0, 244.0)
 var build_stage: StringName = &"shell_ready"
 var build_progress := 0.0
 var world_build_complete := false
+@export var external_ready_coordinator := false
 
 
 func _enter_tree() -> void:
@@ -41,9 +42,10 @@ func _build_world_over_frames() -> void:
 
 	world_build_complete = true
 	_set_stage(&"complete", 0.97)
-	var coordinator := READY_COORDINATOR_SCRIPT.new()
-	coordinator.name = "WorldReadyCoordinator"
-	add_child(coordinator)
+	if not external_ready_coordinator:
+		var coordinator := READY_COORDINATOR_SCRIPT.new()
+		coordinator.name = "WorldReadyCoordinator"
+		add_child(coordinator)
 	build_completed.emit()
 
 
@@ -92,7 +94,7 @@ func _build_rest_area() -> void:
 	add_child(rest_area)
 	var board := get_node_or_null("Board") as BoardCellGenerator
 	if board != null:
-		board.call("_resolve_rest_area")
+		board.resolve_rest_area()
 
 
 func _build_ui() -> void:

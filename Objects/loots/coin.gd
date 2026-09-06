@@ -1,13 +1,11 @@
-extends Node2D
+extends "res://Objects/loots/drop_collectable.gd"
 class_name Coin
 
 const BASE_SPRITE_SCALE := Vector2(0.6, 0.6)
 const VALUE_5_SCALE := 1.25
 const VALUE_10_SCALE := 1.5
 
-@export var value = 1
-@export var spawn_ready: bool = false
-@export var trajectory_animation_managed: bool = false
+@export var default_value: int = 1
 @onready var sprite: AnimatedSprite2D = $Sprite2D
 @onready var collision = $CollisionShape2D
 @onready var sound = $Snd_collected
@@ -18,16 +16,14 @@ var speed = 0
 var _collected := false
 
 func _enter_tree() -> void:
-	var registry: Node = get_node_or_null("/root/CollectableRegistry")
-	if registry != null and registry.has_method("register_collectable"):
-		registry.call("register_collectable", self)
+	CollectableRegistry.register_collectable(self)
 
 func _exit_tree() -> void:
-	var registry: Node = get_node_or_null("/root/CollectableRegistry")
-	if registry != null and registry.has_method("unregister_collectable"):
-		registry.call("unregister_collectable", self)
+	CollectableRegistry.unregister_collectable(self)
 
 func _ready():
+	if value <= 0:
+		value = default_value
 	if spawn_ready:
 		collision.call_deferred("set","disabled",false)
 		stop_drop_flip()
@@ -104,6 +100,11 @@ func start_drop_flip() -> void:
 func sync_trajectory_visual() -> void:
 	if sprite != null:
 		sprite.call("_apply_compensation")
+
+
+func uses_screen_height_trajectory() -> bool:
+	return true
+
 
 func set_trajectory_screen_height(height: float) -> void:
 	if sprite != null and sprite.has_method("set_screen_offset"):

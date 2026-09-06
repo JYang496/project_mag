@@ -1,0 +1,37 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://UI/components/WeaponDisplayIcon/WeaponDisplayIcon.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="FrameStyle"]
+bg_color = Color(0.025, 0.03, 0.035, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.39, 0.43, 0.85)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="WeaponDisplayIcon" type="PanelContainer"]
+mouse_filter = 2
+theme_override_styles/panel = SubResource("FrameStyle")
+script = ExtResource("1_script")
+
+[node name="Texture" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="EmptyLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 20
+text = "+"
+horizontal_alignment = 1
+vertical_alignment = 1

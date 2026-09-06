@@ -1,0 +1,124 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/UpgradeItemCard/UpgradeItemCard.gd" id="1_script"]
+
+[node name="UpgradeItemCard" type="Button"]
+alignment = 0
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="Standard" type="HBoxContainer" parent="Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="StandardIcon" type="TextureRect" parent="Margin/Standard"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="Margin/Standard"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="StandardTitle" type="Label" parent="Margin/Standard/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+clip_text = true
+
+[node name="StandardLevel" type="Label" parent="Margin/Standard/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.74, 0.84, 0.9, 1)
+theme_override_font_sizes/font_size = 13
+
+[node name="StandardParams" type="Label" parent="Margin/Standard/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.82, 0.88, 0.9, 1)
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="StandardLocation" type="Label" parent="Margin/Standard"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(128, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.9, 0.78, 0.42, 1)
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Compact" type="VBoxContainer" parent="Margin"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 1
+
+[node name="Top" type="HBoxContainer" parent="Margin/Compact"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="CompactIcon" type="TextureRect" parent="Margin/Compact/Top"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CompactTitle" type="Label" parent="Margin/Compact/Top"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="CompactLevel" type="Label" parent="Margin/Compact"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.74, 0.84, 0.9, 1)
+theme_override_font_sizes/font_size = 11
+clip_text = true
+
+[node name="CompactLocation" type="Label" parent="Margin/Compact"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.9, 0.78, 0.42, 1)
+theme_override_font_sizes/font_size = 10
+clip_text = true
+
+[node name="CompactParams" type="Label" parent="Margin/Compact"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.82, 0.88, 0.9, 1)
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 2

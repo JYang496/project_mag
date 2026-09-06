@@ -6,8 +6,12 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/light_recoil_feedback.tres" id="2_feedback"]
 
 [node name="SpearLauncher" instance=ExtResource("1_yntmd")]
+active_skill_effect_id = &"spear_phalanx"
 base_trait_flags = 1
 script = ExtResource("1_wrx6n")
+skill_unlock_condition = &"projectile_distinct_targets"
+skill_unlock_hint = "Pierce 2 different enemies with one spear"
+skill_unlock_required = 2.0
 turn_speed_degrees_per_second = 300.0
 fire_feedback_profile = ExtResource("2_feedback")
 range_mode = 1

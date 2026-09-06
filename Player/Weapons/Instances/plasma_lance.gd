@@ -1,5 +1,7 @@
 extends Ranger
 
+const WEAPON_SKILL_AREA := preload("res://Player/Weapons/Effects/weapon_skill_area.gd")
+
 var projectile_template = preload("res://Player/Weapons/Projectiles/plasma_lance_projectile.tscn")
 var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/plasma.png")
 
@@ -33,6 +35,17 @@ var weapon_data := {
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	_tick_overcharge_lance_stacks(delta)
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	var center: Vector2 = get_mouse_target()
+	var target := find_closest_enemy(center, 200.0)
+	if target != null:
+		center = target.global_position
+	var storm := WEAPON_SKILL_AREA.new().setup(
+		WEAPON_SKILL_AREA.Mode.PLASMA_STORM, self, center, 4.0, 175.0, 0.5, 0.45
+	)
+	get_projectile_spawn_parent().add_child(storm)
+	return true
 
 func set_level(lv) -> void:
 	lv = str(lv)

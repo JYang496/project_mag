@@ -7,8 +7,12 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/special_pulse_feedback.tres" id="4_feedback"]
 
 [node name="ChainsawLauncher" unique_id=347628502 instance=ExtResource("1_sq336")]
+active_skill_effect_id = &"chainsaw_cage"
 base_trait_flags = 1
 script = ExtResource("2_hcjeu")
+skill_unlock_condition = &"wall_bounce"
+skill_unlock_hint = "Bounce a chainsaw off a wall or cell boundary"
+skill_unlock_required = 1.0
 turn_speed_degrees_per_second = 240.0
 fire_feedback_profile = ExtResource("4_feedback")
 range_mode = 2

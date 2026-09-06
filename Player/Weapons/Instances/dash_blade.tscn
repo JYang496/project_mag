@@ -13,8 +13,12 @@ radius = 150.0
 size = Vector2(6, 24)
 
 [node name="DashBlade" instance=ExtResource("2_bkv2s")]
+active_skill_effect_id = &"dash_rift"
 base_trait_flags = 65
 script = ExtResource("1_s2x1k")
+skill_unlock_condition = &"long_dash_hit"
+skill_unlock_hint = "Hit after dashing at least 75% of maximum range"
+skill_unlock_required = 0.75
 turn_speed_degrees_per_second = 540.0
 delivery_type_flags = 2
 

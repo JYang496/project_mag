@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://World/world.tscn" id="1_world"]
+[ext_resource type="Script" path="res://tests/showcases/weapon/weapon_active_skill_gameplay_lab.gd" id="2_lab"]
+
+[node name="WeaponActiveSkillGameplayLab" instance=ExtResource("1_world")]
+external_ready_coordinator = true
+
+[node name="WeaponSkillLabController" type="Node" parent="."]
+script = ExtResource("2_lab")
+

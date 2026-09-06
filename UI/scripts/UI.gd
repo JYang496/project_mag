@@ -39,11 +39,11 @@ const HINT_PRESENTER_SCRIPT := preload("res://UI/scripts/components/hint_present
 const HUD_PHASE_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/hud_phase_controller.gd")
 const TOAST_PRESENTER_SCRIPT := preload("res://UI/scripts/components/toast_presenter.gd")
 const BATTLE_CURSOR_PRESENTER_SCRIPT := preload("res://UI/scripts/components/battle_cursor_presenter.gd")
-const VICTORY_TRANSITION_SCRIPT := preload("res://UI/scripts/components/victory_transition.gd")
+const VICTORY_TRANSITION_SCENE := preload("res://UI/components/VictoryTransition/VictoryTransition.tscn")
 const BATTLE_CONTRACT_SELECTION_PANEL_SCENE := preload("res://UI/scenes/battle_contract_selection_panel.tscn")
 const GLOBAL_UI_THEME := preload("res://UI/themes/global_ui_theme.tres")
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
-const SPREAD_CURSOR_OVERLAY_SCRIPT_PATH := "res://UI/scripts/spread_cursor_overlay.gd"
+const SPREAD_CURSOR_OVERLAY_SCENE := preload("res://UI/components/SpreadCursorOverlay/SpreadCursorOverlay.tscn")
 const REST_AREA_PRIMARY_MENUS_SCENE := preload("res://UI/scenes/runtime/rest_area_primary_menus.tscn")
 const MANAGEMENT_SHELL_SCENE := preload("res://UI/scenes/runtime/management_shell.tscn")
 
@@ -162,10 +162,10 @@ var upgrade_module_button: Button
 
 # Misc
 var branch_select_panel: BranchSelectPanel
-var module_equip_selection_panel: ModuleEquipSelectionPanel
-var reward_selection_panel: RewardSelectionPanel
-var weapon_replacement_panel: WeaponReplacementPanel
-var weapon_warehouse_panel: WeaponWarehousePanel
+var module_equip_selection_panel: Control
+var reward_selection_panel: Control
+var weapon_replacement_panel: Control
+var weapon_warehouse_panel: Control
 var purchase_management_view
 var module_shop_list_view
 var upgrade_management_view
@@ -195,8 +195,8 @@ var _pending_module_action := Callable()
 var _pending_battle_start := Callable()
 var _pending_battle_start_cancel := Callable()
 var controls_hint_view
-var right_hud_stack: VBoxContainer
-var left_contract_hud_stack: VBoxContainer
+@onready var right_hud_stack: VBoxContainer = $GUI/RightHudStack
+@onready var left_contract_hud_stack: VBoxContainer = $GUI/ObjectiveHudStack
 var board_edit_panel: Control
 var cell_management_panel: Control
 @warning_ignore("unused_private_class_variable")
@@ -258,7 +258,7 @@ var localization_refresh_controller
 var ui_bootstrap_controller
 var hint_presenter
 var battle_cursor_presenter
-var victory_transition: VictoryTransition
+var victory_transition: Control
 var battle_contract_selection_panel: Control
 var rest_area_primary_menus: RestAreaPrimaryMenusView
 var management_shell_view: ManagementShellView
@@ -314,11 +314,14 @@ func _ready():
 		call_deferred("_show_run_complete")
 	LoadingPerformance.end_segment("ui_ready")
 
+
+func is_ready_for_world_entry() -> bool:
+	return battle_hud != null
+
 func _init_victory_transition() -> void:
 	if victory_transition != null and is_instance_valid(victory_transition):
 		return
-	victory_transition = VICTORY_TRANSITION_SCRIPT.new() as VictoryTransition
-	victory_transition.name = "VictoryTransition"
+	victory_transition = VICTORY_TRANSITION_SCENE.instantiate() as Control
 	add_child(victory_transition)
 
 func play_victory_transition(presentation_mode: StringName = &"quick", chapter: Resource = null) -> void:
@@ -966,12 +969,12 @@ func request_module_equip_selections(
 		if on_complete.is_valid():
 			on_complete.call(processed)
 		PhaseManager.request_settlement_completion_check()
-	var opened := module_equip_selection_panel.open_for_modules(
+	var opened: bool = bool(module_equip_selection_panel.call("open_for_modules",
 		module_instances,
 		wrapped_item_complete,
 		wrapped_complete,
 		true
-	)
+	))
 	if not opened:
 		for transaction_id in transaction_ids:
 			if transaction_id != "":
@@ -1696,34 +1699,12 @@ func _create_controls_hint_panel() -> void:
 func _ensure_right_hud_stack() -> VBoxContainer:
 	if right_hud_stack != null and is_instance_valid(right_hud_stack):
 		return right_hud_stack
-	right_hud_stack = VBoxContainer.new()
-	right_hud_stack.name = "RightHudStack"
-	right_hud_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	right_hud_stack.z_index = 35
-	right_hud_stack.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	right_hud_stack.offset_left = -272.0
-	right_hud_stack.offset_top = 24.0
-	right_hud_stack.offset_right = -24.0
-	right_hud_stack.offset_bottom = 456.0
-	right_hud_stack.add_theme_constant_override("separation", 12)
-	gui_root.add_child(right_hud_stack)
-	return right_hud_stack
+	return null
 
 func _ensure_left_contract_hud_stack() -> VBoxContainer:
 	if left_contract_hud_stack != null and is_instance_valid(left_contract_hud_stack):
 		return left_contract_hud_stack
-	left_contract_hud_stack = VBoxContainer.new()
-	left_contract_hud_stack.name = "ObjectiveHudStack"
-	left_contract_hud_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	left_contract_hud_stack.z_index = 50
-	left_contract_hud_stack.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	left_contract_hud_stack.offset_left = 24.0
-	left_contract_hud_stack.offset_top = 78.0
-	left_contract_hud_stack.offset_right = 304.0
-	left_contract_hud_stack.offset_bottom = 360.0
-	left_contract_hud_stack.add_theme_constant_override("separation", 10)
-	gui_root.add_child(left_contract_hud_stack)
-	return left_contract_hud_stack
+	return null
 
 func _layout_controls_hint_panel(viewport_size: Vector2) -> void:
 	_init_modal_ui_controller()
@@ -1966,15 +1947,7 @@ func _update_rest_area_hover_hint_position() -> void:
 func _ensure_spread_cursor_overlay() -> void:
 	if spread_cursor_overlay != null and is_instance_valid(spread_cursor_overlay):
 		return
-	var overlay := Control.new()
-	overlay.name = "SpreadCursorOverlay"
-	var overlay_script := load(SPREAD_CURSOR_OVERLAY_SCRIPT_PATH) as Script
-	if overlay_script == null:
-		push_warning("Failed to load SpreadCursorOverlay script.")
-		return
-	overlay.set_script(overlay_script)
-	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay.z_index = 300
+	var overlay := SPREAD_CURSOR_OVERLAY_SCENE.instantiate() as Control
 	gui_root.add_child(overlay)
 	gui_root.move_child(overlay, gui_root.get_child_count() - 1)
 	spread_cursor_overlay = overlay

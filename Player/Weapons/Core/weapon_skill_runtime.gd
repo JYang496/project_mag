@@ -5,8 +5,7 @@ const DEFAULT_SKILL_ID: StringName = &"weapon_overdrive"
 const DEFAULT_COOLDOWN_SEC: float = 10.0
 const DEFAULT_DURATION_SEC: float = 4.0
 const DEFAULT_ENERGY_COST: float = 50.0
-const DEFAULT_DAMAGE_MULTIPLIER: float = 2.0
-const DEFAULT_ATTACK_SPEED_MULTIPLIER: float = 1.35
+const ACTIVE_SKILL_CATALOG := preload("res://Player/Weapons/Core/weapon_active_skill_catalog.gd")
 
 var weapon: Weapon
 var _cooldown_remaining: float = 0.0
@@ -39,28 +38,24 @@ func request() -> bool:
 		return false
 	if not weapon.is_attack_phase_allowed() or _cooldown_remaining > 0.0:
 		return false
+	if not weapon.skill_unlock_runtime.ready:
+		return false
 	var definition := _get_player_skill_definition()
 	if definition != null and not definition.allows_role(weapon):
 		return false
 	var player := _resolve_player()
 	if player == null or not is_instance_valid(player):
 		return false
+	if not weapon.can_activate_weapon_skill_effect():
+		return false
 	var energy_cost := _read_energy_cost(definition)
 	if energy_cost > 0.0:
 		if not player.has_method("consume_energy") or not bool(player.call("consume_energy", energy_cost)):
 			return false
+	if not weapon.skill_unlock_runtime.consume_ready():
+		return false
 	_finish_active_skill(false)
-	var damage_multiplier := _read_float(definition, &"damage_multiplier", DEFAULT_DAMAGE_MULTIPLIER, 0.05)
-	var attack_speed_multiplier := _read_float(
-		definition,
-		&"attack_speed_multiplier",
-		DEFAULT_ATTACK_SPEED_MULTIPLIER,
-		0.1
-	)
-	var duration_sec := _read_float(definition, &"duration_sec", DEFAULT_DURATION_SEC, 0.05)
-	weapon.apply_external_damage_mul(_damage_source_id, damage_multiplier)
-	if weapon.has_method("apply_external_attack_speed_mul"):
-		weapon.call("apply_external_attack_speed_mul", _speed_source_id, attack_speed_multiplier)
+	var duration_sec := ACTIVE_SKILL_CATALOG.get_duration(weapon.active_skill_effect_id)
 	_active_remaining = duration_sec
 	_cooldown_remaining = _read_float(definition, &"cooldown_sec", DEFAULT_COOLDOWN_SEC, 0.05)
 	_active_context = SkillActionContext.create(
@@ -70,6 +65,10 @@ func request() -> bool:
 		_read_tags(definition),
 		energy_cost
 	)
+	if not weapon.activate_weapon_skill_effect(_active_context):
+		# A configured skill must commit a concrete effect. Refund the consumed
+		# readiness/energy is intentionally avoided: failure is a content error.
+		push_error("Weapon active skill effect failed to activate: %s" % str(weapon.active_skill_effect_id))
 	weapon.emit_weapon_event(
 		WeaponEvent.create(WeaponEvent.SKILL_CAST_COMMITTED, weapon).with_context(_active_context)
 	)
@@ -87,10 +86,13 @@ func get_status() -> Dictionary:
 	var role_allowed := definition == null or definition.allows_role(weapon)
 	var phase_allowed := weapon != null and weapon.is_attack_phase_allowed()
 	var has_energy := energy_cost <= 0.0 or current_energy >= energy_cost - 0.001
-	var ready := _cooldown_remaining <= 0.0 and role_allowed and phase_allowed and has_energy
-	return {
+	var unlock_status := weapon.skill_unlock_runtime.get_status() if weapon != null else {}
+	var unlock_ready := bool(unlock_status.get("unlock_ready", false))
+	var ready := _cooldown_remaining <= 0.0 and role_allowed and phase_allowed and has_energy and unlock_ready
+	var status := {
 		"id": str(_read_skill_id(definition)),
 		"display_name": _read_display_name(definition),
+		"description": ACTIVE_SKILL_CATALOG.get_skill_description(weapon.active_skill_effect_id),
 		"available": role_allowed,
 		"ready": ready,
 		"active": _active_remaining > 0.0,
@@ -101,10 +103,14 @@ func get_status() -> Dictionary:
 		"energy_cost": energy_cost,
 		"has_energy": has_energy,
 	}
+	status.merge(unlock_status, true)
+	return status
 
 
 func force_ready() -> void:
 	_cooldown_remaining = 0.0
+	if weapon != null and is_instance_valid(weapon):
+		weapon.skill_unlock_runtime.force_ready()
 
 
 func clear_active() -> void:
@@ -119,9 +125,7 @@ func clear_for_weapon_exit() -> void:
 
 func _finish_active_skill(emit_finished: bool = true) -> void:
 	if weapon != null and is_instance_valid(weapon):
-		weapon.remove_external_damage_mul(_damage_source_id)
-		if weapon.has_method("remove_external_attack_speed_mul"):
-			weapon.call("remove_external_attack_speed_mul", _speed_source_id)
+		weapon.finish_weapon_skill_effect()
 		if emit_finished and _active_context != null:
 			_active_context.finish_at(weapon.global_position)
 			weapon.emit_weapon_event(
@@ -155,6 +159,8 @@ func _read_skill_id(definition: WeaponSkillDefinition) -> StringName:
 
 
 func _read_display_name(definition: WeaponSkillDefinition) -> String:
+	if weapon != null and weapon.active_skill_effect_id != StringName():
+		return ACTIVE_SKILL_CATALOG.get_skill_name(weapon.active_skill_effect_id)
 	if definition != null and not definition.display_name.is_empty():
 		return definition.display_name
 	if LocalizationManager != null and LocalizationManager.has_method("tr_key"):

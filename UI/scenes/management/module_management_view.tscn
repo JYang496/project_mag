@@ -1,76 +1,206 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://UI/scripts/management/module_management_view.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://sedqknpaalyt" path="res://UI/scenes/equipment_slot.tscn" id="2_equipment_slot"]
-[ext_resource type="Script" uid="uid://xk8jc704kfv5" path="res://UI/scripts/equipment_slot_module.gd" id="3_equipment_module"]
+[ext_resource type="PackedScene" path="res://UI/components/WarehouseDropList/WarehouseDropList.tscn" id="2_drop_list"]
+
+[sub_resource type="StyleBoxFlat" id="ColumnStyle"]
+bg_color = Color(0.07, 0.095, 0.125, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.22, 0.36, 0.46, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
 
 [node name="ModuleManagementView" type="Control"]
 offset_right = 1000.0
 offset_bottom = 600.0
-mouse_filter = 2
+mouse_filter = 1
 script = ExtResource("1_script")
 
-[node name="TemporaryModulesScroll" type="ScrollContainer" parent="."]
-custom_minimum_size = Vector2(500, 392)
-layout_mode = 0
+[node name="WarehouseTabs" type="HBoxContainer" parent="."]
 offset_left = 25.0
-offset_top = 78.0
+offset_top = 54.0
 offset_right = 525.0
-offset_bottom = 470.0
+offset_bottom = 92.0
+theme_override_constants/separation = 8
+
+[node name="WeaponWarehouseTab" type="Button" parent="WarehouseTabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+
+[node name="ModuleWarehouseTab" type="Button" parent="WarehouseTabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+
+[node name="Columns" type="HBoxContainer" parent="."]
+offset_left = 25.0
+offset_top = 104.0
+offset_right = 975.0
+offset_bottom = 506.0
+theme_override_constants/separation = 14
+
+[node name="LeftColumn" type="PanelContainer" parent="Columns"]
+custom_minimum_size = Vector2(300, 384)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("ColumnStyle")
+
+[node name="Margin" type="MarginContainer" parent="Columns/LeftColumn"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Root" type="VBoxContainer" parent="Columns/LeftColumn/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Columns/LeftColumn/Margin/Root"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 18
+clip_text = true
+
+[node name="LeftListScroll" type="ScrollContainer" parent="Columns/LeftColumn/Margin/Root"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="LeftList" parent="Columns/LeftColumn/Margin/Root/LeftListScroll" instance=ExtResource("2_drop_list")]
+layout_mode = 2
+
+[node name="DetailColumn" type="PanelContainer" parent="Columns"]
+custom_minimum_size = Vector2(300, 384)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("ColumnStyle")
+
+[node name="Margin" type="MarginContainer" parent="Columns/DetailColumn"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Root" type="VBoxContainer" parent="Columns/DetailColumn/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Columns/DetailColumn/Margin/Root"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 18
+clip_text = true
+
+[node name="DetailSubtitle" type="Label" parent="Columns/DetailColumn/Margin/Root"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.74, 0.84, 0.9, 1)
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 2
+
+[node name="DetailScroll" type="ScrollContainer" parent="Columns/DetailColumn/Margin/Root"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="DetailBody" type="VBoxContainer" parent="Columns/DetailColumn/Margin/Root/DetailScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="RightColumn" type="PanelContainer" parent="Columns"]
+custom_minimum_size = Vector2(300, 384)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("ColumnStyle")
+
+[node name="Margin" type="MarginContainer" parent="Columns/RightColumn"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Root" type="VBoxContainer" parent="Columns/RightColumn/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Columns/RightColumn/Margin/Root"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 18
+clip_text = true
+
+[node name="RightListScroll" type="ScrollContainer" parent="Columns/RightColumn/Margin/Root"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="RightList" parent="Columns/RightColumn/Margin/Root/RightListScroll" instance=ExtResource("2_drop_list")]
+layout_mode = 2
+
+[node name="ActionBar" type="HBoxContainer" parent="."]
+offset_left = 25.0
+offset_top = 512.0
+offset_right = 975.0
+offset_bottom = 574.0
+theme_override_constants/separation = 12
+
+[node name="WarehouseStatus" type="Label" parent="ActionBar"]
+custom_minimum_size = Vector2(320, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.82, 0.88, 0.9, 1)
+autowrap_mode = 2
+vertical_alignment = 1
+
+[node name="PrimaryAction" type="Button" parent="ActionBar"]
+custom_minimum_size = Vector2(184, 52)
+layout_mode = 2
+
+[node name="SecondaryAction" type="Button" parent="ActionBar"]
+custom_minimum_size = Vector2(184, 52)
+layout_mode = 2
+
+[node name="BackAction" type="Button" parent="ActionBar"]
+custom_minimum_size = Vector2(150, 52)
+layout_mode = 2
+
+[node name="TemporaryModulesScroll" type="ScrollContainer" parent="."]
+visible = false
+mouse_filter = 2
 
 [node name="Modules" type="GridContainer" parent="TemporaryModulesScroll"]
 layout_mode = 2
-size_flags_horizontal = 3
-columns = 4
 
 [node name="EquippedM" type="GridContainer" parent="."]
-custom_minimum_size = Vector2(440, 440)
-layout_mode = 0
-offset_left = 540.0
-offset_top = 80.0
-offset_right = 980.0
-offset_bottom = 520.0
-columns = 2
-
-[node name="InvEquipment" parent="EquippedM" instance=ExtResource("2_equipment_slot")]
-layout_mode = 2
-script = ExtResource("3_equipment_module")
-
-[node name="InvEquipment2" parent="EquippedM" instance=ExtResource("2_equipment_slot")]
-layout_mode = 2
-script = ExtResource("3_equipment_module")
-equipment_index = 1
-
-[node name="InvEquipment3" parent="EquippedM" instance=ExtResource("2_equipment_slot")]
-layout_mode = 2
-script = ExtResource("3_equipment_module")
-equipment_index = 2
-
-[node name="InvEquipment4" parent="EquippedM" instance=ExtResource("2_equipment_slot")]
-layout_mode = 2
-script = ExtResource("3_equipment_module")
-equipment_index = 3
+visible = false
+mouse_filter = 2
 
 [node name="ModuleSelectionLabel" type="Label" parent="."]
-layout_mode = 0
-offset_left = 25.0
-offset_top = 480.0
-offset_right = 525.0
-offset_bottom = 515.0
-clip_text = true
+visible = false
 
 [node name="ModuleEquipButton" type="Button" parent="."]
-layout_mode = 0
-offset_left = 25.0
-offset_top = 522.0
-offset_right = 263.0
-offset_bottom = 574.0
-text = "Equip Selected Module"
+visible = false
 
 [node name="ModuleSellButton" type="Button" parent="."]
-layout_mode = 0
-offset_left = 287.0
-offset_top = 522.0
-offset_right = 525.0
-offset_bottom = 574.0
-text = "Sell Selected Module"
+visible = false

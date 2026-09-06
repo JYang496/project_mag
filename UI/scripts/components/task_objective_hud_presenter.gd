@@ -1,8 +1,8 @@
 extends RefCounted
 class_name TaskObjectiveHudPresenter
 
-const SmoothProgressBarScript := preload("res://UI/scripts/components/smooth_progress_bar.gd")
-const BATTLE_HUD_THEME := preload("res://UI/themes/battle_hud_theme.tres")
+const HUD_SCENE := preload("res://UI/components/TaskObjectiveHud/TaskObjectiveHud.tscn")
+const CARD_SCENE := preload("res://UI/components/TaskObjectiveCard/TaskObjectiveCard.tscn")
 
 const MAX_CARDS := 2
 const PANEL_SIZE := Vector2(232.0, 136.0)
@@ -30,31 +30,12 @@ func ensure_panel() -> PanelContainer:
 		return panel
 	if parent_root == null or not is_instance_valid(parent_root):
 		return null
-	panel = PanelContainer.new()
-	panel.name = "TaskObjectiveHud"
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.custom_minimum_size = PANEL_SIZE
-	panel.size = PANEL_SIZE
+	panel = HUD_SCENE.instantiate() as PanelContainer
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_END
 	panel.visible = false
 	panel.z_index = 40
-	panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	panel.theme = BATTLE_HUD_THEME
-	panel.add_theme_stylebox_override("panel", _build_panel_style())
 	parent_root.add_child(panel)
-
-	var margin: MarginContainer = MarginContainer.new()
-	margin.name = "Margin"
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_top", 6)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_bottom", 6)
-	panel.add_child(margin)
-
-	card_list = VBoxContainer.new()
-	card_list.name = "CardList"
-	card_list.add_theme_constant_override("separation", 4)
-	margin.add_child(card_list)
+	card_list = panel.get_node("Margin/CardList") as VBoxContainer
 
 	while rows.size() < MAX_CARDS:
 		rows.append(_create_card())
@@ -124,7 +105,7 @@ func refresh(force: bool = false) -> void:
 			root.visible = false
 			continue
 		root.visible = true
-		_apply_status(row, statuses[index] as Dictionary, boss_hud_active)
+		root.call("set_data", statuses[index] as Dictionary, boss_hud_active)
 	if force and owner_ui != null:
 		layout(owner_ui.get_viewport().get_visible_rect().size)
 
@@ -137,90 +118,9 @@ func _hide_cards() -> void:
 			root.visible = false
 
 func _create_card() -> Dictionary:
-	var card: PanelContainer = PanelContainer.new()
-	card.name = "TaskCard"
-	card.custom_minimum_size = CARD_SIZE
-	card.size = CARD_SIZE
-	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card.add_theme_stylebox_override("panel", _build_card_style(Color(0.12, 0.17, 0.20, 0.92), Color(0.36, 0.54, 0.62, 0.95)))
+	var card := CARD_SCENE.instantiate() as PanelContainer
 	card_list.add_child(card)
-
-	var margin: MarginContainer = MarginContainer.new()
-	margin.name = "CardMargin"
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_top", 5)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_bottom", 5)
-	card.add_child(margin)
-
-	var body: VBoxContainer = VBoxContainer.new()
-	body.name = "Body"
-	body.add_theme_constant_override("separation", 4)
-	margin.add_child(body)
-
-	var header: HBoxContainer = HBoxContainer.new()
-	header.name = "Header"
-	header.add_theme_constant_override("separation", 8)
-	body.add_child(header)
-
-	var marker: Label = Label.new()
-	marker.name = "Marker"
-	marker.custom_minimum_size = Vector2(22.0, 22.0)
-	marker.size = Vector2(22.0, 22.0)
-	marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	marker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	marker.add_theme_font_size_override("font_size", 12)
-	marker.add_theme_color_override("font_color", Color(0.92, 0.97, 1.0, 1.0))
-	header.add_child(marker)
-
-	var label: Label = Label.new()
-	label.name = "Label"
-	label.clip_text = true
-	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	label.custom_minimum_size = Vector2(96.0, 0.0)
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.add_theme_font_size_override("font_size", 12)
-	header.add_child(label)
-
-	var value: Label = Label.new()
-	value.name = "Value"
-	value.clip_text = true
-	value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	value.custom_minimum_size = Vector2(66.0, 0.0)
-	value.add_theme_font_size_override("font_size", 12)
-	header.add_child(value)
-
-	var instruction: Label = Label.new()
-	instruction.name = "Instruction"
-	instruction.clip_text = true
-	instruction.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	instruction.custom_minimum_size = Vector2(0.0, 14.0)
-	instruction.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	instruction.add_theme_font_size_override("font_size", 12)
-	instruction.add_theme_color_override("font_color", Color(0.78, 0.86, 0.88, 0.95))
-	body.add_child(instruction)
-
-	var progress: ProgressBar = SmoothProgressBarScript.new()
-	progress.name = "Progress"
-	progress.min_value = 0.0
-	progress.max_value = 1.0
-	progress.step = 0.001
-	progress.value = 0.0
-	progress.show_percentage = false
-	progress.custom_minimum_size = Vector2(0.0, 6.0)
-	progress.add_theme_stylebox_override("background", _build_progress_style(Color(0.05, 0.07, 0.08, 0.9)))
-	progress.add_theme_stylebox_override("fill", _build_progress_style(Color(0.35, 0.84, 0.70, 0.95)))
-	body.add_child(progress)
-
-	return {
-		"root": card,
-		"marker": marker,
-		"label": label,
-		"value": value,
-		"instruction": instruction,
-		"progress": progress,
-	}
+	return {"root": card}
 
 func _apply_status(row: Dictionary, status: Dictionary, compact: bool = false) -> void:
 	var root := row.get("root", null) as PanelContainer

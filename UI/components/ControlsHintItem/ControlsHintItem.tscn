@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/ControlsHintItem/ControlsHintItem.gd" id="1_script"]
+
+[node name="ControlsHintItem" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 0)
+mouse_filter = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+script = ExtResource("1_script")
+
+[node name="Key" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 26)
+layout_mode = 2
+size_flags_horizontal = 0
+mouse_filter = 2
+alignment = 1
+theme_override_constants/separation = 2
+
+[node name="Action" type="Label" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.94, 0.97, 0.98, 1)
+theme_override_font_sizes/font_size = 12
+clip_text = true
+text_overrun_behavior = 3
+autowrap_mode = 2
+vertical_alignment = 1
+max_lines_visible = 2

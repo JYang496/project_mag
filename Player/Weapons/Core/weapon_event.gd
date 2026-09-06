@@ -16,7 +16,6 @@ const WEAPON_ENTERED_SUPPORT := &"weapon_entered_support"
 const MAGAZINE_QUARTER_SPENT := &"magazine_quarter_spent"
 const SUPPORT_CHARGE_READY := &"support_charge_ready"
 const CROSS_WEAPON_HIT := &"cross_weapon_hit"
-const CONTINUOUS_HIT_THRESHOLD := &"continuous_hit_threshold"
 const SHARED_RESOURCE_RELEASE := &"shared_resource_release"
 
 const ALL: Array[StringName] = [
@@ -35,7 +34,6 @@ const ALL: Array[StringName] = [
 	MAGAZINE_QUARTER_SPENT,
 	SUPPORT_CHARGE_READY,
 	CROSS_WEAPON_HIT,
-	CONTINUOUS_HIT_THRESHOLD,
 	SHARED_RESOURCE_RELEASE,
 ]
 
@@ -59,7 +57,13 @@ func with_context(context: SkillActionContext) -> WeaponEvent:
 	action_context = context
 	return self
 
-func to_legacy_detail() -> Dictionary:
+func passive_event_name() -> StringName:
+	if type == TARGET_KILLED:
+		return &"on_enemy_killed"
+	return StringName("on_%s" % type)
+
+
+func to_detail() -> Dictionary:
 	var output := detail.duplicate(true)
 	output["source_weapon"] = source_weapon
 	if target != null:

@@ -9,6 +9,7 @@ const SCRIM_ALPHA := 0.18
 const INITIAL_COVER_ALPHA := 1.0
 const INITIAL_COVER_RELEASE_SEC := 0.38
 const FIRST_SERVICE_INTRO_DURATION_SEC := 4.20
+const OVERLAY_SCENE := preload("res://UI/components/RestAreaArrivalOverlay/RestAreaArrivalOverlay.tscn")
 
 var owner_ui: UI
 var overlay: Control
@@ -202,86 +203,14 @@ func _set_rest_area_locked(locked: bool) -> void:
 
 
 func _build_overlay(root: Control) -> void:
-	overlay = Control.new()
-	overlay.name = "RestAreaArrivalOverlay"
-	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay.z_index = 410
-	overlay.visible = false
+	overlay = OVERLAY_SCENE.instantiate() as Control
 	root.add_child(overlay)
-
-	scrim = ColorRect.new()
-	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	scrim.color = Color(0.008, 0.040, 0.030, 0.0)
-	scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay.add_child(scrim)
-
-	scan_line = ColorRect.new()
-	scan_line.set_anchors_preset(Control.PRESET_CENTER)
-	scan_line.offset_left = -420.0
-	scan_line.offset_top = -1.0
-	scan_line.offset_right = 420.0
-	scan_line.offset_bottom = 1.0
-	scan_line.pivot_offset = Vector2(420.0, 1.0)
-	scan_line.color = Color(0.42, 1.0, 0.58, 0.82)
-	scan_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay.add_child(scan_line)
-
-	status_panel = PanelContainer.new()
-	status_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	status_panel.offset_left = -220.0
-	status_panel.offset_top = 38.0
-	status_panel.offset_right = 220.0
-	status_panel.offset_bottom = 104.0
-	status_panel.pivot_offset = Vector2(220.0, 33.0)
-	status_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	status_panel.add_theme_stylebox_override("panel", _build_status_style())
-	overlay.add_child(status_panel)
-
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 18)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_right", 18)
-	margin.add_theme_constant_override("margin_bottom", 10)
-	status_panel.add_child(margin)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
-	margin.add_child(column)
-	status_label = Label.new()
-	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 16)
-	status_label.add_theme_color_override("font_color", Color(0.70, 1.0, 0.80, 1.0))
-	column.add_child(status_label)
-	var progress_track := ColorRect.new()
-	progress_track.custom_minimum_size = Vector2(0.0, 3.0)
-	progress_track.color = Color(0.06, 0.20, 0.14, 0.92)
-	progress_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(progress_track)
-	progress_fill = ColorRect.new()
-	progress_fill.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	progress_fill.color = Color(0.38, 0.92, 0.58, 1.0)
-	progress_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	progress_fill.pivot_offset = Vector2.ZERO
-	progress_track.add_child(progress_fill)
-
-	audio = AudioStreamPlayer.new()
-	audio.bus = &"SFX"
-	var stream := AudioStreamGenerator.new()
-	stream.mix_rate = 22050.0
-	stream.buffer_length = 0.18
-	audio.stream = stream
-	root.add_child(audio)
-
-
-func _build_status_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.015, 0.075, 0.050, 0.93)
-	style.border_color = Color(0.30, 0.82, 0.50, 0.82)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(5)
-	style.shadow_color = Color(0.0, 0.03, 0.02, 0.62)
-	style.shadow_size = 6
-	return style
+	scrim = overlay.get_node("Scrim") as ColorRect
+	scan_line = overlay.get_node("ScanLine") as ColorRect
+	status_panel = overlay.get_node("StatusPanel") as PanelContainer
+	status_label = overlay.get_node("StatusPanel/Margin/Column/StatusLabel") as Label
+	progress_fill = overlay.get_node("StatusPanel/Margin/Column/ProgressTrack/ProgressFill") as ColorRect
+	audio = overlay.get_node("AudioPlayer") as AudioStreamPlayer
 
 
 func _set_status(text: String) -> void:

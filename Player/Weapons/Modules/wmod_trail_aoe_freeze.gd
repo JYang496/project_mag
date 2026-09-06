@@ -101,6 +101,7 @@ func _sync_trail_effect_config() -> void:
 	_trail_effect.target_group = 0
 	_trail_effect.tick_damage = _get_tick_damage()
 	_trail_effect.damage_type = Attack.TYPE_FREEZE
+	_trail_effect.surface_style = TrailAreaEffect.SurfaceStyle.FROST
 	_trail_effect.stack_damage_per_segment = false
 	_trail_effect.draw_enabled = show_trail_range
 	_trail_effect.fill_color = trail_fill_color

@@ -6,8 +6,12 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/rocket_launcher_fire_feedback.tres" id="4_feedback"]
 
 [node name="RocketLauncher" unique_id=318102634 instance=ExtResource("1_tn5im")]
+active_skill_effect_id = &"rocket_cluster_warhead"
 base_trait_flags = 21
 script = ExtResource("2_6v0md")
+skill_unlock_condition = &"explosion_distinct_targets"
+skill_unlock_hint = "Hit 3 different enemies with one explosion"
+skill_unlock_required = 3.0
 turn_speed_degrees_per_second = 180.0
 fire_feedback_profile = ExtResource("4_feedback")
 range_mode = 1

@@ -14,6 +14,37 @@ var explosion_scale : float = 2.0
 const ROCKET_COLLISION_ARMING_DELAY_SEC: float = 0.08
 const BASE_EXPLOSION_RADIUS: float = 36.0
 const CLUSTER_KILL_RADIUS_MULTIPLIER: float = 1.5
+var _skill_explosion_target_ids: Dictionary = {}
+const CLUSTER_BOMBLET := preload("res://Player/Weapons/Effects/cluster_bomblet.gd")
+var _cluster_warhead_armed := false
+
+func on_area_effect_target_affected(area_effect: Node, target: Node) -> void:
+	if area_effect == null or not is_instance_valid(area_effect) or target == null or not is_instance_valid(target):
+		return
+	var area_id := area_effect.get_instance_id()
+	if not area_effect.tree_exited.is_connected(Callable(self, "_on_skill_explosion_exited").bind(area_id)):
+		area_effect.tree_exited.connect(Callable(self, "_on_skill_explosion_exited").bind(area_id), CONNECT_ONE_SHOT)
+	var target_ids: Dictionary = _skill_explosion_target_ids.get(area_id, {})
+	target_ids[target.get_instance_id()] = true
+	_skill_explosion_target_ids[area_id] = target_ids
+	set_weapon_skill_unlock_progress(float(target_ids.size()))
+	if target_ids.size() >= 3:
+		mark_weapon_skill_ready()
+		_skill_explosion_target_ids.erase(area_id)
+
+func _on_skill_explosion_exited(area_id: int) -> void:
+	_skill_explosion_target_ids.erase(area_id)
+
+func clear_timed_effects_for_prepare() -> void:
+	super.clear_timed_effects_for_prepare()
+	_skill_explosion_target_ids.clear()
+	_cluster_warhead_armed = false
+	set_active_skill_visual_armed(false)
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	_cluster_warhead_armed = true
+	set_active_skill_visual_armed(true, Color(1.0, 0.48, 0.18, 1.0))
+	return true
 
 func _init() -> void:
 	super._init()
@@ -84,10 +115,28 @@ func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> 
 	spawn_projectile.size = size
 	spawn_projectile.expire_time = get_effective_projectile_lifetime()
 	spawn_projectile.collision_arming_delay_sec = ROCKET_COLLISION_ARMING_DELAY_SEC
+	if _cluster_warhead_armed:
+		_cluster_warhead_armed = false
+		set_active_skill_visual_armed(false)
+		spawn_projectile.set_meta(&"cluster_warhead", true)
 	_sync_explosion_effect_config(projectile_damage)
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 	return spawn_projectile
+
+func on_projectile_will_despawn(projectile: Projectile) -> void:
+	if projectile == null or not bool(projectile.get_meta(&"cluster_warhead", false)):
+		return
+	projectile.set_meta(&"cluster_warhead", false)
+	if not is_inside_tree() or not is_attack_phase_allowed():
+		return
+	var shared_hit_counts: Dictionary = {}
+	for index in range(8):
+		var bomblet := CLUSTER_BOMBLET.new().setup(
+			self, Vector2.RIGHT.rotated(TAU * float(index) / 8.0), shared_hit_counts
+		)
+		bomblet.global_position = projectile.global_position
+		get_projectile_spawn_parent().add_child(bomblet)
 
 # Keeps the typed explosion config synced with current weapon runtime stats.
 func _sync_explosion_effect_config(projectile_damage: int) -> void:

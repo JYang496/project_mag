@@ -1,5 +1,7 @@
 extends Node
 
+const REWARD_PANEL_SCRIPT := preload("res://UI/components/RewardSelectionPanel/RewardSelectionPanel.gd")
+
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
 
@@ -69,7 +71,7 @@ func _ready() -> void:
 	assert(summary.size() == 2)
 	assert(int((summary[0] as RewardInfo).get_meta("summary_count", 1)) == 2)
 
-	var panel := preload("res://UI/scenes/reward_selection_panel.tscn").instantiate() as RewardSelectionPanel
+	var panel := preload("res://UI/components/RewardSelectionPanel/RewardSelectionPanel.tscn").instantiate() as Control
 	add_child(panel)
 	await get_tree().process_frame
 	for typed_reward in [task_bundle[0], effect_reward]:
@@ -85,7 +87,8 @@ func _ready() -> void:
 	assert(panel.get_node_or_null("Panel/VBox/DetailPanel") == null)
 	assert(panel.get_node_or_null("Panel/VBox/ActionPanel/Margin/Actions/ConfirmButton") == panel.confirm_button)
 	panel.close_panel()
-	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward, effect_reward], Callable(), Callable(), false))
+	var reward_choices: Array[RewardInfo] = [task_bundle[0], task_bundle[1], effect_reward, effect_reward]
+	assert(panel.open_for_rewards("", reward_choices, Callable(), Callable(), false))
 	await get_tree().process_frame
 	assert(panel.title_label.text == LocalizationManager.tr_key("ui.reward.title", "Choose Reward"))
 	assert(panel.panel.size.x >= 999.0 and panel.panel.size.y >= 619.0)
@@ -99,7 +102,7 @@ func _ready() -> void:
 	assert(panel.options_scroll.size.y >= action_panel.size.y * 5.0)
 	assert(panel.options_scroll.get_global_rect().end.y <= action_panel.get_global_rect().position.y)
 	var actions := panel.get_node("Panel/VBox/ActionPanel/Margin/Actions") as HBoxContainer
-	var confirm_center_x := panel.confirm_button.position.x + panel.confirm_button.size.x * 0.5
+	var confirm_center_x: float = float(panel.confirm_button.position.x + panel.confirm_button.size.x * 0.5)
 	assert(is_equal_approx(confirm_center_x, actions.size.x * 0.5))
 	for index in range(3):
 		var reward_button := panel.options_box.get_child(index) as Button
@@ -160,9 +163,10 @@ func _ready() -> void:
 	assert(panel.get_node_or_null("Panel/VBox/SelectedDetail") == null)
 	panel.call("_input", space_press)
 	assert(not panel.visible)
-	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward], Callable(), Callable(), false))
+	var quick_select_rewards: Array[RewardInfo] = [task_bundle[0], task_bundle[1], effect_reward]
+	assert(panel.open_for_rewards("", quick_select_rewards, Callable(), Callable(), false))
 	panel.call("_begin_quick_select_hold", 0)
-	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS * 0.4)
+	panel.call("_process", REWARD_PANEL_SCRIPT.QUICK_SELECT_HOLD_SECONDS * 0.4)
 	var previous_progress := (panel.options_box.get_child(0) as Button).find_child("HoldProgress", true, false) as ProgressBar
 	assert(previous_progress != null and previous_progress.visible and previous_progress.value > 0.0)
 	panel.call("_begin_quick_select_hold", 1)
@@ -171,25 +175,25 @@ func _ready() -> void:
 	assert(previous_progress.visible and is_zero_approx(previous_progress.value))
 	assert(held_progress != null and held_progress.visible and is_zero_approx(held_progress.value))
 	assert(panel.get("_held_quick_select_index") == 1)
-	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS - 0.05)
+	panel.call("_process", REWARD_PANEL_SCRIPT.QUICK_SELECT_HOLD_SECONDS - 0.05)
 	assert(panel.visible)
 	assert(held_progress.value > 0.8 and held_progress.value < 1.0)
 	panel.call("_cancel_quick_select_hold")
 	assert(panel.visible)
 	assert(held_progress.visible and is_zero_approx(held_progress.value))
 	panel.call("_begin_quick_select_hold", 1)
-	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS)
+	panel.call("_process", REWARD_PANEL_SCRIPT.QUICK_SELECT_HOLD_SECONDS)
 	assert(not panel.visible)
-	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward], Callable(), Callable(), false))
+	assert(panel.open_for_rewards("", quick_select_rewards, Callable(), Callable(), false))
 	panel.confirm_button.emit_signal("pressed")
 	assert(not panel.visible)
-	assert(panel.open_for_rewards("", [task_bundle[0], task_bundle[1], effect_reward], Callable(), Callable(), false))
+	assert(panel.open_for_rewards("", quick_select_rewards, Callable(), Callable(), false))
 	for index in range(3):
 		var reward_button := panel.options_box.get_child(index) as Button
 		var key_badge := reward_button.find_child("KeyBadge", true, false) as Label
 		assert(key_badge != null and key_badge.text == str(index + 1))
 	panel.call("_begin_quick_select_hold", 2)
-	panel.call("_process", RewardSelectionPanel.QUICK_SELECT_HOLD_SECONDS)
+	panel.call("_process", REWARD_PANEL_SCRIPT.QUICK_SELECT_HOLD_SECONDS)
 	assert(not panel.visible)
 
 	print("PASS: task reward bundles generate, grant once, merge, and preserve repeated hold selection")

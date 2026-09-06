@@ -94,7 +94,7 @@ func get_incompatibility_reason(target_weapon: Weapon) -> String:
 	if not target_weapon:
 		return "Invalid weapon."
 	var required_delivery := get_normalized_required_delivery_types()
-	if not required_delivery.is_empty() and target_weapon.has_method("has_delivery_type"):
+	if not required_delivery.is_empty():
 		var matched_delivery := false
 		for delivery_type in required_delivery:
 			if target_weapon.has_delivery_type(delivery_type):
@@ -106,18 +106,16 @@ func get_incompatibility_reason(target_weapon: Weapon) -> String:
 				delivery_names.append(str(required_delivery_type))
 			return "Requires delivery type: %s" % ", ".join(delivery_names)
 	var required_traits := get_normalized_required_weapon_traits()
-	if target_weapon.has_method("has_any_weapon_traits"):
-		if not target_weapon.has_any_weapon_traits(required_traits):
-			var trait_names: PackedStringArray = []
-			for required_trait_name in required_traits:
-				trait_names.append(str(required_trait_name))
-			if trait_names.is_empty():
-				return "Weapon does not match required traits."
-			return "Requires one of: %s" % ", ".join(trait_names)
+	if not target_weapon.has_any_weapon_traits(required_traits):
+		var trait_names: PackedStringArray = []
+		for required_trait_name in required_traits:
+			trait_names.append(str(required_trait_name))
+		if trait_names.is_empty():
+			return "Weapon does not match required traits."
+		return "Requires one of: %s" % ", ".join(trait_names)
 	var required_capabilities := get_normalized_required_weapon_capabilities()
 	if not required_capabilities.is_empty():
-		if not target_weapon.has_method("has_any_weapon_capabilities") \
-				or not target_weapon.has_any_weapon_capabilities(required_capabilities):
+		if not target_weapon.has_any_weapon_capabilities(required_capabilities):
 			return "Requires one of capabilities: %s" % ", ".join(PackedStringArray(required_capabilities))
 	var hook_reason := get_hook_validation_error()
 	if hook_reason != "":
@@ -134,8 +132,7 @@ func get_subscribed_weapon_events() -> Array[StringName]:
 
 func provides_modifier_channel(channel: StringName) -> bool:
 	return channel == WeaponPluginDispatcher.RELOAD_DURATION_CHANNEL \
-		and get_normalized_required_hooks().has(ModuleHook.RELOAD_DURATION) \
-		and has_method("get_reload_duration_multiplier")
+		and get_normalized_required_hooks().has(ModuleHook.RELOAD_DURATION)
 
 func handle_weapon_event(event: WeaponEvent) -> bool:
 	if trigger_spec == null:
@@ -157,26 +154,45 @@ func execute_trigger(_event: WeaponEvent) -> bool:
 func _handle_legacy_weapon_event(event: WeaponEvent) -> bool:
 	match event.type:
 		WeaponEvent.HIT_CONFIRMED:
-			if has_method("apply_on_hit"):
-				call("apply_on_hit", weapon, event.target)
-				return true
+			apply_on_hit(weapon, event.target)
+			return true
 		WeaponEvent.DAMAGE_DEALT:
-			if has_method("on_damage_dealt"):
-				call("on_damage_dealt", weapon, event.target, event.damage_data, event.damage_result)
-				return true
+			on_damage_dealt(weapon, event.target, event.damage_data, event.damage_result)
+			return true
 		WeaponEvent.PROJECTILE_SPAWNED:
-			if has_method("on_projectile_spawned"):
-				call("on_projectile_spawned", weapon, event.projectile)
-				return true
+			on_projectile_spawned(weapon, event.projectile)
+			return true
 		WeaponEvent.RELOAD_STARTED:
-			if has_method("_on_weapon_passive_triggered"):
-				call("_on_weapon_passive_triggered", &"on_reload_started", event.to_legacy_detail())
-				return true
+			on_reload_started(weapon, event.to_detail())
+			return true
 		WeaponEvent.TARGET_KILLED:
-			if has_method("on_kill"):
-				call("on_kill", weapon, event.target, event.damage_data, event.damage_result)
-				return true
+			on_kill(weapon, event.target, event.damage_data, event.damage_result)
+			return true
 	return false
+
+
+func apply_on_hit(_weapon: Weapon, _target: Node) -> void:
+	pass
+
+
+func on_damage_dealt(_weapon: Weapon, _target: Node, _data: DamageData, _result: DamageResult) -> void:
+	pass
+
+
+func on_projectile_spawned(_weapon: Weapon, _projectile: Node2D) -> void:
+	pass
+
+
+func on_reload_started(_weapon: Weapon, _detail: Dictionary) -> void:
+	pass
+
+
+func on_kill(_weapon: Weapon, _target: Node, _data: DamageData, _result: DamageResult) -> void:
+	pass
+
+
+func get_reload_duration_multiplier(_weapon: Weapon, _base_duration: float) -> float:
+	return 1.0
 
 func get_normalized_module_tags() -> Array[StringName]:
 	return ModuleTag.normalize_array(module_tags)

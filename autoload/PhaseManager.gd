@@ -20,6 +20,7 @@ const RUN_STATE_ACTIVE := &"active"
 const RUN_STATE_COMPLETE := &"run_complete"
 const RUN_STATE_ENDLESS := &"endless"
 const BATTLE_RUNTIME_TRANSIENT_GROUP := &"battle_runtime_transient"
+const MAX_PACING_EVENTS := 256
 var time_out = 30
 
 var phase_list := [REST, SETTLEMENT, PROTOCOL_SELECTION, BATTLE_STARTING, BATTLE, GAMEOVER, RUN_COMPLETE]
@@ -33,6 +34,7 @@ var phase := REST:
 signal phase_changed(new_phase: String)
 signal pre_enter_prepare_loot
 signal post_battle_collect_gate_changed(blocking: bool)
+signal pacing_event_recorded(event: Dictionary)
 
 var post_battle_collect_gate_timeout_sec: float = 2.0
 var _post_battle_collect_gate_active := false
@@ -43,11 +45,48 @@ var _protocol_selection_origin := ""
 var _last_completed_level_index := -1
 var _settlement_type: StringName = &"quick"
 var endless_mode := false
+var _pacing_events: Array[Dictionary] = []
+var _run_started_msec := 0
 var _endless_entry_rest_available := false
 var _run_state: StringName = RUN_STATE_ACTIVE
 
 func _ready() -> void:
 	RUN_PROGRESSION_PROFILE.sanitize()
+	phase_changed.connect(_record_phase_pacing_event)
+	reset_pacing_telemetry()
+
+
+func record_pacing_event(event_name: StringName, payload: Dictionary = {}) -> void:
+	var event := {
+		"name": event_name,
+		"elapsed_msec": Time.get_ticks_msec() - _run_started_msec,
+		"level_index": current_level,
+		"phase": current_state(),
+		"payload": payload.duplicate(true),
+	}
+	_pacing_events.append(event)
+	if _pacing_events.size() > MAX_PACING_EVENTS:
+		_pacing_events.pop_front()
+	pacing_event_recorded.emit(event.duplicate(true))
+
+
+func get_pacing_events() -> Array[Dictionary]:
+	return _pacing_events.duplicate(true)
+
+
+func reset_pacing_telemetry() -> void:
+	_pacing_events.clear()
+	_run_started_msec = Time.get_ticks_msec()
+
+
+func _record_phase_pacing_event(new_phase: String) -> void:
+	match new_phase:
+		BATTLE_STARTING: record_pacing_event(&"battle_deployment_started")
+		BATTLE: record_pacing_event(&"battle_started")
+		SETTLEMENT: record_pacing_event(&"battle_completed", {"settlement_type": get_settlement_type()})
+		REST: record_pacing_event(&"chapter_rest_entered", {"settlement_type": get_settlement_type()})
+		RUN_COMPLETE: record_pacing_event(&"run_completed")
+		GAMEOVER: record_pacing_event(&"run_failed")
 
 func current_state() -> String:
 	return phase
@@ -330,6 +369,4 @@ func reset_runtime_state() -> void:
 	_endless_entry_rest_available = false
 	_run_state = RUN_STATE_ACTIVE
 	complete_post_battle_collect_gate()
-	var pacing_telemetry := get_node_or_null("/root/RunPacingTelemetry")
-	if pacing_telemetry != null:
-		pacing_telemetry.reset_runtime_state()
+	reset_pacing_telemetry()

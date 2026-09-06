@@ -1,0 +1,119 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://UI/components/TaskDetailWindow/TaskDetailWindow.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="PanelStyle"]
+bg_color = Color(0.045, 0.06, 0.072, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.24, 0.46, 0.58, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="BadgeStyle"]
+bg_color = Color(0.1, 0.16, 0.18, 0.92)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.28, 0.46, 0.52, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="TaskDetailWindow" type="PanelContainer"]
+visible = false
+custom_minimum_size = Vector2(360, 238)
+mouse_filter = 0
+theme_override_styles/panel = SubResource("PanelStyle")
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="Content" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Margin/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 17
+text_overrun_behavior = 3
+
+[node name="Badges" type="HBoxContainer" parent="Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TaskBadge" type="Label" parent="Margin/Content/Badges"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(62, 20)
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.8, 0.92, 0.96, 1)
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = SubResource("BadgeStyle")
+horizontal_alignment = 1
+
+[node name="RaritySwatch" type="ColorRect" parent="Margin/Content/Badges"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(14, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ObjectiveHeading" type="Label" parent="Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.48, 0.68, 0.76, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="Description" type="Label" parent="Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.76, 0.86, 0.9, 1)
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 2
+
+[node name="RewardHeading" type="Label" parent="Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.48, 0.68, 0.76, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="Reward" type="Label" parent="Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.88, 0.96, 0.72, 1)
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 2
+
+[node name="Footer" type="HBoxContainer" parent="Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Spacer" type="Control" parent="Margin/Content/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CloseButton" type="Button" parent="Margin/Content/Footer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(112, 38)
+layout_mode = 2

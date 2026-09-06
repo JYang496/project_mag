@@ -1,6 +1,8 @@
 extends Melee
 class_name DashBlade
 
+const TRAIL_AREA_EFFECT := preload("res://Combat/area_effect/trail_area_effect.gd")
+
 signal calculate_weapon_damage(damage)
 signal calculate_attack_cooldown(attack_cooldown)
 signal calculate_weapon_speed(speed)
@@ -48,6 +50,8 @@ var _dash_hit_confirmed: bool = false
 var _dash_start_distance: float = 0.0
 var _dash_start_target_id: int = 0
 var _dash_target_position: Vector2 = Vector2.ZERO
+var _rift_armed := false
+var _active_rift: TrailAreaEffect
 
 enum AttackState {
 	IDLE,
@@ -161,6 +165,7 @@ func _on_fuse_texture_changed() -> void:
 	_adjust_blade_sprite_height()
 
 func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
 	center_melee_attack_range_area(attack_range_area)
 	_cleanup_targets()
 	_update_target()
@@ -260,15 +265,57 @@ func _start_dash() -> void:
 			behavior.call("on_dash_cycle_started")
 	_state = AttackState.DASHING
 	_set_hitbox_enabled(true)
+	if _rift_armed:
+		_rift_armed = false
+		if blade_sprite != null:
+			blade_sprite.modulate = Color.WHITE
+		_start_rift_trail()
 
 func _start_return() -> void:
 	if _state != AttackState.DASHING:
 		return
 	_state = AttackState.RETURNING
+	if _active_rift != null and is_instance_valid(_active_rift):
+		var completed_rift := _active_rift
+		completed_rift.detach_emitter(blade_anchor)
+		get_tree().create_timer(3.5, false).timeout.connect(completed_rift.queue_free, CONNECT_ONE_SHOT)
+		_active_rift = null
 	_set_hitbox_enabled(_branch_wants_dash_return_hitbox())
 	for behavior in branch_runtime.get_branch_behaviors():
 		if behavior.has_method("on_dash_return_started"):
 			behavior.call("on_dash_return_started")
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	_rift_armed = true
+	if blade_sprite != null:
+		blade_sprite.modulate = Color(0.72, 0.46, 1.0, 1.0)
+	return true
+
+func _start_rift_trail() -> void:
+	var trail := TRAIL_AREA_EFFECT.new()
+	trail.surface_style = TrailAreaEffect.SurfaceStyle.RIFT
+	trail.duration = 3.0
+	trail.tick_interval = 0.4
+	trail.sample_interval = 0.025
+	trail.max_segments = 20
+	trail.tick_damage = max(1, int(round(float(get_runtime_damage()) * 0.35)))
+	trail.damage_type = Attack.TYPE_ENERGY
+	trail.source_node = self
+	trail.source_category = DamageData.SOURCE_PLAYER_WEAPON
+	trail.fill_color = Color(0.60, 0.32, 1.0, 0.22)
+	trail.line_color = Color(0.78, 0.62, 1.0, 0.9)
+	get_tree().root.add_child(trail)
+	trail.attach_emitter(blade_anchor, 34.0, 10.0, false)
+	_active_rift = trail
+
+func clear_timed_effects_for_prepare() -> void:
+	super.clear_timed_effects_for_prepare()
+	_rift_armed = false
+	if blade_sprite != null:
+		blade_sprite.modulate = Color.WHITE
+	if _active_rift != null and is_instance_valid(_active_rift):
+		_active_rift.queue_free()
+	_active_rift = null
 
 func _start_cooldown() -> void:
 	if _state == AttackState.COOLDOWN:
@@ -312,6 +359,16 @@ func _try_confirm_dash_hit(target: BaseEnemy) -> void:
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)
+	var dash_ratio := _dash_start_distance / maxf(attack_range, 1.0)
+	if _state == AttackState.DASHING and dash_ratio + 0.0001 >= long_dash_trigger_range_ratio:
+		mark_weapon_skill_ready()
+		emit_passive_trigger(&"dash_blade_long_dash_hit_triggered", {
+			"target": target,
+			"distance": _dash_start_distance,
+			"range_ratio": dash_ratio,
+			"threshold": long_dash_trigger_range_ratio,
+			"refresh": "long_dash_hit",
+		}, PASSIVE_SCOPE_GLOBAL)
 	_apply_close_chain_slow(target)
 	for behavior in branch_runtime.get_branch_behaviors():
 		if behavior.has_method("on_dash_target_hit"):
@@ -323,14 +380,6 @@ func _apply_close_chain_slow(target: Node) -> void:
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
-	if event_name != &"on_continuous_hit_threshold" or int(detail.get("threshold", 0)) < 3:
-		return
-	emit_passive_trigger(&"dash_blade_long_dash_hit_triggered", {
-		"target": detail.get("target"),
-		"hit_count": int(detail.get("hit_count", 0)),
-		"threshold": int(detail.get("threshold", 3)),
-		"refresh": "continuous_hits",
-	}, PASSIVE_SCOPE_GLOBAL)
 
 func get_passive_status() -> Dictionary:
 	var state := "building"
@@ -340,12 +389,12 @@ func get_passive_status() -> Dictionary:
 		"state": state,
 		"progress": 0.0,
 		"ready": false,
-		"condition_type": "continuous_hits",
-		"required": 3,
+		"condition_type": "long_dash_hit",
+		"required": long_dash_trigger_range_ratio,
 		"condition_visible": true,
 		"condition_progress": 0.0,
-		"trigger_hint": "continuous_hits",
-		"refresh_hint": "continuous_hits",
+		"trigger_hint": "long_dash_hit",
+		"refresh_hint": "long_dash_hit",
 		"slow_multiplier": clampf(close_chain_slow_multiplier, 0.05, 1.0),
 		"slow_duration": maxf(close_chain_slow_duration_sec, 0.1),
 	}

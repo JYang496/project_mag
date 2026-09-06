@@ -13,7 +13,7 @@ const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _modules: Array[Module] = []
-var _reward_builder: RewardSelectionPanel
+var _reward_builder: Node
 var _previous_weapons: Array = []
 var selected_module: Module
 
@@ -35,10 +35,10 @@ func _prepare_fixtures() -> void:
 		module.visible = false
 		%Fixtures.add_child(module)
 		_modules.append(module)
-	var pistol := (load("res://Player/Weapons/Instances/pistol.tscn") as PackedScene).instantiate() as Weapon
-	pistol.visible = false
-	%Fixtures.add_child(pistol)
-	PlayerData.player_weapon_list = [pistol]
+	var weapon := (load("res://Player/Weapons/Instances/machine_gun.tscn") as PackedScene).instantiate() as Weapon
+	weapon.visible = false
+	%Fixtures.add_child(weapon)
+	PlayerData.player_weapon_list = [weapon]
 	PlayerData.player_gold = 9999
 
 func _capture_reward_cards() -> void:

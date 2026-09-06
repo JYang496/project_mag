@@ -99,7 +99,7 @@ func _test_all_fusion_recipe_tags_have_core_sources() -> void:
 			_expect(not recipe.is_empty(), "every fusion branch must define a recipe: %s" % branch.branch_id)
 			for required_tag in recipe:
 				_expect(available_tags.has(required_tag), "fusion recipe tag must have a current weapon-core source: %s/%s" % [branch.branch_id, required_tag])
-	_expect(branch_count == 30, "fusion recipe audit must cover all 30 registered branches")
+	_expect(branch_count == 28, "fusion recipe audit must cover all 28 registered branches")
 
 func _test_fusion_recipe_and_transaction() -> void:
 	_reset_runtime()

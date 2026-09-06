@@ -7,6 +7,7 @@ const MODULE_MANAGEMENT_CARD_FACTORY := preload("res://UI/scripts/management/mod
 const MODULE_MANAGEMENT_DETAIL_PRESENTER := preload("res://UI/scripts/management/module_management_detail_presenter.gd")
 const MODULE_MANAGEMENT_DRAG_COORDINATOR := preload("res://UI/scripts/management/module_management_drag_coordinator.gd")
 const MODULE_MANAGEMENT_ACTION_PRESENTER := preload("res://UI/scripts/management/module_management_action_presenter.gd")
+const DETAIL_TEXT_SCENE := preload("res://UI/components/DetailText/DetailText.tscn")
 
 @onready var temporary_modules_scroll: ScrollContainer = get_node_or_null("TemporaryModulesScroll")
 @onready var modules: GridContainer = get_node_or_null("TemporaryModulesScroll/Modules")
@@ -206,161 +207,34 @@ func _build_unified_layout() -> void:
 	if _built:
 		return
 	_built = true
-	for child in get_children():
-		remove_child(child)
-		child.queue_free()
-	mouse_filter = Control.MOUSE_FILTER_PASS
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-
-	_tabs = HBoxContainer.new()
-	_tabs.name = "WarehouseTabs"
-	_tabs.visible = true
-	_tabs.position = Vector2(25, 54)
-	_tabs.size = Vector2(500, 38)
-	_tabs.add_theme_constant_override("separation", 8)
-	add_child(_tabs)
-
-	_tab_weapon_button = Button.new()
-	_tab_weapon_button.name = "WeaponWarehouseTab"
-	_tab_weapon_button.toggle_mode = true
+	_tabs = get_node("WarehouseTabs") as HBoxContainer
+	_tab_weapon_button = get_node("WarehouseTabs/WeaponWarehouseTab") as Button
 	_tab_weapon_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
-	_tab_weapon_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_tab_weapon_button.pressed.connect(_on_weapon_tab_pressed)
-	_tabs.add_child(_tab_weapon_button)
-
-	_tab_module_button = Button.new()
-	_tab_module_button.name = "ModuleWarehouseTab"
-	_tab_module_button.toggle_mode = true
+	_tab_module_button = get_node("WarehouseTabs/ModuleWarehouseTab") as Button
 	_tab_module_button.text = LocalizationManager.tr_key("ui.module.warehouse.title", "Module Warehouse")
-	_tab_module_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_tab_module_button.pressed.connect(_on_module_tab_pressed)
-	_tabs.add_child(_tab_module_button)
-
-	var columns := HBoxContainer.new()
-	columns.name = "Columns"
-	columns.position = Vector2(25, 104)
-	columns.size = Vector2(950, 402)
-	columns.add_theme_constant_override("separation", 14)
-	add_child(columns)
-
-	var left_panel := _make_panel_column(columns, "LeftColumn", Vector2(300, 384))
-	_left_title = _make_column_title(left_panel)
-	_left_list = _make_scroll_list(left_panel, "LeftListScroll", "LeftList")
-
-	var detail_panel := _make_panel_column(columns, "DetailColumn", Vector2(300, 384))
-	_detail_title = _make_column_title(detail_panel)
-	_detail_subtitle = Label.new()
-	_detail_subtitle.name = "DetailSubtitle"
-	_detail_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_detail_subtitle.add_theme_font_size_override("font_size", 13)
-	_detail_subtitle.add_theme_color_override("font_color", Color(0.74, 0.84, 0.9))
-	detail_panel.add_child(_detail_subtitle)
-	var detail_scroll := ScrollContainer.new()
-	detail_scroll.name = "DetailScroll"
-	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	detail_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	detail_panel.add_child(detail_scroll)
-	_detail_body = VBoxContainer.new()
-	_detail_body.name = "DetailBody"
-	_detail_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_detail_body.add_theme_constant_override("separation", 6)
-	detail_scroll.add_child(_detail_body)
-
-	var right_panel := _make_panel_column(columns, "RightColumn", Vector2(300, 384))
-	_right_title = _make_column_title(right_panel)
-	_right_list = _make_scroll_list(right_panel, "RightListScroll", "RightList")
-
-	_action_bar = HBoxContainer.new()
-	_action_bar.name = "ActionBar"
-	_action_bar.position = Vector2(25, 512)
-	_action_bar.size = Vector2(950, 62)
-	_action_bar.add_theme_constant_override("separation", 12)
-	add_child(_action_bar)
-
-	_status_label = Label.new()
-	_status_label.name = "WarehouseStatus"
-	_status_label.custom_minimum_size = Vector2(320, 52)
-	_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_status_label.add_theme_color_override("font_color", Color(0.82, 0.88, 0.9))
-	_action_bar.add_child(_status_label)
-
-	_primary_action_button = Button.new()
-	_primary_action_button.name = "PrimaryAction"
-	_primary_action_button.custom_minimum_size = Vector2(184, 52)
-	_action_bar.add_child(_primary_action_button)
-
-	_secondary_action_button = Button.new()
-	_secondary_action_button.name = "SecondaryAction"
-	_secondary_action_button.custom_minimum_size = Vector2(184, 52)
-	_action_bar.add_child(_secondary_action_button)
-
-	_back_action_button = Button.new()
-	_back_action_button.name = "BackAction"
-	_back_action_button.custom_minimum_size = Vector2(150, 52)
+	_left_title = get_node("Columns/LeftColumn/Margin/Root/Title") as Label
+	_left_list = get_node("Columns/LeftColumn/Margin/Root/LeftListScroll/LeftList") as VBoxContainer
+	_left_list.set("view", self)
+	_detail_title = get_node("Columns/DetailColumn/Margin/Root/Title") as Label
+	_detail_subtitle = get_node("Columns/DetailColumn/Margin/Root/DetailSubtitle") as Label
+	_detail_body = get_node("Columns/DetailColumn/Margin/Root/DetailScroll/DetailBody") as VBoxContainer
+	_right_title = get_node("Columns/RightColumn/Margin/Root/Title") as Label
+	_right_list = get_node("Columns/RightColumn/Margin/Root/RightListScroll/RightList") as VBoxContainer
+	_right_list.set("view", self)
+	_action_bar = get_node("ActionBar") as HBoxContainer
+	_status_label = get_node("ActionBar/WarehouseStatus") as Label
+	_primary_action_button = get_node("ActionBar/PrimaryAction") as Button
+	_secondary_action_button = get_node("ActionBar/SecondaryAction") as Button
+	_back_action_button = get_node("ActionBar/BackAction") as Button
 	_back_action_button.text = LocalizationManager.tr_key("ui.panel.back", "Back")
 	_back_action_button.pressed.connect(_on_back_action_pressed)
-	_action_bar.add_child(_back_action_button)
 
 	_sync_legacy_fields()
 	_ensure_detail_presenter()
 	_ensure_drag_coordinator()
 	_ensure_action_presenter()
-
-func _make_panel_column(parent: Container, node_name: String, min_size: Vector2) -> VBoxContainer:
-	var panel := PanelContainer.new()
-	panel.name = node_name
-	panel.custom_minimum_size = min_size
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.07, 0.095, 0.125, 0.94)
-	style.border_color = Color(0.22, 0.36, 0.46)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(8)
-	panel.add_theme_stylebox_override("panel", style)
-	parent.add_child(panel)
-	var margin := MarginContainer.new()
-	margin.name = "Margin"
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_bottom", 10)
-	panel.add_child(margin)
-	var root := VBoxContainer.new()
-	root.name = "Root"
-	root.add_theme_constant_override("separation", 8)
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	margin.add_child(root)
-	return root
-
-func _make_column_title(parent: VBoxContainer) -> Label:
-	var title := Label.new()
-	title.add_theme_font_size_override("font_size", 18)
-	title.add_theme_color_override("font_color", Color(0.86, 0.94, 1.0))
-	title.clip_text = true
-	parent.add_child(title)
-	return title
-
-func _make_scroll_list(parent: VBoxContainer, scroll_name: String, list_name: String) -> VBoxContainer:
-	var scroll := ScrollContainer.new()
-	scroll.name = scroll_name
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	parent.add_child(scroll)
-	var list := WAREHOUSE_DRAG_CONTROLS.WarehouseDropList.new()
-	list.name = list_name
-	list.view = self
-	list.mouse_filter = Control.MOUSE_FILTER_STOP
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 8)
-	scroll.add_child(list)
-	return list
 
 func _style_static_controls() -> void:
 	if owner_ui == null:
@@ -584,8 +458,8 @@ func _get_active_drag_module() -> Module:
 
 func _sync_legacy_fields() -> void:
 	temporary_modules_scroll = get_node_or_null("Columns/RightColumn/Margin/Root/RightListScroll") as ScrollContainer
-	modules = GridContainer.new()
-	equipped_m = GridContainer.new()
+	modules = get_node_or_null("TemporaryModulesScroll/Modules") as GridContainer
+	equipped_m = get_node_or_null("EquippedM") as GridContainer
 	module_selection_label = _status_label
 	module_equip_button = _primary_action_button
 	module_sell_button = _secondary_action_button
@@ -611,10 +485,8 @@ func _format_module_install_targets(module_instance: Module) -> String:
 	return _detail_presenter.format_module_install_targets(module_instance) if _detail_presenter != null else ""
 
 func _add_empty_label(parent: VBoxContainer, text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Color(0.72, 0.81, 0.86))
+	var label := DETAIL_TEXT_SCENE.instantiate() as Label
+	label.call("set_data", text, Color(0.72, 0.81, 0.86), 13)
 	parent.add_child(label)
 
 func _set_list_drop_payload(list: VBoxContainer, payload: Dictionary) -> void:

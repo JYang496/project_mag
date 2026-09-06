@@ -264,11 +264,20 @@ func _try_apply_on_hurt_box(area: Area2D) -> void:
 	if apply_once_per_target and _affected_target_ids.has(target_id):
 		return
 	_affected_target_ids[target_id] = true
-	_apply_to_target(target, _is_enemy_hurt_box(hurt_box))
+	var damage_applied := _apply_to_target(target, _is_enemy_hurt_box(hurt_box))
 	target_affected.emit(target)
+	if damage_applied:
+		_notify_source_area_target(target)
 
 
-func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
+func _notify_source_area_target(target: Node) -> void:
+	var source_weapon := DamageManager.resolve_source_weapon(source_node)
+	if source_weapon != null and source_weapon.has_method("on_area_effect_target_affected"):
+		source_weapon.call("on_area_effect_target_affected", self, target)
+
+
+func _apply_to_target(target: Node, target_is_enemy: bool) -> bool:
+	var damage_applied := false
 	if one_shot_damage > 0:
 		var valid_source_node: Node = _resolve_valid_source_node()
 		var damage_data := DamageManager.build_damage_data(
@@ -280,8 +289,8 @@ func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
 			delivery_type,
 			heat_snapshot
 		)
-		var applied := DamageManager.apply_to_target(target, damage_data)
-		if applied:
+		damage_applied = DamageManager.apply_to_target(target, damage_data)
+		if damage_applied:
 			var owner_player := damage_data.source_player as Player
 			if owner_player and is_instance_valid(owner_player) and target_is_enemy:
 				owner_player.apply_bonus_hit_if_needed(target)
@@ -290,6 +299,7 @@ func _apply_to_target(target: Node, target_is_enemy: bool) -> void:
 	if not status_on_apply.is_empty():
 		_apply_status_to_target(target)
 	apply_custom_effects(target)
+	return damage_applied
 
 
 # Applies periodic area damage for persistent zones like napalm.
@@ -393,8 +403,10 @@ func _try_apply_enemy_target(target: BaseEnemy) -> void:
 	if apply_once_per_target and _affected_target_ids.has(target_id):
 		return
 	_affected_target_ids[target_id] = true
-	_apply_to_target(target, true)
+	var damage_applied := _apply_to_target(target, true)
 	target_affected.emit(target)
+	if damage_applied:
+		_notify_source_area_target(target)
 
 func _get_registry_enemy_targets() -> Array[BaseEnemy]:
 	var output: Array[BaseEnemy] = []

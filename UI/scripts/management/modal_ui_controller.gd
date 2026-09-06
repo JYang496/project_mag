@@ -2,24 +2,24 @@ extends RefCounted
 class_name ModalUiController
 
 const BRANCH_SELECT_PANEL_PATH := "res://UI/scenes/branch_select_panel.tscn"
-const MODULE_EQUIP_SELECTION_PANEL_PATH := "res://UI/scenes/module_equip_selection_panel.tscn"
-const REWARD_SELECTION_PANEL_PATH := "res://UI/scenes/reward_selection_panel.tscn"
-const WEAPON_REPLACEMENT_PANEL_PATH := "res://UI/scenes/weapon_replacement_panel.tscn"
-const WEAPON_WAREHOUSE_PANEL_PATH := "res://UI/scenes/weapon_warehouse_panel.tscn"
+const MODULE_EQUIP_SELECTION_PANEL_PATH := "res://UI/components/ModuleEquipSelectionPanel/ModuleEquipSelectionPanel.tscn"
+const REWARD_SELECTION_PANEL_PATH := "res://UI/components/RewardSelectionPanel/RewardSelectionPanel.tscn"
+const WEAPON_REPLACEMENT_PANEL_PATH := "res://UI/components/WeaponReplacementPanel/WeaponReplacementPanel.tscn"
+const WEAPON_WAREHOUSE_PANEL_PATH := "res://UI/components/WeaponWarehousePanel/WeaponWarehousePanel.tscn"
 const GAME_OVER_VIEW_PATH := "res://UI/scenes/components/game_over_view.tscn"
 const CONTROLS_HINT_VIEW_PATH := "res://UI/scenes/components/controls_hint_view.tscn"
 static var _controls_hint_scene_cache: PackedScene
 static var _controls_hint_scene_requested := false
-const BOARD_EDIT_PANEL_PATH := "res://UI/scenes/board_edit_panel.tscn"
-const CELL_MANAGEMENT_PANEL_SCRIPT := preload("res://UI/scripts/cell_management_panel.gd")
+const BOARD_EDIT_PANEL_PATH := "res://UI/components/BoardEditPanel/BoardEditPanel.tscn"
+const CELL_MANAGEMENT_PANEL_SCENE := preload("res://UI/components/CellManagementPanel/CellManagementPanel.tscn")
 
 var owner_ui: UI
 var gui_root: Control
 var branch_select_panel: BranchSelectPanel
-var module_equip_selection_panel: ModuleEquipSelectionPanel
-var reward_selection_panel: RewardSelectionPanel
-var weapon_replacement_panel: WeaponReplacementPanel
-var weapon_warehouse_panel: WeaponWarehousePanel
+var module_equip_selection_panel: Control
+var reward_selection_panel: Control
+var weapon_replacement_panel: Control
+var weapon_warehouse_panel: Control
 var game_over_view
 var controls_hint_view
 
@@ -108,7 +108,7 @@ func ensure_module_equip_selection_panel() -> bool:
 	if module_equip_selection_panel != null and is_instance_valid(module_equip_selection_panel):
 		return true
 	var panel_scene := load(MODULE_EQUIP_SELECTION_PANEL_PATH) as PackedScene
-	module_equip_selection_panel = panel_scene.instantiate() as ModuleEquipSelectionPanel if panel_scene else null
+	module_equip_selection_panel = panel_scene.instantiate() as Control if panel_scene else null
 	if module_equip_selection_panel == null:
 		push_warning("Failed to create ModuleEquipSelectionPanel.")
 		return false
@@ -122,7 +122,7 @@ func ensure_reward_selection_panel() -> bool:
 	if reward_selection_panel != null and is_instance_valid(reward_selection_panel):
 		return true
 	var panel_scene := load(REWARD_SELECTION_PANEL_PATH) as PackedScene
-	reward_selection_panel = panel_scene.instantiate() as RewardSelectionPanel if panel_scene else null
+	reward_selection_panel = panel_scene.instantiate() as Control if panel_scene else null
 	if reward_selection_panel == null:
 		push_warning("Failed to create RewardSelectionPanel.")
 		return false
@@ -136,7 +136,7 @@ func ensure_weapon_replacement_panel() -> bool:
 	if weapon_replacement_panel != null and is_instance_valid(weapon_replacement_panel):
 		return true
 	var panel_scene := load(WEAPON_REPLACEMENT_PANEL_PATH) as PackedScene
-	weapon_replacement_panel = panel_scene.instantiate() as WeaponReplacementPanel if panel_scene else null
+	weapon_replacement_panel = panel_scene.instantiate() as Control if panel_scene else null
 	if weapon_replacement_panel == null:
 		push_warning("Failed to create WeaponReplacementPanel.")
 		return false
@@ -150,7 +150,7 @@ func ensure_weapon_warehouse_panel() -> bool:
 	if weapon_warehouse_panel != null and is_instance_valid(weapon_warehouse_panel):
 		return true
 	var panel_scene := load(WEAPON_WAREHOUSE_PANEL_PATH) as PackedScene
-	weapon_warehouse_panel = panel_scene.instantiate() as WeaponWarehousePanel if panel_scene else null
+	weapon_warehouse_panel = panel_scene.instantiate() as Control if panel_scene else null
 	if weapon_warehouse_panel == null:
 		push_warning("Failed to create WeaponWarehousePanel.")
 		return false
@@ -178,7 +178,7 @@ func ensure_board_edit_panel() -> bool:
 func ensure_cell_management_panel() -> bool:
 	if cell_management_panel != null and is_instance_valid(cell_management_panel):
 		return true
-	cell_management_panel = CELL_MANAGEMENT_PANEL_SCRIPT.new() as Control
+	cell_management_panel = CELL_MANAGEMENT_PANEL_SCENE.instantiate() as Control
 	cell_management_panel.name = "CellManagementPanel"
 	gui_root.add_child(cell_management_panel)
 	cell_management_panel.visible = false

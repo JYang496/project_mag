@@ -7,8 +7,12 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/shotgun_fire_feedback.tres" id="5_feedback"]
 
 [node name="Shotgun" unique_id=906790110 instance=ExtResource("1_8d78b")]
+active_skill_effect_id = &"shotgun_double_discipline"
 base_trait_flags = 1
 script = ExtResource("2_1ble7")
+skill_unlock_condition = &"support_to_main_close_hit"
+skill_unlock_hint = "Move from support to main, then land a close-range hit"
+skill_unlock_required = 1.0
 turn_speed_degrees_per_second = 360.0
 fire_feedback_profile = ExtResource("5_feedback")
 range_mode = 2

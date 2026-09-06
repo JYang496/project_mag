@@ -6,8 +6,12 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/continuous_pulse_feedback.tres" id="2_feedback"]
 
 [node name="Laser" unique_id=979500994 instance=ExtResource("1_8p4js")]
+active_skill_effect_id = &"laser_refraction_matrix"
 base_trait_flags = 2
 script = ExtResource("1_gbvh7")
+skill_unlock_condition = &"weapon_kill"
+skill_unlock_hint = "Kill an enemy with this weapon"
+skill_unlock_required = 1.0
 turn_speed_degrees_per_second = 360.0
 fire_feedback_profile = ExtResource("2_feedback")
 delivery_type_flags = 4

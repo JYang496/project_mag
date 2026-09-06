@@ -110,7 +110,7 @@ func request_offer() -> Array[BattleContractDefinition]:
 	elif _is_reward_offer_available_for_current_level():
 		options.append(REWARD)
 	set_offer(options)
-	RunPacingTelemetry.record_event(&"protocol_panel_opened", {"option_ids": options.map(func(option): return str(option.contract_id))})
+	PhaseManager.record_pacing_event(&"protocol_panel_opened", {"option_ids": options.map(func(option): return str(option.contract_id))})
 	return current_options.duplicate()
 
 func request_fixed_offer(contract_id: StringName) -> bool:
@@ -209,7 +209,7 @@ func confirm_selection() -> bool:
 			missed_offer_counts[definition.contract_id] = int(missed_offer_counts.get(definition.contract_id, 0)) + 1
 	restored_selection_pending = false
 	_save_persistent_state()
-	RunPacingTelemetry.record_event(&"contract_selected", {"contract_id": str(selected_contract.contract_id)})
+	PhaseManager.record_pacing_event(&"contract_selected", {"contract_id": str(selected_contract.contract_id)})
 	return true
 
 func cancel_offer() -> void:

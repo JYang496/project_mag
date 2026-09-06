@@ -1,7 +1,7 @@
 extends RefCounted
 class_name PauseUiController
 
-const AUDIO_SETTINGS_CONTROLS_SCRIPT := preload("res://UI/scripts/components/audio_settings_controls.gd")
+const AUDIO_SETTINGS_CONTROLS_SCENE := preload("res://UI/components/AudioSettingsControls/AudioSettingsControls.tscn")
 
 var owner_ui: UI
 var pause_menu_panel: PanelContainer
@@ -32,25 +32,13 @@ func ensure_language_controls() -> void:
 	var existing_label := pause_menu_panel.find_child("LanguageLabel", true, false)
 	if existing_label is Label:
 		pause_language_label = existing_label as Label
-	else:
-		pause_language_label = Label.new()
-		pause_language_label.name = "LanguageLabel"
-		_get_content_root().add_child(pause_language_label)
 	var existing_option := pause_menu_panel.find_child("LanguageOption", true, false)
 	if existing_option is OptionButton:
 		pause_language_option = existing_option as OptionButton
-	else:
-		pause_language_option = OptionButton.new()
-		pause_language_option.name = "LanguageOption"
-		_get_content_root().add_child(pause_language_option)
-	if not pause_language_option.is_connected("item_selected", Callable(self, "on_language_option_item_selected")):
+	if pause_language_option != null and not pause_language_option.is_connected("item_selected", Callable(self, "on_language_option_item_selected")):
 		pause_language_option.connect("item_selected", Callable(self, "on_language_option_item_selected"))
 	temporary_module_confirm_toggle = pause_menu_panel.find_child("TemporaryModuleConfirmToggle", true, false) as CheckButton
-	if temporary_module_confirm_toggle == null:
-		temporary_module_confirm_toggle = CheckButton.new()
-		temporary_module_confirm_toggle.name = "TemporaryModuleConfirmToggle"
-		_get_content_root().add_child(temporary_module_confirm_toggle)
-	if not temporary_module_confirm_toggle.toggled.is_connected(on_temporary_module_confirm_toggled):
+	if temporary_module_confirm_toggle != null and not temporary_module_confirm_toggle.toggled.is_connected(on_temporary_module_confirm_toggled):
 		temporary_module_confirm_toggle.toggled.connect(on_temporary_module_confirm_toggled)
 	auto_aim_continuous_fire_toggle = _ensure_assist_toggle(
 		"AutoAimContinuousFireToggle",
@@ -61,16 +49,8 @@ func ensure_language_controls() -> void:
 		on_auto_reload_switch_toggled
 	)
 	controls_hint_label = pause_menu_panel.find_child("ControlsHintLabel", true, false) as Label
-	if controls_hint_label == null:
-		controls_hint_label = Label.new()
-		controls_hint_label.name = "ControlsHintLabel"
-		_get_content_root().add_child(controls_hint_label)
 	controls_hint_option = pause_menu_panel.find_child("ControlsHintOption", true, false) as OptionButton
-	if controls_hint_option == null:
-		controls_hint_option = OptionButton.new()
-		controls_hint_option.name = "ControlsHintOption"
-		_get_content_root().add_child(controls_hint_option)
-	if not controls_hint_option.item_selected.is_connected(on_controls_hint_option_selected):
+	if controls_hint_option != null and not controls_hint_option.item_selected.is_connected(on_controls_hint_option_selected):
 		controls_hint_option.item_selected.connect(on_controls_hint_option_selected)
 	refresh_texts()
 	_sync_public_fields_to_owner()
@@ -189,11 +169,7 @@ func _controls_hint_mode_label(mode: StringName) -> String:
 
 func _ensure_assist_toggle(node_name: String, callback: Callable) -> CheckButton:
 	var toggle := pause_menu_panel.find_child(node_name, true, false) as CheckButton
-	if toggle == null:
-		toggle = CheckButton.new()
-		toggle.name = node_name
-		_get_content_root().add_child(toggle)
-	if not toggle.toggled.is_connected(callback):
+	if toggle != null and not toggle.toggled.is_connected(callback):
 		toggle.toggled.connect(callback)
 	return toggle
 
@@ -202,7 +178,7 @@ func _ensure_audio_settings_controls() -> void:
 	if existing is VBoxContainer:
 		audio_settings_controls = existing as VBoxContainer
 	else:
-		audio_settings_controls = AUDIO_SETTINGS_CONTROLS_SCRIPT.new() as VBoxContainer
+		audio_settings_controls = AUDIO_SETTINGS_CONTROLS_SCENE.instantiate() as VBoxContainer
 		audio_settings_controls.name = "AudioSettingsControls"
 		var audio_slot := pause_menu_panel.find_child("AudioSlot", true, false) as Control
 		var target_parent := audio_slot if audio_slot != null else _get_content_root()

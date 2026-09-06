@@ -1,8 +1,8 @@
 extends RefCounted
 class_name BattleContractHudPresenter
 
-const SmoothProgressBarScript := preload("res://UI/scripts/components/smooth_progress_bar.gd")
-const BATTLE_HUD_THEME := preload("res://UI/themes/battle_hud_theme.tres")
+const HUD_SCENE := preload("res://UI/components/BattleContractHud/BattleContractHud.tscn")
+const BOSS_INTRO_SCENE := preload("res://UI/components/BossContractIntro/BossContractIntro.tscn")
 
 const COMPACT_SIZE := Vector2(280.0, 80.0)
 const EXPANDED_SIZE := Vector2(280.0, 120.0)
@@ -36,72 +36,16 @@ var _boss_intro := false
 
 func bind(root: Control, overlay_root: Control = null) -> void:
 	_overlay_root = overlay_root
-	panel = PanelContainer.new()
-	panel.name = "BattleContractHud"
-	panel.custom_minimum_size = COMPACT_SIZE
-	panel.size_flags_horizontal = Control.SIZE_FILL
-	panel.clip_contents = true
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel = HUD_SCENE.instantiate() as PanelContainer
 	panel.z_index = 50
-	panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	panel.theme = BATTLE_HUD_THEME
-	panel.add_theme_stylebox_override("panel", _build_panel_style())
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 18)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_right", 18)
-	margin.add_theme_constant_override("margin_bottom", 10)
-	panel.add_child(margin)
-	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 4)
-	margin.add_child(body)
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
-	body.add_child(header)
-	title = Label.new()
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.clip_text = true
-	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	title.add_theme_font_size_override("font_size", 12)
-	title.add_theme_color_override("font_color", Color("8edcf2"))
-	title.add_theme_color_override("font_shadow_color", Color(0.0, 0.08, 0.12, 0.9))
-	title.add_theme_constant_override("shadow_offset_x", 1)
-	title.add_theme_constant_override("shadow_offset_y", 1)
-	header.add_child(title)
-	value = Label.new()
-	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	value.clip_text = true
-	value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	value.add_theme_font_size_override("font_size", 11)
-	value.add_theme_color_override("font_color", Color("d9f3f8"))
-	body.add_child(value)
-	detail = Label.new()
-	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	detail.clip_text = true
-	detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	detail.add_theme_font_size_override("font_size", 12)
-	detail.add_theme_color_override("font_color", Color("92adb5"))
-	body.add_child(detail)
-	progress = SmoothProgressBarScript.new()
-	progress.custom_minimum_size = Vector2(0.0, 5.0)
-	progress.max_value = 1.0
-	progress.step = 0.001
-	progress.set("smoothing_speed", PROGRESS_SMOOTHING_SPEED)
-	progress.show_percentage = false
-	progress.add_theme_stylebox_override("background", _build_progress_style(Color(0.03, 0.10, 0.15, 0.9)))
-	progress.add_theme_stylebox_override("fill", _build_progress_style(Color("4db8d1")))
-	body.add_child(progress)
 	root.add_child(panel)
+	title = panel.get_node("Margin/Body/Header/Title") as Label
+	value = panel.get_node("Margin/Body/Value") as Label
+	detail = panel.get_node("Margin/Body/Detail") as Label
+	progress = panel.get_node("Margin/Body/Progress") as ProgressBar
+	audio = panel.get_node("AudioPlayer") as AudioStreamPlayer
 	if root is Container:
 		root.move_child(panel, 0)
-	audio = AudioStreamPlayer.new()
-	audio.bus = &"SFX"
-	var stream := AudioStreamGenerator.new()
-	stream.mix_rate = 22050.0
-	stream.buffer_length = 0.2
-	audio.stream = stream
-	root.add_child(audio)
 	panel.visible = false
 	BattleContractManager.state_changed.connect(_on_state_changed)
 	BattleContractManager.contract_completed.connect(_on_completed)
@@ -316,34 +260,15 @@ func prepare_boss_intro(snapshot: Dictionary) -> void:
 	_boss_intro = true
 	if _overlay_root == null:
 		return
-	var box := PanelContainer.new()
-	box.add_theme_stylebox_override("panel", _build_panel_style())
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 28)
-	margin.add_theme_constant_override("margin_top", 18)
-	margin.add_theme_constant_override("margin_right", 28)
-	margin.add_theme_constant_override("margin_bottom", 18)
-	box.add_child(margin)
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 10)
-	margin.add_child(content)
-	for line in [
+	var box := BOSS_INTRO_SCENE.instantiate() as PanelContainer
+	var lines := [
 		LocalizationManager.tr_key("battle_contract.intro.boss.name", "Boss Battle"),
 		LocalizationManager.tr_key("battle_contract.intro.boss.objective", "Defeat the boss and clear the current level."),
 		LocalizationManager.tr_format("battle_contract.intro.boss.parameters", {"level": snapshot.get("level", 1), "seconds": snapshot.get("time_out_sec", 0), "hp": snapshot.get("target_total_hp", 0)}, "Level {level} · Time limit {seconds}s · Target vitality {hp}"),
-	]:
-		var label := Label.new()
-		label.text = line
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.add_theme_font_size_override("font_size", 24 if content.get_child_count() == 0 else 12)
-		content.add_child(label)
+	]
 	_overlay_root.add_child(box)
-	box.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	box.theme = BATTLE_HUD_THEME
+	box.call("set_data", lines[0], lines[1], lines[2])
 	box.position = Vector2((_overlay_root.size.x - 330.0) * 0.5, _overlay_root.size.y * 0.5)
-	box.size = Vector2(330.0, 150.0)
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.z_index = 80
 	_intro_control = box
 
@@ -459,8 +384,7 @@ func _set_expanded(expanded: bool) -> void:
 	if panel == null:
 		return
 	_expanded = expanded
-	detail.visible = expanded
-	panel.custom_minimum_size = EXPANDED_SIZE if expanded else COMPACT_SIZE
+	panel.call("set_expanded", expanded)
 	var tween := panel.create_tween()
 	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(panel, "modulate:a", 1.0, 0.16).from(0.82)

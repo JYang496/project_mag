@@ -88,7 +88,7 @@ func set_enhanced_mode(value: bool) -> void:
 	_enhanced_mode = value and _enhanced_available
 	$EnhancedFrame.call("set_enhanced", _enhanced_mode, _accent_color)
 	$EnhancementToggle.set_pressed_no_signal(_enhanced_mode)
-	$Margin/Content/EnhancedDetails.visible = _enhanced_mode and not _intro_mode
+	$Margin/Content/ContentSpacer/EnhancedDetails.visible = _enhanced_mode and not _intro_mode
 	_refresh_enhanced_copy()
 
 func is_enhanced_mode() -> bool:
@@ -136,11 +136,19 @@ func set_compact_layout(value: bool) -> void:
 	$Margin/Content/Header.add_theme_constant_override("separation", 6 if value else 9)
 	$Margin/Content.add_theme_constant_override("separation", 6 if value else 8)
 	$Margin/Content/ObjectiveGap.custom_minimum_size.y = 12.0
-	$Margin/Content/EnhancedDetails.add_theme_constant_override("separation", 5 if value else 7)
+	$Margin/Content/ContentSpacer/EnhancedDetails.add_theme_constant_override("separation", 3 if value else 7)
 	$Margin/Content/Title.add_theme_font_size_override("font_size", 22 if value else 25)
 	$Margin/Content/InfoGrid/Description.add_theme_font_size_override("font_size", 15 if value else 16)
-	$Margin/Content/EnhancedDetails/Risk.add_theme_font_size_override("font_size", 12 if value else 13)
-	$Margin/Content/EnhancedDetails/Bonus.add_theme_font_size_override("font_size", 12 if value else 13)
+	$Margin/Content/ContentSpacer/EnhancedDetails/Risk.add_theme_font_size_override("font_size", 11 if value else 13)
+	$Margin/Content/ContentSpacer/EnhancedDetails/Bonus.add_theme_font_size_override("font_size", 11 if value else 13)
+	for detail_label: Label in [
+		$Margin/Content/ContentSpacer/EnhancedDetails/Risk,
+		$Margin/Content/ContentSpacer/EnhancedDetails/Bonus,
+	]:
+		var detail_style := detail_label.get_theme_stylebox("normal") as StyleBoxFlat
+		if detail_style != null:
+			detail_style.content_margin_top = 1.0 if value else 3.0
+			detail_style.content_margin_bottom = 1.0 if value else 3.0
 	_refresh_content_spacing()
 	set_enhanced_available(_enhanced_available)
 
@@ -179,13 +187,13 @@ func show_battle_intro(objective: String, parameters_text: String) -> void:
 	$Margin/Content/Header/TypeLabel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	$Margin/Content/Title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	$Margin/Content/RewardDetails.visible = false
-	$Margin/Content/EnhancedDetails.visible = false
+	$Margin/Content/ContentSpacer/EnhancedDetails.visible = false
 
 func _refresh_enhanced_copy() -> void:
 	var risk_title := LocalizationManager.tr_key("battle_contract.card.enhanced_risk", "ENHANCED RISK")
 	var reward_title := LocalizationManager.tr_key("battle_contract.card.enhanced_reward", "EXTRA REWARD")
-	$Margin/Content/EnhancedDetails/Risk.text = "%s\n◆ %s" % [risk_title, "\n◆ ".join(_enhanced_risk_lines)]
-	$Margin/Content/EnhancedDetails/Bonus.text = "%s\n◆ %s" % [reward_title, "\n◆ ".join(_enhanced_reward_lines)]
+	$Margin/Content/ContentSpacer/EnhancedDetails/Risk.text = "%s\n◆ %s" % [risk_title, "\n◆ ".join(_enhanced_risk_lines)]
+	$Margin/Content/ContentSpacer/EnhancedDetails/Bonus.text = "%s\n◆ %s" % [reward_title, "\n◆ ".join(_enhanced_reward_lines)]
 
 func begin_intro_collapse(duration_sec: float) -> void:
 	## Fade secondary copy before the card becomes the compact objective HUD. Keeping
@@ -225,12 +233,12 @@ func _apply_card_styles() -> void:
 	$Margin/Content/IntroContent/Objective.add_theme_color_override("font_color", Color(0.82, 0.89, 0.91))
 	$Margin/Content/RewardDetails/Objective.add_theme_color_override("font_color", Color(0.82, 0.89, 0.91))
 	$Margin/Content/RewardDetails/Rule.add_theme_color_override("font_color", Color(0.92, 0.72, 0.25))
-	$Margin/Content/EnhancedDetails/Risk.add_theme_color_override("font_color", Color(1.0, 0.53, 0.31))
-	$Margin/Content/EnhancedDetails/Bonus.add_theme_color_override("font_color", Color(0.96, 0.78, 0.28))
-	$Margin/Content/EnhancedDetails/Risk.add_theme_stylebox_override(
+	$Margin/Content/ContentSpacer/EnhancedDetails/Risk.add_theme_color_override("font_color", Color(1.0, 0.53, 0.31))
+	$Margin/Content/ContentSpacer/EnhancedDetails/Bonus.add_theme_color_override("font_color", Color(0.96, 0.78, 0.28))
+	$Margin/Content/ContentSpacer/EnhancedDetails/Risk.add_theme_stylebox_override(
 		"normal", _make_detail_style(Color(0.24, 0.075, 0.035, 0.72), Color(0.9, 0.29, 0.16, 0.78))
 	)
-	$Margin/Content/EnhancedDetails/Bonus.add_theme_stylebox_override(
+	$Margin/Content/ContentSpacer/EnhancedDetails/Bonus.add_theme_stylebox_override(
 		"normal", _make_detail_style(Color(0.20, 0.14, 0.025, 0.72), Color(0.9, 0.62, 0.12, 0.78))
 	)
 	_apply_enhancement_toggle_styles()

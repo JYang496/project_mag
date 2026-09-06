@@ -149,4 +149,28 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="RightHudStack" type="VBoxContainer" parent="GUI"]
+z_index = 35
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -272.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = 456.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="ObjectiveHudStack" type="VBoxContainer" parent="GUI"]
+z_index = 50
+layout_mode = 0
+offset_left = 24.0
+offset_top = 78.0
+offset_right = 304.0
+offset_bottom = 360.0
+mouse_filter = 2
+theme_override_constants/separation = 10
+
 [connection signal="pressed" from="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/Header/ResumeButton" to="." method="_on_resume_button_pressed"]

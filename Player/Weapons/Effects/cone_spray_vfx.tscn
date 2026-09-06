@@ -5,10 +5,11 @@
 
 [node name="ConeSprayVfx" type="Node2D"]
 script = ExtResource("1_script")
+burning_style = true
 sprite_frames = ExtResource("2_frames")
-visible_modulate = Color(1, 0.231373, 0.290196, 0.68)
-body_opacity = 0.62
-range_cue_opacity = 0.28
+visible_modulate = Color(1, 0.55, 0.15, 0.88)
+body_opacity = 0.82
+range_cue_opacity = 0.0
 core_highlight_strength = 0.38
 range_cue_color = Color(1, 0.231373, 0.290196, 1)
 core_highlight_color = Color(1, 0.815686, 0.639216, 1)

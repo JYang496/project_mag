@@ -43,6 +43,10 @@ func _run() -> void:
 	if not opened:
 		_fail("settlement dialog did not open")
 		return
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not _settlement_geometry_is_valid(ui):
+		return
 	ui.temporary_module_settlement_checkbox.button_pressed = true
 	ui.temporary_module_settlement_dialog.get_ok_button().pressed.emit()
 	await get_tree().process_frame
@@ -100,6 +104,34 @@ func _run() -> void:
 
 func _on_complete() -> void:
 	_completed += 1
+
+func _settlement_geometry_is_valid(ui: UI) -> bool:
+	var controller = ui.modal_dialog_controller
+	var content_rect: Rect2 = controller.content.get_global_rect()
+	var native_message_rect: Rect2 = controller.dialog.get_label().get_global_rect()
+	var footer := controller.dialog.get_ok_button().get_parent() as Control
+	if content_rect != native_message_rect:
+		_fail("custom modal content does not match the native safe content rect: content=%s native=%s" % [content_rect, native_message_rect])
+		return false
+	if footer == null or content_rect.end.y > footer.get_global_rect().position.y:
+		_fail("custom modal content overlaps the action footer")
+		return false
+	if not controller.checkbox.visible:
+		_fail("settlement do-not-show option is not visible")
+		return false
+	var checkbox_rect: Rect2 = controller.checkbox.get_global_rect()
+	var scroll_rect: Rect2 = controller.body_scroll.get_global_rect()
+	if checkbox_rect.position.y < scroll_rect.position.y or checkbox_rect.end.y > scroll_rect.end.y:
+		_fail("settlement do-not-show option is clipped in the normal dialog size")
+		return false
+	var expected_confirm := LocalizationManager.tr_key(
+		"ui.module.settlement.confirm_action",
+		"Sell & Start Battle"
+	)
+	if controller.dialog.get_ok_button().text != expected_confirm:
+		_fail("settlement primary action is not localized or does not explain battle start")
+		return false
+	return true
 
 func _fail(message: String) -> void:
 	_restore(_ui)

@@ -8,15 +8,15 @@ var projectile_texture_resource = preload("res://asset/images/weapons/projectile
 var ITEM_NAME = "Machine Gun"
 var attack_speed : float = 1.0
 
-var max_speed_factor : float = 8.0
+var max_speed_factor : float = 2.5
 
 const BULLET_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_STANDARD_SIZE
 const HEAT_SPEED_POINTS: Array[Vector2] = [
 	Vector2(0.0, 1.0),
-	Vector2(10.0, 2.0),
-	Vector2(20.0, 4.0),
-	Vector2(40.0, 6.0),
-	Vector2(50.0, 8.0),
+	Vector2(10.0, 1.3),
+	Vector2(20.0, 1.7),
+	Vector2(40.0, 2.2),
+	Vector2(50.0, 2.5),
 ]
 
 @export var heat_accumulation: float = 4
@@ -32,7 +32,13 @@ var _heat_expansion_rearmed_steps_this_magazine: int = 0
 var _heat_expansion_pending_rearms: int = 0
 var _heat_expansion_active_charge_count: int = 0
 var _heat_expansion_remaining_sec: float = 0.0
+var _last_held_heat_physics_frame: int = -1
 const HEAT_EXPANSION_DAMAGE_SOURCE := &"machine_gun_thermal_amplification"
+const ACTIVE_SKILL_DAMAGE_SOURCE := &"machine_gun_infinite_chain"
+const ACTIVE_SKILL_ATTACK_SPEED_SOURCE := &"machine_gun_infinite_chain_attack_speed"
+var _active_skill_running := false
+var _active_skill_hit_count := 0
+var _active_skill_stacks := 0
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
@@ -43,16 +49,22 @@ func _physics_process(delta: float) -> void:
 		_clear_heat_expansion_damage_bonus()
 
 var weapon_data = {
-	"1": {"damage": "6", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "40"},
-	"2": {"damage": "8", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "40"},
-	"3": {"damage": "10", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "1", "ammo": "40"},
-	"4": {"damage": "11", "speed": "800", "projectile_hits": "1", "fire_interval_sec": "0.9", "ammo": "45"},
-	"5": {"damage": "13", "speed": "800", "projectile_hits": "1", "fire_interval_sec": "0.9", "ammo": "45"},
-	"6": {"damage": "15", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.9", "ammo": "45"},
-	"7": {"damage": "16", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "50"},
-	"8": {"damage": "18", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "50"},
-	"9": {"damage": "20", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.82", "ammo": "50"}
+	"1": {"damage": "6", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "0.55", "ammo": "40"},
+	"2": {"damage": "8", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "0.55", "ammo": "40"},
+	"3": {"damage": "10", "speed": "600", "projectile_hits": "1", "fire_interval_sec": "0.55", "ammo": "40"},
+	"4": {"damage": "11", "speed": "800", "projectile_hits": "1", "fire_interval_sec": "0.50", "ammo": "45"},
+	"5": {"damage": "13", "speed": "800", "projectile_hits": "1", "fire_interval_sec": "0.50", "ammo": "45"},
+	"6": {"damage": "15", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.50", "ammo": "45"},
+	"7": {"damage": "16", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.45", "ammo": "50"},
+	"8": {"damage": "18", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.45", "ammo": "50"},
+	"9": {"damage": "20", "speed": "800", "projectile_hits": "2", "fire_interval_sec": "0.45", "ammo": "50"}
 }
+
+func uses_continuous_automatic_fire() -> bool:
+	return true
+
+func get_automatic_fire_target_grace_sec() -> float:
+	return 0.3
 
 func _ready() -> void:
 	super._ready()
@@ -82,6 +94,10 @@ func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bo
 	_add_held_trigger_heat(delta)
 	request_primary_fire()
 
+func prepare_automatic_aim(delta: float) -> void:
+	super.prepare_automatic_aim(delta)
+	_add_held_trigger_heat(delta)
+
 func request_primary_fire() -> bool:
 	if not is_attack_phase_allowed():
 		return false
@@ -89,11 +105,11 @@ func request_primary_fire() -> bool:
 		return false
 	if not can_fire_with_heat():
 		return false
-	if not can_fire_with_ammo():
+	if not _active_skill_running and not can_fire_with_ammo():
 		if uses_ammo_system() and current_ammo <= 0:
 			request_reload()
 		return false
-	if not consume_ammo(1):
+	if not _active_skill_running and not consume_ammo(1):
 		if uses_ammo_system() and current_ammo <= 0:
 			request_reload()
 		return false
@@ -101,9 +117,39 @@ func request_primary_fire() -> bool:
 	emit_signal("shoot")
 	play_fire_feedback()
 	notify_main_weapon_fired()
-	if uses_ammo_system() and current_ammo <= 0:
+	if not _active_skill_running and uses_ammo_system() and current_ammo <= 0:
 		request_reload()
 	return true
+
+func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
+	_active_skill_running = true
+	_active_skill_hit_count = 0
+	_active_skill_stacks = 0
+	remove_external_damage_mul(ACTIVE_SKILL_DAMAGE_SOURCE)
+	apply_external_attack_speed_mul(ACTIVE_SKILL_ATTACK_SPEED_SOURCE, 5.0)
+	return true
+
+func finish_weapon_skill_effect() -> void:
+	_active_skill_running = false
+	_active_skill_hit_count = 0
+	_active_skill_stacks = 0
+	remove_external_damage_mul(ACTIVE_SKILL_DAMAGE_SOURCE)
+	remove_external_attack_speed_mul(ACTIVE_SKILL_ATTACK_SPEED_SOURCE)
+
+func on_projectile_hit_damage_dealt(
+	_projectile: Node,
+	_target: Node,
+	_hit_damage_type: StringName,
+	final_damage: int
+) -> void:
+	if not _active_skill_running or final_damage <= 0:
+		return
+	_active_skill_hit_count += 1
+	var next_stacks: int = mini(floori(float(_active_skill_hit_count) / 5.0), 5)
+	if next_stacks == _active_skill_stacks:
+		return
+	_active_skill_stacks = next_stacks
+	apply_external_damage_mul(ACTIVE_SKILL_DAMAGE_SOURCE, 1.0 + float(_active_skill_stacks) * 0.08)
 
 func _on_shoot():
 	is_on_cooldown = true
@@ -160,6 +206,9 @@ func _get_shared_heat_value() -> float:
 func _add_held_trigger_heat(delta: float) -> void:
 	if delta <= 0.0:
 		return
+	var physics_frame := Engine.get_physics_frames()
+	if physics_frame == _last_held_heat_physics_frame:
+		return
 	if not can_fire_with_heat():
 		return
 	if not can_fire_with_ammo():
@@ -171,6 +220,7 @@ func _add_held_trigger_heat(delta: float) -> void:
 	if amount <= 0.0:
 		return
 	core.add_heat_amount(amount)
+	_last_held_heat_physics_frame = physics_frame
 
 func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 	super._on_passive_event(event_name, detail)
@@ -288,6 +338,8 @@ func _clear_heat_expansion_damage_bonus() -> void:
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
+	finish_weapon_skill_effect()
+	_last_held_heat_physics_frame = -1
 	_heat_expansion_rearmed_steps_this_magazine = 0
 	_heat_expansion_pending_rearms = 0
 	_clear_heat_expansion_damage_bonus()

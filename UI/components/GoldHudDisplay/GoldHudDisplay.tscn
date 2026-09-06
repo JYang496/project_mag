@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://UI/components/GoldHudDisplay/GoldHudDisplay.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://asset/images/loot/credit_coin_01.png" id="2_coin"]
+[node name="GoldHudDisplay" type="Control"]
+custom_minimum_size = Vector2(112, 38)
+offset_right = 112.0
+offset_bottom = 38.0
+mouse_filter = 2
+script = ExtResource("1_script")
+[node name="CoinIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+offset_left = 2.0
+offset_top = 4.0
+offset_right = 32.0
+offset_bottom = 34.0
+mouse_filter = 2
+texture = ExtResource("2_coin")
+expand_mode = 1
+stretch_mode = 5
+[node name="Value" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 38.0
+offset_top = 2.0
+offset_right = 110.0
+offset_bottom = 36.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.965, 0.91, 0.69, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.82)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.52)
+theme_override_constants/outline_size = 2
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 0
+vertical_alignment = 1

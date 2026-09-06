@@ -1,6 +1,12 @@
 extends PanelContainer
 class_name ControlsHintView
 
+const CONTROLS_HINT_ITEM_SCENE := preload("res://UI/components/ControlsHintItem/ControlsHintItem.tscn")
+const INPUT_PROMPT_ICON_SCENE := preload("res://UI/components/InputPromptIcon/InputPromptIcon.tscn")
+const CONTEXT_HINT_SCENE := preload("res://UI/components/ControlsContextHint/ControlsContextHint.tscn")
+const HINT_TEXT_SCENE := preload("res://UI/components/ControlsHintText/ControlsHintText.tscn")
+const PROMPT_GROUP_SCENE := preload("res://UI/components/InputPromptGroup/InputPromptGroup.tscn")
+
 signal display_state_changed(state: int)
 
 enum DisplayState {
@@ -288,7 +294,7 @@ func refresh_input_glyphs() -> void:
 	_set_action_item(&"move", move_label, _tr("ui.controls.move", "Move"))
 	_set_action_item(&"attack", "AUTO", _tr("ui.controls.auto_fire", "Automatic Fire"))
 	_set_action_item(&"skill", _input_label(&"SKILL_PLAYER"), _tr("ui.controls.skill", "Player Skill"))
-	_set_action_item(&"weapon_skill", "1–4", _tr("ui.controls.weapon_skill_hold", "Hold: Weapon Skill"))
+	_set_action_item(&"weapon_skill", "1–4", _tr("ui.controls.weapon_skill_hold", "Switch Weapon & Cast Skill"))
 	var reload_action := _tr("ui.controls.reload", "Reload")
 	if PlayerAssistSettings.auto_reload_switch:
 		reload_action = _tr("ui.controls.auto_reload", "Auto Reload On")
@@ -556,42 +562,13 @@ func _clear_action_items() -> void:
 	_action_items.clear()
 
 func _create_hint_item(key_text: String, action_text: String) -> HBoxContainer:
-	var item := HBoxContainer.new()
-	item.add_theme_constant_override("separation", 7)
-	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	item.custom_minimum_size.x = 0.0
-	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var key_prompt := HBoxContainer.new()
-	key_prompt.name = "Key"
-	key_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	key_prompt.custom_minimum_size = Vector2(KEYCAP_WIDTH, 26.0)
-	key_prompt.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	key_prompt.alignment = BoxContainer.ALIGNMENT_CENTER
-	key_prompt.add_theme_constant_override("separation", 2)
-	item.add_child(key_prompt)
-	_set_key_prompt(key_prompt, key_text)
-	var action_label := Label.new()
-	action_label.name = "Action"
-	action_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	action_label.custom_minimum_size = Vector2(0.0, 26.0)
-	action_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	action_label.size_flags_vertical = Control.SIZE_FILL
-	action_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	action_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	action_label.max_lines_visible = 2
-	action_label.clip_text = true
-	action_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	action_label.add_theme_font_size_override("font_size", 12)
-	action_label.add_theme_color_override("font_color", Color(0.94, 0.97, 0.98, 1.0))
-	action_label.text = action_text
-	item.add_child(action_label)
+	var item := CONTROLS_HINT_ITEM_SCENE.instantiate() as HBoxContainer
+	item.call("set_data", action_text)
+	_set_key_prompt(item.get_node("Key") as HBoxContainer, key_text)
 	return item
 
 func _create_context_hint_item(line: String) -> HBoxContainer:
-	var item := HBoxContainer.new()
-	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	item.add_theme_constant_override("separation", 4)
+	var item := CONTEXT_HINT_SCENE.instantiate() as HBoxContainer
 	var cursor := 0
 	var bracket_regex := RegEx.new()
 	bracket_regex.compile("\\[([^\\]]+)\\]")
@@ -608,22 +585,12 @@ func _append_context_text(container: HBoxContainer, value: String) -> void:
 	var normalized := value.strip_edges()
 	if normalized == "":
 		return
-	var label := Label.new()
-	label.text = normalized
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.max_lines_visible = 2
-	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_color", Color(0.94, 0.97, 0.98, 1.0))
+	var label := HINT_TEXT_SCENE.instantiate() as Label
+	label.call("set_data", normalized)
 	container.add_child(label)
 
 func _append_prompt_group(container: HBoxContainer, prompt_text: String) -> void:
-	var group := HBoxContainer.new()
-	group.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	group.alignment = BoxContainer.ALIGNMENT_CENTER
-	group.add_theme_constant_override("separation", 2)
+	var group := PROMPT_GROUP_SCENE.instantiate() as HBoxContainer
 	var prompt_parts := prompt_text.split("/", false)
 	for index in range(prompt_parts.size()):
 		if index > 0:
@@ -663,26 +630,16 @@ func _append_prompt_token(container: HBoxContainer, token_text: String) -> void:
 	container.add_child(_make_prompt_fallback_label(normalized))
 
 func _append_space_prompt(container: HBoxContainer) -> void:
-	var icon := TextureRect.new()
-	icon.texture = INPUT_PROMPT_TEXTURE_FACTORY.space_prompt_texture()
-	icon.custom_minimum_size = Vector2(INPUT_PROMPT_DISPLAY_SIZE * 3.0, INPUT_PROMPT_DISPLAY_SIZE)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon.tooltip_text = "Space"
+	var icon := INPUT_PROMPT_ICON_SCENE.instantiate() as TextureRect
 	container.add_child(icon)
+	icon.call("set_data", INPUT_PROMPT_TEXTURE_FACTORY.space_prompt_texture(), Vector2(INPUT_PROMPT_DISPLAY_SIZE * 3.0, INPUT_PROMPT_DISPLAY_SIZE), "Space")
 
 func _make_prompt_fallback_label(value: String, styled: bool = true) -> Label:
-	var label := Label.new()
-	label.text = value
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var label := HINT_TEXT_SCENE.instantiate() as Label
+	label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 12)
 	label.add_theme_color_override("font_color", Color(0.78, 0.84, 0.87, 1.0))
-	if styled:
-		label.add_theme_stylebox_override("normal", _build_keycap_style())
+	label.call("set_data", value, styled, _build_keycap_style() if styled else null)
 	return label
 
 func _set_action_item(action_id: StringName, key_text: String, action_text: String) -> void:
@@ -739,14 +696,8 @@ func _make_input_prompt_icon(coord: Vector2i, accessible_name: String) -> Textur
 		INPUT_PROMPT_TILE_SIZE,
 		INPUT_PROMPT_TILE_SIZE
 	)
-	var icon := TextureRect.new()
-	icon.texture = texture
-	icon.custom_minimum_size = Vector2(INPUT_PROMPT_DISPLAY_SIZE, INPUT_PROMPT_DISPLAY_SIZE)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon.tooltip_text = accessible_name
+	var icon := INPUT_PROMPT_ICON_SCENE.instantiate() as TextureRect
+	icon.call("set_data", texture, Vector2(INPUT_PROMPT_DISPLAY_SIZE, INPUT_PROMPT_DISPLAY_SIZE), accessible_name)
 	return icon
 
 func _keyboard_prompt_coord(key_name: String) -> Vector2i:

@@ -26,9 +26,6 @@ weapon.1.desc,"Sustained mid-range automatic fire. Core Heat and Projectile weap
 weapon.7.name,Orbit,轨道卫星
 weapon.7.role_summary,Close automatic defense,近身自动防御
 weapon.7.desc,"Close support summon. Consumes magazine ammo to deploy slowing satellites, then rewards Defense and On Hit builds when the player is pressured.","近身支援召唤物。消耗弹匣弹药部署减速卫星，在玩家承压时为防御和命中流构筑提供收益。"
-weapon.5.name,Auto Pistol,自动手枪
-weapon.5.role_summary,Flexible steady output,灵活稳定输出
-weapon.5.desc,"Auto-targeting sidearm outside the main-weapon cycle. Six uninterrupted hits open a 3-second Pierce Mark window.","不参与主武器循环的自动索敌副枪；连续命中 6 次会开启 3 秒穿透标记窗口。"
 weapon.17.name,Plasma Lance,等离子长枪
 weapon.17.role_summary,Linear piercing damage,直线贯穿伤害
 weapon.17.desc,"Long-range Heat/Energy exchange lance. Full-energy discharge deals 1.85x damage and spends up to 35 Heat.","远程热量/能量交换长枪。满能量放电造成 1.85 倍伤害，并消耗最多 35 点热量。"
@@ -68,10 +65,6 @@ passive.orbit_energy_cycle.name,Orbital Pulse,轨道脉冲
 passive.orbit_energy_cycle.desc,"Deployment energy cycle. Each valid satellite damage event grants 8 global energy. Full-energy deployment adds 2 satellites and extends their lifetime by 50% instead of multiplying direct damage.","部署能量循环。每次有效卫星伤害获得 8 点全局能量。满能量部署会额外增加 2 颗卫星并延长 50% 持续时间，而非提高直接伤害倍率。"
 passive.orbit_player_damaged_triggered.name,Damage Reaction,受击反应
 passive.orbit_player_damaged_triggered.desc,"Switch Orbit into the main slot to empower its next deployment.","将轨道武器切入主武器栏位，强化下一次部署。"
-passive.pistol_arc_energy_cycle.name,Arc Discharge,电弧释放
-passive.pistol_arc_energy_cycle.desc,"Propagation energy cycle. Each valid Arc damage event grants 12 global energy. Full-energy fire gains +15% direct damage and chains 45% damage to up to 3 nearby enemies.","传导能量循环。每次有效电弧伤害获得 12 点全局能量。满能量射击获得 15% 直接伤害加成，并向最多 3 个附近敌人传导 45% 伤害。"
-passive.pistol_continuous_move_triggered.name,Pierce Mark,穿透标记
-passive.pistol_continuous_move_triggered.desc,"Reach 6 uninterrupted Auto Pistol hits to open a 3-second marking window. Auto Pistol remains outside the main-weapon swap cycle.","自动手枪连续命中 6 次后开启 3 秒标记窗口；自动手枪仍不参与主武器切换循环。"
 passive.plasma_lance_energy_discharge_triggered.name,Plasma Discharge,等离子释放
 passive.plasma_lance_energy_discharge_triggered.desc,"Heat-exchange release. Each valid damage event grants 10 global energy. Full-energy fire deals 1.85x damage and spends up to 35 Heat.","热量交换释放。每次有效伤害获得 10 点全局能量；满能量射击造成 1.85 倍伤害，并消耗最多 35 点热量。"
 passive.rocket_cluster_kill_triggered.name,Cluster Kill,集群歼灭

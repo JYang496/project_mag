@@ -23,7 +23,7 @@ func get_subscribed_weapon_events() -> Array[StringName]:
 
 func handle_weapon_event(event: WeaponEvent) -> bool:
 	if event.type == WeaponEvent.RELOAD_STARTED:
-		_prime_next_magazine(event.to_legacy_detail())
+		_prime_next_magazine(event.to_detail())
 		return true
 	if event.type == WeaponEvent.PRIMARY_ATTACK_FIRED:
 		_consume_empowered_attack()

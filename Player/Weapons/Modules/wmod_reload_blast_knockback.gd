@@ -23,9 +23,7 @@ func get_effect_descriptions() -> PackedStringArray:
 		),
 	]))
 
-func _on_weapon_passive_triggered(event_name: StringName, detail: Dictionary) -> void:
-	if event_name != &"on_reload_started":
-		return
+func on_reload_started(_source_weapon: Weapon, detail: Dictionary) -> void:
 	if detail == null or detail.get("source_weapon", null) != weapon:
 		return
 	var spent_ratio := UTILS.get_spent_ratio(detail)

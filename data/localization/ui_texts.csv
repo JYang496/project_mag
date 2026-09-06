@@ -52,7 +52,7 @@ battle_contract.ui.enhanced_suffix, · Enhanced, · 强化模式
 battle_contract.ui.confirm_enhanced,Begin Enhanced Protocol,开始强化协议
 battle_contract.enhanced.elimination.risk.1,Enemy spawn frequency ×2,敌人刷新频率 ×2
 battle_contract.enhanced.elimination.risk.2,Total enemy HP budget +30%,敌人总生命预算 +30%
-battle_contract.enhanced.survival.risk.1,An elite with HP equal to the level budget deploys at battle start,开局出现一个生命等于本关预算的精英敌人
+battle_contract.enhanced.survival.risk.1,An elite with HP equal to the level budget deploys at battle start,开局出现一个极其顽强的精英敌人
 battle_contract.enhanced.containment.risk.1,Periodic mortar barrages strike around the player,迫击炮将周期性轰炸玩家周围区域
 battle_contract.enhanced.extraction.risk.1,Collect two navigation keys before the extraction zone opens,取得两枚导航密钥后才会开启撤离点
 battle_contract.enhanced.reward.random,One random bonus: compatible module · gold pack · equipped weapon core,随机额外获得：兼容模组、金币包或装备武器核心
@@ -207,6 +207,8 @@ ui.start.continue,Continue Game,继续游戏
 ui.start.no_save,NO OPERATION RECORD FOUND,暂无可用作战记录
 ui.start.start_game,Start Game,开始游戏
 ui.start.new_game,New Game,全新游戏
+ui.start.weapon_skill_lab,Weapon Skill Test Lab,武器技能测试场
+ui.start.loading_test_lab,Loading Test Lab...,正在加载测试场……
 ui.start.settings,Settings,设置
 ui.start.exit,Exit Game,退出游戏
 ui.start.back,Back,返回
@@ -438,6 +440,8 @@ ui.module.sell.title,Sell Module,出售模组
 ui.module.sell.confirm,Sell {module} Lv.{level} for {gold} Gold? This cannot be undone.,以 {gold} 金币出售 {module} Lv.{level}？此操作无法撤销。
 ui.module.settlement.title,Temporary Module Settlement,临时模组结算
 ui.module.settlement.confirm,Sell {count} temporary modules for {gold} Gold and start battle?,出售 {count} 个临时模组并获得 {gold} 金币，然后开始战斗？
+ui.module.settlement.summary,Unsold temporary modules will be sold before battle.,未装备的临时模组将在战斗开始前出售。
+ui.module.settlement.confirm_action,Sell & Start Battle,出售并开始战斗
 ui.module.settlement.dont_show,Do not show this confirmation again,今后不再显示此确认
 ui.transaction.pending,Finish or cancel the current equipment transaction first.,请先完成或取消当前装备事务。
 ui.weapon.replace.install_title,Install Weapon,安装武器
@@ -668,9 +672,37 @@ ui.controls.attack,Attack,攻击
 ui.controls.skill,Player Skill,角色技能
 ui.controls.weapon_skill,Weapon Skill,武器技能
 ui.controls.auto_fire,Automatic Fire,自动开火
-ui.controls.weapon_skill_hold,Hold: Weapon Skill,长按：武器技能
+ui.controls.weapon_skill_hold,Switch Weapon & Cast Skill,切换武器并释放技能
 ui.controls.switch_weapon_hold,Cycle / Tap: Select,轮换 / 短按：选择
 ui.weapon.skill.overdrive,Weapon Overdrive,武器过载
+ui.weapon.skill.machine_gun_infinite_chain.name,Infinite Ammo Chain,无限弹链
+ui.weapon.skill.machine_gun_infinite_chain.description,"For 3 seconds, shots consume no ammo and attack speed is multiplied by 5. Every 5 damaging hits grants +8% damage, up to 5 stacks.","3秒内射击不消耗弹药且攻击速度提升至5倍；每造成5次有效命中，伤害提高8%，最多5层。"
+ui.weapon.skill.charged_blaster_prism_overload.name,Prism Overload,棱镜过载
+ui.weapon.skill.charged_blaster_prism_overload.description,The next charged beam splits into 6 homing energy bolts when it ends. Each bolt deals 35% weapon damage.,下一次充能光束结束时分裂为6枚追踪能量弹，每枚造成35%武器伤害。
+ui.weapon.skill.spear_phalanx.name,Spear Phalanx,长矛方阵
+ui.weapon.skill.spear_phalanx.description,Fire 8 returning spears evenly across a 40-degree spread toward the target. Their hits apply a mark that increases subsequent spear damage by 35%.,朝目标方向在40度范围内均匀发射8根会返回玩家处的长矛；命中施加标记，使后续长矛伤害提高35%。
+ui.weapon.skill.shotgun_double_discipline.name,Double-Barrel Discipline,双管戒律
+ui.weapon.skill.shotgun_double_discipline.description,"The next 2 attacks cost no ammo and fire twice as fast. Each attack still fires a second shot after 0.1 seconds for 60% damage.","接下来2次开火不消耗弹药且攻击速度翻倍；每次仍会在0.1秒后追加一轮造成60%伤害的射击。"
+ui.weapon.skill.orbit_proliferation.name,Orbital Proliferation,轨道增殖
+ui.weapon.skill.orbit_proliferation.description,Deploy 3 temporary satellites for 8 seconds. Temporary satellites deal 70% normal damage.,部署3个持续8秒的临时卫星，临时卫星造成70%正常伤害。
+ui.weapon.skill.rocket_cluster_warhead.name,Cluster Warhead,集束弹头
+ui.weapon.skill.rocket_cluster_warhead.description,The next rocket splits into 8 bomblets on detonation. Each deals 30% weapon damage; repeated hits on one target diminish.,下一枚火箭爆炸后分裂为8枚小炸弹；每枚造成30%武器伤害，同一目标连续受击时伤害递减。
+ui.weapon.skill.laser_refraction_matrix.name,Refraction Matrix,折射矩阵
+ui.weapon.skill.laser_refraction_matrix.description,"For 4 seconds, laser hits refract to up to 3 nearby enemies for 60%, 45%, and 30% damage.","4秒内激光命中会向附近最多3个敌人折射，依次造成60%、45%和30%伤害。"
+ui.weapon.skill.chainsaw_cage.name,Chainsaw Cage,电锯牢笼
+ui.weapon.skill.chainsaw_cage.description,"Electrify the boundary of your current cell for 4 seconds, continuously damaging enemies that touch it.",使当前所在区域的边界带有持续4秒的伤害效果；接触边界的敌人会持续受到伤害。
+ui.weapon.skill.dash_rift.name,Dimensional Rift,次元裂痕
+ui.weapon.skill.dash_rift.description,Your next dash leaves a rift for 3 seconds that deals 35% weapon damage every 0.4 seconds.,下一次冲刺留下持续3秒的裂痕，每0.4秒造成35%武器伤害。
+ui.weapon.skill.flame_moving_inferno.name,Moving Inferno,移动火海
+ui.weapon.skill.flame_moving_inferno.description,For 5 seconds leave burning ground along your path and beneath enemies hit by the flamethrower.,5秒内在移动路径以及被火焰命中的敌人脚下留下燃烧区域。
+ui.weapon.skill.plasma_storm.name,Plasma Storm,电浆风暴
+ui.weapon.skill.plasma_storm.description,Create a 4-second storm that pulls ordinary enemies inward and deals 45% weapon damage every 0.5 seconds.,生成持续4秒的风暴，牵引普通敌人并每0.5秒造成45%武器伤害。
+ui.weapon.skill.glacier_white_frost_domain.name,White Frost Domain,白霜领域
+ui.weapon.skill.glacier_white_frost_domain.description,Create a 6-second field around you. Enemies slow and freeze after 2 seconds; you move 20% faster inside it.,在身边生成持续6秒的领域；敌人减速并在停留2秒后冻结，玩家在领域内移动速度提高20%。
+ui.weapon.skill.cannon_siege_trajectory.name,Siege Trajectory,攻城弹道
+ui.weapon.skill.cannon_siege_trajectory.description,"Fire a slow giant shell that pushes enemies aside and erupts for 60%, 90%, then 120% weapon damage.","发射沿途推开敌人的缓慢巨型炮弹，终点依次爆炸并造成60%、90%、120%武器伤害。"
+ui.weapon.skill.sniper_lethal_aim.name,Lethal Aim,致命瞄准
+ui.weapon.skill.sniper_lethal_aim.description,The next shot gains +250% damage and unlimited pierce plus up to +100% additional damage with distance.,下一发获得250%额外伤害与无限贯穿，并根据距离额外获得最多100%伤害。
 ui.controls.reload,Reload,装填
 ui.controls.auto_reload,Auto Reload On,自动装填已开启
 ui.controls.switch_weapon,Switch Weapon,切换武器
@@ -712,6 +744,26 @@ ui.common.level,Level,等级
 ui.common.rarity,Rarity,稀有度
 ui.common.warning,Warning,警告
 ui.hud.skill.ready,READY,就绪
+ui.hud.weapon_skill.building,BUILDING,积累中
+ui.hud.weapon_skill.cooldown,COOLDOWN %.1fs,冷却 %.1f秒
+ui.hud.weapon_skill.energy_blocked,READY · NOT ENOUGH ENERGY,已就绪 · 能量不足
+ui.hud.weapon_skill.ready_cast,READY · PRESS %d TO SWITCH & CAST,已就绪 · 按 %d 切换并释放
+ui.hud.weapon_skill.condition.magazine_reload,Spend 75% of the magazine then reload,消耗75%弹匣后换弹
+ui.hud.weapon_skill.condition.support_time,Remain as a support weapon for 15 seconds,作为后台武器累计15秒
+ui.hud.weapon_skill.condition.wall_bounce,Bounce a chainsaw off a wall or cell boundary,让锯片撞击墙壁或区域边界
+ui.hud.weapon_skill.condition.long_dash_hit,Hit after dashing at least 75% of maximum range,完成至少75%最大距离的冲刺并命中
+ui.hud.weapon_skill.condition.magazine_distinct_targets,Hit 3 different enemies within one magazine,同一弹匣命中3个不同敌人
+ui.hud.weapon_skill.condition.projectile_distinct_targets,Pierce 2 different enemies with one spear,同一根长矛贯穿2个不同敌人
+ui.hud.weapon_skill.condition.support_to_main_close_hit,Switch from support to main then land a close hit,从后台切为主武器后近距离命中
+ui.hud.weapon_skill.condition.support_to_main_close_hit_armed,Support step complete · land a close hit as main weapon,后台步骤完成 · 作为主武器近距离命中
+ui.hud.weapon_skill.condition.far_hit,Hit an enemy from at least 400 distance,在至少400距离命中敌人
+ui.hud.weapon_skill.condition.player_damaged,Lose health from an enemy attack,因敌人攻击损失生命值
+ui.hud.weapon_skill.condition.explosion_distinct_targets,Hit 3 different enemies with one explosion,同一次爆炸命中3个不同敌人
+ui.hud.weapon_skill.condition.freeze_buildup,Deal damage with 75 Glacier bursts,用冰川投射器造成75次有效喷射
+ui.hud.weapon_skill.condition.global_energy_full,Fill global weapon energy,充满全局武器能量
+ui.hud.weapon_skill.condition.weapon_kill,Kill an enemy with this weapon,使用该武器击杀1个敌人
+ui.hud.weapon_skill.condition.shared_heat_hot,Raise shared Heat to 75%,将玩家共享热量提高至75%
+ui.hud.weapon_skill.condition.global_energy_and_heat,Fill global weapon energy and reach 50% shared Heat,充满全局武器能量并达到50%共享热量
 ui.management.menu.title,Warehouse Management,仓库管理
 ui.management.menu.subtitle,Open weapon and module warehouses,打开武器仓库与模组仓库
 ui.warehouse.instruction,Manage the selected warehouse.,管理所选仓库。

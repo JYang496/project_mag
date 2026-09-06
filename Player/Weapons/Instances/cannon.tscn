@@ -6,6 +6,10 @@
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/heavy_recoil_feedback.tres" id="5_feedback"]
 
 [node name="Cannon" unique_id=2056242882 instance=ExtResource("1_ranger")]
+active_skill_effect_id = &"cannon_siege_trajectory"
+skill_unlock_condition = &"support_time"
+skill_unlock_hint = "Keep Cannon in support for 15 seconds"
+skill_unlock_required = 15.0
 base_trait_flags = 1
 script = ExtResource("2_script")
 turn_speed_degrees_per_second = 180.0

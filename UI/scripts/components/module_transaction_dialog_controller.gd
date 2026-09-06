@@ -201,25 +201,24 @@ func request_temporary_module_settlement(on_complete: Callable, on_cancel: Calla
 			int(module_instance.cost),
 			int(module_instance.module_level)
 		) if GlobalVariables.economy_data else 0
-	var body := LocalizationManager.tr_format(
-		"ui.module.settlement.confirm",
-		{"count": InventoryData.temporary_modules.size(), "gold": total_gold},
-		"Sell %d temporary modules for %d Gold and start battle?" % [
-			InventoryData.temporary_modules.size(),
-			total_gold,
-		]
+	var body := LocalizationManager.tr_key(
+		"ui.module.settlement.summary",
+		"Unsold temporary modules will be sold before battle."
 	)
 	active_dialog_id = &"temporary_module_settlement"
 	var result: bool = modal_dialog_controller.confirm({
 		"id": &"temporary_module_settlement",
 		"title": LocalizationManager.tr_key("ui.module.settlement.title", "Temporary Module Settlement"),
 		"message": body,
-		"confirm_text": "Sell",
-		"cancel_text": "Cancel",
+		"confirm_text": LocalizationManager.tr_key(
+			"ui.module.settlement.confirm_action",
+			"Sell & Start Battle"
+		),
+		"cancel_text": LocalizationManager.tr_key("ui.common.back", "Back"),
 		"on_confirm": Callable(self, "_on_temporary_module_settlement_confirmed"),
 		"on_cancel": Callable(self, "_on_temporary_module_settlement_cancelled"),
-		"destructive": false,
-		"size": Vector2i(560, 300),
+		"destructive": true,
+		"size": Vector2i(560, 380),
 		"checkbox_text": LocalizationManager.tr_key(
 			"ui.module.settlement.dont_show",
 			"Do not show this confirmation again"

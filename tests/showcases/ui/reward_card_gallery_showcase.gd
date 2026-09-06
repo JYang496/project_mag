@@ -4,7 +4,7 @@ const REWARD_PANEL_SCRIPT := preload("res://UI/scripts/reward_selection_panel.gd
 const MODULE_SCENE := preload("res://Player/Weapons/Modules/wmod_crit_calibrator.tscn")
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
-var _card_builder: RewardSelectionPanel
+var _card_builder: Node
 var _showcase_weapons: Array[Weapon] = []
 var _previous_weapon_list: Array = []
 
