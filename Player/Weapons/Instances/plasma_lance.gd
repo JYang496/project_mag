@@ -1,19 +1,20 @@
 extends Ranger
 
 const WEAPON_SKILL_AREA := preload("res://Player/Weapons/Effects/weapon_skill_area.gd")
-
-var projectile_template = preload("res://Player/Weapons/Projectiles/plasma_lance_projectile.tscn")
-var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/plasma.png")
+const MOVING_WALL_ATTACK := preload("res://Player/Weapons/Geometry/moving_wall_attack.gd")
 
 var ITEM_NAME := "Plasma Lance"
-const BULLET_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_STANDARD_SIZE
-
 @export var heat_accumulation: float = 10.0
 @export var max_heat: float = 100.0
 @export var heat_cooldown_rate: float = 0.0
 @export var plasma_heat_damage_bonus_at_full_heat: float = 0.75
 @export var discharge_damage_multiplier: float = 1.85
 @export var discharge_heat_cost: float = 35.0
+@export var wall_width: float = 150.0
+@export var wall_thickness: float = 20.0
+@export var wall_travel_speed: float = 520.0
+@export var discharge_width_multiplier: float = 1.35
+@export var discharge_thickness_multiplier: float = 1.25
 
 var attack_range: float = 980.0
 var _overcharge_lance_stack_count: int = 0
@@ -68,26 +69,34 @@ func _on_shoot() -> void:
 	cooldown_timer.wait_time = maxf(get_runtime_attack_cooldown(), 0.05)
 	cooldown_timer.start()
 
-	var spawn_projectile := spawn_projectile_from_scene(projectile_template)
-	if spawn_projectile == null:
-		return
-
 	projectile_direction = get_aim_forward()
-	var runtime_damage := get_runtime_damage()
-	var heat_damage_multiplier := _get_heat_damage_multiplier()
-	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * heat_damage_multiplier)))
-	spawn_projectile.damage_type = Attack.TYPE_ENERGY
-	spawn_projectile.hp = _get_effective_projectile_hits()
-	var lance_projectile := spawn_projectile as PlasmaLanceProjectile
-	if lance_projectile:
-		lance_projectile.damage_gain_per_pierce = branch_runtime.get_branch_pierce_damage_gain_per_hit()
-	spawn_projectile.global_position = global_position
-	spawn_projectile.projectile_texture = projectile_texture_resource
-	spawn_projectile.desired_pixel_size = BULLET_PIXEL_SIZE
-	spawn_projectile.size = size
-	spawn_projectile.expire_time = maxf(attack_range / maxf(float(speed), 1.0), 0.2)
-	apply_effects_on_projectile(spawn_projectile)
-	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
+	if projectile_direction == Vector2.ZERO:
+		return
+	var runtime_damage: int = get_runtime_damage()
+	var heat_damage_multiplier: float = _get_heat_damage_multiplier()
+	var profile := {
+		"origin": get_muzzle_global_position(),
+		"direction": projectile_direction,
+		"width": get_effective_area_radius(wall_width),
+		"thickness": get_effective_area_radius(wall_thickness),
+		"speed": wall_travel_speed,
+		"travel_distance": attack_range,
+		"damage": maxi(1, int(round(float(runtime_damage) * heat_damage_multiplier))),
+		"damage_type": Attack.TYPE_ENERGY,
+	}
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior != null and is_instance_valid(behavior) and behavior.has_method("get_plasma_wall_profile"):
+			var modifiers: Dictionary = behavior.call("get_plasma_wall_profile")
+			profile["width"] = float(profile["width"]) * maxf(float(modifiers.get("width_multiplier", 1.0)), 0.1)
+			profile["thickness"] = float(profile["thickness"]) * maxf(float(modifiers.get("thickness_multiplier", 1.0)), 0.1)
+			profile["travel_distance"] = float(profile["travel_distance"]) * maxf(float(modifiers.get("travel_distance_multiplier", 1.0)), 0.1)
+	if is_energy_release_attack_active():
+		profile["width"] = float(profile["width"]) * discharge_width_multiplier
+		profile["thickness"] = float(profile["thickness"]) * discharge_thickness_multiplier
+	var wall: Node = MOVING_WALL_ATTACK.new().setup(self, profile) as Node
+	apply_energy_release_marker(wall)
+	apply_heat_snapshot_marker(wall)
+	get_projectile_spawn_parent().add_child(wall)
 
 func _get_heat_damage_multiplier() -> float:
 	var player: Node = PlayerData.player
@@ -123,8 +132,8 @@ func _get_heat_damage_multiplier() -> float:
 	}, PASSIVE_SCOPE_GLOBAL)
 	return maxf(multiplier, 0.05)
 
-func _get_effective_projectile_hits() -> int:
-	return branch_runtime.get_branch_projectile_hit_override(projectile_hits)
+func on_plasma_wall_damage_dealt(_wall: Node, _target: Node, _damage_type: StringName, _final_damage: int) -> void:
+	pass
 
 func _get_overcharge_lance_config() -> Dictionary:
 	for behavior in branch_runtime.get_branch_behaviors():

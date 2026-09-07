@@ -14,6 +14,11 @@ var explosion_scale : float = 2.0
 const ROCKET_COLLISION_ARMING_DELAY_SEC: float = 0.08
 const BASE_EXPLOSION_RADIUS: float = 36.0
 const CLUSTER_KILL_RADIUS_MULTIPLIER: float = 1.5
+const HOMING_EFFECT := preload("res://Player/Weapons/Effects/homing_projectile_effect.gd")
+@export var homing_turn_rate_deg_per_sec: float = 70.0
+@export var homing_acquisition_radius: float = 520.0
+@export_range(0.0, 180.0, 1.0) var homing_acquisition_half_angle_deg: float = 70.0
+@export var homing_release_radius_multiplier: float = 1.35
 var _skill_explosion_target_ids: Dictionary = {}
 const CLUSTER_BOMBLET := preload("res://Player/Weapons/Effects/cluster_bomblet.gd")
 var _cluster_warhead_armed := false
@@ -113,6 +118,7 @@ func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> 
 	spawn_projectile.global_position = get_muzzle_global_position()
 	spawn_projectile.projectile_texture = projectile_texture_resource
 	spawn_projectile.size = size
+	spawn_projectile.configure_gameplay_hitbox(Vector2(12.0, 20.0))
 	spawn_projectile.expire_time = get_effective_projectile_lifetime()
 	spawn_projectile.collision_arming_delay_sec = ROCKET_COLLISION_ARMING_DELAY_SEC
 	if _cluster_warhead_armed:
@@ -121,8 +127,29 @@ func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> 
 		spawn_projectile.set_meta(&"cluster_warhead", true)
 	_sync_explosion_effect_config(projectile_damage)
 	apply_effects_on_projectile(spawn_projectile)
+	_apply_rocket_homing(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 	return spawn_projectile
+
+func _apply_rocket_homing(projectile: Projectile) -> void:
+	var profile := {
+		"turn_rate_deg_per_sec": homing_turn_rate_deg_per_sec,
+		"acquisition_radius": homing_acquisition_radius,
+		"acquisition_half_angle_deg": homing_acquisition_half_angle_deg,
+		"release_radius_multiplier": homing_release_radius_multiplier,
+	}
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior != null and is_instance_valid(behavior) and behavior.has_method("get_rocket_homing_profile"):
+			profile.merge(behavior.call("get_rocket_homing_profile"), true)
+	var homing := HOMING_EFFECT.new().setup(
+		projectile,
+		deg_to_rad(maxf(float(profile["turn_rate_deg_per_sec"]), 0.1)),
+		maxf(float(profile["acquisition_radius"]), 1.0),
+		clampf(float(profile["acquisition_half_angle_deg"]), 0.0, 180.0),
+		maxf(float(profile["release_radius_multiplier"]), 1.0)
+	)
+	projectile.add_child(homing)
+	projectile.module_list.append(homing)
 
 func on_projectile_will_despawn(projectile: Projectile) -> void:
 	if projectile == null or not bool(projectile.get_meta(&"cluster_warhead", false)):

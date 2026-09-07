@@ -271,8 +271,8 @@ func _validate_glacier_cold_snap() -> void:
 	weapon.trigger_runtime.on_entered_support("main")
 	weapon.trigger_runtime.update(5.0)
 	_expect(str(weapon.get_passive_status().get("state", "")) == "armed", "Cold Snap must advertise that the next attack is armed")
-	_expect(bool(weapon.call("_consume_cold_snap_for_next_attack")), "the first attack must consume the armed Cold Snap")
-	_expect(not bool(weapon.call("_consume_cold_snap_for_next_attack")), "a second attack before another support charge must not receive Cold Snap")
+	_expect(bool(weapon.consume_support_trigger()), "the first trail must consume the armed Cold Snap")
+	_expect(not bool(weapon.consume_support_trigger()), "a second trail before another support charge must not receive Cold Snap")
 
 	var normal_target := DummyControlTarget.new()
 	weapon.call("_apply_cold_snap_control", normal_target)
@@ -300,9 +300,9 @@ func _validate_glacier_cold_snap() -> void:
 
 	weapon.trigger_runtime.on_entered_support("main")
 	weapon.trigger_runtime.update(5.0)
-	_expect(bool(weapon.call("_consume_cold_snap_for_next_attack")), "Cold Snap must rearm after five seconds in support mode")
+	_expect(bool(weapon.consume_support_trigger()), "Cold Snap must rearm after five seconds in support mode")
 	weapon.call("clear_timed_effects_for_prepare")
-	_expect(not bool(weapon.call("_consume_cold_snap_for_next_attack")), "battle prepare must not bypass the support-charge requirement")
+	_expect(not bool(weapon.consume_support_trigger()), "battle prepare must not bypass the support-charge requirement")
 
 	normal_target.free()
 	elite_target.free()
@@ -635,6 +635,9 @@ func _validate_global_energy_hud() -> void:
 	PlayerData.player = energy_player
 	var hud_root := Control.new()
 	add_child(hud_root)
+	var special_resource_slot := Control.new()
+	special_resource_slot.name = "SpecialResourceSlot"
+	hud_root.add_child(special_resource_slot)
 	var presenter = HUD_PRESENTER_SCRIPT.new()
 	presenter.character_hud_root = hud_root
 	presenter.call("_sync_global_weapon_energy_meter")

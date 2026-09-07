@@ -2,6 +2,7 @@ extends Ranger
 
 # Projectile
 @onready var beam_blast = preload("res://Player/Weapons/Projectiles/beam_blast.tscn")
+const TETHER_CHAIN_NETWORK := preload("res://Player/Weapons/Geometry/tether_chain_network.gd")
 const SKILL_BOLT_SCENE := preload("res://Player/Weapons/Projectiles/projectile.tscn")
 const SKILL_BOLT_TEXTURE := preload("res://asset/images/weapons/projectiles/plasma.png")
 const HOMING_EFFECT := preload("res://Player/Weapons/Effects/homing_projectile_effect.gd")
@@ -19,6 +20,10 @@ var beam_local_forward := Vector2.UP
 @export var resonance_initial_damage_multiplier: float = 1.55
 @export var resonance_ramp_per_repeat_hit: float = 0.14
 @export var resonance_max_ramp_hits: int = 5
+@export var primary_acquisition_half_angle_deg: float = 42.0
+@export var base_chain_range: float = 170.0
+@export var base_max_chain_count: int = 2
+@export var secondary_link_damage_ratio: float = 0.65
 var is_firing_beam := false
 var firing_turn_timer: Timer
 var _feedback_refund_accum_sec: float = 0.0
@@ -65,26 +70,38 @@ func _on_shoot():
 	is_on_cooldown = true
 	_feedback_refund_accum_sec = 0.0
 	beam_local_forward = get_aim_forward()
-	var base_profile := {
+	var network_profile := {
 		"direction": beam_local_forward.normalized(),
-		"range_multiplier": 1.0,
-		"width_multiplier": 1.0,
-		"damage_multiplier": 1.0,
-		"duration_multiplier": 1.0,
-		"angle_offset_deg": 0.0,
-		"target_lock_mode": "none",
-		"target_lock_release_multiplier": 1.8,
-		"beam_tag": "main",
+		"acquisition_range": beam_range,
+		"acquisition_half_angle_deg": primary_acquisition_half_angle_deg,
+		"chain_range": base_chain_range,
+		"max_chain_count": base_max_chain_count,
+		"duration": maxf(duration, minimum_committed_fire_sec),
+		"tick_interval": maxf(hit_cd, 0.02),
+		"damage": get_runtime_damage(),
+		"secondary_damage_ratio": secondary_link_damage_ratio,
+		"width": _get_full_power_beam_width(),
+		"energy_resonance": is_energy_release_attack_active(),
+		"resonance_ramp_per_tick": resonance_ramp_per_repeat_hit,
+		"resonance_max_ticks": resonance_max_ramp_hits,
+		"beam_tag": "tether_network",
 	}
 	if is_energy_release_attack_active():
-		base_profile["target_lock_mode"] = "first_hit"
-		base_profile["energy_resonance"] = true
-	var beam_profiles := _get_charged_beam_profiles(base_profile)
-	var max_beam_duration: float = 0.0
-	for profile in beam_profiles:
-		max_beam_duration = maxf(max_beam_duration, _spawn_beam_from_profile(profile))
-	if max_beam_duration > 0.0:
-		_start_firing_turn_slowdown(max_beam_duration)
+		network_profile["max_chain_count"] = maxi(base_max_chain_count + 2, 1)
+		network_profile["chain_range"] = base_chain_range * 1.2
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior != null and is_instance_valid(behavior) and behavior.has_method("modify_charged_network_profile"):
+			behavior.call("modify_charged_network_profile", network_profile)
+	var network := TETHER_CHAIN_NETWORK.new().setup(self, network_profile)
+	apply_energy_release_marker(network)
+	apply_heat_snapshot_marker(network)
+	if _prism_overload_armed:
+		_prism_overload_armed = false
+		set_active_skill_visual_armed(false)
+		network.set_meta(&"prism_overload", true)
+		network.tree_exiting.connect(Callable(self, "_on_prism_beam_finished").bind(network), CONNECT_ONE_SHOT)
+	get_projectile_spawn_parent().add_child(network)
+	_start_firing_turn_slowdown(float(network_profile["duration"]))
 	start_weapon_cooldown(0.05)
 
 func _on_remove_timer_timeout() -> void:
@@ -138,7 +155,8 @@ func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bo
 	request_primary_fire()
 
 func on_beam_hit_target(target: Node, beam_profile: Dictionary = {}, hit_damage: int = 0, beam_node: Node = null) -> void:
-	_update_energy_resonance_ramp(target, beam_profile, beam_node)
+	if beam_node != null and beam_node.get("damage") != null:
+		_update_energy_resonance_ramp(target, beam_profile, beam_node)
 	for behavior in branch_runtime.get_branch_behaviors():
 		behavior.on_charged_beam_hit(target, beam_profile, hit_damage)
 
@@ -146,7 +164,7 @@ func get_energy_full_fire_passive_id() -> StringName:
 	return &"charged_blaster_multi_hit_triggered"
 
 func get_energy_full_fire_display_name() -> String:
-	return "Beam Resonance"
+	return "Network Resonance"
 
 func get_energy_gain_per_damage_event() -> float:
 	return 3.0
@@ -268,7 +286,7 @@ func _on_prism_beam_finished(beam_node: Node2D) -> void:
 		return
 	# Prism bolts launch from the same weapon muzzle position as the charged beam,
 	# rather than appearing at the beam endpoint.
-	var launch_position := beam_node.global_position
+	var launch_position := get_muzzle_global_position()
 	for index in range(6):
 		var bolt := spawn_projectile_from_scene(SKILL_BOLT_SCENE) as Projectile
 		if bolt == null:

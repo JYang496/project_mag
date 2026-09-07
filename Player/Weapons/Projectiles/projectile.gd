@@ -6,6 +6,7 @@ enum ProjectileVisualMode { UPRIGHT, DIRECTIONAL, GROUND, SEGMENT, CUSTOM }
 const DEFAULT_EXPIRE_TIME: float = 2.5
 const MIN_EXPIRE_TIME: float = 0.001
 const INITIAL_PROJECTILE_HITS_META := "initial_projectile_hits"
+const DEFAULT_GAMEPLAY_HITBOX_SIZE := Vector2(8.0, 8.0)
 
 var hp : int = 1
 var damage = 1
@@ -21,6 +22,11 @@ var projectile_texture
 var projectile_frames: SpriteFrames
 var size : float = 1.0
 var desired_pixel_size : Vector2 = Vector2.ZERO
+# Gameplay collision is explicit and independent from sprite pixels, transparent
+# padding, and visual scaling. `size` remains a gameplay modifier used by the
+# existing bullet-size stat.
+@export var gameplay_hitbox_size: Vector2 = DEFAULT_GAMEPLAY_HITBOX_SIZE
+@export var gameplay_hitbox_radius: float = 0.0
 var module_list = []
 var effect_list = []
 var source_weapon: Weapon
@@ -131,8 +137,7 @@ func _resolve_projectile_scale() -> Vector2:
 	return Vector2(size, size)
 
 func init_hitbox(hb_type = "once") -> void:
-	var shape = RectangleShape2D.new()
-	shape.size = projectile_sprite.texture.get_size() * projectile_sprite.scale.abs()
+	var shape := _build_gameplay_hitbox_shape()
 	match hb_type:
 		"dot":
 			hitbox_ins = hitbox_dot.instantiate()
@@ -144,6 +149,23 @@ func init_hitbox(hb_type = "once") -> void:
 	hitbox_ins.hitbox_owner = self
 	hitbox_ins.monitoring = collision_arming_delay_sec <= 0.0
 	hitbox_anchor.call_deferred("add_child", hitbox_ins)
+
+func configure_gameplay_hitbox(hitbox_size: Vector2, hitbox_radius: float = 0.0) -> void:
+	gameplay_hitbox_size = Vector2(maxf(hitbox_size.x, 1.0), maxf(hitbox_size.y, 1.0))
+	gameplay_hitbox_radius = maxf(hitbox_radius, 0.0)
+
+func _build_gameplay_hitbox_shape() -> Shape2D:
+	var gameplay_scale := maxf(size, 0.01)
+	if gameplay_hitbox_radius > 0.0:
+		var circle := CircleShape2D.new()
+		circle.radius = maxf(gameplay_hitbox_radius * gameplay_scale, 0.5)
+		return circle
+	var rectangle := RectangleShape2D.new()
+	rectangle.size = Vector2(
+		maxf(gameplay_hitbox_size.x * gameplay_scale, 1.0),
+		maxf(gameplay_hitbox_size.y * gameplay_scale, 1.0)
+	)
+	return rectangle
 
 func _start_collision_arming() -> void:
 	collision_arming_timer.stop()
@@ -285,6 +307,8 @@ func _on_before_pooled() -> void:
 	expire_time = DEFAULT_EXPIRE_TIME
 	size = 1.0
 	desired_pixel_size = Vector2.ZERO
+	gameplay_hitbox_size = DEFAULT_GAMEPLAY_HITBOX_SIZE
+	gameplay_hitbox_radius = 0.0
 	projectile_texture = null
 	projectile_frames = null
 	hitbox_type = "once"

@@ -759,7 +759,7 @@ ui.hud.weapon_skill.condition.support_to_main_close_hit_armed,Support step compl
 ui.hud.weapon_skill.condition.far_hit,Hit an enemy from at least 400 distance,在至少400距离命中敌人
 ui.hud.weapon_skill.condition.player_damaged,Lose health from an enemy attack,因敌人攻击损失生命值
 ui.hud.weapon_skill.condition.explosion_distinct_targets,Hit 3 different enemies with one explosion,同一次爆炸命中3个不同敌人
-ui.hud.weapon_skill.condition.freeze_buildup,Deal damage with 75 Glacier bursts,用冰川投射器造成75次有效喷射
+ui.hud.weapon_skill.condition.freeze_buildup,Deal damage with 75 Glacier trail ticks,用冰川投射器的冰径造成75次有效伤害
 ui.hud.weapon_skill.condition.global_energy_full,Fill global weapon energy,充满全局武器能量
 ui.hud.weapon_skill.condition.weapon_kill,Kill an enemy with this weapon,使用该武器击杀1个敌人
 ui.hud.weapon_skill.condition.shared_heat_hot,Raise shared Heat to 75%,将玩家共享热量提高至75%

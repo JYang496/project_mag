@@ -1133,6 +1133,10 @@ func register_ground_trail(source: MeshInstance2D) -> void:
 	if _connected_renderer != null:
 		_connected_renderer.register_trail(source)
 
+func register_ground_plasma_wall(source: MeshInstance2D) -> void:
+	if _connected_renderer != null:
+		_connected_renderer.register_plasma_wall(source)
+
 func register_ground_segment(line: Line2D) -> void:
 	if _connected_renderer != null:
 		_connected_renderer.register_segment(line)
@@ -1154,6 +1158,7 @@ func unregister_ground_visual(source: Node) -> void:
 	source.set_meta(&"hybrid_ground_registered", false)
 	if _connected_renderer != null:
 		_connected_renderer.unregister_trail(source_id)
+		_connected_renderer.unregister_plasma_wall(source_id)
 	_erase_visual_entry(_shadow_meshes, source_id)
 	_erase_visual_entry(_affiliation_marker_meshes, source_id)
 	_erase_visual_entry(_area_meshes, source_id)

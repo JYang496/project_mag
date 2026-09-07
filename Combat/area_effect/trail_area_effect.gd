@@ -261,6 +261,13 @@ func _apply_tick_damage() -> void:
 	var tree := get_tree()
 	if tree == null:
 		return
+	# A trail can outlive the weapon that created it (for example during weapon
+	# replacement or battle teardown). Do not pass a freed typed reference into
+	# DamageManager; end gameplay immediately and keep only the visual residue.
+	if source_category == DamageData.SOURCE_PLAYER_WEAPON and not is_instance_valid(source_node):
+		source_node = null
+		finish_with_residue()
+		return
 	for target in _collect_targets(tree):
 		var target2d := target as Node2D
 		if target2d == null:

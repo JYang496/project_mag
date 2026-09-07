@@ -8,6 +8,15 @@ class_name ChargedBlasterFocusLanceBranch
 @export var duration_multiplier: float = 1.6
 @export var turn_speed_multiplier: float = 0.55
 
+func modify_charged_network_profile(profile: Dictionary) -> void:
+	profile["acquisition_range"] = maxf(float(profile.get("acquisition_range", 450.0)) * range_multiplier, 1.0)
+	profile["damage"] = maxi(1, int(round(float(profile.get("damage", 1)) * tick_damage_multiplier)))
+	profile["tick_interval"] = maxf(float(profile.get("tick_interval", 0.2)) * hit_cd_multiplier, 0.02)
+	profile["duration"] = maxf(float(profile.get("duration", 1.0)) * duration_multiplier, 0.05)
+	profile["max_chain_count"] = 0
+	profile["width"] = maxf(float(profile.get("width", 8.0)) * width_multiplier, 1.0)
+	profile["beam_tag"] = "focus_tether"
+
 func get_charged_turn_speed_multiplier() -> float:
 	return maxf(turn_speed_multiplier, 0.05)
 

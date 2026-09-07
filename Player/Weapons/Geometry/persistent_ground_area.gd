@@ -1,0 +1,148 @@
+extends Node2D
+class_name PersistentGroundArea
+
+const ENEMY_HURTBOX_MASK := 1 << 2
+const HYBRID_GROUND_REGISTRATION := preload("res://Visual/Oblique/hybrid_ground_registration.gd")
+
+var source_weapon: Node
+var path_length := 200.0
+var path_width := 44.0
+var segment_spacing := 18.0
+var duration_sec := 1.6
+var tick_interval_sec := 0.12
+var cold_snap_active := false
+var _elapsed_sec := 0.0
+var _tick_elapsed_sec := 0.0
+var _cold_snap_target_ids: Dictionary = {}
+var _configured_global_origin := Vector2.ZERO
+var _ground_lines: Array[Line2D] = []
+
+func setup(
+	weapon: Node,
+	origin: Vector2,
+	direction: Vector2,
+	length_value: float,
+	width_value: float,
+	spacing_value: float,
+	duration_value: float,
+	tick_value: float,
+	cold_snap_value: bool
+) -> PersistentGroundArea:
+	source_weapon = weapon
+	_configured_global_origin = origin
+	global_position = origin
+	rotation = direction.normalized().angle()
+	path_length = maxf(length_value, 1.0)
+	path_width = maxf(width_value, 1.0)
+	segment_spacing = maxf(spacing_value, 2.0)
+	duration_sec = maxf(duration_value, 0.05)
+	tick_interval_sec = maxf(tick_value, 0.02)
+	cold_snap_active = cold_snap_value
+	return self
+
+func _ready() -> void:
+	global_position = _configured_global_origin
+	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
+	_create_ground_lines()
+	queue_redraw()
+	_apply_tick()
+
+func _physics_process(delta: float) -> void:
+	var step: float = maxf(delta, 0.0)
+	_elapsed_sec += step
+	_tick_elapsed_sec += step
+	if _elapsed_sec >= duration_sec:
+		queue_free()
+		return
+	if _tick_elapsed_sec >= tick_interval_sec:
+		_tick_elapsed_sec = fmod(_tick_elapsed_sec, tick_interval_sec)
+		_apply_tick()
+	_sync_ground_line_colors()
+	queue_redraw()
+
+func cleanup_for_battle_end() -> void:
+	queue_free()
+
+func _exit_tree() -> void:
+	for line in _ground_lines:
+		HYBRID_GROUND_REGISTRATION.unregister(line)
+
+func _create_ground_lines() -> void:
+	_ground_lines.append(_create_ground_line("GroundFill", Vector2.ZERO, Vector2(path_length, 0.0), path_width))
+	_ground_lines.append(_create_ground_line("GroundEdgeTop", Vector2(0.0, -path_width * 0.5), Vector2(path_length, -path_width * 0.5), 1.5))
+	_ground_lines.append(_create_ground_line("GroundEdgeBottom", Vector2(0.0, path_width * 0.5), Vector2(path_length, path_width * 0.5), 1.5))
+	_sync_ground_line_colors()
+
+func _create_ground_line(line_name: String, start: Vector2, finish: Vector2, width: float) -> Line2D:
+	var line := Line2D.new()
+	line.name = line_name
+	line.points = PackedVector2Array([start, finish])
+	line.width = width
+	line.antialiased = false
+	line.set_meta(&"hybrid_ground_visible", true)
+	add_child(line)
+	if HYBRID_GROUND_REGISTRATION.register(line, &"register_ground_segment"):
+		line.visible = false
+	return line
+
+func _sync_ground_line_colors() -> void:
+	if _ground_lines.size() < 3:
+		return
+	var life_ratio := clampf(1.0 - _elapsed_sec / duration_sec, 0.0, 1.0)
+	_ground_lines[0].default_color = Color(0.34, 0.68, 1.0, 0.18 + 0.20 * life_ratio)
+	var edge := Color(0.70, 0.90, 1.0, 0.35 + 0.35 * life_ratio)
+	_ground_lines[1].default_color = edge
+	_ground_lines[2].default_color = edge
+
+func _apply_tick() -> void:
+	if source_weapon == null or not is_instance_valid(source_weapon):
+		return
+	if not source_weapon.has_method("apply_glacier_trail_tick"):
+		return
+	var shape: RectangleShape2D = RectangleShape2D.new()
+	shape.size = Vector2(path_length, path_width)
+	var query: PhysicsShapeQueryParameters2D = PhysicsShapeQueryParameters2D.new()
+	query.shape = shape
+	query.transform = Transform2D(global_rotation, to_global(Vector2(path_length * 0.5, 0.0)))
+	query.collision_mask = ENEMY_HURTBOX_MASK
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+	var seen_targets: Dictionary = {}
+	for hit in get_world_2d().direct_space_state.intersect_shape(query, 128):
+		var collider: Variant = hit.get("collider", null)
+		if not collider is HurtBox:
+			continue
+		var target: Node = _resolve_hurtbox_target(collider as HurtBox)
+		if target == null or not is_instance_valid(target):
+			continue
+		var target_id: int = target.get_instance_id()
+		if seen_targets.has(target_id):
+			continue
+		seen_targets[target_id] = true
+		var apply_cold_snap: bool = cold_snap_active and not _cold_snap_target_ids.has(target_id)
+		if bool(source_weapon.call("apply_glacier_trail_tick", target, apply_cold_snap)) and apply_cold_snap:
+			_cold_snap_target_ids[target_id] = true
+
+func _resolve_hurtbox_target(hurt_box: HurtBox) -> Node:
+	var target: Node = null
+	if hurt_box.has_method("get_damage_target"):
+		target = hurt_box.call("get_damage_target")
+	if target == null or not is_instance_valid(target):
+		target = hurt_box.get_owner()
+	if target == null or not is_instance_valid(target):
+		target = hurt_box.get_parent()
+	return target
+
+func _draw() -> void:
+	if not _ground_lines.is_empty() and bool(_ground_lines[0].get_meta(&"hybrid_ground_registered", false)):
+		return
+	var life_ratio: float = clampf(1.0 - _elapsed_sec / duration_sec, 0.0, 1.0)
+	var fill: Color = Color(0.34, 0.68, 1.0, 0.18 + 0.20 * life_ratio)
+	var edge: Color = Color(0.70, 0.90, 1.0, 0.35 + 0.35 * life_ratio)
+	draw_rect(Rect2(Vector2(0.0, -path_width * 0.5), Vector2(path_length, path_width)), fill, true)
+	draw_line(Vector2(0.0, -path_width * 0.5), Vector2(path_length, -path_width * 0.5), edge, 1.5)
+	draw_line(Vector2(0.0, path_width * 0.5), Vector2(path_length, path_width * 0.5), edge, 1.5)
+	var segment_x: float = segment_spacing
+	while segment_x < path_length:
+		draw_line(Vector2(segment_x, -path_width * 0.38), Vector2(segment_x, path_width * 0.38), Color(edge, edge.a * 0.45), 1.0)
+		segment_x += segment_spacing

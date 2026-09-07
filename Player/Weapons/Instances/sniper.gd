@@ -1,13 +1,15 @@
 extends Ranger
 class_name Sniper
 
-var projectile_template: PackedScene = preload("res://Player/Weapons/Projectiles/sniper_projectile.tscn")
-var projectile_texture_resource: Texture2D = preload("res://asset/images/weapons/projectiles/sniper_projectile.png")
+const HITSCAN_LINE := preload("res://Player/Weapons/Geometry/hitscan_line_attack.gd")
 
 var ITEM_NAME := "Sniper"
 const NEAR_DISTANCE_THRESHOLD: float = 220.0
 const FAR_DAMAGE_MULTIPLIER: float = 1.8
 @export var far_hit_trigger_distance: float = 400.0
+@export var hitscan_width: float = 5.0
+@export_flags_2d_physics var hitscan_world_blocker_mask: int = 32
+@export var tracer_duration_sec: float = 0.08
 
 var attack_range: float = 900.0
 var _next_shot_max_distance_bonus: bool = false
@@ -41,7 +43,7 @@ func set_level(lv) -> void:
 func _on_shoot() -> void:
 	is_on_cooldown = true
 	var cooldown := maxf(get_runtime_attack_cooldown(), 0.05)
-	var projectile_damage_multiplier := branch_runtime.get_branch_projectile_damage_multiplier()
+	var damage_multiplier := branch_runtime.get_branch_projectile_damage_multiplier()
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
@@ -49,36 +51,68 @@ func _on_shoot() -> void:
 	projectile_direction = get_aim_forward()
 	if projectile_direction == Vector2.ZERO:
 		return
-	var spawn_projectile := spawn_projectile_from_scene(projectile_template)
-	if spawn_projectile == null:
-		return
-
-	var runtime_damage := get_runtime_damage()
-	var lethal_aim := _lethal_aim_armed
+	var runtime_damage: int = get_runtime_damage()
+	var lethal_aim: bool = _lethal_aim_armed
 	_lethal_aim_armed = false
 	if lethal_aim:
 		set_active_skill_visual_armed(false)
 	if lethal_aim:
-		projectile_damage_multiplier *= 3.5
-	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * projectile_damage_multiplier)))
-	var maximum_distance_bonus := consume_support_trigger() or _next_shot_max_distance_bonus
+		damage_multiplier *= 3.5
+	var shot_damage: int = maxi(1, int(round(float(runtime_damage) * damage_multiplier)))
+	var maximum_distance_bonus: bool = consume_support_trigger() or _next_shot_max_distance_bonus
 	_next_shot_max_distance_bonus = false
-	spawn_projectile.set_meta(&"sniper_support_empowered", maximum_distance_bonus)
-	spawn_projectile.damage_type = Attack.TYPE_PHYSICAL
-	spawn_projectile.hp = 99999 if lethal_aim else max(1, projectile_hits)
-	spawn_projectile.set_meta(&"sniper_lethal_aim", lethal_aim)
-	spawn_projectile.global_position = global_position
-	spawn_projectile.projectile_texture = projectile_texture_resource
-	spawn_projectile.size = size
-	spawn_projectile.expire_time = maxf(attack_range / maxf(float(speed), 1.0), 0.2)
+	_fire_hitscan(shot_damage, maximum_distance_bonus, lethal_aim)
 
-	var sniper_projectile := spawn_projectile as SniperProjectile
-	if sniper_projectile:
-		sniper_projectile.pierce_damage_gain_per_hit = _get_branch_pierce_damage_gain_per_hit()
-		sniper_projectile.max_pierce_damage_stacks = _get_branch_max_pierce_damage_stacks()
+func _fire_hitscan(base_shot_damage: int, force_maximum_distance_bonus: bool, lethal_aim: bool) -> void:
+	var origin: Vector2 = get_muzzle_global_position()
+	var result: Dictionary = HITSCAN_LINE.collect_ordered_targets(
+		self, origin, projectile_direction, attack_range, hitscan_width * maxf(size, 0.01), hitscan_world_blocker_mask
+	)
+	var end_position: Vector2 = result.get("end_position", origin)
+	HITSCAN_LINE.spawn_tracer(
+		get_projectile_spawn_parent(), origin, end_position,
+		hitscan_width * maxf(size, 0.01), tracer_duration_sec
+	)
+	var ordered_targets: Array = result.get("targets", [])
+	var hit_limit: int = ordered_targets.size() if lethal_aim else mini(maxi(projectile_hits, 1), ordered_targets.size())
+	var pierce_growth: int = _get_branch_pierce_damage_gain_per_hit()
+	var max_growth_stacks: int = _get_branch_max_pierce_damage_stacks()
+	for hit_index in range(hit_limit):
+		var hit_entry := ordered_targets[hit_index] as Dictionary
+		var target := hit_entry.get("target", null) as Node
+		if target == null or not is_instance_valid(target):
+			continue
+		var growth_stacks: int = hit_index if max_growth_stacks <= 0 else mini(hit_index, max_growth_stacks)
+		var damage_before_distance: int = maxi(1, base_shot_damage + pierce_growth * growth_stacks)
+		var final_base_damage: int = _get_hitscan_distance_scaled_damage(
+			target, damage_before_distance, force_maximum_distance_bonus, lethal_aim
+		)
+		var damage_data: DamageData = DamageManager.build_damage_data(
+			self, final_base_damage, Attack.TYPE_PHYSICAL, {},
+			DamageData.SOURCE_PLAYER_WEAPON, DamageDeliveryType.PROJECTILE
+		)
+		damage_data.dedupe_token = StringName("sniper_hitscan_%d_%d_%d" % [get_instance_id(), Time.get_ticks_usec(), target.get_instance_id()])
+		damage_data.dedupe_window_sec = 0.02
+		var damage_result: DamageResult = DamageManager.apply_to_target_result(target, damage_data)
+		if not damage_result.applied:
+			continue
+		var owner_player := damage_data.source_player as Player
+		if owner_player != null and is_instance_valid(owner_player):
+			owner_player.apply_bonus_hit_if_needed(target)
+		on_hit_target_with_damage_type(target, Attack.TYPE_PHYSICAL)
 
-	apply_effects_on_projectile(spawn_projectile)
-	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
+func _get_hitscan_distance_scaled_damage(
+	target: Node,
+	base_value: int,
+	force_maximum: bool,
+	lethal_aim: bool
+) -> int:
+	if lethal_aim:
+		var target_node := target as Node2D
+		var distance := global_position.distance_to(target_node.global_position) if target_node != null else 0.0
+		var ratio := clampf((distance - NEAR_DISTANCE_THRESHOLD) / maxf(attack_range - NEAR_DISTANCE_THRESHOLD, 1.0), 0.0, 1.0)
+		return max(1, int(round(float(maxi(base_value, 1)) * lerpf(1.0, 2.0, ratio))))
+	return get_sniper_distance_scaled_damage(target, base_value, force_maximum)
 
 func on_hit_target(target: Node) -> void:
 	super.on_hit_target(target)

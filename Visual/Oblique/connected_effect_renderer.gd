@@ -19,6 +19,47 @@ var shared_cone_material: ShaderMaterial
 var cone_mesh_cache: Dictionary = {}
 var cone_material_cache: Dictionary = {}
 var trail_meshes: Dictionary = {}
+var plasma_wall_meshes: Dictionary = {}
+
+func register_plasma_wall(source: MeshInstance2D) -> void:
+	if not _is_ready() or plasma_wall_meshes.has(source.get_instance_id()):
+		return
+	var mesh := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.orientation = PlaneMesh.FACE_Y
+	quad.size = Vector2.ONE
+	mesh.mesh = quad
+	mesh.material_override = source.ground_material
+	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_view._ground_root.add_child(mesh)
+	plasma_wall_meshes[source.get_instance_id()] = {"source": weakref(source), "mesh": mesh}
+	source.visible = false
+	source.set_meta(&"hybrid_ground_registered", true)
+	_sync_plasma_wall(source, mesh)
+
+func unregister_plasma_wall(id: int) -> void:
+	if not plasma_wall_meshes.has(id):
+		return
+	var mesh: MeshInstance3D = plasma_wall_meshes[id]["mesh"]
+	if is_instance_valid(mesh):
+		mesh.queue_free()
+	plasma_wall_meshes.erase(id)
+
+func _sync_plasma_wall(source: MeshInstance2D, mesh: MeshInstance3D) -> void:
+	mesh.position = _view.world_2d_to_3d(source.global_position) + Vector3.UP * 0.032
+	mesh.rotation.y = -source.global_rotation
+	var size: Vector2 = source.visual_size * source.global_scale.abs() * float(_view.world_scale)
+	mesh.scale = Vector3(size.x, 1.0, size.y)
+	mesh.visible = source.get_parent().is_visible_in_tree()
+
+func _sync_plasma_walls() -> void:
+	for id in plasma_wall_meshes.keys():
+		var source := plasma_wall_meshes[id]["source"].get_ref() as MeshInstance2D
+		var mesh := plasma_wall_meshes[id]["mesh"] as MeshInstance3D
+		if source == null or not is_instance_valid(mesh):
+			unregister_plasma_wall(id)
+			continue
+		_sync_plasma_wall(source, mesh)
 
 func register_trail(source: MeshInstance2D) -> void:
 	if not _is_ready() or trail_meshes.has(source.get_instance_id()):
@@ -119,8 +160,11 @@ func sync_late(_delta: float) -> void:
 	_view._sync_segment_meshes()
 	_view._sync_ground_cone_meshes()
 	_sync_trails()
+	_sync_plasma_walls()
 
 func clear() -> void:
+	for id in plasma_wall_meshes.keys():
+		unregister_plasma_wall(id)
 	for id in trail_meshes.keys():
 		unregister_trail(id)
 	segment_meshes.clear()

@@ -19,7 +19,11 @@ idle_fire_empowered_shots = 1
 idle_fire_direct_damage_multiplier = 1.45
 idle_fire_breach_multiplier = 1.2
 idle_fire_breach_duration_sec = 4.0
-delivery_type_flags = 9
+ground_impact_delay_sec = 0.55
+ground_impact_radius = 72.0
+ground_impact_min_distance = 80.0
+ground_target_blocker_mask = 32
+delivery_type_flags = 8
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 

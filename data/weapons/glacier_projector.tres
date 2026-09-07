@@ -9,6 +9,6 @@ weapon_id = "21"
 display_name = "Glacier Projector"
 icon = ExtResource("1_icon")
 price = 45
-description = "Mid-range Freeze cone. Cold Snap empowers the next attack to freeze non-boss enemies or heavily slow bosses."
+description = "Persistent Freeze trail projector. Draw icy ground hazards that damage enemies over time; Cold Snap empowers the next trail to freeze or heavily slow targets."
 scene_path = "res://Player/Weapons/Instances/glacier_projector.tscn"
 core_tags = Array[StringName]([&"freeze", &"area", &"control"])

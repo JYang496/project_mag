@@ -5,6 +5,12 @@ class_name ChargedBlasterPrismFanBranch
 @export var main_damage_multiplier: float = 0.8
 @export var side_damage_multiplier: float = 0.45
 
+func modify_charged_network_profile(profile: Dictionary) -> void:
+	profile["max_chain_count"] = maxi(int(profile.get("max_chain_count", 2)) + 2, 1)
+	profile["chain_range"] = maxf(float(profile.get("chain_range", 170.0)) * 1.25, 1.0)
+	profile["secondary_damage_ratio"] = maxf(float(profile.get("secondary_damage_ratio", 0.65)) * 0.90, 0.05)
+	profile["beam_tag"] = "prism_chain_network"
+
 func get_charged_beam_profiles(base_profile: Dictionary) -> Array[Dictionary]:
 	var main_profile := base_profile.duplicate(true)
 	var base_tag := str(base_profile.get("beam_tag", "main"))

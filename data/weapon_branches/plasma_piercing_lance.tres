@@ -5,15 +5,15 @@
 
 [resource]
 script = ExtResource("4_script")
-fusion_required_tags = Array[StringName]([&"projectile", &"on_hit"])
-produces_tags = Array[StringName]([&"projectile", &"on_hit"])
+fusion_required_tags = Array[StringName]([&"area", &"on_hit"])
+produces_tags = Array[StringName]([&"area", &"on_hit"])
 requires_any_tags = Array[StringName]([&"energy"])
 requires_all_tags = Array[StringName]([])
 amplifies_tags = Array[StringName]([&"on_hit"])
 conflicts_with_tags = Array[StringName]([])
 branch_id = "plasma_piercing_lance"
-display_name = "Piercing Lance"
-description = "Projectile branch. Restores high pierce and increases damage after each pierce, favoring lined-up multi-target fights over burst Heat spending."
+display_name = "Broad Cutting Plane"
+description = "Geometry branch. Creates a wider, longer-travelling plasma wall with reduced thickness, favoring broad interception of enemy groups."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

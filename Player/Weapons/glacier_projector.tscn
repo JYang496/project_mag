@@ -7,10 +7,15 @@
 [ext_resource type="Texture2D" uid="uid://bo8agyho2ubhi" path="res://asset/images/weapons/pistol.png" id="6_icon"]
 
 [node name="GlacierProjector" unique_id=252111721 instance=ExtResource("1_base")]
+base_trait_flags = 24
 script = ExtResource("2_script")
-cone_half_angle_deg = 15.0
-base_range = 200.0
-cold_snap_recharge_sec = 6.0
+base_range = 260.0
+trail_width = 44.0
+trail_segment_spacing = 18.0
+trail_duration_sec = 1.6
+trail_scan_interval_sec = 0.12
+per_target_damage_cooldown_sec = 0.18
+max_active_trails = 8
 cold_snap_freeze_duration_sec = 1.0
 boss_slow_duration_sec = 1.0
 boss_slow_multiplier = 0.5
@@ -24,6 +29,7 @@ spread_min_radius = 6.0
 spread_max_radius = 140.0
 effect_configs = Array[ExtResource("3_3hv4x")]([])
 debug_projectile_effects = false
+delivery_type_flags = 8
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 weapon_traits = 65536

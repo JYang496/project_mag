@@ -17,7 +17,13 @@ heat_accumulation = 10.0
 max_heat = 100.0
 heat_cooldown_rate = 0.0
 plasma_heat_damage_bonus_at_full_heat = 0.75
+wall_width = 150.0
+wall_thickness = 20.0
+wall_travel_speed = 520.0
+discharge_width_multiplier = 1.35
+discharge_thickness_multiplier = 1.25
 fire_feedback_profile = ExtResource("4_feedback")
+delivery_type_flags = 8
 
 [node name="Modules" parent="." index="0" unique_id=1154744371]
 

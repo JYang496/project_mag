@@ -7,6 +7,7 @@ var projectile_texture_resource = preload("res://asset/images/weapons/projectile
 var ITEM_NAME := "Cannon"
 const BULLET_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_CANNON_SIZE
 const SKILL_BLAST_PULSE := preload("res://Player/Weapons/Effects/weapon_skill_blast_pulse.gd")
+const DELAYED_GROUND_IMPACT := preload("res://Player/Weapons/Geometry/delayed_ground_impact.gd")
 const SIEGE_SKILL_FLIGHT_SEC := 0.85
 const SIEGE_SKILL_SPEED_MULTIPLIER := 0.90
 
@@ -15,6 +16,10 @@ const SIEGE_SKILL_SPEED_MULTIPLIER := 0.90
 @export var idle_fire_direct_damage_multiplier: float = 1.45
 @export var idle_fire_breach_multiplier: float = 1.2
 @export var idle_fire_breach_duration_sec: float = 4.0
+@export var ground_impact_delay_sec: float = 0.55
+@export var ground_impact_radius: float = 72.0
+@export var ground_impact_min_distance: float = 80.0
+@export_flags_2d_physics var ground_target_blocker_mask: int = 32
 const IDLE_FIRE_BREACH_STATUS_ID := &"cannon_breach"
 var attack_range: float = 920.0
 var _windup_in_progress: bool = false
@@ -100,35 +105,49 @@ func _on_windup_timer_timeout() -> void:
 func _on_shoot() -> void:
 	is_on_cooldown = true
 	_try_emit_idle_fire_trigger()
-	var idle_empowered_shot := _consume_idle_empowered_shot()
-	var cooldown := maxf(get_runtime_attack_cooldown(), 0.05)
+	var idle_empowered_shot: bool = _consume_idle_empowered_shot()
+	var cooldown: float = maxf(get_runtime_attack_cooldown(), 0.05)
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
 
-	var spawn_projectile := spawn_projectile_from_scene(projectile_template)
-	if spawn_projectile == null:
-		return
-
 	projectile_direction = get_aim_forward()
-	var runtime_damage := get_runtime_damage()
-	var damage_multiplier := branch_runtime.get_branch_projectile_damage_multiplier()
+	if projectile_direction == Vector2.ZERO:
+		return
+	var runtime_damage: int = get_runtime_damage()
+	var damage_multiplier: float = branch_runtime.get_branch_projectile_damage_multiplier()
 	damage_multiplier *= _consume_branch_heat_spend_multiplier()
 	if idle_empowered_shot:
 		damage_multiplier *= maxf(idle_fire_direct_damage_multiplier, 0.05)
-	spawn_projectile.damage = max(1, int(round(float(runtime_damage) * damage_multiplier)))
+	var impact_damage: int = maxi(1, int(round(float(runtime_damage) * damage_multiplier)))
 	var damage_type: StringName = branch_runtime.get_branch_damage_type_override(Attack.TYPE_PHYSICAL)
-	spawn_projectile.damage_type = damage_type
-	spawn_projectile.hp = max(1, projectile_hits)
-	spawn_projectile.global_position = global_position
-	spawn_projectile.projectile_texture = projectile_texture_resource
-	spawn_projectile.desired_pixel_size = BULLET_PIXEL_SIZE
-	spawn_projectile.size = size
-	spawn_projectile.expire_time = maxf(attack_range / maxf(float(speed), 1.0), 0.2)
-	if idle_empowered_shot:
-		spawn_projectile.set_meta("cannon_idle_empowered", true)
-	apply_effects_on_projectile(spawn_projectile)
-	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
+	var origin: Vector2 = get_muzzle_global_position()
+	var impact_position: Vector2 = _resolve_ground_impact_position(origin, projectile_direction)
+	var impact: Node = DELAYED_GROUND_IMPACT.new().setup(
+		self, origin, impact_position, ground_impact_delay_sec,
+		get_effective_area_radius(ground_impact_radius), impact_damage,
+		damage_type, idle_empowered_shot
+	) as Node
+	apply_energy_release_marker(impact)
+	apply_heat_snapshot_marker(impact)
+	get_projectile_spawn_parent().add_child(impact)
+
+func _resolve_ground_impact_position(origin: Vector2, direction: Vector2) -> Vector2:
+	var normalized_direction: Vector2 = direction.normalized()
+	var aim_position: Vector2 = get_mouse_target() as Vector2
+	var aimed_distance: float = origin.distance_to(aim_position)
+	var distance: float = clampf(aimed_distance, maxf(ground_impact_min_distance, 1.0), attack_range)
+	var target_position: Vector2 = origin + normalized_direction * distance
+	if ground_target_blocker_mask <= 0 or not is_inside_tree():
+		return target_position
+	var query: PhysicsRayQueryParameters2D = PhysicsRayQueryParameters2D.create(origin, target_position, ground_target_blocker_mask)
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	var result: Dictionary = get_world_2d().direct_space_state.intersect_ray(query)
+	if result.is_empty():
+		return target_position
+	var collision_position: Vector2 = result.get("position", target_position)
+	return collision_position - normalized_direction * 4.0
 
 func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
 	var shell := spawn_projectile_from_scene(projectile_template) as Projectile
@@ -201,6 +220,36 @@ func on_projectile_hit_damage_dealt(projectile: Node, target: Node, hit_damage_t
 	if not bool(projectile.get_meta("cannon_idle_empowered", false)):
 		return
 	_apply_idle_fire_breach(target)
+
+func on_cannon_ground_impact_damage_dealt(
+	_attack_node: Node,
+	target: Node,
+	_hit_damage_type: StringName,
+	final_damage: int,
+	idle_empowered: bool
+) -> void:
+	if target == null or not is_instance_valid(target) or final_damage <= 0:
+		return
+	if idle_empowered:
+		_apply_idle_fire_breach(target)
+
+func on_cannon_ground_impact_complete(
+	attack_node: Node,
+	impact_position: Vector2,
+	base_impact_damage: int,
+	strongest_final_damage: int,
+	_applied_count: int
+) -> void:
+	if attack_node == null or not is_instance_valid(attack_node):
+		return
+	if not bool(attack_node.get_meta(ENERGY_RELEASE_ATTACK_META, false)):
+		return
+	for behavior in branch_runtime.get_branch_behaviors():
+		if behavior != null and is_instance_valid(behavior) and behavior.has_method("apply_zero_release_ground_impact"):
+			behavior.call(
+				"apply_zero_release_ground_impact", impact_position, attack_node,
+				maxi(strongest_final_damage, base_impact_damage)
+			)
 
 func _on_cooldown_timer_timeout() -> void:
 	is_on_cooldown = false

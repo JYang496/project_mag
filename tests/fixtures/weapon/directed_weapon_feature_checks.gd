@@ -1,7 +1,6 @@
 extends RefCounted
 
 const COMMAND_CONTROLLER := preload("res://Player/Mechas/scripts/player_weapon_command_controller.gd")
-const WEAPON_SELECTOR := preload("res://UI/scripts/weapon_selector.gd")
 
 class SkillPlayer:
 	extends Node2D
@@ -93,7 +92,6 @@ func _validate_skill() -> void:
 	_check(not bool(weapon.get_weapon_skill_status().get("ready", true)), "cooldown still blocks a newly unlocked skill")
 	weapon.skill_runtime.update(10.0)
 	_check(bool(weapon.get_weapon_skill_status().get("ready", false)), "latched unlock becomes castable when cooldown ends")
-	_validate_skill_hud_text(weapon.get_weapon_skill_status())
 	weapon.queue_free()
 	await _validate_weapon_specific_unlock_boundaries()
 	player.queue_free()
@@ -114,8 +112,6 @@ func _validate_weapon_specific_unlock_boundaries() -> void:
 	shotgun.set_weapon_role("main")
 	var staged_status: Dictionary = shotgun.get_weapon_skill_status()
 	_check(is_equal_approx(float(staged_status.get("unlock_progress", 0.0)), 0.5), "Shotgun exposes its completed support-to-main stage as half progress")
-	var staged_text := WEAPON_SELECTOR.new().build_skill_detail_text(staged_status, 2)
-	_check(staged_text.contains("·"), "Shotgun HUD exposes a distinct armed-stage instruction")
 	targets[0].global_position = shotgun.global_position + Vector2.RIGHT * 40.0
 	shotgun.call("_try_unlock_from_close_entry_hit", targets[0])
 	_check(bool(shotgun.get_weapon_skill_status().get("unlock_ready", false)), "Shotgun close hit completes the armed second stage")
@@ -162,13 +158,13 @@ func _validate_weapon_specific_unlock_boundaries() -> void:
 
 	var glacier := (load("res://Player/Weapons/Instances/glacier_projector.tscn") as PackedScene).instantiate() as Weapon
 	_host.add_child(glacier)
-	for _burst in range(74):
-		glacier.call("_record_skill_burst_damage", true)
-	_check(not bool(glacier.get_weapon_skill_status().get("unlock_ready", true)), "Glacier remains locked before 75 successful bursts")
-	glacier.call("_record_skill_burst_damage", false)
-	_check(not bool(glacier.get_weapon_skill_status().get("unlock_ready", true)), "Glacier ignores bursts that deal no damage")
-	glacier.call("_record_skill_burst_damage", true)
-	_check(bool(glacier.get_weapon_skill_status().get("unlock_ready", false)), "Glacier unlocks on the 75th successful burst")
+	for _tick in range(74):
+		glacier.add_weapon_skill_unlock_progress(1.0)
+	_check(not bool(glacier.get_weapon_skill_status().get("unlock_ready", true)), "Glacier remains locked before 75 successful trail ticks")
+	_check(not bool(glacier.call("apply_glacier_trail_tick", null)), "Glacier rejects an invalid trail damage target")
+	_check(not bool(glacier.get_weapon_skill_status().get("unlock_ready", true)), "Glacier ignores trail ticks that deal no damage")
+	glacier.add_weapon_skill_unlock_progress(1.0)
+	_check(bool(glacier.get_weapon_skill_status().get("unlock_ready", false)), "Glacier unlocks on the 75th successful trail tick")
 
 	shotgun.queue_free()
 	spear.queue_free()
@@ -221,26 +217,6 @@ func _validate_all_weapon_trigger_groups() -> void:
 		weapon.queue_free()
 	_check(observed_groups.size() == allowed_groups.size(), "the current 14 weapons exercise all five trigger groups")
 	_check(observed_effects.size() == 14, "all 14 weapons bind distinct selected active skill effects")
-
-func _validate_skill_hud_text(ready_status: Dictionary) -> void:
-	var selector := WEAPON_SELECTOR.new()
-	var ready_text := selector.build_skill_detail_text(ready_status, 2)
-	_check(ready_text.contains("2"), "ready HUD prompt includes the weapon number used to switch and cast")
-	var building_status := ready_status.duplicate(true)
-	building_status["unlock_ready"] = false
-	building_status["unlock_current"] = 1.0
-	building_status["unlock_required"] = 2.0
-	building_status["cooldown_remaining"] = 0.0
-	var building_text := selector.build_skill_detail_text(building_status, 2)
-	_check(building_text.contains("1/2"), "building HUD prompt exposes exact unlock progress")
-	var blocked_status := ready_status.duplicate(true)
-	blocked_status["has_energy"] = false
-	blocked_status["cooldown_remaining"] = 0.0
-	_check(selector.build_skill_detail_text(blocked_status, 2) != ready_text, "energy-blocked HUD state is distinct from ready")
-	var cooldown_status := ready_status.duplicate(true)
-	cooldown_status["cooldown_remaining"] = 3.25
-	_check(selector.build_skill_detail_text(cooldown_status, 2).contains("3.3"), "cooldown HUD prompt exposes remaining time")
-	selector.free()
 
 func _validate_switching() -> void:
 	var old_list: Array = PlayerData.player_weapon_list

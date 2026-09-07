@@ -1,25 +1,26 @@
 extends Ranger
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
-const GLACIER_SPRAY_VFX_SCENE: PackedScene = preload("res://Player/Weapons/Effects/glacier_spray_vfx.tscn")
+const PERSISTENT_GROUND_AREA := preload("res://Player/Weapons/Geometry/persistent_ground_area.gd")
 const WEAPON_SKILL_AREA := preload("res://Player/Weapons/Effects/weapon_skill_area.gd")
-
-@onready var detect_area: Area2D = $DetectArea
 
 var ITEM_NAME := "Glacier Projector"
 @export var cold_per_burst: float = -3.0
 @export var heat_neutralize_rate: float = 7.0
-
-@export_range(5.0, 120.0, 1.0) var cone_half_angle_deg: float = 15.0
-@export_range(40.0, 1200.0, 1.0) var base_range: float = 200.0
+@export_range(40.0, 1200.0, 1.0) var base_range: float = 260.0
+@export_range(8.0, 240.0, 1.0) var trail_width: float = 44.0
+@export_range(4.0, 96.0, 1.0) var trail_segment_spacing: float = 18.0
+@export var trail_duration_sec: float = 1.6
+@export var trail_scan_interval_sec: float = 0.12
+@export var per_target_damage_cooldown_sec: float = 0.18
+@export_range(1, 32, 1) var max_active_trails: int = 8
 @export var cold_snap_freeze_duration_sec: float = 1.0
 @export var boss_slow_duration_sec: float = 1.0
 @export_range(0.05, 1.0, 0.05) var boss_slow_multiplier: float = 0.50
 @export var debug_mode: bool = false
 
-var _attacked_target_ids: Dictionary = {}
-var _glacier_vfx: Node
-var _primary_fire_held: bool = false
+var _active_trails: Array[Node] = []
+var _target_next_damage_msec: Dictionary = {}
 
 var weapon_data: Dictionary = {
 	"1": {"damage": "2", "fire_interval_sec": "0.2", "ammo": "50"},
@@ -32,11 +33,6 @@ var weapon_data: Dictionary = {
 	"8": {"damage": "6", "fire_interval_sec": "0.17", "ammo": "70"},
 	"9": {"damage": "6", "fire_interval_sec": "0.17", "ammo": "70"}
 }
-
-func _ready() -> void:
-	super._ready()
-	_sync_detect_radius()
-	_ensure_glacier_vfx()
 
 func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
 	var player := PlayerData.player as Node2D
@@ -54,19 +50,76 @@ func set_level(lv) -> void:
 	var level_data: Dictionary = get_weapon_level_data(lv, weapon_data)
 	level = int(get_weapon_level_key(lv, weapon_data))
 	base_damage = int(level_data["damage"])
-
 	base_attack_cooldown = float(level_data["fire_interval_sec"])
 	apply_level_ammo(level_data)
 	configure_heat(cold_per_burst, Heat.MAX_HEAT, heat_neutralize_rate)
 	sync_stats()
 	branch_runtime.notify_branch_level_applied(level)
-	_sync_detect_radius()
 
 func _on_shoot() -> void:
 	is_on_cooldown = true
 	cooldown_timer.wait_time = maxf(get_runtime_attack_cooldown(), 0.02)
 	cooldown_timer.start()
-	_emit_glacier_burst()
+	_spawn_ice_trail()
+
+func _spawn_ice_trail() -> void:
+	var forward: Vector2 = get_aim_forward()
+	if forward == Vector2.ZERO:
+		return
+	_prune_active_trails()
+	while _active_trails.size() >= maxi(max_active_trails, 1):
+		var oldest: Node = _active_trails.pop_front()
+		if oldest != null and is_instance_valid(oldest):
+			oldest.queue_free()
+	var cold_snap_active: bool = consume_support_trigger()
+	var trail: Node = PERSISTENT_GROUND_AREA.new().setup(
+		self,
+		get_muzzle_global_position(),
+		forward,
+		_get_effective_attack_range(),
+		_get_effective_trail_width(),
+		trail_segment_spacing,
+		trail_duration_sec,
+		trail_scan_interval_sec,
+		cold_snap_active
+	) as Node
+	trail.tree_exited.connect(_prune_active_trails)
+	_active_trails.append(trail)
+	get_projectile_spawn_parent().add_child(trail)
+	if cold_snap_active:
+		_emit_cold_snap_attack_trigger([])
+
+func apply_glacier_trail_tick(target: Node, apply_cold_snap: bool = false) -> bool:
+	if target == null or not is_instance_valid(target) or not target.has_method("damaged"):
+		return false
+	var now: int = Time.get_ticks_msec()
+	var target_id: int = target.get_instance_id()
+	_prune_target_damage_ledger(now)
+	if now < int(_target_next_damage_msec.get(target_id, 0)):
+		return false
+	_target_next_damage_msec[target_id] = now + int(maxf(per_target_damage_cooldown_sec, 0.02) * 1000.0)
+	var damage_data: DamageData = DamageManager.build_damage_data(
+		self, get_runtime_damage(), Attack.TYPE_FREEZE,
+		{"amount": 0, "angle": Vector2.ZERO},
+		DamageData.SOURCE_PLAYER_WEAPON, DamageDeliveryType.AREA
+	)
+	damage_data.dedupe_token = StringName("glacier_trail_%d_%d_%d" % [get_instance_id(), target_id, now])
+	damage_data.dedupe_window_sec = maxf(per_target_damage_cooldown_sec, 0.02)
+	var applied: bool = DamageManager.apply_to_target(target, damage_data)
+	if not applied:
+		return false
+	on_hit_target_with_damage_type(target, Attack.TYPE_FREEZE)
+	add_weapon_skill_unlock_progress(1.0)
+	if apply_cold_snap:
+		_apply_cold_snap_control(target)
+	return true
+
+func _prune_target_damage_ledger(now_msec: int) -> void:
+	if _target_next_damage_msec.size() <= 256:
+		return
+	for target_id in _target_next_damage_msec.keys():
+		if int(_target_next_damage_msec[target_id]) <= now_msec:
+			_target_next_damage_msec.erase(target_id)
 
 func supports_projectiles() -> bool:
 	return false
@@ -78,111 +131,33 @@ func get_automatic_fire_target_grace_sec() -> float:
 	return 0.3
 
 func request_automatic_fire() -> bool:
-	_primary_fire_held = true
-	var fired := request_primary_fire()
-	if not _can_maintain_held_glacier_vfx():
-		_stop_glacier_vfx()
-		return fired
-	_refresh_held_glacier_vfx()
-	return fired
+	return request_primary_fire()
 
 func handle_primary_input(pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	for behavior in branch_runtime.get_branch_behaviors():
 		if behavior.disables_primary_fire():
-			_primary_fire_held = false
-			_stop_glacier_vfx()
 			return
-	if not can_run_active_behavior():
-		_primary_fire_held = false
-		_stop_glacier_vfx()
-		return
-	if not pressed:
-		_primary_fire_held = false
-		_stop_glacier_vfx()
-		return
-	_primary_fire_held = true
-	request_primary_fire()
-	if not _can_maintain_held_glacier_vfx():
-		_stop_glacier_vfx()
-		return
-	_refresh_held_glacier_vfx()
+	if pressed and can_run_active_behavior():
+		request_primary_fire()
 
 func stop_automatic_fire() -> void:
-	_primary_fire_held = false
-	_stop_glacier_vfx()
-
-func _emit_glacier_burst() -> void:
-	_attacked_target_ids.clear()
-	if detect_area == null or not is_instance_valid(detect_area):
-		return
-	var forward: Vector2 = get_aim_forward()
-	if forward == Vector2.ZERO:
-		return
-	_refresh_glacier_vfx(forward)
-	var targets: Array[Node] = _collect_targets_in_cone(forward)
-	var cold_snap_active := _consume_cold_snap_for_next_attack()
-	var burst_damage_applied := false
-	for target in targets:
-		burst_damage_applied = _apply_freeze_damage(target, cold_snap_active) or burst_damage_applied
-	_record_skill_burst_damage(burst_damage_applied)
-	if cold_snap_active:
-		_emit_cold_snap_attack_trigger(targets)
-
-func _apply_freeze_damage(target: Node, cold_snap_active: bool = false) -> bool:
-	if target == null or not is_instance_valid(target):
-		return false
-	if not target.has_method("damaged"):
-		return false
-	if _attacked_target_ids.has(target.get_instance_id()):
-		return false
-	_attacked_target_ids[target.get_instance_id()] = true
-
-	var runtime_damage: int = get_runtime_damage()
-	var damage_data: DamageData = DamageManager.build_damage_data(
-		self,
-		runtime_damage,
-		Attack.TYPE_FREEZE,
-		{"amount": 0, "angle": Vector2.ZERO},
-		DamageData.SOURCE_PLAYER_WEAPON,
-		DamageDeliveryType.AREA
-	)
-	var damage_applied := DamageManager.apply_to_target(target, damage_data)
-	on_hit_target_with_damage_type(target, Attack.TYPE_FREEZE)
-	if cold_snap_active:
-		_apply_cold_snap_control(target)
-	return damage_applied
-
-func _record_skill_burst_damage(damage_applied: bool) -> void:
-	if damage_applied:
-		add_weapon_skill_unlock_progress(1.0)
-
-func on_hit_target_with_damage_type(target: Node, damage_type: StringName) -> void:
-	super.on_hit_target_with_damage_type(target, damage_type)
-
-func _consume_cold_snap_for_next_attack() -> bool:
-	return consume_support_trigger()
+	pass
 
 func _apply_cold_snap_control(target: Node) -> void:
-	if target == null or not is_instance_valid(target):
-		return
 	var duration := maxf(cold_snap_freeze_duration_sec, 0.05)
 	if _is_boss_target(target):
 		duration = maxf(boss_slow_duration_sec, 0.05)
 		var boss_multiplier := clampf(boss_slow_multiplier, 0.05, 1.0)
 		_apply_control_status(target, boss_multiplier, duration)
 		emit_passive_trigger(&"glacier_target_frozen", {
-			"target": target,
-			"duration": duration,
-			"movement_multiplier": boss_multiplier,
-			"boss_reduced": true,
+			"target": target, "duration": duration,
+			"movement_multiplier": boss_multiplier, "boss_reduced": true,
 		}, PASSIVE_SCOPE_GLOBAL)
 		return
 	_apply_freeze_status(target, duration)
 	emit_passive_trigger(&"glacier_target_frozen", {
-		"target": target,
-		"duration": duration,
-		"movement_multiplier": 0.0,
-		"boss_reduced": false,
+		"target": target, "duration": duration,
+		"movement_multiplier": 0.0, "boss_reduced": false,
 	}, PASSIVE_SCOPE_GLOBAL)
 
 func _apply_freeze_status(target: Node, duration: float) -> void:
@@ -231,11 +206,8 @@ func _refund_ammo_from_cold_snap_branches() -> int:
 		return 0
 	var total_refund := 0
 	for behavior in branch_runtime.get_branch_behaviors():
-		if behavior == null or not is_instance_valid(behavior):
-			continue
-		if not behavior.has_method("get_glacier_cold_snap_ammo_refund"):
-			continue
-		total_refund += maxi(int(behavior.call("get_glacier_cold_snap_ammo_refund")), 0)
+		if behavior != null and is_instance_valid(behavior) and behavior.has_method("get_glacier_cold_snap_ammo_refund"):
+			total_refund += maxi(int(behavior.call("get_glacier_cold_snap_ammo_refund")), 0)
 	if total_refund <= 0:
 		return 0
 	var ammo_before := current_ammo
@@ -258,156 +230,41 @@ func get_passive_status() -> Dictionary:
 		"progress": progress,
 	})
 
-func _collect_targets_in_cone(forward: Vector2) -> Array[Node]:
-	var output: Array[Node] = []
-	var touched_ids: Dictionary = {}
-	var effective_range := _get_effective_attack_range()
-	var max_angle_rad: float = deg_to_rad(_get_effective_cone_half_angle_deg())
-	for area in detect_area.get_overlapping_areas():
-		if not area is HurtBox:
-			continue
-		var hurt_box: HurtBox = area as HurtBox
-		if not hurt_box.get_collision_layer_value(3):
-			continue
-		var target: Node2D = hurt_box.get_owner() as Node2D
-		if target == null or not is_instance_valid(target):
-			continue
-		var target_id: int = target.get_instance_id()
-		if touched_ids.has(target_id):
-			continue
-		var to_target: Vector2 = target.global_position - global_position
-		var distance: float = to_target.length()
-		if distance > effective_range:
-			continue
-		var dir: Vector2 = to_target.normalized()
-		if absf(forward.angle_to(dir)) > max_angle_rad:
-			continue
-		touched_ids[target_id] = true
-		output.append(target)
-	return output
-
-func _sync_detect_radius() -> void:
-	if detect_area == null or not is_instance_valid(detect_area):
-		return
-	var shape_node: CollisionShape2D = detect_area.get_node_or_null("CollisionShape2D") as CollisionShape2D
-	if shape_node == null:
-		return
-	var circle: CircleShape2D = shape_node.shape as CircleShape2D
-	if circle == null:
-		circle = CircleShape2D.new()
-		shape_node.shape = circle
-	circle.radius = maxf(_get_effective_attack_range(), 32.0)
-
 func _get_effective_attack_range() -> float:
 	var level_range := float(get_weapon_level_data(level, weapon_data).get("range", base_range))
 	return maxf(level_range * maxf(branch_runtime.get_branch_attack_range_multiplier(), 0.1), 1.0)
 
-func _get_effective_cone_half_angle_deg() -> float:
-	var angle_multiplier: float = 1.0
+func _get_effective_trail_width() -> float:
+	var multiplier := 1.0
 	for behavior in branch_runtime.get_branch_behaviors():
-		angle_multiplier *= maxf(behavior.get_cone_half_angle_multiplier(), 0.1)
-	return get_effective_cone_half_angle(cone_half_angle_deg * maxf(angle_multiplier, 0.1))
+		if behavior != null and is_instance_valid(behavior) and behavior.has_method("get_glacier_trail_width_multiplier"):
+			multiplier *= maxf(float(behavior.call("get_glacier_trail_width_multiplier")), 0.1)
+	return get_effective_area_radius(trail_width * multiplier)
 
-func _physics_process(delta: float) -> void:
-	super._physics_process(delta)
-	_update_glacier_vfx_follow()
-	if debug_mode:
-		queue_redraw()
+func _prune_active_trails() -> void:
+	var retained: Array[Node] = []
+	for trail in _active_trails:
+		if trail != null and is_instance_valid(trail) and not trail.is_queued_for_deletion():
+			retained.append(trail)
+	_active_trails = retained
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
+	for trail in _active_trails:
+		if trail != null and is_instance_valid(trail):
+			trail.queue_free()
+	_active_trails.clear()
+	_target_next_damage_msec.clear()
 
-func _ensure_glacier_vfx() -> void:
-	if _glacier_vfx != null and is_instance_valid(_glacier_vfx):
-		return
-	if GLACIER_SPRAY_VFX_SCENE == null:
-		return
-	var instance: Node = GLACIER_SPRAY_VFX_SCENE.instantiate()
-	if instance == null:
-		return
-	_glacier_vfx = instance
-	_glacier_vfx.name = "GlacierSprayVfx"
-	add_child(_glacier_vfx)
-
-func _refresh_glacier_vfx(forward: Vector2) -> void:
-	_ensure_glacier_vfx()
-	if _glacier_vfx == null or not is_instance_valid(_glacier_vfx):
-		return
-	if _glacier_vfx.has_method("start_or_refresh"):
-		_glacier_vfx.call(
-			"start_or_refresh",
-			global_position,
-			forward,
-			_get_effective_attack_range(),
-			_get_effective_cone_half_angle_deg()
-		)
-
-func _refresh_held_glacier_vfx() -> void:
-	if not _primary_fire_held:
-		return
-	if not _can_maintain_held_glacier_vfx():
-		_stop_glacier_vfx()
-		return
-	if _glacier_vfx == null or not is_instance_valid(_glacier_vfx):
-		return
-	if not _glacier_vfx.has_method("is_visible_or_fading"):
-		return
-	if not bool(_glacier_vfx.call("is_visible_or_fading")):
-		return
-	var forward := get_aim_forward()
-	if forward == Vector2.ZERO:
-		return
-	_refresh_glacier_vfx(forward)
-
-func _update_glacier_vfx_follow() -> void:
-	if _glacier_vfx == null or not is_instance_valid(_glacier_vfx):
-		return
-	if not _glacier_vfx.has_method("is_visible_or_fading"):
-		return
-	if not bool(_glacier_vfx.call("is_visible_or_fading")):
-		return
-	var forward := get_aim_forward()
-	if forward == Vector2.ZERO:
-		return
-	if _glacier_vfx.has_method("update_aim"):
-		_glacier_vfx.call(
-			"update_aim",
-			global_position,
-			forward,
-			_get_effective_attack_range(),
-			_get_effective_cone_half_angle_deg()
-		)
-
-func _can_maintain_held_glacier_vfx() -> bool:
-	if not is_attack_phase_allowed():
-		return false
-	if not can_fire_with_heat():
-		return false
-	if not can_fire_with_ammo():
-		return false
-	return true
-
-func _stop_glacier_vfx() -> void:
-	if _glacier_vfx == null or not is_instance_valid(_glacier_vfx):
-		return
-	if _glacier_vfx.has_method("stop"):
-		_glacier_vfx.call("stop")
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	if debug_mode:
+		queue_redraw()
 
 func _draw() -> void:
 	if not debug_mode:
 		return
-	_draw_attack_range()
-
-func _draw_attack_range() -> void:
-	var effective_range := _get_effective_attack_range()
-	var half_angle_rad: float = deg_to_rad(_get_effective_cone_half_angle_deg())
-	var offset_angle: float = -PI / 2.0
-	var start_angle: float = offset_angle - half_angle_rad
-	var end_angle: float = offset_angle + half_angle_rad
-	var fill_color := Color(PALETTE.FREEZE, 0.14)
-	var outline_color := Color(PALETTE.PLAYER_PRIMARY, 0.58)
-	draw_arc(Vector2.ZERO, effective_range, start_angle, end_angle, 32, fill_color, -1.0)
-	draw_arc(Vector2.ZERO, effective_range, start_angle, end_angle, 32, outline_color, 2.0)
-	draw_line(Vector2.ZERO, Vector2.UP * effective_range, outline_color, 2.0)
-	draw_line(Vector2.ZERO, Vector2.UP.rotated(-half_angle_rad) * effective_range, outline_color, 1.0)
-	draw_line(Vector2.ZERO, Vector2.UP.rotated(half_angle_rad) * effective_range, outline_color, 1.0)
+	var width := _get_effective_trail_width()
+	var length := _get_effective_attack_range()
+	draw_rect(Rect2(Vector2(-width * 0.5, -length), Vector2(width, length)), Color(PALETTE.FREEZE, 0.14), true)
+	draw_rect(Rect2(Vector2(-width * 0.5, -length), Vector2(width, length)), Color(PALETTE.PLAYER_PRIMARY, 0.58), false, 2.0)

@@ -44,29 +44,42 @@ func apply_zero_release_impact(
 	source_projectile: Node,
 	final_damage: int
 ) -> int:
-	if weapon == null or not is_instance_valid(weapon):
-		return 0
 	var direct_node := direct_target as Node2D
 	if direct_node == null or not is_instance_valid(direct_node) or final_damage <= 0:
 		return 0
-	var ratio := maxf(zero_burst_damage_ratio, 0.0)
-	if direct_target.has_method("get_health_ratio") \
-			and float(direct_target.call("get_health_ratio")) <= clampf(zero_burst_execute_threshold, 0.0, 1.0):
-		ratio *= maxf(zero_burst_execute_multiplier, 1.0)
-	var pulse_damage := maxi(1, int(round(float(final_damage) * ratio)))
+	return apply_zero_release_ground_impact(direct_node.global_position, source_projectile, final_damage)
+
+func apply_zero_release_ground_impact(
+	impact_position: Vector2,
+	source_attack: Node,
+	direct_damage: int
+) -> int:
+	if weapon == null or not is_instance_valid(weapon):
+		return 0
+	if source_attack == null or not is_instance_valid(source_attack) or direct_damage <= 0:
+		return 0
 	var applied := 0
+	var strongest_pulse_damage := 0
 	for enemy in WeaponModuleRuntimeUtils.get_nearby_enemies(
 		weapon.get_tree(),
-		direct_node.global_position,
+		impact_position,
 		maxf(zero_burst_radius, 1.0)
 	):
 		if enemy == null or not is_instance_valid(enemy):
 			continue
+		if enemy.global_position.distance_to(impact_position) > maxf(zero_burst_radius, 1.0):
+			continue
+		var ratio := maxf(zero_burst_damage_ratio, 0.0)
+		if enemy.has_method("get_health_ratio") \
+				and float(enemy.call("get_health_ratio")) <= clampf(zero_burst_execute_threshold, 0.0, 1.0):
+			ratio *= maxf(zero_burst_execute_multiplier, 1.0)
+		var pulse_damage := maxi(1, int(round(float(direct_damage) * ratio)))
+		strongest_pulse_damage = maxi(strongest_pulse_damage, pulse_damage)
 		var data := DamageData.new().setup(
 			pulse_damage,
 			Attack.TYPE_ENERGY,
 			{"amount": 0, "angle": Vector2.ZERO},
-			source_projectile,
+			source_attack,
 			DamageManager.resolve_source_player(weapon),
 			DamageData.SOURCE_PLAYER_WEAPON,
 			DamageDeliveryType.AREA
@@ -74,14 +87,14 @@ func apply_zero_release_impact(
 		data.damage_kind = DamageData.KIND_DIRECT
 		data.suppress_reactive_effects = true
 		data.dedupe_token = StringName("zero_burst_%d_%d" % [
-			source_projectile.get_instance_id(),
+			source_attack.get_instance_id(),
 			enemy.get_instance_id(),
 		])
-		DamageManager.apply_to_target(enemy, data)
-		applied += 1
+		if DamageManager.apply_to_target(enemy, data):
+			applied += 1
 	weapon.emit_passive_trigger(&"cannon_zero_burst_impact", {
 		"release_mode": &"stored_burst",
-		"pulse_damage": pulse_damage,
+		"pulse_damage": strongest_pulse_damage,
 		"radius": maxf(zero_burst_radius, 1.0),
 		"targets": applied,
 	}, Weapon.PASSIVE_SCOPE_GLOBAL)
