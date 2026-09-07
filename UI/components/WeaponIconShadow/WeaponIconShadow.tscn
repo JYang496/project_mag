@@ -1,0 +1,17 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://UI/components/WeaponIconShadow/WeaponIconShadow.gd" id="1"]
+[node name="IconShadow" type="TextureRect"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+modulate = Color(0, 0.02, 0.03, 0.82)
+texture_filter = 4
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("1")

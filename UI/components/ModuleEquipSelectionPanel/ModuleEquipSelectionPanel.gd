@@ -131,15 +131,7 @@ func _build_weapon_row(parent: Container, weapon: Weapon) -> void:
 	var can_equip := bool(feedback.get("ok", false)) or replacement != null
 	var card := WEAPON_CARD_SCENE.instantiate() as Control
 	parent.add_child(card)
-	card.call("set_data", {"icon": _get_node_texture(weapon, "Sprite"), "name": _get_weapon_display_name(weapon), "fit": "✓ %s" % LocalizationManager.tr_key("ui.module.compatible", "Compatible") if can_equip else LocalizationManager.tr_key("ui.module.fit.incompatible_short", "Incompatible"), "fit_color": stat_up_color if can_equip else feedback_text_color, "reason": "" if can_equip else LocalizationManager.localize_module_reason(str(feedback.get("reason", ""))), "stats": _build_stat_preview_bbcode(weapon), "modules_label": LocalizationManager.tr_key("ui.module.equipped_modules_prefix", "Equipped modules:"), "action": LocalizationManager.tr_key("ui.module.action.equip", "Equip"), "available": can_equip, "panel_style": _make_card_style(not can_equip)})
-	(card.get_node("Margin/Root/Left/Identity/IconWell") as PanelContainer).add_theme_stylebox_override("panel", _make_icon_well_style())
-	(card.get_node("Margin/Root/Left/Status") as PanelContainer).add_theme_stylebox_override("panel", _make_status_style())
-	TOKENS.style_label(card.get_node("Margin/Root/Left/Identity/IdentityText/Name") as Label, 20)
-	TOKENS.style_label(card.get_node("Margin/Root/Left/Identity/IdentityText/Fit") as Label, TOKENS.FONT_LABEL, stat_up_color if can_equip else feedback_text_color)
-	TOKENS.style_label(card.get_node("Margin/Root/Left/Identity/IdentityText/Reason") as Label, TOKENS.FONT_CAPTION, feedback_text_color)
-	TOKENS.style_label(card.get_node("Margin/Root/Actions/ModulesLabel") as Label, TOKENS.FONT_CAPTION, TOKENS.COLOR_TEXT_SECONDARY)
-	var action_button := card.get_node("Margin/Root/Actions/EquipButton") as Button
-	_style_secondary_button(action_button)
+	card.call("set_data", {"icon": _get_node_texture(weapon, "Sprite"), "name": _get_weapon_display_name(weapon), "fit": "✓ %s" % LocalizationManager.tr_key("ui.module.compatible", "Compatible") if can_equip else LocalizationManager.tr_key("ui.module.fit.incompatible_short", "Incompatible"), "fit_color": stat_up_color if can_equip else feedback_text_color, "reason": "" if can_equip else LocalizationManager.localize_module_reason(str(feedback.get("reason", ""))), "stats": _build_stat_preview_bbcode(weapon), "modules_label": LocalizationManager.tr_key("ui.module.equipped_modules_prefix", "Equipped modules:"), "action": LocalizationManager.tr_key("ui.module.action.equip", "Equip"), "available": can_equip})
 	var equipped_modules := weapon.get_equipped_modules()
 	var socket_data: Array = []
 	for index in range(weapon.module_slot_capacity):
@@ -323,37 +315,6 @@ func _apply_visual_style() -> void:
 	TOKENS.style_label(section_hint, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_SECONDARY)
 	equipped_list.add_theme_constant_override("separation", 10)
 	_style_secondary_button(cancel_button)
-
-func _make_card_style(disabled: bool = false) -> StyleBoxFlat:
-	var style := TOKENS.make_panel_style(false, Color(0.28, 0.31, 0.33, 0.72) if disabled else TOKENS.COLOR_BORDER)
-	style.bg_color = Color(0.055, 0.060, 0.064, 0.94) if disabled else TOKENS.COLOR_SURFACE_ELEVATED
-	return style
-
-func _make_icon_well_style() -> StyleBoxFlat:
-	var style := TOKENS.make_panel_style(false, TOKENS.COLOR_BORDER)
-	style.bg_color = TOKENS.COLOR_CANVAS
-	return style
-
-func _make_socket_style(occupied: bool) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = TOKENS.COLOR_SURFACE_INTERACTIVE if occupied else TOKENS.COLOR_CANVAS
-	style.border_color = TOKENS.COLOR_ACCENT_SYSTEM if occupied else TOKENS.COLOR_BORDER
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(TOKENS.RADIUS_SMALL)
-	return style
-
-func _make_status_style() -> StyleBoxFlat:
-	var accent := TOKENS.COLOR_ACCENT_SYSTEM
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(accent.r, accent.g, accent.b, 0.07)
-	style.border_color = Color(accent.r, accent.g, accent.b, 0.34)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(TOKENS.RADIUS_SMALL)
-	style.content_margin_left = 8
-	style.content_margin_top = 5
-	style.content_margin_right = 8
-	style.content_margin_bottom = 5
-	return style
 
 func _style_secondary_button(button: Button) -> void:
 	var styles := TOKENS.make_button_style(TOKENS.COLOR_SURFACE_INTERACTIVE, TOKENS.COLOR_ACCENT_SYSTEM)

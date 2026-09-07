@@ -69,7 +69,7 @@ var upgrade_primary_panel: Panel
 var warehouse_primary_panel: Panel
 var board_edit_primary_panel: Panel
 var battle_start_primary_panel: Panel
-var item_message_timer: Timer
+@onready var item_message_timer: Timer = $ItemMessageTimer
 
 
 # Character
@@ -465,12 +465,6 @@ func _restore_pending_equipment_transactions() -> void:
 			InventoryData.finish_pending_transaction(str(transaction.get("id", "")))
 
 func _init_item_message_timer() -> void:
-	if item_message_timer and is_instance_valid(item_message_timer):
-		return
-	item_message_timer = Timer.new()
-	item_message_timer.one_shot = true
-	item_message_timer.wait_time = 1.8
-	add_child(item_message_timer)
 	if not item_message_timer.is_connected("timeout", Callable(self, "_on_item_message_timeout")):
 		item_message_timer.timeout.connect(Callable(self, "_on_item_message_timeout"))
 

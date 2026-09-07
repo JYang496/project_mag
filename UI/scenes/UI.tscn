@@ -8,6 +8,10 @@
 process_mode = 3
 script = ExtResource("1_l38d8")
 
+[node name="ItemMessageTimer" type="Timer" parent="."]
+wait_time = 1.8
+one_shot = true
+
 [node name="GUI" type="Control" parent="." unique_id=1914569511]
 process_mode = 1
 layout_mode = 3

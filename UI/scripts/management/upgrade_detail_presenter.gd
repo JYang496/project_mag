@@ -156,20 +156,6 @@ func _add_fact_card(parent: GridContainer, title: String, value: String) -> void
 	parent.add_child(card)
 	card.call("set_data", title, value)
 
-func _make_upgrade_summary_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.10, 0.045, 0.96)
-	style.border_width_left = 2
-	style.border_width_top = 1
-	style.border_width_right = 1
-	style.border_width_bottom = 1
-	style.border_color = Color(0.72, 0.48, 0.10, 0.92)
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_right = 4
-	style.corner_radius_bottom_left = 4
-	return style
-
 func _add_delta_text(delta_data: Dictionary, parent: Container = null) -> void:
 	var target := parent if parent != null else detail_body
 	if target == null:

@@ -1,7 +1,20 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://UI/scripts/components/controls_hint_view.gd" id="1_script"]
 [ext_resource type="Theme" path="res://UI/themes/battle_hud_theme.tres" id="2_hud_theme"]
+
+[sub_resource type="StyleBoxFlat" id="PanelStyle"]
+bg_color = Color(0.027, 0.063, 0.094, 0.88)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.28, 0.5, 0.58, 0.92)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+[sub_resource type="StyleBoxEmpty" id="BorderlessStyle"]
 
 [node name="ControlsHintPanel" type="PanelContainer"]
 custom_minimum_size = Vector2(252, 40)
@@ -9,6 +22,7 @@ mouse_filter = 2
 z_index = 35
 texture_filter = 1
 theme = ExtResource("2_hud_theme")
+theme_override_styles/panel = SubResource("PanelStyle")
 script = ExtResource("1_script")
 
 [node name="Margin" type="MarginContainer" parent="."]
@@ -31,6 +45,7 @@ theme_override_constants/separation = 8
 layout_mode = 2
 size_flags_horizontal = 3
 text = "操作"
+theme_override_colors/font_color = Color(0.94, 0.98, 1, 1)
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 12
 
@@ -39,6 +54,15 @@ custom_minimum_size = Vector2(76, 28)
 layout_mode = 2
 mouse_filter = 0
 text = "F1 Collapse"
+theme_override_colors/font_color = Color(0.82, 0.91, 0.94, 1)
+theme_override_colors/font_hover_color = Color(0.92, 0.98, 1, 1)
+theme_override_colors/font_pressed_color = Color(0.7, 0.88, 0.94, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("BorderlessStyle")
+theme_override_styles/hover = SubResource("BorderlessStyle")
+theme_override_styles/pressed = SubResource("BorderlessStyle")
+theme_override_styles/focus = SubResource("BorderlessStyle")
+theme_override_styles/disabled = SubResource("BorderlessStyle")
 
 [node name="HeaderDivider" type="ColorRect" parent="Margin/Content"]
 custom_minimum_size = Vector2(0, 1)
@@ -68,6 +92,15 @@ theme_override_font_sizes/font_size = 12
 layout_mode = 2
 mouse_filter = 0
 text = "F1 Expand"
+theme_override_colors/font_color = Color(0.82, 0.91, 0.94, 1)
+theme_override_colors/font_hover_color = Color(0.92, 0.98, 1, 1)
+theme_override_colors/font_pressed_color = Color(0.7, 0.88, 0.94, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("BorderlessStyle")
+theme_override_styles/hover = SubResource("BorderlessStyle")
+theme_override_styles/pressed = SubResource("BorderlessStyle")
+theme_override_styles/focus = SubResource("BorderlessStyle")
+theme_override_styles/disabled = SubResource("BorderlessStyle")
 
 [node name="ContextContent" type="HBoxContainer" parent="Margin/Content"]
 visible = false

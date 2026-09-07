@@ -1,0 +1,32 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://UI/components/DamageTypeIconSlot/DamageTypeIconSlot.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="SlotStyle"]
+bg_color = Color(0.018, 0.031, 0.043, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.7, 0.8, 0.9, 0.82)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+content_margin_left = 1.0
+content_margin_top = 1.0
+content_margin_right = 1.0
+content_margin_bottom = 1.0
+
+[node name="DamageTypeIconSlot" type="PanelContainer"]
+mouse_filter = 2
+theme_override_styles/panel = SubResource("SlotStyle")
+script = ExtResource("1_script")
+
+[node name="Icon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5

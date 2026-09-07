@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://UI/components/RewardComparisonBox/RewardComparisonBox.gd" id="1_script"]
+[node name="ComparisonBox" type="VBoxContainer"]
+custom_minimum_size = Vector2(0, 82)
+size_flags_vertical = 3
+theme_override_constants/separation = 3
+alignment = 1
+script = ExtResource("1_script")

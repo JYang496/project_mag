@@ -1,9 +1,21 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/components/ModuleSocket/ModuleSocket.gd" id="1_script"]
 
+[sub_resource type="StyleBoxFlat" id="SocketStyle"]
+bg_color = Color(0.025, 0.03, 0.035, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [node name="ModuleSocket" type="PanelContainer"]
 custom_minimum_size = Vector2(68, 72)
+theme_override_styles/panel = SubResource("SocketStyle")
 script = ExtResource("1_script")
 
 [node name="Content" type="VBoxContainer" parent="."]

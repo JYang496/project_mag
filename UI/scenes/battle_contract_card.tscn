@@ -150,6 +150,7 @@ vertical_alignment = 1
 visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.78, 0.26, 1)
 text = "RARE // 稀有"
 vertical_alignment = 1
 
@@ -175,6 +176,7 @@ vertical_alignment = 1
 
 [node name="Title" type="Label" parent="Margin/Content"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.95, 0.96, 1)
 theme_override_font_sizes/font_size = 25
 autowrap_mode = 2
 max_lines_visible = 2
@@ -192,6 +194,7 @@ theme_override_constants/separation = 18
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.82, 0.89, 0.91, 1)
 autowrap_mode = 2
 vertical_alignment = 0
 
@@ -205,6 +208,7 @@ alignment = 1
 [node name="Objective" type="Label" parent="Margin/Content/IntroContent"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.82, 0.89, 0.91, 1)
 text = "Complete the contract objective."
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -226,12 +230,14 @@ theme_override_constants/separation = 10
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.82, 0.89, 0.91, 1)
 autowrap_mode = 2
 
 [node name="Rule" type="Label" parent="Margin/Content/RewardDetails"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.92, 0.72, 0.25, 1)
 autowrap_mode = 2
 
 [node name="ContentSpacer" type="Control" parent="Margin/Content"]
@@ -251,9 +257,11 @@ theme_override_constants/separation = 7
 [node name="Risk" type="Label" parent="Margin/Content/ContentSpacer/EnhancedDetails"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(1, 0.53, 0.31, 1)
 autowrap_mode = 2
 
 [node name="Bonus" type="Label" parent="Margin/Content/ContentSpacer/EnhancedDetails"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.96, 0.78, 0.28, 1)
 autowrap_mode = 2

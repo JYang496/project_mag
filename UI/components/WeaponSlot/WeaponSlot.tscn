@@ -1,0 +1,145 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://UI/components/WeaponSlot/WeaponSlot.gd" id="1"]
+[ext_resource type="Texture2D" path="res://UI/themes/modern/weapon_slot_support.png" id="2"]
+
+[sub_resource type="StyleBoxFlat" id="heat_bg"]
+bg_color = Color(0.08, 0.13, 0.16, 0.92)
+
+[sub_resource type="StyleBoxFlat" id="heat_fill"]
+bg_color = Color(1, 0.34, 0.12, 0.95)
+
+[node name="WeaponSlot" type="Control"]
+custom_minimum_size = Vector2(92, 124)
+offset_right = 92.0
+offset_bottom = 124.0
+mouse_filter = 1
+script = ExtResource("1")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2")
+texture_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Icon" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -21.0
+offset_top = -21.0
+offset_right = 21.0
+offset_bottom = 21.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="WeaponName" type="Label" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 5.0
+offset_top = 6.0
+offset_right = 87.0
+offset_bottom = 22.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 10
+text_overrun_behavior = 3
+horizontal_alignment = 1
+
+[node name="Level" type="Label" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 52.0
+offset_top = 95.0
+offset_right = 88.0
+offset_bottom = 111.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 10
+horizontal_alignment = 2
+
+[node name="HeatBar" type="ProgressBar" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 8.0
+offset_top = 112.0
+offset_right = 84.0
+offset_bottom = 118.0
+mouse_filter = 2
+theme_override_styles/background = SubResource("heat_bg")
+theme_override_styles/fill = SubResource("heat_fill")
+show_percentage = false
+
+[node name="CooldownOverlay" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.02, 0.05, 0.08, 0.6)
+
+[node name="Selected" type="ReferenceRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+border_color = Color(0.45, 0.9, 1, 0.95)
+border_width = 2.0
+
+[node name="OverheatOverlay" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 0.12, 0.02, 0.2)
+
+[node name="Locked" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+text = "LOCKED"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DebugIndex" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -10.0
+offset_right = 20.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1

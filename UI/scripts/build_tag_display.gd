@@ -16,6 +16,8 @@ const CHIP_MIN_WIDTH: float = 42.0
 const CHIP_MAX_WIDTH: float = 118.0
 const CHIP_ASCII_CHAR_WIDTH: float = 6.5
 const CHIP_WIDE_CHAR_WIDTH: float = 12.0
+const CHIP_SCENE := preload("res://UI/components/BuildTagChip/BuildTagChip.tscn")
+const ROW_SCENE := preload("res://UI/components/BuildTagRow/BuildTagRow.tscn")
 
 static func build_tag_chip(source_value: Variant, label_override: String = "") -> Dictionary:
 	var normalized := BuildTag.normalize(source_value)
@@ -77,10 +79,7 @@ static func chip_labels(chips: Array, limit: int = 0) -> PackedStringArray:
 	return labels
 
 static func make_chip_row(chips: Array, limit: int = 0) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.name = "BuildChipRow"
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation", 5)
+	var row := ROW_SCENE.instantiate() as HBoxContainer
 	populate_chip_row(row, chips, limit)
 	return row
 
@@ -103,31 +102,8 @@ static func make_chip(chip_data: Dictionary) -> PanelContainer:
 	var text := str(chip_data.get("label", "Tag")).strip_edges()
 	if text == "":
 		text = "Tag"
-	var panel := PanelContainer.new()
-	panel.name = "BuildChip"
-	panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	panel.custom_minimum_size = Vector2(_estimate_chip_width(text), 22.0)
-	panel.tooltip_text = text
-	panel.add_theme_stylebox_override("panel", _make_chip_style(color))
-
-	var margin := MarginContainer.new()
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_theme_constant_override("margin_left", 7)
-	margin.add_theme_constant_override("margin_top", 2)
-	margin.add_theme_constant_override("margin_right", 7)
-	margin.add_theme_constant_override("margin_bottom", 2)
-	panel.add_child(margin)
-
-	var label := Label.new()
-	label.name = "Label"
-	label.text = text
-	label.custom_minimum_size = Vector2(maxf(0.0, panel.custom_minimum_size.x - CHIP_HORIZONTAL_PADDING), 0.0)
-	label.clip_text = true
-	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	label.add_theme_font_size_override("font_size", 11)
-	label.add_theme_color_override("font_color", Color(0.92, 0.97, 1.0, 1.0))
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_child(label)
+	var panel := CHIP_SCENE.instantiate() as PanelContainer
+	panel.call("set_data", text, color, _estimate_chip_width(text))
 	return panel
 
 static func _make_status_chip(label: String, icon_key: String, color: Color, sort_weight: int, status: StringName) -> Dictionary:
@@ -157,14 +133,6 @@ static func _comes_before(left: Dictionary, right: Dictionary) -> bool:
 	if left_weight != right_weight:
 		return left_weight < right_weight
 	return str(left.get("label", "")) < str(right.get("label", ""))
-
-static func _make_chip_style(color: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, 0.18)
-	style.border_color = Color(color.r, color.g, color.b, 0.72)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(5)
-	return style
 
 static func _estimate_chip_width(text: String) -> float:
 	var width := CHIP_HORIZONTAL_PADDING

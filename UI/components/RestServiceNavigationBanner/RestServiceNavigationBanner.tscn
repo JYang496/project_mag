@@ -1,0 +1,40 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://UI/components/RestServiceNavigationBanner/RestServiceNavigationBanner.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="NavigationPanelStyle"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+bg_color = Color(0.035, 0.065, 0.085, 0.92)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.62, 0.78, 0.74)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="RestServiceNavigationBanner" type="PanelContainer"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -370.0
+offset_top = 14.0
+offset_right = -18.0
+offset_bottom = 48.0
+grow_horizontal = 0
+mouse_filter = 2
+z_index = 20
+theme_override_styles/panel = SubResource("NavigationPanelStyle")
+script = ExtResource("1_script")
+
+[node name="Content" type="HBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 5
+alignment = 1

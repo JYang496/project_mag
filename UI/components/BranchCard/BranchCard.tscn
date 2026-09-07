@@ -1,12 +1,58 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://UI/components/BranchCard/BranchCard.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="CardNormal"]
+bg_color = Color(0.065, 0.085, 0.11, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+[sub_resource type="StyleBoxFlat" id="CardHover"]
+bg_color = Color(0.085, 0.11, 0.145, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+[sub_resource type="StyleBoxFlat" id="CardPressed"]
+bg_color = Color(0.11, 0.14, 0.17, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0.92)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+[sub_resource type="StyleBoxFlat" id="IconFrame"]
+bg_color = Color(0.025, 0.035, 0.048, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [node name="BranchCard" type="Button"]
 custom_minimum_size = Vector2(260, 300)
 size_flags_horizontal = 3
 size_flags_vertical = 3
 focus_mode = 2
+theme_override_styles/normal = SubResource("CardNormal")
+theme_override_styles/hover = SubResource("CardHover")
+theme_override_styles/pressed = SubResource("CardPressed")
+theme_override_styles/focus = SubResource("CardHover")
 script = ExtResource("1_script")
 
 [node name="Margin" type="MarginContainer" parent="."]
@@ -54,6 +100,7 @@ custom_minimum_size = Vector2(0, 116)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
+theme_override_styles/panel = SubResource("IconFrame")
 
 [node name="IconMargin" type="MarginContainer" parent="Margin/Content/IconFrame"]
 layout_mode = 2

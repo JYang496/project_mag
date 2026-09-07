@@ -8,6 +8,8 @@ const WEAPON_DISK_CENTER := Vector2(38.0, 111.0)
 const WEAPON_DISK_OFFSET := WEAPON_DISK_CENTER - Vector2(38.0, 36.0)
 const SUPPORT_FRAME_MODULATE := Color(0.66, 0.76, 0.80, 0.78)
 const SUPPORT_ICON_MODULATE := Color(0.80, 0.86, 0.88, 0.90)
+const WEAPON_ROLE_FRAME_SCENE := preload("res://UI/components/WeaponRoleFrame/WeaponRoleFrame.tscn")
+const WEAPON_ICON_SHADOW_SCENE := preload("res://UI/components/WeaponIconShadow/WeaponIconShadow.tscn")
 
 var root: Control
 var icon: TextureRect
@@ -27,11 +29,10 @@ func setup(slot_root: Control, missing_weapon_icon: Texture2D) -> void:
 	background = root.get_node_or_null("Background") as TextureRect
 	if background != null:
 		background.visible = false
-	frame = preload("res://UI/scripts/components/weapon_role_frame.gd").new()
+	frame = WEAPON_ROLE_FRAME_SCENE.instantiate() as Control
 	frame.name = "RoleFrame"
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(frame)
-	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	frame.position = WEAPON_DISK_OFFSET
 	root.move_child(frame, 0)
 	if icon != null:
@@ -101,14 +102,7 @@ func _ensure_icon_shadow() -> void:
 	icon_shadow = root.get_node_or_null("IconShadow") as TextureRect
 	if icon_shadow != null:
 		return
-	icon_shadow = TextureRect.new()
-	icon_shadow.name = "IconShadow"
-	icon_shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_shadow.set_anchors_preset(Control.PRESET_CENTER)
-	icon_shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon_shadow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon_shadow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	icon_shadow.modulate = Color(0.0, 0.02, 0.03, 0.82)
+	icon_shadow = WEAPON_ICON_SHADOW_SCENE.instantiate() as TextureRect
 	root.add_child(icon_shadow)
 	root.move_child(icon_shadow, icon.get_index())
 

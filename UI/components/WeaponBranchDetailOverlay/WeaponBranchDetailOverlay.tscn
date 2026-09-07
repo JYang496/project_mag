@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://UI/components/WeaponBranchDetailOverlay/WeaponBranchDetailOverlay.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="OverlayStyle"]
+bg_color = Color(0.025, 0.04, 0.052, 0.985)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.36, 0.82, 0.94, 0.86)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 10.0
+content_margin_top = 9.0
+content_margin_right = 10.0
+content_margin_bottom = 9.0
+
+[node name="WeaponBranchDetailOverlay" type="PanelContainer"]
+visible = false
+z_index = 20
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 8.0
+offset_top = 44.0
+offset_right = -8.0
+offset_bottom = 314.0
+grow_horizontal = 2
+mouse_filter = 0
+theme_override_styles/panel = SubResource("OverlayStyle")
+script = ExtResource("1_script")
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="Heading" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="BranchRow" type="HBoxContainer" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8

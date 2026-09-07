@@ -1,6 +1,29 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://UI/components/RewardSelectionPanel/RewardSelectionPanel.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="SecondaryButtonStyle"]
+bg_color = Color(0.34, 0.66, 0.76, 0.1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.34, 0.66, 0.76, 0.78)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+[sub_resource type="StyleBoxFlat" id="PrimaryButtonStyle"]
+bg_color = Color(0.34, 0.78, 0.88, 0.15)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.34, 0.78, 0.88, 0.78)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
 
 [node name="RewardSelectionPanel" type="Control"]
 visible = false
@@ -11,6 +34,12 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
 script = ExtResource("1_script")
+
+[node name="DetailOpenTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="DetailCloseTimer" type="Timer" parent="."]
+one_shot = true
 
 [node name="ModalScrim" type="ColorRect" parent="."]
 anchors_preset = 15
@@ -85,7 +114,19 @@ alignment = 1
 [node name="CancelButton" type="Button" parent="Panel/VBox/ActionPanel/Margin/Actions"]
 custom_minimum_size = Vector2(140, 44)
 text = "Cancel"
+theme_override_colors/font_color = Color(0.93, 0.97, 0.98, 1)
+theme_override_styles/normal = SubResource("SecondaryButtonStyle")
+theme_override_styles/hover = SubResource("SecondaryButtonStyle")
+theme_override_styles/pressed = SubResource("SecondaryButtonStyle")
+theme_override_styles/focus = SubResource("SecondaryButtonStyle")
+theme_override_styles/disabled = SubResource("SecondaryButtonStyle")
 
 [node name="ConfirmButton" type="Button" parent="Panel/VBox/ActionPanel/Margin/Actions"]
 custom_minimum_size = Vector2(240, 44)
 text = "Confirm Reward"
+theme_override_colors/font_color = Color(0.93, 0.97, 0.98, 1)
+theme_override_styles/normal = SubResource("PrimaryButtonStyle")
+theme_override_styles/hover = SubResource("PrimaryButtonStyle")
+theme_override_styles/pressed = SubResource("PrimaryButtonStyle")
+theme_override_styles/focus = SubResource("PrimaryButtonStyle")
+theme_override_styles/disabled = SubResource("PrimaryButtonStyle")

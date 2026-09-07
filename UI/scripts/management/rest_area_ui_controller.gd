@@ -5,8 +5,11 @@ const PRIMARY_MENU_ANIM_TIME := 0.2
 const SERVICE_MENU_IDS: Array[StringName] = [&"purchase", &"upgrade", &"warehouse", &"board_edit", &"battle_start"]
 const SECONDARY_SERVICE_MENU_IDS: Array[StringName] = [&"purchase", &"upgrade", &"warehouse"]
 const SECONDARY_MENU_DIM_OVERLAY_NAME := "SecondaryMenuDimOverlay"
-const SECONDARY_MENU_DIM_COLOR := Color(0.0, 0.0, 0.0, 0.42)
 const INPUT_PROMPT_ATLAS := preload("res://asset/images/ui/input_prompts/kenney_pixel/input_prompts_tilemap.png")
+const INPUT_PROMPT_ICON_SCENE := preload("res://UI/components/InputPromptIcon/InputPromptIcon.tscn")
+const REST_SERVICE_NAVIGATION_BANNER_SCENE := preload("res://UI/components/RestServiceNavigationBanner/RestServiceNavigationBanner.tscn")
+const REST_SERVICE_NAVIGATION_LABEL_SCENE := preload("res://UI/components/RestServiceNavigationLabel/RestServiceNavigationLabel.tscn")
+const SECONDARY_MENU_DIM_OVERLAY_SCENE := preload("res://UI/components/SecondaryMenuDimOverlay/SecondaryMenuDimOverlay.tscn")
 const INPUT_PROMPT_TILE_SIZE := 16
 const INPUT_PROMPT_TILE_STRIDE := 17
 const SERVICE_NAV_ICON_SIZE := 24.0
@@ -165,31 +168,8 @@ func _sync_world_service_selection(menu_id: StringName) -> void:
 
 func _ensure_service_navigation_headers() -> void:
 	if _service_navigation_banner == null and owner_ui != null and owner_ui.gui_root != null:
-		_service_navigation_banner = PanelContainer.new()
-		_service_navigation_banner.name = "RestServiceNavigationBanner"
-		_service_navigation_banner.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-		_service_navigation_banner.offset_left = -370.0
-		_service_navigation_banner.offset_top = 14.0
-		_service_navigation_banner.offset_right = -18.0
-		_service_navigation_banner.offset_bottom = 48.0
-		_service_navigation_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_service_navigation_banner.z_index = 20
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.035, 0.065, 0.085, 0.92)
-		style.border_color = Color(0.20, 0.62, 0.78, 0.74)
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(4)
-		style.content_margin_left = 8.0
-		style.content_margin_right = 8.0
-		style.content_margin_top = 4.0
-		style.content_margin_bottom = 4.0
-		_service_navigation_banner.add_theme_stylebox_override("panel", style)
-		_service_navigation_content = HBoxContainer.new()
-		_service_navigation_content.name = "Content"
-		_service_navigation_content.alignment = BoxContainer.ALIGNMENT_CENTER
-		_service_navigation_content.add_theme_constant_override("separation", 5)
-		_service_navigation_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_service_navigation_banner.add_child(_service_navigation_content)
+		_service_navigation_banner = REST_SERVICE_NAVIGATION_BANNER_SCENE.instantiate() as PanelContainer
+		_service_navigation_content = _service_navigation_banner.call("get_content_root") as HBoxContainer
 		owner_ui.gui_root.add_child(_service_navigation_banner)
 	_refresh_service_navigation_headers()
 
@@ -203,11 +183,6 @@ func _refresh_service_navigation_headers() -> void:
 		return
 	if _service_navigation_banner.get_parent() != host:
 		_service_navigation_banner.reparent(host)
-	_service_navigation_banner.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_service_navigation_banner.offset_left = -370.0
-	_service_navigation_banner.offset_top = 14.0
-	_service_navigation_banner.offset_right = -18.0
-	_service_navigation_banner.offset_bottom = 48.0
 	for child in _service_navigation_content.get_children():
 		child.queue_free()
 	_service_navigation_content.add_child(_make_navigation_key_icon(KEY_Q_PROMPT_COORD, "Q"))
@@ -243,23 +218,13 @@ func _make_navigation_key_icon(coord: Vector2i, accessible_name: String) -> Text
 		INPUT_PROMPT_TILE_SIZE,
 		INPUT_PROMPT_TILE_SIZE
 	)
-	var icon := TextureRect.new()
-	icon.texture = texture
-	icon.custom_minimum_size = Vector2(SERVICE_NAV_ICON_SIZE, SERVICE_NAV_ICON_SIZE)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon.tooltip_text = accessible_name
+	var icon := INPUT_PROMPT_ICON_SCENE.instantiate() as TextureRect
+	icon.call("set_data", texture, Vector2(SERVICE_NAV_ICON_SIZE, SERVICE_NAV_ICON_SIZE), accessible_name)
 	return icon
 
 func _make_navigation_label(value: String, current: bool) -> Label:
-	var label := Label.new()
-	label.text = value
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override("font_color", Color(0.95, 0.78, 0.30, 1.0) if current else Color(0.68, 0.88, 1.0, 1.0))
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var label := REST_SERVICE_NAVIGATION_LABEL_SCENE.instantiate() as Label
+	label.call("set_data", value, current)
 	return label
 
 func _get_management_item_mode() -> StringName:
@@ -908,13 +873,8 @@ func _ensure_secondary_menu_dim_overlay() -> ColorRect:
 	if existing != null:
 		_secondary_menu_dim_overlay = existing
 	else:
-		_secondary_menu_dim_overlay = ColorRect.new()
-		_secondary_menu_dim_overlay.name = SECONDARY_MENU_DIM_OVERLAY_NAME
-		_secondary_menu_dim_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_secondary_menu_dim_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_secondary_menu_dim_overlay.z_index = -50
+		_secondary_menu_dim_overlay = SECONDARY_MENU_DIM_OVERLAY_SCENE.instantiate() as ColorRect
 		owner_ui.gui_root.add_child(_secondary_menu_dim_overlay)
-	_secondary_menu_dim_overlay.color = SECONDARY_MENU_DIM_COLOR
 	_secondary_menu_dim_overlay.visible = false
 	_send_secondary_menu_dim_overlay_to_back()
 	return _secondary_menu_dim_overlay

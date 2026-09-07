@@ -1,6 +1,9 @@
 extends Control
 class_name ModuleUpgradeView
 
+const MODULE_UPGRADE_ROW_SCENE := preload("res://UI/components/ModuleUpgradeRow/ModuleUpgradeRow.tscn")
+const MANAGEMENT_EMPTY_STATE_SCENE := preload("res://UI/components/ManagementEmptyState/ManagementEmptyState.tscn")
+
 @onready var module_upgrade_scroll: ScrollContainer = $ModuleUpgradeScroll
 @onready var module_upgrade_list: VBoxContainer = $ModuleUpgradeScroll/ModuleUpgradeList
 @onready var module_upgrade_selection_label: Label = $ModuleUpgradeSelectionLabel
@@ -36,17 +39,16 @@ func refresh_list() -> void:
 		if int(module_instance.module_level) >= Module.MAX_LEVEL:
 			continue
 		has_rows = true
-		var button := Button.new()
-		button.text = build_row_text(module_instance)
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var button := MODULE_UPGRADE_ROW_SCENE.instantiate() as Button
+		button.call("set_data", build_row_text(module_instance), module_instance == selected_module)
 		button.pressed.connect(select_module.bind(module_instance))
 		module_upgrade_list.add_child(button)
 		if owner_ui:
 			owner_ui.call("_style_management_button", button, module_instance == selected_module)
 	if not has_rows:
-		var empty := Label.new()
-		empty.text = LocalizationManager.tr_key("ui.upgrade.module.empty", "No modules can be upgraded.")
+		var empty := MANAGEMENT_EMPTY_STATE_SCENE.instantiate() as Label
 		module_upgrade_list.add_child(empty)
+		empty.call("set_data", LocalizationManager.tr_key("ui.upgrade.module.empty", "No modules can be upgraded."))
 	if selected_module != null and (not is_instance_valid(selected_module) or int(selected_module.module_level) >= Module.MAX_LEVEL):
 		selected_module = null
 	refresh_action()

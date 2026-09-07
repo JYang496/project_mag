@@ -1,9 +1,23 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/components/ModalDetailRow/ModalDetailRow.gd" id="1_script"]
 
+[sub_resource type="StyleBoxFlat" id="DetailRowStyle"]
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 8
+shadow_offset = Vector2(0, 3)
+
 [node name="ModalDetailRow" type="PanelContainer"]
 size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("DetailRowStyle")
 script = ExtResource("1_script")
 
 [node name="Margin" type="MarginContainer" parent="."]

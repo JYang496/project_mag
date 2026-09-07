@@ -1,0 +1,54 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://UI/components/ModuleFitWeaponTile/ModuleFitWeaponTile.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="TileStyle"]
+bg_color = Color(0.4, 0.86, 0.57, 0.08)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.4, 0.86, 0.57, 0.58)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+content_margin_left = 5.0
+content_margin_top = 4.0
+content_margin_right = 5.0
+content_margin_bottom = 4.0
+
+[node name="CompatibleWeaponTile" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 50)
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("TileStyle")
+script = ExtResource("1_script")
+
+[node name="Row" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="WeaponIcon" type="TextureRect" parent="Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(38, 38)
+layout_mode = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="WeaponName" type="Label" parent="Row/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.95, 0.97, 1)
+theme_override_font_sizes/font_size = 13
+clip_text = true
+
+[node name="WeaponFitStatus" type="Label" parent="Row/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 2

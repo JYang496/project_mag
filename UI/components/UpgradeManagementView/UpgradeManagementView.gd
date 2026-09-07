@@ -582,9 +582,7 @@ func _fill_fusion_detail(item_data: Dictionary) -> void:
 	var options := _get_fusion_branch_options(weapon)
 	if selected_fusion_branch_id == "" and options.size() == 1 and target_fuse == 3:
 		selected_fusion_branch_id = str(options[0].branch_id)
-	var branch_row := HBoxContainer.new()
-	branch_row.name = "FusionBranchOptions"
-	branch_row.add_theme_constant_override("separation", 8)
+	var branch_row := FUSION_BRANCH_OPTIONS_SCENE.instantiate() as HBoxContainer
 	upgrade_detail_body.add_child(branch_row)
 	for branch in options:
 		_add_fusion_branch_button(branch, target_fuse == 3, branch_row)
@@ -625,7 +623,7 @@ func _add_fusion_status_row(level: int, required_level: int) -> void:
 	row.name = "FusionLevelStatus"
 	upgrade_detail_body.add_child(row)
 	var level_ok := level >= required_level
-	row.call("set_data", LocalizationManager.tr_format("ui.fusion.level", {"level": level, "required": required_level}, "Level %d / %d" % [level, required_level]), ("✓ %s" % LocalizationManager.tr_key("ui.fusion.level_ready", "Level Ready")) if level_ok else ("× %s" % LocalizationManager.tr_key("ui.fusion.reason.level_too_low", "Weapon level is too low.")), level_ok, _fusion_state_style(level_ok))
+	row.call("set_data", LocalizationManager.tr_format("ui.fusion.level", {"level": level, "required": required_level}, "Level %d / %d" % [level, required_level]), ("✓ %s" % LocalizationManager.tr_key("ui.fusion.level_ready", "Level Ready")) if level_ok else ("× %s" % LocalizationManager.tr_key("ui.fusion.reason.level_too_low", "Weapon level is too low.")), level_ok)
 
 func _add_fusion_stage_indicator(current_fuse: int, target_fuse: int) -> void:
 	var root := FUSION_STAGE_SCENE.instantiate() as Control
@@ -638,7 +636,7 @@ func _add_fusion_stage_indicator(current_fuse: int, target_fuse: int) -> void:
 			color = Color(1.0, 0.72, 0.16)
 		elif stage == target_fuse:
 			color = Color(0.34, 0.84, 1.0)
-		stage_data.append({"text": str(stage), "color": color, "style": _fusion_stage_style(color, stage == current_fuse)})
+		stage_data.append({"text": str(stage), "color": color, "filled": stage == current_fuse})
 	root.call("set_data", LocalizationManager.tr_key("ui.fusion.stage", "Fusion Stage"), LocalizationManager.tr_format("ui.fusion.stage_progress", {"current": current_fuse, "target": target_fuse}, "Current %d · Target %d" % [current_fuse, target_fuse]), stage_data)
 
 func _add_fusion_step_header(step: int, text: String) -> void:
@@ -650,26 +648,7 @@ func _add_fusion_step_header(step: int, text: String) -> void:
 func _add_fusion_condition_tile(text: String, satisfied: bool) -> void:
 	var label := FUSION_CONDITION_SCENE.instantiate() as Label
 	upgrade_detail_body.add_child(label)
-	label.call("set_data", "  %s   %s %s" % [text, "✓" if satisfied else "×", LocalizationManager.tr_key("ui.fusion.satisfied", "Satisfied") if satisfied else LocalizationManager.tr_key("ui.fusion.unmet", "Unmet")], satisfied, _fusion_state_style(satisfied))
-
-func _fusion_state_style(satisfied: bool) -> StyleBoxFlat:
-	var color := Color(0.16, 0.72, 0.28) if satisfied else Color(0.9, 0.18, 0.14)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, 0.1)
-	style.border_color = Color(color.r, color.g, color.b, 0.9)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(3)
-	style.content_margin_left = 8.0
-	style.content_margin_right = 8.0
-	return style
-
-func _fusion_stage_style(color: Color, filled: bool) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, 0.22 if filled else 0.07)
-	style.border_color = color
-	style.set_border_width_all(2 if filled else 1)
-	style.set_corner_radius_all(3)
-	return style
+	label.call("set_data", "  %s   %s %s" % [text, "✓" if satisfied else "×", LocalizationManager.tr_key("ui.fusion.satisfied", "Satisfied") if satisfied else LocalizationManager.tr_key("ui.fusion.unmet", "Unmet")], satisfied)
 
 func _add_fusion_branch_button(branch: WeaponBranchDefinition, enhanced: bool, parent: Container) -> void:
 	var button := FUSION_BRANCH_SCENE.instantiate() as Button
@@ -790,3 +769,4 @@ func _clear_container(container: Node) -> void:
 	for child in container.get_children():
 		container.remove_child(child)
 		child.queue_free()
+const FUSION_BRANCH_OPTIONS_SCENE := preload("res://UI/components/FusionBranchOptions/FusionBranchOptions.tscn")

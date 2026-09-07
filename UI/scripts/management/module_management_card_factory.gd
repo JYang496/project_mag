@@ -4,7 +4,7 @@ class_name ModuleManagementCardFactory
 const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
 
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
-const WAREHOUSE_DRAG_CONTROLS := preload("res://UI/scripts/management/warehouse_drag_controls.gd")
+const WAREHOUSE_DRAG_DROP_BUTTON_SCENE := preload("res://UI/components/WarehouseDragDropButton/WarehouseDragDropButton.tscn")
 const MODULE_FIT_FORMATTER := preload("res://UI/scripts/module_fit_formatter.gd")
 const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 const INVENTORY_CARD_SCENE := preload("res://UI/components/ManagementInventoryCard/ManagementInventoryCard.tscn")
@@ -35,13 +35,9 @@ func make_weapon_button(weapon: Weapon, location: String, selected: bool, presse
 	return button
 
 func make_empty_weapon_slot_button(slot_index: int) -> Button:
-	var button := WAREHOUSE_DRAG_CONTROLS.WarehouseDragDropButton.new()
-	button.view = view
-	button.drop_payload = {"kind": "held_empty_slot", "slot_index": slot_index}
-	button.custom_minimum_size = Vector2(0, 70)
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.text = LocalizationManager.tr_format("ui.weapon.warehouse.empty_slot", {"index": slot_index + 1}, "Empty weapon slot %d" % (slot_index + 1))
-	button.tooltip_text = LocalizationManager.tr_key("ui.weapon.warehouse.drop_to_equip", "Drop a stored weapon here to equip it.")
+	var button := WAREHOUSE_DRAG_DROP_BUTTON_SCENE.instantiate() as Button
+	button.call("set_drag_context", view, {}, {"kind": "held_empty_slot", "slot_index": slot_index})
+	button.call("set_data", LocalizationManager.tr_format("ui.weapon.warehouse.empty_slot", {"index": slot_index + 1}, "Empty weapon slot %d" % (slot_index + 1)), LocalizationManager.tr_key("ui.weapon.warehouse.drop_to_equip", "Drop a stored weapon here to equip it."), Vector2(0, 70))
 	_style_button(button, false)
 	return button
 

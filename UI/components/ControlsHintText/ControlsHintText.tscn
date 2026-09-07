@@ -1,12 +1,27 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/components/ControlsHintText/ControlsHintText.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="KeycapStyle"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+bg_color = Color(0.15, 0.2, 0.23, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.33, 0.4, 0.44, 0.96)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
 [node name="ControlsHintText" type="Label"]
 mouse_filter = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.94, 0.97, 0.98, 1)
 theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("KeycapStyle")
 autowrap_mode = 2
 vertical_alignment = 1
 max_lines_visible = 2

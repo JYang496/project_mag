@@ -36,7 +36,6 @@ var _slot_buttons: Array[Button] = []
 
 func _ready() -> void:
 	visible = false
-	add_theme_stylebox_override("panel", _make_panel_style(PANEL_BG, PANEL_LINE, 2))
 	slots.add_theme_constant_override("separation", 8)
 	var scroll_bar := slots_scroll.get_v_scroll_bar()
 	scroll_bar.custom_minimum_size.x = 14
@@ -216,15 +215,10 @@ func _apply_button_style(button: Button, accent: Color) -> void:
 			bg = Color(0.045, 0.05, 0.055, 0.75)
 		var border := accent
 		border.a = 0.5 if state != "focus" else 0.9
-		button.add_theme_stylebox_override(state, _make_panel_style(bg, border, 1))
-
-func _make_panel_style(bg_color: Color, border_color: Color, border_width: int) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = bg_color
-	style.border_color = border_color
-	style.set_border_width_all(border_width)
-	style.set_corner_radius_all(6)
-	return style
+		var style := (button.get_theme_stylebox(state) as StyleBoxFlat).duplicate() as StyleBoxFlat
+		style.bg_color = bg
+		style.border_color = border
+		button.add_theme_stylebox_override(state, style)
 
 func _get_weapon_definition(weapon: Weapon) -> WeaponDefinition:
 	if weapon == null or not is_instance_valid(weapon):

@@ -1,10 +1,20 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/components/FusionStagePip/FusionStagePip.gd" id="1_script"]
+[sub_resource type="StyleBoxFlat" id="PipStyle"]
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 
 [node name="FusionStagePip" type="Label"]
 custom_minimum_size = Vector2(64, 34)
 theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("PipStyle")
 horizontal_alignment = 1
 vertical_alignment = 1
 script = ExtResource("1_script")

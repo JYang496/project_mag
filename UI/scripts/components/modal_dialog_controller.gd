@@ -227,35 +227,16 @@ func _apply_dialog_visuals(destructive: bool) -> void:
 	if accent_bar != null:
 		accent_bar.color = accent
 	if dialog != null:
-		var panel_style := _make_style(PANEL_BG, Color(accent.r, accent.g, accent.b, 0.58), 8, 1)
+		var panel_style := (dialog.get_theme_stylebox("embedded_border") as StyleBoxFlat).duplicate() as StyleBoxFlat
+		panel_style.border_color = Color(accent.r, accent.g, accent.b, 0.58)
 		dialog.add_theme_stylebox_override("embedded_border", panel_style)
 		dialog.add_theme_stylebox_override("embedded_unfocused_border", panel_style)
 	if message_panel != null:
-		message_panel.add_theme_stylebox_override("panel", _make_style(
-			MESSAGE_BG,
-			Color(accent.r, accent.g, accent.b, 0.36),
-			6,
-			1
-		))
+		var message_style := (message_panel.get_theme_stylebox("panel") as StyleBoxFlat).duplicate() as StyleBoxFlat
+		message_style.border_color = Color(accent.r, accent.g, accent.b, 0.36)
+		message_panel.add_theme_stylebox_override("panel", message_style)
 	if checkbox_panel != null:
 		checkbox_panel.visible = checkbox != null and checkbox.visible
-		checkbox_panel.add_theme_stylebox_override("panel", _make_style(
-			Color(0.08, 0.09, 0.10, 0.70),
-			MESSAGE_BORDER,
-			5,
-			1
-		))
-
-func _make_style(bg_color: Color, border_color: Color, radius: int, border_width: int) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = bg_color
-	style.border_color = border_color
-	style.set_border_width_all(border_width)
-	style.set_corner_radius_all(radius)
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.35)
-	style.shadow_size = 8
-	style.shadow_offset = Vector2(0.0, 3.0)
-	return style
 
 func _apply_destructive_state(destructive: bool) -> void:
 	if dialog == null:
@@ -276,7 +257,7 @@ func _apply_destructive_state(destructive: bool) -> void:
 func _apply_dialog_button_style(button: Button, primary: bool, destructive: bool) -> void:
 	var color := DESTRUCTIVE_ACCENT if destructive else (PRIMARY_ACCENT if primary else SECONDARY_ACCENT)
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
-		var style := StyleBoxFlat.new()
+		var style := (button.get_theme_stylebox(state) as StyleBoxFlat).duplicate() as StyleBoxFlat
 		var state_color := color
 		style.bg_color = Color(state_color.r, state_color.g, state_color.b, 0.28 if primary else 0.08)
 		if state == "hover" or state == "focus":
@@ -287,12 +268,6 @@ func _apply_dialog_button_style(button: Button, primary: bool, destructive: bool
 			state_color = Color(0.40, 0.46, 0.50, 1.0)
 			style.bg_color = Color(0.10, 0.12, 0.14, 0.64)
 		style.border_color = Color(state_color.r, state_color.g, state_color.b, 0.78)
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(5)
-		style.content_margin_left = 12
-		style.content_margin_right = 12
-		style.content_margin_top = 7
-		style.content_margin_bottom = 7
 		button.add_theme_stylebox_override(state, style)
 	button.custom_minimum_size.y = 40.0
 	if destructive:
@@ -306,13 +281,12 @@ func _apply_dialog_button_style(button: Button, primary: bool, destructive: bool
 
 func _apply_close_button_style(button: Button) -> void:
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
-		var style := StyleBoxFlat.new()
+		var style := (button.get_theme_stylebox(state) as StyleBoxFlat).duplicate() as StyleBoxFlat
 		style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
 		if state == "hover" or state == "focus":
 			style.bg_color = Color(0.92, 0.34, 0.30, 0.22)
 		elif state == "pressed":
 			style.bg_color = Color(0.92, 0.34, 0.30, 0.34)
-		style.set_corner_radius_all(5)
 		button.add_theme_stylebox_override(state, style)
 	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		button.add_theme_color_override(color_name, Color(0.94, 0.98, 1.0, 1.0))

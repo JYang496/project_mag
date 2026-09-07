@@ -1,6 +1,26 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://UI/components/WeaponReplacementPanel/WeaponReplacementPanel.gd" id="1_script"]
+[sub_resource type="StyleBoxFlat" id="PanelStyle"]
+bg_color = Color(0.055, 0.065, 0.072, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.42, 0.5, 0.54, 0.55)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+[sub_resource type="StyleBoxFlat" id="ButtonStyle"]
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [node name="WeaponReplacementPanel" type="PanelContainer"]
 visible = false
@@ -14,6 +34,7 @@ offset_bottom = -70.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
+theme_override_styles/panel = SubResource("PanelStyle")
 script = ExtResource("1_script")
 
 [node name="Margin" type="MarginContainer" parent="."]
@@ -63,14 +84,29 @@ alignment = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 44)
 layout_mode = 2
+theme_override_styles/normal = SubResource("ButtonStyle")
+theme_override_styles/hover = SubResource("ButtonStyle")
+theme_override_styles/pressed = SubResource("ButtonStyle")
+theme_override_styles/focus = SubResource("ButtonStyle")
+theme_override_styles/disabled = SubResource("ButtonStyle")
 
 [node name="Cancel" type="Button" parent="Margin/Root/Footer"]
 custom_minimum_size = Vector2(160, 44)
 layout_mode = 2
 text = "Cancel"
+theme_override_styles/normal = SubResource("ButtonStyle")
+theme_override_styles/hover = SubResource("ButtonStyle")
+theme_override_styles/pressed = SubResource("ButtonStyle")
+theme_override_styles/focus = SubResource("ButtonStyle")
+theme_override_styles/disabled = SubResource("ButtonStyle")
 
 [node name="ConfirmReplacement" type="Button" parent="Margin/Root/Footer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(240, 44)
 layout_mode = 2
 disabled = true
+theme_override_styles/normal = SubResource("ButtonStyle")
+theme_override_styles/hover = SubResource("ButtonStyle")
+theme_override_styles/pressed = SubResource("ButtonStyle")
+theme_override_styles/focus = SubResource("ButtonStyle")
+theme_override_styles/disabled = SubResource("ButtonStyle")

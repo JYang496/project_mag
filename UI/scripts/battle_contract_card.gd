@@ -1,5 +1,11 @@
 extends Button
 
+const CARD_BASE_STYLE := preload("res://UI/themes/battle_contract_card_base_style.tres")
+const DETAIL_BASE_STYLE := preload("res://UI/themes/battle_contract_detail_base_style.tres")
+const KEY_BADGE_BASE_STYLE := preload("res://UI/themes/battle_contract_key_badge_style.tres")
+const PROGRESS_TRACK_STYLE := preload("res://UI/themes/battle_contract_progress_track_style.tres")
+const PROGRESS_FILL_STYLE := preload("res://UI/themes/battle_contract_progress_fill_style.tres")
+
 signal enhanced_mode_changed(enabled: bool)
 
 const BattleContractDefinition = preload("res://Combat/battle_contract/BattleContractDefinition.gd")
@@ -210,31 +216,17 @@ func begin_intro_collapse(duration_sec: float) -> void:
 
 func _apply_card_styles() -> void:
 	var card_dark := Color(0.045, 0.07, 0.083, 0.985)
-	var key_badge_style := StyleBoxFlat.new()
-	key_badge_style.bg_color = Color(0.025, 0.055, 0.065, 0.96)
+	var key_badge_style := KEY_BADGE_BASE_STYLE.duplicate() as StyleBoxFlat
 	key_badge_style.border_color = _accent_color.darkened(0.12)
-	key_badge_style.set_border_width_all(1)
-	key_badge_style.set_corner_radius_all(3)
 	$Margin/Content/Header/KeyBadge.add_theme_stylebox_override("normal", key_badge_style)
-	var hold_track := StyleBoxFlat.new()
-	hold_track.bg_color = Color(0.015, 0.03, 0.035, 0.95)
-	hold_track.set_corner_radius_all(2)
-	var hold_fill := StyleBoxFlat.new()
+	var hold_track := PROGRESS_TRACK_STYLE
+	var hold_fill := PROGRESS_FILL_STYLE.duplicate() as StyleBoxFlat
 	hold_fill.bg_color = _accent_color
-	hold_fill.set_corner_radius_all(2)
 	$HoldProgress.add_theme_stylebox_override("background", hold_track)
 	$HoldProgress.add_theme_stylebox_override("fill", hold_fill)
 	$AccentLine.color = _accent_color
 	$EnhancedFrame.set("frame_color", _accent_color)
 	$Margin/Content/Header/TypeLabel.add_theme_color_override("font_color", _accent_color)
-	$Margin/Content/Header/RareBadge.add_theme_color_override("font_color", Color(1.0, 0.78, 0.26))
-	$Margin/Content/Title.add_theme_color_override("font_color", Color(0.91, 0.95, 0.96))
-	$Margin/Content/InfoGrid/Description.add_theme_color_override("font_color", Color(0.82, 0.89, 0.91))
-	$Margin/Content/IntroContent/Objective.add_theme_color_override("font_color", Color(0.82, 0.89, 0.91))
-	$Margin/Content/RewardDetails/Objective.add_theme_color_override("font_color", Color(0.82, 0.89, 0.91))
-	$Margin/Content/RewardDetails/Rule.add_theme_color_override("font_color", Color(0.92, 0.72, 0.25))
-	$Margin/Content/ContentSpacer/EnhancedDetails/Risk.add_theme_color_override("font_color", Color(1.0, 0.53, 0.31))
-	$Margin/Content/ContentSpacer/EnhancedDetails/Bonus.add_theme_color_override("font_color", Color(0.96, 0.78, 0.28))
 	$Margin/Content/ContentSpacer/EnhancedDetails/Risk.add_theme_stylebox_override(
 		"normal", _make_detail_style(Color(0.24, 0.075, 0.035, 0.72), Color(0.9, 0.29, 0.16, 0.78))
 	)
@@ -266,26 +258,16 @@ func _type_label(id: String) -> String:
 		_: return "CONTRACT // 协议"
 
 func _make_style(background: Color, border: Color, width: int) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
+	var style := CARD_BASE_STYLE.duplicate() as StyleBoxFlat
 	style.bg_color = background
 	style.border_color = border
 	style.set_border_width_all(width)
-	style.set_corner_radius_all(4)
-	style.shadow_color = Color(0, 0, 0, 0.42)
-	style.shadow_size = 4
-	style.shadow_offset = Vector2(3, 3)
 	return style
 
 func _make_detail_style(background: Color, border: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
+	var style := DETAIL_BASE_STYLE.duplicate() as StyleBoxFlat
 	style.bg_color = background
 	style.border_color = border
-	style.border_width_left = 3
-	style.content_margin_left = 9.0
-	style.content_margin_top = 3.0
-	style.content_margin_right = 7.0
-	style.content_margin_bottom = 3.0
-	style.set_corner_radius_all(2)
 	return style
 
 func _apply_enhancement_toggle_styles() -> void:

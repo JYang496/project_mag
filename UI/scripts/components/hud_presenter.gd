@@ -567,19 +567,10 @@ func _hide_legacy_ammo_slot() -> void:
 func _style_status_label(label: Label, color: Color, urgent: bool) -> void:
 	if label == null or not is_instance_valid(label):
 		return
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_color", Color(0.93, 0.97, 1.0, 1.0))
-	var style := StyleBoxFlat.new()
+	var style := (label.get_theme_stylebox("normal") as StyleBoxFlat).duplicate() as StyleBoxFlat
 	style.bg_color = Color(color.r, color.g, color.b, 0.18 if not urgent else 0.28)
 	style.border_color = Color(color.r, color.g, color.b, 0.74 if not urgent else 0.95)
 	style.set_border_width_all(1 if not urgent else 2)
-	style.set_corner_radius_all(5)
-	style.content_margin_left = 8.0
-	style.content_margin_right = 8.0
-	style.content_margin_top = 3.0
-	style.content_margin_bottom = 3.0
 	label.add_theme_stylebox_override("normal", style)
 
 func _update_weapon_state_label_text() -> void:

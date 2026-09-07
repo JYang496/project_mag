@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://UI/components/RewardHeader/RewardHeader.gd" id="1_script"]
+[node name="RewardHeader" type="HBoxContainer"]
+mouse_filter = 2
+theme_override_constants/separation = 10
+script = ExtResource("1_script")
+[node name="IconHost" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+mouse_filter = 2
+[node name="TextHost" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2

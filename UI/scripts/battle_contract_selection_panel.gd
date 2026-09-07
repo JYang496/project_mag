@@ -13,6 +13,8 @@ const INPUT_PROMPT_TEXTURE_FACTORY := preload("res://UI/scripts/components/input
 const REWARD_ENEMY_SCENE_PATH := "res://Npc/enemy/scenes/reward_enemy.tscn"
 const MAX_ENEMY_PREVIEW_ENTRIES := 5
 const ENEMY_PREVIEW_ICON_SIZE := Vector2(38, 38)
+const ENEMY_PREVIEW_ENTRY_SCENE := preload("res://UI/components/EnemyPreviewEntry/EnemyPreviewEntry.tscn")
+const ENEMY_PREVIEW_OVERFLOW_SCENE := preload("res://UI/components/EnemyPreviewOverflow/EnemyPreviewOverflow.tscn")
 
 var _confirmed := Callable()
 var _locked := false
@@ -293,12 +295,8 @@ func _update_enemy_preview(contract_id: String) -> void:
 	for index in visible_count:
 		enemy_preview_entries.add_child(_make_enemy_preview_entry(entries[index] as Dictionary))
 	if entries.size() > visible_count:
-		var overflow := Label.new()
-		overflow.text = "+%d" % (entries.size() - visible_count)
-		overflow.custom_minimum_size = Vector2(28, ENEMY_PREVIEW_ICON_SIZE.y)
-		overflow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		overflow.add_theme_font_size_override("font_size", 13)
-		overflow.add_theme_color_override("font_color", Color(0.62, 0.76, 0.79))
+		var overflow := ENEMY_PREVIEW_OVERFLOW_SCENE.instantiate() as Label
+		overflow.call("set_value", entries.size() - visible_count)
 		enemy_preview_entries.add_child(overflow)
 
 func _clear_enemy_preview() -> void:
@@ -307,37 +305,10 @@ func _clear_enemy_preview() -> void:
 		child.queue_free()
 
 func _make_enemy_preview_entry(data: Dictionary) -> VBoxContainer:
-	var item := VBoxContainer.new()
-	item.custom_minimum_size = Vector2(66, 0)
-	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	item.add_theme_constant_override("separation", 1)
-	var portrait := TextureRect.new()
-	portrait.texture = data.get("texture") as Texture2D
-	portrait.custom_minimum_size = ENEMY_PREVIEW_ICON_SIZE
-	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	item.add_child(portrait)
-	var name_row := HBoxContainer.new()
-	name_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	name_row.add_theme_constant_override("separation", 3)
-	var name_label := Label.new()
-	name_label.text = str(data.get("name", "Enemy"))
-	name_label.add_theme_font_size_override("font_size", 11)
-	name_label.add_theme_color_override("font_color", Color(0.80, 0.88, 0.90))
-	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	name_label.tooltip_text = name_label.text
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_row.add_child(name_label)
-	if bool(data.get("elite", false)):
-		var elite_badge := Label.new()
-		elite_badge.text = LocalizationManager.tr_key("battle_contract.ui.enemy_preview.elite", "ELITE")
-		elite_badge.add_theme_font_size_override("font_size", 10)
-		elite_badge.add_theme_color_override("font_color", Color(1.0, 0.72, 0.24))
-		elite_badge.tooltip_text = elite_badge.text
-		name_row.add_child(elite_badge)
-	item.add_child(name_row)
+	var item := ENEMY_PREVIEW_ENTRY_SCENE.instantiate() as VBoxContainer
+	var display_data := data.duplicate()
+	display_data["elite_text"] = LocalizationManager.tr_key("battle_contract.ui.enemy_preview.elite", "ELITE")
+	item.call("set_data", display_data)
 	return item
 
 static func build_enemy_preview_snapshot(contract_id: String, level_index: int) -> Dictionary:

@@ -83,7 +83,6 @@ var _using_gamepad := false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	size_flags_horizontal = Control.SIZE_SHRINK_END
-	add_theme_stylebox_override("panel", _build_panel_style())
 	_configure_text_constraints()
 	_configure_button_click_targets()
 	_configure_visual_hierarchy()
@@ -639,7 +638,7 @@ func _make_prompt_fallback_label(value: String, styled: bool = true) -> Label:
 	label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", Color(0.78, 0.84, 0.87, 1.0))
-	label.call("set_data", value, styled, _build_keycap_style() if styled else null)
+	label.call("set_data", value, styled)
 	return label
 
 func _set_action_item(action_id: StringName, key_text: String, action_text: String) -> void:
@@ -970,18 +969,7 @@ func _configure_button_click_targets() -> void:
 	compact_expand.tooltip_text = _tr("ui.controls.expand_tooltip", "Expand controls hint (F1)")
 
 func _configure_visual_hierarchy() -> void:
-	title_label.add_theme_color_override("font_color", Color(0.94, 0.98, 1.0, 1.0))
-	_apply_hint_button_style(collapse_button)
-	_apply_hint_button_style(compact_expand)
-
-func _apply_hint_button_style(button: Button) -> void:
-	button.add_theme_font_size_override("font_size", 12)
-	button.add_theme_color_override("font_color", Color(0.82, 0.91, 0.94, 1.0))
-	button.add_theme_color_override("font_hover_color", Color(0.92, 0.98, 1.0, 1.0))
-	button.add_theme_color_override("font_pressed_color", Color(0.70, 0.88, 0.94, 1.0))
-	var borderless_style := StyleBoxEmpty.new()
-	for state in [&"normal", &"hover", &"pressed", &"focus", &"disabled"]:
-		button.add_theme_stylebox_override(state, borderless_style)
+	pass
 
 func _should_be_visible() -> bool:
 	return _current_phase in [PhaseManager.BATTLE, PhaseManager.PREPARE] \
@@ -1041,31 +1029,3 @@ func _primary_context_title(context_name: StringName) -> String:
 			return LocalizationManager.tr_key("ui.rest.zone.battle.title", "Start Battle")
 		_:
 			return _tr("ui.tutorial.state.primary_menu", "Primary Menu")
-
-func _build_panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.027, 0.063, 0.094, 0.88)
-	style.border_color = Color(0.28, 0.50, 0.58, 0.92)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(6)
-	return style
-
-func _build_keycap_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.15, 0.20, 0.23, 0.96)
-	style.border_color = Color(0.33, 0.40, 0.44, 0.96)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(4)
-	style.content_margin_left = 5.0
-	style.content_margin_right = 5.0
-	return style
-
-func _build_button_style(bg: Color, border: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = bg
-	style.border_color = border
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(4)
-	style.content_margin_left = 7.0
-	style.content_margin_right = 7.0
-	return style

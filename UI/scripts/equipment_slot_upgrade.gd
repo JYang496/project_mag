@@ -1,6 +1,8 @@
 extends EquipmentSlot
 class_name EquipmentSlotUpgrade
 
+const UPGRADE_SELECTED_LABEL_SCENE := preload("res://UI/components/UpgradeSelectedLabel/UpgradeSelectedLabel.tscn")
+
 var selected_label: Label
 
 func _on_background_gui_input(event: InputEvent) -> void:
@@ -28,15 +30,5 @@ func _draw() -> void:
 func _ensure_selected_label() -> void:
 	if selected_label and is_instance_valid(selected_label):
 		return
-	selected_label = Label.new()
-	selected_label.name = "UpgradeSelectedLabel"
-	selected_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	selected_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	selected_label.offset_left = 8.0
-	selected_label.offset_top = 8.0
-	selected_label.offset_right = -8.0
-	selected_label.offset_bottom = 36.0
-	selected_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	selected_label.add_theme_color_override("font_color", Color(0.75, 0.95, 1.0))
-	selected_label.add_theme_font_size_override("font_size", 16)
+	selected_label = UPGRADE_SELECTED_LABEL_SCENE.instantiate() as Label
 	add_child(selected_label)

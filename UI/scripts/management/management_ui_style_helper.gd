@@ -118,38 +118,10 @@ func configure_focus_chain(buttons: Array) -> void:
 		button.focus_previous = button.get_path_to(previous)
 		button.focus_next = button.get_path_to(next)
 
-func create_management_instruction(panel: Panel, node_name: String, position: Vector2, label_size: Vector2) -> Label:
-	var label := Label.new()
-	label.name = node_name
-	label.position = position
-	label.size = label_size
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	TOKENS.style_label(label, TOKENS.FONT_BODY, TOKENS.COLOR_TEXT_SECONDARY)
-	panel.add_child(label)
-	return label
-
 func _ensure_facility_header_decor(panel: Panel) -> void:
-	var accent := panel.get_node_or_null("SystemAccent") as ColorRect
-	if accent == null:
-		accent = ColorRect.new()
-		accent.name = "SystemAccent"
-		accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel.add_child(accent)
-	accent.position = Vector2.ZERO
-	accent.size = Vector2(6.0, panel.size.y)
-	accent.color = TOKENS.COLOR_ACCENT_SYSTEM
-	var code := panel.get_node_or_null("FacilityCode") as Label
-	if code == null:
-		code = Label.new()
-		code.name = "FacilityCode"
-		code.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		code.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		panel.add_child(code)
-	code.position = Vector2(maxf(panel.size.x - 112.0, 0.0), 18.0)
-	code.size = Vector2(88.0, 24.0)
-	code.text = _facility_code(panel)
-	TOKENS.style_label(code, TOKENS.FONT_CAPTION, TOKENS.COLOR_ACCENT_SYSTEM)
+	var decor := panel.get_node_or_null("FacilityHeaderDecor") as Control
+	if decor != null:
+		decor.call("set_data", _facility_code(panel))
 
 func _facility_code(panel: Panel) -> String:
 	var context := ("%s %s" % [panel.get_parent().name if panel.get_parent() else "", panel.name]).to_lower()

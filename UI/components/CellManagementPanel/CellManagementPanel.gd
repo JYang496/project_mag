@@ -13,7 +13,7 @@ const TASK_MODULE_CARD_HEIGHT := 84.0
 const TASK_DETAIL_WINDOW_SIZE := Vector2(360, 238)
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const PRIMARY_MENU_SCENE := preload("res://UI/components/ReusablePrimaryMenu/ReusablePrimaryMenu.tscn")
-const DRAG_CONTROLS := preload("res://UI/scripts/management/warehouse_drag_controls.gd")
+const WAREHOUSE_DRAG_DROP_BUTTON_SCENE := preload("res://UI/components/WarehouseDragDropButton/WarehouseDragDropButton.tscn")
 const TASK_VIEW_SCENE := preload("res://UI/components/TaskManagementView/TaskManagementView.tscn")
 const BACK_BUTTON_SCENE := preload("res://UI/components/ManagementBackButton/ManagementBackButton.tscn")
 const TASK_MODULE_CARD_SCENE := preload("res://UI/components/TaskModuleCard/TaskModuleCard.tscn")
@@ -21,6 +21,8 @@ const TASK_MODULE_DRAG_PREVIEW_SCENE := preload("res://UI/components/TaskModuleD
 const TASK_CELL_PREVIEW_SCENE := preload("res://UI/components/TaskCellPreview/TaskCellPreview.tscn")
 const TASK_DETAIL_WINDOW_SCENE := preload("res://UI/components/TaskDetailWindow/TaskDetailWindow.tscn")
 const DETAIL_TEXT_SCENE := preload("res://UI/components/DetailText/DetailText.tscn")
+const FOOTER_SPACER_SCENE := preload("res://UI/components/FooterSpacer/FooterSpacer.tscn")
+const TASK_CELL_BASE_STYLE := preload("res://UI/themes/task_cell_base_style.tres")
 
 var owner_ui: UI
 var _board: BoardCellGenerator
@@ -144,9 +146,8 @@ func _populate_cell_preview_grid(grid: GridContainer) -> void:
 	var ids := [7, 8, 9, 4, 5, 6, 1, 2, 3]
 	for id_variant in ids:
 		var cell_id := int(id_variant)
-		var button := DRAG_CONTROLS.WarehouseDragDropButton.new()
-		button.view = self
-		button.drop_payload = {"kind": "task_cell", "cell_id": cell_id}
+		var button := WAREHOUSE_DRAG_DROP_BUTTON_SCENE.instantiate() as Button
+		button.call("set_drag_context", self, {}, {"kind": "task_cell", "cell_id": cell_id})
 		button.custom_minimum_size = CELL_PREVIEW_BUTTON_SIZE
 		button.toggle_mode = false
 		button.disabled = _board == null or not _board.is_cell_active_by_id(cell_id)
@@ -228,8 +229,7 @@ func _make_muted_label(text: String) -> Label:
 	return label
 
 func _add_footer_back_button() -> void:
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var spacer := FOOTER_SPACER_SCENE.instantiate() as Control
 	_footer.add_child(spacer)
 	var button := BACK_BUTTON_SCENE.instantiate() as Button
 	button.call("set_data", LocalizationManager.tr_key("ui.common.back", "Back"))
@@ -536,18 +536,13 @@ func _apply_panel_size_for_mode() -> void:
 	_content.add_theme_constant_override("separation", 10)
 
 func _make_panel_style(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
+	var style := TASK_CELL_BASE_STYLE.duplicate() as StyleBoxFlat
 	style.bg_color = bg
 	style.border_color = border
-	style.set_border_width_all(2)
 	style.set_corner_radius_all(radius)
 	if bg.is_equal_approx(PANEL_BG):
 		style.shadow_color = Color(0, 0, 0, 0.45)
 		style.shadow_size = 12
-	style.content_margin_left = 10.0
-	style.content_margin_right = 10.0
-	style.content_margin_top = 8.0
-	style.content_margin_bottom = 8.0
 	return style
 
 func _clear_panel_content() -> void:

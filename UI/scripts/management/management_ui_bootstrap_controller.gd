@@ -43,9 +43,7 @@ func init_purchase_ui_polish() -> void:
 	init_management_ui_polish()
 	if owner_ui == null or _purchase_polish_ready:
 		return
-	owner_ui.shop_instruction_label = owner_ui.management_ui_style_helper.create_management_instruction(
-		owner_ui.purchase_panel, "ShopInstruction", Vector2(25, 40), Vector2(1, 1)
-	)
+	owner_ui.shop_instruction_label = owner_ui.purchase_panel.get_node_or_null("ShopInstruction") as Label
 	owner_ui.shop_instruction_label.visible = false
 	if not owner_ui.purchase_management_controller.ensure_view():
 		owner_ui.shop_instruction_label.queue_free()
@@ -58,9 +56,7 @@ func init_upgrade_ui_polish() -> void:
 	init_management_ui_polish()
 	if owner_ui == null or _upgrade_polish_ready:
 		return
-	owner_ui.upgrade_instruction_label = owner_ui.management_ui_style_helper.create_management_instruction(
-		owner_ui.upgrade_panel, "UpgradeInstruction", Vector2(25, 42), Vector2(480, 30)
-	)
+	owner_ui.upgrade_instruction_label = owner_ui.upgrade_panel.get_node_or_null("UpgradeInstruction") as Label
 	owner_ui.upgrade_management_controller.set_instruction_label(owner_ui.upgrade_instruction_label)
 	if not owner_ui.upgrade_management_controller.ensure_view():
 		owner_ui.upgrade_instruction_label.queue_free()
@@ -73,9 +69,7 @@ func init_warehouse_ui_polish() -> void:
 	init_management_ui_polish()
 	if owner_ui == null or _warehouse_polish_ready:
 		return
-	owner_ui.module_instruction_label = owner_ui.management_ui_style_helper.create_management_instruction(
-		owner_ui.module_panel, "ModuleInstruction", Vector2(25, 42), Vector2(500, 30)
-	)
+	owner_ui.module_instruction_label = owner_ui.module_panel.get_node_or_null("ModuleInstruction") as Label
 	# The weapon/module tabs now occupy the same header row used by purchase and
 	# upgrade. Their labels communicate the warehouse context more directly.
 	owner_ui.module_instruction_label.visible = false
@@ -96,10 +90,8 @@ func ensure_management_menu_buttons() -> void:
 	var upgrade_weapon_button := owner_ui.upgrade_primary_panel.get_node_or_null("OpenUpgradeButton") as Button
 	_connect_button_pressed(upgrade_weapon_button, owner_ui.rest_area_ui_controller.open_upgrade_panel.bind(&"weapon"))
 	if owner_ui.upgrade_module_button == null:
-		owner_ui.upgrade_module_button = Button.new()
-		owner_ui.upgrade_module_button.name = "OpenModuleUpgradeButton"
-		owner_ui.upgrade_module_button.text = LocalizationManager.tr_key("ui.smith.upgrade.module", "Module")
-		owner_ui.upgrade_primary_panel.add_child(owner_ui.upgrade_module_button)
+		owner_ui.upgrade_module_button = owner_ui.upgrade_primary_panel.get_node_or_null("OpenModuleUpgradeButton") as Button
+	owner_ui.upgrade_module_button.text = LocalizationManager.tr_key("ui.smith.upgrade.module", "Module")
 	_connect_button_pressed(owner_ui.upgrade_module_button, owner_ui.rest_area_ui_controller.open_upgrade_panel.bind(&"module"))
 	# Secondary management panels are loaded later with Management Shell.
 	if owner_ui.upgrade_panel != null:
@@ -109,10 +101,8 @@ func ensure_management_menu_buttons() -> void:
 	var open_module_button := owner_ui.warehouse_primary_panel.get_node_or_null("OpenModuleButton") as Button
 	_connect_button_pressed(open_module_button, owner_ui.rest_area_ui_controller.open_warehouse_management_panel)
 	if owner_ui.weapon_warehouse_button == null or not is_instance_valid(owner_ui.weapon_warehouse_button):
-		owner_ui.weapon_warehouse_button = Button.new()
-		owner_ui.weapon_warehouse_button.name = "OpenWeaponWarehouseButton"
-		owner_ui.weapon_warehouse_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
-		owner_ui.warehouse_primary_panel.add_child(owner_ui.weapon_warehouse_button)
+		owner_ui.weapon_warehouse_button = owner_ui.warehouse_primary_panel.get_node_or_null("OpenWeaponWarehouseButton") as Button
+	owner_ui.weapon_warehouse_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.title", "Weapon Warehouse")
 	_connect_button_pressed(owner_ui.weapon_warehouse_button, owner_ui.rest_area_ui_controller.open_warehouse_weapon_panel)
 	if owner_ui.module_panel != null:
 		var warehouse_back := owner_ui.module_panel.get_node_or_null("BackToWarehouseMenu") as Button

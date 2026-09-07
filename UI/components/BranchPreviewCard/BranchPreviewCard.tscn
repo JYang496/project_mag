@@ -1,0 +1,80 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://UI/components/BranchPreviewCard/BranchPreviewCard.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://UI/components/DamageTypeIconRow/DamageTypeIconRow.tscn" id="2_icons"]
+[ext_resource type="PackedScene" path="res://UI/components/BranchFusionRecipe/BranchFusionRecipe.tscn" id="3_recipe"]
+[ext_resource type="PackedScene" path="res://UI/components/BranchAccentStrip/BranchAccentStrip.tscn" id="4_strip"]
+
+[sub_resource type="StyleBoxFlat" id="CardStyle"]
+bg_color = Color(0.045, 0.06, 0.075, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.24, 0.31, 0.36, 0.44)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+
+[node name="BranchPreviewNode" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 60)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("CardStyle")
+script = ExtResource("1_script")
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="BranchPreviewTitleOffset" type="Control" parent="Content"]
+custom_minimum_size = Vector2(0, 3)
+layout_mode = 2
+
+[node name="BranchPreviewTitleRow" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="BranchDamageTypeIcons" parent="Content/BranchPreviewTitleRow" instance=ExtResource("2_icons")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="BranchPreviewName" type="Label" parent="Content/BranchPreviewTitleRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+text_overrun_behavior = 3
+clip_text = true
+
+[node name="BranchPreviewTopSpacer" type="Control" parent="Content"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BranchPreviewFusionRecipe" parent="Content" instance=ExtResource("3_recipe")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="BranchPreviewBottomSpacer" type="Control" parent="Content"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BranchPreviewUnlockState" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
+theme_override_font_sizes/font_size = 10
+horizontal_alignment = 1
+text_overrun_behavior = 3
+clip_text = true
+
+[node name="BranchAccentStripOverlay" parent="." instance=ExtResource("4_strip")]
+unique_name_in_owner = true

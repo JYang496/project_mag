@@ -1,6 +1,20 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/scripts/branch_select_panel.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="PanelStyle"]
+bg_color = Color(0.035, 0.048, 0.065, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.25, 0.48, 0.62, 0.95)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.42)
+shadow_size = 14
 
 [node name="BranchSelectPanel" type="Control"]
 visible = false
@@ -22,6 +36,7 @@ offset_left = -420.0
 offset_top = -250.0
 offset_right = 420.0
 offset_bottom = 250.0
+theme_override_styles/panel = SubResource("PanelStyle")
 
 [node name="VBox" type="VBoxContainer" parent="Panel"]
 anchors_preset = 15
@@ -34,11 +49,13 @@ offset_bottom = -22.0
 theme_override_constants/separation = 10
 
 [node name="Title" type="Label" parent="Panel/VBox"]
+theme_override_colors/font_color = Color(0.92, 0.98, 1, 1)
 text = "Choose Evolution Branch"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 24
 
 [node name="SubTitle" type="Label" parent="Panel/VBox"]
+theme_override_colors/font_color = Color(0.64, 0.76, 0.84, 1)
 text = ""
 horizontal_alignment = 1
 autowrap_mode = 2

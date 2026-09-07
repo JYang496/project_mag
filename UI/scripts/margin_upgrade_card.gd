@@ -1,5 +1,7 @@
 extends Control
 
+const UPGRADE_STATUS_LINE_SCENE := preload("res://UI/components/UpgradeStatusLine/UpgradeStatusLine.tscn")
+
 @onready var lblName = $UpgradeCard/LabelName
 @onready var itemIcon = $UpgradeCard/ItemImage/Icon
 @onready var cost = $UpgradeCard/Cost
@@ -29,13 +31,13 @@ func _ready():
 		cost.text = LocalizationManager.tr_format("ui.upgrade.cost", {"value": cost_price}, "Cost: %s" % cost_price)
 		comb_status = combine_status(weapon_node)
 		for key in comb_status:
-			var status_label = Label.new()
-			status_label.text = LocalizationManager.tr_format(
+			var status_label := UPGRADE_STATUS_LINE_SCENE.instantiate() as Label
+			status_container.add_child(status_label)
+			status_label.call("set_data", LocalizationManager.tr_format(
 				"ui.upgrade.status_line",
 				{"key": key, "from": comb_status[key][0], "to": comb_status[key][1]},
 				"%s: %s => %s" % [key, comb_status[key][0], comb_status[key][1]]
-			)
-			status_container.add_child(status_label)
+			))
 		itemIcon.texture = weapon_node.sprite.texture
 		lblName.text = LocalizationManager.get_weapon_instance_display_name(weapon_node)
 	refresh_affordability()

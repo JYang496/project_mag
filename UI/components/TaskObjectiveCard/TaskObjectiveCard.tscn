@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://UI/components/TaskObjectiveCard/TaskObjectiveCard.gd" id="1_script"]
 [ext_resource type="Script" path="res://UI/scripts/components/smooth_progress_bar.gd" id="2_progress"]
@@ -15,6 +15,21 @@ corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 [sub_resource type="StyleBoxFlat" id="StyleBox_track"]
 bg_color = Color(0.05, 0.07, 0.08, 0.9)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+[sub_resource type="StyleBoxFlat" id="StyleBox_marker"]
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxFlat" id="StyleBox_fill"]
+bg_color = Color(0.35, 0.84, 0.7, 0.95)
 corner_radius_top_left = 2
 corner_radius_top_right = 2
 corner_radius_bottom_right = 2
@@ -45,6 +60,7 @@ custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.97, 1, 1)
 theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBox_marker")
 horizontal_alignment = 1
 vertical_alignment = 1
 [node name="Title" type="Label" parent="Margin/Body/Header"]
@@ -77,6 +93,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 6)
 layout_mode = 2
 theme_override_styles/background = SubResource("StyleBox_track")
+theme_override_styles/fill = SubResource("StyleBox_fill")
 max_value = 1.0
 step = 0.001
 show_percentage = false

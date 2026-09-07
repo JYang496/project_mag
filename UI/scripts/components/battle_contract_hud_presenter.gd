@@ -390,7 +390,9 @@ func _set_expanded(expanded: bool) -> void:
 	tween.tween_property(panel, "modulate:a", 1.0, 0.16).from(0.82)
 
 func _set_progress_color(color: Color) -> void:
-	progress.add_theme_stylebox_override("fill", _build_progress_style(color))
+	var style := (progress.get_theme_stylebox("fill") as StyleBoxFlat).duplicate() as StyleBoxFlat
+	style.bg_color = color
+	progress.add_theme_stylebox_override("fill", style)
 
 func _play_completion_tone() -> void:
 	audio.play()
@@ -399,19 +401,3 @@ func _play_completion_tone() -> void:
 	for index in 2205:
 		var sample := sin(TAU * (660.0 + 220.0 * float(index) / 2205.0) * float(index) / 22050.0) * 0.14
 		playback.push_frame(Vector2(sample, sample))
-
-func _build_panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.025, 0.075, 0.11, 0.92)
-	style.border_color = Color(0.25, 0.68, 0.82, 0.78)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(6)
-	style.shadow_color = Color(0.0, 0.04, 0.07, 0.55)
-	style.shadow_size = 5
-	return style
-
-func _build_progress_style(color: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.set_corner_radius_all(4)
-	return style

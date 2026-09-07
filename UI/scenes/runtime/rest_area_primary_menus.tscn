@@ -1,7 +1,8 @@
-[gd_scene format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://UI/scripts/management/rest_area_primary_menus_view.gd" id="1_8ml83"]
 [ext_resource type="Theme" path="res://UI/themes/primary_menu_button_theme.tres" id="2_t1bqh"]
+[ext_resource type="PackedScene" path="res://UI/components/FacilityHeaderDecor/FacilityHeaderDecor.tscn" id="3_decor"]
 
 [node name="RestAreaPrimaryMenus" type="Control" unique_id=1254884039]
 layout_mode = 3
@@ -25,6 +26,8 @@ offset_top = 170.0
 offset_right = 836.0
 offset_bottom = 490.0
 theme = ExtResource("2_t1bqh")
+
+[node name="FacilityHeaderDecor" parent="PurchasePrimaryRoot/Panel" instance=ExtResource("3_decor")]
 
 [node name="Title" type="Label" parent="PurchasePrimaryRoot/Panel" unique_id=618611466]
 layout_mode = 1
@@ -81,6 +84,8 @@ offset_right = 836.0
 offset_bottom = 490.0
 theme = ExtResource("2_t1bqh")
 
+[node name="FacilityHeaderDecor" parent="UpgradePrimaryRoot/Panel" instance=ExtResource("3_decor")]
+
 [node name="Title" type="Label" parent="UpgradePrimaryRoot/Panel" unique_id=1996948769]
 layout_mode = 1
 anchors_preset = 10
@@ -113,6 +118,14 @@ offset_right = 248.0
 offset_bottom = 154.0
 text = "Upgrade"
 
+[node name="OpenModuleUpgradeButton" type="Button" parent="UpgradePrimaryRoot/Panel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 166.0
+offset_right = 248.0
+offset_bottom = 212.0
+text = "Module"
+
 [node name="WarehousePrimaryRoot" type="Control" parent="." unique_id=1319409131]
 visible = false
 anchors_preset = 0
@@ -127,6 +140,8 @@ offset_top = 170.0
 offset_right = 836.0
 offset_bottom = 490.0
 theme = ExtResource("2_t1bqh")
+
+[node name="FacilityHeaderDecor" parent="WarehousePrimaryRoot/Panel" instance=ExtResource("3_decor")]
 
 [node name="Title" type="Label" parent="WarehousePrimaryRoot/Panel" unique_id=326982518]
 layout_mode = 1
@@ -160,6 +175,14 @@ offset_right = 248.0
 offset_bottom = 154.0
 text = "Manage Modules"
 
+[node name="OpenWeaponWarehouseButton" type="Button" parent="WarehousePrimaryRoot/Panel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 166.0
+offset_right = 248.0
+offset_bottom = 212.0
+text = "Weapon Warehouse"
+
 [node name="BoardEditRoot" type="Control" parent="." unique_id=1279544841]
 layout_mode = 1
 anchors_preset = 15
@@ -183,6 +206,8 @@ offset_top = 170.0
 offset_right = 836.0
 offset_bottom = 490.0
 theme = ExtResource("2_t1bqh")
+
+[node name="FacilityHeaderDecor" parent="BoardEditRoot/PrimaryMenuRoot/Panel" instance=ExtResource("3_decor")]
 
 [node name="Title" type="Label" parent="BoardEditRoot/PrimaryMenuRoot/Panel" unique_id=931270195]
 layout_mode = 1
@@ -247,6 +272,8 @@ offset_top = 170.0
 offset_right = 836.0
 offset_bottom = 490.0
 theme = ExtResource("2_t1bqh")
+
+[node name="FacilityHeaderDecor" parent="BattleStartRoot/PrimaryMenuRoot/Panel" instance=ExtResource("3_decor")]
 
 [node name="Title" type="Label" parent="BattleStartRoot/PrimaryMenuRoot/Panel" unique_id=1511291816]
 layout_mode = 1

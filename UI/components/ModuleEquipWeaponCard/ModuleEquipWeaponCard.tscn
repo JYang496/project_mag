@@ -1,10 +1,67 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://UI/components/ModuleEquipWeaponCard/ModuleEquipWeaponCard.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="CardStyle"]
+bg_color = Color(0.055, 0.078, 0.102, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.36, 0.46, 0.92)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0, 0, 0, 0.42)
+shadow_size = 6
+shadow_offset = Vector2(4, 4)
+[sub_resource type="StyleBoxFlat" id="IconWellStyle"]
+bg_color = Color(0.012, 0.02, 0.03, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.36, 0.46, 0.92)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxFlat" id="StatusStyle"]
+content_margin_left = 8.0
+content_margin_top = 5.0
+content_margin_right = 8.0
+content_margin_bottom = 5.0
+bg_color = Color(0.34, 0.78, 0.88, 0.07)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.34, 0.78, 0.88, 0.34)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+[sub_resource type="StyleBoxFlat" id="ActionStyle"]
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+bg_color = Color(0.075, 0.105, 0.132, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.34, 0.78, 0.88, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
 
 [node name="ModuleEquipWeaponCard" type="PanelContainer"]
 custom_minimum_size = Vector2(0, 158)
 size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("CardStyle")
 script = ExtResource("1_script")
 
 [node name="Margin" type="MarginContainer" parent="."]
@@ -30,6 +87,7 @@ theme_override_constants/separation = 10
 [node name="IconWell" type="PanelContainer" parent="Margin/Root/Left/Identity"]
 custom_minimum_size = Vector2(72, 68)
 layout_mode = 2
+theme_override_styles/panel = SubResource("IconWellStyle")
 
 [node name="WeaponIcon" type="TextureRect" parent="Margin/Root/Left/Identity/IconWell"]
 unique_name_in_owner = true
@@ -47,20 +105,25 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.93, 0.97, 0.98, 1)
 
 [node name="Fit" type="Label" parent="Margin/Root/Left/Identity/IdentityText"]
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 2
+theme_override_font_sizes/font_size = 14
 
 [node name="Reason" type="Label" parent="Margin/Root/Left/Identity/IdentityText"]
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 2
+theme_override_colors/font_color = Color(1, 0.462745, 0.180392, 1)
+theme_override_font_sizes/font_size = 12
 
 [node name="Status" type="PanelContainer" parent="Margin/Root/Left"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StatusStyle")
 
 [node name="StatusRow" type="HBoxContainer" parent="Margin/Root/Left/Status"]
 layout_mode = 2
@@ -91,6 +154,8 @@ theme_override_constants/separation = 5
 [node name="ModulesLabel" type="Label" parent="Margin/Root/Actions"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_colors/font_color = Color(0.69, 0.78, 0.83, 1)
+theme_override_font_sizes/font_size = 12
 
 [node name="Sockets" type="HBoxContainer" parent="Margin/Root/Actions"]
 unique_name_in_owner = true
@@ -102,3 +167,8 @@ theme_override_constants/separation = 8
 unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 36)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.97, 0.98, 1)
+theme_override_styles/normal = SubResource("ActionStyle")
+theme_override_styles/hover = SubResource("ActionStyle")
+theme_override_styles/pressed = SubResource("ActionStyle")
+theme_override_styles/focus = SubResource("ActionStyle")

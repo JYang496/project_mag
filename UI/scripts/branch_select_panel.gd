@@ -15,7 +15,6 @@ var _branch_ids: Array[String] = []
 var _branch_defs_cache: Array[WeaponBranchDefinition] = []
 
 func _ready() -> void:
-	_apply_panel_style()
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.language_changed.connect(_on_language_changed)
 
@@ -118,45 +117,6 @@ func _build_selected_branch_summary(weapon: Weapon) -> String:
 		{"branches": ", ".join(parts)},
 		"Selected branches: %s" % ", ".join(parts)
 	)
-
-func _apply_panel_style() -> void:
-	if panel == null:
-		return
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.035, 0.048, 0.065, 0.97)
-	style.border_color = Color(0.25, 0.48, 0.62, 0.95)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(8)
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.42)
-	style.shadow_size = 14
-	panel.add_theme_stylebox_override("panel", style)
-	title_label.add_theme_color_override("font_color", Color(0.92, 0.98, 1.0))
-	subtitle_label.add_theme_color_override("font_color", Color(0.64, 0.76, 0.84))
-
-func _apply_card_style(button: Button, accent: Color) -> void:
-	for state in ["normal", "hover", "pressed", "focus"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.065, 0.085, 0.11, 0.96)
-		style.border_color = Color(accent.r, accent.g, accent.b, 0.78)
-		style.set_border_width_all(1)
-		if state == "hover" or state == "focus":
-			style.bg_color = Color(0.085, 0.11, 0.145, 0.98)
-			style.border_color = accent
-			style.set_border_width_all(2)
-		elif state == "pressed":
-			style.bg_color = Color(0.11, 0.14, 0.17, 0.98)
-			style.border_color = Color(1.0, 1.0, 1.0, 0.92)
-			style.set_border_width_all(2)
-		style.set_corner_radius_all(8)
-		button.add_theme_stylebox_override(state, style)
-
-func _make_icon_frame_style(accent: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.025, 0.035, 0.048, 0.98)
-	style.border_color = Color(accent.r, accent.g, accent.b, 0.55)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(6)
-	return style
 
 func _get_branch_accent(def: WeaponBranchDefinition) -> Color:
 	var text := ("%s %s %s" % [def.branch_id, def.display_name, def.description]).to_lower()

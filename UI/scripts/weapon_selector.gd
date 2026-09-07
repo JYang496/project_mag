@@ -3,14 +3,18 @@ class_name WeaponSelector
 
 @export var debug_mode := false
 
-const WEAPON_SLOT_STATUS_BAR_SCRIPT := preload("res://UI/scripts/weapon_slot_status_bar.gd")
-const WEAPON_SKILL_CHARGE_TRACK_SCRIPT := preload("res://UI/scripts/weapon_skill_charge_track.gd")
+const WEAPON_SLOT_STATUS_BAR_SCENE := preload("res://UI/components/WeaponSlotStatusBar/WeaponSlotStatusBar.tscn")
+const WEAPON_SKILL_CHARGE_TRACK_SCENE := preload("res://UI/components/WeaponSkillChargeTrack/WeaponSkillChargeTrack.tscn")
 const READABILITY_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_selector_readability_presenter.gd")
 const PASSIVE_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_selector_passive_presenter.gd")
-const SLOT_VIEW_SCRIPT := preload("res://UI/scripts/components/weapon_slot_view.gd")
+const SLOT_VIEW_SCRIPT := preload("res://UI/components/WeaponSlot/WeaponSlot.gd")
 const SWITCH_CONTROLLER_SCRIPT := preload("res://UI/scripts/components/weapon_switch_controller.gd")
-const EFFECT_BADGE := preload("res://UI/scripts/components/weapon_effect_badge.gd")
-const SKILL_STATE_ICON := preload("res://UI/scripts/components/weapon_skill_state_icon.gd")
+const EFFECT_BADGE_SCENE := preload("res://UI/components/WeaponEffectBadge/WeaponEffectBadge.tscn")
+const SKILL_STATE_ICON_SCENE := preload("res://UI/components/WeaponSkillStateIcon/WeaponSkillStateIcon.tscn")
+const RESOURCE_INDICATOR_SCENE := preload("res://UI/components/WeaponResourceIndicator/WeaponResourceIndicator.tscn")
+const AVAILABILITY_LABEL_SCENE := preload("res://UI/components/WeaponAvailabilityLabel/WeaponAvailabilityLabel.tscn")
+const KEY_LABEL_SCENE := preload("res://UI/components/WeaponKeyLabel/WeaponKeyLabel.tscn")
+const SELECTOR_OVERLAY_SCENE := preload("res://UI/components/WeaponSelectorOverlay/WeaponSelectorOverlay.tscn")
 const SLOT_COUNT := 4
 const SWITCH_ANIM_TIME := 0.35
 const SWITCH_ANIM_TRANS := Tween.TRANS_SINE
@@ -94,7 +98,7 @@ func _ready() -> void:
 	slot_nodes = _slot_nodes.duplicate()
 	_slot_views.clear()
 	for slot_node in _slot_nodes:
-		var slot_view = SLOT_VIEW_SCRIPT.new()
+		var slot_view = slot_node
 		slot_view.setup(slot_node, _missing_weapon_icon)
 		_slot_views.append(slot_view)
 	_ensure_cooldown_overlay()
@@ -118,9 +122,27 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	_update_slot_cooldown_progress()
+	_update_slot_heat()
 	_update_slot_passive_progress()
 	_update_slot_resource_indicators()
 	_update_slot_weapon_skill_progress()
+
+func _update_slot_heat() -> void:
+	var weapons: Array = PlayerData.player_weapon_list
+	for slot_idx in range(mini(SLOT_COUNT, _slot_views.size())):
+		var weapon_idx := logical_order[slot_idx] if slot_idx < logical_order.size() else -1
+		var slot_view = _slot_views[slot_idx]
+		if weapon_idx < 0 or weapon_idx >= weapons.size() or not is_instance_valid(weapons[weapon_idx]):
+			slot_view.set_heat(0.0, 0.0, false)
+			continue
+		var weapon: Node = weapons[weapon_idx]
+		if not weapon.has_method("has_heat_system") or not bool(weapon.call("has_heat_system")):
+			slot_view.set_heat(0.0, 0.0, false)
+			continue
+		var heat_value := float(weapon.call("get_heat_value")) if weapon.has_method("get_heat_value") else 0.0
+		var heat_max := float(weapon.call("get_heat_max_value")) if weapon.has_method("get_heat_max_value") else 0.0
+		var overheated := bool(weapon.call("is_weapon_overheated")) if weapon.has_method("is_weapon_overheated") else false
+		slot_view.set_heat(heat_value, heat_max, overheated)
 
 func set_layout_origin(origin: Vector2) -> void:
 	position = origin
@@ -336,7 +358,7 @@ func _ensure_slot_cooldown_nodes() -> void:
 		if existing != null and is_instance_valid(existing):
 			pass
 		else:
-			var progress_node := WEAPON_SLOT_STATUS_BAR_SCRIPT.new() as Control
+			var progress_node := WEAPON_SLOT_STATUS_BAR_SCENE.instantiate() as Control
 			if progress_node != null:
 				progress_node.name = "WeaponStatusBar%d" % slot_idx
 				progress_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -359,7 +381,7 @@ func _ensure_slot_cooldown_nodes() -> void:
 func _ensure_slot_passive_nodes(slot_idx: int) -> void:
 	var existing := _slot_passive_nodes[slot_idx]
 	if existing == null or not is_instance_valid(existing):
-		var passive_node := WEAPON_SLOT_STATUS_BAR_SCRIPT.new() as Control
+		var passive_node := WEAPON_SLOT_STATUS_BAR_SCENE.instantiate() as Control
 		if passive_node != null:
 			passive_node.name = "PassiveDiamond%d" % slot_idx
 			passive_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -383,7 +405,7 @@ func _ensure_slot_passive_charge_node(slot_idx: int) -> void:
 	var existing := _slot_passive_charge_nodes[slot_idx]
 	if existing != null and is_instance_valid(existing):
 		return
-	var charge_node := WEAPON_SKILL_CHARGE_TRACK_SCRIPT.new() as Control
+	var charge_node := WEAPON_SKILL_CHARGE_TRACK_SCENE.instantiate() as Control
 	if charge_node == null:
 		return
 	charge_node.name = "PassiveChargeTrack%d" % slot_idx
@@ -402,14 +424,8 @@ func _ensure_slot_resource_indicator_node(slot_idx: int) -> void:
 	var existing := _slot_resource_indicator_nodes[slot_idx]
 	if existing != null and is_instance_valid(existing):
 		return
-	var label := Label.new()
-	label.name = "ResourceIndicator%d" % slot_idx
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.visible = false
-	label.z_index = 1
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 12)
+	var label := RESOURCE_INDICATOR_SCENE.instantiate() as Label
+	label.call("set_slot_index", slot_idx)
 	_cooldown_overlay.add_child(label)
 	_slot_resource_indicator_nodes[slot_idx] = label
 
@@ -419,22 +435,14 @@ func _ensure_slot_availability_label_node(slot_idx: int) -> void:
 	var existing := _slot_availability_label_nodes[slot_idx]
 	if existing != null and is_instance_valid(existing):
 		return
-	var label := Label.new()
-	label.name = "WeaponAvailability%d" % slot_idx
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.visible = false
-	label.z_index = 2
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.92))
-	label.add_theme_constant_override("outline_size", 2)
+	var label := AVAILABILITY_LABEL_SCENE.instantiate() as Label
+	label.call("set_slot_index", slot_idx)
 	_cooldown_overlay.add_child(label)
 	_slot_availability_label_nodes[slot_idx] = label
 
 func _ensure_slot_skill_nodes(slot_idx: int) -> void:
 	if _slot_skill_nodes[slot_idx] == null or not is_instance_valid(_slot_skill_nodes[slot_idx]):
-		var skill_bar := WEAPON_SLOT_STATUS_BAR_SCRIPT.new() as Control
+		var skill_bar := WEAPON_SLOT_STATUS_BAR_SCENE.instantiate() as Control
 		skill_bar.name = "WeaponSkillBar%d" % slot_idx
 		skill_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		skill_bar.z_index = 3
@@ -445,7 +453,7 @@ func _ensure_slot_skill_nodes(slot_idx: int) -> void:
 		_cooldown_overlay.add_child(skill_bar)
 		_slot_skill_nodes[slot_idx] = skill_bar
 	if _slot_hold_nodes[slot_idx] == null or not is_instance_valid(_slot_hold_nodes[slot_idx]):
-		var hold_bar := WEAPON_SLOT_STATUS_BAR_SCRIPT.new() as Control
+		var hold_bar := WEAPON_SLOT_STATUS_BAR_SCENE.instantiate() as Control
 		hold_bar.name = "WeaponHoldBar%d" % slot_idx
 		hold_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		hold_bar.visible = false
@@ -458,31 +466,14 @@ func _ensure_slot_skill_nodes(slot_idx: int) -> void:
 		_cooldown_overlay.add_child(hold_bar)
 		_slot_hold_nodes[slot_idx] = hold_bar
 	if _slot_key_labels[slot_idx] == null or not is_instance_valid(_slot_key_labels[slot_idx]):
-		var key_label := Label.new()
-		key_label.name = "WeaponKeyLabel%d" % slot_idx
-		key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		key_label.z_index = 5
-		key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		key_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		key_label.add_theme_font_size_override("font_size", 13)
-		key_label.add_theme_color_override("font_color", Color(0.88, 0.95, 1.0, 1.0))
-		key_label.add_theme_color_override("font_outline_color", Color(0.0, 0.02, 0.03, 0.96))
-		key_label.add_theme_constant_override("outline_size", 3)
+		var key_label := KEY_LABEL_SCENE.instantiate() as Label
+		key_label.call("set_slot_index", slot_idx)
 		_cooldown_overlay.add_child(key_label)
 		_slot_key_labels[slot_idx] = key_label
 		if _key_idle_style == null:
-			_key_idle_style = StyleBoxFlat.new()
-			_key_idle_style.bg_color = Color(0.02, 0.05, 0.07, 0.8)
-			_key_idle_style.border_color = Color("607b85")
-			_key_idle_style.set_corner_radius_all(2)
-			_key_idle_style.set_border_width_all(1)
-			_key_idle_style.border_width_bottom = 2
-			_key_ready_style = _key_idle_style.duplicate()
-			_key_ready_style.bg_color = Color("83f5bc")
-			_key_ready_style.border_color = Color("c2ffe1")
-			_key_ready_style.set_border_width_all(1)
-			_key_ready_style.border_width_bottom = 3
-		var state_icon := SKILL_STATE_ICON.new() as Control
+			_key_idle_style = key_label.get_theme_stylebox("normal") as StyleBoxFlat
+			_key_ready_style = key_label.get_theme_stylebox("pressed") as StyleBoxFlat
+		var state_icon := SKILL_STATE_ICON_SCENE.instantiate() as Control
 		state_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		state_icon.name = "SkillStateIcon%d" % slot_idx
 		state_icon.z_index = 6
@@ -728,7 +719,7 @@ func _update_slot_resource_indicators() -> void:
 		indicator.text = ""
 		var badge := indicator.get_node_or_null("ResourceSymbol") as Control
 		if badge == null:
-			badge = EFFECT_BADGE.new() as Control
+			badge = EFFECT_BADGE_SCENE.instantiate() as Control
 			badge.name = "ResourceSymbol"
 			badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			badge.size = Vector2(20, 20)
@@ -819,15 +810,8 @@ func _resource_indicator_color(slot: Dictionary) -> Color:
 
 func _style_resource_indicator(label: Label, color: Color) -> void:
 	label.add_theme_color_override("font_color", Color(0.04, 0.05, 0.06, 1.0))
-	var style := StyleBoxFlat.new()
+	var style := (label.get_theme_stylebox("normal") as StyleBoxFlat).duplicate() as StyleBoxFlat
 	style.bg_color = Color(color.r, color.g, color.b, 0.9)
-	style.border_color = Color(0.02, 0.03, 0.04, 0.82)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(3)
-	style.content_margin_left = 3.0
-	style.content_margin_right = 3.0
-	style.content_margin_top = 1.0
-	style.content_margin_bottom = 1.0
 	label.add_theme_stylebox_override("normal", style)
 
 func _apply_weapon_availability_label(label: Label, visual_state: Dictionary, is_mainhand: bool = false) -> void:
@@ -853,23 +837,13 @@ func _apply_weapon_availability_label(label: Label, visual_state: Dictionary, is
 func _ensure_cooldown_overlay() -> void:
 	if _cooldown_overlay != null and is_instance_valid(_cooldown_overlay):
 		return
-	_cooldown_overlay = Control.new()
-	_cooldown_overlay.name = "CooldownOverlay"
-	_cooldown_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_cooldown_overlay.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	_cooldown_overlay.offset_left = 0.0
-	_cooldown_overlay.offset_top = 0.0
-	_cooldown_overlay.offset_right = 0.0
-	_cooldown_overlay.offset_bottom = 0.0
-	# Keep the ring branch on the selector's own draw layer so it cannot cover sibling UI.
-	_cooldown_overlay.z_index = 0
+	_cooldown_overlay = SELECTOR_OVERLAY_SCENE.instantiate() as Control
 	add_child(_cooldown_overlay)
 
 func _sync_cooldown_overlay_layout() -> void:
 	if _cooldown_overlay == null or not is_instance_valid(_cooldown_overlay):
 		return
-	_cooldown_overlay.position = Vector2.ZERO
-	_cooldown_overlay.size = size
+	_cooldown_overlay.call("set_display_size", size)
 
 func _resolve_weapon_availability_state(weapon: Variant, is_mainhand: bool) -> Dictionary:
 	if weapon == null or not is_instance_valid(weapon):
@@ -1164,16 +1138,6 @@ func _ensure_debug_labels() -> void:
 		if slot_node == null:
 			continue
 		var label := slot_node.get_node_or_null("DebugIndex") as Label
-		if label == null:
-			label = Label.new()
-			label.name = "DebugIndex"
-			label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			label.set_anchors_preset(Control.PRESET_CENTER)
-			label.position = Vector2(-20.0, -10.0)
-			label.size = Vector2(40.0, 20.0)
-			slot_node.add_child(label)
 		label.visible = debug_mode
 
 func _update_debug_labels() -> void:

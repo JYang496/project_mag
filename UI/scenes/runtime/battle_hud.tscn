@@ -1,7 +1,8 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://UI/scripts/components/battle_hud_view.gd" id="1_fh7no"]
-[ext_resource type="Script" path="res://UI/scripts/weapon_selector.gd" id="2_86ani"]
+[ext_resource type="Script" path="res://UI/components/WeaponBar/WeaponBar.gd" id="2_86ani"]
+[ext_resource type="Script" path="res://UI/components/WeaponSlot/WeaponSlot.gd" id="5_weapon_slot"]
 [ext_resource type="Texture2D" path="res://UI/themes/modern/weapon_slot_main.png" id="3_gar8u"]
 [ext_resource type="Texture2D" path="res://UI/themes/modern/weapon_slot_support.png" id="4_btbbh"]
 [ext_resource type="PackedScene" path="res://UI/components/GoldHudDisplay/GoldHudDisplay.tscn" id="6_jiqn8"]
@@ -20,6 +21,20 @@ corner_radius_top_left = 2
 corner_radius_top_right = 2
 corner_radius_bottom_right = 2
 corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_status_label"]
+content_margin_left = 8.0
+content_margin_top = 3.0
+content_margin_right = 8.0
+content_margin_bottom = 3.0
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
 
 [node name="BattleHud" type="Control" unique_id=1096268923]
 layout_mode = 3
@@ -51,6 +66,7 @@ script = ExtResource("2_86ani")
 anchors_preset = 0
 offset_right = 96.0
 offset_bottom = 72.0
+script = ExtResource("5_weapon_slot")
 
 [node name="Background" type="TextureRect" parent="WeaponSelector/Slot0" unique_id=417292939]
 layout_mode = 1
@@ -80,11 +96,30 @@ grow_vertical = 2
 expand_mode = 1
 stretch_mode = 5
 
+[node name="DebugIndex" type="Label" parent="WeaponSelector/Slot0"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -10.0
+offset_right = 20.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="Slot1" type="Control" parent="WeaponSelector" unique_id=568142288]
 anchors_preset = 0
 offset_left = 104.0
 offset_right = 176.0
 offset_bottom = 72.0
+script = ExtResource("5_weapon_slot")
 
 [node name="Background" type="TextureRect" parent="WeaponSelector/Slot1" unique_id=591956055]
 layout_mode = 1
@@ -114,11 +149,30 @@ grow_vertical = 2
 expand_mode = 1
 stretch_mode = 5
 
+[node name="DebugIndex" type="Label" parent="WeaponSelector/Slot1"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -10.0
+offset_right = 20.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="Slot2" type="Control" parent="WeaponSelector" unique_id=1763285441]
 anchors_preset = 0
 offset_left = 184.0
 offset_right = 256.0
 offset_bottom = 72.0
+script = ExtResource("5_weapon_slot")
 
 [node name="Background" type="TextureRect" parent="WeaponSelector/Slot2" unique_id=2053267405]
 layout_mode = 1
@@ -148,11 +202,30 @@ grow_vertical = 2
 expand_mode = 1
 stretch_mode = 5
 
+[node name="DebugIndex" type="Label" parent="WeaponSelector/Slot2"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -10.0
+offset_right = 20.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="Slot3" type="Control" parent="WeaponSelector" unique_id=2127302516]
 anchors_preset = 0
 offset_left = 264.0
 offset_right = 336.0
 offset_bottom = 72.0
+script = ExtResource("5_weapon_slot")
 
 [node name="Background" type="TextureRect" parent="WeaponSelector/Slot3" unique_id=1800182055]
 layout_mode = 1
@@ -181,6 +254,24 @@ grow_horizontal = 2
 grow_vertical = 2
 expand_mode = 1
 stretch_mode = 5
+
+[node name="DebugIndex" type="Label" parent="WeaponSelector/Slot3"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -10.0
+offset_right = 20.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="Augments" type="Label" parent="." unique_id=360447397]
 visible = false
@@ -247,6 +338,11 @@ custom_minimum_size = Vector2(156, 26)
 offset_right = 156.0
 offset_bottom = 26.0
 mouse_filter = 2
+theme_override_colors/font_color = Color(0.93, 0.97, 1, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBox_status_label")
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="WeaponState" type="Label" parent="."]
 visible = false
@@ -255,6 +351,11 @@ offset_right = 168.0
 offset_bottom = 24.0
 mouse_filter = 2
 text = "Main: -- | PS: --"
+theme_override_colors/font_color = Color(0.93, 0.97, 1, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBox_status_label")
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="SpecialResourceSlot" type="Control" parent="."]
 layout_mode = 0

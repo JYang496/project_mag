@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/PurchaseDetailText/PurchaseDetailText.gd" id="1_script"]
+
+[node name="PurchaseDetailText" type="Label"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.86, 0.9, 0.92, 1)
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 2
+script = ExtResource("1_script")

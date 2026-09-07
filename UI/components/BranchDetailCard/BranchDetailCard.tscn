@@ -1,0 +1,63 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://UI/components/BranchDetailCard/BranchDetailCard.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://UI/components/DamageTypeIconRow/DamageTypeIconRow.tscn" id="2_icons"]
+[ext_resource type="PackedScene" path="res://UI/components/BranchFusionRecipe/BranchFusionRecipe.tscn" id="3_recipe"]
+[ext_resource type="PackedScene" path="res://UI/components/BranchAccentStrip/BranchAccentStrip.tscn" id="4_strip"]
+
+[sub_resource type="StyleBoxFlat" id="CardStyle"]
+bg_color = Color(0.045, 0.06, 0.075, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.24, 0.31, 0.36, 0.44)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+
+[node name="BranchDetailCard" type="PanelContainer"]
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("CardStyle")
+script = ExtResource("1_script")
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="BranchName" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="DamageType" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 1
+
+[node name="BranchDetailDamageTypeIcons" parent="Content/DamageType" instance=ExtResource("2_icons")]
+unique_name_in_owner = true
+
+[node name="Description" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+max_lines_visible = 5
+
+[node name="BranchFusionRecipe" parent="Content" instance=ExtResource("3_recipe")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="BranchAccentStripOverlay" parent="." instance=ExtResource("4_strip")]
+unique_name_in_owner = true

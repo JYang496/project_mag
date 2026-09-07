@@ -95,23 +95,6 @@ func _ensure_digit_label() -> void:
 	_digit_label = get_node_or_null("Digits") as Label
 	if _digit_label != null:
 		_update_digit_label()
-		return
-	# Compatibility fallback for callers that still instantiate the script directly.
-	_digit_label = Label.new()
-	_digit_label.name = "Digits"
-	_digit_label.position = Vector2(22.0, 13.0)
-	_digit_label.size = Vector2(72.0, 44.0)
-	_digit_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_digit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_digit_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_digit_label.add_theme_font_size_override("font_size", 36)
-	_digit_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.82))
-	_digit_label.add_theme_constant_override("outline_size", 2)
-	_digit_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.72))
-	_digit_label.add_theme_constant_override("shadow_offset_x", 1)
-	_digit_label.add_theme_constant_override("shadow_offset_y", 2)
-	add_child(_digit_label)
-	_update_digit_label()
 
 func _update_digit_label() -> void:
 	if _digit_label == null or not is_instance_valid(_digit_label):

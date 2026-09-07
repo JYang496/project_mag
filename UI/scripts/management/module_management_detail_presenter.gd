@@ -7,6 +7,7 @@ const BUILD_TAG_DISPLAY := preload("res://UI/scripts/build_tag_display.gd")
 const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
 const WEAPON_DISPLAY_POLICY := preload("res://UI/scripts/presentation/weapon_display_policy.gd")
 const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
+const WAREHOUSE_DETAIL_TEXT_SCENE := preload("res://UI/components/WarehouseDetailText/WarehouseDetailText.tscn")
 
 var owner_view: Node
 var detail_title: Label
@@ -170,11 +171,9 @@ func _add_detail_line(label: String, value: String) -> void:
 func _add_detail_text(text: String) -> void:
 	if text == "" or detail_body == null:
 		return
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", Color(0.82, 0.88, 0.9))
+	var label := WAREHOUSE_DETAIL_TEXT_SCENE.instantiate() as Label
 	detail_body.add_child(label)
+	label.call("set_data", text)
 
 func _add_detail_chip_row(chips: Array) -> void:
 	if chips.is_empty() or detail_body == null:

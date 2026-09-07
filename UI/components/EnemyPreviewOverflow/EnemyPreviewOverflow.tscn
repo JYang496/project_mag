@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://UI/components/EnemyPreviewOverflow/EnemyPreviewOverflow.gd" id="1_script"]
+[node name="EnemyPreviewOverflow" type="Label"]
+custom_minimum_size = Vector2(28, 38)
+theme_override_colors/font_color = Color(0.62, 0.76, 0.79, 1)
+theme_override_font_sizes/font_size = 13
+vertical_alignment = 1
+script = ExtResource("1_script")

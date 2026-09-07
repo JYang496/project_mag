@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/components/BranchFusionRecipe/BranchFusionRecipe.gd" id="1_script"]
+
+[node name="BranchFusionRecipe" type="HBoxContainer"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+script = ExtResource("1_script")
+
+[node name="FusionRecipePrefix" type="Label" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(54, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
+theme_override_font_sizes/font_size = 11
+vertical_alignment = 1
+
+[node name="FusionRecipeConditions" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3

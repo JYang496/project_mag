@@ -540,21 +540,6 @@ func _ensure_status_label() -> void:
 	_status_label = get_node_or_null("Status") as Label
 	if _status_label != null:
 		_update_status_label()
-		return
-	# Compatibility fallback for callers that still instantiate the script directly.
-	_status_label = Label.new()
-	_status_label.name = "Status"
-	_status_label.position = LABEL_OFFSET
-	_status_label.size = LABEL_SIZE
-	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_status_label.add_theme_font_size_override("font_size", 12)
-	_status_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
-	_status_label.add_theme_constant_override("shadow_offset_x", 1)
-	_status_label.add_theme_constant_override("shadow_offset_y", 1)
-	add_child(_status_label)
-	_update_status_label()
 
 func _apply_heat_gauge_opacity() -> void:
 	if _status_label != null:

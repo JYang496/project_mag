@@ -3,6 +3,9 @@ class_name PurchaseManagementView
 
 const WEAPON_DISPLAY_BUILDER := preload("res://UI/scripts/presentation/weapon_display_model_builder.gd")
 const WEAPON_STAT_FORMATTER := preload("res://UI/scripts/presentation/weapon_stat_formatter.gd")
+const PURCHASE_DETAIL_HEADER_SCENE := preload("res://UI/components/PurchaseDetailHeader/PurchaseDetailHeader.tscn")
+const PURCHASE_DETAIL_TEXT_SCENE := preload("res://UI/components/PurchaseDetailText/PurchaseDetailText.tscn")
+const PURCHASE_COLLAPSIBLE_DETAIL_SECTION_SCENE := preload("res://UI/components/PurchaseCollapsibleDetailSection/PurchaseCollapsibleDetailSection.tscn")
 
 @onready var shop_mode_buttons: HBoxContainer = $ShopModeButtons
 @onready var shop_weapon_mode_button: Button = $ShopModeButtons/BuyWeaponModeButton
@@ -386,46 +389,22 @@ func _add_detail_section(title: String, value: String) -> void:
 	_add_detail_text(value)
 
 func _add_detail_header(text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", 16)
-	label.add_theme_color_override("font_color", Color(0.63, 0.86, 0.95))
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var label := PURCHASE_DETAIL_HEADER_SCENE.instantiate() as Label
 	shop_detail_body.add_child(label)
+	label.call("set_data", text)
 
 func _add_detail_text(text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override("font_color", Color(0.86, 0.9, 0.92))
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var label := PURCHASE_DETAIL_TEXT_SCENE.instantiate() as Label
 	shop_detail_body.add_child(label)
+	label.call("set_data", text)
 
 
 func _add_collapsible_detail_section(title: String, lines: PackedStringArray, expanded: bool = false) -> void:
 	if shop_detail_body == null or lines.is_empty():
 		return
-	var toggle := Button.new()
-	toggle.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	toggle.text = ("▼ " if expanded else "▶ ") + title
-	toggle.add_theme_font_size_override("font_size", 15)
-	toggle.add_theme_color_override("font_color", Color(0.63, 0.86, 0.95))
-	shop_detail_body.add_child(toggle)
-	var body := VBoxContainer.new()
-	body.visible = expanded
-	body.add_theme_constant_override("separation", 6)
-	shop_detail_body.add_child(body)
-	for line in lines:
-		var label := Label.new()
-		label.text = line
-		label.add_theme_font_size_override("font_size", 13)
-		label.add_theme_color_override("font_color", Color(0.86, 0.9, 0.92))
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		body.add_child(label)
-	toggle.pressed.connect(func() -> void:
-		body.visible = not body.visible
-		toggle.text = ("▼ " if body.visible else "▶ ") + title
-	)
+	var section := PURCHASE_COLLAPSIBLE_DETAIL_SECTION_SCENE.instantiate() as VBoxContainer
+	shop_detail_body.add_child(section)
+	section.call("set_data", title, lines, expanded)
 
 func _items_match(a: Dictionary, b: Dictionary) -> bool:
 	if a.is_empty() or b.is_empty():

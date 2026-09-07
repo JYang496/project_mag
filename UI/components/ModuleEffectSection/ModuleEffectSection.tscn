@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://UI/components/ModuleEffectSection/ModuleEffectSection.gd" id="1_script"]
+[node name="ModuleEffectBox" type="VBoxContainer"]
+theme_override_constants/separation = 3
+script = ExtResource("1_script")
+[node name="ModuleEffectHeading" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
+theme_override_font_sizes/font_size = 13

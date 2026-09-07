@@ -30,10 +30,13 @@ func set_data(data: Dictionary) -> void:
 	stat_label.text = str(data.get("stats", ""))
 	modules_label.text = str(data.get("modules_label", ""))
 	equip_button.text = str(data.get("action", ""))
-	equip_button.disabled = not bool(data.get("available", false))
-	var panel_style := data.get("panel_style") as StyleBox
-	if panel_style != null:
-		add_theme_stylebox_override("panel", panel_style)
+	var available := bool(data.get("available", false))
+	equip_button.disabled = not available
+	var panel_style := (get_theme_stylebox("panel") as StyleBoxFlat).duplicate() as StyleBoxFlat
+	if not available:
+		panel_style.bg_color = Color(0.055, 0.06, 0.064, 0.94)
+		panel_style.border_color = Color(0.28, 0.31, 0.33, 0.72)
+	add_theme_stylebox_override("panel", panel_style)
 
 
 func set_sockets(items: Array, occupied_color: Color, empty_color: Color) -> void:

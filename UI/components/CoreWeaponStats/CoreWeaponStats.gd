@@ -1,7 +1,7 @@
 extends HBoxContainer
 
-@onready var headings: Array[Label] = [%DamageHeading, %FireIntervalHeading, %AmmoHeading]
-@onready var values: Array[Label] = [%DamageValue, %FireIntervalValue, %AmmoValue]
+@onready var headings: Array[Label] = [$CoreStatDamage/Heading, $CoreStatFireInterval/Heading, $CoreStatAmmo/Heading]
+@onready var values: Array[Label] = [$CoreStatDamage/Value, $CoreStatFireInterval/Value, $CoreStatAmmo/Value]
 
 
 func set_data(items: Array) -> void:

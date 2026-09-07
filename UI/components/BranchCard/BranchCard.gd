@@ -37,24 +37,14 @@ func set_data(data: Dictionary) -> void:
 
 
 func _apply_styles(accent: Color) -> void:
-	var icon_style := StyleBoxFlat.new()
-	icon_style.bg_color = Color(0.025, 0.035, 0.048, 0.98)
+	var icon_style := (icon_frame.get_theme_stylebox("panel") as StyleBoxFlat).duplicate() as StyleBoxFlat
 	icon_style.border_color = Color(accent.r, accent.g, accent.b, 0.55)
-	icon_style.set_border_width_all(1)
-	icon_style.set_corner_radius_all(6)
 	icon_frame.add_theme_stylebox_override("panel", icon_style)
 	for state in ["normal", "hover", "pressed", "focus"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.065, 0.085, 0.11, 0.96)
+		var style := (get_theme_stylebox(state) as StyleBoxFlat).duplicate() as StyleBoxFlat
 		style.border_color = Color(accent.r, accent.g, accent.b, 0.78)
-		style.set_border_width_all(1)
 		if state == "hover" or state == "focus":
-			style.bg_color = Color(0.085, 0.11, 0.145, 0.98)
 			style.border_color = accent
-			style.set_border_width_all(2)
 		elif state == "pressed":
-			style.bg_color = Color(0.11, 0.14, 0.17, 0.98)
 			style.border_color = Color(1, 1, 1, 0.92)
-			style.set_border_width_all(2)
-		style.set_corner_radius_all(8)
 		add_theme_stylebox_override(state, style)

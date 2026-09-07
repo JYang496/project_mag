@@ -1,9 +1,12 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://UI/components/RewardCard/RewardCard.gd" id="1_script"]
 
 [sub_resource type="StyleBoxFlat" id="ProgressBackground"]
 bg_color = Color(0.091, 0.1, 0.11, 1)
+
+[sub_resource type="StyleBoxFlat" id="ProgressFill"]
+bg_color = Color(0.956863, 0.772549, 0.258824, 1)
 
 [sub_resource type="StyleBoxFlat" id="BadgeStyle"]
 bg_color = Color(0.34, 0.78, 0.88, 0.22)
@@ -56,6 +59,7 @@ layout_mode = 2
 mouse_filter = 2
 show_percentage = false
 theme_override_styles/background = SubResource("ProgressBackground")
+theme_override_styles/fill = SubResource("ProgressFill")
 
 [node name="TopRow" type="HBoxContainer" parent="CardContentMargin/Body"]
 layout_mode = 2

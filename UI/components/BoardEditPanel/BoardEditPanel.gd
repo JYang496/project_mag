@@ -6,6 +6,8 @@ const CELL_BUTTON_SCENE := preload("res://UI/components/BoardCellButton/BoardCel
 const EFFECT_CARD_SCENE := preload("res://UI/components/CellEffectInventoryCard/CellEffectInventoryCard.tscn")
 const DRAG_PREVIEW_SCENE := preload("res://UI/components/BoardEffectDragPreview/BoardEffectDragPreview.tscn")
 const EMPTY_STATE_SCENE := preload("res://UI/components/EmptyStateLabel/EmptyStateLabel.tscn")
+const BOARD_CELL_BASE_STYLE := preload("res://UI/themes/board_cell_base_style.tres")
+const MANAGEMENT_BUTTON_BASE_STYLE := preload("res://UI/themes/management_button_base_style.tres")
 
 const MANAGEMENT_PANEL_BG := Color(0.045, 0.065, 0.09, 0.98)
 const MANAGEMENT_PANEL_BORDER := Color(0.18, 0.38, 0.52, 1.0)
@@ -309,29 +311,9 @@ func _make_cell_style(cell_id: int, hover: bool) -> StyleBoxFlat:
 	return style
 
 func _make_panel_style(bg: Color, border: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
+	var style := BOARD_CELL_BASE_STYLE.duplicate() as StyleBoxFlat
 	style.bg_color = bg
 	style.border_color = border
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(6)
-	style.content_margin_left = 8.0
-	style.content_margin_right = 8.0
-	style.content_margin_top = 6.0
-	style.content_margin_bottom = 6.0
-	return style
-
-func _make_management_panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = MANAGEMENT_PANEL_BG
-	style.border_color = MANAGEMENT_PANEL_BORDER
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(12)
-	style.shadow_color = Color(0, 0, 0, 0.45)
-	style.shadow_size = 12
-	style.content_margin_left = 8.0
-	style.content_margin_right = 8.0
-	style.content_margin_top = 6.0
-	style.content_margin_bottom = 6.0
 	return style
 
 func _style_management_button(button: Button) -> void:
@@ -340,11 +322,7 @@ func _style_management_button(button: Button) -> void:
 		return
 	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 44.0)
 	button.add_theme_font_size_override("font_size", 18)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = MANAGEMENT_BUTTON_BG
-	normal.border_color = MANAGEMENT_BUTTON_BORDER
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(7)
+	var normal := MANAGEMENT_BUTTON_BASE_STYLE.duplicate() as StyleBoxFlat
 	var hover := normal.duplicate() as StyleBoxFlat
 	hover.bg_color = normal.bg_color.lightened(0.12)
 	var pressed := normal.duplicate() as StyleBoxFlat

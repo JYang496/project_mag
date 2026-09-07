@@ -1,11 +1,74 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://UI/components/ModalDialogView/ModalDialogView.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="DialogBorder"]
+bg_color = Color(0.055, 0.066, 0.078, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 8
+shadow_offset = Vector2(0, 3)
+[sub_resource type="StyleBoxFlat" id="MessageStyle"]
+bg_color = Color(0.09, 0.11, 0.13, 0.92)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 8
+shadow_offset = Vector2(0, 3)
+[sub_resource type="StyleBoxFlat" id="CheckboxStyle"]
+bg_color = Color(0.08, 0.09, 0.1, 0.7)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.39, 0.46, 0.55)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 8
+shadow_offset = Vector2(0, 3)
+[sub_resource type="StyleBoxFlat" id="ButtonStyle"]
+content_margin_left = 12.0
+content_margin_top = 7.0
+content_margin_right = 12.0
+content_margin_bottom = 7.0
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+[sub_resource type="Theme" id="DialogTheme"]
+Button/styles/normal = SubResource("ButtonStyle")
+Button/styles/hover = SubResource("ButtonStyle")
+Button/styles/pressed = SubResource("ButtonStyle")
+Button/styles/focus = SubResource("ButtonStyle")
+Button/styles/disabled = SubResource("ButtonStyle")
 
 [node name="ModalDialogView" type="ConfirmationDialog"]
 dialog_text = ""
 borderless = true
 wrap_controls = false
+theme = SubResource("DialogTheme")
+theme_override_styles/embedded_border = SubResource("DialogBorder")
+theme_override_styles/embedded_unfocused_border = SubResource("DialogBorder")
 script = ExtResource("1_script")
 
 [node name="Content" type="VBoxContainer" parent="."]
@@ -63,6 +126,7 @@ theme_override_constants/separation = 10
 [node name="MessagePanel" type="PanelContainer" parent="Content/BodyScroll/BodyContent"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_styles/panel = SubResource("MessageStyle")
 
 [node name="MessageMargin" type="MarginContainer" parent="Content/BodyScroll/BodyContent/MessagePanel"]
 layout_mode = 2
@@ -91,6 +155,7 @@ theme_override_constants/separation = 6
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
+theme_override_styles/panel = SubResource("CheckboxStyle")
 
 [node name="CheckboxMargin" type="MarginContainer" parent="Content/BodyScroll/BodyContent/CheckboxPanel"]
 layout_mode = 2
