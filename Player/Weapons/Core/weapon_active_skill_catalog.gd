@@ -1,6 +1,9 @@
 extends RefCounted
 class_name WeaponActiveSkillCatalog
 
+const AMMO_REFILL_DESCRIPTION_KEY := "ui.weapon.skill.shared.ammo_refill"
+const AMMO_REFILL_FALLBACK := "If this weapon uses ammo, instantly refill it to full and interrupt any reload in progress."
+
 const PROFILES := {
 	&"machine_gun_infinite_chain": {"name_key": "ui.weapon.skill.machine_gun_infinite_chain.name", "description_key": "ui.weapon.skill.machine_gun_infinite_chain.description", "fallback_name": "Infinite Ammo Chain", "fallback_description": "For 3 seconds, shots consume no ammo and attack speed is multiplied by 5. Every 5 damaging hits grants +8% damage, up to 5 stacks.", "duration": 3.0},
 	&"charged_blaster_prism_overload": {"name_key": "ui.weapon.skill.charged_blaster_prism_overload.name", "description_key": "ui.weapon.skill.charged_blaster_prism_overload.description", "fallback_name": "Prism Overload", "fallback_description": "The next charged beam splits into 6 homing energy bolts when it ends. Each bolt deals 35% weapon damage.", "duration": 0.0},
@@ -29,7 +32,9 @@ static func get_skill_name(effect_id: StringName) -> String:
 static func get_skill_description(effect_id: StringName) -> String:
 	var profile := get_profile(effect_id)
 	var fallback := str(profile.get("fallback_description", ""))
-	return _translate(str(profile.get("description_key", "")), fallback)
+	var description := _translate(str(profile.get("description_key", "")), fallback)
+	var ammo_refill_description := _translate(AMMO_REFILL_DESCRIPTION_KEY, AMMO_REFILL_FALLBACK)
+	return ammo_refill_description if description.is_empty() else "%s\n%s" % [description, ammo_refill_description]
 
 static func get_duration(effect_id: StringName) -> float:
 	return maxf(float(get_profile(effect_id).get("duration", 0.0)), 0.0)

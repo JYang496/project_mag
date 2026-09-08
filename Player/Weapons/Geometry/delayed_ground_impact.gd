@@ -90,13 +90,16 @@ func _create_projected_visuals() -> void:
 	_shell_visual = Node2D.new()
 	_shell_visual.name = "ProjectedShell"
 	_shell_visual.set_script(BILLBOARD_VISUAL)
-	var shell_shape := Polygon2D.new()
-	shell_shape.color = Color(1.0, 0.82, 0.42, 0.95)
-	var points := PackedVector2Array()
-	for index in range(12):
-		points.append(Vector2.RIGHT.rotated(TAU * float(index) / 12.0) * 7.0)
-	shell_shape.polygon = points
+	var shell_shape := Sprite2D.new()
+	shell_shape.texture = preload("res://asset/images/weapons/projectiles/cannon_shell.png")
+	shell_shape.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_shell_visual.add_child(shell_shape)
+	if idle_empowered:
+		# Extra armor fins change the silhouette without touching the impact area.
+		var fins := Polygon2D.new()
+		fins.polygon = PackedVector2Array([Vector2(-10,7),Vector2(-7,-2),Vector2(0,-12),Vector2(7,-2),Vector2(10,7),Vector2(4,4),Vector2(0,-7),Vector2(-4,4)])
+		fins.color = Color("b7c5ce")
+		_shell_visual.add_child(fins)
 	add_child(_shell_visual)
 	_update_shell_visual()
 
@@ -111,6 +114,9 @@ func _update_shell_visual() -> void:
 	_shell_visual.call("set_logical_local_position", shell_position)
 
 func _apply_impact() -> void:
+	var vfx := preload("res://Player/Weapons/Effects/projectile_impact_vfx_service.gd").ensure(get_tree())
+	if vfx != null:
+		vfx.play(impact_position, origin_position.direction_to(impact_position), impact_damage_type, 2, &"explode", {"ground": true, "empowered": idle_empowered})
 	if source_weapon == null or not is_instance_valid(source_weapon):
 		return
 	var strongest_final_damage: int = 0
@@ -146,6 +152,8 @@ func _apply_impact() -> void:
 		if source_weapon.has_method("on_hit_target_with_damage_type"):
 			source_weapon.call("on_hit_target_with_damage_type", enemy, impact_damage_type)
 	if source_weapon.has_method("on_cannon_ground_impact_complete"):
+		if idle_empowered and applied_count > 0:
+			TimeImpactController.trigger_weapon_impact(&"cannon_empowered", 0.04)
 		source_weapon.call(
 			"on_cannon_ground_impact_complete", self, impact_position,
 			impact_damage, strongest_final_damage, applied_count
@@ -153,6 +161,40 @@ func _apply_impact() -> void:
 
 func _draw() -> void:
 	if _trajectory_line != null:
+		if _impacted:
+			return
+		var t := clampf(_elapsed_sec / impact_delay_sec, 0.0, 1.0)
+		var view := get_tree().get_first_node_in_group(&"hybrid_ground_view_3d")
+		var center := impact_position
+		var shadow := origin_position.lerp(impact_position, t)
+		var center_visible := true
+		var shadow_visible := true
+		if view != null:
+			center_visible = view.call("can_project_world_point", center)
+			shadow_visible = view.call("can_project_world_point", shadow)
+			if center_visible:
+				center = view.call("project_world_to_canvas", center, get_viewport())
+			if shadow_visible:
+				shadow = view.call("project_world_to_canvas", shadow, get_viewport())
+		center = to_local(center).round()
+		shadow = to_local(shadow).round()
+		if shadow_visible:
+			draw_set_transform(shadow, 0, Vector2(1, 0.45))
+			draw_circle(Vector2.ZERO, 6, Color(0.08, 0.07, 0.09, 0.4))
+			draw_set_transform(Vector2.ZERO)
+		if not center_visible:
+			return
+		var blink := impact_delay_sec - _elapsed_sec <= 0.1 and int(_elapsed_sec * 40) % 2 == 0
+		var accent := Color.WHITE if blink else telegraph_color
+		var radius := lerpf(28, 7, t)
+		draw_arc(center, radius, 0, TAU, 16, accent, 1)
+		if idle_empowered:
+			var diamond := PackedVector2Array([center+Vector2(0,-10),center+Vector2(10,0),center+Vector2(0,10),center+Vector2(-10,0),center+Vector2(0,-10)])
+			draw_polyline(diamond, accent, 2)
+			draw_arc(center, radius + 5, 0, TAU, 8, accent, 1)
+		else:
+			draw_line(center-Vector2(5,0),center+Vector2(5,0),accent,1)
+			draw_line(center-Vector2(0,5),center+Vector2(0,5),accent,1)
 		return
 	var progress: float = clampf(_elapsed_sec / impact_delay_sec, 0.0, 1.0)
 	var marker_alpha: float = 0.30 + progress * 0.35

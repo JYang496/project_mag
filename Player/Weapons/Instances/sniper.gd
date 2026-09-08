@@ -69,10 +69,6 @@ func _fire_hitscan(base_shot_damage: int, force_maximum_distance_bonus: bool, le
 		self, origin, projectile_direction, attack_range, hitscan_width * maxf(size, 0.01), hitscan_world_blocker_mask
 	)
 	var end_position: Vector2 = result.get("end_position", origin)
-	HITSCAN_LINE.spawn_tracer(
-		get_projectile_spawn_parent(), origin, end_position,
-		hitscan_width * maxf(size, 0.01), tracer_duration_sec
-	)
 	var ordered_targets: Array = result.get("targets", [])
 	var hit_limit: int = ordered_targets.size() if lethal_aim else mini(maxi(projectile_hits, 1), ordered_targets.size())
 	var pierce_growth: int = _get_branch_pierce_damage_gain_per_hit()
@@ -100,6 +96,16 @@ func _fire_hitscan(base_shot_damage: int, force_maximum_distance_bonus: bool, le
 		if owner_player != null and is_instance_valid(owner_player):
 			owner_player.apply_bonus_hit_if_needed(target)
 		on_hit_target_with_damage_type(target, Attack.TYPE_PHYSICAL)
+	# Damage is already settled; these segments only describe the completed shot.
+	var segment_start := origin
+	for segment_index in range(hit_limit + 1):
+		var segment_end := end_position
+		if segment_index < hit_limit:
+			segment_end = origin + projectile_direction.normalized() * float(ordered_targets[segment_index]["distance"])
+		HITSCAN_LINE.spawn_tracer(get_projectile_spawn_parent(), segment_start, segment_end,
+			hitscan_width * maxf(size, 0.01), tracer_duration_sec,
+			maxf(0.25, pow(0.78, segment_index)))
+		segment_start = segment_end
 
 func _get_hitscan_distance_scaled_damage(
 	target: Node,

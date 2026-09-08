@@ -6,6 +6,19 @@ const MAX_ACTIVE_EFFECTS := 12
 var _entries: Array[Dictionary] = []
 var _serial := 0
 
+func _ready() -> void:
+	PhaseManager.phase_changed.connect(_on_phase_changed)
+
+func _on_phase_changed(phase: String) -> void:
+	if phase == PhaseManager.BATTLE:
+		return
+	for entry in _entries:
+		var visual := entry.get("visual") as Node2D
+		if is_instance_valid(visual):
+			visual.visible = false
+			visual.set_process(false)
+		entry["active"] = false
+
 static func ensure(tree: SceneTree) -> Node:
 	if tree == null or tree.root == null:
 		return null

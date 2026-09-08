@@ -2,10 +2,10 @@ extends Ranger
 class_name Cannon
 
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/plasma.png")
+var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/cannon_shell.png")
 
 var ITEM_NAME := "Cannon"
-const BULLET_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_CANNON_SIZE
+const BULLET_PIXEL_SIZE := Vector2(14, 18)
 const SKILL_BLAST_PULSE := preload("res://Player/Weapons/Effects/weapon_skill_blast_pulse.gd")
 const DELAYED_GROUND_IMPACT := preload("res://Player/Weapons/Geometry/delayed_ground_impact.gd")
 const SIEGE_SKILL_FLIGHT_SEC := 0.85
@@ -162,7 +162,7 @@ func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
 	shell.knock_back = {"amount": 180.0, "angle": projectile_direction}
 	shell.global_position = get_muzzle_global_position()
 	shell.projectile_texture = projectile_texture_resource
-	shell.desired_pixel_size = BULLET_PIXEL_SIZE * 2.5
+	shell.desired_pixel_size = BULLET_PIXEL_SIZE * 2.0
 	shell.size = size
 	shell.expire_time = SIEGE_SKILL_FLIGHT_SEC
 	shell.wall_collision_mask = 32

@@ -20,9 +20,9 @@ func setup(weapon: Weapon, direction: Vector2, shared_hit_counts: Dictionary) ->
 func _ready() -> void:
 	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	_projected_streak = Line2D.new()
-	_projected_streak.width = 12.0
-	_projected_streak.default_color = Color(1.0, 0.42, 0.12, 0.95)
-	_projected_streak.points = PackedVector2Array([Vector2(-10.0, 0.0), Vector2(10.0, 0.0)])
+	_projected_streak.width = 4.0
+	_projected_streak.default_color = Color(1.0, 0.91, 0.65, 0.95)
+	_projected_streak.points = PackedVector2Array([Vector2(-5.0, 0.0), Vector2(3.0, 0.0)])
 	_projected_streak.rotation = velocity.angle()
 	_projected_streak.set_meta(&"hybrid_ground_visible", true)
 	_projected_streak.set_meta(&"hybrid_segment_style", &"beam")
@@ -51,6 +51,9 @@ func _process(delta: float) -> void:
 		queue_free()
 
 func _explode() -> void:
+	var service := preload("res://Player/Weapons/Effects/projectile_impact_vfx_service.gd").ensure(get_tree())
+	if service != null:
+		service.play(global_position, velocity.normalized(), Attack.TYPE_FIRE, 1, &"explode")
 	if source_weapon == null or not is_instance_valid(source_weapon):
 		return
 	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(get_tree(), global_position, radius):
@@ -67,9 +70,13 @@ func _explode() -> void:
 			{"amount": 25.0, "angle": global_position.direction_to(enemy.global_position)},
 			DamageData.SOURCE_PLAYER_WEAPON, DamageDeliveryType.AREA
 		)
-		DamageManager.apply_to_target(enemy, data)
+		var result := DamageManager.apply_to_target_result(enemy, data)
+		if result.applied and result.killed and previous_hits > 0:
+			TimeImpactController.trigger_weapon_impact(&"rocket_cluster_finish", 0.035)
 
 func _draw() -> void:
 	var pulse := 0.75 + sin(_elapsed * 24.0) * 0.2
-	draw_circle(Vector2.ZERO, 7.0 * pulse, Color(1.0, 0.42, 0.16, 0.95))
-	draw_line(Vector2.ZERO, -velocity.normalized() * 14.0, Color(1.0, 0.78, 0.3, 0.75), 3.0)
+	if bool(_projected_streak.get_meta(&"hybrid_ground_registered", false)):
+		return
+	draw_rect(Rect2(Vector2(-2,-2), Vector2(4,4)), Color(1.0, 0.92, 0.7, pulse))
+	draw_line(Vector2.ZERO, -velocity.normalized() * 7.0, Color(1.0, 0.78, 0.3, 0.75), 2.0)

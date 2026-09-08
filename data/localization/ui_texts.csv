@@ -675,6 +675,7 @@ ui.controls.auto_fire,Automatic Fire,自动开火
 ui.controls.weapon_skill_hold,Switch Weapon & Cast Skill,切换武器并释放技能
 ui.controls.switch_weapon_hold,Cycle / Tap: Select,轮换 / 短按：选择
 ui.weapon.skill.overdrive,Weapon Overdrive,武器过载
+ui.weapon.skill.shared.ammo_refill,"If this weapon uses ammo, instantly refill it to full and interrupt any reload in progress.",如果该武器拥有弹药，则立刻填满全部弹药；如果正在换弹，则立刻打断换弹。
 ui.weapon.skill.machine_gun_infinite_chain.name,Infinite Ammo Chain,无限弹链
 ui.weapon.skill.machine_gun_infinite_chain.description,"For 3 seconds, shots consume no ammo and attack speed is multiplied by 5. Every 5 damaging hits grants +8% damage, up to 5 stacks.","3秒内射击不消耗弹药且攻击速度提升至5倍；每造成5次有效命中，伤害提高8%，最多5层。"
 ui.weapon.skill.charged_blaster_prism_overload.name,Prism Overload,棱镜过载

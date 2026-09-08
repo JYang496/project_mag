@@ -10,6 +10,25 @@ var _impact_tween: Tween
 var _impact_token: int = 0
 var _impact_active: bool = false
 var _recovery_target_scale: float = 1.0
+var _last_weapon_impact_msec := -1000000
+
+func _ready() -> void:
+	PhaseManager.phase_changed.connect(_on_phase_changed)
+
+func _on_phase_changed(phase: String) -> void:
+	if phase != PhaseManager.BATTLE and _impact_active:
+		cancel_active_impact(true)
+
+func trigger_weapon_impact(event: StringName, duration_sec: float = 0.03) -> void:
+	if event not in [&"sniper_far_kill", &"cannon_empowered", &"rocket_cluster_finish"]:
+		return
+	if PhaseManager.current_state() != PhaseManager.BATTLE or _impact_active:
+		return
+	var now := Time.get_ticks_msec()
+	if now - _last_weapon_impact_msec < 450:
+		return
+	_last_weapon_impact_msec = now
+	_trigger_impact(0.82, clampf(duration_sec, 0.02, 0.045), 0.02)
 
 
 func trigger_elite_kill_impact() -> void:

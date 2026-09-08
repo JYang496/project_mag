@@ -22,7 +22,6 @@ func finalize_death(killing_attack: Attack, grant_standard_rewards: bool = true)
 			if enemy is EliteEnemy:
 				PlayerData.run_elite_kills += 1
 			_notify_player_enemy_killed(killing_attack, death_position)
-		_try_trigger_elite_kill_impact(killing_attack)
 	_spawn_death_vfx(death_position, killing_attack)
 	enemy.enemy_death.emit(true)
 	if bool(enemy.get("is_boss")) and enemy.has_method("begin_boss_death_release"):
@@ -62,15 +61,6 @@ func _roll_kill_gold_drop_value() -> int:
 	if GlobalVariables.economy_data:
 		return max(1, int(GlobalVariables.economy_data.enemy_coin_drop_value))
 	return max(1, int(EconomyConfig.new().enemy_coin_drop_value))
-
-func _try_trigger_elite_kill_impact(killing_attack: Attack) -> void:
-	if not (enemy is EliteEnemy):
-		return
-	if killing_attack == null or not killing_attack.is_from_player():
-		return
-	var controller: Node = enemy.get_tree().root.get_node_or_null("TimeImpactController")
-	if controller and controller.has_method("trigger_elite_kill_impact"):
-		controller.trigger_elite_kill_impact()
 
 func _notify_player_enemy_killed(killing_attack: Attack, death_position: Vector2) -> void:
 	if PlayerData.player == null or not is_instance_valid(PlayerData.player):

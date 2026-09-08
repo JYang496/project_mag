@@ -30,6 +30,10 @@ func on_projectile_will_despawn() -> void:
 	if _detonated:
 		return
 	_detonated = true
+	if is_inside_tree() and PhaseManager.current_state() == PhaseManager.BATTLE:
+		var service := preload("res://Player/Weapons/Effects/projectile_impact_vfx_service.gd").ensure(get_tree())
+		if service != null:
+			service.play(projectile.global_position, projectile.base_displacement.normalized(), damage_type, 2, &"explode")
 	var area_effect := area_effect_scene.instantiate() as AreaEffect
 	area_effect.one_shot_damage = damage
 	area_effect.tick_damage = area_tick_damage

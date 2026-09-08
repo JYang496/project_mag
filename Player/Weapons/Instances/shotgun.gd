@@ -157,7 +157,8 @@ func _spawn_shotgun_wave(
 	volley_id: int,
 	wave_index: int
 ) -> void:
-	for dir in shot_directions:
+	for pellet_index in range(shot_directions.size()):
+		var dir := shot_directions[pellet_index]
 		var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 		if spawn_projectile == null:
 			continue
@@ -166,6 +167,10 @@ func _spawn_shotgun_wave(
 		spawn_projectile.damage_type = damage_type
 		spawn_projectile.global_position = global_position
 		spawn_projectile.projectile_texture = projectile_texture_resource
+		spawn_projectile.desired_pixel_size = Vector2(3, 10)
+		var center_distance := absf(float(pellet_index) - float(shot_directions.size() - 1) * 0.5)
+		var brightness := 1.0 - 0.28 * center_distance / maxf(float(shot_directions.size() - 1) * 0.5, 1.0)
+		spawn_projectile.presentation_tint = Color(brightness, brightness * 0.9, brightness * 0.72)
 		spawn_projectile.size = size
 		spawn_projectile.hp = projectile_hits
 		spawn_projectile.expire_time = get_effective_projectile_lifetime()
@@ -187,6 +192,16 @@ func _spawn_delayed_second_wave(
 	if not is_inside_tree() or not is_attack_phase_allowed():
 		return
 	_spawn_shotgun_wave(shot_directions, runtime_damage, damage_multiplier, damage_type, volley_id, 2)
+	if fire_feedback_profile != null:
+		var second_profile := fire_feedback_profile.duplicate()
+		second_profile.set("muzzle_length_scale", 0.75)
+		second_profile.set("muzzle_width_scale", 0.8)
+		second_profile.set("fire_audio_pitch_scale", 1.12)
+		second_profile.set("fire_audio_volume_db", float(fire_feedback_profile.get("fire_audio_volume_db")) - 2.0)
+		if fire_feedback_player == null:
+			fire_feedback_player = WeaponFireFeedbackPlayerScript.new()
+			fire_feedback_player.setup(self)
+		fire_feedback_player.play(second_profile, get_aim_forward(), _should_play_weapon_audio_feedback(), false)
 	emit_passive_trigger(&"shotgun_double_breach_second_wave", {
 		"volley_id": volley_id,
 		"projectile_count": shot_directions.size(),

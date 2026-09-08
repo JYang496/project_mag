@@ -58,13 +58,13 @@ static func collect_ordered_targets(
 	ordered.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["distance"]) < float(b["distance"]))
 	return {"end_position": end_position, "targets": ordered}
 
-static func spawn_tracer(parent: Node, origin: Vector2, end_position: Vector2, width: float, duration: float) -> void:
+static func spawn_tracer(parent: Node, origin: Vector2, end_position: Vector2, width: float, duration: float, brightness: float = 1.0) -> void:
 	if parent == null or not is_instance_valid(parent):
 		return
 	var tracer := Node2D.new()
 	var line := Line2D.new()
 	line.width = maxf(width, 1.0)
-	line.default_color = Color(1.0, 0.9, 0.62, 0.92)
+	line.default_color = Color(1.0, 0.9, 0.62, 0.92 * brightness)
 	line.points = PackedVector2Array([Vector2.ZERO, end_position - origin])
 	line.set_meta(&"hybrid_ground_visible", true)
 	line.set_meta(&"hybrid_segment_style", &"beam")
@@ -75,8 +75,9 @@ static func spawn_tracer(parent: Node, origin: Vector2, end_position: Vector2, w
 	if HYBRID_GROUND_REGISTRATION.register(line, &"register_ground_segment"):
 		line.visible = false
 	tracer.tree_exiting.connect(func() -> void: HYBRID_GROUND_REGISTRATION.unregister(line), CONNECT_ONE_SHOT)
-	var timer := tracer.get_tree().create_timer(maxf(duration, 0.01), false)
-	timer.timeout.connect(tracer.queue_free, CONNECT_ONE_SHOT)
+	var fade := tracer.create_tween()
+	fade.tween_property(line, "default_color:a", 0.0, maxf(duration, 0.01))
+	fade.tween_callback(tracer.queue_free)
 
 static func _resolve_hurtbox_target(hurt_box: HurtBox) -> Node2D:
 	var target: Node = null

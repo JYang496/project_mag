@@ -90,6 +90,7 @@ enum MechaVisualState {
 var _mecha_visual_state: int = MechaVisualState.IDLE
 var _last_mecha_facing_direction: Vector2 = Vector2(-1.0, 1.0)
 var _current_move_animation: StringName = StringName()
+var _move_is_backward := false
 var _last_visual_position: Vector2 = Vector2.ZERO
 @export var camera_zoom_lerp_speed: float = 1.0
 @export var battle_camera_view_mul: float = 0.8
@@ -121,6 +122,8 @@ const PixelArtPolicyType := preload("res://Visual/pixel_art_policy.gd")
 @export var move_animation_scale_multiplier: float = 1.0
 @export var mecha_idle_top_texture: Texture2D = DEFAULT_MECHA_IDLE_TOP_TEXTURE
 @export var mecha_idle_bottom_texture: Texture2D = DEFAULT_MECHA_IDLE_BOTTOM_TEXTURE
+@export var mecha_idle_sprite_frames: SpriteFrames
+@export_range(1.0, 12.0, 0.5) var idle_animation_fps: float = 6.0
 @export var mecha_move_sprite_frames: SpriteFrames = DEFAULT_MECHA_MOVE_SPRITE_FRAMES
 @export var face_axis_hysteresis: float = 0.08
 @export var face_min_distance_px: float = 6.0
@@ -147,6 +150,8 @@ var _board_generator_ref: Node = null
 var _last_move_input_dir: Vector2 = Vector2.ZERO
 var _last_move_input_msec: int = -1
 var _last_movement_mode: StringName = &"idle"
+var _idle_animation_elapsed: float = 0.0
+var _idle_animation_frame: int = 0
 var _last_face_horizontal_sign: int = -1
 var _last_face_vertical_sign: int = 1
 var _last_move_anim_is_top: bool = false
@@ -324,6 +329,7 @@ func _physics_process(delta):
 	elif fixed_oblique_enabled:
 		visual_facing = FixedObliqueProjectionType.world_vector_to_screen(distance_mouse_player)
 	_update_mecha_visual_state(visual_facing)
+	_update_idle_animation(delta)
 	_update_projected_depth()
 	_update_weapon_orbits(delta)
 	if not _require_camera_system_or_halt():
@@ -1346,6 +1352,24 @@ func _setup_mecha_move_sprite() -> void:
 	_set_mecha_visual_state(MechaVisualState.IDLE)
 	_update_mecha_direction(_last_mecha_facing_direction)
 
+func _update_idle_animation(delta: float) -> void:
+	if _mecha_visual_state != MechaVisualState.IDLE:
+		return
+	if mecha_sprite == null or mecha_idle_sprite_frames == null:
+		return
+	var animation_name: StringName = &"idle_top" if current_mecha_direction.begins_with("top") else &"idle_bottom"
+	if not mecha_idle_sprite_frames.has_animation(animation_name):
+		return
+	var frame_count := mecha_idle_sprite_frames.get_frame_count(animation_name)
+	if frame_count <= 0:
+		return
+	_idle_animation_elapsed += maxf(delta, 0.0)
+	var frame_duration := 1.0 / maxf(idle_animation_fps, 1.0)
+	while _idle_animation_elapsed >= frame_duration:
+		_idle_animation_elapsed -= frame_duration
+		_idle_animation_frame = (_idle_animation_frame + 1) % frame_count
+		mecha_sprite.texture = mecha_idle_sprite_frames.get_frame_texture(animation_name, _idle_animation_frame)
+
 func _resize_mecha_move_sprite(animation_name: StringName) -> void:
 	if mecha_move_sprite == null or mecha_move_sprite.sprite_frames == null:
 		return
@@ -1425,8 +1449,6 @@ func _update_mecha_visual_state(direction: Vector2) -> void:
 	_last_visual_position = global_position
 
 func _set_mecha_visual_state(next_state: int) -> void:
-	if _mecha_visual_state == next_state and mecha_sprite != null and mecha_move_sprite != null:
-		return
 	_mecha_visual_state = next_state
 	var is_idle := _mecha_visual_state == MechaVisualState.IDLE
 	if mecha_sprite != null:
@@ -1450,6 +1472,26 @@ func _update_mecha_move_animation(direction: Vector2) -> void:
 			next_is_top = true
 	_last_move_anim_is_top = next_is_top
 	var animation_name: StringName = MOVE_ANIMATION_TOP if next_is_top else MOVE_ANIMATION_BOTTOM
+	var backward_animation: StringName = &"move_top_backward" if next_is_top else &"move_bottom_backward"
+	if mecha_move_sprite.sprite_frames != null and mecha_move_sprite.sprite_frames.has_animation(backward_animation):
+		var travel := velocity
+		if travel.length_squared() <= 0.0001:
+			travel = global_position - _last_visual_position
+		if travel.length_squared() <= 0.0001 and moveto_enabled:
+			travel = moveto_dest - global_position
+		var hybrid_view := _get_hybrid_ground_view()
+		if hybrid_view != null:
+			travel = hybrid_view.call("world_vector_to_screen", travel, global_position) as Vector2
+		elif fixed_oblique_enabled:
+			travel = FixedObliqueProjectionType.world_vector_to_screen(travel)
+		if travel.length_squared() > 0.0001 and direction.length_squared() > 0.0001:
+			var alignment := travel.normalized().dot(direction.normalized())
+			if alignment < -0.15:
+				_move_is_backward = true
+			elif alignment > 0.15:
+				_move_is_backward = false
+		if _move_is_backward:
+			animation_name = backward_animation
 	if _current_move_animation != animation_name:
 		_current_move_animation = animation_name
 		mecha_move_sprite.play(animation_name)
@@ -1577,11 +1619,18 @@ func _update_mecha_direction(direction: Vector2) -> void:
 	if new_dir == "" or new_dir == current_mecha_direction:
 		return
 	current_mecha_direction = new_dir
-	mecha_sprite.flip_h = _last_face_horizontal_sign > 0
+	var faces_right := _last_face_horizontal_sign > 0
+	mecha_sprite.flip_h = not faces_right if new_dir.begins_with("bottom") else faces_right
 	var direction_texture: Texture2D = mecha_idle_top_texture if new_dir.begins_with("top") else mecha_idle_bottom_texture
 	if direction_texture != null:
 		mecha_sprite.texture = direction_texture
 		_resize_mecha_sprite()
+	_idle_animation_elapsed = 0.0
+	_idle_animation_frame = 0
+	var animation_name: StringName = &"idle_top" if new_dir.begins_with("top") else &"idle_bottom"
+	if mecha_idle_sprite_frames != null and mecha_idle_sprite_frames.has_animation(animation_name):
+		if mecha_idle_sprite_frames.get_frame_count(animation_name) > 0:
+			mecha_sprite.texture = mecha_idle_sprite_frames.get_frame_texture(animation_name, 0)
 
 func _compute_stable_mecha_direction(direction: Vector2) -> String:
 	var distance: float = direction.length()

@@ -65,6 +65,7 @@ func request() -> bool:
 		_read_tags(definition),
 		energy_cost
 	)
+	weapon.refill_ammo_instantly()
 	if not weapon.activate_weapon_skill_effect(_active_context):
 		# A configured skill must commit a concrete effect. Refund the consumed
 		# readiness/energy is intentionally avoided: failure is a content error.

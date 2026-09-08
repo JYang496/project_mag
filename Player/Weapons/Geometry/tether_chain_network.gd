@@ -148,6 +148,14 @@ func _create_connection_line(line_name: String, color: Color, width: float) -> L
 	line.set_meta(&"hybrid_ground_visible", false)
 	line.set_meta(&"hybrid_segment_style", &"beam")
 	add_child(line)
+	var flow := preload("res://Player/Weapons/Effects/beam_flow_visual.gd").new()
+	flow.name = "FlowAccent"
+	flow.chain = true
+	flow.body_width = clampf(roundf(width), 2.0, 8.0)
+	flow.body_color = Color(color, 0.28)
+	flow.phase_offset = float(_chain_lines.size() + 1) * 0.14 if line_name != "PrimaryTether" else 0.0
+	add_child(flow)
+	line.set_meta(&"flow_accent", flow)
 	return line
 
 func _register_connection_lines() -> void:
@@ -190,9 +198,15 @@ func _sync_connection_lines() -> void:
 		)
 
 func _set_connection_line(line: Line2D, start: Vector2, end: Vector2, enabled: bool) -> void:
+	var flow := line.get_meta(&"flow_accent") as Node2D
+	flow.set("start", start)
+	flow.set("finish", end)
+	flow.set("active", enabled)
 	line.points = PackedVector2Array([to_local(start), to_local(end)]) if enabled else PackedVector2Array()
-	line.set_meta(&"hybrid_ground_visible", enabled)
-	line.visible = enabled and not bool(line.get_meta(&"hybrid_ground_registered", false))
+	# Endpoints remain available to existing consumers; the bent canvas visual
+	# owns both body and core so no straight strip cuts through its corners.
+	line.set_meta(&"hybrid_ground_visible", false)
+	line.visible = false
 
 func _find_nearest_unique(origin: Vector2, used: Dictionary) -> Node2D:
 	var best: Node2D

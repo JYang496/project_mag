@@ -242,6 +242,9 @@ func _play_player_weapon_hit_feedback(target: Node, data: DamageData, result: Da
 	var source_weapon := resolve_source_weapon(data.source_node)
 	if source_weapon == null:
 		return
+	if source_weapon.has_method("play_typed_hit_feedback"):
+		source_weapon.call("play_typed_hit_feedback", target, data, result)
+		return
 	if source_weapon.has_method("play_hit_feedback"):
 		source_weapon.call("play_hit_feedback", target)
 

@@ -11,6 +11,7 @@
 script = ExtResource("2_6kucl")
 mecha_idle_top_texture = ExtResource("4_idle_top")
 mecha_idle_bottom_texture = ExtResource("5_idle_bottom")
+mecha_idle_sprite_frames = null
 mecha_move_sprite_frames = ExtResource("6_move_frames")
 
 [node name="RangerDroneStrike" parent="ActiveSkill" parent_id_path=PackedInt32Array(269678612) index="0" instance=ExtResource("3_drone")]

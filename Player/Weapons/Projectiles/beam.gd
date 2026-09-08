@@ -24,6 +24,7 @@ var _hybrid_registered: bool = false
 @export_range(0.01, 0.12, 0.005) var damage_tick_interval_sec: float = 0.03
 var _elapsed_sec: float = 0.0
 var _last_damage_tick_by_target: Dictionary = {}
+var _flow: Node2D
 
 func configure_laser_beam(profile: Dictionary) -> void:
 	beam_width_multiplier = maxf(float(profile.get("width_multiplier", 1.0)), 0.05)
@@ -31,6 +32,8 @@ func configure_laser_beam(profile: Dictionary) -> void:
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	_flow = preload("res://Player/Weapons/Effects/beam_flow_visual.gd").new()
+	add_child(_flow)
 	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	line.add_to_group(&"hybrid_ground_segment")
 	line.set_meta("hybrid_ground_visible", false)
@@ -68,10 +71,20 @@ func _physics_process(delta: float) -> void:
 	var beam_hit := _find_nearest_wide_beam_hit()
 	if beam_hit.is_empty():
 		line.points = [beam_start_position, raycast.target_position]
+		_sync_flow()
 		return
 	var hit_local_position: Vector2 = beam_hit["local_position"]
 	line.points = [beam_start_position, hit_local_position]
+	_sync_flow()
 	_apply_beam_tick(beam_hit["target"] as Node)
+
+func _sync_flow() -> void:
+	_flow.set("start", to_global(line.points[0]))
+	_flow.set("finish", to_global(line.points[1]))
+	_flow.set("active", frame_counter > frames_until_show)
+
+func get_presentation_contact_position() -> Vector2:
+	return to_global(line.points[1]) if line.points.size() > 1 else global_position
 
 func _find_nearest_wide_beam_hit() -> Dictionary:
 	if not is_inside_tree():

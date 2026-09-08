@@ -222,6 +222,7 @@ func _handle_hit_target(target: Node, damage_type: StringName = StringName()) ->
 		PlayerData.player.call("_broadcast_weapon_passive_event", &"on_hit", detail)
 
 func on_damage_applied(target: Node, data: DamageData, result: DamageResult) -> void:
+	preload("res://Player/Weapons/Effects/projectile_impact_vfx_service.gd").damage_feedback(self, target, data, result)
 	_accumulate_global_weapon_energy(data, result)
 	var damage_event := WeaponEvent.create(WeaponEvent.DAMAGE_DEALT, self).with_context(data.action_context)
 	damage_event.target = target
@@ -452,7 +453,12 @@ func play_fire_feedback(direction: Vector2 = Vector2.ZERO) -> bool:
 		is_main_weapon()
 	)
 
-func play_hit_feedback(target: Node = null) -> bool:
+func play_typed_hit_feedback(target: Node, data: DamageData, result: DamageResult) -> bool:
+	if result.is_periodic or data.damage_kind == DamageData.KIND_PERIODIC:
+		return false
+	return play_hit_feedback(target, result.damage_type)
+
+func play_hit_feedback(target: Node = null, presentation_damage_type: StringName = &"") -> bool:
 	if fire_feedback_profile == null:
 		return false
 	if not _should_play_weapon_audio_feedback():
@@ -462,10 +468,13 @@ func play_hit_feedback(target: Node = null) -> bool:
 		fire_feedback_player.setup(self)
 	if not fire_feedback_player.has_method("play_hit"):
 		return false
-	return fire_feedback_player.play_hit(fire_feedback_profile, target)
+	return fire_feedback_player.play_hit(fire_feedback_profile, target, presentation_damage_type)
 
 func _should_play_weapon_audio_feedback() -> bool:
-	return is_main_weapon() and has_delivery_type(DELIVERY_PROJECTILE)
+	if not is_inside_tree() or not is_attack_phase_allowed() or not is_main_weapon():
+		return false
+	var presentation_id: String = get_script().resource_path.get_file().get_basename()
+	return has_delivery_type(DELIVERY_PROJECTILE) or presentation_id in ["laser", "flamethrower", "charged_blaster"]
 
 func get_fire_feedback_direction() -> Vector2:
 	return Vector2.RIGHT.rotated(global_rotation)
@@ -672,6 +681,12 @@ func _initialize_heat_runtime() -> void:
 	add_child(heat_runtime)
 
 func _ready() -> void:
+	var presentation_id: String = get_script().resource_path.get_file().get_basename()
+	if presentation_id in ["spear_launcher", "plasma_lance"]:
+		var preview := preload("res://Player/Weapons/Feedback/weapon_charge_preview.gd").new()
+		preview.weapon = self
+		preview.radial = presentation_id == "spear_launcher"
+		add_child(preview)
 	skill_unlock_runtime.configure(skill_unlock_condition, skill_unlock_hint, skill_unlock_required)
 	_load_fuse_sprites()
 	_initialize_branch_runtime()

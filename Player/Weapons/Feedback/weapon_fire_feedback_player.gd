@@ -16,10 +16,13 @@ var _sprite_base_cached: bool = false
 var _fuse_base_position := Vector2.ZERO
 var _fuse_base_rotation: float = 0.0
 var _fuse_base_cached: bool = false
+var _presentation_sequence := 0
+var _audio_rng := RandomNumberGenerator.new()
 
 
 func setup(source_weapon: Node2D) -> void:
 	weapon = source_weapon
+	_audio_rng.seed = source_weapon.get_instance_id()
 
 
 func play(
@@ -37,6 +40,7 @@ func play(
 	if cooldown_msec > 0 and now - _last_feedback_msec < cooldown_msec:
 		return false
 	_last_feedback_msec = now
+	_presentation_sequence += 1
 	var resolved_direction := _resolve_direction(direction)
 	_spawn_muzzle_flash(profile, resolved_direction)
 	if full_feedback:
@@ -48,12 +52,14 @@ func play(
 	return true
 
 
-func play_hit(profile: Resource, target: Node = null) -> bool:
+func play_hit(profile: Resource, target: Node = null, damage_type: StringName = &"") -> bool:
 	if weapon == null or not is_instance_valid(weapon):
 		return false
 	if profile == null:
 		return false
 	var stream := profile.get("hit_audio_stream") as AudioStream
+	if damage_type in [Attack.TYPE_ENERGY, Attack.TYPE_FIRE, Attack.TYPE_FREEZE]:
+		stream = preload("res://Player/Weapons/Feedback/impact_audio.gd").stream_for(damage_type)
 	if stream == null:
 		return false
 	var now := Time.get_ticks_msec()
@@ -113,6 +119,13 @@ func _spawn_muzzle_flash(profile: Resource, direction: Vector2) -> void:
 			"tint": profile.get("muzzle_tint") as Color,
 		}
 		signature.merge(RareWeaponVfxSignatureType.for_weapon(weapon), true)
+		if str(profile.get("fire_category")) == "projectile_light":
+			var heat := 0.0
+			if weapon.has_method("_get_shared_heat_value"):
+				heat = clampf(float(weapon.call("_get_shared_heat_value")) / 50.0, 0.0, 1.0)
+			signature["length_scale"] = float(signature["length_scale"]) * (0.94 + float(_presentation_sequence % 3) * 0.06)
+			signature["tint"] = Color.WHITE.lerp(Color(1.0, 0.28, 0.12), heat)
+			signature["tint_strength"] = heat * 0.6
 		service.call("play", muzzle_flash_scene, visual_position, visual_direction, signature)
 
 
@@ -222,18 +235,34 @@ func _request_camera_shake(profile: Resource) -> void:
 		return
 	if not PlayerData.player.has_method("request_camera_shake"):
 		return
+	if str(profile.get("fire_category")) == "projectile_light" and PlayerData.player.has_method("get_camera_shake_trauma"):
+		camera_trauma = minf(camera_trauma, maxf(0.018 - float(PlayerData.player.call("get_camera_shake_trauma")), 0.0))
 	PlayerData.player.call("request_camera_shake", camera_trauma, weapon.global_position, float(profile.get("camera_max_distance")))
 
 
 func _play_fire_audio(profile: Resource) -> void:
+	var id: String = weapon.get_script().resource_path.get_file().get_basename()
+	if id in ["flamethrower", "laser", "charged_blaster"]:
+		var loop := weapon.get_node_or_null("ContinuousWeaponAudio")
+		if loop == null:
+			loop = preload("res://Player/Weapons/Feedback/continuous_weapon_audio.gd").new()
+			loop.name = "ContinuousWeaponAudio"
+			loop.set("weapon", weapon)
+			loop.set("flavor", id)
+			weapon.add_child(loop)
+		loop.call("refresh")
+		return
 	var stream := profile.get("fire_audio_stream") as AudioStream
 	if stream == null:
 		return
+	var heat_pitch := 1.0
+	if id == "machine_gun" and weapon.has_method("_get_shared_heat_value"):
+		heat_pitch += clampf(float(weapon.call("_get_shared_heat_value")) / 50.0, 0.0, 1.0) * 0.08
 	_play_audio_stream(
 		stream,
 		_get_muzzle_global_position(_resolve_direction(Vector2.ZERO)),
 		float(profile.get("fire_audio_volume_db")),
-		float(profile.get("fire_audio_pitch_scale")),
+		float(profile.get("fire_audio_pitch_scale")) * heat_pitch,
 		float(profile.get("fire_audio_pitch_random")),
 		float(profile.get("audio_max_distance")),
 		float(profile.get("audio_attenuation"))
@@ -254,14 +283,25 @@ func _play_audio_stream(
 	var tree := weapon.get_tree()
 	if tree == null:
 		return
-	var player := AudioStreamPlayer2D.new()
+	# Bound overlapping fire/hit voices across every weapon and pellet.
+	var voices := tree.get_nodes_in_group(&"weapon_feedback_voice")
+	var same_stream := 0
+	for voice in voices:
+		if voice is AudioStreamPlayer2D and voice.stream == stream:
+			same_stream += 1
+	if voices.size() >= 16 or same_stream >= 3:
+		return
+	var player := preload("res://Player/Weapons/Feedback/transient_weapon_voice.gd").new()
 	player.stream = stream
 	player.global_position = audio_position
 	player.volume_db = volume_db
-	player.pitch_scale = maxf(pitch_scale + randf_range(-absf(pitch_random), absf(pitch_random)), 0.05)
+	player.pitch_scale = maxf(pitch_scale + _audio_rng.randf_range(-absf(pitch_random), absf(pitch_random)), 0.05)
 	player.max_distance = maxf(max_distance, 1.0)
 	player.attenuation = maxf(attenuation, 0.0)
 	player.bus = "SFX"
-	tree.root.add_child(player)
-	player.finished.connect(Callable(player, "queue_free"))
+	var parent: Node = tree.current_scene if tree.current_scene != null else weapon
+	parent.add_child(player)
+	player.global_position = audio_position
+	player.add_to_group(&"weapon_feedback_voice")
+	player.add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	player.play()

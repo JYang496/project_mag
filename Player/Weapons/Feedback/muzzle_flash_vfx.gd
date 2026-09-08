@@ -12,6 +12,7 @@ enum ShapeStyle { BALLISTIC, ENERGY, PLASMA_EXOTIC }
 @export var duration_sec: float = 0.08
 @export var smoke_color: Color = Color(0.45, 0.45, 0.45, 0.28)
 @export var smoke_radius: float = 0.0
+@export var cone_smoke: bool = false
 @export var shape_style: ShapeStyle = ShapeStyle.BALLISTIC
 @export_enum("32", "64") var source_size_px := 32
 
@@ -127,7 +128,13 @@ func _draw_ballistic(alpha_mul: float, progress: float) -> void:
 	if smoke_radius > 0.0:
 		var smoke := smoke_color
 		smoke.a *= alpha_mul * 0.8
-		draw_circle(Vector2(-length_px * 0.12, 0.0), smoke_radius * (0.7 + progress * 0.5), smoke)
+		if cone_smoke:
+			for index in range(4):
+				var x := roundf(5 + index * 5 + progress * 7)
+				var half_width := roundf(2 + index * 2 + progress * 3)
+				draw_rect(Rect2(x, -half_width, 6, half_width * 2), smoke)
+		else:
+			draw_circle(Vector2(-length_px * 0.12, 0.0), smoke_radius * (0.7 + progress * 0.5), smoke)
 
 
 func _draw_energy(alpha_mul: float, progress: float) -> void:

@@ -74,12 +74,17 @@ func _validate_skill() -> void:
 	_check(not weapon.request_weapon_skill(), "energy failure rejects activation")
 	_check(bool(weapon.get_weapon_skill_status().get("unlock_ready", false)), "failed activation does not consume unlock readiness")
 	player.energy = 100.0
+	weapon.current_ammo = 1
+	_check(weapon.request_reload(), "ammo weapon enters reload before its directed skill")
 	_check(weapon.request_weapon_skill(), "equipped weapon accepts its directed skill")
 	_check(is_equal_approx(player.energy, 50.0), "weapon skill spends energy")
+	_check(weapon.current_ammo == weapon.get_effective_magazine_capacity(), "weapon skill instantly refills its magazine")
+	_check(not weapon.is_reloading and is_zero_approx(weapon.reload_time_left), "weapon skill interrupts an in-progress reload")
 	_check(bool(weapon.get("_active_skill_running")), "Machine Gun skill enables its ammo-chain window")
 	_check(is_equal_approx(weapon.get_external_attack_speed_multiplier(), 5.0), "Machine Gun skill multiplies attack speed by five")
 	_check(str(weapon.get_weapon_skill_status().get("display_name", "")) != "Weapon Overdrive", "weapon skill exposes its specific name")
 	_check(str(weapon.get_weapon_skill_status().get("description", "")).contains("5"), "weapon skill exposes its concrete effect description")
+	_check(str(weapon.get_weapon_skill_status().get("description", "")).contains("refill"), "weapon skill describes the shared ammo refill effect")
 	_check(commits[0] == 1, "skill emits one committed event")
 	var status: Dictionary = weapon.get_weapon_skill_status()
 	_check(bool(status.get("active", false)) and not bool(status.get("ready", true)), "active skill exposes its cooldown state")

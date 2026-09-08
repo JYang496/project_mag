@@ -1,0 +1,182 @@
+{
+  "source": "C:\\Users\\koalg\\OneDrive\\图片\\128.png",
+  "output": "E:\\Godot Projects\\project_mag\\outputs\\01a07c84-7f74-7450-b739-bbe4ef162ca5\\128_palette24\\128_role_aware_24.png",
+  "method": "hard alpha at 128; role-constrained weighted k-means; RGB-dominant distance with weak XY position features",
+  "visible_palette_target": 24,
+  "visible_palette_actual": 24,
+  "rgba_total_including_transparency": 25,
+  "dimensions": [
+    128,
+    128
+  ],
+  "palette": [
+    {
+      "rgba": "#F6F7FCFF",
+      "pixels": 490,
+      "color_group": "近白高光/白发亮部",
+      "main_position": "头部、头发与面部",
+      "use": "近白高光/白发亮部"
+    },
+    {
+      "rgba": "#DCE3FCFF",
+      "pixels": 330,
+      "color_group": "冷灰蓝阴影/白发暗部",
+      "main_position": "头部、头发与面部",
+      "use": "冷灰蓝阴影/白发暗部"
+    },
+    {
+      "rgba": "#FDFDFCFF",
+      "pixels": 321,
+      "color_group": "近白高光/白发亮部",
+      "main_position": "躯干、手臂与服装",
+      "use": "近白高光/白发亮部"
+    },
+    {
+      "rgba": "#C6D1FAFF",
+      "pixels": 285,
+      "color_group": "冷灰蓝阴影/白发暗部",
+      "main_position": "头部、头发与面部",
+      "use": "冷灰蓝阴影/白发暗部"
+    },
+    {
+      "rgba": "#1C213EFF",
+      "pixels": 271,
+      "color_group": "深色轮廓/衣物暗部",
+      "main_position": "躯干、手臂与服装",
+      "use": "深色轮廓/衣物暗部"
+    },
+    {
+      "rgba": "#5979E7FF",
+      "pixels": 226,
+      "color_group": "蓝色描边/服装与能量高光",
+      "main_position": "躯干、手臂与服装",
+      "use": "蓝色描边/服装与能量高光"
+    },
+    {
+      "rgba": "#0950F6FF",
+      "pixels": 204,
+      "color_group": "蓝色描边/服装与能量高光",
+      "main_position": "躯干、手臂与服装",
+      "use": "蓝色描边/服装与能量高光"
+    },
+    {
+      "rgba": "#B0BBF1FF",
+      "pixels": 203,
+      "color_group": "冷灰蓝阴影/白发暗部",
+      "main_position": "头部、头发与面部",
+      "use": "冷灰蓝阴影/白发暗部"
+    },
+    {
+      "rgba": "#0512A8FF",
+      "pixels": 201,
+      "color_group": "深色轮廓/衣物暗部",
+      "main_position": "躯干、手臂与服装",
+      "use": "深色轮廓/衣物暗部"
+    },
+    {
+      "rgba": "#8BA4F5FF",
+      "pixels": 191,
+      "color_group": "蓝色描边/服装与能量高光",
+      "main_position": "躯干、手臂与服装",
+      "use": "蓝色描边/服装与能量高光"
+    },
+    {
+      "rgba": "#ECEFFCFF",
+      "pixels": 191,
+      "color_group": "近白高光/白发亮部",
+      "main_position": "头部、头发与面部",
+      "use": "近白高光/白发亮部"
+    },
+    {
+      "rgba": "#354BCCFF",
+      "pixels": 185,
+      "color_group": "蓝色描边/服装与能量高光",
+      "main_position": "躯干、手臂与服装",
+      "use": "蓝色描边/服装与能量高光"
+    },
+    {
+      "rgba": "#FDF1EDFF",
+      "pixels": 181,
+      "color_group": "近白高光/白发亮部",
+      "main_position": "躯干、手臂与服装",
+      "use": "近白高光/白发亮部"
+    },
+    {
+      "rgba": "#070B30FF",
+      "pixels": 180,
+      "color_group": "深色轮廓/衣物暗部",
+      "main_position": "躯干、手臂与服装",
+      "use": "深色轮廓/衣物暗部"
+    },
+    {
+      "rgba": "#0728CAFF",
+      "pixels": 145,
+      "color_group": "深色轮廓/衣物暗部",
+      "main_position": "躯干、手臂与服装",
+      "use": "深色轮廓/衣物暗部"
+    },
+    {
+      "rgba": "#03097CFF",
+      "pixels": 107,
+      "color_group": "深色轮廓/衣物暗部",
+      "main_position": "躯干、手臂与服装",
+      "use": "深色轮廓/衣物暗部"
+    },
+    {
+      "rgba": "#8E8EBCFF",
+      "pixels": 46,
+      "color_group": "冷灰蓝阴影/白发暗部",
+      "main_position": "躯干、手臂与服装",
+      "use": "冷灰蓝阴影/白发暗部"
+    },
+    {
+      "rgba": "#5B596DFF",
+      "pixels": 39,
+      "color_group": "中深色结构阴影",
+      "main_position": "躯干、手臂与服装",
+      "use": "中深色结构阴影"
+    },
+    {
+      "rgba": "#F5E0DFFF",
+      "pixels": 32,
+      "color_group": "肤色/暖色细节",
+      "main_position": "躯干、手臂与服装",
+      "use": "肤色/暖色细节"
+    },
+    {
+      "rgba": "#3D4583FF",
+      "pixels": 31,
+      "color_group": "蓝色描边/服装与能量高光",
+      "main_position": "躯干、手臂与服装",
+      "use": "蓝色描边/服装与能量高光"
+    },
+    {
+      "rgba": "#C1ABB7FF",
+      "pixels": 31,
+      "color_group": "过渡混色/局部细节",
+      "main_position": "躯干、手臂与服装",
+      "use": "过渡混色/局部细节"
+    },
+    {
+      "rgba": "#DBC8DBFF",
+      "pixels": 27,
+      "color_group": "肤色/暖色细节",
+      "main_position": "头部、头发与面部",
+      "use": "肤色/暖色细节"
+    },
+    {
+      "rgba": "#E4E3EFFF",
+      "pixels": 17,
+      "color_group": "浅色高光/浅色材质",
+      "main_position": "躯干、手臂与服装",
+      "use": "浅色高光/浅色材质"
+    },
+    {
+      "rgba": "#F1ECEEFF",
+      "pixels": 11,
+      "color_group": "近白高光/白发亮部",
+      "main_position": "躯干、手臂与服装",
+      "use": "近白高光/白发亮部"
+    }
+  ]
+}

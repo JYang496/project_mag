@@ -7,6 +7,12 @@ const DEFAULT_EXPIRE_TIME: float = 2.5
 const MIN_EXPIRE_TIME: float = 0.001
 const INITIAL_PROJECTILE_HITS_META := "initial_projectile_hits"
 const DEFAULT_GAMEPLAY_HITBOX_SIZE := Vector2(8.0, 8.0)
+const IMPACT_VFX := preload("res://Player/Weapons/Effects/projectile_impact_vfx_service.gd")
+const FLIGHT_VFX := preload("res://Player/Weapons/Effects/projectile_flight_vfx.gd")
+var _spawn_generation := 0
+var _despawning := false
+var presentation_tint := Color.WHITE
+var presentation_empowered := false
 
 var hp : int = 1
 var damage = 1
@@ -99,6 +105,10 @@ func batch_simulation_step(delta: float) -> void:
 	_simulate_movement(delta)
 
 func _prepare_for_spawn() -> void:
+	_spawn_generation += 1
+	var generation := _spawn_generation
+	_despawning = false
+	presentation_empowered = bool(get_meta(Weapon.ENERGY_RELEASE_ATTACK_META, false))
 	_reset_projectile_visual_state()
 	overlapping = false
 	_capture_initial_projectile_hits()
@@ -122,7 +132,16 @@ func _prepare_for_spawn() -> void:
 	_start_collision_arming()
 	_apply_debug_overlay()
 	expire_timer.start()
+	if is_instance_valid(source_weapon):
+		var visual_id: String = source_weapon.get_script().resource_path.get_file().get_basename()
+		if visual_id in ["shotgun", "rocket_launcher", "spear_launcher", "chainsaw_launcher", "orbit"]:
+			var flight := FLIGHT_VFX.new()
+			flight.name = "FlightPresentation"
+			flight.projectile = self
+			add_child(flight)
 	await get_tree().physics_frame
+	if generation != _spawn_generation or _despawning or not is_inside_tree():
+		return
 	show_projectile()
 
 func _resolve_projectile_scale() -> Vector2:
@@ -276,6 +295,13 @@ func set_debug_snapshot(source_weapon_name: String, effect_names: Array[String],
 	_apply_debug_overlay()
 
 func despawn() -> void:
+	if _despawning:
+		return
+	_despawning = true
+	if is_inside_tree() and not bool(get_meta(&"presentation_silent_cleanup", false)) and (hp > 0 or not bool(get_meta(&"presentation_hit", false))):
+		var service := IMPACT_VFX.ensure(get_tree())
+		if service != null:
+			service.play(global_position, get_meta(&"presentation_motion_direction", base_displacement.normalized()), damage_type, 0, &"dissolve")
 	_unregister_batch_simulation(false)
 	_notify_source_weapon_before_despawn()
 	if not _is_pooled:
@@ -288,9 +314,15 @@ func despawn() -> void:
 		queue_free()
 
 func cleanup_for_battle_end() -> void:
+	# Teardown is silent; it must not create fresh presentation records.
+	set_meta(&"presentation_hit", true)
+	set_meta(&"presentation_silent_cleanup", true)
 	despawn()
 
 func _on_before_pooled() -> void:
+	_spawn_generation += 1
+	presentation_tint = Color.WHITE
+	presentation_empowered = false
 	expire_timer.stop()
 	collision_arming_timer.stop()
 	_clear_hitbox()
@@ -370,7 +402,17 @@ func _reset_projectile_visual_state() -> void:
 	projectile_root.position = Vector2.ZERO
 	if hitbox_anchor != null:
 		hitbox_anchor.position = Vector2.ZERO
+	# Preserve the existing gameplay metadata lifecycle. Visual snapshots are fields.
 	_reset_runtime_meta_flags()
+	modulate = Color.WHITE
+	self_modulate = Color.WHITE
+	scale = Vector2.ONE
+	projectile_sprite.modulate = presentation_tint
+	projectile_sprite.self_modulate = Color.WHITE
+	projectile_animation.modulate = presentation_tint
+	projectile_animation.self_modulate = Color.WHITE
+	projectile_animation.speed_scale = 1.0
+	projectile_animation.frame = 0
 	_wall_hit_reported = false
 
 func _check_wall_contact(delta: float) -> void:
@@ -390,6 +432,10 @@ func _check_wall_contact(delta: float) -> void:
 	if result.is_empty():
 		return
 	_wall_hit_reported = true
+	var service := IMPACT_VFX.ensure(get_tree())
+	if service != null:
+		service.play(result.get("position", global_position), result.get("normal", Vector2.UP), damage_type, 0, &"bounce", {"wall": true})
+	set_meta(&"presentation_contact_frame", Engine.get_process_frames())
 	if source_weapon and is_instance_valid(source_weapon) and source_weapon.has_method("on_projectile_hit_wall"):
 		source_weapon.call("on_projectile_hit_wall", self, result)
 
@@ -427,6 +473,10 @@ func _move_with_boundary_bounce(delta: float) -> bool:
 	if collision_normal == Vector2.ZERO:
 		return true
 	boundary_bounce_count += 1
+	var service := IMPACT_VFX.ensure(get_tree())
+	if service != null:
+		service.play(global_position, collision_normal, damage_type, 0, &"bounce", {"wall": true})
+	set_meta(&"presentation_contact_frame", Engine.get_process_frames())
 	if source_weapon and is_instance_valid(source_weapon) and source_weapon.has_method("on_projectile_hit_wall"):
 		source_weapon.call("on_projectile_hit_wall", self, {
 			"position": global_position,
@@ -445,6 +495,13 @@ func _clear_hitbox() -> void:
 func _release_effects() -> void:
 	var children := get_children()
 	for child in children:
+		if child.get_script() == FLIGHT_VFX:
+			# A projectile can be reacquired before deferred deletion runs.
+			# Detach its old overlay now so it cannot write into the next shot.
+			child.set_process(false)
+			remove_child(child)
+			child.queue_free()
+			continue
 		# These nodes are permanent parts of every projectile scene. In particular,
 		# freeing HitboxAnchor here corrupts the cached instance: request_ready() will
 		# then resolve $HitboxAnchor again on the next acquire and fail.

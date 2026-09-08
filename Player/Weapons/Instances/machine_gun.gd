@@ -2,7 +2,7 @@ extends Ranger
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/plasma.png")
+var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/machine_gun_tracer.png")
 
 # Weapon
 var ITEM_NAME = "Machine Gun"
@@ -10,7 +10,7 @@ var attack_speed : float = 1.0
 
 var max_speed_factor : float = 2.5
 
-const BULLET_PIXEL_SIZE := PixelArtPolicyType.PROJECTILE_STANDARD_SIZE
+const BULLET_PIXEL_SIZE := Vector2(6, 16)
 const HEAT_SPEED_POINTS: Array[Vector2] = [
 	Vector2(0.0, 1.0),
 	Vector2(10.0, 1.3),

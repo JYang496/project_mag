@@ -4,7 +4,8 @@ extends Ranger
 @onready var beam_blast = preload("res://Player/Weapons/Projectiles/beam_blast.tscn")
 const TETHER_CHAIN_NETWORK := preload("res://Player/Weapons/Geometry/tether_chain_network.gd")
 const SKILL_BOLT_SCENE := preload("res://Player/Weapons/Projectiles/projectile.tscn")
-const SKILL_BOLT_TEXTURE := preload("res://asset/images/weapons/projectiles/plasma.png")
+const SKILL_BOLT_TEXTURE := preload("res://asset/images/weapons/projectiles/energy_bolt_a.png")
+const SKILL_BOLT_FRAMES := preload("res://Player/Weapons/Projectiles/energy_bolt_frames.tres")
 const HOMING_EFFECT := preload("res://Player/Weapons/Effects/homing_projectile_effect.gd")
 const SKILL_BOLT_SPEED := 460.0
 
@@ -297,7 +298,8 @@ func _on_prism_beam_finished(beam_node: Node2D) -> void:
 		bolt.hp = 1
 		bolt.global_position = launch_position
 		bolt.projectile_texture = SKILL_BOLT_TEXTURE
-		bolt.desired_pixel_size = PixelArtPolicyType.PROJECTILE_STANDARD_SIZE
+		bolt.projectile_frames = SKILL_BOLT_FRAMES
+		bolt.desired_pixel_size = Vector2(16, 16)
 		bolt.size = size
 		bolt.expire_time = 1.6
 		apply_effects_on_projectile(bolt)

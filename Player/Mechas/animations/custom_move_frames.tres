@@ -1,0 +1,79 @@
+[gd_resource type="SpriteFrames" load_steps=33 format=3]
+
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_forward_01.png" id="top1"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_forward_02.png" id="top2"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_forward_03.png" id="top3"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_forward_04.png" id="top4"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_forward_05.png" id="top5"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_forward_06.png" id="top6"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_forward_07.png" id="top7"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_forward_08.png" id="top8"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_forward_01.png" id="forward1"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_forward_02.png" id="forward2"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_forward_03.png" id="forward3"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_forward_04.png" id="forward4"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_forward_05.png" id="forward5"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_forward_06.png" id="forward6"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_forward_07.png" id="forward7"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_forward_08.png" id="forward8"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_backward_01.png" id="backward1"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_backward_02.png" id="backward2"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_backward_03.png" id="backward3"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_backward_04.png" id="backward4"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_backward_05.png" id="backward5"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_backward_06.png" id="backward6"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_backward_07.png" id="backward7"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_bottom_backward_08.png" id="backward8"]
+
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_backward_01.png" id="rearback1"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_backward_02.png" id="rearback2"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_backward_03.png" id="rearback3"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_backward_04.png" id="rearback4"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_backward_05.png" id="rearback5"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_backward_06.png" id="rearback6"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_backward_07.png" id="rearback7"]
+[ext_resource type="Texture2D" path="res://asset/images/characters/pixel/custom_move/move_top_backward_08.png" id="rearback8"]
+
+[resource]
+animations = [
+{"frames": [
+{"duration": 1.0, "texture": ExtResource("top1")},
+{"duration": 1.0, "texture": ExtResource("top2")},
+{"duration": 1.0, "texture": ExtResource("top3")},
+{"duration": 1.0, "texture": ExtResource("top4")},
+{"duration": 1.0, "texture": ExtResource("top5")},
+{"duration": 1.0, "texture": ExtResource("top6")},
+{"duration": 1.0, "texture": ExtResource("top7")},
+{"duration": 1.0, "texture": ExtResource("top8")}
+], "loop": true, "name": &"move_top", "speed": 10.0},
+{"frames": [
+{"duration": 1.0, "texture": ExtResource("forward1")},
+{"duration": 1.0, "texture": ExtResource("forward2")},
+{"duration": 1.0, "texture": ExtResource("forward3")},
+{"duration": 1.0, "texture": ExtResource("forward4")},
+{"duration": 1.0, "texture": ExtResource("forward5")},
+{"duration": 1.0, "texture": ExtResource("forward6")},
+{"duration": 1.0, "texture": ExtResource("forward7")},
+{"duration": 1.0, "texture": ExtResource("forward8")}
+], "loop": true, "name": &"move_bottom", "speed": 10.0},
+{"frames": [
+{"duration": 1.0, "texture": ExtResource("backward1")},
+{"duration": 1.0, "texture": ExtResource("backward2")},
+{"duration": 1.0, "texture": ExtResource("backward3")},
+{"duration": 1.0, "texture": ExtResource("backward4")},
+{"duration": 1.0, "texture": ExtResource("backward5")},
+{"duration": 1.0, "texture": ExtResource("backward6")},
+{"duration": 1.0, "texture": ExtResource("backward7")},
+{"duration": 1.0, "texture": ExtResource("backward8")}
+], "loop": true, "name": &"move_bottom_backward", "speed": 10.0},
+{"frames": [
+{"duration": 1.0, "texture": ExtResource("rearback1")},
+{"duration": 1.0, "texture": ExtResource("rearback2")},
+{"duration": 1.0, "texture": ExtResource("rearback3")},
+{"duration": 1.0, "texture": ExtResource("rearback4")},
+{"duration": 1.0, "texture": ExtResource("rearback5")},
+{"duration": 1.0, "texture": ExtResource("rearback6")},
+{"duration": 1.0, "texture": ExtResource("rearback7")},
+{"duration": 1.0, "texture": ExtResource("rearback8")}
+], "loop": true, "name": &"move_top_backward", "speed": 10.0}
+]

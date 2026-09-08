@@ -8,8 +8,12 @@ vec4 burning_spray(vec2 uv, vec4 frame, float time) {
 	float edge = 1.0 - smoothstep(0.65 + n * 0.25, 0.85 + n * 0.15, side);
 	float tip = 1.0 - smoothstep(0.65 + n * 0.2, 0.88 + n * 0.12, p.x);
 	float heat = clamp((1.0 - p.x) * 0.35 + wisps * 0.8 + (1.0 - side) * 0.18, 0.0, 1.0);
-	vec3 color = mix(vec3(0.85, 0.10, 0.012), vec3(1.0, 0.42, 0.055), smoothstep(0.3, 0.65, heat));
-	color = mix(color, vec3(1.0, 0.88, 0.43), smoothstep(0.65, 0.95, heat));
+	// Hard color clusters shared by the flat and projected presentation paths.
+	vec3 color = vec3(0.38, 0.045, 0.025);
+	color = mix(color, vec3(0.86, 0.15, 0.025), step(0.30, heat));
+	color = mix(color, vec3(1.0, 0.44, 0.055), step(0.48, heat));
+	color = mix(color, vec3(1.0, 0.85, 0.30), step(0.70, heat));
+	color = mix(color, vec3(1.0, 0.97, 0.79), step(0.88, heat) * (1.0 - step(0.45, side)));
 	float alpha = frame.a * edge * tip * (0.50 + wisps * 0.5);
 	return vec4(color, alpha);
 }
