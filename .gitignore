@@ -12,3 +12,11 @@ test-results/
 /archive/
 /.codex_tmp/
 tmp/
+
+# Generated previews and tool output
+/output/
+/outputs/
+/docs/reports/
+
+# Temporary validation probes
+/tests/probes/
