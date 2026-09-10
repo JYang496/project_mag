@@ -1,6 +1,8 @@
 extends BaseEnemy
 class_name EnemyRepairUnit
 
+const AURA_VISUAL := preload("res://Visual/Oblique/aura_renderer.gd")
+
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 
 @export var heal_radius: float = 240.0
@@ -9,8 +11,8 @@ const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 @export var cast_duration: float = 0.8
 @export var interrupted_cooldown: float = 1.5
 @export_range(0.01, 1.0, 0.01) var heal_max_hp_ratio: float = 0.12
-@export var heal_line_color: Color = Color(PALETTE.HEAL, 0.95)
-@export var heal_line_outer_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.88)
+@export var heal_line_color: Color = Color(PALETTE.HEAL.lightened(0.35), 0.95)
+@export var heal_line_outer_color: Color = Color(0.06, 0.025, 0.045, 0.90)
 
 var _cooldown_remaining: float = 1.5
 var _cast_remaining: float = 0.0
@@ -94,8 +96,7 @@ func _interrupt_cast() -> void:
 func _draw() -> void:
 	if uses_hybrid_ground_visuals():
 		return
-	draw_arc(Vector2.ZERO, heal_radius, 0.0, TAU, 48, Color(PALETTE.ENEMY_PRIMARY, 0.42), 3.0, false)
-	draw_arc(Vector2.ZERO, heal_radius - 4.0, 0.0, TAU, 48, Color(PALETTE.HEAL, 0.22), 1.25, false)
+	AURA_VISUAL.draw_support(self, heal_radius, Color.TRANSPARENT, Color(PALETTE.ENEMY_PRIMARY, 0.42), PALETTE.HEAL)
 	if _heal_target != null and is_instance_valid(_heal_target):
 		var target_position := to_local(_heal_target.global_position)
 		draw_line(Vector2.ZERO, target_position, heal_line_outer_color, 5.0, false)

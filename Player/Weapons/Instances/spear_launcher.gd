@@ -1,17 +1,12 @@
 extends Ranger
 
 const SPEAR_RETURN_TIME_SEC := 1.0
-const SPEAR_RETURN_EXPIRY_MARGIN_SEC := 0.25
+const SPEAR_LIFETIME_MARGIN_SEC := 1.0
 
 const PASSIVE_ID := &"piercing_blade_dance"
 const CHARGE_GAINED_EVENT := &"piercing_blade_dance_charge_gained"
 const TRIGGERED_EVENT := &"piercing_blade_dance_triggered"
 const RADIAL_PROJECTILE_META := "piercing_blade_dance_radial"
-const SPEAR_PIERCE_MARK_ID := &"spear_pierce"
-const MARK_BONUS_MULTIPLIER_KEY := &"bonus_multiplier"
-const MARK_THRESHOLD_KEY := &"threshold"
-const MARK_VISUAL_NODE_NAME := "SpearPierceMarkVisual"
-const MARK_VISUAL_SCRIPT := preload("res://Player/Weapons/Effects/spear_pierce_mark_visual.gd")
 
 # Projectile
 var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
@@ -24,12 +19,7 @@ var ITEM_NAME = "Spear Launcher"
 @export var radial_charge_cost: int = 10
 @export var radial_projectile_count: int = 8
 @export var radial_fire_interval_sec: float = 0.05
-@export var pierce_mark_duration_sec: float = 20.0
-@export var pierce_mark_damage_multiplier: float = 1.35
-@export var high_pierce_threshold: int = 4
 @export var radial_knockback_amount: float = 100.0
-@export var mark_visual_size_px: float = 20.0
-@export var mark_visual_vertical_offset: float = -30.0
 
 var _piercing_blade_dance_charge: int = 0
 var _projectile_hit_state: Dictionary = {}
@@ -37,7 +27,7 @@ var _projectile_hit_state: Dictionary = {}
 func _init() -> void:
 	super._init()
 	range_mode = RangeMode.FIXED_DISTANCE
-	configured_attack_range = 800.0
+	configured_attack_range = 400.0
 
 var weapon_data = {
 	"1": {"damage": "6", "speed": "900", "projectile_hits": "4", "fire_interval_sec": "0.6", "ammo": "10"},
@@ -104,7 +94,7 @@ func _spawn_spear_projectile(
 	spawn_projectile.set_meta(RADIAL_PROJECTILE_META, is_radial_projectile)
 	projectile_direction = direction.normalized()
 	var outbound_time := get_effective_projectile_lifetime()
-	spawn_projectile.expire_time = outbound_time + SPEAR_RETURN_TIME_SEC + SPEAR_RETURN_EXPIRY_MARGIN_SEC
+	spawn_projectile.expire_time = outbound_time * 2.0 + SPEAR_LIFETIME_MARGIN_SEC
 	apply_return_on_timeout(spawn_projectile, outbound_time, SPEAR_RETURN_TIME_SEC)
 	apply_effects_on_projectile(spawn_projectile)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
@@ -138,7 +128,6 @@ func on_projectile_hit_damage_dealt(
 		return
 	if bool(projectile.get_meta(RADIAL_PROJECTILE_META, false)):
 		if not _is_target_dead(target):
-			_apply_pierce_mark(target)
 			_apply_radial_knockback(target)
 		return
 	_try_gain_charge_from_distinct_pierce_hits(projectile, target)
@@ -265,44 +254,6 @@ func _fire_radial_volley_step(directions: Array[Vector2], index: int) -> void:
 		Callable(self, "_fire_radial_volley_step").bind(directions, index + 1),
 		CONNECT_ONE_SHOT
 	)
-
-
-func _apply_pierce_mark(target: Node) -> void:
-	if target == null or not is_instance_valid(target):
-		return
-	if not target.has_method("apply_mark"):
-		return
-	target.call("apply_mark", SPEAR_PIERCE_MARK_ID, maxf(pierce_mark_duration_sec, 0.1), {
-		MARK_BONUS_MULTIPLIER_KEY: maxf(pierce_mark_damage_multiplier, 1.0),
-		MARK_THRESHOLD_KEY: maxi(1, high_pierce_threshold),
-	})
-	_refresh_pierce_mark_visual(target)
-
-
-func _refresh_pierce_mark_visual(target: Node) -> void:
-	var visual := target.get_node_or_null(MARK_VISUAL_NODE_NAME)
-	if visual == null:
-		visual = MARK_VISUAL_SCRIPT.new()
-		visual.name = MARK_VISUAL_NODE_NAME
-		target.add_child(visual)
-	if visual.has_method("configure"):
-		visual.call(
-			"configure",
-			_get_mark_visual_icon(),
-			SPEAR_PIERCE_MARK_ID,
-			mark_visual_size_px,
-			mark_visual_vertical_offset
-		)
-
-
-func _get_mark_visual_icon() -> Texture2D:
-	if DataHandler != null and DataHandler.has_method("read_weapon_data"):
-		var definition := DataHandler.call("read_weapon_data", "3") as Resource
-		if definition != null:
-			var icon := definition.get("icon") as Texture2D
-			if icon != null:
-				return icon
-	return null
 
 
 func _apply_radial_knockback(target: Node) -> void:

@@ -3,7 +3,6 @@ class_name DelayedGroundImpact
 
 const TARGET_WARNING_SCENE := preload("res://Npc/enemy/scenes/target_warning.tscn")
 const BILLBOARD_VISUAL := preload("res://Visual/Oblique/billboard_visual_2d.gd")
-const HYBRID_GROUND_REGISTRATION := preload("res://Visual/Oblique/hybrid_ground_registration.gd")
 
 var source_weapon: Weapon
 var origin_position := Vector2.ZERO
@@ -18,7 +17,7 @@ var idle_empowered := false
 var _elapsed_sec := 0.0
 var _impacted := false
 var _linger_sec := 0.08
-var _trajectory_line: Line2D
+var _projected_visuals_created := false
 var _shell_visual: Node2D
 
 func setup(
@@ -61,10 +60,6 @@ func _process(delta: float) -> void:
 func cleanup_for_battle_end() -> void:
 	queue_free()
 
-func _exit_tree() -> void:
-	if _trajectory_line != null:
-		HYBRID_GROUND_REGISTRATION.unregister(_trajectory_line)
-
 func _create_projected_visuals() -> void:
 	var warning := TARGET_WARNING_SCENE.instantiate() as TargetWarning
 	warning.name = "ImpactWarning"
@@ -75,17 +70,9 @@ func _create_projected_visuals() -> void:
 	warning.line_color = telegraph_color
 	warning.line_width = 2.0
 	warning.show_countdown = false
+	warning.reveal_from_center = false
 	add_child(warning)
-
-	_trajectory_line = Line2D.new()
-	_trajectory_line.name = "ProjectedTrajectory"
-	_trajectory_line.points = PackedVector2Array([origin_position, impact_position])
-	_trajectory_line.width = 1.0
-	_trajectory_line.default_color = Color(telegraph_color, 0.18)
-	_trajectory_line.set_meta(&"hybrid_ground_visible", true)
-	add_child(_trajectory_line)
-	if HYBRID_GROUND_REGISTRATION.register(_trajectory_line, &"register_ground_segment"):
-		_trajectory_line.visible = false
+	_projected_visuals_created = true
 
 	_shell_visual = Node2D.new()
 	_shell_visual.name = "ProjectedShell"
@@ -160,7 +147,7 @@ func _apply_impact() -> void:
 		)
 
 func _draw() -> void:
-	if _trajectory_line != null:
+	if _projected_visuals_created:
 		if _impacted:
 			return
 		var t := clampf(_elapsed_sec / impact_delay_sec, 0.0, 1.0)
@@ -205,5 +192,4 @@ func _draw() -> void:
 		return
 	var shell_position: Vector2 = origin_position.lerp(impact_position, progress)
 	shell_position += Vector2.UP * sin(progress * PI) * arc_height
-	draw_line(origin_position, impact_position, Color(telegraph_color, 0.18), 1.0)
 	draw_circle(shell_position, 7.0, Color(1.0, 0.82, 0.42, 0.95))

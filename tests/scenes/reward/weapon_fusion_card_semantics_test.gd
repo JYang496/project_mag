@@ -145,7 +145,9 @@ func _run() -> void:
 		_fail("duplicate core card must constrain every Tag to a two-column grid")
 	elif rendered_core_tags.get_combined_minimum_size().x > 260.0:
 		_fail("duplicate core Tag grid must remain inside a draft card column")
-	var rendered_usage_lines := rendered_core_card.find_children("WeaponCoreUsageLine*", "Label", true, false)
+	var rendered_usage_lines := rendered_core_card.find_children("WeaponCoreUsageLine*", "Label", true, false).filter(
+		func(node: Node) -> bool: return (node as Label).visible
+	)
 	var rendered_usage_summary := rendered_core_card.find_child("WeaponCoreUsageSummary", true, false) as Label
 	if rendered_usage_lines.size() != 1 or not (rendered_usage_lines[0] as Label).text.contains("Gatling"):
 		_fail("duplicate core card must render matching fusion branches from usable_branches")
@@ -603,18 +605,20 @@ func _assert_core_usage_count(panel: Node, usage_count: int) -> void:
 	for index in range(usage_count):
 		lines.append("Weapon %d · Branch %d" % [index + 1, index + 1])
 	var section := panel.call("_build_weapon_core_usage_section", {"usable_branch_lines": lines}) as VBoxContainer
-	var visible_lines := section.find_children("WeaponCoreUsageLine*", "Label", true, false)
+	var visible_lines := section.find_children("WeaponCoreUsageLine*", "Label", true, false).filter(
+		func(node: Node) -> bool: return (node as Label).visible
+	)
 	if visible_lines.size() != mini(2, usage_count):
 		_fail("core usage count %d should render at most two branch rows (rendered=%d)" % [usage_count, visible_lines.size()])
 	var more := section.find_child("WeaponCoreUsageMore", true, false) as Label
 	var empty := section.find_child("WeaponCoreUsageEmpty", true, false) as Label
-	if usage_count == 0 and empty == null:
+	if usage_count == 0 and (empty == null or not empty.visible):
 		_fail("core usage count 0 should render the neutral empty state")
-	elif usage_count > 0 and empty != null:
+	elif usage_count > 0 and empty != null and empty.visible:
 		_fail("non-empty core usage should not render the empty state")
-	if usage_count == 3 and (more == null or not more.text.contains("1")):
+	if usage_count == 3 and (more == null or not more.visible or not more.text.contains("1")):
 		_fail("core usage count 3 should summarize one additional recipe")
-	elif usage_count < 3 and more != null:
+	elif usage_count < 3 and more != null and more.visible:
 		_fail("core usage count %d should not render an additional-count row" % usage_count)
 	section.free()
 

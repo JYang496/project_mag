@@ -3,6 +3,18 @@ class_name WeaponSkillArea
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const HYBRID_GROUND_REGISTRATION := preload("res://Visual/Oblique/hybrid_ground_registration.gd")
+const WHITE_FROST_TEXTURES := [
+	preload("res://asset/images/effects/white_frost_domain/white_frost_domain_01_normalized.png"),
+	preload("res://asset/images/effects/white_frost_domain/white_frost_domain_02_normalized.png"),
+	preload("res://asset/images/effects/white_frost_domain/white_frost_domain_03_normalized.png"),
+	preload("res://asset/images/effects/white_frost_domain/white_frost_domain_04_normalized.png"),
+]
+const PLASMA_STORM_TEXTURES := [
+	preload("res://asset/images/effects/plasma_storm/plasma_storm_01_normalized.png"),
+	preload("res://asset/images/effects/plasma_storm/plasma_storm_02_normalized.png"),
+	preload("res://asset/images/effects/plasma_storm/plasma_storm_03_normalized.png"),
+	preload("res://asset/images/effects/plasma_storm/plasma_storm_04_normalized.png"),
+]
 
 enum Mode { CHAINSAW_CAGE, PLASMA_STORM, WHITE_FROST_DOMAIN }
 
@@ -21,6 +33,14 @@ var _elapsed := 0.0
 var _tick_accum := 0.0
 var _exposure: Dictionary = {}
 var _player_boost_applied := false
+
+const WHITE_FROST_APPEAR_SEC := 0.22
+const WHITE_FROST_RELEASE_SEC := 0.80
+const WHITE_FROST_APPEAR_START_SCALE := 0.74
+const WHITE_FROST_RELEASE_END_SCALE := 0.94
+const PLASMA_APPEAR_SEC := 0.20
+const PLASMA_RELEASE_SEC := 0.50
+const PLASMA_TEXTURE_OPACITY := 0.55
 
 func setup(
 	mode_value: Mode,
@@ -54,6 +74,7 @@ func setup(
 
 func _ready() -> void:
 	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	HYBRID_GROUND_REGISTRATION.register(self, &"register_warning_circle")
 	queue_redraw()
 
@@ -66,10 +87,85 @@ func _exit_tree() -> void:
 	_cleanup_player_boost()
 
 func get_warning_progress() -> float:
+	if mode == Mode.WHITE_FROST_DOMAIN:
+		return _get_white_frost_radius_scale()
+	if mode == Mode.PLASMA_STORM:
+		return lerpf(0.78, 1.0, _smoothstep_ratio(_elapsed / PLASMA_APPEAR_SEC))
 	return 1.0
+
+func get_warning_fill_alpha_multiplier() -> float:
+	if mode == Mode.PLASMA_STORM:
+		return _get_plasma_phase_alpha() * 0.25
+	if mode != Mode.WHITE_FROST_DOMAIN:
+		return 1.0
+	var phase_alpha := _get_white_frost_phase_alpha()
+	if _elapsed < WHITE_FROST_APPEAR_SEC:
+		return phase_alpha * 0.33
+	var sustain_pulse := 0.94 + sin(_elapsed * TAU / 1.15) * 0.06
+	return phase_alpha * sustain_pulse * 0.33
+
+func get_warning_outline_alpha_multiplier() -> float:
+	if mode == Mode.PLASMA_STORM:
+		return _get_plasma_phase_alpha() * 0.25
+	if mode != Mode.WHITE_FROST_DOMAIN:
+		return 1.0
+	return _get_white_frost_phase_alpha() * 0.45
+
+# Both renderers sample the owning skill clock, so pause, release and cleanup
+# cannot leave an independently playing animation behind.
+func get_warning_texture() -> Texture2D:
+	if mode == Mode.WHITE_FROST_DOMAIN:
+		return WHITE_FROST_TEXTURES[int(_elapsed * 5.0) % WHITE_FROST_TEXTURES.size()]
+	if mode == Mode.PLASMA_STORM:
+		return PLASMA_STORM_TEXTURES[int(_elapsed * 6.0) % PLASMA_STORM_TEXTURES.size()]
+	return null
+
+func get_warning_texture_alpha() -> float:
+	if mode == Mode.WHITE_FROST_DOMAIN:
+		return _get_white_frost_phase_alpha() * 0.72
+	if mode == Mode.PLASMA_STORM:
+		return _get_plasma_phase_alpha() * PLASMA_TEXTURE_OPACITY
+	return 0.0
+
+func _get_plasma_phase_alpha() -> float:
+	var appear := _smoothstep_ratio(_elapsed / PLASMA_APPEAR_SEC)
+	var release := _smoothstep_ratio((duration_sec - _elapsed) / PLASMA_RELEASE_SEC)
+	return minf(appear, release)
+
+func get_white_frost_visual_phase() -> StringName:
+	if mode != Mode.WHITE_FROST_DOMAIN:
+		return &"steady"
+	if _elapsed < WHITE_FROST_APPEAR_SEC:
+		return &"forming"
+	if _elapsed >= maxf(duration_sec - WHITE_FROST_RELEASE_SEC, WHITE_FROST_APPEAR_SEC):
+		return &"releasing"
+	return &"sustaining"
 
 func get_warning_countdown_text() -> String:
 	return ""
+
+func _get_white_frost_radius_scale() -> float:
+	if _elapsed < WHITE_FROST_APPEAR_SEC:
+		var appear_ratio := clampf(_elapsed / WHITE_FROST_APPEAR_SEC, 0.0, 1.0)
+		return lerpf(WHITE_FROST_APPEAR_START_SCALE, 1.0, _smoothstep_ratio(appear_ratio))
+	var release_start := maxf(duration_sec - WHITE_FROST_RELEASE_SEC, WHITE_FROST_APPEAR_SEC)
+	if _elapsed >= release_start:
+		var release_ratio := clampf((_elapsed - release_start) / maxf(duration_sec - release_start, 0.001), 0.0, 1.0)
+		return lerpf(1.0, WHITE_FROST_RELEASE_END_SCALE, _smoothstep_ratio(release_ratio))
+	return 1.0
+
+func _get_white_frost_phase_alpha() -> float:
+	if _elapsed < WHITE_FROST_APPEAR_SEC:
+		return _smoothstep_ratio(clampf(_elapsed / WHITE_FROST_APPEAR_SEC, 0.0, 1.0))
+	var release_start := maxf(duration_sec - WHITE_FROST_RELEASE_SEC, WHITE_FROST_APPEAR_SEC)
+	if _elapsed >= release_start:
+		var release_ratio := clampf((_elapsed - release_start) / maxf(duration_sec - release_start, 0.001), 0.0, 1.0)
+		return 1.0 - _smoothstep_ratio(release_ratio)
+	return 1.0
+
+func _smoothstep_ratio(value: float) -> float:
+	var clamped := clampf(value, 0.0, 1.0)
+	return clamped * clamped * (3.0 - 2.0 * clamped)
 
 func _process(delta: float) -> void:
 	var step := maxf(delta, 0.0)
@@ -187,6 +283,13 @@ func _is_boss(target: Node) -> bool:
 func _draw() -> void:
 	if bool(get_meta(&"hybrid_ground_registered", false)):
 		return
+	var frame_texture := get_warning_texture()
+	if frame_texture != null:
+		var visual_radius := radius * get_warning_progress()
+		draw_circle(Vector2.ZERO, visual_radius, Color(fill_color, fill_color.a * get_warning_fill_alpha_multiplier()))
+		draw_arc(Vector2.ZERO, visual_radius, 0.0, TAU, 64, Color(line_color, line_color.a * get_warning_outline_alpha_multiplier()), 1.0)
+		draw_texture_rect(frame_texture, Rect2(Vector2.ONE * -visual_radius, Vector2.ONE * visual_radius * 2.0), false, Color(1.0, 1.0, 1.0, get_warning_texture_alpha()))
+		return
 	var life := clampf(1.0 - _elapsed / maxf(duration_sec, 0.001), 0.0, 1.0)
 	match mode:
 		Mode.CHAINSAW_CAGE:
@@ -197,14 +300,3 @@ func _draw() -> void:
 				var point := Vector2.RIGHT.rotated(angle) * radius
 				draw_circle(point, 13.0, color)
 				draw_line(point - Vector2.RIGHT.rotated(angle) * 18.0, point + Vector2.RIGHT.rotated(angle) * 18.0, Color.WHITE, 2.0)
-		Mode.PLASMA_STORM:
-			var color := Color(PALETTE.ENERGY, 0.22 * life)
-			draw_circle(Vector2.ZERO, radius, color)
-			for index in range(3):
-				draw_arc(Vector2.ZERO, radius * (0.35 + index * 0.25), _elapsed * (1.5 + index), _elapsed * (1.5 + index) + PI * 1.35, 24, Color(PALETTE.ENERGY, 0.85 * life), 3.0)
-		Mode.WHITE_FROST_DOMAIN:
-			draw_circle(Vector2.ZERO, radius, Color(PALETTE.FREEZE, 0.13 * life))
-			draw_arc(Vector2.ZERO, radius, 0.0, TAU, 64, Color(PALETTE.PLAYER_PRIMARY, 0.75 * life), 3.0)
-			for index in range(8):
-				var angle := TAU * float(index) / 8.0 + _elapsed * 0.25
-				draw_line(Vector2.RIGHT.rotated(angle) * radius * 0.72, Vector2.RIGHT.rotated(angle) * radius * 0.93, Color(PALETTE.FREEZE, 0.8 * life), 2.0)

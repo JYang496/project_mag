@@ -1,6 +1,8 @@
 extends BaseEnemy
 class_name EnemyOrbitSupport
 
+const AURA_VISUAL := preload("res://Visual/Oblique/aura_renderer.gd")
+
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 
 @export var orbit_radius: float = 170.0
@@ -92,27 +94,7 @@ func _exit_tree() -> void:
 func _draw() -> void:
 	if not aura_visual_enabled or uses_hybrid_ground_visuals():
 		return
-	draw_circle(Vector2.ZERO, maxf(aura_radius, 1.0), aura_fill_color)
-	draw_arc(
-		Vector2.ZERO,
-		maxf(aura_radius, 1.0),
-		0.0,
-		TAU,
-		56,
-		aura_line_color,
-		maxf(aura_line_width, 1.0),
-		true
-	)
-	draw_arc(
-		Vector2.ZERO,
-		maxf(aura_radius - 4.0, 1.0),
-		0.0,
-		TAU,
-		56,
-		aura_detail_color,
-		1.0,
-		true
-	)
+	AURA_VISUAL.draw_support(self, aura_radius, aura_fill_color, aura_line_color, aura_detail_color)
 
 func get_hybrid_aura_visual() -> Dictionary:
 	return {

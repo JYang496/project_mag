@@ -19,7 +19,13 @@ func process(delta: float) -> void:
 		var weapon_id := weapon.get_instance_id()
 		active_weapon_ids[weapon_id] = true
 		if weapon.is_main_weapon():
-			_stop_weapon(weapon, weapon_id)
+			# Main-weapon firing is owned by Player._process_combat_input later in
+			# the same physics frame. Stopping it here tears down held attacks
+			# between their resource pulses (notably the flamethrower stream).
+			# Role changes and phase teardown already call clear(), which remains
+			# responsible for fully stopping every automatic weapon.
+			_continuous_fire_lost_time_by_weapon.erase(weapon_id)
+			weapon.clear_automatic_aim_target()
 			continue
 		var target := weapon.find_auto_fire_target()
 		if target == null:

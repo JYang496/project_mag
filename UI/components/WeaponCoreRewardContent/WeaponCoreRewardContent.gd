@@ -38,17 +38,6 @@ func set_data(data: Dictionary) -> void:
 	usage_more.text = str(data.get("usage_more", ""))
 	usage_empty.visible = lines.is_empty()
 	usage_empty.text = str(data.get("usage_empty", ""))
-	if lines.is_empty():
-		usage_summary.free()
-		usage_line_one.free()
-		usage_line_two.free()
-		usage_more.free()
-	else:
-		usage_empty.free()
-		if lines.size() < 2:
-			usage_line_two.free()
-		if lines.size() < 3:
-			usage_more.free()
 
 
 func get_chip_grid() -> GridContainer:

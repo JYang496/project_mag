@@ -40,9 +40,9 @@ weapon.26.role_summary,Extreme-range heavy strike,超远距离重击
 weapon.26.desc,"Long-range hitscan rifle. Its instant piercing line rewards lining up enemies; Support Charge or Crossfire primes the next shot for the maximum 1.8x distance multiplier.","远程瞬发狙击枪。瞬时贯穿线鼓励串联敌人；支援蓄力或触发交叉火力，都会使下一发获得最高 1.8 倍距离倍率。"
 weapon.3.name,Spear Launcher,长矛发射器
 weapon.3.role_summary,Mid-range piercing control,中距离穿刺控制
-weapon.3.desc,"Mid-range Projectile spear. Repeat hits build Mark charge; reload with enough charge to launch a marking radial volley.","中距离投射长矛。重复命中会积累标记充能；充能足够时换弹会发射施加标记的环形齐射。"
+weapon.3.desc,"Mid-range Projectile spear. Repeat hits build charge; reload with enough charge to launch a radial volley.","中距离投射长矛。重复命中会积累充能；充能足够时换弹会发射环形齐射。"
 passive.piercing_blade_dance.name,Piercing Blade Dance,穿刺轮舞
-passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds charge. Start reloading at 10 charge to launch an 8-direction volley. Its hits mark surviving enemies for 20 seconds and knock them away.","同一根长矛重复伤害同一敌人可积累充能。达到 10 点充能时开始装填，发射 8 方向齐射；命中存活敌人后施加持续 20 秒的标记并将其击退。"
+passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds charge. Start reloading at 10 charge to launch an 8-direction volley that knocks surviving enemies away.","同一根长矛重复伤害同一敌人可积累充能。达到 10 点充能时开始装填，发射 8 方向齐射并击退命中后仍存活的敌人。"
 passive.cannon_idle_fire_triggered.name,Breach Shot,破阵炮击
 passive.cannon_idle_fire_triggered.desc,"Keep the Cannon in support mode for 5 seconds to prime one 1.45x-damage impact that makes affected targets take 20% more damage for 4 seconds.","重炮处于支援模式 5 秒后，下一次落弹造成 1.45 倍伤害，并使受影响目标在 4 秒内受到的伤害提高 20%。"
 passive.cannon_zero_energy_cycle.name,Zero Burst,零点爆发

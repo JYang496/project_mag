@@ -5,10 +5,6 @@ class_name HitBox
 var hitbox_owner
 var attack : Attack
 
-const SPEAR_PIERCE_MARK_ID := &"spear_pierce"
-const SPEAR_PIERCE_MARK_BONUS_MULTIPLIER_KEY := &"bonus_multiplier"
-const SPEAR_PIERCE_MARK_THRESHOLD_KEY := &"threshold"
-
 func _ready() -> void:
 	if hitbox_owner:
 		set_owner(hitbox_owner)
@@ -49,7 +45,6 @@ func apply_attack(area) -> void:
 		var base_damage_variant: Variant = hitbox_owner.get("base_damage")
 		if base_damage_variant != null:
 			outgoing_damage = int(hitbox_owner.call("get_runtime_damage_value", float(base_damage_variant)))
-	outgoing_damage = _apply_spear_pierce_mark_bonus(target, outgoing_damage)
 	if hitbox_owner and hitbox_owner.has_method("get_hitbox_damage_value"):
 		outgoing_damage = int(hitbox_owner.call("get_hitbox_damage_value", target, outgoing_damage, damage_type))
 	var damage_manager := get_node_or_null("/root/DamageManager")
@@ -102,22 +97,6 @@ func _resolve_delivery_type() -> StringName:
 	if hitbox_owner != null and hitbox_owner.get("beam_profile") != null:
 		return DamageDeliveryType.BEAM
 	return StringName()
-
-func _apply_spear_pierce_mark_bonus(target: Node, damage_value: int) -> int:
-	if target == null or not is_instance_valid(target):
-		return damage_value
-	if hitbox_owner == null or not is_instance_valid(hitbox_owner):
-		return damage_value
-	if not hitbox_owner.has_method("get_projectile_pierce_capacity"):
-		return damage_value
-	if not target.has_method("has_mark") or not bool(target.call("has_mark", SPEAR_PIERCE_MARK_ID)):
-		return damage_value
-	var pierce_capacity := int(hitbox_owner.call("get_projectile_pierce_capacity"))
-	var threshold := int(target.call("get_mark_value", SPEAR_PIERCE_MARK_ID, SPEAR_PIERCE_MARK_THRESHOLD_KEY, 4))
-	if pierce_capacity < threshold:
-		return damage_value
-	var multiplier := maxf(float(target.call("get_mark_value", SPEAR_PIERCE_MARK_ID, SPEAR_PIERCE_MARK_BONUS_MULTIPLIER_KEY, 1.35)), 1.0)
-	return max(1, int(round(float(damage_value) * multiplier)))
 
 func _on_area_exited(_exited_area: Area2D) -> void:
 	check_overlapping()

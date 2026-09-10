@@ -6,7 +6,6 @@ const HybridGroundLateSyncType := preload("res://Visual/Oblique/hybrid_ground_la
 const GroundMeshRegistryType := preload("res://Visual/Oblique/ground_mesh_registry.gd")
 const BoardGroundRendererType := preload("res://Visual/Oblique/board_ground_renderer.gd")
 const BoardPlatformRendererType := preload("res://Visual/Oblique/board_platform_renderer.gd")
-const ArenaGroundStyleType := preload("res://Visual/Oblique/arena_ground_style.gd")
 const ConnectedEffectRendererType := preload("res://Visual/Oblique/connected_effect_renderer.gd")
 const AuraRendererType := preload("res://Visual/Oblique/aura_renderer.gd")
 const AreaEffectRendererType := preload("res://Visual/Oblique/area_effect_renderer.gd")
@@ -66,8 +65,6 @@ var camera_fov: float = DEFAULT_CAMERA_FOV
 @export_range(5.0, 40.0, 0.5) var camera_distance: float = HybridCameraDefaultsType.CAMERA_DISTANCE
 var world_scale: float = DEFAULT_WORLD_SCALE
 @export var board_path: NodePath = NodePath("../Board")
-@export var cell_border_color: Color = Color(0.08, 0.12, 0.15, 0.82)
-@export_range(1.0, 8.0, 0.5) var cell_border_width_2d: float = 3.0
 @export_range(32, 1024, 1) var max_visible_unit_billboards := 320
 @export_range(0.0, 512.0, 1.0) var visual_cull_margin_pixels := 96.0
 
@@ -98,8 +95,6 @@ var _rest_zone_material: ShaderMaterial
 var _activation_quad: QuadMesh
 var _activation_material: ShaderMaterial
 var _shader_animation_time := 0.0
-var _border_material: StandardMaterial3D
-var _border_meshes: Dictionary = {}
 var _projection_ready: bool = false
 var _board_visual_active: bool = true
 var _late_sync: Node
@@ -422,20 +417,6 @@ func _rebuild_ground() -> void:
 		var center := texture_sprite.global_position
 		mesh_instance.position = world_2d_to_3d(center)
 		_ground_root.add_child(mesh_instance)
-		var theme_region_extent := _resolve_ground_theme_region_extent()
-		var ground_theme := ArenaGroundStyleType.theme_for_world_region(center, theme_region_extent)
-		var ground_style := ArenaGroundStyleType.build_style(int(cell.get("logical_id")), ground_theme)
-		mesh_instance.set_instance_shader_parameter("arena_theme_tint", ground_style.get("theme_tint", Color.WHITE))
-		mesh_instance.set_instance_shader_parameter("arena_midtone_color", ground_style.get("midtone_color", Color("263747")))
-		mesh_instance.set_instance_shader_parameter("arena_midtone_strength", float(ground_style.get("midtone_strength", 0.15)))
-		mesh_instance.set_instance_shader_parameter("arena_accent_color", ground_style.get("accent_color", Color(0.38, 0.88, 1.0, 1.0)))
-		mesh_instance.set_instance_shader_parameter("arena_variant", float(ground_style.get("variant", 0)))
-		mesh_instance.set_instance_shader_parameter("arena_detail_seed", float(ground_style.get("seed", 0.0)))
-		mesh_instance.set_instance_shader_parameter("arena_detail_strength", float(ground_style.get("detail_strength", 0.07)))
-		mesh_instance.set_instance_shader_parameter("arena_decal_id", float(ground_style.get("decal_id", 0)))
-		mesh_instance.set_instance_shader_parameter("arena_decal_rotation", float(ground_style.get("decal_rotation", 0)))
-		mesh_instance.set_instance_shader_parameter("arena_decal_strength", float(ground_style.get("decal_strength", 0.03)))
-		mesh_instance.set_instance_shader_parameter("arena_ambient_phase", float(ground_style.get("ambient_phase", 0.0)))
 		_cell_meshes[cell.get_instance_id()] = {
 			"cell": weakref(cell),
 			"sprite": weakref(texture_sprite),
@@ -446,25 +427,19 @@ func _rebuild_ground() -> void:
 		var cell_enabled := bool(cell.get("board_enabled"))
 		mesh_instance.visible = _board_visual_active and cell_enabled
 		_apply_armed_deployment_state(mesh_instance, cell)
-		if cell_enabled:
-			_create_cell_border_meshes(cell, center, texture_size)
 		_create_activation_mesh(cell, center, texture_size)
 		LoadingPerformance.end_segment(cell_segment)
 	if _platform_renderer != null:
 		_platform_renderer.rebuild(cells)
 	if _board_renderer != null:
+		_board_renderer.boundaries.rebuild(cells)
 		_board_renderer.setup_rest_area()
 		_board_renderer.hide_legacy_boundaries()
 
 
-func _resolve_ground_theme_region_extent() -> Vector2:
-	var spacing_value: Variant = _board.get("cell_spacing") if _board != null else null
-	if spacing_value is Vector2:
-		var spacing := spacing_value as Vector2
-		return Vector2(maxf(absf(spacing.x) * 2.0, 1.0), maxf(absf(spacing.y) * 2.0, 1.0))
-	return ArenaGroundStyleType.DEFAULT_REGION_EXTENT
-
 func _clear_ground_visual_caches() -> void:
+	if _board_renderer != null:
+		_board_renderer.boundaries.clear()
 	if _platform_renderer != null:
 		_platform_renderer.clear()
 	_activation_meshes.clear()
@@ -483,33 +458,6 @@ func _clear_ground_visual_caches() -> void:
 	_dash_telegraph_meshes.clear()
 	_ground_cone_meshes.clear()
 	_rest_area = null
-
-func _create_cell_border_meshes(cell: Node2D, center: Vector2, cell_size: Vector2) -> void:
-	if _border_material == null:
-		_border_material = StandardMaterial3D.new()
-		_border_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		_border_material.albedo_color = cell_border_color
-	var half_size := cell_size * 0.5
-	var thickness := maxf(cell_border_width_2d, 1.0)
-	_create_ground_border_strip("%sBorderTop" % cell.name, center + Vector2(0.0, -half_size.y), Vector2(cell_size.x, thickness))
-	_create_ground_border_strip("%sBorderBottom" % cell.name, center + Vector2(0.0, half_size.y), Vector2(cell_size.x, thickness))
-	_create_ground_border_strip("%sBorderLeft" % cell.name, center + Vector2(-half_size.x, 0.0), Vector2(thickness, cell_size.y))
-	_create_ground_border_strip("%sBorderRight" % cell.name, center + Vector2(half_size.x, 0.0), Vector2(thickness, cell_size.y))
-
-func _create_ground_border_strip(strip_name: String, center: Vector2, size_2d: Vector2) -> void:
-	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.name = strip_name
-	var box := _border_meshes.get(size_2d) as BoxMesh
-	if box == null:
-		box = BoxMesh.new()
-		box.size = Vector3(size_2d.x * world_scale, 0.006, size_2d.y * world_scale)
-		box.material = _border_material
-		_border_meshes[size_2d] = box
-	mesh_instance.mesh = box
-	mesh_instance.set_meta(&"hybrid_board_visual", true)
-	mesh_instance.visible = _board_visual_active
-	mesh_instance.position = world_2d_to_3d(center) + Vector3.UP * 0.009
-	_ground_root.add_child(mesh_instance)
 
 func _hide_legacy_board_boundary_visuals() -> void:
 	if not is_inside_tree():
@@ -619,6 +567,8 @@ func _on_board_visual_active_changed(active: bool, _immediate: bool) -> void:
 	if active:
 		_sync_cell_meshes()
 		_sync_activation_visuals()
+	if _board_renderer != null:
+		_board_renderer.boundaries.sync()
 
 func _on_board_recentered(offset: Vector2) -> void:
 	var offset_3d := world_2d_to_3d(offset)
@@ -1061,6 +1011,12 @@ func _register_warning_circle(warning: Node2D) -> void:
 	var outline := _create_ring_mesh(outline_color, 0.05)
 	var show_countdown := bool(warning.get("show_countdown"))
 	var countdown_label := _create_warning_countdown_label() if show_countdown else null
+	# Registration precedes the next position sync. Keep new visuals hidden so
+	# they cannot flash for one frame at the ground root's default origin.
+	mesh.visible = false
+	outline.visible = false
+	if countdown_label != null:
+		countdown_label.visible = false
 	_ground_root.add_child(mesh)
 	_ground_root.add_child(outline)
 	if countdown_label != null:
@@ -1070,10 +1026,31 @@ func _register_warning_circle(warning: Node2D) -> void:
 		"source": weakref(warning),
 		"mesh": mesh,
 		"outline": outline,
+		"fill_color": color,
+		"outline_color": outline_color,
 		"countdown_label": countdown_label,
 		"warning": true,
 		"height": DANGER_WARNING_HEIGHT,
 	}
+	if warning.has_method("get_warning_texture"):
+		var texture := warning.call("get_warning_texture") as Texture2D
+		if texture != null:
+			var texture_mesh := MeshInstance3D.new()
+			var plane := PlaneMesh.new()
+			plane.size = Vector2(2.0, 2.0)
+			var material := StandardMaterial3D.new()
+			material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+			material.cull_mode = BaseMaterial3D.CULL_DISABLED
+			material.render_priority = PLAYER_GROUND_EFFECT_RENDER_PRIORITY
+			material.albedo_texture = texture
+			plane.material = material
+			texture_mesh.mesh = plane
+			texture_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			texture_mesh.visible = false
+			_ground_root.add_child(texture_mesh)
+			_area_meshes[warning.get_instance_id()]["texture_mesh"] = texture_mesh
 	warning.set_meta(&"hybrid_ground_registered", true)
 
 func _create_warning_countdown_label() -> Label3D:
@@ -1472,6 +1449,7 @@ func _sync_area_meshes() -> void:
 		var mesh := entry.mesh as MeshInstance3D
 		var outline := entry.get("outline") as MeshInstance3D
 		var countdown_label := entry.get("countdown_label") as Label3D
+		var texture_mesh := entry.get("texture_mesh") as MeshInstance3D
 		if area == null or mesh == null:
 			if mesh != null:
 				mesh.queue_free()
@@ -1479,6 +1457,8 @@ func _sync_area_meshes() -> void:
 				outline.queue_free()
 			if countdown_label != null:
 				countdown_label.queue_free()
+			if texture_mesh != null:
+				texture_mesh.queue_free()
 			_area_meshes.erase(id)
 			continue
 		var visual_shape := int(entry.get("visual_shape", 0))
@@ -1491,18 +1471,39 @@ func _sync_area_meshes() -> void:
 			mesh.position = next_position
 			if outline != null:
 				outline.position = next_position + Vector3.UP * 0.002
+			if texture_mesh != null:
+				texture_mesh.position = next_position + Vector3.UP * 0.004
 			if countdown_label != null:
 				countdown_label.position = next_position + Vector3.UP * 0.08
 			entry["last_position"] = next_position
 		var area_visible := is_world_point_within_visual_bounds(area.global_position, visual_cull_margin_pixels + radius / maxf(world_scale, 0.0001))
 		if bool(entry.get("warning", false)):
 			var progress := clampf(float(area.call("get_warning_progress")), 0.0, 1.0)
-			mesh.visible = area_visible and progress > 0.0
+			var fill_alpha_multiplier := clampf(float(area.call("get_warning_fill_alpha_multiplier")), 0.0, 1.0) if area.has_method("get_warning_fill_alpha_multiplier") else 1.0
+			var outline_alpha_multiplier := clampf(float(area.call("get_warning_outline_alpha_multiplier")), 0.0, 1.0) if area.has_method("get_warning_outline_alpha_multiplier") else 1.0
+			mesh.visible = area_visible and progress > 0.0 and fill_alpha_multiplier > 0.0
 			var progress_radius := radius * progress
 			mesh.scale = Vector3(progress_radius, 1.0, progress_radius)
+			if texture_mesh != null:
+				var texture_alpha := clampf(float(area.call("get_warning_texture_alpha")), 0.0, 1.0)
+				texture_mesh.visible = area_visible and progress > 0.0 and texture_alpha > 0.0
+				texture_mesh.scale = Vector3(progress_radius, 1.0, progress_radius)
+				var texture_material := texture_mesh.mesh.material as StandardMaterial3D
+				texture_material.albedo_texture = area.call("get_warning_texture") as Texture2D
+				texture_material.albedo_color = Color(1.0, 1.0, 1.0, texture_alpha)
+			var fill_material := mesh.mesh.material as ShaderMaterial
+			if fill_material != null:
+				var fill_color := entry.get("fill_color", Color.WHITE) as Color
+				fill_color.a *= fill_alpha_multiplier
+				fill_material.set_shader_parameter(&"fill_color", fill_color)
 			if outline != null:
-				outline.visible = area_visible
-				outline.scale = Vector3(radius, 1.0, radius)
+				outline.visible = area_visible and outline_alpha_multiplier > 0.0
+				outline.scale = Vector3(progress_radius, 1.0, progress_radius)
+				var outline_material := outline.mesh.material as StandardMaterial3D
+				if outline_material != null:
+					var outline_color := entry.get("outline_color", Color.WHITE) as Color
+					outline_color.a *= outline_alpha_multiplier
+					outline_material.albedo_color = outline_color
 			if countdown_label != null:
 				countdown_label.visible = area_visible
 				countdown_label.text = str(area.call("get_warning_countdown_text"))
@@ -1674,6 +1675,13 @@ func _sync_enemy_aura_mesh(source_id: int, entry: Dictionary) -> void:
 				"detail_color",
 				detail_outline_material.albedo_color
 			) as Color
+
+		if config.get("relationship_kind", &"") in [&"shield_aura", &"speed_aura", &"repair_range"]:
+			outline.visible = false
+			if detail_outline != null:
+				detail_outline.visible = false
+			fill.scale = Vector3(radius_3d, 1.0, radius_3d)
+			AuraRendererType.sync_support_surface(fill, config, radius_2d)
 
 func _sync_enemy_link_meshes() -> void:
 	var active_keys: Dictionary = {}

@@ -24,20 +24,25 @@ const ENEMY_SCENES: PackedStringArray = [
 
 const EXPECTED_DAMAGE_BY_SCENE := {
 	"res://Npc/enemy/scenes/base_enemy.tscn": 0,
-	"res://Npc/enemy/scenes/enemy_bomber.tscn": 2,
-	"res://Npc/enemy/scenes/enemy_interceptor.tscn": 3,
+	"res://Npc/enemy/scenes/enemy_bomber.tscn": 1,
+	"res://Npc/enemy/scenes/enemy_interceptor.tscn": 1,
 	"res://Npc/enemy/scenes/enemy_mine_crawler.tscn": 1,
 	"res://Npc/enemy/scenes/enemy_mirror_caster.tscn": 1,
 	"res://Npc/enemy/scenes/enemy_mirror_clone.tscn": 1,
-	"res://Npc/enemy/scenes/enemy_mortar_turret.tscn": 2,
+	"res://Npc/enemy/scenes/enemy_mortar_turret.tscn": 1,
 	"res://Npc/enemy/scenes/enemy_orbit_support.tscn": 1,
 	"res://Npc/enemy/scenes/enemy_repair_unit.tscn": 0,
 	"res://Npc/enemy/scenes/enemy_rolling_ball.tscn": 1,
-	"res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn": 2,
+	"res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn": 1,
 	"res://Npc/enemy/scenes/enemy_shield_core.tscn": 0,
-	"res://Npc/enemy/scenes/enemy_spike_turret.tscn": 2,
+	"res://Npc/enemy/scenes/enemy_spike_turret.tscn": 1,
 	"res://Npc/enemy/scenes/enemy_tar_mine_crawler.tscn": 1,
-	"res://Npc/enemy/scenes/enemy_wheel_cart.tscn": 2,
+	"res://Npc/enemy/scenes/enemy_wheel_cart.tscn": 1,
+}
+
+const EXPECTED_SPECIAL_DAMAGE_MULTIPLIER_BY_SCENE := {
+	"res://Npc/enemy/scenes/enemy_bomber.tscn": {"property": &"blast_damage_multiplier", "value": 1.0},
+	"res://Npc/enemy/scenes/enemy_mortar_turret.tscn": {"property": &"aoe_damage_multiplier", "value": 1.0},
 }
 
 var _failed := false
@@ -77,7 +82,15 @@ func _validate_enemy_scene(scene_path: String) -> void:
 	if EXPECTED_DAMAGE_BY_SCENE.has(scene_path):
 		_expect(
 			enemy.damage == int(EXPECTED_DAMAGE_BY_SCENE[scene_path]),
-			"%s damage must match the half-rounded-up balance value" % scene_path
+			"%s damage must match the survivability balance value" % scene_path
+		)
+	if EXPECTED_SPECIAL_DAMAGE_MULTIPLIER_BY_SCENE.has(scene_path):
+		var multiplier_contract: Dictionary = EXPECTED_SPECIAL_DAMAGE_MULTIPLIER_BY_SCENE[scene_path]
+		var property_name := multiplier_contract.get("property", &"") as StringName
+		var expected_multiplier := float(multiplier_contract.get("value", 1.0))
+		_expect(
+			is_equal_approx(float(enemy.get(property_name)), expected_multiplier),
+			"%s special attack multiplier must preserve the survivability balance" % scene_path
 		)
 
 	var body := enemy.get_node_or_null("Body") as Sprite2D

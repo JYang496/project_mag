@@ -14,7 +14,7 @@ const IMPACT_LEAD_FRAMES := 2.0
 @export var cast_delay: float = 1.25
 @export var cooldown_duration: float = 2.9
 @export var aoe_radius: float = 62.0
-@export var aoe_damage_multiplier: float = 1.8
+@export var aoe_damage_multiplier: float = 1.0
 @export var screen_fire_margin: float = 28.0
 
 var _cooldown_remaining: float = 0.0

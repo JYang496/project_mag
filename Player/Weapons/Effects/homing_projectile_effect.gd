@@ -6,6 +6,8 @@ class_name HomingProjectileEffect
 @export_range(0.0, 180.0, 1.0) var acquire_half_angle_degrees := 180.0
 @export var release_radius_multiplier := 1.35
 var projectile: Projectile
+var search_center := Vector2.ZERO
+var use_fixed_search_center := false
 var _target_ref: WeakRef
 
 func setup(
@@ -13,9 +15,12 @@ func setup(
 	turn_speed: float = 5.5,
 	radius: float = 420.0,
 	half_angle_degrees: float = 180.0,
-	target_release_radius_multiplier: float = 1.35
+	target_release_radius_multiplier: float = 1.35,
+	attack_target_point: Variant = null
 ) -> HomingProjectileEffect:
 	projectile = projectile_value
+	use_fixed_search_center = attack_target_point is Vector2
+	search_center = attack_target_point as Vector2 if use_fixed_search_center else Vector2.ZERO
 	turn_speed_radians_per_sec = maxf(turn_speed, 0.1)
 	acquire_radius = maxf(radius, 1.0)
 	acquire_half_angle_degrees = clampf(half_angle_degrees, 0.0, 180.0)
@@ -45,16 +50,18 @@ func _physics_process(delta: float) -> void:
 func _find_target() -> Node2D:
 	var best: Node2D
 	var best_distance: float = INF
+	var query_center := search_center if use_fixed_search_center else projectile.global_position
 	var current_direction: Vector2 = projectile.base_displacement.normalized()
 	var max_angle: float = deg_to_rad(acquire_half_angle_degrees)
-	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(projectile.get_tree(), projectile.global_position, acquire_radius):
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(projectile.get_tree(), query_center, acquire_radius):
 		var enemy := enemy_ref as Node2D
 		if not _is_target_alive(enemy):
 			continue
-		var to_enemy: Vector2 = projectile.global_position.direction_to(enemy.global_position)
-		if current_direction != Vector2.ZERO and absf(current_direction.angle_to(to_enemy)) > max_angle:
-			continue
-		var distance: float = projectile.global_position.distance_squared_to(enemy.global_position)
+		if not use_fixed_search_center:
+			var to_enemy: Vector2 = projectile.global_position.direction_to(enemy.global_position)
+			if current_direction != Vector2.ZERO and absf(current_direction.angle_to(to_enemy)) > max_angle:
+				continue
+		var distance: float = query_center.distance_squared_to(enemy.global_position)
 		if distance < best_distance:
 			best_distance = distance
 			best = enemy
@@ -68,7 +75,8 @@ func _resolve_locked_target() -> Node2D:
 		_target_ref = null
 		return null
 	var release_radius: float = acquire_radius * release_radius_multiplier
-	if projectile.global_position.distance_squared_to(target.global_position) > release_radius * release_radius:
+	var release_center := search_center if use_fixed_search_center else projectile.global_position
+	if release_center.distance_squared_to(target.global_position) > release_radius * release_radius:
 		_target_ref = null
 		return null
 	return target

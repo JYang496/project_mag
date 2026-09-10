@@ -15,6 +15,7 @@ enum VisualPreset {
 @export var line_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.96)
 @export var line_width: float = 4.0
 @export var show_countdown: bool = true
+@export var reveal_from_center: bool = true
 
 var _elapsed: float = 0.0
 var _fill_polygon: Polygon2D = null
@@ -53,6 +54,8 @@ func _process(delta: float) -> void:
 	_update_countdown_label()
 
 func get_warning_progress() -> float:
+	if not reveal_from_center:
+		return 1.0
 	return clampf(_elapsed / maxf(duration, 0.01), 0.0, 1.0)
 
 func get_warning_remaining() -> float:
@@ -65,8 +68,7 @@ func get_warning_countdown_text() -> String:
 func _draw() -> void:
 	if visual_preset != VisualPreset.BASIC:
 		return
-	var life := clampf(_elapsed / maxf(duration, 0.01), 0.0, 1.0)
-	draw_circle(Vector2.ZERO, radius * life, fill_color)
+	draw_circle(Vector2.ZERO, radius * get_warning_progress(), fill_color)
 	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 24, line_color, maxf(roundf(line_width), 1.0), false)
 
 func _build_dodge_style_visuals() -> void:

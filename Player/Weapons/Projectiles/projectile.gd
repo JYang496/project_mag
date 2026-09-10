@@ -402,8 +402,9 @@ func _reset_projectile_visual_state() -> void:
 	projectile_root.position = Vector2.ZERO
 	if hitbox_anchor != null:
 		hitbox_anchor.position = Vector2.ZERO
-	# Preserve the existing gameplay metadata lifecycle. Visual snapshots are fields.
-	_reset_runtime_meta_flags()
+	# Gameplay metadata is configured before the projectile enters the tree. Keep
+	# visual reset independent so spawn-time markers survive _ready(). Pooled
+	# projectiles clear their runtime metadata in _on_before_pooled().
 	modulate = Color.WHITE
 	self_modulate = Color.WHITE
 	scale = Vector2.ONE

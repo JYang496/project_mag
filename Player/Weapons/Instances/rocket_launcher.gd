@@ -93,19 +93,24 @@ func _on_shoot():
 	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
 	var base_direction := get_aim_forward()
+	var attack_target_point: Vector2 = get_mouse_target()
 	var shot_directions: Array[Vector2] = [base_direction]
 	shot_directions = branch_runtime.get_branch_shot_directions(base_direction)
 	if shot_directions.is_empty():
 		shot_directions = [base_direction]
 	var damage_multiplier := branch_runtime.get_branch_projectile_damage_multiplier()
 	for dir in shot_directions:
-		_fire_single_rocket(dir.normalized(), damage_multiplier)
+		_fire_single_rocket(dir.normalized(), damage_multiplier, attack_target_point)
 	branch_runtime.notify_branch_weapon_shot(base_direction)
 
 func supports_multi_launcher_module() -> bool:
 	return true
 
-func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> Node2D:
+func _fire_single_rocket(
+	direction: Vector2,
+	damage_multiplier: float = 1.0,
+	attack_target_point: Variant = null
+) -> Node2D:
 	var spawn_projectile = spawn_projectile_from_scene(projectile_template)
 	if spawn_projectile == null:
 		return null
@@ -127,11 +132,14 @@ func _fire_single_rocket(direction: Vector2, damage_multiplier: float = 1.0) -> 
 		spawn_projectile.set_meta(&"cluster_warhead", true)
 	_sync_explosion_effect_config(projectile_damage)
 	apply_effects_on_projectile(spawn_projectile)
-	_apply_rocket_homing(spawn_projectile)
+	var homing_search_center: Vector2 = (
+		attack_target_point as Vector2 if attack_target_point is Vector2 else get_mouse_target()
+	)
+	_apply_rocket_homing(spawn_projectile, homing_search_center)
 	get_projectile_spawn_parent().call_deferred("add_child", spawn_projectile)
 	return spawn_projectile
 
-func _apply_rocket_homing(projectile: Projectile) -> void:
+func _apply_rocket_homing(projectile: Projectile, attack_target_point: Vector2) -> void:
 	var profile := {
 		"turn_rate_deg_per_sec": homing_turn_rate_deg_per_sec,
 		"acquisition_radius": homing_acquisition_radius,
@@ -146,7 +154,8 @@ func _apply_rocket_homing(projectile: Projectile) -> void:
 		deg_to_rad(maxf(float(profile["turn_rate_deg_per_sec"]), 0.1)),
 		maxf(float(profile["acquisition_radius"]), 1.0),
 		clampf(float(profile["acquisition_half_angle_deg"]), 0.0, 180.0),
-		maxf(float(profile["release_radius_multiplier"]), 1.0)
+		maxf(float(profile["release_radius_multiplier"]), 1.0),
+		attack_target_point
 	)
 	projectile.add_child(homing)
 	projectile.module_list.append(homing)

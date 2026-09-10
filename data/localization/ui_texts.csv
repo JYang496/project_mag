@@ -681,7 +681,7 @@ ui.weapon.skill.machine_gun_infinite_chain.description,"For 3 seconds, shots con
 ui.weapon.skill.charged_blaster_prism_overload.name,Prism Overload,棱镜过载
 ui.weapon.skill.charged_blaster_prism_overload.description,The next charged beam splits into 6 homing energy bolts when it ends. Each bolt deals 35% weapon damage.,下一次充能光束结束时分裂为6枚追踪能量弹，每枚造成35%武器伤害。
 ui.weapon.skill.spear_phalanx.name,Spear Phalanx,长矛方阵
-ui.weapon.skill.spear_phalanx.description,Fire 8 returning spears evenly across a 40-degree spread toward the target. Their hits apply a mark that increases subsequent spear damage by 35%.,朝目标方向在40度范围内均匀发射8根会返回玩家处的长矛；命中施加标记，使后续长矛伤害提高35%。
+ui.weapon.skill.spear_phalanx.description,Fire 8 returning spears evenly across a 40-degree spread toward the target. Surviving enemies are knocked back.,朝目标方向在40度范围内均匀发射8根会返回玩家处的长矛；命中后击退仍存活的敌人。
 ui.weapon.skill.shotgun_double_discipline.name,Double-Barrel Discipline,双管戒律
 ui.weapon.skill.shotgun_double_discipline.description,"The next 2 attacks cost no ammo and fire twice as fast. Each attack still fires a second shot after 0.1 seconds for 60% damage.","接下来2次开火不消耗弹药且攻击速度翻倍；每次仍会在0.1秒后追加一轮造成60%伤害的射击。"
 ui.weapon.skill.orbit_proliferation.name,Orbital Proliferation,轨道增殖

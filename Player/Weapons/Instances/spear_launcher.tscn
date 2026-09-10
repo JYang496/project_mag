@@ -15,7 +15,7 @@ skill_unlock_required = 2.0
 turn_speed_degrees_per_second = 300.0
 fire_feedback_profile = ExtResource("2_feedback")
 range_mode = 1
-configured_attack_range = 800.0
+configured_attack_range = 400.0
 delivery_type_flags = 1
 
 [node name="Modules" parent="."]

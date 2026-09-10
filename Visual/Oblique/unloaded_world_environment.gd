@@ -1,12 +1,15 @@
 class_name UnloadedWorldEnvironment
 extends Node3D
 
-## A single, camera-following background texture for the unloaded world.
+## Camera-following far scenery and a subdued circuit midground.
 ## The camera-facing quad is visual-only and never creates collision or navigation.
 
-const BACKGROUND_TEXTURE := preload(
+const CIRCUIT_TEXTURE := preload(
 	"res://Visual/Oblique/assets/background_variants/unloaded_world_quarantine_sector_vertical.png"
 )
+
+const BACKGROUND_TEXTURE := preload("res://Visual/Oblique/assets/background_variants/unloaded_world_abyss_sparse_16_9.png")
+const LAYERS_SHADER := preload("res://Visual/Oblique/unloaded_world_layers.gdshader")
 
 @export var hybrid_view_path: NodePath = NodePath("../HybridGroundView3D")
 @export var world_scale: float = 0.01
@@ -17,13 +20,13 @@ const BACKGROUND_TEXTURE := preload(
 @export var maximum_uv_offset := Vector2(0.045, 0.035)
 @export_range(0.1, 20.0, 0.1) var parallax_smoothing: float = 6.0
 @export_range(0.0, 2.0, 0.05) var anchor_settle_duration: float = 0.35
-@export var background_tint := Color(0.78, 0.84, 0.90, 1.0)
+@export var background_tint := Color.WHITE
 
 var _hybrid_view: Node3D
 var _camera: Camera3D
 var _background_mesh: MeshInstance3D
 var _background_quad: QuadMesh
-var _background_material: StandardMaterial3D
+var _background_material: ShaderMaterial
 var _camera_anchor_2d := Vector2.ZERO
 var _smoothed_uv_offset := Vector2.ZERO
 var _cover_scale := Vector2.ONE
@@ -81,15 +84,12 @@ func _build_backdrop() -> void:
 	_attach_camera_environment()
 
 
-func _create_background_material() -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_texture = BACKGROUND_TEXTURE
-	material.albedo_color = background_tint
-	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	material.texture_repeat = false
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.no_depth_test = false
+func _create_background_material() -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = LAYERS_SHADER
+	material.set_shader_parameter("far_texture", BACKGROUND_TEXTURE)
+	material.set_shader_parameter("circuit_texture", CIRCUIT_TEXTURE)
+	material.set_shader_parameter("background_tint", background_tint)
 	return material
 
 
@@ -116,12 +116,13 @@ func _update_backdrop_geometry(force: bool = false) -> void:
 		visible_height
 	) * viewport_overscan
 	_cover_scale = _calculate_cover_scale(viewport_aspect)
-	_background_material.uv1_scale = Vector3(_cover_scale.x, _cover_scale.y, 1.0)
+	_background_material.set_shader_parameter("far_scale", _cover_scale)
+	_background_material.set_shader_parameter("circuit_scale", _calculate_cover_scale(viewport_aspect, CIRCUIT_TEXTURE))
 	_apply_uv_offset(_snap_uv_offset_to_texture_grid(_smoothed_uv_offset))
 
 
-func _calculate_cover_scale(viewport_aspect: float) -> Vector2:
-	var texture_size := Vector2(BACKGROUND_TEXTURE.get_size())
+func _calculate_cover_scale(viewport_aspect: float, texture: Texture2D = BACKGROUND_TEXTURE) -> Vector2:
+	var texture_size := Vector2(texture.get_size())
 	var texture_aspect := texture_size.x / maxf(texture_size.y, 1.0)
 	var fraction := clampf(visible_texture_fraction, 0.5, 0.98)
 	if viewport_aspect >= texture_aspect:
@@ -133,8 +134,14 @@ func _apply_uv_offset(parallax_offset: Vector2) -> void:
 	if _background_material == null:
 		return
 	var centered_crop_offset := (Vector2.ONE - _cover_scale) * 0.5
-	var final_offset := centered_crop_offset + _clamp_uv_offset_to_crop_margin(parallax_offset)
-	_background_material.uv1_offset = Vector3(final_offset.x, final_offset.y, 0.0)
+	var far_parallax := _snap_uv_offset_to_texture_grid(parallax_offset * 0.35)
+	_background_material.set_shader_parameter("far_offset", centered_crop_offset + _clamp_uv_offset_to_crop_margin(far_parallax))
+	var circuit_scale := _calculate_cover_scale(_last_viewport_size.x / _last_viewport_size.y, CIRCUIT_TEXTURE)
+	var circuit_margin := (Vector2.ONE - circuit_scale) * 0.5
+	var circuit_size := Vector2(CIRCUIT_TEXTURE.get_size())
+	var circuit_parallax := (parallax_offset * circuit_size).round() / circuit_size
+	circuit_parallax = circuit_parallax.clamp(-circuit_margin, circuit_margin)
+	_background_material.set_shader_parameter("circuit_offset", circuit_margin + circuit_parallax)
 
 
 func _clamp_uv_offset_to_crop_margin(offset: Vector2) -> Vector2:

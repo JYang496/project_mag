@@ -118,5 +118,8 @@ func _process(delta: float) -> void:
 	if _level <= 0.0:
 		stop()
 		_started = false
-	volume_db = lerpf(-55, -19, _level)
-	pitch_scale = lerpf(0.72, 1.0, _level)
+	var heat_intensity := 0.0
+	if flavor == "flamethrower" and weapon.has_method("get_heat_ratio"):
+		heat_intensity = clampf(float(weapon.call("get_heat_ratio")), 0.0, 1.0)
+	volume_db = lerpf(-55, -19 + heat_intensity * 1.5, _level)
+	pitch_scale = lerpf(0.72, 1.0 + heat_intensity * 0.10, _level)

@@ -2,6 +2,8 @@ extends Node2D
 class_name PersistentGroundArea
 
 const ENEMY_HURTBOX_MASK := 1 << 2
+const EXTEND_DURATION_SEC := 0.32
+const CRUMBLE_START_RATIO := 0.8
 
 var source_weapon: Node
 var path_length := 200.0
@@ -60,21 +62,37 @@ func _physics_process(delta: float) -> void:
 func cleanup_for_battle_end() -> void:
 	queue_free()
 
+func get_extension_progress() -> float:
+	var extend_duration := minf(EXTEND_DURATION_SEC, duration_sec * 0.3)
+	return clampf(_elapsed_sec / maxf(extend_duration, 0.001), 0.0, 1.0)
+
+func get_crumble_progress() -> float:
+	return clampf((_elapsed_sec / duration_sec - CRUMBLE_START_RATIO) / (1.0 - CRUMBLE_START_RATIO), 0.0, 1.0)
+
+func get_damage_length() -> float:
+	# Drifting fragments are cosmetic; only the intact growing trail can hit.
+	if _elapsed_sec >= duration_sec * CRUMBLE_START_RATIO:
+		return 0.0
+	return path_length * get_extension_progress()
+
 func _create_ground_visual() -> void:
 	var visual := preload("res://Player/Weapons/Effects/glacier_ground_visual.gd").new()
 	visual.area = self
 	add_child(visual)
 
 func _apply_tick() -> void:
+	var damage_length := get_damage_length()
+	if damage_length <= 0.0:
+		return
 	if source_weapon == null or not is_instance_valid(source_weapon):
 		return
 	if not source_weapon.has_method("apply_glacier_trail_tick"):
 		return
 	var shape: RectangleShape2D = RectangleShape2D.new()
-	shape.size = Vector2(path_length, path_width)
+	shape.size = Vector2(damage_length, path_width)
 	var query: PhysicsShapeQueryParameters2D = PhysicsShapeQueryParameters2D.new()
 	query.shape = shape
-	query.transform = Transform2D(global_rotation, to_global(Vector2(path_length * 0.5, 0.0)))
+	query.transform = Transform2D(global_rotation, to_global(Vector2(damage_length * 0.5, 0.0)))
 	query.collision_mask = ENEMY_HURTBOX_MASK
 	query.collide_with_areas = true
 	query.collide_with_bodies = false

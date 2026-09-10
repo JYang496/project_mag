@@ -1,6 +1,8 @@
 extends BaseEnemy
 class_name EnemyShieldCore
 
+const AURA_VISUAL := preload("res://Visual/Oblique/aura_renderer.gd")
+
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 
 @export var aura_radius: float = 180.0
@@ -9,8 +11,8 @@ const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 @export var aura_fill_color: Color = Color(PALETTE.SHIELD, 0.10)
 @export var aura_line_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.94)
 @export var aura_detail_color: Color = Color(PALETTE.SHIELD, 0.56)
-@export var protected_line_color: Color = Color(PALETTE.SHIELD, 0.82)
-@export var protected_line_outer_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.78)
+@export var protected_line_color: Color = Color(PALETTE.SHIELD.lightened(0.45), 0.95)
+@export var protected_line_outer_color: Color = Color(0.06, 0.025, 0.045, 0.90)
 
 # Visual-only compatibility list. Runtime protection comes from the spatial snapshot;
 # gameplay code must not populate this by searching nearby enemies.
@@ -65,9 +67,7 @@ func _on_shield_area_body_exited(body: Node2D) -> void:
 func _draw() -> void:
 	if uses_hybrid_ground_visuals():
 		return
-	draw_circle(Vector2.ZERO, aura_radius, aura_fill_color)
-	draw_arc(Vector2.ZERO, aura_radius, 0.0, TAU, 48, aura_line_color, 4.0, false)
-	draw_arc(Vector2.ZERO, aura_radius - 4.0, 0.0, TAU, 48, aura_detail_color, 1.0, false)
+	AURA_VISUAL.draw_support(self, aura_radius, aura_fill_color, aura_line_color, aura_detail_color)
 	for index in mini(_protected_targets.size(), 4):
 		var target := _protected_targets[index]
 		if is_instance_valid(target):

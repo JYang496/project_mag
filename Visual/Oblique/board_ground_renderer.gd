@@ -1,13 +1,18 @@
 class_name BoardGroundRenderer
 extends RefCounted
 
+const ArenaBoundaryRendererType := preload("res://Visual/Oblique/arena_boundary_renderer.gd")
+
 var _view: Node
+var boundaries: ArenaBoundaryRenderer
 var activation_meshes: Dictionary = {}
 var cell_meshes: Dictionary = {}
 var rest_zone_meshes: Dictionary = {}
 
 func setup(view: Node) -> void:
 	_view = view
+	boundaries = ArenaBoundaryRendererType.new()
+	boundaries.setup(view)
 	_view._activation_meshes = activation_meshes
 	_view._cell_meshes = cell_meshes
 	_view._rest_zone_meshes = rest_zone_meshes
@@ -28,11 +33,13 @@ func sync_late(_delta: float) -> void:
 	if not _is_ready():
 		return
 	_view._sync_cell_meshes()
+	boundaries.sync()
 	_view._sync_activation_visuals()
 	_view._sync_rest_ground_mesh()
 	_view._sync_rest_zone_meshes()
 
 func clear() -> void:
+	boundaries.clear()
 	activation_meshes.clear()
 	cell_meshes.clear()
 	rest_zone_meshes.clear()

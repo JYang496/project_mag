@@ -17,6 +17,12 @@ var ITEM_NAME := "Flamethrower"
 @export var heat_prepared_duration_sec: float = 10.0
 @export_range(0.0, 2.0, 0.01) var heat_prepared_fire_damage_bonus_per_stack: float = 0.10
 @export_range(1, 10, 1) var heat_prepared_max_stacks: int = 2
+@export_range(0.04, 0.25, 0.01) var damage_tick_sec: float = 0.10
+@export_range(0.05, 0.5, 0.01) var stream_ramp_sec: float = 0.16
+@export_range(0.0, 0.5, 0.01) var contact_grace_sec: float = 0.15
+@export_range(0.1, 3.0, 0.05) var ignition_contact_sec: float = 0.75
+@export_range(1, 8, 1) var ignition_ticks: int = 3
+@export_range(0.0, 1.0, 0.01) var ignition_damage_ratio: float = 0.12
 
 ## Debug mode: 显示攻击范围扇形
 @export var debug_mode: bool = false
@@ -28,6 +34,13 @@ var _flame_vfx: Node
 var _primary_fire_held: bool = false
 var _moving_inferno: TrailAreaEffect
 var _last_aim_update_physics_frame: int = -1
+var _stream_active := false
+var _stream_elapsed_sec := 0.0
+var _damage_tick_accumulator_sec := 0.0
+var _target_fractional_damage: Dictionary = {}
+var _target_proc_elapsed_sec: Dictionary = {}
+var _target_contact_sec: Dictionary = {}
+var _target_last_contact_time_sec: Dictionary = {}
 
 var weapon_data := {
 	"1": {"damage": "8", "fire_interval_sec": "0.30", "ammo": "20", "range": "180"},
@@ -70,7 +83,7 @@ func _on_shoot() -> void:
 	cooldown *= branch_runtime.get_branch_cooldown_multiplier()
 	cooldown_timer.wait_time = maxf(cooldown, 0.02)
 	cooldown_timer.start()
-	_emit_flame_burst()
+	_begin_or_refresh_flame_stream()
 
 func supports_projectiles() -> bool:
 	return false
@@ -115,21 +128,16 @@ func stop_automatic_fire() -> void:
 	_primary_fire_held = false
 	_stop_flame_vfx()
 
-func _emit_flame_burst() -> void:
-	# 每轮射击开始时清空已攻击目标列表
-	_attacked_target_ids.clear()
-
-	if detect_area == null or not is_instance_valid(detect_area):
-		return
+func _begin_or_refresh_flame_stream() -> void:
+	if not _stream_active:
+		_stream_active = true
+		_stream_elapsed_sec = 0.0
+		_damage_tick_accumulator_sec = damage_tick_sec
 	var forward := get_flame_aim_direction()
-	if forward == Vector2.ZERO:
-		return
-	_refresh_flame_vfx(forward)
-	var targets := _collect_targets_in_cone(forward)
-	for target in targets:
-		_apply_fire_damage(target)
+	if forward != Vector2.ZERO:
+		_refresh_flame_vfx(forward, _get_current_stream_range())
 
-func _apply_fire_damage(target: Node) -> void:
+func _apply_fire_damage(target: Node, tick_duration_sec: float) -> void:
 	if target == null or not is_instance_valid(target):
 		return
 	if not target.has_method("damaged"):
@@ -138,8 +146,22 @@ func _apply_fire_damage(target: Node) -> void:
 		return
 	_attacked_target_ids[target.get_instance_id()] = true
 
-	var runtime_damage: int = get_runtime_damage()
-	runtime_damage = max(1, int(round(float(runtime_damage) * branch_runtime.get_branch_damage_multiplier())))
+	var target_id := target.get_instance_id()
+	var legacy_interval := maxf(
+		get_runtime_attack_cooldown() * branch_runtime.get_branch_cooldown_multiplier(),
+		0.02
+	)
+	var damage_per_second := (
+		float(get_runtime_damage())
+		* branch_runtime.get_branch_damage_multiplier()
+		/ legacy_interval
+	)
+	var accumulated := float(_target_fractional_damage.get(target_id, 0.0))
+	accumulated += damage_per_second * maxf(tick_duration_sec, 0.0)
+	var runtime_damage := int(floor(accumulated))
+	_target_fractional_damage[target_id] = accumulated - float(runtime_damage)
+	if runtime_damage <= 0:
+		return
 	var knock_back := {
 		"amount": 0,
 		"angle": Vector2.ZERO
@@ -150,14 +172,39 @@ func _apply_fire_damage(target: Node) -> void:
 		Attack.TYPE_FIRE,
 		knock_back,
 		DamageData.SOURCE_PLAYER_WEAPON,
-		DamageDeliveryType.AREA
+		DamageDeliveryType.BEAM
 	)
-	DamageManager.apply_to_target(target, damage_data)
+	if not DamageManager.apply_to_target(target, damage_data):
+		return
 	if _moving_inferno != null and is_instance_valid(_moving_inferno) and target is Node2D:
 		_moving_inferno.add_point((target as Node2D).global_position, 38.0)
 
-	# 调用 on_hit_target 触发武器的命中效果
-	on_hit_target_with_damage_type(target, Attack.TYPE_FIRE)
+	# Damage samples are more frequent than the legacy firing pulse. Keep module
+	# proc frequency on the old cadence so continuous damage does not multiply
+	# on-hit builds as an accidental balance change.
+	var proc_elapsed := float(_target_proc_elapsed_sec.get(target_id, legacy_interval)) + tick_duration_sec
+	if proc_elapsed >= legacy_interval:
+		proc_elapsed = fmod(proc_elapsed, legacy_interval)
+		on_hit_target_with_damage_type(target, Attack.TYPE_FIRE)
+	_target_proc_elapsed_sec[target_id] = proc_elapsed
+	_try_apply_ignition(target, damage_per_second)
+
+func _try_apply_ignition(target: Node, damage_per_second: float) -> void:
+	if ignition_ticks <= 0 or ignition_damage_ratio <= 0.0:
+		return
+	var target_id := target.get_instance_id()
+	var contact := float(_target_contact_sec.get(target_id, 0.0))
+	if contact < maxf(ignition_contact_sec, damage_tick_sec):
+		return
+	_target_contact_sec[target_id] = 0.0
+	if not target.has_method("apply_status_payload"):
+		return
+	target.call("apply_status_payload", &"dot", {
+		"tick": maxi(ignition_ticks, 1),
+		"damage": max(1, int(round(damage_per_second * ignition_damage_ratio))),
+		"damage_type": Attack.TYPE_FIRE,
+		"effect_id": &"flamethrower_ignite",
+	})
 
 func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
 	finish_weapon_skill_effect()
@@ -186,11 +233,12 @@ func finish_weapon_skill_effect() -> void:
 		_moving_inferno.finish_with_residue()
 	_moving_inferno = null
 
-func _collect_targets_in_cone(forward: Vector2) -> Array[Node]:
+func _collect_targets_in_cone(forward: Vector2, effective_range: float = -1.0) -> Array[Node]:
 	var output: Array[Node] = []
 	var touched_ids: Dictionary = {}
 	var max_angle_rad := deg_to_rad(_get_effective_cone_half_angle_deg())
-	var effective_range: float = _get_effective_attack_range()
+	if effective_range < 0.0:
+		effective_range = _get_effective_attack_range()
 	if EnemyRegistry != null and EnemyRegistry.has_method("get_enemies_in_radius"):
 		for enemy in EnemyRegistry.get_enemies_in_radius(global_position, effective_range):
 			_append_target_in_cone(enemy, forward, max_angle_rad, effective_range, touched_ids, output)
@@ -244,6 +292,7 @@ func _sync_detect_radius() -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
+	_update_continuous_flame(delta)
 	_update_flame_vfx_follow()
 	if debug_mode:
 		queue_redraw()
@@ -273,6 +322,7 @@ func _on_enter_main_weapon_role() -> void:
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
+	_reset_flame_stream()
 	finish_weapon_skill_effect()
 
 func get_passive_status() -> Dictionary:
@@ -394,16 +444,18 @@ func _ensure_flame_vfx() -> void:
 	_flame_vfx.name = "FlameSprayVfx"
 	add_child(_flame_vfx)
 
-func _refresh_flame_vfx(forward: Vector2) -> void:
+func _refresh_flame_vfx(forward: Vector2, visual_range: float = -1.0) -> void:
 	_ensure_flame_vfx()
 	if _flame_vfx == null or not is_instance_valid(_flame_vfx):
 		return
 	if _flame_vfx.has_method("start_or_refresh"):
+		if visual_range < 0.0:
+			visual_range = _get_current_stream_range()
 		_flame_vfx.call(
 			"start_or_refresh",
 			global_position,
 			forward,
-			_get_effective_attack_range(),
+			visual_range,
 			_get_effective_cone_half_angle_deg()
 		)
 
@@ -422,7 +474,7 @@ func _refresh_held_flame_vfx() -> void:
 	var forward := get_flame_aim_direction()
 	if forward == Vector2.ZERO:
 		return
-	_refresh_flame_vfx(forward)
+	_refresh_flame_vfx(forward, _get_current_stream_range())
 
 func _update_flame_vfx_follow() -> void:
 	if _flame_vfx == null or not is_instance_valid(_flame_vfx):
@@ -435,11 +487,12 @@ func _update_flame_vfx_follow() -> void:
 	if forward == Vector2.ZERO:
 		return
 	if _flame_vfx.has_method("update_aim"):
+		var visual_range := _get_current_stream_range() if _stream_active else _get_effective_attack_range()
 		_flame_vfx.call(
 			"update_aim",
 			global_position,
 			forward,
-			_get_effective_attack_range(),
+			visual_range,
 			_get_effective_cone_half_angle_deg()
 		)
 
@@ -453,7 +506,66 @@ func _can_maintain_held_flame_vfx() -> bool:
 	return true
 
 func _stop_flame_vfx() -> void:
+	_stream_active = false
+	_stream_elapsed_sec = 0.0
+	_damage_tick_accumulator_sec = 0.0
+	_target_contact_sec.clear()
+	_target_last_contact_time_sec.clear()
+	_target_fractional_damage.clear()
+	_target_proc_elapsed_sec.clear()
 	if _flame_vfx == null or not is_instance_valid(_flame_vfx):
 		return
 	if _flame_vfx.has_method("stop"):
 		_flame_vfx.call("stop")
+
+func _update_continuous_flame(delta: float) -> void:
+	if not _stream_active:
+		return
+	if not _primary_fire_held or not _can_maintain_held_flame_vfx():
+		_stop_flame_vfx()
+		return
+	var step := maxf(delta, 0.0)
+	_stream_elapsed_sec += step
+	_damage_tick_accumulator_sec += step
+	var tick := maxf(damage_tick_sec, 0.04)
+	while _damage_tick_accumulator_sec >= tick:
+		_damage_tick_accumulator_sec -= tick
+		_apply_continuous_damage_tick(tick)
+
+func _apply_continuous_damage_tick(tick_duration_sec: float) -> void:
+	if detect_area == null or not is_instance_valid(detect_area):
+		return
+	var forward := get_flame_aim_direction()
+	if forward == Vector2.ZERO:
+		return
+	var current_range := _get_current_stream_range()
+	var targets := _collect_targets_in_cone(forward, current_range)
+	_attacked_target_ids.clear()
+	for target in targets:
+		var target_id := target.get_instance_id()
+		var last_contact := float(_target_last_contact_time_sec.get(target_id, _stream_elapsed_sec))
+		if _stream_elapsed_sec - last_contact > maxf(contact_grace_sec, 0.0):
+			_target_contact_sec[target_id] = 0.0
+		_target_last_contact_time_sec[target_id] = _stream_elapsed_sec
+		_target_contact_sec[target_id] = float(_target_contact_sec.get(target_id, 0.0)) + tick_duration_sec
+		_apply_fire_damage(target, tick_duration_sec)
+	_prune_contact_ledgers()
+
+func _prune_contact_ledgers() -> void:
+	var expiry_sec := maxf(contact_grace_sec, damage_tick_sec)
+	for target_id in _target_last_contact_time_sec.keys():
+		if _stream_elapsed_sec - float(_target_last_contact_time_sec[target_id]) <= expiry_sec:
+			continue
+		_target_last_contact_time_sec.erase(target_id)
+		_target_contact_sec.erase(target_id)
+		_target_fractional_damage.erase(target_id)
+		_target_proc_elapsed_sec.erase(target_id)
+
+func _get_current_stream_range() -> float:
+	var full_range := _get_effective_attack_range()
+	var ramp_ratio := clampf(_stream_elapsed_sec / maxf(stream_ramp_sec, 0.01), 0.0, 1.0)
+	return lerpf(minf(32.0, full_range), full_range, ease(ramp_ratio, -1.5))
+
+func _reset_flame_stream() -> void:
+	_primary_fire_held = false
+	_stop_flame_vfx()

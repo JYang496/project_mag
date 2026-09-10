@@ -23,15 +23,15 @@ var _active_trails: Array[Node] = []
 var _target_next_damage_msec: Dictionary = {}
 
 var weapon_data: Dictionary = {
-	"1": {"damage": "2", "fire_interval_sec": "0.2", "ammo": "50"},
-	"2": {"damage": "2", "fire_interval_sec": "0.2", "ammo": "50"},
-	"3": {"damage": "2", "fire_interval_sec": "0.2", "ammo": "50"},
-	"4": {"damage": "4", "fire_interval_sec": "0.19", "ammo": "60"},
-	"5": {"damage": "4", "fire_interval_sec": "0.19", "ammo": "60"},
-	"6": {"damage": "4", "fire_interval_sec": "0.18", "ammo": "65"},
-	"7": {"damage": "6", "fire_interval_sec": "0.18", "ammo": "65"},
-	"8": {"damage": "6", "fire_interval_sec": "0.17", "ammo": "70"},
-	"9": {"damage": "6", "fire_interval_sec": "0.17", "ammo": "70"}
+	"1": {"damage": "2", "fire_interval_sec": "0.2", "ammo": "20"},
+	"2": {"damage": "2", "fire_interval_sec": "0.2", "ammo": "20"},
+	"3": {"damage": "2", "fire_interval_sec": "0.2", "ammo": "20"},
+	"4": {"damage": "4", "fire_interval_sec": "0.19", "ammo": "30"},
+	"5": {"damage": "4", "fire_interval_sec": "0.19", "ammo": "30"},
+	"6": {"damage": "4", "fire_interval_sec": "0.18", "ammo": "35"},
+	"7": {"damage": "6", "fire_interval_sec": "0.18", "ammo": "35"},
+	"8": {"damage": "6", "fire_interval_sec": "0.17", "ammo": "40"},
+	"9": {"damage": "6", "fire_interval_sec": "0.17", "ammo": "40"}
 }
 
 func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
