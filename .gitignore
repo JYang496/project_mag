@@ -9,9 +9,11 @@ test-results/
 *.pdb
 
 # Temp files
+/outputs/
+/output/
 /archive/
 /.codex_tmp/
-tmp/
+/tmp/
 
 # Generated previews and tool output
 /output/
