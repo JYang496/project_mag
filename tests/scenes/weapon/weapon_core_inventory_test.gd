@@ -29,6 +29,8 @@ func _test_core_normalization_and_queries() -> void:
 	_expect(InventoryData.get_weapon_core_stacks().size() == 2, "different tag sets must remain separate")
 	_expect(InventoryData.find_weapon_cores_containing_tag(&"fire").size() == 2, "tag query must return every matching core stack")
 	_expect(not bool(InventoryData.add_weapon_cores([&"unknown_core_tag"], 1, false).get("ok", true)), "unknown-only core tags must be rejected")
+	var oversized := InventoryData.add_weapon_cores([&"physical", &"projectile", &"heat", &"ammo", &"area"], 1, false)
+	_expect(not bool(oversized.get("ok", true)), "cores with more than four distinct Tags must be rejected")
 
 func _test_enhanced_contract_core_reward_preview() -> void:
 	var weapon := _instantiate_weapon("1")
@@ -76,8 +78,9 @@ func _test_runtime_save_and_legacy_restore() -> void:
 	InventoryData.restore_weapon_core_inventory([
 		{"tags": ["fire", "not_a_real_tag"], "count": 4},
 		{"tags": ["fire"], "count": 0},
+		{"tags": ["physical", "projectile", "heat", "ammo", "area"], "count": 1},
 	])
-	_expect(InventoryData.get_weapon_core_stacks().is_empty(), "malformed or unknown saved core entries must be skipped")
+	_expect(InventoryData.get_weapon_core_stacks().is_empty(), "malformed, unknown, or oversized saved core entries must be skipped")
 
 func _test_all_fusion_recipe_tags_have_core_sources() -> void:
 	var available_tags: Array[StringName] = []

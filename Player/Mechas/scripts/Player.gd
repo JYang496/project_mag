@@ -116,6 +116,12 @@ var _last_visual_position: Vector2 = Vector2.ZERO
 @export var camera_lookahead_distance: float = 18.0
 @export var camera_lookahead_lerp_speed: float = 5.0
 @export var camera_lookahead_min_speed_ratio: float = 0.2
+@export_group("Boundary Camera")
+@export var boundary_camera_enabled: bool = true
+@export_range(16.0, 512.0, 1.0) var boundary_camera_trigger_distance: float = 140.0
+@export_range(0.0, 256.0, 1.0) var boundary_camera_max_offset: float = 90.0
+@export_range(0.1, 20.0, 0.1) var boundary_camera_lerp_speed: float = 5.0
+@export_group("")
 const PixelArtPolicyType := preload("res://Visual/pixel_art_policy.gd")
 @export var mecha_scale_reference_pixel_height: float = PixelArtPolicyType.PLAYER_REFERENCE_HEIGHT_PX
 @export var idle_mecha_scale_multiplier: float = 1.0
@@ -334,7 +340,7 @@ func _physics_process(delta):
 	_update_weapon_orbits(delta)
 	if not _require_camera_system_or_halt():
 		return
-	_camera_system.tick(delta)
+	_camera_system.tick(delta, global_position, _get_board_generator())
 	_update_collect_area_anchor_to_screen_top()
 
 var _enemy_contact_tick_accumulator := 0.0
@@ -383,6 +389,8 @@ func is_invulnerable() -> bool:
 	return Time.get_ticks_msec() < _invulnerable_until_msec
 
 func _input(event: InputEvent) -> void:
+	if LoadingPerformance.is_world_input_locked():
+		return
 	if event is InputEventKey and event.echo:
 		return
 	_ensure_active_skill_runtime()
@@ -422,6 +430,8 @@ func swap_weapon_position(weapon1, weapon2) -> void:
 	_weapon_inventory_runtime.swap_weapon_position(weapon1, weapon2)
 
 func _process_combat_input(delta: float) -> void:
+	if LoadingPerformance.is_world_input_locked():
+		return
 	var main_weapon := get_main_weapon()
 	if main_weapon == null:
 		return
@@ -1237,6 +1247,10 @@ func _update_camera_zoom_by_vision(vision_mul: float) -> void:
 	_camera_system.update_zoom_target_by_vision(vision_mul)
 
 func _resolve_buffered_move_input() -> Vector2:
+	if LoadingPerformance.is_world_input_locked():
+		_last_move_input_dir = Vector2.ZERO
+		_last_move_input_msec = -1
+		return Vector2.ZERO
 	var x_mov := Input.get_action_strength("RIGHT") - Input.get_action_strength("LEFT")
 	var y_mov := Input.get_action_strength("DOWN") - Input.get_action_strength("UP")
 	var raw_input := Vector2(x_mov, y_mov)
@@ -1562,9 +1576,14 @@ func _update_weapon_orbit_z_index(weapon: CanvasItem) -> void:
 	var weapon_node := weapon as Node2D
 	if weapon_node == null:
 		return
+	# Judge occlusion around the orbit's visual center. ORBIT_OFFSET raises the
+	# whole formation toward the mech's torso and must not make almost the entire
+	# orbit count as being behind the player.
+	var is_behind_player := weapon_node.position.y < ORBIT_OFFSET.y
+	weapon.set_meta(&"orbit_behind_owner", is_behind_player)
 	weapon.z_as_relative = true
 	weapon.z_index = WEAPON_BEHIND_PLAYER_Z_INDEX \
-		if weapon_node.position.y < 0.0 else WEAPON_IN_FRONT_OF_PLAYER_Z_INDEX
+		if is_behind_player else WEAPON_IN_FRONT_OF_PLAYER_Z_INDEX
 
 func _remove_missing_weapon_states(valid_weapons: Array) -> void:
 	var to_remove: Array = []
@@ -1900,7 +1919,7 @@ func _tick_movement(delta: float) -> void:
 		if PhaseManager != null and PhaseManager.has_method("current_state"):
 			var current_phase := str(PhaseManager.current_state())
 			rest_phase_active = current_phase == str(PhaseManager.REST)
-			manual_input_allowed = current_phase == str(PhaseManager.BATTLE)
+			manual_input_allowed = current_phase == str(PhaseManager.BATTLE) and not LoadingPerformance.is_world_input_locked()
 		if manual_input_allowed:
 			manual_direction = _resolve_buffered_move_input() + extra_direction
 	elif PhaseManager != null and PhaseManager.has_method("current_state"):
@@ -1969,6 +1988,10 @@ func _sync_camera_config() -> void:
 	_camera_config.rest_camera_zoom_exit_duration = rest_camera_zoom_exit_duration
 	_camera_config.rest_camera_zoom_transition_enabled = rest_camera_zoom_transition_enabled
 	_camera_config.camera_lookahead_lerp_speed = camera_lookahead_lerp_speed
+	_camera_config.boundary_camera_enabled = boundary_camera_enabled
+	_camera_config.boundary_camera_trigger_distance = boundary_camera_trigger_distance
+	_camera_config.boundary_camera_max_offset = boundary_camera_max_offset
+	_camera_config.boundary_camera_lerp_speed = boundary_camera_lerp_speed
 	_camera_config.fixed_oblique_enabled = fixed_oblique_enabled
 	_camera_config.fixed_camera_yaw_degrees = fixed_camera_yaw_degrees
 	_camera_config.fixed_vertical_scale = fixed_vertical_scale

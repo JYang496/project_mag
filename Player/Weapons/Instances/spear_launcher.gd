@@ -249,7 +249,7 @@ func _fire_radial_volley_step(directions: Array[Vector2], index: int) -> void:
 	_spawn_spear_projectile(directions[index], player.global_position, 1.0, true)
 	if index >= directions.size() - 1:
 		return
-	var timer := get_tree().create_timer(maxf(radial_fire_interval_sec, 0.0))
+	var timer := get_tree().create_timer(maxf(radial_fire_interval_sec, 0.0), false)
 	timer.timeout.connect(
 		Callable(self, "_fire_radial_volley_step").bind(directions, index + 1),
 		CONNECT_ONE_SHOT

@@ -10,7 +10,7 @@ var radius := 42.0
 
 
 func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_ALWAYS
+	process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_to_group(&"hybrid_enemy_aura_source")
 	call_deferred("_register_ground_visual")
 	queue_redraw()

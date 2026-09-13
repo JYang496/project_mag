@@ -189,6 +189,11 @@ func get_cell_world_rect_for_point(point: Vector2) -> Rect2:
 	var cell := _find_any_cell_containing_point(point)
 	if cell == null:
 		return Rect2()
+	return _get_cell_world_rect(cell)
+
+func _get_cell_world_rect(cell: Cell) -> Rect2:
+	if cell == null:
+		return Rect2()
 	var capture_polygon := cell.get_node_or_null("Area2D/CapturePolygon") as CollisionPolygon2D
 	if capture_polygon != null and not capture_polygon.polygon.is_empty():
 		return _transform_rect_to_world_aabb(
@@ -203,6 +208,31 @@ func get_cell_world_rect_for_point(point: Vector2) -> Rect2:
 		Rect2(-rectangle.size * 0.5, rectangle.size),
 		collision_shape.global_transform
 	)
+
+func get_camera_boundary_context(world_point: Vector2) -> Dictionary:
+	var cell := _find_cell_containing_point(world_point)
+	if cell == null:
+		return {}
+	var field_rect := get_active_field_world_rect()
+	if field_rect.size.x <= 0.0 or field_rect.size.y <= 0.0:
+		return {}
+	return {
+		&"left": maxf(world_point.x - field_rect.position.x, 0.0),
+		&"right": maxf(field_rect.end.x - world_point.x, 0.0),
+		&"top": maxf(world_point.y - field_rect.position.y, 0.0),
+		&"bottom": maxf(field_rect.end.y - world_point.y, 0.0),
+	}
+
+func get_active_field_world_rect() -> Rect2:
+	var bounds := Rect2()
+	var has_bounds := false
+	for active_cell in get_active_cells():
+		var cell_rect := _get_cell_world_rect(active_cell)
+		if cell_rect.size.x <= 0.0 or cell_rect.size.y <= 0.0:
+			continue
+		bounds = bounds.merge(cell_rect) if has_bounds else cell_rect
+		has_bounds = true
+	return bounds if has_bounds else Rect2()
 
 func get_cell_logical_id_for_point(point: Vector2) -> int:
 	var cell := _find_any_cell_containing_point(point)

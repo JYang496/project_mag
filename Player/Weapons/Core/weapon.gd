@@ -681,6 +681,9 @@ func _initialize_heat_runtime() -> void:
 	add_child(heat_runtime)
 
 func _ready() -> void:
+	var magnetic_link := preload("res://Player/Weapons/Feedback/floating_weapon_link.gd").new()
+	magnetic_link.weapon = self
+	add_child(magnetic_link)
 	var presentation_id: String = get_script().resource_path.get_file().get_basename()
 	if presentation_id in ["spear_launcher", "plasma_lance"]:
 		var preview := preload("res://Player/Weapons/Feedback/weapon_charge_preview.gd").new()
@@ -1268,7 +1271,7 @@ func allows_held_attack_on_battle_entry() -> bool:
 	return false
 
 func is_attack_phase_allowed() -> bool:
-	return PhaseManager.current_state() == PhaseManager.BATTLE
+	return PhaseManager.current_state() == PhaseManager.BATTLE and not LoadingPerformance.is_world_input_locked()
 
 func handle_primary_input(_pressed: bool, _just_pressed: bool, _just_released: bool, _delta: float) -> void:
 	pass

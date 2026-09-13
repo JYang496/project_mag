@@ -10,9 +10,13 @@ var max_cost: int = 99999
 func _ready() -> void:
 	_reload_refresh_settings()
 	cost = starting_cost
+	visible = not PlayerData.gold_supply_enabled
+	disabled = PlayerData.gold_supply_enabled
 	refresh_button_label()
 
 func _on_button_up() -> void:
+	if PlayerData.gold_supply_enabled:
+		return
 	if not PhaseManager.can_configure_loadout():
 		return
 	if PlayerData.spend_gold(cost):

@@ -58,6 +58,10 @@ func _run() -> void:
 	_assert_eq(int(core_data.get("resulting_core_count", -1)), 3, "duplicate resulting core count")
 	_assert_eq((core_data.get("core_tags", []) as Array).size(), 4, "duplicate raw core tags")
 	_assert_eq((core_data.get("usable_branches", []) as Array).size(), 1, "duplicate raw usable branches")
+	var tag_weapon_map := core_data.get("tag_weapon_map", {}) as Dictionary
+	var heat_entries := tag_weapon_map.get("heat", []) as Array
+	if heat_entries.is_empty() or str((heat_entries[0] as Dictionary).get("name", "")) != "Machine Gun":
+		_fail("core data must map each contributing Tag to its supported weapons")
 	for cleared_field in ["summary_text", "role_summary"]:
 		if str(core_data.get(cleared_field, "")).strip_edges() != "":
 			_fail("duplicate core card must clear weapon field: %s" % cleared_field)
@@ -96,12 +100,12 @@ func _run() -> void:
 		_fail("duplicate core card must fit the fixed reward viewport without vertical scrolling")
 	if core_content == null or core_title == null or core_icon == null or core_material_icon == null or core_material_mark == null or core_source_image == null or core_source == null or core_gain == null or core_inventory == null or core_inventory_status == null or core_acquisition == null or core_inheritance == null or core_usage_panel == null or core_usage_icon == null or core_usage == null:
 		_fail("duplicate core card must render its dedicated material-content hierarchy")
-	elif core_title.text != "Machine Gun Core" or not core_source.text.contains("Machine Gun"):
-		_fail("duplicate core card must use the source weapon as its primary identity")
-	elif core_material_mark.text != "◆" or core_material_icon.custom_minimum_size.x < 100.0:
-		_fail("duplicate core card must prioritize the enlarged source weapon over a generic letter mark")
-	elif not core_gain.text.contains("+1") or not core_inventory.text.contains("2 → 3"):
-		_fail("duplicate core card must show dismantle amount and inventory transition")
+	elif core_title.visible or core_gain.visible or not core_source.visible or not core_source.text.contains("Machine Gun"):
+		_fail("duplicate core card must avoid repeated core labels while retaining source provenance")
+	elif core_material_mark.text != "◆" or core_material_icon.custom_minimum_size.x < 90.0:
+		_fail("duplicate core card must retain a readable source-weapon image without crowding primary Tags")
+	elif not core_inventory.text.contains("2 → 3"):
+		_fail("duplicate core card must show the inventory transition once")
 	elif int(core_inventory_status.get_meta(&"current_count", -1)) != 2 or int(core_inventory_status.get_meta(&"resulting_count", -1)) != 3:
 		_fail("duplicate core inventory status must retain its before and after counts")
 	elif core_inventory_status.custom_minimum_size.y < 28.0 or core_inventory_status.custom_minimum_size.y > 32.0:
@@ -112,14 +116,16 @@ func _run() -> void:
 		_fail("duplicate core card must expand with eight pixels between its information blocks")
 	elif core_content.get_child_count() != 3:
 		_fail("duplicate core card must expose exactly acquisition, inheritance, and usage information blocks")
-	elif core_usage_panel.size_flags_vertical != (Control.SIZE_EXPAND | Control.SIZE_SHRINK_END):
-		_fail("duplicate core usage panel must absorb remaining height while shrinking to the bottom edge")
+	elif core_usage_panel.size_flags_vertical != Control.SIZE_SHRINK_BEGIN:
+		_fail("duplicate core usage panel must expand directly below the Tag grid")
 	elif core_usage_panel.get_index() != 2:
-		_fail("duplicate core usage panel must remain the bottom-aligned information block")
+		_fail("duplicate core usage panel must remain directly after the inheritance block")
 	elif core_usage_icon.text.strip_edges() == "":
 		_fail("duplicate core card must identify its fusion-usage section with an icon")
-	elif core_title.get_index() >= core_icon.get_index() or core_icon.get_index() >= core_gain.get_index():
-		_fail("duplicate core card must order source identity, source image, then immediate gain")
+	elif core_icon.get_index() >= core_source.get_index():
+		_fail("duplicate core card must order source image before provenance")
+	if core_usage_panel.visible:
+		_fail("duplicate core card must hide supported weapons until a Tag is focused")
 	var forbidden_core_nodes := [
 		"WeaponDescriptionSlot", "WeaponRoleSummary", "CoreWeaponStats", "WeaponBuildPreview",
 		"ModuleInstallationRequirements", "BranchPreviewRow", "WeaponLevelLabel",
@@ -140,22 +146,56 @@ func _run() -> void:
 	var rendered_core_tag_heading := rendered_core_card.find_child("CoreTagHeading", true, false) as Label
 	if rendered_core_tag_heading == null or not rendered_core_tag_heading.text.contains("INHERITED TAGS"):
 		_fail("duplicate core card must identify the chips as inherited core Tags")
+	elif rendered_core_tag_heading.get_theme_font_size("font_size") < 15:
+		_fail("duplicate core card must give inherited Tags a prominent heading")
 	var rendered_core_tags := rendered_core_card.find_child("BuildChipRow", true, false) as GridContainer
 	if rendered_core_tags == null or rendered_core_tags.columns != 2 or rendered_core_tags.get_child_count() != 4:
 		_fail("duplicate core card must constrain every Tag to a two-column grid")
-	elif rendered_core_tags.get_combined_minimum_size().x > 260.0:
-		_fail("duplicate core Tag grid must remain inside a draft card column")
-	var rendered_usage_lines := rendered_core_card.find_children("WeaponCoreUsageLine*", "Label", true, false).filter(
-		func(node: Node) -> bool: return (node as Label).visible
-	)
+	elif rendered_core_tags.get_theme_constant("h_separation") < 12 or rendered_core_tags.get_theme_constant("v_separation") < 10:
+		_fail("duplicate core Tag grid must keep clear space between primary Tag controls")
+	else:
+		for tag_chip in rendered_core_tags.get_children():
+			if tag_chip.custom_minimum_size.y < 38.0 or tag_chip.size_flags_horizontal != Control.SIZE_EXPAND_FILL:
+				_fail("duplicate core Tag chips must be enlarged and fill their two-column grid")
+			var tag_label := tag_chip.find_child("Label", true, false) as Label
+			if tag_label == null or tag_label.get_theme_font_size("font_size") < 16 or tag_label.horizontal_alignment != HORIZONTAL_ALIGNMENT_CENTER:
+				_fail("duplicate core Tag text must use the card's primary information size")
+	var heat_chip: Control = null
+	for tag_chip in rendered_core_tags.get_children():
+		var tag_label := tag_chip.find_child("Label", true, false) as Label
+		if tag_label != null and tag_label.text == "Heat":
+			heat_chip = tag_chip as Control
+			break
+	if heat_chip == null or heat_chip.focus_mode != Control.FOCUS_ALL:
+		_fail("core Tags must be keyboard-focusable compatibility controls")
+	else:
+		heat_chip.focus_entered.emit()
+		var focused_heading := rendered_core_card.find_child("WeaponCoreUsageHeading", true, false) as Label
+		var focused_name := rendered_core_card.find_child("SupportedWeaponName", true, false) as Label
+		if not core_usage_panel.visible or focused_heading == null or not focused_heading.text.contains("Heat") or focused_name == null or not focused_name.text.contains("Machine Gun"):
+			_fail("focusing a core Tag must reveal the weapons supported by that Tag")
+		for tag_chip in rendered_core_tags.get_children():
+			if tag_chip != heat_chip and tag_chip.modulate.a > 0.5:
+				_fail("focusing a core Tag must de-emphasize unrelated Tag controls")
+		heat_chip.focus_exited.emit()
+		if core_usage_panel.visible:
+			_fail("leaving a core Tag must hide the supported-weapon panel again")
+	var supported_grid := rendered_core_card.find_child("WeaponCoreSupportedWeaponGrid", true, false) as GridContainer
+	var supported_tiles := rendered_core_card.find_children("WeaponCoreWeaponTile*", "PanelContainer", true, false)
 	var rendered_usage_summary := rendered_core_card.find_child("WeaponCoreUsageSummary", true, false) as Label
-	if rendered_usage_lines.size() != 1 or not (rendered_usage_lines[0] as Label).text.contains("Gatling"):
-		_fail("duplicate core card must render matching fusion branches from usable_branches")
-	elif (rendered_usage_lines[0] as Label).get_theme_font_size("font_size") != 13:
-		_fail("duplicate core branch body text must use the readable 13px size")
-	if rendered_usage_summary == null or not rendered_usage_summary.text.contains("1"):
-		_fail("duplicate core card must summarize the total supported fusion branches before examples")
-	for usage_count in range(4):
+	if supported_grid == null or supported_grid.columns != 2 or supported_tiles.size() != 1:
+		_fail("duplicate core card must render every supported weapon in a two-column tile grid")
+	else:
+		var supported_name := supported_tiles[0].find_child("SupportedWeaponName", true, false) as Label
+		var supported_branches := supported_tiles[0].find_child("SupportedWeaponBranches", true, false) as Label
+		var supported_icon := supported_tiles[0].find_child("SupportedWeaponIcon", true, false) as TextureRect
+		if supported_name == null or supported_branches == null or supported_icon == null or not supported_branches.text.contains("Gatling"):
+			_fail("supported weapon tiles must include icon, primary weapon name, and secondary branch names")
+		elif supported_name.get_theme_font_size("font_size") <= supported_branches.get_theme_font_size("font_size"):
+			_fail("supported weapon names must remain visually stronger than branch names")
+	if rendered_usage_summary == null or rendered_usage_summary.visible:
+		_fail("duplicate core card must omit redundant supported-weapon counts")
+	for usage_count in range(6):
 		_assert_core_usage_count(panel, usage_count)
 	var assembler: Variant = panel.call("_get_reward_data_assembler")
 	var filtered_usage_lines: PackedStringArray = assembler.call("_format_core_usage_lines", [
@@ -418,14 +458,14 @@ func _run() -> void:
 	_assert_eq(LocalizationManager.tr_format("ui.reward.weapon_fit_reason", {"requirements": "投射物"}, ""), "满足特性：投射物", "localized satisfied trait status")
 	_assert_eq(LocalizationManager.tr_format("ui.reward.weapon_fit_with_slot", {"requirements": "满足特性：投射物"}, ""), "满足特性：投射物，有空槽", "localized satisfied trait and slot status")
 	_assert_eq(LocalizationManager.tr_format("ui.reward.weapon_requires_trait", {"requirements": "投射物"}, ""), "需要特性：投射物", "localized required trait status")
-	_assert_eq(LocalizationManager.tr_key("ui.reward.core.inherited_tags", ""), "继承标签", "localized core Tag source heading")
+	_assert_eq(LocalizationManager.tr_key("ui.reward.core.inherited_tags", ""), "继承标签 · 融合条件", "localized core Tag source heading")
 	_assert_contains(LocalizationManager.tr_key("ui.reward.core.tag_source_hint", ""), "来自该武器", "localized core Tag source explanation")
 	_assert_contains(LocalizationManager.tr_key("ui.reward.core.tag_source_hint", ""), "融合配方", "localized core Tag purpose explanation")
 	_assert_eq(LocalizationManager.tr_key("ui.reward.type.weapon_core", ""), "武器核心", "localized core title")
 	_assert_eq(LocalizationManager.tr_format("ui.reward.core.named_title", {"name": "机枪"}, ""), "机枪核心", "localized source-named core title")
 	_assert_eq(LocalizationManager.tr_format("ui.reward.core.gain", {"amount": 2}, ""), "+2 核心", "localized immediate core gain")
-	_assert_eq(LocalizationManager.tr_format("ui.reward.core.usage_summary", {"count": 14}, ""), "可支持 14 条融合分支", "localized fusion branch summary")
-	_assert_eq(LocalizationManager.tr_format("ui.reward.core.source", {"name": "机枪"}, ""), "来源：机枪", "localized core source")
+	_assert_eq(LocalizationManager.tr_format("ui.reward.core.usage_summary", {"weapons": 3, "branches": 14}, ""), "支持武器：3 种 · 融合分支：14 条", "localized weapon and fusion branch summary")
+	_assert_eq(LocalizationManager.tr_format("ui.reward.core.source", {"name": "机枪"}, ""), "分解来源：机枪", "localized core source")
 	_assert_eq(LocalizationManager.tr_format("ui.reward.core.dismantled_amount", {"amount": 2}, ""), "重复武器已分解为 2 个核心。", "localized core amount")
 	_assert_eq(LocalizationManager.tr_format("ui.reward.core.inventory", {"current": 8, "resulting": 10}, ""), "库存：8 → 10", "localized core inventory")
 	_assert_eq(LocalizationManager.tr_format("ui.reward.core.more_usages", {"count": 1}, ""), "另有 1 项", "localized additional usage count")
@@ -440,9 +480,10 @@ func _run() -> void:
 		_fail("Chinese branch details should use the compact 融合 N：【Tag】【Tag】 recipe")
 	localized_branch_recipe.free()
 	var localized_core_card := panel.call("_build_reward_card_button", core_reward, 0) as Button
-	if (localized_core_card.find_child("WeaponCoreTitle", true, false) as Label).text != "机枪核心":
-		_fail("Chinese core card must use the source-named material title")
-	if not (localized_core_card.find_child("WeaponCoreSource", true, false) as Label).text.begins_with("来源："):
+	var localized_core_title := localized_core_card.find_child("WeaponCoreTitle", true, false) as Label
+	if localized_core_title.visible or localized_core_title.text != "":
+		_fail("Chinese core card body must not repeat the type-strip material title")
+	if not (localized_core_card.find_child("WeaponCoreSource", true, false) as Label).text.begins_with("分解来源："):
 		_fail("Chinese core card must localize the source label")
 	localized_core_card.free()
 	var localized_new_data: Dictionary = panel.call("_build_reward_display_data", new_reward)
@@ -605,21 +646,17 @@ func _assert_core_usage_count(panel: Node, usage_count: int) -> void:
 	for index in range(usage_count):
 		lines.append("Weapon %d · Branch %d" % [index + 1, index + 1])
 	var section := panel.call("_build_weapon_core_usage_section", {"usable_branch_lines": lines}) as VBoxContainer
-	var visible_lines := section.find_children("WeaponCoreUsageLine*", "Label", true, false).filter(
-		func(node: Node) -> bool: return (node as Label).visible
-	)
-	if visible_lines.size() != mini(2, usage_count):
-		_fail("core usage count %d should render at most two branch rows (rendered=%d)" % [usage_count, visible_lines.size()])
+	var tiles := section.find_children("WeaponCoreWeaponTile*", "PanelContainer", true, false)
+	if tiles.size() != usage_count:
+		_fail("core usage count %d should render every supported weapon tile (rendered=%d)" % [usage_count, tiles.size()])
 	var more := section.find_child("WeaponCoreUsageMore", true, false) as Label
 	var empty := section.find_child("WeaponCoreUsageEmpty", true, false) as Label
 	if usage_count == 0 and (empty == null or not empty.visible):
 		_fail("core usage count 0 should render the neutral empty state")
 	elif usage_count > 0 and empty != null and empty.visible:
 		_fail("non-empty core usage should not render the empty state")
-	if usage_count == 3 and (more == null or not more.visible or not more.text.contains("1")):
-		_fail("core usage count 3 should summarize one additional recipe")
-	elif usage_count < 3 and more != null and more.visible:
-		_fail("core usage count %d should not render an additional-count row" % usage_count)
+	if more != null and more.visible:
+		_fail("core usage count %d should not collapse weapons into an additional-count row" % usage_count)
 	section.free()
 
 func _assert_model_layers(panel: Node, reward: RewardInfo, label: String) -> void:

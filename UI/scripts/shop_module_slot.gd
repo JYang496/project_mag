@@ -100,7 +100,7 @@ func empty_item(message: String = "") -> void:
 	queue_redraw()
 
 func refresh_affordability(_value: int = 0) -> void:
-	purchasable = module_scene != null and PlayerData.player_gold >= price
+	purchasable = not PlayerData.gold_supply_enabled and module_scene != null and PlayerData.player_gold >= price
 	price_label.set("theme_override_colors/font_color", Color(1.0, 1.0, 1.0, 1.0) if purchasable else Color(1.0, 0.0, 0.0, 1.0))
 
 func _connect_gold_signal() -> void:
@@ -118,9 +118,11 @@ func _on_background_gui_input(event: InputEvent) -> void:
 		_notify_shop_selected()
 
 func can_purchase() -> bool:
-	return module_scene != null and purchasable
+	return not PlayerData.gold_supply_enabled and module_scene != null and purchasable
 
 func try_purchase() -> bool:
+	if PlayerData.gold_supply_enabled:
+		return false
 	if not PhaseManager.can_configure_loadout():
 		return false
 	if module_scene == null:

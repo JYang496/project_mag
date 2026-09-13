@@ -259,6 +259,10 @@ func prewarm_mecha_default_weapon(id: String) -> bool:
 	# in load_threaded_get() only adds loader cleanup state without making this async.
 	return weapon.get_scene() != null
 
+func prewarm_mecha_scene(id: String) -> bool:
+	var mecha := read_mecha_data(id)
+	return mecha != null and mecha.get_scene() != null
+
 func read_weapon_data(id: String):
 	if GlobalVariables.weapon_list.is_empty():
 		load_weapon_data()
@@ -401,8 +405,12 @@ func _register_weapon_resource(
 	if not unknown_core_tags.is_empty():
 		errors.append("weapon resource has unknown core_tags %s: %s" % [str(unknown_core_tags), source_path])
 		return
-	if weapon_def.get_normalized_core_tags().is_empty():
+	var normalized_core_tags := weapon_def.get_normalized_core_tags()
+	if normalized_core_tags.is_empty():
 		errors.append("weapon resource has empty core_tags: %s" % source_path)
+		return
+	if normalized_core_tags.size() > WeaponDefinition.MAX_CORE_TAGS:
+		errors.append("weapon resource exceeds maximum %d core_tags: %s" % [WeaponDefinition.MAX_CORE_TAGS, source_path])
 		return
 	output[weapon_id] = resource
 	var scene_path := str(resource.get("scene_path")).strip_edges()

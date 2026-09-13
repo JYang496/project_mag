@@ -86,6 +86,8 @@ func cancel_visible_dialog() -> bool:
 	return true
 
 func _show(spec: Dictionary) -> bool:
+	if owner_ui != null and owner_ui.has_method("is_supply_modal_open") and owner_ui.is_supply_modal_open():
+		return false
 	ensure_dialog()
 	if dialog == null:
 		return false

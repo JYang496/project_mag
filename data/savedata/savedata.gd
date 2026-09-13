@@ -6,10 +6,6 @@ class_name SaveData
 			"current_exp": "1",
 			"current_level": "1",
 		},
-		"2":{
-			"current_exp": "0",
-			"current_level": "1",
-		},
 		"3":{
 			"current_exp": "0",
 			"current_level": "1",

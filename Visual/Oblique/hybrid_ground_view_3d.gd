@@ -109,6 +109,7 @@ var _ground_renderers_initialized: bool = false
 var _view_multiplier: float = 1.0
 var _view_multiplier_tween: Tween
 var _screen_shake_offset := Vector2.ZERO
+var _camera_target_offset := Vector2.ZERO
 var _deployment_armed := false
 var _deployment_previous_ids := PackedInt32Array()
 var _deployment_board_was_visible := false
@@ -219,7 +220,7 @@ func _sync_camera_projection() -> void:
 func _resolve_camera_target_2d() -> Vector2:
 	if PhaseManager != null and PhaseManager.current_state() == PhaseManager.PREPARE:
 		return _resolve_rest_area_center()
-	return _player.global_position if _player != null else Vector2.ZERO
+	return (_player.global_position + _camera_target_offset) if _player != null else Vector2.ZERO
 
 func _resolve_rest_area_center() -> Vector2:
 	if _rest_area == null or not is_instance_valid(_rest_area) or not _rest_area.is_inside_tree():
@@ -278,6 +279,9 @@ func get_view_multiplier() -> float:
 
 func set_screen_shake_offset(offset: Vector2) -> void:
 	_screen_shake_offset = offset
+
+func set_camera_target_offset(offset: Vector2) -> void:
+	_camera_target_offset = offset
 
 func _apply_screen_shake_offset(effective_distance: float) -> void:
 	if _camera == null:
@@ -1400,7 +1404,7 @@ func _sync_shadow_meshes() -> void:
 		var logical_anchor := owner_2d.global_transform * local_anchor
 		mesh.position = world_2d_to_ground_anchor(logical_anchor)
 		mesh.scale = Vector3(size_2d.x * 0.5 * world_scale, 1.0, size_2d.y * 0.5 * world_scale)
-		mesh.visible = true
+		mesh.visible = owner_2d.is_visible_in_tree()
 
 func _sync_affiliation_marker_meshes() -> void:
 	for id in _affiliation_marker_meshes.keys():

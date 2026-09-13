@@ -2,9 +2,7 @@ extends Node
 
 const LONG_FRAME_MS := 33.0
 const RUNTIME_DIAGNOSTICS_SCRIPT := preload("res://autoload/RuntimeDiagnostics.gd")
-const START_MENU_PREVIEW_SCRIPT := preload("res://UI/scripts/components/start_menu_backdrop.gd")
-const WORLD_PREVIEW_COVER_SEC := 0.62
-const WORLD_PREVIEW_SAFE_SCENE_CHANGE_SEC := 0.34
+const OVERLAY_SCRIPT := preload("res://UI/scripts/components/world_loading_overlay.gd")
 const ORDER := [
 	"start_menu_ready", "prewarm_started", "prewarm_finished",
 	"start_button_pressed", "threaded_load_started", "threaded_load_finished",
@@ -20,41 +18,34 @@ var _segments: Dictionary = {}
 var _long_frames: Array[Dictionary] = []
 var _monitor_frames := false
 var _world_build_overlay: CanvasLayer
-var _world_build_overlay_root: ColorRect
-var _world_build_label: Label
-var _world_preview: Control
+var _world_build_overlay_root: Control
 var _world_preview_handoff_active := false
-var _world_preview_cover_tween: Tween
 var _world_build_handoff_tween: Tween
+var _world_preview_cover_tween: Tween
 var _world_preview_handoff_started_usec := 0
+var _world_input_locked := false
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_world_build_overlay = CanvasLayer.new()
 	_world_build_overlay.name = "WorldBuildOverlay"
 	_world_build_overlay.layer = 1000
 	_world_build_overlay.visible = false
 	add_child(_world_build_overlay)
-	var background := ColorRect.new()
-	_world_build_overlay_root = background
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.color = Color(0.015, 0.02, 0.03, 1.0)
-	background.mouse_filter = Control.MOUSE_FILTER_STOP
-	_world_build_overlay.add_child(background)
-	_world_preview = Control.new()
-	_world_preview.name = "WorldEntryRestPreview"
-	_world_preview.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_world_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_world_preview.set_script(START_MENU_PREVIEW_SCRIPT)
-	_world_preview.visible = false
-	background.add_child(_world_preview)
-	var label := Label.new()
-	_world_build_label = label
-	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.text = _localized_loading_text()
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 28)
-	background.add_child(label)
+	_world_build_overlay_root = OVERLAY_SCRIPT.new()
+	_world_build_overlay.add_child(_world_build_overlay_root)
+	_world_build_overlay_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_world_build_overlay_root.stop()
+
+func is_world_input_locked() -> bool:
+	return _world_input_locked
+
+func _input(_event: InputEvent) -> void:
+	if _world_input_locked:
+		get_viewport().set_input_as_handled()
+
+func _exit_tree() -> void:
+	hide_world_build_overlay()
 
 func _process(delta: float) -> void:
 	if not enabled or not _monitor_frames:
@@ -96,130 +87,75 @@ func mark(label: String) -> void:
 	if RUNTIME_DIAGNOSTICS_SCRIPT.verbose_logs_enabled():
 		print("[LoadingPerformance] run=%d flow=%s mark=%s" % [_run_id, _flow, label])
 
-func _localized_loading_text() -> String:
-	var translated := str(TranslationServer.translate("ui.loading"))
-	return translated if translated != "" and translated != "ui.loading" else "Loading..."
-
+# Legacy API retained for world/continue callers; presentation is terminal-only.
 func show_world_build_overlay() -> void:
-	if _world_build_overlay != null:
-		if _world_build_label != null:
-			_world_build_label.text = _localized_loading_text()
-		_stop_world_build_handoff()
-		if _world_preview_handoff_active:
-			_world_build_overlay.visible = true
-			_world_build_overlay_root.modulate.a = 1.0
-			return
-		_stop_world_preview_cover()
-		_world_preview_handoff_active = false
-		_world_build_overlay_root.color.a = 1.0
-		_world_build_overlay_root.modulate.a = 1.0
-		_world_preview.visible = false
-		_world_build_label.visible = true
-		_world_build_overlay.visible = true
+	if not _world_preview_handoff_active:
+		begin_world_preview_handoff()
+	_stop_world_preview_cover()
+	_world_build_overlay_root.modulate.a = 1.0
 
 func hide_world_build_overlay() -> void:
-	if _world_build_overlay != null:
-		_stop_world_build_handoff()
-		_stop_world_preview_cover()
-		_world_preview_handoff_active = false
-		_world_build_overlay.visible = false
-		_world_preview.visible = false
-		_world_build_label.visible = false
-		_world_build_overlay_root.color.a = 1.0
-		_world_build_overlay_root.modulate.a = 1.0
-
-func begin_world_preview_handoff() -> void:
-	if _world_build_overlay == null or _world_build_overlay_root == null or _world_preview == null:
-		return
 	_stop_world_build_handoff()
 	_stop_world_preview_cover()
+	_world_preview_handoff_active = false
+	if is_instance_valid(_world_build_overlay):
+		_world_build_overlay.visible = false
+	if is_instance_valid(_world_build_overlay_root):
+		_world_build_overlay_root.stop()
+		_world_build_overlay_root.modulate.a = 1.0
+	_world_input_locked = false
+
+func begin_world_preview_handoff() -> void:
+	hide_world_build_overlay()
+	_world_input_locked = true
 	_world_preview_handoff_active = true
 	_world_preview_handoff_started_usec = Time.get_ticks_usec()
+	_world_build_overlay_root.begin_loading(str(PlayerData.select_mecha_id))
 	_world_build_overlay.visible = true
-	_world_build_overlay_root.modulate.a = 1.0
-	_world_build_overlay_root.color.a = 0.0
-	_world_build_label.visible = false
-	_world_preview.visible = true
-	_world_preview.call("reset_handoff")
-	_world_preview.call("begin_loading")
-	_world_preview.call("set_loading_progress", 0.06)
+	_world_build_overlay_root.modulate.a = 0.0
 	_world_preview_cover_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	_world_preview_cover_tween.set_parallel(true)
-	_world_preview_cover_tween.tween_property(
-		_world_build_overlay_root,
-		"color:a",
-		1.0,
-		0.34
-	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	_world_preview_cover_tween.tween_method(
-		Callable(self, "_set_world_preview_progress"),
-		0.0,
-		1.0,
-		WORLD_PREVIEW_COVER_SEC
-	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	_world_preview_cover_tween.tween_property(_world_build_overlay_root, "modulate:a", 1.0, 0.18)
 
 func wait_for_world_preview_cover() -> void:
-	var tween := _world_preview_cover_tween
-	if tween != null and tween.is_valid():
-		await tween.finished
+	await wait_for_world_preview_safe_scene_change()
 
 func wait_for_world_preview_safe_scene_change() -> void:
-	if not _world_preview_handoff_active:
-		return
-	var elapsed_sec := (Time.get_ticks_usec() - _world_preview_handoff_started_usec) / 1000000.0
-	var remaining_sec := WORLD_PREVIEW_SAFE_SCENE_CHANGE_SEC - elapsed_sec
-	if remaining_sec > 0.0:
-		await get_tree().create_timer(remaining_sec).timeout
+	while _world_preview_handoff_active and Time.get_ticks_usec() - _world_preview_handoff_started_usec < 180000:
+		await get_tree().process_frame
 
 func cancel_world_preview_handoff() -> void:
-	_stop_world_preview_cover()
-	_world_preview_handoff_active = false
-	if _world_build_overlay != null:
-		_world_build_overlay.visible = false
-		_world_build_overlay_root.color.a = 1.0
-		_world_build_overlay_root.modulate.a = 1.0
-	if _world_preview != null:
-		_world_preview.visible = false
-	if _world_build_label != null:
-		_world_build_label.visible = false
+	hide_world_build_overlay()
+	_monitor_frames = false
 
 func is_world_preview_handoff_active() -> bool:
 	return _world_preview_handoff_active
 
 func update_world_preview_loading_progress(value: float) -> void:
-	if not _world_preview_handoff_active or _world_preview == null or not is_instance_valid(_world_preview):
-		return
-	_world_preview.call("set_loading_progress", value)
+	if _world_preview_handoff_active:
+		_world_build_overlay_root.set_loading_progress(value)
 
-func _set_world_preview_progress(value: float) -> void:
-	if _world_preview != null and is_instance_valid(_world_preview):
-		_world_preview.call("set_handoff_progress", value)
+# Accept an already available portrait without loading/instantiating a mech.
+func set_world_loading_emblem(texture: Texture2D) -> void:
+	_world_build_overlay_root.set_emblem(texture)
 
-func begin_world_build_handoff(duration: float = 0.12) -> void:
-	if _world_build_overlay == null or not _world_build_overlay.visible:
+func begin_world_build_handoff(duration: float = 0.20) -> void:
+	if not _world_preview_handoff_active or _world_build_handoff_tween != null:
 		return
-	update_world_preview_loading_progress(1.0)
-	_stop_world_build_handoff()
+	_stop_world_preview_cover()
+	_world_build_overlay_root.modulate.a = 1.0
+	_world_build_overlay_root.complete_loading()
 	_world_build_handoff_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	_world_build_handoff_tween.tween_property(
-		_world_build_overlay_root,
-		"modulate:a",
-		0.0,
-		maxf(duration, 0.0)
-	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_world_build_handoff_tween.tween_interval(0.12)
+	_world_build_handoff_tween.tween_property(_world_build_overlay_root, "modulate:a", 0.0, maxf(duration, 0.0))
 	_world_build_handoff_tween.tween_callback(_complete_world_build_handoff)
 
+func wait_for_world_build_handoff() -> void:
+	while _world_input_locked and is_inside_tree():
+		await get_tree().process_frame
+
 func _complete_world_build_handoff() -> void:
-	if _world_build_overlay != null:
-		_world_build_overlay.visible = false
-		_world_build_overlay_root.modulate.a = 1.0
-		_world_build_overlay_root.color.a = 1.0
-	_world_preview_handoff_active = false
-	if _world_preview != null:
-		_world_preview.visible = false
-	if _world_build_label != null:
-		_world_build_label.visible = false
 	_world_build_handoff_tween = null
+	hide_world_build_overlay()
 
 func _stop_world_build_handoff() -> void:
 	if _world_build_handoff_tween != null and _world_build_handoff_tween.is_valid():
@@ -252,7 +188,7 @@ func end_segment(label: String) -> void:
 		])
 
 func finish_flow() -> void:
-	hide_world_build_overlay()
+	await wait_for_world_build_handoff()
 	if not enabled:
 		return
 	_monitor_frames = false

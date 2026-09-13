@@ -83,7 +83,7 @@ func play_completion_and_remove() -> void:
 	if _projected_visual != null:
 		_projected_visual.play_completion_and_remove()
 		_projected_visual = null
-	var timer := get_tree().create_timer(0.74)
+	var timer := get_tree().create_timer(0.74, false)
 	timer.timeout.connect(queue_free)
 
 func is_visually_completed() -> bool:

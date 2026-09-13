@@ -60,6 +60,9 @@ var _runtime: RefCounted
 var _history_before_offer: Dictionary = {}
 var _reward_settled := false
 var _enhanced_reward_settled := false
+var _pending_success_settlement := false
+var _staged_completion_granted := 0
+var _staged_milestones: Dictionary = {}
 const STATE_PATH := "user://battle_contract_state.json"
 
 func _ready() -> void:
@@ -307,6 +310,9 @@ func activate_contract(snapshot: Dictionary = {}) -> bool:
 	_completion_guard = false
 	_reward_settled = false
 	_enhanced_reward_settled = false
+	_pending_success_settlement = false
+	_staged_completion_granted = 0
+	_staged_milestones.clear()
 	_set_state(ACTIVE)
 	_start_selected_runtime()
 	return true
@@ -314,6 +320,7 @@ func activate_contract(snapshot: Dictionary = {}) -> bool:
 func update_runtime_snapshot(snapshot: Dictionary) -> void:
 	if state == ACTIVE:
 		runtime_snapshot = snapshot.duplicate(true)
+		_grant_staged_completion_gold(runtime_snapshot, false)
 
 func complete_contract(snapshot: Dictionary = {}) -> bool:
 	if state != ACTIVE or _completion_guard:
@@ -334,6 +341,11 @@ func reset_runtime_state() -> void:
 	_enhanced_reward_by_contract.clear()
 	runtime_snapshot = {}
 	_completion_guard = false
+	_pending_success_settlement = false
+	_reward_settled = false
+	_enhanced_reward_settled = false
+	_staged_completion_granted = 0
+	_staged_milestones.clear()
 	_set_state(IDLE)
 
 func _start_selected_runtime() -> void:
@@ -365,13 +377,66 @@ func _stop_runtime() -> void:
 
 func _on_runtime_completed(snapshot: Dictionary) -> void:
 	_stop_runtime()
+	_grant_staged_completion_gold(snapshot, true)
 	if not complete_contract(snapshot):
 		return
-	_settle_performance_reward(snapshot)
-	_settle_enhanced_reward()
-	await get_tree().create_timer(1.0).timeout
+	_pending_success_settlement = true
+	await get_tree().create_timer(1.0, false).timeout
 	if _combat_port != null and PhaseManager.current_state() == PhaseManager.BATTLE:
 		_combat_port.request_finish_battle(snapshot)
+
+func has_pending_success_settlement() -> bool:
+	return _pending_success_settlement
+
+func settle_pending_success_rewards() -> bool:
+	if not _pending_success_settlement or state != COMPLETED:
+		return false
+	_pending_success_settlement = false
+	_settle_performance_reward(runtime_snapshot)
+	_settle_enhanced_reward()
+	return true
+
+func _grant_staged_completion_gold(snapshot: Dictionary, completed_successfully: bool) -> void:
+	if state != ACTIVE or selected_contract == null or not PlayerData.gold_supply_enabled:
+		return
+	var contract_id := selected_contract.contract_id
+	var milestone_count := 0
+	var reached := 0
+	match contract_id:
+		&"survival":
+			milestone_count = 4
+			var duration := maxf(float(snapshot.get("duration_sec", 0.0)), 1.0)
+			var ratio := clampf(1.0 - float(snapshot.get("remaining_sec", duration)) / duration, 0.0, 1.0)
+			reached = clampi(int(floor(ratio * 4.0 + 0.0001)), 0, 4)
+		&"operation":
+			milestone_count = maxi(int(snapshot.get("total_beacons", 2)), 1)
+			reached = clampi(int(snapshot.get("current_beacon", 0)), 0, milestone_count)
+		&"containment":
+			milestone_count = maxi(int(snapshot.get("total_rifts", 3)), 1)
+			reached = clampi(int(snapshot.get("sealed_count", 0)), 0, milestone_count)
+		&"extraction":
+			milestone_count = 4
+			var duration := maxf(float(snapshot.get("duration_sec", 0.0)), 1.0)
+			var hold_ratio := clampf(1.0 - float(snapshot.get("remaining_sec", duration)) / duration, 0.0, 1.0)
+			reached = clampi(int(floor(hold_ratio * 4.0 + 0.0001)), 0, 3)
+			if completed_successfully:
+				reached = 4
+		_:
+			return
+	if reached <= 0:
+		return
+	var economy: EconomyConfig = GlobalVariables.economy_data
+	var completion_budget := int(economy.get_contract_gold_plan(contract_id, maxi(PhaseManager.current_level, 0)).get("completion_gold", 0))
+	for milestone in range(1, reached + 1):
+		var key := "%s:%d:%d" % [str(contract_id), maxi(PhaseManager.current_level, 0), milestone]
+		if _staged_milestones.has(key):
+			continue
+		var cumulative := int(floor(float(completion_budget * milestone) / float(milestone_count)))
+		var amount := maxi(cumulative - _staged_completion_granted, 0)
+		_staged_milestones[key] = true
+		if amount > 0:
+			_staged_completion_granted += PlayerData.earn_gold(amount)
+			performance_reward_granted.emit({"type": &"gold", "amount": amount, "contract_id": contract_id, "staged": true, "milestone": milestone, "milestone_count": milestone_count})
 
 func _settle_performance_reward(result: Dictionary) -> void:
 	if _reward_settled:
@@ -393,11 +458,12 @@ func _settle_performance_reward(result: Dictionary) -> void:
 		"containment", "extraction":
 			ratio = clampf(float(result.get("performance_ratio", 0.0)), 0.0, 1.0)
 	var performance_gold := clampi(int(round(float(performance_cap) * ratio)), 0, performance_cap)
-	var amount := maxi(completion_gold + performance_gold, 0)
+	var completion_remainder := maxi(completion_gold - _staged_completion_granted, 0)
+	var amount := maxi(completion_remainder + performance_gold, 0)
 	if amount <= 0:
 		return
 	PlayerData.earn_gold(amount)
-	performance_reward_granted.emit({"type": &"gold", "amount": amount, "contract_id": contract_id, "completion_gold": completion_gold, "performance_gold": performance_gold})
+	performance_reward_granted.emit({"type": &"gold", "amount": amount, "contract_id": contract_id, "completion_gold": completion_remainder, "completion_gold_budget": completion_gold, "staged_completion_gold": _staged_completion_granted, "performance_gold": performance_gold})
 
 func _settle_enhanced_reward() -> void:
 	if _enhanced_reward_settled or selected_enhanced_contract == null or selected_enhanced_reward.is_empty():
@@ -433,8 +499,15 @@ func _roll_enhanced_reward(definition: EnhancedContractDefinition) -> Dictionary
 			&"equipped_weapon_core":
 				var core_reward := _build_equipped_weapon_core_reward()
 				if not core_reward.is_empty(): candidates.append(core_reward)
-			&"gold_pack": candidates.append({"type": &"gold_pack", "amount": _enhanced_gold_amount()})
+			&"gold_pack":
+				if not PlayerData.gold_supply_enabled:
+					candidates.append({"type": &"gold_pack", "amount": _enhanced_gold_amount()})
 	if candidates.is_empty():
+		if PlayerData.gold_supply_enabled:
+			var core_reward := _build_equipped_weapon_core_reward()
+			if not core_reward.is_empty():
+				return core_reward
+			return {}
 		return {"type": &"gold_pack", "amount": _enhanced_gold_amount()}
 	return candidates[_rng.randi_range(0, candidates.size() - 1)].duplicate(true)
 
@@ -447,7 +520,7 @@ func _build_equipped_weapon_core_reward() -> Dictionary:
 		var definition := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
 		if definition == null: continue
 		var tags := definition.get_normalized_core_tags()
-		if tags.is_empty() or not definition.get_unknown_core_tags().is_empty(): continue
+		if not definition.has_valid_core_tag_count() or not definition.get_unknown_core_tags().is_empty(): continue
 		candidates.append({"type": &"equipped_weapon_core", "weapon_id": weapon_id, "weapon_name": LocalizationManager.get_weapon_name_from_definition(definition), "core_tags": tags})
 	return {} if candidates.is_empty() else candidates[_rng.randi_range(0, candidates.size() - 1)]
 
@@ -463,14 +536,17 @@ func get_history_snapshot() -> Dictionary:
 	return {"last_selected_id": last_selected_id, "consecutive_selection_count": consecutive_selection_count, "missed_offer_counts": missed_offer_counts.duplicate(true)}
 
 func export_save_state() -> Dictionary:
-	return get_history_snapshot()
+	var payload := get_history_snapshot()
+	payload["settlement"] = _build_settlement_snapshot()
+	return payload
 
 func import_save_state(payload: Dictionary) -> void:
 	_apply_history(payload)
 	reset_runtime_state()
+	_restore_settlement_snapshot(payload.get("settlement", {}) as Dictionary)
 
 func build_rollback_snapshot() -> Dictionary:
-	return {"history_before_confirmation": _history_before_offer.duplicate(true), "option_ids": current_options.map(func(item): return str(item.contract_id)), "selected_id": str(selected_contract.contract_id) if selected_contract != null else "", "enhanced_id": str(selected_enhanced_contract.enhanced_id) if selected_enhanced_contract != null else "", "enhanced_reward": selected_enhanced_reward.duplicate(true)}
+	return {"history_before_confirmation": _history_before_offer.duplicate(true), "option_ids": current_options.map(func(item): return str(item.contract_id)), "selected_id": str(selected_contract.contract_id) if selected_contract != null else "", "enhanced_id": str(selected_enhanced_contract.enhanced_id) if selected_enhanced_contract != null else "", "enhanced_reward": selected_enhanced_reward.duplicate(true), "settlement": _build_settlement_snapshot()}
 
 func restore_rollback_snapshot(payload: Dictionary) -> void:
 	_apply_history(payload.get("history_before_confirmation", {}) as Dictionary)
@@ -489,7 +565,38 @@ func restore_rollback_snapshot(payload: Dictionary) -> void:
 		selected_enhanced_reward = (payload.get("enhanced_reward", {}) as Dictionary).duplicate(true)
 		_set_state(SELECTED)
 		restored_selection_pending = true
+	_restore_settlement_snapshot(payload.get("settlement", {}) as Dictionary)
 	_save_persistent_state()
+
+func _build_settlement_snapshot() -> Dictionary:
+	return {
+		"state": str(state),
+		"selected_id": str(selected_contract.contract_id) if selected_contract != null else "",
+		"runtime_snapshot": runtime_snapshot.duplicate(true),
+		"pending_success": _pending_success_settlement,
+		"reward_settled": _reward_settled,
+		"enhanced_reward_settled": _enhanced_reward_settled,
+		"staged_completion_granted": _staged_completion_granted,
+		"staged_milestones": _staged_milestones.duplicate(true),
+	}
+
+func _restore_settlement_snapshot(payload: Dictionary) -> void:
+	if payload.is_empty():
+		return
+	var restored_state := StringName(str(payload.get("state", IDLE)))
+	if restored_state not in [SELECTED, COMPLETED]:
+		return
+	var restored_contract := _find_definition(str(payload.get("selected_id", "")))
+	if restored_contract == null:
+		return
+	selected_contract = restored_contract
+	runtime_snapshot = (payload.get("runtime_snapshot", {}) as Dictionary).duplicate(true)
+	_pending_success_settlement = bool(payload.get("pending_success", false))
+	_reward_settled = bool(payload.get("reward_settled", false))
+	_enhanced_reward_settled = bool(payload.get("enhanced_reward_settled", false))
+	_staged_completion_granted = maxi(int(payload.get("staged_completion_granted", 0)), 0)
+	_staged_milestones = (payload.get("staged_milestones", {}) as Dictionary).duplicate(true)
+	_set_state(restored_state)
 
 func reset_persistent_state() -> void:
 	last_selected_id = &""

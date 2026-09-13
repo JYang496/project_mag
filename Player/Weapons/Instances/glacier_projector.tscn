@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://dlee5w18ma4c8" path="res://Player/Weapons/Instances/glacier_projector.gd" id="2_script"]
 [ext_resource type="Script" uid="uid://je314grff02u" path="res://Player/Weapons/Effects/effect_config.gd" id="3_3hv4x"]
 [ext_resource type="PackedScene" uid="uid://lpkx68xlbpyj" path="res://Player/Weapons/Modules/wmod_brittle_trigger_freeze.tscn" id="5_74i8c"]
-[ext_resource type="Texture2D" path="res://asset/images/weapons/glacier_projector.png" id="6_icon"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/floating_modules/glacier_projector.png" id="6_icon"]
 [ext_resource type="Resource" path="res://Player/Weapons/Feedback/continuous_pulse_feedback.tres" id="7_feedback"]
 
 [node name="GlacierProjector" unique_id=252111721 instance=ExtResource("1_base")]

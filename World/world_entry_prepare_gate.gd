@@ -6,6 +6,16 @@ const STEP_CELL_EFFECTS := "cell_effects"
 const STEP_TASK_MODULES := "task_modules"
 
 static var _cached_result: Dictionary = {}
+static var _cached_initial_battle_result: Dictionary = {}
+
+static func prepare_initial_battle_entry() -> Dictionary:
+	if not _cached_initial_battle_result.is_empty() \
+			and bool(_cached_initial_battle_result.get("ok", false)):
+		return _cached_initial_battle_result.duplicate(true)
+	_cached_initial_battle_result = aggregate_prepare_results([
+		_build_step_result(STEP_DATA, DataHandler.prepare_world_data(false)),
+	])
+	return _cached_initial_battle_result.duplicate(true)
 
 static func prepare_world_entry() -> Dictionary:
 	if not _cached_result.is_empty() and bool(_cached_result.get("ok", false)):
@@ -19,6 +29,7 @@ static func prepare_world_entry() -> Dictionary:
 
 static func clear_cached_result() -> void:
 	_cached_result.clear()
+	_cached_initial_battle_result.clear()
 
 static func aggregate_prepare_results(step_results: Array) -> Dictionary:
 	var errors := PackedStringArray()

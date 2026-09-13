@@ -2,6 +2,8 @@
 extends Resource
 class_name WeaponDefinition
 
+const MAX_CORE_TAGS := 4
+
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const BUILD_TAG := preload("res://Player/Weapons/Core/build_tag.gd")
 
@@ -60,3 +62,7 @@ func get_normalized_core_tags() -> Array[StringName]:
 
 func get_unknown_core_tags() -> PackedStringArray:
 	return BUILD_TAG.unknown_values(core_tags)
+
+func has_valid_core_tag_count() -> bool:
+	var count := get_normalized_core_tags().size()
+	return count > 0 and count <= MAX_CORE_TAGS

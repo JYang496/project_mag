@@ -76,6 +76,7 @@ func set_service_mode(new_mode: StringName) -> void:
 	var next_mode: StringName = &"fusion" if new_mode == &"fusion" else &"upgrade"
 	if next_mode == service_mode:
 		refresh_template()
+		refresh_action()
 		return
 	if next_mode == &"fusion":
 		_upgrade_saved_hover = hover_item.duplicate(true)
@@ -223,7 +224,8 @@ func add_item_row(item_data: Dictionary, parent_container: Container = null) -> 
 	var price := int(item_data.get("price", 0))
 	var price_text := "-" if level >= maximum else str(price)
 	var enriched := item_data.duplicate(true)
-	enriched["cost_text"] = LocalizationManager.tr_format("ui.upgrade.cost", {"value": price_text}, "Cost: %s" % price_text)
+	enriched["cost_text"] = LocalizationManager.tr_key("ui.workbench.upgrade_supplied", "Upgrades are provided by Gold Supply rewards.") if PlayerData.gold_supply_enabled \
+		else LocalizationManager.tr_format("ui.upgrade.cost", {"value": price_text}, "Cost: %s" % price_text)
 	button.call("set_data", enriched, compact_module)
 	item_data["button"] = button
 	if owner_ui:
@@ -285,6 +287,9 @@ func trigger_action() -> bool:
 	return try_upgrade_selected_item()
 
 func try_upgrade_selected_item() -> bool:
+	if PlayerData.gold_supply_enabled:
+		_show_message(LocalizationManager.tr_key("ui.workbench.upgrade_supplied", "Upgrades are provided by Gold Supply rewards."), 1.6)
+		return false
 	if not PhaseManager.can_configure_loadout():
 		_show_message(LocalizationManager.tr_key("ui.upgrade.rest_only", "Upgrades are only available during rest."), 1.6)
 		return false
@@ -329,10 +334,16 @@ func refresh_action() -> void:
 	if upgrade_action_button == null:
 		return
 	if service_mode == &"fusion":
+		upgrade_action_button.visible = true
 		var preview := _get_fusion_preview()
 		upgrade_action_button.disabled = fusion_submit_pending or not bool(preview.get("ok", false)) or not PhaseManager.can_configure_loadout()
 		upgrade_action_button.text = LocalizationManager.tr_key("ui.fusion.confirm", "Confirm Fusion")
 		return
+	if PlayerData.gold_supply_enabled:
+		upgrade_action_button.visible = false
+		upgrade_action_button.disabled = true
+		return
+	upgrade_action_button.visible = true
 	var ready := false
 	var price := 0
 	if not selected_item.is_empty():

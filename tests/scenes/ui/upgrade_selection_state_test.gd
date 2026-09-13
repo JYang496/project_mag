@@ -14,6 +14,8 @@ func _ready() -> void:
 
 func _run() -> void:
 	PlayerData.reset_runtime_state()
+	# Rest-area purchasing remains covered in its legacy spendable-gold mode.
+	PlayerData.gold_supply_enabled = false
 	InventoryData.reset_runtime_state()
 	PhaseManager.reset_runtime_state()
 	PlayerData.player_gold = 999

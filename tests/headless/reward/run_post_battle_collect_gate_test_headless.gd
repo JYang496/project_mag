@@ -29,6 +29,8 @@ func _run() -> void:
 	add_child(_player)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	PlayerData.earn_gold(50, true)
+	_expect(PlayerData.get_pending_gold_supplies().size() == 2, "auto-pickup crossing two thresholds must enqueue two supplies")
 
 	_ui = UI_SCENE.instantiate() as UI
 	add_child(_ui)
@@ -56,6 +58,8 @@ func _run() -> void:
 	var rest_center := _rest_area.get_spawn_position()
 	_player.global_position = rest_center + Vector2(180.0, 0.0)
 	PhaseManager.phase = PhaseManager.SETTLEMENT
+	PhaseManager._settlement_reward_gate_active = true
+	PhaseManager._contract_rewards_applied = false
 	PhaseManager.begin_post_battle_collect_gate(5.0)
 	_rest_area.call("_on_phase_changed", PhaseManager.SETTLEMENT)
 	await get_tree().process_frame
@@ -73,17 +77,40 @@ func _run() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	_expect(not _is_reward_panel_open(), "reward panel should wait while collect gate is active")
+	_expect(not _is_reward_panel_open(), "reward panel must wait while battle-end auto-collect remains active")
+	_expect(PhaseManager.current_state() == PhaseManager.SETTLEMENT, "settlement must remain active while auto-collect blocks rewards")
 	PhaseManager.complete_post_battle_collect_gate()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	_expect(_is_reward_panel_open(), "reward panel should open after collect gate clears")
+	_expect(_ui.gold_supply_controller.active, "first pending supply must open after auto-collect")
+	_expect(RewardDraftRuntime.is_standard_draft_blocking_interactions(), "protocol reward must remain queued while supply is open")
+	_claim_current_supply()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_expect(_ui.gold_supply_controller.active, "second pending supply must open before protocol reward")
+	_claim_current_supply()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_expect(PlayerData.get_pending_gold_supplies().is_empty(), "all pending supplies must be claimed before protocol reward")
+	_expect(not _ui.gold_supply_controller.active, "supply panel must close before protocol reward panel opens")
+	_expect(_is_reward_panel_open(), "reward panel should open only after all supplies clear")
 	_expect(PhaseManager.current_state() == PhaseManager.SETTLEMENT, "settlement remains active until the reward is confirmed")
 	_expect(not PhaseManager.is_post_battle_collect_gate_active(), "expected collect gate to be inactive after completion")
 
 	_finish()
+
+func _claim_current_supply() -> void:
+	var controller = _ui.gold_supply_controller
+	if controller == null or controller._rewards.is_empty():
+		_expect(false, "supply controller must expose prepared rewards")
+		return
+	# The reserved core option never requires a replacement dialog.
+	controller._selected(controller._rewards.back(), controller._generation)
 
 func _is_reward_panel_open() -> bool:
 	if _ui == null or not is_instance_valid(_ui):

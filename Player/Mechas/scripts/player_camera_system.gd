@@ -11,6 +11,7 @@ var _base_zoom := Vector2.ONE
 var _initial_uniform_zoom: float = 1.0
 var _zoom_target := Vector2.ONE
 var _offset_target := Vector2.ZERO
+var _boundary_offset := Vector2.ZERO
 var _zoom_tween: Tween
 var _last_phase_is_prepare := false
 var _restarea_control_enabled := false
@@ -80,7 +81,7 @@ func reconfigure_oblique(config) -> void:
 	_refresh_zoom_target_from_context()
 	_camera.zoom = _zoom_target
 
-func tick(delta: float) -> void:
+func tick(delta: float, player_world_position: Vector2 = Vector2.ZERO, boundary_provider: Node = null) -> void:
 	if _camera == null:
 		return
 	_sync_zoom_transition_phase_edge()
@@ -91,6 +92,7 @@ func tick(delta: float) -> void:
 		_update_restarea_camera_move(delta)
 		return
 	_update_zoom(delta)
+	_update_boundary_offset(delta, player_world_position, boundary_provider)
 	_update_lookahead(delta)
 
 func request_camera_shake(amount: float, source_global_position: Vector2 = Vector2.ZERO, max_distance: float = 900.0) -> void:
@@ -302,17 +304,56 @@ func _on_zoom_tween_finished() -> void:
 
 func _update_lookahead(delta: float) -> void:
 	# Camera no longer uses movement-based lookahead/inertia offset.
-	_offset_target = Vector2.ZERO
+	_offset_target = _boundary_offset
 	_update_shake(delta)
 	_camera.offset = _offset_target + _shake_offset
 
 func _reset_offset_for_restarea(delta: float) -> void:
 	var reset_t := clampf(maxf(_get_config().camera_lookahead_lerp_speed, 0.0) * maxf(delta, 0.0), 0.0, 1.0)
 	_offset_target = Vector2.ZERO
+	_boundary_offset = Vector2.ZERO
 	_shake_trauma = 0.0
 	_shake_offset = Vector2.ZERO
 	_sync_hybrid_shake()
 	_camera.offset = _camera.offset.lerp(Vector2.ZERO, reset_t)
+	_sync_hybrid_camera_target_offset()
+
+func _update_boundary_offset(delta: float, player_world_position: Vector2, boundary_provider: Node) -> void:
+	var target := Vector2.ZERO
+	var config = _get_config()
+	# Phase changes alone do not invalidate the battlefield framing. Keep it active
+	# through settlement, protocol selection, and deployment while the player is
+	# still inside the active field. Rest-area camera ownership pauses this path in
+	# tick(), and an empty boundary context naturally returns the camera to center.
+	var enabled: bool = bool(config.boundary_camera_enabled)
+	if enabled and boundary_provider != null and boundary_provider.has_method("get_camera_boundary_context"):
+		var context_value: Variant = boundary_provider.call("get_camera_boundary_context", player_world_position)
+		if context_value is Dictionary:
+			target = _calculate_boundary_offset(context_value as Dictionary)
+	var lerp_t := clampf(maxf(config.boundary_camera_lerp_speed, 0.0) * maxf(delta, 0.0), 0.0, 1.0)
+	_boundary_offset = _boundary_offset.lerp(target, lerp_t)
+	if _boundary_offset.length_squared() <= 0.01:
+		_boundary_offset = Vector2.ZERO
+	_sync_hybrid_camera_target_offset()
+
+func _calculate_boundary_offset(distances: Dictionary) -> Vector2:
+	var trigger := maxf(_get_config().boundary_camera_trigger_distance, 1.0)
+	var maximum := maxf(_get_config().boundary_camera_max_offset, 0.0)
+	var result := Vector2.ZERO
+	result.x += _boundary_edge_strength(distances.get(&"left", trigger), trigger) * maximum
+	result.x -= _boundary_edge_strength(distances.get(&"right", trigger), trigger) * maximum
+	result.y += _boundary_edge_strength(distances.get(&"top", trigger), trigger) * maximum
+	result.y -= _boundary_edge_strength(distances.get(&"bottom", trigger), trigger) * maximum
+	return result.limit_length(maximum)
+
+func _boundary_edge_strength(distance_value: Variant, trigger: float) -> float:
+	var proximity := 1.0 - clampf(float(distance_value) / trigger, 0.0, 1.0)
+	return smoothstep(0.0, 1.0, proximity)
+
+func _sync_hybrid_camera_target_offset() -> void:
+	_resolve_hybrid_view()
+	if _hybrid_view != null and _hybrid_view.has_method("set_camera_target_offset"):
+		_hybrid_view.call("set_camera_target_offset", _boundary_offset)
 
 func _get_config():
 	if _config == null:

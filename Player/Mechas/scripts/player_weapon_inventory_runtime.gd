@@ -287,6 +287,8 @@ func get_weapon_at_slot(slot_index: int) -> Weapon:
 	return weapon if weapon != null and is_instance_valid(weapon) else null
 
 func try_select_main_weapon(slot_index: int) -> bool:
+	if LoadingPerformance.is_world_input_locked():
+		return false
 	sanitize_weapon_list()
 	var weapon := get_weapon_at_slot(slot_index)
 	if weapon == null or slot_index == int(_player.PlayerData.main_weapon_index):
@@ -297,12 +299,16 @@ func try_select_main_weapon(slot_index: int) -> bool:
 	return int(_player.PlayerData.main_weapon_index) == slot_index
 
 func request_weapon_skill_at_slot(slot_index: int) -> bool:
+	if LoadingPerformance.is_world_input_locked():
+		return false
 	var weapon := get_weapon_at_slot(slot_index)
 	if weapon == null:
 		return false
 	return bool(weapon.request_weapon_skill())
 
 func can_switch_main_weapon() -> bool:
+	if LoadingPerformance.is_world_input_locked():
+		return false
 	return _player.PlayerData.can_switch_main_weapon()
 
 func try_shift_main_weapon(step: int) -> bool:

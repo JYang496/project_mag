@@ -2,9 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dyetc0qttcb7y" path="res://World/new_game_btn.gd" id="1_new_game"]
 [ext_resource type="Script" uid="uid://q8o4fd420oji" path="res://World/continue.gd" id="2_continue"]
-[ext_resource type="Script" uid="uid://cbi0jbeohvr24" path="res://UI/scripts/components/start_menu_backdrop.gd" id="3_backdrop"]
 [ext_resource type="Script" uid="uid://crthixi6sav7n" path="res://World/start_menu.gd" id="4_menu"]
-[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu_background.png" id="5_background"]
 [ext_resource type="Texture2D" path="res://asset/images/ui/input_prompts/kenney_pixel/input_prompts_tilemap.png" id="6_input_prompts"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_arrow_up_prompt"]
@@ -56,8 +54,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" type="TextureRect" parent="CanvasLayer/GUI" unique_id=1701710582]
-texture_filter = 2
+[node name="Background" type="ColorRect" parent="CanvasLayer/GUI" unique_id=1701710582]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -65,18 +62,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-texture = ExtResource("5_background")
-expand_mode = 1
-
-[node name="Backdrop" type="Control" parent="CanvasLayer/GUI/Background" unique_id=7441319]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-script = ExtResource("3_backdrop")
+color = Color(0.008, 0.018, 0.026, 1)
 
 [node name="SafeArea" type="MarginContainer" parent="CanvasLayer/GUI" unique_id=164632956]
 layout_mode = 1

@@ -10,6 +10,8 @@ func _ready() -> void: call_deferred("_run")
 
 func _run() -> void:
 	PlayerData.reset_runtime_state()
+	# This test owns the legacy spendable-gold shop path, not gold-supply mode.
+	PlayerData.gold_supply_enabled = false
 	InventoryData.reset_runtime_state()
 	PhaseManager.reset_runtime_state()
 	DataHandler.prepare_world_data(true)

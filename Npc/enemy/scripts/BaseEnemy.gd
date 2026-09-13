@@ -200,7 +200,7 @@ func begin_boss_death_release(duration_sec: float = 1.5) -> void:
 		tween.tween_property(body, "scale", body.scale * 0.78, duration * 0.82).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	var release_timer := Timer.new()
 	release_timer.name = "BossDeathReleaseTimer"
-	release_timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	release_timer.process_mode = Node.PROCESS_MODE_PAUSABLE
 	release_timer.one_shot = true
 	release_timer.wait_time = duration
 	release_timer.timeout.connect(Callable(self, "queue_free"), CONNECT_ONE_SHOT)
@@ -284,7 +284,7 @@ func _start_prepared_spawn_sequence() -> void:
 		return
 	var sequence := ENEMY_SPAWN_SEQUENCE_SCRIPT.new()
 	sequence.name = "EnemySpawnSequence"
-	sequence.process_mode = Node.PROCESS_MODE_ALWAYS
+	sequence.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(sequence)
 	sequence.begin(self, _spawn_sequence_duration_override)
 	spawn_phase_started.emit()

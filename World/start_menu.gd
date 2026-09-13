@@ -72,6 +72,7 @@ func _ready() -> void:
 	_apply_localized_text()
 	_play_intro_animation()
 	LoadingPerformance.begin_menu_session()
+	_set_world_entry_buttons_enabled(false)
 	call_deferred("_prewarm_world_entry")
 
 
@@ -330,12 +331,29 @@ func _prewarm_world_entry() -> void:
 	prewarm_state = PrewarmState.RUNNING
 	prewarm_error = ""
 	LoadingPerformance.mark("prewarm_started")
-	var result: Dictionary = WORLD_ENTRY_PREPARE_GATE_SCRIPT.prepare_world_entry()
+	LoadingPerformance.begin_segment("menu_prewarm_core_data")
+	var result: Dictionary = WORLD_ENTRY_PREPARE_GATE_SCRIPT.prepare_initial_battle_entry()
+	LoadingPerformance.end_segment("menu_prewarm_core_data")
 	await get_tree().process_frame
+	LoadingPerformance.begin_segment("menu_prewarm_spawn_data")
 	SpawnData.ensure_loaded()
+	LoadingPerformance.end_segment("menu_prewarm_spawn_data")
+	await get_tree().process_frame
+	LoadingPerformance.begin_segment("menu_prewarm_mecha_scene")
+	DataHandler.prewarm_mecha_scene(str(PlayerData.select_mecha_id))
+	LoadingPerformance.end_segment("menu_prewarm_mecha_scene")
+	await get_tree().process_frame
+	LoadingPerformance.begin_segment("menu_prewarm_default_weapon")
 	DataHandler.prewarm_mecha_default_weapon(str(PlayerData.select_mecha_id))
+	LoadingPerformance.end_segment("menu_prewarm_default_weapon")
+	await get_tree().process_frame
+	LoadingPerformance.begin_segment("menu_prewarm_controls")
 	MODAL_UI_CONTROLLER_SCRIPT.prewarm_controls_hint_scene()
+	LoadingPerformance.end_segment("menu_prewarm_controls")
+	await get_tree().process_frame
+	LoadingPerformance.begin_segment("menu_prewarm_world_scene")
 	var world_request_error := WORLD_SCENE_LOADER_SCRIPT.preload_world(WORLD_SCENE_PATH)
+	LoadingPerformance.end_segment("menu_prewarm_world_scene")
 	if bool(result.get("ok", false)) and SpawnData.spawn_combat_profile != null and world_request_error == OK:
 		prewarm_state = PrewarmState.SUCCEEDED
 	else:
@@ -345,7 +363,19 @@ func _prewarm_world_entry() -> void:
 			prewarm_error = "World entry resources failed to prewarm."
 		push_error("World entry prewarm failed: %s" % prewarm_error)
 	LoadingPerformance.mark("prewarm_finished")
+	_set_world_entry_buttons_enabled(true)
 	if OS.get_cmdline_user_args().has("--loading-benchmark"):
 		if OS.get_cmdline_user_args().has("--loading-benchmark-idle"):
 			await get_tree().create_timer(1.5).timeout
 		new_game_button.call_deferred("_on_pressed")
+
+
+func _set_world_entry_buttons_enabled(enabled: bool) -> void:
+	if enabled:
+		_refresh_save_state()
+		new_game_button.disabled = false
+		weapon_skill_lab_button.disabled = false
+		return
+	start_button.disabled = true
+	new_game_button.disabled = true
+	weapon_skill_lab_button.disabled = true

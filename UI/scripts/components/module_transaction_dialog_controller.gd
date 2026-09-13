@@ -105,26 +105,26 @@ func request_temporary_module_sell_confirmation(module_instance: Module) -> bool
 		int(module_instance.cost),
 		int(module_instance.module_level)
 	) if GlobalVariables.economy_data else 0
+	var discard_mode := PlayerData.gold_supply_enabled
 	var body := LocalizationManager.tr_format(
-		"ui.module.sell.confirm",
+		"ui.module.discard.confirm" if discard_mode else "ui.module.sell.confirm",
 		{
 			"module": LocalizationManager.get_module_name(module_instance),
 			"level": module_instance.module_level,
 			"gold": gold,
 		},
-		"Sell %s Lv.%d for %d Gold? This cannot be undone." % [
+		"Discard %s Lv.%d? This cannot be undone and returns no Gold Supply progress." % [
 			LocalizationManager.get_module_name(module_instance),
 			module_instance.module_level,
-			gold,
-		]
+		] if discard_mode else "Sell %s Lv.%d for %d Gold? This cannot be undone." % [LocalizationManager.get_module_name(module_instance), module_instance.module_level, gold]
 	)
 	pending_module_action = Callable(self, "_confirm_temporary_module_sell").bind(module_instance)
 	active_dialog_id = &"module_action"
 	var result: bool = modal_dialog_controller.confirm({
 		"id": &"module_action",
-		"title": LocalizationManager.tr_key("ui.module.sell.title", "Sell Module"),
+		"title": LocalizationManager.tr_key("ui.module.discard.title", "Discard Module") if discard_mode else LocalizationManager.tr_key("ui.module.sell.title", "Sell Module"),
 		"message": body,
-		"confirm_text": "Sell",
+		"confirm_text": LocalizationManager.tr_key("ui.module.discard.action", "Discard") if discard_mode else LocalizationManager.tr_key("ui.module.sell.action", "Sell"),
 		"cancel_text": "Cancel",
 		"on_confirm": Callable(self, "_on_module_action_confirmed"),
 		"on_cancel": Callable(self, "_on_module_action_cancelled"),
@@ -141,8 +141,8 @@ func request_temporary_module_sell_confirmation(module_instance: Module) -> bool
 			},
 			{
 				"label": LocalizationManager.tr_key("ui.dialog.detail.gold", "Gold"),
-				"value": "+%d" % gold,
-				"tone": &"reward",
+				"value": LocalizationManager.tr_key("ui.module.discard.no_return", "No return") if discard_mode else "+%d" % gold,
+				"tone": &"danger" if discard_mode else &"reward",
 			},
 		],
 	})
@@ -185,6 +185,9 @@ func request_temporary_module_settlement(on_complete: Callable, on_cancel: Calla
 			on_cancel.call_deferred()
 		return false
 	if InventoryData.temporary_modules.is_empty():
+		on_complete.call_deferred()
+		return true
+	if PlayerData.gold_supply_enabled:
 		on_complete.call_deferred()
 		return true
 	pending_battle_start = on_complete

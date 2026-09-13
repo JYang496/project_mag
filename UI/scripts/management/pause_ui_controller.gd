@@ -6,6 +6,7 @@ const AUDIO_SETTINGS_CONTROLS_SCENE := preload("res://UI/components/AudioSetting
 var owner_ui: UI
 var pause_menu_panel: PanelContainer
 var resume_button: Button
+var return_to_menu_button: Button
 var pause_language_label: Label
 var pause_language_option: OptionButton
 var temporary_module_confirm_toggle: CheckButton
@@ -15,10 +16,11 @@ var controls_hint_label: Label
 var controls_hint_option: OptionButton
 var audio_settings_controls: VBoxContainer
 
-func bind(ui: UI, panel: PanelContainer, resume: Button) -> void:
+func bind(ui: UI, panel: PanelContainer, resume: Button, return_to_menu: Button) -> void:
 	owner_ui = ui
 	pause_menu_panel = panel
 	resume_button = resume
+	return_to_menu_button = return_to_menu
 
 func ensure_language_controls() -> void:
 	if pause_menu_panel == null:
@@ -28,6 +30,11 @@ func ensure_language_controls() -> void:
 		pause_label.text = LocalizationManager.tr_key("ui.panel.pause", "Paused")
 	if resume_button:
 		resume_button.text = LocalizationManager.tr_key("ui.panel.resume", "Resume")
+	if return_to_menu_button:
+		return_to_menu_button.text = LocalizationManager.tr_key(
+			"ui.gameover.return_to_menu",
+			"Return to Main Menu"
+		)
 	_ensure_audio_settings_controls()
 	var existing_label := pause_menu_panel.find_child("LanguageLabel", true, false)
 	if existing_label is Label:
@@ -61,6 +68,11 @@ func refresh_texts() -> void:
 		pause_label.text = LocalizationManager.tr_key("ui.panel.pause", "Paused")
 	if resume_button:
 		resume_button.text = LocalizationManager.tr_key("ui.panel.resume", "Resume")
+	if return_to_menu_button:
+		return_to_menu_button.text = LocalizationManager.tr_key(
+			"ui.gameover.return_to_menu",
+			"Return to Main Menu"
+		)
 	_set_section_text("AudioHeader", LocalizationManager.tr_key("ui.start.audio", "Audio"))
 	_set_section_text("InterfaceHeader", LocalizationManager.tr_key("ui.start.display_language", "Display & Language"))
 	_set_section_text("AssistHeader", LocalizationManager.tr_key("ui.start.combat_assist", "Combat Assist"))

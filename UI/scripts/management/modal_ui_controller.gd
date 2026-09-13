@@ -251,6 +251,8 @@ func request_close_cell_management_panel() -> bool:
 	return true
 
 func is_modal_open() -> bool:
+	if owner_ui != null and owner_ui.is_supply_modal_open():
+		return true
 	sync_state_from_owner()
 	for entry in _modal_registry:
 		if _registered_modal_is_open(entry):
@@ -258,6 +260,8 @@ func is_modal_open() -> bool:
 	return false
 
 func is_world_interaction_blocking_modal_open() -> bool:
+	if owner_ui != null and owner_ui.is_supply_modal_open():
+		return true
 	sync_state_from_owner()
 	for entry in _modal_registry:
 		if not bool(entry.get("blocks_world_interaction", true)):
@@ -313,7 +317,7 @@ func show_game_over() -> void:
 	owner_ui.rest_area_ui_controller.set_management_root_visible(&"warehouse", false)
 	if game_over_view != null and is_instance_valid(game_over_view):
 		game_over_view.show_game_over()
-		owner_ui.get_tree().paused = true
+		owner_ui.set_owned_pause(&"gameover", true)
 	_sync_public_fields_to_owner()
 
 func show_run_complete() -> void:
@@ -328,7 +332,7 @@ func show_run_complete() -> void:
 	owner_ui.rest_area_ui_controller.set_management_root_visible(&"upgrade", false)
 	owner_ui.rest_area_ui_controller.set_management_root_visible(&"warehouse", false)
 	game_over_view.show_run_complete()
-	owner_ui.get_tree().paused = true
+	owner_ui.set_owned_pause(&"gameover", true)
 	_sync_public_fields_to_owner()
 
 func _hide_runtime_hud_for_game_over() -> void:

@@ -294,6 +294,8 @@ func _get_zone_hint_text_parts(zone_id: int) -> Array[String]:
 	return []
 
 func _get_upgrade_status_text() -> String:
+	if PlayerData.gold_supply_enabled:
+		return LocalizationManager.tr_key("ui.workbench.upgrade_status", "Inspect upgrades or fuse weapon cores")
 	var upgradable_count := _get_affordable_upgrade_count()
 	if upgradable_count > 0:
 		return LocalizationManager.tr_format(
@@ -424,6 +426,8 @@ func _build_zone_hint_status_signature() -> String:
 	]
 
 func _get_affordable_upgrade_count() -> int:
+	if PlayerData.gold_supply_enabled:
+		return 0
 	var count := 0
 	for weapon in _get_owned_weapons_for_upgrade():
 		if weapon.level >= weapon.max_level:
@@ -441,8 +445,10 @@ func _get_affordable_upgrade_count() -> int:
 func _get_owned_weapons_for_upgrade() -> Array[Weapon]:
 	var result: Array[Weapon] = []
 	for weapon_ref in PlayerData.player_weapon_list:
+		if not is_instance_valid(weapon_ref):
+			continue
 		var weapon := weapon_ref as Weapon
-		if weapon != null and is_instance_valid(weapon):
+		if weapon != null:
 			result.append(weapon)
 	for weapon in InventoryData.get_stored_weapons():
 		if weapon != null and is_instance_valid(weapon):

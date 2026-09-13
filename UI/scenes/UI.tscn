@@ -5,6 +5,7 @@
 [ext_resource type="Theme" path="res://UI/themes/start_menu_theme.tres" id="3_pause_theme"]
 
 [node name="UI" type="CanvasLayer" unique_id=73837684 groups=["ui"]]
+layer = 90
 process_mode = 3
 script = ExtResource("1_l38d8")
 
@@ -75,6 +76,11 @@ text = "Paused"
 custom_minimum_size = Vector2(112, 42)
 layout_mode = 2
 text = "Resume"
+
+[node name="ReturnToMenuButton" type="Button" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/Header"]
+custom_minimum_size = Vector2(176, 42)
+layout_mode = 2
+text = "Return to Main Menu"
 
 [node name="HeaderRule" type="HSeparator" parent="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content"]
 custom_minimum_size = Vector2(0, 8)
@@ -178,3 +184,4 @@ mouse_filter = 2
 theme_override_constants/separation = 10
 
 [connection signal="pressed" from="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/Header/ResumeButton" to="." method="_on_resume_button_pressed"]
+[connection signal="pressed" from="PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/Header/ReturnToMenuButton" to="." method="_on_pause_return_to_menu_pressed"]

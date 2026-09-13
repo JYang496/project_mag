@@ -15,6 +15,15 @@ var pending_transactions: Array[Dictionary] = []
 var weapon_core_inventory: Dictionary = {}
 var _fusion_commit_locks: Dictionary = {}
 var on_select_upg: Weapon
+var _runtime_save_suspensions := 0
+
+func suspend_runtime_saves() -> void:
+	_runtime_save_suspensions += 1
+
+func resume_runtime_saves(flush_after: bool = false) -> void:
+	_runtime_save_suspensions = maxi(_runtime_save_suspensions - 1, 0)
+	if flush_after and _runtime_save_suspensions == 0:
+		save_runtime_state()
 
 func _ready() -> void:
 	call_deferred("load_runtime_state")
@@ -133,7 +142,7 @@ func add_weapon_cores(values: Variant, amount: int = 1, save_after: bool = true)
 	var tags := normalize_core_tags(values)
 	var key := get_core_key(tags)
 	var safe_amount := maxi(amount, 0)
-	if key == "" or safe_amount <= 0:
+	if key == "" or tags.size() > WeaponDefinition.MAX_CORE_TAGS or safe_amount <= 0:
 		return {"ok": false, "result": "invalid_core", "core_key": key, "core_tags": tags}
 	var next_count := get_weapon_core_count(tags) + safe_amount
 	weapon_core_inventory[key] = {"tags": tags, "count": next_count}
@@ -166,7 +175,7 @@ func build_duplicate_weapon_core_preview(weapon_id: String) -> Dictionary:
 		return {"ok": false, "result": "invalid", "weapon_id": normalized_id}
 	var unknown_tags := weapon_def.get_unknown_core_tags()
 	var tags := weapon_def.get_normalized_core_tags()
-	if not unknown_tags.is_empty() or tags.is_empty():
+	if not unknown_tags.is_empty() or tags.is_empty() or tags.size() > WeaponDefinition.MAX_CORE_TAGS:
 		return {
 			"ok": false,
 			"result": "invalid_core_tags",
@@ -539,10 +548,10 @@ func exchange_stored_weapon(stored_weapon: Weapon, equipped_weapon: Weapon) -> D
 	_refresh_ui()
 	return {"ok": true, "result": "exchanged", "weapon": stored_weapon, "slot": slot_index}
 
-func equip_incoming_weapon_to_slot(new_weapon: Weapon, old_weapon: Weapon = null) -> Dictionary:
+func equip_incoming_weapon_to_slot(new_weapon: Weapon, old_weapon: Weapon = null, supply_claim: bool = false) -> Dictionary:
 	var battle_pickup_to_empty_slot := PhaseManager.current_state() == PhaseManager.BATTLE and old_weapon == null
 	if PhaseManager.current_state() not in [PhaseManager.SETTLEMENT, PhaseManager.REST] \
-			and not battle_pickup_to_empty_slot:
+			and not battle_pickup_to_empty_slot and not (supply_claim and PlayerData.gold_supply_rewards.is_applying_battle_claim()):
 		return {"ok": false, "reason": "New weapons can only be installed during settlement or rest."}
 	if new_weapon == null or not is_instance_valid(new_weapon):
 		return {"ok": false, "reason": "Invalid weapon."}
@@ -725,6 +734,8 @@ func obtain_module(module_instance: Module, _ignore_weapon: Weapon = null) -> Di
 	return result
 
 func purchase_module(module_scene: PackedScene) -> Dictionary:
+	if PlayerData.gold_supply_enabled:
+		return {"ok": false, "reason": LocalizationManager.tr_key("ui.workbench.gold_spend_disabled", "Gold purchases are unavailable in Gold Supply mode.")}
 	if not PhaseManager.can_configure_loadout():
 		return {"ok": false, "reason": "Modules can only be purchased during rest."}
 	if module_scene == null:
@@ -751,6 +762,8 @@ func purchase_module(module_scene: PackedScene) -> Dictionary:
 	return result
 
 func upgrade_module_with_gold(module_instance: Module) -> Dictionary:
+	if PlayerData.gold_supply_enabled:
+		return {"ok": false, "reason": LocalizationManager.tr_key("ui.workbench.upgrade_supplied", "Upgrades are provided by Gold Supply rewards.")}
 	if not PhaseManager.can_configure_loadout():
 		return {"ok": false, "reason": "Modules can only be upgraded during rest."}
 	if module_instance == null or not is_instance_valid(module_instance):
@@ -806,6 +819,10 @@ func _merge_duplicate_module(existing: Module, incoming: Module) -> Dictionary:
 		temporary_modules_changed.emit()
 		_refresh_ui()
 		return {"ok": true, "result": "upgraded", "module": existing}
+	if PlayerData.gold_supply_enabled:
+		_discard_module_instance(incoming, existing)
+		_refresh_ui()
+		return {"ok": true, "result": "discarded_duplicate", "gold": 0}
 	var gold := _calculate_module_conversion_coins(incoming)
 	PlayerData.recycle_gold(gold)
 	_discard_module_instance(incoming, existing)
@@ -815,13 +832,14 @@ func _merge_duplicate_module(existing: Module, incoming: Module) -> Dictionary:
 func sell_temporary_module(module_instance: Module) -> Dictionary:
 	if module_instance == null or not temporary_modules.has(module_instance):
 		return {"ok": false, "reason": "Invalid module."}
-	var gold := _calculate_module_conversion_coins(module_instance)
+	var gold := 0 if PlayerData.gold_supply_enabled else _calculate_module_conversion_coins(module_instance)
 	temporary_modules.erase(module_instance)
-	PlayerData.recycle_gold(gold)
+	if not PlayerData.gold_supply_enabled:
+		PlayerData.recycle_gold(gold)
 	_discard_module_instance(module_instance)
 	temporary_modules_changed.emit()
 	_refresh_ui()
-	return {"ok": true, "gold": gold}
+	return {"ok": true, "result": "discarded" if PlayerData.gold_supply_enabled else "sold", "gold": gold}
 
 func sell_module(module_instance: Module) -> Dictionary:
 	if module_instance == null or not is_instance_valid(module_instance):
@@ -831,19 +849,22 @@ func sell_module(module_instance: Module) -> Dictionary:
 	var owner_weapon := _resolve_module_owner_weapon(module_instance)
 	if owner_weapon == null or owner_weapon.modules == null or module_instance.get_parent() != owner_weapon.modules:
 		return {"ok": false, "reason": "Invalid module."}
-	var gold := _calculate_module_conversion_coins(module_instance)
+	var gold := 0 if PlayerData.gold_supply_enabled else _calculate_module_conversion_coins(module_instance)
 	owner_weapon.modules.remove_child(module_instance)
-	PlayerData.recycle_gold(gold)
+	if not PlayerData.gold_supply_enabled:
+		PlayerData.recycle_gold(gold)
 	_discard_module_instance(module_instance)
 	if owner_weapon.has_method("calculate_status"):
 		owner_weapon.calculate_status()
 	temporary_modules_changed.emit()
 	_refresh_ui()
-	return {"ok": true, "result": "sold", "gold": gold}
+	return {"ok": true, "result": "discarded" if PlayerData.gold_supply_enabled else "sold", "gold": gold}
 
 func sell_unclaimed_module(module_instance: Module) -> Dictionary:
 	if module_instance == null or not is_instance_valid(module_instance):
 		return {"ok": false, "reason": "Invalid module."}
+	if PlayerData.gold_supply_enabled:
+		return obtain_module(module_instance)
 	var gold := _calculate_module_conversion_coins(module_instance)
 	var module_name := LocalizationManager.get_module_name(module_instance)
 	PlayerData.recycle_gold(gold)
@@ -857,6 +878,8 @@ func sell_unclaimed_module(module_instance: Module) -> Dictionary:
 	return {"ok": true, "result": "sold", "gold": gold}
 
 func sell_all_temporary_modules() -> Dictionary:
+	if PlayerData.gold_supply_enabled:
+		return {"ok": true, "gold": 0, "count": 0, "preserved": temporary_modules.size()}
 	var total_gold := 0
 	var sold_count := 0
 	for module_instance in temporary_modules.duplicate():
@@ -976,6 +999,8 @@ func reset_runtime_state() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(RUNTIME_STATE_PATH))
 
 func save_runtime_state() -> void:
+	if _runtime_save_suspensions > 0:
+		return
 	var module_payloads: Array[Dictionary] = []
 	for module_instance in temporary_modules:
 		if module_instance == null or not is_instance_valid(module_instance):
@@ -1061,7 +1086,7 @@ func _restore_weapon_cores(payload: Variant) -> void:
 		var unknown := BuildTag.unknown_values(entry.get("tags", []))
 		var tags := normalize_core_tags(entry.get("tags", []))
 		var count := int(entry.get("count", 0))
-		if not unknown.is_empty() or tags.is_empty() or count <= 0:
+		if not unknown.is_empty() or tags.is_empty() or tags.size() > WeaponDefinition.MAX_CORE_TAGS or count <= 0:
 			push_warning("Skipping invalid weapon core entry tags=%s count=%d unknown=%s" % [str(entry.get("tags", [])), count, str(unknown)])
 			continue
 		var key := get_core_key(tags)

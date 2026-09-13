@@ -81,6 +81,7 @@ func _ready() -> void:
 		assert(str(typed_model.synergy_label).strip_edges() == "")
 		assert(str(typed_model.full_detail).strip_edges() != "")
 	assert(panel.open_for_summary(summary))
+	assert(panel.panel.position.x < 0.0)
 	assert(panel.options_box is GridContainer)
 	assert(panel.options_box.get_child_count() == 2)
 	assert(not panel.confirm_button.disabled)
@@ -89,6 +90,7 @@ func _ready() -> void:
 	panel.close_panel()
 	var reward_choices: Array[RewardInfo] = [task_bundle[0], task_bundle[1], effect_reward, effect_reward]
 	assert(panel.open_for_rewards("", reward_choices, Callable(), Callable(), false))
+	assert(panel.panel.position.x < 0.0)
 	await get_tree().process_frame
 	assert(panel.title_label.text == LocalizationManager.tr_key("ui.reward.title", "Choose Reward"))
 	assert(panel.panel.size.x >= 999.0 and panel.panel.size.y >= 619.0)

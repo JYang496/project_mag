@@ -71,9 +71,13 @@ func get_definition_prepare_result() -> Dictionary:
 	return _definition_prepare_result.duplicate(true)
 
 func get_definition(module_id: String) -> TaskModuleDefinition:
+	if not module_id.strip_edges().is_empty() and _definitions_by_id.is_empty():
+		prepare_definitions()
 	return _definitions_by_id.get(module_id.strip_edges(), null) as TaskModuleDefinition
 
 func get_all_definitions() -> Array[TaskModuleDefinition]:
+	if _definitions_by_id.is_empty():
+		prepare_definitions()
 	var output: Array[TaskModuleDefinition] = []
 	for value in _definitions_by_id.values():
 		if value is TaskModuleDefinition:

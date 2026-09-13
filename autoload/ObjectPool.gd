@@ -1,6 +1,9 @@
 extends Node
 class_name ObjectPoolService
 
+const POOL_AVAILABLE_META := &"_pool_is_available"
+const POOL_RELEASE_PENDING_META := &"_pool_release_pending"
+
 @export var max_cached_per_scene: int = 128
 var _in_use: Dictionary = {}
 var _available_by_scene: Dictionary = {}
@@ -40,7 +43,8 @@ func acquire(scene: PackedScene) -> Node:
 		return null
 	_in_use[node.get_instance_id()] = key
 	node.set_meta("_pool_scene_key", key)
-	node.set_meta("_pool_is_available", false)
+	node.set_meta(POOL_AVAILABLE_META, false)
+	node.set_meta(POOL_RELEASE_PENDING_META, false)
 	node.process_mode = Node.PROCESS_MODE_INHERIT
 	if node.has_method("_on_acquired_from_pool"):
 		node.call("_on_acquired_from_pool")
@@ -52,7 +56,8 @@ func release(node: Node) -> void:
 		return
 	# Multiple hits/timeouts can schedule despawn() in the same frame. A second
 	# release must not append the same object to the available list again.
-	if bool(node.get_meta("_pool_is_available", false)):
+	if bool(node.get_meta(POOL_AVAILABLE_META, false)) \
+			or bool(node.get_meta(POOL_RELEASE_PENDING_META, false)):
 		return
 	_metrics.releases += 1
 	if node.has_method("_on_before_pooled"):
@@ -63,15 +68,43 @@ func release(node: Node) -> void:
 	if key == "":
 		node.queue_free()
 		return
-	if node.get_parent() != null:
-		node.get_parent().remove_child(node)
 	node.process_mode = Node.PROCESS_MODE_DISABLED
+	if node.get_parent() != null and _is_tree_teardown_pending(node):
+		# Scene teardown can call release() while the parent is propagating a tree
+		# notification. Godot forbids remove_child() in that window, so do not make
+		# the object acquirable until a deferred detach has actually completed.
+		node.set_meta(POOL_RELEASE_PENDING_META, true)
+		_finalize_release.call_deferred(node, key)
+		return
+	_finalize_release(node, key)
+
+func _is_tree_teardown_pending(node: Node) -> bool:
+	var ancestor: Node = node
+	while ancestor != null:
+		if ancestor.is_queued_for_deletion():
+			return true
+		ancestor = ancestor.get_parent()
+	return false
+
+func _finalize_release(node: Node, key: String) -> void:
+	if node == null or not is_instance_valid(node):
+		_metrics.discarded_invalid += 1
+		return
+	var parent := node.get_parent()
+	if parent != null:
+		parent.remove_child(node)
+	if node.get_parent() != null:
+		# A new tree mutation began before this deferred callback. Retry without
+		# publishing the still-parented node to the available list.
+		_finalize_release.call_deferred(node, key)
+		return
+	node.set_meta(POOL_RELEASE_PENDING_META, false)
 	var available: Array = _available_by_scene.get(key, [])
 	if available.size() >= maxi(max_cached_per_scene, 0):
 		_metrics.discarded_capacity += 1
 		node.queue_free()
 		return
-	node.set_meta("_pool_is_available", true)
+	node.set_meta(POOL_AVAILABLE_META, true)
 	available.append(node)
 	_available_by_scene[key] = available
 

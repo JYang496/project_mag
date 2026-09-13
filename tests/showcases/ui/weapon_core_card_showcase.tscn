@@ -1,0 +1,106 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/showcases/ui/weapon_core_card_showcase.gd" id="1_showcase"]
+
+[node name="WeaponCoreCardShowcase" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_showcase")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.025, 0.045, 0.06, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 48.0
+offset_top = 28.0
+offset_right = -48.0
+offset_bottom = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Root" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Margin/Root"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "武器核心卡 · 信息层级与标签联动"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Margin/Root"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.68, 0.74, 1)
+theme_override_font_sizes/font_size = 14
+text = "鼠标悬停核心标签，或使用右侧按钮 / 数字键 1–4，检查每个标签支持的武器"
+horizontal_alignment = 1
+
+[node name="ReviewRow" type="HBoxContainer" parent="Margin/Root"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 36
+alignment = 1
+
+[node name="CardStage" type="CenterContainer" parent="Margin/Root/ReviewRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 550)
+layout_mode = 2
+
+[node name="ReviewPanel" type="PanelContainer" parent="Margin/Root/ReviewRow"]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Margin/Root/ReviewRow/ReviewPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="Content" type="VBoxContainer" parent="Margin/Root/ReviewRow/ReviewPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Heading" type="Label" parent="Margin/Root/ReviewRow/ReviewPanel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.58, 0.18, 1)
+theme_override_font_sizes/font_size = 18
+text = "交互状态"
+
+[node name="CurrentState" type="Label" parent="Margin/Root/ReviewRow/ReviewPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+autowrap_mode = 2
+
+[node name="Divider" type="HSeparator" parent="Margin/Root/ReviewRow/ReviewPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="StateButtons" type="VBoxContainer" parent="Margin/Root/ReviewRow/ReviewPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Checklist" type="Label" parent="Margin/Root/ReviewRow/ReviewPanel/Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.64, 0.72, 0.78, 1)
+theme_override_font_sizes/font_size = 14
+text = "检查重点\n\n• 卡身不重复“武器核心 / +1 核心”\n• 标签是第一视觉焦点\n• 支持武器是第二视觉焦点\n• 标签切换不会改变卡片高度\n• 鼠标与键盘焦点结果一致"
+vertical_alignment = 2
+autowrap_mode = 2

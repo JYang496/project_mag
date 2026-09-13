@@ -26,6 +26,8 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 func open_for_weapon(target_weapon: Weapon, branch_defs: Array[WeaponBranchDefinition]) -> void:
+	if is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.has_method("is_supply_modal_open") and GlobalVariables.ui.is_supply_modal_open():
+		return
 	_weapon = target_weapon
 	_branch_ids.clear()
 	_branch_defs_cache = branch_defs.duplicate()

@@ -8,6 +8,8 @@ const KIND_WEAPON_UPGRADE: StringName = &"weapon_upgrade"
 const KIND_ECONOMY: StringName = &"economy"
 const KIND_CELL_EFFECT: StringName = &"cell_effect"
 const KIND_TASK_MODULE: StringName = &"task_module"
+const KIND_WEAPON_CORE: StringName = &"weapon_core"
+const KIND_MODULE_UPGRADE: StringName = &"module_upgrade"
 
 @export var total_chip_value : int = 0
 @export var item_id : String = ""
@@ -25,6 +27,12 @@ var target_weapon_from_level: int = 0
 var target_weapon_to_level: int = 0
 var cell_effect_id: String = ""
 var task_module_id: String = ""
+var source_id: StringName = &""
+var core_tags: Array[StringName] = []
+var core_amount: int = 1
+var target_module_from_level: int = 0
+var target_module_to_level: int = 0
+var obtain_prediction_override: Dictionary = {}
 
 func get_rarity() -> String:
 	return RARITY_UTIL.normalize(rarity)

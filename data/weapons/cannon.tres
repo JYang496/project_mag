@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="WeaponDefinition" format=3 uid="uid://bjhiu5w8gb54x"]
 
-[ext_resource type="Texture2D" path="res://asset/images/weapons/cannon2.png" id="1_icon"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/floating_modules/cannon.png" id="1_icon"]
 [ext_resource type="Script" uid="uid://cf8w6uadvmajn" path="res://data/WeaponDefinition.gd" id="3_def"]
 
 [resource]

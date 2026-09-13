@@ -1,58 +1,55 @@
 [gd_resource type="Theme" format=3 uid="uid://dmesct0ftrx2j"]
 
 [ext_resource type="FontFile" path="res://asset/fonts/fusion_pixel/fusion-pixel-12px-proportional-zh_hans.ttf" id="1_font"]
+[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu/button_normal.png" id="2_button_normal"]
+[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu/button_hover.png" id="3_button_hover"]
+[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu/button_pressed.png" id="4_button_pressed"]
+[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu/button_disabled.png" id="5_button_disabled"]
+[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu/panel.png" id="6_panel"]
 
-[sub_resource type="StyleBoxFlat" id="ButtonDisabled"]
-content_margin_left = 18.0
+[sub_resource type="StyleBoxTexture" id="ButtonDisabled"]
+content_margin_left = 52.0
 content_margin_top = 10.0
 content_margin_right = 18.0
 content_margin_bottom = 10.0
-bg_color = Color(0.018, 0.038, 0.05, 0.56)
-border_width_left = 2
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.12, 0.22, 0.26, 0.58)
+texture = ExtResource("5_button_disabled")
+texture_margin_left = 40.0
+texture_margin_top = 20.0
+texture_margin_right = 28.0
+texture_margin_bottom = 20.0
 
-[sub_resource type="StyleBoxFlat" id="ButtonHover"]
-content_margin_left = 22.0
+[sub_resource type="StyleBoxTexture" id="ButtonHover"]
+content_margin_left = 52.0
 content_margin_top = 10.0
 content_margin_right = 18.0
 content_margin_bottom = 10.0
-bg_color = Color(0.055, 0.16, 0.2, 0.96)
-border_width_left = 4
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.34, 0.78, 0.88, 1)
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
+texture = ExtResource("3_button_hover")
+texture_margin_left = 40.0
+texture_margin_top = 20.0
+texture_margin_right = 28.0
+texture_margin_bottom = 20.0
 
-[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
-content_margin_left = 18.0
+[sub_resource type="StyleBoxTexture" id="ButtonNormal"]
+content_margin_left = 52.0
 content_margin_top = 10.0
 content_margin_right = 18.0
 content_margin_bottom = 10.0
-bg_color = Color(0.025, 0.065, 0.09, 0.78)
-border_width_left = 2
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.18, 0.42, 0.52, 0.82)
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
+texture = ExtResource("2_button_normal")
+texture_margin_left = 40.0
+texture_margin_top = 20.0
+texture_margin_right = 28.0
+texture_margin_bottom = 20.0
 
-[sub_resource type="StyleBoxFlat" id="ButtonPressed"]
-content_margin_left = 22.0
+[sub_resource type="StyleBoxTexture" id="ButtonPressed"]
+content_margin_left = 52.0
 content_margin_top = 11.0
 content_margin_right = 18.0
 content_margin_bottom = 9.0
-bg_color = Color(0.025, 0.1, 0.13, 1)
-border_width_left = 4
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.44, 0.88, 0.96, 1)
+texture = ExtResource("4_button_pressed")
+texture_margin_left = 40.0
+texture_margin_top = 20.0
+texture_margin_right = 28.0
+texture_margin_bottom = 20.0
 
 [sub_resource type="StyleBoxFlat" id="CheckHover"]
 content_margin_left = 14.0
@@ -149,48 +146,38 @@ corner_radius_top_right = 2
 corner_radius_bottom_right = 2
 corner_radius_bottom_left = 2
 
-[sub_resource type="StyleBoxFlat" id="SettingsPanel"]
-bg_color = Color(0.018, 0.037, 0.052, 0.985)
-border_width_left = 2
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.26, 0.6, 0.7, 0.94)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-shadow_color = Color(0, 0, 0, 0.72)
-shadow_size = 18
-shadow_offset = Vector2(-8, 8)
+[sub_resource type="StyleBoxTexture" id="SettingsPanel"]
+texture = ExtResource("6_panel")
+texture_margin_left = 28.0
+texture_margin_top = 28.0
+texture_margin_right = 28.0
+texture_margin_bottom = 28.0
+expand_margin_left = 8.0
+expand_margin_top = 8.0
+expand_margin_right = 8.0
+expand_margin_bottom = 8.0
 
-[sub_resource type="StyleBoxFlat" id="PrimaryHover"]
-content_margin_left = 24.0
+[sub_resource type="StyleBoxTexture" id="PrimaryHover"]
+content_margin_left = 52.0
 content_margin_top = 10.0
 content_margin_right = 18.0
 content_margin_bottom = 10.0
-bg_color = Color(0.48, 0.3, 0.055, 1)
-border_width_left = 5
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(1, 0.82, 0.38, 1)
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
+texture = ExtResource("3_button_hover")
+texture_margin_left = 40.0
+texture_margin_top = 20.0
+texture_margin_right = 28.0
+texture_margin_bottom = 20.0
 
-[sub_resource type="StyleBoxFlat" id="PrimaryNormal"]
-content_margin_left = 20.0
+[sub_resource type="StyleBoxTexture" id="PrimaryNormal"]
+content_margin_left = 52.0
 content_margin_top = 10.0
 content_margin_right = 18.0
 content_margin_bottom = 10.0
-bg_color = Color(0.33, 0.2, 0.035, 0.94)
-border_width_left = 4
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.96, 0.7, 0.22, 1)
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
+texture = ExtResource("2_button_normal")
+texture_margin_left = 40.0
+texture_margin_top = 20.0
+texture_margin_right = 28.0
+texture_margin_bottom = 20.0
 
 [resource]
 default_font = ExtResource("1_font")
@@ -240,17 +227,17 @@ OptionButton/styles/pressed = SubResource("InputFocus")
 PanelContainer/styles/panel = SubResource("SettingsPanel")
 PopupMenu/styles/panel = SubResource("SettingsPanel")
 PrimaryButton/base_type = &"Button"
-PrimaryButton/colors/font_color = Color(1, 0.92, 0.72, 1)
-PrimaryButton/colors/font_focus_color = Color(1, 0.97, 0.88, 1)
-PrimaryButton/colors/font_hover_color = Color(1, 0.97, 0.88, 1)
-PrimaryButton/colors/font_pressed_color = Color(1, 0.88, 0.58, 1)
+PrimaryButton/colors/font_color = Color(0.78, 0.87, 0.91, 1)
+PrimaryButton/colors/font_focus_color = Color(0.96, 0.99, 1, 1)
+PrimaryButton/colors/font_hover_color = Color(0.96, 0.99, 1, 1)
+PrimaryButton/colors/font_pressed_color = Color(0.09, 0.16, 0.20, 1)
 PrimaryButton/font_sizes/font_size = 24
 PrimaryButton/fonts/font = ExtResource("1_font")
 PrimaryButton/styles/disabled = SubResource("ButtonDisabled")
 PrimaryButton/styles/focus = SubResource("PrimaryHover")
 PrimaryButton/styles/hover = SubResource("PrimaryHover")
 PrimaryButton/styles/normal = SubResource("PrimaryNormal")
-PrimaryButton/styles/pressed = SubResource("PrimaryNormal")
+PrimaryButton/styles/pressed = SubResource("ButtonPressed")
 SectionTitleLabel/base_type = &"Label"
 SectionTitleLabel/colors/font_color = Color(0.94, 0.98, 0.99, 1)
 SectionTitleLabel/font_sizes/font_size = 24

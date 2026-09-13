@@ -66,9 +66,13 @@ func get_definition_prepare_result() -> Dictionary:
 
 func get_definition(effect_id: String) -> CellEffectDefinition:
 	var normalized := effect_id.strip_edges()
+	if normalized != "" and _definitions_by_id.is_empty():
+		prepare_definitions()
 	return _definitions_by_id.get(normalized, null) as CellEffectDefinition
 
 func get_all_definitions() -> Array[CellEffectDefinition]:
+	if _definitions_by_id.is_empty():
+		prepare_definitions()
 	var output: Array[CellEffectDefinition] = []
 	for definition in _definitions_by_id.values():
 		if definition is CellEffectDefinition:

@@ -159,6 +159,7 @@ var upgrade_module_button: Button
 
 # Pause menu
 @onready var resume_button = $PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/Header/ResumeButton
+@onready var pause_return_to_menu_button: Button = $PauseMenuLayer/PauseMenuRoot/PauseMenuPanel/Margin/Content/Header/ReturnToMenuButton
 
 # Misc
 var branch_select_panel: BranchSelectPanel
@@ -279,6 +280,28 @@ var _warehouse_action_dirty := true
 
 # Lifecycle and bootstrap
 
+var gold_supply_controller
+var _owned_ui_pauses: Dictionary = {}
+
+func is_supply_modal_open() -> bool:
+	return gold_supply_controller != null and gold_supply_controller.active
+
+func request_settlement_gold_supply() -> bool:
+	return gold_supply_controller != null and gold_supply_controller.open_supply(true)
+
+func set_owned_pause(reason: StringName, enabled: bool) -> void:
+	if enabled and not _owned_ui_pauses.has(reason):
+		_owned_ui_pauses[reason] = PhaseManager.acquire_pause(self)
+	elif not enabled and _owned_ui_pauses.has(reason):
+		PhaseManager.release_pause(int(_owned_ui_pauses[reason]))
+		_owned_ui_pauses.erase(reason)
+
+func release_ui_pauses() -> void:
+	if gold_supply_controller != null:
+		gold_supply_controller.close_supply()
+	for reason in _owned_ui_pauses.keys():
+		set_owned_pause(reason, false)
+
 func _ready():
 	LoadingPerformance.begin_segment("ui_ready")
 	GlobalVariables.ui = self
@@ -312,6 +335,9 @@ func _ready():
 		_schedule_rest_area_purchase_prewarm()
 	elif PhaseManager.current_state() == PhaseManager.RUN_COMPLETE:
 		call_deferred("_show_run_complete")
+	gold_supply_controller = preload("res://UI/scripts/components/gold_supply_controller.gd").new()
+	add_child(gold_supply_controller)
+	gold_supply_controller.bind(self)
 	LoadingPerformance.end_segment("ui_ready")
 
 
@@ -324,10 +350,19 @@ func _init_victory_transition() -> void:
 	victory_transition = VICTORY_TRANSITION_SCENE.instantiate() as Control
 	add_child(victory_transition)
 
-func play_victory_transition(presentation_mode: StringName = &"quick", chapter: Resource = null) -> void:
+func play_victory_transition(
+	presentation_mode: StringName = &"quick",
+	chapter: Resource = null,
+	on_exit_started: Callable = Callable(),
+	on_hold_started: Callable = Callable()
+) -> void:
 	_init_victory_transition()
 	if victory_transition == null:
 		return
+	if on_exit_started.is_valid():
+		victory_transition.exit_started.connect(on_exit_started, CONNECT_ONE_SHOT)
+	if on_hold_started.is_valid():
+		victory_transition.hold_started.connect(on_hold_started, CONNECT_ONE_SHOT)
 	await victory_transition.play(presentation_mode, chapter)
 
 func _init_battle_contract_selection_panel() -> void:
@@ -402,6 +437,7 @@ func play_battle_entry_intro(is_boss: bool = false) -> void:
 		await get_tree().create_timer(0.10).timeout
 
 func _exit_tree() -> void:
+	release_ui_pauses()
 	_rest_area_purchase_prewarm_generation += 1
 	if battlefield_deployment_presenter != null:
 		battlefield_deployment_presenter.cancel()
@@ -486,7 +522,7 @@ func _init_pause_ui_controller() -> void:
 	if pause_ui_controller != null:
 		return
 	pause_ui_controller = PAUSE_UI_CONTROLLER_SCRIPT.new()
-	pause_ui_controller.bind(self, pause_menu_panel, resume_button)
+	pause_ui_controller.bind(self, pause_menu_panel, resume_button, pause_return_to_menu_button)
 
 func _init_localization_refresh_controller() -> void:
 	if localization_refresh_controller != null:
@@ -1240,6 +1276,11 @@ func _process(_delta: float) -> void:
 	# Cursor-follow visuals should run on render frames to minimize perceived mouse lag.
 	_update_spread_cursor_overlay()
 func _input(_event) -> void:
+	if gold_supply_controller != null and gold_supply_controller.handle_input(_event):
+		get_viewport().set_input_as_handled()
+		return
+	if is_supply_modal_open():
+		return
 	if battle_contract_selection_panel != null and battle_contract_selection_panel.visible \
 			and (_event.is_action_pressed("ESC") or _event.is_action_pressed("CANCEL")):
 		if bool(battle_contract_selection_panel.call("cancel")):
@@ -1400,6 +1441,8 @@ func _ensure_rest_area_view_instance() -> void:
 	_refresh_localized_static_text()
 
 func ensure_purchase_management() -> void:
+	if PlayerData.gold_supply_enabled:
+		return
 	_init_ui_bootstrap_controller()
 	var had_purchase_view := purchase_management_view != null and is_instance_valid(purchase_management_view)
 	ui_bootstrap_controller.bootstrap_purchase_management()
@@ -1421,6 +1464,8 @@ func _prewarm_purchase_for_rest_area(generation: int) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	if not _is_rest_area_purchase_prewarm_current(generation):
+		return
+	if PlayerData.gold_supply_enabled:
 		return
 	ensure_purchase_management()
 	await get_tree().process_frame
@@ -1544,7 +1589,13 @@ func _on_resume_button_pressed() -> void:
 	if get_tree().paused:
 		_set_pause_menu_open(false)
 
+func _on_pause_return_to_menu_pressed() -> void:
+	release_ui_pauses()
+	get_tree().change_scene_to_file("res://World/Start.tscn")
+
 func _set_pause_menu_open(open: bool) -> void:
+	if open and is_supply_modal_open():
+		return
 	if pause_menu_root == null or not is_instance_valid(pause_menu_root):
 		return
 	if _pause_menu_tween != null and _pause_menu_tween.is_valid():
@@ -1560,7 +1611,7 @@ func _set_pause_menu_open(open: bool) -> void:
 		pause_menu_panel.modulate.a = 0.0
 		pause_menu_panel.position.x = _pause_menu_rest_x + 28.0
 		clear_rest_area_hover_hint()
-		get_tree().paused = true
+		set_owned_pause(&"menu", true)
 		_pause_menu_tween = create_tween().set_parallel(true)
 		_pause_menu_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 		_pause_menu_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
@@ -1582,7 +1633,7 @@ func _finish_pause_menu_close(completed_tween: Tween) -> void:
 	pause_menu_panel.position.x = _pause_menu_rest_x
 	pause_menu_panel.modulate.a = 1.0
 	pause_menu_root.visible = false
-	get_tree().paused = false
+	set_owned_pause(&"menu", false)
 	_pause_menu_tween = null
 	_update_cursor_presentation()
 
@@ -1590,6 +1641,9 @@ func _finish_pause_menu_close(completed_tween: Tween) -> void:
 # Phase changes, pause state, and battle cursor
 
 func _on_phase_changed(new_phase: String) -> void:
+	if gold_supply_controller != null:
+		gold_supply_controller.close_supply()
+		gold_supply_controller.refresh()
 	if new_phase == PhaseManager.PREPARE:
 		_schedule_rest_area_purchase_prewarm()
 	else:
@@ -1675,11 +1729,11 @@ func _create_game_over_layout() -> void:
 
 
 func _on_game_over_new_game_pressed() -> void:
-	get_tree().paused = false
+	release_ui_pauses()
 	get_tree().change_scene_to_file("res://World/Start.tscn")
 
 func _on_run_complete_endless_pressed() -> void:
-	get_tree().paused = false
+	release_ui_pauses()
 	if game_over_view != null and is_instance_valid(game_over_view):
 		game_over_view.visible = false
 	PhaseManager.continue_into_endless()

@@ -53,6 +53,12 @@ const INPUT_PROMPT_TILE_STRIDE := 17
 const INPUT_PROMPT_DISPLAY_SIZE := 32.0
 const SPACE_PROMPT_DISPLAY_WIDTH := 72
 const QUICK_SELECT_HOLD_SECONDS := 0.55
+const ENTRY_FADE_DURATION := 0.15
+const ENTRY_SLIDE_DURATION := 0.50
+const ENTRY_DELAY := 0.08
+const ENTRY_REBOUND_DURATION := 0.08
+const ENTRY_OVERSHOOT := 28.0
+const ENTRY_OFFSCREEN_MARGIN := 60.0
 const DETAIL_HOVER_OPEN_SECONDS := 0.25
 const DETAIL_HOVER_CLOSE_SECONDS := 0.15
 const CARD_FONT_SIZE_BONUS := 0
@@ -346,6 +352,9 @@ func _open_rewards(
 	progress_total: int = 0,
 	show_draft_hint: bool = false
 ) -> bool:
+	if is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.has_method("is_supply_modal_open") and GlobalVariables.ui.is_supply_modal_open():
+		if reward_options.is_empty() or reward_options[0].source_id != &"gold_supply":
+			return false
 	if reward_options.is_empty():
 		return false
 	if visible:
@@ -402,11 +411,38 @@ func _open_rewards(
 	_configure_card_focus_chain()
 	_confirm_button_state()
 	visible = true
+	var victory_transition := _get_active_victory_transition()
+	if victory_transition != null and not bool(victory_transition.call("has_exit_started")):
+		modulate.a = 0.0
+		_reveal_after_victory_exit(victory_transition)
+	else:
+		_reveal_prepared_rewards()
+	return true
+
+func _get_active_victory_transition() -> Control:
+	var ui := GlobalVariables.ui
+	if ui == null or not is_instance_valid(ui):
+		return null
+	var transition = ui.get("victory_transition")
+	if transition == null or not is_instance_valid(transition):
+		return null
+	if not transition.has_method("is_playing") or not bool(transition.call("is_playing")):
+		return null
+	if not transition.has_method("has_exit_started"):
+		return null
+	return transition as Control
+
+func _reveal_after_victory_exit(victory_transition: Control) -> void:
+	await victory_transition.exit_started
+	if not visible:
+		return
+	_reveal_prepared_rewards()
+
+func _reveal_prepared_rewards() -> void:
 	_set_battle_hud_suppressed(true)
 	if options_box.get_child_count() > 0:
 		(options_box.get_child(0) as Button).grab_focus()
 	_play_entry_animation()
-	return true
 
 func _apply_unified_layout() -> void:
 	panel.offset_left = -500.0
@@ -487,12 +523,18 @@ func _play_entry_animation() -> void:
 	_kill_entry_tween()
 	modulate.a = 0.0
 	panel.pivot_offset = panel.size * 0.5
-	panel.scale = Vector2(0.96, 0.96)
-	_entry_tween = create_tween()
-	_entry_tween.set_trans(Tween.TRANS_QUAD)
-	_entry_tween.set_ease(Tween.EASE_OUT)
-	_entry_tween.parallel().tween_property(self, "modulate:a", 1.0, 0.18)
-	_entry_tween.parallel().tween_property(panel, "scale", Vector2.ONE, 0.18)
+	panel.scale = Vector2.ONE
+	var settled_position := panel.position
+	var enter_start := Vector2(-panel.size.x - ENTRY_OFFSCREEN_MARGIN, settled_position.y)
+	var overshoot := settled_position + Vector2(ENTRY_OVERSHOOT, 0.0)
+	panel.position = enter_start
+	_entry_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	_entry_tween.set_ignore_time_scale(true)
+	_entry_tween.tween_property(self, "modulate:a", 1.0, ENTRY_FADE_DURATION)
+	_entry_tween.parallel().tween_property(panel, "position", overshoot, ENTRY_SLIDE_DURATION) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).set_delay(ENTRY_DELAY)
+	_entry_tween.tween_property(panel, "position", settled_position, ENTRY_REBOUND_DURATION) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _kill_entry_tween() -> void:
 	if _entry_tween != null:
@@ -849,9 +891,11 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	button.tooltip_text = ""
 	var body := button.get_node("CardContentMargin/Body") as VBoxContainer
 	if is_weapon_core_reward:
-		body.add_child(_build_weapon_core_content(card_data))
+		var core_content := _build_weapon_core_content(card_data)
+		body.add_child(core_content)
 		_set_mouse_filter_recursive(button, Control.MOUSE_FILTER_IGNORE)
 		_clear_tooltips_recursive(button)
+		core_content.call("configure_tag_weapon_interactions", core_content.get_meta(&"core_chips", []), core_content.get_meta(&"tag_weapon_map", {}))
 		button.mouse_filter = Control.MOUSE_FILTER_STOP
 		_apply_reward_card_style(button, reward, false)
 		return button
@@ -1009,30 +1053,36 @@ func _build_weapon_core_content(card_data: Dictionary) -> VBoxContainer:
 	var resulting_count := int(card_data.get("resulting_core_count", amount))
 	var usage_lines: PackedStringArray = card_data.get("usable_branch_lines", PackedStringArray())
 	content.call("set_data", {
-		"title": LocalizationManager.tr_format("ui.reward.core.named_title", {"name": source_name}, "%s Core" % source_name),
+		"title": LocalizationManager.tr_key("ui.reward.type.weapon_core", "Weapon Core"),
 		"source_icon": _crop_reward_texture_to_content(card_data.get("source_weapon_icon", null) as Texture2D),
 		"source": LocalizationManager.tr_format("ui.reward.core.source", {"name": source_name}, "Source: %s" % source_name),
+		"show_source": source_name != "",
 		"gain": LocalizationManager.tr_format("ui.reward.core.gain", {"amount": amount}, "+%d Core" % amount),
 		"inventory": LocalizationManager.tr_format("ui.reward.core.inventory", {"current": current_count, "resulting": resulting_count}, "Inventory: %d → %d" % [current_count, resulting_count]),
 		"current_count": current_count,
 		"resulting_count": resulting_count,
 		"tag_heading": LocalizationManager.tr_key("ui.reward.core.inherited_tags", "INHERITED CORE TAGS"),
-		"usage_heading": LocalizationManager.tr_key("ui.reward.core.usable_by_label", "Usable By"),
+		"usage_heading": LocalizationManager.tr_key("ui.reward.core.usable_by_label", "Supported Weapons"),
 		"usage_lines": usage_lines,
-		"usage_summary": LocalizationManager.tr_format("ui.reward.core.usage_summary", {"count": int(card_data.get("usable_branch_count", usage_lines.size()))}, "Supports %d fusion branches" % int(card_data.get("usable_branch_count", usage_lines.size()))),
+		"usage_entries": card_data.get("usable_weapon_entries", []),
+		"usage_summary": LocalizationManager.tr_format("ui.reward.core.usage_summary", {"weapons": int(card_data.get("usable_weapon_count", usage_lines.size())), "branches": int(card_data.get("usable_branch_count", usage_lines.size()))}, "Supports %d weapons" % int(card_data.get("usable_weapon_count", usage_lines.size()))),
 		"usage_more": LocalizationManager.tr_format("ui.reward.core.more_usages", {"count": maxi(0, usage_lines.size() - 2)}, "%d more" % maxi(0, usage_lines.size() - 2)),
 		"usage_empty": LocalizationManager.tr_key("ui.reward.core.no_usable_branches", "No available fusion recipes found yet"),
 	})
-	BUILD_TAG_DISPLAY.populate_chip_row(content.call("get_chip_grid") as GridContainer, card_data.get("chips", []))
+	var chips: Array = card_data.get("chips", [])
+	BUILD_TAG_DISPLAY.populate_chip_row(content.call("get_chip_grid") as GridContainer, chips)
+	content.call("emphasize_inherited_tags")
+	content.set_meta(&"core_chips", chips)
+	content.set_meta(&"tag_weapon_map", card_data.get("tag_weapon_map", {}))
 	return content
 
 func _build_weapon_core_usage_section(card_data: Dictionary) -> VBoxContainer:
 	var usage_lines: PackedStringArray = card_data.get("usable_branch_lines", PackedStringArray())
 	var content := WEAPON_CORE_CONTENT_SCENE.instantiate() as VBoxContainer
 	content.call("set_data", {
-		"usage_heading": LocalizationManager.tr_key("ui.reward.core.usable_by_label", "Usable By"),
+		"usage_heading": LocalizationManager.tr_key("ui.reward.core.usable_by_label", "Supported Weapons"),
 		"usage_lines": usage_lines,
-		"usage_summary": LocalizationManager.tr_format("ui.reward.core.usage_summary", {"count": int(card_data.get("usable_branch_count", usage_lines.size()))}, "Supports %d fusion branches" % int(card_data.get("usable_branch_count", usage_lines.size()))),
+		"usage_summary": LocalizationManager.tr_format("ui.reward.core.usage_summary", {"weapons": int(card_data.get("usable_weapon_count", usage_lines.size())), "branches": int(card_data.get("usable_branch_count", usage_lines.size()))}, "Supports %d weapons" % int(card_data.get("usable_weapon_count", usage_lines.size()))),
 		"usage_more": LocalizationManager.tr_format("ui.reward.core.more_usages", {"count": maxi(0, usage_lines.size() - 2)}, "%d more" % maxi(0, usage_lines.size() - 2)),
 		"usage_empty": LocalizationManager.tr_key("ui.reward.core.no_usable_branches", "No available fusion recipes found yet"),
 	})

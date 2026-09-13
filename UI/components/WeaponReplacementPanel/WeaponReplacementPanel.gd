@@ -25,6 +25,7 @@ const NEUTRAL_COLOR := Color(0.66, 0.74, 0.78, 1.0)
 @onready var footer: HBoxContainer = $Margin/Root/Footer
 @onready var cancel_button: Button = $Margin/Root/Footer/Cancel
 
+var _selection_only := false
 var _new_weapon: Weapon
 var _allow_cancel := true
 var _on_complete := Callable()
@@ -57,19 +58,26 @@ func _input(event: InputEvent) -> void:
 func open_for_weapon(
 	new_weapon: Weapon,
 	allow_cancel: bool = true,
-	on_complete: Callable = Callable()
+	on_complete: Callable = Callable(),
+	selection_only: bool = false
 ) -> bool:
+	if not selection_only and is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.has_method("is_supply_modal_open") and GlobalVariables.ui.is_supply_modal_open():
+		return false
 	if new_weapon == null or not is_instance_valid(new_weapon):
 		return false
+	if visible:
+		return false
+	_selection_only = selection_only
 	_new_weapon = new_weapon
 	_allow_cancel = allow_cancel
 	_on_complete = on_complete
-	InventoryData.begin_pending_transaction({
-		"id": "weapon_replacement",
-		"type": "weapon_replacement",
-		"weapon": DataHandler.build_weapon_save_payload(new_weapon),
-		"allow_cancel": allow_cancel,
-	})
+	if not _selection_only:
+		InventoryData.begin_pending_transaction({
+			"id": "weapon_replacement",
+			"type": "weapon_replacement",
+			"weapon": DataHandler.build_weapon_save_payload(new_weapon),
+			"allow_cancel": allow_cancel,
+		})
 	title_label.text = LocalizationManager.tr_key("ui.weapon.replace.install_title", "Install Weapon")
 	description_label.text = LocalizationManager.tr_key(
 		"ui.weapon.replace.consequence_hint",
@@ -78,6 +86,7 @@ func open_for_weapon(
 	description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
 	cancel_button.visible = _allow_cancel
+	_store_button.visible = not _selection_only
 	_store_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.store", "Store in Warehouse")
 	_selected_slot_index = -1
 	_selected_old_weapon = null
@@ -300,6 +309,13 @@ func _slot_accent_for_button(button: Button) -> Color:
 	return _get_weapon_color(PlayerData.player_weapon_list[slot_index] as Weapon)
 
 func _on_confirm_selected() -> void:
+	if not visible:
+		return
+	if _selection_only and _selected_slot_index >= 0:
+		_new_weapon.queue_free()
+		_new_weapon = null
+		_complete(true, {"slot": _selected_slot_index})
+		return
 	if _selected_slot_index < 0:
 		return
 	if _selected_old_weapon == null:
@@ -352,8 +368,16 @@ func cancel_visible_modal() -> bool:
 
 func _complete(accepted: bool, result: Dictionary) -> void:
 	visible = false
-	InventoryData.finish_pending_transaction("weapon_replacement")
+	if not _selection_only:
+		InventoryData.finish_pending_transaction("weapon_replacement")
+	_selection_only = false
 	if _on_complete.is_valid():
 		_on_complete.call_deferred(accepted, result)
 	_on_complete = Callable()
 	PhaseManager.request_settlement_completion_check()
+
+func dismiss_selection() -> void:
+	if not _selection_only:
+		return
+	_on_complete = Callable()
+	_on_cancel_pressed()

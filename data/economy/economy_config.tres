@@ -16,3 +16,9 @@ early_weapon_progress_slot_enabled = true
 early_module_option_chances = PackedFloat32Array(0, 0.2, -1)
 early_economy_option_enabled = false
 early_allow_fallback_economy = true
+
+gold_supply_enabled = true
+gold_supply_thresholds = PackedInt32Array(18, 26, 36, 82, 84, 88, 92, 94, 98)
+gold_supply_progress_weight = 0.5
+gold_supply_core_weight = 0.3
+gold_supply_expansion_weight = 0.2

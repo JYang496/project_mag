@@ -38,7 +38,15 @@ func set_layout_controller(ui_layout_controller: UiLayoutController) -> void:
 	layout_controller = ui_layout_controller
 
 func get_registered_service_menu_ids() -> Array[StringName]:
-	return SERVICE_MENU_IDS.duplicate()
+	var ids := SERVICE_MENU_IDS.duplicate()
+	if PlayerData.gold_supply_enabled:
+		ids.erase(&"purchase")
+	return ids
+
+func _secondary_service_menu_ids() -> Array[StringName]:
+	if PlayerData.gold_supply_enabled:
+		return [&"upgrade", &"warehouse"]
+	return SECONDARY_SERVICE_MENU_IDS
 
 func get_service_primary_root(menu_id: StringName) -> Control:
 	return _get_primary_root(menu_id)
@@ -78,6 +86,9 @@ func open_menu(menu_id: StringName) -> void:
 	if _menu_transition_locked and active:
 		return
 	menu_id = _normalize_menu_id(menu_id)
+	if menu_id == &"purchase" and PlayerData.gold_supply_enabled:
+		owner_ui.show_item_message(LocalizationManager.tr_key("ui.workbench.shop_disabled", "Shops are unavailable in Gold Supply mode."), 1.8)
+		return
 	if menu_id == &"purchase" and not PhaseManager.is_full_shop_open():
 		owner_ui.show_item_message(LocalizationManager.tr_key("ui.shop.closed_until_cycle", "Full shop opens after every third battle."), 1.8)
 		return
@@ -97,11 +108,12 @@ func switch_service(direction: int) -> bool:
 	if reason != "":
 		owner_ui.show_item_message(reason, 1.8)
 		return true
-	var current_index := SECONDARY_SERVICE_MENU_IDS.find(_normalize_menu_id(primary_menu_id))
+	var service_ids := _secondary_service_menu_ids()
+	var current_index := service_ids.find(_normalize_menu_id(primary_menu_id))
 	if current_index < 0:
 		return false
-	var target_id := SECONDARY_SERVICE_MENU_IDS[posmod(
-		current_index + signi(direction), SECONDARY_SERVICE_MENU_IDS.size()
+	var target_id := service_ids[posmod(
+		current_index + signi(direction), service_ids.size()
 	)]
 	if target_id == &"purchase" and not PhaseManager.is_full_shop_open():
 		owner_ui.show_item_message(LocalizationManager.tr_key("ui.shop.closed_until_cycle", "Full shop opens after every third battle."), 1.8)
@@ -186,23 +198,24 @@ func _refresh_service_navigation_headers() -> void:
 	for child in _service_navigation_content.get_children():
 		child.queue_free()
 	_service_navigation_content.add_child(_make_navigation_key_icon(KEY_Q_PROMPT_COORD, "Q"))
-	for index in range(SECONDARY_SERVICE_MENU_IDS.size()):
-		var menu_id := SECONDARY_SERVICE_MENU_IDS[index]
+	var service_ids := _secondary_service_menu_ids()
+	for index in range(service_ids.size()):
+		var menu_id := service_ids[index]
 		_service_navigation_content.add_child(_make_navigation_label(
 			_service_display_name(menu_id),
 			menu_id == _normalize_menu_id(primary_menu_id)
 		))
-		if index < SECONDARY_SERVICE_MENU_IDS.size() - 1:
+		if index < service_ids.size() - 1:
 			_service_navigation_content.add_child(_make_navigation_label("/", false))
 	_service_navigation_content.add_child(_make_navigation_key_icon(KEY_E_PROMPT_COORD, "E"))
 
 func is_secondary_service_navigation_active() -> bool:
 	return active and is_secondary_menu_open() \
-			and SECONDARY_SERVICE_MENU_IDS.has(_normalize_menu_id(primary_menu_id)) \
+			and _secondary_service_menu_ids().has(_normalize_menu_id(primary_menu_id)) \
 			and get_secondary_menu_context() == _normalize_menu_id(primary_menu_id)
 
 func _get_secondary_navigation_host() -> Control:
-	if not SECONDARY_SERVICE_MENU_IDS.has(_normalize_menu_id(primary_menu_id)):
+	if not _secondary_service_menu_ids().has(_normalize_menu_id(primary_menu_id)):
 		return null
 	var root := _get_management_root(primary_menu_id)
 	if root == null or not is_instance_valid(root) or not root.visible:
@@ -319,10 +332,15 @@ func warehouse_back_to_purchase() -> void:
 		_show_primary_menu(&"purchase", owner_ui.purchase_primary_root, owner_ui.purchase_primary_panel)
 
 func reset_purchase_refresh_cost() -> void:
+	if PlayerData.gold_supply_enabled:
+		return
 	owner_ui.reset_cost.emit()
 	refresh_shop_items_for_prepare()
 
 func refresh_shop_items_for_prepare() -> void:
+	if PlayerData.gold_supply_enabled:
+		owner_ui._purchase_prepare_refresh_pending = false
+		return
 	if owner_ui.management_shell_view == null or owner_ui.purchase_panel == null:
 		owner_ui._purchase_prepare_refresh_pending = true
 		owner_ui._mark_shop_purchase_action_dirty()
@@ -390,6 +408,9 @@ func close_module_management_ui() -> void:
 	_sync_public_fields_to_owner()
 
 func open_purchase_weapon_panel() -> void:
+	if PlayerData.gold_supply_enabled:
+		owner_ui.show_item_message(LocalizationManager.tr_key("ui.workbench.shop_disabled", "Shops are unavailable in Gold Supply mode."), 1.8)
+		return
 	if not PhaseManager.is_full_shop_open():
 		owner_ui.show_item_message(LocalizationManager.tr_key("ui.shop.closed_until_cycle", "Full shop opens after every third battle."), 1.8)
 		return
@@ -407,6 +428,9 @@ func open_purchase_weapon_panel() -> void:
 	_menu_transition_locked = false
 
 func open_purchase_module_panel() -> void:
+	if PlayerData.gold_supply_enabled:
+		owner_ui.show_item_message(LocalizationManager.tr_key("ui.workbench.shop_disabled", "Shops are unavailable in Gold Supply mode."), 1.8)
+		return
 	if not PhaseManager.is_full_shop_open():
 		owner_ui.show_item_message(LocalizationManager.tr_key("ui.shop.closed_until_cycle", "Full shop opens after every third battle."), 1.8)
 		return

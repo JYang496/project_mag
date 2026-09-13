@@ -25,7 +25,7 @@ var _ground_telegraph: Node2D
 
 func begin(enemy: Node2D, duration_override: float = -1.0) -> void:
 	_enemy = enemy
-	process_mode = Node.PROCESS_MODE_ALWAYS
+	process_mode = Node.PROCESS_MODE_PAUSABLE
 	_duration = _resolve_duration(duration_override)
 	_telegraph_duration = _duration * TELEGRAPH_RATIO
 	_body = enemy.get_node_or_null("Body") as CanvasItem

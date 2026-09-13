@@ -72,7 +72,10 @@ func get_unit_billboard_config() -> Dictionary:
 			# Orbit layering is semantic: weapons above the player are behind, while
 			# weapons below the player are in front. Horizontal orbit movement must
 			# never change that relationship under an oblique camera projection.
-			var is_behind_owner := unit_owner.position.y < 0.0
+			var is_behind_owner := bool(unit_owner.get_meta(
+				&"orbit_behind_owner",
+				unit_owner.position.y < 0.0
+			))
 			var depth_local_y := owner_ground_y + (-ORBIT_DEPTH_SEPARATION_PX if is_behind_owner else ORBIT_DEPTH_SEPARATION_PX)
 			depth_anchor_world = orbit_owner.global_transform * Vector2(0.0, depth_local_y)
 			projected_position_offset = \

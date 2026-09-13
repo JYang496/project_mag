@@ -1,15 +1,17 @@
 extends Control
 
 signal finished
+signal exit_started
+signal hold_started
 
 const BANNER_HEIGHT := 168.0
 const FADE_IN_DURATION := 0.15
 const SLIDE_IN_DURATION := 0.22
 const REBOUND_DURATION := 0.08
-const HOLD_DURATION := 0.75
+const HOLD_DURATION := 0.38
 const WINDUP_DURATION := 0.05
-const SLIDE_OUT_DURATION := 0.25
-const FADE_OUT_DURATION := 0.22
+const SLIDE_OUT_DURATION := 0.55
+const FADE_OUT_DURATION := 0.46
 
 var _banner: ColorRect
 var _title_group: VBoxContainer
@@ -17,6 +19,7 @@ var _title: Label
 var _playing := false
 var _tween: Tween
 var _presentation_mode: StringName = &"quick"
+var _exit_has_started := false
 
 func _ready() -> void:
 	_banner = %Banner
@@ -30,8 +33,10 @@ func play(presentation_mode: StringName = &"quick", _chapter: Resource = null) -
 		await finished
 		return
 	_playing = true
+	_exit_has_started = false
 	_presentation_mode = presentation_mode
 	visible = true
+	mouse_filter = Control.MOUSE_FILTER_STOP
 	_refresh_text()
 	await get_tree().process_frame
 	var viewport_size := get_viewport_rect().size
@@ -66,7 +71,9 @@ func play(presentation_mode: StringName = &"quick", _chapter: Resource = null) -
 	_tween.parallel().tween_property(_title_group, "position", overshoot, slide_in).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT).set_delay(float(timing.enter_delay))
 	_tween.parallel().tween_property(_title_group, "scale", Vector2.ONE, slide_in).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT).set_delay(float(timing.enter_delay))
 	_tween.tween_property(_title_group, "position", centered, float(timing.rebound)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween.tween_callback(hold_started.emit)
 	_tween.tween_interval(hold)
+	_tween.tween_callback(_begin_exit)
 	_tween.tween_property(_title_group, "position", centered - Vector2(10.0, 0.0), float(timing.windup))
 	_tween.tween_property(_title_group, "position", exit_end, slide_out).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 	_tween.parallel().tween_property(_banner, "modulate:a", 0.0, fade_out).set_delay(float(timing.exit_fade_delay))
@@ -78,6 +85,14 @@ func play(presentation_mode: StringName = &"quick", _chapter: Resource = null) -
 
 func is_playing() -> bool:
 	return _playing
+
+func has_exit_started() -> bool:
+	return _exit_has_started
+
+func _begin_exit() -> void:
+	_exit_has_started = true
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	exit_started.emit()
 
 static func animation_timing_for(_presentation_mode: StringName) -> Dictionary:
 	return {

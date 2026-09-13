@@ -39,8 +39,6 @@ func _on_phase_changed(new_phase: String) -> void:
 
 func _request_completed_battle_standard_draft() -> void:
 	await get_tree().process_frame
-	await get_tree().process_frame
-	await get_tree().process_frame
 	_open_completed_battle_standard_draft_if_ready()
 
 func _open_completed_battle_standard_draft_if_ready() -> void:
@@ -48,7 +46,16 @@ func _open_completed_battle_standard_draft_if_ready() -> void:
 		RewardDraftRuntime.clear_standard_draft_opening()
 		return
 	if PhaseManager.is_post_battle_collect_gate_active():
-		_retry_completed_battle_standard_draft_after_collect_gate()
+		await PhaseManager.post_battle_collect_gate_changed
+		if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
+			return
+		call_deferred("_open_completed_battle_standard_draft_if_ready")
+		return
+	if PhaseManager.is_settlement_reward_gate_active():
+		await PhaseManager.settlement_reward_gate_changed
+		if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
+			return
+		call_deferred("_open_completed_battle_standard_draft_if_ready")
 		return
 	if TaskRewardManager.is_task_reward_blocking_interactions():
 		_retry_completed_battle_standard_draft_after_task_reward()
@@ -58,12 +65,6 @@ func _open_completed_battle_standard_draft_if_ready() -> void:
 
 func _retry_completed_battle_standard_draft_after_task_reward() -> void:
 	await TaskRewardManager.pending_reward_changed
-	if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
-		return
-	call_deferred("_open_completed_battle_standard_draft_if_ready")
-
-func _retry_completed_battle_standard_draft_after_collect_gate() -> void:
-	await PhaseManager.post_battle_collect_gate_changed
 	if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
 		return
 	call_deferred("_open_completed_battle_standard_draft_if_ready")

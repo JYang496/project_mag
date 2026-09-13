@@ -9,6 +9,9 @@ class_name EnemySpikeProjectile
 
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var sprite: Sprite2D = $Sprite2D
+@onready var outline_sprite: Sprite2D = $OutlineSprite
+
+var _trail_sprites: Array[Sprite2D] = []
 
 var direction: Vector2 = Vector2.RIGHT
 var source_enemy: Node
@@ -22,17 +25,29 @@ func _ready() -> void:
 		var circle := collision_shape.shape as CircleShape2D
 		circle.radius = maxf(radius, 2.0)
 	rotation = direction.angle() + deg_to_rad(90.0)
+	for child in get_children():
+		if child is Sprite2D and String(child.name).begins_with("Trail"):
+			_trail_sprites.append(child as Sprite2D)
+	_sync_directional_visuals()
 
 func on_shield_blocked(_shield: Area2D) -> void:
 	queue_free()
 
 func _physics_process(delta: float) -> void:
-	if sprite != null and sprite.has_method("set_world_direction"):
-		sprite.call("set_world_direction", direction)
+	_sync_directional_visuals()
 	global_position += direction * speed * maxf(delta, 0.0)
 	_life_remaining -= maxf(delta, 0.0)
 	if _life_remaining <= 0.0:
 		queue_free()
+
+func _sync_directional_visuals() -> void:
+	if sprite != null and sprite.has_method("set_world_direction"):
+		sprite.call("set_world_direction", direction)
+	if outline_sprite != null and outline_sprite.has_method("set_world_direction"):
+		outline_sprite.call("set_world_direction", direction)
+	for trail_sprite in _trail_sprites:
+		if trail_sprite != null and trail_sprite.has_method("set_world_direction"):
+			trail_sprite.call("set_world_direction", direction)
 
 func _on_area_entered(area: Area2D) -> void:
 	if not (area is HurtBox):

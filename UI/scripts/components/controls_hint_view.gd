@@ -669,6 +669,9 @@ func _set_key_prompt(container: HBoxContainer, key_text: String, action_id: Stri
 	if not _using_gamepad and action_id == &"skill":
 		_append_space_prompt(container)
 		return
+	if not _using_gamepad and action_id == &"weapon_skill":
+		_append_number_range_prompt(container, 1, 4)
+		return
 	if normalized.to_upper() in ["LMB", "RMB"] \
 			or normalized in ["鼠标左键", "左键", "鼠标右键", "右键", "空格"]:
 		_append_prompt_token(container, normalized)
@@ -685,6 +688,12 @@ func _set_key_prompt(container: HBoxContainer, key_text: String, action_id: Stri
 	if added_icon:
 		return
 	container.add_child(_make_prompt_fallback_label(normalized))
+
+
+func _append_number_range_prompt(container: HBoxContainer, first_number: int, last_number: int) -> void:
+	container.add_child(_make_input_prompt_icon(_keyboard_prompt_coord(str(first_number)), str(first_number)))
+	container.add_child(_make_prompt_fallback_label("–", false))
+	container.add_child(_make_input_prompt_icon(_keyboard_prompt_coord(str(last_number)), str(last_number)))
 
 func _make_input_prompt_icon(coord: Vector2i, accessible_name: String) -> TextureRect:
 	var texture := AtlasTexture.new()

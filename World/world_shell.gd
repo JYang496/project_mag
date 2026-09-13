@@ -24,6 +24,9 @@ var world_build_complete := false
 
 
 func _enter_tree() -> void:
+	# Weapon nodes belong to the outgoing player scene. Never expose their stale
+	# object references while this shell builds RestArea before the new player.
+	PlayerData.clear_weapon_runtime_references()
 	LoadingPerformance.mark("world_tree_entered")
 
 
@@ -133,3 +136,7 @@ func _build_world_services() -> void:
 	var enemy_spawner := ENEMY_SPAWNER_SCENE.instantiate() as EnemySpawner
 	enemy_spawner.name = "EnemySpawner"
 	add_child(enemy_spawner)
+
+
+func _exit_tree() -> void:
+	LoadingPerformance.cancel_world_preview_handoff()

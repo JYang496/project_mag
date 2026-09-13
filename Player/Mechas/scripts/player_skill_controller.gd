@@ -30,6 +30,8 @@ func setup_default_active_skill() -> void:
 	_player.active_skill_holder.add_child(skill_instance)
 
 func try_cast_player_active_skill() -> void:
+	if LoadingPerformance.is_world_input_locked():
+		return
 	if _player == null or not is_instance_valid(_player):
 		return
 	if PhaseManager != null and PhaseManager.has_method("current_state"):

@@ -54,12 +54,16 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 func open_for_module(module_instance: Module, on_complete: Callable = Callable(), allow_reward_transaction: bool = false) -> bool:
+	if is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.has_method("is_supply_modal_open") and GlobalVariables.ui.is_supply_modal_open():
+		return false
 	if module_instance == null or not is_instance_valid(module_instance):
 		return false
 	var modules: Array[Module] = [module_instance]
 	return open_for_modules(modules, Callable(), on_complete, allow_reward_transaction)
 
 func open_for_modules(module_instances: Array[Module], on_item_complete: Callable = Callable(), on_complete: Callable = Callable(), allow_reward_transaction: bool = false) -> bool:
+	if is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.has_method("is_supply_modal_open") and GlobalVariables.ui.is_supply_modal_open():
+		return false
 	if visible:
 		return false
 	_module_instances.clear()

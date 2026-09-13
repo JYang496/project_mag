@@ -85,10 +85,16 @@ func refresh(allow_deployment_handoff: bool = false) -> void:
 			var total_batches := maxi(int(snapshot.get("total_batches", 1)), 1)
 			var killed_hp := maxi(int(snapshot.get("killed_hp", 0)), 0)
 			var planned_hp := maxi(int(snapshot.get("planned_hp", 0)), 1)
+			var spawned_hp := maxi(int(snapshot.get("spawned_hp", 0)), 0)
+			var active := maxi(int(snapshot.get("active_enemies", snapshot.get("remaining_enemies", 0))), 0)
+			var queued := maxi(int(snapshot.get("queued_enemies", 0)), 0)
+			var progress_ratio := clampf(float(killed_hp) / float(maxi(planned_hp, spawned_hp)), 0.0, 1.0)
+			if active > 0 or queued > 0:
+				progress_ratio = minf(progress_ratio, 0.99)
 			value.text = _format_elimination_status(snapshot, current_batch, total_batches)
 			detail.text = LocalizationManager.tr_key("battle_contract.hud.elimination.detail", "Eliminate all deployed targets")
 			progress.visible = true
-			progress.call("set_target_value", clampf(float(killed_hp) / float(planned_hp), 0.0, 1.0))
+			progress.call("set_target_value", progress_ratio)
 			_set_progress_color(Color("c94f5a"))
 		"survival":
 			var remaining := float(snapshot.get("remaining_sec", 0.0))
@@ -187,10 +193,12 @@ func _format_elimination_status(snapshot: Dictionary, current_batch: int, total_
 	var queued := maxi(int(snapshot.get("queued_enemies", 0)), 0)
 	var kills := maxi(int(snapshot.get("kills", 0)), 0)
 	var planned := maxi(int(snapshot.get("planned_enemies", 0)), 0)
-	if planned > 0:
+	var spawned := maxi(int(snapshot.get("spawned", 0)), 0)
+	var display_total := maxi(planned, maxi(spawned + queued, kills + active + queued))
+	if display_total > 0:
 		return LocalizationManager.tr_format(
 			"battle_contract.hud.elimination.progress",
-			{"kills": mini(kills, planned), "total": planned, "active": active, "current": current_batch, "batches": total_batches},
+			{"kills": kills, "total": display_total, "active": active, "current": current_batch, "batches": total_batches},
 			"Kills {kills}/{total} · Active {active} · Intensity {current}/{batches}"
 		)
 	if queued > 0:

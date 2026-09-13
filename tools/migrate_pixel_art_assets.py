@@ -92,13 +92,7 @@ DEPRECATED_ENEMY_PATHS = [
     "asset/images/enemies/elite.png",
 ]
 
-RESTORED_SOURCES = [
-    {
-        "path": "asset/images/characters/ranger_drone.png",
-        "git_source": "0bb6867",
-        "reason": "Runtime reference existed while only the .import sidecar remained.",
-    },
-]
+RESTORED_SOURCES = []
 
 def _image_size(path: Path) -> tuple[int, int]:
     with Image.open(path) as image:

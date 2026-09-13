@@ -31,13 +31,14 @@ func get_standard_draft_stage_rules(economy_config: EconomyConfig = null) -> Dic
 	var module_chance := normal_module_chance
 	if is_early:
 		module_chance = economy.get_early_module_option_chance(draft_index)
+	var supply_mode := PlayerData.gold_supply_enabled
 	return {
 		"draft_index": draft_index,
 		"is_early": is_early,
 		"reserve_weapon_progress_slot": is_early and economy.early_weapon_progress_slot_enabled,
 		"module_option_chance": clampf(module_chance, 0.0, 1.0),
-		"normal_economy_enabled": economy.early_economy_option_enabled if is_early else true,
-		"allow_fallback_economy": economy.early_allow_fallback_economy if is_early else true,
+		"normal_economy_enabled": false if supply_mode else (economy.early_economy_option_enabled if is_early else true),
+		"allow_fallback_economy": false if supply_mode else (economy.early_allow_fallback_economy if is_early else true),
 	}
 
 func set_pending_standard_draft(options: Array[RewardInfo], context: Dictionary = {}) -> void:

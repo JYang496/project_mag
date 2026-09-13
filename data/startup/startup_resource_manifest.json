@@ -49,7 +49,6 @@
         "res://data/mechas/Collector.tres",
         "res://data/mechas/HeavyAssault.tres",
         "res://data/mechas/Melee.tres",
-        "res://data/mechas/Ranger.tres",
         "res://data/mechas/Turret.tres"
       ]
     },

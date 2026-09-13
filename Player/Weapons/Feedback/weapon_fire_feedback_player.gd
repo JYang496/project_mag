@@ -109,6 +109,9 @@ func _spawn_muzzle_flash(profile: Resource, direction: Vector2) -> void:
 		visual_direction = hybrid_view.call("world_vector_to_screen", direction, muzzle_position) as Vector2
 		if visual_direction != Vector2.ZERO:
 			visual_direction = visual_direction.normalized()
+	var module_sprite := weapon.get("sprite") as Node2D
+	if module_sprite != null and module_sprite.has_method("get_visual_muzzle_canvas_position"):
+		visual_position = module_sprite.call("get_visual_muzzle_canvas_position") as Vector2
 	var service := MuzzleFlashVfxServiceType.ensure(tree)
 	if service != null:
 		var signature := {
@@ -146,6 +149,9 @@ func _play_recoil(profile: Resource, direction: Vector2) -> void:
 	if recoil_distance <= 0.0 and is_zero_approx(recoil_rotation_deg):
 		return
 	var sprite := weapon.get("sprite") as Node2D
+	var blade_sprite := weapon.get_node_or_null("BladeAnchor/BladeSprite") as Node2D
+	if sprite != null and not sprite.visible and blade_sprite != null:
+		sprite = blade_sprite
 	_play_node_recoil(sprite, true, profile, direction)
 	var fuse_holder := weapon.get("fuse_sprite_holder") as Node2D
 	if fuse_holder != null:

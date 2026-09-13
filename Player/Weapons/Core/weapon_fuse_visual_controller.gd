@@ -11,6 +11,9 @@ func apply_fuse_sprite() -> void:
 	if weapon == null or weapon.sprite == null:
 		return
 	var tex: Texture2D = fuse_sprites.get(weapon.fuse, fuse_sprites.get(1))
+	var base_texture: Texture2D = fuse_sprites.get(1)
+	if base_texture != null and base_texture.resource_path.contains("/floating_modules/"):
+		tex = base_texture
 	if tex:
 		weapon.sprite.texture = tex
 		var blade_sprite_node := weapon.get_node_or_null("BladeAnchor/BladeSprite")

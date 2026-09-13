@@ -193,7 +193,7 @@ func _pick_weighted_candidate(candidate_ids: Array[String]) -> String:
 	
 
 func refresh_affordability(_value: int = 0) -> void:
-	purchasable = item_id != null and PlayerData.player_gold >= price
+	purchasable = not PlayerData.gold_supply_enabled and item_id != null and PlayerData.player_gold >= price
 	price_label.set(
 		"theme_override_colors/font_color",
 		Color(1.0, 1.0, 1.0, 1.0) if purchasable else Color(1.0, 0.0, 0.0, 1.0)
@@ -224,9 +224,11 @@ func _on_background_gui_input(event: InputEvent) -> void:
 		_notify_shop_selected()
 
 func can_purchase() -> bool:
-	return item_id != null and purchasable
+	return not PlayerData.gold_supply_enabled and item_id != null and purchasable
 
 func try_purchase() -> bool:
+	if PlayerData.gold_supply_enabled:
+		return false
 	if not PhaseManager.can_configure_loadout():
 		return false
 	if item_id == null:

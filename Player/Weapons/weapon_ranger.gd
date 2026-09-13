@@ -246,7 +246,8 @@ func _adjust_sprite_height() -> void:
 	var tex_height := float(sprite.texture.get_height())
 	if tex_height <= 0.0:
 		return
-	var scale_factor := SPRITE_TARGET_HEIGHT / tex_height
+	var is_floating_module := sprite.texture.resource_path.contains("/floating_modules/")
+	var scale_factor := 1.0 if is_floating_module else SPRITE_TARGET_HEIGHT / tex_height
 	sprite.scale = Vector2(scale_factor, scale_factor)
 
 func _on_fuse_texture_changed() -> void:

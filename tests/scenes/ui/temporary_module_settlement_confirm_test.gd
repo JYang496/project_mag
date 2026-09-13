@@ -14,6 +14,9 @@ func _ready() -> void:
 
 func _run() -> void:
 	PlayerData.reset_runtime_state()
+	# This regression owns the legacy shop-mode confirmation path. Gold Supply
+	# deliberately preserves temporary modules without opening this dialog.
+	PlayerData.gold_supply_enabled = false
 	InventoryData.reset_runtime_state()
 	PhaseManager.reset_runtime_state()
 

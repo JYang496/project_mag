@@ -17,9 +17,61 @@ monitorable = true
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture_filter = 1
 texture = ExtResource("2_tex")
+modulate = Color(1, 0.72, 0.42, 1)
 script = ExtResource("3_billboard")
 mode = 1
-extra_scale = Vector2(4, 4)
+extra_scale = Vector2(7, 4)
+directional_forward_degrees = -90.0
+depth_sort_step_pixels = 24.0
+depth_sort_offset = 4
+
+[node name="OutlineSprite" type="Sprite2D" parent="."]
+show_behind_parent = true
+texture_filter = 1
+texture = ExtResource("2_tex")
+modulate = Color(0.282353, 0.0941176, 0.129412, 0.95)
+script = ExtResource("3_billboard")
+mode = 1
+extra_scale = Vector2(10, 5.5)
+directional_forward_degrees = -90.0
+depth_sort_step_pixels = 24.0
+depth_sort_offset = 3
+
+[node name="Trail1" type="Sprite2D" parent="."]
+position = Vector2(0, 8)
+show_behind_parent = true
+texture_filter = 1
+texture = ExtResource("2_tex")
+modulate = Color(1, 0.301961, 0.368627, 0.48)
+script = ExtResource("3_billboard")
+mode = 1
+extra_scale = Vector2(6, 3)
+directional_forward_degrees = -90.0
+depth_sort_step_pixels = 24.0
+depth_sort_offset = 2
+
+[node name="Trail2" type="Sprite2D" parent="."]
+position = Vector2(0, 16)
+show_behind_parent = true
+texture_filter = 1
+texture = ExtResource("2_tex")
+modulate = Color(1, 0.301961, 0.368627, 0.28)
+script = ExtResource("3_billboard")
+mode = 1
+extra_scale = Vector2(5, 2.5)
+directional_forward_degrees = -90.0
+depth_sort_step_pixels = 24.0
+depth_sort_offset = 1
+
+[node name="Trail3" type="Sprite2D" parent="."]
+position = Vector2(0, 25)
+show_behind_parent = true
+texture_filter = 1
+texture = ExtResource("2_tex")
+modulate = Color(0.282353, 0.0941176, 0.129412, 0.16)
+script = ExtResource("3_billboard")
+mode = 1
+extra_scale = Vector2(4, 2)
 directional_forward_degrees = -90.0
 depth_sort_step_pixels = 24.0
 

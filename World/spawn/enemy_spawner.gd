@@ -1309,10 +1309,20 @@ func finish_battle_with_victory(level_index: int = -1, effective_time_out: int =
 		var progression: Resource = PhaseManager.get_progression_profile()
 		var presentation: StringName = progression.get_settlement_type_for_completed_level(level_index)
 		var chapter: Resource = progression.get_chapter_for_level(level_index)
-		await ui.call("play_victory_transition", presentation, chapter)
+		await ui.call(
+			"play_victory_transition",
+			presentation,
+			chapter,
+			Callable(),
+			Callable(self, "_prepare_settlement_during_victory_hold")
+		)
 	if PhaseManager.current_state() == PhaseManager.BATTLE:
 		PhaseManager.enter_settlement()
 	_battle_victory_transition_active = false
+
+func _prepare_settlement_during_victory_hold() -> void:
+	if PhaseManager.current_state() == PhaseManager.BATTLE:
+		PhaseManager.enter_settlement()
 
 func _calculate_pressure_budget_total(release_duration_sec: int) -> float:
 	_init_spawn_budget_runtime()

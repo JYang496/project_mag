@@ -66,11 +66,11 @@ theme_override_font_sizes/font_size = 19
 horizontal_alignment = 1
 
 [node name="WeaponCoreIconStage" type="CenterContainer" parent="WeaponCoreAcquisitionSection"]
-custom_minimum_size = Vector2(0, 76)
+custom_minimum_size = Vector2(0, 66)
 layout_mode = 2
 
 [node name="WeaponCoreMaterialIcon" type="Control" parent="WeaponCoreAcquisitionSection/WeaponCoreIconStage"]
-custom_minimum_size = Vector2(104, 72)
+custom_minimum_size = Vector2(96, 62)
 layout_mode = 2
 mouse_filter = 2
 
@@ -116,7 +116,7 @@ grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.79, 0.32, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 16
 text = "◆"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -163,27 +163,27 @@ max_lines_visible = 2
 
 [node name="WeaponCoreInheritanceSection" type="VBoxContainer" parent="."]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 8
 
 [node name="CoreTagHeading" type="Label" parent="WeaponCoreInheritanceSection"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 15
 
 [node name="BuildChipRow" type="GridContainer" parent="WeaponCoreInheritanceSection"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_constants/h_separation = 5
-theme_override_constants/v_separation = 4
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 10
 columns = 2
 
 [node name="WeaponCoreUsagePanel" type="PanelContainer" parent="."]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 10
+size_flags_vertical = 0
 theme_override_styles/panel = SubResource("UsageStyle")
 
 [node name="WeaponCoreUsageSection" type="VBoxContainer" parent="WeaponCoreUsagePanel"]
@@ -195,6 +195,7 @@ layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="WeaponCoreUsageIcon" type="Label" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection/WeaponCoreUsageHeadingRow"]
+visible = false
 custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.94, 0.58, 0.18, 1)
@@ -207,14 +208,23 @@ vertical_alignment = 1
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.64, 0.7, 0.76, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 13
 vertical_alignment = 1
 
 [node name="WeaponCoreUsageSummary" type="Label" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.94, 0.58, 0.18, 1)
 theme_override_font_sizes/font_size = 13
+
+[node name="WeaponCoreSupportedWeaponGrid" type="GridContainer" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 5
+columns = 2
 
 [node name="WeaponCoreUsageLine1" type="Label" parent="WeaponCoreUsagePanel/WeaponCoreUsageSection"]
 unique_name_in_owner = true

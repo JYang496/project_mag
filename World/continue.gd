@@ -4,18 +4,27 @@ const WORLD_SCENE_PATH := "res://World/world.tscn"
 const WORLD_ENTRY_PREPARE_GATE_SCRIPT := preload("res://World/world_entry_prepare_gate.gd")
 const WORLD_SCENE_LOADER_SCRIPT := preload("res://World/world_scene_loader.gd")
 
+var _scene_change_committed := false
+var _loading_started := false
+
+func _exit_tree() -> void:
+	if _loading_started and not _scene_change_committed:
+		LoadingPerformance.cancel_world_preview_handoff()
+
 func _on_pressed() -> void:
-	if disabled:
+	if disabled or LoadingPerformance.is_world_input_locked():
 		return
 	disabled = true
+	_loading_started = true
 	var original_text := text
-	text = "Loading..."
+	text = LocalizationManager.tr_key("ui.loading")
 	LoadingPerformance.begin_flow("continue")
 	LoadingPerformance.begin_world_preview_handoff()
 	var continue_result := SaveManager.prepare_continue()
 	if not bool(continue_result.get("ok", false)):
 		push_error("Unable to continue save: %s" % str(continue_result.get("error_code", "unknown")))
 		LoadingPerformance.cancel_world_preview_handoff()
+		_loading_started = false
 		text = original_text
 		disabled = false
 		return
@@ -34,6 +43,7 @@ func _on_pressed() -> void:
 	if not bool(prepare_result.get("ok", false)):
 		push_error("World entry prepare failed: %s" % WORLD_ENTRY_PREPARE_GATE_SCRIPT.format_errors(prepare_result))
 		LoadingPerformance.cancel_world_preview_handoff()
+		_loading_started = false
 		text = original_text
 		disabled = false
 		return
@@ -42,6 +52,7 @@ func _on_pressed() -> void:
 	if not bool(restore_result.get("ok", false)):
 		push_error("Unable to restore save: %s" % str(restore_result.get("error_code", "unknown")))
 		LoadingPerformance.cancel_world_preview_handoff()
+		_loading_started = false
 		text = original_text
 		disabled = false
 		return
@@ -56,6 +67,7 @@ func _on_pressed() -> void:
 	if not bool(load_result.get("ok", false)):
 		push_error(str(load_result.get("error", "World load failed")))
 		LoadingPerformance.cancel_world_preview_handoff()
+		_loading_started = false
 		text = original_text
 		disabled = false
 		return
@@ -64,4 +76,13 @@ func _on_pressed() -> void:
 	LoadingPerformance.update_world_preview_loading_progress(0.84)
 	LoadingPerformance.show_world_build_overlay()
 	LoadingPerformance.mark("world_scene_changed")
-	get_tree().change_scene_to_packed(load_result.get("scene") as PackedScene)
+	_scene_change_committed = true
+	var change_error := get_tree().change_scene_to_packed(load_result.get("scene") as PackedScene)
+	if change_error != OK:
+		_scene_change_committed = false
+		GlobalVariables.consume_new_game_battle_request()
+		LoadingPerformance.cancel_world_preview_handoff()
+		_loading_started = false
+		text = original_text
+		disabled = false
+		push_error("World scene change failed: %s" % error_string(change_error))

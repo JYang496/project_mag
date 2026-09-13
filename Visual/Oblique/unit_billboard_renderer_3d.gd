@@ -128,7 +128,8 @@ func _sync_entry(source: Node2D, unit_owner: Node2D, mesh: MeshInstance3D, confi
 		mesh.set_instance_shader_parameter("warning_amount", float(config.get("warning_amount", 0.0)))
 		mesh.set_instance_shader_parameter("outline_color", config.get("outline_color", Color.TRANSPARENT) as Color)
 		mesh.set_instance_shader_parameter("outline_width_px", float(config.get("outline_width_px", 0.0)))
-		_shader_parameter_updates += 12
+		mesh.set_instance_shader_parameter("module_feedback", config.get("module_feedback", Vector2(-1.0, 0.0)) as Vector2)
+		_shader_parameter_updates += 13
 	if appearance_changed:
 		mesh.set_instance_shader_parameter("source_id", float(source.get_instance_id() % 4096))
 		_shader_parameter_updates += 1
@@ -163,7 +164,7 @@ func _get_material(texture: Texture2D) -> ShaderMaterial:
 	# Units must remain above terrain, cell activation outlines, ordinary ground
 	# effects, and affiliation markers while danger telegraphs (priority 20+)
 	# retain the final warning layer.
-	shader_material.render_priority = UNIT_RENDER_PRIORITY
+	shader_material.render_priority = UNIT_RENDER_PRIORITY - 1 if texture.resource_path.contains("/floating_modules/") else UNIT_RENDER_PRIORITY
 	shader_material.set_shader_parameter("sprite_texture", texture)
 	_material_cache[texture_id] = shader_material
 	return shader_material

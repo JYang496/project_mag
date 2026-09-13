@@ -36,16 +36,21 @@ func _ready() -> void:
 	GlobalVariables.autosave_data = DataHandler.read_autosave_mecha_data(str(PlayerData.select_mecha_id))
 	PlayerData.round_coin_collected = 0
 	PlayerData.round_chip_collected = 0
-	var select_mecha_load = GlobalVariables.mech_data.scene
 	set_start_up_status()
-	var ins = select_mecha_load.instantiate()
-	ins.global_position = global_position
-	PlayerData.player = ins
-	_player_inside_cell = true
-	call_deferred("_add_player_to_root", ins)
 	_setup_cell_monitor()
 	_connect_phase_signals()
 	LoadingPerformance.end_segment("player_spawner_ready")
+	call_deferred("_instantiate_player")
+
+func _instantiate_player() -> void:
+	LoadingPerformance.begin_segment("player_instantiate")
+	var select_mecha_load: PackedScene = GlobalVariables.mech_data.scene
+	var ins := select_mecha_load.instantiate()
+	ins.global_position = global_position
+	PlayerData.player = ins
+	_player_inside_cell = true
+	LoadingPerformance.end_segment("player_instantiate")
+	call_deferred("_add_player_to_root", ins)
 	
 func set_start_up_status():
 	var lvl_index := clampi(

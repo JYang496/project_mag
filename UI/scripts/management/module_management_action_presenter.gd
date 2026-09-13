@@ -55,7 +55,8 @@ func refresh_module_action() -> void:
 	var selected_equipped_module_weapon := _get_selected_equipped_module_weapon()
 	primary_action_button.text = LocalizationManager.tr_key("ui.module.action.unequip", "Unequip Module")
 	primary_action_button.disabled = selected_equipped_module == null or selected_equipped_module_weapon == null
-	secondary_action_button.text = LocalizationManager.tr_key("ui.module.action.sell_selected", "Sell Selected Module")
+	secondary_action_button.text = LocalizationManager.tr_key("ui.module.action.discard_selected", "Discard Selected Module") if PlayerData.gold_supply_enabled \
+		else LocalizationManager.tr_key("ui.module.action.sell_selected", "Sell Selected Module")
 	secondary_action_button.disabled = not (
 		(selected_module != null and is_instance_valid(selected_module))
 		or (selected_equipped_module != null and is_instance_valid(selected_equipped_module))
@@ -63,7 +64,8 @@ func refresh_module_action() -> void:
 	if selected_module != null and is_instance_valid(selected_module):
 		status_label.text = LocalizationManager.tr_key("ui.module.slot_click_hint", "Click a highlighted slot on the left to install or replace.")
 	elif selected_equipped_module != null and is_instance_valid(selected_equipped_module):
-		status_label.text = LocalizationManager.tr_key("ui.module.equipped_action_hint", "Sell this module or unequip it back to temporary storage.")
+		status_label.text = LocalizationManager.tr_key("ui.module.discard.action_hint", "Discard this module with no return, or unequip it to storage.") if PlayerData.gold_supply_enabled \
+			else LocalizationManager.tr_key("ui.module.equipped_action_hint", "Sell this module or unequip it back to temporary storage.")
 	else:
 		status_label.text = LocalizationManager.tr_key("ui.module.select_prompt", "Select a temporary module to manage.")
 

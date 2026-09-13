@@ -390,7 +390,6 @@ module.wmod_trail_aoe_freeze.detail.2,"Trail duration {duration}s","轨迹持续
 mecha.4.name,Tank,Tank
 mecha.1.name,Comet,流星
 mecha.3.name,Melee,Melee
-mecha.2.name,Long-Range Firepower,远距火力型
 mecha.5.name,Turret,Turret
 task_module.task_kill_common.name,Kill Task Module,击杀任务模组
 task_module.task_kill_common.desc,Deploy to an active cell to add a kill objective for the next battle.,部署到已激活格子，为下一场战斗添加击杀任务。

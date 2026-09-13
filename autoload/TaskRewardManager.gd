@@ -39,7 +39,8 @@ func is_task_reward_blocking_interactions() -> bool:
 func is_reward_blocking_interactions() -> bool:
 	return is_task_reward_blocking_interactions() \
 		or RewardDraftRuntime.is_standard_draft_blocking_interactions() \
-		or PhaseManager.is_post_battle_collect_gate_active()
+		or PhaseManager.is_post_battle_collect_gate_active() \
+		or PhaseManager.is_settlement_reward_gate_active()
 
 func _connect_reward_draft_runtime() -> void:
 	if RewardDraftRuntime == null:
@@ -112,6 +113,7 @@ func restore_snapshot_after_player_spawn() -> bool:
 	var preserve_pending_reward := _reward_unlocked
 	_restore_player_state(snapshot.get("player", {}) as Dictionary)
 	_restore_inventory_state(snapshot.get("inventory", {}) as Dictionary)
+	PlayerData.import_gold_supply_state(snapshot.get("gold_supply", {}) as Dictionary)
 	if snapshot.get("reward_draft_runtime", {}) is Dictionary:
 		RewardDraftRuntime.restore_battle_rollback_snapshot(snapshot.get("reward_draft_runtime", {}) as Dictionary)
 	if snapshot.get("battle_contract", {}) is Dictionary:
@@ -175,6 +177,9 @@ func _try_open_pending_reward() -> void:
 	if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
 		return
 	if PhaseManager.is_post_battle_collect_gate_active():
+		_retry_open_later()
+		return
+	if PhaseManager.is_settlement_reward_gate_active():
 		_retry_open_later()
 		return
 	var ui = GlobalVariables.ui
@@ -413,7 +418,7 @@ func _build_rollback_snapshot() -> Dictionary:
 	for weapon in InventoryData.weapon_storage:
 		if weapon and is_instance_valid(weapon):
 			stored_weapon_payloads.append(DataHandler.build_weapon_save_payload(weapon))
-	return {
+	var snapshot := {
 		"level": int(PhaseManager.current_level),
 		"player": {
 			"level": int(PlayerData.player_level),
@@ -461,13 +466,21 @@ func _build_rollback_snapshot() -> Dictionary:
 		"reward_draft_runtime": RewardDraftRuntime.build_battle_rollback_snapshot(),
 		"battle_contract": BattleContractManager.build_rollback_snapshot(),
 	}
+	if PlayerData.gold_supply_enabled:
+		snapshot["gold_supply"] = PlayerData.export_gold_supply_state()
+	return snapshot
 
 func build_run_snapshot() -> Dictionary:
 	return _build_rollback_snapshot()
 
+func refresh_success_rollback_snapshot() -> void:
+	if PhaseManager.current_state() == PhaseManager.SETTLEMENT and _reward_unlocked:
+		_write_rollback_snapshot()
+
 func restore_run_snapshot_after_player_spawn(payload: Dictionary) -> void:
 	_restore_player_state(payload.get("player", {}) as Dictionary)
 	_restore_inventory_state(payload.get("inventory", {}) as Dictionary)
+	PlayerData.import_gold_supply_state(payload.get("gold_supply", {}) as Dictionary)
 
 func export_save_state() -> Dictionary:
 	var entries: Array[Dictionary] = []

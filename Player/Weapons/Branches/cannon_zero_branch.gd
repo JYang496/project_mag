@@ -1,7 +1,7 @@
 extends WeaponBranchBehavior
 class_name CannonZeroBranch
 
-const ZERO_CANNON_TEXTURE: Texture2D = preload("res://asset/images/weapons/cannon3.png")
+const ZERO_CANNON_TEXTURE: Texture2D = preload("res://asset/images/weapons/floating_modules/cannon.png")
 
 func on_weapon_ready() -> void:
 	_apply_zero_cannon_visual()

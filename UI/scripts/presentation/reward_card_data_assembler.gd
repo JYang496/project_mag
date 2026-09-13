@@ -20,6 +20,11 @@ func _build_reward_card_data(reward: RewardInfo) -> Dictionary:
 	}
 	if reward == null:
 		return data
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_CORE:
+		data["type"] = LocalizationManager.tr_key("ui.reward.type.weapon_core", "Weapon Core")
+		data["name"] = LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
+		data["tag"] = "%d × [%s]" % [reward.core_amount, _format_tag_values(reward.core_tags)]
+		return data
 	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
 		var weapon_name := reward.target_weapon_name.strip_edges()
 		if weapon_name.strip_edges() == "":
@@ -52,7 +57,7 @@ func _build_reward_card_data(reward: RewardInfo) -> Dictionary:
 			"Weapon %s Lv.%d" % [weapon_name, reward.item_level]
 		)
 		var weapon_text := base_weapon_text
-		var outcome := _get_weapon_obtain_prediction(reward.item_id)
+		var outcome := reward.obtain_prediction_override if not reward.obtain_prediction_override.is_empty() else _get_weapon_obtain_prediction(reward.item_id)
 		var result_type := str(outcome.get("result", "not_applicable"))
 		if not outcome.is_empty():
 			weapon_text = _format_weapon_obtain_prediction(base_weapon_text, weapon_name, outcome)
@@ -150,6 +155,9 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 	if reward == null:
 		return data
 	data["rarity"] = reward.get_rarity()
+	data["source_id"] = reward.source_id
+	if reward.reward_kind == RewardInfo.KIND_WEAPON_CORE:
+		return _build_supply_core_data(reward, data)
 	if reward.reward_kind == RewardInfo.KIND_WEAPON_UPGRADE:
 		data["reward_type"] = &"weapon_upgrade"
 		data["detail_variant"] = &"weapon_upgrade"
@@ -273,9 +281,9 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 			"Weapon %s Lv.%d" % [weapon_name, reward.item_level]
 		)
 		var weapon_text := base_weapon_text
-		var outcome := _get_weapon_obtain_prediction(reward.item_id)
+		var outcome := reward.obtain_prediction_override if not reward.obtain_prediction_override.is_empty() else _get_weapon_obtain_prediction(reward.item_id)
 		var result_type := str(outcome.get("result", "not_applicable"))
-		if result_type == "not_applicable":
+		if result_type == "not_applicable" and reward.source_id != &"gold_supply":
 			outcome = _with_new_weapon_destination_prediction(outcome)
 		if not outcome.is_empty():
 			weapon_text = _format_weapon_obtain_prediction(base_weapon_text, weapon_name, outcome)
@@ -363,9 +371,13 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 				"ui.reward.core.tag_source_hint",
 				"Retained from this weapon for fusion recipes."
 			))
-			var usage_lines := _format_core_usage_lines(outcome.get("usable_branches", []))
+			var usage_display := _format_core_usage_display(outcome.get("usable_branches", []))
+			var usage_lines: PackedStringArray = usage_display["lines"]
 			data["usable_branch_lines"] = usage_lines
-			data["usable_branch_count"] = usage_lines.size()
+			data["usable_weapon_entries"] = usage_display["entries"]
+			data["usable_weapon_count"] = int(usage_display["weapon_count"])
+			data["usable_branch_count"] = int(usage_display["branch_count"])
+			data["tag_weapon_map"] = _format_core_tag_weapon_map(outcome.get("usable_branches", []), core_tags)
 			if not usage_lines.is_empty():
 				data["detail_effect"] = LocalizationManager.tr_format("ui.reward.core.usable_by", {"branches": " / ".join(usage_lines)}, "Usable by: %s" % " / ".join(usage_lines))
 				detail_chunks.append(str(data["detail_effect"]))
@@ -401,6 +413,16 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 		data["type_label"] = _format_reward_type_label(reward, "Module")
 		data["level_text"] = "Lv.%d" % max(1, reward.module_level)
 		data["outcome_text"] = LocalizationManager.tr_key("ui.reward.outcome.module_obtain", "Added to temporary modules")
+		if reward.source_id == &"gold_supply":
+			var owned := InventoryData.find_owned_module_by_scene_path(reward.module_scene.resource_path)
+			if owned:
+				var from_level := reward.target_module_from_level if reward.reward_kind == RewardInfo.KIND_MODULE_UPGRADE else int(owned.module_level)
+				var to_level := reward.target_module_to_level if reward.reward_kind == RewardInfo.KIND_MODULE_UPGRADE else mini(from_level + 1, Module.MAX_LEVEL)
+				data["short_tag"] = "Lv.%d -> Lv.%d" % [from_level, to_level]
+				data["level_text"] = data["short_tag"]
+				data["detail_preview"] = data["short_tag"]
+				data["outcome_text"] = LocalizationManager.tr_format("ui.reward.weapon_upgrade", {"name": module_name, "from": from_level, "to": to_level}, "Upgrade %s Lv.%d -> Lv.%d" % [module_name, from_level, to_level])
+				data["available"] = int(owned.module_level) == from_level and from_level < Module.MAX_LEVEL
 	if reward.total_chip_value > 0:
 		summary_chunks.append(LocalizationManager.tr_format(
 			"ui.reward.exp",
@@ -441,6 +463,40 @@ func _weapon_role_summary(weapon_id: String) -> String:
 	if normalized_id == "":
 		return ""
 	return LocalizationManager.tr_key("weapon.%s.role_summary" % normalized_id, "")
+
+func _build_supply_core_data(reward: RewardInfo, data: Dictionary) -> Dictionary:
+	var count := InventoryData.get_weapon_core_count(reward.core_tags)
+	var usages := InventoryData.get_fusion_branch_usages_for_core(reward.core_tags)
+	data["reward_type"] = &"weapon_core"
+	data["detail_variant"] = &"weapon_core"
+	data["type_label"] = LocalizationManager.tr_key("ui.reward.type.weapon_core", "Weapon Core")
+	data["title"] = LocalizationManager.get_weapon_name_by_id(reward.item_id, reward.item_id)
+	data["source_weapon_name"] = data["title"]
+	var definition := DataHandler.read_weapon_data(reward.item_id) as WeaponDefinition
+	if definition:
+		data["icon_texture"] = definition.icon
+		data["source_weapon_icon"] = definition.icon
+	data["core_tags"] = reward.core_tags.duplicate()
+	data["core_amount"] = reward.core_amount
+	data["current_core_count"] = count
+	data["resulting_core_count"] = count + reward.core_amount
+	data["usable_branches"] = usages
+	var usage_display := _format_core_usage_display(usages)
+	data["usable_branch_lines"] = usage_display["lines"]
+	data["usable_weapon_entries"] = usage_display["entries"]
+	data["usable_weapon_count"] = int(usage_display["weapon_count"])
+	data["usable_branch_count"] = int(usage_display["branch_count"])
+	data["tag_weapon_map"] = _format_core_tag_weapon_map(usages, reward.core_tags)
+	data["meta_text"] = LocalizationManager.tr_format("ui.reward.meta.weapon_core", {"current": count, "resulting": count + reward.core_amount}, "Core inventory: %d -> %d" % [count, count + reward.core_amount])
+	data["outcome_text"] = LocalizationManager.tr_format("ui.reward.core.dismantled_amount", {"amount": reward.core_amount}, "Duplicate weapon dismantled into %d core(s)." % reward.core_amount) if bool(reward.get_meta("duplicate_weapon", false)) else "%s ×%d" % [str(data["type_label"]), reward.core_amount]
+	data["detail_preview"] = "[%s]" % _format_tag_values(reward.core_tags)
+	data["detail_text"] = str(data["meta_text"]) + "\n" + str(data["detail_preview"])
+	data["fallback_icon_key"] = "weapon_core"
+	data["icon_badge_text"] = "C"
+	data["chips"] = []
+	for tag in reward.core_tags:
+		data["chips"].append(BUILD_TAG_DISPLAY.build_tag_chip(tag))
+	return data
 
 func _core_current_stat_lines(stats: Dictionary) -> PackedStringArray:
 	var lines := PackedStringArray()
@@ -632,9 +688,15 @@ func _format_tag_values(values: Variant) -> String:
 	return ", ".join(parts)
 
 func _format_core_usage_lines(usages: Variant) -> PackedStringArray:
+	return _format_core_usage_display(usages)["lines"]
+
+func _format_core_usage_display(usages: Variant) -> Dictionary:
 	var lines := PackedStringArray()
 	if not (usages is Array):
-		return lines
+		return {"lines": lines, "entries": [], "weapon_count": 0, "branch_count": 0}
+	var branches_by_weapon := {}
+	var weapon_order := PackedStringArray()
+	var branch_count := 0
 	for usage_variant in usages:
 		if not (usage_variant is Dictionary):
 			continue
@@ -646,8 +708,67 @@ func _format_core_usage_lines(usages: Variant) -> PackedStringArray:
 		var branch := DataHandler.read_weapon_branch_definition(weapon_def.scene_path, str(usage.get("branch_id", "")))
 		if branch == null:
 			continue
-		lines.append("%s · %s" % [LocalizationManager.get_weapon_name_by_id(weapon_id, weapon_id), LocalizationManager.get_branch_display_name(branch)])
-	return lines
+		if not branches_by_weapon.has(weapon_id):
+			branches_by_weapon[weapon_id] = PackedStringArray()
+			weapon_order.append(weapon_id)
+		var branch_names := branches_by_weapon[weapon_id] as PackedStringArray
+		branch_names.append(LocalizationManager.get_branch_display_name(branch))
+		branches_by_weapon[weapon_id] = branch_names
+		branch_count += 1
+	var entries: Array[Dictionary] = []
+	for weapon_id in weapon_order:
+		var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+		var branches := branches_by_weapon[weapon_id] as PackedStringArray
+		var weapon_name := LocalizationManager.get_weapon_name_by_id(weapon_id, weapon_id)
+		lines.append("%s · %s" % [
+			weapon_name,
+			" / ".join(branches),
+		])
+		entries.append({"weapon_id": weapon_id, "name": weapon_name, "icon": weapon_def.icon if weapon_def != null else null, "branches": branches})
+	return {"lines": lines, "entries": entries, "weapon_count": weapon_order.size(), "branch_count": branch_count}
+
+func _format_core_tag_weapon_map(usages: Variant, core_tags: Variant) -> Dictionary:
+	var result := {}
+	if not (core_tags is Array):
+		return result
+	for tag_variant in core_tags:
+		var tag := BuildTag.normalize(tag_variant)
+		if tag != StringName():
+			result[str(tag)] = []
+	if not (usages is Array):
+		return result
+	for usage_variant in usages:
+		if not (usage_variant is Dictionary):
+			continue
+		var usage := usage_variant as Dictionary
+		var weapon_id := str(usage.get("weapon_id", ""))
+		var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
+		if weapon_def == null:
+			continue
+		var branch := DataHandler.read_weapon_branch_definition(weapon_def.scene_path, str(usage.get("branch_id", "")))
+		if branch == null:
+			continue
+		for required_tag_variant in branch.fusion_required_tags:
+			var key := str(BuildTag.normalize(required_tag_variant))
+			if not result.has(key):
+				continue
+			var entries := result[key] as Array
+			var matching_entry: Dictionary = {}
+			for entry_variant in entries:
+				var entry := entry_variant as Dictionary
+				if str(entry.get("weapon_id", "")) == weapon_id:
+					matching_entry = entry
+					break
+			if matching_entry.is_empty():
+				matching_entry = {"weapon_id": weapon_id, "name": LocalizationManager.get_weapon_name_by_id(weapon_id, weapon_id), "icon": weapon_def.icon, "branches": PackedStringArray()}
+				entries.append(matching_entry)
+			var branch_names := matching_entry["branches"] as PackedStringArray
+			var branch_name := LocalizationManager.get_branch_display_name(branch)
+			if not branch_names.has(branch_name):
+				branch_names.append(branch_name)
+				matching_entry["branches"] = branch_names
+			result[key] = entries
+	return result
 
 func _get_reward_action_color(reward: RewardInfo) -> Color:
 	if reward == null:

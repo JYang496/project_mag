@@ -11,12 +11,6 @@ Use the local Godot console executable from the repository root:
   --path . res://tests/showcases/<domain>/<scene>.tscn
 ```
 
-## Character pixels
-
-- Scene: `res://tests/showcases/character/ranger_pixel_unification_showcase.tscn`
-- Shows Ranger front/back idle, front/back 8-frame hover movement, real display
-  footprint, and the four unchanged shared-mecha resources.
-
 ## Combat readability
 
 - Scene: `res://tests/showcases/vfx/combat_readability_showcase.tscn`
@@ -47,6 +41,14 @@ Use the local Godot console executable from the repository root:
 - Controls: `L` language, `F` focus, `H` hold progress, `R` reset.
 - Shows three self-contained cards without a duplicate detail row, long bilingual copy, focus, selection, and
   quick-confirm states.
+
+## Weapon core card
+
+- Scene: `res://tests/showcases/ui/weapon_core_card_showcase.tscn`
+- Controls: `0` clears Tag focus and hides compatibility; `1`–`4` focus
+  Ammo, Heat, Physical, and Projectile Tags.
+- Shows the production weapon-core card with its compact provenance/inventory
+  metadata, enlarged primary Tags, and per-Tag supported-weapon interaction.
 
 ## Contract difficulty
 

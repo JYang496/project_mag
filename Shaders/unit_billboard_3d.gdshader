@@ -16,6 +16,7 @@ instance uniform float warning_amount : hint_range(0.0, 1.0) = 0.0;
 instance uniform vec4 outline_color : source_color = vec4(0.0);
 instance uniform float outline_width_px : hint_range(0.0, 3.0) = 0.0;
 instance uniform float source_id = 0.0;
+instance uniform vec2 module_feedback = vec2(-1.0, 0.0);
 
 void vertex() {
 	VERTEX.y += vertical_anchor_offset;
@@ -57,6 +58,12 @@ void fragment() {
 		outline_alpha = max(outline_alpha, texture(sprite_texture, sprite_uv + vec2(-step_uv.x, step_uv.y)).a);
 	}
 	vec4 shaded = texel * visual_color;
+	if (module_feedback.x >= 0.0) {
+		float cyan = step(texel.r + 0.10, texel.g) * step(texel.r + 0.10, texel.b);
+		vec3 energy = mix(texel.rgb, vec3(0.94, 0.30, 0.07), module_feedback.x);
+		energy *= 0.88 + 0.12 * sin(TIME * 3.0) + module_feedback.y * 0.16;
+		shaded.rgb = mix(texel.rgb, energy, cyan) * visual_color.rgb;
+	}
 	shaded.rgb = mix(shaded.rgb, flash_color.rgb, clamp(flash_amount, 0.0, 1.0));
 	shaded.rgb = mix(shaded.rgb, warning_color.rgb, clamp(warning_amount, 0.0, 1.0));
 	if (texel.a <= 0.01 && outline_alpha > 0.01 && outline_color.a > 0.0) {

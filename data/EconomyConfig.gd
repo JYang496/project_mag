@@ -3,6 +3,34 @@ class_name EconomyConfig
 
 @export var enemy_coin_drop_value: int = 1
 @export var default_player_gold: int = 10
+# Opt-in for new runs only. Existing runs restore their saved economy mode.
+@export var gold_supply_enabled: bool = false
+@export var gold_supply_thresholds: PackedInt32Array = PackedInt32Array([18, 26, 36, 82, 84, 88, 92, 94, 98])
+# No quality progression is assumed yet; each generated record freezes its quality.
+@export var gold_supply_qualities: PackedStringArray = PackedStringArray(["common"])
+@export_range(0.0, 10.0, 0.05) var gold_supply_progress_weight: float = 0.50
+@export_range(0.0, 10.0, 0.05) var gold_supply_core_weight: float = 0.30
+@export_range(0.0, 10.0, 0.05) var gold_supply_expansion_weight: float = 0.20
+@export var gold_supply_endless_enabled: bool = true
+@export_range(1, 100000, 1) var gold_supply_endless_first_increment: int = 24
+@export_range(0, 100000, 1) var gold_supply_endless_increment_growth: int = 2
+
+func build_gold_supply_rules() -> Dictionary:
+	return {
+		"thresholds": Array(gold_supply_thresholds),
+		"qualities": Array(gold_supply_qualities),
+		"endless_enabled": gold_supply_endless_enabled,
+		"endless_first_increment": maxi(gold_supply_endless_first_increment, 1),
+		"endless_increment_growth": maxi(gold_supply_endless_increment_growth, 0),
+	}
+
+func get_gold_supply_reward_weights() -> Dictionary:
+	return {
+		"progress": maxf(gold_supply_progress_weight, 0.0),
+		"core": maxf(gold_supply_core_weight, 0.0),
+		"expansion": maxf(gold_supply_expansion_weight, 0.0),
+	}
+
 @export var weapon_purchase_price_multiplier: float = 1.0
 @export_range(0.0, 10.0, 0.01) var weapon_upgrade_price_ratio: float = 0.75
 @export var shop_refresh_start_cost: int = 4

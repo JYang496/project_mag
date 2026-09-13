@@ -19,6 +19,29 @@ var _save_in_progress := false
 var _save_dirty := false
 var _pending_restore: Dictionary = {}
 var rest_area_service_intro_seen := false
+var _reward_transaction_active := false
+
+func begin_reward_transaction() -> bool:
+	if _save_in_progress or _reward_transaction_active:
+		return false
+	_reward_transaction_active = true
+	return true
+
+func commit_reward_transaction(reason: StringName) -> Dictionary:
+	if not _reward_transaction_active:
+		return _result(false, "no_reward_transaction")
+	# Keep the lock through callbacks; the caller releases it after rollback/commit.
+	_save_in_progress = true
+	var payload := _build_document(STATE_BATTLE if PhaseManager.current_state() == PhaseManager.BATTLE else STATE_REST_AREA)
+	var result := _write_document_atomic(RUN_PATH, BACKUP_PATH, payload)
+	if bool(result.get("ok", false)):
+		_write_manifest(payload)
+	_save_in_progress = false
+	save_completed.emit(reason, result)
+	return result
+
+func abort_reward_transaction() -> void:
+	_reward_transaction_active = false
 
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SLOT_DIRECTORY))
@@ -41,6 +64,8 @@ func create_new_run() -> Dictionary:
 	return save_run(&"new_run", STATE_REST_AREA)
 
 func save_run(reason: StringName = &"autosave", state: String = STATE_REST_AREA) -> Dictionary:
+	if _reward_transaction_active:
+		return _result(false, "reward_transaction_in_progress")
 	if _save_in_progress:
 		_save_dirty = true
 		return _result(true, "queued")
@@ -95,7 +120,11 @@ func restore_before_world() -> Dictionary:
 	if _pending_restore.is_empty():
 		return _result(false, "no_pending_restore")
 	var run: Dictionary = _pending_restore.get("run", {})
-	PlayerData.select_mecha_id = int(run.get("selected_mecha_id", PlayerData.select_mecha_id))
+	var saved_mecha_id := str(run.get("selected_mecha_id", PlayerData.select_mecha_id))
+	if DataHandler.read_mecha_data(saved_mecha_id) == null:
+		push_warning("Saved mecha id=%s is unavailable; falling back to mecha id=1." % saved_mecha_id)
+		saved_mecha_id = "1"
+	PlayerData.select_mecha_id = int(saved_mecha_id)
 	PhaseManager.current_level = maxi(int(run.get("level", 0)), 0)
 	PhaseManager.import_progression_save_state(
 		run.get("progression_state", {}) as Dictionary,

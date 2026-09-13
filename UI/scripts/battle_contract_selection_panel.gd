@@ -47,6 +47,8 @@ func _ready() -> void:
 	confirm_button.pressed.connect(_on_confirm_pressed)
 
 func open(options: Array, confirmed: Callable) -> void:
+	if is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.has_method("is_supply_modal_open") and GlobalVariables.ui.is_supply_modal_open():
+		return
 	if visible or options.size() < 2 or options.size() > 3:
 		return
 	_confirmed = confirmed

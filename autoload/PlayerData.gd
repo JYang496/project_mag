@@ -5,6 +5,8 @@ signal weapon_list_changed()
 signal player_health_changed(current_hp: int, max_hp: int)
 signal player_damage_received(feedback: Dictionary)
 signal player_gold_changed(value: int)
+signal gold_supply_changed()
+signal gold_supply_reset()
 
 const MAX_PLAYER_LEVEL := 10
 
@@ -37,7 +39,7 @@ var player_exp := 0 :
 			player_level += 1
 		player_exp = 0 if player_level >= MAX_PLAYER_LEVEL else remaining_exp
 		
-var player_speed : float = 100.0 :
+var player_speed : float = 120.0 :
 	get:
 		return player_speed
 	set(value):
@@ -156,28 +158,150 @@ var weapon_progress_this_battle := false
 var testing_keep_hp_above_zero := false
 var is_interacting : bool = false
 
+# Run-local supply data is separate from the legacy spendable balance.
+var gold_supply_enabled := false
+var gold_supply_progress: int = 0
+var gold_supply_level: int = 0
+var gold_supply_progress_spent: int = 0
+var _pending_gold_supplies: Array[Dictionary] = []
+var _gold_supply_rules: Dictionary = {}
+var _claimed_gold_supplies: Array[Dictionary] = []
+var gold_supply_rewards = preload("res://World/rewards/gold_supply_reward_service.gd").new()
+
+func get_pending_gold_supplies() -> Array[Dictionary]:
+	return _pending_gold_supplies.duplicate(true)
+
+func get_claimed_gold_supplies() -> Array[Dictionary]:
+	return _claimed_gold_supplies.duplicate(true)
+
+# Internal ledger access for the supply service; callers receive copies above.
+func _find_gold_supply_record(sequence: int) -> Dictionary:
+	for record in _pending_gold_supplies:
+		if int(record.get("sequence", 0)) == sequence:
+			return record
+	return {}
+
+func _finish_gold_supply_claim(sequence: int, receipt: Dictionary) -> void:
+	var record := _find_gold_supply_record(sequence)
+	_pending_gold_supplies.erase(record)
+	_claimed_gold_supplies.append(receipt.duplicate(true))
+
+func get_next_gold_supply_threshold() -> int:
+	var thresholds: Array = _gold_supply_rules.get("thresholds", [])
+	if gold_supply_level < thresholds.size():
+		return maxi(int(thresholds[gold_supply_level]), 0)
+	if thresholds.is_empty() or not PhaseManager.endless_mode \
+			or not bool(_gold_supply_rules.get("endless_enabled", false)):
+		return 0 # Exhausted: retain overflow, never repeat the last threshold.
+	var tail_index: int = gold_supply_level - thresholds.size() + 1
+	var increment: int = maxi(int(_gold_supply_rules.get("endless_first_increment", 24)), 1)
+	var growth: int = maxi(int(_gold_supply_rules.get("endless_increment_growth", 2)), 0)
+	return int(thresholds[-1]) + tail_index * increment + int(tail_index * (tail_index - 1) / 2) * growth
+
+func _route_gold_income(amount: int) -> void:
+	if not gold_supply_enabled:
+		player_gold += amount
+		return
+	gold_supply_progress += amount
+	var threshold := get_next_gold_supply_threshold()
+	while threshold > 0 and gold_supply_progress >= threshold:
+		gold_supply_progress -= threshold
+		gold_supply_progress_spent += threshold
+		gold_supply_level += 1
+		var qualities: Array = _gold_supply_rules.get("qualities", [])
+		var quality := "common"
+		if not qualities.is_empty():
+			quality = str(qualities[mini(gold_supply_level - 1, qualities.size() - 1)])
+		_pending_gold_supplies.append({"source": "gold_supply", "sequence": gold_supply_level, "quality": quality, "threshold": threshold, "status": "unprepared"})
+		threshold = get_next_gold_supply_threshold()
+	gold_supply_changed.emit()
+
+func _reset_gold_supply_state(use_configured_mode: bool) -> void:
+	gold_supply_reset.emit()
+	# New-game reset precedes world preparation, so load the economy switch first.
+	if use_configured_mode and GlobalVariables.economy_data == null:
+		DataHandler.prepare_economy_data()
+	var economy := GlobalVariables.economy_data if GlobalVariables.economy_data else EconomyConfig.new()
+	gold_supply_enabled = use_configured_mode and economy.gold_supply_enabled
+	gold_supply_progress = 0
+	gold_supply_level = 0
+	gold_supply_progress_spent = 0
+	_pending_gold_supplies.clear()
+	_claimed_gold_supplies.clear()
+	_gold_supply_rules = economy.build_gold_supply_rules() if gold_supply_enabled else {}
+	gold_supply_changed.emit()
+
+func export_gold_supply_state() -> Dictionary:
+	if not gold_supply_enabled:
+		return {}
+	return {
+		"schema_version": 1,
+		"enabled": true,
+		"progress": gold_supply_progress,
+		"level": gold_supply_level,
+		"progress_spent": gold_supply_progress_spent,
+		"pending": _pending_gold_supplies.duplicate(true),
+		"claimed": _claimed_gold_supplies.duplicate(true),
+		"rules": _gold_supply_rules.duplicate(true),
+	}
+
+func import_gold_supply_state(payload: Dictionary) -> void:
+	# Missing data means a legacy run, regardless of the new-run config switch.
+	_reset_gold_supply_state(false)
+	if int(payload.get("schema_version", 0)) != 1 or not bool(payload.get("enabled", false)):
+		return
+	gold_supply_enabled = true
+	gold_supply_progress = maxi(int(payload.get("progress", 0)), 0)
+	gold_supply_level = maxi(int(payload.get("level", 0)), 0)
+	gold_supply_progress_spent = maxi(int(payload.get("progress_spent", 0)), 0)
+	_gold_supply_rules = (payload.get("rules", {}) as Dictionary).duplicate(true)
+	# JSON numbers load as floats; normalize counters/rules for deterministic snapshots.
+	var thresholds: Array = []
+	for value in _gold_supply_rules.get("thresholds", []):
+		thresholds.append(int(value))
+	_gold_supply_rules["thresholds"] = thresholds
+	_gold_supply_rules["endless_first_increment"] = maxi(int(_gold_supply_rules.get("endless_first_increment", 24)), 1)
+	_gold_supply_rules["endless_increment_growth"] = maxi(int(_gold_supply_rules.get("endless_increment_growth", 2)), 0)
+	for record in payload.get("pending", []):
+		if record is Dictionary:
+			var restored_record := (record as Dictionary).duplicate(true)
+			restored_record["sequence"] = int(restored_record.get("sequence", 0))
+			restored_record["threshold"] = int(restored_record.get("threshold", 0))
+			restored_record = gold_supply_rewards.normalize_record(restored_record)
+			_pending_gold_supplies.append(restored_record)
+	for receipt in payload.get("claimed", []):
+		if receipt is Dictionary:
+			var restored_receipt := (receipt as Dictionary).duplicate(true)
+			restored_receipt["sequence"] = int(restored_receipt.get("sequence", 0))
+			restored_receipt["selected"] = int(restored_receipt.get("selected", 0))
+			_claimed_gold_supplies.append(restored_receipt)
+	# Restoration is not income and must not generate supplies again.
+	gold_supply_changed.emit()
+
 func earn_gold(amount: int, count_as_collected_coin: bool = false) -> int:
 	var safe_amount := maxi(amount, 0)
 	if safe_amount <= 0:
 		return 0
-	player_gold += safe_amount
 	run_gold_earned += safe_amount
 	if count_as_collected_coin:
 		round_coin_collected += safe_amount
+	_route_gold_income(safe_amount)
 	return safe_amount
 
 func recycle_gold(amount: int) -> int:
 	var safe_amount := maxi(amount, 0)
 	if safe_amount <= 0:
 		return 0
-	player_gold += safe_amount
 	run_gold_recycled += safe_amount
+	_route_gold_income(safe_amount)
 	return safe_amount
 
 func spend_gold(amount: int) -> bool:
 	var safe_amount := maxi(amount, 0)
 	if safe_amount <= 0:
 		return true
+	if gold_supply_enabled:
+		return false
 	if player_gold < safe_amount:
 		return false
 	player_gold -= safe_amount
@@ -185,6 +309,8 @@ func spend_gold(amount: int) -> bool:
 	return true
 
 func refund_gold_spending(amount: int) -> int:
+	if gold_supply_enabled:
+		return 0
 	var safe_amount := clampi(amount, 0, run_gold_spent)
 	if safe_amount <= 0:
 		return 0
@@ -236,7 +362,7 @@ func reset_runtime_state() -> void:
 	player_level = 1
 	next_level_exp = 10
 	player_exp = 0
-	player_speed = 100.0
+	player_speed = 120.0
 	player_bonus_speed = 0.0
 	dash_cooldown = 5.0
 	player_max_hp = 5
@@ -262,7 +388,9 @@ func reset_runtime_state() -> void:
 	grab_radius = 50.0
 	grab_radius_mutifactor = 1.0
 	total_grab_radius = 50.0
-	player_gold = _get_default_player_gold()
+	_reset_gold_supply_state(true)
+	# Supply runs start at zero; the legacy 10-gold gift is not supply income.
+	player_gold = 0 if gold_supply_enabled else _get_default_player_gold()
 	round_coin_collected = 0
 	round_chip_collected = 0
 	run_total_damage_dealt = 0
@@ -301,6 +429,15 @@ func sanitize_main_weapon_index() -> void:
 		main_weapon_index = clampi(main_weapon_index, 0, player_weapon_list.size() - 1)
 	if old_index != main_weapon_index:
 		main_weapon_index_changed.emit(old_index, main_weapon_index, 0)
+
+func clear_weapon_runtime_references() -> void:
+	var old_main_index := main_weapon_index
+	player_weapon_list.clear()
+	main_weapon_index = -1
+	on_select_weapon = -1
+	weapon_list_changed.emit()
+	if old_main_index != main_weapon_index:
+		main_weapon_index_changed.emit(old_main_index, main_weapon_index, 0)
 
 func can_switch_main_weapon() -> bool:
 	return player_weapon_list.size() > 1
@@ -349,11 +486,15 @@ func shift_main_weapon(step: int) -> bool:
 func _sanitize_weapon_list_for_switch() -> void:
 	var current_main: Weapon = null
 	if main_weapon_index >= 0 and main_weapon_index < player_weapon_list.size():
-		current_main = player_weapon_list[main_weapon_index] as Weapon
+		var current_main_ref: Variant = player_weapon_list[main_weapon_index]
+		if is_instance_valid(current_main_ref):
+			current_main = current_main_ref as Weapon
 	var valid_weapons: Array = []
 	for weapon_variant in player_weapon_list:
+		if not is_instance_valid(weapon_variant):
+			continue
 		var weapon := weapon_variant as Weapon
-		if weapon != null and is_instance_valid(weapon):
+		if weapon != null:
 			valid_weapons.append(weapon)
 	if valid_weapons.size() == player_weapon_list.size():
 		return

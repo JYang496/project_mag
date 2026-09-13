@@ -872,7 +872,9 @@ func _refresh_readiness_checklist(force: bool = false) -> void:
 	if InventoryData.temporary_modules.size() > 0:
 		lines.append(LocalizationManager.tr_format("ui.rest.checklist.modules", {"count": InventoryData.temporary_modules.size()}, "• %d stored modules" % InventoryData.temporary_modules.size()))
 	var affordable := _get_affordable_upgrade_count()
-	if affordable > 0:
+	if PlayerData.gold_supply_enabled:
+		lines.append(LocalizationManager.tr_key("ui.rest.checklist.workbench", "• Workbench services available; upgrades come from supplies"))
+	elif affordable > 0:
 		lines.append(LocalizationManager.tr_format("ui.rest.checklist.upgrades", {"count": affordable}, "• %d affordable upgrades" % affordable))
 	if CellEffectRuntime.has_pending_edits():
 		lines.append(LocalizationManager.tr_key("ui.rest.checklist.board", "• Board changes awaiting commit"))
@@ -993,7 +995,7 @@ func _zone_opens_interaction(zone_id: int) -> bool:
 
 func _is_zone_available(zone_id: int) -> bool:
 	if zone_id == ZONE_ID_MERCHANT:
-		return PhaseManager.is_full_shop_open()
+		return not PlayerData.gold_supply_enabled and PhaseManager.is_full_shop_open()
 	if zone_id == ZONE_ID_BOARD_EDIT:
 		return _board != null and _board.is_cell_system_visible()
 	return true
